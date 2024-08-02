@@ -35,7 +35,6 @@ import org.apache.ignite.cache.query.SqlQuery;
 import org.apache.ignite.cache.query.TextQuery;
 import org.apache.ignite.cache.query.annotations.QuerySqlField;
 import org.apache.ignite.cache.query.annotations.QuerySqlFunction;
-import org.apache.ignite.calcite.CalciteQueryEngineConfiguration;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.SqlConfiguration;
@@ -56,31 +55,31 @@ import org.junit.runners.Parameterized;
 /** Tests for SQL plan history (H2 engine). */
 @RunWith(Parameterized.class)
 public class SqlPlanHistoryH2SelfTest extends GridCommonAbstractTest {
-    /** SQL Plan history size. */
+    /** SQL plan history size. */
     private static final int PLAN_HISTORY_SIZE = 10;
 
     /** Plan history size excess. */
     private static final int PLAN_HISTORY_EXCESS = 2;
 
-    /** Simple query. */
+    /** Simple SQL query. */
     private static final String SQL = "SELECT * FROM A.String";
 
-    /** Failed query. */
+    /** Failed SQL query. */
     private static final String SQL_FAILED = "select * from A.String where A.fail()=1";
 
-    /** Cross-cache query. */
+    /** Cross-cache SQL query. */
     private static final String SQL_CROSS_CACHE = "SELECT * FROM B.String";
 
-    /** Failed cross-cache query. */
+    /** Failed cross-cache SQL query. */
     private static final String SQL_CROSS_CACHE_FAILED = "select * from A.String where A.fail()=1";
 
-    /** Query with reduce phase. */
+    /** SQL query with reduce phase. */
     private static final String SQL_WITH_REDUCE_PHASE = "select o.name n1, p.name n2 from \"pers\".Person p, " +
         "\"org\".Organization o where p.orgId=o._key and o._key=101" +
         " union select o.name n1, p.name n2 from \"pers\".Person p, \"org\".Organization o" +
         " where p.orgId=o._key and o._key=102";
 
-    /** Sets of DML commands of various complexity including failed commands. */
+    /** Sets of DML commands of various complexity (including failed commands). */
     List<List<String>> dmlCmds = Arrays.asList(
         Arrays.asList(
             "insert into A.String (_key, _val) values(101, '101')",
@@ -115,51 +114,51 @@ public class SqlPlanHistoryH2SelfTest extends GridCommonAbstractTest {
     /** Strings for checking SQL plan history after executing DML commands. */
     List<String> dmlCheckStrings = Arrays.asList("mode=INSERT", "mode=UPDATE", "mode=DELETE");
 
-    /** Successful SqlFields query. */
+    /** Successful SqlFieldsQuery. */
     SqlFieldsQuery sqlFieldsQry = new SqlFieldsQuery(SQL);
 
-    /** Failed SqlFields query. */
+    /** Failed SqlFieldsQuery. */
     SqlFieldsQuery sqlFieldsQryFailed = new SqlFieldsQuery(SQL_FAILED);
 
-    /** Successful cross-cache SqlFields query. */
+    /** Successful cross-cache SqlFieldsQuery. */
     SqlFieldsQuery sqlFieldsCrossCacheQry = new SqlFieldsQuery(SQL_CROSS_CACHE);
 
-    /** Failed cross-cache SqlFields query. */
+    /** Failed cross-cache SqlFieldsQuery. */
     SqlFieldsQuery sqlFieldsCrossCacheQryFailed = new SqlFieldsQuery(SQL_CROSS_CACHE_FAILED);
 
-    /** Successful Sql query. */
-    SqlQuery sqlQry = new SqlQuery<>("String", "from String");
-
-    /** Failed Sql query. */
-    SqlQuery sqlQryFailed = new SqlQuery<>("String", "from String where fail()=1");
-
-    /** Scan query. */
-    ScanQuery<Integer, String> scanQry = new ScanQuery<>();
-
-    /** Text query. */
-    TextQuery<Integer, String> textQry = new TextQuery<>("String", "2");
-
-    /** */
+    /** Successful SqlFieldsQuery with reduce phase. */
     private final SqlFieldsQuery sqlFieldsQryWithReducePhase = new SqlFieldsQuery(SQL_WITH_REDUCE_PHASE)
         .setDistributedJoins(true);
 
-    /** */
+    /** Failed SqlFieldsQueries with reduce phase. */
     private final SqlFieldsQuery[] sqlFieldsQryWithReducePhaseFailed = F.asArray(
         new SqlFieldsQuery(SQL_WITH_REDUCE_PHASE.replace("o._key=101", "fail()")).setDistributedJoins(true),
         new SqlFieldsQuery(SQL_WITH_REDUCE_PHASE.replace("o._key=102", "fail()")).setDistributedJoins(true)
     );
 
+    /** Successful SqlQuery. */
+    SqlQuery sqlQry = new SqlQuery<>("String", "from String");
+
+    /** Failed SqlQuery. */
+    SqlQuery sqlQryFailed = new SqlQuery<>("String", "from String where fail()=1");
+
+    /** ScanQuery. */
+    ScanQuery<Integer, String> scanQry = new ScanQuery<>();
+
+    /** TextQuery. */
+    TextQuery<Integer, String> textQry = new TextQuery<>("String", "2");
+
     /** Client mode flag. */
     private boolean isClient;
 
-    /** Sql engine. */
-    private SqlPlanHistoryTracker.SqlEngine sqlEngine;
+    /** SQL engine. */
+    protected SqlPlanHistoryTracker.SqlEngine sqlEngine = SqlPlanHistoryTracker.SqlEngine.H2;
 
     /** Local query flag. */
     @Parameterized.Parameter
     public boolean loc;
 
-    /** Fully fetched query flag. */
+    /** Fully-fetched query flag. */
     @Parameterized.Parameter(1)
     public boolean isFullyFetched;
 
@@ -208,6 +207,26 @@ public class SqlPlanHistoryH2SelfTest extends GridCommonAbstractTest {
             .setSqlFunctionClasses(Functions.class);
     }
 
+    /**
+     * @return Ignite instance for quering.
+     */
+    protected IgniteEx queryNode() {
+        IgniteEx node = grid(0);
+
+        assertFalse(node.context().clientNode());
+
+        return node;
+    }
+
+    /**
+     * Starts Ignite instance.
+     *
+     * @throws Exception In case of failure.
+     */
+    protected void startTestGrid() throws Exception {
+        startGrid(0);
+    }
+
     /** {@inheritDoc} */
     @Override protected void beforeTestsStarted() throws Exception {
         super.beforeTestsStarted();
@@ -242,22 +261,20 @@ public class SqlPlanHistoryH2SelfTest extends GridCommonAbstractTest {
     /** {@inheritDoc} */
     @Override protected void beforeTest() throws Exception {
         resetPlanHistory();
-
-        sqlEngine = isCalcite() ? SqlPlanHistoryTracker.SqlEngine.CALCITE : SqlPlanHistoryTracker.SqlEngine.H2;
-
-        try {
-            if (grid(1).configuration().isClientMode())
-                isClient = true;
-        }
-        catch (Exception ignore) {
-            //No-Op
-        }
     }
 
-    /** */
-    public boolean isCalcite() {
-        return grid(0).context().config().getSqlConfiguration().getQueryEnginesConfiguration()[0] instanceof
-            CalciteQueryEngineConfiguration;
+    /**
+     * @param sqlEngine Sql engine.
+     */
+    protected void setSqlEngine(SqlPlanHistoryTracker.SqlEngine sqlEngine) {
+        this.sqlEngine = sqlEngine;
+    }
+
+    /**
+     * @param isClient Client more flag.
+     */
+    protected void setClientMode(boolean isClient) {
+        this.isClient = isClient;
     }
 
     /** */
@@ -294,31 +311,31 @@ public class SqlPlanHistoryH2SelfTest extends GridCommonAbstractTest {
         checkSqlPlanHistory(getExpectedHistorySize());
     }
 
-    /** Checks successful SqlFields queries. */
+    /** Checks successful SqlFieldsQuery. */
     @Test
     public void testSqlFieldsQuery() {
         executeSuccessfulQuery(sqlFieldsQry);
     }
 
-    /** Checks failed SqlFields queries. */
+    /** Checks failed SqlFieldsQuery. */
     @Test
     public void testSqlFieldsQueryFailed() {
         executeFailedQuery(sqlFieldsQryFailed);
     }
 
-    /** Checks successful cross-cache SqlFields queries. */
+    /** Checks successful cross-cache SqlFieldsQuery. */
     @Test
     public void testSqlFieldsCrossCacheQuery() {
         executeSuccessfulQuery(sqlFieldsCrossCacheQry);
     }
 
-    /** Checks failed cross-cache SqlFields queries. */
+    /** Checks failed cross-cache SqlFieldsQuery. */
     @Test
     public void testSqlFieldsCrossCacheQueryFailed() {
         executeFailedQuery(sqlFieldsCrossCacheQryFailed);
     }
 
-    /** Checks successful SqlFields queries with reduce phase. */
+    /** Checks successful SqlFieldsQuery with reduce phase. */
     @Test
     public void testSqlFieldsQueryWithReducePhase() {
         if (loc)
@@ -329,7 +346,7 @@ public class SqlPlanHistoryH2SelfTest extends GridCommonAbstractTest {
         checkSqlPlanHistory((!isClient && sqlEngine == SqlPlanHistoryTracker.SqlEngine.H2) ? 3 : 1);
     }
 
-    /** Checks failed SqlFields queries with reduce phase. */
+    /** Checks failed SqlFieldsQuery with reduce phase. */
     @Test
     public void testSqlFieldsQueryWithReducePhaseFailed() {
         if (loc)
@@ -349,25 +366,25 @@ public class SqlPlanHistoryH2SelfTest extends GridCommonAbstractTest {
         }
     }
 
-    /** Checks successful Sql queries. */
+    /** Checks successful SqlQuery. */
     @Test
     public void testSqlQuery() {
         executeSuccessfulQuery(sqlQry);
     }
 
-    /** Checks failed Sql queries. */
+    /** Checks failed SqlQuery. */
     @Test
     public void testSqlQueryFailed() {
         executeFailedQuery(sqlQryFailed);
     }
 
-    /** Checks scan queries. */
+    /** Checks ScanQuery. */
     @Test
     public void testScanQuery() {
         executeQueryWithoutPlan(scanQry);
     }
 
-    /** Checks text queries. */
+    /** Checks TextQuery. */
     @Test
     public void testTextQuery() {
         executeQueryWithoutPlan(textQry);
@@ -400,7 +417,7 @@ public class SqlPlanHistoryH2SelfTest extends GridCommonAbstractTest {
         }
     }
 
-    /** Checks DML commands executed via SqlField queries. */
+    /** Checks DML commands executed via SqlFieldsQuery. */
     @Test
     public void testSqlFieldsDml() {
         if (isClient && loc || !isFullyFetched)
@@ -611,26 +628,6 @@ public class SqlPlanHistoryH2SelfTest extends GridCommonAbstractTest {
 
             assertTrue(plan.startTime() > 0);
         }
-    }
-
-    /**
-     * @return Ignite instance for quering.
-     */
-    protected IgniteEx queryNode() {
-        IgniteEx node = grid(0);
-
-        assertFalse(node.context().clientNode());
-
-        return node;
-    }
-
-    /**
-     * Starts Ignite instance.
-     *
-     * @throws Exception In case of failure.
-     */
-    protected void startTestGrid() throws Exception {
-        startGrid(0);
     }
 
     /** */
