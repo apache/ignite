@@ -106,6 +106,7 @@ import org.apache.ignite.internal.processors.query.h2.twostep.msg.GridH2DmlRespo
 import org.apache.ignite.internal.processors.query.h2.twostep.msg.GridH2QueryRequest;
 import org.apache.ignite.internal.processors.query.running.HeavyQueriesTracker;
 import org.apache.ignite.internal.processors.query.running.RunningQueryManager;
+import org.apache.ignite.internal.processors.query.running.SqlPlanHistoryTracker;
 import org.apache.ignite.internal.processors.query.schema.AbstractSchemaChangeListener;
 import org.apache.ignite.internal.processors.tracing.MTC;
 import org.apache.ignite.internal.processors.tracing.MTC.TraceSurroundings;
@@ -448,6 +449,17 @@ public class IgniteH2Indexing implements GridQueryIndexing {
                             qryInfo.plan()
                         );
                     }
+
+                    SqlPlanHistoryTracker planHistTracker = ctx.query().runningQueryManager().planHistoryTracker();
+
+                    planHistTracker.addPlan(
+                        qryInfo.plan(),
+                        qry,
+                        qryDesc.schemaName(),
+                        true,
+                        qryInfo.beginTs(),
+                        SqlPlanHistoryTracker.SqlEngine.H2
+                    );
 
                     ResultSet rs = executeSqlQueryWithTimer(
                         stmt,
@@ -2142,6 +2154,17 @@ public class IgniteH2Indexing implements GridQueryIndexing {
         GridQueryCancel cancel
     ) throws IgniteCheckedException {
         UpdatePlan plan = dml.plan();
+
+        SqlPlanHistoryTracker planHistTracker = ctx.query().runningQueryManager().planHistoryTracker();
+
+        planHistTracker.addPlan(
+            plan.plan(),
+            qryDesc.sql(),
+            qryDesc.schemaName(),
+            loc,
+            U.currentTimeMillis(),
+            SqlPlanHistoryTracker.SqlEngine.H2
+        );
 
         UpdateResult fastUpdateRes = plan.processFast(qryParams.arguments());
 

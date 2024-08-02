@@ -460,6 +460,11 @@ public class RootQuery<RowT> extends Query<RowT> implements TrackableQuery {
     }
 
     /** */
+    public long startTime() {
+        return startTs;
+    }
+
+    /** */
     @Override public String toString() {
         return S.toString(RootQuery.class, this);
     }

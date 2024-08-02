@@ -112,6 +112,11 @@ public class H2QueryInfo implements TrackableQuery {
         return stmt.getPlanSQL();
     }
 
+    /** */
+    public long beginTs() {
+        return beginTs;
+    }
+
     /**
      * Print info specified by children.
      *
