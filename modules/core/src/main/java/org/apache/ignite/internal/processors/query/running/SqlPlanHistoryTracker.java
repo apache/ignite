@@ -21,7 +21,7 @@ import java.util.Collections;
 import java.util.Map;
 import org.apache.ignite.internal.util.GridBoundedConcurrentLinkedHashMap;
 
-/** */
+/** Class that manages recording and storing SQL plans. */
 public class SqlPlanHistoryTracker {
     /** SQL plan history. */
     private final GridBoundedConcurrentLinkedHashMap<SqlPlanKey, SqlPlan> sqlPlanHistory;

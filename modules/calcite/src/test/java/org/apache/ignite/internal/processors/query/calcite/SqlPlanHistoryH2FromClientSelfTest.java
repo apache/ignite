@@ -23,6 +23,13 @@ import org.apache.ignite.testframework.junits.JUnitAssertAware;
 /** Tests for SQL plan history from client (H2 engine). */
 public class SqlPlanHistoryH2FromClientSelfTest extends SqlPlanHistoryH2SelfTest {
     /** {@inheritDoc} */
+    @Override protected void beforeTest() throws Exception {
+        super.beforeTest();
+
+        setClientMode(true);
+    }
+
+    /** {@inheritDoc} */
     @Override protected IgniteEx queryNode() {
         IgniteEx node = grid(1);
 

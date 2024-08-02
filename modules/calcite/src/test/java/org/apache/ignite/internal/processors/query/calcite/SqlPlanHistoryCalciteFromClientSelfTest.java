@@ -23,6 +23,13 @@ import org.apache.ignite.testframework.junits.JUnitAssertAware;
 /** Tests for SQL plan history from client (Calcite engine). */
 public class SqlPlanHistoryCalciteFromClientSelfTest extends SqlPlanHistoryCalciteSelfTest {
     /** {@inheritDoc} */
+    @Override protected void beforeTest() throws Exception {
+        super.beforeTest();
+
+        setClientMode(true);
+    }
+
+    /** {@inheritDoc} */
     @Override protected IgniteEx queryNode() {
         IgniteEx node = grid(1);
 

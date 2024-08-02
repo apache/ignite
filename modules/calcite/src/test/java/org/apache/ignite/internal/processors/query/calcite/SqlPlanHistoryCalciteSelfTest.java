@@ -19,11 +19,19 @@ package org.apache.ignite.internal.processors.query.calcite;
 
 import org.apache.ignite.calcite.CalciteQueryEngineConfiguration;
 import org.apache.ignite.internal.processors.query.QueryEngineConfigurationEx;
+import org.apache.ignite.internal.processors.query.running.SqlPlanHistoryTracker;
 
 /** Tests for SQL plan history (Calcite engine). */
 public class SqlPlanHistoryCalciteSelfTest extends SqlPlanHistoryH2SelfTest {
     /** {@inheritDoc} */
     @Override protected QueryEngineConfigurationEx configureSqlEngine() {
         return new CalciteQueryEngineConfiguration();
+    }
+
+    /** {@inheritDoc} */
+    @Override protected void beforeTest() throws Exception {
+        super.beforeTest();
+
+        setSqlEngine(SqlPlanHistoryTracker.SqlEngine.CALCITE);
     }
 }
