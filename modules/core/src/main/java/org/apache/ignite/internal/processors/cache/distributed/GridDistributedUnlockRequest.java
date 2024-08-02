@@ -24,7 +24,6 @@ import java.util.List;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.internal.GridDirectCollection;
-import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
@@ -72,10 +71,8 @@ public class GridDistributedUnlockRequest extends GridDistributedBaseMessage {
 
     /**
      * @param key Key.
-     * @param ctx Context.
-     * @throws IgniteCheckedException If failed.
      */
-    public void addKey(KeyCacheObject key, GridCacheContext<?, ?> ctx) throws IgniteCheckedException {
+    public void addKey(KeyCacheObject key) {
         if (keys == null)
             keys = new ArrayList<>(keysCount());
 

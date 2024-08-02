@@ -577,7 +577,7 @@ public class GridNearTransactionalCache<K, V> extends GridNearCacheAdapter<K, V>
                                     if (!primary.isLocal()) {
                                         assert req != null;
 
-                                        req.addKey(entry.key(), ctx);
+                                        req.addKey(entry.key());
                                     }
                                     else
                                         locKeys.add(cacheKey);
@@ -693,7 +693,7 @@ public class GridNearTransactionalCache<K, V> extends GridNearCacheAdapter<K, V>
                                         continue;
                                     }
 
-                                    req.addKey(entry.key(), ctx);
+                                    req.addKey(entry.key());
                                 }
                             }
                         }

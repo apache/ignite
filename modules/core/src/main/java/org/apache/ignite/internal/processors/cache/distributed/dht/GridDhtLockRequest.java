@@ -206,9 +206,8 @@ public class GridDhtLockRequest extends GridDistributedLockRequest {
      * Adds a Near key.
      *
      * @param key Key.
-     * @param ctx Context.
      */
-    public void addNearKey(KeyCacheObject key, GridCacheSharedContext<?, ?> ctx) {
+    public void addNearKey(KeyCacheObject key) {
         nearKeys.add(key);
     }
 

@@ -1702,7 +1702,7 @@ public abstract class GridDhtTransactionalCacheAdapter<K, V> extends GridDhtCach
 
             try {
                 for (KeyCacheObject key : keyBytes)
-                    req.addKey(key, ctx);
+                    req.addKey(key);
 
                 keyBytes = nearMap.get(n);
 

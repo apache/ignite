@@ -249,10 +249,8 @@ public class GridNearLockRequest extends GridDistributedLockRequest {
 
     /**
      * @param filter Filter.
-     * @throws IgniteCheckedException If failed.
      */
-    public void filter(CacheEntryPredicate[] filter)
-        throws IgniteCheckedException {
+    public void filter(CacheEntryPredicate[] filter) {
         this.filter = filter;
     }
 
