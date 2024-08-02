@@ -550,12 +550,9 @@ public final class UpdatePlan {
             "; value column index=" + (valColIdx < 0 ? "N/A" : valColIdx) +
             "; row count=" + rowsNum +
             "; values=" + (rows == null ? "N/A" : "[" + rowsToString(rows) + "]") +
-            "; select statement based on initial DML statement=" + (selectQry == null ? "N/A" : "'" + selectQry + "'"));
-
-        if (selectQry != null) {
-            sb.append(" (is actual subquery executed on cache=" + isLocSubqry +
-                ", can be executed in lazy mode=" + canSelectBeLazy + ")");
-        }
+            "; select statement based on initial DML statement=" + (selectQry == null ? "N/A" :
+            ("'" + selectQry + "' (is actual subquery executed on cache=" + isLocSubqry +
+            ", can be executed in lazy mode=" + canSelectBeLazy + ")")));
 
         if (fastUpdate == null)
             sb.append("; fast update=N/A");
