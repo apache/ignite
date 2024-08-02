@@ -1073,7 +1073,7 @@ public abstract class GridDhtTransactionalCacheAdapter<K, V> extends GridDhtCach
 
                 final GridDhtTxLocal t = tx;
 
-                return new GridDhtEmbeddedFuture(
+                return new GridDhtEmbeddedFuture<>(
                     txFut,
                     new C2<GridCacheReturn, Exception, IgniteInternalFuture<GridNearLockResponse>>() {
                         @Override public IgniteInternalFuture<GridNearLockResponse> apply(

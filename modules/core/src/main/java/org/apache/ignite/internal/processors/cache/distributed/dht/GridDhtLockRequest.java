@@ -207,10 +207,8 @@ public class GridDhtLockRequest extends GridDistributedLockRequest {
      *
      * @param key Key.
      * @param ctx Context.
-     * @throws IgniteCheckedException If failed.
      */
-    public void addNearKey(KeyCacheObject key, GridCacheSharedContext ctx)
-        throws IgniteCheckedException {
+    public void addNearKey(KeyCacheObject key, GridCacheSharedContext<?, ?> ctx) {
         nearKeys.add(key);
     }
 
@@ -218,7 +216,7 @@ public class GridDhtLockRequest extends GridDistributedLockRequest {
      * @return Near keys.
      */
     public List<KeyCacheObject> nearKeys() {
-        return nearKeys == null ? Collections.<KeyCacheObject>emptyList() : nearKeys;
+        return nearKeys == null ? Collections.emptyList() : nearKeys;
     }
 
     /**
