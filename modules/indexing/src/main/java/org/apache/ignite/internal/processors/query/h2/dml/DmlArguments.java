@@ -57,7 +57,7 @@ public class DmlArguments {
     /**
      * Value argument.
      */
-    private static class ConstantArgument implements DmlArgument {
+    public static class ConstantArgument implements DmlArgument {
         /** Value to return. */
         private final Object val;
 
@@ -72,6 +72,11 @@ public class DmlArguments {
 
         /** {@inheritDoc} */
         @Override public Object get(Object[] params) {
+            return val;
+        }
+
+        /** */
+        public Object getValue() {
             return val;
         }
     }

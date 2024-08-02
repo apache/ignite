@@ -110,6 +110,7 @@ import org.apache.ignite.internal.processors.query.calcite.util.Commons;
 import org.apache.ignite.internal.processors.query.calcite.util.ConvertingClosableIterator;
 import org.apache.ignite.internal.processors.query.calcite.util.ListFieldsQueryCursor;
 import org.apache.ignite.internal.processors.query.running.HeavyQueriesTracker;
+import org.apache.ignite.internal.processors.query.running.SqlPlanHistoryTracker;
 import org.apache.ignite.internal.processors.security.SecurityUtils;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.X;
@@ -684,6 +685,17 @@ public class ExecutionServiceImpl<Row> extends AbstractService implements Execut
                 plan.textPlan()
             );
         }
+
+        SqlPlanHistoryTracker planHistTracker = ctx.query().runningQueryManager().planHistoryTracker();
+
+        planHistTracker.addPlan(
+            plan.textPlan(),
+            qry.sql(),
+            qry.context().schemaName(),
+            qry.context().isLocal(),
+            qry.startTime(),
+            SqlPlanHistoryTracker.SqlEngine.CALCITE
+        );
 
         QueryProperties qryProps = qry.context().unwrap(QueryProperties.class);
 

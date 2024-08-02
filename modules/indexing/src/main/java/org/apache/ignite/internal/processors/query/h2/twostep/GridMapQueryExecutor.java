@@ -69,6 +69,7 @@ import org.apache.ignite.internal.processors.query.h2.twostep.messages.GridQuery
 import org.apache.ignite.internal.processors.query.h2.twostep.msg.GridH2DmlRequest;
 import org.apache.ignite.internal.processors.query.h2.twostep.msg.GridH2DmlResponse;
 import org.apache.ignite.internal.processors.query.h2.twostep.msg.GridH2QueryRequest;
+import org.apache.ignite.internal.processors.query.running.SqlPlanHistoryTracker;
 import org.apache.ignite.internal.processors.tracing.MTC;
 import org.apache.ignite.internal.processors.tracing.MTC.TraceSurroundings;
 import org.apache.ignite.internal.processors.tracing.Span;
@@ -475,6 +476,17 @@ public class GridMapQueryExecutor {
                                 qryInfo.plan()
                             );
                         }
+
+                        SqlPlanHistoryTracker planHistTracker = ctx.query().runningQueryManager().planHistoryTracker();
+
+                        planHistTracker.addPlan(
+                            qryInfo.plan(),
+                            sql,
+                            schemaName,
+                            false,
+                            qryInfo.beginTs(),
+                            SqlPlanHistoryTracker.SqlEngine.H2
+                        );
 
                         GridQueryCancel qryCancel = qryResults.queryCancel(qryIdx);
 

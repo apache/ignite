@@ -77,6 +77,7 @@ import org.apache.ignite.internal.processors.query.h2.twostep.messages.GridQuery
 import org.apache.ignite.internal.processors.query.h2.twostep.msg.GridH2DmlRequest;
 import org.apache.ignite.internal.processors.query.h2.twostep.msg.GridH2DmlResponse;
 import org.apache.ignite.internal.processors.query.h2.twostep.msg.GridH2QueryRequest;
+import org.apache.ignite.internal.processors.query.running.SqlPlanHistoryTracker;
 import org.apache.ignite.internal.processors.tracing.MTC;
 import org.apache.ignite.internal.processors.tracing.MTC.TraceSurroundings;
 import org.apache.ignite.internal.util.typedef.C2;
@@ -525,6 +526,17 @@ public class GridReduceQueryExecutor {
                                 qryInfo.plan()
                             );
                         }
+
+                        SqlPlanHistoryTracker planHistTracker = ctx.query().runningQueryManager().planHistoryTracker();
+
+                        planHistTracker.addPlan(
+                            qryInfo.plan(),
+                            qry.originalSql(),
+                            schemaName,
+                            qry.isLocal(),
+                            qryStartTime,
+                            SqlPlanHistoryTracker.SqlEngine.H2
+                        );
 
                         H2PooledConnection conn0 = conn;
 
