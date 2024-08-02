@@ -18,6 +18,11 @@
 package org.apache.ignite.testsuites;
 
 import org.apache.ignite.internal.processors.query.calcite.QueryCheckerTest;
+import org.apache.ignite.internal.processors.query.calcite.SqlPlanHistoryCalciteFromClientSelfTest;
+import org.apache.ignite.internal.processors.query.calcite.SqlPlanHistoryCalciteSelfTest;
+import org.apache.ignite.internal.processors.query.calcite.SqlPlanHistoryConfigTest;
+import org.apache.ignite.internal.processors.query.calcite.SqlPlanHistoryH2FromClientSelfTest;
+import org.apache.ignite.internal.processors.query.calcite.SqlPlanHistoryH2SelfTest;
 import org.apache.ignite.internal.processors.query.calcite.exec.ClosableIteratorsHolderTest;
 import org.apache.ignite.internal.processors.query.calcite.exec.LogicalRelImplementorTest;
 import org.apache.ignite.internal.processors.query.calcite.exec.exp.IgniteSqlFunctionsTest;
@@ -47,6 +52,12 @@ import org.junit.runners.Suite;
 
     ScriptTestSuite.class,
     CalciteCommunicationMessageSerializationTest.class,
+
+    SqlPlanHistoryConfigTest.class,
+    SqlPlanHistoryH2SelfTest.class,
+    SqlPlanHistoryH2FromClientSelfTest.class,
+    SqlPlanHistoryCalciteSelfTest.class,
+    SqlPlanHistoryCalciteFromClientSelfTest.class,
 })
 public class IgniteCalciteTestSuite {
 }
