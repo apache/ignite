@@ -255,7 +255,7 @@ public class IndexScan<Row> extends AbstractIndexScan<Row, IndexRow> {
             txChanges = transactionRows(
                 ectx.getTxWriteEntries(),
                 // TODO: Use set for partitions here.
-                e -> (cctx.cacheId() == e.cacheId()) && F.contains(parts, e.key().partition()),
+                e -> (cctx.cacheId() == e.cacheId()) && (parts == null || F.contains(parts, e.key().partition())),
                 r -> new IndexRowImpl(rowHnd, r)
             );
 

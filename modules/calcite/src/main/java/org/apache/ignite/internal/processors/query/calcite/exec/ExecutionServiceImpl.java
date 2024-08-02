@@ -660,7 +660,6 @@ public class ExecutionServiceImpl<Row> extends AbstractService implements Execut
                     qry.onResponse(nodeId, fragment.fragmentId(), ex);
                 else {
                     try {
-                        // TODO: add tx state here.
                         QueryStartRequest req = new QueryStartRequest(
                             qry.id(),
                             qry.localQueryId(),
