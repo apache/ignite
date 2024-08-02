@@ -59,6 +59,7 @@ import static org.apache.ignite.internal.util.nio.GridNioServer.SSL_ENABLED_METR
 import static org.apache.ignite.internal.util.nio.ssl.GridNioSslFilter.SSL_HANDSHAKE_DURATION_HISTOGRAM_METRIC_NAME;
 import static org.apache.ignite.internal.util.nio.ssl.GridNioSslFilter.SSL_REJECTED_SESSIONS_CNT_METRIC_NAME;
 import static org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi.COMMUNICATION_METRICS_GROUP_NAME;
+import static org.apache.ignite.testframework.GridTestUtils.assertContains;
 import static org.apache.ignite.testframework.GridTestUtils.assertThrowsWithCause;
 import static org.apache.ignite.testframework.GridTestUtils.keyStorePassword;
 import static org.apache.ignite.testframework.GridTestUtils.keyStorePath;
@@ -295,25 +296,31 @@ public class NodeSslConnectionMetricTest extends GridCommonAbstractTest {
         checkSslCommunicationMetrics(reg, 1, 0, 0);
 
         // Tests untrusted certificate.
-        assertThrowsWithCause(() ->
-            startClient(clientConfiguration("client", "trustboth", CIPHER_SUITE, "TLSv1.2")),
+        Throwable ex = assertThrowsWithCause(() ->
+                startClient(clientConfiguration("client", "trustboth", CIPHER_SUITE, "TLSv1.2")),
             ClientConnectionException.class);
+
+        assertContains(log, ex.getMessage(), "127.0.0.1:10800");
 
         checkSslCommunicationMetrics(reg, 2, 0, 1);
 
         // Tests unsupported cipher suites.
-        assertThrowsWithCause(() ->
-            startClient(clientConfiguration("thinClient", "trusttwo", UNSUPPORTED_CIPHER_SUITE, "TLSv1.2")),
+        ex = assertThrowsWithCause(() ->
+                startClient(clientConfiguration("thinClient", "trusttwo", UNSUPPORTED_CIPHER_SUITE, "TLSv1.2")),
             ClientConnectionException.class
         );
+
+        assertContains(log, ex.getMessage(), "127.0.0.1:10800");
 
         checkSslCommunicationMetrics(reg, 3, 0, 2);
 
         // Tests mismatched protocol versions.
-        assertThrowsWithCause(() ->
-            startClient(clientConfiguration("thinClient", "trusttwo", null, "TLSv1.1")),
+        ex = assertThrowsWithCause(() ->
+                startClient(clientConfiguration("thinClient", "trusttwo", null, "TLSv1.1")),
             ClientConnectionException.class
         );
+
+        assertContains(log, ex.getMessage(), "127.0.0.1:10800");
 
         checkSslCommunicationMetrics(reg, 4, 0, 3);
     }

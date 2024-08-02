@@ -73,6 +73,7 @@ import org.apache.ignite.internal.processors.platform.client.ClientStatus;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.T2;
+import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.logger.NullLogger;
 import org.jetbrains.annotations.Nullable;
@@ -280,7 +281,8 @@ class TcpClientChannel implements ClientChannel, ClientMessageHandler, ClientCon
 
             try {
                 for (ClientRequestFuture pendingReq : pendingReqs.values())
-                    pendingReq.onDone(new ClientConnectionException("Channel is closed", cause));
+                    pendingReq.onDone(new ClientConnectionException("Channel is closed" +
+                        " [" + S.toString(ConnectionDescription.class, connDesc) + ']', cause));
             }
             finally {
                 pendingReqsLock.writeLock().unlock();
@@ -349,7 +351,8 @@ class TcpClientChannel implements ClientChannel, ClientMessageHandler, ClientCon
 
             try {
                 if (closed()) {
-                    ClientConnectionException err = new ClientConnectionException("Channel is closed");
+                    ClientConnectionException err = new ClientConnectionException("Channel is closed" +
+                        " [" + S.toString(ConnectionDescription.class, connDesc) + ']');
 
                     eventListener.onRequestFail(connDesc, id, op.code(), op.name(), System.nanoTime() - startTimeNanos, err);
 
@@ -479,7 +482,8 @@ class TcpClientChannel implements ClientChannel, ClientMessageHandler, ClientCon
         // but this results in an incomplete stack trace from the receiver thread.
         // This is similar to IgniteUtils.exceptionConverters.
         if (e.getCause() instanceof ClientConnectionException)
-            return new ClientConnectionException(e.getMessage(), e.getCause());
+            return new ClientConnectionException(e.getMessage() +
+                " [" + S.toString(ConnectionDescription.class, connDesc) + ']', e.getCause());
 
         if (e.getCause() instanceof ClientReconnectedException)
             return new ClientReconnectedException(e.getMessage(), e.getCause());
@@ -631,7 +635,8 @@ class TcpClientChannel implements ClientChannel, ClientMessageHandler, ClientCon
 
         try {
             if (closed())
-                throw new ClientConnectionException("Channel is closed");
+                throw new ClientConnectionException("Channel is closed" +
+                    " [" + S.toString(ConnectionDescription.class, connDesc) + ']');
 
             Map<Long, NotificationListener> lsnrs = notificationLsnrs[type.ordinal()];
 
@@ -710,7 +715,7 @@ class TcpClientChannel implements ClientChannel, ClientMessageHandler, ClientCon
 
             try {
                 if (closed())
-                    throw new ClientConnectionException("Channel is closed");
+                    throw new ClientConnectionException("Channel is closed" + " [" + S.toString(ConnectionDescription.class, connDesc) + ']');
 
                 fut = new ClientRequestFuture(reqId, ClientOperation.HANDSHAKE);
 
@@ -807,7 +812,7 @@ class TcpClientChannel implements ClientChannel, ClientMessageHandler, ClientCon
                 if (e instanceof IOException)
                     err = handleIOError((IOException)e);
                 else
-                    err = new ClientConnectionException(e.getMessage(), e);
+                    err = new ClientConnectionException(e.getMessage() + " [" + S.toString(ConnectionDescription.class, connDesc) + ']', e);
 
                 eventListener.onHandshakeFail(
                     new ConnectionDescription(sock.localAddress(), sock.remoteAddress(), new ProtocolContext(ver).toString(), null),
@@ -879,7 +884,7 @@ class TcpClientChannel implements ClientChannel, ClientMessageHandler, ClientCon
             lastSendMillis = System.currentTimeMillis();
         }
         catch (IgniteCheckedException e) {
-            throw new ClientConnectionException(e.getMessage(), e);
+            throw new ClientConnectionException(e.getMessage() + " [" + S.toString(ConnectionDescription.class, connDesc) + ']', e);
         }
     }
 
