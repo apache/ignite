@@ -54,7 +54,7 @@ abstract class AbstractSnapshotOperationRequest implements Serializable {
 
     /** Operational node ID. */
     @GridToStringInclude
-    protected final UUID opNodeId;
+    @Nullable protected final UUID opNodeId;
 
     /** Index of incremental snapshot. */
     @GridToStringInclude
@@ -70,11 +70,11 @@ abstract class AbstractSnapshotOperationRequest implements Serializable {
 
     /** Exception occurred during snapshot operation processing. */
     @GridToStringInclude
-    private volatile Throwable err;
+    @Nullable private volatile Throwable err;
 
     /** Snapshot local metadata. */
     @GridToStringExclude
-    private transient volatile SnapshotMetadata locMeta;
+    @Nullable private transient volatile SnapshotMetadata locMeta;
 
     /**
      * @param reqId Request ID.
@@ -87,7 +87,7 @@ abstract class AbstractSnapshotOperationRequest implements Serializable {
      */
     protected AbstractSnapshotOperationRequest(
         UUID reqId,
-        UUID opNodeId,
+        @Nullable UUID opNodeId,
         String snpName,
         String snpPath,
         @Nullable Collection<String> grps,
@@ -105,7 +105,7 @@ abstract class AbstractSnapshotOperationRequest implements Serializable {
     }
 
     /** @return Snapshot local metadata. */
-    public SnapshotMetadata meta() {
+    @Nullable public SnapshotMetadata meta() {
         return locMeta;
     }
 
@@ -120,12 +120,12 @@ abstract class AbstractSnapshotOperationRequest implements Serializable {
     }
 
     /** @return Exception occurred during snapshot operation processing. */
-    public Throwable error() {
+    @Nullable public Throwable error() {
         return err;
     }
 
     /** @return Request ID. */
-    public UUID requestId() {
+    @Nullable public UUID requestId() {
         return reqId;
     }
 
@@ -145,7 +145,7 @@ abstract class AbstractSnapshotOperationRequest implements Serializable {
     }
 
     /** @return Operational node ID. */
-    public UUID operationalNodeId() {
+    @Nullable public UUID operationalNodeId() {
         return opNodeId;
     }
 

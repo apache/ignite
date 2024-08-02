@@ -44,6 +44,7 @@ import org.apache.ignite.internal.util.future.GridFinishedFuture;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.CU;
+import org.apache.ignite.internal.util.typedef.internal.U;
 import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.events.EventType.EVT_NODE_FAILED;
@@ -96,7 +97,7 @@ public class SnapshotCheckProcess {
         while (it.hasNext()) {
             SnapshotCheckContext ctx = it.next().getValue();
 
-            if (!requiredNode(ctx.req, nodeId))
+            if (!ctx.req.nodes().contains(nodeId))
                 continue;
 
             if (ctx.fut != null)
@@ -104,11 +105,10 @@ public class SnapshotCheckProcess {
 
             it.remove();
 
-            if (ctx.req.initiatorId().equals(kctx.localNodeId())) {
-                assert clusterOpFuts.get(ctx.req.reqId) != null;
+            GridFutureAdapter<?> fut = clusterOpFuts.get(ctx.req.reqId);
 
-                clusterOpFuts.get(ctx.req.reqId).onDone(err);
-            }
+            if (fut != null)
+                fut.onDone(err);
         }
     }
 
@@ -145,11 +145,10 @@ public class SnapshotCheckProcess {
             if (log.isInfoEnabled())
                 log.info("Finished snapshot local validation [req=" + ctx.req + ']');
 
-            if (ctx.req.initiatorId().equals(kctx.localNodeId())) {
-                GridFutureAdapter<SnapshotPartitionsVerifyTaskResult> clusterOpFut = clusterOpFuts.get(reqId);
+            GridFutureAdapter<SnapshotPartitionsVerifyTaskResult> clusterOpFut = clusterOpFuts.get(reqId);
 
-                assert clusterOpFut != null;
-
+            // Operation node is the initiator collecting the final check operation result.
+            if (clusterOpFut != null) {
                 Map<ClusterNode, Exception> errors0 = mapErrors(errors);
 
                 if (!F.isEmpty(results)) {
@@ -171,7 +170,9 @@ public class SnapshotCheckProcess {
 
     /** Phase 2 beginning.  */
     private IgniteInternalFuture<CheckResultDTO> validateParts(SnapshotCheckProcessRequest req) {
-        if (!requiredNode(req, kctx.localNodeId()))
+        GridFutureAdapter<?> clusterOpFut = clusterOpFuts.get(req.requestId());
+
+        if (clusterOpFut == null && !req.nodes().contains(kctx.localNodeId()))
             return new GridFinishedFuture<>();
 
         if (req.error() != null)
@@ -185,10 +186,11 @@ public class SnapshotCheckProcess {
         ctx.fut = new GridFutureAdapter<>();
 
         // Store metas on the initiator node to form the process result (SnapshotPartitionsVerifyTaskResult) at the end.
-        if (req.initiatorId().equals(kctx.localNodeId()))
+        if (clusterOpFut != null)
             ctx.clusterMetas = req.clusterMetas();
 
-        if (!dataNode(req, kctx.localNodeId()))
+        // Excludes non-baseline initiator (opNode).
+        if (!baseline(kctx.localNodeId()))
             return new GridFinishedFuture<>();
 
         List<SnapshotMetadata> locMetas = req.clusterMetas().get(kctx.cluster().get().localNode());
@@ -247,7 +249,7 @@ public class SnapshotCheckProcess {
 
     /** Phase 1 beginning: prepare, collect and check local metas. */
     private IgniteInternalFuture<CheckResultDTO> prepareAndCheckMetas(SnapshotCheckProcessRequest req) {
-        if (!requiredNode(req, kctx.localNodeId()))
+        if (!req.nodes().contains(kctx.localNodeId()))
             return new GridFinishedFuture<>();
 
         SnapshotCheckContext ctx = contexts.computeIfAbsent(req.snapshotName(), snpName -> new SnapshotCheckContext(req));
@@ -257,9 +259,8 @@ public class SnapshotCheckProcess {
                 + "' has already started. Request=" + ctx + '.'));
         }
 
-        // Initiator must have the contex to keep cluster metas and knowlage of the required nodes to properly collect
-        // and validate the final operation result. But it must do any snapshot checking job.
-        if (!dataNode(req, kctx.localNodeId()))
+        // Excludes non-baseline initiator (opNode).
+        if (!baseline(kctx.localNodeId()))
             return new GridFinishedFuture<>();
 
         if (log.isDebugEnabled())
@@ -307,8 +308,6 @@ public class SnapshotCheckProcess {
             }
 
             if (clusterOpFut != null) {
-                assert ctx == null || ctx.req.initiatorId().equals(kctx.localNodeId());
-
                 Map<ClusterNode, Exception> errors0 = mapErrors(errors);
 
                 finishClusterFutureWithErr(clusterOpFut, null, errors0);
@@ -317,8 +316,7 @@ public class SnapshotCheckProcess {
             return;
         }
 
-        // Only the operation coordinator must work further.
-        if (ctx == null || !ctx.req.operationalNodeId().equals(kctx.localNodeId()))
+        if (ctx == null || !U.isLocalNodeCoordinator(kctx.discovery()))
             return;
 
         Map<ClusterNode, List<SnapshotMetadata>> metas = new HashMap<>();
@@ -329,7 +327,7 @@ public class SnapshotCheckProcess {
             results.forEach((nodeId, nodeRes) -> {
                 // A node might be not required. It gives null result. But a required node might have invalid empty result
                 // which must be validated.
-                if (ctx.req.nodes().contains(nodeId)) {
+                if (ctx.req.nodes().contains(nodeId) && baseline(nodeId)) {
                     assert nodeRes != null && nodeRes.partsHashes == null;
                     assert kctx.cluster().get().node(nodeId) != null;
 
@@ -389,10 +387,11 @@ public class SnapshotCheckProcess {
 
         List<UUID> requiredNodes = new ArrayList<>(F.viewReadOnly(kctx.discovery().discoCache().aliveBaselineNodes(), F.node2id()));
 
+        // Initiator is also a required node. It collects the final oparation result.
+        requiredNodes.add(kctx.localNodeId());
+
         SnapshotCheckProcessRequest req = new SnapshotCheckProcessRequest(
             reqId,
-            kctx.localNodeId(),
-            requiredNodes.get((int)(Math.random() * requiredNodes.size())),
             requiredNodes,
             snpName,
             snpPath,
@@ -435,17 +434,9 @@ public class SnapshotCheckProcess {
             return clusterOpFut.onDone(propogatedError);
     }
 
-    /** @return {@code True} if the provided node id is id of a required node which holds shanpshot files. */
-    private static boolean dataNode(SnapshotCheckProcessRequest req, UUID nodeId) {
-        return req.nodes().contains(nodeId);
-    }
-
-    /**
-     * @return {@code True} if the provided node id is id of a required node or of the initiator node.
-     * @see #dataNode(SnapshotCheckProcessRequest, UUID)
-     */
-    private static boolean requiredNode(SnapshotCheckProcessRequest req, UUID nodeId) {
-        return req.initiatorId().equals(nodeId) || dataNode(req, nodeId);
+    /** @return {@code True} if the provided node id is id of a baseline node. */
+    private boolean baseline(UUID nodeId) {
+        return CU.baselineNode(kctx.cluster().get().node(nodeId), kctx.state().clusterState());
     }
 
     /** Converts failure to an exception if it is not. */

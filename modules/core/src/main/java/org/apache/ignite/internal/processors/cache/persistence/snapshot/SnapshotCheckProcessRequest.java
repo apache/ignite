@@ -41,18 +41,12 @@ public class SnapshotCheckProcessRequest extends AbstractSnapshotOperationReques
     @GridToStringInclude
     private final boolean includeCustomHandlers;
 
-    /** ID of the initiator node. */
-    @GridToStringInclude
-    private final UUID initiatorId;
-
     /** Cluster metas to pass to the initiator with the phase 2. */
     @GridToStringExclude
     @Nullable private final Map<ClusterNode, List<SnapshotMetadata>> clusterMetas;
 
     /**
      * @param reqId Request ID.
-     * @param initiatorId Initiator node ID.
-     * @param opNodeId Operation coordinator node ID.
      * @param snpName Snapshot name.
      * @param nodes Baseline node IDs that must be alive to complete the operation..
      * @param snpPath Snapshot directory path.
@@ -63,8 +57,6 @@ public class SnapshotCheckProcessRequest extends AbstractSnapshotOperationReques
      */
     SnapshotCheckProcessRequest(
         UUID reqId,
-        UUID initiatorId,
-        UUID opNodeId,
         Collection<UUID> nodes,
         String snpName,
         String snpPath,
@@ -73,11 +65,10 @@ public class SnapshotCheckProcessRequest extends AbstractSnapshotOperationReques
         boolean includeCustomHandlers,
         @Nullable Map<ClusterNode, List<SnapshotMetadata>> clusterMetas
     ) {
-        super(reqId, opNodeId, snpName, snpPath, grps, incIdx, nodes);
+        super(reqId, null, snpName, snpPath, grps, incIdx, nodes);
 
         assert !F.isEmpty(nodes);
 
-        this.initiatorId = initiatorId;
         this.includeCustomHandlers = includeCustomHandlers;
         this.clusterMetas = clusterMetas;
     }
@@ -87,15 +78,9 @@ public class SnapshotCheckProcessRequest extends AbstractSnapshotOperationReques
      * @param clusterMetas Cluster snapshot meadatas.
      */
     SnapshotCheckProcessRequest(SnapshotCheckProcessRequest req, Throwable err, Map<ClusterNode, List<SnapshotMetadata>> clusterMetas) {
-        this(req.reqId, req.initiatorId, req.opNodeId, req.nodes, req.snpName, req.snpPath, req.grps, req.incIdx,
-            req.includeCustomHandlers, clusterMetas);
+        this(req.reqId, req.nodes, req.snpName, req.snpPath, req.grps, req.incIdx, req.includeCustomHandlers, clusterMetas);
 
         error(err == null ? req.error() : err);
-    }
-
-    /** */
-    UUID initiatorId() {
-        return initiatorId;
     }
 
     /** */
