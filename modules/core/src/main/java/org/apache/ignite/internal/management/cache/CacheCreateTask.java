@@ -21,7 +21,6 @@ import java.io.ByteArrayInputStream;
 import java.util.Collection;
 import java.util.Set;
 import java.util.TreeSet;
-import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import javax.cache.Cache;
 import org.apache.ignite.IgniteCache;
@@ -92,9 +91,10 @@ public class CacheCreateTask extends VisorOneNodeTask<CacheCreateCommandArg, Set
                     CacheConfiguration.class.getName() + "' beans.", e);
             }
 
-            if (!F.isEmpty(arg.excludeCaches()))
-                for (String excluded : arg.excludeCaches())
-                    ccfgs.removeIf(ccfg -> ccfg.getName() != null && Pattern.compile(excluded).matcher(ccfg.getName()).matches());
+            if (arg.skipExisting()) {
+                Collection<String> existingCacheNames = ignite.cacheNames();
+                ccfgs.removeIf(ccfg -> ccfg.getName() != null && existingCacheNames.contains(ccfg.getName()));
+            }
 
             Collection<IgniteCache> caches = ignite.createCaches(ccfgs);
 

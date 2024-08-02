@@ -28,9 +28,8 @@ import static org.apache.ignite.internal.IgniteComponentType.SPRING;
 public class CacheCreateCommand implements ComputeCommand<CacheCreateCommandArg, Set<String>> {
     /** {@inheritDoc} */
     @Override public String description() {
-        return "Create caches from Spring XML configuration. Note that the '" + SPRING.module() + "' module should be enabled. " +
-            "Cache filtering options configure the set of caches that will be processed by cache command. " +
-            "Default value for --exclude-caches is empty set. ";
+        return "Create caches from Spring XML configuration. Note that the '" + SPRING.module() +
+            "' module should be enabled. Optionally skips createing existing caches with --skip-existing flag";
     }
 
     /** {@inheritDoc} */
@@ -60,8 +59,8 @@ public class CacheCreateCommand implements ComputeCommand<CacheCreateCommandArg,
         SB options = new SB("The procedure task was executed with the following args: ");
 
         options
-            .a("excluded=[")
-            .a(arg.excludeCaches() == null ? "" : String.join(", ", arg.excludeCaches()))
+            .a("skipExisting=[")
+            .a(arg.skipExisting())
             .a("], springxmlConfig=[")
             .a(arg.springxmlconfig() == null ? "" : String.join(", ", arg.springxmlconfig()))
             .a("]\n");

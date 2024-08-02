@@ -1384,14 +1384,9 @@ public class GridCommandHandlerClusterByClassTest extends GridCommandHandlerClus
         assertTrue(crd.cacheNames().containsAll(F.asList("cache1", "cache2")));
 
         assertContains(log, executeCommand(EXIT_CODE_OK, "--cache", CREATE, SPRING_XML_CONFIG, cfgPath +
-            "/cache-create-correct-exclude-check.xml", "--exclude-caches", "cache1,cache2,cache3"), "Created caches: [cache4, cache5]");
+            "/cache-create-correct-skip-existing-check.xml", "--skip-existing"), "Created caches: [cache3, cache4]");
 
-        assertTrue(crd.cacheNames().containsAll(F.asList("cache1", "cache2", "cache4", "cache5")));
-
-        assertContains(log, executeCommand(EXIT_CODE_OK, "--cache", CREATE, SPRING_XML_CONFIG, cfgPath +
-            "/cache-create-correct-regexp-check.xml", "--exclude-caches", "cache[1-5]"), "Created caches: [regexp-check-passed-cache]");
-
-        assertTrue(crd.cacheNames().containsAll(F.asList("cache1", "cache2", "cache4", "cache5", "regexp-check-passed-cache")));
+        assertTrue(crd.cacheNames().containsAll(F.asList("cache1", "cache2", "cache3", "cache4")));
 
         int expSize = G.allGrids().size();
 

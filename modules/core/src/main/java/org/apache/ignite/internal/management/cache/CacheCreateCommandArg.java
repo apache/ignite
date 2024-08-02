@@ -21,14 +21,10 @@ import java.io.File;
 import java.io.IOException;
 import java.io.ObjectInput;
 import java.io.ObjectOutput;
-import java.util.regex.Pattern;
-import java.util.regex.PatternSyntaxException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.internal.dto.IgniteDataTransferObject;
 import org.apache.ignite.internal.management.api.Argument;
 import org.apache.ignite.internal.util.typedef.internal.U;
-
-import static java.lang.String.format;
 
 /** */
 public class CacheCreateCommandArg extends IgniteDataTransferObject {
@@ -41,9 +37,8 @@ public class CacheCreateCommandArg extends IgniteDataTransferObject {
     private String springxmlconfig;
 
     /** */
-    @Argument(description = "Optional flag to list caches to ignore at creation step. " +
-        "You can use regular expressions to list caches", optional = true, example = "cacheName1,...,cacheNameN")
-    private String[] excludeCaches;
+    @Argument(description = "Optional flag to ignore existing caches", optional = true)
+    private boolean skipExisting;
 
     /** */
     private String fileContent;
@@ -64,32 +59,18 @@ public class CacheCreateCommandArg extends IgniteDataTransferObject {
         }
     }
 
-    /**
-     * @param str To validate that given name is valed regex.
-     */
-    private void validateRegexes(String[] str) {
-        for (String s : str) {
-            try {
-                Pattern.compile(s);
-            }
-            catch (PatternSyntaxException e) {
-                throw new IgniteException(format("Invalid cache name regexp '%s': %s", s, e.getMessage()));
-            }
-        }
-    }
-
     /** {@inheritDoc} */
     @Override protected void writeExternalData(ObjectOutput out) throws IOException {
         U.writeString(out, springxmlconfig);
-        U.writeArray(out, excludeCaches);
         U.writeString(out, fileContent);
+        out.writeBoolean(skipExisting);
     }
 
     /** {@inheritDoc} */
     @Override protected void readExternalData(byte protoVer, ObjectInput in) throws IOException, ClassNotFoundException {
         springxmlconfig = U.readString(in);
-        excludeCaches = U.readArray(in, String.class);
         fileContent = U.readString(in);
+        skipExisting = in.readBoolean();
     }
 
     /** */
@@ -104,15 +85,13 @@ public class CacheCreateCommandArg extends IgniteDataTransferObject {
     }
 
     /** */
-    public String[] excludeCaches() {
-        return excludeCaches;
+    public boolean skipExisting() {
+        return skipExisting;
     }
 
     /** */
-    public void excludeCaches(String[] excludeCaches) {
-        this.excludeCaches = excludeCaches;
-
-        validateRegexes(excludeCaches);
+    public void skipExisting(boolean skipExisting) {
+        this.skipExisting = skipExisting;
     }
 
     /** */

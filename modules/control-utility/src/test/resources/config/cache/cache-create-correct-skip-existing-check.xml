@@ -33,7 +33,4 @@
     <bean class="org.apache.ignite.configuration.CacheConfiguration">
         <property name="name" value="cache4"/>
     </bean>
-    <bean class="org.apache.ignite.configuration.CacheConfiguration">
-        <property name="name" value="cache5"/>
-    </bean>
 </beans>
