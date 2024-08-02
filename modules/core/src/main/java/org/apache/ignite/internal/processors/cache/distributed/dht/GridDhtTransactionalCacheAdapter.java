@@ -95,7 +95,6 @@ import static org.apache.ignite.transactions.TransactionState.COMMITTING;
 /**
  * Base class for transactional DHT caches.
  */
-@SuppressWarnings("unchecked")
 public abstract class GridDhtTransactionalCacheAdapter<K, V> extends GridDhtCacheAdapter<K, V> {
     /** */
     private static final long serialVersionUID = 0L;
@@ -528,7 +527,7 @@ public abstract class GridDhtTransactionalCacheAdapter<K, V> extends GridDhtCach
 
         if (res != null) {
             try {
-                // Reply back to sender.
+                // Reply to sender.
                 ctx.io().send(nodeId, res, ctx.ioPolicy());
 
                 if (txLockMsgLog.isDebugEnabled()) {
@@ -638,27 +637,26 @@ public abstract class GridDhtTransactionalCacheAdapter<K, V> extends GridDhtCach
     }
 
     /**
-     * @param nearNode
-     * @param req
+     * @param nearNode Near node.
+     * @param req Near lock request.
      */
     private void processNearLockRequest0(ClusterNode nearNode, GridNearLockRequest req) {
         IgniteInternalFuture<?> f;
 
         if (req.firstClientRequest()) {
-            for (; ; ) {
+            do {
                 if (waitForExchangeFuture(nearNode, req))
                     return;
 
                 f = lockAllAsync(ctx, nearNode, req);
 
-                if (f != null)
-                    break;
             }
+            while (f == null);
         }
         else
             f = lockAllAsync(ctx, nearNode, req);
 
-        // Register listener just so we print out errors.
+        // Register listener just so we print errors.
         // Exclude lock timeout and rollback exceptions since it's not a fatal exception.
         f.listen(CU.errorLogger(log, GridCacheLockTimeoutException.class,
             GridDistributedLockCancelledException.class, IgniteTxTimeoutCheckedException.class,
@@ -1419,7 +1417,7 @@ public abstract class GridDhtTransactionalCacheAdapter<K, V> extends GridDhtCach
     }
 
     /**
-     * Collects versions of pending candidates versions less then base.
+     * Collects versions of pending candidates versions less than base.
      *
      * @param entries Tx entries to process.
      * @param baseVer Base version.

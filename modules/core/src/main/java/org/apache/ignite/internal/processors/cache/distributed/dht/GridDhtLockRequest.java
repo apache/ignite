@@ -29,7 +29,6 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.GridDirectCollection;
 import org.apache.ignite.internal.GridDirectTransient;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
-import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
 import org.apache.ignite.internal.processors.cache.distributed.GridDistributedLockRequest;
@@ -170,7 +169,7 @@ public class GridDhtLockRequest extends GridDistributedLockRequest {
 
         storeUsed(storeUsed);
 
-        nearKeys = nearCnt == 0 ? Collections.<KeyCacheObject>emptyList() : new ArrayList<KeyCacheObject>(nearCnt);
+        nearKeys = nearCnt == 0 ? Collections.emptyList() : new ArrayList<>(nearCnt);
         invalidateEntries = new BitSet(dhtCnt == 0 ? nearCnt : dhtCnt);
 
         assert miniId != null;
@@ -227,17 +226,11 @@ public class GridDhtLockRequest extends GridDistributedLockRequest {
      *
      * @param key Key.
      * @param invalidateEntry Flag indicating whether node should attempt to invalidate reader.
-     * @param ctx Context.
-     * @throws IgniteCheckedException If failed.
      */
-    public void addDhtKey(
-        KeyCacheObject key,
-        boolean invalidateEntry,
-        GridCacheContext ctx
-    ) throws IgniteCheckedException {
+    public void addDhtKey(KeyCacheObject key, boolean invalidateEntry) {
         invalidateEntries.set(idx, invalidateEntry);
 
-        addKeyBytes(key, false, ctx);
+        addKeyBytes(key, false);
     }
 
     /**
@@ -311,7 +304,7 @@ public class GridDhtLockRequest extends GridDistributedLockRequest {
     }
 
     /** {@inheritDoc} */
-    @Override public void prepareMarshal(GridCacheSharedContext ctx) throws IgniteCheckedException {
+    @Override public void prepareMarshal(GridCacheSharedContext<?, ?> ctx) throws IgniteCheckedException {
         super.prepareMarshal(ctx);
 
         prepareMarshalCacheObjects(nearKeys, ctx.cacheContext(cacheId));
@@ -331,7 +324,7 @@ public class GridDhtLockRequest extends GridDistributedLockRequest {
     }
 
     /** {@inheritDoc} */
-    @Override public void finishUnmarshal(GridCacheSharedContext ctx, ClassLoader ldr) throws IgniteCheckedException {
+    @Override public void finishUnmarshal(GridCacheSharedContext<?, ?> ctx, ClassLoader ldr) throws IgniteCheckedException {
         super.finishUnmarshal(ctx, ldr);
 
         finishUnmarshalCacheObjects(nearKeys, ctx.cacheContext(cacheId), ldr);

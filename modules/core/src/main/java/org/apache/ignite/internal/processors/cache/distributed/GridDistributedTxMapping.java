@@ -18,7 +18,6 @@
 package org.apache.ignite.internal.processors.cache.distributed;
 
 import java.util.Collection;
-import java.util.Iterator;
 import java.util.LinkedHashSet;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteTxEntry;
@@ -234,7 +233,7 @@ public class GridDistributedTxMapping {
      * @param keys Keys to evict readers for.
      */
     public void evictReaders(@Nullable Collection<IgniteTxKey> keys) {
-        if (keys == null || keys.isEmpty())
+        if (F.isEmpty(keys))
             return;
 
         evictReaders(keys, entries);
@@ -245,15 +244,10 @@ public class GridDistributedTxMapping {
      * @param entries Entries to check.
      */
     private void evictReaders(Collection<IgniteTxKey> keys, @Nullable Collection<IgniteTxEntry> entries) {
-        if (entries == null || entries.isEmpty())
+        if (F.isEmpty(entries))
             return;
 
-        for (Iterator<IgniteTxEntry> it = entries.iterator(); it.hasNext();) {
-            IgniteTxEntry entry = it.next();
-
-            if (keys.contains(entry.txKey()))
-                it.remove();
-        }
+        entries.removeIf(entry -> keys.contains(entry.txKey()));
     }
 
     /**

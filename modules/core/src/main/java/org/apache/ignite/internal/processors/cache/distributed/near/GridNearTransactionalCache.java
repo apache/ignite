@@ -131,7 +131,7 @@ public class GridNearTransactionalCache<K, V> extends GridNearCacheAdapter<K, V>
         ctx.checkSecurity(SecurityPermission.CACHE_READ);
 
         if (F.isEmpty(keys))
-            return new GridFinishedFuture<>(Collections.<K, V>emptyMap());
+            return new GridFinishedFuture<>(Collections.emptyMap());
 
         warnIfUnordered(keys, BulkOperation.GET);
 
@@ -431,7 +431,7 @@ public class GridNearTransactionalCache<K, V> extends GridNearCacheAdapter<K, V>
         assert nodeId != null;
         assert res != null;
 
-        GridNearLockFuture fut = (GridNearLockFuture)ctx.mvcc().<Boolean>versionedFuture(res.version(),
+        GridNearLockFuture fut = (GridNearLockFuture)ctx.mvcc().versionedFuture(res.version(),
             res.futureId());
 
         if (fut != null)
@@ -494,8 +494,7 @@ public class GridNearTransactionalCache<K, V> extends GridNearCacheAdapter<K, V>
             if (log.isDebugEnabled())
                 log.debug("Evicting dht-local entry from near cache [entry=" + e + ", tx=" + this + ']');
 
-            if (e.markObsolete(obsoleteVer))
-                return true;
+            return e.markObsolete(obsoleteVer);
         }
 
         return false;
@@ -593,9 +592,6 @@ public class GridNearTransactionalCache<K, V> extends GridNearCacheAdapter<K, V>
                         }
 
                         assert !topVer.equals(AffinityTopologyVersion.NONE) || cand == null;
-
-                        if (topVer.equals(AffinityTopologyVersion.NONE))
-                            topVer = ctx.affinity().affinityTopologyVersion();
 
                         entry.touch();
 
