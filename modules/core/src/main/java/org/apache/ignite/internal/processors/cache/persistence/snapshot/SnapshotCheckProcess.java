@@ -96,7 +96,7 @@ public class SnapshotCheckProcess {
         while (it.hasNext()) {
             SnapshotCheckContext ctx = it.next().getValue();
 
-            if (!workingNode(ctx.req, nodeId))
+            if (!requiredNode(ctx.req, nodeId))
                 continue;
 
             if (ctx.fut != null)
@@ -171,7 +171,7 @@ public class SnapshotCheckProcess {
 
     /** Phase 2 beginning.  */
     private IgniteInternalFuture<CheckResultDTO> validateParts(SnapshotCheckProcessRequest req) {
-        if (!workingNode(req, kctx.localNodeId()))
+        if (!requiredNode(req, kctx.localNodeId()))
             return new GridFinishedFuture<>();
 
         if (req.error() != null)
@@ -247,7 +247,7 @@ public class SnapshotCheckProcess {
 
     /** Phase 1 beginning: prepare, collect and check local metas. */
     private IgniteInternalFuture<CheckResultDTO> prepareAndCheckMetas(SnapshotCheckProcessRequest req) {
-        if (!workingNode(req, kctx.localNodeId()))
+        if (!requiredNode(req, kctx.localNodeId()))
             return new GridFinishedFuture<>();
 
         SnapshotCheckContext ctx = contexts.computeIfAbsent(req.snapshotName(), snpName -> new SnapshotCheckContext(req));
@@ -444,7 +444,7 @@ public class SnapshotCheckProcess {
      * @return {@code True} if the provided node id is id of a required node or of the initiator node.
      * @see #dataNode(SnapshotCheckProcessRequest, UUID)
      */
-    private static boolean workingNode(SnapshotCheckProcessRequest req, UUID nodeId) {
+    private static boolean requiredNode(SnapshotCheckProcessRequest req, UUID nodeId) {
         return req.initiatorId().equals(nodeId) || dataNode(req, nodeId);
     }
 
