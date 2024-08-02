@@ -96,7 +96,7 @@ public class CacheCreateTask extends VisorOneNodeTask<CacheCreateCommandArg, Set
                 ccfgs.removeIf(ccfg -> ccfg.getName() != null && existingCacheNames.contains(ccfg.getName()));
             }
 
-            Collection<IgniteCache> caches = ignite.createCaches(ccfgs);
+            Collection<IgniteCache> caches = ignite.getOrCreateCaches(ccfgs);
 
             return caches.stream().map(Cache::getName).collect(Collectors.toCollection(TreeSet::new));
         }

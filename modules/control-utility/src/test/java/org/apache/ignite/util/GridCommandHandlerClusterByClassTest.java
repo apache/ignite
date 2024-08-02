@@ -1379,12 +1379,12 @@ public class GridCommandHandlerClusterByClassTest extends GridCommandHandlerClus
             "Failed to create caches. Spring XML configuration file not found");
 
         assertContains(log, executeCommand(EXIT_CODE_OK, "--cache", CREATE, SPRING_XML_CONFIG,
-            cfgPath + "/cache-create-correct.xml"), "Created caches: [cache1, cache2]");
+            cfgPath + "/cache-create-correct.xml"), "Created caches: cache1, cache2");
 
         assertTrue(crd.cacheNames().containsAll(F.asList("cache1", "cache2")));
 
         assertContains(log, executeCommand(EXIT_CODE_OK, "--cache", CREATE, SPRING_XML_CONFIG, cfgPath +
-            "/cache-create-correct-skip-existing-check.xml", "--skip-existing"), "Created caches: [cache3, cache4]");
+            "/cache-create-correct-skip-existing-check.xml", "--skip-existing"), "Created caches: cache3, cache4");
 
         assertTrue(crd.cacheNames().containsAll(F.asList("cache1", "cache2", "cache3", "cache4")));
 

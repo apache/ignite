@@ -37,7 +37,7 @@ public class CacheCreateCommandArg extends IgniteDataTransferObject {
     private String springxmlconfig;
 
     /** */
-    @Argument(description = "Optional flag to ignore existing caches", optional = true)
+    @Argument(description = "Optional flag to skip existing caches", optional = true)
     private boolean skipExisting;
 
     /** */
