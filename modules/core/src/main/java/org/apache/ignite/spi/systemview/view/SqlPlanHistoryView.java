@@ -50,9 +50,17 @@ public class SqlPlanHistoryView {
     }
 
     /**
-     * @return boolean Local query flag.
+     * @return String SQL plan.
      */
     @Order(2)
+    public String plan() {
+        return plan.plan();
+    }
+
+    /**
+     * @return boolean Local query flag.
+     */
+    @Order(3)
     public boolean local() {
         return plan.local();
     }
@@ -60,7 +68,7 @@ public class SqlPlanHistoryView {
     /**
      * @return String SQL engine.
      */
-    @Order(3)
+    @Order(4)
     public String engine() {
         return plan.engine();
     }
@@ -68,16 +76,8 @@ public class SqlPlanHistoryView {
     /**
      * @return Date Last time the query was executed.
      */
-    @Order(4)
+    @Order(5)
     public Date lastStartTime() {
         return new Date(plan.startTime());
-    }
-
-    /**
-     * @return String SQL plan.
-     */
-    @Order(5)
-    public String plan() {
-        return plan.plan();
     }
 }
