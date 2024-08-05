@@ -67,10 +67,10 @@ public class SnapshotCheckProcess {
     private final Map<UUID, GridFutureAdapter<SnapshotPartitionsVerifyTaskResult>> clusterOpFuts = new ConcurrentHashMap<>();
 
     /** Check metas first phase subprocess. */
-    private final DistributedProcess<SnapshotCheckProcessRequest, CheckResultDTO> phase1CheckMetas;
+    private final DistributedProcess<SnapshotCheckProcessRequest, SnapshotCheckResponse> phase1CheckMetas;
 
     /** Partition hashes second phase subprocess.  */
-    private final DistributedProcess<SnapshotCheckProcessRequest, CheckResultDTO> phase2PartsHashes;
+    private final DistributedProcess<SnapshotCheckProcessRequest, SnapshotCheckResponse> phase2PartsHashes;
 
     /** */
     public SnapshotCheckProcess(GridKernalContext kctx) {
@@ -113,7 +113,7 @@ public class SnapshotCheckProcess {
     }
 
     /** */
-    Map<String, SnapshotCheckContext> requests() {
+    Map<String, SnapshotCheckContext> contexts() {
         return Collections.unmodifiableMap(contexts);
     }
 
@@ -134,7 +134,7 @@ public class SnapshotCheckProcess {
     /** Phase 2 and process finish. */
     private IgniteInternalFuture<?> reduceValidatePartsAndFinish(
         UUID reqId,
-        Map<UUID, CheckResultDTO> results,
+        Map<UUID, SnapshotCheckResponse> results,
         Map<UUID, Throwable> errors
     ) {
         SnapshotCheckContext ctx = context(null, reqId);
@@ -169,16 +169,12 @@ public class SnapshotCheckProcess {
     }
 
     /** Phase 2 beginning.  */
-    private IgniteInternalFuture<CheckResultDTO> validateParts(SnapshotCheckProcessRequest req) {
-        GridFutureAdapter<?> clusterOpFut = clusterOpFuts.get(req.requestId());
+    private IgniteInternalFuture<SnapshotCheckResponse> validateParts(SnapshotCheckProcessRequest req) {
+        SnapshotCheckContext ctx;
 
-        if (clusterOpFut == null && !req.nodes().contains(kctx.localNodeId()))
+        // The context can be null, if a required node leaves before this phase.
+        if (!req.nodes().contains(kctx.localNodeId()) || (ctx = context(null, req.requestId())) == null)
             return new GridFinishedFuture<>();
-
-        SnapshotCheckContext ctx = context(null, req.requestId());
-
-        assert ctx != null;
-        assert ctx.req.reqId.equals(req.reqId);
 
         ctx.fut = new GridFutureAdapter<>();
 
@@ -197,7 +193,7 @@ public class SnapshotCheckProcess {
                     if (err != null)
                         ctx.fut.onDone(err);
                     else
-                        ctx.fut.onDone(new CheckResultDTO(res));
+                        ctx.fut.onDone(new SnapshotCheckResponse(res));
                 });
         }
 
@@ -215,7 +211,7 @@ public class SnapshotCheckProcess {
 
     /** */
     private Map<ClusterNode, Map<PartitionKeyV2, PartitionHashRecordV2>> mapPartsHashes(
-        @Nullable Map<UUID, CheckResultDTO> results,
+        @Nullable Map<UUID, SnapshotCheckResponse> results,
         Collection<UUID> requiredNodes
     ) {
         if (F.isEmpty(results))
@@ -233,13 +229,17 @@ public class SnapshotCheckProcess {
      * @return Current snapshot checking context by {@code snpName} or {@code reqId}.
      */
     private @Nullable SnapshotCheckContext context(@Nullable String snpName, UUID reqId) {
-        return snpName == null
-            ? contexts.values().stream().filter(ctx -> ctx.req.reqId.equals(reqId)).findFirst().orElse(null)
+        SnapshotCheckContext ctx = snpName == null
+            ? contexts.values().stream().filter(ctx0 -> ctx0.req.reqId.equals(reqId)).findFirst().orElse(null)
             : contexts.get(snpName);
+
+        assert ctx == null || ctx.req.reqId.equals(reqId);
+
+        return ctx;
     }
 
     /** Phase 1 beginning: prepare, collect and check local metas. */
-    private IgniteInternalFuture<CheckResultDTO> prepareAndCheckMetas(SnapshotCheckProcessRequest req) {
+    private IgniteInternalFuture<SnapshotCheckResponse> prepareAndCheckMetas(SnapshotCheckProcessRequest req) {
         if (!req.nodes().contains(kctx.localNodeId()))
             return new GridFinishedFuture<>();
 
@@ -268,7 +268,7 @@ public class SnapshotCheckProcess {
             if (err != null)
                 ctx.fut.onDone(err);
             else
-                ctx.fut.onDone(new CheckResultDTO(locMetas));
+                ctx.fut.onDone(new SnapshotCheckResponse(locMetas));
         });
 
         return ctx.fut;
@@ -277,7 +277,7 @@ public class SnapshotCheckProcess {
     /** Phase 1 end. */
     private void reducePreparationAndMetasCheck(
         UUID reqId,
-        Map<UUID, CheckResultDTO> results,
+        Map<UUID, SnapshotCheckResponse> results,
         Map<UUID, Throwable> errors
     ) {
         String snpName = snpName(results);
@@ -289,8 +289,6 @@ public class SnapshotCheckProcess {
 
         if (!F.isEmpty(errors)) {
             if (ctx != null) {
-                assert ctx.req.reqId.equals(reqId);
-
                 contexts.remove(ctx.req.snapshotName());
 
                 if (log.isInfoEnabled())
@@ -317,20 +315,16 @@ public class SnapshotCheckProcess {
                 // which must be validated.
                 if (ctx.req.nodes().contains(nodeId) && baseline(nodeId)) {
                     assert nodeRes != null && nodeRes.partsHashes == null;
-                    assert kctx.cluster().get().node(nodeId) != null;
 
                     metas.put(kctx.cluster().get().node(nodeId), nodeRes.metas);
                 }
             });
 
-            SnapshotMetadataVerificationTaskResult metasRes = new SnapshotMetadataVerificationTaskResult(
-                metas,
-                SnapshotChecker.reduceMetasResults(ctx.req.snapshotName(), ctx.req.snapshotPath(), metas, null,
-                    kctx.cluster().get().localNode().consistentId())
-            );
+            Map<ClusterNode, Exception> metasCheck = SnapshotChecker.reduceMetasResults(ctx.req.snapshotName(), ctx.req.snapshotPath(),
+                metas, null, kctx.cluster().get().localNode().consistentId());
 
-            if (!F.isEmpty(metasRes.exceptions()))
-                throw new IgniteSnapshotVerifyException(metasRes.exceptions());
+            if (!F.isEmpty(metasCheck))
+                throw new IgniteSnapshotVerifyException(metasCheck);
         }
         catch (Exception e) {
             contexts.remove(snpName);
@@ -353,11 +347,11 @@ public class SnapshotCheckProcess {
     }
 
     /** Finds current snapshot name from the metas. */
-    private @Nullable String snpName(@Nullable Map<UUID, CheckResultDTO> results) {
+    private @Nullable String snpName(@Nullable Map<UUID, SnapshotCheckResponse> results) {
         if (F.isEmpty(results))
             return null;
 
-        for (CheckResultDTO nodeRes : results.values()) {
+        for (SnapshotCheckResponse nodeRes : results.values()) {
             if (nodeRes == null || F.isEmpty(nodeRes.metas))
                 continue;
 
@@ -415,8 +409,8 @@ public class SnapshotCheckProcess {
     /** Properly sets errror to the cluster operation future. */
     static boolean finishClusterFutureWithErr(
         GridFutureAdapter<SnapshotPartitionsVerifyTaskResult> clusterOpFut,
-        Throwable propogatedError,
-        Map<ClusterNode, Exception> nodeErrors
+        @Nullable Throwable propogatedError,
+        @Nullable Map<ClusterNode, Exception> nodeErrors
     ) {
         assert propogatedError != null || !F.isEmpty(nodeErrors);
 
@@ -445,7 +439,7 @@ public class SnapshotCheckProcess {
         private final SnapshotCheckProcessRequest req;
 
         /** Working future. Expected to be set/read in different threads but not concurrently. */
-        private volatile GridFutureAdapter<CheckResultDTO> fut;
+        private volatile GridFutureAdapter<SnapshotCheckResponse> fut;
 
         /** Local snapshot metadata. */
         @Nullable SnapshotMetadata locMeta;
@@ -460,24 +454,24 @@ public class SnapshotCheckProcess {
     }
 
     /** A DTO used to transfer nodes' results for the both phases. */
-    private static final class CheckResultDTO implements Serializable {
+    private static final class SnapshotCheckResponse implements Serializable {
         /** Serial version uid. */
         private static final long serialVersionUID = 0L;
 
-        /** Metas for the pahse 1. Is always {@code null} for the phase 2. */
+        /** Metas for the phase 1. Is always {@code null} for the phase 2. */
         @Nullable private final List<SnapshotMetadata> metas;
 
         /** Node's partition hashes for the phase 2. Is always {@code null} for the phase 1. */
         @Nullable private final Map<PartitionKeyV2, PartitionHashRecordV2> partsHashes;
 
         /** Ctor for the phase 1. */
-        private CheckResultDTO(@Nullable List<SnapshotMetadata> metas) {
+        private SnapshotCheckResponse(@Nullable List<SnapshotMetadata> metas) {
             this.metas = metas;
             this.partsHashes = null;
         }
 
         /** Ctor for the phase 2. */
-        private CheckResultDTO(@Nullable Map<PartitionKeyV2, PartitionHashRecordV2> partsHashes) {
+        private SnapshotCheckResponse(@Nullable Map<PartitionKeyV2, PartitionHashRecordV2> partsHashes) {
             this.metas = null;
             this.partsHashes = partsHashes;
         }
