@@ -18,7 +18,9 @@
 package org.apache.ignite.internal.management.cache;
 
 import java.util.Set;
+import java.util.function.Consumer;
 import org.apache.ignite.internal.management.api.ComputeCommand;
+import org.apache.ignite.internal.util.typedef.F;
 
 import static org.apache.ignite.internal.IgniteComponentType.SPRING;
 
@@ -38,5 +40,10 @@ public class CacheCreateCommand implements ComputeCommand<CacheCreateCommandArg,
     /** {@inheritDoc} */
     @Override public Class<CacheCreateTask> taskClass() {
         return CacheCreateTask.class;
+    }
+
+    /** {@inheritDoc} */
+    @Override public void printResult(CacheCreateCommandArg arg, Set<String> res, Consumer<String> printer) {
+        printer.accept(res.isEmpty() ? "No cache was created" : "Created caches: " + F.concat(res, ", "));
     }
 }
