@@ -26,6 +26,7 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
 import java.util.Set;
+import java.util.function.Consumer;
 import java.util.stream.Collectors;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.cache.query.Query;
@@ -79,52 +80,56 @@ public class SqlPlanHistoryH2SelfTest extends GridCommonAbstractTest {
         " union select o.name n1, p.name n2 from \"pers\".Person p, \"org\".Organization o" +
         " where p.orgId=o._key and o._key=102";
 
-    /** Sets of DML commands of various complexity (including failed commands). */
-    List<List<String>> dmlCmds = Arrays.asList(
-        Arrays.asList(
-            "insert into A.String (_key, _val) values(101, '101')",
-            "update A.String set _val='111' where _key=101",
-            "delete from A.String where _key=101"
-        ),
-        Arrays.asList(
-            "insert into A.String (_key, _val) values(101, '101'), (102, '102'), (103, '103')",
-            "update A.String set _val = case _key " +
-                "when 101 then '111' " +
-                "when 102 then '112' " +
-                "when 103 then '113' " +
-                "end " +
-                "where _key in (101, 102, 103)",
-            "delete from A.String where _key in (101, 102, 103)"
-        ),
-        Arrays.asList(
-            "insert into A.String (_key, _val) select o._key, p.name " +
-                "from \"pers\".Person p, \"org\".Organization o where p.orgId=o._key",
-            "update A.String set _val = 'updated' where _key in " +
-                "(select o._key from \"pers\".Person p, \"org\".Organization o where p.orgId=o._key)",
-            "delete from A.String where _key in (select orgId from \"pers\".Person)"
-        ),
-        Arrays.asList(
-            "insert into A.String (_key, _val) select o._key, p.name from \"pers\".Person p, \"org\".Organization o " +
-                "where A.fail()=1",
-            "update A.String set _val = 'failed' where A.fail()=1",
-            "delete from A.String where A.fail()=1"
-        )
+    /** Set of simple DML commands. */
+    private final List<String> dmlCmds = Arrays.asList(
+        "insert into A.String (_key, _val) values(101, '101')",
+        "update A.String set _val='111' where _key=101",
+        "delete from A.String where _key=101"
+    );
+
+    /** Set of DML commands with multiple operations. */
+    private final List<String> dmlCmdsMultiOps = Arrays.asList(
+        "insert into A.String (_key, _val) values(101, '101'), (102, '102'), (103, '103')",
+        "update A.String set _val = case _key " +
+            "when 101 then '111' " +
+            "when 102 then '112' " +
+            "when 103 then '113' " +
+            "end " +
+            "where _key in (101, 102, 103)",
+        "delete from A.String where _key in (101, 102, 103)"
+    );
+
+    /** Set of DML commands with joins. */
+    private final List<String> dmlCmdsWithJoins = Arrays.asList(
+        "insert into A.String (_key, _val) select o._key, p.name " +
+            "from \"pers\".Person p, \"org\".Organization o where p.orgId=o._key",
+        "update A.String set _val = 'updated' where _key in " +
+            "(select o._key from \"pers\".Person p, \"org\".Organization o where p.orgId=o._key)",
+        "delete from A.String where _key in (select orgId from \"pers\".Person)"
+    );
+
+    /** Set of failed DML commands. */
+    private final List<String> dmlCmdsFailed = Arrays.asList(
+        "insert into A.String (_key, _val) select o._key, p.name from \"pers\".Person p, \"org\".Organization o " +
+            "where A.fail()=1",
+        "update A.String set _val = 'failed' where A.fail()=1",
+        "delete from A.String where A.fail()=1"
     );
 
     /** Strings for checking SQL plan history after executing DML commands. */
-    List<String> dmlCheckStrings = Arrays.asList("mode=INSERT", "mode=UPDATE", "mode=DELETE");
+    private final List<String> dmlCheckStrings = Arrays.asList("mode=INSERT", "mode=UPDATE", "mode=DELETE");
 
     /** Successful SqlFieldsQuery. */
-    SqlFieldsQuery sqlFieldsQry = new SqlFieldsQuery(SQL);
+    private final SqlFieldsQuery sqlFieldsQry = new SqlFieldsQuery(SQL);
 
     /** Failed SqlFieldsQuery. */
-    SqlFieldsQuery sqlFieldsQryFailed = new SqlFieldsQuery(SQL_FAILED);
+    private final SqlFieldsQuery sqlFieldsQryFailed = new SqlFieldsQuery(SQL_FAILED);
 
     /** Successful cross-cache SqlFieldsQuery. */
-    SqlFieldsQuery sqlFieldsCrossCacheQry = new SqlFieldsQuery(SQL_CROSS_CACHE);
+    private final SqlFieldsQuery sqlFieldsCrossCacheQry = new SqlFieldsQuery(SQL_CROSS_CACHE);
 
     /** Failed cross-cache SqlFieldsQuery. */
-    SqlFieldsQuery sqlFieldsCrossCacheQryFailed = new SqlFieldsQuery(SQL_CROSS_CACHE_FAILED);
+    private final SqlFieldsQuery sqlFieldsCrossCacheQryFailed = new SqlFieldsQuery(SQL_CROSS_CACHE_FAILED);
 
     /** Successful SqlFieldsQuery with reduce phase. */
     private final SqlFieldsQuery sqlFieldsQryWithReducePhase = new SqlFieldsQuery(SQL_WITH_REDUCE_PHASE)
@@ -137,16 +142,16 @@ public class SqlPlanHistoryH2SelfTest extends GridCommonAbstractTest {
     );
 
     /** Successful SqlQuery. */
-    SqlQuery sqlQry = new SqlQuery<>("String", "from String");
+    private final SqlQuery sqlQry = new SqlQuery<>("String", "from String");
 
     /** Failed SqlQuery. */
-    SqlQuery sqlQryFailed = new SqlQuery<>("String", "from String where fail()=1");
+    private final SqlQuery sqlQryFailed = new SqlQuery<>("String", "from String where fail()=1");
 
     /** ScanQuery. */
-    ScanQuery<Integer, String> scanQry = new ScanQuery<>();
+    private final ScanQuery<Integer, String> scanQry = new ScanQuery<>();
 
     /** TextQuery. */
-    TextQuery<Integer, String> textQry = new TextQuery<>("String", "2");
+    private final TextQuery<Integer, String> textQry = new TextQuery<>("String", "2");
 
     /** Client mode flag. */
     private boolean isClient;
@@ -289,7 +294,7 @@ public class SqlPlanHistoryH2SelfTest extends GridCommonAbstractTest {
             return;
 
         for (int i = 0; i < 2; i++) {
-            runJdbcQuery(SQL);
+            jdbcQuery(SQL);
 
             checkSqlPlanHistory(getExpectedHistorySize());
         }
@@ -302,7 +307,7 @@ public class SqlPlanHistoryH2SelfTest extends GridCommonAbstractTest {
             return;
 
         try {
-            runJdbcQuery(SQL_FAILED);
+            jdbcQuery(SQL_FAILED);
         }
         catch (Exception ignore) {
             //No-Op
@@ -314,25 +319,25 @@ public class SqlPlanHistoryH2SelfTest extends GridCommonAbstractTest {
     /** Checks successful SqlFieldsQuery. */
     @Test
     public void testSqlFieldsQuery() {
-        executeSuccessfulQuery(sqlFieldsQry);
+        runSuccessfulQuery(sqlFieldsQry);
     }
 
     /** Checks failed SqlFieldsQuery. */
     @Test
     public void testSqlFieldsQueryFailed() {
-        executeFailedQuery(sqlFieldsQryFailed);
+        runFailedQuery(sqlFieldsQryFailed);
     }
 
     /** Checks successful cross-cache SqlFieldsQuery. */
     @Test
     public void testSqlFieldsCrossCacheQuery() {
-        executeSuccessfulQuery(sqlFieldsCrossCacheQry);
+        runSuccessfulQuery(sqlFieldsCrossCacheQry);
     }
 
     /** Checks failed cross-cache SqlFieldsQuery. */
     @Test
     public void testSqlFieldsCrossCacheQueryFailed() {
-        executeFailedQuery(sqlFieldsCrossCacheQryFailed);
+        runFailedQuery(sqlFieldsCrossCacheQryFailed);
     }
 
     /** Checks successful SqlFieldsQuery with reduce phase. */
@@ -341,7 +346,7 @@ public class SqlPlanHistoryH2SelfTest extends GridCommonAbstractTest {
         if (loc)
             return;
 
-        runCacheQuery(sqlFieldsQryWithReducePhase, "pers");
+        cacheQuery(sqlFieldsQryWithReducePhase, "pers");
 
         checkSqlPlanHistory((!isClient && sqlEngine == SqlPlanHistoryTracker.SqlEngine.H2) ? 3 : 1);
     }
@@ -354,7 +359,7 @@ public class SqlPlanHistoryH2SelfTest extends GridCommonAbstractTest {
 
         for (int i = 0; i < sqlFieldsQryWithReducePhaseFailed.length; i++) {
             try {
-                runCacheQuery(sqlFieldsQryWithReducePhaseFailed[i], "pers");
+                cacheQuery(sqlFieldsQryWithReducePhaseFailed[i], "pers");
             }
             catch (Exception ignore) {
                 //No-Op
@@ -369,67 +374,90 @@ public class SqlPlanHistoryH2SelfTest extends GridCommonAbstractTest {
     /** Checks successful SqlQuery. */
     @Test
     public void testSqlQuery() {
-        executeSuccessfulQuery(sqlQry);
+        runSuccessfulQuery(sqlQry);
     }
 
     /** Checks failed SqlQuery. */
     @Test
     public void testSqlQueryFailed() {
-        executeFailedQuery(sqlQryFailed);
+        runFailedQuery(sqlQryFailed);
     }
 
     /** Checks ScanQuery. */
     @Test
     public void testScanQuery() {
-        executeQueryWithoutPlan(scanQry);
+        runQueryWithoutPlan(scanQry);
     }
 
     /** Checks TextQuery. */
     @Test
     public void testTextQuery() {
-        executeQueryWithoutPlan(textQry);
+        runQueryWithoutPlan(textQry);
     }
 
     /** Checks DML commands executed via JDBC. */
     @Test
-    public void testJdbcDml() throws Exception {
-        if (loc || !isFullyFetched)
-            return;
+    public void testJdbcDml() throws SQLException {
+        runJdbcDml(dmlCmds);
+    }
 
-        try (
-            Connection conn = GridTestUtils.connect(queryNode(), null);
-            Statement stmt = conn.createStatement()
-        ) {
-            for (List<String> setOfCmds : dmlCmds) {
-                for (String cmd : setOfCmds) {
-                    try {
-                        stmt.execute(cmd);
-                    }
-                    catch (Exception ignore) {
-                        //No-Op
-                    }
+    /** Checks DML commands with multiple operations executed via JDBC. */
+    @Test
+    public void testJdbcDmlMultiOps() throws SQLException {
+        runJdbcDml(dmlCmdsMultiOps);
+    }
+
+    /** Checks DML commands with joins executed via JDBC. */
+    @Test
+    public void testJdbcDmlWithJoins() throws SQLException {
+        runJdbcDml(dmlCmdsWithJoins);
+    }
+
+    /** Checks failed DML commands executed via JDBC. */
+    @Test
+    public void testJdbcDmlFailed() throws SQLException {
+        executeJdbcDml((stmt) -> {
+            for (String cmd : dmlCmdsFailed)
+                try {
+                    stmt.execute(cmd);
                 }
-
-                checkSqlPlanHistoryDml(3);
-
-                resetPlanHistory();
-            }
-        }
+                catch (Exception ignore) {
+                    //No-Op
+                }
+        });
     }
 
     /** Checks DML commands executed via SqlFieldsQuery. */
     @Test
     public void testSqlFieldsDml() {
-        if (isClient && loc || !isFullyFetched)
-            return;
+        runSqlFieldsQueryDml(dmlCmds);
+    }
 
-        for (List<String> setOfCmds : dmlCmds) {
-            setOfCmds.forEach(this::runDmlCommand);
+    /** Checks DML commands with multiple operations executed via SqlFieldsQuery. */
+    @Test
+    public void testSqlFieldsDmlMultiOps() {
+        runSqlFieldsQueryDml(dmlCmdsMultiOps);
+    }
 
-            checkSqlPlanHistoryDml(3);
+    /** Checks DML commands with joins executed via SqlFieldsQuery. */
+    @Test
+    public void testSqlFieldsDmlWithJoins() {
+        runSqlFieldsQueryDml(dmlCmdsWithJoins);
+    }
 
-            resetPlanHistory();
-        }
+    /** Checks failed DML commands executed via SqlFieldsQuery. */
+    @Test
+    public void testSqlFieldsDmlFailed() {
+        executeSqlFieldsQueryDml(cache -> {
+            for (String cmd : dmlCmdsFailed) {
+                try {
+                    cache.query(new SqlFieldsQuery(cmd).setLocal(loc));
+                }
+                catch (Exception ignore) {
+                    //No-Op
+                }
+            }
+        });
     }
 
     /** Checks that older plan entries are evicted when maximum history size is reached. */
@@ -440,7 +468,7 @@ public class SqlPlanHistoryH2SelfTest extends GridCommonAbstractTest {
 
         for (int i = 1; i <= (PLAN_HISTORY_SIZE + PLAN_HISTORY_EXCESS); i++) {
             try {
-                runCacheQuery(new SqlFieldsQuery(SQL + " where A.fail()=" + i), "A");
+                cacheQuery(new SqlFieldsQuery(SQL + " where A.fail()=" + i), "A");
             }
             catch (Exception ignore) {
                 //No-Op
@@ -460,10 +488,10 @@ public class SqlPlanHistoryH2SelfTest extends GridCommonAbstractTest {
     /**
      * @param qry Query.
      */
-    public void executeSuccessfulQuery(Query qry) {
+    public void runSuccessfulQuery(Query qry) {
         executeQuery(qry, () -> {
             for (int i = 0; i < 2; i++) {
-                runCacheQuery(qry, "A");
+                cacheQuery(qry, "A");
 
                 checkSqlPlanHistory(getExpectedHistorySize());
             }
@@ -473,10 +501,10 @@ public class SqlPlanHistoryH2SelfTest extends GridCommonAbstractTest {
     /**
      * @param qry Query.
      */
-    public void executeFailedQuery(Query qry) {
+    public void runFailedQuery(Query qry) {
         executeQuery(qry, () -> {
             try {
-                runCacheQuery(qry, "A");
+                cacheQuery(qry, "A");
             }
             catch (Exception ignore) {
                 //No-Op
@@ -489,9 +517,9 @@ public class SqlPlanHistoryH2SelfTest extends GridCommonAbstractTest {
     /**
      * @param qry Query.
      */
-    public void executeQueryWithoutPlan(Query qry) {
+    public void runQueryWithoutPlan(Query qry) {
         executeQuery(qry, () -> {
-            runCacheQuery(qry, "A");
+            cacheQuery(qry, "A");
 
             checkSqlPlanHistory(0);
         });
@@ -513,7 +541,7 @@ public class SqlPlanHistoryH2SelfTest extends GridCommonAbstractTest {
     /**
      * @param qry Query.
      */
-    private void runJdbcQuery(String qry) throws SQLException {
+    private void jdbcQuery(String qry) throws SQLException {
         try (
             Connection conn = GridTestUtils.connect(queryNode(), null);
             Statement stmt = conn.createStatement()
@@ -531,7 +559,7 @@ public class SqlPlanHistoryH2SelfTest extends GridCommonAbstractTest {
      * @param qry Query.
      * @param cacheName Cache name.
      */
-    public void runCacheQuery(Query qry, String cacheName) {
+    public void cacheQuery(Query qry, String cacheName) {
         IgniteCache<Integer, String> cache = queryNode().getOrCreateCache(cacheName);
 
         if (isFullyFetched)
@@ -546,17 +574,58 @@ public class SqlPlanHistoryH2SelfTest extends GridCommonAbstractTest {
     }
 
     /**
-     * @param cmd DML command.
+     * @param cmds Set of DML commands.
      */
-    public void runDmlCommand(String cmd) {
+    public void runJdbcDml(List<String> cmds) throws SQLException {
+        executeJdbcDml((stmt) -> {
+            for (String cmd : cmds) {
+                try {
+                    stmt.execute(cmd);
+                }
+                catch (SQLException e) {
+                    throw new RuntimeException(e);
+                }
+            }
+        });
+    }
+
+    /**
+     * @param task Task to execute.
+     */
+    public void executeJdbcDml(Consumer<Statement> task) throws SQLException {
+        if (loc || !isFullyFetched)
+            return;
+
+        try (
+            Connection conn = GridTestUtils.connect(queryNode(), null);
+            Statement stmt = conn.createStatement()
+        ) {
+            task.accept(stmt);
+        }
+
+        checkSqlPlanHistoryDml(3);
+    }
+
+    /**
+     * @param cmds Set of DML commands.
+     */
+    public void runSqlFieldsQueryDml(List<String> cmds) {
+        executeSqlFieldsQueryDml(cache ->
+            cmds.forEach(cmd -> cache.query(new SqlFieldsQuery(cmd).setLocal(loc))));
+    }
+
+    /**
+     * @param task Task to execute.
+     */
+    public void executeSqlFieldsQueryDml(Consumer<IgniteCache<Integer, String>> task) {
+        if (isClient && loc || !isFullyFetched)
+            return;
+
         IgniteCache<Integer, String> cache = queryNode().getOrCreateCache("A");
 
-        try {
-            cache.query(new SqlFieldsQuery(cmd).setLocal(loc));
-        }
-        catch (Exception ignore) {
-            //No-Op
-        }
+        task.accept(cache);
+
+        checkSqlPlanHistoryDml(3);
     }
 
     /** */
