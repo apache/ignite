@@ -95,7 +95,9 @@ public class CacheCreateTask extends VisorOneNodeTask<CacheCreateCommandArg, Set
 
             if (arg.skipExisting()) {
                 Collection<String> existingCacheNames = ignite.cacheNames();
+
                 ccfgs.removeIf(ccfg -> ccfg.getName() != null && existingCacheNames.contains(ccfg.getName()));
+
                 caches = ignite.getOrCreateCaches(ccfgs);
             }
             else
