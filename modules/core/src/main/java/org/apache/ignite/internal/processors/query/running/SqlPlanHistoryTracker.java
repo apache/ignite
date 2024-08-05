@@ -27,7 +27,7 @@ public class SqlPlanHistoryTracker {
     private final GridBoundedConcurrentLinkedHashMap<SqlPlanKey, SqlPlan> sqlPlanHistory;
 
     /** SQL plan history size. */
-    private final int historySize;
+    private int historySize;
 
     /**
      * @param historySize SQL plan history size.
@@ -61,6 +61,13 @@ public class SqlPlanHistoryTracker {
             return Collections.emptyMap();
 
         return Collections.unmodifiableMap(sqlPlanHistory);
+    }
+
+    /**
+     * @param historySize History size.
+     */
+    public void setHistorySize(int historySize) {
+        this.historySize = historySize;
     }
 
     /** */

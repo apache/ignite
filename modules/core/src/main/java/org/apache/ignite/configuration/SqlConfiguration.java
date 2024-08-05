@@ -128,7 +128,7 @@ public class SqlConfiguration {
      * Sets number of SQL plan history elements kept in memory. If not explicitly set, then default value is {@link
      * #DFLT_SQL_PLAN_HISTORY_SIZE}.
      *
-     * @param size Number of SQL query history elements kept in memory.
+     * @param size Number of SQL plan history elements kept in memory.
      * @return {@code this} for chaining.
      */
     public SqlConfiguration setSqlPlanHistorySize(int size) {

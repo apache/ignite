@@ -195,11 +195,11 @@ public class RunningQueryManager {
         histSz = ctx.config().getSqlConfiguration().getSqlQueryHistorySize();
         closure = ctx.closure();
 
-        planHistSz = ctx.config().getSqlConfiguration().getSqlPlanHistorySize();
-
         qryHistTracker = new QueryHistoryTracker(histSz);
 
         heavyQrysTracker = ctx.query().moduleEnabled() ? new HeavyQueriesTracker(ctx) : null;
+
+        planHistSz = ctx.config().getSqlConfiguration().getSqlPlanHistorySize();
 
         planHistTracker = new SqlPlanHistoryTracker(planHistSz);
 
