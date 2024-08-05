@@ -17,7 +17,7 @@
 
 package org.apache.ignite.internal.processors.query.running;
 
-/** Representation of an SQL plan history entry. */
+/** Representation of an entry in SQL plan history. */
 public class SqlPlan {
     /** */
     private final SqlPlanKey key;

@@ -54,10 +54,10 @@ import org.junit.runners.Suite;
     CalciteCommunicationMessageSerializationTest.class,
 
     SqlPlanHistoryConfigTest.class,
-    SqlPlanHistoryH2SelfTest.class,
-    SqlPlanHistoryH2FromClientSelfTest.class,
     SqlPlanHistoryCalciteSelfTest.class,
     SqlPlanHistoryCalciteFromClientSelfTest.class,
+    SqlPlanHistoryH2SelfTest.class,
+    SqlPlanHistoryH2FromClientSelfTest.class,
 })
 public class IgniteCalciteTestSuite {
 }
