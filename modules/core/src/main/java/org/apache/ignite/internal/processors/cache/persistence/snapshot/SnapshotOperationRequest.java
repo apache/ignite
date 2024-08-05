@@ -34,11 +34,21 @@ public class SnapshotOperationRequest extends AbstractSnapshotOperationRequest {
     /** Serial version uid. */
     private static final long serialVersionUID = 0L;
 
+    /** Operational node ID. */
+    private final UUID opNodeId;
+
+    /** Exception occurred during snapshot operation processing. */
+    private volatile Throwable err;
+
     /**
      * Snapshot operation warnings. Warnings do not interrupt snapshot process but raise exception at the end to make
      * the operation status 'not OK' if no other error occurred.
      */
     private volatile List<String> warnings;
+
+    /** Snapshot metadata. */
+    @GridToStringExclude
+    private transient SnapshotMetadata meta;
 
     /**
      * Warning flag of concurrent inconsistent-by-nature streamer updates.
@@ -51,6 +61,9 @@ public class SnapshotOperationRequest extends AbstractSnapshotOperationRequest {
 
     /** If {@code true} then incremental snapshot requested. */
     private final boolean incremental;
+
+    /** Index of incremental snapshot. */
+    private final int incIdx;
 
     /** If {@code true} snapshot only primary copies of partitions. */
     private final boolean onlyPrimary;
@@ -94,16 +107,44 @@ public class SnapshotOperationRequest extends AbstractSnapshotOperationRequest {
     ) {
         super(reqId, opNodeId, snpName, snpPath, grps, incIdx, nodes);
 
+        this.opNodeId = opNodeId;
         this.incremental = incremental;
+        this.incIdx = incIdx;
         this.onlyPrimary = onlyPrimary;
         this.dump = dump;
         this.compress = compress;
         this.encrypt = encrypt;
     }
 
+    /**
+     * @return Operational node ID.
+     */
+    public UUID operationalNodeId() {
+        return opNodeId;
+    }
+
+    /**
+     * @return Exception occurred during snapshot operation processing.
+     */
+    public Throwable error() {
+        return err;
+    }
+
+    /**
+     * @param err Exception occurred during snapshot operation processing.
+     */
+    public void error(Throwable err) {
+        this.err = err;
+    }
+
     /** @return {@code True} if incremental snapshot requested. */
     public boolean incremental() {
         return incremental;
+    }
+
+    /** @return Incremental index. */
+    public int incrementIndex() {
+        return incIdx;
     }
 
     /** @return If {@code true} snapshot only primary copies of partitions. */
@@ -168,6 +209,20 @@ public class SnapshotOperationRequest extends AbstractSnapshotOperationRequest {
      */
     public boolean streamerWarning(boolean val) {
         return streamerWrn = val;
+    }
+
+    /**
+     * @return Snapshot metadata.
+     */
+    public SnapshotMetadata meta() {
+        return meta;
+    }
+
+    /**
+     * Stores snapshot metadata.
+     */
+    public void meta(SnapshotMetadata meta) {
+        this.meta = meta;
     }
 
     /** {@inheritDoc} */

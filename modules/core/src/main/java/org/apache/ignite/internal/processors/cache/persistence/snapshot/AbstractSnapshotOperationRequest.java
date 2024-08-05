@@ -24,7 +24,6 @@ import java.util.Objects;
 import java.util.Set;
 import java.util.UUID;
 import org.apache.ignite.internal.util.distributed.DistributedProcess;
-import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.jetbrains.annotations.Nullable;
@@ -52,14 +51,6 @@ abstract class AbstractSnapshotOperationRequest implements Serializable {
     @GridToStringInclude
     protected final Collection<String> grps;
 
-    /** Operational node ID. */
-    @GridToStringInclude
-    @Nullable protected final UUID opNodeId;
-
-    /** Index of incremental snapshot. */
-    @GridToStringInclude
-    protected final int incIdx;
-
     /** Start time. */
     @GridToStringInclude
     private final long startTime;
@@ -68,17 +59,8 @@ abstract class AbstractSnapshotOperationRequest implements Serializable {
     @GridToStringInclude
     protected final Set<UUID> nodes;
 
-    /** Exception occurred during snapshot operation processing. */
-    @GridToStringInclude
-    @Nullable private volatile Throwable err;
-
-    /** Snapshot local metadata. */
-    @GridToStringExclude
-    @Nullable private transient volatile SnapshotMetadata locMeta;
-
     /**
      * @param reqId Request ID.
-     * @param opNodeId Operational node ID.
      * @param snpName Snapshot name.
      * @param snpPath Snapshot directory path.
      * @param grps List of cache group names.
@@ -95,33 +77,11 @@ abstract class AbstractSnapshotOperationRequest implements Serializable {
         Collection<UUID> nodes
     ) {
         this.reqId = reqId;
-        this.opNodeId = opNodeId;
         this.snpName = snpName;
         this.grps = grps;
         this.snpPath = snpPath;
-        this.incIdx = incIdx;
         this.nodes = new HashSet<>(nodes);
         this.startTime = System.currentTimeMillis();
-    }
-
-    /** @return Snapshot local metadata. */
-    @Nullable public SnapshotMetadata meta() {
-        return locMeta;
-    }
-
-    /** Stores snapshot local metadata. */
-    void meta(SnapshotMetadata meta) {
-        this.locMeta = meta;
-    }
-
-    /** Stores exception occurred during snapshot operation processing. */
-    void error(Throwable err) {
-        this.err = err;
-    }
-
-    /** @return Exception occurred during snapshot operation processing. */
-    @Nullable public Throwable error() {
-        return err;
     }
 
     /** @return Request ID. */
@@ -144,16 +104,6 @@ abstract class AbstractSnapshotOperationRequest implements Serializable {
         return grps;
     }
 
-    /** @return Operational node ID. */
-    @Nullable public UUID operationalNodeId() {
-        return opNodeId;
-    }
-
-    /** @return Incremental index. */
-    public int incrementIndex() {
-        return incIdx;
-    }
-
     /** @return Start time. */
     public long startTime() {
         return startTime;
@@ -174,8 +124,7 @@ abstract class AbstractSnapshotOperationRequest implements Serializable {
 
         AbstractSnapshotOperationRequest o = (AbstractSnapshotOperationRequest)other;
 
-        return reqId.equals(o.reqId) && snpName.equals(o.snpName) && Objects.equals(snpPath, o.snpPath)
-            && Objects.equals(grps, o.grps) && opNodeId.equals(o.opNodeId) && incIdx == o.incIdx;
+        return reqId.equals(o.reqId) && snpName.equals(o.snpName) && Objects.equals(snpPath, o.snpPath) && Objects.equals(grps, o.grps);
     }
 
     /** {@inheritDoc} */
