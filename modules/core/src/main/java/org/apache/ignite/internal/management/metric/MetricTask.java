@@ -26,6 +26,7 @@ import org.apache.ignite.internal.processors.metric.GridMetricManager;
 import org.apache.ignite.internal.processors.task.GridInternal;
 import org.apache.ignite.internal.visor.VisorJob;
 import org.apache.ignite.internal.visor.VisorOneNodeTask;
+import org.apache.ignite.plugin.security.SecurityPermissionSet;
 import org.apache.ignite.spi.metric.BooleanMetric;
 import org.apache.ignite.spi.metric.DoubleMetric;
 import org.apache.ignite.spi.metric.HistogramMetric;
@@ -38,6 +39,9 @@ import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.internal.processors.metric.impl.MetricUtils.SEPARATOR;
 import static org.apache.ignite.internal.processors.metric.impl.MetricUtils.histogramBucketNames;
+import static org.apache.ignite.plugin.security.SecurityPermission.ADMIN_OPS;
+import static org.apache.ignite.plugin.security.SecurityPermissionSetBuilder.NO_PERMISSIONS;
+import static org.apache.ignite.plugin.security.SecurityPermissionSetBuilder.systemPermissions;
 import static org.apache.ignite.spi.metric.jmx.MetricRegistryMBean.searchHistogram;
 
 /** Reperesents visor task for obtaining metric values. */
@@ -56,6 +60,9 @@ public class MetricTask extends VisorOneNodeTask<MetricCommandArg, Map<String, ?
         /** */
         private static final long serialVersionUID = 0L;
 
+        /** */
+        private final MetricCommandArg arg;
+
         /**
          * Create job with specified argument.
          *
@@ -64,6 +71,8 @@ public class MetricTask extends VisorOneNodeTask<MetricCommandArg, Map<String, ?
          */
         protected MetricJob(@Nullable MetricCommandArg arg, boolean debug) {
             super(arg, debug);
+
+            this.arg = arg;
         }
 
         /** {@inheritDoc} */
@@ -162,6 +171,14 @@ public class MetricTask extends VisorOneNodeTask<MetricCommandArg, Map<String, ?
             }
 
             return Collections.singletonMap(metric.name(), valueOf(metric));
+        }
+
+        /** {@inheritDoc} */
+        @Override public SecurityPermissionSet requiredPermissions() {
+            if (arg instanceof MetricConfigureHistogramCommandArg || arg instanceof MetricConfigureHitrateCommandArg)
+                return systemPermissions(ADMIN_OPS);
+
+            return NO_PERMISSIONS;
         }
     }
 }
