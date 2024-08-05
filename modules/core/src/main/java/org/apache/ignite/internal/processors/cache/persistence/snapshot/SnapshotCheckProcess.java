@@ -123,7 +123,7 @@ public class SnapshotCheckProcess {
      * @param err The interrupt reason.
      */
     void interrupt(Throwable err) {
-        contexts.forEach((snpNane, ctx) -> {
+        contexts.forEach((snpName, ctx) -> {
             if (ctx.fut != null)
                 ctx.fut.onDone(err);
         });
@@ -175,9 +175,6 @@ public class SnapshotCheckProcess {
         if (clusterOpFut == null && !req.nodes().contains(kctx.localNodeId()))
             return new GridFinishedFuture<>();
 
-        if (req.error() != null)
-            return new GridFinishedFuture<>(req.error());
-
         SnapshotCheckContext ctx = context(null, req.requestId());
 
         assert ctx != null;
@@ -185,23 +182,17 @@ public class SnapshotCheckProcess {
 
         ctx.fut = new GridFutureAdapter<>();
 
-        // Store metas on the initiator node to form the process result (SnapshotPartitionsVerifyTaskResult) at the end.
-        if (clusterOpFut != null)
-            ctx.clusterMetas = req.clusterMetas();
-
-        // Excludes non-baseline initiator (opNode).
+        // Excludes non-baseline initiator.
         if (!baseline(kctx.localNodeId()))
             return new GridFinishedFuture<>();
 
-        List<SnapshotMetadata> locMetas = req.clusterMetas().get(kctx.cluster().get().localNode());
-
         // Local meta might be null if current node started after the snapshot creation or placement.
-        if (F.isEmpty(locMetas))
+        if (ctx.locMeta == null)
             ctx.fut.onDone();
         else {
             File snpDir = kctx.cache().context().snapshotMgr().snapshotLocalDir(req.snapshotName(), req.snapshotPath());
 
-            kctx.cache().context().snapshotMgr().checker().checkPartitions(locMetas.get(0), snpDir, req.groups(), false, true, false)
+            kctx.cache().context().snapshotMgr().checker().checkPartitions(ctx.locMeta, snpDir, req.groups(), false, true, false)
                 .whenComplete((res, err) -> {
                     if (err != null)
                         ctx.fut.onDone(err);
@@ -259,12 +250,9 @@ public class SnapshotCheckProcess {
                 + "' has already started. Request=" + ctx + '.'));
         }
 
-        // Excludes non-baseline initiator (opNode).
+        // Excludes non-baseline initiator.
         if (!baseline(kctx.localNodeId()))
             return new GridFinishedFuture<>();
-
-        if (log.isDebugEnabled())
-            log.debug("Checking local snapshot metadatas [req=" + ctx.req + ']');
 
         IgniteSnapshotManager snpMgr = kctx.cache().context().snapshotMgr();
 
@@ -292,7 +280,9 @@ public class SnapshotCheckProcess {
         Map<UUID, CheckResultDTO> results,
         Map<UUID, Throwable> errors
     ) {
-        SnapshotCheckContext ctx = context(snpName(results), reqId);
+        String snpName = snpName(results);
+
+        SnapshotCheckContext ctx = context(snpName, reqId);
 
         // The context is not stored in the case of concurrent check of the same snapshot but the operation future is registered.
         GridFutureAdapter<SnapshotPartitionsVerifyTaskResult> clusterOpFut = clusterOpFuts.get(reqId);
@@ -316,12 +306,10 @@ public class SnapshotCheckProcess {
             return;
         }
 
-        if (ctx == null || !U.isLocalNodeCoordinator(kctx.discovery()))
+        if (ctx == null)
             return;
 
         Map<ClusterNode, List<SnapshotMetadata>> metas = new HashMap<>();
-
-        Throwable metasValidationErr;
 
         try {
             results.forEach((nodeId, nodeRes) -> {
@@ -343,17 +331,25 @@ public class SnapshotCheckProcess {
 
             if (!F.isEmpty(metasRes.exceptions()))
                 throw new IgniteSnapshotVerifyException(metasRes.exceptions());
-
-            metasValidationErr = null;
         }
-        catch (Throwable err) {
-            metasValidationErr = err;
+        catch (Exception e) {
+            contexts.remove(snpName);
+
+            if (clusterOpFut != null)
+                clusterOpFut.onDone(e);
+
+            return;
         }
 
-        phase2PartsHashes.start(reqId, new SnapshotCheckProcessRequest(ctx.req, metasValidationErr, metas));
+        List<SnapshotMetadata> locMetas = metas.get(kctx.cluster().get().localNode());
 
-        if (log.isDebugEnabled())
-            log.debug("Started partitions validation as part of the snapshot checking [req=" + ctx.req + ']');
+        ctx.locMeta = F.isEmpty(locMetas) ? null : locMetas.get(0);
+
+        if (clusterOpFut != null)
+            ctx.clusterMetas = metas;
+
+        if (U.isLocalNodeCoordinator(kctx.discovery()))
+            phase2PartsHashes.start(reqId, ctx.req);
     }
 
     /** Finds current snapshot name from the metas. */
@@ -397,8 +393,7 @@ public class SnapshotCheckProcess {
             snpPath,
             grpNames,
             0,
-            inclCstHndlrs,
-            null
+            inclCstHndlrs
         );
 
         GridFutureAdapter<SnapshotPartitionsVerifyTaskResult> clusterOpFut = new GridFutureAdapter<>();
@@ -452,8 +447,11 @@ public class SnapshotCheckProcess {
         /** Working future. Expected to be set/read in different threads but not concurrently. */
         private volatile GridFutureAdapter<CheckResultDTO> fut;
 
-        /** Collected cluster metas. */
-        @Nullable private Map<ClusterNode, List<SnapshotMetadata>> clusterMetas;
+        /** Local snapshot metadata. */
+        @Nullable SnapshotMetadata locMeta;
+
+        /** All the snapshot metadatas. */
+        @Nullable Map<ClusterNode, List<SnapshotMetadata>> clusterMetas;
 
         /** Creates operation context. */
         private SnapshotCheckContext(SnapshotCheckProcessRequest req) {

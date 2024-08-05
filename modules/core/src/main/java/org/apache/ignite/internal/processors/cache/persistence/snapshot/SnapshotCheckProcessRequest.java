@@ -18,11 +18,7 @@
 package org.apache.ignite.internal.processors.cache.persistence.snapshot;
 
 import java.util.Collection;
-import java.util.List;
-import java.util.Map;
 import java.util.UUID;
-import org.apache.ignite.cluster.ClusterNode;
-import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.S;
@@ -41,10 +37,6 @@ public class SnapshotCheckProcessRequest extends AbstractSnapshotOperationReques
     @GridToStringInclude
     private final boolean includeCustomHandlers;
 
-    /** Cluster metas to pass to the initiator with the phase 2. */
-    @GridToStringExclude
-    @Nullable private final Map<ClusterNode, List<SnapshotMetadata>> clusterMetas;
-
     /**
      * @param reqId Request ID.
      * @param snpName Snapshot name.
@@ -53,7 +45,6 @@ public class SnapshotCheckProcessRequest extends AbstractSnapshotOperationReques
      * @param grps List of cache group names.
      * @param incIdx Incremental snapshot index.
      * @param includeCustomHandlers Incremental snapshot index.
-     * @param clusterMetas Cluster snapshot metadatas.
      */
     SnapshotCheckProcessRequest(
         UUID reqId,
@@ -62,30 +53,13 @@ public class SnapshotCheckProcessRequest extends AbstractSnapshotOperationReques
         String snpPath,
         @Nullable Collection<String> grps,
         int incIdx,
-        boolean includeCustomHandlers,
-        @Nullable Map<ClusterNode, List<SnapshotMetadata>> clusterMetas
+        boolean includeCustomHandlers
     ) {
         super(reqId, null, snpName, snpPath, grps, incIdx, nodes);
 
         assert !F.isEmpty(nodes);
 
         this.includeCustomHandlers = includeCustomHandlers;
-        this.clusterMetas = clusterMetas;
-    }
-
-    /**
-     * @param req Original request to extend.
-     * @param clusterMetas Cluster snapshot meadatas.
-     */
-    SnapshotCheckProcessRequest(SnapshotCheckProcessRequest req, Throwable err, Map<ClusterNode, List<SnapshotMetadata>> clusterMetas) {
-        this(req.reqId, req.nodes, req.snpName, req.snpPath, req.grps, req.incIdx, req.includeCustomHandlers, clusterMetas);
-
-        error(err == null ? req.error() : err);
-    }
-
-    /** */
-    Map<ClusterNode, List<SnapshotMetadata>> clusterMetas() {
-        return clusterMetas;
     }
 
     /** {@inheritDoc} */
