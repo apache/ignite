@@ -17,7 +17,6 @@
 
 package org.apache.ignite.internal.client.thin;
 
-import java.net.InetSocketAddress;
 import java.util.AbstractMap.SimpleEntry;
 import java.util.ArrayList;
 import java.util.Arrays;

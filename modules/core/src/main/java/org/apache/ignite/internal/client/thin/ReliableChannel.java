@@ -1050,7 +1050,8 @@ final class ReliableChannel implements AutoCloseable {
                         return ch;
 
                     if (!ignoreThrottling && applyReconnectionThrottling())
-                        throw new ClientConnectionException("Reconnect is not allowed due to applied throttling [addresses=" + getAddresses() + ']');
+                        throw new ClientConnectionException("Reconnect is not allowed due to applied throttling" +
+                            " [addresses=" + getAddresses() + ']');
 
                     ClientChannel channel = chFactory.apply(chCfg, connMgr);
 

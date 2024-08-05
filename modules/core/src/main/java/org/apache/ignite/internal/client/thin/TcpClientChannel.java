@@ -715,7 +715,8 @@ class TcpClientChannel implements ClientChannel, ClientMessageHandler, ClientCon
 
             try {
                 if (closed())
-                    throw new ClientConnectionException("Channel is closed" + " [" + S.toString(ConnectionDescription.class, connDesc) + ']');
+                    throw new ClientConnectionException("Channel is closed" +
+                        " [" + S.toString(ConnectionDescription.class, connDesc) + ']');
 
                 fut = new ClientRequestFuture(reqId, ClientOperation.HANDSHAKE);
 
