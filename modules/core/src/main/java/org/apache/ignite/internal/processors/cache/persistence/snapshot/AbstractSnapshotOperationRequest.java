@@ -20,7 +20,6 @@ package org.apache.ignite.internal.processors.cache.persistence.snapshot;
 import java.io.Serializable;
 import java.util.Collection;
 import java.util.HashSet;
-import java.util.Objects;
 import java.util.Set;
 import java.util.UUID;
 import org.apache.ignite.internal.util.distributed.DistributedProcess;
@@ -112,19 +111,6 @@ abstract class AbstractSnapshotOperationRequest implements Serializable {
     /** @return IDs of the nodes that must be alive to complete the operation. */
     public Set<UUID> nodes() {
         return nodes;
-    }
-
-    /** {@inheritDoc} */
-    @Override public boolean equals(Object other) {
-        if (this == other)
-            return true;
-
-        if (other == null || getClass() != other.getClass())
-            return false;
-
-        AbstractSnapshotOperationRequest o = (AbstractSnapshotOperationRequest)other;
-
-        return reqId.equals(o.reqId) && snpName.equals(o.snpName) && Objects.equals(snpPath, o.snpPath) && Objects.equals(grps, o.grps);
     }
 
     /** {@inheritDoc} */

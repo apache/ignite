@@ -66,20 +66,4 @@ public class SnapshotCheckProcessRequest extends AbstractSnapshotOperationReques
     @Override public String toString() {
         return S.toString(SnapshotCheckProcessRequest.class, this, super.toString());
     }
-
-    /** {@inheritDoc} */
-    @Override public boolean equals(Object other) {
-        if (this == other)
-            return true;
-
-        if (other == null || getClass() != other.getClass())
-            return false;
-
-        if (!super.equals(other))
-            return false;
-
-        SnapshotCheckProcessRequest o = (SnapshotCheckProcessRequest)other;
-
-        return includeCustomHandlers == o.includeCustomHandlers;
-    }
 }

@@ -89,8 +89,8 @@ public class SnapshotCheckProcess {
 
     /** Expected to run in a discovery-managed thread. */
     private void onNodeLeft(UUID nodeId) {
-        Throwable err = new ClusterTopologyCheckedException("Snapshot checking stopped. " +
-            "A required node or the initiator node left the cluster [nodeId=" + nodeId + ']');
+        Throwable err = new ClusterTopologyCheckedException("Snapshot validation stopped. A required node left the cluster " +
+            "[nodeId=" + nodeId + ']');
 
         Iterator<Map.Entry<String, SnapshotCheckContext>> it = contexts.entrySet().iterator();
 
@@ -143,7 +143,7 @@ public class SnapshotCheckProcess {
             contexts.remove(ctx.req.snapshotName());
 
             if (log.isInfoEnabled())
-                log.info("Finished snapshot local validation [req=" + ctx.req + ']');
+                log.info("Finished snapshot validation [req=" + ctx.req + ']');
 
             GridFutureAdapter<SnapshotPartitionsVerifyTaskResult> clusterOpFut = clusterOpFuts.get(reqId);
 
@@ -178,11 +178,6 @@ public class SnapshotCheckProcess {
 
         ctx.fut = new GridFutureAdapter<>();
 
-        // Excludes non-baseline initiator.
-        if (!baseline(kctx.localNodeId()))
-            return new GridFinishedFuture<>();
-
-        // Local meta might be null if current node started after the snapshot creation or placement.
         if (ctx.locMeta == null)
             ctx.fut.onDone();
         else {
@@ -245,7 +240,7 @@ public class SnapshotCheckProcess {
 
         SnapshotCheckContext ctx = contexts.computeIfAbsent(req.snapshotName(), snpName -> new SnapshotCheckContext(req));
 
-        if (!ctx.req.equals(req)) {
+        if (!ctx.req.requestId().equals(req.requestId())) {
             return new GridFinishedFuture<>(new IllegalStateException("Validation of snapshot '" + req.snapshotName()
                 + "' has already started. Request=" + ctx + '.'));
         }
@@ -292,7 +287,7 @@ public class SnapshotCheckProcess {
                 contexts.remove(ctx.req.snapshotName());
 
                 if (log.isInfoEnabled())
-                    log.info("Finished snapshot local validation [req=" + ctx.req + ']');
+                    log.info("Finished snapshot validation [req=" + ctx.req + ']');
             }
 
             if (clusterOpFut != null) {
@@ -396,7 +391,7 @@ public class SnapshotCheckProcess {
             clusterOpFuts.remove(reqId);
 
             if (log.isInfoEnabled())
-                log.info("Finished snapshot checking process [req=" + req + ']');
+                log.info("Finished snapshot validation process [req=" + req + ']');
         });
 
         clusterOpFuts.put(reqId, clusterOpFut);
