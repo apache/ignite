@@ -227,7 +227,6 @@ import static org.apache.ignite.internal.processors.cache.persistence.filename.P
 import static org.apache.ignite.internal.processors.cache.persistence.metastorage.MetaStorage.METASTORAGE_CACHE_ID;
 import static org.apache.ignite.internal.processors.cache.persistence.metastorage.MetaStorage.METASTORAGE_CACHE_NAME;
 import static org.apache.ignite.internal.processors.cache.persistence.partstate.GroupPartitionId.getTypeByPartId;
-import static org.apache.ignite.internal.processors.cache.persistence.snapshot.SnapshotCheckProcess.finishClusterFutureWithErr;
 import static org.apache.ignite.internal.processors.cache.persistence.snapshot.SnapshotRestoreProcess.formatTmpDirName;
 import static org.apache.ignite.internal.processors.cache.persistence.tree.io.PageIO.T_DATA;
 import static org.apache.ignite.internal.processors.cache.persistence.tree.io.PageIO.getPageIO;
@@ -1949,8 +1948,15 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
                             res.onDone(f1.error());
                     });
             }
-            else
-                finishClusterFutureWithErr(res, f0.error(), metasRes == null ? Collections.emptyMap() : metasRes.exceptions());
+            else {
+                if (f0.error() == null)
+                    res.onDone(new IgniteSnapshotVerifyException(metasRes.exceptions()));
+                else if (f0.error() instanceof IgniteSnapshotVerifyException)
+                    res.onDone(new SnapshotPartitionsVerifyTaskResult(null,
+                        new IdleVerifyResultV2(((IgniteSnapshotVerifyException)f0.error()).exceptions())));
+                else
+                    res.onDone(f0.error());
+            }
         });
 
         if (log.isInfoEnabled()) {

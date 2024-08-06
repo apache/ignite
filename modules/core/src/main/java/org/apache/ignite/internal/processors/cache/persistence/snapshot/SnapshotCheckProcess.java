@@ -24,6 +24,7 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
@@ -183,8 +184,11 @@ public class SnapshotCheckProcess {
 
                 clusterOpFut.onDone(new SnapshotPartitionsVerifyTaskResult(ctx.clusterMetas, chkRes));
             }
-            else
-                finishClusterFutureWithErr(clusterOpFut, null, errors0);
+            else {
+                assert !errors0.isEmpty();
+
+                clusterOpFut.onDone(new IgniteSnapshotVerifyException(errors0));
+            }
         }
 
         return new GridFinishedFuture<>();
@@ -247,7 +251,7 @@ public class SnapshotCheckProcess {
      * Call snapshot all the registered validaton handlers.
      *
      * @see IgniteSnapshotManager#handlers()
-     * @see #checkCustomHandlersResults(String, Map, Map)
+     * @see #checkCustomHandlersResults(String, Map)
      */
     GridFutureAdapter<SnapshotCheckResponse> invokeCustomHandlers(
         String snpName,
@@ -409,11 +413,8 @@ public class SnapshotCheckProcess {
                     log.info("Finished snapshot validation [req=" + ctx.req + ']');
             }
 
-            if (clusterOpFut != null) {
-                Map<ClusterNode, Exception> errors0 = mapErrors(errors);
-
-                finishClusterFutureWithErr(clusterOpFut, null, errors0);
-            }
+            if (clusterOpFut != null)
+                clusterOpFut.onDone(new IgniteSnapshotVerifyException(mapErrors(errors)));
 
             return;
         }
@@ -498,7 +499,7 @@ public class SnapshotCheckProcess {
 
         UUID reqId = UUID.randomUUID();
 
-        List<UUID> requiredNodes = new ArrayList<>(F.viewReadOnly(kctx.discovery().discoCache().aliveBaselineNodes(), F.node2id()));
+        Set<UUID> requiredNodes = new HashSet<>(F.viewReadOnly(kctx.discovery().discoCache().aliveBaselineNodes(), F.node2id()));
 
         // Initiator is also a required node. It collects the final oparation result.
         requiredNodes.add(kctx.localNodeId());
@@ -527,23 +528,6 @@ public class SnapshotCheckProcess {
         phase1CheckMetas.start(req.requestId(), req);
 
         return clusterOpFut;
-    }
-
-    /** Properly sets errror to the cluster operation future. */
-    static boolean finishClusterFutureWithErr(
-        GridFutureAdapter<SnapshotPartitionsVerifyTaskResult> clusterOpFut,
-        @Nullable Throwable propogatedError,
-        @Nullable Map<ClusterNode, Exception> nodeErrors
-    ) {
-        assert propogatedError != null || !F.isEmpty(nodeErrors);
-
-        if (propogatedError == null)
-            return clusterOpFut.onDone(new IgniteSnapshotVerifyException(nodeErrors));
-        else if (propogatedError instanceof IgniteSnapshotVerifyException)
-            return clusterOpFut.onDone(new SnapshotPartitionsVerifyTaskResult(null,
-                new IdleVerifyResultV2(((IgniteSnapshotVerifyException)propogatedError).exceptions())));
-        else
-            return clusterOpFut.onDone(propogatedError);
     }
 
     /** @return {@code True} if the provided node id is id of a baseline node. */
