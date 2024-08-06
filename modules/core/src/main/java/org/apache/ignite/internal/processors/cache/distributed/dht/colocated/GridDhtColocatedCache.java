@@ -743,7 +743,7 @@ public class GridDhtColocatedCache<K, V> extends GridDhtTransactionalCacheAdapte
 
                             KeyCacheObject key0 = entry != null ? entry.key() : cacheKey;
 
-                            req.addKey(key0, ctx);
+                            req.addKey(key0);
                         }
                         else
                             locKeys.add(cacheKey);
@@ -803,96 +803,91 @@ public class GridDhtColocatedCache<K, V> extends GridDhtTransactionalCacheAdapte
         if (keys.isEmpty())
             return;
 
-        try {
-            int keyCnt = -1;
+        int keyCnt = -1;
 
-            Map<ClusterNode, GridNearUnlockRequest> map = null;
+        Map<ClusterNode, GridNearUnlockRequest> map = null;
 
-            Collection<KeyCacheObject> locKeys = new LinkedList<>();
+        Collection<KeyCacheObject> locKeys = new LinkedList<>();
 
-            for (KeyCacheObject key : keys) {
-                IgniteTxKey txKey = ctx.txKey(key);
+        for (KeyCacheObject key : keys) {
+            IgniteTxKey txKey = ctx.txKey(key);
 
-                GridCacheMvccCandidate lock = ctx.mvcc().removeExplicitLock(threadId, txKey, ver);
+            GridCacheMvccCandidate lock = ctx.mvcc().removeExplicitLock(threadId, txKey, ver);
 
-                if (lock != null) {
-                    AffinityTopologyVersion topVer = lock.topologyVersion();
+            if (lock != null) {
+                AffinityTopologyVersion topVer = lock.topologyVersion();
 
-                    if (map == null) {
-                        Collection<ClusterNode> affNodes = CU.affinityNodes(ctx, topVer);
+                if (map == null) {
+                    Collection<ClusterNode> affNodes = CU.affinityNodes(ctx, topVer);
 
-                        keyCnt = (int)Math.ceil((double)keys.size() / affNodes.size());
+                    keyCnt = (int)Math.ceil((double)keys.size() / affNodes.size());
 
-                        map = U.newHashMap(affNodes.size());
-                    }
-
-                    ClusterNode primary = ctx.affinity().primaryByKey(key, topVer);
-
-                    if (primary == null) {
-                        if (log.isDebugEnabled())
-                            log.debug("Failed to remove locks (all partition nodes left the grid).");
-
-                        continue;
-                    }
-
-                    if (!primary.isLocal()) {
-                        // Send request to remove from remote nodes.
-                        GridNearUnlockRequest req = map.get(primary);
-
-                        if (req == null) {
-                            map.put(primary, req = new GridNearUnlockRequest(ctx.cacheId(), keyCnt,
-                                ctx.deploymentEnabled()));
-
-                            req.version(ver);
-                        }
-
-                        GridCacheEntryEx entry = peekEx(key);
-
-                        KeyCacheObject key0 = entry != null ? entry.key() : key;
-
-                        req.addKey(key0, ctx);
-                    }
-                    else
-                        locKeys.add(key);
+                    map = U.newHashMap(affNodes.size());
                 }
-            }
 
-            if (!locKeys.isEmpty())
-                removeLocks(ctx.localNodeId(), ver, locKeys, true);
+                ClusterNode primary = ctx.affinity().primaryByKey(key, topVer);
 
-            if (map == null || map.isEmpty())
-                return;
+                if (primary == null) {
+                    if (log.isDebugEnabled())
+                        log.debug("Failed to remove locks (all partition nodes left the grid).");
 
-            IgnitePair<Collection<GridCacheVersion>> versPair = ctx.tm().versions(ver);
-
-            Collection<GridCacheVersion> committed = versPair.get1();
-            Collection<GridCacheVersion> rolledback = versPair.get2();
-
-            for (Map.Entry<ClusterNode, GridNearUnlockRequest> mapping : map.entrySet()) {
-                ClusterNode n = mapping.getKey();
-
-                GridDistributedUnlockRequest req = mapping.getValue();
-
-                if (!F.isEmpty(req.keys())) {
-                    req.completedVersions(committed, rolledback);
-
-                    try {
-                        // We don't wait for reply to this message.
-                        ctx.io().send(n, req, ctx.ioPolicy());
-                    }
-                    catch (ClusterTopologyCheckedException e) {
-                        if (log.isDebugEnabled())
-                            log.debug("Failed to send unlock request (node has left the grid) [keys=" + req.keys() +
-                                ", n=" + n + ", e=" + e + ']');
-                    }
-                    catch (IgniteCheckedException e) {
-                        U.error(log, "Failed to send unlock request [keys=" + req.keys() + ", n=" + n + ']', e);
-                    }
+                    continue;
                 }
+
+                if (!primary.isLocal()) {
+                    // Send request to remove from remote nodes.
+                    GridNearUnlockRequest req = map.get(primary);
+
+                    if (req == null) {
+                        map.put(primary, req = new GridNearUnlockRequest(ctx.cacheId(), keyCnt,
+                            ctx.deploymentEnabled()));
+
+                        req.version(ver);
+                    }
+
+                    GridCacheEntryEx entry = peekEx(key);
+
+                    KeyCacheObject key0 = entry != null ? entry.key() : key;
+
+                    req.addKey(key0);
+                }
+                else
+                    locKeys.add(key);
             }
         }
-        catch (IgniteCheckedException ex) {
-            U.error(log, "Failed to unlock the lock for keys: " + keys, ex);
+
+        if (!locKeys.isEmpty())
+            removeLocks(ctx.localNodeId(), ver, locKeys, true);
+
+        if (map == null || map.isEmpty())
+            return;
+
+        IgnitePair<Collection<GridCacheVersion>> versPair = ctx.tm().versions(ver);
+
+        Collection<GridCacheVersion> committed = versPair.get1();
+        Collection<GridCacheVersion> rolledback = versPair.get2();
+
+        for (Map.Entry<ClusterNode, GridNearUnlockRequest> mapping : map.entrySet()) {
+            ClusterNode n = mapping.getKey();
+
+            GridDistributedUnlockRequest req = mapping.getValue();
+
+            if (!F.isEmpty(req.keys())) {
+                req.completedVersions(committed, rolledback);
+
+                try {
+                    // We don't wait for reply to this message.
+                    ctx.io().send(n, req, ctx.ioPolicy());
+                }
+                catch (ClusterTopologyCheckedException e) {
+                    if (log.isDebugEnabled())
+                        log.debug("Failed to send unlock request (node has left the grid) [keys=" + req.keys() +
+                            ", n=" + n + ", e=" + e + ']');
+                }
+                catch (IgniteCheckedException e) {
+                    U.error(log, "Failed to send unlock request [keys=" + req.keys() + ", n=" + n + ']', e);
+                }
+            }
         }
     }
 

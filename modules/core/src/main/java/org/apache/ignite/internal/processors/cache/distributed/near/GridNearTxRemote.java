@@ -83,7 +83,7 @@ public class GridNearTxRemote extends GridDistributedTxRemoteAdapter {
      * @throws IgniteCheckedException If unmarshalling failed.
      */
     public GridNearTxRemote(
-        GridCacheSharedContext ctx,
+        GridCacheSharedContext<?, ?> ctx,
         AffinityTopologyVersion topVer,
         ClassLoader ldr,
         UUID nodeId,
@@ -162,7 +162,7 @@ public class GridNearTxRemote extends GridDistributedTxRemoteAdapter {
      * @param txLbl Transaction label.
      */
     public GridNearTxRemote(
-        GridCacheSharedContext ctx,
+        GridCacheSharedContext<?, ?> ctx,
         AffinityTopologyVersion topVer,
         UUID nodeId,
         UUID nearNodeId,
@@ -237,7 +237,7 @@ public class GridNearTxRemote extends GridDistributedTxRemoteAdapter {
     }
 
     /** {@inheritDoc} */
-    @Override public void addActiveCache(GridCacheContext cacheCtx, boolean recovery) {
+    @Override public void addActiveCache(GridCacheContext<?, ?> cacheCtx, boolean recovery) {
         throw new UnsupportedOperationException("Near tx doesn't track active caches.");
     }
 
@@ -348,7 +348,7 @@ public class GridNearTxRemote extends GridDistributedTxRemoteAdapter {
      * @return {@code True} if entry has been enlisted.
      */
     public boolean addEntry(
-        GridCacheContext cacheCtx,
+        GridCacheContext<?, ?> cacheCtx,
         IgniteTxKey key,
         GridCacheOperation op,
         CacheObject val,
