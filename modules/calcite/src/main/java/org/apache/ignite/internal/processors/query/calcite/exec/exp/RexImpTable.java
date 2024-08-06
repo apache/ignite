@@ -236,6 +236,7 @@ import static org.apache.ignite.internal.processors.query.calcite.sql.fun.Ignite
 import static org.apache.ignite.internal.processors.query.calcite.sql.fun.IgniteOwnSqlOperatorTable.QUERY_ENGINE;
 import static org.apache.ignite.internal.processors.query.calcite.sql.fun.IgniteOwnSqlOperatorTable.SYSTEM_RANGE;
 import static org.apache.ignite.internal.processors.query.calcite.sql.fun.IgniteOwnSqlOperatorTable.TYPEOF;
+import static org.apache.ignite.internal.processors.query.calcite.sql.fun.IgniteOwnSqlOperatorTable.USER_ATTRIBUTE;
 
 /**
  * Contains implementations of Rex operators as Java code.
@@ -533,6 +534,7 @@ public class RexImpTable {
         map.put(TYPEOF, sysFunctionImplementor);
         map.put(QUERY_ENGINE, sysFunctionImplementor);
         map.put(NULL_BOUND, sysFunctionImplementor);
+        map.put(USER_ATTRIBUTE, sysFunctionImplementor);
 
         defineMethod(LEAST2, IgniteMethod.LEAST2.method(), NullPolicy.ALL);
         defineMethod(GREATEST2, IgniteMethod.GREATEST2.method(), NullPolicy.ALL);
@@ -1703,6 +1705,8 @@ public class RexImpTable {
                 return Expressions.constant(CalciteQueryEngineConfiguration.ENGINE_NAME);
             else if (op == NULL_BOUND)
                 return Expressions.call(root, IgniteMethod.CONTEXT_NULL_BOUND.method());
+            else if (op == USER_ATTRIBUTE)
+                return Expressions.call(root, IgniteMethod.USER_ATTRIBUTE.method(), argValueList);
 
             throw new AssertionError("unknown function " + op);
         }

@@ -2964,6 +2964,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
             keepBinary,
             failOnMultipleStmts,
             GridCacheQueryType.SQL_FIELDS,
+            null,
             null
         );
     }
@@ -2995,7 +2996,8 @@ public class GridQueryProcessor extends GridProcessorAdapter {
             keepBinary,
             failOnMultipleStmts,
             GridCacheQueryType.SQL_FIELDS,
-            cancel
+            cancel,
+            null
         );
     }
 
@@ -3019,7 +3021,8 @@ public class GridQueryProcessor extends GridProcessorAdapter {
         final boolean keepBinary,
         final boolean failOnMultipleStmts,
         GridCacheQueryType qryType,
-        @Nullable final GridQueryCancel cancel
+        @Nullable final GridQueryCancel cancel,
+        final Map<String, String> userAttrs
     ) {
         checkxModuleEnabled();
 
@@ -3050,7 +3053,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
 
                             if (qry instanceof SqlFieldsQueryEx && ((SqlFieldsQueryEx)qry).isBatched()) {
                                 res = qryEngine.queryBatched(
-                                    QueryContext.of(qry, cliCtx, cancel, qryProps),
+                                    QueryContext.of(qry, cliCtx, cancel, qryProps, userAttrs),
                                     schemaName,
                                     qry.getSql(),
                                     ((SqlFieldsQueryEx)qry).batchedArguments()
@@ -3058,7 +3061,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
                             }
                             else {
                                 res = qryEngine.query(
-                                    QueryContext.of(qry, cliCtx, cancel, qryProps),
+                                    QueryContext.of(qry, cliCtx, cancel, qryProps, userAttrs),
                                     schemaName,
                                     qry.getSql(),
                                     qry.getArgs() != null ? qry.getArgs() : X.EMPTY_OBJECT_ARRAY
@@ -3314,6 +3317,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
             keepBinary,
             true,
             GridCacheQueryType.SQL,
+            null,
             null
         ).get(0);
 
