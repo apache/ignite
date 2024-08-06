@@ -2084,6 +2084,17 @@ public class IgniteH2Indexing implements GridQueryIndexing {
         IndexingQueryFilter filters,
         GridQueryCancel cancel
     ) throws IgniteCheckedException {
+        SqlPlanHistoryTracker planHistTracker = ctx.query().runningQueryManager().planHistoryTracker();
+
+        planHistTracker.addPlan(
+            dml.plan().plan(),
+            qryDesc.sql(),
+            qryDesc.schemaName(),
+            loc,
+            U.currentTimeMillis(),
+            SqlPlanHistoryTracker.SqlEngine.H2
+        );
+
         Object[] errKeys = null;
 
         long items = 0;
@@ -2154,17 +2165,6 @@ public class IgniteH2Indexing implements GridQueryIndexing {
         GridQueryCancel cancel
     ) throws IgniteCheckedException {
         UpdatePlan plan = dml.plan();
-
-        SqlPlanHistoryTracker planHistTracker = ctx.query().runningQueryManager().planHistoryTracker();
-
-        planHistTracker.addPlan(
-            plan.plan(),
-            qryDesc.sql(),
-            qryDesc.schemaName(),
-            loc,
-            U.currentTimeMillis(),
-            SqlPlanHistoryTracker.SqlEngine.H2
-        );
 
         UpdateResult fastUpdateRes = plan.processFast(qryParams.arguments());
 
