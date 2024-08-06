@@ -409,11 +409,18 @@ public class SnapshotChecker {
         Set<Integer> grpIds,
         SnapshotMetadata meta,
         boolean forCreation,
+        boolean procPartitionsData,
         boolean skipHash
     ) throws IgniteCheckedException {
-        boolean pouchHoleEnabled = isPunchHoleEnabled(meta, snpDir, grpIds);
-
         IgniteBiTuple<Map<Integer, File>, Set<File>> grpAndPartFiles = preparePartitions(meta, grpIds, snpDir);
+
+        if (!procPartitionsData) {
+            log.info("Snapshot data integrity check skipped [snpName=" + meta.snapshotName() + ']');
+
+            return Collections.emptyMap();
+        }
+
+        boolean pouchHoleEnabled = isPunchHoleEnabled(meta, snpDir, grpIds);
 
         Map<PartitionKeyV2, PartitionHashRecordV2> res = new ConcurrentHashMap<>();
         ThreadLocal<ByteBuffer> buff = ThreadLocal.withInitial(() -> ByteBuffer.allocateDirect(meta.pageSize())
@@ -617,17 +624,11 @@ public class SnapshotChecker {
                 ).collect(Collectors.toSet());
             }
 
-            if (!checkParts) {
-                log.info("Snapshot data integrity check skipped [snpName=" + meta.snapshotName() + ']');
-
-                return Collections.emptyMap();
-            }
-
             if (meta.dump())
-                return checkDumpFiles(snpDir, meta, grps, locNode.consistentId(), skipPartsHashes);
+                return checkDumpFiles(snpDir, meta, grps, locNode.consistentId(), checkParts, skipPartsHashes);
 
             try {
-                return checkSnapshotFiles(snpDir, grps, meta, forCreation, skipPartsHashes);
+                return checkSnapshotFiles(snpDir, grps, meta, forCreation, checkParts, skipPartsHashes);
             }
             catch (IgniteCheckedException e) {
                 throw new IgniteException("Failed to check partitions of snapshot '" + meta.snapshotName() + "'.", e);
@@ -660,13 +661,20 @@ public class SnapshotChecker {
         SnapshotMetadata meta,
         Collection<Integer> grpIds,
         Object nodeCstId,
+        boolean procPartitionsData,
         boolean skipHash
     ) {
+        IgniteBiTuple<Map<Integer, File>, Set<File>> grpAndPartFiles = preparePartitions(meta, grpIds, snpDir);
+
+        if (!procPartitionsData) {
+            log.info("Dump data integrity check skipped [dmpName=" + meta.snapshotName() + ']');
+
+            return Collections.emptyMap();
+        }
+
         EncryptionSpi encSpi = meta.encryptionKey() != null ? encryptionSpi : null;
 
         try (Dump dump = new Dump(snpDir, U.maskForFileName(nodeCstId.toString()), true, true, encSpi, log)) {
-            IgniteBiTuple<Map<Integer, File>, Set<File>> grpAndPartFiles = preparePartitions(meta, grpIds, dump.dumpDirectory());
-
             Collection<PartitionHashRecordV2> partitionHashRecordV2s = U.doInParallel(
                 executor,
                 grpAndPartFiles.get2(),

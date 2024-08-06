@@ -1905,7 +1905,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
         }
 
         if (check && incIdx < 1)
-            return checkSnapshotByDistributedProcess(name, snpPath, grps, includeCustomHandlers);
+            return checkSnpProc.start(name, snpPath, grps, includeCustomHandlers);
 
         GridFutureAdapter<SnapshotPartitionsVerifyTaskResult> res = new GridFutureAdapter<>();
 
@@ -3117,18 +3117,6 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
     /** @return Current incremental snapshot ID. */
     public @Nullable UUID incrementalSnapshotId() {
         return incSnpId;
-    }
-
-    /** */
-    private IgniteInternalFuture<SnapshotPartitionsVerifyTaskResult> checkSnapshotByDistributedProcess(
-        String snpName,
-        @Nullable String snpPath,
-        @Nullable Collection<String> grps,
-        boolean includeCustomHandlers
-    ) {
-        assert !F.isEmpty(snpName);
-
-        return checkSnpProc.start(snpName, snpPath, grps, includeCustomHandlers);
     }
 
     /** Snapshot operation handlers. */

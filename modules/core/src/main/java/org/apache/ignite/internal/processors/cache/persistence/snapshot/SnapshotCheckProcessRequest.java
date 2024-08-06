@@ -33,18 +33,24 @@ public class SnapshotCheckProcessRequest extends AbstractSnapshotOperationReques
     /** Serial version uid. */
     private static final long serialVersionUID = 0L;
 
-    /** */
-    @GridToStringInclude
-    private final boolean includeCustomHandlers;
+    /**
+     * If {@code true}, all the registered {@link IgniteSnapshotManager#handlers()} of type {@link SnapshotHandlerType#RESTORE}
+     * are invoked. Otherwise, only snapshot metadatas and partition hashes are validated.
+     */
+    @GridToStringInclude final boolean allRestoreHandlers;
 
     /**
+     * Creates snapshot check process request.
+     *
      * @param reqId Request ID.
      * @param snpName Snapshot name.
      * @param nodes Baseline node IDs that must be alive to complete the operation..
      * @param snpPath Snapshot directory path.
      * @param grps List of cache group names.
      * @param incIdx Incremental snapshot index.
-     * @param includeCustomHandlers Incremental snapshot index.
+     * @param allRestoreHandlers If {@code true}, all the registered {@link IgniteSnapshotManager#handlers()} of type
+     *                           {@link SnapshotHandlerType#RESTORE} are invoked. Otherwise, only snapshot metadatas and
+     *                           partition hashes are validated.
      */
     SnapshotCheckProcessRequest(
         UUID reqId,
@@ -53,13 +59,13 @@ public class SnapshotCheckProcessRequest extends AbstractSnapshotOperationReques
         String snpPath,
         @Nullable Collection<String> grps,
         int incIdx,
-        boolean includeCustomHandlers
+        boolean allRestoreHandlers
     ) {
         super(reqId, null, snpName, snpPath, grps, incIdx, nodes);
 
         assert !F.isEmpty(nodes);
 
-        this.includeCustomHandlers = includeCustomHandlers;
+        this.allRestoreHandlers = allRestoreHandlers;
     }
 
     /** {@inheritDoc} */
