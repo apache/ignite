@@ -1660,6 +1660,39 @@ public class TcpDiscoverySpi extends IgniteSpiAdapter implements IgniteDiscovery
     }
 
     /**
+     * Writing to a socket might fail due to a broken connection. It might happen due to a recipient has closed the connection
+     * before, on SSL handshake, and doesn't accept new messages. In a such case it's possible to check the original error
+     * by reading the socket input stream.
+     *
+     * @param sock Socket to check.
+     * @param writeErr Error on writing a message to the socket.
+     * @return {@code SSLException} in case of SSL error, or {@code null} otherwise.
+     */
+    private @Nullable SSLException checkSslException(Socket sock, Exception writeErr) {
+        if (!sslEnable)
+            return null;
+
+        SSLException sslEx = X.cause(writeErr, SSLException.class);
+
+        if (sslEx != null)
+            return sslEx;
+
+        try {
+            // Set timeout to 1ms, in this case of closed socket it should return fast.
+            if (X.hasCause(writeErr, SocketException.class))
+                readReceipt(sock, 1);
+        }
+        catch (SSLException sslErr) {
+            return sslErr;
+        }
+        catch (Exception err) {
+            // Skip.
+        }
+
+        return null;
+    }
+
+    /**
      * Creates socket binding it to a local host address. This operation is not blocking.
      *
      * @return Created socket.
@@ -1716,7 +1749,9 @@ public class TcpDiscoverySpi extends IgniteSpiAdapter implements IgniteDiscovery
             out.flush();
         }
         catch (IOException e) {
-            err = e;
+            SSLException sslEx = checkSslException(sock, e);
+
+            err = sslEx == null ? e : sslEx;
         }
         finally {
             boolean cancelled = obj.cancel();
@@ -1824,7 +1859,9 @@ public class TcpDiscoverySpi extends IgniteSpiAdapter implements IgniteDiscovery
             U.marshal(marshaller(), msg, out);
         }
         catch (IgniteCheckedException e) {
-            err = e;
+            SSLException sslEx = checkSslException(sock, e);
+
+            err = sslEx == null ? e : new IgniteCheckedException(sslEx);
         }
         finally {
             boolean cancelled = obj.cancel();
@@ -1869,7 +1906,9 @@ public class TcpDiscoverySpi extends IgniteSpiAdapter implements IgniteDiscovery
             out.flush();
         }
         catch (IOException e) {
-            err = e;
+            SSLException sslEx = checkSslException(sock, e);
+
+            err = sslEx == null ? e : sslEx;
         }
         finally {
             boolean cancelled = obj.cancel();

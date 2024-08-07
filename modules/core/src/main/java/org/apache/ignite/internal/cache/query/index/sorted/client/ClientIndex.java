@@ -17,17 +17,37 @@
 
 package org.apache.ignite.internal.cache.query.index.sorted.client;
 
+import java.util.UUID;
 import org.apache.ignite.internal.cache.query.index.Index;
 import org.apache.ignite.internal.cache.query.index.IndexDefinition;
-import org.apache.ignite.internal.cache.query.index.IndexFactory;
-import org.apache.ignite.internal.processors.cache.GridCacheContext;
 
 /**
- * Factory for client index.
+ * We need indexes on non-affinity nodes. This index does not contain any data.
  */
-public class ClientIndexFactory implements IndexFactory {
+public class ClientIndex extends AbstractClientIndex implements Index {
+    /** Index id. */
+    private final UUID id = UUID.randomUUID();
+
+    /** Index definition. */
+    private final IndexDefinition def;
+
+    /** */
+    public ClientIndex(IndexDefinition def) {
+        this.def = def;
+    }
+
     /** {@inheritDoc} */
-    @Override public Index createIndex(GridCacheContext<?, ?> cctx, IndexDefinition def) {
-        return new ClientIndex(def);
+    @Override public UUID id() {
+        return id;
+    }
+
+    /** {@inheritDoc} */
+    @Override public String name() {
+        return def.idxName().idxName();
+    }
+
+    /** {@inheritDoc} */
+    @Override public IndexDefinition indexDefinition() {
+        return def;
     }
 }

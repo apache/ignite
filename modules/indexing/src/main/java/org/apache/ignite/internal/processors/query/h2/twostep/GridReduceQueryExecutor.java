@@ -419,6 +419,8 @@ public class GridReduceQueryExecutor {
 
                 runs.put(qryReqId, r);
 
+                ReduceH2QueryInfo qryInfo = null;
+
                 try {
                     cancel.add(() -> send(nodes, new GridQueryCancelRequest(qryReqId), null, true));
 
@@ -509,8 +511,10 @@ public class GridReduceQueryExecutor {
 
                         H2Utils.bindParameters(stmt, F.asList(rdc.parameters(params)));
 
-                        ReduceH2QueryInfo qryInfo = new ReduceH2QueryInfo(stmt, qry.originalSql(),
+                        qryInfo = new ReduceH2QueryInfo(stmt, qry.originalSql(),
                             ctx.localNodeId(), qryId, qryReqId);
+
+                        h2.heavyQueriesTracker().startTracking(qryInfo);
 
                         if (ctx.performanceStatistics().enabled()) {
                             ctx.performanceStatistics().queryProperty(
@@ -522,12 +526,18 @@ public class GridReduceQueryExecutor {
                             );
                         }
 
-                        ResultSet res = h2.executeSqlQueryWithTimer(stmt,
-                            conn,
-                            rdc.query(),
-                            timeoutMillis,
-                            cancel,
-                            dataPageScanEnabled,
+                        H2PooledConnection conn0 = conn;
+
+                        ResultSet res = h2.executeWithResumableTimeTracking(
+                            () -> h2.executeSqlQueryWithTimer(
+                                stmt,
+                                conn0,
+                                rdc.query(),
+                                timeoutMillis,
+                                cancel,
+                                dataPageScanEnabled,
+                                null
+                            ),
                             qryInfo
                         );
 
@@ -548,6 +558,9 @@ public class GridReduceQueryExecutor {
                 }
                 catch (IgniteCheckedException | RuntimeException e) {
                     release = true;
+
+                    if (qryInfo != null)
+                        h2.heavyQueriesTracker().stopTracking(qryInfo, e);
 
                     if (e instanceof CacheException) {
                         if (QueryUtils.wasCancelled(e))

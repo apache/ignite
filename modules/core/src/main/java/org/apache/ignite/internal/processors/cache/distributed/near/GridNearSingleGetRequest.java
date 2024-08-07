@@ -251,23 +251,23 @@ public class GridNearSingleGetRequest extends GridCacheIdMessage implements Grid
     }
 
     /** {@inheritDoc} */
-    @Override public void prepareMarshal(GridCacheSharedContext ctx) throws IgniteCheckedException {
+    @Override public void prepareMarshal(GridCacheSharedContext<?, ?> ctx) throws IgniteCheckedException {
         super.prepareMarshal(ctx);
 
         assert key != null;
 
-        GridCacheContext cctx = ctx.cacheContext(cacheId);
+        GridCacheContext<?, ?> cctx = ctx.cacheContext(cacheId);
 
         prepareMarshalCacheObject(key, cctx);
     }
 
     /** {@inheritDoc} */
-    @Override public void finishUnmarshal(GridCacheSharedContext ctx, ClassLoader ldr) throws IgniteCheckedException {
+    @Override public void finishUnmarshal(GridCacheSharedContext<?, ?> ctx, ClassLoader ldr) throws IgniteCheckedException {
         super.finishUnmarshal(ctx, ldr);
 
         assert key != null;
 
-        GridCacheContext cctx = ctx.cacheContext(cacheId);
+        GridCacheContext<?, ?> cctx = ctx.cacheContext(cacheId);
 
         key.finishUnmarshal(cctx.cacheObjectContext(), ldr);
     }

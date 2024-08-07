@@ -91,7 +91,7 @@ public class GridDhtLockResponse extends GridDistributedLockResponse {
      * @param futId Future ID.
      * @param miniId Mini future ID.
      * @param err Error.
-     * @param addDepInfo
+     * @param addDepInfo Deployment info.
      */
     public GridDhtLockResponse(int cacheId, GridCacheVersion lockVer, IgniteUuid futId, IgniteUuid miniId,
         Throwable err, boolean addDepInfo) {
@@ -137,7 +137,7 @@ public class GridDhtLockResponse extends GridDistributedLockResponse {
      * @return Invalid partitions.
      */
     public Collection<Integer> invalidPartitions() {
-        return invalidParts == null ? Collections.<Integer>emptySet() : invalidParts;
+        return invalidParts == null ? Collections.emptySet() : invalidParts;
     }
 
     /**
@@ -158,15 +158,14 @@ public class GridDhtLockResponse extends GridDistributedLockResponse {
      * @return Collection of preload entries.
      */
     public Collection<GridCacheEntryInfo> preloadEntries() {
-        return preloadEntries == null ? Collections.<GridCacheEntryInfo>emptyList() : preloadEntries;
+        return preloadEntries == null ? Collections.emptyList() : preloadEntries;
     }
 
-    /** {@inheritDoc}
-     * @param ctx*/
-    @Override public void prepareMarshal(GridCacheSharedContext ctx) throws IgniteCheckedException {
+    /** {@inheritDoc} */
+    @Override public void prepareMarshal(GridCacheSharedContext<?, ?> ctx) throws IgniteCheckedException {
         super.prepareMarshal(ctx);
 
-        GridCacheContext cctx = ctx.cacheContext(cacheId);
+        GridCacheContext<?, ?> cctx = ctx.cacheContext(cacheId);
 
         if (nearEvicted != null) {
             for (IgniteTxKey key : nearEvicted)
@@ -178,10 +177,10 @@ public class GridDhtLockResponse extends GridDistributedLockResponse {
     }
 
     /** {@inheritDoc} */
-    @Override public void finishUnmarshal(GridCacheSharedContext ctx, ClassLoader ldr) throws IgniteCheckedException {
+    @Override public void finishUnmarshal(GridCacheSharedContext<?, ?> ctx, ClassLoader ldr) throws IgniteCheckedException {
         super.finishUnmarshal(ctx, ldr);
 
-        GridCacheContext cctx = ctx.cacheContext(cacheId);
+        GridCacheContext<?, ?> cctx = ctx.cacheContext(cacheId);
 
         if (nearEvicted != null) {
             for (IgniteTxKey key : nearEvicted)

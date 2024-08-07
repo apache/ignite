@@ -120,6 +120,9 @@ public abstract class H2ResultSetIterator<T> extends GridIteratorAdapter<T> impl
     /** */
     private final H2QueryInfo qryInfo;
 
+    /** */
+    final IgniteH2Indexing h2;
+
     /**
      * @param data Data array.
      * @param log Logger.
@@ -141,6 +144,7 @@ public abstract class H2ResultSetIterator<T> extends GridIteratorAdapter<T> impl
         this.data = data;
         this.tracing = tracing;
         this.qryInfo = qryInfo;
+        this.h2 = h2;
 
         try {
             res = (ResultInterface)RESULT_FIELD.get(data);
@@ -325,6 +329,9 @@ public abstract class H2ResultSetIterator<T> extends GridIteratorAdapter<T> impl
 
         lockTables();
 
+        if (qryInfo != null)
+            h2.heavyQueriesTracker().stopTracking(qryInfo, null);
+
         try {
             resultSetChecker.checkOnClose();
 
@@ -391,7 +398,7 @@ public abstract class H2ResultSetIterator<T> extends GridIteratorAdapter<T> impl
         if (closed)
             return false;
 
-        return hasRow || (hasRow = fetchNext());
+        return hasRow || (hasRow = h2.executeWithResumableTimeTracking(this::fetchNext, qryInfo));
     }
 
     /** {@inheritDoc} */

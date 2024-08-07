@@ -37,6 +37,10 @@ public class CacheCreateCommandArg extends IgniteDataTransferObject {
     private String springxmlconfig;
 
     /** */
+    @Argument(description = "Optional flag to skip existing caches", optional = true)
+    private boolean skipExisting;
+
+    /** */
     private String fileContent;
 
     /** */
@@ -59,12 +63,14 @@ public class CacheCreateCommandArg extends IgniteDataTransferObject {
     @Override protected void writeExternalData(ObjectOutput out) throws IOException {
         U.writeString(out, springxmlconfig);
         U.writeString(out, fileContent);
+        out.writeBoolean(skipExisting);
     }
 
     /** {@inheritDoc} */
     @Override protected void readExternalData(byte protoVer, ObjectInput in) throws IOException, ClassNotFoundException {
         springxmlconfig = U.readString(in);
         fileContent = U.readString(in);
+        skipExisting = in.readBoolean();
     }
 
     /** */
@@ -76,6 +82,16 @@ public class CacheCreateCommandArg extends IgniteDataTransferObject {
     public void springxmlconfig(String springxmlconfig) {
         this.springxmlconfig = springxmlconfig;
         readFile();
+    }
+
+    /** */
+    public boolean skipExisting() {
+        return skipExisting;
+    }
+
+    /** */
+    public void skipExisting(boolean skipExisting) {
+        this.skipExisting = skipExisting;
     }
 
     /** */

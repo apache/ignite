@@ -24,12 +24,16 @@ import java.util.UUID;
 import java.util.stream.Collectors;
 import com.google.common.collect.ImmutableSet;
 import org.apache.calcite.runtime.CalciteException;
+import org.apache.calcite.tools.FrameworkConfig;
+import org.apache.calcite.tools.Frameworks;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.cache.QueryEntity;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.internal.processors.query.IgniteSQLException;
 import org.apache.ignite.internal.util.typedef.F;
 import org.junit.Test;
+
+import static org.apache.ignite.internal.processors.query.calcite.CalciteQueryProcessor.FRAMEWORK_CONFIG;
 
 /**
  * Test SQL data types.
@@ -465,6 +469,25 @@ public class DataTypesTest extends AbstractBasicIntegrationTest {
             .returns((byte)6, (short)6, 6, 6L, BigDecimal.valueOf(6), 6f, 6d)
             .returns((byte)7, (short)7, 7, 7L, BigDecimal.valueOf(7), 7f, 7d)
             .check();
+    }
+
+    /** */
+    @Test
+    public void testFunctionArgsToNumericImplicitConversion() {
+        assertQuery("select decode(?, 0, 0, 1, 1.0)").withParams(0).returns(new BigDecimal("0.0")).check();
+        assertQuery("select decode(?, 0, 0, 1, 1.0)").withParams(1).returns(new BigDecimal("1.0")).check();
+        assertQuery("select decode(?, 0, 0, 1, 1.000)").withParams(0).returns(new BigDecimal("0.000")).check();
+        assertQuery("select decode(?, 0, 0, 1, 1.000)").withParams(1).returns(new BigDecimal("1.000")).check();
+        assertQuery("select decode(?, 0, 0.0, 1, 1.000)").withParams(0).returns(new BigDecimal("0.000")).check();
+        assertQuery("select decode(?, 0, 0.000, 1, 1.0)").withParams(1).returns(new BigDecimal("1.000")).check();
+
+        // With callRewrite==true function COALESCE is rewritten to CASE and CoalesceImplementor can't be checked.
+        FrameworkConfig frameworkCfg = Frameworks.newConfigBuilder(FRAMEWORK_CONFIG)
+            .sqlValidatorConfig(FRAMEWORK_CONFIG.getSqlValidatorConfig().withCallRewrite(false))
+            .build();
+
+        assertQuery("select coalesce(?, 1.000)").withParams(0).withFrameworkConfig(frameworkCfg)
+            .returns(new BigDecimal("0.000")).check();
     }
 
     /** */

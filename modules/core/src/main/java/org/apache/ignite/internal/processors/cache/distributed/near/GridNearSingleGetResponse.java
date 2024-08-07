@@ -96,7 +96,7 @@ public class GridNearSingleGetResponse extends GridCacheIdMessage implements Gri
         this.addDepInfo = addDepInfo;
 
         if (invalidPartitions)
-            flags = (byte)(flags | INVALID_PART_FLAG_MASK);
+            flags |= INVALID_PART_FLAG_MASK;
     }
 
     /**
@@ -136,7 +136,7 @@ public class GridNearSingleGetResponse extends GridCacheIdMessage implements Gri
      *
      */
     public void setContainsValue() {
-        flags = (byte)(flags | CONTAINS_VAL_FLAG_MASK);
+        flags |= CONTAINS_VAL_FLAG_MASK;
     }
 
     /**
@@ -154,11 +154,11 @@ public class GridNearSingleGetResponse extends GridCacheIdMessage implements Gri
     }
 
     /** {@inheritDoc} */
-    @Override public void prepareMarshal(GridCacheSharedContext ctx) throws IgniteCheckedException {
+    @Override public void prepareMarshal(GridCacheSharedContext<?, ?> ctx) throws IgniteCheckedException {
         super.prepareMarshal(ctx);
 
         if (res != null) {
-            GridCacheContext cctx = ctx.cacheContext(cacheId);
+            GridCacheContext<?, ?> cctx = ctx.cacheContext(cacheId);
 
             if (res instanceof CacheObject)
                 prepareMarshalCacheObject((CacheObject)res, cctx);
@@ -173,11 +173,11 @@ public class GridNearSingleGetResponse extends GridCacheIdMessage implements Gri
     }
 
     /** {@inheritDoc} */
-    @Override public void finishUnmarshal(GridCacheSharedContext ctx, ClassLoader ldr) throws IgniteCheckedException {
+    @Override public void finishUnmarshal(GridCacheSharedContext<?, ?> ctx, ClassLoader ldr) throws IgniteCheckedException {
         super.finishUnmarshal(ctx, ldr);
 
         if (res != null) {
-            GridCacheContext cctx = ctx.cacheContext(cacheId());
+            GridCacheContext<?, ?> cctx = ctx.cacheContext(cacheId());
 
             if (res instanceof CacheObject)
                 ((CacheObject)res).finishUnmarshal(cctx.cacheObjectContext(), ldr);

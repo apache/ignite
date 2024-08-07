@@ -111,7 +111,7 @@ public class IgniteStatisticsManagerImpl implements IgniteStatisticsManager {
     private volatile boolean started;
 
     /** Schedule to process obsolescence statistics. */
-    private GridTimeoutProcessor.CancelableTask obsolescenceSchedule;
+    private volatile GridTimeoutProcessor.CancelableTask obsolescenceSchedule;
 
     /** Exchange listener. */
     private final PartitionsExchangeAware exchAwareLsnr = new PartitionsExchangeAware() {
@@ -236,14 +236,21 @@ public class IgniteStatisticsManagerImpl implements IgniteStatisticsManager {
 
         tryStart();
 
-        if (serverNode) {
-            // Use mgmt pool to work with statistics repository in busy lock to schedule some tasks.
-            obsolescenceSchedule = ctx.timeout().schedule(() -> {
-                obsolescenceBusyExecutor.execute(() -> processObsolescence());
-            }, OBSOLESCENCE_INTERVAL * 1000, OBSOLESCENCE_INTERVAL * 1000);
-        }
+        if (serverNode)
+            scheduleObsolescence(OBSOLESCENCE_INTERVAL);
 
         ctx.cache().context().exchange().registerExchangeAwareComponent(exchAwareLsnr);
+    }
+
+    /** */
+    void scheduleObsolescence(int seconds) {
+        assert seconds >= 1;
+
+        if (obsolescenceSchedule != null)
+            obsolescenceSchedule.close();
+
+        obsolescenceSchedule = ctx.timeout().schedule(() -> obsolescenceBusyExecutor.execute(this::processObsolescence),
+            seconds * 1000, seconds * 1000);
     }
 
     /**

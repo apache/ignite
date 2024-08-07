@@ -17,10 +17,12 @@
 
 package org.apache.ignite.sqltests;
 
+import org.apache.ignite.IgniteException;
 import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.testframework.GridTestUtils;
 import org.junit.Test;
 
 /**
@@ -28,7 +30,13 @@ import org.junit.Test;
  */
 public class ReplicatedSqlCustomPartitionsTest extends ReplicatedSqlTest {
     /** Test partitions count. */
-    private static final int NUM_OF_PARTITIONS = 509;
+    static final int NUM_OF_PARTITIONS = 509;
+
+    /** */
+    static final String DEP_PART_TAB_DIFF = "DepartmentPartDiff";
+
+    /** */
+    static final String DEP_PART_TAB_DIFF_NF = "DepartmentPartDiffNf";
 
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
@@ -36,6 +44,11 @@ public class ReplicatedSqlCustomPartitionsTest extends ReplicatedSqlTest {
             .setCacheConfiguration(
                 new CacheConfiguration("partitioned" + NUM_OF_PARTITIONS + "*")
                     .setAffinity(new RendezvousAffinityFunction(false, NUM_OF_PARTITIONS)),
+                new CacheConfiguration("partitioned" + NUM_OF_PARTITIONS + "_DIFF*")
+                    .setAffinity(new RendezvousAffinityFunction(false, NUM_OF_PARTITIONS + 1)),
+                new CacheConfiguration("partitioned" + NUM_OF_PARTITIONS + "_DIFF_NF*")
+                    .setAffinity(new RendezvousAffinityFunction(false, NUM_OF_PARTITIONS))
+                        .setNodeFilter(clusterNode -> true),
                 new CacheConfiguration("replicated" + NUM_OF_PARTITIONS + "*")
                     .setCacheMode(CacheMode.REPLICATED)
                     .setAffinity(new RendezvousAffinityFunction(false, NUM_OF_PARTITIONS))
@@ -55,6 +68,14 @@ public class ReplicatedSqlCustomPartitionsTest extends ReplicatedSqlTest {
         createDepartmentTable(DEP_PART_TAB, "template=partitioned" + NUM_OF_PARTITIONS);
 
         fillDepartmentTable(DEP_PART_TAB);
+
+        createDepartmentTable(DEP_PART_TAB_DIFF, "template=partitioned" + NUM_OF_PARTITIONS + "_DIFF");
+
+        fillDepartmentTable(DEP_PART_TAB_DIFF);
+
+        createDepartmentTable(DEP_PART_TAB_DIFF_NF, "template=partitioned" + NUM_OF_PARTITIONS + "_DIFF_NF");
+
+        fillDepartmentTable(DEP_PART_TAB_DIFF_NF);
     }
 
     /**
@@ -72,5 +93,43 @@ public class ReplicatedSqlCustomPartitionsTest extends ReplicatedSqlTest {
     @Test
     public void testRightJoinPartitionedReplicated() {
         checkRightJoinDepartmentEmployee(DEP_PART_TAB);
+    }
+
+    /**
+     * Check LEFT JOIN with collocated data of replicated and partitioned tables with different affinity.
+     * This test relies on having the same number of partitions in replicated and partitioned caches
+     */
+    @Test
+    public void testLeftJoinReplicatedPartitionedDiffPartitionsErr() {
+        GridTestUtils.assertThrows(log, () -> checkLeftJoinEmployeeDepartment(DEP_PART_TAB_DIFF), IgniteException.class,
+                "only with the same partitions number configuration");
+    }
+
+    /**
+     * Check RIGHT JOIN with collocated data of partitioned and replicated tables with different affinity.
+     */
+    @Test
+    public void testRightJoinPartitionedReplicatedDiffPartitionsErr() {
+        GridTestUtils.assertThrows(log, () -> checkRightJoinDepartmentEmployee(DEP_PART_TAB_DIFF), IgniteException.class,
+                "only with the same partitions number configuration");
+    }
+
+    /**
+     * Check LEFT JOIN with collocated data of replicated and partitioned tables with different node filter.
+     * This test relies on having the same number of partitions in replicated and partitioned caches
+     */
+    @Test
+    public void testLeftJoinReplicatedPartitionedDiffNodeFilterErr() {
+        GridTestUtils.assertThrows(log, () -> checkLeftJoinEmployeeDepartment(DEP_PART_TAB_DIFF_NF), IgniteException.class,
+                "due to different node filters configuration");
+    }
+
+    /**
+     * Check RIGHT JOIN with collocated data of partitioned and replicated tables with different node filter.
+     */
+    @Test
+    public void testRightJoinPartitionedReplicatedDiffNodeFilterErr() {
+        GridTestUtils.assertThrows(log, () -> checkRightJoinDepartmentEmployee(DEP_PART_TAB_DIFF_NF), IgniteException.class,
+                "due to different node filters configuration");
     }
 }

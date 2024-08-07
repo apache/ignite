@@ -47,7 +47,7 @@ public class TxLocksResponse extends GridCacheMessage {
     /** Locks for near txKeys of near transactions. */
     @GridToStringInclude
     @GridDirectTransient
-    private Map<IgniteTxKey, TxLockList> nearTxKeyLocks = new HashMap<>();
+    private final Map<IgniteTxKey, TxLockList> nearTxKeyLocks = new HashMap<>();
 
     /** Remote keys involved into transactions. Doesn't include near keys. */
     @GridToStringInclude
@@ -153,7 +153,7 @@ public class TxLocksResponse extends GridCacheMessage {
     }
 
     /** {@inheritDoc} */
-    @Override public void prepareMarshal(GridCacheSharedContext ctx) throws IgniteCheckedException {
+    @Override public void prepareMarshal(GridCacheSharedContext<?, ?> ctx) throws IgniteCheckedException {
         super.prepareMarshal(ctx);
 
         if (nearTxKeyLocks != null && !nearTxKeyLocks.isEmpty()) {
@@ -190,7 +190,7 @@ public class TxLocksResponse extends GridCacheMessage {
     }
 
     /** {@inheritDoc} */
-    @Override public void finishUnmarshal(GridCacheSharedContext ctx, ClassLoader ldr) throws IgniteCheckedException {
+    @Override public void finishUnmarshal(GridCacheSharedContext<?, ?> ctx, ClassLoader ldr) throws IgniteCheckedException {
         try {
             super.finishUnmarshal(ctx, ldr);
 
@@ -324,10 +324,5 @@ public class TxLocksResponse extends GridCacheMessage {
     /** {@inheritDoc} */
     @Override public byte fieldsCount() {
         return 7;
-    }
-
-    /** {@inheritDoc} */
-    @Override public void onAckReceived() {
-        // No-op.
     }
 }

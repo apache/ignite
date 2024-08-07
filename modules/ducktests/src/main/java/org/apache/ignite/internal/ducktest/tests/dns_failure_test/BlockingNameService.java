@@ -91,7 +91,7 @@ public class BlockingNameService implements NameServiceHandler {
 
         if ("1.8".equals(jdkVer))
             installJdk8();
-        else if ("11".equals(jdkVer))
+        else if ("11".equals(jdkVer) || "17".equals(jdkVer))
             installJdk11();
         else
             throw new IllegalArgumentException("Unsupported JDK version: " + jdkVer);

@@ -1300,7 +1300,7 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter implements Ig
     }
 
     /** {@inheritDoc} */
-    @Override public final void addActiveCache(GridCacheContext cacheCtx, boolean recovery) throws IgniteCheckedException {
+    @Override public final void addActiveCache(GridCacheContext<?, ?> cacheCtx, boolean recovery) throws IgniteCheckedException {
         txState.addActiveCache(cacheCtx, recovery, this);
     }
 

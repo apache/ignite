@@ -119,6 +119,7 @@ import org.apache.ignite.internal.util.lang.GridCloseableIterator;
 import org.apache.ignite.internal.util.lang.GridPlainRunnable;
 import org.apache.ignite.internal.util.lang.IgniteInClosure2X;
 import org.apache.ignite.internal.util.lang.IgniteSingletonIterator;
+import org.apache.ignite.internal.util.lang.IgniteThrowableSupplier;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -414,6 +415,8 @@ public class IgniteH2Indexing implements GridQueryIndexing {
             @Override public GridCloseableIterator<List<?>> iterator() throws IgniteCheckedException {
                 H2PooledConnection conn = connections().connection(qryDesc.schemaName());
 
+                H2QueryInfo qryInfo = null;
+
                 try (TraceSurroundings ignored = MTC.support(ctx.tracing().create(SQL_ITER_OPEN, MTC.span()))) {
                     H2Utils.setupConnection(conn, qctx,
                         qryDesc.distributedJoins(), qryDesc.enforceJoinOrder(), qryParams.lazy());
@@ -436,8 +439,10 @@ public class IgniteH2Indexing implements GridQueryIndexing {
 
                     H2Utils.bindParameters(stmt, F.asList(params));
 
-                    H2QueryInfo qryInfo = new H2QueryInfo(H2QueryInfo.QueryType.LOCAL, stmt, qry,
+                    qryInfo = new H2QueryInfo(H2QueryInfo.QueryType.LOCAL, stmt, qry,
                         ctx.localNodeId(), qryId);
+
+                    heavyQryTracker.startTracking(qryInfo);
 
                     if (ctx.performanceStatistics().enabled()) {
                         ctx.performanceStatistics().queryProperty(
@@ -449,13 +454,16 @@ public class IgniteH2Indexing implements GridQueryIndexing {
                         );
                     }
 
-                    ResultSet rs = executeSqlQueryWithTimer(
-                        stmt,
-                        conn,
-                        qry,
-                        timeout,
-                        cancel,
-                        qryParams.dataPageScanEnabled(),
+                    ResultSet rs = executeWithResumableTimeTracking(
+                        () -> executeSqlQueryWithTimer(
+                            stmt,
+                            conn,
+                            qry,
+                            timeout,
+                            cancel,
+                            qryParams.dataPageScanEnabled(),
+                            null
+                        ),
                         qryInfo
                     );
 
@@ -471,6 +479,9 @@ public class IgniteH2Indexing implements GridQueryIndexing {
                 }
                 catch (IgniteCheckedException | RuntimeException | Error e) {
                     conn.close();
+
+                    if (qryInfo != null)
+                        heavyQryTracker.stopTracking(qryInfo, e);
 
                     throw e;
                 }
@@ -2258,5 +2269,26 @@ public class IgniteH2Indexing implements GridQueryIndexing {
      */
     public DistributedIndexingConfiguration distributedConfiguration() {
         return distrCfg;
+    }
+
+    /**
+     * Resumes time tracking before the task (if needed) and suspends time tracking after the task is finished.
+     *
+     * @param task Query/fetch to execute.
+     * @param qryInfo Query info.
+     * @throws IgniteCheckedException If failed.
+     */
+    public <T> T executeWithResumableTimeTracking(
+        IgniteThrowableSupplier<T> task,
+        final H2QueryInfo qryInfo
+    ) throws IgniteCheckedException {
+        qryInfo.resumeTracking();
+
+        try {
+            return task.get();
+        }
+        finally {
+            qryInfo.suspendTracking();
+        }
     }
 }

@@ -270,7 +270,7 @@ public class GridNearTxPrepareRequest extends GridDistributedTxPrepareRequest {
         Collection<IgniteTxEntry> cp = new ArrayList<>(c.size());
 
         for (IgniteTxEntry e : c) {
-            GridCacheContext cacheCtx = e.context();
+            GridCacheContext<?, ?> cacheCtx = e.context();
 
             // Clone only if it is a near cache.
             if (cacheCtx.isNear())
