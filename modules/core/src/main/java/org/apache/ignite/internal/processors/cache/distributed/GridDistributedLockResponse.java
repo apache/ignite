@@ -181,13 +181,13 @@ public class GridDistributedLockResponse extends GridDistributedBaseMessage {
     }
 
     /** {@inheritDoc} */
-    @Override public IgniteLogger messageLogger(GridCacheSharedContext ctx) {
+    @Override public IgniteLogger messageLogger(GridCacheSharedContext<?, ?> ctx) {
         return ctx.txLockMessageLogger();
     }
 
     /** {@inheritDoc}
      * @param ctx*/
-    @Override public void prepareMarshal(GridCacheSharedContext ctx) throws IgniteCheckedException {
+    @Override public void prepareMarshal(GridCacheSharedContext<?, ?> ctx) throws IgniteCheckedException {
         super.prepareMarshal(ctx);
 
         prepareMarshalCacheObjects(vals, ctx.cacheContext(cacheId));
@@ -197,7 +197,7 @@ public class GridDistributedLockResponse extends GridDistributedBaseMessage {
     }
 
     /** {@inheritDoc} */
-    @Override public void finishUnmarshal(GridCacheSharedContext ctx, ClassLoader ldr) throws IgniteCheckedException {
+    @Override public void finishUnmarshal(GridCacheSharedContext<?, ?> ctx, ClassLoader ldr) throws IgniteCheckedException {
         super.finishUnmarshal(ctx, ldr);
 
         finishUnmarshalCacheObjects(vals, ctx.cacheContext(cacheId), ldr);

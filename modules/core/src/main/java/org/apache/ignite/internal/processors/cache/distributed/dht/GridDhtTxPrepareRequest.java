@@ -223,7 +223,7 @@ public class GridDhtTxPrepareRequest extends GridDistributedTxPrepareRequest {
      * @return Near writes.
      */
     public Collection<IgniteTxEntry> nearWrites() {
-        return nearWrites == null ? Collections.<IgniteTxEntry>emptyList() : nearWrites;
+        return nearWrites == null ? Collections.emptyList() : nearWrites;
     }
 
     /**
@@ -324,7 +324,7 @@ public class GridDhtTxPrepareRequest extends GridDistributedTxPrepareRequest {
      *
      * @param ctx
      */
-    @Override public void prepareMarshal(GridCacheSharedContext ctx) throws IgniteCheckedException {
+    @Override public void prepareMarshal(GridCacheSharedContext<?, ?> ctx) throws IgniteCheckedException {
         super.prepareMarshal(ctx);
 
         if (owned != null && ownedKeys == null) {
@@ -333,7 +333,7 @@ public class GridDhtTxPrepareRequest extends GridDistributedTxPrepareRequest {
             ownedVals = owned.values();
 
             for (IgniteTxKey key: ownedKeys) {
-                GridCacheContext cctx = ctx.cacheContext(key.cacheId());
+                GridCacheContext<?, ?> cctx = ctx.cacheContext(key.cacheId());
 
                 key.prepareMarshal(cctx);
 
@@ -347,7 +347,7 @@ public class GridDhtTxPrepareRequest extends GridDistributedTxPrepareRequest {
     }
 
     /** {@inheritDoc} */
-    @Override public void finishUnmarshal(GridCacheSharedContext ctx, ClassLoader ldr) throws IgniteCheckedException {
+    @Override public void finishUnmarshal(GridCacheSharedContext<?, ?> ctx, ClassLoader ldr) throws IgniteCheckedException {
         super.finishUnmarshal(ctx, ldr);
 
         if (ownedKeys != null) {

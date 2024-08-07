@@ -36,6 +36,27 @@ The following image illustrates the procedure of executing a colocated join. A c
 
 image::images/collocated_joins.png[]
 
+=== Limitations
+
+Collocation joins have the following known limitations:
+
+==== OUTER JOIN and REPLICATED Tables
+
+There is currently a limitation in Ignite's support of `OUTER JOIN`. Given a `REPLICATED` table `R`
+and a `PARTITIONED` table `P`, the following queries may not work correctly out-of-the-box and require special handling:
+
+- `SELECT * FROM R LEFT JOIN P ON R.X = P.X`
+- `SELECT * FROM P RIGHT JOIN R ON P.X = R.X`
+
+To work around the limitation, the following setup is required:
+
+- `P` and `R` need to have equal affinity functions (specifically, the same number of partitions);
+- Caches for both `P` and `R` need to have equal or default node filter;
+- The join columns `R.X` and `P.X` must be the affinity keys of both tables;
+note that unlike most cases this operation requires the `REPLICATED` table to have a specific affinity key;
+- Non-collocated joins must be turned off (`setDistributedJoins(false)`).
+
+If all of the above is true, then the JOIN can be performed correctly.
 
 == Non-colocated Joins
 

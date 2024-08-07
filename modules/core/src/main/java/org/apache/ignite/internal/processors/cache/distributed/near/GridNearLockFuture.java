@@ -1121,9 +1121,8 @@ public final class GridNearLockFuture extends GridCacheCompoundIdentityFuture<Bo
                                         req.addKeyBytes(
                                             key,
                                             retval && dhtVer == null,
-                                            dhtVer,
-                                            // Include DHT version to match remote DHT entry.
-                                            cctx);
+                                            dhtVer); // Include DHT version to match remote DHT entry.
+
                                     }
 
                                     if (cand.reentry())
@@ -1215,7 +1214,7 @@ public final class GridNearLockFuture extends GridCacheCompoundIdentityFuture<Bo
         final ClusterNode node = map.node();
 
         if (filter != null && filter.length != 0)
-            req.filter(filter, cctx);
+            req.filter(filter);
 
         if (node.isLocal()) {
             req.miniId(-1);
