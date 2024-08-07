@@ -75,6 +75,7 @@ import org.apache.ignite.internal.processors.cluster.baseline.autoadjust.Baselin
 import org.apache.ignite.internal.processors.cluster.baseline.autoadjust.BaselineTopologyUpdater;
 import org.apache.ignite.internal.processors.configuration.distributed.DistributePropertyListener;
 import org.apache.ignite.internal.processors.security.SecurityUtils;
+import org.apache.ignite.internal.processors.subscription.GridInternalSubscriptionProcessor;
 import org.apache.ignite.internal.util.future.GridFinishedFuture;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.future.IgniteFinishedFutureImpl;
@@ -1437,11 +1438,10 @@ public class GridClusterStateProcessor extends GridProcessorAdapter implements I
                 boolean client = ctx.clientNode();
 
                 try {
-                    ctx.dataStructures().onActivate(ctx);
+                    GridInternalSubscriptionProcessor isp = ctx.internalSubscriptionProcessor();
 
-                    ctx.task().onActivate(ctx);
-
-                    ctx.encryption().onActivate(ctx);
+                    for (IgniteChangeGlobalStateSupport lsnr : isp.getGlobalStateListeners())
+                        lsnr.onActivate(ctx);
 
                     distributedBaselineConfiguration.onActivate();
 
