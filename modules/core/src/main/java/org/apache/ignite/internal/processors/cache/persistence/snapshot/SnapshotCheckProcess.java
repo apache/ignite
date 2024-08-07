@@ -18,9 +18,7 @@
 package org.apache.ignite.internal.processors.cache.persistence.snapshot;
 
 import java.io.File;
-import java.io.IOException;
 import java.io.Serializable;
-import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
@@ -30,10 +28,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
-import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
-import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.cluster.ClusterNode;
@@ -166,7 +162,7 @@ public class SnapshotCheckProcess {
 
                 Map<ClusterNode, Map<String, SnapshotHandlerResult<?>>> cstRes = mapCustomHandlersResults(results, ctx.req.nodes());
 
-                checkCustomHandlersResults(ctx.req.snapshotName(), cstRes);
+                kctx.cache().context().snapshotMgr().checker().checkCustomHandlersResults(ctx.req.snapshotName(), cstRes);
 
                 clusterOpFut.onDone(new SnapshotPartitionsVerifyTaskResult(ctx.clusterMetas, null));
             }
@@ -202,106 +198,34 @@ public class SnapshotCheckProcess {
         if (!req.nodes().contains(kctx.localNodeId()) || (ctx = context(null, req.requestId())) == null || ctx.locMeta == null)
             return new GridFinishedFuture<>();
 
-        File snpDir = kctx.cache().context().snapshotMgr().snapshotLocalDir(req.snapshotName(), req.snapshotPath());
+        IgniteSnapshotManager snpMgr = kctx.cache().context().snapshotMgr();
 
-        ctx.fut = processPartitions(ctx.locMeta, snpDir, req.groups(), req.allRestoreHandlers, true);
+        if (req.allRestoreHandlers) {
+            ctx.fut = new GridFutureAdapter<>();
+
+            snpMgr.checker().invokeCustomHandlers(ctx.locMeta, req.snapshotPath(), req.groups(), true)
+                .whenComplete((res, err) -> {
+                    if (err != null)
+                        ctx.fut.onDone(err);
+                    else
+                        ctx.fut.onDone(new SnapshotCheckResponse(res));
+                });
+        }
+        else {
+            File snpDir = snpMgr.snapshotLocalDir(req.snapshotName(), req.snapshotPath());
+
+            GridFutureAdapter<SnapshotCheckResponse> fut = new GridFutureAdapter<>();
+
+            snpMgr.checker().checkPartitions(ctx.locMeta, snpDir, req.groups(), false, true, false)
+                .whenComplete((res, err) -> {
+                    if (err != null)
+                        fut.onDone(err);
+                    else
+                        fut.onDone(new SnapshotCheckResponse(res));
+                });
+        }
 
         return ctx.fut;
-    }
-
-    /** */
-    private GridFutureAdapter<SnapshotCheckResponse> processPartitions(
-        SnapshotMetadata meta,
-        File snpDir,
-        @Nullable Collection<String> groups,
-        boolean allRestoreHandlers,
-        boolean check
-    ) {
-        GridFutureAdapter<SnapshotCheckResponse> fut = new GridFutureAdapter<>();
-
-        CompletableFuture<? extends Map<?, ?>> workingFut;
-
-        IgniteSnapshotManager snpMgr = kctx.cache().context().snapshotMgr();
-
-        if (allRestoreHandlers) {
-            workingFut = CompletableFuture.supplyAsync(() -> {
-                try {
-                    return snpMgr.handlers().invokeAll(SnapshotHandlerType.RESTORE,
-                        new SnapshotHandlerContext(meta, groups, kctx.cluster().get().localNode(), snpDir, false, check));
-                }
-                catch (IgniteCheckedException e) {
-                    throw new IgniteException("Failed to call custom snapshot validation handlers.", e);
-                }
-            });
-        }
-        else
-            workingFut = snpMgr.checker().checkPartitions(meta, snpDir, groups, false, check, false);
-
-        workingFut.whenComplete((res, err) -> {
-            if (err != null)
-                fut.onDone(err);
-            else
-                fut.onDone(new SnapshotCheckResponse(res));
-        });
-
-        return fut;
-    }
-
-    /**
-     * Call snapshot all the registered validaton handlers.
-     *
-     * @see IgniteSnapshotManager#handlers()
-     * @see #checkCustomHandlersResults(String, Map)
-     */
-    GridFutureAdapter<SnapshotCheckResponse> invokeCustomHandlers(
-        String snpName,
-        String consId,
-        @Nullable String snpPath,
-        @Nullable Collection<String> groups,
-        boolean check
-    ) throws IgniteCheckedException, IOException {
-        IgniteSnapshotManager snpMgr = kctx.cache().context().snapshotMgr();
-
-        File snpDir = snpMgr.snapshotLocalDir(snpName, snpPath);
-
-        SnapshotMetadata meta = snpMgr.readSnapshotMetadata(snpDir, consId);
-
-        return processPartitions(meta, snpDir, groups, true, check);
-    }
-
-    /**
-     * Checks results of the internal and custon snapshot validation handlres. Throws exception if a validation error occurs.
-     *
-     * @see #invokeCustomHandlers(String, String, String, Collection, boolean)
-     */
-    void checkCustomHandlersResults(
-        String snpName,
-        Map<ClusterNode, Map<String, SnapshotHandlerResult<?>>> results
-    ) throws Exception {
-        Map<String, List<SnapshotHandlerResult<?>>> clusterResults = new HashMap<>();
-        Collection<UUID> execNodes = new ArrayList<>(results.size());
-
-        for (Map.Entry<ClusterNode, Map<String, SnapshotHandlerResult<?>>> nodeRes : results.entrySet()) {
-            ClusterNode node = nodeRes.getKey();
-
-            // Depending on the job mapping, we can get several different results from one node.
-            execNodes.add(node.id());
-
-            assert nodeRes.getValue() != null : "At least the default snapshot restore handler should have been executed ";
-
-            for (Map.Entry<String, SnapshotHandlerResult<?>> nodeHndRes : nodeRes.getValue().entrySet()) {
-                String hndName = nodeHndRes.getKey();
-                SnapshotHandlerResult<?> hndRes = nodeHndRes.getValue();
-
-                if (hndRes.error() != null)
-                    throw hndRes.error();
-
-                clusterResults.computeIfAbsent(hndName, v -> new ArrayList<>()).add(hndRes);
-            }
-        }
-
-        kctx.cache().context().snapshotMgr().handlers().completeAll(SnapshotHandlerType.RESTORE, snpName, clusterResults,
-            execNodes, wrns -> {});
     }
 
     /** */
@@ -310,7 +234,8 @@ public class SnapshotCheckProcess {
             return Collections.emptyMap();
 
         return errors.entrySet().stream()
-            .collect(Collectors.toMap(e -> kctx.cluster().get().node(e.getKey()), e -> asException(e.getValue())));
+            .collect(Collectors.toMap(e -> kctx.cluster().get().node(e.getKey()),
+                e -> e.getValue() instanceof Exception ? (Exception)e.getValue() : new IgniteException(e.getValue())));
     }
 
     /** */
@@ -405,26 +330,15 @@ public class SnapshotCheckProcess {
         // The context is not stored in the case of concurrent check of the same snapshot but the operation future is registered.
         GridFutureAdapter<SnapshotPartitionsVerifyTaskResult> clusterOpFut = clusterOpFuts.get(reqId);
 
-        if (!F.isEmpty(errors)) {
-            if (ctx != null) {
-                contexts.remove(ctx.req.snapshotName());
-
-                if (log.isInfoEnabled())
-                    log.info("Finished snapshot validation [req=" + ctx.req + ']');
-            }
-
-            if (clusterOpFut != null)
-                clusterOpFut.onDone(new IgniteSnapshotVerifyException(mapErrors(errors)));
-
-            return;
-        }
-
-        if (ctx == null)
-            return;
-
-        Map<ClusterNode, List<SnapshotMetadata>> metas = new HashMap<>();
-
         try {
+            if (!F.isEmpty(errors))
+                throw new IgniteSnapshotVerifyException(mapErrors(errors));
+
+            if (ctx == null)
+                return;
+
+            Map<ClusterNode, List<SnapshotMetadata>> metas = new HashMap<>();
+
             results.forEach((nodeId, nodeRes) -> {
                 // A node might be not required. It gives null result. But a required node might have invalid empty result
                 // which must be validated.
@@ -440,25 +354,28 @@ public class SnapshotCheckProcess {
 
             if (!F.isEmpty(metasCheck))
                 throw new IgniteSnapshotVerifyException(metasCheck);
+
+            List<SnapshotMetadata> locMetas = metas.get(kctx.cluster().get().localNode());
+
+            ctx.locMeta = F.isEmpty(locMetas) ? null : locMetas.get(0);
+
+            if (clusterOpFut != null)
+                ctx.clusterMetas = metas;
+
+            if (U.isLocalNodeCoordinator(kctx.discovery()))
+                phase2PartsHashes.start(reqId, ctx.req);
         }
         catch (Exception e) {
-            contexts.remove(snpName);
+            if (ctx != null) {
+                contexts.remove(ctx.req.snapshotName());
+
+                if (log.isInfoEnabled())
+                    log.info("Finished snapshot validation [req=" + ctx.req + ']');
+            }
 
             if (clusterOpFut != null)
                 clusterOpFut.onDone(e);
-
-            return;
         }
-
-        List<SnapshotMetadata> locMetas = metas.get(kctx.cluster().get().localNode());
-
-        ctx.locMeta = F.isEmpty(locMetas) ? null : locMetas.get(0);
-
-        if (clusterOpFut != null)
-            ctx.clusterMetas = metas;
-
-        if (U.isLocalNodeCoordinator(kctx.discovery()))
-            phase2PartsHashes.start(reqId, ctx.req);
     }
 
     /** Finds current snapshot name from the metas. */
@@ -533,11 +450,6 @@ public class SnapshotCheckProcess {
     /** @return {@code True} if the provided node id is id of a baseline node. */
     private boolean baseline(UUID nodeId) {
         return CU.baselineNode(kctx.cluster().get().node(nodeId), kctx.state().clusterState());
-    }
-
-    /** Converts failure to an exception if it is not. */
-    private static Exception asException(Throwable th) {
-        return th instanceof Exception ? (Exception)th : new IgniteException(th);
     }
 
     /** Operation context. */

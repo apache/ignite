@@ -17,12 +17,10 @@
 
 package org.apache.ignite.internal.processors.cache.persistence.snapshot;
 
-import java.io.IOException;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.compute.ComputeJobResult;
@@ -56,7 +54,7 @@ public class SnapshotHandlerRestoreTask extends AbstractSnapshotVerificationTask
         });
 
         try {
-            ignite.context().cache().context().snapshotMgr().checkSnpProc.checkCustomHandlersResults(snpName, resMap);
+            ignite.context().cache().context().snapshotMgr().checker().checkCustomHandlersResults(snpName, resMap);
         }
         catch (Exception e) {
             log.warning("The snapshot operation will be aborted due to a handler error [snapshot=" + snpName + "].", e);
@@ -90,14 +88,14 @@ public class SnapshotHandlerRestoreTask extends AbstractSnapshotVerificationTask
         }
 
         /** {@inheritDoc} */
-        @Override public Map<String, SnapshotHandlerResult<?>> execute() {
+        @Override public Map<String, SnapshotHandlerResult<Object>> execute() {
             try {
                 IgniteSnapshotManager snpMgr = ignite.context().cache().context().snapshotMgr();
 
-                return snpMgr.checkSnpProc.invokeCustomHandlers(snpName, consId, snpPath, rqGrps, check).get().customHandlersResults();
+                return snpMgr.checker().invokeCustomHandlers(snpName, consId, snpPath, rqGrps, check).get();
             }
-            catch (IgniteCheckedException | IOException e) {
-                throw new IgniteException(e);
+            catch (Exception e) {
+                throw new IgniteException("Filed to invoke all the snapshot validation handlers.", e);
             }
         }
     }

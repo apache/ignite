@@ -34,6 +34,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutorService;
@@ -403,6 +404,55 @@ public class SnapshotChecker {
         return new IgniteBiTuple<>(grpDirs, partFiles);
     }
 
+    /**
+     * Calls all the registered Absence validaton handlers. Reads snapshot metadata.
+     *
+     * @see IgniteSnapshotManager#handlers()
+     */
+    public CompletableFuture<Map<String, SnapshotHandlerResult<Object>>> invokeCustomHandlers(
+        String snpName,
+        String consId,
+        @Nullable String snpPath,
+        @Nullable Collection<String> groups,
+        boolean check
+    ) throws IgniteCheckedException, IOException {
+        IgniteSnapshotManager snpMgr = kctx.cache().context().snapshotMgr();
+
+        File snpDir = snpMgr.snapshotLocalDir(snpName, snpPath);
+
+        SnapshotMetadata meta = snpMgr.readSnapshotMetadata(snpDir, consId);
+
+        return invokeCustomHandlers(meta, snpPath, groups, check);
+    }
+
+    /**
+     *  Reads snapshot metadata. Requires snapshot meta to work.
+     *
+     * @see IgniteSnapshotManager#handlers()
+     */
+    public CompletableFuture<Map<String, SnapshotHandlerResult<Object>>> invokeCustomHandlers(
+        SnapshotMetadata meta,
+        @Nullable String snpPath,
+        @Nullable Collection<String> groups,
+        boolean check
+    ) {
+        IgniteSnapshotManager snpMgr = kctx.cache().context().snapshotMgr();
+
+        File snpDir = snpMgr.snapshotLocalDir(meta.snapshotName(), snpPath);
+
+        // The handlers use or may use the same snapshot pool. If it configured with 1 thread, launching waiting task in
+        // the same pool might block it.
+        return CompletableFuture.supplyAsync(() -> {
+            try {
+                return snpMgr.handlers().invokeAll(SnapshotHandlerType.RESTORE,
+                    new SnapshotHandlerContext(meta, groups, kctx.cluster().get().localNode(), snpDir, false, check));
+            }
+            catch (IgniteCheckedException e) {
+                throw new IgniteException("Failed to call custom snapshot validation handlers.", e);
+            }
+        });
+    }
+
     /** */
     public Map<PartitionKeyV2, PartitionHashRecordV2> checkSnapshotFiles(
         File snpDir,
@@ -604,7 +654,7 @@ public class SnapshotChecker {
         boolean checkParts,
         boolean skipPartsHashes
     ) {
-        // Run result awaitinh in the default executor to avoid blocking if the executor has just one thread.
+        // Await in the default executor to avoid blocking the snapshot executor if it has just one thread.
         return CompletableFuture.supplyAsync(() -> {
             if (!snpDir.exists())
                 throw new IllegalStateException("Snapshot directory doesn't exists: " + snpDir);
@@ -634,6 +684,41 @@ public class SnapshotChecker {
                 throw new IgniteException("Failed to check partitions of snapshot '" + meta.snapshotName() + "'.", e);
             }
         });
+    }
+
+    /**
+     * Checks results of the internal and custon snapshot validation handlres. Throws exception if a validation error occurs.
+     *
+     * @see #invokeCustomHandlers(String, String, String, Collection, boolean)
+     */
+    public void checkCustomHandlersResults(
+        String snpName,
+        Map<ClusterNode, Map<String, SnapshotHandlerResult<?>>> results
+    ) throws Exception {
+        Map<String, List<SnapshotHandlerResult<?>>> clusterResults = new HashMap<>();
+        Collection<UUID> execNodes = new ArrayList<>(results.size());
+
+        for (Map.Entry<ClusterNode, Map<String, SnapshotHandlerResult<?>>> nodeRes : results.entrySet()) {
+            ClusterNode node = nodeRes.getKey();
+
+            // Depending on the job mapping, we can get several different results from one node.
+            execNodes.add(node.id());
+
+            assert nodeRes.getValue() != null : "At least the default snapshot restore handler should have been executed ";
+
+            for (Map.Entry<String, SnapshotHandlerResult<?>> nodeHndRes : nodeRes.getValue().entrySet()) {
+                String hndName = nodeHndRes.getKey();
+                SnapshotHandlerResult<?> hndRes = nodeHndRes.getValue();
+
+                if (hndRes.error() != null)
+                    throw hndRes.error();
+
+                clusterResults.computeIfAbsent(hndName, v -> new ArrayList<>()).add(hndRes);
+            }
+        }
+
+        kctx.cache().context().snapshotMgr().handlers().completeAll(SnapshotHandlerType.RESTORE, snpName, clusterResults,
+            execNodes, wrns -> {});
     }
 
     /** */
