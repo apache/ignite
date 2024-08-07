@@ -21,7 +21,6 @@ import java.util.EnumSet;
 import java.util.HashSet;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicReference;
-
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.configuration.QueryEngineConfiguration;
@@ -34,11 +33,9 @@ import org.apache.ignite.internal.processors.odbc.ClientListenerProtocolVersion;
 import org.apache.ignite.internal.processors.odbc.ClientListenerRequestHandler;
 import org.apache.ignite.internal.processors.odbc.ClientListenerResponse;
 import org.apache.ignite.internal.processors.odbc.ClientListenerResponseSender;
-import org.apache.ignite.internal.processors.query.NestedTxMode;
 import org.apache.ignite.internal.processors.query.QueryEngineConfigurationEx;
 import org.apache.ignite.internal.util.GridSpinBusyLock;
 import org.apache.ignite.internal.util.nio.GridNioSession;
-import org.apache.ignite.internal.util.typedef.F;
 
 import static org.apache.ignite.internal.jdbc.thin.JdbcThinUtils.nullableBooleanFromByte;
 import static org.apache.ignite.internal.processors.odbc.ClientListenerNioListener.JDBC_CLIENT;
@@ -74,8 +71,11 @@ public class JdbcConnectionContext extends ClientListenerAbstractConnectionConte
     /** Version 2.13.0: adds choose of query engine support. */
     static final ClientListenerProtocolVersion VER_2_13_0 = ClientListenerProtocolVersion.create(2, 13, 0);
 
+    /** Version 2.17.0. Removes nested transaction support. */
+    static final ClientListenerProtocolVersion VER_2_17_0 = ClientListenerProtocolVersion.create(2, 17, 0);
+
     /** Current version. */
-    public static final ClientListenerProtocolVersion CURRENT_VER = VER_2_13_0;
+    public static final ClientListenerProtocolVersion CURRENT_VER = VER_2_17_0;
 
     /** Supported versions. */
     private static final Set<ClientListenerProtocolVersion> SUPPORTED_VERS = new HashSet<>();
@@ -103,6 +103,7 @@ public class JdbcConnectionContext extends ClientListenerAbstractConnectionConte
 
     static {
         SUPPORTED_VERS.add(CURRENT_VER);
+        SUPPORTED_VERS.add(VER_2_13_0);
         SUPPORTED_VERS.add(VER_2_9_0);
         SUPPORTED_VERS.add(VER_2_8_0);
         SUPPORTED_VERS.add(VER_2_7_0);
@@ -162,26 +163,14 @@ public class JdbcConnectionContext extends ClientListenerAbstractConnectionConte
         boolean skipReducerOnUpdate = false;
         String qryEngine = null;
 
-        NestedTxMode nestedTxMode = NestedTxMode.DEFAULT;
-
         if (ver.compareTo(VER_2_1_5) >= 0)
             lazyExec = reader.readBoolean();
 
         if (ver.compareTo(VER_2_3_0) >= 0)
             skipReducerOnUpdate = reader.readBoolean();
 
-        if (ver.compareTo(VER_2_7_0) >= 0) {
-            String nestedTxModeName = reader.readString();
-
-            if (!F.isEmpty(nestedTxModeName)) {
-                try {
-                    nestedTxMode = NestedTxMode.valueOf(nestedTxModeName);
-                }
-                catch (IllegalArgumentException e) {
-                    throw new IgniteCheckedException("Invalid nested transactions handling mode: " + nestedTxModeName);
-                }
-            }
-        }
+        if (ver.compareTo(VER_2_7_0) >= 0 && ver.compareTo(VER_2_17_0) < 0)
+            reader.readString();
 
         Boolean dataPageScanEnabled = null;
         Integer updateBatchSize = null;
@@ -258,7 +247,7 @@ public class JdbcConnectionContext extends ClientListenerAbstractConnectionConte
         };
 
         handler = new JdbcRequestHandler(busyLock, snd, maxCursors, distributedJoins, enforceJoinOrder,
-            collocated, replicatedOnly, autoCloseCursors, lazyExec, skipReducerOnUpdate, qryEngine, nestedTxMode,
+            collocated, replicatedOnly, autoCloseCursors, lazyExec, skipReducerOnUpdate, qryEngine,
             dataPageScanEnabled, updateBatchSize, ver, this);
 
         handler.start();
