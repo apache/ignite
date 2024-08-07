@@ -8,6 +8,7 @@ import java.util.List;
 import java.util.Map;
 import javax.cache.configuration.Factory;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
+import org.apache.ignite.cache.query.annotations.QuerySqlFunction;
 import org.apache.ignite.calcite.CalciteQueryEngineConfiguration;
 import org.apache.ignite.client.IgniteClient;
 import org.apache.ignite.configuration.CacheConfiguration;
@@ -82,7 +83,7 @@ public class SelectUserAttributesTest extends GridCommonAbstractTest {
         clnCfg.setUserAttributes(new UserAttributesFactory().create());
 
         try (IgniteClient cln = Ignition.startClient(clnCfg)) {
-            List<List<?>> res = cln.query(new SqlFieldsQuery("select USER_ATTRIBUTE('sessionId') as SESSION_ID;")).getAll();
+            List<List<?>> res = cln.query(new SqlFieldsQuery("select USER_ATTRIBUTE('sessionId');")).getAll();
 
             assertEquals(1, res.size());
             assertEquals(1, res.get(0).size());
@@ -101,7 +102,7 @@ public class SelectUserAttributesTest extends GridCommonAbstractTest {
 
         List<List<?>> res = startClientGrid(cfg)
             .createCache(DEFAULT_CACHE_NAME)
-            .query(new SqlFieldsQuery("select USER_ATTRIBUTE('sessionId') as SESSION_ID;")).getAll();
+            .query(new SqlFieldsQuery("select USER_ATTRIBUTE('sessionId');")).getAll();
 
         assertEquals(1, res.size());
         assertEquals(1, res.get(0).size());
@@ -113,7 +114,7 @@ public class SelectUserAttributesTest extends GridCommonAbstractTest {
     public void testServer() throws Exception {
         List<List<?>> res = startGrid(0)
             .createCache(DEFAULT_CACHE_NAME)
-            .query(new SqlFieldsQuery("select USER_ATTRIBUTE('sessionId') as SESSION_ID;")).getAll();
+            .query(new SqlFieldsQuery("select USER_ATTRIBUTE('sessionId');")).getAll();
 
         assertEquals(1, res.size());
         assertEquals(1, res.get(0).size());
@@ -146,10 +147,37 @@ public class SelectUserAttributesTest extends GridCommonAbstractTest {
     }
 
     /** */
+    @Test
+    public void testSqlFunction() throws Exception {
+        Ignite ign = startGrids(3);
+
+        IgniteCache<?, ?> cache = ign.createCache(new CacheConfiguration<>()
+                .setName(DEFAULT_CACHE_NAME)
+                .setSqlSchema("PUBLIC")
+                .setSqlFunctionClasses(UserAttributeFunctions.class));
+
+        List<List<?>> res = cache.query(new SqlFieldsQuery("select function(USER_ATTRIBUTE('sessionId'));")).getAll();
+
+        assertEquals(1, res.size());
+        assertEquals(1, res.get(0).size());
+        assertEquals(SESSION_ID_SRV, res.get(0).get(0));
+    }
+
+    /** */
     public static class UserAttributesFactory implements Factory<Map<String, String>> {
         /** */
         @Override public Map<String, String> create() {
             return F.asMap(SESSION_ID_ATTR, SESSION_ID_CLN);
+        }
+    }
+
+    /** */
+    public static class UserAttributeFunctions {
+        @QuerySqlFunction
+        public static String function(String sessionId) {
+            System.out.println("SessionId: " + sessionId);
+
+            return sessionId;
         }
     }
 }
