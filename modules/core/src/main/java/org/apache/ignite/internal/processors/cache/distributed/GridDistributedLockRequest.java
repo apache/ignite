@@ -266,7 +266,7 @@ public class GridDistributedLockRequest extends GridDistributedBaseMessage {
      */
     public void storeUsed(boolean storeUsed) {
         if (storeUsed)
-            flags = (byte)(flags | STORE_USED_FLAG_MASK);
+            flags |= STORE_USED_FLAG_MASK;
         else
             flags &= ~STORE_USED_FLAG_MASK;
     }
@@ -290,14 +290,8 @@ public class GridDistributedLockRequest extends GridDistributedBaseMessage {
      *
      * @param key Key.
      * @param retVal Flag indicating whether value should be returned.
-     * @param ctx Context.
-     * @throws IgniteCheckedException If failed.
      */
-    public void addKeyBytes(
-        KeyCacheObject key,
-        boolean retVal,
-        GridCacheContext ctx
-    ) throws IgniteCheckedException {
+    public void addKeyBytes(KeyCacheObject key, boolean retVal) {
         if (keys == null)
             keys = new ArrayList<>(keysCount());
 
@@ -328,25 +322,25 @@ public class GridDistributedLockRequest extends GridDistributedBaseMessage {
     }
 
     /** {@inheritDoc} */
-    @Override public IgniteLogger messageLogger(GridCacheSharedContext ctx) {
+    @Override public IgniteLogger messageLogger(GridCacheSharedContext<?, ?> ctx) {
         return ctx.txLockMessageLogger();
     }
 
     /** {@inheritDoc}
      * @param ctx*/
-    @Override public void prepareMarshal(GridCacheSharedContext ctx) throws IgniteCheckedException {
+    @Override public void prepareMarshal(GridCacheSharedContext<?, ?> ctx) throws IgniteCheckedException {
         super.prepareMarshal(ctx);
 
-        GridCacheContext cctx = ctx.cacheContext(cacheId);
+        GridCacheContext<?, ?> cctx = ctx.cacheContext(cacheId);
 
         prepareMarshalCacheObjects(keys, cctx);
     }
 
     /** {@inheritDoc} */
-    @Override public void finishUnmarshal(GridCacheSharedContext ctx, ClassLoader ldr) throws IgniteCheckedException {
+    @Override public void finishUnmarshal(GridCacheSharedContext<?, ?> ctx, ClassLoader ldr) throws IgniteCheckedException {
         super.finishUnmarshal(ctx, ldr);
 
-        GridCacheContext cctx = ctx.cacheContext(cacheId);
+        GridCacheContext<?, ?> cctx = ctx.cacheContext(cacheId);
 
         finishUnmarshalCacheObjects(keys, cctx, ldr);
     }

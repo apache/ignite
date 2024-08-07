@@ -430,7 +430,7 @@ NOTE: The 'ignite-spring' module should be enabled.
 
 [source, shell]
 ----
-control.sh|bat --cache create --springXmlConfig springXmlFilePath
+control.sh|bat --cache create --springXmlConfig springXmlFilePath --skip-existing
 ----
 
 Parameters:
@@ -440,13 +440,17 @@ Parameters:
 | Parameter | Description
 | `--springXmlConfig springXmlConfigPath` | Path to the Spring XML configuration that contains
 'org.apache.ignite.configuration.CacheConfiguration' beans to create caches from.
+|`--skip-existing`| Optional flag to skip existing caches.
 |===
 
 Examples:
 [source, shell]
 ----
 # Create caches from the `/ignite/config/userCaches.xml` configuration.
-control.sh|bat --cache create --springXmlConfig /ignite/config/userCaches.xml`
+control.sh|bat --cache create --springXmlConfig /ignite/config/userCaches.xml
+
+# Create caches from the `/ignite/config/userCaches.xml` configuration except existing ones.
+control.sh|bat --cache create --springXmlConfig /ignite/config/userCaches.xml --skip-existing
 ----
 
 == Destroying Caches

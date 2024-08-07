@@ -1201,7 +1201,7 @@ public class SnapshotRestoreProcess {
         catch (Exception ex) {
             opCtx0.errHnd.accept(ex);
 
-            return new GridFinishedFuture<>(ex);
+            retFut.onDone(ex);
         }
 
         return retFut;
