@@ -129,6 +129,8 @@ public class SnapshotCheckProcess {
                 ctx.fut.onDone(err);
         });
 
+        contexts.clear();
+
         clusterOpFuts.forEach((reqId, fut) -> fut.onDone(err));
     }
 
