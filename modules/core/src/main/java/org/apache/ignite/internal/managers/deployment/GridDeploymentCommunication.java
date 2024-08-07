@@ -294,6 +294,7 @@ class GridDeploymentCommunication {
         sendResponse(nodeId, req.responseTopic(), res);
     }
 
+    /** */
     private static String clsNameFromResourceName(String reqResourceName) {
         String clsName = reqResourceName.replace('/', '.');
 
