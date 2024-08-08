@@ -17,7 +17,9 @@
 
 package org.apache.ignite.util;
 
+import java.security.Permissions;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.ThreadLocalRandom;
@@ -39,9 +41,14 @@ import org.apache.ignite.internal.processors.cache.GridCacheEntryEx;
 import org.apache.ignite.internal.processors.cache.IgniteInternalCache;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersionManager;
 import org.apache.ignite.internal.processors.dr.GridDrType;
+import org.apache.ignite.internal.processors.security.impl.TestSecurityData;
+import org.apache.ignite.internal.processors.security.impl.TestSecurityPluginProvider;
 import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.plugin.security.SecurityPermission;
+import org.apache.ignite.plugin.security.SecurityPermissionSet;
+import org.apache.ignite.plugin.security.SecurityPermissionSetBuilder;
 import org.apache.ignite.testframework.ListeningTestLogger;
 import org.apache.ignite.testframework.LogListener;
 import org.junit.Test;
@@ -53,6 +60,9 @@ import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
 import static org.apache.ignite.internal.commandline.CommandHandler.EXIT_CODE_OK;
 import static org.apache.ignite.internal.commandline.CommandHandler.EXIT_CODE_UNEXPECTED_ERROR;
 import static org.apache.ignite.internal.management.consistency.ConsistencyRepairTask.CONSISTENCY_VIOLATIONS_FOUND;
+import static org.apache.ignite.plugin.security.SecurityPermission.ADMIN_OPS;
+import static org.apache.ignite.plugin.security.SecurityPermissionSetBuilder.ALL_PERMISSIONS;
+import static org.apache.ignite.plugin.security.SecurityPermissionSetBuilder.NO_PERMISSIONS;
 import static org.apache.ignite.testframework.GridTestUtils.assertContains;
 import static org.apache.ignite.testframework.LogListener.matches;
 
@@ -82,6 +92,15 @@ public class GridCommandHandlerConsistencyTest extends GridCommandHandlerCluster
     /** */
     public static final String PARTITIONS_ARG = "--partitions";
 
+    /** */
+    private static final String TEST_NO_PERMISSIONS_LOGIN = "no-permissions-login";
+
+    /** */
+    private static final String TEST_LOGIN = "admin-login";
+
+    /** */
+    private static final String DEFAULT_PWD = "pwd";
+
     /** Partitions. */
     private static final int PARTITIONS = 32;
 
@@ -92,7 +111,7 @@ public class GridCommandHandlerConsistencyTest extends GridCommandHandlerCluster
     protected final ListeningTestLogger listeningLog = new ListeningTestLogger(log);
 
     /** */
-    @Parameterized.Parameters(name = "cmdHnd={0}, strategy={1}, explicitGrp={2}, callByGrp={3}")
+    @Parameterized.Parameters(name = "cmdHnd={0}, strategy={1}, explicitGrp={2}, callByGrp={3}, withSecurityEnabled={4}")
     public static Iterable<Object[]> data() {
         List<Object[]> res = new ArrayList<>();
 
@@ -100,12 +119,13 @@ public class GridCommandHandlerConsistencyTest extends GridCommandHandlerCluster
         List<String> invokers = commandHandlers();
 
         for (ReadRepairStrategy strategy : ReadRepairStrategy.values()) {
-            for (boolean explicitGrp : new boolean[]{false, true}) {
-                if (explicitGrp)
-                    res.add(new Object[]{invokers.get(cntr++ % invokers.size()), strategy, explicitGrp, true});
+            for(boolean withSecurityEnabled : new boolean[]{false, true})
+                for (boolean explicitGrp : new boolean[]{false, true}) {
+                    if (explicitGrp)
+                        res.add(new Object[]{invokers.get(cntr++ % invokers.size()), strategy, explicitGrp, true, withSecurityEnabled});
 
-                res.add(new Object[]{invokers.get(cntr++ % invokers.size()), strategy, explicitGrp, false});
-            }
+                    res.add(new Object[]{invokers.get(cntr++ % invokers.size()), strategy, explicitGrp, false, withSecurityEnabled});
+                }
         }
 
         return res;
@@ -128,6 +148,12 @@ public class GridCommandHandlerConsistencyTest extends GridCommandHandlerCluster
      */
     @Parameterized.Parameter(3)
     public boolean callByGrp;
+
+    /**
+     * True if security checks enabled
+     */
+    @Parameterized.Parameter(4)
+    public boolean withSecurityEnabled;
 
     /**
      *
@@ -153,6 +179,9 @@ public class GridCommandHandlerConsistencyTest extends GridCommandHandlerCluster
         cfg.setDataStorageConfiguration(null);
 
         cfg.setGridLogger(listeningLog);
+
+        if (withSecurityEnabled)
+            cfg.setPluginProviders(new TestSecurityPluginProvider(igniteInstanceName, DEFAULT_PWD, ALL_PERMISSIONS, false, userData()));
 
         return cfg;
     }
@@ -221,7 +250,8 @@ public class GridCommandHandlerConsistencyTest extends GridCommandHandlerCluster
             }
         }
 
-        assertEquals(EXIT_CODE_OK, execute("--cache", "idle_verify"));
+        checkExecuteWithArgs("--cache", "idle_verify");
+
         assertContains(log, testOut.toString(),
             "conflict partitions has been found: [counterConflicts=0, hashConflicts=" + brokenParts.get());
 
@@ -285,7 +315,8 @@ public class GridCommandHandlerConsistencyTest extends GridCommandHandlerCluster
 
         AtomicInteger brokenParts = new AtomicInteger(PARTITIONS);
 
-        assertEquals(EXIT_CODE_OK, execute("--cache", "idle_verify"));
+        checkExecuteWithArgs("--cache", "idle_verify");
+
         assertContains(log, testOut.toString(),
             "conflict partitions has been found: [counterConflicts=0, hashConflicts=" + brokenParts.get());
 
@@ -307,7 +338,7 @@ public class GridCommandHandlerConsistencyTest extends GridCommandHandlerCluster
 
         for (int i = 0; i < PARTITIONS; i++) {
             assertEquals(EXIT_CODE_UNEXPECTED_ERROR,
-                execute("--consistency", "repair",
+                executeWithUser(TEST_LOGIN, "--consistency", "repair",
                     CACHE, "non-existent",
                     PARTITIONS_ARG, String.valueOf(i),
                     STRATEGY, strategy.toString()));
@@ -329,18 +360,18 @@ public class GridCommandHandlerConsistencyTest extends GridCommandHandlerCluster
 
             i = Math.min(i + ThreadLocalRandom.current().nextInt(1, 10), PARTITIONS);
 
-            assertEquals(EXIT_CODE_OK, execute("--consistency", "repair",
+            checkExecuteWithArgs("--consistency", "repair",
                 CACHE, callByGrp ? cacheName + GRP_POSTFIX : cacheName,
                 PARTITIONS_ARG,
-                    IntStream.range(from, i).mapToObj(Integer::toString).collect(Collectors.joining(",")),
-                STRATEGY, strategy.toString()));
+                IntStream.range(from, i).mapToObj(Integer::toString).collect(Collectors.joining(",")),
+                STRATEGY, strategy.toString());
 
             assertTrue(ConsistencyStatusTask.MAP.isEmpty());
 
             assertContains(log, testOut.toString(), CONSISTENCY_VIOLATIONS_FOUND);
             assertContains(log, testOut.toString(), "[found=1, repaired=" + repairsPerEntry.toString());
 
-            assertEquals(EXIT_CODE_OK, execute("--cache", "idle_verify"));
+            assertEquals(EXIT_CODE_OK, executeWithUser(TEST_LOGIN, "--cache", "idle_verify"));
 
             if (repairsPerEntry > 0) {
                 brokenParts.addAndGet(-(i - from));
@@ -443,5 +474,55 @@ public class GridCommandHandlerConsistencyTest extends GridCommandHandlerCluster
      */
     protected boolean binaryCache() {
         return false;
+    }
+
+    /**
+     *
+     */
+    protected TestSecurityData[] userData() {
+        return new TestSecurityData[]{
+            new TestSecurityData(TEST_NO_PERMISSIONS_LOGIN, DEFAULT_PWD, NO_PERMISSIONS, new Permissions()),
+            new TestSecurityData(TEST_LOGIN, DEFAULT_PWD, adminPermission(ADMIN_OPS), new Permissions())
+        };
+    }
+
+    /**
+     *
+     */
+    private SecurityPermissionSet adminPermission(SecurityPermission... perms) {
+        return SecurityPermissionSetBuilder.create()
+            .defaultAllowAll(false)
+            .appendSystemPermissions(perms)
+            .build();
+    }
+
+    /**
+     * @param args Args.
+     */
+    private void checkExecuteWithArgs(String... args) {
+        if (withSecurityEnabled)
+            assertEquals(EXIT_CODE_UNEXPECTED_ERROR, executeWithUser(TEST_NO_PERMISSIONS_LOGIN, args));
+
+        assertEquals(EXIT_CODE_OK, executeWithUser(TEST_LOGIN, args));
+    }
+
+    /**
+     * @param login Login.
+     * @param args Args.
+     */
+    protected int executeWithUser(String login, String... args) {
+        if(!withSecurityEnabled)
+            return execute(args);
+
+        List<String> argsWithAuth = new ArrayList<>();
+
+        argsWithAuth.add("--user");
+        argsWithAuth.add(login);
+        argsWithAuth.add("--password");
+        argsWithAuth.add(DEFAULT_PWD);
+
+        argsWithAuth.addAll(Arrays.asList(args));
+
+        return execute(argsWithAuth);
     }
 }

@@ -274,8 +274,7 @@ public class ConsistencyRepairTask extends AbstractConsistencyTask<ConsistencyRe
          * @param keys Keys.
          */
         private void repair(IgniteCache<Object, Object> cache, Set<Object> keys) {
-            UUID nodeId = ignite.localNode().id();
-            try (OperationSecurityContext ignored = ignite.context().security().withContext(nodeId)) {
+            try (OperationSecurityContext ignored = ignite.context().security().withContext(ignite.localNode().id())) {
                 cache.getAll(keys); // Repair.
             }
             catch (CacheException e) {
