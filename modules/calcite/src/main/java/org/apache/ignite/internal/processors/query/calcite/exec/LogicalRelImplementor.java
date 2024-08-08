@@ -178,6 +178,8 @@ public class LogicalRelImplementor<Row> implements IgniteRelVisitor<Node<Row>> {
 
             int affKey = distribution.getKeys().get(0);
 
+            assert rel.getRowType().getFieldList().get(affKey) != null : "Unexpected affinity key field: " + affKey;
+
             if (rel.getRowType().getFieldList().get(affKey).getType().isNullable()) {
                 FilterNode<Row> filter = new FilterNode<>(ctx, rel.getRowType(),
                     r -> ctx.rowHandler().get(affKey, r) != null);
