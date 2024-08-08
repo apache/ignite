@@ -173,7 +173,8 @@ public class LogicalRelImplementor<Row> implements IgniteRelVisitor<Node<Row>> {
         Node<Row> input = visit(rel.getInput());
 
         if (distribution.function().affinity()) { // Affinity key can't be null, so filter out null values.
-            assert distribution.getKeys().size() == 1 : distribution.getKeys().size();
+            assert distribution.getKeys().size() == 1 : "Unexpected affinity keys count: " +
+                distribution.getKeys().size() + ", must be 1";
 
             int affKey = distribution.getKeys().get(0);
 
