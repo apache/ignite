@@ -115,18 +115,16 @@ public class GridCommandHandlerConsistencyTest extends GridCommandHandlerCluster
     public static Iterable<Object[]> data() {
         List<Object[]> res = new ArrayList<>();
 
-        int cntr = 0;
-        List<String> invokers = commandHandlers();
+        for (String invoker : commandHandlers())
+            for (ReadRepairStrategy strategy : ReadRepairStrategy.values())
+                for (boolean explicitGrp : new boolean[] {false, true})
+                    for (boolean callByGrp : new boolean[] {false, true})
+                        for (boolean withSecurityEnabled : new boolean[] {false, true}) {
+                            if (!explicitGrp && callByGrp || invoker.equals(JMX_CMD_HND) && withSecurityEnabled)
+                                continue;
 
-        for (ReadRepairStrategy strategy : ReadRepairStrategy.values()) {
-            for(boolean withSecurityEnabled : new boolean[]{false, true})
-                for (boolean explicitGrp : new boolean[]{false, true}) {
-                    if (explicitGrp)
-                        res.add(new Object[]{invokers.get(cntr++ % invokers.size()), strategy, explicitGrp, true, withSecurityEnabled});
-
-                    res.add(new Object[]{invokers.get(cntr++ % invokers.size()), strategy, explicitGrp, false, withSecurityEnabled});
-                }
-        }
+                            res.add(new Object[] {invoker, strategy, explicitGrp, callByGrp, withSecurityEnabled});
+                        }
 
         return res;
     }
@@ -477,17 +475,17 @@ public class GridCommandHandlerConsistencyTest extends GridCommandHandlerCluster
     }
 
     /**
-     *
+     * @return {@link TestSecurityData} array for ignite configuration.
      */
     protected TestSecurityData[] userData() {
-        return new TestSecurityData[]{
+        return new TestSecurityData[] {
             new TestSecurityData(TEST_NO_PERMISSIONS_LOGIN, DEFAULT_PWD, NO_PERMISSIONS, new Permissions()),
             new TestSecurityData(TEST_LOGIN, DEFAULT_PWD, adminPermission(ADMIN_OPS), new Permissions())
         };
     }
 
     /**
-     *
+     * @return {@link SecurityPermissionSet} with provided system permissions.
      */
     private SecurityPermissionSet adminPermission(SecurityPermission... perms) {
         return SecurityPermissionSetBuilder.create()
@@ -497,7 +495,9 @@ public class GridCommandHandlerConsistencyTest extends GridCommandHandlerCluster
     }
 
     /**
-     * @param args Args.
+     * Wrapper for security check with {@link #assertEquals(int, int)}. The method checks 2 user logins
+     * for auth success/error.
+     * @param args command arguments.
      */
     private void checkExecuteWithArgs(String... args) {
         if (withSecurityEnabled)
@@ -507,11 +507,12 @@ public class GridCommandHandlerConsistencyTest extends GridCommandHandlerCluster
     }
 
     /**
-     * @param login Login.
-     * @param args Args.
+     * Executes command with the given args. User's login is used if security check is enabled.
+     * @param login User login.
+     * @param args command arguments.
      */
     protected int executeWithUser(String login, String... args) {
-        if(!withSecurityEnabled)
+        if (!withSecurityEnabled)
             return execute(args);
 
         List<String> argsWithAuth = new ArrayList<>();
