@@ -142,7 +142,7 @@ public class GridCommandHandlerConsistencyTest extends GridCommandHandlerCluster
     public boolean callByGrp;
 
     /**
-     * True if security checks enabled
+     * True if security checks enabled.
      */
     @Parameterized.Parameter(4)
     public boolean withSecurityEnabled;
@@ -172,13 +172,17 @@ public class GridCommandHandlerConsistencyTest extends GridCommandHandlerCluster
 
         cfg.setGridLogger(listeningLog);
 
-        if (withSecurityEnabled)
+        if (withSecurityEnabled) {
             cfg.setPluginProviders(
                 new TestSecurityPluginProvider(
-                    igniteInstanceName, DEFAULT_PWD, ALL_PERMISSIONS, false,
+                    igniteInstanceName,
+                    DEFAULT_PWD,
+                    ALL_PERMISSIONS,
+                    false,
                     new TestSecurityData(TEST_NO_PERMISSIONS_LOGIN, DEFAULT_PWD, NO_PERMISSIONS, new Permissions()),
                     new TestSecurityData(TEST_LOGIN, DEFAULT_PWD, systemPermissions(ADMIN_OPS), new Permissions()))
             );
+        }
 
         return cfg;
     }
