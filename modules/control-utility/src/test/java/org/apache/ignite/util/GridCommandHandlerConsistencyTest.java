@@ -109,16 +109,20 @@ public class GridCommandHandlerConsistencyTest extends GridCommandHandlerCluster
     public static Iterable<Object[]> data() {
         List<Object[]> res = new ArrayList<>();
 
-        for (String invoker : commandHandlers())
-            for (ReadRepairStrategy strategy : ReadRepairStrategy.values())
-                for (boolean explicitGrp : new boolean[] {false, true})
-                    for (boolean callByGrp : new boolean[] {false, true})
+        for (String invoker : commandHandlers()) {
+            for (ReadRepairStrategy strategy : ReadRepairStrategy.values()) {
+                for (boolean explicitGrp : new boolean[] {false, true}) {
+                    for (boolean callByGrp : new boolean[] {false, true}) {
                         for (boolean withSecurityEnabled : new boolean[] {false, true}) {
                             if (!explicitGrp && callByGrp || invoker.equals(JMX_CMD_HND) && withSecurityEnabled)
                                 continue;
 
                             res.add(new Object[] {invoker, strategy, explicitGrp, callByGrp, withSecurityEnabled});
                         }
+                    }
+                }
+            }
+        }
 
         return res;
     }
