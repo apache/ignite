@@ -34,6 +34,7 @@ import org.apache.calcite.rel.core.JoinRelType;
 import org.apache.calcite.rel.core.Minus;
 import org.apache.calcite.rel.core.Spool;
 import org.apache.calcite.rel.type.RelDataType;
+import org.apache.calcite.rel.type.RelDataTypeField;
 import org.apache.calcite.rex.RexLiteral;
 import org.apache.calcite.rex.RexNode;
 import org.apache.calcite.util.ImmutableBitSet;
@@ -178,9 +179,11 @@ public class LogicalRelImplementor<Row> implements IgniteRelVisitor<Node<Row>> {
 
             int affKey = distribution.getKeys().get(0);
 
-            assert rel.getRowType().getFieldList().get(affKey) != null : "Unexpected affinity key field: " + affKey;
+            RelDataTypeField affFld = rel.getRowType().getFieldList().get(affKey);
 
-            if (rel.getRowType().getFieldList().get(affKey).getType().isNullable()) {
+            assert affFld != null : "Unexpected affinity key field: " + affKey;
+
+            if (affFld.getType().isNullable()) {
                 FilterNode<Row> filter = new FilterNode<>(ctx, rel.getRowType(),
                     r -> ctx.rowHandler().get(affKey, r) != null);
 

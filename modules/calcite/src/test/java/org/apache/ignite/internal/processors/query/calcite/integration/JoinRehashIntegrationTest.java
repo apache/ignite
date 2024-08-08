@@ -55,7 +55,7 @@ public class JoinRehashIntegrationTest extends AbstractBasicIntegrationTest {
 
     /** Tests that null values are filtered out on rehashing. */
     @Test
-    public void testNullAffinityKeys() throws Exception {
+    public void testNullAffinityKeys() {
         prepareTables();
 
         // Add null values.
