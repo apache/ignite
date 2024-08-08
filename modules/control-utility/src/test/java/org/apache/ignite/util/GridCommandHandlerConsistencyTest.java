@@ -19,7 +19,7 @@ package org.apache.ignite.util;
 
 import java.security.Permissions;
 import java.util.ArrayList;
-import java.util.Arrays;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.ThreadLocalRandom;
@@ -46,23 +46,26 @@ import org.apache.ignite.internal.processors.security.impl.TestSecurityPluginPro
 import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
-import org.apache.ignite.plugin.security.SecurityPermission;
-import org.apache.ignite.plugin.security.SecurityPermissionSet;
-import org.apache.ignite.plugin.security.SecurityPermissionSetBuilder;
 import org.apache.ignite.testframework.ListeningTestLogger;
 import org.apache.ignite.testframework.LogListener;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 
+import static java.util.Arrays.asList;
 import static org.apache.ignite.cache.CacheAtomicityMode.ATOMIC;
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
 import static org.apache.ignite.internal.commandline.CommandHandler.EXIT_CODE_OK;
 import static org.apache.ignite.internal.commandline.CommandHandler.EXIT_CODE_UNEXPECTED_ERROR;
+import static org.apache.ignite.internal.commandline.SecurityCommandHandlerPermissionsTest.DEFAULT_PWD;
+import static org.apache.ignite.internal.commandline.SecurityCommandHandlerPermissionsTest.TEST_LOGIN;
+import static org.apache.ignite.internal.commandline.SecurityCommandHandlerPermissionsTest.TEST_NO_PERMISSIONS_LOGIN;
+import static org.apache.ignite.internal.commandline.SecurityCommandHandlerPermissionsTest.enrichWithConnectionArguments;
 import static org.apache.ignite.internal.management.consistency.ConsistencyRepairTask.CONSISTENCY_VIOLATIONS_FOUND;
 import static org.apache.ignite.plugin.security.SecurityPermission.ADMIN_OPS;
 import static org.apache.ignite.plugin.security.SecurityPermissionSetBuilder.ALL_PERMISSIONS;
 import static org.apache.ignite.plugin.security.SecurityPermissionSetBuilder.NO_PERMISSIONS;
+import static org.apache.ignite.plugin.security.SecurityPermissionSetBuilder.systemPermissions;
 import static org.apache.ignite.testframework.GridTestUtils.assertContains;
 import static org.apache.ignite.testframework.LogListener.matches;
 
@@ -91,15 +94,6 @@ public class GridCommandHandlerConsistencyTest extends GridCommandHandlerCluster
 
     /** */
     public static final String PARTITIONS_ARG = "--partitions";
-
-    /** */
-    private static final String TEST_NO_PERMISSIONS_LOGIN = "no-permissions-login";
-
-    /** */
-    private static final String TEST_LOGIN = "admin-login";
-
-    /** */
-    private static final String DEFAULT_PWD = "pwd";
 
     /** Partitions. */
     private static final int PARTITIONS = 32;
@@ -179,7 +173,12 @@ public class GridCommandHandlerConsistencyTest extends GridCommandHandlerCluster
         cfg.setGridLogger(listeningLog);
 
         if (withSecurityEnabled)
-            cfg.setPluginProviders(new TestSecurityPluginProvider(igniteInstanceName, DEFAULT_PWD, ALL_PERMISSIONS, false, userData()));
+            cfg.setPluginProviders(
+                new TestSecurityPluginProvider(
+                    igniteInstanceName, DEFAULT_PWD, ALL_PERMISSIONS, false,
+                    new TestSecurityData(TEST_NO_PERMISSIONS_LOGIN, DEFAULT_PWD, NO_PERMISSIONS, new Permissions()),
+                    new TestSecurityData(TEST_LOGIN, DEFAULT_PWD, systemPermissions(ADMIN_OPS), new Permissions()))
+            );
 
         return cfg;
     }
@@ -248,7 +247,7 @@ public class GridCommandHandlerConsistencyTest extends GridCommandHandlerCluster
             }
         }
 
-        checkExecuteWithArgs("--cache", "idle_verify");
+        checkCommandExecution(EXIT_CODE_OK, asList("--cache", "idle_verify"));
 
         assertContains(log, testOut.toString(),
             "conflict partitions has been found: [counterConflicts=0, hashConflicts=" + brokenParts.get());
@@ -313,7 +312,7 @@ public class GridCommandHandlerConsistencyTest extends GridCommandHandlerCluster
 
         AtomicInteger brokenParts = new AtomicInteger(PARTITIONS);
 
-        checkExecuteWithArgs("--cache", "idle_verify");
+        checkCommandExecution(EXIT_CODE_OK, asList("--cache", "idle_verify"));
 
         assertContains(log, testOut.toString(),
             "conflict partitions has been found: [counterConflicts=0, hashConflicts=" + brokenParts.get());
@@ -335,11 +334,13 @@ public class GridCommandHandlerConsistencyTest extends GridCommandHandlerCluster
         injectTestSystemOut();
 
         for (int i = 0; i < PARTITIONS; i++) {
-            assertEquals(EXIT_CODE_UNEXPECTED_ERROR,
-                executeWithUser(TEST_LOGIN, "--consistency", "repair",
+            checkCommandExecution(
+                EXIT_CODE_UNEXPECTED_ERROR,
+                asList("--consistency", "repair",
                     CACHE, "non-existent",
                     PARTITIONS_ARG, String.valueOf(i),
-                    STRATEGY, strategy.toString()));
+                    STRATEGY, strategy.toString())
+            );
 
             assertTrue(ConsistencyStatusTask.MAP.isEmpty());
 
@@ -358,18 +359,20 @@ public class GridCommandHandlerConsistencyTest extends GridCommandHandlerCluster
 
             i = Math.min(i + ThreadLocalRandom.current().nextInt(1, 10), PARTITIONS);
 
-            checkExecuteWithArgs("--consistency", "repair",
-                CACHE, callByGrp ? cacheName + GRP_POSTFIX : cacheName,
-                PARTITIONS_ARG,
-                IntStream.range(from, i).mapToObj(Integer::toString).collect(Collectors.joining(",")),
-                STRATEGY, strategy.toString());
+            checkCommandExecution(
+                EXIT_CODE_OK,
+                asList("--consistency", "repair",
+                    CACHE, callByGrp ? cacheName + GRP_POSTFIX : cacheName,
+                    PARTITIONS_ARG, IntStream.range(from, i).mapToObj(Integer::toString).collect(Collectors.joining(",")),
+                    STRATEGY, strategy.toString())
+            );
 
             assertTrue(ConsistencyStatusTask.MAP.isEmpty());
 
             assertContains(log, testOut.toString(), CONSISTENCY_VIOLATIONS_FOUND);
             assertContains(log, testOut.toString(), "[found=1, repaired=" + repairsPerEntry.toString());
 
-            assertEquals(EXIT_CODE_OK, executeWithUser(TEST_LOGIN, "--cache", "idle_verify"));
+            checkCommandExecution(EXIT_CODE_OK, asList("--cache", "idle_verify"));
 
             if (repairsPerEntry > 0) {
                 brokenParts.addAndGet(-(i - from));
@@ -475,55 +478,18 @@ public class GridCommandHandlerConsistencyTest extends GridCommandHandlerCluster
     }
 
     /**
-     * @return {@link TestSecurityData} array for ignite configuration.
-     */
-    protected TestSecurityData[] userData() {
-        return new TestSecurityData[] {
-            new TestSecurityData(TEST_NO_PERMISSIONS_LOGIN, DEFAULT_PWD, NO_PERMISSIONS, new Permissions()),
-            new TestSecurityData(TEST_LOGIN, DEFAULT_PWD, adminPermission(ADMIN_OPS), new Permissions())
-        };
-    }
-
-    /**
-     * @return {@link SecurityPermissionSet} with provided system permissions.
-     */
-    private SecurityPermissionSet adminPermission(SecurityPermission... perms) {
-        return SecurityPermissionSetBuilder.create()
-            .defaultAllowAll(false)
-            .appendSystemPermissions(perms)
-            .build();
-    }
-
-    /**
      * Wrapper for security check with {@link #assertEquals(int, int)}. The method checks 2 user logins
      * for auth success/error.
-     * @param args command arguments.
+     * @param expExitCode Exp exit code.
+     * @param cmdArgs cmdArgs command arguments
      */
-    private void checkExecuteWithArgs(String... args) {
-        if (withSecurityEnabled)
-            assertEquals(EXIT_CODE_UNEXPECTED_ERROR, executeWithUser(TEST_NO_PERMISSIONS_LOGIN, args));
-
-        assertEquals(EXIT_CODE_OK, executeWithUser(TEST_LOGIN, args));
-    }
-
-    /**
-     * Executes command with the given args. User's login is used if security check is enabled.
-     * @param login User login.
-     * @param args command arguments.
-     */
-    protected int executeWithUser(String login, String... args) {
+    private void checkCommandExecution(int expExitCode, Collection<String> cmdArgs) {
         if (!withSecurityEnabled)
-            return execute(args);
+            assertEquals(expExitCode, execute(new ArrayList<>(cmdArgs)));
+        else {
+            assertEquals(EXIT_CODE_UNEXPECTED_ERROR, execute(enrichWithConnectionArguments(cmdArgs, TEST_NO_PERMISSIONS_LOGIN)));
 
-        List<String> argsWithAuth = new ArrayList<>();
-
-        argsWithAuth.add("--user");
-        argsWithAuth.add(login);
-        argsWithAuth.add("--password");
-        argsWithAuth.add(DEFAULT_PWD);
-
-        argsWithAuth.addAll(Arrays.asList(args));
-
-        return execute(argsWithAuth);
+            assertEquals(expExitCode, execute(enrichWithConnectionArguments(cmdArgs, TEST_LOGIN)));
+        }
     }
 }
