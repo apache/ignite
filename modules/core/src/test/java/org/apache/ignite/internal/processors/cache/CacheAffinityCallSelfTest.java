@@ -58,8 +58,7 @@ public class CacheAffinityCallSelfTest extends GridCommonAbstractTest {
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
-        AlwaysFailoverSpi failSpi = new AlwaysFailoverSpi();
-        cfg.setFailoverSpi(failSpi);
+        cfg.setFailoverSpi(new AlwaysFailoverSpi());
 
         // Do not configure cache on client.
         if (igniteInstanceName.equals(getTestIgniteInstanceName(SRVS)))
@@ -74,6 +73,16 @@ public class CacheAffinityCallSelfTest extends GridCommonAbstractTest {
         }
 
         return cfg;
+    }
+
+    /** {@inheritDoc} */
+    @Override protected void beforeTest() {
+        setLoggerDebugLevel();
+    }
+
+    /** {@inheritDoc} */
+    @Override protected void afterTest() {
+        stopAllGrids();
     }
 
     /**
@@ -131,8 +140,6 @@ public class CacheAffinityCallSelfTest extends GridCommonAbstractTest {
             if (i < ITERS - 1)
                 startGrid(0);
         }
-
-        stopAllGrids();
     }
 
     /**
@@ -149,32 +156,27 @@ public class CacheAffinityCallSelfTest extends GridCommonAbstractTest {
         assertTrue(client.configuration().isClientMode());
         assertNull(client.context().cache().cache(CACHE_NAME));
 
-        try {
-            grid(0).context().cache().context().exchange().mergeExchangesTestWaitVersion(
-                new AffinityTopologyVersion(SRVS + 3, 0),
-                null
-            );
+        grid(0).context().cache().context().exchange().mergeExchangesTestWaitVersion(
+            new AffinityTopologyVersion(SRVS + 3, 0),
+            null
+        );
 
-            IgniteInternalFuture<IgniteEx> fut1 = GridTestUtils.runAsync(() -> startGrid(SRVS + 1));
+        IgniteInternalFuture<IgniteEx> fut1 = GridTestUtils.runAsync(() -> startGrid(SRVS + 1));
 
-            assertTrue(GridTestUtils.waitForCondition(() -> client.context().cache().context()
-                .exchange().lastTopologyFuture()
-                .initialVersion().equals(new AffinityTopologyVersion(SRVS + 2, 0)), 5_000));
+        assertTrue(GridTestUtils.waitForCondition(() -> client.context().cache().context()
+            .exchange().lastTopologyFuture()
+            .initialVersion().equals(new AffinityTopologyVersion(SRVS + 2, 0)), 5_000));
 
-            assertFalse(fut1.isDone());
+        assertFalse(fut1.isDone());
 
-            // The future should not complete until second node is started.
-            IgniteInternalFuture<Object> fut2 = GridTestUtils.runAsync(() ->
-                client.compute().affinityCall(CACHE_NAME, key, new CheckCallable(key, null)));
+        // The future should not complete until second node is started.
+        IgniteInternalFuture<Object> fut2 = GridTestUtils.runAsync(() ->
+            client.compute().affinityCall(CACHE_NAME, key, new CheckCallable(key, null)));
 
-            startGrid(SRVS + 2);
+        startGrid(SRVS + 2);
 
-            fut1.get();
-            fut2.get();
-        }
-        finally {
-            stopAllGrids();
-        }
+        fut1.get();
+        fut2.get();
     }
 
     /**
@@ -221,9 +223,6 @@ public class CacheAffinityCallSelfTest extends GridCommonAbstractTest {
         catch (ClusterTopologyException e) {
             log.info("Expected error: " + e);
         }
-        finally {
-            stopAllGrids();
-        }
     }
 
     /**
@@ -251,21 +250,16 @@ public class CacheAffinityCallSelfTest extends GridCommonAbstractTest {
             }
         });
 
-        try {
-            final Affinity<Integer> aff = client.affinity(CACHE_NAME);
+        final Affinity<Integer> aff = client.affinity(CACHE_NAME);
 
-            assertNull(client.context().cache().cache(CACHE_NAME));
+        assertNull(client.context().cache().cache(CACHE_NAME));
 
-            GridTestUtils.runMultiThreaded(new Runnable() {
-                @Override public void run() {
-                    while (!fut.isDone())
-                        assertNotNull(aff.mapKeyToNode(key));
-                }
-            }, 5, "test-thread");
-        }
-        finally {
-            stopAllGrids();
-        }
+        GridTestUtils.runMultiThreaded(new Runnable() {
+            @Override public void run() {
+                while (!fut.isDone())
+                    assertNotNull(aff.mapKeyToNode(key));
+            }
+        }, 5, "test-thread");
     }
 
     /**
