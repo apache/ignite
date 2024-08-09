@@ -26,6 +26,7 @@ import org.apache.ignite.internal.processors.cache.CacheObject;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.S;
+import org.jetbrains.annotations.Nullable;
 
 /**
  * Cache DR info used as argument in PUT cache internal interfaces.
@@ -42,6 +43,9 @@ public class GridCacheDrInfo implements Externalizable {
 
     /** DR version. */
     private GridCacheVersion ver;
+
+    /** Previous entry state metadata. */
+    protected CacheObject prevStateMeta;
 
     /**
      * {@link Externalizable} support.
@@ -62,6 +66,21 @@ public class GridCacheDrInfo implements Externalizable {
 
         this.val = val;
         this.ver = ver;
+    }
+
+    /**
+     * Constructor.
+     *
+     * @param val Value.
+     * @param ver Version.
+     * @param prevStateMeta Previous entry state metadata.
+     */
+    public GridCacheDrInfo(@Nullable CacheObject val, GridCacheVersion ver, CacheObject prevStateMeta) {
+        assert ver != null;
+
+        this.val = val;
+        this.ver = ver;
+        this.prevStateMeta = prevStateMeta;
     }
 
     /**
@@ -113,6 +132,13 @@ public class GridCacheDrInfo implements Externalizable {
      */
     public GridCacheVersion version() {
         return ver;
+    }
+
+    /**
+     * @return Previous entry state metadata.
+     */
+    public CacheObject previousStateMetadata() {
+        return prevStateMeta;
     }
 
     /**

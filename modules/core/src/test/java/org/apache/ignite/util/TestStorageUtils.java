@@ -66,6 +66,7 @@ public class TestStorageUtils {
             0L,
             partId,
             breakCntr ? locPart.updateCounter() + 1 : locPart.updateCounter(),
+            null,
             DataEntry.EMPTY_FLAGS);
 
         IgniteCacheDatabaseSharedManager db = ctx.shared().database();

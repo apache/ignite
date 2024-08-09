@@ -369,10 +369,13 @@ class StandaloneWalRecordsIterator extends AbstractWalRecordsIterator {
             if (X.hasCause(e, IgniteDataIntegrityViolationException.class))
                 // "curIdx" is an index in walFileDescriptors list.
                 if (curIdx == walFileDescriptors.size() - 1)
-                    // This means that there is no explicit last sengment, so we stop as if we reached the end
+                    // This means that there is no explicit last segment, so we stop as if we reached the end
                     // of the WAL.
-                    if (highBound.equals(DFLT_HIGH_BOUND))
+                    if (highBound.equals(DFLT_HIGH_BOUND)) {
+                        log.warning("Corrupted or partially written (last) WAL segment found.", e);
+
                         return null;
+                    }
 
         return super.handleRecordException(e, ptr);
     }
@@ -429,6 +432,8 @@ class StandaloneWalRecordsIterator extends AbstractWalRecordsIterator {
 
         final KeyCacheObject key;
         final CacheObject val;
+        final CacheObject prevStateMeta;
+
         boolean keepBinary = this.keepBinary || !fakeCacheObjCtx.kernalContext().marshallerContext().initialized();
 
         if (dataEntry instanceof LazyDataEntry) {
@@ -438,19 +443,27 @@ class StandaloneWalRecordsIterator extends AbstractWalRecordsIterator {
                 lazyDataEntry.getKeyType(),
                 lazyDataEntry.getKeyBytes());
 
-            final byte type = lazyDataEntry.getValType();
+            final byte valType = lazyDataEntry.getValType();
 
-            val = type == 0 ? null :
+            val = valType == 0 ? null :
                 processor.toCacheObject(fakeCacheObjCtx,
-                    type,
+                    valType,
                     lazyDataEntry.getValBytes());
+
+            final byte prevMetaStateType = lazyDataEntry.getPreviousStateMetadataType();
+
+            prevStateMeta = prevMetaStateType == 0 ? null :
+                processor.toCacheObject(fakeCacheObjCtx,
+                    prevMetaStateType,
+                    lazyDataEntry.getPreviousStateMetadataBytes());
         }
         else {
             key = dataEntry.key();
             val = dataEntry.value();
+            prevStateMeta = dataEntry.previousStateMetadata();
         }
 
-        return unwrapDataEntry(fakeCacheObjCtx, dataEntry, key, val, keepBinary);
+        return unwrapDataEntry(fakeCacheObjCtx, dataEntry, key, val, prevStateMeta, keepBinary);
     }
 
     /**
@@ -459,11 +472,18 @@ class StandaloneWalRecordsIterator extends AbstractWalRecordsIterator {
      * @param dataEntry Data entry.
      * @param key Entry key.
      * @param val Entry value.
-     * @param keepBinary Don't convert non primitive types.
+     * @param keepBinary Don't convert non-primitive types.
+     * @param prevStateMeta Previous state metadata.
      * @return Unwrapped entry.
      */
-    private DataEntry unwrapDataEntry(CacheObjectContext coCtx, DataEntry dataEntry,
-        KeyCacheObject key, CacheObject val, boolean keepBinary) {
+    private DataEntry unwrapDataEntry(
+            CacheObjectContext coCtx,
+            DataEntry dataEntry,
+            KeyCacheObject key,
+            CacheObject val,
+            CacheObject prevStateMeta,
+            boolean keepBinary
+    ) {
         return new UnwrapDataEntry(
             dataEntry.cacheId(),
             key,
@@ -476,6 +496,7 @@ class StandaloneWalRecordsIterator extends AbstractWalRecordsIterator {
             dataEntry.partitionCounter(),
             coCtx,
             keepBinary,
+            prevStateMeta,
             dataEntry.flags());
     }
 

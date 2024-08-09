@@ -47,7 +47,8 @@ public class UnwrapDataEntry extends DataEntry {
      * @param partId Partition ID.
      * @param partCnt Partition counter.
      * @param cacheObjValCtx cache object value context for unwrapping objects.
-     * @param keepBinary disable unwrapping for non primitive objects, Binary Objects would be returned instead.
+     * @param keepBinary disable unwrapping for non-primitive objects, Binary Objects would be returned instead.
+     * @param prevStateMeta Previous state metadata.
      * @param flags Flags.
      */
     public UnwrapDataEntry(
@@ -62,8 +63,10 @@ public class UnwrapDataEntry extends DataEntry {
         final long partCnt,
         final CacheObjectValueContext cacheObjValCtx,
         final boolean keepBinary,
+        CacheObject prevStateMeta,
         final byte flags) {
-        super(cacheId, key, val, op, nearXidVer, writeVer, expireTime, partId, partCnt, flags);
+        super(cacheId, key, val, op, nearXidVer, writeVer, expireTime, partId, partCnt, prevStateMeta, flags);
+
         this.cacheObjValCtx = cacheObjValCtx;
         this.keepBinary = keepBinary;
     }
@@ -98,7 +101,24 @@ public class UnwrapDataEntry extends DataEntry {
         }
         catch (Exception e) {
             cacheObjValCtx.kernalContext().log(UnwrapDataEntry.class)
-                .error("Unable to convert value [" + value() + "]", e);
+                .error("Unable to convert value [" + val + "]", e);
+            return null;
+        }
+    }
+
+    /**
+     * Unwraps previous state metadata from cache value object into primitive boxed type or source class. If client classes were
+     * used in key, call of this method requires classes to be available in classpath.
+     *
+     * @return Previous state metadata which was placed into cache. Or null for delete operation or for failure.
+     */
+    public Object unwrappedPreviousStateMetadata() {
+        try {
+            return unwrapValue(prevStateMeta, keepBinary, cacheObjValCtx);
+        }
+        catch (Exception e) {
+            cacheObjValCtx.kernalContext().log(UnwrapDataEntry.class)
+                .error("Unable to convert previous state metadata [" + prevStateMeta + "]", e);
             return null;
         }
     }
