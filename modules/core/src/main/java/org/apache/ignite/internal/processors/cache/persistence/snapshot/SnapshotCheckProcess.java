@@ -197,7 +197,8 @@ public class SnapshotCheckProcess {
         SnapshotCheckContext ctx;
 
         // The context can be null, if a required node leaves before this phase.
-        if (!req.nodes().contains(kctx.localNodeId()) || (ctx = context(req.snapshotName(), req.requestId())) == null || ctx.locMeta == null)
+        if (!req.nodes().contains(kctx.localNodeId()) || (ctx = context(req.snapshotName(), req.requestId())) == null
+            || ctx.locMeta == null)
             return new GridFinishedFuture<>();
 
         IgniteSnapshotManager snpMgr = kctx.cache().context().snapshotMgr();
@@ -207,7 +208,7 @@ public class SnapshotCheckProcess {
         CompletableFuture<? extends Map<?, ?>> workingFut = req.allRestoreHandlers
             ? snpMgr.checker().invokeCustomHandlers(ctx.locMeta, req.snapshotPath(), req.groups(), true)
             : snpMgr.checker().checkPartitions(ctx.locMeta, snpMgr.snapshotLocalDir(req.snapshotName(), req.snapshotPath()),
-            req.groups(), false, true, false);
+                req.groups(), false, true, false);
 
         workingFut.whenComplete((res, err) -> {
             if (err != null)
