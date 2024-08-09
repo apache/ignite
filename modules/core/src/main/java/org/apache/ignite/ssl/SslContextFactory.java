@@ -24,6 +24,7 @@ import java.io.InputStream;
 import java.security.GeneralSecurityException;
 import java.security.KeyStore;
 import java.security.NoSuchAlgorithmException;
+import java.security.Security;
 import java.security.cert.CertificateException;
 import java.security.cert.X509Certificate;
 import java.util.Arrays;
@@ -62,7 +63,7 @@ public class SslContextFactory extends AbstractSslContextFactory {
     public static final String DFLT_SSL_PROTOCOL = AbstractSslContextFactory.DFLT_SSL_PROTOCOL;
 
     /** Default key manager / trust manager algorithm. Specifying different trust manager algorithm is not supported. */
-    public static final String DFLT_KEY_ALGORITHM = System.getProperty("ssl.KeyManagerFactory.algorithm", "SunX509");
+    public static final String DFLT_KEY_ALGORITHM = System.getProperty("ssl.KeyManagerFactory.algorithm", getSecurityProperty("ssl.KeyManagerFactory.algorithm", "SunX509"));
 
     /** Key manager algorithm. */
     protected String keyAlgorithm = DFLT_KEY_ALGORITHM;
@@ -382,6 +383,20 @@ public class SslContextFactory extends AbstractSslContextFactory {
         catch (IOException e) {
             throw new SSLException("Failed to initialize key store (I/O error occurred): " + storeFilePath, e);
         }
+    }
+
+    /**
+     * Get java security property
+     * @param property property name
+     * @param defaultValue default value
+     * @return Returns security property retrieved by name or defaultValue if not found
+     */
+    private static String getSecurityProperty(String property, String defaultValue) {
+        String value = Security.getProperty(property);
+        if (value != null) {
+            return value;
+        }
+        return defaultValue;
     }
 
     /** {@inheritDoc} */
