@@ -210,12 +210,9 @@ public class CacheCopyDataService implements CacheAgentService {
 	}
 	
 	public String typeName(IgniteCache<Object,BinaryObject> dataMap) {    	
-    	String typeName = tableOfCache(dataMap.getName());
-    	String shortName = typeName;
-    	if(!StringUtil.isNullOrEmpty(typeName)) {
-    		int pos = typeName.lastIndexOf('.');
-    		shortName = pos>0? typeName.substring(pos+1): typeName;
-    	}
+    	String typeName = tableOfCache(dataMap.getName());    	
+    	int pos = typeName.lastIndexOf('.');
+    	String shortName = pos>0? typeName.substring(pos+1): typeName;
     	
     	CacheConfiguration<Object,BinaryObject> cfg = dataMap.getConfiguration(CacheConfiguration.class);
     	
@@ -223,11 +220,7 @@ public class CacheCopyDataService implements CacheAgentService {
     		Iterator<QueryEntity> qeit = cfg.getQueryEntities().iterator();
     		while(qeit.hasNext()) {
 	    		QueryEntity entity = qeit.next();
-	    		if(StringUtil.isNullOrEmpty(typeName)) {
-	        		typeName = entity.getValueType();
-	        		break;
-	        	}
-	    		else if(typeName.equalsIgnoreCase(entity.getValueType()) || shortName.equalsIgnoreCase(entity.getTableName())){
+	    		if(typeName.equalsIgnoreCase(entity.getValueType()) || shortName.equalsIgnoreCase(entity.getTableName())){
 	    			break;
 	    		}
 	    		else {

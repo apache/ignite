@@ -1,5 +1,5 @@
 
-
+import _ from 'lodash';
 import cloneDeep from 'lodash/cloneDeep';
 import get from 'lodash/get';
 import {tap} from 'rxjs/operators';
@@ -43,11 +43,7 @@ export default class CacheEditFormController {
         rebuildDropdowns();
 
         const filterModel = () => {
-            if (
-                this.clonedCache &&
-                this.available('2.0.0') &&
-                get(this.clonedCache, 'affinity.kind') === 'Fair'
-            )
+            if (this.clonedCache && get(this.clonedCache, 'affinity.kind') === 'Fair')
                 this.clonedCache.affinity.kind = null;
 
         };

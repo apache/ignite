@@ -150,36 +150,36 @@ export default class CacheServiceController {
         this.subscription = merge(
             this.originalCache$,
             this.serviceList$,
-            this.selectionManager.editGoes$.pipe(tap((id) => this.edit(id))),
+            this.selectionManager.editGoes$.pipe(tap((id:string) => this.edit(id))),
             this.selectionManager.editLeaves$.pipe(tap((options) => this.$state.go('base.console.edit.cache-service.select', null, options)))
         ).subscribe();
         
-        this.tableActions$ = this.selectionManager.selectedItemIDs$.pipe(map((selectedItems) => [
+        this.tableActions$ = this.selectionManager.selectedItemIDs$.pipe(map((selectedItems: Array<string>) => [
             {
                 action: 'Flush Data', 
                 click: () => {
-                    this.call(selectedItems,'saveDataService');
+                    this.call(selectedItems,'CacheSaveDataService');
                 },
                 available: true
             },
             {
                 action: 'Load Data',
                 click: () => {
-                    this.call(selectedItems,'loadDataService');
+                    this.call(selectedItems,'CacheLoadDataService');
                 },
                 available: true
             },
             {
                 action: 'Clear Data',
                 click: () => {
-                    this.call(selectedItems,'clearDataService');
+                    this.call(selectedItems,'CacheClearDataService');
                 },
                 available: true
             },
             {
                 action: 'Poll Data from Other Cluster',
                 click: () => {
-                    this.call(selectedItems,'copyDataService');
+                    this.call(selectedItems,'CacheCopyDataService');
                 },
                 available: true
             }

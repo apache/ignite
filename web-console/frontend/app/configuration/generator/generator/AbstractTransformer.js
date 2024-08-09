@@ -1,5 +1,5 @@
 
-
+import _ from 'lodash';
 import StringBuilder from './StringBuilder';
 
 import IgniteConfigurationGenerator from './ConfigurationGenerator';
@@ -136,11 +136,6 @@ export default class AbstractTransformer {
     // Generate metrics group.
     static clusterMetrics(cluster, available) {
         return this.toSection(this.generator.clusterMetrics(cluster, available));
-    }
-
-    // Generate ODBC group.
-    static clusterODBC(odbc, available) {
-        return this.toSection(this.generator.clusterODBC(odbc, available));
     }
 
     // Generate cluster persistence store group.

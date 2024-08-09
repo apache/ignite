@@ -83,6 +83,18 @@ export default class PageConfigureAdvancedModels {
                 sort: {direction: 'asc', priority: 0},
                 cellTemplate: valueCellTemplate,
                 minWidth: 165
+            },
+            {
+                name: 'valueLabel',
+                displayName: 'Value label',
+                field: 'tableComment',
+                enableHiding: false,
+                filter: {
+                    placeholder: 'Filter by value label'
+                },
+                sort: {direction: 'asc', priority: 0},
+                cellTemplate: valueCellTemplate,
+                minWidth: 165
             }
         ];
 

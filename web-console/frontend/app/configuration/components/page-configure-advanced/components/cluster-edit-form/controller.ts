@@ -107,7 +107,7 @@ export default class ClusterEditFormController {
         this.supportedJdbcTypes = this.IgniteLegacyUtils.mkOptions(this.IgniteLegacyUtils.SUPPORTED_JDBC_TYPES);
 
         this.$scope.ui = this.IgniteFormUtils.formUI();
-        this.$scope.ui.loadedPanels = ['checkpoint', 'serviceConfiguration', 'odbcConfiguration'];
+        this.$scope.ui.loadedPanels = ['checkpoint', 'serviceConfiguration'];
 
         this.formActions = [
             {text: 'Save', icon: 'checkmark', click: () => this.save(false)},

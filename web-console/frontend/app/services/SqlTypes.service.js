@@ -42,7 +42,7 @@ export default class SqlTypes {
      * Find JDBC type descriptor for specified JDBC type and options.
      *
      * @param {Number} dbType  Column db type.
-     * @return {String} Java type.
+     * @return {String|object} Java type.
      */
     findJdbcType(dbType) {
         const jdbcType = _.find(JDBC_TYPES, (item) => item.dbType === dbType);

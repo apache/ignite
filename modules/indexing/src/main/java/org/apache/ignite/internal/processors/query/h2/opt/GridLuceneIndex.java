@@ -95,7 +95,7 @@ import static org.apache.ignite.internal.processors.query.QueryUtils.VAL_FIELD_N
  */
 public class GridLuceneIndex implements AutoCloseable {
     /** Field name for string representation of value. */
-    public static final String VAL_STR_FIELD_NAME = "_TEXT";//modify@byron "_gg_val_str__";  
+    public static final String VAL_STR_FIELD_NAME = "_TEXT"; // modify@byron "_gg_val_str__";  
     
     public static final int DEAULT_LIMIT = 1200;
     
@@ -297,7 +297,7 @@ public class GridLuceneIndex implements AutoCloseable {
             String orderBy = null;
             String tag = null;
             StringBuilder sb = new StringBuilder();
-            for(String item:items){
+            for(String item : items){
             	if(item.startsWith("tag:")){
             		tag = item.substring("tag:".length());
             	}

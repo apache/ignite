@@ -174,18 +174,21 @@ public class JdbcExecutor implements AutoCloseable {
             		node.put("tcpAddresses", dbInfo.jdbcUrl);
             		node.put("consistentId", dbInfo.getJndiName());
             		node.put("tcpPort", dbInfo.getSchemaName());
-            		node.put("replicaCount", dbInfo.top.getNodes().size());
-            		node.put("attributes", dbInfo.getJdbcProp());
-            		node.put("isActive", dbInfo.top.isActive());
-            		node.getJsonObject("attributes").put("database.driverCls", dbInfo.driverCls);
+            		node.put("replicaCount", dbInfo.top.getNodes().size());            		
+            		node.put("isActive", dbInfo.top.isActive());            		
             		if(params.getBoolean("attr",false)) {
+            			node.put("attributes", dbInfo.getJdbcProp());
+            			JsonObject attrs = node.getJsonObject("attributes");
+            			attrs.put("database.driverCls", dbInfo.driverCls);
 	            		System.getenv().forEach((k,v)->{
-	            			node.getJsonObject("attributes").put(k, v);
+	            			if(k.startsWith("ignite") || v.length()<128) {
+	            				attrs.put(k, v);
+	            			}
 	            		});
             		}
             		
                     result.add(node);
-                    res.put("result", result);
+                    return RestResult.success(result.toString(), args.getString("sessionToken"));
                     
             	}
             	else if("metadata".equals(cmd)) {
@@ -219,16 +222,19 @@ public class JdbcExecutor implements AutoCloseable {
                     	ObjectNode column = new ObjectNode(jsonNodeFactory);
                     	
                     	for(DbColumn col: table.getColumns()) {
+                    		String aClass = "java.lang.Object";
                     		try {
-                    			String aClass = DataType.getTypeClassName(DataType.convertSQLTypeToValueType(col.getType()));
-                    			column.put(col.getName(), aClass);
+                    			aClass = DataType.getTypeClassName(DataType.convertSQLTypeToValueType(col.getType()));
                     		}
                     		catch(DbException e) {
-                    			column.put(col.getName(), "java.lang.Object");
+                    			log.warning(e.getMessage());
                     		}
+                    		column.put(col.getName(), col.getComment()!=null? aClass+" //"+col.getComment(): aClass);
                     	}                    	
                     	fields.set(typeName, column);
                     	
+                    	ObjectNode comments = caches.withObject("/comments");
+                    	comments.put(typeName, table.getComment());
                     	
                     	ObjectNode indexes = caches.withObject("/indexes");
                     	ArrayNode index = new ArrayNode(jsonNodeFactory);  

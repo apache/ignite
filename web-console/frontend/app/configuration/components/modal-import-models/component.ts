@@ -25,7 +25,7 @@ import {default as ConfigSelectors} from '../../store/selectors';
 import {default as ConfigEffects} from '../../store/effects';
 import {default as ConfigureState} from '../../services/ConfigureState';
 // eslint-disable-next-line
-import {default as AgentManager} from 'app/modules/agent/AgentModal.service'
+import {default as AgentManager} from 'app/modules/agent/AgentManager.service'
 import {default as SqlTypes} from 'app/services/SqlTypes.service';
 import {default as JavaTypes} from 'app/services/JavaTypes.service';
 import IgniteLegacyUtils from 'app/services/LegacyUtils.service';
@@ -90,6 +90,8 @@ export class ModalImportModels {
 
     /** @type {ng.ICompiledExpression} */
     onHide;
+
+    loadedCaches: Map<string, any>;
 
     static $inject = ['$uiRouter','Datasource', 'ConfigSelectors', 'ConfigEffects', 'ConfigureState', 'IgniteConfirm', 'IgniteConfirmBatch', 'IgniteFocus', 'SqlTypes', 'JavaTypes', 'IgniteMessages', 
     '$scope', 'Demo', 'AgentManager', 'IgniteActivitiesData', 'IgniteLoading', 'IgniteFormUtils', 'IgniteLegacyUtils', 'IgniteVersion', 'User'];
@@ -522,9 +524,8 @@ export class ModalImportModels {
 
                     _.forEach(tables, (tbl, idx) => {
                         tbl.id = idx;
-                        tbl.action = IMPORT_DM_NEW_CACHE;
-                        // tbl.generatedCacheName = toJavaClassName(tbl.table) + 'Cache';
-                        tbl.generatedCacheName = uniqueName(toJavaClassName(tbl.table) + 'Cache', this.caches);
+                        tbl.action = IMPORT_DM_NEW_CACHE;                       
+                        tbl.generatedCacheName = uniqueName(toJavaClassName(tbl.table), this.caches);
                         tbl.cacheOrTemplate = DFLT_PARTITIONED_CACHE.value;
                         tbl.label = tbl.schema + '.' + tbl.table;
                         tbl.edit = false;
@@ -642,7 +643,7 @@ export class ModalImportModels {
                 _.forEach(table.columns, function(col) {
                     const fld = dbField(col.name, SqlTypes.findJdbcType(col.type), col.nullable, col.unsigned);
 
-                    qryFields.push({name: fld.javaFieldName, className: fld.javaType});
+                    qryFields.push({name: fld.javaFieldName, className: fld.javaType, comment: col.comment});
 
                     const dbName = fld.databaseFieldName;
 
@@ -699,6 +700,7 @@ export class ModalImportModels {
 
                 Object.assign(batchAction.newDomainModel, {
                     tableName: typeAlias,
+                    tableComment: table.comment,
                     keyType: valType + 'Key',
                     valueType: valType,
                     queryMetadata: 'Configuration',
@@ -744,8 +746,10 @@ export class ModalImportModels {
                     // const siblingCaches = batch.filter((a) => a.newCache).map((a) => a.newCache);
                     const siblingCaches = [];
                     newCache.id = uuidv4();
-                    newCache.name = uniqueName(typeName + 'Cache', this.caches.concat(siblingCaches));
+                    newCache.name = uniqueName(typeName, this.caches.concat(siblingCaches));
                     newCache.domains = [batchAction.newDomainModel.id];
+                    // add@byron
+                    newCache.sqlSchema = table.schema;
                     batchAction.newDomainModel.caches = [newCache.id];
 
                     // POJO store factory is not defined in template.

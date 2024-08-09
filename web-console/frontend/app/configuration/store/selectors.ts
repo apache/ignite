@@ -8,6 +8,7 @@ import {defaultNames} from '../defaultNames';
 import {default as Caches} from '../services/Caches';
 import {default as Clusters} from '../services/Clusters';
 import {default as Models} from '../services/Models';
+import {Cluster} from '../types';
 
 const isDefined = filter((v) => v);
 
@@ -49,7 +50,7 @@ const currentShortItems = ({changesKey, shortKey}) => (state$) => {
 
 const selectNames = (itemIDs, nameAt = 'name') => pipe(
     pluck('value'),
-    map((items) => itemIDs.map((id) => items.get(id)[nameAt]))
+    map((items:any) => itemIDs.map((id) => items.get(id)[nameAt]))
 );
 
 export default class ConfigSelectors {
@@ -148,7 +149,7 @@ export default class ConfigSelectors {
         return combineLatest(
             state$.pipe(this.selectCluster(clusterID), pluck('caches')),
             state$.pipe(this.selectShortCaches(), pluck('value')),
-            (ids, items) => ids.map((id) => items.get(id))
+            (ids:Array<string>, items:any) => ids.map((id) => items.get(id))
         );
     };
 
@@ -156,7 +157,7 @@ export default class ConfigSelectors {
         const hasValues = (array) => !array.some((v) => !v);
         return state$.pipe(
             this.selectCluster(clusterID),
-            exhaustMap((cluster) => {
+            exhaustMap((cluster:Cluster) => {
                 if (!cluster)
                     return of({__isComplete: false});
 

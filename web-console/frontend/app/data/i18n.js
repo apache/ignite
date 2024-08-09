@@ -16,6 +16,7 @@ export default {
     '/queries/scan': 'Scan',
     '/queries/add/query': 'Add query',
     '/queries/add/scan': 'Add scan',
+    '/queries/add/gremlin': 'Add Gremlin query',
     '/queries/demo': 'SQL demo',
     '/queries/notebook/': 'Query notebook',
     '/settings/profile': 'User profile',
@@ -36,6 +37,17 @@ export default {
     'base.sql.tabs.queries-history': 'Queries history',
     'base.sql.tabs.running-queries': 'Running queries',
     'base.monitoring.rolling-updates': 'Rolling Update',
+
+    // add@byron
+    'queries.notebook.scanTooltip.clusterIsInactive': 'Cluster is inactive',
+    'queries.notebook.scanTooltip.waitingForResponse': 'Waiting for cluster query response',
+    'queries.notebook.scanTooltip.text': 'Scan all data',
+
+    'queries.notebook.queryTooltip.clusterIsInactive': 'Cluster is inactive',
+    'queries.notebook.queryTooltip.waitingForResponse': 'Waiting for cluster query response',
+    'queries.notebook.queryTooltip.actionPrefix': 'Execute query of ',
+
+    'queries.notebook.clearQueryResultConfirmationMessage': 'Are you sure you want to clear query result?',
 
     // app/components/page-signin/template.pug
     'app.components.page-signin.m1': 'Sign In',

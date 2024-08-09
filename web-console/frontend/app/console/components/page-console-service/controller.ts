@@ -122,17 +122,13 @@ export default class ServiceController {
             filter((v) => v),
             take(1)
         );
-       
-        
         
         this.serviceMap = {
             'status':{ id: 'status', name:'status', description:'get cluster last status', mode: 'NodeSinger'},
             'serviceList':{ id: 'serviceList', name:'serviceList', description:'get cluster service list', mode: 'NodeSinger'}
         };
-        this.serviceList = [this.serviceMap['status'],this.serviceMap['serviceList']];  
-        
-        
-        //this.serviceListSubject$.next(this.serviceList);     
+        this.serviceList = [this.serviceMap['status'],this.serviceMap['serviceList']];
+         
         
         this.clusterID = await clusterID$.toPromise();
         this.serviceList$ = from(this.callServiceList('ClusterAgentService'));
@@ -161,13 +157,13 @@ export default class ServiceController {
 
         this.subscription = merge(
             this.originalService$,
-            this.selectionManager.editGoes$.pipe(tap((id) => this.edit(id))),
+            this.selectionManager.editGoes$.pipe(tap((id:string) => this.edit(id))),
             this.selectionManager.editLeaves$.pipe(tap((options) => this.$state.go('base.console.edit.service.select', null, options)))
         ).subscribe();
 
         this.isBlocked$ = serviceID$; 
         
-        this.tableActions$ = this.selectionManager.selectedItemIDs$.pipe(map((selectedItems) => [            
+        this.tableActions$ = this.selectionManager.selectedItemIDs$.pipe(map((selectedItems: Array<string>) => [            
             {
                 action: 'Redeploy',
                 click: () => {

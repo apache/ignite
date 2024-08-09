@@ -61,7 +61,7 @@ export default class PageDatasourceOverviewController {
             },
             sort: {direction: 'asc'},
             sortingAlgorithm: naturalCompare,
-            minWidth: 400
+            minWidth: 300
         },
         {
             name: 'driverCls',
@@ -77,7 +77,7 @@ export default class PageDatasourceOverviewController {
             field: 'db',
             cellClass: 'ui-grid-number-cell',            
             enableFiltering: false,           
-            width: 75
+            width: 100
         },
         {
             name: 'schemaName',
@@ -97,7 +97,7 @@ export default class PageDatasourceOverviewController {
             `,
             enableFiltering: false,
             type: 'string',
-            width: 75
+            width: 85
         },
         {
             name: 'id',
@@ -107,7 +107,7 @@ export default class PageDatasourceOverviewController {
             cellTemplate: cellTemplate,
             enableFiltering: false,
             type: 'string',
-            width: 75
+            width: 85
         }
     ];    
 

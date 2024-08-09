@@ -64,7 +64,7 @@ public final class TextQuery<K, V> extends Query<Cache.Entry<K, V>> {
     /** */
     private static final long serialVersionUID = 0L;
 
-    /** */
+    /** Table name */
     private String type;
 
     /** SQL clause. */

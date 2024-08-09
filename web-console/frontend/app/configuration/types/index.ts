@@ -86,6 +86,7 @@ export interface ShortDomainModel {
     id: string,
     keyType: string,
     valueType: string,
+    tableComment?: string,
     hasIndex: boolean
 }
 

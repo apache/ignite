@@ -24,11 +24,18 @@ import java.util.Arrays;
 import java.util.HashSet;
 import java.util.Set;
 
+import org.apache.ignite.console.agent.db.Dialect;
+
 /**
- * MySQL specific metadata dialect.
+ * MySQL specific metadata dialect. useInformationSchema=true
  */
 public class MySQLMetadataDialect extends JdbcMetadataDialect {
-    /** Type name index. */
+    
+	public MySQLMetadataDialect(Connection conn) {
+		super(conn, Dialect.MYSQL);		
+	}
+
+	/** Type name index. */
     private static final int TYPE_NAME_IDX = 1;
 
     /** {@inheritDoc} */

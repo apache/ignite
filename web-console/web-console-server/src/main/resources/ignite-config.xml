@@ -6,7 +6,7 @@
     <bean class="org.apache.ignite.configuration.IgniteConfiguration">
     	<property name="igniteInstanceName" value="admin" />	
         <property name="consistentId" value="web-console-data"/>
-        <property name="peerClassLoadingEnabled" value="false"/>
+        <property name="peerClassLoadingEnabled" value="true"/>
         <property name="metricsLogFrequency" value="0"/>
         <property name="queryThreadPoolSize" value="8"/>
         <property name="failureDetectionTimeout" value="10000"/>

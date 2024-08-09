@@ -9,7 +9,7 @@ include /app/configuration/mixins
 panel-collapsible(ng-form=form on-open=`ui.loadPanel('${form}')`)
     panel-title Queries & Indexing
     panel-description
-        | Cache queries settings.
+        | Cache queries and sqlSchema settings. 
         a.link-success(href="https://apacheignite-sql.readme.io/docs/select" target="_blank") More info
     panel-content.pca-form-row(ng-if=`ui.isPanelLoaded('${form}')`)
         .pca-form-column-6.pc-form-grid-row
@@ -19,8 +19,8 @@ panel-collapsible(ng-form=form on-open=`ui.loadPanel('${form}')`)
                     model: `${model}.sqlSchema`,
                     name: '"sqlSchema"',
                     placeholder: 'Input schema name',
-                    tip: 'Cache group name.<br/>\
-                          Caches with the same group name share single underlying "physical" cache (partition set), but are logically isolated.'
+                    tip: 'If SQL schema name is not set<br/>\
+                          In SQL terms, each such cache corresponds to a separate schema whose name equals the name of the cache'
                 })
            
             .pc-form-grid-col-60

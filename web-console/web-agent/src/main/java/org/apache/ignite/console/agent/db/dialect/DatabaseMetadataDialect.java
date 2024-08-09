@@ -112,13 +112,13 @@ public abstract class DatabaseMetadataDialect {
      * @param idxs Table indexes.
      * @return New {@code DbTable} instance.
      */
-    protected DbTable table(String schema, String tbl, Collection<DbColumn> cols, Collection<QueryIndex>idxs) {
+    protected DbTable table(String schema, String tbl, String comment,Collection<DbColumn> cols, Collection<QueryIndex>idxs) {
         Collection<VisorQueryIndex> res = new ArrayList<>(idxs.size());
 
         for (QueryIndex idx : idxs)
             res.add(new VisorQueryIndex(idx));
 
-        return new DbTable(schema, tbl, cols, res);
+        return new DbTable(schema, tbl, comment, cols, res);
     }
 
     /**

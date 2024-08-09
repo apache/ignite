@@ -16,25 +16,6 @@
 
 package org.apache.ignite.console.agent.db.dialect;
 
-import java.sql.Connection;
-import java.sql.PreparedStatement;
-import java.sql.ResultSet;
-import java.sql.SQLException;
-import java.sql.Statement;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.HashSet;
-import java.util.LinkedHashMap;
-import java.util.LinkedHashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
-import org.apache.ignite.cache.QueryIndex;
-import org.apache.ignite.console.agent.db.DbColumn;
-import org.apache.ignite.console.agent.db.DbTable;
-
 import static java.sql.Types.BIGINT;
 import static java.sql.Types.BLOB;
 import static java.sql.Types.CHAR;
@@ -52,6 +33,28 @@ import static java.sql.Types.SQLXML;
 import static java.sql.Types.TIMESTAMP;
 import static java.sql.Types.TINYINT;
 import static java.sql.Types.VARCHAR;
+
+import java.sql.Connection;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+import java.sql.SQLException;
+import java.sql.Statement;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.HashSet;
+import java.util.LinkedHashMap;
+import java.util.LinkedHashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+
+import org.apache.ignite.cache.QueryIndex;
+import org.apache.ignite.console.agent.db.DbColumn;
+import org.apache.ignite.console.agent.db.DbTable;
+import org.apache.ignite.console.agent.db.Dialect;
+import org.apache.ignite.console.agent.utils.DBMetadataUtils;
 
 /**
  * Oracle specific metadata dialect.
@@ -139,6 +142,15 @@ public class OracleMetadataDialect extends DatabaseMetadataDialect {
 
             "APEX_040000", "APEX_PUBLIC_USER", "DIP", "FLOWS_30000", "FLOWS_FILES", "MDDATA", "ORACLE_OCM",
             "SPATIAL_CSW_ADMIN_USR", "SPATIAL_WFS_ADMIN_USR", "XS$NULL"));
+    }
+    
+    private DBMetadataUtils metaUtil;
+    
+    private final Connection conn;
+    
+    public OracleMetadataDialect(Connection conn) {
+    	this.conn = conn;
+    	this.metaUtil = new DBMetadataUtils(conn,Dialect.ORACLE);
     }
 
     /** {@inheritDoc} */
@@ -368,7 +380,8 @@ public class OracleMetadataDialect extends DatabaseMetadataDialect {
                     String prevSchema = "";
                     String prevTbl = "";
 
-                    boolean first = true;
+                    boolean first = true;                   
+                    
 
                     Set<String> pkCols = Collections.emptySet();
                     Collection<DbColumn> cols = new ArrayList<>();
@@ -380,6 +393,8 @@ public class OracleMetadataDialect extends DatabaseMetadataDialect {
 
                         if (sysSchemas.contains(owner) || (schema != null && schema.startsWith("FLOWS_")))
                             continue;
+                        
+                        
 
                         boolean changed = !owner.equals(prevSchema) || !tbl.equals(prevTbl);
 
@@ -387,7 +402,7 @@ public class OracleMetadataDialect extends DatabaseMetadataDialect {
                             if (first)
                                 first = false;
                             else
-                                tbls.add(table(prevSchema, prevTbl, cols, idxs));
+                                tbls.add(table(prevSchema, prevTbl, null, cols, idxs));
 
                             prevSchema = owner;
                             prevTbl = tbl;
@@ -413,7 +428,34 @@ public class OracleMetadataDialect extends DatabaseMetadataDialect {
                     }
 
                     if (!cols.isEmpty())
-                        tbls.add(table(prevSchema, prevTbl, cols, idxs));
+                        tbls.add(table(prevSchema, prevTbl, null, cols, idxs));
+                }
+                
+                Map<String,String> tableComments = this.metaUtil.getIntrospector().getTableComments(conn.getCatalog(), schema);
+                if(tableComments!=null) {
+	                for(DbTable tab: tbls) {
+	                	String remarks = tableComments.get(tab.getTable());
+	                	if(remarks!=null) {
+	                		tab.setComment(remarks);
+	                	}
+	                }
+                }
+                
+                Map<String, Map<String, String>> tableColumnComments = this.metaUtil.getIntrospector().getColumnComments(conn.getCatalog(), schema);
+                
+                if(tableColumnComments!=null) {
+	                for(DbTable tab: tbls) {
+	                	Map<String, String> remarks = tableColumnComments.get(tab.getTable());
+	                	if(remarks!=null) {
+	                		for(DbColumn col: tab.getColumns()) {
+	                			String remark = remarks.get(col.getName());
+	                			if(remark!=null) {
+	                				col.setComment(remark);
+	                			}
+	                		}
+	                		
+	                	}
+	                }
                 }
             }
         }

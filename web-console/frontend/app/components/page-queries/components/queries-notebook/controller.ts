@@ -834,7 +834,7 @@ export class NotebookCtrl {
         $scope.chartAcceptKeyColumn = function(paragraph, item) {
             const accepted = _.findIndex(paragraph.chartKeyCols, item) < 0;
 
-            if (accepted) {
+            if (accepted && (item!=TIME_LINE || paragraph.chartKeyCols.length==0)) {
                 paragraph.chartKeyCols = [item];
 
                 _chartApplySettings(paragraph, true);
@@ -978,13 +978,13 @@ export class NotebookCtrl {
                     if (!active || state !== 'CONNECTED' || (!cluster && !agentMgr.isDemoMode()))
                         return of(EMPTY);
 
-                    return of(cluster).pipe(
-                        // remove@byron
-                        // tap(() => Loading.start('sqlLoading')),
+                    return of(cluster).pipe(                        
+                        tap(() => Loading.start('sqlLoading')),
                         tap(() => {
                             _.forEach($scope.notebook.paragraphs, (paragraph) => {
-                                // remove@byron
-                                // paragraph.reset($interval);
+                                //to modify@byron
+                                paragraph.reset($interval);
+                                // paragraph.cancelRefresh($interval);
                             });
                         }),
                         switchMap(() => refreshCaches(60000))

@@ -8,7 +8,8 @@ import {CacheModes, AtomicityModes, ShortCache} from '../types';
 import {Menu} from 'app/types';
 
 const JDBC_LINKS = {
-    Oracle: 'https://docs.oracle.com/javase/tutorial/jdbc/basics/connecting.html'
+    Oracle: 'https://docs.oracle.com/javase/tutorial/jdbc/basics/connecting.html',
+    Dremio: 'https://www.dremio.com/platform/sql-query-engine/'
 }
 
 export default class Caches {

@@ -71,7 +71,7 @@ panel-collapsible(ng-form=form opened=`!!${model}.queryMetadata`)
                             ng-change=`$ctrl.onQueryFieldsChange(${model})`
                         )
                             list-editable-item-view
-                                | {{$ctrl.Models.fieldProperties.fieldPresentation($item, $ctrl.available)}}
+                                | {{$ctrl.Models.fieldProperties.fieldPresentation($item, $ctrl.available)}} / {{$item.comment}}
 
                             list-editable-item-edit
                                 - form = '$parent.form'

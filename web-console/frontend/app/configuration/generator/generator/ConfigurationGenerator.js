@@ -93,7 +93,6 @@ export default class IgniteConfigurationGenerator {
         this.clusterMisc(cluster, available, cfg);
         this.clusterMetrics(cluster, available, cfg);
         this.clusterMvcc(cluster, available, cfg);
-        this.clusterODBC(cluster.odbc, available, cfg);
 
         this.clusterRebalance(cluster, available, cfg);
         this.clusterServiceConfiguration(cluster.serviceConfigurations, cluster.caches, cfg);
@@ -137,7 +136,7 @@ export default class IgniteConfigurationGenerator {
 
                 break;
 
-            case '@DB2':
+            case 'DB2':
                 dsBean = new Bean('com.ibm.db2.jcc.DB2DataSource', id, {})
                     .property('serverName', `${id}.jdbc.server_name`, 'YOUR_DATABASE_SERVER_NAME')
                     .propertyInt('portNumber', `${id}.jdbc.port_number`, 'YOUR_JDBC_PORT_NUMBER')
@@ -769,9 +768,7 @@ export default class IgniteConfigurationGenerator {
     }
 
     // Generate cluster query group.
-    static clusterClientConnector(cluster, available, cfg = this.igniteConfigurationBean(cluster)) {
-        if (!available('2.3.0'))
-            return cfg;
+    static clusterClientConnector(cluster, available, cfg = this.igniteConfigurationBean(cluster)) {        
 
         cfg.longProperty('longQueryWarningTimeout');
 
@@ -959,9 +956,7 @@ export default class IgniteConfigurationGenerator {
                     cluster.peerClassLoadingLocalClassPathExclude);
         }
 
-        // Since ignite 2.0
-        if (available('2.0.0'))
-            cfg.emptyBeanProperty('classLoader');
+        cfg.emptyBeanProperty('classLoader');
 
         let deploymentBean = null;
 
@@ -1048,7 +1043,7 @@ export default class IgniteConfigurationGenerator {
 
     // Execute event filtration in accordance to generated project version.
     static filterEvents(eventGrps, available) {
-        if (available('2.0.0')) {
+        if (eventGrps) {
             return _.reduce(eventGrps, (acc, eventGrp) => {
                 switch (eventGrp.value) {
                     case 'EVTS_SWAPSPACE':
@@ -1540,27 +1535,7 @@ export default class IgniteConfigurationGenerator {
             cfg.longProperty('metricsUpdateFrequency');
 
         return cfg;
-    }
-
-    // Generate ODBC group.
-    static clusterODBC(odbc, available, cfg = this.igniteConfigurationBean()) {
-        //  Deprecated in ignite 2.1
-        if (available('2.1.0') || _.get(odbc, 'odbcEnabled') !== true)
-            return cfg;
-
-        const bean = new Bean('org.apache.ignite.configuration.OdbcConfiguration', 'odbcConfiguration',
-            odbc, clusterDflts.odbcConfiguration);
-
-        bean.stringProperty('endpointAddress')
-            .intProperty('socketSendBufferSize')
-            .intProperty('socketReceiveBufferSize')
-            .intProperty('maxOpenCursors')
-            .intProperty('threadPoolSize');
-
-        cfg.beanProperty('odbcConfiguration', bean);
-
-        return cfg;
-    }
+    }    
 
     // Generate cluster query group.
     static clusterQuery(cluster, available, cfg = this.igniteConfigurationBean(cluster)) {
@@ -1939,8 +1914,7 @@ export default class IgniteConfigurationGenerator {
 
     // Generate domain model for store group.
     static domainStore(domain, cfg = this.domainJdbcTypeBean(domain)) {
-        cfg.stringProperty('databaseSchema')
-            .stringProperty('databaseTable');
+        cfg.stringProperty('databaseSchema').stringProperty('databaseTable');
 
         this._domainModelDatabaseFields(cfg, 'keyFields', domain);
         this._domainModelDatabaseFields(cfg, 'valueFields', domain);
@@ -2072,9 +2046,7 @@ export default class IgniteConfigurationGenerator {
 
         ccfg.emptyBeanProperty('affinityMapper');
 
-        // Since ignite 2.0
-        if (available('2.0.0'))
-            ccfg.emptyBeanProperty('topologyValidator');
+        ccfg.emptyBeanProperty('topologyValidator');            
 
         return ccfg;
     }

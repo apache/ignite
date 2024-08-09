@@ -407,16 +407,6 @@ export default class Clusters {
         }
     };
 
-    odbc = {
-        odbcEnabled: {
-            correctMarshaller: (cluster, odbcEnabled) => {
-                const marshallerKind = get(cluster, 'marshaller.kind') || this.marshaller.kind.default;
-                return !odbcEnabled || marshallerKind === this.marshaller.kind.default;
-            },
-            correctMarshallerWatch: (root) => `${root}.marshaller.kind`
-        }
-    };
-
     swapSpaceSpis = [
         {value: 'FileSwapSpaceSpi', label: 'File-based swap'},
         {value: null, label: 'Not set'}

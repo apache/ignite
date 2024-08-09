@@ -17,22 +17,15 @@
 package org.apache.ignite.console.agent.db.dialect;
 
 import java.sql.Connection;
-import java.sql.DatabaseMetaData;
-import java.sql.ResultSet;
 import java.sql.SQLException;
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashSet;
-import java.util.LinkedHashMap;
-import java.util.LinkedHashSet;
 import java.util.List;
-import java.util.Map;
 import java.util.Set;
 
-import org.apache.ignite.cache.QueryIndex;
-import org.apache.ignite.console.agent.db.DbColumn;
 import org.apache.ignite.console.agent.db.DbTable;
+import org.apache.ignite.console.agent.db.Dialect;
 
 /**
  * MySQL specific metadata dialect.
@@ -40,6 +33,10 @@ import org.apache.ignite.console.agent.db.DbTable;
 public class DremioMetadataDialect extends JdbcMetadataDialect {
     /** Type name index. */
     private static final int TYPE_NAME_IDX = 1;
+    
+    public DremioMetadataDialect(Connection conn) {
+		super(conn, Dialect.DREMIO);		
+	}
 
     /** {@inheritDoc} */
     @Override public Set<String> systemSchemas() {

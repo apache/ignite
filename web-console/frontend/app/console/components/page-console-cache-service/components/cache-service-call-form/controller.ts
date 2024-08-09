@@ -108,7 +108,7 @@ export default class CacheServiceCallFormController {
         if (this.$scope.ui.inputForm && this.$scope.ui.inputForm.$invalid)
             return this.IgniteFormUtils.triggerValidation(this.$scope.ui.inputForm, this.$scope);
         return this.IgniteConfirm.confirm('Are you sure you want to '+service.description+' for current selected caches?')
-        .then( () => { this.callServiceForCache(service.name); } );
+            .then( () => { this.callServiceForCache(service.name); } );
     }
 
     clearImplementationVersion(storeFactory) {

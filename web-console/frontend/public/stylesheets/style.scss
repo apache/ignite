@@ -1865,7 +1865,8 @@ treecontrol.tree-classic {
 .grid {
     .ui-grid-header-cell .ui-grid-cell-contents {
         text-align: center;
-
+        text-overflow: unset;
+        
         > span:not(.ui-grid-header-cell-label) {
             position: absolute;
             right: -3px;

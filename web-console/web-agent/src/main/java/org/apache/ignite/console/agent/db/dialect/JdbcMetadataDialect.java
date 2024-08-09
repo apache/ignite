@@ -27,9 +27,12 @@ import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+
 import org.apache.ignite.cache.QueryIndex;
 import org.apache.ignite.console.agent.db.DbColumn;
 import org.apache.ignite.console.agent.db.DbTable;
+import org.apache.ignite.console.agent.db.Dialect;
+import org.apache.ignite.console.agent.utils.DBMetadataUtils;
 
 /**
  * Metadata dialect that uses standard JDBC for reading metadata.
@@ -76,6 +79,19 @@ public class JdbcMetadataDialect extends DatabaseMetadataDialect {
 
     /** Index column descend index. */
     static final int IDX_ASC_OR_DESC_IDX = 10;
+    
+    protected DBMetadataUtils metaUtil;
+    
+    protected final Connection conn;
+    
+    protected boolean hasTableComment = true;
+    
+    protected boolean hasColumnComment = true;
+    
+    public JdbcMetadataDialect(Connection conn,Dialect dialect) {
+    	this.conn = conn;
+    	this.metaUtil = new DBMetadataUtils(conn,dialect);
+    }
 
     /** {@inheritDoc} */
     @Override public Collection<String> schemas(Connection conn, boolean importSamples) throws SQLException {
@@ -151,6 +167,8 @@ public class JdbcMetadataDialect extends DatabaseMetadataDialect {
                     // Skip system schemas.
                     if (sys.contains(schema))
                         continue;
+                    
+                    String tableComment = tableCommentColumn(tblsRs,toSchema,tblName);
 
                     Set<String> pkCols = new LinkedHashSet<>();
 
@@ -190,13 +208,16 @@ public class JdbcMetadataDialect extends DatabaseMetadataDialect {
                     try (ResultSet colsRs = dbMeta.getColumns(tblCatalog, tblSchema, tblName, null)) {
                         while (colsRs.next()) {
                             String colName = colsRs.getString(COL_NAME_IDX);
+                            DbColumn col = new DbColumn(
+                                    colName,
+                                    colsRs.getInt(COL_DATA_TYPE_IDX),
+                                    pkCols.contains(colName),
+                                    colsRs.getInt(COL_NULLABLE_IDX) == DatabaseMetaData.columnNullable,
+                                    unsignedTypes.contains(colsRs.getString(COL_TYPE_NAME_IDX)));
+                            
+                            col.setComment(columnCommentColumn(colsRs,toSchema,tblName,colName));
 
-                            cols.add(new DbColumn(
-                                colName,
-                                colsRs.getInt(COL_DATA_TYPE_IDX),
-                                pkCols.contains(colName),
-                                colsRs.getInt(COL_NULLABLE_IDX) == DatabaseMetaData.columnNullable,
-                                unsignedTypes.contains(colsRs.getString(COL_TYPE_NAME_IDX))));
+                            cols.add(col);
                         }
                     }
 
@@ -236,17 +257,70 @@ public class JdbcMetadataDialect extends DatabaseMetadataDialect {
 
                             if (pkCols.equals(idx.getFields().keySet())) {
                                 idxs.remove(entry.getKey());
-
                                 break;
                             }
                         }
                     }
 
-                    tbls.add(table(schema, tblName, cols, idxs.values()));
+                    tbls.add(table(schema, tblName, tableComment, cols, idxs.values()));
                 }
+            }
+            
+            if(!this.hasTableComment) {
+	            Map<String,String> tableComments = this.metaUtil.getIntrospector().getTableComments(useCatalog() ? toSchema : null, useSchema() ? toSchema : null);
+	            if(tableComments!=null) {
+	                for(DbTable tab: tbls) {
+	                	String remarks = tableComments.get(tab.getTable());
+	                	if(remarks!=null) {
+	                		tab.setComment(remarks);
+	                	}
+	                }
+	            }
+            }
+            
+            if(!this.hasColumnComment) {
+	            Map<String, Map<String, String>> tableColumnComments = this.metaUtil.getIntrospector().getColumnComments(useCatalog() ? toSchema : null, useSchema() ? toSchema : null);
+	            
+	            if(tableColumnComments!=null) {
+	                for(DbTable tab: tbls) {
+	                	Map<String, String> remarks = tableColumnComments.get(tab.getTable());
+	                	if(remarks!=null) {
+	                		for(DbColumn col: tab.getColumns()) {
+	                			String remark = remarks.get(col.getName());
+	                			if(remark!=null) {
+	                				col.setComment(remark);
+	                			}
+	                		}
+	                		
+	                	}
+	                }
+	            }
             }
         }
 
         return tbls;
     }
+    
+    /**获取表注解*/
+    protected String tableCommentColumn(ResultSet colsRs,String toSchema,String tableName) {        
+    	try {
+    		if(hasTableComment)
+    			return colsRs.getString("REMARKS");
+		} catch (SQLException e) {
+			hasTableComment = false;			
+		}
+    	return null;
+    }
+    
+    /**获取字段注解*/
+    protected String columnCommentColumn(ResultSet colsRs,String toSchema,String tableName,String colName) {        
+        try {
+        	if(hasColumnComment)
+        		return colsRs.getString("REMARKS");
+		} catch (SQLException e) {
+			hasColumnComment = false;			
+		}
+        return null;
+    }
+
 }

@@ -29,6 +29,7 @@ export default class PageConsoleAdvancedCluster {
         this.originalCluster$ = clusterID$.pipe(
             distinctUntilChanged(),
             switchMap((id) => {
+                this.clusterID = id;
                 return this.ConfigureState.state$.pipe(this.ConfigSelectors.selectClusterToEdit(id));
             }),
             distinctUntilChanged(),

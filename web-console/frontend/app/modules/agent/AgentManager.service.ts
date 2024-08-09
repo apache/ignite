@@ -642,12 +642,19 @@ export default class AgentManager {
     publicCacheNames() {
         return this.collectCacheNames(null)
             .then((data) => {
-                if (nonEmpty(data.caches))
-                    return _.difference(_.keys(data.caches), RESERVED_CACHE_NAMES);
+                if (nonEmpty(data.caches)){
+                    let caches = _.difference(_.keys(data.caches), RESERVED_CACHE_NAMES);
+                    return _.filter(caches,(cache:string)=>{ 
+                        return !cache.startsWith('INDEXES.') && !cache.startsWith('igfs-internal-')
+                    });
+                }
 
                 return this.topology(false, false, true)
                     .then((nodes) => {
-                        return _.map(_.uniqBy(_.flatMap(nodes, 'caches'), 'name'), 'name');
+                        let caches = _.map(_.uniqBy(_.flatMap(nodes, 'caches'), 'name'), 'name');
+                        return _.filter(caches,(cache)=>{ 
+                            return !cache.startsWith('INDEXES.') && !cache.startsWith('_igfs-internal-')
+                        });
                     });
             });
     }
@@ -664,8 +671,8 @@ export default class AgentManager {
             .then((caches) => {
                 let types = [];
 
-                const _compact = (className) => {
-                    return className.replace('java.lang.', '').replace('java.util.', '').replace('java.sql.', '');
+                const _compact = (fieldName) => {
+                    return fieldName.replace('java.lang.', '').replace('java.util.', '').replace('java.sql.', '');
                 };
 
                 const _typeMapper = (meta, typeName) => {
@@ -676,13 +683,18 @@ export default class AgentManager {
                     let columns = [];
 
                     for (const fieldName in fields) {
-                        if (fields.hasOwnProperty(fieldName)) {
-                            const fieldClass = _compact(fields[fieldName]);
-
+                        if (fields.hasOwnProperty(fieldName)) {                            
+                            const filedInfo = fields[fieldName].split(' //')
+                            const fieldClass = _compact(filedInfo[0]);
+                            let description = null;
+                            if(filedInfo.length>1){
+                                description = filedInfo[1];
+                            }
                             columns.push({
                                 type: 'field',
                                 name: fieldName,
                                 clazz: fieldClass,
+                                description: description,
                                 system: fieldName === '_KEY' || fieldName === '_VAL',
                                 cacheName: meta.cacheName,
                                 typeName,
@@ -733,11 +745,17 @@ export default class AgentManager {
                         });
                     }
 
+                    let description = null;
+                    if(meta.comments && meta.comments[typeName]){
+                        description = meta.comments[typeName];
+                    }
+
                     return {
                         type: 'type',
                         cacheName: meta.cacheName || '',
                         typeName,
                         maskedName,
+                        description,
                         children: columns
                     };
                 };

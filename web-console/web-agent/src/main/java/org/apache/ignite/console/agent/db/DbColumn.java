@@ -36,6 +36,8 @@ public class DbColumn {
 
     /** Whether column unsigned. */
     private final boolean unsigned;
+    
+    private String comment;
 
     /**
      * @param name Column name.
@@ -91,4 +93,12 @@ public class DbColumn {
     @Override public String toString() {
         return S.toString(DbColumn.class, this);
     }
+
+	public String getComment() {
+		return comment;
+	}
+
+	public void setComment(String comment) {
+		this.comment = comment;
+	}
 }

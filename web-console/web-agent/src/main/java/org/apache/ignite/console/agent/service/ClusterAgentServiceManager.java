@@ -18,11 +18,14 @@ import io.swagger.annotations.ApiOperation;
 import io.vertx.core.json.JsonArray;
 import io.vertx.core.json.JsonObject;
 
-@ApiOperation("get list of servcie of cluster")
-public class ClusterAgentServiceManager {
+@ApiOperation(value = "Deploy Service to the cluster", notes = "部署Service到ignite集群中。")
+public class ClusterAgentServiceManager implements ClusterAgentService {
    
 	@IgniteInstanceResource
-    private Ignite ignite;	
+    private Ignite ignite;
+	
+	public ClusterAgentServiceManager(){		
+	}
 		
 	public ClusterAgentServiceManager(Ignite ignite){
 		this.ignite = ignite;
@@ -67,8 +70,16 @@ public class ClusterAgentServiceManager {
 				info.put("mode", "ClusterSingleton"); 
 				info.put("type","Unknown");
 			}
+			
 			if(type!=null && !info.getString("type").equals(type)) {
 				continue;
+			}
+			
+			if(ctx.affinityKey()!=null) {
+				info.put("mode", "KeyaffinitySingleton"); 
+			}
+			else if(ctx.maxPerNodeCount()>1) {
+				info.put("mode", "Multiple"); 
 			}
 			result.put(ctx.name(), info);
 		}
@@ -146,6 +157,66 @@ public class ClusterAgentServiceManager {
 			    result.put(service.toString(), info);					
 			}
 		}	
+		return result;
+	}
+
+	/**
+	 * deploy service
+	 */
+	@Override
+	public ServiceResult call(String cluterId, Map<String, Object> payload) {
+		ServiceResult result = new ServiceResult();		
+		JsonObject args = new JsonObject(payload);		
+		JsonArray services = args.getJsonArray("servicesClass");
+		// KeyaffinitySingleton,Multiple,NodeSingleton,ClusterSingleton
+		String mode = args.getString("mode","NodeSingleton");
+		List<String> messages = new ArrayList<>();
+		for(Object service: services) {
+			if(service instanceof String) {				
+			    try {
+			    	Class<? extends Service> ctx = (Class)Class.forName(service.toString());
+			    	Service svc = ctx.newInstance();
+			    	
+				    JsonObject info = new JsonObject();
+					info.put("name", ctx.getSimpleName());
+					info.put("cacheName", "");
+					ApiOperation api = ctx.getAnnotation(ApiOperation.class);					
+
+					if (api != null) {
+						info.put("description", api.value());
+						info.put("notes", api.notes());
+					} else {
+						info.put("description", ctx.getName());
+						info.put("notes", "");
+					}
+					info.put("mode", mode);
+					if(mode.equals("ClusterSingleton")) {
+						ignite.services().deployClusterSingleton(ctx.getSimpleName(),svc);
+					}
+					else if(mode.equals("NodeSingleton")) {
+						ignite.services().deployNodeSingleton(ctx.getSimpleName(),svc);
+					}
+					else if(mode.equals("Multiple")) {
+						int totalCnt = args.getInteger("totalCnt",ignite.cluster().nodes().size());
+						int maxPerNodeCnt = args.getInteger("maxPerNodeCnt",1);
+						ignite.services().deployMultiple(ctx.getSimpleName(), svc, totalCnt, maxPerNodeCnt);
+					}
+					else {
+						String cacheName = args.getString("cacheName");
+						Object affKey = args.getValue("affKey");
+						info.put("cacheName", cacheName);
+						ignite.services().deployKeyAffinitySingleton(ctx.getSimpleName(), svc, cacheName, affKey);
+					}					
+					result.put(ctx.getSimpleName(), info);	
+					
+				} catch (InstantiationException | IllegalAccessException e) {
+					messages.add(e.getMessage());
+				} catch (ClassNotFoundException e) {
+					messages.add(e.getMessage());
+				}
+			    				
+			}
+		}
 		return result;
 	}
 }

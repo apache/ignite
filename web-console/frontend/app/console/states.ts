@@ -143,7 +143,8 @@ function registerStates($stateProvider) {
     .state('base.console.edit.service.select', {
         url: `/{serviceID}`,
         permission: 'configuration',
-        resolve: {         
+        resolve: {
+
         },
         data: {
             errorState: 'base.console.edit.service'
@@ -152,7 +153,7 @@ function registerStates($stateProvider) {
             async: 'NOWAIT'
         },
         tfMetaTags: {
-            title: 'Configure Service'
+            title: 'Invoke Service'
         }
     })
     .state('base.console.edit.cache-service.select', {
@@ -162,7 +163,7 @@ function registerStates($stateProvider) {
             _cache: ['ConfigEffects', '$transition$', ({etp}, $transition$) => {
                 const {clusterID, cacheID} = $transition$.params();
 
-                if (cacheID === 'new')
+                if (cacheID === 'new' || !cacheID)
                     return Promise.resolve();
 
                 return etp('LOAD_CACHE', {cacheID});
@@ -175,7 +176,7 @@ function registerStates($stateProvider) {
             async: 'NOWAIT'
         },
         tfMetaTags: {
-            title: 'Configure Service'
+            title: 'Invoke Cache Service'
         }
     })
     .state('base.console.edit.advanced', {
@@ -211,7 +212,7 @@ function registerStates($stateProvider) {
             async: 'NOWAIT'
         },
         tfMetaTags: {
-            title: 'Configure Cluster Command'
+            title: 'Invoke Cluster Command'
         }
     })
     .state('base.console.edit.advanced.caches', {

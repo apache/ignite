@@ -64,6 +64,7 @@ import static org.apache.ignite.console.websocket.WebSocketEvents.SCHEMA_IMPORT_
 import static org.apache.ignite.console.websocket.WebSocketEvents.SCHEMA_IMPORT_METADATA;
 import static org.apache.ignite.console.websocket.WebSocketEvents.SCHEMA_IMPORT_SCHEMAS;
 import static org.springframework.web.util.UriComponentsBuilder.fromUri;
+import org.apache.ignite.internal.visor.compute.VisorGatewayTask;
 
 /**
  * Browsers web sockets handler.

@@ -1,6 +1,6 @@
 
 
-import publicTemplate from '../../../views/public.pug';
+import publicTemplate from 'views/public.pug';
 import {UIRouter, StateParams} from '@uirouter/angularjs';
 import {IIgniteNg1StateDeclaration} from 'app/types';
 

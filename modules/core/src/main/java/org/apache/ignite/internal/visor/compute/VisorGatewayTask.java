@@ -50,6 +50,7 @@ import org.apache.ignite.internal.util.typedef.CI1;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.visor.VisorOneNodeTask;
 import org.apache.ignite.internal.visor.VisorTaskArgument;
+import org.apache.ignite.internal.visor.VisorTaskResult;
 import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.lang.IgniteFuture;
 import org.apache.ignite.lang.IgniteUuid;
@@ -115,7 +116,15 @@ public class VisorGatewayTask implements ComputeTask<Object[], Object> {
         if (ex != null)
             throw ex;
 
-        return res.getData();
+        Object data = res.getData();
+        if(data instanceof VisorTaskResult) {
+        	try {
+				data = ((VisorTaskResult)data).result();
+			} catch (Exception e) {
+				throw new IgniteException(e);
+			}
+        }
+        return data;
     }
 
     /**

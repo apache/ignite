@@ -229,6 +229,7 @@ export default function service(ErrorPopover) {
         {value: 'MySQL', label: 'MySQL'},
         {value: 'PostgreSQL', label: 'PostgreSQL'},
         {value: 'H2', label: 'H2 database'},
+        {value: 'Dremio', label: 'Dremio Data Lake'},
         {value: 'Hive', label: 'Apache Hive'}
     ];
 

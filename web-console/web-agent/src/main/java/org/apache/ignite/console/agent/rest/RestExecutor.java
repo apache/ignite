@@ -21,22 +21,23 @@ import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.net.URL;
 import java.net.URLEncoder;
+import java.net.http.HttpClient;
+import java.net.http.HttpClient.Redirect;
+import java.net.http.HttpRequest;
+import java.net.http.HttpResponse;
+import java.net.http.HttpResponse.BodyHandlers;
+import java.nio.charset.StandardCharsets;
+import java.time.Duration;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import org.apache.ignite.IgniteLogger;
-
 import org.apache.ignite.logger.slf4j.Slf4jLogger;
-import org.eclipse.jetty.client.HttpClient;
-import org.eclipse.jetty.client.api.Response;
-import org.eclipse.jetty.client.util.FormContentProvider;
-import org.eclipse.jetty.client.util.InputStreamResponseListener;
-import org.eclipse.jetty.http.HttpMethod;
-import org.eclipse.jetty.util.Fields;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
-import org.eclipse.jetty.util.thread.QueuedThreadPool;
+
 import org.slf4j.LoggerFactory;
 
 import io.vertx.core.json.JsonObject;
+
 
 import static java.net.HttpURLConnection.HTTP_NOT_FOUND;
 import static java.net.HttpURLConnection.HTTP_OK;
@@ -59,15 +60,17 @@ public class RestExecutor implements AutoCloseable {
      * @param sslCtxFactory Ssl context factory.
      */
     public RestExecutor(SslContextFactory sslCtxFactory) {
-        httpClient = new HttpClient();        
-        httpClient.setMaxConnectionsPerDestination(1);
-        httpClient.setFollowRedirects(false);
+        httpClient = HttpClient.newBuilder()
+        		.connectTimeout(Duration.ofSeconds(60))
+        		.followRedirects(Redirect.NEVER)
+        		.build();
+       
     }
 
     /** {@inheritDoc} */
     @Override public void close() {
         try {
-            httpClient.stop();
+            //httpClient.stop();
         }
         catch (Throwable e) {
             log.error("Failed to close HTTP client", e);
@@ -80,11 +83,11 @@ public class RestExecutor implements AutoCloseable {
      * @return Result of REST request.
      * @throws IOException If failed to parse REST result.
      */
-    private RestResult parseResponse(Response res, InputStream in) throws IOException {
-        int code = res.getStatus();
+    private RestResult parseResponse(HttpResponse<String> res) throws IOException {
+        int code = res.statusCode();
 
         if (code == HTTP_OK)
-            return fromJson(new InputStreamReader(in), RestResult.class);
+            return fromJson(res.body(), RestResult.class);
 
         if (code == HTTP_UNAUTHORIZED) {
             return RestResult.fail(STATUS_AUTH_FAILED, "Failed to authenticate in cluster. " +
@@ -95,7 +98,7 @@ public class RestExecutor implements AutoCloseable {
             return RestResult.fail(STATUS_FAILED, "Failed connect to cluster.");
 
         return RestResult.fail(STATUS_FAILED, "Failed to execute REST command [code=" +
-            code + ", msg=" + res.getReason() + "]");
+            code + ", msg=" + res.body() + "]");
     }
 
     /**
@@ -106,31 +109,36 @@ public class RestExecutor implements AutoCloseable {
      * @throws Throwable If failed to send request.
      */
     public RestResult sendRequest(String url, JsonObject params) throws Throwable {
-        if (!httpClient.isRunning())
-            httpClient.start();
-
-        Fields fields = new Fields();
-
-        params.getMap().forEach((k, v) ->{ if(v!=null) fields.add(k, String.valueOf(v)); });
-
-        InputStreamResponseListener lsnr = new InputStreamResponseListener();
         
-        URL urlO = new URL(url); 
-        String path = "/ignite";
-        if(!urlO.getPath().isEmpty()) {
-        	path = "/"+URLEncoder.encode(urlO.getPath().substring(1),"UTF-8");
+    	final StringBuilder fields = new StringBuilder();
+    	
+        params.getMap().forEach((k, v) ->{ 
+        	if(v!=null) {
+        		if(fields.length()>0) {
+        			fields.append("&");
+        		}        		     		
+        		fields.append(k);
+        		fields.append("=");
+        		fields.append(URLEncoder.encode(String.valueOf(v),StandardCharsets.UTF_8));
+        	}        	
+        });     
+        
+        URL urlO = new URL(url);         
+        if(urlO.getPath().isEmpty()) {
+        	urlO = new URL(url+"/ignite");
         }
-        httpClient.newRequest(url)
-            .path(path)
-            .method(HttpMethod.POST)
-            .content(new FormContentProvider(fields))
-            .send(lsnr);
+        HttpRequest request = HttpRequest.newBuilder()
+        		        .uri(urlO.toURI())
+        		        .timeout(Duration.ofMinutes(1))
+        		        .header("Content-Type", "application/x-www-form-urlencoded")
+        		        .POST(HttpRequest.BodyPublishers.ofString(fields.toString()))
+        		        .build();        
 
         try {
-            Response res = lsnr.get(6L, TimeUnit.SECONDS);            
-            return parseResponse(res, lsnr.getInputStream());
+            HttpResponse<String> res = httpClient.send(request,BodyHandlers.ofString());            
+            return parseResponse(res);
         }
-        catch (ExecutionException e) {
+        catch (Exception e) {
             throw e.getCause();
         }
         

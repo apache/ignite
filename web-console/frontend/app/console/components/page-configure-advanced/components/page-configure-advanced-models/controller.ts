@@ -83,6 +83,18 @@ export default class PageConfigureAdvancedModels {
                 sort: {direction: 'asc', priority: 0},
                 cellTemplate: valueCellTemplate,
                 minWidth: 165
+            },
+            {
+                name: 'valueLabel',
+                displayName: 'Value label',
+                field: 'tableComment',
+                enableHiding: false,
+                filter: {
+                    placeholder: 'Filter by value label'
+                },
+                sort: {direction: 'asc', priority: 0},
+                cellTemplate: valueCellTemplate,
+                minWidth: 165
             }
         ];
 
@@ -150,12 +162,12 @@ export default class PageConfigureAdvancedModels {
     }
 
     save({model, download}) {
-        //this.ConfigureState.dispatchAction(advancedSaveModel(model, download));
+        this.ConfigureState.dispatchAction(advancedSaveModel(model, download));
     }
 
     remove(itemIDs: Array<string>) {
-        //this.ConfigureState.dispatchAction(
-        //    removeClusterItems(this.$uiRouter.globals.params.clusterID, 'models', itemIDs, true, true)
-        //);
+        this.ConfigureState.dispatchAction(
+            removeClusterItems(this.$uiRouter.globals.params.clusterID, 'models', itemIDs, true, true)
+        );
     }
 }

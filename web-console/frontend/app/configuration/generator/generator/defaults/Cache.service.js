@@ -22,7 +22,8 @@ const DFLT_CACHE = {
     sqlOnheapRowCacheSize: 10240,
     longQueryWarningTimeout: 3000,
     snapshotableIndex: false,
-    sqlEscapeAll: false,
+    sqlEscapeAll: true,
+    sqlSchema: 'PUBLIC',
     storeKeepBinary: false,
     loadPreviousValue: false,
     cacheStoreFactory: {

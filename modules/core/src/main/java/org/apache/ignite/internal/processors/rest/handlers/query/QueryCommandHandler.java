@@ -43,6 +43,7 @@ import org.apache.ignite.cache.query.QueryCursor;
 import org.apache.ignite.cache.query.ScanQuery;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.cache.query.SqlQuery;
+import org.apache.ignite.cache.query.TextQuery;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.management.cache.VisorQueryScanRegexFilter;
@@ -327,8 +328,13 @@ public class QueryCommandHandler extends GridRestCommandHandlerAdapter {
                         		pred = instance(IgniteBiPredicate.class, req.className());
                         	}
                         }
-
-                        qry = new ScanQuery(pred);
+                        // add@byron
+                        if(req.sqlQuery() !=null && !req.sqlQuery().isBlank()) {
+                        	qry = new TextQuery(req.typeName(), req.sqlQuery()).setFitler(pred);                        	
+                        }
+                        else {
+                        	qry = new ScanQuery(pred);
+                        }
 
                         break;
 

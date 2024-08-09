@@ -29,6 +29,8 @@ public class DbTable {
 
     /** Table name. */
     private final String tbl;
+    
+    private String comment;
 
     /** Columns. */
     private final Collection<DbColumn> cols;
@@ -44,9 +46,10 @@ public class DbTable {
      * @param cols Columns.
      * @param idxs Indexes;
      */
-    public DbTable(String schema, String tbl, Collection<DbColumn> cols, Collection<VisorQueryIndex> idxs) {
+    public DbTable(String schema, String tbl, String comment, Collection<DbColumn> cols, Collection<VisorQueryIndex> idxs) {
         this.schema = schema;
         this.tbl = tbl;
+        this.comment = comment;
         this.cols = cols;
         this.idxs = idxs;
     }
@@ -83,4 +86,12 @@ public class DbTable {
     @Override public String toString() {
         return S.toString(DbTable.class, this);
     }
+
+	public String getComment() {
+		return comment;
+	}
+
+	public void setComment(String comment) {
+		this.comment = comment;
+	}
 }

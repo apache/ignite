@@ -34,10 +34,7 @@ const DFLT_CLUSTER = {
         },
         Jdbc: {
             initSchema: false
-        },
-        SharedFs: {
-            path: 'disco/tcp'
-        },
+        },        
         ZooKeeper: {
             basePath: '/apacheIgnite',
             serviceName: 'ignite',
@@ -198,12 +195,6 @@ const DFLT_CLUSTER = {
         keyClsName: 'java.lang.String',
         valClsName: 'java.lang.String',
         items: []
-    },
-    odbcConfiguration: {
-        endpointAddress: '0.0.0.0:10800..10810',
-        socketSendBufferSize: 0,
-        socketReceiveBufferSize: 0,
-        maxOpenCursors: 128
     },
     eventStorage: {
         Memory: {

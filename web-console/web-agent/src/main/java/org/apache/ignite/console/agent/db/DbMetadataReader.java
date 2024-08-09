@@ -24,16 +24,15 @@ import java.sql.Driver;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.Collection;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
-import java.util.Properties;
+
 import org.apache.ignite.console.agent.db.dialect.DB2MetadataDialect;
 import org.apache.ignite.console.agent.db.dialect.DatabaseMetadataDialect;
 import org.apache.ignite.console.agent.db.dialect.DremioMetadataDialect;
 import org.apache.ignite.console.agent.db.dialect.JdbcMetadataDialect;
 import org.apache.ignite.console.agent.db.dialect.MySQLMetadataDialect;
 import org.apache.ignite.console.agent.db.dialect.OracleMetadataDialect;
+import org.apache.ignite.console.agent.db.dialect.PostgreSQLMetadataDialect;
 import org.apache.ignite.console.db.DBInfo;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -58,23 +57,26 @@ public class DbMetadataReader {
             String dbProductName = conn.getMetaData().getDatabaseProductName();
 
             if ("Oracle".equals(dbProductName))
-                return new OracleMetadataDialect();
+                return new OracleMetadataDialect(conn);
 
             if (dbProductName.startsWith("DB2/"))
-                return new DB2MetadataDialect();
+                return new DB2MetadataDialect(conn);
 
             if ("MySQL".equals(dbProductName))
-                return new MySQLMetadataDialect();
+                return new MySQLMetadataDialect(conn);
+            
+            if ("PostgreSQL".equals(dbProductName))
+                return new PostgreSQLMetadataDialect(conn);
             
             if (dbProductName.startsWith("Dremio"))
-                return new DremioMetadataDialect();
+                return new DremioMetadataDialect(conn);
 
-            return new JdbcMetadataDialect();
+            return new JdbcMetadataDialect(conn,Dialect.GENERIC);
         }
         catch (SQLException e) {
             log.error("Failed to resolve dialect (JdbcMetaDataDialect will be used.", e);
 
-            return new JdbcMetadataDialect();
+            return new JdbcMetadataDialect(conn,Dialect.GENERIC);
         }
     }
 

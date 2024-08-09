@@ -55,7 +55,9 @@ import org.apache.ignite.console.agent.handlers.StringStreamHandler;
 import org.apache.ignite.console.agent.service.CacheClearDataService;
 import org.apache.ignite.console.agent.service.CacheCopyDataService;
 import org.apache.ignite.console.agent.service.CacheLoadDataService;
+import org.apache.ignite.console.agent.service.CacheSaveDataService;
 import org.apache.ignite.console.agent.service.ClusterAgentServiceManager;
+import org.apache.ignite.console.agent.service.ClusterAgentVerticleManager;
 import org.apache.ignite.console.agent.service.ComputeTaskLoadService;
 import org.apache.ignite.console.json.JsonBinarySerializer;
 import org.apache.ignite.console.utils.BeanMerger;
@@ -194,11 +196,14 @@ public class IgniteClusterLauncher implements StartNodeCallable{
      */
     public static void deployServices(IgniteServices services) {    	
         
-        services.deployNodeSingleton("loadDataService", new CacheLoadDataService());
-        services.deployNodeSingleton("clearDataService", new CacheClearDataService());
-        services.deployClusterSingleton("copyDataService", new CacheCopyDataService());        
-        services.deployNodeSingleton("computeTaskLoadService", new ComputeTaskLoadService());
+        services.deployNodeSingleton("CacheLoadDataService", new CacheLoadDataService());
+        services.deployNodeSingleton("CacheSaveDataService", new CacheSaveDataService());
+        services.deployNodeSingleton("CacheClearDataService", new CacheClearDataService());
+        services.deployClusterSingleton("CacheCopyDataService", new CacheCopyDataService());        
+        services.deployNodeSingleton("ComputeTaskLoadService", new ComputeTaskLoadService());
         
+        services.deployClusterSingleton("ClusterAgentServiceManager", new ClusterAgentServiceManager());
+        services.deployClusterSingleton("ClusterAgentVerticleManager", new ClusterAgentVerticleManager());
         //String cacheName = "default";
         //services.deployKeyAffinitySingleton("loadDataKeyAffinityService",new ClusterLoadDataService(), cacheName, "id");
     }

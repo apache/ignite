@@ -19,6 +19,8 @@ package org.apache.ignite.console.agent.rest;
 import static org.apache.ignite.internal.processors.rest.GridRestResponse.STATUS_FAILED;
 
 import java.io.IOException;
+import java.lang.reflect.Constructor;
+import java.lang.reflect.InvocationTargetException;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.util.Collection;
@@ -41,6 +43,9 @@ import org.apache.tinkerpop.gremlin.structure.Edge;
 import org.apache.tinkerpop.gremlin.structure.Property;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 import org.apache.tinkerpop.gremlin.structure.VertexProperty;
+import org.apache.tinkerpop.gremlin.structure.io.IoRegistry;
+import org.apache.tinkerpop.gremlin.structure.io.binary.TypeSerializerRegistry;
+import org.apache.tinkerpop.gremlin.util.ser.GraphBinaryMessageSerializerV1;
 import org.slf4j.LoggerFactory;
 
 import io.vertx.core.Vertx;
@@ -58,8 +63,16 @@ public class GremlinExecutor implements AutoCloseable {
     /** */
     private final GremlinGroovyScriptEngine engine;
     
-    String gremlinAddr = "localhost";
-    int gremlinPort = 8182;
+    TypeSerializerRegistry typeSerializerRegistry;
+    
+    GraphBinaryMessageSerializerV1 gbSerializer;
+    
+    private String gremlinAddr = "localhost";
+    private int gremlinPort = 8182;
+    
+    private String prevURL = "";
+    
+    private Client client;
 
     /**
      * @param sslCtxFactory Ssl context factory.
@@ -74,7 +87,23 @@ public class GremlinExecutor implements AutoCloseable {
 		    	this.gremlinAddr = addr;
 			}
     	}
-    	this.gremlinPort = gremlinPort;
+    	this.gremlinPort = gremlinPort;    	
+    	
+    	try {
+    		Class<? extends IoRegistry> ioReg = (Class)Class.forName("org.janusgraph.graphdb.tinkerpop.JanusGraphIoRegistry");
+    		Constructor<? extends IoRegistry> cons = ioReg.getDeclaredConstructor();
+    		cons.setAccessible(true);
+    		
+			typeSerializerRegistry = TypeSerializerRegistry.build()
+				    .addRegistry(cons.newInstance())
+				    .create();
+			
+			gbSerializer = new GraphBinaryMessageSerializerV1(typeSerializerRegistry);
+		} catch (InstantiationException | IllegalAccessException | ClassNotFoundException | NoSuchMethodException | SecurityException | IllegalArgumentException | InvocationTargetException e) {
+			log.info("constuct typeSerializerRegistry " + e.getMessage());
+			gbSerializer = new GraphBinaryMessageSerializerV1();
+		}
+    		
     }
 
     /** {@inheritDoc} */
@@ -367,7 +396,7 @@ public class GremlinExecutor implements AutoCloseable {
      * @throws IOException If failed to parse REST result.
      * @throws Throwable If failed to send request.
      */
-    public RestResult sendRequest(Map<String,Object> context, String clusterId,JsonObject params) throws Throwable {
+    public RestResult sendRequest(Map<String,Object> context, String clusterId, JsonObject params) throws Throwable {
     	String code = params.getString("qry");
         try {
         	long start = System.currentTimeMillis();
@@ -375,8 +404,24 @@ public class GremlinExecutor implements AutoCloseable {
         	JsonObject res = new JsonObject();
         	res.put("error",(String)null);
         	
-        	Cluster cluster = Cluster.build(gremlinAddr).port(gremlinPort).create();
-        	Client client = cluster.connect();
+        	if(!this.prevURL.equals(clusterId) || this.client.isClosing()) {
+        		
+        		Cluster cluster = Cluster.build()
+        	    	    .addContactPoint(gremlinAddr)
+        	    	    .port(gremlinPort)
+        	    	    .serializer(gbSerializer)
+        	    	    .maxConnectionPoolSize(4)
+        	    	    .maxInProcessPerConnection(1)
+        	    	    .maxSimultaneousUsagePerConnection(4)
+        	    	    .workerPoolSize(8)        	    	   
+        	    	    .create();
+                	
+                this.client = cluster.connect();
+        		
+        		this.prevURL = clusterId;
+        		
+        	}
+        	
         	
         	ResultSet result = client.submit(code,context);
 

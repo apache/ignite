@@ -29,6 +29,7 @@ import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.LinkedList;
 import java.util.List;
@@ -44,11 +45,14 @@ import java.util.concurrent.ConcurrentMap;
 import java.util.function.BiFunction;
 import javax.cache.Cache;
 import org.apache.ignite.Ignite;
+import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.IgniteSystemProperties;
+import org.apache.ignite.binary.BinaryObject;
 import org.apache.ignite.cache.CacheEntry;
+import org.apache.ignite.cache.QueryEntity;
 import org.apache.ignite.cache.QueryIndexType;
 import org.apache.ignite.cache.query.IndexQuery;
 import org.apache.ignite.cache.query.QueryMetrics;
@@ -580,7 +584,7 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
 
                     break;
 
-                case TEXT:
+                case TEXT:                	
                     if (cctx.events().isRecordable(EVT_CACHE_QUERY_EXECUTED)) {
                         cctx.gridEvents().record(new CacheQueryExecutedEvent<>(
                             cctx.localNode(),
@@ -603,7 +607,7 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
                     tq.setLocal(qry.forceLocal());
                     tq.setFitler(qry.scanFilter());
 					tq.setLimit(qry.limit());
-                    //iter = qryProc.queryText(cacheName, tq, qry.queryClassName(), filter(qry));
+                    // iter = qryProc.queryText(cacheName, tq, qry.queryClassName(), filter(qry));
                     iter = qryProc.queryText(cacheName, qry.clause(), qry.queryClassName(), filter(qry), qry.limit());
 					//end@
                     break;
@@ -2975,9 +2979,12 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
 	
 	//add@byron support text search filter
     public CacheQuery<Map.Entry<K, V>> createFullTextQuery(String clsName,
-        String search, IgniteBiPredicate<Object, Object> filter, int limit,  int pageSize, boolean keepBinary) {
-        A.notNull("clsName", clsName);
+        String search, IgniteBiPredicate<Object, Object> filter, int limit,  int pageSize, boolean keepBinary) {        
         A.notNull("search", search);
+        // add@byron
+    	if(clsName==null || clsName.isBlank()) {
+    		clsName = typeName(this.cctx.config());
+    	}
 
         return new GridCacheQueryAdapter<Map.Entry<K, V>>(cctx,
             TEXT,
@@ -2991,6 +2998,37 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
         	.limit(limit)
         	.pageSize(pageSize);
     }
+    
+    private String typeName(CacheConfiguration cfg) {    	
+    	String typeName = tableOfCache(this.cacheName());
+    	String shortName = typeName;
+    	int pos = typeName.lastIndexOf('.');
+    	if(pos>0) {    		
+    		shortName = typeName.substring(pos+1);
+    	}    	
+    	if(!cfg.getQueryEntities().isEmpty()) {
+    		Iterator<QueryEntity> qeit = cfg.getQueryEntities().iterator();
+    		while(qeit.hasNext()) {
+	    		QueryEntity entity = qeit.next();
+	    		if(typeName.equalsIgnoreCase(entity.getValueType()) || shortName.equalsIgnoreCase(entity.getTableName())){
+	    			break;
+	    		}
+	    		else {
+	    			typeName = entity.getValueType();
+	    		}
+    		}
+    	}    	  	
+    	return typeName;
+    }
+	
+    private String tableOfCache(String cacheName) {
+		if(cacheName.startsWith("SQL_")) {
+			int pos = cacheName.lastIndexOf('_',5);
+			if(pos>0)
+				return cacheName.substring(pos+1);
+		}
+		return cacheName;
+	}
 
     /**
      * Creates index query.

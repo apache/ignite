@@ -39,6 +39,8 @@ public class Model extends DataObject {
 
     /** */
     private String valType;
+    
+    private String tableComment;
 
     /**
      * @param json JSON data.
@@ -62,6 +64,7 @@ public class Model extends DataObject {
             hasIdx,
             json.getString("keyType"),
             json.getString("valueType"),
+            json.getString("tableComment"),
             toJson(json)
         );
     }
@@ -75,12 +78,13 @@ public class Model extends DataObject {
      * @param valType Value type name.
      * @param json JSON payload.
      */
-    public Model(UUID id, boolean hasIdx, String keyType, String valType, String json) {
+    public Model(UUID id, boolean hasIdx, String keyType, String valType, String tableComment,String json) {
         super(id, json);
 
         this.hasIdx = hasIdx;
         this.keyType = keyType;
         this.valType = valType;
+        this.tableComment = tableComment;
     }
 
     /**
@@ -110,6 +114,7 @@ public class Model extends DataObject {
             .put("id", getId())
             .put("hasIndex", hasIdx)
             .put("keyType", keyType)
-            .put("valueType", valType);
+            .put("valueType", valType)
+            .put("tableComment", tableComment);
     }
 }

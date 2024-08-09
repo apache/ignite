@@ -468,6 +468,11 @@ public class WebSocketRouter implements AutoCloseable {
 			if(restart) {			
 	        	IgniteClusterLauncher.stopIgnite(clusterName,clusterId);
 			}
+			else if(unzipDest!=null) {
+				stat.put("message", "Deploy server.xml to "+unzipDest);
+				stat.put("status", "stoped");
+				return stat;
+			}
 			
 			Ignite ignite = null;
 			// 不是演示环境
@@ -612,7 +617,7 @@ public class WebSocketRouter implements AutoCloseable {
         log.info("Cluster status msg has been revoked: " + msg);
         JsonObject stat = new JsonObject();
         JsonObject json = fromJson(msg);
-        String nodeId = json.getString("id");
+        String cluterId = json.getString("id");
         String serviceName = json.getString("serviceName","");        
         
         if(serviceName.equals("datasourceTest")) {
@@ -633,7 +638,7 @@ public class WebSocketRouter implements AutoCloseable {
         	
         }
         if(serviceName.equals("datasourceDisconnect")) {        	
-        	boolean rv = dbHnd.getDatabaseListener().deactivedCluster(nodeId);
+        	boolean rv = dbHnd.getDatabaseListener().deactivedCluster(cluterId);
         	if(!rv) {
         		stat.put("message", "Try again to remove from List.");
         	}
@@ -703,7 +708,7 @@ public class WebSocketRouter implements AutoCloseable {
             		
             		ClusterAgentService agentSeervice = (ClusterAgentService)(serviceObject);
             		runningServices.put(serviceName,agentSeervice);
-            		ServiceResult result = agentSeervice.call(args.getMap());
+            		ServiceResult result = agentSeervice.call(cluterId,args.getMap());
             		runningServices.remove(serviceName);
             		return result.toJson();
             	}	        	
@@ -713,7 +718,7 @@ public class WebSocketRouter implements AutoCloseable {
 				stat.put("errorType", e.getClass().getSimpleName());
 				runningServices.remove(serviceName);
 			}
-        }        
+        }
         return stat;
     }
 
@@ -724,7 +729,7 @@ public class WebSocketRouter implements AutoCloseable {
     private JsonObject processCallClusterCommand(String msg) {
         log.info("Cluster cmd has been revoked: " + msg);        
         JsonObject json = fromJson(msg);
-        String nodeId = json.getString("id");
+        
         String cmdName = json.getString("cmdName","");
         JsonObject state = new JsonObject();
         Ignite ignite = getIgnite(json,state);
@@ -807,6 +812,16 @@ public class WebSocketRouter implements AutoCloseable {
                     RestResult res;
 
                     try {
+                    	
+                    	if("qryscanexe".equals(cmd) && params.containsKey("className")) {
+                    		// Scan Query or Text Query
+                    		String className = params.getString("className");
+                    		if(className.startsWith("$text:")) {
+                    			params.put("qry", className.substring(6));
+                    			params.remove("className");
+                    		}
+                		}
+                    	
                     	if("qrygremlinexe".equals(cmd) || "qrygroovyexe".equals(cmd)) {
                     		// Gremlin Query or Execute groovy code
                     		res = vertxClusterHnd.restCommand(reqRest.getClusterId(),params);

@@ -7,7 +7,7 @@ import java.util.Map;
 
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
-
+import org.apache.ignite.lang.IgniteFuture;
 import org.apache.ignite.resources.IgniteInstanceResource;
 import org.apache.ignite.services.Service;
 import org.apache.ignite.services.ServiceContext;
@@ -33,8 +33,11 @@ public class CacheLoadDataService implements CacheAgentService {
 			try {
 				IgniteCache<?,?> igcache = ignite.cache(cache);
 					
-				igcache.loadCache(null);
+				IgniteFuture<Void> fut = igcache.loadCacheAsync(null, null);
 				count++;
+				
+				fut.get(1000);				
+				
 			}
 			catch(Exception e) {
 				message.add(e.getMessage());

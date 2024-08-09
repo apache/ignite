@@ -10,12 +10,14 @@
                 span(ng-switch-when='type' ng-dblclick='dblclickMetadata(paragraph, node)')
                     i.fa.fa-table
                     label.clickable
-                        div.node-display(ng-bind='node.displayName' ng-attr-title='{{node.displayName}}')
+                        div.node-display(ng-bind='node.displayName' ng-attr-title='{{node.description}}')
                 span(ng-switch-when='plain')
                     label {{node.name}}
                 span(ng-switch-when='field' ng-dblclick='dblclickMetadata(paragraph, node)')
                     i.fa(ng-class='node.system ? "fa-file-text-o" : "fa-file-o"')
-                    label.clickable {{node.name}} [{{node.clazz}}]
+                    label.clickable {{node.name}}: 
+                        span.node-display(ng-bind='node.description' ng-if='node.description' ng-attr-title='{{node.clazz}}')
+                        span.node-display(ng-bind='node.clazz' ng-if='!node.description')                     
                 label(ng-switch-when='indexes') {{node.name}}
                 label(ng-switch-when='index') {{node.name}}
                 span(ng-switch-when='index-field' ng-dblclick='dblclickMetadata(paragraph, node)')

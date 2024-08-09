@@ -126,6 +126,7 @@ ${scale && entity.precision && entity.scale ? ',' + entity.scale : ''}${precisio
             id: model.id,
             keyType: model.keyType,
             valueType: model.valueType,
+            tableComment: model.tableComment,
             hasIndex: this.hasIndex(model)
         };
     }
