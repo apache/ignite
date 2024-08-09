@@ -30,7 +30,7 @@ public class GridCommandHandlerIndexingWithSSLTest extends GridCommandHandlerInd
 
     /** {@inheritDoc} */
     @Override protected void beforeTest() throws Exception {
-        Assume.assumeTrue(commandHandler.equalsIgnoreCase(CLI_CMD_HND));
+        Assume.assumeTrue(cliCommandHandler());
 
         super.beforeTest();
     }

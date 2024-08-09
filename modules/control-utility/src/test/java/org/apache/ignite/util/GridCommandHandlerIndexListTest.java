@@ -87,7 +87,7 @@ public class GridCommandHandlerIndexListTest extends GridCommandHandlerAbstractT
 
         String outStr = testOut.toString();
 
-        String typePattern = commandHandler.equals(CLI_CMD_HND) ? "ArrayList" : "LinkedKeySet";
+        String typePattern = cliCommandHandler() ? "ArrayList" : "LinkedKeySet";
 
         assertTrue(outStr.contains("grpName=" + GROUP_NAME + ", cacheName=" + CACHE_NAME + ", idxName=PERSON_ORGID_ASC_IDX, " +
             "colsNames=" + typePattern + " [ORGID, _KEY], tblName=PERSON"));
@@ -139,7 +139,7 @@ public class GridCommandHandlerIndexListTest extends GridCommandHandlerAbstractT
             "--cache-name", CACHE_NAME,
             "--index-name", idxName));
 
-        String typePattern = commandHandler.equals(CLI_CMD_HND) ? "ArrayList" : "LinkedKeySet";
+        String typePattern = cliCommandHandler() ? "ArrayList" : "LinkedKeySet";
 
         assertTrue(testOut.toString().contains("grpName=" + GROUP_NAME + ", cacheName=" + CACHE_NAME +
             ", idxName=PERSON_ORGID_ASC_IDX, colsNames=" + typePattern + " [ORGID, _KEY], tblName=PERSON"));

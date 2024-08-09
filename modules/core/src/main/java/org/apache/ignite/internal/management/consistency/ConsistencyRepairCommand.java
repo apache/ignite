@@ -23,6 +23,7 @@ import java.util.Set;
 import java.util.function.Consumer;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteException;
+import org.apache.ignite.client.IgniteClient;
 import org.apache.ignite.internal.client.GridClient;
 import org.apache.ignite.internal.client.GridClientNode;
 import org.apache.ignite.internal.management.api.CommandUtils;
@@ -49,6 +50,7 @@ public class ConsistencyRepairCommand implements LocalCommand<ConsistencyRepairC
     /** {@inheritDoc} */
     @Override public String execute(
         @Nullable GridClient cli,
+        @Nullable IgniteClient client,
         @Nullable Ignite ignite,
         ConsistencyRepairCommandArg arg,
         Consumer<String> printer
@@ -57,14 +59,14 @@ public class ConsistencyRepairCommand implements LocalCommand<ConsistencyRepairC
         boolean failed = false;
 
         if (arg.parallel())
-            failed = execute(cli, ignite, arg, nodes(cli, ignite), sb);
+            failed = execute(cli, client, ignite, arg, nodes(cli, client, ignite), sb);
         else {
-            Set<GridClientNode> nodes = nodes(cli, ignite).stream()
+            Set<GridClientNode> nodes = nodes(cli, client, ignite).stream()
                 .filter(node -> !node.isClient())
                 .collect(toSet());
 
             for (GridClientNode node : nodes) {
-                failed = execute(cli, ignite, arg, Collections.singleton(node), sb);
+                failed = execute(cli, client, ignite, arg, Collections.singleton(node), sb);
 
                 if (failed)
                     break;
@@ -84,6 +86,7 @@ public class ConsistencyRepairCommand implements LocalCommand<ConsistencyRepairC
     /** */
     private boolean execute(
         @Nullable GridClient cli,
+        @Nullable IgniteClient client,
         @Nullable Ignite ignite,
         ConsistencyRepairCommandArg arg,
         Collection<GridClientNode> nodes,
@@ -93,6 +96,7 @@ public class ConsistencyRepairCommand implements LocalCommand<ConsistencyRepairC
 
         ConsistencyTaskResult res = CommandUtils.execute(
             cli,
+            client,
             ignite,
             ConsistencyRepairTask.class,
             arg,
