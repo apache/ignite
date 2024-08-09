@@ -88,6 +88,16 @@ public class LimitOffsetIntegrationTest extends AbstractBasicIntegrationTest {
                     .setSqlSchema("PUBLIC"));
     }
 
+    /** */
+    @Test
+    public void testNestedLimitOffsetWithUnion() {
+        sql("INSERT into TEST_REPL VALUES (1, 'a'), (2, 'b'), (3, 'c'), (4, 'd')");
+
+        assertQuery("(SELECT id FROM TEST_REPL WHERE id = 2) UNION ALL " +
+            "SELECT id FROM (select id from (SELECT id FROM TEST_REPL OFFSET 2) order by id OFFSET 1)"
+        ).returns(2).returns(4).check();
+    }
+
     /** Tests correctness of fetch / offset params. */
     @Test
     public void testInvalidLimitOffset() {
