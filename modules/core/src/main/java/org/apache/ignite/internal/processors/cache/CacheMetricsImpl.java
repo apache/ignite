@@ -232,13 +232,13 @@ public class CacheMetricsImpl implements CacheMetrics {
     private final MetricRegistryImpl mreg;
 
     /** Conflict resolver accepted entries count. */
-    private volatile LongAdderMetric rslvrAcceptedCnt;
+    private LongAdderMetric rslvrAcceptedCnt;
 
     /** Conflict resolver rejected entries count. */
-    private volatile LongAdderMetric rslvrRejectedCnt;
+    private LongAdderMetric rslvrRejectedCnt;
 
     /** Conflict resolver merged entries count. */
-    private volatile LongAdderMetric rslvrMergedCnt;
+    private LongAdderMetric rslvrMergedCnt;
 
     /**
      * Creates cache metrics.
