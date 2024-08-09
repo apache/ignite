@@ -197,7 +197,7 @@ public class SnapshotCheckProcess {
         SnapshotCheckContext ctx;
 
         // The context can be null, if a required node leaves before this phase.
-        if (!req.nodes().contains(kctx.localNodeId()) || (ctx = context(null, req.requestId())) == null || ctx.locMeta == null)
+        if (!req.nodes().contains(kctx.localNodeId()) || (ctx = context(req.snapshotName(), req.requestId())) == null || ctx.locMeta == null)
             return new GridFinishedFuture<>();
 
         IgniteSnapshotManager snpMgr = kctx.cache().context().snapshotMgr();
@@ -452,10 +452,10 @@ public class SnapshotCheckProcess {
         private volatile GridFutureAdapter<SnapshotCheckResponse> fut;
 
         /** Local snapshot metadata. */
-        @Nullable SnapshotMetadata locMeta;
+        @Nullable private SnapshotMetadata locMeta;
 
         /** All the snapshot metadatas. */
-        @Nullable Map<ClusterNode, List<SnapshotMetadata>> clusterMetas;
+        @Nullable private Map<ClusterNode, List<SnapshotMetadata>> clusterMetas;
 
         /** Creates operation context. */
         private SnapshotCheckContext(SnapshotCheckProcessRequest req) {
@@ -464,7 +464,7 @@ public class SnapshotCheckProcess {
     }
 
     /** A DTO used to transfer nodes' results for the both phases. */
-    static final class SnapshotCheckResponse implements Serializable {
+    private static final class SnapshotCheckResponse implements Serializable {
         /** Serial version uid. */
         private static final long serialVersionUID = 0L;
 
@@ -492,7 +492,7 @@ public class SnapshotCheckProcess {
         }
 
         /** */
-        Map<String, SnapshotHandlerResult<?>> customHandlersResults() {
+        private Map<String, SnapshotHandlerResult<?>> customHandlersResults() {
             return (Map<String, SnapshotHandlerResult<?>>)partsResults;
         }
     }
