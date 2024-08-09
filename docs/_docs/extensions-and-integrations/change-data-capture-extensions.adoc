@@ -118,6 +118,11 @@ image:../../assets/images/integrations/CDC-ignite2kafka.svg[]
 | `kafkaRequestTimeout` | Kafka request timeout in milliseconds.  | `3000`
 |===
 
+`kafkaRequestTimeout` property sets how much `IgniteToKafkaCdcStreamer` will wait for `KafkaProducer` to finish request. Also, proper `KafkaProducer` configuration should be provided, including link:https://kafka.apache.org/documentation/#producerconfigs_request.timeout.ms[request.timeout.ms]. For more details you should refer to a link:https://kafka.apache.org/documentation/#configuration[configuration]
+section of the official Kafka documentation.
+
+NOTE: `kafkaRequestTimeout` should not be too low, because `IgniteToKafkaCdcStreamer` will wait for `KafkaProducer` to send messages to a broker, and if wait time exceeds `kafkaRequestTimeout`, then `IgniteToKafkaCdcStreamer` will fail with a timeout error.
+
 === IgniteToKafkaCdcStreamer Metrics
 
 [cols="30%,70%",opts="header"]
@@ -196,6 +201,10 @@ Kafka to Ignite configuration file should contain the following beans that will 
 | `LastBatchSentTime` | Timestamp of last sent batch to the destination cluster.
 | `MarkersCount` | Count of metadata markers received from Kafka.
 |===
+
+`kafkaRequestTimeout` property is used as timeout for `KafkaConsumer` methods. Also, proper `KafkaConsumer` configuration should be provided, including link:https://kafka.apache.org/documentation/#consumerconfigs_request.timeout.ms[request.timeout.ms]. For more details you should refer to a link:https://kafka.apache.org/documentation/#configuration[configuration] section of the official Kafka documentation.
+
+NOTE: `kafkaRequestTimeout` should not be too low, because `kafka-to-ignite.sh` will fail with a timeout error, if `KafkaConsumer` method execution time exceeds `kafkaRequestTimeout` (except for `KafkaConsumer#poll`). `kafkaRequestTimeout` should not be very high too, because poll can wait up to this timeout, which prevents further partitions to be processed.
 
 ==== Logging
 
