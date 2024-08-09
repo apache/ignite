@@ -741,4 +741,19 @@ public interface CacheMetrics {
      *         Note that this metric includes backup partitions, which also participate in index building on each node.
      */
     public int getIndexBuildPartitionsLeftCount();
+
+    /**
+     * @return The number of entries accepted by conflict resolver.
+     */
+    public long getAcceptedByConflictResolverCnt();
+
+    /**
+     * @return The number of entries rejected by conflict resolver.
+     */
+    public long getRejectedByConflictResolverCnt();
+
+    /**
+     * @return The number of entries merged by conflict resolver.
+     */
+    public long getMergedByConflictResolverCnt();
 }

@@ -332,6 +332,15 @@ public class CacheMetricsSnapshotV2 extends IgniteDataTransferObject implements 
     /** The number of local node partitions that remain to be processed to complete indexing. */
     private int idxBuildPartitionsLeftCount;
 
+    /** Conflict resolver accepted entries count. */
+    private long acceptedByConflictResolverCnt;
+
+    /** Conflict resolver rejected entries count. */
+    private long rejectedByConflictResolverCnt;
+
+    /** Conflict resolver merged entries count. */
+    private long mergedByConflictResolverCnt;
+
     /**
      * Default constructor.
      */
@@ -447,6 +456,10 @@ public class CacheMetricsSnapshotV2 extends IgniteDataTransferObject implements 
         idxRebuildKeyProcessed = m.getIndexRebuildKeysProcessed();
 
         idxBuildPartitionsLeftCount = m.getIndexBuildPartitionsLeftCount();
+
+        acceptedByConflictResolverCnt = m.getAcceptedByConflictResolverCnt();
+        rejectedByConflictResolverCnt = m.getRejectedByConflictResolverCnt();
+        mergedByConflictResolverCnt = m.getMergedByConflictResolverCnt();
     }
 
     /**
@@ -593,6 +606,9 @@ public class CacheMetricsSnapshotV2 extends IgniteDataTransferObject implements 
             rebalancingBytesRate += e.getRebalancingBytesRate();
             rebalancingKeysRate += e.getRebalancingKeysRate();
             idxBuildPartitionsLeftCount += e.getIndexBuildPartitionsLeftCount();
+            acceptedByConflictResolverCnt += e.getAcceptedByConflictResolverCnt();
+            rejectedByConflictResolverCnt += e.getRejectedByConflictResolverCnt();
+            mergedByConflictResolverCnt += e.getMergedByConflictResolverCnt();
         }
 
         int size = metrics.size();
@@ -1084,6 +1100,20 @@ public class CacheMetricsSnapshotV2 extends IgniteDataTransferObject implements 
     }
 
     /** {@inheritDoc} */
+    @Override public long getAcceptedByConflictResolverCnt() {
+        return acceptedByConflictResolverCnt;
+    }
+
+    /** {@inheritDoc} */
+    @Override public long getRejectedByConflictResolverCnt() {
+        return rejectedByConflictResolverCnt;
+    }
+
+    @Override public long getMergedByConflictResolverCnt() {
+        return mergedByConflictResolverCnt;
+    }
+
+    /** {@inheritDoc} */
     @Override public String toString() {
         return S.toString(CacheMetricsSnapshotV2.class, this);
     }
@@ -1166,6 +1196,9 @@ public class CacheMetricsSnapshotV2 extends IgniteDataTransferObject implements 
         out.writeInt(keySize);
         U.writeLongString(out, txKeyCollisions);
         out.writeInt(idxBuildPartitionsLeftCount);
+        out.writeLong(acceptedByConflictResolverCnt);
+        out.writeLong(rejectedByConflictResolverCnt);
+        out.writeLong(mergedByConflictResolverCnt);
     }
 
     /** {@inheritDoc} */
@@ -1246,5 +1279,8 @@ public class CacheMetricsSnapshotV2 extends IgniteDataTransferObject implements 
         keySize = in.readInt();
         txKeyCollisions = U.readLongString(in);
         idxBuildPartitionsLeftCount = in.readInt();
+        acceptedByConflictResolverCnt = in.readLong();
+        rejectedByConflictResolverCnt = in.readLong();
+        mergedByConflictResolverCnt = in.readLong();
     }
 }
