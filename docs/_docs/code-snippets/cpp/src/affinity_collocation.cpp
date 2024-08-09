@@ -26,8 +26,6 @@ struct Person
 {
     int32_t id;
     std::string name;
-    int32_t cityId;
-    std::string companyId;
 };
 
 struct PersonKey
@@ -53,16 +51,12 @@ template<> struct BinaryType<Person> : BinaryTypeDefaultAll<Person>
     {
         writer.WriteInt32("id", obj.id);
         writer.WriteString("name", obj.name);
-        writer.WriteInt32("cityId", obj.cityId);
-        writer.WriteString("companyId", obj.companyId);
     }
 
     static void Read(BinaryReader& reader, Person& dst)
     {
         dst.id = reader.ReadInt32("id");
         dst.name = reader.ReadString("name");
-        dst.cityId = reader.ReadInt32("cityId");
-        dst.companyId = reader.ReadString("companyId");
     }
 };
 
@@ -127,8 +121,8 @@ int main()
     Company company{};
     company.name = "Company1";
 
-    personCache.Put(PersonKey{1, "company1_key"}, person);
-    companyCache.Put("company1_key", company);
+    personCache.Put(PersonKey{1, "company1"}, person);
+    companyCache.Put("company1", company);
 
     return 0;
 }
