@@ -62,8 +62,6 @@ import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
 
 import static org.apache.calcite.tools.Frameworks.createRootSchema;
-import static org.apache.calcite.tools.Frameworks.newConfigBuilder;
-import static org.apache.ignite.internal.processors.query.calcite.CalciteQueryProcessor.FRAMEWORK_CONFIG;
 
 /**
  * Test LogicalRelImplementor class.
@@ -110,11 +108,7 @@ public class LogicalRelImplementorTest extends GridCommonAbstractTest {
         publicSchema.addTable("TBL", tbl);
 
         qctx = BaseQueryContext.builder()
-            .frameworkConfig(
-                newConfigBuilder(FRAMEWORK_CONFIG)
-                    .defaultSchema(createRootSchema(false).add(publicSchema.getName(), publicSchema))
-                    .build()
-            )
+            .defaultSchema(createRootSchema(false).add(publicSchema.getName(), publicSchema))
             .logger(log)
             .build();
 

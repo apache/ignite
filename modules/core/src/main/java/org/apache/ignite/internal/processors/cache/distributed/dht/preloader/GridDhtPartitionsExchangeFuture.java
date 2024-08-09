@@ -109,6 +109,7 @@ import org.apache.ignite.internal.processors.cluster.DiscoveryDataClusterState;
 import org.apache.ignite.internal.processors.cluster.IgniteChangeGlobalStateSupport;
 import org.apache.ignite.internal.processors.metric.GridMetricManager;
 import org.apache.ignite.internal.processors.security.SecurityContext;
+import org.apache.ignite.internal.processors.subscription.GridInternalSubscriptionProcessor;
 import org.apache.ignite.internal.processors.tracing.NoopSpan;
 import org.apache.ignite.internal.processors.tracing.Span;
 import org.apache.ignite.internal.processors.tracing.SpanTags;
@@ -1382,15 +1383,14 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
                 cctx.exchange().exchangerBlockingSectionBegin();
 
                 try {
-                    kctx.dataStructures().onDeActivate(kctx);
-
                     assert registerCachesFuture == null : "No caches registration should be scheduled before new caches have started.";
 
                     registerCachesFuture = cctx.affinity().onCacheChangeRequest(this, crd, exchActions);
 
-                    kctx.encryption().onDeActivate(kctx);
+                    GridInternalSubscriptionProcessor isp = kctx.internalSubscriptionProcessor();
 
-                    ((IgniteChangeGlobalStateSupport)kctx.distributedMetastorage()).onDeActivate(kctx);
+                    for (IgniteChangeGlobalStateSupport lsnr : isp.getGlobalStateListeners())
+                        lsnr.onDeActivate(kctx);
 
                     if (log.isInfoEnabled()) {
                         log.info("Successfully deactivated data structures, services and caches [" +

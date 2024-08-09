@@ -645,8 +645,9 @@ This view exposes information about SQL views.
 [{table_opts}]
 |===
 |NAME | TYPE |    DESCRIPTION
-|NAME | string |  Name
 |SCHEMA | string |  Schema
+|NAME | string |  Name
+|SQL | string | SQL query for view
 |DESCRIPTION | string |  Description
 |===
 

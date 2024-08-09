@@ -27,6 +27,9 @@ import org.apache.calcite.sql.SqlDdl;
 import org.apache.calcite.sql.SqlIdentifier;
 import org.apache.calcite.sql.SqlKind;
 import org.apache.calcite.sql.SqlNode;
+import org.apache.calcite.sql.ddl.SqlCreateView;
+import org.apache.calcite.sql.ddl.SqlDropView;
+import org.apache.calcite.sql.dialect.CalciteSqlDialect;
 import org.apache.ignite.cache.QueryIndex;
 import org.apache.ignite.internal.processors.cache.query.IgniteQueryErrorCode;
 import org.apache.ignite.internal.processors.query.IgniteSQLException;
@@ -55,9 +58,11 @@ import org.apache.ignite.internal.sql.command.SqlAnalyzeCommand;
 import org.apache.ignite.internal.sql.command.SqlCommand;
 import org.apache.ignite.internal.sql.command.SqlCreateIndexCommand;
 import org.apache.ignite.internal.sql.command.SqlCreateUserCommand;
+import org.apache.ignite.internal.sql.command.SqlCreateViewCommand;
 import org.apache.ignite.internal.sql.command.SqlDropIndexCommand;
 import org.apache.ignite.internal.sql.command.SqlDropStatisticsCommand;
 import org.apache.ignite.internal.sql.command.SqlDropUserCommand;
+import org.apache.ignite.internal.sql.command.SqlDropViewCommand;
 import org.apache.ignite.internal.sql.command.SqlIndexColumn;
 import org.apache.ignite.internal.sql.command.SqlKillComputeTaskCommand;
 import org.apache.ignite.internal.sql.command.SqlKillContinuousQueryCommand;
@@ -87,7 +92,9 @@ public class SqlToNativeCommandConverter {
             || sqlCmd instanceof IgniteSqlAlterUser
             || sqlCmd instanceof IgniteSqlDropUser
             || sqlCmd instanceof IgniteSqlKill
-            || sqlCmd instanceof IgniteSqlStatisticsCommand;
+            || sqlCmd instanceof IgniteSqlStatisticsCommand
+            || sqlCmd instanceof SqlCreateView
+            || sqlCmd instanceof SqlDropView;
     }
 
     /**
@@ -120,6 +127,10 @@ public class SqlToNativeCommandConverter {
             return convertKill((IgniteSqlKill)cmd, pctx);
         else if (cmd instanceof IgniteSqlStatisticsCommand)
             return convertStatistics((IgniteSqlStatisticsCommand)cmd, pctx);
+        else if (cmd instanceof SqlCreateView)
+            return convertCreateView((SqlCreateView)cmd, pctx);
+        else if (cmd instanceof SqlDropView)
+            return convertDropView((SqlDropView)cmd, pctx);
 
         throw new IgniteSQLException("Unsupported native operation [" +
             "cmdName=" + (cmd == null ? null : cmd.getClass().getSimpleName()) + "; " +
@@ -196,6 +207,27 @@ public class SqlToNativeCommandConverter {
      */
     private static SqlDropUserCommand convertDropUser(IgniteSqlDropUser sqlCmd, PlanningContext ctx) {
         return new SqlDropUserCommand(sqlCmd.user().getSimple());
+    }
+
+    /**
+     * Converts CREATE VIEW ... command.
+     */
+    private static SqlCreateViewCommand convertCreateView(SqlCreateView sqlCmd, PlanningContext ctx) {
+        String schemaName = deriveSchemaName(sqlCmd.name, ctx);
+        String viewName = deriveObjectName(sqlCmd.name, ctx, "View name");
+
+        return new SqlCreateViewCommand(schemaName, viewName,
+            sqlCmd.query.toSqlString(CalciteSqlDialect.DEFAULT).toString(), sqlCmd.getReplace());
+    }
+
+    /**
+     * Converts DROP VIEW ... command.
+     */
+    private static SqlDropViewCommand convertDropView(SqlDropView sqlCmd, PlanningContext ctx) {
+        String schemaName = deriveSchemaName(sqlCmd.name, ctx);
+        String viewName = deriveObjectName(sqlCmd.name, ctx, "View name");
+
+        return new SqlDropViewCommand(schemaName, viewName, sqlCmd.ifExists);
     }
 
     /**

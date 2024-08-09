@@ -31,7 +31,6 @@ import org.apache.calcite.plan.RelOptUtil;
 import org.apache.calcite.rel.core.TableModify;
 import org.apache.calcite.sql.SqlInsert;
 import org.apache.calcite.sql.SqlKind;
-import org.apache.calcite.tools.Frameworks;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.cache.query.FieldsQueryCursor;
@@ -119,7 +118,6 @@ import org.jetbrains.annotations.Nullable;
 
 import static java.util.Collections.singletonList;
 import static org.apache.ignite.events.EventType.EVT_CACHE_QUERY_OBJECT_READ;
-import static org.apache.ignite.internal.processors.query.calcite.CalciteQueryProcessor.FRAMEWORK_CONFIG;
 import static org.apache.ignite.internal.processors.query.calcite.externalize.RelJsonReader.fromJson;
 
 /**
@@ -481,11 +479,7 @@ public class ExecutionServiceImpl<Row> extends AbstractService implements Execut
     private BaseQueryContext createQueryContext(Context parent, @Nullable String schema) {
         return BaseQueryContext.builder()
             .parentContext(parent)
-            .frameworkConfig(
-                Frameworks.newConfigBuilder(FRAMEWORK_CONFIG)
-                    .defaultSchema(schemaHolder().schema(schema))
-                    .build()
-            )
+            .defaultSchema(schemaHolder().schema(schema))
             .logger(log)
             .build();
     }

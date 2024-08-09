@@ -502,7 +502,7 @@ public class SystemViewCommandTest extends GridCommandHandlerClusterByClassAbstr
 
         List<List<String>> sqlViewsView = systemView(ignite0, SQL_VIEWS_VIEW);
 
-        sqlViewsView.forEach(row -> viewNames.add(row.get(0))); // name
+        sqlViewsView.forEach(row -> viewNames.add(row.get(1))); // name
 
         assertEquals(expViewNames, viewNames);
     }

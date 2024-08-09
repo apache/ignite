@@ -111,7 +111,13 @@ public enum SecurityPermission {
     REFRESH_STATISTICS,
 
     /** Permission to execute ANALYZE and DROP STATISTICS command. */
-    CHANGE_STATISTICS;
+    CHANGE_STATISTICS,
+
+    /** Permission to execute CREATE VIEW command. */
+    SQL_VIEW_CREATE,
+
+    /** Permission to execute DROP VIEW command. */
+    SQL_VIEW_DROP;
 
     /** Enumerated values. */
     private static final SecurityPermission[] VALS = values();
