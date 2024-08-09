@@ -47,6 +47,7 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.IgniteSystemProperties;
+import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.CacheRebalanceMode;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.cluster.ClusterState;
@@ -2128,7 +2129,7 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
             if (!F.isEmpty(caches))
                 resetLostPartitions(caches);
 
-            if (exchActions.finalizePartitionCounters())
+            if (exchActions.finalizePartitionCounters() || exchActions.activateFullBaseline())
                 finalizePartitionCounters();
         }
 
@@ -3432,8 +3433,12 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
 
         List<SupplyPartitionInfo> list = assignHistoricalSuppliers(top, maxCntrs, varCntrs, haveHistory);
 
-        if (resetOwners)
-            resetOwnersByCounter(top, maxCntrs, haveHistory);
+        if (resetOwners) {
+            resetOwnersByCounter(top, maxCntrs,
+                exchActions.activateFullBaseline() &&
+                    transactionalTwoPhaseCommit(cctx.kernalContext().cache().cacheGroup(top.groupId()).config()) ?
+                    new HashSet<>() : haveHistory);
+        }
 
         return list;
     }
@@ -4302,6 +4307,12 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
 
                         // Failed node's primary partitions. Safe to use affinity since topology was fully rebalanced.
                         parts = grp.affinity().primaryPartitions(firstDiscoEvt.eventNode().id(), topVer);
+                    }
+                    else if (exchActions != null && exchActions.activateFullBaseline()) {
+                        AffinityTopologyVersion topVer = sharedContext().exchange().readyAffinityVersion();
+
+                        parts = transactionalTwoPhaseCommit(grp.config()) ? grp.affinity().primaryPartitions(cctx.localNodeId(), topVer)
+                            : new HashSet<>();
                     }
                     else
                         parts = grp.topology().localPartitionMap().keySet();
@@ -5414,6 +5425,14 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
         assert wasRebalanced();
 
         markRebalanced();
+    }
+
+    /**
+     * @param ccfg Cache configuration.
+     * @return {@code true} for transactional caches with more than one backup. =
+     */
+    private static boolean transactionalTwoPhaseCommit(CacheConfiguration<?, ?> ccfg) {
+        return ccfg.getBackups() > 1 && ccfg.getAtomicityMode() == CacheAtomicityMode.TRANSACTIONAL;
     }
 
     /**

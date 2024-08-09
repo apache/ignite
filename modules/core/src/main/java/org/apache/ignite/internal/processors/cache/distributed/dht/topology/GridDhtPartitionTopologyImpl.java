@@ -2872,6 +2872,7 @@ public class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
 
         try {
             WALPointer ptr = null;
+            StringBuilder gapsLog = new StringBuilder();
 
             lock.readLock().lock();
 
@@ -2890,6 +2891,12 @@ public class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
                         GridLongList gaps = part.finalizeUpdateCounters();
 
                         if (gaps != null) {
+                            gapsLog.append("[part=")
+                                .append(p)
+                                .append(", gaps=")
+                                .append(gaps)
+                                .append("], ");
+
                             for (int j = 0; j < gaps.size() / 2; j++) {
                                 long gapStart = gaps.get(j * 2);
                                 long gapStop = gaps.get(j * 2 + 1);
@@ -2916,6 +2923,9 @@ public class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
                 }
             }
             finally {
+                if (log.isInfoEnabled() && gapsLog.length() > 0)
+                    log.info("Finalizing gap counters completed: " + gapsLog);
+
                 try {
                     if (ptr != null)
                         ctx.wal().flush(ptr, false);
