@@ -20,6 +20,7 @@ package org.apache.ignite.internal.processors.cache.persistence.snapshot;
 import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -38,6 +39,7 @@ import org.apache.ignite.internal.processors.cache.persistence.wal.FileDescripto
 import org.apache.ignite.internal.processors.cache.persistence.wal.FileWriteAheadLogManager;
 import org.apache.ignite.internal.processors.cache.persistence.wal.reader.IgniteWalIteratorFactory;
 import org.apache.ignite.internal.processors.task.GridInternal;
+import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.resources.IgniteInstanceResource;
 import org.apache.ignite.resources.LoggerResource;
@@ -214,7 +216,8 @@ public class SnapshotMetadataVerificationTask
                 continue;
             }
 
-            reduceRes.computeIfAbsent(res.getNode(), n -> new ArrayList<>()).addAll(res.getData());
+            if (!F.isEmpty((Collection<?>)res.getData()))
+                reduceRes.computeIfAbsent(res.getNode(), n -> new ArrayList<>()).addAll(res.getData());
         }
 
         exs = SnapshotChecker.reduceMetasResults(arg.snapshotName(), arg.snapshotPath(), reduceRes, exs, ignite.localNode().consistentId());
