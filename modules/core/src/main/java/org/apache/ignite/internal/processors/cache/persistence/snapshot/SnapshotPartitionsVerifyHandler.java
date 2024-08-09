@@ -83,17 +83,22 @@ import static org.apache.ignite.internal.processors.cache.persistence.file.FileP
 import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.cachePartitionFiles;
 import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.partId;
 import static org.apache.ignite.internal.processors.cache.persistence.partstate.GroupPartitionId.getTypeByPartId;
+import static org.apache.ignite.internal.processors.cache.persistence.snapshot.IgniteSnapshotManager.SNAPSHOT_METRICS;
 import static org.apache.ignite.internal.processors.cache.persistence.snapshot.IgniteSnapshotManager.databaseRelativePath;
 import static org.apache.ignite.internal.processors.cache.persistence.snapshot.dump.CreateDumpFutureTask.DUMP_FILE_EXT;
 import static org.apache.ignite.internal.processors.cache.persistence.wal.reader.StandaloneGridKernalContext.closeAllComponents;
 import static org.apache.ignite.internal.processors.cache.persistence.wal.reader.StandaloneGridKernalContext.startAllComponents;
 import static org.apache.ignite.internal.processors.cache.verify.IdleVerifyUtility.calculatePartitionHash;
 import static org.apache.ignite.internal.processors.cache.verify.IdleVerifyUtility.checkPartitionsPageCrcSum;
+import static org.apache.ignite.internal.processors.metric.impl.MetricUtils.metricName;
 
 /**
  * Default snapshot restore handler for checking snapshot partitions consistency.
  */
 public class SnapshotPartitionsVerifyHandler implements SnapshotHandler<Map<PartitionKeyV2, PartitionHashRecordV2>> {
+    /** */
+    public static final String METRIC_REG_NAME = metricName(SNAPSHOT_METRICS, "check");
+
     /** Shared context. */
     protected final GridCacheSharedContext<?, ?> cctx;
 
