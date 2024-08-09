@@ -207,7 +207,7 @@ public class ReliabilityTest extends AbstractThinClientTest {
 
             Throwable ex = GridTestUtils.assertThrowsWithCause(() -> cachePut(cache, 0, 0), ClientConnectionException.class);
 
-            GridTestUtils.assertContains(null, ex.getMessage(), cluster.clientAddresses().iterator().next());
+            GridTestUtils.assertContains(null, ex.getMessage(), F.first(cluster.clientAddresses()));
 
             // Recover after fail.
             cachePut(cache, 0, 0);

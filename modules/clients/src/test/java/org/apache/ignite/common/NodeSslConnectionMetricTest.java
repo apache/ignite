@@ -74,6 +74,9 @@ public class NodeSslConnectionMetricTest extends GridCommonAbstractTest {
     /** Cipher suite not supported by cluster nodes. */
     private static final String UNSUPPORTED_CIPHER_SUITE = "TLS_RSA_WITH_AES_128_GCM_SHA256";
 
+    /** Local server address. */
+    private static final String LOCAL_CLIENT_ADDRESS = "127.0.0.1:10800";
+
     /** Metric timeout. */
     private static final long TIMEOUT = 7_000;
 
@@ -300,7 +303,7 @@ public class NodeSslConnectionMetricTest extends GridCommonAbstractTest {
                 startClient(clientConfiguration("client", "trustboth", CIPHER_SUITE, "TLSv1.2")),
             ClientConnectionException.class);
 
-        assertContains(log, ex.getMessage(), "127.0.0.1:10800");
+        assertContains(log, ex.getMessage(), LOCAL_CLIENT_ADDRESS);
 
         checkSslCommunicationMetrics(reg, 2, 0, 1);
 
@@ -310,7 +313,7 @@ public class NodeSslConnectionMetricTest extends GridCommonAbstractTest {
             ClientConnectionException.class
         );
 
-        assertContains(log, ex.getMessage(), "127.0.0.1:10800");
+        assertContains(log, ex.getMessage(), LOCAL_CLIENT_ADDRESS);
 
         checkSslCommunicationMetrics(reg, 3, 0, 2);
 
@@ -320,7 +323,7 @@ public class NodeSslConnectionMetricTest extends GridCommonAbstractTest {
             ClientConnectionException.class
         );
 
-        assertContains(log, ex.getMessage(), "127.0.0.1:10800");
+        assertContains(log, ex.getMessage(), LOCAL_CLIENT_ADDRESS);
 
         checkSslCommunicationMetrics(reg, 4, 0, 3);
     }
@@ -396,7 +399,7 @@ public class NodeSslConnectionMetricTest extends GridCommonAbstractTest {
         String protocol
     ) {
         return new ClientConfiguration()
-            .setAddresses("127.0.0.1:10800")
+            .setAddresses(LOCAL_CLIENT_ADDRESS)
             // When PA is enabled, async client channel init executes and spoils the metrics.
             .setPartitionAwarenessEnabled(false)
             .setSslMode(SslMode.REQUIRED)

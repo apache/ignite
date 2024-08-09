@@ -73,6 +73,7 @@ import org.apache.ignite.internal.processors.platform.client.ClientStatus;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.T2;
+import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.logger.NullLogger;
 import org.jetbrains.annotations.Nullable;
@@ -889,7 +890,7 @@ class TcpClientChannel implements ClientChannel, ClientMessageHandler, ClientCon
      * @param ex IO exception (cause).
      */
     private ClientException handleIOError(@Nullable IOException ex) {
-        return handleIOError("sock=" + sock, ex);
+        return handleIOError(S.toString(ConnectionDescription.class, connDesc), ex);
     }
 
     /**

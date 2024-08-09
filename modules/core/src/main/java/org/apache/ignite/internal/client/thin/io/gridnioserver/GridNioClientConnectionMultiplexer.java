@@ -195,7 +195,7 @@ public class GridNioClientConnectionMultiplexer implements ClientConnectionMulti
             return new GridNioClientConnection(ses, msgHnd, stateHnd);
         }
         catch (Exception e) {
-            throw new ClientConnectionException(e.getMessage() + " [" + S.toString(InetSocketAddress.class, addr) + ']', e);
+            throw new ClientConnectionException(e.getMessage() + " [" + addr + ']', e);
         }
         finally {
             rwLock.readLock().unlock();
