@@ -1645,11 +1645,11 @@ public class GridCacheContext<K, V> implements Externalizable {
             atomicVerComp);
 
         if (ctx.isUseNew())
-            cache().metrics0().incrementAcceptedByConflictResolverCnt();
+            cache().metrics0().incrementResolverAcceptedCount();
         else if (ctx.isUseOld())
-            cache().metrics0().incrementRejectedByConflictResolverCnt();
+            cache().metrics0().incrementResolverRejectedCount();
         else
-            cache().metrics0().incrementMergedByConflictResolverCnt();
+            cache().metrics0().incrementResolverMergedCount();
 
         if (ctx.isManualResolve())
             drMgr.onReceiveCacheConflictResolved(ctx.isUseNew(), ctx.isUseOld(), ctx.isMerge());

@@ -228,17 +228,17 @@ public class CacheMetricsImpl implements CacheMetrics {
     /** The number of local node partitions that remain to be processed to complete indexing. */
     private final IntMetricImpl idxBuildPartitionsLeftCnt;
 
-    /** Cache metric registry name. */
-    private final String metricRegistryName;
+    /** Cache metric registry. */
+    private final MetricRegistryImpl mreg;
 
     /** Conflict resolver accepted entries count. */
-    private LongAdderMetric acceptedByConflictResolverCnt;
+    private LongAdderMetric rslvrAcceptedCnt;
 
     /** Conflict resolver rejected entries count. */
-    private LongAdderMetric rejectedByConflictResolverCnt;
+    private LongAdderMetric rslvrRejectedCnt;
 
     /** Conflict resolver merged entries count. */
-    private LongAdderMetric mergedByConflictResolverCnt;
+    private LongAdderMetric rslvrMergedCnt;
 
     /**
      * Creates cache metrics.
@@ -268,9 +268,7 @@ public class CacheMetricsImpl implements CacheMetrics {
 
         delegate = null;
 
-        metricRegistryName = cacheMetricsRegistryName(cctx.name(), isNear);
-
-        MetricRegistryImpl mreg = getCacheMetricRegistry();
+        mreg = cctx.kernalContext().metric().registry(cacheMetricsRegistryName(cctx.name(), isNear));
 
         reads = mreg.longMetric("CacheGets",
             "The total number of gets to the cache.");
@@ -426,11 +424,6 @@ public class CacheMetricsImpl implements CacheMetrics {
 
         idxBuildPartitionsLeftCnt = mreg.intMetric("IndexBuildPartitionsLeftCount",
             "The number of local node partitions that remain to be processed to complete indexing.");
-    }
-
-    /** @return {@link MetricRegistryImpl} for cache. */
-    private MetricRegistryImpl getCacheMetricRegistry() {
-        return cctx.kernalContext().metric().registry(metricRegistryName);
     }
 
     /**
@@ -1679,31 +1672,31 @@ public class CacheMetricsImpl implements CacheMetrics {
     }
 
     /** */
-    public void incrementAcceptedByConflictResolverCnt() {
-        acceptedByConflictResolverCnt.increment();
+    public void incrementResolverAcceptedCount() {
+        rslvrAcceptedCnt.increment();
     }
 
     /** */
-    public void incrementRejectedByConflictResolverCnt() {
-        rejectedByConflictResolverCnt.increment();
+    public void incrementResolverRejectedCount() {
+        rslvrRejectedCnt.increment();
     }
 
     /** */
-    public void incrementMergedByConflictResolverCnt() {
-        mergedByConflictResolverCnt.increment();
+    public void incrementResolverMergedCount() {
+        rslvrMergedCnt.increment();
     }
 
     /** Registers metrics for conflict resolver. */
     public void registerResolverMetrics() {
-        MetricRegistryImpl mreg = getCacheMetricRegistry();
+        assert mreg != null : "Cache metrics registry should have been initialized!";
 
-        acceptedByConflictResolverCnt = mreg.longAdderMetric("ConflictResolverAcceptedCount",
+        rslvrAcceptedCnt = mreg.longAdderMetric("ConflictResolverAcceptedCount",
             "Conflict resolver accepted entries count");
 
-        rejectedByConflictResolverCnt = mreg.longAdderMetric("ConflictResolverRejectedCount",
+        rslvrRejectedCnt = mreg.longAdderMetric("ConflictResolverRejectedCount",
             "Conflict resolver rejected entries count");
 
-        mergedByConflictResolverCnt = mreg.longAdderMetric("ConflictResolverMergedCount",
+        rslvrMergedCnt = mreg.longAdderMetric("ConflictResolverMergedCount",
             "Conflict resolver merged entries count");
     }
 
