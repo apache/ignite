@@ -19,12 +19,14 @@ package org.apache.ignite.testsuites;
 
 import org.apache.ignite.internal.processors.query.calcite.QueryCheckerTest;
 import org.apache.ignite.internal.processors.query.calcite.exec.ClosableIteratorsHolderTest;
+import org.apache.ignite.internal.processors.query.calcite.exec.FilteredCursorTest;
 import org.apache.ignite.internal.processors.query.calcite.exec.LogicalRelImplementorTest;
 import org.apache.ignite.internal.processors.query.calcite.exec.exp.IgniteSqlFunctionsTest;
 import org.apache.ignite.internal.processors.query.calcite.exec.tracker.MemoryTrackerTest;
 import org.apache.ignite.internal.processors.query.calcite.message.CalciteCommunicationMessageSerializationTest;
 import org.apache.ignite.internal.processors.query.calcite.sql.SqlCustomParserTest;
 import org.apache.ignite.internal.processors.query.calcite.sql.SqlReservedWordsTest;
+import org.apache.ignite.internal.processors.tx.TransactionIsolationTest;
 import org.junit.runner.RunWith;
 import org.junit.runners.Suite;
 
@@ -44,9 +46,12 @@ import org.junit.runners.Suite;
     SqlReservedWordsTest.class,
     IgniteSqlFunctionsTest.class,
     LogicalRelImplementorTest.class,
+    FilteredCursorTest.class,
 
     ScriptTestSuite.class,
     CalciteCommunicationMessageSerializationTest.class,
+
+    TransactionIsolationTest.class
 })
 public class IgniteCalciteTestSuite {
 }

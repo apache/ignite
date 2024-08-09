@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.processors.query.calcite.exec;
 
 import java.lang.reflect.Type;
+import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -30,6 +31,7 @@ import org.apache.calcite.schema.SchemaPlus;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
+import org.apache.ignite.internal.processors.cache.transactions.IgniteTxEntry;
 import org.apache.ignite.internal.processors.query.calcite.exec.exp.ExpressionFactory;
 import org.apache.ignite.internal.processors.query.calcite.exec.exp.ExpressionFactoryImpl;
 import org.apache.ignite.internal.processors.query.calcite.exec.tracker.ExecutionNodeMemoryTracker;
@@ -47,6 +49,7 @@ import org.apache.ignite.internal.processors.query.calcite.util.TypeUtils;
 import org.apache.ignite.internal.util.lang.RunnableX;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.internal.processors.query.calcite.util.Commons.checkRange;
 
@@ -103,6 +106,9 @@ public class ExecutionContext<Row> extends AbstractQueryContext implements DataC
     private final long timeout;
 
     /** */
+    private final Collection<IgniteTxEntry> txWriteEntries;
+
+    /** */
     private final long startTs;
 
     /** */
@@ -127,7 +133,8 @@ public class ExecutionContext<Row> extends AbstractQueryContext implements DataC
         MemoryTracker qryMemoryTracker,
         IoTracker ioTracker,
         long timeout,
-        Map<String, Object> params
+        Map<String, Object> params,
+        @Nullable Collection<IgniteTxEntry> txWriteEntries
     ) {
         super(qctx);
 
@@ -142,6 +149,7 @@ public class ExecutionContext<Row> extends AbstractQueryContext implements DataC
         this.ioTracker = ioTracker;
         this.params = params;
         this.timeout = timeout;
+        this.txWriteEntries = txWriteEntries;
 
         startTs = U.currentTimeMillis();
 
@@ -287,6 +295,13 @@ public class ExecutionContext<Row> extends AbstractQueryContext implements DataC
         correlations = Commons.ensureCapacity(correlations, id + 1);
 
         correlations[id] = value;
+    }
+
+    /**
+     * @return Transaction write map
+     */
+    public Collection<IgniteTxEntry> getTxWriteEntries() {
+        return txWriteEntries;
     }
 
     /**
