@@ -204,7 +204,7 @@ public class SnapshotCheckProcess {
 
         ctx.fut = new GridFutureAdapter<>();
 
-        CompletableFuture<? extends Map<?,?>> workingFut = req.allRestoreHandlers
+        CompletableFuture<? extends Map<?, ?>> workingFut = req.allRestoreHandlers
             ? snpMgr.checker().invokeCustomHandlers(ctx.locMeta, req.snapshotPath(), req.groups(), true)
             : snpMgr.checker().checkPartitions(ctx.locMeta, snpMgr.snapshotLocalDir(req.snapshotName(), req.snapshotPath()),
             req.groups(), false, true, false);
