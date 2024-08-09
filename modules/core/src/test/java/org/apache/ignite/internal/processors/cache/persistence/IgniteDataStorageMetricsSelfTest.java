@@ -271,16 +271,18 @@ public class IgniteDataStorageMetricsSelfTest extends GridCommonAbstractTest {
             "checkpointListenersExecuteTime=(\\d+)ms, " +
             "checkpointLockHoldTime=(\\d+)ms, " +
             "walCpRecordFsyncDuration=(\\d+)ms, " +
-            "writeCheckpointEntryDuration=(\\d+)ms, " +
-            "splitAndSortCpPagesDuration=(\\d+)ms");
+            "splitAndSortCpPagesDuration=(\\d+)ms, " +
+            "writeRecoveryDataDuration=(\\d+)ms, " +
+            "writeCheckpointEntryDuration=(\\d+)ms, ");
 
         AtomicLong expLastCpBeforeLockDuration = new AtomicLong();
         AtomicLong expLastCpLockWaitDuration = new AtomicLong();
         AtomicLong expLastCpListenersExecDuration = new AtomicLong();
         AtomicLong expLastCpLockHoldDuration = new AtomicLong();
         AtomicLong expLastCpWalRecordFsyncDuration = new AtomicLong();
-        AtomicLong expLastCpWriteEntryDuration = new AtomicLong();
         AtomicLong expLastCpSplitAndSortPagesDuration = new AtomicLong();
+        AtomicLong expLastCpRecoveryDataWriteDuration = new AtomicLong();
+        AtomicLong expLastCpWriteEntryDuration = new AtomicLong();
         AtomicInteger cpCnt = new AtomicInteger();
 
         listeningLog.registerListener(s -> {
@@ -294,8 +296,9 @@ public class IgniteDataStorageMetricsSelfTest extends GridCommonAbstractTest {
             expLastCpListenersExecDuration.set(Long.parseLong(matcher.group(3)));
             expLastCpLockHoldDuration.set(Long.parseLong(matcher.group(4)));
             expLastCpWalRecordFsyncDuration.set(Long.parseLong(matcher.group(5)));
-            expLastCpWriteEntryDuration.set(Long.parseLong(matcher.group(6)));
-            expLastCpSplitAndSortPagesDuration.set(Long.parseLong(matcher.group(7)));
+            expLastCpSplitAndSortPagesDuration.set(Long.parseLong(matcher.group(6)));
+            expLastCpRecoveryDataWriteDuration.set(Long.parseLong(matcher.group(7)));
+            expLastCpWriteEntryDuration.set(Long.parseLong(matcher.group(8)));
             cpCnt.incrementAndGet();
         });
 
@@ -308,7 +311,7 @@ public class IgniteDataStorageMetricsSelfTest extends GridCommonAbstractTest {
         db.checkpointReadLock();
 
         try {
-            waitForCondition(() -> cpCnt.get() > 0, getTestTimeout());
+            assertTrue(waitForCondition(() -> cpCnt.get() > 0, 5_000L));
 
             MetricRegistry mreg = node.context().metric().registry(DATASTORAGE_METRIC_PREFIX);
 
@@ -320,6 +323,8 @@ public class IgniteDataStorageMetricsSelfTest extends GridCommonAbstractTest {
             AtomicLongMetric lastCpWriteEntryDuration = mreg.findMetric("LastCheckpointWriteEntryDuration");
             AtomicLongMetric lastCpSplitAndSortPagesDuration =
                 mreg.findMetric("LastCheckpointSplitAndSortPagesDuration");
+            AtomicLongMetric lastCpRecoveryDataWriteDuration =
+                mreg.findMetric("LastCheckpointRecoveryDataWriteDuration");
 
             HistogramMetric cpBeforeLockHistogram = mreg.findMetric("CheckpointBeforeLockHistogram");
             HistogramMetric cpLockWaitHistogram = mreg.findMetric("CheckpointLockWaitHistogram");
@@ -333,7 +338,7 @@ public class IgniteDataStorageMetricsSelfTest extends GridCommonAbstractTest {
             HistogramMetric cpSplitAndSortPagesHistogram = mreg.findMetric("CheckpointSplitAndSortPagesHistogram");
             HistogramMetric cpHistogram = mreg.findMetric("CheckpointHistogram");
 
-            waitForCondition(() -> cpCnt.get() == Arrays.stream(cpHistogram.value()).sum(), getTestTimeout());
+            assertTrue(waitForCondition(() -> cpCnt.get() == Arrays.stream(cpHistogram.value()).sum(), 5_000));
 
             assertEquals(cpCnt.get(), Arrays.stream(cpBeforeLockHistogram.value()).sum());
             assertEquals(cpCnt.get(), Arrays.stream(cpLockWaitHistogram.value()).sum());
@@ -351,8 +356,9 @@ public class IgniteDataStorageMetricsSelfTest extends GridCommonAbstractTest {
             assertEquals(expLastCpListenersExecDuration.get(), lastCpListenersExecDuration.value());
             assertEquals(expLastCpLockHoldDuration.get(), lastCpLockHoldDuration.value());
             assertEquals(expLastCpWalRecordFsyncDuration.get(), lastCpWalRecordFsyncDuration.value());
-            assertEquals(expLastCpWriteEntryDuration.get(), lastCpWriteEntryDuration.value());
             assertEquals(expLastCpSplitAndSortPagesDuration.get(), lastCpSplitAndSortPagesDuration.value());
+            assertEquals(expLastCpRecoveryDataWriteDuration.get(), lastCpRecoveryDataWriteDuration.value());
+            assertEquals(expLastCpWriteEntryDuration.get(), lastCpWriteEntryDuration.value());
         }
         finally {
             db.checkpointReadUnlock();
