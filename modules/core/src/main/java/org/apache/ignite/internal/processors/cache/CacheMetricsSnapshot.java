@@ -1052,21 +1052,6 @@ public class CacheMetricsSnapshot implements CacheMetrics, Externalizable {
     }
 
     /** {@inheritDoc} */
-    @Override public long getAcceptedByConflictResolverCnt() {
-        return 0;
-    }
-
-    /** {@inheritDoc} */
-    @Override public long getRejectedByConflictResolverCnt() {
-        return 0;
-    }
-
-    /** {@inheritDoc} */
-    @Override public long getMergedByConflictResolverCnt() {
-        return 0;
-    }
-
-    /** {@inheritDoc} */
     @Override public String toString() {
         return S.toString(CacheMetricsSnapshot.class, this);
     }

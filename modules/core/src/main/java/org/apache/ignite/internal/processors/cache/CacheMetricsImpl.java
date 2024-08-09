@@ -1683,29 +1683,14 @@ public class CacheMetricsImpl implements CacheMetrics {
         acceptedByConflictResolverCnt.increment();
     }
 
-    /** {@inheritDoc} */
-    @Override public long getAcceptedByConflictResolverCnt() {
-        return acceptedByConflictResolverCnt == null ? 0 : acceptedByConflictResolverCnt.value();
-    }
-
     /** */
     public void incrementRejectedByConflictResolverCnt() {
         rejectedByConflictResolverCnt.increment();
     }
 
-    /** {@inheritDoc} */
-    @Override public long getRejectedByConflictResolverCnt() {
-        return rejectedByConflictResolverCnt == null ? 0 : rejectedByConflictResolverCnt.value();
-    }
-
     /** */
     public void incrementMergedByConflictResolverCnt() {
         mergedByConflictResolverCnt.increment();
-    }
-
-    /** {@inheritDoc} */
-    @Override public long getMergedByConflictResolverCnt() {
-        return mergedByConflictResolverCnt == null ? 0 : mergedByConflictResolverCnt.value();
     }
 
     /** Registers metrics for conflict resolver. */
@@ -1721,7 +1706,6 @@ public class CacheMetricsImpl implements CacheMetrics {
         mergedByConflictResolverCnt = mreg.longAdderMetric("ConflictResolverMergedCount",
             "Conflict resolver merged entries count");
     }
-
 
     /** {@inheritDoc} */
     @Override public String toString() {

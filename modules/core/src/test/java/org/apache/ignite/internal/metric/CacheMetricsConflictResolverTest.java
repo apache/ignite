@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.metric;
 
+import java.util.function.Function;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.processors.cache.CacheConflictResolutionManager;
@@ -26,10 +27,15 @@ import org.apache.ignite.internal.processors.cache.IgniteInternalCache;
 import org.apache.ignite.internal.processors.cache.version.CacheVersionConflictResolver;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersionConflictContext;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersionedEntryEx;
+import org.apache.ignite.internal.processors.metric.MetricRegistryImpl;
 import org.apache.ignite.plugin.AbstractTestPluginProvider;
 import org.apache.ignite.plugin.PluginContext;
+import org.apache.ignite.spi.metric.LongMetric;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
+
+import static org.apache.ignite.internal.processors.cache.CacheMetricsImpl.CACHE_METRICS;
+import static org.apache.ignite.internal.processors.metric.impl.MetricUtils.metricName;
 
 /** Tests conflict resolver metrics per cache. */
 public class CacheMetricsConflictResolverTest extends GridCommonAbstractTest {
@@ -63,23 +69,33 @@ public class CacheMetricsConflictResolverTest extends GridCommonAbstractTest {
      */
     @Test
     public void testCacheConflictResolver() throws Exception {
-        try (IgniteEx ign = startGrid(0)) {
-            ign.getOrCreateCache(DEFAULT_CACHE_NAME);
+        IgniteEx ign = startGrid(0);
 
-            IgniteInternalCache<Integer, Integer> cachex = ign.cachex(DEFAULT_CACHE_NAME);
+        ign.getOrCreateCache(DEFAULT_CACHE_NAME);
 
-            conflictResolverMgr.setRslvState(State.USE_NEW);
-            cachex.put(0, 0);
-            assertEquals(1, cachex.localMetrics().getAcceptedByConflictResolverCnt());
+        IgniteInternalCache<Integer, Integer> cachex = ign.cachex(DEFAULT_CACHE_NAME);
 
-            conflictResolverMgr.setRslvState(State.USE_OLD);
-            cachex.put(0, 0);
-            assertEquals(1, cachex.localMetrics().getRejectedByConflictResolverCnt());
+        MetricRegistryImpl mreg = ign.context().metric().registry(metricName(CACHE_METRICS, DEFAULT_CACHE_NAME));
 
-            conflictResolverMgr.setRslvState(State.MERGE);
-            cachex.put(0, 0);
-            assertEquals(1, cachex.localMetrics().getMergedByConflictResolverCnt());
-        }
+        Function<String, LongMetric> metric = metricName -> (LongMetric)mreg.findMetric(metricName);
+
+        assertEquals(0, metric.apply("ConflictResolverAcceptedCount").value());
+        assertEquals(0, metric.apply("ConflictResolverRejectedCount").value());
+        assertEquals(0, metric.apply("ConflictResolverMergedCount").value());
+
+        conflictResolverMgr.setConflictResolverState(State.USE_NEW);
+        cachex.put(0, 0);
+        assertEquals(1, metric.apply("ConflictResolverAcceptedCount").value());
+
+        conflictResolverMgr.setConflictResolverState(State.USE_OLD);
+        cachex.put(0, 0);
+        assertEquals(1, metric.apply("ConflictResolverRejectedCount").value());
+
+        conflictResolverMgr.setConflictResolverState(State.MERGE);
+        cachex.put(0, 0);
+        assertEquals(1, metric.apply("ConflictResolverMergedCount").value());
+
+        stopAllGrids();
     }
 
     /** */
@@ -127,7 +143,7 @@ public class CacheMetricsConflictResolverTest extends GridCommonAbstractTest {
          * Sets conflict resolver entries handling policy.
          * @param state State.
          */
-        public void setRslvState(State state) {
+        public void setConflictResolverState(State state) {
             rslvState = state;
         }
     }

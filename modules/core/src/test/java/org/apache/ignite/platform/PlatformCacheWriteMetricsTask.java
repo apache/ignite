@@ -557,19 +557,5 @@ public class PlatformCacheWriteMetricsTask extends ComputeTaskAdapter<Long, Obje
         @Override public int getIndexBuildPartitionsLeftCount() {
             return 0;
         }
-
-        /** {@inheritDoc} */
-        @Override public long getAcceptedByConflictResolverCnt() {
-            return 0;
-        }
-
-        /** {@inheritDoc} */
-        @Override public long getRejectedByConflictResolverCnt() {
-            return 0;
-        }
-
-        @Override public long getMergedByConflictResolverCnt() {
-            return 0;
-        }
     }
 }
