@@ -31,7 +31,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        java: [ '8', '11' ]
+        java: [ '11' ]
     name: Check java code on JDK ${{ matrix.java }}
     steps:
       - uses: actions/checkout@v4
@@ -63,7 +63,6 @@ jobs:
           ./mvnw test-compile -Pall-java,licenses,lgpl,checkstyle,examples,all-scala,scala,check-licenses -B -V
 
       - name: Run abandoned tests checks.
-        if: ${{ matrix.java == '8' }}
         run : |
           ./mvnw test -Pcheck-test-suites,all-java,all-scala,scala -B -V
 
