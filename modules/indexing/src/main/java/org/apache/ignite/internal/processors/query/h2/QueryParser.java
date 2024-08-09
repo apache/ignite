@@ -481,6 +481,8 @@ public class QueryParser {
 
                 GridCacheTwoStepQuery twoStepQry = null;
 
+                System.err.println("!!!! cmon");
+
                 if (splitNeeded) {
                     GridSubqueryJoinOptimizer.pullOutSubQueries(selectStmt);
 
