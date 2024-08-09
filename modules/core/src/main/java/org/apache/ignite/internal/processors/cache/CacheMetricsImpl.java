@@ -232,13 +232,13 @@ public class CacheMetricsImpl implements CacheMetrics {
     private final MetricRegistryImpl mreg;
 
     /** Conflict resolver accepted entries count. */
-    private LongAdderMetric rslvrAcceptedCnt;
+    private volatile LongAdderMetric rslvrAcceptedCnt;
 
     /** Conflict resolver rejected entries count. */
-    private LongAdderMetric rslvrRejectedCnt;
+    private volatile LongAdderMetric rslvrRejectedCnt;
 
     /** Conflict resolver merged entries count. */
-    private LongAdderMetric rslvrMergedCnt;
+    private volatile LongAdderMetric rslvrMergedCnt;
 
     /**
      * Creates cache metrics.
@@ -745,13 +745,13 @@ public class CacheMetricsImpl implements CacheMetrics {
 
         idxRebuildKeyProcessed.reset();
 
-        if(rslvrAcceptedCnt != null)
+        if (rslvrAcceptedCnt != null)
             rslvrAcceptedCnt.reset();
 
-        if(rslvrRejectedCnt != null)
+        if (rslvrRejectedCnt != null)
             rslvrRejectedCnt.reset();
 
-        if(rslvrMergedCnt != null)
+        if (rslvrMergedCnt != null)
             rslvrMergedCnt.reset();
     }
 
@@ -1697,8 +1697,6 @@ public class CacheMetricsImpl implements CacheMetrics {
 
     /** Registers metrics for conflict resolver. */
     public void registerResolverMetrics() {
-        assert mreg != null : "Cache metrics registry should have been initialized!";
-
         rslvrAcceptedCnt = mreg.longAdderMetric("ConflictResolverAcceptedCount",
             "Conflict resolver accepted entries count");
 
