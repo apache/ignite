@@ -347,7 +347,7 @@ public class CacheMetricsImpl implements CacheMetrics {
         rebalanceStartTime = mreg.longMetric("RebalanceStartTime",
             "Rebalance start time");
 
-        rebalanceStartTime.value(-1);
+        rebalanceStartTime.set(-1);
 
         estimatedRebalancingKeys = mreg.longMetric("EstimatedRebalancingKeys",
             "Number estimated to rebalance keys.");
@@ -1456,14 +1456,14 @@ public class CacheMetricsImpl implements CacheMetrics {
 
         rebalancingKeysRate.reset();
 
-        rebalanceStartTime.value(-1L);
+        rebalanceStartTime.set(-1L);
     }
 
     /**
      *
      */
     public void startRebalance(long delay) {
-        rebalanceStartTime.value(delay + U.currentTimeMillis());
+        rebalanceStartTime.set(delay + U.currentTimeMillis());
     }
 
     /** {@inheritDoc} */

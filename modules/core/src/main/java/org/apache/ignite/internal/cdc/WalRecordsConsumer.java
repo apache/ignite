@@ -138,7 +138,7 @@ public class WalRecordsConsumer<K, V> {
 
                 evtsCnt.increment();
 
-                lastEvtTs.value(System.currentTimeMillis());
+                lastEvtTs.set(System.currentTimeMillis());
 
                 return next;
             }
