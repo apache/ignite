@@ -21,7 +21,7 @@ import org.apache.ignite.Ignition;
 import org.apache.ignite.client.ClientAddressFinder;
 import org.apache.ignite.client.ClientCache;
 import org.apache.ignite.client.IgniteClient;
-import org.apache.ignite.client.ThinClientKubernetesAddressFinder;
+import org.apache.ignite.kubernetes.client.ThinClientKubernetesAddressFinder;
 import org.apache.ignite.configuration.ClientConfiguration;
 import org.apache.ignite.configuration.ClientConnectorConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
