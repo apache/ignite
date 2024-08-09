@@ -59,7 +59,8 @@ public enum IgniteComponentType {
     IGFS_HELPER(
         "org.apache.ignite.internal.processors.igfs.IgfsNoopHelper",
         "org.apache.ignite.internal.processors.igfs.IgfsHelperImpl",
-        "ignite-hadoop"
+        "ignite-hadoop",
+        "org.apache.ignite.internal.processors.igfs.IgfsMessageFactoryProvider"
     ),
 
     /** Spring XML parsing. */

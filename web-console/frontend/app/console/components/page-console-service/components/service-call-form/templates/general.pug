@@ -1,0 +1,74 @@
+
+
+include /app/helpers/jade/mixins
+include /app/configuration/mixins
+
+-var form = 'general'
+-var model = '$ctrl.clonedService'
+
+panel-collapsible(opened=`::true` ng-form=form)
+    panel-title General
+    panel-description
+        | Common service invoke configuration.
+        a.link-success(href="https://apacheignite.readme.io/docs/data-grid" target="_blank") More info
+    panel-content.pca-form-row
+        .pca-form-column-6.pc-form-grid-row
+            .pc-form-grid-col-60
+                +form-field__text({
+                    label: 'Service Name:',
+                    model: `${model}.name`,
+                    name: '"name"',   
+                    tip: `${model}.notes`,
+                    required: true
+                })(
+                    
+                    ignite-unique-property='name'
+                    ignite-unique-skip=`["id", ${model}]`
+                )
+                    
+            
+            .pc-form-grid-col-60(ng-if='$ctrl.available("2.1.0")')
+                +form-field__text({
+                    label: 'Cache Name:',
+                    model: `${model}.cacheName`,
+                    name: '"cacheName"',
+                    placeholder: 'Input cache name',
+                    tip: 'Cache name.<br/>\
+                          Caches with the same group name share single underlying "physical" cache (partition set), but are logically isolated.'
+                })
+            .pc-form-grid-col-30
+                +form-field__cache-modes({
+                    label: 'Mode:',
+                    model: `${model}.mode`,
+                    name: '"mode"',
+                    placeholder: 'PARTITIONED'
+                })
+
+            .pc-form-grid-col-30
+                +form-field__dropdown({
+                    label: 'Atomicity:',
+                    model: `${model}.atomicityMode`,
+                    name: '"atomicityMode"',
+                    placeholder: 'ATOMIC',
+                    options: '[\
+                        {value: "ATOMIC", label: "ATOMIC"},\
+                        {value: "TRANSACTIONAL", label: "TRANSACTIONAL"}]',
+                    tip: 'Atomicity:\
+                        <ul>\
+                            <li>ATOMIC - in this mode distributed transactions and distributed locking are not supported</li>\
+                            <li>TRANSACTIONAL - in this mode specified fully ACID-compliant transactional cache behavior</li>\
+                        </ul>'
+                })
+           
+            
+            .pc-form-grid-col-60
+                +form-field__checkbox({
+                    label: 'Copy on read',
+                    model: `${model}.copyOnRead`,
+                    name: '"copyOnRead"',
+                    tip: 'Flag indicating whether copy of the value stored in cache should be created for cache operation implying return value<br/>\
+                          Also if this flag is set copies are created for values passed to CacheInterceptor and to CacheEntryProcessor'
+                })
+           
+
+        

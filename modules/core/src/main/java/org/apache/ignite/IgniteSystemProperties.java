@@ -664,13 +664,6 @@ public final class IgniteSystemProperties {
     public static final String IGNITE_H2_DEBUG_CONSOLE_PORT = "IGNITE_H2_DEBUG_CONSOLE_PORT";
 
     /**
-     * @deprecated This property is ignored and will be deleted in future releases.
-     */
-    @Deprecated
-    @SystemProperty("This option is ignored and will be deleted in future releases")
-    public static final String IGNITE_IPC_SHMEM_SPACE_DEBUG = "IGNITE_IPC_SHMEM_SPACE_DEBUG";
-
-    /**
      * Property allowing to skip configuration consistency checks.
      */
     @SystemProperty("Skip configuration consistency checks")
@@ -731,8 +724,8 @@ public final class IgniteSystemProperties {
      *
      * Default is {@code false}
      */
-    @SystemProperty("Disable MBeans registration. This may be helpful if MBeans are not allowed " +
-        "e.g. for security reasons")
+    @SystemProperty(value = "Disable MBeans registration. This may be helpful if MBeans are not allowed " +
+        "e.g. for security reasons", defaults= "true")
     public static final String IGNITE_MBEANS_DISABLED = "IGNITE_MBEANS_DISABLED";
 
     /**
@@ -748,7 +741,6 @@ public final class IgniteSystemProperties {
      */
     @SystemProperty(value = "Size of buffer holding last exception", type = Integer.class,
         defaults = "" + DEFAULT_QUEUE_SIZE)
-
     public static final String IGNITE_EXCEPTION_REGISTRY_MAX_SIZE = "IGNITE_EXCEPTION_REGISTRY_MAX_SIZE";
 
     /**

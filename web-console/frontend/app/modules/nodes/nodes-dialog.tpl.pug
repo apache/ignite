@@ -1,0 +1,28 @@
+
+
+.modal.modal--ignite.ignite-nodes-dialog(tabindex='-1' role='dialog')
+    .modal-dialog.modal-dialog--adjust-height
+        form.modal-content
+            .modal-header
+                h4.modal-title Select Node
+                button.close(type='button' aria-label='Close' ng-click='$cancel()')
+                     svg(ignite-icon="cross")
+            .modal-body.modal-body-with-scroll
+                p Choose node to execute query for cache: #[strong {{ $ctrl.options.target }}]
+
+                ul.tabs.tabs--blue
+                    li.active(role='presentation')
+                        a
+                            span Cache Nodes
+                            span.badge.badge--blue {{ $ctrl.data.length }}
+
+                .panel--ignite.panel--ignite__without-border
+                    .grid.ui-grid--ignite(ui-grid='$ctrl.gridOptions' ui-grid-resize-columns ui-grid-selection ui-grid-pinning ui-grid-hovering)
+
+            .modal-footer
+                div
+                    grid-item-selected(class='pull-left' grid-api='$ctrl.gridApi')
+
+                div
+                    button.btn-ignite.btn-ignite--link-success(id='confirm-btn-close' ng-click='$cancel()') Cancel
+                    button.btn-ignite.btn-ignite--success(id='confirm-btn-confirm' ng-click='$ok($ctrl.selected)' ng-disabled='$ctrl.selected.length === 0') Select node

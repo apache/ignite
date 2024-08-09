@@ -294,7 +294,8 @@ public class IgniteProductVersion implements Comparable<IgniteProductVersion>, E
             try {
                 byte major = Byte.parseByte(match.group(1));
                 byte minor = Byte.parseByte(match.group(2));
-                byte maintenance = Byte.parseByte(match.group(3));
+                String patch = match.group(3);
+                byte maintenance = Byte.parseByte(patch.length()>2 ? patch.substring(0,2) : patch);
 
                 String stage = "";
 

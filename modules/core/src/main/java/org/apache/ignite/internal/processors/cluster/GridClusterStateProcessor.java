@@ -545,7 +545,7 @@ public class GridClusterStateProcessor extends GridProcessorAdapter implements I
 
             boolean serverNode = !ctx.clientNode();
             boolean activation = !state.state().active() && targetState.active();
-
+            
             if (serverNode && activation && !inMemoryMode) {
                 if (isBaselineSatisfied(state.baselineTopology(), discoCache.serverNodes()))
                     changeGlobalState(targetState, true, state.baselineTopology().currentBaseline(), false);
@@ -605,6 +605,21 @@ public class GridClusterStateProcessor extends GridProcessorAdapter implements I
                 return msg;
             }
         }
+        
+        // add@byron
+        else if(!compatibilityMode && globalState.state().active() && !node.isClient() && globalState.baselineTopology().attributes(node.consistentId())!=null) {
+        	 U.warn(log, "Failed to change cluster state, all participating nodes failed. " +
+                     "Switching to inactive state.");
+
+        	 //ChangeGlobalStateFinishMessage finishMsg = new ChangeGlobalStateFinishMessage(node.id(), INACTIVE, true);
+
+             //onStateFinishMessage(finishMsg);
+        	 
+        	 //globalState = DiscoveryDataClusterState.createState(INACTIVE, globalState.baselineTopology());
+        	 
+             //return finishMsg;
+        }
+        // end@
 
         return null;
     }
@@ -1138,8 +1153,9 @@ public class GridClusterStateProcessor extends GridProcessorAdapter implements I
         DiscoveryDataClusterState curState = globalState;
 
         if (!curState.transition() && curState.state() == state) {
-            if (!state.active() || BaselineTopology.equals(curState.baselineTopology(), blt))
-                return new GridFinishedFuture<>();
+            if (!state.active() || BaselineTopology.equals(curState.baselineTopology(), blt)) {
+               return new GridFinishedFuture<>();
+            }
         }
 
         GridChangeGlobalStateFuture startedFut = null;
@@ -1439,6 +1455,9 @@ public class GridClusterStateProcessor extends GridProcessorAdapter implements I
                 try {
                     ctx.dataStructures().onActivate(ctx);
 
+                    // add@byron
+                    ctx.igfs().onActivate(ctx);
+                    // end@
                     ctx.task().onActivate(ctx);
 
                     ctx.encryption().onActivate(ctx);

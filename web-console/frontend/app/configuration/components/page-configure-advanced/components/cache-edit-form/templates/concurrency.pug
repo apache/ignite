@@ -1,0 +1,57 @@
+
+
+include /app/helpers/jade/mixins
+include /app/configuration/mixins
+
+-var form = 'concurrency'
+-var model = '$ctrl.clonedCache'
+
+panel-collapsible(ng-form=form on-open=`ui.loadPanel('${form}')`)
+    panel-title Concurrency control
+    panel-description
+        | Cache concurrent asynchronous operations settings.
+    panel-content.pca-form-row(ng-if=`ui.isPanelLoaded('${form}')`)
+        .pca-form-column-6.pc-form-grid-row
+            .pc-form-grid-col-30
+                +form-field__number({
+                    label: 'Max async operations:',
+                    model: `${model}.maxConcurrentAsyncOperations`,
+                    name: '"maxConcurrentAsyncOperations"',
+                    placeholder: '500',
+                    min: '0',
+                    tip: 'Maximum number of allowed concurrent asynchronous operations<br/>\
+                         If <b>0</b> then number of concurrent asynchronous operations is unlimited'
+                })
+            .pc-form-grid-col-30
+                +form-field__number({
+                    label: 'Default lock timeout:',
+                    model: `${model}.defaultLockTimeout`,
+                    name: '"defaultLockTimeout"',
+                    placeholder: '0',
+                    min: '0',
+                    tip: 'Default lock acquisition timeout in milliseconds<br/>\
+                         If <b>0</b> then lock acquisition will never timeout'
+                })
+
+           
+
+            .pc-form-grid-col-60
+                +form-field__dropdown({
+                    label: 'Write synchronization mode:',
+                    model: `${model}.writeSynchronizationMode`,
+                    name: '"writeSynchronizationMode"',
+                    placeholder: 'PRIMARY_SYNC',
+                    options: '[\
+                                            {value: "FULL_SYNC", label: "FULL_SYNC"},\
+                                            {value: "FULL_ASYNC", label: "FULL_ASYNC"},\
+                                            {value: "PRIMARY_SYNC", label: "PRIMARY_SYNC"}\
+                                        ]',
+                    tip: 'Write synchronization mode\
+                                        <ul>\
+                                            <li>FULL_SYNC - Ignite will wait for write or commit replies from all nodes</li>\
+                                            <li>FULL_ASYNC - Ignite will not wait for write or commit responses from participating nodes</li>\
+                                            <li>PRIMARY_SYNC - Makes sense for PARTITIONED mode. Ignite will wait for write or commit to complete on primary node</li>\
+                                        </ul>'
+                })
+        .pca-form-column-6
+            +preview-xml-java(model, 'cacheConcurrency')

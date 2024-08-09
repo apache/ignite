@@ -1,0 +1,17 @@
+
+
+.flex-full-height > [ui-view] {
+	display: flex;
+    flex-direction: column;
+    flex: 1 0 auto;
+}
+
+.amis-scope *, .amis-scope *::before, .amis-scope *::after {
+    box-sizing: content-box;
+}
+
+div.pc-form-actions-panel .message {
+    font-size: 14px;
+    color: #e30d09;
+    margin: 0.25em;  
+}
