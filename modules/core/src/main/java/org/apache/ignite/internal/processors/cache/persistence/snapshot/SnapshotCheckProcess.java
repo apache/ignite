@@ -17,7 +17,6 @@
 
 package org.apache.ignite.internal.processors.cache.persistence.snapshot;
 
-import java.io.File;
 import java.io.Serializable;
 import java.util.Collection;
 import java.util.Collections;
@@ -28,6 +27,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
 import org.apache.ignite.IgniteException;
@@ -202,30 +202,19 @@ public class SnapshotCheckProcess {
 
         IgniteSnapshotManager snpMgr = kctx.cache().context().snapshotMgr();
 
-        if (req.allRestoreHandlers) {
-            ctx.fut = new GridFutureAdapter<>();
+        ctx.fut = new GridFutureAdapter<>();
 
-            snpMgr.checker().invokeCustomHandlers(ctx.locMeta, req.snapshotPath(), req.groups(), true)
-                .whenComplete((res, err) -> {
-                    if (err != null)
-                        ctx.fut.onDone(err);
-                    else
-                        ctx.fut.onDone(new SnapshotCheckResponse(res));
-                });
-        }
-        else {
-            File snpDir = snpMgr.snapshotLocalDir(req.snapshotName(), req.snapshotPath());
+        CompletableFuture<? extends Map<?,?>> workingFut = req.allRestoreHandlers
+            ? snpMgr.checker().invokeCustomHandlers(ctx.locMeta, req.snapshotPath(), req.groups(), true)
+            : snpMgr.checker().checkPartitions(ctx.locMeta, snpMgr.snapshotLocalDir(req.snapshotName(), req.snapshotPath()),
+            req.groups(), false, true, false);
 
-            GridFutureAdapter<SnapshotCheckResponse> fut = new GridFutureAdapter<>();
-
-            snpMgr.checker().checkPartitions(ctx.locMeta, snpDir, req.groups(), false, true, false)
-                .whenComplete((res, err) -> {
-                    if (err != null)
-                        fut.onDone(err);
-                    else
-                        fut.onDone(new SnapshotCheckResponse(res));
-                });
-        }
+        workingFut.whenComplete((res, err) -> {
+            if (err != null)
+                ctx.fut.onDone(err);
+            else
+                ctx.fut.onDone(new SnapshotCheckResponse(res));
+        });
 
         return ctx.fut;
     }
