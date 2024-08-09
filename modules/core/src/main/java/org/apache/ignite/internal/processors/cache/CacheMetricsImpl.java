@@ -744,6 +744,15 @@ public class CacheMetricsImpl implements CacheMetrics {
         txKeyCollisionInfo = null;
 
         idxRebuildKeyProcessed.reset();
+
+        if(rslvrAcceptedCnt != null)
+            rslvrAcceptedCnt.reset();
+
+        if(rslvrRejectedCnt != null)
+            rslvrRejectedCnt.reset();
+
+        if(rslvrMergedCnt != null)
+            rslvrMergedCnt.reset();
     }
 
     /** {@inheritDoc} */
