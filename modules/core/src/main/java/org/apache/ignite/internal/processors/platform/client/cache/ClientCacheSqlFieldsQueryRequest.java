@@ -23,6 +23,7 @@ import org.apache.ignite.cache.query.FieldsQueryCursor;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.internal.binary.BinaryRawReaderEx;
 import org.apache.ignite.internal.processors.cache.DynamicCacheDescriptor;
+import org.apache.ignite.internal.processors.cache.query.GridCacheQueryType;
 import org.apache.ignite.internal.processors.cache.query.SqlFieldsQueryEx;
 import org.apache.ignite.internal.processors.odbc.jdbc.JdbcStatementType;
 import org.apache.ignite.internal.processors.platform.cache.PlatformCache;
@@ -147,7 +148,8 @@ public class ClientCacheSqlFieldsQueryRequest extends ClientCacheQueryRequest im
                 }
             }
 
-            List<FieldsQueryCursor<List<?>>> curs = ctx.kernalContext().query().querySqlFields(qry, true, true);
+            List<FieldsQueryCursor<List<?>>> curs = ctx.kernalContext().query().querySqlFields(
+                null, qry, null, true, true, GridCacheQueryType.SQL_FIELDS, null, ctx.attributes());
 
             assert curs.size() == 1;
 

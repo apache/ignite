@@ -24,6 +24,7 @@ import java.io.ObjectOutput;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Date;
+import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
@@ -826,9 +827,22 @@ public class IgniteCacheProxyImpl<K, V> extends AsyncSupportAdapter<IgniteCache<
             if (qry instanceof SqlQuery)
                 return (QueryCursor<R>)ctx.kernalContext().query().querySql(ctx, (SqlQuery)qry, keepBinary);
 
-            if (qry instanceof SqlFieldsQuery)
+            if (qry instanceof SqlFieldsQuery) {
+                Map<String, ?> userAttrs = ctx.kernalContext().config().getUserAttributes();
+
+                Map<String, String> strUserAttrs = null;
+
+                if (userAttrs != null) {
+                    strUserAttrs = new HashMap<>();
+
+                    for (String attr: userAttrs.keySet())
+                        strUserAttrs.put(attr, userAttrs.get(attr).toString());
+                }
+
                 return (FieldsQueryCursor<R>)ctx.kernalContext().query().querySqlFields(ctx, (SqlFieldsQuery)qry,
-                    null, keepBinary, true).get(0);
+                    null, keepBinary, true, GridCacheQueryType.SQL_FIELDS, null, strUserAttrs
+                    ).get(0);
+            }
 
             if (qry instanceof ScanQuery)
                 return query((ScanQuery)qry, null, projection(qry.isLocal()));
