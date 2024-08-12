@@ -411,11 +411,15 @@ public class JdbcConnection implements Connection {
 
     /** {@inheritDoc} */
     @Override public void commit() throws SQLException {
+        ensureNotClosed();
+
         throw new SQLFeatureNotSupportedException("Transactions are not supported.");
     }
 
     /** {@inheritDoc} */
     @Override public void rollback() throws SQLException {
+        ensureNotClosed();
+
         throw new SQLFeatureNotSupportedException("Transactions are not supported.");
     }
 
@@ -484,11 +488,15 @@ public class JdbcConnection implements Connection {
 
     /** {@inheritDoc} */
     @Override public void setTransactionIsolation(int level) throws SQLException {
+        ensureNotClosed();
+
         throw new SQLFeatureNotSupportedException("Transactions are not supported.");
     }
 
     /** {@inheritDoc} */
     @Override public int getTransactionIsolation() throws SQLException {
+        ensureNotClosed();
+
         throw new SQLFeatureNotSupportedException("Transactions are not supported.");
     }
 
