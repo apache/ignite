@@ -256,7 +256,7 @@ public class GridCacheUtils {
     private static final CacheEntryPredicate[] ALWAYS_FALSE0_ARR = new CacheEntryPredicate[] {ALWAYS_FALSE0};
 
     /** Read filter. */
-    public static final IgnitePredicate READ_FILTER = new P1<IgniteTxEntry>() {
+    public static final IgnitePredicate<IgniteTxEntry> READ_FILTER = new P1<IgniteTxEntry>() {
         @Override public boolean apply(IgniteTxEntry e) {
             return e.op() == READ;
         }
@@ -267,7 +267,7 @@ public class GridCacheUtils {
     };
 
     /** Read filter. */
-    public static final IgnitePredicate READ_FILTER_NEAR = new P1<IgniteTxEntry>() {
+    public static final IgnitePredicate<IgniteTxEntry> READ_FILTER_NEAR = new P1<IgniteTxEntry>() {
         @Override public boolean apply(IgniteTxEntry e) {
             return e.op() == READ && e.context().isNear();
         }
@@ -278,7 +278,7 @@ public class GridCacheUtils {
     };
 
     /** Read filter. */
-    public static final IgnitePredicate READ_FILTER_COLOCATED = new P1<IgniteTxEntry>() {
+    public static final IgnitePredicate<IgniteTxEntry> READ_FILTER_COLOCATED = new P1<IgniteTxEntry>() {
         @Override public boolean apply(IgniteTxEntry e) {
             return e.op() == READ && !e.context().isNear();
         }
@@ -289,7 +289,7 @@ public class GridCacheUtils {
     };
 
     /** Write filter. */
-    public static final IgnitePredicate WRITE_FILTER = new P1<IgniteTxEntry>() {
+    public static final IgnitePredicate<IgniteTxEntry> WRITE_FILTER = new P1<IgniteTxEntry>() {
         @Override public boolean apply(IgniteTxEntry e) {
             return e.op() != READ;
         }
@@ -300,7 +300,7 @@ public class GridCacheUtils {
     };
 
     /** Write filter. */
-    public static final IgnitePredicate WRITE_FILTER_NEAR = new P1<IgniteTxEntry>() {
+    public static final IgnitePredicate<IgniteTxEntry> WRITE_FILTER_NEAR = new P1<IgniteTxEntry>() {
         @Override public boolean apply(IgniteTxEntry e) {
             return e.op() != READ && e.context().isNear();
         }
@@ -311,7 +311,7 @@ public class GridCacheUtils {
     };
 
     /** Write filter. */
-    public static final IgnitePredicate WRITE_FILTER_COLOCATED = new P1<IgniteTxEntry>() {
+    public static final IgnitePredicate<IgniteTxEntry> WRITE_FILTER_COLOCATED = new P1<IgniteTxEntry>() {
         @Override public boolean apply(IgniteTxEntry e) {
             return e.op() != READ && !e.context().isNear();
         }
@@ -322,7 +322,7 @@ public class GridCacheUtils {
     };
 
     /** Write filter. */
-    public static final IgnitePredicate FILTER_NEAR_CACHE_ENTRY = new P1<IgniteTxEntry>() {
+    public static final IgnitePredicate<IgniteTxEntry> FILTER_NEAR_CACHE_ENTRY = new P1<IgniteTxEntry>() {
         @Override public boolean apply(IgniteTxEntry e) {
             return e.context().isNear();
         }

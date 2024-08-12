@@ -91,7 +91,17 @@ public class CacheCreateTask extends VisorOneNodeTask<CacheCreateCommandArg, Set
                     CacheConfiguration.class.getName() + "' beans.", e);
             }
 
-            Collection<IgniteCache> caches = ignite.createCaches(ccfgs);
+            Collection<IgniteCache> caches;
+
+            if (arg.skipExisting()) {
+                Collection<String> existingCacheNames = ignite.cacheNames();
+
+                ccfgs.removeIf(ccfg -> ccfg.getName() != null && existingCacheNames.contains(ccfg.getName()));
+
+                caches = ignite.getOrCreateCaches(ccfgs);
+            }
+            else
+                caches = ignite.createCaches(ccfgs);
 
             return caches.stream().map(Cache::getName).collect(Collectors.toCollection(TreeSet::new));
         }

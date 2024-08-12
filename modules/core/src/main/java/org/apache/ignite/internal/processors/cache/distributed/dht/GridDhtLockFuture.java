@@ -948,7 +948,7 @@ public final class GridDhtLockFuture extends GridCacheCompoundIdentityFuture<Boo
 
                                     boolean invalidateRdr = e.readerId(n.id()) != null;
 
-                                    req.addDhtKey(e.key(), invalidateRdr, cctx);
+                                    req.addDhtKey(e.key(), invalidateRdr);
 
                                     if (needVal) {
                                         // Mark last added key as needed to be preloaded.
