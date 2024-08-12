@@ -43,7 +43,6 @@ import org.apache.ignite.internal.util.nio.GridNioFutureImpl;
 import org.apache.ignite.internal.util.nio.GridNioServer;
 import org.apache.ignite.internal.util.nio.GridNioSession;
 import org.apache.ignite.internal.util.nio.ssl.GridNioSslFilter;
-import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.logger.NullLogger;
 
 /**
@@ -195,7 +194,7 @@ public class GridNioClientConnectionMultiplexer implements ClientConnectionMulti
             return new GridNioClientConnection(ses, msgHnd, stateHnd);
         }
         catch (Exception e) {
-            throw new ClientConnectionException(e.getMessage() + " [" + addr + ']', e);
+            throw new ClientConnectionException(e.getMessage() + " [remoteAddress=" + addr + ']', e);
         }
         finally {
             rwLock.readLock().unlock();

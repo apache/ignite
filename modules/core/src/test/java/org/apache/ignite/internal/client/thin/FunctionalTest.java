@@ -646,7 +646,7 @@ public class FunctionalTest extends AbstractBinaryArraysTest {
             expEx
         );
 
-        assertContains(log, expEx.getMessage(), "[InetSocketAddress [holder=" + Config.SERVER + "]]");
+        assertContains(log, expEx.getMessage(), Config.SERVER);
     }
 
 
