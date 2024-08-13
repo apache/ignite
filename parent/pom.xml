@@ -943,6 +943,7 @@
                         <groupId>org.apache.maven.plugins</groupId>
                         <artifactId>maven-surefire-plugin</artifactId>
                         <configuration>
+                            <forkCount>1</forkCount>
                             <argLine>
                                 --add-exports=java.base/jdk.internal.misc=ALL-UNNAMED
                                 --add-exports=java.base/sun.nio.ch=ALL-UNNAMED
