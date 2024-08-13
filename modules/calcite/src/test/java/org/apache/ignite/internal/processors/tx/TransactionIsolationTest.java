@@ -23,9 +23,13 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
+import java.util.Set;
 import java.util.concurrent.TimeUnit;
+import java.util.stream.Collectors;
 import java.util.stream.LongStream;
+import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.Ignition;
@@ -75,6 +79,18 @@ public class TransactionIsolationTest extends GridCommonAbstractTest {
     public static final String SQL = "sql";
 
     /** */
+    private enum ExecutorType {
+        /** */
+        SERVER,
+
+        /** */
+        CLIENT,
+
+        /** */
+        THIN
+    }
+
+    /** */
     public static final User JOHN = new User(1, "John Connor");
 
     /** */
@@ -95,7 +111,7 @@ public class TransactionIsolationTest extends GridCommonAbstractTest {
 
     /** */
     @Parameterized.Parameter(1)
-    public boolean thin;
+    public ExecutorType type;
 
     /** */
     @Parameterized.Parameter(2)
@@ -114,6 +130,14 @@ public class TransactionIsolationTest extends GridCommonAbstractTest {
     public int backups;
 
     /** */
+    @Parameterized.Parameter(6)
+    public boolean commit;
+
+    /** */
+    @Parameterized.Parameter(7)
+    public boolean multi;
+
+    /** */
     private static IgniteEx srv;
 
     /** */
@@ -129,7 +153,8 @@ public class TransactionIsolationTest extends GridCommonAbstractTest {
     private TransactionIsolation txIsolation = READ_COMMITTED;
 
     /** @return Test parameters. */
-    @Parameterized.Parameters(name = "modify={0},thin={1},partitionAwareness={2},mode={3},gridCnt={4},backups={5}")
+    @Parameterized.Parameters(
+        name = "modify={0},qryExecutor={1},partitionAwareness={2},mode={3},gridCnt={4},backups={5},commit={6},multi={7}")
     public static Collection<?> parameters() {
         List<Object[]> params = new ArrayList<>();
 
@@ -143,10 +168,26 @@ public class TransactionIsolationTest extends GridCommonAbstractTest {
                         : new int[]{0};
 
                     for (int backup: backups) {
-                        params.add(new Object[]{modify, false, false, mode, gridCnt, backup});
+                        for (boolean commit : new boolean[]{false, true}) {
+                            for (boolean mutli : new boolean[] {false, true}) {
+                                params.add(new Object[]{modify, ExecutorType.SERVER, false, mode, gridCnt, backup, commit, mutli});
+                                params.add(new Object[]{modify, ExecutorType.CLIENT, false, mode, gridCnt, backup, commit, mutli});
 
-                        for (boolean partitionAwareness : new boolean[]{false, true}) {
-                            params.add(new Object[]{modify, true, partitionAwareness, mode, gridCnt, backup});
+/*
+                                for (boolean partitionAwareness : new boolean[]{false, true}) {
+                                    params.add(new Object[]{
+                                        modify,
+                                        ExecutorType.THIN,
+                                        partitionAwareness,
+                                        mode,
+                                        gridCnt,
+                                        backup,
+                                        commit,
+                                        mutli
+                                    });
+                                }
+*/
+                            }
                         }
                     }
                 }
@@ -231,20 +272,16 @@ public class TransactionIsolationTest extends GridCommonAbstractTest {
             init();
         }
 
+        node().cache(users()).removeAll();
+        node().cache(tbl()).removeAll();
+
         insert(F.t(1, JOHN));
-    }
-
-    /** {@inheritDoc} */
-    @Override protected void afterTest() throws Exception {
-        super.afterTest();
-
-        cli.cache(users()).removeAll();
     }
 
     /** */
     @Test
     public void testIndexScan() {
-        assumeFalse("https://issues.apache.org/jira/browse/IGNITE-22874", thin);
+        assumeFalse("https://issues.apache.org/jira/browse/IGNITE-22874", type == ExecutorType.THIN);
 
         delete(1);
 
@@ -327,101 +364,156 @@ public class TransactionIsolationTest extends GridCommonAbstractTest {
     /** */
     @Test
     public void testInsert() {
-        assumeFalse("https://issues.apache.org/jira/browse/IGNITE-22874", thin);
+        assumeFalse("https://issues.apache.org/jira/browse/IGNITE-22874", type == ExecutorType.THIN);
 
-        Runnable checkDflts = () -> {
-            assertNull(CACHE, select(4, CACHE));
-            assertNull(SQL, select(4, SQL));
+        Runnable checkBefore = () -> {
+            for (int i = 4; i <= (multi ? 6 : 4); i++) {
+                assertNull(CACHE, select(i, CACHE));
+                assertNull(SQL, select(i, SQL));
+            }
         };
 
-        checkDflts.run();
+        Runnable checkAfter = () -> {
+            for (int i = 4; i <= (multi ? 6 : 4); i++) {
+                assertEquals(CACHE, JOHN, select(i, CACHE));
+                assertEquals(SQL, JOHN, select(i, SQL));
+            }
+        };
+
+        checkBefore.run();
 
         insideTx(() -> {
-            checkDflts.run();
+            checkBefore.run();
 
-            insert(F.t(4, JOHN));
+            if (multi) {
+                insert(F.t(4, JOHN), F.t(5, JOHN), F.t(6, JOHN));
+            }
+            else
+                insert(F.t(4, JOHN));
 
-            assertEquals(CACHE, JOHN, select(4, CACHE));
-            assertEquals(SQL, JOHN, select(4, SQL));
-        }, false);
+            checkAfter.run();
+        }, commit);
 
-        checkDflts.run();
+        if (commit)
+            checkAfter.run();
+        else
+            checkBefore.run();
     }
 
     /** */
     @Test
     public void testUpdate() {
-        assumeFalse("https://issues.apache.org/jira/browse/IGNITE-22874", thin);
+        assumeFalse("https://issues.apache.org/jira/browse/IGNITE-22874", type == ExecutorType.THIN);
 
-        Runnable checkDflts = () -> {
-            assertEquals(JOHN, select(1, CACHE));
-            assertEquals(JOHN, select(1, SQL));
+        if (multi)
+            insert(F.t(2, JOHN), F.t(3, JOHN));
+
+        Runnable checkBefore = () -> {
+            for (int i = 1; i <= (multi ? 3 : 1); i++) {
+                assertEquals(JOHN, select(i, CACHE));
+                assertEquals(JOHN, select(i, SQL));
+            }
         };
 
-        checkDflts.run();
+        Runnable checkAfter = () -> {
+            for (int i = 1; i <= (multi ? 3 : 1); i++) {
+                assertEquals(KYLE, select(i, CACHE));
+                assertEquals(KYLE, select(i, SQL));
+            }
+        };
+
+        checkBefore.run();
 
         insideTx(() -> {
-            checkDflts.run();
+            checkBefore.run();
 
-            update(F.t(1, SARAH));
+            if (multi)
+                update(F.t(1, SARAH), F.t(2, SARAH), F.t(3, SARAH));
+            else
+                update(F.t(1, SARAH));
 
-            assertEquals(SARAH, select(1, CACHE));
-            assertEquals(SARAH, select(1, SQL));
+            for (int i = 1; i <= (multi ? 3 : 1); i++) {
+                assertEquals(SARAH, select(i, CACHE));
+                assertEquals(SARAH, select(i, SQL));
+            }
 
-            update(F.t(1, KYLE));
+            if (multi)
+                update(F.t(1, KYLE), F.t(2, KYLE), F.t(3, KYLE));
+            else
+                update(F.t(1, KYLE));
 
-            assertEquals(KYLE, select(1, CACHE));
-            assertEquals(KYLE, select(1, SQL));
-        }, false);
+            checkAfter.run();
+        }, commit);
 
-        checkDflts.run();
+        if (commit)
+            checkAfter.run();
+        else
+            checkBefore.run();
     }
 
     /** */
     @Test
     public void testDelete() {
-        assumeFalse("https://issues.apache.org/jira/browse/IGNITE-22874", thin);
+        assumeFalse("https://issues.apache.org/jira/browse/IGNITE-22874", type == ExecutorType.THIN);
 
-        Runnable checkDflts = () -> {
-            assertEquals(JOHN, select(1, CACHE));
-            assertEquals(JOHN, select(1, SQL));
+        if (multi)
+            insert(F.t(2, JOHN), F.t(3, JOHN));
+
+        Runnable checkBefore = () -> {
+            for (int i = 1; i <= (multi ? 3 : 1); i++) {
+                assertEquals(JOHN, select(i, CACHE));
+                assertEquals(JOHN, select(i, SQL));
+            }
         };
 
-        checkDflts.run();
+        Runnable checkAfter = () -> {
+            for (int i = 1; i <= (multi ? 3 : 1); i++) {
+                assertNull(select(i, CACHE));
+                assertNull(select(i, SQL));
+            }
+        };
+
+        checkBefore.run();
 
         insideTx(() -> {
-            checkDflts.run();
+            checkBefore.run();
 
-            delete(1);
+            if (multi)
+                delete(1, 2, 3);
+            else
+                delete(1);
 
-            assertNull(select(1, CACHE));
-            assertNull(select(1, SQL));
-        }, false);
+            checkAfter.run();
+        }, commit);
 
-        checkDflts.run();
+        if (commit)
+            checkAfter.run();
+        else
+            checkBefore.run();
     }
 
     /** */
     @Test
     public void testVisibility() {
-        assumeFalse("https://issues.apache.org/jira/browse/IGNITE-22874", thin);
+        assumeFalse("https://issues.apache.org/jira/browse/IGNITE-22874", type == ExecutorType.THIN);
 
         executeSql(format("DELETE FROM %s", tbl()));
-
-        IgniteCache<Long, Long> cache = cli.cache(tbl());
-        ClientCache<Long, Long> thinCache = thinCli.cache(tbl());
 
         assertEquals("Table must be empty", 0L, executeSql(format("SELECT COUNT(*) FROM %s", tbl())).get(0).get(0));
 
         long cnt = 100;
 
         LongStream.range(1, 1 + cnt).forEach(i -> insideTx(() -> {
-            if (thin) {
+            if (type == ExecutorType.THIN) {
+                ClientCache<Long, Long> thinCache = thinCli.cache(tbl());
+
                 thinCache.put(i, i + 1);
 
                 assertEquals("Must see transaction related data", (Long)(i + 1), thinCache.get(i));
             }
             else {
+                IgniteCache<Long, Long> cache = node().cache(tbl());
+
                 cache.put(i, i + 1);
 
                 assertEquals("Must see transaction related data", (Long)(i + 1), cache.get(i));
@@ -439,7 +531,7 @@ public class TransactionIsolationTest extends GridCommonAbstractTest {
 
     /** */
     private void insideTx(RunnableX test, boolean commit) {
-        if (thin) {
+        if (type == ExecutorType.THIN) {
             try (ClientTransaction tx = thinCli.transactions().txStart(txConcurrency, txIsolation, TX_TIMEOUT)) {
                 test.run();
 
@@ -451,7 +543,11 @@ public class TransactionIsolationTest extends GridCommonAbstractTest {
 
         }
         else {
-            try (Transaction tx = cli.transactions().txStart(txConcurrency, txIsolation, TX_TIMEOUT, TX_SIZE)) {
+            Ignite initiator = node();
+
+            assertNotNull(initiator);
+
+            try (Transaction tx = initiator.transactions().txStart(txConcurrency, txIsolation, TX_TIMEOUT, TX_SIZE)) {
                 test.run();
 
                 if (commit)
@@ -465,9 +561,9 @@ public class TransactionIsolationTest extends GridCommonAbstractTest {
     /** */
     private User select(Integer id, String api) {
         if (api.equals(CACHE))
-            return thin
+            return type == ExecutorType.THIN
                 ? (User)thinCli.cache(users()).get(id)
-                : (User)cli.cache(users()).get(id);
+                : (User)node().cache(users()).get(id);
         else if (api.equals(SQL)) {
             List<List<?>> res = executeSql(format("SELECT _VAL FROM %s WHERE _KEY = ?", users()), id);
 
@@ -482,47 +578,131 @@ public class TransactionIsolationTest extends GridCommonAbstractTest {
     }
 
     /** */
-    private void insert(IgniteBiTuple<Integer, User> data) {
+    private void insert(IgniteBiTuple<Integer, User>... entries) {
         if (modify.equals(CACHE)) {
-            if (thin)
-                thinCli.cache(users()).put(data.get1(), data.get2());
-            else
-                cli.cache(users()).put(data.get1(), data.get2());
+            if (multi) {
+                Map<Integer, User> data = Arrays.stream(entries).collect(Collectors.toMap(IgniteBiTuple::get1, IgniteBiTuple::get2));
+
+                if (type == ExecutorType.THIN)
+                    thinCli.cache(users()).putAll(data);
+                else
+                    node().cache(users()).putAll(data);
+            }
+            else {
+                for (IgniteBiTuple<Integer, User> data : entries) {
+                    if (type == ExecutorType.THIN)
+                        thinCli.cache(users()).put(data.get1(), data.get2());
+                    else
+                        node().cache(users()).put(data.get1(), data.get2());
+                }
+            }
         }
         else if (modify.equals(SQL)) {
-            executeSql(format("INSERT INTO %s(id, userid, fio) VALUES(?, ?, ?)", users()),
-                data.get1(),
-                data.get2().userId,
-                data.get2().fio);
+            String insert = format("INSERT INTO %s(id, userid, fio) VALUES(?, ?, ?)", users());
+
+            if (multi) {
+                StringBuilder sql = new StringBuilder();
+                Object[] params = new Object[entries.length * 3];
+
+                for (int i = 0; i < entries.length; i++) {
+                    IgniteBiTuple<Integer, User> data = entries[i];
+
+                    if (i != 0)
+                        sql.append(";");
+
+                    sql.append(insert);
+
+                    params[i * 3] = data.get1();
+                    params[i * 3 + 1] = data.get2().userId;
+                    params[i * 3 + 2] = data.get2().fio;
+                }
+
+                executeSql(sql.toString(), params);
+            }
+            else {
+                for (IgniteBiTuple<Integer, User> data : entries)
+                    executeSql(insert, data.get1(), data.get2().userId, data.get2().fio);
+            }
         }
         else
             fail("Unknown insert: " + modify);
     }
 
     /** */
-    private void update(IgniteBiTuple<Integer, User> data) {
-        if (modify.equals(CACHE)) {
-            if (thin)
-                thinCli.cache(users()).put(data.get1(), data.get2());
-            else
-                cli.cache(users()).put(data.get1(), data.get2());
-        }
+    private void update(IgniteBiTuple<Integer, User>...entries) {
+        if (modify.equals(CACHE))
+            insert(entries);
         else if (modify.equals(SQL)) {
-            executeSql(format("UPDATE %s SET userid = ?, fio = ? WHERE id = ?", users()),
-                data.get2().userId,
-                data.get2().fio,
-                data.get1());
+            String update = format("UPDATE %s SET userid = ?, fio = ? WHERE id = ?", users());
+
+            if (multi) {
+                StringBuilder sql = new StringBuilder();
+                Object[] params = new Object[entries.length * 3];
+
+                for (int i = 0; i < entries.length; i++) {
+                    IgniteBiTuple<Integer, User> data = entries[i];
+
+                    if (i != 0)
+                        sql.append(";");
+
+                    sql.append(update);
+
+                    params[i * 3] = data.get2().userId;
+                    params[i * 3 + 1] = data.get2().fio;
+                    params[i * 3 + 2] = data.get1();
+                }
+
+                executeSql(sql.toString(), params);
+            }
+            else {
+                for (IgniteBiTuple<Integer, User> data : entries)
+                    executeSql(update, data.get2().userId, data.get2().fio, data.get1());
+            }
         }
         else
             fail("Unknown update: " + modify);
     }
 
     /** */
-    private void delete(int id) {
-        if (modify.equals(CACHE))
-            cli.cache(users()).remove(id);
-        else if (modify.equals(SQL))
-            executeSql(format("DELETE FROM %s WHERE id = ?", users()), id);
+    private void delete(int... keys) {
+        if (modify.equals(CACHE)) {
+            if (multi) {
+                Set<Integer> toRemove = Arrays.stream(keys).boxed().collect(Collectors.toSet());
+
+                if (type == ExecutorType.THIN)
+                    thinCli.cache(users()).removeAll(toRemove);
+                else
+                    node().cache(users()).removeAll(toRemove);
+            }
+            else {
+                for (int id : keys) {
+                    if (type == ExecutorType.THIN)
+                        thinCli.cache(users()).remove(id);
+                    else
+                        node().cache(users()).remove(id);
+                }
+            }
+        }
+        else if (modify.equals(SQL)) {
+            String delete = format("DELETE FROM %s WHERE id = ?", users());
+
+            if (multi) {
+                StringBuilder sql = new StringBuilder();
+
+                for (int i = 0; i < keys.length; i++) {
+                    if (i != 0)
+                        sql.append(";");
+
+                    sql.append(delete);
+                }
+
+                executeSql(sql.toString(), Arrays.stream(keys).boxed().toArray(Object[]::new));
+            }
+            else {
+                for (int id : keys)
+                    executeSql(delete, id);
+            }
+        }
         else
             fail("Unknown delete: " + modify);
     }
@@ -562,21 +742,35 @@ public class TransactionIsolationTest extends GridCommonAbstractTest {
 
     /** */
     public List<List<?>> executeSql(String sqlText, Object... args) {
-        String explain = "EXPLAIN PLAN FOR ";
+        if (!multi) {
+            String explain = "EXPLAIN PLAN FOR ";
 
-        if (!sqlText.startsWith(explain)) {
-            List<List<?>> res = executeSql(explain + sqlText);
-            for (List<?> r : res)
-                r.forEach(System.out::println);
+            if (!sqlText.startsWith(explain)) {
+                List<List<?>> res = executeSql(explain + sqlText);
+                for (List<?> r : res)
+                    r.forEach(System.out::println);
+            }
         }
 
         SqlFieldsQuery qry = new SqlFieldsQuery(sqlText)
             .setArgs(args)
             .setTimeout(5, TimeUnit.SECONDS);
 
-        return thin
-            ? thinCli.query(qry).getAll()
-            : cli.cache(F.first(cli.cacheNames())).query(qry).getAll();
+        if (type == ExecutorType.THIN)
+            return thinCli.query(qry).getAll();
+
+        if (multi) {
+            return node().context().query().querySqlFields(qry, false, false).get(0).getAll();
+        }
+        else
+            return node().cache(F.first(cli.cacheNames())).query(qry).getAll();
+    }
+
+    /** */
+    private IgniteEx node() {
+        assertTrue(type == ExecutorType.CLIENT || type == ExecutorType.SERVER);
+
+        return type == ExecutorType.CLIENT ? cli : srv;
     }
 
     /** */
