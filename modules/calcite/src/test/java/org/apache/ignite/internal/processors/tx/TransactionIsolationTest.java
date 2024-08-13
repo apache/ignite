@@ -385,9 +385,8 @@ public class TransactionIsolationTest extends GridCommonAbstractTest {
         insideTx(() -> {
             checkBefore.run();
 
-            if (multi) {
+            if (multi)
                 insert(F.t(4, JOHN), F.t(5, JOHN), F.t(6, JOHN));
-            }
             else
                 insert(F.t(4, JOHN));
 
