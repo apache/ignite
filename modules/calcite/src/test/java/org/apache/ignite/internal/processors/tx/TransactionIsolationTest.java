@@ -144,15 +144,12 @@ public class TransactionIsolationTest extends GridCommonAbstractTest {
 
                     for (int backup: backups) {
                         params.add(new Object[]{modify, false, false, mode, gridCnt, backup});
+
+                        for (boolean partitionAwareness : new boolean[]{false, true}) {
+                            params.add(new Object[]{modify, true, partitionAwareness, mode, gridCnt, backup});
+                        }
                     }
                 }
-
-/*
-                        TODO: add backups, gridCount
-                        for (boolean partitionAwareness : new boolean[]{false, true}) {
-                            params.add(new Object[]{insert, update, delete, true, partitionAwareness, mode});
-                        }
-*/
             }
         }
 
@@ -565,7 +562,6 @@ public class TransactionIsolationTest extends GridCommonAbstractTest {
 
     /** */
     public List<List<?>> executeSql(String sqlText, Object... args) {
-/*
         String explain = "EXPLAIN PLAN FOR ";
 
         if (!sqlText.startsWith(explain)) {
@@ -573,7 +569,6 @@ public class TransactionIsolationTest extends GridCommonAbstractTest {
             for (List<?> r : res)
                 r.forEach(System.out::println);
         }
-*/
 
         SqlFieldsQuery qry = new SqlFieldsQuery(sqlText)
             .setArgs(args)
