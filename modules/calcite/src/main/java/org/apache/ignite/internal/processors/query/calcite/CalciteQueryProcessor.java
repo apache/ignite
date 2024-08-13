@@ -141,6 +141,7 @@ public class CalciteQueryProcessor extends GridProcessorAdapter implements Query
     public static final FrameworkConfig FRAMEWORK_CONFIG = Frameworks.newConfigBuilder()
         .executor(new RexExecutorImpl(DataContexts.EMPTY))
         .sqlToRelConverterConfig(SqlToRelConverter.config()
+            .withRemoveSortInSubQuery(false)
             .withTrimUnusedFields(true)
             // currently SqlToRelConverter creates not optimal plan for both optimization and execution
             // so it's better to disable such rewriting right now

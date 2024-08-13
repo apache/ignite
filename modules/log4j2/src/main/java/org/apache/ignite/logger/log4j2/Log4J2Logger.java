@@ -399,7 +399,7 @@ public class Log4J2Logger implements IgniteLoggerEx {
     /** */
     private void addConsoleAppender(Configuration logCfg, boolean clearOutput) {
         PatternLayout layout = PatternLayout.newBuilder()
-            .withPattern(clearOutput ? "%m%n" : "%d{ISO8601}][%-5p][%t][%c{1}] %m%n")
+            .withPattern(clearOutput ? "%m%n" : "[%d{ISO8601}][%-5p][%t][%c{1}] %m%n")
             .withCharset(Charset.defaultCharset())
             .withAlwaysWriteExceptions(false)
             .withNoConsoleNoAnsi(false)

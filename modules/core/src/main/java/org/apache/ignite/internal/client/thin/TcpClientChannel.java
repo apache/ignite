@@ -73,6 +73,7 @@ import org.apache.ignite.internal.processors.platform.client.ClientStatus;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.T2;
+import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.logger.NullLogger;
 import org.jetbrains.annotations.Nullable;
@@ -280,7 +281,8 @@ class TcpClientChannel implements ClientChannel, ClientMessageHandler, ClientCon
 
             try {
                 for (ClientRequestFuture pendingReq : pendingReqs.values())
-                    pendingReq.onDone(new ClientConnectionException("Channel is closed", cause));
+                    pendingReq.onDone(new ClientConnectionException("Channel is closed [remoteAddress="
+                        + sock.remoteAddress() + ']', cause));
             }
             finally {
                 pendingReqsLock.writeLock().unlock();
@@ -349,7 +351,8 @@ class TcpClientChannel implements ClientChannel, ClientMessageHandler, ClientCon
 
             try {
                 if (closed()) {
-                    ClientConnectionException err = new ClientConnectionException("Channel is closed");
+                    ClientConnectionException err = new ClientConnectionException("Channel is closed [remoteAddress="
+                        + sock.remoteAddress() + ']');
 
                     eventListener.onRequestFail(connDesc, id, op.code(), op.name(), System.nanoTime() - startTimeNanos, err);
 
@@ -631,7 +634,7 @@ class TcpClientChannel implements ClientChannel, ClientMessageHandler, ClientCon
 
         try {
             if (closed())
-                throw new ClientConnectionException("Channel is closed");
+                throw new ClientConnectionException("Channel is closed [remoteAddress=" + sock.remoteAddress() + ']');
 
             Map<Long, NotificationListener> lsnrs = notificationLsnrs[type.ordinal()];
 
@@ -710,7 +713,7 @@ class TcpClientChannel implements ClientChannel, ClientMessageHandler, ClientCon
 
             try {
                 if (closed())
-                    throw new ClientConnectionException("Channel is closed");
+                    throw new ClientConnectionException("Channel is closed [remoteAddress=" + sock.remoteAddress() + ']');
 
                 fut = new ClientRequestFuture(reqId, ClientOperation.HANDSHAKE);
 
@@ -807,7 +810,7 @@ class TcpClientChannel implements ClientChannel, ClientMessageHandler, ClientCon
                 if (e instanceof IOException)
                     err = handleIOError((IOException)e);
                 else
-                    err = new ClientConnectionException(e.getMessage(), e);
+                    err = new ClientConnectionException(e.getMessage() + " [remoteAddress=" + sock.remoteAddress() + ']', e);
 
                 eventListener.onHandshakeFail(
                     new ConnectionDescription(sock.localAddress(), sock.remoteAddress(), new ProtocolContext(ver).toString(), null),
@@ -879,7 +882,7 @@ class TcpClientChannel implements ClientChannel, ClientMessageHandler, ClientCon
             lastSendMillis = System.currentTimeMillis();
         }
         catch (IgniteCheckedException e) {
-            throw new ClientConnectionException(e.getMessage(), e);
+            throw new ClientConnectionException(e.getMessage() + " [remoteAddress=" + sock.remoteAddress() + ']', e);
         }
     }
 
@@ -887,7 +890,7 @@ class TcpClientChannel implements ClientChannel, ClientMessageHandler, ClientCon
      * @param ex IO exception (cause).
      */
     private ClientException handleIOError(@Nullable IOException ex) {
-        return handleIOError("sock=" + sock, ex);
+        return handleIOError(S.toString(ConnectionDescription.class, connDesc), ex);
     }
 
     /**

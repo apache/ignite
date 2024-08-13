@@ -1378,10 +1378,15 @@ public class GridCommandHandlerClusterByClassTest extends GridCommandHandlerClus
                 SPRING_XML_CONFIG, cfgPath + "/unknown.xml"),
             "Failed to create caches. Spring XML configuration file not found");
 
-        assertEquals(CommandHandler.EXIT_CODE_OK, execute("--cache", CREATE, SPRING_XML_CONFIG,
-            cfgPath + "/cache-create-correct.xml"));
+        assertContains(log, executeCommand(EXIT_CODE_OK, "--cache", CREATE, SPRING_XML_CONFIG,
+            cfgPath + "/cache-create-correct.xml"), "Created caches: cache1, cache2");
 
         assertTrue(crd.cacheNames().containsAll(F.asList("cache1", "cache2")));
+
+        assertContains(log, executeCommand(EXIT_CODE_OK, "--cache", CREATE, SPRING_XML_CONFIG, cfgPath +
+            "/cache-create-correct-skip-existing-check.xml", "--skip-existing"), "Created caches: cache3, cache4");
+
+        assertTrue(crd.cacheNames().containsAll(F.asList("cache1", "cache2", "cache3", "cache4")));
 
         int expSize = G.allGrids().size();
 

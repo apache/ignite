@@ -34,6 +34,7 @@ import org.apache.calcite.rel.core.JoinRelType;
 import org.apache.calcite.rel.core.Minus;
 import org.apache.calcite.rel.core.Spool;
 import org.apache.calcite.rel.type.RelDataType;
+import org.apache.calcite.rel.type.RelDataTypeField;
 import org.apache.calcite.rex.RexLiteral;
 import org.apache.calcite.rex.RexNode;
 import org.apache.calcite.util.ImmutableBitSet;
@@ -171,6 +172,26 @@ public class LogicalRelImplementor<Row> implements IgniteRelVisitor<Node<Row>> {
             new Outbox<>(ctx, rel.getRowType(), exchangeSvc, mailboxRegistry, rel.exchangeId(), rel.targetFragmentId(), dest);
 
         Node<Row> input = visit(rel.getInput());
+
+        if (distribution.function().affinity()) { // Affinity key can't be null, so filter out null values.
+            assert distribution.getKeys().size() == 1 : "Unexpected affinity keys count: " +
+                distribution.getKeys().size() + ", must be 1";
+
+            int affKey = distribution.getKeys().get(0);
+
+            RelDataTypeField affFld = rel.getRowType().getFieldList().get(affKey);
+
+            assert affFld != null : "Unexpected affinity key field: " + affKey;
+
+            if (affFld.getType().isNullable()) {
+                FilterNode<Row> filter = new FilterNode<>(ctx, rel.getRowType(),
+                    r -> ctx.rowHandler().get(affKey, r) != null);
+
+                filter.register(input);
+
+                input = filter;
+            }
+        }
 
         outbox.register(input);
 
