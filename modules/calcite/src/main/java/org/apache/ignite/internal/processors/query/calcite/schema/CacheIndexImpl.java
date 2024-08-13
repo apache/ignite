@@ -215,7 +215,7 @@ public class CacheIndexImpl implements IgniteIndex {
 
                 IgniteBiTuple<Set<KeyCacheObject>, List<CacheDataRow>> txChanges = transactionRows(
                     ectx.getTxWriteEntries(),
-                    e -> F.contains(parts, e.key().partition()),
+                    e -> parts == null || F.contains(parts, e.key().partition()),
                     Function.identity()
                 );
 

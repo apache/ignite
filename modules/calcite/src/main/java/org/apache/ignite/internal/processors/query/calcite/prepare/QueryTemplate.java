@@ -25,6 +25,8 @@ import java.util.Objects;
 import java.util.concurrent.atomic.AtomicReference;
 
 import com.google.common.collect.ImmutableList;
+import org.apache.calcite.rel.RelNode;
+import org.apache.calcite.rel.SingleRel;
 import org.apache.calcite.rel.metadata.RelMetadataQuery;
 import org.apache.ignite.internal.processors.query.IgniteSQLException;
 import org.apache.ignite.internal.processors.query.calcite.exec.PartitionExtractor;
@@ -33,6 +35,7 @@ import org.apache.ignite.internal.processors.query.calcite.metadata.FragmentMapp
 import org.apache.ignite.internal.processors.query.calcite.metadata.MappingService;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteReceiver;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteSender;
+import org.apache.ignite.internal.processors.query.calcite.rel.IgniteTableModify;
 import org.apache.ignite.internal.processors.query.calcite.util.Commons;
 import org.apache.ignite.internal.util.typedef.F;
 import org.jetbrains.annotations.NotNull;
@@ -85,7 +88,19 @@ public class QueryTemplate {
                 else
                     ex.addSuppressed(e);
 
-                fragments = replace(fragments, e.fragment(), new FragmentSplitter(e.node()).go(e.fragment()));
+                RelNode cutPoint = e.node();
+
+                // TableModify inside transaction must be executed locally.
+                boolean forceLocTableModify = Commons.queryTransactionVersion(ctx) != null && cutPoint instanceof IgniteTableModify;
+
+                if (forceLocTableModify)
+                    cutPoint = ((SingleRel)cutPoint).getInput(); // Cuts TableScan instead of TableModification.
+
+                fragments = replace(fragments, e.fragment(), new FragmentSplitter(cutPoint).go(e.fragment()));
+
+                // Maps TableModify to be executed locally.
+                if (forceLocTableModify)
+                    fragments.set(0, fragments.get(0).mapLocalTableModify(mappingService, ctx, mq).attach(Commons.emptyCluster()));
             }
         }
 

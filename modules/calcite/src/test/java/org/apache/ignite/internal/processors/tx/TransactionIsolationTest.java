@@ -28,6 +28,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.stream.LongStream;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteSystemProperties;
+import org.apache.ignite.Ignition;
 import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.cache.CacheWriteSynchronizationMode;
@@ -90,27 +91,27 @@ public class TransactionIsolationTest extends GridCommonAbstractTest {
 
     /** */
     @Parameterized.Parameter()
-    public String insert;
+    public String modify;
 
     /** */
     @Parameterized.Parameter(1)
-    public String update;
-
-    /** */
-    @Parameterized.Parameter(2)
-    public String delete;
-
-    /** */
-    @Parameterized.Parameter(3)
     public boolean thin;
 
     /** */
-    @Parameterized.Parameter(4)
+    @Parameterized.Parameter(2)
     public boolean partitionAwareness;
 
     /** */
-    @Parameterized.Parameter(5)
+    @Parameterized.Parameter(3)
     public CacheMode mode;
+
+    /** */
+    @Parameterized.Parameter(4)
+    public int gridCnt;
+
+    /** */
+    @Parameterized.Parameter(5)
+    public int backups;
 
     /** */
     private static IgniteEx srv;
@@ -128,25 +129,30 @@ public class TransactionIsolationTest extends GridCommonAbstractTest {
     private TransactionIsolation txIsolation = READ_COMMITTED;
 
     /** @return Test parameters. */
-    @Parameterized.Parameters(name = "insert={0},update={1},delete={2},thin={3},partitionAwareness={4},mode={5}")
+    @Parameterized.Parameters(name = "modify={0},thin={1},partitionAwareness={2},mode={3},gridCnt={4},backups={5}")
     public static Collection<?> parameters() {
         List<Object[]> params = new ArrayList<>();
 
         String[] apis = new String[] {CACHE, SQL};
 
-        for (String insert : apis) {
-            for (String update : apis) {
-                for (String delete : apis) {
-                    for (CacheMode mode : CacheMode.values()) {
-                        params.add(new Object[]{insert, update, delete, false, false, mode});
+        for (String modify : apis) {
+            for (CacheMode mode : CacheMode.values()) {
+                for (int gridCnt : new int[]{1, 3, 5}) {
+                    int[] backups = gridCnt > 1
+                        ? new int[]{1, gridCnt - 1}
+                        : new int[]{0};
+
+                    for (int backup: backups) {
+                        params.add(new Object[]{modify, false, false, mode, gridCnt, backup});
+                    }
+                }
 
 /*
+                        TODO: add backups, gridCount
                         for (boolean partitionAwareness : new boolean[]{false, true}) {
                             params.add(new Object[]{insert, update, delete, true, partitionAwareness, mode});
                         }
 */
-                    }
-                }
             }
         }
 
@@ -159,11 +165,9 @@ public class TransactionIsolationTest extends GridCommonAbstractTest {
             new SqlConfiguration().setQueryEnginesConfiguration(new CalciteQueryEngineConfiguration()));
     }
 
-    /** {@inheritDoc} */
-    @Override protected void beforeTestsStarted() throws Exception {
-        super.beforeTestsStarted();
-
-        srv = startGrids(3);
+    /** */
+    private void init() throws Exception {
+        srv = startGrids(gridCnt);
         cli = startClientGrid("client");
         thinCli = TcpIgniteClient.start(new ClientConfiguration()
             .setAddresses(Config.SERVER)
@@ -183,6 +187,7 @@ public class TransactionIsolationTest extends GridCommonAbstractTest {
                 .setName(users)
                 .setAtomicityMode(CacheAtomicityMode.TRANSACTIONAL)
                 .setCacheMode(mode)
+                .setBackups(backups)
                 .setWriteSynchronizationMode(CacheWriteSynchronizationMode.FULL_SYNC)
                 .setSqlSchema(QueryUtils.DFLT_SCHEMA)
                 .setQueryEntities(Collections.singleton(new QueryEntity()
@@ -203,6 +208,7 @@ public class TransactionIsolationTest extends GridCommonAbstractTest {
             cli.createCache(new CacheConfiguration<Integer, Integer>()
                 .setName(tbl)
                 .setAtomicityMode(CacheAtomicityMode.TRANSACTIONAL)
+                .setBackups(backups)
                 .setCacheMode(this.mode)
                 .setWriteSynchronizationMode(CacheWriteSynchronizationMode.FULL_SYNC)
                 .setSqlSchema(QueryUtils.DFLT_SCHEMA)
@@ -223,6 +229,10 @@ public class TransactionIsolationTest extends GridCommonAbstractTest {
     /** {@inheritDoc} */
     @Override protected void beforeTest() throws Exception {
         super.beforeTest();
+
+        if (F.isEmpty(Ignition.allGrids())) {
+            init();
+        }
 
         insert(F.t(1, JOHN));
     }
@@ -476,48 +486,48 @@ public class TransactionIsolationTest extends GridCommonAbstractTest {
 
     /** */
     private void insert(IgniteBiTuple<Integer, User> data) {
-        if (insert.equals(CACHE)) {
+        if (modify.equals(CACHE)) {
             if (thin)
                 thinCli.cache(users()).put(data.get1(), data.get2());
             else
                 cli.cache(users()).put(data.get1(), data.get2());
         }
-        else if (insert.equals(SQL)) {
+        else if (modify.equals(SQL)) {
             executeSql(format("INSERT INTO %s(id, userid, fio) VALUES(?, ?, ?)", users()),
                 data.get1(),
                 data.get2().userId,
                 data.get2().fio);
         }
         else
-            fail("Unknown insert: " + insert);
+            fail("Unknown insert: " + modify);
     }
 
     /** */
     private void update(IgniteBiTuple<Integer, User> data) {
-        if (update.equals(CACHE)) {
+        if (modify.equals(CACHE)) {
             if (thin)
                 thinCli.cache(users()).put(data.get1(), data.get2());
             else
                 cli.cache(users()).put(data.get1(), data.get2());
         }
-        else if (update.equals(SQL)) {
+        else if (modify.equals(SQL)) {
             executeSql(format("UPDATE %s SET userid = ?, fio = ? WHERE id = ?", users()),
                 data.get2().userId,
                 data.get2().fio,
                 data.get1());
         }
         else
-            fail("Unknown update: " + update);
+            fail("Unknown update: " + modify);
     }
 
     /** */
     private void delete(int id) {
-        if (delete.equals(CACHE))
+        if (modify.equals(CACHE))
             cli.cache(users()).remove(id);
-        else if (delete.equals(SQL))
+        else if (modify.equals(SQL))
             executeSql(format("DELETE FROM %s WHERE id = ?", users()), id);
         else
-            fail("Unknown delete: " + delete);
+            fail("Unknown delete: " + modify);
     }
 
     /** */
@@ -555,6 +565,7 @@ public class TransactionIsolationTest extends GridCommonAbstractTest {
 
     /** */
     public List<List<?>> executeSql(String sqlText, Object... args) {
+/*
         String explain = "EXPLAIN PLAN FOR ";
 
         if (!sqlText.startsWith(explain)) {
@@ -562,6 +573,7 @@ public class TransactionIsolationTest extends GridCommonAbstractTest {
             for (List<?> r : res)
                 r.forEach(System.out::println);
         }
+*/
 
         SqlFieldsQuery qry = new SqlFieldsQuery(sqlText)
             .setArgs(args)

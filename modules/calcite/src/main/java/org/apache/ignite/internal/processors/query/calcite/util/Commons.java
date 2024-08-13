@@ -465,7 +465,16 @@ public final class Commons {
      * @return Query transaction or {@code null}.
      */
     public static <T extends IgniteInternalTx> T queryTransaction(Context ctx, GridCacheSharedContext<?, ?> cctx) {
-        GridCacheVersion txId = ctx.unwrap(GridCacheVersion.class);
+        GridCacheVersion txId = queryTransactionVersion(ctx);
+
         return txId == null ? null : cctx.tm().tx(txId);
+    }
+
+    /**
+     * @param ctx Context.
+     * @return Query transaction version if exists or {@code null}.
+     */
+    public static @Nullable GridCacheVersion queryTransactionVersion(Context ctx) {
+        return ctx.unwrap(GridCacheVersion.class);
     }
 }
