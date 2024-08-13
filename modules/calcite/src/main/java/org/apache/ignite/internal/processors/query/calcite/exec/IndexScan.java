@@ -18,6 +18,7 @@ package org.apache.ignite.internal.processors.query.calcite.exec;
 
 import java.lang.reflect.Type;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashSet;
@@ -252,10 +253,13 @@ public class IndexScan<Row> extends AbstractIndexScan<Row, IndexRow> {
         if (txChanges == null) {
             InlineIndexRowHandler rowHnd = idx.segment(0).rowHandler();
 
+            // Expecting parts are sorted or almost sorted and amount of transaction entries are relatively small.
+            if (parts != null)
+                Arrays.sort(parts);
+
             txChanges = transactionRows(
                 ectx.getTxWriteEntries(),
-                // TODO: Use set for partitions here.
-                e -> (cctx.cacheId() == e.cacheId()) && (parts == null || F.contains(parts, e.key().partition())),
+                e -> (cctx.cacheId() == e.cacheId()) && (parts == null || Arrays.binarySearch(parts, e.key().partition()) >= 0),
                 r -> new IndexRowImpl(rowHnd, r)
             );
 

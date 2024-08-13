@@ -193,10 +193,8 @@ public class QueryStartRequest implements MarshalableMessage, ExecutionContextAw
         fragmentDesc.prepareMarshal(ctx);
 
         if (txWriteEntries != null) {
-            for (IgniteTxEntry e : txWriteEntries) {
-                boolean transferExpiry = false; // TODO: FIXME
-                e.marshal(ctx, transferExpiry);
-            }
+            for (IgniteTxEntry e : txWriteEntries)
+                e.marshal(ctx, true);
         }
     }
 
@@ -210,12 +208,10 @@ public class QueryStartRequest implements MarshalableMessage, ExecutionContextAw
         fragmentDesc.prepareUnmarshal(ctx);
 
         if (txWriteEntries != null) {
-            boolean near = false; // TODO: FIXME.
-
             for (IgniteTxEntry e : txWriteEntries) {
-                e.prepareUnmarshal(ctx, topologyVersion(), near);
+                e.prepareUnmarshal(ctx, topologyVersion(), false);
 
-                e.unmarshal(ctx, near, ldr);
+                e.unmarshal(ctx, false, ldr);
             }
         }
     }
