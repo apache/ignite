@@ -65,6 +65,7 @@ import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 
 import static java.lang.String.format;
+import static org.apache.ignite.testframework.GridTestUtils.runAsync;
 import static org.apache.ignite.transactions.TransactionIsolation.READ_COMMITTED;
 import static org.junit.Assume.assumeFalse;
 
@@ -306,9 +307,22 @@ public class TransactionIsolationTest extends GridCommonAbstractTest {
                 assertEquals(i * 10 + 1, executeSql(format("SELECT MIN(userid) FROM %s WHERE userid > ?", users()), i * 10).get(0).get(0));
 
                 for (int j = 0; j < 5; j++) {
-                    int id = start + j + 1;
+                    final int id = start + j + 1;
 
                     insert(F.t(id, new User(id, "User" + j))); // Intentionally repeat FIO to make same indexed keys.
+
+                    // Concurrent query must not see any transaction data.
+                    runAsync(() -> {
+                        RunnableX check = () -> {
+                            assertEquals(25L, executeSql(format("SELECT COUNT(*) FROM %s", users())).get(0).get(0));
+
+                            assertNull(select(id, CACHE));
+                            assertNull(select(id, SQL));
+                        };
+
+                        insideTx(check, false);
+                        check.run();
+                    }).get(TX_TIMEOUT);
 
                     long expTblSz = 25L + i * 5 + j + 1;
 
@@ -365,6 +379,9 @@ public class TransactionIsolationTest extends GridCommonAbstractTest {
     @Test
     public void testInsert() {
         assumeFalse("https://issues.apache.org/jira/browse/IGNITE-22874", type == ExecutorType.THIN);
+
+        // TODO: expire policy test.
+        // TODO: add test for partition filter in query.
 
         Runnable checkBefore = () -> {
             for (int i = 4; i <= (multi ? 6 : 4); i++) {
@@ -558,7 +575,9 @@ public class TransactionIsolationTest extends GridCommonAbstractTest {
     }
 
     /** */
-    private User select(Integer id, String api) {
+    private User select(Integer id, String api, int...parts) {
+        assertTrue(F.isEmpty(parts) || api.equals(SQL));
+
         if (api.equals(CACHE))
             return type == ExecutorType.THIN
                 ? (User)thinCli.cache(users()).get(id)
@@ -741,6 +760,11 @@ public class TransactionIsolationTest extends GridCommonAbstractTest {
 
     /** */
     public List<List<?>> executeSql(String sqlText, Object... args) {
+        return executeSql(sqlText, null, args);
+    }
+
+    /** */
+    public List<List<?>> executeSql(String sqlText, int[] parts, Object... args) {
         if (!multi) {
             String explain = "EXPLAIN PLAN FOR ";
 
@@ -754,6 +778,9 @@ public class TransactionIsolationTest extends GridCommonAbstractTest {
         SqlFieldsQuery qry = new SqlFieldsQuery(sqlText)
             .setArgs(args)
             .setTimeout(5, TimeUnit.SECONDS);
+
+        if (!F.isEmpty(parts))
+            qry.setPartitions(parts);
 
         if (type == ExecutorType.THIN)
             return thinCli.query(qry).getAll();
