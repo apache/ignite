@@ -331,10 +331,13 @@ public class RelJsonReader {
             Boolean distinct = (Boolean)jsonAggCall.get("distinct");
             List<Integer> operands = (List<Integer>)jsonAggCall.get("operands");
             Integer filterOperand = (Integer)jsonAggCall.get("filter");
-            RelDataType type = relJson.toType(Commons.typeFactory(Commons.emptyCluster()), jsonAggCall.get("type"));
+            RelDataType type = relJson.toType(Commons.typeFactory(), jsonAggCall.get("type"));
             String name = (String)jsonAggCall.get("name");
             RelCollation collation = relJson.toCollation((List<Map<String, Object>>)jsonAggCall.get("coll"));
-            return AggregateCall.create(aggregation, distinct, false, false, operands,
+            List<RexNode> rexList = Commons.transform((List<Object>)jsonAggCall.get("rexList"),
+                node -> relJson.toRex(this, node));
+
+            return AggregateCall.create(aggregation, distinct, false, false, rexList, operands,
                 filterOperand == null ? -1 : filterOperand, null, collation, type, name);
         }
     }

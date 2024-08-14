@@ -192,7 +192,7 @@ public class StdSqlOperatorsTest extends AbstractBasicIntegrationTest {
         assertExpression("EXP(2)").returns(Math.exp(2)).check();
         assertExpression("POWER(2, 2)").returns(Math.pow(2, 2)).check();
         assertExpression("LN(2)").returns(Math.log(2)).check();
-        assertExpression("LOG10(2) ").returns(Math.log10(2)).check();
+        assertExpression("LOG10(2) ").returns(Math.log(2) / Math.log(10)).check();
         assertExpression("ABS(-1)").returns(Math.abs(-1)).check();
         assertExpression("RAND()").check();
         assertExpression("RAND_INTEGER(10)").check();
