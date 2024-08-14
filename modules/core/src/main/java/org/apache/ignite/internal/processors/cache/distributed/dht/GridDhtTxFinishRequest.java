@@ -32,7 +32,6 @@ import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.plugin.extensions.communication.MessageCollectionItemType;
 import org.apache.ignite.plugin.extensions.communication.MessageReader;
 import org.apache.ignite.plugin.extensions.communication.MessageWriter;
-import org.apache.ignite.transactions.TransactionIsolation;
 import org.jetbrains.annotations.NotNull;
 
 /**
@@ -45,14 +44,8 @@ public class GridDhtTxFinishRequest extends GridDistributedTxFinishRequest {
     /** Near node ID. */
     private UUID nearNodeId;
 
-    /** Transaction isolation. */
-    private TransactionIsolation isolation;
-
     /** Mini future ID. */
     private int miniId;
-
-    /** One phase commit write version. */
-    private GridCacheVersion writeVer;
 
     /** */
     @GridDirectCollection(PartitionUpdateCountersMessage.class)
@@ -73,7 +66,6 @@ public class GridDhtTxFinishRequest extends GridDistributedTxFinishRequest {
      * @param xidVer Transaction ID.
      * @param threadId Thread ID.
      * @param commitVer Commit version.
-     * @param isolation Transaction isolation.
      * @param commit Commit flag.
      * @param invalidate Invalidate flag.
      * @param sys System flag.
@@ -98,7 +90,6 @@ public class GridDhtTxFinishRequest extends GridDistributedTxFinishRequest {
         GridCacheVersion xidVer,
         GridCacheVersion commitVer,
         long threadId,
-        TransactionIsolation isolation,
         boolean commit,
         boolean invalidate,
         boolean sys,
@@ -135,10 +126,8 @@ public class GridDhtTxFinishRequest extends GridDistributedTxFinishRequest {
 
         assert miniId != 0;
         assert nearNodeId != null;
-        assert isolation != null;
 
         this.nearNodeId = nearNodeId;
-        this.isolation = isolation;
         this.miniId = miniId;
         this.updCntrs = updCntrs;
 
@@ -152,13 +141,6 @@ public class GridDhtTxFinishRequest extends GridDistributedTxFinishRequest {
      */
     public int miniId() {
         return miniId;
-    }
-
-    /**
-     * @return Transaction isolation.
-     */
-    public TransactionIsolation isolation() {
-        return isolation;
     }
 
     /**
@@ -180,20 +162,6 @@ public class GridDhtTxFinishRequest extends GridDistributedTxFinishRequest {
      */
     private void systemInvalidate(boolean sysInvalidate) {
         setFlag(sysInvalidate, SYS_INVALIDATE_FLAG_MASK);
-    }
-
-    /**
-     * @return Write version for one-phase commit transactions.
-     */
-    public GridCacheVersion writeVersion() {
-        return writeVer;
-    }
-
-    /**
-     * @param writeVer Write version for one-phase commit transactions.
-     */
-    public void writeVersion(GridCacheVersion writeVer) {
-        this.writeVer = writeVer;
     }
 
     /**
@@ -261,31 +229,19 @@ public class GridDhtTxFinishRequest extends GridDistributedTxFinishRequest {
 
         switch (writer.state()) {
             case 21:
-                if (!writer.writeByte("isolation", isolation != null ? (byte)isolation.ordinal() : -1))
-                    return false;
-
-                writer.incrementState();
-
-            case 22:
                 if (!writer.writeInt("miniId", miniId))
                     return false;
 
                 writer.incrementState();
 
-            case 23:
+            case 22:
                 if (!writer.writeUuid("nearNodeId", nearNodeId))
                     return false;
 
                 writer.incrementState();
 
-            case 24:
+            case 23:
                 if (!writer.writeCollection("updCntrs", updCntrs, MessageCollectionItemType.MSG))
-                    return false;
-
-                writer.incrementState();
-
-            case 25:
-                if (!writer.writeMessage("writeVer", writeVer))
                     return false;
 
                 writer.incrementState();
@@ -307,18 +263,6 @@ public class GridDhtTxFinishRequest extends GridDistributedTxFinishRequest {
 
         switch (reader.state()) {
             case 21:
-                byte isolationOrd;
-
-                isolationOrd = reader.readByte("isolation");
-
-                if (!reader.isLastRead())
-                    return false;
-
-                isolation = TransactionIsolation.fromOrdinal(isolationOrd);
-
-                reader.incrementState();
-
-            case 22:
                 miniId = reader.readInt("miniId");
 
                 if (!reader.isLastRead())
@@ -326,7 +270,7 @@ public class GridDhtTxFinishRequest extends GridDistributedTxFinishRequest {
 
                 reader.incrementState();
 
-            case 23:
+            case 22:
                 nearNodeId = reader.readUuid("nearNodeId");
 
                 if (!reader.isLastRead())
@@ -334,16 +278,8 @@ public class GridDhtTxFinishRequest extends GridDistributedTxFinishRequest {
 
                 reader.incrementState();
 
-            case 24:
+            case 23:
                 updCntrs = reader.readCollection("updCntrs", MessageCollectionItemType.MSG);
-
-                if (!reader.isLastRead())
-                    return false;
-
-                reader.incrementState();
-
-            case 25:
-                writeVer = reader.readMessage("writeVer");
 
                 if (!reader.isLastRead())
                     return false;
@@ -362,7 +298,7 @@ public class GridDhtTxFinishRequest extends GridDistributedTxFinishRequest {
 
     /** {@inheritDoc} */
     @Override public byte fieldsCount() {
-        return 26;
+        return 24;
     }
 
     /** {@inheritDoc} */
