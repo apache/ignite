@@ -227,6 +227,7 @@ data: {
       "JSON_OBJECT"
       "JSON_OBJECTAGG"
       "JSON_QUERY"
+      "JSON_SCOPE"
       "JSON_VALUE"
       "LAG"
       "LANGUAGE"

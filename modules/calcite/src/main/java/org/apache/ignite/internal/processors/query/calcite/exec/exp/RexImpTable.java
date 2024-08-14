@@ -102,6 +102,7 @@ import static org.apache.calcite.sql.fun.SqlLibraryOperators.EXISTS_NODE;
 import static org.apache.calcite.sql.fun.SqlLibraryOperators.EXTRACT_VALUE;
 import static org.apache.calcite.sql.fun.SqlLibraryOperators.EXTRACT_XML;
 import static org.apache.calcite.sql.fun.SqlLibraryOperators.FROM_BASE64;
+import static org.apache.calcite.sql.fun.SqlLibraryOperators.ILIKE;
 import static org.apache.calcite.sql.fun.SqlLibraryOperators.JSON_DEPTH;
 import static org.apache.calcite.sql.fun.SqlLibraryOperators.JSON_KEYS;
 import static org.apache.calcite.sql.fun.SqlLibraryOperators.JSON_LENGTH;
@@ -117,6 +118,7 @@ import static org.apache.calcite.sql.fun.SqlLibraryOperators.REGEXP_REPLACE;
 import static org.apache.calcite.sql.fun.SqlLibraryOperators.REPEAT;
 import static org.apache.calcite.sql.fun.SqlLibraryOperators.REVERSE;
 import static org.apache.calcite.sql.fun.SqlLibraryOperators.RIGHT;
+import static org.apache.calcite.sql.fun.SqlLibraryOperators.RLIKE;
 import static org.apache.calcite.sql.fun.SqlLibraryOperators.SHA1;
 import static org.apache.calcite.sql.fun.SqlLibraryOperators.SINH;
 import static org.apache.calcite.sql.fun.SqlLibraryOperators.SOUNDEX;
@@ -204,16 +206,18 @@ import static org.apache.calcite.sql.fun.SqlStdOperatorTable.MINUS;
 import static org.apache.calcite.sql.fun.SqlStdOperatorTable.MINUS_DATE;
 import static org.apache.calcite.sql.fun.SqlStdOperatorTable.MOD;
 import static org.apache.calcite.sql.fun.SqlStdOperatorTable.MULTIPLY;
+import static org.apache.calcite.sql.fun.SqlStdOperatorTable.NEGATED_POSIX_REGEX_CASE_INSENSITIVE;
+import static org.apache.calcite.sql.fun.SqlStdOperatorTable.NEGATED_POSIX_REGEX_CASE_SENSITIVE;
 import static org.apache.calcite.sql.fun.SqlStdOperatorTable.NOT;
 import static org.apache.calcite.sql.fun.SqlStdOperatorTable.NOT_EQUALS;
-import static org.apache.calcite.sql.fun.SqlStdOperatorTable.NOT_LIKE;
-import static org.apache.calcite.sql.fun.SqlStdOperatorTable.NOT_SIMILAR_TO;
 import static org.apache.calcite.sql.fun.SqlStdOperatorTable.OCTET_LENGTH;
 import static org.apache.calcite.sql.fun.SqlStdOperatorTable.OR;
 import static org.apache.calcite.sql.fun.SqlStdOperatorTable.OVERLAY;
 import static org.apache.calcite.sql.fun.SqlStdOperatorTable.PI;
 import static org.apache.calcite.sql.fun.SqlStdOperatorTable.PLUS;
 import static org.apache.calcite.sql.fun.SqlStdOperatorTable.POSITION;
+import static org.apache.calcite.sql.fun.SqlStdOperatorTable.POSIX_REGEX_CASE_INSENSITIVE;
+import static org.apache.calcite.sql.fun.SqlStdOperatorTable.POSIX_REGEX_CASE_SENSITIVE;
 import static org.apache.calcite.sql.fun.SqlStdOperatorTable.POWER;
 import static org.apache.calcite.sql.fun.SqlStdOperatorTable.RADIANS;
 import static org.apache.calcite.sql.fun.SqlStdOperatorTable.RAND;
@@ -232,6 +236,7 @@ import static org.apache.calcite.sql.fun.SqlStdOperatorTable.TRUNCATE;
 import static org.apache.calcite.sql.fun.SqlStdOperatorTable.UNARY_MINUS;
 import static org.apache.calcite.sql.fun.SqlStdOperatorTable.UNARY_PLUS;
 import static org.apache.calcite.sql.fun.SqlStdOperatorTable.UPPER;
+import static org.apache.calcite.util.ReflectUtil.isStatic;
 import static org.apache.ignite.internal.processors.query.calcite.sql.fun.IgniteOwnSqlOperatorTable.GREATEST2;
 import static org.apache.ignite.internal.processors.query.calcite.sql.fun.IgniteOwnSqlOperatorTable.LEAST2;
 import static org.apache.ignite.internal.processors.query.calcite.sql.fun.IgniteOwnSqlOperatorTable.NULL_BOUND;
@@ -329,8 +334,10 @@ public class RexImpTable {
         map.put(LOG, new LogImplementor());
         map.put(LOG10, new LogImplementor());
 
-        map.put(RAND, new RandImplementor());
-        map.put(RAND_INTEGER, new RandIntegerImplementor());
+        defineReflective(RAND, BuiltInMethod.RAND.method,
+            BuiltInMethod.RAND_SEED.method);
+        defineReflective(RAND_INTEGER, BuiltInMethod.RAND_INTEGER.method,
+            BuiltInMethod.RAND_INTEGER_SEED.method);
 
         defineMethod(ACOS, "acos", NullPolicy.STRICT);
         defineMethod(ASIN, "asin", NullPolicy.STRICT);
@@ -395,31 +402,30 @@ public class RexImpTable {
         map.put(IS_NOT_FALSE, new IsNotFalseImplementor());
 
         // LIKE and SIMILAR
-        final MethodImplementor likeImplementor =
-            new MethodImplementor(BuiltInMethod.LIKE.method, NullPolicy.STRICT,
-                false);
-        map.put(LIKE, likeImplementor);
-        map.put(NOT_LIKE, likeImplementor);
-        final MethodImplementor similarImplementor =
-            new MethodImplementor(BuiltInMethod.SIMILAR.method, NullPolicy.STRICT,
-                false);
-        map.put(SIMILAR_TO, similarImplementor);
-        map.put(NOT_SIMILAR_TO, NotImplementor.of(similarImplementor));
+        defineReflective(LIKE, BuiltInMethod.LIKE.method,
+            BuiltInMethod.LIKE_ESCAPE.method);
+        defineReflective(ILIKE, BuiltInMethod.ILIKE.method,
+            BuiltInMethod.ILIKE_ESCAPE.method);
+        defineReflective(RLIKE, BuiltInMethod.RLIKE.method);
+        defineReflective(SIMILAR_TO, BuiltInMethod.SIMILAR.method,
+            BuiltInMethod.SIMILAR_ESCAPE.method);
 
         // POSIX REGEX
-        final MethodImplementor posixRegexImplementorCaseSensitive =
-            new PosixRegexMethodImplementor(true);
-        final MethodImplementor posixRegexImplementorCaseInsensitive =
-            new PosixRegexMethodImplementor(false);
-        map.put(SqlStdOperatorTable.POSIX_REGEX_CASE_INSENSITIVE,
-            posixRegexImplementorCaseInsensitive);
-        map.put(SqlStdOperatorTable.POSIX_REGEX_CASE_SENSITIVE,
-            posixRegexImplementorCaseSensitive);
-        map.put(SqlStdOperatorTable.NEGATED_POSIX_REGEX_CASE_INSENSITIVE,
-            NotImplementor.of(posixRegexImplementorCaseInsensitive));
-        map.put(SqlStdOperatorTable.NEGATED_POSIX_REGEX_CASE_SENSITIVE,
-            NotImplementor.of(posixRegexImplementorCaseSensitive));
-        map.put(REGEXP_REPLACE, new RegexpReplaceImplementor());
+        ReflectiveImplementor insensitiveImplementor =
+            defineReflective(POSIX_REGEX_CASE_INSENSITIVE,
+                BuiltInMethod.POSIX_REGEX_INSENSITIVE.method);
+        ReflectiveImplementor sensitiveImplementor =
+            defineReflective(POSIX_REGEX_CASE_SENSITIVE,
+                BuiltInMethod.POSIX_REGEX_SENSITIVE.method);
+        map.put(NEGATED_POSIX_REGEX_CASE_INSENSITIVE,
+            NotImplementor.of(insensitiveImplementor));
+        map.put(NEGATED_POSIX_REGEX_CASE_SENSITIVE,
+            NotImplementor.of(sensitiveImplementor));
+        defineReflective(REGEXP_REPLACE,
+            BuiltInMethod.REGEXP_REPLACE3.method,
+            BuiltInMethod.REGEXP_REPLACE4.method,
+            BuiltInMethod.REGEXP_REPLACE5.method,
+            BuiltInMethod.REGEXP_REPLACE6.method);
 
         // Multisets & arrays
         defineMethod(CARDINALITY, BuiltInMethod.COLLECTION_SIZE.method,
@@ -481,10 +487,11 @@ public class RexImpTable {
         // Json Operators
         defineMethod(JSON_VALUE_EXPRESSION,
             BuiltInMethod.JSON_VALUE_EXPRESSION.method, NullPolicy.STRICT);
-        defineMethod(JSON_EXISTS, BuiltInMethod.JSON_EXISTS.method, NullPolicy.ARG0);
+        defineReflective(JSON_EXISTS, BuiltInMethod.JSON_EXISTS2.method,
+            BuiltInMethod.JSON_EXISTS3.method);
         map.put(JSON_VALUE,
             new JsonValueImplementor(BuiltInMethod.JSON_VALUE.method));
-        defineMethod(JSON_QUERY, BuiltInMethod.JSON_QUERY.method, NullPolicy.ARG0);
+        defineReflective(JSON_QUERY, BuiltInMethod.JSON_QUERY.method);
         defineMethod(JSON_TYPE, BuiltInMethod.JSON_TYPE.method, NullPolicy.ARG0);
         defineMethod(JSON_DEPTH, BuiltInMethod.JSON_DEPTH.method, NullPolicy.ARG0);
         defineMethod(JSON_KEYS, BuiltInMethod.JSON_KEYS.method, NullPolicy.ARG0);
@@ -576,6 +583,13 @@ public class RexImpTable {
     /** */
     private void defineMethod(SqlOperator operator, Method method, NullPolicy nullPolicy) {
         map.put(operator, new MethodImplementor(method, nullPolicy, false));
+    }
+
+    /** */
+    private ReflectiveImplementor defineReflective(SqlOperator operator, Method... methods) {
+        final ReflectiveImplementor implementor = new ReflectiveImplementor(ImmutableList.copyOf(methods));
+        map.put(operator, implementor);
+        return implementor;
     }
 
     /** */
@@ -1014,32 +1028,9 @@ public class RexImpTable {
     }
 
     /**
-     * Implementor for {@link org.apache.calcite.sql.fun.SqlPosixRegexOperator}s.
-     */
-    private static class PosixRegexMethodImplementor extends MethodImplementor {
-        /** */
-        protected final boolean caseSensitive;
-
-        /** Constructor. */
-        PosixRegexMethodImplementor(boolean caseSensitive) {
-            super(BuiltInMethod.POSIX_REGEX.method, NullPolicy.STRICT, false);
-            this.caseSensitive = caseSensitive;
-        }
-
-        /** {@inheritDoc} */
-        @Override Expression implementSafe(RexToLixTranslator translator,
-            RexCall call, List<Expression> argValueList) {
-            assert argValueList.size() == 2;
-            // Add extra parameter (caseSensitive boolean flag), required by SqlFunctions#posixRegex.
-            final List<Expression> newOperands = new ArrayList<>(argValueList);
-            newOperands.add(Expressions.constant(caseSensitive));
-            return super.implementSafe(translator, call, newOperands);
-        }
-    }
-
-    /**
-     * Implementor for JSON_VALUE function, convert to solid format "JSON_VALUE(json_doc, path, empty_behavior,
-     * empty_default, error_behavior, error default)" in order to simplify the runtime implementation.
+     * Implementor for JSON_VALUE function, convert to solid format
+     * "JSON_VALUE(json_doc, path, empty_behavior, empty_default, error_behavior, error default)"
+     * in order to simplify the runtime implementation.
      *
      * <p>We should avoid this when we support
      * variable arguments function.
@@ -1053,7 +1044,6 @@ public class RexImpTable {
         /** {@inheritDoc} */
         @Override Expression implementSafe(RexToLixTranslator translator,
             RexCall call, List<Expression> argValueList) {
-            final Expression expression;
             final List<Expression> newOperands = new ArrayList<>();
             newOperands.add(argValueList.get(0));
             newOperands.add(argValueList.get(1));
@@ -1097,12 +1087,11 @@ public class RexImpTable {
             newOperands.add(dfltValOnEmpty);
             newOperands.add(errorBehavior);
             newOperands.add(dfltValOnError);
-            Class clazz = method.getDeclaringClass();
-            expression = EnumUtils.call(null, clazz, method.getName(), newOperands);
-
-            final Type returnType =
-                translator.typeFactory.getJavaClass(call.getType());
-            return EnumUtils.convert(expression, returnType);
+            List<Expression> argValList0 =
+                ConverterUtils.fromInternal(method.getParameterTypes(), newOperands);
+            final Expression target =
+                Expressions.new_(method.getDeclaringClass());
+            return Expressions.call(target, method, argValList0);
         }
     }
 
@@ -2269,75 +2258,48 @@ public class RexImpTable {
     }
 
     /**
-     * Implementation that calls a given {@link Method}.
+     * Implementation that a {@link java.lang.reflect.Method}.
+     *
+     * <p>If there are several methods in the list, calls the first that has the
+     * right number of arguments.
      *
      * <p>When method is not static, a new instance of the required class is
      * created.
      */
     private static class ReflectiveImplementor extends AbstractRexCallImplementor {
         /** */
-        protected final Method method;
+        protected final ImmutableList<? extends Method> methods;
 
         /** */
-        ReflectiveImplementor(Method method, NullPolicy nullPolicy) {
-            super("reflective_" + method.getName(), nullPolicy, false);
-            this.method = method;
+        ReflectiveImplementor(List<? extends Method> methods) {
+            super("reflective_" + methods.get(0).getName(), NullPolicy.STRICT, false);
+            this.methods = ImmutableList.copyOf(methods);
         }
 
         /** {@inheritDoc} */
         @Override Expression implementSafe(RexToLixTranslator translator,
-            RexCall call, List<Expression> argValueList) {
-            List<Expression> argValList0 = ConverterUtils.fromInternal(method.getParameterTypes(), argValueList);
-            if ((method.getModifiers() & Modifier.STATIC) != 0)
+            RexCall call, List<Expression> argValList) {
+            for (Method method : methods) {
+                if (method.getParameterCount() == argValList.size())
+                    return implementSafe(method, argValList);
+            }
+            throw new IllegalArgumentException("no matching method");
+        }
+
+        /** */
+        protected MethodCallExpression implementSafe(Method method,
+            List<Expression> argValList) {
+            List<Expression> argValList0 =
+                ConverterUtils.fromInternal(method.getParameterTypes(),
+                    argValList);
+            if (isStatic(method))
                 return Expressions.call(method, argValList0);
-
-            // The UDF class must have a public zero-args constructor.
-            // Assume that the validator checked already.
-            final Expression target = Expressions.new_(method.getDeclaringClass());
-            return Expressions.call(target, method, argValList0);
-        }
-    }
-
-    /** Implementor for the {@code RAND} function. */
-    private static class RandImplementor extends AbstractRexCallImplementor {
-        /** */
-        private final AbstractRexCallImplementor[] implementors = {
-            new ReflectiveImplementor(BuiltInMethod.RAND.method, nullPolicy),
-            new ReflectiveImplementor(BuiltInMethod.RAND_SEED.method, nullPolicy)
-        };
-
-        /** */
-        RandImplementor() {
-            super("rand", NullPolicy.STRICT, false);
-        }
-
-        /** {@inheritDoc} */
-        @Override Expression implementSafe(final RexToLixTranslator translator,
-            final RexCall call, final List<Expression> argValueList) {
-            return implementors[call.getOperands().size()]
-                .implementSafe(translator, call, argValueList);
-        }
-    }
-
-    /** Implementor for the {@code RAND_INTEGER} function. */
-    private static class RandIntegerImplementor extends AbstractRexCallImplementor {
-        /** */
-        private final AbstractRexCallImplementor[] implementors = {
-            null,
-            new ReflectiveImplementor(BuiltInMethod.RAND_INTEGER.method, nullPolicy),
-            new ReflectiveImplementor(BuiltInMethod.RAND_INTEGER_SEED.method, nullPolicy)
-        };
-
-        /** */
-        RandIntegerImplementor() {
-            super("rand_integer", NullPolicy.STRICT, false);
-        }
-
-        /** {@inheritDoc} */
-        @Override Expression implementSafe(final RexToLixTranslator translator,
-            final RexCall call, final List<Expression> argValueList) {
-            return implementors[call.getOperands().size()]
-                .implementSafe(translator, call, argValueList);
+            else {
+                // The class must have a public zero-args constructor.
+                final Expression target =
+                    Expressions.new_(method.getDeclaringClass());
+                return Expressions.call(target, method, argValList0);
+            }
         }
     }
 
@@ -2466,29 +2428,6 @@ public class RexImpTable {
         @Override Expression implementSafe(final RexToLixTranslator translator,
             final RexCall call, final List<Expression> argValueList) {
             return Expressions.equal(argValueList.get(0), TRUE_EXPR);
-        }
-    }
-
-    /** Implementor for the {@code REGEXP_REPLACE} function. */
-    private static class RegexpReplaceImplementor extends AbstractRexCallImplementor {
-        /** Implementors. */
-        private final AbstractRexCallImplementor[] implementors = {
-            new ReflectiveImplementor(BuiltInMethod.REGEXP_REPLACE3.method, nullPolicy),
-            new ReflectiveImplementor(BuiltInMethod.REGEXP_REPLACE4.method, nullPolicy),
-            new ReflectiveImplementor(BuiltInMethod.REGEXP_REPLACE5.method, nullPolicy),
-            new ReflectiveImplementor(BuiltInMethod.REGEXP_REPLACE6.method, nullPolicy),
-        };
-
-        /** */
-        RegexpReplaceImplementor() {
-            super("regexp_replace", NullPolicy.STRICT, false);
-        }
-
-        /** {@inheritDoc} */
-        @Override Expression implementSafe(RexToLixTranslator translator,
-            RexCall call, List<Expression> argValueList) {
-            return implementors[call.getOperands().size() - 3]
-                .implementSafe(translator, call, argValueList);
         }
     }
 

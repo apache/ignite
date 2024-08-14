@@ -17,6 +17,7 @@
 package org.apache.ignite.internal.processors.query.calcite.externalize;
 
 import java.io.IOException;
+import java.math.BigDecimal;
 import java.util.AbstractList;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
@@ -40,6 +41,7 @@ import org.apache.calcite.rel.core.AggregateCall;
 import org.apache.calcite.rel.type.RelDataType;
 import org.apache.calcite.rex.RexLiteral;
 import org.apache.calcite.rex.RexNode;
+import org.apache.calcite.runtime.SqlFunctions;
 import org.apache.calcite.sql.SqlAggFunction;
 import org.apache.calcite.util.ImmutableBitSet;
 import org.apache.calcite.util.Pair;
@@ -218,6 +220,11 @@ public class RelJsonReader {
         /** {@inheritDoc} */
         @Override public float getFloat(String tag) {
             return ((Number)jsonRel.get(tag)).floatValue();
+        }
+
+        /** {@inheritDoc} */
+        @Override public BigDecimal getBigDecimal(String tag) {
+            return SqlFunctions.toBigDecimal(jsonRel.get(tag));
         }
 
         /** {@inheritDoc} */
