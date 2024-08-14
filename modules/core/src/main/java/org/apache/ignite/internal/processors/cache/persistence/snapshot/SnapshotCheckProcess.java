@@ -22,7 +22,6 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
-import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -93,24 +92,10 @@ public class SnapshotCheckProcess {
         Throwable err = new ClusterTopologyCheckedException("Snapshot validation stopped. A required node left the cluster " +
             "[nodeId=" + nodeId + ']');
 
-        Iterator<Map.Entry<String, SnapshotCheckContext>> it = contexts.entrySet().iterator();
-
-        while (it.hasNext()) {
-            SnapshotCheckContext ctx = it.next().getValue();
-
-            if (!ctx.req.nodes().contains(nodeId))
-                continue;
-
-            if (ctx.fut != null)
-                ctx.fut.onDone(err);
-
-            it.remove();
-
-            GridFutureAdapter<?> fut = clusterOpFuts.get(ctx.req.reqId);
-
-            if (fut != null)
-                fut.onDone(err);
-        }
+        contexts.values().forEach(ctx -> {
+            if (ctx.req.nodes().contains(nodeId))
+                ctx.locProcFut.onDone(err);
+        });
     }
 
     /** */
@@ -124,10 +109,7 @@ public class SnapshotCheckProcess {
      * @param err The interrupt reason.
      */
     void interrupt(Throwable err) {
-        contexts.forEach((snpName, ctx) -> {
-            if (ctx.fut != null)
-                ctx.fut.onDone(err);
-        });
+        contexts.forEach((snpName, ctx) -> ctx.locProcFut.onDone(err));
 
         contexts.clear();
 
@@ -203,21 +185,24 @@ public class SnapshotCheckProcess {
 
         IgniteSnapshotManager snpMgr = kctx.cache().context().snapshotMgr();
 
-        ctx.fut = new GridFutureAdapter<>();
+        GridFutureAdapter<SnapshotCheckResponse> phaseFut = ctx.phaseFut();
 
-        CompletableFuture<? extends Map<?, ?>> workingFut = req.allRestoreHandlers
-            ? snpMgr.checker().invokeCustomHandlers(ctx.locMeta, req.snapshotPath(), req.groups(), true)
-            : snpMgr.checker().checkPartitions(ctx.locMeta, snpMgr.snapshotLocalDir(req.snapshotName(), req.snapshotPath()),
+        // Might be already finished by #onNodeLeft().
+        if (!phaseFut.isDone()) {
+            CompletableFuture<? extends Map<?, ?>> workingFut = req.allRestoreHandlers
+                ? snpMgr.checker().invokeCustomHandlers(ctx.locMeta, req.snapshotPath(), req.groups(), true)
+                : snpMgr.checker().checkPartitions(ctx.locMeta, snpMgr.snapshotLocalDir(req.snapshotName(), req.snapshotPath()),
                 req.groups(), false, true, false);
 
-        workingFut.whenComplete((res, err) -> {
-            if (err != null)
-                ctx.fut.onDone(err);
-            else
-                ctx.fut.onDone(new SnapshotCheckResponse(res));
-        });
+            workingFut.whenComplete((res, err) -> {
+                if (err != null)
+                    phaseFut.onDone(err);
+                else
+                    phaseFut.onDone(new SnapshotCheckResponse(res));
+            });
+        }
 
-        return ctx.fut;
+        return phaseFut;
     }
 
     /** */
@@ -293,20 +278,23 @@ public class SnapshotCheckProcess {
 
         Collection<Integer> grpIds = F.isEmpty(req.groups()) ? null : F.viewReadOnly(req.groups(), CU::cacheId);
 
-        ctx.fut = new GridFutureAdapter<>();
+        GridFutureAdapter<SnapshotCheckResponse> phaseFut = ctx.phaseFut();
 
-        snpMgr.checker().checkLocalMetas(
-            snpMgr.snapshotLocalDir(req.snapshotName(), req.snapshotPath()),
-            grpIds,
-            kctx.cluster().get().localNode().consistentId()
-        ).whenComplete((locMetas, err) -> {
-            if (err != null)
-                ctx.fut.onDone(err);
-            else
-                ctx.fut.onDone(new SnapshotCheckResponse(locMetas));
-        });
+        // Might be already finished by #onNodeLeft().
+        if (!phaseFut.isDone()) {
+            snpMgr.checker().checkLocalMetas(
+                snpMgr.snapshotLocalDir(req.snapshotName(), req.snapshotPath()),
+                grpIds,
+                kctx.cluster().get().localNode().consistentId()
+            ).whenComplete((locMetas, err) -> {
+                if (err != null)
+                    phaseFut.onDone(err);
+                else
+                    phaseFut.onDone(new SnapshotCheckResponse(locMetas));
+            });
+        }
 
-        return ctx.fut;
+        return phaseFut;
     }
 
     /** Phase 1 end. */
@@ -326,8 +314,14 @@ public class SnapshotCheckProcess {
             if (!F.isEmpty(errors))
                 throw new IgniteSnapshotVerifyException(mapErrors(errors));
 
-            if (ctx == null)
+            if (ctx == null) {
+                assert clusterOpFut == null;
+
                 return;
+            }
+
+            if (ctx.locProcFut.error() != null)
+                throw ctx.locProcFut.error();
 
             Map<ClusterNode, List<SnapshotMetadata>> metas = new HashMap<>();
 
@@ -357,7 +351,7 @@ public class SnapshotCheckProcess {
             if (U.isLocalNodeCoordinator(kctx.discovery()))
                 phase2PartsHashes.start(reqId, ctx.req);
         }
-        catch (Exception e) {
+        catch (Throwable th) {
             if (ctx != null) {
                 contexts.remove(ctx.req.snapshotName());
 
@@ -366,7 +360,7 @@ public class SnapshotCheckProcess {
             }
 
             if (clusterOpFut != null)
-                clusterOpFut.onDone(e);
+                clusterOpFut.onDone(th);
         }
     }
 
@@ -439,9 +433,11 @@ public class SnapshotCheckProcess {
         return clusterOpFut;
     }
 
-    /** @return {@code True} if the provided node id is id of a baseline node. */
+    /** @return {@code True} if node with the provided id is in the cluster and is a baseline node. {@code False} otherwise. */
     private boolean baseline(UUID nodeId) {
-        return CU.baselineNode(kctx.cluster().get().node(nodeId), kctx.state().clusterState());
+        ClusterNode node = kctx.cluster().get().node(nodeId);
+
+        return node != null && CU.baselineNode(node, kctx.state().clusterState());
     }
 
     /** Operation context. */
@@ -449,8 +445,8 @@ public class SnapshotCheckProcess {
         /** Request. */
         private final SnapshotCheckProcessRequest req;
 
-        /** Working future. Expected to be set/read in different threads but not concurrently. */
-        private volatile GridFutureAdapter<SnapshotCheckResponse> fut;
+        /** Current process' future. Listens error, stop requests, etc. */
+        private final GridFutureAdapter<SnapshotCheckResponse> locProcFut = new GridFutureAdapter<>();
 
         /** Local snapshot metadata. */
         @Nullable private SnapshotMetadata locMeta;
@@ -461,6 +457,15 @@ public class SnapshotCheckProcess {
         /** Creates operation context. */
         private SnapshotCheckContext(SnapshotCheckProcessRequest req) {
             this.req = req;
+        }
+
+        /** Gives a future for current process phase. The future can be stopped by an async error like #onNodeLeft(). */
+        private <T> GridFutureAdapter<T> phaseFut() {
+            GridFutureAdapter<T> fut = new GridFutureAdapter<>();
+
+            locProcFut.listen(f -> fut.onDone(f.error()));
+
+            return fut;
         }
     }
 
