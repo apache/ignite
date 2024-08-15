@@ -305,12 +305,7 @@ public class TransactionIsolationTest extends GridCommonAbstractTest {
 
         assertEquals(25L, executeSql(format("SELECT COUNT(*) FROM %s", users())).get(0).get(0));
 
-        for (Map.Entry<Integer, Set<Integer>> partToKeys : partsToKeys.entrySet()) {
-            assertEquals(
-                (long)partToKeys.getValue().size(),
-                executeSql(format("SELECT COUNT(*) FROM %s", users()), new int[] {partToKeys.getKey()}).get(0).get(0)
-            );
-        }
+        checkQueryWithPartitionFilter();
 
         insideTx(() -> {
             for (int i = 0; i < 5; i++) {
@@ -351,6 +346,8 @@ public class TransactionIsolationTest extends GridCommonAbstractTest {
                         executeSql(format("SELECT MIN(userid) FROM %s WHERE userid BETWEEN ? AND ?", users()), id, 500).get(0).get(0)
                     );
                 }
+
+                checkQueryWithPartitionFilter();
             }
 
             for (int i = 0; i < 5; i++) {
@@ -372,9 +369,31 @@ public class TransactionIsolationTest extends GridCommonAbstractTest {
                     ensureSorted(rows, false);
                 }
             }
+
+            // https://issues.apache.org/jira/browse/IGNITE-22993
+            checkQueryWithPartitionFilter();
         }, true);
 
         assertEquals(25L, executeSql(format("SELECT COUNT(*) FROM %s", users())).get(0).get(0));
+    }
+
+    /** */
+    private void checkQueryWithPartitionFilter() {
+        // https://issues.apache.org/jira/browse/IGNITE-22993
+        if (mode != CacheMode.PARTITIONED)
+            return;
+
+        for (Map.Entry<Integer, Set<Integer>> partToKeys : partsToKeys.entrySet()) {
+            assertEquals(
+                (long)partToKeys.getValue().size(),
+                executeSql(format("SELECT COUNT(*) FROM %s", users()), new int[]{partToKeys.getKey()}).get(0).get(0)
+            );
+
+            assertEquals(
+                partToKeys.getValue().size(),
+                executeSql(format("SELECT * FROM %s", users()), new int[]{partToKeys.getKey()}).size()
+            );
+        }
     }
 
     /** */
@@ -393,7 +412,6 @@ public class TransactionIsolationTest extends GridCommonAbstractTest {
         assumeFalse("https://issues.apache.org/jira/browse/IGNITE-22874", type == ExecutorType.THIN);
 
         // TODO: expire policy test.
-        // TODO: add test for partition filter in query.
 
         Runnable checkBefore = () -> {
             for (int i = 4; i <= (multi ? 6 : 4); i++) {
