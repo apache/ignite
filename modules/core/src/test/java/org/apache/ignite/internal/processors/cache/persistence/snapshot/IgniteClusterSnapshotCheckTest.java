@@ -112,7 +112,7 @@ import static org.apache.ignite.internal.processors.cache.persistence.snapshot.I
 import static org.apache.ignite.internal.processors.dr.GridDrType.DR_NONE;
 import static org.apache.ignite.internal.util.distributed.DistributedProcess.DistributedProcessType.RESTORE_CACHE_GROUP_SNAPSHOT_START;
 import static org.apache.ignite.internal.util.distributed.DistributedProcess.DistributedProcessType.CHECK_SNAPSHOT_METAS;
-import static org.apache.ignite.internal.util.distributed.DistributedProcess.DistributedProcessType.VALIDATE_SNAPSHOT_PARTS_PARTS;
+import static org.apache.ignite.internal.util.distributed.DistributedProcess.DistributedProcessType.CHECK_SNAPSHOT_PARTS;
 import static org.apache.ignite.testframework.GridTestUtils.assertContains;
 import static org.apache.ignite.testframework.GridTestUtils.assertNotContains;
 import static org.apache.ignite.testframework.GridTestUtils.assertThrowsAnyCause;
@@ -632,7 +632,7 @@ public class IgniteClusterSnapshotCheckTest extends AbstractSnapshotSelfTest {
                     () -> new IgniteFutureImpl<>(snp(grid(i0)).checkSnapshot(SNAPSHOT_NAME, null)),
                     () -> new IgniteFutureImpl<>(snp(grid(j0)).checkSnapshot(SNAPSHOT_NAME, null)),
                     CHECK_SNAPSHOT_METAS,
-                    VALIDATE_SNAPSHOT_PARTS_PARTS,
+                    CHECK_SNAPSHOT_PARTS,
                     true,
                     false,
                     null,
@@ -659,7 +659,7 @@ public class IgniteClusterSnapshotCheckTest extends AbstractSnapshotSelfTest {
                     () -> new IgniteFutureImpl<>(snp(grid(i0)).checkSnapshot(SNAPSHOT_NAME, null)),
                     () -> new IgniteFutureImpl<>(snp(grid(j0)).checkSnapshot(SNAPSHOT_NAME + '2', null)),
                     CHECK_SNAPSHOT_METAS,
-                    VALIDATE_SNAPSHOT_PARTS_PARTS,
+                    CHECK_SNAPSHOT_PARTS,
                     false,
                     true,
                     null,
@@ -689,7 +689,7 @@ public class IgniteClusterSnapshotCheckTest extends AbstractSnapshotSelfTest {
                 doTestConcurrentSnpCheckOperations(
                     () -> new IgniteFutureImpl<>(snp(grid(i0)).checkSnapshot(SNAPSHOT_NAME, null)),
                     () -> snp(grid(j0)).restoreSnapshot(SNAPSHOT_NAME + '2', null),
-                    VALIDATE_SNAPSHOT_PARTS_PARTS,
+                    CHECK_SNAPSHOT_PARTS,
                     RESTORE_CACHE_GROUP_SNAPSHOT_START,
                     false,
                     false,
@@ -721,7 +721,7 @@ public class IgniteClusterSnapshotCheckTest extends AbstractSnapshotSelfTest {
                     () -> new IgniteFutureImpl<>(snp(grid(i0)).checkSnapshot(SNAPSHOT_NAME, null)),
                     () -> snp(grid(j0)).restoreSnapshot(SNAPSHOT_NAME + '2', null, null, 0, true),
                     CHECK_SNAPSHOT_METAS,
-                    VALIDATE_SNAPSHOT_PARTS_PARTS,
+                    CHECK_SNAPSHOT_PARTS,
                     false,
                     true,
                     null,
@@ -746,7 +746,7 @@ public class IgniteClusterSnapshotCheckTest extends AbstractSnapshotSelfTest {
                     () -> new IgniteFutureImpl<>(snp(grid(i0)).checkSnapshot(SNAPSHOT_NAME, null)),
                     () -> snp(grid(j0)).restoreSnapshot(SNAPSHOT_NAME, null, null, 0, true),
                     CHECK_SNAPSHOT_METAS,
-                    VALIDATE_SNAPSHOT_PARTS_PARTS,
+                    CHECK_SNAPSHOT_PARTS,
                     true,
                     false,
                     null,
@@ -771,7 +771,7 @@ public class IgniteClusterSnapshotCheckTest extends AbstractSnapshotSelfTest {
                     () -> snp(grid(i0)).restoreSnapshot(SNAPSHOT_NAME, null, null, 0, true),
                     () -> new IgniteFutureImpl<>(snp(grid(j0)).checkSnapshot(SNAPSHOT_NAME, null)),
                     CHECK_SNAPSHOT_METAS,
-                    VALIDATE_SNAPSHOT_PARTS_PARTS,
+                    CHECK_SNAPSHOT_PARTS,
                     true,
                     false,
                     null,
@@ -1175,9 +1175,6 @@ public class IgniteClusterSnapshotCheckTest extends AbstractSnapshotSelfTest {
                         continue;
 
                     chkAgainIdx.compareAndSet(-1, i);
-
-                    if (!snp(grid(i)).checkSnpProc.contexts().isEmpty())
-                        return false;
                 }
 
                 return true;

@@ -498,6 +498,6 @@ public class DistributedProcess<I extends Serializable, R extends Serializable> 
         /**
          * Snapshot partitions validation.
          */
-        VALIDATE_SNAPSHOT_PARTS_PARTS
+        CHECK_SNAPSHOT_PARTS
     }
 }

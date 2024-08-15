@@ -221,16 +221,6 @@ public class SnapshotChecker {
         }
     }
 
-    /** Launches local metas checking and waits for the result, handles execution exceptions. */
-    public List<SnapshotMetadata> checkLocalMetasResult(File snpPath, @Nullable Collection<Integer> grpIds, @Nullable Object locNodeCstId) {
-        try {
-            return checkLocalMetas(snpPath, grpIds, locNodeCstId).get();
-        }
-        catch (Exception e) {
-            throw new IgniteException("Failed to check snapshot metadatas of snapshot '" + snpPath.getName() + "'.", e);
-        }
-    }
-
     /** Launches local metas checking. */
     public CompletableFuture<List<SnapshotMetadata>> checkLocalMetas(File snpPath, @Nullable Collection<Integer> grpIds,
         @Nullable Object locNodeCstId) {
@@ -470,7 +460,7 @@ public class SnapshotChecker {
             return Collections.emptyMap();
         }
 
-        boolean pouchHoleEnabled = isPunchHoleEnabled(meta, snpDir, grpIds);
+        boolean checkCompressed = forCreation && isPunchHoleEnabled(meta, snpDir, grpIds);
 
         Map<PartitionKeyV2, PartitionHashRecordV2> res = new ConcurrentHashMap<>();
         ThreadLocal<ByteBuffer> buff = ThreadLocal.withInitial(() -> ByteBuffer.allocateDirect(meta.pageSize())
@@ -495,7 +485,7 @@ public class SnapshotChecker {
                     ) {
                         pageStore.init();
 
-                        if (pouchHoleEnabled && meta.isGroupWithCompression(grpId) && forCreation) {
+                        if (checkCompressed && meta.isGroupWithCompression(grpId)) {
                             byte pageType = partId == INDEX_PARTITION ? FLAG_IDX : FLAG_DATA;
 
                             checkPartitionsPageCrcSum(() -> pageStore, partId, pageType, (id, buffer) -> {

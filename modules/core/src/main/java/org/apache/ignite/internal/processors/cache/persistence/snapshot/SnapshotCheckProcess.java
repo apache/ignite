@@ -35,6 +35,7 @@ import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.events.DiscoveryEvent;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteInternalFuture;
+import org.apache.ignite.internal.NodeStoppingException;
 import org.apache.ignite.internal.cluster.ClusterTopologyCheckedException;
 import org.apache.ignite.internal.management.cache.IdleVerifyResultV2;
 import org.apache.ignite.internal.management.cache.PartitionKeyV2;
@@ -50,7 +51,7 @@ import org.jetbrains.annotations.Nullable;
 import static org.apache.ignite.events.EventType.EVT_NODE_FAILED;
 import static org.apache.ignite.events.EventType.EVT_NODE_LEFT;
 import static org.apache.ignite.internal.util.distributed.DistributedProcess.DistributedProcessType.CHECK_SNAPSHOT_METAS;
-import static org.apache.ignite.internal.util.distributed.DistributedProcess.DistributedProcessType.VALIDATE_SNAPSHOT_PARTS_PARTS;
+import static org.apache.ignite.internal.util.distributed.DistributedProcess.DistributedProcessType.CHECK_SNAPSHOT_PARTS;
 
 /** Distributed process of snapshot checking (with the partition hashes). */
 public class SnapshotCheckProcess {
@@ -81,21 +82,20 @@ public class SnapshotCheckProcess {
         phase1CheckMetas = new DistributedProcess<>(kctx, CHECK_SNAPSHOT_METAS, this::prepareAndCheckMetas,
             this::reducePreparationAndMetasCheck);
 
-        phase2PartsHashes = new DistributedProcess<>(kctx, VALIDATE_SNAPSHOT_PARTS_PARTS, this::validateParts,
+        phase2PartsHashes = new DistributedProcess<>(kctx, CHECK_SNAPSHOT_PARTS, this::validateParts,
             this::reduceValidatePartsAndFinish);
 
-        kctx.event().addLocalEventListener(evt -> onNodeLeft(((DiscoveryEvent)evt).eventNode().id()), EVT_NODE_FAILED, EVT_NODE_LEFT);
-    }
+        kctx.event().addLocalEventListener(evt -> {
+            UUID nodeId = ((DiscoveryEvent)evt).eventNode().id();
 
-    /** Expected to run in a discovery-managed thread. */
-    private void onNodeLeft(UUID nodeId) {
-        Throwable err = new ClusterTopologyCheckedException("Snapshot validation stopped. A required node left the cluster " +
-            "[nodeId=" + nodeId + ']');
+            Throwable err = new ClusterTopologyCheckedException("Snapshot validation stopped. A required node left " +
+                "the cluster [nodeId=" + nodeId + ']');
 
-        contexts.values().forEach(ctx -> {
-            if (ctx.req.nodes().contains(nodeId))
-                ctx.locProcFut.onDone(err);
-        });
+            contexts.values().forEach(ctx -> {
+                if (ctx.req.nodes().contains(nodeId))
+                    ctx.locProcFut.onDone(err);
+            });
+        }, EVT_NODE_FAILED, EVT_NODE_LEFT);
     }
 
     /** */
@@ -139,9 +139,9 @@ public class SnapshotCheckProcess {
 
         assert results.values().stream().noneMatch(res -> res != null && res.metas != null);
 
-        if (ctx.req.allRestoreHandlers) {
+        if (ctx.req.allRestoreHandlers()) {
             try {
-                if (!F.isEmpty(errors))
+                if (!errors.isEmpty())
                     throw F.firstValue(errors);
 
                 Map<ClusterNode, Map<String, SnapshotHandlerResult<?>>> cstRes = mapCustomHandlersResults(results, ctx.req.nodes());
@@ -157,18 +157,15 @@ public class SnapshotCheckProcess {
         else {
             Map<ClusterNode, Exception> errors0 = mapErrors(errors);
 
-            if (!F.isEmpty(results)) {
+            if (!results.isEmpty()) {
                 Map<ClusterNode, Map<PartitionKeyV2, PartitionHashRecordV2>> results0 = mapPartsHashes(results, ctx.req.nodes());
 
                 IdleVerifyResultV2 chkRes = SnapshotChecker.reduceHashesResults(results0, errors0);
 
                 clusterOpFut.onDone(new SnapshotPartitionsVerifyTaskResult(ctx.clusterMetas, chkRes));
             }
-            else {
-                assert !errors0.isEmpty();
-
+            else
                 clusterOpFut.onDone(new IgniteSnapshotVerifyException(errors0));
-            }
         }
 
         return new GridFinishedFuture<>();
@@ -192,7 +189,7 @@ public class SnapshotCheckProcess {
 
         // Might be already finished by #onNodeLeft().
         if (!phaseFut.isDone()) {
-            CompletableFuture<? extends Map<?, ?>> workingFut = req.allRestoreHandlers
+            CompletableFuture<? extends Map<?, ?>> workingFut = req.allRestoreHandlers()
                 ? snpMgr.checker().invokeCustomHandlers(ctx.locMeta, req.snapshotPath(), req.groups(), true)
                 : snpMgr.checker().checkPartitions(ctx.locMeta, snpMgr.snapshotLocalDir(req.snapshotName(), req.snapshotPath()),
                 req.groups(), false, true, false);
@@ -209,10 +206,7 @@ public class SnapshotCheckProcess {
     }
 
     /** */
-    private Map<ClusterNode, Exception> mapErrors(@Nullable Map<UUID, Throwable> errors) {
-        if (F.isEmpty(errors))
-            return Collections.emptyMap();
-
+    private Map<ClusterNode, Exception> mapErrors(Map<UUID, Throwable> errors) {
         return errors.entrySet().stream()
             .collect(Collectors.toMap(e -> kctx.cluster().get().node(e.getKey()),
                 e -> e.getValue() instanceof Exception ? (Exception)e.getValue() : new IgniteException(e.getValue())));
@@ -220,13 +214,9 @@ public class SnapshotCheckProcess {
 
     /** */
     private Map<ClusterNode, Map<PartitionKeyV2, PartitionHashRecordV2>> mapPartsHashes(
-        @Nullable Map<UUID, SnapshotCheckResponse> results,
+        Map<UUID, SnapshotCheckResponse> results,
         Collection<UUID> requiredNodes
     ) {
-        if (F.isEmpty(results))
-            return Collections.emptyMap();
-
-        // A not required node can leave the cluster and its result can be null.
         return results.entrySet().stream()
             .filter(e -> requiredNodes.contains(e.getKey()) && e.getValue() != null)
             .collect(Collectors.toMap(e -> kctx.cluster().get().node(e.getKey()), e -> e.getValue().partsHashes()));
@@ -237,10 +227,6 @@ public class SnapshotCheckProcess {
         Map<UUID, SnapshotCheckResponse> results,
         Set<UUID> requiredNodes
     ) {
-        if (F.isEmpty(results))
-            return Collections.emptyMap();
-
-        // A not required node can leave the cluster and its result can be null.
         return results.entrySet().stream()
             .filter(e -> requiredNodes.contains(e.getKey()) && e.getValue() != null)
             .collect(Collectors.toMap(e -> kctx.cluster().get().node(e.getKey()), e -> e.getValue().customHandlersResults()));
@@ -253,10 +239,10 @@ public class SnapshotCheckProcess {
      */
     private @Nullable SnapshotCheckContext context(@Nullable String snpName, UUID reqId) {
         SnapshotCheckContext ctx = snpName == null
-            ? contexts.values().stream().filter(ctx0 -> ctx0.req.reqId.equals(reqId)).findFirst().orElse(null)
+            ? contexts.values().stream().filter(ctx0 -> ctx0.req.requestId().equals(reqId)).findFirst().orElse(null)
             : contexts.get(snpName);
 
-        assert ctx == null || ctx.req.reqId.equals(reqId);
+        assert ctx == null || ctx.req.requestId().equals(reqId);
 
         return ctx;
     }
@@ -265,6 +251,9 @@ public class SnapshotCheckProcess {
     private IgniteInternalFuture<SnapshotCheckResponse> prepareAndCheckMetas(SnapshotCheckProcessRequest req) {
         if (!req.nodes().contains(kctx.localNodeId()))
             return new GridFinishedFuture<>();
+
+        if (kctx.isStopping())
+            return new GridFinishedFuture<>(new NodeStoppingException("The node is stopping: " + kctx.localNodeId()));
 
         SnapshotCheckContext ctx = contexts.computeIfAbsent(req.snapshotName(), snpName -> new SnapshotCheckContext(req));
 
@@ -314,7 +303,7 @@ public class SnapshotCheckProcess {
         GridFutureAdapter<SnapshotPartitionsVerifyTaskResult> clusterOpFut = clusterOpFuts.get(reqId);
 
         try {
-            if (!F.isEmpty(errors))
+            if (!errors.isEmpty())
                 throw new IgniteSnapshotVerifyException(mapErrors(errors));
 
             if (ctx == null) {
@@ -341,7 +330,7 @@ public class SnapshotCheckProcess {
             Map<ClusterNode, Exception> metasCheck = SnapshotChecker.reduceMetasResults(ctx.req.snapshotName(), ctx.req.snapshotPath(),
                 metas, null, kctx.cluster().get().localNode().consistentId());
 
-            if (!F.isEmpty(metasCheck))
+            if (!metasCheck.isEmpty())
                 throw new IgniteSnapshotVerifyException(metasCheck);
 
             List<SnapshotMetadata> locMetas = metas.get(kctx.cluster().get().localNode());
@@ -368,10 +357,7 @@ public class SnapshotCheckProcess {
     }
 
     /** Finds current snapshot name from the metas. */
-    private @Nullable String snpName(@Nullable Map<UUID, SnapshotCheckResponse> results) {
-        if (F.isEmpty(results))
-            return null;
-
+    private @Nullable String snpName(Map<UUID, SnapshotCheckResponse> results) {
         for (SnapshotCheckResponse nodeRes : results.values()) {
             if (nodeRes == null || F.isEmpty(nodeRes.metas))
                 continue;
@@ -416,7 +402,6 @@ public class SnapshotCheckProcess {
             snpName,
             snpPath,
             grpNames,
-            0,
             allRestoreHandlers
         );
 

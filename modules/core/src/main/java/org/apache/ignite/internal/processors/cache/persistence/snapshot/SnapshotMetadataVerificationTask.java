@@ -24,6 +24,7 @@ import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.ExecutionException;
 import java.util.stream.Collectors;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
@@ -102,11 +103,15 @@ public class SnapshotMetadataVerificationTask
         @Override public List<SnapshotMetadata> execute() {
             IgniteSnapshotManager snpMgr = ignite.context().cache().context().snapshotMgr();
 
-            List<SnapshotMetadata> snpMeta = snpMgr.checker().checkLocalMetasResult(
-                snpMgr.snapshotLocalDir(arg.snapshotName(), arg.snapshotPath()),
-                arg.grpIds(),
-                ignite.localNode().consistentId()
-            );
+            List<SnapshotMetadata> snpMeta;
+
+            try {
+                snpMeta = snpMgr.checker().checkLocalMetas(snpMgr.snapshotLocalDir(arg.snapshotName(), arg.snapshotPath()),
+                    arg.grpIds(), ignite.localNode().consistentId()).get();
+            }
+            catch (InterruptedException | ExecutionException e) {
+                throw new IgniteException("Failed to launch snapshot metadatas check of snapshot '" + arg.snapshotName() + "'.", e);
+            }
 
             if (arg.incrementIndex() > 0) {
                 List<SnapshotMetadata> metas = snpMeta.stream()

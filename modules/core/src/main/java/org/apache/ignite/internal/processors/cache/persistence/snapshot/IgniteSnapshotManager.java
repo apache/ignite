@@ -380,7 +380,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
     private final DistributedProcess<SnapshotOperationRequest, SnapshotOperationResponse> startSnpProc;
 
     /** Snapshot full validation distributed process. */
-    final SnapshotCheckProcess checkSnpProc;
+    private final SnapshotCheckProcess checkSnpProc;
 
     /** Check previously performed snapshot operation and delete uncompleted files if we need. */
     private final DistributedProcess<SnapshotOperationRequest, SnapshotOperationResponse> endSnpProc;

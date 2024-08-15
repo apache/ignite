@@ -105,7 +105,7 @@ public class SnapshotOperationRequest extends AbstractSnapshotOperationRequest {
         boolean compress,
         boolean encrypt
     ) {
-        super(reqId, opNodeId, snpName, snpPath, grps, incIdx, nodes);
+        super(reqId, snpName, snpPath, grps, incIdx, nodes);
 
         this.opNodeId = opNodeId;
         this.incremental = incremental;

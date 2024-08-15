@@ -36,19 +36,19 @@ abstract class AbstractSnapshotOperationRequest implements Serializable {
 
     /** Request ID. */
     @GridToStringInclude
-    protected final UUID reqId;
+    private final UUID reqId;
 
     /** Snapshot name. */
     @GridToStringInclude
-    protected final String snpName;
+    private final String snpName;
 
     /** Snapshot directory path. */
     @GridToStringInclude
-    protected final String snpPath;
+    private final String snpPath;
 
     /** List of cache group names. */
     @GridToStringInclude
-    protected final Collection<String> grps;
+    private final Collection<String> grps;
 
     /** Start time. */
     @GridToStringInclude
@@ -56,7 +56,7 @@ abstract class AbstractSnapshotOperationRequest implements Serializable {
 
     /** IDs of the nodes that must be alive to complete the operation. */
     @GridToStringInclude
-    protected final Set<UUID> nodes;
+    private final Set<UUID> nodes;
 
     /**
      * @param reqId Request ID.
@@ -68,7 +68,6 @@ abstract class AbstractSnapshotOperationRequest implements Serializable {
      */
     protected AbstractSnapshotOperationRequest(
         UUID reqId,
-        @Nullable UUID opNodeId,
         String snpName,
         String snpPath,
         @Nullable Collection<String> grps,
