@@ -196,12 +196,15 @@ public abstract class WALRecord {
         ROTATED_ID_PART_RECORD(48, PHYSICAL),
 
         /** */
+        @Deprecated
         MVCC_DATA_PAGE_MARK_UPDATED_RECORD(49, PHYSICAL),
 
         /** */
+        @Deprecated
         MVCC_DATA_PAGE_TX_STATE_HINT_UPDATED_RECORD(50, PHYSICAL),
 
         /** */
+        @Deprecated
         MVCC_DATA_PAGE_NEW_TX_STATE_HINT_UPDATED_RECORD(51, PHYSICAL),
 
         /** Encrypted WAL-record. */
@@ -215,9 +218,11 @@ public abstract class WALRecord {
         ENCRYPTED_DATA_RECORD(53, LOGICAL),
 
         /** Mvcc data record. */
+        @Deprecated
         MVCC_DATA_RECORD(54, LOGICAL),
 
         /** Mvcc Tx state change record. */
+        @Deprecated
         MVCC_TX_RECORD(55, LOGICAL),
 
         /** Consistent cut record. */

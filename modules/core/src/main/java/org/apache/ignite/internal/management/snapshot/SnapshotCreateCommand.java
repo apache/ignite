@@ -18,7 +18,7 @@
 package org.apache.ignite.internal.management.snapshot;
 
 /** */
-public class SnapshotCreateCommand extends AbstractSnapshotCommand<SnapshotCreateCommandArg> {
+public class SnapshotCreateCommand extends AbstractSnapshotCommand<SnapshotCreateCommandArg, String> {
     /** {@inheritDoc} */
     @Override public String description() {
         return "Create cluster snapshot";

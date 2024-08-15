@@ -45,14 +45,12 @@ import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtAffini
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionsFullMessage;
 import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionTopology;
 import org.apache.ignite.internal.util.lang.GridAbsPredicate;
-import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiPredicate;
 import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
-import org.apache.ignite.transactions.TransactionSerializationException;
 import org.junit.Ignore;
 import org.junit.Test;
 
@@ -361,16 +359,7 @@ public class IgniteClientCacheStartFailoverTest extends GridCommonAbstractTest {
                                 ", key=" + key +
                                 ", val=" + i + ']', e);
 
-                            CacheConfiguration ccfg = cache.getConfiguration(CacheConfiguration.class);
-
-                            TransactionSerializationException txEx = X.cause(e, TransactionSerializationException.class);
-
-                            boolean notContains = !txEx.getMessage().contains(
-                                "Cannot serialize transaction due to write conflict (transaction is marked for rollback)"
-                            );
-
-                            if (txEx == null || notContains)
-                                fail("Assert violated because exception was thrown [e=" + e.getMessage() + ']');
+                            fail();
                         }
                     }
                 }

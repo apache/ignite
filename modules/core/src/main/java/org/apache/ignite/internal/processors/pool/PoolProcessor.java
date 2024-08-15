@@ -41,7 +41,6 @@ import org.apache.ignite.internal.IgniteComponentType;
 import org.apache.ignite.internal.managers.communication.GridIoPolicy;
 import org.apache.ignite.internal.managers.systemview.walker.StripedExecutorTaskViewWalker;
 import org.apache.ignite.internal.processors.GridProcessorAdapter;
-import org.apache.ignite.internal.processors.metric.MetricRegistry;
 import org.apache.ignite.internal.processors.plugin.IgnitePluginProcessor;
 import org.apache.ignite.internal.processors.security.IgniteSecurity;
 import org.apache.ignite.internal.processors.security.thread.SecurityAwareIoPool;
@@ -56,6 +55,7 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.internal.util.worker.GridWorkerListener;
 import org.apache.ignite.internal.worker.WorkersRegistry;
 import org.apache.ignite.lang.IgniteInClosure;
+import org.apache.ignite.metric.MetricRegistry;
 import org.apache.ignite.plugin.extensions.communication.IoPool;
 import org.apache.ignite.spi.systemview.view.StripedExecutorTaskView;
 import org.apache.ignite.thread.IgniteStripedThreadPoolExecutor;
@@ -524,7 +524,7 @@ public class PoolProcessor extends GridProcessorAdapter {
             DFLT_THREAD_KEEP_ALIVE_TIME,
             new LinkedBlockingQueue<>(),
             GridIoPolicy.UNDEFINED,
-            excHnd);
+            oomeHnd);
 
         snpExecSvc.allowCoreThreadTimeOut(true);
 

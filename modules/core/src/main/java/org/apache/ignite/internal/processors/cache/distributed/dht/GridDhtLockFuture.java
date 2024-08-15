@@ -55,7 +55,6 @@ import org.apache.ignite.internal.processors.cache.distributed.GridDistributedLo
 import org.apache.ignite.internal.processors.cache.distributed.dht.colocated.GridDhtColocatedLockFuture;
 import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtInvalidPartitionException;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearCacheAdapter;
-import org.apache.ignite.internal.processors.cache.mvcc.txlog.TxState;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteInternalTx;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteTxEntry;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
@@ -86,7 +85,7 @@ import static org.apache.ignite.internal.processors.tracing.SpanType.TX_DHT_LOCK
  * Cache lock future.
  */
 public final class GridDhtLockFuture extends GridCacheCompoundIdentityFuture<Boolean>
-    implements GridCacheVersionedFuture<Boolean>, GridDhtFuture<Boolean>, GridCacheMappedVersion, DhtLockFuture<Boolean> {
+    implements GridCacheVersionedFuture<Boolean>, GridDhtFuture<Boolean>, GridCacheMappedVersion {
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -639,7 +638,7 @@ public final class GridDhtLockFuture extends GridCacheCompoundIdentityFuture<Boo
     /**
      * @param t Error.
      */
-    @Override public void onError(Throwable t) {
+    public void onError(Throwable t) {
         synchronized (this) {
             if (err != null)
                 return;
@@ -949,7 +948,7 @@ public final class GridDhtLockFuture extends GridCacheCompoundIdentityFuture<Boo
 
                                     boolean invalidateRdr = e.readerId(n.id()) != null;
 
-                                    req.addDhtKey(e.key(), invalidateRdr, cctx);
+                                    req.addDhtKey(e.key(), invalidateRdr);
 
                                     if (needVal) {
                                         // Mark last added key as needed to be preloaded.
@@ -1349,10 +1348,6 @@ public final class GridDhtLockFuture extends GridCacheCompoundIdentityFuture<Boo
                             try {
                                 if (entry.initialValue(info.value(),
                                     info.version(),
-                                    null,
-                                    null,
-                                    TxState.NA,
-                                    TxState.NA,
                                     info.ttl(),
                                     info.expireTime(),
                                     true,

@@ -35,7 +35,7 @@ import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.client.GridClient;
 import org.apache.ignite.internal.client.GridClientConfiguration;
 import org.apache.ignite.internal.client.GridClientFactory;
-import org.apache.ignite.internal.processors.metric.MetricRegistry;
+import org.apache.ignite.metric.MetricRegistry;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.metric.BooleanMetric;
 import org.apache.ignite.spi.metric.HistogramMetric;
@@ -59,6 +59,7 @@ import static org.apache.ignite.internal.util.nio.GridNioServer.SSL_ENABLED_METR
 import static org.apache.ignite.internal.util.nio.ssl.GridNioSslFilter.SSL_HANDSHAKE_DURATION_HISTOGRAM_METRIC_NAME;
 import static org.apache.ignite.internal.util.nio.ssl.GridNioSslFilter.SSL_REJECTED_SESSIONS_CNT_METRIC_NAME;
 import static org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi.COMMUNICATION_METRICS_GROUP_NAME;
+import static org.apache.ignite.testframework.GridTestUtils.assertContains;
 import static org.apache.ignite.testframework.GridTestUtils.assertThrowsWithCause;
 import static org.apache.ignite.testframework.GridTestUtils.keyStorePassword;
 import static org.apache.ignite.testframework.GridTestUtils.keyStorePath;
@@ -72,6 +73,9 @@ public class NodeSslConnectionMetricTest extends GridCommonAbstractTest {
 
     /** Cipher suite not supported by cluster nodes. */
     private static final String UNSUPPORTED_CIPHER_SUITE = "TLS_RSA_WITH_AES_128_GCM_SHA256";
+
+    /** Local server address. */
+    private static final String LOCAL_CLIENT_ADDRESS = "127.0.0.1:10800";
 
     /** Metric timeout. */
     private static final long TIMEOUT = 7_000;
@@ -295,25 +299,31 @@ public class NodeSslConnectionMetricTest extends GridCommonAbstractTest {
         checkSslCommunicationMetrics(reg, 1, 0, 0);
 
         // Tests untrusted certificate.
-        assertThrowsWithCause(() ->
-            startClient(clientConfiguration("client", "trustboth", CIPHER_SUITE, "TLSv1.2")),
+        Throwable ex = assertThrowsWithCause(() ->
+                startClient(clientConfiguration("client", "trustboth", CIPHER_SUITE, "TLSv1.2")),
             ClientConnectionException.class);
+
+        assertContains(log, ex.getMessage(), LOCAL_CLIENT_ADDRESS);
 
         checkSslCommunicationMetrics(reg, 2, 0, 1);
 
         // Tests unsupported cipher suites.
-        assertThrowsWithCause(() ->
-            startClient(clientConfiguration("thinClient", "trusttwo", UNSUPPORTED_CIPHER_SUITE, "TLSv1.2")),
+        ex = assertThrowsWithCause(() ->
+                startClient(clientConfiguration("thinClient", "trusttwo", UNSUPPORTED_CIPHER_SUITE, "TLSv1.2")),
             ClientConnectionException.class
         );
+
+        assertContains(log, ex.getMessage(), LOCAL_CLIENT_ADDRESS);
 
         checkSslCommunicationMetrics(reg, 3, 0, 2);
 
         // Tests mismatched protocol versions.
-        assertThrowsWithCause(() ->
-            startClient(clientConfiguration("thinClient", "trusttwo", null, "TLSv1.1")),
+        ex = assertThrowsWithCause(() ->
+                startClient(clientConfiguration("thinClient", "trusttwo", null, "TLSv1.1")),
             ClientConnectionException.class
         );
+
+        assertContains(log, ex.getMessage(), LOCAL_CLIENT_ADDRESS);
 
         checkSslCommunicationMetrics(reg, 4, 0, 3);
     }
@@ -389,7 +399,7 @@ public class NodeSslConnectionMetricTest extends GridCommonAbstractTest {
         String protocol
     ) {
         return new ClientConfiguration()
-            .setAddresses("127.0.0.1:10800")
+            .setAddresses(LOCAL_CLIENT_ADDRESS)
             // When PA is enabled, async client channel init executes and spoils the metrics.
             .setPartitionAwarenessEnabled(false)
             .setSslMode(SslMode.REQUIRED)

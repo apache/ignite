@@ -35,7 +35,6 @@ import org.apache.ignite.internal.cache.query.index.sorted.inline.io.InlineIO;
 import org.apache.ignite.internal.cache.query.index.sorted.inline.io.InnerIO;
 import org.apache.ignite.internal.cache.query.index.sorted.inline.io.LeafIO;
 import org.apache.ignite.internal.metric.IoStatisticsHolder;
-import org.apache.ignite.internal.pagemem.PageIdUtils;
 import org.apache.ignite.internal.pagemem.PageMemory;
 import org.apache.ignite.internal.pagemem.PageUtils;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
@@ -51,7 +50,6 @@ import org.apache.ignite.internal.processors.cache.persistence.tree.io.BPlusMeta
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.IOVersions;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.PageIO;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.PageIoResolver;
-import org.apache.ignite.internal.processors.cache.tree.mvcc.data.MvccDataRow;
 
 /**
  * Creates temporary index to defragment old index.
@@ -178,7 +176,7 @@ public class DefragIndexFactory extends InlineIndexFactory {
 
         PageUtils.putBytes(pageAddr, off, row.values);
 
-        IORowHandler.store(pageAddr, off + payloadSize, row, io.storeMvccInfo());
+        IORowHandler.store(pageAddr, off + payloadSize, row);
     }
 
     /** */
@@ -200,26 +198,6 @@ public class DefragIndexFactory extends InlineIndexFactory {
             values = EMPTY_BYTES;
         else
             values = PageUtils.getBytes(pageAddr, off, inlineSize);
-
-        if (io.storeMvccInfo()) {
-            long mvccCrdVer = io.mvccCoordinatorVersion(pageAddr, idx);
-            long mvccCntr = io.mvccCounter(pageAddr, idx);
-            int mvccOpCntr = io.mvccOperationCounter(pageAddr, idx);
-
-            MvccDataRow row = new MvccDataRow(
-                null,
-                0,
-                link,
-                PageIdUtils.partId(PageIdUtils.pageId(link)),
-                CacheDataRowAdapter.RowData.LINK_ONLY,
-                mvccCrdVer,
-                mvccCntr,
-                mvccOpCntr,
-                true
-            );
-
-            return new DefragIndexRowImpl(rowHnd, row, values);
-        }
 
         return new DefragIndexRowImpl(rowHnd, new CacheDataRowAdapter(link), values);
     }
@@ -268,26 +246,6 @@ public class DefragIndexFactory extends InlineIndexFactory {
         @Override public int inlineSize() {
             return io.inlineSize();
         }
-
-        /** {@inheritDoc} */
-        @Override public long mvccCoordinatorVersion(long pageAddr, int idx) {
-            return io.mvccCoordinatorVersion(pageAddr, idx);
-        }
-
-        /** {@inheritDoc} */
-        @Override public long mvccCounter(long pageAddr, int idx) {
-            return io.mvccCounter(pageAddr, idx);
-        }
-
-        /** {@inheritDoc} */
-        @Override public int mvccOperationCounter(long pageAddr, int idx) {
-            return io.mvccOperationCounter(pageAddr, idx);
-        }
-
-        /** {@inheritDoc} */
-        @Override public boolean storeMvccInfo() {
-            return io.storeMvccInfo();
-        }
     }
 
     /** */
@@ -334,26 +292,6 @@ public class DefragIndexFactory extends InlineIndexFactory {
         @Override public int inlineSize() {
             return io.inlineSize();
         }
-
-        /** {@inheritDoc} */
-        @Override public long mvccCoordinatorVersion(long pageAddr, int idx) {
-            return io.mvccCoordinatorVersion(pageAddr, idx);
-        }
-
-        /** {@inheritDoc} */
-        @Override public long mvccCounter(long pageAddr, int idx) {
-            return io.mvccCounter(pageAddr, idx);
-        }
-
-        /** {@inheritDoc} */
-        @Override public int mvccOperationCounter(long pageAddr, int idx) {
-            return io.mvccOperationCounter(pageAddr, idx);
-        }
-
-        /** {@inheritDoc} */
-        @Override public boolean storeMvccInfo() {
-            return io.storeMvccInfo();
-        }
     }
 
     /**
@@ -373,19 +311,9 @@ public class DefragIndexFactory extends InlineIndexFactory {
         public static DefragIndexRowImpl create(
             InlineIndexRowHandler rowHnd,
             long newLink,
-            DefragIndexRowImpl oldValue,
-            boolean storeMvcc
+            DefragIndexRowImpl oldValue
         ) {
-            CacheDataRow newDataRow;
-
-            if (storeMvcc) {
-                newDataRow = new MvccDataRow(newLink);
-                newDataRow.mvccVersion(oldValue);
-            }
-            else
-                newDataRow = new CacheDataRowAdapter(newLink);
-
-            return new DefragIndexRowImpl(rowHnd, newDataRow, oldValue.values);
+            return new DefragIndexRowImpl(rowHnd, new CacheDataRowAdapter(newLink), oldValue.values);
         }
     }
 }

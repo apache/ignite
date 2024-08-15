@@ -32,7 +32,6 @@ import java.util.concurrent.Callable;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.concurrent.atomic.LongAdder;
 import javax.cache.Cache;
 import javax.cache.CacheException;
 import javax.cache.configuration.Factory;
@@ -257,7 +256,7 @@ public class GridCacheUtils {
     private static final CacheEntryPredicate[] ALWAYS_FALSE0_ARR = new CacheEntryPredicate[] {ALWAYS_FALSE0};
 
     /** Read filter. */
-    public static final IgnitePredicate READ_FILTER = new P1<IgniteTxEntry>() {
+    public static final IgnitePredicate<IgniteTxEntry> READ_FILTER = new P1<IgniteTxEntry>() {
         @Override public boolean apply(IgniteTxEntry e) {
             return e.op() == READ;
         }
@@ -268,7 +267,7 @@ public class GridCacheUtils {
     };
 
     /** Read filter. */
-    public static final IgnitePredicate READ_FILTER_NEAR = new P1<IgniteTxEntry>() {
+    public static final IgnitePredicate<IgniteTxEntry> READ_FILTER_NEAR = new P1<IgniteTxEntry>() {
         @Override public boolean apply(IgniteTxEntry e) {
             return e.op() == READ && e.context().isNear();
         }
@@ -279,7 +278,7 @@ public class GridCacheUtils {
     };
 
     /** Read filter. */
-    public static final IgnitePredicate READ_FILTER_COLOCATED = new P1<IgniteTxEntry>() {
+    public static final IgnitePredicate<IgniteTxEntry> READ_FILTER_COLOCATED = new P1<IgniteTxEntry>() {
         @Override public boolean apply(IgniteTxEntry e) {
             return e.op() == READ && !e.context().isNear();
         }
@@ -290,7 +289,7 @@ public class GridCacheUtils {
     };
 
     /** Write filter. */
-    public static final IgnitePredicate WRITE_FILTER = new P1<IgniteTxEntry>() {
+    public static final IgnitePredicate<IgniteTxEntry> WRITE_FILTER = new P1<IgniteTxEntry>() {
         @Override public boolean apply(IgniteTxEntry e) {
             return e.op() != READ;
         }
@@ -301,7 +300,7 @@ public class GridCacheUtils {
     };
 
     /** Write filter. */
-    public static final IgnitePredicate WRITE_FILTER_NEAR = new P1<IgniteTxEntry>() {
+    public static final IgnitePredicate<IgniteTxEntry> WRITE_FILTER_NEAR = new P1<IgniteTxEntry>() {
         @Override public boolean apply(IgniteTxEntry e) {
             return e.op() != READ && e.context().isNear();
         }
@@ -312,7 +311,7 @@ public class GridCacheUtils {
     };
 
     /** Write filter. */
-    public static final IgnitePredicate WRITE_FILTER_COLOCATED = new P1<IgniteTxEntry>() {
+    public static final IgnitePredicate<IgniteTxEntry> WRITE_FILTER_COLOCATED = new P1<IgniteTxEntry>() {
         @Override public boolean apply(IgniteTxEntry e) {
             return e.op() != READ && !e.context().isNear();
         }
@@ -323,7 +322,7 @@ public class GridCacheUtils {
     };
 
     /** Write filter. */
-    public static final IgnitePredicate FILTER_NEAR_CACHE_ENTRY = new P1<IgniteTxEntry>() {
+    public static final IgnitePredicate<IgniteTxEntry> FILTER_NEAR_CACHE_ENTRY = new P1<IgniteTxEntry>() {
         @Override public boolean apply(IgniteTxEntry e) {
             return e.context().isNear();
         }
@@ -560,30 +559,6 @@ public class GridCacheUtils {
 
             @Override public String toString() {
                 return "Bool reducer: " + bool;
-            }
-        };
-    }
-
-    /**
-     * @return Long reducer.
-     */
-    public static IgniteReducer<Long, Long> longReducer() {
-        return new IgniteReducer<Long, Long>() {
-            private final LongAdder res = new LongAdder();
-
-            @Override public boolean collect(Long l) {
-                if (l != null)
-                    res.add(l);
-
-                return true;
-            }
-
-            @Override public Long reduce() {
-                return res.sum();
-            }
-
-            @Override public String toString() {
-                return "Long reducer: " + res;
             }
         };
     }
@@ -858,16 +833,6 @@ public class GridCacheUtils {
         assert ctx != null;
 
         ctx.ttl().expire(TTL_BATCH_SIZE);
-    }
-
-    /**
-     * @param ctx Shared cache context.
-     */
-    public static <K, V> void unwindEvicts(GridCacheSharedContext<K, V> ctx) {
-        assert ctx != null;
-
-        for (GridCacheContext<K, V> cacheCtx : ctx.cacheContexts())
-            unwindEvicts(cacheCtx);
     }
 
     /**
@@ -1677,8 +1642,7 @@ public class GridCacheUtils {
      * @throws IgniteCheckedException If configuration is not valid.
      */
     public static void initializeConfigDefaults(IgniteLogger log, CacheConfiguration cfg,
-        CacheObjectContext cacheObjCtx)
-        throws IgniteCheckedException {
+        CacheObjectContext cacheObjCtx) throws IgniteCheckedException {
         if (cfg.getCacheMode() == null)
             cfg.setCacheMode(DFLT_CACHE_MODE);
 
@@ -2101,25 +2065,6 @@ public class GridCacheUtils {
         return pageSize
             - (encSpi.encryptedSizeNoPadding(pageSize) - pageSize)
             - encSpi.blockSize(); /* For CRC and encryption key ID. */
-    }
-
-    /**
-     * @param sctx Shared context.
-     * @param cacheIds Cache ids.
-     * @return First partitioned cache or {@code null} in case no partitioned cache ids are in list.
-     */
-    public static GridCacheContext<?, ?> firstPartitioned(GridCacheSharedContext<?, ?> sctx, int[] cacheIds) {
-        for (int i = 0; i < cacheIds.length; i++) {
-            GridCacheContext<?, ?> cctx = sctx.cacheContext(cacheIds[i]);
-
-            if (cctx == null)
-                throw new CacheException("Failed to find cache.");
-
-            if (!cctx.isReplicated())
-                return cctx;
-        }
-
-        return null;
     }
 
     /**

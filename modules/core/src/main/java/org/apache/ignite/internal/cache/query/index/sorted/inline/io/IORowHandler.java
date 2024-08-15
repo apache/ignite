@@ -19,28 +19,15 @@ package org.apache.ignite.internal.cache.query.index.sorted.inline.io;
 
 import org.apache.ignite.internal.cache.query.index.sorted.IndexRow;
 import org.apache.ignite.internal.pagemem.PageUtils;
-import org.apache.ignite.internal.processors.cache.mvcc.MvccUtils;
 
 /**
  * Class provide a common logic for storing an index row.
  */
 public class IORowHandler {
     /** */
-    public static void store(long pageAddr, int off, IndexRow row, boolean storeMvccInfo) {
+    public static void store(long pageAddr, int off, IndexRow row) {
         // Write link after all inlined idx keys.
         PageUtils.putLong(pageAddr, off, row.link());
-
-        if (storeMvccInfo) {
-            long mvccCrdVer = row.mvccCoordinatorVersion();
-            long mvccCntr = row.mvccCounter();
-            int mvccOpCntr = row.mvccOperationCounter();
-
-            assert MvccUtils.mvccVersionIsValid(mvccCrdVer, mvccCntr, mvccOpCntr);
-
-            PageUtils.putLong(pageAddr, off + 8, mvccCrdVer);
-            PageUtils.putLong(pageAddr, off + 16, mvccCntr);
-            PageUtils.putInt(pageAddr, off + 24, mvccOpCntr);
-        }
     }
 
     /**
@@ -49,23 +36,10 @@ public class IORowHandler {
      * @param srcIo Source IO.
      * @param srcPageAddr Source page address.
      * @param srcIdx Source index.
-     * @param storeMvcc {@code True} to store mvcc data.
      */
-    static void store(long dstPageAddr, int dstOff, InlineIO srcIo, long srcPageAddr, int srcIdx, boolean storeMvcc) {
+    static void store(long dstPageAddr, int dstOff, InlineIO srcIo, long srcPageAddr, int srcIdx) {
         long link = srcIo.link(srcPageAddr, srcIdx);
 
         PageUtils.putLong(dstPageAddr, dstOff, link);
-
-        if (storeMvcc) {
-            long mvccCrdVer = srcIo.mvccCoordinatorVersion(srcPageAddr, srcIdx);
-            long mvccCntr = srcIo.mvccCounter(srcPageAddr, srcIdx);
-            int mvccOpCntr = srcIo.mvccOperationCounter(srcPageAddr, srcIdx);
-
-            assert MvccUtils.mvccVersionIsValid(mvccCrdVer, mvccCntr, mvccOpCntr);
-
-            PageUtils.putLong(dstPageAddr, dstOff + 8, mvccCrdVer);
-            PageUtils.putLong(dstPageAddr, dstOff + 16, mvccCntr);
-            PageUtils.putInt(dstPageAddr, dstOff + 24, mvccOpCntr);
-        }
     }
 }

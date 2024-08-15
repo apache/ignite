@@ -45,7 +45,7 @@ public class MetricsMxBeanImpl implements MetricsMxBean {
     @Override public void resetMetrics(String registry) {
         assert registry != null;
 
-        MetricRegistry mreg = mmgr.registry(registry);
+        MetricRegistryImpl mreg = mmgr.registry(registry);
 
         if (mreg != null)
             mreg.reset();

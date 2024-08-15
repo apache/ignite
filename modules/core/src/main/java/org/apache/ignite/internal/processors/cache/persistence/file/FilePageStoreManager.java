@@ -59,7 +59,6 @@ import org.apache.ignite.internal.pagemem.store.PageStore;
 import org.apache.ignite.internal.pagemem.store.PageStoreCollection;
 import org.apache.ignite.internal.processors.cache.CacheGroupContext;
 import org.apache.ignite.internal.processors.cache.CacheGroupDescriptor;
-import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedManagerAdapter;
 import org.apache.ignite.internal.processors.cache.persistence.DataRegion;
 import org.apache.ignite.internal.processors.cache.persistence.GridCacheDatabaseSharedManager;
@@ -433,32 +432,6 @@ public class FilePageStoreManager extends GridCacheSharedManagerAdapter implemen
             cctx.kernalContext().failure().process(new FailureContext(FailureType.CRITICAL_ERROR, e));
 
             throw e;
-        }
-    }
-
-    /** {@inheritDoc} */
-    @Override public void initialize(int cacheId, int partitions, String cacheName, PageMetrics pageMetrics)
-        throws IgniteCheckedException {
-        assert storeWorkDir != null;
-
-        if (!idxCacheStores.containsKey(cacheId)) {
-            GridCacheContext<?, ?> cctx = this.cctx.cacheContext(cacheId);
-
-            CacheStoreHolder holder = initDir(
-                new File(storeWorkDir, cacheName),
-                cacheId,
-                cacheName,
-                partitions,
-                pageMetrics,
-                cctx != null && cctx.config().isEncryptionEnabled(),
-                cctx != null
-                    ? cctx.group().caches().stream().map(GridCacheContext::name).collect(Collectors.toSet())
-                    : null
-            );
-
-            CacheStoreHolder old = idxCacheStores.put(cacheId, holder);
-
-            assert old == null : "Non-null old store holder for cacheId: " + cacheId;
         }
     }
 

@@ -68,6 +68,9 @@ Register name: `cache.{cache_name}.{near}`
 |CacheSize|long|Local cache size.
 |CommitTime  |histogram  | Commit time in nanoseconds.
 |CommitTimeTotal |long| The total time of commit, in nanoseconds.
+|ConflictResolverAcceptedCount|long|Conflict resolver accepted entries count.
+|ConflictResolverRejectedCount|long|Conflict resolver rejected entries count.
+|ConflictResolverMergedCount|long|Conflict resolver merged entries count.
 |EntryProcessorHits | long|The total number of invocations on keys, which exist in cache.
 |EntryProcessorInvokeTimeNanos | long | The total time of cache invocations for which this node is the initiator, in nanoseconds.
 |EntryProcessorMaxInvocationTime |long | So far, the maximum time to execute cache invokes for which this node is the initiator.
@@ -507,6 +510,3 @@ Register name: `sql.queries.user`
 |failed| long | The number of failed SQL queries (including canceled).
 |canceled| long | The number of canceled SQL queries.
 |===
-
-
-

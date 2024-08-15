@@ -38,7 +38,6 @@ import org.apache.ignite.internal.processors.cache.persistence.tree.io.DataPageP
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.IOVersions;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.PageIO;
 import org.apache.ignite.internal.processors.cache.persistence.tree.reuse.ReuseList;
-import org.apache.ignite.internal.processors.cache.tree.mvcc.search.MvccDataPageClosure;
 import org.apache.ignite.internal.util.GridUnsafe;
 import org.apache.ignite.internal.util.lang.GridCursor;
 import org.apache.ignite.internal.util.typedef.internal.CU;
@@ -155,8 +154,8 @@ public class CacheDataTree extends BPlusTree<CacheSearchRow, CacheDataRow> {
                 && upper == null
                 && grp.persistenceEnabled()
                 && dataPageScanEnabled.get()
-                && (c == null || c instanceof MvccDataPageClosure))
-            return scanDataPages(asRowData(x), (MvccDataPageClosure)c);
+                && c == null)
+            return scanDataPages(asRowData(x));
 
         lastFindWithDataPageScan = FALSE;
         return super.find(lower, upper, c, x);
@@ -164,11 +163,10 @@ public class CacheDataTree extends BPlusTree<CacheSearchRow, CacheDataRow> {
 
     /**
      * @param rowData Required row data.
-     * @param c Optional MVCC closure.
      * @return Cache row cursor.
      * @throws IgniteCheckedException If failed.
      */
-    private GridCursor<CacheDataRow> scanDataPages(CacheDataRowAdapter.RowData rowData, MvccDataPageClosure c)
+    private GridCursor<CacheDataRow> scanDataPages(CacheDataRowAdapter.RowData rowData)
         throws IgniteCheckedException {
         lastFindWithDataPageScan = TRUE;
 
@@ -181,7 +179,6 @@ public class CacheDataTree extends BPlusTree<CacheSearchRow, CacheDataRow> {
         GridCacheSharedContext shared = grp.shared();
         GridCacheDatabaseSharedManager db = (GridCacheDatabaseSharedManager)shared.database();
         PageStore pageStore = db.getPageStore(grpId, partId);
-        int pageSize = pageSize();
 
         long startPageId = ((PageMemoryEx)pageMem).partitionMetaPageId(grp.groupId(), partId);
 
@@ -259,22 +256,20 @@ public class CacheDataTree extends BPlusTree<CacheSearchRow, CacheDataRow> {
                             int r = 0;
 
                             for (int i = 0; i < rowsCnt; i++) {
-                                if (c == null || c.applyMvcc(io, pageAddr, i, pageSize)) {
-                                    DataRow row = new DataRow();
+                                DataRow row = new DataRow();
 
-                                    row.initFromDataPage(
-                                        io,
-                                        pageAddr,
-                                        i,
-                                        grp,
-                                        shared,
-                                        pageMem,
-                                        rowData,
-                                        skipVer
-                                    );
+                                row.initFromDataPage(
+                                    io,
+                                    pageAddr,
+                                    i,
+                                    grp,
+                                    shared,
+                                    pageMem,
+                                    rowData,
+                                    skipVer
+                                );
 
-                                    rows[r++] = row;
-                                }
+                                rows[r++] = row;
                             }
 
                             if (r == 0)
@@ -372,9 +367,7 @@ public class CacheDataTree extends BPlusTree<CacheSearchRow, CacheDataRow> {
 
         assert row.key() != null : row;
 
-        cmp = compareKeys(row.key(), link);
-
-        return cmp;
+        return compareKeys(row.key(), link);
     }
 
     /** {@inheritDoc} */

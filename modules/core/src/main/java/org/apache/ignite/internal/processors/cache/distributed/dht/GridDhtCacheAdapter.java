@@ -74,7 +74,6 @@ import org.apache.ignite.internal.processors.cache.distributed.near.GridNearGetR
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearGetResponse;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearSingleGetRequest;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearSingleGetResponse;
-import org.apache.ignite.internal.processors.cache.mvcc.MvccSnapshot;
 import org.apache.ignite.internal.processors.cache.persistence.CacheDataRow;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.processors.platform.cache.PlatformCacheEntryFilter;
@@ -677,8 +676,7 @@ public abstract class GridDhtCacheAdapter<K, V> extends GridDistributedCacheAdap
             /*keep cache objects*/false,
             opCtx != null && opCtx.recovery(),
             needVer,
-            null,
-            null); // TODO IGNITE-7371
+            null);
     }
 
     /**
@@ -692,7 +690,6 @@ public abstract class GridDhtCacheAdapter<K, V> extends GridDistributedCacheAdap
      * @param keepCacheObjects Keep cache objects.
      * @param needVer If {@code true} returns values as tuples containing value and version.
      * @param txLbl Transaction label.
-     * @param mvccSnapshot MVCC snapshot.
      * @return Future.
      */
     private <K1, V1> IgniteInternalFuture<Map<K1, V1>> getAllAsync0(
@@ -706,13 +703,10 @@ public abstract class GridDhtCacheAdapter<K, V> extends GridDistributedCacheAdap
         final boolean keepCacheObjects,
         final boolean recovery,
         final boolean needVer,
-        @Nullable String txLbl,
-        MvccSnapshot mvccSnapshot
+        @Nullable String txLbl
     ) {
         if (F.isEmpty(keys))
             return new GridFinishedFuture<>(Collections.emptyMap());
-
-        assert mvccSnapshot == null;
 
         Map<KeyCacheObject, EntryGetResult> misses = null;
 
@@ -1065,7 +1059,6 @@ public abstract class GridDhtCacheAdapter<K, V> extends GridDistributedCacheAdap
      * @param expiry Expiry policy.
      * @param skipVals Skip values flag.
      * @param txLbl Transaction label.
-     * @param mvccSnapshot MVCC snapshot.
      * @return Get future.
      */
     IgniteInternalFuture<Map<KeyCacheObject, EntryGetResult>> getDhtAllAsync(
@@ -1076,8 +1069,7 @@ public abstract class GridDhtCacheAdapter<K, V> extends GridDistributedCacheAdap
         @Nullable IgniteCacheExpiryPolicy expiry,
         boolean skipVals,
         boolean recovery,
-        @Nullable String txLbl,
-        MvccSnapshot mvccSnapshot
+        @Nullable String txLbl
     ) {
         return getAllAsync0(keys,
             readerArgs,
@@ -1089,8 +1081,7 @@ public abstract class GridDhtCacheAdapter<K, V> extends GridDistributedCacheAdap
             /*keep cache objects*/true,
             recovery,
             /*need version*/true,
-            txLbl,
-            mvccSnapshot);
+            txLbl);
     }
 
     /**
@@ -1104,7 +1095,6 @@ public abstract class GridDhtCacheAdapter<K, V> extends GridDistributedCacheAdap
      * @param expiry Expiry policy.
      * @param skipVals Skip values flag.
      * @param txLbl Transaction label.
-     * @param mvccSnapshot MVCC snapshot.
      * @return DHT future.
      */
     public GridDhtFuture<Collection<GridCacheEntryInfo>> getDhtAsync(UUID reader,
@@ -1117,8 +1107,7 @@ public abstract class GridDhtCacheAdapter<K, V> extends GridDistributedCacheAdap
         @Nullable IgniteCacheExpiryPolicy expiry,
         boolean skipVals,
         boolean recovery,
-        @Nullable String txLbl,
-        MvccSnapshot mvccSnapshot
+        @Nullable String txLbl
     ) {
         GridDhtGetFuture<K, V> fut = new GridDhtGetFuture<>(ctx,
             msgId,
@@ -1131,8 +1120,7 @@ public abstract class GridDhtCacheAdapter<K, V> extends GridDistributedCacheAdap
             skipVals,
             recovery,
             addReaders,
-            txLbl,
-            mvccSnapshot);
+            txLbl);
 
         fut.init();
 
@@ -1150,7 +1138,6 @@ public abstract class GridDhtCacheAdapter<K, V> extends GridDistributedCacheAdap
      * @param expiry Expiry.
      * @param skipVals Skip vals flag.
      * @param txLbl Transaction label.
-     * @param mvccSnapshot Mvcc snapshot.
      * @return Future for the operation.
      */
     GridDhtGetSingleFuture getDhtSingleAsync(
@@ -1164,8 +1151,7 @@ public abstract class GridDhtCacheAdapter<K, V> extends GridDistributedCacheAdap
         @Nullable IgniteCacheExpiryPolicy expiry,
         boolean skipVals,
         boolean recovery,
-        String txLbl,
-        MvccSnapshot mvccSnapshot
+        String txLbl
     ) {
         GridDhtGetSingleFuture fut = new GridDhtGetSingleFuture<>(
             ctx,
@@ -1179,8 +1165,7 @@ public abstract class GridDhtCacheAdapter<K, V> extends GridDistributedCacheAdap
             expiry,
             skipVals,
             recovery,
-            txLbl,
-            mvccSnapshot);
+            txLbl);
 
         fut.init();
 
@@ -1208,8 +1193,7 @@ public abstract class GridDhtCacheAdapter<K, V> extends GridDistributedCacheAdap
                 expiryPlc,
                 req.skipValues(),
                 req.recovery(),
-                req.txLabel(),
-                req.mvccSnapshot());
+                req.txLabel());
 
         fut.listen(new CI1<IgniteInternalFuture<GridCacheEntryInfo>>() {
             @Override public void apply(IgniteInternalFuture<GridCacheEntryInfo> f) {
@@ -1313,8 +1297,7 @@ public abstract class GridDhtCacheAdapter<K, V> extends GridDistributedCacheAdap
                 expiryPlc,
                 req.skipValues(),
                 req.recovery(),
-                req.txLabel(),
-                req.mvccSnapshot());
+                req.txLabel());
 
         fut.listen(new CI1<IgniteInternalFuture<Collection<GridCacheEntryInfo>>>() {
             @Override public void apply(IgniteInternalFuture<Collection<GridCacheEntryInfo>> f) {
@@ -1582,7 +1565,6 @@ public abstract class GridDhtCacheAdapter<K, V> extends GridDistributedCacheAdap
      * @return {@code True} if cache affinity changed and operation should be remapped.
      */
     protected final boolean needRemap(AffinityTopologyVersion rmtVer) {
-        // TODO IGNITE-7164 check mvcc crd for mvcc enabled txs.
         return !ctx.affinity().isCompatibleWithCurrentTopologyVersion(rmtVer);
     }
 

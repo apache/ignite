@@ -30,6 +30,7 @@ import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
+import org.apache.calcite.sql.type.SqlTypeName;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.binary.BinaryObjectBuilder;
@@ -569,6 +570,68 @@ public class TableDmlIntegrationTest extends AbstractBasicIntegrationTest {
         checkWrongDefault("VARBINARY", "'10'");
         checkWrongDefault("VARBINARY", "10");
         checkWrongDefault("UUID", "FALSE");
+    }
+
+    /**
+     * Test checks the impossibility of inserting duplicate keys.
+     */
+    @Test
+    public void testInsertDuplicateKey() {
+        executeSql("CREATE TABLE test (a int primary key, b int)");
+
+        executeSql("INSERT INTO test VALUES (0, 0)");
+        executeSql("INSERT INTO test VALUES (1, 1)");
+
+        assertThrows("INSERT INTO test VALUES (1, 2)", IgniteSQLException.class,
+                "Failed to INSERT some keys because they are already in cache");
+    }
+
+    /** */
+    @Test
+    public void testInsertValueOverflow() {
+        List<List<Object>> args = F.asList(
+            F.asList(SqlTypeName.BIGINT.getName(), Long.MAX_VALUE, Long.MIN_VALUE),
+            F.asList(SqlTypeName.INTEGER.getName(), (long)Integer.MAX_VALUE, (long)Integer.MIN_VALUE),
+            F.asList(SqlTypeName.SMALLINT.getName(), (long)Short.MAX_VALUE, (long)Short.MIN_VALUE),
+            F.asList(SqlTypeName.TINYINT.getName(), (long)Byte.MAX_VALUE, (long)Byte.MIN_VALUE)
+        );
+
+        for (List<Object> arg : args) {
+            try {
+                String type = (String)arg.get(0);
+                long max = (Long)arg.get(1);
+                long min = (Long)arg.get(2);
+
+                sql(String.format("CREATE TABLE TEST_SOURCE (ID INT PRIMARY KEY, VAL %s)", type));
+                sql(String.format("CREATE TABLE TEST_DEST (ID INT PRIMARY KEY, VAL %s)", type));
+
+                sql("INSERT INTO TEST_SOURCE VALUES (1, 1)");
+                sql(String.format("INSERT INTO TEST_SOURCE VALUES (2, %d)", max));
+                sql("INSERT INTO TEST_SOURCE VALUES (3, -1)");
+                sql(String.format("INSERT INTO TEST_SOURCE VALUES (4, %d)", min));
+
+                BigDecimal moreThanMax = new BigDecimal(max).add(BigDecimal.ONE);
+
+                assertThrows(String.format("INSERT INTO TEST_DEST (ID, VAL) VALUES (1, %s)", moreThanMax.toString()),
+                    IgniteSQLException.class, type + " overflow");
+                assertThrows(String.format("INSERT INTO TEST_DEST (ID, VAL) VALUES (1, %d + 1)", max),
+                    IgniteSQLException.class, type + " overflow");
+                assertThrows(String.format("INSERT INTO TEST_DEST (ID, VAL) VALUES (1, %d - 1)", min),
+                    IgniteSQLException.class, type + " overflow");
+                assertThrows(String.format("INSERT INTO TEST_DEST (ID, VAL) VALUES (1, %d + (SELECT 1))", max),
+                    IgniteSQLException.class, type + " overflow");
+                assertThrows(String.format("INSERT INTO TEST_DEST (ID, VAL) VALUES (1, %d + (SELECT -1))", min),
+                    IgniteSQLException.class, type + " overflow");
+                assertThrows("INSERT INTO TEST_DEST (ID, VAL) VALUES (1, (SELECT SUM(VAL) FROM TEST_SOURCE WHERE VAL > 0))",
+                    IgniteSQLException.class, type + " overflow");
+                assertThrows("INSERT INTO TEST_DEST (ID, VAL) VALUES (1, (SELECT SUM(VAL) FROM TEST_SOURCE WHERE VAL < 0))",
+                    IgniteSQLException.class, type + " overflow");
+            }
+            finally {
+                sql("DROP TABLE TEST_SOURCE");
+                sql("DROP TABLE TEST_DEST");
+            }
+        }
     }
 
     /** */

@@ -29,7 +29,6 @@ import org.apache.ignite.compute.ComputeJobResult;
 import org.apache.ignite.internal.management.api.NoArg;
 import org.apache.ignite.internal.processors.cache.persistence.snapshot.IgniteSnapshotManager;
 import org.apache.ignite.internal.processors.cache.persistence.snapshot.SnapshotOperationRequest;
-import org.apache.ignite.internal.processors.metric.MetricRegistry;
 import org.apache.ignite.internal.processors.task.GridInternal;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.T5;
@@ -37,6 +36,7 @@ import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.visor.VisorJob;
 import org.apache.ignite.internal.visor.VisorMultiNodeTask;
 import org.apache.ignite.internal.visor.VisorTaskArgument;
+import org.apache.ignite.metric.MetricRegistry;
 import org.apache.ignite.spi.metric.IntMetric;
 import org.apache.ignite.spi.metric.LongMetric;
 import org.jetbrains.annotations.Nullable;
@@ -49,7 +49,7 @@ import static org.apache.ignite.internal.processors.cache.persistence.snapshot.S
  * Task to get the status of the current snapshot operation in the cluster.
  */
 @GridInternal
-public class SnapshotStatusTask extends VisorMultiNodeTask<NoArg, SnapshotTaskResult, SnapshotStatus> {
+public class SnapshotStatusTask extends VisorMultiNodeTask<NoArg, SnapshotStatus, SnapshotStatus> {
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -64,21 +64,21 @@ public class SnapshotStatusTask extends VisorMultiNodeTask<NoArg, SnapshotTaskRe
     }
 
     /** {@inheritDoc} */
-    @Nullable @Override protected SnapshotTaskResult reduce0(List<ComputeJobResult> results) {
+    @Nullable @Override protected SnapshotStatus reduce0(List<ComputeJobResult> results) {
         if (results.isEmpty())
-            return new SnapshotTaskResult(null, new IgniteException("Failed to get the snapshot status. Topology is empty."));
+            throw new IgniteException("Failed to get the snapshot status. Topology is empty.");
 
         IgniteException error = F.find(F.viewReadOnly(results, ComputeJobResult::getException,
             r -> r.getException() != null), null, F.notNull());
 
         if (error != null)
-            return new SnapshotTaskResult(null, new IgniteException("Failed to get the snapshot status.", error));
+            throw new IgniteException("Failed to get the snapshot status.", error);
 
         Collection<SnapshotStatus> res = F.viewReadOnly(results, ComputeJobResult::getData, r -> r.getData() != null);
 
         // There is no snapshot operation.
         if (res.isEmpty())
-            return new SnapshotTaskResult(null, null);
+            return null;
 
         SnapshotStatus s0 = F.first(res);
 
@@ -90,7 +90,7 @@ public class SnapshotStatusTask extends VisorMultiNodeTask<NoArg, SnapshotTaskRe
 
         res.forEach(s -> progress.putAll(s.progress));
 
-        return new SnapshotTaskResult(new SnapshotStatus(s0.op, s0.name, s0.incIdx, s0.requestId, s0.startTime, progress), null);
+        return new SnapshotStatus(s0.op, s0.name, s0.incIdx, s0.requestId, s0.startTime, progress);
     }
 
     /** */

@@ -24,7 +24,7 @@ import java.util.Map;
 import java.util.UUID;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.management.metric.MetricCommand;
-import org.apache.ignite.internal.processors.metric.MetricRegistry;
+import org.apache.ignite.internal.processors.metric.MetricRegistryImpl;
 import org.apache.ignite.internal.processors.metric.impl.HistogramMetricImpl;
 import org.apache.ignite.internal.processors.metric.impl.HitRateMetric;
 import org.apache.ignite.internal.util.typedef.F;
@@ -108,7 +108,7 @@ public class MetricCommandTest extends GridCommandHandlerClusterByClassAbstractT
 
         assertContains(log,
             executeCommand(EXIT_CODE_INVALID_ARGUMENTS, CMD_METRIC, "--node-id", incorrectNodeId, IGNITE_METRICS),
-            "Failed to perform operation.\nNode with id=" + incorrectNodeId + " not found");
+            "Check arguments. Node with id=" + incorrectNodeId + " not found");
     }
 
     /** Tests command output in case nonexistent metric name is specified. */
@@ -186,7 +186,7 @@ public class MetricCommandTest extends GridCommandHandlerClusterByClassAbstractT
 
         ignite0.context().metric().remove(mregName);
 
-        MetricRegistry mreg = ignite0.context().metric().registry(mregName);
+        MetricRegistryImpl mreg = ignite0.context().metric().registry(mregName);
 
         long[] bounds = new long[] {50, 500};
 
@@ -215,7 +215,7 @@ public class MetricCommandTest extends GridCommandHandlerClusterByClassAbstractT
 
         ignite0.context().metric().remove(mregName);
 
-        MetricRegistry mreg = ignite0.context().metric().registry(mregName);
+        MetricRegistryImpl mreg = ignite0.context().metric().registry(mregName);
 
         HitRateMetric hitrate = mreg.hitRateMetric("hitrate", null, 500, 5);
 
@@ -233,7 +233,7 @@ public class MetricCommandTest extends GridCommandHandlerClusterByClassAbstractT
 
         ignite0.context().metric().remove(mregName);
 
-        MetricRegistry mreg = ignite0.context().metric().registry(mregName);
+        MetricRegistryImpl mreg = ignite0.context().metric().registry(mregName);
 
         long[] bounds = new long[] {50, 500};
 
@@ -279,7 +279,7 @@ public class MetricCommandTest extends GridCommandHandlerClusterByClassAbstractT
     public void testNodeIdArgument() {
         String mregName = "boolean-metric-registry";
 
-        MetricRegistry mreg = ignite0.context().metric().registry(mregName);
+        MetricRegistryImpl mreg = ignite0.context().metric().registry(mregName);
 
         mreg.booleanMetric("boolean-metric", "");
 
@@ -298,7 +298,7 @@ public class MetricCommandTest extends GridCommandHandlerClusterByClassAbstractT
 
         ignite0.context().metric().remove(mregName);
 
-        MetricRegistry mreg = ignite0.context().metric().registry(mregName);
+        MetricRegistryImpl mreg = ignite0.context().metric().registry(mregName);
 
         mreg.booleanMetric("boolean-metric", "");
         mreg.longMetric("long-metric", "").increment();
@@ -329,7 +329,7 @@ public class MetricCommandTest extends GridCommandHandlerClusterByClassAbstractT
     public void testBooleanMetrics() {
         String mregName = "boolean-metric-registry";
 
-        MetricRegistry mreg = ignite0.context().metric().registry(mregName);
+        MetricRegistryImpl mreg = ignite0.context().metric().registry(mregName);
 
         mreg.booleanMetric("boolean-metric", "");
 
@@ -347,7 +347,7 @@ public class MetricCommandTest extends GridCommandHandlerClusterByClassAbstractT
 
         ignite0.context().metric().remove(mregName);
 
-        MetricRegistry mreg = ignite0.context().metric().registry(mregName);
+        MetricRegistryImpl mreg = ignite0.context().metric().registry(mregName);
 
         mreg.longMetric("long-metric", "").add(Long.MAX_VALUE);
 
@@ -365,7 +365,7 @@ public class MetricCommandTest extends GridCommandHandlerClusterByClassAbstractT
 
         ignite0.context().metric().remove(mregName);
 
-        MetricRegistry mreg = ignite0.context().metric().registry(mregName);
+        MetricRegistryImpl mreg = ignite0.context().metric().registry(mregName);
 
         mreg.intMetric("int-metric", "").add(Integer.MAX_VALUE);
 
@@ -383,7 +383,7 @@ public class MetricCommandTest extends GridCommandHandlerClusterByClassAbstractT
 
         ignite0.context().metric().remove(mregName);
 
-        MetricRegistry mreg = ignite0.context().metric().registry(mregName);
+        MetricRegistryImpl mreg = ignite0.context().metric().registry(mregName);
 
         mreg.doubleMetric("double-metric", "").add(111.222);
 
@@ -399,7 +399,7 @@ public class MetricCommandTest extends GridCommandHandlerClusterByClassAbstractT
     public void testObjectMetrics() {
         String mregName = "object-registry";
 
-        MetricRegistry mreg = ignite0.context().metric().registry(mregName);
+        MetricRegistryImpl mreg = ignite0.context().metric().registry(mregName);
 
         Object metricVal = new Object() {
             @Override public String toString() {
@@ -423,7 +423,7 @@ public class MetricCommandTest extends GridCommandHandlerClusterByClassAbstractT
 
         ignite0.context().metric().remove(mregName);
 
-        MetricRegistry mreg = ignite0.context().metric().registry(mregName);
+        MetricRegistryImpl mreg = ignite0.context().metric().registry(mregName);
 
         mreg.hitRateMetric("hitrate-metric", "", getTestTimeout(), 2).add(Integer.MAX_VALUE);
 

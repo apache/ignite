@@ -44,7 +44,7 @@ import static org.apache.ignite.internal.visor.util.VisorTaskUtils.logStart;
  * @param <R> Task result type.
  * @param <J> Job result type
  */
-public abstract class VisorMultiNodeTask<A, R, J> implements ComputeTask<VisorTaskArgument<A>, R> {
+public abstract class VisorMultiNodeTask<A, R, J> implements ComputeTask<VisorTaskArgument<A>, VisorTaskResult<R>> {
     /** Auto-injected grid instance. */
     @IgniteInstanceResource
     protected transient IgniteEx ignite;
@@ -135,9 +135,12 @@ public abstract class VisorMultiNodeTask<A, R, J> implements ComputeTask<VisorTa
     @Nullable protected abstract R reduce0(List<ComputeJobResult> results) throws IgniteException;
 
     /** {@inheritDoc} */
-    @Nullable @Override public final R reduce(List<ComputeJobResult> results) {
+    @Nullable @Override public final VisorTaskResult<R> reduce(List<ComputeJobResult> results) {
         try {
-            return reduce0(results);
+            return new VisorTaskResult<>(reduce0(results), null);
+        }
+        catch (Exception e) {
+            return new VisorTaskResult<>(null, e);
         }
         finally {
             if (debug)

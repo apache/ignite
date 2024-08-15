@@ -37,6 +37,7 @@ import org.apache.ignite.internal.cdc.CdcMain;
 import org.apache.ignite.internal.processors.cache.persistence.snapshot.SnapshotMetadata;
 import org.apache.ignite.internal.processors.cache.persistence.snapshot.dump.Dump;
 import org.apache.ignite.internal.processors.cache.persistence.snapshot.dump.Dump.DumpedPartitionIterator;
+import org.apache.ignite.internal.processors.cache.persistence.snapshot.dump.DumpConsumerKernalContextAware;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -77,10 +78,13 @@ public class DumpReader implements Runnable {
     @Override public void run() {
         ackAsciiLogo();
 
-        try (Dump dump = new Dump(cfg.dumpRoot(), null, cfg.keepBinary(), false, encryptionSpi(), log)) {
+        try (Dump dump = new Dump(cfg.dumpRoot(), null, cfg.keepBinary(), cfg.keepRaw(), encryptionSpi(), log)) {
             DumpConsumer cnsmr = cfg.consumer();
 
-            cnsmr.start();
+            if (cnsmr instanceof DumpConsumerKernalContextAware)
+                ((DumpConsumerKernalContextAware)cnsmr).start(dump.context());
+            else
+                cnsmr.start();
 
             try {
                 File[] files = new File(cfg.dumpRoot(), DFLT_MARSHALLER_PATH).listFiles(BinaryUtils::notTmpFile);
@@ -97,7 +101,7 @@ public class DumpReader implements Runnable {
                     : null;
 
                 for (SnapshotMetadata meta : dump.metadata()) {
-                    for (Integer grp : meta.cacheGroupIds()) {
+                    for (Integer grp : meta.partitions().keySet()) {
                         if (cacheGrpIds == null || cacheGrpIds.contains(grp))
                             grpToNodes.computeIfAbsent(grp, key -> new ArrayList<>()).add(meta.folderName());
                     }

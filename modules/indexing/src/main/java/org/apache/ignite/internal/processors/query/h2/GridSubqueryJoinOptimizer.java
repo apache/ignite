@@ -270,7 +270,6 @@ public class GridSubqueryJoinOptimizer {
      * <p>
      * We call query simple if it is select query (not union) and it has neither having nor grouping,
      * has no distinct clause, has no aggregations, has no limits, no sorting, no offset clause.
-     * Also it is not SELECT FOR UPDATE.
      *
      * @param subQry Sub query.
      * @return {@code true} if it is simple query.
@@ -284,7 +283,6 @@ public class GridSubqueryJoinOptimizer {
         boolean simple = F.isEmpty(select.sort())
             && select.offset() == null
             && select.limit() == null
-            && !select.isForUpdate()
             && !select.distinct()
             && select.havingColumn() < 0
             && F.isEmpty(select.groupColumns());
@@ -414,8 +412,10 @@ public class GridSubqueryJoinOptimizer {
         remapColumns(
             parent,
             subSel,
-            // reference equality used intentionally here
-            col -> wrappedSubQry == col.expressionInFrom(),
+            // In case of several nested subqueries, inner subqueries are wrapped into alias of outer subqueries,
+            // to check column belonging correctly we should unwrap aliases.
+            // Reference equality used intentionally here.
+            col -> GridSqlAlias.unwrap(wrappedSubQry) == GridSqlAlias.unwrap(col.expressionInFrom()),
             subTbl
         );
 

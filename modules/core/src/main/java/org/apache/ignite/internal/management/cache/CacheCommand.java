@@ -20,6 +20,7 @@ package org.apache.ignite.internal.management.cache;
 import org.apache.ignite.internal.management.api.CommandRegistryImpl;
 import org.apache.ignite.internal.management.api.HelpCommand;
 import org.apache.ignite.internal.management.api.NoArg;
+import org.apache.ignite.internal.management.cache.scan.CacheScanCommand;
 
 /** */
 public class CacheCommand extends CommandRegistryImpl<NoArg, Void> {

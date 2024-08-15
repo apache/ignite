@@ -142,7 +142,6 @@ import org.apache.ignite.internal.processors.cluster.ChangeGlobalStateMessage;
 import org.apache.ignite.internal.processors.cluster.DiscoveryDataClusterState;
 import org.apache.ignite.internal.processors.compress.CompressionHandler;
 import org.apache.ignite.internal.processors.datastructures.DataStructuresProcessor;
-import org.apache.ignite.internal.processors.metric.MetricRegistry;
 import org.apache.ignite.internal.processors.platform.cache.PlatformCacheManager;
 import org.apache.ignite.internal.processors.plugin.CachePluginManager;
 import org.apache.ignite.internal.processors.query.QuerySchema;
@@ -183,6 +182,7 @@ import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.lifecycle.LifecycleAware;
 import org.apache.ignite.marshaller.Marshaller;
 import org.apache.ignite.marshaller.MarshallerUtils;
+import org.apache.ignite.metric.MetricRegistry;
 import org.apache.ignite.mxbean.IgniteMBeanAware;
 import org.apache.ignite.plugin.security.SecurityException;
 import org.apache.ignite.plugin.security.SecurityPermission;
@@ -653,7 +653,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
      * @param cacheObjCtx Cache object context.
      * @throws IgniteCheckedException If configuration is not valid.
      */
-    void initialize(CacheConfiguration cfg, CacheObjectContext cacheObjCtx) throws IgniteCheckedException {
+    void initialize(CacheConfiguration<?, ?> cfg, CacheObjectContext cacheObjCtx) throws IgniteCheckedException {
         CU.initializeConfigDefaults(log, cfg, cacheObjCtx);
     }
 

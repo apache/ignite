@@ -36,6 +36,7 @@ import org.apache.ignite.marshaller.MarshallerContext;
 
 import static java.nio.file.StandardCopyOption.ATOMIC_MOVE;
 import static java.nio.file.StandardCopyOption.REPLACE_EXISTING;
+import static org.apache.ignite.internal.MarshallerPlatformIds.otherPlatforms;
 import static org.apache.ignite.internal.binary.BinaryUtils.MAPPING_FILE_EXTENSION;
 import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.TMP_SUFFIX;
 
@@ -74,6 +75,29 @@ final class MarshallerMappingFileStore {
         log = kctx.log(MarshallerMappingFileStore.class);
 
         fixLegacyFolder();
+    }
+
+    /** Drop appropriate mapping file. */
+    void deleteMapping(int typeId) {
+        byte[] allPlatforms = otherPlatforms((byte)-1);
+
+        for (byte platformId : allPlatforms) {
+            String fileName = BinaryUtils.mappingFileName(platformId, typeId);
+
+            File file = new File(mappingDir, fileName);
+
+            if (file.exists()) {
+                if (log.isDebugEnabled()) {
+                    log.debug("Try to remove: " + file.getAbsolutePath());
+                }
+
+                if (!file.delete()) {
+                    final String msg = "Failed to remove mapping for typeId: " + typeId;
+
+                    U.error(log, msg);
+                }
+            }
+        }
     }
 
     /**

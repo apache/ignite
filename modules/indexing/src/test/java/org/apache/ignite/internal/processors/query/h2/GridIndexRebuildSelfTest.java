@@ -139,15 +139,8 @@ public class GridIndexRebuildSelfTest extends DynamicIndexAbstractSelfTest {
      *     <li>Restart the node and block index rebuild;</li>
      *     <li>For half of the keys do cache puts <b>before</b> corresponding key
      *     has been processed during index rebuild;</li>
-     *     <li>Check that:
-     *         <ul>
-     *             <li>For MVCC case: some keys have all versions that existed before restart, while those
-     *             updated concurrently have only put version (one with mark value -1)
-     *             and latest version present before node restart;</li>
-     *             <li>For non MVCC case: keys updated concurrently must have mark values of -1 despite that
-     *             index rebuild for them has happened after put.</li>
-     *         </ul>
-     *     </li>
+     *     <li>Check that keys updated concurrently must have mark values of -1 despite that
+     *     index rebuild for them has happened after put.</li>
      * </ul></p>
      * @throws Exception if failed.
      */

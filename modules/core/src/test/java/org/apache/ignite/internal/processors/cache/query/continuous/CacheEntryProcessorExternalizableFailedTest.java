@@ -559,27 +559,6 @@ public class CacheEntryProcessorExternalizableFailedTest extends GridCommonAbstr
         }
     }
 
-    /** */
-    @SuppressWarnings({"unchecked", "ThrowableNotThrown"})
-    private void checkExplicitMvccInvoke(Ignite node, IgniteCache cache, TransactionConcurrency txConcurrency,
-        TransactionIsolation txIsolation) {
-        try (final Transaction tx = node.transactions().txStart(txConcurrency, txIsolation)) {
-            cache.put(KEY, WRONG_VALUE);
-
-            GridTestUtils.assertThrowsWithCause(new Callable<Object>() {
-                @Override public Object call() throws Exception {
-                    cache.invoke(KEY, createEntryProcessor());
-
-                    fail("Should never happened.");
-
-                    tx.commit();
-
-                    return null;
-                }
-            }, UnsupportedOperationException.class);
-        }
-    }
-
     /**
      * @return Entry processor.
      */

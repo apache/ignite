@@ -39,7 +39,6 @@ import org.apache.ignite.internal.processors.cache.KeyCacheObject;
 import org.apache.ignite.internal.processors.cache.ReaderArguments;
 import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtInvalidPartitionException;
 import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtLocalPartition;
-import org.apache.ignite.internal.processors.cache.mvcc.MvccSnapshot;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.util.future.GridCompoundFuture;
 import org.apache.ignite.internal.util.future.GridCompoundIdentityFuture;
@@ -120,9 +119,6 @@ public final class GridDhtGetFuture<K, V> extends GridCompoundIdentityFuture<Col
     /** Transaction label. */
     private final String txLbl;
 
-    /** */
-    private final MvccSnapshot mvccSnapshot;
-
     /**
      * @param cctx Context.
      * @param msgId Message ID.
@@ -134,7 +130,6 @@ public final class GridDhtGetFuture<K, V> extends GridCompoundIdentityFuture<Col
      * @param expiryPlc Expiry policy.
      * @param skipVals Skip values flag.
      * @param txLbl Transaction label.
-     * @param mvccSnapshot MVCC snapshot.
      */
     public GridDhtGetFuture(
         GridCacheContext<K, V> cctx,
@@ -148,8 +143,7 @@ public final class GridDhtGetFuture<K, V> extends GridCompoundIdentityFuture<Col
         boolean skipVals,
         boolean recovery,
         boolean addReaders,
-        @Nullable String txLbl,
-        MvccSnapshot mvccSnapshot
+        @Nullable String txLbl
     ) {
         super(CU.<GridCacheEntryInfo>collectionsReducer(keys.size()));
 
@@ -168,7 +162,6 @@ public final class GridDhtGetFuture<K, V> extends GridCompoundIdentityFuture<Col
         this.recovery = recovery;
         this.addReaders = addReaders;
         this.txLbl = txLbl;
-        this.mvccSnapshot = mvccSnapshot;
 
         futId = IgniteUuid.randomUuid();
 
@@ -441,8 +434,7 @@ public final class GridDhtGetFuture<K, V> extends GridCompoundIdentityFuture<Col
                 expiryPlc,
                 skipVals,
                 recovery,
-                txLbl,
-                mvccSnapshot);
+                txLbl);
         }
         else {
             final ReaderArguments args = readerArgs;
@@ -465,8 +457,7 @@ public final class GridDhtGetFuture<K, V> extends GridCompoundIdentityFuture<Col
                             expiryPlc,
                             skipVals,
                             recovery,
-                            txLbl,
-                            mvccSnapshot);
+                            txLbl);
                     }
                 }
             );

@@ -94,13 +94,13 @@ public class IdleVerifyUtility {
      * @param partId Partition id.
      * @param pageType Page type. Possible types {@link PageIdAllocator#FLAG_DATA}, {@link PageIdAllocator#FLAG_IDX}
      *      and {@link PageIdAllocator#FLAG_AUX}.
-     * @param pagePostProcessor Page post processor closure.
+     * @param pagePostProc Page post processor closure.
      */
     public static void checkPartitionsPageCrcSum(
         IgniteThrowableSupplier<FilePageStore> pageStoreSup,
         int partId,
         byte pageType,
-        @Nullable BiConsumer<Long, ByteBuffer> pagePostProcessor
+        @Nullable BiConsumer<Long, ByteBuffer> pagePostProc
     ) {
         assert pageType == FLAG_DATA || pageType == FLAG_IDX || pageType == FLAG_AUX : pageType;
 
@@ -118,8 +118,8 @@ public class IdleVerifyUtility {
 
                 pageStore.read(pageId, buf, true, true);
 
-                if (pagePostProcessor != null)
-                    pagePostProcessor.accept(pageId, buf);
+                if (pagePostProc != null)
+                    pagePostProc.accept(pageId, buf);
             }
         }
         catch (Throwable e) {

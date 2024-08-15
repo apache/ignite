@@ -56,7 +56,6 @@ import org.apache.ignite.internal.processors.cache.CacheGroupContext;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.StoredCacheData;
 import org.apache.ignite.internal.processors.cache.persistence.snapshot.SnapshotMetadata;
-import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -228,7 +227,9 @@ public abstract class AbstractCacheDumpTest extends GridCommonAbstractTest {
     }
 
     /** */
-    protected T2<CountDownLatch, IgniteInternalFuture<?>> runDumpAsyncAndStopBeforeStart() throws IgniteInterruptedCheckedException {
+    protected T2<CountDownLatch, IgniteInternalFuture<?>> runDumpAsyncAndStopBeforeStart(
+        IgniteEx srv
+    ) throws IgniteInterruptedCheckedException {
         CountDownLatch latch = new CountDownLatch(1);
 
         List<Ignite> ignites = Ignition.allGrids();
@@ -244,7 +245,7 @@ public abstract class AbstractCacheDumpTest extends GridCommonAbstractTest {
             });
         }
 
-        IgniteInternalFuture<Object> dumpFut = runAsync(() -> createDump((IgniteEx)F.first(ignites)));
+        IgniteInternalFuture<Object> dumpFut = runAsync(() -> createDump(srv));
 
         // Waiting while dump will be setup: task planned after change listener set.
         assertTrue(waitForCondition(() -> {
@@ -344,82 +345,7 @@ public abstract class AbstractCacheDumpTest extends GridCommonAbstractTest {
 
         assertEquals(nodes, nodesDirs.size());
 
-        TestDumpConsumer cnsmr = new TestDumpConsumer() {
-            final Set<Integer> keys = new HashSet<>();
-
-            final Set<Long> grpParts = new HashSet<>();
-
-            int dfltDumpSz;
-
-            int grpDumpSz;
-
-            @Override public void onCacheConfigs(Iterator<StoredCacheData> caches) {
-                super.onCacheConfigs(caches);
-
-                Set<String> cachesFound = new HashSet<>();
-
-                caches.forEachRemaining(data -> {
-                    String cacheName = data.config().getName();
-
-                    assertTrue(cachesFound.add(cacheName));
-
-                    assertEquals(cacheName, data.configuration().getName());
-
-                    assertFalse(data.sql());
-
-                    assertTrue(data.queryEntities().isEmpty());
-
-                    if (cacheName.startsWith("cache-"))
-                        assertEquals(GRP, data.configuration().getGroupName());
-                    else if (!cacheName.equals(DEFAULT_CACHE_NAME))
-                        throw new IgniteException("Unknown cache");
-                });
-
-                assertEquals(expectedFoundCaches, cachesFound);
-            }
-
-            @Override public void onPartition(int grp, int part, Iterator<DumpEntry> iter) {
-                if (onlyPrimary)
-                    assertTrue(grpParts.add(toLong(grp, part)));
-
-                if (grp == CU.cacheId(DEFAULT_CACHE_NAME)) {
-                    while (iter.hasNext()) {
-                        DumpEntry e = iter.next();
-
-                        checkDefaultCacheEntry(e);
-
-                        keys.add((Integer)e.key());
-
-                        dfltDumpSz++;
-                    }
-                }
-                else {
-                    while (iter.hasNext()) {
-                        DumpEntry e = iter.next();
-
-                        assertNotNull(e);
-                        assertNotNull(e.version());
-                        assertNull(e.version().otherClusterVersion());
-
-                        if (e.cacheId() == CU.cacheId(CACHE_0))
-                            assertEquals(USER_FACTORY.apply((Integer)e.key()), e.value());
-                        else
-                            assertEquals(((Key)e.key()).getId() + "", ((Value)e.value()).getVal());
-
-                        grpDumpSz++;
-                    }
-                }
-            }
-
-            @Override public void check() {
-                super.check();
-
-                assertEquals(expectedDfltDumpSz, dfltDumpSz);
-                assertEquals(expectedGrpDumpSz, grpDumpSz);
-
-                IntStream.range(0, expectedCnt).forEach(key -> assertTrue(keys.contains(key)));
-            }
-        };
+        TestDumpConsumer cnsmr = dumpConsumer(expectedFoundCaches, expectedDfltDumpSz, expectedGrpDumpSz, expectedCnt);
 
         new DumpReader(
             new DumpReaderConfiguration(
@@ -427,6 +353,7 @@ public abstract class AbstractCacheDumpTest extends GridCommonAbstractTest {
                 cnsmr,
                 DFLT_THREAD_CNT, DFLT_TIMEOUT,
                 true,
+                false,
                 false,
                 cacheGrpNames,
                 skipCopies,
@@ -439,14 +366,13 @@ public abstract class AbstractCacheDumpTest extends GridCommonAbstractTest {
     }
 
     /** */
-    protected void checkDefaultCacheEntry(DumpEntry e) {
-        assertNotNull(e);
-
-        Integer key = (Integer)e.key();
-
-        assertEquals(key, e.value());
-        assertNotNull(e.version());
-        assertNull(e.version().otherClusterVersion());
+    protected TestDumpConsumer dumpConsumer(
+        Set<String> expectedFoundCaches,
+        int expectedDfltDumpSz,
+        int expectedGrpDumpSz,
+        int expectedCnt
+    ) {
+        return new TestDumpConsumerImpl(expectedFoundCaches, expectedDfltDumpSz, expectedGrpDumpSz, expectedCnt);
     }
 
     /** */
@@ -574,6 +500,122 @@ public abstract class AbstractCacheDumpTest extends GridCommonAbstractTest {
         encSpi.setKeyStorePassword(KEYSTORE_PASSWORD.toCharArray());
 
         return encSpi;
+    }
+
+    /** */
+    public class TestDumpConsumerImpl extends TestDumpConsumer {
+        /** */
+        private final Set<String> expectedFoundCaches;
+
+        /** */
+        private final int expectedDfltDumpSz;
+
+        /** */
+        private final int expectedGrpDumpSz;
+
+        /** */
+        private final int expectedCnt;
+
+        /** */
+        final Set<Integer> keys = new HashSet<>();
+
+        /** */
+        final Set<Long> grpParts = new HashSet<>();
+
+        /** */
+        int dfltDumpSz;
+
+        /** */
+        int grpDumpSz;
+
+        /** */
+        protected TestDumpConsumerImpl(Set<String> expectedFoundCaches, int expectedDfltDumpSz, int expectedGrpDumpSz, int expectedCnt) {
+            this.expectedFoundCaches = expectedFoundCaches;
+            this.expectedDfltDumpSz = expectedDfltDumpSz;
+            this.expectedGrpDumpSz = expectedGrpDumpSz;
+            this.expectedCnt = expectedCnt;
+        }
+
+        /** {@inheritDoc} */
+        @Override public void onCacheConfigs(Iterator<StoredCacheData> caches) {
+            super.onCacheConfigs(caches);
+
+            Set<String> cachesFound = new HashSet<>();
+
+            caches.forEachRemaining(data -> {
+                String cacheName = data.config().getName();
+
+                assertTrue(cachesFound.add(cacheName));
+
+                assertEquals(cacheName, data.configuration().getName());
+
+                assertFalse(data.sql());
+
+                assertTrue(data.queryEntities().isEmpty());
+
+                if (cacheName.startsWith("cache-"))
+                    assertEquals(GRP, data.configuration().getGroupName());
+                else if (!cacheName.equals(DEFAULT_CACHE_NAME))
+                    throw new IgniteException("Unknown cache");
+            });
+
+            assertEquals(expectedFoundCaches, cachesFound);
+        }
+
+        /** {@inheritDoc} */
+        @Override public void onPartition(int grp, int part, Iterator<DumpEntry> iter) {
+            if (onlyPrimary)
+                assertTrue(grpParts.add(toLong(grp, part)));
+
+            if (grp == CU.cacheId(DEFAULT_CACHE_NAME)) {
+                while (iter.hasNext()) {
+                    DumpEntry e = iter.next();
+
+                    checkDefaultCacheEntry(e);
+
+                    keys.add((Integer)e.key());
+
+                    dfltDumpSz++;
+                }
+            }
+            else {
+                while (iter.hasNext()) {
+                    DumpEntry e = iter.next();
+
+                    assertNotNull(e);
+                    assertNotNull(e.version());
+                    assertNull(e.version().otherClusterVersion());
+
+                    if (e.cacheId() == CU.cacheId(CACHE_0))
+                        assertEquals(USER_FACTORY.apply((Integer)e.key()), e.value());
+                    else
+                        assertEquals(((Key)e.key()).getId() + "", ((Value)e.value()).getVal());
+
+                    grpDumpSz++;
+                }
+            }
+        }
+
+        /** {@inheritDoc} */
+        @Override public void check() {
+            super.check();
+
+            assertEquals(expectedDfltDumpSz, dfltDumpSz);
+            assertEquals(expectedGrpDumpSz, grpDumpSz);
+
+            IntStream.range(0, expectedCnt).forEach(key -> assertTrue(keys.contains(key)));
+        }
+
+        /** */
+        protected void checkDefaultCacheEntry(DumpEntry e) {
+            assertNotNull(e);
+
+            Integer key = (Integer)e.key();
+
+            assertEquals(key, e.value());
+            assertNotNull(e.version());
+            assertNull(e.version().otherClusterVersion());
+        }
     }
 
     /** */

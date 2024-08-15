@@ -227,11 +227,9 @@ import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.IgnitePeerToPeerClassLoadingException;
 import org.apache.ignite.internal.processors.cluster.BaselineTopology;
-import org.apache.ignite.internal.transactions.IgniteTxAlreadyCompletedCheckedException;
 import org.apache.ignite.internal.transactions.IgniteTxHeuristicCheckedException;
 import org.apache.ignite.internal.transactions.IgniteTxOptimisticCheckedException;
 import org.apache.ignite.internal.transactions.IgniteTxRollbackCheckedException;
-import org.apache.ignite.internal.transactions.IgniteTxSerializationCheckedException;
 import org.apache.ignite.internal.transactions.IgniteTxTimeoutCheckedException;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.future.IgniteFinishedFutureImpl;
@@ -275,12 +273,10 @@ import org.apache.ignite.spi.discovery.DiscoverySpi;
 import org.apache.ignite.spi.discovery.DiscoverySpiOrderSupport;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.thread.IgniteThreadFactory;
-import org.apache.ignite.transactions.TransactionAlreadyCompletedException;
 import org.apache.ignite.transactions.TransactionDeadlockException;
 import org.apache.ignite.transactions.TransactionHeuristicException;
 import org.apache.ignite.transactions.TransactionOptimisticException;
 import org.apache.ignite.transactions.TransactionRollbackException;
-import org.apache.ignite.transactions.TransactionSerializationException;
 import org.apache.ignite.transactions.TransactionTimeoutException;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -1049,18 +1045,6 @@ public abstract class IgniteUtils {
                     ((IgniteClientDisconnectedCheckedException)e).reconnectFuture(),
                     e.getMessage(),
                     e);
-            }
-        });
-
-        m.put(IgniteTxSerializationCheckedException.class, new C1<IgniteCheckedException, IgniteException>() {
-            @Override public IgniteException apply(IgniteCheckedException e) {
-                return new TransactionSerializationException(e.getMessage(), e);
-            }
-        });
-
-        m.put(IgniteTxAlreadyCompletedCheckedException.class, new C1<IgniteCheckedException, IgniteException>() {
-            @Override public IgniteException apply(IgniteCheckedException e) {
-                return new TransactionAlreadyCompletedException(e.getMessage(), e);
             }
         });
 
@@ -10104,9 +10088,13 @@ public abstract class IgniteUtils {
      *      {@code null} if passed in name is not related to lambda.
      */
     @Nullable public static String lambdaEnclosingClassName(String clsName) {
-        int idx = clsName.indexOf("$$Lambda$");
+        int idx0 = clsName.indexOf("$$Lambda$"); // Java 8+
+        int idx1 = clsName.indexOf("$$Lambda/"); // Java 21+
 
-        return idx != -1 ? clsName.substring(0, idx) : null;
+        if (idx0 == idx1)
+            return null;
+
+        return clsName.substring(0, idx0 >= 0 ? idx0 : idx1);
     }
 
     /**

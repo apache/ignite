@@ -28,7 +28,6 @@ import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
-import javax.cache.CacheException;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteCheckedException;
@@ -59,9 +58,7 @@ import org.apache.ignite.internal.processors.query.schema.message.SchemaFinishDi
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.internal.util.typedef.T2;
-import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.U;
-import org.apache.ignite.transactions.TransactionSerializationException;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
@@ -387,10 +384,6 @@ public class DynamicEnableIndexingConcurrentSelfTest extends DynamicEnableIndexi
                         cache.put(i, val);
                     else
                         cache.remove(i);
-                }
-                catch (CacheException e) {
-                    if (!X.hasCause(e, TransactionSerializationException.class))
-                        throw e;
                 }
                 finally {
                     iterations.countDown();

@@ -46,7 +46,6 @@ import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtCacheAdapter;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtUnreservedPartitionException;
 import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionTopology;
-import org.apache.ignite.internal.processors.cache.mvcc.MvccSnapshot;
 import org.apache.ignite.internal.processors.query.QueryUtils;
 import org.apache.ignite.internal.util.GridCloseableIteratorAdapter;
 import org.apache.ignite.internal.util.GridEmptyCloseableIterator;
@@ -132,9 +131,6 @@ public class GridCacheQueryAdapter<T> implements CacheQuery<T> {
 
     /** */
     private int taskHash;
-
-    /** */
-    private MvccSnapshot mvccSnapshot;
 
     /** */
     private Boolean dataPageScanEnabled;
@@ -243,7 +239,6 @@ public class GridCacheQueryAdapter<T> implements CacheQuery<T> {
      * @param incMeta Include metadata flag.
      * @param keepBinary Keep binary flag.
      * @param taskHash Task hash.
-     * @param mvccSnapshot Mvcc version.
      * @param dataPageScanEnabled Flag to enable data page scan.
      */
     public GridCacheQueryAdapter(
@@ -264,7 +259,6 @@ public class GridCacheQueryAdapter<T> implements CacheQuery<T> {
         boolean incMeta,
         boolean keepBinary,
         int taskHash,
-        MvccSnapshot mvccSnapshot,
         Boolean dataPageScanEnabled
     ) {
         this.cctx = cctx;
@@ -284,7 +278,6 @@ public class GridCacheQueryAdapter<T> implements CacheQuery<T> {
         this.incMeta = incMeta;
         this.keepBinary = keepBinary;
         this.taskHash = taskHash;
-        this.mvccSnapshot = mvccSnapshot;
         this.dataPageScanEnabled = dataPageScanEnabled;
     }
 
@@ -324,13 +317,6 @@ public class GridCacheQueryAdapter<T> implements CacheQuery<T> {
      */
     public Boolean isDataPageScanEnabled() {
         return dataPageScanEnabled;
-    }
-
-    /**
-     * @return MVCC snapshot.
-     */
-    @Nullable MvccSnapshot mvccSnapshot() {
-        return mvccSnapshot;
     }
 
     /**
@@ -622,16 +608,12 @@ public class GridCacheQueryAdapter<T> implements CacheQuery<T> {
 
         boolean loc = nodes.size() == 1 && F.first(nodes).id().equals(cctx.localNodeId());
 
-        GridCloseableIterator it;
-
         if (loc)
-            it = qryMgr.scanQueryLocal(this, true);
+            return qryMgr.scanQueryLocal(this, true);
         else if (part != null)
-            it = new ScanQueryFallbackClosableIterator(part, this, qryMgr, cctx);
+            return new ScanQueryFallbackClosableIterator(part, this, qryMgr, cctx);
         else
-            it = qryMgr.scanQueryDistributed(this, nodes);
-
-        return it;
+            return qryMgr.scanQueryDistributed(this, nodes);
     }
 
     /**

@@ -32,8 +32,6 @@ import org.apache.ignite.internal.QueryMXBeanImpl;
 import org.apache.ignite.internal.ServiceMXBeanImpl;
 import org.apache.ignite.internal.TransactionsMXBeanImpl;
 import org.apache.ignite.internal.processors.cache.GridCacheContextInfo;
-import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxLocal;
-import org.apache.ignite.internal.processors.cache.mvcc.MvccUtils;
 import org.apache.ignite.internal.processors.cache.query.IgniteQueryErrorCode;
 import org.apache.ignite.internal.processors.query.GridQueryProperty;
 import org.apache.ignite.internal.processors.query.GridQueryTypeDescriptor;
@@ -309,8 +307,6 @@ public class SqlCommandProcessor {
         try {
             isDdlOnSchemaSupported(cmd.schemaName());
 
-            finishActiveTxIfNecessary();
-
             if (cmd instanceof SqlCreateIndexCommand) {
                 SqlCreateIndexCommand cmd0 = (SqlCreateIndexCommand)cmd;
 
@@ -428,23 +424,6 @@ public class SqlCommandProcessor {
         }
         catch (Exception e) {
             throw new IgniteSQLException(e.getMessage(), e);
-        }
-    }
-
-    /**
-     * Commits active transaction if exists.
-     *
-     * @throws IgniteCheckedException If failed.
-     */
-    protected void finishActiveTxIfNecessary() throws IgniteCheckedException {
-        try (GridNearTxLocal tx = MvccUtils.tx(ctx)) {
-            if (tx == null)
-                return;
-
-            if (!tx.isRollbackOnly())
-                tx.commit();
-            else
-                tx.rollback();
         }
     }
 }

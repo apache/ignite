@@ -19,7 +19,7 @@ package org.apache.ignite.internal.metric;
 
 import org.apache.ignite.internal.IgniteNodeAttributes;
 import org.apache.ignite.internal.processors.metric.GridMetricManager;
-import org.apache.ignite.internal.processors.metric.MetricRegistry;
+import org.apache.ignite.internal.processors.metric.MetricRegistryImpl;
 import org.apache.ignite.spi.metric.DoubleMetric;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
@@ -45,7 +45,7 @@ public class SystemMetricsTest extends GridCommonAbstractTest {
      */
     @Test
     public void testCpuLoadMetric() {
-        MetricRegistry sysReg = grid(0).context().metric().registry(GridMetricManager.SYS_METRICS);
+        MetricRegistryImpl sysReg = grid(0).context().metric().registry(GridMetricManager.SYS_METRICS);
 
         DoubleMetric cpuLoad = sysReg.doubleMetric(GridMetricManager.CPU_LOAD, GridMetricManager.CPU_LOAD_DESCRIPTION);
 

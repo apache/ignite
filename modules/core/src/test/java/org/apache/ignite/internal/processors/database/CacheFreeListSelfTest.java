@@ -611,11 +611,6 @@ public class CacheFreeListSelfTest extends GridCommonAbstractTest {
         }
 
         /** {@inheritDoc} */
-        @Override public int headerSize() {
-            return 0;
-        }
-
-        /** {@inheritDoc} */
         @Override public long link() {
             return link;
         }
@@ -632,46 +627,6 @@ public class CacheFreeListSelfTest extends GridCommonAbstractTest {
 
         /** {@inheritDoc} */
         @Override public int cacheId() {
-            return 0;
-        }
-
-        /** {@inheritDoc} */
-        @Override public long newMvccCoordinatorVersion() {
-            return 0;
-        }
-
-        /** {@inheritDoc} */
-        @Override public long newMvccCounter() {
-            return 0;
-        }
-
-        /** {@inheritDoc} */
-        @Override public int newMvccOperationCounter() {
-            return 0;
-        }
-
-        /** {@inheritDoc} */
-        @Override public long mvccCoordinatorVersion() {
-            return 0;
-        }
-
-        /** {@inheritDoc} */
-        @Override public long mvccCounter() {
-            return 0;
-        }
-
-        /** {@inheritDoc} */
-        @Override public int mvccOperationCounter() {
-            return 0;
-        }
-
-        /** {@inheritDoc} */
-        @Override public byte mvccTxState() {
-            return 0;
-        }
-
-        /** {@inheritDoc} */
-        @Override public byte newMvccTxState() {
             return 0;
         }
     }

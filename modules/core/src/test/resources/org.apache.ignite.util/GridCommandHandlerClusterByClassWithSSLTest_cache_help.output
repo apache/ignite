@@ -53,10 +53,11 @@ Arguments: --cache help --yes
       --seq                       - print information about sequences.
 
   Create caches from Spring XML configuration. Note that the 'ignite-spring' module should be enabled:
-    control.(sh|bat) --cache create --springxmlconfig springXmlConfigPath
+    control.(sh|bat) --cache create --springxmlconfig springXmlConfigPath [--skip-existing]
 
     Parameters:
       --springxmlconfig springXmlConfigPath  - Path to the Spring XML configuration that contains 'org.apache.ignite.configuration.CacheConfiguration' beans to create caches from.
+      --skip-existing                        - Optional flag to skip existing caches.
 
   Permanently destroy specified caches:
     control.(sh|bat) --cache destroy --caches cache1,...,cacheN|--destroy-all-caches
@@ -141,9 +142,10 @@ Arguments: --cache help --yes
       --group-names groupName1,groupName2,...groupNameN                        - Comma-separated list of cache group names for which indexes should be scheduled for the rebuild. Can be used simultaneously with cache names.
 
   Show cache content:
-    control.(sh|bat) --cache scan cacheName [--limit N]
+    control.(sh|bat) --cache scan cacheName [--output-format table] [--limit N]
 
     Parameters:
+      --output-format table  - Pluggable output format. 'default', 'table' exists by default.
       --limit N  - limit count of entries to scan (1000 by default).
 
 Command [CACHE] finished with code: 0

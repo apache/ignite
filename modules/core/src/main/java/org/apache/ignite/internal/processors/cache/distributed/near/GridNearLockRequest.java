@@ -249,11 +249,8 @@ public class GridNearLockRequest extends GridDistributedLockRequest {
 
     /**
      * @param filter Filter.
-     * @param ctx Context.
-     * @throws IgniteCheckedException If failed.
      */
-    public void filter(CacheEntryPredicate[] filter, GridCacheContext ctx)
-        throws IgniteCheckedException {
+    public void filter(CacheEntryPredicate[] filter) {
         this.filter = filter;
     }
 
@@ -284,19 +281,12 @@ public class GridNearLockRequest extends GridDistributedLockRequest {
      * @param key Key.
      * @param retVal Flag indicating whether value should be returned.
      * @param dhtVer DHT version.
-     * @param ctx Context.
-     * @throws IgniteCheckedException If failed.
      */
-    public void addKeyBytes(
-        KeyCacheObject key,
-        boolean retVal,
-        @Nullable GridCacheVersion dhtVer,
-        GridCacheContext ctx
-    ) throws IgniteCheckedException {
+    public void addKeyBytes(KeyCacheObject key, boolean retVal, @Nullable GridCacheVersion dhtVer) {
         dhtVers[idx] = dhtVer;
 
         // Delegate to super.
-        addKeyBytes(key, retVal, ctx);
+        addKeyBytes(key, retVal);
     }
 
     /**
@@ -329,11 +319,11 @@ public class GridNearLockRequest extends GridDistributedLockRequest {
     }
 
     /** {@inheritDoc} */
-    @Override public void prepareMarshal(GridCacheSharedContext ctx) throws IgniteCheckedException {
+    @Override public void prepareMarshal(GridCacheSharedContext<?, ?> ctx) throws IgniteCheckedException {
         super.prepareMarshal(ctx);
 
         if (filter != null) {
-            GridCacheContext cctx = ctx.cacheContext(cacheId);
+            GridCacheContext<?, ?> cctx = ctx.cacheContext(cacheId);
 
             for (CacheEntryPredicate p : filter) {
                 if (p != null)
@@ -343,11 +333,11 @@ public class GridNearLockRequest extends GridDistributedLockRequest {
     }
 
     /** {@inheritDoc} */
-    @Override public void finishUnmarshal(GridCacheSharedContext ctx, ClassLoader ldr) throws IgniteCheckedException {
+    @Override public void finishUnmarshal(GridCacheSharedContext<?, ?> ctx, ClassLoader ldr) throws IgniteCheckedException {
         super.finishUnmarshal(ctx, ldr);
 
         if (filter != null) {
-            GridCacheContext cctx = ctx.cacheContext(cacheId);
+            GridCacheContext<?, ?> cctx = ctx.cacheContext(cacheId);
 
             for (CacheEntryPredicate p : filter) {
                 if (p != null)

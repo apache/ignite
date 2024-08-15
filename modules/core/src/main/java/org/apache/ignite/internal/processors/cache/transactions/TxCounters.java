@@ -40,21 +40,6 @@ public class TxCounters {
     private volatile Map<Integer, PartitionUpdateCountersMessage> updCntrs;
 
     /**
-     * Accumulates size change for cache partition.
-     *
-     * @param cacheId Cache id.
-     * @param part Partition id.
-     * @param delta Size delta.
-     */
-    public void accumulateSizeDelta(int cacheId, int part, long delta) {
-        AtomicLong accDelta = accumulator(sizeDeltas, cacheId, part);
-
-        // here AtomicLong is used more as a container,
-        // every instance is assumed to be accessed in thread-confined manner
-        accDelta.set(accDelta.get() + delta);
-    }
-
-    /**
      * @return Map of size changes for cache partitions made by transaction.
      */
     public Map<Integer, Map<Integer, AtomicLong>> sizeDeltas() {
@@ -91,16 +76,6 @@ public class TxCounters {
      */
     public void incrementUpdateCounter(int cacheId, int part) {
         accumulator(updCntrsAcc, cacheId, part).incrementAndGet();
-    }
-
-    /**
-     * @param cacheId Cache id.
-     * @param part Partition number.
-     */
-    public void decrementUpdateCounter(int cacheId, int part) {
-        long acc = accumulator(updCntrsAcc, cacheId, part).decrementAndGet();
-
-        assert acc >= 0;
     }
 
     /**

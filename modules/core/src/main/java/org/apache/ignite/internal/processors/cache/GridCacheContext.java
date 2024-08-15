@@ -83,7 +83,6 @@ import org.apache.ignite.internal.processors.cache.persistence.snapshot.dump.Dum
 import org.apache.ignite.internal.processors.cache.query.GridCacheQueryManager;
 import org.apache.ignite.internal.processors.cache.query.continuous.CacheContinuousQueryManager;
 import org.apache.ignite.internal.processors.cache.store.CacheStoreManager;
-import org.apache.ignite.internal.processors.cache.transactions.IgniteInternalTx;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteTxEntry;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteTxKey;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteTxManager;
@@ -488,6 +487,9 @@ public class GridCacheContext<K, V> implements Externalizable {
      */
     void initConflictResolver() {
         conflictRslvr = rslvrMgr.conflictResolver();
+
+        if (conflictRslvr != null)
+            cache().metrics0().registerResolverMetrics();
     }
 
     /**
@@ -1642,6 +1644,13 @@ public class GridCacheContext<K, V> implements Externalizable {
         GridCacheVersionConflictContext<K, V> ctx = conflictRslvr.resolve(cacheObjCtx, oldEntry, newEntry,
             atomicVerComp);
 
+        if (ctx.isUseNew())
+            cache().metrics0().incrementResolverAcceptedCount();
+        else if (ctx.isUseOld())
+            cache().metrics0().incrementResolverRejectedCount();
+        else
+            cache().metrics0().incrementResolverMergedCount();
+
         if (ctx.isManualResolve())
             drMgr.onReceiveCacheConflictResolved(ctx.isUseNew(), ctx.isUseOld(), ctx.isMerge());
 
@@ -2286,15 +2295,6 @@ public class GridCacheContext<K, V> implements Externalizable {
 
         if (isNear())
             near().dht().context().statisticsEnabled = statisticsEnabled;
-    }
-
-    /**
-     * @param tx Transaction.
-     * @return {@code True} if it is need to notify continuous query listeners.
-     */
-    public boolean hasContinuousQueryListeners(@Nullable IgniteInternalTx tx) {
-        return grp.sharedGroup() ? grp.hasContinuousQueryCaches() :
-            contQryMgr.notifyContinuousQueries(tx) && !F.isEmpty(contQryMgr.updateListeners(false, false));
     }
 
     /**

@@ -95,6 +95,7 @@ import static org.apache.ignite.internal.processors.cache.CacheEnumOperationsAbs
 import static org.apache.ignite.internal.processors.cache.CacheEnumOperationsAbstractTest.TestEnum.VAL2;
 import static org.apache.ignite.internal.processors.cache.CacheEnumOperationsAbstractTest.TestEnum.VAL3;
 import static org.apache.ignite.internal.processors.cache.transactions.IgniteTxManager.TXS_MON_LIST;
+import static org.apache.ignite.testframework.GridTestUtils.assertContains;
 import static org.apache.ignite.testframework.GridTestUtils.assertThrowsAnyCause;
 import static org.apache.ignite.testframework.GridTestUtils.runAsync;
 import static org.apache.ignite.transactions.TransactionConcurrency.OPTIMISTIC;
@@ -644,6 +645,8 @@ public class FunctionalTest extends AbstractBinaryArraysTest {
             String.format("%s expected but no exception was received", ClientConnectionException.class.getName()),
             expEx
         );
+
+        assertContains(log, expEx.getMessage(), Config.SERVER);
     }
 
 

@@ -48,7 +48,6 @@ import org.apache.ignite.internal.metric.IoStatisticsHolder;
 import org.apache.ignite.internal.metric.IoStatisticsQueryHelper;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
-import org.apache.ignite.internal.processors.cache.mvcc.MvccSnapshot;
 import org.apache.ignite.internal.processors.cache.query.CacheQueryType;
 import org.apache.ignite.internal.processors.cache.query.GridCacheQueryType;
 import org.apache.ignite.internal.processors.cache.query.GridCacheSqlQuery;
@@ -83,7 +82,6 @@ import org.h2.api.ErrorCode;
 import org.h2.jdbc.JdbcResultSet;
 import org.h2.value.Value;
 import org.jetbrains.annotations.NotNull;
-import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.events.EventType.EVT_CACHE_QUERY_EXECUTED;
 import static org.apache.ignite.internal.cache.query.index.sorted.inline.InlineIndexImpl.calculateSegment;
@@ -269,7 +267,6 @@ public class GridMapQueryExecutor {
                                 timeout,
                                 params,
                                 lazy,
-                                req.mvccSnapshot(),
                                 dataPageScanEnabled,
                                 treatReplicatedAsPartitioned
                             );
@@ -298,7 +295,6 @@ public class GridMapQueryExecutor {
                 timeout,
                 params,
                 lazy,
-                req.mvccSnapshot(),
                 dataPageScanEnabled,
                 treatReplicatedAsPartitioned
             );
@@ -326,7 +322,6 @@ public class GridMapQueryExecutor {
      * @param timeout Query timeout.
      * @param params Query parameters.
      * @param lazy Streaming flag.
-     * @param mvccSnapshot MVCC snapshot.
      * @param dataPageScanEnabled If data page scan is enabled.
      */
     private void onQueryRequest0(
@@ -347,7 +342,6 @@ public class GridMapQueryExecutor {
         final int timeout,
         final Object[] params,
         boolean lazy,
-        @Nullable final MvccSnapshot mvccSnapshot,
         Boolean dataPageScanEnabled,
         boolean treatReplicatedAsPartitioned
     ) {
@@ -357,7 +351,8 @@ public class GridMapQueryExecutor {
             IoStatisticsQueryHelper.startGatheringQueryStatistics();
 
         // Prepare to run queries.
-        GridCacheContext<?, ?> mainCctx = mainCacheContext(cacheIds);
+        GridCacheContext<?, ?> mainCctx = !F.isEmpty(cacheIds) ? ctx.cache().context().cacheContext(cacheIds.get(0))
+            : null;
 
         MapNodeResults nodeRess = resultsForNode(node.id());
 
@@ -409,7 +404,6 @@ public class GridMapQueryExecutor {
                 segmentId,
                 h2.backupFilter(topVer, parts, treatReplicatedAsPartitioned),
                 distributedJoinCtx,
-                mvccSnapshot,
                 reserved,
                 true);
 
@@ -452,6 +446,8 @@ public class GridMapQueryExecutor {
 
                 qryResults.addResult(qryIdx, res);
 
+                MapH2QueryInfo qryInfo = null;
+
                 try {
                     res.lock();
 
@@ -466,7 +462,9 @@ public class GridMapQueryExecutor {
 
                         H2Utils.bindParameters(stmt, params0);
 
-                        MapH2QueryInfo qryInfo = new MapH2QueryInfo(stmt, qry.query(), node.id(), qryId, reqId, segmentId);
+                        qryInfo = new MapH2QueryInfo(stmt, qry.query(), node.id(), qryId, reqId, segmentId);
+
+                        h2.heavyQueriesTracker().startTracking(qryInfo);
 
                         if (performanceStatsEnabled) {
                             ctx.performanceStatistics().queryProperty(
@@ -478,14 +476,20 @@ public class GridMapQueryExecutor {
                             );
                         }
 
-                        ResultSet rs = h2.executeSqlQueryWithTimer(
-                            stmt,
-                            conn,
-                            sql,
-                            timeout,
-                            qryResults.queryCancel(qryIdx),
-                            dataPageScanEnabled,
-                            qryInfo);
+                        GridQueryCancel qryCancel = qryResults.queryCancel(qryIdx);
+
+                        ResultSet rs = h2.executeWithResumableTimeTracking(
+                            () -> h2.executeSqlQueryWithTimer(
+                                stmt,
+                                conn,
+                                sql,
+                                timeout,
+                                qryCancel,
+                                dataPageScanEnabled,
+                                null
+                            ),
+                            qryInfo
+                        );
 
                         if (evt) {
                             ctx.event().record(new CacheQueryExecutedEvent<>(
@@ -513,14 +517,21 @@ public class GridMapQueryExecutor {
 
                         res.openResult(rs, qryInfo);
 
-                        final GridQueryNextPageResponse msg = prepareNextPage(
-                            nodeRess,
-                            node,
-                            qryResults,
-                            qryIdx,
-                            segmentId,
-                            pageSize,
-                            dataPageScanEnabled
+                        MapQueryResults qryResults0 = qryResults;
+
+                        int qryIdx0 = qryIdx;
+
+                        final GridQueryNextPageResponse msg = h2.executeWithResumableTimeTracking(
+                            () -> prepareNextPage(
+                                nodeRess,
+                                node,
+                                qryResults0,
+                                qryIdx0,
+                                segmentId,
+                                pageSize,
+                                dataPageScanEnabled
+                            ),
+                            qryInfo
                         );
 
                         if (msg != null)
@@ -533,6 +544,12 @@ public class GridMapQueryExecutor {
                     }
 
                     qryIdx++;
+                }
+                catch (Throwable e) {
+                    if (qryInfo != null)
+                        h2.heavyQueriesTracker().stopTracking(qryInfo, e);
+
+                    throw e;
                 }
                 finally {
                     try {
@@ -618,14 +635,6 @@ public class GridMapQueryExecutor {
                 }
             }
         }
-    }
-
-    /**
-     * @param cacheIds Cache ids.
-     * @return Id of the first cache in list, or {@code null} if list is empty.
-     */
-    private GridCacheContext mainCacheContext(List<Integer> cacheIds) {
-        return !F.isEmpty(cacheIds) ? ctx.cache().context().cacheContext(cacheIds.get(0)) : null;
     }
 
     /**
@@ -857,13 +866,15 @@ public class GridMapQueryExecutor {
 
             final MapQueryResults qryResults = nodeRess.get(reqId, req.segmentId());
 
+            MapQueryResult res = null;
+
             if (qryResults == null)
                 sendError(node, reqId, new CacheException("No query result found for request: " + req));
             else if (qryResults.cancelled())
                 sendQueryCancel(node, reqId);
             else {
                 try {
-                    MapQueryResult res = qryResults.result(req.query());
+                    res = qryResults.result(req.query());
 
                     assert res != null;
 
@@ -876,14 +887,18 @@ public class GridMapQueryExecutor {
 
                         Boolean dataPageScanEnabled = isDataPageScanEnabled(req.getFlags());
 
-                        GridQueryNextPageResponse msg = prepareNextPage(
-                            nodeRess,
-                            node,
-                            qryResults,
-                            req.query(),
-                            req.segmentId(),
-                            req.pageSize(),
-                            dataPageScanEnabled);
+                        GridQueryNextPageResponse msg = h2.executeWithResumableTimeTracking(
+                            () -> prepareNextPage(
+                                nodeRess,
+                                node,
+                                qryResults,
+                                req.query(),
+                                req.segmentId(),
+                                req.pageSize(),
+                                dataPageScanEnabled
+                            ),
+                            res.qryInfo()
+                        );
 
                         if (msg != null)
                             sendNextPage(node, msg);
@@ -898,6 +913,9 @@ public class GridMapQueryExecutor {
                     }
                 }
                 catch (Exception e) {
+                    if (res.qryInfo() != null)
+                        h2.heavyQueriesTracker().stopTracking(res.qryInfo(), e);
+
                     QueryRetryException retryEx = X.cause(e, QueryRetryException.class);
 
                     if (retryEx != null)
@@ -952,6 +970,9 @@ public class GridMapQueryExecutor {
 
             if (last) {
                 qr.closeResult(qry);
+
+                if (res.qryInfo() != null)
+                    h2.heavyQueriesTracker().stopTracking(res.qryInfo(), null);
 
                 if (qr.isAllClosed()) {
                     nodeRess.remove(qr.queryRequestId(), segmentId, qr);

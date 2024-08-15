@@ -84,7 +84,7 @@ import org.apache.ignite.internal.client.impl.GridClientImpl;
 import org.apache.ignite.internal.client.util.GridConcurrentHashSet;
 import org.apache.ignite.internal.management.cache.FindAndDeleteGarbageInPersistenceTaskResult;
 import org.apache.ignite.internal.management.cache.IdleVerifyDumpTask;
-import org.apache.ignite.internal.management.snapshot.SnapshotTaskResult;
+import org.apache.ignite.internal.management.cache.VerifyBackupPartitionsTaskV2;
 import org.apache.ignite.internal.management.tx.TxInfo;
 import org.apache.ignite.internal.management.tx.TxTaskResult;
 import org.apache.ignite.internal.managers.communication.GridIoMessage;
@@ -114,7 +114,7 @@ import org.apache.ignite.internal.processors.cache.warmup.WarmUpTestPluginProvid
 import org.apache.ignite.internal.processors.cluster.ChangeGlobalStateFinishMessage;
 import org.apache.ignite.internal.processors.cluster.GridClusterStateProcessor;
 import org.apache.ignite.internal.processors.datastreamer.DataStreamerRequest;
-import org.apache.ignite.internal.processors.metric.MetricRegistry;
+import org.apache.ignite.internal.processors.metric.MetricRegistryImpl;
 import org.apache.ignite.internal.util.BasicRateLimiter;
 import org.apache.ignite.internal.util.distributed.SingleNodeMessage;
 import org.apache.ignite.internal.util.future.IgniteFinishedFutureImpl;
@@ -130,6 +130,7 @@ import org.apache.ignite.lang.IgniteFuture;
 import org.apache.ignite.lang.IgniteInClosure;
 import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.lang.IgniteUuid;
+import org.apache.ignite.metric.MetricRegistry;
 import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi;
 import org.apache.ignite.spi.metric.LongMetric;
@@ -723,6 +724,32 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
 
         boolean tagUpdated = GridTestUtils.waitForCondition(() -> newTag.equals(cl.cluster().tag()), 10_000);
         assertTrue("Tag has not been updated in 10 seconds", tagUpdated);
+    }
+
+    /**
+     * Tests idle_verify working on an inactive cluster with persistence. Works via control.sh.
+     *
+     * @throws IgniteException if succeeded.
+     */
+    @Test
+    public void testIdleVerifyOnInactiveClusterWithPersistence() throws Exception {
+        IgniteEx srv = startGrids(2);
+
+        assertTrue(CU.isPersistenceEnabled(getConfiguration()));
+        assertFalse(srv.cluster().state().active());
+
+        injectTestSystemOut();
+
+        assertEquals(EXIT_CODE_UNEXPECTED_ERROR, execute("--cache", "idle_verify"));
+
+        assertContains(log, testOut.toString(), VerifyBackupPartitionsTaskV2.IDLE_VERIFY_ON_INACTIVE_CLUSTER_ERROR_MESSAGE);
+        assertContains(log, testOut.toString(), "Failed to perform operation");
+
+        srv.cluster().state(ACTIVE);
+        srv.createCache(DEFAULT_CACHE_NAME);
+
+        assertEquals(EXIT_CODE_OK, execute("--cache", "idle_verify"));
+        assertContains(log, testOut.toString(), "The check procedure has finished, no conflicts have been found.");
     }
 
     /**
@@ -3246,7 +3273,7 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
                 waitForCondition(endTimeMetricPredicate::getAsBoolean, getTestTimeout()));
         }
 
-        assertContains(log, (String)((SnapshotTaskResult)h.getLastOperationResult()).result(), snpName);
+        assertContains(log, (String)h.getLastOperationResult(), snpName);
 
         stopAllGrids();
 
@@ -3312,8 +3339,7 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
 
         createCacheAndPreload(ig, 1000);
 
-        snp(ig).createSnapshot(snpName)
-            .get();
+        snp(ig).createSnapshot(snpName).get();
 
         TestCommandHandler h = newCommandHandler();
 
@@ -3321,7 +3347,7 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
 
         StringBuilder sb = new StringBuilder();
 
-        ((SnapshotPartitionsVerifyTaskResult)((SnapshotTaskResult)h.getLastOperationResult()).result()).print(sb::append);
+        ((SnapshotPartitionsVerifyTaskResult)h.getLastOperationResult()).print(sb::append);
 
         assertContains(log, sb.toString(), "The check procedure has finished, no conflicts have been found");
     }
@@ -3434,7 +3460,7 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
 
         waitForCondition(() -> ig.cache(cacheName1) != null, getTestTimeout());
 
-        MetricRegistry metrics = ig.context().metric().registry(SNAPSHOT_RESTORE_METRICS);
+        MetricRegistryImpl metrics = ig.context().metric().registry(SNAPSHOT_RESTORE_METRICS);
         Metric operIdMetric = metrics.findMetric("requestId");
         assertNotNull(operIdMetric);
 
@@ -3581,7 +3607,8 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
             assertContains(log, testOut.toString(), "--increment argument specified twice");
 
             // Non existent increment.
-            assertEquals(EXIT_CODE_UNEXPECTED_ERROR, execute("--snapshot", "restore", snpName, "--increment", "2", "--sync"));
+            assertEquals(EXIT_CODE_INVALID_ARGUMENTS, execute("--snapshot", "restore", snpName, "--increment", "2", "--sync"));
+            assertContains(log, testOut.toString(), "No incremental snapshot found [snpName=" + snpName);
         }
         finally {
             autoConfirmation = autoConfirmation0;
@@ -3646,8 +3673,7 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
                 execute("--snapshot", "restore", snpName, "--src", "A", "--src", "B"));
             assertContains(log, testOut.toString(), "--src argument specified twice");
 
-            // The check command simply prints the results of the check, it always ends with a zero exit code.
-            assertEquals(EXIT_CODE_OK, execute("--snapshot", "check", snpName));
+            assertEquals(EXIT_CODE_INVALID_ARGUMENTS, execute("--snapshot", "check", snpName));
             assertContains(log, testOut.toString(), "Snapshot does not exists [snapshot=" + snpName);
 
             assertEquals(EXIT_CODE_OK, execute("--snapshot", "check", snpName, "--src", snpDir.getAbsolutePath()));
