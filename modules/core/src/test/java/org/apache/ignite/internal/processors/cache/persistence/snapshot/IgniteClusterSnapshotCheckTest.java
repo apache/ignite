@@ -111,8 +111,8 @@ import static org.apache.ignite.internal.processors.cache.persistence.snapshot.I
 import static org.apache.ignite.internal.processors.cache.persistence.snapshot.IgniteSnapshotManager.databaseRelativePath;
 import static org.apache.ignite.internal.processors.dr.GridDrType.DR_NONE;
 import static org.apache.ignite.internal.util.distributed.DistributedProcess.DistributedProcessType.RESTORE_CACHE_GROUP_SNAPSHOT_START;
-import static org.apache.ignite.internal.util.distributed.DistributedProcess.DistributedProcessType.SNAPSHOT_CHECK_METAS;
-import static org.apache.ignite.internal.util.distributed.DistributedProcess.DistributedProcessType.SNAPSHOT_VALIDATE_PARTS;
+import static org.apache.ignite.internal.util.distributed.DistributedProcess.DistributedProcessType.CHECK_SNAPSHOT_METAS;
+import static org.apache.ignite.internal.util.distributed.DistributedProcess.DistributedProcessType.VALIDATE_SNAPSHOT_PARTS_PARTS;
 import static org.apache.ignite.testframework.GridTestUtils.assertContains;
 import static org.apache.ignite.testframework.GridTestUtils.assertNotContains;
 import static org.apache.ignite.testframework.GridTestUtils.assertThrowsAnyCause;
@@ -631,8 +631,8 @@ public class IgniteClusterSnapshotCheckTest extends AbstractSnapshotSelfTest {
                 doTestConcurrentSnpCheckOperations(
                     () -> new IgniteFutureImpl<>(snp(grid(i0)).checkSnapshot(SNAPSHOT_NAME, null)),
                     () -> new IgniteFutureImpl<>(snp(grid(j0)).checkSnapshot(SNAPSHOT_NAME, null)),
-                    SNAPSHOT_CHECK_METAS,
-                    SNAPSHOT_VALIDATE_PARTS,
+                    CHECK_SNAPSHOT_METAS,
+                    VALIDATE_SNAPSHOT_PARTS_PARTS,
                     true,
                     false,
                     null,
@@ -658,8 +658,8 @@ public class IgniteClusterSnapshotCheckTest extends AbstractSnapshotSelfTest {
                 doTestConcurrentSnpCheckOperations(
                     () -> new IgniteFutureImpl<>(snp(grid(i0)).checkSnapshot(SNAPSHOT_NAME, null)),
                     () -> new IgniteFutureImpl<>(snp(grid(j0)).checkSnapshot(SNAPSHOT_NAME + '2', null)),
-                    SNAPSHOT_CHECK_METAS,
-                    SNAPSHOT_VALIDATE_PARTS,
+                    CHECK_SNAPSHOT_METAS,
+                    VALIDATE_SNAPSHOT_PARTS_PARTS,
                     false,
                     true,
                     null,
@@ -689,7 +689,7 @@ public class IgniteClusterSnapshotCheckTest extends AbstractSnapshotSelfTest {
                 doTestConcurrentSnpCheckOperations(
                     () -> new IgniteFutureImpl<>(snp(grid(i0)).checkSnapshot(SNAPSHOT_NAME, null)),
                     () -> snp(grid(j0)).restoreSnapshot(SNAPSHOT_NAME + '2', null),
-                    SNAPSHOT_VALIDATE_PARTS,
+                    VALIDATE_SNAPSHOT_PARTS_PARTS,
                     RESTORE_CACHE_GROUP_SNAPSHOT_START,
                     false,
                     false,
@@ -720,8 +720,8 @@ public class IgniteClusterSnapshotCheckTest extends AbstractSnapshotSelfTest {
                 doTestConcurrentSnpCheckOperations(
                     () -> new IgniteFutureImpl<>(snp(grid(i0)).checkSnapshot(SNAPSHOT_NAME, null)),
                     () -> snp(grid(j0)).restoreSnapshot(SNAPSHOT_NAME + '2', null, null, 0, true),
-                    SNAPSHOT_CHECK_METAS,
-                    SNAPSHOT_VALIDATE_PARTS,
+                    CHECK_SNAPSHOT_METAS,
+                    VALIDATE_SNAPSHOT_PARTS_PARTS,
                     false,
                     true,
                     null,
@@ -745,8 +745,8 @@ public class IgniteClusterSnapshotCheckTest extends AbstractSnapshotSelfTest {
                 doTestConcurrentSnpCheckOperations(
                     () -> new IgniteFutureImpl<>(snp(grid(i0)).checkSnapshot(SNAPSHOT_NAME, null)),
                     () -> snp(grid(j0)).restoreSnapshot(SNAPSHOT_NAME, null, null, 0, true),
-                    SNAPSHOT_CHECK_METAS,
-                    SNAPSHOT_VALIDATE_PARTS,
+                    CHECK_SNAPSHOT_METAS,
+                    VALIDATE_SNAPSHOT_PARTS_PARTS,
                     true,
                     false,
                     null,
@@ -770,8 +770,8 @@ public class IgniteClusterSnapshotCheckTest extends AbstractSnapshotSelfTest {
                 doTestConcurrentSnpCheckOperations(
                     () -> snp(grid(i0)).restoreSnapshot(SNAPSHOT_NAME, null, null, 0, true),
                     () -> new IgniteFutureImpl<>(snp(grid(j0)).checkSnapshot(SNAPSHOT_NAME, null)),
-                    SNAPSHOT_CHECK_METAS,
-                    SNAPSHOT_VALIDATE_PARTS,
+                    CHECK_SNAPSHOT_METAS,
+                    VALIDATE_SNAPSHOT_PARTS_PARTS,
                     true,
                     false,
                     null,
@@ -795,7 +795,7 @@ public class IgniteClusterSnapshotCheckTest extends AbstractSnapshotSelfTest {
                 doTestConcurrentSnpCheckOperations(
                     () -> new IgniteFutureImpl<>(snp(grid(i0)).checkSnapshot(SNAPSHOT_NAME, null)),
                     () -> snp(grid(j0)).restoreSnapshot(SNAPSHOT_NAME, null),
-                    SNAPSHOT_CHECK_METAS,
+                    CHECK_SNAPSHOT_METAS,
                     RESTORE_CACHE_GROUP_SNAPSHOT_START,
                     false,
                     false,
@@ -819,7 +819,7 @@ public class IgniteClusterSnapshotCheckTest extends AbstractSnapshotSelfTest {
                 doTestConcurrentSnpCheckOperations(
                     () -> new IgniteFutureImpl<>(snp(grid(i0)).checkSnapshot(SNAPSHOT_NAME, null)),
                     () -> snp(grid(j0)).createSnapshot(SNAPSHOT_NAME + "_2", null, false, false),
-                    SNAPSHOT_CHECK_METAS,
+                    CHECK_SNAPSHOT_METAS,
                     null,
                     false,
                     false,
@@ -903,7 +903,7 @@ public class IgniteClusterSnapshotCheckTest extends AbstractSnapshotSelfTest {
 
         int grids = G.allGrids().size();
 
-        discoSpi(grid(0)).block(msg -> msg instanceof FullMessage && ((FullMessage<?>)msg).type() == SNAPSHOT_CHECK_METAS.ordinal());
+        discoSpi(grid(0)).block(msg -> msg instanceof FullMessage && ((FullMessage<?>)msg).type() == CHECK_SNAPSHOT_METAS.ordinal());
 
         IgniteInternalFuture<?> fut = snp(grid(3)).checkSnapshot(SNAPSHOT_NAME, null, null, false, 0, true);
 
@@ -1119,7 +1119,7 @@ public class IgniteClusterSnapshotCheckTest extends AbstractSnapshotSelfTest {
 
         try {
             discoSpi(grid(coordIdx)).block(msg -> msg instanceof FullMessage
-                && ((FullMessage<?>)msg).type() == SNAPSHOT_CHECK_METAS.ordinal());
+                && ((FullMessage<?>)msg).type() == CHECK_SNAPSHOT_METAS.ordinal());
 
             IgniteInternalFuture<?> fut = snp(grid(originatorIdx)).checkSnapshot(SNAPSHOT_NAME, null, null, false, 0, true);
 

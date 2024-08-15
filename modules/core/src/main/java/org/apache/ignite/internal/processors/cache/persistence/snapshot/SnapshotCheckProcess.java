@@ -49,8 +49,8 @@ import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.events.EventType.EVT_NODE_FAILED;
 import static org.apache.ignite.events.EventType.EVT_NODE_LEFT;
-import static org.apache.ignite.internal.util.distributed.DistributedProcess.DistributedProcessType.SNAPSHOT_CHECK_METAS;
-import static org.apache.ignite.internal.util.distributed.DistributedProcess.DistributedProcessType.SNAPSHOT_VALIDATE_PARTS;
+import static org.apache.ignite.internal.util.distributed.DistributedProcess.DistributedProcessType.CHECK_SNAPSHOT_METAS;
+import static org.apache.ignite.internal.util.distributed.DistributedProcess.DistributedProcessType.VALIDATE_SNAPSHOT_PARTS_PARTS;
 
 /** Distributed process of snapshot checking (with the partition hashes). */
 public class SnapshotCheckProcess {
@@ -78,10 +78,10 @@ public class SnapshotCheckProcess {
 
         log = kctx.log(getClass());
 
-        phase1CheckMetas = new DistributedProcess<>(kctx, SNAPSHOT_CHECK_METAS, this::prepareAndCheckMetas,
+        phase1CheckMetas = new DistributedProcess<>(kctx, CHECK_SNAPSHOT_METAS, this::prepareAndCheckMetas,
             this::reducePreparationAndMetasCheck);
 
-        phase2PartsHashes = new DistributedProcess<>(kctx, SNAPSHOT_VALIDATE_PARTS, this::validateParts,
+        phase2PartsHashes = new DistributedProcess<>(kctx, VALIDATE_SNAPSHOT_PARTS_PARTS, this::validateParts,
             this::reduceValidatePartsAndFinish);
 
         kctx.event().addLocalEventListener(evt -> onNodeLeft(((DiscoveryEvent)evt).eventNode().id()), EVT_NODE_FAILED, EVT_NODE_LEFT);

@@ -491,13 +491,13 @@ public class DistributedProcess<I extends Serializable, R extends Serializable> 
         RESTORE_INCREMENTAL_SNAPSHOT_START,
 
         /**
-         * Snapshot check metas.
+         * Snapshot metadatas check.
          */
-        SNAPSHOT_CHECK_METAS,
+        CHECK_SNAPSHOT_METAS,
 
         /**
-         * Snapshot validate partitions.
+         * Snapshot partitions validation.
          */
-        SNAPSHOT_VALIDATE_PARTS
+        VALIDATE_SNAPSHOT_PARTS_PARTS
     }
 }
