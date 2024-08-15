@@ -331,6 +331,20 @@ public class IntervalTest extends AbstractBasicIntegrationTest {
         assertEquals(Duration.ofSeconds(31), eval("INTERVAL '1:2' MINUTE TO SECOND / 2"));
         assertEquals(Duration.ofSeconds(1862), eval("INTERVAL '1:2:4' HOUR TO SECOND / 2"));
         assertEquals(Duration.ofMillis(1862228), eval("INTERVAL '0 1:2:4.456' DAY TO SECOND / 2"));
+
+        // Interval range overflow
+        assertThrows("SELECT INTERVAL 5000000 MONTHS * 1000",
+            IgniteSQLException.class, "INTEGER overflow");
+        assertThrows("SELECT DATE '2021-01-01' + INTERVAL 999999999999 DAY",
+            IgniteSQLException.class, "BIGINT overflow"); // Overflow for interval type (long).
+        assertThrows("SELECT DATE '2021-01-01' + INTERVAL 3000000000 DAYS",
+            IgniteSQLException.class, "INTEGER overflow"); // Overflow for date type (integer).
+        assertThrows("SELECT DATE '2021-01-01' + INTERVAL -999999999 YEAR",
+            IgniteSQLException.class, "INTEGER overflow");
+        assertThrows("SELECT INTERVAL 1000000000 YEARS + INTERVAL 1 MONTH",
+            IgniteSQLException.class, "INTEGER overflow");
+        assertThrows("SELECT INTERVAL 100000000000 DAYS + INTERVAL 100000000000 DAYS",
+            IgniteSQLException.class, "BIGINT overflow");
     }
 
     /**

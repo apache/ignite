@@ -1246,7 +1246,7 @@ public class RexImpTable {
                         argValList);
                 }
             }
-            return Expressions.makeBinary(expressionType,
+            return IgniteExpressions.makeBinary(expressionType,
                 argValList.get(0), argValList.get(1));
         }
 
@@ -1314,7 +1314,7 @@ public class RexImpTable {
                 && null != backupMethodName)
                 e = Expressions.call(argVal, backupMethodName);
             else
-                e = Expressions.makeUnary(expressionType, argVal);
+                e = IgniteExpressions.makeUnary(expressionType, argVal);
 
             if (e.type.equals(argVal.type))
                 return e;
@@ -1773,10 +1773,10 @@ public class RexImpTable {
                                 case INTERVAL_MINUTE:
                                 case INTERVAL_MINUTE_SECOND:
                                 case INTERVAL_SECOND:
-                                    trop1 = Expressions.convert_(
+                                    trop1 = IgniteExpressions.convertChecked(
                                         Expressions.divide(trop1,
                                             Expressions.constant(DateTimeUtils.MILLIS_PER_DAY)),
-                                        int.class);
+                                        Primitive.of(long.class), Primitive.of(int.class));
                             }
                     }
                     break;
@@ -1815,9 +1815,9 @@ public class RexImpTable {
                 case INTERVAL_SECOND:
                     switch (call.getKind()) {
                         case MINUS:
-                            return normalize(typeName, Expressions.subtract(trop0, trop1));
+                            return normalize(typeName, IgniteExpressions.subtractExact(trop0, trop1));
                         default:
-                            return normalize(typeName, Expressions.add(trop0, trop1));
+                            return normalize(typeName, IgniteExpressions.addExact(trop0, trop1));
                     }
 
                 default:
@@ -1883,7 +1883,6 @@ public class RexImpTable {
         implements RexCallImplementor {
         /** */
         final NullPolicy nullPlc;
-        F
 
         /** */
         final String variableName;
@@ -1966,7 +1965,7 @@ public class RexImpTable {
             final Expression convertedCallVal =
                 noConvert
                     ? callVal
-                    : ConverterUtils.convert(callVal, returnType);
+                    : ConverterUtils.convert(callVal, call.getType());
 
             final Expression valExpression =
                 Expressions.condition(condition,

@@ -127,6 +127,7 @@ import org.apache.ignite.lang.IgniteClosure;
 import org.apache.ignite.lang.IgniteProductVersion;
 import org.apache.ignite.lang.IgniteReducer;
 import org.apache.ignite.lang.IgniteUuid;
+import org.apache.ignite.plugin.security.SecurityPermission;
 import org.apache.ignite.resources.IgniteInstanceResource;
 import org.apache.ignite.spi.IgniteSpiCloseableIterator;
 import org.apache.ignite.spi.indexing.IndexingQueryFilter;
@@ -1161,12 +1162,9 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
 
                 int cnt = 0;
 
-                boolean stop = false;
                 boolean pageSent = false;
 
                 Collection<Object> data = new ArrayList<>(pageSize);
-
-                AffinityTopologyVersion topVer = cctx.affinity().affinityTopologyVersion();
 
                 final boolean statsEnabled = cctx.statisticsEnabled();
 
@@ -1288,20 +1286,12 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
 
                             onPageReady(loc, qryInfo, res.metadata(), data, finished, null);
 
-                            pageSent = true;
-
                             res.onPageSend();
 
                             if (!finished)
                                 rmvIter = false;
 
-                            if (!qryInfo.allPages())
-                                return;
-
-                            data = new ArrayList<>(pageSize);
-
-                            if (stop)
-                                break; // while
+                            return;
                         }
                     }
                 }
@@ -1439,6 +1429,81 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
                     U.currentTimeMillis() - startTime, true);
 
             throw e;
+        }
+        finally {
+            leaveBusy();
+        }
+    }
+
+    /**
+     * Process local index query.
+     *
+     * @param qry Query.
+     * @return GridCloseableIterator.
+     */
+    @SuppressWarnings({"unchecked"})
+    public GridCloseableIterator indexQueryLocal(final GridCacheQueryAdapter qry) throws IgniteCheckedException {
+        if (!enterBusy())
+            throw new IllegalStateException("Failed to process query request (grid is stopping).");
+
+        try {
+            assert qry.type() == INDEX : "Wrong processing of query: " + qry.type();
+
+            cctx.checkSecurity(SecurityPermission.CACHE_READ);
+
+            if (cctx.localNode().isClient())
+                throw new IgniteException("Failed to execute local index query on a client node.");
+
+            final Integer part = qry.partition();
+
+            int[] parts = null;
+
+            if (part != null) {
+                final GridDhtLocalPartition locPart = cctx.dht().topology().localPartition(part);
+
+                if (locPart == null || locPart.state() != OWNING) {
+                    throw new CacheInvalidStateException("Failed to execute index query because required partition " +
+                        "has not been found on local node [cacheName=" + cctx.name() + ", part=" + part + "]");
+                }
+
+                parts = new int[] {part};
+            }
+
+            if (log.isDebugEnabled())
+                log.debug("Running local index query: " + qry);
+
+            if (cctx.events().isRecordable(EVT_CACHE_QUERY_EXECUTED)) {
+                cctx.gridEvents().record(new CacheQueryExecutedEvent<>(
+                    cctx.localNode(),
+                    "Index query executed.",
+                    EVT_CACHE_QUERY_EXECUTED,
+                    CacheQueryType.INDEX.name(),
+                    cctx.name(),
+                    qry.queryClassName(),
+                    null,
+                    qry.scanFilter(),
+                    null,
+                    null,
+                    securitySubjectId(cctx),
+                    cctx.kernalContext().task().resolveTaskName(qry.taskHash())));
+            }
+
+            IndexQueryResult<K, V> idxQryRes = qryProc.queryIndex(cacheName, qry.queryClassName(), qry.idxQryDesc(),
+                qry.scanFilter(), filter(qry, parts, parts != null), qry.keepBinary(), qry.taskHash());
+
+            GridCloseableIterator<IgniteBiTuple<K, V>> iter = idxQryRes.iter();
+
+            return new GridCloseableIteratorAdapter() {
+                @Override protected Object onNext() throws IgniteCheckedException {
+                    IgniteBiTuple<K, V> entry = iter.nextX();
+
+                    return new CacheEntryImpl<>(entry.getKey(), entry.getValue());
+                }
+
+                @Override protected boolean onHasNext() throws IgniteCheckedException {
+                    return iter.hasNextX();
+                }
+            };
         }
         finally {
             leaveBusy();

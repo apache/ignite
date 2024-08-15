@@ -2747,6 +2747,8 @@ public class GridQueryProcessor extends GridProcessorAdapter {
 
         if (idx != null)
             idx.store(cctx, desc, newRow, prevRow, prevRowAvailable);
+
+        statsMgr.onRowUpdated(desc.schemaName(), desc.tableName(), newRow.partition(), key.valueBytes(coctx));
     }
 
     /**
@@ -3042,7 +3044,11 @@ public class GridQueryProcessor extends GridProcessorAdapter {
                         QueryEngine qryEngine = engineForQuery(cliCtx, qry);
 
                         if (qryEngine != null) {
-                            QueryProperties qryProps = new QueryProperties(cctx == null ? null : cctx.name(), keepBinary);
+                            QueryProperties qryProps = new QueryProperties(
+                                cctx == null ? null : cctx.name(),
+                                keepBinary,
+                                failOnMultipleStmts
+                            );
 
                             if (qry instanceof SqlFieldsQueryEx && ((SqlFieldsQueryEx)qry).isBatched()) {
                                 res = qryEngine.queryBatched(
@@ -3610,6 +3616,8 @@ public class GridQueryProcessor extends GridProcessorAdapter {
 
         if (indexingEnabled())
             idx.remove(cctx, desc, row);
+
+        statsMgr.onRowUpdated(desc.schemaName(), desc.tableName(), row.partition(), row.key().valueBytes(cctx.cacheObjectContext()));
     }
 
     /**

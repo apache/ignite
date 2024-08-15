@@ -19,10 +19,9 @@ package org.apache.ignite.internal.management.kill;
 
 import org.apache.ignite.internal.management.api.ComputeCommand;
 import org.apache.ignite.internal.management.kill.SnapshotCancelTask.CancelSnapshotArg;
-import org.apache.ignite.internal.management.snapshot.SnapshotTaskResult;
 
 /** */
-public class KillSnapshotCommand implements ComputeCommand<CancelSnapshotArg, SnapshotTaskResult> {
+public class KillSnapshotCommand implements ComputeCommand<CancelSnapshotArg, String> {
     /** {@inheritDoc} */
     @Override public String description() {
         return "Kill running snapshot by snapshot name";

@@ -21,7 +21,7 @@ import org.apache.ignite.internal.management.kill.SnapshotCancelTask;
 import org.apache.ignite.internal.management.kill.SnapshotCancelTask.CancelSnapshotArg;
 
 /** */
-public class SnapshotCancelCommand extends AbstractSnapshotCommand<CancelSnapshotArg> {
+public class SnapshotCancelCommand extends AbstractSnapshotCommand<CancelSnapshotArg, String> {
     /** {@inheritDoc} */
     @Override public String description() {
         return "Cancel running snapshot operation";

@@ -27,38 +27,15 @@ import org.apache.ignite.internal.cache.query.index.sorted.IndexKeyDefinition;
  */
 public class ClientIndexDefinition implements IndexDefinition {
     /** */
-    private final int cfgInlineSize;
-
-    /** */
-    private final int maxInlineSize;
-
-    /** */
     private final IndexName idxName;
 
     /** */
     private final LinkedHashMap<String, IndexKeyDefinition> keyDefs;
 
     /** */
-    public ClientIndexDefinition(
-        IndexName idxName,
-        LinkedHashMap<String, IndexKeyDefinition> keyDefs,
-        int cfgInlineSize,
-        int maxInlineSize
-    ) {
+    public ClientIndexDefinition(IndexName idxName, LinkedHashMap<String, IndexKeyDefinition> keyDefs) {
         this.idxName = idxName;
-        this.cfgInlineSize = cfgInlineSize;
-        this.maxInlineSize = maxInlineSize;
         this.keyDefs = keyDefs;
-    }
-
-    /** */
-    public int getCfgInlineSize() {
-        return cfgInlineSize;
-    }
-
-    /** */
-    public int getMaxInlineSize() {
-        return maxInlineSize;
     }
 
     /** {@inheritDoc} */

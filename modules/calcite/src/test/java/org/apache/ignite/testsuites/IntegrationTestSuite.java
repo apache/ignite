@@ -20,7 +20,6 @@ package org.apache.ignite.testsuites;
 import org.apache.ignite.internal.processors.cache.DdlTransactionCalciteSelfTest;
 import org.apache.ignite.internal.processors.query.calcite.CalciteQueryProcessorTest;
 import org.apache.ignite.internal.processors.query.calcite.CancelTest;
-import org.apache.ignite.internal.processors.query.calcite.DateTimeTest;
 import org.apache.ignite.internal.processors.query.calcite.IndexWithSameNameCalciteTest;
 import org.apache.ignite.internal.processors.query.calcite.SqlFieldsQueryUsageTest;
 import org.apache.ignite.internal.processors.query.calcite.UnstableTopologyTest;
@@ -30,6 +29,7 @@ import org.apache.ignite.internal.processors.query.calcite.integration.CalciteBa
 import org.apache.ignite.internal.processors.query.calcite.integration.CalciteErrorHandlilngIntegrationTest;
 import org.apache.ignite.internal.processors.query.calcite.integration.CorrelatesIntegrationTest;
 import org.apache.ignite.internal.processors.query.calcite.integration.DataTypesTest;
+import org.apache.ignite.internal.processors.query.calcite.integration.DateTimeTest;
 import org.apache.ignite.internal.processors.query.calcite.integration.DynamicParametersIntegrationTest;
 import org.apache.ignite.internal.processors.query.calcite.integration.ExpiredEntriesIntegrationTest;
 import org.apache.ignite.internal.processors.query.calcite.integration.FunctionsTest;
@@ -72,6 +72,7 @@ import org.apache.ignite.internal.processors.query.calcite.jdbc.JdbcQueryTest;
 import org.apache.ignite.internal.processors.query.calcite.rules.JoinCommuteRulesTest;
 import org.apache.ignite.internal.processors.query.calcite.rules.OrToUnionRuleTest;
 import org.apache.ignite.internal.processors.query.calcite.rules.ProjectScanMergeRuleTest;
+import org.apache.ignite.internal.processors.query.calcite.thin.MultiLineQueryTest;
 import org.junit.runner.RunWith;
 import org.junit.runners.Suite;
 
@@ -135,6 +136,7 @@ import org.junit.runners.Suite;
     IndexWithSameNameCalciteTest.class,
     AuthorizationIntegrationTest.class,
     DdlTransactionCalciteSelfTest.class,
+    MultiLineQueryTest.class,
 })
 public class IntegrationTestSuite {
 }

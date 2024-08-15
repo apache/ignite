@@ -59,8 +59,8 @@ public class IgniteStatisticsManagerImpl implements IgniteStatisticsManager {
     /** Default statistics usage state. */
     private static final StatisticsUsageState DEFAULT_STATISTICS_USAGE_STATE = ON;
 
-    /** Interval to check statistics obsolescence in milliseconds. */
-    private static final int OBSOLESCENCE_INTERVAL = 60_000;
+    /** Interval to check statistics obsolescence in seconds. */
+    private static final int OBSOLESCENCE_INTERVAL = 60;
 
     /** Logger. */
     private final IgniteLogger log;
@@ -105,13 +105,13 @@ public class IgniteStatisticsManagerImpl implements IgniteStatisticsManager {
         StatisticsUsageState.class);
 
     /** Last known statistics usage state. */
-    private volatile StatisticsUsageState lastUsageState;
+    private volatile StatisticsUsageState lastUsageState = null;
 
     /** Started flag to prevent double start on change statistics usage state and activation and vice versa. */
     private volatile boolean started;
 
     /** Schedule to process obsolescence statistics. */
-    private GridTimeoutProcessor.CancelableTask obsolescenceSchedule;
+    private volatile GridTimeoutProcessor.CancelableTask obsolescenceSchedule;
 
     /** Exchange listener. */
     private final PartitionsExchangeAware exchAwareLsnr = new PartitionsExchangeAware() {
@@ -236,13 +236,21 @@ public class IgniteStatisticsManagerImpl implements IgniteStatisticsManager {
 
         tryStart();
 
-        if (serverNode) {
-            // Use mgmt pool to work with statistics repository in busy lock to schedule some tasks.
-            obsolescenceSchedule = ctx.timeout().schedule(() -> obsolescenceBusyExecutor.execute(this::processObsolescence),
-                OBSOLESCENCE_INTERVAL, OBSOLESCENCE_INTERVAL);
-        }
+        if (serverNode)
+            scheduleObsolescence(OBSOLESCENCE_INTERVAL);
 
         ctx.cache().context().exchange().registerExchangeAwareComponent(exchAwareLsnr);
+    }
+
+    /** */
+    void scheduleObsolescence(int seconds) {
+        assert seconds >= 1;
+
+        if (obsolescenceSchedule != null)
+            obsolescenceSchedule.close();
+
+        obsolescenceSchedule = ctx.timeout().schedule(() -> obsolescenceBusyExecutor.execute(this::processObsolescence),
+            seconds * 1000, seconds * 1000);
     }
 
     /**

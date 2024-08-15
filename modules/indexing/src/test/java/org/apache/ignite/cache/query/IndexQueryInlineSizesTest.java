@@ -32,7 +32,7 @@ import org.apache.ignite.cache.QueryEntity;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.processors.query.h2.IgniteH2Indexing;
-import org.apache.ignite.internal.processors.query.h2.database.H2TreeIndexBase;
+import org.apache.ignite.internal.processors.query.h2.database.H2TreeIndex;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2Table;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
@@ -272,7 +272,7 @@ public class IndexQueryInlineSizesTest extends GridCommonAbstractTest {
             GridH2Table tbl = ((IgniteH2Indexing)crd.context().query().getIndexing()).schemaManager()
                 .dataTable("PUBLIC", TABLE);
 
-            assertEquals(expInlineSize, ((H2TreeIndexBase)tbl.getIndex(idxName)).inlineSize());
+            assertEquals(expInlineSize, ((H2TreeIndex)tbl.getIndex(idxName)).inlineSize());
         }
 
         /** {@inheritDoc} */

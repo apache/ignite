@@ -266,7 +266,7 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
     public static final String DIRECT_PROTO_VER_ATTR = "comm.direct.proto.ver";
 
     /** Direct protocol version. */
-    public static final byte DIRECT_PROTO_VER = 3;
+    public static final byte DIRECT_PROTO_VER = 4;
 
     /** Current IO policy. */
     private static final ThreadLocal<Byte> CUR_PLC = new ThreadLocal<>();

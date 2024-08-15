@@ -68,6 +68,8 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.BooleanSupplier;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import javax.cache.CacheException;
@@ -404,6 +406,28 @@ public final class GridTestUtils {
         }
         catch (AssertionError e) {
             U.warn(log, String.format("String does not contain substring: '%s':", substr));
+            U.warn(log, "String:");
+            U.warn(log, str);
+
+            throw e;
+        }
+    }
+
+    /**
+     * Checks that string {@param str} matches {@param pattern}. Logs both strings
+     * and throws {@link java.lang.AssertionError}, if not.
+     *
+     * @param log Logger (optional).
+     * @param str String.
+     * @param pattern Pattern.
+     */
+    public static void assertContains(@Nullable IgniteLogger log, String str, Pattern pattern) {
+        try {
+            Matcher m = pattern.matcher(str);
+            assertTrue(str != null && m.find());
+        }
+        catch (AssertionError e) {
+            U.warn(log, String.format("String does not match pattern: '%s':", pattern));
             U.warn(log, "String:");
             U.warn(log, str);
 

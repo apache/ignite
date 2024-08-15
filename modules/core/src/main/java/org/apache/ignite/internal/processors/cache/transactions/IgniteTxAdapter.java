@@ -1896,7 +1896,7 @@ public abstract class IgniteTxAdapter extends GridMetadataAwareAdapter implement
      * @throws IgniteCheckedException If caches already enlisted in this transaction are not compatible with given
      *      cache (e.g. they have different stores).
      */
-    public abstract void addActiveCache(GridCacheContext cacheCtx, boolean recovery) throws IgniteCheckedException;
+    public abstract void addActiveCache(GridCacheContext<?, ?> cacheCtx, boolean recovery) throws IgniteCheckedException;
 
     /** {@inheritDoc} */
     @Override public TxCounters txCounters(boolean createIfAbsent) {
