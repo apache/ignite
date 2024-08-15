@@ -236,7 +236,6 @@ public class CacheIndexImpl implements IgniteIndex {
                         }
                     };
 
-                    // TODO: no need to create list here.
                     cnt += txChanges.get2().size();
                 }
             }
