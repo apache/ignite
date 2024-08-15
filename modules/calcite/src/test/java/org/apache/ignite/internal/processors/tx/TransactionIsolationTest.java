@@ -21,6 +21,8 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.HashMap;
+import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -152,6 +154,9 @@ public class TransactionIsolationTest extends GridCommonAbstractTest {
 
     /** */
     private TransactionIsolation txIsolation = READ_COMMITTED;
+
+    /** */
+    private Map<Integer, Set<Integer>> partsToKeys = new HashMap<>();
 
     /** @return Test parameters. */
     @Parameterized.Parameters(
@@ -299,6 +304,13 @@ public class TransactionIsolationTest extends GridCommonAbstractTest {
         }
 
         assertEquals(25L, executeSql(format("SELECT COUNT(*) FROM %s", users())).get(0).get(0));
+
+        for (Map.Entry<Integer, Set<Integer>> partToKeys : partsToKeys.entrySet()) {
+            assertEquals(
+                (long)partToKeys.getValue().size(),
+                executeSql(format("SELECT COUNT(*) FROM %s", users()), new int[] {partToKeys.getKey()}).get(0).get(0)
+            );
+        }
 
         insideTx(() -> {
             for (int i = 0; i < 5; i++) {
@@ -556,7 +568,6 @@ public class TransactionIsolationTest extends GridCommonAbstractTest {
                 else
                     tx.rollback();
             }
-
         }
         else {
             Ignite initiator = node();
@@ -575,9 +586,7 @@ public class TransactionIsolationTest extends GridCommonAbstractTest {
     }
 
     /** */
-    private User select(Integer id, String api, int...parts) {
-        assertTrue(F.isEmpty(parts) || api.equals(SQL));
-
+    private User select(Integer id, String api) {
         if (api.equals(CACHE))
             return type == ExecutorType.THIN
                 ? (User)thinCli.cache(users()).get(id)
@@ -597,6 +606,17 @@ public class TransactionIsolationTest extends GridCommonAbstractTest {
 
     /** */
     private void insert(IgniteBiTuple<Integer, User>... entries) {
+        for (IgniteBiTuple<Integer, User> data : entries) {
+            assertTrue(partsToKeys
+                .computeIfAbsent(userPartition(data.get1()), k -> new HashSet<>())
+                .add(data.get1()));
+        }
+
+        doInsert(entries);
+    }
+
+    /** */
+    private void doInsert(IgniteBiTuple<Integer, User>[] entries) {
         if (modify.equals(CACHE)) {
             if (multi) {
                 Map<Integer, User> data = Arrays.stream(entries).collect(Collectors.toMap(IgniteBiTuple::get1, IgniteBiTuple::get2));
@@ -648,8 +668,15 @@ public class TransactionIsolationTest extends GridCommonAbstractTest {
 
     /** */
     private void update(IgniteBiTuple<Integer, User>...entries) {
+        for (IgniteBiTuple<Integer, User> data : entries) {
+            int part = userPartition(data.get1());
+
+            assertTrue(partsToKeys.containsKey(part));
+            assertTrue(partsToKeys.get(part).contains(data.get1()));
+        }
+
         if (modify.equals(CACHE))
-            insert(entries);
+            doInsert(entries);
         else if (modify.equals(SQL)) {
             String update = format("UPDATE %s SET userid = ?, fio = ? WHERE id = ?", users());
 
@@ -683,6 +710,13 @@ public class TransactionIsolationTest extends GridCommonAbstractTest {
 
     /** */
     private void delete(int... keys) {
+        for (int key : keys) {
+            int part = userPartition(key);
+
+            assertTrue(partsToKeys.containsKey(part));
+            assertTrue(partsToKeys.get(part).remove(key));
+        }
+
         if (modify.equals(CACHE)) {
             if (multi) {
                 Set<Integer> toRemove = Arrays.stream(keys).boxed().collect(Collectors.toSet());
@@ -797,6 +831,11 @@ public class TransactionIsolationTest extends GridCommonAbstractTest {
         assertTrue(type == ExecutorType.CLIENT || type == ExecutorType.SERVER);
 
         return type == ExecutorType.CLIENT ? cli : srv;
+    }
+
+    /** */
+    private int userPartition(int id) {
+        return affinity(cli.cache(users())).partition(id);
     }
 
     /** */
