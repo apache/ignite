@@ -293,35 +293,50 @@ public class TransactionIsolationTest extends GridCommonAbstractTest {
 
         assertEquals("Table must be empty", 0L, sql(format("SELECT COUNT(*) FROM %s", users())).get(0).get(0));
 
-        for (int i = 0; i < 5; i++) {
-            int start = i * 10;
+        int stepCnt = 7;
+        int stepSz = 12;
+        int outOfTxSz = 3;
+        int inTxSz = 9;
 
-            for (int j = 0; j < 5; j++) {
-                int id = start + j + 1;
+        assert outOfTxSz + inTxSz == stepSz;
+
+        for (int i = 0; i < stepCnt; i++) {
+            int outOfTxStart = i * stepSz;
+
+            for (int j = 0; j < outOfTxSz; j++) {
+                int id = outOfTxStart + j;
 
                 insert(F.t(id, new User(id, "User" + j))); // Intentionally repeat FIO to make same indexed keys.
             }
         }
 
-        assertEquals(25L, sql(format("SELECT COUNT(*) FROM %s", users())).get(0).get(0));
+        assertEquals((long)(stepCnt * outOfTxSz), sql(format("SELECT COUNT(*) FROM %s", users())).get(0).get(0));
 
         checkQueryWithPartitionFilter();
 
         insideTx(() -> {
-            for (int i = 0; i < 5; i++) {
-                int start = i * 10 + 5;
+            for (int i = 0; i < stepCnt; i++) {
+                int outOfTxStart = i * stepSz;
+                int inTxStart = i * stepSz + outOfTxSz;
 
-                assertEquals(i * 10 + 1, sql(format("SELECT MIN(userid) FROM %s WHERE userid > ?", users()), i * 10).get(0).get(0));
+                assertEquals(
+                    outOfTxStart,
+                    sql(format("SELECT MIN(userid) FROM %s WHERE userid >= ?", users()), outOfTxStart).get(0).get(0)
+                );
+                assertEquals(
+                    outOfTxStart + 1,
+                    sql(format("SELECT MIN(userid) FROM %s WHERE userid > ?", users()), outOfTxStart).get(0).get(0)
+                );
 
-                for (int j = 0; j < 5; j++) {
-                    final int id = start + j + 1;
+                for (int j = 0; j < inTxSz; j++) {
+                    final int id = inTxStart + j;
 
                     insert(F.t(id, new User(id, "User" + j))); // Intentionally repeat FIO to make same indexed keys.
 
                     // Concurrent query must not see any transaction data.
                     runAsync(() -> {
                         RunnableX check = () -> {
-                            assertEquals(25L, sql(format("SELECT COUNT(*) FROM %s", users())).get(0).get(0));
+                            assertEquals((long)(stepCnt * outOfTxSz), sql(format("SELECT COUNT(*) FROM %s", users())).get(0).get(0));
 
                             assertNull(select(id, CACHE));
                             assertNull(select(id, SQL));
@@ -331,7 +346,7 @@ public class TransactionIsolationTest extends GridCommonAbstractTest {
                         check.run();
                     }).get(TX_TIMEOUT);
 
-                    long expTblSz = 25L + i * 5 + j + 1;
+                    long expTblSz = (long)(stepCnt * outOfTxSz) + i * inTxSz + j + 1;
 
                     assertEquals(expTblSz, sql(format("SELECT COUNT(*) FROM %s", users())).get(0).get(0));
 
@@ -350,23 +365,42 @@ public class TransactionIsolationTest extends GridCommonAbstractTest {
                 checkQueryWithPartitionFilter();
 
                 List<List<?>> res = sql(
-                    format("SELECT id FROM %s WHERE userId > ? AND userId <= ? ORDER BY id LIMIT 10", users()),
-                    i * 10,
-                    (i + 1) * 10
+                    format("SELECT id FROM %s WHERE userId >= ? AND userId <= ? ORDER BY id LIMIT ?", users()),
+                    i * stepSz,
+                    (i + 1) * stepSz,
+                    stepSz
                 );
 
-                assertEquals(10, res.size());
+                assertEquals(stepSz, res.size());
+
+                for (int j = 0; j < stepSz; j++)
+                    assertEquals(outOfTxStart + j, res.get(j).get(0));
+
+                int offset = 3;
+
+                res = sql(
+                    format("SELECT id FROM %s WHERE userId >= ? AND userId <= ? ORDER BY id LIMIT ? OFFSET ?", users()),
+                    i * stepSz,
+                    (i + 1) * stepSz,
+                    stepSz - offset,
+                    offset
+                );
+
+                assertEquals(stepSz - offset, res.size());
+
+                for (int j = 0; j < stepSz - offset; j++)
+                    assertEquals(outOfTxStart + j + offset, res.get(j).get(0));
             }
 
-            for (int i = 0; i < 5; i++) {
-                int start = i * 10;
+            for (int i = 0; i < stepCnt; i++) {
+                int start = i * stepSz;
 
-                for (int j = 0; j < 5; j++) {
-                    int id = start + j + 1;
+                for (int j = 0; j < outOfTxSz; j++) {
+                    int id = start + j;
 
                     delete(id);
 
-                    long expTblSz = 50L - (i * 5 + j + 1);
+                    long expTblSz = (stepCnt * stepSz) - (i * outOfTxSz + j + 1);
 
                     assertEquals(expTblSz, sql(format("SELECT COUNT(*) FROM %s", users())).get(0).get(0));
 
@@ -378,11 +412,10 @@ public class TransactionIsolationTest extends GridCommonAbstractTest {
                 }
             }
 
-            // https://issues.apache.org/jira/browse/IGNITE-22993
             checkQueryWithPartitionFilter();
         }, true);
 
-        assertEquals(25L, sql(format("SELECT COUNT(*) FROM %s", users())).get(0).get(0));
+        assertEquals((long)inTxSz * stepCnt, sql(format("SELECT COUNT(*) FROM %s", users())).get(0).get(0));
     }
 
     /** */
