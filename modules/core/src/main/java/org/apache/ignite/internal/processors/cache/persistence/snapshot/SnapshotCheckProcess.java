@@ -176,11 +176,14 @@ public class SnapshotCheckProcess {
 
     /** Phase 2 beginning.  */
     private IgniteInternalFuture<SnapshotCheckResponse> validateParts(SnapshotCheckProcessRequest req) {
-        SnapshotCheckContext ctx;
+        if (!req.nodes().contains(kctx.localNodeId()))
+            return new GridFinishedFuture<>();
 
-        // The context can be null, if a required node leaves before this phase.
-        if (!req.nodes().contains(kctx.localNodeId()) || (ctx = context(req.snapshotName(), req.requestId())) == null
-            || ctx.locMeta == null)
+        SnapshotCheckContext ctx = context(req.snapshotName(), req.requestId());
+
+        assert ctx != null;
+
+        if (ctx.locMeta == null)
             return new GridFinishedFuture<>();
 
         IgniteSnapshotManager snpMgr = kctx.cache().context().snapshotMgr();
