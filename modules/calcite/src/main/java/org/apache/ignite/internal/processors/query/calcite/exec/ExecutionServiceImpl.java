@@ -615,7 +615,6 @@ public class ExecutionServiceImpl<Row> extends AbstractService implements Execut
 
         MemoryTracker qryMemoryTracker = qry.createMemoryTracker(memoryTracker, cfg.getQueryMemoryQuota());
 
-        // TODO: send batch fragment request to reduce tx state overhead.
         final GridNearTxLocal userTx = Commons.queryTransaction(qry.context(), ctx.cache().context());
 
         ExecutionContext<Row> ectx = new ExecutionContext<>(
