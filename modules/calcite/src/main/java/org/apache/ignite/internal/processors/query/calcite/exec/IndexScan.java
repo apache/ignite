@@ -560,7 +560,7 @@ public class IndexScan<Row> extends AbstractIndexScan<Row, IndexRow> {
                     e.key(),
                     e.value(),
                     e.explicitVersion(),
-                    CU.EXPIRE_TIME_ETERNAL // TODO: FIX expire time calculation.
+                    CU.EXPIRE_TIME_ETERNAL // Expire time calculated on commit, can use eternal here.
                 )));
             }
         }

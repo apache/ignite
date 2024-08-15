@@ -28,7 +28,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
-import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 import java.util.stream.LongStream;
 import org.apache.ignite.Ignite;
@@ -67,6 +66,7 @@ import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 
 import static java.lang.String.format;
+import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.apache.ignite.testframework.GridTestUtils.runAsync;
 import static org.apache.ignite.transactions.TransactionIsolation.READ_COMMITTED;
 import static org.junit.Assume.assumeFalse;
@@ -410,8 +410,6 @@ public class TransactionIsolationTest extends GridCommonAbstractTest {
     @Test
     public void testInsert() {
         assumeFalse("https://issues.apache.org/jira/browse/IGNITE-22874", type == ExecutorType.THIN);
-
-        // TODO: expire policy test.
 
         Runnable checkBefore = () -> {
             for (int i = 4; i <= (multi ? 6 : 4); i++) {
@@ -829,7 +827,7 @@ public class TransactionIsolationTest extends GridCommonAbstractTest {
 
         SqlFieldsQuery qry = new SqlFieldsQuery(sqlText)
             .setArgs(args)
-            .setTimeout(5, TimeUnit.SECONDS);
+            .setTimeout(5, SECONDS);
 
         if (!F.isEmpty(parts))
             qry.setPartitions(parts);
