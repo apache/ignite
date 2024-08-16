@@ -29,8 +29,14 @@ import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
+import org.apache.ignite.internal.commandline.cache.distribution.CacheDistributionTask;
+import org.apache.ignite.internal.commandline.cache.distribution.CacheDistributionTaskResult;
+import org.apache.ignite.internal.management.cache.CacheDistributionCommandArg;
 import org.apache.ignite.internal.processors.cache.persistence.CleanCacheStoresMaintenanceAction;
+import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.X;
+import org.apache.ignite.internal.visor.VisorTaskArgument;
+import org.apache.ignite.internal.visor.VisorTaskResult;
 import org.apache.ignite.lang.IgniteRunnable;
 import org.apache.ignite.maintenance.MaintenanceAction;
 import org.apache.ignite.maintenance.MaintenanceRegistry;
@@ -75,6 +81,20 @@ public class WalEnableDisableWithRestartsTest extends GridCommonAbstractTest {
         nodes.getFirst().cluster().state(ClusterState.ACTIVE);
 
         Ignite client = Ignition.start(igniteCfg(true, "client"));
+
+        client.getOrCreateCache(new CacheConfiguration<>("with-node-filter-cache")
+            .setNodeFilter(node -> node.consistentId().toString().endsWith("0"))
+            .setStatisticsEnabled(true));
+
+        CacheDistributionCommandArg arg = new CacheDistributionCommandArg();
+        arg.caches(new String[] {"with-node-filter-cache"});
+
+        VisorTaskArgument<CacheDistributionCommandArg> vis =
+            new VisorTaskArgument<>(F.nodeIds(client.cluster().forServers().nodes()), arg, false);
+
+        client.compute().execute(CacheDistributionTask.class, vis);
+        VisorTaskResult<CacheDistributionTaskResult> res = client.compute().execute(CacheDistributionTask.class, vis);
+        CacheDistributionTaskResult result = res.result();
 
         new Thread(new Runnable() {
             public void run() {
@@ -125,6 +145,7 @@ public class WalEnableDisableWithRestartsTest extends GridCommonAbstractTest {
         }
 
         assertFalse(failure);
+        assertEquals(0, result.exceptions().size());
     }
 
     /** */
