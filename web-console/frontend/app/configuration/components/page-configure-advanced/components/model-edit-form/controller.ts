@@ -10,6 +10,8 @@ import {default as IgniteVersion} from 'app/services/Version.service';
 import {Confirm} from 'app/services/Confirm.service';
 import {DomainModel} from '../../../../types';
 import ErrorPopover from 'app/services/ErrorPopover.service';
+import JavaTypes from 'app/services/JavaTypes.service';
+import SqlTypes from 'app/services/SqlTypes.service';
 import LegacyUtilsFactory from 'app/services/LegacyUtils.service';
 import ConfigChangesGuard from '../../../../services/ConfigChangesGuard';
 import FormUtils from 'app/services/FormUtils.service';
@@ -18,12 +20,14 @@ export default class ModelEditFormController {
     model: DomainModel;
     onSave: ng.ICompiledExpression;
 
-    static $inject = ['ModalImportModels', 'IgniteErrorPopover', 'IgniteLegacyUtils', 'Confirm', 'ConfigChangesGuard', 'IgniteVersion', '$scope', 'Models', 'IgniteFormUtils'];
+    static $inject = ['ModalImportModels', 'IgniteErrorPopover', 'IgniteLegacyUtils', 'JavaTypes', 'SqlTypes', 'Confirm', 'ConfigChangesGuard', 'IgniteVersion', '$scope', 'Models', 'IgniteFormUtils'];
 
     constructor(
         private ModalImportModels: ModalImportModels,
         private ErrorPopover: ErrorPopover,
         private LegacyUtils: ReturnType<typeof LegacyUtilsFactory>,
+        private JavaTypes: JavaTypes,
+        private SqlTypes: SqlTypes,
         private Confirm: Confirm,
         private ConfigChangesGuard: ConfigChangesGuard<DomainModel>,
         private IgniteVersion: IgniteVersion,
@@ -31,21 +35,19 @@ export default class ModelEditFormController {
         private Models: Models,
         private IgniteFormUtils: ReturnType<typeof FormUtils>
     ) {}
-
-    javaBuiltInClassesBase = this.LegacyUtils.javaBuiltInClasses;
+    
 
     $onInit() {
         this.available = this.IgniteVersion.available.bind(this.IgniteVersion);
-
-        this.queryFieldTypes = this.LegacyUtils.javaBuiltInClasses.concat('byte[]');
         this.$scope.ui = this.IgniteFormUtils.formUI();
+        this.queryFieldTypes = this.JavaTypes.javaBuiltInClasses();
+        this.javaBuiltInClassesBase = this.JavaTypes.javaBuiltInBaseClasses();
 
-        this.$scope.javaBuiltInClasses = this.LegacyUtils.javaBuiltInClasses;
-        this.$scope.supportedJdbcTypes = this.LegacyUtils.mkOptions(this.LegacyUtils.SUPPORTED_JDBC_TYPES);
-        this.$scope.supportedJavaTypes = this.LegacyUtils.mkOptions(this.LegacyUtils.javaBuiltInTypes);
+        this.$scope.supportedJdbcTypes = this.SqlTypes.mkJdbcTypeOptions();
+        this.$scope.supportedJavaTypes = this.JavaTypes.mkJavaBuiltInTypesOptions();
 
         this.formActions = [
-            {text: 'Save', icon: 'checkmark', click: () => this.save()},
+            {text: 'Save', icon: 'checkmark', click: () => this.save(false)},
             {text: 'Save and Download', icon: 'download', click: () => this.save(true)}
         ];
     }
@@ -107,7 +109,7 @@ export default class ModelEditFormController {
             if (_.isEmpty(item.keyFields))
                 return this.ErrorPopover.show('keyFields', 'Key fields are not specified', this.$scope.ui, 'store');
 
-            if (this.LegacyUtils.isJavaBuiltInClass(item.keyType) && item.keyFields.length !== 1)
+            if (this.JavaTypes.isJavaBuiltInClass(item.keyType) && item.keyFields.length !== 1)
                 return this.ErrorPopover.show('keyFields', 'Only one field should be specified in case when key type is a Java built-in type', this.$scope.ui, 'store');
 
             if (_.isEmpty(item.valueFields))

@@ -14,6 +14,9 @@ import JAVA_PRIMITIVES from '../data/java-primitives.json';
 // Java keywords.
 import JAVA_KEYWORDS from '../data/java-keywords.json';
 
+// Extended list of Java built-in class names.
+const JAVA_CLASS_STRINGS = JAVA_CLASSES.slice();
+
 // Regular expression to check Java identifier.
 const VALID_IDENTIFIER = /^[a-zA-Z_$][a-zA-Z0-9_$]*$/im;
 
@@ -26,8 +29,7 @@ const VALID_PACKAGE = /^(([a-zA-Z_$][a-zA-Z0-9_$]*)\.)*([a-zA-Z_$][a-zA-Z0-9_$]*
 // Regular expression to check UUID string representation.
 const VALID_UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/im;
 
-// Extended list of Java built-in class names.
-const JAVA_CLASS_STRINGS = JAVA_CLASSES.slice();
+
 
 /**
  * Utility service for various check on java types.
@@ -144,5 +146,112 @@ export default class JavaTypes {
         const javaName = name ? this.shortClassName(name).replace(/[^A-Za-z_0-9]+/g, '_') : 'dflt';
 
         return prefix + javaName.charAt(0).toLocaleUpperCase() + javaName.slice(1);
+    }
+
+    /**
+     * @param {String} s var name to check.
+     * @returns {boolean} 'true' if given class name is java or sql ident.
+     */
+    isValidJavaIdentifier(s) {
+        return this.validIdentifier(s) && !this.isKeyword(s) && this.nonBuiltInClass(s);
+        //&& SqlTypes.validIdentifier(s) && !SqlTypes.isKeyword(s);
+    }
+
+    toJavaIdentifier(name) {
+        if (_.isEmpty(name))
+            return 'DB';
+
+        const len = name.length;
+
+        let ident = '';
+
+        let capitalizeNext = true;
+        let lastCh = ' '
+        for (let i = 0; i < len; i++) {
+            const ch = name.charAt(i);
+            if ((ch === ' ' || ch === '_') && !('A'<=lastCh && lastCh<='Z'))
+                capitalizeNext = true;
+            else if (ch === '-') {
+                ident += '_';
+                capitalizeNext = true;
+            }
+            else if (capitalizeNext) {
+                ident += ch.toLocaleUpperCase();
+
+                capitalizeNext = false;
+            }
+            else
+                ident += ch;
+            lastCh = ch;
+        }
+
+        return ident;
+    }
+
+    toJavaClassName(name) {
+        const clazzName = this.toJavaIdentifier(name);
+
+        if (this.isValidJavaIdentifier(clazzName))
+            return clazzName;
+
+        return 'Class' + clazzName;
+    }
+
+    toJavaFieldName(dbName) {
+        const javaName = this.toJavaIdentifier(dbName);
+
+        const fieldName = javaName.charAt(0).toLocaleLowerCase() + javaName.slice(1);
+
+        if (this.isValidJavaIdentifier(fieldName))
+            return fieldName;
+
+        return 'field' + javaName;
+    }
+
+    /**
+     * @param clsName Class name to check.
+     * @param additionalClasses List of classes to check as builtin.
+     * @returns {Boolean} 'true' if given class name is a java build-in type.
+     */
+    isJavaBuiltInClass(clsName, additionalClasses=null) {
+        if (!clsName || clsName.trim().length === 0)
+            return false;
+
+        return _.includes(this.javaBuiltInClasses(), clsName) 
+            || _.includes(this.javaBuiltInFullNameClasses(), clsName)
+            || (_.isArray(additionalClasses) && _.includes(additionalClasses, clsName));
+    }
+
+    javaBuiltInBaseClasses() {
+        return _.map(JAVA_CLASSES, (option) => {
+            return option.short
+        });
+    }
+
+    javaBuiltInClasses() {
+        return _.map(JAVA_CLASS_STRINGS, (option) => {
+            return option.short
+        });
+    }
+    javaBuiltInFullNameClasses() {
+        return _.map(JAVA_CLASS_STRINGS, (option) => {
+            return option.full
+        });
+    }
+
+    mkJavaClassesOptions() {
+        return _.map(JAVA_CLASS_STRINGS, (option) => {
+            return {value: option.full, label: option.short};
+        });
+    }
+
+    mkJavaBuiltInTypesOptions() {
+        let baseType = _.map(JAVA_PRIMITIVES, (option) => {
+            return {value: option, label: option};
+        });
+        let classes = _.map(JAVA_CLASSES, (option) => {
+            return {value: option.short, label: option.short};
+        });
+        return _.concat(baseType, classes,[{value: '[B', label: 'byte[]'}]);
     }
 }

@@ -8,7 +8,7 @@ import {tap} from 'rxjs/operators';
 import {ShortCache} from '../../../../types';
 import {Menu} from 'app/types';
 import Clusters from '../../../../services/Clusters';
-import LegacyUtils from 'app/services/LegacyUtils.service';
+import SqlTypes from 'app/services/SqlTypes.service';
 import IgniteEventGroups from '../../../../generator/generator/defaults/Event-groups.service';
 import LegacyConfirm from 'app/services/Confirm.service';
 import Version from 'app/services/Version.service';
@@ -20,10 +20,10 @@ export default class ClusterEditFormController {
     servicesCachesMenu: Menu<string>;
     onSave: ng.ICompiledExpression;
 
-    static $inject = ['IgniteLegacyUtils', 'IgniteEventGroups', 'IgniteConfirm', 'IgniteVersion', '$scope', 'Clusters', 'IgniteFormUtils'];
+    static $inject = ['SqlTypes', 'IgniteEventGroups', 'IgniteConfirm', 'IgniteVersion', '$scope', 'Clusters', 'IgniteFormUtils'];
 
     constructor(
-        private IgniteLegacyUtils: ReturnType<typeof LegacyUtils>,
+        private SqlTypes: SqlTypes,
         private IgniteEventGroups: IgniteEventGroups,
         private IgniteConfirm: ReturnType<typeof LegacyConfirm>,
         private IgniteVersion: Version,
@@ -104,7 +104,7 @@ export default class ClusterEditFormController {
         )
         .subscribe();
 
-        this.supportedJdbcTypes = this.IgniteLegacyUtils.mkOptions(this.IgniteLegacyUtils.SUPPORTED_JDBC_TYPES);
+        this.supportedJdbcTypes = this.SqlTypes.mkJdbcTypeOptions();
 
         this.$scope.ui = this.IgniteFormUtils.formUI();
         this.$scope.ui.loadedPanels = ['checkpoint', 'serviceConfiguration'];

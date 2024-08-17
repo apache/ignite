@@ -17,5 +17,9 @@
   {"short": "Timestamp", "full": "java.sql.Timestamp"},
   {"short": "UUID", "full": "java.util.UUID"},
   {"short": "Serializable", "full": "java.io.Serializable"},
+  {"short": "SQLXML", "full": "java.sql.SQLXML"},
+  {"short": "Array", "full": "java.sql.Array"},
+  {"short": "Blob", "full": "java.sql.Blob"},
+  {"short": "Clob", "full": "java.sql.Clob"},
   {"short": "Class", "full": "java.lang.Class"}
 ]

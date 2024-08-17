@@ -15,9 +15,8 @@
  */
 
 package org.apache.ignite.console.agent.db;
-
 import org.apache.ignite.internal.util.typedef.internal.S;
-
+import java.sql.Types;
 /**
  * Database table column.
  */
@@ -37,7 +36,11 @@ public class DbColumn {
     /** Whether column unsigned. */
     private final boolean unsigned;
     
-    private String comment;
+    /** Whether column unsigned. */
+    private final String typeName;
+
+
+	private String comment;
 
     /**
      * @param name Column name.
@@ -46,9 +49,10 @@ public class DbColumn {
      * @param nullable {@code true} if {@code NULL } allowed for column in database.
      * @param unsigned {@code true} if column is unsigned.
      */
-    public DbColumn(String name, int type, boolean key, boolean nullable, boolean unsigned) {
+    public DbColumn(String name, int type, String typeName,boolean key, boolean nullable, boolean unsigned) {
         this.name = name;
         this.type = type;
+        this.typeName = typeName;
         this.key = key;
         this.nullable = nullable;
         this.unsigned = unsigned;
@@ -87,7 +91,11 @@ public class DbColumn {
      */
     public boolean isUnsigned() {
         return unsigned;
-    }
+    }    
+    
+    public String getTypeName() {
+		return typeName;
+	}
 
     /** {@inheritDoc} */
     @Override public String toString() {

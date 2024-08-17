@@ -1,6 +1,7 @@
 
 
 import LegacyUtilsFactory from 'app/services/LegacyUtils.service';
+import JavaTypes from 'app/services/JavaTypes.service';
 
 export default angular.module('ignite-console.page-configure.validation', [])
     .directive('pcNotInCollection', function() {
@@ -84,18 +85,18 @@ export default angular.module('ignite-console.page-configure.validation', [])
             bindToController: true
         };
     })
-    .directive('isValidJavaIdentifier', ['IgniteLegacyUtils', function(LegacyUtils: ReturnType<typeof LegacyUtilsFactory>) {
+    .directive('isValidJavaIdentifier', ['JavaTypes', function(JavaTypes: JavaTypes) {
         return {
             link(scope, el, attr, ngModel: ng.INgModelController) {
-                ngModel.$validators.isValidJavaIdentifier = (value: string) => LegacyUtils.VALID_JAVA_IDENTIFIER.test(value);
+                ngModel.$validators.isValidJavaIdentifier = (value: string) => JavaTypes.isValidJavaIdentifier(value);
             },
             require: 'ngModel'
         };
     }])
-    .directive('notJavaReservedWord', ['IgniteLegacyUtils', function(LegacyUtils: ReturnType<typeof LegacyUtilsFactory>) {
+    .directive('notJavaReservedWord', ['JavaTypes', function(JavaTypes: JavaTypes) {
         return {
             link(scope, el, attr, ngModel: ng.INgModelController) {
-                ngModel.$validators.notJavaReservedWord = (value: string) => !LegacyUtils.JAVA_KEYWORDS.includes(value);
+                ngModel.$validators.notJavaReservedWord = (value: string) => !JavaTypes.isKeyword(value);
             },
             require: 'ngModel'
         };

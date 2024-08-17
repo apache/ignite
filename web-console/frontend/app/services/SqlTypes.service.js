@@ -38,15 +38,51 @@ export default class SqlTypes {
         return !!(value && _.includes(H2_SQL_KEYWORDS, value.toUpperCase()));
     }
 
+    isValidSqlIdentifier(s) {
+        return this.validIdentifier(s) && !this.isKeyword(s) && !this.findJdbcTypeName(s);
+    }
+
     /**
      * Find JDBC type descriptor for specified JDBC type and options.
      *
      * @param {Number} dbType  Column db type.
      * @return {String|object} Java type.
      */
-    findJdbcType(dbType) {
-        const jdbcType = _.find(JDBC_TYPES, (item) => item.dbType === dbType);
-
+    findJdbcType(dbType,dbTypeName) {
+        let jdbcType = undefined;
+        if(dbType==1111 && dbTypeName){
+            jdbcType = this.findJdbcTypeName(dbTypeName);
+        }
+        if(!jdbcType){
+            jdbcType = _.find(JDBC_TYPES, (item) => item.dbType === dbType);
+        }
         return jdbcType ? jdbcType : UNKNOWN_JDBC_TYPE;
+    }
+
+    findJdbcTypeName(typeName) {
+        typeName = typeName.toUpperCase();
+        const jdbcType = _.find(JDBC_TYPES, (item) => item.dbName === typeName);
+        return jdbcType ? jdbcType : undefined;
+    }
+
+    toJdbcIdentifier(name) { 
+        const len = name.length;
+        let ident = name.replace(/([a-z])([A-Z])/g, '$1_$2').toLowerCase();
+        return ident;
+    }
+
+    toJdbcTypeName(name) {
+        const clazzName = this.toJdbcIdentifier(name);
+
+        if (this.isValidSqlIdentifier(clazzName))
+            return clazzName;
+
+        return 'Type' + clazzName;
+    }
+
+    mkJdbcTypeOptions() {
+        return _.map(JDBC_TYPES, (option) => {
+            return {value: option.dbName, label: option.dbName};
+        });
     }
 }

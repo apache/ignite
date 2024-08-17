@@ -2,6 +2,7 @@
 
 import isEmpty from 'lodash/isEmpty';
 import {nonEmpty} from 'app/utils/lodashMixins';
+import JavaTypes from 'app/services/JavaTypes.service';
 
 const CAUSE_STR = 'Caused by: ';
 const ERR_START_STR = ' err=';

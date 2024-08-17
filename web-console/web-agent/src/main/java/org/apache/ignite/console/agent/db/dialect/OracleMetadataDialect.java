@@ -422,8 +422,8 @@ public class OracleMetadataDialect extends DatabaseMetadataDialect {
                         }
 
                         String colName = colsRs.getString(COL_NAME_IDX);
-
-                        cols.add(new DbColumn(colName, decodeType(colsRs), pkCols.contains(colName),
+                        String colType = colsRs.getString(DATA_TYPE_IDX);
+                        cols.add(new DbColumn(colName, decodeType(colsRs), colType, pkCols.contains(colName),
                             !"N".equals(colsRs.getString(NULLABLE_IDX)), false));
                     }
 

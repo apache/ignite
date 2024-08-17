@@ -42,9 +42,16 @@ public class AuthenticationTokenFilter implements Filter{
         	String uri = ((HttpServletRequest) servletRequest).getRequestURI();
         	
             String authorization = ((HttpServletRequest) servletRequest).getHeader("Authorization");
+			String token = null;
             if (!StringUtils.isEmpty(authorization) && authorization.toLowerCase().startsWith("token ")){
-            	String token = authorization.substring(6);
-            	Account account = accountsService.getAccountByToken(token);
+            	token = authorization.substring(6);
+			}
+			if (!StringUtils.isEmpty(authorization) && authorization.toLowerCase().startsWith("bearer ")){
+				token = authorization.substring(7);
+			}
+				
+            if(token!=null){	
+				Account account = accountsService.getAccountByToken(token);
             	if(account!=null) {
             		account.setAdmin(true); // add@byron
             		TokenAuthentication authentication = new TokenAuthentication(token,account);

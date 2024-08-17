@@ -208,12 +208,14 @@ public class JdbcMetadataDialect extends DatabaseMetadataDialect {
                     try (ResultSet colsRs = dbMeta.getColumns(tblCatalog, tblSchema, tblName, null)) {
                         while (colsRs.next()) {
                             String colName = colsRs.getString(COL_NAME_IDX);
+                            String colType = colsRs.getString(COL_TYPE_NAME_IDX);
                             DbColumn col = new DbColumn(
                                     colName,
                                     colsRs.getInt(COL_DATA_TYPE_IDX),
+                                    colType,
                                     pkCols.contains(colName),
                                     colsRs.getInt(COL_NULLABLE_IDX) == DatabaseMetaData.columnNullable,
-                                    unsignedTypes.contains(colsRs.getString(COL_TYPE_NAME_IDX)));
+                                    unsignedTypes.contains(colType));
                             
                             col.setComment(columnCommentColumn(colsRs,toSchema,tblName,colName));
 

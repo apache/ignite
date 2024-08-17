@@ -398,62 +398,6 @@ export class ModalImportModels {
         };
         
 
-        function isValidJavaIdentifier(s) {
-            return JavaTypes.validIdentifier(s) && !JavaTypes.isKeyword(s) && JavaTypes.nonBuiltInClass(s) &&
-                SqlTypes.validIdentifier(s) && !SqlTypes.isKeyword(s);
-        }
-
-        function toJavaIdentifier(name) {
-            if (_.isEmpty(name))
-                return 'DB';
-
-            const len = name.length;
-
-            let ident = '';
-
-            let capitalizeNext = true;
-
-            for (let i = 0; i < len; i++) {
-                const ch = name.charAt(i);
-
-                if (ch === ' ' || ch === '_')
-                    capitalizeNext = true;
-                else if (ch === '-') {
-                    ident += '_';
-                    capitalizeNext = true;
-                }
-                else if (capitalizeNext) {
-                    ident += ch.toLocaleUpperCase();
-
-                    capitalizeNext = false;
-                }
-                else
-                    ident += ch.toLocaleLowerCase();
-            }
-
-            return ident;
-        }
-
-        function toJavaClassName(name) {
-            const clazzName = toJavaIdentifier(name);
-
-            if (isValidJavaIdentifier(clazzName))
-                return clazzName;
-
-            return 'Class' + clazzName;
-        }
-
-        function toJavaFieldName(dbName) {
-            const javaName = toJavaIdentifier(dbName);
-
-            const fieldName = javaName.charAt(0).toLocaleLowerCase() + javaName.slice(1);
-
-            if (isValidJavaIdentifier(fieldName))
-                return fieldName;
-
-            return 'field' + javaName;
-        }
-
         /**
          * Load list of database schemas.
          */
@@ -475,7 +419,7 @@ export class ModalImportModels {
                 .then((schemaInfo) => {
                     $scope.importDomain.action = 'schemas';
                     $scope.importDomain.info = INFO_SELECT_SCHEMAS;
-                    $scope.importDomain.catalog = toJavaIdentifier(schemaInfo.catalog);
+                    $scope.importDomain.catalog = JavaTypes.toJavaIdentifier(schemaInfo.catalog);
                     $scope.importDomain.schemas = _.map(schemaInfo.schemas, (schema) => ({name: schema}));
                     $scope.importDomain.schemasToUse = $scope.importDomain.schemas;
                     this.selectedSchemasIDs = $scope.importDomain.schemas.map((s) => s.name);
@@ -525,7 +469,7 @@ export class ModalImportModels {
                     _.forEach(tables, (tbl, idx) => {
                         tbl.id = idx;
                         tbl.action = IMPORT_DM_NEW_CACHE;                       
-                        tbl.generatedCacheName = uniqueName(toJavaClassName(tbl.table), this.caches);
+                        tbl.generatedCacheName = uniqueName(SqlTypes.toJdbcIdentifier(tbl.table), this.caches);
                         tbl.cacheOrTemplate = DFLT_PARTITIONED_CACHE.value;
                         tbl.label = tbl.schema + '.' + tbl.table;
                         tbl.edit = false;
@@ -604,9 +548,9 @@ export class ModalImportModels {
 
                 return {
                     databaseFieldName: name,
-                    databaseFieldType: jdbcType.dbName,
+                    databaseFieldType: jdbcType.dbType==1111? 'OTHER' : jdbcType.dbName,
                     javaType: javaTypes.javaType,
-                    javaFieldName: toJavaFieldName(name),
+                    javaFieldName: generatePojo ? JavaTypes.toJavaFieldName(name) : name,
                     javaFieldType
                 };
             }
@@ -617,13 +561,14 @@ export class ModalImportModels {
                 const keyFields = [];
                 const valFields = [];
                 const aliases = [];
-
+                
                 const tableName = table.table;
-                let typeName = toJavaClassName(tableName);
+                // this is cacheName
+                let typeName = generatePojo? JavaTypes.toJavaClassName(tableName) : tableName;
 
                 if (_.find($scope.importDomain.tablesToUse,
                         (tbl, ix) => ix !== curIx && tableName === tbl.table)) {
-                    typeName = typeName + '_' + toJavaClassName(table.schema);
+                    typeName = typeName + '_' + JavaTypes.toJavaClassName(table.schema);
 
                     containDup = true;
                 }
@@ -641,17 +586,19 @@ export class ModalImportModels {
                 let _containKey = false;
 
                 _.forEach(table.columns, function(col) {
-                    const fld = dbField(col.name, SqlTypes.findJdbcType(col.type), col.nullable, col.unsigned);
+                    const fld = dbField(col.name, SqlTypes.findJdbcType(col.type,col.typeName), col.nullable, col.unsigned);
 
                     qryFields.push({name: fld.javaFieldName, className: fld.javaType, comment: col.comment});
 
                     const dbName = fld.databaseFieldName;
 
                     if (generatePojo && $scope.ui.generateFieldAliases &&
-                        SqlTypes.validIdentifier(dbName) && !SqlTypes.isKeyword(dbName) &&
+                        SqlTypes.isValidSqlIdentifier(dbName) &&
                         !_.find(aliases, {field: fld.javaFieldName}) &&
-                        fld.javaFieldName.toUpperCase() !== dbName.toUpperCase())
+                        fld.javaFieldName.toUpperCase() !== dbName.toUpperCase()){
+                            
                         aliases.push({field: fld.javaFieldName, alias: dbName});
+                    }                        
 
                     if (col.key) {
                         keyFields.push(fld);
@@ -666,7 +613,7 @@ export class ModalImportModels {
                 if (table.indexes) {
                     _.forEach(table.indexes, (idx) => {
                         const idxFields = _.map(idx.fields, (idxFld) => ({
-                            name: toJavaFieldName(idxFld.name),
+                            name: generatePojo?JavaTypes.toJavaFieldName(idxFld.name):idxFld.name,
                             direction: idxFld.sortOrder
                         }));
 
@@ -741,12 +688,9 @@ export class ModalImportModels {
                 if (table.action === IMPORT_DM_NEW_CACHE) {
                     const newCache = _.cloneDeep(this.loadedCaches[table.cacheOrTemplate]);
 
-                    batchAction.newCache = newCache;
-
-                    // const siblingCaches = batch.filter((a) => a.newCache).map((a) => a.newCache);
-                    const siblingCaches = [];
+                    batchAction.newCache = newCache;                    
                     newCache.id = uuidv4();
-                    newCache.name = uniqueName(typeName, this.caches.concat(siblingCaches));
+                    newCache.name = table.generatedCacheName;
                     newCache.domains = [batchAction.newDomainModel.id];
                     // add@byron
                     newCache.sqlSchema = table.schema;

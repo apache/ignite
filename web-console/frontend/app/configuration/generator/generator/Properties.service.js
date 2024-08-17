@@ -1,5 +1,5 @@
 
-
+import _ from 'lodash';
 import StringBuilder from './StringBuilder';
 
 /**

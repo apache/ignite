@@ -1,5 +1,6 @@
 [
     {"dbName": "BIT", "dbType": -7, "signed": {"javaType": "Boolean", "primitiveType": "boolean"}},
+    {"dbName": "BOOLEAN", "dbType": 16, "signed": {"javaType": "Boolean", "primitiveType": "boolean"}},
     {"dbName": "TINYINT", "dbType": -6,
         "signed": {"javaType": "Byte", "primitiveType": "byte"},
         "unsigned": {"javaType": "Short", "primitiveType": "short"}},
@@ -29,16 +30,17 @@
     {"dbName": "JAVA_OBJECT", "dbType": 2000, "signed": {"javaType": "Object"}},
     {"dbName": "DISTINCT", "dbType": 2001, "signed": {"javaType": "Object"}},
     {"dbName": "STRUCT", "dbType": 2002, "signed": {"javaType": "Object"}},
-    {"dbName": "ARRAY", "dbType": 2003, "signed": {"javaType": "Object"}},
-    {"dbName": "BLOB", "dbType": 2004, "signed": {"javaType": "Object"}},
+    {"dbName": "ARRAY", "dbType": 2003, "signed": {"javaType": "Array"}},
+    {"dbName": "BLOB", "dbType": 2004, "signed": {"javaType": "Blob"}},
     {"dbName": "CLOB", "dbType": 2005, "signed": {"javaType": "String"}},
     {"dbName": "REF", "dbType": 2006, "signed": {"javaType": "Object"}},
     {"dbName": "DATALINK", "dbType": 70, "signed": {"javaType": "Object"}},
-    {"dbName": "BOOLEAN", "dbType": 16, "signed": {"javaType": "Boolean", "primitiveType": "boolean"}},
     {"dbName": "ROWID", "dbType": -8, "signed": {"javaType": "Object"}},
     {"dbName": "NCHAR", "dbType": -15, "signed": {"javaType": "String"}},
     {"dbName": "NVARCHAR", "dbType": -9, "signed": {"javaType": "String"}},
     {"dbName": "LONGNVARCHAR", "dbType": -16, "signed": {"javaType": "String"}},
     {"dbName": "NCLOB", "dbType": 2011, "signed": {"javaType": "String"}},
-    {"dbName": "SQLXML", "dbType": 2009, "signed": {"javaType": "Object"}}
+    {"dbName": "SQLXML", "dbType": 2009, "signed": {"javaType": "SQLXML"}},
+    {"dbName": "UUID", "dbType": 1111, "signed": {"javaType": "UUID"}},
+    {"dbName": "JSON", "dbType": 1111, "signed": {"javaType": "String"}}
 ]

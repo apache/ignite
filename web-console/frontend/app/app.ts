@@ -59,7 +59,6 @@ import FormUtils from './services/FormUtils.service';
 import InetAddress from './services/InetAddress.service';
 import JavaTypes from './services/JavaTypes.service';
 import SqlTypes from './services/SqlTypes.service';
-import LegacyTable from './services/LegacyTable.service';
 import LegacyUtils from './services/LegacyUtils.service';
 import Messages from './services/Messages.service';
 import ErrorParser from './services/ErrorParser.service';
@@ -269,7 +268,6 @@ export default angular
     .service('IgniteMessages', Messages)
     .service('IgniteErrorParser', ErrorParser)
     .service('IgniteModelNormalizer', ModelNormalizer)
-    .service('IgniteLegacyTable', LegacyTable)
     .service('IgniteFormUtils', FormUtils)
     .service('IgniteLegacyUtils', LegacyUtils)
     .service('IgniteActivitiesUserDialog', IgniteActivitiesUserDialog)

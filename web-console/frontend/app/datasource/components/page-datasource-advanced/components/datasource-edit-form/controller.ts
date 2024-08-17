@@ -6,8 +6,7 @@ import isEqual from 'lodash/isEqual';
 import _ from 'lodash';
 import {tap} from 'rxjs/operators';
 import {Menu} from 'app/types';
-
-import LegacyUtils from 'app/services/LegacyUtils.service';
+import SqlTypes from 'app/services/SqlTypes.service';
 
 import LegacyConfirm from 'app/services/Confirm.service';
 import Version from 'app/services/Version.service';
@@ -17,10 +16,10 @@ export default class DatasourceEditFormController {
     
     onSave: ng.ICompiledExpression;
 
-    static $inject = ['IgniteLegacyUtils', 'IgniteConfirm', 'IgniteVersion', '$scope', 'IgniteFormUtils'];
+    static $inject = ['SqlTypes', 'IgniteConfirm', 'IgniteVersion', '$scope', 'IgniteFormUtils'];
 
     constructor(
-        private IgniteLegacyUtils: ReturnType<typeof LegacyUtils>,        
+        private SqlTypes: SqlTypes,        
         private IgniteConfirm: ReturnType<typeof LegacyConfirm>,
         private IgniteVersion: Version,
         private $scope: ng.IScope,      
@@ -30,7 +29,7 @@ export default class DatasourceEditFormController {
     $onInit() {
         this.available = this.IgniteVersion.available.bind(this.IgniteVersion);
 
-        this.supportedJdbcTypes = this.IgniteLegacyUtils.mkOptions(this.IgniteLegacyUtils.SUPPORTED_JDBC_TYPES);
+        this.supportedJdbcTypes = this.SqlTypes.mkJdbcTypeOptions();
 
         this.$scope.ui = this.IgniteFormUtils.formUI();
         this.$scope.ui.loadedPanels = ['attributes', 'transactions'];

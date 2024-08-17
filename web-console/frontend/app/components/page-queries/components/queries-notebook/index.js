@@ -2,6 +2,7 @@
 
 import angular from 'angular';
 import templateUrl from './template.tpl.pug';
+import { Paragraph } from './Paragraph';
 import { NotebookCtrl } from './controller';
 import NotebookData from '../../notebook.data';
 import {component as actions} from './components/query-actions-button/component';

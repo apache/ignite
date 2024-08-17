@@ -1,11 +1,11 @@
 
 
 import _ from 'lodash';
-
+import JavaTypes from 'app/services/JavaTypes.service';
 /**
  * @param {ReturnType<typeof import('../services/LegacyUtils.service').default>} LegacyUtils [description]
  */
-export default function factory(LegacyUtils) {
+export default function factory(LegacyUtils,JavaTypes) {
     /**
      * Filter domain models with key fields configuration.
      * @template T
@@ -21,7 +21,9 @@ export default function factory(LegacyUtils) {
         const out = [];
 
         _.forEach(domains, function(domain) {
-            const _valid = !LegacyUtils.domainForStoreConfigured(domain) || LegacyUtils.isJavaBuiltInClass(domain.keyType) || !_.isEmpty(domain.keyFields);
+            const _valid = !LegacyUtils.domainForStoreConfigured(domain) 
+            || JavaTypes.isJavaBuiltInClass(domain.keyFields) 
+            && !_.isEmpty(domain.keyFields);
 
             if (valid && _valid || invalid && !_valid)
                 out.push(domain);
@@ -33,4 +35,4 @@ export default function factory(LegacyUtils) {
     return filter;
 }
 
-factory.$inject = ['IgniteLegacyUtils'];
+factory.$inject = ['IgniteLegacyUtils','JavaTypes'];
