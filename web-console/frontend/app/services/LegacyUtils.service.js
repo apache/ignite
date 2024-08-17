@@ -3,6 +3,7 @@
 import saver from 'file-saver';
 import _ from 'lodash';
 
+
 // TODO: Refactor this service for legacy tables with more than one input field.
 /**
  * @param {import('./ErrorPopover.service').default} ErrorPopover
@@ -15,176 +16,6 @@ export default function service(ErrorPopover) {
     function isEmptyString(s) {
         if (isDefined(s))
             return s.trim().length === 0;
-
-        return true;
-    }
-
-    const javaBuiltInClasses = [
-        'BigDecimal',
-        'Boolean',
-        'Byte',
-        'Date',
-        'Double',
-        'Float',
-        'Integer',
-        'Long',
-        'Object',
-        'Short',
-        'String',
-        'Time',
-        'Timestamp',
-        'UUID'
-    ];
-
-    const javaBuiltInTypes = [
-        'BigDecimal',
-        'boolean',
-        'Boolean',
-        'byte',
-        'byte[]',
-        'Byte',
-        'Date',
-        'double',
-        'Double',
-        'float',
-        'Float',
-        'int',
-        'Integer',
-        'long',
-        'Long',
-        'Object',
-        'short',
-        'Short',
-        'String',
-        'Time',
-        'Timestamp',
-        'UUID'
-    ];
-
-    const javaBuiltInFullNameClasses = [
-        'java.math.BigDecimal',
-        'java.lang.Boolean',
-        'java.lang.Byte',
-        'java.sql.Date',
-        'java.lang.Double',
-        'java.lang.Float',
-        'java.lang.Integer',
-        'java.lang.Long',
-        'java.lang.Object',
-        'java.lang.Short',
-        'java.lang.String',
-        'java.sql.Time',
-        'java.sql.Timestamp',
-        'java.util.UUID'
-    ];
-
-    /**
-     * @param clsName Class name to check.
-     * @param additionalClasses List of classes to check as builtin.
-     * @returns {Boolean} 'true' if given class name is a java build-in type.
-     */
-    function isJavaBuiltInClass(clsName, additionalClasses=null) {
-        if (isEmptyString(clsName))
-            return false;
-
-        return _.includes(javaBuiltInClasses, clsName) || _.includes(javaBuiltInFullNameClasses, clsName)
-            || (_.isArray(additionalClasses) && _.includes(additionalClasses, clsName));
-    }
-
-    const SUPPORTED_JDBC_TYPES = [
-        'BIGINT',
-        'BIT',
-        'BOOLEAN',
-        'BLOB',
-        'CHAR',
-        'CLOB',
-        'DATE',
-        'DECIMAL',
-        'DOUBLE',
-        'FLOAT',
-        'INTEGER',
-        'LONGNVARCHAR',
-        'LONGVARCHAR',
-        'NCHAR',
-        'NUMERIC',
-        'NVARCHAR',
-        'REAL',
-        'SMALLINT',
-        'TIME',
-        'TIMESTAMP',
-        'TINYINT',
-        'VARCHAR'
-    ];
-
-    /*eslint-disable */
-    const JAVA_KEYWORDS = [
-        'abstract',
-        'assert',
-        'boolean',
-        'break',
-        'byte',
-        'case',
-        'catch',
-        'char',
-        'class',
-        'const',
-        'continue',
-        'default',
-        'do',
-        'double',
-        'else',
-        'enum',
-        'extends',
-        'false',
-        'final',
-        'finally',
-        'float',
-        'for',
-        'goto',
-        'if',
-        'implements',
-        'import',
-        'instanceof',
-        'int',
-        'interface',
-        'long',
-        'native',
-        'new',
-        'null',
-        'package',
-        'private',
-        'protected',
-        'public',
-        'return',
-        'short',
-        'static',
-        'strictfp',
-        'super',
-        'switch',
-        'synchronized',
-        'this',
-        'throw',
-        'throws',
-        'transient',
-        'true',
-        'try',
-        'void',
-        'volatile',
-        'while'
-    ];
-    /* eslint-enable */
-
-    const VALID_JAVA_IDENTIFIER = new RegExp('^[a-zA-Z_$][a-zA-Z\\d_$]*$');
-
-    function isValidJavaIdentifier(msg, ident, elemId, panels, panelId, stopEdit) {
-        if (isEmptyString(ident))
-            return !stopEdit && ErrorPopover.show(elemId, msg + ' is invalid!', panels, panelId);
-
-        if (_.includes(JAVA_KEYWORDS, ident))
-            return !stopEdit && ErrorPopover.show(elemId, msg + ' could not contains reserved java keyword: "' + ident + '"!', panels, panelId);
-
-        if (!VALID_JAVA_IDENTIFIER.test(ident))
-            return !stopEdit && ErrorPopover.show(elemId, msg + ' contains invalid identifier: "' + ident + '"!', panels, panelId);
 
         return true;
     }
@@ -221,18 +52,6 @@ export default function service(ErrorPopover) {
         return null;
     }
 
-    const cacheStoreJdbcDialects = [
-        {value: 'Generic', label: 'Generic JDBC'},
-        {value: 'Oracle', label: 'Oracle'},
-        {value: 'DB2', label: 'IBM DB2'},
-        {value: 'SQLServer', label: 'Microsoft SQL Server'},
-        {value: 'MySQL', label: 'MySQL'},
-        {value: 'PostgreSQL', label: 'PostgreSQL'},
-        {value: 'H2', label: 'H2 database'},
-        {value: 'Dremio', label: 'Dremio Data Lake'},
-        {value: 'Hive', label: 'Apache Hive'}
-    ];
-
     function domainForStoreConfigured(domain) {
         const isEmpty = !isDefined(domain) || (isEmptyString(domain.databaseSchema) &&
             isEmptyString(domain.databaseTable) &&
@@ -241,53 +60,9 @@ export default function service(ErrorPopover) {
 
         return !isEmpty;
     }
-
-    const DS_CHECK_SUCCESS = {checked: true};
-
-    /**
-     * Compare datasources of caches or clusters.
-     *
-     * @param firstObj First cache or cluster.
-     * @param firstType Type of first object to compare.
-     * @param secondObj Second cache or cluster.
-     * @param secondType Type of first object to compare.
-     * @param index Index of invalid object when check is failed.
-     * @returns {*} Check result object.
-     */
-    function compareDataSources(firstObj, firstType, secondObj, secondType, index) {
-        const firstDs = extractDataSource(firstObj);
-        const secondDs = extractDataSource(secondObj);
-
-        if (firstDs && secondDs) {
-            const firstDB = firstDs.dialect;
-            const secondDB = secondDs.dialect;
-
-            if (firstDs.dataSourceBean === secondDs.dataSourceBean && firstDB !== secondDB)
-                return {checked: false, firstObj, firstDs, firstType, secondObj, secondDs, secondType, index};
-        }
-
-        return DS_CHECK_SUCCESS;
-    }
-
-    function compareSQLSchemaNames(firstCache, secondCache) {
-        const firstName = firstCache.sqlSchema;
-        const secondName = secondCache.sqlSchema;
-
-        if (firstName && secondName && (firstName === secondName))
-            return {checked: false, firstCache, secondCache};
-
-        return DS_CHECK_SUCCESS;
-    }
-
-    function toJavaName(prefix, name) {
-        const javaName = name ? name.replace(/[^A-Za-z_0-9]+/g, '_') : 'dflt';
-
-        return prefix + javaName.charAt(0).toLocaleUpperCase() + javaName.slice(1);
-    }
-
+    
     return {
-        VALID_JAVA_IDENTIFIER,
-        JAVA_KEYWORDS,
+
         mkOptions(options) {
             return _.map(options, (option) => {
                 return {value: option, label: isDefined(option) ? option : 'Not set'};
@@ -305,39 +80,7 @@ export default function service(ErrorPopover) {
             return false;
         },
         isEmptyString,
-        SUPPORTED_JDBC_TYPES,
-        javaBuiltInClasses,
-        javaBuiltInTypes,
-        isJavaBuiltInClass,
-        isValidJavaIdentifier,
-        isValidJavaClass(msg, ident, allowBuiltInClass, elemId, packageOnly, panels, panelId, stopEdit = false) {
-            if (isEmptyString(ident))
-                return !stopEdit && ErrorPopover.show(elemId, msg + ' could not be empty!', panels, panelId);
-
-            const parts = ident.split('.');
-
-            const len = parts.length;
-
-            if (!allowBuiltInClass && isJavaBuiltInClass(ident))
-                return !stopEdit && ErrorPopover.show(elemId, msg + ' should not be the Java build-in class!', panels, panelId);
-
-            if (len < 2) {
-                if (isJavaBuiltInClass(ident, allowBuiltInClass))
-                    return true;
-
-                if (!packageOnly)
-                    return !stopEdit && ErrorPopover.show(elemId, msg + ' does not have package specified!', panels, panelId);
-            }
-
-            for (let i = 0; i < parts.length; i++) {
-                const part = parts[i];
-
-                if (!isValidJavaIdentifier(msg, part, elemId, panels, panelId, stopEdit))
-                    return false;
-            }
-
-            return true;
-        },
+        
         domainForQueryConfigured(domain) {
             const isEmpty = !isDefined(domain) || (_.isEmpty(domain.fields) &&
                 _.isEmpty(domain.aliases) &&
@@ -351,115 +94,7 @@ export default function service(ErrorPopover) {
 
             saver.saveAs(file, name, false);
         },
-        getQueryVariable(name) {
-            const attrs = window.location.search.substring(1).split('&');
-            const attr = _.find(attrs, (a) => a === name || (a.indexOf('=') >= 0 && a.substr(0, a.indexOf('=')) === name));
-
-            if (!isDefined(attr))
-                return null;
-
-            if (attr === name)
-                return true;
-
-            return attr.substr(attr.indexOf('=') + 1);
-        },
-        cacheStoreJdbcDialects,
-        cacheStoreJdbcDialectsLabel(dialect) {
-            const found = _.find(cacheStoreJdbcDialects, (dialectVal) => dialectVal.value === dialect);
-
-            return found ? found.label : null;
-        },
-        checkDataSources(cluster, caches, checkCacheExt) {
-            let res = DS_CHECK_SUCCESS;
-
-            _.find(caches, (curCache, curIx) => {
-                // Check datasources of cluster JDBC ip finder and cache store factory datasource.
-                res = compareDataSources(curCache, 'cache', cluster, 'cluster');
-
-                if (!res.checked)
-                    return true;
-
-                _.find(cluster.checkpointSpi, (spi, spiIx) => {
-                    res = compareDataSources(curCache, 'cache', spi, 'checkpoint', spiIx);
-
-                    return !res.checked;
-                });
-
-                if (!res.checked)
-                    return true;
-
-                // Check datasource of current saved cache and datasource of other cache in cluster.
-                if (isDefined(checkCacheExt)) {
-                    if (checkCacheExt.id !== curCache.id) {
-                        res = compareDataSources(checkCacheExt, 'cache', curCache, 'cache');
-
-                        return !res.checked;
-                    }
-
-                    return false;
-                }
-
-                // Check datasources of specified list of caches.
-                return _.find(caches, (checkCache, checkIx) => {
-                    if (checkIx < curIx) {
-                        res = compareDataSources(checkCache, 'cache', curCache, 'cache');
-
-                        return !res.checked;
-                    }
-
-                    return false;
-                });
-            });
-
-            if (res.checked) {
-                _.find(cluster.checkpointSpi, (curSpi, curIx) => {
-                    // Check datasources of cluster JDBC ip finder and cache store factory datasource.
-                    res = compareDataSources(cluster, 'cluster', curSpi, 'checkpoint', curIx);
-
-                    if (!res.checked)
-                        return true;
-
-                    _.find(cluster.checkpointSpi, (spi, spiIx) => {
-                        if (spiIx < curIx) {
-                            res = compareDataSources(curSpi, 'checkpoint', spi, 'checkpoint', curIx);
-
-                            return !res.checked;
-                        }
-
-                        return false;
-                    });
-                });
-            }
-
-            return res;
-        },
-        checkCacheSQLSchemas(caches, checkCacheExt) {
-            let res = DS_CHECK_SUCCESS;
-
-            _.find(caches, (curCache, curIx) => {
-                if (isDefined(checkCacheExt)) {
-                    if (checkCacheExt.id !== curCache.id) {
-                        res = compareSQLSchemaNames(checkCacheExt, curCache);
-
-                        return !res.checked;
-                    }
-
-                    return false;
-                }
-
-                return _.find(caches, (checkCache, checkIx) => {
-                    if (checkIx < curIx) {
-                        res = compareSQLSchemaNames(checkCache, curCache);
-
-                        return !res.checked;
-                    }
-
-                    return false;
-                });
-            });
-
-            return res;
-        },
+                
         autoCacheStoreConfiguration(cache, domains, jndiName, dialect) {
             const cacheStoreFactory = isDefined(cache.cacheStoreFactory) &&
                 isDefined(cache.cacheStoreFactory.kind);
