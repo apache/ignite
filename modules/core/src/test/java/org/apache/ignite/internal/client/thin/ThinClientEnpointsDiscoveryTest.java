@@ -20,6 +20,7 @@ package org.apache.ignite.internal.client.thin;
 import java.net.InetSocketAddress;
 import java.net.ServerSocket;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Map;
 
 import org.apache.ignite.Ignition;
@@ -162,7 +163,8 @@ public class ThinClientEnpointsDiscoveryTest extends ThinClientAbstractPartition
 
             IgniteClient client = Ignition.startClient(ccfg);
 
-            client.cacheNames();
+            Collection<String> cacheNames = client.cacheNames();
+            assertFalse(cacheNames.isEmpty());
         }
     }
 }
