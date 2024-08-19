@@ -744,13 +744,14 @@ final class ReliableChannel implements AutoCloseable {
         initChannelHolders();
 
         if (failures == null || failures.size() < attemptsLimit) {
+            // Apply no-op function. Establish default channel connection.
+            applyOnDefaultChannel(channel -> null, null, failures);
+
             if (channelsCnt.get() == 0) {
                 // Establish default channel connection and retrive nodes endpoints if applicable.
                 if (applyOnDefaultChannel(discoveryCtx::refresh, null, failures))
                     initChannelHolders();
             }
-            else // Apply no-op function. Establish default channel connection.
-                applyOnDefaultChannel(channel -> null, null, failures);
         }
 
         if (partitionAwarenessEnabled)
