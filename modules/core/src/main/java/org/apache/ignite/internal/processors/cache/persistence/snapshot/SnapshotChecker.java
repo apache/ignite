@@ -335,8 +335,6 @@ public class SnapshotChecker {
         }
 
         if (firstMeta == null && mappedExceptions.isEmpty()) {
-            assert !allMetas.isEmpty();
-
             throw new IllegalArgumentException("Snapshot does not exists [snapshot=" + snpName
                 + (snpPath != null ? ", baseDir=" + snpPath : "") + ", consistentId=" + curNodeCstId + ']');
         }
@@ -749,12 +747,14 @@ public class SnapshotChecker {
 
         EncryptionSpi encSpi = meta.encryptionKey() != null ? encryptionSpi : null;
 
-        try (Dump dump = new Dump(snpDir, U.maskForFileName(nodeCstId.toString()), true, true, encSpi, log)) {
+        try (Dump dump = new Dump(snpDir, nodeCstId.toString(), true, true, encSpi, log)) {
+            String nodeFolderName = kctx.pdsFolderResolver().resolveFolders().folderName();
+
             Collection<PartitionHashRecordV2> partitionHashRecordV2s = U.doInParallel(
                 executor,
                 grpAndPartFiles.get2(),
                 part -> calculateDumpedPartitionHash(dump, cacheGroupName(part.getParentFile()), partId(part.getName()),
-                    skipHash, nodeCstId, U.maskForFileName(nodeCstId.toString()))
+                    skipHash, nodeCstId, nodeFolderName)
             );
 
             return partitionHashRecordV2s.stream().collect(Collectors.toMap(PartitionHashRecordV2::partitionKey, r -> r));
