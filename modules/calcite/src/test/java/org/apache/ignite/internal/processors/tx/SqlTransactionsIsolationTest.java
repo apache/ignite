@@ -74,7 +74,7 @@ import static org.junit.Assume.assumeFalse;
 /** */
 @RunWith(Parameterized.class)
 @WithSystemProperty(key = IgniteSystemProperties.IGNITE_ALLOW_TX_AWARE_QUERIES, value = "true")
-public class TransactionIsolationTest extends GridCommonAbstractTest {
+public class SqlTransactionsIsolationTest extends GridCommonAbstractTest {
     /** */
     public static final String CACHE = "cache";
 

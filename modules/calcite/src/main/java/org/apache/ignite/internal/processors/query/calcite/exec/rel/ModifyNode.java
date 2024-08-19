@@ -201,7 +201,7 @@ public class ModifyNode<Row> extends AbstractNode<Row> implements SingleNode<Row
         final GridNearTxLocal userTx = Commons.queryTransaction(context(), cctx.shared());
 
         if (userTx != null) {
-            invokeInsideTx(userTx, tuples);
+            invokeInsideTransaction(userTx, tuples);
 
             updatedRows += tuples.size();
         }
@@ -237,7 +237,7 @@ public class ModifyNode<Row> extends AbstractNode<Row> implements SingleNode<Row
     }
 
     /** */
-    private void invokeInsideTx(GridNearTxLocal userTx, List<ModifyTuple> tuples) throws IgniteCheckedException {
+    private void invokeInsideTransaction(GridNearTxLocal userTx, List<ModifyTuple> tuples) throws IgniteCheckedException {
         userTx.resume();
 
         try {
