@@ -67,6 +67,8 @@ import org.apache.ignite.IgniteDataStreamer;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.ShutdownPolicy;
 import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
+import org.apache.ignite.client.ClientCache;
+import org.apache.ignite.client.ClientCacheConfiguration;
 import org.apache.ignite.cluster.BaselineNode;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.cluster.ClusterState;
@@ -181,6 +183,7 @@ import static org.apache.ignite.testframework.GridTestUtils.waitForCondition;
 import static org.apache.ignite.transactions.TransactionConcurrency.OPTIMISTIC;
 import static org.apache.ignite.transactions.TransactionConcurrency.PESSIMISTIC;
 import static org.apache.ignite.transactions.TransactionIsolation.READ_COMMITTED;
+import static org.apache.ignite.transactions.TransactionIsolation.REPEATABLE_READ;
 import static org.apache.ignite.util.TestStorageUtils.corruptDataEntry;
 
 /**
@@ -2733,7 +2736,58 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
         }
     }
 
-    /** */
+    /**
+     * Tests killing transaction command.
+     */
+    @Test
+    public void testKillTxCommand() throws Exception {
+        injectTestSystemOut();
+
+        ClientCacheConfiguration cacheCfg = new ClientCacheConfiguration()
+            .setName("txCache")
+            .setAtomicityMode(TRANSACTIONAL)
+            .setStatisticsEnabled(true);
+
+        Ignite ignite = startGrid(0);
+        ignite.cluster().state(ACTIVE);
+
+        IgniteCache cache1 = ignite.getOrCreateCache("txCache");
+
+        Ignite client1 = startClientGrid("client1");
+        IgniteCache cache2 = client1.getOrCreateCache("txCache");
+
+        Ignite client2 = startClientGrid("client2");
+        IgniteCache cache3 = client2.getOrCreateCache("txCache");
+
+        cache1.putAll(generate(100, 10));
+        cache2.putAll(generate(200, 100));
+        cache3.putAll(generate(200, 110));
+
+        try (
+            Transaction tx1 = client1.transactions()
+                .txStart(PESSIMISTIC, REPEATABLE_READ, 0, 0);
+
+            Transaction tx2 = client2.transactions()
+                .txStart(OPTIMISTIC, READ_COMMITTED, 0, 0);
+
+            Transaction tx3 = ignite.transactions()
+                .txStart(PESSIMISTIC, READ_COMMITTED, Integer.MAX_VALUE, 0);
+        ) {
+            assertEquals(EXIT_CODE_OK, execute("--tx","--info", tx1.xid().toString()));
+
+            assertEquals(EXIT_CODE_OK, execute("--tx", "--limit", "2", "--xid", tx1.xid().toString(), "--kill"));
+
+            assertContains(log, testOut.toString(), "Killed transactions");
+
+            //tx1.commit();
+            tx2.commit();
+            tx3.commit();
+        }
+    }
+
+    /**
+     *
+     */
     @Test
     public void testKillHangingLocalTransactions() throws Exception {
         Ignite ignite = startGridsMultiThreaded(2);
