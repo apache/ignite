@@ -631,6 +631,16 @@ final class ReliableChannel implements AutoCloseable {
             return;
         }
 
+        // Add connected channels to the list to avoid unnecessary reconnects.
+        if (holders != null) {
+            for (ClientChannelHolder h : holders) {
+                ClientChannel ch = h.ch;
+
+                if (ch != null && !ch.closed())
+                    newAddrs.add(h.getAddresses());
+            }
+        }
+
         Map<InetSocketAddress, ClientChannelHolder> curAddrs = new HashMap<>();
 
         Set<InetSocketAddress> newAddrsSet = newAddrs.stream().flatMap(Collection::stream).collect(Collectors.toSet());

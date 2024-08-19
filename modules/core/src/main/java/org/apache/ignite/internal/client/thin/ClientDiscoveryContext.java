@@ -217,17 +217,7 @@ public class ClientDiscoveryContext {
             return addresses;
         }
 
-        if (F.isEmpty(addresses))
-            return topInfo.endpoints;
-
-        // Merge static and dynamic addresses.
-        Collection<List<InetSocketAddress>> res = new ArrayList<>(
-                addresses.size() + topInfo.endpoints.size());
-
-        res.addAll(addresses);
-        res.addAll(topInfo.endpoints);
-
-        return res;
+        return topInfo.endpoints;
     }
 
     /**
