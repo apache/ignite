@@ -17,6 +17,11 @@
 
 package org.apache.ignite.internal.client.thin;
 
+import java.net.InetSocketAddress;
+import java.net.ServerSocket;
+import java.util.ArrayList;
+import java.util.Map;
+
 import org.apache.ignite.Ignition;
 import org.apache.ignite.client.ClientConnectionException;
 import org.apache.ignite.client.IgniteClient;
@@ -26,11 +31,6 @@ import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.processors.odbc.ClientListenerProcessor;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.junit.Test;
-
-import java.net.InetSocketAddress;
-import java.net.ServerSocket;
-import java.util.ArrayList;
-import java.util.Map;
 
 import static org.apache.ignite.configuration.ClientConnectorConfiguration.DFLT_PORT;
 
