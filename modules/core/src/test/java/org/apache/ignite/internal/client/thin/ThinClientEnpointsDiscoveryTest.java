@@ -137,7 +137,7 @@ public class ThinClientEnpointsDiscoveryTest extends ThinClientAbstractPartition
         awaitChannelsInit(0);
     }
 
-
+    /** */
     @Test
     public void testUnreachableAddressDiscoveredDoesNotPreventClientInit() throws Exception {
         try (ServerSocket sock = new ServerSocket()) {
