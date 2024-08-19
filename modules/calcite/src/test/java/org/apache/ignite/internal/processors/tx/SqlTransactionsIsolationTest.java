@@ -28,6 +28,10 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
+import java.util.function.BiConsumer;
+import java.util.function.IntConsumer;
+import java.util.function.IntFunction;
+import java.util.function.Predicate;
 import java.util.stream.Collectors;
 import java.util.stream.LongStream;
 import org.apache.ignite.Ignite;
@@ -465,24 +469,108 @@ public class SqlTransactionsIsolationTest extends GridCommonAbstractTest {
         int depCnt = 5;
         int userCnt = 5;
 
+        Map<Integer, List<User>> data = new HashMap<>();
+
+        IntFunction<String> uname = i -> "User " + i + 1;
+
+        IntConsumer insertDepartment = i -> {
+            data.put(i + 1, new ArrayList<>());
+
+            sql(format("INSERT INTO %s(ID, NAME) VALUES(?, ?)", departments()), i + 1, (i + 1) + " department");
+        };
+
+        BiConsumer<Integer, Integer> insertUser = (id, depId) -> {
+            User user = new User(id, depId, uname.apply(depId));
+
+            insert(F.t(id, user));
+
+            data.get(depId).add(user);
+        };
+
+        for (int i = 0; i < depCnt; i++)
+            insertDepartment.accept(i);
+
         for (int i = 0; i < depCnt; i++) {
-            sql(format("INSERT INTO %s(ID, NAME) VALUES(?, ?)", departments()), i + 1, i + " department");
-
-            for (int j = 0; j < userCnt; j++) {
-                int id = i * depCnt + j;
-                int depId = j + 1;
-
-                insert(F.t(id, new User(id, depId, "User " + id)));
-            }
+            for (int j = 0; j < userCnt; j++)
+                insertUser.accept(i * depCnt + j, j + 1);
         }
 
-        sql(format("INSERT INTO %s(ID, NAME) VALUES(?, ?)", departments()), depCnt + 1, (depCnt + 1) + " department");
+        insertDepartment.accept(depCnt);
 
+        checkJoin(data, uname);
+
+        insideTx(() -> {
+            for (int i = depCnt + 1; i < depCnt * 2; i++)
+                insertDepartment.accept(i);
+
+            for (int i = 0; i < depCnt * 2; i++) {
+                for (int j = 0; j < userCnt; j++) {
+                    if (i >= depCnt)
+                        insertUser.accept(i * depCnt + j, i + 1);
+
+                    checkJoin(data, uname);
+                }
+            }
+
+        }, false);
+    }
+
+    /** */
+    private void checkJoin(Map<Integer, List<User>> data, IntFunction<String> uname) {
         List<List<?>> res = sql(
-            format("SELECT d.name, u.fio FROM %s d JOIN %s u ON d.id = u.departmentId", departments(), users())
+            format("SELECT d.id, u.id, u.fio FROM %s d JOIN %s u ON d.id = u.departmentId", departments(), users())
         );
 
-        assertEquals(depCnt * userCnt, res.size());
+        Map<Integer, List<User>> data0 = new HashMap<>();
+
+        data.forEach((key, value) -> data0.put(key, new ArrayList<>(value)));
+
+        for (List<?> row : res) {
+            List<User> users = data0.get(row.get(0));
+
+            assertNotNull(users);
+
+            assertTrue(users.removeIf(u -> {
+                if (u.userId != (Integer)row.get(1))
+                    return false;
+
+                assertEquals(u.fio, row.get(2));
+
+                return true;
+            }));
+        }
+
+        data0.values().forEach(l -> assertTrue(l.isEmpty()));
+
+        res = sql(
+            format("SELECT d.id, COUNT(*) FROM %s d JOIN %s u ON d.id = u.departmentId GROUP BY d.id", departments(), users())
+        );
+
+        assertEquals((int)data.values().stream().filter(((Predicate<List<?>>)List::isEmpty).negate()).count(), res.size());
+
+        for (List<?> row : res)
+            assertEquals((long)data.get(row.get(0)).size(), row.get(1));
+
+        res = sql(
+            format("SELECT d.id, COUNT(*) FROM %s d LEFT JOIN %s u ON d.id = u.departmentId GROUP BY d.id", departments(), users())
+        );
+
+        assertEquals(data.size(), res.size());
+
+        for (List<?> row : res) {
+            long size = data.get(row.get(0)).size();
+
+            assertEquals(size == 0 ? 1 : size, row.get(1));
+        }
+
+        res = sql(
+            format("SELECT d.id, u.fio FROM %s d JOIN %s u ON d.id = u.departmentId", departments(), users())
+        );
+
+        assertEquals(data.values().stream().mapToInt(List::size).sum(), res.size());
+
+        for (List<?> row : res)
+            assertEquals(uname.apply((Integer)row.get(0)), row.get(1));
     }
 
     /** */
@@ -731,11 +819,13 @@ public class SqlTransactionsIsolationTest extends GridCommonAbstractTest {
             }
         }
         else if (modify.equals(SQL)) {
-            String insert = format("INSERT INTO %s(id, userid, fio) VALUES(?, ?, ?)", users());
+            String insert = format("INSERT INTO %s(id, userid, departmentId, fio) VALUES(?, ?, ?, ?)", users());
+
+            int colCnt = 4;
 
             if (multi) {
                 StringBuilder sql = new StringBuilder();
-                Object[] params = new Object[entries.length * 3];
+                Object[] params = new Object[entries.length * colCnt];
 
                 for (int i = 0; i < entries.length; i++) {
                     IgniteBiTuple<Integer, User> data = entries[i];
@@ -745,16 +835,17 @@ public class SqlTransactionsIsolationTest extends GridCommonAbstractTest {
 
                     sql.append(insert);
 
-                    params[i * 3] = data.get1();
-                    params[i * 3 + 1] = data.get2().userId;
-                    params[i * 3 + 2] = data.get2().fio;
+                    params[i * colCnt] = data.get1();
+                    params[i * colCnt + 1] = data.get2().userId;
+                    params[i * colCnt + 2] = data.get2().departmentId;
+                    params[i * colCnt + 3] = data.get2().fio;
                 }
 
                 sql(sql.toString(), params);
             }
             else {
                 for (IgniteBiTuple<Integer, User> data : entries)
-                    sql(insert, data.get1(), data.get2().userId, data.get2().fio);
+                    sql(insert, data.get1(), data.get2().userId, data.get2().departmentId, data.get2().fio);
             }
         }
         else
@@ -773,11 +864,13 @@ public class SqlTransactionsIsolationTest extends GridCommonAbstractTest {
         if (modify.equals(CACHE))
             doInsert(entries);
         else if (modify.equals(SQL)) {
-            String update = format("UPDATE %s SET userid = ?, fio = ? WHERE id = ?", users());
+            String update = format("UPDATE %s SET userid = ?, departmentId = ?, fio = ? WHERE id = ?", users());
+
+            int colCnt = 4;
 
             if (multi) {
                 StringBuilder sql = new StringBuilder();
-                Object[] params = new Object[entries.length * 3];
+                Object[] params = new Object[entries.length * colCnt];
 
                 for (int i = 0; i < entries.length; i++) {
                     IgniteBiTuple<Integer, User> data = entries[i];
@@ -787,9 +880,10 @@ public class SqlTransactionsIsolationTest extends GridCommonAbstractTest {
 
                     sql.append(update);
 
-                    params[i * 3] = data.get2().userId;
-                    params[i * 3 + 1] = data.get2().fio;
-                    params[i * 3 + 2] = data.get1();
+                    params[i * colCnt] = data.get2().userId;
+                    params[i * colCnt + 1] = data.get2().fio;
+                    params[i * colCnt + 2] = data.get2().fio;
+                    params[i * colCnt + 3] = data.get1();
                 }
 
                 sql(sql.toString(), params);
