@@ -17,7 +17,10 @@
 
 package org.apache.ignite.internal.client.thin;
 
+import java.io.IOException;
 import java.net.InetSocketAddress;
+import java.net.ServerSocket;
+import java.net.Socket;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -46,6 +49,7 @@ import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.junit.Test;
 
+import static org.apache.ignite.configuration.ClientConnectorConfiguration.DFLT_PORT;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertSame;
@@ -355,6 +359,26 @@ public class ReliableChannelTest {
                 throw new RuntimeException(e);
             }
         }, true);
+    }
+
+    @Test
+    public void testUnreachableAddressDiscovered() throws IOException {
+        try (ServerSocket sock = new ServerSocket()) {
+            sock.bind(new InetSocketAddress("127.0.0.1", 0));
+
+            TestAddressFinder finder = new TestAddressFinder()
+                    .nextAddresesResponse("127.0.0.1:" + sock.getLocalPort());
+
+            // Use good address in config, bad address in finder.
+            // We expect the client to establish secondary connections in background, so the bad address should not
+            // affect the client usability.
+            ClientConfiguration ccfg = new ClientConfiguration()
+                    .setAddresses("127.0.0.1:10800")
+                    .setAddressesFinder(finder);
+
+            ReliableChannel rc = new ReliableChannel(chFactory, ccfg, null);
+            rc.channelsInit();
+        }
     }
 
     /** */
