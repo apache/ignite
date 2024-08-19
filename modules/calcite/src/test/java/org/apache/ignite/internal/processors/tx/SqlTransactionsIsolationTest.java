@@ -511,7 +511,6 @@ public class SqlTransactionsIsolationTest extends GridCommonAbstractTest {
                     checkJoin(data, uname);
                 }
             }
-
         }, false);
     }
 
