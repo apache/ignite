@@ -82,7 +82,16 @@ public class SqlTransactionsIsolationTest extends GridCommonAbstractTest {
     public static final String SQL = "sql";
 
     /** */
-    private enum ExecutorType {
+    public static final String USERS = "USERS";
+
+    /** */
+    public static final String DEPARTMENTS = "DEPARTMENTS";
+
+    /** */
+    public static final String TBL = "TBL";
+
+    /** */
+    public enum ExecutorType {
         /** */
         SERVER,
 
@@ -94,13 +103,13 @@ public class SqlTransactionsIsolationTest extends GridCommonAbstractTest {
     }
 
     /** */
-    public static final User JOHN = new User(1, "John Connor");
+    public static final User JOHN = new User(1, 0, "John Connor");
 
     /** */
-    public static final User SARAH = new User(2, "Sarah Connor");
+    public static final User SARAH = new User(2, 0, "Sarah Connor");
 
     /** */
-    public static final User KYLE = new User(3, "Kyle Reese");
+    public static final User KYLE = new User(3, 0, "Kyle Reese");
 
     /** */
     public static final int TX_TIMEOUT = 60_000;
@@ -150,13 +159,13 @@ public class SqlTransactionsIsolationTest extends GridCommonAbstractTest {
     private static IgniteClient thinCli;
 
     /** */
-    private TransactionConcurrency txConcurrency = TransactionConcurrency.OPTIMISTIC;
+    private final TransactionConcurrency txConcurrency = TransactionConcurrency.OPTIMISTIC;
 
     /** */
-    private TransactionIsolation txIsolation = READ_COMMITTED;
+    private final TransactionIsolation txIsolation = READ_COMMITTED;
 
     /** */
-    private Map<Integer, Set<Integer>> partsToKeys = new HashMap<>();
+    private final Map<Integer, Set<Integer>> partsToKeys = new HashMap<>();
 
     /** @return Test parameters. */
     @Parameterized.Parameters(
@@ -218,14 +227,21 @@ public class SqlTransactionsIsolationTest extends GridCommonAbstractTest {
             .setPartitionAwarenessEnabled(partitionAwareness));
 
         for (CacheMode mode : CacheMode.values()) {
-            String users = tableName("USERS", mode);
-            String tbl = tableName("TBL", mode);
+            String users = tableName(USERS, mode);
+            String deps = tableName(DEPARTMENTS, mode);
+            String tbl = tableName(TBL, mode);
 
-            LinkedHashMap<String, String> flds = new LinkedHashMap<>();
+            LinkedHashMap<String, String> userFlds = new LinkedHashMap<>();
 
-            flds.put("id", Integer.class.getName());
-            flds.put("userId", Integer.class.getName());
-            flds.put("fio", String.class.getName());
+            userFlds.put("id", Integer.class.getName());
+            userFlds.put("userId", Integer.class.getName());
+            userFlds.put("departmentId", Integer.class.getName());
+            userFlds.put("fio", String.class.getName());
+
+            LinkedHashMap<String, String> depFlds = new LinkedHashMap<>();
+
+            depFlds.put("id", Integer.class.getName());
+            depFlds.put("name", String.class.getName());
 
             cli.createCache(new CacheConfiguration<>()
                 .setName(users)
@@ -239,7 +255,7 @@ public class SqlTransactionsIsolationTest extends GridCommonAbstractTest {
                     .setKeyType(Integer.class.getName())
                     .setValueType(User.class.getName())
                     .setKeyFieldName("id")
-                    .setFields(flds)
+                    .setFields(userFlds)
                     .setIndexes(Arrays.asList(
                         new QueryIndex()
                             .setName("IDX_FIO_" + users)
@@ -248,6 +264,20 @@ public class SqlTransactionsIsolationTest extends GridCommonAbstractTest {
                             .setName("IDX_USERID_" + users)
                             .setFieldNames(Collections.singleton("userId"), true)
                     )))));
+
+            cli.createCache(new CacheConfiguration<>()
+                .setName(deps)
+                .setAtomicityMode(CacheAtomicityMode.TRANSACTIONAL)
+                .setCacheMode(mode)
+                .setBackups(backups)
+                .setWriteSynchronizationMode(CacheWriteSynchronizationMode.FULL_SYNC)
+                .setSqlSchema(QueryUtils.DFLT_SCHEMA)
+                .setQueryEntities(Collections.singleton(new QueryEntity()
+                    .setTableName(deps)
+                    .setKeyType(Integer.class.getName())
+                    .setValueType(String.class.getName())
+                    .setKeyFieldName("id")
+                    .setFields(depFlds))));
 
             cli.createCache(new CacheConfiguration<Integer, Integer>()
                 .setName(tbl)
@@ -280,6 +310,7 @@ public class SqlTransactionsIsolationTest extends GridCommonAbstractTest {
 
         node().cache(users()).removeAll();
         node().cache(tbl()).removeAll();
+        node().cache(departments()).removeAll();
 
         insert(F.t(1, JOHN));
     }
@@ -306,7 +337,7 @@ public class SqlTransactionsIsolationTest extends GridCommonAbstractTest {
             for (int j = 0; j < outOfTxSz; j++) {
                 int id = outOfTxStart + j;
 
-                insert(F.t(id, new User(id, "User" + j))); // Intentionally repeat FIO to make same indexed keys.
+                insert(F.t(id, new User(id, 0, "User" + j))); // Intentionally repeat FIO to make same indexed keys.
             }
         }
 
@@ -331,7 +362,7 @@ public class SqlTransactionsIsolationTest extends GridCommonAbstractTest {
                 for (int j = 0; j < inTxSz; j++) {
                     final int id = inTxStart + j;
 
-                    insert(F.t(id, new User(id, "User" + j))); // Intentionally repeat FIO to make same indexed keys.
+                    insert(F.t(id, new User(id, 0, "User" + j))); // Intentionally repeat FIO to make same indexed keys.
 
                     // Concurrent query must not see any transaction data.
                     runAsync(() -> {
@@ -419,32 +450,39 @@ public class SqlTransactionsIsolationTest extends GridCommonAbstractTest {
     }
 
     /** */
-    private void checkQueryWithPartitionFilter() {
-        // https://issues.apache.org/jira/browse/IGNITE-22993
-        if (mode != CacheMode.PARTITIONED)
-            return;
+    @Test
+    public void testJoin() {
+        assumeFalse("https://issues.apache.org/jira/browse/IGNITE-22874", type == ExecutorType.THIN);
 
-        for (Map.Entry<Integer, Set<Integer>> partToKeys : partsToKeys.entrySet()) {
-            assertEquals(
-                (long)partToKeys.getValue().size(),
-                sql(format("SELECT COUNT(*) FROM %s", users()), new int[]{partToKeys.getKey()}).get(0).get(0)
-            );
+        partsToKeys.clear();
 
-            assertEquals(
-                partToKeys.getValue().size(),
-                sql(format("SELECT * FROM %s", users()), new int[]{partToKeys.getKey()}).size()
-            );
+        sql(format("DELETE FROM %s", users()));
+        sql(format("DELETE FROM %s", departments()));
+
+        assertEquals("Table must be empty", 0L, sql(format("SELECT COUNT(*) FROM %s", users())).get(0).get(0));
+        assertEquals("Table must be empty", 0L, sql(format("SELECT COUNT(*) FROM %s", departments())).get(0).get(0));
+
+        int depCnt = 5;
+        int userCnt = 5;
+
+        for (int i = 0; i < depCnt; i++) {
+            sql(format("INSERT INTO %s(ID, NAME) VALUES(?, ?)", departments()), i + 1, i + " department");
+
+            for (int j = 0; j < userCnt; j++) {
+                int id = i * depCnt + j;
+                int depId = j + 1;
+
+                insert(F.t(id, new User(id, depId, "User " + id)));
+            }
         }
-    }
 
-    /** */
-    private static void ensureSorted(List<List<?>> rows, boolean asc) {
-        for (int k = 1; k < rows.size(); k++) {
-            String fio0 = (String)rows.get(k - 1).get(0);
-            String fio1 = (String)rows.get(k).get(0);
+        sql(format("INSERT INTO %s(ID, NAME) VALUES(?, ?)", departments()), depCnt + 1, (depCnt + 1) + " department");
 
-            assertTrue(asc ? (fio0.compareTo(fio1) <= 0) : (fio0.compareTo(fio1) >= 0));
-        }
+        List<List<?>> res = sql(
+            format("SELECT d.name, u.fio FROM %s d JOIN %s u ON d.id = u.departmentId", departments(), users())
+        );
+
+        assertEquals(depCnt * userCnt, res.size());
     }
 
     /** */
@@ -817,16 +855,49 @@ public class SqlTransactionsIsolationTest extends GridCommonAbstractTest {
     }
 
     /** */
+    private void checkQueryWithPartitionFilter() {
+        // https://issues.apache.org/jira/browse/IGNITE-22993
+        if (mode != CacheMode.PARTITIONED)
+            return;
+
+        for (Map.Entry<Integer, Set<Integer>> partToKeys : partsToKeys.entrySet()) {
+            assertEquals(
+                (long)partToKeys.getValue().size(),
+                sql(format("SELECT COUNT(*) FROM %s", users()), new int[]{partToKeys.getKey()}).get(0).get(0)
+            );
+
+            assertEquals(
+                partToKeys.getValue().size(),
+                sql(format("SELECT * FROM %s", users()), new int[]{partToKeys.getKey()}).size()
+            );
+        }
+    }
+
+    /** */
+    private static void ensureSorted(List<List<?>> rows, boolean asc) {
+        for (int k = 1; k < rows.size(); k++) {
+            String fio0 = (String)rows.get(k - 1).get(0);
+            String fio1 = (String)rows.get(k).get(0);
+
+            assertTrue(asc ? (fio0.compareTo(fio1) <= 0) : (fio0.compareTo(fio1) >= 0));
+        }
+    }
+
+    /** */
     public static class User {
         /** */
         private final int userId;
 
         /** */
+        private final int departmentId;
+
+        /** */
         private final String fio;
 
         /** */
-        public User(int id, String fio) {
-            this.userId = id;
+        public User(int userId, int departmentId, String fio) {
+            this.userId = userId;
+            this.departmentId = departmentId;
             this.fio = fio;
         }
 
@@ -835,12 +906,12 @@ public class SqlTransactionsIsolationTest extends GridCommonAbstractTest {
             if (this == o) return true;
             if (o == null || getClass() != o.getClass()) return false;
             User user = (User)o;
-            return userId == user.userId && Objects.equals(fio, user.fio);
+            return userId == user.userId && departmentId == user.departmentId && Objects.equals(fio, user.fio);
         }
 
         /** {@inheritDoc} */
         @Override public int hashCode() {
-            return Objects.hash(userId, fio);
+            return Objects.hash(userId, departmentId, fio);
         }
 
         /** {@inheritDoc} */
@@ -897,12 +968,17 @@ public class SqlTransactionsIsolationTest extends GridCommonAbstractTest {
 
     /** */
     private String users() {
-        return tableName("USERS", mode);
+        return tableName(USERS, mode);
+    }
+
+    /** */
+    private String departments() {
+        return tableName(DEPARTMENTS, mode);
     }
 
     /** */
     private String tbl() {
-        return tableName("TBL", mode);
+        return tableName(TBL, mode);
     }
 
     /** */
