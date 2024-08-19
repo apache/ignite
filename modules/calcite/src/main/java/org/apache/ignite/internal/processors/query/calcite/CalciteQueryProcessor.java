@@ -618,7 +618,6 @@ public class CalciteQueryProcessor extends GridProcessorAdapter implements Query
 
         GridCacheVersion ver = userTxId(qryCtx);
 
-        //TODO: check when qryCtx is null.
         if (ver == null)
             return;
 
