@@ -58,7 +58,7 @@ public class ClientDiscoveryContext {
     private final IgniteLogger log;
 
     /** Statically configured addresses. */
-    @Nullable private final Collection<List<InetSocketAddress>> addresses;
+    @Nullable private final String[] addresses;
 
     /** Configured address finder. */
     @Nullable private final ClientAddressFinder addrFinder;
@@ -72,13 +72,13 @@ public class ClientDiscoveryContext {
     /** Cache addresses returned by {@link ClientAddressFinder}. */
     private volatile String[] prevHostAddrs;
 
+    /** Previously requested endpoints for topology version. */
+    private volatile long prevTopVer = UNKNOWN_TOP_VER;
+
     /** */
     public ClientDiscoveryContext(ClientConfiguration clientCfg) {
         log = NullLogger.whenNull(clientCfg.getLogger());
-
-        String[] addrs = clientCfg.getAddresses();
-        addresses = addrs == null ? null : parsedAddresses(addrs);
-
+        addresses = clientCfg.getAddresses();
         addrFinder = clientCfg.getAddressesFinder();
         enabled = clientCfg.isClusterDiscoveryEnabled();
         reset();
@@ -87,6 +87,7 @@ public class ClientDiscoveryContext {
     /** */
     void reset() {
         topInfo = new TopologyInfo(UNKNOWN_TOP_VER, Collections.emptyMap());
+        prevTopVer = UNKNOWN_TOP_VER;
         prevHostAddrs = null;
     }
 
@@ -195,39 +196,26 @@ public class ClientDiscoveryContext {
      * since last request.
      */
     @Nullable Collection<List<InetSocketAddress>> getEndpoints() {
+        Collection<List<InetSocketAddress>> endpoints = null;
         TopologyInfo topInfo = this.topInfo;
 
-        if (addrFinder != null) {
-            String[] hostAddrs = addrFinder.getAddresses();
+        if (addrFinder != null || topInfo.topVer == UNKNOWN_TOP_VER) {
+            String[] hostAddrs = addrFinder == null ? addresses : addrFinder.getAddresses();
 
             if (F.isEmpty(hostAddrs))
                 throw new ClientException("Empty addresses");
 
             if (!Arrays.equals(hostAddrs, prevHostAddrs)) {
+                endpoints = parsedAddresses(hostAddrs);
                 prevHostAddrs = hostAddrs;
-                return parsedAddresses(hostAddrs);
             }
         }
-
-        if (topInfo.topVer == UNKNOWN_TOP_VER) {
-            if (addresses == null)
-                throw new ClientException("Empty addresses");
-
-            //noinspection AssignmentOrReturnOfFieldWithMutableType
-            return addresses;
+        else if (prevTopVer != topInfo.topVer) {
+            endpoints = topInfo.endpoints;
+            prevTopVer = topInfo.topVer;
         }
 
-        return topInfo.endpoints;
-    }
-
-    /**
-     * Gets initial endpoints.
-     *
-     * @return Initially configured endpoints.
-     */
-    @Nullable Collection<List<InetSocketAddress>> getInitialEndpoints() {
-        //noinspection AssignmentOrReturnOfFieldWithMutableType
-        return addresses;
+        return endpoints;
     }
 
     /**
