@@ -17,9 +17,16 @@
 
 package org.apache.ignite.internal.client.thin;
 
+import org.apache.ignite.Ignition;
 import org.apache.ignite.client.ClientConnectionException;
+import org.apache.ignite.client.IgniteClient;
+import org.apache.ignite.configuration.ClientConfiguration;
+import org.apache.ignite.configuration.ClientConnectorConfiguration;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.junit.Test;
+
+import java.net.InetSocketAddress;
+import java.net.ServerSocket;
 
 /**
  * Test endpoints discovery by thin client.
@@ -121,5 +128,29 @@ public class ThinClientEnpointsDiscoveryTest extends ThinClientAbstractPartition
         detectTopologyChange();
 
         awaitChannelsInit(0);
+    }
+
+
+    @Test
+    public void testUnreachableAddressDiscovered() throws Exception {
+        startGrid(0);
+
+        try (ServerSocket sock = new ServerSocket()) {
+            sock.bind(new InetSocketAddress("127.0.0.1", 0));
+
+            ReliableChannelTest.TestAddressFinder finder = new ReliableChannelTest.TestAddressFinder()
+                    .nextAddresesResponse("127.0.0.1:" + sock.getLocalPort());
+
+            // Use good address in config, bad address in finder.
+            // We expect the client to establish secondary connections in background, so the bad address should not
+            // affect the client usability.
+            ClientConfiguration ccfg = new ClientConfiguration()
+                    .setAddresses("127.0.0.1:" + ClientConnectorConfiguration.DFLT_PORT)
+                    .setAddressesFinder(finder);
+
+            IgniteClient client = Ignition.startClient(ccfg);
+
+            client.cacheNames();
+        }
     }
 }

@@ -17,10 +17,7 @@
 
 package org.apache.ignite.internal.client.thin;
 
-import java.io.IOException;
 import java.net.InetSocketAddress;
-import java.net.ServerSocket;
-import java.net.Socket;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -37,6 +34,7 @@ import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
+
 import org.apache.ignite.client.ClientAddressFinder;
 import org.apache.ignite.client.ClientAuthorizationException;
 import org.apache.ignite.client.ClientConnectionException;
@@ -49,7 +47,6 @@ import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.junit.Test;
 
-import static org.apache.ignite.configuration.ClientConnectorConfiguration.DFLT_PORT;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertSame;
@@ -361,26 +358,6 @@ public class ReliableChannelTest {
         }, true);
     }
 
-    @Test
-    public void testUnreachableAddressDiscovered() throws IOException {
-        try (ServerSocket sock = new ServerSocket()) {
-            sock.bind(new InetSocketAddress("127.0.0.1", 0));
-
-            TestAddressFinder finder = new TestAddressFinder()
-                    .nextAddresesResponse("127.0.0.1:" + sock.getLocalPort());
-
-            // Use good address in config, bad address in finder.
-            // We expect the client to establish secondary connections in background, so the bad address should not
-            // affect the client usability.
-            ClientConfiguration ccfg = new ClientConfiguration()
-                    .setAddresses("127.0.0.1:10800")
-                    .setAddressesFinder(finder);
-
-            ReliableChannel rc = new ReliableChannel(chFactory, ccfg, null);
-            rc.channelsInit();
-        }
-    }
-
     /** */
     private void checkFailAfterSendOperation(Consumer<TcpClientCache> op, boolean channelsReinitOnFail) {
         ClientConfiguration ccfg = new ClientConfiguration()
@@ -506,20 +483,20 @@ public class ReliableChannelTest {
     /**
      * Mock for address finder.
      */
-    private static class TestAddressFinder implements ClientAddressFinder {
+    static class TestAddressFinder implements ClientAddressFinder {
 
         /** Queue of list addresses. Every new request poll this queue. */
         private final Queue<String[]> addrResQueue;
 
         /** */
-        private TestAddressFinder() {
+        TestAddressFinder() {
             addrResQueue = new LinkedList<>();
         }
 
         /**
          * Configure result for every next {@link #getAddresses()} request.
          */
-        private TestAddressFinder nextAddresesResponse(String... addrs) {
+        TestAddressFinder nextAddresesResponse(String... addrs) {
             addrResQueue.add(addrs);
 
             return this;
