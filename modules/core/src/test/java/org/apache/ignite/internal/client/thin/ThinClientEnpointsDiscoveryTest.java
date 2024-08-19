@@ -18,15 +18,17 @@
 package org.apache.ignite.internal.client.thin;
 
 import org.apache.ignite.Ignition;
+import org.apache.ignite.client.ClientAddressFinder;
 import org.apache.ignite.client.ClientConnectionException;
 import org.apache.ignite.client.IgniteClient;
 import org.apache.ignite.configuration.ClientConfiguration;
-import org.apache.ignite.configuration.ClientConnectorConfiguration;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.junit.Test;
 
 import java.net.InetSocketAddress;
 import java.net.ServerSocket;
+
+import static org.apache.ignite.configuration.ClientConnectorConfiguration.DFLT_PORT;
 
 /**
  * Test endpoints discovery by thin client.
@@ -132,25 +134,37 @@ public class ThinClientEnpointsDiscoveryTest extends ThinClientAbstractPartition
 
 
     @Test
-    public void testUnreachableAddressDiscovered() throws Exception {
+    public void testUnreachableAddressDiscoveredDoesNotPreventClientInit() throws Exception {
         startGrid(0);
 
         try (ServerSocket sock = new ServerSocket()) {
             sock.bind(new InetSocketAddress("127.0.0.1", 0));
 
-            ReliableChannelTest.TestAddressFinder finder = new ReliableChannelTest.TestAddressFinder()
-                    .nextAddresesResponse("127.0.0.1:" + sock.getLocalPort());
-
             // Use good address in config, bad address in finder.
             // We expect the client to establish secondary connections in background, so the bad address should not
             // affect the client usability.
             ClientConfiguration ccfg = new ClientConfiguration()
-                    .setAddresses("127.0.0.1:" + ClientConnectorConfiguration.DFLT_PORT)
-                    .setAddressesFinder(finder);
+                    .setTimeout(1000)
+                    .setAddresses("127.0.0.1:" + DFLT_PORT)
+                    .setAddressesFinder(new TestAddressFinder("127.0.0.1:" + sock.getLocalPort()));
 
             IgniteClient client = Ignition.startClient(ccfg);
 
             client.cacheNames();
         }
     }
+
+    private static class TestAddressFinder implements ClientAddressFinder {
+        private final String[] addresses;
+
+        private TestAddressFinder(String... addresses) {
+            this.addresses = addresses;
+        }
+
+        @Override
+        public String[] getAddresses() {
+            return addresses;
+        }
+    }
+
 }

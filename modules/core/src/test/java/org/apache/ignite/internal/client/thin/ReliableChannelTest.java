@@ -34,7 +34,6 @@ import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
-
 import org.apache.ignite.client.ClientAddressFinder;
 import org.apache.ignite.client.ClientAuthorizationException;
 import org.apache.ignite.client.ClientConnectionException;
@@ -483,20 +482,20 @@ public class ReliableChannelTest {
     /**
      * Mock for address finder.
      */
-    static class TestAddressFinder implements ClientAddressFinder {
+    private static class TestAddressFinder implements ClientAddressFinder {
 
         /** Queue of list addresses. Every new request poll this queue. */
         private final Queue<String[]> addrResQueue;
 
         /** */
-        TestAddressFinder() {
+        private TestAddressFinder() {
             addrResQueue = new LinkedList<>();
         }
 
         /**
          * Configure result for every next {@link #getAddresses()} request.
          */
-        TestAddressFinder nextAddresesResponse(String... addrs) {
+        private TestAddressFinder nextAddresesResponse(String... addrs) {
             addrResQueue.add(addrs);
 
             return this;
