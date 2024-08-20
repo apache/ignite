@@ -762,7 +762,7 @@ final class ReliableChannel implements AutoCloseable {
 
             if (channelsCnt.get() == 0) {
                 // Establish default channel connection and retrive nodes endpoints if applicable.
-                Boolean discoveryUpdated = applyOnDefaultChannel(discoveryCtx::refresh, null, failures);
+                boolean discoveryUpdated = applyOnDefaultChannel(discoveryCtx::refresh, null, failures);
 
                 if (discoveryUpdated)
                     initChannelHolders();
