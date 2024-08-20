@@ -251,8 +251,14 @@ public abstract class ThinClientAbstractPartitionAwarenessTest extends GridCommo
         }
     }
 
+    /**
+     * Gets a value indicating whether the channel is connected at the specified index (port offset).
+     *
+     * @param chIdx Channel index (port offset).
+     * @return {@code true} if the channel is connected, {@code false} otherwise.
+     */
     protected boolean isConnected(int chIdx) {
-        List<ReliableChannel.ClientChannelHolder> channelHolders = ((TcpIgniteClient) client).reliableChannel().getChannelHolders();
+        List<ReliableChannel.ClientChannelHolder> channelHolders = ((TcpIgniteClient)client).reliableChannel().getChannelHolders();
         int chPort = DFLT_PORT + chIdx;
 
         for (ReliableChannel.ClientChannelHolder holder : channelHolders) {
