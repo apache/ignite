@@ -32,6 +32,7 @@ import org.apache.calcite.schema.SchemaPlus;
 import org.apache.calcite.util.ImmutableBitSet;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
+import org.apache.ignite.internal.processors.cache.GridCacheProcessor;
 import org.apache.ignite.internal.processors.query.calcite.QueryRegistryImpl;
 import org.apache.ignite.internal.processors.query.calcite.exec.ArrayRowHandler;
 import org.apache.ignite.internal.processors.query.calcite.exec.ExchangeServiceImpl;
@@ -377,6 +378,7 @@ public class PlannerTest extends AbstractPlannerTest {
     ) throws IgniteCheckedException {
         GridTestKernalContext kernal = newContext();
         kernal.add(new NoOpIgniteSecurityProcessor(kernal));
+        kernal.add(new GridCacheProcessor(kernal));
 
         QueryTaskExecutorImpl taskExecutor = new QueryTaskExecutorImpl(kernal);
         taskExecutor.stripedThreadPoolExecutor(new IgniteStripedThreadPoolExecutor(
