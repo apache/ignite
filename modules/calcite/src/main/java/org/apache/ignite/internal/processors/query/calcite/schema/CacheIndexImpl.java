@@ -63,7 +63,7 @@ import org.apache.ignite.spi.indexing.IndexingQueryFilterImpl;
 import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.internal.processors.query.calcite.exec.IndexFirstLastScan.createNotNullRowFilter;
-import static org.apache.ignite.internal.processors.query.calcite.exec.IndexScan.transactionRows;
+import static org.apache.ignite.internal.processors.query.calcite.exec.IndexScan.transactionData;
 
 /**
  * Ignite scannable cache index.
@@ -178,7 +178,8 @@ public class CacheIndexImpl implements IgniteIndex {
                 boolean nullsFirst = collation.getFieldCollations().get(0).nullDirection ==
                     RelFieldCollation.NullDirection.FIRST;
 
-                BPlusTree.TreeRowClosure<IndexRow, IndexRow> notNullRowFilter = createNotNullRowFilter(iidx, checkExpired);
+                BPlusTree.TreeRowClosure<IndexRow, IndexRow> notNullRowFilter =
+                    IndexScan.createNotNullRowFilter(iidx, checkExpired);
 
                 AtomicBoolean skipCheck = new AtomicBoolean();
 
@@ -213,8 +214,9 @@ public class CacheIndexImpl implements IgniteIndex {
 
                 int[] parts = grp.partitions(ectx.localNodeId());
 
-                IgniteBiTuple<Set<KeyCacheObject>, List<CacheDataRow>> txChanges = transactionRows(
+                IgniteBiTuple<Set<KeyCacheObject>, List<CacheDataRow>> txChanges = transactionData(
                     ectx.getTxWriteEntries(),
+                    iidx.indexDefinition().cacheInfo().cacheId(),
                     e -> parts == null || F.contains(parts, e.key().partition()),
                     Function.identity()
                 );
@@ -232,7 +234,7 @@ public class CacheIndexImpl implements IgniteIndex {
 
                             IndexRow row = tree.getRow(io, pageAddr, idx);
 
-                            return !txChanges.get1().remove(row.cacheDataRow().key());
+                            return !txChanges.get1().contains(row.cacheDataRow().key());
                         }
                     };
 

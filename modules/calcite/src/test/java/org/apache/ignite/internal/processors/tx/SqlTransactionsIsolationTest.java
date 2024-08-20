@@ -36,6 +36,7 @@ import java.util.stream.Collectors;
 import java.util.stream.LongStream;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
+import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.Ignition;
 import org.apache.ignite.cache.CacheAtomicityMode;
@@ -71,6 +72,7 @@ import org.junit.runners.Parameterized;
 
 import static java.lang.String.format;
 import static java.util.concurrent.TimeUnit.SECONDS;
+import static org.apache.ignite.testframework.GridTestUtils.assertThrows;
 import static org.apache.ignite.testframework.GridTestUtils.runAsync;
 import static org.apache.ignite.transactions.TransactionIsolation.READ_COMMITTED;
 import static org.junit.Assume.assumeFalse;
@@ -229,6 +231,8 @@ public class SqlTransactionsIsolationTest extends GridCommonAbstractTest {
         thinCli = TcpIgniteClient.start(new ClientConfiguration()
             .setAddresses(Config.SERVER)
             .setPartitionAwarenessEnabled(partitionAwareness));
+
+        cli.createCache(new CacheConfiguration<>(DEFAULT_CACHE_NAME).setAtomicityMode(CacheAtomicityMode.TRANSACTIONAL));
 
         for (CacheMode mode : CacheMode.values()) {
             String users = tableName(USERS, mode);
@@ -601,6 +605,15 @@ public class SqlTransactionsIsolationTest extends GridCommonAbstractTest {
             else
                 insert(F.t(4, JOHN));
 
+            if (modify.equals(SQL)) {
+                assertThrows(
+                    log,
+                    () -> doInsert(F.t(4, JOHN)),
+                    IgniteException.class,
+                    "Failed to INSERT some keys because they are already in cache"
+                );
+            }
+
             checkAfter.run();
         }, commit);
 
@@ -743,10 +756,17 @@ public class SqlTransactionsIsolationTest extends GridCommonAbstractTest {
     private void insideTx(RunnableX test, boolean commit) {
         if (type == ExecutorType.THIN) {
             try (ClientTransaction tx = thinCli.transactions().txStart(txConcurrency, txIsolation, TX_TIMEOUT)) {
+                for (int i = 0; i < 3; i++)
+                    thinCli.cache(DEFAULT_CACHE_NAME).put(i, i);
+
                 test.run();
 
-                if (commit)
+                if (commit) {
+                    for (int i = 0; i < 3; i++)
+                        thinCli.cache(DEFAULT_CACHE_NAME).remove(i, i);
+
                     tx.commit();
+                }
                 else
                     tx.rollback();
             }
@@ -757,10 +777,17 @@ public class SqlTransactionsIsolationTest extends GridCommonAbstractTest {
             assertNotNull(initiator);
 
             try (Transaction tx = initiator.transactions().txStart(txConcurrency, txIsolation, TX_TIMEOUT, TX_SIZE)) {
+                for (int i = 0; i < 3; i++)
+                    initiator.cache(DEFAULT_CACHE_NAME).put(i, i);
+
                 test.run();
 
-                if (commit)
+                if (commit) {
+                    for (int i = 0; i < 3; i++)
+                        initiator.cache(DEFAULT_CACHE_NAME).remove(i, i);
+
                     tx.commit();
+                }
                 else
                     tx.rollback();
             }
@@ -798,7 +825,7 @@ public class SqlTransactionsIsolationTest extends GridCommonAbstractTest {
     }
 
     /** */
-    private void doInsert(IgniteBiTuple<Integer, User>[] entries) {
+    private void doInsert(IgniteBiTuple<Integer, User>... entries) {
         if (modify.equals(CACHE)) {
             if (multi) {
                 Map<Integer, User> data = Arrays.stream(entries).collect(Collectors.toMap(IgniteBiTuple::get1, IgniteBiTuple::get2));
@@ -880,7 +907,7 @@ public class SqlTransactionsIsolationTest extends GridCommonAbstractTest {
                     sql.append(update);
 
                     params[i * colCnt] = data.get2().userId;
-                    params[i * colCnt + 1] = data.get2().fio;
+                    params[i * colCnt + 1] = data.get2().departmentId;
                     params[i * colCnt + 2] = data.get2().fio;
                     params[i * colCnt + 3] = data.get1();
                 }
@@ -889,7 +916,7 @@ public class SqlTransactionsIsolationTest extends GridCommonAbstractTest {
             }
             else {
                 for (IgniteBiTuple<Integer, User> data : entries)
-                    sql(update, data.get2().userId, data.get2().fio, data.get1());
+                    sql(update, data.get2().userId, data.get2().departmentId, data.get2().fio, data.get1());
             }
         }
         else
@@ -1020,16 +1047,6 @@ public class SqlTransactionsIsolationTest extends GridCommonAbstractTest {
 
     /** */
     public List<List<?>> sql(String sqlText, int[] parts, Object... args) {
-        if (!multi) {
-            String explain = "EXPLAIN PLAN FOR ";
-
-            if (!sqlText.startsWith(explain)) {
-                List<List<?>> res = sql(explain + sqlText);
-                for (List<?> r : res)
-                    r.forEach(System.out::println);
-            }
-        }
-
         SqlFieldsQuery qry = new SqlFieldsQuery(sqlText)
             .setArgs(args)
             .setTimeout(5, SECONDS);

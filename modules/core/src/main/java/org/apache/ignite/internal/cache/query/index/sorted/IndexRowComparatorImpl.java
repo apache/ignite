@@ -90,9 +90,6 @@ public class IndexRowComparatorImpl implements IndexRowComparator {
             else if (rkey == NullIndexKey.INSTANCE)
                 return 1;
 
-            if (lkey == null || rkey == null)
-                System.out.println("IndexRowComparatorImpl.compare");
-
             if (lkey.type() == rkey.type() || lkey.isComparableTo(rkey))
                 return lkey.compare(rkey);
             else if (rkey.isComparableTo(lkey))

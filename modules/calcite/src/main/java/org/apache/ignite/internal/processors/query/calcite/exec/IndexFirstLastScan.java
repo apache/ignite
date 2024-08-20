@@ -16,24 +16,15 @@
  */
 package org.apache.ignite.internal.processors.query.calcite.exec;
 
-import java.util.List;
 import org.apache.calcite.util.ImmutableBitSet;
 import org.apache.calcite.util.ImmutableIntList;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
-import org.apache.ignite.internal.cache.query.index.sorted.IndexKeyType;
 import org.apache.ignite.internal.cache.query.index.sorted.IndexRow;
 import org.apache.ignite.internal.cache.query.index.sorted.inline.IndexQueryContext;
-import org.apache.ignite.internal.cache.query.index.sorted.inline.InlineIndex;
 import org.apache.ignite.internal.cache.query.index.sorted.inline.InlineIndexImpl;
-import org.apache.ignite.internal.cache.query.index.sorted.inline.InlineIndexKeyType;
-import org.apache.ignite.internal.cache.query.index.sorted.inline.io.InlineIO;
-import org.apache.ignite.internal.processors.cache.persistence.tree.BPlusTree;
-import org.apache.ignite.internal.processors.cache.persistence.tree.io.BPlusIO;
 import org.apache.ignite.internal.processors.query.calcite.schema.CacheTableDescriptor;
 import org.apache.ignite.internal.util.lang.GridCursor;
-import org.apache.ignite.internal.util.typedef.F;
-import org.apache.ignite.internal.util.typedef.internal.U;
 import org.jetbrains.annotations.Nullable;
 
 /**
@@ -103,43 +94,5 @@ public class IndexFirstLastScan<Row> extends IndexScan<Row> {
                 throw new IgniteException("Failed to take " + (first ? "first" : "last") + " not-null index value.", e);
             }
         }
-    }
-
-    /**
-     * Creates row filter to skip null values in the first index column.
-     */
-    public static BPlusTree.TreeRowClosure<IndexRow, IndexRow> createNotNullRowFilter(
-        InlineIndex idx,
-        boolean checkExpired
-    ) {
-        List<InlineIndexKeyType> inlineKeyTypes = idx.segment(0).rowHandler().inlineIndexKeyTypes();
-
-        InlineIndexKeyType keyType = F.isEmpty(inlineKeyTypes) ? null : inlineKeyTypes.get(0);
-
-        return new BPlusTree.TreeRowClosure<IndexRow, IndexRow>() {
-            /** {@inheritDoc} */
-            @Override public boolean apply(
-                BPlusTree<IndexRow, IndexRow> tree,
-                BPlusIO<IndexRow> io,
-                long pageAddr,
-                int idx
-            ) throws IgniteCheckedException {
-                if (!checkExpired && keyType != null && io instanceof InlineIO) {
-                    Boolean keyIsNull = keyType.isNull(pageAddr, io.offset(idx), ((InlineIO)io).inlineSize());
-
-                    if (keyIsNull == Boolean.TRUE)
-                        return false;
-                }
-
-                IndexRow idxRow = io.getLookupRow(tree, pageAddr, idx);
-
-                if (checkExpired &&
-                    idxRow.cacheDataRow().expireTime() > 0 &&
-                    idxRow.cacheDataRow().expireTime() <= U.currentTimeMillis())
-                    return false;
-
-                return idxRow.key(0).type() != IndexKeyType.NULL;
-            }
-        };
     }
 }

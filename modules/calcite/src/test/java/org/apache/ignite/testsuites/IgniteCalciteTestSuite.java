@@ -47,11 +47,11 @@ import org.junit.runners.Suite;
     SqlReservedWordsTest.class,
     IgniteSqlFunctionsTest.class,
     LogicalRelImplementorTest.class,
-    FilteredCursorTest.class,
 
     ScriptTestSuite.class,
     CalciteCommunicationMessageSerializationTest.class,
 
+    FilteredCursorTest.class,
     SqlTransactionsIsolationTest.class,
     SqlTransactionsUnsupportedModesTest.class
 })

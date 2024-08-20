@@ -115,7 +115,7 @@ public class IndexScan<Row> extends AbstractIndexScan<Row, IndexRow> {
     private final Type[] fieldsStoreTypes;
 
     /**
-     * First, set of keys changed (updated or removed) inside transaction: must be skiped during index scan.
+     * First, set of keys changed (inserted, updated or removed) inside transaction: must be skiped during index scan.
      * Second, list of rows inserted or updated inside transaction: must be mixed with the scan results.
      */
     private IgniteBiTuple<Set<KeyCacheObject>, List<IndexRow>> txChanges;
@@ -250,6 +250,7 @@ public class IndexScan<Row> extends AbstractIndexScan<Row, IndexRow> {
         if (F.isEmpty(ectx.getTxWriteEntries()))
             return idxCursor;
 
+        // Calculate txChanges only once.
         if (txChanges == null) {
             InlineIndexRowHandler rowHnd = idx.segment(0).rowHandler();
 
@@ -257,9 +258,10 @@ public class IndexScan<Row> extends AbstractIndexScan<Row, IndexRow> {
             if (parts != null)
                 Arrays.sort(parts);
 
-            txChanges = transactionRows(
+            txChanges = transactionData(
                 ectx.getTxWriteEntries(),
-                e -> (cctx.cacheId() == e.cacheId()) && (parts == null || Arrays.binarySearch(parts, e.key().partition()) >= 0),
+                cctx.cacheId(),
+                e -> parts == null || Arrays.binarySearch(parts, e.key().partition()) >= 0,
                 r -> new IndexRowImpl(rowHnd, r)
             );
 
@@ -497,6 +499,44 @@ public class IndexScan<Row> extends AbstractIndexScan<Row, IndexRow> {
         }
     }
 
+    /**
+     * Creates row filter to skip null values in the first index column.
+     */
+    public static BPlusTree.TreeRowClosure<IndexRow, IndexRow> createNotNullRowFilter(
+        InlineIndex idx,
+        boolean checkExpired
+    ) {
+        List<InlineIndexKeyType> inlineKeyTypes = idx.segment(0).rowHandler().inlineIndexKeyTypes();
+
+        InlineIndexKeyType keyType = F.isEmpty(inlineKeyTypes) ? null : inlineKeyTypes.get(0);
+
+        return new BPlusTree.TreeRowClosure<IndexRow, IndexRow>() {
+            /** {@inheritDoc} */
+            @Override public boolean apply(
+                BPlusTree<IndexRow, IndexRow> tree,
+                BPlusIO<IndexRow> io,
+                long pageAddr,
+                int idx
+            ) throws IgniteCheckedException {
+                if (!checkExpired && keyType != null && io instanceof InlineIO) {
+                    Boolean keyIsNull = keyType.isNull(pageAddr, io.offset(idx), ((InlineIO)io).inlineSize());
+
+                    if (keyIsNull == Boolean.TRUE)
+                        return false;
+                }
+
+                IndexRow idxRow = io.getLookupRow(tree, pageAddr, idx);
+
+                if (checkExpired &&
+                    idxRow.cacheDataRow().expireTime() > 0 &&
+                    idxRow.cacheDataRow().expireTime() <= U.currentTimeMillis())
+                    return false;
+
+                return idxRow.key(0).type() != IndexKeyType.NULL;
+            }
+        };
+    }
+
     /** */
     public static BPlusTree.TreeRowClosure<IndexRow, IndexRow> createNotExpiredRowFilter() {
         return (tree, io, pageAddr, idx) -> {
@@ -535,20 +575,31 @@ public class IndexScan<Row> extends AbstractIndexScan<Row, IndexRow> {
         }
     }
 
-    /** */
-    public static <R> IgniteBiTuple<Set<KeyCacheObject>, List<R>> transactionRows(
-        Collection<IgniteTxEntry> writes,
+    /**
+     * @param entries Entries changed in transaction.
+     * @param cacheId Cache id.
+     * @param filter Filter.
+     * @param mapper Mapper to specific data type.
+     * @return First, set of object changed in transaction, second, list of transaction data in required format.
+     * @param <R> Required type.
+     */
+    public static <R> IgniteBiTuple<Set<KeyCacheObject>, List<R>> transactionData(
+        Collection<IgniteTxEntry> entries,
+        int cacheId,
         Predicate<IgniteTxEntry> filter,
         Function<CacheDataRow, R> mapper
     ) {
-        if (F.isEmpty(writes))
+        if (F.isEmpty(entries))
             return F.t(Collections.emptySet(), Collections.emptyList());
 
-        Set<KeyCacheObject> skipKeys = new HashSet<>(writes.size());
-        List<R> mixRows = new ArrayList<>(writes.size());
+        Set<KeyCacheObject> skipKeys = new HashSet<>(entries.size());
+        List<R> mixRows = new ArrayList<>(entries.size());
 
-        for (IgniteTxEntry e : writes) {
+        for (IgniteTxEntry e : entries) {
             assert e.key().partition() != -1;
+
+            if (e.cacheId() != cacheId)
+                continue;;
 
             if (!filter.test(e))
                 continue;
@@ -573,36 +624,34 @@ public class IndexScan<Row> extends AbstractIndexScan<Row, IndexRow> {
         /** Sorted cursor. */
         private final GridCursor<? extends R> cursor;
 
-        /** Sorted rows that must be skiped on {@link #cursor} iteration. */
+        /** Rows that must be skiped on {@link #cursor} iteration. */
         private final Set<KeyCacheObject> skipKeys;
 
-        /** */
-        private final Function<R, KeyCacheObject> key;
+        /** Mapper from row to {@link KeyCacheObject}. */
+        private final Function<R, KeyCacheObject> toKey;
 
         /**
-         * @param cursor
-         * @param skipKeys
-         * @param key
+         * @param cursor Sorted cursor.
+         * @param skipKeys Keys to skip.
+         * @param toKey Mapper from row to {@link KeyCacheObject}.
          */
-        FilteredCursor(GridCursor<? extends R> cursor, Set<KeyCacheObject> skipKeys, Function<R, KeyCacheObject> key) {
+        FilteredCursor(GridCursor<? extends R> cursor, Set<KeyCacheObject> skipKeys, Function<R, KeyCacheObject> toKey) {
             this.cursor = cursor;
             this.skipKeys = skipKeys;
-            this.key = key;
+            this.toKey = toKey;
         }
 
         /** {@inheritDoc} */
         @Override public boolean next() throws IgniteCheckedException {
-            if (!cursor.next())
-                return false;
+            R cur;
 
-            R cur = cursor.get();
-
-            while (skipKeys.contains(key.apply(cur))) {
+            do {
                 if (!cursor.next())
                     return false;
 
                 cur = cursor.get();
-            }
+
+            } while (skipKeys.contains(toKey.apply(cur)));
 
             return true;
         }

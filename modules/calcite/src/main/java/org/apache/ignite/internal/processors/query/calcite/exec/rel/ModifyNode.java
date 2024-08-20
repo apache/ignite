@@ -189,6 +189,7 @@ public class ModifyNode<Row> extends AbstractNode<Row> implements SingleNode<Row
     }
 
     /** */
+    @SuppressWarnings("unchecked")
     private void flushTuples(boolean force) throws IgniteCheckedException {
         if (F.isEmpty(tuples) || !force && tuples.size() < MODIFY_BATCH_SIZE)
             return;
@@ -196,31 +197,92 @@ public class ModifyNode<Row> extends AbstractNode<Row> implements SingleNode<Row
         List<ModifyTuple> tuples = this.tuples;
         this.tuples = new ArrayList<>(MODIFY_BATCH_SIZE);
 
-        GridCacheContext<?, ?> cctx = desc.cacheContext();
+        GridCacheContext<Object, Object> cctx = desc.cacheContext();
+        GridCacheProxyImpl<Object, Object> cache = cctx.cache().keepBinary();
+        GridNearTxLocal tx = Commons.queryTransaction(context(), cctx.shared());
 
-        final GridNearTxLocal userTx = Commons.queryTransaction(context(), cctx.shared());
+        if (tx == null)
+            invokeOutsideTransaction(tuples, cache);
+        else
+            invokeInsideTransaction(tuples, cache, tx);
+    }
 
-        if (userTx != null) {
-            invokeInsideTransaction(userTx, tuples);
+    /**
+     * Perform data modification without explicit transaction.
+     * @param tuples Modified data.
+     * @param cache Cache.
+     * @throws IgniteCheckedException If failed.
+     */
+    private void invokeOutsideTransaction(
+        List<ModifyTuple> tuples,
+        GridCacheProxyImpl<Object, Object> cache
+    ) throws IgniteCheckedException {
+        Map<Object, EntryProcessor<Object, Object, Long>> map = invokeMap(tuples);
+        Map<Object, EntryProcessorResult<Long>> res = cache.invokeAll(map);
 
-            updatedRows += tuples.size();
+        long updated = res.values().stream().mapToLong(EntryProcessorResult::get).sum();
+
+        if ((op == TableModify.Operation.INSERT || op == TableModify.Operation.MERGE) && updated != res.size()) {
+            List<Object> conflictKeys = res.entrySet().stream()
+                .filter(e -> e.getValue().get() == 0)
+                .map(Map.Entry::getKey)
+                .collect(Collectors.toList());
+
+            throw conflictKeysException(conflictKeys);
         }
-        else {
-            Map<Object, EntryProcessor<Object, Object, Long>> map = invokeMap(tuples);
-            Map<Object, EntryProcessorResult<Long>> res = cctx.cache().keepBinary().invokeAll(map);
 
-            long updated = res.values().stream().mapToLong(EntryProcessorResult::get).sum();
+        updatedRows += updated;
+    }
 
-            if ((op == TableModify.Operation.INSERT || op == TableModify.Operation.MERGE) && updated != res.size()) {
-                List<Object> conflictKeys = res.entrySet().stream()
-                    .filter(e -> e.getValue().get() == 0)
-                    .map(Map.Entry::getKey)
-                    .collect(Collectors.toList());
+    /**
+     * Performs data modification within user transaction.
+     * @param tuples Modified data.
+     * @param cache Cache.
+     * @param userTx Transaction.
+     * @throws IgniteCheckedException If failed.
+     */
+    private void invokeInsideTransaction(
+        List<ModifyTuple> tuples,
+        GridCacheProxyImpl<Object, Object> cache,
+        GridNearTxLocal userTx
+    ) throws IgniteCheckedException {
+        userTx.resume();
 
-                throw conflictKeysException(conflictKeys);
+        try {
+            int updated = 0;
+
+            for (ModifyTuple entry : tuples) {
+                assert entry.getOp() == op || op == TableModify.Operation.MERGE : entry.getOp();
+
+                switch (entry.getOp()) {
+                    case INSERT:
+                        if (cache.getAndPut(entry.getKey(), entry.getValue()) != null)
+                            throw conflictKeysException(Collections.singletonList(entry.getKey()));
+
+                        updated++;
+
+                        break;
+                    case UPDATE:
+                        if (cache.replace(entry.getKey(), entry.getValue()))
+                            updated++;
+
+                        break;
+                    case DELETE:
+                        assert op == TableModify.Operation.DELETE;
+
+                        if (cache.remove(entry.getKey()))
+                            updated++;
+
+                        break;
+                    default:
+                        throw new AssertionError("Unexpected tuple operation: " + entry.getOp());
+                }
             }
 
             updatedRows += updated;
+        }
+        finally {
+            userTx.suspend();
         }
     }
 
@@ -233,44 +295,6 @@ public class ModifyNode<Row> extends AbstractNode<Row> implements SingleNode<Row
         else {
             return new IgniteSQLException("Failed to MERGE some keys due to keys conflict or concurrent updates. " +
                 "[cache=" + desc.cacheContext().name() + ", keys=" + conflictKeys + ']', CONCURRENT_UPDATE);
-        }
-    }
-
-    /** */
-    private void invokeInsideTransaction(GridNearTxLocal userTx, List<ModifyTuple> tuples) throws IgniteCheckedException {
-        userTx.resume();
-
-        try {
-            GridCacheProxyImpl<Object, Object> cache = desc.cacheContext().cache().keepBinary();
-
-            for (ModifyTuple entry : tuples) {
-                assert entry.getOp() == op || op == TableModify.Operation.MERGE : entry.getOp();
-
-                switch (entry.getOp()) {
-                    case INSERT:
-                        if (cache.get(entry.getKey()) != null)
-                            throw conflictKeysException(Collections.singletonList(entry.getKey()));
-
-                        cache.put(entry.getKey(), entry.getValue());
-
-                        break;
-                    case UPDATE:
-                        cache.put(entry.getKey(), entry.getValue());
-
-                        break;
-                    case DELETE:
-                        assert op == TableModify.Operation.DELETE;
-
-                        cache.remove(entry.getKey());
-
-                        break;
-                    default:
-                        throw new AssertionError("Unexpected tuple operation: " + entry.getOp());
-                }
-            }
-        }
-        finally {
-            userTx.suspend();
         }
     }
 

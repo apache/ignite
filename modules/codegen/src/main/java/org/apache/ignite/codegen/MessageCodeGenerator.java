@@ -164,7 +164,7 @@ public class MessageCodeGenerator {
      * @throws Exception In case of error.
      */
     public static void main(String[] args) throws Exception {
-        String srcDir = CALCITE_SRC_DIR;
+        String srcDir = DFLT_SRC_DIR;
 
         if (args != null && args.length > 0)
             srcDir = args[0];

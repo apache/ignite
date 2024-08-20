@@ -247,12 +247,13 @@ public class TableScan<Row> implements Iterable<Row>, AutoCloseable {
                     cur = part.dataStore().cursor(cctx.cacheId());
 
                     /**
-                     * First, set of keys changed (updated or removed) inside transaction: must be skiped during index scan.
+                     * First, set of keys changed (inserted, updated or removed) inside transaction: must be skiped during index scan.
                      * Second, list of rows inserted or updated inside transaction: must be mixed with the scan results.
                      */
-                    IgniteBiTuple<Set<KeyCacheObject>, List<CacheDataRow>> txChanges = IndexScan.transactionRows(
+                    IgniteBiTuple<Set<KeyCacheObject>, List<CacheDataRow>> txChanges = IndexScan.transactionData(
                         ectx.getTxWriteEntries(),
-                        e -> e.cacheId() == cctx.cacheId() && e.key().partition() == part.id(),
+                        cctx.cacheId(),
+                        e -> e.key().partition() == part.id(),
                         Function.identity()
                     );
 

@@ -603,11 +603,13 @@ public class CalciteQueryProcessor extends GridProcessorAdapter implements Query
 
         SqlFieldsQuery sqlFieldsQry = qryCtx.unwrap(SqlFieldsQuery.class);
 
-        return sqlFieldsQry != null ? F.asList(sqlFieldsQry.isLocal(), sqlFieldsQry.isEnforceJoinOrder(), userTxId(qryCtx) == null) : null;
+        return sqlFieldsQry != null
+            ? F.asList(sqlFieldsQry.isLocal(), sqlFieldsQry.isEnforceJoinOrder(), queryTransactionVersion(qryCtx) == null)
+            : null;
     }
 
     /** */
-    private static GridCacheVersion userTxId(@Nullable QueryContext qryCtx) {
+    private static GridCacheVersion queryTransactionVersion(@Nullable QueryContext qryCtx) {
         return qryCtx == null ? null : qryCtx.unwrap(GridCacheVersion.class);
     }
 
@@ -616,7 +618,7 @@ public class CalciteQueryProcessor extends GridProcessorAdapter implements Query
         if (!IgniteSystemProperties.getBoolean(IGNITE_ALLOW_TX_AWARE_QUERIES))
             return;
 
-        GridCacheVersion ver = userTxId(qryCtx);
+        GridCacheVersion ver = queryTransactionVersion(qryCtx);
 
         if (ver == null)
             return;

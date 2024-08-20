@@ -298,7 +298,7 @@ public class ExecutionContext<Row> extends AbstractQueryContext implements DataC
     }
 
     /**
-     * @return Transaction write map
+     * @return Transaction write map.
      */
     public Collection<IgniteTxEntry> getTxWriteEntries() {
         return txWriteEntries;
