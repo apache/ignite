@@ -27,14 +27,14 @@ public interface MarshalableMessage extends CalciteMessage {
     /**
      * Prepares the message before sending.
      *
-     * @param ctx Kernal context.
+     * @param ctx Cache shared context.
      */
     void prepareMarshal(GridCacheSharedContext<?, ?> ctx) throws IgniteCheckedException;
 
     /**
      * Prepares the message before processing.
      *
-     * @param ctx Kernal context.
+     * @param ctx Cache shared context.
      */
     void prepareUnmarshal(GridCacheSharedContext<?, ?> ctx) throws IgniteCheckedException;
 }
