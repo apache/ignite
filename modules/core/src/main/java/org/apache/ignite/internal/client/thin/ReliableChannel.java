@@ -623,7 +623,7 @@ final class ReliableChannel implements AutoCloseable {
         // Enable parallel threads to schedule new init of channel holders.
         scheduledChannelsReinit.set(false);
 
-        Collection<List<InetSocketAddress>> newAddrs = new ArrayList<>(discoveryCtx.getEndpoints());
+        Collection<List<InetSocketAddress>> newAddrs = discoveryCtx.getEndpoints();
 
         if (newAddrs == null) {
             finishChannelsReInit = System.currentTimeMillis();
@@ -633,6 +633,9 @@ final class ReliableChannel implements AutoCloseable {
 
         // Add connected channels to the list to avoid unnecessary reconnects.
         if (holders != null) {
+            // Do not modify the original list.
+            newAddrs = new ArrayList<>(newAddrs);
+
             for (ClientChannelHolder h : holders) {
                 ClientChannel ch = h.ch;
 
