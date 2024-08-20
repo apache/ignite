@@ -631,8 +631,8 @@ final class ReliableChannel implements AutoCloseable {
             return;
         }
 
-        // Add connected channels to the list to avoid unnecessary reconnects.
-        if (holders != null) {
+        // Add connected channels to the list to avoid unnecessary reconnects, unless address finder is used.
+        if (holders != null && clientCfg.getAddressesFinder() == null) {
             // Do not modify the original list.
             newAddrs = new ArrayList<>(newAddrs);
 
