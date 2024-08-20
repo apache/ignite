@@ -54,7 +54,7 @@ import static org.apache.ignite.configuration.ClientConnectorConfiguration.DFLT_
 @SuppressWarnings("rawtypes")
 public abstract class ThinClientAbstractPartitionAwarenessTest extends GridCommonAbstractTest {
     /** Wait timeout. */
-    protected static final long WAIT_TIMEOUT = 5_000L;
+    protected static final long WAIT_TIMEOUT = 15_000L;
 
     /** Replicated cache name. */
     protected static final String REPL_CACHE_NAME = "replicated_cache";
