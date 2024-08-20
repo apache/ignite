@@ -62,7 +62,6 @@ import org.apache.ignite.spi.indexing.IndexingQueryFilter;
 import org.apache.ignite.spi.indexing.IndexingQueryFilterImpl;
 import org.jetbrains.annotations.Nullable;
 
-import static org.apache.ignite.internal.processors.query.calcite.exec.IndexFirstLastScan.createNotNullRowFilter;
 import static org.apache.ignite.internal.processors.query.calcite.exec.IndexScan.transactionData;
 
 /**
