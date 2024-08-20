@@ -1057,12 +1057,14 @@ final class ReliableChannel implements AutoCloseable {
             if (close)
                 throw new ClientConnectionException("Channel is closed [addresses=" + getAddresses() + ']');
 
-            if (ch == null) {
+            ClientChannel ch0 = ch;
+
+            if (ch0 == null || ch0.closed()) {
                 synchronized (this) {
                     if (close)
                         throw new ClientConnectionException("Channel is closed [addresses=" + getAddresses() + ']');
 
-                    if (ch != null)
+                    if (ch != null && !ch.closed())
                         return ch;
 
                     if (!ignoreThrottling && applyReconnectionThrottling())
@@ -1088,13 +1090,13 @@ final class ReliableChannel implements AutoCloseable {
                         }
                     }
 
-                    ch = channel;
+                    ch0 = ch = channel;
 
                     channelsCnt.incrementAndGet();
                 }
             }
 
-            return ch;
+            return ch0;
         }
 
         /**
