@@ -1115,8 +1115,6 @@ public class IgniteClusterSnapshotCheckTest extends AbstractSnapshotSelfTest {
             break;
         }
 
-        AtomicInteger chkAgainIdx = new AtomicInteger(-1);
-
         try {
             discoSpi(grid(coordIdx)).block(msg -> msg instanceof FullMessage
                 && ((FullMessage<?>)msg).type() == CHECK_SNAPSHOT_METAS.ordinal());
@@ -1125,7 +1123,7 @@ public class IgniteClusterSnapshotCheckTest extends AbstractSnapshotSelfTest {
 
             discoSpi(grid(coordIdx)).waitBlocked(getTestTimeout());
 
-            stopGrid(nodeToStopIdx);
+            stopGrid(nodeToStopIdx, true);
 
             stopped.add(nodeToStopIdx);
 
@@ -1166,22 +1164,24 @@ public class IgniteClusterSnapshotCheckTest extends AbstractSnapshotSelfTest {
         finally {
             if (nodeToStopIdx != coordIdx)
                 discoSpi(grid(coordIdx)).unblock();
-
-            awaitPartitionMapExchange();
-
-            assertTrue(waitForCondition(() -> {
-                for (int i = 0; i < grids; ++i) {
-                    if (stopped.contains(i))
-                        continue;
-
-                    chkAgainIdx.compareAndSet(-1, i);
-                }
-
-                return true;
-            }, getTestTimeout()));
         }
 
-        snp(grid(chkAgainIdx.get())).checkSnapshot(SNAPSHOT_NAME, null, null, false, 0, true).get();
+        if (requredLeft) {
+            int chkAgainIdx = -1;
+
+            for (int i = 0; i < grids; ++i) {
+                if (stopped.contains(i))
+                    continue;
+
+                chkAgainIdx = i;
+
+                break;
+            }
+
+            assert chkAgainIdx >= 0;
+
+            snp(grid(chkAgainIdx)).checkSnapshot(SNAPSHOT_NAME, null, null, false, 0, true).get(getTestTimeout());
+        }
     }
 
     /** */

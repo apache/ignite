@@ -92,8 +92,16 @@ public class SnapshotCheckProcess {
                 "the cluster [nodeId=" + nodeId + ']');
 
             contexts.values().forEach(ctx -> {
-                if (ctx.req.nodes().contains(nodeId))
+                if (ctx.req.nodes().contains(nodeId)) {
                     ctx.locProcFut.onDone(err);
+
+                    // We have no a guaranty that a node-left-event is processed strictly before the 1st phase reduce which
+                    // can handle this error.
+                    GridFutureAdapter<?> clusterFut = clusterOpFuts.get(ctx.req.requestId());
+
+                    if (clusterFut != null)
+                        clusterFut.onDone(err);
+                }
             });
         }, EVT_NODE_FAILED, EVT_NODE_LEFT);
     }
@@ -187,7 +195,7 @@ public class SnapshotCheckProcess {
 
         GridFutureAdapter<SnapshotCheckResponse> phaseFut = ctx.phaseFut();
 
-        // Might be already finished by #onNodeLeft().
+        // Might be already finished by asynchronous leave of a required node.
         if (!phaseFut.isDone()) {
             CompletableFuture<? extends Map<?, ?>> workingFut = req.allRestoreHandlers()
                 ? snpMgr.checker().invokeCustomHandlers(ctx.locMeta, req.snapshotPath(), req.groups(), true)
@@ -272,7 +280,7 @@ public class SnapshotCheckProcess {
 
         GridFutureAdapter<SnapshotCheckResponse> phaseFut = ctx.phaseFut();
 
-        // Might be already finished by #onNodeLeft().
+        // Might be already finished by asynchronous leave of a required node.
         if (!phaseFut.isDone()) {
             snpMgr.checker().checkLocalMetas(
                 snpMgr.snapshotLocalDir(req.snapshotName(), req.snapshotPath()),
@@ -447,7 +455,7 @@ public class SnapshotCheckProcess {
             this.req = req;
         }
 
-        /** Gives a future for current process phase. The future can be stopped by an async error like #onNodeLeft(). */
+        /** Gives a future for current process phase. The future can be stopped by asynchronous leave of a required node */
         private <T> GridFutureAdapter<T> phaseFut() {
             GridFutureAdapter<T> fut = new GridFutureAdapter<>();
 
