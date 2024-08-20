@@ -113,9 +113,6 @@ public class SnapshotChecker {
     protected final EncryptionSpi encryptionSpi;
 
     /** */
-    @Nullable protected final CompressionProcessor compression;
-
-    /** */
     protected final ExecutorService executor;
 
     /** */
@@ -131,8 +128,6 @@ public class SnapshotChecker {
         this.marshallerClsLdr = marshallerClsLdr;
 
         this.encryptionSpi = kctx.config().getEncryptionSpi() == null ? new NoopEncryptionSpi() : kctx.config().getEncryptionSpi();
-
-        this.compression = kctx.compress();
 
         this.executor = executorSrvc;
 
@@ -245,7 +240,7 @@ public class SnapshotChecker {
 
                 if (meta.hasCompressedGroups() && grpIdsToFind.stream().anyMatch(meta::isGroupWithCompression)) {
                     try {
-                        compression.checkPageCompressionSupported();
+                        kctx.compress().checkPageCompressionSupported();
                     }
                     catch (NullPointerException | IgniteCheckedException e) {
                         String grpWithCompr = grpIdsToFind.stream().filter(meta::isGroupWithCompression)
