@@ -20,6 +20,7 @@ package org.apache.ignite.internal.processors.tx;
 import java.util.EnumSet;
 import java.util.List;
 import javax.cache.CacheException;
+import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.calcite.CalciteQueryEngineConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
@@ -31,6 +32,7 @@ import org.apache.ignite.transactions.TransactionIsolation;
 import org.junit.Test;
 
 import static java.util.concurrent.TimeUnit.SECONDS;
+import static org.apache.ignite.testframework.GridTestUtils.assertThrows;
 
 /** */
 public class SqlTransactionsUnsupportedModesTest extends GridCommonAbstractTest {
@@ -39,7 +41,7 @@ public class SqlTransactionsUnsupportedModesTest extends GridCommonAbstractTest 
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
         cfg.getSqlConfiguration().setQueryEnginesConfiguration(new CalciteQueryEngineConfiguration());
-        cfg.getTransactionConfiguration().setTxAwareQueries(true);
+        cfg.getTransactionConfiguration().setTxAwareQueries(igniteInstanceName.contains("0"));
 
         return cfg;
     }
@@ -65,6 +67,20 @@ public class SqlTransactionsUnsupportedModesTest extends GridCommonAbstractTest 
                 }
 
                 assertTrue(supported.isEmpty());
+            }
+        }
+    }
+
+    /** */
+    @Test
+    public void testJoinFailIfConfigMismatch() throws Exception {
+        try (IgniteEx srv = startGrid(0)) {
+            for (boolean client : new boolean[] {false, true}) {
+                assertThrows(
+                    null,
+                    () -> client ? startClientGrid(1) : startGrid(1),
+                    IgniteCheckedException.class,
+                    "Transactions aware queries enabled mismatch (fix txAwareQueries property)");
             }
         }
     }
