@@ -156,15 +156,16 @@ public abstract class ThinClientAbstractPartitionAwarenessTest extends GridCommo
      */
     protected void assertOpOnChannel(@Nullable TestTcpClientChannel expCh, ClientOperation expOp) {
         T2<TestTcpClientChannel, ClientOperation> nextChOp = opsQueue.poll();
+        T2<TestTcpClientChannel, ClientOperation> queuedOp = opsQueue.peek();
 
         assertNotNull("Unexpected (null) next operation [expCh=" + expCh + ", expOp=" + expOp + ']', nextChOp);
 
         assertEquals("Unexpected operation on channel [expCh=" + expCh + ", expOp=" + expOp +
-                ", nextOpCh=" + nextChOp + ']', expOp, nextChOp.get2());
+                ", nextOpCh=" + nextChOp + ", queuedOp=" + queuedOp + ']', expOp, nextChOp.get2());
 
         if (expCh != null) {
             assertEquals("Unexpected channel for operation [expCh=" + expCh + ", expOp=" + expOp +
-                ", nextOpCh=" + nextChOp + ']', expCh, nextChOp.get1());
+                ", nextOpCh=" + nextChOp + ", queuedOp=" + queuedOp + ']', expCh, nextChOp.get1());
         }
     }
 
