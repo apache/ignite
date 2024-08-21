@@ -376,8 +376,7 @@ public class LongDestroyDurableBackgroundTaskTest extends GridCommonAbstractTest
         taskArg.checkSizes(true);
 
         ValidateIndexesTaskResult taskRes =
-            ignite.compute().execute(ValidateIndexesTask.class, new VisorTaskArgument<>(nodeIds, taskArg, false))
-                .result();
+            ignite.compute().execute(ValidateIndexesTask.class, new VisorTaskArgument<>(nodeIds, taskArg, false)).result();
 
         if (!taskRes.exceptions().isEmpty()) {
             for (Map.Entry<ValidateIndexesTaskResult.NodeInfo, Exception> e : taskRes.exceptions().entrySet())
