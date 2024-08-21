@@ -164,17 +164,18 @@ tab:Java[]
 [source,java]
 ----
 try (IgniteClient client = Ignition.startClient(new ClientConfiguration().setAddresses("node1_address:10800",
-"node2_address:10800", "node3_address:10800")) {
+"node2_address:10800", "node3_address:10800"))) {
 // Create a regular Person object and put it to the cache.
 Person person = buildPerson(personId);
-ignite.cache("myCache").put(personId, person);
+client.cache("myCache").put(personId, person);
 
 // Get an instance of binary-enabled cache.
-IgniteCache<Integer, BinaryObject> binaryCache = ignite.cache("myCache").withKeepBinary();
+ClientCache<Integer, BinaryObject> binaryCache = client.cache("myCache").withKeepBinary();
 
 // Get the above person object in the BinaryObject format.
-BinaryObject binaryPerson = binaryCache.get(personId);}
-} catch (ClientConnectionException ex) {
+BinaryObject binaryPerson = binaryCache.get(personId);
+}
+catch (ClientConnectionException ex) {
 // All the servers are unavailable
 }
 ----
