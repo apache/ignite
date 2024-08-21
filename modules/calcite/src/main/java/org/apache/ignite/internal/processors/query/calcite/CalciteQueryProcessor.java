@@ -21,7 +21,6 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
-import java.util.EnumSet;
 import java.util.List;
 import java.util.UUID;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -50,7 +49,6 @@ import org.apache.calcite.sql.validate.SqlValidator;
 import org.apache.calcite.sql2rel.SqlToRelConverter;
 import org.apache.calcite.tools.FrameworkConfig;
 import org.apache.calcite.tools.Frameworks;
-import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.SystemProperty;
 import org.apache.ignite.cache.query.FieldsQueryCursor;
 import org.apache.ignite.cache.query.QueryCancelledException;
@@ -121,11 +119,10 @@ import org.apache.ignite.internal.processors.query.calcite.util.LifecycleAware;
 import org.apache.ignite.internal.processors.query.calcite.util.Service;
 import org.apache.ignite.internal.processors.security.SecurityUtils;
 import org.apache.ignite.internal.util.typedef.F;
-import org.apache.ignite.transactions.TransactionIsolation;
 import org.jetbrains.annotations.Nullable;
 
-import static org.apache.ignite.IgniteSystemProperties.IGNITE_ALLOW_TX_AWARE_QUERIES;
 import static org.apache.ignite.IgniteSystemProperties.getLong;
+import static org.apache.ignite.configuration.TransactionConfiguration.TX_AWARE_QUERIES_SUPPORTED_MODES;
 import static org.apache.ignite.events.EventType.EVT_SQL_QUERY_EXECUTION;
 
 /** */
@@ -141,13 +138,6 @@ public class CalciteQueryProcessor extends GridProcessorAdapter implements Query
     @SystemProperty(value = "Timeout of calcite based sql engine's planner, in ms", type = Long.class,
         defaults = "" + DFLT_IGNITE_CALCITE_PLANNER_TIMEOUT)
     public static final String IGNITE_CALCITE_PLANNER_TIMEOUT = "IGNITE_CALCITE_PLANNER_TIMEOUT";
-
-    /**
-     * Supported levels of transaction isolation for SQL queries.
-     *
-     * @see IgniteSystemProperties#IGNITE_ALLOW_TX_AWARE_QUERIES
-     */
-    public static final EnumSet<TransactionIsolation> SUPPORTED_MODES = EnumSet.of(TransactionIsolation.READ_COMMITTED);
 
     /** */
     public static final FrameworkConfig FRAMEWORK_CONFIG = Frameworks.newConfigBuilder()
@@ -615,7 +605,7 @@ public class CalciteQueryProcessor extends GridProcessorAdapter implements Query
 
     /** */
     private void ensureTransactionModeSupported(@Nullable QueryContext qryCtx) {
-        if (!IgniteSystemProperties.getBoolean(IGNITE_ALLOW_TX_AWARE_QUERIES))
+        if (!ctx.config().getTransactionConfiguration().isTxAwareQueries())
             return;
 
         GridCacheVersion ver = queryTransactionVersion(qryCtx);
@@ -625,7 +615,7 @@ public class CalciteQueryProcessor extends GridProcessorAdapter implements Query
 
         final GridNearTxLocal userTx = ctx.cache().context().tm().tx(ver);
 
-        if (SUPPORTED_MODES.contains(userTx.isolation()))
+        if (TX_AWARE_QUERIES_SUPPORTED_MODES.contains(userTx.isolation()))
             return;
 
         throw new IllegalStateException("Transaction isolation mode not supported for SQL queries: " + userTx.isolation());

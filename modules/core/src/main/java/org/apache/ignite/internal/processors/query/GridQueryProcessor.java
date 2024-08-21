@@ -159,7 +159,6 @@ import static java.util.Objects.isNull;
 import static java.util.Objects.nonNull;
 import static java.util.regex.Pattern.CASE_INSENSITIVE;
 import static java.util.stream.Collectors.toSet;
-import static org.apache.ignite.IgniteSystemProperties.IGNITE_ALLOW_TX_AWARE_QUERIES;
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
 import static org.apache.ignite.events.EventType.EVT_CACHE_QUERY_EXECUTED;
 import static org.apache.ignite.internal.GridTopic.TOPIC_SCHEMA;
@@ -3033,7 +3032,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
         if (qry.isLocal() && ctx.clientNode())
             throw new CacheException("Execution of local SqlFieldsQuery on client node disallowed.");
 
-        final GridNearTxLocal userTx = IgniteSystemProperties.getBoolean(IGNITE_ALLOW_TX_AWARE_QUERIES)
+        final GridNearTxLocal userTx = ctx.config().getTransactionConfiguration().isTxAwareQueries()
             ? ctx.cache().context().tm().userTx()
             : null;
 

@@ -1563,13 +1563,6 @@ public final class IgniteSystemProperties {
     public static final String IGNITE_ALLOW_DML_INSIDE_TRANSACTION = "IGNITE_ALLOW_DML_INSIDE_TRANSACTION";
 
     /**
-     * When set to true, Ignite will execute SQL and scan queries in transaction aware mode.
-     * Default is {@code false}.
-     */
-    @SystemProperty("When set to true, Ignite will execute SQL and scan queries in transaction aware mode")
-    public static final String IGNITE_ALLOW_TX_AWARE_QUERIES = "IGNITE_ALLOW_TX_AWARE_QUERIES";
-
-    /**
      * Timeout between ZooKeeper client retries, default 2s.
      */
     @SystemProperty(value = "Timeout between ZooKeeper client retries in milliseconds", type = Long.class,

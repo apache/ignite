@@ -19,6 +19,7 @@ package org.apache.ignite.configuration;
 
 import java.io.Serializable;
 import java.util.ArrayList;
+import java.util.EnumSet;
 import javax.cache.configuration.Factory;
 import org.apache.ignite.internal.util.TransientSerializable;
 import org.apache.ignite.internal.util.typedef.internal.S;
@@ -32,6 +33,13 @@ import org.apache.ignite.transactions.TransactionIsolation;
  */
 @TransientSerializable(methodName = "transientSerializableFields")
 public class TransactionConfiguration implements Serializable {
+    /**
+     * Supported levels of transaction isolation for SQL queries.
+     *
+     * @see #setTxAwareQueries(boolean)
+     */
+    public static final EnumSet<TransactionIsolation> TX_AWARE_QUERIES_SUPPORTED_MODES = EnumSet.of(TransactionIsolation.READ_COMMITTED);
+
     /** */
     private static final IgniteProductVersion TX_PME_TIMEOUT_SINCE = IgniteProductVersion.fromString("2.5.1");
 
@@ -101,6 +109,12 @@ public class TransactionConfiguration implements Serializable {
     private boolean useJtaSync;
 
     /**
+     * When set to true, Ignite will execute SQL and scan queries in transaction aware mode.
+     * Default is {@code false}.
+     */
+    private boolean txAwareQueries;
+
+    /**
      * Empty constructor.
      */
     public TransactionConfiguration() {
@@ -121,6 +135,7 @@ public class TransactionConfiguration implements Serializable {
         tmLookupClsName = cfg.getTxManagerLookupClassName();
         txManagerFactory = cfg.getTxManagerFactory();
         useJtaSync = cfg.isUseJtaSynchronization();
+        txAwareQueries = cfg.isTxAwareQueries();
     }
 
     /**
@@ -405,6 +420,23 @@ public class TransactionConfiguration implements Serializable {
      */
     public TransactionConfiguration setUseJtaSynchronization(boolean useJtaSync) {
         this.useJtaSync = useJtaSync;
+
+        return this;
+    }
+
+    /**
+     * @return Whether to execute SQL and scan queries in transaction aware mode.
+     */
+    public boolean isTxAwareQueries() {
+        return txAwareQueries;
+    }
+
+    /**
+     * @param txAwareQueries Whether to execute SQL and scan queries in transaction aware mode.
+     * @return {@code this} for chaining.
+     */
+    public TransactionConfiguration setTxAwareQueries(boolean txAwareQueries) {
+        this.txAwareQueries = txAwareQueries;
 
         return this;
     }

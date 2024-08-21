@@ -37,7 +37,6 @@ import java.util.stream.LongStream;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteException;
-import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.Ignition;
 import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.CacheMode;
@@ -53,7 +52,6 @@ import org.apache.ignite.client.IgniteClient;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.ClientConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
-import org.apache.ignite.configuration.SqlConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.client.thin.TcpIgniteClient;
 import org.apache.ignite.internal.processors.query.QueryUtils;
@@ -61,7 +59,6 @@ import org.apache.ignite.internal.util.lang.RunnableX;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.lang.IgniteBiTuple;
-import org.apache.ignite.testframework.junits.WithSystemProperty;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.transactions.Transaction;
 import org.apache.ignite.transactions.TransactionConcurrency;
@@ -75,11 +72,9 @@ import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.apache.ignite.testframework.GridTestUtils.assertThrows;
 import static org.apache.ignite.testframework.GridTestUtils.runAsync;
 import static org.apache.ignite.transactions.TransactionIsolation.READ_COMMITTED;
-import static org.junit.Assume.assumeFalse;
 
 /** */
 @RunWith(Parameterized.class)
-@WithSystemProperty(key = IgniteSystemProperties.IGNITE_ALLOW_TX_AWARE_QUERIES, value = "true")
 public class SqlTransactionsIsolationTest extends GridCommonAbstractTest {
     /** */
     public static final String CACHE = "cache";
@@ -194,7 +189,6 @@ public class SqlTransactionsIsolationTest extends GridCommonAbstractTest {
                                 params.add(new Object[]{modify, ExecutorType.SERVER, false, mode, gridCnt, backup, commit, mutli});
                                 params.add(new Object[]{modify, ExecutorType.CLIENT, false, mode, gridCnt, backup, commit, mutli});
 
-/*
                                 for (boolean partitionAwareness : new boolean[]{false, true}) {
                                     params.add(new Object[]{
                                         modify,
@@ -207,7 +201,6 @@ public class SqlTransactionsIsolationTest extends GridCommonAbstractTest {
                                         mutli
                                     });
                                 }
-*/
                             }
                         }
                     }
@@ -220,8 +213,12 @@ public class SqlTransactionsIsolationTest extends GridCommonAbstractTest {
 
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
-        return super.getConfiguration(igniteInstanceName).setSqlConfiguration(
-            new SqlConfiguration().setQueryEnginesConfiguration(new CalciteQueryEngineConfiguration()));
+        IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
+
+        cfg.getSqlConfiguration().setQueryEnginesConfiguration(new CalciteQueryEngineConfiguration());
+        cfg.getTransactionConfiguration().setTxAwareQueries(true);
+
+        return cfg;
     }
 
     /** */
@@ -316,9 +313,9 @@ public class SqlTransactionsIsolationTest extends GridCommonAbstractTest {
             init();
         }
 
-        node().cache(users()).removeAll();
-        node().cache(tbl()).removeAll();
-        node().cache(departments()).removeAll();
+        cli.cache(users()).removeAll();
+        cli.cache(tbl()).removeAll();
+        cli.cache(departments()).removeAll();
 
         insert(F.t(1, JOHN));
     }
@@ -326,8 +323,6 @@ public class SqlTransactionsIsolationTest extends GridCommonAbstractTest {
     /** */
     @Test
     public void testIndexScan() {
-        assumeFalse("https://issues.apache.org/jira/browse/IGNITE-22874", type == ExecutorType.THIN);
-
         delete(1);
 
         assertEquals("Table must be empty", 0L, sql(format("SELECT COUNT(*) FROM %s", users())).get(0).get(0));
@@ -460,8 +455,6 @@ public class SqlTransactionsIsolationTest extends GridCommonAbstractTest {
     /** */
     @Test
     public void testJoin() {
-        assumeFalse("https://issues.apache.org/jira/browse/IGNITE-22874", type == ExecutorType.THIN);
-
         partsToKeys.clear();
 
         sql(format("DELETE FROM %s", users()));
@@ -579,8 +572,6 @@ public class SqlTransactionsIsolationTest extends GridCommonAbstractTest {
     /** */
     @Test
     public void testInsert() {
-        assumeFalse("https://issues.apache.org/jira/browse/IGNITE-22874", type == ExecutorType.THIN);
-
         Runnable checkBefore = () -> {
             for (int i = 4; i <= (multi ? 6 : 4); i++) {
                 assertNull(CACHE, select(i, CACHE));
@@ -626,8 +617,6 @@ public class SqlTransactionsIsolationTest extends GridCommonAbstractTest {
     /** */
     @Test
     public void testUpdate() {
-        assumeFalse("https://issues.apache.org/jira/browse/IGNITE-22874", type == ExecutorType.THIN);
-
         if (multi)
             insert(F.t(2, JOHN), F.t(3, JOHN));
 
@@ -677,8 +666,6 @@ public class SqlTransactionsIsolationTest extends GridCommonAbstractTest {
     /** */
     @Test
     public void testDelete() {
-        assumeFalse("https://issues.apache.org/jira/browse/IGNITE-22874", type == ExecutorType.THIN);
-
         if (multi)
             insert(F.t(2, JOHN), F.t(3, JOHN));
 
@@ -718,8 +705,6 @@ public class SqlTransactionsIsolationTest extends GridCommonAbstractTest {
     /** */
     @Test
     public void testVisibility() {
-        assumeFalse("https://issues.apache.org/jira/browse/IGNITE-22874", type == ExecutorType.THIN);
-
         sql(format("DELETE FROM %s", tbl()));
 
         assertEquals("Table must be empty", 0L, sql(format("SELECT COUNT(*) FROM %s", tbl())).get(0).get(0));
