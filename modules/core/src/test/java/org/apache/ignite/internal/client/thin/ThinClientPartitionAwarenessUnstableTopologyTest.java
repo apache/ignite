@@ -210,7 +210,7 @@ public class ThinClientPartitionAwarenessUnstableTopologyTest extends ThinClient
         cache.put(key, 0);
 
         // Connection to disconnected node should be restored after retry.
-        assertOpOnChannel(channels[disconnectNodeIdx], ClientOperation.CACHE_PUT);
+        assertOpOnChannel(channels[disconnectNodeIdx], ClientOperation.CACHE_PUT, ClientOperation.CACHE_PARTITIONS);
 
         // Test partition awareness.
         testPartitionAwareness(false);
