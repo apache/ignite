@@ -151,6 +151,9 @@ public abstract class ThinClientAbstractPartitionAwarenessTest extends GridCommo
         client = null;
     }
 
+    /**
+     * Checks that operation goes through specified channel.
+     */
     protected void assertOpOnChannel(@Nullable TestTcpClientChannel expCh, ClientOperation expOp) {
         assertOpOnChannel(expCh, expOp, null);
     }
