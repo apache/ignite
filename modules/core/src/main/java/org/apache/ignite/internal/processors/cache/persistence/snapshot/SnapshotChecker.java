@@ -55,6 +55,7 @@ import org.apache.ignite.internal.processors.cache.CacheObject;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
 import org.apache.ignite.internal.processors.cache.StoredCacheData;
 import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionState;
+import org.apache.ignite.internal.processors.cache.persistence.CacheDataRow;
 import org.apache.ignite.internal.processors.cache.persistence.file.FilePageStore;
 import org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager;
 import org.apache.ignite.internal.processors.cache.persistence.metastorage.MetaStorage;
@@ -67,6 +68,7 @@ import org.apache.ignite.internal.processors.cache.verify.IdleVerifyUtility;
 import org.apache.ignite.internal.processors.cache.verify.PartitionHashRecordV2;
 import org.apache.ignite.internal.processors.compress.CompressionProcessor;
 import org.apache.ignite.internal.util.GridUnsafe;
+import org.apache.ignite.internal.util.lang.GridIterator;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -543,14 +545,19 @@ public class SnapshotChecker {
                         // There is no `primary` partitions for snapshot.
                         PartitionKeyV2 key = new PartitionKeyV2(grpId, partId, grpName);
 
+                        GridIterator<CacheDataRow> partIt = skipHash
+                            ? F.emptyIterator()
+                            : kctx.cache().context().snapshotMgr().partitionRowIterator(kctx, grpName, partId, pageStore,
+                                kctx.cache().context());
+
                         PartitionHashRecordV2 hash = calculatePartitionHash(key,
                             updateCntr,
                             meta.consistentId(),
                             GridDhtPartitionState.OWNING,
                             false,
                             size,
-                            skipHash ? F.emptyIterator()
-                                : kctx.cache().context().snapshotMgr().partitionRowIterator(kctx, grpName, partId, pageStore));
+                            partIt
+                        );
 
                         assert hash != null : "OWNING must have hash: " + key;
 

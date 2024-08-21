@@ -2518,18 +2518,23 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
      * @param grpName Cache group name.
      * @param partId Partition id.
      * @param pageStore File page store to iterate over.
+     * @param cacheSharedCtx Related cache shared context. If {@code null}, a temporary one is created using
+     *                       {@link GridCacheSharedContext#builder()}.
      * @return Iterator over partition.
      * @throws IgniteCheckedException If and error occurs.
      */
     public GridCloseableIterator<CacheDataRow> partitionRowIterator(GridKernalContext ctx,
         String grpName,
         int partId,
-        FilePageStore pageStore
+        FilePageStore pageStore,
+        @Nullable GridCacheSharedContext<?, ?> cacheSharedCtx
     ) throws IgniteCheckedException {
         CacheObjectContext coctx = new CacheObjectContext(ctx, grpName, null, false,
             false, false, false, false);
 
-        GridCacheSharedContext<?, ?> sctx = GridCacheSharedContext.builder().build(ctx, null);
+        GridCacheSharedContext<?, ?> sctx = cacheSharedCtx == null
+            ? GridCacheSharedContext.builder().build(ctx, null)
+            : cacheSharedCtx;
 
         return new DataPageIterator(sctx, coctx, pageStore, partId);
     }
@@ -2582,7 +2587,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
                 snpPart::toPath,
                 val -> {});
 
-        GridCloseableIterator<CacheDataRow> partIter = partitionRowIterator(cctx.kernalContext(), grpName, partId, pageStore);
+        GridCloseableIterator<CacheDataRow> partIter = partitionRowIterator(cctx.kernalContext(), grpName, partId, pageStore, null);
 
         return new GridCloseableIteratorAdapter<CacheDataRow>() {
             /** {@inheritDoc} */
