@@ -68,9 +68,6 @@ name mapper, a global ID mapper, and a global binary serializer as well as per-t
 are supported for per-type configuration, in which case, the provided configuration will be applied to all types
 that match the type name template.
 
-:javaSourceFile: {javaCodeDir}/BinaryMarshallerExample.java
-:dotnetSourceFile: code-snippets/dotnet/BinaryMarshallerExample.cs
-
 [tabs]
 --
 tab:XML[]
