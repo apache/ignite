@@ -52,6 +52,7 @@ import org.apache.ignite.internal.processors.cache.PartitionUpdateCounter;
 import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtLocalPartition;
 import org.apache.ignite.internal.processors.cache.persistence.file.FilePageStore;
 import org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager;
+import org.apache.ignite.internal.processors.cache.persistence.snapshot.SnapshotChecker;
 import org.apache.ignite.internal.processors.cache.verify.GridNotIdleException;
 import org.apache.ignite.internal.processors.cache.verify.PartitionHashRecordV2;
 import org.apache.ignite.internal.processors.task.GridInternal;
@@ -63,6 +64,7 @@ import org.apache.ignite.resources.IgniteInstanceResource;
 import org.apache.ignite.resources.LoggerResource;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
+
 import static java.util.Collections.emptyMap;
 import static org.apache.ignite.internal.pagemem.PageIdAllocator.FLAG_DATA;
 import static org.apache.ignite.internal.processors.cache.verify.IdleVerifyUtility.GRID_NOT_IDLE_MSG;
@@ -143,8 +145,8 @@ public class VerifyBackupPartitionsTaskV2 extends ComputeTaskAdapter<CacheIdleVe
      * @return Idle verify job result constructed from results of remote executions.
      */
     public static IdleVerifyResultV2 reduce0(List<ComputeJobResult> results) {
-        Map<PartitionKeyV2, List<PartitionHashRecordV2>> clusterHashes = new HashMap<>();
         Map<ClusterNode, Exception> ex = new HashMap<>();
+        Map<ClusterNode, Map<PartitionKeyV2, PartitionHashRecordV2>> hashes = new HashMap<>();
 
         for (ComputeJobResult res : results) {
             if (res.getException() != null) {
@@ -153,19 +155,10 @@ public class VerifyBackupPartitionsTaskV2 extends ComputeTaskAdapter<CacheIdleVe
                 continue;
             }
 
-            Map<PartitionKeyV2, PartitionHashRecordV2> nodeHashes = res.getData();
-
-            for (Map.Entry<PartitionKeyV2, PartitionHashRecordV2> e : nodeHashes.entrySet()) {
-                List<PartitionHashRecordV2> records = clusterHashes.computeIfAbsent(e.getKey(), k -> new ArrayList<>());
-
-                records.add(e.getValue());
-            }
+            hashes.put(res.getNode(), res.getData());
         }
 
-        if (results.size() != ex.size())
-            return new IdleVerifyResultV2(clusterHashes, ex);
-        else
-            return new IdleVerifyResultV2(ex);
+        return SnapshotChecker.reduceHashesResults(hashes, ex);
     }
 
     /**

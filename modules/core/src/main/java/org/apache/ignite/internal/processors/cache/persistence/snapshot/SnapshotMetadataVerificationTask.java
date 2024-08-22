@@ -20,9 +20,11 @@ package org.apache.ignite.internal.processors.cache.persistence.snapshot;
 import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.ExecutionException;
 import java.util.stream.Collectors;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
@@ -38,6 +40,7 @@ import org.apache.ignite.internal.processors.cache.persistence.wal.FileDescripto
 import org.apache.ignite.internal.processors.cache.persistence.wal.FileWriteAheadLogManager;
 import org.apache.ignite.internal.processors.cache.persistence.wal.reader.IgniteWalIteratorFactory;
 import org.apache.ignite.internal.processors.task.GridInternal;
+import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.resources.IgniteInstanceResource;
 import org.apache.ignite.resources.LoggerResource;
@@ -100,11 +103,15 @@ public class SnapshotMetadataVerificationTask
         @Override public List<SnapshotMetadata> execute() {
             IgniteSnapshotManager snpMgr = ignite.context().cache().context().snapshotMgr();
 
-            List<SnapshotMetadata> snpMeta = snpMgr.checker().checkLocalMetas(
-                snpMgr.snapshotLocalDir(arg.snapshotName(), arg.snapshotPath()),
-                arg.grpIds(),
-                ignite.localNode().consistentId()
-            );
+            List<SnapshotMetadata> snpMeta;
+
+            try {
+                snpMeta = snpMgr.checker().checkLocalMetas(snpMgr.snapshotLocalDir(arg.snapshotName(), arg.snapshotPath()),
+                    arg.grpIds(), ignite.localNode().consistentId()).get();
+            }
+            catch (InterruptedException | ExecutionException e) {
+                throw new IgniteException("Failed to launch snapshot metadatas check of snapshot '" + arg.snapshotName() + "'.", e);
+            }
 
             if (arg.incrementIndex() > 0) {
                 List<SnapshotMetadata> metas = snpMeta.stream()
@@ -214,10 +221,11 @@ public class SnapshotMetadataVerificationTask
                 continue;
             }
 
-            reduceRes.computeIfAbsent(res.getNode(), n -> new ArrayList<>()).addAll(res.getData());
+            if (!F.isEmpty((Collection<?>)res.getData()))
+                reduceRes.computeIfAbsent(res.getNode(), n -> new ArrayList<>()).addAll(res.getData());
         }
 
-        exs = SnapshotChecker.checkClusterMetas(arg.snapshotName(), arg.snapshotPath(), reduceRes, exs);
+        exs = SnapshotChecker.reduceMetasResults(arg.snapshotName(), arg.snapshotPath(), reduceRes, exs, ignite.localNode().consistentId());
 
         return new SnapshotMetadataVerificationTaskResult(reduceRes, exs);
     }

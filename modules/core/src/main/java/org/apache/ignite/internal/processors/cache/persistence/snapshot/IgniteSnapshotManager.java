@@ -379,6 +379,9 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
     /** Take snapshot operation procedure. */
     private final DistributedProcess<SnapshotOperationRequest, SnapshotOperationResponse> startSnpProc;
 
+    /** Snapshot full validation distributed process. */
+    private final SnapshotCheckProcess checkSnpProc;
+
     /** Check previously performed snapshot operation and delete uncompleted files if we need. */
     private final DistributedProcess<SnapshotOperationRequest, SnapshotOperationResponse> endSnpProc;
 
@@ -487,6 +490,8 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
         marsh = MarshallerUtils.jdkMarshaller(ctx.igniteInstanceName());
 
         restoreCacheGrpProc = new SnapshotRestoreProcess(ctx, locBuff);
+
+        checkSnpProc = new SnapshotCheckProcess(ctx);
 
         // Manage remote snapshots.
         snpRmtMgr = new SequentialRemoteSnapshotManager();
@@ -720,8 +725,11 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
     @Override protected void stop0(boolean cancel) {
         busyLock.block();
 
+        IgniteCheckedException stopErr = new NodeStoppingException("Node is stopping.");
+
         try {
-            restoreCacheGrpProc.interrupt(new NodeStoppingException("Node is stopping."));
+            restoreCacheGrpProc.interrupt(stopErr);
+            checkSnpProc.interrupt(stopErr);
 
             // Try stop all snapshot processing if not yet.
             for (AbstractSnapshotFutureTask<?> sctx : locSnpTasks.values())
@@ -1890,12 +1898,15 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
         A.ensure(grps == null || grps.stream().filter(Objects::isNull).collect(Collectors.toSet()).isEmpty(),
             "Collection of cache groups names cannot contain null elements.");
 
-        GridFutureAdapter<SnapshotPartitionsVerifyTaskResult> res = new GridFutureAdapter<>();
-
         if (log.isInfoEnabled()) {
             log.info("The check snapshot procedure started [snpName=" + name + ", snpPath=" + snpPath +
-                ", incIdx=" + incIdx + ", grps=" + grps + ']');
+                ", incIdx=" + incIdx + ", grps=" + grps + ", validateParts=" + check + ']');
         }
+
+        if (check && incIdx < 1)
+            return checkSnpProc.start(name, snpPath, grps, includeCustomHandlers);
+
+        GridFutureAdapter<SnapshotPartitionsVerifyTaskResult> res = new GridFutureAdapter<>();
 
         GridKernalContext kctx0 = cctx.kernalContext();
 
@@ -2507,20 +2518,20 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
      * @param grpName Cache group name.
      * @param partId Partition id.
      * @param pageStore File page store to iterate over.
+     * @param cacheSharedCtx Related cache shared context.
      * @return Iterator over partition.
      * @throws IgniteCheckedException If and error occurs.
      */
     public GridCloseableIterator<CacheDataRow> partitionRowIterator(GridKernalContext ctx,
         String grpName,
         int partId,
-        FilePageStore pageStore
+        FilePageStore pageStore,
+        GridCacheSharedContext<?, ?> cacheSharedCtx
     ) throws IgniteCheckedException {
         CacheObjectContext coctx = new CacheObjectContext(ctx, grpName, null, false,
             false, false, false, false);
 
-        GridCacheSharedContext<?, ?> sctx = GridCacheSharedContext.builder().build(ctx, null);
-
-        return new DataPageIterator(sctx, coctx, pageStore, partId);
+        return new DataPageIterator(cacheSharedCtx, coctx, pageStore, partId);
     }
 
     /**
@@ -2571,7 +2582,8 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
                 snpPart::toPath,
                 val -> {});
 
-        GridCloseableIterator<CacheDataRow> partIter = partitionRowIterator(cctx.kernalContext(), grpName, partId, pageStore);
+        GridCloseableIterator<CacheDataRow> partIter = partitionRowIterator(cctx.kernalContext(), grpName, partId, pageStore,
+            GridCacheSharedContext.builder().build(cctx.kernalContext(), null));
 
         return new GridCloseableIteratorAdapter<CacheDataRow>() {
             /** {@inheritDoc} */

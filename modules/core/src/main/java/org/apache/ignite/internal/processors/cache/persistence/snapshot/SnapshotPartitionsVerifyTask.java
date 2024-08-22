@@ -18,12 +18,10 @@
 package org.apache.ignite.internal.processors.cache.persistence.snapshot;
 
 import java.io.File;
-import java.io.IOException;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
-import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.compute.ComputeJobResult;
 import org.apache.ignite.internal.management.cache.PartitionKeyV2;
@@ -86,15 +84,15 @@ public class SnapshotPartitionsVerifyTask extends AbstractSnapshotVerificationTa
                     "[snpName=" + snpName + ", consId=" + consId + ']');
             }
 
+            File snpDir = cctx.snapshotMgr().snapshotLocalDir(snpName, snpPath);
+
             try {
-                File snpDir = cctx.snapshotMgr().snapshotLocalDir(snpName, snpPath);
                 SnapshotMetadata meta = cctx.snapshotMgr().readSnapshotMetadata(snpDir, consId);
 
-                return new SnapshotPartitionsVerifyHandler(cctx)
-                    .invoke(new SnapshotHandlerContext(meta, rqGrps, ignite.localNode(), snpDir, false, check));
+                return cctx.snapshotMgr().checker().checkPartitions(meta, snpDir, rqGrps, false, check, false).get();
             }
-            catch (IgniteCheckedException | IOException e) {
-                throw new IgniteException(e);
+            catch (Exception e) {
+                throw new IgniteException("Failed to read snapshot metadatas of the snapshot '" + snpName + "'.", e);
             }
             finally {
                 if (log.isInfoEnabled()) {

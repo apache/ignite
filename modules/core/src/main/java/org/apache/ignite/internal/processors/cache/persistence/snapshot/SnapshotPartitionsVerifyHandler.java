@@ -17,27 +17,19 @@
 
 package org.apache.ignite.internal.processors.cache.persistence.snapshot;
 
-import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.Collections;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
-import java.util.stream.Collectors;
 import org.apache.ignite.IgniteCheckedException;
-import org.apache.ignite.IgniteLogger;
+import org.apache.ignite.IgniteException;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.management.cache.IdleVerifyResultV2;
 import org.apache.ignite.internal.management.cache.PartitionKeyV2;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
-import org.apache.ignite.internal.processors.cache.persistence.metastorage.MetaStorage;
 import org.apache.ignite.internal.processors.cache.verify.PartitionHashRecordV2;
 import org.apache.ignite.internal.util.GridStringBuilder;
-import org.apache.ignite.internal.util.typedef.F;
-import org.apache.ignite.internal.util.typedef.internal.CU;
 
 /**
  * Default snapshot restore handler for checking snapshot partitions consistency.
@@ -46,14 +38,9 @@ public class SnapshotPartitionsVerifyHandler implements SnapshotHandler<Map<Part
     /** Shared context. */
     protected final GridCacheSharedContext<?, ?> cctx;
 
-    /** Logger. */
-    private final IgniteLogger log;
-
     /** @param cctx Shared context. */
     public SnapshotPartitionsVerifyHandler(GridCacheSharedContext<?, ?> cctx) {
         this.cctx = cctx;
-
-        log = cctx.logger(getClass());
     }
 
     /** {@inheritDoc} */
@@ -63,36 +50,14 @@ public class SnapshotPartitionsVerifyHandler implements SnapshotHandler<Map<Part
 
     /** {@inheritDoc} */
     @Override public Map<PartitionKeyV2, PartitionHashRecordV2> invoke(SnapshotHandlerContext opCtx) throws IgniteCheckedException {
-        if (!opCtx.snapshotDirectory().exists())
-            throw new IgniteCheckedException("Snapshot directory doesn't exists: " + opCtx.snapshotDirectory());
-
-        SnapshotMetadata meta = opCtx.metadata();
-
-        Set<Integer> grps = F.isEmpty(opCtx.groups())
-            ? new HashSet<>(meta.partitions().keySet())
-            : opCtx.groups().stream().map(CU::cacheId).collect(Collectors.toSet());
-
-        if (type() == SnapshotHandlerType.CREATE) {
-            grps = grps.stream().filter(grp -> grp == MetaStorage.METASTORAGE_CACHE_ID ||
-                CU.affinityNode(
-                    cctx.localNode(),
-                    cctx.kernalContext().cache().cacheGroupDescriptor(grp).config().getNodeFilter()
-                )
-            ).collect(Collectors.toSet());
+        try {
+            return cctx.snapshotMgr().checker().checkPartitions(opCtx.metadata(), opCtx.snapshotDirectory(), opCtx.groups(),
+                type() == SnapshotHandlerType.CREATE, opCtx.check(), skipHash()).get();
         }
-
-        if (!opCtx.check()) {
-            log.info("Snapshot data integrity check skipped [snpName=" + meta.snapshotName() + ']');
-
-            return Collections.emptyMap();
+        catch (Exception e) {
+            throw new IgniteException("Failed to get result of partitions validation of snapshot '"
+                + opCtx.metadata().snapshotName() + "'.", e);
         }
-
-        if (meta.dump())
-            return cctx.snapshotMgr().checker().checkDumpFiles(opCtx.snapshotDirectory(), meta, grps, cctx.localNode().consistentId(),
-                skipHash());
-
-        return cctx.snapshotMgr().checker().checkSnapshotFiles(opCtx.snapshotDirectory(), grps, meta,
-            type() == SnapshotHandlerType.CREATE, skipHash(), isPunchHoleEnabled(opCtx, grps));
     }
 
     /** {@inheritDoc} */
@@ -130,26 +95,6 @@ public class SnapshotPartitionsVerifyHandler implements SnapshotHandler<Map<Part
      * @return {@code True} if full partition hash calculation is required. {@code False} otherwise.
      */
     protected boolean skipHash() {
-        return false;
-    }
-
-    /** */
-    protected boolean isPunchHoleEnabled(SnapshotHandlerContext opCtx, Set<Integer> grpIds) {
-        SnapshotMetadata meta = opCtx.metadata();
-        Path snapshotDir = opCtx.snapshotDirectory().toPath();
-
-        if (meta.hasCompressedGroups() && grpIds.stream().anyMatch(meta::isGroupWithCompression)) {
-            try {
-                cctx.kernalContext().compress().checkPageCompressionSupported(snapshotDir, meta.pageSize());
-
-                return true;
-            }
-            catch (Exception e) {
-                log.info("File system doesn't support page compression on snapshot directory: " + snapshotDir
-                    + ", snapshot may have larger size than expected.");
-            }
-        }
-
         return false;
     }
 }

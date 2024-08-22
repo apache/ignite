@@ -34,6 +34,8 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.UUID;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutorService;
 import java.util.stream.Collectors;
@@ -43,6 +45,7 @@ import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.dump.DumpEntry;
 import org.apache.ignite.internal.GridKernalContext;
+import org.apache.ignite.internal.management.cache.IdleVerifyResultV2;
 import org.apache.ignite.internal.management.cache.PartitionKeyV2;
 import org.apache.ignite.internal.managers.encryption.EncryptionCacheKeyProvider;
 import org.apache.ignite.internal.managers.encryption.GroupKey;
@@ -52,6 +55,7 @@ import org.apache.ignite.internal.processors.cache.CacheObject;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
 import org.apache.ignite.internal.processors.cache.StoredCacheData;
 import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionState;
+import org.apache.ignite.internal.processors.cache.persistence.CacheDataRow;
 import org.apache.ignite.internal.processors.cache.persistence.file.FilePageStore;
 import org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager;
 import org.apache.ignite.internal.processors.cache.persistence.metastorage.MetaStorage;
@@ -64,6 +68,7 @@ import org.apache.ignite.internal.processors.cache.verify.IdleVerifyUtility;
 import org.apache.ignite.internal.processors.cache.verify.PartitionHashRecordV2;
 import org.apache.ignite.internal.processors.compress.CompressionProcessor;
 import org.apache.ignite.internal.util.GridUnsafe;
+import org.apache.ignite.internal.util.lang.GridIterator;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -110,9 +115,6 @@ public class SnapshotChecker {
     protected final EncryptionSpi encryptionSpi;
 
     /** */
-    @Nullable protected final CompressionProcessor compression;
-
-    /** */
     protected final ExecutorService executor;
 
     /** */
@@ -128,8 +130,6 @@ public class SnapshotChecker {
         this.marshallerClsLdr = marshallerClsLdr;
 
         this.encryptionSpi = kctx.config().getEncryptionSpi() == null ? new NoopEncryptionSpi() : kctx.config().getEncryptionSpi();
-
-        this.compression = kctx.compress();
 
         this.executor = executorSrvc;
 
@@ -218,73 +218,99 @@ public class SnapshotChecker {
         }
     }
 
-    /** */
-    public List<SnapshotMetadata> checkLocalMetas(File snpFullPath, @Nullable Collection<Integer> cacheGrpIds,
-        @Nullable Object locNodeConsistId) {
-        List<SnapshotMetadata> snpMetas = readSnapshotMetadatas(snpFullPath, locNodeConsistId);
+    /** Launches local metas checking. */
+    public CompletableFuture<List<SnapshotMetadata>> checkLocalMetas(File snpPath, @Nullable Collection<Integer> grpIds,
+        @Nullable Object locNodeCstId) {
+        return CompletableFuture.supplyAsync(() -> {
+            List<SnapshotMetadata> snpMetas = readSnapshotMetadatas(snpPath, locNodeCstId);
 
-        for (SnapshotMetadata meta : snpMetas) {
-            byte[] snpMasterKeyDigest = meta.masterKeyDigest();
+            for (SnapshotMetadata meta : snpMetas) {
+                byte[] snpMasterKeyDigest = meta.masterKeyDigest();
 
-            if (encryptionSpi.masterKeyDigest() == null && snpMasterKeyDigest != null) {
-                throw new IllegalStateException("Snapshot '" + meta.snapshotName() + "' has encrypted caches " +
-                    "while encryption is disabled. To restore this snapshot, start Ignite with configured " +
-                    "encryption and the same master key.");
-            }
-
-            if (snpMasterKeyDigest != null && !Arrays.equals(snpMasterKeyDigest, encryptionSpi.masterKeyDigest())) {
-                throw new IllegalStateException("Snapshot '" + meta.snapshotName() + "' has different master " +
-                    "key digest. To restore this snapshot, start Ignite with the same master key.");
-            }
-
-            Collection<Integer> grpIdsToFind = new HashSet<>(F.isEmpty(cacheGrpIds) ? meta.cacheGroupIds() : cacheGrpIds);
-
-            if (meta.hasCompressedGroups() && grpIdsToFind.stream().anyMatch(meta::isGroupWithCompression)) {
-                try {
-                    compression.checkPageCompressionSupported();
+                if (encryptionSpi.masterKeyDigest() == null && snpMasterKeyDigest != null) {
+                    throw new IllegalStateException("Snapshot '" + meta.snapshotName() + "' has encrypted caches " +
+                        "while encryption is disabled. To restore this snapshot, start Ignite with configured " +
+                        "encryption and the same master key.");
                 }
-                catch (NullPointerException | IgniteCheckedException e) {
-                    String grpWithCompr = grpIdsToFind.stream().filter(meta::isGroupWithCompression)
-                        .map(String::valueOf).collect(Collectors.joining(", "));
 
-                    String msg = "Requested cache groups [" + grpWithCompr + "] for check " +
-                        "from snapshot '" + meta.snapshotName() + "' are compressed while " +
-                        "disk page compression is disabled. To check these groups please " +
-                        "start Ignite with ignite-compress module in classpath";
+                if (snpMasterKeyDigest != null && !Arrays.equals(snpMasterKeyDigest, encryptionSpi.masterKeyDigest())) {
+                    throw new IllegalStateException("Snapshot '" + meta.snapshotName() + "' has different master " +
+                        "key digest. To restore this snapshot, start Ignite with the same master key.");
+                }
 
-                    throw new IllegalStateException(msg);
+                Collection<Integer> grpIdsToFind = new HashSet<>(F.isEmpty(grpIds) ? meta.cacheGroupIds() : grpIds);
+
+                if (meta.hasCompressedGroups() && grpIdsToFind.stream().anyMatch(meta::isGroupWithCompression)) {
+                    try {
+                        kctx.compress().checkPageCompressionSupported();
+                    }
+                    catch (NullPointerException | IgniteCheckedException e) {
+                        String grpWithCompr = grpIdsToFind.stream().filter(meta::isGroupWithCompression)
+                            .map(String::valueOf).collect(Collectors.joining(", "));
+
+                        String msg = "Requested cache groups [" + grpWithCompr + "] for check " +
+                            "from snapshot '" + meta.snapshotName() + "' are compressed while " +
+                            "disk page compression is disabled. To check these groups please " +
+                            "start Ignite with ignite-compress module in classpath";
+
+                        throw new IllegalStateException(msg);
+                    }
+                }
+
+                grpIdsToFind.removeAll(meta.partitions().keySet());
+
+                if (!grpIdsToFind.isEmpty() && !new HashSet<>(meta.cacheGroupIds()).containsAll(grpIdsToFind)) {
+                    throw new IllegalArgumentException("Cache group(s) was not found in the snapshot [groups=" + grpIdsToFind +
+                        ", snapshot=" + meta.snapshotName() + ']');
                 }
             }
 
-            grpIdsToFind.removeAll(meta.partitions().keySet());
-
-            if (!grpIdsToFind.isEmpty() && !new HashSet<>(meta.cacheGroupIds()).containsAll(grpIdsToFind)) {
-                throw new IllegalArgumentException("Cache group(s) was not found in the snapshot [groups=" + grpIdsToFind +
-                    ", snapshot=" + meta.snapshotName() + ']');
-            }
-        }
-
-        return snpMetas;
+            return snpMetas;
+        }, executor);
     }
 
     /** */
-    public static Map<ClusterNode, Exception> checkClusterMetas(
+    public static IdleVerifyResultV2 reduceHashesResults(
+        Map<ClusterNode, Map<PartitionKeyV2, PartitionHashRecordV2>> results,
+        Map<ClusterNode, Exception> ex
+    ) {
+        Map<PartitionKeyV2, List<PartitionHashRecordV2>> clusterHashes = new HashMap<>();
+
+        results.forEach((node, nodeHashes) -> {
+            assert ex.get(node) == null;
+
+            for (Map.Entry<PartitionKeyV2, PartitionHashRecordV2> e : nodeHashes.entrySet()) {
+                List<PartitionHashRecordV2> records = clusterHashes.computeIfAbsent(e.getKey(), k -> new ArrayList<>());
+
+                records.add(e.getValue());
+            }
+        });
+
+        if (results.size() != ex.size())
+            return new IdleVerifyResultV2(clusterHashes, ex);
+        else
+            return new IdleVerifyResultV2(ex);
+    }
+
+    /** */
+    public static Map<ClusterNode, Exception> reduceMetasResults(
         String snpName,
         @Nullable String snpPath,
         Map<ClusterNode, List<SnapshotMetadata>> allMetas,
-        Map<ClusterNode, Exception> knownExceptions
+        @Nullable Map<ClusterNode, Exception> exceptions,
+        Object curNodeCstId
     ) {
-        Map<ClusterNode, Exception> resultExceptions = new HashMap<>(knownExceptions);
+        Map<ClusterNode, Exception> mappedExceptions = F.isEmpty(exceptions) ? Collections.emptyMap() : new HashMap<>(exceptions);
 
         SnapshotMetadata firstMeta = null;
         Set<String> baselineNodes = Collections.emptySet();
 
         for (Map.Entry<ClusterNode, List<SnapshotMetadata>> nme : allMetas.entrySet()) {
             ClusterNode node = nme.getKey();
-            Exception e = knownExceptions.get(node);
+            Exception e = mappedExceptions.get(node);
 
             if (e != null) {
-                resultExceptions.put(node, e);
+                mappedExceptions.put(node, e);
 
                 continue;
             }
@@ -299,29 +325,23 @@ public class SnapshotChecker {
                 baselineNodes.remove(meta.consistentId());
 
                 if (!firstMeta.sameSnapshot(meta)) {
-                    resultExceptions.put(node, new IgniteException("An error occurred during comparing snapshot metadata "
+                    mappedExceptions.put(node, new IgniteException("An error occurred during comparing snapshot metadata "
                         + "from cluster nodes [firstMeta=" + firstMeta + ", meta=" + meta + ", nodeId=" + node.id() + ']'));
                 }
             }
         }
 
-        if (firstMeta == null && resultExceptions.isEmpty()) {
-            assert !allMetas.isEmpty();
-
-            for (ClusterNode node : allMetas.keySet()) {
-                Exception e = new IllegalArgumentException("Snapshot does not exists [snapshot=" + snpName
-                    + (snpPath != null ? ", baseDir=" + snpPath : "") + ", consistentId=" + node.consistentId() + ']');
-
-                resultExceptions.put(node, e);
-            }
+        if (firstMeta == null && mappedExceptions.isEmpty()) {
+            throw new IllegalArgumentException("Snapshot does not exists [snapshot=" + snpName
+                + (snpPath != null ? ", baseDir=" + snpPath : "") + ", consistentId=" + curNodeCstId + ']');
         }
 
-        if (!F.isEmpty(baselineNodes) && F.isEmpty(knownExceptions)) {
+        if (!F.isEmpty(baselineNodes) && F.isEmpty(exceptions)) {
             throw new IgniteException("No snapshot metadatas found for the baseline nodes " +
                 "with consistent ids: " + String.join(", ", baselineNodes));
         }
 
-        return resultExceptions;
+        return mappedExceptions;
     }
 
     /** */
@@ -369,16 +389,73 @@ public class SnapshotChecker {
         return new IgniteBiTuple<>(grpDirs, partFiles);
     }
 
+    /**
+     * Calls all the registered Absence validaton handlers. Reads snapshot metadata.
+     *
+     * @see IgniteSnapshotManager#handlers()
+     */
+    public CompletableFuture<Map<String, SnapshotHandlerResult<Object>>> invokeCustomHandlers(
+        String snpName,
+        String consId,
+        @Nullable String snpPath,
+        @Nullable Collection<String> groups,
+        boolean check
+    ) throws IgniteCheckedException, IOException {
+        IgniteSnapshotManager snpMgr = kctx.cache().context().snapshotMgr();
+
+        File snpDir = snpMgr.snapshotLocalDir(snpName, snpPath);
+
+        SnapshotMetadata meta = snpMgr.readSnapshotMetadata(snpDir, consId);
+
+        return invokeCustomHandlers(meta, snpPath, groups, check);
+    }
+
+    /**
+     *  Reads snapshot metadata. Requires snapshot meta to work.
+     *
+     * @see IgniteSnapshotManager#handlers()
+     */
+    public CompletableFuture<Map<String, SnapshotHandlerResult<Object>>> invokeCustomHandlers(
+        SnapshotMetadata meta,
+        @Nullable String snpPath,
+        @Nullable Collection<String> groups,
+        boolean check
+    ) {
+        IgniteSnapshotManager snpMgr = kctx.cache().context().snapshotMgr();
+
+        File snpDir = snpMgr.snapshotLocalDir(meta.snapshotName(), snpPath);
+
+        // The handlers use or may use the same snapshot pool. If it configured with 1 thread, launching waiting task in
+        // the same pool might block it.
+        return CompletableFuture.supplyAsync(() -> {
+            try {
+                return snpMgr.handlers().invokeAll(SnapshotHandlerType.RESTORE,
+                    new SnapshotHandlerContext(meta, groups, kctx.cluster().get().localNode(), snpDir, false, check));
+            }
+            catch (IgniteCheckedException e) {
+                throw new IgniteException("Failed to call custom snapshot validation handlers.", e);
+            }
+        });
+    }
+
     /** */
     public Map<PartitionKeyV2, PartitionHashRecordV2> checkSnapshotFiles(
         File snpDir,
         Set<Integer> grpIds,
         SnapshotMetadata meta,
         boolean forCreation,
-        boolean skipHash,
-        boolean punchHoleEnabled
+        boolean procPartitionsData,
+        boolean skipHash
     ) throws IgniteCheckedException {
         IgniteBiTuple<Map<Integer, File>, Set<File>> grpAndPartFiles = preparePartitions(meta, grpIds, snpDir);
+
+        if (!procPartitionsData) {
+            log.info("Snapshot data integrity check skipped [snpName=" + meta.snapshotName() + ']');
+
+            return Collections.emptyMap();
+        }
+
+        boolean checkCompressed = forCreation && isPunchHoleEnabled(meta, snpDir, grpIds);
 
         Map<PartitionKeyV2, PartitionHashRecordV2> res = new ConcurrentHashMap<>();
         ThreadLocal<ByteBuffer> buff = ThreadLocal.withInitial(() -> ByteBuffer.allocateDirect(meta.pageSize())
@@ -403,7 +480,7 @@ public class SnapshotChecker {
                     ) {
                         pageStore.init();
 
-                        if (punchHoleEnabled && meta.isGroupWithCompression(grpId) && forCreation) {
+                        if (checkCompressed && meta.isGroupWithCompression(grpId)) {
                             byte pageType = partId == INDEX_PARTITION ? FLAG_IDX : FLAG_DATA;
 
                             checkPartitionsPageCrcSum(() -> pageStore, partId, pageType, (id, buffer) -> {
@@ -468,14 +545,19 @@ public class SnapshotChecker {
                         // There is no `primary` partitions for snapshot.
                         PartitionKeyV2 key = new PartitionKeyV2(grpId, partId, grpName);
 
+                        GridIterator<CacheDataRow> partIt = skipHash
+                            ? F.emptyIterator()
+                            : kctx.cache().context().snapshotMgr().partitionRowIterator(kctx, grpName, partId, pageStore,
+                                kctx.cache().context());
+
                         PartitionHashRecordV2 hash = calculatePartitionHash(key,
                             updateCntr,
                             meta.consistentId(),
                             GridDhtPartitionState.OWNING,
                             false,
                             size,
-                            skipHash ? F.emptyIterator()
-                                : kctx.cache().context().snapshotMgr().partitionRowIterator(kctx, grpName, partId, pageStore));
+                            partIt
+                        );
 
                         assert hash != null : "OWNING must have hash: " + key;
 
@@ -494,7 +576,7 @@ public class SnapshotChecker {
             );
         }
         catch (Throwable t) {
-            log.error("Error executing handler: ", t);
+            log.error("An error occurred on snapshot partitions validation.", t);
 
             throw t;
         }
@@ -536,24 +618,128 @@ public class SnapshotChecker {
         return rootIO.getCount(pageAddr) != 0;
     }
 
+    /** Launches local partitions checking. */
+    public CompletableFuture<Map<PartitionKeyV2, PartitionHashRecordV2>> checkPartitions(
+        SnapshotMetadata meta,
+        File snpDir,
+        @Nullable Collection<String> groups,
+        boolean forCreation,
+        boolean checkParts,
+        boolean skipPartsHashes
+    ) {
+        // Await in the default executor to avoid blocking the snapshot executor if it has just one thread.
+        return CompletableFuture.supplyAsync(() -> {
+            if (!snpDir.exists())
+                throw new IllegalStateException("Snapshot directory doesn't exists: " + snpDir);
+
+            ClusterNode locNode = kctx.cluster().get().localNode();
+
+            Set<Integer> grps = F.isEmpty(groups)
+                ? new HashSet<>(meta.partitions().keySet())
+                : groups.stream().map(CU::cacheId).collect(Collectors.toSet());
+
+            if (forCreation) {
+                grps = grps.stream().filter(grp -> grp == MetaStorage.METASTORAGE_CACHE_ID ||
+                    CU.affinityNode(
+                        locNode,
+                        kctx.cache().cacheGroupDescriptor(grp).config().getNodeFilter()
+                    )
+                ).collect(Collectors.toSet());
+            }
+
+            if (meta.dump())
+                return checkDumpFiles(snpDir, meta, grps, locNode.consistentId(), checkParts, skipPartsHashes);
+
+            try {
+                return checkSnapshotFiles(snpDir, grps, meta, forCreation, checkParts, skipPartsHashes);
+            }
+            catch (IgniteCheckedException e) {
+                throw new IgniteException("Failed to check partitions of snapshot '" + meta.snapshotName() + "'.", e);
+            }
+        });
+    }
+
+    /**
+     * Checks results of the internal and custon snapshot validation handlres. Throws exception if a validation error occurs.
+     *
+     * @see #invokeCustomHandlers(String, String, String, Collection, boolean)
+     */
+    public void checkCustomHandlersResults(
+        String snpName,
+        Map<ClusterNode, Map<String, SnapshotHandlerResult<?>>> results
+    ) throws Exception {
+        Map<String, List<SnapshotHandlerResult<?>>> clusterResults = new HashMap<>();
+        Collection<UUID> execNodes = new ArrayList<>(results.size());
+
+        for (Map.Entry<ClusterNode, Map<String, SnapshotHandlerResult<?>>> nodeRes : results.entrySet()) {
+            ClusterNode node = nodeRes.getKey();
+
+            // Depending on the job mapping, we can get several different results from one node.
+            execNodes.add(node.id());
+
+            assert nodeRes.getValue() != null : "At least the default snapshot restore handler should have been executed ";
+
+            for (Map.Entry<String, SnapshotHandlerResult<?>> nodeHndRes : nodeRes.getValue().entrySet()) {
+                String hndName = nodeHndRes.getKey();
+                SnapshotHandlerResult<?> hndRes = nodeHndRes.getValue();
+
+                if (hndRes.error() != null)
+                    throw hndRes.error();
+
+                clusterResults.computeIfAbsent(hndName, v -> new ArrayList<>()).add(hndRes);
+            }
+        }
+
+        kctx.cache().context().snapshotMgr().handlers().completeAll(SnapshotHandlerType.RESTORE, snpName, clusterResults,
+            execNodes, wrns -> {});
+    }
+
     /** */
-    public Map<PartitionKeyV2, PartitionHashRecordV2> checkDumpFiles(
+    private boolean isPunchHoleEnabled(SnapshotMetadata meta, File snpDir, Set<Integer> grpIds) {
+        Path snapshotDir = snpDir.toPath();
+
+        if (meta.hasCompressedGroups() && grpIds.stream().anyMatch(meta::isGroupWithCompression)) {
+            try {
+                kctx.compress().checkPageCompressionSupported(snapshotDir, meta.pageSize());
+
+                return true;
+            }
+            catch (Exception e) {
+                log.info("File system doesn't support page compression on snapshot directory: " + snapshotDir
+                    + ", snapshot may have larger size than expected.");
+            }
+        }
+
+        return false;
+    }
+
+    /** */
+    private Map<PartitionKeyV2, PartitionHashRecordV2> checkDumpFiles(
         File snpDir,
         SnapshotMetadata meta,
         Collection<Integer> grpIds,
         Object nodeCstId,
+        boolean procPartitionsData,
         boolean skipHash
     ) {
+        IgniteBiTuple<Map<Integer, File>, Set<File>> grpAndPartFiles = preparePartitions(meta, grpIds, snpDir);
+
+        if (!procPartitionsData) {
+            log.info("Dump data integrity check skipped [dmpName=" + meta.snapshotName() + ']');
+
+            return Collections.emptyMap();
+        }
+
         EncryptionSpi encSpi = meta.encryptionKey() != null ? encryptionSpi : null;
 
-        try (Dump dump = new Dump(snpDir, U.maskForFileName(nodeCstId.toString()), true, true, encSpi, log)) {
-            IgniteBiTuple<Map<Integer, File>, Set<File>> grpAndPartFiles = preparePartitions(meta, grpIds, dump.dumpDirectory());
+        try (Dump dump = new Dump(snpDir, nodeCstId.toString(), true, true, encSpi, log)) {
+            String nodeFolderName = kctx.pdsFolderResolver().resolveFolders().folderName();
 
             Collection<PartitionHashRecordV2> partitionHashRecordV2s = U.doInParallel(
                 executor,
                 grpAndPartFiles.get2(),
                 part -> calculateDumpedPartitionHash(dump, cacheGroupName(part.getParentFile()), partId(part.getName()),
-                    skipHash, nodeCstId, U.maskForFileName(nodeCstId.toString()))
+                    skipHash, nodeCstId, nodeFolderName)
             );
 
             return partitionHashRecordV2s.stream().collect(Collectors.toMap(PartitionHashRecordV2::partitionKey, r -> r));
