@@ -177,7 +177,7 @@ public class SqlTransactionsIsolationTest extends GridCommonAbstractTest {
         String[] apis = new String[] {CACHE, SQL};
 
         for (String modify : apis) {
-            for (CacheMode mode : CacheMode.values()) {
+            for (CacheMode cacheMode : CacheMode.values()) {
                 for (int gridCnt : new int[]{1, 3, 5}) {
                     int[] backups = gridCnt > 1
                         ? new int[]{1, gridCnt - 1}
@@ -186,8 +186,8 @@ public class SqlTransactionsIsolationTest extends GridCommonAbstractTest {
                     for (int backup: backups) {
                         for (boolean commit : new boolean[]{false, true}) {
                             for (boolean mutli : new boolean[] {false, true}) {
-                                params.add(new Object[]{modify, ExecutorType.SERVER, false, mode, gridCnt, backup, commit, mutli});
-                                params.add(new Object[]{modify, ExecutorType.CLIENT, false, mode, gridCnt, backup, commit, mutli});
+                                params.add(new Object[]{modify, ExecutorType.SERVER, false, cacheMode, gridCnt, backup, commit, mutli});
+                                params.add(new Object[]{modify, ExecutorType.CLIENT, false, cacheMode, gridCnt, backup, commit, mutli});
 
 /*
                                 for (boolean partitionAwareness : new boolean[]{false, true}) {
@@ -327,7 +327,7 @@ public class SqlTransactionsIsolationTest extends GridCommonAbstractTest {
     public void testIndexScan() {
         delete(1);
 
-        assertEquals("Table must be empty", 0L, sql(format("SELECT COUNT(*) FROM %s", users())).get(0).get(0));
+        assertUsersSize(0);
 
         int stepCnt = 7;
         int stepSz = 12;
@@ -346,7 +346,7 @@ public class SqlTransactionsIsolationTest extends GridCommonAbstractTest {
             }
         }
 
-        assertEquals((long)(stepCnt * outOfTxSz), sql(format("SELECT COUNT(*) FROM %s", users())).get(0).get(0));
+        assertUsersSize(stepCnt * outOfTxSz);
 
         checkQueryWithPartitionFilter();
 
@@ -372,7 +372,7 @@ public class SqlTransactionsIsolationTest extends GridCommonAbstractTest {
                     // Concurrent query must not see any transaction data.
                     runAsync(() -> {
                         RunnableX check = () -> {
-                            assertEquals((long)(stepCnt * outOfTxSz), sql(format("SELECT COUNT(*) FROM %s", users())).get(0).get(0));
+                            assertUsersSize(stepCnt * outOfTxSz);
 
                             assertNull(select(id, CACHE));
                             assertNull(select(id, SQL));
@@ -384,7 +384,7 @@ public class SqlTransactionsIsolationTest extends GridCommonAbstractTest {
 
                     long expTblSz = (long)(stepCnt * outOfTxSz) + i * inTxSz + j + 1;
 
-                    assertEquals(expTblSz, sql(format("SELECT COUNT(*) FROM %s", users())).get(0).get(0));
+                    assertUsersSize(expTblSz);
 
                     List<List<?>> rows = sql(format("SELECT fio FROM %s ORDER BY fio", users()));
 
@@ -438,7 +438,7 @@ public class SqlTransactionsIsolationTest extends GridCommonAbstractTest {
 
                     long expTblSz = (stepCnt * stepSz) - (i * outOfTxSz + j + 1);
 
-                    assertEquals(expTblSz, sql(format("SELECT COUNT(*) FROM %s", users())).get(0).get(0));
+                    assertUsersSize(expTblSz);
 
                     List<List<?>> rows = sql(format("SELECT fio FROM %s ORDER BY fio DESC", users()));
 
@@ -451,7 +451,7 @@ public class SqlTransactionsIsolationTest extends GridCommonAbstractTest {
             checkQueryWithPartitionFilter();
         }, true);
 
-        assertEquals((long)inTxSz * stepCnt, sql(format("SELECT COUNT(*) FROM %s", users())).get(0).get(0));
+        assertUsersSize(inTxSz * stepCnt);
     }
 
     /** */
@@ -462,8 +462,8 @@ public class SqlTransactionsIsolationTest extends GridCommonAbstractTest {
         sql(format("DELETE FROM %s", users()));
         sql(format("DELETE FROM %s", departments()));
 
-        assertEquals("Table must be empty", 0L, sql(format("SELECT COUNT(*) FROM %s", users())).get(0).get(0));
-        assertEquals("Table must be empty", 0L, sql(format("SELECT COUNT(*) FROM %s", departments())).get(0).get(0));
+        assertUsersSize(0);
+        assertTableSize(0, departments());
 
         int depCnt = 5;
         int userCnt = 5;
@@ -709,7 +709,7 @@ public class SqlTransactionsIsolationTest extends GridCommonAbstractTest {
     public void testVisibility() {
         sql(format("DELETE FROM %s", tbl()));
 
-        assertEquals("Table must be empty", 0L, sql(format("SELECT COUNT(*) FROM %s", tbl())).get(0).get(0));
+        assertTableSize(0, tbl());
 
         long cnt = 100;
 
@@ -729,14 +729,10 @@ public class SqlTransactionsIsolationTest extends GridCommonAbstractTest {
                 assertEquals("Must see transaction related data", (Long)(i + 1), cache.get(i));
             }
 
-            List<List<?>> sqlData = sql(format("SELECT COUNT(*) FROM %s", tbl()));
-
-            assertEquals("Must count properly", i, sqlData.get(0).get(0));
+            assertTableSize(i, tbl());
         }, true));
 
-        List<List<?>> sqlData = sql(format("SELECT COUNT(*) FROM %s", tbl()));
-
-        assertEquals("Must see committed data", cnt, sqlData.get(0).get(0));
+        assertTableSize(cnt, tbl());
     }
 
     /** */
@@ -978,6 +974,16 @@ public class SqlTransactionsIsolationTest extends GridCommonAbstractTest {
                 sql(format("SELECT * FROM %s", users()), new int[]{partToKeys.getKey()}).size()
             );
         }
+    }
+
+    /** */
+    private void assertUsersSize(long sz) {
+        assertTableSize(sz, users());
+    }
+
+    /** */
+    private void assertTableSize(long sz, String tbl) {
+        assertEquals(sz, sql(format("SELECT COUNT(*) FROM %s", tbl)).get(0).get(0));
     }
 
     /** */

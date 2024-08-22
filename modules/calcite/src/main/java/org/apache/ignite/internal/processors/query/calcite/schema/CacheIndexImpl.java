@@ -209,7 +209,7 @@ public class CacheIndexImpl implements IgniteIndex {
                 rowFilter = IndexScan.createNotExpiredRowFilter();
 
             if (!F.isEmpty(ectx.getTxWriteEntries())) {
-                BPlusTree.TreeRowClosure<IndexRow, IndexRow> _rowFilter = rowFilter;
+                BPlusTree.TreeRowClosure<IndexRow, IndexRow> rowFilter0 = rowFilter;
 
                 int[] parts = grp.partitions(ectx.localNodeId());
 
@@ -228,7 +228,7 @@ public class CacheIndexImpl implements IgniteIndex {
                             long pageAddr,
                             int idx
                         ) throws IgniteCheckedException {
-                            if (_rowFilter != null && !_rowFilter.apply(tree, io, pageAddr, idx))
+                            if (rowFilter0 != null && !rowFilter0.apply(tree, io, pageAddr, idx))
                                 return false;
 
                             IndexRow row = tree.getRow(io, pageAddr, idx);
