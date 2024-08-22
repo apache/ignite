@@ -677,6 +677,7 @@ public class JdbcResultSetSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testBlob() throws Exception {
         ResultSet rs = stmt.executeQuery(SQL);
 
@@ -700,6 +701,7 @@ public class JdbcResultSetSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testClob() throws Exception {
         ResultSet rs = stmt.executeQuery(SQL);
 
@@ -1114,6 +1116,8 @@ public class JdbcResultSetSelfTest extends GridCommonAbstractTest {
             if (timeVal != null ? !timeVal.equals(that.timeVal) : that.timeVal != null) return false;
             if (tsVal != null ? !tsVal.equals(that.tsVal) : that.tsVal != null) return false;
             if (urlVal != null ? !urlVal.equals(that.urlVal) : that.urlVal != null) return false;
+            if (!Arrays.equals(blobVal, that.blobVal)) return false;
+            if (clobVal != null ? !clobVal.equals(that.clobVal) : that.clobVal != null) return false;
 
             return true;
         }
@@ -1140,6 +1144,8 @@ public class JdbcResultSetSelfTest extends GridCommonAbstractTest {
             res = 31 * res + (f1 != null ? f1.hashCode() : 0);
             res = 31 * res + (f2 != null ? f2.hashCode() : 0);
             res = 31 * res + (f3 != null ? f3.hashCode() : 0);
+            res = 31 * res + (blobVal != null ? Arrays.hashCode(blobVal) : 0);
+            res = 31 * res + (clobVal != null ? clobVal.hashCode() : 0);
 
             return res;
         }

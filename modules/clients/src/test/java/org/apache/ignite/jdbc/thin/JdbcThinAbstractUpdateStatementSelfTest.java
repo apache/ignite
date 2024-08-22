@@ -24,7 +24,7 @@ import java.sql.Statement;
  */
 public abstract class JdbcThinAbstractUpdateStatementSelfTest extends JdbcThinAbstractDmlStatementSelfTest {
     /** SQL query to populate cache. */
-    private static final String ITEMS_SQL = "insert into Person(_key, id, firstName, lastName, age, blob, clob) values " +
+    private static final String ITEMS_SQL = "insert into Person(_key, id, firstName, lastName, age, data, text) values " +
         "('p1', 1, 'John', 'White', 25, RAWTOHEX('White'), 'John White'), " +
         "('p2', 2, 'Joe', 'Black', 35, RAWTOHEX('Black'), 'Joe Black'), " +
         "('p3', 3, 'Mike', 'Green', 40, RAWTOHEX('Green'), 'Mike Green')";

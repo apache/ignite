@@ -18,39 +18,28 @@
 package org.apache.ignite.internal.jdbc2;
 
 import java.io.Reader;
+import java.sql.Clob;
 import java.sql.SQLException;
 import java.sql.SQLFeatureNotSupportedException;
-import junit.framework.TestCase;
 import org.apache.commons.io.IOUtils;
 import org.junit.Assert;
+import org.junit.Test;
+
+import static java.nio.charset.StandardCharsets.UTF_8;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.fail;
 
 /**
  * Test for JDBC CLOB.
  */
-public class JdbcClobTest extends TestCase {
-    /** Entity for testing. */
-    private JdbcClob clob;
-
-    /**
-     * CLOB initialization.
-     */
-    @Override public void setUp() throws Exception {
-        super.setUp();
-
-        clob = new JdbcClob("1234567890");
-    }
-
-    /**
-     * CLOB clearing.
-     */
-    @Override public void tearDown() throws Exception {
-        clob = null;
-    }
-
+public class JdbcClobTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testLength() throws Exception {
+        JdbcClob clob = new JdbcClob("1234567890");
+
         assertEquals(10, clob.length());
 
         clob.free();
@@ -68,7 +57,19 @@ public class JdbcClobTest extends TestCase {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testGetSubString() throws Exception {
+        JdbcClob clob = new JdbcClob("1234567890");
+
+        try {
+            clob.getSubString(-1, 1);
+
+            fail();
+        }
+        catch (SQLException e) {
+            // No-op.
+        }
+
         try {
             clob.getSubString(0, 1);
 
@@ -95,6 +96,8 @@ public class JdbcClobTest extends TestCase {
         catch (SQLException e) {
             // No-op.
         }
+
+        assertEquals("", clob.getSubString(3, 0));
 
         assertEquals("1", clob.getSubString(1, 1));
 
@@ -123,7 +126,10 @@ public class JdbcClobTest extends TestCase {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testGetCharacterStream() throws Exception {
+        JdbcClob clob = new JdbcClob("1234567890");
+
         Reader cStream = clob.getCharacterStream();
         String res = IOUtils.toString(cStream);
         assertEquals("1234567890", res);
@@ -143,7 +149,19 @@ public class JdbcClobTest extends TestCase {
     /**
      * @throws Exception If failed.
      */
-    public void testGetCharacterStream1() throws Exception {
+    @Test
+    public void testGetCharacterStreamWithParams() throws Exception {
+        JdbcClob clob = new JdbcClob("1234567890");
+
+        try {
+            clob.getCharacterStream(-1, 1);
+
+            fail();
+        }
+        catch (SQLException e) {
+            // No-op.
+        }
+
         try {
             clob.getCharacterStream(0, 1);
 
@@ -187,6 +205,10 @@ public class JdbcClobTest extends TestCase {
         res = IOUtils.toString(cStream);
         assertEquals("34567", res);
 
+        cStream = clob.getCharacterStream(3, 0);
+        res = IOUtils.toString(cStream);
+        assertEquals("", res);
+
         clob.free();
 
         try {
@@ -202,10 +224,15 @@ public class JdbcClobTest extends TestCase {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testGetAsciiStream() throws Exception {
+        JdbcClob clob = new JdbcClob("1234567890");
         byte[] bytes = IOUtils.toByteArray(clob.getAsciiStream());
+        Assert.assertArrayEquals("1234567890".getBytes(UTF_8), bytes);
 
-        Assert.assertArrayEquals("1234567890".getBytes(), bytes);
+        clob = new JdbcClob("");
+        bytes = IOUtils.toByteArray(clob.getAsciiStream());
+        Assert.assertArrayEquals("".getBytes(UTF_8), bytes);
 
         clob.free();
 
@@ -222,7 +249,29 @@ public class JdbcClobTest extends TestCase {
     /**
      * @throws Exception If failed.
      */
-    public void testPosition() throws Exception {
+    @Test
+    public void testGetAsciiStreamForNonAsciiData() throws Exception {
+        StringBuilder sb = new StringBuilder();
+        for (int i = 0; i < 10000; i++) {
+            sb.append("aa©😀");
+        }
+
+        Clob clob = new JdbcClob(sb.toString());
+
+        byte[] bytes = IOUtils.toByteArray(clob.getAsciiStream());
+
+        String reencoded = new String(bytes, UTF_8);
+
+        assertEquals(clob.getSubString(1, (int)clob.length()), reencoded);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    @Test
+    public void testPositionWithStringPattern() throws Exception {
+        JdbcClob clob = new JdbcClob("1234567890");
+
         try {
             clob.position("0", 0);
 
@@ -231,6 +280,21 @@ public class JdbcClobTest extends TestCase {
         catch (SQLException e) {
             // No-op.
         }
+
+        try {
+            clob.position("0", -1);
+
+            fail();
+        }
+        catch (SQLException e) {
+            // No-op.
+        }
+
+        assertEquals(1, clob.position("", 1));
+
+        assertEquals(10, clob.position("", 10));
+
+        assertEquals(11, clob.position("", 100));
 
         assertEquals(-1, clob.position("a", 11));
 
@@ -261,11 +325,23 @@ public class JdbcClobTest extends TestCase {
     /**
      * @throws Exception If failed.
      */
-    public void testPosition1() throws Exception {
+    @Test
+    public void testPositionWithClobPattern() throws Exception {
+        JdbcClob clob = new JdbcClob("1234567890");
+
         JdbcClob anotherClob = new JdbcClob("567");
 
         try {
             clob.position(anotherClob, 0);
+
+            fail();
+        }
+        catch (SQLException e) {
+            // No-op.
+        }
+
+        try {
+            clob.position(anotherClob, -1);
 
             fail();
         }
@@ -302,7 +378,19 @@ public class JdbcClobTest extends TestCase {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testSetString() throws Exception {
+        JdbcClob clob = new JdbcClob("1234567890");
+
+        try {
+            clob.setString(-1, "a");
+
+            fail();
+        }
+        catch (SQLException e) {
+            // No-op.
+        }
+
         try {
             clob.setString(0, "a");
 
@@ -330,22 +418,27 @@ public class JdbcClobTest extends TestCase {
             // No-op.
         }
 
-        clob.setString(1, "a");
+        int written = clob.setString(1, "a");
         assertEquals("a", clob.getSubString(1, 1));
+        assertEquals(1, written);
 
-        clob.setString(5, "abc");
+        written = clob.setString(5, "abc");
         assertEquals("abc", clob.getSubString(5, 3));
+        assertEquals(3, written);
 
-        clob.setString(10, "def");
+        written = clob.setString(10, "def");
         assertEquals("def", clob.getSubString(10, 3));
+        assertEquals(3, written);
 
         clob = new JdbcClob("12345");
-        clob.setString(3, "abcd");
+        written = clob.setString(3, "abcd");
         assertEquals("12abcd", clob.getSubString(1, (int)clob.length()));
+        assertEquals(4, written);
 
         clob = new JdbcClob("12345");
-        clob.setString(3, "ab");
+        written = clob.setString(3, "ab");
         assertEquals("12ab5", clob.getSubString(1, (int)clob.length()));
+        assertEquals(2, written);
 
         clob.free();
 
@@ -362,7 +455,19 @@ public class JdbcClobTest extends TestCase {
     /**
      * @throws Exception If failed.
      */
-    public void testSetString1() throws Exception {
+    @Test
+    public void testSetStringWithSubString() throws Exception {
+        JdbcClob clob = new JdbcClob("1234567890");
+
+        try {
+            clob.setString(-1, "a", 0, 1);
+
+            fail();
+        }
+        catch (SQLException e) {
+            // No-op.
+        }
+
         try {
             clob.setString(0, "a", 0, 1);
 
@@ -373,7 +478,7 @@ public class JdbcClobTest extends TestCase {
         }
 
         try {
-            clob.setString(clob.length() + 1, "a", 0, 1);
+            clob.setString(clob.length() + 2, "a", 0, 1);
 
             fail();
         }
@@ -418,20 +523,29 @@ public class JdbcClobTest extends TestCase {
         }
 
         clob = new JdbcClob("1234567890");
-        clob.setString(3, "abcd", 0, 1);
+        int written = clob.setString(3, "abcd", 0, 1);
         assertEquals("12a4567890", clob.getSubString(1, (int)clob.length()));
+        assertEquals(1, written);
 
         clob = new JdbcClob("1234567890");
-        clob.setString(1, "abcd", 0, 3);
+        written = clob.setString(1, "abcd", 0, 3);
         assertEquals("abc4567890", clob.getSubString(1, (int)clob.length()));
+        assertEquals(3, written);
 
         clob = new JdbcClob("1234567890");
-        clob.setString(5, "abcd", 2, 2);
+        written = clob.setString(5, "abcd", 2, 2);
         assertEquals("1234cd7890", clob.getSubString(1, (int)clob.length()));
+        assertEquals(2, written);
 
         clob = new JdbcClob("1234567890");
-        clob.setString(9, "abcd", 0, 4);
+        written = clob.setString(9, "abcd", 0, 4);
         assertEquals("12345678abcd", clob.getSubString(1, (int)clob.length()));
+        assertEquals(4, written);
+
+        clob = new JdbcClob("1234567890");
+        written = clob.setString(11, "abcd", 0, 4);
+        assertEquals("1234567890abcd", clob.getSubString(1, (int)clob.length()));
+        assertEquals(4, written);
 
         clob.free();
 
@@ -448,7 +562,10 @@ public class JdbcClobTest extends TestCase {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testTruncate() throws Exception {
+        JdbcClob clob = new JdbcClob("1234567890");
+
         try {
             clob.truncate(-1);
 
@@ -491,7 +608,10 @@ public class JdbcClobTest extends TestCase {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testSetAsciiStream() throws Exception {
+        JdbcClob clob = new JdbcClob("1234567890");
+
         try {
             clob.setAsciiStream(1L);
 
@@ -505,7 +625,10 @@ public class JdbcClobTest extends TestCase {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testSetCharacterStream() throws Exception {
+        JdbcClob clob = new JdbcClob("1234567890");
+
         try {
             clob.setCharacterStream(1L);
 
@@ -519,10 +642,11 @@ public class JdbcClobTest extends TestCase {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testFree() throws Exception {
-        clob.length();
+        JdbcClob clob = new JdbcClob("1234567890");
 
-        clob.getCharacterStream();
+        clob.length();
 
         clob.free();
 
@@ -530,15 +654,6 @@ public class JdbcClobTest extends TestCase {
 
         try {
             clob.length();
-
-            fail();
-        }
-        catch (SQLException e) {
-            // No-op.
-        }
-
-        try {
-            clob.getCharacterStream();
 
             fail();
         }

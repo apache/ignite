@@ -39,6 +39,7 @@ import org.junit.Test;
 
 import static java.sql.Types.BIGINT;
 import static java.sql.Types.BINARY;
+import static java.sql.Types.BLOB;
 import static java.sql.Types.BOOLEAN;
 import static java.sql.Types.CLOB;
 import static java.sql.Types.DATALINK;
@@ -585,7 +586,7 @@ public class JdbcPreparedStatementSelfTest extends GridCommonAbstractTest {
 
         assertEquals(1, cnt);
 
-        stmt.setNull(1, BINARY);
+        stmt.setNull(1, BLOB);
 
         rs = stmt.executeQuery();
 

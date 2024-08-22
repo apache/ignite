@@ -52,6 +52,7 @@ import org.junit.Test;
 
 import static java.sql.Types.BIGINT;
 import static java.sql.Types.BINARY;
+import static java.sql.Types.BLOB;
 import static java.sql.Types.BOOLEAN;
 import static java.sql.Types.CLOB;
 import static java.sql.Types.DATE;
@@ -883,7 +884,7 @@ public class JdbcThinPreparedStatementSelfTest extends JdbcThinAbstractSelfTest 
 
         assertEquals(1, cnt);
 
-        stmt.setNull(1, BINARY);
+        stmt.setNull(1, BLOB);
 
         rs = stmt.executeQuery();
 
@@ -1136,6 +1137,18 @@ public class JdbcThinPreparedStatementSelfTest extends JdbcThinAbstractSelfTest 
 
         checkNotSupported(new RunnableX() {
             @Override public void runx() throws Exception {
+                stmt.setBlob(1, (InputStream)null);
+            }
+        });
+
+        checkNotSupported(new RunnableX() {
+            @Override public void runx() throws Exception {
+                stmt.setBlob(1, null, 0L);
+            }
+        });
+
+        checkNotSupported(new RunnableX() {
+            @Override public void runx() throws Exception {
                 stmt.setCharacterStream(1, null);
             }
         });
@@ -1149,6 +1162,18 @@ public class JdbcThinPreparedStatementSelfTest extends JdbcThinAbstractSelfTest 
         checkNotSupported(new RunnableX() {
             @Override public void runx() throws Exception {
                 stmt.setCharacterStream(1, null, 0L);
+            }
+        });
+
+        checkNotSupported(new RunnableX() {
+            @Override public void runx() throws Exception {
+                stmt.setClob(1, (Reader)null);
+            }
+        });
+
+        checkNotSupported(new RunnableX() {
+            @Override public void runx() throws Exception {
+                stmt.setClob(1, null, 0L);
             }
         });
 

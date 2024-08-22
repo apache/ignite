@@ -17,6 +17,8 @@
 
 package org.apache.ignite.jdbc.thin;
 
+import java.sql.Blob;
+import java.sql.Clob;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
@@ -24,8 +26,6 @@ import java.sql.Statement;
 import java.util.Arrays;
 import java.util.HashSet;
 import org.apache.ignite.configuration.IgniteConfiguration;
-import org.apache.ignite.internal.jdbc2.JdbcBlob;
-import org.apache.ignite.internal.jdbc2.JdbcClob;
 import org.apache.ignite.internal.util.lang.RunnableX;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.ListeningTestLogger;
@@ -37,13 +37,13 @@ import org.junit.Test;
  */
 public class JdbcThinInsertStatementSelfTest extends JdbcThinAbstractDmlStatementSelfTest {
     /** SQL query. */
-    private static final String SQL = "insert into Person(_key, id, firstName, lastName, age, blob, clob) values " +
+    private static final String SQL = "insert into Person(_key, id, firstName, lastName, age, data, text) values " +
         "('p1', 1, 'John', 'White', 25, RAWTOHEX('White'), 'John White'), " +
         "('p2', 2, 'Joe', 'Black', 35, RAWTOHEX('Black'), 'Joe Black'), " +
         "('p3', 3, 'Mike', 'Green', 40, RAWTOHEX('Green'), 'Mike Green')";
 
     /** SQL query. */
-    private static final String SQL_PREPARED = "insert into Person(_key, id, firstName, lastName, age, blob, clob) " +
+    private static final String SQL_PREPARED = "insert into Person(_key, id, firstName, lastName, age, data, text) " +
         "values (?, ?, ?, ?, ?, ?, ?), (?, ?, ?, ?, ?, ?, ?), (?, ?, ?, ?, ?, ?, ?)";
 
     /** Test logger. */
@@ -97,8 +97,14 @@ public class JdbcThinInsertStatementSelfTest extends JdbcThinAbstractDmlStatemen
             prepStmt.setString(paramCnt++, (String)arg[2]);
             prepStmt.setString(paramCnt++, (String)arg[3]);
             prepStmt.setInt(paramCnt++, (Integer)arg[4]);
-            prepStmt.setBlob(paramCnt++, new JdbcBlob((byte[])arg[5]));
-            prepStmt.setClob(paramCnt++, new JdbcClob((String)arg[6]));
+
+            Blob blob = conn.createBlob();
+            blob.setBytes(1, (byte[])arg[5]);
+            prepStmt.setBlob(paramCnt++, blob);
+
+            Clob clob = conn.createClob();
+            clob.setString(1, (String)arg[6]);
+            prepStmt.setClob(paramCnt++, clob);
         }
     }
 
@@ -120,8 +126,8 @@ public class JdbcThinInsertStatementSelfTest extends JdbcThinAbstractDmlStatemen
                         assertEquals("John", rs.getString("firstName"));
                         assertEquals("White", rs.getString("lastName"));
                         assertEquals(25, rs.getInt("age"));
-                        assertEquals("White", str(getBytes(rs.getBlob("blob"))));
-                        assertEquals("John White", str(rs.getClob("clob")));
+                        assertEquals("White", str(getBytes(rs.getBlob("data"))));
+                        assertEquals("John White", str(rs.getClob("text")));
                         break;
 
                     case 2:
@@ -129,8 +135,8 @@ public class JdbcThinInsertStatementSelfTest extends JdbcThinAbstractDmlStatemen
                         assertEquals("Joe", rs.getString("firstName"));
                         assertEquals("Black", rs.getString("lastName"));
                         assertEquals(35, rs.getInt("age"));
-                        assertEquals("Black", str(getBytes(rs.getBlob("blob"))));
-                        assertEquals("Joe Black", str(rs.getClob("clob")));
+                        assertEquals("Black", str(getBytes(rs.getBlob("data"))));
+                        assertEquals("Joe Black", str(rs.getClob("text")));
                         break;
 
                     case 3:
@@ -138,9 +144,8 @@ public class JdbcThinInsertStatementSelfTest extends JdbcThinAbstractDmlStatemen
                         assertEquals("Mike", rs.getString("firstName"));
                         assertEquals("Green", rs.getString("lastName"));
                         assertEquals(40, rs.getInt("age"));
-                        assertEquals("Green", str(getBytes(rs.getBlob("blob"))));
-                        assertEquals("Mike Green", str(rs.getClob("clob")));
-                        System.out.println("CASE 3!!!!");
+                        assertEquals("Green", str(getBytes(rs.getBlob("data"))));
+                        assertEquals("Mike Green", str(rs.getClob("text")));
                         break;
 
                     default:
@@ -155,11 +160,8 @@ public class JdbcThinInsertStatementSelfTest extends JdbcThinAbstractDmlStatemen
         if (prepStmt != null && !prepStmt.isClosed())
             prepStmt.close();
 
-        conn.close();
-
         assertTrue(prepStmt.isClosed());
         assertTrue(stmt.isClosed());
-        assertTrue(conn.isClosed());
 
         super.afterTest();
     }

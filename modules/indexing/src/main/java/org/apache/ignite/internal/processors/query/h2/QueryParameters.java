@@ -20,6 +20,8 @@ package org.apache.ignite.internal.processors.query.h2;
 
 import java.util.List;
 import org.apache.ignite.internal.processors.query.NestedTxMode;
+import org.apache.ignite.internal.util.tostring.GridToStringInclude;
+import org.apache.ignite.internal.util.typedef.internal.S;
 
 /**
  * Query parameters which vary between requests having the same execution plan. Essentially, these are the arguments
@@ -27,6 +29,7 @@ import org.apache.ignite.internal.processors.query.NestedTxMode;
  */
 public class QueryParameters {
     /** Arguments. */
+    @GridToStringInclude(sensitive = true)
     private final Object[] args;
 
     /** Partitions. */
@@ -193,5 +196,10 @@ public class QueryParameters {
             null,
             this.updateBatchSize
         );
+    }
+
+    /** {@inheritDoc} */
+    @Override public String toString() {
+        return S.toString(QueryParameters.class, this);
     }
 }

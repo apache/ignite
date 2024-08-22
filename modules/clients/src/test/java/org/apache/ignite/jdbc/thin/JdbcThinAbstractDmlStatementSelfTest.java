@@ -18,12 +18,12 @@
 package org.apache.ignite.jdbc.thin;
 
 import java.io.Serializable;
-import java.io.UnsupportedEncodingException;
 import java.sql.Blob;
 import java.sql.Clob;
 import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.SQLException;
+import java.util.Arrays;
 import java.util.Collections;
 import org.apache.ignite.cache.QueryEntity;
 import org.apache.ignite.cache.query.annotations.QuerySqlField;
@@ -33,6 +33,7 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.binary.BinaryMarshaller;
 import org.apache.ignite.internal.util.typedef.F;
 
+import static java.nio.charset.StandardCharsets.UTF_16;
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
 
@@ -40,11 +41,8 @@ import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
  * Statement test.
  */
 public abstract class JdbcThinAbstractDmlStatementSelfTest extends JdbcThinAbstractSelfTest {
-    /** UTF 16 character set name. */
-    private static final String UTF_16 = "UTF-16"; // RAWTOHEX function use UTF-16 for conversion strings to byte arrays.
-
     /** SQL SELECT query for verification. */
-    static final String SQL_SELECT = "select _key, id, firstName, lastName, age, blob, clob from Person";
+    static final String SQL_SELECT = "select _key, id, firstName, lastName, age, data, text from Person";
 
     /** Connection. */
     protected Connection conn;
@@ -123,8 +121,8 @@ public abstract class JdbcThinAbstractDmlStatementSelfTest extends JdbcThinAbstr
         e.addQueryField("age", Integer.class.getName(), null);
         e.addQueryField("firstName", String.class.getName(), null);
         e.addQueryField("lastName", String.class.getName(), null);
-        e.addQueryField("blob", byte[].class.getName(), null);
-        e.addQueryField("clob", String.class.getName(), null);
+        e.addQueryField("data", byte[].class.getName(), null);
+        e.addQueryField("text", String.class.getName(), null);
 
         ccfg.setQueryEntities(Collections.singletonList(e));
 
@@ -166,8 +164,8 @@ public abstract class JdbcThinAbstractDmlStatementSelfTest extends JdbcThinAbstr
         e.addQueryField("age", Integer.class.getName(), null);
         e.addQueryField("firstName", String.class.getName(), null);
         e.addQueryField("lastName", String.class.getName(), null);
-        e.addQueryField("blob", byte[].class.getName(), null);
-        e.addQueryField("clob", String.class.getName(), null);
+        e.addQueryField("data", byte[].class.getName(), null);
+        e.addQueryField("text", String.class.getName(), null);
 
         cache.setQueryEntities(Collections.singletonList(e));
 
@@ -182,15 +180,22 @@ public abstract class JdbcThinAbstractDmlStatementSelfTest extends JdbcThinAbstr
     }
 
     /**
+     * Helper to get test binary data as string UTF-16 encoding to be in sync with the RAWTOHEX function
+     * which uses UTF-16 for conversion strings to byte arrays.
      * @param str String.
+     * @return Byte array with the UTF-16 encoding.
      */
     static byte[] getBytes(String str) {
-        try {
-            return str.getBytes(UTF_16);
-        }
-        catch (UnsupportedEncodingException e) {
-            throw new RuntimeException(e);
-        }
+        return str.getBytes(UTF_16);
+    }
+
+    /**
+     * Helper to convert a binary data (which is a string UTF-16 encoding) back to string.
+     * @param arr Byte array with the UTF-16 encoding.
+     * @return String.
+     */
+    static String str(byte[] arr) {
+        return new String(arr, UTF_16);
     }
 
     /**
@@ -201,18 +206,6 @@ public abstract class JdbcThinAbstractDmlStatementSelfTest extends JdbcThinAbstr
             return blob.getBytes(1, (int)blob.length());
         }
         catch (SQLException e) {
-            throw new RuntimeException(e);
-        }
-    }
-
-    /**
-     * @param arr Array.
-     */
-    static String str(byte[] arr) {
-        try {
-            return new String(arr, UTF_16);
-        }
-        catch (UnsupportedEncodingException e) {
             throw new RuntimeException(e);
         }
     }
@@ -249,13 +242,13 @@ public abstract class JdbcThinAbstractDmlStatementSelfTest extends JdbcThinAbstr
         @QuerySqlField
         private final int age;
 
-        /** Blob. */
+        /** Binary data (BLOB). */
         @QuerySqlField
-        private final byte[] blob;
+        private final byte[] data;
 
-        /** Clob. */
+        /** CLOB. */
         @QuerySqlField
-        private final String clob;
+        private final String text;
 
         /**
          * @param id ID.
@@ -272,8 +265,8 @@ public abstract class JdbcThinAbstractDmlStatementSelfTest extends JdbcThinAbstr
             this.firstName = firstName;
             this.lastName = lastName;
             this.age = age;
-            this.blob = getBytes(lastName);
-            this.clob = firstName + " " + lastName;
+            this.data = getBytes(lastName);
+            this.text = firstName + " " + lastName;
         }
 
         /** {@inheritDoc} */
@@ -286,16 +279,23 @@ public abstract class JdbcThinAbstractDmlStatementSelfTest extends JdbcThinAbstr
             if (id != person.id) return false;
             if (age != person.age) return false;
             if (firstName != null ? !firstName.equals(person.firstName) : person.firstName != null) return false;
-            return lastName != null ? lastName.equals(person.lastName) : person.lastName == null;
+            if (lastName != null ? !lastName.equals(person.lastName) : person.lastName != null) return false;
+            if (data != null ? !Arrays.equals(data, person.data) : person.data != null) return false;
+            if (text != null ? !text.equals(person.text) : person.text != null) return false;
 
+            return true;
         }
 
         /** {@inheritDoc} */
         @Override public int hashCode() {
             int result = id;
+
             result = 31 * result + (firstName != null ? firstName.hashCode() : 0);
             result = 31 * result + (lastName != null ? lastName.hashCode() : 0);
             result = 31 * result + age;
+            result = 31 * result + (data != null ? Arrays.hashCode(data) : 0);
+            result = 31 * result + (text != null ? text.hashCode() : 0);
+
             return result;
         }
     }

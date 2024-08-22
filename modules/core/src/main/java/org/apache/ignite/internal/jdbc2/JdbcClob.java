@@ -17,7 +17,6 @@
 
 package org.apache.ignite.internal.jdbc2;
 
-import java.io.ByteArrayInputStream;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.io.Reader;
@@ -26,6 +25,8 @@ import java.io.Writer;
 import java.sql.Clob;
 import java.sql.SQLException;
 import java.sql.SQLFeatureNotSupportedException;
+
+import static java.nio.charset.StandardCharsets.UTF_8;
 
 /**
  * CLOB implementation for Ignite JDBC driver.
@@ -75,7 +76,8 @@ public class JdbcClob implements Clob {
     @Override public InputStream getAsciiStream() throws SQLException {
         ensureNotClosed();
 
-        return new ByteArrayInputStream(chars.getBytes());
+        // Encode to UTF-8 since Ignite internally stores strings in UTF-8 by default.
+        return new Utf8EncodedStringInputStream(chars);
     }
 
     /** {@inheritDoc} */
@@ -102,7 +104,7 @@ public class JdbcClob implements Clob {
 
         if (pos < 1 || str == null || pos - 1 > chars.length())
             throw new SQLException("Invalid argument. Position should be greater than zero. " +
-                "Position should not exceed CLOB length. Source string should not be null " +
+                "Position should not exceed CLOB length+1. Source string should not be null " +
                 "[pos=" + pos + ", str=" + str + ']');
 
         StringBuilder strBuilder = new StringBuilder(chars);
@@ -122,9 +124,9 @@ public class JdbcClob implements Clob {
     @Override public int setString(long pos, String str, int off, int len) throws SQLException {
         ensureNotClosed();
 
-        if (pos < 1 || str == null || pos > chars.length() || off < 0 || len < 0 || off + len > str.length())
+        if (pos < 1 || str == null || pos - 1 > chars.length() || off < 0 || len < 0 || off + len > str.length())
             throw new SQLException("Invalid argument. Position should be greater than zero. " +
-                "Position should not exceed CLOB length. Source string should not be null.  " +
+                "Position should not exceed CLOB length+1. Source string should not be null.  " +
                 "Offset and length shouldn't be negative. Offset + length should not exceed source string length " +
                 "[pos=" + pos + ", str=" + str + ", offset=" + off + ", len=" + len + ']');
 
@@ -174,5 +176,82 @@ public class JdbcClob implements Clob {
     private void ensureNotClosed() throws SQLException {
         if (chars == null)
             throw new SQLException("Clob instance can't be used after free() has been called.");
+    }
+
+    /**
+     * Input stream which encodes the given string to UTF-8.
+     * To save memory for large strings it does it by chunks.
+     */
+    private static class Utf8EncodedStringInputStream extends InputStream {
+        /** String to encode. */
+        private final String chars;
+
+        /** String length. */
+        private final int length;
+
+        /** Start index of the next chunk (substring) to be encoded. */
+        private int charsPos;
+
+        /** Default chunk size. */
+        private static final int DEFAULT_CHUNK_SIZE = 4096;
+
+        /** Buffer containing the current chunk encoding. */
+        private byte[] buf;
+
+        /** Current position in the buffer - index of the next byte to be read from the input stream. */
+        private int bufPos;
+
+        /**
+         * @param chars String to be encoded.
+         */
+        Utf8EncodedStringInputStream(String chars) {
+            this.chars = chars;
+
+            length = chars.length();
+            charsPos = 0;
+        }
+
+        /** {@inheritDoc} */
+        @Override public synchronized int read() {
+            if (buf == null || buf.length == 0 || bufPos >= buf.length) {
+                if (charsPos >= length)
+                    return -1;
+
+                bufPos = 0;
+
+                encodeNextChunk();
+            }
+
+            return buf[bufPos++] & 0xFF;
+        }
+
+        /**
+         * Encodes the next chunk of the string.
+         * <p>
+         * Makes sure that chunk doesn't contain the malformed surrogate element at the end
+         * (high surrogate that is not followed by a low surrogate).
+         */
+        private void encodeNextChunk() {
+            int remainingSize = chars.length() - charsPos;
+
+            assert remainingSize > 0;
+
+            int chunkSize;
+
+            if (remainingSize <= DEFAULT_CHUNK_SIZE) {
+                chunkSize = remainingSize;
+            }
+            else if (Character.isHighSurrogate(chars.charAt(charsPos + DEFAULT_CHUNK_SIZE - 1))) {
+                chunkSize = DEFAULT_CHUNK_SIZE + 1;
+            }
+            else {
+                chunkSize = DEFAULT_CHUNK_SIZE;
+            }
+
+            String subs = chars.substring(charsPos, charsPos + chunkSize);
+            buf = subs.getBytes(UTF_8);
+
+            charsPos += chunkSize;
+        }
     }
 }

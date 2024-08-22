@@ -24,6 +24,7 @@ import java.sql.Clob;
 import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.SQLException;
+import java.util.Arrays;
 import java.util.Collections;
 import org.apache.ignite.cache.QueryEntity;
 import org.apache.ignite.cache.query.annotations.QuerySqlField;
@@ -260,6 +261,8 @@ public abstract class JdbcAbstractDmlStatementSelfTest extends GridCommonAbstrac
             if (id != person.id) return false;
             if (age != person.age) return false;
             if (firstName != null ? !firstName.equals(person.firstName) : person.firstName != null) return false;
+            if (data != null ? !Arrays.equals(data, person.data) : person.data != null) return false;
+            if (text != null ? !text.equals(person.text) : person.text != null) return false;
             return lastName != null ? lastName.equals(person.lastName) : person.lastName == null;
 
         }
@@ -270,6 +273,8 @@ public abstract class JdbcAbstractDmlStatementSelfTest extends GridCommonAbstrac
             result = 31 * result + (firstName != null ? firstName.hashCode() : 0);
             result = 31 * result + (lastName != null ? lastName.hashCode() : 0);
             result = 31 * result + age;
+            result = 31 * result + (data != null ? Arrays.hashCode(data) : 0);
+            result = 31 * result + (text != null ? text.hashCode() : 0);
             return result;
         }
     }
