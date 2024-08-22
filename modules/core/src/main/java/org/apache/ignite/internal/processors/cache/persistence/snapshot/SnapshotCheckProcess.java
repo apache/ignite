@@ -21,7 +21,6 @@ import java.io.Serializable;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
-import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -94,24 +93,18 @@ public class SnapshotCheckProcess {
             Throwable err = new ClusterTopologyCheckedException("Snapshot validation stopped. A required node left " +
                 "the cluster [nodeId=" + nodeId + ']');
 
-            // We have no a guarantee that a node-left-event is processed strictly before the 1st phase reduce which
-            // can handle saved error. We should clean, mark stoppage here.
-            Iterator<Map.Entry<String, SnapshotCheckContext>> ctxIt = contexts.entrySet().iterator();
-
-            while (ctxIt.hasNext()) {
-                SnapshotCheckContext ctx = ctxIt.next().getValue();
-
+            contexts.values().forEach(ctx -> {
                 if (ctx.req.nodes().contains(nodeId)) {
                     ctx.locProcFut.onDone(err);
 
-                    ctxIt.remove();
-
+                    // We have no a guaranty that a node-left-event is processed strictly before the 1st phase reduce which
+                    // can handle this error.
                     GridFutureAdapter<?> clusterFut = clusterOpFuts.get(ctx.req.requestId());
 
                     if (clusterFut != null)
                         clusterFut.onDone(err);
                 }
-            }
+            });
         }, EVT_NODE_FAILED, EVT_NODE_LEFT);
     }
 
@@ -127,8 +120,6 @@ public class SnapshotCheckProcess {
         }
 
         contexts.forEach((snpName, ctx) -> ctx.locProcFut.onDone(err));
-
-        contexts.clear();
 
         clusterOpFuts.forEach((reqId, fut) -> fut.onDone(err));
     }
@@ -190,16 +181,19 @@ public class SnapshotCheckProcess {
 
     /** Phase 2 beginning.  */
     private IgniteInternalFuture<SnapshotCheckResponse> validateParts(SnapshotCheckProcessRequest req) {
-        SnapshotCheckContext ctx;
+        if (!req.nodes().contains(kctx.localNodeId()))
+            return new GridFinishedFuture<>();
 
-        // The context can be removed by async. node leave. Or current node may have no any snapshot data.
-        if (!req.nodes().contains(kctx.localNodeId()) || (ctx = context(req.snapshotName(), req.requestId())) == null
-            || ctx.locMeta == null)
+        SnapshotCheckContext ctx = context(req.snapshotName(), req.requestId());
+
+        assert ctx != null;
+
+        if (ctx.locMeta == null)
             return new GridFinishedFuture<>();
 
         IgniteSnapshotManager snpMgr = kctx.cache().context().snapshotMgr();
 
-        GridFutureAdapter<SnapshotCheckResponse> phaseFut = ctx.phaseFut();
+        GridFutureAdapter<SnapshotCheckResponse> phaseFut = ctx.phaseFuture();
 
         // Might be already finished by asynchronous leave of a required node.
         if (!phaseFut.isDone()) {
@@ -289,7 +283,7 @@ public class SnapshotCheckProcess {
 
         Collection<Integer> grpIds = F.isEmpty(req.groups()) ? null : F.viewReadOnly(req.groups(), CU::cacheId);
 
-        GridFutureAdapter<SnapshotCheckResponse> phaseFut = ctx.phaseFut();
+        GridFutureAdapter<SnapshotCheckResponse> phaseFut = ctx.phaseFuture();
 
         // Might be already finished by asynchronous leave of a required node.
         if (!phaseFut.isDone()) {
@@ -325,8 +319,11 @@ public class SnapshotCheckProcess {
             if (!errors.isEmpty())
                 throw new IgniteSnapshotVerifyException(mapErrors(errors));
 
-            if (ctx == null)
+            if (ctx == null) {
+                assert clusterOpFut == null;
+
                 return;
+            }
 
             if (ctx.locProcFut.error() != null)
                 throw ctx.locProcFut.error();
@@ -463,8 +460,8 @@ public class SnapshotCheckProcess {
             this.req = req;
         }
 
-        /** Gives a future for current process phase. The future can be stopped by asynchronous leave of a required node */
-        private <T> GridFutureAdapter<T> phaseFut() {
+        /** Gives a future for current process phase. The future can be stopped by asynchronous leave of a required node. */
+        private <T> GridFutureAdapter<T> phaseFuture() {
             GridFutureAdapter<T> fut = new GridFutureAdapter<>();
 
             locProcFut.listen(f -> fut.onDone(f.error()));
