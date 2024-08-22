@@ -20,6 +20,7 @@ import java.io.BufferedInputStream;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.Serializable;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.nio.file.DirectoryStream;
@@ -31,6 +32,7 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -38,10 +40,15 @@ import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutorService;
+import java.util.concurrent.atomic.AtomicLong;
+import java.util.concurrent.atomic.LongAdder;
+import java.util.function.BiConsumer;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
+import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.dump.DumpEntry;
 import org.apache.ignite.internal.GridKernalContext;
@@ -51,7 +58,10 @@ import org.apache.ignite.internal.managers.encryption.EncryptionCacheKeyProvider
 import org.apache.ignite.internal.managers.encryption.GroupKey;
 import org.apache.ignite.internal.managers.encryption.GroupKeyEncrypted;
 import org.apache.ignite.internal.pagemem.store.PageStore;
+import org.apache.ignite.internal.pagemem.wal.record.DataEntry;
 import org.apache.ignite.internal.processors.cache.CacheObject;
+import org.apache.ignite.internal.processors.cache.GridCacheOperation;
+import org.apache.ignite.internal.processors.cache.GridLocalConfigManager;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
 import org.apache.ignite.internal.processors.cache.StoredCacheData;
 import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionState;
@@ -64,8 +74,14 @@ import org.apache.ignite.internal.processors.cache.persistence.tree.io.BPlusIO;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.BPlusMetaIO;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.PageIO;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.PagePartitionMetaIO;
+import org.apache.ignite.internal.processors.cache.persistence.wal.FileDescriptor;
+import org.apache.ignite.internal.processors.cache.persistence.wal.FileWriteAheadLogManager;
+import org.apache.ignite.internal.processors.cache.persistence.wal.reader.IgniteWalIteratorFactory;
 import org.apache.ignite.internal.processors.cache.verify.IdleVerifyUtility;
 import org.apache.ignite.internal.processors.cache.verify.PartitionHashRecordV2;
+import org.apache.ignite.internal.processors.cache.verify.TransactionsHashRecord;
+import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
+import org.apache.ignite.internal.processors.cluster.BaselineTopology;
 import org.apache.ignite.internal.processors.compress.CompressionProcessor;
 import org.apache.ignite.internal.util.GridUnsafe;
 import org.apache.ignite.internal.util.lang.GridIterator;
@@ -74,10 +90,13 @@ import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.marshaller.Marshaller;
+import org.apache.ignite.marshaller.MarshallerUtils;
 import org.apache.ignite.spi.encryption.EncryptionSpi;
 import org.apache.ignite.spi.encryption.noop.NoopEncryptionSpi;
+import org.apache.ignite.transactions.TransactionState;
 import org.jetbrains.annotations.Nullable;
 
+import static org.apache.ignite.internal.managers.discovery.ConsistentIdMapper.ALL_NODES;
 import static org.apache.ignite.internal.pagemem.PageIdAllocator.FLAG_DATA;
 import static org.apache.ignite.internal.pagemem.PageIdAllocator.FLAG_IDX;
 import static org.apache.ignite.internal.pagemem.PageIdAllocator.INDEX_PARTITION;
@@ -93,6 +112,8 @@ import static org.apache.ignite.internal.processors.cache.persistence.file.FileP
 import static org.apache.ignite.internal.processors.cache.persistence.partstate.GroupPartitionId.getTypeByPartId;
 import static org.apache.ignite.internal.processors.cache.persistence.snapshot.IgniteSnapshotManager.SNAPSHOT_METAFILE_EXT;
 import static org.apache.ignite.internal.processors.cache.persistence.snapshot.IgniteSnapshotManager.databaseRelativePath;
+import static org.apache.ignite.internal.processors.cache.persistence.snapshot.IgniteSnapshotManager.incrementalSnapshotWalsDir;
+import static org.apache.ignite.internal.processors.cache.persistence.snapshot.IgniteSnapshotManager.snapshotMetaFileName;
 import static org.apache.ignite.internal.processors.cache.persistence.snapshot.dump.CreateDumpFutureTask.DUMP_FILE_EXT;
 import static org.apache.ignite.internal.processors.cache.verify.IdleVerifyUtility.calculatePartitionHash;
 import static org.apache.ignite.internal.processors.cache.verify.IdleVerifyUtility.checkPartitionsPageCrcSum;
@@ -137,7 +158,7 @@ public class SnapshotChecker {
     }
 
     /** */
-    protected List<SnapshotMetadata> readSnapshotMetadatas(File snpFullPath, @Nullable Object nodeConstId) {
+    protected List<SnapshotMetadata> readSnapshotMetadatas(File snpFullPath, Object nodeConstId) {
         if (!(snpFullPath.exists() && snpFullPath.isDirectory()))
             return Collections.emptyList();
 
@@ -208,6 +229,11 @@ public class SnapshotChecker {
     }
 
     /** */
+    public SnapshotMetadata readSnapshotMetadata(File snpDir, String consId) throws IgniteCheckedException, IOException {
+        return readSnapshotMetadata(new File(snpDir, snapshotMetaFileName(consId)));
+    }
+
+    /** */
     public <T> T readFromFile(File smf)
         throws IOException, IgniteCheckedException {
         if (!smf.exists())
@@ -219,10 +245,14 @@ public class SnapshotChecker {
     }
 
     /** Launches local metas checking. */
-    public CompletableFuture<List<SnapshotMetadata>> checkLocalMetas(File snpPath, @Nullable Collection<Integer> grpIds,
-        @Nullable Object locNodeCstId) {
+    public CompletableFuture<List<SnapshotMetadata>> checkLocalMetas(
+        File snpDir,
+        int incIdx,
+        @Nullable Collection<Integer> grpIds,
+        Object locNodeCstId
+    ) {
         return CompletableFuture.supplyAsync(() -> {
-            List<SnapshotMetadata> snpMetas = readSnapshotMetadatas(snpPath, locNodeCstId);
+            List<SnapshotMetadata> snpMetas = readSnapshotMetadatas(snpDir, locNodeCstId);
 
             for (SnapshotMetadata meta : snpMetas) {
                 byte[] snpMasterKeyDigest = meta.masterKeyDigest();
@@ -265,8 +295,384 @@ public class SnapshotChecker {
                 }
             }
 
+            if (incIdx > 0) {
+                List<SnapshotMetadata> metas = snpMetas.stream().filter(m -> m.consistentId().equals(locNodeCstId))
+                    .collect(Collectors.toList());
+
+                if (metas.size() != 1) {
+                    throw new IgniteException("Failed to find single snapshot metafile on local node [locNodeId="
+                        + locNodeCstId + ", metas=" + snpMetas + ", snpName=" + snpDir.getName()
+                        + ", snpPath=" + snpDir.getParent() + "]. Incremental snapshots requires exactly one meta file " +
+                        "per node because they don't support restoring on a different topology.");
+                }
+
+                checkIncrementalSnapshotsExist(metas.get(0), snpDir, incIdx, locNodeCstId.toString());
+            }
+
             return snpMetas;
         }, executor);
+    }
+
+    /** Checks that all incremental snapshots are present, contain correct metafile and WAL segments. */
+    private void checkIncrementalSnapshotsExist(
+        SnapshotMetadata fullMeta,
+        File snpDir,
+        int incIdx,
+        String locNodeCstId
+    ) {
+        try {
+            // Incremental snapshot must contain ClusterSnapshotRecord.
+            long startSeg = fullMeta.snapshotRecordPointer().index();
+
+            String snpName = fullMeta.snapshotName();
+
+            for (int inc = 1; inc <= incIdx; inc++) {
+                File incSnpDir = kctx.cache().context().snapshotMgr().incrementalSnapshotLocalDir(snpName, snpDir.getParent(), inc);
+
+                if (!incSnpDir.exists()) {
+                    throw new IllegalArgumentException("No incremental snapshot found " +
+                        "[snpName=" + snpName + ", snpPath=" + snpDir.getParent() + ", incrementIndex=" + inc + ']');
+                }
+
+                String metaFileName = snapshotMetaFileName(locNodeCstId);
+
+                File metafile = incSnpDir.toPath().resolve(metaFileName).toFile();
+
+                IncrementalSnapshotMetadata incMeta = readFromFile(metafile);
+
+                if (!incMeta.matchBaseSnapshot(fullMeta)) {
+                    throw new IllegalArgumentException("Incremental snapshot doesn't match full snapshot " +
+                        "[incMeta=" + incMeta + ", fullMeta=" + fullMeta + ']');
+                }
+
+                if (incMeta.incrementIndex() != inc) {
+                    throw new IgniteException(
+                        "Incremental snapshot meta has wrong index [expectedIdx=" + inc + ", meta=" + incMeta + ']');
+                }
+
+                checkWalSegments(incMeta, startSeg, incrementalSnapshotWalsDir(incSnpDir, incMeta.folderName()));
+
+                // Incremental snapshots must not cross each other.
+                startSeg = incMeta.incrementalSnapshotPointer().index() + 1;
+            }
+        }
+        catch (IgniteCheckedException | IOException e) {
+            throw new IgniteException(e);
+        }
+    }
+
+    /** Check that incremental snapshot contains all required WAL segments. Throws {@link IgniteException} in case of any errors. */
+    private void checkWalSegments(IncrementalSnapshotMetadata meta, long startWalSeg, File incSnpWalDir) {
+        IgniteWalIteratorFactory factory = new IgniteWalIteratorFactory(log);
+
+        List<FileDescriptor> walSeg = factory.resolveWalFiles(
+            new IgniteWalIteratorFactory.IteratorParametersBuilder()
+                .filesOrDirs(incSnpWalDir.listFiles(file ->
+                    FileWriteAheadLogManager.WAL_SEGMENT_FILE_COMPACTED_PATTERN.matcher(file.getName()).matches())));
+
+        if (walSeg.isEmpty())
+            throw new IgniteException("No WAL segments found for incremental snapshot [dir=" + incSnpWalDir + ']');
+
+        long actFirstSeg = walSeg.get(0).idx();
+
+        if (actFirstSeg != startWalSeg) {
+            throw new IgniteException("Missed WAL segment [expectFirstSegment=" + startWalSeg
+                + ", actualFirstSegment=" + actFirstSeg + ", meta=" + meta + ']');
+        }
+
+        long expLastSeg = meta.incrementalSnapshotPointer().index();
+        long actLastSeg = walSeg.get(walSeg.size() - 1).idx();
+
+        if (actLastSeg != expLastSeg) {
+            throw new IgniteException("Missed WAL segment [expectLastSegment=" + startWalSeg
+                + ", actualLastSegment=" + actFirstSeg + ", meta=" + meta + ']');
+        }
+
+        List<?> walSegGaps = factory.hasGaps(walSeg);
+
+        if (!walSegGaps.isEmpty())
+            throw new IgniteException("Missed WAL segments [misses=" + walSegGaps + ", meta=" + meta + ']');
+    }
+
+    /** */
+    public CompletableFuture<IncrementalSnapshotResult> checkIncrementalSnapshot(
+        String snpName,
+        @Nullable String snpPath,
+        int incIdx
+    ) {
+        assert incIdx > 0;
+
+        return CompletableFuture.supplyAsync(
+            () -> {
+                String consId = kctx.cluster().get().localNode().consistentId().toString();
+
+                File snpDir = kctx.cache().context().snapshotMgr().snapshotLocalDir(snpName, snpPath);
+
+                try {
+                    if (log.isInfoEnabled()) {
+                        log.info("Verify incremental snapshot procedure has been initiated " +
+                            "[snpName=" + snpName + ", incrementIndex=" + incIdx + ", consId=" + consId + ']');
+                    }
+
+                    BaselineTopology blt = kctx.state().clusterState().baselineTopology();
+
+                    SnapshotMetadata meta = readSnapshotMetadata(snpDir, consId);
+
+                    if (!F.eqNotOrdered(blt.consistentIds(), meta.baselineNodes())) {
+                        throw new IgniteCheckedException("Topologies of snapshot and current cluster are different [snp=" +
+                            meta.baselineNodes() + ", current=" + blt.consistentIds() + ']');
+                    }
+
+                    Map<Integer, StoredCacheData> txCaches = readTxCachesData(snpDir);
+
+                    AtomicLong procSegCnt = new AtomicLong();
+
+                    LongAdder procEntriesCnt = new LongAdder();
+
+                    IncrementalSnapshotProcessor proc = new IncrementalSnapshotProcessor(
+                        kctx.cache().context(), snpName, snpPath, incIdx, txCaches.keySet()
+                    ) {
+                        @Override void totalWalSegments(int segCnt) {
+                            // No-op.
+                        }
+
+                        @Override void processedWalSegments(int segCnt) {
+                            procSegCnt.set(segCnt);
+                        }
+
+                        @Override void initWalEntries(LongAdder entriesCnt) {
+                            procEntriesCnt.add(entriesCnt.sum());
+                        }
+                    };
+
+                    short locNodeId = blt.consistentIdMapping().get(consId);
+
+                    Set<GridCacheVersion> activeDhtTxs = new HashSet<>();
+                    Map<GridCacheVersion, Set<Short>> txPrimParticipatingNodes = new HashMap<>();
+                    Map<Short, HashHolder> nodesTxHash = new HashMap<>();
+
+                    Set<GridCacheVersion> partiallyCommittedTxs = new HashSet<>();
+                    // Hashes in this map calculated based on WAL records only, not part-X.bin data.
+                    Map<PartitionKeyV2, HashHolder> partMap = new HashMap<>();
+                    List<Exception> exceptions = new ArrayList<>();
+
+                    Function<Short, HashHolder> hashHolderBuilder = (k) -> new HashHolder();
+
+                    BiConsumer<GridCacheVersion, Set<Short>> calcTxHash = (xid, participatingNodes) -> {
+                        for (short nodeId : participatingNodes) {
+                            if (nodeId != locNodeId) {
+                                HashHolder hash = nodesTxHash.computeIfAbsent(nodeId, hashHolderBuilder);
+
+                                hash.increment(xid.hashCode(), 0);
+                            }
+                        }
+                    };
+
+                    // CacheId -> CacheGrpId.
+                    Map<Integer, Integer> cacheGrpId = txCaches.values().stream()
+                        .collect(Collectors.toMap(
+                            StoredCacheData::cacheId,
+                            cacheData -> CU.cacheGroupId(cacheData.config().getName(), cacheData.config().getGroupName())
+                        ));
+
+                    LongAdder procTxCnt = new LongAdder();
+
+                    proc.process(dataEntry -> {
+                        if (dataEntry.op() == GridCacheOperation.READ || !exceptions.isEmpty())
+                            return;
+
+                        if (log.isTraceEnabled())
+                            log.trace("Checking data entry [entry=" + dataEntry + ']');
+
+                        if (!activeDhtTxs.contains(dataEntry.writeVersion()))
+                            partiallyCommittedTxs.add(dataEntry.nearXidVersion());
+
+                        StoredCacheData cacheData = txCaches.get(dataEntry.cacheId());
+
+                        PartitionKeyV2 partKey = new PartitionKeyV2(
+                            cacheGrpId.get(dataEntry.cacheId()),
+                            dataEntry.partitionId(),
+                            CU.cacheOrGroupName(cacheData.config()));
+
+                        HashHolder hash = partMap.computeIfAbsent(partKey, (k) -> new HashHolder());
+
+                        try {
+                            int valHash = dataEntry.key().hashCode();
+
+                            if (dataEntry.value() != null)
+                                valHash += Arrays.hashCode(dataEntry.value().valueBytes(null));
+
+                            int verHash = dataEntry.writeVersion().hashCode();
+
+                            hash.increment(valHash, verHash);
+                        }
+                        catch (IgniteCheckedException ex) {
+                            exceptions.add(ex);
+                        }
+                    }, txRec -> {
+                        if (!exceptions.isEmpty())
+                            return;
+
+                        if (log.isDebugEnabled())
+                            log.debug("Checking tx record [txRec=" + txRec + ']');
+
+                        if (txRec.state() == TransactionState.PREPARED) {
+                            // Collect only primary nodes. For some cases backup nodes is included into TxRecord#participationNodes()
+                            // but actually doesn't even start transaction, for example, if the node participates only as a backup
+                            // of reading only keys.
+                            Set<Short> primParticipatingNodes = txRec.participatingNodes().keySet();
+
+                            if (primParticipatingNodes.contains(locNodeId)) {
+                                txPrimParticipatingNodes.put(txRec.nearXidVersion(), primParticipatingNodes);
+                                activeDhtTxs.add(txRec.writeVersion());
+                            }
+                            else {
+                                for (Collection<Short> backups : txRec.participatingNodes().values()) {
+                                    if (backups.contains(ALL_NODES) || backups.contains(locNodeId))
+                                        activeDhtTxs.add(txRec.writeVersion());
+                                }
+                            }
+                        }
+                        else if (txRec.state() == TransactionState.COMMITTED) {
+                            activeDhtTxs.remove(txRec.writeVersion());
+
+                            Set<Short> participatingNodes = txPrimParticipatingNodes.remove(txRec.nearXidVersion());
+
+                            // Legal cases:
+                            // 1. This node is a transaction near node, but not primary or backup node.
+                            // 2. This node participated in the transaction multiple times (e.g., primary for one key and
+                            //    backup for other key).
+                            // 3. A transaction is included into previous incremental snapshot.
+                            if (participatingNodes == null)
+                                return;
+
+                            procTxCnt.increment();
+
+                            calcTxHash.accept(txRec.nearXidVersion(), participatingNodes);
+                        }
+                        else if (txRec.state() == TransactionState.ROLLED_BACK) {
+                            activeDhtTxs.remove(txRec.writeVersion());
+                            txPrimParticipatingNodes.remove(txRec.nearXidVersion());
+                        }
+                    });
+
+                    // All active transactions that didn't log COMMITTED or ROLL_BACK records are considered committed.
+                    // It is possible as incremental snapshot started after transaction left IgniteTxManager#activeTransactions()
+                    // collection, but completed before the final TxRecord was written.
+                    for (Map.Entry<GridCacheVersion, Set<Short>> tx : txPrimParticipatingNodes.entrySet())
+                        calcTxHash.accept(tx.getKey(), tx.getValue());
+
+                    Map<Object, TransactionsHashRecord> txHashRes = nodesTxHash.entrySet().stream()
+                        .map(e -> new TransactionsHashRecord(
+                            consId,
+                            blt.compactIdMapping().get(e.getKey()),
+                            e.getValue().hash
+                        ))
+                        .collect(Collectors.toMap(
+                            TransactionsHashRecord::remoteConsistentId,
+                            Function.identity()
+                        ));
+
+                    Map<PartitionKeyV2, PartitionHashRecordV2> partHashRes = partMap.entrySet().stream()
+                        .collect(Collectors.toMap(
+                            Map.Entry::getKey,
+                            e -> new PartitionHashRecordV2(
+                                e.getKey(),
+                                false,
+                                consId,
+                                null,
+                                0,
+                                null,
+                                new IdleVerifyUtility.VerifyPartitionContext(e.getValue().hash, e.getValue().verHash)
+                            )
+                        ));
+
+                    if (log.isInfoEnabled()) {
+                        log.info("Verify incremental snapshot procedure finished " +
+                            "[snpName=" + snpName + ", incrementIndex=" + incIdx + ", consId=" + consId +
+                            ", txCnt=" + procTxCnt.sum() + ", dataEntries=" + procEntriesCnt.sum() +
+                            ", walSegments=" + procSegCnt.get() + ']');
+                    }
+
+                    return new IncrementalSnapshotResult(
+                        txHashRes,
+                        partHashRes,
+                        partiallyCommittedTxs,
+                        exceptions
+                    );
+                }
+                catch (IgniteCheckedException | IOException e) {
+                    throw new IgniteException("Failed to check incremental snapshot [snpName=" + snpName + ", snpPath="
+                        + snpPath + ", incrementIdx=" + incIdx, e);
+                }
+            },
+            executor
+        );
+    }
+
+    /** @return Collection of snapshotted transactional caches, key is a cache ID. */
+    private Map<Integer, StoredCacheData> readTxCachesData(File snpDir) throws IgniteCheckedException, IOException {
+        String folderName = kctx.pdsFolderResolver().resolveFolders().folderName();
+
+        return GridLocalConfigManager.readCachesData(
+                new File(snpDir, databaseRelativePath(folderName)),
+                MarshallerUtils.jdkMarshaller(kctx.igniteInstanceName()),
+                kctx.config())
+            .values().stream()
+            .filter(data -> data.config().getAtomicityMode() == CacheAtomicityMode.TRANSACTIONAL)
+            .collect(Collectors.toMap(StoredCacheData::cacheId, Function.identity()));
+    }
+
+    /** */
+    public IdleVerifyResultV2 reduceIncrementalResults(
+        Map<ClusterNode, IncrementalSnapshotResult> results,
+        Map<ClusterNode, Exception> errors
+    ) {
+        if (!errors.isEmpty())
+            return new IdleVerifyResultV2(errors);
+
+        Map<Object, Map<Object, TransactionsHashRecord>> nodeTxHashMap = new HashMap<>();
+        List<List<TransactionsHashRecord>> txHashConflicts = new ArrayList<>();
+        Map<PartitionKeyV2, List<PartitionHashRecordV2>> partHashes = new HashMap<>();
+        Map<ClusterNode, Collection<GridCacheVersion>> partiallyCommittedTxs = new HashMap<>();
+
+        results.forEach((node, res) -> {
+            if (!F.isEmpty(res.partiallyCommittedTxs()))
+                partiallyCommittedTxs.put(node, res.partiallyCommittedTxs());
+
+            for (Map.Entry<PartitionKeyV2, PartitionHashRecordV2> entry : res.partHashRes().entrySet())
+                partHashes.computeIfAbsent(entry.getKey(), v -> new ArrayList<>()).add(entry.getValue());
+
+            if (log.isDebugEnabled())
+                log.debug("Handle VerifyIncrementalSnapshotJob result [node=" + node + ", taskRes=" + res + ']');
+
+            nodeTxHashMap.put(node.consistentId(), res.txHashRes());
+
+            Iterator<Map.Entry<Object, TransactionsHashRecord>> resIt = res.txHashRes().entrySet().iterator();
+
+            while (resIt.hasNext()) {
+                Map.Entry<Object, TransactionsHashRecord> nodeTxHash = resIt.next();
+
+                Map<Object, TransactionsHashRecord> prevNodeTxHash = nodeTxHashMap.get(nodeTxHash.getKey());
+
+                if (prevNodeTxHash != null) {
+                    TransactionsHashRecord hash = nodeTxHash.getValue();
+                    TransactionsHashRecord prevHash = prevNodeTxHash.remove(hash.localConsistentId());
+
+                    if (prevHash == null || prevHash.transactionHash() != hash.transactionHash())
+                        txHashConflicts.add(F.asList(hash, prevHash));
+
+                    resIt.remove();
+                }
+            }
+        });
+
+        // Add all missed pairs to conflicts.
+        nodeTxHashMap.values().stream()
+            .flatMap(e -> e.values().stream())
+            .forEach(e -> txHashConflicts.add(F.asList(e, null)));
+
+        return new IdleVerifyResultV2(partHashes, txHashConflicts, partiallyCommittedTxs);
     }
 
     /** */
@@ -870,6 +1276,80 @@ public class SnapshotChecker {
             GroupKey key = getActiveKey(grpId);
 
             return key != null && key.id() == keyId ? key : null;
+        }
+    }
+
+    /**  */
+    static class IncrementalSnapshotResult implements Serializable {
+        /** */
+        private static final long serialVersionUID = 0L;
+
+        /** Transaction hashes collection. */
+        private Map<Object, TransactionsHashRecord> txHashRes;
+
+        /**
+         * Partition hashes collection. Value is a hash of data entries {@link DataEntry} from WAL segments included
+         * into the incremental snapshot.
+         */
+        private Map<PartitionKeyV2, PartitionHashRecordV2> partHashRes;
+
+        /** Partially committed transactions' collection. */
+        private Collection<GridCacheVersion> partiallyCommittedTxs;
+
+        /** Occurred exceptions. */
+        private Collection<Exception> exceptions;
+
+        /** */
+        public IncrementalSnapshotResult() {
+            // No-op.
+        }
+
+        /** */
+        private IncrementalSnapshotResult(
+            Map<Object, TransactionsHashRecord> txHashRes,
+            Map<PartitionKeyV2, PartitionHashRecordV2> partHashRes,
+            Collection<GridCacheVersion> partiallyCommittedTxs,
+            Collection<Exception> exceptions
+        ) {
+            this.txHashRes = txHashRes;
+            this.partHashRes = partHashRes;
+            this.partiallyCommittedTxs = partiallyCommittedTxs;
+            this.exceptions = exceptions;
+        }
+
+        /** */
+        Map<PartitionKeyV2, PartitionHashRecordV2> partHashRes() {
+            return partHashRes;
+        }
+
+        /** */
+        Map<Object, TransactionsHashRecord> txHashRes() {
+            return txHashRes;
+        }
+
+        /** */
+        Collection<GridCacheVersion> partiallyCommittedTxs() {
+            return partiallyCommittedTxs;
+        }
+
+        /** */
+        Collection<Exception> exceptions() {
+            return exceptions;
+        }
+    }
+
+    /** Holder for calculated hashes. */
+    private static class HashHolder {
+        /** */
+        public int hash;
+
+        /** */
+        public int verHash;
+
+        /** */
+        private void increment(int hash, int verHash) {
+            this.hash += hash;
+            this.verHash += verHash;
         }
     }
 }
