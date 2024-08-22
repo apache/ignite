@@ -40,7 +40,6 @@ import org.apache.ignite.internal.cluster.ClusterTopologyCheckedException;
 import org.apache.ignite.internal.management.cache.IdleVerifyResultV2;
 import org.apache.ignite.internal.management.cache.PartitionKeyV2;
 import org.apache.ignite.internal.processors.cache.verify.PartitionHashRecordV2;
-import org.apache.ignite.internal.util.GridBusyLock;
 import org.apache.ignite.internal.util.distributed.DistributedProcess;
 import org.apache.ignite.internal.util.future.GridFinishedFuture;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
@@ -75,7 +74,7 @@ public class SnapshotCheckProcess {
     private final DistributedProcess<SnapshotCheckProcessRequest, SnapshotCheckResponse> phase2PartsHashes;
 
     /** Stop node lock. */
-    private final GridBusyLock nodeStopLock = new GridBusyLock();
+    private boolean nodeStopping;
 
     /** */
     public SnapshotCheckProcess(GridKernalContext kctx) {
@@ -122,7 +121,10 @@ public class SnapshotCheckProcess {
      * @param err The interrupt reason.
      */
     void interrupt(Throwable err) {
-        nodeStopLock.block();
+        // Prevents starting new processes in #prepareAndCheckMetas.
+        synchronized (contexts) {
+            nodeStopping = true;
+        }
 
         contexts.forEach((snpName, ctx) -> ctx.locProcFut.onDone(err));
 
@@ -264,12 +266,15 @@ public class SnapshotCheckProcess {
         if (!req.nodes().contains(kctx.localNodeId()))
             return new GridFinishedFuture<>();
 
-        if (!nodeStopLock.enterBusy())
-            return new GridFinishedFuture<>(new NodeStoppingException("The node is stopping: " + kctx.localNodeId()));
+        SnapshotCheckContext ctx;
 
-        SnapshotCheckContext ctx = contexts.computeIfAbsent(req.snapshotName(), snpName -> new SnapshotCheckContext(req));
+        // Sync. with stopping in #interrupt.
+        synchronized (contexts) {
+            if (nodeStopping)
+                return new GridFinishedFuture<>(new NodeStoppingException("The node is stopping: " + kctx.localNodeId()));
 
-        nodeStopLock.leaveBusy();
+            ctx = contexts.computeIfAbsent(req.snapshotName(), snpName -> new SnapshotCheckContext(req));
+        }
 
         if (!ctx.req.requestId().equals(req.requestId())) {
             return new GridFinishedFuture<>(new IllegalStateException("Validation of snapshot '" + req.snapshotName()
