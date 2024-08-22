@@ -19,9 +19,9 @@ package org.apache.ignite.internal.processors.cache.persistence.snapshot;
 
 import java.io.Serializable;
 import java.util.Collection;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -91,24 +91,25 @@ public class SnapshotCheckProcess {
             Throwable err = new ClusterTopologyCheckedException("Snapshot validation stopped. A required node left " +
                 "the cluster [nodeId=" + nodeId + ']');
 
-            contexts.values().forEach(ctx -> {
+            // We have no a guarantee that a node-left-event is processed strictly before the 1st phase reduce which
+            // can handle saved error. We should clean, mark stoppage here.
+            Iterator<Map.Entry<String, SnapshotCheckContext>> ctxIt = contexts.entrySet().iterator();
+
+            while (ctxIt.hasNext()) {
+                SnapshotCheckContext ctx = ctxIt.next().getValue();
+
                 if (ctx.req.nodes().contains(nodeId)) {
                     ctx.locProcFut.onDone(err);
 
-                    // We have no a guaranty that a node-left-event is processed strictly before the 1st phase reduce which
-                    // can handle this error.
+                    ctxIt.remove();
+
                     GridFutureAdapter<?> clusterFut = clusterOpFuts.get(ctx.req.requestId());
 
                     if (clusterFut != null)
                         clusterFut.onDone(err);
                 }
-            });
+            }
         }, EVT_NODE_FAILED, EVT_NODE_LEFT);
-    }
-
-    /** */
-    Map<String, SnapshotCheckContext> contexts() {
-        return Collections.unmodifiableMap(contexts);
     }
 
     /**
@@ -181,14 +182,11 @@ public class SnapshotCheckProcess {
 
     /** Phase 2 beginning.  */
     private IgniteInternalFuture<SnapshotCheckResponse> validateParts(SnapshotCheckProcessRequest req) {
-        if (!req.nodes().contains(kctx.localNodeId()))
-            return new GridFinishedFuture<>();
+        SnapshotCheckContext ctx;
 
-        SnapshotCheckContext ctx = context(req.snapshotName(), req.requestId());
-
-        assert ctx != null;
-
-        if (ctx.locMeta == null)
+        // The context can be removed by async. node leave. Or current node may have no any snapshot data.
+        if (!req.nodes().contains(kctx.localNodeId()) || (ctx = context(req.snapshotName(), req.requestId())) == null
+            || ctx.locMeta == null)
             return new GridFinishedFuture<>();
 
         IgniteSnapshotManager snpMgr = kctx.cache().context().snapshotMgr();
@@ -314,11 +312,8 @@ public class SnapshotCheckProcess {
             if (!errors.isEmpty())
                 throw new IgniteSnapshotVerifyException(mapErrors(errors));
 
-            if (ctx == null) {
-                assert clusterOpFut == null;
-
+            if (ctx == null)
                 return;
-            }
 
             if (ctx.locProcFut.error() != null)
                 throw ctx.locProcFut.error();

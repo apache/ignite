@@ -23,6 +23,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.IgniteException;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.management.cache.IdleVerifyResultV2;
 import org.apache.ignite.internal.management.cache.PartitionKeyV2;
@@ -49,8 +50,14 @@ public class SnapshotPartitionsVerifyHandler implements SnapshotHandler<Map<Part
 
     /** {@inheritDoc} */
     @Override public Map<PartitionKeyV2, PartitionHashRecordV2> invoke(SnapshotHandlerContext opCtx) throws IgniteCheckedException {
-        return cctx.snapshotMgr().checker().checkPartitionsResult(opCtx.metadata(), opCtx.snapshotDirectory(), opCtx.groups(),
-            type() == SnapshotHandlerType.CREATE, opCtx.check(), skipHash());
+        try {
+            return cctx.snapshotMgr().checker().checkPartitions(opCtx.metadata(), opCtx.snapshotDirectory(), opCtx.groups(),
+                type() == SnapshotHandlerType.CREATE, opCtx.check(), skipHash()).get();
+        }
+        catch (Exception e) {
+            throw new IgniteException("Failed to get result of partitions validation of snapshot '"
+                + opCtx.metadata().snapshotName() + "'.", e);
+        }
     }
 
     /** {@inheritDoc} */

@@ -618,23 +618,6 @@ public class SnapshotChecker {
         return rootIO.getCount(pageAddr) != 0;
     }
 
-    /** Launches local partitions checking and waits for the result, handles execution exceptions. */
-    public Map<PartitionKeyV2, PartitionHashRecordV2> checkPartitionsResult(
-        SnapshotMetadata meta,
-        File snpDir,
-        @Nullable Collection<String> groups,
-        boolean forCreation,
-        boolean checkParts,
-        boolean skipPartsHashes
-    ) {
-        try {
-            return checkPartitions(meta, snpDir, groups, forCreation, checkParts, skipPartsHashes).get();
-        }
-        catch (Exception e) {
-            throw new IgniteException("Failed to get result of partitions validation of snapshot '" + meta.snapshotName() + "'.", e);
-        }
-    }
-
     /** Launches local partitions checking. */
     public CompletableFuture<Map<PartitionKeyV2, PartitionHashRecordV2>> checkPartitions(
         SnapshotMetadata meta,
