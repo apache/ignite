@@ -1706,7 +1706,7 @@ public class IgniteKernal implements IgniteEx, Externalizable {
 
         // Save transactions configuration.
         add(ATTR_TX_SERIALIZABLE_ENABLED, cfg.getTransactionConfiguration().isTxSerializableEnabled());
-        add(ATTR_TX_AWARE_QUERIES_ENABLED, cfg.getTransactionConfiguration().isTxAwareQueries());
+        add(ATTR_TX_AWARE_QUERIES_ENABLED, cfg.getTransactionConfiguration().isTxAwareQueriesEnabled());
 
         // Supported features.
         add(ATTR_IGNITE_FEATURES, IgniteFeatures.allFeatures());

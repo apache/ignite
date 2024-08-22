@@ -41,7 +41,7 @@ public class SqlTransactionsUnsupportedModesTest extends GridCommonAbstractTest 
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
         cfg.getSqlConfiguration().setQueryEnginesConfiguration(new CalciteQueryEngineConfiguration());
-        cfg.getTransactionConfiguration().setTxAwareQueries(igniteInstanceName.contains("0"));
+        cfg.getTransactionConfiguration().setTxAwareQueriesEnabled(igniteInstanceName.contains("0"));
 
         return cfg;
     }

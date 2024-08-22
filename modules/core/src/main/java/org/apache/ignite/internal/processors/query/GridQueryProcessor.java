@@ -3032,7 +3032,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
         if (qry.isLocal() && ctx.clientNode())
             throw new CacheException("Execution of local SqlFieldsQuery on client node disallowed.");
 
-        final GridNearTxLocal userTx = ctx.config().getTransactionConfiguration().isTxAwareQueries()
+        final GridNearTxLocal userTx = ctx.config().getTransactionConfiguration().isTxAwareQueriesEnabled()
             ? ctx.cache().context().tm().userTx()
             : null;
 

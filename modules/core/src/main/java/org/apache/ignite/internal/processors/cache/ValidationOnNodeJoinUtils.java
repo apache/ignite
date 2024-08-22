@@ -582,10 +582,10 @@ public class ValidationOnNodeJoinUtils {
         if (rmtTxAwareQryEnabled != null) {
             TransactionConfiguration locTxCfg = ctx.config().getTransactionConfiguration();
 
-            if (!rmtTxAwareQryEnabled.equals(locTxCfg.isTxAwareQueries()))
+            if (!rmtTxAwareQryEnabled.equals(locTxCfg.isTxAwareQueriesEnabled()))
                 throw new IgniteCheckedException("Transactions aware queries enabled mismatch " +
                     "(fix txAwareQueries property) [rmtNodeId=" + rmt.id() +
-                    ", locTxAwareQueries=" + locTxCfg.isTxAwareQueries() +
+                    ", locTxAwareQueries=" + locTxCfg.isTxAwareQueriesEnabled() +
                     ", rmtTxAwareQueries=" + rmtTxAwareQryEnabled + ']');
         }
     }

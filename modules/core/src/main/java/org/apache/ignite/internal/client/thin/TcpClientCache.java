@@ -80,13 +80,13 @@ import static org.apache.ignite.internal.processors.platform.cache.expiry.Platfo
  */
 public class TcpClientCache<K, V> implements ClientCache<K, V> {
     /** "Keep binary" flag mask. */
-    private static final byte KEEP_BINARY_FLAG_MASK = 0x01;
+    public static final byte KEEP_BINARY_FLAG_MASK = 0x01;
 
     /** "Transactional" flag mask. */
-    private static final byte TRANSACTIONAL_FLAG_MASK = 0x02;
+    public static final byte TRANSACTIONAL_FLAG_MASK = 0x02;
 
     /** "With expiry policy" flag mask. */
-    private static final byte WITH_EXPIRY_POLICY_FLAG_MASK = 0x04;
+    public static final byte WITH_EXPIRY_POLICY_FLAG_MASK = 0x04;
 
     /** Platform type: Java platform. */
     static final byte JAVA_PLATFORM = 1;
@@ -973,12 +973,18 @@ public class TcpClientCache<K, V> implements ClientCache<K, V> {
             throw new NullPointerException("qry");
 
         Consumer<PayloadOutputChannel> qryWriter = payloadCh -> {
-            writeCacheInfo(payloadCh);
+            writeCacheInfo(
+                payloadCh,
+                payloadCh.clientChannel().protocolCtx().isFeatureSupported(ProtocolBitmaskFeature.TX_AWARE_QUERIES)
+                    ? transactions.tx()
+                    : null
+            );
             serDes.write(qry, payloadCh.out());
         };
 
         return new ClientFieldsQueryCursor<>(new ClientFieldsQueryPager(
             ch,
+            transactions.tx(),
             ClientOperation.QUERY_SQL_FIELDS,
             ClientOperation.QUERY_SQL_FIELDS_CURSOR_GET_PAGE,
             qryWriter,
@@ -1149,6 +1155,7 @@ public class TcpClientCache<K, V> implements ClientCache<K, V> {
 
         return new ClientQueryCursor<>(new ClientQueryPager<>(
             ch,
+            null,
             ClientOperation.QUERY_SCAN,
             ClientOperation.QUERY_SCAN_CURSOR_GET_PAGE,
             qryWriter,
@@ -1235,6 +1242,7 @@ public class TcpClientCache<K, V> implements ClientCache<K, V> {
 
         return new ClientQueryCursor<>(new ClientQueryPager<>(
             ch,
+            null,
             ClientOperation.QUERY_INDEX,
             ClientOperation.QUERY_INDEX_CURSOR_GET_PAGE,
             qryWriter,
@@ -1264,6 +1272,7 @@ public class TcpClientCache<K, V> implements ClientCache<K, V> {
 
         return new ClientQueryCursor<>(new ClientQueryPager<>(
             ch,
+            null,
             ClientOperation.QUERY_SQL,
             ClientOperation.QUERY_SQL_CURSOR_GET_PAGE,
             qryWriter,
