@@ -36,7 +36,7 @@ public class TransactionConfiguration implements Serializable {
     /**
      * Supported levels of transaction isolation for SQL queries.
      *
-     * @see #setTxAwareQueries(boolean)
+     * @see #setTxAwareQueriesEnabled(boolean)
      */
     public static final EnumSet<TransactionIsolation> TX_AWARE_QUERIES_SUPPORTED_MODES = EnumSet.of(TransactionIsolation.READ_COMMITTED);
 
@@ -112,7 +112,7 @@ public class TransactionConfiguration implements Serializable {
      * When set to true, Ignite will execute SQL and scan queries in transaction aware mode.
      * Default is {@code false}.
      */
-    private boolean txAwareQueries;
+    private boolean txAwareQueriesEnabled;
 
     /**
      * Empty constructor.
@@ -135,7 +135,7 @@ public class TransactionConfiguration implements Serializable {
         tmLookupClsName = cfg.getTxManagerLookupClassName();
         txManagerFactory = cfg.getTxManagerFactory();
         useJtaSync = cfg.isUseJtaSynchronization();
-        txAwareQueries = cfg.isTxAwareQueries();
+        txAwareQueriesEnabled = cfg.isTxAwareQueriesEnabled();
     }
 
     /**
@@ -427,16 +427,16 @@ public class TransactionConfiguration implements Serializable {
     /**
      * @return Whether to execute SQL and scan queries in transaction aware mode.
      */
-    public boolean isTxAwareQueries() {
-        return txAwareQueries;
+    public boolean isTxAwareQueriesEnabled() {
+        return txAwareQueriesEnabled;
     }
 
     /**
-     * @param txAwareQueries Whether to execute SQL and scan queries in transaction aware mode.
+     * @param txAwareQueriesEnabled Whether to execute SQL and scan queries in transaction aware mode.
      * @return {@code this} for chaining.
      */
-    public TransactionConfiguration setTxAwareQueries(boolean txAwareQueries) {
-        this.txAwareQueries = txAwareQueries;
+    public TransactionConfiguration setTxAwareQueriesEnabled(boolean txAwareQueriesEnabled) {
+        this.txAwareQueriesEnabled = txAwareQueriesEnabled;
 
         return this;
     }

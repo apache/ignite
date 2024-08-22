@@ -218,7 +218,7 @@ public class SqlTransactionsIsolationTest extends GridCommonAbstractTest {
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
         cfg.getSqlConfiguration().setQueryEnginesConfiguration(new CalciteQueryEngineConfiguration());
-        cfg.getTransactionConfiguration().setTxAwareQueries(true);
+        cfg.getTransactionConfiguration().setTxAwareQueriesEnabled(true);
 
         return cfg;
     }

@@ -605,7 +605,7 @@ public class CalciteQueryProcessor extends GridProcessorAdapter implements Query
 
     /** */
     private void ensureTransactionModeSupported(@Nullable QueryContext qryCtx) {
-        if (!ctx.config().getTransactionConfiguration().isTxAwareQueries())
+        if (!ctx.config().getTransactionConfiguration().isTxAwareQueriesEnabled())
             return;
 
         GridCacheVersion ver = queryTransactionVersion(qryCtx);
