@@ -205,7 +205,7 @@ public abstract class GridDistributedTxRemoteAdapter extends IgniteTxAdapter imp
     }
 
     /** {@inheritDoc} */
-    @Override public void addActiveCache(GridCacheContext cacheCtx, boolean recovery) throws IgniteCheckedException {
+    @Override public void addActiveCache(GridCacheContext<?, ?> cacheCtx, boolean recovery) throws IgniteCheckedException {
         txState.addActiveCache(cacheCtx, recovery, this);
     }
 

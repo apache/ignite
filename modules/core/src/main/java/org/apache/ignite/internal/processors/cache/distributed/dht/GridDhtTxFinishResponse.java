@@ -112,14 +112,14 @@ public class GridDhtTxFinishResponse extends GridDistributedTxFinishResponse {
     }
 
     /** {@inheritDoc} */
-    @Override public void prepareMarshal(GridCacheSharedContext ctx) throws IgniteCheckedException {
+    @Override public void prepareMarshal(GridCacheSharedContext<?, ?> ctx) throws IgniteCheckedException {
         super.prepareMarshal(ctx);
 
         if (checkCommittedErr != null && checkCommittedErrBytes == null)
             checkCommittedErrBytes = U.marshal(ctx, checkCommittedErr);
 
         if (retVal != null && retVal.cacheId() != 0) {
-            GridCacheContext cctx = ctx.cacheContext(retVal.cacheId());
+            GridCacheContext<?, ?> cctx = ctx.cacheContext(retVal.cacheId());
 
             assert cctx != null : retVal.cacheId();
 
@@ -128,7 +128,7 @@ public class GridDhtTxFinishResponse extends GridDistributedTxFinishResponse {
     }
 
     /** {@inheritDoc} */
-    @Override public void finishUnmarshal(GridCacheSharedContext ctx, ClassLoader ldr)
+    @Override public void finishUnmarshal(GridCacheSharedContext<?, ?> ctx, ClassLoader ldr)
         throws IgniteCheckedException {
         super.finishUnmarshal(ctx, ldr);
 
@@ -136,7 +136,7 @@ public class GridDhtTxFinishResponse extends GridDistributedTxFinishResponse {
             checkCommittedErr = U.unmarshal(ctx, checkCommittedErrBytes, U.resolveClassLoader(ldr, ctx.gridConfig()));
 
         if (retVal != null && retVal.cacheId() != 0) {
-            GridCacheContext cctx = ctx.cacheContext(retVal.cacheId());
+            GridCacheContext<?, ?> cctx = ctx.cacheContext(retVal.cacheId());
 
             assert cctx != null : retVal.cacheId();
 

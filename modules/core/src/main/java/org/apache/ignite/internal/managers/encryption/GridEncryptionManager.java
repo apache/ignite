@@ -311,6 +311,8 @@ public class GridEncryptionManager extends GridManagerAdapter<EncryptionSpi> imp
             }
         });
 
+        ctx.internalSubscriptionProcessor().registerGlobalStateListener(this);
+
         prepareMKChangeProc = new DistributedProcess<>(ctx, MASTER_KEY_CHANGE_PREPARE, this::prepareMasterKeyChange,
             this::finishPrepareMasterKeyChange);
 

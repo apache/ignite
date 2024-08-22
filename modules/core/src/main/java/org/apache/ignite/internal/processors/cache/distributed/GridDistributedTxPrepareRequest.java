@@ -79,18 +79,10 @@ public class GridDistributedTxPrepareRequest extends GridDistributedBaseMessage 
     public static final int STORE_WRITE_THROUGH_FLAG_MASK = 0x20;
 
     /** Collection to message converter. */
-    private static final C1<Collection<UUID>, UUIDCollectionMessage> COL_TO_MSG = new C1<Collection<UUID>, UUIDCollectionMessage>() {
-        @Override public UUIDCollectionMessage apply(Collection<UUID> uuids) {
-            return new UUIDCollectionMessage(uuids);
-        }
-    };
+    private static final C1<Collection<UUID>, UUIDCollectionMessage> COL_TO_MSG = UUIDCollectionMessage::new;
 
     /** Message to collection converter. */
-    private static final C1<UUIDCollectionMessage, Collection<UUID>> MSG_TO_COL = new C1<UUIDCollectionMessage, Collection<UUID>>() {
-        @Override public Collection<UUID> apply(UUIDCollectionMessage msg) {
-            return msg.uuids();
-        }
-    };
+    private static final C1<UUIDCollectionMessage, Collection<UUID>> MSG_TO_COL = UUIDCollectionMessage::uuids;
 
     /** Thread ID. */
     @GridToStringInclude
@@ -247,7 +239,7 @@ public class GridDistributedTxPrepareRequest extends GridDistributedBaseMessage 
      */
     public void storeWriteThrough(boolean storeWriteThrough) {
         if (storeWriteThrough)
-            flags = (byte)(flags | STORE_WRITE_THROUGH_FLAG_MASK);
+            flags |= STORE_WRITE_THROUGH_FLAG_MASK;
         else
             flags &= ~STORE_WRITE_THROUGH_FLAG_MASK;
     }
@@ -276,7 +268,7 @@ public class GridDistributedTxPrepareRequest extends GridDistributedBaseMessage 
      * @return Map of versions to be verified.
      */
     public Map<IgniteTxKey, GridCacheVersion> dhtVersions() {
-        return dhtVers == null ? Collections.<IgniteTxKey, GridCacheVersion>emptyMap() : dhtVers;
+        return dhtVers == null ? Collections.emptyMap() : dhtVers;
     }
 
     /**
@@ -380,9 +372,8 @@ public class GridDistributedTxPrepareRequest extends GridDistributedBaseMessage 
         this.txState = txState;
     }
 
-    /** {@inheritDoc}
-     * @param ctx*/
-    @Override public void prepareMarshal(GridCacheSharedContext ctx) throws IgniteCheckedException {
+    /** {@inheritDoc} */
+    @Override public void prepareMarshal(GridCacheSharedContext<?, ?> ctx) throws IgniteCheckedException {
         super.prepareMarshal(ctx);
 
         if (writes != null)
@@ -393,7 +384,7 @@ public class GridDistributedTxPrepareRequest extends GridDistributedBaseMessage 
 
         if (dhtVers != null && dhtVerKeys == null) {
             for (IgniteTxKey key : dhtVers.keySet()) {
-                GridCacheContext cctx = ctx.cacheContext(key.cacheId());
+                GridCacheContext<?, ?> cctx = ctx.cacheContext(key.cacheId());
 
                 key.prepareMarshal(cctx);
             }
@@ -407,14 +398,14 @@ public class GridDistributedTxPrepareRequest extends GridDistributedBaseMessage 
     }
 
     /** {@inheritDoc} */
-    @Override public void finishUnmarshal(GridCacheSharedContext ctx, ClassLoader ldr) throws IgniteCheckedException {
+    @Override public void finishUnmarshal(GridCacheSharedContext<?, ?> ctx, ClassLoader ldr) throws IgniteCheckedException {
         super.finishUnmarshal(ctx, ldr);
 
         if (writes != null)
-            unmarshalTx(writes, false, ctx, ldr);
+            unmarshalTx(writes, ctx, ldr);
 
         if (reads != null)
-            unmarshalTx(reads, false, ctx, ldr);
+            unmarshalTx(reads, ctx, ldr);
 
         if (dhtVerKeys != null && dhtVers == null) {
             assert dhtVerVals != null;
@@ -444,7 +435,7 @@ public class GridDistributedTxPrepareRequest extends GridDistributedBaseMessage 
     }
 
     /** {@inheritDoc} */
-    @Override public IgniteLogger messageLogger(GridCacheSharedContext ctx) {
+    @Override public IgniteLogger messageLogger(GridCacheSharedContext<?, ?> ctx) {
         return ctx.txPrepareMessageLogger();
     }
 

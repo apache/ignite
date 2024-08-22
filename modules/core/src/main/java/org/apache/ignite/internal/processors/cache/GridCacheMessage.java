@@ -286,7 +286,7 @@ public abstract class GridCacheMessage implements Message {
      * @param ctx Cache context.
      * @throws IgniteCheckedException If failed.
      */
-    public void prepareMarshal(GridCacheSharedContext ctx) throws IgniteCheckedException {
+    public void prepareMarshal(GridCacheSharedContext<?, ?> ctx) throws IgniteCheckedException {
         // No-op.
     }
 
@@ -298,7 +298,7 @@ public abstract class GridCacheMessage implements Message {
      * @param ldr Class loader.
      * @throws IgniteCheckedException If failed.
      */
-    public void finishUnmarshal(GridCacheSharedContext ctx, ClassLoader ldr) throws IgniteCheckedException {
+    public void finishUnmarshal(GridCacheSharedContext<?, ?> ctx, ClassLoader ldr) throws IgniteCheckedException {
         // No-op.
     }
 
@@ -435,7 +435,6 @@ public abstract class GridCacheMessage implements Message {
      * @throws IgniteCheckedException If failed.
      */
     protected final void unmarshalTx(Iterable<IgniteTxEntry> txEntries,
-        boolean near,
         GridCacheSharedContext ctx,
         ClassLoader ldr) throws IgniteCheckedException {
         assert ldr != null;
@@ -443,9 +442,9 @@ public abstract class GridCacheMessage implements Message {
 
         if (txEntries != null) {
             for (IgniteTxEntry e : txEntries) {
-                e.prepareUnmarshal(ctx, topologyVersion(), near);
+                e.prepareUnmarshal(ctx, topologyVersion(), false);
 
-                e.unmarshal(ctx, near, ldr);
+                e.unmarshal(ctx, false, ldr);
             }
         }
     }
@@ -657,7 +656,7 @@ public abstract class GridCacheMessage implements Message {
      * @param ctx Context.
      * @return Logger.
      */
-    public IgniteLogger messageLogger(GridCacheSharedContext ctx) {
+    public IgniteLogger messageLogger(GridCacheSharedContext<?, ?> ctx) {
         return ctx.messageLogger();
     }
 
