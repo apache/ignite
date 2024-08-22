@@ -40,6 +40,7 @@ import org.apache.ignite.internal.cluster.ClusterTopologyCheckedException;
 import org.apache.ignite.internal.management.cache.IdleVerifyResultV2;
 import org.apache.ignite.internal.management.cache.PartitionKeyV2;
 import org.apache.ignite.internal.processors.cache.verify.PartitionHashRecordV2;
+import org.apache.ignite.internal.util.GridBusyLock;
 import org.apache.ignite.internal.util.distributed.DistributedProcess;
 import org.apache.ignite.internal.util.future.GridFinishedFuture;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
@@ -72,6 +73,9 @@ public class SnapshotCheckProcess {
 
     /** Partition hashes second phase subprocess.  */
     private final DistributedProcess<SnapshotCheckProcessRequest, SnapshotCheckResponse> phase2PartsHashes;
+
+    /** Stop node lock. */
+    private final GridBusyLock nodeStopLock = new GridBusyLock();
 
     /** */
     public SnapshotCheckProcess(GridKernalContext kctx) {
@@ -118,6 +122,8 @@ public class SnapshotCheckProcess {
      * @param err The interrupt reason.
      */
     void interrupt(Throwable err) {
+        nodeStopLock.block();
+
         contexts.forEach((snpName, ctx) -> ctx.locProcFut.onDone(err));
 
         contexts.clear();
@@ -258,10 +264,12 @@ public class SnapshotCheckProcess {
         if (!req.nodes().contains(kctx.localNodeId()))
             return new GridFinishedFuture<>();
 
-        if (kctx.isStopping())
+        if (!nodeStopLock.enterBusy())
             return new GridFinishedFuture<>(new NodeStoppingException("The node is stopping: " + kctx.localNodeId()));
 
         SnapshotCheckContext ctx = contexts.computeIfAbsent(req.snapshotName(), snpName -> new SnapshotCheckContext(req));
+
+        nodeStopLock.leaveBusy();
 
         if (!ctx.req.requestId().equals(req.requestId())) {
             return new GridFinishedFuture<>(new IllegalStateException("Validation of snapshot '" + req.snapshotName()
