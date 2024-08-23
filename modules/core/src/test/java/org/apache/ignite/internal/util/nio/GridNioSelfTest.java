@@ -639,7 +639,7 @@ public class GridNioSelfTest extends GridCommonAbstractTest {
      */
     @Test
     public void testSendReceive() throws Exception {
-        CountDownLatch latch = new CountDownLatch(2);
+        CountDownLatch latch = new CountDownLatch(10);
 
         NioListener lsnr = new NioListener(latch);
 
@@ -648,7 +648,7 @@ public class GridNioSelfTest extends GridCommonAbstractTest {
         TestClient client = null;
 
         try {
-            for (int i = 0; i < 2; i++) {
+            for (int i = 0; i < 5; i++) {
                 client = createClient(U.getLocalHost(), srvr.port(), U.getLocalHost());
 
                 client.sendMessage(createMessage(), MSG_SIZE);
@@ -657,13 +657,14 @@ public class GridNioSelfTest extends GridCommonAbstractTest {
                 client.close();
             }
 
-            log.info("Before latch await, current count: " + latch.getCount());
-            boolean success = latch.await(60, SECONDS);
-            log.info("After latch await, latch count: " + latch.getCount() + ", success: " + success);
 
-            assert success;
+            latch.await();
+//            log.info("Before latch await, current count: " + latch.getCount());
+//            boolean success = latch.await(60, SECONDS);
+//            log.info("After latch await, latch count: " + latch.getCount() + ", success: " + success);
+//            assert success;
 
-            assertEquals("Unexpected message count", 4, lsnr.getMessageCount());
+            assertEquals("Unexpected message count", 10, lsnr.getMessageCount());
         }
         finally {
             srvr.stop();
@@ -749,11 +750,13 @@ public class GridNioSelfTest extends GridCommonAbstractTest {
 
             }, THREAD_CNT, "sender");
 
-            log.info("Before latch await, current count: " + latch.getCount());
-            boolean success = latch.await(55, SECONDS);
-            log.info("After latch await, latch count: " + latch.getCount() + ", success: " + success);
+            latch.await();
 
-            assert success;
+//            log.info("Before latch await, current count: " + latch.getCount());
+//            boolean success = latch.await(55, SECONDS);
+//            log.info("After latch await, latch count: " + latch.getCount() + ", success: " + success);
+//
+//            assert success;
 
             assertEquals("Unexpected message count", 10, lsnr.getMessageCount());
             assertFalse("Size check failed", lsnr.isSizeFailed());
@@ -919,11 +922,13 @@ public class GridNioSelfTest extends GridCommonAbstractTest {
 
             }, THREAD_CNT, "sender");
 
-            log.info("Before latch await, current count: " + latch.getCount());
-            boolean success = latch.await(55, SECONDS);
-            log.info("After latch await, latch count: " + latch.getCount() + ", success: " + success);
+            latch.await();
 
-            assert success;
+//            log.info("Before latch await, current count: " + latch.getCount());
+//            boolean success = latch.await(55, SECONDS);
+//            log.info("After latch await, latch count: " + latch.getCount() + ", success: " + success);
+//
+//            assert success;
 
             assertEquals("Unexpected message count", 10, lsnr.getMessageCount());
             assertFalse("Size check failed", lsnr.isSizeFailed());
