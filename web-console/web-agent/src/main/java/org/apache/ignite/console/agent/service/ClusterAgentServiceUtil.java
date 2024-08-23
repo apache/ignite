@@ -32,28 +32,28 @@ public class ClusterAgentServiceUtil  {
 		return list;
 	}
 	
-	public static List<String> cacheNameSelectList(Ignite ignite,JsonObject args) {
-		String cacheName = null;
-			
-		JsonArray selectCaches = args.getJsonArray("caches");
-		if(args.containsKey("cache")) {
-			cacheName = args.getJsonObject("cache").getString("name");
-		}		
+	public static List<String> cacheNameSelectList(Ignite ignite,JsonObject args) {		
 		List<String> list = new ArrayList<>();
-		for(String cache: ignite.cacheNames()) {			
-			IgniteCache<?,?> igcache = ignite.cache(cache);
+		
+		if(args.containsKey("cache")) {
+			String cacheName = args.getJsonObject("cache").getString("name");
 			if(cacheName!=null && !cacheName.isEmpty()) {
-				if(!igcache.getName().equals(cacheName)) {
-					continue;
+				IgniteCache<?,?> igcache = ignite.cache(cacheName);
+				if(igcache!=null) {
+					list.add(cacheName);
 				}
 			}
-			if(selectCaches!=null) {
-				if(!selectCaches.contains(igcache.getName())) {
-					continue;
-				}
-			}				
-			list.add(cache);					
-		}		
+		}
+		if(args.containsKey("caches")) {
+			JsonArray selectCaches = args.getJsonArray("caches");
+			for(Object cache: selectCaches) {			
+				IgniteCache<?,?> igcache = ignite.cache(cache.toString());
+				
+				if(igcache!=null) {
+					list.add(igcache.getName());
+				}				
+			}
+		}
 		return list;
 	}
 	

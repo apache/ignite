@@ -25,6 +25,8 @@ import java.util.Map;
 import java.util.UUID;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
+import org.apache.ignite.binary.BinaryObject;
+import org.apache.ignite.binary.BinaryObjectException;
 import org.apache.ignite.internal.GridDirectCollection;
 import org.apache.ignite.internal.GridDirectMap;
 import org.apache.ignite.internal.GridDirectTransient;
@@ -544,9 +546,20 @@ public class GridH2QueryRequest implements Message, GridCacheQueryMarshallable {
                 params = BinaryUtils.rawArrayFromBinary(((BinaryMarshaller)m).binaryMarshaller().unmarshal(paramsBytes, ldr));
             else
                 params = U.unmarshal(m, paramsBytes, ldr);
+            
+            // add@byron
+            for(int i=0;i<params.length;i++) {
+            	if(params[i] instanceof BinaryObject) {
+            		params[i] = ((BinaryObject)params[i]).deserialize();
+            	}
+            }
+            // end@
         }
         catch (IgniteCheckedException e) {
             throw new IgniteException(e);
+        }
+        catch (BinaryObjectException e) {
+           // ignore
         }
     }
 

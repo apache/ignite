@@ -43,7 +43,7 @@ export const dbPresets = [
         },
         {
             db: 'Dremio',
-            driverCls: 'com.dremio.jdbc.Driver.',
+            driverCls: 'com.dremio.jdbc.Driver',
             jdbcUrl: 'jdbc:dremio:direct=[host]:31010;schema=[OPTIONAL_SCHMEMA]',
             user: 'root'
         },
