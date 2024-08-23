@@ -663,7 +663,7 @@ public class GridNioSelfTest extends GridCommonAbstractTest {
 
             assert success;
 
-            assertEquals("Unexpected message count", 2, lsnr.getMessageCount());
+            assertEquals("Unexpected message count", 4, lsnr.getMessageCount());
         }
         finally {
             srvr.stop();
