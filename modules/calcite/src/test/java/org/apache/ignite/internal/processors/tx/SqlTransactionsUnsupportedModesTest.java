@@ -80,7 +80,7 @@ public class SqlTransactionsUnsupportedModesTest extends GridCommonAbstractTest 
                     null,
                     () -> client ? startClientGrid(1) : startGrid(1),
                     IgniteCheckedException.class,
-                    "Transactions aware queries enabled mismatch (fix txAwareQueries property)");
+                    "Transactions aware queries enabled mismatch (fix txAwareQueriesEnabled property)");
             }
         }
     }
