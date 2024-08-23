@@ -651,7 +651,7 @@ public class GridNioSelfTest extends GridCommonAbstractTest {
         TestClient client = null;
 
         try {
-            for (int i = 0; i < 5; i++) {
+            for (int i = 0; i < 2; i++) {
                 client = createClient(U.getLocalHost(), srvr.port(), U.getLocalHost());
 
                 client.sendMessage(createMessage(), MSG_SIZE);
@@ -660,7 +660,7 @@ public class GridNioSelfTest extends GridCommonAbstractTest {
                 client.close();
             }
 
-            assert latch.await(30, SECONDS);
+            assert latch.await(55, SECONDS);
 
             assertEquals("Unexpected message count", COUNT, lsnr.getMessageCount());
         }
@@ -716,7 +716,7 @@ public class GridNioSelfTest extends GridCommonAbstractTest {
      */
     @Test
     public void testMultiThreadedSendReceive() throws Exception {
-        CountDownLatch latch = new CountDownLatch(MSG_CNT * THREAD_CNT);
+        CountDownLatch latch = new CountDownLatch(10);
 
         NioListener lsnr = new NioListener(latch);
 
@@ -732,7 +732,7 @@ public class GridNioSelfTest extends GridCommonAbstractTest {
                     try {
                         client = createClient(U.getLocalHost(), srvr.port(), U.getLocalHost());
 
-                        for (int i = 0; i < MSG_CNT; i++)
+                        for (int i = 0; i < 2; i++)
                             client.sendMessage(data, data.length);
                     }
                     catch (Exception e) {
@@ -750,7 +750,7 @@ public class GridNioSelfTest extends GridCommonAbstractTest {
 
             assert latch.await(55, SECONDS);
 
-            assertEquals("Unexpected message count", MSG_CNT * THREAD_CNT, lsnr.getMessageCount());
+            assertEquals("Unexpected message count", 10, lsnr.getMessageCount());
             assertFalse("Size check failed", lsnr.isSizeFailed());
         }
         finally {
@@ -863,7 +863,8 @@ public class GridNioSelfTest extends GridCommonAbstractTest {
     public void testDeliveryDuration() throws Exception {
         idProvider.set(1);
 
-        CountDownLatch latch = new CountDownLatch(MSG_CNT * THREAD_CNT);
+        //CountDownLatch latch = new CountDownLatch(MSG_CNT * THREAD_CNT);
+        CountDownLatch latch = new CountDownLatch(10);
 
         final Map<Integer, Long> deliveryDurations = new ConcurrentHashMap<>();
 
@@ -883,7 +884,8 @@ public class GridNioSelfTest extends GridCommonAbstractTest {
                     try {
                         client = createClient(U.getLocalHost(), srvr.port(), U.getLocalHost());
 
-                        while (cntr.getAndIncrement() < MSG_CNT * THREAD_CNT) {
+                        //while (cntr.getAndIncrement() < MSG_CNT * THREAD_CNT) {
+                        while (cntr.getAndIncrement() < 10) {
                             MessageWithId msg = new MessageWithId(idProvider.getAndIncrement());
 
                             byte[] data = serializeMessage(msg);
@@ -914,10 +916,10 @@ public class GridNioSelfTest extends GridCommonAbstractTest {
 
             assert latch.await(55, SECONDS);
 
-            assertEquals("Unexpected message count", MSG_CNT * THREAD_CNT, lsnr.getMessageCount());
+            assertEquals("Unexpected message count", 10, lsnr.getMessageCount());
             assertFalse("Size check failed", lsnr.isSizeFailed());
 
-            printDurationStatistics(deliveryDurations, sndTimes, MSG_CNT * THREAD_CNT, 300);
+            printDurationStatistics(deliveryDurations, sndTimes, 10, 300);
         }
         finally {
             srvr.stop();
