@@ -61,7 +61,7 @@ import static java.util.concurrent.TimeUnit.SECONDS;
  */
 public class GridNioSelfTest extends GridCommonAbstractTest {
     /** Message count in test without reconnect. */
-    private static final int MSG_CNT = 2000;
+   // private static final int MSG_CNT = 2000;
 
     /** */
     private static final int START_PORT = 55443;
@@ -657,9 +657,9 @@ public class GridNioSelfTest extends GridCommonAbstractTest {
                 client.close();
             }
 
-            System.out.println("Before latch await, current count: " + latch.getCount());
+            log.info("Before latch await, current count: " + latch.getCount());
             boolean success = latch.await(60, SECONDS);
-            System.out.println("After latch await, latch count: " + latch.getCount() + ", success: " + success);
+            log.info("After latch await, latch count: " + latch.getCount() + ", success: " + success);
 
             assert success;
 
@@ -671,12 +671,6 @@ public class GridNioSelfTest extends GridCommonAbstractTest {
             if (client != null)
                 client.close();
         }
-    }
-
-    @Test
-    public void ddd() throws Exception {
-        CountDownLatch latch = new CountDownLatch(2);
-        assert latch.await(5, SECONDS);
     }
 
     /**
