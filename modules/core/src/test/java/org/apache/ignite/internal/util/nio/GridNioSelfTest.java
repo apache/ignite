@@ -81,9 +81,6 @@ public class GridNioSelfTest extends GridCommonAbstractTest {
     /** Count of statistics segments. */
     private static final int STATISTICS_SEGMENTS_CNT = 10;
 
-    /** Count for countDowns int Nio */
-    private static final int COUNT = 2;
-
     /** Marshaller. */
     private static volatile Marshaller marsh;
 
@@ -642,7 +639,7 @@ public class GridNioSelfTest extends GridCommonAbstractTest {
      */
     @Test
     public void testSendReceive() throws Exception {
-        CountDownLatch latch = new CountDownLatch(COUNT);
+        CountDownLatch latch = new CountDownLatch(2);
 
         NioListener lsnr = new NioListener(latch);
 
@@ -660,9 +657,13 @@ public class GridNioSelfTest extends GridCommonAbstractTest {
                 client.close();
             }
 
-            assert latch.await(55, SECONDS);
+            System.out.println("Before latch await, current count: " + latch.getCount());
+            boolean success = latch.await(60, SECONDS);
+            System.out.println("After latch await, latch count: " + latch.getCount() + ", success: " + success);
 
-            assertEquals("Unexpected message count", COUNT, lsnr.getMessageCount());
+            assert success;
+
+            assertEquals("Unexpected message count", 2, lsnr.getMessageCount());
         }
         finally {
             srvr.stop();
@@ -670,6 +671,12 @@ public class GridNioSelfTest extends GridCommonAbstractTest {
             if (client != null)
                 client.close();
         }
+    }
+
+    @Test
+    public void ddd() throws Exception {
+        CountDownLatch latch = new CountDownLatch(2);
+        assert latch.await(5, SECONDS);
     }
 
     /**
