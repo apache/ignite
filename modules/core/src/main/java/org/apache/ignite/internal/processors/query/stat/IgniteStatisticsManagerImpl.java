@@ -99,7 +99,7 @@ public class IgniteStatisticsManagerImpl implements IgniteStatisticsManager {
     private final DistributedEnumProperty<StatisticsUsageState> usageState = new DistributedEnumProperty<>(
         "statistics.usage.state",
         "Statistics usage state. OFF - No statistics used, NO_UPDATE - Statistics used 'as is' without updates, " +
-            "ON - Statistics used and updated after each changes.",
+            "ON - Statistics used and updated after each changes. It is a value by default.",
         StatisticsUsageState::fromOrdinal,
         StatisticsUsageState::index,
         StatisticsUsageState.class);
@@ -216,8 +216,17 @@ public class IgniteStatisticsManagerImpl implements IgniteStatisticsManager {
 
         ctx.internalSubscriptionProcessor().registerDistributedConfigurationListener(dispatcher -> {
             usageState.addListener((name, oldVal, newVal) -> {
-                if (log.isInfoEnabled())
-                    log.info(String.format("Statistics usage state was changed from %s to %s", oldVal, newVal));
+                oldVal = usageState();
+
+                if (newVal == null)
+                    newVal = oldVal;
+
+                if (log.isInfoEnabled()) {
+                    if (oldVal == newVal && oldVal == DEFAULT_STATISTICS_USAGE_STATE)
+                        log.info(String.format("Statistics usage state has not changed and equals to the default value %s", oldVal));
+                    else
+                        log.info(String.format("Statistics usage state was changed from %s to %s", oldVal, newVal));
+                }
 
                 lastUsageState = newVal;
 
