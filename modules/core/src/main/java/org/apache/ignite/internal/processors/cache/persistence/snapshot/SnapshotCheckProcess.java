@@ -19,6 +19,7 @@ package org.apache.ignite.internal.processors.cache.persistence.snapshot;
 
 import java.io.Serializable;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -158,7 +159,7 @@ public class SnapshotCheckProcess {
 
             clusterOpFut.onDone(new SnapshotPartitionsVerifyTaskResult(ctx.clusterMetas, chkRes));
         }
-        if (ctx.req.allRestoreHandlers()) {
+        else if (ctx.req.allRestoreHandlers()) {
             try {
                 if (!errors.isEmpty())
                     throw F.firstValue(errors);
@@ -500,16 +501,14 @@ public class SnapshotCheckProcess {
         @Nullable private final SnapshotChecker.IncrementalSnapshotResult incRes;
 
         /** Ctor for the phase 1. */
-        //TODO : can metas be null?
-        private SnapshotCheckResponse(@Nullable List<SnapshotMetadata> metas) {
+        private SnapshotCheckResponse(List<SnapshotMetadata> metas) {
             this.metas = metas;
             this.partsResults = null;
             this.incRes = null;
         }
 
         /** Ctor for the phase 2 for a normal snapshot. */
-        //TODO : can partsResults be null?
-        private SnapshotCheckResponse(@Nullable Map<?, ?> partsResults) {
+        private SnapshotCheckResponse(Map<?, ?> partsResults) {
             this.metas = null;
             this.partsResults = partsResults;
             this.incRes = null;

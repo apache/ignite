@@ -641,6 +641,34 @@ public class IgniteClusterSnapshotCheckTest extends AbstractSnapshotSelfTest {
         }
     }
 
+    /** Tests that concurrent snapshot full and incremental checks are allowed for the same snapshot. */
+    @Test
+    public void testConcurrentTheSameSnpFullAndIncrementalChecksAllowed() throws Exception {
+        // 0 - coordinator; 0,1 - baselines; 2 - non-baseline; 3,4 - clients.
+        prepareGridsAndSnapshot(3, 2, 2, false);
+
+        snp(grid(3)).createSnapshot(SNAPSHOT_NAME + '2').get();
+        snp(grid(3)).createIncrementalSnapshot(SNAPSHOT_NAME + '2').get();
+
+        for (int i = 0; i < G.allGrids().size(); ++i) {
+            for (int j = 1; j < G.allGrids().size() - 1; ++j) {
+                int i0 = i;
+                int j0 = j;
+
+                doTestConcurrentSnpCheckOperations(
+                    () -> new IgniteFutureImpl<>(snp(grid(i0)).checkSnapshot(SNAPSHOT_NAME, null)),
+                    () -> new IgniteFutureImpl<>(snp(grid(j0)).checkSnapshot(SNAPSHOT_NAME + '2', null, 1)),
+                    CHECK_SNAPSHOT_METAS,
+                    CHECK_SNAPSHOT_PARTS,
+                    false,
+                    true,
+                    null,
+                    null
+                );
+            }
+        }
+    }
+
     /** Tests that concurrent snapshot full checks are allowed for different snapshots. */
     @Test
     public void testConcurrentDifferentSnpFullChecksAllowed() throws Exception {
