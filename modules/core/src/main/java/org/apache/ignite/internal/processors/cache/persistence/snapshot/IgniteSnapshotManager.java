@@ -1902,7 +1902,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
                 ", incIdx=" + incIdx + ", grps=" + grps + ", validateParts=" + check + ']');
         }
 
-        if (check || !includeCustomHandlers && incIdx > 0)
+        if (check && (incIdx < 1 || !includeCustomHandlers))
             return checkSnpProc.start(name, snpPath, grps, incIdx, includeCustomHandlers);
 
         GridFutureAdapter<SnapshotPartitionsVerifyTaskResult> res = new GridFutureAdapter<>();
@@ -1929,8 +1929,6 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
                 Class<? extends AbstractSnapshotVerificationTask> cls = includeCustomHandlers
                     ? SnapshotHandlerRestoreTask.class
                     : SnapshotPartitionsVerifyTask.class;
-
-                assert incIdx < 1 || cls == SnapshotHandlerRestoreTask.class;
 
                 kctx0.task().execute(
                         cls,

@@ -158,7 +158,7 @@ public class SnapshotCheckProcess {
 
             clusterOpFut.onDone(new SnapshotPartitionsVerifyTaskResult(ctx.clusterMetas, chkRes));
         }
-        if (ctx.req.allRestoreHandlers()) {
+        else if (ctx.req.allRestoreHandlers()) {
             try {
                 if (!errors.isEmpty())
                     throw F.firstValue(errors);
@@ -258,8 +258,8 @@ public class SnapshotCheckProcess {
     }
 
     /**
-     * @param ctxId Id validation process context. If {@code null}, ignored.
-     * @param reqId  If {@code ctxId} is {@code null}, is used to find the operation request.
+     * @param ctxId Context id. If {@code null}, ignored.
+     * @param reqId If {@code ctxId} is {@code null}, is used to find the operation context.
      * @return Current snapshot checking context by {@code ctxId} or {@code reqId}.
      */
     private @Nullable SnapshotCheckContext context(@Nullable String ctxId, UUID reqId) {
@@ -381,9 +381,9 @@ public class SnapshotCheckProcess {
         }
     }
 
-    /** @return Context id depending on request type and the snapshot name. */
+    /** @return Context id depending on request type and snapshot name. */
     private static String contextId(SnapshotCheckProcessRequest req) {
-        return req.incrementalIdx() > 0 ? req.snapshotName() + "_inc" : req.snapshotName();
+        return req.incrementalIdx() > 0 ? req.snapshotName() + "_inc_" + req.incrementalIdx() : req.snapshotName();
     }
 
     /**
@@ -484,7 +484,7 @@ public class SnapshotCheckProcess {
         @Nullable private final List<SnapshotMetadata> metas;
 
         /**
-         * Node's partition hashes for the phase 2. Is always {@code null} for the phase 1 or in case of an incremental
+         * Node's partition hashes for the phase 2. Is always {@code null} for the phase 1 or in case of incremental
          * snapshot.
          *
          * @see #partsHashes()
@@ -493,29 +493,27 @@ public class SnapshotCheckProcess {
         @Nullable private final Map<?, ?> partsResults;
 
         /**
-         * Incremental snapshot result for the phase 2. Is always {@code null} for the phase 1 or in case of a normal snapshot.
+         * Incremental snapshot result for the phase 2. Is always {@code null} for the phase 1 or in case of normal snapshot.
          *
          * @see #incrementalResult()
          */
         @Nullable private final SnapshotChecker.IncrementalSnapshotResult incRes;
 
         /** Ctor for the phase 1. */
-        //TODO : can metas be null?
-        private SnapshotCheckResponse(@Nullable List<SnapshotMetadata> metas) {
+        private SnapshotCheckResponse(List<SnapshotMetadata> metas) {
             this.metas = metas;
             this.partsResults = null;
             this.incRes = null;
         }
 
-        /** Ctor for the phase 2 for a normal snapshot. */
-        //TODO : can partsResults be null?
-        private SnapshotCheckResponse(@Nullable Map<?, ?> partsResults) {
+        /** Ctor for the phase 2 for normal snapshot. */
+        private SnapshotCheckResponse(Map<?, ?> partsResults) {
             this.metas = null;
             this.partsResults = partsResults;
             this.incRes = null;
         }
 
-        /** Ctor for the phase 2 for an incremental snapshot. */
+        /** Ctor for the phase 2 for incremental snapshot. */
         private SnapshotCheckResponse(SnapshotChecker.IncrementalSnapshotResult incRes) {
             this.metas = null;
             this.partsResults = null;
