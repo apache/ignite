@@ -602,8 +602,7 @@ public class SnapshotChecker {
                     );
                 }
                 catch (IgniteCheckedException | IOException e) {
-                    throw new IgniteException("Failed to check incremental snapshot [snpName=" + snpName + ", snpPath="
-                        + snpPath + ", incrementIdx=" + incIdx, e);
+                    throw new IgniteException(e);
                 }
             },
             executor
