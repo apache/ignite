@@ -641,7 +641,7 @@ public class IgniteClusterSnapshotCheckTest extends AbstractSnapshotSelfTest {
         }
     }
 
-    /** Tests that concurrent snapshot full and incremental checks are allowed for the same snapshot. */
+    /** Tests that concurrent full checks of normal and incremental the same snapshot are allowed . */
     @Test
     public void testConcurrentTheSameSnpFullAndIncrementalChecksAllowed() throws Exception {
         assertFalse(encryption);

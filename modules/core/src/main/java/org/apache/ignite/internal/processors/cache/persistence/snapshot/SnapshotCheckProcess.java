@@ -213,7 +213,7 @@ public class SnapshotCheckProcess {
             CompletableFuture<?> workingFut;
 
             if (req.incrementalIdx() > 0) {
-                assert !req.allRestoreHandlers() : "Snapshot handlers aren't supported for an incremental snapshot.";
+                assert !req.allRestoreHandlers() : "Snapshot handlers aren't supported for incremental snapshot.";
 
                 workingFut = snpMgr.checker().checkIncrementalSnapshot(req.snapshotName(), req.snapshotPath(), req.incrementalIdx());
             }
