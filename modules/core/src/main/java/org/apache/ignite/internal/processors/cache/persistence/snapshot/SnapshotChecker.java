@@ -1292,7 +1292,7 @@ public class SnapshotChecker {
     }
 
     /**  */
-    static class IncrementalSnapshotResult implements Serializable {
+    public static class IncrementalSnapshotResult implements Serializable {
         /** */
         private static final long serialVersionUID = 0L;
 
@@ -1330,22 +1330,22 @@ public class SnapshotChecker {
         }
 
         /** */
-        private Map<PartitionKeyV2, PartitionHashRecordV2> partHashRes() {
+        public Map<PartitionKeyV2, PartitionHashRecordV2> partHashRes() {
             return partHashRes;
         }
 
         /** */
-        private Map<Object, TransactionsHashRecord> txHashRes() {
+        public Map<Object, TransactionsHashRecord> txHashRes() {
             return txHashRes;
         }
 
         /** */
-        private Collection<GridCacheVersion> partiallyCommittedTxs() {
+        public Collection<GridCacheVersion> partiallyCommittedTxs() {
             return partiallyCommittedTxs;
         }
 
         /** */
-        private Collection<Exception> exceptions() {
+        public Collection<Exception> exceptions() {
             return exceptions;
         }
     }
