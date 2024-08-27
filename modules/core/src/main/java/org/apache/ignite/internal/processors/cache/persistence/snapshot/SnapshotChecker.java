@@ -795,7 +795,7 @@ public class SnapshotChecker {
     }
 
     /**
-     * Calls all the registered Absence validaton handlers. Reads snapshot metadata.
+     * Calls all the registered custom validaton handlers. Reads snapshot metadata.
      *
      * @see IgniteSnapshotManager#handlers()
      */
@@ -816,7 +816,7 @@ public class SnapshotChecker {
     }
 
     /**
-     *  Reads snapshot metadata. Requires snapshot meta to work.
+     * Calls all the registered custom validaton handlers.
      *
      * @see IgniteSnapshotManager#handlers()
      */
@@ -1317,22 +1317,22 @@ public class SnapshotChecker {
         }
 
         /** */
-        Map<PartitionKeyV2, PartitionHashRecordV2> partHashRes() {
+        private Map<PartitionKeyV2, PartitionHashRecordV2> partHashRes() {
             return partHashRes;
         }
 
         /** */
-        Map<Object, TransactionsHashRecord> txHashRes() {
+        private Map<Object, TransactionsHashRecord> txHashRes() {
             return txHashRes;
         }
 
         /** */
-        Collection<GridCacheVersion> partiallyCommittedTxs() {
+        private Collection<GridCacheVersion> partiallyCommittedTxs() {
             return partiallyCommittedTxs;
         }
 
         /** */
-        Collection<Exception> exceptions() {
+        private Collection<Exception> exceptions() {
             return exceptions;
         }
     }
@@ -1340,10 +1340,10 @@ public class SnapshotChecker {
     /** Holder for calculated hashes. */
     private static class HashHolder {
         /** */
-        public int hash;
+        private int hash;
 
         /** */
-        public int verHash;
+        private int verHash;
 
         /** */
         private void increment(int hash, int verHash) {
