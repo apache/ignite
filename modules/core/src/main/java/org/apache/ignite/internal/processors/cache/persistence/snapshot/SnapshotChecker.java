@@ -265,10 +265,10 @@ public class SnapshotChecker {
         File snpDir,
         int incIdx,
         @Nullable Collection<Integer> grpIds,
-        Object locNodeCstId
+        Object consId
     ) {
         return CompletableFuture.supplyAsync(() -> {
-            List<SnapshotMetadata> snpMetas = readSnapshotMetadatas(snpDir, locNodeCstId);
+            List<SnapshotMetadata> snpMetas = readSnapshotMetadatas(snpDir, consId);
 
             for (SnapshotMetadata meta : snpMetas) {
                 byte[] snpMasterKeyDigest = meta.masterKeyDigest();
@@ -312,17 +312,17 @@ public class SnapshotChecker {
             }
 
             if (incIdx > 0) {
-                List<SnapshotMetadata> metas = snpMetas.stream().filter(m -> m.consistentId().equals(locNodeCstId))
+                List<SnapshotMetadata> metas = snpMetas.stream().filter(m -> m.consistentId().equals(consId))
                     .collect(Collectors.toList());
 
                 if (metas.size() != 1) {
                     throw new IgniteException("Failed to find single snapshot metafile on local node [locNodeId="
-                        + locNodeCstId + ", metas=" + snpMetas + ", snpName=" + snpDir.getName()
+                        + consId + ", metas=" + snpMetas + ", snpName=" + snpDir.getName()
                         + ", snpPath=" + snpDir.getParent() + "]. Incremental snapshots requires exactly one meta file " +
                         "per node because they don't support restoring on a different topology.");
                 }
 
-                checkIncrementalSnapshotsExist(metas.get(0), snpDir, incIdx, locNodeCstId.toString());
+                checkIncrementalSnapshotsExist(metas.get(0), snpDir, incIdx, consId.toString());
             }
 
             return snpMetas;
@@ -334,7 +334,7 @@ public class SnapshotChecker {
         SnapshotMetadata fullMeta,
         File snpDir,
         int incIdx,
-        String locNodeCstId
+        String consId
     ) {
         try {
             // Incremental snapshot must contain ClusterSnapshotRecord.
@@ -350,7 +350,7 @@ public class SnapshotChecker {
                         "[snpName=" + snpName + ", snpPath=" + snpDir.getParent() + ", incrementIndex=" + inc + ']');
                 }
 
-                String metaFileName = snapshotMetaFileName(locNodeCstId);
+                String metaFileName = snapshotMetaFileName(consId);
 
                 File metafile = incSnpDir.toPath().resolve(metaFileName).toFile();
 
@@ -719,7 +719,7 @@ public class SnapshotChecker {
         @Nullable String snpPath,
         Map<ClusterNode, List<SnapshotMetadata>> allMetas,
         @Nullable Map<ClusterNode, Exception> exceptions,
-        Object curNodeCstId
+        Object consId
     ) {
         Map<ClusterNode, Exception> mappedExceptions = F.isEmpty(exceptions) ? Collections.emptyMap() : new HashMap<>(exceptions);
 
@@ -754,7 +754,7 @@ public class SnapshotChecker {
 
         if (firstMeta == null && mappedExceptions.isEmpty()) {
             throw new IllegalArgumentException("Snapshot does not exists [snapshot=" + snpName
-                + (snpPath != null ? ", baseDir=" + snpPath : "") + ", consistentId=" + curNodeCstId + ']');
+                + (snpPath != null ? ", baseDir=" + snpPath : "") + ", consistentId=" + consId + ']');
         }
 
         if (!F.isEmpty(baselineNodes) && F.isEmpty(exceptions)) {
@@ -1136,7 +1136,7 @@ public class SnapshotChecker {
         File snpDir,
         SnapshotMetadata meta,
         Collection<Integer> grpIds,
-        Object nodeCstId,
+        Object consId,
         boolean procPartitionsData,
         boolean skipHash
     ) {
@@ -1150,14 +1150,14 @@ public class SnapshotChecker {
 
         EncryptionSpi encSpi = meta.encryptionKey() != null ? encryptionSpi : null;
 
-        try (Dump dump = new Dump(snpDir, nodeCstId.toString(), true, true, encSpi, log)) {
+        try (Dump dump = new Dump(snpDir, consId.toString(), true, true, encSpi, log)) {
             String nodeFolderName = kctx.pdsFolderResolver().resolveFolders().folderName();
 
             Collection<PartitionHashRecordV2> partitionHashRecordV2s = U.doInParallel(
                 workingExecutor,
                 grpAndPartFiles.get2(),
                 part -> calculateDumpedPartitionHash(dump, cacheGroupName(part.getParentFile()), partId(part.getName()),
-                    skipHash, nodeCstId, nodeFolderName)
+                    skipHash, consId, nodeFolderName)
             );
 
             return partitionHashRecordV2s.stream().collect(Collectors.toMap(PartitionHashRecordV2::partitionKey, r -> r));
@@ -1199,7 +1199,7 @@ public class SnapshotChecker {
         Dump.DumpedPartitionIterator iter,
         String grpName,
         int part,
-        Object consistentId
+        Object consId
     ) throws IgniteCheckedException {
         long size = 0;
 
@@ -1216,7 +1216,7 @@ public class SnapshotChecker {
         return new PartitionHashRecordV2(
             new PartitionKeyV2(CU.cacheId(grpName), part, grpName),
             false,
-            consistentId,
+            consId,
             null,
             size,
             PartitionHashRecordV2.PartitionState.OWNING,
