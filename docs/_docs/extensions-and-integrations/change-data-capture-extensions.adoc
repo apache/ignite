@@ -571,6 +571,8 @@ The script will use predefined configuration '.xml' files from '../examples/conf
 
 NOTE: Use `--help` to explore the manager capabilities
 
+NOTE: Please, enable `ignite-rest-http` and `ignite-json` to be able to run `cdc-start-up.sh` with `--check`.
+
 Examples for reference:
 
 * Start Ignite node with specified properties:
