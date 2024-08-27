@@ -24,8 +24,8 @@ import java.util.UUID;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
 import org.apache.ignite.internal.GridDirectCollection;
+import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.query.calcite.message.MarshalableMessage;
-import org.apache.ignite.internal.processors.query.calcite.message.MarshallingContext;
 import org.apache.ignite.internal.processors.query.calcite.message.MessageType;
 import org.apache.ignite.internal.processors.query.calcite.util.Commons;
 import org.apache.ignite.internal.util.typedef.F;
@@ -168,12 +168,12 @@ public class FragmentMapping implements MarshalableMessage {
     }
 
     /** {@inheritDoc} */
-    @Override public void prepareMarshal(MarshallingContext ctx) {
+    @Override public void prepareMarshal(GridCacheSharedContext<?, ?> ctx) {
         colocationGroups.forEach(g -> g.prepareMarshal(ctx));
     }
 
     /** {@inheritDoc} */
-    @Override public void prepareUnmarshal(MarshallingContext ctx) {
+    @Override public void prepareUnmarshal(GridCacheSharedContext<?, ?> ctx) {
         colocationGroups.forEach(g -> g.prepareUnmarshal(ctx));
     }
 

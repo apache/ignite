@@ -53,9 +53,6 @@ public class GridNearTxRemote extends GridDistributedTxRemoteAdapter {
     /** Near node ID. */
     private final UUID nearNodeId;
 
-    /** Near transaction ID. */
-    private GridCacheVersion nearXidVer;
-
     /** Owned versions. */
     private Map<IgniteTxKey, GridCacheVersion> owned;
 
@@ -140,75 +137,6 @@ public class GridNearTxRemote extends GridDistributedTxRemoteAdapter {
         topologyVersion(topVer);
     }
 
-    /**
-     * This constructor is meant for pessimistic transactions.
-     *
-     * @param topVer Transaction topology version.
-     * @param nodeId Node ID.
-     * @param nearNodeId Near node ID.
-     * @param nearXidVer Near transaction ID.
-     * @param xidVer XID version.
-     * @param commitVer Commit version.
-     * @param sys System flag.
-     * @param plc IO policy.
-     * @param concurrency Concurrency level (should be pessimistic).
-     * @param isolation Transaction isolation.
-     * @param invalidate Invalidate flag.
-     * @param timeout Timeout.
-     * @param ctx Cache registry.
-     * @param txSize Expected transaction size.
-     * @param subjId Subject ID.
-     * @param taskNameHash Task name hash code.
-     * @param txLbl Transaction label.
-     */
-    public GridNearTxRemote(
-        GridCacheSharedContext<?, ?> ctx,
-        AffinityTopologyVersion topVer,
-        UUID nodeId,
-        UUID nearNodeId,
-        GridCacheVersion nearXidVer,
-        GridCacheVersion xidVer,
-        GridCacheVersion commitVer,
-        boolean sys,
-        byte plc,
-        TransactionConcurrency concurrency,
-        TransactionIsolation isolation,
-        boolean invalidate,
-        long timeout,
-        int txSize,
-        @Nullable UUID subjId,
-        int taskNameHash,
-        @Nullable String txLbl
-    ) {
-        super(
-            ctx,
-            nodeId,
-            xidVer,
-            commitVer,
-            sys,
-            plc,
-            concurrency,
-            isolation,
-            invalidate,
-            timeout,
-            txSize,
-            subjId,
-            taskNameHash,
-            txLbl
-        );
-
-        assert nearNodeId != null;
-
-        this.nearXidVer = nearXidVer;
-        this.nearNodeId = nearNodeId;
-
-        txState = new IgniteTxRemoteStateImpl(U.newLinkedHashMap(1), U.newLinkedHashMap(txSize));
-
-        assert topVer != null && topVer.topologyVersion() > 0 : topVer;
-
-        topologyVersion(topVer);
-    }
-
     /** {@inheritDoc} */
     @Override public boolean remote() {
         return true;
@@ -227,13 +155,6 @@ public class GridNearTxRemote extends GridDistributedTxRemoteAdapter {
     /** {@inheritDoc} */
     @Override public GridCacheVersion ownedVersion(IgniteTxKey key) {
         return owned == null ? null : owned.get(key);
-    }
-
-    /**
-     * @return Near transaction ID.
-     */
-    @Override public GridCacheVersion nearXidVersion() {
-        return nearXidVer;
     }
 
     /** {@inheritDoc} */
@@ -271,15 +192,6 @@ public class GridNearTxRemote extends GridDistributedTxRemoteAdapter {
      */
     public Collection<IgniteTxKey> evicted() {
         return evicted;
-    }
-
-    /**
-     * Adds evicted key bytes to evicted collection.
-     *
-     * @param key Evicted key.
-     */
-    void addEvicted(IgniteTxKey key) {
-        evicted.add(key);
     }
 
     /**
