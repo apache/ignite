@@ -480,27 +480,20 @@ public class SnapshotCheckProcess {
         /** Serial version uid. */
         private static final long serialVersionUID = 0L;
 
-        /** Metas for the phase 1. Is always {@code null} for the phase 2. */
+        /** @see #metas() */
         @Nullable private final List<SnapshotMetadata> metas;
 
         /**
-         * Node's partition hashes for the phase 2. Is always {@code null} for the phase 1 or in case of incremental
-         * snapshot.
-         *
          * @see #partsHashes()
          * @see #customHandlersResults()
          */
         @Nullable private final Map<?, ?> partsResults;
 
-        /**
-         * Incremental snapshot result for the phase 2. Is always {@code null} for the phase 1 or in case of normal snapshot.
-         *
-         * @see #incrementalResult()
-         */
+        /** @see #incrementalResult() */
         @Nullable private final SnapshotChecker.IncrementalSnapshotResult incRes;
 
         /** Ctor for the phase 1. */
-        private SnapshotCheckResponse(List<SnapshotMetadata> metas) {
+        private SnapshotCheckResponse(@Nullable List<SnapshotMetadata> metas) {
             this.metas = metas;
             this.partsResults = null;
             this.incRes = null;
@@ -520,17 +513,30 @@ public class SnapshotCheckProcess {
             this.incRes = incRes;
         }
 
-        /** */
+        /** Metas for the phase 1. Is always {@code null} for the phase 2. */
+        @Nullable private List<SnapshotMetadata> metas() {
+            return metas;
+        }
+
+        /**
+         * Node's partition hashes for the phase 2. Is always {@code null} for the phase 1 or in case of incremental
+         * snapshot.
+         */
         private @Nullable Map<PartitionKeyV2, PartitionHashRecordV2> partsHashes() {
             return (Map<PartitionKeyV2, PartitionHashRecordV2>)partsResults;
         }
 
-        /** */
+        /**
+         * Results of the custom handlers for the phase 2. Is always {@code null} for the phase 1 or in case of incremental
+         * snapshot.
+         *
+         * @see IgniteSnapshotManager#handlers()
+         */
         private @Nullable Map<String, SnapshotHandlerResult<?>> customHandlersResults() {
             return (Map<String, SnapshotHandlerResult<?>>)partsResults;
         }
 
-        /** */
+        /** Incremental snapshot result for the phase 2. Is always {@code null} for the phase 1 or in case of normal snapshot. */
         private @Nullable SnapshotChecker.IncrementalSnapshotResult incrementalResult() {
             return incRes;
         }
