@@ -216,16 +216,10 @@ public class IgniteStatisticsManagerImpl implements IgniteStatisticsManager {
 
         ctx.internalSubscriptionProcessor().registerDistributedConfigurationListener(dispatcher -> {
             usageState.addListener((name, oldVal, newVal) -> {
-                oldVal = usageState();
-
-                if (newVal == null)
-                    newVal = oldVal;
-
                 if (log.isInfoEnabled()) {
-                    if (oldVal == newVal && oldVal == DEFAULT_STATISTICS_USAGE_STATE)
-                        log.info(String.format("Statistics usage state has not changed and equals to the default value %s", oldVal));
-                    else
-                        log.info(String.format("Statistics usage state was changed from %s to %s", oldVal, newVal));
+                    if (newVal != null)
+                        log.info(String.format("Statistics usage state was changed from %s to %s",
+                            oldVal == null ? DEFAULT_STATISTICS_USAGE_STATE : oldVal, newVal));
                 }
 
                 lastUsageState = newVal;
