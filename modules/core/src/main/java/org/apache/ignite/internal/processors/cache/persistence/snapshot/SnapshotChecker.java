@@ -846,8 +846,6 @@ public class SnapshotChecker {
 
         File snpDir = snpMgr.snapshotLocalDir(meta.snapshotName(), snpPath);
 
-        // The handlers use or may use the same snapshot pool. If it configured with 1 thread, launching waiting task in
-        // the same pool might block it.
         return CompletableFuture.supplyAsync(() -> {
             try {
                 return snpMgr.handlers().invokeAll(SnapshotHandlerType.RESTORE,
@@ -1048,7 +1046,6 @@ public class SnapshotChecker {
         boolean checkParts,
         boolean skipPartsHashes
     ) {
-        // Await in the default executor to avoid blocking the snapshot executor if it has just one thread.
         return CompletableFuture.supplyAsync(() -> {
             if (!snpDir.exists())
                 throw new IllegalStateException("Snapshot directory doesn't exists: " + snpDir);
