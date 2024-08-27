@@ -61,7 +61,7 @@ public class SnapshotCheckProcess {
     /** */
     private final GridKernalContext kctx;
 
-    /** Operation contexts by id. */
+    /** Operation contexts by unique operation name/id. */
     private final Map<String, SnapshotCheckContext> contexts = new ConcurrentHashMap<>();
 
     /** Cluster-wide operation futures per snapshot called from current node. */
@@ -381,7 +381,7 @@ public class SnapshotCheckProcess {
         }
     }
 
-    /** @return Context id depending on request type and snapshot name. */
+    /** @return Unique operation context id depending on request type and snapshot name. */
     private static String contextId(SnapshotCheckProcessRequest req) {
         return req.incrementalIdx() > 0 ? req.snapshotName() + "_inc_" + req.incrementalIdx() : req.snapshotName();
     }
@@ -392,7 +392,7 @@ public class SnapshotCheckProcess {
      * @param snpName Snapshot name.
      * @param snpPath Snapshot directory path.
      * @param grpNames List of cache group names.
-     * @param incIdx Incremental snapshot index.
+     * @param incIdx Incremental snapshot index. If not positive, snapshot is not considered as incremental.
      * @param allRestoreHandlers If {@code true}, all the registered {@link IgniteSnapshotManager#handlers()} of type
      *                    {@link SnapshotHandlerType#RESTORE} are invoked. Otherwise, only snapshot metadatas and partition
      *                    hashes are validated.
