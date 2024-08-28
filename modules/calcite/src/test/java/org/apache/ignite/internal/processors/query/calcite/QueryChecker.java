@@ -27,13 +27,12 @@ import java.util.List;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
-
 import org.apache.calcite.tools.FrameworkConfig;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.cache.query.FieldsQueryCursor;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
-import org.apache.ignite.internal.processors.cache.distributed.dht.atomic.GridDhtAtomicCache;
+import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtCacheAdapter;
 import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtLocalPartition;
 import org.apache.ignite.internal.processors.cache.transactions.TransactionProxyImpl;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
@@ -536,7 +535,7 @@ public abstract class QueryChecker {
      * @param cacheName Cache to check reservations.
      */
     public static void awaitReservationsRelease(IgniteEx node, String cacheName) throws IgniteInterruptedCheckedException {
-        GridDhtAtomicCache c = GridTestUtils.getFieldValue(node.cachex(cacheName), "delegate");
+        GridDhtCacheAdapter c = GridTestUtils.getFieldValue(node.cachex(cacheName), "delegate");
 
         List<GridDhtLocalPartition> parts = c.topology().localPartitions();
 

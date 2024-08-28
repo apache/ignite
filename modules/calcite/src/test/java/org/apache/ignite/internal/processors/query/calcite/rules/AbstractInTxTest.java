@@ -22,8 +22,11 @@ import java.util.Collection;
 import java.util.concurrent.ThreadLocalRandom;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
+import org.apache.ignite.cache.CacheAtomicityMode;
+import org.apache.ignite.configuration.CacheConfiguration;
+import org.apache.ignite.internal.processors.cache.transactions.TransactionProxyImpl;
+import org.apache.ignite.internal.processors.query.QueryContext;
 import org.apache.ignite.internal.processors.tx.AbstractTransactionalSqlTest;
-import org.apache.ignite.internal.util.lang.RunnableX;
 import org.apache.ignite.transactions.Transaction;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
@@ -64,35 +67,76 @@ public abstract class AbstractInTxTest extends AbstractTransactionalSqlTest {
 
     /** */
     protected <K, V> void put(Ignite node, IgniteCache<K, V> cache, K key, V val) {
-        RunnableX action = () -> cache.put(key, val);
+        invokeAction(node, () -> {
+            cache.put(key, val);
+            return null;
+        });
+    }
 
-        RunnableX txAction = () -> {
-            if (tx == null)
-                tx = node.transactions().txStart(PESSIMISTIC, READ_COMMITTED, getTestTimeout(), 100);
-            else
-                tx.resume();
-
-            try {
-                action.run();
-            }
-            finally {
-                tx.suspend();
-            }
-
-        };
-
+    /** */
+    protected <T> T invokeAction(Ignite node, SupplierX<T> action) {
         switch (txDml) {
             case ALL:
-                txAction.run();
-                break;
+                return txAction(node, action);
             case NONE:
-                action.run();
-                break;
+                return action.get();
             case RANDOM:
                 if (ThreadLocalRandom.current().nextBoolean())
-                    action.run();
+                    return action.get();
                 else
-                    txAction.run();
+                    return txAction(node, action);
+            default:
+                throw new IllegalArgumentException();
         }
+    }
+
+    /** */
+    public <T> T txAction(Ignite node, SupplierX<T> action) {
+        if (tx == null)
+            startTransaction(node);
+
+        tx.resume();
+
+        try {
+            return action.get();
+        }
+        finally {
+            tx.suspend();
+        }
+    }
+
+    /** */
+    protected void startTransaction(Ignite node) {
+        tx = node.transactions().txStart(PESSIMISTIC, READ_COMMITTED, getTestTimeout(), 100);
+
+        tx.suspend();
+    }
+
+    /** */
+    protected interface SupplierX<T> {
+        /** */
+        T getx() throws Exception;
+
+        /** */
+        default T get() {
+            try {
+                return getx();
+            }
+            catch (Exception e) {
+                throw new RuntimeException(e);
+            }
+        }
+    }
+
+    /** */
+    protected QueryContext txContext() {
+        return QueryContext.of(tx != null ? ((TransactionProxyImpl)tx).tx().xidVersion() : null);
+    }
+
+    /** */
+    protected <K, V> CacheConfiguration<K, V> cacheConfiguration() {
+        return new CacheConfiguration<K, V>().setAtomicityMode(txDml == TxDml.NONE
+            ? CacheAtomicityMode.ATOMIC
+            : CacheAtomicityMode.TRANSACTIONAL);
     }
 }
