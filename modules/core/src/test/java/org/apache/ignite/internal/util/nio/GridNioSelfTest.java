@@ -99,6 +99,7 @@ public class GridNioSelfTest extends GridCommonAbstractTest {
     /** {@inheritDoc} */
     @Override protected void afterTestsStopped() throws Exception {
         getTestResources().stopThreads();
+        Thread.sleep(2000);
     }
 
     /**
@@ -639,6 +640,8 @@ public class GridNioSelfTest extends GridCommonAbstractTest {
      */
     @Test
     public void testSendReceive() throws Exception {
+        Thread.sleep(2000);
+
         CountDownLatch latch = new CountDownLatch(5);
 
         NioListener lsnr = new NioListener(latch);
