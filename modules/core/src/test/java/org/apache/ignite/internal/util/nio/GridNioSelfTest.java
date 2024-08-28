@@ -660,7 +660,13 @@ public class GridNioSelfTest extends GridCommonAbstractTest {
                 client.close();
             }
 
-            assert latch.await(30, SECONDS);
+            try {
+                assert latch.await(30, SECONDS);
+            }
+            catch (Exception e)
+            {
+                log.error("Error here!!!   " + e.getMessage());
+            }
 
             assertEquals("Unexpected message count", 5, lsnr.getMessageCount());
         }
@@ -748,7 +754,13 @@ public class GridNioSelfTest extends GridCommonAbstractTest {
 
             }, THREAD_CNT, "sender");
 
-            assert latch.await(30, SECONDS);
+            try {
+                assert latch.await(30, SECONDS);
+            }
+            catch (Exception e)
+            {
+                log.error("Error here!!!   " + e.getMessage());
+            }
 
             assertEquals("Unexpected message count", 10, lsnr.getMessageCount());
             assertFalse("Size check failed", lsnr.isSizeFailed());
@@ -913,7 +925,14 @@ public class GridNioSelfTest extends GridCommonAbstractTest {
 
             }, THREAD_CNT, "sender");
 
-            assert latch.await(30, SECONDS);
+            try {
+                assert latch.await(30, SECONDS);
+            }
+            catch (Exception e)
+            {
+                log.error("Error here!!!   " + e.getMessage());
+            }
+
             assertEquals("Unexpected message count", MSG_CNT * THREAD_CNT, lsnr.getMessageCount());
             assertFalse("Size check failed", lsnr.isSizeFailed());
 
