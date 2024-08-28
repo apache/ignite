@@ -23,10 +23,12 @@ import java.util.concurrent.ThreadLocalRandom;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.cache.CacheAtomicityMode;
+import org.apache.ignite.calcite.CalciteQueryEngineConfiguration;
 import org.apache.ignite.configuration.CacheConfiguration;
+import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.processors.cache.transactions.TransactionProxyImpl;
 import org.apache.ignite.internal.processors.query.QueryContext;
-import org.apache.ignite.internal.processors.tx.AbstractTransactionalSqlTest;
+import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.transactions.Transaction;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
@@ -36,7 +38,7 @@ import static org.apache.ignite.transactions.TransactionIsolation.READ_COMMITTED
 
 /** */
 @RunWith(Parameterized.class)
-public abstract class AbstractInTxTest extends AbstractTransactionalSqlTest {
+public abstract class AbstractTransactionalSqlTest extends GridCommonAbstractTest {
     /** */
     public enum TxDml {
         /** All put, remove and SQL dml will be executed inside transaction. */
@@ -64,6 +66,16 @@ public abstract class AbstractInTxTest extends AbstractTransactionalSqlTest {
 
     /** */
     protected Transaction tx;
+
+    /** {@inheritDoc} */
+    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
+        IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
+
+        cfg.getSqlConfiguration().setQueryEnginesConfiguration(new CalciteQueryEngineConfiguration());
+        cfg.getTransactionConfiguration().setTxAwareQueriesEnabled(true);
+
+        return cfg;
+    }
 
     /** */
     protected <K, V> void put(Ignite node, IgniteCache<K, V> cache, K key, V val) {

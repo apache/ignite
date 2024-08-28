@@ -44,12 +44,14 @@ import org.apache.ignite.cache.CacheWriteSynchronizationMode;
 import org.apache.ignite.cache.QueryEntity;
 import org.apache.ignite.cache.QueryIndex;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
+import org.apache.ignite.calcite.CalciteQueryEngineConfiguration;
 import org.apache.ignite.client.ClientCache;
 import org.apache.ignite.client.ClientTransaction;
 import org.apache.ignite.client.Config;
 import org.apache.ignite.client.IgniteClient;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.ClientConfiguration;
+import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.client.thin.TcpIgniteClient;
 import org.apache.ignite.internal.processors.query.QueryUtils;
@@ -57,6 +59,7 @@ import org.apache.ignite.internal.util.lang.RunnableX;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.lang.IgniteBiTuple;
+import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.transactions.Transaction;
 import org.apache.ignite.transactions.TransactionConcurrency;
 import org.apache.ignite.transactions.TransactionIsolation;
@@ -74,7 +77,7 @@ import static org.apache.ignite.transactions.TransactionIsolation.READ_COMMITTED
 
 /** */
 @RunWith(Parameterized.class)
-public class SqlTransactionsIsolationTest extends AbstractTransactionalSqlTest {
+public class SqlTransactionsIsolationTest extends GridCommonAbstractTest {
     /** */
     public static final String USERS = "USERS";
 
@@ -211,6 +214,16 @@ public class SqlTransactionsIsolationTest extends AbstractTransactionalSqlTest {
         }
 
         return params;
+    }
+
+    /** {@inheritDoc} */
+    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
+        IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
+
+        cfg.getSqlConfiguration().setQueryEnginesConfiguration(new CalciteQueryEngineConfiguration());
+        cfg.getTransactionConfiguration().setTxAwareQueriesEnabled(true);
+
+        return cfg;
     }
 
     /** */

@@ -54,7 +54,7 @@ import static org.junit.Assume.assumeTrue;
  * SELECT * FROM products
  *      WHERE subcategory ='Camera Media' AND LNNVL(category, 'Photo');
  */
-public class OrToUnionRuleTest extends AbstractInTxTest {
+public class OrToUnionRuleTest extends AbstractTransactionalSqlTest {
     /** */
     public static final String IDX_SUBCAT_ID = "IDX_SUBCAT_ID";
 
