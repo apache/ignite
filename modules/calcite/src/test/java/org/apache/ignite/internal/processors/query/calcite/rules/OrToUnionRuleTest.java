@@ -17,8 +17,12 @@
 
 package org.apache.ignite.internal.processors.query.calcite.rules;
 
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.concurrent.ThreadLocalRandom;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
+import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.cache.QueryEntity;
 import org.apache.ignite.cache.QueryIndex;
@@ -27,16 +31,23 @@ import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.internal.processors.query.QueryEngine;
 import org.apache.ignite.internal.processors.query.calcite.QueryChecker;
 import org.apache.ignite.internal.processors.query.calcite.util.Commons;
-import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.apache.ignite.internal.processors.tx.AbstractTransactionalSqlTest;
+import org.apache.ignite.internal.util.lang.RunnableX;
+import org.apache.ignite.transactions.Transaction;
 import org.hamcrest.CoreMatchers;
 import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.Parameterized;
 
 import static java.util.Arrays.asList;
 import static java.util.Collections.singletonList;
 import static org.apache.ignite.internal.processors.query.calcite.QueryChecker.containsIndexScan;
 import static org.apache.ignite.internal.processors.query.calcite.QueryChecker.containsTableScan;
 import static org.apache.ignite.internal.processors.query.calcite.QueryChecker.containsUnion;
+import static org.apache.ignite.transactions.TransactionConcurrency.PESSIMISTIC;
+import static org.apache.ignite.transactions.TransactionIsolation.READ_COMMITTED;
 import static org.hamcrest.CoreMatchers.not;
+import static org.junit.Assume.assumeTrue;
 
 /**
  * Test OR -> UnionAll rewrite rule.
@@ -53,7 +64,8 @@ import static org.hamcrest.CoreMatchers.not;
  * SELECT * FROM products
  *      WHERE subcategory ='Camera Media' AND LNNVL(category, 'Photo');
  */
-public class OrToUnionRuleTest extends GridCommonAbstractTest {
+@RunWith(Parameterized.class)
+public class OrToUnionRuleTest extends AbstractTransactionalSqlTest {
     /** */
     public static final String IDX_SUBCAT_ID = "IDX_SUBCAT_ID";
 
@@ -66,8 +78,43 @@ public class OrToUnionRuleTest extends GridCommonAbstractTest {
     /** */
     public static final String IDX_CAT_ID = "IDX_CAT_ID";
 
+    /** */
+    public enum TxDml {
+        /** All put, remove and SQL dml will be executed inside transaction. */
+        ALL,
+
+        /** Only some DML operations will be executed inside transaction. */
+        RANDOM,
+
+        /** Don't use transaction for DML. */
+        NONE
+    }
+
+    /** */
+    @Parameterized.Parameter()
+    public TxDml txDml;
+
+    /** */
+    public TxDml currentMode;
+
+    /** @return Test parameters. */
+    @Parameterized.Parameters(name = "txDml={0}")
+    public static Collection<?> parameters() {
+        return Arrays.asList(TxDml.values());
+    }
+
+    /** */
+    private Transaction tx;
+
     /** {@inheritDoc} */
-    @Override protected void beforeTestsStarted() throws Exception {
+    @Override protected void beforeTest() throws Exception {
+        if (currentMode != null && txDml == currentMode)
+            return;
+
+        currentMode = txDml;
+
+        stopAllGrids();
+
         Ignite grid = startGridsMultiThreaded(2);
 
         QueryEntity qryEnt = new QueryEntity();
@@ -93,36 +140,37 @@ public class OrToUnionRuleTest extends GridCommonAbstractTest {
         final CacheConfiguration<Integer, Product> cfg = new CacheConfiguration<>(qryEnt.getTableName());
 
         cfg.setCacheMode(CacheMode.PARTITIONED)
+            .setAtomicityMode(CacheAtomicityMode.TRANSACTIONAL)
             .setBackups(0)
             .setQueryEntities(singletonList(qryEnt))
             .setSqlSchema("PUBLIC");
 
         IgniteCache<Integer, Product> devCache = grid.createCache(cfg);
 
-        devCache.put(1, new Product(1, "Photo", 1, "Camera Media", 11, "Media 1"));
-        devCache.put(2, new Product(2, "Photo", 1, "Camera Media", 11, "Media 2"));
-        devCache.put(3, new Product(3, "Photo", 1, "Camera Lens", 12, "Lens 1"));
-        devCache.put(4, new Product(4, "Photo", 1, "Other", 12, "Charger 1"));
-        devCache.put(5, new Product(5, "Video", 2, "Camera Media", 21, "Media 3"));
-        devCache.put(6, new Product(6, "Video", 2, "Camera Lens", 22, "Lens 3"));
-        devCache.put(7, new Product(7, "Video", 1, null, 0, "Canon"));
-        devCache.put(8, new Product(8, null, 0, "Camera Lens", 11, "Zeiss"));
-        devCache.put(9, new Product(9, null, 0, null, 0, null));
-        devCache.put(10, new Product(10, null, 0, null, 30, null));
-        devCache.put(11, new Product( 11, null, 0, null, 30, null));
-        devCache.put(12, new Product( 12, null, 0, null, 31, null));
-        devCache.put(13, new Product( 13, null, 0, null, 31, null));
+        put(grid, devCache, 1, new Product(1, "Photo", 1, "Camera Media", 11, "Media 1"));
+        put(grid, devCache, 2, new Product(2, "Photo", 1, "Camera Media", 11, "Media 2"));
+        put(grid, devCache, 3, new Product(3, "Photo", 1, "Camera Lens", 12, "Lens 1"));
+        put(grid, devCache, 4, new Product(4, "Photo", 1, "Other", 12, "Charger 1"));
+        put(grid, devCache, 5, new Product(5, "Video", 2, "Camera Media", 21, "Media 3"));
+        put(grid, devCache, 6, new Product(6, "Video", 2, "Camera Lens", 22, "Lens 3"));
+        put(grid, devCache, 7, new Product(7, "Video", 1, null, 0, "Canon"));
+        put(grid, devCache, 8, new Product(8, null, 0, "Camera Lens", 11, "Zeiss"));
+        put(grid, devCache, 9, new Product(9, null, 0, null, 0, null));
+        put(grid, devCache, 10, new Product(10, null, 0, null, 30, null));
+        put(grid, devCache, 11, new Product(11, null, 0, null, 30, null));
+        put(grid, devCache, 12, new Product(12, null, 0, null, 31, null));
+        put(grid, devCache, 13, new Product(13, null, 0, null, 31, null));
 
-        devCache.put(14, new Product( 14, null, 0, null, 32, null));
-        devCache.put(15, new Product( 15, null, 0, null, 33, null));
-        devCache.put(16, new Product( 16, null, 0, null, 34, null));
-        devCache.put(17, new Product( 17, null, 0, null, 35, null));
-        devCache.put(18, new Product( 18, null, 0, null, 36, null));
-        devCache.put(19, new Product( 19, null, 0, null, 37, null));
-        devCache.put(20, new Product( 20, null, 0, null, 38, null));
-        devCache.put(21, new Product( 21, null, 0, null, 39, null));
-        devCache.put(22, new Product( 22, null, 0, null, 40, null));
-        devCache.put(23, new Product( 23, null, 0, null, 41, null));
+        put(grid, devCache, 14, new Product(14, null, 0, null, 32, null));
+        put(grid, devCache, 15, new Product(15, null, 0, null, 33, null));
+        put(grid, devCache, 16, new Product(16, null, 0, null, 34, null));
+        put(grid, devCache, 17, new Product(17, null, 0, null, 35, null));
+        put(grid, devCache, 18, new Product(18, null, 0, null, 36, null));
+        put(grid, devCache, 19, new Product(19, null, 0, null, 37, null));
+        put(grid, devCache, 20, new Product(20, null, 0, null, 38, null));
+        put(grid, devCache, 21, new Product(21, null, 0, null, 39, null));
+        put(grid, devCache, 22, new Product(22, null, 0, null, 40, null));
+        put(grid, devCache, 23, new Product(23, null, 0, null, 41, null));
 
         awaitPartitionMapExchange();
     }
@@ -132,19 +180,23 @@ public class OrToUnionRuleTest extends GridCommonAbstractTest {
      */
     @Test
     public void testEqualityOrToUnionAllRewrite() {
-        checkQuery("SELECT * " +
+        QueryChecker checker = checkQuery("SELECT * " +
             "FROM products " +
             "WHERE category = 'Video' " +
             "OR subcategory ='Camera Lens'")
-            .matches(containsUnion(true))
-            .matches(containsIndexScan("PUBLIC", "PRODUCTS", "IDX_CATEGORY"))
-            .matches(containsIndexScan("PUBLIC", "PRODUCTS", "IDX_SUBCATEGORY"))
             .returns(3, "Photo", 1, "Camera Lens", 12, "Lens 1")
             .returns(5, "Video", 2, "Camera Media", 21, "Media 3")
             .returns(6, "Video", 2, "Camera Lens", 22, "Lens 3")
             .returns(7, "Video", 1, null, 0, "Canon")
-            .returns(8, null, 0, "Camera Lens", 11, "Zeiss")
-            .check();
+            .returns(8, null, 0, "Camera Lens", 11, "Zeiss");
+
+        if (txDml == TxDml.NONE) {
+            checker.matches(containsUnion(true))
+                .matches(containsIndexScan("PUBLIC", "PRODUCTS", "IDX_CATEGORY"))
+                .matches(containsIndexScan("PUBLIC", "PRODUCTS", "IDX_SUBCATEGORY"));
+        }
+
+        checker.check();
     }
 
     /**
@@ -152,17 +204,21 @@ public class OrToUnionRuleTest extends GridCommonAbstractTest {
      */
     @Test
     public void testNonDistinctOrToUnionAllRewrite() {
-        checkQuery("SELECT * " +
+        QueryChecker checker = checkQuery("SELECT * " +
             "FROM products " +
             "WHERE subcategory = 'Camera Lens' " +
             "OR subcategory = 'Other'")
-            .matches(CoreMatchers.not(containsUnion(true)))
-            .matches(containsIndexScan("PUBLIC", "PRODUCTS", "IDX_SUBCATEGORY"))
             .returns(3, "Photo", 1, "Camera Lens", 12, "Lens 1")
             .returns(4, "Photo", 1, "Other", 12, "Charger 1")
             .returns(6, "Video", 2, "Camera Lens", 22, "Lens 3")
-            .returns(8, null, 0, "Camera Lens", 11, "Zeiss")
-            .check();
+            .returns(8, null, 0, "Camera Lens", 11, "Zeiss");
+
+        if (txDml == TxDml.NONE) {
+            checker.matches(not(containsUnion(true)))
+                .matches(containsIndexScan("PUBLIC", "PRODUCTS", "IDX_SUBCATEGORY"));
+        }
+
+        checker.check();
     }
 
     /**
@@ -170,19 +226,23 @@ public class OrToUnionRuleTest extends GridCommonAbstractTest {
      */
     @Test
     public void testMixedOrToUnionAllRewrite() {
-        checkQuery("SELECT * " +
+        QueryChecker checker = checkQuery("SELECT * " +
             "FROM products " +
             "WHERE category = 'Photo' " +
             "OR (subcat_id > 12 AND subcat_id < 22)")
-            .matches(containsUnion(true))
-            .matches(containsIndexScan("PUBLIC", "PRODUCTS", "IDX_CATEGORY"))
-            .matches(containsIndexScan("PUBLIC", "PRODUCTS", "IDX_SUBCAT_ID"))
             .returns(1, "Photo", 1, "Camera Media", 11, "Media 1")
             .returns(2, "Photo", 1, "Camera Media", 11, "Media 2")
             .returns(3, "Photo", 1, "Camera Lens", 12, "Lens 1")
             .returns(4, "Photo", 1, "Other", 12, "Charger 1")
-            .returns(5, "Video", 2, "Camera Media", 21, "Media 3")
-            .check();
+            .returns(5, "Video", 2, "Camera Media", 21, "Media 3");
+
+        if (txDml == TxDml.NONE) {
+            checker.matches(containsUnion(true))
+                .matches(containsIndexScan("PUBLIC", "PRODUCTS", "IDX_CATEGORY"))
+                .matches(containsIndexScan("PUBLIC", "PRODUCTS", "IDX_SUBCAT_ID"));
+        }
+
+        checker.check();
     }
 
     /**
@@ -203,6 +263,8 @@ public class OrToUnionRuleTest extends GridCommonAbstractTest {
      */
     @Test
     public void testWithHiddenKeys() {
+        assumeTrue(txDml == TxDml.NONE);
+
         checkQuery("SELECT _key, _val FROM products WHERE category = 'Photo' OR subcat_id = 22")
             .matches(containsUnion(true))
             .matches(containsIndexScan("PUBLIC", "PRODUCTS", "IDX_CATEGORY"))
@@ -262,7 +324,7 @@ public class OrToUnionRuleTest extends GridCommonAbstractTest {
 
     /** */
     private QueryChecker checkQuery(String qry) {
-        return new QueryChecker(qry) {
+        return new QueryChecker(qry, tx) {
             @Override protected QueryEngine getEngine() {
                 return Commons.lookupComponent(grid(0).context(), QueryEngine.class);
             }
@@ -299,6 +361,40 @@ public class OrToUnionRuleTest extends GridCommonAbstractTest {
             this.subCategory = subCategory;
             this.subcat_Id = subcat_Id;
             this.name = name;
+        }
+    }
+
+    /** */
+    private <K, V> void put(Ignite node, IgniteCache<K, V> cache, K key, V val) {
+        RunnableX action = () -> cache.put(key, val);
+
+        RunnableX txAction = () -> {
+            if (tx == null)
+                tx = node.transactions().txStart(PESSIMISTIC, READ_COMMITTED, getTestTimeout(), 100);
+            else
+                tx.resume();
+
+            try {
+                action.run();
+            }
+            finally {
+                tx.suspend();
+            }
+
+        };
+
+        switch (txDml) {
+            case ALL:
+                txAction.run();
+                break;
+            case NONE:
+                action.run();
+                break;
+            case RANDOM:
+                if (ThreadLocalRandom.current().nextBoolean())
+                    action.run();
+                else
+                    txAction.run();
         }
     }
 }

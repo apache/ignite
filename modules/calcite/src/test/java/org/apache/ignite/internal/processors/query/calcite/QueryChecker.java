@@ -35,6 +35,8 @@ import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.processors.cache.distributed.dht.atomic.GridDhtAtomicCache;
 import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtLocalPartition;
+import org.apache.ignite.internal.processors.cache.transactions.TransactionProxyImpl;
+import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.processors.query.QueryContext;
 import org.apache.ignite.internal.processors.query.QueryEngine;
 import org.apache.ignite.internal.processors.query.schema.management.SchemaManager;
@@ -42,6 +44,7 @@ import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.testframework.GridTestUtils;
+import org.apache.ignite.transactions.Transaction;
 import org.hamcrest.CoreMatchers;
 import org.hamcrest.CustomTypeSafeMatcher;
 import org.hamcrest.Matcher;
@@ -275,6 +278,9 @@ public abstract class QueryChecker {
     private final String qry;
 
     /** */
+    private final Transaction tx;
+
+    /** */
     private final ArrayList<Matcher<String>> planMatchers = new ArrayList<>();
 
     /** */
@@ -303,7 +309,13 @@ public abstract class QueryChecker {
 
     /** */
     public QueryChecker(String qry) {
+        this(qry, null);
+    }
+
+    /** */
+    public QueryChecker(String qry, Transaction tx) {
         this.qry = qry;
+        this.tx = tx;
     }
 
     /** */
@@ -382,7 +394,11 @@ public abstract class QueryChecker {
         // Check plan.
         QueryEngine engine = getEngine();
 
-        QueryContext ctx = frameworkCfg != null ? QueryContext.of(frameworkCfg) : null;
+        GridCacheVersion txVer = tx != null
+            ? ((TransactionProxyImpl)tx).tx().xidVersion()
+            : null;
+
+        QueryContext ctx = (frameworkCfg != null || txVer != null) ? QueryContext.of(frameworkCfg, txVer) : null;
 
         List<FieldsQueryCursor<List<?>>> explainCursors =
             engine.query(ctx, "PUBLIC", "EXPLAIN PLAN FOR " + qry, params);

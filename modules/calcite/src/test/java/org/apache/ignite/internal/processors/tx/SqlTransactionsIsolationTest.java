@@ -44,14 +44,12 @@ import org.apache.ignite.cache.CacheWriteSynchronizationMode;
 import org.apache.ignite.cache.QueryEntity;
 import org.apache.ignite.cache.QueryIndex;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
-import org.apache.ignite.calcite.CalciteQueryEngineConfiguration;
 import org.apache.ignite.client.ClientCache;
 import org.apache.ignite.client.ClientTransaction;
 import org.apache.ignite.client.Config;
 import org.apache.ignite.client.IgniteClient;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.ClientConfiguration;
-import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.client.thin.TcpIgniteClient;
 import org.apache.ignite.internal.processors.query.QueryUtils;
@@ -59,7 +57,6 @@ import org.apache.ignite.internal.util.lang.RunnableX;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.lang.IgniteBiTuple;
-import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.transactions.Transaction;
 import org.apache.ignite.transactions.TransactionConcurrency;
 import org.apache.ignite.transactions.TransactionIsolation;
@@ -69,19 +66,15 @@ import org.junit.runners.Parameterized;
 
 import static java.lang.String.format;
 import static java.util.concurrent.TimeUnit.SECONDS;
+import static org.apache.ignite.internal.processors.tx.SqlTransactionsIsolationTest.ModifyApi.CACHE;
+import static org.apache.ignite.internal.processors.tx.SqlTransactionsIsolationTest.ModifyApi.SQL;
 import static org.apache.ignite.testframework.GridTestUtils.assertThrows;
 import static org.apache.ignite.testframework.GridTestUtils.runAsync;
 import static org.apache.ignite.transactions.TransactionIsolation.READ_COMMITTED;
 
 /** */
 @RunWith(Parameterized.class)
-public class SqlTransactionsIsolationTest extends GridCommonAbstractTest {
-    /** */
-    public static final String CACHE = "cache";
-
-    /** */
-    public static final String SQL = "sql";
-
+public class SqlTransactionsIsolationTest extends AbstractTransactionalSqlTest {
     /** */
     public static final String USERS = "USERS";
 
@@ -104,6 +97,15 @@ public class SqlTransactionsIsolationTest extends GridCommonAbstractTest {
     }
 
     /** */
+    public enum ModifyApi {
+        /** */
+        CACHE,
+
+        /** */
+        SQL
+    }
+
+    /** */
     public static final User JOHN = new User(1, 0, "John Connor");
 
     /** */
@@ -120,7 +122,7 @@ public class SqlTransactionsIsolationTest extends GridCommonAbstractTest {
 
     /** */
     @Parameterized.Parameter()
-    public String modify;
+    public ModifyApi modify;
 
     /** */
     @Parameterized.Parameter(1)
@@ -174,9 +176,7 @@ public class SqlTransactionsIsolationTest extends GridCommonAbstractTest {
     public static Collection<?> parameters() {
         List<Object[]> params = new ArrayList<>();
 
-        String[] apis = new String[] {CACHE, SQL};
-
-        for (String modify : apis) {
+        for (ModifyApi modify : ModifyApi.values()) {
             for (CacheMode cacheMode : CacheMode.values()) {
                 for (int gridCnt : new int[]{1, 3, 5}) {
                     int[] backups = gridCnt > 1
@@ -211,16 +211,6 @@ public class SqlTransactionsIsolationTest extends GridCommonAbstractTest {
         }
 
         return params;
-    }
-
-    /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
-        IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
-
-        cfg.getSqlConfiguration().setQueryEnginesConfiguration(new CalciteQueryEngineConfiguration());
-        cfg.getTransactionConfiguration().setTxAwareQueriesEnabled(true);
-
-        return cfg;
     }
 
     /** */
@@ -576,15 +566,15 @@ public class SqlTransactionsIsolationTest extends GridCommonAbstractTest {
     public void testInsert() {
         Runnable checkBefore = () -> {
             for (int i = 4; i <= (multi ? 6 : 4); i++) {
-                assertNull(CACHE, select(i, CACHE));
-                assertNull(SQL, select(i, SQL));
+                assertNull(CACHE.name(), select(i, CACHE));
+                assertNull(SQL.name(), select(i, SQL));
             }
         };
 
         Runnable checkAfter = () -> {
             for (int i = 4; i <= (multi ? 6 : 4); i++) {
-                assertEquals(CACHE, JOHN, select(i, CACHE));
-                assertEquals(SQL, JOHN, select(i, SQL));
+                assertEquals(CACHE.name(), JOHN, select(i, CACHE));
+                assertEquals(SQL.name(), JOHN, select(i, SQL));
             }
         };
 
@@ -598,7 +588,7 @@ public class SqlTransactionsIsolationTest extends GridCommonAbstractTest {
             else
                 insert(F.t(4, JOHN));
 
-            if (modify.equals(SQL)) {
+            if (modify == SQL) {
                 assertThrows(
                     log,
                     () -> doInsert(F.t(4, JOHN)),
@@ -778,12 +768,12 @@ public class SqlTransactionsIsolationTest extends GridCommonAbstractTest {
     }
 
     /** */
-    private User select(Integer id, String api) {
-        if (api.equals(CACHE))
+    private User select(Integer id, ModifyApi api) {
+        if (api == CACHE)
             return type == ExecutorType.THIN
                 ? (User)thinCli.cache(users()).get(id)
                 : (User)node().cache(users()).get(id);
-        else if (api.equals(SQL)) {
+        else if (api == SQL) {
             List<List<?>> res = sql(format("SELECT _VAL FROM %s WHERE _KEY = ?", users()), id);
 
             assertNotNull(res);
@@ -809,7 +799,7 @@ public class SqlTransactionsIsolationTest extends GridCommonAbstractTest {
 
     /** */
     private void doInsert(IgniteBiTuple<Integer, User>... entries) {
-        if (modify.equals(CACHE)) {
+        if (modify == CACHE) {
             if (multi) {
                 Map<Integer, User> data = Arrays.stream(entries).collect(Collectors.toMap(IgniteBiTuple::get1, IgniteBiTuple::get2));
 
@@ -827,7 +817,7 @@ public class SqlTransactionsIsolationTest extends GridCommonAbstractTest {
                 }
             }
         }
-        else if (modify.equals(SQL)) {
+        else if (modify == SQL) {
             String insert = format("INSERT INTO %s(id, userid, departmentId, fio) VALUES(?, ?, ?, ?)", users());
 
             int colCnt = 4;
@@ -870,9 +860,9 @@ public class SqlTransactionsIsolationTest extends GridCommonAbstractTest {
             assertTrue(partsToKeys.get(part).contains(data.get1()));
         }
 
-        if (modify.equals(CACHE))
+        if (modify == CACHE)
             doInsert(entries);
-        else if (modify.equals(SQL)) {
+        else if (modify == SQL) {
             String update = format("UPDATE %s SET userid = ?, departmentId = ?, fio = ? WHERE id = ?", users());
 
             int colCnt = 4;
@@ -915,7 +905,7 @@ public class SqlTransactionsIsolationTest extends GridCommonAbstractTest {
             assertTrue(partsToKeys.get(part).remove(key));
         }
 
-        if (modify.equals(CACHE)) {
+        if (modify == CACHE) {
             if (multi) {
                 Set<Integer> toRemove = Arrays.stream(keys).boxed().collect(Collectors.toSet());
 
@@ -933,7 +923,7 @@ public class SqlTransactionsIsolationTest extends GridCommonAbstractTest {
                 }
             }
         }
-        else if (modify.equals(SQL)) {
+        else if (modify == SQL) {
             String delete = format("DELETE FROM %s WHERE id = ?", users());
 
             if (multi) {
