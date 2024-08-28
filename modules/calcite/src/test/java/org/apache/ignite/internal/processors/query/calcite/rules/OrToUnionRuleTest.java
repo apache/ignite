@@ -17,9 +17,6 @@
 
 package org.apache.ignite.internal.processors.query.calcite.rules;
 
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.concurrent.ThreadLocalRandom;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.cache.CacheAtomicityMode;
@@ -31,21 +28,14 @@ import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.internal.processors.query.QueryEngine;
 import org.apache.ignite.internal.processors.query.calcite.QueryChecker;
 import org.apache.ignite.internal.processors.query.calcite.util.Commons;
-import org.apache.ignite.internal.processors.tx.AbstractTransactionalSqlTest;
-import org.apache.ignite.internal.util.lang.RunnableX;
-import org.apache.ignite.transactions.Transaction;
 import org.hamcrest.CoreMatchers;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.Parameterized;
 
 import static java.util.Arrays.asList;
 import static java.util.Collections.singletonList;
 import static org.apache.ignite.internal.processors.query.calcite.QueryChecker.containsIndexScan;
 import static org.apache.ignite.internal.processors.query.calcite.QueryChecker.containsTableScan;
 import static org.apache.ignite.internal.processors.query.calcite.QueryChecker.containsUnion;
-import static org.apache.ignite.transactions.TransactionConcurrency.PESSIMISTIC;
-import static org.apache.ignite.transactions.TransactionIsolation.READ_COMMITTED;
 import static org.hamcrest.CoreMatchers.not;
 import static org.junit.Assume.assumeTrue;
 
@@ -64,8 +54,7 @@ import static org.junit.Assume.assumeTrue;
  * SELECT * FROM products
  *      WHERE subcategory ='Camera Media' AND LNNVL(category, 'Photo');
  */
-@RunWith(Parameterized.class)
-public class OrToUnionRuleTest extends AbstractTransactionalSqlTest {
+public class OrToUnionRuleTest extends AbstractInTxTest {
     /** */
     public static final String IDX_SUBCAT_ID = "IDX_SUBCAT_ID";
 
@@ -77,34 +66,6 @@ public class OrToUnionRuleTest extends AbstractTransactionalSqlTest {
 
     /** */
     public static final String IDX_CAT_ID = "IDX_CAT_ID";
-
-    /** */
-    public enum TxDml {
-        /** All put, remove and SQL dml will be executed inside transaction. */
-        ALL,
-
-        /** Only some DML operations will be executed inside transaction. */
-        RANDOM,
-
-        /** Don't use transaction for DML. */
-        NONE
-    }
-
-    /** */
-    @Parameterized.Parameter()
-    public TxDml txDml;
-
-    /** */
-    public TxDml currentMode;
-
-    /** @return Test parameters. */
-    @Parameterized.Parameters(name = "txDml={0}")
-    public static Collection<?> parameters() {
-        return Arrays.asList(TxDml.values());
-    }
-
-    /** */
-    private Transaction tx;
 
     /** {@inheritDoc} */
     @Override protected void beforeTest() throws Exception {
@@ -361,40 +322,6 @@ public class OrToUnionRuleTest extends AbstractTransactionalSqlTest {
             this.subCategory = subCategory;
             this.subcat_Id = subcat_Id;
             this.name = name;
-        }
-    }
-
-    /** */
-    private <K, V> void put(Ignite node, IgniteCache<K, V> cache, K key, V val) {
-        RunnableX action = () -> cache.put(key, val);
-
-        RunnableX txAction = () -> {
-            if (tx == null)
-                tx = node.transactions().txStart(PESSIMISTIC, READ_COMMITTED, getTestTimeout(), 100);
-            else
-                tx.resume();
-
-            try {
-                action.run();
-            }
-            finally {
-                tx.suspend();
-            }
-
-        };
-
-        switch (txDml) {
-            case ALL:
-                txAction.run();
-                break;
-            case NONE:
-                action.run();
-                break;
-            case RANDOM:
-                if (ThreadLocalRandom.current().nextBoolean())
-                    action.run();
-                else
-                    txAction.run();
         }
     }
 }

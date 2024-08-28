@@ -19,6 +19,7 @@ package org.apache.ignite.internal.processors.query.calcite.rules;
 
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
+import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.cache.QueryEntity;
 import org.apache.ignite.cache.QueryIndex;
@@ -28,7 +29,6 @@ import org.apache.ignite.internal.processors.query.QueryEngine;
 import org.apache.ignite.internal.processors.query.calcite.QueryChecker;
 import org.apache.ignite.internal.processors.query.calcite.util.Commons;
 import org.apache.ignite.testframework.GridTestUtils;
-import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
 
 import static java.util.Arrays.asList;
@@ -46,12 +46,19 @@ import static org.apache.ignite.internal.processors.query.calcite.rules.OrToUnio
  * sql execution: SELECT t1.f11, t2.f21 FROM T1 t1 INNER JOIN T2 t2 on t1.f11 = t2.f22"
  * need to eleminate all unused coluns and take into account only: f11, f21 and f22 cols.
  */
-public class ProjectScanMergeRuleTest extends GridCommonAbstractTest {
+public class ProjectScanMergeRuleTest extends AbstractInTxTest {
     /** */
     public static final String IDX_CAT_ID = "IDX_CAT_ID";
 
     /** {@inheritDoc} */
-    @Override protected void beforeTestsStarted() throws Exception {
+    @Override protected void beforeTest() throws Exception {
+        if (currentMode != null && txDml == currentMode)
+            return;
+
+        currentMode = txDml;
+
+        stopAllGrids();
+
         Ignite grid = startGridsMultiThreaded(2);
 
         QueryEntity qryEnt = new QueryEntity();
@@ -74,23 +81,24 @@ public class ProjectScanMergeRuleTest extends GridCommonAbstractTest {
         final CacheConfiguration<Integer, Product> cfg = new CacheConfiguration<>(qryEnt.getTableName());
 
         cfg.setCacheMode(CacheMode.PARTITIONED)
+            .setAtomicityMode(CacheAtomicityMode.TRANSACTIONAL)
             .setBackups(1)
             .setQueryEntities(singletonList(qryEnt))
             .setSqlSchema("PUBLIC");
 
         IgniteCache<Integer, Product> devCache = grid.createCache(cfg);
 
-        devCache.put(1, new Product(1, "prod1", 1, "cat1", 11, "noname1"));
-        devCache.put(2, new Product(2, "prod2", 2, "cat1", 11, "noname2"));
-        devCache.put(3, new Product(3, "prod3", 3, "cat1", 12, "noname3"));
-        devCache.put(4, new Product(4, "prod4", 4, "cat1", 13, "noname4"));
+        put(grid, devCache, 1, new Product(1, "prod1", 1, "cat1", 11, "noname1"));
+        put(grid, devCache, 2, new Product(2, "prod2", 2, "cat1", 11, "noname2"));
+        put(grid, devCache, 3, new Product(3, "prod3", 3, "cat1", 12, "noname3"));
+        put(grid, devCache, 4, new Product(4, "prod4", 4, "cat1", 13, "noname4"));
 
         awaitPartitionMapExchange();
     }
 
     /** */
     private QueryChecker checkQuery(String qry) {
-        return new QueryChecker(qry) {
+        return new QueryChecker(qry, tx) {
             @Override protected QueryEngine getEngine() {
                 return Commons.lookupComponent(grid(0).context(), QueryEngine.class);
             }
