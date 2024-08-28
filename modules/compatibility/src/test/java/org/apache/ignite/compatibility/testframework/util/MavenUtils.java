@@ -43,8 +43,6 @@ import org.apache.maven.model.io.xpp3.MavenXpp3Reader;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
-import static org.apache.ignite.internal.util.lang.GridFunc.isEmpty;
-
 /**
  * Provides some useful methods to work with Maven.
  */
@@ -146,7 +144,7 @@ public class MavenUtils {
      * @throws Exception In case of an error.
      */
     private static String defineMavenLocalRepositoryPath() throws Exception {
-        String output = exec(buildMvnCommand() + " help:effective-settings");
+        String output = exec(withMavenSettings(buildMvnCommand() + " help:effective-settings"));
 
         int endTagPos = output.indexOf("</localRepository>");
 
@@ -167,7 +165,7 @@ public class MavenUtils {
         Path outPath = Files.createTempFile("effective-pom", "");
 
         try {
-            exec(buildMvnCommand() + " -f " + workDir + " help:effective-pom -Doutput=" + outPath.toAbsolutePath());
+            exec(withMavenSettings(buildMvnCommand() + " -f " + workDir + " help:effective-pom -Doutput=" + outPath.toAbsolutePath()));
 
             Model model = new MavenXpp3Reader().read(new FileInputStream(outPath.toFile()));
 
@@ -187,18 +185,12 @@ public class MavenUtils {
     private static void downloadArtifact(String artifact) throws Exception {
         X.println("Downloading artifact... Identifier: " + artifact);
 
-        // Default platform independ path for maven settings file.
-        Path locProxyMavenSettings = Paths.get(System.getProperty("user.home"), ".m2", "local-proxy.xml");
-
-        String locProxyMavenSettingsFromEnv = System.getenv("LOCAL_PROXY_MAVEN_SETTINGS");
-
         GridStringBuilder mavenCmdArgs = new SB(" ").a(MAVEN_DEPENDENCY_PLUGIN).a(":get -Dartifact=" + artifact);
 
-        if (!isEmpty(locProxyMavenSettingsFromEnv))
-            locProxyMavenSettings = Paths.get(locProxyMavenSettingsFromEnv);
+        Path mvnSettingsFilePath = resolveMavenSettingsFilePath();
 
-        if (Files.exists(locProxyMavenSettings))
-            mavenCmdArgs.a(" -s " + locProxyMavenSettings.toString());
+        if (Files.exists(mvnSettingsFilePath))
+            mavenCmdArgs.a(" -s ").a(mvnSettingsFilePath);
         else {
             Collection<String> repos = new ArrayList<>();
 
@@ -262,6 +254,25 @@ public class MavenUtils {
 
             throw e;
         }
+    }
+
+    /** */
+    private static String withMavenSettings(String cmd) {
+        Path mvnSettingsFilePath = resolveMavenSettingsFilePath();
+
+        if (Files.exists(mvnSettingsFilePath))
+            cmd += " -s " + mvnSettingsFilePath;
+
+        return cmd;
+    }
+
+    /** */
+    private static Path resolveMavenSettingsFilePath() {
+        String settingsPathEnv = System.getenv("LOCAL_PROXY_MAVEN_SETTINGS");
+
+        return F.isEmpty(settingsPathEnv)
+            ? Paths.get(System.getProperty("user.home"), ".m2", "local-proxy.xml")
+            : Paths.get(settingsPathEnv);
     }
 
     /**
