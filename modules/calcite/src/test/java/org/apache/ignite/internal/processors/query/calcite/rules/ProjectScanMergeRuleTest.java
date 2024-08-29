@@ -19,7 +19,6 @@ package org.apache.ignite.internal.processors.query.calcite.rules;
 
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
-import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.cache.QueryEntity;
 import org.apache.ignite.cache.QueryIndex;
@@ -51,14 +50,7 @@ public class ProjectScanMergeRuleTest extends AbstractTransactionalSqlTest {
     public static final String IDX_CAT_ID = "IDX_CAT_ID";
 
     /** {@inheritDoc} */
-    @Override protected void beforeTest() throws Exception {
-        if (currentMode != null && txDml == currentMode)
-            return;
-
-        currentMode = txDml;
-
-        stopAllGrids();
-
+    @Override protected void init() throws Exception {
         Ignite grid = startGridsMultiThreaded(2);
 
         QueryEntity qryEnt = new QueryEntity();
@@ -78,10 +70,9 @@ public class ProjectScanMergeRuleTest extends AbstractTransactionalSqlTest {
         ));
         qryEnt.setTableName("products");
 
-        final CacheConfiguration<Integer, Product> cfg = new CacheConfiguration<>(qryEnt.getTableName());
-
-        cfg.setCacheMode(CacheMode.PARTITIONED)
-            .setAtomicityMode(CacheAtomicityMode.TRANSACTIONAL)
+        final CacheConfiguration<Integer, Product> cfg = this.<Integer, Product>cacheConfiguration()
+            .setName(qryEnt.getTableName())
+            .setCacheMode(CacheMode.PARTITIONED)
             .setBackups(1)
             .setQueryEntities(singletonList(qryEnt))
             .setSqlSchema("PUBLIC");

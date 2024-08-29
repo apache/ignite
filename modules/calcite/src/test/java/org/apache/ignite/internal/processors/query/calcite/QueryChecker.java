@@ -406,7 +406,7 @@ public abstract class QueryChecker {
         List<List<?>> explainRes = explainCursor.getAll();
         String actualPlan = (String)explainRes.get(0).get(0);
 
-        if (!F.isEmpty(planMatchers)) {
+        if (!F.isEmpty(planMatchers) && tx == null) {
             for (Matcher<String> matcher : planMatchers)
                 assertThat("Invalid plan:\n" + actualPlan + "\n for query: " + qry, actualPlan, matcher);
         }

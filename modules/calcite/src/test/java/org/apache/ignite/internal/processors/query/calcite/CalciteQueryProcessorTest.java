@@ -95,14 +95,7 @@ public class CalciteQueryProcessorTest extends AbstractTransactionalSqlTest {
     }
 
     /** {@inheritDoc} */
-    @Override protected void beforeTest() throws Exception {
-        if (currentMode != null && txDml == currentMode)
-            return;
-
-        currentMode = txDml;
-
-        stopAllGrids();
-
+    @Override protected void init() throws Exception {
         startGrids(5);
 
         client = startClientGrid();
@@ -114,6 +107,8 @@ public class CalciteQueryProcessorTest extends AbstractTransactionalSqlTest {
             tx.resume();
 
             tx.rollback();
+
+            tx = null;
         }
 
         for (Ignite ign : G.allGrids()) {
@@ -443,7 +438,7 @@ public class CalciteQueryProcessorTest extends AbstractTransactionalSqlTest {
 
         QueryEngine engine = Commons.lookupComponent(client.context(), QueryEngine.class);
 
-        List<FieldsQueryCursor<List<?>>> qry = engine.query(txContext(), "PUBLIC",
+        List<FieldsQueryCursor<List<?>>> qry = engine.query(queryContext(), "PUBLIC",
             "SELECT * FROM employer1 " +
                 "UNION " +
                 "SELECT * FROM employer2 " +
@@ -702,7 +697,7 @@ public class CalciteQueryProcessorTest extends AbstractTransactionalSqlTest {
 
         QueryEngine engine = Commons.lookupComponent(client.context(), QueryEngine.class);
 
-        List<FieldsQueryCursor<List<?>>> qry = engine.query(txContext(), "PUBLIC",
+        List<FieldsQueryCursor<List<?>>> qry = engine.query(queryContext(), "PUBLIC",
             "SELECT * FROM employer WHERE employer.salary = (SELECT AVG(employer.salary) FROM employer)");
 
         assertEquals(1, qry.size());
@@ -735,7 +730,7 @@ public class CalciteQueryProcessorTest extends AbstractTransactionalSqlTest {
 
         QueryEngine engine = Commons.lookupComponent(client.context(), QueryEngine.class);
 
-        List<FieldsQueryCursor<List<?>>> qry = engine.query(txContext(), "PUBLIC",
+        List<FieldsQueryCursor<List<?>>> qry = engine.query(queryContext(), "PUBLIC",
             "SELECT avg(salary) FROM " +
                 "(SELECT avg(salary) as salary FROM employer UNION ALL SELECT salary FROM employer)");
 
@@ -773,7 +768,7 @@ public class CalciteQueryProcessorTest extends AbstractTransactionalSqlTest {
 
         QueryEngine engine = Commons.lookupComponent(grid(1).context(), QueryEngine.class);
 
-        List<FieldsQueryCursor<List<?>>> qry = engine.query(txContext(), "PUBLIC",
+        List<FieldsQueryCursor<List<?>>> qry = engine.query(queryContext(), "PUBLIC",
             "select * from DEVELOPER d, PROJECT p where d.projectId = p._key and d._key = ?", 0);
 
         assertEquals(1, qry.size());
@@ -806,7 +801,7 @@ public class CalciteQueryProcessorTest extends AbstractTransactionalSqlTest {
 
         QueryEngine engine = Commons.lookupComponent(grid(1).context(), QueryEngine.class);
 
-        List<FieldsQueryCursor<List<?>>> qry = engine.query(txContext(), "PUBLIC",
+        List<FieldsQueryCursor<List<?>>> qry = engine.query(queryContext(), "PUBLIC",
             "select * from DEVELOPER d, PROJECT p where d.projectId = p._key and d._key = ?", 0);
 
         assertEquals(1, qry.size());
@@ -839,7 +834,7 @@ public class CalciteQueryProcessorTest extends AbstractTransactionalSqlTest {
 
         QueryEngine engine = Commons.lookupComponent(grid(1).context(), QueryEngine.class);
 
-        List<FieldsQueryCursor<List<?>>> qry = engine.query(txContext(), "PUBLIC",
+        List<FieldsQueryCursor<List<?>>> qry = engine.query(queryContext(), "PUBLIC",
             "" +
                 "select * from DEVELOPER d, PROJECT p where d.projectId = p._key and d._key = ?;" +
                 "select * from DEVELOPER d, PROJECT p where d.projectId = p._key and d._key = 10;" +
@@ -1238,7 +1233,7 @@ public class CalciteQueryProcessorTest extends AbstractTransactionalSqlTest {
 
         QueryEngine engineCli = Commons.lookupComponent(client.context(), QueryEngine.class);
 
-        List<FieldsQueryCursor<List<?>>> cursorsCli = engineCli.query(txContext(), "PUBLIC", sql, args);
+        List<FieldsQueryCursor<List<?>>> cursorsCli = engineCli.query(queryContext(), "PUBLIC", sql, args);
 
         List<List<?>> allSrv;
 

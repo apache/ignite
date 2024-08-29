@@ -56,7 +56,7 @@ public abstract class AbstractTransactionalSqlTest extends GridCommonAbstractTes
     public TxDml txDml;
 
     /** */
-    protected TxDml currentMode;
+    protected static TxDml currentMode;
 
     /** @return Test parameters. */
     @Parameterized.Parameters(name = "txDml={0}")
@@ -65,7 +65,7 @@ public abstract class AbstractTransactionalSqlTest extends GridCommonAbstractTes
     }
 
     /** */
-    protected Transaction tx;
+    protected static Transaction tx;
 
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
@@ -76,6 +76,38 @@ public abstract class AbstractTransactionalSqlTest extends GridCommonAbstractTes
 
         return cfg;
     }
+
+    /** {@inheritDoc} */
+    @Override protected void beforeTest() throws Exception {
+        if (currentMode != null && txDml == currentMode)
+            return;
+
+        currentMode = txDml;
+
+        if (tx != null) {
+            tx.resume();
+
+            tx.rollback();
+
+            tx = null;
+        }
+
+        stopAllGrids();
+
+        init();
+    }
+
+    /** {@inheritDoc} */
+    @Override protected void afterTestsStopped() throws Exception {
+        super.afterTestsStopped();
+
+        currentMode = null;
+
+        tx = null;
+    }
+
+    /** */
+    protected abstract void init() throws Exception;
 
     /** */
     protected <K, V> void put(Ignite node, IgniteCache<K, V> cache, K key, V val) {
@@ -141,7 +173,7 @@ public abstract class AbstractTransactionalSqlTest extends GridCommonAbstractTes
     }
 
     /** */
-    protected QueryContext txContext() {
+    protected QueryContext queryContext() {
         return QueryContext.of(tx != null ? ((TransactionProxyImpl)tx).tx().xidVersion() : null);
     }
 

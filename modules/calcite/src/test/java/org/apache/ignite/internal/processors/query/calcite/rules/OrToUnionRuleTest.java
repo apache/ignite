@@ -19,7 +19,6 @@ package org.apache.ignite.internal.processors.query.calcite.rules;
 
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
-import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.cache.QueryEntity;
 import org.apache.ignite.cache.QueryIndex;
@@ -68,14 +67,7 @@ public class OrToUnionRuleTest extends AbstractTransactionalSqlTest {
     public static final String IDX_CAT_ID = "IDX_CAT_ID";
 
     /** {@inheritDoc} */
-    @Override protected void beforeTest() throws Exception {
-        if (currentMode != null && txDml == currentMode)
-            return;
-
-        currentMode = txDml;
-
-        stopAllGrids();
-
+    @Override protected void init() throws Exception {
         Ignite grid = startGridsMultiThreaded(2);
 
         QueryEntity qryEnt = new QueryEntity();
@@ -98,10 +90,8 @@ public class OrToUnionRuleTest extends AbstractTransactionalSqlTest {
         ));
         qryEnt.setTableName("products");
 
-        final CacheConfiguration<Integer, Product> cfg = new CacheConfiguration<>(qryEnt.getTableName());
-
-        cfg.setCacheMode(CacheMode.PARTITIONED)
-            .setAtomicityMode(CacheAtomicityMode.TRANSACTIONAL)
+        final CacheConfiguration<Integer, Product> cfg = this.<Integer, Product>cacheConfiguration().setName(qryEnt.getTableName())
+            .setCacheMode(CacheMode.PARTITIONED)
             .setBackups(0)
             .setQueryEntities(singletonList(qryEnt))
             .setSqlSchema("PUBLIC");
@@ -141,23 +131,19 @@ public class OrToUnionRuleTest extends AbstractTransactionalSqlTest {
      */
     @Test
     public void testEqualityOrToUnionAllRewrite() {
-        QueryChecker checker = checkQuery("SELECT * " +
+        checkQuery("SELECT * " +
             "FROM products " +
             "WHERE category = 'Video' " +
             "OR subcategory ='Camera Lens'")
+            .matches(containsUnion(true))
+            .matches(containsIndexScan("PUBLIC", "PRODUCTS", "IDX_CATEGORY"))
+            .matches(containsIndexScan("PUBLIC", "PRODUCTS", "IDX_SUBCATEGORY"))
             .returns(3, "Photo", 1, "Camera Lens", 12, "Lens 1")
             .returns(5, "Video", 2, "Camera Media", 21, "Media 3")
             .returns(6, "Video", 2, "Camera Lens", 22, "Lens 3")
             .returns(7, "Video", 1, null, 0, "Canon")
-            .returns(8, null, 0, "Camera Lens", 11, "Zeiss");
-
-        if (txDml == TxDml.NONE) {
-            checker.matches(containsUnion(true))
-                .matches(containsIndexScan("PUBLIC", "PRODUCTS", "IDX_CATEGORY"))
-                .matches(containsIndexScan("PUBLIC", "PRODUCTS", "IDX_SUBCATEGORY"));
-        }
-
-        checker.check();
+            .returns(8, null, 0, "Camera Lens", 11, "Zeiss")
+            .check();
     }
 
     /**
@@ -165,21 +151,17 @@ public class OrToUnionRuleTest extends AbstractTransactionalSqlTest {
      */
     @Test
     public void testNonDistinctOrToUnionAllRewrite() {
-        QueryChecker checker = checkQuery("SELECT * " +
+        checkQuery("SELECT * " +
             "FROM products " +
             "WHERE subcategory = 'Camera Lens' " +
             "OR subcategory = 'Other'")
+            .matches(CoreMatchers.not(containsUnion(true)))
+            .matches(containsIndexScan("PUBLIC", "PRODUCTS", "IDX_SUBCATEGORY"))
             .returns(3, "Photo", 1, "Camera Lens", 12, "Lens 1")
             .returns(4, "Photo", 1, "Other", 12, "Charger 1")
             .returns(6, "Video", 2, "Camera Lens", 22, "Lens 3")
-            .returns(8, null, 0, "Camera Lens", 11, "Zeiss");
-
-        if (txDml == TxDml.NONE) {
-            checker.matches(not(containsUnion(true)))
-                .matches(containsIndexScan("PUBLIC", "PRODUCTS", "IDX_SUBCATEGORY"));
-        }
-
-        checker.check();
+            .returns(8, null, 0, "Camera Lens", 11, "Zeiss")
+            .check();
     }
 
     /**
@@ -187,23 +169,19 @@ public class OrToUnionRuleTest extends AbstractTransactionalSqlTest {
      */
     @Test
     public void testMixedOrToUnionAllRewrite() {
-        QueryChecker checker = checkQuery("SELECT * " +
+        checkQuery("SELECT * " +
             "FROM products " +
             "WHERE category = 'Photo' " +
             "OR (subcat_id > 12 AND subcat_id < 22)")
+            .matches(containsUnion(true))
+            .matches(containsIndexScan("PUBLIC", "PRODUCTS", "IDX_CATEGORY"))
+            .matches(containsIndexScan("PUBLIC", "PRODUCTS", "IDX_SUBCAT_ID"))
             .returns(1, "Photo", 1, "Camera Media", 11, "Media 1")
             .returns(2, "Photo", 1, "Camera Media", 11, "Media 2")
             .returns(3, "Photo", 1, "Camera Lens", 12, "Lens 1")
             .returns(4, "Photo", 1, "Other", 12, "Charger 1")
-            .returns(5, "Video", 2, "Camera Media", 21, "Media 3");
-
-        if (txDml == TxDml.NONE) {
-            checker.matches(containsUnion(true))
-                .matches(containsIndexScan("PUBLIC", "PRODUCTS", "IDX_CATEGORY"))
-                .matches(containsIndexScan("PUBLIC", "PRODUCTS", "IDX_SUBCAT_ID"));
-        }
-
-        checker.check();
+            .returns(5, "Video", 2, "Camera Media", 21, "Media 3")
+            .check();
     }
 
     /**
