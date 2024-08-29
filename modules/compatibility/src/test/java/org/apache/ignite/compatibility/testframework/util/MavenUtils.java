@@ -23,7 +23,6 @@ import java.io.InputStreamReader;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.concurrent.Callable;
@@ -52,12 +51,6 @@ public class MavenUtils {
 
     /** */
     private static final String MAVEN_DEPENDENCY_PLUGIN = "org.apache.maven.plugins:maven-dependency-plugin:3.2.0";
-
-    /** */
-    private static final String GG_MVN_REPO = "http://www.gridgainsystems.com/nexus/content/repositories/external";
-
-    /** Set this flag to true if running PDS compatibility tests locally. */
-    private static boolean useGgRepo;
 
     /**
      * Gets a path to an artifact with given version and groupId=org.apache.ignite and artifactId={@code artifactId}.
@@ -144,7 +137,7 @@ public class MavenUtils {
      * @throws Exception In case of an error.
      */
     private static String defineMavenLocalRepositoryPath() throws Exception {
-        String output = exec(withMavenSettings(buildMvnCommand() + " help:effective-settings"));
+        String output = exec(buildMvnCommand() + " help:effective-settings");
 
         int endTagPos = output.indexOf("</localRepository>");
 
@@ -165,7 +158,7 @@ public class MavenUtils {
         Path outPath = Files.createTempFile("effective-pom", "");
 
         try {
-            exec(withMavenSettings(buildMvnCommand() + " -f " + workDir + " help:effective-pom -Doutput=" + outPath.toAbsolutePath()));
+            exec(buildMvnCommand() + " -f " + workDir + " help:effective-pom -Doutput=" + outPath.toAbsolutePath());
 
             Model model = new MavenXpp3Reader().read(new FileInputStream(outPath.toFile()));
 
@@ -187,21 +180,10 @@ public class MavenUtils {
 
         GridStringBuilder mavenCmdArgs = new SB(" ").a(MAVEN_DEPENDENCY_PLUGIN).a(":get -Dartifact=" + artifact);
 
-        Path mvnSettingsFilePath = resolveMavenSettingsFilePath();
+        Collection<String> repos = mavenProjectRepositories();
 
-        if (Files.exists(mvnSettingsFilePath))
-            mavenCmdArgs.a(" -s ").a(mvnSettingsFilePath);
-        else {
-            Collection<String> repos = new ArrayList<>();
-
-            if (useGgRepo)
-                repos.add(GG_MVN_REPO);
-
-            repos.addAll(mavenProjectRepositories());
-
-            if (!repos.isEmpty())
-                mavenCmdArgs.a(" -DremoteRepositories=").a(String.join(",", repos));
-        }
+        if (!repos.isEmpty())
+            mavenCmdArgs.a(" -DremoteRepositories=").a(String.join(",", repos));
 
         exec(buildMvnCommand() + mavenCmdArgs.toString());
 
@@ -256,14 +238,18 @@ public class MavenUtils {
         }
     }
 
-    /** */
-    private static String withMavenSettings(String cmd) {
+    /**
+     * @return Maven executable command.
+     */
+    private static String buildMvnCommand() {
+        String mvnCmd = resolveMavenApplicationPath();
+
         Path mvnSettingsFilePath = resolveMavenSettingsFilePath();
 
         if (Files.exists(mvnSettingsFilePath))
-            cmd += " -s " + mvnSettingsFilePath;
+            mvnCmd += " -s " + mvnSettingsFilePath;
 
-        return cmd;
+        return mvnCmd;
     }
 
     /** */
@@ -275,10 +261,8 @@ public class MavenUtils {
             : Paths.get(settingsPathEnv);
     }
 
-    /**
-     * @return Maven executable command.
-     */
-    private static String buildMvnCommand() {
+    /** */
+    private static String resolveMavenApplicationPath() {
         String m2Home = System.getenv("M2_HOME");
 
         if (m2Home == null)
