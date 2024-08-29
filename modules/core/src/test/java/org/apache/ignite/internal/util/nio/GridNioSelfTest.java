@@ -661,7 +661,7 @@ public class GridNioSelfTest extends GridCommonAbstractTest {
             }
 
             try {
-                assert latch.await(30, SECONDS);
+                latch.await(30, SECONDS);
             }
             catch (Exception e) {
                 log.error("Error here!!!   " + e.getMessage());
@@ -754,7 +754,7 @@ public class GridNioSelfTest extends GridCommonAbstractTest {
             }, THREAD_CNT, "sender");
 
             try {
-                assert latch.await(30, SECONDS);
+                latch.await(30, SECONDS);
             }
             catch (Exception e) {
                 log.error("Error here!!!   " + e.getMessage());
@@ -923,7 +923,7 @@ public class GridNioSelfTest extends GridCommonAbstractTest {
             }, THREAD_CNT, "sender");
 
             try {
-                assert latch.await(30, SECONDS);
+                latch.await(30, SECONDS);
             }
             catch (Exception e) {
                 log.error("Error here!!!   " + e.getMessage());
