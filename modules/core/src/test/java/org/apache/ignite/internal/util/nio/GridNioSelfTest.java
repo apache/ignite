@@ -663,8 +663,7 @@ public class GridNioSelfTest extends GridCommonAbstractTest {
             try {
                 assert latch.await(30, SECONDS);
             }
-            catch (Exception e)
-            {
+            catch (Exception e) {
                 log.error("Error here!!!   " + e.getMessage());
             }
 
@@ -757,8 +756,7 @@ public class GridNioSelfTest extends GridCommonAbstractTest {
             try {
                 assert latch.await(30, SECONDS);
             }
-            catch (Exception e)
-            {
+            catch (Exception e) {
                 log.error("Error here!!!   " + e.getMessage());
             }
 
@@ -875,7 +873,6 @@ public class GridNioSelfTest extends GridCommonAbstractTest {
     public void testDeliveryDuration() throws Exception {
         idProvider.set(1);
 
-        //CountDownLatch latch = new CountDownLatch(MSG_CNT * THREAD_CNT);
         CountDownLatch latch = new CountDownLatch(10);
 
         final Map<Integer, Long> deliveryDurations = new ConcurrentHashMap<>();
@@ -928,8 +925,7 @@ public class GridNioSelfTest extends GridCommonAbstractTest {
             try {
                 assert latch.await(30, SECONDS);
             }
-            catch (Exception e)
-            {
+            catch (Exception e) {
                 log.error("Error here!!!   " + e.getMessage());
             }
 
