@@ -74,6 +74,8 @@ public abstract class AbstractBasicIntegrationTransactionalTest extends Abstract
 
     /** {@inheritDoc} */
     @Override protected void afterTest() throws Exception {
+        clearTransaction();
+
         // Wait for pending queries before destroying caches. If some error occurs during query execution, client code
         // can get control earlier than query leave the running queries registry (need some time for async message
         // exchange), but eventually, all queries should be closed.
@@ -145,6 +147,9 @@ public abstract class AbstractBasicIntegrationTransactionalTest extends Abstract
 
     /** */
     protected List<List<?>> executeSql(String sql, Object... args) {
+        if (sqlTxMode != SqlTransactionMode.NONE && tx == null)
+            startTransaction(client);
+
         CalciteQueryProcessor qryProc = Commons.lookupComponent(client.context(), CalciteQueryProcessor.class);
 
         List<FieldsQueryCursor<List<?>>> cur = qryProc.query(queryContext(), "PUBLIC", sql, args);

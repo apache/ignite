@@ -84,13 +84,7 @@ public abstract class AbstractTransactionalSqlTest extends GridCommonAbstractTes
 
         currentMode = sqlTxMode;
 
-        if (tx != null) {
-            tx.resume();
-
-            tx.rollback();
-
-            tx = null;
-        }
+        clearTransaction();
 
         stopAllGrids();
 
@@ -99,11 +93,15 @@ public abstract class AbstractTransactionalSqlTest extends GridCommonAbstractTes
 
     /** {@inheritDoc} */
     @Override protected void afterTestsStopped() throws Exception {
-        super.afterTestsStopped();
+        clearTransaction();
+
+        stopAllGrids();
 
         currentMode = null;
 
         tx = null;
+
+        super.afterTestsStopped();
     }
 
     /** */
@@ -119,6 +117,9 @@ public abstract class AbstractTransactionalSqlTest extends GridCommonAbstractTes
 
     /** */
     protected <T> T invokeAction(Ignite node, SupplierX<T> action) {
+        if (tx == null && sqlTxMode != SqlTransactionMode.NONE)
+            startTransaction(node);
+
         switch (sqlTxMode) {
             case ALL:
                 return txAction(node, action);
@@ -136,9 +137,6 @@ public abstract class AbstractTransactionalSqlTest extends GridCommonAbstractTes
 
     /** */
     public <T> T txAction(Ignite node, SupplierX<T> action) {
-        if (tx == null)
-            startTransaction(node);
-
         tx.resume();
 
         try {
@@ -182,5 +180,17 @@ public abstract class AbstractTransactionalSqlTest extends GridCommonAbstractTes
         return new CacheConfiguration<K, V>().setAtomicityMode(sqlTxMode == SqlTransactionMode.NONE
             ? CacheAtomicityMode.ATOMIC
             : CacheAtomicityMode.TRANSACTIONAL);
+    }
+
+    /** */
+    protected void clearTransaction() {
+        if (tx == null)
+            return;
+
+        tx.resume();
+
+        tx.rollback();
+
+        tx = null;
     }
 }

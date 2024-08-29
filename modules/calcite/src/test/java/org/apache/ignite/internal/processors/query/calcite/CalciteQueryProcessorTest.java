@@ -103,13 +103,7 @@ public class CalciteQueryProcessorTest extends AbstractTransactionalSqlTest {
 
     /** {@inheritDoc} */
     @Override protected void afterTest() throws InterruptedException {
-        if (tx != null) {
-            tx.resume();
-
-            tx.rollback();
-
-            tx = null;
-        }
+        clearTransaction();
 
         for (Ignite ign : G.allGrids()) {
             for (String cacheName : ign.cacheNames())
