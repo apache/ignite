@@ -136,27 +136,13 @@ public class SnapshotChecker {
     protected final EncryptionSpi encryptionSpi;
 
     /** */
-    protected final ExecutorService workingExecutor;
+    protected final ExecutorService executor;
 
     /** */
-    protected final ExecutorService launchingExecutor;
-
-    /**
-     * @param kctx              Kernal context.
-     * @param marshaller        Marshaller.
-     * @param workingExecutor   An executor for the desired snapshot checks like
-     *                          {@link #checkPartitions(SnapshotMetadata, File, Collection, boolean, boolean, boolean)},
-     *                          or {@link #checkIncrementalSnapshot(String, String, int)}.
-     * @param launchingExecutor An additional executor to start and wait for the working futures launched in {@link #workingExecutor}.
-     *                          If {@code null}, the same {@link #workingExecutor} is used. Might be helpful when the working
-     *                          executor is too tiny or even has just 1 thread and awaiting in the same executor can block the process.
-     * @param marshallerClsLdr  Marshaller class loader.
-     */
     public SnapshotChecker(
         GridKernalContext kctx,
         Marshaller marshaller,
-        ExecutorService workingExecutor,
-        @Nullable ExecutorService launchingExecutor,
+        ExecutorService executor,
         @Nullable ClassLoader marshallerClsLdr
     ) {
         this.kctx = kctx;
@@ -166,9 +152,7 @@ public class SnapshotChecker {
 
         this.encryptionSpi = kctx.config().getEncryptionSpi() == null ? new NoopEncryptionSpi() : kctx.config().getEncryptionSpi();
 
-        this.workingExecutor = workingExecutor;
-
-        this.launchingExecutor = launchingExecutor == null ? workingExecutor : launchingExecutor;
+        this.executor = executor;
 
         this.log = kctx.log(getClass());
     }
@@ -326,7 +310,7 @@ public class SnapshotChecker {
             }
 
             return snpMetas;
-        }, workingExecutor);
+        }, executor);
     }
 
     /** Checks that all incremental snapshots are present, contain correct metafile and WAL segments. */
@@ -621,7 +605,7 @@ public class SnapshotChecker {
                     throw new IgniteException(e);
                 }
             },
-            workingExecutor
+            executor
         );
     }
 
@@ -846,6 +830,8 @@ public class SnapshotChecker {
 
         File snpDir = snpMgr.snapshotLocalDir(meta.snapshotName(), snpPath);
 
+        // The handlers use or may use the same snapshot pool. If it configured with 1 thread, launching waiting task in
+        // the same pool might block it.
         return CompletableFuture.supplyAsync(() -> {
             try {
                 return snpMgr.handlers().invokeAll(SnapshotHandlerType.RESTORE,
@@ -854,7 +840,7 @@ public class SnapshotChecker {
             catch (IgniteCheckedException e) {
                 throw new IgniteException("Failed to call custom snapshot validation handlers.", e);
             }
-        }, launchingExecutor);
+        });
     }
 
     /** */
@@ -886,7 +872,7 @@ public class SnapshotChecker {
 
         try {
             U.doInParallel(
-                workingExecutor,
+                executor,
                 grpAndPartFiles.get2(),
                 part -> {
                     String grpName = cacheGroupName(part.getParentFile());
@@ -1046,6 +1032,7 @@ public class SnapshotChecker {
         boolean checkParts,
         boolean skipPartsHashes
     ) {
+        // Await in the default executor to avoid blocking the snapshot executor if it has just one thread.
         return CompletableFuture.supplyAsync(() -> {
             if (!snpDir.exists())
                 throw new IllegalStateException("Snapshot directory doesn't exists: " + snpDir);
@@ -1074,7 +1061,7 @@ public class SnapshotChecker {
             catch (IgniteCheckedException e) {
                 throw new IgniteException("Failed to check partitions of snapshot '" + meta.snapshotName() + "'.", e);
             }
-        }, launchingExecutor);
+        });
     }
 
     /**
@@ -1154,7 +1141,7 @@ public class SnapshotChecker {
             String nodeFolderName = kctx.pdsFolderResolver().resolveFolders().folderName();
 
             Collection<PartitionHashRecordV2> partitionHashRecordV2s = U.doInParallel(
-                workingExecutor,
+                executor,
                 grpAndPartFiles.get2(),
                 part -> calculateDumpedPartitionHash(dump, cacheGroupName(part.getParentFile()), partId(part.getName()),
                     skipHash, consId, nodeFolderName)

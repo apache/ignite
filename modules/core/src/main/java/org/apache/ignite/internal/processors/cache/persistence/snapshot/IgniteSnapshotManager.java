@@ -154,7 +154,6 @@ import org.apache.ignite.internal.processors.configuration.distributed.Distribut
 import org.apache.ignite.internal.processors.configuration.distributed.DistributedPropertyDispatcher;
 import org.apache.ignite.internal.processors.marshaller.MappedName;
 import org.apache.ignite.internal.processors.metastorage.persistence.DistributedMetaStorageImpl;
-import org.apache.ignite.internal.processors.pool.PoolProcessor;
 import org.apache.ignite.internal.processors.task.GridInternal;
 import org.apache.ignite.internal.util.BasicRateLimiter;
 import org.apache.ignite.internal.util.GridBusyLock;
@@ -470,11 +469,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
     private final boolean sequentialWrite =
         IgniteSystemProperties.getBoolean(IGNITE_SNAPSHOT_SEQUENTIAL_WRITE, DFLT_IGNITE_SNAPSHOT_SEQUENTIAL_WRITE);
 
-    /**
-     * The snapshot checker. Uses {@link PoolProcessor#getSnapshotExecutorService()} to work and also
-     * {@link PoolProcessor#getExecutorService()} to launch and wait for the working futures if
-     * {@link IgniteConfiguration#getSnapshotThreadPoolSize()} is just 1. If bigger, uses only the snapshot thread pool.
-     */
+    /** Snapshot checker. */
     private final SnapshotChecker snpChecker;
 
     /**
@@ -500,13 +495,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
         // Manage remote snapshots.
         snpRmtMgr = new SequentialRemoteSnapshotManager();
 
-        snpChecker = new SnapshotChecker(
-            ctx,
-            marsh,
-            ctx.pools().getSnapshotExecutorService(),
-            ctx.config().getSnapshotThreadPoolSize() > 1 ? ctx.pools().getSnapshotExecutorService() : ctx.pools().getExecutorService(),
-            U.resolveClassLoader(ctx.config())
-        );
+        snpChecker = new SnapshotChecker(ctx, marsh, ctx.pools().getSnapshotExecutorService(), U.resolveClassLoader(ctx.config()));
     }
 
     /**
