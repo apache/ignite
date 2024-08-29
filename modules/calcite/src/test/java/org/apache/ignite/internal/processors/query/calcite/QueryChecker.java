@@ -38,6 +38,7 @@ import org.apache.ignite.internal.processors.cache.transactions.TransactionProxy
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.processors.query.QueryContext;
 import org.apache.ignite.internal.processors.query.QueryEngine;
+import org.apache.ignite.internal.processors.query.calcite.rules.AbstractTransactionalSqlTest.SqlTransactionMode;
 import org.apache.ignite.internal.processors.query.schema.management.SchemaManager;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.G;
@@ -308,11 +309,14 @@ public abstract class QueryChecker {
 
     /** */
     public QueryChecker(String qry) {
-        this(qry, null);
+        this(qry, null, SqlTransactionMode.NONE);
     }
 
     /** */
-    public QueryChecker(String qry, Transaction tx) {
+    public QueryChecker(String qry, Transaction tx, SqlTransactionMode sqlTxMode) {
+        assert (tx != null && sqlTxMode != SqlTransactionMode.NONE)
+            || (tx == null && sqlTxMode == SqlTransactionMode.NONE) : "mode = " + sqlTxMode + ", tx = " + tx;
+
         this.qry = qry;
         this.tx = tx;
     }

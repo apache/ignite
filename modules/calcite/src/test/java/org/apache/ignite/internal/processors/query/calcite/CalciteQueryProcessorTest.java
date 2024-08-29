@@ -263,7 +263,7 @@ public class CalciteQueryProcessorTest extends AbstractTransactionalSqlTest {
      */
     @Test
     public void testBangEqual() throws Exception {
-        assumeTrue(txDml == TxDml.NONE);
+        assumeTrue(sqlTxMode == SqlTransactionMode.NONE);
 
         IgniteCache<Integer, Developer> developer = grid(1).createCache(new CacheConfiguration<Integer, Developer>()
             .setName("developer")
@@ -906,7 +906,7 @@ public class CalciteQueryProcessorTest extends AbstractTransactionalSqlTest {
     public void testSequentialInserts() throws Exception {
         sql("CREATE TABLE t(x INTEGER) WITH \"atomicity=transactional\"", true);
 
-        if (txDml != TxDml.NONE)
+        if (sqlTxMode != SqlTransactionMode.NONE)
             startTransaction(client);
 
         for (int i = 0; i < 10_000; i++)
@@ -1079,7 +1079,7 @@ public class CalciteQueryProcessorTest extends AbstractTransactionalSqlTest {
      */
     @Test
     public void testSelectWithOrdering() throws IgniteInterruptedCheckedException {
-        assumeTrue(txDml == TxDml.NONE);
+        assumeTrue(sqlTxMode == SqlTransactionMode.NONE);
 
         sql( "drop table if exists test_tbl", true);
 
@@ -1237,7 +1237,7 @@ public class CalciteQueryProcessorTest extends AbstractTransactionalSqlTest {
 
         List<List<?>> allSrv;
 
-        if (!noCheck && txDml == TxDml.NONE) {
+        if (!noCheck && sqlTxMode == SqlTransactionMode.NONE) {
             List<FieldsQueryCursor<List<?>>> cursorsSrv = engineSrv.query(null, "PUBLIC", sql, args);
 
             try (QueryCursor srvCursor = cursorsSrv.get(0); QueryCursor cliCursor = cursorsCli.get(0)) {
@@ -1328,7 +1328,7 @@ public class CalciteQueryProcessorTest extends AbstractTransactionalSqlTest {
 
     /** */
     private QueryChecker assertQuery(IgniteEx ignite, String qry) {
-        return new QueryChecker(qry, tx) {
+        return new QueryChecker(qry, tx, sqlTxMode) {
             @Override protected QueryEngine getEngine() {
                 return Commons.lookupComponent(ignite.context(), QueryEngine.class);
             }

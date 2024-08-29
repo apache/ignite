@@ -202,7 +202,7 @@ public class OrToUnionRuleTest extends AbstractTransactionalSqlTest {
      */
     @Test
     public void testWithHiddenKeys() {
-        assumeTrue(txDml == TxDml.NONE);
+        assumeTrue(sqlTxMode == SqlTransactionMode.NONE);
 
         checkQuery("SELECT _key, _val FROM products WHERE category = 'Photo' OR subcat_id = 22")
             .matches(containsUnion(true))
@@ -263,7 +263,7 @@ public class OrToUnionRuleTest extends AbstractTransactionalSqlTest {
 
     /** */
     private QueryChecker checkQuery(String qry) {
-        return new QueryChecker(qry, tx) {
+        return new QueryChecker(qry, tx, sqlTxMode) {
             @Override protected QueryEngine getEngine() {
                 return Commons.lookupComponent(grid(0).context(), QueryEngine.class);
             }

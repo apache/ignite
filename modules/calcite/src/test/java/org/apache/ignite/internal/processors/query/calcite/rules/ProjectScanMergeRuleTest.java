@@ -89,7 +89,7 @@ public class ProjectScanMergeRuleTest extends AbstractTransactionalSqlTest {
 
     /** */
     private QueryChecker checkQuery(String qry) {
-        return new QueryChecker(qry, tx) {
+        return new QueryChecker(qry, tx, sqlTxMode) {
             @Override protected QueryEngine getEngine() {
                 return Commons.lookupComponent(grid(0).context(), QueryEngine.class);
             }

@@ -30,7 +30,6 @@ import org.apache.ignite.cache.QueryEntity;
 import org.apache.ignite.cache.query.FieldsQueryCursor;
 import org.apache.ignite.cache.query.QueryCursor;
 import org.apache.ignite.cache.query.annotations.QuerySqlField;
-import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.processors.query.QueryEngine;
 import org.apache.ignite.internal.processors.query.calcite.CalciteQueryProcessor;
@@ -137,7 +136,7 @@ public abstract class AbstractBasicIntegrationTransactionalTest extends Abstract
 
     /** */
     protected QueryChecker assertQuery(IgniteEx ignite, String qry) {
-        return new QueryChecker(qry, tx) {
+        return new QueryChecker(qry, tx, sqlTxMode) {
             @Override protected QueryEngine getEngine() {
                 return Commons.lookupComponent(ignite.context(), QueryEngine.class);
             }
@@ -173,7 +172,7 @@ public abstract class AbstractBasicIntegrationTransactionalTest extends Abstract
 
     /** */
     protected IgniteCache<Integer, Employer> createAndPopulateTable(int backups, CacheMode cacheMode) {
-        IgniteCache<Integer, Employer> person = client.getOrCreateCache(new CacheConfiguration<Integer, Employer>()
+        IgniteCache<Integer, Employer> person = client.getOrCreateCache(this.<Integer, Employer>cacheConfiguration()
             .setName(TABLE_NAME)
             .setSqlSchema("PUBLIC")
             .setQueryEntities(F.asList(new QueryEntity(Integer.class, Employer.class)

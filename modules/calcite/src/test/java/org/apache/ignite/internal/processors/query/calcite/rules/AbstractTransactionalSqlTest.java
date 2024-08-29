@@ -40,7 +40,7 @@ import static org.apache.ignite.transactions.TransactionIsolation.READ_COMMITTED
 @RunWith(Parameterized.class)
 public abstract class AbstractTransactionalSqlTest extends GridCommonAbstractTest {
     /** */
-    public enum TxDml {
+    public enum SqlTransactionMode {
         /** All put, remove and SQL dml will be executed inside transaction. */
         ALL,
 
@@ -53,15 +53,15 @@ public abstract class AbstractTransactionalSqlTest extends GridCommonAbstractTes
 
     /** */
     @Parameterized.Parameter()
-    public TxDml txDml;
+    public SqlTransactionMode sqlTxMode;
 
     /** */
-    protected static TxDml currentMode;
+    protected static SqlTransactionMode currentMode;
 
     /** @return Test parameters. */
-    @Parameterized.Parameters(name = "txDml={0}")
+    @Parameterized.Parameters(name = "sqlTxMode={0}")
     public static Collection<?> parameters() {
-        return Arrays.asList(TxDml.values());
+        return Arrays.asList(SqlTransactionMode.values());
     }
 
     /** */
@@ -79,10 +79,10 @@ public abstract class AbstractTransactionalSqlTest extends GridCommonAbstractTes
 
     /** {@inheritDoc} */
     @Override protected void beforeTest() throws Exception {
-        if (currentMode != null && txDml == currentMode)
+        if (currentMode != null && sqlTxMode == currentMode)
             return;
 
-        currentMode = txDml;
+        currentMode = sqlTxMode;
 
         if (tx != null) {
             tx.resume();
@@ -119,7 +119,7 @@ public abstract class AbstractTransactionalSqlTest extends GridCommonAbstractTes
 
     /** */
     protected <T> T invokeAction(Ignite node, SupplierX<T> action) {
-        switch (txDml) {
+        switch (sqlTxMode) {
             case ALL:
                 return txAction(node, action);
             case NONE:
@@ -179,7 +179,7 @@ public abstract class AbstractTransactionalSqlTest extends GridCommonAbstractTes
 
     /** */
     protected <K, V> CacheConfiguration<K, V> cacheConfiguration() {
-        return new CacheConfiguration<K, V>().setAtomicityMode(txDml == TxDml.NONE
+        return new CacheConfiguration<K, V>().setAtomicityMode(sqlTxMode == SqlTransactionMode.NONE
             ? CacheAtomicityMode.ATOMIC
             : CacheAtomicityMode.TRANSACTIONAL);
     }
