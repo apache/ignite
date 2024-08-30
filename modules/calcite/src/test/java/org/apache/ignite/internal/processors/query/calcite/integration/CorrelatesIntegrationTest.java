@@ -22,8 +22,6 @@ import org.junit.Test;
 
 /**
  * Tests correlated queries.
- *
- * TODO: FIX test failures.
  */
 public class CorrelatesIntegrationTest extends AbstractBasicIntegrationTransactionalTest {
     /**
