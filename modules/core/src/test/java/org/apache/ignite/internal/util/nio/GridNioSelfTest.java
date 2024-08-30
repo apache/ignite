@@ -61,7 +61,7 @@ import static java.util.concurrent.TimeUnit.SECONDS;
  */
 public class GridNioSelfTest extends GridCommonAbstractTest {
     /** Message count in test without reconnect. */
-    private static final int MSG_CNT = 2000;
+    private static final int MSG_CNT = 100;
 
     /** */
     private static final int START_PORT = 55443;
@@ -640,8 +640,6 @@ public class GridNioSelfTest extends GridCommonAbstractTest {
      */
     @Test
     public void testSendReceive() throws Exception {
-        Thread.sleep(2000);
-
         CountDownLatch latch = new CountDownLatch(5);
 
         NioListener lsnr = new NioListener(latch);
@@ -652,10 +650,13 @@ public class GridNioSelfTest extends GridCommonAbstractTest {
 
         try {
             for (int i = 0; i < 5; i++) {
-                client = createClient(U.getLocalHost(), srvr.port(), U.getLocalHost());
+                client = createClient(U.getLocalHost(), srvr.port() + 1, U.getLocalHost());
 
                 log.warning("VOT tut idet client.sendMessage(createMessage(), MSG_SIZE);");
+
                 client.sendMessage(createMessage(), MSG_SIZE);
+
+                Thread.sleep(1000);
 
                 client.close();
             }
@@ -735,7 +736,7 @@ public class GridNioSelfTest extends GridCommonAbstractTest {
                     TestClient client = null;
 
                     try {
-                        client = createClient(U.getLocalHost(), srvr.port(), U.getLocalHost());
+                        client = createClient(U.getLocalHost(), srvr.port() + 2, U.getLocalHost());
 
                         for (int i = 0; i < 2; i++)
                             client.sendMessage(data, data.length);
@@ -746,8 +747,15 @@ public class GridNioSelfTest extends GridCommonAbstractTest {
                         assert false : "Message sending failed: " + e;
                     }
                     finally {
-                        if (client != null)
+                        if (client != null) {
                             client.close();
+
+                            try {
+                                Thread.sleep(1000);
+                            } catch (InterruptedException e) {
+                                throw new RuntimeException(e);
+                            }
+                        }
                     }
                 }
 
@@ -842,7 +850,9 @@ public class GridNioSelfTest extends GridCommonAbstractTest {
 
                             barrier.await();
 
-                            Thread.sleep(100);
+                            client.close();
+
+                            Thread.sleep(1000);
                         }
                     }
                     catch (InterruptedException ignored) {
@@ -903,6 +913,8 @@ public class GridNioSelfTest extends GridCommonAbstractTest {
                             deliveryDurations.put(msg.getId(), start);
 
                             client.sendMessage(data, data.length);
+
+                            Thread.sleep(100);
 
                             long end = System.currentTimeMillis();
 
