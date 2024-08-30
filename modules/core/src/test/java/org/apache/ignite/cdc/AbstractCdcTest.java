@@ -308,7 +308,7 @@ public abstract class AbstractCdcTest extends GridCommonAbstractTest {
         private volatile boolean stopped;
 
         /** {@inheritDoc} */
-        @Override public void start(MetricRegistry mreg) {
+        @Override public void start(MetricRegistry mreg, Path cdcDir) {
             stopped = false;
         }
 
@@ -462,7 +462,7 @@ public abstract class AbstractCdcTest extends GridCommonAbstractTest {
         }
 
         /** {@inheritDoc} */
-        @Override public void start(MetricRegistry mreg) {
+        @Override public void start(MetricRegistry mreg, Path cdcDir) {
             // No-op.
         }
 
