@@ -1147,6 +1147,9 @@ public class IgniteKernal implements IgniteEx, Externalizable {
                 U.error(
                     log, "Exception during start processors, node will be stopped and close connections", e);
 
+                if (e instanceof OutOfMemoryError)
+                    checkPhysicalRam();
+
                 // Stop discovery spi to close tcp socket.
                 ctx.discovery().stop(true);
 
