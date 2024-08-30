@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.ducktest.tests.cdc;
 
+import java.nio.file.Path;
 import java.util.Iterator;
 import java.util.concurrent.atomic.AtomicLong;
 import org.apache.ignite.IgniteLogger;
@@ -42,7 +43,7 @@ public class CountingCdcConsumer implements CdcConsumer {
     private final AtomicLong objectsConsumed = new AtomicLong();
 
     /** {@inheritDoc} */
-    @Override public void start(MetricRegistry mreg) {
+    @Override public void start(MetricRegistry mreg, Path cdcDir) {
         log.info("CountingCdcConsumer started");
     }
 
