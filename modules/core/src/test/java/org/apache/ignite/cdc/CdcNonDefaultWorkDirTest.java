@@ -18,6 +18,7 @@
 package org.apache.ignite.cdc;
 
 import java.io.File;
+import java.nio.file.Path;
 import java.util.concurrent.CountDownLatch;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.configuration.DataStorageConfiguration;
@@ -92,8 +93,8 @@ public class CdcNonDefaultWorkDirTest extends GridCommonAbstractTest {
         CdcConfiguration cdcCfg = new CdcConfiguration();
 
         cdcCfg.setConsumer(new AbstractCdcTest.UserCdcConsumer() {
-            @Override public void start(MetricRegistry mreg) {
-                super.start(mreg);
+            @Override public void start(MetricRegistry mreg, Path cdcDir) {
+                super.start(mreg, cdcDir);
 
                 started.countDown();
             }
