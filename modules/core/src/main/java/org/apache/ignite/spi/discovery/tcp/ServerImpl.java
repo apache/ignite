@@ -7248,6 +7248,9 @@ class ServerImpl extends TcpDiscoveryImpl {
 
         /** @return Alive address if was able to connected to. {@code Null} otherwise. */
         private InetSocketAddress checkConnection(TcpDiscoveryNode node, int timeout) {
+            IgniteSpiOperationTimeoutHelper timeoutHelper = new IgniteSpiOperationTimeoutHelper(System.nanoTime()
+                + U.millisToNanos(timeout));
+
             AtomicReference<InetSocketAddress> liveAddrHolder = new AtomicReference<>();
 
             List<InetSocketAddress> addrs = new ArrayList<>(spi.getEffectiveNodeAddresses(node));
@@ -7277,20 +7280,25 @@ class ServerImpl extends TcpDiscoveryImpl {
                         for (int i = 0; i < addrsToCheck; ++i) {
                             InetSocketAddress addr = addrs.get(addrIdx.getAndIncrement());
 
-                            try (Socket sock = new Socket()) {
-                                if (liveAddrHolder.get() == null) {
-                                    sock.connect(addr, perAddrTimeout);
+                            if (liveAddrHolder.get() == null) {
+                                try (Socket sock = spi.openSocket(addr, timeoutHelper)) {
+                                    spi.writeToSocket(sock, new TcpDiscoveryPingRequest(getConfiguredNodeId(), null),
+                                        timeoutHelper.nextTimeoutChunk(perAddrTimeout));
+
+                                    spi.readMessage(sock, null, timeoutHelper.nextTimeoutChunk(perAddrTimeout));
 
                                     liveAddrHolder.compareAndSet(null, addr);
                                 }
+                                catch (Exception e) {
+                                    U.warn(log, "Failed to check connection to previous node [nodeId=" + node.id() + ", order="
+                                        + node.order() + ", address=" + addr + ']', e);
+                                }
+                                finally {
+                                    latch.countDown();
+                                }
                             }
-                            catch (Exception e) {
-                                U.warn(log, "Failed to check connection to previous node [nodeId=" + node.id() + ", order="
-                                    + node.order() + ", address=" + addr + ']', e);
-                            }
-                            finally {
+                            else
                                 latch.countDown();
-                            }
                         }
                     }
                 });
