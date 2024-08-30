@@ -17,6 +17,7 @@
 
 package org.apache.ignite.cdc;
 
+import java.nio.file.Path;
 import java.util.Collections;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
@@ -201,10 +202,10 @@ public class CdcPushMetricsExporterTest extends AbstractCdcTest {
         }
 
         /** {@inheritDoc} */
-        @Override public void start(MetricRegistry mreg) {
+        @Override public void start(MetricRegistry mreg, Path cdcDir) {
             Ignite ignite = Ignition.start(destClusterCliCfg);
 
-            super.start(mreg);
+            super.start(mreg, cdcDir);
 
             ignite.log().info("TestIgniteToIgniteConsumer started.");
         }
