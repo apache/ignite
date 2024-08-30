@@ -24,6 +24,7 @@ import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.internal.mem.DirectMemoryProvider;
 import org.apache.ignite.internal.mem.DirectMemoryRegion;
+import org.apache.ignite.internal.mem.IgniteOutOfMemoryException;
 import org.apache.ignite.internal.mem.UnsafeChunk;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.mem.MemoryAllocator;
@@ -102,6 +103,7 @@ public class UnsafeMemoryProvider implements DirectMemoryProvider {
     }
 
     /** {@inheritDoc} */
+    @SuppressWarnings("ErrorNotRethrown")
     @Override public DirectMemoryRegion nextRegion() {
         if (used == sizes.length)
             return null;
@@ -115,6 +117,10 @@ public class UnsafeMemoryProvider implements DirectMemoryProvider {
 
         try {
             ptr = allocator.allocateMemory(chunkSize);
+        }
+        catch (OutOfMemoryError e) {
+            throw new IgniteOutOfMemoryException("Failed to allocate next memory chunk: " + U.readableSize(chunkSize, true) +
+                ". Adjust the heap settings or data storage configuration to allocate the memory.", e);
         }
         catch (IllegalArgumentException e) {
             String msg = "Failed to allocate next memory chunk: " + U.readableSize(chunkSize, true) +

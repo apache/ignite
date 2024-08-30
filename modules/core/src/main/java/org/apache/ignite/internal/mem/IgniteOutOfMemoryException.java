@@ -17,7 +17,6 @@
 
 package org.apache.ignite.internal.mem;
 
-import java.io.IOException;
 import org.apache.ignite.IgniteException;
 
 /**
@@ -45,7 +44,7 @@ public class IgniteOutOfMemoryException extends IgniteException {
      * @param msg Error message.
      * @param e Cause exception.
      */
-    public IgniteOutOfMemoryException(String msg, IOException e) {
+    public IgniteOutOfMemoryException(String msg, Throwable e) {
         super(msg, e);
     }
 }
