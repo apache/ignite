@@ -17,6 +17,7 @@
 
 package org.apache.ignite.cdc;
 
+import java.nio.file.Path;
 import java.util.Iterator;
 import java.util.concurrent.CountDownLatch;
 import org.apache.ignite.IgniteCheckedException;
@@ -123,7 +124,7 @@ public class CdcConfigurationTest extends GridCommonAbstractTest {
         public CountDownLatch startLatch = new CountDownLatch(1);
 
         /** {@inheritDoc} */
-        @Override public void start(MetricRegistry mreg) {
+        @Override public void start(MetricRegistry mreg, Path cdcDir) {
             springString2 = ctx.getBean("springString2", String.class);
 
             startLatch.countDown();

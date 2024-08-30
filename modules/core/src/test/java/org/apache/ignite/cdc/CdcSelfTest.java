@@ -19,6 +19,7 @@ package org.apache.ignite.cdc;
 
 import java.io.File;
 import java.io.Serializable;
+import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -418,7 +419,7 @@ public class CdcSelfTest extends AbstractCdcTest {
                     // No-op.
                 }
 
-                @Override public void start(MetricRegistry mreg) {
+                @Override public void start(MetricRegistry mreg, Path cdcDir) {
                     // No-op.
                 }
             };
@@ -512,7 +513,7 @@ public class CdcSelfTest extends AbstractCdcTest {
                     // No-op.
                 }
 
-                @Override public void start(MetricRegistry mreg) {
+                @Override public void start(MetricRegistry mreg, Path cdcDir) {
                     // No-op.
                 }
             }, cfg));
