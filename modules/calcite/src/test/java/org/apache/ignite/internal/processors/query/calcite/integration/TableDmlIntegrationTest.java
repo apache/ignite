@@ -36,7 +36,6 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.binary.BinaryObjectBuilder;
 import org.apache.ignite.cache.query.FieldsQueryCursor;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
-import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.processors.query.IgniteSQLException;
 import org.apache.ignite.internal.processors.query.QueryEngine;
@@ -49,14 +48,14 @@ import org.apache.ignite.testframework.GridTestUtils;
 import org.junit.Test;
 
 /** */
-public class TableDmlIntegrationTest extends AbstractBasicIntegrationTest {
+public class TableDmlIntegrationTest extends AbstractBasicIntegrationTransactionalTest {
     /**
      * Test verifies that already inserted by the current query data
      * is not processed by this query again.
      */
     @Test
     public void testInsertAsSelect() {
-        executeSql("CREATE TABLE test (epoch_cur int, epoch_copied int)");
+        executeSql("CREATE TABLE test (epoch_cur int, epoch_copied int) WITH atomicity=transactional");
         executeSql("INSERT INTO test VALUES (0, 0)");
 
         final String insertAsSelectSql = "INSERT INTO test SELECT ?, epoch_cur FROM test";
@@ -76,7 +75,8 @@ public class TableDmlIntegrationTest extends AbstractBasicIntegrationTest {
      */
     @Test
     public void testInsertAsSelectWithConcurrentDataModification() throws IgniteCheckedException {
-        executeSql("CREATE TABLE test (id int primary key, val int) with cache_name=\"test\", value_type=\"my_type\"");
+        executeSql("CREATE TABLE test (id int primary key, val int) " +
+            "with cache_name=\"test\", value_type=\"my_type\", atomicity=transactional");
         IgniteCache<Integer, Object> cache = grid(0).cache("test").withKeepBinary();
 
         BinaryObjectBuilder builder = grid(0).binary().builder("my_type");
@@ -110,7 +110,7 @@ public class TableDmlIntegrationTest extends AbstractBasicIntegrationTest {
      */
     @Test
     public void testUpdate() {
-        executeSql("CREATE TABLE test (val integer)");
+        executeSql("CREATE TABLE test (val integer) with atomicity=transactional");
 
         client.context().query().querySqlFields(
             new SqlFieldsQuery("CREATE INDEX test_val_idx ON test (val)").setSchema("PUBLIC"), false).getAll();
@@ -144,7 +144,7 @@ public class TableDmlIntegrationTest extends AbstractBasicIntegrationTest {
     /** */
     @Test
     public void testInsertPrimitiveKey() {
-        grid(1).getOrCreateCache(new CacheConfiguration<Integer, CalciteQueryProcessorTest.Developer>()
+        grid(1).getOrCreateCache(this.<Integer, CalciteQueryProcessorTest.Developer>cacheConfiguration()
             .setName("developer")
             .setSqlSchema("PUBLIC")
             .setIndexedTypes(Integer.class, CalciteQueryProcessorTest.Developer.class)
@@ -153,7 +153,7 @@ public class TableDmlIntegrationTest extends AbstractBasicIntegrationTest {
 
         QueryEngine engine = Commons.lookupComponent(grid(1).context(), QueryEngine.class);
 
-        List<FieldsQueryCursor<List<?>>> qry = engine.query(null, "PUBLIC",
+        List<FieldsQueryCursor<List<?>>> qry = engine.query(queryContext(), "PUBLIC",
             "INSERT INTO DEVELOPER(_key, name, projectId) VALUES (?, ?, ?)", 0, "Igor", 1);
 
         assertEquals(1, qry.size());
@@ -168,7 +168,7 @@ public class TableDmlIntegrationTest extends AbstractBasicIntegrationTest {
 
         assertEqualsCollections(F.asList(1L), row);
 
-        qry = engine.query(null, "PUBLIC", "select _key, * from DEVELOPER");
+        qry = engine.query(queryContext(), "PUBLIC", "select _key, * from DEVELOPER");
 
         assertEquals(1, qry.size());
 
@@ -182,7 +182,7 @@ public class TableDmlIntegrationTest extends AbstractBasicIntegrationTest {
     /** */
     @Test
     public void testInsertUpdateDeleteNonPrimitiveKey() throws Exception {
-        client.getOrCreateCache(new CacheConfiguration<CalciteQueryProcessorTest.Key, CalciteQueryProcessorTest.Developer>()
+        client.getOrCreateCache(this.<CalciteQueryProcessorTest.Key, CalciteQueryProcessorTest.Developer>cacheConfiguration()
             .setName("developer")
             .setSqlSchema("PUBLIC")
             .setIndexedTypes(CalciteQueryProcessorTest.Key.class, CalciteQueryProcessorTest.Developer.class)
@@ -193,7 +193,8 @@ public class TableDmlIntegrationTest extends AbstractBasicIntegrationTest {
 
         QueryEngine engine = Commons.lookupComponent(grid(1).context(), QueryEngine.class);
 
-        List<FieldsQueryCursor<List<?>>> qry = engine.query(null, "PUBLIC", "INSERT INTO DEVELOPER VALUES (?, ?, ?, ?)", 0, 0, "Igor", 1);
+        List<FieldsQueryCursor<List<?>>> qry =
+            engine.query(queryContext(), "PUBLIC", "INSERT INTO DEVELOPER VALUES (?, ?, ?, ?)", 0, 0, "Igor", 1);
 
         assertEquals(1, qry.size());
 
@@ -203,7 +204,7 @@ public class TableDmlIntegrationTest extends AbstractBasicIntegrationTest {
 
         assertEqualsCollections(F.asList(1L), row);
 
-        qry = engine.query(null, "PUBLIC", "select * from DEVELOPER");
+        qry = engine.query(queryContext(), "PUBLIC", "select * from DEVELOPER");
 
         assertEquals(1, qry.size());
 
@@ -213,7 +214,7 @@ public class TableDmlIntegrationTest extends AbstractBasicIntegrationTest {
 
         assertEqualsCollections(F.asList(0, 0, "Igor", 1), row);
 
-        qry = engine.query(null, "PUBLIC", "UPDATE DEVELOPER d SET name = name || 'Roman' WHERE id = ?", 0);
+        qry = engine.query(queryContext(), "PUBLIC", "UPDATE DEVELOPER d SET name = name || 'Roman' WHERE id = ?", 0);
 
         assertEquals(1, qry.size());
 
@@ -223,7 +224,7 @@ public class TableDmlIntegrationTest extends AbstractBasicIntegrationTest {
 
         assertEqualsCollections(F.asList(1L), row);
 
-        qry = engine.query(null, "PUBLIC", "select * from DEVELOPER");
+        qry = engine.query(queryContext(), "PUBLIC", "select * from DEVELOPER");
 
         assertEquals(1, qry.size());
 
@@ -233,7 +234,7 @@ public class TableDmlIntegrationTest extends AbstractBasicIntegrationTest {
 
         assertEqualsCollections(F.asList(0, 0, "IgorRoman", 1), row);
 
-        qry = engine.query(null, "PUBLIC", "DELETE FROM DEVELOPER WHERE id = ?", 0);
+        qry = engine.query(queryContext(), "PUBLIC", "DELETE FROM DEVELOPER WHERE id = ?", 0);
 
         assertEquals(1, qry.size());
 
@@ -243,7 +244,7 @@ public class TableDmlIntegrationTest extends AbstractBasicIntegrationTest {
 
         assertEqualsCollections(F.asList(1L), row);
 
-        qry = engine.query(null, "PUBLIC", "select * from DEVELOPER");
+        qry = engine.query(queryContext(), "PUBLIC", "select * from DEVELOPER");
 
         assertEquals(1, qry.size());
 
@@ -257,7 +258,7 @@ public class TableDmlIntegrationTest extends AbstractBasicIntegrationTest {
      */
     @Test
     public void testInsertUpdateDeleteComplexKey() {
-        executeSql("CREATE TABLE t(id INT, val VARCHAR, val2 VARCHAR, PRIMARY KEY(id, val))");
+        executeSql("CREATE TABLE t(id INT, val VARCHAR, val2 VARCHAR, PRIMARY KEY(id, val)) WITH atomicity=transactional");
         executeSql("INSERT INTO t(id, val, val2) VALUES (1, 'a', 'b')");
 
         assertQuery("SELECT * FROM t").returns(1, "a", "b").check();
@@ -279,11 +280,12 @@ public class TableDmlIntegrationTest extends AbstractBasicIntegrationTest {
      */
     @Test
     public void testMerge() {
-        executeSql("CREATE TABLE test1 (a int, b varchar, c varchar)");
+        executeSql("CREATE TABLE test1 (a int, b varchar, c varchar) WITH atomicity=transactional");
+        executeSql("CREATE TABLE test2 (a int, b varchar) WITH atomicity=transactional");
+
         executeSql("INSERT INTO test1 VALUES (0, 'a', '0')");
         executeSql("INSERT INTO test1 VALUES (1, 'b', '1')");
 
-        executeSql("CREATE TABLE test2 (a int, b varchar)");
         executeSql("INSERT INTO test2 VALUES (0, '0')");
         executeSql("INSERT INTO test2 VALUES (2, '2')");
 
@@ -305,11 +307,12 @@ public class TableDmlIntegrationTest extends AbstractBasicIntegrationTest {
      */
     @Test
     public void testMergeWhenMatched() {
-        executeSql("CREATE TABLE test1 (a int, b varchar, c varchar)");
+        executeSql("CREATE TABLE test1 (a int, b varchar, c varchar) WITH atomicity=transactional");
+        executeSql("CREATE TABLE test2 (a int, b varchar) WITH atomicity=transactional");
+
         executeSql("INSERT INTO test1 VALUES (0, 'a', '0')");
         executeSql("INSERT INTO test1 VALUES (1, 'b', '1')");
 
-        executeSql("CREATE TABLE test2 (a int, b varchar)");
         executeSql("INSERT INTO test2 VALUES (0, '0')");
         executeSql("INSERT INTO test2 VALUES (2, '2')");
 
@@ -329,11 +332,12 @@ public class TableDmlIntegrationTest extends AbstractBasicIntegrationTest {
      */
     @Test
     public void testMergeWhenNotMatched() {
-        executeSql("CREATE TABLE test1 (a int, b varchar, c varchar)");
+        executeSql("CREATE TABLE test1 (a int, b varchar, c varchar) WITH atomicity=transactional");
+        executeSql("CREATE TABLE test2 (a int, b varchar) WITH atomicity=transactional");
+
         executeSql("INSERT INTO test1 VALUES (0, 'a', '0')");
         executeSql("INSERT INTO test1 VALUES (1, 'b', '1')");
 
-        executeSql("CREATE TABLE test2 (a int, b varchar)");
         executeSql("INSERT INTO test2 VALUES (0, '0')");
         executeSql("INSERT INTO test2 VALUES (2, '2')");
 
@@ -354,7 +358,7 @@ public class TableDmlIntegrationTest extends AbstractBasicIntegrationTest {
      */
     @Test
     public void testMergeTableWithItself() {
-        executeSql("CREATE TABLE test1 (a int, b int, c varchar)");
+        executeSql("CREATE TABLE test1 (a int, b int, c varchar) WITH atomicity=transactional");
         executeSql("INSERT INTO test1 VALUES (0, 0, '0')");
 
         String sql = "MERGE INTO test1 dst USING test1 src ON dst.a = src.a + 1 " +
@@ -379,11 +383,10 @@ public class TableDmlIntegrationTest extends AbstractBasicIntegrationTest {
      */
     @Test
     public void testMergeBatch() {
-        executeSql("CREATE TABLE test1 (a int)");
+        executeSql("CREATE TABLE test1 (a int) WITH atomicity=transactional");
+        executeSql("CREATE TABLE test2 (a int, b int) WITH atomicity=transactional");
 
         executeSql("INSERT INTO test1 SELECT x FROM TABLE(SYSTEM_RANGE(0, 9999))");
-
-        executeSql("CREATE TABLE test2 (a int, b int)");
 
         executeSql("INSERT INTO test2 SELECT x, 0 FROM TABLE(SYSTEM_RANGE(-5000, 4999))");
 
@@ -401,10 +404,10 @@ public class TableDmlIntegrationTest extends AbstractBasicIntegrationTest {
      */
     @Test
     public void testMergeAliases() {
-        executeSql("CREATE TABLE test1 (a int, b int, c varchar)");
-        executeSql("INSERT INTO test1 VALUES (0, 0, '0')");
+        executeSql("CREATE TABLE test1 (a int, b int, c varchar) WITH atomicity=transactional");
+        executeSql("CREATE TABLE test2 (a int, d int, e varchar) WITH atomicity=transactional");
 
-        executeSql("CREATE TABLE test2 (a int, d int, e varchar)");
+        executeSql("INSERT INTO test1 VALUES (0, 0, '0')");
 
         // Without aliases, column 'A' in insert statement is not ambiguous.
         executeSql("MERGE INTO test2 USING test1 ON c = e " +
@@ -448,11 +451,11 @@ public class TableDmlIntegrationTest extends AbstractBasicIntegrationTest {
      */
     @Test
     public void testMergeKeysConflict() {
-        executeSql("CREATE TABLE test1 (a int, b int)");
+        executeSql("CREATE TABLE test1 (a int, b int) WITH atomicity=transactional");
+        executeSql("CREATE TABLE test2 (a int primary key, b int) WITH atomicity=transactional");
+
         executeSql("INSERT INTO test1 VALUES (0, 0)");
         executeSql("INSERT INTO test1 VALUES (1, 1)");
-
-        executeSql("CREATE TABLE test2 (a int primary key, b int)");
 
         assertThrows("MERGE INTO test2 USING test1 ON test1.a = test2.a " +
             "WHEN MATCHED THEN UPDATE SET b = test1.b + 1 " +
@@ -477,7 +480,7 @@ public class TableDmlIntegrationTest extends AbstractBasicIntegrationTest {
             IgniteSQLException.class,
             "Object 'NON_EXISTENT_TABLE' not found");
 
-        executeSql("CREATE TABLE PERSON(ID INT, PRIMARY KEY(id), NAME VARCHAR)");
+        executeSql("CREATE TABLE PERSON(ID INT, PRIMARY KEY(id), NAME VARCHAR) WITH atomicity=transactional");
 
         assertThrows("" +
                 "MERGE INTO PERSON DST USING NON_EXISTENT_TABLE SRC ON DST.ID = SRC.ID" +
@@ -500,7 +503,7 @@ public class TableDmlIntegrationTest extends AbstractBasicIntegrationTest {
         Stream.of(true, false).forEach(withPk -> {
             try {
                 sql("CREATE TABLE integers(i INTEGER " + (withPk ? "PRIMARY KEY" : "") +
-                        " , col1 INTEGER DEFAULT 200, col2 INTEGER DEFAULT 300)");
+                        " , col1 INTEGER DEFAULT 200, col2 INTEGER DEFAULT 300) WITH atomicity=transactional");
 
                 sql("INSERT INTO integers (i) VALUES (0)");
                 sql("INSERT INTO integers VALUES (1, DEFAULT, DEFAULT)");
@@ -525,6 +528,8 @@ public class TableDmlIntegrationTest extends AbstractBasicIntegrationTest {
                         .check();
             }
             finally {
+                clearTransaction();
+
                 sql("DROP TABLE IF EXISTS integers");
             }
         });
@@ -577,7 +582,7 @@ public class TableDmlIntegrationTest extends AbstractBasicIntegrationTest {
      */
     @Test
     public void testInsertDuplicateKey() {
-        executeSql("CREATE TABLE test (a int primary key, b int)");
+        executeSql("CREATE TABLE test (a int primary key, b int) WITH atomicity=transactional");
 
         executeSql("INSERT INTO test VALUES (0, 0)");
         executeSql("INSERT INTO test VALUES (1, 1)");
@@ -602,8 +607,8 @@ public class TableDmlIntegrationTest extends AbstractBasicIntegrationTest {
                 long max = (Long)arg.get(1);
                 long min = (Long)arg.get(2);
 
-                sql(String.format("CREATE TABLE TEST_SOURCE (ID INT PRIMARY KEY, VAL %s)", type));
-                sql(String.format("CREATE TABLE TEST_DEST (ID INT PRIMARY KEY, VAL %s)", type));
+                sql(String.format("CREATE TABLE TEST_SOURCE (ID INT PRIMARY KEY, VAL %s) WITH atomicity=transactional", type));
+                sql(String.format("CREATE TABLE TEST_DEST (ID INT PRIMARY KEY, VAL %s) WITH atomicity=transactional", type));
 
                 sql("INSERT INTO TEST_SOURCE VALUES (1, 1)");
                 sql(String.format("INSERT INTO TEST_SOURCE VALUES (2, %d)", max));
@@ -628,6 +633,8 @@ public class TableDmlIntegrationTest extends AbstractBasicIntegrationTest {
                     IgniteSQLException.class, type + " overflow");
             }
             finally {
+                clearTransaction();
+
                 sql("DROP TABLE TEST_SOURCE");
                 sql("DROP TABLE TEST_DEST");
             }
@@ -637,7 +644,7 @@ public class TableDmlIntegrationTest extends AbstractBasicIntegrationTest {
     /** */
     private void checkDefaultValue(String sqlType, String sqlVal, Object expectedVal) {
         try {
-            executeSql("CREATE TABLE test (dummy INT, val " + sqlType + " DEFAULT " + sqlVal + ")");
+            executeSql("CREATE TABLE test (dummy INT, val " + sqlType + " DEFAULT " + sqlVal + ") WITH atomicity=transactional");
             executeSql("INSERT INTO test (dummy) VALUES (0)");
 
             checkQueryResult("SELECT val FROM test", expectedVal);
@@ -648,6 +655,8 @@ public class TableDmlIntegrationTest extends AbstractBasicIntegrationTest {
             checkQueryResult("SELECT val FROM test", expectedVal);
         }
         finally {
+            clearTransaction();
+
             executeSql("DROP TABLE IF EXISTS test");
         }
     }
@@ -669,7 +678,7 @@ public class TableDmlIntegrationTest extends AbstractBasicIntegrationTest {
     /** */
     private void checkWrongDefault(String sqlType, String sqlVal) {
         try {
-            assertThrows("CREATE TABLE test (val " + sqlType + " DEFAULT " + sqlVal + ")",
+            assertThrows("CREATE TABLE test (val " + sqlType + " DEFAULT " + sqlVal + ") WITH atomicity=transactional",
                 IgniteSQLException.class, "Cannot convert literal");
         }
         finally {
