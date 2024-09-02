@@ -62,7 +62,6 @@ set(SOURCES src/app/application_data_buffer.cpp
         src/protocol_version.cpp
         src/result_page.cpp
         src/row.cpp
-        src/nested_tx_mode.cpp
         src/engine_mode.cpp
         src/message.cpp
         src/column.cpp
@@ -97,7 +96,7 @@ if (WIN32)
     if (MSVC_VERSION GREATER_EQUAL 1900)
         target_link_libraries(${TARGET} legacy_stdio_definitions)
     endif()
-                
+
     set_target_properties(${TARGET} PROPERTIES OUTPUT_NAME "ignite.odbc")
 else()
     target_link_libraries(${TARGET} ignite-common ignite-binary ignite-network odbcinst)
@@ -157,7 +156,7 @@ endif()
 
 target_include_directories(${TARGET} INTERFACE include)
 
-install(TARGETS ${TARGET} 
+install(TARGETS ${TARGET}
     RUNTIME DESTINATION bin
     ARCHIVE DESTINATION lib
     LIBRARY DESTINATION lib
