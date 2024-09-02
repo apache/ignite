@@ -37,13 +37,18 @@ import org.junit.Test;
  *
  * @see IgniteStdSqlOperatorTable
  */
-public class StdSqlOperatorsTest extends AbstractBasicIntegrationTest {
+public class StdSqlOperatorsTest extends AbstractBasicIntegrationTransactionalTest {
     /** {@inheritDoc} */
-    @Override protected void beforeTest() throws Exception {
-        super.beforeTest();
+    @Override protected void init() throws Exception {
+        super.init();
 
-        sql("CREATE TABLE t(val INT)");
+        sql("CREATE TABLE t(val INT) WITH atomicity=transactional");
         sql("INSERT INTO t VALUES (1)");
+    }
+
+    /** {@inheritDoc} */
+    @Override protected void afterTest() throws Exception {
+        // No-op.
     }
 
     /** */
