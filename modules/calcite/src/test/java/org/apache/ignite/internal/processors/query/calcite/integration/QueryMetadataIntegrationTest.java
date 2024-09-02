@@ -37,7 +37,7 @@ import static org.apache.calcite.rel.type.RelDataType.SCALE_NOT_SPECIFIED;
 /**
  * Test query metadata.
  */
-public class QueryMetadataIntegrationTest extends AbstractBasicIntegrationTest {
+public class QueryMetadataIntegrationTest extends AbstractBasicIntegrationTransactionalTest {
     /** */
     @Test
     public void testJoin() throws Exception {
