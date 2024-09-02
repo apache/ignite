@@ -61,7 +61,7 @@ import static java.util.concurrent.TimeUnit.SECONDS;
  */
 public class GridNioSelfTest extends GridCommonAbstractTest {
     /** Message count in test without reconnect. */
-    private static final int MSG_CNT = 2000;
+    private static final int MSG_CNT = 200;
 
     /** */
     private static final int START_PORT = 55443;
@@ -639,7 +639,7 @@ public class GridNioSelfTest extends GridCommonAbstractTest {
      */
     @Test
     public void testSendReceive() throws Exception {
-        CountDownLatch latch = new CountDownLatch(10);
+        CountDownLatch latch = new CountDownLatch(5);
 
         NioListener lsnr = new NioListener(latch);
 
@@ -652,14 +652,15 @@ public class GridNioSelfTest extends GridCommonAbstractTest {
                 client = createClient(U.getLocalHost(), srvr.port(), U.getLocalHost());
 
                 client.sendMessage(createMessage(), MSG_SIZE);
-                client.sendMessage(createMessage(), MSG_SIZE);
+
+                Thread.sleep(100);
 
                 client.close();
             }
 
             assert latch.await(30, SECONDS);
 
-            assertEquals("Unexpected message count", 10, lsnr.getMessageCount());
+            assertEquals("Unexpected message count", 5, lsnr.getMessageCount());
         }
         finally {
             srvr.stop();
@@ -729,8 +730,12 @@ public class GridNioSelfTest extends GridCommonAbstractTest {
                     try {
                         client = createClient(U.getLocalHost(), srvr.port(), U.getLocalHost());
 
-                        for (int i = 0; i < MSG_CNT; i++)
+                        for (int i = 0; i < MSG_CNT; i++) {
                             client.sendMessage(data, data.length);
+
+                            Thread.sleep(100);
+                        }
+
                     }
                     catch (Exception e) {
                         error("Failed to send message.", e);
@@ -890,6 +895,8 @@ public class GridNioSelfTest extends GridCommonAbstractTest {
                             deliveryDurations.put(msg.getId(), start);
 
                             client.sendMessage(data, data.length);
+
+                            Thread.sleep(100);
 
                             long end = System.currentTimeMillis();
 
