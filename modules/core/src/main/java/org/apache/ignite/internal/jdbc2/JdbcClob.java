@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.jdbc2;
 
+import org.apache.ignite.internal.util.typedef.internal.U;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.io.Reader;
@@ -193,7 +194,7 @@ public class JdbcClob implements Clob {
         private int charsPos;
 
         /** Default chunk size. */
-        private static final int DEFAULT_CHUNK_SIZE = 4096;
+        private static final int DEFAULT_CHUNK_SIZE = 8192;
 
         /** Buffer containing the current chunk encoding. */
         private byte[] buf;
@@ -223,6 +224,40 @@ public class JdbcClob implements Clob {
             }
 
             return buf[bufPos++] & 0xFF;
+        }
+
+        /** {@inheritDoc} */
+        @Override public synchronized int read(byte b[], int off, int len) {
+            if (b == null)
+                throw new NullPointerException();
+
+            if (off < 0 || len < 0 || len > b.length - off)
+                throw new IndexOutOfBoundsException(String.format("Range [%s, %<s + %s) out of bounds for length %s", off, len, b.length));
+
+            if (len == 0)
+                return 0;
+
+            int i = 0;
+
+            while (i < len) {
+                if (buf == null || buf.length == 0 || bufPos >= buf.length) {
+                    if (charsPos >= length)
+                        return i > 0 ? i : -1;
+
+                    bufPos = 0;
+
+                    encodeNextChunk();
+                }
+
+                int encoded_chunk_size = Math.min(len - i, buf.length - bufPos);
+
+                U.arrayCopy(buf, bufPos, b, off + i, encoded_chunk_size);
+
+                bufPos += encoded_chunk_size;
+                i += encoded_chunk_size;
+            }
+
+            return i;
         }
 
         /**

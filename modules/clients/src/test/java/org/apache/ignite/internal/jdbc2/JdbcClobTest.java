@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.jdbc2;
 
+import java.io.InputStream;
 import java.io.Reader;
 import java.sql.Clob;
 import java.sql.SQLException;
@@ -250,7 +251,7 @@ public class JdbcClobTest {
      * @throws Exception If failed.
      */
     @Test
-    public void testGetAsciiStreamForNonAsciiData() throws Exception {
+    public void testGetAsciiStreamForNonAsciiDataBufferedRead() throws Exception {
         StringBuilder sb = new StringBuilder();
         for (int i = 0; i < 10000; i++) {
             sb.append("aa©😀");
@@ -258,7 +259,86 @@ public class JdbcClobTest {
 
         Clob clob = new JdbcClob(sb.toString());
 
-        byte[] bytes = IOUtils.toByteArray(clob.getAsciiStream());
+        InputStream stream = clob.getAsciiStream();
+
+        try {
+            stream.read(null, 0, 1);
+
+            fail();
+        }
+        catch (NullPointerException e) {
+            // No-op.
+        }
+
+        try {
+            stream.read(new byte[10], -1, 5);
+
+            fail();
+        }
+        catch (IndexOutOfBoundsException e) {
+            // No-op.
+        }
+
+        try {
+            stream.read(new byte[10], 5, -1);
+
+            fail();
+        }
+        catch (IndexOutOfBoundsException e) {
+            // No-op.
+        }
+
+        try {
+            stream.read(new byte[10], 11, 1);
+
+            fail();
+        }
+        catch (IndexOutOfBoundsException e) {
+            // No-op.
+        }
+
+        try {
+            stream.read(new byte[10], 5, 6);
+
+            fail();
+        }
+        catch (IndexOutOfBoundsException e) {
+            // No-op.
+        }
+
+        assertEquals(0, stream.read(new byte[10], 5, 0));
+
+        byte[] bytes = IOUtils.toByteArray(stream);
+
+        String reencoded = new String(bytes, UTF_8);
+
+        assertEquals(clob.getSubString(1, (int)clob.length()), reencoded);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    @Test
+    public void testGetAsciiStreamForNonAsciiDataReadByByte() throws Exception {
+        StringBuilder sb = new StringBuilder();
+        for (int i = 0; i < 10000; i++) {
+            sb.append("aa©😀");
+        }
+
+        Clob clob = new JdbcClob(sb.toString());
+
+        InputStream stream = clob.getAsciiStream();
+
+        int i = 0;
+        byte[] bytes = new byte[80000];
+
+        byte value = (byte)stream.read();
+
+        while (value != -1) {
+            bytes[i++] = value;
+
+            value = (byte)stream.read();
+        }
 
         String reencoded = new String(bytes, UTF_8);
 
