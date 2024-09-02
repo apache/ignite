@@ -147,10 +147,15 @@ public abstract class AbstractBasicIntegrationTransactionalTest extends Abstract
 
     /** */
     protected List<List<?>> executeSql(String sql, Object... args) {
-        if (sqlTxMode != SqlTransactionMode.NONE && tx == null)
-            startTransaction(client);
+        return executeSql(client, sql, args);
+    }
 
-        CalciteQueryProcessor qryProc = Commons.lookupComponent(client.context(), CalciteQueryProcessor.class);
+    /** */
+    protected List<List<?>> executeSql(IgniteEx ignite, String sql, Object... args) {
+        if (sqlTxMode != SqlTransactionMode.NONE && tx == null)
+            startTransaction(ignite);
+
+        CalciteQueryProcessor qryProc = Commons.lookupComponent(ignite.context(), CalciteQueryProcessor.class);
 
         List<FieldsQueryCursor<List<?>>> cur = qryProc.query(queryContext(), "PUBLIC", sql, args);
 
@@ -177,7 +182,12 @@ public abstract class AbstractBasicIntegrationTransactionalTest extends Abstract
 
     /** */
     protected IgniteCache<Integer, Employer> createAndPopulateTable(int backups, CacheMode cacheMode) {
-        IgniteCache<Integer, Employer> person = client.getOrCreateCache(this.<Integer, Employer>cacheConfiguration()
+        return createAndPopulateTable(client, backups, cacheMode);
+    }
+
+    /** */
+    protected IgniteCache<Integer, Employer> createAndPopulateTable(Ignite ignite, int backups, CacheMode cacheMode) {
+        IgniteCache<Integer, Employer> person = ignite.getOrCreateCache(this.<Integer, Employer>cacheConfiguration()
             .setName(TABLE_NAME)
             .setSqlSchema("PUBLIC")
             .setQueryEntities(F.asList(new QueryEntity(Integer.class, Employer.class)
@@ -191,11 +201,11 @@ public abstract class AbstractBasicIntegrationTransactionalTest extends Abstract
 
         int idx = 0;
 
-        put(client, person, idx++, new Employer("Igor", 10d));
-        put(client, person, idx++, new Employer(null, 15d));
-        put(client, person, idx++, new Employer("Ilya", 15d));
-        put(client, person, idx++, new Employer("Roma", 10d));
-        put(client, person, idx, new Employer("Roma", 10d));
+        put(ignite, person, idx++, new Employer("Igor", 10d));
+        put(ignite, person, idx++, new Employer(null, 15d));
+        put(ignite, person, idx++, new Employer("Ilya", 15d));
+        put(ignite, person, idx++, new Employer("Roma", 10d));
+        put(ignite, person, idx, new Employer("Roma", 10d));
 
         return person;
     }
