@@ -27,14 +27,13 @@ import org.apache.ignite.cache.QueryEntity;
 import org.apache.ignite.cache.QueryIndex;
 import org.apache.ignite.cache.QueryIndexType;
 import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
-import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.junit.Test;
 
 /**
  * Sort aggregate integration test.
  */
-public class SortAggregateIntegrationTest extends AbstractBasicIntegrationTest {
+public class SortAggregateIntegrationTest extends AbstractBasicIntegrationTransactionalTest {
     /** */
     public static final int ROWS = 103;
 
@@ -45,6 +44,8 @@ public class SortAggregateIntegrationTest extends AbstractBasicIntegrationTest {
 
     /** {@inheritDoc} */
     @Override protected void afterTest() {
+        clearTransaction();
+
         for (String cacheName : client.cacheNames())
             client.cache(cacheName).clear();
     }
@@ -77,7 +78,8 @@ public class SortAggregateIntegrationTest extends AbstractBasicIntegrationTest {
 
         return super.getConfiguration(igniteInstanceName)
             .setCacheConfiguration(
-                new CacheConfiguration<>(part.getTableName())
+                cacheConfiguration()
+                    .setName(part.getTableName())
                     .setAffinity(new RendezvousAffinityFunction(false, 8))
                     .setCacheMode(CacheMode.PARTITIONED)
                     .setQueryEntities(Arrays.asList(tbl1, part))
@@ -88,7 +90,7 @@ public class SortAggregateIntegrationTest extends AbstractBasicIntegrationTest {
     /** */
     @Test
     public void mapReduceAggregate() throws InterruptedException {
-        fillCacheTest(grid(0).cache("TEST"), ROWS);
+        fillCacheTest(client.cache("TEST"), ROWS);
 
         List<List<?>> cursors = executeSql("SELECT /*+ DISABLE_RULE('HashAggregateConverterRule') */" +
             "SUM(val0), SUM(val1), grp0 FROM TEST " +
@@ -110,7 +112,7 @@ public class SortAggregateIntegrationTest extends AbstractBasicIntegrationTest {
     /** */
     @Test
     public void correctCollationsOnMapReduceSortAgg() throws InterruptedException {
-        fillCacheTbl1(grid(0).cache("TEST"), ROWS);
+        fillCacheTbl1(client.cache("TEST"), ROWS);
 
         List<List<?>> cursors = executeSql("SELECT PK FROM TBL1 WHERE col0 IN (SELECT col0 FROM TBL1)");
 
@@ -123,7 +125,7 @@ public class SortAggregateIntegrationTest extends AbstractBasicIntegrationTest {
      */
     private void fillCacheTbl1(IgniteCache c, int rows) throws InterruptedException {
         for (int i = 0; i < rows; ++i)
-            c.put(i, new TestValTbl1(i));
+            put(client, c, i, new TestValTbl1(i));
 
         awaitPartitionMapExchange();
     }
@@ -134,7 +136,7 @@ public class SortAggregateIntegrationTest extends AbstractBasicIntegrationTest {
      */
     private void fillCacheTest(IgniteCache c, int rows) throws InterruptedException {
         for (int i = 0; i < rows; ++i)
-            c.put(i, new TestValTest(i));
+            put(client, c, i, new TestValTest(i));
 
         awaitPartitionMapExchange();
     }
