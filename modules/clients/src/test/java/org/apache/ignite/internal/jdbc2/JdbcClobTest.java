@@ -332,12 +332,12 @@ public class JdbcClobTest {
         int i = 0;
         byte[] bytes = new byte[80000];
 
-        byte value = (byte)stream.read();
+        byte val = (byte)stream.read();
 
-        while (value != -1) {
-            bytes[i++] = value;
+        while (val != -1) {
+            bytes[i++] = val;
 
-            value = (byte)stream.read();
+            val = (byte)stream.read();
         }
 
         String reencoded = new String(bytes, UTF_8);

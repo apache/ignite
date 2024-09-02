@@ -17,7 +17,6 @@
 
 package org.apache.ignite.internal.jdbc2;
 
-import org.apache.ignite.internal.util.typedef.internal.U;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.io.Reader;
@@ -26,6 +25,7 @@ import java.io.Writer;
 import java.sql.Clob;
 import java.sql.SQLException;
 import java.sql.SQLFeatureNotSupportedException;
+import org.apache.ignite.internal.util.typedef.internal.U;
 
 import static java.nio.charset.StandardCharsets.UTF_8;
 
