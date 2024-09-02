@@ -48,6 +48,7 @@ import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.jetbrains.annotations.Nullable;
+import org.junit.Assert;
 import org.junit.Test;
 
 import static org.apache.ignite.IgniteJdbcDriver.CFG_URL_PREFIX;
@@ -686,10 +687,10 @@ public class JdbcResultSetSelfTest extends GridCommonAbstractTest {
         while (rs.next()) {
             if (cnt == 0) {
                 Blob blob = rs.getBlob("blobVal");
-                assert Arrays.equals(blob.getBytes(1, (int)blob.length()), new byte[] {1});
+                Assert.assertArrayEquals(blob.getBytes(1, (int)blob.length()), new byte[] {1});
 
                 blob = rs.getBlob(23);
-                assert Arrays.equals(blob.getBytes(1, (int)blob.length()), new byte[] {1});
+                Assert.assertArrayEquals(blob.getBytes(1, (int)blob.length()), new byte[] {1});
             }
 
             cnt++;
@@ -710,10 +711,10 @@ public class JdbcResultSetSelfTest extends GridCommonAbstractTest {
         while (rs.next()) {
             if (cnt == 0) {
                 Clob clob = rs.getClob("clobVal");
-                assert "str".equals(clob.getSubString(1, (int)clob.length()));
+                Assert.assertEquals("str", clob.getSubString(1, (int)clob.length()));
 
                 clob = rs.getClob(24);
-                assert "str".equals(clob.getSubString(1, (int)clob.length()));
+                Assert.assertEquals("str", clob.getSubString(1, (int)clob.length()));
             }
 
             cnt++;

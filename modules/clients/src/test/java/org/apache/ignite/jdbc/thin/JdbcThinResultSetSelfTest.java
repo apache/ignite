@@ -613,10 +613,10 @@ public class JdbcThinResultSetSelfTest extends JdbcThinAbstractSelfTest {
         while (rs.next()) {
             if (cnt == 0) {
                 Blob blob = rs.getBlob("blobVal");
-                assert Arrays.equals(blob.getBytes(1, (int)blob.length()), new byte[] {1});
+                Assert.assertArrayEquals(blob.getBytes(1, (int)blob.length()), new byte[] {1});
 
                 blob = rs.getBlob(16);
-                assert Arrays.equals(blob.getBytes(1, (int)blob.length()), new byte[] {1});
+                Assert.assertArrayEquals(blob.getBytes(1, (int)blob.length()), new byte[] {1});
             }
 
             cnt++;
@@ -637,10 +637,10 @@ public class JdbcThinResultSetSelfTest extends JdbcThinAbstractSelfTest {
         while (rs.next()) {
             if (cnt == 0) {
                 Clob clob = rs.getClob("clobVal");
-                assert "str".equals(clob.getSubString(1, (int)clob.length()));
+                Assert.assertEquals("str", clob.getSubString(1, (int)clob.length()));
 
                 clob = rs.getClob(17);
-                assert "str".equals(clob.getSubString(1, (int)clob.length()));
+                Assert.assertEquals("str", clob.getSubString(1, (int)clob.length()));
             }
 
             cnt++;
