@@ -213,7 +213,7 @@ public abstract class AbstractBasicIntegrationTransactionalTest extends Abstract
     /** */
     protected List<List<?>> sql(IgniteEx ignite, String sql, Object... params) {
         if (sqlTxMode != SqlTransactionMode.NONE && tx == null)
-            startTransaction(client);
+            startTransaction(ignite);
 
         List<FieldsQueryCursor<List<?>>> cur = queryProcessor(ignite).query(queryContext(), "PUBLIC", sql, params);
 
