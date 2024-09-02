@@ -650,7 +650,7 @@ public class GridNioSelfTest extends GridCommonAbstractTest {
 
         try {
             for (int i = 0; i < 5; i++) {
-                client = createClient(U.getLocalHost(), srvr.port() + 1, U.getLocalHost());
+                client = createClient(U.getLocalHost(), srvr.port(), U.getLocalHost());
 
                 log.warning("VOT tut idet client.sendMessage(createMessage(), MSG_SIZE);");
 
@@ -736,10 +736,12 @@ public class GridNioSelfTest extends GridCommonAbstractTest {
                     TestClient client = null;
 
                     try {
-                        client = createClient(U.getLocalHost(), srvr.port() + 2, U.getLocalHost());
+                        client = createClient(U.getLocalHost(), srvr.port(), U.getLocalHost());
 
-                        for (int i = 0; i < 2; i++)
+                        for (int i = 0; i < 2; i++) {
                             client.sendMessage(data, data.length);
+                            Thread.sleep(1000);
+                        }
                     }
                     catch (Exception e) {
                         error("Failed to send message.", e);
@@ -850,10 +852,6 @@ public class GridNioSelfTest extends GridCommonAbstractTest {
                                 info("Run " + i + " iterations.");
 
                             barrier.await();
-
-                            client.close();
-
-                            Thread.sleep(1000);
                         }
                     }
                     catch (InterruptedException ignored) {
@@ -884,7 +882,7 @@ public class GridNioSelfTest extends GridCommonAbstractTest {
     public void testDeliveryDuration() throws Exception {
         idProvider.set(1);
 
-        CountDownLatch latch = new CountDownLatch(10);
+        CountDownLatch latch = new CountDownLatch(MSG_CNT * THREAD_CNT);
 
         final Map<Integer, Long> deliveryDurations = new ConcurrentHashMap<>();
 
@@ -935,12 +933,7 @@ public class GridNioSelfTest extends GridCommonAbstractTest {
 
             }, THREAD_CNT, "sender");
 
-            try {
-                latch.await(30, SECONDS);
-            }
-            catch (Exception e) {
-                log.error("Error here!!!   " + e.getMessage());
-            }
+            assert latch.await(30, SECONDS);
 
             assertEquals("Unexpected message count", MSG_CNT * THREAD_CNT, lsnr.getMessageCount());
             assertFalse("Size check failed", lsnr.isSizeFailed());
