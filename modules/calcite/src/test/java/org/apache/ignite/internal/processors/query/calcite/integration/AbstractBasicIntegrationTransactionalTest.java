@@ -195,7 +195,7 @@ public abstract class AbstractBasicIntegrationTransactionalTest extends Abstract
         put(client, person, idx++, new Employer(null, 15d));
         put(client, person, idx++, new Employer("Ilya", 15d));
         put(client, person, idx++, new Employer("Roma", 10d));
-        put(client, person, idx++, new Employer("Roma", 10d));
+        put(client, person, idx, new Employer("Roma", 10d));
 
         return person;
     }

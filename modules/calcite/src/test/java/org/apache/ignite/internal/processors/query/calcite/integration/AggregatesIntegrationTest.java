@@ -352,7 +352,7 @@ public class AggregatesIntegrationTest extends AbstractBasicIntegrationTransacti
         put(client, person, idx++, new IndexedEmployer("Roma", null, 9d));
         put(client, person, idx++, new IndexedEmployer(null, null, null));
         put(client, person, idx++, new IndexedEmployer("Oleg", 15d, 15d));
-        put(client, person, idx++, new IndexedEmployer("Maya", null, null));
+        put(client, person, idx, new IndexedEmployer("Maya", null, null));
     }
 
     /** */
