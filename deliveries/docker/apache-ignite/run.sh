@@ -75,16 +75,18 @@ fi
 #
 # Add Java extra option
 #
-JVM_OPTS="\
-    --add-exports=java.base/jdk.internal.misc=ALL-UNNAMED \
-    --add-exports=java.base/sun.nio.ch=ALL-UNNAMED \
-    --add-exports=java.management/com.sun.jmx.mbeanserver=ALL-UNNAMED \
-    --add-exports=jdk.internal.jvmstat/sun.jvmstat.monitor=ALL-UNNAMED \
-    --add-exports=java.base/sun.reflect.generics.reflectiveObjects=ALL-UNNAMED \
-    --add-opens=jdk.management/com.sun.management.internal=ALL-UNNAMED \
-    --add-opens=java.base/jdk.internal.access=ALL-UNNAMED \
-    --illegal-access=permit \
-    ${JVM_OPTS}"
+if [ "${version}" -ge 11 ] ; then
+    JVM_OPTS="\
+        --add-exports=java.base/jdk.internal.misc=ALL-UNNAMED \
+        --add-exports=java.base/sun.nio.ch=ALL-UNNAMED \
+        --add-exports=java.management/com.sun.jmx.mbeanserver=ALL-UNNAMED \
+        --add-exports=jdk.internal.jvmstat/sun.jvmstat.monitor=ALL-UNNAMED \
+        --add-exports=java.base/sun.reflect.generics.reflectiveObjects=ALL-UNNAMED \
+        --add-opens=jdk.management/com.sun.management.internal=ALL-UNNAMED \
+        --add-opens=java.base/jdk.internal.access=ALL-UNNAMED \
+        --illegal-access=permit \
+        ${JVM_OPTS}"
+fi
 
 DIGNITE_QUIET=$(printenv JVM_OPTS | grep -o 'IGNITE_QUIET=[^ ,]\+' | cut -d "=" -f 2)
 
