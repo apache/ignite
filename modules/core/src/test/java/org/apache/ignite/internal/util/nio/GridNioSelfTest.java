@@ -639,7 +639,7 @@ public class GridNioSelfTest extends GridCommonAbstractTest {
      */
     @Test
     public void testSendReceive() throws Exception {
-        CountDownLatch latch = new CountDownLatch(5);
+        CountDownLatch latch = new CountDownLatch(10);
 
         NioListener lsnr = new NioListener(latch);
 
@@ -652,15 +652,14 @@ public class GridNioSelfTest extends GridCommonAbstractTest {
                 client = createClient(U.getLocalHost(), srvr.port(), U.getLocalHost());
 
                 client.sendMessage(createMessage(), MSG_SIZE);
-
-                Thread.sleep(100);
+                client.sendMessage(createMessage(), MSG_SIZE);
 
                 client.close();
             }
 
             assert latch.await(30, SECONDS);
 
-            assertEquals("Unexpected message count", 5, lsnr.getMessageCount());
+            assertEquals("Unexpected message count", 10, lsnr.getMessageCount());
         }
         finally {
             srvr.stop();
@@ -730,11 +729,8 @@ public class GridNioSelfTest extends GridCommonAbstractTest {
                     try {
                         client = createClient(U.getLocalHost(), srvr.port(), U.getLocalHost());
 
-                        for (int i = 0; i < MSG_CNT; i++) {
+                        for (int i = 0; i < MSG_CNT; i++)
                             client.sendMessage(data, data.length);
-
-                            Thread.sleep(100);
-                        }
 
                     }
                     catch (Exception e) {
@@ -895,8 +891,6 @@ public class GridNioSelfTest extends GridCommonAbstractTest {
                             deliveryDurations.put(msg.getId(), start);
 
                             client.sendMessage(data, data.length);
-
-                            Thread.sleep(100);
 
                             long end = System.currentTimeMillis();
 
@@ -1478,9 +1472,11 @@ public class GridNioSelfTest extends GridCommonAbstractTest {
          * @param len Count of bytes to write.
          * @throws IOException If send failed.
          */
-        public void sendMessage(byte[] data, int len) throws IOException {
+        public void sendMessage(byte[] data, int len) throws IOException, InterruptedException {
             out.write(U.intToBytes(len));
             out.write(data, 0, len);
+
+            Thread.sleep(50);
         }
 
         /**
