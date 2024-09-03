@@ -73,35 +73,18 @@ if [ -z "${JVM_OPTS}" ] ; then
 fi
 
 #
-# Add Java extra option 
+# Add Java extra option
 #
-if [ "${version}" -eq 8 ] ; then
-    JVM_OPTS="\
-        -XX:+AggressiveOpts \
-         ${JVM_OPTS}"
-elif [ "${version}" -gt 8 ] && [ "${version}" -lt 11 ]; then
-    JVM_OPTS="\
-        -XX:+AggressiveOpts \
-        --add-exports=java.base/jdk.internal.misc=ALL-UNNAMED \
-        --add-exports=java.base/sun.nio.ch=ALL-UNNAMED \
-        --add-exports=java.management/com.sun.jmx.mbeanserver=ALL-UNNAMED \
-        --add-exports=jdk.internal.jvmstat/sun.jvmstat.monitor=ALL-UNNAMED \
-        --add-exports=java.base/sun.reflect.generics.reflectiveObjects=ALL-UNNAMED \
-        --illegal-access=permit \
-        --add-modules=java.xml.bind \
-        ${JVM_OPTS}"
-elif [ "${version}" -ge 11 ] ; then
-    JVM_OPTS="\
-        --add-exports=java.base/jdk.internal.misc=ALL-UNNAMED \
-        --add-exports=java.base/sun.nio.ch=ALL-UNNAMED \
-        --add-exports=java.management/com.sun.jmx.mbeanserver=ALL-UNNAMED \
-        --add-exports=jdk.internal.jvmstat/sun.jvmstat.monitor=ALL-UNNAMED \
-        --add-exports=java.base/sun.reflect.generics.reflectiveObjects=ALL-UNNAMED \
-        --add-opens=jdk.management/com.sun.management.internal=ALL-UNNAMED \
-        --add-opens=java.base/jdk.internal.access=ALL-UNNAMED \
-        --illegal-access=permit \
-        ${JVM_OPTS}"
-fi
+JVM_OPTS="\
+    --add-exports=java.base/jdk.internal.misc=ALL-UNNAMED \
+    --add-exports=java.base/sun.nio.ch=ALL-UNNAMED \
+    --add-exports=java.management/com.sun.jmx.mbeanserver=ALL-UNNAMED \
+    --add-exports=jdk.internal.jvmstat/sun.jvmstat.monitor=ALL-UNNAMED \
+    --add-exports=java.base/sun.reflect.generics.reflectiveObjects=ALL-UNNAMED \
+    --add-opens=jdk.management/com.sun.management.internal=ALL-UNNAMED \
+    --add-opens=java.base/jdk.internal.access=ALL-UNNAMED \
+    --illegal-access=permit \
+    ${JVM_OPTS}"
 
 DIGNITE_QUIET=$(printenv JVM_OPTS | grep -o 'IGNITE_QUIET=[^ ,]\+' | cut -d "=" -f 2)
 
