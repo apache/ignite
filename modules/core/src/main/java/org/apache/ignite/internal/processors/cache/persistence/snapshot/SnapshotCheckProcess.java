@@ -201,9 +201,9 @@ public class SnapshotCheckProcess {
         // Might be already finished by asynchronous leave of a required node.
         if (!phaseFut.isDone()) {
             CompletableFuture<? extends Map<?, ?>> workingFut = req.allRestoreHandlers()
-                ? snpMgr.checker().invokeCustomHandlers(ctx.locMeta, req.snapshotPath(), req.groups(), true)
+                ? snpMgr.checker().invokeCustomHandlers(ctx.locMeta, req.snapshotPath(), req.groups(), req.fullCheck())
                 : snpMgr.checker().checkPartitions(ctx.locMeta, snpMgr.snapshotLocalDir(req.snapshotName(), req.snapshotPath()),
-                req.groups(), false, true, false);
+                req.groups(), false, req.fullCheck(), false);
 
             workingFut.whenComplete((res, err) -> {
                 if (err != null)
@@ -359,7 +359,7 @@ public class SnapshotCheckProcess {
 
     /** @return Unique operation context id depending on request type and snapshot name. */
     private static String contextId(SnapshotCheckProcessRequest req) {
-        return req.fullCheck() ? req.snapshotName() + "_full" : req.snapshotName();
+        return req.fullCheck() ? req.snapshotName() + "_full" : req.snapshotName() + req.requestId().toString();
     }
 
     /**

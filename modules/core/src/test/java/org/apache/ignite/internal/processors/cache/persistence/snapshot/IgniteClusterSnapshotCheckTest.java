@@ -343,7 +343,7 @@ public class IgniteClusterSnapshotCheckTest extends AbstractSnapshotSelfTest {
         for (int i = 4; i < 7; i++) {
             IgniteEx grid = startGrid(optimize(getConfiguration(getTestIgniteInstanceName(i)).setCacheConfiguration()));
 
-            if(!U.isLocalNodeCoordinator(grid.context().discovery()))
+            if (!U.isLocalNodeCoordinator(grid.context().discovery()))
                 continue;
 
             grid.context().io().addMessageListener(GridTopic.TOPIC_DISTRIBUTED_PROCESS, new GridMessageListener() {

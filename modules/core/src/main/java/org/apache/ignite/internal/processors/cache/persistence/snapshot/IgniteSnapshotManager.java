@@ -1927,18 +1927,18 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
                 Map<ClusterNode, List<SnapshotMetadata>> metas = metasRes.meta();
 
                 kctx0.task().execute(
-                    IncrementalSnapshotVerificationTask.class ,
-                        new SnapshotPartitionsVerifyTaskArg(grps, metas, snpPath, incIdx, check),
-                        options(new ArrayList<>(metas.keySet()))
-                    ).listen(f1 -> {
-                        if (f1.error() == null)
-                            res.onDone(f1.result());
-                        else if (f1.error() instanceof IgniteSnapshotVerifyException)
-                            res.onDone(new SnapshotPartitionsCheckResult(metas,
-                                new IdleVerifyResultV2(((IgniteSnapshotVerifyException)f1.error()).exceptions())));
-                        else
-                            res.onDone(f1.error());
-                    });
+                    IncrementalSnapshotVerificationTask.class,
+                    new SnapshotPartitionsVerifyTaskArg(grps, metas, snpPath, incIdx, check),
+                    options(new ArrayList<>(metas.keySet()))
+                ).listen(f1 -> {
+                    if (f1.error() == null)
+                        res.onDone(f1.result());
+                    else if (f1.error() instanceof IgniteSnapshotVerifyException)
+                        res.onDone(new SnapshotPartitionsCheckResult(metas,
+                            new IdleVerifyResultV2(((IgniteSnapshotVerifyException)f1.error()).exceptions())));
+                    else
+                        res.onDone(f1.error());
+                });
             }
             else {
                 if (f0.error() == null)
