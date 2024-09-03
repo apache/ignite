@@ -731,7 +731,6 @@ public class GridNioSelfTest extends GridCommonAbstractTest {
 
                         for (int i = 0; i < MSG_CNT; i++)
                             client.sendMessage(data, data.length);
-
                     }
                     catch (Exception e) {
                         error("Failed to send message.", e);
