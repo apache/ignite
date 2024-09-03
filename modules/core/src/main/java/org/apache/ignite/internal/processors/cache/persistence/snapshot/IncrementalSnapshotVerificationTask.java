@@ -66,7 +66,7 @@ public class IncrementalSnapshotVerificationTask extends AbstractSnapshotVerific
     private static final long serialVersionUID = 0L;
 
     /** {@inheritDoc} */
-    @Override public SnapshotPartitionsVerifyTaskResult reduce(List<ComputeJobResult> results) throws IgniteException {
+    @Override public SnapshotPartitionsCheckResult reduce(List<ComputeJobResult> results) throws IgniteException {
         Map<Object, Map<Object, TransactionsHashRecord>> nodeTxHashMap = new HashMap<>();
 
         List<List<TransactionsHashRecord>> txHashConflicts = new ArrayList<>();
@@ -125,7 +125,7 @@ public class IncrementalSnapshotVerificationTask extends AbstractSnapshotVerific
             .flatMap(e -> e.values().stream())
             .forEach(e -> txHashConflicts.add(F.asList(e, null)));
 
-        return new SnapshotPartitionsVerifyTaskResult(
+        return new SnapshotPartitionsCheckResult(
             metas,
             errors.isEmpty() ?
                 new IdleVerifyResultV2(partHashes, txHashConflicts, partiallyCommittedTxs)

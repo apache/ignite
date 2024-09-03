@@ -27,6 +27,7 @@ import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
@@ -60,11 +61,11 @@ public class SnapshotCheckProcess {
     /** */
     private final GridKernalContext kctx;
 
-    /** Operation contexts by name. */
+    /** Operation contexts by unique operation name/id. */
     private final Map<String, SnapshotCheckContext> contexts = new ConcurrentHashMap<>();
 
     /** Cluster-wide operation futures per snapshot called from current node. */
-    private final Map<UUID, GridFutureAdapter<SnapshotPartitionsVerifyTaskResult>> clusterOpFuts = new ConcurrentHashMap<>();
+    private final Map<UUID, GridFutureAdapter<SnapshotPartitionsCheckResult>> clusterOpFuts = new ConcurrentHashMap<>();
 
     /** Check metas first phase subprocess. */
     private final DistributedProcess<SnapshotCheckProcessRequest, SnapshotCheckResponse> phase1CheckMetas;
@@ -135,12 +136,12 @@ public class SnapshotCheckProcess {
         if (ctx == null)
             return new GridFinishedFuture<>();
 
-        contexts.remove(ctx.req.snapshotName());
+        contexts.remove(contextId(ctx.req));
 
         if (log.isInfoEnabled())
             log.info("Finished snapshot validation [req=" + ctx.req + ']');
 
-        GridFutureAdapter<SnapshotPartitionsVerifyTaskResult> clusterOpFut = clusterOpFuts.get(reqId);
+        GridFutureAdapter<SnapshotPartitionsCheckResult> clusterOpFut = clusterOpFuts.get(reqId);
 
         if (clusterOpFut == null)
             return new GridFinishedFuture<>();
@@ -152,11 +153,12 @@ public class SnapshotCheckProcess {
                 if (!errors.isEmpty())
                     throw F.firstValue(errors);
 
-                Map<ClusterNode, Map<String, SnapshotHandlerResult<?>>> cstRes = mapCustomHandlersResults(results, ctx.req.nodes());
+                Map<ClusterNode, Map<String, SnapshotHandlerResult<?>>> cstRes = mapResults(results, ctx.req.nodes(),
+                    SnapshotCheckResponse::customHandlersResults);
 
                 kctx.cache().context().snapshotMgr().checker().checkCustomHandlersResults(ctx.req.snapshotName(), cstRes);
 
-                clusterOpFut.onDone(new SnapshotPartitionsVerifyTaskResult(ctx.clusterMetas, null));
+                clusterOpFut.onDone(new SnapshotPartitionsCheckResult(ctx.clusterMetas, null));
             }
             catch (Throwable err) {
                 clusterOpFut.onDone(err);
@@ -166,11 +168,12 @@ public class SnapshotCheckProcess {
             Map<ClusterNode, Exception> errors0 = mapErrors(errors);
 
             if (!results.isEmpty()) {
-                Map<ClusterNode, Map<PartitionKeyV2, PartitionHashRecordV2>> results0 = mapPartsHashes(results, ctx.req.nodes());
+                Map<ClusterNode, Map<PartitionKeyV2, PartitionHashRecordV2>> results0 = mapResults(results, ctx.req.nodes(),
+                    SnapshotCheckResponse::partsHashes);
 
                 IdleVerifyResultV2 chkRes = SnapshotChecker.reduceHashesResults(results0, errors0);
 
-                clusterOpFut.onDone(new SnapshotPartitionsVerifyTaskResult(ctx.clusterMetas, chkRes));
+                clusterOpFut.onDone(new SnapshotPartitionsCheckResult(ctx.clusterMetas, chkRes));
             }
             else
                 clusterOpFut.onDone(new IgniteSnapshotVerifyException(errors0));
@@ -184,7 +187,7 @@ public class SnapshotCheckProcess {
         if (!req.nodes().contains(kctx.localNodeId()))
             return new GridFinishedFuture<>();
 
-        SnapshotCheckContext ctx = context(req.snapshotName(), req.requestId());
+        SnapshotCheckContext ctx = context(contextId(req), req.requestId());
 
         assert ctx != null;
 
@@ -221,38 +224,25 @@ public class SnapshotCheckProcess {
     }
 
     /** */
-    private Map<ClusterNode, Map<PartitionKeyV2, PartitionHashRecordV2>> mapPartsHashes(
+    private <T> Map<ClusterNode, T> mapResults(
         Map<UUID, SnapshotCheckResponse> results,
-        Collection<UUID> requiredNodes
+        Set<UUID> requiredNodes,
+        Function<SnapshotCheckResponse, T> resExtractor
     ) {
         return results.entrySet().stream()
             .filter(e -> requiredNodes.contains(e.getKey()) && e.getValue() != null)
-            .collect(Collectors.toMap(e -> kctx.cluster().get().node(e.getKey()), e -> e.getValue().partsHashes()));
-    }
-
-    /** */
-    private Map<ClusterNode, Map<String, SnapshotHandlerResult<?>>> mapCustomHandlersResults(
-        Map<UUID, SnapshotCheckResponse> results,
-        Set<UUID> requiredNodes
-    ) {
-        return results.entrySet().stream()
-            .filter(e -> requiredNodes.contains(e.getKey()) && e.getValue() != null)
-            .collect(Collectors.toMap(e -> kctx.cluster().get().node(e.getKey()), e -> e.getValue().customHandlersResults()));
+            .collect(Collectors.toMap(e -> kctx.cluster().get().node(e.getKey()), e -> resExtractor.apply(e.getValue())));
     }
 
     /**
-     * @param snpName Snapshot name of the validation process. If {@code null}, ignored.
-     * @param reqId  If {@code snpName} is {@code null}, is used to find the operation request.
-     * @return Current snapshot checking context by {@code snpName} or {@code reqId}.
+     * @param ctxId Context id. If {@code null}, ignored.
+     * @param reqId If {@code ctxId} is {@code null}, is used to find the operation context.
+     * @return Current snapshot checking context by {@code ctxId} or {@code reqId}.
      */
-    private @Nullable SnapshotCheckContext context(@Nullable String snpName, UUID reqId) {
-        SnapshotCheckContext ctx = snpName == null
+    private @Nullable SnapshotCheckContext context(@Nullable String ctxId, UUID reqId) {
+        return ctxId == null
             ? contexts.values().stream().filter(ctx0 -> ctx0.req.requestId().equals(reqId)).findFirst().orElse(null)
-            : contexts.get(snpName);
-
-        assert ctx == null || ctx.req.requestId().equals(reqId);
-
-        return ctx;
+            : contexts.get(ctxId);
     }
 
     /** Phase 1 beginning: prepare, collect and check local metas. */
@@ -267,7 +257,7 @@ public class SnapshotCheckProcess {
             if (nodeStopping)
                 return new GridFinishedFuture<>(new NodeStoppingException("The node is stopping: " + kctx.localNodeId()));
 
-            ctx = contexts.computeIfAbsent(req.snapshotName(), snpName -> new SnapshotCheckContext(req));
+            ctx = contexts.computeIfAbsent(contextId(req), snpName -> new SnapshotCheckContext(req));
         }
 
         if (!ctx.req.requestId().equals(req.requestId())) {
@@ -308,12 +298,10 @@ public class SnapshotCheckProcess {
         Map<UUID, SnapshotCheckResponse> results,
         Map<UUID, Throwable> errors
     ) {
-        String snpName = snpName(results);
-
-        SnapshotCheckContext ctx = context(snpName, reqId);
+        SnapshotCheckContext ctx = context(null, reqId);
 
         // The context is not stored in the case of concurrent check of the same snapshot but the operation future is registered.
-        GridFutureAdapter<SnapshotPartitionsVerifyTaskResult> clusterOpFut = clusterOpFuts.get(reqId);
+        GridFutureAdapter<SnapshotPartitionsCheckResult> clusterOpFut = clusterOpFuts.get(reqId);
 
         try {
             if (!errors.isEmpty())
@@ -358,7 +346,7 @@ public class SnapshotCheckProcess {
         }
         catch (Throwable th) {
             if (ctx != null) {
-                contexts.remove(ctx.req.snapshotName());
+                contexts.remove(contextId(ctx.req));
 
                 if (log.isInfoEnabled())
                     log.info("Finished snapshot validation [req=" + ctx.req + ']');
@@ -369,19 +357,9 @@ public class SnapshotCheckProcess {
         }
     }
 
-    /** Finds current snapshot name from the metas. */
-    private @Nullable String snpName(Map<UUID, SnapshotCheckResponse> results) {
-        for (SnapshotCheckResponse nodeRes : results.values()) {
-            if (nodeRes == null || F.isEmpty(nodeRes.metas))
-                continue;
-
-            assert nodeRes.metas.get(0) != null : "Empty snapshot metadata in the results";
-            assert !F.isEmpty(nodeRes.metas.get(0).snapshotName()) : "Empty snapshot name in a snapshot metadata.";
-
-            return nodeRes.metas.get(0).snapshotName();
-        }
-
-        return null;
+    /** @return Unique operation context id depending on request type and snapshot name. */
+    private static String contextId(SnapshotCheckProcessRequest req) {
+        return req.fullCheck() ? req.snapshotName() + "_full" : req.snapshotName();
     }
 
     /**
@@ -390,14 +368,16 @@ public class SnapshotCheckProcess {
      * @param snpName Snapshot name.
      * @param snpPath Snapshot directory path.
      * @param grpNames List of cache group names.
+     * @param fullCheck If {@code true}, calculates partition hashes. Otherwise, checks only snapshot integrity and partition counters.
      * @param allRestoreHandlers If {@code true}, all the registered {@link IgniteSnapshotManager#handlers()} of type
      *                    {@link SnapshotHandlerType#RESTORE} are invoked. Otherwise, only snapshot metadatas and partition
      *                    hashes are validated.
      */
-    public IgniteInternalFuture<SnapshotPartitionsVerifyTaskResult> start(
+    public IgniteInternalFuture<SnapshotPartitionsCheckResult> start(
         String snpName,
         @Nullable String snpPath,
         @Nullable Collection<String> grpNames,
+        boolean fullCheck,
         boolean allRestoreHandlers
     ) {
         assert !F.isEmpty(snpName);
@@ -415,10 +395,11 @@ public class SnapshotCheckProcess {
             snpName,
             snpPath,
             grpNames,
+            fullCheck,
             allRestoreHandlers
         );
 
-        GridFutureAdapter<SnapshotPartitionsVerifyTaskResult> clusterOpFut = new GridFutureAdapter<>();
+        GridFutureAdapter<SnapshotPartitionsCheckResult> clusterOpFut = new GridFutureAdapter<>();
 
         clusterOpFut.listen(fut -> {
             clusterOpFuts.remove(reqId);

@@ -1840,7 +1840,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
      * @return Future with the result of execution snapshot partitions verify task, which besides calculating partition
      *         hashes of {@link IdleVerifyResultV2} also contains the snapshot metadata distribution across the cluster.
      */
-    public IgniteInternalFuture<SnapshotPartitionsVerifyTaskResult> checkSnapshot(String name, @Nullable String snpPath) {
+    public IgniteInternalFuture<SnapshotPartitionsCheckResult> checkSnapshot(String name, @Nullable String snpPath) {
         return checkSnapshot(name, snpPath, -1);
     }
 
@@ -1853,7 +1853,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
      * @return Future with the result of execution snapshot partitions verify task, which besides calculating partition
      *         hashes of {@link IdleVerifyResultV2} also contains the snapshot metadata distribution across the cluster.
      */
-    public IgniteInternalFuture<SnapshotPartitionsVerifyTaskResult> checkSnapshot(String name, @Nullable String snpPath, int incIdx) {
+    public IgniteInternalFuture<SnapshotPartitionsCheckResult> checkSnapshot(String name, @Nullable String snpPath, int incIdx) {
         A.notNullOrEmpty(name, "Snapshot name cannot be null or empty.");
         A.ensure(U.alphanumericUnderscore(name), "Snapshot name must satisfy the following name pattern: a-zA-Z0-9_");
 
@@ -1884,7 +1884,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
      * @return Future with the result of execution snapshot partitions verify task, which besides calculating partition
      *         hashes of {@link IdleVerifyResultV2} also contains the snapshot metadata distribution across the cluster.
      */
-    public IgniteInternalFuture<SnapshotPartitionsVerifyTaskResult> checkSnapshot(
+    public IgniteInternalFuture<SnapshotPartitionsCheckResult> checkSnapshot(
         String name,
         @Nullable String snpPath,
         @Nullable Collection<String> grps,
@@ -1902,10 +1902,10 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
                 ", incIdx=" + incIdx + ", grps=" + grps + ", validateParts=" + check + ']');
         }
 
-        if (check && incIdx < 1)
-            return checkSnpProc.start(name, snpPath, grps, includeCustomHandlers);
+        if (incIdx < 1)
+            return checkSnpProc.start(name, snpPath, grps, check, includeCustomHandlers);
 
-        GridFutureAdapter<SnapshotPartitionsVerifyTaskResult> res = new GridFutureAdapter<>();
+        GridFutureAdapter<SnapshotPartitionsCheckResult> res = new GridFutureAdapter<>();
 
         GridKernalContext kctx0 = cctx.kernalContext();
 
@@ -1926,22 +1926,15 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
             if (f0.error() == null && F.isEmpty(metasRes.exceptions())) {
                 Map<ClusterNode, List<SnapshotMetadata>> metas = metasRes.meta();
 
-                Class<? extends AbstractSnapshotVerificationTask> cls;
-
-                if (includeCustomHandlers)
-                    cls = SnapshotHandlerRestoreTask.class;
-                else
-                    cls = incIdx > 0 ? IncrementalSnapshotVerificationTask.class : SnapshotPartitionsVerifyTask.class;
-
                 kctx0.task().execute(
-                        cls,
+                    IncrementalSnapshotVerificationTask.class ,
                         new SnapshotPartitionsVerifyTaskArg(grps, metas, snpPath, incIdx, check),
                         options(new ArrayList<>(metas.keySet()))
                     ).listen(f1 -> {
                         if (f1.error() == null)
                             res.onDone(f1.result());
                         else if (f1.error() instanceof IgniteSnapshotVerifyException)
-                            res.onDone(new SnapshotPartitionsVerifyTaskResult(metas,
+                            res.onDone(new SnapshotPartitionsCheckResult(metas,
                                 new IdleVerifyResultV2(((IgniteSnapshotVerifyException)f1.error()).exceptions())));
                         else
                             res.onDone(f1.error());
@@ -1951,7 +1944,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
                 if (f0.error() == null)
                     res.onDone(new IgniteSnapshotVerifyException(metasRes.exceptions()));
                 else if (f0.error() instanceof IgniteSnapshotVerifyException)
-                    res.onDone(new SnapshotPartitionsVerifyTaskResult(null,
+                    res.onDone(new SnapshotPartitionsCheckResult(null,
                         new IdleVerifyResultV2(((IgniteSnapshotVerifyException)f0.error()).exceptions())));
                 else
                     res.onDone(f0.error());

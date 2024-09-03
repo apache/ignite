@@ -41,7 +41,7 @@ import org.jetbrains.annotations.Nullable;
  * The task for checking the consistency of snapshots in the cluster.
  */
 public abstract class AbstractSnapshotVerificationTask extends
-    ComputeTaskAdapter<SnapshotPartitionsVerifyTaskArg, SnapshotPartitionsVerifyTaskResult> {
+    ComputeTaskAdapter<SnapshotPartitionsVerifyTaskArg, SnapshotPartitionsCheckResult> {
     /** Serial version uid. */
     private static final long serialVersionUID = 0L;
 

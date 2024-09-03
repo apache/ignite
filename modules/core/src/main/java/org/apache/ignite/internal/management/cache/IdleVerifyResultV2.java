@@ -45,7 +45,7 @@ import org.jetbrains.annotations.Nullable;
 import static org.apache.ignite.internal.util.IgniteUtils.nl;
 
 /**
- * Encapsulates result of {@link VerifyBackupPartitionsTaskV2}.
+ * Encapsulates of partition check: hashes, counters, conflicts, errors, etc..
  */
 public class IdleVerifyResultV2 extends VisorDataTransferObject {
     /** */
