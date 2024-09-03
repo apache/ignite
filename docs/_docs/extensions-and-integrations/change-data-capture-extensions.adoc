@@ -118,6 +118,40 @@ image:../../assets/images/integrations/CDC-ignite2kafka.svg[]
 | `kafkaRequestTimeout` | Kafka request timeout in milliseconds.  | `3000`
 |===
 
+* `kafkaRequestTimeout` property sets how much `IgniteToKafkaCdcStreamer` will wait for `KafkaProducer` to finish request.
+
+NOTE: `kafkaRequestTimeout` should not be too low. If wait time exceeds `kafkaRequestTimeout`, then `IgniteToKafkaCdcStreamer` will fail with a timeout error.
+
+* To specify `KafkaProducer` settings, use `kafkaProperties` property. We suggest to use a separate file to store all the necessary configuration properties and reference it from the IgniteToKafkaCdcStreamer configuration '.xml' file. See the examples below.
+
+`kafka.properties`
+```
+bootstrap.servers=xxx.x.x.x:9092
+request.timeout.ms=10000
+```
+
+IgniteToKafkaCdcStreamer bean declaration in `ignite-to-kafka-streamer-config.xml`
+```
+<bean id="cdc.streamer" class="org.apache.ignite.cdc.kafka.IgniteToKafkaCdcStreamer">
+    <property name="topic" value="${send_data_kafka_topic_name}"/>
+    <property name="metadataTopic" value="${send_metadata_kafka_topic_name}"/>
+    <property name="kafkaPartitions" value="${send_kafka_partitions}"/>
+    <property name="caches">
+        <list>
+            <value>terminator</value>
+        </list>
+    </property>
+    <property name="onlyPrimary" value="false"/>
+    <property name="kafkaProperties" ref="kafkaProperties"/>
+</bean>
+
+<util:properties id="kafkaProperties" location="file:kafka_properties_path/kafka.properties"/>
+```
+
+
+NOTE: link:https://kafka.apache.org/documentation/#producerconfigs_request.timeout.ms[request.timeout.ms] Kafka producer property is mandatory for streamer configuration. For more details you should refer to a link:https://kafka.apache.org/documentation/#configuration[configuration]
+section of the official Kafka documentation.
+
 === IgniteToKafkaCdcStreamer Metrics
 
 [cols="30%,70%",opts="header"]
@@ -180,10 +214,38 @@ Kafka to Ignite configuration file should contain the following beans that will 
 | `metadataTopic` | Name of topic for replication of BinaryTypes and TypeMappings. | null
 | `metadataConsumerGroup` | Group for `KafkaConsumer`, which polls from metadata topic | ignite-metadata-update-<kafkaPartsFrom>-<kafkaPartsTo>
 | `kafkaRequestTimeout` | Kafka request timeout in milliseconds.  | `3000`
+| `kafkaConsumerPollTimeout` | Kafka poll timeout in milliseconds. | `3000`
 | `maxBatchSize` | Maximum number of events to be sent to destination cluster in a single batch. | 1024
 | `threadCount` | Count of threads to proceed consumers. Each thread poll records from dedicated partitions in round-robin manner. | 16
 |`metricRegistryName`| Name for metric registry. `org.apache.metricRegistryName.cdc.applier` | cdc-kafka-to-ignite
 |===
+
+* `kafkaRequestTimeout` property is used as timeout for `KafkaConsumer` methods (except for `KafkaConsumer#poll`).
+
+NOTE: `kafkaRequestTimeout` should not be too low, otherwise you are risking the application fail on method execution.
+
+* `kafkaConsumerPollTimeout` property is used as timeout for `KafkaConsumer#poll` method.
+
+NOTE: High `kafkaConsumerPollTimeout` property setting might greatly affect replication performance. Kafka topics partitions are equally distributed among threads (see `threadCount`). Each thread can only poll one partition at a time, meaning no other partition, asigned to the same thread, will be polled from while the current is not handled.
+
+* To specify `KafkaConsumer` settings, use `kafkaProperties` bean. Basically, you need to use a separate file to store all the necessary configuration properties and reference it from the KafkaToIgniteCdcStreamer configuration '.xml' file. See the examples below.
+
+`kafka.properties`
+```
+bootstrap.servers=127.0.0.1:9092
+request.timeout.ms=10000
+group.id=kafka-to-ignite-dc1
+auto.offset.reset=earliest
+enable.auto.commit=false
+```
+
+Kafka properties bean declaration in `kafka-to-ignite-streamer-config.xml`
+```
+<util:properties id="kafkaProperties" location="file:kafka_properties_path/kafka.properties"/>
+```
+
+
+NOTE: link:https://kafka.apache.org/documentation/#consumerconfigs_request.timeout.ms[request.timeout.ms] Kafka consumer property is mandatory for streamer configuration.
 
 === Metrics
 
