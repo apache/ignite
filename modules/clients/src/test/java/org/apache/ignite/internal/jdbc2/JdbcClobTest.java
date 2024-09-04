@@ -27,13 +27,16 @@ import org.junit.Assert;
 import org.junit.Test;
 
 import static java.nio.charset.StandardCharsets.UTF_8;
+import static org.apache.ignite.testframework.GridTestUtils.assertThrows;
 import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.fail;
 
 /**
  * Test for JDBC CLOB.
  */
 public class JdbcClobTest {
+    /** */
+    static final String ERROR_CLOB_FREE = "Clob instance can't be used after free() has been called.";
+
     /**
      * @throws Exception If failed.
      */
@@ -44,15 +47,7 @@ public class JdbcClobTest {
         assertEquals(10, clob.length());
 
         clob.free();
-
-        try {
-            clob.length();
-
-            fail();
-        }
-        catch (SQLException e) {
-            // No-op.
-        }
+        assertThrows(null, clob::length, SQLException.class, ERROR_CLOB_FREE);
     }
 
     /**
@@ -62,41 +57,13 @@ public class JdbcClobTest {
     public void testGetSubString() throws Exception {
         JdbcClob clob = new JdbcClob("1234567890");
 
-        try {
-            clob.getSubString(-1, 1);
+        assertThrows(null, () -> clob.getSubString(-1, 1), SQLException.class, null);
 
-            fail();
-        }
-        catch (SQLException e) {
-            // No-op.
-        }
+        assertThrows(null, () -> clob.getSubString(0, 1), SQLException.class, null);
 
-        try {
-            clob.getSubString(0, 1);
+        assertThrows(null, () -> clob.getSubString(1, -1), SQLException.class, null);
 
-            fail();
-        }
-        catch (SQLException e) {
-            // No-op.
-        }
-
-        try {
-            clob.getSubString(1, -1);
-
-            fail();
-        }
-        catch (SQLException e) {
-            // No-op.
-        }
-
-        try {
-            clob.getSubString(1, 11);
-
-            fail();
-        }
-        catch (SQLException e) {
-            // No-op.
-        }
+        assertThrows(null, () -> clob.getSubString(1, 11), SQLException.class, null);
 
         assertEquals("", clob.getSubString(3, 0));
 
@@ -113,15 +80,7 @@ public class JdbcClobTest {
         assertEquals("1234567890", clob.getSubString(1, 10));
 
         clob.free();
-
-        try {
-            clob.getSubString(1, 10);
-
-            fail();
-        }
-        catch (SQLException e) {
-            // No-op.
-        }
+        assertThrows(null, () -> clob.getSubString(1, 10), SQLException.class, ERROR_CLOB_FREE);
     }
 
     /**
@@ -136,15 +95,7 @@ public class JdbcClobTest {
         assertEquals("1234567890", res);
 
         clob.free();
-
-        try {
-            clob.getCharacterStream();
-
-            fail();
-        }
-        catch (SQLException e) {
-            // No-op.
-        }
+        assertThrows(null, () -> clob.getCharacterStream(), SQLException.class, ERROR_CLOB_FREE);
     }
 
     /**
@@ -154,41 +105,13 @@ public class JdbcClobTest {
     public void testGetCharacterStreamWithParams() throws Exception {
         JdbcClob clob = new JdbcClob("1234567890");
 
-        try {
-            clob.getCharacterStream(-1, 1);
+        assertThrows(null, () -> clob.getCharacterStream(-1, 1), SQLException.class, null);
 
-            fail();
-        }
-        catch (SQLException e) {
-            // No-op.
-        }
+        assertThrows(null, () -> clob.getCharacterStream(0, 1), SQLException.class, null);
 
-        try {
-            clob.getCharacterStream(0, 1);
+        assertThrows(null, () -> clob.getCharacterStream(1, -1), SQLException.class, null);
 
-            fail();
-        }
-        catch (SQLException e) {
-            // No-op.
-        }
-
-        try {
-            clob.getCharacterStream(1, -1);
-
-            fail();
-        }
-        catch (SQLException e) {
-            // No-op.
-        }
-
-        try {
-            clob.getCharacterStream(1, 11);
-
-            fail();
-        }
-        catch (SQLException e) {
-            // No-op.
-        }
+        assertThrows(null, () -> clob.getCharacterStream(1, 11), SQLException.class, null);
 
         Reader cStream = clob.getCharacterStream(1, 10);
         String res = IOUtils.toString(cStream);
@@ -211,15 +134,7 @@ public class JdbcClobTest {
         assertEquals("", res);
 
         clob.free();
-
-        try {
-            clob.getCharacterStream(1, 1);
-
-            fail();
-        }
-        catch (SQLException e) {
-            // No-op.
-        }
+        assertThrows(null, () -> clob.getCharacterStream(1, 1), SQLException.class, ERROR_CLOB_FREE);
     }
 
     /**
@@ -231,20 +146,12 @@ public class JdbcClobTest {
         byte[] bytes = IOUtils.toByteArray(clob.getAsciiStream());
         Assert.assertArrayEquals("1234567890".getBytes(UTF_8), bytes);
 
-        clob = new JdbcClob("");
-        bytes = IOUtils.toByteArray(clob.getAsciiStream());
-        Assert.assertArrayEquals("".getBytes(UTF_8), bytes);
-
         clob.free();
+        assertThrows(null, clob::getAsciiStream, SQLException.class, ERROR_CLOB_FREE);
 
-        try {
-            clob.getAsciiStream();
-
-            fail();
-        }
-        catch (SQLException e) {
-            // No-op.
-        }
+        Clob emptyClob = new JdbcClob("");
+        bytes = IOUtils.toByteArray(emptyClob.getAsciiStream());
+        Assert.assertArrayEquals("".getBytes(UTF_8), bytes);
     }
 
     /**
@@ -261,50 +168,15 @@ public class JdbcClobTest {
 
         InputStream stream = clob.getAsciiStream();
 
-        try {
-            stream.read(null, 0, 1);
+        assertThrows(null, () -> stream.read(null, 0, 1), NullPointerException.class, null);
 
-            fail();
-        }
-        catch (NullPointerException e) {
-            // No-op.
-        }
+        assertThrows(null, () -> stream.read(new byte[10], -1, 5), IndexOutOfBoundsException.class, null);
 
-        try {
-            stream.read(new byte[10], -1, 5);
+        assertThrows(null, () -> stream.read(new byte[10], 5, -1), IndexOutOfBoundsException.class, null);
 
-            fail();
-        }
-        catch (IndexOutOfBoundsException e) {
-            // No-op.
-        }
+        assertThrows(null, () -> stream.read(new byte[10], 11, 1), IndexOutOfBoundsException.class, null);
 
-        try {
-            stream.read(new byte[10], 5, -1);
-
-            fail();
-        }
-        catch (IndexOutOfBoundsException e) {
-            // No-op.
-        }
-
-        try {
-            stream.read(new byte[10], 11, 1);
-
-            fail();
-        }
-        catch (IndexOutOfBoundsException e) {
-            // No-op.
-        }
-
-        try {
-            stream.read(new byte[10], 5, 6);
-
-            fail();
-        }
-        catch (IndexOutOfBoundsException e) {
-            // No-op.
-        }
+        assertThrows(null, () -> stream.read(new byte[10], 5, 6), IndexOutOfBoundsException.class, null);
 
         assertEquals(0, stream.read(new byte[10], 5, 0));
 
@@ -350,56 +222,34 @@ public class JdbcClobTest {
      */
     @Test
     public void testPositionWithStringPattern() throws Exception {
-        JdbcClob clob = new JdbcClob("1234567890");
+        JdbcClob clob1 = new JdbcClob("1234567890");
 
-        try {
-            clob.position("0", 0);
+        assertThrows(null, () -> clob1.position("0", 0), SQLException.class, null);
 
-            fail();
-        }
-        catch (SQLException e) {
-            // No-op.
-        }
+        assertThrows(null, () -> clob1.position("0", -1), SQLException.class, null);
 
-        try {
-            clob.position("0", -1);
+        assertEquals(1, clob1.position("", 1));
 
-            fail();
-        }
-        catch (SQLException e) {
-            // No-op.
-        }
+        assertEquals(10, clob1.position("", 10));
 
-        assertEquals(1, clob.position("", 1));
+        assertEquals(11, clob1.position("", 100));
 
-        assertEquals(10, clob.position("", 10));
+        assertEquals(-1, clob1.position("a", 11));
 
-        assertEquals(11, clob.position("", 100));
+        assertEquals(1, clob1.position("1", 1));
 
-        assertEquals(-1, clob.position("a", 11));
+        assertEquals(5, clob1.position("56", 1));
 
-        assertEquals(1, clob.position("1", 1));
+        assertEquals(5, clob1.position("56", 5));
 
-        assertEquals(5, clob.position("56", 1));
+        assertEquals(-1, clob1.position("56", 6));
 
-        assertEquals(5, clob.position("56", 5));
+        clob1.free();
+        assertThrows(null, clob1::getAsciiStream, SQLException.class, ERROR_CLOB_FREE);
 
-        assertEquals(-1, clob.position("56", 6));
+        Clob clob2 = new JdbcClob("abbabab");
 
-        clob = new JdbcClob("abbabab");
-
-        assertEquals(5, clob.position("b", 4));
-
-        clob.free();
-
-        try {
-            clob.position("1", 1);
-
-            fail();
-        }
-        catch (SQLException e) {
-            // No-op.
-        }
+        assertEquals(5, clob2.position("b", 4));
     }
 
     /**
@@ -407,52 +257,30 @@ public class JdbcClobTest {
      */
     @Test
     public void testPositionWithClobPattern() throws Exception {
-        JdbcClob clob = new JdbcClob("1234567890");
+        Clob clob = new JdbcClob("1234567890");
 
-        JdbcClob anotherClob = new JdbcClob("567");
+        Clob patternClob = new JdbcClob("567");
 
-        try {
-            clob.position(anotherClob, 0);
+        assertThrows(null, () -> clob.position(patternClob, 0), SQLException.class, null);
 
-            fail();
-        }
-        catch (SQLException e) {
-            // No-op.
-        }
+        assertThrows(null, () -> clob.position(patternClob, -1), SQLException.class, null);
 
-        try {
-            clob.position(anotherClob, -1);
+        assertEquals(5, clob.position(patternClob, 1));
 
-            fail();
-        }
-        catch (SQLException e) {
-            // No-op.
-        }
+        assertEquals(5, clob.position(patternClob, 5));
 
-        assertEquals(5, clob.position(anotherClob, 1));
+        assertEquals(-1, clob.position(patternClob, 6));
 
-        assertEquals(5, clob.position(anotherClob, 5));
+        Clob patternClob2 = new JdbcClob("a");
 
-        assertEquals(-1, clob.position(anotherClob, 6));
-
-        anotherClob = new JdbcClob("a");
-
-        assertEquals(-1, clob.position(anotherClob, 1));
-
-        clob = new JdbcClob("bbabbabba");
-
-        assertEquals(6, clob.position(anotherClob, 5));
+        assertEquals(-1, clob.position(patternClob2, 1));
 
         clob.free();
+        assertThrows(null, () -> clob.position(patternClob2, 5), SQLException.class, ERROR_CLOB_FREE);
 
-        try {
-            clob.position(anotherClob, 5);
+        Clob clob2 = new JdbcClob("bbabbabba");
 
-            fail();
-        }
-        catch (SQLException e) {
-            // No-op.
-        }
+        assertEquals(6, clob2.position(patternClob2, 5));
     }
 
     /**
@@ -460,76 +288,40 @@ public class JdbcClobTest {
      */
     @Test
     public void testSetString() throws Exception {
-        JdbcClob clob = new JdbcClob("1234567890");
+        JdbcClob clob1 = new JdbcClob("1234567890");
 
-        try {
-            clob.setString(-1, "a");
+        assertThrows(null, () -> clob1.setString(-1, "a"), SQLException.class, null);
 
-            fail();
-        }
-        catch (SQLException e) {
-            // No-op.
-        }
+        assertThrows(null, () -> clob1.setString(0, "a"), SQLException.class, null);
 
-        try {
-            clob.setString(0, "a");
+        assertThrows(null, () -> clob1.setString(clob1.length() + 2, "a"), SQLException.class, null);
 
-            fail();
-        }
-        catch (SQLException e) {
-            // No-op.
-        }
+        assertThrows(null, () -> clob1.setString(1, null), SQLException.class, null);
 
-        try {
-            clob.setString(clob.length() + 2, "a");
-
-            fail();
-        }
-        catch (SQLException e) {
-            // No-op.
-        }
-
-        try {
-            clob.setString(1, null);
-
-            fail();
-        }
-        catch (SQLException e) {
-            // No-op.
-        }
-
-        int written = clob.setString(1, "a");
-        assertEquals("a", clob.getSubString(1, 1));
+        int written = clob1.setString(1, "a");
+        assertEquals("a", clob1.getSubString(1, 1));
         assertEquals(1, written);
 
-        written = clob.setString(5, "abc");
-        assertEquals("abc", clob.getSubString(5, 3));
+        written = clob1.setString(5, "abc");
+        assertEquals("abc", clob1.getSubString(5, 3));
         assertEquals(3, written);
 
-        written = clob.setString(10, "def");
-        assertEquals("def", clob.getSubString(10, 3));
+        written = clob1.setString(10, "def");
+        assertEquals("def", clob1.getSubString(10, 3));
         assertEquals(3, written);
 
-        clob = new JdbcClob("12345");
-        written = clob.setString(3, "abcd");
-        assertEquals("12abcd", clob.getSubString(1, (int)clob.length()));
+        clob1.free();
+        assertThrows(null, () -> clob1.setString(1, "a"), SQLException.class, ERROR_CLOB_FREE);
+
+        Clob clob2 = new JdbcClob("12345");
+        written = clob2.setString(3, "abcd");
+        assertEquals("12abcd", clob2.getSubString(1, (int)clob2.length()));
         assertEquals(4, written);
 
-        clob = new JdbcClob("12345");
-        written = clob.setString(3, "ab");
-        assertEquals("12ab5", clob.getSubString(1, (int)clob.length()));
+        Clob clob3 = new JdbcClob("12345");
+        written = clob3.setString(3, "ab");
+        assertEquals("12ab5", clob3.getSubString(1, (int)clob3.length()));
         assertEquals(2, written);
-
-        clob.free();
-
-        try {
-            clob.setString(1, "a");
-
-            fail();
-        }
-        catch (SQLException e) {
-            // No-op.
-        }
     }
 
     /**
@@ -539,104 +331,47 @@ public class JdbcClobTest {
     public void testSetStringWithSubString() throws Exception {
         JdbcClob clob = new JdbcClob("1234567890");
 
-        try {
-            clob.setString(-1, "a", 0, 1);
+        assertThrows(null, () -> clob.setString(-1, "a", 0, 1), SQLException.class, null);
 
-            fail();
-        }
-        catch (SQLException e) {
-            // No-op.
-        }
+        assertThrows(null, () -> clob.setString(0, "a", 0, 1), SQLException.class, null);
 
-        try {
-            clob.setString(0, "a", 0, 1);
+        assertThrows(null, () -> clob.setString(clob.length() + 2, "a", 0, 1), SQLException.class, null);
 
-            fail();
-        }
-        catch (SQLException e) {
-            // No-op.
-        }
+        assertThrows(null, () -> clob.setString(1, null, 0, 1), SQLException.class, null);
 
-        try {
-            clob.setString(clob.length() + 2, "a", 0, 1);
+        assertThrows(null, () -> clob.setString(1, "a", -1, 1), SQLException.class, null);
 
-            fail();
-        }
-        catch (SQLException e) {
-            // No-op.
-        }
+        assertThrows(null, () -> clob.setString(1, "a", 0, -1), SQLException.class, null);
 
-        try {
-            clob.setString(1, null, 0, 1);
-
-            fail();
-        }
-        catch (SQLException e) {
-            // No-op.
-        }
-
-        try {
-            clob.setString(1, "a", -1, 1);
-
-            fail();
-        }
-        catch (SQLException e) {
-            // No-op.
-        }
-
-        try {
-            clob.setString(1, "a", 0, -1);
-
-            fail();
-        }
-        catch (SQLException e) {
-            // No-op.
-        }
-
-        try {
-            clob.setString(1, "abc", 1, 3);
-
-            fail();
-        }
-        catch (SQLException e) {
-            // No-op.
-        }
-
-        clob = new JdbcClob("1234567890");
-        int written = clob.setString(3, "abcd", 0, 1);
-        assertEquals("12a4567890", clob.getSubString(1, (int)clob.length()));
-        assertEquals(1, written);
-
-        clob = new JdbcClob("1234567890");
-        written = clob.setString(1, "abcd", 0, 3);
-        assertEquals("abc4567890", clob.getSubString(1, (int)clob.length()));
-        assertEquals(3, written);
-
-        clob = new JdbcClob("1234567890");
-        written = clob.setString(5, "abcd", 2, 2);
-        assertEquals("1234cd7890", clob.getSubString(1, (int)clob.length()));
-        assertEquals(2, written);
-
-        clob = new JdbcClob("1234567890");
-        written = clob.setString(9, "abcd", 0, 4);
-        assertEquals("12345678abcd", clob.getSubString(1, (int)clob.length()));
-        assertEquals(4, written);
-
-        clob = new JdbcClob("1234567890");
-        written = clob.setString(11, "abcd", 0, 4);
-        assertEquals("1234567890abcd", clob.getSubString(1, (int)clob.length()));
-        assertEquals(4, written);
+        assertThrows(null, () -> clob.setString(1, "abc", 1, 3), SQLException.class, null);
 
         clob.free();
+        assertThrows(null, () -> clob.setString(1, "a", 0, 1), SQLException.class, ERROR_CLOB_FREE);
 
-        try {
-            clob.setString(1, "a", 0, 1);
+        Clob clob2 = new JdbcClob("1234567890");
+        int written = clob2.setString(3, "abcd", 0, 1);
+        assertEquals("12a4567890", clob2.getSubString(1, (int)clob2.length()));
+        assertEquals(1, written);
 
-            fail();
-        }
-        catch (SQLException e) {
-            // No-op.
-        }
+        clob2 = new JdbcClob("1234567890");
+        written = clob2.setString(1, "abcd", 0, 3);
+        assertEquals("abc4567890", clob2.getSubString(1, (int)clob2.length()));
+        assertEquals(3, written);
+
+        clob2 = new JdbcClob("1234567890");
+        written = clob2.setString(5, "abcd", 2, 2);
+        assertEquals("1234cd7890", clob2.getSubString(1, (int)clob2.length()));
+        assertEquals(2, written);
+
+        clob2 = new JdbcClob("1234567890");
+        written = clob2.setString(9, "abcd", 0, 4);
+        assertEquals("12345678abcd", clob2.getSubString(1, (int)clob2.length()));
+        assertEquals(4, written);
+
+        clob2 = new JdbcClob("1234567890");
+        written = clob2.setString(11, "abcd", 0, 4);
+        assertEquals("1234567890abcd", clob2.getSubString(1, (int)clob2.length()));
+        assertEquals(4, written);
     }
 
     /**
@@ -646,23 +381,17 @@ public class JdbcClobTest {
     public void testTruncate() throws Exception {
         JdbcClob clob = new JdbcClob("1234567890");
 
-        try {
+        assertThrows(null, () -> {
             clob.truncate(-1);
 
-            fail();
-        }
-        catch (SQLException e) {
-            // No-op.
-        }
+            return null;
+        }, SQLException.class, null);
 
-        try {
+        assertThrows(null, () -> {
             clob.truncate(clob.length() + 1);
 
-            fail();
-        }
-        catch (SQLException e) {
-            // No-op.
-        }
+            return null;
+        }, SQLException.class, null);
 
         clob.truncate(9);
         assertEquals("123456789", clob.getSubString(1, (int)clob.length()));
@@ -674,15 +403,11 @@ public class JdbcClobTest {
         assertEquals("", clob.getSubString(1, (int)clob.length()));
 
         clob.free();
-
-        try {
+        assertThrows(null, () -> {
             clob.truncate(1);
 
-            fail();
-        }
-        catch (SQLException e) {
-            // No-op.
-        }
+            return null;
+        }, SQLException.class, ERROR_CLOB_FREE);
     }
 
     /**
@@ -692,14 +417,7 @@ public class JdbcClobTest {
     public void testSetAsciiStream() throws Exception {
         JdbcClob clob = new JdbcClob("1234567890");
 
-        try {
-            clob.setAsciiStream(1L);
-
-            fail();
-        }
-        catch (SQLFeatureNotSupportedException e) {
-            // No-op.
-        }
+        assertThrows(null, () -> clob.setAsciiStream(1L), SQLFeatureNotSupportedException.class, null);
     }
 
     /**
@@ -709,14 +427,7 @@ public class JdbcClobTest {
     public void testSetCharacterStream() throws Exception {
         JdbcClob clob = new JdbcClob("1234567890");
 
-        try {
-            clob.setCharacterStream(1L);
-
-            fail();
-        }
-        catch (SQLFeatureNotSupportedException e) {
-            // No-op.
-        }
+        assertThrows(null, () -> clob.setCharacterStream(1L), SQLFeatureNotSupportedException.class, null);
     }
 
     /**
@@ -732,13 +443,6 @@ public class JdbcClobTest {
 
         clob.free();
 
-        try {
-            clob.length();
-
-            fail();
-        }
-        catch (SQLException e) {
-            // No-op.
-        }
+        assertThrows(null, clob::length, SQLException.class, ERROR_CLOB_FREE);
     }
 }
