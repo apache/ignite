@@ -80,7 +80,6 @@ import org.apache.ignite.internal.processors.metastorage.DistributedMetaStorageT
 import org.apache.ignite.internal.processors.metastorage.persistence.DistributedMetaStorageHistoryCacheTest;
 import org.apache.ignite.internal.processors.metastorage.persistence.DmsDataWriterWorkerTest;
 import org.apache.ignite.internal.processors.metastorage.persistence.InMemoryCachedDistributedMetaStorageBridgeTest;
-import org.apache.ignite.internal.suggestions.JvmConfigurationSuggestionsTest;
 import org.apache.ignite.internal.util.collection.BitSetIntSetTest;
 import org.apache.ignite.internal.util.collection.ImmutableIntSetTest;
 import org.apache.ignite.internal.util.collection.IntHashMapTest;
@@ -222,7 +221,6 @@ import org.junit.runners.Suite;
     RemoveAllDeadlockTest.class,
 
     NoopCheckpointSpiLoggingTest.class,
-    JvmConfigurationSuggestionsTest.class,
     ExponentialBackoffTest.class,
     ProgressSpeedCalculationTest.class,
 
