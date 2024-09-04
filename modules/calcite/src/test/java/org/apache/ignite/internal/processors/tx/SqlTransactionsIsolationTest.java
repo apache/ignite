@@ -787,7 +787,7 @@ public class SqlTransactionsIsolationTest extends GridCommonAbstractTest {
     /** */
     private User select(Integer id, ModifyApi api) {
         if (api == CACHE)
-            return type == ExecutorType.THIN
+            return (type == ExecutorType.THIN || type == ExecutorType.THIN2)
                 ? (User)thinCli.cache(users()).get(id)
                 : (User)node().cache(users()).get(id);
         else if (api == SQL) {
