@@ -1921,7 +1921,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
             taskArg,
             options(bltNodes)
         ).listen(f0 -> {
-            SnapshotMetadatasCheshResult metasRes = f0.result();
+            SnapshotChecker.SnapshotMetadatasCheckResult metasRes = f0.result();
 
             if (f0.error() == null && F.isEmpty(metasRes.exceptions())) {
                 Map<ClusterNode, List<SnapshotMetadata>> metas = metasRes.metas();

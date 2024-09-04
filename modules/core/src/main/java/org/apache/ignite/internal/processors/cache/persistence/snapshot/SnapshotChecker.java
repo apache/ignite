@@ -20,6 +20,8 @@ import java.io.BufferedInputStream;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.ObjectInput;
+import java.io.ObjectOutput;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.nio.file.DirectoryStream;
@@ -45,6 +47,7 @@ import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.dump.DumpEntry;
 import org.apache.ignite.internal.GridKernalContext;
+import org.apache.ignite.internal.dto.IgniteDataTransferObject;
 import org.apache.ignite.internal.management.cache.IdleVerifyResultV2;
 import org.apache.ignite.internal.management.cache.PartitionKeyV2;
 import org.apache.ignite.internal.managers.encryption.EncryptionCacheKeyProvider;
@@ -293,7 +296,7 @@ public class SnapshotChecker {
     }
 
     /** */
-    public static SnapshotMetadatasCheshResult reduceMetasResults(
+    public static SnapshotMetadatasCheckResult reduceMetasResults(
         String snpName,
         @Nullable String snpPath,
         Map<ClusterNode, List<SnapshotMetadata>> allMetas,
@@ -346,7 +349,7 @@ public class SnapshotChecker {
                 "with consistent ids: " + String.join(", ", baselineNodes));
         }
 
-        return new SnapshotMetadatasCheshResult(mappedMetas, mappedExceptions);
+        return new SnapshotMetadatasCheckResult(mappedMetas, mappedExceptions);
     }
 
     /** */
@@ -875,6 +878,54 @@ public class SnapshotChecker {
             GroupKey key = getActiveKey(grpId);
 
             return key != null && key.id() == keyId ? key : null;
+        }
+    }
+
+    // TODO: why not a serializable.
+    /** */
+    public static class SnapshotMetadatasCheckResult extends IgniteDataTransferObject {
+        /** */
+        private static final long serialVersionUID = 0L;
+
+        /** Full snapshot metadata. */
+        private Map<ClusterNode, List<SnapshotMetadata>> metas;
+
+        /** Errors happened during snapshot metadatas check. */
+        private Map<ClusterNode, Exception> exceptions;
+
+        /** */
+        private SnapshotMetadatasCheckResult(
+            Map<ClusterNode, List<SnapshotMetadata>> metas,
+            Map<ClusterNode, Exception> exceptions
+        ) {
+            this.metas = metas;
+            this.exceptions = exceptions;
+        }
+
+        /** */
+        public SnapshotMetadatasCheckResult() {
+        }
+
+        /** @return Errors happened during snapshot metadatas check. */
+        public Map<ClusterNode, Exception> exceptions() {
+            return Collections.unmodifiableMap(exceptions);
+        }
+
+        /** @return Full snapshot metadata. */
+        public Map<ClusterNode, List<SnapshotMetadata>> metas() {
+            return Collections.unmodifiableMap(metas);
+        }
+
+        /** {@inheritDoc} */
+        @Override protected void writeExternalData(ObjectOutput out) throws IOException {
+            U.writeMap(out, metas);
+            U.writeMap(out, exceptions);
+        }
+
+        /** {@inheritDoc} */
+        @Override protected void readExternalData(byte protoVer, ObjectInput in) throws IOException, ClassNotFoundException {
+            metas = U.readMap(in);
+            exceptions = U.readMap(in);
         }
     }
 }

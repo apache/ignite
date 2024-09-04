@@ -328,8 +328,8 @@ public class SnapshotCheckProcess {
                 }
             });
 
-            SnapshotMetadatasCheshResult metasCheckRes = SnapshotChecker.reduceMetasResults(ctx.req.snapshotName(), ctx.req.snapshotPath(),
-                receivedMetas, null, kctx.cluster().get().localNode().consistentId());
+            SnapshotChecker.SnapshotMetadatasCheckResult metasCheckRes = SnapshotChecker.reduceMetasResults(ctx.req.snapshotName(),
+                ctx.req.snapshotPath(), receivedMetas, null, kctx.cluster().get().localNode().consistentId());
 
             if (!metasCheckRes.exceptions().isEmpty())
                 throw new IgniteSnapshotVerifyException(metasCheckRes.exceptions());
