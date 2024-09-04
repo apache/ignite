@@ -16,6 +16,7 @@
  */
 package org.apache.ignite.internal.processors.query.calcite.sql;
 
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -26,6 +27,7 @@ import java.util.stream.Collectors;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import org.apache.calcite.sql.SqlCall;
+import org.apache.calcite.sql.SqlHint;
 import org.apache.calcite.sql.SqlIdentifier;
 import org.apache.calcite.sql.SqlKind;
 import org.apache.calcite.sql.SqlLiteral;
@@ -735,6 +737,21 @@ public class SqlCustomParserTest extends GridCommonAbstractTest {
         createView = parse("create view \"my.schema\".\"my.view\" as select * from my_table");
 
         assertThat(createView.name.names, is(ImmutableList.of("my.schema", "my.view")));
+
+        createView = parse("create view my_view as select /*+ FORCE_INDEX(my_idx) */ * from my_table");
+
+        assertThat(createView.name.names, is(ImmutableList.of("MY_VIEW")));
+        assertThat(createView.query, instanceOf(SqlSelect.class));
+
+        SqlSelect select = (SqlSelect)createView.query;
+
+        assertThat(select.getHints().size(), is(1));
+        assertThat(select.getHints().get(0), instanceOf(SqlHint.class));
+
+        SqlHint hint = (SqlHint)select.getHints().get(0);
+
+        assertThat(hint.getName(), is("FORCE_INDEX"));
+        assertThat(hint.getOptionList(), is(Collections.singletonList("MY_IDX")));
     }
 
     /**

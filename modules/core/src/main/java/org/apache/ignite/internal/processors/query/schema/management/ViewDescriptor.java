@@ -35,7 +35,7 @@ public class ViewDescriptor {
      * @param sql View SQL.
      * @param desc View description.
      */
-    public ViewDescriptor(String name, String sql, String desc) {
+    ViewDescriptor(String name, String sql, String desc) {
         this.name = name;
         this.sql = sql;
         this.desc = desc;

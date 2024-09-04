@@ -41,6 +41,7 @@ public class SqlDropViewCommand implements SqlCommand {
      * Default constructor.
      */
     public SqlDropViewCommand() {
+        // No-op.
     }
 
     /**

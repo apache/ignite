@@ -406,6 +406,7 @@ public class SchemaHolderImpl extends AbstractService implements SchemaHolder, S
     /** */
     private void rebuild() {
         SchemaPlus newCalciteSchema = Frameworks.createRootSchema(false);
+
         newCalciteSchema.add("UUID", typeFactory -> ((IgniteTypeFactory)typeFactory).createCustomType(UUID.class));
         newCalciteSchema.add("OTHER", typeFactory -> ((IgniteTypeFactory)typeFactory).createCustomType(Object.class));
         newCalciteSchema.add(QueryUtils.DFLT_SCHEMA, new IgniteSchema(QueryUtils.DFLT_SCHEMA));

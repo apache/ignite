@@ -108,16 +108,16 @@ public class IgniteSchema extends AbstractSchema {
     }
 
     /**
-     * Registers current {@code IgniteSchema} in parent {@code schema}.
+     * Registers current {@code IgniteSchema} in parent {@code SchemaPlus}.
      *
-     * @param schema Parent schema.
+     * @param parent Parent schema.
      * @return Registered schema.
      */
-    public SchemaPlus register(SchemaPlus schema) {
-        SchemaPlus schemaPlus = schema.add(schemaName, this);
+    public SchemaPlus register(SchemaPlus parent) {
+        SchemaPlus newSchema = parent.add(schemaName, this);
 
-        viewMap.forEach((name, sql) -> schemaPlus.add(name, new ViewTableMacroImpl(sql, schemaPlus)));
+        viewMap.forEach((name, sql) -> newSchema.add(name, new ViewTableMacroImpl(sql, newSchema)));
 
-        return schemaPlus;
+        return newSchema;
     }
 }

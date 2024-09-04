@@ -474,7 +474,7 @@ DROP INDEX idx_person_name;
 
 == CREATE VIEW
 
-Creates an user definded SQL view
+Creates an user definded SQL view.
 
 
 [source,sql]

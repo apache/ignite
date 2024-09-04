@@ -243,10 +243,12 @@ public class TypeUtils {
         RelDataType type,
         @Nullable List<String> origin
     ) {
+        int MAX_VIEW_DEPTH = 100;
+
         int cnt = 0; // Counter to protect from infinite recursion.
 
         while (true) {
-            if (F.isEmpty(origin) || cnt++ >= 100)
+            if (F.isEmpty(origin) || cnt++ >= MAX_VIEW_DEPTH)
                 return typeFactory.getResultClass(type);
 
             RelOptTable table = schema.getTableForMember(origin.subList(0, 2));

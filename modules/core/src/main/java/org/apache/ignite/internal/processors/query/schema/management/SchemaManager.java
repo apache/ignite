@@ -286,7 +286,7 @@ public class SchemaManager {
         try {
             createSchema(schema, true);
 
-            schema(schema).add(new ViewDescriptor(MetricUtils.toSqlName(view.name()), "SYSTEM", view.description()));
+            schema(schema).add(new ViewDescriptor(MetricUtils.toSqlName(view.name()), null, view.description()));
 
             sysViews.add(view);
 
@@ -928,7 +928,12 @@ public class SchemaManager {
         lock.writeLock().lock();
 
         try {
-            ViewDescriptor viewDesc = view(schemaName, viewName);
+            SchemaDescriptor schema = schema(schemaName);
+
+            if (schema == null)
+                return;
+
+            ViewDescriptor viewDesc = schema.viewByName(viewName);
 
             if (viewDesc == null)
                 return;
@@ -1140,29 +1145,6 @@ public class SchemaManager {
             }
 
             return null;
-        }
-        finally {
-            lock.readLock().unlock();
-        }
-    }
-
-    /**
-     * Find view by its identifier.
-     *
-     * @param schemaName Schema name.
-     * @param viewName View name.
-     * @return View or {@code null} if none found.
-     */
-    @Nullable public ViewDescriptor view(String schemaName, String viewName) {
-        lock.readLock().lock();
-
-        try {
-            SchemaDescriptor schema = schema(schemaName);
-
-            if (schema == null)
-                return null;
-
-            return schema.viewByName(viewName);
         }
         finally {
             lock.readLock().unlock();

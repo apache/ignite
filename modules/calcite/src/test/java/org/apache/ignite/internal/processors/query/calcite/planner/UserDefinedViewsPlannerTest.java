@@ -75,6 +75,24 @@ public class UserDefinedViewsPlannerTest extends AbstractPlannerTest {
      * @throws Exception If failed.
      */
     @Test
+    public void testViewHint() throws Exception {
+        IgniteSchema schema = createSchema(
+            createTable("T1", IgniteDistributions.single(), "C1", INTEGER, "C2", INTEGER, "C3", INTEGER)
+                .addIndex("IDX_1", 0)
+                .addIndex("IDX_2", 1)
+        );
+
+        schema.addView("V1", "SELECT /*+ FORCE_INDEX(IDX_1) */ C1, C2 FROM T1");
+        schema.addView("V2", "SELECT /*+ FORCE_INDEX(IDX_2) */ C1, C2 FROM T1");
+
+        assertPlan("SELECT * FROM v1 WHERE c1 = ? AND c2 = ?", schema, isIndexScan("T1", "IDX_1"));
+        assertPlan("SELECT * FROM v2 WHERE c1 = ? AND c2 = ?", schema, isIndexScan("T1", "IDX_2"));
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    @Test
     public void testRecursiveView() throws Exception {
         IgniteSchema schema = createSchema();
 

@@ -96,7 +96,7 @@ public class AuthorizationIntegrationTest extends AbstractSecurityTest {
         return Arrays.asList(false, true);
     }
 
-    /** */
+    /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         return super.getConfiguration(igniteInstanceName)
             .setIncludeEventTypes(EVT_CACHE_OBJECT_PUT, EVT_CACHE_OBJECT_REMOVED)
@@ -111,7 +111,7 @@ public class AuthorizationIntegrationTest extends AbstractSecurityTest {
         };
     }
 
-    /** */
+    /** {@inheritDoc} */
     @Override protected void beforeTest() throws Exception {
         super.beforeTest();
 
@@ -146,7 +146,7 @@ public class AuthorizationIntegrationTest extends AbstractSecurityTest {
         grid1.events().localListen(lsnrRemove, EVT_CACHE_OBJECT_REMOVED);
     }
 
-    /** */
+    /** {@inheritDoc} */
     @Override protected void afterTest() throws Exception {
         super.afterTest();
 

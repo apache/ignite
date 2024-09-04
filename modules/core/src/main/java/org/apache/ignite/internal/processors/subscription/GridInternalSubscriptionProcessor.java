@@ -59,9 +59,6 @@ public class GridInternalSubscriptionProcessor extends GridProcessorAdapter {
     /** */
     private final List<IgniteChangeGlobalStateSupport> globalStateListeners = new ArrayList<>();
 
-    /** */
-    private final List<IgniteChangeGlobalStateSupport> globalStateListeners = new ArrayList<>();
-
     /**
      * @param ctx Kernal context.
      */

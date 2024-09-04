@@ -125,7 +125,7 @@ public class SchemaDescriptor {
     }
 
     /**
-     * @return Views.
+     * @return View descriptors.
      */
     public Collection<ViewDescriptor> views() {
         return views.values();
@@ -133,7 +133,7 @@ public class SchemaDescriptor {
 
     /**
      * @param viewName View name.
-     * @return View.
+     * @return View descriptor.
      */
     public ViewDescriptor viewByName(String viewName) {
         return views.get(viewName);

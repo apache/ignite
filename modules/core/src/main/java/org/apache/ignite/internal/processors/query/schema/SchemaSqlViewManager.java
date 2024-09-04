@@ -50,7 +50,7 @@ public class SchemaSqlViewManager implements IgniteChangeGlobalStateSupport {
     /**
      * Constructor.
      *
-     * @param ctx Context.
+     * @param ctx Kernal context.
      */
     public SchemaSqlViewManager(GridKernalContext ctx) {
         this.ctx = ctx;
@@ -188,7 +188,7 @@ public class SchemaSqlViewManager implements IgniteChangeGlobalStateSupport {
         private final String viewSql;
 
         /** */
-        public SqlView(String schemaName, String viewName, String viewSql) {
+        private SqlView(String schemaName, String viewName, String viewSql) {
             this.schemaName = schemaName;
             this.viewName = viewName;
             this.viewSql = viewSql;

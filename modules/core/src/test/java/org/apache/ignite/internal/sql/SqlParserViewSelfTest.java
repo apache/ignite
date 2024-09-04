@@ -26,7 +26,7 @@ import org.junit.Test;
  */
 public class SqlParserViewSelfTest extends SqlParserAbstractSelfTest {
     /**
-     * Tests for CREATE VIEW command.
+     * Test for CREATE VIEW command.
      */
     @Test
     public void testCreateView() {
@@ -77,7 +77,7 @@ public class SqlParserViewSelfTest extends SqlParserAbstractSelfTest {
     }
 
     /**
-     * Tests for DROP VIEW command.
+     * Test for DROP VIEW command.
      */
     @Test
     public void testDropView() {
