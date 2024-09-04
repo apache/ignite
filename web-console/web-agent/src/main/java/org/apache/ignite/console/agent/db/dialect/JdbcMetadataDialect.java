@@ -18,6 +18,7 @@ package org.apache.ignite.console.agent.db.dialect;
 
 import java.sql.Connection;
 import java.sql.DatabaseMetaData;
+import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
@@ -171,11 +172,8 @@ public class JdbcMetadataDialect extends DatabaseMetadataDialect {
                     String tableComment = tableCommentColumn(tblsRs,toSchema,tblName);
 
                     Set<String> pkCols = new LinkedHashSet<>();
-
-                    try (ResultSet pkRs = dbMeta.getPrimaryKeys(tblCatalog, tblSchema, tblName)) {
-                        while (pkRs.next())
-                            pkCols.add(pkRs.getString(PK_COL_NAME_IDX));
-                    }
+                    
+                    pkCols.addAll(getPrimaryKeyDefines(conn, tblCatalog, tblSchema, tblName));
 
                     Map.Entry<String, Set<String>> uniqueIdxAsPk = null;
 
@@ -302,6 +300,18 @@ public class JdbcMetadataDialect extends DatabaseMetadataDialect {
 
         return tbls;
     }
+    
+    
+	protected List<String> getPrimaryKeyDefines(Connection connection, String tblCatalog, String tblSchema, String tblName) throws SQLException {
+    	DatabaseMetaData dbMeta = conn.getMetaData();
+    	List<String> pkCols = new ArrayList<>();
+
+        try (ResultSet pkRs = dbMeta.getPrimaryKeys(tblCatalog, tblSchema, tblName)) {
+            while (pkRs.next())
+                pkCols.add(pkRs.getString(PK_COL_NAME_IDX));
+        }
+        return pkCols;
+	}
     
     /**获取表注解*/
     protected String tableCommentColumn(ResultSet colsRs,String toSchema,String tableName) {        

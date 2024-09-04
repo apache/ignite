@@ -1,6 +1,6 @@
 package org.apache.ignite.console.agent.db;
 
-import org.apache.ignite.console.agent.utils.StringUtils;
+import org.apache.ignite.console.agent.utils.SqlStringUtils;
 
 public class IntrospectedBase {
     protected String name;
@@ -17,7 +17,7 @@ public class IntrospectedBase {
      */
     public boolean filter(String searchText, String searchComment, MatchType matchType, boolean caseSensitive) {
     	
-        if (StringUtils.isNotEmpty(searchText)) {        	
+        if (SqlStringUtils.isNotEmpty(searchText)) {        	
         	
             if (matchType == MatchType.EQUALS) {
                 if (caseSensitive) {
@@ -54,7 +54,7 @@ public class IntrospectedBase {
             }
         }
         
-        if (StringUtils.isNotEmpty(searchComment)) {
+        if (SqlStringUtils.isNotEmpty(searchComment)) {
             if (matchType == MatchType.EQUALS) {
                 if (caseSensitive) {
                     if (getRemarks() == null || !getRemarks().equals(searchComment)) {

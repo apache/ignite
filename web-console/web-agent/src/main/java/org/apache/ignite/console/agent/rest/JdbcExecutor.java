@@ -265,9 +265,9 @@ public class JdbcExecutor implements AutoCloseable {
             		if(!StringUtil.isEmpty(schema)) {
             			conn.setSchema(schema);
             		}
-            		JdbcQueryExecutor exec = new JdbcQueryExecutor(conn.createStatement(),params.getString("qry"));
+            		JdbcQueryExecutor exec = new JdbcQueryExecutor(conn.createStatement(),params.getString("qry"),schema);
             	
-            		JsonObject result = exec.executeSqlVisor(0, clusterId);
+            		JsonObject result = exec.call(0, clusterId);
             		res.put("result", result);
             		
             	}

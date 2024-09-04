@@ -18,13 +18,19 @@ package org.apache.ignite.console.agent.db.dialect;
 
 import java.sql.Connection;
 import java.sql.DatabaseMetaData;
+import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.HashMap;
 import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
 import java.util.Set;
 
 import org.apache.ignite.console.agent.db.Dialect;
+
 
 /**
  * MySQL specific metadata dialect. useInformationSchema=true
@@ -37,6 +43,7 @@ public class MySQLMetadataDialect extends JdbcMetadataDialect {
 
 	/** Type name index. */
     private static final int TYPE_NAME_IDX = 1;
+    private static final String CONSTRAINT_NAME_PRIMARY_KEY = "PRIMARY";
 
     /** {@inheritDoc} */
     @Override public Set<String> systemSchemas() {
@@ -73,4 +80,28 @@ public class MySQLMetadataDialect extends JdbcMetadataDialect {
 
         return unsignedTypes;
     }
+    
+    @Override
+	protected List<String> getPrimaryKeyDefines(Connection connection, String catalog, String schema, String table) throws SQLException {
+		String sql = "select table_name, column_name, ordinal_position from information_schema.key_column_usage where table_schema = ? and constraint_name=? and table_name = ?";
+		PreparedStatement preparedStatement = null;
+		ResultSet resultSet = null;
+		List<String> primaryKeyList = new ArrayList<>();
+		preparedStatement = connection.prepareStatement(sql);
+		preparedStatement.setString(1, catalog);
+		preparedStatement.setString(2, CONSTRAINT_NAME_PRIMARY_KEY);
+		preparedStatement.setString(3, table);
+		resultSet = preparedStatement.executeQuery();
+
+		String primaryKey = null;			
+		String tableName = null;
+		while (resultSet.next()) {
+			tableName = resultSet.getString("table_name");
+			primaryKey = resultSet.getString("column_name");
+			primaryKeyList.add(primaryKey);
+		}
+		resultSet.close();
+		preparedStatement.close();
+		return primaryKeyList;
+	}
 }

@@ -648,7 +648,7 @@ export class ModalImportModels {
                 Object.assign(batchAction.newDomainModel, {
                     tableName: typeAlias,
                     tableComment: table.comment,
-                    keyType: valType + 'Key',
+                    keyType: valType + (generatePojo? 'Key':'_key'),
                     valueType: valType,
                     queryMetadata: 'Configuration',
                     databaseSchema: table.schema,

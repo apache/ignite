@@ -6,6 +6,8 @@ import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.Callable;
 
+import org.apache.ignite.console.agent.utils.SqlStringUtils;
+
 import io.vertx.core.json.JsonArray;
 import io.vertx.core.json.JsonObject;
 
@@ -20,19 +22,124 @@ public class JdbcQueryExecutor implements Callable<JsonObject> {
     private final Statement statement;
     
     private final String sql;
+    
+    private final String schema;
+    
+    private final boolean isQuery;
 
-    public JdbcQueryExecutor(Statement statement, String sql) {
+    public JdbcQueryExecutor(Statement statement, String sql,String schema) {
         this.statement = statement;
         this.sql = sql;
+        this.schema = schema;
+        String nomalSQL = SqlStringUtils.removeSQLComments(sql).trim().toLowerCase();
+        this.isQuery = nomalSQL.startsWith("select") || nomalSQL.startsWith("show") || nomalSQL.startsWith("describe");
         
     }
+    
+     
 
     @Override
     public JsonObject call() throws SQLException {
-        return executeSqlList();
-    }    
+    	if(this.isQuery) {
+    		return executeSqlVisor(0,"");
+    	}
+    	else {
+    		return executeSql(0,"");
+    	}
+    }
     
-
+    public JsonObject call(int queryId,String nodeId) throws SQLException {
+    	if(this.isQuery) {
+    		return executeSqlVisor(0,nodeId);
+    	}
+    	else {
+    		return executeSql(queryId,nodeId);
+    	}
+    }
+    
+    public JsonObject executeSql(int queryId,String nodeId) throws SQLException {
+    	ResultSet resultSet = null;
+        long start = System.currentTimeMillis();        
+        JsonObject queryResult = new JsonObject();
+        JsonArray metaDataArray = new JsonArray();
+        JsonArray dataArray = new JsonArray();
+        
+        String err = null;
+        try {
+        	queryResult.put("hasMore", false);
+            boolean isResult = this.statement.execute(this.sql);
+            if(isResult) {
+	            resultSet = this.statement.getResultSet();
+	            if(resultSet!=null) {
+	            	ResultSetMetaData resultSetMetaData = resultSet.getMetaData();
+		            int rowCount = 0; //To count the number of rows		
+		            
+		            int columnCount = resultSetMetaData.getColumnCount();
+		
+		            //Adding metadata of the result. This is a fix for SQLite. Earlier the method was
+		            // called late.
+		            addFieldsMetadata(resultSetMetaData, metaDataArray, columnCount);
+		
+		            
+		            while (resultSet.next()) {
+		            	JsonArray row = new JsonArray();
+		                ++rowCount;
+		                for (int index = 1; index <= columnCount; index++) {
+		                    //int columnType = resultSetMetaData.getColumnType(index);
+		                    Object object = resultSet.getObject(index);
+		                    row.add(object);
+		                }
+		                dataArray.add(row);
+		            }
+	            }
+	            
+	            boolean hasMore = this.statement.getMoreResults();
+	            queryResult.put("hasMore", hasMore);
+            }
+            else {
+            	int effectCount = this.statement.getUpdateCount();            	
+            	JsonObject object = new JsonObject();
+    			object.put("fieldName", "effectCount");
+    			object.put("typeName", "");
+    			object.put("schemaName", this.schema);	    			
+    			object.put("fieldTypeName", "Integer");
+    			metaDataArray.add(object);
+    			
+    			JsonArray row = new JsonArray();
+    			row.add(effectCount);
+    			dataArray.add(row);
+            }
+            
+            
+            queryResult.put("queryId", queryId);
+            queryResult.put("responseNodeId", nodeId);
+            
+            queryResult.put("rows", dataArray); 
+            queryResult.put("columns", metaDataArray);
+            queryResult.put("protocolVersion", 1);
+          
+            long end = System.currentTimeMillis();
+            queryResult.put("duration", end-start);
+            
+            return queryResult;
+            
+        } catch (SQLException ex) {
+        	err = ex.getMessage();
+        	queryResult.put("error",err);        
+		} finally {
+            if(null!=resultSet) resultSet.close();
+        }        
+        
+        return queryResult;
+    }
+    
+    /**
+     * Ignite兼容模型
+     * @param queryId
+     * @param nodeId
+     * @return
+     * @throws SQLException
+     */
     public JsonObject executeSqlVisor(int queryId,String nodeId) throws SQLException {
         ResultSet resultSet = null;
         long start = System.currentTimeMillis();        

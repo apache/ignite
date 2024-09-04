@@ -114,7 +114,7 @@ public class DBMetadataUtils {
     }
 
     public static void sortTables(List<IntrospectedTable> tables) {
-        if (StringUtils.isNotEmpty(tables)) {
+        if (SqlStringUtils.isNotEmpty(tables)) {
             Collections.sort(tables, new Comparator<IntrospectedTable>() {
                 public int compare(IntrospectedTable o1, IntrospectedTable o2) {
                     return o1.getName().compareTo(o2.getName());
@@ -124,7 +124,7 @@ public class DBMetadataUtils {
     }
 
     public static void sortColumns(List<IntrospectedColumn> columns) {
-        if (StringUtils.isNotEmpty(columns)) {
+        if (SqlStringUtils.isNotEmpty(columns)) {
             Collections.sort(columns, new Comparator<IntrospectedColumn>() {
                 public int compare(IntrospectedColumn o1, IntrospectedColumn o2) {
                     int result = o1.getTableName().compareTo(o2.getTableName());

@@ -29,6 +29,7 @@ import java.util.List;
 import org.apache.ignite.console.agent.db.dialect.DB2MetadataDialect;
 import org.apache.ignite.console.agent.db.dialect.DatabaseMetadataDialect;
 import org.apache.ignite.console.agent.db.dialect.DremioMetadataDialect;
+import org.apache.ignite.console.agent.db.dialect.HiveSQLMetadataDialect;
 import org.apache.ignite.console.agent.db.dialect.JdbcMetadataDialect;
 import org.apache.ignite.console.agent.db.dialect.MySQLMetadataDialect;
 import org.apache.ignite.console.agent.db.dialect.OracleMetadataDialect;
@@ -70,6 +71,9 @@ public class DbMetadataReader {
             
             if (dbProductName.startsWith("Dremio"))
                 return new DremioMetadataDialect(conn);
+            
+            if (dbProductName.contains("Hive"))
+                return new HiveSQLMetadataDialect(conn);
 
             return new JdbcMetadataDialect(conn,Dialect.GENERIC);
         }

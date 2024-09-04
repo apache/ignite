@@ -2,7 +2,7 @@ package org.apache.ignite.console.agent.db.introspector;
 
 import org.apache.ignite.console.agent.db.DatabaseConfig;
 import org.apache.ignite.console.agent.utils.DBMetadataUtils;
-import org.apache.ignite.console.agent.utils.StringUtils;
+import org.apache.ignite.console.agent.utils.SqlStringUtils;
 
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
@@ -31,12 +31,12 @@ public class OracleIntrospector extends DatabaseIntrospector {
         Map<String, String> answer = new HashMap<String, String>();
         try {
             StringBuilder sqlBuilder = new StringBuilder("select table_name tname,comments from all_tab_comments where comments is not null ");
-            if (StringUtils.isNotEmpty(config.getSchemaPattern())) {
+            if (SqlStringUtils.isNotEmpty(config.getSchemaPattern())) {
                 sqlBuilder.append(" and owner like :1 ");
             }
             sqlBuilder.append("order by tname ");
             PreparedStatement preparedStatement = dbMetadataUtils.getConnection().prepareStatement(sqlBuilder.toString());
-            if (StringUtils.isNotEmpty(config.getSchemaPattern())) {
+            if (SqlStringUtils.isNotEmpty(config.getSchemaPattern())) {
                 preparedStatement.setString(1, config.getSchemaPattern());
             }
             ResultSet rs = preparedStatement.executeQuery();
@@ -63,13 +63,13 @@ public class OracleIntrospector extends DatabaseIntrospector {
         try {
             StringBuilder sqlBuilder = new StringBuilder("select table_name tname,column_name cname,comments from all_col_comments ");
             sqlBuilder.append("where comments is not null ");
-            if (StringUtils.isNotEmpty(config.getSchemaPattern())) {
+            if (SqlStringUtils.isNotEmpty(config.getSchemaPattern())) {
                 sqlBuilder.append(" and owner like :1 ");
             }
             sqlBuilder.append("order by table_name,column_name ");
 
             PreparedStatement preparedStatement = dbMetadataUtils.getConnection().prepareStatement(sqlBuilder.toString());
-            if (StringUtils.isNotEmpty(config.getSchemaPattern())) {
+            if (SqlStringUtils.isNotEmpty(config.getSchemaPattern())) {
                 preparedStatement.setString(1, config.getSchemaPattern());
             }
             ResultSet rs = preparedStatement.executeQuery();

@@ -2,7 +2,7 @@ package org.apache.ignite.console.agent.db.introspector;
 
 import org.apache.ignite.console.agent.db.DatabaseConfig;
 import org.apache.ignite.console.agent.utils.DBMetadataUtils;
-import org.apache.ignite.console.agent.utils.StringUtils;
+import org.apache.ignite.console.agent.utils.SqlStringUtils;
 
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
@@ -35,12 +35,12 @@ public class SqlServerIntrospector extends DatabaseIntrospector {
             sqlBuilder.append("where b.minor_id=0 and b.name = 'MS_Description'   ");
             sqlBuilder.append("and a.schema_id in (   ");
             sqlBuilder.append("    select schema_id from sys.schemas  ");
-            if (StringUtils.isNotEmpty(config.getSchemaPattern())) {
+            if (SqlStringUtils.isNotEmpty(config.getSchemaPattern())) {
                 sqlBuilder.append(" where name like ?   ");
             }
             sqlBuilder.append(")  and b.value is not null ");
             PreparedStatement preparedStatement = dbMetadataUtils.getConnection().prepareStatement(sqlBuilder.toString());
-            if (StringUtils.isNotEmpty(config.getSchemaPattern())) {
+            if (SqlStringUtils.isNotEmpty(config.getSchemaPattern())) {
                 preparedStatement.setString(1, config.getSchemaPattern());
             }
             ResultSet rs = preparedStatement.executeQuery();
@@ -71,13 +71,13 @@ public class SqlServerIntrospector extends DatabaseIntrospector {
             sqlBuilder.append("where c.minor_id<>0 and b.column_id=c.minor_id   ");
             sqlBuilder.append("and a.schema_id in (   ");
             sqlBuilder.append("    select schema_id from sys.schemas  ");
-            if (StringUtils.isNotEmpty(config.getSchemaPattern())) {
+            if (SqlStringUtils.isNotEmpty(config.getSchemaPattern())) {
                 sqlBuilder.append(" where name like ?   ");
             }
             sqlBuilder.append(")  and c.value is not null");
 
             PreparedStatement preparedStatement = dbMetadataUtils.getConnection().prepareStatement(sqlBuilder.toString());
-            if (StringUtils.isNotEmpty(config.getSchemaPattern())) {
+            if (SqlStringUtils.isNotEmpty(config.getSchemaPattern())) {
                 preparedStatement.setString(1, config.getSchemaPattern());
             }
             ResultSet rs = preparedStatement.executeQuery();
