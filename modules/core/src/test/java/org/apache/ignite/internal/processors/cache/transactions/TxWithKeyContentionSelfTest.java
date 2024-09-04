@@ -219,7 +219,7 @@ public class TxWithKeyContentionSelfTest extends GridCommonAbstractTest {
     private void runKeyCollisionsMetric(TransactionConcurrency concurrency, TransactionIsolation isolation) throws Exception {
         Ignite ig = startGridsMultiThreaded(3);
 
-        int contCnt = (int)U.staticField(IgniteTxManager.class, "COLLISIONS_QUEUE_THRESHOLD") * 5;
+        int contCnt = (int)U.staticField(IgniteTxManager.class, "COLLISIONS_QUEUE_THRESHOLD") * 5; //500
 
         CountDownLatch txLatch = new CountDownLatch(contCnt);
 
@@ -239,7 +239,7 @@ public class TxWithKeyContentionSelfTest extends GridCommonAbstractTest {
 
         CountDownLatch blockOnce = new CountDownLatch(1);
 
-        for (Ignite ig0 : G.allGrids()) {
+        for (Ignite ig0 : G.allGrids()) { //1-3
             if (ig0.configuration().isClientMode())
                 continue;
 
@@ -266,16 +266,18 @@ public class TxWithKeyContentionSelfTest extends GridCommonAbstractTest {
             }
         });
 
-        blockOnce.await();
+        blockOnce.await(); // its ok
 
         GridCompoundFuture<?, ?> finishFut = new GridCompoundFuture<>();
 
-        for (int i = 0; i < contCnt; ++i) {
+        for (int i = 0; i < contCnt; ++i) { // 0-500
             IgniteInternalFuture f0 = GridTestUtils.runAsync(() -> {
                 try (Transaction tx = cliTxMgr.txStart(concurrency, isolation)) {
                     cache0.put(keyId, 0);
 
                     tx.commit();
+
+                    Thread.sleep(100);
 
                     txLatch.countDown();
                 }
@@ -298,7 +300,7 @@ public class TxWithKeyContentionSelfTest extends GridCommonAbstractTest {
 
         IgniteTxManager srvTxMgr = ((IgniteEx)ig).context().cache().context().tm();
 
-        assertTrue(GridTestUtils.waitForCondition(new GridAbsPredicate() {
+        assertTrue(GridTestUtils.waitForCondition(new GridAbsPredicate() { // failed here
             @Override public boolean apply() {
                 try {
                     U.invoke(IgniteTxManager.class, srvTxMgr, "collectTxCollisionsInfo");
@@ -311,8 +313,13 @@ public class TxWithKeyContentionSelfTest extends GridCommonAbstractTest {
 
                 String coll1 = metrics.getTxKeyCollisions();
 
+                log.warning("!!! COL1 = " + coll1);
+                log.warning("txLatch.getCount() = " + txLatch.getCount());
+
                 if (!coll1.isEmpty()) {
                     String coll2 = metrics.getTxKeyCollisions();
+
+                    log.warning("!!! COL2 = " + coll2);
 
                     // check idempotent
                     assertEquals(coll1, coll2);
