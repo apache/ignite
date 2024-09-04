@@ -82,7 +82,7 @@ public class ViewsIntegrationTest extends AbstractBasicIntegrationTest {
     }
 
     /**
-     * Creates and drops view.
+     * Tests create and drop view.
      */
     @Test
     public void testCreateDrop() throws Exception {
@@ -119,6 +119,7 @@ public class ViewsIntegrationTest extends AbstractBasicIntegrationTest {
             .setIndexedTypes(Integer.class, Integer.class)
             .setSqlSchema("MY_SCHEMA")
         );
+
         IgniteCache<?, ?> cache4 = client.getOrCreateCache(new CacheConfiguration<>("CACHE4")
             .setIndexedTypes(Integer.class, String.class)
             .setSqlSchema("MY_SCHEMA")
