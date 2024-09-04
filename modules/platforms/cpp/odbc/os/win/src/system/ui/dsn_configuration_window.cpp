@@ -566,7 +566,7 @@ namespace ignite
                     cfg.SetPassword(password);
                 }
 
-                void DsnConfigurationWindow::RetrieveSslParameters(config::nesteuration& cfg) const
+                void DsnConfigurationWindow::RetrieveSslParameters(config::Configuration& cfg) const
                 {
                     std::string sslModeStr;
                     std::string sslKeyStr;
