@@ -34,7 +34,7 @@ namespace ignite
         const ProtocolVersion ProtocolVersion::VERSION_2_7_0(2, 7, 0);
         const ProtocolVersion ProtocolVersion::VERSION_2_8_0(2, 8, 0);
         const ProtocolVersion ProtocolVersion::VERSION_2_13_0(2, 13, 0);
-        const ProtocolVersion ProtocolVersion::VERSION_2_13_0(2, 17, 0);
+        const ProtocolVersion ProtocolVersion::VERSION_2_17_0(2, 17, 0);
 
         ProtocolVersion::VersionSet::value_type supportedArray[] = {
             ProtocolVersion::VERSION_2_1_0,
