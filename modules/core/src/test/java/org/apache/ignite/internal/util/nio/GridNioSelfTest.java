@@ -61,7 +61,7 @@ import static java.util.concurrent.TimeUnit.SECONDS;
  */
 public class GridNioSelfTest extends GridCommonAbstractTest {
     /** Message count in test without reconnect. */
-    private static final int MSG_CNT = 200;
+    private static final int MSG_CNT = 2000;
 
     /** */
     private static final int START_PORT = 55443;
