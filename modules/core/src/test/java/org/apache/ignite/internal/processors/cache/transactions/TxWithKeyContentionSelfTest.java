@@ -266,7 +266,7 @@ public class TxWithKeyContentionSelfTest extends GridCommonAbstractTest {
             }
         });
 
-        blockOnce.await(); // its ok
+        blockOnce.await(); // it`s ok
 
         GridCompoundFuture<?, ?> finishFut = new GridCompoundFuture<>();
 
@@ -276,8 +276,6 @@ public class TxWithKeyContentionSelfTest extends GridCommonAbstractTest {
                     cache0.put(keyId, 0);
 
                     tx.commit();
-
-                    Thread.sleep(100);
 
                     txLatch.countDown();
                 }
@@ -300,21 +298,37 @@ public class TxWithKeyContentionSelfTest extends GridCommonAbstractTest {
 
         IgniteTxManager srvTxMgr = ((IgniteEx)ig).context().cache().context().tm();
 
+        try {
+            U.invoke(IgniteTxManager.class, srvTxMgr, "collectTxCollisionsInfo");
+        }
+        catch (IgniteCheckedException e) {
+            fail(e.toString());
+        }
+
+        try {
+            Thread.sleep(2000);
+        }
+        catch (InterruptedException e) {
+            throw new RuntimeException(e);
+        }
+
+        CacheMetrics metrics = ig.cache(DEFAULT_CACHE_NAME).localMetrics();
+
+        try {
+            Thread.sleep(2000);
+        }
+        catch (InterruptedException e) {
+            throw new RuntimeException(e);
+        }
+
+        String coll1 = metrics.getTxKeyCollisions();
+
+        log.warning("!!!!!! coll1 = " + coll1);
+        log.warning("txLatch.getCount() = " + txLatch.getCount());
+
         assertTrue(GridTestUtils.waitForCondition(new GridAbsPredicate() { // failed here
             @Override public boolean apply() {
-                try {
-                    U.invoke(IgniteTxManager.class, srvTxMgr, "collectTxCollisionsInfo");
-                }
-                catch (IgniteCheckedException e) {
-                    fail(e.toString());
-                }
-
-                CacheMetrics metrics = ig.cache(DEFAULT_CACHE_NAME).localMetrics();
-
-                String coll1 = metrics.getTxKeyCollisions();
-
                 log.warning("!!! COL1 = " + coll1);
-                log.warning("txLatch.getCount() = " + txLatch.getCount());
 
                 if (!coll1.isEmpty()) {
                     String coll2 = metrics.getTxKeyCollisions();
