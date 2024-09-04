@@ -43,6 +43,8 @@ import static org.apache.ignite.cluster.ClusterState.ACTIVE;
 import static org.apache.ignite.configuration.IgniteConfiguration.DFLT_SNAPSHOT_DIRECTORY;
 import static org.apache.ignite.internal.util.distributed.DistributedProcess.DistributedProcessType.CACHE_GROUP_KEY_CHANGE_PREPARE;
 import static org.apache.ignite.internal.util.distributed.DistributedProcess.DistributedProcessType.MASTER_KEY_CHANGE_PREPARE;
+import static org.apache.ignite.internal.util.distributed.DistributedProcess.DistributedProcessType.RESTORE_CACHE_GROUP_SNAPSHOT_PREPARE;
+import static org.apache.ignite.internal.util.distributed.DistributedProcess.DistributedProcessType.START_SNAPSHOT;
 import static org.apache.ignite.testframework.GridTestUtils.assertThrowsAnyCause;
 
 /**
@@ -387,12 +389,14 @@ public class EncryptedSnapshotTest extends AbstractSnapshotSelfTest {
 
             ensureCacheAbsent(dfltCacheCfg);
 
-            spi0.block((msg) -> msg instanceof FullMessage && ((FullMessage<?>)msg).error().isEmpty());
+            spi0.block((msg) -> msg instanceof FullMessage && ((FullMessage<?>)msg).error().isEmpty()
+                && ((FullMessage<?>)msg).type() == RESTORE_CACHE_GROUP_SNAPSHOT_PREPARE.ordinal());
 
             fut = grid(1).snapshot().restoreSnapshot(SNAPSHOT_NAME, Collections.singletonList(dfltCacheCfg.getName()));
         }
         else {
-            spi0.block((msg) -> msg instanceof FullMessage && ((FullMessage<?>)msg).error().isEmpty());
+            spi0.block((msg) -> msg instanceof FullMessage && ((FullMessage<?>)msg).error().isEmpty()
+                && ((FullMessage<?>)msg).type() == START_SNAPSHOT.ordinal());
 
             fut = snp(grid(1)).createSnapshot(SNAPSHOT_NAME, null, false, onlyPrimary);
         }

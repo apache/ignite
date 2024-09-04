@@ -1921,10 +1921,10 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
             taskArg,
             options(bltNodes)
         ).listen(f0 -> {
-            SnapshotMetadataVerificationTaskResult metasRes = f0.result();
+            SnapshotMetadatasCheshResult metasRes = f0.result();
 
             if (f0.error() == null && F.isEmpty(metasRes.exceptions())) {
-                Map<ClusterNode, List<SnapshotMetadata>> metas = metasRes.meta();
+                Map<ClusterNode, List<SnapshotMetadata>> metas = metasRes.metas();
 
                 kctx0.task().execute(
                     IncrementalSnapshotVerificationTask.class,

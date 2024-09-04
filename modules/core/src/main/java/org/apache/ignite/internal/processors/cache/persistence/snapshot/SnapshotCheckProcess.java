@@ -316,7 +316,7 @@ public class SnapshotCheckProcess {
             if (ctx.locProcFut.error() != null)
                 throw ctx.locProcFut.error();
 
-            Map<ClusterNode, List<SnapshotMetadata>> metas = new HashMap<>();
+            Map<ClusterNode, List<SnapshotMetadata>> receivedMetas = new HashMap<>();
 
             results.forEach((nodeId, nodeRes) -> {
                 // A node might be not required. It gives null result. But a required node might have invalid empty result
@@ -324,22 +324,22 @@ public class SnapshotCheckProcess {
                 if (ctx.req.nodes().contains(nodeId) && baseline(nodeId)) {
                     assert nodeRes != null && nodeRes.partsResults == null;
 
-                    metas.put(kctx.cluster().get().node(nodeId), nodeRes.metas);
+                    receivedMetas.put(kctx.cluster().get().node(nodeId), nodeRes.metas);
                 }
             });
 
-            Map<ClusterNode, Exception> metasCheck = SnapshotChecker.reduceMetasResults(ctx.req.snapshotName(), ctx.req.snapshotPath(),
-                metas, null, kctx.cluster().get().localNode().consistentId());
+            SnapshotMetadatasCheshResult metasCheckRes = SnapshotChecker.reduceMetasResults(ctx.req.snapshotName(), ctx.req.snapshotPath(),
+                receivedMetas, null, kctx.cluster().get().localNode().consistentId());
 
-            if (!metasCheck.isEmpty())
-                throw new IgniteSnapshotVerifyException(metasCheck);
+            if (!metasCheckRes.exceptions().isEmpty())
+                throw new IgniteSnapshotVerifyException(metasCheckRes.exceptions());
 
-            List<SnapshotMetadata> locMetas = metas.get(kctx.cluster().get().localNode());
+            List<SnapshotMetadata> locMetas = metasCheckRes.metas().get(kctx.cluster().get().localNode());
 
             ctx.locMeta = F.isEmpty(locMetas) ? null : locMetas.get(0);
 
             if (clusterOpFut != null)
-                ctx.clusterMetas = metas;
+                ctx.clusterMetas = metasCheckRes.metas();
 
             if (U.isLocalNodeCoordinator(kctx.discovery()))
                 phase2PartsHashes.start(reqId, ctx.req);

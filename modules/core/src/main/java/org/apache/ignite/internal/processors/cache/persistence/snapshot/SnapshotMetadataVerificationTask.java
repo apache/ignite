@@ -52,7 +52,7 @@ import static org.apache.ignite.internal.processors.cache.persistence.snapshot.I
 /** Snapshot task to verify snapshot metadata on the baseline nodes for given snapshot name. */
 @GridInternal
 public class SnapshotMetadataVerificationTask
-      extends ComputeTaskAdapter<SnapshotMetadataVerificationTaskArg, SnapshotMetadataVerificationTaskResult> {
+      extends ComputeTaskAdapter<SnapshotMetadataVerificationTaskArg, SnapshotMetadatasCheshResult> {
     /** Serial version uid. */
     private static final long serialVersionUID = 0L;
 
@@ -209,7 +209,7 @@ public class SnapshotMetadataVerificationTask
     }
 
     /** {@inheritDoc} */
-    @Override public @Nullable SnapshotMetadataVerificationTaskResult reduce(
+    @Override public @Nullable SnapshotMetadatasCheshResult reduce(
         List<ComputeJobResult> results) throws IgniteException {
         Map<ClusterNode, List<SnapshotMetadata>> reduceRes = new HashMap<>();
         Map<ClusterNode, Exception> exs = new HashMap<>();
@@ -225,9 +225,8 @@ public class SnapshotMetadataVerificationTask
                 reduceRes.computeIfAbsent(res.getNode(), n -> new ArrayList<>()).addAll(res.getData());
         }
 
-        exs = SnapshotChecker.reduceMetasResults(arg.snapshotName(), arg.snapshotPath(), reduceRes, exs, ignite.localNode().consistentId());
-
-        return new SnapshotMetadataVerificationTaskResult(reduceRes, exs);
+        return SnapshotChecker.reduceMetasResults(arg.snapshotName(), arg.snapshotPath(), reduceRes, exs,
+            ignite.localNode().consistentId());
     }
 
     /** {@inheritDoc} */

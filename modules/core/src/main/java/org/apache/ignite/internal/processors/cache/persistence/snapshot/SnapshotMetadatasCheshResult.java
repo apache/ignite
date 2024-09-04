@@ -28,48 +28,48 @@ import org.apache.ignite.internal.dto.IgniteDataTransferObject;
 import org.apache.ignite.internal.util.typedef.internal.U;
 
 /** */
-public class SnapshotMetadataVerificationTaskResult extends IgniteDataTransferObject {
+public class SnapshotMetadatasCheshResult extends IgniteDataTransferObject {
     /** */
     private static final long serialVersionUID = 0L;
 
     /** Full snapshot metadata. */
-    private Map<ClusterNode, List<SnapshotMetadata>> meta;
+    private Map<ClusterNode, List<SnapshotMetadata>> metas;
 
-    /** Errors happened during snapshot metadata verification. */
+    /** Errors happened during snapshot metadatas check. */
     private Map<ClusterNode, Exception> exceptions;
 
     /** */
-    public SnapshotMetadataVerificationTaskResult(
-        Map<ClusterNode, List<SnapshotMetadata>> meta,
+    public SnapshotMetadatasCheshResult(
+        Map<ClusterNode, List<SnapshotMetadata>> metas,
         Map<ClusterNode, Exception> exceptions
     ) {
-        this.meta = Collections.unmodifiableMap(meta);
+        this.metas = Collections.unmodifiableMap(metas);
         this.exceptions = Collections.unmodifiableMap(exceptions);
     }
 
     /** */
-    public SnapshotMetadataVerificationTaskResult() {
+    public SnapshotMetadatasCheshResult() {
     }
 
-    /** @return Errors happened during snapshot metadata verification. */
+    /** @return Errors happened during snapshot metadatas check. */
     public Map<ClusterNode, Exception> exceptions() {
         return Collections.unmodifiableMap(exceptions);
     }
 
     /** @return Full snapshot metadata. */
-    public Map<ClusterNode, List<SnapshotMetadata>> meta() {
-        return Collections.unmodifiableMap(meta);
+    public Map<ClusterNode, List<SnapshotMetadata>> metas() {
+        return Collections.unmodifiableMap(metas);
     }
 
     /** {@inheritDoc} */
     @Override protected void writeExternalData(ObjectOutput out) throws IOException {
-        U.writeMap(out, meta);
+        U.writeMap(out, metas);
         U.writeMap(out, exceptions);
     }
 
     /** {@inheritDoc} */
     @Override protected void readExternalData(byte protoVer, ObjectInput in) throws IOException, ClassNotFoundException {
-        meta = U.readMap(in);
+        metas = U.readMap(in);
         exceptions = U.readMap(in);
     }
 }

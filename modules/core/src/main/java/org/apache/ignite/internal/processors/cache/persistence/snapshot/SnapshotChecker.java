@@ -293,7 +293,7 @@ public class SnapshotChecker {
     }
 
     /** */
-    public static Map<ClusterNode, Exception> reduceMetasResults(
+    public static SnapshotMetadatasCheshResult reduceMetasResults(
         String snpName,
         @Nullable String snpPath,
         Map<ClusterNode, List<SnapshotMetadata>> allMetas,
@@ -301,6 +301,7 @@ public class SnapshotChecker {
         Object curNodeCstId
     ) {
         Map<ClusterNode, Exception> mappedExceptions = F.isEmpty(exceptions) ? Collections.emptyMap() : new HashMap<>(exceptions);
+        Map<ClusterNode, List<SnapshotMetadata>> mappedMetas = new HashMap<>();
 
         SnapshotMetadata firstMeta = null;
         Set<String> baselineNodes = Collections.emptySet();
@@ -315,7 +316,9 @@ public class SnapshotChecker {
                 continue;
             }
 
-            for (SnapshotMetadata meta : nme.getValue()) {
+            List<SnapshotMetadata> nodeMetas = nme.getValue();
+
+            for (SnapshotMetadata meta : nodeMetas) {
                 if (firstMeta == null) {
                     firstMeta = meta;
 
@@ -328,6 +331,8 @@ public class SnapshotChecker {
                     mappedExceptions.put(node, new IgniteException("An error occurred during comparing snapshot metadata "
                         + "from cluster nodes [firstMeta=" + firstMeta + ", meta=" + meta + ", nodeId=" + node.id() + ']'));
                 }
+
+                mappedMetas.computeIfAbsent(node, n -> new ArrayList<>()).add(meta);
             }
         }
 
@@ -341,7 +346,7 @@ public class SnapshotChecker {
                 "with consistent ids: " + String.join(", ", baselineNodes));
         }
 
-        return mappedExceptions;
+        return new SnapshotMetadatasCheshResult(mappedMetas, mappedExceptions);
     }
 
     /** */
