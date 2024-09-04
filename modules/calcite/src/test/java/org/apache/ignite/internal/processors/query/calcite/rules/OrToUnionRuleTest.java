@@ -27,7 +27,6 @@ import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.internal.processors.query.QueryEngine;
 import org.apache.ignite.internal.processors.query.calcite.QueryChecker;
 import org.apache.ignite.internal.processors.query.calcite.util.Commons;
-import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.hamcrest.CoreMatchers;
 import org.junit.Test;
 
@@ -37,6 +36,7 @@ import static org.apache.ignite.internal.processors.query.calcite.QueryChecker.c
 import static org.apache.ignite.internal.processors.query.calcite.QueryChecker.containsTableScan;
 import static org.apache.ignite.internal.processors.query.calcite.QueryChecker.containsUnion;
 import static org.hamcrest.CoreMatchers.not;
+import static org.junit.Assume.assumeTrue;
 
 /**
  * Test OR -> UnionAll rewrite rule.
@@ -53,7 +53,7 @@ import static org.hamcrest.CoreMatchers.not;
  * SELECT * FROM products
  *      WHERE subcategory ='Camera Media' AND LNNVL(category, 'Photo');
  */
-public class OrToUnionRuleTest extends GridCommonAbstractTest {
+public class OrToUnionRuleTest extends AbstractTransactionalSqlTest {
     /** */
     public static final String IDX_SUBCAT_ID = "IDX_SUBCAT_ID";
 
@@ -67,7 +67,7 @@ public class OrToUnionRuleTest extends GridCommonAbstractTest {
     public static final String IDX_CAT_ID = "IDX_CAT_ID";
 
     /** {@inheritDoc} */
-    @Override protected void beforeTestsStarted() throws Exception {
+    @Override protected void init() throws Exception {
         Ignite grid = startGridsMultiThreaded(2);
 
         QueryEntity qryEnt = new QueryEntity();
@@ -90,39 +90,38 @@ public class OrToUnionRuleTest extends GridCommonAbstractTest {
         ));
         qryEnt.setTableName("products");
 
-        final CacheConfiguration<Integer, Product> cfg = new CacheConfiguration<>(qryEnt.getTableName());
-
-        cfg.setCacheMode(CacheMode.PARTITIONED)
+        final CacheConfiguration<Integer, Product> cfg = this.<Integer, Product>cacheConfiguration().setName(qryEnt.getTableName())
+            .setCacheMode(CacheMode.PARTITIONED)
             .setBackups(0)
             .setQueryEntities(singletonList(qryEnt))
             .setSqlSchema("PUBLIC");
 
         IgniteCache<Integer, Product> devCache = grid.createCache(cfg);
 
-        devCache.put(1, new Product(1, "Photo", 1, "Camera Media", 11, "Media 1"));
-        devCache.put(2, new Product(2, "Photo", 1, "Camera Media", 11, "Media 2"));
-        devCache.put(3, new Product(3, "Photo", 1, "Camera Lens", 12, "Lens 1"));
-        devCache.put(4, new Product(4, "Photo", 1, "Other", 12, "Charger 1"));
-        devCache.put(5, new Product(5, "Video", 2, "Camera Media", 21, "Media 3"));
-        devCache.put(6, new Product(6, "Video", 2, "Camera Lens", 22, "Lens 3"));
-        devCache.put(7, new Product(7, "Video", 1, null, 0, "Canon"));
-        devCache.put(8, new Product(8, null, 0, "Camera Lens", 11, "Zeiss"));
-        devCache.put(9, new Product(9, null, 0, null, 0, null));
-        devCache.put(10, new Product(10, null, 0, null, 30, null));
-        devCache.put(11, new Product( 11, null, 0, null, 30, null));
-        devCache.put(12, new Product( 12, null, 0, null, 31, null));
-        devCache.put(13, new Product( 13, null, 0, null, 31, null));
+        put(grid, devCache, 1, new Product(1, "Photo", 1, "Camera Media", 11, "Media 1"));
+        put(grid, devCache, 2, new Product(2, "Photo", 1, "Camera Media", 11, "Media 2"));
+        put(grid, devCache, 3, new Product(3, "Photo", 1, "Camera Lens", 12, "Lens 1"));
+        put(grid, devCache, 4, new Product(4, "Photo", 1, "Other", 12, "Charger 1"));
+        put(grid, devCache, 5, new Product(5, "Video", 2, "Camera Media", 21, "Media 3"));
+        put(grid, devCache, 6, new Product(6, "Video", 2, "Camera Lens", 22, "Lens 3"));
+        put(grid, devCache, 7, new Product(7, "Video", 1, null, 0, "Canon"));
+        put(grid, devCache, 8, new Product(8, null, 0, "Camera Lens", 11, "Zeiss"));
+        put(grid, devCache, 9, new Product(9, null, 0, null, 0, null));
+        put(grid, devCache, 10, new Product(10, null, 0, null, 30, null));
+        put(grid, devCache, 11, new Product(11, null, 0, null, 30, null));
+        put(grid, devCache, 12, new Product(12, null, 0, null, 31, null));
+        put(grid, devCache, 13, new Product(13, null, 0, null, 31, null));
 
-        devCache.put(14, new Product( 14, null, 0, null, 32, null));
-        devCache.put(15, new Product( 15, null, 0, null, 33, null));
-        devCache.put(16, new Product( 16, null, 0, null, 34, null));
-        devCache.put(17, new Product( 17, null, 0, null, 35, null));
-        devCache.put(18, new Product( 18, null, 0, null, 36, null));
-        devCache.put(19, new Product( 19, null, 0, null, 37, null));
-        devCache.put(20, new Product( 20, null, 0, null, 38, null));
-        devCache.put(21, new Product( 21, null, 0, null, 39, null));
-        devCache.put(22, new Product( 22, null, 0, null, 40, null));
-        devCache.put(23, new Product( 23, null, 0, null, 41, null));
+        put(grid, devCache, 14, new Product(14, null, 0, null, 32, null));
+        put(grid, devCache, 15, new Product(15, null, 0, null, 33, null));
+        put(grid, devCache, 16, new Product(16, null, 0, null, 34, null));
+        put(grid, devCache, 17, new Product(17, null, 0, null, 35, null));
+        put(grid, devCache, 18, new Product(18, null, 0, null, 36, null));
+        put(grid, devCache, 19, new Product(19, null, 0, null, 37, null));
+        put(grid, devCache, 20, new Product(20, null, 0, null, 38, null));
+        put(grid, devCache, 21, new Product(21, null, 0, null, 39, null));
+        put(grid, devCache, 22, new Product(22, null, 0, null, 40, null));
+        put(grid, devCache, 23, new Product(23, null, 0, null, 41, null));
 
         awaitPartitionMapExchange();
     }
@@ -203,6 +202,8 @@ public class OrToUnionRuleTest extends GridCommonAbstractTest {
      */
     @Test
     public void testWithHiddenKeys() {
+        assumeTrue(sqlTxMode == SqlTransactionMode.NONE);
+
         checkQuery("SELECT _key, _val FROM products WHERE category = 'Photo' OR subcat_id = 22")
             .matches(containsUnion(true))
             .matches(containsIndexScan("PUBLIC", "PRODUCTS", "IDX_CATEGORY"))
@@ -262,7 +263,7 @@ public class OrToUnionRuleTest extends GridCommonAbstractTest {
 
     /** */
     private QueryChecker checkQuery(String qry) {
-        return new QueryChecker(qry) {
+        return new QueryChecker(qry, tx, sqlTxMode) {
             @Override protected QueryEngine getEngine() {
                 return Commons.lookupComponent(grid(0).context(), QueryEngine.class);
             }

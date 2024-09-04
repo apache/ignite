@@ -70,6 +70,8 @@ import org.junit.runners.Parameterized;
 
 import static java.lang.String.format;
 import static java.util.concurrent.TimeUnit.SECONDS;
+import static org.apache.ignite.internal.processors.tx.SqlTransactionsIsolationTest.ModifyApi.CACHE;
+import static org.apache.ignite.internal.processors.tx.SqlTransactionsIsolationTest.ModifyApi.SQL;
 import static org.apache.ignite.testframework.GridTestUtils.assertThrows;
 import static org.apache.ignite.testframework.GridTestUtils.runAsync;
 import static org.apache.ignite.transactions.TransactionIsolation.READ_COMMITTED;
@@ -77,12 +79,6 @@ import static org.apache.ignite.transactions.TransactionIsolation.READ_COMMITTED
 /** */
 @RunWith(Parameterized.class)
 public class SqlTransactionsIsolationTest extends GridCommonAbstractTest {
-    /** */
-    public static final String CACHE = "cache";
-
-    /** */
-    public static final String SQL = "sql";
-
     /** */
     public static final String USERS = "USERS";
 
@@ -108,6 +104,15 @@ public class SqlTransactionsIsolationTest extends GridCommonAbstractTest {
     }
 
     /** */
+    public enum ModifyApi {
+        /** */
+        CACHE,
+
+        /** */
+        SQL
+    }
+
+    /** */
     public static final User JOHN = new User(1, 0, "John Connor");
 
     /** */
@@ -124,7 +129,7 @@ public class SqlTransactionsIsolationTest extends GridCommonAbstractTest {
 
     /** */
     @Parameterized.Parameter()
-    public String modify;
+    public ModifyApi modify;
 
     /** */
     @Parameterized.Parameter(1)
@@ -178,9 +183,7 @@ public class SqlTransactionsIsolationTest extends GridCommonAbstractTest {
     public static Collection<?> parameters() {
         List<Object[]> params = new ArrayList<>();
 
-        String[] apis = new String[] {CACHE, SQL};
-
-        for (String modify : apis) {
+        for (ModifyApi modify : ModifyApi.values()) {
             for (CacheMode mode : CacheMode.values()) {
                 for (int gridCnt : new int[]{1, 3, 5}) {
                     int[] backups = gridCnt > 1
@@ -331,7 +334,7 @@ public class SqlTransactionsIsolationTest extends GridCommonAbstractTest {
     public void testIndexScan() {
         delete(1);
 
-        assertEquals("Table must be empty", 0L, sql(format("SELECT COUNT(*) FROM %s", users())).get(0).get(0));
+        assertUsersSize(0);
 
         int stepCnt = 7;
         int stepSz = 12;
@@ -350,7 +353,7 @@ public class SqlTransactionsIsolationTest extends GridCommonAbstractTest {
             }
         }
 
-        assertEquals((long)(stepCnt * outOfTxSz), sql(format("SELECT COUNT(*) FROM %s", users())).get(0).get(0));
+        assertUsersSize(stepCnt * outOfTxSz);
 
         checkQueryWithPartitionFilter();
 
@@ -376,7 +379,7 @@ public class SqlTransactionsIsolationTest extends GridCommonAbstractTest {
                     // Concurrent query must not see any transaction data.
                     runAsync(() -> {
                         RunnableX check = () -> {
-                            assertEquals((long)(stepCnt * outOfTxSz), sql(format("SELECT COUNT(*) FROM %s", users())).get(0).get(0));
+                            assertUsersSize(stepCnt * outOfTxSz);
 
                             assertNull(select(id, CACHE));
                             assertNull(select(id, SQL));
@@ -388,7 +391,7 @@ public class SqlTransactionsIsolationTest extends GridCommonAbstractTest {
 
                     long expTblSz = (long)(stepCnt * outOfTxSz) + i * inTxSz + j + 1;
 
-                    assertEquals(expTblSz, sql(format("SELECT COUNT(*) FROM %s", users())).get(0).get(0));
+                    assertUsersSize(expTblSz);
 
                     List<List<?>> rows = sql(format("SELECT fio FROM %s ORDER BY fio", users()));
 
@@ -442,7 +445,7 @@ public class SqlTransactionsIsolationTest extends GridCommonAbstractTest {
 
                     long expTblSz = (stepCnt * stepSz) - (i * outOfTxSz + j + 1);
 
-                    assertEquals(expTblSz, sql(format("SELECT COUNT(*) FROM %s", users())).get(0).get(0));
+                    assertUsersSize(expTblSz);
 
                     List<List<?>> rows = sql(format("SELECT fio FROM %s ORDER BY fio DESC", users()));
 
@@ -455,7 +458,7 @@ public class SqlTransactionsIsolationTest extends GridCommonAbstractTest {
             checkQueryWithPartitionFilter();
         }, true);
 
-        assertEquals((long)inTxSz * stepCnt, sql(format("SELECT COUNT(*) FROM %s", users())).get(0).get(0));
+        assertUsersSize(inTxSz * stepCnt);
     }
 
     /** */
@@ -466,8 +469,8 @@ public class SqlTransactionsIsolationTest extends GridCommonAbstractTest {
         sql(format("DELETE FROM %s", users()));
         sql(format("DELETE FROM %s", departments()));
 
-        assertEquals("Table must be empty", 0L, sql(format("SELECT COUNT(*) FROM %s", users())).get(0).get(0));
-        assertEquals("Table must be empty", 0L, sql(format("SELECT COUNT(*) FROM %s", departments())).get(0).get(0));
+        assertUsersSize(0);
+        assertTableSize(0, departments());
 
         int depCnt = 5;
         int userCnt = 5;
@@ -580,15 +583,15 @@ public class SqlTransactionsIsolationTest extends GridCommonAbstractTest {
     public void testInsert() {
         Runnable checkBefore = () -> {
             for (int i = 4; i <= (multi ? 6 : 4); i++) {
-                assertNull(CACHE, select(i, CACHE));
-                assertNull(SQL, select(i, SQL));
+                assertNull(CACHE.name(), select(i, CACHE));
+                assertNull(SQL.name(), select(i, SQL));
             }
         };
 
         Runnable checkAfter = () -> {
             for (int i = 4; i <= (multi ? 6 : 4); i++) {
-                assertEquals(CACHE, JOHN, select(i, CACHE));
-                assertEquals(SQL, JOHN, select(i, SQL));
+                assertEquals(CACHE.name(), JOHN, select(i, CACHE));
+                assertEquals(SQL.name(), JOHN, select(i, SQL));
             }
         };
 
@@ -602,7 +605,7 @@ public class SqlTransactionsIsolationTest extends GridCommonAbstractTest {
             else
                 insert(F.t(4, JOHN));
 
-            if (modify.equals(SQL)) {
+            if (modify == SQL) {
                 assertThrows(
                     log,
                     () -> doInsert(F.t(4, JOHN)),
@@ -713,7 +716,7 @@ public class SqlTransactionsIsolationTest extends GridCommonAbstractTest {
     public void testVisibility() {
         sql(format("DELETE FROM %s", tbl()));
 
-        assertEquals("Table must be empty", 0L, sql(format("SELECT COUNT(*) FROM %s", tbl())).get(0).get(0));
+        assertTableSize(0, tbl());
 
         long cnt = 100;
 
@@ -733,14 +736,10 @@ public class SqlTransactionsIsolationTest extends GridCommonAbstractTest {
                 assertEquals("Must see transaction related data", (Long)(i + 1), cache.get(i));
             }
 
-            List<List<?>> sqlData = sql(format("SELECT COUNT(*) FROM %s", tbl()));
-
-            assertEquals("Must count properly", i, sqlData.get(0).get(0));
+            assertTableSize(i, tbl());
         }, true));
 
-        List<List<?>> sqlData = sql(format("SELECT COUNT(*) FROM %s", tbl()));
-
-        assertEquals("Must see committed data", cnt, sqlData.get(0).get(0));
+        assertTableSize(cnt, tbl());
     }
 
     /** */
@@ -786,12 +785,12 @@ public class SqlTransactionsIsolationTest extends GridCommonAbstractTest {
     }
 
     /** */
-    private User select(Integer id, String api) {
-        if (api.equals(CACHE))
-            return (type == ExecutorType.THIN || type == ExecutorType.THIN2)
+    private User select(Integer id, ModifyApi api) {
+        if (api == CACHE)
+            return type == ExecutorType.THIN
                 ? (User)thinCli.cache(users()).get(id)
                 : (User)node().cache(users()).get(id);
-        else if (api.equals(SQL)) {
+        else if (api == SQL) {
             List<List<?>> res = sql(format("SELECT _VAL FROM %s WHERE _KEY = ?", users()), id);
 
             assertNotNull(res);
@@ -817,7 +816,7 @@ public class SqlTransactionsIsolationTest extends GridCommonAbstractTest {
 
     /** */
     private void doInsert(IgniteBiTuple<Integer, User>... entries) {
-        if (modify.equals(CACHE)) {
+        if (modify == CACHE) {
             if (multi) {
                 Map<Integer, User> data = Arrays.stream(entries).collect(Collectors.toMap(IgniteBiTuple::get1, IgniteBiTuple::get2));
 
@@ -835,7 +834,7 @@ public class SqlTransactionsIsolationTest extends GridCommonAbstractTest {
                 }
             }
         }
-        else if (modify.equals(SQL)) {
+        else if (modify == SQL) {
             String insert = format("INSERT INTO %s(id, userid, departmentId, fio) VALUES(?, ?, ?, ?)", users());
 
             int colCnt = 4;
@@ -878,9 +877,9 @@ public class SqlTransactionsIsolationTest extends GridCommonAbstractTest {
             assertTrue(partsToKeys.get(part).contains(data.get1()));
         }
 
-        if (modify.equals(CACHE))
+        if (modify == CACHE)
             doInsert(entries);
-        else if (modify.equals(SQL)) {
+        else if (modify == SQL) {
             String update = format("UPDATE %s SET userid = ?, departmentId = ?, fio = ? WHERE id = ?", users());
 
             int colCnt = 4;
@@ -923,7 +922,7 @@ public class SqlTransactionsIsolationTest extends GridCommonAbstractTest {
             assertTrue(partsToKeys.get(part).remove(key));
         }
 
-        if (modify.equals(CACHE)) {
+        if (modify == CACHE) {
             if (multi) {
                 Set<Integer> toRemove = Arrays.stream(keys).boxed().collect(Collectors.toSet());
 
@@ -941,7 +940,7 @@ public class SqlTransactionsIsolationTest extends GridCommonAbstractTest {
                 }
             }
         }
-        else if (modify.equals(SQL)) {
+        else if (modify == SQL) {
             String delete = format("DELETE FROM %s WHERE id = ?", users());
 
             if (multi) {
@@ -982,6 +981,16 @@ public class SqlTransactionsIsolationTest extends GridCommonAbstractTest {
                 sql(format("SELECT * FROM %s", users()), new int[]{partToKeys.getKey()}).size()
             );
         }
+    }
+
+    /** */
+    private void assertUsersSize(long sz) {
+        assertTableSize(sz, users());
+    }
+
+    /** */
+    private void assertTableSize(long sz, String tbl) {
+        assertEquals(sz, sql(format("SELECT COUNT(*) FROM %s", tbl)).get(0).get(0));
     }
 
     /** */

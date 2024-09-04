@@ -19,11 +19,9 @@ package org.apache.ignite.internal.processors.query.calcite.integration;
 
 import java.util.List;
 import org.apache.ignite.IgniteCache;
-import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.cache.QueryEntity;
 import org.apache.ignite.cache.query.annotations.QuerySqlField;
-import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.internal.processors.query.calcite.QueryChecker;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.testframework.GridTestUtils;
@@ -32,7 +30,7 @@ import org.junit.Test;
 /**
  *
  */
-public class AggregatesIntegrationTest extends AbstractBasicIntegrationTest {
+public class AggregatesIntegrationTest extends AbstractBasicIntegrationTransactionalTest {
     /** */
     @Test
     public void testMinMaxWithTable() {
@@ -48,7 +46,7 @@ public class AggregatesIntegrationTest extends AbstractBasicIntegrationTest {
         for (String idx : indexes) {
             for (int backups = -1; backups < 3; ++backups) {
                 executeSql("create table tbl(id integer primary key, val0 integer, val1 float, val2 varchar) " +
-                    "with template=" + (backups < 0 ? "replicated" : "partitioned,backups=" + backups));
+                    "with template=" + (backups < 0 ? "replicated" : "partitioned,backups=" + backups) + ",atomicity=transactional");
 
                 executeSql("create index test_idx on tbl(" + idx + ")");
 
@@ -58,6 +56,8 @@ public class AggregatesIntegrationTest extends AbstractBasicIntegrationTest {
                 assertQuery("select min(val1) from tbl").returns(10.0f).check();
                 assertQuery("select max(val0) from tbl").returns(5).check();
                 assertQuery("select max(val1) from tbl").returns(50.0f).check();
+
+                clearTransaction();
 
                 executeSql("drop table tbl");
             }
@@ -88,6 +88,8 @@ public class AggregatesIntegrationTest extends AbstractBasicIntegrationTest {
             assertQuery("select max(salary) from person").returns(15.0).check();
             assertQuery("select max(descVal) from person").returns(15.0).check();
 
+            clearTransaction();
+
             client.destroyCache(TABLE_NAME);
         }
     }
@@ -100,6 +102,8 @@ public class AggregatesIntegrationTest extends AbstractBasicIntegrationTest {
 
             assertQuery("select count(*) from person").returns(7L).check();
 
+            clearTransaction();
+
             client.destroyCache(TABLE_NAME);
         }
 
@@ -111,6 +115,11 @@ public class AggregatesIntegrationTest extends AbstractBasicIntegrationTest {
     /** */
     @Test
     public void testCountIndexedField() {
+        // Check count with two columns index.
+        sql("CREATE TABLE tbl (a INT, b INT, c INT) WITH atomicity=transactional");
+        sql("CREATE INDEX idx_a ON tbl(a, c)");
+        sql("CREATE INDEX idx_b ON tbl(b DESC, c)");
+
         createAndPopulateIndexedTable(1, CacheMode.PARTITIONED);
 
         assertQuery("select count(salary) from person").returns(4L).check();
@@ -125,11 +134,6 @@ public class AggregatesIntegrationTest extends AbstractBasicIntegrationTest {
             .returns(1L, 15d)
             .returns(1L, null)
             .check();
-
-        // Check count with two columns index.
-        sql("CREATE TABLE tbl (a INT, b INT, c INT)");
-        sql("CREATE INDEX idx_a ON tbl(a, c)");
-        sql("CREATE INDEX idx_b ON tbl(b DESC, c)");
 
         for (int i = 0; i < 100; i++) {
             sql("INSERT INTO tbl VALUES (null, null, ?)", i % 2 == 0 ? i : null);
@@ -221,7 +225,7 @@ public class AggregatesIntegrationTest extends AbstractBasicIntegrationTest {
     /** */
     @SuppressWarnings("ThrowableNotThrown")
     @Test
-    public void testMultipleRowsFromSingleAggr() throws IgniteCheckedException {
+    public void testMultipleRowsFromSingleAggr() {
         createAndPopulateTable();
 
         GridTestUtils.assertThrowsWithCause(() -> assertQuery("SELECT (SELECT name FROM person)").check(),
@@ -240,10 +244,12 @@ public class AggregatesIntegrationTest extends AbstractBasicIntegrationTest {
 
         IgniteCache<Integer, Employer> person = client.cache(cacheName);
 
+        clearTransaction();
+
         person.clear();
 
         for (int gridIdx = 0; gridIdx < nodeCount(); gridIdx++)
-            person.put(primaryKey(grid(gridIdx).cache(cacheName)), new Employer(gridIdx == 0 ? "Emp" : null, 0.0d));
+            put(client, person, primaryKey(grid(gridIdx).cache(cacheName)), new Employer(gridIdx == 0 ? "Emp" : null, 0.0d));
 
         GridTestUtils.assertThrowsWithCause(() -> assertQuery("SELECT (SELECT name FROM person)").check(),
             IllegalArgumentException.class);
@@ -280,12 +286,12 @@ public class AggregatesIntegrationTest extends AbstractBasicIntegrationTest {
 
     /** */
     @Test
-    public void testColocatedAggregate() throws Exception {
+    public void testColocatedAggregate() {
         executeSql("CREATE TABLE t1(id INT, val0 VARCHAR, val1 VARCHAR, val2 VARCHAR, PRIMARY KEY(id, val1)) " +
-            "WITH AFFINITY_KEY=val1");
+            "WITH AFFINITY_KEY=val1,atomicity=transactional");
 
         executeSql("CREATE TABLE t2(id INT, val0 VARCHAR, val1 VARCHAR, val2 VARCHAR, PRIMARY KEY(id, val1)) " +
-            "WITH AFFINITY_KEY=val1");
+            "WITH AFFINITY_KEY=val1,atomicity=transactional");
 
         for (int i = 0; i < 100; i++)
             executeSql("INSERT INTO t1 VALUES (?, ?, ?, ?)", i, "val" + i, "val" + i % 2, "val" + i);
@@ -312,8 +318,8 @@ public class AggregatesIntegrationTest extends AbstractBasicIntegrationTest {
 
     /** */
     @Test
-    public void testEverySomeAggregate() throws Exception {
-        executeSql("CREATE TABLE t(c1 INT, c2 INT)");
+    public void testEverySomeAggregate() {
+        executeSql("CREATE TABLE t(c1 INT, c2 INT) WITH atomicity=transactional");
         executeSql("INSERT INTO t VALUES (null, 0)");
         executeSql("INSERT INTO t VALUES (0, null)");
         executeSql("INSERT INTO t VALUES (null, null)");
@@ -330,7 +336,7 @@ public class AggregatesIntegrationTest extends AbstractBasicIntegrationTest {
 
     /** */
     protected void createAndPopulateIndexedTable(int backups, CacheMode cacheMode) {
-        IgniteCache<Integer, IndexedEmployer> person = client.getOrCreateCache(new CacheConfiguration<Integer, IndexedEmployer>()
+        IgniteCache<Integer, IndexedEmployer> person = client.getOrCreateCache(this.<Integer, IndexedEmployer>cacheConfiguration()
             .setName(TABLE_NAME)
             .setSqlSchema("PUBLIC")
             .setQueryEntities(F.asList(new QueryEntity(Integer.class, IndexedEmployer.class).setTableName(TABLE_NAME)))
@@ -340,13 +346,13 @@ public class AggregatesIntegrationTest extends AbstractBasicIntegrationTest {
 
         int idx = 0;
 
-        person.put(idx++, new IndexedEmployer("Igor", 5d, 9d));
-        person.put(idx++, new IndexedEmployer(null, 3d, null));
-        person.put(idx++, new IndexedEmployer("Ilya", 1d, 1d));
-        person.put(idx++, new IndexedEmployer("Roma", null, 9d));
-        person.put(idx++, new IndexedEmployer(null, null, null));
-        person.put(idx++, new IndexedEmployer("Oleg", 15d, 15d));
-        person.put(idx++, new IndexedEmployer("Maya", null, null));
+        put(client, person, idx++, new IndexedEmployer("Igor", 5d, 9d));
+        put(client, person, idx++, new IndexedEmployer(null, 3d, null));
+        put(client, person, idx++, new IndexedEmployer("Ilya", 1d, 1d));
+        put(client, person, idx++, new IndexedEmployer("Roma", null, 9d));
+        put(client, person, idx++, new IndexedEmployer(null, null, null));
+        put(client, person, idx++, new IndexedEmployer("Oleg", 15d, 15d));
+        put(client, person, idx, new IndexedEmployer("Maya", null, null));
     }
 
     /** */

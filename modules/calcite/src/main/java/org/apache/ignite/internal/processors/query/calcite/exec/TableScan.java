@@ -258,7 +258,7 @@ public class TableScan<Row> implements Iterable<Row>, AutoCloseable {
                     );
 
                     if (!F.isEmpty(txChanges.get1())) {
-                        cur = new IndexScan.FilteredCursor<CacheDataRow>(cur, txChanges.get1(), CacheSearchRow::key);
+                        cur = new IndexScan.FilteredCursor<>(cur, txChanges.get1(), CacheSearchRow::key);
 
                         txIter = txChanges.get2().iterator();
                     }

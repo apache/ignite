@@ -38,11 +38,13 @@ import org.apache.ignite.internal.cache.query.index.sorted.IndexKeyDefinition;
 import org.apache.ignite.internal.cache.query.index.sorted.IndexKeyType;
 import org.apache.ignite.internal.cache.query.index.sorted.IndexKeyTypeSettings;
 import org.apache.ignite.internal.cache.query.index.sorted.IndexRow;
+import org.apache.ignite.internal.cache.query.index.sorted.InlineIndexRowHandler;
 import org.apache.ignite.internal.cache.query.index.sorted.inline.IndexQueryContext;
 import org.apache.ignite.internal.cache.query.index.sorted.inline.InlineIndex;
 import org.apache.ignite.internal.cache.query.index.sorted.inline.InlineIndexImpl;
 import org.apache.ignite.internal.cache.query.index.sorted.inline.InlineIndexKeyType;
 import org.apache.ignite.internal.cache.query.index.sorted.inline.InlineIndexKeyTypeRegistry;
+import org.apache.ignite.internal.cache.query.index.sorted.keys.NullIndexKey;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
 import org.apache.ignite.internal.processors.cache.persistence.CacheDataRow;
 import org.apache.ignite.internal.processors.cache.persistence.tree.BPlusTree;
@@ -209,7 +211,7 @@ public class CacheIndexImpl implements IgniteIndex {
                 rowFilter = IndexScan.createNotExpiredRowFilter();
 
             if (!F.isEmpty(ectx.getTxWriteEntries())) {
-                BPlusTree.TreeRowClosure<IndexRow, IndexRow> _rowFilter = rowFilter;
+                BPlusTree.TreeRowClosure<IndexRow, IndexRow> rowFilter0 = rowFilter;
 
                 int[] parts = grp.partitions(ectx.localNodeId());
 
@@ -228,7 +230,7 @@ public class CacheIndexImpl implements IgniteIndex {
                             long pageAddr,
                             int idx
                         ) throws IgniteCheckedException {
-                            if (_rowFilter != null && !_rowFilter.apply(tree, io, pageAddr, idx))
+                            if (rowFilter0 != null && !rowFilter0.apply(tree, io, pageAddr, idx))
                                 return false;
 
                             IndexRow row = tree.getRow(io, pageAddr, idx);
@@ -237,7 +239,14 @@ public class CacheIndexImpl implements IgniteIndex {
                         }
                     };
 
-                    cnt += txChanges.get2().size();
+                    InlineIndexRowHandler rowHnd = iidx.segment(0).rowHandler();
+
+                    for (CacheDataRow txRow : txChanges.get2()) {
+                        if (rowHnd.indexKey(0, txRow) == NullIndexKey.INSTANCE)
+                            continue;
+
+                        cnt += 1;
+                    }
                 }
             }
 

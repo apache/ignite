@@ -48,6 +48,9 @@ import static org.apache.ignite.internal.processors.query.calcite.externalize.Re
  */
 public class Fragment {
     /** */
+    private static final String ERR_MSG = "Failed to calculate physical distribution";
+
+    /** */
     private final long id;
 
     /** */
@@ -155,19 +158,19 @@ public class Fragment {
         assert root instanceof IgniteTableModify;
         assert root.getInput(0) instanceof IgniteReceiver;
 
-        FragmentMapping mapping = IgniteMdFragmentMapping._fragmentMapping(root.getInput(0), mq, ctx);
+        FragmentMapping fm = IgniteMdFragmentMapping._fragmentMapping(root.getInput(0), mq, ctx);
 
         try {
-            mapping = mapping.local(ctx.localNodeId());
+            fm = fm.local(ctx.localNodeId());
         }
         catch (NodeMappingException e) {
-            throw new FragmentMappingException("Failed to calculate physical distribution", this, e.node(), e);
+            throw new FragmentMappingException(ERR_MSG, this, e.node(), e);
         }
         catch (ColocationMappingException e) {
-            throw new FragmentMappingException("Failed to calculate physical distribution", this, root, e);
+            throw new FragmentMappingException(ERR_MSG, this, root, e);
         }
 
-        return mapped(mapping.finalizeMapping(nodesSource(mappingSrvc, ctx)));
+        return mapped(fm.finalizeMapping(nodesSource(mappingSrvc, ctx)));
     }
 
     /**
@@ -201,10 +204,10 @@ public class Fragment {
             return mapping.finalizeMapping(nodesSource);
         }
         catch (NodeMappingException e) {
-            throw new FragmentMappingException("Failed to calculate physical distribution", this, e.node(), e);
+            throw new FragmentMappingException(ERR_MSG, this, e.node(), e);
         }
         catch (ColocationMappingException e) {
-            throw new FragmentMappingException("Failed to calculate physical distribution", this, root, e);
+            throw new FragmentMappingException(ERR_MSG, this, root, e);
         }
     }
 

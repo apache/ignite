@@ -598,10 +598,7 @@ public class IndexScan<Row> extends AbstractIndexScan<Row, IndexRow> {
         for (IgniteTxEntry e : entries) {
             assert e.key().partition() != -1;
 
-            if (e.cacheId() != cacheId)
-                continue;;
-
-            if (!filter.test(e))
+            if (e.cacheId() != cacheId || !filter.test(e))
                 continue;
 
             skipKeys.add(e.key());

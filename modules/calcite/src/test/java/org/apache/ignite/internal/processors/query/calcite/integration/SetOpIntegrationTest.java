@@ -18,8 +18,6 @@
 package org.apache.ignite.internal.processors.query.calcite.integration;
 
 import java.util.List;
-
-import javax.cache.Cache;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteDataStreamer;
 import org.apache.ignite.cache.CacheMode;
@@ -32,41 +30,47 @@ import org.junit.Test;
 /**
  * Integration test for set op (EXCEPT, INTERSECT).
  */
-public class SetOpIntegrationTest extends AbstractBasicIntegrationTest {
+public class SetOpIntegrationTest extends AbstractBasicIntegrationTransactionalTest {
     /** */
-    private void populateTables() throws InterruptedException {
-        IgniteCache<Integer, Employer> emp1 = client.getOrCreateCache(new CacheConfiguration<Integer, Employer>("emp1")
+    private void createTables() {
+        client.getOrCreateCache(this.<Integer, Employer>cacheConfiguration()
+            .setName("emp1")
             .setSqlSchema("PUBLIC")
             .setQueryEntities(F.asList(new QueryEntity(Integer.class, Employer.class).setTableName("emp1")))
             .setBackups(2)
         );
 
-        IgniteCache<Integer, Employer> emp2 = client.getOrCreateCache(new CacheConfiguration<Integer, Employer>("emp2")
+        client.getOrCreateCache(this.<Integer, Employer>cacheConfiguration()
+            .setName("emp2")
             .setSqlSchema("PUBLIC")
             .setQueryEntities(F.asList(new QueryEntity(Integer.class, Employer.class).setTableName("emp2")))
             .setBackups(1)
         );
-
-        emp1.put(1, new Employer("Igor", 10d));
-        emp1.put(2, new Employer("Igor", 11d));
-        emp1.put(3, new Employer("Igor", 12d));
-        emp1.put(4, new Employer("Igor1", 13d));
-        emp1.put(5, new Employer("Igor1", 13d));
-        emp1.put(6, new Employer("Igor1", 13d));
-        emp1.put(7, new Employer("Roman", 14d));
-
-        emp2.put(1, new Employer("Roman", 10d));
-        emp2.put(2, new Employer("Roman", 11d));
-        emp2.put(3, new Employer("Roman", 12d));
-        emp2.put(4, new Employer("Roman", 13d));
-        emp2.put(5, new Employer("Igor1", 13d));
-        emp2.put(6, new Employer("Igor1", 13d));
-
-        awaitPartitionMapExchange(true, true, null);
     }
 
-    /** Copy cache with it's content to new replicated cache. */
-    private void copyCacheAsReplicated(String cacheName) throws InterruptedException {
+    /** */
+    private void populateEmp1(IgniteCache<Integer, Employer> emp1) {
+        put(client, emp1, 1, new Employer("Igor", 10d));
+        put(client, emp1, 2, new Employer("Igor", 11d));
+        put(client, emp1, 3, new Employer("Igor", 12d));
+        put(client, emp1, 4, new Employer("Igor1", 13d));
+        put(client, emp1, 5, new Employer("Igor1", 13d));
+        put(client, emp1, 6, new Employer("Igor1", 13d));
+        put(client, emp1, 7, new Employer("Roman", 14d));
+    }
+
+    /** */
+    private void populateEmp2(IgniteCache<Integer, Employer> emp2) {
+        put(client, emp2, 1, new Employer("Roman", 10d));
+        put(client, emp2, 2, new Employer("Roman", 11d));
+        put(client, emp2, 3, new Employer("Roman", 12d));
+        put(client, emp2, 4, new Employer("Roman", 13d));
+        put(client, emp2, 5, new Employer("Igor1", 13d));
+        put(client, emp2, 6, new Employer("Igor1", 13d));
+    }
+
+    /** */
+    private void createCacheCopyAsReplicated(String cacheName) throws InterruptedException {
         IgniteCache<Object, Object> cache = client.cache(cacheName);
 
         CacheConfiguration<Object, Object> ccfg = new CacheConfiguration<Object, Object>(
@@ -76,10 +80,7 @@ public class SetOpIntegrationTest extends AbstractBasicIntegrationTest {
         ccfg.setCacheMode(CacheMode.REPLICATED);
         ccfg.getQueryEntities().forEach(qe -> qe.setTableName(qe.getTableName() + "_repl"));
 
-        IgniteCache<Object, Object> replCache = client.getOrCreateCache(ccfg);
-
-        for (Cache.Entry<?, ?> entry : cache)
-            replCache.put(entry.getKey(), entry.getValue());
+        client.getOrCreateCache(ccfg);
 
         awaitPartitionMapExchange(true, true, null);
     }
@@ -87,7 +88,9 @@ public class SetOpIntegrationTest extends AbstractBasicIntegrationTest {
     /** */
     @Test
     public void testExcept() throws Exception {
-        populateTables();
+        createTables();
+        populateEmp1(client.cache("emp1"));
+        populateEmp2(client.cache("emp2"));
 
         List<List<?>> rows = executeSql("SELECT name FROM emp1 EXCEPT SELECT name FROM emp2");
 
@@ -98,10 +101,14 @@ public class SetOpIntegrationTest extends AbstractBasicIntegrationTest {
     /** */
     @Test
     public void testExceptFromEmpty() throws Exception {
-        populateTables();
+        createTables();
+        createCacheCopyAsReplicated("emp1");
+        createCacheCopyAsReplicated("emp2");
 
-        copyCacheAsReplicated("emp1");
-        copyCacheAsReplicated("emp2");
+        populateEmp1(client.cache("emp1"));
+        populateEmp2(client.cache("emp2"));
+        populateEmp1(client.cache("emp1Replicated"));
+        populateEmp2(client.cache("emp2Replicated"));
 
         List<List<?>> rows = executeSql("SELECT name FROM emp1 WHERE salary < 0 EXCEPT SELECT name FROM emp2");
 
@@ -115,7 +122,9 @@ public class SetOpIntegrationTest extends AbstractBasicIntegrationTest {
     /** */
     @Test
     public void testExceptSeveralColumns() throws Exception {
-        populateTables();
+        createTables();
+        populateEmp1(client.cache("emp1"));
+        populateEmp2(client.cache("emp2"));
 
         List<List<?>> rows = executeSql("SELECT name, salary FROM emp1 EXCEPT SELECT name, salary FROM emp2");
 
@@ -127,7 +136,9 @@ public class SetOpIntegrationTest extends AbstractBasicIntegrationTest {
     /** */
     @Test
     public void testExceptAll() throws Exception {
-        populateTables();
+        createTables();
+        populateEmp1(client.cache("emp1"));
+        populateEmp2(client.cache("emp2"));
 
         List<List<?>> rows = executeSql("SELECT name FROM emp1 EXCEPT ALL SELECT name FROM emp2");
 
@@ -139,7 +150,9 @@ public class SetOpIntegrationTest extends AbstractBasicIntegrationTest {
     /** */
     @Test
     public void testExceptNested() throws Exception {
-        populateTables();
+        createTables();
+        populateEmp1(client.cache("emp1"));
+        populateEmp2(client.cache("emp2"));
 
         List<List<?>> rows =
             executeSql("SELECT name FROM emp1 EXCEPT (SELECT name FROM emp1 EXCEPT SELECT name FROM emp2)");
@@ -152,8 +165,12 @@ public class SetOpIntegrationTest extends AbstractBasicIntegrationTest {
     /** */
     @Test
     public void testExceptReplicatedWithPartitioned() throws Exception {
-        populateTables();
-        copyCacheAsReplicated("emp1");
+        createTables();
+        createCacheCopyAsReplicated("emp1");
+
+        populateEmp1(client.cache("emp1"));
+        populateEmp2(client.cache("emp2"));
+        populateEmp1(client.cache("emp1Replicated"));
 
         List<List<?>> rows = executeSql("SELECT name FROM emp1_repl EXCEPT ALL SELECT name FROM emp2");
 
@@ -165,9 +182,14 @@ public class SetOpIntegrationTest extends AbstractBasicIntegrationTest {
     /** */
     @Test
     public void testExceptReplicated() throws Exception {
-        populateTables();
-        copyCacheAsReplicated("emp1");
-        copyCacheAsReplicated("emp2");
+        createTables();
+        createCacheCopyAsReplicated("emp1");
+        createCacheCopyAsReplicated("emp2");
+
+        populateEmp1(client.cache("emp1"));
+        populateEmp2(client.cache("emp2"));
+        populateEmp1(client.cache("emp1Replicated"));
+        populateEmp2(client.cache("emp2Replicated"));
 
         List<List<?>> rows = executeSql("SELECT name FROM emp1_repl EXCEPT ALL SELECT name FROM emp2_repl");
 
@@ -179,8 +201,12 @@ public class SetOpIntegrationTest extends AbstractBasicIntegrationTest {
     /** */
     @Test
     public void testExceptMerge() throws Exception {
-        populateTables();
-        copyCacheAsReplicated("emp1");
+        createTables();
+        createCacheCopyAsReplicated("emp1");
+
+        populateEmp1(client.cache("emp1"));
+        populateEmp2(client.cache("emp2"));
+        populateEmp1(client.cache("emp1Replicated"));
 
         List<List<?>> rows = executeSql("SELECT name FROM emp1_repl EXCEPT ALL SELECT name FROM emp2 EXCEPT ALL " +
             "SELECT name FROM emp1 WHERE salary < 11");
@@ -193,20 +219,20 @@ public class SetOpIntegrationTest extends AbstractBasicIntegrationTest {
     /** */
     @Test
     public void testSetOpBigBatch() throws Exception {
-        client.getOrCreateCache(new CacheConfiguration<Integer, Integer>()
+        client.getOrCreateCache(this.<Integer, Integer>cacheConfiguration()
             .setName("cache1")
             .setQueryEntities(F.asList(new QueryEntity(Integer.class, Integer.class).setTableName("table1")))
             .setBackups(2)
         );
 
-        client.getOrCreateCache(new CacheConfiguration<Integer, Integer>()
+        client.getOrCreateCache(this.<Integer, Integer>cacheConfiguration()
             .setName("cache2")
             .setQueryEntities(F.asList(new QueryEntity(Integer.class, Integer.class).setTableName("table2")))
             .setBackups(1)
         );
 
-        copyCacheAsReplicated("cache1");
-        copyCacheAsReplicated("cache2");
+        createCacheCopyAsReplicated("cache1");
+        createCacheCopyAsReplicated("cache2");
 
         try (IgniteDataStreamer<Integer, Integer> ds1 = client.dataStreamer("cache1");
              IgniteDataStreamer<Integer, Integer> ds2 = client.dataStreamer("cache2");
@@ -330,7 +356,9 @@ public class SetOpIntegrationTest extends AbstractBasicIntegrationTest {
     /** */
     @Test
     public void testIntersect() throws Exception {
-        populateTables();
+        createTables();
+        populateEmp1(client.cache("emp1"));
+        populateEmp2(client.cache("emp2"));
 
         List<List<?>> rows = executeSql("SELECT name FROM emp1 INTERSECT SELECT name FROM emp2");
 
@@ -342,7 +370,9 @@ public class SetOpIntegrationTest extends AbstractBasicIntegrationTest {
     /** */
     @Test
     public void testInstersectAll() throws Exception {
-        populateTables();
+        createTables();
+        populateEmp1(client.cache("emp1"));
+        populateEmp2(client.cache("emp2"));
 
         List<List<?>> rows = executeSql("SELECT name FROM emp1 INTERSECT ALL SELECT name FROM emp2");
 
@@ -354,10 +384,15 @@ public class SetOpIntegrationTest extends AbstractBasicIntegrationTest {
     /** */
     @Test
     public void testIntersectEmpty() throws Exception {
-        populateTables();
+        createTables();
+        createCacheCopyAsReplicated("emp1");
+        createCacheCopyAsReplicated("emp2");
 
-        copyCacheAsReplicated("emp1");
-        copyCacheAsReplicated("emp2");
+        populateEmp1(client.cache("emp1"));
+        populateEmp2(client.cache("emp2"));
+
+        populateEmp1(client.cache("emp1Replicated"));
+        populateEmp2(client.cache("emp2Replicated"));
 
         List<List<?>> rows = executeSql("SELECT name FROM emp1 WHERE salary < 0 INTERSECT SELECT name FROM emp2");
 
@@ -371,8 +406,12 @@ public class SetOpIntegrationTest extends AbstractBasicIntegrationTest {
     /** */
     @Test
     public void testIntersectMerge() throws Exception {
-        populateTables();
-        copyCacheAsReplicated("emp1");
+        createTables();
+        createCacheCopyAsReplicated("emp1");
+
+        populateEmp1(client.cache("emp1"));
+        populateEmp2(client.cache("emp2"));
+        populateEmp1(client.cache("emp1Replicated"));
 
         List<List<?>> rows = executeSql("SELECT name FROM emp1_repl INTERSECT ALL SELECT name FROM emp2 INTERSECT ALL " +
             "SELECT name FROM emp1 WHERE salary < 14");
@@ -384,9 +423,14 @@ public class SetOpIntegrationTest extends AbstractBasicIntegrationTest {
     /** */
     @Test
     public void testIntersectReplicated() throws Exception {
-        populateTables();
-        copyCacheAsReplicated("emp1");
-        copyCacheAsReplicated("emp2");
+        createTables();
+        createCacheCopyAsReplicated("emp1");
+        createCacheCopyAsReplicated("emp2");
+
+        populateEmp1(client.cache("emp1"));
+        populateEmp2(client.cache("emp2"));
+        populateEmp1(client.cache("emp1Replicated"));
+        populateEmp2(client.cache("emp2Replicated"));
 
         List<List<?>> rows = executeSql("SELECT name FROM emp1_repl INTERSECT ALL SELECT name FROM emp2_repl");
 
@@ -398,8 +442,12 @@ public class SetOpIntegrationTest extends AbstractBasicIntegrationTest {
     /** */
     @Test
     public void testIntersectReplicatedWithPartitioned() throws Exception {
-        populateTables();
-        copyCacheAsReplicated("emp1");
+        createTables();
+        createCacheCopyAsReplicated("emp1");
+
+        populateEmp1(client.cache("emp1"));
+        populateEmp2(client.cache("emp2"));
+        populateEmp1(client.cache("emp1Replicated"));
 
         List<List<?>> rows = executeSql("SELECT name FROM emp1_repl INTERSECT ALL SELECT name FROM emp2");
 
@@ -411,7 +459,9 @@ public class SetOpIntegrationTest extends AbstractBasicIntegrationTest {
     /** */
     @Test
     public void testIntersectSeveralColumns() throws Exception {
-        populateTables();
+        createTables();
+        populateEmp1(client.cache("emp1"));
+        populateEmp2(client.cache("emp2"));
 
         List<List<?>> rows = executeSql("SELECT name, salary FROM emp1 INTERSECT ALL SELECT name, salary FROM emp2");
 
@@ -423,8 +473,8 @@ public class SetOpIntegrationTest extends AbstractBasicIntegrationTest {
     @Test
     public void testSetOpColocated() {
         executeSql("CREATE TABLE emp(empid INTEGER, deptid INTEGER, name VARCHAR, PRIMARY KEY(empid, deptid)) " +
-            "WITH AFFINITY_KEY=deptid");
-        executeSql("CREATE TABLE dept(deptid INTEGER, name VARCHAR, PRIMARY KEY(deptid))");
+            "WITH AFFINITY_KEY=deptid,atomicity=transactional");
+        executeSql("CREATE TABLE dept(deptid INTEGER, name VARCHAR, PRIMARY KEY(deptid)) WITH atomicity=transactional");
 
         executeSql("INSERT INTO emp VALUES (0, 0, 'test0'), (1, 0, 'test1'), (2, 1, 'test2')");
         executeSql("INSERT INTO dept VALUES (0, 'test0'), (1, 'test1'), (2, 'test2')");
@@ -458,7 +508,7 @@ public class SetOpIntegrationTest extends AbstractBasicIntegrationTest {
      */
     @Test
     public void testSetOpRewindability() {
-        executeSql("CREATE TABLE test(i INTEGER)");
+        executeSql("CREATE TABLE test(i INTEGER) WITH atomicity=transactional");
         executeSql("INSERT INTO test VALUES (1), (2)");
 
         assertQuery("SELECT (SELECT i FROM test EXCEPT SELECT test.i) FROM test")

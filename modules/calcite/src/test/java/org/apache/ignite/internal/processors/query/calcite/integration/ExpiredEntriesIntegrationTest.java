@@ -29,15 +29,23 @@ import org.junit.Test;
 import static org.apache.ignite.internal.processors.query.calcite.QueryChecker.containsIndexScan;
 import static org.apache.ignite.internal.processors.query.calcite.QueryChecker.containsSubPlan;
 import static org.apache.ignite.internal.processors.query.calcite.QueryChecker.containsTableScan;
+import static org.junit.Assume.assumeTrue;
 
 /**
  * Test query expired entries.
  */
-public class ExpiredEntriesIntegrationTest extends AbstractBasicIntegrationTest {
+public class ExpiredEntriesIntegrationTest extends AbstractBasicIntegrationTransactionalTest {
+    /** {@inheritDoc} */
+    @Override protected void beforeTest() throws Exception {
+        super.beforeTest();
+
+        assumeTrue(sqlTxMode == SqlTransactionMode.NONE);
+    }
+
     /** */
     @Test
     public void testExpiration() throws Exception {
-        CacheConfiguration<Integer, Developer> cacheCfg = new CacheConfiguration<Integer, Developer>()
+        CacheConfiguration<Integer, Developer> cacheCfg = this.<Integer, Developer>cacheConfiguration()
             .setIndexedTypes(Integer.class, Developer.class)
             .setExpiryPolicyFactory(CreatedExpiryPolicy.factoryOf(new Duration(TimeUnit.MILLISECONDS, 1)));
 
@@ -54,15 +62,15 @@ public class ExpiredEntriesIntegrationTest extends AbstractBasicIntegrationTest 
         awaitPartitionMapExchange();
 
         for (int i = 0; i < 100; i++) {
-            cache1.put(i, new Developer("dev" + i, i));
-            cache2.put(i, new Developer("dev" + i, i));
+            put(client, cache1, i, new Developer("dev" + i, i));
+            put(client, cache1, i, new Developer("dev" + i, i));
         }
 
         ExpiryPolicy expPlc = new CreatedExpiryPolicy(new Duration(TimeUnit.DAYS, 1));
 
         for (int i = 50; i < 55; i++) {
-            cache1.withExpiryPolicy(expPlc).put(i, new Developer("dev" + i, i));
-            cache2.withExpiryPolicy(expPlc).put(i, new Developer("dev" + i, i));
+            put(client, cache1.withExpiryPolicy(expPlc), i, new Developer("dev" + i, i));
+            put(client, cache2.withExpiryPolicy(expPlc), i, new Developer("dev" + i, i));
         }
 
         GridTestUtils.waitForCondition(() -> cache2.size() == 5, 1_000);

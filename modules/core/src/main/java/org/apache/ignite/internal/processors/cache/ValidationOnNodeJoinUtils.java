@@ -584,9 +584,9 @@ public class ValidationOnNodeJoinUtils {
 
             if (!rmtTxAwareQryEnabled.equals(locTxCfg.isTxAwareQueriesEnabled()))
                 throw new IgniteCheckedException("Transactions aware queries enabled mismatch " +
-                    "(fix txAwareQueries property) [rmtNodeId=" + rmt.id() +
-                    ", locTxAwareQueries=" + locTxCfg.isTxAwareQueriesEnabled() +
-                    ", rmtTxAwareQueries=" + rmtTxAwareQryEnabled + ']');
+                    "(fix txAwareQueriesEnabled property) [rmtNodeId=" + rmt.id() +
+                    ", locTxAwareQueriesEnabled=" + locTxCfg.isTxAwareQueriesEnabled() +
+                    ", rmtTxAwareQueriesEnabled=" + rmtTxAwareQryEnabled + ']');
         }
     }
 

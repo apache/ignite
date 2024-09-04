@@ -20,6 +20,7 @@ package org.apache.ignite.configuration;
 import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.EnumSet;
+import java.util.Set;
 import javax.cache.configuration.Factory;
 import org.apache.ignite.internal.util.TransientSerializable;
 import org.apache.ignite.internal.util.typedef.internal.S;
@@ -38,7 +39,7 @@ public class TransactionConfiguration implements Serializable {
      *
      * @see #setTxAwareQueriesEnabled(boolean)
      */
-    public static final EnumSet<TransactionIsolation> TX_AWARE_QUERIES_SUPPORTED_MODES = EnumSet.of(TransactionIsolation.READ_COMMITTED);
+    public static final Set<TransactionIsolation> TX_AWARE_QUERIES_SUPPORTED_MODES = EnumSet.of(TransactionIsolation.READ_COMMITTED);
 
     /** */
     private static final IgniteProductVersion TX_PME_TIMEOUT_SINCE = IgniteProductVersion.fromString("2.5.1");
