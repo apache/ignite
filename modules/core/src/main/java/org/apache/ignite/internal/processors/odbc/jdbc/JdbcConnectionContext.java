@@ -36,6 +36,7 @@ import org.apache.ignite.internal.processors.odbc.ClientListenerResponseSender;
 import org.apache.ignite.internal.processors.query.QueryEngineConfigurationEx;
 import org.apache.ignite.internal.util.GridSpinBusyLock;
 import org.apache.ignite.internal.util.nio.GridNioSession;
+import org.apache.ignite.internal.util.typedef.F;
 
 import static org.apache.ignite.internal.jdbc.thin.JdbcThinUtils.nullableBooleanFromByte;
 import static org.apache.ignite.internal.processors.odbc.ClientListenerNioListener.JDBC_CLIENT;
@@ -79,6 +80,9 @@ public class JdbcConnectionContext extends ClientListenerAbstractConnectionConte
 
     /** Supported versions. */
     private static final Set<ClientListenerProtocolVersion> SUPPORTED_VERS = new HashSet<>();
+
+    /** Default nested tx mode for compatibility. */
+    private static final String DEFAULT_NESTED_TX_MODE = "ERROR";
 
     /** Shutdown busy lock. */
     private final GridSpinBusyLock busyLock;
@@ -169,8 +173,14 @@ public class JdbcConnectionContext extends ClientListenerAbstractConnectionConte
         if (ver.compareTo(VER_2_3_0) >= 0)
             skipReducerOnUpdate = reader.readBoolean();
 
-        if (ver.compareTo(VER_2_7_0) >= 0 && ver.compareTo(VER_2_17_0) < 0)
-            reader.readString();
+        if (ver.compareTo(VER_2_7_0) >= 0) {
+            String nestedTxModeName = reader.readString();
+
+            if (!F.isEmpty(nestedTxModeName)) {
+                if (!nestedTxModeName.equals(DEFAULT_NESTED_TX_MODE))
+                    throw new IgniteCheckedException("Nested transactions are not supported!");
+            }
+        }
 
         Boolean dataPageScanEnabled = null;
         Integer updateBatchSize = null;

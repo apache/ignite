@@ -289,7 +289,7 @@ public class JdbcThinTcpIo {
         writer.writeBoolean(connProps.isLazy());
         writer.writeBoolean(connProps.isSkipReducerOnUpdate());
 
-        if (ver.compareTo(VER_2_7_0) >= 0 && ver.compareTo(VER_2_17_0) < 0)
+        if (ver.compareTo(VER_2_7_0) >= 0)
             writer.writeString(DEFAULT_NESTED_TX_MODE);
 
         if (ver.compareTo(VER_2_8_0) >= 0) {

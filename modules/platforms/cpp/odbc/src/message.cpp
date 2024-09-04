@@ -86,7 +86,7 @@ namespace ignite
                 utility::WriteString(writer, config.GetPassword());
             }
 
-            if (version >= ProtocolVersion::VERSION_2_7_0 && version < ProtocolVersion::VERSION_2_17_0)
+            if (version >= ProtocolVersion::VERSION_2_7_0)
                 writer.WriteInt8(3);
 
             if (version >= ProtocolVersion::VERSION_2_13_0)

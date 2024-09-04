@@ -161,8 +161,12 @@ public class OdbcConnectionContext extends ClientListenerAbstractConnectionConte
             passwd = reader.readString();
         }
 
-        if (ver.compareTo(VER_2_7_0) >= 0 && ver.compareTo(VER_2_17_0) < 0)
-            reader.readByte();
+        if (ver.compareTo(VER_2_7_0) >= 0) {
+            byte nestedTxCode = reader.readByte();
+
+            if (nestedTxCode != 3)
+                throw new IgniteCheckedException("Nested transactions are not supported!");
+        }
 
         String qryEngine = null;
         if (ver.compareTo(VER_2_13_0) >= 0) {
