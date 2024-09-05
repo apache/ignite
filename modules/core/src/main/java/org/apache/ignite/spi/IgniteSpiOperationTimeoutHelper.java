@@ -75,7 +75,7 @@ public class IgniteSpiOperationTimeoutHelper {
     }
 
     /**
-     * Creates timeout helper.
+     * Creates timeout helper with absolute time threshold. {@code timeoutEnabled} is considered false.
      *
      * @param absoluteThreshold Absolute time threshold (nanos) which must not be reached. Ignored if negative or 0.
      */

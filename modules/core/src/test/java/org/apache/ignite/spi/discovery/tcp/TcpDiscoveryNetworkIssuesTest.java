@@ -64,8 +64,6 @@ import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.ListeningTestLogger;
 import org.apache.ignite.testframework.LogListener;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
-import org.apache.ignite.testframework.junits.logger.GridTestLog4jLogger;
-import org.apache.logging.log4j.Level;
 import org.junit.Test;
 
 import static org.apache.ignite.events.EventType.EVT_NODE_FAILED;
@@ -167,8 +165,6 @@ public class TcpDiscoveryNetworkIssuesTest extends GridCommonAbstractTest {
 
         if (gridLog != null)
             cfg.setGridLogger(gridLog);
-
-        ((GridTestLog4jLogger)log).setLevel(Level.DEBUG);
 
         return cfg;
     }
