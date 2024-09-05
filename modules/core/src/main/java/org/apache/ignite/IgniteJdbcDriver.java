@@ -167,8 +167,8 @@ public class IgniteJdbcDriver implements Driver {
     /** Distributed joins parameter name. */
     private static final String PARAM_DISTRIBUTED_JOINS = "distributedJoins";
 
-    /** Transactions enabled parameter name. */
-    private static final String PARAM_TX_ENABLED = "transactionsEnabled";
+    /** Transactions allowed parameter name. */
+    private static final String PARAM_TX_ALLOWED = "transactionsAllowed";
 
     /** DML streaming parameter name. */
     private static final String PARAM_STREAMING = "streaming";
@@ -221,8 +221,8 @@ public class IgniteJdbcDriver implements Driver {
     /** Distributed joins property name. */
     public static final String PROP_DISTRIBUTED_JOINS = PROP_PREFIX + PARAM_DISTRIBUTED_JOINS;
 
-    /** Transactions enabled property name. */
-    public static final String PROP_TX_ENABLED = PROP_PREFIX + PARAM_TX_ENABLED;
+    /** Transactions allowed property name. */
+    public static final String PROP_TX_ALLOWED = PROP_PREFIX + PARAM_TX_ALLOWED;
 
     /** DML streaming property name. */
     public static final String PROP_STREAMING = PROP_PREFIX + PARAM_STREAMING;
@@ -245,7 +245,7 @@ public class IgniteJdbcDriver implements Driver {
     /** Skip reducer on update update property name. */
     public static final String PROP_SKIP_REDUCER_ON_UPDATE = PROP_PREFIX + PARAM_SKIP_REDUCER_ON_UPDATE;
 
-    /** Enforce join order property name. */
+    /** Transactions allowed property name. */
     public static final String PROP_ENFORCE_JOIN_ORDER = PROP_PREFIX + PARAM_ENFORCE_JOIN_ORDER;
 
     /** Lazy property name. */
@@ -296,7 +296,7 @@ public class IgniteJdbcDriver implements Driver {
     }
 
     /** {@inheritDoc} */
-    @Override public boolean acceptsURL(String url) {
+    @Override public boolean acceptsURL(String url) throws SQLException {
         return url.startsWith(CFG_URL_PREFIX);
     }
 
@@ -315,7 +315,7 @@ public class IgniteJdbcDriver implements Driver {
             new JdbcDriverPropertyInfo("Distributed Joins", info.getProperty(PROP_DISTRIBUTED_JOINS), ""),
             new JdbcDriverPropertyInfo("Enforce Join Order", info.getProperty(PROP_ENFORCE_JOIN_ORDER), ""),
             new JdbcDriverPropertyInfo("Lazy query execution", info.getProperty(PROP_LAZY), ""),
-            new JdbcDriverPropertyInfo("Transaction aware queries enabled", info.getProperty(PROP_TX_ENABLED), ""),
+            new JdbcDriverPropertyInfo("Transactions Allowed", info.getProperty(PROP_TX_ALLOWED), ""),
             new JdbcDriverPropertyInfo("Queries with multiple statements allowed", info.getProperty(PROP_MULTIPLE_STMTS), ""),
             new JdbcDriverPropertyInfo("Skip reducer on update", info.getProperty(PROP_SKIP_REDUCER_ON_UPDATE), ""),
             new JdbcDriverPropertyInfo("Schema name", info.getProperty(PROP_SCHEMA), ""),
