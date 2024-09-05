@@ -127,7 +127,9 @@ For information on how to secure the JDBC client driver connection, you can refe
 
 |Presently ACID Transactions are supported, but only at the key-value API level. At the SQL level, Ignite supports atomic, but not transactional consistency.
 
-This means that the JDBC driver will throw a `Transactions are not supported` exception if you try to use this functionality.
+This means that the JDBC driver might throw a `Transactions are not supported` exception if you try to use this functionality.
+
+However, in cases when you need transactional syntax to work (even without transactional semantics), e.g. some BI tools might force the transactional behavior, set this parameter to `true` to prevent exceptions from being thrown.
 
 |`false`
 

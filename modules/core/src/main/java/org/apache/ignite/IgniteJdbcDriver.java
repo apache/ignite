@@ -167,6 +167,9 @@ public class IgniteJdbcDriver implements Driver {
     /** Distributed joins parameter name. */
     private static final String PARAM_DISTRIBUTED_JOINS = "distributedJoins";
 
+    /** Transactions allowed parameter name. */
+    private static final String PARAM_TX_ALLOWED = "transactionsAllowed";
+
     /** DML streaming parameter name. */
     private static final String PARAM_STREAMING = "streaming";
 
@@ -217,6 +220,9 @@ public class IgniteJdbcDriver implements Driver {
 
     /** Distributed joins property name. */
     public static final String PROP_DISTRIBUTED_JOINS = PROP_PREFIX + PARAM_DISTRIBUTED_JOINS;
+
+    /** Transactions allowed property name. */
+    public static final String PROP_TX_ALLOWED = PROP_PREFIX + PARAM_TX_ALLOWED;
 
     /** DML streaming property name. */
     public static final String PROP_STREAMING = PROP_PREFIX + PARAM_STREAMING;
@@ -309,6 +315,7 @@ public class IgniteJdbcDriver implements Driver {
             new JdbcDriverPropertyInfo("Distributed Joins", info.getProperty(PROP_DISTRIBUTED_JOINS), ""),
             new JdbcDriverPropertyInfo("Enforce Join Order", info.getProperty(PROP_ENFORCE_JOIN_ORDER), ""),
             new JdbcDriverPropertyInfo("Lazy query execution", info.getProperty(PROP_LAZY), ""),
+            new JdbcDriverPropertyInfo("Transactions Allowed", info.getProperty(PROP_TX_ALLOWED), ""),
             new JdbcDriverPropertyInfo("Queries with multiple statements allowed", info.getProperty(PROP_MULTIPLE_STMTS), ""),
             new JdbcDriverPropertyInfo("Skip reducer on update", info.getProperty(PROP_SKIP_REDUCER_ON_UPDATE), ""),
             new JdbcDriverPropertyInfo("Schema name", info.getProperty(PROP_SCHEMA), ""),

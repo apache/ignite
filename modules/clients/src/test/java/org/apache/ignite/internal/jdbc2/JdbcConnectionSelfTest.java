@@ -228,6 +228,42 @@ public class JdbcConnectionSelfTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     @Test
+    public void testTxAllowedCommit() throws Exception {
+        String url = CFG_URL_PREFIX + "transactionsAllowed=true@" + configURL();
+
+        try (final Connection conn = DriverManager.getConnection(url)) {
+            conn.setTransactionIsolation(Connection.TRANSACTION_SERIALIZABLE);
+
+            assertEquals(Connection.TRANSACTION_SERIALIZABLE, conn.getTransactionIsolation());
+
+            conn.setAutoCommit(false);
+
+            conn.commit();
+        }
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    @Test
+    public void testTxAllowedRollback() throws Exception {
+        String url = CFG_URL_PREFIX + "transactionsAllowed=true@" + configURL();
+
+        try (final Connection conn = DriverManager.getConnection(url)) {
+            conn.setTransactionIsolation(Connection.TRANSACTION_SERIALIZABLE);
+
+            assertEquals(Connection.TRANSACTION_SERIALIZABLE, conn.getTransactionIsolation());
+
+            conn.setAutoCommit(false);
+
+            conn.rollback();
+        }
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    @Test
     public void testSqlHints() throws Exception {
         try (final Connection conn = DriverManager.getConnection(CFG_URL_PREFIX + "enforceJoinOrder=true@"
             + configURL())) {
