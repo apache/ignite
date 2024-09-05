@@ -125,7 +125,7 @@ For information on how to secure the JDBC client driver connection, you can refe
 
 |`transactionsAllowed`
 
-|Presently ACID Transactions are NOT supported. At the SQL level, Ignite supports atomic, but not transactional consistency.
+|Presently ACID Transactions are supported, but only at the key-value API level. At the SQL level, Ignite supports atomic, but not transactional consistency.
 
 This means that the JDBC driver will throw a `Transactions are not supported` exception if you try to use this functionality.
 
