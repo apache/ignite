@@ -55,11 +55,9 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentLinkedDeque;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.ConcurrentMap;
-import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.LinkedBlockingDeque;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 import javax.net.ssl.SSLException;
 import javax.net.ssl.SSLServerSocket;
@@ -3505,39 +3503,6 @@ class ServerImpl extends TcpDiscoveryImpl {
                                 if (log.isDebugEnabled())
                                     log.debug("Handshake response: " + res);
 
-                                // We should take previousNodeAlive flag into account
-                                // only if we received the response from the correct node.
-                                if (res.creatorNodeId().equals(next.id()) && res.previousNodeAlive() && sndState != null) {
-                                    sndState.checkTimeout();
-
-                                    // Remote node checked connection to it's previous and got success.
-                                    boolean previousNode = sndState.markLastFailedNodeAlive();
-
-                                    if (previousNode)
-                                        failedNodes.remove(failedNodes.size() - 1);
-                                    else {
-                                        newNextNode = false;
-
-                                        newNextNode(ring.nextNode(failedNodes));
-                                    }
-
-                                    U.closeQuiet(sock);
-
-                                    sock = null;
-
-                                    if (sndState.isFailed()) {
-                                        segmentLocalNodeOnSendFail(failedNodes);
-
-                                        return; // Nothing to do here.
-                                    }
-
-                                    if (previousNode)
-                                        U.warn(log, "New next node has connection to it's previous, trying previous " +
-                                            "again. [next=" + next + ']');
-
-                                    continue ringLoop;
-                                }
-
                                 if (locNodeId.equals(res.creatorNodeId())) {
                                     if (log.isDebugEnabled())
                                         log.debug("Handshake response from local node: " + res);
@@ -6744,60 +6709,6 @@ class ServerImpl extends TcpDiscoveryImpl {
 
                     if (req.client())
                         res.clientAck(true);
-                    else if (req.changeTopology()) {
-                        // Node cannot connect to it's next (for local node it's previous).
-                        // Need to check connectivity to it.
-                        long rcvdTime = lastRingMsgReceivedTime;
-                        long now = System.nanoTime();
-                        long timeThreshold = rcvdTime + U.millisToNanos(effectiveExchangeTimeout());
-
-                        // We got message from previous in less than effective exchange timeout.
-                        boolean ok = timeThreshold > now;
-                        TcpDiscoveryNode previous = null;
-
-                        if (ok) {
-                            // Check case when previous node suddenly died. This will speed up
-                            // node failing.
-                            Set<TcpDiscoveryNode> failed;
-
-                            synchronized (mux) {
-                                failed = failedNodes.keySet();
-                            }
-
-                            previous = ring.previousNode(failed);
-
-                            InetSocketAddress liveAddr = null;
-
-                            if (previous != null && !previous.id().equals(nodeId) &&
-                                (req.checkPreviousNodeId() == null || previous.id().equals(req.checkPreviousNodeId()))) {
-
-                                // The connection recovery connection to one node is connCheckTick.
-                                // We need to suppose network delays. So we use half of this time.
-                                int backwardCheckTimeout = (int)(connCheckTick / 2);
-
-                                if (log.isDebugEnabled()) {
-                                    log.debug("Remote node requests topology change. Checking connection to " +
-                                        "previous [" + previous + "] with timeout " + backwardCheckTimeout);
-                                }
-
-                                liveAddr = checkConnection(previous, backwardCheckTimeout);
-                            }
-
-                            ok = liveAddr != null;
-
-                            assert !(ok && liveAddr.getAddress().isLoopbackAddress() && spi.locNodeAddrs.contains(liveAddr));
-                        }
-
-                        res.previousNodeAlive(ok);
-
-                        if (log.isInfoEnabled()) {
-                            log.info("Previous node alive status [alive=" + ok +
-                                ", checkPreviousNodeId=" + req.checkPreviousNodeId() +
-                                ", actualPreviousNode=" + previous +
-                                ", lastMessageReceivedTime=" + rcvdTime + ", now=" + now +
-                                ", connCheckInterval=" + connCheckInterval + ']');
-                        }
-                    }
 
                     if (log.isDebugEnabled()) {
                         log.debug("Sending handshake response [" + res + "] with timeout " +
@@ -7244,84 +7155,6 @@ class ServerImpl extends TcpDiscoveryImpl {
          */
         private void ringMessageReceived() {
             lastRingMsgReceivedTime = System.nanoTime();
-        }
-
-        /** @return Alive address if was able to connected to. {@code Null} otherwise. */
-        private InetSocketAddress checkConnection(TcpDiscoveryNode node, int timeout) {
-            IgniteSpiOperationTimeoutHelper timeoutHelper = new IgniteSpiOperationTimeoutHelper(System.nanoTime()
-                + U.millisToNanos(timeout));
-
-            AtomicReference<InetSocketAddress> liveAddrHolder = new AtomicReference<>();
-
-            List<InetSocketAddress> addrs = new ArrayList<>(spi.getEffectiveNodeAddresses(node));
-
-            CountDownLatch latch = new CountDownLatch(addrs.size());
-
-            int addrLeft = addrs.size();
-
-            int threadsLeft = utilityPool.getMaximumPoolSize();
-
-            AtomicInteger addrIdx = new AtomicInteger();
-
-            while (addrLeft > 0) {
-                int addrPerThread = addrLeft / threadsLeft + (addrLeft % threadsLeft > 0 ? 1 : 0);
-
-                addrLeft -= addrPerThread;
-
-                --threadsLeft;
-
-                utilityPool.execute(new Thread() {
-                    private final int addrsToCheck = addrPerThread;
-
-                    /** */
-                    @Override public void run() {
-                        int perAddrTimeout = timeout / addrsToCheck;
-
-                        for (int i = 0; i < addrsToCheck; ++i) {
-                            InetSocketAddress addr = addrs.get(addrIdx.getAndIncrement());
-
-                            if (liveAddrHolder.get() == null) {
-                                try (Socket sock = spi.openSocket(addr, timeoutHelper)) {
-                                    spi.writeToSocket(sock, new TcpDiscoveryPingRequest(getConfiguredNodeId(), null),
-                                        timeoutHelper.nextTimeoutChunk(perAddrTimeout));
-
-                                    spi.readMessage(sock, null, timeoutHelper.nextTimeoutChunk(perAddrTimeout));
-
-                                    liveAddrHolder.compareAndSet(null, addr);
-                                }
-                                catch (Exception e) {
-                                    U.warn(log, "Failed to check connection to previous node [nodeId=" + node.id() + ", order="
-                                        + node.order() + ", address=" + addr + ']', e);
-                                }
-                                finally {
-                                    latch.countDown();
-                                }
-                            }
-                            else
-                                latch.countDown();
-                        }
-                    }
-                });
-            }
-
-            try {
-                latch.await(timeout, TimeUnit.MILLISECONDS);
-            }
-            catch (InterruptedException ignored) {
-                // No-op.
-            }
-
-            if (liveAddrHolder.get() == null) {
-                U.warn(log, "Failed to check connection to previous node [connectingNodeId=" + nodeId
-                    + ", previousNode=" + U.toShortString(node) + ", previousNodeKnownAddresses=" + addrs + ']');
-            }
-            else if (log.isInfoEnabled()) {
-                log.info("Connection check to previous node done [connectingNodeId=" + nodeId + ", previousNode="
-                    + U.toShortString(node) + ", firstRespondedAddress=" + liveAddrHolder.get() +
-                    ", previousNodeKnownAddresses=" + addrs + ']');
-            }
-
-            return liveAddrHolder.get();
         }
 
         /**

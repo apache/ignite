@@ -22,32 +22,26 @@ import java.net.InetSocketAddress;
 import java.net.Socket;
 import java.net.SocketTimeoutException;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.LinkedHashSet;
 import java.util.Map;
 import java.util.Set;
-import java.util.UUID;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.BiConsumer;
 import java.util.function.Consumer;
-import java.util.stream.Collectors;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
-import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.managers.GridManagerAdapter;
 import org.apache.ignite.internal.managers.discovery.GridDiscoveryManager;
 import org.apache.ignite.internal.util.GridConcurrentHashSet;
-import org.apache.ignite.internal.util.typedef.F;
-import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.internal.util.worker.GridWorker;
 import org.apache.ignite.spi.IgniteSpiOperationTimeoutException;
@@ -61,8 +55,6 @@ import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryAbstractMessage;
 import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryHandshakeRequest;
 import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryHandshakeResponse;
 import org.apache.ignite.testframework.GridTestUtils;
-import org.apache.ignite.testframework.ListeningTestLogger;
-import org.apache.ignite.testframework.LogListener;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.testframework.junits.logger.GridTestLog4jLogger;
 import org.apache.logging.log4j.Level;
@@ -246,179 +238,6 @@ public class TcpDiscoveryNetworkIssuesTest extends GridCommonAbstractTest {
     }
 
     /**
-     * Tests backward ping of previous node if {@link TcpDiscoveryNode#socketAddresses()} contains same loopback address
-     * as of local node. Assumes single localhost is set and single local address is resolved.
-     */
-    @Test
-    public void testBackwardNodeCheckWithSameLoopbackSingleLocalAddress() throws Exception {
-        doTestBackwardNodeCheckWithSameLoopback("127.0.0.1");
-    }
-
-    /**
-     * Tests backward ping of previous node if {@link TcpDiscoveryNode#socketAddresses()} contains same loopback address
-     * as of local node. Assumes {@link #getConfiguration(String)} localhost.
-     */
-    @Test
-    public void testBackwardNodeCheckWithSameLoopbackSeveralLocalAddresses() throws Exception {
-        doTestBackwardNodeCheckWithSameLoopback("0.0.0.0");
-    }
-
-    /**
-     * Tests backward ping when the discovery threads of the malfunctional node is simulated to hang at GC.
-     * But the JVM is able to accept socket connections.
-     */
-    @Test
-    public void testBackwardConnectionCheckWhenDiscoveryThreadsSuspended() throws Exception {
-        ListeningTestLogger testLog = new ListeningTestLogger(log);
-
-        gridLog = testLog;
-
-        localhost = "127.0.0.1";
-
-        failureDetectionTimeout = 3000;
-
-        specialSpi = new TestDiscoverySpi();
-
-        // This node suspects its next failed.
-        Ignite doubtNode0 = startGrid(0);
-
-        // Simulates freezed threads on node 1 but answering sockets. I.e. Soccket#connect() works to node 1 but
-        // reading anything with Socker#read() from it would fail with the timeout.
-        specialSpi = new TestDiscoverySpi();
-
-        // Node simulated 'freezed'. Can accept connections (socket accept) but won't write anything to a discovery socket.
-        Ignite freezedNode1 = startGrid(1);
-
-        UUID freezedNodeId = freezedNode1.cluster().localNode().id();
-
-        specialSpi = new TestDiscoverySpi();
-
-        setLoggerDebugLevel();
-
-        // Node which does the backward connection check to its previous 'freezed'.
-        Ignite pingingNode2 = startGrid(2);
-
-        LogListener node1SegmentedLogLsnr = LogListener.matches("Local node SEGMENTED: TcpDiscoveryNode [id=" + freezedNodeId).build();
-
-        // Node1 must leave the cluster.
-        LogListener backwardPingLogLsnr = LogListener.matches("Remote node requests topology change. Checking connection to " +
-            "previous [TcpDiscoveryNode [id=" + freezedNodeId).build();
-
-        testLog.registerListener(node1SegmentedLogLsnr);
-        testLog.registerListener(backwardPingLogLsnr);
-
-        // Result of the ping from node2 ot node1.
-        AtomicReference<Boolean> backwardPingResult = new AtomicReference<>();
-
-        // Request to establish new permanent cluster connection from doubting node0 to node2.
-        testSpi(doubtNode0).hsRqLsnr.set((s, hsRq) -> {
-            if (hsRq.changeTopology() && freezedNodeId.equals(hsRq.checkPreviousNodeId())) {
-                // Continue simutation of node1 freeze at GC and processes no discovery messages.
-                testSpi(freezedNode1).addrsToBlock = Collections.emptyList();
-            }
-        });
-
-        // Response from node2 to node0 with negative check of freezed node1.
-        testSpi(pingingNode2).hsRespLsnr.set((s, hsResp) -> {
-            backwardPingResult.set(hsResp.previousNodeAlive());
-        });
-
-        // Begin simutation of node1 freeze at GC and processes no discovery messages and wait till
-        // the discovery traffic node0->node1 stops.
-        testSpi(doubtNode0).addrsToBlock = spi(freezedNode1).locNodeAddrs;
-        assertTrue(waitForCondition(() -> testSpi(doubtNode0).blocked, getTestTimeout()));
-
-        // Wait till the discovery traffic node1->node2 stops too.
-        assertTrue(waitForCondition(() -> testSpi(freezedNode1).blocked, getTestTimeout()));
-
-        // Wait till the backward connection check and ensure the result is negative (node1 confirmed failed).
-        assertTrue(backwardPingLogLsnr.check(getTestTimeout()));
-        assertTrue(waitForCondition(() -> backwardPingResult.get() != null, getTestTimeout()));
-
-        assertFalse(backwardPingResult.get());
-
-        assertTrue(backwardPingLogLsnr.check(getTestTimeout()));
-
-        // Node0 and node2 must survive.
-        assertTrue(waitForCondition(() -> doubtNode0.cluster().nodes().size() == 2
-                && !doubtNode0.cluster().nodes().stream().map(ClusterNode::id).collect(Collectors.toSet()).contains(freezedNodeId),
-            getTestTimeout()));
-
-        assertTrue(waitForCondition(() -> pingingNode2.cluster().nodes().size() == 2
-                && !pingingNode2.cluster().nodes().stream().map(ClusterNode::id).collect(Collectors.toSet()).contains(freezedNodeId),
-            getTestTimeout()));
-    }
-
-    /**
-     * Performs Tests backward node ping if {@link TcpDiscoveryNode#socketAddresses()} contains same loopback address as of local node.
-     * Assumes several local address are resolved.
-     */
-    private void doTestBackwardNodeCheckWithSameLoopback(String localhost) throws Exception {
-        this.localhost = localhost;
-
-        specialSpi = new TestDiscoverySpi();
-
-        Ignite node0 = startGrid(0);
-
-        specialSpi = null;
-
-        Ignite node1 = startGrid(1);
-
-        specialSpi = new TestDiscoverySpi();
-
-        Ignite node2 = startGrid(2);
-
-        CountDownLatch handshakeToNode2 = new CountDownLatch(1);
-
-        // Listener of handshake request from node0 to node2. Activates simulation of same localhost address of node1
-        // for node2. Also, disabled network malfunction. The cluster must be restored.
-        testSpi(node0).hsRqLsnr.set((socket, handshakeRequest) -> {
-            // First, node0 tries to connect and send the handshake request to another address of faulty node1.
-            if (testSpi(node2).locNodeAddrs.contains(new InetSocketAddress(socket.getInetAddress(), socket.getPort()))) {
-                testSpi(node2).simulatedPrevNodeAddr.set(F.viewReadOnly(testSpi(node2).locNode.socketAddresses(),
-                    a -> a, a -> a.getAddress().isLoopbackAddress()));
-
-                testSpi(node0).hsRqLsnr.set(null);
-
-                // Restore network. Node0 is now able to connect to node1 again.
-                testSpi(node0).addrsToBlock = null;
-
-                handshakeToNode2.countDown();
-            }
-        });
-
-        AtomicReference<Boolean> node1AliveStatus = new AtomicReference<>();
-
-        // Listener of handshake response from node2 to node1.
-        testSpi(node2).hsRespLsnr.set(((socket1, response) -> {
-            testSpi(node2).simulatedPrevNodeAddr.set(null);
-
-            testSpi(node2).hsRespLsnr.set(null);
-
-            node1AliveStatus.set(response.previousNodeAlive());
-        }));
-
-        // Simulate malfunction of connection node0 to mode1.
-        testSpi(node0).addrsToBlock = spi(node1).locNodeAddrs;
-        assertTrue(waitForCondition(() -> testSpi(node0).blocked, failureDetectionTimeout));
-
-        // Wait until node0 tries to connect to node2 and asks if node1 is alive.
-        assertTrue(handshakeToNode2.await((long)failureDetectionTimeout * (spi(node1).locNodeAddrs.size() + 1),
-            TimeUnit.MILLISECONDS));
-
-        assertTrue(waitForCondition(() -> node1AliveStatus.get() != null, failureDetectionTimeout));
-
-        assertTrue(node1AliveStatus.get());
-
-        // Wait a bit until node0 restore connection node1.
-        U.sleep(failureDetectionTimeout / 2);
-
-        // Node 1 must not be kicked.
-        for (Ignite ig : G.allGrids())
-            assertEquals(3, ig.cluster().nodes().size());
-    }
-
-    /**
      * Ensures sequential failure of two nodes has no additional issues.
      */
     @Test
@@ -483,41 +302,6 @@ public class TcpDiscoveryNetworkIssuesTest extends GridCommonAbstractTest {
         for (int i = 0; i < gridCnt; i++) {
             if (!failedNodes.contains(i))
                 assertFalse(segmentedNodes.contains(i));
-        }
-    }
-
-    /**
-     * This test uses node failure by stopping service threads, which makes the node unresponsive and results in
-     * failing connection to the server. Failures are simulated on the 1st node in the ring. In this case,
-     * the 2nd node in the ring will trigger 'Backward Connection Check', which should result in failing attempt of connection.
-     * This result is followed by the corresponding logs, indicating described failures. The test verifies the logs.
-     *
-     * @throws Exception If failed.
-     */
-    @Test
-    public void testBackwardConnectionCheckFailedLogMessage() throws Exception {
-        startGrid(0);
-
-        ListeningTestLogger testLog = new ListeningTestLogger(log);
-
-        LogListener lsnr0 = LogListener.matches("Failed to check connection to previous node").times(2).build();
-
-        testLog.registerListener(lsnr0);
-
-        gridLog = testLog;
-
-        startGrid(1);
-
-        startGrid(2);
-
-        spi(grid(0)).simulateNodeFailure();
-
-        assertTrue(lsnr0.check(getTestTimeout()));
-
-        for (Ignite ig : Arrays.asList(grid(1), grid(2))) {
-            waitForCondition(() -> ig.cluster().nodes().size() == 2, getTestTimeout());
-
-            assertTrue(ig.cluster().nodes().stream().noneMatch(node -> node.order() == 1));
         }
     }
 
