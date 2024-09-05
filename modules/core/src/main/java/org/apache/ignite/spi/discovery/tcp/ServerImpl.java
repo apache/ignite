@@ -818,8 +818,7 @@ class ServerImpl extends TcpDiscoveryImpl {
      * @param addr Address of the node.
      * @param nodeId Node ID to ping. In case when client node ID is not null this node ID is an ID of the router node.
      * @param clientNodeId Client node ID.
-     * @param timeoutHelper Timeout helper. If {@code null}, a default one based on the timeouts of {@link TcpDiscoverySpi}
-     *                      is used.
+     * @param timeoutHelper Timeout helper. If {@code null}, a default one based on {@link TcpDiscoverySpi} is used.
      * @return ID of the remote node and "client exists" flag if node alive or {@code null} if the remote node has
      *         left a topology during the ping process.
      * @throws IgniteCheckedException If an error occurs.
@@ -7254,8 +7253,17 @@ class ServerImpl extends TcpDiscoveryImpl {
             lastRingMsgReceivedTime = System.nanoTime();
         }
 
-        /** @return Alive address if was able to connected to. {@code Null} otherwise. */
+        /**
+         * Asynchronously searches for an alive address of the previous node using a maximal timeout.
+         *
+         * @param node Node to ping.
+         * @param timeout Overal operation timeout.
+         * @return An address successfully connected to. {@code Null} if no alive address was detected within the timeout.
+         * @see #pingNode(InetSocketAddress, UUID, UUID, IgniteSpiOperationTimeoutHelper)
+         */
         private InetSocketAddress pingPreviousNode(TcpDiscoveryNode node, int timeout) {
+            assert ring.previousNodeOf(locNode).equals(node);
+
             long maxTimeNanos = System.nanoTime() + U.millisToNanos(timeout);
 
             AtomicReference<InetSocketAddress> liveAddrHolder = new AtomicReference<>();
@@ -7273,37 +7281,41 @@ class ServerImpl extends TcpDiscoveryImpl {
             while (addrLeft > 0) {
                 int addrPerThread = addrLeft / threadsLeft + (addrLeft % threadsLeft > 0 ? 1 : 0);
 
-                int perAddrTimeout = timeout / addrPerThread;
-
                 addrLeft -= addrPerThread;
 
                 --threadsLeft;
 
                 utilityPool.execute(new Thread() {
+                    private final int addrsToCheck = addrPerThread;
+
                     /** */
                     @Override public void run() {
-                        for (int i = 0; i < addrPerThread; ++i) {
+                        int perAddrTimeout = timeout / addrsToCheck;
+
+                        for (int i = 0; i < addrsToCheck; ++i) {
+                            if (liveAddrHolder.get() != null) {
+                                latch.countDown();
+
+                                continue;
+                            }
+
+                            long curMaxTimeNanos = Math.min(maxTimeNanos, System.nanoTime() + U.millisToNanos(perAddrTimeout));
+
+                            IgniteSpiOperationTimeoutHelper timeoutHelper = new IgniteSpiOperationTimeoutHelper(curMaxTimeNanos);
+
                             InetSocketAddress addr = addrs.get(addrIdx.getAndIncrement());
 
-                            if (liveAddrHolder.get() == null) {
-                                long curMaxTimeNanos = Math.min(maxTimeNanos, System.nanoTime() + U.millisToNanos(perAddrTimeout));
-
-                                IgniteSpiOperationTimeoutHelper timeoutHelper = new IgniteSpiOperationTimeoutHelper(curMaxTimeNanos);
-
-                                try {
-                                    if (pingNode(addr, nodeId, null, timeoutHelper).get1() != null)
-                                        liveAddrHolder.compareAndSet(null, addr);
-                                }
-                                catch (Exception e) {
-                                    U.warn(log, "Failed to check connection to previous node [nodeId=" + node.id() + ", order="
-                                        + node.order() + ", address=" + addr + ']', e);
-                                }
-                                finally {
-                                    latch.countDown();
-                                }
+                            try {
+                                if (pingNode(addr, node.id(), null, timeoutHelper).get1() != null)
+                                    liveAddrHolder.compareAndSet(null, addr);
                             }
-                            else
+                            catch (Exception e) {
+                                U.warn(log, "Failed to check connection to previous node [nodeId=" + node.id() + ", order="
+                                    + node.order() + ", address=" + addr + ']', e);
+                            }
+                            finally {
                                 latch.countDown();
+                            }
                         }
                     }
                 });
