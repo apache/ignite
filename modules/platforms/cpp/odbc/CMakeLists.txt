@@ -96,7 +96,7 @@ if (WIN32)
     if (MSVC_VERSION GREATER_EQUAL 1900)
         target_link_libraries(${TARGET} legacy_stdio_definitions)
     endif()
-
+                
     set_target_properties(${TARGET} PROPERTIES OUTPUT_NAME "ignite.odbc")
 else()
     target_link_libraries(${TARGET} ignite-common ignite-binary ignite-network odbcinst)
@@ -156,7 +156,7 @@ endif()
 
 target_include_directories(${TARGET} INTERFACE include)
 
-install(TARGETS ${TARGET}
+install(TARGETS ${TARGET} 
     RUNTIME DESTINATION bin
     ARCHIVE DESTINATION lib
     LIBRARY DESTINATION lib
