@@ -70,6 +70,9 @@ public class OdbcConnectionContext extends ClientListenerAbstractConnectionConte
     /** Supported versions. */
     private static final Set<ClientListenerProtocolVersion> SUPPORTED_VERS = new HashSet<>();
 
+    /** Default nested tx mode for compatibility. */
+    private static final byte DEFAULT_NESTED_TX_MODE = 3;
+
     /** Shutdown busy lock. */
     private final GridSpinBusyLock busyLock;
 
@@ -160,7 +163,7 @@ public class OdbcConnectionContext extends ClientListenerAbstractConnectionConte
         if (ver.compareTo(VER_2_7_0) >= 0) {
             byte nestedTxCode = reader.readByte();
 
-            if (nestedTxCode != 3)
+            if (nestedTxCode != DEFAULT_NESTED_TX_MODE)
                 throw new IgniteCheckedException("Nested transactions are not supported!");
         }
 
