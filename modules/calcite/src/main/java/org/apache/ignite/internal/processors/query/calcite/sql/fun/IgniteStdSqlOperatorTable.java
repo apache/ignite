@@ -158,14 +158,18 @@ public class IgniteStdSqlOperatorTable extends ReflectiveSqlOperatorTable {
         register(SqlStdOperatorTable.RAND); // Random.
         register(SqlStdOperatorTable.RAND_INTEGER); // Integer random.
         register(SqlStdOperatorTable.ACOS); // Arc cosine.
+        register(SqlLibraryOperators.ACOSH); // Hyperbolic arc cosine.
         register(SqlStdOperatorTable.ASIN); // Arc sine.
+        register(SqlLibraryOperators.ASINH); // Hyperbolic arc sine.
         register(SqlStdOperatorTable.ATAN); // Arc tangent.
         register(SqlStdOperatorTable.ATAN2); // Angle from coordinates.
+        register(SqlLibraryOperators.ATANH); // Hyperbolic arc tangent.
         register(SqlStdOperatorTable.SQRT); // Square root.
         register(SqlStdOperatorTable.CBRT); // Cube root.
         register(SqlStdOperatorTable.COS); // Cosine
         register(SqlLibraryOperators.COSH); // Hyperbolic cosine.
         register(SqlStdOperatorTable.COT); // Cotangent.
+        register(SqlLibraryOperators.COTH); // Hyperbolic cotangent.
         register(SqlStdOperatorTable.DEGREES); // Radians to degrees.
         register(SqlStdOperatorTable.RADIANS); // Degrees to radians.
         register(SqlStdOperatorTable.ROUND);
@@ -174,6 +178,10 @@ public class IgniteStdSqlOperatorTable extends ReflectiveSqlOperatorTable {
         register(SqlLibraryOperators.SINH); // Hyperbolic sine.
         register(SqlStdOperatorTable.TAN); // Tangent.
         register(SqlLibraryOperators.TANH); // Hyperbolic tangent.
+        register(SqlLibraryOperators.SEC); // Secant.
+        register(SqlLibraryOperators.SECH); // Hyperbolic secant.
+        register(SqlLibraryOperators.CSC); // Cosecant.
+        register(SqlLibraryOperators.CSCH); // Hyperbolic cosecant.
         register(SqlStdOperatorTable.TRUNCATE);
         register(SqlStdOperatorTable.PI);
 

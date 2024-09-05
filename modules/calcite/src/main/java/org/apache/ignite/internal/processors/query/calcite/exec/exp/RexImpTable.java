@@ -16,8 +16,6 @@
  */
 package org.apache.ignite.internal.processors.query.calcite.exec.exp;
 
-import java.lang.reflect.Constructor;
-import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
 import java.lang.reflect.Type;
@@ -28,7 +26,6 @@ import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.function.Supplier;
 import java.util.stream.Collectors;
 import com.google.common.collect.ImmutableList;
 import org.apache.calcite.adapter.enumerable.EnumUtils;
@@ -89,10 +86,16 @@ import static org.apache.calcite.linq4j.tree.ExpressionType.Negate;
 import static org.apache.calcite.linq4j.tree.ExpressionType.NotEqual;
 import static org.apache.calcite.linq4j.tree.ExpressionType.Subtract;
 import static org.apache.calcite.linq4j.tree.ExpressionType.UnaryPlus;
+import static org.apache.calcite.sql.fun.SqlLibraryOperators.ACOSH;
+import static org.apache.calcite.sql.fun.SqlLibraryOperators.ASINH;
+import static org.apache.calcite.sql.fun.SqlLibraryOperators.ATANH;
 import static org.apache.calcite.sql.fun.SqlLibraryOperators.CHR;
 import static org.apache.calcite.sql.fun.SqlLibraryOperators.COMPRESS;
 import static org.apache.calcite.sql.fun.SqlLibraryOperators.CONCAT_FUNCTION;
 import static org.apache.calcite.sql.fun.SqlLibraryOperators.COSH;
+import static org.apache.calcite.sql.fun.SqlLibraryOperators.COTH;
+import static org.apache.calcite.sql.fun.SqlLibraryOperators.CSC;
+import static org.apache.calcite.sql.fun.SqlLibraryOperators.CSCH;
 import static org.apache.calcite.sql.fun.SqlLibraryOperators.DATE;
 import static org.apache.calcite.sql.fun.SqlLibraryOperators.DATETIME;
 import static org.apache.calcite.sql.fun.SqlLibraryOperators.DATE_FROM_UNIX_DATE;
@@ -119,6 +122,8 @@ import static org.apache.calcite.sql.fun.SqlLibraryOperators.REPEAT;
 import static org.apache.calcite.sql.fun.SqlLibraryOperators.REVERSE;
 import static org.apache.calcite.sql.fun.SqlLibraryOperators.RIGHT;
 import static org.apache.calcite.sql.fun.SqlLibraryOperators.RLIKE;
+import static org.apache.calcite.sql.fun.SqlLibraryOperators.SEC;
+import static org.apache.calcite.sql.fun.SqlLibraryOperators.SECH;
 import static org.apache.calcite.sql.fun.SqlLibraryOperators.SHA1;
 import static org.apache.calcite.sql.fun.SqlLibraryOperators.SINH;
 import static org.apache.calcite.sql.fun.SqlLibraryOperators.SOUNDEX;
@@ -339,23 +344,31 @@ public class RexImpTable {
         defineReflective(RAND_INTEGER, BuiltInMethod.RAND_INTEGER.method,
             BuiltInMethod.RAND_INTEGER_SEED.method);
 
-        defineMethod(ACOS, "acos", NullPolicy.STRICT);
-        defineMethod(ASIN, "asin", NullPolicy.STRICT);
-        defineMethod(ATAN, "atan", NullPolicy.STRICT);
-        defineMethod(ATAN2, "atan2", NullPolicy.STRICT);
-        defineMethod(CBRT, "cbrt", NullPolicy.STRICT);
-        defineMethod(COS, "cos", NullPolicy.STRICT);
-        defineMethod(COSH, "cosh", NullPolicy.STRICT);
-        defineMethod(COT, "cot", NullPolicy.STRICT);
-        defineMethod(DEGREES, "degrees", NullPolicy.STRICT);
-        defineMethod(RADIANS, "radians", NullPolicy.STRICT);
-        defineMethod(ROUND, "sround", NullPolicy.STRICT);
-        defineMethod(SIGN, "sign", NullPolicy.STRICT);
-        defineMethod(SIN, "sin", NullPolicy.STRICT);
-        defineMethod(SINH, "sinh", NullPolicy.STRICT);
-        defineMethod(TAN, "tan", NullPolicy.STRICT);
-        defineMethod(TANH, "tanh", NullPolicy.STRICT);
-        defineMethod(TRUNCATE, "struncate", NullPolicy.STRICT);
+        defineMethod(ACOS, BuiltInMethod.ACOS.method, NullPolicy.STRICT);
+        defineMethod(ACOSH, BuiltInMethod.ACOSH.method, NullPolicy.STRICT);
+        defineMethod(ASIN, BuiltInMethod.ASIN.method, NullPolicy.STRICT);
+        defineMethod(ASINH, BuiltInMethod.ASINH.method, NullPolicy.STRICT);
+        defineMethod(ATAN, BuiltInMethod.ATAN.method, NullPolicy.STRICT);
+        defineMethod(ATAN2, BuiltInMethod.ATAN2.method, NullPolicy.STRICT);
+        defineMethod(ATANH, BuiltInMethod.ATANH.method, NullPolicy.STRICT);
+        defineMethod(CBRT, BuiltInMethod.CBRT.method, NullPolicy.STRICT);
+        defineMethod(COS, BuiltInMethod.COS.method, NullPolicy.STRICT);
+        defineMethod(COSH, BuiltInMethod.COSH.method, NullPolicy.STRICT);
+        defineMethod(COT, BuiltInMethod.COT.method, NullPolicy.STRICT);
+        defineMethod(COTH, BuiltInMethod.COTH.method, NullPolicy.STRICT);
+        defineMethod(CSC, BuiltInMethod.CSC.method, NullPolicy.STRICT);
+        defineMethod(CSCH, BuiltInMethod.CSCH.method, NullPolicy.STRICT);
+        defineMethod(DEGREES, BuiltInMethod.DEGREES.method, NullPolicy.STRICT);
+        defineMethod(RADIANS, BuiltInMethod.RADIANS.method, NullPolicy.STRICT);
+        defineMethod(ROUND, BuiltInMethod.SROUND.method, NullPolicy.STRICT);
+        defineMethod(SEC, BuiltInMethod.SEC.method, NullPolicy.STRICT);
+        defineMethod(SECH, BuiltInMethod.SECH.method, NullPolicy.STRICT);
+        defineMethod(SIGN, BuiltInMethod.SIGN.method, NullPolicy.STRICT);
+        defineMethod(SIN, BuiltInMethod.SIN.method, NullPolicy.STRICT);
+        defineMethod(SINH, BuiltInMethod.SINH.method, NullPolicy.STRICT);
+        defineMethod(TAN, BuiltInMethod.TAN.method, NullPolicy.STRICT);
+        defineMethod(TANH, BuiltInMethod.TANH.method, NullPolicy.STRICT);
+        defineMethod(TRUNCATE, BuiltInMethod.STRUNCATE.method, NullPolicy.STRICT);
 
         map.put(PI, new PiImplementor());
 
@@ -551,28 +564,6 @@ public class RexImpTable {
         // Operator IS_NOT_DISTINCT_FROM is removed by RexSimplify, but still possible in join conditions, so
         // implementation required.
         defineMethod(IS_NOT_DISTINCT_FROM, IgniteMethod.IS_NOT_DISTINCT_FROM.method(), NullPolicy.NONE);
-    }
-
-    /** */
-    private <T> Supplier<T> constructorSupplier(Class<T> klass) {
-        final Constructor<T> constructor;
-        try {
-            constructor = klass.getDeclaredConstructor();
-        }
-        catch (NoSuchMethodException e) {
-            throw new IllegalArgumentException(
-                klass + " should implement zero arguments constructor");
-        }
-        return () -> {
-            try {
-                return constructor.newInstance();
-            }
-            catch (InstantiationException | IllegalAccessException
-                | InvocationTargetException e) {
-                throw new IllegalStateException(
-                    "Error while creating aggregate implementor " + constructor, e);
-            }
-        };
     }
 
     /** */
