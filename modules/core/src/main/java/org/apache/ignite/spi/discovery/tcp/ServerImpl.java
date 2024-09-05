@@ -7246,10 +7246,17 @@ class ServerImpl extends TcpDiscoveryImpl {
             lastRingMsgReceivedTime = System.nanoTime();
         }
 
-        /** @return Alive address if was able to connected to. {@code Null} otherwise. */
+        /**
+         * Asynchronously searches for an alive address of a node using a maximal timeout. Sends {@link TcpDiscoveryPingRequest}
+         * and waits for {@link TcpDiscoveryPingResponse}. Uses {@link TcpDiscoverySpi#getSocketTimeout()} and
+         * {@link TcpDiscoverySpi#getAckTimeout()} over the socket to send and read the messages.
+         *
+         * @param node Node to ping.
+         * @param timeout Overal operation timeout.
+         * @return An address successfully connected to. {@code Null} if no alive address was detected within the timeout.
+         */
         private InetSocketAddress checkConnection(TcpDiscoveryNode node, int timeout) {
-            IgniteSpiOperationTimeoutHelper timeoutHelper = new IgniteSpiOperationTimeoutHelper(System.nanoTime()
-                + U.millisToNanos(timeout));
+            long maxTimeNanos = System.nanoTime() + U.millisToNanos(timeout);
 
             AtomicReference<InetSocketAddress> liveAddrHolder = new AtomicReference<>();
 
@@ -7278,27 +7285,33 @@ class ServerImpl extends TcpDiscoveryImpl {
                         int perAddrTimeout = timeout / addrsToCheck;
 
                         for (int i = 0; i < addrsToCheck; ++i) {
+                            if (liveAddrHolder.get() != null) {
+                                latch.countDown();
+
+                                continue;
+                            }
+
+                            long curMaxTimeNanos = Math.min(maxTimeNanos, System.nanoTime() + U.millisToNanos(perAddrTimeout));
+
+                            IgniteSpiOperationTimeoutHelper timeoutHelper = new IgniteSpiOperationTimeoutHelper(curMaxTimeNanos);
+
                             InetSocketAddress addr = addrs.get(addrIdx.getAndIncrement());
 
-                            if (liveAddrHolder.get() == null) {
-                                try (Socket sock = spi.openSocket(addr, timeoutHelper)) {
-                                    spi.writeToSocket(sock, new TcpDiscoveryPingRequest(getConfiguredNodeId(), null),
-                                        timeoutHelper.nextTimeoutChunk(perAddrTimeout));
+                            try (Socket sock = spi.openSocket(addr, timeoutHelper)) {
+                                spi.writeToSocket(sock, new TcpDiscoveryPingRequest(getConfiguredNodeId(), null),
+                                    timeoutHelper.nextTimeoutChunk(spi.getSocketTimeout()));
 
-                                    spi.readMessage(sock, null, timeoutHelper.nextTimeoutChunk(perAddrTimeout));
+                                spi.readMessage(sock, null, timeoutHelper.nextTimeoutChunk(spi.getAckTimeout()));
 
-                                    liveAddrHolder.compareAndSet(null, addr);
-                                }
-                                catch (Exception e) {
-                                    U.warn(log, "Failed to check connection to previous node [nodeId=" + node.id() + ", order="
-                                        + node.order() + ", address=" + addr + ']', e);
-                                }
-                                finally {
-                                    latch.countDown();
-                                }
+                                liveAddrHolder.compareAndSet(null, addr);
                             }
-                            else
+                            catch (Exception e) {
+                                U.warn(log, "Failed to check connection to previous node [nodeId=" + node.id() + ", order="
+                                    + node.order() + ", address=" + addr + ']', e);
+                            }
+                            finally {
                                 latch.countDown();
+                            }
                         }
                     }
                 });
@@ -7522,7 +7535,7 @@ class ServerImpl extends TcpDiscoveryImpl {
             for (InetSocketAddress addr : spi.getEffectiveNodeAddresses(node)) {
                 try {
                     if (!(addr.getAddress().isLoopbackAddress() && locNode.socketAddresses().contains(addr))) {
-                        IgniteBiTuple<UUID, Boolean> t = pingNode(addr, node.id(), null);
+                        IgniteBiTuple<UUID, Boolean> t = ServerImpl.this.pingNode(addr, node.id(), null);
 
                         if (t != null)
                             return true;
