@@ -161,9 +161,7 @@ public class OdbcConnectionContext extends ClientListenerAbstractConnectionConte
         }
 
         if (ver.compareTo(VER_2_7_0) >= 0) {
-            byte nestedTxCode = reader.readByte();
-
-            if (nestedTxCode != DEFAULT_NESTED_TX_MODE)
+            if (reader.readByte() != DEFAULT_NESTED_TX_MODE)
                 throw new IgniteCheckedException("Nested transactions are not supported!");
         }
 
