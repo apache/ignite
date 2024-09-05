@@ -6780,7 +6780,7 @@ class ServerImpl extends TcpDiscoveryImpl {
                                         "previous [" + previous + "] with timeout " + backwardCheckTimeout);
                                 }
 
-                                liveAddr = checkConnection(previous, backwardCheckTimeout);
+                                liveAddr = pingPreviousNode(previous, backwardCheckTimeout);
                             }
 
                             ok = liveAddr != null;
@@ -7247,15 +7247,18 @@ class ServerImpl extends TcpDiscoveryImpl {
         }
 
         /**
-         * Asynchronously searches for an alive address of a node using a maximal timeout. Sends {@link TcpDiscoveryPingRequest}
-         * and waits for {@link TcpDiscoveryPingResponse}. Uses {@link TcpDiscoverySpi#getSocketTimeout()} and
-         * {@link TcpDiscoverySpi#getAckTimeout()} over the socket to send and read the messages.
+         * Asynchronously searches for an alive address of the previous using a maximal timeout. Sends
+         * {@link TcpDiscoveryPingRequest} and waits for {@link TcpDiscoveryPingResponse}. Uses
+         * {@link TcpDiscoverySpi#getSocketTimeout()} and {@link TcpDiscoverySpi#getAckTimeout()} over the socket to send
+         * and read the messages.
          *
          * @param node Node to ping.
          * @param timeout Overal operation timeout.
          * @return An address successfully connected to. {@code Null} if no alive address was detected within the timeout.
          */
-        private InetSocketAddress checkConnection(TcpDiscoveryNode node, int timeout) {
+        private InetSocketAddress pingPreviousNode(TcpDiscoveryNode node, int timeout) {
+            assert ring.previousNodeOf(locNode).equals(node);
+
             long maxTimeNanos = System.nanoTime() + U.millisToNanos(timeout);
 
             AtomicReference<InetSocketAddress> liveAddrHolder = new AtomicReference<>();
@@ -7535,7 +7538,7 @@ class ServerImpl extends TcpDiscoveryImpl {
             for (InetSocketAddress addr : spi.getEffectiveNodeAddresses(node)) {
                 try {
                     if (!(addr.getAddress().isLoopbackAddress() && locNode.socketAddresses().contains(addr))) {
-                        IgniteBiTuple<UUID, Boolean> t = ServerImpl.this.pingNode(addr, node.id(), null);
+                        IgniteBiTuple<UUID, Boolean> t = pingNode(addr, node.id(), null);
 
                         if (t != null)
                             return true;
