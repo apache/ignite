@@ -766,7 +766,7 @@ namespace ignite
 #ifdef SQL_MULTIPLE_ACTIVE_TXN
                 // A character string: "Y" if the driver supports more than one active transaction at the same time,
                 // "N" if only one transaction can be active at any time.
-                strParams[SQL_MULTIPLE_ACTIVE_TXN] = "N";
+                strParams[SQL_MULTIPLE_ACTIVE_TXN] = "Y";
 #endif // SQL_MULTIPLE_ACTIVE_TXN
 
 #ifdef SQL_ORDER_BY_COLUMNS_IN_SELECT
