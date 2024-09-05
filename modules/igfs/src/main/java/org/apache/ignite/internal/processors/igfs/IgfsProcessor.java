@@ -182,6 +182,8 @@ public class IgfsProcessor extends IgfsProcessorAdapter {
         }
 
         ctx.addNodeAttribute(ATTR_IGFS, attrVals.toArray(new IgfsAttributes[attrVals.size()]));
+        
+        ctx.internalSubscriptionProcessor().registerGlobalStateListener(this);
     }
 
     /** {@inheritDoc} */
