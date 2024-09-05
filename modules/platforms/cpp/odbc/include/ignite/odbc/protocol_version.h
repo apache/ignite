@@ -55,9 +55,6 @@ namespace ignite
             /** Version 2.13.0: added ability to choose of query engine support. */
             static const ProtocolVersion VERSION_2_13_0;
 
-            /** Version 2.17.0: removes nested transaction support. */
-            static const ProtocolVersion VERSION_2_17_0;
-
             typedef std::set<ProtocolVersion> VersionSet;
 
             /**

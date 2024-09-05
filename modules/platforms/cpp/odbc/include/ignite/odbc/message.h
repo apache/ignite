@@ -49,6 +49,17 @@ namespace ignite
             };
         };
 
+        /**
+         * Default nested tx mode for compatibility.
+         */
+        struct NestedTxType
+        {
+            enum Type
+            {
+                NESTED_TX_MODE = 3
+            };
+        };
+
         struct RequestType
         {
             enum Type

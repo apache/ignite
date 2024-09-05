@@ -87,7 +87,7 @@ namespace ignite
             }
 
             if (version >= ProtocolVersion::VERSION_2_7_0)
-                writer.WriteInt8(3);
+                writer.WriteInt8(NestedTxType::NESTED_TX_MODE);
 
             if (version >= ProtocolVersion::VERSION_2_13_0)
             {
