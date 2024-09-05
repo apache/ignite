@@ -132,7 +132,7 @@ BOOST_AUTO_TEST_CASE(TestValues)
     CheckStrInfo(SQL_LIKE_ESCAPE_CLAUSE, "N");
     CheckStrInfo(SQL_MAX_ROW_SIZE_INCLUDES_LONG, "Y");
     CheckStrInfo(SQL_MULT_RESULT_SETS, "N");
-    CheckStrInfo(SQL_MULTIPLE_ACTIVE_TXN, "Y");
+    CheckStrInfo(SQL_MULTIPLE_ACTIVE_TXN, "N");
     CheckStrInfo(SQL_ORDER_BY_COLUMNS_IN_SELECT, "N");
     CheckStrInfo(SQL_PROCEDURE_TERM, "stored procedure");
     CheckStrInfo(SQL_PROCEDURES, "N");
