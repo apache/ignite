@@ -93,7 +93,7 @@ import static org.apache.ignite.IgniteJdbcDriver.PROP_STREAMING_ALLOW_OVERWRITE;
 import static org.apache.ignite.IgniteJdbcDriver.PROP_STREAMING_FLUSH_FREQ;
 import static org.apache.ignite.IgniteJdbcDriver.PROP_STREAMING_PER_NODE_BUF_SIZE;
 import static org.apache.ignite.IgniteJdbcDriver.PROP_STREAMING_PER_NODE_PAR_OPS;
-import static org.apache.ignite.IgniteJdbcDriver.PROP_TX_ALLOWED;
+import static org.apache.ignite.IgniteJdbcDriver.PROP_TX_ENABLED;
 import static org.apache.ignite.cache.query.SqlFieldsQuery.DFLT_LAZY;
 import static org.apache.ignite.internal.GridClosureCallMode.BALANCE;
 import static org.apache.ignite.internal.jdbc2.JdbcUtils.convertToSqlException;
@@ -169,8 +169,11 @@ public class JdbcConnection implements Connection {
     /** Lazy query execution flag. */
     private boolean lazy;
 
-    /** Transactions allowed flag. */
-    private boolean txAllowed;
+    /** Transactions enabled flag. */
+    private boolean txAwareQueriesEnabled;
+
+    /** Auto commit flag. */
+    private boolean autoCommit;
 
     /** Current transaction isolation. */
     private int txIsolation;
@@ -228,7 +231,6 @@ public class JdbcConnection implements Connection {
         distributedJoins = Boolean.parseBoolean(props.getProperty(PROP_DISTRIBUTED_JOINS));
         enforceJoinOrder = Boolean.parseBoolean(props.getProperty(PROP_ENFORCE_JOIN_ORDER));
         lazy = Boolean.parseBoolean(props.getProperty(PROP_LAZY, String.valueOf(DFLT_LAZY)));
-        txAllowed = Boolean.parseBoolean(props.getProperty(PROP_TX_ALLOWED));
 
         stream = Boolean.parseBoolean(props.getProperty(PROP_STREAMING));
 
@@ -280,6 +282,18 @@ public class JdbcConnection implements Connection {
             else {
                 if (schemaName == null)
                     schemaName = QueryUtils.DFLT_SCHEMA;
+            }
+
+            String txAwareQueriesEnabledStr = props.getProperty(PROP_TX_ENABLED);
+
+            txAwareQueriesEnabled = txAwareQueriesEnabledStr == null
+                ? ignite.configuration().getTransactionConfiguration().isTxAwareQueriesEnabled()
+                : Boolean.parseBoolean(txAwareQueriesEnabledStr);
+
+            if (txAwareQueriesEnabled && !ignite.configuration().getTransactionConfiguration().isTxAwareQueriesEnabled()) {
+                throw new SQLException("Parameters invalid. " + PROP_TX_ENABLED + " true, " +
+                    "but TransactionConfiguration.txAwareQueriesEnabled false. " +
+                    "Please, enable transaction aware queries in IgniteConfiguration.");
             }
 
             clientDesc = "jdbc-v2:" + F.first(ignite.cluster().localNode().addresses()) + ":" + ignite.name();
@@ -406,22 +420,24 @@ public class JdbcConnection implements Connection {
     @Override public void setAutoCommit(boolean autoCommit) throws SQLException {
         ensureNotClosed();
 
-        if (!txAllowed && !autoCommit)
+        if (!txAwareQueriesEnabled && !autoCommit)
             throw new SQLFeatureNotSupportedException("Transactions are not supported.");
+
+        this.autoCommit = autoCommit;
     }
 
     /** {@inheritDoc} */
     @Override public boolean getAutoCommit() throws SQLException {
         ensureNotClosed();
 
-        return true;
+        return autoCommit;
     }
 
     /** {@inheritDoc} */
     @Override public void commit() throws SQLException {
         ensureNotClosed();
 
-        if (!txAllowed)
+        if (!txAwareQueriesEnabled)
             throw new SQLFeatureNotSupportedException("Transactions are not supported.");
     }
 
@@ -429,7 +445,7 @@ public class JdbcConnection implements Connection {
     @Override public void rollback() throws SQLException {
         ensureNotClosed();
 
-        if (!txAllowed)
+        if (!txAwareQueriesEnabled)
             throw new SQLFeatureNotSupportedException("Transactions are not supported.");
     }
 
@@ -500,7 +516,7 @@ public class JdbcConnection implements Connection {
     @Override public void setTransactionIsolation(int level) throws SQLException {
         ensureNotClosed();
 
-        if (txAllowed)
+        if (txAwareQueriesEnabled)
             txIsolation = level;
         else
             throw new SQLFeatureNotSupportedException("Transactions are not supported.");
@@ -510,7 +526,7 @@ public class JdbcConnection implements Connection {
     @Override public int getTransactionIsolation() throws SQLException {
         ensureNotClosed();
 
-        if (txAllowed)
+        if (txAwareQueriesEnabled)
             return txIsolation;
         else
             throw new SQLFeatureNotSupportedException("Transactions are not supported.");
@@ -565,7 +581,7 @@ public class JdbcConnection implements Connection {
     @Override public void setHoldability(int holdability) throws SQLException {
         ensureNotClosed();
 
-        if (!txAllowed && holdability != HOLD_CURSORS_OVER_COMMIT)
+        if (!txAwareQueriesEnabled && holdability != HOLD_CURSORS_OVER_COMMIT)
             throw new SQLFeatureNotSupportedException("Invalid holdability (transactions are not supported).");
     }
 
@@ -615,9 +631,10 @@ public class JdbcConnection implements Connection {
         if (resSetConcurrency != CONCUR_READ_ONLY)
             throw new SQLFeatureNotSupportedException("Invalid concurrency (updates are not supported).");
 
-        if (!txAllowed && resSetHoldability != HOLD_CURSORS_OVER_COMMIT)
+        if (!txAwareQueriesEnabled && resSetHoldability != HOLD_CURSORS_OVER_COMMIT)
             throw new SQLFeatureNotSupportedException("Invalid holdability (transactions are not supported).");
 
+        //TODO: Support tx for statement.
         JdbcStatement stmt = new JdbcStatement(this);
 
         statements.add(stmt);
@@ -636,7 +653,7 @@ public class JdbcConnection implements Connection {
         if (resSetConcurrency != CONCUR_READ_ONLY)
             throw new SQLFeatureNotSupportedException("Invalid concurrency (updates are not supported).");
 
-        if (!txAllowed && resSetHoldability != HOLD_CURSORS_OVER_COMMIT)
+        if (!txAwareQueriesEnabled && resSetHoldability != HOLD_CURSORS_OVER_COMMIT)
             throw new SQLFeatureNotSupportedException("Invalid holdability (transactions are not supported).");
 
         JdbcPreparedStatement stmt;
