@@ -75,17 +75,6 @@ public class IgniteSpiOperationTimeoutHelper {
     }
 
     /**
-     * Creates timeout helper.
-     *
-     * @param absoluteThreshold Absolute time threshold (nanos) which must not be reached. Ignored if negative or 0.
-     */
-    public IgniteSpiOperationTimeoutHelper(long absoluteThreshold) {
-        timeoutEnabled = false;
-
-        timeoutThreshold = absoluteThreshold;
-    }
-
-    /**
      * Returns a timeout value to use for the next network operation.
      *
      * If failure detection timeout is enabled then the returned value is a portion of time left since the last time
