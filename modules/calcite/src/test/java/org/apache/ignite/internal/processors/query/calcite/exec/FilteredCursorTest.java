@@ -68,7 +68,7 @@ public class FilteredCursorTest {
 
     /** */
     private List<Integer> all(GridCursor<IndexRow> rawCursor, Set<KeyCacheObject> skipKeys) throws IgniteCheckedException {
-        GridCursor<IndexRow> cursor = new IndexScan.FilteredCursor<>(rawCursor, skipKeys, r -> r.cacheDataRow().key());
+        GridCursor<IndexRow> cursor = new FilteredCursor<>(rawCursor, skipKeys, r -> r.cacheDataRow().key());
 
         List<Integer> res = new ArrayList<>();
 
@@ -145,7 +145,7 @@ public class FilteredCursorTest {
             });
         }
 
-        return new RuntimeSortedIndex.Cursor<>(null, rows, null, null, true, true);
+        return new ListCursor<>(null, rows, null, null, true, true);
     }
 
     /** */

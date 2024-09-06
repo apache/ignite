@@ -41,9 +41,9 @@ import org.apache.ignite.internal.cache.query.index.sorted.IndexRowImpl;
 import org.apache.ignite.internal.cache.query.index.sorted.InlineIndexRowHandler;
 import org.apache.ignite.internal.cache.query.index.sorted.inline.IndexQueryContext;
 import org.apache.ignite.internal.cache.query.index.sorted.inline.InlineIndex;
-import org.apache.ignite.internal.cache.query.index.sorted.inline.InlineIndexImpl;
 import org.apache.ignite.internal.cache.query.index.sorted.inline.InlineIndexKeyType;
 import org.apache.ignite.internal.cache.query.index.sorted.inline.InlineIndexTree;
+import org.apache.ignite.internal.cache.query.index.sorted.inline.SegmentedIndexCursor;
 import org.apache.ignite.internal.cache.query.index.sorted.inline.io.InlineIO;
 import org.apache.ignite.internal.cache.query.index.sorted.keys.IndexKey;
 import org.apache.ignite.internal.cache.query.index.sorted.keys.IndexKeyFactory;
@@ -60,7 +60,6 @@ import org.apache.ignite.internal.processors.cache.persistence.tree.BPlusTree;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.BPlusIO;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteTxEntry;
 import org.apache.ignite.internal.processors.query.calcite.exec.RowHandler.RowFactory;
-import org.apache.ignite.internal.processors.query.calcite.exec.RuntimeSortedIndex.Cursor;
 import org.apache.ignite.internal.processors.query.calcite.exec.exp.RangeIterable;
 import org.apache.ignite.internal.processors.query.calcite.schema.CacheTableDescriptor;
 import org.apache.ignite.internal.processors.query.calcite.type.IgniteTypeFactory;
@@ -269,10 +268,10 @@ public class IndexScan<Row> extends AbstractIndexScan<Row, IndexRow> {
         }
 
         try {
-            return new InlineIndexImpl.SegmentedIndexCursor(
+            return new SegmentedIndexCursor(
                 new GridCursor[]{
                     new FilteredCursor<>(idxCursor, txChanges.get1(), r -> r.cacheDataRow().key()),
-                    new Cursor<>(this::compare, txChanges.get2(), lower, upper, lowerInclude, upperInclude)
+                    new ListCursor<>(this::compare, txChanges.get2(), lower, upper, lowerInclude, upperInclude)
                 },
                 idx.indexDefinition()
             );
@@ -614,49 +613,6 @@ public class IndexScan<Row> extends AbstractIndexScan<Row, IndexRow> {
         }
 
         return F.t(skipKeys, mixRows);
-    }
-
-    /** */
-    static class FilteredCursor<R> implements GridCursor<R> {
-        /** Sorted cursor. */
-        private final GridCursor<? extends R> cursor;
-
-        /** Rows that must be skiped on {@link #cursor} iteration. */
-        private final Set<KeyCacheObject> skipKeys;
-
-        /** Mapper from row to {@link KeyCacheObject}. */
-        private final Function<R, KeyCacheObject> toKey;
-
-        /**
-         * @param cursor Sorted cursor.
-         * @param skipKeys Keys to skip.
-         * @param toKey Mapper from row to {@link KeyCacheObject}.
-         */
-        FilteredCursor(GridCursor<? extends R> cursor, Set<KeyCacheObject> skipKeys, Function<R, KeyCacheObject> toKey) {
-            this.cursor = cursor;
-            this.skipKeys = skipKeys;
-            this.toKey = toKey;
-        }
-
-        /** {@inheritDoc} */
-        @Override public boolean next() throws IgniteCheckedException {
-            R cur;
-
-            do {
-                if (!cursor.next())
-                    return false;
-
-                cur = cursor.get();
-
-            } while (skipKeys.contains(toKey.apply(cur)));
-
-            return true;
-        }
-
-        /** {@inheritDoc} */
-        @Override public R get() throws IgniteCheckedException {
-            return cursor.get();
-        }
     }
 
     /** */
