@@ -27,12 +27,14 @@ import org.apache.ignite.internal.util.typedef.internal.S;
  * Query parameters which vary between requests having the same execution plan. Essentially, these are the arguments
  * of original {@link org.apache.ignite.cache.query.SqlFieldsQuery} which are not part of {@link QueryDescriptor}.
  */
+@GridToStringInclude(sensitive = true)
 public class QueryParameters {
     /** Arguments. */
     @GridToStringInclude(sensitive = true)
     private final Object[] args;
 
     /** Partitions. */
+    @GridToStringInclude(sensitive = true)
     private final int[] parts;
 
     /** Timeout. */
@@ -54,6 +56,7 @@ public class QueryParameters {
     private final boolean autoCommit;
 
     /** Batched arguments. */
+    @GridToStringInclude(sensitive = true)
     private final List<Object[]> batchedArgs;
 
     /**
