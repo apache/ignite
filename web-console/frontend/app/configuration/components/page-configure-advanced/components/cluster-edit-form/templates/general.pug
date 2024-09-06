@@ -11,6 +11,8 @@ include ./general/discovery/multicast
 include ./general/discovery/vm
 include ./general/discovery/zookeeper
 include ./general/discovery/kubernetes
+include ./general/discovery/webconsoleserver
+
 
 panel-collapsible(opened=`::true` ng-form=form)
     panel-title General
@@ -66,6 +68,7 @@ panel-collapsible(opened=`::true` ng-form=form)
                 +discovery-vm()(ng-if=`${modelDiscoveryKind} === 'Vm'`)
                 +discovery-zookeeper()(ng-if=`${modelDiscoveryKind} === 'ZooKeeper' || ${modelDiscoveryKind} === 'ZooKeeperIpFinder'`)
                 +discovery-kubernetes()(ng-if=`${modelDiscoveryKind} === 'Kubernetes'`)
+                +discovery-webconsoleserver()(ng-if=`${modelDiscoveryKind} === 'WebConsoleServer'`)
 
         .pca-form-column-6
             -var model = '$ctrl.clonedCluster'

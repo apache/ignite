@@ -101,13 +101,7 @@
             <groupId>org.apache.ignite</groupId>
             <artifactId>ignite-slf4j</artifactId>
             <version>${web-console.ignite.version}</version>
-        </dependency>
-        
-         <dependency>
-            <groupId>org.apache.ignite</groupId>
-            <artifactId>ignite-zookeeper</artifactId>
-            <version>${web-console.ignite.version}</version>
-        </dependency>
+        </dependency>         
         
        <dependency>
 	      <groupId>org.apache.ignite.console.agent</groupId>

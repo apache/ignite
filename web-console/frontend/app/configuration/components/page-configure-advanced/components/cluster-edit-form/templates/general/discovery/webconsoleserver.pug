@@ -1,0 +1,36 @@
+
+
+include /app/helpers/jade/mixins
+
+mixin discovery-webconsoleserver(modelAt = '$ctrl.clonedCluster')
+    -const model = `${modelAt}.discovery.WebConsoleServer`
+
+    .pc-form-grid-row&attributes(attributes=attributes)
+        .pc-form-grid-col-30
+            +form-field__url({
+                label: 'Master Server URL:',
+                model: `${model}.masterUrl`,
+                name: '"masterUrl"',
+                enabled: 'true',
+                placeholder: 'http://127.0.0.1:3000',
+                tip: 'URL of web console server'
+            })        
+        .pc-form-grid-col-20
+            +form-field__number({
+                label: 'Waits for reply:',
+                model: `${model}.responseWaitTime`,
+                name: '"responseWaitTime"',
+                placeholder: '60000',
+                min: '0',
+                tip: 'Time in milliseconds IP finder waits for reply to multicast address request'
+            })        
+        .pc-form-grid-col-30
+            +form-field__password({
+                label: 'Server Account Token:',
+                model: `${model}.accountToken`,
+                name: '"accountToken"',
+                enabled: 'true',
+                placeholder: '<uuid>',
+                tip: 'See account token in profile'
+            })
+        

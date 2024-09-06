@@ -258,13 +258,29 @@ public class BrowsersService extends AbstractSocketHandler {
                         log.warn("Failed to send response to browser: " + evt, e);
                     }
                     break;
+                    
+                case "BROADCAST":
+                	try {
+                        
+                		for (Collection<WebSocketSession> sessions : locBrowsers.values()) {
+                            for (WebSocketSession bses : sessions) {
+                            	if(bses!=ses) {
+                            		sendMessageQuiet(bses, evt);
+                            	}
+                            }
+                        }
+                    }                    
+                    catch (Exception e) {
+                        log.warn("Failed to send response to browser: " + evt, e);
+                    }
+                    break;
                 	
 
                 default:
                     throw new IllegalStateException(messages.getMessageWithArgs("err.unknown-evt", evt));
             }
-
-            locRequests.put(evt.getRequestId(), ses);
+            if(evt.getRequestId()!=null)
+            	locRequests.put(evt.getRequestId(), ses);
         }
         catch (IllegalStateException e) {
             log.warn(e.toString());

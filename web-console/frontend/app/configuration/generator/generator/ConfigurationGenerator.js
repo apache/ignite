@@ -235,6 +235,16 @@ export default class IgniteConfigurationGenerator {
 
                 break;
 
+            case 'WebConsoleServer':
+                ipFinder = new Bean('org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryWebConsoleServerIpFinder',
+                    'ipFinder', cluster.discovery.WebConsoleServer, clusterDflts.discovery.WebConsoleServer);
+
+                ipFinder.stringProperty('masterUrl')
+                    .intProperty('responseWaitTime')
+                    .stringProperty('accountToken');
+
+                break;
+
             case 'ZooKeeper':
                 
                 zkDiscovery = IgniteConfigurationGenerator.discoveryZKConfigurationBean(cluster.discovery.ZooKeeper);

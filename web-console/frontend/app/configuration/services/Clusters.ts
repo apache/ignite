@@ -20,6 +20,7 @@ export default class Clusters {
         {value: 'Isolated', label: 'Isolated Nodes'},
         {value: 'Vm', label: 'Static IPs'},
         {value: 'Multicast', label: 'Multicast'},
+        {value: 'WebConsoleServer', label: 'Web Console Server'},
         {value: 'ZooKeeper', label: 'Apache ZooKeeper'},
         {value: 'ZooKeeperIpFinder', label: 'ZooKeeper IpFinder'},
         {value: 'Kubernetes', label: 'Kubernetes'}

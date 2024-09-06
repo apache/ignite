@@ -314,11 +314,12 @@ public class IgniteClusterLauncher implements StartNodeCallable{
 			if(isLastNode) {				
 				if(cfg.getConsistentId()==null)
 					cfg.setConsistentId(clusterId+"_"+nodeIndex);
+				
 			}
 			else {
 				cfg.setClusterStateOnStart(ClusterState.INACTIVE);
 				if(cfg.getConsistentId()==null)
-					cfg.setConsistentId(clusterId+"_"+nodeIndex);			
+					cfg.setConsistentId(clusterId+"_"+nodeIndex);		
 			}
 			
 			if(cfg.getIgniteInstanceName()==null)

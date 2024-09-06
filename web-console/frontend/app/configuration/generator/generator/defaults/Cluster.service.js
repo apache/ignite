@@ -32,9 +32,11 @@ const DFLT_CLUSTER = {
             addressRequestAttempts: 2,
             localAddress: '0.0.0.0'
         },
-        Jdbc: {
-            initSchema: false
-        },        
+        WebConsoleServer: {
+            masterUrl: "",
+            responseWaitTime: 60000,
+            accountToken: ""
+        },  
         ZooKeeper: {
             basePath: '/apacheIgnite',
             serviceName: 'ignite',

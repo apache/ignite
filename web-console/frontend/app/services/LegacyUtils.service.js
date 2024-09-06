@@ -20,38 +20,6 @@ export default function service(ErrorPopover) {
         return true;
     }
 
-    /**
-     * Extract datasource from cache or cluster.
-     *
-     * @param object Cache or cluster to extract datasource.
-     * @returns {*} Datasource object or null if not set.
-     */
-    function extractDataSource(object) {
-        let datasource = null;
-
-        // Extract from cluster object
-        if (_.get(object, 'discovery.kind') === 'Jdbc') {
-            datasource = object.discovery.Jdbc;
-
-            if (datasource.dataSourceBean && datasource.dialect)
-                return datasource;
-        } // Extract from JDBC checkpoint configuration.
-        else if (_.get(object, 'kind') === 'JDBC') {
-            datasource = object.JDBC;
-
-            if (datasource.dataSourceBean && datasource.dialect)
-                return datasource;
-        } // Extract from cache object
-        else if (_.get(object, 'cacheStoreFactory.kind')) {
-            datasource = object.cacheStoreFactory[object.cacheStoreFactory.kind];
-
-            if (datasource.dialect || (datasource.connectVia === 'DataSource'))
-                return datasource;
-        }
-
-        return null;
-    }
-
     function domainForStoreConfigured(domain) {
         const isEmpty = !isDefined(domain) || (isEmptyString(domain.databaseSchema) &&
             isEmptyString(domain.databaseTable) &&

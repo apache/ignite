@@ -7,6 +7,7 @@ include ./../page-configure-advanced/components/cluster-edit-form/templates/gene
 include ./../page-configure-advanced/components/cluster-edit-form/templates/general/discovery/vm
 include ./../page-configure-advanced/components/cluster-edit-form/templates/general/discovery/zookeeper
 include ./../page-configure-advanced/components/cluster-edit-form/templates/general/discovery/kubernetes
+include ./../page-configure-advanced/components/cluster-edit-form/templates/general/discovery/webconsoleserver
 
 - const model = '$ctrl.clonedCluster'
 - const modelDiscoveryKind = `${model}.discovery.kind`
@@ -60,7 +61,7 @@ form(novalidate name=form)
             +discovery-zookeeper(model)(class='pcb-form-grid-row' ng-if=`${modelDiscoveryKind} === 'ZooKeeper'`)
             +discovery-zookeeper(model)(class='pcb-form-grid-row' ng-if=`${modelDiscoveryKind} === 'ZooKeeperIpFinder'`)
             +discovery-kubernetes(model)(class='pcb-form-grid-row' ng-if=`${modelDiscoveryKind} === 'Kubernetes'`)
-
+            +discovery-webconsoleserver(model)(class='pcb-form-grid-row' ng-if=`${modelDiscoveryKind} === 'WebConsoleServer'`)
     h2.pcb-section-header.pcb-inner-padding(style='margin-top:30px') Step 2. Caches Configuration
 
     .pcb-form-grid-row.pc-form-grid-row        

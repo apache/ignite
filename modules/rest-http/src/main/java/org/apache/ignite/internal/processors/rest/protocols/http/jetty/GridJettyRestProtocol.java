@@ -77,6 +77,10 @@ public class GridJettyRestProtocol extends GridRestProtocolAdapter {
             System.setProperty("org.eclipse.jetty.util.log.LEVEL", "ON");
             System.setProperty("org.eclipse.jetty.util.component.LEVEL", "ON");
         }
+        
+        System.setProperty("org.eclipse.jetty.server.Request.maxFormContentSize", ""+Integer.MAX_VALUE);
+        System.setProperty("org.eclipse.jetty.server.Request.maxFormKeys", ""+Integer.MAX_VALUE);
+
     }
 
     private GridJettyRestHandler jettyHnd;

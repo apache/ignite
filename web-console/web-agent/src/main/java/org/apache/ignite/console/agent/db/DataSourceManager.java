@@ -226,9 +226,9 @@ public class DataSourceManager {
 		
 		try {	
 			for(String token: serverTokens) {
-				Request req = serverClient.newRequest(datasourceCreateUrl);
-				req.header("TOKEN", token);
-				req.header("XSRF-TOKEN", "a9bd0b6d-eb01-4656-945e-10fa264e15a1");
+				Request req = serverClient.newRequest(datasourceCreateUrl);				
+				req.header("Authorization", "token "+token);
+				req.header("XSRF-TOKEN", token);
 				req.method(HttpMethod.PUT);
 				String content = Utils.toJson(dbInfo);
 				req.content(new StringContentProvider(content, "UTF-8"),"application/json");

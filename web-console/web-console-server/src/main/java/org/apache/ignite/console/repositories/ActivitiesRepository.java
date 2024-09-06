@@ -21,9 +21,12 @@ import java.time.LocalDate;
 import java.time.ZonedDateTime;
 import java.util.Collection;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
+import java.util.stream.Collectors;
+
 import org.apache.ignite.Ignite;
 import org.apache.ignite.console.db.OneToManyIndex;
 import org.apache.ignite.console.db.Table;
@@ -61,6 +64,36 @@ public class ActivitiesRepository {
             activitiesIdx = new OneToManyIndex<>(ignite, "wc_account_activities_idx");
         });
     }
+    
+    /**
+     * GEt activity List.
+     *
+     * @param accId Account ID.
+     * @param grp Activity group.
+     * @param act Activity action.
+     *
+     * @return Activity.
+     */
+    public List<Activity> list(UUID accId, String grp) {
+        return txMgr.doInTransaction(() -> {
+            // Activity period is the current year and month.
+            long date = LocalDate.now().atStartOfDay(UTC).withDayOfMonth(1).toInstant().toEpochMilli();
+
+            ActivityKey activityKey = new ActivityKey(accId, date);
+
+            Set<UUID> ids = activitiesIdx.get(activityKey);
+
+            Collection<Activity> activities = activitiesTbl.loadAll(ids);
+
+            List<Activity> activityList = activities
+                .stream()
+                .filter(item -> item.getGroup().equals(grp))
+                .collect(Collectors.toList())
+                ;
+           
+            return activityList;
+        });
+    }
 
     /**
      * Save activity.
@@ -95,6 +128,42 @@ public class ActivitiesRepository {
             ids.add(activity.getId());
 
             activitiesIdx.addAll(activityKey, ids);
+
+            return activity;
+        });
+    }
+    
+    /**
+     * delete activity.
+     *
+     * @param accId Account ID.
+     * @param grp Activity group.
+     * @param act Activity action.
+     *
+     * @return Activity.
+     */
+    public Activity delete(UUID accId, String grp, String act) {
+        return txMgr.doInTransaction(() -> {
+            // Activity period is the current year and month.
+            long date = LocalDate.now().atStartOfDay(UTC).withDayOfMonth(1).toInstant().toEpochMilli();
+
+            ActivityKey activityKey = new ActivityKey(accId, date);
+
+            Set<UUID> ids = activitiesIdx.get(activityKey);
+
+            Collection<Activity> activities = activitiesTbl.loadAll(ids);
+
+            Activity activity = activities
+                .stream()
+                .filter(item -> item.getGroup().equals(grp) && item.getAction().equals(act))
+                .findFirst()
+                .orElse(null);
+            
+            if(activity!=null) {
+	            activitiesTbl.delete(activity.getId());
+	
+	            activitiesIdx.remove(activityKey, activity.getId());
+            }
 
             return activity;
         });

@@ -275,7 +275,7 @@
             "saveNotebookNameButtonTooltip": "Save notebook name",
             "addQueryButtonLabel": "Add query",
             "addScanButtonLabel": "Add scan",
-            "addGremlinButtonLabel": "Add Gremlin",
+            "addGremlinButtonLabel": "Add 图查询",
             "breadcrumbs": {
                 "parent": "Notebooks",
                 "here": "Notebook '{{name}}'"
@@ -770,6 +770,6 @@
     "demoModeButton": {
         "continueConfirmationMessage": "Would you like to continue with previous demo session?",
         "demoModeDisabledErrorMessage": "Demo mode disabled by administrator",
-        "startDemoButtonLabel": "Start Demo"
+        "startDemoButtonLabel": "启动Demo"
     }
 }
