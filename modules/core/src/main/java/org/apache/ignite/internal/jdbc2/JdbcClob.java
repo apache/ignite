@@ -54,11 +54,13 @@ public class JdbcClob implements Clob {
     @Override public String getSubString(long pos, int len) throws SQLException {
         ensureNotClosed();
 
-        if (pos < 1 || len < 0 || pos - 1 + len > chars.length())
+        long zeroBasedPos = pos - 1;
+
+        if (zeroBasedPos < 0 || len < 0 || zeroBasedPos + len > chars.length())
             throw new SQLException("Invalid argument. Position should be greater than 0. Length should not be " +
                 "negative. Position + length should be less than CLOB size [pos=" + pos + ", length=" + len + ']');
 
-        return chars.substring((int)pos - 1, (int)pos - 1 + len);
+        return getSubStringInternal(zeroBasedPos, len);
     }
 
     /** {@inheritDoc} */
@@ -89,9 +91,9 @@ public class JdbcClob implements Clob {
             throw new SQLException("Invalid argument. Start position should be greater than zero [start=" +
                 start + ']');
 
-        int idx = chars.indexOf(searchStr, (int)start - 1);
+        long zeroBasedIdx = positionInternal(searchStr, start - 1);
 
-        return idx == -1 ? -1 : idx + 1;
+        return zeroBasedIdx == -1 ? -1 : zeroBasedIdx + 1;
     }
 
     /** {@inheritDoc} */
@@ -103,46 +105,29 @@ public class JdbcClob implements Clob {
     @Override public int setString(long pos, String str) throws SQLException {
         ensureNotClosed();
 
-        if (pos < 1 || str == null || pos - 1 > chars.length())
+        long zeroBasedPos = pos - 1;
+
+        if (zeroBasedPos < 0 || str == null || zeroBasedPos > chars.length())
             throw new SQLException("Invalid argument. Position should be greater than zero. " +
                 "Position should not exceed CLOB length+1. Source string should not be null " +
                 "[pos=" + pos + ", str=" + str + ']');
 
-        StringBuilder strBuilder = new StringBuilder(chars);
-
-        // Ensure string buffer capacity
-        if (pos - 1 + str.length() > chars.length())
-            strBuilder.setLength((int)pos - 1 + str.length());
-
-        strBuilder.replace((int)pos - 1, (int)pos - 1 + str.length(), str);
-
-        chars = strBuilder.toString();
-
-        return str.length();
+        return setStringInternal(zeroBasedPos, str);
     }
 
     /** {@inheritDoc} */
     @Override public int setString(long pos, String str, int off, int len) throws SQLException {
         ensureNotClosed();
 
-        if (pos < 1 || str == null || pos - 1 > chars.length() || off < 0 || len < 0 || off + len > str.length())
+        long zeroBasedPos = pos - 1;
+
+        if (zeroBasedPos < 0 || str == null || zeroBasedPos > chars.length() || off < 0 || len < 0 || off + len > str.length())
             throw new SQLException("Invalid argument. Position should be greater than zero. " +
                 "Position should not exceed CLOB length+1. Source string should not be null.  " +
                 "Offset and length shouldn't be negative. Offset + length should not exceed source string length " +
                 "[pos=" + pos + ", str=" + str + ", offset=" + off + ", len=" + len + ']');
 
-        StringBuilder strBuilder = new StringBuilder(chars);
-
-        // Ensure string buffer capacity
-        if (pos - 1 + str.length() > chars.length())
-            strBuilder.setLength((int)pos - 1 + str.length());
-
-        String replaceStr = str.substring(off, off + len);
-        strBuilder.replace((int)pos - 1, (int)pos - 1 + replaceStr.length(), replaceStr);
-
-        chars = strBuilder.toString();
-
-        return replaceStr.length();
+        return setStringInternal(zeroBasedPos, str, off, len);
     }
 
     /** {@inheritDoc} */
@@ -177,6 +162,55 @@ public class JdbcClob implements Clob {
     private void ensureNotClosed() throws SQLException {
         if (chars == null)
             throw new SQLException("Clob instance can't be used after free() has been called.");
+    }
+
+    /**
+     * Internal getSubString implementation the zero-based position parameter.
+     */
+    private String getSubStringInternal(long zeroBasedPos, int len) {
+        return chars.substring((int)zeroBasedPos, (int)zeroBasedPos + len);
+    }
+
+    /**
+     * Internal position implementation with zero-based start parameter.
+     */
+    private long positionInternal(String searchStr, long zeroBasedStart) {
+        return chars.indexOf(searchStr, (int)zeroBasedStart);
+    }
+
+    /**
+     * Internal setString implementation with zero-based position parameter.
+     */
+    private int setStringInternal(long zeroBasedPos, String str) {
+        StringBuilder strBuilder = new StringBuilder(chars);
+
+        // Ensure string buffer capacity
+        if (zeroBasedPos + str.length() > chars.length())
+            strBuilder.setLength((int)zeroBasedPos + str.length());
+
+        strBuilder.replace((int)zeroBasedPos, (int)zeroBasedPos + str.length(), str);
+
+        chars = strBuilder.toString();
+
+        return str.length();
+    }
+
+    /**
+     * Internal setString implementation with zero-based position parameter.
+     */
+    private int setStringInternal(long zeroBasedPos, String str, int off, int len) {
+        StringBuilder strBuilder = new StringBuilder(chars);
+
+        // Ensure string buffer capacity
+        if (zeroBasedPos + str.length() > chars.length())
+            strBuilder.setLength((int)zeroBasedPos + str.length());
+
+        String replaceStr = str.substring(off, off + len);
+        strBuilder.replace((int)zeroBasedPos, (int)zeroBasedPos + replaceStr.length(), replaceStr);
+
+        chars = strBuilder.toString();
+
+        return replaceStr.length();
     }
 
     /**
