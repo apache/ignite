@@ -191,21 +191,6 @@ public class SqlTransactionsIsolationTest extends GridCommonAbstractTest {
                             for (boolean mutli : new boolean[] {false, true}) {
                                 params.add(new Object[]{modify, ExecutorType.SERVER, false, cacheMode, gridCnt, backup, commit, mutli});
                                 params.add(new Object[]{modify, ExecutorType.CLIENT, false, cacheMode, gridCnt, backup, commit, mutli});
-
-/*
-                                for (boolean partitionAwareness : new boolean[]{false, true}) {
-                                    params.add(new Object[]{
-                                        modify,
-                                        ExecutorType.THIN,
-                                        partitionAwareness,
-                                        mode,
-                                        gridCnt,
-                                        backup,
-                                        commit,
-                                        mutli
-                                    });
-                                }
-*/
                             }
                         }
                     }
