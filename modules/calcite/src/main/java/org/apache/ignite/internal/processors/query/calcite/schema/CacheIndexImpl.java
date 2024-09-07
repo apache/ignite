@@ -155,17 +155,17 @@ public class CacheIndexImpl implements IgniteIndex {
         if (idx == null || !grp.nodeIds().contains(ectx.localNodeId()))
             return 0;
 
-        IndexingQueryFilter filter = new IndexingQueryFilterImpl(
-            tbl.descriptor().cacheContext().kernalContext(),
-            ectx.topologyVersion(),
-            grp.partitions(ectx.localNodeId())
-        );
-
         InlineIndex iidx = idx.unwrap(InlineIndex.class);
 
         BPlusTree.TreeRowClosure<IndexRow, IndexRow> rowFilter = countRowFilter(notNull, iidx);
 
         try {
+            IndexingQueryFilter filter = new IndexingQueryFilterImpl(
+                tbl.descriptor().cacheContext().kernalContext(),
+                ectx.topologyVersion(),
+                grp.partitions(ectx.localNodeId())
+            );
+
             long cnt = 0;
 
             for (int i = 0; i < iidx.segmentsCount(); ++i)
