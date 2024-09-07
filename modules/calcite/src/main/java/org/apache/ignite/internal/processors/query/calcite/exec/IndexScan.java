@@ -26,7 +26,6 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Set;
 import java.util.function.Function;
-import java.util.function.Predicate;
 import org.apache.calcite.rel.type.RelDataType;
 import org.apache.calcite.util.ImmutableBitSet;
 import org.apache.calcite.util.ImmutableIntList;
@@ -253,14 +252,10 @@ public class IndexScan<Row> extends AbstractIndexScan<Row, IndexRow> {
         if (txChanges == null) {
             InlineIndexRowHandler rowHnd = idx.segment(0).rowHandler();
 
-            // Expecting parts are sorted or almost sorted and amount of transaction entries are relatively small.
-            if (parts != null)
-                Arrays.sort(parts);
-
             txChanges = transactionData(
                 ectx.getTxWriteEntries(),
                 cctx.cacheId(),
-                e -> parts == null || Arrays.binarySearch(parts, e.key().partition()) >= 0,
+                parts,
                 r -> new IndexRowImpl(rowHnd, r)
             );
 
@@ -577,7 +572,7 @@ public class IndexScan<Row> extends AbstractIndexScan<Row, IndexRow> {
     /**
      * @param entries Entries changed in transaction.
      * @param cacheId Cache id.
-     * @param filter Filter.
+     * @param parts Partitions set.
      * @param mapper Mapper to specific data type.
      * @return First, set of object changed in transaction, second, list of transaction data in required format.
      * @param <R> Required type.
@@ -585,9 +580,13 @@ public class IndexScan<Row> extends AbstractIndexScan<Row, IndexRow> {
     public static <R> IgniteBiTuple<Set<KeyCacheObject>, List<R>> transactionData(
         Collection<IgniteTxEntry> entries,
         int cacheId,
-        Predicate<IgniteTxEntry> filter,
+        @Nullable int[] parts,
         Function<CacheDataRow, R> mapper
     ) {
+        // Expecting parts are sorted or almost sorted and amount of transaction entries are relatively small.
+        if (parts != null)
+            Arrays.sort(parts);
+
         if (F.isEmpty(entries))
             return F.t(Collections.emptySet(), Collections.emptyList());
 
@@ -595,9 +594,14 @@ public class IndexScan<Row> extends AbstractIndexScan<Row, IndexRow> {
         List<R> mixRows = new ArrayList<>(entries.size());
 
         for (IgniteTxEntry e : entries) {
-            assert e.key().partition() != -1;
+            int part = e.key().partition();
 
-            if (e.cacheId() != cacheId || !filter.test(e))
+            assert part != -1;
+
+            if (e.cacheId() != cacheId)
+                continue;
+
+            if (parts != null && Arrays.binarySearch(parts, part) < 0)
                 continue;
 
             skipKeys.add(e.key());

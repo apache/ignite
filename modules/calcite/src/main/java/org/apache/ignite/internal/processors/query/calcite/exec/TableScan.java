@@ -253,7 +253,7 @@ public class TableScan<Row> implements Iterable<Row>, AutoCloseable {
                     IgniteBiTuple<Set<KeyCacheObject>, List<CacheDataRow>> txChanges = IndexScan.transactionData(
                         ectx.getTxWriteEntries(),
                         cctx.cacheId(),
-                        e -> e.key().partition() == part.id(),
+                        new int[] {part.id()},
                         Function.identity()
                     );
 
