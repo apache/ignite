@@ -262,6 +262,9 @@ public class IndexScan<Row> extends AbstractIndexScan<Row, IndexRow> {
             txChanges.get2().sort(this::compare);
         }
 
+        // `txChanges` returns single thread data structures e.g. `HashSet`, `ArrayList`.
+        // It safe to use them in multiple `FilteredCursor` instances, because, multi range index scan will be flat to the single cursor.
+        // See AbstractIndexScan#iterator.
         try {
             return new SegmentedIndexCursor(
                 new GridCursor[]{

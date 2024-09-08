@@ -167,8 +167,10 @@ public class CacheIndexImpl implements IgniteIndex {
         if (idx == null || !grp.nodeIds().contains(ectx.localNodeId()))
             return 0L;
 
+        int[] locParts = grp.partitions(ectx.localNodeId());
+
         IndexingQueryFilter filter = new IndexingQueryFilterImpl(tbl.descriptor().cacheContext().kernalContext(),
-            ectx.topologyVersion(), grp.partitions(ectx.localNodeId()));
+            ectx.topologyVersion(), locParts);
 
         InlineIndex iidx = idx.unwrap(InlineIndex.class);
 
@@ -180,7 +182,7 @@ public class CacheIndexImpl implements IgniteIndex {
             IgniteBiTuple<Set<KeyCacheObject>, List<CacheDataRow>> txChanges = transactionData(
                 ectx.getTxWriteEntries(),
                 iidx.indexDefinition().cacheInfo().cacheId(),
-                grp.partitions(ectx.localNodeId()),
+                locParts,
                 Function.identity()
             );
 
@@ -279,12 +281,12 @@ public class CacheIndexImpl implements IgniteIndex {
     }
 
     /** */
-    private static long countTransactionRows(InlineIndex iidx, List<CacheDataRow> newAndUpdatedRows) {
+    private static long countTransactionRows(InlineIndex iidx, List<CacheDataRow> changedRows) {
         InlineIndexRowHandler rowHnd = iidx.segment(0).rowHandler();
 
         long cnt = 0;
 
-        for (CacheDataRow txRow : newAndUpdatedRows) {
+        for (CacheDataRow txRow : changedRows) {
             if (rowHnd.indexKey(0, txRow) == NullIndexKey.INSTANCE)
                 continue;
 
