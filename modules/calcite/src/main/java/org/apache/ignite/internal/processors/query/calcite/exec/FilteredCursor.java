@@ -57,7 +57,7 @@ class FilteredCursor<R> implements GridCursor<R> {
 
             cur = cursor.get();
 
-        } while (skipKeys.contains(toKey.apply(cur)));
+        } while (!skipKeys.isEmpty() && skipKeys.remove(toKey.apply(cur)));
 
         return true;
     }

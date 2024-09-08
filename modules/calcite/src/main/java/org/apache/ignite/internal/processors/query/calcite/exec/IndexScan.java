@@ -265,6 +265,8 @@ public class IndexScan<Row> extends AbstractIndexScan<Row, IndexRow> {
         try {
             return new SegmentedIndexCursor(
                 new GridCursor[]{
+                    // This call will change `txChanges.get1()` content.
+                    // Removing found key from set more efficient so we break some rules here.
                     new FilteredCursor<>(idxCursor, txChanges.get1(), r -> r.cacheDataRow().key()),
                     new ListCursor<>(this::compare, txChanges.get2(), lower, upper, lowerInclude, upperInclude)
                 },
@@ -505,6 +507,8 @@ public class IndexScan<Row> extends AbstractIndexScan<Row, IndexRow> {
         InlineIndexKeyType keyType = F.isEmpty(inlineKeyTypes) ? null : inlineKeyTypes.get(0);
 
         return new BPlusTree.TreeRowClosure<IndexRow, IndexRow>() {
+            private IndexRow idxRow;
+
             /** {@inheritDoc} */
             @Override public boolean apply(
                 BPlusTree<IndexRow, IndexRow> tree,
@@ -515,11 +519,14 @@ public class IndexScan<Row> extends AbstractIndexScan<Row, IndexRow> {
                 if (!checkExpired && keyType != null && io instanceof InlineIO) {
                     Boolean keyIsNull = keyType.isNull(pageAddr, io.offset(idx), ((InlineIO)io).inlineSize());
 
-                    if (keyIsNull == Boolean.TRUE)
+                    if (keyIsNull == Boolean.TRUE) {
+                        idxRow = null;
+
                         return false;
+                    }
                 }
 
-                IndexRow idxRow = io.getLookupRow(tree, pageAddr, idx);
+                idxRow = io.getLookupRow(tree, pageAddr, idx);
 
                 if (checkExpired &&
                     idxRow.cacheDataRow().expireTime() > 0 &&
@@ -528,17 +535,35 @@ public class IndexScan<Row> extends AbstractIndexScan<Row, IndexRow> {
 
                 return idxRow.key(0).type() != IndexKeyType.NULL;
             }
+
+            /** {@inheritDoc} */
+            @Override public IndexRow lastRow() {
+                return idxRow;
+            }
         };
     }
 
     /** */
     public static BPlusTree.TreeRowClosure<IndexRow, IndexRow> createNotExpiredRowFilter() {
-        return (tree, io, pageAddr, idx) -> {
-            IndexRow idxRow = io.getLookupRow(tree, pageAddr, idx);
+        return new BPlusTree.TreeRowClosure<IndexRow, IndexRow>() {
+            private IndexRow idxRow;
 
-            // Skip expired.
-            return !(idxRow.cacheDataRow().expireTime() > 0 &&
-                idxRow.cacheDataRow().expireTime() <= U.currentTimeMillis());
+            @Override public boolean apply(
+                BPlusTree<IndexRow, IndexRow> tree,
+                BPlusIO<IndexRow> io,
+                long pageAddr,
+                int idx
+            ) throws IgniteCheckedException {
+                idxRow = io.getLookupRow(tree, pageAddr, idx);
+
+                // Skip expired.
+                return !(idxRow.cacheDataRow().expireTime() > 0 &&
+                    idxRow.cacheDataRow().expireTime() <= U.currentTimeMillis());
+            }
+
+            @Override public IndexRow lastRow() {
+                return idxRow;
+            }
         };
     }
 
@@ -580,18 +605,18 @@ public class IndexScan<Row> extends AbstractIndexScan<Row, IndexRow> {
     public static <R> IgniteBiTuple<Set<KeyCacheObject>, List<R>> transactionData(
         Collection<IgniteTxEntry> entries,
         int cacheId,
-        @Nullable int[] parts,
+        int[] parts,
         Function<CacheDataRow, R> mapper
     ) {
+        if (F.isEmpty(entries))
+            return F.t(Collections.emptySet(), Collections.emptyList());
+
         // Expecting parts are sorted or almost sorted and amount of transaction entries are relatively small.
         if (parts != null)
             Arrays.sort(parts);
 
-        if (F.isEmpty(entries))
-            return F.t(Collections.emptySet(), Collections.emptyList());
-
-        Set<KeyCacheObject> skipKeys = new HashSet<>(entries.size());
-        List<R> mixRows = new ArrayList<>(entries.size());
+        Set<KeyCacheObject> changedKeys = new HashSet<>(entries.size());
+        List<R> newAndUpdatedRows = new ArrayList<>(entries.size());
 
         for (IgniteTxEntry e : entries) {
             int part = e.key().partition();
@@ -604,10 +629,10 @@ public class IndexScan<Row> extends AbstractIndexScan<Row, IndexRow> {
             if (parts != null && Arrays.binarySearch(parts, part) < 0)
                 continue;
 
-            skipKeys.add(e.key());
+            changedKeys.add(e.key());
 
             if (e.value() != null) { // Mix only updated or inserted entries. In case val == null entry removed.
-                mixRows.add(mapper.apply(new CacheDataRowAdapter(
+                newAndUpdatedRows.add(mapper.apply(new CacheDataRowAdapter(
                     e.key(),
                     e.value(),
                     e.explicitVersion(),
@@ -616,7 +641,7 @@ public class IndexScan<Row> extends AbstractIndexScan<Row, IndexRow> {
             }
         }
 
-        return F.t(skipKeys, mixRows);
+        return F.t(changedKeys, newAndUpdatedRows);
     }
 
     /** */

@@ -21,7 +21,6 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Set;
 import java.util.UUID;
-import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Function;
 import org.apache.calcite.plan.RelOptCluster;
 import org.apache.calcite.plan.RelOptTable;
@@ -165,7 +164,7 @@ public class CacheIndexImpl implements IgniteIndex {
 
     /** {@inheritDoc} */
     @Override public long count(ExecutionContext<?> ectx, ColocationGroup grp, boolean notNull) {
-        if (idx != null && grp.nodeIds().contains(ectx.localNodeId()))
+        if (idx == null || !grp.nodeIds().contains(ectx.localNodeId()))
             return 0L;
 
         IndexingQueryFilter filter = new IndexingQueryFilterImpl(tbl.descriptor().cacheContext().kernalContext(),
@@ -186,9 +185,11 @@ public class CacheIndexImpl implements IgniteIndex {
             );
 
             if (!txChanges.get1().isEmpty()) {
-                rowFilter = transactionAwareCountRowFilter(rowFilter, txChanges);
+                // This call will change `txChanges.get1()` content.
+                // Removing found key from set more efficient so we break some rules here.
+                rowFilter = transactionAwareCountRowFilter(rowFilter, txChanges.get1());
 
-                cnt += countTransactionData(iidx, txChanges, cnt);
+                cnt = countTransactionRows(iidx, txChanges.get2());
             }
         }
 
@@ -208,15 +209,13 @@ public class CacheIndexImpl implements IgniteIndex {
         boolean checkExpired = !tbl.descriptor().cacheContext().config().isEagerTtl();
 
         if (notNull) {
-            boolean nullsFirst = collation.getFieldCollations().get(0).nullDirection ==
-                RelFieldCollation.NullDirection.FIRST;
+            boolean nullsFirst = collation.getFieldCollations().get(0).nullDirection == RelFieldCollation.NullDirection.FIRST;
 
-            TreeRowClosure<IndexRow, IndexRow> notNullRowFilter =
-                IndexScan.createNotNullRowFilter(iidx, checkExpired);
-
-            AtomicBoolean skipCheck = new AtomicBoolean();
+            TreeRowClosure<IndexRow, IndexRow> notNullRowFilter = IndexScan.createNotNullRowFilter(iidx, checkExpired);
 
             return new TreeRowClosure<IndexRow, IndexRow>() {
+                private boolean skipCheck;
+
                 @Override public boolean apply(
                     BPlusTree<IndexRow, IndexRow> tree,
                     BPlusIO<IndexRow> io,
@@ -227,15 +226,21 @@ public class CacheIndexImpl implements IgniteIndex {
                     // don't need to check it with notNullRowFilter.
                     // In case of NULL-LAST collation, all values after first null value will be null,
                     // don't need to check it too.
-                    if (skipCheck.get() && !checkExpired)
+                    if (skipCheck && !checkExpired)
                         return nullsFirst;
 
                     boolean res = notNullRowFilter.apply(tree, io, pageAddr, idx);
 
                     if (res == nullsFirst)
-                        skipCheck.set(true);
+                        skipCheck = true;
 
                     return res;
+                }
+
+                @Override public IndexRow lastRow() {
+                    return (skipCheck && !checkExpired)
+                        ? null
+                        : notNullRowFilter.lastRow();
                 }
             };
         }
@@ -247,8 +252,8 @@ public class CacheIndexImpl implements IgniteIndex {
 
     /** */
     private static @NotNull TreeRowClosure<IndexRow, IndexRow> transactionAwareCountRowFilter(
-        TreeRowClosure<IndexRow, IndexRow> rowFilter0,
-        IgniteBiTuple<Set<KeyCacheObject>, List<CacheDataRow>> txChanges
+        TreeRowClosure<IndexRow, IndexRow> rowFilter,
+        Set<KeyCacheObject> skipKeys
     ) {
         return new TreeRowClosure<IndexRow, IndexRow>() {
             @Override public boolean apply(
@@ -257,26 +262,35 @@ public class CacheIndexImpl implements IgniteIndex {
                 long pageAddr,
                 int idx
             ) throws IgniteCheckedException {
-                if (rowFilter0 != null && !rowFilter0.apply(tree, io, pageAddr, idx))
+                if (rowFilter != null && !rowFilter.apply(tree, io, pageAddr, idx))
                     return false;
 
-                IndexRow row = tree.getRow(io, pageAddr, idx);
+                if (skipKeys.isEmpty())
+                    return true;
 
-                return !txChanges.get1().contains(row.cacheDataRow().key());
+                IndexRow row = rowFilter == null ? null : rowFilter.lastRow();
+
+                if (row == null)
+                    row = tree.getRow(io, pageAddr, idx);
+
+                return !skipKeys.remove(row.cacheDataRow().key());
             }
         };
     }
 
     /** */
-    private static long countTransactionData(InlineIndex iidx, IgniteBiTuple<Set<KeyCacheObject>, List<CacheDataRow>> txChanges, long cnt) {
+    private static long countTransactionRows(InlineIndex iidx, List<CacheDataRow> newAndUpdatedRows) {
         InlineIndexRowHandler rowHnd = iidx.segment(0).rowHandler();
 
-        for (CacheDataRow txRow : txChanges.get2()) {
+        long cnt = 0;
+
+        for (CacheDataRow txRow : newAndUpdatedRows) {
             if (rowHnd.indexKey(0, txRow) == NullIndexKey.INSTANCE)
                 continue;
 
-            cnt += 1;
+            cnt++;
         }
+
         return cnt;
     }
 
