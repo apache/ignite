@@ -42,39 +42,38 @@ import org.junit.Test;
  * Type coercion related tests that ensure that the necessary casts are placed where it is necessary.
  */
 public class ImplicitCastsTest extends AbstractPlannerTest {
-
-    private static final RelDataType INTEGER = TYPE_FACTORY.createSqlType(SqlTypeName.INTEGER);
-
+    /** */
     private static final RelDataType FLOAT = TYPE_FACTORY.createSqlType(SqlTypeName.FLOAT);
 
-
-    /** MergeSort join - casts are pushed down to children. **/
+    /** Tests that casts are pushed down to children in MergeSort join. **/
     @Test
     public void testMergeSort() throws Exception {
         IgniteSchema igniteSchema = new IgniteSchema("PUBLIC");
 
-        for(List<Object> paramSet : joinColumnTypes()){
+        for (List<Object> paramSet : joinColumnTypes()) {
             RelDataType lhs = (RelDataType)paramSet.get(0);
             RelDataType rhs = (RelDataType)paramSet.get(1);
+
             ExpectedTypes expected = (ExpectedTypes)paramSet.get(2);
 
             addTable(igniteSchema, "A1", "COL1", lhs);
             addTable(igniteSchema, "B1", "COL1", rhs);
 
-            String query = "select A1.*, B1.* from A1 join B1 on A1.col1 = B1.col1";
-            assertPlan(query, igniteSchema, nodeOrAnyChild(isInstanceOf(IgniteMergeJoin.class)
+            String qry = "select A1.*, B1.* from A1 join B1 on A1.col1 = B1.col1";
+
+            assertPlan(qry, igniteSchema, nodeOrAnyChild(isInstanceOf(IgniteMergeJoin.class)
                 .and(nodeOrAnyChild(new TableScanWithProjection(expected.lhs)))
                 .and(nodeOrAnyChild(new TableScanWithProjection(expected.rhs)))
             ));
         }
     }
 
-    /** Nested loop join - casts are added to condition operands. **/
+    /** Tests that casts are added to condition operands in Nested loop join. **/
     @Test
     public void testNestedLoop() throws Exception {
         IgniteSchema igniteSchema = new IgniteSchema("PUBLIC");
 
-        for(List<Object> paramSet : joinColumnTypes()){
+        for (List<Object> paramSet : joinColumnTypes()) {
             RelDataType lhs = (RelDataType)paramSet.get(0);
             RelDataType rhs = (RelDataType)paramSet.get(1);
             ExpectedTypes expected = (ExpectedTypes)paramSet.get(2);
@@ -82,47 +81,45 @@ public class ImplicitCastsTest extends AbstractPlannerTest {
             addTable(igniteSchema, "A1", "COL1", lhs);
             addTable(igniteSchema, "B1", "COL1", rhs);
 
-            String query = "select A1.*, B1.* from A1 join B1 on A1.col1 != B1.col1";
-            assertPlan(query, igniteSchema, isInstanceOf(IgniteNestedLoopJoin.class).and(new NestedLoopWithFilter(expected)));
+            String qry = "select A1.*, B1.* from A1 join B1 on A1.col1 != B1.col1";
+
+            assertPlan(qry, igniteSchema, isInstanceOf(IgniteNestedLoopJoin.class).and(new NestedLoopWithFilter(expected)));
         }
     }
 
-    /** Filter clause - casts are added to condition operands. **/
+    /** Tests that casts are added to condition operands in Filter clause. **/
     @Test
     public void testFilter() throws Exception {
         IgniteSchema igniteSchema = new IgniteSchema("PUBLIC");
 
-        for (List<Object> paramSet : filterTypes()) {
-            RelDataType lhs = (RelDataType)paramSet.get(0);
-            ExpectedTypes expected = (ExpectedTypes)paramSet.get(1);
+        ExpectedTypes expectedType = new ExpectedTypes(null, null);
 
-            addTable(igniteSchema, "A1", "COL1", lhs);
+        List<RelDataType> relTypes = Stream.of(TYPE_FACTORY.createSqlType(SqlTypeName.INTEGER), TYPE_FACTORY.createSqlType(SqlTypeName.FLOAT))
+            .collect(Collectors.toList());
+
+        for (RelDataType numType : relTypes) {
+            addTable(igniteSchema, "A1", "COL1", numType);
 
             assertPlan("SELECT * FROM A1 WHERE COL1 > 1", igniteSchema, isInstanceOf(IgniteTableScan.class)
                 .and(node -> {
                     String actualPredicate = node.condition().toString();
-                    String expectedPredicate;
 
-                    if (expected.lhs == null) {
-                        expectedPredicate = ">($t1, 1)";
-                    }
-                    else {
-                        expectedPredicate = String.format(">(CAST($t1):%s NOT NULL, 1)", lhs);
-                    }
+                    String expectedPredicate = expectedType.lhs == null
+                        ? ">($t1, 1)"
+                        : String.format(">(CAST($t1):%s NOT NULL, 1)", expectedType);
 
                     return expectedPredicate.equals(actualPredicate);
                 }));
         }
     }
 
+    /** */
     private static List<List<Object>> joinColumnTypes() {
-
         List<RelDataType> numericTypes = SqlTypeName.NUMERIC_TYPES.stream().map(t -> {
-            if (t == SqlTypeName.DECIMAL) {
-                return TYPE_FACTORY.createSqlType(t, 10, 2);
-            } else {
+            if (t == SqlTypeName.DECIMAL)
+                return TYPE_FACTORY.createSqlType(SqlTypeName.DECIMAL, 10, 2);
+            else
                 return TYPE_FACTORY.createSqlType(t);
-            }
         }).collect(Collectors.toList());
 
         List<List<Object>> arguments = new ArrayList<>();
@@ -130,10 +127,12 @@ public class ImplicitCastsTest extends AbstractPlannerTest {
         for (RelDataType lhs : numericTypes) {
             for (RelDataType rhs : numericTypes) {
                 ExpectedTypes expectedTypes;
-                if (lhs.equals(rhs)) {
+
+                if (lhs.equals(rhs))
                     expectedTypes = new ExpectedTypes(null, null);
-                } else {
+                else {
                     RelDataType t = TYPE_FACTORY.leastRestrictive(Arrays.asList(lhs, rhs));
+
                     expectedTypes = new ExpectedTypes(t.equals(lhs) ? null : t, t.equals(rhs) ? null : t);
                 }
 
@@ -144,18 +143,15 @@ public class ImplicitCastsTest extends AbstractPlannerTest {
         return arguments;
     }
 
-    private static List<List<Object>> filterTypes() {
-        return Stream.of(
-            Stream.of(INTEGER, new ExpectedTypes(null, null)).collect(Collectors.toList()),
-            Stream.of(FLOAT, new ExpectedTypes(null, null)).collect(Collectors.toList())
-        ).collect(Collectors.toList());
-    }
-
+    /** */
     private static final class ExpectedTypes {
+        /** */
         final RelDataType lhs;
 
+        /** */
         final RelDataType rhs;
 
+        /** */
         ExpectedTypes(@Nullable RelDataType lhs, @Nullable RelDataType rhs) {
             this.lhs = lhs;
             this.rhs = rhs;
@@ -167,49 +163,51 @@ public class ImplicitCastsTest extends AbstractPlannerTest {
         }
     }
 
-    static final class TableScanWithProjection implements Predicate<RelNode> {
+    /** */
+    private static final class TableScanWithProjection implements Predicate<RelNode> {
+        /** */
+        @Nullable private final RelDataType expected;
 
-        @Nullable
-        private final RelDataType expected;
-
+        /** */
         TableScanWithProjection(@Nullable RelDataType expected) {
             this.expected = expected;
         }
 
-        @Override
-        public boolean test(RelNode node) {
-            if (!(node instanceof IgniteTableScan)) {
+        /** */
+        @Override public boolean test(RelNode node) {
+            if (!(node instanceof IgniteTableScan))
                 return false;
-            }
-            IgniteTableScan scan = (IgniteTableScan) node;
 
-            if (expected == null) {
+            IgniteTableScan scan = (IgniteTableScan)node;
+
+            if (expected == null)
                 return scan.projects() == null;
-            } else {
+            else {
                 String expectedProjections = String.format("[$t0, $t1, CAST($t1):%s NOT NULL]", expected);
                 String actualProjections;
 
-                if (scan.projects() == null) {
+                if (scan.projects() == null)
                     actualProjections = null;
-                } else {
+                else
                     actualProjections = scan.projects().toString();
-                }
 
                 return Objects.equals(actualProjections, expectedProjections);
             }
         }
     }
 
+    /** */
     static final class NestedLoopWithFilter implements Predicate<IgniteNestedLoopJoin> {
-
+        /** */
         private final ExpectedTypes expected;
 
+        /** */
         NestedLoopWithFilter(ExpectedTypes expected) {
             this.expected = expected;
         }
 
-        @Override
-        public boolean test(IgniteNestedLoopJoin node) {
+        /** */
+        @Override public boolean test(IgniteNestedLoopJoin node) {
             String actualCondition = node.getCondition().toString();
             RelDataType expected1 = expected.lhs;
             RelDataType expected2 = expected.rhs;
@@ -220,19 +218,19 @@ public class ImplicitCastsTest extends AbstractPlannerTest {
                 expectedCondition = String.format(
                     "%s(CAST($1):%s NOT NULL, CAST($3):%s NOT NULL)",
                     opToUse.getName(), expected1, expected2);
-
-            } else if (expected1 == null && expected2 == null) {
-                expectedCondition = String.format("%s($1, $3)", opToUse.getName());
-            } else if (expected1 != null) {
-                expectedCondition = String.format("%s(CAST($1):%s NOT NULL, $3)", opToUse.getName(), expected1);
-            } else {
-                expectedCondition = String.format("%s($1, CAST($3):%s NOT NULL)", opToUse.getName(), expected2);
             }
+            else if (expected1 == null && expected2 == null)
+                expectedCondition = String.format("%s($1, $3)", opToUse.getName());
+            else if (expected1 != null)
+                expectedCondition = String.format("%s(CAST($1):%s NOT NULL, $3)", opToUse.getName(), expected1);
+            else
+                expectedCondition = String.format("%s($1, CAST($3):%s NOT NULL)", opToUse.getName(), expected2);
 
             return Objects.equals(actualCondition, expectedCondition);
         }
     }
 
+    /** */
     private static void addTable(IgniteSchema igniteSchema, String tableName, String columnName, RelDataType columnType) {
         RelDataType tableType = new RelDataTypeFactory.Builder(TYPE_FACTORY)
             .add("ID", SqlTypeName.INTEGER)

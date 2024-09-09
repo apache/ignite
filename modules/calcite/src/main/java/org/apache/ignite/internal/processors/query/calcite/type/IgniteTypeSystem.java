@@ -21,6 +21,7 @@ import java.io.Serializable;
 import java.math.BigDecimal;
 import org.apache.calcite.rel.type.RelDataType;
 import org.apache.calcite.rel.type.RelDataTypeFactory;
+import org.apache.calcite.rel.type.RelDataTypeSystem;
 import org.apache.calcite.rel.type.RelDataTypeSystemImpl;
 import org.apache.calcite.sql.type.BasicSqlType;
 import org.apache.calcite.sql.type.SqlTypeName;
@@ -30,7 +31,7 @@ import org.apache.calcite.sql.type.SqlTypeName;
  */
 public class IgniteTypeSystem extends RelDataTypeSystemImpl implements Serializable {
     /** Singleton instance. */
-    public static final IgniteTypeSystem INSTANCE = new IgniteTypeSystem();
+    public static final RelDataTypeSystem INSTANCE = new IgniteTypeSystem();
 
     /** {@inheritDoc} */
     @Override public int getMaxNumericScale() {

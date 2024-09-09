@@ -28,6 +28,7 @@ import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.rel.RelVisitor;
 import org.apache.calcite.rel.core.JoinRelType;
 import org.apache.calcite.rel.type.RelDataTypeFactory;
+import org.apache.calcite.rel.type.RelDataTypeSystem;
 import org.apache.calcite.schema.SchemaPlus;
 import org.apache.calcite.sql.type.SqlTypeName;
 import org.apache.calcite.util.ImmutableBitSet;
@@ -86,13 +87,18 @@ import static org.apache.ignite.configuration.IgniteConfiguration.DFLT_THREAD_KE
 //@WithSystemProperty(key = "calcite.debug", value = "true")
 @SuppressWarnings({"TooBroadScope", "FieldCanBeLocal", "TypeMayBeWeakened"})
 public class PlannerTest extends AbstractPlannerTest {
+    /** */
     private static final int TIME_PRECISION = 9;
+
+    /** */
     private static final int STRING_PRECISION = 65536;
+
+    /** */
     private static final int DECIMAL_PRECISION = 32767;
     private static final int DECIMAL_SCALE = 32767;
     private static final int TIMESTAMP_DEFAULT_PRECISION = 6;
 
-    private final IgniteTypeSystem typeSystem = IgniteTypeSystem.INSTANCE;
+    private final RelDataTypeSystem typeSystem = IgniteTypeSystem.INSTANCE;
 
 
     /**
