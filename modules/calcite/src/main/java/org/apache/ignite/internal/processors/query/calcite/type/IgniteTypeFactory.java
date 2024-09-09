@@ -250,7 +250,16 @@ public class IgniteTypeFactory extends JavaTypeFactoryImpl {
         if (types.size() == 1 || allEquals(types))
             return F.first(types);
 
-        return super.leastRestrictive(types);
+        RelDataType res = super.leastRestrictive(types);
+
+        if (res != null && res.getSqlTypeName() == SqlTypeName.FLOAT && types.size() > 1) {
+            for (RelDataType type : types) {
+                if (type.getSqlTypeName() == SqlTypeName.DOUBLE && type.getPrecision() >= res.getPrecision())
+                    return type;
+            }
+        }
+
+        return res;
     }
 
     /** {@inheritDoc} */
