@@ -60,6 +60,7 @@ import org.apache.ignite.cache.query.SqlQuery;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.QueryEngineConfiguration;
+import org.apache.ignite.configuration.TransactionConfiguration;
 import org.apache.ignite.events.CacheQueryExecutedEvent;
 import org.apache.ignite.internal.GridComponent;
 import org.apache.ignite.internal.GridKernalContext;
@@ -300,6 +301,9 @@ public class GridQueryProcessor extends GridProcessorAdapter {
     /** Schema manager. */
     private final SchemaManager schemaMgr;
 
+    /** @see TransactionConfiguration#isTxAwareQueriesEnabled()  */
+    private final boolean txAwareQueriesEnabled;
+
     /**
      * Constructor.
      *
@@ -339,6 +343,8 @@ public class GridQueryProcessor extends GridProcessorAdapter {
         initQueryEngines();
 
         idxBuildStatusStorage = new IndexBuildStatusStorage(ctx);
+
+        txAwareQueriesEnabled = ctx.config().getTransactionConfiguration().isTxAwareQueriesEnabled();
     }
 
     /** {@inheritDoc} */
@@ -3032,7 +3038,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
         if (qry.isLocal() && ctx.clientNode())
             throw new CacheException("Execution of local SqlFieldsQuery on client node disallowed.");
 
-        final GridNearTxLocal userTx = ctx.config().getTransactionConfiguration().isTxAwareQueriesEnabled()
+        final GridNearTxLocal userTx = txAwareQueriesEnabled
             ? ctx.cache().context().tm().userTx()
             : null;
 
@@ -3081,6 +3087,9 @@ public class GridQueryProcessor extends GridProcessorAdapter {
                             }
                         }
                         else {
+                            if (userTx != null && txAwareQueriesEnabled)
+                                throw new CacheException("SQL aware queries supported only for Calcite query engine");
+
                             res = idx.querySqlFields(
                                 schemaName,
                                 qry,

@@ -97,10 +97,10 @@ public class SqlTransactionsIsolationTest extends GridCommonAbstractTest {
         CLIENT,
 
         /** */
-        THIN,
+        THIN_VIA_CACHE_API,
 
         /** */
-        THIN2
+        THIN_VIA_QUERY
     }
 
     /** */
@@ -192,16 +192,18 @@ public class SqlTransactionsIsolationTest extends GridCommonAbstractTest {
 
                     for (int backup: backups) {
                         for (boolean commit : new boolean[]{false, true}) {
-                            for (ExecutorType executorType : new ExecutorType[] {ExecutorType.CLIENT, ExecutorType.SERVER}) {
+                            for (ExecutorType execType : new ExecutorType[] {ExecutorType.CLIENT, ExecutorType.SERVER}) {
                                 for (boolean mutli : new boolean[]{false, true})
-                                    params.add(new Object[]{modify, executorType, false, mode, gridCnt, backup, commit, mutli});
+                                    params.add(new Object[]{modify, execType, false, mode, gridCnt, backup, commit, mutli});
                             }
 
-                            for (ExecutorType executorType : new ExecutorType[] {ExecutorType.THIN, ExecutorType.THIN2}) {
+                            ExecutorType[] thinExecutors = {ExecutorType.THIN_VIA_CACHE_API, ExecutorType.THIN_VIA_QUERY};
+
+                            for (ExecutorType execType : thinExecutors) {
                                 for (boolean partitionAwareness : new boolean[]{false, true}) {
                                     params.add(new Object[]{
                                         modify,
-                                        executorType,
+                                        execType,
                                         partitionAwareness,
                                         mode,
                                         gridCnt,
@@ -721,7 +723,7 @@ public class SqlTransactionsIsolationTest extends GridCommonAbstractTest {
         long cnt = 100;
 
         LongStream.range(1, 1 + cnt).forEach(i -> insideTx(() -> {
-            if (type == ExecutorType.THIN || type == ExecutorType.THIN2) {
+            if (type == ExecutorType.THIN_VIA_CACHE_API || type == ExecutorType.THIN_VIA_QUERY) {
                 ClientCache<Long, Long> thinCache = thinCli.cache(tbl());
 
                 thinCache.put(i, i + 1);
@@ -744,7 +746,7 @@ public class SqlTransactionsIsolationTest extends GridCommonAbstractTest {
 
     /** */
     private void insideTx(RunnableX test, boolean commit) {
-        if (type == ExecutorType.THIN || type == ExecutorType.THIN2) {
+        if (type == ExecutorType.THIN_VIA_CACHE_API || type == ExecutorType.THIN_VIA_QUERY) {
             try (ClientTransaction tx = thinCli.transactions().txStart(txConcurrency, txIsolation, TX_TIMEOUT)) {
                 for (int i = 0; i < 3; i++)
                     thinCli.cache(DEFAULT_CACHE_NAME).put(i, i);
@@ -787,7 +789,7 @@ public class SqlTransactionsIsolationTest extends GridCommonAbstractTest {
     /** */
     private User select(Integer id, ModifyApi api) {
         if (api == CACHE)
-            return (type == ExecutorType.THIN || type == ExecutorType.THIN2)
+            return (type == ExecutorType.THIN_VIA_CACHE_API || type == ExecutorType.THIN_VIA_QUERY)
                 ? (User)thinCli.cache(users()).get(id)
                 : (User)node().cache(users()).get(id);
         else if (api == SQL) {
@@ -820,14 +822,14 @@ public class SqlTransactionsIsolationTest extends GridCommonAbstractTest {
             if (multi) {
                 Map<Integer, User> data = Arrays.stream(entries).collect(Collectors.toMap(IgniteBiTuple::get1, IgniteBiTuple::get2));
 
-                if (type == ExecutorType.THIN || type == ExecutorType.THIN2)
+                if (type == ExecutorType.THIN_VIA_CACHE_API || type == ExecutorType.THIN_VIA_QUERY)
                     thinCli.cache(users()).putAll(data);
                 else
                     node().cache(users()).putAll(data);
             }
             else {
                 for (IgniteBiTuple<Integer, User> data : entries) {
-                    if (type == ExecutorType.THIN || type == ExecutorType.THIN2)
+                    if (type == ExecutorType.THIN_VIA_CACHE_API || type == ExecutorType.THIN_VIA_QUERY)
                         thinCli.cache(users()).put(data.get1(), data.get2());
                     else
                         node().cache(users()).put(data.get1(), data.get2());
@@ -926,14 +928,14 @@ public class SqlTransactionsIsolationTest extends GridCommonAbstractTest {
             if (multi) {
                 Set<Integer> toRemove = Arrays.stream(keys).boxed().collect(Collectors.toSet());
 
-                if (type == ExecutorType.THIN || type == ExecutorType.THIN2)
+                if (type == ExecutorType.THIN_VIA_CACHE_API || type == ExecutorType.THIN_VIA_QUERY)
                     thinCli.cache(users()).removeAll(toRemove);
                 else
                     node().cache(users()).removeAll(toRemove);
             }
             else {
                 for (int id : keys) {
-                    if (type == ExecutorType.THIN || type == ExecutorType.THIN2)
+                    if (type == ExecutorType.THIN_VIA_CACHE_API || type == ExecutorType.THIN_VIA_QUERY)
                         thinCli.cache(users()).remove(id);
                     else
                         node().cache(users()).remove(id);
@@ -1054,9 +1056,9 @@ public class SqlTransactionsIsolationTest extends GridCommonAbstractTest {
         if (!F.isEmpty(parts))
             qry.setPartitions(parts);
 
-        if (type == ExecutorType.THIN)
+        if (type == ExecutorType.THIN_VIA_CACHE_API)
             return unwrapBinary(thinCli.query(qry).getAll());
-        else if (type == ExecutorType.THIN2)
+        else if (type == ExecutorType.THIN_VIA_QUERY)
             return unwrapBinary(thinCli.cache(F.first(thinCli.cacheNames())).query(qry).getAll());
 
         if (multi) {
