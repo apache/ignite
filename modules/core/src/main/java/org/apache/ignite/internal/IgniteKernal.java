@@ -1510,6 +1510,9 @@ public class IgniteKernal implements IgniteEx, Externalizable {
             if (total < 0)
                 total = Long.MAX_VALUE;
 
+            assert total <= ram : "Required memory for Ignite nodes exceeds physical RAM " +
+                "[required=" + (total >> 20) + "MB, available=" + (ram >> 20) + "MB].";
+
             // 4GB or 20% of available memory is expected to be used by OS and user applications
             long safeToUse = ram - Math.max(4L << 30, (long)(ram * 0.2));
 
