@@ -48,6 +48,8 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiTuple;
 import org.jetbrains.annotations.Nullable;
 
+import static org.apache.ignite.internal.processors.query.calcite.exec.IndexScan.transactionData;
+
 /** */
 public class TableScan<Row> implements Iterable<Row>, AutoCloseable {
     /** */
@@ -192,6 +194,12 @@ public class TableScan<Row> implements Iterable<Row>, AutoCloseable {
         /** */
         private GridCursor<? extends CacheDataRow> cur;
 
+        /**
+         * First, set of keys changed (inserted, updated or removed) inside transaction: must be skiped during index scan.
+         * Second, list of rows inserted or updated inside transaction: must be mixed with the scan results.
+         */
+        private IgniteBiTuple<Set<KeyCacheObject>, List<CacheDataRow>> txChanges;
+
         /** */
         private Iterator<CacheDataRow> txIter = Collections.emptyIterator();
 
@@ -203,6 +211,17 @@ public class TableScan<Row> implements Iterable<Row>, AutoCloseable {
             assert reserved != null;
 
             parts = new ArrayDeque<>(reserved);
+
+            if (!F.isEmpty(ectx.getTxWriteEntries())) {
+                txChanges = transactionData(
+                    ectx.getTxWriteEntries(),
+                    cctx.cacheId(),
+                    // All partitions scaned for replication cache.
+                    // See TableScan#reserve.
+                    cctx.isReplicated() ? null : TableScan.this.parts,
+                    Function.identity()
+                );
+            }
         }
 
         /** {@inheritDoc} */
@@ -246,21 +265,13 @@ public class TableScan<Row> implements Iterable<Row>, AutoCloseable {
 
                     cur = part.dataStore().cursor(cctx.cacheId());
 
-                    /**
-                     * First, set of keys changed (inserted, updated or removed) inside transaction: must be skiped during index scan.
-                     * Second, list of rows inserted or updated inside transaction: must be mixed with the scan results.
-                     */
-                    IgniteBiTuple<Set<KeyCacheObject>, List<CacheDataRow>> txChanges = IndexScan.transactionData(
-                        ectx.getTxWriteEntries(),
-                        cctx.cacheId(),
-                        e -> e.key().partition() == part.id(),
-                        Function.identity()
-                    );
+                    if (txChanges != null) {
+                        // This call will change `txChanges.get1()` content.
+                        // Removing found key from set more efficient so we break some rules here.
+                        if (!F.isEmpty(txChanges.get1()))
+                            cur = new FilteredCursor<>(cur, txChanges.get1(), CacheSearchRow::key);
 
-                    if (!F.isEmpty(txChanges.get1())) {
-                        cur = new FilteredCursor<>(cur, txChanges.get1(), CacheSearchRow::key);
-
-                        txIter = txChanges.get2().iterator();
+                        txIter = F.iterator0(txChanges.get2(), true, e -> e.key().partition() == part.id());
                     }
                 }
 

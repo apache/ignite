@@ -21,7 +21,6 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Set;
 import java.util.UUID;
-import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Function;
 import org.apache.calcite.plan.RelOptCluster;
 import org.apache.calcite.plan.RelOptTable;
@@ -48,6 +47,7 @@ import org.apache.ignite.internal.cache.query.index.sorted.keys.NullIndexKey;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
 import org.apache.ignite.internal.processors.cache.persistence.CacheDataRow;
 import org.apache.ignite.internal.processors.cache.persistence.tree.BPlusTree;
+import org.apache.ignite.internal.processors.cache.persistence.tree.BPlusTree.TreeRowClosure;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.BPlusIO;
 import org.apache.ignite.internal.processors.query.calcite.exec.ExecutionContext;
 import org.apache.ignite.internal.processors.query.calcite.exec.IndexFirstLastScan;
@@ -62,6 +62,7 @@ import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.spi.indexing.IndexingQueryFilter;
 import org.apache.ignite.spi.indexing.IndexingQueryFilterImpl;
+import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.internal.processors.query.calcite.exec.IndexScan.transactionData;
@@ -163,100 +164,133 @@ public class CacheIndexImpl implements IgniteIndex {
 
     /** {@inheritDoc} */
     @Override public long count(ExecutionContext<?> ectx, ColocationGroup grp, boolean notNull) {
+        if (idx == null || !grp.nodeIds().contains(ectx.localNodeId()))
+            return 0L;
+
+        int[] locParts = grp.partitions(ectx.localNodeId());
+
+        IndexingQueryFilter filter = new IndexingQueryFilterImpl(tbl.descriptor().cacheContext().kernalContext(),
+            ectx.topologyVersion(), locParts);
+
+        InlineIndex iidx = idx.unwrap(InlineIndex.class);
+
+        TreeRowClosure<IndexRow, IndexRow> rowFilter = countRowFilter(notNull, iidx);
+
         long cnt = 0;
 
-        if (idx != null && grp.nodeIds().contains(ectx.localNodeId())) {
-            IndexingQueryFilter filter = new IndexingQueryFilterImpl(tbl.descriptor().cacheContext().kernalContext(),
-                ectx.topologyVersion(), grp.partitions(ectx.localNodeId()));
+        if (!F.isEmpty(ectx.getTxWriteEntries())) {
+            IgniteBiTuple<Set<KeyCacheObject>, List<CacheDataRow>> txChanges = transactionData(
+                ectx.getTxWriteEntries(),
+                iidx.indexDefinition().cacheInfo().cacheId(),
+                locParts,
+                Function.identity()
+            );
 
-            InlineIndex iidx = idx.unwrap(InlineIndex.class);
+            if (!txChanges.get1().isEmpty()) {
+                // This call will change `txChanges.get1()` content.
+                // Removing found key from set more efficient so we break some rules here.
+                rowFilter = transactionAwareCountRowFilter(rowFilter, txChanges.get1());
 
-            BPlusTree.TreeRowClosure<IndexRow, IndexRow> rowFilter = null;
-
-            boolean checkExpired = !tbl.descriptor().cacheContext().config().isEagerTtl();
-
-            if (notNull) {
-                boolean nullsFirst = collation.getFieldCollations().get(0).nullDirection ==
-                    RelFieldCollation.NullDirection.FIRST;
-
-                BPlusTree.TreeRowClosure<IndexRow, IndexRow> notNullRowFilter =
-                    IndexScan.createNotNullRowFilter(iidx, checkExpired);
-
-                AtomicBoolean skipCheck = new AtomicBoolean();
-
-                rowFilter = new BPlusTree.TreeRowClosure<IndexRow, IndexRow>() {
-                    @Override public boolean apply(
-                        BPlusTree<IndexRow, IndexRow> tree,
-                        BPlusIO<IndexRow> io,
-                        long pageAddr,
-                        int idx
-                    ) throws IgniteCheckedException {
-                        // If we have NULLS-FIRST collation, all values after first not-null value will be not-null,
-                        // don't need to check it with notNullRowFilter.
-                        // In case of NULL-LAST collation, all values after first null value will be null,
-                        // don't need to check it too.
-                        if (skipCheck.get() && !checkExpired)
-                            return nullsFirst;
-
-                        boolean res = notNullRowFilter.apply(tree, io, pageAddr, idx);
-
-                        if (res == nullsFirst)
-                            skipCheck.set(true);
-
-                        return res;
-                    }
-                };
+                cnt = countTransactionRows(iidx, txChanges.get2());
             }
-            else if (checkExpired)
-                rowFilter = IndexScan.createNotExpiredRowFilter();
+        }
 
-            if (!F.isEmpty(ectx.getTxWriteEntries())) {
-                BPlusTree.TreeRowClosure<IndexRow, IndexRow> rowFilter0 = rowFilter;
+        try {
+            for (int i = 0; i < iidx.segmentsCount(); ++i)
+                cnt += iidx.count(i, new IndexQueryContext(filter, rowFilter));
 
-                int[] parts = grp.partitions(ectx.localNodeId());
+            return cnt;
+        }
+        catch (IgniteCheckedException e) {
+            throw new IgniteException("Unable to count index records.", e);
+        }
+    }
 
-                IgniteBiTuple<Set<KeyCacheObject>, List<CacheDataRow>> txChanges = transactionData(
-                    ectx.getTxWriteEntries(),
-                    iidx.indexDefinition().cacheInfo().cacheId(),
-                    e -> parts == null || F.contains(parts, e.key().partition()),
-                    Function.identity()
-                );
+    /** */
+    private @Nullable TreeRowClosure<IndexRow, IndexRow> countRowFilter(boolean notNull, InlineIndex iidx) {
+        boolean checkExpired = !tbl.descriptor().cacheContext().config().isEagerTtl();
 
-                if (!txChanges.get1().isEmpty()) {
-                    rowFilter = new BPlusTree.TreeRowClosure<IndexRow, IndexRow>() {
-                        @Override public boolean apply(
-                            BPlusTree<IndexRow, IndexRow> tree,
-                            BPlusIO<IndexRow> io,
-                            long pageAddr,
-                            int idx
-                        ) throws IgniteCheckedException {
-                            if (rowFilter0 != null && !rowFilter0.apply(tree, io, pageAddr, idx))
-                                return false;
+        if (notNull) {
+            boolean nullsFirst = collation.getFieldCollations().get(0).nullDirection == RelFieldCollation.NullDirection.FIRST;
 
-                            IndexRow row = tree.getRow(io, pageAddr, idx);
+            TreeRowClosure<IndexRow, IndexRow> notNullRowFilter = IndexScan.createNotNullRowFilter(iidx, checkExpired);
 
-                            return !txChanges.get1().contains(row.cacheDataRow().key());
-                        }
-                    };
+            return new TreeRowClosure<IndexRow, IndexRow>() {
+                private boolean skipCheck;
 
-                    InlineIndexRowHandler rowHnd = iidx.segment(0).rowHandler();
+                @Override public boolean apply(
+                    BPlusTree<IndexRow, IndexRow> tree,
+                    BPlusIO<IndexRow> io,
+                    long pageAddr,
+                    int idx
+                ) throws IgniteCheckedException {
+                    // If we have NULLS-FIRST collation, all values after first not-null value will be not-null,
+                    // don't need to check it with notNullRowFilter.
+                    // In case of NULL-LAST collation, all values after first null value will be null,
+                    // don't need to check it too.
+                    if (skipCheck && !checkExpired)
+                        return nullsFirst;
 
-                    for (CacheDataRow txRow : txChanges.get2()) {
-                        if (rowHnd.indexKey(0, txRow) == NullIndexKey.INSTANCE)
-                            continue;
+                    boolean res = notNullRowFilter.apply(tree, io, pageAddr, idx);
 
-                        cnt += 1;
-                    }
+                    if (res == nullsFirst)
+                        skipCheck = true;
+
+                    return res;
                 }
-            }
 
-            try {
-                for (int i = 0; i < iidx.segmentsCount(); ++i)
-                    cnt += iidx.count(i, new IndexQueryContext(filter, rowFilter));
+                @Override public IndexRow lastRow() {
+                    return (skipCheck && !checkExpired)
+                        ? null
+                        : notNullRowFilter.lastRow();
+                }
+            };
+        }
+        else if (checkExpired)
+            return IndexScan.createNotExpiredRowFilter();
+
+        return null;
+    }
+
+    /** */
+    private static @NotNull TreeRowClosure<IndexRow, IndexRow> transactionAwareCountRowFilter(
+        TreeRowClosure<IndexRow, IndexRow> rowFilter,
+        Set<KeyCacheObject> skipKeys
+    ) {
+        return new TreeRowClosure<IndexRow, IndexRow>() {
+            @Override public boolean apply(
+                BPlusTree<IndexRow, IndexRow> tree,
+                BPlusIO<IndexRow> io,
+                long pageAddr,
+                int idx
+            ) throws IgniteCheckedException {
+                if (rowFilter != null && !rowFilter.apply(tree, io, pageAddr, idx))
+                    return false;
+
+                if (skipKeys.isEmpty())
+                    return true;
+
+                IndexRow row = rowFilter == null ? null : rowFilter.lastRow();
+
+                if (row == null)
+                    row = tree.getRow(io, pageAddr, idx);
+
+                return !skipKeys.remove(row.cacheDataRow().key());
             }
-            catch (IgniteCheckedException e) {
-                throw new IgniteException("Unable to count index records.", e);
-            }
+        };
+    }
+
+    /** */
+    private static long countTransactionRows(InlineIndex iidx, List<CacheDataRow> changedRows) {
+        InlineIndexRowHandler rowHnd = iidx.segment(0).rowHandler();
+
+        long cnt = 0;
+
+        for (CacheDataRow txRow : changedRows) {
+            if (rowHnd.indexKey(0, txRow) == NullIndexKey.INSTANCE)
+                continue;
+
+            cnt++;
         }
 
         return cnt;

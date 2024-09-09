@@ -26,7 +26,6 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Set;
 import java.util.function.Function;
-import java.util.function.Predicate;
 import org.apache.calcite.rel.type.RelDataType;
 import org.apache.calcite.util.ImmutableBitSet;
 import org.apache.calcite.util.ImmutableIntList;
@@ -253,23 +252,24 @@ public class IndexScan<Row> extends AbstractIndexScan<Row, IndexRow> {
         if (txChanges == null) {
             InlineIndexRowHandler rowHnd = idx.segment(0).rowHandler();
 
-            // Expecting parts are sorted or almost sorted and amount of transaction entries are relatively small.
-            if (parts != null)
-                Arrays.sort(parts);
-
             txChanges = transactionData(
                 ectx.getTxWriteEntries(),
                 cctx.cacheId(),
-                e -> parts == null || Arrays.binarySearch(parts, e.key().partition()) >= 0,
+                parts,
                 r -> new IndexRowImpl(rowHnd, r)
             );
 
             txChanges.get2().sort(this::compare);
         }
 
+        // `txChanges` returns single thread data structures e.g. `HashSet`, `ArrayList`.
+        // It safe to use them in multiple `FilteredCursor` instances, because, multi range index scan will be flat to the single cursor.
+        // See AbstractIndexScan#iterator.
         try {
             return new SegmentedIndexCursor(
                 new GridCursor[]{
+                    // This call will change `txChanges.get1()` content.
+                    // Removing found key from set more efficient so we break some rules here.
                     new FilteredCursor<>(idxCursor, txChanges.get1(), r -> r.cacheDataRow().key()),
                     new ListCursor<>(this::compare, txChanges.get2(), lower, upper, lowerInclude, upperInclude)
                 },
@@ -510,6 +510,8 @@ public class IndexScan<Row> extends AbstractIndexScan<Row, IndexRow> {
         InlineIndexKeyType keyType = F.isEmpty(inlineKeyTypes) ? null : inlineKeyTypes.get(0);
 
         return new BPlusTree.TreeRowClosure<IndexRow, IndexRow>() {
+            private IndexRow idxRow;
+
             /** {@inheritDoc} */
             @Override public boolean apply(
                 BPlusTree<IndexRow, IndexRow> tree,
@@ -520,11 +522,14 @@ public class IndexScan<Row> extends AbstractIndexScan<Row, IndexRow> {
                 if (!checkExpired && keyType != null && io instanceof InlineIO) {
                     Boolean keyIsNull = keyType.isNull(pageAddr, io.offset(idx), ((InlineIO)io).inlineSize());
 
-                    if (keyIsNull == Boolean.TRUE)
+                    if (keyIsNull == Boolean.TRUE) {
+                        idxRow = null;
+
                         return false;
+                    }
                 }
 
-                IndexRow idxRow = io.getLookupRow(tree, pageAddr, idx);
+                idxRow = io.getLookupRow(tree, pageAddr, idx);
 
                 if (checkExpired &&
                     idxRow.cacheDataRow().expireTime() > 0 &&
@@ -533,17 +538,35 @@ public class IndexScan<Row> extends AbstractIndexScan<Row, IndexRow> {
 
                 return idxRow.key(0).type() != IndexKeyType.NULL;
             }
+
+            /** {@inheritDoc} */
+            @Override public IndexRow lastRow() {
+                return idxRow;
+            }
         };
     }
 
     /** */
     public static BPlusTree.TreeRowClosure<IndexRow, IndexRow> createNotExpiredRowFilter() {
-        return (tree, io, pageAddr, idx) -> {
-            IndexRow idxRow = io.getLookupRow(tree, pageAddr, idx);
+        return new BPlusTree.TreeRowClosure<IndexRow, IndexRow>() {
+            private IndexRow idxRow;
 
-            // Skip expired.
-            return !(idxRow.cacheDataRow().expireTime() > 0 &&
-                idxRow.cacheDataRow().expireTime() <= U.currentTimeMillis());
+            @Override public boolean apply(
+                BPlusTree<IndexRow, IndexRow> tree,
+                BPlusIO<IndexRow> io,
+                long pageAddr,
+                int idx
+            ) throws IgniteCheckedException {
+                idxRow = io.getLookupRow(tree, pageAddr, idx);
+
+                // Skip expired.
+                return !(idxRow.cacheDataRow().expireTime() > 0 &&
+                    idxRow.cacheDataRow().expireTime() <= U.currentTimeMillis());
+            }
+
+            @Override public IndexRow lastRow() {
+                return idxRow;
+            }
         };
     }
 
@@ -577,7 +600,7 @@ public class IndexScan<Row> extends AbstractIndexScan<Row, IndexRow> {
     /**
      * @param entries Entries changed in transaction.
      * @param cacheId Cache id.
-     * @param filter Filter.
+     * @param parts Partitions set.
      * @param mapper Mapper to specific data type.
      * @return First, set of object changed in transaction, second, list of transaction data in required format.
      * @param <R> Required type.
@@ -585,25 +608,34 @@ public class IndexScan<Row> extends AbstractIndexScan<Row, IndexRow> {
     public static <R> IgniteBiTuple<Set<KeyCacheObject>, List<R>> transactionData(
         Collection<IgniteTxEntry> entries,
         int cacheId,
-        Predicate<IgniteTxEntry> filter,
+        int[] parts,
         Function<CacheDataRow, R> mapper
     ) {
         if (F.isEmpty(entries))
             return F.t(Collections.emptySet(), Collections.emptyList());
 
-        Set<KeyCacheObject> skipKeys = new HashSet<>(entries.size());
-        List<R> mixRows = new ArrayList<>(entries.size());
+        // Expecting parts are sorted or almost sorted and amount of transaction entries are relatively small.
+        if (parts != null)
+            Arrays.sort(parts);
+
+        Set<KeyCacheObject> changedKeys = new HashSet<>(entries.size());
+        List<R> newAndUpdatedRows = new ArrayList<>(entries.size());
 
         for (IgniteTxEntry e : entries) {
-            assert e.key().partition() != -1;
+            int part = e.key().partition();
 
-            if (e.cacheId() != cacheId || !filter.test(e))
+            assert part != -1;
+
+            if (e.cacheId() != cacheId)
                 continue;
 
-            skipKeys.add(e.key());
+            if (parts != null && Arrays.binarySearch(parts, part) < 0)
+                continue;
+
+            changedKeys.add(e.key());
 
             if (e.value() != null) { // Mix only updated or inserted entries. In case val == null entry removed.
-                mixRows.add(mapper.apply(new CacheDataRowAdapter(
+                newAndUpdatedRows.add(mapper.apply(new CacheDataRowAdapter(
                     e.key(),
                     e.value(),
                     e.explicitVersion(),
@@ -612,7 +644,7 @@ public class IndexScan<Row> extends AbstractIndexScan<Row, IndexRow> {
             }
         }
 
-        return F.t(skipKeys, mixRows);
+        return F.t(changedKeys, newAndUpdatedRows);
     }
 
     /** */
