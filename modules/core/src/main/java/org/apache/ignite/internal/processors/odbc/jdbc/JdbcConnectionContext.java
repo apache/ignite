@@ -79,7 +79,7 @@ public class JdbcConnectionContext extends ClientListenerAbstractConnectionConte
     private static final Set<ClientListenerProtocolVersion> SUPPORTED_VERS = new HashSet<>();
 
     /** Default nested tx mode for compatibility. */
-    private static final String DEFAULT_NESTED_TX_MODE = "ERROR";
+    public static final String DEFAULT_NESTED_TX_MODE = "ERROR";
 
     /** Shutdown busy lock. */
     private final GridSpinBusyLock busyLock;

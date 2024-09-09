@@ -56,7 +56,7 @@ namespace ignite
         {
             enum Type
             {
-                NESTED_TX_MODE = 3
+                DEFAULT_NESTED_TX_MODE = 3
             };
         };
 

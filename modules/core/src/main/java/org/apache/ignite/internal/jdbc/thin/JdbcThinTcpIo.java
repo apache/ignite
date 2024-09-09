@@ -70,6 +70,7 @@ import org.apache.ignite.lang.IgniteProductVersion;
 
 import static java.lang.Math.abs;
 import static org.apache.ignite.internal.jdbc.thin.JdbcThinUtils.nullableBooleanToByte;
+import static org.apache.ignite.internal.processors.odbc.jdbc.JdbcConnectionContext.DEFAULT_NESTED_TX_MODE;
 
 /**
  * JDBC IO layer implementation based on blocking IPC streams.
@@ -125,9 +126,6 @@ public class JdbcThinTcpIo {
 
     /** Random. */
     private static final AtomicLong IDX_GEN = new AtomicLong(new Random(U.currentTimeMillis()).nextLong());
-
-    /** Default nested tx mode for compatibility. */
-    private static final String DEFAULT_NESTED_TX_MODE = "ERROR";
 
     /** Connection properties. */
     private final ConnectionProperties connProps;
