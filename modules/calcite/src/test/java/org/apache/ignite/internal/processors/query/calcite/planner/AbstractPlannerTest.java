@@ -24,6 +24,7 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 import java.util.UUID;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.BiFunction;
 import java.util.function.Predicate;
 import java.util.function.Supplier;
@@ -110,6 +111,8 @@ import static org.apache.ignite.internal.processors.query.calcite.externalize.Re
 //@WithSystemProperty(key = "calcite.debug", value = "true")
 @SuppressWarnings({"TooBroadScope", "FieldCanBeLocal", "TypeMayBeWeakened"})
 public abstract class AbstractPlannerTest extends GridCommonAbstractTest {
+
+    private static final AtomicInteger NEXT_TABLE_ID = new AtomicInteger(2001);
     /** */
     protected static final IgniteTypeFactory TYPE_FACTORY = new IgniteTypeFactory(IgniteTypeSystem.INSTANCE);
 

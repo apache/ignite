@@ -29,6 +29,7 @@ import org.apache.calcite.rel.RelVisitor;
 import org.apache.calcite.rel.core.JoinRelType;
 import org.apache.calcite.rel.type.RelDataTypeFactory;
 import org.apache.calcite.schema.SchemaPlus;
+import org.apache.calcite.sql.type.SqlTypeName;
 import org.apache.calcite.util.ImmutableBitSet;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
@@ -85,6 +86,15 @@ import static org.apache.ignite.configuration.IgniteConfiguration.DFLT_THREAD_KE
 //@WithSystemProperty(key = "calcite.debug", value = "true")
 @SuppressWarnings({"TooBroadScope", "FieldCanBeLocal", "TypeMayBeWeakened"})
 public class PlannerTest extends AbstractPlannerTest {
+    private static final int TIME_PRECISION = 9;
+    private static final int STRING_PRECISION = 65536;
+    private static final int DECIMAL_PRECISION = 32767;
+    private static final int DECIMAL_SCALE = 32767;
+    private static final int TIMESTAMP_DEFAULT_PRECISION = 6;
+
+    private final IgniteTypeSystem typeSystem = IgniteTypeSystem.INSTANCE;
+
+
     /**
      * @throws Exception If failed.
      */
@@ -147,6 +157,62 @@ public class PlannerTest extends AbstractPlannerTest {
         IgniteRel phys = physicalPlan(sql, publicSchema);
 
         assertEquals(2, splitPlan(phys).fragments().size());
+    }
+
+    @Test
+    public void getMaxPrecision() {
+        assertEquals(STRING_PRECISION, typeSystem.getMaxPrecision(SqlTypeName.CHAR));
+        assertEquals(STRING_PRECISION, typeSystem.getMaxPrecision(SqlTypeName.VARCHAR));
+        assertEquals(STRING_PRECISION, typeSystem.getMaxPrecision(SqlTypeName.BINARY));
+        assertEquals(STRING_PRECISION, typeSystem.getMaxPrecision(SqlTypeName.VARBINARY));
+
+        assertEquals(3, typeSystem.getMaxPrecision(SqlTypeName.TINYINT));
+        assertEquals(5, typeSystem.getMaxPrecision(SqlTypeName.SMALLINT));
+        assertEquals(10, typeSystem.getMaxPrecision(SqlTypeName.INTEGER));
+        assertEquals(19, typeSystem.getMaxPrecision(SqlTypeName.BIGINT));
+        assertEquals(7, typeSystem.getMaxPrecision(SqlTypeName.REAL));
+        assertEquals(14, typeSystem.getMaxPrecision(SqlTypeName.FLOAT));
+        assertEquals(15, typeSystem.getMaxPrecision(SqlTypeName.DOUBLE));
+        assertEquals(DECIMAL_PRECISION, typeSystem.getMaxPrecision(SqlTypeName.DECIMAL));
+
+        assertEquals(0, typeSystem.getMaxPrecision(SqlTypeName.DATE));
+        assertEquals(TIME_PRECISION, typeSystem.getMaxPrecision(SqlTypeName.TIME));
+        assertEquals(TIME_PRECISION, typeSystem.getMaxPrecision(SqlTypeName.TIME_WITH_LOCAL_TIME_ZONE));
+        assertEquals(TIME_PRECISION, typeSystem.getMaxPrecision(SqlTypeName.TIMESTAMP));
+        assertEquals(TIME_PRECISION, typeSystem.getMaxPrecision(SqlTypeName.TIMESTAMP_WITH_LOCAL_TIME_ZONE));
+    }
+
+    @Test
+    public void getDefaultPrecision() {
+//        assertEquals(1, typeSystem.getDefaultPrecision(SqlTypeName.CHAR));
+//        assertEquals(RelDataType.PRECISION_NOT_SPECIFIED, typeSystem.getDefaultPrecision(SqlTypeName.VARCHAR));
+//        assertEquals(1, typeSystem.getDefaultPrecision(SqlTypeName.BINARY));
+//        assertEquals(RelDataType.PRECISION_NOT_SPECIFIED, typeSystem.getDefaultPrecision(SqlTypeName.VARBINARY));
+//
+//        assertEquals(3, typeSystem.getDefaultPrecision(SqlTypeName.TINYINT));
+//        assertEquals(5, typeSystem.getDefaultPrecision(SqlTypeName.SMALLINT));
+//        assertEquals(10, typeSystem.getDefaultPrecision(SqlTypeName.INTEGER));
+//        assertEquals(19, typeSystem.getDefaultPrecision(SqlTypeName.BIGINT));
+//        assertEquals(7, typeSystem.getDefaultPrecision(SqlTypeName.REAL));
+        assertEquals(14, typeSystem.getDefaultPrecision(SqlTypeName.FLOAT));
+        assertEquals(15, typeSystem.getDefaultPrecision(SqlTypeName.DOUBLE));
+        assertEquals(DECIMAL_PRECISION, typeSystem.getDefaultPrecision(SqlTypeName.DECIMAL));
+
+        assertEquals(0, typeSystem.getDefaultPrecision(SqlTypeName.DATE));
+        assertEquals(TIME_PRECISION, typeSystem.getMaxPrecision(SqlTypeName.TIME));
+        assertEquals(0, typeSystem.getDefaultPrecision(SqlTypeName.TIME_WITH_LOCAL_TIME_ZONE));
+        assertEquals(TIMESTAMP_DEFAULT_PRECISION, typeSystem.getDefaultPrecision(SqlTypeName.TIMESTAMP));
+        assertEquals(TIMESTAMP_DEFAULT_PRECISION, typeSystem.getDefaultPrecision(SqlTypeName.TIMESTAMP_WITH_LOCAL_TIME_ZONE));
+    }
+
+    @Test
+    public void testGetMaxNumericPrecision() {
+        assertEquals(DECIMAL_PRECISION, typeSystem.getMaxNumericPrecision());
+    }
+
+    @Test
+    public void testGetMaxNumericScale() {
+        assertEquals(DECIMAL_SCALE, typeSystem.getMaxNumericScale());
     }
 
     /**
