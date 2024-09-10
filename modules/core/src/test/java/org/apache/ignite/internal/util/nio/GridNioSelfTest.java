@@ -896,7 +896,6 @@ public class GridNioSelfTest extends GridCommonAbstractTest {
                             sndTimes.put(msg.getId(), end - start);
                         }
 
-                        assert latch.await(30, SECONDS);
                     }
                     catch (Exception e) {
                         error("Failed to send message.", e);
@@ -910,6 +909,8 @@ public class GridNioSelfTest extends GridCommonAbstractTest {
                 }
 
             }, THREAD_CNT, "sender");
+
+            assert latch.await(30, SECONDS);
 
             assertEquals("Unexpected message count", MSG_CNT * THREAD_CNT, lsnr.getMessageCount());
             assertFalse("Size check failed", lsnr.isSizeFailed());
@@ -1472,10 +1473,18 @@ public class GridNioSelfTest extends GridCommonAbstractTest {
          * @throws IOException If send failed.
          */
         public void sendMessage(byte[] data, int len) throws IOException, InterruptedException {
-            out.write(U.intToBytes(len));
-            out.write(data, 0, len);
+            CountDownLatch latch = new CountDownLatch(1);
+
+            try {
+                out.write(U.intToBytes(len));
+                out.write(data, 0, len);
+            }
+            finally {
+                latch.countDown(); // Signal that the work is done
+            }
 
             //Thread.sleep(50);
+            latch.await(); // This blocks until latch.countDown() is called
         }
 
         /**
