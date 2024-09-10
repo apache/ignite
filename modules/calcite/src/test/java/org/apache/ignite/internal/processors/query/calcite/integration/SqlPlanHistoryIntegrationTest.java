@@ -536,6 +536,7 @@ public class SqlPlanHistoryIntegrationTest extends GridCommonAbstractTest {
 
     /**
      * @param cmds Set of DML commands.
+     * @param isSimpleQry Simple query flag.
      */
     public void runJdbcDml(List<String> cmds, boolean isSimpleQry) throws SQLException {
         executeJdbcDml((stmt) -> {
@@ -552,6 +553,7 @@ public class SqlPlanHistoryIntegrationTest extends GridCommonAbstractTest {
 
     /**
      * @param task Task to execute.
+     * @param isSimpleQry Simple query flag.
      */
     public void executeJdbcDml(Consumer<Statement> task, boolean isSimpleQry) throws SQLException {
         if (loc || !isFullyFetched)
@@ -569,6 +571,7 @@ public class SqlPlanHistoryIntegrationTest extends GridCommonAbstractTest {
 
     /**
      * @param cmds Set of DML commands.
+     * @param isSimpleQry Simple query flag.
      */
     public void runSqlFieldsQueryDml(List<String> cmds, boolean isSimpleQry) {
         executeSqlFieldsQueryDml(
@@ -578,6 +581,7 @@ public class SqlPlanHistoryIntegrationTest extends GridCommonAbstractTest {
 
     /**
      * @param task Task to execute.
+     * @param isSimpleQry Simple query flag.
      */
     public void executeSqlFieldsQueryDml(Consumer<IgniteCache<Integer, String>> task, boolean isSimpleQry) {
         if (isClient && loc || !isFullyFetched)
@@ -590,7 +594,9 @@ public class SqlPlanHistoryIntegrationTest extends GridCommonAbstractTest {
         checkSqlPlanHistoryDml(3, isSimpleQry);
     }
 
-    /** */
+    /**
+     * @param node Ignite node to check SQL plan history for.
+     */
     public Collection<SqlPlan> getSqlPlanHistory(IgniteEx node) {
         return node.context().query().runningQueryManager().planHistoryTracker()
             .sqlPlanHistory().keySet();

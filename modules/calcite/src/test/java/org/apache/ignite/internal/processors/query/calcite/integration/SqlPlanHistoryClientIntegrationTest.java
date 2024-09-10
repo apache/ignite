@@ -41,6 +41,7 @@ public class SqlPlanHistoryClientIntegrationTest extends SqlPlanHistoryIntegrati
     /** {@inheritDoc} */
     @Override protected void startTestGrid() throws Exception {
         startGrids(2);
+
         startClientGrid(2);
     }
 }
