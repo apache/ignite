@@ -35,6 +35,7 @@ import org.apache.calcite.sql.SqlNodeList;
 import org.apache.calcite.sql.SqlUserDefinedTypeNameSpec;
 import org.apache.calcite.sql.fun.SqlStdOperatorTable;
 import org.apache.calcite.sql.parser.SqlParserPos;
+import org.apache.calcite.sql.type.SqlTypeFamily;
 import org.apache.calcite.sql.type.SqlTypeUtil;
 import org.apache.calcite.sql.validate.SqlValidator;
 import org.apache.calcite.sql.validate.SqlValidatorScope;
@@ -85,7 +86,7 @@ public class IgniteTypeCoercion extends TypeCoercionImpl {
             //
             RelDataType targetType = factory.leastRestrictive(Arrays.asList(leftType, rightType));
 
-            if (targetType == null)
+            if (targetType == null || targetType.getFamily() == SqlTypeFamily.ANY)
                 return super.binaryComparisonCoercion(binding);
             else {
                 boolean coerced = false;
