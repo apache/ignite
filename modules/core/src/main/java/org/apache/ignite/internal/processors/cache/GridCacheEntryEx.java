@@ -333,7 +333,6 @@ public interface GridCacheEntryEx {
      * @param oldValPresent {@code True} if oldValue present.
      * @param oldVal Old value.
      * @param topVer Topology version.
-     * @param filter Filter.
      * @param drType DR type.
      * @param drExpireTime DR expire time (if any).
      * @param explicitVer Explicit version (if any).
@@ -359,7 +358,6 @@ public interface GridCacheEntryEx {
         boolean oldValPresent,
         @Nullable CacheObject oldVal,
         AffinityTopologyVersion topVer,
-        CacheEntryPredicate[] filter,
         GridDrType drType,
         long drExpireTime,
         @Nullable GridCacheVersion explicitVer,
@@ -379,7 +377,6 @@ public interface GridCacheEntryEx {
      * @param oldValPresent {@code True} if oldValue present.
      * @param oldVal Old value.
      * @param topVer Topology version.
-     * @param filter Filter.
      * @param drType DR type.
      * @param explicitVer Explicit version (if any).
      * @param taskName Task name.
@@ -400,7 +397,6 @@ public interface GridCacheEntryEx {
         boolean oldValPresent,
         @Nullable CacheObject oldVal,
         AffinityTopologyVersion topVer,
-        CacheEntryPredicate[] filter,
         GridDrType drType,
         @Nullable GridCacheVersion explicitVer,
         String taskName,

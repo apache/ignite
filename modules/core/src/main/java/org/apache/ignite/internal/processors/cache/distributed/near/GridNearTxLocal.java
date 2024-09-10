@@ -3885,7 +3885,6 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
             isolation,
             createTtl,
             accessTtl,
-            CU.empty0(),
             skipStore,
             keepBinary);
 
