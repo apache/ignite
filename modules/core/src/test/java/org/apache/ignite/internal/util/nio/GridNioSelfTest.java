@@ -54,6 +54,7 @@ import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.jetbrains.annotations.Nullable;
 import org.junit.Test;
 
+import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static java.util.concurrent.TimeUnit.SECONDS;
 
 /**
@@ -1484,7 +1485,7 @@ public class GridNioSelfTest extends GridCommonAbstractTest {
             }
 
             //Thread.sleep(50);
-            latch.await(); // This blocks until latch.countDown() is called
+            latch.await(50, MILLISECONDS);
         }
 
         /**
