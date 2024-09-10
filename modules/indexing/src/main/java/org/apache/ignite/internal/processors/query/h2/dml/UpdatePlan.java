@@ -18,12 +18,9 @@
 package org.apache.ignite.internal.processors.query.h2.dml;
 
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Objects;
-import java.util.stream.Collectors;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.binary.BinaryObject;
 import org.apache.ignite.binary.BinaryObjectBuilder;
@@ -533,82 +530,5 @@ public final class UpdatePlan {
      */
     public boolean canSelectBeLazy() {
         return canSelectBeLazy;
-    }
-
-    /**
-     * @return String representation of update plan.
-     */
-    public String plan() {
-        StringBuilder sb = new StringBuilder("mode=" + mode +
-            "; table name=" + tbl.cacheName() +
-            "; group ID=" + tbl.cacheContext().groupId() +
-            "; columns=" + (colNames == null ? "N/A" : "[" + Arrays.stream(colNames).reduce((a, b) -> a + ", " + b)
-            .orElse("") + "]") +
-            "; column types=" + (colTypes == null ? "N/A" : "[" + Arrays.stream(colTypes).mapToObj(Objects::toString)
-            .reduce((a, b) -> a + ", " + b).orElse("") + "]") +
-            "; key column index=" + (keyColIdx < 0 ? "N/A" : keyColIdx) +
-            "; value column index=" + (valColIdx < 0 ? "N/A" : valColIdx) +
-            "; row count=" + rowsNum +
-            "; values=" + (rows == null ? "N/A" : "[" + rowsToString(rows) + "]") +
-            "; select statement based on initial DML statement=" + (selectQry == null ? "N/A" :
-            ("'" + selectQry + "' (is actual subquery executed on cache=" + isLocSubqry +
-            ", can be executed in lazy mode=" + canSelectBeLazy + ")")));
-
-        if (fastUpdate == null)
-            sb.append("; fast update=N/A");
-        else {
-            List<String> fastUpdateArgs = getFastUpdateArgs();
-
-            sb.append("; fast update arguments=[key=" + fastUpdateArgs.get(0) + ", value=" + fastUpdateArgs.get(1) +
-                ", new value=" + fastUpdateArgs.get(2) + "]");
-        }
-
-        sb.append("; distributed plan info=");
-
-        if (distributed == null)
-            sb.append("N/A");
-        else {
-            sb.append("[IDs of caches involved in update=[" +
-                distributed.getCacheIds().stream().map(Object::toString).collect(Collectors.joining(", ")) + "]" +
-                ", update involves only replicated caches=" + distributed.isReplicatedOnly());
-        }
-
-        return sb.toString();
-    }
-
-    /**
-     * @param rows Rows.
-     */
-    public String rowsToString(List<List<DmlArgument>> rows) {
-        StringBuilder result = new StringBuilder();
-
-        for (List<DmlArgument> row : rows) {
-            if (!row.isEmpty()) {
-                result.append("{");
-
-                result.append(row.stream()
-                    .map(arg -> ((DmlArguments.ConstantArgument)arg).getValue().toString())
-                    .collect(Collectors.joining(", ")));
-
-                result.append("}, ");
-            }
-        }
-
-        return result.length() > 0 ? result.substring(0, result.length() - 2) : "";
-    }
-
-    /** */
-    public List<String> getFastUpdateArgs() {
-        assert fastUpdate != null;
-
-        DmlArguments.ConstantArgument keyArg = (DmlArguments.ConstantArgument)fastUpdate.keyArg();
-        DmlArguments.ConstantArgument valArg = (DmlArguments.ConstantArgument)fastUpdate.valArg();
-        DmlArguments.ConstantArgument newValArg = (DmlArguments.ConstantArgument)fastUpdate.newValArg();
-
-        return Arrays.asList(
-            keyArg.getValue() == null ? "NULL" : keyArg.getValue().toString(),
-            valArg.getValue() == null ? "NULL" : valArg.getValue().toString(),
-            newValArg.getValue() == null ? "NULL" : newValArg.getValue().toString()
-        );
     }
 }

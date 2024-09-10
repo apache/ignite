@@ -42,6 +42,7 @@ import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.events.CacheQueryExecutedEvent;
 import org.apache.ignite.events.DiscoveryEvent;
+import org.apache.ignite.indexing.IndexingQueryEngineConfiguration;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.GridTopic;
 import org.apache.ignite.internal.metric.IoStatisticsHolder;
@@ -69,7 +70,6 @@ import org.apache.ignite.internal.processors.query.h2.twostep.messages.GridQuery
 import org.apache.ignite.internal.processors.query.h2.twostep.msg.GridH2DmlRequest;
 import org.apache.ignite.internal.processors.query.h2.twostep.msg.GridH2DmlResponse;
 import org.apache.ignite.internal.processors.query.h2.twostep.msg.GridH2QueryRequest;
-import org.apache.ignite.internal.processors.query.running.SqlPlanHistoryTracker;
 import org.apache.ignite.internal.processors.tracing.MTC;
 import org.apache.ignite.internal.processors.tracing.MTC.TraceSurroundings;
 import org.apache.ignite.internal.processors.tracing.Span;
@@ -477,15 +477,12 @@ public class GridMapQueryExecutor {
                             );
                         }
 
-                        SqlPlanHistoryTracker planHistTracker = ctx.query().runningQueryManager().planHistoryTracker();
-
-                        planHistTracker.addPlan(
+                        h2.runningQueryManager().planHistoryTracker().addPlan(
                             qryInfo.plan(),
                             sql,
                             schemaName,
                             false,
-                            qryInfo.beginTs(),
-                            SqlPlanHistoryTracker.SqlEngine.H2
+                            IndexingQueryEngineConfiguration.ENGINE_NAME
                         );
 
                         GridQueryCancel qryCancel = qryResults.queryCancel(qryIdx);

@@ -47,6 +47,7 @@ import org.apache.ignite.cache.query.QueryCancelledException;
 import org.apache.ignite.cache.query.QueryRetryException;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.events.DiscoveryEvent;
+import org.apache.ignite.indexing.IndexingQueryEngineConfiguration;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.GridTopic;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
@@ -77,7 +78,6 @@ import org.apache.ignite.internal.processors.query.h2.twostep.messages.GridQuery
 import org.apache.ignite.internal.processors.query.h2.twostep.msg.GridH2DmlRequest;
 import org.apache.ignite.internal.processors.query.h2.twostep.msg.GridH2DmlResponse;
 import org.apache.ignite.internal.processors.query.h2.twostep.msg.GridH2QueryRequest;
-import org.apache.ignite.internal.processors.query.running.SqlPlanHistoryTracker;
 import org.apache.ignite.internal.processors.tracing.MTC;
 import org.apache.ignite.internal.processors.tracing.MTC.TraceSurroundings;
 import org.apache.ignite.internal.util.typedef.C2;
@@ -527,15 +527,12 @@ public class GridReduceQueryExecutor {
                             );
                         }
 
-                        SqlPlanHistoryTracker planHistTracker = ctx.query().runningQueryManager().planHistoryTracker();
-
-                        planHistTracker.addPlan(
+                        h2.runningQueryManager().planHistoryTracker().addPlan(
                             qryInfo.plan(),
                             qry.originalSql(),
                             schemaName,
                             qry.isLocal(),
-                            qryStartTime,
-                            SqlPlanHistoryTracker.SqlEngine.H2
+                            IndexingQueryEngineConfiguration.ENGINE_NAME
                         );
 
                         H2PooledConnection conn0 = conn;

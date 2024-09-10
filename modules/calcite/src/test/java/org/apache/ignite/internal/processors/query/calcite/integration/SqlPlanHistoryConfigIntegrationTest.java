@@ -15,14 +15,14 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.query.calcite;
+package org.apache.ignite.internal.processors.query.calcite.integration;
 
 import org.apache.ignite.Ignite;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
 
 /** Test for Sql plan history configuration. */
-public class SqlPlanHistoryConfigTest extends GridCommonAbstractTest {
+public class SqlPlanHistoryConfigIntegrationTest extends GridCommonAbstractTest {
     /** Sql plan history size in the XML Spring config. */
     private static final int SQL_PLAN_HISTORY_SIZE_XML_CONFIG = 10;
 

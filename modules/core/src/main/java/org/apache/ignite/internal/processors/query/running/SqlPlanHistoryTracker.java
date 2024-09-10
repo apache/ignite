@@ -24,7 +24,7 @@ import org.apache.ignite.internal.util.GridBoundedConcurrentLinkedHashMap;
 /** Class that manages recording and storing SQL plans. */
 public class SqlPlanHistoryTracker {
     /** SQL plan history. */
-    private final GridBoundedConcurrentLinkedHashMap<SqlPlanKey, SqlPlan> sqlPlanHistory;
+    private final GridBoundedConcurrentLinkedHashMap<SqlPlan, Long> sqlPlanHistory;
 
     /** SQL plan history size. */
     private int historySize;
@@ -43,20 +43,19 @@ public class SqlPlanHistoryTracker {
      * @param qry Query.
      * @param schema Schema name.
      * @param loc Local query flag.
-     * @param startTs Start query timestamp.
      * @param engine SQL engine.
      */
-    public void addPlan(String plan, String qry, String schema, boolean loc, long startTs, SqlEngine engine) {
+    public void addPlan(String plan, String qry, String schema, boolean loc, String engine) {
         if (historySize <= 0)
             return;
 
-        SqlPlan sqlPlan = new SqlPlan(plan, qry, schema, loc, startTs, engine);
+        SqlPlan sqlPlan = new SqlPlan(plan, qry, schema, loc, engine);
 
-        sqlPlanHistory.put(sqlPlan.key(), sqlPlan);
+        sqlPlanHistory.put(sqlPlan, sqlPlan.startTime());
     }
 
     /** */
-    public Map<SqlPlanKey, SqlPlan> sqlPlanHistory() {
+    public Map<SqlPlan, Long> sqlPlanHistory() {
         if (historySize <= 0)
             return Collections.emptyMap();
 
@@ -68,14 +67,5 @@ public class SqlPlanHistoryTracker {
      */
     public void setHistorySize(int historySize) {
         this.historySize = historySize;
-    }
-
-    /** */
-    public enum SqlEngine {
-        /** */
-        CALCITE,
-
-        /** */
-        H2
     }
 }

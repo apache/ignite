@@ -15,32 +15,32 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.query.running;
+package org.apache.ignite.internal.processors.query.calcite.integration;
 
-/** SQL plan history entry key value. */
-public class SqlPlanValue {
-    /** Start query timestamp. */
-    private final long startTime;
+import org.apache.ignite.internal.IgniteEx;
+import org.apache.ignite.testframework.junits.JUnitAssertAware;
 
-    /** SQL engine. */
-    private final SqlPlanHistoryTracker.SqlEngine engine;
+/** Tests for SQL plan history from client (Calcite engine). */
+public class SqlPlanHistoryClientIntegrationTest extends SqlPlanHistoryIntegrationTest {
+    /** {@inheritDoc} */
+    @Override protected void beforeTest() throws Exception {
+        super.beforeTest();
 
-    /**
-     * @param startTime Start query timestamp.
-     * @param engine Sql engine.
-     */
-    public SqlPlanValue(long startTime, SqlPlanHistoryTracker.SqlEngine engine) {
-        this.startTime = startTime;
-        this.engine = engine;
+        setClientMode(true);
     }
 
-    /** */
-    public long startTime() {
-        return startTime;
+    /** {@inheritDoc} */
+    @Override protected IgniteEx queryNode() {
+        IgniteEx node = grid(2);
+
+        JUnitAssertAware.assertTrue(node.context().clientNode());
+
+        return node;
     }
 
-    /** */
-    public String engine() {
-        return engine.name();
+    /** {@inheritDoc} */
+    @Override protected void startTestGrid() throws Exception {
+        startGrids(2);
+        startClientGrid(2);
     }
 }

@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.query.calcite;
+package org.apache.ignite.internal.processors.query.calcite.integration;
 
 import java.sql.Connection;
 import java.sql.ResultSet;
@@ -40,12 +40,12 @@ import org.apache.ignite.calcite.CalciteQueryEngineConfiguration;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.SqlConfiguration;
+import org.apache.ignite.indexing.IndexingQueryEngineConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.processors.query.IgniteSQLException;
 import org.apache.ignite.internal.processors.query.QueryEngineConfigurationEx;
 import org.apache.ignite.internal.processors.query.running.SqlPlan;
-import org.apache.ignite.internal.processors.query.running.SqlPlanHistoryTracker;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
@@ -55,7 +55,7 @@ import org.junit.runners.Parameterized;
 
 /** Tests for SQL plan history (Calcite engine). */
 @RunWith(Parameterized.class)
-public class SqlPlanHistoryCalciteSelfTest extends GridCommonAbstractTest {
+public class SqlPlanHistoryIntegrationTest extends GridCommonAbstractTest {
     /** SQL plan history size. */
     private static final int PLAN_HISTORY_SIZE = 10;
 
@@ -87,18 +87,6 @@ public class SqlPlanHistoryCalciteSelfTest extends GridCommonAbstractTest {
         "delete from A.String where _key=101"
     );
 
-    /** Set of DML commands with multiple operations. */
-    private final List<String> dmlCmdsMultiOps = Arrays.asList(
-        "insert into A.String (_key, _val) values(101, '101'), (102, '102'), (103, '103')",
-        "update A.String set _val = case _key " +
-            "when 101 then '111' " +
-            "when 102 then '112' " +
-            "when 103 then '113' " +
-            "end " +
-            "where _key in (101, 102, 103)",
-        "delete from A.String where _key in (101, 102, 103)"
-    );
-
     /** Set of DML commands with joins. */
     private final List<String> dmlCmdsWithJoins = Arrays.asList(
         "insert into A.String (_key, _val) select o._key, p.name " +
@@ -107,17 +95,6 @@ public class SqlPlanHistoryCalciteSelfTest extends GridCommonAbstractTest {
             "(select o._key from \"pers\".Person p, \"org\".Organization o where p.orgId=o._key)",
         "delete from A.String where _key in (select orgId from \"pers\".Person)"
     );
-
-    /** Set of failed DML commands. */
-    private final List<String> dmlCmdsFailed = Arrays.asList(
-        "insert into A.String (_key, _val) select o._key, p.name from \"pers\".Person p, \"org\".Organization o " +
-            "where A.fail()=1",
-        "update A.String set _val = 'failed' where A.fail()=1",
-        "delete from A.String where A.fail()=1"
-    );
-
-    /** Strings for checking SQL plan history after executing DML commands. */
-    private final List<String> dmlCheckStrings = Arrays.asList("mode=INSERT", "mode=UPDATE", "mode=DELETE");
 
     /** Successful SqlFieldsQuery. */
     private final SqlFieldsQuery sqlFieldsQry = new SqlFieldsQuery(SQL);
@@ -157,7 +134,7 @@ public class SqlPlanHistoryCalciteSelfTest extends GridCommonAbstractTest {
     private boolean isClient;
 
     /** SQL engine. */
-    protected SqlPlanHistoryTracker.SqlEngine sqlEngine = SqlPlanHistoryTracker.SqlEngine.CALCITE;
+    protected String sqlEngine = CalciteQueryEngineConfiguration.ENGINE_NAME;
 
     /** Local query flag. */
     @Parameterized.Parameter
@@ -224,12 +201,23 @@ public class SqlPlanHistoryCalciteSelfTest extends GridCommonAbstractTest {
     }
 
     /**
+     * @return Ignite map node.
+     */
+    protected IgniteEx mapNode() {
+        IgniteEx node = grid(1);
+
+        assertFalse(node.context().clientNode());
+
+        return node;
+    }
+
+    /**
      * Starts Ignite instance.
      *
      * @throws Exception In case of failure.
      */
     protected void startTestGrid() throws Exception {
-        startGrid(0);
+        startGrids(2);
     }
 
     /** {@inheritDoc} */
@@ -253,7 +241,6 @@ public class SqlPlanHistoryCalciteSelfTest extends GridCommonAbstractTest {
         cacheOrg.put(102, new Organization("o2"));
         cachePers.put(103, new Person(101, "p1"));
         cachePers.put(104, new Person(102, "p2"));
-        cachePers.put(105, new Person(103, "p3"));
     }
 
     /** {@inheritDoc} */
@@ -271,7 +258,7 @@ public class SqlPlanHistoryCalciteSelfTest extends GridCommonAbstractTest {
     /**
      * @param sqlEngine Sql engine.
      */
-    protected void setSqlEngine(SqlPlanHistoryTracker.SqlEngine sqlEngine) {
+    protected void setSqlEngine(String sqlEngine) {
         this.sqlEngine = sqlEngine;
     }
 
@@ -287,6 +274,8 @@ public class SqlPlanHistoryCalciteSelfTest extends GridCommonAbstractTest {
      */
     public void resetPlanHistory() {
         queryNode().context().query().runningQueryManager().resetPlanHistoryMetrics();
+
+        mapNode().context().query().runningQueryManager().resetPlanHistoryMetrics();
     }
 
     /** Checks successful JDBC queries. */
@@ -350,7 +339,7 @@ public class SqlPlanHistoryCalciteSelfTest extends GridCommonAbstractTest {
 
         cacheQuery(sqlFieldsQryWithReducePhase, "pers");
 
-        checkSqlPlanHistory((!isClient && sqlEngine == SqlPlanHistoryTracker.SqlEngine.H2) ? 3 : 1);
+        checkSqlPlanHistory((!isClient && sqlEngine == IndexingQueryEngineConfiguration.ENGINE_NAME) ? 3 : 1);
     }
 
     /** Checks failed SqlFieldsQuery with reduce phase. */
@@ -367,7 +356,7 @@ public class SqlPlanHistoryCalciteSelfTest extends GridCommonAbstractTest {
                 //No-Op
             }
 
-            checkSqlPlanHistory((!isClient && sqlEngine == SqlPlanHistoryTracker.SqlEngine.H2) ? i + 1 : 0);
+            checkSqlPlanHistory((!isClient && sqlEngine == IndexingQueryEngineConfiguration.ENGINE_NAME) ? i + 1 : 0);
 
             resetPlanHistory();
         }
@@ -400,66 +389,25 @@ public class SqlPlanHistoryCalciteSelfTest extends GridCommonAbstractTest {
     /** Checks DML commands executed via JDBC. */
     @Test
     public void testJdbcDml() throws SQLException {
-        runJdbcDml(dmlCmds);
-    }
-
-    /** Checks DML commands with multiple operations executed via JDBC. */
-    @Test
-    public void testJdbcDmlMultiOps() throws SQLException {
-        runJdbcDml(dmlCmdsMultiOps);
+        runJdbcDml(dmlCmds, true);
     }
 
     /** Checks DML commands with joins executed via JDBC. */
     @Test
     public void testJdbcDmlWithJoins() throws SQLException {
-        runJdbcDml(dmlCmdsWithJoins);
-    }
-
-    /** Checks failed DML commands executed via JDBC. */
-    @Test
-    public void testJdbcDmlFailed() throws SQLException {
-        executeJdbcDml((stmt) -> {
-            for (String cmd : dmlCmdsFailed)
-                try {
-                    stmt.execute(cmd);
-                }
-                catch (Exception ignore) {
-                    //No-Op
-                }
-        });
+        runJdbcDml(dmlCmdsWithJoins, false);
     }
 
     /** Checks DML commands executed via SqlFieldsQuery. */
     @Test
     public void testSqlFieldsDml() {
-        runSqlFieldsQueryDml(dmlCmds);
-    }
-
-    /** Checks DML commands with multiple operations executed via SqlFieldsQuery. */
-    @Test
-    public void testSqlFieldsDmlMultiOps() {
-        runSqlFieldsQueryDml(dmlCmdsMultiOps);
+        runSqlFieldsQueryDml(dmlCmds, true);
     }
 
     /** Checks DML commands with joins executed via SqlFieldsQuery. */
     @Test
     public void testSqlFieldsDmlWithJoins() {
-        runSqlFieldsQueryDml(dmlCmdsWithJoins);
-    }
-
-    /** Checks failed DML commands executed via SqlFieldsQuery. */
-    @Test
-    public void testSqlFieldsDmlFailed() {
-        executeSqlFieldsQueryDml(cache -> {
-            for (String cmd : dmlCmdsFailed) {
-                try {
-                    cache.query(new SqlFieldsQuery(cmd).setLocal(loc));
-                }
-                catch (Exception ignore) {
-                    //No-Op
-                }
-            }
-        });
+        runSqlFieldsQueryDml(dmlCmdsWithJoins, false);
     }
 
     /** Checks that older plan entries are evicted when maximum history size is reached. */
@@ -477,11 +425,12 @@ public class SqlPlanHistoryCalciteSelfTest extends GridCommonAbstractTest {
             }
         }
 
-        GridTestUtils.waitForCondition(() -> getSqlPlanHistoryValues().size() == PLAN_HISTORY_SIZE, 1000);
+        GridTestUtils.waitForCondition(() -> getSqlPlanHistory(queryNode()).size() == PLAN_HISTORY_SIZE, 1000);
 
-        checkSqlPlanHistory((isClient && sqlEngine == SqlPlanHistoryTracker.SqlEngine.H2) ? 0 : PLAN_HISTORY_SIZE);
+        checkSqlPlanHistory((isClient && sqlEngine == IndexingQueryEngineConfiguration.ENGINE_NAME) ? 0 :
+            PLAN_HISTORY_SIZE);
 
-        Set<String> qrys = getSqlPlanHistoryValues().stream().map(SqlPlan::query).collect(Collectors.toSet());
+        Set<String> qrys = getSqlPlanHistory(queryNode()).stream().map(SqlPlan::query).collect(Collectors.toSet());
 
         for (int i = 1; i <= PLAN_HISTORY_EXCESS; i++)
             assertFalse(qrys.contains(SQL + " where A.fail=" + i));
@@ -494,7 +443,7 @@ public class SqlPlanHistoryCalciteSelfTest extends GridCommonAbstractTest {
 
         executeQuery(sqlFieldsQry, (q) -> cacheQuery(q, "A"));
 
-        assertTrue(getSqlPlanHistoryValues().isEmpty());
+        assertTrue(getSqlPlanHistory(queryNode()).isEmpty());
     }
 
     /**
@@ -588,7 +537,7 @@ public class SqlPlanHistoryCalciteSelfTest extends GridCommonAbstractTest {
     /**
      * @param cmds Set of DML commands.
      */
-    public void runJdbcDml(List<String> cmds) throws SQLException {
+    public void runJdbcDml(List<String> cmds, boolean isSimpleQry) throws SQLException {
         executeJdbcDml((stmt) -> {
             for (String cmd : cmds) {
                 try {
@@ -598,13 +547,13 @@ public class SqlPlanHistoryCalciteSelfTest extends GridCommonAbstractTest {
                     throw new RuntimeException(e);
                 }
             }
-        });
+        }, isSimpleQry);
     }
 
     /**
      * @param task Task to execute.
      */
-    public void executeJdbcDml(Consumer<Statement> task) throws SQLException {
+    public void executeJdbcDml(Consumer<Statement> task, boolean isSimpleQry) throws SQLException {
         if (loc || !isFullyFetched)
             return;
 
@@ -615,21 +564,22 @@ public class SqlPlanHistoryCalciteSelfTest extends GridCommonAbstractTest {
             task.accept(stmt);
         }
 
-        checkSqlPlanHistoryDml(3);
+        checkSqlPlanHistoryDml(3, isSimpleQry);
     }
 
     /**
      * @param cmds Set of DML commands.
      */
-    public void runSqlFieldsQueryDml(List<String> cmds) {
-        executeSqlFieldsQueryDml(cache ->
-            cmds.forEach(cmd -> cache.query(new SqlFieldsQuery(cmd).setLocal(loc))));
+    public void runSqlFieldsQueryDml(List<String> cmds, boolean isSimpleQry) {
+        executeSqlFieldsQueryDml(
+            cache -> cmds.forEach(cmd -> cache.query(new SqlFieldsQuery(cmd).setLocal(loc))),
+            isSimpleQry);
     }
 
     /**
      * @param task Task to execute.
      */
-    public void executeSqlFieldsQueryDml(Consumer<IgniteCache<Integer, String>> task) {
+    public void executeSqlFieldsQueryDml(Consumer<IgniteCache<Integer, String>> task, boolean isSimpleQry) {
         if (isClient && loc || !isFullyFetched)
             return;
 
@@ -637,18 +587,18 @@ public class SqlPlanHistoryCalciteSelfTest extends GridCommonAbstractTest {
 
         task.accept(cache);
 
-        checkSqlPlanHistoryDml(3);
+        checkSqlPlanHistoryDml(3, isSimpleQry);
     }
 
     /** */
-    public Collection<SqlPlan> getSqlPlanHistoryValues() {
-        return queryNode().context().query().runningQueryManager().planHistoryTracker()
-            .sqlPlanHistory().values();
+    public Collection<SqlPlan> getSqlPlanHistory(IgniteEx node) {
+        return node.context().query().runningQueryManager().planHistoryTracker()
+            .sqlPlanHistory().keySet();
     }
 
     /** */
     public int getExpectedHistorySize() {
-        return (isClient && sqlEngine == SqlPlanHistoryTracker.SqlEngine.H2) ? 0 : 1;
+        return (isClient && sqlEngine == IndexingQueryEngineConfiguration.ENGINE_NAME) ? 0 : 1;
     }
 
     /**
@@ -657,7 +607,7 @@ public class SqlPlanHistoryCalciteSelfTest extends GridCommonAbstractTest {
      * @param size Number of SQL plan entries expected to be in the history.
      */
     public void checkSqlPlanHistory(int size) {
-        Collection<SqlPlan> sqlPlans = getSqlPlanHistoryValues();
+        Collection<SqlPlan> sqlPlans = getSqlPlanHistory(queryNode());
 
         assertNotNull(sqlPlans);
 
@@ -668,19 +618,24 @@ public class SqlPlanHistoryCalciteSelfTest extends GridCommonAbstractTest {
      * Prepares SQL plan history entries for futher checking (DML operations).
      *
      * @param size Number of SQL plan entries expected to be in the history.
+     * @param isSimpleQry Simple query flag.
      */
-    public void checkSqlPlanHistoryDml(int size) {
-        Collection<SqlPlan> sqlPlans = getSqlPlanHistoryValues();
+    public void checkSqlPlanHistoryDml(int size, boolean isSimpleQry) {
+        Collection<SqlPlan> sqlPlans = getSqlPlanHistory(queryNode());
 
         assertNotNull(sqlPlans);
 
-        if (sqlEngine == SqlPlanHistoryTracker.SqlEngine.H2) {
-            Collection<SqlPlan> sqlPlans0 = new ArrayList<>();
+        if (sqlEngine == IndexingQueryEngineConfiguration.ENGINE_NAME) {
+            String check;
 
-            for (String str : dmlCheckStrings)
-                sqlPlans0.addAll(sqlPlans.stream().filter(p -> p.plan().contains(str)).collect(Collectors.toList()));
+            if (isSimpleQry)
+                check = "no SELECT queries have been executed.";
+            else
+                check = "the following " + (loc ? "local " : "") + "query has been executed:";
 
-            sqlPlans = sqlPlans0;
+            sqlPlans = sqlPlans.stream().filter(p -> p.plan().contains(check)).collect(Collectors.toList());
+
+            checkMetrics((!isSimpleQry && !loc) ? size : 0, getSqlPlanHistory(mapNode()));
         }
 
         checkMetrics(size, sqlPlans);

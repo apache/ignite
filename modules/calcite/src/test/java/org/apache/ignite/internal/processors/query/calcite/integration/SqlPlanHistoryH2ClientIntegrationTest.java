@@ -15,13 +15,13 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.query.calcite;
+package org.apache.ignite.internal.processors.query.calcite.integration;
 
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.testframework.junits.JUnitAssertAware;
 
 /** Tests for SQL plan history from client (H2 engine). */
-public class SqlPlanHistoryH2FromClientSelfTest extends SqlPlanHistoryH2SelfTest {
+public class SqlPlanHistoryH2ClientIntegrationTest extends SqlPlanHistoryH2IntegrationTest {
     /** {@inheritDoc} */
     @Override protected void beforeTest() throws Exception {
         super.beforeTest();
@@ -31,7 +31,7 @@ public class SqlPlanHistoryH2FromClientSelfTest extends SqlPlanHistoryH2SelfTest
 
     /** {@inheritDoc} */
     @Override protected IgniteEx queryNode() {
-        IgniteEx node = grid(1);
+        IgniteEx node = grid(2);
 
         JUnitAssertAware.assertTrue(node.context().clientNode());
 
@@ -40,7 +40,7 @@ public class SqlPlanHistoryH2FromClientSelfTest extends SqlPlanHistoryH2SelfTest
 
     /** {@inheritDoc} */
     @Override protected void startTestGrid() throws Exception {
-        startGrid(0);
-        startClientGrid(1);
+        startGrids(2);
+        startClientGrid(2);
     }
 }

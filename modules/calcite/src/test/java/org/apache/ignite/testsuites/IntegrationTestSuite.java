@@ -59,6 +59,11 @@ import org.apache.ignite.internal.processors.query.calcite.integration.ServerSta
 import org.apache.ignite.internal.processors.query.calcite.integration.SetOpIntegrationTest;
 import org.apache.ignite.internal.processors.query.calcite.integration.SortAggregateIntegrationTest;
 import org.apache.ignite.internal.processors.query.calcite.integration.SqlDiagnosticIntegrationTest;
+import org.apache.ignite.internal.processors.query.calcite.integration.SqlPlanHistoryClientIntegrationTest;
+import org.apache.ignite.internal.processors.query.calcite.integration.SqlPlanHistoryConfigIntegrationTest;
+import org.apache.ignite.internal.processors.query.calcite.integration.SqlPlanHistoryH2ClientIntegrationTest;
+import org.apache.ignite.internal.processors.query.calcite.integration.SqlPlanHistoryH2IntegrationTest;
+import org.apache.ignite.internal.processors.query.calcite.integration.SqlPlanHistoryIntegrationTest;
 import org.apache.ignite.internal.processors.query.calcite.integration.StatisticsCommandDdlIntegrationTest;
 import org.apache.ignite.internal.processors.query.calcite.integration.StdSqlOperatorsTest;
 import org.apache.ignite.internal.processors.query.calcite.integration.SystemViewsIntegrationTest;
@@ -139,6 +144,11 @@ import org.junit.runners.Suite;
     DdlTransactionCalciteSelfTest.class,
     MultiLineQueryTest.class,
     ViewsIntegrationTest.class,
+    SqlPlanHistoryConfigIntegrationTest.class,
+    SqlPlanHistoryIntegrationTest.class,
+    SqlPlanHistoryClientIntegrationTest.class,
+    SqlPlanHistoryH2IntegrationTest.class,
+    SqlPlanHistoryH2ClientIntegrationTest.class,
 })
 public class IntegrationTestSuite {
 }

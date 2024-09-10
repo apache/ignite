@@ -101,19 +101,4 @@ public final class FastUpdate {
 
         return res ? UpdateResult.ONE : UpdateResult.ZERO;
     }
-
-    /** */
-    public DmlArgument keyArg() {
-        return keyArg;
-    }
-
-    /** */
-    public DmlArgument valArg() {
-        return valArg;
-    }
-
-    /** */
-    public DmlArgument newValArg() {
-        return newValArg;
-    }
 }

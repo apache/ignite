@@ -17,71 +17,103 @@
 
 package org.apache.ignite.internal.processors.query.running;
 
+import java.util.Objects;
+import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.internal.util.typedef.internal.U;
+
 /** Representation of an entry in SQL plan history. */
 public class SqlPlan {
-    /** */
-    private final SqlPlanKey key;
+    /** SQL plan. */
+    private final String plan;
 
-    /** */
-    private final SqlPlanValue val;
+    /** Query. */
+    private final String qry;
+
+    /** Schema name. */
+    private final String schema;
+
+    /** Local query flag. */
+    private final boolean loc;
+
+    /** SQL engine. */
+    private final String engine;
+
+    /** Query start timestamp. */
+    private final long startTime;
+
+    /** Pre-calculated hash code. */
+    private final int hash;
 
     /**
      * @param plan SQL plan.
      * @param qry Query.
      * @param schema Schema name.
      * @param loc Local query flag.
-     * @param startTime Start query timestamp.
      */
     public SqlPlan(
         String plan,
         String qry,
         String schema,
         boolean loc,
-        long startTime,
-        SqlPlanHistoryTracker.SqlEngine engine
+        String engine
     ) {
-        key = new SqlPlanKey(plan, qry, schema, loc);
+        this.plan = plan;
+        this.qry = qry;
+        this.schema = schema;
+        this.loc = loc;
+        this.engine = engine;
 
-        val = new SqlPlanValue(startTime, engine);
-    }
+        startTime = U.currentTimeMillis();
 
-    /** */
-    public SqlPlanKey key() {
-        return key;
-    }
-
-    /** */
-    public SqlPlanValue value() {
-        return val;
+        hash = Objects.hash(plan, qry, schema, loc, engine);
     }
 
     /** */
     public String plan() {
-        return key.plan();
+        return plan;
     }
 
     /** */
     public String query() {
-        return key.query();
+        return qry;
     }
 
     /** */
     public String schema() {
-        return key.schema();
+        return schema;
     }
 
     /** */
     public boolean local() {
-        return key.local();
-    }
-
-    /** */
-    public long startTime() {
-        return val.startTime();
+        return loc;
     }
 
     /** */
     public String engine() {
-        return val.engine();
+        return engine;
+    }
+
+    /** */
+    public long startTime() {
+        return startTime;
+    }
+
+    /** {@inheritDoc} */
+    @Override public int hashCode() {
+        return hash;
+    }
+
+    /** {@inheritDoc} */
+    @Override public boolean equals(Object o) {
+        if (this == o)
+            return true;
+
+        if (o == null || getClass() != o.getClass())
+            return false;
+
+        SqlPlan plan0 = (SqlPlan)o;
+
+        return F.eq(plan, plan0.plan) && F.eq(qry, plan0.qry) && F.eq(schema, plan0.schema) && F.eq(loc, plan0.loc)
+            && F.eq(engine, plan0.engine);
     }
 }

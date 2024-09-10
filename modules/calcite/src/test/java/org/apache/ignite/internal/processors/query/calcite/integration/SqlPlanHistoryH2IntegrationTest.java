@@ -15,14 +15,13 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.query.calcite;
+package org.apache.ignite.internal.processors.query.calcite.integration;
 
 import org.apache.ignite.indexing.IndexingQueryEngineConfiguration;
 import org.apache.ignite.internal.processors.query.QueryEngineConfigurationEx;
-import org.apache.ignite.internal.processors.query.running.SqlPlanHistoryTracker;
 
 /** Tests for SQL plan history (H2 engine). */
-public class SqlPlanHistoryH2SelfTest extends SqlPlanHistoryCalciteSelfTest {
+public class SqlPlanHistoryH2IntegrationTest extends SqlPlanHistoryIntegrationTest {
     /** {@inheritDoc} */
     @Override protected QueryEngineConfigurationEx configureSqlEngine() {
         return new IndexingQueryEngineConfiguration();
@@ -32,6 +31,6 @@ public class SqlPlanHistoryH2SelfTest extends SqlPlanHistoryCalciteSelfTest {
     @Override protected void beforeTest() throws Exception {
         super.beforeTest();
 
-        setSqlEngine(SqlPlanHistoryTracker.SqlEngine.H2);
+        setSqlEngine(IndexingQueryEngineConfiguration.ENGINE_NAME);
     }
 }
