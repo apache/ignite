@@ -219,7 +219,7 @@ public class TxWithKeyContentionSelfTest extends GridCommonAbstractTest {
     private void runKeyCollisionsMetric(TransactionConcurrency concurrency, TransactionIsolation isolation) throws Exception {
         Ignite ig = startGridsMultiThreaded(3);
 
-        int contCnt = (int)U.staticField(IgniteTxManager.class, "COLLISIONS_QUEUE_THRESHOLD") * 5; //500
+        int contCnt = (int)U.staticField(IgniteTxManager.class, "COLLISIONS_QUEUE_THRESHOLD") * 5;
 
         CountDownLatch txLatch = new CountDownLatch(contCnt);
 
@@ -239,7 +239,7 @@ public class TxWithKeyContentionSelfTest extends GridCommonAbstractTest {
 
         CountDownLatch blockOnce = new CountDownLatch(1);
 
-        for (Ignite ig0 : G.allGrids()) { //1-3
+        for (Ignite ig0 : G.allGrids()) {
             if (ig0.configuration().isClientMode())
                 continue;
 
@@ -266,11 +266,11 @@ public class TxWithKeyContentionSelfTest extends GridCommonAbstractTest {
             }
         });
 
-        blockOnce.await(); // it`s ok
+        blockOnce.await();
 
         GridCompoundFuture<?, ?> finishFut = new GridCompoundFuture<>();
 
-        for (int i = 0; i < contCnt; ++i) { // 0-500
+        for (int i = 0; i < contCnt; ++i) {
             IgniteInternalFuture f0 = GridTestUtils.runAsync(() -> {
                 try (Transaction tx = cliTxMgr.txStart(concurrency, isolation)) {
                     cache0.put(keyId, 0);
@@ -296,6 +296,8 @@ public class TxWithKeyContentionSelfTest extends GridCommonAbstractTest {
             commSpi0.stopBlock();
         }
 
+        CountDownLatch latch = new CountDownLatch(1);
+
         IgniteTxManager srvTxMgr = ((IgniteEx)ig).context().cache().context().tm();
 
         try {
@@ -304,16 +306,14 @@ public class TxWithKeyContentionSelfTest extends GridCommonAbstractTest {
         catch (IgniteCheckedException e) {
             fail(e.toString());
         }
-
-        try {
-            Thread.sleep(3000);
-        }
-        catch (InterruptedException e) {
-            throw new RuntimeException(e);
+        finally {
+            latch.countDown(); // Signal that the work is done
         }
 
-        //CacheMetrics metrics = ig.cache(DEFAULT_CACHE_NAME).localMetrics();
-        CacheMetrics metrics = ig.cache(DEFAULT_CACHE_NAME).metrics();
+        // Wait for the work to complete
+        latch.await(); // This blocks until latch.countDown() is called
+
+        CacheMetrics metrics = ig.cache(DEFAULT_CACHE_NAME).localMetrics();
 
         log.warning("!!!!!! metrics = " + metrics);
 
