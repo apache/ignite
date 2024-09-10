@@ -104,7 +104,6 @@ import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtTxFini
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtTxOnePhaseCommitAckRequest;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtTxPrepareRequest;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtTxPrepareResponse;
-import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtUnlockRequest;
 import org.apache.ignite.internal.processors.cache.distributed.dht.PartitionUpdateCountersMessage;
 import org.apache.ignite.internal.processors.cache.distributed.dht.TransactionAttributesAwareRequest;
 import org.apache.ignite.internal.processors.cache.distributed.dht.atomic.AtomicApplicationAttributesAwareRequest;
@@ -262,7 +261,6 @@ public class GridIoMessageFactory implements MessageFactoryProvider {
         factory.register((short)33, GridDhtTxFinishResponse::new);
         factory.register((short)34, GridDhtTxPrepareRequest::new);
         factory.register((short)35, GridDhtTxPrepareResponse::new);
-        factory.register((short)36, GridDhtUnlockRequest::new);
         factory.register((short)37, GridDhtAtomicDeferredUpdateResponse::new);
         factory.register((short)38, GridDhtAtomicUpdateRequest::new);
         factory.register((short)39, GridDhtAtomicUpdateResponse::new);
