@@ -31,8 +31,8 @@ import org.junit.Test;
 
 import static org.junit.Assert.assertEquals;
 
-/** */
-public class TestNumericTypesPericions {
+/** Test for numeric types precisions. */
+public class NumericTypesPrecisionsTest {
     /** */
     private static final IgniteTypeFactory TYPE_FACTORY = new IgniteTypeFactory();
 
