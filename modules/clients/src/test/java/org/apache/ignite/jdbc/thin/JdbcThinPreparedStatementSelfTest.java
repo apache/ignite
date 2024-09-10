@@ -873,31 +873,17 @@ public class JdbcThinPreparedStatementSelfTest extends JdbcThinAbstractSelfTest 
 
         ResultSet rs = stmt.executeQuery();
 
-        int cnt = 0;
-
-        while (rs.next()) {
-            if (cnt == 0)
-                assert rs.getInt("id") == 1;
-
-            cnt++;
-        }
-
-        assertEquals(1, cnt);
+        assertTrue(rs.next());
+        assertEquals(1, rs.getInt("id"));
+        assertFalse(rs.next());
 
         stmt.setNull(1, BLOB);
 
         rs = stmt.executeQuery();
 
-        cnt = 0;
-
-        while (rs.next()) {
-            if (cnt == 0)
-                assert rs.getInt("id") == 2;
-
-            cnt++;
-        }
-
-        assert cnt == 1;
+        assertTrue(rs.next());
+        assertEquals(2, rs.getInt("id"));
+        assertFalse(rs.next());
     }
 
     /**
@@ -915,31 +901,17 @@ public class JdbcThinPreparedStatementSelfTest extends JdbcThinAbstractSelfTest 
 
         ResultSet rs = stmt.executeQuery();
 
-        int cnt = 0;
-
-        while (rs.next()) {
-            if (cnt == 0)
-                assert rs.getInt("id") == 1;
-
-            cnt++;
-        }
-
-        assertEquals(1, cnt);
+        assertTrue(rs.next());
+        assertEquals(1, rs.getInt("id"));
+        assertFalse(rs.next());
 
         stmt.setNull(1, CLOB);
 
         rs = stmt.executeQuery();
 
-        cnt = 0;
-
-        while (rs.next()) {
-            if (cnt == 0)
-                assert rs.getInt("id") == 2;
-
-            cnt++;
-        }
-
-        assert cnt == 1;
+        assertTrue(rs.next());
+        assertEquals(2, rs.getInt("id"));
+        assertFalse(rs.next());
     }
 
     /**

@@ -608,21 +608,15 @@ public class JdbcThinResultSetSelfTest extends JdbcThinAbstractSelfTest {
     public void testBlob() throws Exception {
         ResultSet rs = stmt.executeQuery(SQL);
 
-        int cnt = 0;
+        assertTrue(rs.next());
 
-        while (rs.next()) {
-            if (cnt == 0) {
-                Blob blob = rs.getBlob("blobVal");
-                Assert.assertArrayEquals(blob.getBytes(1, (int)blob.length()), new byte[] {1});
+        Blob blob = rs.getBlob("blobVal");
+        Assert.assertArrayEquals(blob.getBytes(1, (int)blob.length()), new byte[] {1});
 
-                blob = rs.getBlob(16);
-                Assert.assertArrayEquals(blob.getBytes(1, (int)blob.length()), new byte[] {1});
-            }
+        blob = rs.getBlob(16);
+        Assert.assertArrayEquals(blob.getBytes(1, (int)blob.length()), new byte[] {1});
 
-            cnt++;
-        }
-
-        assert cnt == 1;
+        assertFalse(rs.next());
     }
 
     /**
@@ -632,21 +626,15 @@ public class JdbcThinResultSetSelfTest extends JdbcThinAbstractSelfTest {
     public void testClob() throws Exception {
         ResultSet rs = stmt.executeQuery(SQL);
 
-        int cnt = 0;
+        assertTrue(rs.next());
 
-        while (rs.next()) {
-            if (cnt == 0) {
-                Clob clob = rs.getClob("clobVal");
-                Assert.assertEquals("str", clob.getSubString(1, (int)clob.length()));
+        Clob clob = rs.getClob("clobVal");
+        Assert.assertEquals("str", clob.getSubString(1, (int)clob.length()));
 
-                clob = rs.getClob(17);
-                Assert.assertEquals("str", clob.getSubString(1, (int)clob.length()));
-            }
+        clob = rs.getClob(17);
+        Assert.assertEquals("str", clob.getSubString(1, (int)clob.length()));
 
-            cnt++;
-        }
-
-        assert cnt == 1;
+        assertFalse(rs.next());
     }
 
     /**

@@ -682,21 +682,13 @@ public class JdbcResultSetSelfTest extends GridCommonAbstractTest {
     public void testBlob() throws Exception {
         ResultSet rs = stmt.executeQuery(SQL);
 
-        int cnt = 0;
+        assertTrue(rs.next());
+        Blob blob = rs.getBlob("blobVal");
+        Assert.assertArrayEquals(blob.getBytes(1, (int)blob.length()), new byte[] {1});
 
-        while (rs.next()) {
-            if (cnt == 0) {
-                Blob blob = rs.getBlob("blobVal");
-                Assert.assertArrayEquals(blob.getBytes(1, (int)blob.length()), new byte[] {1});
-
-                blob = rs.getBlob(23);
-                Assert.assertArrayEquals(blob.getBytes(1, (int)blob.length()), new byte[] {1});
-            }
-
-            cnt++;
-        }
-
-        assert cnt == 1;
+        blob = rs.getBlob(23);
+        Assert.assertArrayEquals(blob.getBytes(1, (int)blob.length()), new byte[] {1});
+        assertFalse(rs.next());
     }
 
     /**
@@ -706,21 +698,13 @@ public class JdbcResultSetSelfTest extends GridCommonAbstractTest {
     public void testClob() throws Exception {
         ResultSet rs = stmt.executeQuery(SQL);
 
-        int cnt = 0;
+        assertTrue(rs.next());
+        Clob clob = rs.getClob("clobVal");
+        Assert.assertEquals("str", clob.getSubString(1, (int)clob.length()));
 
-        while (rs.next()) {
-            if (cnt == 0) {
-                Clob clob = rs.getClob("clobVal");
-                Assert.assertEquals("str", clob.getSubString(1, (int)clob.length()));
-
-                clob = rs.getClob(24);
-                Assert.assertEquals("str", clob.getSubString(1, (int)clob.length()));
-            }
-
-            cnt++;
-        }
-
-        assert cnt == 1;
+        clob = rs.getClob(24);
+        Assert.assertEquals("str", clob.getSubString(1, (int)clob.length()));
+        assertFalse(rs.next());
     }
 
     /**
