@@ -453,8 +453,8 @@ public class DataTypesTest extends AbstractBasicIntegrationTest {
 
     /** */
     @Test
-    public void testIsNotDistinctFrom() {
-        SqlTypeName[] toTypes = new SqlTypeName[] {SqlTypeName.TINYINT, SqlTypeName.SMALLINT, SqlTypeName.BIGINT, SqlTypeName.DECIMAL};
+    public void testIsNotDistinctFromTypeConversion() {
+       SqlTypeName[] toTypes = new SqlTypeName[] {SqlTypeName.TINYINT, SqlTypeName.SMALLINT, SqlTypeName.BIGINT, SqlTypeName.DECIMAL};
 
         executeSql("CREATE TABLE t1(i1 INTEGER, i2 INTEGER)");
         executeSql("INSERT INTO t1 VALUES (1, null), (2, 2), (null, 3), (3, null)");
@@ -464,6 +464,7 @@ public class DataTypesTest extends AbstractBasicIntegrationTest {
             executeSql("INSERT INTO t2 VALUES (1, 1), (2, 2), (null, 3), (4, null)");
 
             assertQuery("SELECT i1, i4 FROM t1 JOIN t2 ON i1 IS NOT DISTINCT FROM i3")
+//            assertQuery("SELECT i1, i4 FROM t1 JOIN t2 ON i1 > i3")
                 .returns(1, 1)
                 .returns(2, 2)
                 .returns(null, 3)
