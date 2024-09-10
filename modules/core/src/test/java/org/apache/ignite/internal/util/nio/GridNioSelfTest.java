@@ -1144,7 +1144,7 @@ public class GridNioSelfTest extends GridCommonAbstractTest {
      * @throws IgniteCheckedException If client cannot be created.
      */
     protected TestClient createClient(InetAddress addr, int port, InetAddress locHost) throws IgniteCheckedException {
-        return new TestClient(createSocket(), addr, port, 0);
+        return new TestClient(createSocket(), addr, port, 50);
     }
 
     /**
