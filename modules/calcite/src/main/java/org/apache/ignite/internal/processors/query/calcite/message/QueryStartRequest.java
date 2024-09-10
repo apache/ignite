@@ -19,6 +19,7 @@ package org.apache.ignite.internal.processors.query.calcite.message;
 
 import java.nio.ByteBuffer;
 import java.util.UUID;
+import org.apache.ignite.ClientContext;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.GridDirectTransient;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
@@ -60,6 +61,13 @@ public class QueryStartRequest implements MarshalableMessage, ExecutionContextAw
     private byte[] paramsBytes;
 
     /** */
+    @GridDirectTransient
+    private ClientContext clnCtx;
+
+    /** */
+    private byte[] clnCtxBytes;
+
+    /** */
     private long timeout;
 
     /** */
@@ -74,7 +82,8 @@ public class QueryStartRequest implements MarshalableMessage, ExecutionContextAw
         int totalFragmentsCnt,
         Object[] params,
         @Nullable byte[] paramsBytes,
-        long timeout
+        long timeout,
+        @Nullable ClientContext clnCtx
     ) {
         this.qryId = qryId;
         this.originatingQryId = originatingQryId;
@@ -86,6 +95,7 @@ public class QueryStartRequest implements MarshalableMessage, ExecutionContextAw
         this.params = params;
         this.paramsBytes = paramsBytes; // If we already have marshalled params, use it.
         this.timeout = timeout;
+        this.clnCtx = clnCtx;
     }
 
     /** */
@@ -159,6 +169,11 @@ public class QueryStartRequest implements MarshalableMessage, ExecutionContextAw
         return paramsBytes;
     }
 
+    /** */
+    @Override public @Nullable ClientContext clientContext() {
+        return clnCtx;
+    }
+
     /**
      * @return Query timeout.
      */
@@ -172,6 +187,9 @@ public class QueryStartRequest implements MarshalableMessage, ExecutionContextAw
             paramsBytes = ctx.marshal(params);
 
         fragmentDesc.prepareMarshal(ctx);
+
+        if (clnCtxBytes == null && clnCtx != null)
+            clnCtxBytes = ctx.marshal(clnCtx.getAttributes());
     }
 
     /** {@inheritDoc} */
@@ -180,6 +198,12 @@ public class QueryStartRequest implements MarshalableMessage, ExecutionContextAw
             params = ctx.unmarshal(paramsBytes);
 
         fragmentDesc.prepareUnmarshal(ctx);
+
+        if (clnCtx == null && clnCtxBytes != null)
+            clnCtx = new ClientContext(ctx.unmarshal(clnCtxBytes));
+
+        if (clnCtx == null)
+            System.out.println();
     }
 
     /** {@inheritDoc} */
@@ -248,6 +272,11 @@ public class QueryStartRequest implements MarshalableMessage, ExecutionContextAw
 
                 writer.incrementState();
 
+            case 9:
+                if (!writer.writeByteArray("clnCtxBytes", clnCtxBytes))
+                    return false;
+
+                writer.incrementState();
         }
 
         return true;
@@ -333,6 +362,13 @@ public class QueryStartRequest implements MarshalableMessage, ExecutionContextAw
 
                 reader.incrementState();
 
+            case 9:
+                clnCtxBytes = reader.readByteArray("clnCtxBytes");
+
+                if (!reader.isLastRead())
+                    return false;
+
+                reader.incrementState();
         }
 
         return reader.afterMessageRead(QueryStartRequest.class);
@@ -345,6 +381,6 @@ public class QueryStartRequest implements MarshalableMessage, ExecutionContextAw
 
     /** {@inheritDoc} */
     @Override public byte fieldsCount() {
-        return 9;
+        return 10;
     }
 }

@@ -21,6 +21,7 @@ import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
+import org.apache.ignite.ClientContext;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.GridDirectCollection;
 import org.apache.ignite.internal.GridDirectTransient;
@@ -77,6 +78,11 @@ public class QueryBatchMessage implements MarshalableMessage, ExecutionContextAw
     /** {@inheritDoc} */
     @Override public long fragmentId() {
         return fragmentId;
+    }
+
+    /** {@inheritDoc} */
+    @Override public ClientContext clientContext() {
+        return null;
     }
 
     /**

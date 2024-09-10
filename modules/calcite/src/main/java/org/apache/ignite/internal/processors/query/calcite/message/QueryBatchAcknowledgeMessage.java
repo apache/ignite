@@ -20,6 +20,7 @@ package org.apache.ignite.internal.processors.query.calcite.message;
 import java.nio.ByteBuffer;
 import java.util.UUID;
 
+import org.apache.ignite.ClientContext;
 import org.apache.ignite.plugin.extensions.communication.MessageReader;
 import org.apache.ignite.plugin.extensions.communication.MessageWriter;
 
@@ -60,6 +61,11 @@ public class QueryBatchAcknowledgeMessage implements ExecutionContextAware {
     /** {@inheritDoc} */
     @Override public long fragmentId() {
         return fragmentId;
+    }
+
+    /** {@inheritDoc} */
+    @Override public ClientContext clientContext() {
+        return null;
     }
 
     /**

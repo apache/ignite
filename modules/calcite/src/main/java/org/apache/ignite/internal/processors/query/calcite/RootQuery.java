@@ -31,6 +31,7 @@ import org.apache.calcite.plan.Context;
 import org.apache.calcite.schema.SchemaPlus;
 import org.apache.calcite.tools.FrameworkConfig;
 import org.apache.calcite.util.CancelFlag;
+import org.apache.ignite.ClientContext;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
@@ -138,6 +139,7 @@ public class RootQuery<RowT> extends Query<RowT> implements TrackableQuery {
         Context parent = Commons.convert(qryCtx);
 
         FrameworkConfig frameworkCfg = qryCtx != null ? qryCtx.unwrap(FrameworkConfig.class) : null;
+        ClientContext clnCtx = qryCtx != null ? qryCtx.unwrap(ClientContext.class) : null;
 
         ctx = BaseQueryContext.builder()
             .parentContext(parent)
@@ -147,6 +149,7 @@ public class RootQuery<RowT> extends Query<RowT> implements TrackableQuery {
             .forcedJoinOrder(forcedJoinOrder)
             .partitions(parts)
             .logger(log)
+            .clientContext(clnCtx)
             .build();
     }
 
@@ -159,7 +162,7 @@ public class RootQuery<RowT> extends Query<RowT> implements TrackableQuery {
      * @param schema new schema.
      */
     public RootQuery<RowT> childQuery(SchemaPlus schema) {
-        return new RootQuery<>(sql, schema, params, QueryContext.of(cancel), ctx.isLocal(), ctx.isForcedJoinOrder(),
+        return new RootQuery<>(sql, schema, params, QueryContext.of(cancel, ctx.clientContext()), ctx.isLocal(), ctx.isForcedJoinOrder(),
             ctx.partitions(), exch, unregister, log, plannerTimeout, totalTimeout);
     }
 
