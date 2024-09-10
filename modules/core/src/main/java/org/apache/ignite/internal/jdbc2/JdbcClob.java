@@ -186,7 +186,7 @@ public class JdbcClob implements Clob {
 
         // Ensure string buffer capacity
         if (zeroBasedPos + str.length() > chars.length())
-            strBuilder.setLength((int)zeroBasedPos + str.length());
+            strBuilder.setLength(zeroBasedPos + str.length());
 
         strBuilder.replace(zeroBasedPos, zeroBasedPos + str.length(), str);
 
@@ -261,7 +261,7 @@ public class JdbcClob implements Clob {
         }
 
         /** {@inheritDoc} */
-        @Override public synchronized int read(byte b[], int off, int len) {
+        @Override public synchronized int read(byte[] b, int off, int len) {
             if (b == null)
                 throw new NullPointerException();
 
