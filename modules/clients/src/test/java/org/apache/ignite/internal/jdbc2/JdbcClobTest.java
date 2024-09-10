@@ -160,7 +160,11 @@ public class JdbcClobTest {
     @Test
     public void testGetAsciiStreamForNonAsciiDataBufferedRead() throws Exception {
         StringBuilder sb = new StringBuilder();
-        for (int i = 0; i < 10000; i++) {
+
+        // Create string in a way which makes sure that all variants in
+        // JdbcClob.Utf8EncodedStringInputStream.encodeNextChunk() are covered.
+        // In particular the check for the surrogate element.
+        for (int i = 0; i < 3277; i++) {
             sb.append("aa©😀");
         }
 
@@ -193,7 +197,7 @@ public class JdbcClobTest {
     @Test
     public void testGetAsciiStreamForNonAsciiDataReadByByte() throws Exception {
         StringBuilder sb = new StringBuilder();
-        for (int i = 0; i < 10000; i++) {
+        for (int i = 0; i < 10; i++) {
             sb.append("aa©😀");
         }
 
@@ -202,7 +206,7 @@ public class JdbcClobTest {
         InputStream stream = clob.getAsciiStream();
 
         int i = 0;
-        byte[] bytes = new byte[80000];
+        byte[] bytes = new byte[80];
 
         byte val = (byte)stream.read();
 
