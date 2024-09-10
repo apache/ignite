@@ -453,7 +453,7 @@ public class DataTypesTest extends AbstractBasicIntegrationTest {
 
     /** */
     @Test
-    public void testIsNotDistinctFrom() {
+    public void testIsNotDistinctFromTypeConversion() {
         SqlTypeName[] toTypes = new SqlTypeName[] {SqlTypeName.TINYINT, SqlTypeName.SMALLINT, SqlTypeName.BIGINT, SqlTypeName.DECIMAL};
 
         executeSql("CREATE TABLE t1(i1 INTEGER, i2 INTEGER)");
