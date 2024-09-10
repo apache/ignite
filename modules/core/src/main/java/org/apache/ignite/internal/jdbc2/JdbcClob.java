@@ -60,7 +60,7 @@ public class JdbcClob implements Clob {
             throw new SQLException("Invalid argument. Position should be greater than 0. Length should not be " +
                 "negative. Position + length should be less than CLOB size [pos=" + pos + ", length=" + len + ']');
 
-        return getSubStringInternal(zeroBasedPos, len);
+        return getSubStringInternal((int)zeroBasedPos, len);
     }
 
     /** {@inheritDoc} */
@@ -112,7 +112,7 @@ public class JdbcClob implements Clob {
                 "Position should not exceed CLOB length+1. Source string should not be null " +
                 "[pos=" + pos + ", str=" + str + ']');
 
-        return setStringInternal(zeroBasedPos, str);
+        return setStringInternal((int)zeroBasedPos, str);
     }
 
     /** {@inheritDoc} */
@@ -127,7 +127,7 @@ public class JdbcClob implements Clob {
                 "Offset and length shouldn't be negative. Offset + length should not exceed source string length " +
                 "[pos=" + pos + ", str=" + str + ", offset=" + off + ", len=" + len + ']');
 
-        return setStringInternal(zeroBasedPos, str, off, len);
+        return setStringInternal((int)zeroBasedPos, str, off, len);
     }
 
     /** {@inheritDoc} */
@@ -165,10 +165,10 @@ public class JdbcClob implements Clob {
     }
 
     /**
-     * Internal getSubString implementation the zero-based position parameter.
+     * Internal getSubString implementation with zero-based position parameter.
      */
-    private String getSubStringInternal(long zeroBasedPos, int len) {
-        return chars.substring((int)zeroBasedPos, (int)zeroBasedPos + len);
+    private String getSubStringInternal(int zeroBasedPos, int len) {
+        return chars.substring(zeroBasedPos, zeroBasedPos + len);
     }
 
     /**
@@ -181,14 +181,14 @@ public class JdbcClob implements Clob {
     /**
      * Internal setString implementation with zero-based position parameter.
      */
-    private int setStringInternal(long zeroBasedPos, String str) {
+    private int setStringInternal(int zeroBasedPos, String str) {
         StringBuilder strBuilder = new StringBuilder(chars);
 
         // Ensure string buffer capacity
         if (zeroBasedPos + str.length() > chars.length())
             strBuilder.setLength((int)zeroBasedPos + str.length());
 
-        strBuilder.replace((int)zeroBasedPos, (int)zeroBasedPos + str.length(), str);
+        strBuilder.replace(zeroBasedPos, zeroBasedPos + str.length(), str);
 
         chars = strBuilder.toString();
 
@@ -198,15 +198,15 @@ public class JdbcClob implements Clob {
     /**
      * Internal setString implementation with zero-based position parameter.
      */
-    private int setStringInternal(long zeroBasedPos, String str, int off, int len) {
+    private int setStringInternal(int zeroBasedPos, String str, int off, int len) {
         StringBuilder strBuilder = new StringBuilder(chars);
 
         // Ensure string buffer capacity
         if (zeroBasedPos + str.length() > chars.length())
-            strBuilder.setLength((int)zeroBasedPos + str.length());
+            strBuilder.setLength(zeroBasedPos + str.length());
 
         String replaceStr = str.substring(off, off + len);
-        strBuilder.replace((int)zeroBasedPos, (int)zeroBasedPos + replaceStr.length(), replaceStr);
+        strBuilder.replace(zeroBasedPos, zeroBasedPos + replaceStr.length(), replaceStr);
 
         chars = strBuilder.toString();
 
@@ -283,12 +283,12 @@ public class JdbcClob implements Clob {
                     encodeNextChunk();
                 }
 
-                int encoded_chunk_size = Math.min(len - i, buf.length - bufPos);
+                int encodedChunkSize = Math.min(len - i, buf.length - bufPos);
 
-                U.arrayCopy(buf, bufPos, b, off + i, encoded_chunk_size);
+                U.arrayCopy(buf, bufPos, b, off + i, encodedChunkSize);
 
-                bufPos += encoded_chunk_size;
-                i += encoded_chunk_size;
+                bufPos += encodedChunkSize;
+                i += encodedChunkSize;
             }
 
             return i;
