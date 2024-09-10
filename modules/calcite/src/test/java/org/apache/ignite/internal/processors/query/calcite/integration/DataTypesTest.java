@@ -24,6 +24,7 @@ import java.util.UUID;
 import java.util.stream.Collectors;
 import com.google.common.collect.ImmutableSet;
 import org.apache.calcite.runtime.CalciteException;
+import org.apache.calcite.sql.type.SqlTypeName;
 import org.apache.calcite.tools.FrameworkConfig;
 import org.apache.calcite.tools.Frameworks;
 import org.apache.ignite.IgniteCache;
@@ -448,6 +449,28 @@ public class DataTypesTest extends AbstractBasicIntegrationTest {
             .returns(11, new BigDecimal("11.100"), new BigDecimal("11"), new BigDecimal("11.1"))
             .returns(12, new BigDecimal("12.123"), new BigDecimal("12"), new BigDecimal("12.123456"))
             .check();
+    }
+
+    /** */
+    @Test
+    public void testIsNotDistinctFrom() {
+        SqlTypeName[] toTypes = new SqlTypeName[] {SqlTypeName.TINYINT, SqlTypeName.SMALLINT, SqlTypeName.BIGINT, SqlTypeName.DECIMAL};
+
+        executeSql("CREATE TABLE t1(i1 INTEGER, i2 INTEGER)");
+        executeSql("INSERT INTO t1 VALUES (1, null), (2, 2), (null, 3), (3, null)");
+
+        for (SqlTypeName type : toTypes) {
+            executeSql("CREATE TABLE t2(i3 " + type.getName() + ", i4 INTEGER)");
+            executeSql("INSERT INTO t2 VALUES (1, 1), (2, 2), (null, 3), (4, null)");
+
+            assertQuery("SELECT i1, i4 FROM t1 JOIN t2 ON i1 IS NOT DISTINCT FROM i3")
+                .returns(1, 1)
+                .returns(2, 2)
+                .returns(null, 3)
+                .check();
+
+            executeSql("DROP TABLE t2");
+        }
     }
 
     /** */
