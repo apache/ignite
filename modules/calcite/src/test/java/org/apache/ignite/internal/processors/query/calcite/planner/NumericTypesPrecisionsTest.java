@@ -17,10 +17,9 @@
 
 package org.apache.ignite.internal.processors.query.calcite.planner;
 
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
-import java.util.stream.Collectors;
-import java.util.stream.Stream;
 import org.apache.calcite.rel.type.RelDataType;
 import org.apache.calcite.rel.type.RelDataTypeSystem;
 import org.apache.calcite.sql.type.SqlTypeName;
@@ -73,122 +72,62 @@ public class NumericTypesPrecisionsTest {
     private static final RelDataType BIGINT = TYPE_FACTORY.createSqlType(SqlTypeName.BIGINT);
 
     /** */
+    private static final RelDataType[] TEST_SUITE = new RelDataType[] {TINYINT, SMALLINT, INTEGER, REAL, FLOAT, DOUBLE, DECIMAL, BIGINT};
+
+    /** */
     @Test
     public void testLeastRestrictiveTinyInt() {
-        List<TypesHolder> types = Stream.of(
-            new TypesHolder(TINYINT, TINYINT, TINYINT),
-            new TypesHolder(TINYINT, SMALLINT, SMALLINT),
-            new TypesHolder(TINYINT, INTEGER, INTEGER),
-            new TypesHolder(TINYINT, FLOAT, FLOAT),
-            new TypesHolder(TINYINT, REAL, REAL),
-            new TypesHolder(TINYINT, DOUBLE, DOUBLE),
-            new TypesHolder(TINYINT, DECIMAL, DECIMAL),
-            new TypesHolder(TINYINT, BIGINT, BIGINT)
-        ).collect(Collectors.toList());
+        RelDataType[] expected = new RelDataType[] {TINYINT, SMALLINT, INTEGER, FLOAT, REAL, DOUBLE, DECIMAL, BIGINT};
 
-        doTestExpectedLeastRestrictive(types);
+        doTestExpectedLeastRestrictive(TINYINT, expected);
     }
 
     /** */
     @Test
     public void testLeastRestrictiveSmallInt() {
-        List<TypesHolder> types = Stream.of(
-            new TypesHolder(SMALLINT, TINYINT, SMALLINT),
-            new TypesHolder(SMALLINT, SMALLINT, SMALLINT),
-            new TypesHolder(SMALLINT, INTEGER, INTEGER),
-            new TypesHolder(SMALLINT, FLOAT, FLOAT),
-            new TypesHolder(SMALLINT, REAL, REAL),
-            new TypesHolder(SMALLINT, DOUBLE, DOUBLE),
-            new TypesHolder(SMALLINT, DECIMAL, DECIMAL),
-            new TypesHolder(SMALLINT, BIGINT, BIGINT)
-        ).collect(Collectors.toList());
+        RelDataType[] expected = new RelDataType[] {SMALLINT, SMALLINT, INTEGER, FLOAT, REAL, DOUBLE, DECIMAL, BIGINT};
 
-        doTestExpectedLeastRestrictive(types);
+        doTestExpectedLeastRestrictive(SMALLINT, expected);
     }
 
     /** */
     @Test
     public void testLeastRestrictiveInteger() {
-        List<TypesHolder> types = Stream.of(
-            new TypesHolder(INTEGER, TINYINT, INTEGER),
-            new TypesHolder(INTEGER, SMALLINT, INTEGER),
-            new TypesHolder(INTEGER, INTEGER, INTEGER),
-            new TypesHolder(INTEGER, FLOAT, FLOAT),
-            new TypesHolder(INTEGER, REAL, REAL),
-            new TypesHolder(INTEGER, DOUBLE, DOUBLE),
-            new TypesHolder(INTEGER, DECIMAL, DECIMAL),
-            new TypesHolder(INTEGER, BIGINT, BIGINT)
-        ).collect(Collectors.toList());
+        RelDataType[] expected = new RelDataType[] {INTEGER, INTEGER, INTEGER, FLOAT, REAL, DOUBLE, DECIMAL, BIGINT};
 
-        doTestExpectedLeastRestrictive(types);
+        doTestExpectedLeastRestrictive(INTEGER, expected);
     }
 
     /** */
     @Test
     public void testLeastRestrictiveFloat() {
-        List<TypesHolder> types = Stream.of(
-            new TypesHolder(FLOAT, TINYINT, FLOAT),
-            new TypesHolder(FLOAT, SMALLINT, FLOAT),
-            new TypesHolder(FLOAT, INTEGER, FLOAT),
-            new TypesHolder(FLOAT, FLOAT, FLOAT),
-            new TypesHolder(FLOAT, REAL, FLOAT),
-            new TypesHolder(FLOAT, DOUBLE, DOUBLE),
-            new TypesHolder(FLOAT, DECIMAL, DOUBLE),
-            new TypesHolder(FLOAT, BIGINT, FLOAT)
-        ).collect(Collectors.toList());
+        RelDataType[] expected = new RelDataType[] {FLOAT, FLOAT, FLOAT, FLOAT, FLOAT, DOUBLE, DOUBLE, FLOAT};
 
-        doTestExpectedLeastRestrictive(types);
+        doTestExpectedLeastRestrictive(FLOAT, expected);
     }
 
     /** */
     @Test
     public void testLeastRestrictiveDouble() {
-        List<TypesHolder> types = Stream.of(
-            new TypesHolder(DOUBLE, TINYINT, DOUBLE),
-            new TypesHolder(DOUBLE, SMALLINT, DOUBLE),
-            new TypesHolder(DOUBLE, INTEGER, DOUBLE),
-            new TypesHolder(DOUBLE, FLOAT, DOUBLE),
-            new TypesHolder(DOUBLE, REAL, DOUBLE),
-            new TypesHolder(DOUBLE, DOUBLE, DOUBLE),
-            new TypesHolder(DOUBLE, DECIMAL, DOUBLE),
-            new TypesHolder(DOUBLE, BIGINT, DOUBLE)
-        ).collect(Collectors.toList());
+        RelDataType[] expected = new RelDataType[] {DOUBLE, DOUBLE, DOUBLE, DOUBLE, DOUBLE, DOUBLE, DOUBLE, DOUBLE};
 
-        doTestExpectedLeastRestrictive(types);
+        doTestExpectedLeastRestrictive(DOUBLE, expected);
     }
 
     /** */
     @Test
     public void testLeastRestrictiveDecimal() {
-        List<TypesHolder> types = Stream.of(
-            new TypesHolder(DECIMAL, TINYINT, DECIMAL),
-            new TypesHolder(DECIMAL, SMALLINT, DECIMAL),
-            new TypesHolder(DECIMAL, INTEGER, DECIMAL),
-            new TypesHolder(DECIMAL, FLOAT, DOUBLE),
-            new TypesHolder(DECIMAL, REAL, DOUBLE),
-            new TypesHolder(DECIMAL, DOUBLE, DOUBLE),
-            new TypesHolder(DECIMAL, DECIMAL, DECIMAL),
-            new TypesHolder(DECIMAL, BIGINT, DECIMAL)
-        ).collect(Collectors.toList());
+        RelDataType[] expected = new RelDataType[] {DECIMAL, DECIMAL, DECIMAL, DOUBLE, DOUBLE, DOUBLE, DECIMAL, DECIMAL};
 
-        doTestExpectedLeastRestrictive(types);
+        doTestExpectedLeastRestrictive(DECIMAL, expected);
     }
 
     /** */
     @Test
     public void testLeastRestrictiveBigInt() {
-        List<TypesHolder> types = Stream.of(
-            new TypesHolder(BIGINT, TINYINT, BIGINT),
-            new TypesHolder(BIGINT, SMALLINT, BIGINT),
-            new TypesHolder(BIGINT, INTEGER, BIGINT),
-            new TypesHolder(BIGINT, FLOAT, FLOAT),
-            new TypesHolder(BIGINT, REAL, REAL),
-            new TypesHolder(BIGINT, DOUBLE, DOUBLE),
-            new TypesHolder(BIGINT, DECIMAL, DECIMAL),
-            new TypesHolder(BIGINT, BIGINT, BIGINT)
-        ).collect(Collectors.toList());
+        RelDataType[] expected = new RelDataType[] {BIGINT, BIGINT, BIGINT, FLOAT, REAL, DOUBLE, DECIMAL, BIGINT};
 
-        doTestExpectedLeastRestrictive(types);
+        doTestExpectedLeastRestrictive(BIGINT, expected);
     }
 
     /** */
@@ -272,7 +211,14 @@ public class NumericTypesPrecisionsTest {
     }
 
     /** */
-    private static void doTestExpectedLeastRestrictive(List<TypesHolder> types) {
+    private static void doTestExpectedLeastRestrictive(RelDataType testType, RelDataType[] expectedLeast) {
+        assert expectedLeast.length == TEST_SUITE.length;
+
+        List<TypesHolder> types = new ArrayList<>(TEST_SUITE.length);
+
+        for (int i = 0; i < types.size(); ++i)
+            types.add(new TypesHolder(testType, TEST_SUITE[i], expectedLeast[i]));
+
         for (TypesHolder holder : types) {
             RelDataType actualType = TYPE_FACTORY.leastRestrictive(Arrays.asList(holder.type1, holder.type2));
 

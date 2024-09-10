@@ -252,6 +252,8 @@ public class IgniteTypeFactory extends JavaTypeFactoryImpl {
 
         RelDataType res = super.leastRestrictive(types);
 
+        // Calcite compares approximate numerics by their precisions. While FLOAT has the same precision as DOUBLE, the
+        // least restrictive may variate between them and issue FLOAT instead of DOUBLE. DOUBLE is more preferable.
         if (res != null && res.getSqlTypeName() == SqlTypeName.FLOAT && types.size() > 1) {
             for (RelDataType type : types) {
                 if (type.getSqlTypeName() == SqlTypeName.DOUBLE && type.getPrecision() >= res.getPrecision())
