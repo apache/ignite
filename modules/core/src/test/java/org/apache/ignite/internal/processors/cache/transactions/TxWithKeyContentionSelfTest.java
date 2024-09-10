@@ -312,7 +312,8 @@ public class TxWithKeyContentionSelfTest extends GridCommonAbstractTest {
             throw new RuntimeException(e);
         }
 
-        CacheMetrics metrics = ig.cache(DEFAULT_CACHE_NAME).localMetrics();
+        //CacheMetrics metrics = ig.cache(DEFAULT_CACHE_NAME).localMetrics();
+        CacheMetrics metrics = ig.cache(DEFAULT_CACHE_NAME).metrics();
 
         log.warning("!!!!!! metrics = " + metrics);
 
