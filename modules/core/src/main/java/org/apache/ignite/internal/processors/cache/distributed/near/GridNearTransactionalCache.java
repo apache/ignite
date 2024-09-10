@@ -21,7 +21,6 @@ import java.io.Externalizable;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.LinkedList;
-import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import org.apache.ignite.IgniteCheckedException;
@@ -39,7 +38,6 @@ import org.apache.ignite.internal.processors.cache.KeyCacheObject;
 import org.apache.ignite.internal.processors.cache.distributed.GridDistributedCacheEntry;
 import org.apache.ignite.internal.processors.cache.distributed.GridDistributedUnlockRequest;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtCache;
-import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtUnlockRequest;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteTxLocalEx;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.util.future.GridFinishedFuture;
@@ -206,67 +204,6 @@ public class GridNearTransactionalCache<K, V> extends GridNearCacheAdapter<K, V>
 
     /**
      * @param nodeId Node ID.
-     * @param req Request.
-     */
-    public void clearLocks(UUID nodeId, GridDhtUnlockRequest req) {
-        assert nodeId != null;
-
-        GridCacheVersion obsoleteVer = nextVersion();
-
-        List<KeyCacheObject> keys = req.nearKeys();
-
-        if (keys != null) {
-            AffinityTopologyVersion topVer = ctx.affinity().affinityTopologyVersion();
-
-            for (KeyCacheObject key : keys) {
-                while (true) {
-                    GridDistributedCacheEntry entry = peekExx(key);
-
-                    try {
-                        if (entry != null) {
-                            entry.doneRemote(
-                                req.version(),
-                                req.version(),
-                                null,
-                                req.committedVersions(),
-                                req.rolledbackVersions(),
-                                /*system invalidate*/false);
-
-                            // Note that we don't reorder completed versions here,
-                            // as there is no point to reorder relative to the version
-                            // we are about to remove.
-                            if (entry.removeLock(req.version())) {
-                                if (log.isDebugEnabled())
-                                    log.debug("Removed lock [lockId=" + req.version() + ", key=" + key + ']');
-
-                                // Try to evict near entry dht-mapped locally.
-                                evictNearEntry(entry, obsoleteVer, topVer);
-                            }
-                            else {
-                                if (log.isDebugEnabled())
-                                    log.debug("Received unlock request for unknown candidate " +
-                                        "(added to cancelled locks set): " + req);
-                            }
-
-                            entry.touch();
-                        }
-                        else if (log.isDebugEnabled())
-                            log.debug("Received unlock request for entry that could not be found: " + req);
-
-                        break;
-                    }
-                    catch (GridCacheEntryRemovedException ignored) {
-                        if (log.isDebugEnabled())
-                            log.debug("Received remove lock request for removed entry (will retry) [entry=" + entry +
-                                ", req=" + req + ']');
-                    }
-                }
-            }
-        }
-    }
-
-    /**
-     * @param nodeId Node ID.
      * @param res Response.
      */
     private void processLockResponse(UUID nodeId, GridNearLockResponse res) {
@@ -309,36 +246,6 @@ public class GridNearTransactionalCache<K, V> extends GridNearCacheAdapter<K, V>
         fut.map();
 
         return fut;
-    }
-
-    /**
-     * @param e Transaction entry.
-     * @param topVer Topology version.
-     * @return {@code True} if entry is locally mapped as a primary or back up node.
-     */
-    protected boolean isNearLocallyMapped(GridCacheEntryEx e, AffinityTopologyVersion topVer) {
-        return ctx.affinity().partitionBelongs(ctx.localNode(), e.partition(), topVer);
-    }
-
-    /**
-     *
-     * @param e Entry to evict if it qualifies for eviction.
-     * @param obsoleteVer Obsolete version.
-     * @param topVer Topology version.
-     * @return {@code True} if attempt was made to evict the entry.
-     */
-    protected boolean evictNearEntry(GridCacheEntryEx e, GridCacheVersion obsoleteVer, AffinityTopologyVersion topVer) {
-        assert e != null;
-        assert obsoleteVer != null;
-
-        if (isNearLocallyMapped(e, topVer)) {
-            if (log.isDebugEnabled())
-                log.debug("Evicting dht-local entry from near cache [entry=" + e + ", tx=" + this + ']');
-
-            return e.markObsolete(obsoleteVer);
-        }
-
-        return false;
     }
 
     /** {@inheritDoc} */
