@@ -270,6 +270,10 @@ public class ConnectionPropertiesImpl implements ConnectionProperties, Serializa
     private final StringProperty qryEngine = new StringProperty("queryEngine",
         "Use specified SQL query engine for a connection.", null, null, false, null);
 
+    /** Use specified SQL query engine for a connection. */
+    private final BooleanProperty txEnabled = new BooleanProperty("transactionsEnabled",
+        "Enable transactions if supported on server.", false, false);
+
     /** Properties array. */
     private final ConnectionProperty[] propsArr = {
         distributedJoins, enforceJoinOrder, collocated, replicatedOnly, autoCloseServerCursor,
@@ -289,7 +293,8 @@ public class ConnectionPropertiesImpl implements ConnectionProperties, Serializa
         connTimeout,
         disabledFeatures,
         keepBinary,
-        qryEngine
+        qryEngine,
+        txEnabled
     };
 
     /** {@inheritDoc} */
@@ -706,6 +711,16 @@ public class ConnectionPropertiesImpl implements ConnectionProperties, Serializa
     /** {@inheritDoc} */
     @Override public void setQueryEngine(String qryEngine) {
         this.qryEngine.setValue(qryEngine);
+    }
+
+    /** {@inheritDoc} */
+    @Override public boolean isTxEnabled() {
+        return txEnabled.value();
+    }
+
+    /** {@inheritDoc} */
+    @Override public void setTxEnabled(boolean txEnabled) {
+        this.txEnabled.setValue(txEnabled);
     }
 
     /**

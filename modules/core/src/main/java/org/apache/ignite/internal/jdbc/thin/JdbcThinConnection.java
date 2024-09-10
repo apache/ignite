@@ -273,7 +273,7 @@ public class JdbcThinConnection implements Connection {
         ctx = createBinaryCtx(metaHnd, marshCtx);
         holdability = HOLD_CURSORS_OVER_COMMIT;
         autoCommit = true;
-        txIsolation = Connection.TRANSACTION_NONE;
+        txIsolation = connProps.isTxEnabled() ? TRANSACTION_READ_COMMITTED : TRANSACTION_NONE;
         netTimeout = connProps.getConnectionTimeout();
         qryTimeout = connProps.getQueryTimeout();
         maintenanceExecutor = Executors.newScheduledThreadPool(2,
