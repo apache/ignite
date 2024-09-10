@@ -306,7 +306,7 @@ public class TxWithKeyContentionSelfTest extends GridCommonAbstractTest {
         }
 
         try {
-            Thread.sleep(2000);
+            Thread.sleep(3000);
         }
         catch (InterruptedException e) {
             throw new RuntimeException(e);
@@ -314,12 +314,7 @@ public class TxWithKeyContentionSelfTest extends GridCommonAbstractTest {
 
         CacheMetrics metrics = ig.cache(DEFAULT_CACHE_NAME).localMetrics();
 
-        try {
-            Thread.sleep(2000);
-        }
-        catch (InterruptedException e) {
-            throw new RuntimeException(e);
-        }
+        log.warning("!!!!!! metrics = " + metrics);
 
         String coll1 = metrics.getTxKeyCollisions();
 
