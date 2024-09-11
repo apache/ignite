@@ -22,7 +22,7 @@ import java.util.UUID;
 import java.util.concurrent.ExecutorService;
 import javax.management.MBeanServer;
 import org.apache.ignite.DataRegionMetrics;
-import org.apache.ignite.DataRegionMetricsAdapter;
+
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteAtomicLong;
 import org.apache.ignite.IgniteAtomicReference;
@@ -38,6 +38,7 @@ import org.apache.ignite.IgniteDataStreamer;
 import org.apache.ignite.IgniteEncryption;
 import org.apache.ignite.IgniteEvents;
 import org.apache.ignite.IgniteException;
+import org.apache.ignite.IgniteFileSystem;
 import org.apache.ignite.IgniteLock;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.IgniteMessaging;
@@ -48,7 +49,7 @@ import org.apache.ignite.IgniteServices;
 import org.apache.ignite.IgniteSet;
 import org.apache.ignite.IgniteSnapshot;
 import org.apache.ignite.IgniteTransactions;
-import org.apache.ignite.MemoryMetrics;
+
 import org.apache.ignite.binary.BinaryObjectBuilder;
 import org.apache.ignite.binary.BinaryObjectException;
 import org.apache.ignite.cache.affinity.Affinity;
@@ -493,16 +494,7 @@ public class IgniteMock implements Ignite {
     @Override public @NotNull TracingConfigurationManager tracingConfiguration() {
         return NoopTracingConfigurationManager.INSTANCE;
     }
-
-    /** {@inheritDoc} */
-    @Override public Collection<MemoryMetrics> memoryMetrics() {
-        return DataRegionMetricsAdapter.collectionOf(dataRegionMetrics());
-    }
-
-    /** {@inheritDoc} */
-    @Nullable @Override public MemoryMetrics memoryMetrics(String memPlcName) {
-        return DataRegionMetricsAdapter.valueOf(dataRegionMetrics(memPlcName));
-    }
+    
 
     /**
      * @param staticCfg Configuration.
@@ -510,4 +502,16 @@ public class IgniteMock implements Ignite {
     public void setStaticCfg(IgniteConfiguration staticCfg) {
         this.staticCfg = staticCfg;
     }
+
+	@Override
+	public IgniteFileSystem fileSystem(String name) throws IllegalArgumentException {
+		// TODO Auto-generated method stub
+		return null;
+	}
+
+	@Override
+	public Collection<IgniteFileSystem> fileSystems() {
+		// TODO Auto-generated method stub
+		return null;
+	}
 }

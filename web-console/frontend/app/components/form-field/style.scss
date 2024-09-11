@@ -1,0 +1,14 @@
+
+
+.copy-input-value-button {
+    position: absolute;
+    top: 31px;
+    right: 10px;
+
+    &:hover {
+        @import 'public/stylesheets/variables';
+
+        color: $ignite-brand-success;
+        cursor: pointer;
+    }
+}

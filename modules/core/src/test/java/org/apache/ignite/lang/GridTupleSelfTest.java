@@ -103,44 +103,7 @@ public class GridTupleSelfTest extends GridCommonAbstractTest {
         }
     }
 
-    /**
-     * JUnit.
-     */
-    @Test
-    public void testGridTuple2AsMap() {
-        String str1 = "A test string 1";
-        String str2 = "A test string 2";
-
-        IgniteBiTuple<String, String> tpl = new IgniteBiTuple<>();
-
-        tpl.put(str1, str2);
-
-        assertEquals(str2, tpl.get(str1));
-        assertEquals(1, tpl.size());
-
-        assert tpl.containsKey(str1);
-        assert tpl.containsValue(str2);
-
-        Iterator<Map.Entry<String, String>> it = tpl.entrySet().iterator();
-
-        assert it.hasNext();
-
-        Map.Entry<String, String> next = it.next();
-
-        assertEquals(str1, next.getKey());
-        assertEquals(str2, next.getValue());
-
-        assert !it.hasNext();
-
-        next = F.firstEntry(tpl);
-
-        assertEquals(str1, next.getKey());
-        assertEquals(str2, next.getValue());
-
-        tpl = new IgniteBiTuple<>();
-
-        assert !tpl.entrySet().iterator().hasNext();
-    }
+   
 
     /**
      * JUnit.

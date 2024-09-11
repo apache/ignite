@@ -1,0 +1,15 @@
+
+
+mixin form-field__input({ name, model, disabled, required, placeholder, namePostfix = '' })
+    input(
+        id=`{{ ${name} }}${ namePostfix }Input`
+        name=`{{ ${name} }}`
+        translate-attr=`{placeholder: "${placeholder}"}`
+
+        ng-model=model
+
+        ng-required=required && `${required}`
+        ng-disabled=disabled && `${disabled}`
+        ng-ref='$input'
+        ng-ref-read='ngModel'
+    )&attributes(attributes ? attributes.attributes ? attributes.attributes : attributes : {})

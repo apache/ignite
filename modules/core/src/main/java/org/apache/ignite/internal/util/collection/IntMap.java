@@ -25,7 +25,7 @@ import org.jetbrains.annotations.Nullable;
 /**
  * The map for integer keys.
  */
-public interface IntMap<V> {
+public interface IntMap<V> extends java.io.Serializable {
     /***
      * The bridge for consuming all entries of the map.
      */

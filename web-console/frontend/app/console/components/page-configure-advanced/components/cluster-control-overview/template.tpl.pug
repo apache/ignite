@@ -1,0 +1,27 @@
+
+pc-items-table(
+    table-title='::"Grid Commands"'
+    column-defs='$ctrl.commandColumnDefs'
+    row-identity-key='id'
+    items='$ctrl.serviceList$|async:this'
+    actions-menu='$ctrl.tableActions$|async:this'
+    selected-row-id='$ctrl.selectionManager.selectedItemIDs$|async:this'
+    one-way-selection='::true'
+    on-selection-change='$ctrl.selectedRows$.next($event)'
+    on-filter-changed='$ctrl.filterChanges$.next($event)'   
+)
+    
+
+h2.pc-page-header.ng-animate-disabled(ng-if='!($ctrl.isBlocked$|async:this)')
+    | {{ ($ctrl.selectionManager.selectedItemIDs$|async:this).length ? 'Multiple' : 'No' }} services selected
+    span.pc-page-header-sub Select only one service to see settings and call it
+
+h2.pc-page-header.ng-animate-disabled(ng-if='$ctrl.isBlocked$|async:this')
+    | {{ $ctrl.itemEditTitle$|async:this }}
+
+command-call-form(
+    service='$ctrl.originalService$|async:this'    
+    on-call='$ctrl.onCall($event)'
+    ng-class='{"pca-form-blocked": !($ctrl.isBlocked$|async:this)}'
+   
+)

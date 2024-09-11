@@ -1,0 +1,33 @@
+
+.pca-form-row
+    .pca-form-column-6.pc-form-grid-row            
+        .pc-form-grid-col-30
+            +form-field__text({
+                label: 'Mongo express URL:',
+                model: `${model}.url`,
+                name: '"url"',                        
+                placeholder: 'http://localhost:37017'
+            })
+       
+            
+        .pc-form-grid-col-30
+            +form-field__text({
+                label: 'Default database:',
+                model: `${model}.schemaName`,
+                name: '"schemaName"',
+                placeholder: 'public'
+            })
+            
+        .pc-form-grid-col-30
+            +form-field__text({
+                label: 'User name:',
+                model: `${model}.userName`,
+                name: '"userName"'
+            })
+            
+        .pc-form-grid-col-30
+            +form-field__password({
+                label: 'Password:',
+                model: `${model}.password`,
+                name: '"password"'
+            })

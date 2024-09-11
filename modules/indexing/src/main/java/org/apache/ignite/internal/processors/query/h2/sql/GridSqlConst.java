@@ -21,6 +21,7 @@ import java.util.Collections;
 import org.h2.expression.ValueExpression;
 import org.h2.value.Value;
 import org.h2.value.ValueBoolean;
+import org.h2.value.ValueEnumBase;
 import org.h2.value.ValueNull;
 
 import static org.apache.ignite.internal.processors.query.QueryUtils.includeSensitive;
@@ -58,9 +59,13 @@ public class GridSqlConst extends GridSqlElement {
 
     /** {@inheritDoc} */
     @Override public String getSQL() {
+    	if(val instanceof ValueEnumBase) { //add@byron
+    		return "'"+val.getSQL()+"'";
+    	}
+    	
         if (!includeSensitive())
             return "?";
-
+	    
         return val.getSQL();
     }
 }

@@ -1,0 +1,14 @@
+
+
+svg(
+    ng-if='$ctrl.secured'
+    ignite-icon='lockClosed'
+    bs-tooltip='::{title: ("clusterSecurityIconComponent.titleSecured"|translate)}'
+    data-placement='top'
+)
+svg(
+    ng-if='!$ctrl.secured'
+    ignite-icon='lockOpened'
+    bs-tooltip='::{title: ("clusterSecurityIconComponent.titleUnsecured"|translate)}'
+    data-placement='top'
+)

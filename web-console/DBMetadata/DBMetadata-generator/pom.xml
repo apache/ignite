@@ -1,0 +1,76 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+	<modelVersion>4.0.0</modelVersion>
+	<groupId>org.apache.ignite.console.agent</groupId>
+	<artifactId>DBMetadata-generator</artifactId>
+	<version>0.2.2</version>
+	<packaging>jar</packaging>
+
+	<properties>
+		<java.version>11</java.version>
+		<maven.compiler.source>11</maven.compiler.source>
+		<maven.compiler.target>11</maven.compiler.target>
+		<slf4j.version>1.7.33</slf4j.version>
+		<jsqlparser.version>5.0</jsqlparser.version>
+		<commons-lang3.version>3.12.0</commons-lang3.version>
+		<commons-collections3.version>3.2.2</commons-collections3.version>
+		<fastjson-version>1.2.28</fastjson-version>
+	</properties>
+
+	<dependencies>
+		<dependency>
+			<groupId>org.apache.ignite.console.agent</groupId>
+			<artifactId>DBMetadata-core</artifactId>
+			<version>0.2.2</version>
+		</dependency>
+
+		<dependency>
+			<groupId>org.beetl</groupId>
+			<artifactId>beetl-core</artifactId>
+			<version>2.1.4</version>
+		</dependency>
+
+		<dependency>
+			<groupId>org.slf4j</groupId>
+			<artifactId>slf4j-api</artifactId>
+			<version>${slf4j.version}</version>
+		</dependency>
+		
+		<dependency>
+			<groupId>com.alibaba</groupId>
+			<artifactId>fastjson</artifactId>
+			<version>${fastjson-version}</version>
+		</dependency>
+		<dependency>
+			<groupId>org.projectlombok</groupId>
+			<artifactId>lombok</artifactId>
+			<version>1.18.6</version>
+		</dependency>
+		
+
+		<!-- https://mvnrepository.com/artifact/com.github.jsqlparser/jsqlparser -->
+		<!-- <dependency>
+			<groupId>com.github.jsqlparser</groupId>
+			<artifactId>jsqlparser</artifactId>
+			<version>${jsqlparser.version}</version>
+		</dependency> -->
+
+		<!-- https://mvnrepository.com/artifact/org.apache.commons/commons-lang3 -->
+		<dependency>
+			<groupId>org.apache.commons</groupId>
+			<artifactId>commons-lang3</artifactId>
+			<version>${commons-lang3.version}</version>
+		</dependency>
+
+		
+		<!-- <dependency>
+			<groupId>commons-collections</groupId>
+			<artifactId>commons-collections</artifactId>
+			<version>${commons-collections3.version}</version>
+		</dependency> -->
+
+	</dependencies>	
+
+</project>

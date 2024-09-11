@@ -1,0 +1,65 @@
+
+
+include /app/helpers/jade/mixins
+
++form-field__label({
+    label: '{{ ::$ctrl.label }}',
+    name: '$ctrl.id',
+    required: '$ctrl.required',
+    disabled: '$ctrl.ngDisabled'
+})
+    +form-field__tooltip({title: '{{$ctrl.tip}}'})(
+        ng-if='$ctrl.tip'
+    )
+
+.form-field__control.form-field__control-group(ng-form='$ctrl.innerForm')
+    input(
+        type='number'
+        id='{{::$ctrl.id}}Input'
+        ng-model='$ctrl.value'
+        ng-model-options='{allowInvalid: true, debounce: $ctrl.inputDebounce}'
+        ng-change='$ctrl.onValueChange()'
+        name='numberInput'
+        placeholder='{{$ctrl.placeholder}}'
+        min='{{ $ctrl.min ? $ctrl.min / $ctrl.sizeScale.value : "" }}'
+        max='{{ $ctrl.max ? $ctrl.max / $ctrl.sizeScale.value : "" }}'
+        ng-required='$ctrl.required'
+        ng-disabled='$ctrl.ngDisabled'
+        ignite-form-field-input-autofocus='{{$ctrl.autofocus}}'
+        ng-on-blur='$ctrl.triggerBlur()'
+    )
+    button.select-toggle(
+        bs-select
+        bs-options='size as size.translationId for size in $ctrl.sizesMenu'
+        ng-model='$ctrl.sizeScale'
+        protect-from-bs-select-render
+        ng-disabled='$ctrl.ngDisabled'
+        type='button'
+        translate='{{$ctrl.sizeScale.translationId}}'
+    )
+
+.form-field__errors(
+    ng-messages='$ctrl.ngModel.$error'
+    ng-show=`($ctrl.ngModel.$dirty || $ctrl.ngModel.$touched || $ctrl.ngModel.$submitted) && $ctrl.ngModel.$invalid`
+)
+    div(ng-transclude)
+    +form-field__error({
+        error: 'required',
+        message: 'This field could not be empty'
+    })
+    +form-field__error({
+        error: 'min',
+        message: 'Value is less than allowable minimum: {{ $ctrl.min/$ctrl.sizeScale.value }} {{$ctrl.sizeScale.label}}'
+    })
+    +form-field__error({
+        error: 'max',
+        message: 'Value is more than allowable maximum: {{ $ctrl.max/$ctrl.sizeScale.value }} {{$ctrl.sizeScale.label}}'
+    })
+    +form-field__error({
+        error: 'number',
+        message: 'Only numbers allowed'
+    })
+    +form-field__error({
+        error: 'step',
+        message: 'Invalid step'
+    })

@@ -1628,7 +1628,26 @@ public interface IgniteInternalCache<K, V> extends Iterable<Cache.Entry<K, V>> {
     /**
      * @return {@link ExpiryPolicy} associated with this projection.
      */
-    @Nullable public ExpiryPolicy expiry();
+    @Nullable public ExpiryPolicy expiry();    
+    
+    /**
+     * Checks whether this cache is IGFS data cache.
+     *
+     * @return {@code True} in case this cache is IGFS data cache.
+     */
+    public default boolean isIgfsDataCache() {		
+		return false;
+	}
+
+    /**
+     * Get current amount of used IGFS space in bytes.
+     *
+     * @return Amount of used IGFS space in bytes.
+     */
+    public default long igfsDataSpaceUsed() {
+    	return 0;
+    }    
+   
 
     /**
      * @param plc {@link ExpiryPolicy} to associate with this projection.

@@ -1,0 +1,206 @@
+{% extends 'layout.html' %}
+
+{% block title %}{{ dbName }}{% endblock %}
+
+{% block breadcrumb %}
+<li class="nav-item dropdown">
+  <a class="nav-link dropdown-toggle" href="#" role="button" aria-controls="navbarDatabaseDropdown" data-bs-target="#navbarDatabaseDropdown" data-bs-toggle="collapse" aria-expanded="false">
+    Database: {{ dbName }}
+  </a>
+  <ul id="navbarDatabaseDropdown" class="dropdown-menu">
+    {% for db in databases %}
+    <li><a class="dropdown-item" href="{{ baseHref }}db/{{ db | url_encode }}/">{{ db }}</a></li>
+    {% endfor %}
+  </ul>
+</li>
+{% endblock %}
+
+{% block content %}
+<div class="card mb-3">
+  <div class="card-header">
+    <h4 class="d-inline-block">Collections</h4>
+    {% if !settings.read_only %}
+    <form class="form-inline float-end" method="POST">
+      <input type="hidden" name="_csrf" value="{{ csrfToken }}">
+      <div class="input-group">
+        <input type="text" class="form-control" id="collection" name="collection" placeholder="Collection name" />
+        <div class="input-group-append">
+          <button type="submit" class="btn btn-primary">
+            <i class="fa fa-plus"></i>
+            Create collection
+          </button>
+        </div>
+      </div>
+    </form>
+    {% endif %}
+  </div>
+  <ul class="list-group list-group-flush">
+    {% for c in colls %}
+    <li class="list-group-item p-1">
+      <div class="row row-cols-md-auto row-cols-1 m-0">
+        <div class="col px-0 px-md-1 py-1 py-md-0 d-grid">
+          <a href="{{ dbUrl }}/{{ c | url_encode }}" class="btn btn-success btn-block">
+            <i class="fa fa-eye d-block"></i>View
+          </a>
+        </div>
+        {% if !settings.me_no_export %}
+        <div class="col px-0 px-md-1 py-1 py-md-0 d-grid" >
+          <a href="{{ dbUrl }}/export/{{ c | url_encode }}" class="btn btn-warning btn-block text-white">
+            <i class="fa fa-download d-block"></i>Export
+          </a>
+        </div>
+        {% endif %}
+        <div class="col px-0 px-md-1 py-1 py-md-0 d-grid">
+          <a href="{{ dbUrl }}/expArr/{{ c | url_encode }}" class="btn btn-warning btn-block text-white">
+            <i class="fa fa-download d-block"></i>[JSON]
+          </a>
+        </div>
+        <div class="col px-0 px-md-1 py-1 py-md-0 d-grid">
+          <a class="btn btn-warning btn-block text-white import-file-link">
+            <i class="fa fa-upload d-block"></i>Import
+          </a>
+          <input class="d-none import-input-file" type="file" name="import-file"
+            data-collection-name="{{ c | url_encode }}" />
+        </div>
+        <div class="col-md-5 px-0 px-md-1 py-1 py-md-0 d-grid">
+          <h3 class="align-self-center m-0"><a href="{{ dbUrl }}/{{ c | url_encode }}">{{ c }}</a></h3>
+        </div>
+        {% if !settings.read_only && !settings.no_delete %}
+        <div class="col px-0 px-md-1 py-1 py-md-0 d-grid ms-auto">
+          <form method="POST" class="d-grid" action="{{ dbUrl }}/{{ c | url_encode }}">
+            <input type="hidden" name="_csrf" value="{{ csrfToken }}">
+            <input type="hidden" name="_method" value="delete">
+            <button type="submit" class="btn btn-danger btn-block deleteButton" data-collection-name="{{ c }}">
+              <i class="fa fa-trash d-block"></i>Delete
+            </button>
+          </form>
+        </div>
+        {% endif %}
+      </div>
+    </li>
+    {% endfor %}
+  </ul>
+</div>
+
+{% if !settings.read_only && !settings.no_delete %}
+<div class="modal fade" id="confirm-deletion" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title">Delete collection</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body">
+        <p>
+          Be careful! You are about to delete whole <strong><span id="modal-collection-name"></span></strong>
+          collection.
+        </p>
+        <p>
+          <label for="confirmation-input">Type the database name to proceed:</label>
+          <input type="text" id="confirmation-input" name="confirmation-input" data-shouldbe="" value="" />
+        </p>
+      </div>
+      <div class="modal-footer">
+        <button type="button" data-bs-dismiss="modal" class="btn btn btn-danger" id="delete">Delete</button>
+        <button type="button" data-bs-dismiss="modal" class="btn">Cancel</button>
+      </div>
+    </div>
+  </div>
+</div>
+{% endif %}
+
+{% if grids.length && settings.gridFSEnabled %}
+<h2>GridFS Buckets</h2>
+
+<table class="table table-bordered table-striped table-condensed">
+  {% for b in grids %}
+  <tr>
+    <td class="col-md-2">
+      <a href="{{ dbUrl }}/gridFS/{{ b }}" class="btn btn-success btn-block">
+        <i class="fa fa-eye d-block"></i>View
+      </a>
+    </td>
+    <td>
+      <h3><a href="{{ dbUrl }}/gridFS/{{ b }}">{{ b }}</a></h3>
+    </td>
+  </tr>
+  {% endfor %}
+</table>
+{% endif %}
+
+
+{% if stats != false %}
+<div class="card mb-3">
+  <h4 class="card-header">Database stats</h4>
+  <table class="table table-bordered table-striped m-0">
+    <tr>
+      <td><strong>Collections (incl. system.namespaces)</strong></td>
+      <td>{{ stats.collections }}</td>
+    </tr>
+    <tr>
+      <td><strong>Data Size</strong></td>
+      <td>{{ stats.dataSize }}</td>
+    </tr>
+    <tr>
+      <td><strong>Storage Size</strong></td>
+      <td>{{ stats.storageSize }}</td>
+    </tr>
+    {% if stats.fileSize %}
+    <tr>
+      <td><strong>File Size (on disk)</strong></td>
+      <td>{{ stats.fileSize }}</td>
+    </tr>
+    {% endif %}
+    {% if stats.avgObjSize %}
+    <tr>
+      <td><strong>Avg Obj Size #</strong></td>
+      <td>{{ stats.avgObjSize }}</td>
+    </tr>
+    {% endif %}
+    {% if stats.objects %}
+    <tr>
+      <td><strong>Objects #</strong></td>
+      <td>{{ stats.objects }}</td>
+    </tr>
+    {% endif %}
+    {% if stats.numExtents %}
+    <tr>
+      <td><strong>Extents #</strong></td>
+      <td>{{ stats.numExtents }}</td>
+    </tr>
+    {% endif %}
+    {% if stats.extentFreeListNum %}
+    <tr>
+      <td><strong>Extents Free List</strong></td>
+      <td>{{ stats.extentFreeListNum }}</td>
+    </tr>
+    {% endif %}
+    {% if stats.indexes %}
+    <tr>
+      <td><strong>Indexes #</strong></td>
+      <td>{{ stats.indexes }}</td>
+    </tr>
+    {% endif %}
+    {% if stats.indexSize %}
+    <tr>
+      <td><strong>Index Size</strong></td>
+      <td>{{ stats.indexSize }}</td>
+    </tr>
+    {% endif %}
+    {% if stats.dataFileVersion %}
+    <tr>
+      <td><strong>Data File Version</strong></td>
+      <td>{{ stats.dataFileVersion }}</td>
+    </tr>
+    {% endif %}
+  </table>
+</div>
+{% endif %}
+
+{% endblock %}
+
+{% block scripts %}
+{% if !settings.read_only %}
+<script src="{{ baseHref }}{{ assets.database.js }}"></script>
+{% endif %}
+{% endblock %}
