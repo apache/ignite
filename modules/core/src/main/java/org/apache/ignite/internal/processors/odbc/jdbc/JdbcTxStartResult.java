@@ -25,7 +25,7 @@ import org.apache.ignite.internal.util.typedef.internal.S;
 /**
  * JDBC start transaction result.
  */
-public class JdbcTransactionStartResult extends JdbcResult {
+public class JdbcTxStartResult extends JdbcResult {
     /** ID of initial request. */
     private long reqId;
 
@@ -33,7 +33,7 @@ public class JdbcTransactionStartResult extends JdbcResult {
     private int txId;
 
     /** Default constructor for deserialization purpose. */
-    public JdbcTransactionStartResult() {
+    public JdbcTxStartResult() {
         super(BINARY_TYPE_NAME_GET);
     }
 
@@ -41,7 +41,7 @@ public class JdbcTransactionStartResult extends JdbcResult {
      * @param reqId ID of initial request.
      * @param txId Transaction id.
      */
-    public JdbcTransactionStartResult(long reqId, int txId) {
+    public JdbcTxStartResult(long reqId, int txId) {
         this();
 
         this.reqId = reqId;
@@ -86,6 +86,6 @@ public class JdbcTransactionStartResult extends JdbcResult {
 
     /** {@inheritDoc} */
     @Override public String toString() {
-        return S.toString(JdbcTransactionStartResult.class, this);
+        return S.toString(JdbcTxStartResult.class, this);
     }
 }

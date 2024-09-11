@@ -49,6 +49,8 @@ import org.apache.ignite.internal.processors.odbc.jdbc.JdbcResult;
 import org.apache.ignite.internal.processors.odbc.jdbc.JdbcResultInfo;
 import org.apache.ignite.internal.processors.odbc.jdbc.JdbcResultWithIo;
 import org.apache.ignite.internal.processors.odbc.jdbc.JdbcStatementType;
+import org.apache.ignite.internal.processors.odbc.jdbc.JdbcTxStartRequest;
+import org.apache.ignite.internal.processors.odbc.jdbc.JdbcTxStartResult;
 import org.apache.ignite.internal.processors.query.IgniteSQLException;
 import org.apache.ignite.internal.sql.SqlKeyword;
 import org.apache.ignite.internal.sql.SqlParseException;
@@ -56,6 +58,8 @@ import org.apache.ignite.internal.sql.SqlParser;
 import org.apache.ignite.internal.sql.command.SqlCommand;
 import org.apache.ignite.internal.sql.command.SqlSetStreamingCommand;
 import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.transactions.TransactionConcurrency;
+import org.apache.ignite.transactions.TransactionIsolation;
 
 import static java.sql.ResultSet.CONCUR_READ_ONLY;
 import static java.sql.ResultSet.FETCH_FORWARD;
@@ -67,6 +71,12 @@ import static java.sql.ResultSet.TYPE_FORWARD_ONLY;
 public class JdbcThinStatement implements Statement {
     /** Default queryPage size. */
     private static final int DFLT_PAGE_SIZE = Query.DFLT_PAGE_SIZE;
+
+    /** */
+    private static final String DFLT_TX_LABEL = "JDBC_THIN";
+
+    /** */
+    public static final long DFLT_TX_TIMEOUT = 60_000;
 
     /** JDBC Connection implementation. */
     protected final JdbcThinConnection conn;
@@ -228,6 +238,8 @@ public class JdbcThinStatement implements Statement {
             return;
         }
 
+        openTransactionIfRequired();
+
         JdbcQueryExecuteRequest req = new JdbcQueryExecuteRequest(stmtType, schema, pageSize,
             maxRows, conn.getAutoCommit(), explicitTimeout, sql, args == null ? null : args.toArray(new Object[args.size()]));
 
@@ -281,6 +293,24 @@ public class JdbcThinStatement implements Statement {
             throw new SQLException("Unexpected result [res=" + res0 + ']');
 
         assert !resultSets.isEmpty() : "At least one results set is expected";
+    }
+
+    /** */
+    private void openTransactionIfRequired() throws SQLException {
+        if (conn.isTx()
+            || !conn.txSupported()
+            || conn.getAutoCommit()
+            || conn.getTransactionIsolation() == Connection.TRANSACTION_NONE)
+            return;
+
+        JdbcThinTcpIo txConnection;
+
+        JdbcTxStartResult res = conn.sendRequest(new JdbcTxStartRequest(
+            TransactionConcurrency.PESSIMISTIC,
+            TransactionIsolation.READ_COMMITTED,
+            DFLT_TX_TIMEOUT,
+            DFLT_TX_LABEL
+        )).response();
     }
 
     /**

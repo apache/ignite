@@ -107,6 +107,8 @@ public class JdbcResponse extends ClientListenerResponse implements JdbcRawBinar
      */
     public void activeTransaction(boolean activeTx) {
         this.activeTx = activeTx;
+
+        throw new RuntimeException("JDBC Transaction!");
     }
 
     /** {@inheritDoc} */

@@ -1343,10 +1343,17 @@ public class JdbcRequestHandler implements ClientListenerRequestHandler {
      * @return resulting {@link JdbcResponse}.
      */
     private JdbcResponse startTransaction(JdbcTxStartRequest req) {
-        return resultToResonse(new JdbcTransactionStartResult(
-            req.requestId(),
-            ClientTxStartRequest.startClientTransaction(connCtx, req.data())
-        ));
+        try {
+            return resultToResonse(new JdbcTxStartResult(
+                req.requestId(),
+                ClientTxStartRequest.startClientTransaction(connCtx, req.data())
+            ));
+        }
+        catch (Exception e) {
+            U.error(log, "Failed to start transaction [reqId=" + req.requestId() + ", req=" + req + ']', e);
+
+            return exceptionToResult(e);
+        }
     }
 
     /**
@@ -1362,6 +1369,8 @@ public class JdbcRequestHandler implements ClientListenerRequestHandler {
             return resultToResonse(new JdbcResult(JdbcResult.TX_START));
         }
         catch (IgniteCheckedException e) {
+            U.error(log, "Failed to end transaction [reqId=" + req.requestId() + ", req=" + req + ']', e);
+
             return exceptionToResult(e);
         }
     }

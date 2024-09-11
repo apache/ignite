@@ -22,6 +22,8 @@ import org.apache.ignite.internal.binary.BinaryReaderExImpl;
 import org.apache.ignite.internal.binary.BinaryWriterExImpl;
 import org.apache.ignite.internal.processors.platform.client.tx.ClientTxStartRequest.ClientTransactionData;
 import org.apache.ignite.internal.util.typedef.internal.S;
+import org.apache.ignite.transactions.TransactionConcurrency;
+import org.apache.ignite.transactions.TransactionIsolation;
 
 /**
  * JDBC start transaction request.
@@ -33,6 +35,23 @@ public class JdbcTxStartRequest extends JdbcRequest {
     /** Default constructor is used for deserialization. */
     public JdbcTxStartRequest() {
         super(TX_START);
+    }
+
+    /**
+     * @param concurrency Transaction concurrency.
+     * @param isolation Isolation level.
+     * @param timeout Timeout.
+     * @param lb Label.
+     */
+    public JdbcTxStartRequest(
+        TransactionConcurrency concurrency,
+        TransactionIsolation isolation,
+        long timeout,
+        String lb
+    ) {
+        this();
+
+        this.data = new ClientTransactionData(concurrency, isolation, timeout, lb);
     }
 
     /** {@inheritDoc} */

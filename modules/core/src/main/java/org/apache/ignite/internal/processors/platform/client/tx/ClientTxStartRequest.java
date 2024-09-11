@@ -119,7 +119,7 @@ public class ClientTxStartRequest extends ClientRequest {
         private final String lb;
 
         /** */
-        private ClientTransactionData(TransactionConcurrency concurrency, TransactionIsolation isolation, long timeout, String lb) {
+        public ClientTransactionData(TransactionConcurrency concurrency, TransactionIsolation isolation, long timeout, String lb) {
             this.concurrency = concurrency;
             this.isolation = isolation;
             this.timeout = timeout;

@@ -259,6 +259,9 @@ public class JdbcThinConnection implements Connection {
     /** Marshaller context. */
     private final JdbcMarshallerContext marshCtx;
 
+    /** Current transaction id. */
+    private int txId;
+
     /**
      * Creates new connection.
      *
@@ -338,6 +341,20 @@ public class JdbcThinConnection implements Connection {
     }
 
     /**
+     * @return {@code True} if there are open transaction, {@code false} otherwise.
+     */
+    boolean isTx() {
+        return txId != 0;
+    }
+
+    /** */
+    boolean txSupported() {
+        return partitionAwareness
+            ? ios.firstEntry().getValue().isTxAwareQueriesSupported()
+            : singleIo.isTxAwareQueriesSupported();
+    }
+
+    /**
      * @param sql Statement.
      * @param cmd Parsed form of {@code sql}.
      * @param stmt Jdbc thin statement.
@@ -345,14 +362,13 @@ public class JdbcThinConnection implements Connection {
      */
     void executeNative(String sql, SqlCommand cmd, JdbcThinStatement stmt) throws SQLException {
         if (cmd instanceof SqlSetStreamingCommand) {
+            if (isTx())
+                throw new SQLException("Can't change stream mode inside transaction [txId = " + txId + ']');
+
             SqlSetStreamingCommand cmd0 = (SqlSetStreamingCommand)cmd;
 
             // If streaming is already on, we have to close it first.
-            if (streamState != null) {
-                streamState.close();
-
-                streamState = null;
-            }
+            closeStreamStateIfOpen(true);
 
             boolean newVal = ((SqlSetStreamingCommand)cmd).isTurnOn();
 
@@ -537,11 +553,7 @@ public class JdbcThinConnection implements Connection {
 
         maintenanceExecutor.shutdown();
 
-        if (streamState != null) {
-            streamState.close();
-
-            streamState = null;
-        }
+        closeStreamStateIfOpen(true);
 
         synchronized (stmtsMux) {
             stmts.clear();
@@ -907,6 +919,19 @@ public class JdbcThinConnection implements Connection {
     public void ensureNotClosed() throws SQLException {
         if (closed)
             throw new SQLException("Connection is closed.", CONNECTION_CLOSED);
+    }
+
+    /** */
+    private void closeStreamStateIfOpen(boolean checkError) throws SQLException {
+        if (streamState == null)
+            return;
+
+        if (checkError)
+            streamState.close();
+        else
+            streamState.close0();
+
+        streamState = null;
     }
 
     /**
@@ -1353,10 +1378,11 @@ public class JdbcThinConnection implements Connection {
 
         connCnt.decrementAndGet();
 
-        if (streamState != null) {
-            streamState.close0();
-
-            streamState = null;
+        try {
+            closeStreamStateIfOpen(false);
+        }
+        catch (SQLException e) {
+            throw new IgniteException(e);
         }
 
         synchronized (stmtsMux) {
@@ -1967,13 +1993,6 @@ public class JdbcThinConnection implements Connection {
     private void maybeLogTransactionWarning(boolean logRequired) {
         if (logRequired && !txSupported())
             LOG.warning("Transactions are not supported.");
-    }
-
-    /** */
-    private boolean txSupported() {
-        return partitionAwareness
-            ? ios.firstEntry().getValue().isTxAwareQueriesSupported()
-            : singleIo.isTxAwareQueriesSupported();
     }
 
     /**
