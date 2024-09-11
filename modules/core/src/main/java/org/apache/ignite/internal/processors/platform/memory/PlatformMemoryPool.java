@@ -35,6 +35,9 @@ public class PlatformMemoryPool {
     /** base pointer. */
     private final long poolPtr;
 
+    /** Cleaner instance. */
+    private static final Cleaner cleaner = Cleaner.create();
+
     /** First pooled memory chunk. */
     private PlatformPooledMemory mem1;
 
@@ -50,7 +53,6 @@ public class PlatformMemoryPool {
     public PlatformMemoryPool() {
         poolPtr = allocatePool();
 
-        Cleaner cleaner = Cleaner.create();
         cleaner.register(this, new CleanerRunnable(poolPtr));
     }
 
