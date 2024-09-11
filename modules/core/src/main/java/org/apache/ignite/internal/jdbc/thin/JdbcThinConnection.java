@@ -273,7 +273,6 @@ public class JdbcThinConnection implements Connection {
         ctx = createBinaryCtx(metaHnd, marshCtx);
         holdability = HOLD_CURSORS_OVER_COMMIT;
         autoCommit = true;
-        txIsolation = connProps.isTxEnabled() ? TRANSACTION_READ_COMMITTED : TRANSACTION_NONE;
         netTimeout = connProps.getConnectionTimeout();
         qryTimeout = connProps.getQueryTimeout();
         maintenanceExecutor = Executors.newScheduledThreadPool(2,
@@ -294,6 +293,8 @@ public class JdbcThinConnection implements Connection {
 
             baseEndpointVer = null;
         }
+
+        txIsolation = txSupported() ? TRANSACTION_READ_UNCOMMITTED : TRANSACTION_NONE;
     }
 
     /** Create new binary context. */
@@ -495,16 +496,14 @@ public class JdbcThinConnection implements Connection {
 
         this.autoCommit = autoCommit;
 
-        if (!autoCommit)
-            LOG.warning("Transactions are not supported.");
+        maybeLogTransactionWarning(!autoCommit);
     }
 
     /** {@inheritDoc} */
     @Override public boolean getAutoCommit() throws SQLException {
         ensureNotClosed();
 
-        if (!autoCommit)
-            LOG.warning("Transactions are not supported.");
+        maybeLogTransactionWarning(!autoCommit);
 
         return autoCommit;
     }
@@ -516,7 +515,7 @@ public class JdbcThinConnection implements Connection {
         if (autoCommit)
             throw new SQLException("Transaction cannot be committed explicitly in auto-commit mode.");
 
-        LOG.warning("Transactions are not supported.");
+        maybeLogTransactionWarning(true);
     }
 
     /** {@inheritDoc} */
@@ -526,7 +525,7 @@ public class JdbcThinConnection implements Connection {
         if (autoCommit)
             throw new SQLException("Transaction cannot be rolled back explicitly in auto-commit mode.");
 
-        LOG.warning("Transactions are not supported.");
+        maybeLogTransactionWarning(true);
     }
 
     /** {@inheritDoc} */
@@ -611,11 +610,15 @@ public class JdbcThinConnection implements Connection {
         ensureNotClosed();
 
         switch (level) {
-            case Connection.TRANSACTION_READ_UNCOMMITTED:
             case Connection.TRANSACTION_READ_COMMITTED:
+            case Connection.TRANSACTION_NONE:
+                break;
+            case Connection.TRANSACTION_READ_UNCOMMITTED:
             case Connection.TRANSACTION_REPEATABLE_READ:
             case Connection.TRANSACTION_SERIALIZABLE:
-            case Connection.TRANSACTION_NONE:
+                if (txSupported())
+                    throw new SQLException("Requested isolation level not supported by the server: " + level);
+
                 break;
 
             default:
@@ -1958,6 +1961,19 @@ public class JdbcThinConnection implements Connection {
         }
 
         return NO_RETRIES;
+    }
+
+    /** */
+    private void maybeLogTransactionWarning(boolean logRequired) {
+        if (logRequired && !txSupported())
+            LOG.warning("Transactions are not supported.");
+    }
+
+    /** */
+    private boolean txSupported() {
+        return partitionAwareness
+            ? ios.firstEntry().getValue().isTxAwareQueriesSupported()
+            : singleIo.isTxAwareQueriesSupported();
     }
 
     /**

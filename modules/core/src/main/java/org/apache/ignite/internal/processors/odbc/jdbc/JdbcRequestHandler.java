@@ -32,6 +32,7 @@ import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
 import javax.cache.configuration.Factory;
+import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.cache.query.BulkLoadContextCursor;
 import org.apache.ignite.cache.query.FieldsQueryCursor;
@@ -62,6 +63,8 @@ import org.apache.ignite.internal.processors.odbc.ClientListenerResponse;
 import org.apache.ignite.internal.processors.odbc.ClientListenerResponseSender;
 import org.apache.ignite.internal.processors.odbc.SqlListenerUtils;
 import org.apache.ignite.internal.processors.odbc.SqlStateCode;
+import org.apache.ignite.internal.processors.platform.client.tx.ClientTxEndRequest;
+import org.apache.ignite.internal.processors.platform.client.tx.ClientTxStartRequest;
 import org.apache.ignite.internal.processors.query.GridQueryCancel;
 import org.apache.ignite.internal.processors.query.IgniteSQLException;
 import org.apache.ignite.internal.processors.query.NestedTxMode;
@@ -105,6 +108,8 @@ import static org.apache.ignite.internal.processors.odbc.jdbc.JdbcRequest.QRY_CL
 import static org.apache.ignite.internal.processors.odbc.jdbc.JdbcRequest.QRY_EXEC;
 import static org.apache.ignite.internal.processors.odbc.jdbc.JdbcRequest.QRY_FETCH;
 import static org.apache.ignite.internal.processors.odbc.jdbc.JdbcRequest.QRY_META;
+import static org.apache.ignite.internal.processors.odbc.jdbc.JdbcRequest.TX_END;
+import static org.apache.ignite.internal.processors.odbc.jdbc.JdbcRequest.TX_START;
 
 /**
  * JDBC request handler.
@@ -365,6 +370,14 @@ public class JdbcRequestHandler implements ClientListenerRequestHandler {
 
                 case BINARY_TYPE_GET:
                     resp = getBinaryType((JdbcBinaryTypeGetRequest)req);
+                    break;
+
+                case TX_START:
+                    resp = startTransaction((JdbcTxStartRequest)req);
+                    break;
+
+                case TX_END:
+                    resp = endTransaction((JdbcTxEndRequest)req);
                     break;
 
                 default:
@@ -1319,6 +1332,36 @@ public class JdbcRequestHandler implements ClientListenerRequestHandler {
         catch (Exception e) {
             U.error(log, "Failed to get schemas metadata [reqId=" + req.requestId() + ", req=" + req + ']', e);
 
+            return exceptionToResult(e);
+        }
+    }
+
+    /**
+     * Starts new transaction.
+     *
+     * @param req Request
+     * @return resulting {@link JdbcResponse}.
+     */
+    private JdbcResponse startTransaction(JdbcTxStartRequest req) {
+        return resultToResonse(new JdbcTransactionStartResult(
+            req.requestId(),
+            ClientTxStartRequest.startClientTransaction(connCtx, req.data())
+        ));
+    }
+
+    /**
+     * End transaction.
+     *
+     * @param req Request
+     * @return resulting {@link JdbcResponse}.
+     */
+    private JdbcResponse endTransaction(JdbcTxEndRequest req) {
+        try {
+            ClientTxEndRequest.endTxAsync(connCtx, req.txId(), req.committed()).get();
+
+            return resultToResonse(new JdbcResult(JdbcResult.TX_START));
+        }
+        catch (IgniteCheckedException e) {
             return exceptionToResult(e);
         }
     }

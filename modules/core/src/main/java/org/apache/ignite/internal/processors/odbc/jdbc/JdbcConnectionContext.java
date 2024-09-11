@@ -21,7 +21,6 @@ import java.util.EnumSet;
 import java.util.HashSet;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicReference;
-
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.configuration.QueryEngineConfiguration;
@@ -120,10 +119,11 @@ public class JdbcConnectionContext extends ClientListenerAbstractConnectionConte
      * @param busyLock Shutdown busy lock.
      * @param connId Connection ID.
      * @param maxCursors Maximum allowed cursors.
+     * @param maxActiveTxCnt Maximum allowed transactions.
      */
     public JdbcConnectionContext(GridKernalContext ctx, GridNioSession ses, GridSpinBusyLock busyLock, long connId,
-        int maxCursors) {
-        super(ctx, ses, connId);
+        int maxCursors, int maxActiveTxCnt) {
+        super(ctx, ses, connId, maxActiveTxCnt);
 
         this.busyLock = busyLock;
         this.maxCursors = maxCursors;

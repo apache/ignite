@@ -18,7 +18,9 @@
 package org.apache.ignite.internal.processors.platform.client.tx;
 
 import org.apache.ignite.binary.BinaryRawReader;
+import org.apache.ignite.binary.BinaryRawWriter;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxLocal;
+import org.apache.ignite.internal.processors.odbc.ClientListenerAbstractConnectionContext;
 import org.apache.ignite.internal.processors.platform.client.ClientConnectionContext;
 import org.apache.ignite.internal.processors.platform.client.ClientIntResponse;
 import org.apache.ignite.internal.processors.platform.client.ClientRequest;
@@ -32,17 +34,8 @@ import org.apache.ignite.transactions.TransactionIsolation;
  * Start transaction request.
  */
 public class ClientTxStartRequest extends ClientRequest {
-    /** Transaction concurrency control. */
-    private final TransactionConcurrency concurrency;
-
-    /** Transaction isolation level. */
-    private final TransactionIsolation isolation;
-
-    /** Transaction timeout. */
-    private final long timeout;
-
-    /** Transaction label. */
-    private final String lb;
+    /** */
+    private final ClientTransactionData data;
 
     /**
      * Constructor.
@@ -52,14 +45,20 @@ public class ClientTxStartRequest extends ClientRequest {
     public ClientTxStartRequest(BinaryRawReader reader) {
         super(reader);
 
-        concurrency = TransactionConcurrency.fromOrdinal(reader.readByte());
-        isolation = TransactionIsolation.fromOrdinal(reader.readByte());
-        timeout = reader.readLong();
-        lb = reader.readString();
+        data = ClientTransactionData.read(reader);
     }
 
     /** {@inheritDoc} */
     @Override public ClientResponse process(ClientConnectionContext ctx) {
+        return new ClientIntResponse(requestId(), startClientTransaction(ctx, data));
+    }
+
+    /**
+     * @param ctx Client connection context.
+     * @param data Transaction data from client.
+     * @return Transaction id.
+     */
+    public static int startClientTransaction(ClientListenerAbstractConnectionContext ctx, ClientTransactionData data) {
         GridNearTxLocal tx;
 
         ctx.kernalContext().gateway().readLock();
@@ -69,12 +68,12 @@ public class ClientTxStartRequest extends ClientRequest {
                 false,
                 false,
                 null,
-                concurrency,
-                isolation,
-                timeout,
+                data.concurrency,
+                data.isolation,
+                data.timeout,
                 true,
                 0,
-                lb
+                data.lb
             );
         }
         finally {
@@ -88,7 +87,7 @@ public class ClientTxStartRequest extends ClientRequest {
 
             ctx.addTxContext(new ClientTxContext(txId, tx));
 
-            return new ClientIntResponse(requestId(), txId);
+            return txId;
         }
         catch (Exception e) {
             try {
@@ -100,6 +99,60 @@ public class ClientTxStartRequest extends ClientRequest {
 
             throw (e instanceof IgniteClientException) ? (IgniteClientException)e :
                 new IgniteClientException(ClientStatus.FAILED, e.getMessage(), e);
+        }
+    }
+
+    /**
+     * Common data for strating client transaction.
+     */
+    public static class ClientTransactionData {
+        /** Transaction concurrency control. */
+        private final TransactionConcurrency concurrency;
+
+        /** Transaction isolation level. */
+        private final TransactionIsolation isolation;
+
+        /** Transaction timeout. */
+        private final long timeout;
+
+        /** Transaction label. */
+        private final String lb;
+
+        /** */
+        private ClientTransactionData(TransactionConcurrency concurrency, TransactionIsolation isolation, long timeout, String lb) {
+            this.concurrency = concurrency;
+            this.isolation = isolation;
+            this.timeout = timeout;
+            this.lb = lb;
+        }
+
+        /** */
+        public void write(BinaryRawWriter writer) {
+            write(writer, concurrency, isolation, timeout, lb);
+        }
+
+        /** */
+        public static ClientTransactionData read(BinaryRawReader reader) {
+            return new ClientTransactionData(
+                TransactionConcurrency.fromOrdinal(reader.readByte()),
+                TransactionIsolation.fromOrdinal(reader.readByte()),
+                reader.readLong(),
+                reader.readString()
+            );
+        }
+
+        /** */
+        public static void write(
+            BinaryRawWriter writer,
+            TransactionConcurrency concurrency,
+            TransactionIsolation isolation,
+            long timeout,
+            String lb
+        ) {
+            writer.writeByte((byte)concurrency.ordinal());
+            writer.writeByte((byte)isolation.ordinal());
+            writer.writeLong(timeout);
+            writer.writeString(lb);
         }
     }
 }

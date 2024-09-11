@@ -456,10 +456,10 @@ public class ClientListenerNioListener extends GridNioServerListenerAdapter<Clie
 
         switch (clientType) {
             case ODBC_CLIENT:
-                return new OdbcConnectionContext(ctx, ses, busyLock, connId, maxCursors);
+                return new OdbcConnectionContext(ctx, ses, busyLock, connId, maxCursors, thinCfg.getMaxActiveTxPerConnection());
 
             case JDBC_CLIENT:
-                return new JdbcConnectionContext(ctx, ses, busyLock, connId, maxCursors);
+                return new JdbcConnectionContext(ctx, ses, busyLock, connId, maxCursors, thinCfg.getMaxActiveTxPerConnection());
 
             case THIN_CLIENT:
                 return new ClientConnectionContext(ctx, ses, connId, maxCursors, thinCfg);

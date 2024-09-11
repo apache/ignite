@@ -272,7 +272,7 @@ public class ConnectionPropertiesImpl implements ConnectionProperties, Serializa
 
     /** Use specified SQL query engine for a connection. */
     private final BooleanProperty txEnabled = new BooleanProperty("transactionsEnabled",
-        "Enable transactions if supported on server.", false, false);
+        "Enable transactions if supported on server.", null, false);
 
     /** Properties array. */
     private final ConnectionProperty[] propsArr = {

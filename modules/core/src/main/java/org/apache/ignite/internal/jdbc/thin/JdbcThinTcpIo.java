@@ -691,6 +691,15 @@ public class JdbcThinTcpIo {
     }
 
     /**
+     * Whether SQL transactions are supported by the server or not.
+     *
+     * @return {@code true} if SQL transactions supported, {@code false} otherwise.
+     */
+    boolean isTxAwareQueriesSupported() {
+        return protoCtx.isFeatureSupported(JdbcThinFeature.TX_AWARE_QUERIES);
+    }
+
+    /**
      * Get next server index.
      *
      * @param len Number of servers.
@@ -761,6 +770,9 @@ public class JdbcThinTcpIo {
 
         for (String f : disabledFeaturesStr.split("\\W+"))
             features.remove(JdbcThinFeature.valueOf(f.toUpperCase()));
+
+        if (!connProps.isTxEnabled())
+            features.remove(JdbcThinFeature.TX_AWARE_QUERIES);
 
         return features;
     }
