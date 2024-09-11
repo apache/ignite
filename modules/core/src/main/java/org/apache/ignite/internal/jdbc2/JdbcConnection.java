@@ -702,7 +702,7 @@ public class JdbcConnection implements Connection {
     @Override public Clob createClob() throws SQLException {
         ensureNotClosed();
 
-        throw new SQLFeatureNotSupportedException("SQL-specific types are not supported.");
+        return new JdbcClob("");
     }
 
     /** {@inheritDoc} */
