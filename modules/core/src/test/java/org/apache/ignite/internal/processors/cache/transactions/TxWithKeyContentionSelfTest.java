@@ -302,33 +302,26 @@ public class TxWithKeyContentionSelfTest extends GridCommonAbstractTest {
 
         IgniteTxManager srvTxMgr = ((IgniteEx)ig).context().cache().context().tm();
 
-        try {
-            U.invoke(IgniteTxManager.class, srvTxMgr, "collectTxCollisionsInfo");
-        }
-        catch (IgniteCheckedException e) {
-            fail(e.toString());
-        }
-        finally {
-            latch.countDown(); // Signal that the work is done
-        }
+        latch.countDown();
 
-        // Wait for the work to complete
-        latch.await(); // This blocks until latch.countDown() is called
-
-        CacheMetrics metrics = ig.cache(DEFAULT_CACHE_NAME).localMetrics();
-
-        log.warning("!!!!!! metrics = " + metrics);
-
-        String coll1 = metrics.getTxKeyCollisions();
-
-        log.warning("!!!!!! coll1 = " + coll1);
-
-        log.warning("txLatch.getCount() = " + txLatch.getCount());
+        latch.await();
 
         assertTrue(GridTestUtils.waitForCondition(new GridAbsPredicate() { // failed here
             @Override public boolean apply() {
-                log.warning("!!! COL1 = " + coll1);
+                try {
+                    U.invoke(IgniteTxManager.class, srvTxMgr, "collectTxCollisionsInfo");
+                }
+                catch (IgniteCheckedException e) {
+                    fail(e.toString());
+                }
 
+                CacheMetrics metrics = ig.cache(DEFAULT_CACHE_NAME).localMetrics();
+
+                log.warning("!!!!!! metrics = " + metrics);
+
+                String coll1 = metrics.getTxKeyCollisions();
+
+                log.warning("!!!!!! coll1 = " + coll1);
                 if (!coll1.isEmpty()) {
                     String coll2 = metrics.getTxKeyCollisions();
 
