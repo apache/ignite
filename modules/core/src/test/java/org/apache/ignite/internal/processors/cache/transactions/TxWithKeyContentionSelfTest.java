@@ -320,6 +320,9 @@ public class TxWithKeyContentionSelfTest extends GridCommonAbstractTest {
         String coll1 = metrics.getTxKeyCollisions();
 
         log.warning("!!!!!! coll1 = " + coll1);
+
+        txLatch.await();
+
         log.warning("txLatch.getCount() = " + txLatch.getCount());
 
         assertTrue(GridTestUtils.waitForCondition(new GridAbsPredicate() { // failed here
@@ -346,7 +349,5 @@ public class TxWithKeyContentionSelfTest extends GridCommonAbstractTest {
         f.get();
 
         finishFut.get();
-
-        txLatch.await();
     }
 }
