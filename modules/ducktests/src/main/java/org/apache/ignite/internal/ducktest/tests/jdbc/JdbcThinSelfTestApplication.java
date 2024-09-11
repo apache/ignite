@@ -59,10 +59,12 @@ public class JdbcThinSelfTestApplication extends IgniteAwareApplication {
         }
     }
 
+    /** */
     private void createTable(Connection conn) throws SQLException {
         conn.createStatement().execute("CREATE TABLE IF NOT EXISTS table(id INT, strVal VARCHAR, decVal DECIMAL, PRIMARY KEY(id)) ");
     }
 
+    /** */
     private void insertRow(Connection conn) throws SQLException {
         PreparedStatement insertStatement = conn.prepareStatement("INSERT INTO table(id, strVal, decVal) VALUES(?, ?, ?)");
 
@@ -73,6 +75,7 @@ public class JdbcThinSelfTestApplication extends IgniteAwareApplication {
         insertStatement.execute();
     }
 
+    /** */
     private void selectRow(Connection conn) throws SQLException {
         PreparedStatement selectStatement = conn.prepareStatement("SELECT * FROM table WHERE id = ?");
 
@@ -93,6 +96,7 @@ public class JdbcThinSelfTestApplication extends IgniteAwareApplication {
                     "actual [id=" + resultId + ", strVal=" + resultStr + ", decVal=" + resultDecimal + "].");
     }
 
+    /** */
     private void updateRow(Connection conn) throws SQLException {
         PreparedStatement selectStatement = conn.prepareStatement("UPDATE table SET decVal = ? WHERE id = ?");
 
@@ -103,6 +107,7 @@ public class JdbcThinSelfTestApplication extends IgniteAwareApplication {
             throw new RuntimeException("Row wasn't updated.");
     }
 
+    /** */
     private void deleteRow(Connection conn) throws SQLException {
         PreparedStatement selectStatement = conn.prepareStatement("DELETE FROM table WHERE id = ?");
 
@@ -112,6 +117,7 @@ public class JdbcThinSelfTestApplication extends IgniteAwareApplication {
             throw new RuntimeException("Row wasn't deleted.");
     }
 
+    /** */
     private void dropTable(Connection conn) throws SQLException {
         conn.createStatement().execute("DROP TABLE IF EXISTS table");
     }
