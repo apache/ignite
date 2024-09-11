@@ -66,24 +66,21 @@ export default class PageDatasourceOverviewController {
         {
             name: 'driverCls',
             displayName: 'driverClass',
-            field: 'driverCls',
-            cellClass: 'ui-grid-number-cell',            
+            field: 'driverCls',                     
             enableFiltering: false,           
-            width: 180
+            width: 300
         },
         {
             name: 'db',
             displayName: 'DB type',
-            field: 'db',
-            cellClass: 'ui-grid-number-cell',            
+            field: 'db',                   
             enableFiltering: false,           
-            width: 100
+            width: 150
         },
         {
             name: 'schemaName',
             displayName: 'Schema',
-            field: 'schemaName',
-            cellClass: 'ui-grid-number-cell',            
+            field: 'schemaName',                     
             enableFiltering: false,            
             width: 150
         },

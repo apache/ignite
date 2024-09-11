@@ -24,7 +24,7 @@ const UNKNOWN_JDBC_TYPE = {
 export default class SqlTypes {
     /**
      * @param {String} value Value to check.
-     * @returns {boolean} 'true' if given text is valid Java class name.
+     * @returns {boolean} 'true' if given text is valid sql class name.
      */
     validIdentifier(value) {
         return !!(value && VALID_IDENTIFIER.test(value));

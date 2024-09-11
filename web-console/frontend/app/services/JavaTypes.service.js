@@ -18,10 +18,10 @@ import JAVA_KEYWORDS from '../data/java-keywords.json';
 const JAVA_CLASS_STRINGS = JAVA_CLASSES.slice();
 
 // Regular expression to check Java identifier.
-const VALID_IDENTIFIER = /^[a-zA-Z_$][a-zA-Z0-9_$]*$/im;
+const VALID_IDENTIFIER = /^[a-zA-Z_$\u4e00-\u9fa5][a-zA-Z0-9_$\u4e00-\u9fa5]*$/im;
 
 // Regular expression to check Java class name.
-const VALID_CLASS_NAME = /^(([a-zA-Z_$][a-zA-Z0-9_$]*)\.)*([a-zA-Z_$][a-zA-Z0-9_$]*)$/im;
+const VALID_CLASS_NAME = /^(([a-zA-Z_$][a-zA-Z0-9_$]*)\.)*([a-zA-Z_$\u4e00-\u9fa5][a-zA-Z0-9_$\u4e00-\u9fa5]*)$/im;
 
 // Regular expression to check Java package.
 const VALID_PACKAGE = /^(([a-zA-Z_$][a-zA-Z0-9_$]*)\.)*([a-zA-Z_$][a-zA-Z0-9_$]*(\.?\*)?)$/im;
@@ -143,7 +143,7 @@ export default class JavaTypes {
      * @returns {string} Valid java name.
      */
     toJavaName(prefix, name) {
-        const javaName = name ? this.shortClassName(name).replace(/[^A-Za-z_0-9]+/g, '_') : 'dflt';
+        const javaName = name ? this.shortClassName(name).replace(/[^A-Za-z_0-9\u4e00-\u9fa5]+/g, '_') : 'dflt';
 
         return prefix + javaName.charAt(0).toLocaleUpperCase() + javaName.slice(1);
     }

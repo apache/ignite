@@ -205,6 +205,9 @@
                 "executeOnSelectedNode": {
                     "buttonLabel": "Execute on selected node"
                 },
+                "moveUpParagraph":{
+                    "buttonLabel": "Move up"
+                },
                 "explain": {
                     "buttonLabel": "Explain",
                     "tooltip": "explain query"

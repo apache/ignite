@@ -135,8 +135,8 @@ export interface DatasourceDto {
 	jdbcUrl: string,	
 	jndiName: string, // 数据库JNDI名称
 	schemaName: string, // 默认的模式名称
-	userName: string,
-	password: string,
+	userName: string | null,
+	password: string | null,
 	jdbcProp: object
 }
 

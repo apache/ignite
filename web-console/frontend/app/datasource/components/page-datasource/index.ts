@@ -1,4 +1,4 @@
-
+import angular from 'angular';
 
 import component from './component';
 

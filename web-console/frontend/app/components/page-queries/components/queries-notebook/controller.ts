@@ -843,6 +843,17 @@ export class NotebookCtrl {
             $location.hash(paragraph.id);
         };
 
+        $scope.moveUpParagraph = (paragraph) => {            
+
+            let index = $scope.notebook.paragraphs.indexOf(paragraph);
+            if(index<=0) return ;
+
+            // 将当前元素与其前一个元素交换  
+            let arr = $scope.notebook.paragraphs;
+            [arr[index], arr[index - 1]] = [arr[index - 1], arr[index]];            
+            
+        };
+
         $scope.addQuery = function() {
             const sz = $scope.notebook.paragraphs.length;
 
@@ -2120,8 +2131,8 @@ export class NotebookCtrl {
             available: (p) => this.$scope.scanAvailable(p)
         },
         {
-            text: this.$translate.instant('queries.notebook.scanActions.scanOnSelectedNode'),
-            click: (p) => this.$scope.scan(p, true),
+            text: this.$translate.instant('queries.notebook.queryActions.moveUpParagraph.buttonLabel'),
+            click: (p) => this.$scope.moveUpParagraph(p),
             available: (p) => this.$scope.scanAvailable(p)
         },
         {
@@ -2143,8 +2154,8 @@ export class NotebookCtrl {
             available: (p) => this.$scope.queryAvailable(p)
         },
         {
-            text: this.$translate.instant('queries.notebook.queryActions.executeOnSelectedNode.buttonLabel'),
-            click: (p) => this.$scope.execute(p, true),
+            text: this.$translate.instant('queries.notebook.queryActions.moveUpParagraph.buttonLabel'),
+            click: (p) => this.$scope.moveUpParagraph(p),
             available: (p) => this.$scope.queryAvailable(p)
         },
         {

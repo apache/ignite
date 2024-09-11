@@ -1,5 +1,12 @@
 export const dbPresets = [
         {
+            db: 'Generic',
+            driverCls: '',
+            jdbcUrl: 'jdbc:[engine]://[host]:[port]/[database]',
+            user: 'system',
+            samples: false
+        },
+        {
             db: 'Oracle',
             driverCls: 'oracle.jdbc.OracleDriver',
             jdbcUrl: 'jdbc:oracle:thin:@[host]:[port]:[database]',

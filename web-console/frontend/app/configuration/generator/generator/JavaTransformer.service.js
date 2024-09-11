@@ -661,13 +661,13 @@ export default class IgniteJavaTransformer extends AbstractTransformer {
         return imports;
     }
 
-    static collectBeanImports(bean) {
+    static collectBeanImports(bean,level=0) {
         const imports = [bean.clsName];
 
         _.forEach(bean.arguments, (arg) => {
             switch (arg.clsName) {
                 case 'BEAN':
-                    imports.push(...this.collectBeanImports(arg.value));
+                    imports.push(...this.collectBeanImports(arg.value,level));
 
                     break;
                 case 'java.lang.Class':
@@ -684,7 +684,7 @@ export default class IgniteJavaTransformer extends AbstractTransformer {
             }
         });
 
-        imports.push(...this.collectPropertiesImports(bean.properties));
+        imports.push(...this.collectPropertiesImports(bean.properties,level));
 
         if (_.includes(STORE_FACTORY, bean.clsName))
             imports.push('javax.sql.DataSource', 'javax.cache.configuration.Factory');
@@ -696,9 +696,12 @@ export default class IgniteJavaTransformer extends AbstractTransformer {
      * @param {Array.<Object>} props
      * @returns {Array.<String>}
      */
-    static collectPropertiesImports(props) {
+    static collectPropertiesImports(props,level = 0) {
         const imports = [];
-
+        if(level>5){
+            console.log(level);
+        }
+        
         _.forEach(props, (prop) => {
             switch (prop.clsName) {
                 case 'DATA_SOURCE':
@@ -712,25 +715,29 @@ export default class IgniteJavaTransformer extends AbstractTransformer {
 
                     break;
                 case 'BEAN':
-                    imports.push(...this.collectBeanImports(prop.value));
-
+                    level++;
+                    imports.push(...this.collectBeanImports(prop.value,level));
+                    level--;
                     break;
                 case 'ARRAY':
                     if (!prop.varArg)
                         imports.push(prop.typeClsName);
-
-                    if (this._isBean(prop.typeClsName))
-                        _.forEach(prop.items, (item) => imports.push(...this.collectBeanImports(item)));
+                    level++;
+                    if (this._isBean(prop.typeClsName)){
+                        let items = prop.items.slice(0,100);
+                        _.forEach(items, (item) => imports.push(...this.collectBeanImports(item,level)));
+                    }                        
 
                     if (prop.typeClsName === 'java.lang.Class')
                         _.forEach(prop.items, (item) => imports.push(item));
-
+                    level--;
                     break;
                 case 'COLLECTION':
                     imports.push(prop.typeClsName);
-
+                    level++;
                     if (this._isBean(prop.typeClsName)) {
-                        _.forEach(prop.items, (item) => imports.push(...this.collectBeanImports(item)));
+                        let items = prop.items.slice(0,100);
+                        _.forEach(items, (item) => imports.push(...this.collectBeanImports(item,level)));
 
                         imports.push(prop.implClsName);
                     }
@@ -738,7 +745,7 @@ export default class IgniteJavaTransformer extends AbstractTransformer {
                         imports.push('java.util.Arrays');
                     else
                         imports.push(prop.implClsName);
-
+                    level--;
                     break;
                 case 'ENUM_COLLECTION':
                     imports.push(prop.typeClsName);
@@ -749,9 +756,8 @@ export default class IgniteJavaTransformer extends AbstractTransformer {
                         imports.push(prop.implClsName);
 
                     break;
-                case 'MAP':
-                    imports.push(...this._collectMapImports(prop));
-
+                case 'MAP':                    
+                    imports.push(...this._collectMapImports(prop));                    
                     break;
                 default:
                     if (!this.javaTypesNonEnum.nonEnum(prop.clsName))

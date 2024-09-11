@@ -8,7 +8,7 @@ export default {
     '/configuration/new/basic': 'Basic cluster configuration create',
     '/configuration/new/advanced/cluster': 'Advanced cluster configuration create',
     '/configuration/download': 'Download project',
-    'configuration/import/model': 'Import cluster models',
+    '/configuration/import/model': 'Import cluster models',
     '/demo/resume': 'Demo resume',
     '/demo/reset': 'Demo reset',
     '/queries/execute': 'Query execute',
@@ -36,17 +36,6 @@ export default {
     'base.sql.tabs.notebooks-list': 'Query notebooks',
     'base.sql.tabs.queries-history': 'Queries history',
     'base.sql.tabs.running-queries': 'Running queries',
-    'base.monitoring.rolling-updates': 'Rolling Update',
-
-    // add@byron
-    'queries.notebook.scanTooltip.clusterIsInactive': 'Cluster is inactive',
-    'queries.notebook.scanTooltip.waitingForResponse': 'Waiting for cluster query response',
-    'queries.notebook.scanTooltip.text': 'Scan all data',
-
-    'queries.notebook.queryTooltip.clusterIsInactive': 'Cluster is inactive',
-    'queries.notebook.queryTooltip.waitingForResponse': 'Waiting for cluster query response',
-    'queries.notebook.queryTooltip.actionPrefix': 'Execute query of ',
-
-    'queries.notebook.clearQueryResultConfirmationMessage': 'Are you sure you want to clear query result?'
+    'base.monitoring.rolling-updates': 'Rolling Update'   
     
 };

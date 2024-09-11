@@ -19,6 +19,14 @@ export default function service(ErrorPopover) {
 
         return true;
     }
+    
+    function domainForQueryConfigured(domain) {
+        const isEmpty = !isDefined(domain) || (_.isEmpty(domain.fields) &&
+            _.isEmpty(domain.aliases) &&
+            _.isEmpty(domain.indexes));
+
+        return !isEmpty;
+    }
 
     function domainForStoreConfigured(domain) {
         const isEmpty = !isDefined(domain) || (isEmptyString(domain.databaseSchema) &&
@@ -49,13 +57,8 @@ export default function service(ErrorPopover) {
         },
         isEmptyString,
         
-        domainForQueryConfigured(domain) {
-            const isEmpty = !isDefined(domain) || (_.isEmpty(domain.fields) &&
-                _.isEmpty(domain.aliases) &&
-                _.isEmpty(domain.indexes));
+        domainForQueryConfigured,
 
-            return !isEmpty;
-        },
         domainForStoreConfigured,
         download(type = 'application/octet-stream', name = 'file.txt', data = '') {
             const file = new Blob([data], { type: `${type};charset=utf-8`});
@@ -96,50 +99,7 @@ export default function service(ErrorPopover) {
                 res += possible.charAt(Math.floor(Math.random() * possibleLen));
 
             return res;
-        },
-        checkFieldValidators(ui) {
-            const form = ui.inputForm;
-            const errors = form.$error;
-            const errKeys = Object.keys(errors);
-
-            if (errKeys && errKeys.length > 0) {
-                const firstErrorKey = errKeys[0];
-
-                const firstError = errors[firstErrorKey][0];
-
-                const err = firstError.$error[firstErrorKey];
-
-                const actualError = _.isArray(err) ? err[0] : firstError;
-
-                const errNameFull = actualError.$name;
-                const errNameShort = errNameFull.endsWith('TextInput') ? errNameFull.substring(0, errNameFull.length - 9) : errNameFull;
-
-                const extractErrorMessage = (errName) => {
-                    try {
-                        return errors[firstErrorKey][0].$errorMessages[errName][firstErrorKey];
-                    }
-                    catch (ignored1) {
-                        try {
-                            return form[firstError.$name].$errorMessages[errName][firstErrorKey];
-                        }
-                        catch (ignored2) {
-                            try {
-                                return form.$errorMessages[errName][firstErrorKey];
-                            }
-                            catch (ignored3) {
-                                return false;
-                            }
-                        }
-                    }
-                };
-
-                const msg = extractErrorMessage(errNameFull) || extractErrorMessage(errNameShort) || 'Invalid value!';
-
-                return ErrorPopover.show(errNameFull, msg, ui, firstError.$name);
-            }
-
-            return true;
-        }
+        }        
     };
 }
 

@@ -66,7 +66,7 @@ export default class Datasource {
 
     getDatasource(id: string){
         return this.$http.get(`/api/v1/datasource/${id}`).then((result) => {
-            const datasource = result.data 
+            const datasource:any = result.data 
             if(datasource.jdbcProp==null){
                 datasource.jdbcProp = {}
             }

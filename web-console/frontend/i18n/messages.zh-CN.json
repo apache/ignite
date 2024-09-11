@@ -205,6 +205,9 @@
                 "executeOnSelectedNode": {
                     "buttonLabel": "Execute on selected node"
                 },
+                "moveUpParagraph":{
+                    "buttonLabel": "Move up"
+                },
                 "explain": {
                     "buttonLabel": "Explain",
                     "tooltip": "explain query"
@@ -275,7 +278,7 @@
             "saveNotebookNameButtonTooltip": "Save notebook name",
             "addQueryButtonLabel": "Add query",
             "addScanButtonLabel": "Add scan",
-            "addGremlinButtonLabel": "Add 图查询",
+            "addGremlinButtonLabel": "Add Gremlin",
             "breadcrumbs": {
                 "parent": "Notebooks",
                 "here": "Notebook '{{name}}'"

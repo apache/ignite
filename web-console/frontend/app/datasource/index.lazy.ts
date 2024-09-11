@@ -1,4 +1,4 @@
-
+import angular from 'angular';
 
 import {UIRouter, LazyLoadResult} from '@uirouter/angularjs';
 import {default as datasourceIcon} from './icons/datasource.icon.svg';

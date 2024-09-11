@@ -5,8 +5,6 @@ import {StateParams} from '@uirouter/angularjs';
 import {from, combineLatest} from 'rxjs';
 import {switchMap, take, map} from 'rxjs/operators';
 
-export type ClusterParams = ({clusterID: string} | {clusterID: 'new'}) & StateParams;
-
 
 function registerStates($stateProvider) {
     // Setup the states.

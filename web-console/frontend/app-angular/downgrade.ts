@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
+import angular from 'angular';
 import {ServiceBootstrapComponent} from './components/serviceBootstrap';
 import {platformBrowserDynamic} from '@angular/platform-browser-dynamic';
 import {downgradeModule, downgradeComponent } from '@angular/upgrade/static';

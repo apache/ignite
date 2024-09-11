@@ -58,8 +58,8 @@ export default function() {
                 // templateNamespace: 'svg' does not work in IE11
                 this.wrapper.innerHTML = `<svg><use xlink:href="${url}" href="${url}" /></svg>`;
 
-                Array.from(this.wrapper.childNodes[0].childNodes).forEach((n) => {
-                    this.$element.empty().append(n);
+                Array.from(this.wrapper.childNodes[0].childNodes).forEach((el) => {
+                    this.$element.empty().append(el);
                 });
             }
         }
