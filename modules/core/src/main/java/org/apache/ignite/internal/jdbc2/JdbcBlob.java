@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.jdbc2;
 
 import java.io.ByteArrayInputStream;
+import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.sql.Blob;
@@ -35,6 +36,9 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 public class JdbcBlob implements Blob {
     /** Byte array. */
     private byte[] arr;
+
+    /** Output stream. */
+    private OutputStream stream;
 
     /**
      * @param arr Byte array.
@@ -186,5 +190,39 @@ public class JdbcBlob implements Blob {
     private void ensureNotClosed() throws SQLException {
         if (arr == null)
             throw new SQLException("Blob instance can't be used after free() has been called.");
+    }
+
+    /**
+     *
+     */
+    private static class BlobOutputStream extends OutputStream {
+        /** */
+        private byte[] arr;
+
+        /** */
+        private int idx;
+
+        /** */
+        private int len;
+
+        /**
+         * @param arr Array.
+         * @param len Length.
+         */
+        public BlobOutputStream(byte[] arr, int len) {
+            this.arr = arr;
+            this.len = len;
+        }
+
+        /** {@inheritDoc} */
+        @Override public void write(int b) throws IOException {
+            if (idx < len)
+                arr[idx++] = (byte)b;
+        }
+
+        /** {@inheritDoc} */
+        @Override public void write(byte b[], int off, int len) {
+
+        }
     }
 }

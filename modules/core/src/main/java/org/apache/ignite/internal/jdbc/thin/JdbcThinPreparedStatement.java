@@ -39,6 +39,7 @@ import java.sql.Time;
 import java.sql.Timestamp;
 import java.util.ArrayList;
 import java.util.Calendar;
+import org.apache.ignite.internal.processors.odbc.SqlInputStreamWrapper;
 import org.apache.ignite.internal.processors.odbc.SqlListenerUtils;
 import org.apache.ignite.internal.processors.odbc.SqlStateCode;
 import org.apache.ignite.internal.processors.odbc.jdbc.JdbcMetaParamsRequest;
@@ -58,6 +59,15 @@ public class JdbcThinPreparedStatement extends JdbcThinStatement implements Prep
 
     /** Parameters metadata. */
     private JdbcThinParameterMetadata metaData;
+
+    /**
+     * The maximum size of array to allocate.
+     * Some VMs reserve some header words in an array.
+     * Attempts to allocate larger arrays may result in
+     * OutOfMemoryError: Requested array size exceeds VM limit
+     * @see java.util.ArrayList#MAX_ARRAY_SIZE
+     */
+    private static final int MAX_ARRAY_SIZE = Integer.MAX_VALUE - 8;
 
     /**
      * Creates new prepared statement.
@@ -215,7 +225,10 @@ public class JdbcThinPreparedStatement extends JdbcThinStatement implements Prep
     @Override public void setBinaryStream(int paramIdx, InputStream x, int length) throws SQLException {
         ensureNotClosed();
 
-        throw new SQLFeatureNotSupportedException("Streams are not supported.");
+        if (length < 0)
+            throw new SQLException("Invalid argument. Length should be greater than 0.");
+
+        setArgument(paramIdx, new SqlInputStreamWrapper(x, length));
     }
 
     /** {@inheritDoc} */
@@ -411,9 +424,7 @@ public class JdbcThinPreparedStatement extends JdbcThinStatement implements Prep
 
     /** {@inheritDoc} */
     @Override public void setBlob(int paramIdx, InputStream inputStream, long length) throws SQLException {
-        ensureNotClosed();
-
-        throw new SQLFeatureNotSupportedException("SQL-specific types are not supported.");
+        setBinaryStream(paramIdx, inputStream, length);
     }
 
     /** {@inheritDoc} */
@@ -446,7 +457,10 @@ public class JdbcThinPreparedStatement extends JdbcThinStatement implements Prep
     @Override public void setBinaryStream(int paramIdx, InputStream x, long length) throws SQLException {
         ensureNotClosed();
 
-        throw new SQLFeatureNotSupportedException("Streams are not supported.");
+        if (length > MAX_ARRAY_SIZE)
+            throw new SQLFeatureNotSupportedException("Invalid argument. InputStreams with length > " + length + " are not supported.");
+
+        setBinaryStream(paramIdx, x, Math.toIntExact(length));
     }
 
     /** {@inheritDoc} */
@@ -467,7 +481,7 @@ public class JdbcThinPreparedStatement extends JdbcThinStatement implements Prep
     @Override public void setBinaryStream(int paramIdx, InputStream x) throws SQLException {
         ensureNotClosed();
 
-        throw new SQLFeatureNotSupportedException("Streams are not supported.");
+        setArgument(paramIdx, new SqlInputStreamWrapper(x));
     }
 
     /** {@inheritDoc} */
@@ -493,9 +507,7 @@ public class JdbcThinPreparedStatement extends JdbcThinStatement implements Prep
 
     /** {@inheritDoc} */
     @Override public void setBlob(int paramIdx, InputStream inputStream) throws SQLException {
-        ensureNotClosed();
-
-        throw new SQLFeatureNotSupportedException("SQL-specific types are not supported.");
+        setBinaryStream(paramIdx, inputStream);
     }
 
     /** {@inheritDoc} */
@@ -518,6 +530,19 @@ public class JdbcThinPreparedStatement extends JdbcThinStatement implements Prep
         return iface != null && iface.isAssignableFrom(JdbcThinPreparedStatement.class);
     }
 
+    /** {@inheritDoc} */
+    @Override public void closeImpl() {
+        try {
+            for (Object arg : args) {
+                if (arg instanceof AutoCloseable)
+                    ((AutoCloseable)arg).close();
+            }
+        }
+        catch (Exception ignored) {
+            // No-op.
+        }
+    }
+
     /**
      * Sets query argument value.
      *
@@ -528,7 +553,7 @@ public class JdbcThinPreparedStatement extends JdbcThinStatement implements Prep
     private void setArgument(int paramIdx, Object val) throws SQLException {
         ensureNotClosed();
 
-        if (val != null && !SqlListenerUtils.isPlainType(val.getClass()))
+        if (val != null && !SqlListenerUtils.isPlainType(val.getClass()) && !(val instanceof SqlInputStreamWrapper))
             ensureCustomObjectsSupported();
 
         if (paramIdx < 1)

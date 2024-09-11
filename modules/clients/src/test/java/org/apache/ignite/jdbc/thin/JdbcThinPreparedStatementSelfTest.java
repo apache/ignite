@@ -17,7 +17,7 @@
 
 package org.apache.ignite.jdbc.thin;
 
-import java.io.InputStream;
+import java.io.ByteArrayInputStream;
 import java.io.Reader;
 import java.io.Serializable;
 import java.math.BigDecimal;
@@ -36,6 +36,7 @@ import java.sql.Timestamp;
 import java.sql.Types;
 import java.util.Arrays;
 import java.util.Date;
+import java.util.Random;
 import java.util.concurrent.Callable;
 import java.util.stream.Collectors;
 import org.apache.ignite.IgniteCache;
@@ -890,6 +891,53 @@ public class JdbcThinPreparedStatementSelfTest extends JdbcThinAbstractSelfTest 
      * @throws Exception If failed.
      */
     @Test
+    public void testBlobInputStream() throws Exception {
+        final int BLOB_SIZE = 123000;
+
+        byte[] bytes = new byte[BLOB_SIZE];
+        new Random().nextBytes(bytes);
+
+        try {
+            try (PreparedStatement stmt = conn.prepareStatement("insert into TestObject(_key, id, blobVal) values (?, ?, ?)")) {
+                ByteArrayInputStream stream1 = new ByteArrayInputStream(bytes);
+
+                stmt.setInt(1, 3);
+                stmt.setInt(2, 3);
+                stmt.setBlob(3, stream1, BLOB_SIZE);
+                int inserted = stmt.executeUpdate();
+
+                assertEquals(1, inserted);
+            }
+
+            try (PreparedStatement stmt = conn.prepareStatement(SQL_PART + " where blobVal is not distinct from ?")) {
+                ByteArrayInputStream stream2 = new ByteArrayInputStream(bytes);
+
+                stmt.setBlob(1, stream2);
+
+                ResultSet rs = stmt.executeQuery();
+
+                int cnt = 0;
+
+                while (rs.next()) {
+                    if (cnt == 0)
+                        assert rs.getInt("id") == 3;
+
+                    cnt++;
+                }
+
+                assertEquals(1, cnt);
+            }
+
+        }
+        finally {
+            grid(0).cache(DEFAULT_CACHE_NAME).remove(3);
+        }
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    @Test
     public void testClob() throws Exception {
         stmt = conn.prepareStatement(SQL_PART + " where clobVal is not distinct from ?");
 
@@ -1086,36 +1134,6 @@ public class JdbcThinPreparedStatementSelfTest extends JdbcThinAbstractSelfTest 
         checkNotSupported(new RunnableX() {
             @Override public void runx() throws Exception {
                 stmt.setAsciiStream(1, null, 0L);
-            }
-        });
-
-        checkNotSupported(new RunnableX() {
-            @Override public void runx() throws Exception {
-                stmt.setBinaryStream(1, null);
-            }
-        });
-
-        checkNotSupported(new RunnableX() {
-            @Override public void runx() throws Exception {
-                stmt.setBinaryStream(1, null, 0);
-            }
-        });
-
-        checkNotSupported(new RunnableX() {
-            @Override public void runx() throws Exception {
-                stmt.setBinaryStream(1, null, 0L);
-            }
-        });
-
-        checkNotSupported(new RunnableX() {
-            @Override public void runx() throws Exception {
-                stmt.setBlob(1, (InputStream)null);
-            }
-        });
-
-        checkNotSupported(new RunnableX() {
-            @Override public void runx() throws Exception {
-                stmt.setBlob(1, null, 0L);
             }
         });
 

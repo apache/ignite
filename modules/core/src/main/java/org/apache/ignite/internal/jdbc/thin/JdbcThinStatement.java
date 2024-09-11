@@ -399,10 +399,20 @@ public class JdbcThinStatement implements Statement {
             closeResults();
 
             conn.closeStatement(this);
+
+            closeImpl();
         }
         finally {
             closed = true;
         }
+    }
+
+    /**
+     * This is guaranteed to be called exactly once even in case of concurrent {@link #close()} calls.
+     * @throws SQLException in case of error
+     */
+    protected void closeImpl() throws SQLException {
+        // No-op.
     }
 
     /**

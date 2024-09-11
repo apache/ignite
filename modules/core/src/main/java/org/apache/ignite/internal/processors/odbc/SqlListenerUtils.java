@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.processors.odbc;
 
+import java.io.IOException;
 import java.math.BigDecimal;
 import java.sql.Time;
 import java.sql.Timestamp;
@@ -26,7 +27,6 @@ import org.apache.ignite.binary.BinaryObjectException;
 import org.apache.ignite.cache.query.QueryCancelledException;
 import org.apache.ignite.internal.binary.BinaryReaderExImpl;
 import org.apache.ignite.internal.binary.BinaryUtils;
-import org.apache.ignite.internal.binary.BinaryWriterExImpl;
 import org.apache.ignite.internal.binary.GridBinaryMarshaller;
 import org.apache.ignite.internal.processors.cache.query.IgniteQueryErrorCode;
 import org.apache.ignite.internal.processors.query.IgniteSQLException;
@@ -180,7 +180,7 @@ public abstract class SqlListenerUtils {
      * @param binObjAllow Allow to write non plain objects.
      * @throws BinaryObjectException On error.
      */
-    public static void writeObject(BinaryWriterExImpl writer, @Nullable Object obj, boolean binObjAllow)
+    public static void writeObject(SqlBinaryWriter writer, @Nullable Object obj, boolean binObjAllow)
         throws BinaryObjectException {
         if (obj == null) {
             writer.writeByte(GridBinaryMarshaller.NULL);
@@ -246,6 +246,14 @@ public abstract class SqlListenerUtils {
             writer.writeTimestampArray((Timestamp[])obj);
         else if (cls == java.util.Date[].class || cls == java.sql.Date[].class)
             writer.writeDateArray((java.util.Date[])obj);
+        else if (obj instanceof SqlInputStreamWrapper) {
+            try {
+                writer.writeInputStreamAsByteArray((SqlInputStreamWrapper)obj);
+            }
+            catch (IOException e) {
+                throw new BinaryObjectException(e);
+            }
+        }
         else if (binObjAllow)
             writer.writeObjectDetached(obj);
         else
