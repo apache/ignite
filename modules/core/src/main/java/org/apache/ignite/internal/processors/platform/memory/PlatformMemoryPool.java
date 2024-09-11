@@ -17,7 +17,7 @@
 
 package org.apache.ignite.internal.processors.platform.memory;
 
-import org.apache.ignite.internal.util.GridCleaner;
+import java.lang.ref.Cleaner;
 
 import static org.apache.ignite.internal.processors.platform.memory.PlatformMemoryUtils.POOL_HDR_OFF_MEM_1;
 import static org.apache.ignite.internal.processors.platform.memory.PlatformMemoryUtils.POOL_HDR_OFF_MEM_2;
@@ -35,6 +35,9 @@ public class PlatformMemoryPool {
     /** base pointer. */
     private final long poolPtr;
 
+    /** Cleaner instance. */
+    private static final Cleaner cleaner = Cleaner.create();
+
     /** First pooled memory chunk. */
     private PlatformPooledMemory mem1;
 
@@ -50,7 +53,7 @@ public class PlatformMemoryPool {
     public PlatformMemoryPool() {
         poolPtr = allocatePool();
 
-        GridCleaner.create(this, new CleanerRunnable(poolPtr));
+        cleaner.register(this, new CleanerRunnable(poolPtr));
     }
 
     /**

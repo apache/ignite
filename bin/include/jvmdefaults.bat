@@ -24,25 +24,6 @@ set value=""
 :: First argument is the version of the java
 :: Second argument is the current value of the jvm options
 :: Third value is the name of the environment variable that jvm options should be set to
-if %java_version% == 8 (
-    set value= ^
-    -XX:+AggressiveOpts ^
-    %current_value%
-)
-
-if %java_version% GEQ 9 if %java_version% LSS 11 (
-    set value= ^
-    -XX:+AggressiveOpts ^
-    --add-exports=java.base/jdk.internal.misc=ALL-UNNAMED ^
-    --add-exports=java.base/sun.nio.ch=ALL-UNNAMED ^
-    --add-exports=java.management/com.sun.jmx.mbeanserver=ALL-UNNAMED ^
-    --add-exports=jdk.internal.jvmstat/sun.jvmstat.monitor=ALL-UNNAMED ^
-    --add-exports=java.base/sun.reflect.generics.reflectiveObjects=ALL-UNNAMED ^
-    --illegal-access=permit ^
-    --add-modules=java.xml.bind ^
-    %current_value%
-)
-
 if %java_version% GEQ 11 if %java_version% LSS 14 (
     set value= ^
     --add-exports=java.base/jdk.internal.misc=ALL-UNNAMED ^
