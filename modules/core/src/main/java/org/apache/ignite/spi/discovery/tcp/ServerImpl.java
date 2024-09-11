@@ -7247,8 +7247,8 @@ class ServerImpl extends TcpDiscoveryImpl {
         }
 
         /**
-         * Asynchronously searches for an alive address of the previous using a maximal timeout. Sends
-         * {@link TcpDiscoveryPingRequest} and waits for {@link TcpDiscoveryPingResponse}. Uses
+         * Asynchronously searches for an alive address of the previous using given maximal timeout. Sends
+         * {@link TcpDiscoveryPingRequest} and waits for {@link TcpDiscoveryPingResponse}. Uses also
          * {@link TcpDiscoverySpi#getSocketTimeout()} and {@link TcpDiscoverySpi#getAckTimeout()} over the socket to send
          * and read the messages.
          *
