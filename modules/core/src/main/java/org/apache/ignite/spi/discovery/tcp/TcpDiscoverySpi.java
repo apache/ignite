@@ -1651,7 +1651,7 @@ public class TcpDiscoverySpi extends IgniteSpiAdapter implements IgniteDiscovery
 
             return sock;
         }
-        catch (IgniteSpiOperationTimeoutException e) {
+        catch (IOException | IgniteSpiOperationTimeoutException e) {
             if (sock != null)
                 U.closeQuiet(sock);
 
