@@ -36,7 +36,8 @@ class JdbcThinTest(IgniteTest):
     @ignite_versions(str(DEV_BRANCH), str(LATEST), version_prefix="thin_jdbc_version")
     def test_simple_insert_select(self, server_version, thin_jdbc_version):
         """
-        Smoke test ensuring the Thin JDBC driver just works via single insert and select.
+        Smoke test ensuring the Thin JDBC driver just works doing simple SQL queries
+        and that the compationility between Ignite versions is preserved.
         """
         server_config = IgniteConfiguration(
             version=IgniteVersion(server_version),
