@@ -117,6 +117,7 @@ import org.apache.ignite.plugin.security.SecurityCredentials;
 import org.apache.ignite.spi.IgniteNodeValidationResult;
 import org.apache.ignite.spi.IgniteSpiContext;
 import org.apache.ignite.spi.IgniteSpiException;
+import org.apache.ignite.spi.IgniteSpiOperationTimeoutException;
 import org.apache.ignite.spi.IgniteSpiOperationTimeoutHelper;
 import org.apache.ignite.spi.IgniteSpiThread;
 import org.apache.ignite.spi.discovery.DiscoveryDataBag;
@@ -911,7 +912,7 @@ class ServerImpl extends TcpDiscoveryImpl {
 
                         return t;
                     }
-                    catch (IOException | IgniteCheckedException e) {
+                    catch (IOException | IgniteSpiOperationTimeoutException e) {
                         if (nodeId != null && !nodeAlive(nodeId)) {
                             log.warning("Failed to ping node [nodeId=" + nodeId + "]. Node has left or is " +
                                 "leaving topology. Cause: " + e.getMessage());
@@ -935,15 +936,23 @@ class ServerImpl extends TcpDiscoveryImpl {
                             break;
                         }
 
-                        if (dfltTimeouts && spi.failureDetectionTimeoutEnabled() && timeoutHelper.checkFailureTimeoutReached(e)) {
-                            log.warning("Failed to ping node [nodeId=" + nodeId + "]. Reached the timeout " +
-                                spi.failureDetectionTimeout() + "ms. Cause: " + e.getMessage());
+                        if (dfltTimeouts) {
+                            if (spi.failureDetectionTimeoutEnabled() && timeoutHelper.checkFailureTimeoutReached(e)) {
+                                log.warning("Failed to ping node [nodeId=" + nodeId + "]. Reached the timeout " +
+                                    spi.failureDetectionTimeout() + "ms. Cause: " + e.getMessage());
 
-                            break;
+                                break;
+                            }
+                            else if (!spi.failureDetectionTimeoutEnabled() && reconCnt == spi.getReconnectCount()) {
+                                log.warning("Failed to ping node [nodeId=" + nodeId + "]. Reached the reconnection " +
+                                    "count " + spi.getReconnectCount() + ". Cause: " + e.getMessage());
+
+                                break;
+                            }
                         }
-                        else if (!spi.failureDetectionTimeoutEnabled() && reconCnt == spi.getReconnectCount()) {
-                            log.warning("Failed to ping node [nodeId=" + nodeId + "]. Reached the reconnection " +
-                                "count " + spi.getReconnectCount() + ". Cause: " + e.getMessage());
+                        else if (e instanceof IgniteSpiOperationTimeoutException) {
+                            log.warning("Failed to ping node [nodeId=" + nodeId + "]. Reached the maximal ping timeout. " +
+                                "Cause: " + e.getMessage());
 
                             break;
                         }
@@ -7306,7 +7315,11 @@ class ServerImpl extends TcpDiscoveryImpl {
                             InetSocketAddress addr = addrs.get(addrIdx.getAndIncrement());
 
                             try {
-                                if (pingNode(addr, node.id(), null, timeoutHelper).get1() != null)
+                                UUID id = pingNode(addr, node.id(), null, timeoutHelper).get1();
+
+                                assert id == null || id.equals(node.id());
+
+                                if (id != null)
                                     liveAddrHolder.compareAndSet(null, addr);
                             }
                             catch (Exception e) {
