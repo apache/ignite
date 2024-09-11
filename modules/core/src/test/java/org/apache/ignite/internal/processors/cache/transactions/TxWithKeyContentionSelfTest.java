@@ -296,6 +296,8 @@ public class TxWithKeyContentionSelfTest extends GridCommonAbstractTest {
             commSpi0.stopBlock();
         }
 
+        txLatch.await();
+
         CountDownLatch latch = new CountDownLatch(1);
 
         IgniteTxManager srvTxMgr = ((IgniteEx)ig).context().cache().context().tm();
@@ -320,8 +322,6 @@ public class TxWithKeyContentionSelfTest extends GridCommonAbstractTest {
         String coll1 = metrics.getTxKeyCollisions();
 
         log.warning("!!!!!! coll1 = " + coll1);
-
-        txLatch.await();
 
         log.warning("txLatch.getCount() = " + txLatch.getCount());
 
