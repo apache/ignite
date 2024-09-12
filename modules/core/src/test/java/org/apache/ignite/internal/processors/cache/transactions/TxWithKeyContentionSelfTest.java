@@ -235,8 +235,6 @@ public class TxWithKeyContentionSelfTest extends GridCommonAbstractTest {
 
         IgniteCache<Integer, Integer> cache0 = cl.cache(DEFAULT_CACHE_NAME);
 
-        CacheMetrics metrics = ig.cache(DEFAULT_CACHE_NAME).localMetrics();
-
         final Integer keyId = primaryKey(cache);
 
         CountDownLatch blockOnce = new CountDownLatch(1);
@@ -298,44 +296,32 @@ public class TxWithKeyContentionSelfTest extends GridCommonAbstractTest {
             commSpi0.stopBlock();
         }
 
-        txLatch.await();
+        f.get();
 
-        CountDownLatch latch = new CountDownLatch(1);
+        finishFut.get();
+
+        txLatch.await();
 
         IgniteTxManager srvTxMgr = ((IgniteEx)ig).context().cache().context().tm();
 
-        latch.countDown();
-        latch.await();
+        try {
+            U.invoke(IgniteTxManager.class, srvTxMgr, "collectTxCollisionsInfo");
+        }
+        catch (IgniteCheckedException e) {
+            fail(e.toString());
+        }
+
+        CacheMetrics metrics = ig.cache(DEFAULT_CACHE_NAME).localMetrics();
+
+        log.warning("!!!!!! metrics = " + metrics);
 
         assertTrue(GridTestUtils.waitForCondition(new GridAbsPredicate() { // failed here
             @Override public boolean apply() {
-                CountDownLatch latch1 = new CountDownLatch(1);
-
-                try {
-                    U.invoke(IgniteTxManager.class, srvTxMgr, "collectTxCollisionsInfo");
-                }
-                catch (IgniteCheckedException e) {
-                    fail(e.toString());
-                }
-
-                latch1.countDown();
-
-                try {
-                    latch1.await();
-                }
-                catch (InterruptedException e) {
-                    throw new RuntimeException(e);
-                }
-
-                log.warning("!!!!!! metrics = " + metrics);
-
                 String coll1 = metrics.getTxKeyCollisions();
 
                 log.warning("!!!!!! coll1 = " + coll1);
                 if (!coll1.isEmpty()) {
                     String coll2 = metrics.getTxKeyCollisions();
-
-                    log.warning("!!! COL2 = " + coll2);
 
                     // check idempotent
                     assertEquals(coll1, coll2);
@@ -348,9 +334,5 @@ public class TxWithKeyContentionSelfTest extends GridCommonAbstractTest {
                     return false;
             }
         }, 10_000));
-
-        f.get();
-
-        finishFut.get();
     }
 }
