@@ -23,7 +23,6 @@ import java.util.function.BiPredicate;
 import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.function.Supplier;
-
 import org.apache.calcite.rel.RelCollation;
 import org.apache.calcite.rel.RelFieldCollation;
 import org.apache.calcite.rel.core.AggregateCall;
@@ -60,9 +59,11 @@ public interface ExpressionFactory<Row> {
      *
      * @param left Collations of left row.
      * @param right Collations of right row.
+     * @param nullsEqual If {@code true}, nulls are considered equal. Usually, NULL <> NULL in SQL. So, the value should
+     *                   be {@code false}. Expect for cases with IS DISTINCT / IS NOT DISTINCT.
      * @return Rows comparator.
      */
-    Comparator<Row> comparator(List<RelFieldCollation> left, List<RelFieldCollation> right);
+    Comparator<Row> comparator(List<RelFieldCollation> left, List<RelFieldCollation> right, boolean nullsEqual);
 
     /**
      * Creates a Filter predicate.

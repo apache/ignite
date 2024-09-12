@@ -19,6 +19,7 @@ package org.apache.ignite.internal.processors.query.calcite.exec.exp;
 
 import java.lang.reflect.Modifier;
 import java.lang.reflect.Type;
+import java.util.AbstractMap;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.BitSet;
@@ -29,6 +30,7 @@ import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.BiPredicate;
 import java.util.function.Function;
 import java.util.function.Predicate;
@@ -78,6 +80,7 @@ import org.apache.ignite.internal.processors.query.calcite.util.Commons;
 import org.apache.ignite.internal.processors.query.calcite.util.IgniteMethod;
 import org.apache.ignite.internal.util.GridBoundedConcurrentLinkedHashMap;
 import org.apache.ignite.internal.util.typedef.F;
+import org.jetbrains.annotations.Nullable;
 
 /**
  * Implements rex expression into a function object. Uses JaninoRexCompiler under the hood.
@@ -85,7 +88,7 @@ import org.apache.ignite.internal.util.typedef.F;
  */
 public class ExpressionFactoryImpl<Row> implements ExpressionFactory<Row> {
     /** */
-    private static final Map<String, Scalar> SCALAR_CACHE = new GridBoundedConcurrentLinkedHashMap<>(1024);
+    private static final Map<String, Object> SCALAR_CACHE = new GridBoundedConcurrentLinkedHashMap<>(1024);
 
     /** Placeholder for lowest possible value in range bound. This placeholder is only reqired to compare ranges. */
     private static final Object LOWEST_VALUE = new Object();
@@ -192,7 +195,7 @@ public class ExpressionFactoryImpl<Row> implements ExpressionFactory<Row> {
     }
 
     /** {@inheritDoc} */
-    @Override public Comparator<Row> comparator(List<RelFieldCollation> left, List<RelFieldCollation> right) {
+    @Override public Comparator<Row> comparator(List<RelFieldCollation> left, List<RelFieldCollation> right, boolean nullsEqual) {
         if (F.isEmpty(left) || F.isEmpty(right) || left.size() != right.size())
             throw new IllegalArgumentException("Both inputs should be non-empty and have the same size: left="
                 + (left != null ? left.size() : "null") + ", right=" + (right != null ? right.size() : "null"));
@@ -205,6 +208,8 @@ public class ExpressionFactoryImpl<Row> implements ExpressionFactory<Row> {
             if (left.get(i).direction != right.get(i).direction)
                 throw new IllegalArgumentException("Can't be compared: left=" + left.get(i) + ", right=" + right.get(i));
         }
+
+        int nullComparison = nullsEqual ? 0 : left.get(0).nullDirection.nullComparison;
 
         return new Comparator<Row>() {
             @Override public int compare(Row o1, Row o2) {
@@ -237,7 +242,8 @@ public class ExpressionFactoryImpl<Row> implements ExpressionFactory<Row> {
                 }
 
                 // If compared rows contain NULLs, they shouldn't be treated as equals, since NULL <> NULL in SQL.
-                return hasNulls ? 1 : 0;
+                // Expect for cases with IS DISTINCT / IS NOT DISTINCT.
+                return hasNulls ? nullComparison : 0;
             }
         };
     }
@@ -252,28 +258,32 @@ public class ExpressionFactoryImpl<Row> implements ExpressionFactory<Row> {
 
     /** {@inheritDoc} */
     @Override public Predicate<Row> predicate(RexNode filter, RelDataType rowType) {
-        return new PredicateImpl(scalar(filter, rowType));
+        Map.Entry<SingleScalar, String> res = scalar(filter, rowType);
+
+        return new PredicateImpl(res.getKey(), res.getValue());
     }
 
     /** {@inheritDoc} */
     @Override public BiPredicate<Row, Row> biPredicate(RexNode filter, RelDataType rowType) {
-        return new BiPredicateImpl(biScalar(filter, rowType));
+        Map.Entry<BiScalar, String> res = biScalar(filter, rowType);
+
+        return new BiPredicateImpl(res.getKey(), res.getValue());
     }
 
     /** {@inheritDoc} */
     @Override public Function<Row, Row> project(List<RexNode> projects, RelDataType rowType) {
-        return new ProjectImpl(scalar(projects, rowType), ctx.rowHandler().factory(typeFactory, RexUtil.types(projects)));
+        return new ProjectImpl(scalar(projects, rowType).getKey(), ctx.rowHandler().factory(typeFactory, RexUtil.types(projects)));
     }
 
     /** {@inheritDoc} */
     @Override public Supplier<Row> rowSource(List<RexNode> values) {
-        return new ValuesImpl(scalar(values, null), ctx.rowHandler().factory(typeFactory,
+        return new ValuesImpl(scalar(values, null).getKey(), ctx.rowHandler().factory(typeFactory,
             Commons.transform(values, v -> v != null ? v.getType() : nullType)));
     }
 
     /** {@inheritDoc} */
     @Override public <T> Supplier<T> execute(RexNode node) {
-        return new ValueImpl<T>(scalar(node, null), ctx.rowHandler().factory(typeFactory.getJavaClass(node.getType())));
+        return new ValueImpl<T>(scalar(node, null).getKey(), ctx.rowHandler().factory(typeFactory.getJavaClass(node.getType())));
     }
 
     /** {@inheritDoc} */
@@ -364,8 +374,8 @@ public class ExpressionFactoryImpl<Row> implements ExpressionFactory<Row> {
         if ((collationKeyIdx >= collationKeys.size()) || (!lowerInclude && !upperInclude) ||
             searchBounds.get(collationKeys.get(collationKeyIdx)) == null) {
             ranges.add(new RangeConditionImpl(
-                scalar(curLower, rowType),
-                scalar(curUpper, rowType),
+                scalar(curLower, rowType).getKey(),
+                scalar(curUpper, rowType).getKey(),
                 lowerInclude,
                 upperInclude,
                 rowComparator,
@@ -433,7 +443,7 @@ public class ExpressionFactoryImpl<Row> implements ExpressionFactory<Row> {
      * @param type Row type.
      * @return SingleScalar.
      */
-    private SingleScalar scalar(RexNode node, RelDataType type) {
+    private Map.Entry<SingleScalar, String> scalar(RexNode node, RelDataType type) {
         return scalar(ImmutableList.of(node), type);
     }
 
@@ -444,9 +454,21 @@ public class ExpressionFactoryImpl<Row> implements ExpressionFactory<Row> {
      * @param type Row type.
      * @return SingleScalar.
      */
-    private SingleScalar scalar(List<RexNode> nodes, RelDataType type) {
-        return (SingleScalar)SCALAR_CACHE.computeIfAbsent(digest(nodes, type, false),
-            k -> compile(nodes, type, false));
+    private Map.Entry<SingleScalar, String> scalar(List<RexNode> nodes, RelDataType type) {
+        AtomicReference<String> srcHolder = new AtomicReference<>();
+
+        String digest = digest(nodes, type, false);
+        Scalar compiled = compile(nodes, type, false, srcHolder);
+
+        System.err.println("TEST | scalar digest: " + digest);
+        System.err.println("TEST | scalar src: " + srcHolder.get());
+
+        Map.Entry<? extends Scalar, String> existing = (Map.Entry<? extends Scalar, String>)SCALAR_CACHE.get(digest);
+
+        if (existing != null)
+            System.err.println(existing.getValue());
+
+        return (Map.Entry<SingleScalar, String>)SCALAR_CACHE.computeIfAbsent(digest, k -> new AbstractMap.SimpleEntry(compiled, srcHolder.get()));
     }
 
     /**
@@ -456,15 +478,27 @@ public class ExpressionFactoryImpl<Row> implements ExpressionFactory<Row> {
      * @param type Row type.
      * @return BiScalar.
      */
-    private BiScalar biScalar(RexNode node, RelDataType type) {
+    private Map.Entry<BiScalar, String> biScalar(RexNode node, RelDataType type) {
         ImmutableList<RexNode> nodes = ImmutableList.of(node);
 
-        return (BiScalar)SCALAR_CACHE.computeIfAbsent(digest(nodes, type, true),
-            k -> compile(nodes, type, true));
+        AtomicReference<String> srcHolder = new AtomicReference<>();
+
+        String digest = digest(nodes, type, true);
+        Scalar compiled = compile(nodes, type, true, srcHolder);
+
+        System.err.println("TEST | biscalar digest: " + digest);
+        System.err.println("TEST | biscalar src: " + srcHolder.get());
+
+        Map.Entry<? extends Scalar, String> existing = (Map.Entry<? extends Scalar, String>)SCALAR_CACHE.get(digest);
+
+        if (existing != null)
+            System.err.println(existing.getValue());
+
+        return (Map.Entry<BiScalar, String>)SCALAR_CACHE.computeIfAbsent(digest, k -> new AbstractMap.SimpleEntry<>(compiled, srcHolder.get()));
     }
 
     /** */
-    private Scalar compile(List<RexNode> nodes, RelDataType type, boolean biInParams) {
+    private Scalar compile(List<RexNode> nodes, RelDataType type, boolean biInParams, @Nullable AtomicReference<String> srcHolder) {
         if (type == null)
             type = emptyType;
 
@@ -541,7 +575,12 @@ public class ExpressionFactoryImpl<Row> implements ExpressionFactory<Row> {
 
         Class<? extends Scalar> clazz = biInParams ? BiScalar.class : SingleScalar.class;
 
-        return Commons.compile(clazz, Expressions.toString(F.asList(decl), "\n", false));
+        String src = Expressions.toString(F.asList(decl), "\n", false);
+
+        if(srcHolder!=null)
+            srcHolder.set(src);
+
+        return Commons.compile(clazz, src);
     }
 
     /** */
@@ -612,11 +651,14 @@ public class ExpressionFactoryImpl<Row> implements ExpressionFactory<Row> {
 
     /** */
     private class PredicateImpl extends AbstractScalarPredicate<SingleScalar> implements Predicate<Row> {
+        public final String src;
         /**
          * @param scalar Scalar.
          */
-        private PredicateImpl(SingleScalar scalar) {
+        private PredicateImpl(SingleScalar scalar, String src) {
             super(scalar);
+
+            this.src = src;
         }
 
         /** {@inheritDoc} */
@@ -628,11 +670,14 @@ public class ExpressionFactoryImpl<Row> implements ExpressionFactory<Row> {
 
     /** */
     private class BiPredicateImpl extends AbstractScalarPredicate<BiScalar> implements BiPredicate<Row, Row> {
+        public final String src;
         /**
          * @param scalar Scalar.
          */
-        private BiPredicateImpl(BiScalar scalar) {
+        private BiPredicateImpl(BiScalar scalar, String src) {
             super(scalar);
+
+            this.src = src;
         }
 
         /** {@inheritDoc} */

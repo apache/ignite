@@ -97,8 +97,11 @@ public class IgniteTypeCoercion extends TypeCoercionImpl {
                 if (!leftType.equals(targetType))
                     coerced = coerceOperandType(scope, call, 0, targetType);
 
-                if (!coerced && !rightType.equals(targetType))
-                    coerced = coerceOperandType(scope, call, 1, targetType);
+                if (!rightType.equals(targetType)) {
+                    boolean rightCoerced = coerceOperandType(scope, call, 1, targetType);
+
+                    coerced = coerced || rightCoerced;
+                }
 
                 return coerced;
             }
