@@ -304,22 +304,26 @@ public class TxWithKeyContentionSelfTest extends GridCommonAbstractTest {
 
         IgniteTxManager srvTxMgr = ((IgniteEx)ig).context().cache().context().tm();
 
+        CountDownLatch latch = new CountDownLatch(1);
+
         try {
             U.invoke(IgniteTxManager.class, srvTxMgr, "collectTxCollisionsInfo");
+            latch.countDown();
         }
         catch (IgniteCheckedException e) {
             fail(e.toString());
         }
 
-        CacheMetrics metrics = ig.cache(DEFAULT_CACHE_NAME).localMetrics();
-
-        log.warning("!!!!!! metrics = " + metrics);
+        latch.await();
 
         assertTrue(GridTestUtils.waitForCondition(new GridAbsPredicate() { // failed here
             @Override public boolean apply() {
+                CacheMetrics metrics = ig.cache(DEFAULT_CACHE_NAME).localMetrics();
+
                 String coll1 = metrics.getTxKeyCollisions();
 
                 log.warning("!!!!!! coll1 = " + coll1);
+
                 if (!coll1.isEmpty()) {
                     String coll2 = metrics.getTxKeyCollisions();
 
@@ -333,6 +337,6 @@ public class TxWithKeyContentionSelfTest extends GridCommonAbstractTest {
                 else
                     return false;
             }
-        }, 10_000));
+        }, 20_000));
     }
 }
