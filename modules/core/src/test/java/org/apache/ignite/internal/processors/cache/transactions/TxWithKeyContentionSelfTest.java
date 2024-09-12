@@ -235,6 +235,8 @@ public class TxWithKeyContentionSelfTest extends GridCommonAbstractTest {
 
         IgniteCache<Integer, Integer> cache0 = cl.cache(DEFAULT_CACHE_NAME);
 
+        CacheMetrics metrics = ig.cache(DEFAULT_CACHE_NAME).localMetrics();
+
         final Integer keyId = primaryKey(cache);
 
         CountDownLatch blockOnce = new CountDownLatch(1);
@@ -303,11 +305,12 @@ public class TxWithKeyContentionSelfTest extends GridCommonAbstractTest {
         IgniteTxManager srvTxMgr = ((IgniteEx)ig).context().cache().context().tm();
 
         latch.countDown();
-
         latch.await();
 
         assertTrue(GridTestUtils.waitForCondition(new GridAbsPredicate() { // failed here
             @Override public boolean apply() {
+                CountDownLatch latch1 = new CountDownLatch(1);
+
                 try {
                     U.invoke(IgniteTxManager.class, srvTxMgr, "collectTxCollisionsInfo");
                 }
@@ -315,7 +318,14 @@ public class TxWithKeyContentionSelfTest extends GridCommonAbstractTest {
                     fail(e.toString());
                 }
 
-                CacheMetrics metrics = ig.cache(DEFAULT_CACHE_NAME).localMetrics();
+                latch1.countDown();
+
+                try {
+                    latch1.await();
+                }
+                catch (InterruptedException e) {
+                    throw new RuntimeException(e);
+                }
 
                 log.warning("!!!!!! metrics = " + metrics);
 
