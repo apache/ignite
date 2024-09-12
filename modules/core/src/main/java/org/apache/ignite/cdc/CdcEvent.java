@@ -23,6 +23,8 @@ import javax.cache.expiry.ExpiryPolicy;
 import org.apache.ignite.cache.CacheEntryVersion;
 import org.apache.ignite.cache.affinity.Affinity;
 import org.apache.ignite.internal.cdc.CdcMain;
+import org.apache.ignite.internal.processors.cache.CacheObject;
+import org.apache.ignite.internal.processors.cache.KeyCacheObject;
 import org.apache.ignite.lang.IgniteExperimental;
 import org.apache.ignite.spi.systemview.view.CacheView;
 import org.jetbrains.annotations.Nullable;
@@ -39,12 +41,32 @@ public interface CdcEvent extends Serializable {
     /**
      * @return Key for the changed entry.
      */
-    public Object key();
+    public KeyCacheObject keyCacheObject();
 
     /**
      * @return Value for the changed entry or {@code null} in case of entry removal.
      */
-    @Nullable public Object value();
+    @Nullable public CacheObject valueCacheObject();
+
+    /**
+     * @return Previous entry state metadata if expected.
+     */
+    @Nullable public CacheObject previousStateMetadataCacheObject();
+
+    /**
+     * @return Key which was placed into cache. Or null if failed to convert.
+     */
+    public Object key();
+
+    /**
+     * @return Value which was placed into cache. Or null for delete operation or for failure.
+     */
+    public Object value();
+
+    /**
+     * @return Previous entry state metadata.
+     */
+    public Object previousStateMetadata();
 
     /**
      * @return {@code True} if event fired on primary node for partition containing this entry.

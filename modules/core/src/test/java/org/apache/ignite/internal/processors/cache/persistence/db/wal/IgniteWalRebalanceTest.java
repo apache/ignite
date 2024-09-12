@@ -892,6 +892,7 @@ public class IgniteWalRebalanceTest extends GridCommonAbstractTest {
                         0,
                         0,
                         0,
+                        null,
                         DataEntry.EMPTY_FLAGS
                     )));
 

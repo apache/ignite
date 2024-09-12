@@ -257,10 +257,11 @@ public class CdcResendCommandTest extends GridCommandHandlerAbstractTest {
         AlwaysNewResolutionManager() {
             rslv = new CacheVersionConflictResolver() {
                 @Override public <K1, V1> GridCacheVersionConflictContext<K1, V1> resolve(
-                    CacheObjectValueContext ctx,
-                    GridCacheVersionedEntryEx<K1, V1> oldEntry,
-                    GridCacheVersionedEntryEx<K1, V1> newEntry,
-                    boolean atomicVerComparator
+                        CacheObjectValueContext ctx,
+                        GridCacheVersionedEntryEx<K1, V1> oldEntry,
+                        GridCacheVersionedEntryEx<K1, V1> newEntry,
+                        Object prevStateMeta,
+                        boolean atomicVerComparator
                 ) {
                     GridCacheVersionConflictContext<K1, V1> res = new GridCacheVersionConflictContext<>(ctx, oldEntry, newEntry);
 

@@ -104,6 +104,7 @@ public class CacheMetricsConflictResolverTest extends GridCommonAbstractTest {
             CacheObjectValueContext ctx,
             GridCacheVersionedEntryEx<K, V> oldEntry,
             GridCacheVersionedEntryEx<K, V> newEntry,
+            Object prevStateMeta,
             boolean atomicVerComparator
         ) {
             GridCacheVersionConflictContext<K, V> res = new GridCacheVersionConflictContext<>(ctx, oldEntry, newEntry);

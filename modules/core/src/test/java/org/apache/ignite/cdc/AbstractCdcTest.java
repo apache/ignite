@@ -25,6 +25,7 @@ import java.util.Arrays;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.CountDownLatch;
@@ -307,7 +308,7 @@ public abstract class AbstractCdcTest extends GridCommonAbstractTest {
                     return;
 
                 data.computeIfAbsent(
-                    F.t(evt.value() == null ? DELETE : UPDATE, evt.cacheId()),
+                    F.t(evt.valueCacheObject() == null ? DELETE : UPDATE, evt.cacheId()),
                     k -> new ArrayList<>()).add(extract(evt));
 
                 assertTrue(caches.containsKey(evt.cacheId()));
@@ -374,7 +375,7 @@ public abstract class AbstractCdcTest extends GridCommonAbstractTest {
             assertTrue(userTypeFound);
             assertNull(evt.version().otherClusterVersion());
 
-            if (evt.value() == null)
+            if (evt.valueCacheObject() == null)
                 return;
 
             User user = (User)evt.value();
@@ -513,6 +514,35 @@ public abstract class AbstractCdcTest extends GridCommonAbstractTest {
         /** */
         public byte[] getPayload() {
             return payload;
+        }
+
+        /** {@inheritDoc} */
+        @Override public boolean equals(Object o) {
+            if (this == o)
+                return true;
+
+            if (o == null || getClass() != o.getClass())
+                return false;
+
+            User user = (User)o;
+
+            if (age != user.age)
+                return false;
+
+            if (!Objects.equals(name, user.name))
+                return false;
+
+            return Arrays.equals(payload, user.payload);
+        }
+
+        /** {@inheritDoc} */
+        @Override public int hashCode() {
+            int result = name != null ? name.hashCode() : 0;
+
+            result = 31 * result + age;
+            result = 31 * result + Arrays.hashCode(payload);
+
+            return result;
         }
     }
 

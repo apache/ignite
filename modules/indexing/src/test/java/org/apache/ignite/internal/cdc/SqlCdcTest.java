@@ -229,7 +229,7 @@ public class SqlCdcTest extends AbstractCdcTest {
             assertTrue(userValType);
             assertTrue(cityValType);
 
-            if (evt.value() == null)
+            if (evt.valueCacheObject() == null)
                 return;
 
             if (evt.cacheId() == cacheId(USER)) {

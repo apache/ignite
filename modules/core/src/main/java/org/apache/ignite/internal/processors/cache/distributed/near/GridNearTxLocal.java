@@ -921,11 +921,12 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
                     expiryPlc,
                     retval,
                     filter,
-                    /*drVer*/drVer,
-                    /*drTtl*/-1L,
-                    /*drExpireTime*/-1L,
+                    drVer,
+                    -1L,
+                    -1L,
+                    null,
                     ret,
-                    /*enlisted*/null,
+                    null,
                     skipStore,
                     false,
                     hasFilters,
@@ -1064,6 +1065,7 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
                     GridCacheVersion drVer;
                     long drTtl;
                     long drExpireTime;
+                    CacheObject prevStateMeta;
 
                     if (drPutMap != null) {
                         GridCacheDrInfo info = drPutMap.get(key);
@@ -1073,6 +1075,7 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
                         drVer = info.version();
                         drTtl = info.ttl();
                         drExpireTime = info.expireTime();
+                        prevStateMeta = info.previousStateMetadata();
                     }
                     else if (drRmvMap != null) {
                         assert drRmvMap.get(key) != null;
@@ -1080,19 +1083,22 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
                         drVer = drRmvMap.get(key);
                         drTtl = -1L;
                         drExpireTime = -1L;
+                        prevStateMeta = null;
                     }
                     else if (dataCenterId != null) {
                         drVer = cacheCtx.cache().nextVersion(dataCenterId);
                         drTtl = -1L;
                         drExpireTime = -1L;
+                        prevStateMeta = null;
                     }
                     else {
                         drVer = null;
                         drTtl = -1L;
                         drExpireTime = -1L;
+                        prevStateMeta = null;
                     }
 
-                    if (!rmv && val == null && entryProc == null) {
+                    if (!rmv && val == null && entryProc == null && drPutMap == null /*null values allowed at dr*/) {
                         setRollbackOnly();
 
                         throw new NullPointerException("Null value.");
@@ -1112,6 +1118,7 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
                         drVer,
                         drTtl,
                         drExpireTime,
+                        prevStateMeta,
                         ret,
                         enlisted,
                         skipStore,
@@ -1183,6 +1190,7 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
      * @param drVer DR version.
      * @param drTtl DR ttl.
      * @param drExpireTime DR expire time.
+     * @param prevStateMeta Previous entry state meta.
      * @param ret Return value.
      * @param enlisted Enlisted keys collection.
      * @param skipStore Skip store flag.
@@ -1205,6 +1213,7 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
         final GridCacheVersion drVer,
         final long drTtl,
         long drExpireTime,
+        @Nullable CacheObject prevStateMeta,
         final GridCacheReturn ret,
         @Nullable final Collection<KeyCacheObject> enlisted,
         boolean skipStore,
@@ -1326,6 +1335,7 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
                                     drTtl,
                                     drExpireTime,
                                     drVer,
+                                    prevStateMeta,
                                     skipStore,
                                     keepBinary,
                                     CU.isNearEnabled(cacheCtx));
@@ -1342,6 +1352,7 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
                                     -1L,
                                     -1L,
                                     null,
+                                    prevStateMeta,
                                     skipStore,
                                     keepBinary,
                                     CU.isNearEnabled(cacheCtx));
@@ -1378,6 +1389,7 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
                         drTtl,
                         drExpireTime,
                         drVer,
+                        prevStateMeta,
                         skipStore,
                         keepBinary,
                         CU.isNearEnabled(cacheCtx));
@@ -1497,6 +1509,7 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
                     drTtl,
                     drExpireTime,
                     drVer,
+                    prevStateMeta,
                     skipStore,
                     keepBinary,
                     CU.isNearEnabled(cacheCtx));
@@ -2418,6 +2431,7 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
                                     true,
                                     -1L,
                                     -1L,
+                                    null,
                                     null,
                                     skipStore,
                                     !deserializeBinary,

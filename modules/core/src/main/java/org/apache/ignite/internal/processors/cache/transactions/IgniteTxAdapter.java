@@ -1802,7 +1802,7 @@ public abstract class IgniteTxAdapter extends GridMetadataAwareAdapter implement
             false,
             txEntry.keepBinary());
 
-        GridCacheVersionConflictContext ctx = old.context().conflictResolve(oldEntry, newEntry, false);
+        GridCacheVersionConflictContext ctx = old.context().conflictResolve(oldEntry, newEntry, txEntry.previousStateMetadata(), false);
 
         if (ctx.isMerge()) {
             Object resVal = ctx.mergeValue();

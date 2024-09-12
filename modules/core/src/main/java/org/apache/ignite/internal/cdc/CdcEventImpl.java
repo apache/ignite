@@ -20,7 +20,12 @@ package org.apache.ignite.internal.cdc;
 import org.apache.ignite.cache.CacheEntryVersion;
 import org.apache.ignite.cdc.CdcConsumer;
 import org.apache.ignite.cdc.CdcEvent;
+import org.apache.ignite.internal.pagemem.wal.record.DataEntry;
+import org.apache.ignite.internal.pagemem.wal.record.UnwrapDataEntry;
+import org.apache.ignite.internal.processors.cache.CacheObject;
+import org.apache.ignite.internal.processors.cache.KeyCacheObject;
 import org.apache.ignite.internal.util.typedef.internal.S;
+import org.jetbrains.annotations.Nullable;
 
 /**
  * Event of single entry change.
@@ -33,87 +38,69 @@ public class CdcEventImpl implements CdcEvent {
     /** Serial version uid. */
     private static final long serialVersionUID = 0L;
 
-    /** Key. */
-    private final Object key;
-
-    /** Value. */
-    private final Object val;
-
-    /** {@code True} if changes made on primary node. */
-    private final boolean primary;
-
-    /** Partition. */
-    private final int part;
-
-    /** Order of the entry change. */
-    private final CacheEntryVersion ord;
-
-    /** Cache id. */
-    private final int cacheId;
-
-    /** Expire time. */
-    private final long expireTime;
+    /** Entry. */
+    private final DataEntry entry;
 
     /**
-     * @param key Key.
-     * @param val Value.
-     * @param primary {@code True} if changes made on primary node.
-     * @param part Partition.
-     * @param ord Order of the entry change.
-     * @param cacheId Cache id.
-     * @param expireTime Expire time.
+     * @param entry Entry.
      */
-    public CdcEventImpl(
-        Object key,
-        Object val,
-        boolean primary,
-        int part,
-        CacheEntryVersion ord,
-        int cacheId,
-        long expireTime
-    ) {
-        this.key = key;
-        this.val = val;
-        this.primary = primary;
-        this.part = part;
-        this.ord = ord;
-        this.cacheId = cacheId;
-        this.expireTime = expireTime;
+    public CdcEventImpl(DataEntry entry) {
+        this.entry = entry;
     }
 
     /** {@inheritDoc} */
     @Override public Object key() {
-        return key;
+        return ((UnwrapDataEntry)(entry)).unwrappedKey();
     }
 
     /** {@inheritDoc} */
     @Override public Object value() {
-        return val;
+        return ((UnwrapDataEntry)(entry)).unwrappedValue();
+    }
+
+    /** {@inheritDoc} */
+    @Override public Object previousStateMetadata() {
+        return ((UnwrapDataEntry)(entry)).unwrappedPreviousStateMetadata();
+    }
+
+    /** {@inheritDoc} */
+    @Override public KeyCacheObject keyCacheObject() {
+        return entry.key();
+    }
+
+    /** {@inheritDoc} */
+    @Override public CacheObject valueCacheObject() {
+        return entry.value();
+    }
+
+    /** {@inheritDoc} */
+    @Override public @Nullable CacheObject previousStateMetadataCacheObject() {
+        return entry.previousStateMetadata();
     }
 
     /** {@inheritDoc} */
     @Override public boolean primary() {
-        return primary;
+        return (entry.flags() & DataEntry.PRIMARY_FLAG) != 0;
     }
 
     /** {@inheritDoc} */
     @Override public int partition() {
-        return part;
+        return entry.partitionId();
     }
 
     /** {@inheritDoc} */
     @Override public CacheEntryVersion version() {
-        return ord;
+        return entry.writeVersion();
     }
 
     /** {@inheritDoc} */
     @Override public int cacheId() {
-        return cacheId;
+        return entry.cacheId();
     }
 
     /** {@inheritDoc} */
     @Override public long expireTime() {
-        return expireTime;
+        return entry.expireTime();
     }
 
     /** {@inheritDoc} */
