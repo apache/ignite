@@ -21,6 +21,7 @@ import java.lang.management.ManagementFactory;
 import java.lang.management.ThreadInfo;
 import com.fasterxml.jackson.databind.JsonNode;
 import org.apache.ignite.Ignite;
+import org.apache.ignite.IgniteJdbcThinDataSource;
 import org.apache.ignite.client.IgniteClient;
 import org.apache.ignite.cluster.ClusterState;
 import org.apache.ignite.internal.IgniteEx;
@@ -70,6 +71,9 @@ public abstract class IgniteAwareApplication {
 
     /** Client. */
     protected IgniteClient client;
+
+    /** Thin JDBC DataSource. */
+    protected IgniteJdbcThinDataSource thinJdbcDataSource;
 
     /** Cfg path. */
     protected String cfgPath;
