@@ -160,11 +160,8 @@ public class CacheIndexImpl implements IgniteIndex {
         BPlusTree.TreeRowClosure<IndexRow, IndexRow> rowFilter = countRowFilter(notNull, iidx);
 
         try {
-            IndexingQueryFilter filter = new IndexingQueryFilterImpl(
-                tbl.descriptor().cacheContext().kernalContext(),
-                ectx.topologyVersion(),
-                grp.partitions(ectx.localNodeId())
-            );
+            IndexingQueryFilter filter = new IndexingQueryFilterImpl(tbl.descriptor().cacheContext().kernalContext(),
+                ectx.topologyVersion(), grp.partitions(ectx.localNodeId()));
 
             long cnt = 0;
 
