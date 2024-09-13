@@ -317,30 +317,28 @@ public class ExecutionContext<Row> extends AbstractQueryContext implements DataC
     }
 
     /**
-     * @param entries Entries changed in transaction.
      * @param cacheId Cache id.
      * @param parts Partitions set.
      * @param mapper Mapper to specific data type.
      * @return First, set of object changed in transaction, second, list of transaction data in required format.
      * @param <R> Required type.
      */
-    public static <R> IgniteBiTuple<Set<KeyCacheObject>, List<R>> transactionData(
-        Collection<IgniteTxEntry> entries,
+    public <R> IgniteBiTuple<Set<KeyCacheObject>, List<R>> transactionChanges(
         int cacheId,
         int[] parts,
         Function<CacheDataRow, R> mapper
     ) {
-        if (F.isEmpty(entries))
+        if (F.isEmpty(txWriteEntries))
             return F.t(Collections.emptySet(), Collections.emptyList());
 
         // Expecting parts are sorted or almost sorted and amount of transaction entries are relatively small.
-        if (parts != null)
+        if (parts != null && !F.isSorted(parts))
             Arrays.sort(parts);
 
-        Set<KeyCacheObject> changedKeys = new HashSet<>(entries.size());
-        List<R> newAndUpdatedRows = new ArrayList<>(entries.size());
+        Set<KeyCacheObject> changedKeys = new HashSet<>(txWriteEntries.size());
+        List<R> newAndUpdatedRows = new ArrayList<>(txWriteEntries.size());
 
-        for (IgniteTxEntry e : entries) {
+        for (IgniteTxEntry e : txWriteEntries) {
             int part = e.key().partition();
 
             assert part != -1;

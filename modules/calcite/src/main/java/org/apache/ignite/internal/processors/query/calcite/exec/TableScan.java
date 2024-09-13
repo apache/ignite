@@ -211,8 +211,7 @@ public class TableScan<Row> implements Iterable<Row>, AutoCloseable {
             parts = new ArrayDeque<>(reserved);
 
             if (!F.isEmpty(ectx.getTxWriteEntries())) {
-                txChanges = ExecutionContext.transactionData(
-                    ectx.getTxWriteEntries(),
+                txChanges = ectx.transactionChanges(
                     cctx.cacheId(),
                     // All partitions scaned for replication cache.
                     // See TableScan#reserve.

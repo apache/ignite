@@ -244,8 +244,7 @@ public class IndexScan<Row> extends AbstractIndexScan<Row, IndexRow> {
         if (txChanges == null) {
             InlineIndexRowHandler rowHnd = idx.segment(0).rowHandler();
 
-            txChanges = ExecutionContext.transactionData(
-                ectx.getTxWriteEntries(),
+            txChanges = ectx.transactionChanges(
                 cctx.cacheId(),
                 parts,
                 r -> new IndexRowImpl(rowHnd, r)
