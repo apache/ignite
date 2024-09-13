@@ -108,7 +108,7 @@ public class IndexScan<Row> extends AbstractIndexScan<Row, IndexRow> {
      * First, set of keys changed (inserted, updated or removed) inside transaction: must be skiped during index scan.
      * Second, list of rows inserted or updated inside transaction: must be mixed with the scan results.
      */
-    private IgniteBiTuple<Set<KeyCacheObject>, List<IndexRow>> txChanges;
+    private final IgniteBiTuple<Set<KeyCacheObject>, List<IndexRow>> txChanges;
 
     /**
      * @param ectx Execution context.
@@ -171,6 +171,21 @@ public class IndexScan<Row> extends AbstractIndexScan<Row, IndexRow> {
             fieldsStoreTypes[i] = typeFactory.getResultClass(srcRowType.getFieldList().get(i).getType());
 
         fieldIdxMapping = fieldToInlinedKeysMapping(srcRowType.getFieldCount());
+
+        if (!F.isEmpty(ectx.getTxWriteEntries())) {
+            InlineIndexRowHandler rowHnd = idx.segment(0).rowHandler();
+
+            txChanges = ectx.transactionChanges(
+                cctx.cacheId(),
+                parts,
+                r -> new IndexRowImpl(rowHnd, r)
+            );
+
+            txChanges.get2().sort(this::compare);
+        }
+        else
+            txChanges = null;
+
     }
 
     /**
@@ -237,21 +252,8 @@ public class IndexScan<Row> extends AbstractIndexScan<Row, IndexRow> {
     @Override protected GridCursor<IndexRow> indexCursor(IndexRow lower, IndexRow upper, boolean lowerInclude, boolean upperInclude) {
         GridCursor<IndexRow> idxCursor = super.indexCursor(lower, upper, lowerInclude, upperInclude);
 
-        if (F.isEmpty(ectx.getTxWriteEntries()))
+        if (txChanges == null)
             return idxCursor;
-
-        // Calculate txChanges only once.
-        if (txChanges == null) {
-            InlineIndexRowHandler rowHnd = idx.segment(0).rowHandler();
-
-            txChanges = ectx.transactionChanges(
-                cctx.cacheId(),
-                parts,
-                r -> new IndexRowImpl(rowHnd, r)
-            );
-
-            txChanges.get2().sort(this::compare);
-        }
 
         // `txChanges` returns single thread data structures e.g. `HashSet`, `ArrayList`.
         // It safe to use them in multiple `FilteredCursor` instances, because, multi range index scan will be flat to the single cursor.
@@ -413,12 +415,8 @@ public class IndexScan<Row> extends AbstractIndexScan<Row, IndexRow> {
 
         InlineIndexRowHandler rowHnd = idx.segment(0).rowHandler();
 
-        InlineIndexRowFactory rowFactory = isInlineScan()
-            ? new InlineIndexRowFactory(
-                rowHnd.inlineIndexKeyTypes().toArray(new InlineIndexKeyType[0]),
-                rowHnd,
-                !F.isEmpty(ectx.getTxWriteEntries())) // Need access to CacheDataRow to corecctly handle transcaction context.
-            : null;
+        InlineIndexRowFactory rowFactory = (isInlineScan() && (txChanges == null || F.isEmpty(txChanges.get1()))) ?
+            new InlineIndexRowFactory(rowHnd.inlineIndexKeyTypes().toArray(new InlineIndexKeyType[0]), rowHnd) : null;
 
         BPlusTree.TreeRowClosure<IndexRow, IndexRow> rowFilter = isInlineScan() ? null : createNotExpiredRowFilter();
 
@@ -444,12 +442,10 @@ public class IndexScan<Row> extends AbstractIndexScan<Row, IndexRow> {
         /** */
         private InlineIndexRowFactory(
             InlineIndexKeyType[] keyTypes,
-            InlineIndexRowHandler idxRowHnd,
-            boolean useCacheRow
+            InlineIndexRowHandler idxRowHnd
         ) {
             this.keyTypes = keyTypes;
             this.idxRowHnd = idxRowHnd;
-            this.useCacheRow = useCacheRow;
         }
 
         /** {@inheritDoc} */
