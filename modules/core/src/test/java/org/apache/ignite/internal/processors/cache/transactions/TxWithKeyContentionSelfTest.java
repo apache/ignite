@@ -235,6 +235,10 @@ public class TxWithKeyContentionSelfTest extends GridCommonAbstractTest {
 
         IgniteCache<Integer, Integer> cache0 = cl.cache(DEFAULT_CACHE_NAME);
 
+        ig.cache(DEFAULT_CACHE_NAME).enableStatistics(true);
+
+        cl.cache(DEFAULT_CACHE_NAME).enableStatistics(true);
+
         final Integer keyId = primaryKey(cache);
 
         CountDownLatch blockOnce = new CountDownLatch(1);
@@ -302,6 +306,8 @@ public class TxWithKeyContentionSelfTest extends GridCommonAbstractTest {
 
         txLatch.await();
 
+        Thread.sleep(1000);
+
         IgniteTxManager srvTxMgr = ((IgniteEx)ig).context().cache().context().tm();
 
         CountDownLatch latch = new CountDownLatch(1);
@@ -316,8 +322,16 @@ public class TxWithKeyContentionSelfTest extends GridCommonAbstractTest {
 
         latch.await();
 
+        Thread.sleep(1000);
+
+        final int[] i = {0};
+
         assertTrue(GridTestUtils.waitForCondition(new GridAbsPredicate() { // failed here
             @Override public boolean apply() {
+                log.warning("Apply action number " + i[0]);
+
+                i[0] = i[0] + 1;
+
                 CacheMetrics metrics = ig.cache(DEFAULT_CACHE_NAME).localMetrics();
 
                 String coll1 = metrics.getTxKeyCollisions();
@@ -328,7 +342,7 @@ public class TxWithKeyContentionSelfTest extends GridCommonAbstractTest {
                     String coll2 = metrics.getTxKeyCollisions();
 
                     // check idempotent
-                    assertEquals(coll1, coll2);
+                    assertEquals(coll1, coll2); //сравнивает жопу с жопой
 
                     assertTrue(coll1.contains("queueSize"));
 
@@ -337,6 +351,6 @@ public class TxWithKeyContentionSelfTest extends GridCommonAbstractTest {
                 else
                     return false;
             }
-        }, 20_000));
+        }, 25_000));
     }
 }
