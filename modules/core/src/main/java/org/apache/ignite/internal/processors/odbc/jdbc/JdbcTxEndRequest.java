@@ -38,7 +38,7 @@ public class JdbcTxEndRequest extends JdbcRequest {
     }
 
     /** {@inheritDoc} */
-    protected JdbcTxEndRequest(int txId, boolean committed) {
+    public JdbcTxEndRequest(int txId, boolean committed) {
         this();
 
         this.txId = txId;

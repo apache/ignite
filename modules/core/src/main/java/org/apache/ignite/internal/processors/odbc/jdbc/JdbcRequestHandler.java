@@ -385,9 +385,6 @@ public class JdbcRequestHandler implements ClientListenerRequestHandler {
                         "Unsupported JDBC request [req=" + req + ']');
             }
 
-            if (resp != null)
-                resp.activeTransaction(connCtx.kernalContext().cache().context().tm().inUserTx());
-
             return resp;
         }
         finally {

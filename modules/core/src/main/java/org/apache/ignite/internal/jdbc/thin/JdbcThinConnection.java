@@ -108,6 +108,9 @@ import org.apache.ignite.internal.processors.odbc.jdbc.JdbcResponse;
 import org.apache.ignite.internal.processors.odbc.jdbc.JdbcResult;
 import org.apache.ignite.internal.processors.odbc.jdbc.JdbcResultWithIo;
 import org.apache.ignite.internal.processors.odbc.jdbc.JdbcStatementType;
+import org.apache.ignite.internal.processors.odbc.jdbc.JdbcTxEndRequest;
+import org.apache.ignite.internal.processors.odbc.jdbc.JdbcTxStartRequest;
+import org.apache.ignite.internal.processors.odbc.jdbc.JdbcTxStartResult;
 import org.apache.ignite.internal.processors.odbc.jdbc.JdbcUpdateBinarySchemaResult;
 import org.apache.ignite.internal.sql.command.SqlCommand;
 import org.apache.ignite.internal.sql.command.SqlSetStreamingCommand;
@@ -123,6 +126,8 @@ import org.apache.ignite.logger.NullLogger;
 import org.apache.ignite.marshaller.MarshallerContext;
 import org.apache.ignite.marshaller.jdk.JdkMarshaller;
 import org.apache.ignite.thread.IgniteThreadFactory;
+import org.apache.ignite.transactions.TransactionConcurrency;
+import org.apache.ignite.transactions.TransactionIsolation;
 import org.jetbrains.annotations.Nullable;
 
 import static java.sql.ResultSet.CLOSE_CURSORS_AT_COMMIT;
@@ -153,6 +158,15 @@ public class JdbcThinConnection implements Connection {
 
     /** Reconnection maximum period. */
     private static final int RECONNECTION_MAX_DELAY = 300_000;
+
+    /** Transaction label. */
+    private static final String DFLT_TX_LABEL = "JDBC_THIN";
+
+    /** Default transaction timeout. */
+    private static final long DFLT_TX_TIMEOUT = 60_000;
+
+    /** */
+    static final int NO_TX = 0;
 
     /** Network timeout permission */
     private static final String SET_NETWORK_TIMEOUT_PERM = "setNetworkTimeout";
@@ -226,8 +240,8 @@ public class JdbcThinConnection implements Connection {
     /** Mutex. */
     private final Object mux = new Object();
 
-    /** Ignite endpoint to use within transactional context. */
-    private volatile JdbcThinTcpIo txIo;
+    /** Transactional context. */
+    private volatile TxContext txCtx;
 
     /** Random generator. */
     private static final Random RND = new Random(System.currentTimeMillis());
@@ -258,9 +272,6 @@ public class JdbcThinConnection implements Connection {
 
     /** Marshaller context. */
     private final JdbcMarshallerContext marshCtx;
-
-    /** Current transaction id. */
-    private int txId;
 
     /**
      * Creates new connection.
@@ -343,8 +354,8 @@ public class JdbcThinConnection implements Connection {
     /**
      * @return {@code True} if there are open transaction, {@code false} otherwise.
      */
-    boolean isTx() {
-        return txId != 0;
+    boolean isTxOpen() {
+        return txCtx != null;
     }
 
     /** */
@@ -352,6 +363,11 @@ public class JdbcThinConnection implements Connection {
         return partitionAwareness
             ? ios.firstEntry().getValue().isTxAwareQueriesSupported()
             : singleIo.isTxAwareQueriesSupported();
+    }
+
+    /** */
+    int txId() {
+        return txCtx == null ? NO_TX : txCtx.txId;
     }
 
     /**
@@ -362,8 +378,8 @@ public class JdbcThinConnection implements Connection {
      */
     void executeNative(String sql, SqlCommand cmd, JdbcThinStatement stmt) throws SQLException {
         if (cmd instanceof SqlSetStreamingCommand) {
-            if (isTx())
-                throw new SQLException("Can't change stream mode inside transaction [txId = " + txId + ']');
+            if (isTxOpen())
+                throw new SQLException("Can't change stream mode inside transaction [txId = " + txCtx.txId + ']');
 
             SqlSetStreamingCommand cmd0 = (SqlSetStreamingCommand)cmd;
 
@@ -531,7 +547,10 @@ public class JdbcThinConnection implements Connection {
         if (autoCommit)
             throw new SQLException("Transaction cannot be committed explicitly in auto-commit mode.");
 
-        maybeLogTransactionWarning(true);
+        if (isTxOpen())
+            endTransaction(true);
+        else
+            maybeLogTransactionWarning(true);
     }
 
     /** {@inheritDoc} */
@@ -541,13 +560,19 @@ public class JdbcThinConnection implements Connection {
         if (autoCommit)
             throw new SQLException("Transaction cannot be rolled back explicitly in auto-commit mode.");
 
-        maybeLogTransactionWarning(true);
+        if (isTxOpen())
+            endTransaction(false);
+        else
+            maybeLogTransactionWarning(true);
     }
 
     /** {@inheritDoc} */
     @Override public void close() throws SQLException {
         if (isClosed())
             return;
+
+        if (isTxOpen())
+            endTransaction(false);
 
         closed = true;
 
@@ -912,6 +937,41 @@ public class JdbcThinConnection implements Connection {
     }
 
     /**
+     * Ends opened transaction.
+     * @throws SQLException If failed.
+     */
+    void endTransaction(boolean commit) throws SQLException {
+        assert isTxOpen();
+
+        try {
+            sendRequest(new JdbcTxEndRequest(txCtx.txId, commit), null, null);
+        }
+        finally {
+            txCtx = null;
+        }
+    }
+
+    /**
+     * Opens transaction if required.
+     * @throws SQLException If failed.
+     */
+    void openTransactionIfRequired() throws SQLException {
+        if (isTxOpen()
+            || !txSupported()
+            || getTransactionIsolation() == TRANSACTION_NONE)
+            return;
+
+        JdbcResultWithIo res = sendRequest(new JdbcTxStartRequest(
+            TransactionConcurrency.PESSIMISTIC,
+            TransactionIsolation.READ_COMMITTED,
+            DFLT_TX_TIMEOUT,
+            DFLT_TX_LABEL
+        ));
+
+        txCtx = new TxContext(((JdbcTxStartResult)res.response()).txId(), res.cliIo());
+    }
+
+    /**
      * Ensures that connection is not closed.
      *
      * @throws SQLException If connection is closed.
@@ -1009,8 +1069,6 @@ public class JdbcThinConnection implements Connection {
                         qryReq = (JdbcQueryExecuteRequest)req;
 
                     JdbcResponse res = cliIo.sendRequest(req, stmt);
-
-                    txIo = res.activeTransaction() ? cliIo : null;
 
                     if (res.status() == IgniteQueryErrorCode.QUERY_CANCELED && stmt != null &&
                         stmt.requestTimeout() != NO_TIMEOUT && reqTimeoutTask != null &&
@@ -1653,8 +1711,8 @@ public class JdbcThinConnection implements Connection {
         if (!partitionAwareness)
             return singleIo;
 
-        if (txIo != null)
-            return txIo;
+        if (txCtx != null)
+            return txCtx.txIo;
 
         if (nodeIds == null || nodeIds.isEmpty())
             return randomIo();
@@ -2495,6 +2553,21 @@ public class JdbcThinConnection implements Connection {
             }
 
             return handled;
+        }
+    }
+
+    /** */
+    private class TxContext {
+        /** */
+        final int txId;
+
+        /** */
+        final JdbcThinTcpIo txIo;
+
+        /** */
+        public TxContext(int txId, JdbcThinTcpIo txIo) {
+            this.txId = txId;
+            this.txIo = txIo;
         }
     }
 }

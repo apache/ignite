@@ -54,6 +54,8 @@ import org.apache.ignite.internal.processors.odbc.jdbc.JdbcQueryFetchResult;
 import org.apache.ignite.internal.processors.odbc.jdbc.JdbcQueryMetadataRequest;
 import org.apache.ignite.internal.processors.odbc.jdbc.JdbcQueryMetadataResult;
 
+import static org.apache.ignite.internal.jdbc.thin.JdbcThinConnection.NO_TX;
+
 /**
  * JDBC result set implementation.
  */
@@ -134,6 +136,9 @@ public class JdbcThinResultSet implements ResultSet {
     /** Sticky ignite endpoint. */
     private JdbcThinTcpIo stickyIO;
 
+    /** Transaction id */
+    private final int txId;
+
     /**
      * Constructs static result set.
      *
@@ -146,6 +151,7 @@ public class JdbcThinResultSet implements ResultSet {
         cursorId = -1L;
         finished = true;
         isQuery = true;
+        autoClose = false;
         updCnt = -1;
 
         rows = fields;
@@ -157,6 +163,9 @@ public class JdbcThinResultSet implements ResultSet {
         metaInit = true;
 
         initColumnOrder();
+
+        stickyIO = null;
+        txId = NO_TX;
     }
 
     /**
@@ -196,6 +205,7 @@ public class JdbcThinResultSet implements ResultSet {
             this.updCnt = updCnt;
 
         this.stickyIO = stickyIO;
+        this.txId = stmt.connection().txId();
     }
 
     /** {@inheritDoc} */
@@ -1881,6 +1891,16 @@ public class JdbcThinResultSet implements ResultSet {
     }
 
     /**
+     * Ensures that result set fetched in the scope of the same transaction.
+     *
+     * @throws SQLException If transaction different or closed.
+     */
+    private void ensureSameTransaction() throws SQLException {
+        if (txId != stmt.connection().txId())
+            throw new SQLException("Can't fetch data in different transaction.");
+    }
+
+    /**
      * Ensures that result set is not closed or cancelled.
      *
      * @throws SQLException If result set is closed or cancelled.
@@ -1889,6 +1909,8 @@ public class JdbcThinResultSet implements ResultSet {
         ensureNotClosed();
 
         ensureNotCancelled();
+
+        ensureSameTransaction();
     }
 
     /**
