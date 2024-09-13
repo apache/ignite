@@ -113,6 +113,9 @@ public class JdbcBlobTest {
         res = blob.getBytes(1, 0);
         assertEquals(0, res.length);
 
+        blob = new JdbcBlob(new byte[0]);
+        assertEquals(0, blob.getBytes(1, 0).length);
+
         blob.free();
 
         try {
