@@ -174,7 +174,7 @@ public class CacheIndexImpl implements IgniteIndex {
     }
 
     /** */
-    private BPlusTree.@Nullable TreeRowClosure<IndexRow, IndexRow> countRowFilter(boolean notNull, InlineIndex iidx) {
+    private BPlusTree.TreeRowClosure<IndexRow, IndexRow> countRowFilter(boolean notNull, InlineIndex iidx) {
         boolean checkExpired = !tbl.descriptor().cacheContext().config().isEagerTtl();
 
         if (notNull) {
