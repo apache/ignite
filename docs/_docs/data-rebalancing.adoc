@@ -68,7 +68,9 @@ tab:C++[unsupported]
 
 == Configuring Rebalance Thread Pool
 
-You can define the number of threads that are taken from the system thread pool and used for rebalancing.
+By default, rebalancing is performed on the number of threads defines as `min(4, max(1, AVAILABLE_PROC_CNT / 4))` per node. For example, with 16 cotes (`AVAILABLE_PROC_CNT`= 16), this would compute to 4 threads.
+
+You can increase the number of threads taken from the system thread pool and used for rebalancing.
 A system thread is taken from the pool every time a node needs to send a batch of data to a remote node or needs to process a batch that came from a remote node.
 
 The thread is relinquished after the batch is processed.
