@@ -157,8 +157,6 @@ public class CacheIndexImpl implements IgniteIndex {
 
         InlineIndex iidx = idx.unwrap(InlineIndex.class);
 
-        BPlusTree.TreeRowClosure<IndexRow, IndexRow> rowFilter = countRowFilter(notNull, iidx);
-
         try {
             IndexingQueryFilter filter = new IndexingQueryFilterImpl(tbl.descriptor().cacheContext().kernalContext(),
                 ectx.topologyVersion(), grp.partitions(ectx.localNodeId()));
@@ -166,7 +164,7 @@ public class CacheIndexImpl implements IgniteIndex {
             long cnt = 0;
 
             for (int i = 0; i < iidx.segmentsCount(); ++i)
-                cnt += iidx.count(i, new IndexQueryContext(filter, rowFilter));
+                cnt += iidx.count(i, new IndexQueryContext(filter, countRowFilter(notNull, iidx)));
 
             return cnt;
         }
@@ -184,7 +182,7 @@ public class CacheIndexImpl implements IgniteIndex {
 
             BPlusTree.TreeRowClosure<IndexRow, IndexRow> notNullRowFilter = IndexScan.createNotNullRowFilter(iidx, checkExpired);
 
-            return new BPlusTree.TreeRowClosure<IndexRow, IndexRow>() {
+            return new BPlusTree.TreeRowClosure<>() {
                 private boolean skipCheck;
 
                 @Override public boolean apply(
