@@ -3087,8 +3087,12 @@ public class GridQueryProcessor extends GridProcessorAdapter {
                             }
                         }
                         else {
-                            if (userTx != null && txAwareQueriesEnabled)
-                                throw new CacheException("SQL aware queries supported only for Calcite query engine");
+                            if (userTx != null && txAwareQueriesEnabled) {
+                                throw new IgniteSQLException(
+                                    "SQL aware queries are not supported by Indexing query engine",
+                                    IgniteQueryErrorCode.UNSUPPORTED_OPERATION
+                                );
+                            }
 
                             res = idx.querySqlFields(
                                 schemaName,

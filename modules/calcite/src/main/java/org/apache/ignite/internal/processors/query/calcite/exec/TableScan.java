@@ -48,8 +48,6 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiTuple;
 import org.jetbrains.annotations.Nullable;
 
-import static org.apache.ignite.internal.processors.query.calcite.exec.IndexScan.transactionData;
-
 /** */
 public class TableScan<Row> implements Iterable<Row>, AutoCloseable {
     /** */
@@ -213,7 +211,7 @@ public class TableScan<Row> implements Iterable<Row>, AutoCloseable {
             parts = new ArrayDeque<>(reserved);
 
             if (!F.isEmpty(ectx.getTxWriteEntries())) {
-                txChanges = transactionData(
+                txChanges = ExecutionContext.transactionData(
                     ectx.getTxWriteEntries(),
                     cctx.cacheId(),
                     // All partitions scaned for replication cache.
@@ -269,7 +267,7 @@ public class TableScan<Row> implements Iterable<Row>, AutoCloseable {
                         // This call will change `txChanges.get1()` content.
                         // Removing found key from set more efficient so we break some rules here.
                         if (!F.isEmpty(txChanges.get1()))
-                            cur = new FilteredCursor<>(cur, txChanges.get1(), CacheSearchRow::key);
+                            cur = new KeyFilteringCursor<>(cur, txChanges.get1(), CacheSearchRow::key);
 
                         txIter = F.iterator0(txChanges.get2(), true, e -> e.key().partition() == part.id());
                     }

@@ -30,7 +30,7 @@ import org.apache.ignite.internal.cache.query.index.sorted.SortedIndexDefinition
 import org.apache.ignite.internal.util.lang.GridCursor;
 
 /** Single cursor over multiple segments. The next value is chosen with the index row comparator. */
-public class SegmentedIndexCursor implements GridCursor<IndexRow> {
+public class SortedSegmentedIndexCursor implements GridCursor<IndexRow> {
     /** Cursors over segments. */
     private final Queue<GridCursor<IndexRow>> cursors;
 
@@ -41,8 +41,8 @@ public class SegmentedIndexCursor implements GridCursor<IndexRow> {
     private IndexRow head;
 
     /** */
-    public SegmentedIndexCursor(GridCursor<IndexRow>[] cursors, SortedIndexDefinition idxDef) throws IgniteCheckedException {
-        cursorComp = new Comparator<GridCursor<IndexRow>>() {
+    public SortedSegmentedIndexCursor(GridCursor<IndexRow>[] cursors, SortedIndexDefinition idxDef) throws IgniteCheckedException {
+        cursorComp = new Comparator<>() {
             private final IndexRowComparator rowComparator = idxDef.rowComparator();
 
             private final IndexKeyDefinition[] keyDefs =

@@ -88,7 +88,7 @@ public class RuntimeSortedIndex<Row> implements RuntimeIndex<Row>, TreeIndex<Row
         Row lowerRow = (lowerBound == null) ? null : lower;
         Row upperRow = (upperBound == null) ? null : upper;
 
-        return new ListCursor<>(comp, rows, lowerRow, upperRow, lowerInclude, upperInclude);
+        return new SortedListRangeCursor<>(comp, rows, lowerRow, upperRow, lowerInclude, upperInclude);
     }
 
     /**

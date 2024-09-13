@@ -25,7 +25,7 @@ import org.jetbrains.annotations.Nullable;
 /**
  * Cursor to navigate through a sorted list with duplicates.
  */
-public class ListCursor<Row> implements GridCursor<Row> {
+public class SortedListRangeCursor<Row> implements GridCursor<Row> {
     /** */
     private final Comparator<Row> comp;
 
@@ -52,7 +52,7 @@ public class ListCursor<Row> implements GridCursor<Row> {
      * @param lowerInclude {@code True} for inclusive lower bound.
      * @param upperInclude {@code True} for inclusive upper bound.
      */
-    public ListCursor(
+    public SortedListRangeCursor(
         Comparator<Row> comp,
         List<Row> rows,
         @Nullable Row lower,
@@ -97,6 +97,9 @@ public class ListCursor<Row> implements GridCursor<Row> {
 
     /** {@inheritDoc} */
     @Override public boolean next() {
+        // Intentionally use `-comp.compare(rows.get(idx), upper)` here.
+        // `InlineIndexTree#compareFullRows` that used here works correctly only for specific parameter order.
+        // First parameter must be tree row and the second search row. See implementation, for details.
         if (idx == rows.size() || (upper != null && -comp.compare(rows.get(idx), upper) < (includeUpper ? 0 : 1)))
             return false;
 

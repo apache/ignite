@@ -27,8 +27,8 @@ import org.apache.ignite.internal.util.lang.GridCursor;
  * Cursor wrapper that skips all entires that maps to any of {@code skipKeys} key.
  * <b>Note, for the performance reasons content of {@code skipKeys} will be changed during iteration.</b>
  */
-class FilteredCursor<R> implements GridCursor<R> {
-    /** Sorted cursor. */
+class KeyFilteringCursor<R> implements GridCursor<R> {
+    /** Underlying cursor. */
     private final GridCursor<? extends R> cursor;
 
     /** Rows that must be skiped on {@link #cursor} iteration. */
@@ -42,7 +42,7 @@ class FilteredCursor<R> implements GridCursor<R> {
      * @param skipKeys Keys to skip. <b>Content will be changed during iteration.</b>
      * @param toKey Mapper from row to {@link KeyCacheObject}.
      */
-    FilteredCursor(GridCursor<? extends R> cursor, Set<KeyCacheObject> skipKeys, Function<R, KeyCacheObject> toKey) {
+    KeyFilteringCursor(GridCursor<? extends R> cursor, Set<KeyCacheObject> skipKeys, Function<R, KeyCacheObject> toKey) {
         this.cursor = cursor;
         this.skipKeys = skipKeys;
         this.toKey = toKey;

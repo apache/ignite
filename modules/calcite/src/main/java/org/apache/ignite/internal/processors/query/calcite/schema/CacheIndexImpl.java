@@ -65,8 +65,6 @@ import org.apache.ignite.spi.indexing.IndexingQueryFilterImpl;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
-import static org.apache.ignite.internal.processors.query.calcite.exec.IndexScan.transactionData;
-
 /**
  * Ignite scannable cache index.
  */
@@ -179,7 +177,7 @@ public class CacheIndexImpl implements IgniteIndex {
         long cnt = 0;
 
         if (!F.isEmpty(ectx.getTxWriteEntries())) {
-            IgniteBiTuple<Set<KeyCacheObject>, List<CacheDataRow>> txChanges = transactionData(
+            IgniteBiTuple<Set<KeyCacheObject>, List<CacheDataRow>> txChanges = ExecutionContext.transactionData(
                 ectx.getTxWriteEntries(),
                 iidx.indexDefinition().cacheInfo().cacheId(),
                 locParts,
