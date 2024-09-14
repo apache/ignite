@@ -28,6 +28,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
+import java.util.concurrent.ThreadLocalRandom;
 import java.util.function.BiConsumer;
 import java.util.function.IntConsumer;
 import java.util.function.IntFunction;
@@ -339,6 +340,8 @@ public class SqlTransactionsIsolationTest extends GridCommonAbstractTest {
         checkQueryWithPartitionFilter();
 
         insideTx(() -> {
+            int nullFio = 0;
+
             for (int i = 0; i < stepCnt; i++) {
                 int outOfTxStart = i * stepSz;
                 int inTxStart = i * stepSz + outOfTxSz;
@@ -355,7 +358,14 @@ public class SqlTransactionsIsolationTest extends GridCommonAbstractTest {
                 for (int j = 0; j < inTxSz; j++) {
                     final int id = inTxStart + j;
 
-                    insert(F.t(id, new User(id, 0, "User" + j))); // Intentionally repeat FIO to make same indexed keys.
+                    String fio = ThreadLocalRandom.current().nextBoolean()
+                        ? ("User" + j) // Intentionally repeat FIO to make same indexed keys.
+                        : null;
+
+                    if (fio == null)
+                        nullFio++;
+
+                    insert(F.t(id, new User(id, 0, fio)));
 
                     // Concurrent query must not see any transaction data.
                     runAsync(() -> {
@@ -379,6 +389,10 @@ public class SqlTransactionsIsolationTest extends GridCommonAbstractTest {
                     assertEquals(expTblSz, rows.size());
 
                     ensureSorted(rows, true);
+
+                    rows = sql(format("SELECT COUNT(fio) FROM %s", users()));
+
+                    assertEquals(expTblSz - nullFio, rows.get(0).get(0));
 
                     assertEquals(
                         id,
@@ -980,7 +994,11 @@ public class SqlTransactionsIsolationTest extends GridCommonAbstractTest {
             String fio0 = (String)rows.get(k - 1).get(0);
             String fio1 = (String)rows.get(k).get(0);
 
-            assertTrue(asc ? (fio0.compareTo(fio1) <= 0) : (fio0.compareTo(fio1) >= 0));
+            int cmp = fio0 == null
+                ? (fio1 == null ? 0 : -1)
+                : (fio1 == null ? 1 : fio0.compareTo(fio1));
+
+            assertTrue(asc ? (cmp <= 0) : (cmp >= 0));
         }
     }
 

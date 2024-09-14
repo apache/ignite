@@ -184,7 +184,7 @@ public class CacheIndexImpl implements IgniteIndex {
                 // Removing found key from set more efficient so we break some rules here.
                 rowFilter = transactionAwareCountRowFilter(rowFilter, txChanges.get1());
 
-                cnt = countTransactionRows(iidx, txChanges.get2());
+                cnt = countTransactionRows(notNull, iidx, txChanges.get2());
             }
         }
 
@@ -277,13 +277,13 @@ public class CacheIndexImpl implements IgniteIndex {
     }
 
     /** */
-    private static long countTransactionRows(InlineIndex iidx, List<CacheDataRow> changedRows) {
+    private static long countTransactionRows(boolean notNull, InlineIndex iidx, List<CacheDataRow> changedRows) {
         InlineIndexRowHandler rowHnd = iidx.segment(0).rowHandler();
 
         long cnt = 0;
 
         for (CacheDataRow txRow : changedRows) {
-            if (rowHnd.indexKey(0, txRow) == NullIndexKey.INSTANCE)
+            if (rowHnd.indexKey(0, txRow) == NullIndexKey.INSTANCE && notNull)
                 continue;
 
             cnt++;
