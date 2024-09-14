@@ -18,12 +18,12 @@
 package org.apache.ignite.internal.jdbc2;
 
 import java.io.ByteArrayInputStream;
+import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.io.SequenceInputStream;
 import java.sql.Blob;
 import java.sql.SQLException;
-import java.sql.SQLFeatureNotSupportedException;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -281,33 +281,62 @@ public class JdbcBlob implements Blob {
     private int setBytesImpl(long pos, byte[] bytes, int off, int len) {
         int idx = (int)(pos - 1);
 
-        long newCnt = idx + len > cnt ? idx + len : cnt;
-
-        int remaining = len;
         int curPos = 0;
+        int bufIdx;
+        for (bufIdx = 0; bufIdx < buffers.size(); bufIdx++) {
+            byte[] buf = buffers.get(bufIdx);
 
-        for (byte[] buf : buffers) {
-            if (idx < curPos + buf.length) {
-                int toCopy = Math.min(remaining, buf.length - (idx - curPos));
-
-                U.arrayCopy(bytes, off + len - remaining, buf, Math.max(0, idx - curPos), toCopy);
-
-                remaining -= toCopy;
+            if (idx >= curPos + buf.length) {
+                curPos += buf.length;
             }
+            else {
+                break;
+            }
+        }
+
+        int written = setBytesImpl0(bufIdx, idx - curPos, bytes, off, len);
+
+        cnt = idx + written > cnt ? idx + written : cnt;
+
+        return written;
+    }
+
+    /**
+     * @param bufIdx index of buffer to write bytes
+     * @param bufPos the in buffer position at which
+     *        to start writing; the first position is 0
+     * @param bytes the array of bytes to be written to this {@code BLOB}
+     *        object
+     * @param off the offset into the array {@code bytes} at which
+     *        to start reading the bytes to be set
+     * @param len the number of bytes to be written to the {@code BLOB}
+     *        value from the array of bytes {@code bytes}
+     * @return the number of bytes written
+     */
+    private int setBytesImpl0(int bufIdx, int bufPos, byte[] bytes, int off, int len) {
+        int remaining = len;
+        int curPos = bufPos;
+
+        for (int i = bufIdx; i < buffers.size(); i++) {
+            byte[] buf = buffers.get(i);
+
+            int toCopy = Math.min(remaining, buf.length - curPos);
+
+            U.arrayCopy(bytes, off + len - remaining, buf, curPos, toCopy);
+
+            remaining -= toCopy;
 
             if (remaining == 0)
                 break;
 
-            curPos += buf.length;
+            curPos = 0;
         }
 
         if (remaining > 0) {
-            addNewBuffer(newCnt);
+            addNewBuffer(remaining);
 
             U.arrayCopy(bytes, off + len - remaining, buffers.get(buffers.size() - 1), 0, remaining);
         }
-
-        cnt = newCnt;
 
         return len;
     }
@@ -317,16 +346,16 @@ public class JdbcBlob implements Blob {
      *
      * @param newCount the new size of the Blob
      */
-    private void addNewBuffer(final long newCount) {
+    private void addNewBuffer(final int newCount) {
         final int newBufSize;
 
         if (buffers.isEmpty()) {
-            newBufSize = (int)newCount;
+            newBufSize = newCount;
         }
         else {
             newBufSize = Math.max(
                     buffers.get(buffers.size() - 1).length << 1,
-                    (int)(newCount - cnt));
+                    (newCount));
         }
 
         buffers.add(new byte[newBufSize]);
@@ -334,7 +363,12 @@ public class JdbcBlob implements Blob {
 
     /** {@inheritDoc} */
     @Override public OutputStream setBinaryStream(long pos) throws SQLException {
-        throw new SQLFeatureNotSupportedException();
+        ensureNotClosed();
+
+        if (pos < 1 || pos > cnt + 1)
+            throw new SQLException("Invalid argument. Position can't be less than 1 or greater than Blob length + 1 [pos=" + pos + ']');
+
+        return new BlobOutputStream(pos - 1);
     }
 
     /** {@inheritDoc} */
@@ -363,5 +397,85 @@ public class JdbcBlob implements Blob {
     private void ensureNotClosed() throws SQLException {
         if (buffers == null)
             throw new SQLException("Blob instance can't be used after free() has been called.");
+    }
+
+    /**
+     */
+    private class BlobOutputStream extends OutputStream {
+        /** The index of the current buffer. */
+        private int bufIdx;
+
+        /** Position in the current buffer. */
+        private int inBufPos;
+
+        /** Global current position. */
+        private long curPos;
+
+        /**
+         * @param pos Start position, zero-based.
+         */
+        public BlobOutputStream(long pos) {
+            curPos = pos;
+
+            for (long p = 0; p < cnt;) {
+                if (curPos > p + buffers.get(bufIdx).length - 1) {
+                    p += buffers.get(bufIdx++).length;
+                }
+                else {
+                    inBufPos = (int)(curPos - p);
+                    break;
+                }
+            }
+        }
+
+        /** {@inheritDoc} */
+        @Override public void write(int b) throws IOException {
+            write(new byte[] {(byte)b}, 0, 1);
+        }
+
+        /** {@inheritDoc} */
+        @Override public void write(byte b[], int off, int len) {
+            int written = setBytesImpl0(b, off, len);
+
+            cnt = Math.max(curPos + written, cnt);
+
+            curPos += written;
+        }
+
+        /**
+         */
+        private int setBytesImpl0(byte[] bytes, int off, int len) {
+            int remaining = len;
+
+            for (; bufIdx < buffers.size(); bufIdx++) {
+                byte[] buf = buffers.get(bufIdx);
+
+                int toCopy = Math.min(remaining, buf.length - inBufPos);
+
+                U.arrayCopy(bytes, off + len - remaining, buf, inBufPos, toCopy);
+
+                remaining -= toCopy;
+
+                if (remaining == 0) {
+                    inBufPos += toCopy;
+
+                    break;
+                }
+                else {
+                    inBufPos = 0;
+                }
+            }
+
+            if (remaining > 0) {
+                addNewBuffer(remaining);
+
+                U.arrayCopy(bytes, off + len - remaining, buffers.get(buffers.size() - 1), 0, remaining);
+
+                bufIdx = buffers.size() - 1;
+                inBufPos = remaining;
+            }
+
+            return len;
+        }
     }
 }

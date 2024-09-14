@@ -19,8 +19,8 @@ package org.apache.ignite.internal.jdbc2;
 
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.OutputStream;
 import java.sql.SQLException;
-import java.sql.SQLFeatureNotSupportedException;
 import org.junit.Test;
 
 import static org.apache.ignite.testframework.GridTestUtils.assertThrows;
@@ -359,7 +359,29 @@ public class JdbcBlobTest {
     public void testSetBinaryStream() throws Exception {
         JdbcBlob blob = new JdbcBlob();
 
-        assertThrows(null, () -> blob.setBinaryStream(1L), SQLFeatureNotSupportedException.class, null);
+        assertThrows(null, () -> blob.setBinaryStream(0), SQLException.class, null);
+        assertThrows(null, () -> blob.setBinaryStream(2L), SQLException.class, null);
+
+        OutputStream os = blob.setBinaryStream(1L);
+        os.write(0);
+        os.write(new byte[] {1, 2, 3, 4, 5, 6, 7});
+        os.close();
+        assertArrayEquals(new byte[]{0, 1, 2, 3, 4, 5, 6, 7}, blob.getBytes(1, (int)blob.length()));
+
+        os = blob.setBinaryStream(3L);
+        os.write(new byte[] {20, 21, 22});
+        os.write(23);
+        os.close();
+        assertArrayEquals(new byte[]{0, 1, 20, 21, 22, 23, 6, 7}, blob.getBytes(1, (int)blob.length()));
+
+        os = blob.setBinaryStream(7L);
+        os.write(new byte[] {30, 31, 32});
+        os.write(33);
+        os.close();
+        assertArrayEquals(new byte[]{0, 1, 20, 21, 22, 23, 30, 31, 32, 33}, blob.getBytes(1, (int)blob.length()));
+
+        blob.free();
+        assertThrows(null, () -> blob.setBinaryStream(2L), SQLException.class, ERROR_BLOB_FREE);
     }
 
     /**
