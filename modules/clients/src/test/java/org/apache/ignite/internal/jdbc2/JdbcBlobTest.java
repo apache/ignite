@@ -20,34 +20,31 @@ package org.apache.ignite.internal.jdbc2;
 import java.io.IOException;
 import java.io.InputStream;
 import java.sql.SQLException;
-import java.util.Arrays;
+import java.sql.SQLFeatureNotSupportedException;
 import org.junit.Test;
 
+import static org.apache.ignite.testframework.GridTestUtils.assertThrows;
+import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
 
 /** */
 public class JdbcBlobTest {
+    /** */
+    static final String ERROR_BLOB_FREE = "Blob instance can't be used after free() has been called.";
+
     /**
      * @throws Exception If failed.
      */
     @Test
     public void testLength() throws Exception {
-        JdbcBlob blob = new JdbcBlob(new byte[16]);
+        JdbcBlob blob = new JdbcBlob(new byte[8]);
+
+        blob.setBytes(9, new byte[8]);
 
         assertEquals(16, (int)blob.length());
 
         blob.free();
-
-        try {
-            blob.length();
-
-            fail();
-        }
-        catch (SQLException e) {
-            // No-op.
-        }
+        assertThrows(null, blob::length, SQLException.class, ERROR_BLOB_FREE);
     }
 
     /**
@@ -57,43 +54,28 @@ public class JdbcBlobTest {
     public void testGetBytes() throws Exception {
         byte[] arr = new byte[] {0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15};
 
-        JdbcBlob blob = new JdbcBlob(arr);
+        JdbcBlob blob = new JdbcBlob();
 
-        try {
-            blob.getBytes(0, 16);
+        assertArrayEquals(new byte[0], blob.getBytes(1, 1));
 
-            fail();
-        }
-        catch (SQLException e) {
-            // No-op.
-        }
+        blob.setBytes(1, new byte[] {0});
+        blob.setBytes(2, new byte[] {1, 2});
+        blob.setBytes(4, new byte[] {3, 4, 5, 6});
+        blob.setBytes(8, new byte[] {7, 8, 9, 10, 11, 12, 13, 14});
+        blob.setBytes(16, new byte[] {15});
 
-        try {
-            blob.getBytes(17, 16);
-
-            fail();
-        }
-        catch (SQLException e) {
-            // No-op.
-        }
-
-        try {
-            blob.getBytes(1, -1);
-
-            fail();
-        }
-        catch (SQLException e) {
-            // No-op.
-        }
+        assertThrows(null, () -> blob.getBytes(0, 16), SQLException.class, null);
+        assertThrows(null, () -> blob.getBytes(17, 16), SQLException.class, null);
+        assertThrows(null, () -> blob.getBytes(1, -1), SQLException.class, null);
 
         byte[] res = blob.getBytes(1, 0);
         assertEquals(0, res.length);
 
-        assertTrue(Arrays.equals(arr, blob.getBytes(1, 16)));
+        assertArrayEquals(arr, blob.getBytes(1, 16));
 
         res = blob.getBytes(1, 20);
         assertEquals(16, res.length);
-        assertTrue(Arrays.equals(arr, res));
+        assertArrayEquals(arr, res);
 
         res = blob.getBytes(1, 10);
         assertEquals(10, res.length);
@@ -113,19 +95,11 @@ public class JdbcBlobTest {
         res = blob.getBytes(1, 0);
         assertEquals(0, res.length);
 
-        blob = new JdbcBlob(new byte[0]);
-        assertEquals(0, blob.getBytes(1, 0).length);
+        JdbcBlob blob2 = new JdbcBlob(new byte[0]);
+        assertEquals(0, blob2.getBytes(1, 0).length);
 
-        blob.free();
-
-        try {
-            blob.getBytes(1, 16);
-
-            fail();
-        }
-        catch (SQLException e) {
-            // No-op.
-        }
+        blob2.free();
+        assertThrows(null, () -> blob2.getBytes(1, 16), SQLException.class, ERROR_BLOB_FREE);
     }
 
     /**
@@ -135,24 +109,24 @@ public class JdbcBlobTest {
     public void testGetBinaryStream() throws Exception {
         byte[] arr = new byte[] {0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15};
 
-        JdbcBlob blob = new JdbcBlob(arr);
+        JdbcBlob blob = new JdbcBlob();
+
+        assertArrayEquals(new byte[0], readBytes(blob.getBinaryStream()));
+
+        blob.setBytes(1, new byte[] {0});
+        blob.setBytes(2, new byte[] {1, 2});
+        blob.setBytes(4, new byte[] {3, 4, 5, 6});
+        blob.setBytes(8, new byte[] {7, 8, 9, 10, 11, 12, 13, 14});
+        blob.setBytes(16, new byte[] {15});
 
         InputStream is = blob.getBinaryStream();
 
         byte[] res = readBytes(is);
 
-        assertTrue(Arrays.equals(arr, res));
+        assertArrayEquals(arr, res);
 
         blob.free();
-
-        try {
-            blob.getBinaryStream();
-
-            fail();
-        }
-        catch (SQLException e) {
-            // No-op.
-        }
+        assertThrows(null, () -> blob.getBinaryStream(), SQLException.class, ERROR_BLOB_FREE);
     }
 
     /**
@@ -162,47 +136,22 @@ public class JdbcBlobTest {
     public void testGetBinaryStreamWithParams() throws Exception {
         byte[] arr = new byte[] {0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15};
 
-        JdbcBlob blob = new JdbcBlob(arr);
+        JdbcBlob blob = new JdbcBlob();
 
-        try {
-            blob.getBinaryStream(0, arr.length);
+        blob.setBytes(1, new byte[] {0});
+        blob.setBytes(2, new byte[] {1, 2});
+        blob.setBytes(4, new byte[] {3, 4, 5, 6});
+        blob.setBytes(8, new byte[] {7, 8, 9, 10, 11, 12, 13, 14});
+        blob.setBytes(16, new byte[] {15});
 
-            fail();
-        }
-        catch (SQLException e) {
-            // No-op.
-        }
-
-        try {
-            blob.getBinaryStream(1, 0);
-
-            fail();
-        }
-        catch (SQLException e) {
-            // No-op.
-        }
-
-        try {
-            blob.getBinaryStream(17, arr.length);
-
-            fail();
-        }
-        catch (SQLException e) {
-            // No-op.
-        }
-
-        try {
-            blob.getBinaryStream(1, arr.length + 1);
-
-            fail();
-        }
-        catch (SQLException e) {
-            // No-op.
-        }
+        assertThrows(null, () -> blob.getBinaryStream(0, arr.length), SQLException.class, null);
+        assertThrows(null, () -> blob.getBinaryStream(1, 0), SQLException.class, null);
+        assertThrows(null, () -> blob.getBinaryStream(17, arr.length), SQLException.class, null);
+        assertThrows(null, () -> blob.getBinaryStream(1, arr.length + 1), SQLException.class, null);
 
         InputStream is = blob.getBinaryStream(1, arr.length);
         byte[] res = readBytes(is);
-        assertTrue(Arrays.equals(arr, res));
+        assertArrayEquals(arr, res);
 
         is = blob.getBinaryStream(1, 10);
         res = readBytes(is);
@@ -217,15 +166,7 @@ public class JdbcBlobTest {
         assertEquals(14, res[9]);
 
         blob.free();
-
-        try {
-            blob.getBinaryStream(1, arr.length);
-
-            fail();
-        }
-        catch (SQLException e) {
-            // No-op.
-        }
+        assertThrows(null, () -> blob.getBinaryStream(1, arr.length), SQLException.class, ERROR_BLOB_FREE);
     }
 
     /**
@@ -233,12 +174,16 @@ public class JdbcBlobTest {
      */
     @Test
     public void testPositionBytePattern() throws Exception {
-        byte[] arr = new byte[] {0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15};
+        JdbcBlob blob = new JdbcBlob();
 
-        JdbcBlob blob = new JdbcBlob(arr);
+        blob.setBytes(1, new byte[] {0});
+        blob.setBytes(2, new byte[] {1, 2});
+        blob.setBytes(4, new byte[] {3, 4, 5, 6});
+        blob.setBytes(8, new byte[] {7, 8, 9, 10, 11, 12, 13, 14});
+        blob.setBytes(16, new byte[] {15});
 
         assertEquals(-1, blob.position(new byte[] {1, 2, 3}, 0));
-        assertEquals(-1, blob.position(new byte[] {1, 2, 3}, arr.length + 1));
+        assertEquals(-1, blob.position(new byte[] {1, 2, 3}, 16 + 1));
         assertEquals(-1, blob.position(new byte[0], 1));
         assertEquals(-1, blob.position(new byte[17], 1));
         assertEquals(-1, blob.position(new byte[] {3, 2, 1}, 1));
@@ -252,15 +197,7 @@ public class JdbcBlobTest {
         assertEquals(-1, blob.position(new byte[] {1, 2, 4}, 1));
 
         blob.free();
-
-        try {
-            blob.position(new byte[] {0, 1, 2}, 1);
-
-            fail();
-        }
-        catch (SQLException e) {
-            // No-op.
-        }
+        assertThrows(null, () -> blob.position(new byte[] {0, 1, 2}, 1), SQLException.class, ERROR_BLOB_FREE);
     }
 
     /**
@@ -268,12 +205,16 @@ public class JdbcBlobTest {
      */
     @Test
     public void testPositionBlobPattern() throws Exception {
-        byte[] arr = new byte[] {0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15};
+        JdbcBlob blob = new JdbcBlob();
 
-        JdbcBlob blob = new JdbcBlob(arr);
+        blob.setBytes(1, new byte[] {0});
+        blob.setBytes(2, new byte[] {1, 2});
+        blob.setBytes(4, new byte[] {3, 4, 5, 6});
+        blob.setBytes(8, new byte[] {7, 8, 9, 10, 11, 12, 13, 14});
+        blob.setBytes(16, new byte[] {15});
 
         assertEquals(-1, blob.position(new JdbcBlob(new byte[] {1, 2, 3}), 0));
-        assertEquals(-1, blob.position(new JdbcBlob(new byte[] {1, 2, 3}), arr.length + 1));
+        assertEquals(-1, blob.position(new JdbcBlob(new byte[] {1, 2, 3}), 16 + 1));
         assertEquals(-1, blob.position(new JdbcBlob(new byte[0]), 1));
         assertEquals(-1, blob.position(new JdbcBlob(new byte[17]), 1));
         assertEquals(-1, blob.position(new JdbcBlob(new byte[] {3, 2, 1}), 1));
@@ -287,15 +228,7 @@ public class JdbcBlobTest {
         assertEquals(-1, blob.position(new JdbcBlob(new byte[] {1, 2, 4}), 1));
 
         blob.free();
-
-        try {
-            blob.position(new JdbcBlob(new byte[] {0, 1, 2}), 1);
-
-            fail();
-        }
-        catch (SQLException e) {
-            // No-op.
-        }
+        assertThrows(null, () -> blob.position(new JdbcBlob(new byte[] {0, 1, 2}), 1), SQLException.class, ERROR_BLOB_FREE);
     }
 
     /**
@@ -307,47 +240,24 @@ public class JdbcBlobTest {
 
         JdbcBlob blob = new JdbcBlob(arr);
 
-        try {
-            blob.setBytes(0, new byte[4]);
-
-            fail();
-        }
-        catch (SQLException e) {
-            // No-op.
-        }
-
-        try {
-            blob.setBytes(17, new byte[4]);
-
-            fail();
-        }
-        catch (ArrayIndexOutOfBoundsException e) {
-            // No-op.
-        }
+        assertThrows(null, () -> blob.setBytes(0, new byte[4]), SQLException.class, null);
+        assertThrows(null, () -> blob.setBytes(17, new byte[4]), ArrayIndexOutOfBoundsException.class, null);
 
         assertEquals(4, blob.setBytes(1, new byte[] {3, 2, 1, 0}));
-        assertTrue(Arrays.equals(new byte[] {3, 2, 1, 0, 4, 5, 6, 7}, blob.getBytes(1, arr.length)));
+        assertArrayEquals(new byte[]{3, 2, 1, 0, 4, 5, 6, 7}, blob.getBytes(1, arr.length));
 
         assertEquals(4, blob.setBytes(5, new byte[] {7, 6, 5, 4}));
-        assertTrue(Arrays.equals(new byte[] {3, 2, 1, 0, 7, 6, 5, 4}, blob.getBytes(1, arr.length)));
+        assertArrayEquals(new byte[]{3, 2, 1, 0, 7, 6, 5, 4}, blob.getBytes(1, arr.length));
 
         assertEquals(4, blob.setBytes(7, new byte[] {8, 9, 10, 11}));
-        assertTrue(Arrays.equals(new byte[] {3, 2, 1, 0, 7, 6, 8, 9, 10, 11}, blob.getBytes(1, (int)blob.length())));
+        assertArrayEquals(new byte[] {3, 2, 1, 0, 7, 6, 8, 9, 10, 11}, blob.getBytes(1, (int)blob.length()));
 
-        blob = new JdbcBlob(new byte[] {15, 16});
-        assertEquals(8, blob.setBytes(1, new byte[] {0, 1, 2, 3, 4, 5, 6, 7}));
-        assertTrue(Arrays.equals(new byte[] {0, 1, 2, 3, 4, 5, 6, 7}, blob.getBytes(1, (int)blob.length())));
+        JdbcBlob blob2 = new JdbcBlob(new byte[] {15, 16});
+        assertEquals(8, blob2.setBytes(1, new byte[] {0, 1, 2, 3, 4, 5, 6, 7}));
+        assertArrayEquals(new byte[] {0, 1, 2, 3, 4, 5, 6, 7}, blob2.getBytes(1, (int)blob2.length()));
 
-        blob.free();
-
-        try {
-            blob.setBytes(1, new byte[] {0, 1, 2});
-
-            fail();
-        }
-        catch (SQLException e) {
-            // No-op.
-        }
+        blob2.free();
+        assertThrows(null, () -> blob2.setBytes(1, new byte[] {0, 1, 2}), SQLException.class, ERROR_BLOB_FREE);
     }
 
     /**
@@ -359,74 +269,36 @@ public class JdbcBlobTest {
 
         JdbcBlob blob = new JdbcBlob(arr);
 
-        try {
-            blob.setBytes(0, new byte[4], 0, 2);
-
-            fail();
-        }
-        catch (SQLException e) {
-            // No-op.
-        }
-
-        try {
-            blob.setBytes(17, new byte[4], 0, 2);
-
-            fail();
-        }
-        catch (ArrayIndexOutOfBoundsException e) {
-            // No-op.
-        }
-
-        try {
-            blob.setBytes(1, new byte[4], -1, 2);
-
-            fail();
-        }
-        catch (ArrayIndexOutOfBoundsException e) {
-            // No-op.
-        }
-
-        try {
-            blob.setBytes(1, new byte[4], 0, 5);
-
-            fail();
-        }
-        catch (ArrayIndexOutOfBoundsException e) {
-            // No-op.
-        }
+        assertThrows(null, () -> blob.setBytes(0, new byte[4], 0, 2), SQLException.class, null);
+        assertThrows(null, () -> blob.setBytes(17, new byte[4], 0, 2), ArrayIndexOutOfBoundsException.class, null);
+        assertThrows(null, () -> blob.setBytes(1, new byte[4], -1, 2), ArrayIndexOutOfBoundsException.class, null);
+        assertThrows(null, () -> blob.setBytes(1, new byte[4], 0, 5), ArrayIndexOutOfBoundsException.class, null);
+        assertThrows(null, () -> blob.setBytes(1, new byte[4], 4, 5), ArrayIndexOutOfBoundsException.class, null);
 
         assertEquals(4, blob.setBytes(1, new byte[] {3, 2, 1, 0}, 0, 4));
-        assertTrue(Arrays.equals(new byte[] {3, 2, 1, 0, 4, 5, 6, 7}, blob.getBytes(1, arr.length)));
+        assertArrayEquals(new byte[]{3, 2, 1, 0, 4, 5, 6, 7}, blob.getBytes(1, arr.length));
 
         assertEquals(4, blob.setBytes(5, new byte[] {7, 6, 5, 4}, 0, 4));
-        assertTrue(Arrays.equals(new byte[] {3, 2, 1, 0, 7, 6, 5, 4}, blob.getBytes(1, arr.length)));
+        assertArrayEquals(new byte[]{3, 2, 1, 0, 7, 6, 5, 4}, blob.getBytes(1, arr.length));
 
         assertEquals(4, blob.setBytes(7, new byte[] {8, 9, 10, 11}, 0, 4));
-        assertTrue(Arrays.equals(new byte[] {3, 2, 1, 0, 7, 6, 8, 9, 10, 11}, blob.getBytes(1, (int)blob.length())));
+        assertArrayEquals(new byte[]{3, 2, 1, 0, 7, 6, 8, 9, 10, 11}, blob.getBytes(1, (int)blob.length()));
 
         assertEquals(2, blob.setBytes(1, new byte[] {3, 2, 1, 0}, 2, 2));
-        assertTrue(Arrays.equals(new byte[] {1, 0, 1, 0, 7, 6, 8, 9, 10, 11}, blob.getBytes(1, (int)blob.length())));
+        assertArrayEquals(new byte[]{1, 0, 1, 0, 7, 6, 8, 9, 10, 11}, blob.getBytes(1, (int)blob.length()));
 
         assertEquals(2, blob.setBytes(9, new byte[] {3, 2, 1, 0}, 1, 2));
-        assertTrue(Arrays.equals(new byte[] {1, 0, 1, 0, 7, 6, 8, 9, 2, 1}, blob.getBytes(1, (int)blob.length())));
+        assertArrayEquals(new byte[]{1, 0, 1, 0, 7, 6, 8, 9, 2, 1}, blob.getBytes(1, (int)blob.length()));
 
         assertEquals(3, blob.setBytes(9, new byte[] {3, 2, 1, 0}, 0, 3));
-        assertTrue(Arrays.equals(new byte[] {1, 0, 1, 0, 7, 6, 8, 9, 3, 2, 1}, blob.getBytes(1, (int)blob.length())));
+        assertArrayEquals(new byte[]{1, 0, 1, 0, 7, 6, 8, 9, 3, 2, 1}, blob.getBytes(1, (int)blob.length()));
 
-        blob = new JdbcBlob(new byte[] {15, 16});
-        assertEquals(8, blob.setBytes(1, new byte[] {0, 1, 2, 3, 4, 5, 6, 7}, 0, 8));
-        assertTrue(Arrays.equals(new byte[] {0, 1, 2, 3, 4, 5, 6, 7}, blob.getBytes(1, (int)blob.length())));
+        JdbcBlob blob2 = new JdbcBlob(new byte[] {15, 16});
+        assertEquals(8, blob2.setBytes(1, new byte[] {0, 1, 2, 3, 4, 5, 6, 7}, 0, 8));
+        assertArrayEquals(new byte[]{0, 1, 2, 3, 4, 5, 6, 7}, blob2.getBytes(1, (int)blob2.length()));
 
-        blob.free();
-
-        try {
-            blob.setBytes(1, new byte[] {0, 1, 2}, 0, 2);
-
-            fail();
-        }
-        catch (SQLException e) {
-            // No-op.
-        }
+        blob2.free();
+        assertThrows(null, () -> blob2.setBytes(1, new byte[] {0, 1, 2}, 0, 2), SQLException.class, ERROR_BLOB_FREE);
     }
 
     /**
@@ -438,41 +310,56 @@ public class JdbcBlobTest {
 
         JdbcBlob blob = new JdbcBlob(arr);
 
-        try {
+        assertThrows(null, () -> {
             blob.truncate(-1);
 
-            fail();
-        }
-        catch (SQLException e) {
-            // No-op.
-        }
+            return null;
+        }, SQLException.class, null);
 
-        try {
+        assertThrows(null, () -> {
             blob.truncate(arr.length + 1);
 
-            fail();
-        }
-        catch (SQLException e) {
-            // No-op.
-        }
+            return null;
+        }, SQLException.class, null);
 
         blob.truncate(4);
-        assertTrue(Arrays.equals(new byte[] {0, 1, 2, 3}, blob.getBytes(1, (int)blob.length())));
+        assertArrayEquals(new byte[]{0, 1, 2, 3}, blob.getBytes(1, (int)blob.length()));
 
         blob.truncate(0);
         assertEquals(0, (int)blob.length());
 
         blob.free();
-
-        try {
+        assertThrows(null, () -> {
             blob.truncate(0);
 
-            fail();
-        }
-        catch (SQLException e) {
-            // No-op.
-            System.out.println();
-        }
+            return null;
+        }, SQLException.class, ERROR_BLOB_FREE);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    @Test
+    public void testFree() throws Exception {
+        JdbcBlob blob = new JdbcBlob(new byte[] {0, 1, 2, 3, 4, 5, 6, 7});
+
+        assertEquals(8, blob.length());
+
+        blob.free();
+
+        blob.free();
+
+        assertThrows(null, blob::length, SQLException.class, ERROR_BLOB_FREE);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    @Test
+    public void testSetBinaryStream() throws Exception {
+        JdbcBlob blob = new JdbcBlob();
+
+        assertThrows(null, () -> blob.setBinaryStream(1L), SQLFeatureNotSupportedException.class, null);
     }
 
     /**
