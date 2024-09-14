@@ -36,6 +36,8 @@ import org.apache.ignite.internal.processors.query.calcite.metadata.MappingServi
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteReceiver;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteSender;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteTableModify;
+import org.apache.ignite.internal.processors.query.calcite.trait.IgniteDistribution;
+import org.apache.ignite.internal.processors.query.calcite.trait.IgniteDistributions;
 import org.apache.ignite.internal.processors.query.calcite.util.Commons;
 import org.apache.ignite.internal.util.typedef.F;
 import org.jetbrains.annotations.NotNull;
@@ -93,10 +95,15 @@ public class QueryTemplate {
                 // TableModify inside transaction must be executed locally.
                 boolean forceLocTableModify = Commons.queryTransactionVersion(ctx) != null && cutPoint instanceof IgniteTableModify;
 
-                if (forceLocTableModify)
+                IgniteDistribution receiverTrait = null;
+
+                if (forceLocTableModify) {
                     cutPoint = ((SingleRel)cutPoint).getInput(); // Cuts TableScan instead of TableModification.
 
-                fragments = replace(fragments, e.fragment(), new FragmentSplitter(cutPoint).go(e.fragment()));
+                    receiverTrait = IgniteDistributions.single(); // Force receiver distribution.
+                }
+
+                fragments = replace(fragments, e.fragment(), new FragmentSplitter(cutPoint, receiverTrait).go(e.fragment()));
 
                 // Maps TableModify to be executed locally.
                 if (forceLocTableModify)

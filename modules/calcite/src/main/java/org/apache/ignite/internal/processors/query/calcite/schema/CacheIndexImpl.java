@@ -47,7 +47,6 @@ import org.apache.ignite.internal.cache.query.index.sorted.keys.NullIndexKey;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
 import org.apache.ignite.internal.processors.cache.persistence.CacheDataRow;
 import org.apache.ignite.internal.processors.cache.persistence.tree.BPlusTree;
-import org.apache.ignite.internal.processors.cache.persistence.tree.BPlusTree.TreeRowClosure;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.BPlusIO;
 import org.apache.ignite.internal.processors.query.calcite.exec.ExecutionContext;
 import org.apache.ignite.internal.processors.query.calcite.exec.IndexFirstLastScan;
@@ -163,16 +162,13 @@ public class CacheIndexImpl implements IgniteIndex {
     /** {@inheritDoc} */
     @Override public long count(ExecutionContext<?> ectx, ColocationGroup grp, boolean notNull) {
         if (idx == null || !grp.nodeIds().contains(ectx.localNodeId()))
-            return 0L;
+            return 0;
 
         int[] locParts = grp.partitions(ectx.localNodeId());
 
-        IndexingQueryFilter filter = new IndexingQueryFilterImpl(tbl.descriptor().cacheContext().kernalContext(),
-            ectx.topologyVersion(), locParts);
-
         InlineIndex iidx = idx.unwrap(InlineIndex.class);
 
-        TreeRowClosure<IndexRow, IndexRow> rowFilter = countRowFilter(notNull, iidx);
+        BPlusTree.TreeRowClosure<IndexRow, IndexRow> rowFilter = countRowFilter(notNull, iidx);
 
         long cnt = 0;
 
@@ -193,6 +189,9 @@ public class CacheIndexImpl implements IgniteIndex {
         }
 
         try {
+            IndexingQueryFilter filter = new IndexingQueryFilterImpl(tbl.descriptor().cacheContext().kernalContext(),
+                ectx.topologyVersion(), locParts);
+
             for (int i = 0; i < iidx.segmentsCount(); ++i)
                 cnt += iidx.count(i, new IndexQueryContext(filter, rowFilter));
 
@@ -210,9 +209,9 @@ public class CacheIndexImpl implements IgniteIndex {
         if (notNull) {
             boolean nullsFirst = collation.getFieldCollations().get(0).nullDirection == RelFieldCollation.NullDirection.FIRST;
 
-            TreeRowClosure<IndexRow, IndexRow> notNullRowFilter = IndexScan.createNotNullRowFilter(iidx, checkExpired);
+            BPlusTree.TreeRowClosure<IndexRow, IndexRow> notNullRowFilter = IndexScan.createNotNullRowFilter(iidx, checkExpired);
 
-            return new TreeRowClosure<>() {
+            return new BPlusTree.TreeRowClosure<>() {
                 private boolean skipCheck;
 
                 @Override public boolean apply(
@@ -250,11 +249,11 @@ public class CacheIndexImpl implements IgniteIndex {
     }
 
     /** */
-    private static @NotNull TreeRowClosure<IndexRow, IndexRow> transactionAwareCountRowFilter(
-        TreeRowClosure<IndexRow, IndexRow> rowFilter,
+    private static @NotNull BPlusTree.TreeRowClosure<IndexRow, IndexRow> transactionAwareCountRowFilter(
+        BPlusTree.TreeRowClosure<IndexRow, IndexRow> rowFilter,
         Set<KeyCacheObject> skipKeys
     ) {
-        return new TreeRowClosure<IndexRow, IndexRow>() {
+        return new BPlusTree.TreeRowClosure<>() {
             @Override public boolean apply(
                 BPlusTree<IndexRow, IndexRow> tree,
                 BPlusIO<IndexRow> io,
