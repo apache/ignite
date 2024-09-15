@@ -35,6 +35,9 @@ import java.util.function.IntFunction;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
 import java.util.stream.LongStream;
+import javax.cache.processor.EntryProcessor;
+import javax.cache.processor.EntryProcessorException;
+import javax.cache.processor.MutableEntry;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteException;
@@ -71,6 +74,7 @@ import org.junit.runners.Parameterized;
 import static java.lang.String.format;
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.apache.ignite.internal.processors.tx.SqlTransactionsIsolationTest.ModifyApi.CACHE;
+import static org.apache.ignite.internal.processors.tx.SqlTransactionsIsolationTest.ModifyApi.ENTRY_PROCESSOR;
 import static org.apache.ignite.internal.processors.tx.SqlTransactionsIsolationTest.ModifyApi.SQL;
 import static org.apache.ignite.testframework.GridTestUtils.assertThrows;
 import static org.apache.ignite.testframework.GridTestUtils.runAsync;
@@ -104,6 +108,9 @@ public class SqlTransactionsIsolationTest extends GridCommonAbstractTest {
     public enum ModifyApi {
         /** */
         CACHE,
+
+        /** */
+        ENTRY_PROCESSOR,
 
         /** */
         SQL
@@ -525,6 +532,8 @@ public class SqlTransactionsIsolationTest extends GridCommonAbstractTest {
 
         data.forEach((key, value) -> data0.put(key, new ArrayList<>(value)));
 
+        assertEquals(data0.values().stream().mapToInt(List::size).sum(), res.size());
+
         for (List<?> row : res) {
             List<User> users = data0.get(row.get(0));
 
@@ -829,6 +838,19 @@ public class SqlTransactionsIsolationTest extends GridCommonAbstractTest {
                 }
             }
         }
+        else if (modify == ENTRY_PROCESSOR) {
+            if (multi) {
+                fail("XXX");
+            }
+            else {
+                for (IgniteBiTuple<Integer, User> data : entries) {
+                    if (type == ExecutorType.THIN)
+                        thinCli.cache(users()).invoke(data.get1(), new InsertEntryProcessor<>(), data.get2());
+                    else
+                        node().cache(users()).invoke(data.get1(), new InsertEntryProcessor<>(), data.get2());
+                }
+            }
+        }
         else if (modify == SQL) {
             String insert = format("INSERT INTO %s(id, userid, departmentId, fio) VALUES(?, ?, ?, ?)", users());
 
@@ -874,6 +896,19 @@ public class SqlTransactionsIsolationTest extends GridCommonAbstractTest {
 
         if (modify == CACHE)
             doInsert(entries);
+        else if (modify == ENTRY_PROCESSOR) {
+            if (multi) {
+                fail("XXX");
+            }
+            else {
+                for (IgniteBiTuple<Integer, User> data : entries) {
+                    if (type == ExecutorType.THIN)
+                        thinCli.cache(users()).invoke(data.get1(), new UpdateEntryProcessor<>(), data.get2());
+                    else
+                        node().cache(users()).invoke(data.get1(), new UpdateEntryProcessor<>(), data.get2());
+                }
+            }
+        }
         else if (modify == SQL) {
             String update = format("UPDATE %s SET userid = ?, departmentId = ?, fio = ? WHERE id = ?", users());
 
@@ -932,6 +967,19 @@ public class SqlTransactionsIsolationTest extends GridCommonAbstractTest {
                         thinCli.cache(users()).remove(id);
                     else
                         node().cache(users()).remove(id);
+                }
+            }
+        }
+        else if (modify == ENTRY_PROCESSOR) {
+            if (multi) {
+                fail("XXX");
+            }
+            else {
+                for (int id : keys) {
+                    if (type == ExecutorType.THIN)
+                        thinCli.cache(users()).invoke(id, new RemoveEntryProcessor<>());
+                    else
+                        node().cache(users()).invoke(id, new RemoveEntryProcessor<>());
                 }
             }
         }
@@ -1093,5 +1141,39 @@ public class SqlTransactionsIsolationTest extends GridCommonAbstractTest {
     /** */
     private static String tableName(String tbl, CacheMode mode) {
         return tbl + "_" + mode;
+    }
+
+    /** */
+    public static class RemoveEntryProcessor<K, V, T> implements EntryProcessor<K, V, T> {
+        /** {@inheritDoc} */
+        @Override public T process(MutableEntry<K, V> entry, Object... arguments) throws EntryProcessorException {
+            entry.remove();
+
+            return null;
+        }
+    }
+
+    /** */
+    public static class InsertEntryProcessor<K, V, T> implements EntryProcessor<K, V, T> {
+        /** {@inheritDoc} */
+        @Override public T process(MutableEntry<K, V> entry, Object... arguments) throws EntryProcessorException {
+            assertFalse(entry.exists());
+
+            entry.setValue((V)arguments[0]);
+
+            return null;
+        }
+    }
+
+    /** */
+    public static class UpdateEntryProcessor<K, V, T> implements EntryProcessor<K, V, T> {
+        /** {@inheritDoc} */
+        @Override public T process(MutableEntry<K, V> entry, Object... arguments) throws EntryProcessorException {
+            assertTrue(entry.exists());
+
+            entry.setValue((V)arguments[0]);
+
+            return null;
+        }
     }
 }
