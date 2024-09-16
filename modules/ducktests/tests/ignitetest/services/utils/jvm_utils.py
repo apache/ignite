@@ -31,14 +31,14 @@ JVM_PARAMS_GENERIC = "-server -XX:+DisableExplicitGC -XX:+AlwaysPreTouch " \
 
 
 def create_jvm_settings(heap_size=DEFAULT_HEAP, gc_settings=JVM_PARAMS_GC_G1, generic_params=JVM_PARAMS_GENERIC,
-                        gc_dump_path=None, oom_path=None, vm_error_path=None):
+                        gc_dump_path=None, oom_path=None, vm_error_path=None,):
     """
     Provides settings string for JVM process.
     param opts: JVM options to merge. Adds new or rewrites default values. Can be list or string.
     """
     gc_dump = ""
     if gc_dump_path:
-        gc_dump = "-verbose:gc -Xloggc:" + gc_dump_path
+        gc_dump = "-Xlog:gc:" + gc_dump_path
 
     out_of_mem_dump = ""
     if oom_path:
