@@ -60,9 +60,6 @@ public class IgniteTypeCoercion extends TypeCoercionImpl {
 
     /** {@inheritDoc} **/
     @Override public boolean binaryComparisonCoercion(SqlCallBinding binding) {
-//        if(true)
-//            return super.binaryComparisonCoercion(binding);
-
         // Although it is not reflected in the docs, this method is also invoked for MAX, MIN (and other similar operators)
         // by ComparableOperandTypeChecker. When that is the case, fallback to default rules.
         SqlCall call = binding.getCall();
@@ -97,11 +94,8 @@ public class IgniteTypeCoercion extends TypeCoercionImpl {
                 if (!leftType.equals(targetType))
                     coerced = coerceOperandType(scope, call, 0, targetType);
 
-                if (!rightType.equals(targetType)) {
-                    boolean rightCoerced = coerceOperandType(scope, call, 1, targetType);
-
-                    coerced = coerced || rightCoerced;
-                }
+                if (!rightType.equals(targetType))
+                    coerced &= coerceOperandType(scope, call, 1, targetType);
 
                 return coerced;
             }

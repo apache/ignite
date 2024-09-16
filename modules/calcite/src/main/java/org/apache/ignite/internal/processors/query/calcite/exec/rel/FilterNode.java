@@ -75,12 +75,6 @@ public class FilterNode<Row> extends AbstractNode<Row> implements SingleNode<Row
 
         waiting--;
 
-        try {
-           pred.test(row);
-        } catch (Throwable t){
-            System.err.println("saf");
-        }
-
         if (pred.test(row))
             inBuf.add(row);
 

@@ -456,25 +456,20 @@ public class DataTypesTest extends AbstractBasicIntegrationTest {
     /** */
     @Test
     public void testIsNotDistinctFromTypeConversion() {
-       SqlTypeName[] toTypes = new SqlTypeName[] {SqlTypeName.INTEGER, SqlTypeName.TINYINT, SqlTypeName.SMALLINT,
-           SqlTypeName.BIGINT, SqlTypeName.DECIMAL};
-//        SqlTypeName[] toTypes = new SqlTypeName[] {SqlTypeName.TINYINT, SqlTypeName.SMALLINT};
+        SqlTypeName[] numerics = new SqlTypeName[] {SqlTypeName.TINYINT, SqlTypeName.SMALLINT, SqlTypeName.BIGINT, SqlTypeName.DECIMAL};
 
         executeSql("CREATE TABLE t1(key1 INTEGER, i1idx INTEGER, i1 INTEGER, chr1 VARCHAR, PRIMARY KEY(key1))");
         executeSql("CREATE INDEX t1_idx ON t1(i1idx)");
         executeSql("INSERT INTO t1 VALUES (1, 1, null, '1'), (2, 2, 2, '22'), (3, 33, 3, null), (4, null, 4, '4')");
 
-        for (SqlTypeName type : toTypes) {
-            System.err.println("TEST | type: " + type.getName());
-
+        for (SqlTypeName type : numerics) {
             String t = type.getName();
 
             executeSql("CREATE TABLE t2(key2 " + t + ", i2idx " + t + ", i2 " + t + ", i3 INTEGER, chr2 VARCHAR, PRIMARY KEY(key2))");
             executeSql("CREATE INDEX t2_idx ON t2(i2idx)");
             executeSql("INSERT INTO t2 VALUES (0, 0, 0, null, '0'), (11, null, 1, 1, '1'), (2, 2, 2, 2, '22'), (3, 3, null, 3, null)");
 
-            for(HintDefinition hint : Arrays.asList(HintDefinition.MERGE_JOIN, HintDefinition.NL_JOIN, HintDefinition.CNL_JOIN)) {
-//            for(HintDefinition hint : Arrays.asList(HintDefinition.CNL_JOIN)) {
+            for (HintDefinition hint : Arrays.asList(HintDefinition.MERGE_JOIN, HintDefinition.NL_JOIN, HintDefinition.CNL_JOIN)) {
                 String h = "/*+ " + hint.name() + " */ ";
 
                 // Primary keys, indexed.
@@ -520,9 +515,10 @@ public class DataTypesTest extends AbstractBasicIntegrationTest {
                     .check();
 
                 // Indexed and not indexed.
-                assertQuery("SELECT " + h + "key1, i3 FROM t1 JOIN t2 ON i2 IS NOT DISTINCT FROM i1")
-                    .returns(1, 3)
+                assertQuery("SELECT " + h + "key1, i3 FROM t1 JOIN t2 ON i2idx IS NOT DISTINCT FROM i1")
+                    .returns(1, 1)
                     .returns(2, 2)
+                    .returns(3, 3)
                     .check();
 
                 // Both not indexed.

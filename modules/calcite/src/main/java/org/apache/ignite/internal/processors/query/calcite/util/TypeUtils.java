@@ -138,11 +138,10 @@ public class TypeUtils {
         // No need to cast if the source type precedence list
         // contains target type. i.e. do not cast from
         // tinyint to int or int to bigint.
-        if (fromType.getPrecedenceList().containsType(toType)
-            && SqlTypeUtil.isIntType(fromType)
-            && SqlTypeUtil.isIntType(toType)) {
+        // Currently, RelDataTypeFactoryImpl#CLASS_FAMILIES doesn't consider the byte type.
+        if (SqlTypeUtil.isIntType(fromType) && SqlTypeUtil.isIntType(toType) && (fromType.getPrecedenceList().containsType(toType))
+            || fromType.getSqlTypeName() == SqlTypeName.TINYINT || toType.getSqlTypeName() == SqlTypeName.TINYINT)
             return false;
-        }
 
         // Implicit type coercion does not handle nullability.
         if (SqlTypeUtil.equalSansNullability(factory, fromType, toType))
