@@ -95,15 +95,15 @@ public class QueryTemplate {
                 // TableModify inside transaction must be executed locally.
                 boolean forceLocTableModify = Commons.queryTransactionVersion(ctx) != null && cutPoint instanceof IgniteTableModify;
 
-                IgniteDistribution receiverTrait = null;
+                IgniteDistribution exchagneDistribution = null;
 
                 if (forceLocTableModify) {
                     cutPoint = ((SingleRel)cutPoint).getInput(); // Cuts TableScan instead of TableModification.
 
-                    receiverTrait = IgniteDistributions.single(); // Force receiver distribution.
+                    exchagneDistribution = IgniteDistributions.single(); // Force exchange distribution.
                 }
 
-                fragments = replace(fragments, e.fragment(), new FragmentSplitter(cutPoint, receiverTrait).go(e.fragment()));
+                fragments = replace(fragments, e.fragment(), new FragmentSplitter(cutPoint, exchagneDistribution).go(e.fragment()));
 
                 // Maps TableModify to be executed locally.
                 if (forceLocTableModify)
