@@ -524,7 +524,7 @@ public class DataTypesTest extends AbstractBasicIntegrationTest {
 //                    .check();
 
                 // Indexed and not indexed.
-                assertQuery("SELECT " + h + "key1, i3 FROM t1 JOIN t2 ON i2idx IS DISTINCT FROM i1 AND i2idx<2")
+                assertQuery("SELECT " + h + "key1, i3 FROM t1 JOIN t2 ON i2 IS NOT DISTINCT FROM i1")
                     .returns(2, null)
                     .returns(3, null)
                     .returns(4, null)

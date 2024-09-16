@@ -460,13 +460,12 @@ public class ExpressionFactoryImpl<Row> implements ExpressionFactory<Row> {
         String digest = digest(nodes, type, false);
         Scalar compiled = compile(nodes, type, false, srcHolder);
 
-        System.err.println("TEST | scalar digest: " + digest);
-        System.err.println("TEST | scalar src: " + srcHolder.get());
-
         Map.Entry<? extends Scalar, String> existing = (Map.Entry<? extends Scalar, String>)SCALAR_CACHE.get(digest);
 
-        if (existing != null)
-            System.err.println(existing.getValue());
+        if (existing != null) {
+            System.err.println("TEST | scalar digest: " + digest);
+            System.err.println("TEST | scalar src: " + srcHolder.get());
+        }
 
         return (Map.Entry<SingleScalar, String>)SCALAR_CACHE.computeIfAbsent(digest, k -> new AbstractMap.SimpleEntry(compiled, srcHolder.get()));
     }
@@ -486,13 +485,12 @@ public class ExpressionFactoryImpl<Row> implements ExpressionFactory<Row> {
         String digest = digest(nodes, type, true);
         Scalar compiled = compile(nodes, type, true, srcHolder);
 
-        System.err.println("TEST | biscalar digest: " + digest);
-        System.err.println("TEST | biscalar src: " + srcHolder.get());
-
         Map.Entry<? extends Scalar, String> existing = (Map.Entry<? extends Scalar, String>)SCALAR_CACHE.get(digest);
 
-        if (existing != null)
-            System.err.println(existing.getValue());
+        if (existing != null) {
+            System.err.println("TEST | biscalar digest: " + digest);
+            System.err.println("TEST | biscalar src: " + srcHolder.get());
+        }
 
         return (Map.Entry<BiScalar, String>)SCALAR_CACHE.computeIfAbsent(digest, k -> new AbstractMap.SimpleEntry<>(compiled, srcHolder.get()));
     }
@@ -579,6 +577,8 @@ public class ExpressionFactoryImpl<Row> implements ExpressionFactory<Row> {
 
         if(srcHolder!=null)
             srcHolder.set(src);
+
+        System.err.println("TEST | src: \n" + src);
 
         return Commons.compile(clazz, src);
     }
