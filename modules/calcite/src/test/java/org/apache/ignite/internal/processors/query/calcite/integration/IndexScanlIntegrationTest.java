@@ -36,6 +36,8 @@ import org.apache.ignite.internal.processors.query.calcite.QueryChecker;
 import org.apache.ignite.internal.processors.query.calcite.exec.ExecutionContext;
 import org.apache.ignite.internal.processors.query.calcite.exec.IndexScan;
 import org.apache.ignite.internal.processors.query.calcite.exec.exp.RangeIterable;
+import org.apache.ignite.internal.processors.query.calcite.integration.AbstractBasicIntegrationTest.DelegatingIgniteIndex;
+import org.apache.ignite.internal.processors.query.calcite.integration.AbstractBasicIntegrationTest.Employer;
 import org.apache.ignite.internal.processors.query.calcite.metadata.ColocationGroup;
 import org.apache.ignite.internal.processors.query.calcite.schema.IgniteIndex;
 import org.apache.ignite.internal.processors.query.calcite.schema.IgniteTable;

@@ -24,6 +24,7 @@ import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.cache.QueryEntity;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.internal.processors.query.calcite.QueryChecker;
+import org.apache.ignite.internal.processors.query.calcite.integration.AbstractBasicIntegrationTest.Employer;
 import org.apache.ignite.internal.util.typedef.F;
 import org.junit.Test;
 

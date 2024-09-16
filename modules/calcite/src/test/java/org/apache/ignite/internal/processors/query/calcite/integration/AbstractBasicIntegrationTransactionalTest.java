@@ -18,37 +18,25 @@
 package org.apache.ignite.internal.processors.query.calcite.integration;
 
 import java.util.List;
-import org.apache.calcite.plan.RelOptCluster;
-import org.apache.calcite.plan.RelOptTable;
-import org.apache.calcite.rel.RelCollation;
-import org.apache.calcite.rex.RexNode;
-import org.apache.calcite.util.ImmutableBitSet;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.cache.QueryEntity;
 import org.apache.ignite.cache.query.FieldsQueryCursor;
 import org.apache.ignite.cache.query.QueryCursor;
-import org.apache.ignite.cache.query.annotations.QuerySqlField;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.processors.query.QueryEngine;
 import org.apache.ignite.internal.processors.query.calcite.CalciteQueryProcessor;
 import org.apache.ignite.internal.processors.query.calcite.QueryChecker;
-import org.apache.ignite.internal.processors.query.calcite.exec.ExecutionContext;
 import org.apache.ignite.internal.processors.query.calcite.exec.ExecutionServiceImpl;
-import org.apache.ignite.internal.processors.query.calcite.exec.exp.RangeIterable;
-import org.apache.ignite.internal.processors.query.calcite.metadata.ColocationGroup;
-import org.apache.ignite.internal.processors.query.calcite.prepare.bounds.SearchBounds;
-import org.apache.ignite.internal.processors.query.calcite.rel.logical.IgniteLogicalIndexScan;
+import org.apache.ignite.internal.processors.query.calcite.integration.AbstractBasicIntegrationTest.Employer;
 import org.apache.ignite.internal.processors.query.calcite.rules.AbstractTransactionalSqlTest;
-import org.apache.ignite.internal.processors.query.calcite.schema.IgniteIndex;
-import org.apache.ignite.internal.processors.query.calcite.schema.IgniteTable;
 import org.apache.ignite.internal.processors.query.calcite.util.Commons;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.G;
-import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.internal.processors.query.calcite.exec.ExchangeServiceImpl.INBOX_INITIALIZATION_TIMEOUT;
+import static org.apache.ignite.internal.processors.query.calcite.integration.AbstractBasicIntegrationTest.TABLE_NAME;
 import static org.apache.ignite.testframework.GridTestUtils.assertThrowsAnyCause;
 import static org.apache.ignite.testframework.GridTestUtils.waitForCondition;
 
@@ -58,9 +46,6 @@ import static org.apache.ignite.testframework.GridTestUtils.waitForCondition;
 public abstract class AbstractBasicIntegrationTransactionalTest extends AbstractTransactionalSqlTest {
     /** */
     protected static final Object[] NULL_RESULT = new Object[] { null };
-
-    /** */
-    protected static final String TABLE_NAME = "person";
 
     /** */
     protected static IgniteEx client;
@@ -229,99 +214,6 @@ public abstract class AbstractBasicIntegrationTransactionalTest extends Abstract
 
         try (QueryCursor<List<?>> srvCursor = cur.get(0)) {
             return srvCursor.getAll();
-        }
-    }
-
-    /** */
-    public static class DelegatingIgniteIndex implements IgniteIndex {
-        /** */
-        protected final IgniteIndex delegate;
-
-        /** */
-        public DelegatingIgniteIndex(IgniteIndex delegate) {
-            this.delegate = delegate;
-        }
-
-        /** {@inheritDoc} */
-        @Override public RelCollation collation() {
-            return delegate.collation();
-        }
-
-        /** {@inheritDoc} */
-        @Override public String name() {
-            return delegate.name();
-        }
-
-        /** {@inheritDoc} */
-        @Override public IgniteTable table() {
-            return delegate.table();
-        }
-
-        /** {@inheritDoc} */
-        @Override public IgniteLogicalIndexScan toRel(
-            RelOptCluster cluster,
-            RelOptTable relOptTbl,
-            @Nullable List<RexNode> proj,
-            @Nullable RexNode cond,
-            @Nullable ImmutableBitSet requiredColumns
-        ) {
-            return delegate.toRel(cluster, relOptTbl, proj, cond, requiredColumns);
-        }
-
-        /** {@inheritDoc} */
-        @Override public List<SearchBounds> toSearchBounds(
-            RelOptCluster cluster,
-            @Nullable RexNode cond,
-            @Nullable ImmutableBitSet requiredColumns
-        ) {
-            return delegate.toSearchBounds(cluster, cond, requiredColumns);
-        }
-
-        /** {@inheritDoc} */
-        @Override public <Row> Iterable<Row> scan(
-            ExecutionContext<Row> execCtx,
-            ColocationGroup grp,
-            RangeIterable<Row> ranges,
-            @Nullable ImmutableBitSet requiredColumns
-        ) {
-            return delegate.scan(execCtx, grp, ranges, requiredColumns);
-        }
-
-        /** {@inheritDoc} */
-        @Override public long count(ExecutionContext<?> ectx, ColocationGroup grp, boolean notNull) {
-            return delegate.count(ectx, grp, notNull);
-        }
-
-        /** {@inheritDoc} */
-        @Override public <Row> Iterable<Row> firstOrLast(
-            boolean first,
-            ExecutionContext<Row> ectx,
-            ColocationGroup grp,
-            @Nullable ImmutableBitSet requiredColumns
-        ) {
-            return delegate.firstOrLast(first, ectx, grp, requiredColumns);
-        }
-
-        /** {@inheritDoc} */
-        @Override public boolean isInlineScanPossible(@Nullable ImmutableBitSet requiredColumns) {
-            return delegate.isInlineScanPossible(requiredColumns);
-        }
-    }
-
-    /** */
-    public static class Employer {
-        /** */
-        @QuerySqlField
-        public String name;
-
-        /** */
-        @QuerySqlField
-        public Double salary;
-
-        /** */
-        public Employer(String name, Double salary) {
-            this.name = name;
-            this.salary = salary;
         }
     }
 }

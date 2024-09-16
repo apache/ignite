@@ -59,9 +59,6 @@ import static org.apache.ignite.testframework.GridTestUtils.waitForCondition;
  */
 public class AbstractBasicIntegrationTest extends GridCommonAbstractTest {
     /** */
-    protected static final Object[] NULL_RESULT = new Object[] { null };
-
-    /** */
     protected static final String TABLE_NAME = "person";
 
     /** */

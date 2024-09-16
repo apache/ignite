@@ -41,6 +41,8 @@ import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.junit.Test;
 
+import static org.apache.ignite.internal.processors.query.calcite.integration.AbstractBasicIntegrationTest.TABLE_NAME;
+
 /**
  * Tests for server side statistics usage.
  */
