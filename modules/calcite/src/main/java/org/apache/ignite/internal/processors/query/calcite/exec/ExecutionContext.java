@@ -48,6 +48,7 @@ import org.apache.ignite.internal.processors.query.calcite.exec.tracker.Executio
 import org.apache.ignite.internal.processors.query.calcite.exec.tracker.IoTracker;
 import org.apache.ignite.internal.processors.query.calcite.exec.tracker.MemoryTracker;
 import org.apache.ignite.internal.processors.query.calcite.exec.tracker.RowTracker;
+import org.apache.ignite.internal.processors.query.calcite.message.QueryTxEntry;
 import org.apache.ignite.internal.processors.query.calcite.metadata.ColocationGroup;
 import org.apache.ignite.internal.processors.query.calcite.metadata.FragmentDescription;
 import org.apache.ignite.internal.processors.query.calcite.prepare.AbstractQueryContext;
@@ -119,7 +120,7 @@ public class ExecutionContext<Row> extends AbstractQueryContext implements DataC
     private final long timeout;
 
     /** */
-    private final Collection<IgniteTxEntry> txWriteEntries;
+    private final Collection<QueryTxEntry> qryTxEntries;
 
     /** */
     private final long startTs;
@@ -147,7 +148,7 @@ public class ExecutionContext<Row> extends AbstractQueryContext implements DataC
         IoTracker ioTracker,
         long timeout,
         Map<String, Object> params,
-        @Nullable Collection<IgniteTxEntry> txWriteEntries
+        @Nullable Collection<QueryTxEntry> qryTxEntries
     ) {
         super(qctx);
 
@@ -162,7 +163,7 @@ public class ExecutionContext<Row> extends AbstractQueryContext implements DataC
         this.ioTracker = ioTracker;
         this.params = params;
         this.timeout = timeout;
-        this.txWriteEntries = txWriteEntries;
+        this.qryTxEntries = qryTxEntries;
 
         startTs = U.currentTimeMillis();
 
@@ -313,8 +314,29 @@ public class ExecutionContext<Row> extends AbstractQueryContext implements DataC
     /**
      * @return Transaction write map.
      */
-    public Collection<IgniteTxEntry> getTxWriteEntries() {
-        return txWriteEntries;
+    public Collection<QueryTxEntry> getQryTxEntries() {
+        return qryTxEntries;
+    }
+
+    /** */
+    public static Collection<QueryTxEntry> transactionChanges(
+        Collection<IgniteTxEntry> writeEntries
+    ) {
+        if (F.isEmpty(writeEntries))
+            return null;
+
+        Collection<QueryTxEntry> res = new ArrayList<>();
+
+        for (IgniteTxEntry e : writeEntries) {
+            CacheObject val = e.value();
+
+            if (!F.isEmpty(e.entryProcessors()))
+                val = e.applyEntryProcessors(val);
+
+            res.add(new QueryTxEntry(e.cacheId(), e.key(), val, e.explicitVersion()));
+        }
+
+        return res;
     }
 
     /**
@@ -329,17 +351,17 @@ public class ExecutionContext<Row> extends AbstractQueryContext implements DataC
         int[] parts,
         Function<CacheDataRow, R> mapper
     ) {
-        if (F.isEmpty(txWriteEntries))
+        if (F.isEmpty(qryTxEntries))
             return F.t(Collections.emptySet(), Collections.emptyList());
 
         // Expecting parts are sorted or almost sorted and amount of transaction entries are relatively small.
         if (parts != null && !F.isSorted(parts))
             Arrays.sort(parts);
 
-        Set<KeyCacheObject> changedKeys = new HashSet<>(txWriteEntries.size());
-        List<R> newAndUpdatedRows = new ArrayList<>(txWriteEntries.size());
+        Set<KeyCacheObject> changedKeys = new HashSet<>(qryTxEntries.size());
+        List<R> newAndUpdatedRows = new ArrayList<>(qryTxEntries.size());
 
-        for (IgniteTxEntry e : txWriteEntries) {
+        for (QueryTxEntry e : qryTxEntries) {
             int part = e.key().partition();
 
             assert part != -1;
@@ -352,14 +374,13 @@ public class ExecutionContext<Row> extends AbstractQueryContext implements DataC
 
             changedKeys.add(e.key());
 
-            // TODO: apply entry processors here.
             CacheObject val = e.value();
 
             if (val != null) { // Mix only updated or inserted entries. In case val == null entry removed.
                 newAndUpdatedRows.add(mapper.apply(new CacheDataRowAdapter(
                     e.key(),
                     val,
-                    e.explicitVersion(),
+                    e.version(),
                     CU.EXPIRE_TIME_ETERNAL // Expire time calculated on commit, can use eternal here.
                 )));
             }

@@ -172,7 +172,7 @@ public class IndexScan<Row> extends AbstractIndexScan<Row, IndexRow> {
 
         fieldIdxMapping = fieldToInlinedKeysMapping(srcRowType.getFieldCount());
 
-        if (!F.isEmpty(ectx.getTxWriteEntries())) {
+        if (!F.isEmpty(ectx.getQryTxEntries())) {
             InlineIndexRowHandler rowHnd = idx.segment(0).rowHandler();
 
             txChanges = ectx.transactionChanges(

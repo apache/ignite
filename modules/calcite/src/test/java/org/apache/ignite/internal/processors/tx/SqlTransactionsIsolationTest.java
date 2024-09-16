@@ -79,6 +79,7 @@ import static org.apache.ignite.internal.processors.tx.SqlTransactionsIsolationT
 import static org.apache.ignite.testframework.GridTestUtils.assertThrows;
 import static org.apache.ignite.testframework.GridTestUtils.runAsync;
 import static org.apache.ignite.transactions.TransactionIsolation.READ_COMMITTED;
+import static org.junit.Assume.assumeFalse;
 
 /** */
 @RunWith(Parameterized.class)
@@ -164,6 +165,10 @@ public class SqlTransactionsIsolationTest extends GridCommonAbstractTest {
     public boolean multi;
 
     /** */
+    @Parameterized.Parameter(8)
+    public TransactionConcurrency txConcurrency;
+
+    /** */
     private static IgniteEx srv;
 
     /** */
@@ -173,9 +178,6 @@ public class SqlTransactionsIsolationTest extends GridCommonAbstractTest {
     private static IgniteClient thinCli;
 
     /** */
-    private final TransactionConcurrency txConcurrency = TransactionConcurrency.OPTIMISTIC;
-
-    /** */
     private final TransactionIsolation txIsolation = READ_COMMITTED;
 
     /** */
@@ -183,11 +185,11 @@ public class SqlTransactionsIsolationTest extends GridCommonAbstractTest {
 
     /** @return Test parameters. */
     @Parameterized.Parameters(
-        name = "modify={0},qryExecutor={1},partitionAwareness={2},mode={3},gridCnt={4},backups={5},commit={6},multi={7}")
+        name = "modify={0},qryExecutor={1},partitionAwareness={2},mode={3},gridCnt={4},backups={5},commit={6},multi={7},txConcurrency={8}")
     public static Collection<?> parameters() {
         List<Object[]> params = new ArrayList<>();
 
-        for (ModifyApi modify : new ModifyApi[] {ENTRY_PROCESSOR}) { //ModifyApi.values()) {
+        for (ModifyApi modify : ModifyApi.values()) {
             for (CacheMode cacheMode : CacheMode.values()) {
                 for (int gridCnt : new int[]{1, 3, 5}) {
                     int[] backups = gridCnt > 1
@@ -197,8 +199,21 @@ public class SqlTransactionsIsolationTest extends GridCommonAbstractTest {
                     for (int backup: backups) {
                         for (boolean commit : new boolean[]{false, true}) {
                             for (boolean mutli : new boolean[] {false, true}) {
-                                params.add(new Object[]{modify, ExecutorType.SERVER, false, cacheMode, gridCnt, backup, commit, mutli});
-                                params.add(new Object[]{modify, ExecutorType.CLIENT, false, cacheMode, gridCnt, backup, commit, mutli});
+                                for (TransactionConcurrency txConcurrency : TransactionConcurrency.values()) {
+                                    for (ExecutorType execType : new ExecutorType[]{ExecutorType.SERVER, ExecutorType.CLIENT}) {
+                                        params.add(new Object[]{
+                                            modify,
+                                            execType,
+                                            false, //partitionAwareness
+                                            cacheMode,
+                                            gridCnt,
+                                            backup,
+                                            commit,
+                                            mutli,
+                                            txConcurrency
+                                        });
+                                    }
+                                }
                             }
                         }
                     }
@@ -373,18 +388,20 @@ public class SqlTransactionsIsolationTest extends GridCommonAbstractTest {
 
                     insert(F.t(id, new User(id, 0, fio)));
 
-                    // Concurrent query must not see any transaction data.
-                    runAsync(() -> {
-                        RunnableX check = () -> {
-                            assertUsersSize(stepCnt * outOfTxSz);
+                    if (txConcurrency == TransactionConcurrency.OPTIMISTIC) {
+                        // Concurrent query must not see any transaction data.
+                        runAsync(() -> {
+                            RunnableX check = () -> {
+                                assertUsersSize(stepCnt * outOfTxSz);
 
-                            assertNull(select(id, CACHE));
-                            assertNull(select(id, SQL));
-                        };
+                                assertNull(select(id, CACHE));
+                                assertNull(select(id, SQL));
+                            };
 
-                        insideTx(check, false);
-                        check.run();
-                    }).get(TX_TIMEOUT);
+                            insideTx(check, false);
+                            check.run();
+                        }).get(TX_TIMEOUT);
+                    }
 
                     long expTblSz = (long)(stepCnt * outOfTxSz) + i * inTxSz + j + 1;
 
@@ -611,7 +628,7 @@ public class SqlTransactionsIsolationTest extends GridCommonAbstractTest {
             if (modify == SQL) {
                 assertThrows(
                     log,
-                    () -> doInsert(F.t(4, JOHN)),
+                    () -> doInsert(false, F.t(4, JOHN)),
                     IgniteException.class,
                     "Failed to INSERT some keys because they are already in cache"
                 );
@@ -677,23 +694,9 @@ public class SqlTransactionsIsolationTest extends GridCommonAbstractTest {
 
     /** */
     @Test
-    public void testDeleteSimple() throws Exception {
-        assertEquals(JOHN, node().cache(users()).get(1));
-
-        insideTx(() -> {
-            assertEquals(JOHN, node().cache(users()).get(1));
-
-            delete(1);
-
-            assertNull(node().cache(users()).get(1));
-        }, false);
-
-        assertEquals(JOHN, node().cache(users()).get(1));
-    }
-
-    /** */
-    @Test
     public void testDelete() {
+        assumeFalse("", txConcurrency == TransactionConcurrency.OPTIMISTIC && type == ExecutorType.SERVER && modify == ENTRY_PROCESSOR);
+
         if (multi)
             insert(F.t(2, JOHN), F.t(3, JOHN));
 
@@ -830,11 +833,11 @@ public class SqlTransactionsIsolationTest extends GridCommonAbstractTest {
                 .add(data.get1()));
         }
 
-        doInsert(entries);
+        doInsert(false, entries);
     }
 
     /** */
-    private void doInsert(IgniteBiTuple<Integer, User>... entries) {
+    private void doInsert(boolean update, IgniteBiTuple<Integer, User>... entries) {
         if (modify == CACHE) {
             if (multi) {
                 Map<Integer, User> data = Arrays.stream(entries).collect(Collectors.toMap(IgniteBiTuple::get1, IgniteBiTuple::get2));
@@ -855,14 +858,20 @@ public class SqlTransactionsIsolationTest extends GridCommonAbstractTest {
         }
         else if (modify == ENTRY_PROCESSOR) {
             if (multi) {
-                fail("XXX");
+                Set<Integer> keys = Arrays.stream(entries).map(IgniteBiTuple::get1).collect(Collectors.toSet());
+                Map<Integer, User> data = Arrays.stream(entries).collect(Collectors.toMap(IgniteBiTuple::get1, IgniteBiTuple::get2));
+
+                if (type == ExecutorType.THIN)
+                    thinCli.cache(users()).invokeAll(keys, new UpdateEntryProcessor<>(update), data);
+                else
+                    node().cache(users()).invokeAll(keys, new UpdateEntryProcessor<>(update), data);
             }
             else {
                 for (IgniteBiTuple<Integer, User> data : entries) {
                     if (type == ExecutorType.THIN)
-                        thinCli.cache(users()).invoke(data.get1(), new InsertEntryProcessor<>(), data.get2());
+                        thinCli.cache(users()).invoke(data.get1(), new UpdateEntryProcessor<>(update), data.get2());
                     else
-                        node().cache(users()).invoke(data.get1(), new InsertEntryProcessor<>(), data.get2());
+                        node().cache(users()).invoke(data.get1(), new UpdateEntryProcessor<>(update), data.get2());
                 }
             }
         }
@@ -909,21 +918,8 @@ public class SqlTransactionsIsolationTest extends GridCommonAbstractTest {
             assertTrue(partsToKeys.get(part).contains(data.get1()));
         }
 
-        if (modify == CACHE)
-            doInsert(entries);
-        else if (modify == ENTRY_PROCESSOR) {
-            if (multi) {
-                fail("XXX");
-            }
-            else {
-                for (IgniteBiTuple<Integer, User> data : entries) {
-                    if (type == ExecutorType.THIN)
-                        thinCli.cache(users()).invoke(data.get1(), new UpdateEntryProcessor<>(), data.get2());
-                    else
-                        node().cache(users()).invoke(data.get1(), new UpdateEntryProcessor<>(), data.get2());
-                }
-            }
-        }
+        if (modify == CACHE || modify == ENTRY_PROCESSOR)
+            doInsert(true, entries);
         else if (modify == SQL) {
             String update = format("UPDATE %s SET userid = ?, departmentId = ?, fio = ? WHERE id = ?", users());
 
@@ -987,7 +983,12 @@ public class SqlTransactionsIsolationTest extends GridCommonAbstractTest {
         }
         else if (modify == ENTRY_PROCESSOR) {
             if (multi) {
-                fail("XXX");
+                Set<Integer> toRemove = Arrays.stream(keys).boxed().collect(Collectors.toSet());
+
+                if (type == ExecutorType.THIN)
+                    thinCli.cache(users()).invokeAll(toRemove, new RemoveEntryProcessor<>());
+                else
+                    node().cache(users()).invokeAll(toRemove, new RemoveEntryProcessor<>());
             }
             else {
                 for (int id : keys) {
@@ -1169,24 +1170,28 @@ public class SqlTransactionsIsolationTest extends GridCommonAbstractTest {
     }
 
     /** */
-    public static class InsertEntryProcessor<K, V, T> implements EntryProcessor<K, V, T> {
-        /** {@inheritDoc} */
-        @Override public T process(MutableEntry<K, V> entry, Object... arguments) throws EntryProcessorException {
-            assertFalse(entry.exists());
-
-            entry.setValue((V)arguments[0]);
-
-            return null;
-        }
-    }
-
-    /** */
     public static class UpdateEntryProcessor<K, V, T> implements EntryProcessor<K, V, T> {
+        /** */
+        private final boolean update;
+
+        /** */
+        public UpdateEntryProcessor() {
+            this(true);
+        }
+
+        /** */
+        public UpdateEntryProcessor(boolean update) {
+            this.update = update;
+        }
+
         /** {@inheritDoc} */
         @Override public T process(MutableEntry<K, V> entry, Object... arguments) throws EntryProcessorException {
-            assertTrue(entry.exists());
+            assertEquals("Expect entry " + (update ? "" : "not") + " exists", update, entry.exists());
 
-            entry.setValue((V)arguments[0]);
+            if (arguments[0] instanceof User)
+                entry.setValue((V)arguments[0]);
+            else
+                entry.setValue((V)((Map<Integer, User>)arguments[0]).get((Integer)entry.getKey()));
 
             return null;
         }

@@ -172,7 +172,7 @@ public class CacheIndexImpl implements IgniteIndex {
 
         long cnt = 0;
 
-        if (!F.isEmpty(ectx.getTxWriteEntries())) {
+        if (!F.isEmpty(ectx.getQryTxEntries())) {
             IgniteBiTuple<Set<KeyCacheObject>, List<CacheDataRow>> txChanges = ectx.transactionChanges(
                 iidx.indexDefinition().cacheInfo().cacheId(),
                 locParts,

@@ -25,7 +25,6 @@ import org.apache.ignite.internal.GridDirectCollection;
 import org.apache.ignite.internal.GridDirectTransient;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
-import org.apache.ignite.internal.processors.cache.transactions.IgniteTxEntry;
 import org.apache.ignite.internal.processors.query.calcite.metadata.FragmentDescription;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.plugin.extensions.communication.MessageCollectionItemType;
@@ -69,8 +68,8 @@ public class QueryStartRequest implements MarshalableMessage, ExecutionContextAw
     private long timeout;
 
     /** */
-    @GridDirectCollection(IgniteTxEntry.class)
-    private @Nullable Collection<IgniteTxEntry> txWriteEntries;
+    @GridDirectCollection(QueryTxEntry.class)
+    private @Nullable Collection<QueryTxEntry> qryTxEntries;
 
     /** */
     @SuppressWarnings("AssignmentOrReturnOfFieldWithMutableType")
@@ -85,7 +84,7 @@ public class QueryStartRequest implements MarshalableMessage, ExecutionContextAw
         Object[] params,
         @Nullable byte[] paramsBytes,
         long timeout,
-        Collection<IgniteTxEntry> txWriteEntries
+        Collection<QueryTxEntry> qryTxEntries
     ) {
         this.qryId = qryId;
         this.originatingQryId = originatingQryId;
@@ -97,7 +96,7 @@ public class QueryStartRequest implements MarshalableMessage, ExecutionContextAw
         this.params = params;
         this.paramsBytes = paramsBytes; // If we already have marshalled params, use it.
         this.timeout = timeout;
-        this.txWriteEntries = txWriteEntries;
+        this.qryTxEntries = qryTxEntries;
     }
 
     /** */
@@ -179,10 +178,10 @@ public class QueryStartRequest implements MarshalableMessage, ExecutionContextAw
     }
 
     /**
-     * @return Transaction write entries.
+     * @return Transaction entries to mixin on query processing.
      */
-    public @Nullable Collection<IgniteTxEntry> txWriteEntries() {
-        return txWriteEntries;
+    public @Nullable Collection<QueryTxEntry> queryTransactionEntries() {
+        return qryTxEntries;
     }
 
     /** {@inheritDoc} */
@@ -192,9 +191,9 @@ public class QueryStartRequest implements MarshalableMessage, ExecutionContextAw
 
         fragmentDesc.prepareMarshal(ctx);
 
-        if (txWriteEntries != null) {
-            for (IgniteTxEntry e : txWriteEntries)
-                e.marshal(ctx, true);
+        if (qryTxEntries != null) {
+            for (QueryTxEntry e : qryTxEntries)
+                e.prepareMarshal(ctx);
         }
     }
 
@@ -207,12 +206,9 @@ public class QueryStartRequest implements MarshalableMessage, ExecutionContextAw
 
         fragmentDesc.prepareUnmarshal(ctx);
 
-        if (txWriteEntries != null) {
-            for (IgniteTxEntry e : txWriteEntries) {
-                e.prepareUnmarshal(ctx, topologyVersion(), false);
-
-                e.unmarshal(ctx, false, ldr);
-            }
+        if (qryTxEntries != null) {
+            for (QueryTxEntry e : qryTxEntries)
+                e.prepareUnmarshal(ctx, ldr);
         }
     }
 
@@ -277,7 +273,7 @@ public class QueryStartRequest implements MarshalableMessage, ExecutionContextAw
                 writer.incrementState();
 
             case 8:
-                if (!writer.writeCollection("txWriteEntries", txWriteEntries, MessageCollectionItemType.MSG))
+                if (!writer.writeCollection("qryTxEntries", qryTxEntries, MessageCollectionItemType.MSG))
                     return false;
 
                 writer.incrementState();
@@ -366,7 +362,7 @@ public class QueryStartRequest implements MarshalableMessage, ExecutionContextAw
                 reader.incrementState();
 
             case 8:
-                txWriteEntries = reader.readCollection("txWriteEntries", MessageCollectionItemType.MSG);
+                qryTxEntries = reader.readCollection("qryTxEntries", MessageCollectionItemType.MSG);
 
                 if (!reader.isLastRead())
                     return false;
