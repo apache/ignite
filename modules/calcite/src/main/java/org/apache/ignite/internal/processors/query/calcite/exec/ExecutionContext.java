@@ -37,6 +37,7 @@ import org.apache.calcite.schema.SchemaPlus;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
+import org.apache.ignite.internal.processors.cache.CacheObject;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
 import org.apache.ignite.internal.processors.cache.persistence.CacheDataRow;
 import org.apache.ignite.internal.processors.cache.persistence.CacheDataRowAdapter;
@@ -351,10 +352,13 @@ public class ExecutionContext<Row> extends AbstractQueryContext implements DataC
 
             changedKeys.add(e.key());
 
-            if (e.value() != null) { // Mix only updated or inserted entries. In case val == null entry removed.
+            // TODO: apply entry processors here.
+            CacheObject val = e.value();
+
+            if (val != null) { // Mix only updated or inserted entries. In case val == null entry removed.
                 newAndUpdatedRows.add(mapper.apply(new CacheDataRowAdapter(
                     e.key(),
-                    e.value(),
+                    val,
                     e.explicitVersion(),
                     CU.EXPIRE_TIME_ETERNAL // Expire time calculated on commit, can use eternal here.
                 )));

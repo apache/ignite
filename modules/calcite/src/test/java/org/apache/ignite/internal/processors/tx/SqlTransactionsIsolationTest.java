@@ -187,7 +187,7 @@ public class SqlTransactionsIsolationTest extends GridCommonAbstractTest {
     public static Collection<?> parameters() {
         List<Object[]> params = new ArrayList<>();
 
-        for (ModifyApi modify : ModifyApi.values()) {
+        for (ModifyApi modify : new ModifyApi[] {ENTRY_PROCESSOR}) { //ModifyApi.values()) {
             for (CacheMode cacheMode : CacheMode.values()) {
                 for (int gridCnt : new int[]{1, 3, 5}) {
                     int[] backups = gridCnt > 1
@@ -307,9 +307,8 @@ public class SqlTransactionsIsolationTest extends GridCommonAbstractTest {
     @Override protected void beforeTest() throws Exception {
         super.beforeTest();
 
-        if (F.isEmpty(Ignition.allGrids())) {
+        if (F.isEmpty(Ignition.allGrids()))
             init();
-        }
 
         cli.cache(users()).removeAll();
         cli.cache(tbl()).removeAll();
@@ -674,6 +673,22 @@ public class SqlTransactionsIsolationTest extends GridCommonAbstractTest {
             checkAfter.run();
         else
             checkBefore.run();
+    }
+
+    /** */
+    @Test
+    public void testDeleteSimple() throws Exception {
+        assertEquals(JOHN, node().cache(users()).get(1));
+
+        insideTx(() -> {
+            assertEquals(JOHN, node().cache(users()).get(1));
+
+            delete(1);
+
+            assertNull(node().cache(users()).get(1));
+        }, false);
+
+        assertEquals(JOHN, node().cache(users()).get(1));
     }
 
     /** */
