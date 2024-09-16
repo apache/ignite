@@ -456,9 +456,9 @@ public class DataTypesTest extends AbstractBasicIntegrationTest {
     /** */
     @Test
     public void testIsNotDistinctFromTypeConversion() {
-//       SqlTypeName[] toTypes = new SqlTypeName[] {SqlTypeName.INTEGER, SqlTypeName.TINYINT, SqlTypeName.SMALLINT,
-//           SqlTypeName.BIGINT, SqlTypeName.DECIMAL};
-        SqlTypeName[] toTypes = new SqlTypeName[] {SqlTypeName.TINYINT, SqlTypeName.SMALLINT};
+       SqlTypeName[] toTypes = new SqlTypeName[] {SqlTypeName.INTEGER, SqlTypeName.TINYINT, SqlTypeName.SMALLINT,
+           SqlTypeName.BIGINT, SqlTypeName.DECIMAL};
+//        SqlTypeName[] toTypes = new SqlTypeName[] {SqlTypeName.TINYINT, SqlTypeName.SMALLINT};
 
         executeSql("CREATE TABLE t1(key1 INTEGER, i1idx INTEGER, i1 INTEGER, chr1 VARCHAR, PRIMARY KEY(key1))");
         executeSql("CREATE INDEX t1_idx ON t1(i1idx)");
@@ -473,90 +473,82 @@ public class DataTypesTest extends AbstractBasicIntegrationTest {
             executeSql("CREATE INDEX t2_idx ON t2(i2idx)");
             executeSql("INSERT INTO t2 VALUES (0, 0, 0, null, '0'), (11, null, 1, 1, '1'), (2, 2, 2, 2, '22'), (3, 3, null, 3, null)");
 
-//            for(HintDefinition hint : Arrays.asList(HintDefinition.MERGE_JOIN, HintDefinition.NL_JOIN, HintDefinition.CNL_JOIN)) {
-//            for(HintDefinition hint : Arrays.asList(HintDefinition.NL_JOIN, HintDefinition.CNL_JOIN)) {
-            for(HintDefinition hint : Arrays.asList(HintDefinition.CNL_JOIN)) {
+            for(HintDefinition hint : Arrays.asList(HintDefinition.MERGE_JOIN, HintDefinition.NL_JOIN, HintDefinition.CNL_JOIN)) {
+//            for(HintDefinition hint : Arrays.asList(HintDefinition.CNL_JOIN)) {
                 String h = "/*+ " + hint.name() + " */ ";
 
-//                // Primary keys, indexed.
-//                assertQuery("SELECT " + h + "key1, i3 FROM t1 JOIN t2 ON key2 IS NOT DISTINCT FROM key1")
-//                    .returns(2, 2)
-//                    .returns(3, 3)
-//                    .check();
-//
-//                log.error("TEST | 3");
-//                // Indexed and not indexed.
-//                assertQuery("SELECT " + h + "key1, i3 FROM t1 JOIN t2 ON i2idx IS NOT DISTINCT FROM i1")
-//                    .returns(1, 1)
-//                    .returns(2, 2)
-//                    .returns(3, 3)
-//                    .check();
-//
-//                // Both not indexed.
-//                assertQuery("SELECT " + h + "key1, i3 FROM t1 JOIN t2 ON i2 IS NOT DISTINCT FROM i1")
-//                    .returns(1, 3)
-//                    .returns(2, 2)
-//                    .check();
-//
-//                // Indexed and casted.
-//                log.error("TEST | 8");
-//                assertQuery("SELECT " + h + "key1, i3 FROM t1 JOIN t2 ON i2idx IS NOT DISTINCT FROM CAST(chr1 as INTEGER)")
-//                    .returns(3, 1)
-//                    .check();
-//
-//                // Not indexed and casted.
-//                log.error("TEST | 10");
-//                assertQuery("SELECT " + h + "key1, i3 FROM t1 JOIN t2 ON i2 IS NOT DISTINCT FROM CAST(chr1 as INTEGER)")
-//                    .returns(1, 1)
-//                    .returns(3, 3)
-//                    .check();
-//
-//                // @see MergeJoinConverterRule#matchesJoin(RelOptRuleCall)
-//                if (hint == HintDefinition.MERGE_JOIN)
-//                    continue;
-//
-//                // Primary keys, indexed.
-//                assertQuery("SELECT " + h + "key1, i3 FROM t1 JOIN t2 ON key2 IS DISTINCT FROM key1 and key1<2")
-//                    .returns(1, 1)
-//                    .returns(1, 2)
-//                    .returns(1, 3)
-//                    .returns(1, null)
-//                    .check();
+                // Primary keys, indexed.
+                assertQuery("SELECT " + h + "key1, i3 FROM t1 JOIN t2 ON key2 IS NOT DISTINCT FROM key1")
+                    .returns(2, 2)
+                    .returns(3, 3)
+                    .check();
+
+                // Indexed and not indexed.
+                assertQuery("SELECT " + h + "key1, i3 FROM t1 JOIN t2 ON i2idx IS NOT DISTINCT FROM i1")
+                    .returns(1, 1)
+                    .returns(2, 2)
+                    .returns(3, 3)
+                    .check();
+
+                // Both not indexed.
+                assertQuery("SELECT " + h + "key1, i3 FROM t1 JOIN t2 ON i2 IS NOT DISTINCT FROM i1")
+                    .returns(1, 3)
+                    .returns(2, 2)
+                    .check();
+
+                // Indexed and casted.
+                assertQuery("SELECT " + h + "key1, i3 FROM t1 JOIN t2 ON i2idx IS NOT DISTINCT FROM CAST(chr1 as INTEGER)")
+                    .returns(3, 1)
+                    .check();
+
+                // Not indexed and casted.
+                assertQuery("SELECT " + h + "key1, i3 FROM t1 JOIN t2 ON i2 IS NOT DISTINCT FROM CAST(chr1 as INTEGER)")
+                    .returns(1, 1)
+                    .returns(3, 3)
+                    .check();
+
+                // @see MergeJoinConverterRule#matchesJoin(RelOptRuleCall)
+                if (hint == HintDefinition.MERGE_JOIN)
+                    continue;
+
+                // Primary keys, indexed.
+                assertQuery("SELECT " + h + "key1, i3 FROM t1 JOIN t2 ON key2 IS DISTINCT FROM key1 and key1<2")
+                    .returns(1, 1)
+                    .returns(1, 2)
+                    .returns(1, 3)
+                    .returns(1, null)
+                    .check();
 
                 // Indexed and not indexed.
                 assertQuery("SELECT " + h + "key1, i3 FROM t1 JOIN t2 ON i2 IS NOT DISTINCT FROM i1")
-                    .returns(2, null)
-                    .returns(3, null)
-                    .returns(4, null)
-                    .returns(1, null)
+                    .returns(1, 3)
+                    .returns(2, 2)
                     .check();
-//
-//                // Both not indexed.
-//                log.error("TEST | 6");
-//                assertQuery("SELECT " + h + "key1, i3 FROM t1 JOIN t2 ON i2 IS DISTINCT FROM i1 and key1<3")
-//                    .returns(1, 1)
-//                    .returns(1, 2)
-//                    .returns(1, null)
-//                    .returns(2, 1)
-//                    .returns(2, 3)
-//                    .returns(2, null)
-//                    .check();
-//
-//                // Indexed and casted.
-//                assertQuery("SELECT " + h + "key1, i3 FROM t1 JOIN t2 ON i2idx IS DISTINCT FROM CAST(chr1 as INTEGER) and key1<2")
-//                    .returns(1, null)
-//                    .returns(1, 2)
-//                    .returns(1, 3)
-//                    .returns(1, 1)
-//                    .check();
-//
-//                log.error("TEST | 9");
-//                // Not indexed and casted.
-//                assertQuery("SELECT " + h + "key1, i3 FROM t1 JOIN t2 ON i2 IS DISTINCT FROM CAST(chr1 as INTEGER) and key1<2")
-//                    .returns(1, null)
-//                    .returns(1, 2)
-//                    .returns(1, 3)
-//                    .check();
+
+                // Both not indexed.
+                assertQuery("SELECT " + h + "key1, i3 FROM t1 JOIN t2 ON i2 IS DISTINCT FROM i1 and key1<3")
+                    .returns(1, 1)
+                    .returns(1, 2)
+                    .returns(1, null)
+                    .returns(2, 1)
+                    .returns(2, 3)
+                    .returns(2, null)
+                    .check();
+
+                // Indexed and casted.
+                assertQuery("SELECT " + h + "key1, i3 FROM t1 JOIN t2 ON i2idx IS DISTINCT FROM CAST(chr1 as INTEGER) and key1<2")
+                    .returns(1, null)
+                    .returns(1, 2)
+                    .returns(1, 3)
+                    .returns(1, 1)
+                    .check();
+
+                // Not indexed and casted.
+                assertQuery("SELECT " + h + "key1, i3 FROM t1 JOIN t2 ON i2 IS DISTINCT FROM CAST(chr1 as INTEGER) and key1<2")
+                    .returns(1, null)
+                    .returns(1, 2)
+                    .returns(1, 3)
+                    .check();
             }
 
             executeSql("DROP TABLE t2");

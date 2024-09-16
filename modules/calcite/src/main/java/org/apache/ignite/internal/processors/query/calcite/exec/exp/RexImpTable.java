@@ -539,8 +539,7 @@ public class RexImpTable {
 
         // Operator IS_NOT_DISTINCT_FROM is removed by RexSimplify, but still possible in join conditions, so
         // implementation required.
-//        defineMethod(IS_NOT_DISTINCT_FROM, IgniteMethod.IS_NOT_DISTINCT_FROM.method(), NullPolicy.NONE);
-        map.put(IS_NOT_DISTINCT_FROM, new MethodImplementor(IgniteMethod.IS_NOT_DISTINCT_FROM.method(), NullPolicy.NONE, true));
+        defineMethod(IS_NOT_DISTINCT_FROM, IgniteMethod.IS_NOT_DISTINCT_FROM.method(), NullPolicy.NONE);
     }
 
     /** */
