@@ -21,6 +21,7 @@ from unittest.mock import Mock
 import pytest
 
 from ignitetest.services.utils.ignite_spec import IgniteApplicationSpec
+from ignitetest.utils.ignite_test import JFR_ENABLED
 
 
 @pytest.fixture
@@ -76,6 +77,15 @@ def check_default_jvm_options__are_not_used__if_merge_with_default_is_false(serv
 
     spec = IgniteApplicationSpec(service, merge_with_default=False)
     assert len(spec.jvm_opts) == 0
+
+
+def check_boolean_options__go_after_default_ones_and_overwrite_them__if_passed_via_jvm_opt(service):
+    service.context.globals[JFR_ENABLED] = True
+    spec = IgniteApplicationSpec(service, jvm_opts="-XX:-UnlockCommercialFeatures")
+    assert "-XX:-FlightRecorder" in spec.jvm_opts
+    assert "-XX:-FlightRecorder" in spec.jvm_opts
+    assert spec.jvm_opts.index("-XX:-FlightRecorder") >\
+           spec.jvm_opts.index("-XX:+FlightRecorder")
 
 
 def check_colon_options__go_after_default_ones_and_overwrite_them__if_passed_via_jvm_opt(service):
