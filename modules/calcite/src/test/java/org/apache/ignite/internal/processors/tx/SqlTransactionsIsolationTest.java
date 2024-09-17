@@ -79,7 +79,6 @@ import static org.apache.ignite.internal.processors.tx.SqlTransactionsIsolationT
 import static org.apache.ignite.testframework.GridTestUtils.assertThrows;
 import static org.apache.ignite.testframework.GridTestUtils.runAsync;
 import static org.apache.ignite.transactions.TransactionIsolation.READ_COMMITTED;
-import static org.junit.Assume.assumeFalse;
 
 /** */
 @RunWith(Parameterized.class)
@@ -695,8 +694,6 @@ public class SqlTransactionsIsolationTest extends GridCommonAbstractTest {
     /** */
     @Test
     public void testDelete() {
-        assumeFalse("", txConcurrency == TransactionConcurrency.OPTIMISTIC && type == ExecutorType.SERVER && modify == ENTRY_PROCESSOR);
-
         if (multi)
             insert(F.t(2, JOHN), F.t(3, JOHN));
 
