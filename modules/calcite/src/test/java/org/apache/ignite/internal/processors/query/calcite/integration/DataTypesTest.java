@@ -456,7 +456,8 @@ public class DataTypesTest extends AbstractBasicIntegrationTest {
     /** */
     @Test
     public void testIsNotDistinctFromTypeConversion() {
-        SqlTypeName[] numerics = new SqlTypeName[] {SqlTypeName.TINYINT, SqlTypeName.SMALLINT, SqlTypeName.BIGINT, SqlTypeName.DECIMAL};
+        SqlTypeName[] numerics = new SqlTypeName[] {SqlTypeName.TINYINT, SqlTypeName.SMALLINT, SqlTypeName.BIGINT,
+            SqlTypeName.DECIMAL, SqlTypeName.FLOAT, SqlTypeName.DOUBLE, SqlTypeName.BIGINT};
 
         executeSql("CREATE TABLE t1(key1 INTEGER, i1idx INTEGER, i1 INTEGER, chr1 VARCHAR, PRIMARY KEY(key1))");
         executeSql("CREATE INDEX t1_idx ON t1(i1idx)");
