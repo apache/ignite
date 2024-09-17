@@ -160,10 +160,8 @@ public class OdbcConnectionContext extends ClientListenerAbstractConnectionConte
             passwd = reader.readString();
         }
 
-        if (ver.compareTo(VER_2_7_0) >= 0) {
-            if (reader.readByte() != DEFAULT_NESTED_TX_MODE)
-                throw new IgniteCheckedException("Nested transactions are not supported!");
-        }
+        if (ver.compareTo(VER_2_7_0) >= 0 && reader.readByte() != DEFAULT_NESTED_TX_MODE)
+            throw new IgniteCheckedException("Nested transactions are not supported!");
 
         String qryEngine = null;
         if (ver.compareTo(VER_2_13_0) >= 0) {
