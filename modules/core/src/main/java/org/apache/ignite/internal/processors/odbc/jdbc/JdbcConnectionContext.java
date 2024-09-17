@@ -172,10 +172,8 @@ public class JdbcConnectionContext extends ClientListenerAbstractConnectionConte
         if (ver.compareTo(VER_2_7_0) >= 0) {
             String nestedTxModeName = reader.readString();
 
-            if (!F.isEmpty(nestedTxModeName)) {
-                if (!nestedTxModeName.equals(DEFAULT_NESTED_TX_MODE))
-                    throw new IgniteCheckedException("Nested transactions are not supported!");
-            }
+            if (!F.isEmpty(nestedTxModeName) && !nestedTxModeName.equals(DEFAULT_NESTED_TX_MODE))
+                throw new IgniteCheckedException("Nested transactions are not supported!");
         }
 
         Boolean dataPageScanEnabled = null;
