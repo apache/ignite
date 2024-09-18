@@ -17,6 +17,7 @@
 
 package org.apache.ignite;
 
+import java.lang.ref.Cleaner;
 import java.sql.Connection;
 import java.sql.Driver;
 import java.sql.DriverManager;
@@ -142,6 +143,9 @@ public class IgniteJdbcThinDriver implements Driver {
     /** Minor version. */
     private static final int MINOR_VER = IgniteVersionUtils.VER.minor();
 
+    /** Cleaner. */
+    private static final Cleaner cleaner = Cleaner.create();
+
     /** {@inheritDoc} */
     @Override public Connection connect(String url, Properties props) throws SQLException {
         if (!acceptsURL(url))
@@ -186,6 +190,13 @@ public class IgniteJdbcThinDriver implements Driver {
     /** {@inheritDoc} */
     @Override public Logger getParentLogger() throws SQLFeatureNotSupportedException {
         throw new SQLFeatureNotSupportedException("java.util.logging is not used.");
+    }
+
+    /**
+     * @return Claner instance.
+     */
+    public Cleaner getCleaner() {
+        return cleaner;
     }
 
     /**

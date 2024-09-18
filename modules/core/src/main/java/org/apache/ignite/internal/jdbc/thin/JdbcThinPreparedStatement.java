@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.jdbc.thin;
 
+import java.io.IOException;
 import java.io.InputStream;
 import java.io.Reader;
 import java.math.BigDecimal;
@@ -46,6 +47,8 @@ import org.apache.ignite.internal.processors.odbc.jdbc.JdbcMetaParamsRequest;
 import org.apache.ignite.internal.processors.odbc.jdbc.JdbcMetaParamsResult;
 import org.apache.ignite.internal.processors.odbc.jdbc.JdbcQuery;
 import org.apache.ignite.internal.processors.odbc.jdbc.JdbcStatementType;
+
+import static java.sql.Types.BINARY;
 
 /**
  * JDBC prepared statement implementation.
@@ -223,12 +226,7 @@ public class JdbcThinPreparedStatement extends JdbcThinStatement implements Prep
 
     /** {@inheritDoc} */
     @Override public void setBinaryStream(int paramIdx, InputStream x, int length) throws SQLException {
-        ensureNotClosed();
-
-        if (length < 0)
-            throw new SQLException("Invalid argument. Length should be greater than 0.");
-
-        setArgument(paramIdx, new SqlInputStreamWrapper(x, length));
+        setBinaryStream(paramIdx, x, (long)length);
     }
 
     /** {@inheritDoc} */
@@ -318,7 +316,7 @@ public class JdbcThinPreparedStatement extends JdbcThinStatement implements Prep
 
     /** {@inheritDoc} */
     @Override public void setBlob(int paramIdx, Blob x) throws SQLException {
-        setBytes(paramIdx, x.getBytes(1, (int)x.length()));
+        setArgument(paramIdx, x);
     }
 
     /** {@inheritDoc} */
@@ -457,10 +455,24 @@ public class JdbcThinPreparedStatement extends JdbcThinStatement implements Prep
     @Override public void setBinaryStream(int paramIdx, InputStream x, long length) throws SQLException {
         ensureNotClosed();
 
-        if (length > MAX_ARRAY_SIZE)
-            throw new SQLFeatureNotSupportedException("Invalid argument. InputStreams with length > " + length + " are not supported.");
+        if (length < 0)
+            throw new SQLException("Invalid argument. Length should be greater than 0.");
 
-        setBinaryStream(paramIdx, x, Math.toIntExact(length));
+        if (length > MAX_ARRAY_SIZE)
+            throw new SQLFeatureNotSupportedException("Invalid argument. InputStreams with length > " + MAX_ARRAY_SIZE +
+                    " are not supported.");
+
+        if (x == null) {
+            setNull(paramIdx, BINARY);
+        }
+        else {
+            try {
+                setArgument(paramIdx, SqlInputStreamWrapper.withKnownLength(x, (int)length));
+            }
+            catch (IOException e) {
+                throw new SQLException("Failed to set argument.", e);
+            }
+        }
     }
 
     /** {@inheritDoc} */
@@ -481,7 +493,17 @@ public class JdbcThinPreparedStatement extends JdbcThinStatement implements Prep
     @Override public void setBinaryStream(int paramIdx, InputStream x) throws SQLException {
         ensureNotClosed();
 
-        setArgument(paramIdx, new SqlInputStreamWrapper(x));
+        if (x == null) {
+            setNull(paramIdx, BINARY);
+        }
+        else {
+            try {
+                setArgument(paramIdx, SqlInputStreamWrapper.withUnknownLength(x, conn.connectionProperties().getMaxInMemoryLobSize()));
+            }
+            catch (IOException e) {
+                throw new SQLException("Failed to set argument.", e);
+            }
+        }
     }
 
     /** {@inheritDoc} */

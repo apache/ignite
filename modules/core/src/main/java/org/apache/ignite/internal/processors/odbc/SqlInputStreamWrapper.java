@@ -22,10 +22,12 @@ import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.lang.ref.Cleaner;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.sql.SQLException;
 import java.sql.SQLFeatureNotSupportedException;
+import org.apache.ignite.IgniteJdbcThinDriver;
 
 /**
  * InputStream wrapper for limited streams.
@@ -34,17 +36,17 @@ public class SqlInputStreamWrapper implements AutoCloseable {
     /** */
     private InputStream inputStream;
 
-    /** */
-    private final byte[] rawData;
+    /** Memory buffer for .*/
+    private byte[] rawData;
+
+    /** Temporary file holder. */
+    private TempFileHolder tempFileHolder;
 
     /** */
-    private Path tempFile;
+    private Cleaner.Cleanable tempFileCleaner;
 
     /** */
-    private final Integer len;
-
-    /** */
-    private static final int MAX_MEMORY_BUFFER_BYTES = 51200;
+    private final int len;
 
     /** */
     private static final String TEMP_FILE_PREFIX = "ignite-jdbc-stream";
@@ -53,123 +55,193 @@ public class SqlInputStreamWrapper implements AutoCloseable {
     private static final int MAX_ARRAY_SIZE = Integer.MAX_VALUE - 8;
 
     /**
+     * Constructs wrapper for stream with known length.
+     *
      * @param inputStream Input stream.
      * @param len Length of data in the input stream.
+     * @return Input stream wrapper.
      */
-    public SqlInputStreamWrapper(InputStream inputStream, Integer len) {
-        this.inputStream = inputStream;
-        this.len = len;
+    public static SqlInputStreamWrapper withKnownLength(InputStream inputStream, int len) throws SQLException, IOException {
+        return new SqlInputStreamWrapper(inputStream, len, null);
+    }
 
-        rawData = null;
-        tempFile = null;
+    /**
+     * Constructs wrapper for stream if length is unknown.
+     * <p>
+     * It would try to determine the data length reading the whole stream syncroniously. If the stream length is
+     * less than {@code maxMemoryBufferBytes} data will be stored in heap memory. Otherwise, data will be written
+     * to temporary file.
+     *
+     * @param inputStream Input stream.
+     * @param maxMemoryBufferBytes Maximum memory buffer size in bytes.
+     * @return Input stream wrapper.
+     */
+    public static SqlInputStreamWrapper withUnknownLength(InputStream inputStream, int maxMemoryBufferBytes)
+            throws SQLException, IOException {
+        return new SqlInputStreamWrapper(inputStream, null, maxMemoryBufferBytes);
     }
 
     /**
      * @param inputStream Input stream.
+     * @param len Length of data in the input stream. May be null if unknown.
+     * @param maxMemoryBufferBytes Maximum memory buffer size in bytes. Is null if len is not null.
      */
-    public SqlInputStreamWrapper(InputStream inputStream) throws SQLException {
-        try {
-            ByteArrayOutputStream memoryOutputStream = new ByteArrayOutputStream();
-            final int memoryLength = copyStream(inputStream, memoryOutputStream, MAX_MEMORY_BUFFER_BYTES);
-            byte[] rawData = memoryOutputStream.toByteArray();
-
-            if (memoryLength == -1) {
-                final int diskLength;
-
-                tempFile = Files.createTempFile(TEMP_FILE_PREFIX, ".tmp");
-
-                try (OutputStream diskOutputStream = Files.newOutputStream(tempFile)) {
-                    diskOutputStream.write(rawData);
-
-                    diskLength = copyStream(inputStream, diskOutputStream, MAX_ARRAY_SIZE - rawData.length);
-
-                    if (diskLength == -1)
-                        throw new SQLFeatureNotSupportedException("Invalid argument. InputStreams with length > " +
-                                MAX_ARRAY_SIZE + " are not supported.");
-                }
-                catch (RuntimeException | Error | SQLException e) {
-                    try {
-                        tempFile.toFile().delete();
-                    }
-                    catch (Throwable ignore) {
-                        // No-op
-                    }
-
-                    throw e;
-                }
-
-                this.rawData = null;
-
-                this.inputStream = null;
-
-                len = rawData.length + diskLength;
-            }
-            else {
-                this.rawData = rawData;
-
-                this.inputStream = null;
-
-                len = rawData.length;
-            }
+    protected SqlInputStreamWrapper(InputStream inputStream, Integer len, Integer maxMemoryBufferBytes)
+            throws IOException, SQLFeatureNotSupportedException {
+        if (len != null) {
+            this.inputStream = inputStream;
+            this.len = len;
+            return;
         }
-        catch (IOException e) {
-            throw new SQLException("An I/O error occurred while sending to the backend.", e);
+
+        ByteArrayOutputStream memoryOutputStream = new ByteArrayOutputStream();
+        final int memoryLength = copyStream(inputStream, memoryOutputStream, maxMemoryBufferBytes + 1);
+        byte[] rawData = memoryOutputStream.toByteArray();
+
+        if (memoryLength == -1) {
+            final int diskLength;
+
+            Path tempFile = Files.createTempFile(TEMP_FILE_PREFIX, ".tmp");
+
+            tempFileHolder = new TempFileHolder(tempFile);
+
+            tempFileCleaner = ((IgniteJdbcThinDriver)IgniteJdbcThinDriver.register())
+                    .getCleaner()
+                    .register(this, tempFileHolder);
+
+            try (OutputStream diskOutputStream = Files.newOutputStream(tempFile)) {
+                diskOutputStream.write(rawData);
+
+                diskLength = copyStream(inputStream, diskOutputStream, MAX_ARRAY_SIZE - rawData.length);
+
+                if (diskLength == -1)
+                    throw new SQLFeatureNotSupportedException("Invalid argument. InputStreams with length greater than " +
+                            MAX_ARRAY_SIZE + " are not supported.");
+            }
+            catch (RuntimeException | Error | SQLException e) {
+                tempFileCleaner.clean();
+
+                throw e;
+            }
+
+            this.len = rawData.length + diskLength;
+        }
+        else {
+            this.rawData = rawData;
+            this.len = rawData.length;
         }
     }
 
-    /** */
+    /**
+     * Returns input stream for the enclosed data.
+     *
+     * @return Input stream.
+     */
     public InputStream getStream() throws IOException {
-        if (inputStream != null) {
+        if (inputStream != null)
             return inputStream;
-        }
-        else if (tempFile != null) {
-            inputStream = Files.newInputStream(tempFile);
-            return inputStream;
-        }
-        else {
+
+        if (tempFileHolder != null)
+            inputStream = tempFileHolder.getStream();
+        else
             inputStream = new ByteArrayInputStream(rawData, 0, len);
-        }
 
         return inputStream;
     }
 
-    /** */
-    public Integer getLength() {
+    /**
+     * @return Length of data in the input stream.
+     */
+    public int getLength() {
         return len;
     }
 
     /** {@inheritDoc} */
     @Override public void close() throws Exception {
-        if (tempFile != null) {
-            tempFile.toFile().delete();
-            tempFile = null;
-
-            if (inputStream != null) {
-                inputStream.close();
-                inputStream = null;
-            }
-        }
+        if (tempFileCleaner != null)
+            tempFileCleaner.clean();
     }
 
-    /** */
+    /**
+     * Copy data from the input stream to the output stream.
+     * <p>
+     * Stops and retuen -1 if count of bytes copied exceeds the {@code limit}.
+     *
+     * @param inputStream input stream
+     * @param outputStream output stream
+     * @param limit Maximum bytes to copy.
+     * @return Count of bytes copied. -1 if limit exceeds.
+     */
     private static int copyStream(InputStream inputStream, OutputStream outputStream, int limit) throws IOException {
         int totalLength = 0;
 
         byte[] buf = new byte[8192];
 
-        int readLength = inputStream.read(buf);
+        int readLength = inputStream.read(buf, 0, Math.min(buf.length, limit));
 
         while (readLength > 0) {
             totalLength += readLength;
 
             outputStream.write(buf, 0, readLength);
 
-            if (totalLength >= limit) {
+            if (totalLength > limit)
                 return -1;
-            }
 
             readLength = inputStream.read(buf);
         }
         return totalLength;
+    }
+
+    /**
+     * Holder for the temporary file.
+     * <p>
+     * Used to remove the temp file once the stream wrapper object has become phantom reachable.
+     * It may be if the large stream was passed as argumant to statement and this sattement
+     * was abandoned without being closed.
+     */
+    private static class TempFileHolder implements Runnable {
+        /** Full path to temp file. */
+        private final Path tempFile;
+
+        /** Input stream opened for this temp file if any. */
+        private InputStream inputStream;
+
+        /**
+         * @param tempFile Full path to temp file.
+         */
+        TempFileHolder(Path tempFile) {
+            this.tempFile = tempFile;
+        }
+
+        /**
+         * @return Input stream for reading from temp file.
+         */
+        InputStream getStream() throws IOException {
+            if (inputStream == null)
+                inputStream = Files.newInputStream(tempFile);
+
+            return inputStream;
+        }
+
+        /** The cleaning action to be called by the {@link java.lang.ref.Cleaner}. */
+        @Override public void run() {
+            clean();
+        }
+
+        /** Cleans the temp file and input stream if it was created. */
+        private void clean() {
+            try {
+                tempFile.toFile().delete();
+
+                if (inputStream != null) {
+                    inputStream.close();
+
+                    inputStream = null;
+                }
+            }
+            catch (IOException ignore) {
+                // No-op
+            }
+        }
     }
 }

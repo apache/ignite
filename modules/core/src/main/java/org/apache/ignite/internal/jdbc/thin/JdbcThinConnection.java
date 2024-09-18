@@ -928,6 +928,13 @@ public class JdbcThinConnection implements Connection {
     }
 
     /**
+     * @return Connection properties.
+     */
+    ConnectionProperties connectionProperties() {
+        return connProps;
+    }
+
+    /**
      * Send request for execution via corresponding singleIo from {@link #ios}.
      *
      * @param req Request.

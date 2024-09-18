@@ -46,6 +46,9 @@ public class ConnectionPropertiesImpl implements ConnectionProperties, Serializa
     /** Default socket buffer size. */
     private static final int DFLT_SOCK_BUFFER_SIZE = 64 * 1024;
 
+    /** Default max in-memory LOB size. */
+    private static final int DFLT_MAX_IN_MEMORY_LOB_SIZE = 10 * 1024 * 1024;
+
     /** Property: schema. */
     private static final String PROP_SCHEMA = "schema";
 
@@ -247,6 +250,11 @@ public class ConnectionPropertiesImpl implements ConnectionProperties, Serializa
     private final StringProperty qryEngine = new StringProperty("queryEngine",
         "Use specified SQL query engine for a connection.", null, null, false, null);
 
+    /** Socket send buffer size property. */
+    private IntegerProperty maxInMemoryLobSize = new IntegerProperty(
+            "maxInMemoryLobSize", "Maximum in-memory LOB size",
+            DFLT_MAX_IN_MEMORY_LOB_SIZE, false, 0, Integer.MAX_VALUE - 8);
+
     /** Properties array. */
     private final ConnectionProperty[] propsArr = {
         distributedJoins, enforceJoinOrder, collocated, replicatedOnly, autoCloseServerCursor,
@@ -266,7 +274,8 @@ public class ConnectionPropertiesImpl implements ConnectionProperties, Serializa
         connTimeout,
         disabledFeatures,
         keepBinary,
-        qryEngine
+        qryEngine,
+        maxInMemoryLobSize
     };
 
     /** {@inheritDoc} */
@@ -673,6 +682,16 @@ public class ConnectionPropertiesImpl implements ConnectionProperties, Serializa
     /** {@inheritDoc} */
     @Override public void setQueryEngine(String qryEngine) {
         this.qryEngine.setValue(qryEngine);
+    }
+
+    /** {@inheritDoc} */
+    @Override public int getMaxInMemoryLobSize() {
+        return maxInMemoryLobSize.value();
+    }
+
+    /** {@inheritDoc} */
+    @Override public void setMaxInMemoryLobSize(int maxInMemoryLobSize) throws SQLException {
+        this.maxInMemoryLobSize.setValue(maxInMemoryLobSize);
     }
 
     /**

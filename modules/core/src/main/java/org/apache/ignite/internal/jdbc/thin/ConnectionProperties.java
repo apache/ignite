@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.jdbc.thin;
 
+import java.io.InputStream;
 import java.sql.SQLException;
 import org.apache.ignite.internal.processors.odbc.jdbc.JdbcThinFeature;
 import org.apache.ignite.internal.util.HostAndPortRange;
@@ -560,4 +561,23 @@ public interface ConnectionProperties {
      * @param qryEngine SQL Query engine name.
      */
     public void setQueryEngine(String qryEngine);
+
+    /**
+     * @return Maximum size of large objects to be materialized in-memory on the client.
+     */
+    public int getMaxInMemoryLobSize();
+
+    /**
+     * Set maximum size of large objects to be materialized in-memory on the client.
+     * <p>
+     * It's applicable for data passed via the {@code OutputStream} obtained from the {@link java.sql.Blob#setBinaryStream}
+     * method or via the {@code InputStream} passed to {@link java.sql.PreparedStatement#setBinaryStream(int, InputStream)}
+     * with unknown length.
+     * <p>
+     * If data exceeds the limit, it will be written to the temporary file on the client before sending to server node.
+     * Temporary file will be cleaned up after query is executed.
+     *
+     * @param maxInMemoryLobSize Maximum size in bytes.
+     */
+    public void setMaxInMemoryLobSize(int maxInMemoryLobSize) throws SQLException;
 }

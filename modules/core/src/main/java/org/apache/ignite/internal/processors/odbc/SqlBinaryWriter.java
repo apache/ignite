@@ -19,6 +19,8 @@ package org.apache.ignite.internal.processors.odbc;
 
 import java.io.IOException;
 import java.io.InputStream;
+import java.sql.Blob;
+import java.sql.SQLException;
 import org.apache.ignite.internal.binary.BinaryContext;
 import org.apache.ignite.internal.binary.BinaryWriterExImpl;
 import org.apache.ignite.internal.binary.BinaryWriterHandles;
@@ -28,24 +30,32 @@ import org.apache.ignite.internal.binary.streams.BinaryOutputStream;
 
 /**
  * Binary writer for SQL.
+ * <p>
+ * Provides ability to write byte arrays from InputStreams and Blobs.
  */
 public class SqlBinaryWriter extends BinaryWriterExImpl {
     /** Default buffer size. */
     public static final int DEFAULT_BUFFER_SIZE = 8192;
 
-    /** */
+    /**
+     * @param ctx Context.
+     * @param out Output stream.
+     * @param handles Handles.
+     */
     public SqlBinaryWriter(BinaryContext ctx, BinaryOutputStream out, BinaryWriterSchemaHolder schema, BinaryWriterHandles handles) {
         super(ctx, out, schema, handles);
     }
 
     /**
-     * Write byte array from the inputStream.
+     * Write byte array from the InputStream enclosed in the stream wrapper.
+     *
      * @param inputStreamWrapper inputStreamWrapper
      */
     public void writeInputStreamAsByteArray(SqlInputStreamWrapper inputStreamWrapper) throws IOException {
         BinaryOutputStream out = out();
+
         InputStream in = inputStreamWrapper.getStream();
-        int wrapperLength = inputStreamWrapper.getLength();
+        int streamLength = inputStreamWrapper.getLength();
 
         if (in == null) {
             out.writeByte(GridBinaryMarshaller.NULL);
@@ -59,16 +69,25 @@ public class SqlBinaryWriter extends BinaryWriterExImpl {
 
         out.unsafeEnsure(1 + 4);
         out.unsafeWriteByte(GridBinaryMarshaller.BYTE_ARR);
-        out.unsafeWriteInt(wrapperLength);
+        out.unsafeWriteInt(streamLength);
 
-        while (-1 != (readLength = in.read(buf)) && writtenLength < wrapperLength) {
+        while (-1 != (readLength = in.read(buf)) && writtenLength < streamLength) {
             out.writeByteArray(buf, 0, readLength);
 
             writtenLength += readLength;
         }
 
         if (inputStreamWrapper.getLength() != writtenLength)
-            throw new IOException("Input stream length mismatch. [wrapperLength= " + wrapperLength + ", " +
+            throw new IOException("Input stream length mismatch. [streamLength= " + streamLength + ", " +
                     "writtenLength= " + writtenLength + "]");
+    }
+
+    /**
+     * Write byte array from the Blob instance.
+     *
+     * @param blob Blob.
+     */
+    public void writeBlobAsByteArray(Blob blob) throws SQLException, IOException {
+        writeInputStreamAsByteArray(SqlInputStreamWrapper.withKnownLength(blob.getBinaryStream(1, blob.length()), (int)blob.length()));
     }
 }

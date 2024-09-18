@@ -392,7 +392,7 @@ public class JdbcThinStatement implements Statement {
 
     /** {@inheritDoc} */
     @Override public void close() throws SQLException {
-        if (isClosed())
+        if (closed)
             return;
 
         try {
