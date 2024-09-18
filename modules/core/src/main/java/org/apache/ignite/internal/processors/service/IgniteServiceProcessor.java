@@ -679,12 +679,14 @@ public class IgniteServiceProcessor extends GridProcessorAdapter implements Igni
             if (err == null) {
                 try {
                     byte[] srvcBytes = U.marshal(marsh, cfg.getService());
+                    byte[] nodeFilterBytes = U.marshal(marsh, cfg.getNodeFilter());
                     byte[] interceptorsBytes = U.marshal(marsh, cfg.getInterceptors());
 
                     String[] knownSvcMdtNames = cfg instanceof PlatformServiceConfiguration ?
                         ((PlatformServiceConfiguration)cfg).mtdNames() : null;
 
-                    cfgsCp.add(new LazyServiceConfiguration(cfg, srvcBytes, interceptorsBytes).platformMtdNames(knownSvcMdtNames));
+                    cfgsCp.add(new LazyServiceConfiguration(cfg, srvcBytes, nodeFilterBytes, interceptorsBytes)
+                        .platformMtdNames(knownSvcMdtNames));
                 }
                 catch (Exception e) {
                     U.error(log, "Failed to marshal service with configured marshaller " +
@@ -1135,6 +1137,18 @@ public class IgniteServiceProcessor extends GridProcessorAdapter implements Igni
         @NotNull AffinityTopologyVersion topVer,
         @Nullable TreeMap<UUID, Integer> oldTop) throws IgniteCheckedException {
         Object nodeFilter = cfg.getNodeFilter();
+
+        if (cfg instanceof LazyServiceConfiguration) {
+            LazyServiceConfiguration srvcCfg = (LazyServiceConfiguration)cfg;
+
+            if (nodeFilter == null && srvcCfg.nodeFilterBytes() != null) {
+                GridDeployment srvcDep = ctx.deploy().getDeployment(srvcCfg.serviceClassName());
+
+                ClassLoader clsLdr = U.resolveClassLoader(srvcDep != null ? srvcDep.classLoader() : null, ctx.config());
+
+                nodeFilter = U.unmarshal(marsh, srvcCfg.nodeFilterBytes(), clsLdr);
+            }
+        }
 
         if (nodeFilter != null)
             ctx.resource().injectGeneric(nodeFilter);

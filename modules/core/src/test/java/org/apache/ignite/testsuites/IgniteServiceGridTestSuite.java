@@ -40,6 +40,7 @@ import org.apache.ignite.internal.processors.service.GridServiceReassignmentSelf
 import org.apache.ignite.internal.processors.service.GridServiceSerializationSelfTest;
 import org.apache.ignite.internal.processors.service.IgniteServiceCallContextTest;
 import org.apache.ignite.internal.processors.service.IgniteServiceCallInterceptorTest;
+import org.apache.ignite.internal.processors.service.IgniteServiceDeployUnknownClassTest;
 import org.apache.ignite.internal.processors.service.IgniteServiceDeployment2ClassLoadersDefaultMarshallerTest;
 import org.apache.ignite.internal.processors.service.IgniteServiceDeployment2ClassLoadersJdkMarshallerTest;
 import org.apache.ignite.internal.processors.service.IgniteServiceDeployment2ClassLoadersOptimizedMarshallerTest;
@@ -124,7 +125,8 @@ import org.junit.runners.Suite;
     GridServiceClusterReadOnlyModeTest.class,
     IgniteServiceCallContextTest.class,
     GridServiceMetricsTest.class,
-    IgniteServiceCallInterceptorTest.class
+    IgniteServiceCallInterceptorTest.class,
+    IgniteServiceDeployUnknownClassTest.class
 })
 public class IgniteServiceGridTestSuite {
     /** */
