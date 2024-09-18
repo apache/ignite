@@ -3,7 +3,7 @@ The `ignitetest` framework provides basic functionality and services
 to write integration tests for Apache Ignite. This framework bases on 
 the `ducktape` test framework, for information about it check the links:
 - https://github.com/confluentinc/ducktape - source code of the `ducktape`.
-- http://ducktape-docs.readthedocs.io - documentation to the `ducktape`.
+- https://ducktape.readthedocs.io/en/latest/index.html - documentation to the `ducktape`.
 
 Structure of the `tests` directory is:
 - `./ignitetest/services` contains basic services functionality.
@@ -77,11 +77,11 @@ You may set versions (products) using `@ignite_versions` decorator at code
 ```
 or passing versions set via globals during the execution
 ```
---globals-json, eg: {"ignite_versions":["2.8.1", "dev"]}
+--global-json, eg: {"ignite_versions":["2.8.1", "dev"]}
 ```
 You may also specify product prefix by `project` param at globals, for example:
 ```
---globals-json, eg: {"project": "fork" ,"ignite_versions": ["ignite-2.8.1", "2.8.1", "dev"]}
+--global-json, eg: {"project": "fork" ,"ignite_versions": ["ignite-2.8.1", "2.8.1", "dev"]}
 ```
 will execute tests on `ignite-2.8.1, fork-2.8.1, fork-dev`
 
@@ -89,12 +89,75 @@ will execute tests on `ignite-2.8.1, fork-2.8.1, fork-dev`
 TBD
 
 # Special runs
+## Run with FlightRecorder (JFR)
+To run ignite with flight recorder you should enable `jfr_enabled` through globals, for example:
+```
+--global-json, eg: {"jfr_enabled":true}
+```
+## Run with safepoints logging
+Safepoint logging is enabled by default, to disable it, you need to pass `false` for `safepoint_log_enabled` for example:
+```
+--global-json, eg: {"safepoint_log_enabled":false}
+```
 ## Run with enabled security
 ### Run with SSL enabled
-TBD
+To enable ssl it is only required to pass `enabled` for `ssl` in globals:
+```
+--global-json, eg: {"ssl":{"enabled":true}}
+```
+
+You can configure ignite ssl connection by passing configs from this structure to `global-json` :
+```
+    {"ssl": {
+        "enabled": true,
+        "params": {
+          "server": {
+            "key_store_jks": "server.jks",
+            "key_store_password": "123456",
+            "trust_store_jks": "truststore.jks",
+            "trust_store_password": "123456"
+          },
+          "client": {
+            "key_store_jks": "client.jks",
+            "key_store_password": "123456",
+            "trust_store_jks": "truststore.jks",
+            "trust_store_password": "123456"
+          },
+          "admin": {
+            "key_store_jks": "admin.jks",
+            "key_store_password": "123456",
+            "trust_store_jks": "truststore.jks",
+            "trust_store_password": "123456"
+          }
+        }
+      }
+    }
+```
+There are three possible interactions with a cluster in a ducktape, each of them has its own alias,
+which corresponds to keystore:
+Ignite(clientMode = False) - server
+Ignite(clientMode = True) - client
+ControlUtility - admin
+
+If we enable SSL in globals, these SSL params will be injected in corresponding
+configuration
+You can also override keystore corresponding to alias throw globals
+
+Default keystores for these services are generated automatically on creating environment
+
+If you specify ssl_params in test, you override globals
+For more information about ssl in ignite you can check this link: [SSL in ignite](https://ignite.apache.org/docs/latest/security/ssl-tls)
 
 ### Run with build-in authentication enabled
-TBD
+Via this option you could overwrite default login and password options in tests with authentication.
+```
+    {"authentication":{
+        "enabled": true,
+        "username": "username",
+        "password": "password"
+      }
+    }
+```
 
 ## Run with metrics export enabled
 
