@@ -136,7 +136,7 @@ public class SnapshotCheckProcess {
         if (ctx == null)
             return new GridFinishedFuture<>();
 
-        contexts.remove(contextId(ctx.req));
+        contexts.remove(ctx.req.snapshotName());
 
         if (log.isInfoEnabled())
             log.info("Finished snapshot validation [req=" + ctx.req + ']');
@@ -150,7 +150,7 @@ public class SnapshotCheckProcess {
 
         SnapshotChecker checker = kctx.cache().context().snapshotMgr().checker();
 
-        if (ctx.req.incrementalIdx() > 0) {
+        if (ctx.req.incrementalIndex() > 0) {
             IdleVerifyResultV2 chkRes = checker.reduceIncrementalResults(
                 mapResults(results, ctx.req.nodes(), SnapshotCheckResponse::incrementalResult),
                 mapErrors(errors)
@@ -197,7 +197,7 @@ public class SnapshotCheckProcess {
         if (!req.nodes().contains(kctx.localNodeId()))
             return new GridFinishedFuture<>();
 
-        SnapshotCheckContext ctx = context(contextId(req), req.requestId());
+        SnapshotCheckContext ctx = context(req.snapshotName(), req.requestId());
 
         assert ctx != null;
 
@@ -212,10 +212,10 @@ public class SnapshotCheckProcess {
         if (!phaseFut.isDone()) {
             CompletableFuture<?> workingFut;
 
-            if (req.incrementalIdx() > 0) {
+            if (req.incrementalIndex() > 0) {
                 assert !req.allRestoreHandlers() : "Snapshot handlers aren't supported for incremental snapshot.";
 
-                workingFut = snpMgr.checker().checkIncrementalSnapshot(req.snapshotName(), req.snapshotPath(), req.incrementalIdx());
+                workingFut = snpMgr.checker().checkIncrementalSnapshot(req.snapshotName(), req.snapshotPath(), req.incrementalIndex());
             }
             else {
                 workingFut = req.allRestoreHandlers()
@@ -228,7 +228,7 @@ public class SnapshotCheckProcess {
                 if (err != null)
                     phaseFut.onDone(err);
                 else {
-                    if (req.incrementalIdx() > 0)
+                    if (req.incrementalIndex() > 0)
                         phaseFut.onDone(new SnapshotCheckResponse((SnapshotChecker.IncrementalSnapshotResult)res));
                     else
                         phaseFut.onDone(new SnapshotCheckResponse((Map<?, ?>)res));
@@ -258,14 +258,14 @@ public class SnapshotCheckProcess {
     }
 
     /**
-     * @param ctxId Context id. If {@code null}, ignored.
+     * @param snpName Snapshot name. If {@code null}, ignored.
      * @param reqId If {@code ctxId} is {@code null}, is used to find the operation context.
      * @return Current snapshot checking context by {@code ctxId} or {@code reqId}.
      */
-    private @Nullable SnapshotCheckContext context(@Nullable String ctxId, UUID reqId) {
-        return ctxId == null
+    private @Nullable SnapshotCheckContext context(@Nullable String snpName, UUID reqId) {
+        return snpName == null
             ? contexts.values().stream().filter(ctx0 -> ctx0.req.requestId().equals(reqId)).findFirst().orElse(null)
-            : contexts.get(ctxId);
+            : contexts.get(snpName);
     }
 
     /** Phase 1 beginning: prepare, collect and check local metas. */
@@ -280,7 +280,7 @@ public class SnapshotCheckProcess {
             if (nodeStopping)
                 return new GridFinishedFuture<>(new NodeStoppingException("The node is stopping: " + kctx.localNodeId()));
 
-            ctx = contexts.computeIfAbsent(contextId(req), snpName -> new SnapshotCheckContext(req));
+            ctx = contexts.computeIfAbsent(req.snapshotName(), snpName -> new SnapshotCheckContext(req));
         }
 
         if (!ctx.req.requestId().equals(req.requestId())) {
@@ -302,7 +302,7 @@ public class SnapshotCheckProcess {
         if (!phaseFut.isDone()) {
             snpMgr.checker().checkLocalMetas(
                 snpMgr.snapshotLocalDir(req.snapshotName(), req.snapshotPath()),
-                req.incrementalIdx(),
+                req.incrementalIndex(),
                 grpIds,
                 kctx.cluster().get().localNode().consistentId()
             ).whenComplete((locMetas, err) -> {
@@ -370,7 +370,7 @@ public class SnapshotCheckProcess {
         }
         catch (Throwable th) {
             if (ctx != null) {
-                contexts.remove(contextId(ctx.req));
+                contexts.remove(ctx.req.snapshotName());
 
                 if (log.isInfoEnabled())
                     log.info("Finished snapshot validation [req=" + ctx.req + ']');
@@ -379,11 +379,6 @@ public class SnapshotCheckProcess {
             if (clusterOpFut != null)
                 clusterOpFut.onDone(th);
         }
-    }
-
-    /** @return Unique operation context id depending on request type and snapshot name. */
-    private static String contextId(SnapshotCheckProcessRequest req) {
-        return req.incrementalIdx() > 0 ? req.snapshotName() + "_inc_" + req.incrementalIdx() : req.snapshotName();
     }
 
     /**

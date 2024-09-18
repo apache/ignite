@@ -381,7 +381,7 @@ public class IdleVerifyUtility {
 
         /**
          * @param partHash Partition hash.
-         * @param partHash Version hash.
+         * @param partVerHash Version hash.
          */
         public VerifyPartitionContext(int partHash, int partVerHash) {
             this.partHash = partHash;

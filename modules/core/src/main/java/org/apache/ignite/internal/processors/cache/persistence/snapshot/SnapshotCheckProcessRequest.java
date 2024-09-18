@@ -82,14 +82,13 @@ public class SnapshotCheckProcessRequest extends AbstractSnapshotOperationReques
         return allRestoreHandlers;
     }
 
-    /** @return Incremental snapshot index. Incremental snapshot index. If not positive, snapshot is not considered as incremental. */
-    public int incrementalIdx() {
+    /** @return Incremental snapshot index. If not positive, snapshot is not considered as incremental. */
+    public int incrementalIndex() {
         return incIdx;
     }
 
     /** {@inheritDoc} */
     @Override public String toString() {
         return S.toString(SnapshotCheckProcessRequest.class, this, super.toString());
-
     }
 }

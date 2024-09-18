@@ -641,10 +641,10 @@ public class IgniteClusterSnapshotCheckTest extends AbstractSnapshotSelfTest {
         }
     }
 
-    /** Tests that concurrent full checks of normal and incremental the same snapshot are allowed . */
+    /** Tests that concurrent full checks of normal and incremental the same snapshot are declined . */
     @Test
-    public void testConcurrentTheSameSnpFullAndIncrementalChecksAllowed() throws Exception {
-        assertFalse(encryption);
+    public void testConcurrentTheSameSnpFullAndIncrementalChecksDeclined() throws Exception {
+        assumeFalse(encryption);
 
         // 0 - coordinator; 0,1 - baselines; 2 - non-baseline; 3,4 - clients.
         prepareGridsAndSnapshot(3, 2, 2, false);
@@ -661,7 +661,7 @@ public class IgniteClusterSnapshotCheckTest extends AbstractSnapshotSelfTest {
                     () -> new IgniteFutureImpl<>(snp(grid(j0)).checkSnapshot(SNAPSHOT_NAME, null, 1)),
                     CHECK_SNAPSHOT_METAS,
                     CHECK_SNAPSHOT_PARTS,
-                    false,
+                    true,
                     false,
                     null,
                     null
@@ -699,9 +699,9 @@ public class IgniteClusterSnapshotCheckTest extends AbstractSnapshotSelfTest {
         }
     }
 
-    /** Tests that concurrent checks of different incremental snapshots are allowed. */
+    /** Tests that concurrent checks of different incremental snapshots are declined. */
     @Test
-    public void testConcurrentDifferentIncrementalFullChecksAllowed() throws Exception {
+    public void testConcurrentDifferentIncrementalFullChecksDeclined() throws Exception {
         assumeFalse(encryption);
 
         // 0 - coordinator; 0,1 - baselines; 2 - non-baseline; 3,4 - clients.
@@ -720,7 +720,7 @@ public class IgniteClusterSnapshotCheckTest extends AbstractSnapshotSelfTest {
                     () -> new IgniteFutureImpl<>(snp(grid(j0)).checkSnapshot(SNAPSHOT_NAME, null, 2)),
                     CHECK_SNAPSHOT_METAS,
                     CHECK_SNAPSHOT_PARTS,
-                    false,
+                    true,
                     false,
                     null,
                     null
@@ -729,9 +729,9 @@ public class IgniteClusterSnapshotCheckTest extends AbstractSnapshotSelfTest {
         }
     }
 
-    /** Tests that concurrent full restoration of a normal snapshot and check of an incremental are allowed. */
+    /** Tests that concurrent full restoration of a normal snapshot and check of an incremental are declined. */
     @Test
-    public void testConcurrentTheSameSnpIncrementalCheckAndFullRestoreAllowed() throws Exception {
+    public void testConcurrentTheSameSnpIncrementalCheckAndFullRestoreDeclined() throws Exception {
         assumeFalse(encryption);
 
         // 0 - coordinator; 0,1 - baselines; 2 - non-baseline; 3,4 - clients.
@@ -754,8 +754,8 @@ public class IgniteClusterSnapshotCheckTest extends AbstractSnapshotSelfTest {
                     () -> new IgniteFutureImpl<>(snp(grid(j0)).checkSnapshot(SNAPSHOT_NAME, null, 1)),
                     CHECK_SNAPSHOT_METAS,
                     CHECK_SNAPSHOT_PARTS,
-                    false,
                     true,
+                    false,
                     null,
                     () -> grid(0).destroyCache(DEFAULT_CACHE_NAME)
                 );
@@ -929,7 +929,7 @@ public class IgniteClusterSnapshotCheckTest extends AbstractSnapshotSelfTest {
 
     /** Tests that snapshot full check doesn't affect a snapshot creation. */
     @Test
-    public void testConcurrentSnpCheckAndCreateAllowed() throws Exception {
+    public void testConcurrentDifferentSnpCheckAndCreateAllowed() throws Exception {
         prepareGridsAndSnapshot(3, 2, 2, false);
 
         for (int i = 0; i < G.allGrids().size(); ++i) {

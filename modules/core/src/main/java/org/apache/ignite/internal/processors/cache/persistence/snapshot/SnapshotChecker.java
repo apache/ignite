@@ -214,8 +214,7 @@ public class SnapshotChecker {
     }
 
     /** */
-    public SnapshotMetadata readSnapshotMetadata(File smf)
-        throws IgniteCheckedException, IOException {
+    public SnapshotMetadata readSnapshotMetadata(File smf) throws IgniteCheckedException, IOException {
         SnapshotMetadata meta = readFromFile(smf);
 
         String smfName = smf.getName().substring(0, smf.getName().length() - SNAPSHOT_METAFILE_EXT.length());
@@ -625,45 +624,50 @@ public class SnapshotChecker {
     /** */
     public IdleVerifyResultV2 reduceIncrementalResults(
         Map<ClusterNode, IncrementalSnapshotResult> results,
-        Map<ClusterNode, Exception> errors
+        Map<ClusterNode, Exception> operationErrors
     ) {
-        if (!errors.isEmpty())
-            return new IdleVerifyResultV2(errors);
+        if (!operationErrors.isEmpty())
+            return new IdleVerifyResultV2(operationErrors);
 
         Map<Object, Map<Object, TransactionsHashRecord>> nodeTxHashMap = new HashMap<>();
         List<List<TransactionsHashRecord>> txHashConflicts = new ArrayList<>();
         Map<PartitionKeyV2, List<PartitionHashRecordV2>> partHashes = new HashMap<>();
         Map<ClusterNode, Collection<GridCacheVersion>> partiallyCommittedTxs = new HashMap<>();
+        Map<ClusterNode, Exception> errors = new HashMap<>();
 
         results.forEach((node, res) -> {
-            if (!F.isEmpty(res.partiallyCommittedTxs()))
-                partiallyCommittedTxs.put(node, res.partiallyCommittedTxs());
+            if (res.exceptions.isEmpty() && errors.isEmpty()) {
+                if (!F.isEmpty(res.partiallyCommittedTxs()))
+                    partiallyCommittedTxs.put(node, res.partiallyCommittedTxs());
 
-            for (Map.Entry<PartitionKeyV2, PartitionHashRecordV2> entry : res.partHashRes().entrySet())
-                partHashes.computeIfAbsent(entry.getKey(), v -> new ArrayList<>()).add(entry.getValue());
+                for (Map.Entry<PartitionKeyV2, PartitionHashRecordV2> entry : res.partHashRes().entrySet())
+                    partHashes.computeIfAbsent(entry.getKey(), v -> new ArrayList<>()).add(entry.getValue());
 
-            if (log.isDebugEnabled())
-                log.debug("Handle VerifyIncrementalSnapshotJob result [node=" + node + ", taskRes=" + res + ']');
+                if (log.isDebugEnabled())
+                    log.debug("Handle VerifyIncrementalSnapshotJob result [node=" + node + ", taskRes=" + res + ']');
 
-            nodeTxHashMap.put(node.consistentId(), res.txHashRes());
+                nodeTxHashMap.put(node.consistentId(), res.txHashRes());
 
-            Iterator<Map.Entry<Object, TransactionsHashRecord>> resIt = res.txHashRes().entrySet().iterator();
+                Iterator<Map.Entry<Object, TransactionsHashRecord>> resIt = res.txHashRes().entrySet().iterator();
 
-            while (resIt.hasNext()) {
-                Map.Entry<Object, TransactionsHashRecord> nodeTxHash = resIt.next();
+                while (resIt.hasNext()) {
+                    Map.Entry<Object, TransactionsHashRecord> nodeTxHash = resIt.next();
 
-                Map<Object, TransactionsHashRecord> prevNodeTxHash = nodeTxHashMap.get(nodeTxHash.getKey());
+                    Map<Object, TransactionsHashRecord> prevNodeTxHash = nodeTxHashMap.get(nodeTxHash.getKey());
 
-                if (prevNodeTxHash != null) {
-                    TransactionsHashRecord hash = nodeTxHash.getValue();
-                    TransactionsHashRecord prevHash = prevNodeTxHash.remove(hash.localConsistentId());
+                    if (prevNodeTxHash != null) {
+                        TransactionsHashRecord hash = nodeTxHash.getValue();
+                        TransactionsHashRecord prevHash = prevNodeTxHash.remove(hash.localConsistentId());
 
-                    if (prevHash == null || prevHash.transactionHash() != hash.transactionHash())
-                        txHashConflicts.add(F.asList(hash, prevHash));
+                        if (prevHash == null || prevHash.transactionHash() != hash.transactionHash())
+                            txHashConflicts.add(F.asList(hash, prevHash));
 
-                    resIt.remove();
+                        resIt.remove();
+                    }
                 }
             }
+            else if (!res.exceptions.isEmpty())
+                errors.put(node, F.first(res.exceptions));
         });
 
         // Add all missed pairs to conflicts.
@@ -671,7 +675,9 @@ public class SnapshotChecker {
             .flatMap(e -> e.values().stream())
             .forEach(e -> txHashConflicts.add(F.asList(e, null)));
 
-        return new IdleVerifyResultV2(partHashes, txHashConflicts, partiallyCommittedTxs);
+        return errors.isEmpty()
+            ? new IdleVerifyResultV2(partHashes, txHashConflicts, partiallyCommittedTxs)
+            : new IdleVerifyResultV2(errors);
     }
 
     /** */
