@@ -88,7 +88,7 @@ public class IgniteServiceDeployUnknownClassTest extends GridCommonAbstractTest 
         // TODO: https://issues.apache.org/jira/browse/IGNITE-23226
         // assertTrue(cli.services().serviceDescriptors().isEmpty());
 
-        // Check node alive
+        // Check node alive.
         srv.createCache(DEFAULT_CACHE_NAME).put(1, 1);
     }
 }
