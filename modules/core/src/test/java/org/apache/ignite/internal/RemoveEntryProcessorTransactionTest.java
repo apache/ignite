@@ -26,9 +26,6 @@ import org.apache.ignite.transactions.TransactionConcurrency;
 import org.apache.ignite.transactions.TransactionIsolation;
 import org.junit.Test;
 
-import static org.apache.ignite.transactions.TransactionConcurrency.OPTIMISTIC;
-import static org.apache.ignite.transactions.TransactionIsolation.READ_COMMITTED;
-
 /** */
 public class RemoveEntryProcessorTransactionTest extends GridCommonAbstractTest {
     /** */
@@ -40,10 +37,10 @@ public class RemoveEntryProcessorTransactionTest extends GridCommonAbstractTest 
         );
 
         for (TransactionConcurrency txConcurrency : TransactionConcurrency.values()) {
-            for (TransactionIsolation val : TransactionIsolation.values()) {
+            for (TransactionIsolation txIsolation : TransactionIsolation.values()) {
                 c.put("key", 1);
 
-                try (Transaction tx = grid(0).transactions().txStart(OPTIMISTIC, READ_COMMITTED)) {
+                try (Transaction tx = grid(0).transactions().txStart(txConcurrency, txIsolation)) {
                     c.invoke("key", new RemoveAndReturnNullEntryProcessor());
 
                     assertNull(c.get("key"));
