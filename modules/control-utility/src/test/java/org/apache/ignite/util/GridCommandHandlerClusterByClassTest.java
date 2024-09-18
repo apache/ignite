@@ -2055,6 +2055,9 @@ public class GridCommandHandlerClusterByClassTest extends GridCommandHandlerClus
 
         createCacheAndPreload(ignite, 100);
 
+        createCacheAndPreload(ignite, "with-node-filter-cache", 10, 32,
+            node -> node.consistentId().toString().endsWith("0"));
+
         injectTestSystemOut();
 
         // Run distribution for all node and all cache
@@ -2067,6 +2070,9 @@ public class GridCommandHandlerClusterByClassTest extends GridCommandHandlerClus
 
         // Result include info by cache "ignite-sys-cache"
         assertContains(log, out, "[next group: id=-2100569601, name=ignite-sys-cache]");
+
+        // Result include info by cache "with-node-filter-cache"
+        assertContains(log, out, "[next group: id=-1695684207, name=with-node-filter-cache]");
 
         // Run distribution for all node and all cache and include additional user attribute
         assertEquals(EXIT_CODE_OK, execute("--cache", "distribution", "null", "--user-attributes", "ZONE,CELL,DC"));
