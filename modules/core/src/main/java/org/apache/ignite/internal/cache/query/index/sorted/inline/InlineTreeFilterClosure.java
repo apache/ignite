@@ -29,7 +29,7 @@ import org.apache.ignite.spi.indexing.IndexingQueryCacheFilter;
 import static org.apache.ignite.internal.pagemem.PageIdUtils.pageId;
 
 /**
- * Reopresents filter that allow query only primary partitions.
+ * Represents filter that allow query only primary partitions.
  */
 public class InlineTreeFilterClosure implements BPlusTree.TreeRowClosure<IndexRow, IndexRow> {
     /** */
