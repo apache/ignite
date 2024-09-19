@@ -31,9 +31,7 @@ import org.apache.ignite.internal.processors.query.calcite.rel.IgniteReceiver;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteRel;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteSender;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteTrimExchange;
-import org.apache.ignite.internal.processors.query.calcite.trait.IgniteDistribution;
 import org.apache.ignite.internal.processors.query.calcite.util.Commons;
-import org.jetbrains.annotations.Nullable;
 
 /**
  *
@@ -46,15 +44,11 @@ public class FragmentSplitter extends IgniteRelShuttle {
     private RelNode cutPoint;
 
     /** */
-    private final @Nullable IgniteDistribution exchangeDistribution;
-
-    /** */
     private FragmentProto curr;
 
     /** */
-    public FragmentSplitter(RelNode cutPoint, @Nullable IgniteDistribution exchangeDistribution) {
+    public FragmentSplitter(RelNode cutPoint) {
         this.cutPoint = cutPoint;
-        this.exchangeDistribution = exchangeDistribution;
     }
 
     /** */
@@ -115,17 +109,8 @@ public class FragmentSplitter extends IgniteRelShuttle {
         long srcFragmentId = IdGenerator.nextId();
         long exchangeId = srcFragmentId;
 
-        traits = exchangeDistribution == null ? traits : traits.replace(exchangeDistribution);
-
         IgniteReceiver receiver = new IgniteReceiver(cluster, traits, rowType, exchangeId, srcFragmentId);
-        IgniteSender snd = new IgniteSender(
-            cluster,
-            traits,
-            input,
-            exchangeId,
-            targetFragmentId,
-            exchangeDistribution == null ? rel.distribution() : exchangeDistribution
-        );
+        IgniteSender snd = new IgniteSender(cluster, traits, input, exchangeId, targetFragmentId, rel.distribution());
 
         curr.remotes.add(receiver);
         stack.push(new FragmentProto(srcFragmentId, snd));
