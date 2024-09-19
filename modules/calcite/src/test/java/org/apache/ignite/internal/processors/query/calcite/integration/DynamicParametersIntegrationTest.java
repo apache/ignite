@@ -26,6 +26,7 @@ import java.time.LocalDate;
 import java.time.Period;
 import java.util.List;
 import java.util.UUID;
+import org.apache.calcite.runtime.CalciteContextException;
 import org.apache.ignite.internal.util.typedef.F;
 import org.junit.Test;
 
@@ -33,6 +34,20 @@ import org.junit.Test;
  *  Dynamic parameters types inference test.
  */
 public class DynamicParametersIntegrationTest extends AbstractBasicIntegrationTest {
+    /** {@inheritDoc} */
+    @Override public void beforeTest() throws Exception {
+        super.beforeTest();
+
+        sql("CREATE TABLE t1 (id INTEGER PRIMARY KEY, val1 INTEGER NOT NULL, val2 INTEGER)");
+    }
+
+    /** {@inheritDoc} */
+    @Override public void afterTest() throws Exception {
+        sql("DROP TABLE IF EXISTS t1");
+
+        super.afterTest();
+    }
+
     /** */
     @Test
     public void testMetadataTypesForDynamicParameters() {
@@ -108,5 +123,75 @@ public class DynamicParametersIntegrationTest extends AbstractBasicIntegrationTe
         assertQuery("SELECT COALESCE(?, ?)").withParams(12, "b").returns("12").check();
         assertQuery("SELECT UPPER(TYPEOF(?))").withParams(1).returns("INTEGER").check();
         assertQuery("SELECT UPPER(TYPEOF(?))").withParams(1d).returns("DOUBLE").check();
+    }
+
+    /** */
+    @Test
+    public void testWrongParametersNumberInSelectList() {
+        assertUnexpectedNumberOfParameters("SELECT 1", 1);
+        assertUnexpectedNumberOfParameters("SELECT ?", 1, 2);
+        assertUnexpectedNumberOfParameters("SELECT COALESCE(?)");
+        assertUnexpectedNumberOfParameters("SELECT * FROM (VALUES(1, 2, ?)) t1");
+    }
+
+    /** */
+    @Test
+    public void testDynamicParametersInExplain() {
+        sql("EXPLAIN PLAN FOR SELECT * FROM t1 WHERE id > ?", 1);
+    }
+
+    /** */
+    @Test
+    public void testWrongParametersNumberInDelete() {
+        assertUnexpectedNumberOfParameters("DELETE FROM t1 WHERE id = 1 AND val1=1", 1);
+        assertUnexpectedNumberOfParameters("DELETE FROM t1 WHERE id = ? AND val1=1", 1, 2);
+        assertUnexpectedNumberOfParameters("DELETE FROM t1 WHERE id = ? AND val1=1");
+    }
+
+    /** */
+    @Test
+    public void testWrongParametersNumberInInsert() {
+        assertUnexpectedNumberOfParameters("INSERT INTO t1 VALUES(1, 2, 3)", 1);
+        assertUnexpectedNumberOfParameters("INSERT INTO t1 VALUES(1, 2, ?)", 1, 2);
+        assertUnexpectedNumberOfParameters("INSERT INTO t1 VALUES(1, 2, ?)");
+    }
+
+    /** */
+    @Test
+    public void testWrongParametersNumberInExplain() {
+        assertUnexpectedNumberOfParameters("EXPLAIN PLAN FOR SELECT * FROM t1 WHERE id > ?");
+        assertUnexpectedNumberOfParameters("EXPLAIN PLAN FOR SELECT * FROM t1 WHERE id > ?", 1, 2);
+    }
+
+    /** */
+    @Test
+    public void testWrongParametersNumberInLimitOffset() {
+        assertUnexpectedNumberOfParameters("SELECT * FROM t1 LIMIT 1", 1);
+        assertUnexpectedNumberOfParameters("SELECT * FROM t1 LIMIT ?", 1, 2);
+        assertUnexpectedNumberOfParameters("SELECT * FROM t1 LIMIT ?");
+
+        assertUnexpectedNumberOfParameters("SELECT * FROM t1 LIMIT 1 OFFSET 1", 1);
+        assertUnexpectedNumberOfParameters("SELECT * FROM t1 LIMIT ? OFFSET ?", 1, 2, 3);
+        assertUnexpectedNumberOfParameters("SELECT * FROM t1 LIMIT ? OFFSET ?", 1);
+        assertUnexpectedNumberOfParameters("SELECT * FROM t1 LIMIT 1 OFFSET ?", 1, 2);
+        assertUnexpectedNumberOfParameters("SELECT * FROM t1 LIMIT 1 OFFSET ?");
+
+        assertUnexpectedNumberOfParameters("SELECT * FROM t1 OFFSET 1", 1);
+        assertUnexpectedNumberOfParameters("SELECT * FROM t1 OFFSET ?", 1, 2);
+        assertUnexpectedNumberOfParameters("SELECT * FROM t1 OFFSET ?");
+    }
+
+    /** */
+    @Test
+    public void testWrongParametersNumberInUpdate() {
+        assertUnexpectedNumberOfParameters("UPDATE t1 SET val1=? WHERE id = 1");
+        assertUnexpectedNumberOfParameters("UPDATE t1 SET val1=? WHERE id = 1", 1, 2);
+        assertUnexpectedNumberOfParameters("UPDATE t1 SET val1=10 WHERE id = ?");
+        assertUnexpectedNumberOfParameters("UPDATE t1 SET val1=10 WHERE id = ?", 1, 2);
+    }
+
+    /** */
+    private void assertUnexpectedNumberOfParameters(String qry, Object... params) {
+        assertThrows(qry, CalciteContextException.class, "Unexpected number of query parameters", params);
     }
 }

@@ -31,6 +31,9 @@ import org.junit.Test;
  * Planner test for force index hint.
  */
 public class ForceIndexHintPlannerTest extends AbstractPlannerTest {
+
+
+
     /** */
     private IgniteSchema schema;
 
@@ -39,6 +42,10 @@ public class ForceIndexHintPlannerTest extends AbstractPlannerTest {
 
     /** */
     private TestTable tbl2;
+
+    private static final String TBL1 = "TBL1";
+
+    private static final String TBL2 = "TBL2";
 
     /** {@inheritDoc} */
     @Override public void setup() {
@@ -68,6 +75,11 @@ public class ForceIndexHintPlannerTest extends AbstractPlannerTest {
         super.afterTest();
 
         ((GridTestLog4jLogger)log).setLevel(Level.INFO);
+    }
+
+
+    private void assertNoCertainIndex(String sql, String tblName, String idxName) throws Exception {
+        assertPlan(sql, schema, nodeOrAnyChild(isIndexScan(tblName, idxName)).negate());
     }
 
     /** */

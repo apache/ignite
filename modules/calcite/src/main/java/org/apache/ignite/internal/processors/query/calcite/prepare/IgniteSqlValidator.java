@@ -45,6 +45,7 @@ import org.apache.calcite.sql.SqlNode;
 import org.apache.calcite.sql.SqlNodeList;
 import org.apache.calcite.sql.SqlNumericLiteral;
 import org.apache.calcite.sql.SqlOperatorTable;
+import org.apache.calcite.sql.SqlOrderBy;
 import org.apache.calcite.sql.SqlSelect;
 import org.apache.calcite.sql.SqlUpdate;
 import org.apache.calcite.sql.SqlUtil;
@@ -101,8 +102,11 @@ public class IgniteSqlValidator extends SqlValidatorImpl {
         HUMAN_READABLE_ALIASES_FOR = Collections.unmodifiableSet(kinds);
     }
 
-    /** Dynamic parameters. */
-    Object[] parameters;
+    /** Passed query arguments. */
+    private Object[] parameters;
+
+    /** Number of query's dynamic parameters. */
+    private int dynamicParamsCnt;
 
     /**
      * Creates a validator.
@@ -523,7 +527,51 @@ public class IgniteSqlValidator extends SqlValidatorImpl {
     }
 
     /** {@inheritDoc} */
+    @Override public SqlNode validate(SqlNode topNode) {
+        extractDynamicParameters(topNode);
+
+        SqlNode res = super.validate(topNode);
+
+        if (dynamicParamsCnt != parameters.length)
+            throw newValidationError(res, IgniteResource.INSTANCE.unexpectedParameter(parameters.length, dynamicParamsCnt));
+
+        return res;
+    }
+
+    /** */
+    private void checkDynamicParametersNumber(SqlDynamicParam dynamicParam) {
+        if (dynamicParam.getIndex() >= dynamicParamsCnt)
+            dynamicParamsCnt = dynamicParam.getIndex() + 1;
+    }
+
+    /** */
+    private void extractDynamicParameters(SqlNode node) {
+        if (node instanceof SqlDynamicParam)
+            checkDynamicParametersNumber((SqlDynamicParam)node);
+        if (node instanceof SqlOrderBy) {
+            SqlOrderBy orderBy = (SqlOrderBy)node;
+
+            if (orderBy.offset instanceof SqlDynamicParam)
+                checkDynamicParametersNumber((SqlDynamicParam)orderBy.offset);
+
+            if (orderBy.fetch instanceof SqlDynamicParam)
+                checkDynamicParametersNumber((SqlDynamicParam)orderBy.fetch);
+        }
+        else if (node instanceof SqlSelect) {
+            SqlSelect select = (SqlSelect)node;
+
+            if (select.getOffset() instanceof SqlDynamicParam)
+                checkDynamicParametersNumber((SqlDynamicParam)select.getOffset());
+
+            if (select.getFetch() instanceof SqlDynamicParam)
+                checkDynamicParametersNumber((SqlDynamicParam)select.getFetch());
+        }
+    }
+
+    /** {@inheritDoc} */
     @Override protected void inferUnknownTypes(RelDataType inferredType, SqlValidatorScope scope, SqlNode node) {
+        extractDynamicParameters(node);
+
         if (node instanceof SqlDynamicParam && inferredType.equals(unknownType)) {
             if (parameters.length > ((SqlDynamicParam)node).getIndex()) {
                 Object param = parameters[((SqlDynamicParam)node).getIndex()];

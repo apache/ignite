@@ -39,25 +39,62 @@ NULL	11.000000
 statement ok
 INSERT INTO test VALUES (11, 'hello'), (12, 'world')
 
+statement ok
+INSERT INTO test VALUES (10, 'ahello'), (13, 'world')
+
+query I
+SELECT COUNT(*) FROM test;
+----
+7
+
+query II
+SELECT COUNT(*), COUNT(s) FROM test;
+----
+7	6
+
+query I
+SELECT AVG(a) FROM test;
+----
+11
+
+query II
+SELECT AVG(a), COUNT(DISTINCT(s)) FROM test;
+----
+11	3
+
+query II
+SELECT AVG(a), COUNT(a) FROM test;
+----
+11	7
+
+query II
+SELECT COUNT(a), COUNT(DISTINCT s) FROM test;
+----
+7	3
+
 # scalar distinct
 query III
 SELECT COUNT(*), COUNT(s), COUNT(DISTINCT s) FROM test;
 ----
-5	4	2
+7	6	3
 
 # grouped distinct
 query IIII
 SELECT a, COUNT(*), COUNT(s), COUNT(DISTINCT s) FROM test GROUP BY a ORDER BY a;
 ----
+10	1	1	1
 11	3	2	1
 12	2	2	1
+13	1	1	1
 
 # now with WHERE clause
 query IIII
 SELECT a, COUNT(*), COUNT(s), COUNT(DISTINCT s) FROM test WHERE s IS NOT NULL GROUP BY a ORDER BY a;
 ----
+10	1	1	1
 11	2	2	1
 12	2	2	1
+13	1	1	1
 
 # string min/max with long strings
 statement ok
@@ -78,5 +115,6 @@ query II
 SELECT MAX(s), MIN(s) FROM test_strings2;
 ----
 aa	A
+
 
 
