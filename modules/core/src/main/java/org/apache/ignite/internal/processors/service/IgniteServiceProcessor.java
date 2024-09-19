@@ -1136,7 +1136,7 @@ public class IgniteServiceProcessor extends GridProcessorAdapter implements Igni
     Map<UUID, Integer> reassign(@NotNull IgniteUuid srvcId, @NotNull ServiceConfiguration cfg,
         @NotNull AffinityTopologyVersion topVer,
         @Nullable TreeMap<UUID, Integer> oldTop) throws IgniteCheckedException {
-        Object nodeFilter = cfg.getNodeFilter();
+        IgnitePredicate<ClusterNode> nodeFilter = cfg.getNodeFilter();
 
         if (cfg instanceof LazyServiceConfiguration) {
             LazyServiceConfiguration srvcCfg = (LazyServiceConfiguration)cfg;
@@ -1147,6 +1147,8 @@ public class IgniteServiceProcessor extends GridProcessorAdapter implements Igni
                 ClassLoader clsLdr = U.resolveClassLoader(srvcDep != null ? srvcDep.classLoader() : null, ctx.config());
 
                 nodeFilter = U.unmarshal(marsh, srvcCfg.nodeFilterBytes(), clsLdr);
+
+                cfg.setNodeFilter(nodeFilter);
             }
         }
 
