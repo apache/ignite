@@ -452,7 +452,7 @@ public class LogicalRelImplementor<Row> implements IgniteRelVisitor<Node<Row>> {
                     tbl.name(),
                     ctx,
                     rel.getTable().getRowType(),
-                    tbl.scan(ctx, ctx.group(rel.sourceId()), ImmutableBitSet.of(idx.collation().getKeys().get(0))),
+                    tbl.scan(ctx, ctx.group(rel.sourceId()), ImmutableBitSet.of(rel.fieldIndex())),
                     rel.notNull() ? r -> ctx.rowHandler().get(0, r) != null : null,
                     null
                 )
