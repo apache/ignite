@@ -39,11 +39,13 @@ public class DynamicParametersIntegrationTest extends AbstractBasicIntegrationTe
         super.beforeTest();
 
         sql("CREATE TABLE t1 (id INTEGER PRIMARY KEY, val1 INTEGER NOT NULL, val2 INTEGER)");
+        sql("CREATE TABLE t2 (id2 INTEGER PRIMARY KEY, val3 INTEGER NOT NULL, val4 INTEGER)");
     }
 
     /** {@inheritDoc} */
     @Override public void afterTest() throws Exception {
         sql("DROP TABLE IF EXISTS t1");
+        sql("DROP TABLE IF EXISTS t2");
 
         super.afterTest();
     }
@@ -165,6 +167,79 @@ public class DynamicParametersIntegrationTest extends AbstractBasicIntegrationTe
 
     /** */
     @Test
+    public void testWrongParametersNumberInSubqueries() {
+        assertUnexpectedNumberOfParameters("SELECT * FROM t1 where val1 in (SELECT val2 from t1 where val2>? and val2!=val1)", 1, 2);
+        assertUnexpectedNumberOfParameters("SELECT * FROM t1 where val1 in (SELECT val2 from t1 where val2>? and val2!=val1)");
+        assertUnexpectedNumberOfParameters("SELECT * FROM t1 where val1 in (SELECT val2 from t1 where val2>? and val2!=val1 " +
+            "LIMIT ? OFFSET 1)", 1, 2, 3);
+        assertUnexpectedNumberOfParameters("SELECT * FROM t1 where val1 in (SELECT val2 from t1 where val2>? and val2!=val1 " +
+            "LIMIT ? OFFSET ?)", 1);
+        assertUnexpectedNumberOfParameters("SELECT * FROM t1 where val1 in (SELECT val2 from t1 where val2>? and val2!=val1 " +
+                "LIMIT ? OFFSET ?) LIMIT ?",
+            1, 2, 3);
+
+        assertUnexpectedNumberOfParameters("SELECT * FROM t1 where val1 in (SELECT val3 from t2 where val3>? and val4!=val1)", 1, 2);
+        assertUnexpectedNumberOfParameters("SELECT * FROM t1 where val1 in (SELECT val3 from t2 where val3>? and val4!=val1)");
+        assertUnexpectedNumberOfParameters("SELECT * FROM t1 where val1 in (SELECT val3 from t2 where val3>? and val4!=val1 " +
+            "LIMIT ? OFFSET 1)", 1, 2, 3);
+        assertUnexpectedNumberOfParameters("SELECT * FROM t1 where val1 in (SELECT val3 from t2 where val3>? and val4!=val1 " +
+            "LIMIT ? OFFSET ?)", 1);
+        assertUnexpectedNumberOfParameters("SELECT * FROM t1 where val1 in (SELECT val3 from t2 where val3>? and val4!=val1 " +
+            "LIMIT ? OFFSET ?) LIMIT ?", 1, 2, 3);
+    }
+
+    /** */
+    @Test
+    public void testWrongParametersNumberInUnion() {
+        assertUnexpectedNumberOfParameters("SELECT val1 FROM t1 where val2=? UNION ALL SELECT val3 FROM t2 where val4=?", 1);
+        assertUnexpectedNumberOfParameters("SELECT val1 FROM t1 where val2=? UNION ALL SELECT val3 FROM t2 where val4=?", 1, 2, 3);
+        assertUnexpectedNumberOfParameters("SELECT val1 FROM t1 where val2=? UNION ALL SELECT val3 FROM t2 where val4=?");
+
+        assertUnexpectedNumberOfParameters("SELECT val1 FROM t1 where val2=? UNION ALL SELECT val3 FROM t2 where val4=? " +
+            "LIMIT 5 OFFSET 3", 1);
+        assertUnexpectedNumberOfParameters("SELECT val1 FROM t1 where val2=? UNION ALL SELECT val3 FROM t2 where val4=? " +
+            "LIMIT 5 OFFSET 3", 1, 2, 3);
+        assertUnexpectedNumberOfParameters("SELECT val1 FROM t1 where val2=? UNION ALL SELECT val3 FROM t2 where val4=? " +
+            "LIMIT 5 OFFSET 3");
+
+        assertUnexpectedNumberOfParameters("SELECT val1 FROM t1 where val2=? UNION ALL SELECT val3 FROM t2 where val4=? " +
+            "LIMIT ? OFFSET ?", 1, 2, 3);
+        assertUnexpectedNumberOfParameters("SELECT val1 FROM t1 where val2=? UNION ALL SELECT val3 FROM t2 where val4=? " +
+            "LIMIT ? OFFSET ?", 1, 2, 3, 4, 5);
+        assertUnexpectedNumberOfParameters("SELECT val1 FROM t1 where val2=? UNION ALL SELECT val3 FROM t2 where val4=? " +
+            "LIMIT ? OFFSET ?");
+
+        assertUnexpectedNumberOfParameters("SELECT val1 FROM t1 where val2=(SELECT val3 from T2 where val3 > val1 + ? LIMIT ?) " +
+            "UNION ALL SELECT val3 FROM t2 where val4=?");
+        assertUnexpectedNumberOfParameters("SELECT val1 FROM t1 where val2=(SELECT val3 from T2 where val3 > val1 + ? LIMIT ?) " +
+            "UNION ALL SELECT val3 FROM t2 where val4=?", 1, 2);
+        assertUnexpectedNumberOfParameters("SELECT val1 FROM t1 where val2=(SELECT val3 from T2 where val3 > val1 + ? LIMIT ?) " +
+            "UNION ALL SELECT val3 FROM t2 where val4=?", 1, 2, 3, 4);
+
+        assertUnexpectedNumberOfParameters("SELECT val1 FROM t1 where val2=?+1 and val1>? UNION ALL SELECT val3 FROM t2 " +
+            "where val4=? LIMIT 1 OFFSET 2");
+        assertUnexpectedNumberOfParameters("SELECT val1 FROM t1 where val2=?+1 and val1>? UNION ALL SELECT val3 FROM t2 " +
+            "where val4=? LIMIT 1 OFFSET 2", 1);
+        assertUnexpectedNumberOfParameters("SELECT val1 FROM t1 where val2=?+1 and val1>? UNION ALL SELECT val3 FROM t2 " +
+            "where val4=? LIMIT 1 OFFSET 2", 1, 2, 3, 4);
+    }
+
+    /** */
+    @Test
+    public void testtestWrongParametersNumberInSeveralQueries() {
+        assertUnexpectedNumberOfParameters("SELECT val1 FROM t1 where val2=?; SELECT val3 FROM t2 where val4=?");
+        assertUnexpectedNumberOfParameters("SELECT val1 FROM t1 where val2=?; SELECT val3 FROM t2 where val4=?", 1);
+        assertUnexpectedNumberOfParameters("SELECT val1 FROM t1 where val2=?; SELECT val3 FROM t2 where val4=?", 1);
+        assertUnexpectedNumberOfParameters("SELECT val1 FROM t1 where val2=?; SELECT val3 FROM t2 where val4=?", 1, 2, 3);
+
+        assertUnexpectedNumberOfParameters("SELECT val1 FROM t1 where val2=? LIMIT ? OFFSET ?; SELECT val3 FROM t2 " +
+            "where val4=? LIMIT ?", 1, 2, 3, 4);
+        assertUnexpectedNumberOfParameters("SELECT val1 FROM t1 where val2=? LIMIT ? OFFSET ?; SELECT val3 FROM t2 " +
+            "where val4=? LIMIT ?", 1, 2, 3, 4, 5, 6);
+    }
+
+    /** */
+    @Test
     public void testWrongParametersNumberInLimitOffset() {
         assertUnexpectedNumberOfParameters("SELECT * FROM t1 LIMIT 1", 1);
         assertUnexpectedNumberOfParameters("SELECT * FROM t1 LIMIT ?", 1, 2);
@@ -192,6 +267,6 @@ public class DynamicParametersIntegrationTest extends AbstractBasicIntegrationTe
 
     /** */
     private void assertUnexpectedNumberOfParameters(String qry, Object... params) {
-        assertThrows(qry, CalciteContextException.class, "Unexpected number of query parameters", params);
+        assertThrows(qry, CalciteContextException.class, "Wrong number of query parameters", params);
     }
 }

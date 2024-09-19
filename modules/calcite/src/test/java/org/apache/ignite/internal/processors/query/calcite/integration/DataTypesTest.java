@@ -417,12 +417,6 @@ public class DataTypesTest extends AbstractBasicIntegrationTest {
 
     /** */
     @Test
-    public void test0(){
-        assertQuery("SELECT COALESCE(?, ?)").withParams("a").returns("a").check();
-    }
-
-    /** */
-    @Test
     public void testDecimalScale() {
         sql("CREATE TABLE t (id INT PRIMARY KEY, val1 DECIMAL(5, 3), val2 DECIMAL(3), val3 DECIMAL)");
 

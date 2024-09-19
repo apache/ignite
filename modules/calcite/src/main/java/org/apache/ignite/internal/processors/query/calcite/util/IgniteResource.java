@@ -73,6 +73,7 @@ public interface IgniteResource {
     @Resources.BaseMessage("Modify operation is not supported for table ''{0}''")
     Resources.ExInst<SqlValidatorException> modifyTableNotSupported(String table);
 
-    @Resources.BaseMessage("Unexpected number of query parameters. Provided {0} but there is only {1} dynamic parameter(s).")
-    Resources.ExInst<SqlValidatorException> unexpectedParameter(int provided, int expected);
+    /** */
+    @Resources.BaseMessage("Wrong number of query parameters. Expected: {0}, provided: {1}.")
+    Resources.ExInst<SqlValidatorException> unexpectedParameter(int expected, int provided);
 }

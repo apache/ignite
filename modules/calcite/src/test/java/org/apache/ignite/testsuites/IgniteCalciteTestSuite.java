@@ -33,8 +33,8 @@ import org.junit.runners.Suite;
  */
 @RunWith(Suite.class)
 @Suite.SuiteClasses({
-//    PlannerTestSuite.class,
-//    ExecutionTestSuite.class,
+    PlannerTestSuite.class,
+    ExecutionTestSuite.class,
     IntegrationTestSuite.class,
 
     ClosableIteratorsHolderTest.class,

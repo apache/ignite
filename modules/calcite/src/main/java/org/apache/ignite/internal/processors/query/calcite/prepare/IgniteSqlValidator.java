@@ -58,7 +58,6 @@ import org.apache.calcite.sql.type.SqlTypeFamily;
 import org.apache.calcite.sql.type.SqlTypeName;
 import org.apache.calcite.sql.validate.SelectScope;
 import org.apache.calcite.sql.validate.SqlQualified;
-import org.apache.calcite.sql.validate.SqlValidator;
 import org.apache.calcite.sql.validate.SqlValidatorImpl;
 import org.apache.calcite.sql.validate.SqlValidatorNamespace;
 import org.apache.calcite.sql.validate.SqlValidatorScope;
@@ -103,10 +102,22 @@ public class IgniteSqlValidator extends SqlValidatorImpl {
     }
 
     /** Passed query arguments. */
-    private Object[] parameters;
+    private final Object[] parameters;
 
-    /** Number of query's dynamic parameters. */
-    private int dynamicParamsCnt;
+    /** If {@code true}, enables validation of {@link #parameters}'s' number against the query's dynamic parameters. */
+    private final boolean validateParamsNum;
+
+    /**
+     * Number of current query being validated with shared {@link #parameters}.
+     * Is not actual if {@link #validateParamsNum} is {@code false}.
+     */
+    private final int qryNum;
+
+    /** Total number of queries being validated one by one with shared {@link #parameters}. */
+    private final int qryCnt;
+
+    /** Maximal number of detected query's dynamic parameters. Is not actual if {@link #validateParamsNum} is {@code false}. */
+    private int dynParCnt;
 
     /**
      * Creates a validator.
@@ -115,13 +126,27 @@ public class IgniteSqlValidator extends SqlValidatorImpl {
      * @param catalogReader Catalog reader
      * @param typeFactory   Type factory
      * @param config        Config
-     * @param parameters    Dynamic parameters
+     * @param planningCtx   Planning context
      */
     public IgniteSqlValidator(SqlOperatorTable opTab, CalciteCatalogReader catalogReader,
-        IgniteTypeFactory typeFactory, SqlValidator.Config config, Object[] parameters) {
+        IgniteTypeFactory typeFactory, Config config, PlanningContext planningCtx) {
         super(opTab, catalogReader, typeFactory, config);
 
-        this.parameters = parameters;
+        parameters = planningCtx.parameters();
+
+        validateParamsNum = planningCtx.validateParamsNumber();
+
+        if (validateParamsNum) {
+            qryNum = planningCtx.currentQueryNumber();
+            qryCnt = planningCtx.queriesCnt();
+
+            assert qryNum >= 0 || qryCnt == 0;
+            assert qryCnt > qryNum || qryCnt == 0;
+        }
+        else {
+            qryNum = 0;
+            qryCnt = 0;
+        }
     }
 
     /** {@inheritDoc} */
@@ -532,20 +557,25 @@ public class IgniteSqlValidator extends SqlValidatorImpl {
 
         SqlNode res = super.validate(topNode);
 
-        if (dynamicParamsCnt != parameters.length)
-            throw newValidationError(res, IgniteResource.INSTANCE.unexpectedParameter(parameters.length, dynamicParamsCnt));
+        if (validateParamsNum && (parameters.length < dynParCnt || (parameters.length > dynParCnt && qryNum == qryCnt - 1))) {
+            throw newValidationError(res, IgniteResource.INSTANCE.unexpectedParameter(dynParCnt,
+                parameters == null ? 0 : parameters.length));
+        }
 
         return res;
     }
 
     /** */
     private void checkDynamicParametersNumber(SqlDynamicParam dynamicParam) {
-        if (dynamicParam.getIndex() >= dynamicParamsCnt)
-            dynamicParamsCnt = dynamicParam.getIndex() + 1;
+        if (dynamicParam.getIndex() >= dynParCnt)
+            dynParCnt = dynamicParam.getIndex() + 1;
     }
 
     /** */
     private void extractDynamicParameters(SqlNode node) {
+        if (!validateParamsNum)
+            return;
+
         if (node instanceof SqlDynamicParam)
             checkDynamicParametersNumber((SqlDynamicParam)node);
         if (node instanceof SqlOrderBy) {

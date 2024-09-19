@@ -31,8 +31,10 @@ import org.apache.calcite.tools.FrameworkConfig;
 import org.apache.calcite.tools.RuleSet;
 import org.apache.calcite.util.CancelFlag;
 import org.apache.ignite.internal.processors.query.calcite.type.IgniteTypeFactory;
+import org.apache.ignite.internal.util.lang.IgnitePair;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 
 /**
  * Planning context.
@@ -46,6 +48,14 @@ public final class PlanningContext implements Context {
 
     /** */
     private final Object[] parameters;
+
+    /**
+     * If not {@code null}, notifies to validate passed parameters number against number of the query's dynamic parameters.
+     * Since several queries may share {@link #parameters()} while each query is validated by dedicated validator,
+     * the validator has to be aware of numbers total queries and current query.
+     * The pair is: number of current query starting with 0 and total number of queries.
+     */
+    @Nullable private final IgnitePair<Integer> validateParamsNumberCfg;
 
     /** */
     private final CancelFlag cancelFlag = new CancelFlag(new AtomicBoolean());
@@ -64,15 +74,27 @@ public final class PlanningContext implements Context {
 
     /**
      * Private constructor, used by a builder.
+     *
+     * @param parentCtx Parent context.
+     * @param qry The query.
+     * @param parameters Parameters to pass to the query dynamic parameters.
+     * @param validateParamsNumberCfg If not {@code null}, notifies to validate passed parameters number against number
+     *                                of the query's dynamic parameters. The pair is: number of current query starting with 0
+     *                                and total number of queries.
+     * @param plannerTimeout Timeout on operation.
+     *
+     * @see #validateParamsNumberCfg
      */
     private PlanningContext(
         Context parentCtx,
         String qry,
         Object[] parameters,
+        @Nullable IgnitePair<Integer> validateParamsNumberCfg,
         long plannerTimeout
     ) {
         this.qry = qry;
         this.parameters = parameters;
+        this.validateParamsNumberCfg = validateParamsNumberCfg;
 
         this.parentCtx = parentCtx;
         startTs = U.currentTimeMillis();
@@ -92,6 +114,29 @@ public final class PlanningContext implements Context {
     @SuppressWarnings("AssignmentOrReturnOfFieldWithMutableType")
     public Object[] parameters() {
         return parameters;
+    }
+
+    /** @return {@code True}, if the validation of number of {@link #parameters()} is required. */
+    public boolean validateParamsNumber() {
+        return validateParamsNumberCfg != null;
+    }
+
+    /**
+     * @return Number of current query being processed with the same {@link #parameters()}. Starts with 0 and is always 0
+     * if {@link #validateParamsNumber()} is not set.
+     * @see #validateParamsNumber()
+     */
+    public int currentQueryNumber() {
+        return validateParamsNumberCfg == null ? 0 : validateParamsNumberCfg.get1();
+    }
+
+    /**
+     * @return Total number of queries to process with the same {@link #parameters()}. Is always 0 if {@link #validateParamsNumber()}
+     * is not set.
+     * @see #validateParamsNumber()
+     */
+    public int queriesCnt() {
+        return validateParamsNumberCfg == null ? 0 : validateParamsNumberCfg.get2();
     }
 
     // Helper methods
@@ -222,6 +267,12 @@ public final class PlanningContext implements Context {
         private String qry;
 
         /** */
+        private int curQryNum;
+
+        /** */
+        private int totalQueriesCnt;
+
+        /** */
         private Object[] parameters;
 
         /** */
@@ -256,6 +307,29 @@ public final class PlanningContext implements Context {
         }
 
         /**
+         * @param curQryNum Number of curent query being processed with shared {@link #parameters(Object...)}.
+         *                  Starts with 0.
+         * @return Builder for chaining.
+         * @see PlanningContext#validateParamsNumber()
+         * @see #validateParametersTotalQueries(int)
+         */
+        public Builder validateParametersQueryNumber(int curQryNum) {
+            this.curQryNum = curQryNum;
+            return this;
+        }
+
+        /**
+         * @param totalQueriesCnt Total number of quries being processed with the same {@link #parameters(Object...)}.
+         * @return Builder for chaining.
+         * @see PlanningContext#validateParamsNumber()
+         * @see #validateParametersQueryNumber(int)
+         */
+        public Builder validateParametersTotalQueries(int totalQueriesCnt) {
+            this.totalQueriesCnt = totalQueriesCnt;
+            return this;
+        }
+
+        /**
          * @param plannerTimeout Planner timeout.
          *
          * @return Builder for chaining.
@@ -271,7 +345,9 @@ public final class PlanningContext implements Context {
          * @return Planner context.
          */
         public PlanningContext build() {
-            return new PlanningContext(parentCtx, qry, parameters, plannerTimeout);
+            IgnitePair validateParamsNumCfg = totalQueriesCnt != 0 || curQryNum != 0 ? new IgnitePair(curQryNum, totalQueriesCnt) : null;
+
+            return new PlanningContext(parentCtx, qry, parameters, validateParamsNumCfg, plannerTimeout);
         }
     }
 }

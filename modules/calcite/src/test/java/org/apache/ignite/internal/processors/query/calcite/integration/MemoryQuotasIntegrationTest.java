@@ -254,24 +254,6 @@ public class MemoryQuotasIntegrationTest extends AbstractBasicIntegrationTest {
 
     /** */
     @Test
-    public void test0() {
-        // Colocated.
-        sql("CREATE TABLE tbl2 (id INT, b VARBINARY, v INTEGER) WITH TEMPLATE=REPLICATED");
-
-        sql("CREATE INDEX idx2 ON tbl2(id)");
-        sql("CREATE INDEX idx3 ON tbl2(v)");
-
-        for (int i = 0; i < 100; i++)
-            sql("INSERT INTO tbl2 VALUES (?, ?, ?)", i, new byte[1000], i % 5);
-
-        assertQuery("SELECT COUNT(DISTINCT v) FROM tbl2")
-//            .matches(QueryChecker.containsSubPlan("IgniteColocatedSortAggregate"))
-            .resultSize(1)
-            .check();
-    }
-
-    /** */
-    @Test
     public void testSortAggregateNode() {
         // Colocated.
         sql("CREATE TABLE tbl2 (id INT, b VARBINARY) WITH TEMPLATE=REPLICATED");

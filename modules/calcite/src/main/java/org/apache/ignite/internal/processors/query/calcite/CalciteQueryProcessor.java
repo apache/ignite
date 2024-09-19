@@ -390,7 +390,7 @@ public class CalciteQueryProcessor extends GridProcessorAdapter implements Query
         String sql,
         Object... params
     ) throws IgniteSQLException {
-        return parseAndProcessQuery(qryCtx, executionSvc::executePlan, schemaName, sql, params);
+        return parseAndProcessQuery(qryCtx, executionSvc::executePlan, schemaName, sql, true, params);
     }
 
     /** {@inheritDoc} */
@@ -399,7 +399,7 @@ public class CalciteQueryProcessor extends GridProcessorAdapter implements Query
         String schemaName,
         String sql
     ) throws IgniteSQLException {
-        return parseAndProcessQuery(ctx, (qry, plan) -> fieldsMeta(plan, true), schemaName, sql);
+        return parseAndProcessQuery(ctx, (qry, plan) -> fieldsMeta(plan, true), schemaName, sql, false);
     }
 
     /** {@inheritDoc} */
@@ -408,7 +408,7 @@ public class CalciteQueryProcessor extends GridProcessorAdapter implements Query
         String schemaName,
         String sql
     ) throws IgniteSQLException {
-        return parseAndProcessQuery(ctx, (qry, plan) -> fieldsMeta(plan, false), schemaName, sql);
+        return parseAndProcessQuery(ctx, (qry, plan) -> fieldsMeta(plan, false), schemaName, sql, false);
     }
 
     /** {@inheritDoc} */
@@ -484,6 +484,7 @@ public class CalciteQueryProcessor extends GridProcessorAdapter implements Query
         BiFunction<RootQuery<Object[]>, QueryPlan, T> action,
         @Nullable String schemaName,
         String sql,
+        boolean validatParamsCnt,
         Object... params
     ) throws IgniteSQLException {
         SchemaPlus schema = schemaHolder.schema(schemaName);
@@ -513,22 +514,27 @@ public class CalciteQueryProcessor extends GridProcessorAdapter implements Query
 
         List<T> res = new ArrayList<>(qryList.size());
         List<RootQuery<Object[]>> qrys = new ArrayList<>(qryList.size());
+        int qryIdx = 0;
 
         for (final SqlNode sqlNode: qryList) {
+            int qryIdx0 = qryIdx;
+
             T singleRes = processQuery(qryCtx, qry -> {
                 QueryPlan plan0;
                 if (qryList.size() == 1) {
                     plan0 = queryPlanCache().queryPlan(
                         // Use source SQL to avoid redundant parsing next time.
                         new CacheKey(schema.getName(), sql, contextKey(qryCtx), params),
-                        () -> prepareSvc.prepareSingle(sqlNode, qry.planningContext())
+                        () -> prepareSvc.prepareSingle(sqlNode, qry.planningContext(validatParamsCnt, 0, 1))
                     );
                 }
                 else
-                    plan0 = prepareSvc.prepareSingle(sqlNode, qry.planningContext());
+                    plan0 = prepareSvc.prepareSingle(sqlNode, qry.planningContext(validatParamsCnt, qryIdx0, qryList.size()));
 
                 return action.apply(qry, plan0);
             }, schema.getName(), removeSensitive(sqlNode), qrys, params);
+
+            ++qryIdx;
 
             res.add(singleRes);
         }
