@@ -26,23 +26,15 @@ import java.util.function.LongFunction;
 import org.apache.calcite.sql.validate.SqlValidatorException;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.calcite.CalciteQueryEngineConfiguration;
+import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.internal.processors.query.IgniteSQLException;
-import org.apache.ignite.internal.processors.query.calcite.AbstractTransactionalSqlTest.SqlTransactionMode;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.junit.Test;
 
 /**
  * Test Ignite SQL functions.
  */
-public class FunctionsTest extends AbstractBasicIntegrationTransactionalTest {
-    /** {@inheritDoc} */
-    @Override protected void beforeTest() throws Exception {
-        super.beforeTest();
-
-        if (sqlTxMode != SqlTransactionMode.NONE)
-            startTransaction(client);
-    }
-
+public class FunctionsTest extends AbstractBasicIntegrationTest {
     /** */
     @Test
     public void testTimestampDiffWithFractionsOfSecond() {
@@ -158,15 +150,14 @@ public class FunctionsTest extends AbstractBasicIntegrationTransactionalTest {
      */
     @Test
     public void testRangeWithCache() throws Exception {
-        IgniteCache<Integer, Integer> cache = client.getOrCreateCache(
-            this.<Integer, Integer>cacheConfiguration()
-                .setName("test")
+        IgniteCache<Integer, Integer> cache = grid(0).getOrCreateCache(
+            new CacheConfiguration<Integer, Integer>("test")
                 .setBackups(1)
                 .setIndexedTypes(Integer.class, Integer.class)
         );
 
         for (int i = 0; i < 100; i++)
-            put(client, cache, i, i);
+            cache.put(i, i);
 
         awaitPartitionMapExchange();
 
