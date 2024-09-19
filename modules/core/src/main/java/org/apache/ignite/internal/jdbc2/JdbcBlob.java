@@ -17,16 +17,10 @@
 
 package org.apache.ignite.internal.jdbc2;
 
-import java.io.ByteArrayInputStream;
-import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
-import java.io.SequenceInputStream;
 import java.sql.Blob;
 import java.sql.SQLException;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.List;
 import org.apache.ignite.internal.util.typedef.internal.U;
 
 /**
@@ -35,51 +29,40 @@ import org.apache.ignite.internal.util.typedef.internal.U;
  * <p>
  * This implementation can be useful for reading binary fields of objects through JDBC.
  */
-public class JdbcBlob implements Blob {
-    /** The list of buffers, which grows and never reduces. */
-    private List<byte[]> buffers;
-
-    /** The total count of bytes in the blob. */
-    protected long cnt;
-
+public class JdbcBlob extends JdbcMemoryBuffer implements Blob {
     /**
      */
     public JdbcBlob() {
-        buffers = new ArrayList<>(1);
-
-        cnt = 0;
     }
 
     /**
      * @param arr Byte array.
      */
     public JdbcBlob(byte[] arr) {
-        buffers = new ArrayList<>(1);
-
         buffers.add(arr);
 
-        cnt = arr.length;
+        totalCnt = arr.length;
     }
 
     /** {@inheritDoc} */
     @Override public long length() throws SQLException {
         ensureNotClosed();
 
-        return cnt;
+        return totalCnt;
     }
 
     /** {@inheritDoc} */
     @Override public byte[] getBytes(long pos, int len) throws SQLException {
         ensureNotClosed();
 
-        if (pos < 1 || (cnt - pos < 0 && cnt > 0) || len < 0)
+        if (pos < 1 || (totalCnt - pos < 0 && totalCnt > 0) || len < 0)
             throw new SQLException("Invalid argument. Position can't be less than 1 or " +
                 "greater than size of underlying byte array. Requested length also can't be negative " +
                 "[pos=" + pos + ", len=" + len + ']');
 
         int idx = (int)(pos - 1);
 
-        int size = len > cnt - idx ? (int)(cnt - idx) : len;
+        int size = len > totalCnt - idx ? (int)(totalCnt - idx) : len;
 
         byte[] res = new byte[size];
 
@@ -108,60 +91,26 @@ public class JdbcBlob implements Blob {
     @Override public InputStream getBinaryStream() throws SQLException {
         ensureNotClosed();
 
-        return getBinaryStreamImpl(1, cnt);
+        return getInputStream(0, totalCnt);
     }
 
     /** {@inheritDoc} */
     @Override public InputStream getBinaryStream(long pos, long len) throws SQLException {
         ensureNotClosed();
 
-        if (pos < 1 || len < 1 || pos > cnt || len > cnt - pos + 1)
+        if (pos < 1 || len < 1 || pos > totalCnt || len > totalCnt - pos + 1)
             throw new SQLException("Invalid argument. Position can't be less than 1 or " +
                 "greater than size of underlying byte array. Requested length can't be negative and can't be " +
                 "greater than available bytes from given position [pos=" + pos + ", len=" + len + ']');
 
-        return getBinaryStreamImpl(pos, len);
-    }
-
-    /**
-     * @param pos the offset to the first byte of the partial value to be
-     *        retrieved. The first byte in the {@code Blob} is at position 1.
-     * @param len the length in bytes of the partial value to be retrieved
-     * @return {@code InputStream} through which
-     *         the partial {@code Blob} value can be read.
-     */
-    private InputStream getBinaryStreamImpl(long pos, long len) {
-        int idx = (int)(pos - 1);
-
-        long remaining = Math.min(len, cnt - idx);
-
-        final List<ByteArrayInputStream> list = new ArrayList<>(buffers.size());
-
-        int curPos = 0;
-
-        for (byte[] buf : buffers) {
-            if (idx < curPos + buf.length) {
-                int toCopy = (int)Math.min(remaining, buf.length - Math.max(idx - curPos, 0));
-
-                list.add(new ByteArrayInputStream(buf, Math.max(idx - curPos, 0), toCopy));
-
-                remaining -= toCopy;
-            }
-
-            curPos += buf.length;
-
-            if (remaining == 0)
-                break;
-        }
-
-        return new SequenceInputStream(Collections.enumeration(list));
+        return getInputStream(pos - 1, len);
     }
 
     /** {@inheritDoc} */
     @Override public long position(byte[] ptrn, long start) throws SQLException {
         ensureNotClosed();
 
-        if (start < 1 || start > cnt || ptrn.length == 0 || ptrn.length > cnt)
+        if (start < 1 || start > totalCnt || ptrn.length == 0 || ptrn.length > totalCnt)
             return -1;
 
         long idx = start - 1;
@@ -174,7 +123,7 @@ public class JdbcBlob implements Blob {
 
         int i;
         long pos;
-        for (i = 0, pos = 0; pos < cnt;) {
+        for (i = 0, pos = 0; pos < totalCnt;) {
             if (pos < idx) {
                 if (idx > pos + buffers.get(curBufIdx).length - 1) {
                     pos += buffers.get(curBufIdx++).length;
@@ -243,7 +192,7 @@ public class JdbcBlob implements Blob {
     @Override public long position(Blob ptrn, long start) throws SQLException {
         ensureNotClosed();
 
-        if (start < 1 || start > cnt || ptrn.length() == 0 || ptrn.length() > cnt)
+        if (start < 1 || start > totalCnt || ptrn.length() == 0 || ptrn.length() > totalCnt)
             return -1;
 
         return position(ptrn.getBytes(1, (int)ptrn.length()), start);
@@ -261,7 +210,7 @@ public class JdbcBlob implements Blob {
         if (pos < 1)
             throw new SQLException("Invalid argument. Position can't be less than 1 [pos=" + pos + ']');
 
-        if (pos - 1 > cnt || off < 0 || off >= bytes.length || off + len > bytes.length)
+        if (pos - 1 > totalCnt || off < 0 || off >= bytes.length || off + len > bytes.length)
             throw new ArrayIndexOutOfBoundsException();
 
         return setBytesImpl(pos, bytes, off, len);
@@ -296,7 +245,7 @@ public class JdbcBlob implements Blob {
 
         int written = setBytesImpl0(bufIdx, idx - curPos, bytes, off, len);
 
-        cnt = idx + written > cnt ? idx + written : cnt;
+        totalCnt = idx + written > totalCnt ? idx + written : totalCnt;
 
         return written;
     }
@@ -341,45 +290,25 @@ public class JdbcBlob implements Blob {
         return len;
     }
 
-    /**
-     * Makes a new buffer available
-     *
-     * @param newCount the new size of the Blob
-     */
-    private void addNewBuffer(final int newCount) {
-        final int newBufSize;
-
-        if (buffers.isEmpty()) {
-            newBufSize = newCount;
-        }
-        else {
-            newBufSize = Math.max(
-                    buffers.get(buffers.size() - 1).length << 1,
-                    (newCount));
-        }
-
-        buffers.add(new byte[newBufSize]);
-    }
-
     /** {@inheritDoc} */
     @Override public OutputStream setBinaryStream(long pos) throws SQLException {
         ensureNotClosed();
 
-        if (pos < 1 || pos > cnt + 1)
+        if (pos < 1 || pos > totalCnt + 1)
             throw new SQLException("Invalid argument. Position can't be less than 1 or greater than Blob length + 1 [pos=" + pos + ']');
 
-        return new BlobOutputStream(pos - 1);
+        return getOutputStream(pos - 1);
     }
 
     /** {@inheritDoc} */
     @Override public void truncate(long len) throws SQLException {
         ensureNotClosed();
 
-        if (len < 0 || len > cnt)
+        if (len < 0 || len > totalCnt)
             throw new SQLException("Invalid argument. Length can't be " +
                 "less than zero or greater than Blob length [len=" + len + ']');
 
-        cnt = len;
+        totalCnt = len;
     }
 
     /** {@inheritDoc} */
@@ -397,85 +326,5 @@ public class JdbcBlob implements Blob {
     private void ensureNotClosed() throws SQLException {
         if (buffers == null)
             throw new SQLException("Blob instance can't be used after free() has been called.");
-    }
-
-    /**
-     */
-    private class BlobOutputStream extends OutputStream {
-        /** The index of the current buffer. */
-        private int bufIdx;
-
-        /** Position in the current buffer. */
-        private int inBufPos;
-
-        /** Global current position. */
-        private long curPos;
-
-        /**
-         * @param pos Start position, zero-based.
-         */
-        public BlobOutputStream(long pos) {
-            curPos = pos;
-
-            for (long p = 0; p < cnt;) {
-                if (curPos > p + buffers.get(bufIdx).length - 1) {
-                    p += buffers.get(bufIdx++).length;
-                }
-                else {
-                    inBufPos = (int)(curPos - p);
-                    break;
-                }
-            }
-        }
-
-        /** {@inheritDoc} */
-        @Override public void write(int b) throws IOException {
-            write(new byte[] {(byte)b}, 0, 1);
-        }
-
-        /** {@inheritDoc} */
-        @Override public void write(byte b[], int off, int len) {
-            int written = setBytesImpl0(b, off, len);
-
-            cnt = Math.max(curPos + written, cnt);
-
-            curPos += written;
-        }
-
-        /**
-         */
-        private int setBytesImpl0(byte[] bytes, int off, int len) {
-            int remaining = len;
-
-            for (; bufIdx < buffers.size(); bufIdx++) {
-                byte[] buf = buffers.get(bufIdx);
-
-                int toCopy = Math.min(remaining, buf.length - inBufPos);
-
-                U.arrayCopy(bytes, off + len - remaining, buf, inBufPos, toCopy);
-
-                remaining -= toCopy;
-
-                if (remaining == 0) {
-                    inBufPos += toCopy;
-
-                    break;
-                }
-                else {
-                    inBufPos = 0;
-                }
-            }
-
-            if (remaining > 0) {
-                addNewBuffer(remaining);
-
-                U.arrayCopy(bytes, off + len - remaining, buffers.get(buffers.size() - 1), 0, remaining);
-
-                bufIdx = buffers.size() - 1;
-                inBufPos = remaining;
-            }
-
-            return len;
-        }
     }
 }

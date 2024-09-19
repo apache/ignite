@@ -26,6 +26,7 @@ import java.nio.file.Path;
 import java.sql.SQLException;
 import java.sql.SQLFeatureNotSupportedException;
 import org.apache.ignite.IgniteJdbcThinDriver;
+import org.apache.ignite.internal.jdbc2.JdbcMemoryBuffer;
 
 /**
  * InputStream wrapper for limited streams.
@@ -35,7 +36,7 @@ public class SqlInputStreamWrapper implements AutoCloseable {
     private InputStream inputStream;
 
     /** Memory buffer for .*/
-    private MemoryBuffer rawData;
+    private JdbcMemoryBuffer rawData;
 
     /** Temporary file holder. */
     private TempFileHolder tempFileHolder;
@@ -92,7 +93,7 @@ public class SqlInputStreamWrapper implements AutoCloseable {
             return;
         }
 
-        rawData = new MemoryBuffer();
+        rawData = new JdbcMemoryBuffer();
         final int memoryLength = copyStream(inputStream, rawData.getOutputStream(), maxMemoryBufferBytes + 1);
 
         if (memoryLength == -1) {
@@ -107,9 +108,9 @@ public class SqlInputStreamWrapper implements AutoCloseable {
                     .register(this, tempFileHolder);
 
             try (OutputStream diskOutputStream = Files.newOutputStream(tempFile)) {
-                copyStream(rawData.getInputStream(), diskOutputStream, rawData.getCnt());
+                copyStream(rawData.getInputStream(), diskOutputStream, rawData.getLength());
 
-                diskLength = copyStream(inputStream, diskOutputStream, MAX_ARRAY_SIZE - rawData.getCnt());
+                diskLength = copyStream(inputStream, diskOutputStream, MAX_ARRAY_SIZE - rawData.getLength());
 
                 if (diskLength == -1)
                     throw new SQLFeatureNotSupportedException("Invalid argument. InputStreams with length greater than " +
@@ -121,10 +122,10 @@ public class SqlInputStreamWrapper implements AutoCloseable {
                 throw e;
             }
 
-            this.len = Math.toIntExact(rawData.getCnt() + diskLength);
+            this.len = Math.toIntExact(rawData.getLength() + diskLength);
         }
         else {
-            this.len = Math.toIntExact(rawData.getCnt());
+            this.len = Math.toIntExact(rawData.getLength());
         }
     }
 
@@ -180,11 +181,12 @@ public class SqlInputStreamWrapper implements AutoCloseable {
 
             outputStream.write(buf, 0, readLength);
 
-            if (totalLength > limit)
+            if (totalLength == limit)
                 return -1;
 
-            readLength = inputStream.read(buf);
+            readLength = inputStream.read(buf, 0, (int)Math.min(buf.length, limit - totalLength));
         }
+
         return totalLength;
     }
 
