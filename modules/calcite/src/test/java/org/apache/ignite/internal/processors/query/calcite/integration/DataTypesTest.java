@@ -35,7 +35,6 @@ import org.apache.ignite.internal.util.typedef.F;
 import org.junit.Test;
 
 import static org.apache.ignite.internal.processors.query.calcite.CalciteQueryProcessor.FRAMEWORK_CONFIG;
-import static org.junit.Assume.assumeTrue;
 
 /**
  * Test SQL data types.
@@ -447,7 +446,8 @@ public class DataTypesTest extends AbstractBasicIntegrationTransactionalTest {
     /** */
     @Test
     public void testFunctionArgsToNumericImplicitConversion() {
-        assumeTrue(sqlTxMode == SqlTransactionMode.NONE);
+        if (sqlTxMode != SqlTransactionMode.NONE)
+            startTransaction(client);
 
         assertQuery("select decode(?, 0, 0, 1, 1.0)").withParams(0).returns(new BigDecimal("0.0")).check();
         assertQuery("select decode(?, 0, 0, 1, 1.0)").withParams(1).returns(new BigDecimal("1.0")).check();
@@ -522,7 +522,8 @@ public class DataTypesTest extends AbstractBasicIntegrationTransactionalTest {
     /** */
     @Test
     public void testCastDecimalOverflows() {
-        assumeTrue(sqlTxMode == SqlTransactionMode.NONE);
+        if (sqlTxMode != SqlTransactionMode.NONE)
+            startTransaction(client);
 
         // BIGINT
         assertQuery("SELECT CAST(9223372036854775807.1 AS BIGINT)").returns(9223372036854775807L).check();

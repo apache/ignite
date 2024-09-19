@@ -26,22 +26,13 @@ import java.time.LocalDate;
 import java.time.Period;
 import java.util.List;
 import java.util.UUID;
-import org.apache.ignite.internal.processors.query.calcite.AbstractTransactionalSqlTest.SqlTransactionMode;
 import org.apache.ignite.internal.util.typedef.F;
 import org.junit.Test;
 
 /**
  *  Dynamic parameters types inference test.
  */
-public class DynamicParametersIntegrationTest extends AbstractBasicIntegrationTransactionalTest {
-    /** {@inheritDoc} */
-    @Override protected void beforeTest() throws Exception {
-        super.beforeTest();
-
-        if (sqlTxMode != SqlTransactionMode.NONE)
-            startTransaction(client);
-    }
-
+public class DynamicParametersIntegrationTest extends AbstractBasicIntegrationTest {
     /** */
     @Test
     public void testMetadataTypesForDynamicParameters() {

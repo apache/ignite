@@ -89,6 +89,8 @@ public class UserDefinedFunctionsIntegrationTest extends AbstractBasicIntegratio
         assertThrows("SELECT EMP2_SCHEMA.mul(1, 2)");
         assertThrows("SELECT EMP2_SCHEMA.sq(1)");
 
+        // Can't destroy caches when running transactions.
+        // Skip following checks in tx mode.
         if (sqlTxMode == SqlTransactionMode.NONE) {
             client.cache("emp1").destroy();
             awaitPartitionMapExchange();

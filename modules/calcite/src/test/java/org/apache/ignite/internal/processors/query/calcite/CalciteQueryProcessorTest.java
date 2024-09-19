@@ -67,7 +67,6 @@ import static org.apache.ignite.testframework.GridTestUtils.waitForCondition;
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.CoreMatchers.not;
 import static org.junit.Assert.assertThat;
-import static org.junit.Assume.assumeTrue;
 
 /**
  *
@@ -256,20 +255,16 @@ public class CalciteQueryProcessorTest extends AbstractTransactionalSqlTest {
      */
     @Test
     public void testBangEqual() throws Exception {
-        assumeTrue(sqlTxMode == SqlTransactionMode.NONE);
-
-        IgniteCache<Integer, Developer> developer = grid(1).createCache(new CacheConfiguration<Integer, Developer>()
+        IgniteCache<Integer, Developer> developer = client.createCache(this.<Integer, Developer>cacheConfiguration()
             .setName("developer")
             .setSqlSchema("PUBLIC")
             .setIndexedTypes(Integer.class, Developer.class)
             .setBackups(2)
         );
 
-        developer.put(1, new Developer("Name1", 1));
-        developer.put(10, new Developer("Name10", 10));
-        developer.put(100, new Developer("Name100", 100));
-
-        awaitPartitionMapExchange(true, true, null);
+        put(client, developer, 1, new Developer("Name1", 1));
+        put(client, developer, 10, new Developer("Name10", 10));
+        put(client, developer, 100, new Developer("Name100", 100));
 
         assertEquals(2, sql("SELECT * FROM Developer WHERE projectId != ?", false, 1).size());
     }
@@ -1072,16 +1067,17 @@ public class CalciteQueryProcessorTest extends AbstractTransactionalSqlTest {
      */
     @Test
     public void testSelectWithOrdering() throws IgniteInterruptedCheckedException {
-        assumeTrue(sqlTxMode == SqlTransactionMode.NONE);
+        if (sqlTxMode != SqlTransactionMode.NONE)
+            startTransaction(client);
 
         sql( "drop table if exists test_tbl", true);
 
-        sql( "create table test_tbl (c1 int)", true);
-
-        sql( "insert into test_tbl values (1), (2), (3), (null)", true);
+        sql( "create table test_tbl (c1 int) with atomicity=transactional", true);
 
         sql( "create index idx_asc on test_tbl (c1)", true);
         sql( "create index idx_desc on test_tbl (c1 desc)", true);
+
+        sql( "insert into test_tbl values (1), (2), (3), (null)", true);
 
         assertQuery(client, "select c1 from test_tbl ORDER BY c1")
             .matches(containsIndexScan("PUBLIC", "TEST_TBL", "IDX_ASC"))
