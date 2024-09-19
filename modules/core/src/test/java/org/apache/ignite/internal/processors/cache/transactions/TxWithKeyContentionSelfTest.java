@@ -36,7 +36,7 @@ import org.apache.ignite.configuration.NearCacheConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.TestRecordingCommunicationSpi;
-import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxFinishResponse;
+import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxPrepareResponse;
 import org.apache.ignite.internal.util.future.GridCompoundFuture;
 import org.apache.ignite.internal.util.lang.GridAbsPredicate;
 import org.apache.ignite.internal.util.typedef.G;
@@ -217,7 +217,7 @@ public class TxWithKeyContentionSelfTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     private void runKeyCollisionsMetric(TransactionConcurrency concurrency, TransactionIsolation isolation) throws Exception {
-        Ignite ig = startGridsMultiThreaded(3);
+        Ignite ig = startGridsMultiThreaded(2);
 
         int contCnt = (int)U.staticField(IgniteTxManager.class, "COLLISIONS_QUEUE_THRESHOLD") * 5;
 
@@ -229,11 +229,17 @@ public class TxWithKeyContentionSelfTest extends GridCommonAbstractTest {
 
         Ignite cl = startGrid();
 
+        CacheConfiguration<?, ?> dfltCacheCfg = getCacheConfiguration(DEFAULT_CACHE_NAME);
+
+        dfltCacheCfg.setStatisticsEnabled(true);
+
+        String cacheName = dfltCacheCfg.getName();
+
         IgniteTransactions cliTxMgr = cl.transactions();
 
-        IgniteCache<Integer, Integer> cache = ig.cache(DEFAULT_CACHE_NAME);
+        IgniteCache<Integer, Integer> cache = ig.cache(cacheName);
 
-        IgniteCache<Integer, Integer> cache0 = cl.cache(DEFAULT_CACHE_NAME);
+        IgniteCache<Integer, Integer> cache0 = cl.cache(cacheName);
 
         ig.cache(DEFAULT_CACHE_NAME).enableStatistics(true);
 
@@ -252,7 +258,7 @@ public class TxWithKeyContentionSelfTest extends GridCommonAbstractTest {
 
             commSpi0.blockMessages(new IgniteBiPredicate<ClusterNode, Message>() {
                 @Override public boolean apply(ClusterNode node, Message msg) {
-                    if (msg instanceof GridNearTxFinishResponse && blockOnce.getCount() > 0) {
+                    if (msg instanceof GridNearTxPrepareResponse && blockOnce.getCount() > 0) {
                         blockOnce.countDown();
 
                         return true;
@@ -300,12 +306,6 @@ public class TxWithKeyContentionSelfTest extends GridCommonAbstractTest {
             commSpi0.stopBlock();
         }
 
-        f.get();
-
-        finishFut.get();
-
-        txLatch.await();
-
         Thread.sleep(1000);
 
         IgniteTxManager srvTxMgr = ((IgniteEx)ig).context().cache().context().tm();
@@ -352,5 +352,11 @@ public class TxWithKeyContentionSelfTest extends GridCommonAbstractTest {
                     return false;
             }
         }, 25_000));
+
+        f.get();
+
+        finishFut.get();
+
+        txLatch.await();
     }
 }
