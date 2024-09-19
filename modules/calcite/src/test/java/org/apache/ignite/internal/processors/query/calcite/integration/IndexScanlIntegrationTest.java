@@ -300,6 +300,10 @@ public class IndexScanlIntegrationTest extends AbstractBasicIntegrationTransacti
                     assertEquals(ROWS_CNT, idx.rowsProcessed());
                     assertTrue(idx.isInlineScan());
                 }
+                else if (sqlTxMode == SqlTransactionMode.ALL) {
+                    assertEquals(0, idx.rowsProcessed());
+                    assertFalse(idx.isInlineScan());
+                }
             }
             else {
                 checker.check();

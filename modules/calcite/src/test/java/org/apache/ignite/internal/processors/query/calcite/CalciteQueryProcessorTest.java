@@ -21,11 +21,13 @@ import java.time.Duration;
 import java.time.Period;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
+import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 import org.apache.calcite.util.ImmutableIntList;
 import org.apache.ignite.Ignite;
@@ -56,6 +58,7 @@ import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.ListeningTestLogger;
 import org.apache.ignite.testframework.LogListener;
 import org.apache.ignite.testframework.junits.WithSystemProperty;
+import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.hamcrest.CoreMatchers;
 import org.junit.Test;
 
@@ -72,7 +75,7 @@ import static org.junit.Assert.assertThat;
  *
  */
 @WithSystemProperty(key = "calcite.debug", value = "false")
-public class CalciteQueryProcessorTest extends AbstractTransactionalSqlTest {
+public class CalciteQueryProcessorTest extends GridCommonAbstractTest {
     /** */
     private static IgniteEx client;
 
@@ -93,7 +96,7 @@ public class CalciteQueryProcessorTest extends AbstractTransactionalSqlTest {
     }
 
     /** {@inheritDoc} */
-    @Override protected void init() throws Exception {
+    @Override protected void beforeTestsStarted() throws Exception {
         startGrids(5);
 
         client = startClientGrid();
@@ -101,8 +104,6 @@ public class CalciteQueryProcessorTest extends AbstractTransactionalSqlTest {
 
     /** {@inheritDoc} */
     @Override protected void afterTest() throws InterruptedException {
-        clearTransaction();
-
         for (Ignite ign : G.allGrids()) {
             for (String cacheName : ign.cacheNames())
                 ign.destroyCache(cacheName);
@@ -132,7 +133,7 @@ public class CalciteQueryProcessorTest extends AbstractTransactionalSqlTest {
         fields.put("ID", Integer.class.getName());
         fields.put("VAL", String.class.getName());
 
-        IgniteCache<Integer, String> cache = client.getOrCreateCache(this.<Integer, String>cacheConfiguration()
+        IgniteCache<Integer, String> cache = client.getOrCreateCache(new CacheConfiguration<Integer, String>()
             .setGroupName("SOME_GROUP")
             .setName("TBL")
             .setSqlSchema("PUBLIC")
@@ -144,8 +145,8 @@ public class CalciteQueryProcessorTest extends AbstractTransactionalSqlTest {
             .setCacheMode(CacheMode.REPLICATED)
         );
 
-        put(client, cache, 1, "1");
-        put(client, cache, 2, "2");
+        cache.put(1, "1");
+        cache.put(2, "2");
 
         assertQuery(client, "select val from tbl order by id")
             .returns("1")
@@ -161,7 +162,7 @@ public class CalciteQueryProcessorTest extends AbstractTransactionalSqlTest {
     /** Tests varchar min\max aggregates. */
     @Test
     public void testVarCharMinMax() throws IgniteInterruptedCheckedException {
-        execute(client, "CREATE TABLE TEST(val VARCHAR primary key, val1 integer) WITH \"atomicity=transactional\";");
+        execute(client, "CREATE TABLE TEST(val VARCHAR primary key, val1 integer);");
         execute(client, "INSERT INTO test VALUES ('б', 1), ('бб', 2), ('щ', 3), ('щщ', 4), ('Б', 4), ('ББ', 4), ('Я', 4);");
         List<List<?>> rows = sql("SELECT MAX(val), MIN(val) FROM TEST");
 
@@ -172,7 +173,7 @@ public class CalciteQueryProcessorTest extends AbstractTransactionalSqlTest {
     /** */
     @Test
     public void testCountWithJoin() throws Exception {
-        IgniteCache<Integer, RISK> RISK = client.getOrCreateCache(this.<Integer, RISK>cacheConfiguration()
+        IgniteCache<Integer, RISK> RISK = client.getOrCreateCache(new CacheConfiguration<Integer, RISK>()
             .setName("RISK")
             .setSqlSchema("PUBLIC")
             .setQueryEntities(F.asList(new QueryEntity(Integer.class, RISK.class).setTableName("RISK")
@@ -180,7 +181,7 @@ public class CalciteQueryProcessorTest extends AbstractTransactionalSqlTest {
             .setBackups(1)
         );
 
-        IgniteCache<Integer, TRADE> TRADE = client.getOrCreateCache(this.<Integer, TRADE>cacheConfiguration()
+        IgniteCache<Integer, TRADE> TRADE = client.getOrCreateCache(new CacheConfiguration<Integer, TRADE>()
             .setName("TRADE")
             .setSqlSchema("PUBLIC")
             .setQueryEntities(F.asList(new QueryEntity(Integer.class, TRADE.class).setTableName("TRADE")
@@ -188,7 +189,7 @@ public class CalciteQueryProcessorTest extends AbstractTransactionalSqlTest {
             .setBackups(1)
         );
 
-        IgniteCache<Integer, BATCH> BATCH = client.getOrCreateCache(this.<Integer, BATCH>cacheConfiguration()
+        IgniteCache<Integer, BATCH> BATCH = client.getOrCreateCache(new CacheConfiguration<Integer, BATCH>()
             .setName("BATCH")
             .setSqlSchema("PUBLIC")
             .setQueryEntities(F.asList(new QueryEntity(Integer.class, BATCH.class).setTableName("BATCH")))
@@ -197,14 +198,22 @@ public class CalciteQueryProcessorTest extends AbstractTransactionalSqlTest {
 
         int numRiskRows = 65_000;
 
+        Map<Integer, RISK> mRisk = new HashMap<>(numRiskRows);
+
         for (int i = 0; i < numRiskRows; i++)
-            put(client, RISK, i, new RISK(i));
+            mRisk.put(i, new RISK(i));
+
+        RISK.putAll(mRisk);
+
+        Map<Integer, TRADE> mTrade = new HashMap<>(200);
 
         for (int i = 0; i < 200; i++)
-            put(client, TRADE, i, new TRADE(i));
+            mTrade.put(i, new TRADE(i));
+
+        TRADE.putAll(mTrade);
 
         for (int i = 0; i < 80; i++)
-            put(client, BATCH, i, new BATCH(i));
+            BATCH.put(i, new BATCH(i));
 
         awaitPartitionMapExchange(true, true, null);
 
@@ -255,16 +264,18 @@ public class CalciteQueryProcessorTest extends AbstractTransactionalSqlTest {
      */
     @Test
     public void testBangEqual() throws Exception {
-        IgniteCache<Integer, Developer> developer = client.createCache(this.<Integer, Developer>cacheConfiguration()
+        IgniteCache<Integer, Developer> developer = grid(1).createCache(new CacheConfiguration<Integer, Developer>()
             .setName("developer")
             .setSqlSchema("PUBLIC")
             .setIndexedTypes(Integer.class, Developer.class)
             .setBackups(2)
         );
 
-        put(client, developer, 1, new Developer("Name1", 1));
-        put(client, developer, 10, new Developer("Name10", 10));
-        put(client, developer, 100, new Developer("Name100", 100));
+        developer.put(1, new Developer("Name1", 1));
+        developer.put(10, new Developer("Name10", 10));
+        developer.put(100, new Developer("Name100", 100));
+
+        awaitPartitionMapExchange(true, true, null);
 
         assertEquals(2, sql("SELECT * FROM Developer WHERE projectId != ?", false, 1).size());
     }
@@ -352,33 +363,33 @@ public class CalciteQueryProcessorTest extends AbstractTransactionalSqlTest {
     /** */
     @Test
     public void unionAll() throws Exception {
-        IgniteCache<Integer, Employer> employer1 = client.getOrCreateCache(this.<Integer, Employer>cacheConfiguration()
+        IgniteCache<Integer, Employer> employer1 = client.getOrCreateCache(new CacheConfiguration<Integer, Employer>()
             .setName("employer1")
             .setSqlSchema("PUBLIC")
             .setQueryEntities(F.asList(new QueryEntity(Integer.class, Employer.class).setTableName("EMPLOYER1")))
             .setBackups(1)
         );
 
-        IgniteCache<Integer, Employer> employer2 = client.getOrCreateCache(this.<Integer, Employer>cacheConfiguration()
+        IgniteCache<Integer, Employer> employer2 = client.getOrCreateCache(new CacheConfiguration<Integer, Employer>()
             .setName("employer2")
             .setSqlSchema("PUBLIC")
             .setQueryEntities(F.asList(new QueryEntity(Integer.class, Employer.class).setTableName("EMPLOYER2")))
             .setBackups(2)
         );
 
-        IgniteCache<Integer, Employer> employer3 = client.getOrCreateCache(this.<Integer, Employer>cacheConfiguration()
+        IgniteCache<Integer, Employer> employer3 = client.getOrCreateCache(new CacheConfiguration<Integer, Employer>()
             .setName("employer3")
             .setSqlSchema("PUBLIC")
             .setQueryEntities(F.asList(new QueryEntity(Integer.class, Employer.class).setTableName("EMPLOYER3")))
             .setBackups(3)
         );
 
-        put(client, employer1, 1, new Employer("Igor", 10d));
-        put(client, employer2, 1, new Employer("Roman", 15d));
-        put(client, employer3, 1, new Employer("Nikolay", 20d));
-        put(client, employer1, 2, new Employer("Igor", 10d));
-        put(client, employer2, 2, new Employer("Roman", 15d));
-        put(client, employer3, 3, new Employer("Nikolay", 20d));
+        employer1.put(1, new Employer("Igor", 10d));
+        employer2.put(1, new Employer("Roman", 15d));
+        employer3.put(1, new Employer("Nikolay", 20d));
+        employer1.put(2, new Employer("Igor", 10d));
+        employer2.put(2, new Employer("Roman", 15d));
+        employer3.put(3, new Employer("Nikolay", 20d));
 
         awaitPartitionMapExchange(true, true, null);
 
@@ -394,39 +405,39 @@ public class CalciteQueryProcessorTest extends AbstractTransactionalSqlTest {
     /** */
     @Test
     public void union() throws Exception {
-        IgniteCache<Integer, Employer> employer1 = client.getOrCreateCache(this.<Integer, Employer>cacheConfiguration()
+        IgniteCache<Integer, Employer> employer1 = client.getOrCreateCache(new CacheConfiguration<Integer, Employer>()
             .setName("employer1")
             .setSqlSchema("PUBLIC")
             .setQueryEntities(F.asList(new QueryEntity(Integer.class, Employer.class).setTableName("EMPLOYER1")))
             .setBackups(1)
         );
 
-        IgniteCache<Integer, Employer> employer2 = client.getOrCreateCache(this.<Integer, Employer>cacheConfiguration()
+        IgniteCache<Integer, Employer> employer2 = client.getOrCreateCache(new CacheConfiguration<Integer, Employer>()
             .setName("employer2")
             .setSqlSchema("PUBLIC")
             .setQueryEntities(F.asList(new QueryEntity(Integer.class, Employer.class).setTableName("EMPLOYER2")))
             .setBackups(2)
         );
 
-        IgniteCache<Integer, Employer> employer3 = client.getOrCreateCache(this.<Integer, Employer>cacheConfiguration()
+        IgniteCache<Integer, Employer> employer3 = client.getOrCreateCache(new CacheConfiguration<Integer, Employer>()
             .setName("employer3")
             .setSqlSchema("PUBLIC")
             .setQueryEntities(F.asList(new QueryEntity(Integer.class, Employer.class).setTableName("EMPLOYER3")))
             .setBackups(3)
         );
 
-        put(client, employer1, 1, new Employer("Igor", 10d));
-        put(client, employer2, 1, new Employer("Roman", 15d));
-        put(client, employer3, 1, new Employer("Nikolay", 20d));
-        put(client, employer1, 2, new Employer("Igor", 10d));
-        put(client, employer2, 2, new Employer("Roman", 15d));
-        put(client, employer3, 3, new Employer("Nikolay", 20d));
+        employer1.put(1, new Employer("Igor", 10d));
+        employer2.put(1, new Employer("Roman", 15d));
+        employer3.put(1, new Employer("Nikolay", 20d));
+        employer1.put(2, new Employer("Igor", 10d));
+        employer2.put(2, new Employer("Roman", 15d));
+        employer3.put(3, new Employer("Nikolay", 20d));
 
         awaitPartitionMapExchange(true, true, null);
 
-        QueryEngine engine = Commons.lookupComponent(client.context(), QueryEngine.class);
+        QueryEngine engine = Commons.lookupComponent(grid(1).context(), QueryEngine.class);
 
-        List<FieldsQueryCursor<List<?>>> qry = engine.query(queryContext(), "PUBLIC",
+        List<FieldsQueryCursor<List<?>>> qry = engine.query(null, "PUBLIC",
             "SELECT * FROM employer1 " +
                 "UNION " +
                 "SELECT * FROM employer2 " +
@@ -441,34 +452,34 @@ public class CalciteQueryProcessorTest extends AbstractTransactionalSqlTest {
 
     /** */
     private void populateTables() throws InterruptedException {
-        IgniteCache<Integer, Employer> orders = client.getOrCreateCache(this.<Integer, Employer>cacheConfiguration()
+        IgniteCache<Integer, Employer> orders = client.getOrCreateCache(new CacheConfiguration<Integer, Employer>()
             .setName("orders")
             .setSqlSchema("PUBLIC")
             .setQueryEntities(F.asList(new QueryEntity(Integer.class, Employer.class).setTableName("orders")))
             .setBackups(2)
         );
 
-        IgniteCache<Integer, Employer> account = client.getOrCreateCache(this.<Integer, Employer>cacheConfiguration()
+        IgniteCache<Integer, Employer> account = client.getOrCreateCache(new CacheConfiguration<Integer, Employer>()
             .setName("account")
             .setSqlSchema("PUBLIC")
             .setQueryEntities(F.asList(new QueryEntity(Integer.class, Employer.class).setTableName("account")))
             .setBackups(1)
         );
 
-        put(client, orders, 1, new Employer("Igor", 10d));
-        put(client, orders, 2, new Employer("Igor", 11d));
-        put(client, orders, 3, new Employer("Igor", 12d));
-        put(client, orders, 4, new Employer("Igor1", 13d));
-        put(client, orders, 5, new Employer("Igor1", 13d));
-        put(client, orders, 6, new Employer("Igor1", 13d));
-        put(client, orders, 7, new Employer("Roman", 14d));
+        orders.put(1, new Employer("Igor", 10d));
+        orders.put(2, new Employer("Igor", 11d));
+        orders.put(3, new Employer("Igor", 12d));
+        orders.put(4, new Employer("Igor1", 13d));
+        orders.put(5, new Employer("Igor1", 13d));
+        orders.put(6, new Employer("Igor1", 13d));
+        orders.put(7, new Employer("Roman", 14d));
 
-        put(client, account, 1, new Employer("Roman", 10d));
-        put(client, account, 2, new Employer("Roman", 11d));
-        put(client, account, 3, new Employer("Roman", 12d));
-        put(client, account, 4, new Employer("Roman", 13d));
-        put(client, account, 5, new Employer("Igor1", 13d));
-        put(client, account, 6, new Employer("Igor1", 13d));
+        account.put(1, new Employer("Roman", 10d));
+        account.put(2, new Employer("Roman", 11d));
+        account.put(3, new Employer("Roman", 12d));
+        account.put(4, new Employer("Roman", 13d));
+        account.put(5, new Employer("Igor1", 13d));
+        account.put(6, new Employer("Igor1", 13d));
 
         /*
         select * from orders;
@@ -661,31 +672,30 @@ public class CalciteQueryProcessorTest extends AbstractTransactionalSqlTest {
      * @param sql Statement.
      */
     protected List<List<?>> execute(IgniteEx node, String sql, Object... args) {
-        return invokeAction(
-            node,
-            () -> node.context().query().querySqlFields(new SqlFieldsQuery(sql).setSchema("PUBLIC").setArgs(args), true).getAll()
-        );
+        return node.context().query().querySqlFields(new SqlFieldsQuery(sql).setSchema("PUBLIC").setArgs(args), true).getAll();
     }
 
     /** */
     @Test
     public void aggregate() throws Exception {
-        IgniteCache<Integer, Employer> employer = client.getOrCreateCache(this.<Integer, Employer>cacheConfiguration()
+        IgniteCache<Integer, Employer> employer = client.getOrCreateCache(new CacheConfiguration<Integer, Employer>()
             .setName("employer")
             .setSqlSchema("PUBLIC")
             .setIndexedTypes(Integer.class, Employer.class)
             .setBackups(2)
         );
 
-        put(client, employer, 0, new Employer("Igor", 10d));
-        put(client, employer, 1, new Employer("Roman", 15d));
-        put(client, employer, 2, new Employer("Nikolay", 20d));
+        employer.putAll(ImmutableMap.of(
+            0, new Employer("Igor", 10d),
+            1, new Employer("Roman", 15d),
+            2, new Employer("Nikolay", 20d)
+        ));
 
         awaitPartitionMapExchange(true, true, null);
 
-        QueryEngine engine = Commons.lookupComponent(client.context(), QueryEngine.class);
+        QueryEngine engine = Commons.lookupComponent(grid(1).context(), QueryEngine.class);
 
-        List<FieldsQueryCursor<List<?>>> qry = engine.query(queryContext(), "PUBLIC",
+        List<FieldsQueryCursor<List<?>>> qry = engine.query(null, "PUBLIC",
             "SELECT * FROM employer WHERE employer.salary = (SELECT AVG(employer.salary) FROM employer)");
 
         assertEquals(1, qry.size());
@@ -700,7 +710,7 @@ public class CalciteQueryProcessorTest extends AbstractTransactionalSqlTest {
     public void aggregateNested() throws Exception {
         String cacheName = "employer";
 
-        IgniteCache<Integer, Employer> employer = client.getOrCreateCache(this.<Integer, Employer>cacheConfiguration()
+        IgniteCache<Integer, Employer> employer = client.getOrCreateCache(new CacheConfiguration<Integer, Employer>()
             .setName(cacheName)
             .setSqlSchema("PUBLIC")
             .setIndexedTypes(Integer.class, Employer.class)
@@ -712,13 +722,15 @@ public class CalciteQueryProcessorTest extends AbstractTransactionalSqlTest {
         List<Integer> keysNode0 = primaryKeys(grid(0).cache(cacheName), 2);
         List<Integer> keysNode1 = primaryKeys(grid(1).cache(cacheName), 1);
 
-        put(client, employer, keysNode0.get(0), new Employer("Igor", 10d));
-        put(client, employer, keysNode0.get(1), new Employer("Roman", 20d));
-        put(client, employer, keysNode1.get(0), new Employer("Nikolay", 30d));
+        employer.putAll(ImmutableMap.of(
+            keysNode0.get(0), new Employer("Igor", 10d),
+            keysNode0.get(1), new Employer("Roman", 20d),
+            keysNode1.get(0), new Employer("Nikolay", 30d)
+        ));
 
-        QueryEngine engine = Commons.lookupComponent(client.context(), QueryEngine.class);
+        QueryEngine engine = Commons.lookupComponent(grid(1).context(), QueryEngine.class);
 
-        List<FieldsQueryCursor<List<?>>> qry = engine.query(queryContext(), "PUBLIC",
+        List<FieldsQueryCursor<List<?>>> qry = engine.query(null, "PUBLIC",
             "SELECT avg(salary) FROM " +
                 "(SELECT avg(salary) as salary FROM employer UNION ALL SELECT salary FROM employer)");
 
@@ -732,31 +744,31 @@ public class CalciteQueryProcessorTest extends AbstractTransactionalSqlTest {
     /** */
     @Test
     public void query() throws Exception {
-        IgniteCache<Integer, Developer> developer = grid(1).createCache(this.<Integer, Developer>cacheConfiguration()
+        IgniteCache<Integer, Developer> developer = grid(1).createCache(new CacheConfiguration<Integer, Developer>()
             .setName("developer")
             .setSqlSchema("PUBLIC")
             .setIndexedTypes(Integer.class, Developer.class)
             .setBackups(2)
         );
 
-        IgniteCache<Integer, Project> project = grid(1).createCache(this.<Integer, Project>cacheConfiguration()
+        IgniteCache<Integer, Project> project = grid(1).createCache(new CacheConfiguration<Integer, Project>()
             .setName("project")
             .setSqlSchema("PUBLIC")
             .setIndexedTypes(Integer.class, Project.class)
             .setBackups(2)
         );
 
-        put(grid(1), project, 0, new Project("Ignite"));
-        put(grid(1), project, 1, new Project("Calcite"));
+        project.put(0, new Project("Ignite"));
+        project.put(1, new Project("Calcite"));
 
-        put(grid(1), developer, 0, new Developer("Igor", 1));
-        put(grid(1), developer, 1, new Developer("Roman", 0));
+        developer.put(0, new Developer("Igor", 1));
+        developer.put(1, new Developer("Roman", 0));
 
         awaitPartitionMapExchange(true, true, null);
 
         QueryEngine engine = Commons.lookupComponent(grid(1).context(), QueryEngine.class);
 
-        List<FieldsQueryCursor<List<?>>> qry = engine.query(queryContext(), "PUBLIC",
+        List<FieldsQueryCursor<List<?>>> qry = engine.query(null, "PUBLIC",
             "select * from DEVELOPER d, PROJECT p where d.projectId = p._key and d._key = ?", 0);
 
         assertEquals(1, qry.size());
@@ -767,29 +779,29 @@ public class CalciteQueryProcessorTest extends AbstractTransactionalSqlTest {
     /** */
     @Test
     public void query2() {
-        IgniteCache<Integer, Developer> developer = grid(1).getOrCreateCache(this.<Integer, Developer>cacheConfiguration()
+        IgniteCache<Integer, Developer> developer = grid(1).getOrCreateCache(new CacheConfiguration<Integer, Developer>()
             .setName("developer")
             .setSqlSchema("PUBLIC")
             .setIndexedTypes(Integer.class, Developer.class)
             .setCacheMode(CacheMode.REPLICATED)
         );
 
-        IgniteCache<Integer, Project> project = grid(1).getOrCreateCache(this.<Integer, Project>cacheConfiguration()
+        IgniteCache<Integer, Project> project = grid(1).getOrCreateCache(new CacheConfiguration<Integer, Project>()
             .setName("project")
             .setSqlSchema("PUBLIC")
             .setIndexedTypes(Integer.class, Project.class)
             .setBackups(2)
         );
 
-        put(grid(1), project, 0, new Project("Ignite"));
-        put(grid(1), project, 1, new Project("Calcite"));
+        project.put(0, new Project("Ignite"));
+        project.put(1, new Project("Calcite"));
 
-        put(grid(1), developer, 0, new Developer("Igor", 1));
-        put(grid(1), developer, 1, new Developer("Roman", 0));
+        developer.put(0, new Developer("Igor", 1));
+        developer.put(1, new Developer("Roman", 0));
 
         QueryEngine engine = Commons.lookupComponent(grid(1).context(), QueryEngine.class);
 
-        List<FieldsQueryCursor<List<?>>> qry = engine.query(queryContext(), "PUBLIC",
+        List<FieldsQueryCursor<List<?>>> qry = engine.query(null, "PUBLIC",
             "select * from DEVELOPER d, PROJECT p where d.projectId = p._key and d._key = ?", 0);
 
         assertEquals(1, qry.size());
@@ -799,30 +811,34 @@ public class CalciteQueryProcessorTest extends AbstractTransactionalSqlTest {
 
     /** */
     @Test
-    public void queryMultiStatement() {
-        IgniteCache<Integer, Developer> developer = grid(1).getOrCreateCache(this.<Integer, Developer>cacheConfiguration()
+    public void queryMultiStatement() throws Exception {
+        IgniteCache<Integer, Developer> developer = grid(1).getOrCreateCache(new CacheConfiguration<Integer, Developer>()
             .setName("developer")
             .setSqlSchema("PUBLIC")
             .setIndexedTypes(Integer.class, Developer.class)
             .setBackups(2)
         );
 
-        IgniteCache<Integer, Project> project = grid(1).getOrCreateCache(this.<Integer, Project>cacheConfiguration()
+        IgniteCache<Integer, Project> project = grid(1).getOrCreateCache(new CacheConfiguration<Integer, Project>()
             .setName("project")
             .setSqlSchema("PUBLIC")
             .setIndexedTypes(Integer.class, Project.class)
             .setBackups(2)
         );
 
-        put(grid(1), project, 0, new Project("Ignite"));
-        put(grid(1), project, 1, new Project("Calcite"));
+        project.putAll(ImmutableMap.of(
+            0, new Project("Ignite"),
+            1, new Project("Calcite")
+        ));
 
-        put(grid(1), developer, 0, new Developer("Igor", 1));
-        put(grid(1), developer, 1, new Developer("Roman", 0));
+        developer.putAll(ImmutableMap.of(
+            0, new Developer("Igor", 1),
+            1, new Developer("Roman", 0)
+        ));
 
         QueryEngine engine = Commons.lookupComponent(grid(1).context(), QueryEngine.class);
 
-        List<FieldsQueryCursor<List<?>>> qry = engine.query(queryContext(), "PUBLIC",
+        List<FieldsQueryCursor<List<?>>> qry = engine.query(null, "PUBLIC",
             "" +
                 "select * from DEVELOPER d, PROJECT p where d.projectId = p._key and d._key = ?;" +
                 "select * from DEVELOPER d, PROJECT p where d.projectId = p._key and d._key = 10;" +
@@ -892,10 +908,7 @@ public class CalciteQueryProcessorTest extends AbstractTransactionalSqlTest {
     /** */
     @Test
     public void testSequentialInserts() throws Exception {
-        sql("CREATE TABLE t(x INTEGER) WITH \"atomicity=transactional\"", true);
-
-        if (sqlTxMode != SqlTransactionMode.NONE)
-            startTransaction(client);
+        sql("CREATE TABLE t(x INTEGER)", true);
 
         for (int i = 0; i < 10_000; i++)
             sql("INSERT INTO t VALUES (?)", true, i);
@@ -1067,17 +1080,14 @@ public class CalciteQueryProcessorTest extends AbstractTransactionalSqlTest {
      */
     @Test
     public void testSelectWithOrdering() throws IgniteInterruptedCheckedException {
-        if (sqlTxMode != SqlTransactionMode.NONE)
-            startTransaction(client);
-
         sql( "drop table if exists test_tbl", true);
 
-        sql( "create table test_tbl (c1 int) with atomicity=transactional", true);
+        sql( "create table test_tbl (c1 int)", true);
+
+        sql( "insert into test_tbl values (1), (2), (3), (null)", true);
 
         sql( "create index idx_asc on test_tbl (c1)", true);
         sql( "create index idx_desc on test_tbl (c1 desc)", true);
-
-        sql( "insert into test_tbl values (1), (2), (3), (null)", true);
 
         assertQuery(client, "select c1 from test_tbl ORDER BY c1")
             .matches(containsIndexScan("PUBLIC", "TEST_TBL", "IDX_ASC"))
@@ -1222,11 +1232,11 @@ public class CalciteQueryProcessorTest extends AbstractTransactionalSqlTest {
 
         QueryEngine engineCli = Commons.lookupComponent(client.context(), QueryEngine.class);
 
-        List<FieldsQueryCursor<List<?>>> cursorsCli = engineCli.query(queryContext(), "PUBLIC", sql, args);
+        List<FieldsQueryCursor<List<?>>> cursorsCli = engineCli.query(null, "PUBLIC", sql, args);
 
         List<List<?>> allSrv;
 
-        if (!noCheck && sqlTxMode == SqlTransactionMode.NONE) {
+        if (!noCheck) {
             List<FieldsQueryCursor<List<?>>> cursorsSrv = engineSrv.query(null, "PUBLIC", sql, args);
 
             try (QueryCursor srvCursor = cursorsSrv.get(0); QueryCursor cliCursor = cursorsCli.get(0)) {
@@ -1317,7 +1327,7 @@ public class CalciteQueryProcessorTest extends AbstractTransactionalSqlTest {
 
     /** */
     private QueryChecker assertQuery(IgniteEx ignite, String qry) {
-        return new QueryChecker(qry, tx, sqlTxMode) {
+        return new QueryChecker(qry) {
             @Override protected QueryEngine getEngine() {
                 return Commons.lookupComponent(ignite.context(), QueryEngine.class);
             }
