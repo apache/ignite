@@ -208,4 +208,9 @@ public abstract class AbstractBasicIntegrationTransactionalTest extends Abstract
 
         tx = null;
     }
+
+    /** */
+    public String atomicity() {
+        return "atomicity=" + (sqlTxMode == SqlTransactionMode.NONE ? CacheAtomicityMode.ATOMIC : CacheAtomicityMode.TRANSACTIONAL);
+    }
 }

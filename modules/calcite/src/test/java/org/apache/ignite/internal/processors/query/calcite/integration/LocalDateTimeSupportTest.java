@@ -233,7 +233,7 @@ public class LocalDateTimeSupportTest extends AbstractBasicIntegrationTransactio
                 " \"KEY_TYPE=java.lang.Integer" +
                 ", VALUE_TYPE=" + Data.class.getName() +
                 ", CACHE_NAME=default" +
-                ", atomicity=transactional\"");
+                ", " + atomicity() + "\"");
         }
         else {
             QueryEntity projEntity = new QueryEntity();

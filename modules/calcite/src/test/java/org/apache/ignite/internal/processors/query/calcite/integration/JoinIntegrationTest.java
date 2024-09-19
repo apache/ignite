@@ -52,8 +52,8 @@ public class JoinIntegrationTest extends AbstractBasicIntegrationTransactionalTe
     @Override protected void init() throws Exception {
         super.init();
 
-        executeSql("create table t1 (c1 int, c2 int, c3 int) WITH atomicity=transactional");
-        executeSql("create table t2 (c1 int, c2 int, c3 int) WITH atomicity=transactional");
+        executeSql("create table t1 (c1 int, c2 int, c3 int) WITH " + atomicity());
+        executeSql("create table t2 (c1 int, c2 int, c3 int) WITH " + atomicity());
 
         executeSql("create index t1_idx on t1 (c3, c2, c1)");
         executeSql("create index t2_idx on t2 (c3, c2, c1)");

@@ -29,7 +29,7 @@ public class CorrelatesIntegrationTest extends AbstractBasicIntegrationTransacti
      */
     @Test
     public void testCorrelatesAssignedBeforeAccess() {
-        sql("create table test_tbl(v INTEGER) WITH atomicity=transactional");
+        sql("create table test_tbl(v INTEGER) WITH " + atomicity());
         sql("INSERT INTO test_tbl VALUES (1)");
 
         assertQuery("SELECT t0.v, (SELECT t0.v + t1.v FROM test_tbl t1) AS j FROM test_tbl t0")
@@ -57,8 +57,8 @@ public class CorrelatesIntegrationTest extends AbstractBasicIntegrationTransacti
      */
     @Test
     public void testCorrelatesCollision() {
-        sql("CREATE TABLE test1 (a INTEGER, b INTEGER) WITH atomicity=transactional");
-        sql("CREATE TABLE test2 (a INTEGER, c INTEGER) WITH atomicity=transactional");
+        sql("CREATE TABLE test1 (a INTEGER, b INTEGER) WITH " + atomicity());
+        sql("CREATE TABLE test2 (a INTEGER, c INTEGER) WITH " + atomicity());
         sql("INSERT INTO test1 VALUES (11, 1), (12, 2), (13, 3)");
         sql("INSERT INTO test2 VALUES (11, 1), (12, 1), (13, 4)");
 
@@ -82,9 +82,9 @@ public class CorrelatesIntegrationTest extends AbstractBasicIntegrationTransacti
      */
     @Test
     public void testCorrelatedDistribution() {
-        sql("CREATE TABLE dept(deptid INTEGER, name VARCHAR, PRIMARY KEY(deptid)) WITH atomicity=transactional");
+        sql("CREATE TABLE dept(deptid INTEGER, name VARCHAR, PRIMARY KEY(deptid)) WITH " + atomicity());
         sql("CREATE TABLE emp(empid INTEGER, deptid INTEGER, name VARCHAR, PRIMARY KEY(empid, deptid)) " +
-            "WITH AFFINITY_KEY=deptid,atomicity=transactional");
+            "WITH AFFINITY_KEY=deptid," + atomicity());
 
         sql("INSERT INTO dept VALUES (0, 'dept0'), (1, 'dept1'), (2, 'dept2')");
         sql("INSERT INTO emp VALUES (0, 0, 'emp0'), (1, 0, 'emp1'), (2, 0, 'emp2'), " +

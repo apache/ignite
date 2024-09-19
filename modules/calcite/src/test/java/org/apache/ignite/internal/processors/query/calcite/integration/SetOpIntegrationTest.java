@@ -24,7 +24,6 @@ import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.cache.QueryEntity;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.internal.processors.query.calcite.QueryChecker;
-import org.apache.ignite.internal.processors.query.calcite.integration.AbstractBasicIntegrationTest.Employer;
 import org.apache.ignite.internal.util.typedef.F;
 import org.junit.Test;
 
@@ -474,8 +473,8 @@ public class SetOpIntegrationTest extends AbstractBasicIntegrationTransactionalT
     @Test
     public void testSetOpColocated() {
         executeSql("CREATE TABLE emp(empid INTEGER, deptid INTEGER, name VARCHAR, PRIMARY KEY(empid, deptid)) " +
-            "WITH AFFINITY_KEY=deptid,atomicity=transactional");
-        executeSql("CREATE TABLE dept(deptid INTEGER, name VARCHAR, PRIMARY KEY(deptid)) WITH atomicity=transactional");
+            "WITH AFFINITY_KEY=deptid," + atomicity());
+        executeSql("CREATE TABLE dept(deptid INTEGER, name VARCHAR, PRIMARY KEY(deptid)) WITH " + atomicity());
 
         executeSql("INSERT INTO emp VALUES (0, 0, 'test0'), (1, 0, 'test1'), (2, 1, 'test2')");
         executeSql("INSERT INTO dept VALUES (0, 'test0'), (1, 'test1'), (2, 'test2')");
@@ -509,7 +508,7 @@ public class SetOpIntegrationTest extends AbstractBasicIntegrationTransactionalT
      */
     @Test
     public void testSetOpRewindability() {
-        executeSql("CREATE TABLE test(i INTEGER) WITH atomicity=transactional");
+        executeSql("CREATE TABLE test(i INTEGER) WITH " + atomicity());
         executeSql("INSERT INTO test VALUES (1), (2)");
 
         assertQuery("SELECT (SELECT i FROM test EXCEPT SELECT test.i) FROM test")

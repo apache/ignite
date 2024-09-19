@@ -23,12 +23,9 @@ import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.cache.QueryEntity;
 import org.apache.ignite.cache.query.annotations.QuerySqlField;
 import org.apache.ignite.internal.processors.query.calcite.QueryChecker;
-import org.apache.ignite.internal.processors.query.calcite.integration.AbstractBasicIntegrationTest.Employer;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.junit.Test;
-
-import static org.apache.ignite.internal.processors.query.calcite.integration.AbstractBasicIntegrationTest.TABLE_NAME;
 
 /**
  *
@@ -49,7 +46,7 @@ public class AggregatesIntegrationTest extends AbstractBasicIntegrationTransacti
         for (String idx : indexes) {
             for (int backups = -1; backups < 3; ++backups) {
                 executeSql("create table tbl(id integer primary key, val0 integer, val1 float, val2 varchar) " +
-                    "with template=" + (backups < 0 ? "replicated" : "partitioned,backups=" + backups) + ",atomicity=transactional");
+                    "with template=" + (backups < 0 ? "replicated" : "partitioned,backups=" + backups) + "," + atomicity());
 
                 executeSql("create index test_idx on tbl(" + idx + ")");
 
@@ -119,7 +116,7 @@ public class AggregatesIntegrationTest extends AbstractBasicIntegrationTransacti
     @Test
     public void testCountIndexedField() {
         // Check count with two columns index.
-        sql("CREATE TABLE tbl (a INT, b INT, c INT) WITH atomicity=transactional");
+        sql("CREATE TABLE tbl (a INT, b INT, c INT) WITH " + atomicity());
         sql("CREATE INDEX idx_a ON tbl(a, c)");
         sql("CREATE INDEX idx_b ON tbl(b DESC, c)");
 
@@ -291,10 +288,10 @@ public class AggregatesIntegrationTest extends AbstractBasicIntegrationTransacti
     @Test
     public void testColocatedAggregate() {
         executeSql("CREATE TABLE t1(id INT, val0 VARCHAR, val1 VARCHAR, val2 VARCHAR, PRIMARY KEY(id, val1)) " +
-            "WITH AFFINITY_KEY=val1,atomicity=transactional");
+            "WITH AFFINITY_KEY=val1," + atomicity());
 
         executeSql("CREATE TABLE t2(id INT, val0 VARCHAR, val1 VARCHAR, val2 VARCHAR, PRIMARY KEY(id, val1)) " +
-            "WITH AFFINITY_KEY=val1,atomicity=transactional");
+            "WITH AFFINITY_KEY=val1," + atomicity());
 
         for (int i = 0; i < 100; i++)
             executeSql("INSERT INTO t1 VALUES (?, ?, ?, ?)", i, "val" + i, "val" + i % 2, "val" + i);
@@ -322,7 +319,7 @@ public class AggregatesIntegrationTest extends AbstractBasicIntegrationTransacti
     /** */
     @Test
     public void testEverySomeAggregate() {
-        executeSql("CREATE TABLE t(c1 INT, c2 INT) WITH atomicity=transactional");
+        executeSql("CREATE TABLE t(c1 INT, c2 INT) WITH " + atomicity());
         executeSql("INSERT INTO t VALUES (null, 0)");
         executeSql("INSERT INTO t VALUES (0, null)");
         executeSql("INSERT INTO t VALUES (null, null)");
