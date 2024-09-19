@@ -49,7 +49,9 @@ import org.apache.ignite.resources.IgniteInstanceResource;
 import org.apache.ignite.resources.LoggerResource;
 import org.jetbrains.annotations.NotNull;
 
+import static java.lang.String.valueOf;
 import static org.apache.ignite.internal.processors.cache.persistence.snapshot.IgniteSnapshotManager.incrementalSnapshotWalsDir;
+import static org.apache.ignite.internal.processors.cache.persistence.snapshot.IgniteSnapshotManager.snapshotMetaFileName;
 
 /** Snapshot task to verify snapshot metadata on the baseline nodes for given snapshot name. */
 @GridInternal
@@ -112,7 +114,7 @@ public class SnapshotMetadataVerificationTask
 
             if (arg.incrementIndex() > 0) {
                 List<SnapshotMetadata> metas = snpMeta.stream()
-                    .filter(m -> m.consistentId().equals(ignite.localNode().consistentId()))
+                    .filter(m -> m.consistentId().equals(valueOf(ignite.localNode().consistentId())))
                     .collect(Collectors.toList());
 
                 if (metas.size() != 1) {
@@ -187,7 +189,9 @@ public class SnapshotMetadataVerificationTask
                             "[snpName=" + arg.snapshotName() + ", snpPath=" + arg.snapshotPath() + ", incrementIndex=" + inc + ']');
                     }
 
-                    String metaFileName = IgniteSnapshotManager.snapshotMetaFileName(ignite.localNode().consistentId().toString());
+                    String folderName = ignite.context().cache().context().kernalContext().pdsFolderResolver().resolveFolders().folderName();
+
+                    String metaFileName = snapshotMetaFileName(folderName);
 
                     File metafile = incSnpDir.toPath().resolve(metaFileName).toFile();
 
