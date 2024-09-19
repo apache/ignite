@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.query.calcite.rules;
+package org.apache.ignite.internal.processors.query.calcite;
 
 import java.util.Arrays;
 import java.util.Collection;
@@ -55,14 +55,14 @@ public abstract class AbstractTransactionalSqlTest extends GridCommonAbstractTes
     @Parameterized.Parameter()
     public SqlTransactionMode sqlTxMode;
 
-    /** */
-    protected static SqlTransactionMode currentMode;
-
     /** @return Test parameters. */
     @Parameterized.Parameters(name = "sqlTxMode={0}")
     public static Collection<?> parameters() {
         return Arrays.asList(SqlTransactionMode.values());
     }
+
+    /** */
+    protected static SqlTransactionMode currentMode;
 
     /** */
     protected static Transaction tx;
@@ -155,7 +155,7 @@ public abstract class AbstractTransactionalSqlTest extends GridCommonAbstractTes
     }
 
     /** */
-    protected interface SupplierX<T> {
+    public interface SupplierX<T> {
         /** */
         T getx() throws Exception;
 

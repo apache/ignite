@@ -26,6 +26,7 @@ import java.time.LocalDate;
 import java.time.Period;
 import java.util.List;
 import java.util.UUID;
+import org.apache.ignite.internal.processors.query.calcite.AbstractTransactionalSqlTest.SqlTransactionMode;
 import org.apache.ignite.internal.util.typedef.F;
 import org.junit.Test;
 

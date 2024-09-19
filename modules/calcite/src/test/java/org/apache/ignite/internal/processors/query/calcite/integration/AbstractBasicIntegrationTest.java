@@ -59,6 +59,9 @@ import static org.apache.ignite.testframework.GridTestUtils.waitForCondition;
  */
 public class AbstractBasicIntegrationTest extends GridCommonAbstractTest {
     /** */
+    protected static final Object[] NULL_RESULT = new Object[] { null };
+
+    /** */
     protected static final String TABLE_NAME = "person";
 
     /** */
@@ -144,7 +147,12 @@ public class AbstractBasicIntegrationTest extends GridCommonAbstractTest {
 
     /** */
     protected List<List<?>> executeSql(String sql, Object... args) {
-        CalciteQueryProcessor qryProc = Commons.lookupComponent(client.context(), CalciteQueryProcessor.class);
+        return executeSql(client, sql, args);
+    }
+
+    /** */
+    protected List<List<?>> executeSql(IgniteEx ignite, String sql, Object... args) {
+        CalciteQueryProcessor qryProc = Commons.lookupComponent(ignite.context(), CalciteQueryProcessor.class);
 
         List<FieldsQueryCursor<List<?>>> cur = qryProc.query(queryContext(), "PUBLIC", sql, args);
 
@@ -171,12 +179,12 @@ public class AbstractBasicIntegrationTest extends GridCommonAbstractTest {
 
     /** */
     protected IgniteCache<Integer, Employer> createAndPopulateTable() {
-        return createAndPopulateTable(2, CacheMode.PARTITIONED);
+        return createAndPopulateTable(client, 2, CacheMode.PARTITIONED);
     }
 
     /** */
-    protected IgniteCache<Integer, Employer> createAndPopulateTable(int backups, CacheMode cacheMode) {
-        IgniteCache<Integer, Employer> person = client.getOrCreateCache(new CacheConfiguration<Integer, Employer>()
+    protected IgniteCache<Integer, Employer> createAndPopulateTable(Ignite ignite, int backups, CacheMode cacheMode) {
+        IgniteCache<Integer, Employer> person = ignite.getOrCreateCache(this.<Integer, Employer>cacheConfiguration()
             .setName(TABLE_NAME)
             .setSqlSchema("PUBLIC")
             .setQueryEntities(F.asList(new QueryEntity(Integer.class, Employer.class)
@@ -190,13 +198,23 @@ public class AbstractBasicIntegrationTest extends GridCommonAbstractTest {
 
         int idx = 0;
 
-        person.put(idx++, new Employer("Igor", 10d));
-        person.put(idx++, new Employer(null, 15d));
-        person.put(idx++, new Employer("Ilya", 15d));
-        person.put(idx++, new Employer("Roma", 10d));
-        person.put(idx++, new Employer("Roma", 10d));
+        put(ignite, person, idx++, new Employer("Igor", 10d));
+        put(ignite, person, idx++, new Employer(null, 15d));
+        put(ignite, person, idx++, new Employer("Ilya", 15d));
+        put(ignite, person, idx++, new Employer("Roma", 10d));
+        put(ignite, person, idx, new Employer("Roma", 10d));
 
         return person;
+    }
+
+    /** */
+    protected <K, V> void put(Ignite ignite, IgniteCache<K, V> c, K key, V val) {
+        c.put(key, val);
+    }
+
+    /** */
+    protected <K, V> CacheConfiguration<K, V> cacheConfiguration() {
+        return new CacheConfiguration<>();
     }
 
     /** */

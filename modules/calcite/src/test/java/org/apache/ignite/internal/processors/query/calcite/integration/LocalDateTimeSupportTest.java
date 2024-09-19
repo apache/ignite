@@ -36,6 +36,7 @@ import org.apache.ignite.cache.QueryEntity;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.processors.cacheobject.IgniteCacheObjectProcessor;
+import org.apache.ignite.internal.processors.query.calcite.AbstractTransactionalSqlTest.SqlTransactionMode;
 import org.apache.ignite.internal.util.typedef.G;
 import org.junit.Test;
 import org.junit.runner.RunWith;

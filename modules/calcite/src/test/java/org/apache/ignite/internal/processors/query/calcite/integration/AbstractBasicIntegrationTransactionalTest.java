@@ -17,112 +17,104 @@
 
 package org.apache.ignite.internal.processors.query.calcite.integration;
 
+import java.util.Arrays;
+import java.util.Collection;
 import java.util.List;
+import java.util.concurrent.ThreadLocalRandom;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
-import org.apache.ignite.cache.CacheMode;
-import org.apache.ignite.cache.QueryEntity;
-import org.apache.ignite.cache.query.FieldsQueryCursor;
-import org.apache.ignite.cache.query.QueryCursor;
+import org.apache.ignite.cache.CacheAtomicityMode;
+import org.apache.ignite.calcite.CalciteQueryEngineConfiguration;
+import org.apache.ignite.configuration.CacheConfiguration;
+import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
+import org.apache.ignite.internal.processors.cache.transactions.TransactionProxyImpl;
+import org.apache.ignite.internal.processors.query.QueryContext;
 import org.apache.ignite.internal.processors.query.QueryEngine;
-import org.apache.ignite.internal.processors.query.calcite.CalciteQueryProcessor;
+import org.apache.ignite.internal.processors.query.calcite.AbstractTransactionalSqlTest.SqlTransactionMode;
+import org.apache.ignite.internal.processors.query.calcite.AbstractTransactionalSqlTest.SupplierX;
 import org.apache.ignite.internal.processors.query.calcite.QueryChecker;
-import org.apache.ignite.internal.processors.query.calcite.exec.ExecutionServiceImpl;
-import org.apache.ignite.internal.processors.query.calcite.integration.AbstractBasicIntegrationTest.Employer;
-import org.apache.ignite.internal.processors.query.calcite.rules.AbstractTransactionalSqlTest;
 import org.apache.ignite.internal.processors.query.calcite.util.Commons;
-import org.apache.ignite.internal.util.typedef.F;
-import org.apache.ignite.internal.util.typedef.G;
+import org.apache.ignite.transactions.Transaction;
+import org.junit.runner.RunWith;
+import org.junit.runners.Parameterized;
 
-import static org.apache.ignite.internal.processors.query.calcite.exec.ExchangeServiceImpl.INBOX_INITIALIZATION_TIMEOUT;
-import static org.apache.ignite.internal.processors.query.calcite.integration.AbstractBasicIntegrationTest.TABLE_NAME;
-import static org.apache.ignite.testframework.GridTestUtils.assertThrowsAnyCause;
-import static org.apache.ignite.testframework.GridTestUtils.waitForCondition;
+import static org.apache.ignite.transactions.TransactionConcurrency.PESSIMISTIC;
+import static org.apache.ignite.transactions.TransactionIsolation.READ_COMMITTED;
 
-/**
- *
- */
-public abstract class AbstractBasicIntegrationTransactionalTest extends AbstractTransactionalSqlTest {
+/** */
+@RunWith(Parameterized.class)
+public abstract class AbstractBasicIntegrationTransactionalTest extends AbstractBasicIntegrationTest {
     /** */
-    protected static final Object[] NULL_RESULT = new Object[] { null };
+    @Parameterized.Parameter()
+    public SqlTransactionMode sqlTxMode;
+
+    /** @return Test parameters. */
+    @Parameterized.Parameters(name = "sqlTxMode={0}")
+    public static Collection<?> parameters() {
+        return Arrays.asList(SqlTransactionMode.values());
+    }
 
     /** */
-    protected static IgniteEx client;
+    protected static SqlTransactionMode currentMode;
+
+    /** */
+    protected static Transaction tx;
 
     /** {@inheritDoc} */
-    @Override protected void init() throws Exception {
+    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
+        IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
+
+        cfg.getSqlConfiguration().setQueryEnginesConfiguration(new CalciteQueryEngineConfiguration());
+        cfg.getTransactionConfiguration().setTxAwareQueriesEnabled(true);
+
+        return cfg;
+    }
+
+    /** {@inheritDoc} */
+    @Override protected void beforeTest() throws Exception {
+        if (currentMode != null && sqlTxMode == currentMode)
+            return;
+
+        currentMode = sqlTxMode;
+
+        clearTransaction();
+
+        stopAllGrids();
+
+        init();
+    }
+
+
+    /** {@inheritDoc} */
+    @Override protected void afterTest() throws Exception {
+        clearTransaction();
+
+        super.afterTest();
+    }
+
+    /** {@inheritDoc} */
+    @Override protected void afterTestsStopped() throws Exception {
+        clearTransaction();
+
+        stopAllGrids();
+
+        currentMode = null;
+
+        tx = null;
+
+        super.afterTestsStopped();
+    }
+
+    /** */
+    protected void init() throws Exception {
         startGrids(nodeCount());
 
         client = startClientGrid("client");
     }
 
     /** {@inheritDoc} */
-    @Override protected void afterTest() throws Exception {
-        clearTransaction();
-
-        // Wait for pending queries before destroying caches. If some error occurs during query execution, client code
-        // can get control earlier than query leave the running queries registry (need some time for async message
-        // exchange), but eventually, all queries should be closed.
-        assertTrue("Not finished queries found on client", waitForCondition(
-            () -> queryProcessor(client).queryRegistry().runningQueries().isEmpty(), 1_000L));
-
-        waitForCondition(() -> {
-            for (Ignite ign : G.allGrids()) {
-                if (!queryProcessor(ign).mailboxRegistry().inboxes().isEmpty())
-                    return false;
-            }
-
-            return true;
-        }, INBOX_INITIALIZATION_TIMEOUT * 2);
-
-        for (Ignite ign : G.allGrids()) {
-            for (String cacheName : ign.cacheNames())
-                ign.destroyCache(cacheName);
-
-            CalciteQueryProcessor qryProc = queryProcessor(ign);
-
-            assertEquals("Not finished queries found [ignite=" + ign.name() + ']',
-                0, qryProc.queryRegistry().runningQueries().size());
-
-            ExecutionServiceImpl<Object[]> execSvc = (ExecutionServiceImpl<Object[]>)qryProc.executionService();
-            assertEquals("Tracked memory must be 0 after test [ignite=" + ign.name() + ']',
-                0, execSvc.memoryTracker().allocated());
-
-            assertEquals("Count of inboxes must be 0 after test [ignite=" + ign.name() + ']',
-                0, qryProc.mailboxRegistry().inboxes().size());
-
-            assertEquals("Count of outboxes must be 0 after test [ignite=" + ign.name() + ']',
-                0, qryProc.mailboxRegistry().outboxes().size());
-        }
-
-        awaitPartitionMapExchange();
-
-        cleanQueryPlanCache();
-    }
-
-    /** */
-    protected int nodeCount() {
-        return 3;
-    }
-
-    /** */
-    protected void cleanQueryPlanCache() {
-        for (Ignite ign : G.allGrids()) {
-            CalciteQueryProcessor qryProc = (CalciteQueryProcessor)Commons.lookupComponent(
-                ((IgniteEx)ign).context(), QueryEngine.class);
-
-            qryProc.queryPlanCache().clear();
-        }
-    }
-
-    /** */
-    protected QueryChecker assertQuery(String qry) {
-        return assertQuery(client, qry);
-    }
-
-    /** */
-    protected QueryChecker assertQuery(IgniteEx ignite, String qry) {
+    @Override protected QueryChecker assertQuery(IgniteEx ignite, String qry) {
         return new QueryChecker(qry, tx, sqlTxMode) {
             @Override protected QueryEngine getEngine() {
                 return Commons.lookupComponent(ignite.context(), QueryEngine.class);
@@ -130,90 +122,90 @@ public abstract class AbstractBasicIntegrationTransactionalTest extends Abstract
         };
     }
 
-    /** */
-    protected List<List<?>> executeSql(String sql, Object... args) {
-        return executeSql(client, sql, args);
-    }
-
-    /** */
-    protected List<List<?>> executeSql(IgniteEx ignite, String sql, Object... args) {
+    /** {@inheritDoc} */
+    @Override protected List<List<?>> executeSql(IgniteEx ignite, String sql, Object... args) {
         if (sqlTxMode != SqlTransactionMode.NONE && tx == null)
             startTransaction(ignite);
 
-        CalciteQueryProcessor qryProc = Commons.lookupComponent(ignite.context(), CalciteQueryProcessor.class);
-
-        List<FieldsQueryCursor<List<?>>> cur = qryProc.query(queryContext(), "PUBLIC", sql, args);
-
-        try (QueryCursor<List<?>> srvCursor = cur.get(0)) {
-            return srvCursor.getAll();
-        }
+        return super.executeSql(ignite, sql, args);
     }
 
-    /**
-     * Asserts that executeSql throws an exception.
-     *
-     * @param sql Query.
-     * @param cls Exception class.
-     * @param msg Error message.
-     */
-    protected void assertThrows(String sql, Class<? extends Exception> cls, String msg, Object... args) {
-        assertThrowsAnyCause(log, () -> executeSql(sql, args), cls, msg);
+    /** {@inheritDoc} */
+    @Override protected QueryContext queryContext() {
+        return QueryContext.of(tx != null ? ((TransactionProxyImpl<?, ?>)tx).tx().xidVersion() : null);
     }
 
-    /** */
-    protected IgniteCache<Integer, Employer> createAndPopulateTable() {
-        return createAndPopulateTable(2, CacheMode.PARTITIONED);
-    }
-
-    /** */
-    protected IgniteCache<Integer, Employer> createAndPopulateTable(int backups, CacheMode cacheMode) {
-        return createAndPopulateTable(client, backups, cacheMode);
-    }
-
-    /** */
-    protected IgniteCache<Integer, Employer> createAndPopulateTable(Ignite ignite, int backups, CacheMode cacheMode) {
-        IgniteCache<Integer, Employer> person = ignite.getOrCreateCache(this.<Integer, Employer>cacheConfiguration()
-            .setName(TABLE_NAME)
-            .setSqlSchema("PUBLIC")
-            .setQueryEntities(F.asList(new QueryEntity(Integer.class, Employer.class)
-                .setTableName(TABLE_NAME)
-                .addQueryField("ID", Integer.class.getName(), null)
-                .setKeyFieldName("ID")
-            ))
-            .setCacheMode(cacheMode)
-            .setBackups(backups)
-        );
-
-        int idx = 0;
-
-        put(ignite, person, idx++, new Employer("Igor", 10d));
-        put(ignite, person, idx++, new Employer(null, 15d));
-        put(ignite, person, idx++, new Employer("Ilya", 15d));
-        put(ignite, person, idx++, new Employer("Roma", 10d));
-        put(ignite, person, idx, new Employer("Roma", 10d));
-
-        return person;
-    }
-
-    /** */
-    protected CalciteQueryProcessor queryProcessor(Ignite ignite) {
-        return Commons.lookupComponent(((IgniteEx)ignite).context(), CalciteQueryProcessor.class);
-    }
-
-    /** */
-    protected List<List<?>> sql(String sql, Object... params) {
-        return sql(client, sql, params);
-    }
-
-    /** */
-    protected List<List<?>> sql(IgniteEx ignite, String sql, Object... params) {
+    /** {@inheritDoc} */
+    @Override protected List<List<?>> sql(IgniteEx ignite, String sql, Object... params) {
         if (sqlTxMode != SqlTransactionMode.NONE && tx == null)
             startTransaction(ignite);
 
-        List<FieldsQueryCursor<List<?>>> cur = queryProcessor(ignite).query(queryContext(), "PUBLIC", sql, params);
+        return super.sql(ignite, sql, params);
+    }
 
-        try (QueryCursor<List<?>> srvCursor = cur.get(0)) {
-            return srvCursor.getAll();
+    /** {@inheritDoc} */
+    @Override protected <K, V> void put(Ignite node, IgniteCache<K, V> cache, K key, V val) {
+        invokeAction(node, () -> {
+            cache.put(key, val);
+            return null;
+        });
+    }
+
+    /** {@inheritDoc} */
+    @Override protected <K, V> CacheConfiguration<K, V> cacheConfiguration() {
+        return super.<K, V>cacheConfiguration().setAtomicityMode(sqlTxMode == SqlTransactionMode.NONE
+            ? CacheAtomicityMode.ATOMIC
+            : CacheAtomicityMode.TRANSACTIONAL);
+    }
+
+    /** */
+    protected <T> T invokeAction(Ignite node, SupplierX<T> action) {
+        if (tx == null && sqlTxMode != SqlTransactionMode.NONE)
+            startTransaction(node);
+
+        switch (sqlTxMode) {
+            case ALL:
+                return txAction(node, action);
+            case NONE:
+                return action.get();
+            case RANDOM:
+                if (ThreadLocalRandom.current().nextBoolean())
+                    return action.get();
+                else
+                    return txAction(node, action);
+            default:
+                throw new IllegalArgumentException();
         }
+    }
+
+    /** */
+    public <T> T txAction(Ignite node, SupplierX<T> action) {
+        tx.resume();
+
+        try {
+            return action.get();
+        }
+        finally {
+            tx.suspend();
+        }
+    }
+
+    /** */
+    protected void startTransaction(Ignite node) {
+        tx = node.transactions().txStart(PESSIMISTIC, READ_COMMITTED, getTestTimeout(), 100);
+
+        tx.suspend();
+    }
+
+    /** */
+    protected void clearTransaction() {
+        if (tx == null)
+            return;
+
+        tx.resume();
+
+        tx.rollback();
+
+        tx = null;
     }
 }

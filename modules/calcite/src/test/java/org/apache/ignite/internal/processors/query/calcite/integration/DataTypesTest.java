@@ -29,6 +29,8 @@ import org.apache.calcite.tools.Frameworks;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.cache.QueryEntity;
 import org.apache.ignite.internal.processors.query.IgniteSQLException;
+import org.apache.ignite.internal.processors.query.calcite.AbstractTransactionalSqlTest.SqlTransactionMode;
+import org.apache.ignite.internal.processors.query.calcite.AbstractTransactionalSqlTest.SupplierX;
 import org.apache.ignite.internal.util.typedef.F;
 import org.junit.Test;
 
