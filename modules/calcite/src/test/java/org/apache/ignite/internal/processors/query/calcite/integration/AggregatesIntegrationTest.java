@@ -17,11 +17,14 @@
 
 package org.apache.ignite.internal.processors.query.calcite.integration;
 
+import java.util.Collections;
 import java.util.List;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.cache.QueryEntity;
+import org.apache.ignite.cache.QueryIndex;
 import org.apache.ignite.cache.query.annotations.QuerySqlField;
+import org.apache.ignite.internal.processors.query.QueryUtils;
 import org.apache.ignite.internal.processors.query.calcite.QueryChecker;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.testframework.GridTestUtils;
@@ -332,6 +335,29 @@ public class AggregatesIntegrationTest extends AbstractBasicIntegrationTransacti
         assertQuery("SELECT SOME(c1 < c2) FROM t").returns(true).check();
         assertQuery("SELECT EVERY(c1 <= c2) FROM t").returns(true).check();
         assertQuery("SELECT SOME(c1 > c2) FROM t").returns(false).check();
+    }
+
+    /** */
+    @Test
+    public void testCountIndexedFieldSegmented() {
+        client.getOrCreateCache(cacheConfiguration()
+            .setName("cache_seg")
+            .setSqlSchema(QueryUtils.DFLT_SCHEMA)
+            .setQueryEntities(Collections.singleton(
+                new QueryEntity()
+                    .setKeyType(Integer.class.getName())
+                    .setValueType("tbl_seg")
+                    .setTableName("TBL_SEG")
+                    .addQueryField("a", Integer.class.getName(), null)
+                    .addQueryField("b", Integer.class.getName(), null)
+                    .setIndexes(F.asList(new QueryIndex("a", true), new QueryIndex("b", false)))))
+            .setQueryParallelism(5));
+
+        for (int i = 0; i < 100; i++)
+            sql("INSERT INTO tbl_seg (_key, a, b) VALUES (?, ?, ?)", i, i % 2 == 0 ? i : null, i % 2 == 0 ? null : i);
+
+        assertQuery("SELECT COUNT(a) FROM tbl_seg").returns(50L).check();
+        assertQuery("SELECT COUNT(b) FROM tbl_seg").returns(50L).check();
     }
 
     /** */

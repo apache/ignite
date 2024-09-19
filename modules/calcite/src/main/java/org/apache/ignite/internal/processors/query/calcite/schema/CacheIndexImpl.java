@@ -168,7 +168,9 @@ public class CacheIndexImpl implements IgniteIndex {
 
         InlineIndex iidx = idx.unwrap(InlineIndex.class);
 
-        BPlusTree.TreeRowClosure<IndexRow, IndexRow> rowFilter = countRowFilter(notNull, iidx);
+        boolean[] skipCheck = new boolean[] {false};
+
+        BPlusTree.TreeRowClosure<IndexRow, IndexRow> rowFilter = countRowFilter(skipCheck, notNull, iidx);
 
         long cnt = 0;
 
@@ -192,8 +194,11 @@ public class CacheIndexImpl implements IgniteIndex {
             IndexingQueryFilter filter = new IndexingQueryFilterImpl(tbl.descriptor().cacheContext().kernalContext(),
                 ectx.topologyVersion(), locParts);
 
-            for (int i = 0; i < iidx.segmentsCount(); ++i)
+            for (int i = 0; i < iidx.segmentsCount(); ++i) {
                 cnt += iidx.count(i, new IndexQueryContext(filter, rowFilter));
+
+                skipCheck[0] = false;
+            }
 
             return cnt;
         }
@@ -203,7 +208,7 @@ public class CacheIndexImpl implements IgniteIndex {
     }
 
     /** */
-    private @Nullable BPlusTree.TreeRowClosure<IndexRow, IndexRow> countRowFilter(boolean notNull, InlineIndex iidx) {
+    private @Nullable BPlusTree.TreeRowClosure<IndexRow, IndexRow> countRowFilter(boolean[] skipCheck, boolean notNull, InlineIndex iidx) {
         boolean checkExpired = !tbl.descriptor().cacheContext().config().isEagerTtl();
 
         if (notNull) {
@@ -212,8 +217,6 @@ public class CacheIndexImpl implements IgniteIndex {
             BPlusTree.TreeRowClosure<IndexRow, IndexRow> notNullRowFilter = IndexScan.createNotNullRowFilter(iidx, checkExpired);
 
             return new BPlusTree.TreeRowClosure<>() {
-                private boolean skipCheck;
-
                 @Override public boolean apply(
                     BPlusTree<IndexRow, IndexRow> tree,
                     BPlusIO<IndexRow> io,
@@ -224,28 +227,26 @@ public class CacheIndexImpl implements IgniteIndex {
                     // don't need to check it with notNullRowFilter.
                     // In case of NULL-LAST collation, all values after first null value will be null,
                     // don't need to check it too.
-                    if (skipCheck && !checkExpired)
+                    if (skipCheck[0] && !checkExpired)
                         return nullsFirst;
 
                     boolean res = notNullRowFilter.apply(tree, io, pageAddr, idx);
 
                     if (res == nullsFirst)
-                        skipCheck = true;
+                        skipCheck[0] = true;
 
                     return res;
                 }
 
                 @Override public IndexRow lastRow() {
-                    return (skipCheck && !checkExpired)
+                    return (skipCheck[0] && !checkExpired)
                         ? null
                         : notNullRowFilter.lastRow();
                 }
             };
         }
-        else if (checkExpired)
-            return IndexScan.createNotExpiredRowFilter();
 
-        return null;
+        return checkExpired ? IndexScan.createNotExpiredRowFilter() : null;
     }
 
     /** */
