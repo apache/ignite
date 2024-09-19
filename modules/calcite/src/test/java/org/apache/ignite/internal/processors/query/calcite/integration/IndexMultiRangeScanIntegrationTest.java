@@ -20,7 +20,6 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
-import org.apache.ignite.internal.processors.query.calcite.AbstractTransactionalSqlTest.SqlTransactionMode;
 import org.apache.ignite.internal.processors.query.calcite.QueryChecker;
 import org.apache.ignite.internal.util.typedef.F;
 import org.hamcrest.CoreMatchers;

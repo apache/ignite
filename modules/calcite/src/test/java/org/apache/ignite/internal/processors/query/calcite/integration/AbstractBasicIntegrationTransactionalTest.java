@@ -31,8 +31,6 @@ import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.processors.cache.transactions.TransactionProxyImpl;
 import org.apache.ignite.internal.processors.query.QueryContext;
 import org.apache.ignite.internal.processors.query.QueryEngine;
-import org.apache.ignite.internal.processors.query.calcite.AbstractTransactionalSqlTest.SqlTransactionMode;
-import org.apache.ignite.internal.processors.query.calcite.AbstractTransactionalSqlTest.SupplierX;
 import org.apache.ignite.internal.processors.query.calcite.QueryChecker;
 import org.apache.ignite.internal.processors.query.calcite.util.Commons;
 import org.apache.ignite.transactions.Transaction;
@@ -212,5 +210,33 @@ public abstract class AbstractBasicIntegrationTransactionalTest extends Abstract
     /** */
     public String atomicity() {
         return "atomicity=" + (sqlTxMode == SqlTransactionMode.NONE ? CacheAtomicityMode.ATOMIC : CacheAtomicityMode.TRANSACTIONAL);
+    }
+
+    /** */
+    public interface SupplierX<T> {
+        /** */
+        T getx() throws Exception;
+
+        /** */
+        default T get() {
+            try {
+                return getx();
+            }
+            catch (Exception e) {
+                throw new RuntimeException(e);
+            }
+        }
+    }
+
+    /** */
+    public enum SqlTransactionMode {
+        /** All put, remove and SQL dml will be executed inside transaction. */
+        ALL,
+
+        /** Only some DML operations will be executed inside transaction. */
+        RANDOM,
+
+        /** Don't use transaction for DML. */
+        NONE
     }
 }

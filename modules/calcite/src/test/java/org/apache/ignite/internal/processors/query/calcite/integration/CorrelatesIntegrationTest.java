@@ -42,7 +42,7 @@ public class CorrelatesIntegrationTest extends AbstractBasicIntegrationTransacti
      */
     @Test
     public void testCorrelatesWithTableSpool() {
-        sql("CREATE TABLE test(i1 INT, i2 INT) WITH atomicity=transactional");
+        sql("CREATE TABLE test(i1 INT, i2 INT) WITH " + atomicity());
         sql("INSERT INTO test VALUES (1, 1), (2, 2)");
 
         assertQuery("SELECT (SELECT t1.i1 + t1.i2 + t0.i2 FROM test t1 WHERE i1 = 1) FROM test t0")

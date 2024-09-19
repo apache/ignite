@@ -26,11 +26,8 @@ import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.cache.query.annotations.QuerySqlField;
 import org.apache.ignite.calcite.CalciteQueryEngineConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
-import org.apache.ignite.internal.processors.query.calcite.AbstractTransactionalSqlTest.SupplierX;
 import org.apache.ignite.internal.util.typedef.F;
 import org.junit.Test;
-
-import static org.apache.ignite.internal.processors.query.calcite.AbstractTransactionalSqlTest.SqlTransactionMode.NONE;
 
 /**
  * Test "keep binary" in cache queries.
@@ -94,7 +91,7 @@ public class KeepBinaryIntegrationTest extends AbstractBasicIntegrationTransacti
             return null;
         };
 
-        if (sqlTxMode == NONE)
+        if (sqlTxMode == SqlTransactionMode.NONE)
             checker.get();
         else
             txAction(client, checker);
