@@ -2055,6 +2055,9 @@ public class GridCommandHandlerClusterByClassTest extends GridCommandHandlerClus
 
         createCacheAndPreload(ignite, 100);
 
+        createCacheAndPreload(client, "with-node-filter-cache", 1, 3,
+            node -> node.consistentId().toString().endsWith("0"));
+
         injectTestSystemOut();
 
         // Run distribution for all node and all cache
@@ -2091,6 +2094,17 @@ public class GridCommandHandlerClusterByClassTest extends GridCommandHandlerClus
 
         // Check that number of columns increased by 3
         assertEquals(3, userArrtCommaNum - commaNum);
+
+        // Run distribution for all node and "with-node-filter-cache" cache
+        assertEquals(EXIT_CODE_OK, execute("--cache", "distribution", "null", "with-node-filter-cache"));
+
+        out = testOut.toString();
+
+        // Result include info by cache "with-node-filter-cache"
+        assertContains(log, out, "[next group: id=-1695684207, name=with-node-filter-cache]");
+
+        // Result not include error
+        assertNotContains(log, out, "Cache distrubution task failed on nodes");
     }
 
     /** */
