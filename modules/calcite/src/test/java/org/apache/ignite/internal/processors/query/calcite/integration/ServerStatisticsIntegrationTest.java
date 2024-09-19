@@ -505,7 +505,6 @@ public class ServerStatisticsIntegrationTest extends AbstractBasicIntegrationTra
             .setQueryEntities(F.asList(new QueryEntity(Integer.class, AllTypes.class).setTableName("all_types")))
             .setBackups(2)
         );
-
     }
 
     /**
