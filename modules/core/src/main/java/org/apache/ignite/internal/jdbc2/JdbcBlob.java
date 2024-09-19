@@ -17,6 +17,8 @@
 
 package org.apache.ignite.internal.jdbc2;
 
+import java.io.ByteArrayInputStream;
+import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.sql.Blob;
@@ -100,79 +102,14 @@ public class JdbcBlob extends JdbcMemoryBuffer implements Blob {
         if (start < 1 || start > totalCnt || ptrn.length == 0 || ptrn.length > totalCnt)
             return -1;
 
-        long idx = start - 1;
+        try {
+            long idx =  positionImpl(new ByteArrayInputStream(ptrn), ptrn.length, start - 1);
 
-        int curBufIdx = 0;
-        int patternStartBufIdx = 0;
-        int patternStartBufPos = 0;
-        boolean patternStarted = false;
-        int curBufPos = 0;
-
-        int i;
-        long pos;
-        for (i = 0, pos = 0; pos < totalCnt;) {
-            if (pos < idx) {
-                if (idx > pos + buffers.get(curBufIdx).length - 1) {
-                    pos += buffers.get(curBufIdx++).length;
-
-                    continue;
-                }
-                else {
-                    curBufPos = (int)(idx - pos);
-                    pos = idx;
-                }
-            }
-
-            if (buffers.get(curBufIdx)[curBufPos] == ptrn[i]) {
-                if (i == 0) {
-                    patternStarted = true;
-                    patternStartBufIdx = curBufIdx;
-                    patternStartBufPos = curBufPos;
-                }
-
-                pos++;
-
-                curBufPos++;
-
-                if (curBufPos == buffers.get(curBufIdx).length) {
-                    curBufIdx++;
-
-                    curBufPos = 0;
-                }
-
-                i++;
-
-                if (i == ptrn.length)
-                    return pos - ptrn.length + 1;
-            }
-            else {
-                pos = pos - i + 1;
-
-                i = 0;
-
-                if (patternStarted) {
-                    if (patternStartBufPos + 1 < buffers.get(patternStartBufIdx).length) {
-                        curBufIdx = patternStartBufIdx;
-                        curBufPos = patternStartBufPos + 1;
-                    }
-                    else {
-                        curBufIdx = patternStartBufIdx + 1;
-                        curBufPos = 0;
-                    }
-                }
-                else {
-                    if (curBufPos + 1 < buffers.get(curBufIdx).length) {
-                        curBufPos++;
-                    }
-                    else {
-                        curBufIdx++;
-                        curBufPos = 0;
-                    }
-                }
-            }
+            return idx == -1 ? -1 : idx + 1;
         }
-
-        return -1;
+        catch (IOException e) {
+            throw new SQLException(e);
+        }
     }
 
     /** {@inheritDoc} */
@@ -182,7 +119,65 @@ public class JdbcBlob extends JdbcMemoryBuffer implements Blob {
         if (start < 1 || start > totalCnt || ptrn.length() == 0 || ptrn.length() > totalCnt)
             return -1;
 
-        return position(ptrn.getBytes(1, (int)ptrn.length()), start);
+        try {
+            long idx = positionImpl(ptrn.getBinaryStream(), ptrn.length(), start - 1);
+
+            return idx == -1 ? -1 : idx + 1;
+        }
+        catch (IOException e) {
+            throw new SQLException(e);
+        }
+    }
+
+    /**
+     *
+     * @param ptrn Pattern
+     * @param ptrnLen Pattern length
+     * @param idx Start index
+     * @return Position
+     */
+    private long positionImpl(InputStream ptrn, long ptrnLen, long idx) throws IOException {
+        assert ptrn.markSupported();
+
+        InputStream is = getInputStream(idx, totalCnt - idx);
+
+        boolean patternStarted = false;
+
+        long i;
+        long pos;
+        int b;
+        for (i = 0, pos = idx; (b = is.read()) != -1; ) {
+            int p = ptrn.read();
+
+            if (b == p) {
+                if (!patternStarted) {
+                    patternStarted = true;
+
+                    is.mark(Integer.MAX_VALUE);
+                }
+
+                pos++;
+
+                i++;
+
+                if (i == ptrnLen)
+                    return pos - ptrnLen;
+            }
+            else {
+                pos = pos - i + 1;
+
+                i = 0;
+                ptrn.reset();
+
+                if (patternStarted) {
+                    patternStarted = false;
+
+                    is.reset();
+                }
+            }
+        }
+
+        return -1;
     }
 
     /** {@inheritDoc} */

@@ -118,6 +118,15 @@ public class JdbcMemoryBuffer {
         /** Stream length. */
         private final long len;
 
+        /** Remembered bufIdx at the moment the {@link BufferInputStream#mark} is called. */
+        private Integer markedBufIdx;
+
+        /** Remembered inBufPas at the moment the {@link BufferInputStream#mark} is called. */
+        private Integer markedInBufPos;
+
+        /** Remembered pos at the moment the {@link BufferInputStream#mark} is called. */
+        private Long markedPos;
+
         /**
          * @param start starting position.
          */
@@ -191,6 +200,32 @@ public class JdbcMemoryBuffer {
             }
 
             return size;
+        }
+
+        /** {@inheritDoc} */
+        @Override public boolean markSupported() {
+            return true;
+        }
+
+        /** {@inheritDoc} */
+        @Override public synchronized void reset() {
+            if (markedBufIdx != null && markedInBufPos != null && markedPos!= null) {
+                bufIdx = markedBufIdx;
+                inBufPos = markedInBufPos;
+                pos = markedPos;
+            }
+            else {
+                bufIdx = 0;
+                inBufPos = 0;
+                pos = start;
+            }
+        }
+
+        /** {@inheritDoc} */
+        @Override public synchronized void mark(int readlimit) {
+            markedBufIdx = bufIdx;
+            markedInBufPos = inBufPos;
+            markedPos = pos;
         }
     }
 

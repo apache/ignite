@@ -210,6 +210,9 @@ public class JdbcBlobTest {
         assertEquals(-1, blob.position(new byte[] {0, 2, 3}, 1));
         assertEquals(-1, blob.position(new byte[] {1, 2, 4}, 1));
 
+        blob.setBytes(17, new byte[] {16, 16, 16, 33, 46});
+        assertEquals(18, blob.position(new byte[] {16, 16, 33}, 1));
+
         blob.free();
         assertThrows(null, () -> blob.position(new byte[] {0, 1, 2}, 1), SQLException.class, ERROR_BLOB_FREE);
     }
@@ -240,6 +243,13 @@ public class JdbcBlobTest {
         assertEquals(-1, blob.position(new JdbcBlob(new byte[] {0, 1, 3}), 1));
         assertEquals(-1, blob.position(new JdbcBlob(new byte[] {0, 2, 3}), 1));
         assertEquals(-1, blob.position(new JdbcBlob(new byte[] {1, 2, 4}), 1));
+
+        blob.setBytes(17, new byte[] {16, 16, 16, 33, 46});
+        JdbcBlob ptrn = new JdbcBlob();
+        ptrn.setBytes(1, new byte[] {16});
+        ptrn.setBytes(2, new byte[] {16});
+        ptrn.setBytes(3, new byte[] {33});
+        assertEquals(18, blob.position(ptrn, 1));
 
         blob.free();
         assertThrows(null, () -> blob.position(new JdbcBlob(new byte[] {0, 1, 2}), 1), SQLException.class, ERROR_BLOB_FREE);
