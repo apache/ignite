@@ -361,7 +361,7 @@ public class Accumulators {
     /** */
     private static class AnyVal<Row> extends AbstractAccumulator<Row> {
         /** */
-        protected Object holder;
+        private Object holder;
 
         /** */
         AnyVal(AggregateCall aggCall, RowHandler<Row> hnd) {
