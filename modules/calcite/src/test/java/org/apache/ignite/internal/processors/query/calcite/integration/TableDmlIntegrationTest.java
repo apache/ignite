@@ -34,8 +34,6 @@ import org.apache.calcite.sql.type.SqlTypeName;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.binary.BinaryObjectBuilder;
-import org.apache.ignite.cache.query.FieldsQueryCursor;
-import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.processors.query.IgniteSQLException;
 import org.apache.ignite.internal.processors.query.QueryEngine;
@@ -112,8 +110,7 @@ public class TableDmlIntegrationTest extends AbstractBasicIntegrationTransaction
     public void testUpdate() {
         executeSql("CREATE TABLE test (val integer) with " + atomicity());
 
-        client.context().query().querySqlFields(
-            new SqlFieldsQuery("CREATE INDEX test_val_idx ON test (val)").setSchema("PUBLIC"), false).getAll();
+        executeSql("CREATE INDEX test_val_idx ON test (val)");
 
         for (int i = 1; i <= 4096; i++)
             executeSql("INSERT INTO test VALUES (?)", i);
@@ -153,12 +150,7 @@ public class TableDmlIntegrationTest extends AbstractBasicIntegrationTransaction
 
         QueryEngine engine = Commons.lookupComponent(grid(1).context(), QueryEngine.class);
 
-        List<FieldsQueryCursor<List<?>>> qry = engine.query(queryContext(), "PUBLIC",
-            "INSERT INTO DEVELOPER(_key, name, projectId) VALUES (?, ?, ?)", 0, "Igor", 1);
-
-        assertEquals(1, qry.size());
-
-        List<List<?>> rows = qry.get(0).getAll();
+        List<List<?>> rows = executeSql("INSERT INTO DEVELOPER(_key, name, projectId) VALUES (?, ?, ?)", 0, "Igor", 1);
 
         assertEquals(1, rows.size());
 
@@ -168,11 +160,11 @@ public class TableDmlIntegrationTest extends AbstractBasicIntegrationTransaction
 
         assertEqualsCollections(F.asList(1L), row);
 
-        qry = engine.query(queryContext(), "PUBLIC", "select _key, * from DEVELOPER");
+        rows = executeSql("select _key, * from DEVELOPER");
 
-        assertEquals(1, qry.size());
+        assertEquals(1, rows.size());
 
-        row = F.first(qry.get(0).getAll());
+        row = F.first(rows);
 
         assertNotNull(row);
 
@@ -193,62 +185,37 @@ public class TableDmlIntegrationTest extends AbstractBasicIntegrationTransaction
 
         QueryEngine engine = Commons.lookupComponent(grid(1).context(), QueryEngine.class);
 
-        List<FieldsQueryCursor<List<?>>> qry =
-            engine.query(queryContext(), "PUBLIC", "INSERT INTO DEVELOPER VALUES (?, ?, ?, ?)", 0, 0, "Igor", 1);
-
-        assertEquals(1, qry.size());
-
-        List<?> row = F.first(qry.get(0).getAll());
+        List<?> row = F.first(executeSql("INSERT INTO DEVELOPER VALUES (?, ?, ?, ?)", 0, 0, "Igor", 1));
 
         assertNotNull(row);
 
         assertEqualsCollections(F.asList(1L), row);
 
-        qry = engine.query(queryContext(), "PUBLIC", "select * from DEVELOPER");
-
-        assertEquals(1, qry.size());
-
-        row = F.first(qry.get(0).getAll());
+        row = F.first(executeSql("select * from DEVELOPER"));
 
         assertNotNull(row);
 
         assertEqualsCollections(F.asList(0, 0, "Igor", 1), row);
 
-        qry = engine.query(queryContext(), "PUBLIC", "UPDATE DEVELOPER d SET name = name || 'Roman' WHERE id = ?", 0);
-
-        assertEquals(1, qry.size());
-
-        row = F.first(qry.get(0).getAll());
+        row = F.first(executeSql("UPDATE DEVELOPER d SET name = name || 'Roman' WHERE id = ?", 0));
 
         assertNotNull(row);
 
         assertEqualsCollections(F.asList(1L), row);
 
-        qry = engine.query(queryContext(), "PUBLIC", "select * from DEVELOPER");
-
-        assertEquals(1, qry.size());
-
-        row = F.first(qry.get(0).getAll());
+        row = F.first(executeSql("select * from DEVELOPER"));
 
         assertNotNull(row);
 
         assertEqualsCollections(F.asList(0, 0, "IgorRoman", 1), row);
 
-        qry = engine.query(queryContext(), "PUBLIC", "DELETE FROM DEVELOPER WHERE id = ?", 0);
-
-        assertEquals(1, qry.size());
-
-        row = F.first(qry.get(0).getAll());
+        row = F.first(executeSql("DELETE FROM DEVELOPER WHERE id = ?", 0));
 
         assertNotNull(row);
 
         assertEqualsCollections(F.asList(1L), row);
 
-        qry = engine.query(queryContext(), "PUBLIC", "select * from DEVELOPER");
-
-        assertEquals(1, qry.size());
-
-        row = F.first(qry.get(0).getAll());
+        row = F.first(executeSql("select * from DEVELOPER"));
 
         assertNull(row);
     }
