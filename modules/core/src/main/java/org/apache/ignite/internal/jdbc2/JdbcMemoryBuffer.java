@@ -17,7 +17,6 @@
 
 package org.apache.ignite.internal.jdbc2;
 
-import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.util.ArrayList;
@@ -30,18 +29,6 @@ public class JdbcMemoryBuffer {
 
     /** The total count of bytes. */
     protected long totalCnt;
-
-    /**
-     * Constructor.
-     *
-     * @param bufs The list of buffers.
-     * @param cnt The total count of bytes in buffers.
-     */
-    public JdbcMemoryBuffer(List<byte[]> bufs, long cnt) {
-        buffers = bufs;
-
-        totalCnt = cnt;
-    }
 
     /** */
     public JdbcMemoryBuffer() {
@@ -81,7 +68,7 @@ public class JdbcMemoryBuffer {
      *         the partial {@code Blob} value can be read.
      */
     public InputStream getInputStream(long pos, long len) {
-        if (pos < 0 || len < 0 || pos > totalCnt || pos + len > totalCnt)
+        if (pos < 0 || len < 0 || pos > totalCnt)
             throw new RuntimeException("Invalid argument. Position can't be less than 0 or " +
                     "greater than size of underlying memory buffers. Requested length can't be negative and can't be " +
                     "greater than available bytes from given position [pos=" + pos + ", len=" + len + ']');
@@ -154,7 +141,7 @@ public class JdbcMemoryBuffer {
 
         /** {@inheritDoc} */
         @Override public int read() {
-            if (pos >= start + len)
+            if (pos >= start + len || pos >= totalCnt)
                 return -1;
 
             int res = buffers.get(bufIdx)[inBufPos] & 0xff;
@@ -175,12 +162,12 @@ public class JdbcMemoryBuffer {
 
         /** {@inheritDoc} */
         @Override public int read(byte res[], int off, int cnt) {
-            if (pos > start + len)
+            if (pos >= start + len || pos >= totalCnt)
                 return -1;
 
-            int idx = (int)(pos);
+            long availableBytes = Math.min(start + len, totalCnt) - pos;
 
-            int size = cnt > totalCnt - idx ? (int)(totalCnt - idx) : cnt;
+            int size = cnt < availableBytes ? cnt : (int)availableBytes;
 
             int remaining = size;
 
@@ -238,22 +225,12 @@ public class JdbcMemoryBuffer {
         }
 
         /** {@inheritDoc} */
-        @Override public void write(int b) throws IOException {
+        @Override public void write(int b) {
             write(new byte[] {(byte)b}, 0, 1);
         }
 
         /** {@inheritDoc} */
-        @Override public void write(byte b[], int off, int len) {
-            int written = setBytesImpl0(b, off, len);
-
-            totalCnt = Math.max(pos + written, totalCnt);
-
-            pos += written;
-        }
-
-        /**
-         */
-        private int setBytesImpl0(byte[] bytes, int off, int len) {
+        @Override public void write(byte[] bytes, int off, int len) {
             int remaining = len;
 
             for (; bufIdx < buffers.size(); bufIdx++) {
@@ -284,7 +261,9 @@ public class JdbcMemoryBuffer {
                 inBufPos = remaining;
             }
 
-            return len;
+            totalCnt = Math.max(pos + len, totalCnt);
+
+            pos += len;
         }
     }
 }

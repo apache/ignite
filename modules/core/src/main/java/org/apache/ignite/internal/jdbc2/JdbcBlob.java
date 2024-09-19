@@ -21,7 +21,6 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.sql.Blob;
 import java.sql.SQLException;
-import org.apache.ignite.internal.util.typedef.internal.U;
 
 /**
  * Simple BLOB implementation. Actually there is no such entity as BLOB in Ignite. So using arrays is a preferable way
@@ -60,31 +59,19 @@ public class JdbcBlob extends JdbcMemoryBuffer implements Blob {
                 "greater than size of underlying byte array. Requested length also can't be negative " +
                 "[pos=" + pos + ", len=" + len + ']');
 
-        int idx = (int)(pos - 1);
+        try {
+            long idx = pos - 1;
 
-        int size = len > totalCnt - idx ? (int)(totalCnt - idx) : len;
+            int size = len > totalCnt - idx ? (int)(totalCnt - idx) : len;
 
-        byte[] res = new byte[size];
+            byte[] res = new byte[size];
 
-        int remaining = size;
-        int curPos = 0;
+            getInputStream(idx, len).read(res);
 
-        for (byte[] buf : buffers) {
-            if (idx < curPos + buf.length) {
-                int toCopy = Math.min(remaining, buf.length - Math.max(idx - curPos, 0));
-
-                U.arrayCopy(buf, Math.max(idx - curPos, 0), res, size - remaining, toCopy);
-
-                remaining -= toCopy;
-            }
-
-            curPos += buf.length;
-
-            if (remaining == 0)
-                break;
+            return res;
+        } catch (Exception e) {
+            throw new SQLException(e);
         }
-
-        return res;
     }
 
     /** {@inheritDoc} */
@@ -213,78 +200,11 @@ public class JdbcBlob extends JdbcMemoryBuffer implements Blob {
         if (pos - 1 > totalCnt || off < 0 || off >= bytes.length || off + len > bytes.length)
             throw new ArrayIndexOutOfBoundsException();
 
-        return setBytesImpl(pos, bytes, off, len);
-    }
-
-    /**
-     * @param pos the position in the {@code BLOB} object at which
-     *        to start writing; the first position is 1
-     * @param bytes the array of bytes to be written to this {@code BLOB}
-     *        object
-     * @param off the offset into the array {@code bytes} at which
-     *        to start reading the bytes to be set
-     * @param len the number of bytes to be written to the {@code BLOB}
-     *        value from the array of bytes {@code bytes}
-     * @return the number of bytes written
-     */
-    private int setBytesImpl(long pos, byte[] bytes, int off, int len) {
-        int idx = (int)(pos - 1);
-
-        int curPos = 0;
-        int bufIdx;
-        for (bufIdx = 0; bufIdx < buffers.size(); bufIdx++) {
-            byte[] buf = buffers.get(bufIdx);
-
-            if (idx >= curPos + buf.length) {
-                curPos += buf.length;
-            }
-            else {
-                break;
-            }
+        try {
+            getOutputStream(pos - 1).write(bytes, off, len);
         }
-
-        int written = setBytesImpl0(bufIdx, idx - curPos, bytes, off, len);
-
-        totalCnt = idx + written > totalCnt ? idx + written : totalCnt;
-
-        return written;
-    }
-
-    /**
-     * @param bufIdx index of buffer to write bytes
-     * @param bufPos the in buffer position at which
-     *        to start writing; the first position is 0
-     * @param bytes the array of bytes to be written to this {@code BLOB}
-     *        object
-     * @param off the offset into the array {@code bytes} at which
-     *        to start reading the bytes to be set
-     * @param len the number of bytes to be written to the {@code BLOB}
-     *        value from the array of bytes {@code bytes}
-     * @return the number of bytes written
-     */
-    private int setBytesImpl0(int bufIdx, int bufPos, byte[] bytes, int off, int len) {
-        int remaining = len;
-        int curPos = bufPos;
-
-        for (int i = bufIdx; i < buffers.size(); i++) {
-            byte[] buf = buffers.get(i);
-
-            int toCopy = Math.min(remaining, buf.length - curPos);
-
-            U.arrayCopy(bytes, off + len - remaining, buf, curPos, toCopy);
-
-            remaining -= toCopy;
-
-            if (remaining == 0)
-                break;
-
-            curPos = 0;
-        }
-
-        if (remaining > 0) {
-            addNewBuffer(remaining);
-
-            U.arrayCopy(bytes, off + len - remaining, buffers.get(buffers.size() - 1), 0, remaining);
+        catch (Exception e) {
+            throw new SQLException(e);
         }
 
         return len;

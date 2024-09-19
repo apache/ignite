@@ -165,6 +165,20 @@ public class JdbcBlobTest {
         assertEquals(5, res[0]);
         assertEquals(14, res[9]);
 
+        is = blob.getBinaryStream(6, 10);
+        res = new byte[20];
+        assertEquals(10, is.read(res, 1, 13));
+        assertEquals(-1, is.read());
+        assertEquals(5, res[1]);
+        assertEquals(14, res[10]);
+
+        is = blob.getBinaryStream(6, 10);
+        res = new byte[200];
+        assertEquals(10, is.read(res, 1, 200));
+        assertEquals(-1, is.read());
+        assertEquals(5, res[1]);
+        assertEquals(14, res[10]);
+
         blob.free();
         assertThrows(null, () -> blob.getBinaryStream(1, arr.length), SQLException.class, ERROR_BLOB_FREE);
     }
