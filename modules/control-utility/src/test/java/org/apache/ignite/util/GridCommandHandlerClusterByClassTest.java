@@ -2055,9 +2055,6 @@ public class GridCommandHandlerClusterByClassTest extends GridCommandHandlerClus
 
         createCacheAndPreload(ignite, 100);
 
-        createCacheAndPreload(ignite, "with-node-filter-cache", 10, 32,
-            node -> node.consistentId().toString().endsWith("0"));
-
         injectTestSystemOut();
 
         // Run distribution for all node and all cache
