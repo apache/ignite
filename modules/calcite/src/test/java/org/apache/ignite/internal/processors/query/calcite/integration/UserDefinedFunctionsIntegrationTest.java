@@ -20,8 +20,8 @@ package org.apache.ignite.internal.processors.query.calcite.integration;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.cache.QueryEntity;
 import org.apache.ignite.cache.query.annotations.QuerySqlFunction;
+import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.internal.processors.query.IgniteSQLException;
-import org.apache.ignite.internal.processors.query.calcite.AbstractTransactionalSqlTest.SqlTransactionMode;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.junit.Test;
@@ -29,41 +29,38 @@ import org.junit.Test;
 /**
  * Integration test for user defined functions.
  */
-public class UserDefinedFunctionsIntegrationTest extends AbstractBasicIntegrationTransactionalTest {
+public class UserDefinedFunctionsIntegrationTest extends AbstractBasicIntegrationTest {
     /** */
     @Test
     public void testFunctions() throws Exception {
         // Cache with impicit schema.
-        IgniteCache<Integer, Employer> emp1 = client.getOrCreateCache(this.<Integer, Employer>cacheConfiguration()
-            .setName("emp1")
+        IgniteCache<Integer, Employer> emp1 = client.getOrCreateCache(new CacheConfiguration<Integer, Employer>("emp1")
             .setSqlFunctionClasses(AddFunctionsLibrary.class, MulFunctionsLibrary.class)
             .setQueryEntities(F.asList(new QueryEntity(Integer.class, Employer.class).setTableName("emp1")))
         );
 
         // Cache with explicit custom schema.
-        IgniteCache<Integer, Employer> emp2 = client.getOrCreateCache(this.<Integer, Employer>cacheConfiguration()
-            .setName("emp2")
+        IgniteCache<Integer, Employer> emp2 = client.getOrCreateCache(new CacheConfiguration<Integer, Employer>("emp2")
             .setSqlFunctionClasses(AddFunctionsLibrary.class)
             .setSqlSchema("emp2_schema")
             .setQueryEntities(F.asList(new QueryEntity(Integer.class, Employer.class).setTableName("emp2")))
         );
 
         // Cache with PUBLIC schema.
-        IgniteCache<Integer, Employer> emp3 = client.getOrCreateCache(this.<Integer, Employer>cacheConfiguration()
-            .setName("emp3")
+        IgniteCache<Integer, Employer> emp3 = client.getOrCreateCache(new CacheConfiguration<Integer, Employer>("emp3")
             .setSqlFunctionClasses(OtherFunctionsLibrary.class)
             .setSqlSchema("PUBLIC")
             .setQueryEntities(F.asList(new QueryEntity(Integer.class, Employer.class).setTableName("emp3")))
         );
 
-        put(client, emp1, 1, new Employer("Igor1", 1d));
-        put(client, emp1, 2, new Employer("Roman1", 2d));
+        emp1.put(1, new Employer("Igor1", 1d));
+        emp1.put(2, new Employer("Roman1", 2d));
 
-        put(client, emp2, 1, new Employer("Igor2", 10d));
-        put(client, emp2, 2, new Employer("Roman2", 20d));
+        emp2.put(1, new Employer("Igor2", 10d));
+        emp2.put(2, new Employer("Roman2", 20d));
 
-        put(client, emp3, 1, new Employer("Igor3", 100d));
-        put(client, emp3, 2, new Employer("Roman3", 200d));
+        emp3.put(1, new Employer("Igor3", 100d));
+        emp3.put(2, new Employer("Roman3", 200d));
 
         awaitPartitionMapExchange();
 
@@ -89,27 +86,23 @@ public class UserDefinedFunctionsIntegrationTest extends AbstractBasicIntegratio
         assertThrows("SELECT EMP2_SCHEMA.mul(1, 2)");
         assertThrows("SELECT EMP2_SCHEMA.sq(1)");
 
-        // Can't destroy caches when running transactions.
-        // Skip following checks in tx mode.
-        if (sqlTxMode == SqlTransactionMode.NONE) {
-            client.cache("emp1").destroy();
-            awaitPartitionMapExchange();
+        client.cache("emp1").destroy();
+        awaitPartitionMapExchange();
 
-            assertThrows("SELECT \"emp1\".add(1, 2)");
-            assertQuery("SELECT EMP2_SCHEMA.add(1, 2)").returns(3d).check();
+        assertThrows("SELECT \"emp1\".add(1, 2)");
+        assertQuery("SELECT EMP2_SCHEMA.add(1, 2)").returns(3d).check();
 
-            client.cache("emp2").destroy();
-            awaitPartitionMapExchange();
+        client.cache("emp2").destroy();
+        awaitPartitionMapExchange();
 
-            assertThrows("SELECT EMP2_SCHEMA.add(1, 2)");
-            assertQuery("SELECT sq(4)").returns(16d).check();
+        assertThrows("SELECT EMP2_SCHEMA.add(1, 2)");
+        assertQuery("SELECT sq(4)").returns(16d).check();
 
-            client.cache("emp3").destroy();
-            awaitPartitionMapExchange();
+        client.cache("emp3").destroy();
+        awaitPartitionMapExchange();
 
-            // PUBLIC schema is predefined and not dropped on cache destroy.
-            assertQuery("SELECT sq(4)").returns(16d).check();
-        }
+        // PUBLIC schema is predefined and not dropped on cache destroy.
+        assertQuery("SELECT sq(4)").returns(16d).check();
     }
 
     /** */
