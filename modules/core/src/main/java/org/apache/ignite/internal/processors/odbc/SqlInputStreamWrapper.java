@@ -17,8 +17,6 @@
 
 package org.apache.ignite.internal.processors.odbc;
 
-import java.io.ByteArrayInputStream;
-import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
@@ -37,7 +35,7 @@ public class SqlInputStreamWrapper implements AutoCloseable {
     private InputStream inputStream;
 
     /** Memory buffer for .*/
-    private byte[] rawData;
+    private MemoryBuffer rawData;
 
     /** Temporary file holder. */
     private TempFileHolder tempFileHolder;
@@ -94,9 +92,8 @@ public class SqlInputStreamWrapper implements AutoCloseable {
             return;
         }
 
-        ByteArrayOutputStream memoryOutputStream = new ByteArrayOutputStream();
-        final int memoryLength = copyStream(inputStream, memoryOutputStream, maxMemoryBufferBytes + 1);
-        byte[] rawData = memoryOutputStream.toByteArray();
+        rawData = new MemoryBuffer();
+        final int memoryLength = copyStream(inputStream, rawData.getOutputStream(), maxMemoryBufferBytes + 1);
 
         if (memoryLength == -1) {
             final int diskLength;
@@ -110,9 +107,9 @@ public class SqlInputStreamWrapper implements AutoCloseable {
                     .register(this, tempFileHolder);
 
             try (OutputStream diskOutputStream = Files.newOutputStream(tempFile)) {
-                diskOutputStream.write(rawData);
+                copyStream(rawData.getInputStream(), diskOutputStream, rawData.getCnt());
 
-                diskLength = copyStream(inputStream, diskOutputStream, MAX_ARRAY_SIZE - rawData.length);
+                diskLength = copyStream(inputStream, diskOutputStream, MAX_ARRAY_SIZE - rawData.getCnt());
 
                 if (diskLength == -1)
                     throw new SQLFeatureNotSupportedException("Invalid argument. InputStreams with length greater than " +
@@ -124,11 +121,10 @@ public class SqlInputStreamWrapper implements AutoCloseable {
                 throw e;
             }
 
-            this.len = rawData.length + diskLength;
+            this.len = Math.toIntExact(rawData.getCnt() + diskLength);
         }
         else {
-            this.rawData = rawData;
-            this.len = rawData.length;
+            this.len = Math.toIntExact(rawData.getCnt());
         }
     }
 
@@ -137,14 +133,14 @@ public class SqlInputStreamWrapper implements AutoCloseable {
      *
      * @return Input stream.
      */
-    public InputStream getStream() throws IOException {
+    public InputStream getInputStream() throws IOException {
         if (inputStream != null)
             return inputStream;
 
         if (tempFileHolder != null)
-            inputStream = tempFileHolder.getStream();
+            inputStream = tempFileHolder.getInputStream();
         else
-            inputStream = new ByteArrayInputStream(rawData, 0, len);
+            inputStream = rawData.getInputStream();
 
         return inputStream;
     }
@@ -172,12 +168,12 @@ public class SqlInputStreamWrapper implements AutoCloseable {
      * @param limit Maximum bytes to copy.
      * @return Count of bytes copied. -1 if limit exceeds.
      */
-    private static int copyStream(InputStream inputStream, OutputStream outputStream, int limit) throws IOException {
+    private static int copyStream(InputStream inputStream, OutputStream outputStream, long limit) throws IOException {
         int totalLength = 0;
 
         byte[] buf = new byte[8192];
 
-        int readLength = inputStream.read(buf, 0, Math.min(buf.length, limit));
+        int readLength = inputStream.read(buf, 0, (int)Math.min(buf.length, limit));
 
         while (readLength > 0) {
             totalLength += readLength;
@@ -216,7 +212,7 @@ public class SqlInputStreamWrapper implements AutoCloseable {
         /**
          * @return Input stream for reading from temp file.
          */
-        InputStream getStream() throws IOException {
+        InputStream getInputStream() throws IOException {
             if (inputStream == null)
                 inputStream = Files.newInputStream(tempFile);
 

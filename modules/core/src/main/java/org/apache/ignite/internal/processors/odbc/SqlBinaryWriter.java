@@ -54,7 +54,7 @@ public class SqlBinaryWriter extends BinaryWriterExImpl {
     public void writeInputStreamAsByteArray(SqlInputStreamWrapper inputStreamWrapper) throws IOException {
         BinaryOutputStream out = out();
 
-        InputStream in = inputStreamWrapper.getStream();
+        InputStream in = inputStreamWrapper.getInputStream();
         int streamLength = inputStreamWrapper.getLength();
 
         if (in == null) {
