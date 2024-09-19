@@ -71,7 +71,8 @@ public class JdbcBlob extends JdbcMemoryBuffer implements Blob {
             getInputStream(idx, len).read(res);
 
             return res;
-        } catch (Exception e) {
+        }
+        catch (IOException e) {
             throw new SQLException(e);
         }
     }
@@ -103,7 +104,7 @@ public class JdbcBlob extends JdbcMemoryBuffer implements Blob {
             return -1;
 
         try {
-            long idx =  positionImpl(new ByteArrayInputStream(ptrn), ptrn.length, start - 1);
+            long idx = positionImpl(new ByteArrayInputStream(ptrn), ptrn.length, start - 1);
 
             return idx == -1 ? -1 : idx + 1;
         }

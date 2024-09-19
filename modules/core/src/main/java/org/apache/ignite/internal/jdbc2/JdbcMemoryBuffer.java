@@ -23,6 +23,9 @@ import java.util.ArrayList;
 import java.util.List;
 import org.apache.ignite.internal.util.typedef.internal.U;
 
+/**
+ * Memory buffer.
+ */
 public class JdbcMemoryBuffer {
     /** The list of buffers, which grows and never reduces. */
     protected List<byte[]> buffers;
@@ -209,7 +212,7 @@ public class JdbcMemoryBuffer {
 
         /** {@inheritDoc} */
         @Override public synchronized void reset() {
-            if (markedBufIdx != null && markedInBufPos != null && markedPos!= null) {
+            if (markedBufIdx != null && markedInBufPos != null && markedPos != null) {
                 bufIdx = markedBufIdx;
                 inBufPos = markedInBufPos;
                 pos = markedPos;
