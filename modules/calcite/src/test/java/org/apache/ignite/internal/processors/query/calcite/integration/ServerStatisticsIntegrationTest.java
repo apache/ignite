@@ -471,7 +471,7 @@ public class ServerStatisticsIntegrationTest extends AbstractBasicIntegrationTra
 
     /** */
     protected QueryChecker assertQuerySrv(String qry) {
-        return new QueryChecker(qry) {
+        return new QueryChecker(qry, tx, sqlTxMode) {
             @Override protected QueryEngine getEngine() {
                 return Commons.lookupComponent(srv.context(), QueryEngine.class);
             }

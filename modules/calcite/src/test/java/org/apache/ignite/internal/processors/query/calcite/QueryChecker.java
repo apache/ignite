@@ -406,15 +406,6 @@ public abstract class QueryChecker {
         List<FieldsQueryCursor<List<?>>> explainCursors =
             engine.query(ctx, "PUBLIC", "EXPLAIN PLAN FOR " + qry, params);
 
-        for (FieldsQueryCursor<List<?>> cur : explainCursors) {
-            List<List<?>> plan = cur.getAll();
-
-            for (List<?> row : plan) {
-                System.out.println(row);
-            }
-        }
-
-/*
         FieldsQueryCursor<List<?>> explainCursor = explainCursors.get(0);
         List<List<?>> explainRes = explainCursor.getAll();
         String actualPlan = (String)explainRes.get(0).get(0);
@@ -426,7 +417,6 @@ public abstract class QueryChecker {
 
         if (exactPlan != null)
             assertEquals(exactPlan, actualPlan);
-*/
 
         // Check result.
         List<FieldsQueryCursor<List<?>>> cursors =
