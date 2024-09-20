@@ -621,10 +621,7 @@ public class SqlTransactionsIsolationTest extends GridCommonAbstractTest {
     /** */
     @Test
     public void testInsert() {
-        assumeFalse(
-            "Thin client doesn't support multiple statements",
-            multi && modify == SQL && (type == ExecutorType.THIN_VIA_CACHE_API || type == ExecutorType.THIN_VIA_QUERY)
-        );
+        ensureModeSupported();
 
         Runnable checkBefore = () -> {
             for (int i = 4; i <= (multi ? 6 : 4); i++) {
@@ -671,10 +668,7 @@ public class SqlTransactionsIsolationTest extends GridCommonAbstractTest {
     /** */
     @Test
     public void testUpdate() {
-        assumeFalse(
-            "Thin client doesn't support multiple statements",
-            multi && modify == SQL && (type == ExecutorType.THIN_VIA_CACHE_API || type == ExecutorType.THIN_VIA_QUERY)
-        );
+        ensureModeSupported();
 
         if (multi)
             insert(F.t(2, JOHN), F.t(3, JOHN));
@@ -725,10 +719,7 @@ public class SqlTransactionsIsolationTest extends GridCommonAbstractTest {
     /** */
     @Test
     public void testDelete() {
-        assumeFalse(
-            "Thin client doesn't support multiple statements",
-            multi && modify == SQL && (type == ExecutorType.THIN_VIA_CACHE_API || type == ExecutorType.THIN_VIA_QUERY)
-        );
+        ensureModeSupported();
 
         if (multi)
             insert(F.t(2, JOHN), F.t(3, JOHN));
@@ -1192,6 +1183,14 @@ public class SqlTransactionsIsolationTest extends GridCommonAbstractTest {
     /** */
     private static String tableName(String tbl, CacheMode mode) {
         return tbl + "_" + mode;
+    }
+
+    /** */
+    private void ensureModeSupported() {
+        assumeFalse(
+            "Thin client doesn't support multiple statements for SQL",
+            multi && modify == SQL && (type == ExecutorType.THIN_VIA_CACHE_API || type == ExecutorType.THIN_VIA_QUERY)
+        );
     }
 
     /** */
