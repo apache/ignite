@@ -31,13 +31,13 @@ import org.junit.Test;
 import static java.util.Collections.singletonList;
 
 /** */
-public class DateTimeTest extends AbstractBasicIntegrationTest {
+public class DateTimeTest extends AbstractBasicIntegrationTransactionalTest {
     /** */
     private static final SimpleDateFormat DATE_FORMAT = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss.SSS");
 
     /** {@inheritDoc} */
-    @Override protected void beforeTestsStarted() throws Exception {
-        super.beforeTestsStarted();
+    @Override protected void init() throws Exception {
+        super.init();
 
         QueryEntity qryEnt = new QueryEntity();
         qryEnt.setKeyFieldName("ID");
@@ -51,22 +51,22 @@ public class DateTimeTest extends AbstractBasicIntegrationTest {
         qryEnt.addQueryField("SQLTIMESTAMP", Timestamp.class.getName(), null);
         qryEnt.setTableName("datetimetable");
 
-        final CacheConfiguration<Integer, DateTimeEntry> cfg = new CacheConfiguration<>(qryEnt.getTableName());
-
-        cfg.setCacheMode(CacheMode.PARTITIONED)
+        final CacheConfiguration<Integer, DateTimeEntry> cfg = this.<Integer, DateTimeEntry>cacheConfiguration()
+            .setName(qryEnt.getTableName())
+            .setCacheMode(CacheMode.PARTITIONED)
             .setBackups(1)
             .setQueryEntities(singletonList(qryEnt))
             .setSqlSchema("PUBLIC");
 
         IgniteCache<Integer, DateTimeEntry> dateTimeCache = client.createCache(cfg);
 
-        dateTimeCache.put(1, new DateTimeEntry(1, javaDate("2020-10-01 12:00:00.000"),
+        put(client, dateTimeCache, 1, new DateTimeEntry(1, javaDate("2020-10-01 12:00:00.000"),
             sqlDate("2020-10-01"), sqlTime("12:00:00"), sqlTimestamp("2020-10-01 12:00:00.000")));
-        dateTimeCache.put(2, new DateTimeEntry(2, javaDate("2020-12-01 00:10:20.000"),
+        put(client, dateTimeCache, 2, new DateTimeEntry(2, javaDate("2020-12-01 00:10:20.000"),
             sqlDate("2020-12-01"), sqlTime("00:10:20"), sqlTimestamp("2020-12-01 00:10:20.000")));
-        dateTimeCache.put(3, new DateTimeEntry(3, javaDate("2020-10-20 13:15:00.000"),
+        put(client, dateTimeCache, 3, new DateTimeEntry(3, javaDate("2020-10-20 13:15:00.000"),
             sqlDate("2020-10-20"), sqlTime("13:15:00"), sqlTimestamp("2020-10-20 13:15:00.000")));
-        dateTimeCache.put(4, new DateTimeEntry(4, javaDate("2020-01-01 22:40:00.000"),
+        put(client, dateTimeCache, 4, new DateTimeEntry(4, javaDate("2020-01-01 22:40:00.000"),
             sqlDate("2020-01-01"), sqlTime("22:40:00"), sqlTimestamp("2020-01-01 22:40:00.000")));
     }
 
