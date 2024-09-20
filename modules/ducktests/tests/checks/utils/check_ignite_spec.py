@@ -95,4 +95,5 @@ def check_colon_options__go_after_default_ones_and_overwrite_them__if_passed_via
     assert "-Xlog:gc*=debug,gc+stats*=debug,gc+ergo*=debug:/default-path/gc.log:uptime,time,level,tags" \
            in spec.jvm_opts
     assert spec.jvm_opts.index("-Xlog:gc:/some-non-default-path/gc.log") > \
-           spec.jvm_opts.index("-Xlog:gc:/default-path/gc.log")
+           spec.jvm_opts.index(
+               "-Xlog:gc*=debug,gc+stats*=debug,gc+ergo*=debug:/default-path/gc.log:uptime,time,level,tags")
