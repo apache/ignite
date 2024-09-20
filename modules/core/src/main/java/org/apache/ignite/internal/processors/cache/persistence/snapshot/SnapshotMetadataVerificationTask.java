@@ -39,6 +39,7 @@ import org.apache.ignite.compute.ComputeJobResult;
 import org.apache.ignite.compute.ComputeJobResultPolicy;
 import org.apache.ignite.compute.ComputeTaskAdapter;
 import org.apache.ignite.internal.IgniteEx;
+import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.persistence.wal.FileDescriptor;
 import org.apache.ignite.internal.processors.cache.persistence.wal.FileWriteAheadLogManager;
 import org.apache.ignite.internal.processors.cache.persistence.wal.reader.IgniteWalIteratorFactory;
@@ -176,7 +177,9 @@ public class SnapshotMetadataVerificationTask
         /** Checks that all incremental snapshots are present, contain correct metafile and WAL segments. */
         public void checkIncrementalSnapshots(SnapshotMetadata fullMeta, SnapshotMetadataVerificationTaskArg arg) {
             try {
-                IgniteSnapshotManager snpMgr = ignite.context().cache().context().snapshotMgr();
+                GridCacheSharedContext<Object, Object> ctx = ignite.context().cache().context();
+
+                IgniteSnapshotManager snpMgr = ctx.snapshotMgr();
 
                 // Incremental snapshot must contain ClusterSnapshotRecord.
                 long startSeg = fullMeta.snapshotRecordPointer().index();
@@ -189,7 +192,7 @@ public class SnapshotMetadataVerificationTask
                             "[snpName=" + arg.snapshotName() + ", snpPath=" + arg.snapshotPath() + ", incrementIndex=" + inc + ']');
                     }
 
-                    String folderName = ignite.context().cache().context().kernalContext().pdsFolderResolver().resolveFolders().folderName();
+                    String folderName = ctx.kernalContext().pdsFolderResolver().resolveFolders().folderName();
 
                     String metaFileName = snapshotMetaFileName(folderName);
 
