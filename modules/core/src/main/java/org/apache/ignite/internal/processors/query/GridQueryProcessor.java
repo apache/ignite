@@ -302,6 +302,9 @@ public class GridQueryProcessor extends GridProcessorAdapter {
     /** Local schema manager. */
     private final SchemaManager schemaMgr;
 
+    /** Global schema SQL views manager. */
+    private final SchemaSqlViewManager schemaSqlViewMgr;
+
     /** @see TransactionConfiguration#isTxAwareQueriesEnabled()  */
     private final boolean txAwareQueriesEnabled;
 

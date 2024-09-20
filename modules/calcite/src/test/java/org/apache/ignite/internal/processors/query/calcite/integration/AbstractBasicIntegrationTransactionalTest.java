@@ -111,8 +111,8 @@ public abstract class AbstractBasicIntegrationTransactionalTest extends Abstract
         client = startClientGrid("client");
     }
 
-    /** {@inheritDoc} */
-    @Override protected QueryChecker assertQuery(IgniteEx ignite, String qry) {
+    /** */
+    protected QueryChecker assertQuery(IgniteEx ignite, String qry) {
         return new QueryChecker(qry, tx, sqlTxMode) {
             @Override protected QueryEngine getEngine() {
                 return Commons.lookupComponent(ignite.context(), QueryEngine.class);
