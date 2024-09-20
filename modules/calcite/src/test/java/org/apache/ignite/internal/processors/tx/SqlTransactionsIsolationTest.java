@@ -80,6 +80,7 @@ import static org.apache.ignite.internal.processors.tx.SqlTransactionsIsolationT
 import static org.apache.ignite.testframework.GridTestUtils.assertThrows;
 import static org.apache.ignite.testframework.GridTestUtils.runAsync;
 import static org.apache.ignite.transactions.TransactionIsolation.READ_COMMITTED;
+import static org.junit.Assume.assumeFalse;
 
 /** */
 @RunWith(Parameterized.class)
@@ -220,8 +221,7 @@ public class SqlTransactionsIsolationTest extends GridCommonAbstractTest {
                                     for (ExecutorType execType :
                                             new ExecutorType[]{ExecutorType.THIN_VIA_CACHE_API, ExecutorType.THIN_VIA_QUERY}) {
                                         for (boolean partitionAwareness : new boolean[]{false, true}) {
-                                            params.add(new Object[]{
-                                                modify,
+                                            params.add(new Object[]{modify,
                                                 execType,
                                                 partitionAwareness,
                                                 cacheMode,
@@ -621,6 +621,11 @@ public class SqlTransactionsIsolationTest extends GridCommonAbstractTest {
     /** */
     @Test
     public void testInsert() {
+        assumeFalse(
+            "Thin client doesn't support multiple statements",
+            multi && modify == SQL && (type == ExecutorType.THIN_VIA_CACHE_API || type == ExecutorType.THIN_VIA_QUERY)
+        );
+
         Runnable checkBefore = () -> {
             for (int i = 4; i <= (multi ? 6 : 4); i++) {
                 assertNull(CACHE.name(), select(i, CACHE));
@@ -666,6 +671,11 @@ public class SqlTransactionsIsolationTest extends GridCommonAbstractTest {
     /** */
     @Test
     public void testUpdate() {
+        assumeFalse(
+            "Thin client doesn't support multiple statements",
+            multi && modify == SQL && (type == ExecutorType.THIN_VIA_CACHE_API || type == ExecutorType.THIN_VIA_QUERY)
+        );
+
         if (multi)
             insert(F.t(2, JOHN), F.t(3, JOHN));
 
@@ -715,6 +725,11 @@ public class SqlTransactionsIsolationTest extends GridCommonAbstractTest {
     /** */
     @Test
     public void testDelete() {
+        assumeFalse(
+            "Thin client doesn't support multiple statements",
+            multi && modify == SQL && (type == ExecutorType.THIN_VIA_CACHE_API || type == ExecutorType.THIN_VIA_QUERY)
+        );
+
         if (multi)
             insert(F.t(2, JOHN), F.t(3, JOHN));
 
