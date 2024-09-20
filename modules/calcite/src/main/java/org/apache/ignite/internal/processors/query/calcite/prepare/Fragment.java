@@ -34,7 +34,6 @@ import org.apache.ignite.internal.processors.query.calcite.metadata.NodeMappingE
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteReceiver;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteRel;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteSender;
-import org.apache.ignite.internal.processors.query.calcite.rel.IgniteTableModify;
 import org.apache.ignite.internal.processors.query.calcite.trait.IgniteDistributions;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
@@ -47,9 +46,6 @@ import static org.apache.ignite.internal.processors.query.calcite.externalize.Re
  * Fragment of distributed query
  */
 public class Fragment {
-    /** */
-    private static final String ERR_MSG = "Failed to calculate physical distribution";
-
     /** */
     private final long id;
 
@@ -143,42 +139,7 @@ public class Fragment {
         if (mapping != null)
             return this;
 
-        return mapped(mapping(ctx, mq, nodesSource(mappingSrvc, ctx)));
-    }
-
-    /**
-     * Mapps {@link IgniteTableModify} fragment with the {@link IgniteReceiver} as input to be invoked on local node.
-     * @param ctx Planner context.
-     * @param mq Metadata query.
-     */
-    Fragment mapLocalTableModify(MappingService mappingSrvc, MappingQueryContext ctx, RelMetadataQuery mq) throws FragmentMappingException {
-        if (mapping != null)
-            return this;
-
-        assert root instanceof IgniteTableModify;
-        assert root.getInput(0) instanceof IgniteReceiver;
-
-        FragmentMapping fm = IgniteMdFragmentMapping._fragmentMapping(root.getInput(0), mq, ctx);
-
-        try {
-            fm = fm.local(ctx.localNodeId());
-        }
-        catch (NodeMappingException e) {
-            throw new FragmentMappingException(ERR_MSG, this, e.node(), e);
-        }
-        catch (ColocationMappingException e) {
-            throw new FragmentMappingException(ERR_MSG, this, root, e);
-        }
-
-        return mapped(fm.finalizeMapping(nodesSource(mappingSrvc, ctx)));
-    }
-
-    /**
-     * @param mapping New mapping.
-     * @return This fragment mapped to new {@code mapping}
-     */
-    Fragment mapped(FragmentMapping mapping) {
-        return new Fragment(id, root, remotes, rootSer, mapping);
+        return new Fragment(id, root, remotes, rootSer, mapping(ctx, mq, nodesSource(mappingSrvc, ctx)));
     }
 
     /** */
@@ -204,10 +165,10 @@ public class Fragment {
             return mapping.finalizeMapping(nodesSource);
         }
         catch (NodeMappingException e) {
-            throw new FragmentMappingException(ERR_MSG, this, e.node(), e);
+            throw new FragmentMappingException("Failed to calculate physical distribution", this, e.node(), e);
         }
         catch (ColocationMappingException e) {
-            throw new FragmentMappingException(ERR_MSG, this, root, e);
+            throw new FragmentMappingException("Failed to calculate physical distribution", this, root, e);
         }
     }
 

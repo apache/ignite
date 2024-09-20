@@ -1164,30 +1164,22 @@ public class SqlTransactionsIsolationTest extends GridCommonAbstractTest {
         return tableName(USERS, mode);
     }
 
-    /**
-     *
-     */
+    /** */
     private String departments() {
         return tableName(DEPARTMENTS, mode);
     }
 
-    /**
-     *
-     */
+    /** */
     private String tbl() {
         return tableName(TBL, mode);
     }
 
-    /**
-     *
-     */
+    /** */
     private static String tableName(String tbl, CacheMode mode) {
         return tbl + "_" + mode;
     }
 
-    /**
-     *
-     */
+    /** */
     private List<List<?>> unwrapBinary(List<List<?>> all) {
         return all.stream()
             .map(row -> row.stream()
@@ -1196,9 +1188,7 @@ public class SqlTransactionsIsolationTest extends GridCommonAbstractTest {
             .collect(Collectors.toList());
     }
 
-    /**
-     *
-     */
+    /** */
     public static class RemoveEntryProcessor<K, V, T> implements EntryProcessor<K, V, T> {
         /** {@inheritDoc} */
         @Override public T process(MutableEntry<K, V> entry, Object... arguments) throws EntryProcessorException {

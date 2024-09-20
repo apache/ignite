@@ -32,15 +32,7 @@ import org.junit.Test;
 /**
  *  Dynamic parameters types inference test.
  */
-public class DynamicParametersIntegrationTest extends AbstractBasicIntegrationTransactionalTest {
-    /** {@inheritDoc} */
-    @Override protected void beforeTest() throws Exception {
-        super.beforeTest();
-
-        if (sqlTxMode != SqlTransactionMode.NONE)
-            startTransaction(client);
-    }
-
+public class DynamicParametersIntegrationTest extends AbstractBasicIntegrationTest {
     /** */
     @Test
     public void testMetadataTypesForDynamicParameters() {

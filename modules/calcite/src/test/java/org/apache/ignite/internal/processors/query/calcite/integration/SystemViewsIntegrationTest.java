@@ -31,15 +31,7 @@ import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_CLIENT_MODE;
 /**
  * Integration tests for system views.
  */
-public class SystemViewsIntegrationTest extends AbstractBasicIntegrationTransactionalTest {
-    /** {@inheritDoc} */
-    @Override protected void beforeTest() throws Exception {
-        super.beforeTest();
-
-        if (sqlTxMode != SqlTransactionMode.NONE)
-            startTransaction(client);
-    }
-
+public class SystemViewsIntegrationTest extends AbstractBasicIntegrationTest {
     /** */
     @Test
     public void testSimpleView() {
@@ -113,7 +105,7 @@ public class SystemViewsIntegrationTest extends AbstractBasicIntegrationTransact
             .check();
 
         // Join view with regular table.
-        sql("CREATE TABLE t(a bigint, b varchar) WITH atomicity=transactional");
+        sql("CREATE TABLE t(a bigint, b varchar)");
         sql("INSERT INTO t VALUES (?, 'test')", client.localNode().order());
 
         assertQuery("SELECT node_id, node_order, b FROM sys.nodes JOIN t ON node_order = a")
@@ -124,7 +116,7 @@ public class SystemViewsIntegrationTest extends AbstractBasicIntegrationTransact
     /** */
     @Test
     public void testViewAsSourceForDml() {
-        sql("CREATE TABLE t(a bigint) WITH atomicity=transactional");
+        sql("CREATE TABLE t(a bigint)");
         sql("INSERT INTO t SELECT node_order FROM sys.nodes WHERE node_id = ?", client.localNode().id());
         assertQuery("SELECT * FROM t").returns(client.localNode().order()).check();
 
