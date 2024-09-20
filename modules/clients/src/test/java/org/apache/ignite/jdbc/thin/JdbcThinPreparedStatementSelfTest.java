@@ -961,7 +961,7 @@ public class JdbcThinPreparedStatementSelfTest extends JdbcThinAbstractSelfTest 
 
         byte[] bytes = new byte[] {0, 1, 2, 3, 4, 5, 6, 7, 8, 9};
 
-        String currentTempStreamFile;
+        String curTempStreamFile;
 
         try (conn) {
             Set<String> existingTempStreamFiles = getTempStreamFiles();
@@ -976,7 +976,7 @@ public class JdbcThinPreparedStatementSelfTest extends JdbcThinAbstractSelfTest 
             newTempStreamFiles.removeAll(existingTempStreamFiles);
             assertTrue(newTempStreamFiles.size() == 1);
 
-            currentTempStreamFile = newTempStreamFiles.iterator().next();
+            curTempStreamFile = newTempStreamFiles.iterator().next();
 
             int inserted = stmtToBeLeftUnclosed.executeUpdate();
 
@@ -1004,7 +1004,7 @@ public class JdbcThinPreparedStatementSelfTest extends JdbcThinAbstractSelfTest 
         // Make sure the phantom reference to stream wrapper created inside
         // the stmtToBeLeftUnclosed statemnt was detected and the corresponding
         // temp file is removed by java.lang.ref.Cleaner thread.
-        assertTrue(GridTestUtils.waitForCondition(() -> !getTempStreamFiles().contains(currentTempStreamFile), 3_000, 10));
+        assertTrue(GridTestUtils.waitForCondition(() -> !getTempStreamFiles().contains(curTempStreamFile), 3_000, 10));
     }
 
     /** */
