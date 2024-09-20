@@ -6554,8 +6554,6 @@ class ServerImpl extends TcpDiscoveryImpl {
                         blockingSectionEnd();
                     }
 
-                    long tsNanos = System.nanoTime();
-
                     if (log.isInfoEnabled()) {
                         log.info("TCP discovery accepted incoming connection " +
                             "[rmtAddr=" + sock.getInetAddress() + ", rmtPort=" + sock.getPort() + ']');

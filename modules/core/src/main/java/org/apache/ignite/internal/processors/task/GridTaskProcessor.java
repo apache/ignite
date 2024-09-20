@@ -209,8 +209,7 @@ public class GridTaskProcessor extends GridProcessorAdapter implements IgniteCha
         if (!active)
             return;
 
-        tasksMetaCache = ctx.security().enabled() ?
-            ctx.cache().<GridTaskNameHashKey, String>utilityCache() : null;
+        tasksMetaCache = ctx.security().enabled() ? ctx.cache().<GridTaskNameHashKey, String>utilityCache() : null;
 
         startLatch.countDown();
     }
