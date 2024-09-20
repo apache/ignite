@@ -462,6 +462,8 @@ public class IncrementalSnapshotTest extends AbstractSnapshotSelfTest {
 
         ignite.destroyCache(DEFAULT_CACHE_NAME);
 
+        awaitPartitionMapExchange();
+
         ignite.snapshot().restoreSnapshot(SNAPSHOT_NAME, F.asList(DEFAULT_CACHE_NAME)).get(getTestTimeout());
 
         assertEquals(1, cache.size());
