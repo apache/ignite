@@ -640,6 +640,24 @@ public class JdbcThinResultSetSelfTest extends JdbcThinAbstractSelfTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
+    public void testBinaryStream() throws Exception {
+        ResultSet rs = stmt.executeQuery(SQL);
+
+        assertTrue(rs.next());
+
+        InputStream stream = rs.getBinaryStream("blobVal");
+        Assert.assertArrayEquals(stream.readAllBytes(), new byte[] {1});
+
+        stream = rs.getBinaryStream(16);
+        Assert.assertArrayEquals(stream.readAllBytes(), new byte[] {1});
+
+        assertFalse(rs.next());
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
     @SuppressWarnings("deprecation")
     @Test
     public void testDate() throws Exception {
@@ -851,18 +869,6 @@ public class JdbcThinResultSetSelfTest extends JdbcThinAbstractSelfTest {
         checkNotSupported(new RunnableX() {
             @Override public void runx() throws Exception {
                 rs.getAsciiStream("id");
-            }
-        });
-
-        checkNotSupported(new RunnableX() {
-            @Override public void runx() throws Exception {
-                rs.getBinaryStream(1);
-            }
-        });
-
-        checkNotSupported(new RunnableX() {
-            @Override public void runx() throws Exception {
-                rs.getBinaryStream("id");
             }
         });
 

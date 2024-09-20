@@ -17,7 +17,6 @@
 
 package org.apache.ignite.internal.jdbc.thin;
 
-import java.io.IOException;
 import java.io.InputStream;
 import java.io.Reader;
 import java.math.BigDecimal;
@@ -466,12 +465,7 @@ public class JdbcThinPreparedStatement extends JdbcThinStatement implements Prep
             setNull(paramIdx, BINARY);
         }
         else {
-            try {
-                setArgument(paramIdx, SqlInputStreamWrapper.withKnownLength(x, (int)length));
-            }
-            catch (IOException e) {
-                throw new SQLException("Failed to set argument.", e);
-            }
+            setArgument(paramIdx, SqlInputStreamWrapper.withKnownLength(x, (int)length));
         }
     }
 
@@ -497,12 +491,7 @@ public class JdbcThinPreparedStatement extends JdbcThinStatement implements Prep
             setNull(paramIdx, BINARY);
         }
         else {
-            try {
-                setArgument(paramIdx, SqlInputStreamWrapper.withUnknownLength(x, conn.connectionProperties().getMaxInMemoryLobSize()));
-            }
-            catch (IOException e) {
-                throw new SQLException("Failed to set argument.", e);
-            }
+            setArgument(paramIdx, SqlInputStreamWrapper.withUnknownLength(x, conn.connectionProperties().getMaxInMemoryLobSize()));
         }
     }
 

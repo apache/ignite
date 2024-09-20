@@ -61,8 +61,13 @@ public class SqlInputStreamWrapper implements AutoCloseable {
      * @param len Length of data in the input stream.
      * @return Input stream wrapper.
      */
-    public static SqlInputStreamWrapper withKnownLength(InputStream inputStream, int len) throws SQLException, IOException {
-        return new SqlInputStreamWrapper(inputStream, len, null);
+    public static SqlInputStreamWrapper withKnownLength(InputStream inputStream, int len) throws SQLException {
+        try {
+            return new SqlInputStreamWrapper(inputStream, len, null);
+        }
+        catch (IOException e) {
+            throw new SQLException(e);
+        }
     }
 
     /**
@@ -76,9 +81,13 @@ public class SqlInputStreamWrapper implements AutoCloseable {
      * @param maxMemoryBufferBytes Maximum memory buffer size in bytes.
      * @return Input stream wrapper.
      */
-    public static SqlInputStreamWrapper withUnknownLength(InputStream inputStream, int maxMemoryBufferBytes)
-            throws SQLException, IOException {
-        return new SqlInputStreamWrapper(inputStream, null, maxMemoryBufferBytes);
+    public static SqlInputStreamWrapper withUnknownLength(InputStream inputStream, int maxMemoryBufferBytes) throws SQLException {
+        try {
+            return new SqlInputStreamWrapper(inputStream, null, maxMemoryBufferBytes);
+        }
+        catch (IOException e) {
+            throw new SQLException(e);
+        }
     }
 
     /**
