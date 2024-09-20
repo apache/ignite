@@ -58,7 +58,6 @@ import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.ClientConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
-import org.apache.ignite.internal.client.thin.TcpIgniteClient;
 import org.apache.ignite.internal.processors.query.QueryUtils;
 import org.apache.ignite.internal.util.lang.RunnableX;
 import org.apache.ignite.internal.util.typedef.F;
@@ -258,7 +257,7 @@ public class SqlTransactionsIsolationTest extends GridCommonAbstractTest {
     private void init() throws Exception {
         srv = startGrids(gridCnt);
         cli = startClientGrid("client");
-        thinCli = TcpIgniteClient.start(new ClientConfiguration()
+        thinCli = Ignition.startClient(new ClientConfiguration()
             .setAddresses(Config.SERVER)
             .setPartitionAwarenessEnabled(partitionAwareness));
 
@@ -1141,14 +1140,13 @@ public class SqlTransactionsIsolationTest extends GridCommonAbstractTest {
         if (!F.isEmpty(parts))
             qry.setPartitions(parts);
 
-        if (type == ExecutorType.THIN_VIA_CACHE_API)
+        if (type == ExecutorType.THIN_VIA_QUERY)
             return unwrapBinary(thinCli.query(qry).getAll());
-        else if (type == ExecutorType.THIN_VIA_QUERY)
+        else if (type == ExecutorType.THIN_VIA_CACHE_API)
             return unwrapBinary(thinCli.cache(F.first(thinCli.cacheNames())).query(qry).getAll());
 
-        if (multi) {
+        if (multi)
             return node().context().query().querySqlFields(qry, false, false).get(0).getAll();
-        }
         else
             return node().cache(F.first(cli.cacheNames())).query(qry).getAll();
     }

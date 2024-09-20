@@ -80,13 +80,13 @@ import static org.apache.ignite.internal.processors.platform.cache.expiry.Platfo
  */
 public class TcpClientCache<K, V> implements ClientCache<K, V> {
     /** "Keep binary" flag mask. */
-    public static final byte KEEP_BINARY_FLAG_MASK = 0x01;
+    static final byte KEEP_BINARY_FLAG_MASK = 0x01;
 
     /** "Transactional" flag mask. */
-    public static final byte TRANSACTIONAL_FLAG_MASK = 0x02;
+    static final byte TRANSACTIONAL_FLAG_MASK = 0x02;
 
     /** "With expiry policy" flag mask. */
-    public static final byte WITH_EXPIRY_POLICY_FLAG_MASK = 0x04;
+    private static final byte WITH_EXPIRY_POLICY_FLAG_MASK = 0x04;
 
     /** Platform type: Java platform. */
     static final byte JAVA_PLATFORM = 1;
