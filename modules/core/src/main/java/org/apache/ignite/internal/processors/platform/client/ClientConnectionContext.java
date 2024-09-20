@@ -197,9 +197,8 @@ public class ClientConnectionContext extends ClientListenerAbstractConnectionCon
 
             features = ClientBitmaskFeature.enumSet(cliFeatures);
 
-            if (!ctx.config().getTransactionConfiguration().isTxAwareQueriesEnabled()) {
+            if (!ctx.config().getTransactionConfiguration().isTxAwareQueriesEnabled())
                 features.remove(ClientBitmaskFeature.TX_AWARE_QUERIES);
-            }
         }
 
         currentProtocolContext = new ClientProtocolContext(ver, features);
