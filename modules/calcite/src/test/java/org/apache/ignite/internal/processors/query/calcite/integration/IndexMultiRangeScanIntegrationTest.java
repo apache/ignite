@@ -54,11 +54,11 @@ public class IndexMultiRangeScanIntegrationTest extends AbstractBasicIntegration
     @Override protected void init() throws Exception {
         super.init();
 
-        sql("CREATE TABLE test (c1 INTEGER, c2 VARCHAR, c3 INTEGER) WITH atomicity=transactional");
+        sql("CREATE TABLE test (c1 INTEGER, c2 VARCHAR, c3 INTEGER) WITH " + atomicity());
         sql("CREATE INDEX c1c2c3 ON test(c1, c2, c3)");
-        sql("CREATE TABLE test_desc (c1 INTEGER, c2 VARCHAR, c3 INTEGER) WITH atomicity=transactional");
+        sql("CREATE TABLE test_desc (c1 INTEGER, c2 VARCHAR, c3 INTEGER) WITH " + atomicity());
         sql("CREATE INDEX c1c2c3_desc ON test_desc(c1 DESC, c2 DESC, c3 DESC)");
-        sql("CREATE TABLE test_pk (c1 INTEGER, c2 VARCHAR, c3 INTEGER, PRIMARY KEY(c1, c2, c3)) WITH atomicity=transactional");
+        sql("CREATE TABLE test_pk (c1 INTEGER, c2 VARCHAR, c3 INTEGER, PRIMARY KEY(c1, c2, c3)) WITH " + atomicity());
 
         for (String tbl : F.asList("test", "test_desc", "test_pk")) {
             sql("INSERT INTO " + tbl + "(c1, c2, c3) VALUES (0, null, 0)");

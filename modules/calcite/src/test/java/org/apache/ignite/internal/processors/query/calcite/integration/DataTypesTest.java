@@ -42,7 +42,7 @@ public class DataTypesTest extends AbstractBasicIntegrationTransactionalTest {
     /** Tests Other type. */
     @Test
     public void testOtherType() {
-        executeSql("CREATE TABLE t(id INT, oth OTHER) WITH atomicity=transactional");
+        executeSql("CREATE TABLE t(id INT, oth OTHER) WITH " + atomicity());
 
         assertThrows("CREATE TABLE t2(id INT, oth OTHER DEFAULT 'str')", IgniteSQLException.class,
             "Type 'OTHER' doesn't support default value.");
@@ -112,7 +112,7 @@ public class DataTypesTest extends AbstractBasicIntegrationTransactionalTest {
 
     /** Tests UUID type. */
     private void testUuid(boolean indexed) {
-        executeSql("CREATE TABLE t(id INT, name VARCHAR(255), uid UUID, primary key (id)) WITH atomicity=transactional");
+        executeSql("CREATE TABLE t(id INT, name VARCHAR(255), uid UUID, primary key (id)) WITH " + atomicity());
 
         if (indexed)
             executeSql("CREATE INDEX uuid_idx ON t (uid);");
@@ -200,7 +200,7 @@ public class DataTypesTest extends AbstractBasicIntegrationTransactionalTest {
      */
     @Test
     public void testNumericRanges() {
-        executeSql("CREATE TABLE tbl(tiny TINYINT, small SMALLINT, i INTEGER, big BIGINT) WITH atomicity=transactional");
+        executeSql("CREATE TABLE tbl(tiny TINYINT, small SMALLINT, i INTEGER, big BIGINT) WITH " + atomicity());
 
         executeSql("INSERT INTO tbl VALUES (" + Byte.MAX_VALUE + ", " + Short.MAX_VALUE + ", " +
             Integer.MAX_VALUE + ", " + Long.MAX_VALUE + ')');
@@ -226,7 +226,7 @@ public class DataTypesTest extends AbstractBasicIntegrationTransactionalTest {
      */
     @Test
     public void testNumericConvertationOnEquals() {
-        executeSql("CREATE TABLE tbl(tiny TINYINT, small SMALLINT, i INTEGER, big BIGINT) WITH atomicity=transactional");
+        executeSql("CREATE TABLE tbl(tiny TINYINT, small SMALLINT, i INTEGER, big BIGINT) WITH " + atomicity());
 
         executeSql("INSERT INTO tbl VALUES (1, 2, 3, 4), (5, 5, 5, 5)");
 
@@ -296,7 +296,7 @@ public class DataTypesTest extends AbstractBasicIntegrationTransactionalTest {
     /** */
     @Test
     public void testBinarySql() {
-        executeSql("CREATE TABLE tbl(b BINARY(3), v VARBINARY) WITH atomicity=transactional");
+        executeSql("CREATE TABLE tbl(b BINARY(3), v VARBINARY) WITH " + atomicity());
 
         byte[] val = new byte[]{1, 2, 3};
 
@@ -362,7 +362,7 @@ public class DataTypesTest extends AbstractBasicIntegrationTransactionalTest {
     /** */
     @Test
     public void testBinaryAggregation() {
-        executeSql("CREATE TABLE tbl(b varbinary) WITH atomicity=transactional");
+        executeSql("CREATE TABLE tbl(b varbinary) WITH " + atomicity());
         executeSql("INSERT INTO tbl VALUES (NULL)");
         executeSql("INSERT INTO tbl VALUES (x'010203')");
         executeSql("INSERT INTO tbl VALUES (x'040506')");
@@ -377,7 +377,7 @@ public class DataTypesTest extends AbstractBasicIntegrationTransactionalTest {
     /** */
     @Test
     public void testBinaryConcat() {
-        executeSql("CREATE TABLE tbl(b varbinary) WITH atomicity=transactional");
+        executeSql("CREATE TABLE tbl(b varbinary) WITH " + atomicity());
         executeSql("INSERT INTO tbl VALUES (x'010203')");
         List<List<?>> res = executeSql("SELECT b || x'040506' FROM tbl");
 
@@ -389,7 +389,7 @@ public class DataTypesTest extends AbstractBasicIntegrationTransactionalTest {
     /** */
     @Test
     public void testDecimalScale() {
-        sql("CREATE TABLE t (id INT PRIMARY KEY, val1 DECIMAL(5, 3), val2 DECIMAL(3), val3 DECIMAL) WITH atomicity=transactional");
+        sql("CREATE TABLE t (id INT PRIMARY KEY, val1 DECIMAL(5, 3), val2 DECIMAL(3), val3 DECIMAL) WITH " + atomicity());
 
         // Check literals scale.
         sql("INSERT INTO t values (0, 0, 0, 0)");
@@ -424,7 +424,7 @@ public class DataTypesTest extends AbstractBasicIntegrationTransactionalTest {
     /** */
     @Test
     public void testNumericConversion() {
-        sql("CREATE TABLE t (v1 TINYINT, v2 SMALLINT, v3 INT, v4 BIGINT, v5 DECIMAL, v6 FLOAT, v7 DOUBLE) WITH atomicity=transactional");
+        sql("CREATE TABLE t (v1 TINYINT, v2 SMALLINT, v3 INT, v4 BIGINT, v5 DECIMAL, v6 FLOAT, v7 DOUBLE) WITH " + atomicity());
 
         List<Number> params = F.asList((byte)1, (short)2, 3, 4L, BigDecimal.valueOf(5), 6f, 7d);
 
@@ -445,7 +445,7 @@ public class DataTypesTest extends AbstractBasicIntegrationTransactionalTest {
     /** */
     @Test
     public void testFunctionArgsToNumericImplicitConversion() {
-        assumeTrue(sqlTxMode == SqlTransactionMode.NONE);
+        assumeTrue("Test use queries that doesn't touch any data. Skip for tx modes", sqlTxMode == SqlTransactionMode.NONE);
 
         assertQuery("select decode(?, 0, 0, 1, 1.0)").withParams(0).returns(new BigDecimal("0.0")).check();
         assertQuery("select decode(?, 0, 0, 1, 1.0)").withParams(1).returns(new BigDecimal("1.0")).check();
@@ -520,7 +520,7 @@ public class DataTypesTest extends AbstractBasicIntegrationTransactionalTest {
     /** */
     @Test
     public void testCastDecimalOverflows() {
-        assumeTrue(sqlTxMode == SqlTransactionMode.NONE);
+        assumeTrue("Test use queries that doesn't touch any data. Skip for tx modes", sqlTxMode == SqlTransactionMode.NONE);
 
         // BIGINT
         assertQuery("SELECT CAST(9223372036854775807.1 AS BIGINT)").returns(9223372036854775807L).check();

@@ -471,7 +471,7 @@ public class ServerStatisticsIntegrationTest extends AbstractBasicIntegrationTra
 
     /** */
     protected QueryChecker assertQuerySrv(String qry) {
-        return new QueryChecker(qry) {
+        return new QueryChecker(qry, tx, sqlTxMode) {
             @Override protected QueryEngine getEngine() {
                 return Commons.lookupComponent(srv.context(), QueryEngine.class);
             }
@@ -505,7 +505,6 @@ public class ServerStatisticsIntegrationTest extends AbstractBasicIntegrationTra
             .setQueryEntities(F.asList(new QueryEntity(Integer.class, AllTypes.class).setTableName("all_types")))
             .setBackups(2)
         );
-
     }
 
     /**

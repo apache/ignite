@@ -165,7 +165,7 @@ public class InlineIndexImpl extends AbstractIndex implements InlineIndex {
             for (int i = 0; i < segmentsCnt; i++)
                 segmentCursors[i] = find(lower, upper, lowIncl, upIncl, i, qryCtx);
 
-            return new SegmentedIndexCursor(segmentCursors, def);
+            return new SortedSegmentedIndexCursor(segmentCursors, def);
         }
         finally {
             lock.readLock().unlock();
@@ -589,7 +589,7 @@ public class InlineIndexImpl extends AbstractIndex implements InlineIndex {
     }
 
     /** First-only, single-value-only segmented cursor. */
-    private static class SingleValueSegmentedIndexCursor extends SegmentedIndexCursor {
+    private static class SingleValueSegmentedIndexCursor extends SortedSegmentedIndexCursor {
         /** Ctor. */
         SingleValueSegmentedIndexCursor(
             GridCursor<IndexRow>[] cursors,

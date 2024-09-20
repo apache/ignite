@@ -119,15 +119,18 @@ public class CacheDistributionTask extends VisorMultiNodeTask<CacheDistributionC
                     return info;
 
                 for (Integer id : grpIds) {
+                    final DynamicCacheDescriptor desc = ignite.context().cache().cacheDescriptor(id);
+
+                    final CacheGroupContext grpCtx = ignite.context().cache().cacheGroup(desc == null ? id : desc.groupId());
+
+                    if (grpCtx == null)
+                        continue;
+
                     final CacheDistributionGroup grp = new CacheDistributionGroup();
 
                     info.getGroups().add(grp);
 
                     grp.setGroupId(id);
-
-                    final DynamicCacheDescriptor desc = ignite.context().cache().cacheDescriptor(id);
-
-                    final CacheGroupContext grpCtx = ignite.context().cache().cacheGroup(desc == null ? id : desc.groupId());
 
                     grp.setGroupName(grpCtx.cacheOrGroupName());
 

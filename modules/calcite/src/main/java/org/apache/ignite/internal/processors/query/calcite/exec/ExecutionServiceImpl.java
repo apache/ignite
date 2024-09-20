@@ -624,7 +624,7 @@ public class ExecutionServiceImpl<Row> extends AbstractService implements Execut
             createIoTracker(locNodeId, qry.localQueryId()),
             timeout,
             qryParams,
-            userTx == null ? null : userTx.writeEntries());
+            userTx == null ? null : ExecutionContext.transactionChanges(userTx.writeEntries()));
 
         Node<Row> node = new LogicalRelImplementor<>(ectx, partitionService(), mailboxRegistry(),
             exchangeService(), failureProcessor()).go(fragment.root());
@@ -664,7 +664,7 @@ public class ExecutionServiceImpl<Row> extends AbstractService implements Execut
                             qry.parameters(),
                             parametersMarshalled,
                             timeout,
-                            ectx.getTxWriteEntries()
+                            ectx.getQryTxEntries()
                         );
 
                         messageService().send(nodeId, req);
@@ -873,7 +873,7 @@ public class ExecutionServiceImpl<Row> extends AbstractService implements Execut
                 createIoTracker(nodeId, msg.originatingQryId()),
                 msg.timeout(),
                 Commons.parametersMap(msg.parameters()),
-                msg.txWriteEntries()
+                msg.queryTransactionEntries()
             );
 
             executeFragment(qry, (FragmentPlan)qryPlan, ectx);

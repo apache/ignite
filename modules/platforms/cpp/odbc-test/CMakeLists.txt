@@ -90,7 +90,6 @@ set(SOURCES
         ../odbc/src/common_types.cpp
         ../odbc/src/utility.cpp
         ../odbc/src/result_page.cpp
-        ../odbc/src/nested_tx_mode.cpp
         ../odbc/src/engine_mode.cpp)
 
 add_executable(${TARGET} ${SOURCES})

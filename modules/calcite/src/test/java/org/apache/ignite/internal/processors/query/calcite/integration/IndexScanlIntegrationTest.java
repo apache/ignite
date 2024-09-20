@@ -62,7 +62,7 @@ public class IndexScanlIntegrationTest extends AbstractBasicIntegrationTransacti
     /** */
     @Test
     public void testNullsInCNLJSearchRow() {
-        executeSql("CREATE TABLE t(i1 INTEGER, i2 INTEGER) WITH TEMPLATE=REPLICATED,atomicity=transactional");
+        executeSql("CREATE TABLE t(i1 INTEGER, i2 INTEGER) WITH TEMPLATE=REPLICATED," + atomicity());
         executeSql("INSERT INTO t VALUES (0, null), (1, null), (2, 2), (3, null), (4, null), (null, 5)");
         executeSql("CREATE INDEX t_idx ON t(i1)");
 
@@ -89,7 +89,7 @@ public class IndexScanlIntegrationTest extends AbstractBasicIntegrationTransacti
     /** */
     @Test
     public void testNullsInSearchRow() {
-        executeSql("CREATE TABLE t(i1 INTEGER, i2 INTEGER) WITH TEMPLATE=REPLICATED,atomicity=transactional");
+        executeSql("CREATE TABLE t(i1 INTEGER, i2 INTEGER) WITH TEMPLATE=REPLICATED," + atomicity());
         executeSql("INSERT INTO t VALUES (null, 0), (1, null), (2, 2), (3, null)");
         executeSql("CREATE INDEX t_idx ON t(i1, i2)");
 
@@ -165,7 +165,7 @@ public class IndexScanlIntegrationTest extends AbstractBasicIntegrationTransacti
     /** */
     @Test
     public void testScanBooleanField() {
-        executeSql("CREATE TABLE t(i INTEGER, b BOOLEAN) WITH atomicity=transactional");
+        executeSql("CREATE TABLE t(i INTEGER, b BOOLEAN) WITH " + atomicity());
         executeSql("INSERT INTO t VALUES (0, TRUE), (1, TRUE), (2, FALSE), (3, FALSE), (4, null)");
         executeSql("CREATE INDEX t_idx ON t(b)");
 
@@ -218,8 +218,8 @@ public class IndexScanlIntegrationTest extends AbstractBasicIntegrationTransacti
     /** */
     @Test
     public void testIsNotDistinctFrom() {
-        executeSql("CREATE TABLE t1(i1 INTEGER) WITH TEMPLATE=REPLICATED,atomicity=transactional");
-        executeSql("CREATE TABLE t2(i2 INTEGER, i3 INTEGER) WITH TEMPLATE=REPLICATED,atomicity=transactional");
+        executeSql("CREATE TABLE t1(i1 INTEGER) WITH TEMPLATE=REPLICATED," + atomicity());
+        executeSql("CREATE TABLE t2(i2 INTEGER, i3 INTEGER) WITH TEMPLATE=REPLICATED," + atomicity());
 
         executeSql("INSERT INTO t1 VALUES (1), (2), (null), (3)");
         executeSql("INSERT INTO t2 VALUES (1, 1), (2, 2), (null, 3), (4, null)");
@@ -263,7 +263,7 @@ public class IndexScanlIntegrationTest extends AbstractBasicIntegrationTransacti
         checkSingleColumnInlineScan(false, "DECIMAL", BigDecimal::valueOf);
 
         // Multi columns scans.
-        executeSql("CREATE TABLE t(id INTEGER PRIMARY KEY, i1 INTEGER, i2 INTEGER, i3 INTEGER) WITH atomicity=transactional");
+        executeSql("CREATE TABLE t(id INTEGER PRIMARY KEY, i1 INTEGER, i2 INTEGER, i3 INTEGER) WITH " + atomicity());
         executeSql("CREATE INDEX t_idx ON t(i1, i3)");
         RowCountingIndex idx = injectRowCountingIndex(grid(0), "T", "T_IDX");
 
@@ -278,7 +278,7 @@ public class IndexScanlIntegrationTest extends AbstractBasicIntegrationTransacti
 
     /** */
     public void checkSingleColumnInlineScan(boolean expInline, String dataType, IntFunction<Object> valFactory) {
-        executeSql("CREATE TABLE t(id INTEGER PRIMARY KEY, val " + dataType + ") WITH atomicity=transactional");
+        executeSql("CREATE TABLE t(id INTEGER PRIMARY KEY, val " + dataType + ") WITH " + atomicity());
 
         try {
             executeSql("CREATE INDEX t_idx ON t(val)");
@@ -298,6 +298,10 @@ public class IndexScanlIntegrationTest extends AbstractBasicIntegrationTransacti
                 if (sqlTxMode == SqlTransactionMode.NONE) {
                     assertEquals(ROWS_CNT, idx.rowsProcessed());
                     assertTrue(idx.isInlineScan());
+                }
+                else if (sqlTxMode == SqlTransactionMode.ALL) {
+                    assertEquals(0, idx.rowsProcessed());
+                    assertFalse(idx.isInlineScan());
                 }
             }
             else {
@@ -342,10 +346,10 @@ public class IndexScanlIntegrationTest extends AbstractBasicIntegrationTransacti
     /** */
     @Test
     public void testNoIndexHint() {
-        executeSql("CREATE TABLE t1(i1 INTEGER) WITH TEMPLATE=PARTITIONED,atomicity=transactional");
+        executeSql("CREATE TABLE t1(i1 INTEGER) WITH TEMPLATE=PARTITIONED," + atomicity());
         executeSql("CREATE INDEX t1_idx ON t1(i1)");
 
-        executeSql("CREATE TABLE t2(i2 INTEGER, i3 INTEGER) WITH TEMPLATE=PARTITIONED,atomicity=transactional");
+        executeSql("CREATE TABLE t2(i2 INTEGER, i3 INTEGER) WITH TEMPLATE=PARTITIONED," + atomicity());
 
         executeSql("INSERT INTO t1 VALUES (1), (2), (30), (40)");
 
@@ -377,13 +381,13 @@ public class IndexScanlIntegrationTest extends AbstractBasicIntegrationTransacti
     /** */
     @Test
     public void testForcedIndexHint() {
-        executeSql("CREATE TABLE t1(i1 INTEGER, i2 INTEGER, i3 INTEGER) WITH TEMPLATE=PARTITIONED,atomicity=transactional");
+        executeSql("CREATE TABLE t1(i1 INTEGER, i2 INTEGER, i3 INTEGER) WITH TEMPLATE=PARTITIONED," + atomicity());
 
         executeSql("CREATE INDEX t1_idx1 ON t1(i1)");
         executeSql("CREATE INDEX t1_idx2 ON t1(i2)");
         executeSql("CREATE INDEX t1_idx3 ON t1(i3)");
 
-        executeSql("CREATE TABLE t2(i21 INTEGER, i22 INTEGER, i23 INTEGER) WITH TEMPLATE=PARTITIONED,atomicity=transactional");
+        executeSql("CREATE TABLE t2(i21 INTEGER, i22 INTEGER, i23 INTEGER) WITH TEMPLATE=PARTITIONED," + atomicity());
 
         executeSql("CREATE INDEX t2_idx1 ON t2(i21)");
         executeSql("CREATE INDEX t2_idx2 ON t2(i22)");

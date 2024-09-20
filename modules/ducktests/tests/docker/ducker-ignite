@@ -42,7 +42,7 @@ docker_run_memory_limit="8000m"
 default_num_nodes=4
 
 # The default OpenJDK base image.
-default_jdk="openjdk:8"
+default_jdk="openjdk:11"
 
 # The default ducker-ignite image name.
 default_image_name="ducker-ignite"

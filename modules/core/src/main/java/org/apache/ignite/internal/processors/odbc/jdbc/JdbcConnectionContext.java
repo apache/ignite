@@ -33,7 +33,6 @@ import org.apache.ignite.internal.processors.odbc.ClientListenerProtocolVersion;
 import org.apache.ignite.internal.processors.odbc.ClientListenerRequestHandler;
 import org.apache.ignite.internal.processors.odbc.ClientListenerResponse;
 import org.apache.ignite.internal.processors.odbc.ClientListenerResponseSender;
-import org.apache.ignite.internal.processors.query.NestedTxMode;
 import org.apache.ignite.internal.processors.query.QueryEngineConfigurationEx;
 import org.apache.ignite.internal.util.GridSpinBusyLock;
 import org.apache.ignite.internal.util.nio.GridNioSession;
@@ -78,6 +77,9 @@ public class JdbcConnectionContext extends ClientListenerAbstractConnectionConte
 
     /** Supported versions. */
     private static final Set<ClientListenerProtocolVersion> SUPPORTED_VERS = new HashSet<>();
+
+    /** Default nested tx mode for compatibility. */
+    public static final String DEFAULT_NESTED_TX_MODE = "ERROR";
 
     /** Shutdown busy lock. */
     private final GridSpinBusyLock busyLock;
@@ -162,8 +164,6 @@ public class JdbcConnectionContext extends ClientListenerAbstractConnectionConte
         boolean skipReducerOnUpdate = false;
         String qryEngine = null;
 
-        NestedTxMode nestedTxMode = NestedTxMode.DEFAULT;
-
         if (ver.compareTo(VER_2_1_5) >= 0)
             lazyExec = reader.readBoolean();
 
@@ -173,14 +173,8 @@ public class JdbcConnectionContext extends ClientListenerAbstractConnectionConte
         if (ver.compareTo(VER_2_7_0) >= 0) {
             String nestedTxModeName = reader.readString();
 
-            if (!F.isEmpty(nestedTxModeName)) {
-                try {
-                    nestedTxMode = NestedTxMode.valueOf(nestedTxModeName);
-                }
-                catch (IllegalArgumentException e) {
-                    throw new IgniteCheckedException("Invalid nested transactions handling mode: " + nestedTxModeName);
-                }
-            }
+            if (!F.isEmpty(nestedTxModeName) && !nestedTxModeName.equals(DEFAULT_NESTED_TX_MODE))
+                throw new IgniteCheckedException("Nested transactions are not supported!");
         }
 
         Boolean dataPageScanEnabled = null;
@@ -258,7 +252,7 @@ public class JdbcConnectionContext extends ClientListenerAbstractConnectionConte
         };
 
         handler = new JdbcRequestHandler(busyLock, snd, maxCursors, distributedJoins, enforceJoinOrder,
-            collocated, replicatedOnly, autoCloseCursors, lazyExec, skipReducerOnUpdate, qryEngine, nestedTxMode,
+            collocated, replicatedOnly, autoCloseCursors, lazyExec, skipReducerOnUpdate, qryEngine,
             dataPageScanEnabled, updateBatchSize, ver, this);
 
         handler.start();

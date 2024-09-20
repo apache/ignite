@@ -82,6 +82,8 @@ import org.apache.ignite.internal.binary.BinaryMarshaller;
 import org.apache.ignite.internal.binary.BinaryMetadata;
 import org.apache.ignite.internal.binary.BinaryMetadataHandler;
 import org.apache.ignite.internal.binary.BinaryTypeImpl;
+import org.apache.ignite.internal.jdbc2.JdbcBlob;
+import org.apache.ignite.internal.jdbc2.JdbcClob;
 import org.apache.ignite.internal.jdbc2.JdbcUtils;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.GridCacheUtils;
@@ -794,14 +796,14 @@ public class JdbcThinConnection implements Connection {
     @Override public Clob createClob() throws SQLException {
         ensureNotClosed();
 
-        throw new SQLFeatureNotSupportedException("SQL-specific types are not supported.");
+        return new JdbcClob("");
     }
 
     /** {@inheritDoc} */
     @Override public Blob createBlob() throws SQLException {
         ensureNotClosed();
 
-        throw new SQLFeatureNotSupportedException("SQL-specific types are not supported.");
+        return new JdbcBlob(new byte[0]);
     }
 
     /** {@inheritDoc} */

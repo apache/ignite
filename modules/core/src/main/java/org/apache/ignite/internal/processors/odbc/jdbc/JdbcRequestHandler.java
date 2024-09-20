@@ -67,7 +67,6 @@ import org.apache.ignite.internal.processors.platform.client.tx.ClientTxEndReque
 import org.apache.ignite.internal.processors.platform.client.tx.ClientTxStartRequest;
 import org.apache.ignite.internal.processors.query.GridQueryCancel;
 import org.apache.ignite.internal.processors.query.IgniteSQLException;
-import org.apache.ignite.internal.processors.query.NestedTxMode;
 import org.apache.ignite.internal.processors.query.QueryUtils;
 import org.apache.ignite.internal.processors.query.SqlClientContext;
 import org.apache.ignite.internal.sql.optimizer.affinity.PartitionResult;
@@ -155,9 +154,6 @@ public class JdbcRequestHandler implements ClientListenerRequestHandler {
     /** Automatic close of cursors. */
     private final boolean autoCloseCursors;
 
-    /** Nested transactions handling mode. */
-    private final NestedTxMode nestedTxMode;
-
     /** Protocol version. */
     private final ClientListenerProtocolVersion protocolVer;
 
@@ -197,7 +193,6 @@ public class JdbcRequestHandler implements ClientListenerRequestHandler {
         boolean lazy,
         boolean skipReducerOnUpdate,
         @Nullable String qryEngine,
-        NestedTxMode nestedTxMode,
         @Nullable Boolean dataPageScanEnabled,
         @Nullable Integer updateBatchSize,
         ClientListenerProtocolVersion protocolVer,
@@ -231,7 +226,6 @@ public class JdbcRequestHandler implements ClientListenerRequestHandler {
         this.busyLock = busyLock;
         this.maxCursors = maxCursors;
         this.autoCloseCursors = autoCloseCursors;
-        this.nestedTxMode = nestedTxMode;
         this.protocolVer = protocolVer;
 
         log = connCtx.kernalContext().log(getClass());
@@ -1014,7 +1008,6 @@ public class JdbcRequestHandler implements ClientListenerRequestHandler {
         qry.setCollocated(cliCtx.isCollocated());
         qry.setReplicatedOnly(cliCtx.isReplicatedOnly());
         qry.setLazy(cliCtx.isLazy());
-        qry.setNestedTxMode(nestedTxMode);
         qry.setSchema(schemaName);
         qry.setQueryInitiatorId(connCtx.clientDescriptor());
 
