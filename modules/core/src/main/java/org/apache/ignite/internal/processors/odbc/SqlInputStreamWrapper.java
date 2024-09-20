@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.processors.odbc;
 
+import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
@@ -99,15 +100,16 @@ public class SqlInputStreamWrapper implements AutoCloseable {
         if (memoryLength == -1) {
             final int diskLength;
 
-            Path tempFile = Files.createTempFile(TEMP_FILE_PREFIX, ".tmp");
+            File tempFile = File.createTempFile(TEMP_FILE_PREFIX, ".tmp");
+            tempFile.deleteOnExit();
 
-            tempFileHolder = new TempFileHolder(tempFile);
+            tempFileHolder = new TempFileHolder(tempFile.toPath());
 
             tempFileCleaner = ((IgniteJdbcThinDriver)IgniteJdbcThinDriver.register())
                     .getCleaner()
                     .register(this, tempFileHolder);
 
-            try (OutputStream diskOutputStream = Files.newOutputStream(tempFile)) {
+            try (OutputStream diskOutputStream = Files.newOutputStream(tempFile.toPath())) {
                 copyStream(rawData.getInputStream(), diskOutputStream, rawData.getLength());
 
                 diskLength = copyStream(inputStream, diskOutputStream, MAX_ARRAY_SIZE - rawData.getLength());

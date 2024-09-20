@@ -18,13 +18,14 @@
 package org.apache.ignite.jdbc.thin;
 
 import java.io.ByteArrayInputStream;
-import java.io.File;
+import java.io.IOException;
 import java.io.OutputStream;
 import java.io.Reader;
 import java.io.Serializable;
 import java.math.BigDecimal;
 import java.net.URL;
 import java.nio.file.Files;
+import java.nio.file.NotDirectoryException;
 import java.nio.file.Path;
 import java.sql.Blob;
 import java.sql.Clob;
@@ -40,8 +41,10 @@ import java.sql.Time;
 import java.sql.Timestamp;
 import java.sql.Types;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.Date;
 import java.util.Random;
+import java.util.Set;
 import java.util.concurrent.Callable;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -56,9 +59,7 @@ import org.apache.ignite.internal.util.lang.RunnableX;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.junit.Assert;
-import org.junit.Rule;
 import org.junit.Test;
-import org.junit.rules.TemporaryFolder;
 
 import static java.sql.Types.BIGINT;
 import static java.sql.Types.BINARY;
@@ -101,10 +102,6 @@ public class JdbcThinPreparedStatementSelfTest extends JdbcThinAbstractSelfTest 
 
     /** Statement. */
     private PreparedStatement stmt;
-
-    /** Temp directory. */
-    @Rule
-    public TemporaryFolder tempFolder = new TemporaryFolder();
 
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
@@ -964,11 +961,10 @@ public class JdbcThinPreparedStatementSelfTest extends JdbcThinAbstractSelfTest 
 
         byte[] bytes = new byte[] {0, 1, 2, 3, 4, 5, 6, 7, 8, 9};
 
-        String saveSysTmpDir = System.getProperty("java.io.tmpdir");
-        System.setProperty("java.io.tmpdir", tempFolder.getRoot().getAbsolutePath());
+        String currentTempStreamFile;
 
         try (conn) {
-            assertTrue(folderEmpty(tempFolder.getRoot()));
+            Set<String> existingTempStreamFiles = getTempStreamFiles();
 
             PreparedStatement stmtToBeLeftUnclosed = conn.prepareStatement("insert into TestObject(_key, id, blobVal) values (?, ?, ?)");
 
@@ -976,7 +972,11 @@ public class JdbcThinPreparedStatementSelfTest extends JdbcThinAbstractSelfTest 
             stmtToBeLeftUnclosed.setInt(2, 3);
             stmtToBeLeftUnclosed.setBinaryStream(3, new ByteArrayInputStream(bytes));
 
-            assertFalse(folderEmpty(tempFolder.getRoot()));
+            Set<String> newTempStreamFiles = getTempStreamFiles();
+            newTempStreamFiles.removeAll(existingTempStreamFiles);
+            assertTrue(newTempStreamFiles.size() == 1);
+
+            currentTempStreamFile = newTempStreamFiles.iterator().next();
 
             int inserted = stmtToBeLeftUnclosed.executeUpdate();
 
@@ -996,7 +996,6 @@ public class JdbcThinPreparedStatementSelfTest extends JdbcThinAbstractSelfTest 
         }
         finally {
             grid(0).cache(DEFAULT_CACHE_NAME).remove(3);
-            System.setProperty("java.io.tmpdir", saveSysTmpDir);
         }
 
         // Invoke gc to force phantom references detection.
@@ -1005,16 +1004,25 @@ public class JdbcThinPreparedStatementSelfTest extends JdbcThinAbstractSelfTest 
         // Make sure the phantom reference to stream wrapper created inside
         // the stmtToBeLeftUnclosed statemnt was detected and the corresponding
         // temp file is removed by java.lang.ref.Cleaner thread.
-        assertTrue(GridTestUtils.waitForCondition(() -> folderEmpty(tempFolder.getRoot()), 3_000, 10));
+        assertTrue(GridTestUtils.waitForCondition(() -> !getTempStreamFiles().contains(currentTempStreamFile), 3_000, 10));
     }
 
     /** */
-    private boolean folderEmpty(File folder) {
-        try (Stream<Path> entries = Files.list(folder.toPath())) {
-            return entries.findFirst().isEmpty();
+    private Set<String> getTempStreamFiles() {
+        Path tmpDir = Path.of(System.getProperty("java.io.tmpdir"));
+
+        try (Stream<Path> entries = Files.list(tmpDir)) {
+            return entries
+                    .map(Path::getFileName)
+                    .map(Path::toString)
+                    .filter(e -> e.startsWith("ignite-jdbc-stream"))
+                    .collect(Collectors.toSet());
         }
-        catch (Exception e) {
+        catch (NotDirectoryException e) {
             throw new AssertionError(e);
+        }
+        catch (IOException e) {
+            return Collections.emptySet();
         }
     }
 
