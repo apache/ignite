@@ -18,12 +18,12 @@
 package org.apache.ignite.internal.processors.cache.index;
 
 import java.util.List;
-import javax.cache.CacheException;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.internal.processors.query.IgniteSQLException;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.transactions.Transaction;
 import org.apache.ignite.transactions.TransactionConcurrency;
@@ -61,8 +61,8 @@ public class H2TransactionAwareQueriesEnabledTest extends GridCommonAbstractTest
                         assertThrows(
                             null,
                             () -> sql(node, "SELECT * FROM T"),
-                            CacheException.class,
-                            "SQL aware queries supported only for Calcite query engine"
+                            IgniteSQLException.class,
+                            "SQL aware queries are not supported by Indexing query engine"
                         );
 
                         tx.rollback();

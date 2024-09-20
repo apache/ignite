@@ -256,15 +256,13 @@ public class ExpressionFactoryImpl<Row> implements ExpressionFactory<Row> {
 
     /** */
     private static int compareBinary(Object o1, Object o2, int nullComparison) {
-        if (o1 == o2) {
+        if (o1 == o2)
             return 0;
-        }
-        else if (o1 == null) {
+        else if (o1 == null)
             return nullComparison;
-        }
-        else if (o2 == null) {
+        else if (o2 == null)
             return -nullComparison;
-        }
+
         return BinaryObjectImpl.compareForDml(o1, o2);
     }
 

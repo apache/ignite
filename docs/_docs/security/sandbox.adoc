@@ -29,7 +29,7 @@ The activation of Ignite Sandbox involves the configuration of an `SecurityManag
 === Install SecurityManager
 
 Due to the fact, that Ignite Sandbox is based on the Java Sandbox model, and
-link:https://docs.oracle.com/javase/8/docs/technotes/guides/security/spec/security-spec.doc6.html#a19349[SecurityManager,window=_blank]
+link:https://docs.oracle.com/en/java/javase/11/docs/api/java.base/java/lang/SecurityManager.html[SecurityManager,window=_blank]
 is an important part of that model, you need to have it installed.
 The SecurityManager is responsible for checking, which security policy is currently in effect. It also performs access control checks.
 The security manager is not automatically installed when an application is running. If you run Ignite as a separate application,

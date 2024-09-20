@@ -378,7 +378,7 @@ import org.junit.runners.Suite;
 
     DumpCacheConfigTest.class,
 
-    H2TransactionAwareQueriesEnabledTest.class
+    H2TransactionAwareQueriesEnabledTest.class,
 })
 public class IgniteBinaryCacheQueryTestSuite3 {
     /** Setup lazy mode default. */

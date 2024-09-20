@@ -249,37 +249,7 @@ public class ModifyNode<Row> extends AbstractNode<Row> implements SingleNode<Row
         userTx.resume();
 
         try {
-            int updated = 0;
-
-            for (ModifyTuple entry : tuples) {
-                assert entry.getOp() == op || op == TableModify.Operation.MERGE : entry.getOp();
-
-                switch (entry.getOp()) {
-                    case INSERT:
-                        if (cache.getAndPut(entry.getKey(), entry.getValue()) != null)
-                            throw conflictKeysException(Collections.singletonList(entry.getKey()));
-
-                        updated++;
-
-                        break;
-                    case UPDATE:
-                        if (cache.replace(entry.getKey(), entry.getValue()))
-                            updated++;
-
-                        break;
-                    case DELETE:
-                        assert op == TableModify.Operation.DELETE;
-
-                        if (cache.remove(entry.getKey()))
-                            updated++;
-
-                        break;
-                    default:
-                        throw new AssertionError("Unexpected tuple operation: " + entry.getOp());
-                }
-            }
-
-            updatedRows += updated;
+            invokeOutsideTransaction(tuples, cache);
         }
         finally {
             userTx.suspend();

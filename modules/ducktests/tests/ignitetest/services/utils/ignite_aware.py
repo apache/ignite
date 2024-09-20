@@ -101,7 +101,8 @@ class IgniteAwareService(BackgroundThreadService, IgnitePathAware, JvmProcessMix
         """
         Awaits start finished.
         """
-        if self.config.service_type in (IgniteServiceType.NONE, IgniteServiceType.THIN_CLIENT):
+        if self.config.service_type in (IgniteServiceType.NONE, IgniteServiceType.THIN_CLIENT,
+                                        IgniteServiceType.THIN_JDBC):
             return
 
         self.logger.info("Waiting for IgniteAware(s) to start ...")

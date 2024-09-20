@@ -70,6 +70,7 @@ import org.apache.ignite.lang.IgniteProductVersion;
 
 import static java.lang.Math.abs;
 import static org.apache.ignite.internal.jdbc.thin.JdbcThinUtils.nullableBooleanToByte;
+import static org.apache.ignite.internal.processors.odbc.jdbc.JdbcConnectionContext.DEFAULT_NESTED_TX_MODE;
 
 /**
  * JDBC IO layer implementation based on blocking IPC streams.
@@ -284,7 +285,7 @@ public class JdbcThinTcpIo {
         writer.writeBoolean(connProps.isSkipReducerOnUpdate());
 
         if (ver.compareTo(VER_2_7_0) >= 0)
-            writer.writeString(connProps.nestedTxMode());
+            writer.writeString(DEFAULT_NESTED_TX_MODE);
 
         if (ver.compareTo(VER_2_8_0) >= 0) {
             writer.writeByte(nullableBooleanToByte(connProps.isDataPageScanEnabled()));

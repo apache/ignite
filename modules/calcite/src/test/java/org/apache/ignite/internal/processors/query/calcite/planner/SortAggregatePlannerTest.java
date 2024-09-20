@@ -212,7 +212,7 @@ public class SortAggregatePlannerTest extends AbstractAggregatePlannerTest {
 
         assertPlan("SELECT (SELECT test.a FROM test t ORDER BY 1 LIMIT 1) FROM test", publicSchema,
             hasChildThat(isInstanceOf(IgniteCorrelatedNestedLoopJoin.class)
-                .and(input(1, hasChildThat(isInstanceOf(IgniteLimit.class)
+                .and(input(1, nodeOrAnyChild(isInstanceOf(IgniteLimit.class)
                     .and(input(isInstanceOf(IgniteSort.class)))))))
         );
     }

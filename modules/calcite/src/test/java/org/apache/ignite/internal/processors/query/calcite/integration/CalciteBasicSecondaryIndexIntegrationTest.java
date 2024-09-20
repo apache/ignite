@@ -150,7 +150,7 @@ public class CalciteBasicSecondaryIndexIntegrationTest extends AbstractBasicInte
             );
 
         executeSql("CREATE TABLE PUBLIC.UNWRAP_PK" + " (F1 VARCHAR, F2 BIGINT, F3 BIGINT, F4 BIGINT, " +
-            "CONSTRAINT PK PRIMARY KEY (F2, F1)) WITH \"backups=0, affinity_key=F1,atomicity=transactional\"");
+            "CONSTRAINT PK PRIMARY KEY (F2, F1)) WITH \"backups=0, affinity_key=F1," + atomicity() + "\"");
 
         put(client, devCache, 1, new Developer("Mozart", 3, "Vienna", 33));
         put(client, devCache, 2, new Developer("Beethoven", 2, "Vienna", 44));
