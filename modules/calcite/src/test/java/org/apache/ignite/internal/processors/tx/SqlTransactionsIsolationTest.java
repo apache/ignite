@@ -879,14 +879,14 @@ public class SqlTransactionsIsolationTest extends GridCommonAbstractTest {
                 Set<Integer> keys = Arrays.stream(entries).map(IgniteBiTuple::get1).collect(Collectors.toSet());
                 Map<Integer, User> data = Arrays.stream(entries).collect(Collectors.toMap(IgniteBiTuple::get1, IgniteBiTuple::get2));
 
-                if (type == ExecutorType.THIN)
+                if (type == ExecutorType.THIN_VIA_QUERY || type == ExecutorType.THIN_VIA_CACHE_API)
                     thinCli.cache(users()).invokeAll(keys, new UpdateEntryProcessor<>(update), data);
                 else
                     node().cache(users()).invokeAll(keys, new UpdateEntryProcessor<>(update), data);
             }
             else {
                 for (IgniteBiTuple<Integer, User> data : entries) {
-                    if (type == ExecutorType.THIN)
+                    if (type == ExecutorType.THIN_VIA_QUERY || type == ExecutorType.THIN_VIA_CACHE_API)
                         thinCli.cache(users()).invoke(data.get1(), new UpdateEntryProcessor<>(update), data.get2());
                     else
                         node().cache(users()).invoke(data.get1(), new UpdateEntryProcessor<>(update), data.get2());
@@ -1003,14 +1003,14 @@ public class SqlTransactionsIsolationTest extends GridCommonAbstractTest {
             if (multi) {
                 Set<Integer> toRemove = Arrays.stream(keys).boxed().collect(Collectors.toSet());
 
-                if (type == ExecutorType.THIN)
+                if (type == ExecutorType.THIN_VIA_QUERY || type == ExecutorType.THIN_VIA_CACHE_API)
                     thinCli.cache(users()).invokeAll(toRemove, new RemoveEntryProcessor<>());
                 else
                     node().cache(users()).invokeAll(toRemove, new RemoveEntryProcessor<>());
             }
             else {
                 for (int id : keys) {
-                    if (type == ExecutorType.THIN)
+                    if (type == ExecutorType.THIN_VIA_QUERY || type == ExecutorType.THIN_VIA_CACHE_API)
                         thinCli.cache(users()).invoke(id, new RemoveEntryProcessor<>());
                     else
                         node().cache(users()).invoke(id, new RemoveEntryProcessor<>());
@@ -1164,22 +1164,30 @@ public class SqlTransactionsIsolationTest extends GridCommonAbstractTest {
         return tableName(USERS, mode);
     }
 
-    /** */
+    /**
+     *
+     */
     private String departments() {
         return tableName(DEPARTMENTS, mode);
     }
 
-    /** */
+    /**
+     *
+     */
     private String tbl() {
         return tableName(TBL, mode);
     }
 
-    /** */
+    /**
+     *
+     */
     private static String tableName(String tbl, CacheMode mode) {
         return tbl + "_" + mode;
     }
 
-    /** */
+    /**
+     *
+     */
     private List<List<?>> unwrapBinary(List<List<?>> all) {
         return all.stream()
             .map(row -> row.stream()
@@ -1188,7 +1196,9 @@ public class SqlTransactionsIsolationTest extends GridCommonAbstractTest {
             .collect(Collectors.toList());
     }
 
-    /** */
+    /**
+     *
+     */
     public static class RemoveEntryProcessor<K, V, T> implements EntryProcessor<K, V, T> {
         /** {@inheritDoc} */
         @Override public T process(MutableEntry<K, V> entry, Object... arguments) throws EntryProcessorException {
