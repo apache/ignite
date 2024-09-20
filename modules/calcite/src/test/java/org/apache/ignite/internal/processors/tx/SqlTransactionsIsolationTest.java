@@ -42,6 +42,7 @@ import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.Ignition;
+import org.apache.ignite.binary.BinaryObject;
 import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.cache.CacheWriteSynchronizationMode;
@@ -57,7 +58,6 @@ import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.ClientConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
-import org.apache.ignite.internal.client.thin.TcpIgniteClient;
 import org.apache.ignite.internal.processors.query.QueryUtils;
 import org.apache.ignite.internal.util.lang.RunnableX;
 import org.apache.ignite.internal.util.typedef.F;
@@ -79,6 +79,7 @@ import static org.apache.ignite.internal.processors.tx.SqlTransactionsIsolationT
 import static org.apache.ignite.testframework.GridTestUtils.assertThrows;
 import static org.apache.ignite.testframework.GridTestUtils.runAsync;
 import static org.apache.ignite.transactions.TransactionIsolation.READ_COMMITTED;
+import static org.junit.Assume.assumeFalse;
 
 /** */
 @RunWith(Parameterized.class)
@@ -101,7 +102,10 @@ public class SqlTransactionsIsolationTest extends GridCommonAbstractTest {
         CLIENT,
 
         /** */
-        THIN
+        THIN_VIA_CACHE_API,
+
+        /** */
+        THIN_VIA_QUERY
     }
 
     /** */
@@ -212,6 +216,22 @@ public class SqlTransactionsIsolationTest extends GridCommonAbstractTest {
                                             txConcurrency
                                         });
                                     }
+
+                                    for (ExecutorType execType :
+                                            new ExecutorType[]{ExecutorType.THIN_VIA_CACHE_API, ExecutorType.THIN_VIA_QUERY}) {
+                                        for (boolean partitionAwareness : new boolean[]{false, true}) {
+                                            params.add(new Object[]{modify,
+                                                execType,
+                                                partitionAwareness,
+                                                cacheMode,
+                                                gridCnt,
+                                                backup,
+                                                commit,
+                                                mutli,
+                                                txConcurrency
+                                            });
+                                        }
+                                    }
                                 }
                             }
                         }
@@ -237,7 +257,7 @@ public class SqlTransactionsIsolationTest extends GridCommonAbstractTest {
     private void init() throws Exception {
         srv = startGrids(gridCnt);
         cli = startClientGrid("client");
-        thinCli = TcpIgniteClient.start(new ClientConfiguration()
+        thinCli = Ignition.startClient(new ClientConfiguration()
             .setAddresses(Config.SERVER)
             .setPartitionAwarenessEnabled(partitionAwareness));
 
@@ -600,6 +620,8 @@ public class SqlTransactionsIsolationTest extends GridCommonAbstractTest {
     /** */
     @Test
     public void testInsert() {
+        ensureModeSupported();
+
         Runnable checkBefore = () -> {
             for (int i = 4; i <= (multi ? 6 : 4); i++) {
                 assertNull(CACHE.name(), select(i, CACHE));
@@ -645,6 +667,8 @@ public class SqlTransactionsIsolationTest extends GridCommonAbstractTest {
     /** */
     @Test
     public void testUpdate() {
+        ensureModeSupported();
+
         if (multi)
             insert(F.t(2, JOHN), F.t(3, JOHN));
 
@@ -694,6 +718,8 @@ public class SqlTransactionsIsolationTest extends GridCommonAbstractTest {
     /** */
     @Test
     public void testDelete() {
+        ensureModeSupported();
+
         if (multi)
             insert(F.t(2, JOHN), F.t(3, JOHN));
 
@@ -740,7 +766,7 @@ public class SqlTransactionsIsolationTest extends GridCommonAbstractTest {
         long cnt = 100;
 
         LongStream.range(1, 1 + cnt).forEach(i -> insideTx(() -> {
-            if (type == ExecutorType.THIN) {
+            if (type == ExecutorType.THIN_VIA_CACHE_API || type == ExecutorType.THIN_VIA_QUERY) {
                 ClientCache<Long, Long> thinCache = thinCli.cache(tbl());
 
                 thinCache.put(i, i + 1);
@@ -763,7 +789,7 @@ public class SqlTransactionsIsolationTest extends GridCommonAbstractTest {
 
     /** */
     private void insideTx(RunnableX test, boolean commit) {
-        if (type == ExecutorType.THIN) {
+        if (type == ExecutorType.THIN_VIA_CACHE_API || type == ExecutorType.THIN_VIA_QUERY) {
             try (ClientTransaction tx = thinCli.transactions().txStart(txConcurrency, txIsolation, TX_TIMEOUT)) {
                 for (int i = 0; i < 3; i++)
                     thinCli.cache(DEFAULT_CACHE_NAME).put(i, i);
@@ -806,7 +832,7 @@ public class SqlTransactionsIsolationTest extends GridCommonAbstractTest {
     /** */
     private User select(Integer id, ModifyApi api) {
         if (api == CACHE)
-            return type == ExecutorType.THIN
+            return (type == ExecutorType.THIN_VIA_CACHE_API || type == ExecutorType.THIN_VIA_QUERY)
                 ? (User)thinCli.cache(users()).get(id)
                 : (User)node().cache(users()).get(id);
         else if (api == SQL) {
@@ -839,14 +865,14 @@ public class SqlTransactionsIsolationTest extends GridCommonAbstractTest {
             if (multi) {
                 Map<Integer, User> data = Arrays.stream(entries).collect(Collectors.toMap(IgniteBiTuple::get1, IgniteBiTuple::get2));
 
-                if (type == ExecutorType.THIN)
+                if (type == ExecutorType.THIN_VIA_CACHE_API || type == ExecutorType.THIN_VIA_QUERY)
                     thinCli.cache(users()).putAll(data);
                 else
                     node().cache(users()).putAll(data);
             }
             else {
                 for (IgniteBiTuple<Integer, User> data : entries) {
-                    if (type == ExecutorType.THIN)
+                    if (type == ExecutorType.THIN_VIA_CACHE_API || type == ExecutorType.THIN_VIA_QUERY)
                         thinCli.cache(users()).put(data.get1(), data.get2());
                     else
                         node().cache(users()).put(data.get1(), data.get2());
@@ -858,14 +884,14 @@ public class SqlTransactionsIsolationTest extends GridCommonAbstractTest {
                 Set<Integer> keys = Arrays.stream(entries).map(IgniteBiTuple::get1).collect(Collectors.toSet());
                 Map<Integer, User> data = Arrays.stream(entries).collect(Collectors.toMap(IgniteBiTuple::get1, IgniteBiTuple::get2));
 
-                if (type == ExecutorType.THIN)
+                if (type == ExecutorType.THIN_VIA_QUERY || type == ExecutorType.THIN_VIA_CACHE_API)
                     thinCli.cache(users()).invokeAll(keys, new UpdateEntryProcessor<>(update), data);
                 else
                     node().cache(users()).invokeAll(keys, new UpdateEntryProcessor<>(update), data);
             }
             else {
                 for (IgniteBiTuple<Integer, User> data : entries) {
-                    if (type == ExecutorType.THIN)
+                    if (type == ExecutorType.THIN_VIA_QUERY || type == ExecutorType.THIN_VIA_CACHE_API)
                         thinCli.cache(users()).invoke(data.get1(), new UpdateEntryProcessor<>(update), data.get2());
                     else
                         node().cache(users()).invoke(data.get1(), new UpdateEntryProcessor<>(update), data.get2());
@@ -964,14 +990,14 @@ public class SqlTransactionsIsolationTest extends GridCommonAbstractTest {
             if (multi) {
                 Set<Integer> toRemove = Arrays.stream(keys).boxed().collect(Collectors.toSet());
 
-                if (type == ExecutorType.THIN)
+                if (type == ExecutorType.THIN_VIA_CACHE_API || type == ExecutorType.THIN_VIA_QUERY)
                     thinCli.cache(users()).removeAll(toRemove);
                 else
                     node().cache(users()).removeAll(toRemove);
             }
             else {
                 for (int id : keys) {
-                    if (type == ExecutorType.THIN)
+                    if (type == ExecutorType.THIN_VIA_CACHE_API || type == ExecutorType.THIN_VIA_QUERY)
                         thinCli.cache(users()).remove(id);
                     else
                         node().cache(users()).remove(id);
@@ -982,14 +1008,14 @@ public class SqlTransactionsIsolationTest extends GridCommonAbstractTest {
             if (multi) {
                 Set<Integer> toRemove = Arrays.stream(keys).boxed().collect(Collectors.toSet());
 
-                if (type == ExecutorType.THIN)
+                if (type == ExecutorType.THIN_VIA_QUERY || type == ExecutorType.THIN_VIA_CACHE_API)
                     thinCli.cache(users()).invokeAll(toRemove, new RemoveEntryProcessor<>());
                 else
                     node().cache(users()).invokeAll(toRemove, new RemoveEntryProcessor<>());
             }
             else {
                 for (int id : keys) {
-                    if (type == ExecutorType.THIN)
+                    if (type == ExecutorType.THIN_VIA_QUERY || type == ExecutorType.THIN_VIA_CACHE_API)
                         thinCli.cache(users()).invoke(id, new RemoveEntryProcessor<>());
                     else
                         node().cache(users()).invoke(id, new RemoveEntryProcessor<>());
@@ -1114,12 +1140,13 @@ public class SqlTransactionsIsolationTest extends GridCommonAbstractTest {
         if (!F.isEmpty(parts))
             qry.setPartitions(parts);
 
-        if (type == ExecutorType.THIN)
-            return thinCli.query(qry).getAll();
+        if (type == ExecutorType.THIN_VIA_QUERY)
+            return unwrapBinary(thinCli.query(qry).getAll());
+        else if (type == ExecutorType.THIN_VIA_CACHE_API)
+            return unwrapBinary(thinCli.cache(F.first(thinCli.cacheNames())).query(qry).getAll());
 
-        if (multi) {
+        if (multi)
             return node().context().query().querySqlFields(qry, false, false).get(0).getAll();
-        }
         else
             return node().cache(F.first(cli.cacheNames())).query(qry).getAll();
     }
@@ -1154,6 +1181,23 @@ public class SqlTransactionsIsolationTest extends GridCommonAbstractTest {
     /** */
     private static String tableName(String tbl, CacheMode mode) {
         return tbl + "_" + mode;
+    }
+
+    /** */
+    private void ensureModeSupported() {
+        assumeFalse(
+            "Thin client doesn't support multiple statements for SQL",
+            multi && modify == SQL && (type == ExecutorType.THIN_VIA_CACHE_API || type == ExecutorType.THIN_VIA_QUERY)
+        );
+    }
+
+    /** */
+    private List<List<?>> unwrapBinary(List<List<?>> all) {
+        return all.stream()
+            .map(row -> row.stream()
+                .map(col -> col instanceof BinaryObject ? ((BinaryObject)col).deserialize() : col)
+                .collect(Collectors.toList()))
+            .collect(Collectors.toList());
     }
 
     /** */
