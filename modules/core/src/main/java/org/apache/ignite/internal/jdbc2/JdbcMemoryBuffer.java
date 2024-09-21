@@ -41,6 +41,15 @@ public class JdbcMemoryBuffer {
     }
 
     /** */
+    public JdbcMemoryBuffer(byte[] arr) {
+        buffers = new ArrayList<>();
+
+        buffers.add(arr);
+
+        totalCnt = arr.length;
+    }
+
+    /** */
     public long getLength() {
         return totalCnt;
     }
@@ -87,7 +96,7 @@ public class JdbcMemoryBuffer {
      *
      * @param newCount the new size of the Blob
      */
-    protected void addNewBuffer(final int newCount) {
+    private void addNewBuffer(final int newCount) {
         final int newBufSize;
 
         if (buffers.isEmpty()) {
@@ -100,6 +109,16 @@ public class JdbcMemoryBuffer {
         }
 
         buffers.add(new byte[newBufSize]);
+    }
+
+    public void truncate(long len) {
+        totalCnt = len;
+    }
+
+    public void close() {
+        buffers.clear();
+
+        buffers = null;
     }
 
     /**

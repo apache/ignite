@@ -961,41 +961,51 @@ public class JdbcThinPreparedStatementSelfTest extends JdbcThinAbstractSelfTest 
 
         byte[] bytes = new byte[] {0, 1, 2, 3, 4, 5, 6, 7, 8, 9};
 
-        String curTempStreamFile;
+        Set<String> existingTempStreamFiles = getTempStreamFiles();
+        Set<String> newTempStreamFiles;
 
         try (conn) {
-            Set<String> existingTempStreamFiles = getTempStreamFiles();
-
             PreparedStatement stmtToBeLeftUnclosed = conn.prepareStatement("insert into TestObject(_key, id, blobVal) values (?, ?, ?)");
 
             stmtToBeLeftUnclosed.setInt(1, 3);
             stmtToBeLeftUnclosed.setInt(2, 3);
             stmtToBeLeftUnclosed.setBinaryStream(3, new ByteArrayInputStream(bytes));
 
-            Set<String> newTempStreamFiles = getTempStreamFiles();
+            PreparedStatement stmtToBeClosed = conn.prepareStatement("insert into TestObject(_key, id, blobVal) values (?, ?, ?)");
+
+            stmtToBeClosed.setInt(1, 4);
+            stmtToBeClosed.setInt(2, 4);
+            stmtToBeClosed.setBinaryStream(3, new ByteArrayInputStream(bytes));
+
+            newTempStreamFiles = getTempStreamFiles();
             newTempStreamFiles.removeAll(existingTempStreamFiles);
-            assertTrue(newTempStreamFiles.size() == 1);
+            assertTrue(newTempStreamFiles.size() == 2);
 
-            curTempStreamFile = newTempStreamFiles.iterator().next();
-
-            int inserted = stmtToBeLeftUnclosed.executeUpdate();
-
-            assertEquals(1, inserted);
+            assertEquals(1, stmtToBeLeftUnclosed.executeUpdate());
+            assertEquals(1, stmtToBeClosed.executeUpdate());
 
             // Abandon the statement without closing it.
             stmtToBeLeftUnclosed = null;
 
+            stmtToBeClosed.close();
+
             stmt = conn.prepareStatement(SQL_PART + " where id = ?");
+
             stmt.setInt(1, 3);
-
             ResultSet rs = stmt.executeQuery();
+            assertTrue(rs.next());
+            assertArrayEquals(bytes, rs.getBytes("blobVal"));
+            assertFalse(rs.next());
 
+            stmt.setInt(1, 4);
+            rs = stmt.executeQuery();
             assertTrue(rs.next());
             assertArrayEquals(bytes, rs.getBytes("blobVal"));
             assertFalse(rs.next());
         }
         finally {
             grid(0).cache(DEFAULT_CACHE_NAME).remove(3);
+            grid(0).cache(DEFAULT_CACHE_NAME).remove(4);
         }
 
         // Invoke gc to force phantom references detection.
@@ -1004,7 +1014,7 @@ public class JdbcThinPreparedStatementSelfTest extends JdbcThinAbstractSelfTest 
         // Make sure the phantom reference to stream wrapper created inside
         // the stmtToBeLeftUnclosed statemnt was detected and the corresponding
         // temp file is removed by java.lang.ref.Cleaner thread.
-        assertTrue(GridTestUtils.waitForCondition(() -> !getTempStreamFiles().contains(curTempStreamFile), 3_000, 10));
+        assertTrue(GridTestUtils.waitForCondition(() -> !getTempStreamFiles().containsAll(newTempStreamFiles), 3_000, 10));
     }
 
     /** */

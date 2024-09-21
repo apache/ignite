@@ -30,33 +30,33 @@ import java.sql.SQLException;
  * <p>
  * This implementation can be useful for reading binary fields of objects through JDBC.
  */
-public class JdbcBlob extends JdbcMemoryBuffer implements Blob {
+public class JdbcBlob implements Blob {
+    private JdbcMemoryBuffer buffer;
     /**
      */
     public JdbcBlob() {
+        buffer = new JdbcMemoryBuffer();
     }
 
     /**
      * @param arr Byte array.
      */
     public JdbcBlob(byte[] arr) {
-        buffers.add(arr);
-
-        totalCnt = arr.length;
+        buffer = new JdbcMemoryBuffer(arr);
     }
 
     /** {@inheritDoc} */
     @Override public long length() throws SQLException {
         ensureNotClosed();
 
-        return totalCnt;
+        return buffer.getLength();
     }
 
     /** {@inheritDoc} */
     @Override public byte[] getBytes(long pos, int len) throws SQLException {
         ensureNotClosed();
 
-        if (pos < 1 || (totalCnt - pos < 0 && totalCnt > 0) || len < 0)
+        if (pos < 1 || (buffer.getLength() - pos < 0 && buffer.getLength() > 0) || len < 0)
             throw new SQLException("Invalid argument. Position can't be less than 1 or " +
                 "greater than size of underlying byte array. Requested length also can't be negative " +
                 "[pos=" + pos + ", len=" + len + ']');
@@ -64,11 +64,11 @@ public class JdbcBlob extends JdbcMemoryBuffer implements Blob {
         try {
             long idx = pos - 1;
 
-            int size = len > totalCnt - idx ? (int)(totalCnt - idx) : len;
+            int size = len > buffer.getLength() - idx ? (int)(buffer.getLength() - idx) : len;
 
             byte[] res = new byte[size];
 
-            getInputStream(idx, len).read(res);
+            buffer.getInputStream(idx, len).read(res);
 
             return res;
         }
@@ -81,53 +81,43 @@ public class JdbcBlob extends JdbcMemoryBuffer implements Blob {
     @Override public InputStream getBinaryStream() throws SQLException {
         ensureNotClosed();
 
-        return getInputStream(0, totalCnt);
+        return buffer.getInputStream(0, buffer.getLength());
     }
 
     /** {@inheritDoc} */
     @Override public InputStream getBinaryStream(long pos, long len) throws SQLException {
         ensureNotClosed();
 
-        if (pos < 1 || len < 1 || pos > totalCnt || len > totalCnt - pos + 1)
+        if (pos < 1 || len < 1 || pos > buffer.getLength() || len > buffer.getLength() - pos + 1)
             throw new SQLException("Invalid argument. Position can't be less than 1 or " +
                 "greater than size of underlying byte array. Requested length can't be negative and can't be " +
                 "greater than available bytes from given position [pos=" + pos + ", len=" + len + ']');
 
-        return getInputStream(pos - 1, len);
+        return buffer.getInputStream(pos - 1, len);
     }
 
     /** {@inheritDoc} */
     @Override public long position(byte[] ptrn, long start) throws SQLException {
         ensureNotClosed();
 
-        if (start < 1 || start > totalCnt || ptrn.length == 0 || ptrn.length > totalCnt)
+        if (start < 1 || start > buffer.getLength() || ptrn.length == 0 || ptrn.length > buffer.getLength())
             return -1;
 
-        try {
-            long idx = positionImpl(new ByteArrayInputStream(ptrn), ptrn.length, start - 1);
+        long idx = positionImpl(new ByteArrayInputStream(ptrn), ptrn.length, start - 1);
 
-            return idx == -1 ? -1 : idx + 1;
-        }
-        catch (IOException e) {
-            throw new SQLException(e);
-        }
+        return idx == -1 ? -1 : idx + 1;
     }
 
     /** {@inheritDoc} */
     @Override public long position(Blob ptrn, long start) throws SQLException {
         ensureNotClosed();
 
-        if (start < 1 || start > totalCnt || ptrn.length() == 0 || ptrn.length() > totalCnt)
+        if (start < 1 || start > buffer.getLength() || ptrn.length() == 0 || ptrn.length() > buffer.getLength())
             return -1;
 
-        try {
-            long idx = positionImpl(ptrn.getBinaryStream(), ptrn.length(), start - 1);
+        long idx = positionImpl(ptrn.getBinaryStream(), ptrn.length(), start - 1);
 
-            return idx == -1 ? -1 : idx + 1;
-        }
-        catch (IOException e) {
-            throw new SQLException(e);
-        }
+        return idx == -1 ? -1 : idx + 1;
     }
 
     /**
@@ -137,48 +127,53 @@ public class JdbcBlob extends JdbcMemoryBuffer implements Blob {
      * @param idx Start index
      * @return Position
      */
-    private long positionImpl(InputStream ptrn, long ptrnLen, long idx) throws IOException {
+    private long positionImpl(InputStream ptrn, long ptrnLen, long idx) throws SQLException {
         assert ptrn.markSupported();
 
-        InputStream is = getInputStream(idx, totalCnt - idx);
+        try {
+            InputStream is = buffer.getInputStream(idx, buffer.getLength() - idx);
 
-        boolean patternStarted = false;
+            boolean patternStarted = false;
 
-        long i;
-        long pos;
-        int b;
-        for (i = 0, pos = idx; (b = is.read()) != -1; ) {
-            int p = ptrn.read();
+            long i;
+            long pos;
+            int b;
+            for (i = 0, pos = idx; (b = is.read()) != -1; ) {
+                int p = ptrn.read();
 
-            if (b == p) {
-                if (!patternStarted) {
-                    patternStarted = true;
+                if (b == p) {
+                    if (!patternStarted) {
+                        patternStarted = true;
 
-                    is.mark(Integer.MAX_VALUE);
+                        is.mark(Integer.MAX_VALUE);
+                    }
+
+                    pos++;
+
+                    i++;
+
+                    if (i == ptrnLen)
+                        return pos - ptrnLen;
                 }
+                else {
+                    pos = pos - i + 1;
 
-                pos++;
+                    i = 0;
+                    ptrn.reset();
 
-                i++;
+                    if (patternStarted) {
+                        patternStarted = false;
 
-                if (i == ptrnLen)
-                    return pos - ptrnLen;
-            }
-            else {
-                pos = pos - i + 1;
-
-                i = 0;
-                ptrn.reset();
-
-                if (patternStarted) {
-                    patternStarted = false;
-
-                    is.reset();
+                        is.reset();
+                    }
                 }
             }
+
+            return -1;
         }
-
-        return -1;
+        catch (IOException e) {
+            throw new SQLException(e);
+        }
     }
 
     /** {@inheritDoc} */
@@ -193,13 +188,13 @@ public class JdbcBlob extends JdbcMemoryBuffer implements Blob {
         if (pos < 1)
             throw new SQLException("Invalid argument. Position can't be less than 1 [pos=" + pos + ']');
 
-        if (pos - 1 > totalCnt || off < 0 || off >= bytes.length || off + len > bytes.length)
+        if (pos - 1 > buffer.getLength() || off < 0 || off >= bytes.length || off + len > bytes.length)
             throw new ArrayIndexOutOfBoundsException();
 
         try {
-            getOutputStream(pos - 1).write(bytes, off, len);
+            buffer.getOutputStream(pos - 1).write(bytes, off, len);
         }
-        catch (Exception e) {
+        catch (IOException e) {
             throw new SQLException(e);
         }
 
@@ -210,29 +205,29 @@ public class JdbcBlob extends JdbcMemoryBuffer implements Blob {
     @Override public OutputStream setBinaryStream(long pos) throws SQLException {
         ensureNotClosed();
 
-        if (pos < 1 || pos > totalCnt + 1)
+        if (pos < 1 || pos > buffer.getLength() + 1)
             throw new SQLException("Invalid argument. Position can't be less than 1 or greater than Blob length + 1 [pos=" + pos + ']');
 
-        return getOutputStream(pos - 1);
+        return buffer.getOutputStream(pos - 1);
     }
 
     /** {@inheritDoc} */
     @Override public void truncate(long len) throws SQLException {
         ensureNotClosed();
 
-        if (len < 0 || len > totalCnt)
+        if (len < 0 || len > buffer.getLength())
             throw new SQLException("Invalid argument. Length can't be " +
                 "less than zero or greater than Blob length [len=" + len + ']');
 
-        totalCnt = len;
+        buffer.truncate(len);
     }
 
     /** {@inheritDoc} */
     @Override public void free() throws SQLException {
-        if (buffers != null) {
-            buffers.clear();
+        if (buffer != null) {
+            buffer.close();
 
-            buffers = null;
+            buffer = null;
         }
     }
 
@@ -240,7 +235,7 @@ public class JdbcBlob extends JdbcMemoryBuffer implements Blob {
      *
      */
     private void ensureNotClosed() throws SQLException {
-        if (buffers == null)
+        if (buffer == null)
             throw new SQLException("Blob instance can't be used after free() has been called.");
     }
 }
