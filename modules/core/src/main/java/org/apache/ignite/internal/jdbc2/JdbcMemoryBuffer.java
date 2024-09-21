@@ -28,10 +28,10 @@ import org.apache.ignite.internal.util.typedef.internal.U;
  */
 public class JdbcMemoryBuffer {
     /** The list of buffers, which grows and never reduces. */
-    protected List<byte[]> buffers;
+    private List<byte[]> buffers;
 
     /** The total count of bytes. */
-    protected long totalCnt;
+    private long totalCnt;
 
     /** */
     public JdbcMemoryBuffer() {
@@ -111,10 +111,12 @@ public class JdbcMemoryBuffer {
         buffers.add(new byte[newBufSize]);
     }
 
+    /** */
     public void truncate(long len) {
         totalCnt = len;
     }
 
+    /** */
     public void close() {
         buffers.clear();
 
