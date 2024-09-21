@@ -206,8 +206,6 @@ public class ExpressionFactoryImpl<Row> implements ExpressionFactory<Row> {
                 throw new IllegalArgumentException("Can't be compared: left=" + left.get(i) + ", right=" + right.get(i));
         }
 
-        int nullComparison = nullsEqual ? 0 : left.get(0).nullDirection.nullComparison;
-
         return new Comparator<Row>() {
             @Override public int compare(Row o1, Row o2) {
                 boolean hasNulls = false;
@@ -228,11 +226,9 @@ public class ExpressionFactoryImpl<Row> implements ExpressionFactory<Row> {
                         continue;
                     }
 
-                    int nullComparison = leftField.nullDirection.nullComparison;
-
                     int res = leftField.direction == RelFieldCollation.Direction.ASCENDING ?
-                        ExpressionFactoryImpl.compare(c1, c2, nullComparison) :
-                        ExpressionFactoryImpl.compare(c2, c1, -nullComparison);
+                        ExpressionFactoryImpl.compare(c1, c2, leftField.nullDirection.nullComparison) :
+                        ExpressionFactoryImpl.compare(c2, c1, -leftField.nullDirection.nullComparison);
 
                     if (res != 0)
                         return res;
@@ -240,7 +236,7 @@ public class ExpressionFactoryImpl<Row> implements ExpressionFactory<Row> {
 
                 // If compared rows contain NULLs, they shouldn't be treated as equals, since NULL <> NULL in SQL.
                 // Expect for cases with IS DISTINCT / IS NOT DISTINCT.
-                return hasNulls ? nullComparison : 0;
+                return hasNulls && !nullsEqual ? left.get(0).nullDirection.nullComparison : 0;
             }
         };
     }

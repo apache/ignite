@@ -88,17 +88,8 @@ public class IgniteTypeCoercion extends TypeCoercionImpl {
 
             if (targetType == null || targetType.getFamily() == SqlTypeFamily.ANY)
                 return super.binaryComparisonCoercion(binding);
-            else {
-                boolean coerced = false;
-
-                if (!leftType.equals(targetType))
-                    coerced = coerceOperandType(scope, call, 0, targetType);
-
-                if (!rightType.equals(targetType))
-                    coerced &= coerceOperandType(scope, call, 1, targetType);
-
-                return coerced;
-            }
+            else
+                return coerceOperandType(scope, call, 0, targetType) || coerceOperandType(scope, call, 1, targetType);
         }
     }
 
