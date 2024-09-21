@@ -1141,7 +1141,10 @@ public class IgniteServiceProcessor extends GridProcessorAdapter implements Igni
         if (cfg instanceof LazyServiceConfiguration) {
             LazyServiceConfiguration srvcCfg = (LazyServiceConfiguration)cfg;
 
-            if (nodeFilter == null && srvcCfg.nodeFilterBytes() != null) {
+            assert srvcCfg.nodeFilterBytes() != null || srvcCfg.getNodeFilter() == null
+                : "Node filter exists when no the bytes.";
+
+            if (srvcCfg.nodeFilterBytes() != null) {
                 GridDeployment srvcDep = ctx.deploy().getDeployment(srvcCfg.serviceClassName());
 
                 ClassLoader clsLdr = U.resolveClassLoader(srvcDep != null ? srvcDep.classLoader() : null, ctx.config());
@@ -1151,6 +1154,8 @@ public class IgniteServiceProcessor extends GridProcessorAdapter implements Igni
                 cfg.setNodeFilter(nodeFilter);
             }
         }
+
+        assert cfg instanceof LazyServiceConfiguration : "Not a LazyServiceConfiguration";
 
         if (nodeFilter != null)
             ctx.resource().injectGeneric(nodeFilter);
