@@ -192,6 +192,20 @@ public class DynamicParametersIntegrationTest extends AbstractBasicIntegrationTe
 
     /** */
     @Test
+    public void testWrongParametersNumberInJoins() {
+        assertUnexpectedNumberOfParameters("SELECT val1, val3 FROM t1 JOIN t2 on val2=val4", 1);
+        assertUnexpectedNumberOfParameters("SELECT val1 * ?, val3 FROM t1 JOIN t2 on val2=val4*?");
+        assertUnexpectedNumberOfParameters("SELECT val1 * ?, val3 FROM t1 JOIN t2 on val2=val4*?", 1);
+        assertUnexpectedNumberOfParameters("SELECT val1 * ?, val3 FROM t1 JOIN t2 on val2=val4*?", 1, 2, 3);
+
+        assertUnexpectedNumberOfParameters("SELECT val1 * ?, val3 FROM t1 JOIN t2 on val2=val4*? WHERE val3>? ORDER BY " +
+            "val1 LIMIT ? OFFSET ?", 1, 2, 3, 4);
+        assertUnexpectedNumberOfParameters("SELECT val1 * ?, val3 FROM t1 JOIN t2 on val2=val4*? WHERE val3>? ORDER BY " +
+            "val1 LIMIT ? OFFSET ?", 1, 2, 3, 4, 5, 6);
+    }
+
+    /** */
+    @Test
     public void testWrongParametersNumberInUnion() {
         assertUnexpectedNumberOfParameters("SELECT val1 FROM t1 where val2=? UNION ALL SELECT val3 FROM t2 where val4=?", 1);
         assertUnexpectedNumberOfParameters("SELECT val1 FROM t1 where val2=? UNION ALL SELECT val3 FROM t2 where val4=?", 1, 2, 3);
