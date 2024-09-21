@@ -134,6 +134,8 @@ public class ServiceInfo implements ServiceDescriptor {
 
     /** {@inheritDoc} */
     @Override public Class<? extends Service> serviceClass() {
+        assert cfg instanceof LazyServiceConfiguration : "Check failed at 1";
+
         if (cfg instanceof LazyServiceConfiguration) {
             if (srvcCls != null)
                 return srvcCls;

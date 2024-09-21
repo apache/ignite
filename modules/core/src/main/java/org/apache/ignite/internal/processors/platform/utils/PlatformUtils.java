@@ -1356,6 +1356,8 @@ public class PlatformUtils {
      * @return Service platform or empty string if this is a java service.
      */
     public static String servicePlatform(ServiceConfiguration svcCfg) {
+        assert svcCfg instanceof LazyServiceConfiguration : "Check failed at 2";
+
         if (svcCfg instanceof LazyServiceConfiguration) {
             String svcClsName = ((LazyServiceConfiguration)svcCfg).serviceClassName();
 

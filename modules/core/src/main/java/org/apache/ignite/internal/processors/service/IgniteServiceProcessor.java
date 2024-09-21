@@ -1375,6 +1375,8 @@ public class IgniteServiceProcessor extends GridProcessorAdapter implements Igni
      * @throws IgniteCheckedException If failed.
      */
     private Service copyAndInject(ServiceConfiguration cfg, ServiceContextImpl svcCtx) throws IgniteCheckedException {
+        assert cfg instanceof LazyServiceConfiguration : "Check failed at 3";
+
         if (cfg instanceof LazyServiceConfiguration) {
             LazyServiceConfiguration srvcCfg = (LazyServiceConfiguration)cfg;
 
@@ -2025,6 +2027,8 @@ public class IgniteServiceProcessor extends GridProcessorAdapter implements Igni
      */
     private ReadOnlyMetricRegistry createServiceMetrics(ServiceContextImpl srvcCtx, ServiceConfiguration cfg) {
         MetricRegistryImpl metricRegistry = ctx.metric().registry(serviceMetricRegistryName(srvcCtx.name()));
+
+        assert cfg instanceof LazyServiceConfiguration : "Check failed at 4";
 
         if (cfg instanceof LazyServiceConfiguration && ((LazyServiceConfiguration)cfg).platformMtdNames() != null) {
             for (String definedMtdName : ((LazyServiceConfiguration)cfg).platformMtdNames()) {
