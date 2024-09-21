@@ -135,7 +135,7 @@ JVM_OPTS="-Dcom.sun.management.jmxremote -Dcom.sun.management.jmxremote.port=${J
 
 ==== Understanding MBean's ObjectName
 
-Every JMX Mbean has an https://docs.oracle.com/javase/8/docs/api/javax/management/ObjectName.html[ObjectName,window=_blank].
+Every JMX Mbean has an https://docs.oracle.com/en/java/javase/11/docs/api/java.management/javax/management/ObjectName.html[ObjectName,window=_blank].
 The ObjectName is used to identify the bean.
 The ObjectName consists of a domain and a list of key properties, and can be represented as a string as follows:
 

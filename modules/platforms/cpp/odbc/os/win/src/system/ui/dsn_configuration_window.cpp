@@ -60,7 +60,6 @@ namespace ignite
                     passwordLabel(),
                     passwordEdit(),
                     engineModeComboBox(),
-                    nestedTxModeComboBox(),
                     okButton(),
                     cancelButton(),
                     config(config),
@@ -337,31 +336,6 @@ namespace ignite
 
                     rowPos += INTERVAL + ROW_HEIGHT;
 
-                    nestedTxModeLabel = CreateLabel(labelPosX, rowPos, LABEL_WIDTH, ROW_HEIGHT,
-                        "Nested Transaction Mode:", ChildId::NESTED_TX_MODE_LABEL);
-                    nestedTxModeComboBox = CreateComboBox(editPosX, rowPos, editSizeX, ROW_HEIGHT,
-                        "", ChildId::NESTED_TX_MODE_COMBO_BOX);
-
-                    {
-                        int id = 0;
-
-                        const NestedTxMode::ModeSet &supported = NestedTxMode::GetValidValues();
-
-                        for (NestedTxMode::ModeSet::const_iterator it = supported.begin();
-                             it != supported.end(); ++it) {
-                            nestedTxModeComboBox->AddString(NestedTxMode::ToString(*it));
-
-                            if (*it == config.GetNestedTxMode())
-                                nestedTxModeComboBox->SetSelection(id);
-
-                            ++id;
-                        }
-                    }
-
-                    nestedTxModeComboBox->SetEnabled(version >= ProtocolVersion::VERSION_2_5_0);
-
-                    rowPos += INTERVAL + ROW_HEIGHT;
-
                     distributedJoinsCheckBox = CreateCheckBox(labelPosX, rowPos, checkBoxSize, ROW_HEIGHT,
                         "Distributed Joins", ChildId::DISTRIBUTED_JOINS_CHECK_BOX, config.IsDistributedJoins());
 
@@ -482,7 +456,6 @@ namespace ignite
                                     ProtocolVersion version = ProtocolVersion::FromString(versionStr);
                                     lazyCheckBox->SetEnabled(version >= ProtocolVersion::VERSION_2_1_5);
                                     skipReducerOnUpdateCheckBox->SetEnabled(version >= ProtocolVersion::VERSION_2_3_0);
-                                    nestedTxModeComboBox->SetEnabled(version >= ProtocolVersion::VERSION_2_5_0);
                                     engineModeComboBox->SetEnabled(version >= ProtocolVersion::VERSION_2_13_0);
 
                                     break;
@@ -630,13 +603,6 @@ namespace ignite
                     if (pageSize <= 0)
                         pageSize = config.GetPageSize();
 
-                    std::string nestedTxModeStr;
-
-                    nestedTxModeComboBox->GetText(nestedTxModeStr);
-
-                    NestedTxMode::Type nestedTxMode = NestedTxMode::FromString(nestedTxModeStr,
-                                                                               config.GetNestedTxMode());
-
                     std::string engineModeStr;
 
                     engineModeComboBox->GetText(engineModeStr);
@@ -653,7 +619,6 @@ namespace ignite
                     LOG_MSG("Retrieving arguments:");
                     LOG_MSG("Page size:              " << pageSize);
                     LOG_MSG("SQL Engine Mode:        " << EngineMode::ToString(engineMode));
-                    LOG_MSG("Nested TX Mode:         " << NestedTxMode::ToString(nestedTxMode));
                     LOG_MSG("Distributed Joins:      " << (distributedJoins ? "true" : "false"));
                     LOG_MSG("Enforce Join Order:     " << (enforceJoinOrder ? "true" : "false"));
                     LOG_MSG("Replicated only:        " << (replicatedOnly ? "true" : "false"));
@@ -663,7 +628,6 @@ namespace ignite
 
                     cfg.SetPageSize(pageSize);
                     cfg.SetEngineMode(engineMode);
-                    cfg.SetNestedTxMode(nestedTxMode);
                     cfg.SetDistributedJoins(distributedJoins);
                     cfg.SetEnforceJoinOrder(enforceJoinOrder);
                     cfg.SetReplicatedOnly(replicatedOnly);
