@@ -52,10 +52,10 @@ public final class PlanningContext implements Context {
     /**
      * If not {@code null}, notifies to validate passed parameters number against number of the query's dynamic parameters.
      * Since several queries may share {@link #parameters()} while each query is validated by dedicated validator,
-     * this validator has to be aware of numbers of total queries and current query.
+     * this validator has to be aware of numbers of total queries and of current query number.
      * The pair is: number of current query starting with 0 and total number of queries.
      */
-    @Nullable private final IgnitePair<Integer> validateParamsNumberCfg;
+    @Nullable private final IgnitePair<Integer> validateParamsNumCfg;
 
     /** */
     private final CancelFlag cancelFlag = new CancelFlag(new AtomicBoolean());
@@ -77,24 +77,24 @@ public final class PlanningContext implements Context {
      *
      * @param parentCtx Parent context.
      * @param qry The query to process.
-     * @param parameters Parameters to pass to the query dynamic parameters.
-     * @param validateParamsNumberCfg If not {@code null}, notifies to validate passed parameters number against number
+     * @param parameters Values to pass to the query's dynamic parameters.
+     * @param validateParamsNumCfg If not {@code null}, notifies to validate passed parameters number against number
      *                                of the query's dynamic parameters. The pair is: number of current query starting with 0
-     *                                and total number of queries to process.
+     *                                and total number of queries being processed with shared {@link PlanningContext#parameters()}.
      * @param plannerTimeout Timeout on operation.
      *
-     * @see #validateParamsNumberCfg
+     * @see #validateParamsNumCfg
      */
     private PlanningContext(
         Context parentCtx,
         String qry,
         Object[] parameters,
-        @Nullable IgnitePair<Integer> validateParamsNumberCfg,
+        @Nullable IgnitePair<Integer> validateParamsNumCfg,
         long plannerTimeout
     ) {
         this.qry = qry;
         this.parameters = parameters;
-        this.validateParamsNumberCfg = validateParamsNumberCfg;
+        this.validateParamsNumCfg = validateParamsNumCfg;
 
         this.parentCtx = parentCtx;
         startTs = U.currentTimeMillis();
@@ -118,25 +118,25 @@ public final class PlanningContext implements Context {
 
     /** @return {@code True}, if the validation of number of {@link #parameters()} is required. */
     public boolean validateParamsNumber() {
-        return validateParamsNumberCfg != null;
+        return validateParamsNumCfg != null;
     }
 
     /**
-     * @return Number of current query being processed with the same {@link #parameters()}. Starts with 0 and is always 0
+     * @return Number of current query being processed with shared {@link #parameters()}. Starts with 0 and is always 0
      * if {@link #validateParamsNumber()} is not set.
      * @see #validateParamsNumber()
      */
     public int currentQueryNumber() {
-        return validateParamsNumberCfg == null ? 0 : validateParamsNumberCfg.get1();
+        return validateParamsNumCfg == null ? 0 : validateParamsNumCfg.get1();
     }
 
     /**
-     * @return Total number of queries to process with the same {@link #parameters()}. Is always 0 if {@link #validateParamsNumber()}
-     * is not set.
+     * @return Total number of queries to process with shared{@link #parameters()}. Is always 0 if {@link #validateParamsNumber()}
+     * is {@code false}.
      * @see #validateParamsNumber()
      */
     public int queriesCnt() {
-        return validateParamsNumberCfg == null ? 0 : validateParamsNumberCfg.get2();
+        return validateParamsNumCfg == null ? 0 : validateParamsNumCfg.get2();
     }
 
     // Helper methods
@@ -319,7 +319,7 @@ public final class PlanningContext implements Context {
         }
 
         /**
-         * @param totalQueriesCnt Total number of quries being processed with the same {@link #parameters(Object...)}.
+         * @param totalQueriesCnt Total number of quries being processed with shared {@link #parameters(Object...)}.
          * @return Builder for chaining.
          * @see PlanningContext#validateParamsNumber()
          * @see #validateParametersQueryNumber(int)

@@ -484,7 +484,7 @@ public class CalciteQueryProcessor extends GridProcessorAdapter implements Query
         BiFunction<RootQuery<Object[]>, QueryPlan, T> action,
         @Nullable String schemaName,
         String sql,
-        boolean validatParamsCnt,
+        boolean validateParamsCnt,
         Object... params
     ) throws IgniteSQLException {
         SchemaPlus schema = schemaHolder.schema(schemaName);
@@ -525,11 +525,11 @@ public class CalciteQueryProcessor extends GridProcessorAdapter implements Query
                     plan0 = queryPlanCache().queryPlan(
                         // Use source SQL to avoid redundant parsing next time.
                         new CacheKey(schema.getName(), sql, contextKey(qryCtx), params),
-                        () -> prepareSvc.prepareSingle(sqlNode, qry.planningContext(validatParamsCnt, 0, 1))
+                        () -> prepareSvc.prepareSingle(sqlNode, qry.planningContext(validateParamsCnt, 0, 1))
                     );
                 }
                 else
-                    plan0 = prepareSvc.prepareSingle(sqlNode, qry.planningContext(validatParamsCnt, qryIdx0, qryList.size()));
+                    plan0 = prepareSvc.prepareSingle(sqlNode, qry.planningContext(validateParamsCnt, qryIdx0, qryList.size()));
 
                 return action.apply(qry, plan0);
             }, schema.getName(), removeSensitive(sqlNode), qrys, params);

@@ -133,7 +133,9 @@ public class DynamicParametersIntegrationTest extends AbstractBasicIntegrationTe
         assertUnexpectedNumberOfParameters("SELECT 1", 1);
         assertUnexpectedNumberOfParameters("SELECT ?", 1, 2);
         assertUnexpectedNumberOfParameters("SELECT COALESCE(?)");
+        assertUnexpectedNumberOfParameters("SELECT COALESCE(?)", 1, 2);
         assertUnexpectedNumberOfParameters("SELECT * FROM (VALUES(1, 2, ?)) t1");
+        assertUnexpectedNumberOfParameters("SELECT * FROM (VALUES(1, 2, ?)) t1", 1, 2);
     }
 
     /** */

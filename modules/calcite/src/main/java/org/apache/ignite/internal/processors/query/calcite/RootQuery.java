@@ -306,9 +306,9 @@ public class RootQuery<RowT> extends Query<RowT> implements TrackableQuery {
      *
      * @param validateParamsCnt If {@code true}, enables validation of {@link #parameters()} number.
      * @param curQryNum Current query number in the queries sharing {@link #parameters()}. Ignored if
-     *        {@code validatParamsCnt} is {@code false}.
+     *        {@code validateParamsCnt} is {@code false}.
      * @param totalQueriesCnt Total count of th queries sharing {@link #parameters()}. Ignored if
-     *        {@code validatParamsCnt} is {@code false}.
+     *        {@code validateParamsCnt} is {@code false}.
      * @return Planning context.
      * @see PlanningContext#validateParamsNumber()
      */

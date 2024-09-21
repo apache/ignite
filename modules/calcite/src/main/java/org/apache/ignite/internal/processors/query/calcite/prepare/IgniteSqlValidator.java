@@ -140,8 +140,7 @@ public class IgniteSqlValidator extends SqlValidatorImpl {
             qryNum = planningCtx.currentQueryNumber();
             qryCnt = planningCtx.queriesCnt();
 
-            assert qryNum >= 0 || qryCnt == 0;
-            assert qryCnt > qryNum || qryCnt == 0;
+            assert qryNum >= 0 && qryCnt > qryNum : "Wrong query number or total queries number.";
         }
         else {
             qryNum = 0;
@@ -565,39 +564,6 @@ public class IgniteSqlValidator extends SqlValidatorImpl {
         return res;
     }
 
-    /** */
-    private void checkDynamicParametersNumber(SqlDynamicParam dynamicParam) {
-        if (dynamicParam.getIndex() >= dynParCnt)
-            dynParCnt = dynamicParam.getIndex() + 1;
-    }
-
-    /** */
-    private void extractDynamicParameters(SqlNode node) {
-        if (!validateParamsNum)
-            return;
-
-        if (node instanceof SqlDynamicParam)
-            checkDynamicParametersNumber((SqlDynamicParam)node);
-        if (node instanceof SqlOrderBy) {
-            SqlOrderBy orderBy = (SqlOrderBy)node;
-
-            if (orderBy.offset instanceof SqlDynamicParam)
-                checkDynamicParametersNumber((SqlDynamicParam)orderBy.offset);
-
-            if (orderBy.fetch instanceof SqlDynamicParam)
-                checkDynamicParametersNumber((SqlDynamicParam)orderBy.fetch);
-        }
-        else if (node instanceof SqlSelect) {
-            SqlSelect select = (SqlSelect)node;
-
-            if (select.getOffset() instanceof SqlDynamicParam)
-                checkDynamicParametersNumber((SqlDynamicParam)select.getOffset());
-
-            if (select.getFetch() instanceof SqlDynamicParam)
-                checkDynamicParametersNumber((SqlDynamicParam)select.getFetch());
-        }
-    }
-
     /** {@inheritDoc} */
     @Override protected void inferUnknownTypes(RelDataType inferredType, SqlValidatorScope scope, SqlNode node) {
         extractDynamicParameters(node);
@@ -654,6 +620,39 @@ public class IgniteSqlValidator extends SqlValidatorImpl {
         }
         else
             super.inferUnknownTypes(inferredType, scope, node);
+    }
+
+    /** */
+    private void extractDynamicParameters(SqlNode node) {
+        if (!validateParamsNum)
+            return;
+
+        if (node instanceof SqlDynamicParam)
+            findMaximalDynamicParameterNumber((SqlDynamicParam)node);
+        if (node instanceof SqlOrderBy) {
+            SqlOrderBy orderBy = (SqlOrderBy)node;
+
+            if (orderBy.offset instanceof SqlDynamicParam)
+                findMaximalDynamicParameterNumber((SqlDynamicParam)orderBy.offset);
+
+            if (orderBy.fetch instanceof SqlDynamicParam)
+                findMaximalDynamicParameterNumber((SqlDynamicParam)orderBy.fetch);
+        }
+        else if (node instanceof SqlSelect) {
+            SqlSelect select = (SqlSelect)node;
+
+            if (select.getOffset() instanceof SqlDynamicParam)
+                findMaximalDynamicParameterNumber((SqlDynamicParam)select.getOffset());
+
+            if (select.getFetch() instanceof SqlDynamicParam)
+                findMaximalDynamicParameterNumber((SqlDynamicParam)select.getFetch());
+        }
+    }
+
+    /** */
+    private void findMaximalDynamicParameterNumber(SqlDynamicParam dynamicParam) {
+        if (dynamicParam.getIndex() >= dynParCnt)
+            dynParCnt = dynamicParam.getIndex() + 1;
     }
 
     /** {@inheritDoc} */
