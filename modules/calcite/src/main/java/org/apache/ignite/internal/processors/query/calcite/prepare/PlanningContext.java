@@ -52,7 +52,7 @@ public final class PlanningContext implements Context {
     /**
      * If not {@code null}, notifies to validate passed parameters number against number of the query's dynamic parameters.
      * Since several queries may share {@link #parameters()} while each query is validated by dedicated validator,
-     * the validator has to be aware of numbers total queries and current query.
+     * this validator has to be aware of numbers of total queries and current query.
      * The pair is: number of current query starting with 0 and total number of queries.
      */
     @Nullable private final IgnitePair<Integer> validateParamsNumberCfg;
@@ -76,11 +76,11 @@ public final class PlanningContext implements Context {
      * Private constructor, used by a builder.
      *
      * @param parentCtx Parent context.
-     * @param qry The query.
+     * @param qry The query to process.
      * @param parameters Parameters to pass to the query dynamic parameters.
      * @param validateParamsNumberCfg If not {@code null}, notifies to validate passed parameters number against number
      *                                of the query's dynamic parameters. The pair is: number of current query starting with 0
-     *                                and total number of queries.
+     *                                and total number of queries to process.
      * @param plannerTimeout Timeout on operation.
      *
      * @see #validateParamsNumberCfg

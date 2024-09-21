@@ -104,7 +104,7 @@ public class IgniteSqlValidator extends SqlValidatorImpl {
     /** Passed query arguments. */
     private final Object[] parameters;
 
-    /** If {@code true}, enables validation of {@link #parameters}'s' number against the query's dynamic parameters. */
+    /** If {@code true}, enables validation of {@link #parameters}'s number against the query's dynamic parameters. */
     private final boolean validateParamsNum;
 
     /**
