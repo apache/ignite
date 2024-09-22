@@ -103,7 +103,7 @@ public class LongRunningQueryTest extends AbstractIndexingCommonTest {
 
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration() throws Exception {
-        IgniteConfiguration cfg =  super.getConfiguration();
+        IgniteConfiguration cfg = super.getConfiguration();
 
         return cfg.setSqlConfiguration(new SqlConfiguration().setLongQueryWarningTimeout(LONG_QUERY_WARNING_TIMEOUT));
     }
