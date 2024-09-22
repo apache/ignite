@@ -38,15 +38,15 @@ public class H2DmlInfo implements TrackableQuery {
     /** Schema name. */
     private final String schema;
 
-    /** Sql text. */
+    /** Dml command. */
     private final String sql;
 
     /**
-     * @param beginTs Begin time of the DML command execution.
+     * @param beginTs Begin timestamp.
      * @param qryId Query id.
      * @param initNodeId Initiator node id.
      * @param schema Schema name.
-     * @param sql DML command.
+     * @param sql Dml command.
      */
     public H2DmlInfo(long beginTs, long qryId, UUID initNodeId, String schema, String sql) {
         this.beginTs = beginTs;

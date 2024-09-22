@@ -56,6 +56,7 @@ public class LongRunningQueryTest extends AbstractIndexingCommonTest {
     /** Keys count. */
     private static final int KEY_CNT = 1000;
 
+    /** Long query warning timeout. */
     private static final int LONG_QUERY_WARNING_TIMEOUT = 1000;
 
     /** External wait time. */
@@ -288,7 +289,7 @@ public class LongRunningQueryTest extends AbstractIndexingCommonTest {
     public void testLongRunningDelete() {
         local = false;
 
-        populateCache(1_000_000);
+        increaseCacheSize(1_000_000);
 
         runDml(DELETE, false);
     }
@@ -306,7 +307,7 @@ public class LongRunningQueryTest extends AbstractIndexingCommonTest {
     public void testLongRunningDeleteLocal() {
         local = true;
 
-        populateCache(1_000_000);
+        increaseCacheSize(1_000_000);
 
         runDml(DELETE, false);
     }
@@ -577,7 +578,7 @@ public class LongRunningQueryTest extends AbstractIndexingCommonTest {
 
         long start = System.currentTimeMillis();
 
-        sql("test", dml, (isWithSubquery ? (LONG_QUERY_WARNING_TIMEOUT * 2) : null));
+        sql("test", dml, (isWithSubquery ? (LONG_QUERY_WARNING_TIMEOUT * 1.5) : null));
 
         assertTrue((System.currentTimeMillis() - start) > LONG_QUERY_WARNING_TIMEOUT);
 
@@ -585,10 +586,10 @@ public class LongRunningQueryTest extends AbstractIndexingCommonTest {
     }
 
     /**
-     * @param entries Number of entries to be put into the "test" cache on top of what is already there.
+     * @param targetCacheSize Target size of the "test" cache.
      */
-    public void populateCache(int entries) {
-        for (int i = KEY_CNT; i < entries; i++)
+    public void increaseCacheSize(int targetCacheSize) {
+        for (int i = KEY_CNT; i < targetCacheSize; i++)
             sql("test", "insert into test (_key, _val) values (?, ?)", i, i);
     }
 
@@ -613,13 +614,13 @@ public class LongRunningQueryTest extends AbstractIndexingCommonTest {
         }
 
         /**
-         * Function gets the thread to sleep for 5 seconds. It doesn't take any parameters and returns integer "1".
+         * Function gets the thread to sleep for 4 seconds. It doesn't take any parameters and returns integer "1".
          */
         @SuppressWarnings("unused")
         @QuerySqlFunction
         public static int sleep_func_dml() {
             try {
-                Thread.sleep(5000);
+                Thread.sleep(4000);
             }
             catch (InterruptedException ignored) {
                 // No-op
