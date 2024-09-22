@@ -563,10 +563,10 @@ public class LongRunningQueryTest extends AbstractIndexingCommonTest {
     }
 
     /**
-     * @param dml DML command.
-     * @param isWithSubquery Flag indicating whether the DML command has a subquery.
+     * @param dml Dml command.
+     * @param isSubquery Flag indicating whether the Dml command has a subquery.
      */
-    public void runDml(String dml, boolean isWithSubquery) {
+    public void runDml(String dml, boolean isSubquery) {
         lazy = false;
 
         LogListener lsnr = LogListener
@@ -578,7 +578,7 @@ public class LongRunningQueryTest extends AbstractIndexingCommonTest {
 
         long start = System.currentTimeMillis();
 
-        sql("test", dml, (isWithSubquery ? (LONG_QUERY_WARNING_TIMEOUT * 1.5) : null));
+        sql("test", dml, (isSubquery ? (LONG_QUERY_WARNING_TIMEOUT * 1.5) : null));
 
         assertTrue((System.currentTimeMillis() - start) > LONG_QUERY_WARNING_TIMEOUT);
 
@@ -614,7 +614,7 @@ public class LongRunningQueryTest extends AbstractIndexingCommonTest {
         }
 
         /**
-         * Function gets the thread to sleep for 4 seconds. It doesn't take any parameters and returns integer "1".
+         * This function gets the thread to sleep for 4 seconds. It doesn't take any parameters and always returns 1.
          */
         @SuppressWarnings("unused")
         @QuerySqlFunction
