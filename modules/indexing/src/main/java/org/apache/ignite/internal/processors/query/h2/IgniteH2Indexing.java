@@ -2092,18 +2092,15 @@ public class IgniteH2Indexing implements GridQueryIndexing {
 
         GridCacheContext<?, ?> cctx = dml.plan().cacheContext();
 
-        H2DmlCommandInfo dmlInfo = new H2DmlCommandInfo(
+        H2DmlInfo dmlInfo = new H2DmlInfo(
             U.currentTimeMillis(),
             qryId,
-            loc,
+            ctx.localNodeId(),
             qryDesc.schemaName(),
             qryDesc.sql()
         );
 
-//        heavyQueriesTracker().startTracking(dmlInfo);
-
-//        String plan = dml.plan().plan();
-//        heavyQueriesTracker().startTracking();
+        heavyQueriesTracker().startTracking(dmlInfo);
 
         for (int i = 0; i < DFLT_UPDATE_RERUN_ATTEMPTS; i++) {
             CacheOperationContext opCtx = cctx != null ? DmlUtils.setKeepBinaryContext(cctx) : null;
@@ -2134,7 +2131,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
                 break;
         }
 
-//        heavyQueriesTracker().stopTracking(dmlInfo, null);
+        heavyQueriesTracker().stopTracking(dmlInfo, null);
 
         if (F.isEmpty(errKeys) && partRes == null) {
             if (items == 1L)
@@ -2171,8 +2168,6 @@ public class IgniteH2Indexing implements GridQueryIndexing {
         UpdatePlan plan = dml.plan();
 
         UpdateResult fastUpdateRes = plan.processFast(qryParams.arguments());
-
-//        heavyQueriesTracker().startTracking();
 
         if (fastUpdateRes != null)
             return fastUpdateRes;
@@ -2270,8 +2265,6 @@ public class IgniteH2Indexing implements GridQueryIndexing {
             return DmlUtils.processSelectResult(plan, cur, pageSize);
         }
         finally {
-//            heavyQueriesTracker().stopTracking();
-
             if (cur instanceof AutoCloseable)
                 U.closeQuiet((AutoCloseable)cur);
         }

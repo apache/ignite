@@ -54,17 +54,33 @@ import static org.h2.engine.Constants.DEFAULT_PAGE_SIZE;
  */
 public class LongRunningQueryTest extends AbstractIndexingCommonTest {
     /** Keys count. */
-//    private static final int KEY_CNT = 1000;
-    private static final int KEY_CNT = 5;
+    private static final int KEY_CNT = 1000;
 
     private static final int LONG_QUERY_WARNING_TIMEOUT = 1000;
 
-    String update = "update A.String set _val = 'failed' where A.fail()=1";
-
-    String delete = "delete from A.String where A.fail()=1";
-
     /** External wait time. */
     private static final int EXT_WAIT_TIME = 2000;
+
+    /** Insert. */
+    private static final String INSERT = "insert into test (_key, _val) values (1001, sleep_func_dml())";
+
+    /** Insert with a subquery. */
+    private static final String INSERT_WITH_SUBQUERY = "insert into test (_key, _val) select p._key, p.orgId from " +
+        "\"pers\".Person p where p._key < sleep_func(?)";
+
+    /** Update. */
+    private static final String UPDATE = "update test set _val = sleep_func_dml() where _key = 1";
+
+    /** Update with a subquery. */
+    private static final String UPDATE_WITH_SUBQUERY = "update test set _val = 111 where _key in " +
+        "(select p._key from \"pers\".Person p where p._key < sleep_func(?))";
+
+    /** Delete. */
+    private static final String DELETE = "delete from test";
+
+    /** Delete with a subquery. */
+    private static final String DELETE_WITH_SUBQUERY = "delete from test where _key in " +
+        "(select p._key from \"pers\".Person p where p._key < sleep_func(?))";
 
     /** Page size. */
     private int pageSize = DEFAULT_PAGE_SIZE;
@@ -111,6 +127,11 @@ public class LongRunningQueryTest extends AbstractIndexingCommonTest {
 
         for (long i = 0; i < KEY_CNT; ++i)
             c.put(i, i);
+
+        IgniteCache c2 = grid().createCache(cacheConfig("pers", Integer.class, Person.class));
+
+        for (int i = 0; i < 3; ++i)
+            c2.put(1000 + i, new Person(i, "p" + i));
     }
 
     /** {@inheritDoc} */
@@ -198,348 +219,104 @@ public class LongRunningQueryTest extends AbstractIndexingCommonTest {
         checkFastQueries();
     }
 
+    /** */
     @Test
     public void testLongRunningInsert() {
         local = false;
-        lazy = false;
 
-        String insert = "insert into test (_key, _val) values (5, sleep_func1())";
-//        String insert = "insert into test (_key, _val) values (5, 5)";
-
-        LogListener lsnr = LogListener
-            .matches(LONG_QUERY_EXEC_MSG)
-            .andMatches(s -> !s.contains("plan=SELECT"))
-            .build();
-
-        testLog().registerListener(lsnr);
-
-        long start = System.currentTimeMillis();
-
-        sql("test", insert);
-
-        long time = System.currentTimeMillis() - start;
-
-        assertTrue(time > LONG_QUERY_WARNING_TIMEOUT);
-
-        assertTrue(lsnr.check());
+        runDml(INSERT, false);
     }
 
+    /** */
     @Test
-    public void testLongRunningInsertWithSelect() {
+    public void testLongRunningInsertWithSubquery() {
         local = false;
-        lazy = false;
 
-        CacheConfiguration ccfg1 = cacheConfig("pers", Integer.class, Person.class);
-
-        IgniteCache<Integer, Person> cache1 = ignite.getOrCreateCache(ccfg1);
-
-        cache1.put(6, new Person(1, "p1"));
-        cache1.put(7, new Person(2, "p2"));
-        cache1.put(8, new Person(3, "p3"));
-
-
-        LogListener lsnr = LogListener
-            .matches(LONG_QUERY_EXEC_MSG)
-            .andMatches(s -> !s.contains("plan=SELECT"))
-            .build();
-
-        testLog().registerListener(lsnr);
-
-        String insert = "insert into test (_key, _val) select p._key, p.orgId from \"pers\".Person p where p._key < sleep_func(?)";
-
-        sql("test", insert, 2000);
-
-        assertTrue(lsnr.check());
+        runDml(INSERT_WITH_SUBQUERY, true);
     }
 
+    /** */
     @Test
     public void testLongRunningInsertLocal() {
         local = true;
-        lazy = false;
 
-        String insert = "insert into test (_key, _val) values (5, sleep_func1())";
-
-        LogListener lsnr = LogListener
-            .matches(LONG_QUERY_EXEC_MSG)
-            .build();
-
-        testLog().registerListener(lsnr);
-
-        long start = System.currentTimeMillis();
-
-        sql("test", insert);
-
-        assertTrue(System.currentTimeMillis() - start > LONG_QUERY_WARNING_TIMEOUT);
-
-        assertTrue(lsnr.check());
+        runDml(INSERT, false);
     }
 
+    /** */
     @Test
-    public void testLongRunningInsertWithSelectLocal() {
+    public void testLongRunningInsertWithSubqueryLocal() {
         local = true;
-        lazy = false;
 
-        CacheConfiguration ccfg1 = cacheConfig("pers", Integer.class, Person.class);
-
-        IgniteCache<Integer, Person> cache1 = ignite.getOrCreateCache(ccfg1);
-
-        cache1.put(6, new Person(1, "p1"));
-        cache1.put(7, new Person(2, "p2"));
-        cache1.put(8, new Person(3, "p3"));
-
-
-        LogListener lsnr = LogListener
-            .matches(LONG_QUERY_EXEC_MSG)
-            .andMatches(s -> !s.contains("plan=SELECT"))
-            .build();
-
-        testLog().registerListener(lsnr);
-
-        String insert = "insert into test (_key, _val) select p._key, p.orgId from \"pers\".Person p where p._key < sleep_func(?)";
-
-        sql("test", insert, 2000);
-
-        assertTrue(lsnr.check());
+        runDml(INSERT_WITH_SUBQUERY, true);
     }
 
+    /** */
     @Test
     public void testLongRunningUpdate() {
         local = false;
-        lazy = false;
 
-//        for (int i = 6; i < 1_000_000; ++i)
-//            sql("test", "insert into test (_key, _val) values (?,?)", i, i);
-
-        LogListener lsnr = LogListener
-            .matches(LONG_QUERY_EXEC_MSG)
-            .build();
-
-        testLog().registerListener(lsnr);
-
-        String update = "update test set _val = sleep_func1()";
-
-        long start = System.currentTimeMillis();
-
-        sql("test", update);
-
-//        for (int i = 6; i < 1_000_000; ++i)
-//            sql("test", "update test set _val = " + (i + 1) + " where _key = " + i);
-
-        assertTrue(System.currentTimeMillis() - start > LONG_QUERY_WARNING_TIMEOUT);
-
-        assertTrue(lsnr.check());
+        runDml(UPDATE, false);
     }
 
+    /** */
     @Test
-    public void testLongRunningUpdateWithSelect() {
+    public void testLongRunningUpdateWithSubquery() {
         local = false;
-        lazy = false;
 
-        CacheConfiguration ccfg1 = cacheConfig("pers", Integer.class, Person.class);
-
-        IgniteCache<Integer, Person> cache1 = ignite.getOrCreateCache(ccfg1);
-
-        cache1.put(6, new Person(1, "p1"));
-        cache1.put(7, new Person(2, "p2"));
-        cache1.put(8, new Person(3, "p3"));
-
-        LogListener lsnr = LogListener
-            .matches(LONG_QUERY_EXEC_MSG)
-            .andMatches("plan=SELECT")
-            .build();
-
-        testLog().registerListener(lsnr);
-
-        long start = System.currentTimeMillis();
-
-        String update = "update test set _val = 111 where _key in " +
-            "(select p._key from \"pers\".Person p where p._key < sleep_func(?))";
-
-        sql("test", update, 2000);
-
-        assertTrue(System.currentTimeMillis() - start > LONG_QUERY_WARNING_TIMEOUT);
-
-        assertTrue(lsnr.check());
+        runDml(UPDATE_WITH_SUBQUERY, true);
     }
 
+    /** */
     @Test
     public void testLongRunningUpdateLocal() {
         local = true;
-        lazy = false;
 
-        for (int i = 6; i < 1_000_000; ++i)
-            sql("test", "insert into test (_key, _val) values (?,?)", i, i);
-
-        LogListener lsnr = LogListener
-            .matches(LONG_QUERY_EXEC_MSG)
-            .build();
-
-        testLog().registerListener(lsnr);
-
-        long start = System.currentTimeMillis();
-
-        for (int i = 6; i < 1_000_000; ++i)
-            sql("test", "update test set _val = " + (i + 1) + " where _key = " + i);
-
-        assertTrue(System.currentTimeMillis() - start > LONG_QUERY_WARNING_TIMEOUT);
-
-        assertTrue(lsnr.check());
+        runDml(UPDATE, false);
     }
 
+    /** */
     @Test
-    public void testLongRunningUpdateWithSelectLocal() {
+    public void testLongRunningUpdateWithSubqueryLocal() {
         local = true;
-        lazy = false;
 
-        CacheConfiguration ccfg1 = cacheConfig("pers", Integer.class, Person.class);
-
-        IgniteCache<Integer, Person> cache1 = ignite.getOrCreateCache(ccfg1);
-
-        cache1.put(6, new Person(1, "p1"));
-        cache1.put(7, new Person(2, "p2"));
-        cache1.put(8, new Person(3, "p3"));
-
-        LogListener lsnr = LogListener
-            .matches(LONG_QUERY_EXEC_MSG)
-            .andMatches("plan=SELECT")
-            .build();
-
-        testLog().registerListener(lsnr);
-
-        long start = System.currentTimeMillis();
-
-        String update = "update test set _val = 111 where _key in " +
-            "(select p._key from \"pers\".Person p where p._key < sleep_func(?))";
-
-        sql("test", update, 2000);
-
-        assertTrue(System.currentTimeMillis() - start > LONG_QUERY_WARNING_TIMEOUT);
-
-        assertTrue(lsnr.check());
+        runDml(UPDATE_WITH_SUBQUERY, true);
     }
 
+    /** */
     @Test
     public void testLongRunningDelete() {
         local = false;
-        lazy = false;
 
-        for (int i = 6; i < 1_000_000; ++i)
-            sql("test", "insert into test (_key, _val) values (?,?)", i, i);
+        populateCache(1_000_000);
 
-        LogListener lsnr = LogListener
-            .matches(LONG_QUERY_EXEC_MSG)
-//            .andMatches("plan=SELECT")
-            .build();
-
-        testLog().registerListener(lsnr);
-
-        long start = System.currentTimeMillis();
-
-//        String delete = "delete from test where _key between 6 and 1000000";
-        String delete = "delete from test";
-
-        sql("test", delete);
-
-        assertTrue(System.currentTimeMillis() - start > LONG_QUERY_WARNING_TIMEOUT);
-
-        assertTrue(lsnr.check());
-
-        //Печатаются предупреждения типа "Query produced big result set"
+        runDml(DELETE, false);
     }
 
+    /** */
     @Test
-    public void testLongRunningDeleteWithSelect() {
+    public void testLongRunningDeleteWithSubquery() {
         local = false;
-        lazy = false;
 
-        CacheConfiguration ccfg1 = cacheConfig("pers", Integer.class, Person.class);
-
-        IgniteCache<Integer, Person> cache1 = ignite.getOrCreateCache(ccfg1);
-
-        cache1.put(6, new Person(1, "p1"));
-        cache1.put(7, new Person(2, "p2"));
-        cache1.put(8, new Person(3, "p3"));
-
-
-        LogListener lsnr = LogListener
-            .matches(LONG_QUERY_EXEC_MSG)
-//            .andMatches("plan=SELECT")
-            .build();
-
-        testLog().registerListener(lsnr);
-
-        long start = System.currentTimeMillis();
-
-        String delete = "delete from test where _key in " +
-            "(select p._key from \"pers\".Person p where p._key < sleep_func(?))";
-
-        sql("test", delete, 2000);
-
-        assertTrue(System.currentTimeMillis() - start > LONG_QUERY_WARNING_TIMEOUT);
-
-        assertTrue(lsnr.check());
+        runDml(DELETE_WITH_SUBQUERY, true);
     }
 
+    /** */
     @Test
     public void testLongRunningDeleteLocal() {
         local = true;
-        lazy = false;
 
-        for (int i = 6; i < 1_000_000; ++i)
-            sql("test", "insert into test (_key, _val) values (?,?)", i, i);
+        populateCache(1_000_000);
 
-        LogListener lsnr = LogListener
-            .matches(LONG_QUERY_EXEC_MSG)
-//            .andMatches("plan=SELECT")
-            .build();
-
-        testLog().registerListener(lsnr);
-
-        long start = System.currentTimeMillis();
-
-//        String delete = "delete from test where _key between 6 and 1000000";
-        String delete = "delete from test";
-
-        sql("test", delete);
-
-        assertTrue(System.currentTimeMillis() - start > LONG_QUERY_WARNING_TIMEOUT);
-
-        assertTrue(lsnr.check());
-
-        //Печатаются предупреждения типа "Query produced big result set"
+        runDml(DELETE, false);
     }
 
+    /** */
     @Test
-    public void testLongRunningDeleteWithSelectLocal() {
+    public void testLongRunningDeleteWithSubqueryLocal() {
         local = true;
-        lazy = false;
 
-        CacheConfiguration ccfg1 = cacheConfig("pers", Integer.class, Person.class);
-
-        IgniteCache<Integer, Person> cache1 = ignite.getOrCreateCache(ccfg1);
-
-        cache1.put(6, new Person(1, "p1"));
-        cache1.put(7, new Person(2, "p2"));
-        cache1.put(8, new Person(3, "p3"));
-
-
-        LogListener lsnr = LogListener
-            .matches(LONG_QUERY_EXEC_MSG)
-            .andMatches("plan=SELECT")
-            .build();
-
-        testLog().registerListener(lsnr);
-
-        long start = System.currentTimeMillis();
-
-        String delete = "delete from test where _key in " +
-            "(select p._key from \"pers\".Person p where p._key < sleep_func(?))";
-
-        sql("test", delete, 2000);
-
-        assertTrue(System.currentTimeMillis() - start > LONG_QUERY_WARNING_TIMEOUT);
-
-        assertTrue(lsnr.check());
+        runDml(DELETE_WITH_SUBQUERY, true);
     }
 
     /**
@@ -785,6 +562,37 @@ public class LongRunningQueryTest extends AbstractIndexingCommonTest {
     }
 
     /**
+     * @param dml DML command.
+     * @param isWithSubquery Flag indicating whether the DML command has a subquery.
+     */
+    public void runDml(String dml, boolean isWithSubquery) {
+        lazy = false;
+
+        LogListener lsnr = LogListener
+            .matches(LONG_QUERY_EXEC_MSG)
+            .andMatches(s -> s.contains("type=DML"))
+            .build();
+
+        testLog().registerListener(lsnr);
+
+        long start = System.currentTimeMillis();
+
+        sql("test", dml, (isWithSubquery ? (LONG_QUERY_WARNING_TIMEOUT * 2) : null));
+
+        assertTrue((System.currentTimeMillis() - start) > LONG_QUERY_WARNING_TIMEOUT);
+
+        assertTrue(lsnr.check());
+    }
+
+    /**
+     * @param entries Number of entries to be put into the "test" cache on top of what is already there.
+     */
+    public void populateCache(int entries) {
+        for (int i = KEY_CNT; i < entries; i++)
+            sql("test", "insert into test (_key, _val) values (?, ?)", i, i);
+    }
+
+    /**
      * Utility class with custom SQL functions.
      */
     public static class TestSQLFunctions {
@@ -804,8 +612,12 @@ public class LongRunningQueryTest extends AbstractIndexingCommonTest {
             return v;
         }
 
+        /**
+         * Function gets the thread to sleep for 5 seconds. It doesn't take any parameters and returns integer "1".
+         */
+        @SuppressWarnings("unused")
         @QuerySqlFunction
-        public static int sleep_func1() {
+        public static int sleep_func_dml() {
             try {
                 Thread.sleep(5000);
             }
@@ -813,7 +625,7 @@ public class LongRunningQueryTest extends AbstractIndexingCommonTest {
                 // No-op
             }
 
-            return 2;
+            return 1;
         }
     }
 
