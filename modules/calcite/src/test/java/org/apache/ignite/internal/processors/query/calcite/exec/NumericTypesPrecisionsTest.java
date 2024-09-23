@@ -15,17 +15,15 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.query.calcite.planner;
+package org.apache.ignite.internal.processors.query.calcite.exec;
 
-import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.List;
 import org.apache.calcite.rel.type.RelDataType;
 import org.apache.calcite.rel.type.RelDataTypeSystem;
 import org.apache.calcite.sql.type.SqlTypeName;
 import org.apache.ignite.internal.processors.query.calcite.type.IgniteTypeFactory;
 import org.apache.ignite.internal.processors.query.calcite.type.IgniteTypeSystem;
-import org.jetbrains.annotations.Nullable;
+import org.apache.ignite.internal.processors.query.calcite.util.Commons;
 import org.junit.Test;
 
 import static org.junit.Assert.assertEquals;
@@ -33,7 +31,7 @@ import static org.junit.Assert.assertEquals;
 /** Test for numeric types precisions. */
 public class NumericTypesPrecisionsTest {
     /** */
-    private static final IgniteTypeFactory TYPE_FACTORY = new IgniteTypeFactory();
+    private static final IgniteTypeFactory TYPE_FACTORY = Commons.typeFactory();
 
     /** */
     private static final int STRING_PRECISION = 65536;
@@ -77,7 +75,7 @@ public class NumericTypesPrecisionsTest {
     /** */
     @Test
     public void testLeastRestrictiveTinyInt() {
-        RelDataType[] expected = new RelDataType[] {TINYINT, SMALLINT, INTEGER, FLOAT, REAL, DOUBLE, DECIMAL, BIGINT};
+        RelDataType[] expected = new RelDataType[] {TINYINT, SMALLINT, INTEGER, REAL, FLOAT, DOUBLE, DECIMAL, BIGINT};
 
         doTestExpectedLeastRestrictive(TINYINT, expected);
     }
@@ -85,7 +83,7 @@ public class NumericTypesPrecisionsTest {
     /** */
     @Test
     public void testLeastRestrictiveSmallInt() {
-        RelDataType[] expected = new RelDataType[] {SMALLINT, SMALLINT, INTEGER, FLOAT, REAL, DOUBLE, DECIMAL, BIGINT};
+        RelDataType[] expected = new RelDataType[] {SMALLINT, SMALLINT, INTEGER, REAL, FLOAT, DOUBLE, DECIMAL, BIGINT};
 
         doTestExpectedLeastRestrictive(SMALLINT, expected);
     }
@@ -93,7 +91,7 @@ public class NumericTypesPrecisionsTest {
     /** */
     @Test
     public void testLeastRestrictiveInteger() {
-        RelDataType[] expected = new RelDataType[] {INTEGER, INTEGER, INTEGER, FLOAT, REAL, DOUBLE, DECIMAL, BIGINT};
+        RelDataType[] expected = new RelDataType[] {INTEGER, INTEGER, INTEGER, REAL, FLOAT, DOUBLE, DECIMAL, BIGINT};
 
         doTestExpectedLeastRestrictive(INTEGER, expected);
     }
@@ -125,7 +123,7 @@ public class NumericTypesPrecisionsTest {
     /** */
     @Test
     public void testLeastRestrictiveBigInt() {
-        RelDataType[] expected = new RelDataType[] {BIGINT, BIGINT, BIGINT, FLOAT, REAL, DOUBLE, DECIMAL, BIGINT};
+        RelDataType[] expected = new RelDataType[] {BIGINT, BIGINT, BIGINT, REAL, FLOAT, DOUBLE, DECIMAL, BIGINT};
 
         doTestExpectedLeastRestrictive(BIGINT, expected);
     }
@@ -192,39 +190,13 @@ public class NumericTypesPrecisionsTest {
     }
 
     /** */
-    private static final class TypesHolder {
-        /** */
-        private final RelDataType type1;
-
-        /** */
-        private final RelDataType type2;
-
-        /** */
-        private final RelDataType expectedLeast;
-
-        /** */
-        private TypesHolder(RelDataType type1, RelDataType type2, @Nullable RelDataType least) {
-            this.type1 = type1;
-            this.type2 = type2;
-            this.expectedLeast = least;
-        }
-    }
-
-    /** */
     private static void doTestExpectedLeastRestrictive(RelDataType testType, RelDataType[] expectedLeast) {
         assert expectedLeast.length == TEST_SUITE.length;
 
-        List<TypesHolder> types = new ArrayList<>(TEST_SUITE.length);
+        for (int i = 0; i < TEST_SUITE.length; ++i) {
+            RelDataType actualType = TYPE_FACTORY.leastRestrictive(Arrays.asList(testType, TEST_SUITE[i]));
 
-        for (int i = 0; i < types.size(); ++i)
-            types.add(new TypesHolder(testType, TEST_SUITE[i], expectedLeast[i]));
-
-        for (TypesHolder holder : types) {
-            RelDataType actualType = TYPE_FACTORY.leastRestrictive(Arrays.asList(holder.type1, holder.type2));
-
-            assertEquals("leastRestrictive(" + holder.type1 + ", " + holder.type2 + ")", holder.expectedLeast, actualType);
-
-            assertEquals("leastRestrictive(" + holder.type2 + ", " + holder.type1 + ")", holder.expectedLeast, actualType);
+            assertEquals("leastRestrictive(" + testType + ", " + TEST_SUITE[i] + ")", expectedLeast[i], actualType);
         }
     }
 }
