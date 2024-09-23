@@ -270,7 +270,7 @@ automake (GNU automake) 1.16.1
 OpenSSL 1.0.0c 2 Dec 2010
 6. g++ --version
 g++ (SUSE Linux) 5.5.0 20171010 [gcc-5-branch revision 253640]
-7. JDK 1.8
+7. JDK 11
 ----
 --
 

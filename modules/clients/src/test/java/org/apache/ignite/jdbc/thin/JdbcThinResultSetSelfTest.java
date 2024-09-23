@@ -62,7 +62,7 @@ public class JdbcThinResultSetSelfTest extends JdbcThinAbstractSelfTest {
     /** SQL query. */
     private static final String SQL =
         "select id, boolVal, byteVal, shortVal, intVal, longVal, floatVal, " +
-            "doubleVal, bigVal, strVal, arrVal, dateVal, timeVal, tsVal, objVal " +
+            "doubleVal, bigVal, strVal, arrVal, dateVal, timeVal, tsVal, objVal, blobVal, clobVal " +
             "from TestObject where id = 1";
 
     /** Statement. */
@@ -144,6 +144,8 @@ public class JdbcThinResultSetSelfTest extends JdbcThinAbstractSelfTest {
         o.bigVal = new BigDecimal(1);
         o.strVal = "1";
         o.arrVal = new byte[] {1};
+        o.blobVal = new byte[] {1};
+        o.clobVal = "str";
         o.dateVal = new Date(1, 1, 1);
         o.timeVal = new Time(1, 1, 1);
         o.tsVal = new Timestamp(1);
@@ -602,6 +604,42 @@ public class JdbcThinResultSetSelfTest extends JdbcThinAbstractSelfTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
+    public void testBlob() throws Exception {
+        ResultSet rs = stmt.executeQuery(SQL);
+
+        assertTrue(rs.next());
+
+        Blob blob = rs.getBlob("blobVal");
+        Assert.assertArrayEquals(blob.getBytes(1, (int)blob.length()), new byte[] {1});
+
+        blob = rs.getBlob(16);
+        Assert.assertArrayEquals(blob.getBytes(1, (int)blob.length()), new byte[] {1});
+
+        assertFalse(rs.next());
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    @Test
+    public void testClob() throws Exception {
+        ResultSet rs = stmt.executeQuery(SQL);
+
+        assertTrue(rs.next());
+
+        Clob clob = rs.getClob("clobVal");
+        Assert.assertEquals("str", clob.getSubString(1, (int)clob.length()));
+
+        clob = rs.getClob(17);
+        Assert.assertEquals("str", clob.getSubString(1, (int)clob.length()));
+
+        assertFalse(rs.next());
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
     @SuppressWarnings("deprecation")
     @Test
     public void testDate() throws Exception {
@@ -825,30 +863,6 @@ public class JdbcThinResultSetSelfTest extends JdbcThinAbstractSelfTest {
         checkNotSupported(new RunnableX() {
             @Override public void runx() throws Exception {
                 rs.getBinaryStream("id");
-            }
-        });
-
-        checkNotSupported(new RunnableX() {
-            @Override public void runx() throws Exception {
-                rs.getBlob(1);
-            }
-        });
-
-        checkNotSupported(new RunnableX() {
-            @Override public void runx() throws Exception {
-                rs.getBlob("id");
-            }
-        });
-
-        checkNotSupported(new RunnableX() {
-            @Override public void runx() throws Exception {
-                rs.getClob(1);
-            }
-        });
-
-        checkNotSupported(new RunnableX() {
-            @Override public void runx() throws Exception {
-                rs.getClob("id");
             }
         });
 
@@ -1742,6 +1756,14 @@ public class JdbcThinResultSetSelfTest extends JdbcThinAbstractSelfTest {
 
         /** */
         @QuerySqlField
+        private byte[] blobVal;
+
+        /** */
+        @QuerySqlField
+        private String clobVal;
+
+        /** */
+        @QuerySqlField
         private Date dateVal;
 
         /** */
@@ -1806,6 +1828,8 @@ public class JdbcThinResultSetSelfTest extends JdbcThinAbstractSelfTest {
             if (timeVal != null ? !timeVal.equals(that.timeVal) : that.timeVal != null) return false;
             if (tsVal != null ? !tsVal.equals(that.tsVal) : that.tsVal != null) return false;
             if (urlVal != null ? !urlVal.equals(that.urlVal) : that.urlVal != null) return false;
+            if (!Arrays.equals(blobVal, that.blobVal)) return false;
+            if (clobVal != null ? !clobVal.equals(that.clobVal) : that.clobVal != null) return false;
 
             return true;
         }
@@ -1832,6 +1856,8 @@ public class JdbcThinResultSetSelfTest extends JdbcThinAbstractSelfTest {
             res = 31 * res + (objVal != null ? objVal.hashCode() : 0);
             res = 31 * res + (f2 != null ? f2.hashCode() : 0);
             res = 31 * res + (f3 != null ? f3.hashCode() : 0);
+            res = 31 * res + (blobVal != null ? Arrays.hashCode(blobVal) : 0);
+            res = 31 * res + (clobVal != null ? clobVal.hashCode() : 0);
 
             return res;
         }

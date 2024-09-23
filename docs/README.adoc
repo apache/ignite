@@ -153,7 +153,7 @@ When referencing an external resource, make the link to open in a new window by 
 
 [source, adoc]
 ----
-link:https://docs.oracle.com/javase/8/docs/technotes/guides/security/SunProviders.html#SunJSSE_Protocols[Supported protocols,window=_blank]
+link:https://docs.oracle.com/en/java/javase/11/security/java-security-overview1.html#GUID-FCF419A7-B856-46DD-A36F-C6F88F9AF37F[Supported protocols,window=_blank]
 ----
 
 
