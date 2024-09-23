@@ -654,7 +654,7 @@ public class IgniteServiceProcessor extends GridProcessorAdapter implements Igni
      */
     private PreparedConfigurations<IgniteUuid> prepareServiceConfigurations(Collection<ServiceConfiguration> cfgs,
         IgnitePredicate<ClusterNode> dfltNodeFilter) {
-        List<ServiceConfiguration> cfgsCp = new ArrayList<>(cfgs.size());
+        List<LazyServiceConfiguration> cfgsCp = new ArrayList<>(cfgs.size());
 
         List<GridServiceDeploymentFuture<IgniteUuid>> failedFuts = null;
 
@@ -773,7 +773,7 @@ public class IgniteServiceProcessor extends GridProcessorAdapter implements Igni
 
             PreparedConfigurations<IgniteUuid> srvcCfg = prepareServiceConfigurations(cfgs, dfltNodeFilter);
 
-            List<ServiceConfiguration> cfgsCp = srvcCfg.cfgs;
+            List<LazyServiceConfiguration> cfgsCp = srvcCfg.cfgs;
 
             List<GridServiceDeploymentFuture<IgniteUuid>> failedFuts = srvcCfg.failedFuts;
 
@@ -783,7 +783,7 @@ public class IgniteServiceProcessor extends GridProcessorAdapter implements Igni
                 try {
                     Collection<ServiceChangeAbstractRequest> reqs = new ArrayList<>();
 
-                    for (ServiceConfiguration cfg : cfgsCp) {
+                    for (LazyServiceConfiguration cfg : cfgsCp) {
                         IgniteUuid srvcId = IgniteUuid.randomUuid();
 
                         GridServiceDeploymentFuture<IgniteUuid> fut = new GridServiceDeploymentFuture<>(cfg, srvcId);
@@ -1136,21 +1136,10 @@ public class IgniteServiceProcessor extends GridProcessorAdapter implements Igni
     Map<UUID, Integer> reassign(@NotNull IgniteUuid srvcId, @NotNull ServiceConfiguration cfg,
         @NotNull AffinityTopologyVersion topVer,
         @Nullable TreeMap<UUID, Integer> oldTop) throws IgniteCheckedException {
-        IgnitePredicate<ClusterNode> nodeFilter = cfg.getNodeFilter();
+        if (cfg instanceof LazyServiceConfiguration)
+            unmarshalNodeFilterIfNeeded((LazyServiceConfiguration)cfg);
 
-        if (cfg instanceof LazyServiceConfiguration) {
-            LazyServiceConfiguration srvcCfg = (LazyServiceConfiguration)cfg;
-
-            if (nodeFilter == null && srvcCfg.nodeFilterBytes() != null) {
-                GridDeployment srvcDep = ctx.deploy().getDeployment(srvcCfg.serviceClassName());
-
-                ClassLoader clsLdr = U.resolveClassLoader(srvcDep != null ? srvcDep.classLoader() : null, ctx.config());
-
-                nodeFilter = U.unmarshal(marsh, srvcCfg.nodeFilterBytes(), clsLdr);
-
-                cfg.setNodeFilter(nodeFilter);
-            }
-        }
+        Object nodeFilter = cfg.getNodeFilter();
 
         if (nodeFilter != null)
             ctx.resource().injectGeneric(nodeFilter);
@@ -1435,6 +1424,18 @@ public class IgniteServiceProcessor extends GridProcessorAdapter implements Igni
                 return srvc;
             }
         }
+    }
+
+    /** @param cfg Lazy service configuration. */
+    private void unmarshalNodeFilterIfNeeded(LazyServiceConfiguration cfg) throws IgniteCheckedException {
+        if (cfg.getNodeFilter() != null)
+            return;
+
+        GridDeployment dep = ctx.deploy().getDeployment(cfg.serviceClassName());
+
+        ClassLoader clsLdr = U.resolveClassLoader(dep != null ? dep.classLoader() : null, ctx.config());
+
+        cfg.setNodeFilter(U.unmarshal(marsh, cfg.nodeFilterBytes(), clsLdr));
     }
 
     /**
@@ -1780,10 +1781,20 @@ public class IgniteServiceProcessor extends GridProcessorAdapter implements Igni
                         "exists : [" + "srvcId" + reqSrvcId + ", srvcTop=" + oldDesc.topologySnapshot() + ']');
                 }
                 else {
-                    ServiceConfiguration cfg = ((ServiceDeploymentRequest)req).configuration();
+                    LazyServiceConfiguration cfg = ((ServiceDeploymentRequest)req).configuration();
 
                     if (ctx.security().enabled())
                         err = checkPermissions(((ServiceDeploymentRequest)req).configuration().getName(), SERVICE_DEPLOY);
+
+                    if (err == null) {
+                        try {
+                            unmarshalNodeFilterIfNeeded(cfg);
+                        }
+                        catch (IgniteCheckedException e) {
+                            err = new IgniteCheckedException("Failed to deploy service, " +
+                                "unable to unmarshal node filter, cfg=" + cfg, e);
+                        }
+                    }
 
                     if (err == null) {
                         oldDesc = lookupInRegisteredServices(cfg.getName());

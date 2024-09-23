@@ -68,8 +68,8 @@ public class IgniteServiceDeployUnknownClassTest extends GridCommonAbstractTest 
 
             assertThrowsWithCause(() -> cli.services().deploy(svcCfg), ServiceDeploymentException.class);
 
-            // TODO: https://issues.apache.org/jira/browse/IGNITE-23226
-            // assertTrue(cli.services().serviceDescriptors().isEmpty());
+            assertTrue(cli.services().serviceDescriptors().isEmpty());
+            assertTrue(srv.services().serviceDescriptors().isEmpty());
 
             // Check node alive.
             srv.createCache(DEFAULT_CACHE_NAME).put(1, 1);

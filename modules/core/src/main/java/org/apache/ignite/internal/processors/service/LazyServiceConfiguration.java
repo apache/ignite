@@ -18,12 +18,13 @@
 package org.apache.ignite.internal.processors.service;
 
 import java.util.Arrays;
+import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
+import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.services.Service;
 import org.apache.ignite.services.ServiceCallInterceptor;
 import org.apache.ignite.services.ServiceConfiguration;
-import org.jetbrains.annotations.Nullable;
 
 /**
  * Lazy service configuration.
@@ -35,6 +36,10 @@ public class LazyServiceConfiguration extends ServiceConfiguration {
     /** Service instance. */
     @GridToStringExclude
     private transient Service srvc;
+
+    /** Node filter. */
+    @GridToStringExclude
+    private transient IgnitePredicate<ClusterNode> nodeFilter;
 
     /** Service interceptors. */
     @GridToStringExclude
@@ -71,8 +76,8 @@ public class LazyServiceConfiguration extends ServiceConfiguration {
     public LazyServiceConfiguration(
         ServiceConfiguration cfg,
         byte[] srvcBytes,
-        @Nullable byte[] nodeFilterBytes,
-        @Nullable byte[] interceptorsBytes
+        byte[] nodeFilterBytes,
+        byte[] interceptorsBytes
     ) {
         assert cfg.getService() != null : cfg;
         assert srvcBytes != null;
@@ -82,10 +87,8 @@ public class LazyServiceConfiguration extends ServiceConfiguration {
         maxPerNodeCnt = cfg.getMaxPerNodeCount();
         cacheName = cfg.getCacheName();
         affKey = cfg.getAffinityKey();
-        if (nodeFilterBytes != null)
-            this.nodeFilterBytes = nodeFilterBytes;
-        else
-            nodeFilter = cfg.getNodeFilter();
+        nodeFilter = cfg.getNodeFilter();
+        this.nodeFilterBytes = nodeFilterBytes;
         this.srvcBytes = srvcBytes;
         srvc = cfg.getService();
         srvcClsName = srvc.getClass().getName();
@@ -120,6 +123,18 @@ public class LazyServiceConfiguration extends ServiceConfiguration {
         assert srvc != null : this;
 
         return srvc;
+    }
+
+    /** {@inheritDoc} */
+    @Override public ServiceConfiguration setNodeFilter(IgnitePredicate<ClusterNode> nodeFilter) {
+        this.nodeFilter = nodeFilter;
+
+        return this;
+    }
+
+    /** {@inheritDoc} */
+    @Override public IgnitePredicate<ClusterNode> getNodeFilter() {
+        return nodeFilter;
     }
 
     /** {@inheritDoc} */
