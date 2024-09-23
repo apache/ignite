@@ -54,7 +54,6 @@ import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.jetbrains.annotations.Nullable;
 import org.junit.Test;
 
-import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static java.util.concurrent.TimeUnit.SECONDS;
 
 /**
@@ -896,7 +895,6 @@ public class GridNioSelfTest extends GridCommonAbstractTest {
 
                             sndTimes.put(msg.getId(), end - start);
                         }
-
                     }
                     catch (Exception e) {
                         error("Failed to send message.", e);
@@ -1144,7 +1142,7 @@ public class GridNioSelfTest extends GridCommonAbstractTest {
      * @throws IgniteCheckedException If client cannot be created.
      */
     protected TestClient createClient(InetAddress addr, int port, InetAddress locHost) throws IgniteCheckedException {
-        return new TestClient(createSocket(), addr, port, 50);
+        return new TestClient(createSocket(), addr, port, 0);
     }
 
     /**
@@ -1474,18 +1472,10 @@ public class GridNioSelfTest extends GridCommonAbstractTest {
          * @throws IOException If send failed.
          */
         public void sendMessage(byte[] data, int len) throws IOException, InterruptedException {
-            CountDownLatch latch = new CountDownLatch(1);
+            out.write(U.intToBytes(len));
+            out.write(data, 0, len);
 
-            try {
-                out.write(U.intToBytes(len));
-                out.write(data, 0, len);
-            }
-            finally {
-                latch.countDown(); // Signal that the work is done
-            }
-
-            //Thread.sleep(50);
-            latch.await(50, MILLISECONDS);
+            Thread.sleep(50);
         }
 
         /**
