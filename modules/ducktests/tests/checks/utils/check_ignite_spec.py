@@ -83,7 +83,7 @@ def check_boolean_options__go_after_default_ones_and_overwrite_them__if_passed_v
     service.context.globals[JFR_ENABLED] = True
     spec = IgniteApplicationSpec(service, jvm_opts="-XX:-FlightRecorder")
     assert "-XX:-FlightRecorder" in spec.jvm_opts
-    assert "-XX:-FlightRecorder" in spec.jvm_opts
+    assert "-XX:+FlightRecorder" in spec.jvm_opts
     assert spec.jvm_opts.index("-XX:-FlightRecorder") >\
            spec.jvm_opts.index("-XX:+FlightRecorder")
 

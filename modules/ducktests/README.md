@@ -105,8 +105,11 @@ To enable ssl it is only required to pass `enabled` for `ssl` in globals:
 ```
 --global-json, eg: {"ssl":{"enabled":true}}
 ```
+In this case, all ssl params will be set to default values, and will be written to ignite config.
+These values correspond to the keystores that are generated (and you shouldn't worry about it).
+Default keystores for these services are generated automatically on creating environment.
 
-You can configure ignite ssl connection by passing configs from this structure to `global-json` :
+If you want, you could override these values through globals, for example:
 ```
     {"ssl": {
         "enabled": true,
@@ -133,23 +136,34 @@ You can configure ignite ssl connection by passing configs from this structure t
       }
     }
 ```
-Options `key_store_jks` and `trust_store_jks` are paths.
-If you start it with `/` it will be used as an absolute path. 
-Otherwise, it will be a relative path that starts from `/mnt/service/shared/`.
+Where:
 
-There are three possible interactions with a cluster in a ducktape, each of them has its own alias,
+Server, client and admin are three possible interactions with a cluster in a ducktape, each of them has its own alias,
 which corresponds to keystore:
 * Ignite(clientMode = False) - server
 * Ignite(clientMode = True) - client
 * ControlUtility - admin
 
-If we enable SSL in globals, these SSL params will be injected in corresponding
-configuration.
-You can also override keystore corresponding to alias throw globals.
+And options `key_store_jks` and `trust_store_jks` are paths to keys.
+If you start it with `/` it will be used as an absolute path. 
+Otherwise, it will be a relative path that starts from `/mnt/service/shared/`.
 
-Default keystores for these services are generated automatically on creating environment.
+And if you need to specify values only for one configuration, you can skip other configurations, for example:
 
-If you specify ssl_params in test, you override globals.
+```
+    {"ssl": {
+        "enabled": true,
+        "params": {
+          "server": {
+            "key_store_jks": "server.jks",
+            "key_store_password": "123456",
+            "trust_store_jks": "truststore.jks",
+            "trust_store_password": "123456"
+          }
+        }
+      }
+    }
+```
 
 For more information about ssl in ignite you can check this link: [SSL in ignite](https://ignite.apache.org/docs/latest/security/ssl-tls)
 
