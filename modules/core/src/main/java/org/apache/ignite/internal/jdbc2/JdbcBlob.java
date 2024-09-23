@@ -32,7 +32,7 @@ import java.sql.SQLException;
  */
 public class JdbcBlob implements Blob {
     /** */
-    private JdbcBuffer data;
+    private JdbcDataBufferImpl data;
 
     /**
      */
@@ -50,14 +50,14 @@ public class JdbcBlob implements Blob {
     /**
      */
     public JdbcBlob(int maxMemoryBufferBytes) {
-        data = new JdbcMemoryBuffer(maxMemoryBufferBytes);
+        data = new JdbcDataBufferImpl(maxMemoryBufferBytes);
     }
 
     /**
      * @param arr Byte array.
      */
     public JdbcBlob(int maxMemoryBufferBytes, byte[] arr) {
-        data = new JdbcMemoryBuffer(maxMemoryBufferBytes, arr);
+        data = new JdbcDataBufferImpl(maxMemoryBufferBytes, arr);
     }
 
     /** {@inheritDoc} */

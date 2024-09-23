@@ -22,7 +22,7 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.sql.SQLException;
 import java.sql.SQLFeatureNotSupportedException;
-import org.apache.ignite.internal.jdbc2.JdbcMemoryBuffer;
+import org.apache.ignite.internal.jdbc2.JdbcDataBufferImpl;
 
 /**
  * InputStream wrapper for limited streams.
@@ -32,7 +32,7 @@ public class SqlInputStreamWrapper implements AutoCloseable {
     private InputStream inputStream;
 
     /** Memory buffer for .*/
-    private JdbcMemoryBuffer rawData;
+    private JdbcDataBufferImpl rawData;
 
     /** */
     private final int len;
@@ -89,7 +89,7 @@ public class SqlInputStreamWrapper implements AutoCloseable {
             return;
         }
 
-        rawData = new JdbcMemoryBuffer(maxMemoryBufferBytes);
+        rawData = new JdbcDataBufferImpl(maxMemoryBufferBytes);
 
         copyStream(inputStream, rawData.getOutputStream(), MAX_ARRAY_SIZE);
 

@@ -37,7 +37,7 @@ import static java.nio.file.StandardOpenOption.WRITE;
 /**
  * Memory buffer.
  */
-public class JdbcMemoryBuffer implements JdbcBuffer {
+public class JdbcDataBufferImpl implements JdbcDataBuffer {
     /** The list of buffers. */
     private List<byte[]> buffers;
 
@@ -60,7 +60,7 @@ public class JdbcMemoryBuffer implements JdbcBuffer {
     private long totalCnt;
 
     /** */
-    public JdbcMemoryBuffer(int maxMemoryBufferBytes) {
+    public JdbcDataBufferImpl(int maxMemoryBufferBytes) {
         buffers = new ArrayList<>();
 
         totalCnt = 0;
@@ -69,7 +69,7 @@ public class JdbcMemoryBuffer implements JdbcBuffer {
     }
 
     /** */
-    public JdbcMemoryBuffer(int maxMemoryBufferBytes, byte[] arr) {
+    public JdbcDataBufferImpl(int maxMemoryBufferBytes, byte[] arr) {
         buffers = new ArrayList<>();
 
         buffers.add(arr);

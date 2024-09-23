@@ -24,7 +24,7 @@ import java.io.OutputStream;
 /**
  *
  */
-public interface JdbcBuffer {
+public interface JdbcDataBuffer {
     /** */
     long getLength();
 
