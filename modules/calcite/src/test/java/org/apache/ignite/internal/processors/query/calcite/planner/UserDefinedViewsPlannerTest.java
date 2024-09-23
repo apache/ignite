@@ -89,11 +89,9 @@ public class UserDefinedViewsPlannerTest extends AbstractPlannerTest {
         assertPlan("SELECT * FROM v2 WHERE c1 = ? AND c2 = ?", schema, isIndexScan("T1", "IDX_2"));
     }
 
-    /**
-     * @throws Exception If failed.
-     */
+    /** */
     @Test
-    public void testRecursiveView() throws Exception {
+    public void testRecursiveView() {
         IgniteSchema schema = createSchema();
 
         schema.addView("V1", "SELECT * FROM V1");
