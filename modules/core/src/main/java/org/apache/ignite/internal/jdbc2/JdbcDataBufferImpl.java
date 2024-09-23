@@ -90,11 +90,9 @@ public class JdbcDataBufferImpl implements JdbcDataBuffer {
     }
 
     /**
-     * @param pos the offset to the first byte of the partial value to be
-     *        retrieved. The first byte in the {@code Blob} is at position 0.
-     * @param len the length in bytes of the partial value to be retrieved
-     * @return {@code InputStream} through which
-     *         the partial {@code Blob} value can be read.
+     * @param pos the zero-based offset to the first byte to be retrieved.
+     * @param len the length in bytes of the data to be retrieved.
+     * @return {@code InputStream} through which the data can be read.
      */
     @Override public InputStream getInputStream(long pos, long len) {
         if (pos < 0 || len < 0 || pos > totalCnt)
@@ -170,30 +168,88 @@ public class JdbcDataBufferImpl implements JdbcDataBuffer {
         tempFileChannel = FileChannel.open(tempFileHolder.getPath(), WRITE, READ);
     }
 
+    private BufPosition getInMemoryBufferPosition(long pos) {
+        BufPosition res = new BufPosition();
+
+        res.idx = 0;
+
+        for (long p = 0; p < totalCnt; ) {
+            if (pos > p + buffers.get(res.idx).length - 1) {
+                p += buffers.get(res.idx).length;
+                res.idx++;
+            }
+            else {
+                res.pos = (int)(pos - p);
+                break;
+            }
+        }
+
+        return res;
+    }
+
+    /** */
+    private class BufPosition {
+        /** The index of the current buffer. */
+        public int idx;
+
+        /** Current position in the current buffer. */
+        public int pos;
+
+        BufPosition() {
+            idx = 0;
+
+            pos = 0;
+        }
+
+        void set(BufPosition x)  {
+            idx = x.idx;
+            pos = x.pos;
+        }
+
+        void set(int idx, int pos) {
+            this.idx = idx;
+            this.pos = pos;
+        }
+
+        void advance() {
+            pos++;
+
+            if (pos == buffers.get(idx).length) {
+                idx++;
+
+                pos = 0;
+            }
+        }
+
+        void advance(int step) {
+            pos += step;
+
+            if (pos == buffers.get(idx).length) {
+                idx++;
+
+                pos = 0;
+            }
+        }
+    }
+
     /**
      *
      */
     private class BufferInputStream extends InputStream {
-        /** The index of the current buffer. */
-        private int bufIdx;
+        /** Current position in the in-memory storage. */
+        private BufPosition curBuf;
 
-        /** Current position in the current buffer. */
-        private int inBufPos;
-
-        /** Global current position. */
+        /** Current stream position. */
         private long pos;
 
-        /** Starting position. */
+        /** Stream starting position. */
         private final long start;
 
         /** Stream length. */
         private final long len;
 
-        /** Remembered bufIdx at the moment the {@link BufferInputStream#mark} is called. */
-        private Integer markedBufIdx;
-
-        /** Remembered inBufPas at the moment the {@link BufferInputStream#mark} is called. */
-        private Integer markedInBufPos;
+        /** Remembered buffer position at the moment the {@link BufferInputStream#mark} is called. */
+        private BufPosition markedCurBuf = new BufPosition();
 
         /** Remembered pos at the moment the {@link BufferInputStream#mark} is called. */
         private Long markedPos;
@@ -201,34 +257,24 @@ public class JdbcDataBufferImpl implements JdbcDataBuffer {
         /**
          * @param start starting position.
          */
-        BufferInputStream(long start, long len) {
-            this.start = pos = start;
+        private BufferInputStream(long start, long len) {
+            this.start = pos = markedPos = start;
 
             this.len = len;
 
             if (tempFileHolder == null) {
-                bufIdx = 0;
+                curBuf = getInMemoryBufferPosition(start);
 
-                for (long p = 0; p < totalCnt; ) {
-                    if (start > p + buffers.get(bufIdx).length - 1) {
-                        p += buffers.get(bufIdx++).length;
-                    }
-                    else {
-                        inBufPos = (int)(start - p);
-                        break;
-                    }
-                }
+                markedCurBuf.set(curBuf);
             }
         }
 
         /** {@inheritDoc} */
         @Override public int read() throws IOException {
-            if (tempFileHolder == null) {
+            if (tempFileHolder == null)
                 return readFromMemory();
-            }
-            else {
+            else
                 return readFromFile();
-            }
         }
 
         /** */
@@ -236,18 +282,20 @@ public class JdbcDataBufferImpl implements JdbcDataBuffer {
             if (pos >= start + len || pos >= totalCnt)
                 return -1;
 
-            int res = buffers.get(bufIdx)[inBufPos] & 0xff;
+            int res = buffers.get(curBuf.idx)[curBuf.pos] & 0xff;
 
-            inBufPos++;
             pos++;
 
-            if (pos < start + len) {
-                if (inBufPos == buffers.get(bufIdx).length) {
-                    bufIdx++;
-
-                    inBufPos = 0;
-                }
-            }
+            curBuf.advance();
+//            curBuf.pos++;
+//
+//            if (pos < start + len) {
+//                if (curBuf.pos == buffers.get(curBuf.idx).length) {
+//                    curBuf.idx++;
+//
+//                    curBuf.pos = 0;
+//                }
+//            }
 
             return res;
         }
@@ -280,23 +328,24 @@ public class JdbcDataBufferImpl implements JdbcDataBuffer {
 
             int remaining = size;
 
-            while (remaining > 0 && bufIdx < buffers.size()) {
-                byte[] buf = buffers.get(bufIdx);
+            while (remaining > 0 && curBuf.idx < buffers.size()) {
+                byte[] buf = buffers.get(curBuf.idx);
 
-                int toCopy = Math.min(remaining, buf.length - inBufPos);
+                int toCopy = Math.min(remaining, buf.length - curBuf.pos);
 
-                U.arrayCopy(buf, Math.max(inBufPos, 0), res, off + (size - remaining), toCopy);
+                U.arrayCopy(buf, Math.max(curBuf.pos, 0), res, off + (size - remaining), toCopy);
 
                 remaining -= toCopy;
 
                 pos += toCopy;
-                inBufPos += toCopy;
-
-                if (inBufPos == buffers.get(bufIdx).length) {
-                    inBufPos = 0;
-
-                    bufIdx++;
-                }
+                curBuf.advance(toCopy);
+//                curBuf.pos += toCopy;
+//
+//                if (curBuf.pos == buffers.get(curBuf.idx).length) {
+//                    curBuf.pos = 0;
+//
+//                    curBuf.idx++;
+//                }
             }
 
             return size;
@@ -314,29 +363,16 @@ public class JdbcDataBufferImpl implements JdbcDataBuffer {
 
         /** {@inheritDoc} */
         @Override public synchronized void reset() {
-            if (tempFileHolder == null) {
-                if (markedBufIdx != null && markedInBufPos != null) {
-                    bufIdx = markedBufIdx;
-                    inBufPos = markedInBufPos;
-                }
-                else {
-                    bufIdx = 0;
-                    inBufPos = 0;
-                }
-            }
+            if (tempFileHolder == null)
+                curBuf.set(markedCurBuf);
 
-            if (markedPos != null)
-                pos = markedPos;
-            else
-                pos = start;
+            pos = markedPos;
         }
 
         /** {@inheritDoc} */
         @Override public synchronized void mark(int readlimit) {
-            if (tempFileHolder == null) {
-                markedBufIdx = bufIdx;
-                markedInBufPos = inBufPos;
-            }
+            if (tempFileHolder == null)
+                markedCurBuf.set(curBuf);
 
             markedPos = pos;
         }
@@ -344,34 +380,20 @@ public class JdbcDataBufferImpl implements JdbcDataBuffer {
 
     /** */
     private class BufferOutputStream extends OutputStream {
-        /** The index of the current buffer. */
-        private int bufIdx;
+        /** Current position in the in-memory storage. */
+        private BufPosition bufPos;
 
-        /** Position in the current buffer. */
-        private int inBufPos;
-
-        /** Global current position. */
+        /** Current stream position. */
         private long pos;
 
         /**
          * @param pos starting position.
          */
-        BufferOutputStream(long pos) {
+        private BufferOutputStream(long pos) {
             this.pos = pos;
 
-            if (tempFileHolder == null) {
-                bufIdx = 0;
-
-                for (long p = 0; p < totalCnt; ) {
-                    if (pos > p + buffers.get(bufIdx).length - 1) {
-                        p += buffers.get(bufIdx++).length;
-                    }
-                    else {
-                        inBufPos = (int)(pos - p);
-                        break;
-                    }
-                }
-            }
+            if (tempFileHolder == null)
+                bufPos = getInMemoryBufferPosition(pos);
         }
 
         /** {@inheritDoc} */
@@ -400,22 +422,22 @@ public class JdbcDataBufferImpl implements JdbcDataBuffer {
         private void writeToMemory(byte[] bytes, int off, int len) {
             int remaining = len;
 
-            for (; bufIdx < buffers.size(); bufIdx++) {
-                byte[] buf = buffers.get(bufIdx);
+            for (; bufPos.idx < buffers.size(); bufPos.idx++) {
+                byte[] buf = buffers.get(bufPos.idx);
 
-                int toCopy = Math.min(remaining, buf.length - inBufPos);
+                int toCopy = Math.min(remaining, buf.length - bufPos.pos);
 
-                U.arrayCopy(bytes, off + len - remaining, buf, inBufPos, toCopy);
+                U.arrayCopy(bytes, off + len - remaining, buf, bufPos.pos, toCopy);
 
                 remaining -= toCopy;
 
                 if (remaining == 0) {
-                    inBufPos += toCopy;
+                    bufPos.pos += toCopy;
 
                     break;
                 }
                 else {
-                    inBufPos = 0;
+                    bufPos.pos = 0;
                 }
             }
 
@@ -424,8 +446,8 @@ public class JdbcDataBufferImpl implements JdbcDataBuffer {
 
                 U.arrayCopy(bytes, off + len - remaining, buffers.get(buffers.size() - 1), 0, remaining);
 
-                bufIdx = buffers.size() - 1;
-                inBufPos = remaining;
+                bufPos.idx = buffers.size() - 1;
+                bufPos.pos = remaining;
             }
         }
 
