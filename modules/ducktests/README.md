@@ -95,9 +95,9 @@ To run ignite with flight recorder you should enable `jfr_enabled` through globa
 --global-json, eg: {"jfr_enabled":true}
 ```
 ## Run with safepoints logging
-Safepoint logging is enabled by default, to disable it, you need to pass `false` for `safepoint_log_enabled` for example:
+Safepoint logging is disabled by default, to enable it, you need to pass `true` for `safepoint_log_enabled` for example:
 ```
---global-json, eg: {"safepoint_log_enabled":false}
+--global-json, eg: {"safepoint_log_enabled":true}
 ```
 ## Run with enabled security
 ### Run with SSL enabled
@@ -133,19 +133,23 @@ You can configure ignite ssl connection by passing configs from this structure t
       }
     }
 ```
+Options `key_store_jks` and `trust_store_jks` is paths.
+If you start it with `/` it will be used as an absolute path, otherwise as a relative path.
+
 There are three possible interactions with a cluster in a ducktape, each of them has its own alias,
 which corresponds to keystore:
-Ignite(clientMode = False) - server
-Ignite(clientMode = True) - client
-ControlUtility - admin
+* Ignite(clientMode = False) - server
+* Ignite(clientMode = True) - client
+* ControlUtility - admin
 
 If we enable SSL in globals, these SSL params will be injected in corresponding
-configuration
-You can also override keystore corresponding to alias throw globals
+configuration.
+You can also override keystore corresponding to alias throw globals.
 
-Default keystores for these services are generated automatically on creating environment
+Default keystores for these services are generated automatically on creating environment.
 
-If you specify ssl_params in test, you override globals
+If you specify ssl_params in test, you override globals.
+
 For more information about ssl in ignite you can check this link: [SSL in ignite](https://ignite.apache.org/docs/latest/security/ssl-tls)
 
 ### Run with build-in authentication enabled

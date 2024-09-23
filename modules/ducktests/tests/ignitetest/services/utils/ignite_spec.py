@@ -102,7 +102,7 @@ class IgniteSpec(metaclass=ABCMeta):
                                                oom_path=os.path.join(self.service.log_dir, "out_of_mem.hprof"),
                                                vm_error_path=os.path.join(self.service.log_dir, "hs_err_pid%p.log"))
 
-        if self.service.context.globals.get(SAFEPOINT_LOGS_ENABLED, True):
+        if self.service.context.globals.get(SAFEPOINT_LOGS_ENABLED, False):
             default_jvm_opts = merge_jvm_settings(
                 default_jvm_opts, ["-Xlog:safepoint*=debug:file=" + os.path.join(self.service.log_dir, "safepoint.log")
                                    + ":time,uptime,level,tags"])
