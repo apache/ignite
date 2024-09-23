@@ -102,31 +102,6 @@ CREATE TABLE integers(i INTEGER, j INTEGER);
 statement ok
 INSERT INTO integers VALUES (3, 4), (3, 4), (2, 4);
 
-# group by constant alias
-query IR
-SELECT 1 AS k, SUM(i) FROM integers GROUP BY k ORDER BY 2;
-----
-1	8.000000
-
-# refer to the same alias twice
-query IR
-SELECT i % 2 AS k, SUM(i) FROM integers GROUP BY k, k ORDER BY 1;
-----
-0	2.000000
-1	6.000000
-
-# aliases can only be referenced in the GROUP BY as the root column: operations not allowed
-# CONTROVERSIAL: this query DOES work in SQLite
-statement error
-SELECT 1 AS k, SUM(i) FROM integers GROUP BY k+1 ORDER BY 2;
-
-# group by column refs should be recognized, even if one uses an explicit table specifier and the other does not
-query II
-SELECT test.b, SUM(a) FROM test GROUP BY b ORDER BY COUNT(a) DESC;
-----
-21	48
-22	24
-
 # use GROUP BY column in math operator
 query II
 SELECT i, i + 10 FROM integers GROUP BY i ORDER BY i
@@ -209,4 +184,3 @@ SELECT test.b, SUM(a) FROM test GROUP BY b ORDER BY COUNT(a) DESC;
 ----
 21	48
 22	24
-
