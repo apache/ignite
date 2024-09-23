@@ -118,7 +118,7 @@ public class TxWithKeyContentionSelfTest extends GridCommonAbstractTest {
 
         stopAllGrids();
 
-        U.sleep(2000);
+        U.sleep(3000);
     }
 
     /** {@inheritDoc} */
