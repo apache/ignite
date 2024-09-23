@@ -133,8 +133,9 @@ You can configure ignite ssl connection by passing configs from this structure t
       }
     }
 ```
-Options `key_store_jks` and `trust_store_jks` is paths.
-If you start it with `/` it will be used as an absolute path, otherwise as a relative path.
+Options `key_store_jks` and `trust_store_jks` are paths.
+If you start it with `/` it will be used as an absolute path. 
+Otherwise, it will be a relative path that starts from `/mnt/service/shared/`.
 
 There are three possible interactions with a cluster in a ducktape, each of them has its own alias,
 which corresponds to keystore:
