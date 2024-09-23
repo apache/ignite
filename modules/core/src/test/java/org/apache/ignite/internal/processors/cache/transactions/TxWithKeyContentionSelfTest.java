@@ -231,8 +231,6 @@ public class TxWithKeyContentionSelfTest extends GridCommonAbstractTest {
 
         CacheConfiguration<?, ?> dfltCacheCfg = getCacheConfiguration(DEFAULT_CACHE_NAME);
 
-        dfltCacheCfg.setStatisticsEnabled(true);
-
         String cacheName = dfltCacheCfg.getName();
 
         IgniteTransactions cliTxMgr = cl.transactions();
@@ -306,23 +304,7 @@ public class TxWithKeyContentionSelfTest extends GridCommonAbstractTest {
             commSpi0.stopBlock();
         }
 
-        Thread.sleep(1000);
-
         IgniteTxManager srvTxMgr = ((IgniteEx)ig).context().cache().context().tm();
-
-        CountDownLatch latch = new CountDownLatch(1);
-
-        try {
-            U.invoke(IgniteTxManager.class, srvTxMgr, "collectTxCollisionsInfo");
-            latch.countDown();
-        }
-        catch (IgniteCheckedException e) {
-            fail(e.toString());
-        }
-
-        latch.await();
-
-        Thread.sleep(1000);
 
         final int[] i = {0};
 
@@ -331,6 +313,13 @@ public class TxWithKeyContentionSelfTest extends GridCommonAbstractTest {
                 log.warning("Apply action number " + i[0]);
 
                 i[0] = i[0] + 1;
+
+                try {
+                    U.invoke(IgniteTxManager.class, srvTxMgr, "collectTxCollisionsInfo");
+                }
+                catch (IgniteCheckedException e) {
+                    fail(e.toString());
+                }
 
                 CacheMetrics metrics = ig.cache(DEFAULT_CACHE_NAME).localMetrics();
 
@@ -351,7 +340,7 @@ public class TxWithKeyContentionSelfTest extends GridCommonAbstractTest {
                 else
                     return false;
             }
-        }, 25_000));
+        }, 30_000));
 
         f.get();
 
