@@ -128,7 +128,7 @@ public class NumericTypesPrecisionsTest {
         doTestExpectedLeastRestrictive(BIGINT, expected);
     }
 
-    /** */
+    /** This test is mostly for tracking possible chages with Calcite's version updates. */
     @Test
     public void testMaxPrecision() {
         assertEquals(STRING_PRECISION, typeSys.getMaxPrecision(SqlTypeName.CHAR));
@@ -152,7 +152,7 @@ public class NumericTypesPrecisionsTest {
         assertEquals(3, typeSys.getMaxPrecision(SqlTypeName.TIMESTAMP_WITH_LOCAL_TIME_ZONE));
     }
 
-    /** */
+    /** This test is mostly for tracking possible chages with Calcite's version updates. */
     @Test
     public void testDefaultPrecision() {
         assertEquals(1, typeSys.getDefaultPrecision(SqlTypeName.CHAR));
@@ -177,13 +177,13 @@ public class NumericTypesPrecisionsTest {
     }
 
 
-    /** */
+    /** This test is mostly for tracking possible chages with Calcite's version updates. */
     @Test
     public void testMaxNumericPrecision() {
         assertEquals(DECIMAL_PRECISION, typeSys.getMaxNumericPrecision());
     }
 
-    /** */
+    /** This test is mostly for tracking possible chages with Calcite's version updates. */
     @Test
     public void testMaxNumericScale() {
         assertEquals(DECIMAL_SCALE, typeSys.getMaxNumericScale());
