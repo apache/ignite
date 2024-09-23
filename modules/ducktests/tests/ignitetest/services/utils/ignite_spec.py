@@ -29,7 +29,7 @@ from itertools import chain
 
 from ignitetest.services.utils import IgniteServiceType
 from ignitetest.services.utils.config_template import IgniteClientConfigTemplate, IgniteServerConfigTemplate, \
-    IgniteLoggerConfigTemplate, IgniteThinClientConfigTemplate
+    IgniteLoggerConfigTemplate, IgniteThinClientConfigTemplate, IgniteThinJdbcConfigTemplate
 from ignitetest.services.utils.jvm_utils import create_jvm_settings, merge_jvm_settings
 from ignitetest.services.utils.path import get_home_dir, IgnitePathAware
 from ignitetest.services.utils.ssl.ssl_params import is_ssl_enabled
@@ -141,6 +141,9 @@ class IgniteSpec(metaclass=ABCMeta):
 
         if self.service.config.service_type == IgniteServiceType.THIN_CLIENT:
             config_templates.append((IgnitePathAware.IGNITE_THIN_CLIENT_CONFIG_NAME, IgniteThinClientConfigTemplate()))
+
+        if self.service.config.service_type == IgniteServiceType.THIN_JDBC:
+            config_templates.append((IgnitePathAware.IGNITE_THIN_JDBC_CONFIG_NAME, IgniteThinJdbcConfigTemplate()))
 
         return config_templates
 
@@ -355,5 +358,9 @@ class IgniteApplicationSpec(IgniteSpec):
         return cmd
 
     def config_file_path(self):
-        return self.service.config_file if self.service.config.service_type == IgniteServiceType.NODE \
-            else self.service.thin_client_config_file
+        if self.service.config.service_type == IgniteServiceType.NODE:
+            return self.service.config_file
+        elif self.service.config.service_type == IgniteServiceType.THIN_CLIENT:
+            return self.service.thin_client_config_file
+        else:
+            return self.service.thin_jdbc_config_file

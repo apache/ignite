@@ -52,7 +52,9 @@ import org.junit.Test;
 
 import static java.sql.Types.BIGINT;
 import static java.sql.Types.BINARY;
+import static java.sql.Types.BLOB;
 import static java.sql.Types.BOOLEAN;
+import static java.sql.Types.CLOB;
 import static java.sql.Types.DATE;
 import static java.sql.Types.DOUBLE;
 import static java.sql.Types.FLOAT;
@@ -79,7 +81,7 @@ public class JdbcThinPreparedStatementSelfTest extends JdbcThinAbstractSelfTest 
     /** SQL query. */
     private static final String SQL_PART =
         "select id, boolVal, byteVal, shortVal, intVal, longVal, floatVal, " +
-            "doubleVal, bigVal, strVal, arrVal, dateVal, timeVal, tsVal, objVal " +
+            "doubleVal, bigVal, strVal, arrVal, dateVal, timeVal, tsVal, objVal, blobVal, clobVal " +
             "from TestObject ";
 
     /** Connection. */
@@ -128,6 +130,8 @@ public class JdbcThinPreparedStatementSelfTest extends JdbcThinAbstractSelfTest 
         o.bigVal = new BigDecimal(1);
         o.strVal = "str";
         o.arrVal = new byte[] {1};
+        o.blobVal = new byte[] {1};
+        o.clobVal = "large str";
         o.dateVal = new Date(1);
         o.timeVal = new Time(1);
         o.tsVal = new Timestamp(1);
@@ -858,6 +862,62 @@ public class JdbcThinPreparedStatementSelfTest extends JdbcThinAbstractSelfTest 
      * @throws Exception If failed.
      */
     @Test
+    public void testBlob() throws Exception {
+        stmt = conn.prepareStatement(SQL_PART + " where blobVal is not distinct from ?");
+
+        Blob blob = conn.createBlob();
+
+        blob.setBytes(1, new byte[] {1});
+
+        stmt.setBlob(1, blob);
+
+        ResultSet rs = stmt.executeQuery();
+
+        assertTrue(rs.next());
+        assertEquals(1, rs.getInt("id"));
+        assertFalse(rs.next());
+
+        stmt.setNull(1, BLOB);
+
+        rs = stmt.executeQuery();
+
+        assertTrue(rs.next());
+        assertEquals(2, rs.getInt("id"));
+        assertFalse(rs.next());
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    @Test
+    public void testClob() throws Exception {
+        stmt = conn.prepareStatement(SQL_PART + " where clobVal is not distinct from ?");
+
+        Clob clob = conn.createClob();
+
+        clob.setString(1, "large str");
+
+        stmt.setClob(1, clob);
+
+        ResultSet rs = stmt.executeQuery();
+
+        assertTrue(rs.next());
+        assertEquals(1, rs.getInt("id"));
+        assertFalse(rs.next());
+
+        stmt.setNull(1, CLOB);
+
+        rs = stmt.executeQuery();
+
+        assertTrue(rs.next());
+        assertEquals(2, rs.getInt("id"));
+        assertFalse(rs.next());
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    @Test
     public void testDate() throws Exception {
         stmt = conn.prepareStatement(SQL_PART + " where dateVal is not distinct from ?");
 
@@ -1049,12 +1109,6 @@ public class JdbcThinPreparedStatementSelfTest extends JdbcThinAbstractSelfTest 
 
         checkNotSupported(new RunnableX() {
             @Override public void runx() throws Exception {
-                stmt.setBlob(1, (Blob)null);
-            }
-        });
-
-        checkNotSupported(new RunnableX() {
-            @Override public void runx() throws Exception {
                 stmt.setBlob(1, (InputStream)null);
             }
         });
@@ -1080,12 +1134,6 @@ public class JdbcThinPreparedStatementSelfTest extends JdbcThinAbstractSelfTest 
         checkNotSupported(new RunnableX() {
             @Override public void runx() throws Exception {
                 stmt.setCharacterStream(1, null, 0L);
-            }
-        });
-
-        checkNotSupported(new RunnableX() {
-            @Override public void runx() throws Exception {
-                stmt.setClob(1, (Clob)null);
             }
         });
 
@@ -1203,6 +1251,14 @@ public class JdbcThinPreparedStatementSelfTest extends JdbcThinAbstractSelfTest 
         /** */
         @QuerySqlField
         private byte[] arrVal;
+
+        /** */
+        @QuerySqlField
+        private byte[] blobVal;
+
+        /** */
+        @QuerySqlField
+        private String clobVal;
 
         /** */
         @QuerySqlField
