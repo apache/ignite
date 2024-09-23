@@ -166,3 +166,35 @@ class IgniteThinClientConfiguration(NamedTuple):
         Application mode.
         """
         return IgniteServiceType.THIN_CLIENT
+
+
+class IgniteThinJdbcConfiguration(NamedTuple):
+    addresses: list = []
+    version: IgniteVersion = DEV_BRANCH
+    ssl_params: SslParams = None
+    username: str = None
+    password: str = None
+
+    def prepare_ssl(self, test_globals, shared_root):
+        """
+        Updates ssl configuration from globals.
+        """
+        ssl_params = None
+        if self.ssl_params is None and is_ssl_enabled(test_globals):
+            ssl_params = get_ssl_params(test_globals, shared_root, IGNITE_CLIENT_ALIAS)
+        if ssl_params:
+            return self._replace(ssl_params=ssl_params)
+        return self
+
+    def prepare_for_env(self, cluster, node):
+        """
+        Updates configuration based on current environment.
+        """
+        return self
+
+    @property
+    def service_type(self):
+        """
+        Application mode.
+        """
+        return IgniteServiceType.THIN_JDBC
