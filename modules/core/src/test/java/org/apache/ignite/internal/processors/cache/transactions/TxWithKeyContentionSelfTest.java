@@ -231,15 +231,11 @@ public class TxWithKeyContentionSelfTest extends GridCommonAbstractTest {
 
         Ignite cl = startGrid();
 
-        CacheConfiguration<?, ?> dfltCacheCfg = getCacheConfiguration(DEFAULT_CACHE_NAME);
-
-        String cacheName = dfltCacheCfg.getName();
-
         IgniteTransactions cliTxMgr = cl.transactions();
 
-        IgniteCache<Integer, Integer> cache = ig.cache(cacheName);
+        IgniteCache<Integer, Integer> cache = ig.cache(DEFAULT_CACHE_NAME);
 
-        IgniteCache<Integer, Integer> cache0 = cl.cache(cacheName);
+        IgniteCache<Integer, Integer> cache0 = cl.cache(DEFAULT_CACHE_NAME);
 
         ig.cache(DEFAULT_CACHE_NAME).enableStatistics(true);
 
@@ -308,7 +304,7 @@ public class TxWithKeyContentionSelfTest extends GridCommonAbstractTest {
 
         IgniteTxManager srvTxMgr = ((IgniteEx)ig).context().cache().context().tm();
 
-        assertTrue(GridTestUtils.waitForCondition(new GridAbsPredicate() { // failed here
+        assertTrue(GridTestUtils.waitForCondition(new GridAbsPredicate() {
             @Override public boolean apply() {
                 try {
                     U.invoke(IgniteTxManager.class, srvTxMgr, "collectTxCollisionsInfo");
@@ -323,13 +319,13 @@ public class TxWithKeyContentionSelfTest extends GridCommonAbstractTest {
 
                 String coll1 = metrics.getTxKeyCollisions();
 
-                log.warning("!!!!!! coll1 = " + coll1);
+                log.warning("coll1 = " + coll1);
 
                 if (!coll1.isEmpty()) {
                     String coll2 = metrics.getTxKeyCollisions();
 
                     // check idempotent
-                    assertEquals(coll1, coll2); //сравнивает жопу с жопой
+                    assertEquals(coll1, coll2);
 
                     assertTrue(coll1.contains("queueSize"));
 
