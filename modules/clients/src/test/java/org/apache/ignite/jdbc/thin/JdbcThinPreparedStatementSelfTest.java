@@ -979,7 +979,7 @@ public class JdbcThinPreparedStatementSelfTest extends JdbcThinAbstractSelfTest 
 
             newTempStreamFiles = getTempStreamFiles();
             newTempStreamFiles.removeAll(existingTempStreamFiles);
-            assertTrue(newTempStreamFiles.size() == 2);
+            assertEquals(2, newTempStreamFiles.size());
 
             assertEquals(1, stmtToBeLeftUnclosed.executeUpdate());
             assertEquals(1, stmtToBeClosed.executeUpdate());
@@ -1025,7 +1025,7 @@ public class JdbcThinPreparedStatementSelfTest extends JdbcThinAbstractSelfTest 
             return entries
                     .map(Path::getFileName)
                     .map(Path::toString)
-                    .filter(e -> e.startsWith("ignite-jdbc-stream"))
+                    .filter(e -> e.startsWith("ignite-jdbc-temp-data"))
                     .collect(Collectors.toSet());
         }
         catch (NotDirectoryException e) {

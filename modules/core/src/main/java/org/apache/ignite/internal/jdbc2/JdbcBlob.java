@@ -32,19 +32,32 @@ import java.sql.SQLException;
  */
 public class JdbcBlob implements Blob {
     /** */
-    private JdbcMemoryBuffer data;
+    private JdbcBuffer data;
 
     /**
      */
     public JdbcBlob() {
-        data = new JdbcMemoryBuffer();
+        this(Integer.MAX_VALUE);
     }
 
     /**
      * @param arr Byte array.
      */
     public JdbcBlob(byte[] arr) {
-        data = new JdbcMemoryBuffer(arr);
+        this(Integer.MAX_VALUE, arr);
+    }
+
+    /**
+     */
+    public JdbcBlob(int maxMemoryBufferBytes) {
+        data = new JdbcMemoryBuffer(maxMemoryBufferBytes);
+    }
+
+    /**
+     * @param arr Byte array.
+     */
+    public JdbcBlob(int maxMemoryBufferBytes, byte[] arr) {
+        data = new JdbcMemoryBuffer(maxMemoryBufferBytes, arr);
     }
 
     /** {@inheritDoc} */
@@ -221,7 +234,12 @@ public class JdbcBlob implements Blob {
             throw new SQLException("Invalid argument. Length can't be " +
                 "less than zero or greater than Blob length [len=" + len + ']');
 
-        data.truncate(len);
+        try {
+            data.truncate(len);
+        }
+        catch (IOException e) {
+            throw new SQLException(e);
+        }
     }
 
     /** {@inheritDoc} */

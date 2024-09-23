@@ -17,59 +17,76 @@
 
 package org.apache.ignite.internal.jdbc2;
 
+import java.io.File;
+import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.lang.ref.Cleaner;
+import java.nio.ByteBuffer;
+import java.nio.channels.FileChannel;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
+import org.apache.ignite.IgniteJdbcThinDriver;
 import org.apache.ignite.internal.util.typedef.internal.U;
+
+import static java.nio.file.StandardOpenOption.READ;
+import static java.nio.file.StandardOpenOption.WRITE;
 
 /**
  * Memory buffer.
  */
-public class JdbcMemoryBuffer {
-    /** The list of buffers, which grows and never reduces. */
+public class JdbcMemoryBuffer implements JdbcBuffer {
+    /** The list of buffers. */
     private List<byte[]> buffers;
+
+    /** */
+    private static final String TEMP_FILE_PREFIX = "ignite-jdbc-temp-data";
+
+    /** */
+    private TempFileHolder tempFileHolder;
+
+    /** */
+    private Cleaner.Cleanable tempFileCleaner;
+
+    /** */
+    private FileChannel tempFileChannel;
+
+    /** */
+    private final Integer maxMemoryBufferBytes;
 
     /** The total count of bytes. */
     private long totalCnt;
 
     /** */
-    public JdbcMemoryBuffer() {
+    public JdbcMemoryBuffer(int maxMemoryBufferBytes) {
         buffers = new ArrayList<>();
 
         totalCnt = 0;
+
+        this.maxMemoryBufferBytes = maxMemoryBufferBytes;
     }
 
     /** */
-    public JdbcMemoryBuffer(byte[] arr) {
+    public JdbcMemoryBuffer(int maxMemoryBufferBytes, byte[] arr) {
         buffers = new ArrayList<>();
 
         buffers.add(arr);
 
         totalCnt = arr.length;
+
+        this.maxMemoryBufferBytes = maxMemoryBufferBytes;
     }
 
     /** */
-    public long getLength() {
+    @Override public long getLength() {
         return totalCnt;
     }
 
     /** */
-    public OutputStream getOutputStream() {
-        return new BufferOutputStream(0);
-    }
-
-    /** */
-    public OutputStream getOutputStream(long pos) {
+    @Override public OutputStream getOutputStream(long pos) {
         return new BufferOutputStream(pos);
-    }
-
-    /** */
-    public InputStream getInputStream() {
-        if (buffers.isEmpty() || totalCnt == 0)
-            return InputStream.nullInputStream();
-
-        return new BufferInputStream(0, totalCnt);
     }
 
     /**
@@ -79,13 +96,13 @@ public class JdbcMemoryBuffer {
      * @return {@code InputStream} through which
      *         the partial {@code Blob} value can be read.
      */
-    public InputStream getInputStream(long pos, long len) {
+    @Override public InputStream getInputStream(long pos, long len) {
         if (pos < 0 || len < 0 || pos > totalCnt)
             throw new RuntimeException("Invalid argument. Position can't be less than 0 or " +
                     "greater than size of underlying memory buffers. Requested length can't be negative and can't be " +
                     "greater than available bytes from given position [pos=" + pos + ", len=" + len + ']');
 
-        if (buffers.isEmpty() || totalCnt == 0 || len == 0 || pos == totalCnt)
+        if (totalCnt == 0 || len == 0 || pos == totalCnt)
             return InputStream.nullInputStream();
 
         return new BufferInputStream(pos, len);
@@ -112,15 +129,45 @@ public class JdbcMemoryBuffer {
     }
 
     /** */
-    public void truncate(long len) {
+    @Override public void truncate(long len) throws IOException {
         totalCnt = len;
+
+        if (tempFileHolder != null)
+            tempFileChannel.truncate(len);
+
+        // TODO free memory buffers as well???
     }
 
     /** */
-    public void close() {
+    @Override public void close() {
         buffers.clear();
 
         buffers = null;
+    }
+
+    /** */
+    private void switchToFile() throws IOException {
+        File tempFile = File.createTempFile(TEMP_FILE_PREFIX, ".tmp");
+        tempFile.deleteOnExit();
+
+        tempFileHolder = new TempFileHolder(tempFile.toPath());
+
+        tempFileCleaner = ((IgniteJdbcThinDriver)IgniteJdbcThinDriver.register())
+                .getCleaner()
+                .register(this, tempFileHolder);
+
+        try (OutputStream diskOutputStream = Files.newOutputStream(tempFile.toPath())) {
+            getInputStream().transferTo(diskOutputStream);
+        }
+        catch (RuntimeException | Error e) {
+            tempFileCleaner.clean();
+
+            throw e;
+        }
+
+        buffers.clear();
+
+        tempFileChannel = FileChannel.open(tempFileHolder.getPath(), WRITE, READ);
     }
 
     /**
@@ -155,25 +202,37 @@ public class JdbcMemoryBuffer {
          * @param start starting position.
          */
         BufferInputStream(long start, long len) {
-            bufIdx = 0;
-
             this.start = pos = start;
 
             this.len = len;
 
-            for (long p = 0; p < totalCnt;) {
-                if (start > p + buffers.get(bufIdx).length - 1) {
-                    p += buffers.get(bufIdx++).length;
-                }
-                else {
-                    inBufPos = (int)(start - p);
-                    break;
+            if (tempFileHolder == null) {
+                bufIdx = 0;
+
+                for (long p = 0; p < totalCnt; ) {
+                    if (start > p + buffers.get(bufIdx).length - 1) {
+                        p += buffers.get(bufIdx++).length;
+                    }
+                    else {
+                        inBufPos = (int)(start - p);
+                        break;
+                    }
                 }
             }
         }
 
         /** {@inheritDoc} */
-        @Override public int read() {
+        @Override public int read() throws IOException {
+            if (tempFileHolder == null) {
+                return readFromMemory();
+            }
+            else {
+                return readFromFile();
+            }
+        }
+
+        /** */
+        private int readFromMemory() {
             if (pos >= start + len || pos >= totalCnt)
                 return -1;
 
@@ -193,8 +252,25 @@ public class JdbcMemoryBuffer {
             return res;
         }
 
+        /** */
+        private int readFromFile() throws IOException {
+            byte[] res = new byte[1];
+
+            return tempFileChannel.read(ByteBuffer.wrap(res), pos);
+        }
+
         /** {@inheritDoc} */
-        @Override public int read(byte res[], int off, int cnt) {
+        @Override public int read(byte res[], int off, int cnt) throws IOException {
+            if (tempFileHolder == null) {
+                return readFromMemory(res, off, cnt);
+            }
+            else {
+                return readFromFile(res, off, cnt);
+            }
+        }
+
+        /** */
+        private int readFromMemory(byte res[], int off, int cnt) {
             if (pos >= start + len || pos >= totalCnt)
                 return -1;
 
@@ -226,6 +302,11 @@ public class JdbcMemoryBuffer {
             return size;
         }
 
+        /** */
+        private int readFromFile(byte[] res, int off, int cnt) throws IOException {
+            return tempFileChannel.read(ByteBuffer.wrap(res, off, cnt), pos);
+        }
+
         /** {@inheritDoc} */
         @Override public boolean markSupported() {
             return true;
@@ -233,22 +314,30 @@ public class JdbcMemoryBuffer {
 
         /** {@inheritDoc} */
         @Override public synchronized void reset() {
-            if (markedBufIdx != null && markedInBufPos != null && markedPos != null) {
-                bufIdx = markedBufIdx;
-                inBufPos = markedInBufPos;
+            if (tempFileHolder == null) {
+                if (markedBufIdx != null && markedInBufPos != null) {
+                    bufIdx = markedBufIdx;
+                    inBufPos = markedInBufPos;
+                }
+                else {
+                    bufIdx = 0;
+                    inBufPos = 0;
+                }
+            }
+
+            if (markedPos != null)
                 pos = markedPos;
-            }
-            else {
-                bufIdx = 0;
-                inBufPos = 0;
+            else
                 pos = start;
-            }
         }
 
         /** {@inheritDoc} */
         @Override public synchronized void mark(int readlimit) {
-            markedBufIdx = bufIdx;
-            markedInBufPos = inBufPos;
+            if (tempFileHolder == null) {
+                markedBufIdx = bufIdx;
+                markedInBufPos = inBufPos;
+            }
+
             markedPos = pos;
         }
     }
@@ -268,28 +357,47 @@ public class JdbcMemoryBuffer {
          * @param pos starting position.
          */
         BufferOutputStream(long pos) {
-            bufIdx = 0;
-
             this.pos = pos;
 
-            for (long p = 0; p < totalCnt;) {
-                if (pos > p + buffers.get(bufIdx).length - 1) {
-                    p += buffers.get(bufIdx++).length;
-                }
-                else {
-                    inBufPos = (int)(pos - p);
-                    break;
+            if (tempFileHolder == null) {
+                bufIdx = 0;
+
+                for (long p = 0; p < totalCnt; ) {
+                    if (pos > p + buffers.get(bufIdx).length - 1) {
+                        p += buffers.get(bufIdx++).length;
+                    }
+                    else {
+                        inBufPos = (int)(pos - p);
+                        break;
+                    }
                 }
             }
         }
 
         /** {@inheritDoc} */
-        @Override public void write(int b) {
+        @Override public void write(int b) throws IOException {
             write(new byte[] {(byte)b}, 0, 1);
         }
 
         /** {@inheritDoc} */
-        @Override public void write(byte[] bytes, int off, int len) {
+        @Override public void write(byte[] bytes, int off, int len) throws IOException {
+            if (Math.max(pos + len, totalCnt) > maxMemoryBufferBytes)
+                switchToFile();
+
+            if (tempFileHolder == null) {
+                writeToMemory(bytes, off, len);
+            }
+            else {
+                writeToTempFile(bytes, off, len);
+            }
+
+            totalCnt = Math.max(pos + len, totalCnt);
+
+            pos += len;
+        }
+
+        /** */
+        private void writeToMemory(byte[] bytes, int off, int len) {
             int remaining = len;
 
             for (; bufIdx < buffers.size(); bufIdx++) {
@@ -319,10 +427,49 @@ public class JdbcMemoryBuffer {
                 bufIdx = buffers.size() - 1;
                 inBufPos = remaining;
             }
+        }
 
-            totalCnt = Math.max(pos + len, totalCnt);
+        /** */
+        private void writeToTempFile(byte[] bytes, int off, int len) throws IOException {
+            tempFileChannel.position(pos);
 
-            pos += len;
+            tempFileChannel.write(ByteBuffer.wrap(bytes, off, len));
+        }
+    }
+
+    /**
+     * Holder for the temporary file.
+     * <p>
+     * Used to remove the temp file once the stream wrapper object has become phantom reachable.
+     * It may be if the large stream was passed as argumant to statement and this sattement
+     * was abandoned without being closed.
+     */
+    private static class TempFileHolder implements Runnable {
+        /** Full path to temp file. */
+        private final Path path;
+
+        /**
+         * @param path Full path to temp file.
+         */
+        public TempFileHolder(Path path) {
+            this.path = path;
+        }
+
+        /**
+         * @return Full path to temp file.
+         */
+        public Path getPath() {
+            return path;
+        }
+
+        /** The cleaning action to be called by the {@link java.lang.ref.Cleaner}. */
+        @Override public void run() {
+            clean();
+        }
+
+        /** Cleans the temp file and input stream if it was created. */
+        private void clean() {
+            path.toFile().delete();
         }
     }
 }

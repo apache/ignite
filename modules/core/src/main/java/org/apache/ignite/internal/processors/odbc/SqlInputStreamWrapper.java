@@ -17,16 +17,11 @@
 
 package org.apache.ignite.internal.processors.odbc;
 
-import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
-import java.lang.ref.Cleaner;
-import java.nio.file.Files;
-import java.nio.file.Path;
 import java.sql.SQLException;
 import java.sql.SQLFeatureNotSupportedException;
-import org.apache.ignite.IgniteJdbcThinDriver;
 import org.apache.ignite.internal.jdbc2.JdbcMemoryBuffer;
 
 /**
@@ -39,17 +34,8 @@ public class SqlInputStreamWrapper implements AutoCloseable {
     /** Memory buffer for .*/
     private JdbcMemoryBuffer rawData;
 
-    /** Temporary file holder. */
-    private TempFileHolder tempFileHolder;
-
-    /** */
-    private Cleaner.Cleanable tempFileCleaner;
-
     /** */
     private final int len;
-
-    /** */
-    private static final String TEMP_FILE_PREFIX = "ignite-jdbc-stream";
 
     /** */
     private static final int MAX_ARRAY_SIZE = Integer.MAX_VALUE - 8;
@@ -96,48 +82,18 @@ public class SqlInputStreamWrapper implements AutoCloseable {
      * @param maxMemoryBufferBytes Maximum memory buffer size in bytes. Is null if len is not null.
      */
     protected SqlInputStreamWrapper(InputStream inputStream, Integer len, Integer maxMemoryBufferBytes)
-            throws IOException, SQLFeatureNotSupportedException {
+            throws IOException, SQLException {
         if (len != null) {
             this.inputStream = inputStream;
             this.len = len;
             return;
         }
 
-        rawData = new JdbcMemoryBuffer();
-        final int memoryLength = copyStream(inputStream, rawData.getOutputStream(), maxMemoryBufferBytes + 1);
+        rawData = new JdbcMemoryBuffer(maxMemoryBufferBytes);
 
-        if (memoryLength == -1) {
-            final int diskLength;
+        copyStream(inputStream, rawData.getOutputStream(), MAX_ARRAY_SIZE);
 
-            File tempFile = File.createTempFile(TEMP_FILE_PREFIX, ".tmp");
-            tempFile.deleteOnExit();
-
-            tempFileHolder = new TempFileHolder(tempFile.toPath());
-
-            tempFileCleaner = ((IgniteJdbcThinDriver)IgniteJdbcThinDriver.register())
-                    .getCleaner()
-                    .register(this, tempFileHolder);
-
-            try (OutputStream diskOutputStream = Files.newOutputStream(tempFile.toPath())) {
-                copyStream(rawData.getInputStream(), diskOutputStream, rawData.getLength());
-
-                diskLength = copyStream(inputStream, diskOutputStream, MAX_ARRAY_SIZE - rawData.getLength());
-
-                if (diskLength == -1)
-                    throw new SQLFeatureNotSupportedException("Invalid argument. InputStreams with length greater than " +
-                            MAX_ARRAY_SIZE + " are not supported.");
-            }
-            catch (RuntimeException | Error | SQLException e) {
-                tempFileCleaner.clean();
-
-                throw e;
-            }
-
-            this.len = Math.toIntExact(rawData.getLength() + diskLength);
-        }
-        else {
-            this.len = Math.toIntExact(rawData.getLength());
-        }
+        this.len = Math.toIntExact(rawData.getLength());
     }
 
     /**
@@ -146,12 +102,7 @@ public class SqlInputStreamWrapper implements AutoCloseable {
      * @return Input stream.
      */
     public InputStream getInputStream() throws IOException {
-        if (inputStream != null)
-            return inputStream;
-
-        if (tempFileHolder != null)
-            inputStream = tempFileHolder.getInputStream();
-        else
+        if (inputStream == null)
             inputStream = rawData.getInputStream();
 
         return inputStream;
@@ -166,8 +117,8 @@ public class SqlInputStreamWrapper implements AutoCloseable {
 
     /** {@inheritDoc} */
     @Override public void close() throws Exception {
-        if (tempFileCleaner != null)
-            tempFileCleaner.clean();
+        if (inputStream != null)
+            inputStream.close();
     }
 
     /**
@@ -178,9 +129,10 @@ public class SqlInputStreamWrapper implements AutoCloseable {
      * @param inputStream input stream
      * @param outputStream output stream
      * @param limit Maximum bytes to copy.
-     * @return Count of bytes copied. -1 if limit exceeds.
+     * @throws SQLException if limit exceeds.
+     * @return Count of bytes copied.
      */
-    private static int copyStream(InputStream inputStream, OutputStream outputStream, long limit) throws IOException {
+    private static int copyStream(InputStream inputStream, OutputStream outputStream, long limit) throws IOException, SQLException {
         int totalLength = 0;
 
         byte[] buf = new byte[8192];
@@ -193,64 +145,12 @@ public class SqlInputStreamWrapper implements AutoCloseable {
             outputStream.write(buf, 0, readLength);
 
             if (totalLength == limit)
-                return -1;
+                throw new SQLFeatureNotSupportedException("Invalid argument. InputStreams with length greater than " +
+                        MAX_ARRAY_SIZE + " are not supported.");
 
             readLength = inputStream.read(buf, 0, (int)Math.min(buf.length, limit - totalLength));
         }
 
         return totalLength;
-    }
-
-    /**
-     * Holder for the temporary file.
-     * <p>
-     * Used to remove the temp file once the stream wrapper object has become phantom reachable.
-     * It may be if the large stream was passed as argumant to statement and this sattement
-     * was abandoned without being closed.
-     */
-    private static class TempFileHolder implements Runnable {
-        /** Full path to temp file. */
-        private final Path tempFile;
-
-        /** Input stream opened for this temp file if any. */
-        private InputStream inputStream;
-
-        /**
-         * @param tempFile Full path to temp file.
-         */
-        TempFileHolder(Path tempFile) {
-            this.tempFile = tempFile;
-        }
-
-        /**
-         * @return Input stream for reading from temp file.
-         */
-        InputStream getInputStream() throws IOException {
-            if (inputStream == null)
-                inputStream = Files.newInputStream(tempFile);
-
-            return inputStream;
-        }
-
-        /** The cleaning action to be called by the {@link java.lang.ref.Cleaner}. */
-        @Override public void run() {
-            clean();
-        }
-
-        /** Cleans the temp file and input stream if it was created. */
-        private void clean() {
-            try {
-                tempFile.toFile().delete();
-
-                if (inputStream != null) {
-                    inputStream.close();
-
-                    inputStream = null;
-                }
-            }
-            catch (IOException ignore) {
-                // No-op
-            }
-        }
     }
 }
