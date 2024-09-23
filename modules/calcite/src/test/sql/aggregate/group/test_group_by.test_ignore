@@ -86,6 +86,13 @@ SELECT b, SUM(a), COUNT(*), SUM(a+2) FROM test WHERE a <= 12 GROUP BY b ORDER BY
 statement error
 SELECT b % 2 AS f, COUNT(SUM(a)) FROM test GROUP BY f;
 
+# group by alias
+query IR
+SELECT b % 2 AS f, SUM(a) FROM test GROUP BY f ORDER By f;
+----
+0	24.000000
+1	12.000000
+
 statement ok
 INSERT INTO test VALUES (12, 21), (12, 21), (12, 21)
 
@@ -102,6 +109,31 @@ CREATE TABLE integers(i INTEGER, j INTEGER);
 
 statement ok
 INSERT INTO integers VALUES (3, 4), (3, 4), (2, 4);
+
+# group by constant alias
+query IR
+SELECT 1 AS k, SUM(i) FROM integers GROUP BY k ORDER BY 2;
+----
+1	8.000000
+
+# refer to the same alias twice
+query IR
+SELECT i % 2 AS k, SUM(i) FROM integers GROUP BY k, k ORDER BY 1;
+----
+0	2.000000
+1	6.000000
+
+# aliases can only be referenced in the GROUP BY as the root column: operations not allowed
+# CONTROVERSIAL: this query DOES work in SQLite
+statement error
+SELECT 1 AS k, SUM(i) FROM integers GROUP BY k+1 ORDER BY 2;
+
+# group by column refs should be recognized, even if one uses an explicit table specifier and the other does not
+query II
+SELECT test.b, SUM(a) FROM test GROUP BY b ORDER BY COUNT(a) DESC;
+----
+21	48
+22	24
 
 # use GROUP BY column in math operator
 query II
@@ -127,12 +159,18 @@ SELECT 1 AS k, SUM(i) FROM integers GROUP BY k ORDER BY 2;
 ----
 1	8.000000
 
-# use an alias that is identical to a column name (should prioritize column name)
+# use an alias that is identical to a column name and the table reference
 query IR
-SELECT 1 AS i, SUM(i) FROM integers GROUP BY i ORDER BY 2;
+SELECT 1 AS i, SUM(t.i) FROM integers t GROUP BY t.i ORDER BY 2;
 ----
 1	2.000000
 1	6.000000
+
+# use an alias that is identical to a column name
+query IR
+SELECT 1 AS i, SUM(i) FROM integers GROUP BY i ORDER BY 2;
+----
+1	8.000000
 
 # refer to the same alias twice
 query IR
@@ -159,9 +197,9 @@ NULL	NULL
 2	2.000000
 3	3.000000
 
-# column reference should have preference over alias reference in grouping
+# column reference have to be specified when an alias with the same name exists
 query IIR
-SELECT i, i % 2 AS i, SUM(i) FROM integers GROUP BY i ORDER BY 1 NULLS FIRST;
+SELECT i, i % 2 AS i, SUM(i) FROM integers t GROUP BY t.i ORDER BY 1 NULLS FIRST;
 ----
 NULL	NULL	NULL
 1	1	1.000000

@@ -145,6 +145,12 @@ SELECT i, SUM(j), ANY_VALUE(j) FROM integers GROUP BY i ORDER BY i
 2	4.000000	4
 3	8.000000	4
 
+# group by constant alias
+query IR
+SELECT 1 AS k, SUM(i) FROM integers GROUP BY k ORDER BY 2;
+----
+1	8.000000
+
 # use an alias that is identical to a column name and the table reference
 query IR
 SELECT 1 AS i, SUM(t.i) FROM integers t GROUP BY t.i ORDER BY 2;
@@ -157,6 +163,13 @@ query IR
 SELECT 1 AS i, SUM(i) FROM integers GROUP BY i ORDER BY 2;
 ----
 1	8.000000
+
+# refer to the same alias twice
+query IR
+SELECT i % 2 AS k, SUM(i) FROM integers GROUP BY k, k ORDER BY 1;
+----
+0	2.000000
+1	6.000000
 
 statement ok
 DROP TABLE integers;
@@ -196,3 +209,4 @@ SELECT test.b, SUM(a) FROM test GROUP BY b ORDER BY COUNT(a) DESC;
 ----
 21	48
 22	24
+
