@@ -21,6 +21,7 @@ package org.apache.ignite.internal.processors.query.calcite.integration;
 import java.util.Collections;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.cache.QueryEntity;
+import org.apache.ignite.configuration.CacheConfiguration;
 import org.junit.Test;
 
 import static java.util.stream.Collectors.joining;
@@ -29,7 +30,7 @@ import static java.util.stream.Stream.generate;
 /**
  *
  */
-public class MetadataIntegrationTest extends AbstractBasicIntegrationTransactionalTest {
+public class MetadataIntegrationTest extends AbstractBasicIntegrationTest {
     /** */
     @Test
     public void trimColumnNames() {
@@ -108,8 +109,7 @@ public class MetadataIntegrationTest extends AbstractBasicIntegrationTransaction
     /** Test implicit system fields expand by star. */
     @Test
     public void testSystemFieldsStarExpand() {
-        IgniteCache<Integer, Integer> cache = client.createCache(this.<Integer, Integer>cacheConfiguration()
-            .setName("test")
+        IgniteCache<Integer, Integer> cache = client.createCache(new CacheConfiguration<Integer, Integer>("test")
             .setSqlSchema("PUBLIC")
             .setQueryEntities(
                 Collections.singletonList(new QueryEntity()
@@ -120,7 +120,7 @@ public class MetadataIntegrationTest extends AbstractBasicIntegrationTransaction
             )
         );
 
-        put(client, cache, 0, 0);
+        cache.put(0, 0);
 
         assertQuery("select * from test")
             .columnNames("_KEY", "_VAL").returns(0, 0).check();

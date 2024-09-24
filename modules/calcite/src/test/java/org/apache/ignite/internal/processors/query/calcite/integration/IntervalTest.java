@@ -28,7 +28,7 @@ import org.junit.Test;
 /**
  * Test SQL INTERVAL data types.
  */
-public class IntervalTest extends AbstractBasicIntegrationTransactionalTest {
+public class IntervalTest extends AbstractBasicIntegrationTest {
     /**
      * Test returned result for interval data types.
      */
@@ -142,7 +142,7 @@ public class IntervalTest extends AbstractBasicIntegrationTransactionalTest {
      */
     @Test
     public void testDml() {
-        executeSql("CREATE TABLE test(ym INTERVAL YEAR, dt INTERVAL DAYS) WITH atomicity=transactional");
+        executeSql("CREATE TABLE test(ym INTERVAL YEAR, dt INTERVAL DAYS)");
         executeSql("INSERT INTO test(ym, dt) VALUES (INTERVAL 1 MONTH, INTERVAL 2 DAYS)");
         executeSql("INSERT INTO test(ym, dt) VALUES (INTERVAL 3 YEARS, INTERVAL 4 HOURS)");
         executeSql("INSERT INTO test(ym, dt) VALUES (INTERVAL '4-5' YEARS TO MONTHS, INTERVAL '6:7' HOURS TO MINUTES)");

@@ -287,7 +287,6 @@ public class JdbcThinConnection implements Connection {
         metaHnd = new JdbcBinaryMetadataHandler();
         marshCtx = new JdbcMarshallerContext();
         ctx = createBinaryCtx(metaHnd, marshCtx);
-        holdability = HOLD_CURSORS_OVER_COMMIT;
         autoCommit = true;
         netTimeout = connProps.getConnectionTimeout();
         qryTimeout = connProps.getQueryTimeout();
@@ -310,6 +309,7 @@ public class JdbcThinConnection implements Connection {
             baseEndpointVer = null;
         }
 
+        holdability = txSupported() ? CLOSE_CURSORS_AT_COMMIT : HOLD_CURSORS_OVER_COMMIT;
         txIsolation = txSupported() ? TRANSACTION_READ_UNCOMMITTED : TRANSACTION_NONE;
     }
 
@@ -442,7 +442,7 @@ public class JdbcThinConnection implements Connection {
         int resSetHoldability) throws SQLException {
         ensureNotClosed();
 
-        checkCursorOptions(resSetType, resSetConcurrency);
+        checkCursorOptions(resSetType, resSetConcurrency, resSetHoldability);
 
         JdbcThinStatement stmt = new JdbcThinStatement(this, resSetHoldability, schema);
 
@@ -472,7 +472,7 @@ public class JdbcThinConnection implements Connection {
         int resSetHoldability) throws SQLException {
         ensureNotClosed();
 
-        checkCursorOptions(resSetType, resSetConcurrency);
+        checkCursorOptions(resSetType, resSetConcurrency, resSetHoldability);
 
         if (sql == null)
             throw new SQLException("SQL string cannot be null.");
@@ -489,14 +489,18 @@ public class JdbcThinConnection implements Connection {
     /**
      * @param resSetType Cursor option.
      * @param resSetConcurrency Cursor option.
+     * @param resSetHoldability Cursor option.
      * @throws SQLException If options unsupported.
      */
-    private void checkCursorOptions(int resSetType, int resSetConcurrency) throws SQLException {
+    private void checkCursorOptions(int resSetType, int resSetConcurrency, int resSetHoldability) throws SQLException {
         if (resSetType != TYPE_FORWARD_ONLY)
             throw new SQLFeatureNotSupportedException("Invalid result set type (only forward is supported).");
 
         if (resSetConcurrency != CONCUR_READ_ONLY)
             throw new SQLFeatureNotSupportedException("Invalid concurrency (updates are not supported).");
+
+        if (txSupported() && resSetHoldability == HOLD_CURSORS_OVER_COMMIT)
+            throw new SQLFeatureNotSupportedException("Invalid holdability (can't hold cursor over commit).");
     }
 
     /** {@inheritDoc} */
@@ -706,6 +710,9 @@ public class JdbcThinConnection implements Connection {
 
         if (holdability != HOLD_CURSORS_OVER_COMMIT && holdability != CLOSE_CURSORS_AT_COMMIT)
             throw new SQLException("Invalid result set holdability value.");
+
+        if (txSupported() && holdability == HOLD_CURSORS_OVER_COMMIT)
+            throw new SQLException("When transactions enabled all cursors are closed on commit.");
 
         this.holdability = holdability;
     }
@@ -959,6 +966,7 @@ public class JdbcThinConnection implements Connection {
      */
     void openTransactionIfRequired() throws SQLException {
         if (isTxOpen()
+            || getAutoCommit()
             || !txSupported()
             || getTransactionIsolation() == TRANSACTION_NONE)
             return;
@@ -971,6 +979,14 @@ public class JdbcThinConnection implements Connection {
         ));
 
         txCtx = new TxContext(((JdbcTxStartResult)res.response()).txId(), res.cliIo());
+    }
+
+    /** */
+    public JdbcThinResultSet addToTransactionContext(JdbcThinResultSet rset) {
+        if (txCtx != null)
+            txCtx.cursors.add(rset);
+
+        return rset;
     }
 
     /**
@@ -2565,6 +2581,9 @@ public class JdbcThinConnection implements Connection {
 
         /** */
         final JdbcThinTcpIo txIo;
+
+        /** */
+        final List<JdbcThinResultSet> cursors = new ArrayList<>();
 
         /** */
         public TxContext(int txId, JdbcThinTcpIo txIo) {
