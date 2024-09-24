@@ -191,8 +191,6 @@ public class JdbcThinStatement implements Statement {
      * @throws SQLException Onj error.
      */
     protected void execute0(JdbcStatementType stmtType, String sql, List<Object> args) throws SQLException {
-        conn.openTransactionIfRequired();
-
         ensureNotClosed();
 
         closeResults();
@@ -230,57 +228,76 @@ public class JdbcThinStatement implements Statement {
             return;
         }
 
-        JdbcQueryExecuteRequest req = new JdbcQueryExecuteRequest(stmtType, schema, pageSize,
-            maxRows, conn.getAutoCommit(), explicitTimeout, sql, args == null ? null : args.toArray(new Object[args.size()]));
+        conn.transactionContext().track(this);
 
-        JdbcResultWithIo resWithIo = conn.sendRequest(req, this, null);
+        try {
 
-        JdbcResult res0 = resWithIo.response();
+            JdbcQueryExecuteRequest req = new JdbcQueryExecuteRequest(stmtType, schema, pageSize,
+                maxRows, conn.getAutoCommit(), explicitTimeout, sql, args == null ? null : args.toArray(new Object[args.size()]));
 
-        JdbcThinTcpIo stickyIo = resWithIo.cliIo();
+            JdbcResultWithIo resWithIo = conn.sendRequest(req, this, null);
 
-        assert res0 != null;
+            JdbcResult res0 = resWithIo.response();
 
-        if (res0 instanceof JdbcBulkLoadAckResult)
-            res0 = sendFile((JdbcBulkLoadAckResult)res0, stickyIo);
+            JdbcThinTcpIo stickyIo = resWithIo.cliIo();
 
-        if (res0 instanceof JdbcQueryExecuteResult) {
-            JdbcQueryExecuteResult res = (JdbcQueryExecuteResult)res0;
+            assert res0 != null;
 
-            resultSets = Collections.singletonList(new JdbcThinResultSet(this, res.cursorId(), pageSize,
-                res.last(), res.items(), res.isQuery(), conn.autoCloseServerCursor(), res.updateCount(),
-                closeOnCompletion, stickyIo));
-        }
-        else if (res0 instanceof JdbcQueryExecuteMultipleStatementsResult) {
-            JdbcQueryExecuteMultipleStatementsResult res = (JdbcQueryExecuteMultipleStatementsResult)res0;
+            if (res0 instanceof JdbcBulkLoadAckResult)
+                res0 = sendFile((JdbcBulkLoadAckResult)res0, stickyIo);
 
-            List<JdbcResultInfo> resInfos = res.results();
+            boolean onlyUpdates = true;
 
-            resultSets = new ArrayList<>(resInfos.size());
+            if (res0 instanceof JdbcQueryExecuteResult) {
+                JdbcQueryExecuteResult res = (JdbcQueryExecuteResult)res0;
 
-            boolean firstRes = true;
+                resultSets = Collections.singletonList(new JdbcThinResultSet(this, res.cursorId(), pageSize,
+                    res.last(), res.items(), res.isQuery(), conn.autoCloseServerCursor(), res.updateCount(),
+                    closeOnCompletion, conn.resultSetTransactionContext(), stickyIo));
 
-            for (JdbcResultInfo rsInfo : resInfos) {
-                if (!rsInfo.isQuery())
-                    resultSets.add(resultSetForUpdate(rsInfo.updateCount()));
-                else {
-                    if (firstRes) {
-                        firstRes = false;
+                onlyUpdates = !res.isQuery();
+            }
+            else if (res0 instanceof JdbcQueryExecuteMultipleStatementsResult) {
+                JdbcQueryExecuteMultipleStatementsResult res = (JdbcQueryExecuteMultipleStatementsResult)res0;
 
-                        resultSets.add(new JdbcThinResultSet(this, rsInfo.cursorId(), pageSize, res.isLast(),
-                            res.items(), true, conn.autoCloseServerCursor(), -1, closeOnCompletion,
-                            stickyIo));
-                    }
+                List<JdbcResultInfo> resInfos = res.results();
+
+                resultSets = new ArrayList<>(resInfos.size());
+
+                boolean firstRes = true;
+
+                for (JdbcResultInfo rsInfo : resInfos) {
+                    if (!rsInfo.isQuery())
+                        resultSets.add(resultSetForUpdate(rsInfo.updateCount()));
                     else {
-                        resultSets.add(new JdbcThinResultSet(this, rsInfo.cursorId(), pageSize, false,
-                            null, true, conn.autoCloseServerCursor(), -1, closeOnCompletion,
-                            stickyIo));
+                        onlyUpdates = false;
+
+                        if (firstRes) {
+                            firstRes = false;
+
+                            resultSets.add(new JdbcThinResultSet(this, rsInfo.cursorId(), pageSize, res.isLast(),
+                                res.items(), true, conn.autoCloseServerCursor(), -1, closeOnCompletion, conn.resultSetTransactionContext(),
+                                stickyIo));
+                        }
+                        else {
+                            resultSets.add(new JdbcThinResultSet(this, rsInfo.cursorId(), pageSize, false,
+                                null, true, conn.autoCloseServerCursor(), -1, closeOnCompletion, conn.resultSetTransactionContext(),
+                                stickyIo));
+                        }
                     }
                 }
             }
+            else
+                throw new SQLException("Unexpected result [res=" + res0 + ']');
+
+            if (onlyUpdates && conn.getAutoCommit() && conn.txSupported())
+                conn.endTransactionIfExists(true);
         }
-        else
-            throw new SQLException("Unexpected result [res=" + res0 + ']');
+        finally {
+            // Rollback in case of error.
+            if (conn.getAutoCommit() && conn.isTxOpen())
+                conn.endTransactionIfExists(false);
+        }
 
         assert !resultSets.isEmpty() : "At least one results set is expected";
     }
@@ -302,7 +319,7 @@ public class JdbcThinStatement implements Statement {
     private JdbcThinResultSet resultSetForUpdate(long cnt) {
         return new JdbcThinResultSet(this, -1, pageSize,
             true, Collections.<List<Object>>emptyList(), false,
-            conn.autoCloseServerCursor(), cnt, closeOnCompletion, null);
+            conn.autoCloseServerCursor(), cnt, closeOnCompletion, conn.EMPTY, null);
     }
 
     /**
@@ -411,7 +428,7 @@ public class JdbcThinStatement implements Statement {
      * Close results.
      * @throws SQLException On error.
      */
-    private void closeResults() throws SQLException {
+    void closeResults() throws SQLException {
         if (resultSets != null) {
             for (JdbcThinResultSet rs : resultSets)
                 rs.close0();
