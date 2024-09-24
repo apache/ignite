@@ -67,6 +67,7 @@ import org.apache.ignite.internal.processors.query.calcite.integration.TableDmlI
 import org.apache.ignite.internal.processors.query.calcite.integration.TimeoutIntegrationTest;
 import org.apache.ignite.internal.processors.query.calcite.integration.UserDdlIntegrationTest;
 import org.apache.ignite.internal.processors.query.calcite.integration.UserDefinedFunctionsIntegrationTest;
+import org.apache.ignite.internal.processors.query.calcite.integration.ViewsIntegrationTest;
 import org.apache.ignite.internal.processors.query.calcite.jdbc.JdbcCrossEngineTest;
 import org.apache.ignite.internal.processors.query.calcite.jdbc.JdbcQueryTest;
 import org.apache.ignite.internal.processors.query.calcite.rules.JoinCommuteRulesTest;
@@ -137,6 +138,7 @@ import org.junit.runners.Suite;
     AuthorizationIntegrationTest.class,
     DdlTransactionCalciteSelfTest.class,
     MultiLineQueryTest.class,
+    ViewsIntegrationTest.class,
 })
 public class IntegrationTestSuite {
 }
