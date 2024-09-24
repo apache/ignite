@@ -38,20 +38,8 @@ import static java.nio.file.StandardOpenOption.WRITE;
  * Memory buffer.
  */
 public class JdbcDataBufferImpl implements JdbcDataBuffer {
-    /** The list of buffers. */
-    private List<byte[]> buffers;
-
     /** */
-    private static final String TEMP_FILE_PREFIX = "ignite-jdbc-temp-data";
-
-    /** */
-    private TempFileHolder tempFileHolder;
-
-    /** */
-    private Cleaner.Cleanable tempFileCleaner;
-
-    /** */
-    private FileChannel tempFileChannel;
+    private Storage data;
 
     /** */
     private final Integer maxMemoryBufferBytes;
@@ -61,7 +49,7 @@ public class JdbcDataBufferImpl implements JdbcDataBuffer {
 
     /** */
     public JdbcDataBufferImpl(int maxMemoryBufferBytes) {
-        buffers = new ArrayList<>();
+        data = new MemoryStorage();
 
         totalCnt = 0;
 
@@ -70,9 +58,7 @@ public class JdbcDataBufferImpl implements JdbcDataBuffer {
 
     /** */
     public JdbcDataBufferImpl(int maxMemoryBufferBytes, byte[] arr) {
-        buffers = new ArrayList<>();
-
-        buffers.add(arr);
+        data = new MemoryStorage(arr);
 
         totalCnt = arr.length;
 
@@ -106,141 +92,350 @@ public class JdbcDataBufferImpl implements JdbcDataBuffer {
         return new BufferInputStream(pos, len);
     }
 
-    /**
-     * Makes a new buffer available
-     *
-     * @param newCount the new size of the Blob
-     */
-    private void addNewBuffer(final int newCount) {
-        final int newBufSize;
-
-        if (buffers.isEmpty()) {
-            newBufSize = newCount;
-        }
-        else {
-            newBufSize = Math.max(
-                    buffers.get(buffers.size() - 1).length << 1,
-                    (newCount));
-        }
-
-        buffers.add(new byte[newBufSize]);
-    }
-
     /** */
     @Override public void truncate(long len) throws IOException {
         totalCnt = len;
 
-        if (tempFileHolder != null)
-            tempFileChannel.truncate(len);
-
-        // TODO free memory buffers as well???
+        data.truncate(len);
     }
 
     /** */
     @Override public void close() {
-        buffers.clear();
-
-        buffers = null;
+        data.close();
     }
 
     /** */
     private void switchToFile() throws IOException {
-        File tempFile = File.createTempFile(TEMP_FILE_PREFIX, ".tmp");
-        tempFile.deleteOnExit();
+        Storage newData = new FileStorage(getInputStream());
 
-        tempFileHolder = new TempFileHolder(tempFile.toPath());
+        data.close();
 
-        tempFileCleaner = ((IgniteJdbcThinDriver)IgniteJdbcThinDriver.register())
-                .getCleaner()
-                .register(this, tempFileHolder);
-
-        try (OutputStream diskOutputStream = Files.newOutputStream(tempFile.toPath())) {
-            getInputStream().transferTo(diskOutputStream);
-        }
-        catch (RuntimeException | Error e) {
-            tempFileCleaner.clean();
-
-            throw e;
-        }
-
-        buffers.clear();
-
-        tempFileChannel = FileChannel.open(tempFileHolder.getPath(), WRITE, READ);
+        data = newData;
     }
 
-    private BufPosition getInMemoryBufferPosition(long pos) {
-        BufPosition res = new BufPosition();
-
-        res.idx = 0;
-
-        for (long p = 0; p < totalCnt; ) {
-            if (pos > p + buffers.get(res.idx).length - 1) {
-                p += buffers.get(res.idx).length;
-                res.idx++;
-            }
-            else {
-                res.pos = (int)(pos - p);
-                break;
-            }
-        }
-
-        return res;
+    private interface Context {
+        Context copy();
     }
 
     /** */
-    private class BufPosition {
-        /** The index of the current buffer. */
-        public int idx;
+    private static class StreamPosition {
+        /** Current stream position. */
+        private long pos;
 
-        /** Current position in the current buffer. */
-        public int pos;
+        protected Context context;
 
-        BufPosition() {
-            idx = 0;
-
+        StreamPosition() {
             pos = 0;
         }
 
-        void set(BufPosition x)  {
-            idx = x.idx;
+        StreamPosition(StreamPosition x) {
+            set(x);
+        }
+
+        StreamPosition set(StreamPosition x)  {
             pos = x.pos;
+
+            if (x.context != null)
+                context = x.context.copy();
+
+            return this;
         }
 
-        void set(int idx, int pos) {
-            this.idx = idx;
+        StreamPosition setPos(long pos) {
             this.pos = pos;
+
+            return this;
         }
 
-        void advance() {
-            pos++;
+        StreamPosition setContext(Context context) {
+            this.context = context;
 
-            if (pos == buffers.get(idx).length) {
-                idx++;
-
-                pos = 0;
-            }
+            return this;
         }
 
-        void advance(int step) {
-            pos += step;
-
-            if (pos == buffers.get(idx).length) {
-                idx++;
-
-                pos = 0;
-            }
+        public long getPos() {
+            return pos;
         }
     }
 
+    private interface Storage {
+        StreamPosition createPos();
+        int read(StreamPosition pos) throws IOException;
+        int read(StreamPosition pos, byte res[], int off, int cnt) throws IOException;
+        void write(StreamPosition pos, int b) throws IOException;
+        void write(StreamPosition pos, byte[] bytes, int off, int len) throws IOException;
+        void advance(StreamPosition pos, long step);
+        void truncate(long len) throws IOException;
+        void close();
+    }
+
+    private static class MemoryStreamContext implements Context {
+        /** The index of the current buffer. */
+        private int idx;
+
+        /** Current position in the current buffer. */
+        private int inBufPos;
+
+        public MemoryStreamContext(int idx, int inBufPos) {
+            this.idx = idx;
+            this.inBufPos = inBufPos;
+        }
+
+        @Override public Context copy() {
+            return new MemoryStreamContext(idx, inBufPos);
+        }
+    }
+
+    private static class MemoryStorage implements Storage {
+        /** The list of buffers. */
+        private List<byte[]> buffers = new ArrayList<>();
+
+        public MemoryStorage() {
+            // No-op
+        }
+
+        public MemoryStorage(byte[] arr) {
+            buffers.add(arr);
+        }
+
+        @Override public StreamPosition createPos() {
+            return new StreamPosition().setContext(new MemoryStreamContext(0, 0));
+        }
+
+        @Override public int read(StreamPosition pos) {
+            byte[] buf = getBuf(pos);
+
+            if (buf == null)
+                return -1;
+
+            int res = buf[getBufPos(pos)] & 0xff;
+
+            advance(pos, 1);
+
+            return res;
+        }
+
+        @Override public int read(StreamPosition pos, byte[] res, int off, int cnt) {
+            byte[] buf = getBuf(pos);
+
+            if (buf == null)
+                return -1;
+
+            int remaining = cnt;
+
+            while (remaining > 0 && buf!= null) {
+                int toCopy = Math.min(remaining, buf.length - getBufPos(pos));
+
+                U.arrayCopy(buf, getBufPos(pos), res, off + (cnt - remaining), toCopy);
+
+                remaining -= toCopy;
+
+                advance(pos, toCopy);
+                buf = getBuf(pos);
+            }
+
+            return cnt;
+        }
+
+        @Override public void write(StreamPosition pos, int b) {
+            if (getBuf(pos) == null)
+                addNewBuffer(1);
+
+            getBuf(pos)[getBufPos(pos)] = (byte)(b & 0xff);
+
+            advance(pos, 1);
+        }
+
+        @Override public void write(StreamPosition pos, byte[] bytes, int off, int len) {
+            int remaining = len;
+
+            byte[] buf;
+
+            while (remaining > 0 && (buf = getBuf(pos)) != null) {
+                int toCopy = Math.min(remaining, buf.length - getBufPos(pos));
+
+                U.arrayCopy(bytes, off + len - remaining, buf, getBufPos(pos), toCopy);
+
+                remaining -= toCopy;
+
+                advance(pos, toCopy);
+            }
+
+            if (remaining > 0) {
+                addNewBuffer(remaining);
+
+                U.arrayCopy(bytes, off + len - remaining, getBuf(pos), 0, remaining);
+
+                advance(pos, remaining);
+            }
+        }
+
+        @Override public void advance(StreamPosition pos, long step) {
+            int inBufPos = getBufPos(pos);
+            int idx = getBufIdx(pos);
+            long remain = step;
+
+            while (remain > 0) {
+                if (remain >= buffers.get(idx).length - inBufPos) {
+                    remain -= buffers.get(idx).length - inBufPos;
+
+                    inBufPos = 0;
+
+                    idx++;
+                }
+                else {
+                    inBufPos += Math.toIntExact(remain);
+
+                    remain = 0;
+                }
+            }
+
+            pos.setPos(pos.getPos() + step);
+
+            MemoryStreamContext context = (MemoryStreamContext)pos.context;
+            context.idx = idx;
+            context.inBufPos = inBufPos;
+        }
+
+        @Override public void truncate(long len) {
+            StreamPosition pos = createPos();
+
+            advance(pos, len);
+
+            if (buffers.size() > getBufIdx(pos) + 1)
+                buffers.subList(getBufIdx(pos) + 1, buffers.size()).clear();
+        }
+
+        @Override public void close() {
+            buffers.clear();
+            buffers = null;
+        }
+
+        /**
+         * Makes a new buffer available
+         *
+         * @param newCount the new size of the Blob
+         */
+        private void addNewBuffer(final int newCount) {
+            final int newBufSize;
+
+            if (buffers.isEmpty()) {
+                newBufSize = newCount;
+            }
+            else {
+                newBufSize = Math.max(
+                        buffers.get(buffers.size() - 1).length << 1,
+                        (newCount));
+            }
+
+            buffers.add(new byte[newBufSize]);
+        }
+
+        private byte[] getBuf(StreamPosition pos) {
+            return getBufIdx(pos) < buffers.size() ? buffers.get(getBufIdx(pos)) : null;
+        }
+
+        private int getBufPos(StreamPosition pos) {
+            return ((MemoryStreamContext)pos.context).inBufPos;
+        }
+
+        private int getBufIdx(StreamPosition pos) {
+            return ((MemoryStreamContext)pos.context).idx;
+        }
+    }
+
+    private static class FileStorage implements Storage {
+        /** */
+        private static final String TEMP_FILE_PREFIX = "ignite-jdbc-temp-data";
+
+        /** */
+        private final TempFileHolder tempFileHolder;
+
+        /** */
+        private final Cleaner.Cleanable tempFileCleaner;
+
+        /** */
+        private final FileChannel tempFileChannel;
+
+        FileStorage(InputStream memoryStorage) throws IOException {
+            File tempFile = File.createTempFile(TEMP_FILE_PREFIX, ".tmp");
+            tempFile.deleteOnExit();
+
+            tempFileHolder = new TempFileHolder(tempFile.toPath());
+
+            tempFileCleaner = ((IgniteJdbcThinDriver)IgniteJdbcThinDriver.register())
+                    .getCleaner()
+                    .register(this, tempFileHolder);
+
+            try (OutputStream diskOutputStream = Files.newOutputStream(tempFile.toPath())) {
+                memoryStorage.transferTo(diskOutputStream);
+            }
+            catch (RuntimeException | Error e) {
+                tempFileCleaner.clean();
+
+                throw e;
+            }
+
+            tempFileChannel = FileChannel.open(tempFileHolder.getPath(), WRITE, READ);
+        }
+
+        @Override public StreamPosition createPos() {
+            return new StreamPosition();
+        }
+
+        @Override public int read(StreamPosition pos) throws IOException {
+            byte[] res = new byte[1];
+
+            int read = tempFileChannel.read(ByteBuffer.wrap(res), pos.getPos());
+
+            if (read == -1) {
+                return -1;
+            }
+            else {
+                advance(pos, read);
+
+                return res[0] & 0xff;
+            }
+        }
+
+        @Override public int read(StreamPosition pos, byte[] res, int off, int cnt) throws IOException {
+            int read = tempFileChannel.read(ByteBuffer.wrap(res, off, cnt), pos.getPos());
+
+            if (read != -1)
+                advance(pos, read);
+
+            return read;
+        }
+
+        @Override public void write(StreamPosition pos, int b) throws IOException {
+            write(pos, new byte[] {(byte)b}, 0, 1);
+        }
+
+        @Override public void write(StreamPosition pos, byte[] bytes, int off, int len) throws IOException {
+            int written = tempFileChannel.write(ByteBuffer.wrap(bytes, off, len), pos.getPos());
+
+            advance(pos, written);
+        }
+
+        @Override public void truncate(long len) throws IOException {
+            tempFileChannel.truncate(len);
+        }
+
+        @Override public void close() {
+            tempFileCleaner.clean();
+        }
+
+        @Override public void advance(StreamPosition pos, long step) {
+            pos.setPos(pos.getPos() + step);
+        }
+    }
+    
     /**
      *
      */
     private class BufferInputStream extends InputStream {
         /** Current position in the in-memory storage. */
-        private BufPosition curBuf;
-
-        /** Current stream position. */
-        private long pos;
+        private final StreamPosition curPos;
 
         /** Stream starting position. */
         private final long start;
@@ -249,111 +444,42 @@ public class JdbcDataBufferImpl implements JdbcDataBuffer {
         private final long len;
 
         /** Remembered buffer position at the moment the {@link BufferInputStream#mark} is called. */
-        private BufPosition markedCurBuf = new BufPosition();
-
-        /** Remembered pos at the moment the {@link BufferInputStream#mark} is called. */
-        private Long markedPos;
+        private final StreamPosition markedPos;
 
         /**
          * @param start starting position.
          */
         private BufferInputStream(long start, long len) {
-            this.start = pos = markedPos = start;
+            this.start = start;
 
             this.len = len;
 
-            if (tempFileHolder == null) {
-                curBuf = getInMemoryBufferPosition(start);
+            curPos = data.createPos();
 
-                markedCurBuf.set(curBuf);
-            }
+            if (start > 0)
+                data.advance(curPos, start);
+
+            markedPos = new StreamPosition(curPos);
         }
 
         /** {@inheritDoc} */
         @Override public int read() throws IOException {
-            if (tempFileHolder == null)
-                return readFromMemory();
-            else
-                return readFromFile();
-        }
-
-        /** */
-        private int readFromMemory() {
-            if (pos >= start + len || pos >= totalCnt)
+            if (curPos.getPos() >= start + len)
                 return -1;
 
-            int res = buffers.get(curBuf.idx)[curBuf.pos] & 0xff;
-
-            pos++;
-
-            curBuf.advance();
-//            curBuf.pos++;
-//
-//            if (pos < start + len) {
-//                if (curBuf.pos == buffers.get(curBuf.idx).length) {
-//                    curBuf.idx++;
-//
-//                    curBuf.pos = 0;
-//                }
-//            }
-
-            return res;
-        }
-
-        /** */
-        private int readFromFile() throws IOException {
-            byte[] res = new byte[1];
-
-            return tempFileChannel.read(ByteBuffer.wrap(res), pos);
+            return data.read(curPos);
         }
 
         /** {@inheritDoc} */
         @Override public int read(byte res[], int off, int cnt) throws IOException {
-            if (tempFileHolder == null) {
-                return readFromMemory(res, off, cnt);
-            }
-            else {
-                return readFromFile(res, off, cnt);
-            }
-        }
-
-        /** */
-        private int readFromMemory(byte res[], int off, int cnt) {
-            if (pos >= start + len || pos >= totalCnt)
+            if (curPos.getPos() >= start + len || curPos.getPos() >= totalCnt)
                 return -1;
 
-            long availableBytes = Math.min(start + len, totalCnt) - pos;
+            long availableBytes = Math.min(start + len, totalCnt) - curPos.getPos();
 
-            int size = cnt < availableBytes ? cnt : (int)availableBytes;
+            int toRead = cnt < availableBytes ? cnt : (int)availableBytes;
 
-            int remaining = size;
-
-            while (remaining > 0 && curBuf.idx < buffers.size()) {
-                byte[] buf = buffers.get(curBuf.idx);
-
-                int toCopy = Math.min(remaining, buf.length - curBuf.pos);
-
-                U.arrayCopy(buf, Math.max(curBuf.pos, 0), res, off + (size - remaining), toCopy);
-
-                remaining -= toCopy;
-
-                pos += toCopy;
-                curBuf.advance(toCopy);
-//                curBuf.pos += toCopy;
-//
-//                if (curBuf.pos == buffers.get(curBuf.idx).length) {
-//                    curBuf.pos = 0;
-//
-//                    curBuf.idx++;
-//                }
-            }
-
-            return size;
-        }
-
-        /** */
-        private int readFromFile(byte[] res, int off, int cnt) throws IOException {
-            return tempFileChannel.read(ByteBuffer.wrap(res, off, cnt), pos);
+            return data.read(curPos, res, off, toRead);
         }
 
         /** {@inheritDoc} */
@@ -363,99 +489,45 @@ public class JdbcDataBufferImpl implements JdbcDataBuffer {
 
         /** {@inheritDoc} */
         @Override public synchronized void reset() {
-            if (tempFileHolder == null)
-                curBuf.set(markedCurBuf);
-
-            pos = markedPos;
+            curPos.set(markedPos);
         }
 
         /** {@inheritDoc} */
         @Override public synchronized void mark(int readlimit) {
-            if (tempFileHolder == null)
-                markedCurBuf.set(curBuf);
-
-            markedPos = pos;
+            markedPos.set(curPos);
         }
     }
 
     /** */
     private class BufferOutputStream extends OutputStream {
         /** Current position in the in-memory storage. */
-        private BufPosition bufPos;
-
-        /** Current stream position. */
-        private long pos;
+        private final StreamPosition bufPos;
 
         /**
          * @param pos starting position.
          */
         private BufferOutputStream(long pos) {
-            this.pos = pos;
+            bufPos = data.createPos();
 
-            if (tempFileHolder == null)
-                bufPos = getInMemoryBufferPosition(pos);
+            if (pos > 0)
+                data.advance(bufPos, pos);
         }
 
         /** {@inheritDoc} */
         @Override public void write(int b) throws IOException {
-            write(new byte[] {(byte)b}, 0, 1);
+            data.write(bufPos, new byte[] {(byte)b}, 0, 1);
+
+            totalCnt = Math.max(bufPos.getPos(), totalCnt);
         }
 
         /** {@inheritDoc} */
         @Override public void write(byte[] bytes, int off, int len) throws IOException {
-            if (Math.max(pos + len, totalCnt) > maxMemoryBufferBytes)
+            if (Math.max(bufPos.getPos() + len, totalCnt) > maxMemoryBufferBytes)
                 switchToFile();
 
-            if (tempFileHolder == null) {
-                writeToMemory(bytes, off, len);
-            }
-            else {
-                writeToTempFile(bytes, off, len);
-            }
+            data.write(bufPos, bytes, off, len);
 
-            totalCnt = Math.max(pos + len, totalCnt);
-
-            pos += len;
-        }
-
-        /** */
-        private void writeToMemory(byte[] bytes, int off, int len) {
-            int remaining = len;
-
-            for (; bufPos.idx < buffers.size(); bufPos.idx++) {
-                byte[] buf = buffers.get(bufPos.idx);
-
-                int toCopy = Math.min(remaining, buf.length - bufPos.pos);
-
-                U.arrayCopy(bytes, off + len - remaining, buf, bufPos.pos, toCopy);
-
-                remaining -= toCopy;
-
-                if (remaining == 0) {
-                    bufPos.pos += toCopy;
-
-                    break;
-                }
-                else {
-                    bufPos.pos = 0;
-                }
-            }
-
-            if (remaining > 0) {
-                addNewBuffer(remaining);
-
-                U.arrayCopy(bytes, off + len - remaining, buffers.get(buffers.size() - 1), 0, remaining);
-
-                bufPos.idx = buffers.size() - 1;
-                bufPos.pos = remaining;
-            }
-        }
-
-        /** */
-        private void writeToTempFile(byte[] bytes, int off, int len) throws IOException {
-            tempFileChannel.position(pos);
-
-            tempFileChannel.write(ByteBuffer.wrap(bytes, off, len));
+            totalCnt = Math.max(bufPos.getPos(), totalCnt);
         }
     }
 

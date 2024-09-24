@@ -763,7 +763,7 @@ public class JdbcThinConnection implements Connection {
     @Override public Blob createBlob() throws SQLException {
         ensureNotClosed();
 
-        return new JdbcBlob(new byte[0]);
+        return new JdbcBlob(connProps.getMaxInMemoryLobSize());
     }
 
     /** {@inheritDoc} */

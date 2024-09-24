@@ -24,7 +24,7 @@ import java.io.OutputStream;
 /**
  *
  */
-public interface JdbcDataBuffer {
+public interface JdbcDataBuffer extends AutoCloseable {
     /** */
     long getLength();
 
@@ -50,7 +50,4 @@ public interface JdbcDataBuffer {
 
     /** */
     void truncate(long len) throws IOException;
-
-    /** */
-    void close();
 }

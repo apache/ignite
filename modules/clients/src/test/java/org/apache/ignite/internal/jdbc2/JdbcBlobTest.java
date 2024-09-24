@@ -330,9 +330,13 @@ public class JdbcBlobTest {
      */
     @Test
     public void testTruncate() throws Exception {
-        byte[] arr = new byte[] {0, 1, 2, 3, 4, 5, 6, 7};
+        JdbcBlob blob = new JdbcBlob();
 
-        JdbcBlob blob = new JdbcBlob(arr);
+        blob.setBytes(1, new byte[] {0});
+        blob.setBytes(2, new byte[] {1, 2});
+        blob.setBytes(4, new byte[] {3, 4, 5, 6});
+        blob.setBytes(8, new byte[] {7, 8, 9, 10, 11, 12, 13, 14});
+        blob.setBytes(16, new byte[] {15});
 
         assertThrows(null, () -> {
             blob.truncate(-1);
@@ -341,13 +345,16 @@ public class JdbcBlobTest {
         }, SQLException.class, null);
 
         assertThrows(null, () -> {
-            blob.truncate(arr.length + 1);
+            blob.truncate(16 + 1);
 
             return null;
         }, SQLException.class, null);
 
-        blob.truncate(4);
-        assertArrayEquals(new byte[]{0, 1, 2, 3}, blob.getBytes(1, (int)blob.length()));
+        blob.truncate(12);
+        assertArrayEquals(new byte[]{0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11}, blob.getBytes(1, (int)blob.length()));
+
+        blob.truncate(10);
+        assertArrayEquals(new byte[]{0, 1, 2, 3, 4, 5, 6, 7, 8, 9}, blob.getBytes(1, (int)blob.length()));
 
         blob.truncate(0);
         assertEquals(0, (int)blob.length());
@@ -358,6 +365,13 @@ public class JdbcBlobTest {
 
             return null;
         }, SQLException.class, ERROR_BLOB_FREE);
+
+        byte[] arr = new byte[] {0, 1, 2, 3, 4, 5, 6, 7};
+        JdbcBlob blob2 = new JdbcBlob(4);
+        blob2.setBytes(1, arr);
+        blob2.truncate(4);
+        assertArrayEquals(new byte[]{0, 1, 2, 3}, blob2.getBytes(1, (int)blob2.length()));
+        blob2.free();
     }
 
     /**
