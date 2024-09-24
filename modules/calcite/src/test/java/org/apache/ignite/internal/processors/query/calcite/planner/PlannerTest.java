@@ -281,7 +281,7 @@ public class PlannerTest extends AbstractPlannerTest {
 
         String sql = "SELECT (ID0 + ID1) AS RES FROM PUBLIC.TEST_TABLE";
 
-        List<Object[]> res = executeQuery(publicSchema, sql, -10);
+        List<Object[]> res = executeQuery(publicSchema, sql);
 
         assertFalse(res.isEmpty());
 
