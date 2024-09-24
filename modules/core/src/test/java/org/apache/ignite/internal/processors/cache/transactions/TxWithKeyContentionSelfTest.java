@@ -134,7 +134,7 @@ public class TxWithKeyContentionSelfTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     @Test
-    @WithSystemProperty(key = IGNITE_DUMP_TX_COLLISIONS_INTERVAL, value = "40000")
+    @WithSystemProperty(key = IGNITE_DUMP_TX_COLLISIONS_INTERVAL, value = "30000")
     public void testPessimisticRepeatableReadCheckContentionTxMetric() throws Exception {
         runKeyCollisionsMetric(PESSIMISTIC, REPEATABLE_READ);
     }
@@ -145,7 +145,7 @@ public class TxWithKeyContentionSelfTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     @Test
-    @WithSystemProperty(key = IGNITE_DUMP_TX_COLLISIONS_INTERVAL, value = "40000")
+    @WithSystemProperty(key = IGNITE_DUMP_TX_COLLISIONS_INTERVAL, value = "30000")
     public void testPessimisticRepeatableReadCheckContentionTxMetricNear() throws Exception {
         nearCache = true;
 
@@ -156,7 +156,7 @@ public class TxWithKeyContentionSelfTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     @Test
-    @WithSystemProperty(key = IGNITE_DUMP_TX_COLLISIONS_INTERVAL, value = "40000")
+    @WithSystemProperty(key = IGNITE_DUMP_TX_COLLISIONS_INTERVAL, value = "30000")
     public void testPessimisticReadCommitedCheckContentionTxMetric() throws Exception {
         runKeyCollisionsMetric(PESSIMISTIC, READ_COMMITTED);
     }
@@ -165,7 +165,7 @@ public class TxWithKeyContentionSelfTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     @Test
-    @WithSystemProperty(key = IGNITE_DUMP_TX_COLLISIONS_INTERVAL, value = "40000")
+    @WithSystemProperty(key = IGNITE_DUMP_TX_COLLISIONS_INTERVAL, value = "30000")
     public void testPessimisticReadCommitedCheckContentionTxMetricNear() throws Exception {
         nearCache = true;
 
@@ -176,7 +176,7 @@ public class TxWithKeyContentionSelfTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     @Test
-    @WithSystemProperty(key = IGNITE_DUMP_TX_COLLISIONS_INTERVAL, value = "40000")
+    @WithSystemProperty(key = IGNITE_DUMP_TX_COLLISIONS_INTERVAL, value = "30000")
     public void testOptimisticReadCommittedCheckContentionTxMetric() throws Exception {
         runKeyCollisionsMetric(OPTIMISTIC, READ_COMMITTED);
     }
@@ -185,7 +185,7 @@ public class TxWithKeyContentionSelfTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     @Test
-    @WithSystemProperty(key = IGNITE_DUMP_TX_COLLISIONS_INTERVAL, value = "40000")
+    @WithSystemProperty(key = IGNITE_DUMP_TX_COLLISIONS_INTERVAL, value = "30000")
     public void testOptimisticReadCommittedCheckContentionTxMetricNear() throws Exception {
         nearCache = true;
 
@@ -196,7 +196,7 @@ public class TxWithKeyContentionSelfTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     @Test
-    @WithSystemProperty(key = IGNITE_DUMP_TX_COLLISIONS_INTERVAL, value = "40000")
+    @WithSystemProperty(key = IGNITE_DUMP_TX_COLLISIONS_INTERVAL, value = "30000")
     public void testOptimisticRepeatableReadCheckContentionTxMetric() throws Exception {
         runKeyCollisionsMetric(OPTIMISTIC, REPEATABLE_READ);
     }
@@ -205,7 +205,7 @@ public class TxWithKeyContentionSelfTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     @Test
-    @WithSystemProperty(key = IGNITE_DUMP_TX_COLLISIONS_INTERVAL, value = "40000")
+    @WithSystemProperty(key = IGNITE_DUMP_TX_COLLISIONS_INTERVAL, value = "30000")
     public void testOptimisticRepeatableReadCheckContentionTxMetricNear() throws Exception {
         nearCache = true;
 
@@ -221,7 +221,7 @@ public class TxWithKeyContentionSelfTest extends GridCommonAbstractTest {
     private void runKeyCollisionsMetric(TransactionConcurrency concurrency, TransactionIsolation isolation) throws Exception {
         Ignite ig = startGridsMultiThreaded(2);
 
-        int contCnt = (int)U.staticField(IgniteTxManager.class, "COLLISIONS_QUEUE_THRESHOLD") * 5;
+        int contCnt = (int)U.staticField(IgniteTxManager.class, "COLLISIONS_QUEUE_THRESHOLD") * 20;
 
         CountDownLatch txLatch = new CountDownLatch(contCnt);
 
@@ -304,17 +304,15 @@ public class TxWithKeyContentionSelfTest extends GridCommonAbstractTest {
 
         IgniteTxManager srvTxMgr = ((IgniteEx)ig).context().cache().context().tm();
 
+        try {
+            U.invoke(IgniteTxManager.class, srvTxMgr, "collectTxCollisionsInfo");
+        }
+        catch (IgniteCheckedException e) {
+            fail(e.toString());
+        }
+
         assertTrue(GridTestUtils.waitForCondition(new GridAbsPredicate() {
             @Override public boolean apply() {
-                try {
-                    U.invoke(IgniteTxManager.class, srvTxMgr, "collectTxCollisionsInfo");
-
-                    U.sleep(1000);
-                }
-                catch (IgniteCheckedException e) {
-                    fail(e.toString());
-                }
-
                 CacheMetrics metrics = cache.localMetrics();
 
                 String coll1 = metrics.getTxKeyCollisions();
@@ -334,7 +332,7 @@ public class TxWithKeyContentionSelfTest extends GridCommonAbstractTest {
                 else
                     return false;
             }
-        }, 30_000));
+        }, 20_000));
 
         f.get();
 
