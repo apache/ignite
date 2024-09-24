@@ -319,7 +319,7 @@ public class JdbcThinStatement implements Statement {
     private JdbcThinResultSet resultSetForUpdate(long cnt) {
         return new JdbcThinResultSet(this, -1, pageSize,
             true, Collections.<List<Object>>emptyList(), false,
-            conn.autoCloseServerCursor(), cnt, closeOnCompletion, conn.EMPTY, null);
+            conn.autoCloseServerCursor(), cnt, closeOnCompletion, conn.emptyCtx, null);
     }
 
     /**
@@ -982,17 +982,14 @@ public class JdbcThinStatement implements Statement {
         if (isClosed())
             return;
 
-        boolean allRsClosed = true;
-
         if (resultSets != null) {
             for (JdbcThinResultSet rs : resultSets) {
                 if (!rs.isClosed())
-                    allRsClosed = false;
+                    return;
             }
         }
 
-        if (allRsClosed)
-            close();
+        close();
     }
 
     /**

@@ -167,9 +167,6 @@ public class JdbcThinConnection implements Connection {
     /** Default transaction timeout. */
     private static final long DFLT_TX_TIMEOUT = 60_000;
 
-    /** */
-    static final int NO_TX = 0;
-
     /** Network timeout permission */
     private static final String SET_NETWORK_TIMEOUT_PERM = "setNetworkTimeout";
 
@@ -244,6 +241,9 @@ public class JdbcThinConnection implements Connection {
 
     /** Transactional context. */
     private volatile TxContext txCtx;
+
+    /** */
+    final TxContext emptyCtx = new TxContext() {};
 
     /** Random generator. */
     private static final Random RND = new Random(System.currentTimeMillis());
@@ -386,7 +386,7 @@ public class JdbcThinConnection implements Connection {
     void executeNative(String sql, SqlCommand cmd, JdbcThinStatement stmt) throws SQLException {
         if (cmd instanceof SqlSetStreamingCommand) {
             if (isTxOpen())
-                throw new SQLException("Can't change stream mode inside transaction [txId = " + txCtx.txId + ']');
+                throw new SQLException("Can't change stream mode inside transaction");
 
             SqlSetStreamingCommand cmd0 = (SqlSetStreamingCommand)cmd;
 
@@ -963,16 +963,14 @@ public class JdbcThinConnection implements Connection {
     TxContext transactionContext() throws SQLException {
         if (!txSupported()
             || getTransactionIsolation() == TRANSACTION_NONE)
-            return EMPTY;
+            return emptyCtx;
 
         if (isTxOpen())
             return txCtx;
 
         assert txCtx == null;
 
-        txCtx = new TxContext();
-
-        txCtx.start();
+        txCtx = new TxContextImpl();
 
         return txCtx;
     }
@@ -982,7 +980,7 @@ public class JdbcThinConnection implements Connection {
      * @throws SQLException If failed.
      */
     TxContext resultSetTransactionContext() throws SQLException {
-        return getAutoCommit() ? txCtx : EMPTY;
+        return getAutoCommit() ? txCtx : emptyCtx;
     }
 
     /**
@@ -1726,7 +1724,7 @@ public class JdbcThinConnection implements Connection {
             return singleIo;
 
         if (txCtx != null)
-            return txCtx.txIo;
+            return txCtx.txIo();
 
         if (nodeIds == null || nodeIds.isEmpty())
             return randomIo();
@@ -2570,37 +2568,19 @@ public class JdbcThinConnection implements Connection {
         }
     }
 
-    /** */
-    TxContext EMPTY = new TxContext() {
-        /** {@inheritDoc} */
-        @Override void start() {
-            // No-op.
-        }
-
-        /** {@inheritDoc} */
-        @Override void end(boolean commit) {
-            // No-op.
-        }
-
-        /** {@inheritDoc} */
-        @Override void track(JdbcThinStatement stmt) {
-            // No-op.
-        }
-    };
-
-    /** */
-    class TxContext {
-        /** */
+    /** Transaction context. */
+    class TxContextImpl implements TxContext {
+        /** IO to transaction coordinator. */
         JdbcThinTcpIo txIo;
 
-        /** */
+        /** Transaction id. */
         int txId;
 
         /** Tracked statements to close results on transaction end. */
         private final Set<JdbcThinStatement> stmts = Collections.newSetFromMap(new IdentityHashMap<>());
 
         /** */
-        void start() throws SQLException {
+        public TxContextImpl() throws SQLException {
             JdbcResultWithIo res = sendRequest(new JdbcTxStartRequest(
                 TransactionConcurrency.PESSIMISTIC,
                 TransactionIsolation.READ_COMMITTED,
@@ -2612,19 +2592,42 @@ public class JdbcThinConnection implements Connection {
             txId = ((JdbcTxStartResult)res.response()).txId();
         }
 
-        /** */
-        void end(boolean commit) throws SQLException {
+        /** {@inheritDoc} */
+        @Override public void end(boolean commit) throws SQLException {
             if (!autoCommit) {
                 for (JdbcThinStatement stmt : stmts)
                     stmt.closeResults();
             }
 
-            sendRequest(new JdbcTxEndRequest(txCtx.txId, commit), null, null);
+            sendRequest(new JdbcTxEndRequest(txId, commit), null, null);
+        }
+
+        /** {@inheritDoc} */
+        @Override public void track(JdbcThinStatement stmt) {
+            stmts.add(stmt);
+        }
+
+        /** {@inheritDoc} */
+        @Override public JdbcThinTcpIo txIo() {
+            return txIo;
+        }
+    }
+
+    /** */
+    interface TxContext {
+        /** */
+        default void end(boolean commit) throws SQLException {
+            // No-op.
         }
 
         /** */
-        void track(JdbcThinStatement stmt) {
-            stmts.add(stmt);
+        default void track(JdbcThinStatement stmt) {
+            // No-op.
+        }
+
+        /** */
+        default JdbcThinTcpIo txIo() {
+            throw new UnsupportedOperationException();
         }
     }
 }
