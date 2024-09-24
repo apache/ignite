@@ -89,7 +89,7 @@
         <jna.version>4.5.2</jna.version>
         <jnr.posix.version>3.1.15</jnr.posix.version>
         <jotm.version>2.3.1-M1</jotm.version>
-        <jtidy.version>r938</jtidy.version>
+        <jtidy.version>1.0.5</jtidy.version>
         <log4j2.version>2.22.0</log4j2.version>
         <lucene.bundle.version>7.4.0_1</lucene.bundle.version>
         <lucene.version>8.11.2</lucene.version>
