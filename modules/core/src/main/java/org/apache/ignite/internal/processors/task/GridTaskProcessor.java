@@ -200,6 +200,8 @@ public class GridTaskProcessor extends GridProcessorAdapter implements IgniteCha
         ctx.io().addMessageListener(TOPIC_TASK_CANCEL, new TaskCancelMessageListener());
         ctx.io().addMessageListener(TOPIC_TASK, new JobMessageListener(true));
 
+        ctx.internalSubscriptionProcessor().registerGlobalStateListener(this);
+
         if (log.isDebugEnabled())
             log.debug("Started task processor.");
     }
@@ -1168,7 +1170,7 @@ public class GridTaskProcessor extends GridProcessorAdapter implements IgniteCha
 
     /** {@inheritDoc} */
     @Override public void onDeActivate(GridKernalContext kctx) {
-        onKernalStop(true);
+        // No-op.
     }
 
     /**

@@ -259,6 +259,8 @@ public final class DataStructuresProcessor extends GridProcessorAdapter implemen
     /** {@inheritDoc} */
     @Override public void start() {
         ctx.event().addLocalEventListener(lsnr, EVT_NODE_LEFT, EVT_NODE_FAILED);
+
+        ctx.internalSubscriptionProcessor().registerGlobalStateListener(this);
     }
 
     /** {@inheritDoc} */
