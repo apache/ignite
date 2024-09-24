@@ -1339,6 +1339,7 @@ public class GridNioSelfTest extends GridCommonAbstractTest {
             if (latch != null)
                 latch.countDown();
 
+            //sending ack of processing message
             ses.send(new byte[] {(byte)0xDEADBEEF});
         }
 
