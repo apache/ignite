@@ -182,8 +182,9 @@ public class IgniteServiceDeploymentClassLoadingDefaultMarshallerTest extends Gr
         assertTrue(cli.services().serviceDescriptors().isEmpty());
         assertTrue(srv.services().serviceDescriptors().isEmpty());
 
-        // Check node alive.
+        // Check node availability.
         srv.createCache(DEFAULT_CACHE_NAME).put(1, 1);
+        cli.cache(DEFAULT_CACHE_NAME).put(2, 2);
     }
 
     /**

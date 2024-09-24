@@ -1792,7 +1792,7 @@ public class IgniteServiceProcessor extends GridProcessorAdapter implements Igni
                         }
                         catch (IgniteCheckedException e) {
                             err = new IgniteCheckedException("Failed to deploy service, " +
-                                "unable to unmarshal node filter, cfg=" + cfg, e);
+                                "unable to unmarshal service node filter, cfg=" + cfg, e);
                         }
                     }
 
