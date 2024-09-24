@@ -1478,7 +1478,7 @@ public class GridNioSelfTest extends GridCommonAbstractTest {
          * @param len Count of bytes to write.
          * @throws IOException If send failed.
          */
-        public void sendMessage(byte[] data, int len) throws IOException, InterruptedException {
+        public void sendMessage(byte[] data, int len) throws IOException {
             out.write(U.intToBytes(len));
             out.write(data, 0, len);
         }
