@@ -177,6 +177,10 @@ public class JdbcDataBufferImpl implements JdbcDataBuffer {
         private int inBufPos;
 
         public MemoryStreamContext(int idx, int inBufPos) {
+            set(idx, inBufPos);
+        }
+
+        public void set(int idx, int inBufPos) {
             this.idx = idx;
             this.inBufPos = inBufPos;
         }
@@ -292,9 +296,7 @@ public class JdbcDataBufferImpl implements JdbcDataBuffer {
 
             pos.setPos(pos.getPos() + step);
 
-            MemoryStreamContext context = (MemoryStreamContext)pos.context;
-            context.idx = idx;
-            context.inBufPos = inBufPos;
+            ((MemoryStreamContext)pos.context).set(idx, inBufPos);
         }
 
         @Override public void truncate(long len) {
@@ -422,6 +424,13 @@ public class JdbcDataBufferImpl implements JdbcDataBuffer {
         }
 
         @Override public void close() {
+            try {
+                tempFileChannel.close();
+            }
+            catch (IOException ignore) {
+                // No-op
+            }
+
             tempFileCleaner.clean();
         }
 
@@ -515,7 +524,7 @@ public class JdbcDataBufferImpl implements JdbcDataBuffer {
 
         /** {@inheritDoc} */
         @Override public void write(int b) throws IOException {
-            data.write(bufPos, new byte[] {(byte)b}, 0, 1);
+            data.write(bufPos, b);
 
             totalCnt = Math.max(bufPos.getPos(), totalCnt);
         }
