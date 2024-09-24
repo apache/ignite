@@ -19,14 +19,20 @@ package org.apache.ignite.internal.processors.service;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.Set;
+import java.util.UUID;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.failure.StopNodeFailureHandler;
+import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.marshaller.Marshaller;
 import org.apache.ignite.services.Service;
 import org.apache.ignite.services.ServiceConfiguration;
+import org.apache.ignite.services.ServiceDeploymentException;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
+
+import static org.apache.ignite.testframework.GridTestUtils.assertThrowsWithCause;
 
 /**
  * Tests that not all nodes in cluster need user's service definition (only nodes according to filter).
@@ -34,6 +40,9 @@ import org.junit.Test;
 public class IgniteServiceDeploymentClassLoadingDefaultMarshallerTest extends GridCommonAbstractTest {
     /** */
     private static final String NOOP_SERVICE_CLS_NAME = "org.apache.ignite.tests.p2p.NoopService";
+
+    /** */
+    private static final String NODE_FILTER_CLS_NAME = "org.apache.ignite.tests.p2p.ExcludeNodeFilter";
 
     /** */
     private static final int SERVER_NODE = 0;
@@ -68,6 +77,8 @@ public class IgniteServiceDeploymentClassLoadingDefaultMarshallerTest extends Gr
 
         if (extClsLdrGrids.contains(igniteInstanceName))
             cfg.setClassLoader(extClsLdr);
+
+        cfg.setFailureHandler(new StopNodeFailureHandler());
 
         return cfg;
     }
@@ -150,6 +161,29 @@ public class IgniteServiceDeploymentClassLoadingDefaultMarshallerTest extends Gr
         startClientGrid(CLIENT_NODE);
 
         startClientGrid(CLIENT_NODE_WITH_EXT_CLASS_LOADER).services().deploy(serviceConfig());
+    }
+
+    /** @throws Exception If failed. */
+    @Test
+    public void testFailWhenNodeFilterClassNotFound() throws Exception {
+        IgniteEx srv = startGrid(SERVER_NODE);
+        IgniteEx cli = startClientGrid(CLIENT_NODE);
+
+        ServiceConfiguration svcCfg = new ServiceConfiguration()
+            .setName("TestDeploymentService")
+            .setService(((Class<Service>)extClsLdr.loadClass(NOOP_SERVICE_CLS_NAME)).getDeclaredConstructor().newInstance())
+            .setNodeFilter(((Class<IgnitePredicate<ClusterNode>>)extClsLdr.loadClass(NODE_FILTER_CLS_NAME))
+                .getConstructor(UUID.class)
+                .newInstance(cli.context().localNodeId()))
+            .setTotalCount(1);
+
+        assertThrowsWithCause(() -> cli.services().deploy(svcCfg), ServiceDeploymentException.class);
+
+        assertTrue(cli.services().serviceDescriptors().isEmpty());
+        assertTrue(srv.services().serviceDescriptors().isEmpty());
+
+        // Check node alive.
+        srv.createCache(DEFAULT_CACHE_NAME).put(1, 1);
     }
 
     /**
