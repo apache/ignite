@@ -1339,7 +1339,7 @@ public class GridNioSelfTest extends GridCommonAbstractTest {
             if (latch != null)
                 latch.countDown();
 
-            ses.send(new byte[] {(byte) 0xDEADBEEF});
+            ses.send(new byte[] {(byte)0xDEADBEEF});
         }
 
         /**
