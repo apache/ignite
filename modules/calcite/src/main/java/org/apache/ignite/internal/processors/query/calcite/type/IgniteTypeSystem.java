@@ -54,10 +54,10 @@ public class IgniteTypeSystem extends RelDataTypeSystemImpl implements Serializa
     }
 
     /** {@inheritDoc} */
-    @Override public RelDataType deriveSumType(RelDataTypeFactory typeFactory, RelDataType argType) {
+    @Override public RelDataType deriveSumType(RelDataTypeFactory typeFactory, RelDataType argumentType) {
         RelDataType sumType;
-        if (argType instanceof BasicSqlType) {
-            switch (argType.getSqlTypeName()) {
+        if (argumentType instanceof BasicSqlType) {
+            switch (argumentType.getSqlTypeName()) {
                 case INTEGER:
                 case TINYINT:
                 case SMALLINT:
@@ -79,11 +79,11 @@ public class IgniteTypeSystem extends RelDataTypeSystemImpl implements Serializa
                     break;
 
                 default:
-                    return super.deriveSumType(typeFactory, argType);
+                    return super.deriveSumType(typeFactory, argumentType);
             }
         }
         else {
-            switch (argType.getSqlTypeName()) {
+            switch (argumentType.getSqlTypeName()) {
                 case INTEGER:
                 case TINYINT:
                 case SMALLINT:
@@ -105,10 +105,10 @@ public class IgniteTypeSystem extends RelDataTypeSystemImpl implements Serializa
                     break;
 
                 default:
-                    return super.deriveSumType(typeFactory, argType);
+                    return super.deriveSumType(typeFactory, argumentType);
             }
         }
 
-        return typeFactory.createTypeWithNullability(sumType, argType.isNullable());
+        return typeFactory.createTypeWithNullability(sumType, argumentType.isNullable());
     }
 }

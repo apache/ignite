@@ -200,7 +200,7 @@ class ClientImpl extends TcpDiscoveryImpl {
     private final CountDownLatch leaveLatch = new CountDownLatch(1);
 
     /** */
-аш    private final ScheduledExecutorService executorSrvc;
+    private final ScheduledExecutorService executorSrvc;
 
     /** */
     private MessageWorker msgWorker;
@@ -2817,7 +2817,7 @@ class ClientImpl extends TcpDiscoveryImpl {
     /**
      *
      */
-    private enum State {
+    enum State {
         /** */
         STARTING,
 

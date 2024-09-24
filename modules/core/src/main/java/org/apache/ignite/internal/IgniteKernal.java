@@ -1113,7 +1113,7 @@ public class IgniteKernal implements IgniteEx, Externalizable {
                 startTimer.finishGlobalStage("Start processors");
 
                 // Start plugins.
-                for (PluginProvider<?> provider : ctx.plugins().allProviders()) {
+                for (PluginProvider provider : ctx.plugins().allProviders()) {
                     ctx.add(new GridPluginComponent(provider));
 
                     provider.start(ctx.plugins().pluginContextForProvider(provider));
