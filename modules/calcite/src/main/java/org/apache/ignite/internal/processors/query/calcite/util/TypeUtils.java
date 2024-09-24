@@ -248,8 +248,11 @@ public class TypeUtils {
         int cnt = 0; // Counter to protect from infinite recursion.
 
         while (true) {
-            if (F.isEmpty(origin) || cnt++ >= maxViewDepth)
+            if (F.isEmpty(origin))
                 return typeFactory.getResultClass(type);
+
+            if (cnt++ >= maxViewDepth)
+                throw new UnsupportedOperationException("To many inner views: " + maxViewDepth);
 
             RelOptTable table = schema.getTableForMember(origin.subList(0, 2));
 
