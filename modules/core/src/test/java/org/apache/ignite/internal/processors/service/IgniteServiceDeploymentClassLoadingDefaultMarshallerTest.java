@@ -182,7 +182,8 @@ public class IgniteServiceDeploymentClassLoadingDefaultMarshallerTest extends Gr
         assertThrowsWithCause(() -> cli.services().deploy(svcCfg), ServiceDeploymentException.class);
 
         // 2. Node filter class not found on cluster nodes during node join.
-        IgniteConfiguration cfg = getConfiguration(getTestIgniteInstanceName(SERVER_NODE_WITH_EXT_CLASS_LOADER)).setServiceConfiguration(svcCfg);
+        IgniteConfiguration cfg = getConfiguration(getTestIgniteInstanceName(SERVER_NODE_WITH_EXT_CLASS_LOADER))
+            .setServiceConfiguration(svcCfg);
 
         assertThrowsWithCause(() -> startGrid(cfg), IgniteCheckedException.class);
 
