@@ -80,7 +80,7 @@ public final class UpdatePlan {
 
     /** Number of rows in rows based MERGE or INSERT. */
     private final int rowsNum;
-
+    
     /** Whether absent PK parts should be filled with defaults or not. */
     private boolean fillAbsentPKsWithDefaults;
 
