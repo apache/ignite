@@ -28,7 +28,6 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
-import org.apache.ignite.IgniteJdbcThinDriver;
 import org.apache.ignite.internal.util.typedef.internal.U;
 
 import static java.nio.file.StandardOpenOption.READ;
@@ -39,7 +38,7 @@ import static java.nio.file.StandardOpenOption.WRITE;
  */
 public class JdbcDataBufferImpl implements JdbcDataBuffer {
     /** */
-    private Storage data;
+    private Storage storage;
 
     /** */
     private final Integer maxMemoryBufferBytes;
@@ -49,7 +48,7 @@ public class JdbcDataBufferImpl implements JdbcDataBuffer {
 
     /** */
     public JdbcDataBufferImpl(int maxMemoryBufferBytes) {
-        data = new MemoryStorage();
+        storage = new MemoryStorage();
 
         totalCnt = 0;
 
@@ -58,7 +57,7 @@ public class JdbcDataBufferImpl implements JdbcDataBuffer {
 
     /** */
     public JdbcDataBufferImpl(int maxMemoryBufferBytes, byte[] arr) {
-        data = new MemoryStorage(arr);
+        storage = new MemoryStorage(arr);
 
         totalCnt = arr.length;
 
@@ -96,43 +95,43 @@ public class JdbcDataBufferImpl implements JdbcDataBuffer {
     @Override public void truncate(long len) throws IOException {
         totalCnt = len;
 
-        data.truncate(len);
+        storage.truncate(len);
     }
 
     /** */
     @Override public void close() {
-        data.close();
+        storage.close();
     }
 
     /** */
-    private void switchToFile() throws IOException {
-        Storage newData = new FileStorage(getInputStream());
+    private void switchToFileStorage() throws IOException {
+        Storage newStorage = new FileStorage(getInputStream());
 
-        data.close();
+        storage.close();
 
-        data = newData;
+        storage = newStorage;
     }
 
-    private interface Context {
-        Context copy();
+    private interface StoragePointerContext {
+        StoragePointerContext copy();
     }
 
     /** */
-    private static class StreamPosition {
+    private static class StoragePointer {
         /** Current stream position. */
         private long pos;
 
-        protected Context context;
+        protected StoragePointerContext context;
 
-        StreamPosition() {
+        StoragePointer() {
             pos = 0;
         }
 
-        StreamPosition(StreamPosition x) {
+        StoragePointer(StoragePointer x) {
             set(x);
         }
 
-        StreamPosition set(StreamPosition x)  {
+        StoragePointer set(StoragePointer x)  {
             pos = x.pos;
 
             if (x.context != null)
@@ -141,13 +140,13 @@ public class JdbcDataBufferImpl implements JdbcDataBuffer {
             return this;
         }
 
-        StreamPosition setPos(long pos) {
+        StoragePointer setPos(long pos) {
             this.pos = pos;
 
             return this;
         }
 
-        StreamPosition setContext(Context context) {
+        StoragePointer setContext(StoragePointerContext context) {
             this.context = context;
 
             return this;
@@ -159,24 +158,24 @@ public class JdbcDataBufferImpl implements JdbcDataBuffer {
     }
 
     private interface Storage {
-        StreamPosition createPos();
-        int read(StreamPosition pos) throws IOException;
-        int read(StreamPosition pos, byte res[], int off, int cnt) throws IOException;
-        void write(StreamPosition pos, int b) throws IOException;
-        void write(StreamPosition pos, byte[] bytes, int off, int len) throws IOException;
-        void advance(StreamPosition pos, long step);
+        StoragePointer createPointer();
+        int read(StoragePointer pos) throws IOException;
+        int read(StoragePointer pos, byte res[], int off, int cnt) throws IOException;
+        void write(StoragePointer pos, int b) throws IOException;
+        void write(StoragePointer pos, byte[] bytes, int off, int len) throws IOException;
+        void advance(StoragePointer pos, long step);
         void truncate(long len) throws IOException;
         void close();
     }
 
-    private static class MemoryStreamContext implements Context {
+    private static class MemoryStoragePointerContext implements StoragePointerContext {
         /** The index of the current buffer. */
         private int idx;
 
         /** Current position in the current buffer. */
         private int inBufPos;
 
-        public MemoryStreamContext(int idx, int inBufPos) {
+        public MemoryStoragePointerContext(int idx, int inBufPos) {
             set(idx, inBufPos);
         }
 
@@ -185,8 +184,8 @@ public class JdbcDataBufferImpl implements JdbcDataBuffer {
             this.inBufPos = inBufPos;
         }
 
-        @Override public Context copy() {
-            return new MemoryStreamContext(idx, inBufPos);
+        @Override public StoragePointerContext copy() {
+            return new MemoryStoragePointerContext(idx, inBufPos);
         }
     }
 
@@ -199,14 +198,15 @@ public class JdbcDataBufferImpl implements JdbcDataBuffer {
         }
 
         public MemoryStorage(byte[] arr) {
-            buffers.add(arr);
+            if (arr.length > 0)
+                buffers.add(arr);
         }
 
-        @Override public StreamPosition createPos() {
-            return new StreamPosition().setContext(new MemoryStreamContext(0, 0));
+        @Override public StoragePointer createPointer() {
+            return new StoragePointer().setContext(new MemoryStoragePointerContext(0, 0));
         }
 
-        @Override public int read(StreamPosition pos) {
+        @Override public int read(StoragePointer pos) {
             byte[] buf = getBuf(pos);
 
             if (buf == null)
@@ -219,7 +219,7 @@ public class JdbcDataBufferImpl implements JdbcDataBuffer {
             return res;
         }
 
-        @Override public int read(StreamPosition pos, byte[] res, int off, int cnt) {
+        @Override public int read(StoragePointer pos, byte[] res, int off, int cnt) {
             byte[] buf = getBuf(pos);
 
             if (buf == null)
@@ -241,7 +241,7 @@ public class JdbcDataBufferImpl implements JdbcDataBuffer {
             return cnt;
         }
 
-        @Override public void write(StreamPosition pos, int b) {
+        @Override public void write(StoragePointer pos, int b) {
             if (getBuf(pos) == null)
                 addNewBuffer(1);
 
@@ -250,7 +250,7 @@ public class JdbcDataBufferImpl implements JdbcDataBuffer {
             advance(pos, 1);
         }
 
-        @Override public void write(StreamPosition pos, byte[] bytes, int off, int len) {
+        @Override public void write(StoragePointer pos, byte[] bytes, int off, int len) {
             int remaining = len;
 
             byte[] buf;
@@ -274,7 +274,7 @@ public class JdbcDataBufferImpl implements JdbcDataBuffer {
             }
         }
 
-        @Override public void advance(StreamPosition pos, long step) {
+        @Override public void advance(StoragePointer pos, long step) {
             int inBufPos = getBufPos(pos);
             int idx = getBufIdx(pos);
             long remain = step;
@@ -296,11 +296,11 @@ public class JdbcDataBufferImpl implements JdbcDataBuffer {
 
             pos.setPos(pos.getPos() + step);
 
-            ((MemoryStreamContext)pos.context).set(idx, inBufPos);
+            ((MemoryStoragePointerContext)pos.context).set(idx, inBufPos);
         }
 
         @Override public void truncate(long len) {
-            StreamPosition pos = createPos();
+            StoragePointer pos = createPointer();
 
             advance(pos, len);
 
@@ -333,16 +333,16 @@ public class JdbcDataBufferImpl implements JdbcDataBuffer {
             buffers.add(new byte[newBufSize]);
         }
 
-        private byte[] getBuf(StreamPosition pos) {
+        private byte[] getBuf(StoragePointer pos) {
             return getBufIdx(pos) < buffers.size() ? buffers.get(getBufIdx(pos)) : null;
         }
 
-        private int getBufPos(StreamPosition pos) {
-            return ((MemoryStreamContext)pos.context).inBufPos;
+        private int getBufPos(StoragePointer pos) {
+            return ((MemoryStoragePointerContext)pos.context).inBufPos;
         }
 
-        private int getBufIdx(StreamPosition pos) {
-            return ((MemoryStreamContext)pos.context).idx;
+        private int getBufIdx(StoragePointer pos) {
+            return ((MemoryStoragePointerContext)pos.context).idx;
         }
     }
 
@@ -359,15 +359,16 @@ public class JdbcDataBufferImpl implements JdbcDataBuffer {
         /** */
         private final FileChannel tempFileChannel;
 
+        /** Cleaner to remove temp files. */
+        private static final Cleaner cleaner = Cleaner.create();
+
         FileStorage(InputStream memoryStorage) throws IOException {
             File tempFile = File.createTempFile(TEMP_FILE_PREFIX, ".tmp");
             tempFile.deleteOnExit();
 
             tempFileHolder = new TempFileHolder(tempFile.toPath());
 
-            tempFileCleaner = ((IgniteJdbcThinDriver)IgniteJdbcThinDriver.register())
-                    .getCleaner()
-                    .register(this, tempFileHolder);
+            tempFileCleaner = cleaner.register(this, tempFileHolder);
 
             try (OutputStream diskOutputStream = Files.newOutputStream(tempFile.toPath())) {
                 memoryStorage.transferTo(diskOutputStream);
@@ -381,11 +382,11 @@ public class JdbcDataBufferImpl implements JdbcDataBuffer {
             tempFileChannel = FileChannel.open(tempFileHolder.getPath(), WRITE, READ);
         }
 
-        @Override public StreamPosition createPos() {
-            return new StreamPosition();
+        @Override public StoragePointer createPointer() {
+            return new StoragePointer();
         }
 
-        @Override public int read(StreamPosition pos) throws IOException {
+        @Override public int read(StoragePointer pos) throws IOException {
             byte[] res = new byte[1];
 
             int read = tempFileChannel.read(ByteBuffer.wrap(res), pos.getPos());
@@ -400,7 +401,7 @@ public class JdbcDataBufferImpl implements JdbcDataBuffer {
             }
         }
 
-        @Override public int read(StreamPosition pos, byte[] res, int off, int cnt) throws IOException {
+        @Override public int read(StoragePointer pos, byte[] res, int off, int cnt) throws IOException {
             int read = tempFileChannel.read(ByteBuffer.wrap(res, off, cnt), pos.getPos());
 
             if (read != -1)
@@ -409,11 +410,11 @@ public class JdbcDataBufferImpl implements JdbcDataBuffer {
             return read;
         }
 
-        @Override public void write(StreamPosition pos, int b) throws IOException {
+        @Override public void write(StoragePointer pos, int b) throws IOException {
             write(pos, new byte[] {(byte)b}, 0, 1);
         }
 
-        @Override public void write(StreamPosition pos, byte[] bytes, int off, int len) throws IOException {
+        @Override public void write(StoragePointer pos, byte[] bytes, int off, int len) throws IOException {
             int written = tempFileChannel.write(ByteBuffer.wrap(bytes, off, len), pos.getPos());
 
             advance(pos, written);
@@ -434,7 +435,7 @@ public class JdbcDataBufferImpl implements JdbcDataBuffer {
             tempFileCleaner.clean();
         }
 
-        @Override public void advance(StreamPosition pos, long step) {
+        @Override public void advance(StoragePointer pos, long step) {
             pos.setPos(pos.getPos() + step);
         }
     }
@@ -443,8 +444,8 @@ public class JdbcDataBufferImpl implements JdbcDataBuffer {
      *
      */
     private class BufferInputStream extends InputStream {
-        /** Current position in the in-memory storage. */
-        private final StreamPosition curPos;
+        /** Current position in the storage. */
+        private final StoragePointer curPointer;
 
         /** Stream starting position. */
         private final long start;
@@ -453,7 +454,7 @@ public class JdbcDataBufferImpl implements JdbcDataBuffer {
         private final long len;
 
         /** Remembered buffer position at the moment the {@link BufferInputStream#mark} is called. */
-        private final StreamPosition markedPos;
+        private final StoragePointer markedPointer;
 
         /**
          * @param start starting position.
@@ -463,32 +464,32 @@ public class JdbcDataBufferImpl implements JdbcDataBuffer {
 
             this.len = len;
 
-            curPos = data.createPos();
+            curPointer = storage.createPointer();
 
             if (start > 0)
-                data.advance(curPos, start);
+                storage.advance(curPointer, start);
 
-            markedPos = new StreamPosition(curPos);
+            markedPointer = new StoragePointer(curPointer);
         }
 
         /** {@inheritDoc} */
         @Override public int read() throws IOException {
-            if (curPos.getPos() >= start + len)
+            if (curPointer.getPos() >= start + len)
                 return -1;
 
-            return data.read(curPos);
+            return storage.read(curPointer);
         }
 
         /** {@inheritDoc} */
         @Override public int read(byte res[], int off, int cnt) throws IOException {
-            if (curPos.getPos() >= start + len || curPos.getPos() >= totalCnt)
+            if (curPointer.getPos() >= start + len || curPointer.getPos() >= totalCnt)
                 return -1;
 
-            long availableBytes = Math.min(start + len, totalCnt) - curPos.getPos();
+            long availableBytes = Math.min(start + len, totalCnt) - curPointer.getPos();
 
             int toRead = cnt < availableBytes ? cnt : (int)availableBytes;
 
-            return data.read(curPos, res, off, toRead);
+            return storage.read(curPointer, res, off, toRead);
         }
 
         /** {@inheritDoc} */
@@ -498,33 +499,33 @@ public class JdbcDataBufferImpl implements JdbcDataBuffer {
 
         /** {@inheritDoc} */
         @Override public synchronized void reset() {
-            curPos.set(markedPos);
+            curPointer.set(markedPointer);
         }
 
         /** {@inheritDoc} */
         @Override public synchronized void mark(int readlimit) {
-            markedPos.set(curPos);
+            markedPointer.set(curPointer);
         }
     }
 
     /** */
     private class BufferOutputStream extends OutputStream {
         /** Current position in the in-memory storage. */
-        private final StreamPosition bufPos;
+        private final StoragePointer bufPos;
 
         /**
          * @param pos starting position.
          */
         private BufferOutputStream(long pos) {
-            bufPos = data.createPos();
+            bufPos = storage.createPointer();
 
             if (pos > 0)
-                data.advance(bufPos, pos);
+                storage.advance(bufPos, pos);
         }
 
         /** {@inheritDoc} */
         @Override public void write(int b) throws IOException {
-            data.write(bufPos, b);
+            storage.write(bufPos, b);
 
             totalCnt = Math.max(bufPos.getPos(), totalCnt);
         }
@@ -532,9 +533,9 @@ public class JdbcDataBufferImpl implements JdbcDataBuffer {
         /** {@inheritDoc} */
         @Override public void write(byte[] bytes, int off, int len) throws IOException {
             if (Math.max(bufPos.getPos() + len, totalCnt) > maxMemoryBufferBytes)
-                switchToFile();
+                switchToFileStorage();
 
-            data.write(bufPos, bytes, off, len);
+            storage.write(bufPos, bytes, off, len);
 
             totalCnt = Math.max(bufPos.getPos(), totalCnt);
         }
