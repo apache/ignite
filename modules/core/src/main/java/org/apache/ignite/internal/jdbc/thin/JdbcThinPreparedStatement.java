@@ -48,6 +48,7 @@ import org.apache.ignite.internal.processors.odbc.jdbc.JdbcQuery;
 import org.apache.ignite.internal.processors.odbc.jdbc.JdbcStatementType;
 
 import static java.sql.Types.BINARY;
+import static org.apache.ignite.internal.processors.odbc.SqlInputStreamWrapper.MAX_ARRAY_SIZE;
 
 /**
  * JDBC prepared statement implementation.
@@ -61,15 +62,6 @@ public class JdbcThinPreparedStatement extends JdbcThinStatement implements Prep
 
     /** Parameters metadata. */
     private JdbcThinParameterMetadata metaData;
-
-    /**
-     * The maximum size of array to allocate.
-     * Some VMs reserve some header words in an array.
-     * Attempts to allocate larger arrays may result in
-     * OutOfMemoryError: Requested array size exceeds VM limit
-     * @see java.util.ArrayList#MAX_ARRAY_SIZE
-     */
-    private static final int MAX_ARRAY_SIZE = Integer.MAX_VALUE - 8;
 
     /**
      * Creates new prepared statement.

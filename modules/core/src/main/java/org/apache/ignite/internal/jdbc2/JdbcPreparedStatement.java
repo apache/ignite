@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.jdbc2;
 
+import java.io.ByteArrayOutputStream;
 import java.io.InputStream;
 import java.io.Reader;
 import java.math.BigDecimal;
@@ -44,10 +45,14 @@ import java.util.List;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.internal.jdbc.thin.JdbcThinParameterMetadata;
 import org.apache.ignite.internal.processors.cache.query.SqlFieldsQueryEx;
+import org.apache.ignite.internal.processors.odbc.SqlInputStreamWrapper;
 import org.apache.ignite.internal.processors.odbc.jdbc.JdbcParameterMeta;
 import org.apache.ignite.internal.processors.query.GridQueryFieldMetadata;
 import org.apache.ignite.internal.processors.query.IgniteSQLException;
 import org.jetbrains.annotations.Nullable;
+
+import static java.sql.Types.BINARY;
+import static org.apache.ignite.internal.processors.odbc.SqlInputStreamWrapper.MAX_ARRAY_SIZE;
 
 /**
  * JDBC prepared statement implementation.
@@ -188,9 +193,7 @@ public class JdbcPreparedStatement extends JdbcStatement implements PreparedStat
 
     /** {@inheritDoc} */
     @Override public void setBinaryStream(int paramIdx, InputStream x, int len) throws SQLException {
-        ensureNotClosed();
-
-        throw new SQLFeatureNotSupportedException("Streams are not supported.");
+        setBinaryStream(paramIdx, x, (long)len);
     }
 
     /** {@inheritDoc} */
@@ -410,9 +413,7 @@ public class JdbcPreparedStatement extends JdbcStatement implements PreparedStat
 
     /** {@inheritDoc} */
     @Override public void setBlob(int paramIdx, InputStream inputStream, long len) throws SQLException {
-        ensureNotClosed();
-
-        throw new SQLFeatureNotSupportedException("SQL-specific types are not supported.");
+        setBinaryStream(paramIdx, inputStream, len);
     }
 
     /** {@inheritDoc} */
@@ -446,7 +447,27 @@ public class JdbcPreparedStatement extends JdbcStatement implements PreparedStat
     @Override public void setBinaryStream(int paramIdx, InputStream x, long len) throws SQLException {
         ensureNotClosed();
 
-        throw new SQLFeatureNotSupportedException("Streams are not supported.");
+        if (len < 0)
+            throw new SQLException("Invalid argument. Length should be greater than 0.");
+
+        if (len > MAX_ARRAY_SIZE)
+            throw new SQLFeatureNotSupportedException("Invalid argument. InputStreams with length > " + MAX_ARRAY_SIZE +
+                    " are not supported.");
+
+        if (x == null) {
+            setNull(paramIdx, BINARY);
+        }
+        else {
+            ByteArrayOutputStream buf = new ByteArrayOutputStream((int)len) {
+                /** {@inheritDoc} */
+                @Override public synchronized byte[] toByteArray() {
+                    // Intentiolnally do not create array copy to save memory.
+                    return buf;
+                }
+            };
+
+            setArgument(paramIdx, buf.toByteArray());
+        }
     }
 
     /** {@inheritDoc} */
@@ -467,7 +488,16 @@ public class JdbcPreparedStatement extends JdbcStatement implements PreparedStat
     @Override public void setBinaryStream(int paramIdx, InputStream x) throws SQLException {
         ensureNotClosed();
 
-        throw new SQLFeatureNotSupportedException("Streams are not supported.");
+        if (x == null) {
+            setNull(paramIdx, BINARY);
+        }
+        else {
+            try (SqlInputStreamWrapper streamWrapper = SqlInputStreamWrapper.withUnknownLength(x, 52000)) {
+                setBinaryStream(paramIdx, streamWrapper.getInputStream(), streamWrapper.getLength());
+            } catch (Exception e) {
+                throw new SQLException(e);
+            }
+        }
     }
 
     /** {@inheritDoc} */
@@ -493,9 +523,7 @@ public class JdbcPreparedStatement extends JdbcStatement implements PreparedStat
 
     /** {@inheritDoc} */
     @Override public void setBlob(int paramIdx, InputStream inputStream) throws SQLException {
-        ensureNotClosed();
-
-        throw new SQLFeatureNotSupportedException("SQL-specific types are not supported.");
+        setBinaryStream(paramIdx, inputStream);
     }
 
     /** {@inheritDoc} */
