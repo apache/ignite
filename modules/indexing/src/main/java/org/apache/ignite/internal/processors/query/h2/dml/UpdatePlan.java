@@ -83,7 +83,7 @@ public final class UpdatePlan {
     
     /** Whether absent PK parts should be filled with defaults or not. */
     private boolean fillAbsentPKsWithDefaults;
-
+    
     /** Arguments for fast UPDATE or DELETE. */
     private final FastUpdate fastUpdate;
 
@@ -135,7 +135,7 @@ public final class UpdatePlan {
         this.rows = rows;
         this.rowsNum = rowsNum;
         this.fillAbsentPKsWithDefaults = fillAbsentPKsWithDefaults;
-
+    
         assert mode != null;
         assert tbl != null;
 
@@ -469,7 +469,7 @@ public final class UpdatePlan {
                      colVal = row.size() > j ? row.get(j).get(args) : null;
                 else
                      colVal = row.get(j).get(args);
-
+    
                 if (j == keyColIdx || j == valColIdx) {
                     Class<?> colCls = j == keyColIdx ? desc.type().keyClass() : desc.type().valueClass();
 
