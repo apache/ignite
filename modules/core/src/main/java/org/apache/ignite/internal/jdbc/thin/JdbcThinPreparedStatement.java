@@ -453,12 +453,10 @@ public class JdbcThinPreparedStatement extends JdbcThinStatement implements Prep
             throw new SQLFeatureNotSupportedException("Invalid argument. InputStreams with length > " + MAX_ARRAY_SIZE +
                     " are not supported.");
 
-        if (x == null) {
+        if (x == null)
             setNull(paramIdx, BINARY);
-        }
-        else {
+        else
             setArgument(paramIdx, SqlInputStreamWrapper.withKnownLength(x, (int)length));
-        }
     }
 
     /** {@inheritDoc} */
@@ -479,12 +477,10 @@ public class JdbcThinPreparedStatement extends JdbcThinStatement implements Prep
     @Override public void setBinaryStream(int paramIdx, InputStream x) throws SQLException {
         ensureNotClosed();
 
-        if (x == null) {
+        if (x == null)
             setNull(paramIdx, BINARY);
-        }
-        else {
+        else
             setArgument(paramIdx, SqlInputStreamWrapper.withUnknownLength(x, conn.connectionProperties().getMaxInMemoryLobSize()));
-        }
     }
 
     /** {@inheritDoc} */

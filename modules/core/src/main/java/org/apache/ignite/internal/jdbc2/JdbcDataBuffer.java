@@ -26,7 +26,7 @@ import java.io.OutputStream;
  */
 public interface JdbcDataBuffer extends AutoCloseable {
     /** */
-    long getLength();
+    long totalCnt();
 
     /**
      *
@@ -41,9 +41,7 @@ public interface JdbcDataBuffer extends AutoCloseable {
     /**
      *
      */
-    default InputStream getInputStream() {
-        return getInputStream(0, getLength());
-    }
+    InputStream getInputStream();
 
     /** */
     InputStream getInputStream(long pos, long len);

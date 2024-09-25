@@ -99,7 +99,7 @@ public class SqlInputStreamWrapper implements AutoCloseable {
 
         copyStream(inputStream, rawData.getOutputStream(), MAX_ARRAY_SIZE);
 
-        this.len = Math.toIntExact(rawData.getLength());
+        this.len = Math.toIntExact(rawData.totalCnt());
     }
 
     /**

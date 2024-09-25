@@ -32,6 +32,7 @@ import org.apache.ignite.internal.util.typedef.F;
 import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.cache.query.SqlFieldsQuery.DFLT_LAZY;
+import static org.apache.ignite.internal.jdbc2.JdbcBlob.DFLT_MAX_IN_MEMORY_LOB_SIZE;
 
 /**
  * Holds JDBC connection properties.
@@ -45,9 +46,6 @@ public class ConnectionPropertiesImpl implements ConnectionProperties, Serializa
 
     /** Default socket buffer size. */
     private static final int DFLT_SOCK_BUFFER_SIZE = 64 * 1024;
-
-    /** Default max in-memory LOB size. */
-    private static final int DFLT_MAX_IN_MEMORY_LOB_SIZE = 10 * 1024 * 1024;
 
     /** Property: schema. */
     private static final String PROP_SCHEMA = "schema";

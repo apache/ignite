@@ -17,7 +17,6 @@
 
 package org.apache.ignite.internal.jdbc2;
 
-import java.io.ByteArrayOutputStream;
 import java.io.InputStream;
 import java.io.Reader;
 import java.math.BigDecimal;
@@ -265,7 +264,7 @@ public class JdbcPreparedStatement extends JdbcStatement implements PreparedStat
 
     /** {@inheritDoc} */
     @Override public void setBlob(int paramIdx, Blob x) throws SQLException {
-        setBytes(paramIdx, x.getBytes(1, (int)x.length()));
+        setArgument(paramIdx, x);
     }
 
     /** {@inheritDoc} */
@@ -454,20 +453,10 @@ public class JdbcPreparedStatement extends JdbcStatement implements PreparedStat
             throw new SQLFeatureNotSupportedException("Invalid argument. InputStreams with length > " + MAX_ARRAY_SIZE +
                     " are not supported.");
 
-        if (x == null) {
+        if (x == null)
             setNull(paramIdx, BINARY);
-        }
-        else {
-            ByteArrayOutputStream buf = new ByteArrayOutputStream((int)len) {
-                /** {@inheritDoc} */
-                @Override public synchronized byte[] toByteArray() {
-                    // Intentiolnally do not create array copy to save memory.
-                    return buf;
-                }
-            };
-
-            setArgument(paramIdx, buf.toByteArray());
-        }
+        else
+            setArgument(paramIdx, SqlInputStreamWrapper.withKnownLength(x, (int)len));
     }
 
     /** {@inheritDoc} */
@@ -488,16 +477,10 @@ public class JdbcPreparedStatement extends JdbcStatement implements PreparedStat
     @Override public void setBinaryStream(int paramIdx, InputStream x) throws SQLException {
         ensureNotClosed();
 
-        if (x == null) {
+        if (x == null)
             setNull(paramIdx, BINARY);
-        }
-        else {
-            try (SqlInputStreamWrapper streamWrapper = SqlInputStreamWrapper.withUnknownLength(x, 52000)) {
-                setBinaryStream(paramIdx, streamWrapper.getInputStream(), streamWrapper.getLength());
-            } catch (Exception e) {
-                throw new SQLException(e);
-            }
-        }
+        else
+            setArgument(paramIdx, SqlInputStreamWrapper.withUnknownLength(x, conn.getMaxInMemoryLobSize()));
     }
 
     /** {@inheritDoc} */

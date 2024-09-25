@@ -268,12 +268,15 @@ public class JdbcBlobTest {
         assertThrows(null, () -> blob.setBytes(17, new byte[4]), ArrayIndexOutOfBoundsException.class, null);
 
         assertEquals(4, blob.setBytes(1, new byte[] {3, 2, 1, 0}));
+        assertEquals(8, blob.length());
         assertArrayEquals(new byte[]{3, 2, 1, 0, 4, 5, 6, 7}, blob.getBytes(1, arr.length));
 
         assertEquals(4, blob.setBytes(5, new byte[] {7, 6, 5, 4}));
+        assertEquals(8, blob.length());
         assertArrayEquals(new byte[]{3, 2, 1, 0, 7, 6, 5, 4}, blob.getBytes(1, arr.length));
 
         assertEquals(4, blob.setBytes(7, new byte[] {8, 9, 10, 11}));
+        assertEquals(10, blob.length());
         assertArrayEquals(new byte[] {3, 2, 1, 0, 7, 6, 8, 9, 10, 11}, blob.getBytes(1, (int)blob.length()));
 
         JdbcBlob blob2 = new JdbcBlob(new byte[] {15, 16});

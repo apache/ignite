@@ -43,14 +43,9 @@ public class JdbcDataBufferImpl implements JdbcDataBuffer {
     /** */
     private final Integer maxMemoryBufferBytes;
 
-    /** The total count of bytes. */
-    private long totalCnt;
-
     /** */
     public JdbcDataBufferImpl(int maxMemoryBufferBytes) {
         storage = new MemoryStorage();
-
-        totalCnt = 0;
 
         this.maxMemoryBufferBytes = maxMemoryBufferBytes;
     }
@@ -59,19 +54,24 @@ public class JdbcDataBufferImpl implements JdbcDataBuffer {
     public JdbcDataBufferImpl(int maxMemoryBufferBytes, byte[] arr) {
         storage = new MemoryStorage(arr);
 
-        totalCnt = arr.length;
-
         this.maxMemoryBufferBytes = maxMemoryBufferBytes;
     }
 
     /** */
-    @Override public long getLength() {
-        return totalCnt;
+    @Override public long totalCnt() {
+        return storage.totalCnt();
     }
 
     /** */
     @Override public OutputStream getOutputStream(long pos) {
+        assert pos >= 0;
+        assert pos <= storage.totalCnt();
+
         return new BufferOutputStream(pos);
+    }
+
+    @Override public InputStream getInputStream() {
+        return new BufferInputStream();
     }
 
     /**
@@ -80,12 +80,11 @@ public class JdbcDataBufferImpl implements JdbcDataBuffer {
      * @return {@code InputStream} through which the data can be read.
      */
     @Override public InputStream getInputStream(long pos, long len) {
-        if (pos < 0 || len < 0 || pos > totalCnt)
-            throw new RuntimeException("Invalid argument. Position can't be less than 0 or " +
-                    "greater than size of underlying memory buffers. Requested length can't be negative and can't be " +
-                    "greater than available bytes from given position [pos=" + pos + ", len=" + len + ']');
+        assert pos >= 0;
+        assert len >= 0;
+        assert pos < storage.totalCnt() || storage.totalCnt() == 0;
 
-        if (totalCnt == 0 || len == 0 || pos == totalCnt)
+        if (storage.totalCnt() == 0 || len == 0)
             return InputStream.nullInputStream();
 
         return new BufferInputStream(pos, len);
@@ -93,7 +92,8 @@ public class JdbcDataBufferImpl implements JdbcDataBuffer {
 
     /** */
     @Override public void truncate(long len) throws IOException {
-        totalCnt = len;
+        assert len >= 0;
+        assert len <= storage.totalCnt();
 
         storage.truncate(len);
     }
@@ -158,6 +158,7 @@ public class JdbcDataBufferImpl implements JdbcDataBuffer {
     }
 
     private interface Storage {
+        long totalCnt();
         StoragePointer createPointer();
         int read(StoragePointer pos) throws IOException;
         int read(StoragePointer pos, byte res[], int off, int cnt) throws IOException;
@@ -193,13 +194,23 @@ public class JdbcDataBufferImpl implements JdbcDataBuffer {
         /** The list of buffers. */
         private List<byte[]> buffers = new ArrayList<>();
 
+        /** The total number of bytes in all buffers. */
+        private long totalCnt;
+
         public MemoryStorage() {
             // No-op
         }
 
         public MemoryStorage(byte[] arr) {
-            if (arr.length > 0)
+            if (arr.length > 0) {
                 buffers.add(arr);
+
+                totalCnt = arr.length;
+            }
+        }
+
+        @Override public long totalCnt() {
+            return totalCnt;
         }
 
         @Override public StoragePointer createPointer() {
@@ -207,10 +218,10 @@ public class JdbcDataBufferImpl implements JdbcDataBuffer {
         }
 
         @Override public int read(StoragePointer pos) {
-            byte[] buf = getBuf(pos);
-
-            if (buf == null)
+            if (pos.getPos() >= totalCnt)
                 return -1;
+
+            byte[] buf = getBuf(pos);
 
             int res = buf[getBufPos(pos)] & 0xff;
 
@@ -220,15 +231,18 @@ public class JdbcDataBufferImpl implements JdbcDataBuffer {
         }
 
         @Override public int read(StoragePointer pos, byte[] res, int off, int cnt) {
-            byte[] buf = getBuf(pos);
-
-            if (buf == null)
+            if (pos.getPos() >= totalCnt)
                 return -1;
+
+            byte[] buf = getBuf(pos);
 
             int remaining = cnt;
 
-            while (remaining > 0 && buf!= null) {
+            while (remaining > 0 && pos.getPos() < totalCnt) {
                 int toCopy = Math.min(remaining, buf.length - getBufPos(pos));
+
+                if (toCopy > totalCnt - pos.getPos())
+                    toCopy = (int)(totalCnt - pos.getPos());
 
                 U.arrayCopy(buf, getBufPos(pos), res, off + (cnt - remaining), toCopy);
 
@@ -238,7 +252,7 @@ public class JdbcDataBufferImpl implements JdbcDataBuffer {
                 buf = getBuf(pos);
             }
 
-            return cnt;
+            return cnt - remaining;
         }
 
         @Override public void write(StoragePointer pos, int b) {
@@ -248,6 +262,8 @@ public class JdbcDataBufferImpl implements JdbcDataBuffer {
             getBuf(pos)[getBufPos(pos)] = (byte)(b & 0xff);
 
             advance(pos, 1);
+
+            totalCnt = Math.max(pos.getPos(), totalCnt);
         }
 
         @Override public void write(StoragePointer pos, byte[] bytes, int off, int len) {
@@ -272,6 +288,8 @@ public class JdbcDataBufferImpl implements JdbcDataBuffer {
 
                 advance(pos, remaining);
             }
+
+            totalCnt = Math.max(pos.getPos(), totalCnt);
         }
 
         @Override public void advance(StoragePointer pos, long step) {
@@ -306,6 +324,8 @@ public class JdbcDataBufferImpl implements JdbcDataBuffer {
 
             if (buffers.size() > getBufIdx(pos) + 1)
                 buffers.subList(getBufIdx(pos) + 1, buffers.size()).clear();
+
+            totalCnt = len;
         }
 
         @Override public void close() {
@@ -362,6 +382,9 @@ public class JdbcDataBufferImpl implements JdbcDataBuffer {
         /** Cleaner to remove temp files. */
         private static final Cleaner cleaner = Cleaner.create();
 
+        /** The total number of bytes. */
+        private long totalCnt;
+
         FileStorage(InputStream memoryStorage) throws IOException {
             File tempFile = File.createTempFile(TEMP_FILE_PREFIX, ".tmp");
             tempFile.deleteOnExit();
@@ -380,6 +403,12 @@ public class JdbcDataBufferImpl implements JdbcDataBuffer {
             }
 
             tempFileChannel = FileChannel.open(tempFileHolder.getPath(), WRITE, READ);
+
+            totalCnt = tempFileChannel.size();
+        }
+
+        @Override public long totalCnt() {
+            return totalCnt;
         }
 
         @Override public StoragePointer createPointer() {
@@ -402,6 +431,9 @@ public class JdbcDataBufferImpl implements JdbcDataBuffer {
         }
 
         @Override public int read(StoragePointer pos, byte[] res, int off, int cnt) throws IOException {
+            if (pos.getPos() >= tempFileChannel.size())
+                return -1;
+
             int read = tempFileChannel.read(ByteBuffer.wrap(res, off, cnt), pos.getPos());
 
             if (read != -1)
@@ -418,10 +450,14 @@ public class JdbcDataBufferImpl implements JdbcDataBuffer {
             int written = tempFileChannel.write(ByteBuffer.wrap(bytes, off, len), pos.getPos());
 
             advance(pos, written);
+
+            totalCnt = Math.max(pos.getPos(), totalCnt);
         }
 
         @Override public void truncate(long len) throws IOException {
             tempFileChannel.truncate(len);
+
+            totalCnt = tempFileChannel.size();
         }
 
         @Override public void close() {
@@ -450,19 +486,25 @@ public class JdbcDataBufferImpl implements JdbcDataBuffer {
         /** Stream starting position. */
         private final long start;
 
-        /** Stream length. */
-        private final long len;
+        /** Stream length limit. May be null which means no limit.*/
+        private final Long limit;
 
         /** Remembered buffer position at the moment the {@link BufferInputStream#mark} is called. */
         private final StoragePointer markedPointer;
 
         /**
+         */
+        private BufferInputStream() {
+            this(0, null);
+        }
+
+        /**
          * @param start starting position.
          */
-        private BufferInputStream(long start, long len) {
+        private BufferInputStream(long start, Long limit) {
             this.start = start;
 
-            this.len = len;
+            this.limit = limit;
 
             curPointer = storage.createPointer();
 
@@ -474,7 +516,7 @@ public class JdbcDataBufferImpl implements JdbcDataBuffer {
 
         /** {@inheritDoc} */
         @Override public int read() throws IOException {
-            if (curPointer.getPos() >= start + len)
+            if (limit != null && curPointer.getPos() >= start + limit)
                 return -1;
 
             return storage.read(curPointer);
@@ -482,12 +524,17 @@ public class JdbcDataBufferImpl implements JdbcDataBuffer {
 
         /** {@inheritDoc} */
         @Override public int read(byte res[], int off, int cnt) throws IOException {
-            if (curPointer.getPos() >= start + len || curPointer.getPos() >= totalCnt)
-                return -1;
+            int toRead = cnt;
 
-            long availableBytes = Math.min(start + len, totalCnt) - curPointer.getPos();
+            if (limit != null) {
+                if (curPointer.getPos() >= start + limit)
+                    return -1;
 
-            int toRead = cnt < availableBytes ? cnt : (int)availableBytes;
+                long availableBytes = start + limit - curPointer.getPos();
+
+                if (cnt > availableBytes)
+                    toRead = (int)availableBytes;
+            }
 
             return storage.read(curPointer, res, off, toRead);
         }
@@ -527,17 +574,17 @@ public class JdbcDataBufferImpl implements JdbcDataBuffer {
         @Override public void write(int b) throws IOException {
             storage.write(bufPos, b);
 
-            totalCnt = Math.max(bufPos.getPos(), totalCnt);
+//            totalCnt = Math.max(bufPos.getPos(), totalCnt);
         }
 
         /** {@inheritDoc} */
         @Override public void write(byte[] bytes, int off, int len) throws IOException {
-            if (Math.max(bufPos.getPos() + len, totalCnt) > maxMemoryBufferBytes)
+            if (Math.max(bufPos.getPos() + len, storage.totalCnt()) > maxMemoryBufferBytes)
                 switchToFileStorage();
 
             storage.write(bufPos, bytes, off, len);
 
-            totalCnt = Math.max(bufPos.getPos(), totalCnt);
+//            totalCnt = Math.max(bufPos.getPos(), totalCnt);
         }
     }
 

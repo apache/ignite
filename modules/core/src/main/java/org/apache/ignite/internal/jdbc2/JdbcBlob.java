@@ -31,6 +31,9 @@ import java.sql.SQLException;
  * This implementation can be useful for reading binary fields of objects through JDBC.
  */
 public class JdbcBlob implements Blob {
+    /** Default max in-memory LOB size. */
+    public static final int DFLT_MAX_IN_MEMORY_LOB_SIZE = 10 * 1024 * 1024;
+
     /** */
     private JdbcDataBufferImpl data;
 
@@ -64,22 +67,22 @@ public class JdbcBlob implements Blob {
     @Override public long length() throws SQLException {
         ensureNotClosed();
 
-        return data.getLength();
+        return data.totalCnt();
     }
 
     /** {@inheritDoc} */
     @Override public byte[] getBytes(long pos, int len) throws SQLException {
         ensureNotClosed();
 
-        if (pos < 1 || (data.getLength() - pos < 0 && data.getLength() > 0) || len < 0)
-            throw new SQLException("Invalid argument. Position can't be less than 1 or " +
-                "greater than size of underlying byte array. Requested length also can't be negative " +
-                "[pos=" + pos + ", len=" + len + ']');
-
         try {
+            if (pos < 1 || (pos > data.totalCnt() && data.totalCnt() > 0) || len < 0)
+                throw new SQLException("Invalid argument. Position can't be less than 1 or " +
+                    "greater than size of underlying data. Requested length also can't be negative " +
+                    "[pos=" + pos + ", len=" + len + ", size=" + data.totalCnt() + ']');
+
             long idx = pos - 1;
 
-            int size = len > data.getLength() - idx ? (int)(data.getLength() - idx) : len;
+            int size = len > data.totalCnt() - idx ? (int)(data.totalCnt() - idx) : len;
 
             byte[] res = new byte[size];
 
@@ -96,17 +99,17 @@ public class JdbcBlob implements Blob {
     @Override public InputStream getBinaryStream() throws SQLException {
         ensureNotClosed();
 
-        return data.getInputStream(0, data.getLength());
+        return data.getInputStream();
     }
 
     /** {@inheritDoc} */
     @Override public InputStream getBinaryStream(long pos, long len) throws SQLException {
         ensureNotClosed();
 
-        if (pos < 1 || len < 1 || pos > data.getLength() || len > data.getLength() - pos + 1)
+        if (pos < 1 || len < 1 || pos > data.totalCnt() || len > data.totalCnt() - (pos - 1))
             throw new SQLException("Invalid argument. Position can't be less than 1 or " +
-                "greater than size of underlying byte array. Requested length can't be negative and can't be " +
-                "greater than available bytes from given position [pos=" + pos + ", len=" + len + ']');
+                "greater than size of underlying data. Requested length can't be negative and can't be " +
+                "greater than available bytes from given position [pos=" + pos + ", len=" + len + ", size=" + data.totalCnt() + ']');
 
         return data.getInputStream(pos - 1, len);
     }
@@ -115,7 +118,7 @@ public class JdbcBlob implements Blob {
     @Override public long position(byte[] ptrn, long start) throws SQLException {
         ensureNotClosed();
 
-        if (start < 1 || start > data.getLength() || ptrn.length == 0 || ptrn.length > data.getLength())
+        if (start < 1 || start > data.totalCnt() || ptrn.length == 0 || ptrn.length > data.totalCnt())
             return -1;
 
         long idx = positionImpl(new ByteArrayInputStream(ptrn), ptrn.length, start - 1);
@@ -127,7 +130,7 @@ public class JdbcBlob implements Blob {
     @Override public long position(Blob ptrn, long start) throws SQLException {
         ensureNotClosed();
 
-        if (start < 1 || start > data.getLength() || ptrn.length() == 0 || ptrn.length() > data.getLength())
+        if (start < 1 || start > data.totalCnt() || ptrn.length() == 0 || ptrn.length() > data.totalCnt())
             return -1;
 
         long idx = positionImpl(ptrn.getBinaryStream(), ptrn.length(), start - 1);
@@ -146,7 +149,7 @@ public class JdbcBlob implements Blob {
         assert ptrn.markSupported();
 
         try {
-            InputStream is = data.getInputStream(idx, data.getLength() - idx);
+            InputStream is = data.getInputStream(idx, data.totalCnt() - idx);
 
             boolean patternStarted = false;
 
@@ -203,7 +206,7 @@ public class JdbcBlob implements Blob {
         if (pos < 1)
             throw new SQLException("Invalid argument. Position can't be less than 1 [pos=" + pos + ']');
 
-        if (pos - 1 > data.getLength() || off < 0 || off >= bytes.length || off + len > bytes.length)
+        if (pos - 1 > data.totalCnt() || off < 0 || off >= bytes.length || off + len > bytes.length)
             throw new ArrayIndexOutOfBoundsException();
 
         try {
@@ -220,7 +223,7 @@ public class JdbcBlob implements Blob {
     @Override public OutputStream setBinaryStream(long pos) throws SQLException {
         ensureNotClosed();
 
-        if (pos < 1 || pos > data.getLength() + 1)
+        if (pos < 1 || pos > data.totalCnt() + 1)
             throw new SQLException("Invalid argument. Position can't be less than 1 or greater than Blob length + 1 [pos=" + pos + ']');
 
         return data.getOutputStream(pos - 1);
@@ -230,7 +233,7 @@ public class JdbcBlob implements Blob {
     @Override public void truncate(long len) throws SQLException {
         ensureNotClosed();
 
-        if (len < 0 || len > data.getLength())
+        if (len < 0 || len > data.totalCnt())
             throw new SQLException("Invalid argument. Length can't be " +
                 "less than zero or greater than Blob length [len=" + len + ']');
 

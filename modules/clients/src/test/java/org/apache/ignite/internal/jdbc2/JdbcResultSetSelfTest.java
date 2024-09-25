@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.jdbc2;
 
+import java.io.InputStream;
 import java.io.Serializable;
 import java.lang.reflect.Field;
 import java.math.BigDecimal;
@@ -704,6 +705,24 @@ public class JdbcResultSetSelfTest extends GridCommonAbstractTest {
 
         clob = rs.getClob(24);
         Assert.assertEquals("str", clob.getSubString(1, (int)clob.length()));
+        assertFalse(rs.next());
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    @Test
+    public void testBinaryStream() throws Exception {
+        ResultSet rs = stmt.executeQuery(SQL);
+
+        assertTrue(rs.next());
+
+        InputStream stream = rs.getBinaryStream("blobVal");
+        Assert.assertArrayEquals(stream.readAllBytes(), new byte[] {1});
+
+        stream = rs.getBinaryStream(23);
+        Assert.assertArrayEquals(stream.readAllBytes(), new byte[] {1});
+
         assertFalse(rs.next());
     }
 
