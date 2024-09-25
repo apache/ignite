@@ -89,6 +89,7 @@ class IgniteNodeSpecExcludeDucktests(IgniteNodeSpec):
         Skip the module target directory while building classpath.
         """
         envs = super().envs()
+
         if envs.get("EXCLUDE_MODULES") is not None:
             envs["EXCLUDE_MODULES"] = envs["EXCLUDE_MODULES"] + ",ducktests"
         else:
