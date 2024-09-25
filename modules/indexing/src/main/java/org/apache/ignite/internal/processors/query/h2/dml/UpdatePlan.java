@@ -466,9 +466,9 @@ public final class UpdatePlan {
             for (int j = 0; j < colNames.length; j++) {
                 Object colVal;
                 if (fillAbsentPKsWithDefaults)
-                     colVal = row.size() > j ? row.get(j).get(args) : null;
+                    colVal = row.size() > j ? row.get(j).get(args) : null;
                 else
-                     colVal = row.get(j).get(args);
+                    colVal = row.get(j).get(args);
 
                 if (j == keyColIdx || j == valColIdx) {
                     Class<?> colCls = j == keyColIdx ? desc.type().keyClass() : desc.type().valueClass();

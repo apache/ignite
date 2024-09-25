@@ -18,13 +18,13 @@
 package org.apache.ignite.internal.processors.query.running;
 
 import java.util.Collections;
-import java.util.Map;
-import org.apache.ignite.internal.util.GridBoundedConcurrentLinkedHashMap;
+import java.util.Set;
+import org.apache.ignite.internal.util.GridBoundedConcurrentLinkedHashSet;
 
 /** Class that manages recording and storing SQL plans. */
 public class SqlPlanHistoryTracker {
     /** SQL plan history. */
-    private final GridBoundedConcurrentLinkedHashMap<SqlPlan, Long> sqlPlanHistory;
+    private final GridBoundedConcurrentLinkedHashSet<SqlPlan> sqlPlanHistory;
 
     /** SQL plan history size. */
     private int historySize;
@@ -35,7 +35,7 @@ public class SqlPlanHistoryTracker {
     public SqlPlanHistoryTracker(int historySize) {
         this.historySize = historySize;
 
-        sqlPlanHistory = (historySize > 0) ? new GridBoundedConcurrentLinkedHashMap<>(historySize) : null;
+        sqlPlanHistory = (historySize > 0) ? new GridBoundedConcurrentLinkedHashSet<>(historySize) : null;
     }
 
     /**
@@ -51,15 +51,18 @@ public class SqlPlanHistoryTracker {
 
         SqlPlan sqlPlan = new SqlPlan(plan, qry, schema, loc, engine);
 
-        sqlPlanHistory.put(sqlPlan, sqlPlan.startTime());
+        if (sqlPlanHistory.contains(sqlPlan))
+            sqlPlanHistory.remove(sqlPlan);
+
+        sqlPlanHistory.add(sqlPlan);
     }
 
     /** */
-    public Map<SqlPlan, Long> sqlPlanHistory() {
+    public Set<SqlPlan> sqlPlanHistory() {
         if (historySize <= 0)
-            return Collections.emptyMap();
+            return Collections.emptySet();
 
-        return Collections.unmodifiableMap(sqlPlanHistory);
+        return Collections.unmodifiableSet(sqlPlanHistory);
     }
 
     /**

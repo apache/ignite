@@ -436,6 +436,32 @@ public class SqlPlanHistoryIntegrationTest extends GridCommonAbstractTest {
             assertFalse(qrys.contains(SQL + " where A.fail=" + i));
     }
 
+    /**
+     * Checks that older SQL plan history entries are replaced with newer ones with the same parameters (except for
+     * the beginning time).
+     */
+    @Test
+    public void testEntryReplacement() throws InterruptedException {
+        if (loc || !isFullyFetched || (isClient && sqlEngine == IndexingQueryEngineConfiguration.ENGINE_NAME))
+            return;
+
+        long[] timeStamps = new long[2];
+
+        for (int i = 0; i < 2; i++) {
+            executeQuery(sqlFieldsQry, (q) -> cacheQuery(q, "A"));
+
+            Collection<SqlPlan> plans = getSqlPlanHistory(queryNode());
+
+            assertEquals(1, plans.size());
+
+            timeStamps[i] = plans.stream().findFirst().get().startTime();
+
+            Thread.sleep(10);
+        }
+
+        assertTrue(timeStamps[1] > timeStamps[0]);
+    }
+
     /** Checks that SQL plan history remains empty if history size is set to zero. */
     @Test
     public void testEmptyPlanHistory() {
@@ -598,8 +624,7 @@ public class SqlPlanHistoryIntegrationTest extends GridCommonAbstractTest {
      * @param node Ignite node to check SQL plan history for.
      */
     public Collection<SqlPlan> getSqlPlanHistory(IgniteEx node) {
-        return node.context().query().runningQueryManager().planHistoryTracker()
-            .sqlPlanHistory().keySet();
+        return new ArrayList<>(node.context().query().runningQueryManager().planHistoryTracker().sqlPlanHistory());
     }
 
     /** */
