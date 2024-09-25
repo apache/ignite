@@ -33,6 +33,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
 import javax.cache.configuration.Factory;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.cache.query.BulkLoadContextCursor;
 import org.apache.ignite.cache.query.FieldsQueryCursor;
@@ -63,6 +64,7 @@ import org.apache.ignite.internal.processors.odbc.ClientListenerResponse;
 import org.apache.ignite.internal.processors.odbc.ClientListenerResponseSender;
 import org.apache.ignite.internal.processors.odbc.SqlListenerUtils;
 import org.apache.ignite.internal.processors.odbc.SqlStateCode;
+import org.apache.ignite.internal.processors.platform.client.tx.ClientTxContext;
 import org.apache.ignite.internal.processors.platform.client.tx.ClientTxEndRequest;
 import org.apache.ignite.internal.processors.platform.client.tx.ClientTxStartRequest;
 import org.apache.ignite.internal.processors.query.GridQueryCancel;
@@ -626,7 +628,9 @@ public class JdbcRequestHandler implements ClientListenerRequestHandler {
 
             qry.setSchema(schemaName);
 
-            List<FieldsQueryCursor<List<?>>> results = querySqlFields(qry, cancel);
+            List<FieldsQueryCursor<List<?>>> results = req.txId() == 0
+                ? querySqlFields(qry, cancel)
+                : querySqlFields(req.txId(), qry, cancel);
 
             FieldsQueryCursor<List<?>> fieldsCur = results.get(0);
 
@@ -753,6 +757,32 @@ public class JdbcRequestHandler implements ClientListenerRequestHandler {
         }
         finally {
             cleanupQueryCancellationMeta(unregisterReq, req.requestId());
+        }
+    }
+
+    /** */
+    private List<FieldsQueryCursor<List<?>>> querySqlFields(
+        int txId,
+        SqlFieldsQueryEx qry,
+        GridQueryCancel cancel
+    ) throws IgniteCheckedException {
+        ClientTxContext txCtx = connCtx.txContext(txId);
+
+        if (txCtx == null)
+            throw new IgniteException("Transaction not found [txId=" + txId + ']');
+
+        try {
+            txCtx.acquire(true);
+
+            return querySqlFields(qry, cancel);
+        }
+        finally {
+            try {
+                txCtx.release(true);
+            }
+            catch (Exception e) {
+                log.warning("Failed to release client transaction context", e);
+            }
         }
     }
 
@@ -1356,7 +1386,7 @@ public class JdbcRequestHandler implements ClientListenerRequestHandler {
         try {
             ClientTxEndRequest.endTxAsync(connCtx, req.txId(), req.committed()).get();
 
-            return resultToResonse(new JdbcResult(JdbcResult.TX_START));
+            return resultToResonse(new JdbcTxEndResult(req.requestId()));
         }
         catch (IgniteCheckedException e) {
             U.error(log, "Failed to end transaction [reqId=" + req.requestId() + ", req=" + req + ']', e);

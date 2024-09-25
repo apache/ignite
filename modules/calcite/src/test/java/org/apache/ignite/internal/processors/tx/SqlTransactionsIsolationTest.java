@@ -17,6 +17,11 @@
 
 package org.apache.ignite.internal.processors.tx;
 
+import java.sql.Connection;
+import java.sql.DriverManager;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -73,6 +78,7 @@ import org.junit.runners.Parameterized;
 
 import static java.lang.String.format;
 import static java.util.concurrent.TimeUnit.SECONDS;
+import static org.apache.ignite.internal.jdbc.thin.ConnectionPropertiesImpl.PROP_PREFIX;
 import static org.apache.ignite.internal.processors.tx.SqlTransactionsIsolationTest.ModifyApi.CACHE;
 import static org.apache.ignite.internal.processors.tx.SqlTransactionsIsolationTest.ModifyApi.ENTRY_PROCESSOR;
 import static org.apache.ignite.internal.processors.tx.SqlTransactionsIsolationTest.ModifyApi.SQL;
@@ -105,7 +111,10 @@ public class SqlTransactionsIsolationTest extends GridCommonAbstractTest {
         THIN_VIA_CACHE_API,
 
         /** */
-        THIN_VIA_QUERY
+        THIN_VIA_QUERY,
+
+        /** */
+        THIN_JDBC
     }
 
     /** */
@@ -181,6 +190,18 @@ public class SqlTransactionsIsolationTest extends GridCommonAbstractTest {
     private static IgniteClient thinCli;
 
     /** */
+    private ThreadLocal<Connection> jdbcThinConn = ThreadLocal.withInitial(() -> {
+        try {
+            return DriverManager.getConnection("jdbc:ignite:thin://127.0.0.1:10800?"
+                + PROP_PREFIX + "partitionAwareness=" + partitionAwareness + "&"
+                + PROP_PREFIX + "transactionConcurrency=" + txConcurrency);
+        }
+        catch (SQLException e) {
+            throw new RuntimeException(e);
+        }
+    });
+
+    /** */
     private final TransactionIsolation txIsolation = READ_COMMITTED;
 
     /** */
@@ -203,7 +224,25 @@ public class SqlTransactionsIsolationTest extends GridCommonAbstractTest {
                         for (boolean commit : new boolean[]{false, true}) {
                             for (boolean mutli : new boolean[] {false, true}) {
                                 for (TransactionConcurrency txConcurrency : TransactionConcurrency.values()) {
-                                    for (ExecutorType execType : new ExecutorType[]{ExecutorType.SERVER, ExecutorType.CLIENT}) {
+                                    ExecutorType[] nodeExecTypes = {ExecutorType.SERVER, ExecutorType.CLIENT};
+
+                                    ExecutorType[] thinExecTypes;
+
+                                    if (modify == SQL) {
+                                        thinExecTypes = new ExecutorType[]{
+                                            ExecutorType.THIN_VIA_CACHE_API,
+                                            ExecutorType.THIN_VIA_QUERY,
+                                            ExecutorType.THIN_JDBC
+                                        };
+                                    }
+                                    else {
+                                        thinExecTypes = new ExecutorType[]{
+                                            ExecutorType.THIN_VIA_CACHE_API,
+                                            ExecutorType.THIN_VIA_QUERY
+                                        };
+                                    }
+
+                                    for (ExecutorType execType : nodeExecTypes) {
                                         params.add(new Object[]{
                                             modify,
                                             execType,
@@ -217,8 +256,7 @@ public class SqlTransactionsIsolationTest extends GridCommonAbstractTest {
                                         });
                                     }
 
-                                    for (ExecutorType execType :
-                                            new ExecutorType[]{ExecutorType.THIN_VIA_CACHE_API, ExecutorType.THIN_VIA_QUERY}) {
+                                    for (ExecutorType execType : thinExecTypes) {
                                         for (boolean partitionAwareness : new boolean[]{false, true}) {
                                             params.add(new Object[]{modify,
                                                 execType,
@@ -413,7 +451,9 @@ public class SqlTransactionsIsolationTest extends GridCommonAbstractTest {
                             RunnableX check = () -> {
                                 assertUsersSize(stepCnt * outOfTxSz);
 
-                                assertNull(select(id, CACHE));
+                                if (type != ExecutorType.THIN_JDBC)
+                                    assertNull(select(id, CACHE));
+
                                 assertNull(select(id, SQL));
                             };
 
@@ -624,14 +664,18 @@ public class SqlTransactionsIsolationTest extends GridCommonAbstractTest {
 
         Runnable checkBefore = () -> {
             for (int i = 4; i <= (multi ? 6 : 4); i++) {
-                assertNull(CACHE.name(), select(i, CACHE));
+                if (type != ExecutorType.THIN_JDBC)
+                    assertNull(CACHE.name(), select(i, CACHE));
+
                 assertNull(SQL.name(), select(i, SQL));
             }
         };
 
         Runnable checkAfter = () -> {
             for (int i = 4; i <= (multi ? 6 : 4); i++) {
-                assertEquals(CACHE.name(), JOHN, select(i, CACHE));
+                if (type != ExecutorType.THIN_JDBC)
+                    assertEquals(CACHE.name(), JOHN, select(i, CACHE));
+
                 assertEquals(SQL.name(), JOHN, select(i, SQL));
             }
         };
@@ -674,14 +718,18 @@ public class SqlTransactionsIsolationTest extends GridCommonAbstractTest {
 
         Runnable checkBefore = () -> {
             for (int i = 1; i <= (multi ? 3 : 1); i++) {
-                assertEquals(JOHN, select(i, CACHE));
+                if (type != ExecutorType.THIN_JDBC)
+                    assertEquals(JOHN, select(i, CACHE));
+
                 assertEquals(JOHN, select(i, SQL));
             }
         };
 
         Runnable checkAfter = () -> {
             for (int i = 1; i <= (multi ? 3 : 1); i++) {
-                assertEquals(KYLE, select(i, CACHE));
+                if (type != ExecutorType.THIN_JDBC)
+                    assertEquals(KYLE, select(i, CACHE));
+
                 assertEquals(KYLE, select(i, SQL));
             }
         };
@@ -697,7 +745,8 @@ public class SqlTransactionsIsolationTest extends GridCommonAbstractTest {
                 update(F.t(1, SARAH));
 
             for (int i = 1; i <= (multi ? 3 : 1); i++) {
-                assertEquals(SARAH, select(i, CACHE));
+                if (type != ExecutorType.THIN_JDBC)
+                    assertEquals(SARAH, select(i, CACHE));
                 assertEquals(SARAH, select(i, SQL));
             }
 
@@ -725,15 +774,20 @@ public class SqlTransactionsIsolationTest extends GridCommonAbstractTest {
 
         Runnable checkBefore = () -> {
             for (int i = 1; i <= (multi ? 3 : 1); i++) {
-                assertEquals(JOHN, select(i, CACHE));
+                if (type != ExecutorType.THIN_JDBC)
+                    assertEquals(JOHN, select(i, CACHE));
+
                 assertEquals(JOHN, select(i, SQL));
             }
         };
 
         Runnable checkAfter = () -> {
             for (int i = 1; i <= (multi ? 3 : 1); i++) {
-                assertNull(select(i, CACHE));
+                if (type != ExecutorType.THIN_JDBC)
+                    assertNull(select(i, CACHE));
+
                 assertNull(select(i, SQL));
+
             }
         };
 
@@ -759,6 +813,8 @@ public class SqlTransactionsIsolationTest extends GridCommonAbstractTest {
     /** */
     @Test
     public void testVisibility() {
+        assumeFalse(type == ExecutorType.THIN_JDBC);
+
         sql(format("DELETE FROM %s", tbl()));
 
         assertTableSize(0, tbl());
@@ -804,6 +860,31 @@ public class SqlTransactionsIsolationTest extends GridCommonAbstractTest {
                 }
                 else
                     tx.rollback();
+            }
+        }
+        else if (type == ExecutorType.THIN_JDBC) {
+            try {
+                jdbcThinConn.get().setAutoCommit(false);
+            }
+            catch (SQLException e) {
+                throw new RuntimeException(e);
+            }
+
+            try {
+                test.run();
+            }
+            finally {
+                try {
+                    if (commit)
+                        jdbcThinConn.get().commit();
+                    else
+                        jdbcThinConn.get().rollback();
+
+                    jdbcThinConn.get().setAutoCommit(true);
+                }
+                catch (SQLException e) {
+                    throw new RuntimeException(e);
+                }
             }
         }
         else {
@@ -1052,6 +1133,10 @@ public class SqlTransactionsIsolationTest extends GridCommonAbstractTest {
         if (mode != CacheMode.PARTITIONED)
             return;
 
+        // Partitions filter not supported by JDBC.
+        if (type == ExecutorType.THIN_JDBC)
+            return;
+
         for (Map.Entry<Integer, Set<Integer>> partToKeys : partsToKeys.entrySet()) {
             assertEquals(
                 (long)partToKeys.getValue().size(),
@@ -1144,6 +1229,45 @@ public class SqlTransactionsIsolationTest extends GridCommonAbstractTest {
             return unwrapBinary(thinCli.query(qry).getAll());
         else if (type == ExecutorType.THIN_VIA_CACHE_API)
             return unwrapBinary(thinCli.cache(F.first(thinCli.cacheNames())).query(qry).getAll());
+        else if (type == ExecutorType.THIN_JDBC) {
+            assertTrue("Partition filter not supported", F.isEmpty(parts));
+
+            try {
+                PreparedStatement stmt = jdbcThinConn.get().prepareStatement(sqlText);
+
+                if (!F.isEmpty(args)) {
+                    for (int i = 0; i < args.length; i++)
+                        stmt.setObject(i + 1, args[i]);
+                }
+
+                List<List<?>> res = new ArrayList<>();
+
+                if (sqlText.startsWith("SELECT")) {
+                    try (ResultSet rset = stmt.executeQuery()) {
+                        int colCnt = rset.getMetaData().getColumnCount();
+
+                        while (rset.next()) {
+                            List<Object> row = new ArrayList<>();
+
+                            res.add(row);
+
+                            for (int i = 0; i < colCnt; i++)
+                                row.add(rset.getObject(i + 1));
+                        }
+
+                        return res;
+
+                    }
+                }
+                else
+                    res.add(List.of(stmt.executeUpdate()));
+
+                return res;
+            }
+            catch (SQLException e) {
+                throw new RuntimeException(e);
+            }
+        }
 
         if (multi)
             return node().context().query().querySqlFields(qry, false, false).get(0).getAll();

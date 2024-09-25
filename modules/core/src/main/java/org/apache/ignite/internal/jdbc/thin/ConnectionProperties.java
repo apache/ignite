@@ -18,7 +18,6 @@
 package org.apache.ignite.internal.jdbc.thin;
 
 import java.sql.SQLException;
-import org.apache.ignite.configuration.TransactionConfiguration;
 import org.apache.ignite.internal.processors.odbc.jdbc.JdbcThinFeature;
 import org.apache.ignite.internal.util.HostAndPortRange;
 import org.jetbrains.annotations.Nullable;
@@ -563,16 +562,14 @@ public interface ConnectionProperties {
     public void setQueryEngine(String qryEngine);
 
     /**
-     * @return {@code True} if transactions enabled, {@code false} otherwise.
-     * @see TransactionConfiguration#isTxAwareQueriesEnabled()
+     * @return Transaction concurrency value.
      */
-    public boolean isTxEnabled();
+    public String getTransactionConcurrency();
 
     /**
-     * Set to {@code true} to enable transactions.
+     * Sets transaction concurrency.
      *
-     * @param txEnabled Whether to enable transactions support.
-     * @see TransactionConfiguration#setTxAwareQueriesEnabled(boolean)
+     * @param transactionConcurrency Transaction concurrecny.
      */
-    public void setTxEnabled(boolean txEnabled);
+    public void setTransactionConcurrency(String transactionConcurrency);
 }

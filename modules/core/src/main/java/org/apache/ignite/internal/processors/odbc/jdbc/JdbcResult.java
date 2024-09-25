@@ -235,6 +235,16 @@ public class JdbcResult implements JdbcRawBinarylizable {
 
                 break;
 
+            case TX_START:
+                res = new JdbcTxStartResult();
+
+                break;
+
+            case TX_END:
+                res = new JdbcTxEndResult();
+
+                break;
+
             default:
                 throw new IgniteException("Unknown SQL listener request ID: [request ID=" + resId + ']');
         }

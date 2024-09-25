@@ -29,6 +29,7 @@ import org.apache.ignite.internal.processors.odbc.SqlStateCode;
 import org.apache.ignite.internal.processors.odbc.jdbc.JdbcThinFeature;
 import org.apache.ignite.internal.util.HostAndPortRange;
 import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.transactions.TransactionConcurrency;
 import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.cache.query.SqlFieldsQuery.DFLT_LAZY;
@@ -247,9 +248,14 @@ public class ConnectionPropertiesImpl implements ConnectionProperties, Serializa
     private final StringProperty qryEngine = new StringProperty("queryEngine",
         "Use specified SQL query engine for a connection.", null, null, false, null);
 
-    /** Use specified SQL query engine for a connection. */
-    private final BooleanProperty txEnabled = new BooleanProperty("transactionsEnabled",
-        "Enable transactions if supported on server.", null, false);
+    /** Transaction concurrency. */
+    private StringProperty transactionConcurrency = new StringProperty("transactionConcurrency",
+        "Transaction concurrencty level.",
+        TransactionConcurrency.OPTIMISTIC.name(),
+        new String[]{TransactionConcurrency.OPTIMISTIC.name(), TransactionConcurrency.PESSIMISTIC.name()},
+        false,
+        null
+    );
 
     /** Properties array. */
     private final ConnectionProperty[] propsArr = {
@@ -271,7 +277,7 @@ public class ConnectionPropertiesImpl implements ConnectionProperties, Serializa
         disabledFeatures,
         keepBinary,
         qryEngine,
-        txEnabled
+        transactionConcurrency
     };
 
     /** {@inheritDoc} */
@@ -681,13 +687,13 @@ public class ConnectionPropertiesImpl implements ConnectionProperties, Serializa
     }
 
     /** {@inheritDoc} */
-    @Override public boolean isTxEnabled() {
-        return txEnabled.value();
+    @Override public String getTransactionConcurrency() {
+        return transactionConcurrency.value();
     }
 
     /** {@inheritDoc} */
-    @Override public void setTxEnabled(boolean txEnabled) {
-        this.txEnabled.setValue(txEnabled);
+    @Override public void setTransactionConcurrency(String transactionConcurrency) {
+        this.transactionConcurrency.setValue(transactionConcurrency);
     }
 
     /**

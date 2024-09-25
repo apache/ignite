@@ -772,9 +772,6 @@ public class JdbcThinTcpIo {
         for (String f : disabledFeaturesStr.split("\\W+"))
             features.remove(JdbcThinFeature.valueOf(f.toUpperCase()));
 
-        if (!connProps.isTxEnabled())
-            features.remove(JdbcThinFeature.TX_AWARE_QUERIES);
-
         return features;
     }
 }

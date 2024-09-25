@@ -23,29 +23,24 @@ import org.apache.ignite.internal.binary.BinaryWriterExImpl;
 import org.apache.ignite.internal.util.typedef.internal.S;
 
 /**
- * JDBC start transaction result.
+ * JDBC end transaction result.
  */
-public class JdbcTxStartResult extends JdbcResult {
+public class JdbcTxEndResult extends JdbcResult {
     /** ID of initial request. */
     private long reqId;
 
-    /** Transaction id. */
-    private int txId;
-
     /** Default constructor for deserialization purpose. */
-    public JdbcTxStartResult() {
-        super(TX_START);
+    public JdbcTxEndResult() {
+        super(TX_END);
     }
 
     /**
      * @param reqId ID of initial request.
-     * @param txId Transaction id.
      */
-    public JdbcTxStartResult(long reqId, int txId) {
+    public JdbcTxEndResult(long reqId) {
         this();
 
         this.reqId = reqId;
-        this.txId = txId;
     }
 
     /** {@inheritDoc} */
@@ -56,7 +51,6 @@ public class JdbcTxStartResult extends JdbcResult {
         super.writeBinary(writer, protoCtx);
 
         writer.writeLong(reqId);
-        writer.writeInt(txId);
     }
 
     /** {@inheritDoc} */
@@ -67,7 +61,6 @@ public class JdbcTxStartResult extends JdbcResult {
         super.readBinary(reader, protoCtx);
 
         reqId = reader.readLong();
-        txId = reader.readInt();
     }
 
     /**
@@ -77,15 +70,8 @@ public class JdbcTxStartResult extends JdbcResult {
         return reqId;
     }
 
-    /**
-     * @return Transaction id.
-     */
-    public int txId() {
-        return txId;
-    }
-
     /** {@inheritDoc} */
     @Override public String toString() {
-        return S.toString(JdbcTxStartResult.class, this);
+        return S.toString(JdbcTxEndResult.class, this);
     }
 }

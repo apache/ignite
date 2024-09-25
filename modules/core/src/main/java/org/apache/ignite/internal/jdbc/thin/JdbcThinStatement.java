@@ -233,7 +233,8 @@ public class JdbcThinStatement implements Statement {
         try {
 
             JdbcQueryExecuteRequest req = new JdbcQueryExecuteRequest(stmtType, schema, pageSize,
-                maxRows, conn.getAutoCommit(), explicitTimeout, sql, args == null ? null : args.toArray(new Object[args.size()]));
+                maxRows, conn.getAutoCommit(), explicitTimeout, sql, args == null ? null : args.toArray(new Object[args.size()]),
+                conn.transactionContext().txId());
 
             JdbcResultWithIo resWithIo = conn.sendRequest(req, this, null);
 
@@ -290,7 +291,7 @@ public class JdbcThinStatement implements Statement {
             else
                 throw new SQLException("Unexpected result [res=" + res0 + ']');
 
-            if (onlyUpdates && conn.getAutoCommit() && conn.txSupported())
+            if (onlyUpdates && conn.getAutoCommit() && conn.txSupportedOnServer())
                 conn.endTransactionIfExists(true);
         }
         finally {

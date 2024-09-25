@@ -173,6 +173,9 @@ public class JdbcThinConnection implements Connection {
     /** Zero timeout as query timeout means no timeout. */
     static final int NO_TIMEOUT = 0;
 
+    /** No transaction id. */
+    static final int NO_TX = 0;
+
     /** Index generator. */
     private static final AtomicLong IDX_GEN = new AtomicLong();
 
@@ -196,6 +199,9 @@ public class JdbcThinConnection implements Connection {
 
     /** Current transaction isolation. */
     private int txIsolation;
+
+    /** Transaction concurrencty */
+    private final TransactionConcurrency txConcurrency;
 
     /** Auto-commit flag. */
     private boolean autoCommit;
@@ -309,8 +315,9 @@ public class JdbcThinConnection implements Connection {
             baseEndpointVer = null;
         }
 
-        holdability = txSupported() ? CLOSE_CURSORS_AT_COMMIT : HOLD_CURSORS_OVER_COMMIT;
-        txIsolation = txSupported() ? TRANSACTION_READ_UNCOMMITTED : TRANSACTION_NONE;
+        holdability = txSupportedOnServer() ? CLOSE_CURSORS_AT_COMMIT : HOLD_CURSORS_OVER_COMMIT;
+        txIsolation = txSupportedOnServer() ? TRANSACTION_READ_COMMITTED : TRANSACTION_NONE;
+        txConcurrency = TransactionConcurrency.valueOf(connProps.getTransactionConcurrency());
     }
 
     /** Create new binary context. */
@@ -361,10 +368,15 @@ public class JdbcThinConnection implements Connection {
     }
 
     /** */
-    boolean txSupported() {
-        return partitionAwareness
+    boolean txSupportedOnServer() {
+        return (partitionAwareness
             ? ios.firstEntry().getValue().isTxAwareQueriesSupported()
-            : singleIo.isTxAwareQueriesSupported();
+            : singleIo.isTxAwareQueriesSupported());
+    }
+
+    /** */
+    private boolean txEnabledForConnection() {
+        return txSupportedOnServer() && txIsolation != TRANSACTION_NONE;
     }
 
     /** */
@@ -409,7 +421,7 @@ public class JdbcThinConnection implements Connection {
                 streamState = new StreamState((SqlSetStreamingCommand)cmd, cliIo);
 
                 sendRequest(new JdbcQueryExecuteRequest(JdbcStatementType.ANY_STATEMENT_TYPE,
-                    schema, 1, 1, autoCommit, stmt.explicitTimeout, sql, null), stmt, cliIo);
+                    schema, 1, 1, autoCommit, stmt.explicitTimeout, sql, null, NO_TX), stmt, cliIo);
 
                 streamState.start();
             }
@@ -463,13 +475,13 @@ public class JdbcThinConnection implements Connection {
 
     /** {@inheritDoc} */
     @Override public PreparedStatement prepareStatement(String sql) throws SQLException {
-        return prepareStatement(sql, TYPE_FORWARD_ONLY, CONCUR_READ_ONLY, HOLD_CURSORS_OVER_COMMIT);
+        return prepareStatement(sql, TYPE_FORWARD_ONLY, CONCUR_READ_ONLY, holdability);
     }
 
     /** {@inheritDoc} */
     @Override public PreparedStatement prepareStatement(String sql, int resSetType,
         int resSetConcurrency) throws SQLException {
-        return prepareStatement(sql, resSetType, resSetConcurrency, HOLD_CURSORS_OVER_COMMIT);
+        return prepareStatement(sql, resSetType, resSetConcurrency, holdability);
     }
 
     /** {@inheritDoc} */
@@ -504,7 +516,7 @@ public class JdbcThinConnection implements Connection {
         if (resSetConcurrency != CONCUR_READ_ONLY)
             throw new SQLFeatureNotSupportedException("Invalid concurrency (updates are not supported).");
 
-        if (txSupported() && resSetHoldability == HOLD_CURSORS_OVER_COMMIT)
+        if (txEnabledForConnection() && resSetHoldability == HOLD_CURSORS_OVER_COMMIT)
             throw new SQLFeatureNotSupportedException("Invalid holdability (can't hold cursor over commit).");
     }
 
@@ -561,7 +573,7 @@ public class JdbcThinConnection implements Connection {
         if (autoCommit)
             throw new SQLException("Transaction cannot be committed explicitly in auto-commit mode.");
 
-        if (txSupported())
+        if (txEnabledForConnection())
             endTransactionIfExists(true);
         else
             maybeLogTransactionWarning(true);
@@ -574,7 +586,7 @@ public class JdbcThinConnection implements Connection {
         if (autoCommit)
             throw new SQLException("Transaction cannot be rolled back explicitly in auto-commit mode.");
 
-        if (txSupported())
+        if (txEnabledForConnection())
             endTransactionIfExists(false);
         else
             maybeLogTransactionWarning(true);
@@ -670,7 +682,7 @@ public class JdbcThinConnection implements Connection {
             case Connection.TRANSACTION_READ_UNCOMMITTED:
             case Connection.TRANSACTION_REPEATABLE_READ:
             case Connection.TRANSACTION_SERIALIZABLE:
-                if (txSupported())
+                if (txSupportedOnServer())
                     throw new SQLException("Requested isolation level not supported by the server: " + level);
 
                 break;
@@ -722,7 +734,7 @@ public class JdbcThinConnection implements Connection {
         if (holdability != HOLD_CURSORS_OVER_COMMIT && holdability != CLOSE_CURSORS_AT_COMMIT)
             throw new SQLException("Invalid result set holdability value.");
 
-        if (txSupported() && holdability == HOLD_CURSORS_OVER_COMMIT)
+        if (txSupportedOnServer() && holdability == HOLD_CURSORS_OVER_COMMIT)
             throw new SQLException("When transactions enabled all cursors are closed on commit.");
 
         this.holdability = holdability;
@@ -961,8 +973,7 @@ public class JdbcThinConnection implements Connection {
      * @throws SQLException If failed.
      */
     TxContext transactionContext() throws SQLException {
-        if (!txSupported()
-            || getTransactionIsolation() == TRANSACTION_NONE)
+        if (!txEnabledForConnection())
             return emptyCtx;
 
         if (isTxOpen())
@@ -970,7 +981,7 @@ public class JdbcThinConnection implements Connection {
 
         assert txCtx == null;
 
-        txCtx = new TxContextImpl();
+        txCtx = new TxContextImpl(txIsolation, txConcurrency);
 
         return txCtx;
     }
@@ -2061,7 +2072,7 @@ public class JdbcThinConnection implements Connection {
 
     /** */
     private void maybeLogTransactionWarning(boolean logRequired) {
-        if (logRequired && !txSupported())
+        if (logRequired && !txSupportedOnServer())
             LOG.warning("Transactions are not supported.");
     }
 
@@ -2576,14 +2587,17 @@ public class JdbcThinConnection implements Connection {
         /** Transaction id. */
         int txId;
 
+        /** Closed flag. */
+        boolean closed;
+
         /** Tracked statements to close results on transaction end. */
         private final Set<JdbcThinStatement> stmts = Collections.newSetFromMap(new IdentityHashMap<>());
 
         /** */
-        public TxContextImpl() throws SQLException {
+        public TxContextImpl(int jdbcIsolation, TransactionConcurrency transactionConcurrency) throws SQLException {
             JdbcResultWithIo res = sendRequest(new JdbcTxStartRequest(
-                TransactionConcurrency.PESSIMISTIC,
-                TransactionIsolation.READ_COMMITTED,
+                transactionConcurrency,
+                isolation(jdbcIsolation),
                 DFLT_TX_TIMEOUT,
                 DFLT_TX_LABEL
             ));
@@ -2594,6 +2608,11 @@ public class JdbcThinConnection implements Connection {
 
         /** {@inheritDoc} */
         @Override public void end(boolean commit) throws SQLException {
+            if (closed)
+                return;
+
+            closed = true;
+
             if (!autoCommit) {
                 for (JdbcThinStatement stmt : stmts)
                     stmt.closeResults();
@@ -2603,13 +2622,37 @@ public class JdbcThinConnection implements Connection {
         }
 
         /** {@inheritDoc} */
-        @Override public void track(JdbcThinStatement stmt) {
+        @Override public void track(JdbcThinStatement stmt) throws SQLException {
+            if (closed)
+                throw new SQLException("Transaction context closed");
+
             stmts.add(stmt);
         }
 
         /** {@inheritDoc} */
         @Override public JdbcThinTcpIo txIo() {
             return txIo;
+        }
+
+        /** {@inheritDoc} */
+        @Override public int txId() {
+            return txId;
+        }
+
+        /** */
+        private TransactionIsolation isolation(int jdbcIsolation) throws SQLException {
+            switch (jdbcIsolation) {
+                case TRANSACTION_READ_COMMITTED:
+                    return TransactionIsolation.READ_COMMITTED;
+                case TRANSACTION_REPEATABLE_READ:
+                    return TransactionIsolation.REPEATABLE_READ;
+                case TRANSACTION_SERIALIZABLE:
+                    return TransactionIsolation.SERIALIZABLE;
+                case TRANSACTION_NONE:
+                case TRANSACTION_READ_UNCOMMITTED:
+                default:
+                    throw new SQLException("Transaction level not supported by the server: " + jdbcIsolation);
+            }
         }
     }
 
@@ -2621,13 +2664,18 @@ public class JdbcThinConnection implements Connection {
         }
 
         /** */
-        default void track(JdbcThinStatement stmt) {
+        default void track(JdbcThinStatement stmt) throws SQLException {
             // No-op.
         }
 
         /** */
         default JdbcThinTcpIo txIo() {
             throw new UnsupportedOperationException();
+        }
+
+        /** */
+        default int txId() {
+            return NO_TX;
         }
     }
 }
