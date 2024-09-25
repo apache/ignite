@@ -397,8 +397,17 @@ public class IgniteServiceProcessor extends GridProcessorAdapter implements Igni
 
         ServiceProcessorCommonDiscoveryData clusterData = (ServiceProcessorCommonDiscoveryData)data.commonData();
 
-        for (ServiceInfo desc : clusterData.registeredServices())
+        for (ServiceInfo desc : clusterData.registeredServices()) {
+            try {
+                unmarshalNodeFilterIfNeeded(desc.configuration());
+            }
+            catch (IgniteCheckedException e) {
+                throw new IgniteException("Cannot join the cluster. " +
+                    "Failed to unmarshal service node filter [srvcCfg=" + desc.configuration() + ']', e);
+            }
+
             registerService(desc);
+        }
     }
 
     /** {@inheritDoc} */
@@ -413,15 +422,27 @@ public class IgniteServiceProcessor extends GridProcessorAdapter implements Igni
         ClusterNode node,
         DiscoveryDataBag.JoiningNodeDiscoveryData data
     ) {
-        if (data.joiningNodeData() == null || !ctx.security().enabled())
+        if (data.joiningNodeData() == null)
             return null;
 
         List<ServiceInfo> svcs = ((ServiceProcessorJoinNodeDiscoveryData)data.joiningNodeData()).services();
 
-        SecurityException err = checkDeployPermissionDuringJoin(node, svcs);
+        if (ctx.security().enabled()) {
+            SecurityException err = checkDeployPermissionDuringJoin(node, svcs);
 
-        if (err != null)
-            return new IgniteNodeValidationResult(node.id(), err.getMessage());
+            if (err != null)
+                return new IgniteNodeValidationResult(node.id(), err.getMessage());
+        }
+
+        for (ServiceInfo svc : svcs) {
+            try {
+                unmarshalNodeFilterIfNeeded(svc.configuration());
+            }
+            catch (IgniteCheckedException e) {
+                return new IgniteNodeValidationResult(node.id(),
+                    "Failed to unmarshal service node filter that configured on the joining node. "  + e.getMessage());
+            }
+        }
 
         return null;
     }
@@ -1136,9 +1157,6 @@ public class IgniteServiceProcessor extends GridProcessorAdapter implements Igni
     Map<UUID, Integer> reassign(@NotNull IgniteUuid srvcId, @NotNull ServiceConfiguration cfg,
         @NotNull AffinityTopologyVersion topVer,
         @Nullable TreeMap<UUID, Integer> oldTop) throws IgniteCheckedException {
-        if (cfg instanceof LazyServiceConfiguration)
-            unmarshalNodeFilterIfNeeded((LazyServiceConfiguration)cfg);
-
         Object nodeFilter = cfg.getNodeFilter();
 
         if (nodeFilter != null)
@@ -1729,7 +1747,7 @@ public class IgniteServiceProcessor extends GridProcessorAdapter implements Igni
                 }
             }
 
-            for (ServiceConfiguration srvcCfg : prepCfgs.cfgs) {
+            for (LazyServiceConfiguration srvcCfg : prepCfgs.cfgs) {
                 ServiceInfo srvcInfo = new ServiceInfo(ctx.localNodeId(), IgniteUuid.randomUuid(), srvcCfg, true);
 
                 srvcInfo.context(ctx);

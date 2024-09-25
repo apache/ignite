@@ -20,6 +20,7 @@ import java.util.Collections;
 import java.util.HashSet;
 import java.util.Set;
 import java.util.UUID;
+import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.failure.StopNodeFailureHandler;
@@ -177,7 +178,13 @@ public class IgniteServiceDeploymentClassLoadingDefaultMarshallerTest extends Gr
                 .newInstance(cli.context().localNodeId()))
             .setTotalCount(1);
 
+        // 1. Node filter class not found on nodes.
         assertThrowsWithCause(() -> cli.services().deploy(svcCfg), ServiceDeploymentException.class);
+
+        // 2. Node filter class not found on cluster nodes during node join.
+        IgniteConfiguration cfg = getConfiguration(getTestIgniteInstanceName(SERVER_NODE_WITH_EXT_CLASS_LOADER)).setServiceConfiguration(svcCfg);
+
+        assertThrowsWithCause(() -> startGrid(cfg), IgniteCheckedException.class);
 
         assertTrue(cli.services().serviceDescriptors().isEmpty());
         assertTrue(srv.services().serviceDescriptors().isEmpty());
@@ -185,6 +192,28 @@ public class IgniteServiceDeploymentClassLoadingDefaultMarshallerTest extends Gr
         // Check node availability.
         srv.createCache(DEFAULT_CACHE_NAME).put(1, 1);
         cli.cache(DEFAULT_CACHE_NAME).put(2, 2);
+    }
+
+    /** @throws Exception If failed. */
+    @Test
+    public void testFailWhenNodeFilterClassNotFoundOnJoiningNode() throws Exception {
+        IgniteEx srv = startGrid(SERVER_NODE_WITH_EXT_CLASS_LOADER);
+        IgniteEx cli = startClientGrid(CLIENT_NODE_WITH_EXT_CLASS_LOADER);
+
+        ServiceConfiguration svcCfg = new ServiceConfiguration()
+            .setName("TestDeploymentService")
+            .setService(((Class<Service>)extClsLdr.loadClass(NOOP_SERVICE_CLS_NAME)).getDeclaredConstructor().newInstance())
+            .setNodeFilter(((Class<IgnitePredicate<ClusterNode>>)extClsLdr.loadClass(NODE_FILTER_CLS_NAME))
+                .getConstructor(UUID.class)
+                .newInstance(cli.context().localNodeId()))
+            .setTotalCount(1);
+
+        cli.services().deploy(svcCfg);
+
+        assertThrowsWithCause(() -> startGrid(SERVER_NODE), IgniteCheckedException.class);
+
+        assertEquals(1, cli.services().serviceDescriptors().size());
+        assertEquals(1, srv.services().serviceDescriptors().size());
     }
 
     /**
