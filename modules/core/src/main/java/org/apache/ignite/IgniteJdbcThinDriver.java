@@ -17,7 +17,6 @@
 
 package org.apache.ignite;
 
-import java.lang.ref.Cleaner;
 import java.sql.Connection;
 import java.sql.Driver;
 import java.sql.DriverManager;
