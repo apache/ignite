@@ -223,14 +223,13 @@ public class SqlTransactionsIsolationTest extends GridCommonAbstractTest {
     public static Collection<?> parameters() {
         List<Object[]> params = new ArrayList<>();
 
-        for (ModifyApi modify : ModifyApi.values()) {
-            for (CacheMode cacheMode : CacheMode.values()) {
-                for (int gridCnt : new int[]{1, 3, 5}) {
-                    int[] backups = gridCnt > 1
-                        ? new int[]{1, gridCnt - 1}
-                        : new int[]{0};
-
-                    for (int backup: backups) {
+        for (CacheMode cacheMode : CacheMode.values()) {
+            for (int gridCnt : new int[]{1, 3, 5}) {
+                int[] backups = gridCnt > 1
+                    ? new int[]{1, gridCnt - 1}
+                    : new int[]{0};
+                for (int backup: backups) {
+                    for (ModifyApi modify : ModifyApi.values()) {
                         for (boolean commit : new boolean[]{false, true}) {
                             for (boolean mutli : new boolean[] {false, true}) {
                                 for (TransactionConcurrency txConcurrency : TransactionConcurrency.values()) {
@@ -392,10 +391,15 @@ public class SqlTransactionsIsolationTest extends GridCommonAbstractTest {
     @Override protected void beforeTest() throws Exception {
         super.beforeTest();
 
-        boolean reinit = Ignition.allGrids().size() - 1 != gridCnt
-            || partitionAwareness != thinCliCfg.isPartitionAwarenessEnabled()
-            || mode != cli.cache(tbl()).getConfiguration(CacheConfiguration.class).getCacheMode()
-            || backups != cli.cache(tbl()).getConfiguration(CacheConfiguration.class).getBackups();
+        boolean reinit = gridCnt != Ignition.allGrids().size() - 1
+            || partitionAwareness != thinCliCfg.isPartitionAwarenessEnabled();
+
+        if (!reinit) {
+            CacheConfiguration ccfg = cli.cache(tbl()).getConfiguration(CacheConfiguration.class);
+
+            reinit = mode != ccfg.getCacheMode()
+                || (ccfg.getCacheMode() == CacheMode.PARTITIONED && backups != ccfg.getBackups());
+        }
 
         if (reinit) {
             stopAllGrids();
