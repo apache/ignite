@@ -190,9 +190,19 @@ public class SqlTransactionsIsolationTest extends GridCommonAbstractTest {
     private static IgniteClient thinCli;
 
     /** */
+    private static ClientConfiguration thinCliCfg;
+
+    /** */
     private ThreadLocal<Connection> jdbcThinConn = ThreadLocal.withInitial(() -> {
         try {
-            return DriverManager.getConnection("jdbc:ignite:thin://127.0.0.1:10800?"
+            String addrs = partitionAwareness
+                ? Ignition.allGrids().stream()
+                    .filter(n -> !n.configuration().isClientMode())
+                    .map(n -> "127.0.0.1:" + ((IgniteEx)n).context().clientListener().port())
+                    .collect(Collectors.joining(","))
+                : "127.0.0.1:10800";
+
+            return DriverManager.getConnection("jdbc:ignite:thin://" + addrs + "?"
                 + PROP_PREFIX + "partitionAwareness=" + partitionAwareness + "&"
                 + PROP_PREFIX + "transactionConcurrency=" + txConcurrency);
         }
@@ -293,18 +303,33 @@ public class SqlTransactionsIsolationTest extends GridCommonAbstractTest {
 
     /** */
     private void init() throws Exception {
+        thinCliCfg = new ClientConfiguration()
+            .setAddresses(Config.SERVER)
+            .setPartitionAwarenessEnabled(partitionAwareness);
+
         srv = startGrids(gridCnt);
         cli = startClientGrid("client");
-        thinCli = Ignition.startClient(new ClientConfiguration()
-            .setAddresses(Config.SERVER)
-            .setPartitionAwarenessEnabled(partitionAwareness));
+        thinCli = Ignition.startClient(thinCliCfg);
 
-        cli.createCache(new CacheConfiguration<>(DEFAULT_CACHE_NAME).setAtomicityMode(CacheAtomicityMode.TRANSACTIONAL));
+        cli.createCache(new CacheConfiguration<>(DEFAULT_CACHE_NAME)
+            .setAtomicityMode(CacheAtomicityMode.TRANSACTIONAL)
+            .setBackups(backups));
+
+        cli.createCache(new CacheConfiguration<Integer, Integer>()
+            .setName(tableName(TBL, mode))
+            .setAtomicityMode(CacheAtomicityMode.TRANSACTIONAL)
+            .setBackups(backups)
+            .setCacheMode(mode)
+            .setWriteSynchronizationMode(CacheWriteSynchronizationMode.FULL_SYNC)
+            .setSqlSchema(QueryUtils.DFLT_SCHEMA)
+            .setQueryEntities(Collections.singleton(new QueryEntity()
+                .setTableName(tableName(TBL, mode))
+                .setKeyType(Long.class.getName())
+                .setValueType(Long.class.getName()))));
 
         for (CacheMode mode : CacheMode.values()) {
             String users = tableName(USERS, mode);
             String deps = tableName(DEPARTMENTS, mode);
-            String tbl = tableName(TBL, mode);
 
             LinkedHashMap<String, String> userFlds = new LinkedHashMap<>();
 
@@ -353,18 +378,6 @@ public class SqlTransactionsIsolationTest extends GridCommonAbstractTest {
                     .setValueType(String.class.getName())
                     .setKeyFieldName("id")
                     .setFields(depFlds))));
-
-            cli.createCache(new CacheConfiguration<Integer, Integer>()
-                .setName(tbl)
-                .setAtomicityMode(CacheAtomicityMode.TRANSACTIONAL)
-                .setBackups(backups)
-                .setCacheMode(this.mode)
-                .setWriteSynchronizationMode(CacheWriteSynchronizationMode.FULL_SYNC)
-                .setSqlSchema(QueryUtils.DFLT_SCHEMA)
-                .setQueryEntities(Collections.singleton(new QueryEntity()
-                    .setTableName(tbl)
-                    .setKeyType(Long.class.getName())
-                    .setValueType(Long.class.getName()))));
         }
     }
 
@@ -379,14 +392,29 @@ public class SqlTransactionsIsolationTest extends GridCommonAbstractTest {
     @Override protected void beforeTest() throws Exception {
         super.beforeTest();
 
-        if (F.isEmpty(Ignition.allGrids()))
+        boolean reinit = Ignition.allGrids().size() - 1 != gridCnt
+            || partitionAwareness != thinCliCfg.isPartitionAwarenessEnabled()
+            || mode != cli.cache(tbl()).getConfiguration(CacheConfiguration.class).getCacheMode()
+            || backups != cli.cache(tbl()).getConfiguration(CacheConfiguration.class).getBackups();
+
+        if (reinit) {
+            stopAllGrids();
+
             init();
+        }
 
         cli.cache(users()).removeAll();
         cli.cache(tbl()).removeAll();
         cli.cache(departments()).removeAll();
 
         insert(F.t(1, JOHN));
+
+        assertEquals(gridCnt + 1, Ignition.allGrids().size());
+        assertEquals(mode, cli.cache(tbl()).getConfiguration(CacheConfiguration.class).getCacheMode());
+        assertEquals(partitionAwareness, thinCliCfg.isPartitionAwarenessEnabled());
+        cli.cacheNames().stream()
+            .filter(name -> cli.cache(name).getConfiguration(CacheConfiguration.class).getCacheMode() == CacheMode.PARTITIONED)
+            .forEach(name -> assertEquals(backups, cli.cache(name).getConfiguration(CacheConfiguration.class).getBackups()));
     }
 
     /** */
