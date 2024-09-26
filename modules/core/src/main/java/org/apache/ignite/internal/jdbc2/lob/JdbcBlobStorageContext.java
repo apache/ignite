@@ -15,37 +15,16 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.jdbc2;
-
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.OutputStream;
+package org.apache.ignite.internal.jdbc2.lob;
 
 /**
- *
+ * Additional storage-specific data to be saved in the {@link JdbcBlobBufferPointer}.
  */
-public interface JdbcDataBuffer extends AutoCloseable {
-    /** */
-    long totalCnt();
-
+public interface JdbcBlobStorageContext {
     /**
+     * Create a copy of this context.
      *
+     * @return New context instance.
      */
-    default OutputStream getOutputStream() {
-        return getOutputStream(0);
-    }
-
-    /** */
-    OutputStream getOutputStream(long pos);
-
-    /**
-     *
-     */
-    InputStream getInputStream();
-
-    /** */
-    InputStream getInputStream(long pos, long len);
-
-    /** */
-    void truncate(long len) throws IOException;
+    JdbcBlobStorageContext copy();
 }

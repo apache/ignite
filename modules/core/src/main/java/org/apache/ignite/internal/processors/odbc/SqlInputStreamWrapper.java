@@ -22,7 +22,7 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.sql.SQLException;
 import java.sql.SQLFeatureNotSupportedException;
-import org.apache.ignite.internal.jdbc2.JdbcDataBufferImpl;
+import org.apache.ignite.internal.jdbc2.lob.JdbcBlobBuffer;
 
 /**
  * InputStream wrapper for limited streams.
@@ -32,7 +32,7 @@ public class SqlInputStreamWrapper implements AutoCloseable {
     private InputStream inputStream;
 
     /** Memory buffer for .*/
-    private JdbcDataBufferImpl rawData;
+    private JdbcBlobBuffer rawData;
 
     /** */
     private final int len;
@@ -95,9 +95,9 @@ public class SqlInputStreamWrapper implements AutoCloseable {
             return;
         }
 
-        rawData = new JdbcDataBufferImpl(maxMemoryBufferBytes);
+        rawData = new JdbcBlobBuffer(maxMemoryBufferBytes);
 
-        copyStream(inputStream, rawData.getOutputStream(), MAX_ARRAY_SIZE);
+        copyStream(inputStream, rawData.getOutputStream(0), MAX_ARRAY_SIZE);
 
         this.len = Math.toIntExact(rawData.totalCnt());
     }

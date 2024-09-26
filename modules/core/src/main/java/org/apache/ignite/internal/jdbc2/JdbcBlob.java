@@ -23,6 +23,7 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.sql.Blob;
 import java.sql.SQLException;
+import org.apache.ignite.internal.jdbc2.lob.JdbcBlobBuffer;
 
 /**
  * Simple BLOB implementation. Actually there is no such entity as BLOB in Ignite. So using arrays is a preferable way
@@ -35,7 +36,7 @@ public class JdbcBlob implements Blob {
     public static final int DFLT_MAX_IN_MEMORY_LOB_SIZE = 10 * 1024 * 1024;
 
     /** */
-    private JdbcDataBufferImpl data;
+    private JdbcBlobBuffer data;
 
     /**
      */
@@ -53,14 +54,14 @@ public class JdbcBlob implements Blob {
     /**
      */
     public JdbcBlob(int maxMemoryBufferBytes) {
-        data = new JdbcDataBufferImpl(maxMemoryBufferBytes);
+        data = new JdbcBlobBuffer(maxMemoryBufferBytes);
     }
 
     /**
      * @param arr Byte array.
      */
     public JdbcBlob(int maxMemoryBufferBytes, byte[] arr) {
-        data = new JdbcDataBufferImpl(maxMemoryBufferBytes, arr);
+        data = new JdbcBlobBuffer(maxMemoryBufferBytes, arr);
     }
 
     /** {@inheritDoc} */
