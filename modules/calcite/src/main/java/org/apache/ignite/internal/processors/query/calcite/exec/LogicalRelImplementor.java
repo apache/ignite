@@ -450,8 +450,16 @@ public class LogicalRelImplementor<Row> implements IgniteRelVisitor<Node<Row>> {
         else {
             CollectNode<Row> replacement = CollectNode.createCountCollector(ctx);
 
-            replacement.register(new ScanStorageNode<>(tbl.name(), ctx, rel.getTable().getRowType(), tbl.scan(ctx,
-                ctx.group(rel.sourceId()), ImmutableBitSet.of(0))));
+            replacement.register(
+                new ScanStorageNode<>(
+                    tbl.name(),
+                    ctx,
+                    rel.getTable().getRowType(),
+                    tbl.scan(ctx, ctx.group(rel.sourceId()), ImmutableBitSet.of(rel.fieldIndex())),
+                    rel.notNull() ? r -> ctx.rowHandler().get(0, r) != null : null,
+                    null
+                )
+            );
 
             return replacement;
         }
