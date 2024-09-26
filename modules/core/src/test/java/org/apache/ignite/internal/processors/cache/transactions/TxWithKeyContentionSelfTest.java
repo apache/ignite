@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.processors.cache.transactions;
 
+import java.util.List;
 import java.util.concurrent.CountDownLatch;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
@@ -117,8 +118,6 @@ public class TxWithKeyContentionSelfTest extends GridCommonAbstractTest {
         super.beforeTest();
 
         stopAllGrids();
-
-        U.sleep(3000);
     }
 
     /** {@inheritDoc} */
@@ -223,8 +222,9 @@ public class TxWithKeyContentionSelfTest extends GridCommonAbstractTest {
 
         int contCnt = (int)U.staticField(IgniteTxManager.class, "COLLISIONS_QUEUE_THRESHOLD") * 20;
 
-        CountDownLatch txLatch = new CountDownLatch(contCnt);
+        CountDownLatch txLatch = new CountDownLatch(contCnt * 2);
 
+        CountDownLatch txLatch0 = new CountDownLatch(contCnt * 2);
         ig.cluster().state(ClusterState.ACTIVE);
 
         client = true;
@@ -237,11 +237,9 @@ public class TxWithKeyContentionSelfTest extends GridCommonAbstractTest {
 
         IgniteCache<Integer, Integer> cache0 = cl.cache(DEFAULT_CACHE_NAME);
 
-        ig.cache(DEFAULT_CACHE_NAME).enableStatistics(true);
+        final List<Integer> priKeys = primaryKeys(cache, 3, 1);
 
-        cl.cache(DEFAULT_CACHE_NAME).enableStatistics(true);
-
-        final Integer keyId = primaryKey(cache);
+        final Integer backKey = backupKey(cache);
 
         CountDownLatch blockOnce = new CountDownLatch(1);
 
@@ -266,8 +264,9 @@ public class TxWithKeyContentionSelfTest extends GridCommonAbstractTest {
         }
 
         IgniteInternalFuture f = GridTestUtils.runAsync(() -> {
-            try (Transaction tx = cliTxMgr.txStart(concurrency, isolation)) {
-                cache0.put(keyId, 0);
+            try (Transaction tx = cliTxMgr.txStart(PESSIMISTIC, READ_COMMITTED)) {
+                cache0.put(priKeys.get(0), 0);
+                cache0.put(priKeys.get(2), 0);
                 tx.commit();
             }
         });
@@ -279,7 +278,21 @@ public class TxWithKeyContentionSelfTest extends GridCommonAbstractTest {
         for (int i = 0; i < contCnt; ++i) {
             IgniteInternalFuture f0 = GridTestUtils.runAsync(() -> {
                 try (Transaction tx = cliTxMgr.txStart(concurrency, isolation)) {
-                    cache0.put(keyId, 0);
+                    cache0.put(priKeys.get(0), 0);
+                    cache0.put(priKeys.get(1), 0);
+
+                    txLatch0.countDown();
+
+                    tx.commit();
+
+                    txLatch.countDown();
+                }
+
+                try (Transaction tx = cliTxMgr.txStart(concurrency, isolation)) {
+                    cache0.put(priKeys.get(2), 0);
+                    cache0.put(backKey, 0);
+
+                    txLatch0.countDown();
 
                     tx.commit();
 
@@ -304,15 +317,16 @@ public class TxWithKeyContentionSelfTest extends GridCommonAbstractTest {
 
         IgniteTxManager srvTxMgr = ((IgniteEx)ig).context().cache().context().tm();
 
-        try {
-            U.invoke(IgniteTxManager.class, srvTxMgr, "collectTxCollisionsInfo");
-        }
-        catch (IgniteCheckedException e) {
-            fail(e.toString());
-        }
 
         assertTrue(GridTestUtils.waitForCondition(new GridAbsPredicate() {
             @Override public boolean apply() {
+                try {
+                    U.invoke(IgniteTxManager.class, srvTxMgr, "collectTxCollisionsInfo");
+                }
+                catch (IgniteCheckedException e) {
+                    fail(e.toString());
+                }
+
                 CacheMetrics metrics = cache.localMetrics();
 
                 String coll1 = metrics.getTxKeyCollisions();
@@ -332,7 +346,7 @@ public class TxWithKeyContentionSelfTest extends GridCommonAbstractTest {
                 else
                     return false;
             }
-        }, 20_000));
+        }, 10_000));
 
         f.get();
 
