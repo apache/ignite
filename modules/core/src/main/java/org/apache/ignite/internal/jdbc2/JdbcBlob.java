@@ -118,7 +118,10 @@ public class JdbcBlob implements Blob {
     @Override public long position(byte[] ptrn, long start) throws SQLException {
         ensureNotClosed();
 
-        if (start < 1 || start > data.totalCnt() || ptrn.length == 0 || ptrn.length > data.totalCnt())
+        if (start < 1)
+            throw new SQLException("Invalid argument. Start position can't be less than 1 [start=" + start + ']');
+
+        if (start > data.totalCnt() || ptrn.length == 0 || ptrn.length > data.totalCnt())
             return -1;
 
         long idx = positionImpl(new ByteArrayInputStream(ptrn), ptrn.length, start - 1);
@@ -130,7 +133,10 @@ public class JdbcBlob implements Blob {
     @Override public long position(Blob ptrn, long start) throws SQLException {
         ensureNotClosed();
 
-        if (start < 1 || start > data.totalCnt() || ptrn.length() == 0 || ptrn.length() > data.totalCnt())
+        if (start < 1)
+            throw new SQLException("Invalid argument. Start position can't be less than 1 [start=" + start + ']');
+
+        if (start > data.totalCnt() || ptrn.length() == 0 || ptrn.length() > data.totalCnt())
             return -1;
 
         long idx = positionImpl(ptrn.getBinaryStream(), ptrn.length(), start - 1);

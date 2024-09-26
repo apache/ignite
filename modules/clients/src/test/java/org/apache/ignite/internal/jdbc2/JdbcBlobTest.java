@@ -196,7 +196,9 @@ public class JdbcBlobTest {
         blob.setBytes(8, new byte[] {7, 8, 9, 10, 11, 12, 13, 14});
         blob.setBytes(16, new byte[] {15});
 
-        assertEquals(-1, blob.position(new byte[] {1, 2, 3}, 0));
+        assertThrows(null, () -> blob.position(new byte[] {1, 2, 3}, -1), SQLException.class, null);
+        assertThrows(null, () -> blob.position(new byte[] {1, 2, 3}, 0), SQLException.class, null);
+
         assertEquals(-1, blob.position(new byte[] {1, 2, 3}, 16 + 1));
         assertEquals(-1, blob.position(new byte[0], 1));
         assertEquals(-1, blob.position(new byte[17], 1));
@@ -230,7 +232,9 @@ public class JdbcBlobTest {
         blob.setBytes(8, new byte[] {7, 8, 9, 10, 11, 12, 13, 14});
         blob.setBytes(16, new byte[] {15});
 
-        assertEquals(-1, blob.position(new JdbcBlob(new byte[] {1, 2, 3}), 0));
+        assertThrows(null, () -> blob.position(new JdbcBlob(new byte[] {1, 2, 3}), -1), SQLException.class, null);
+        assertThrows(null, () -> blob.position(new JdbcBlob(new byte[] {1, 2, 3}), 0), SQLException.class, null);
+
         assertEquals(-1, blob.position(new JdbcBlob(new byte[] {1, 2, 3}), 16 + 1));
         assertEquals(-1, blob.position(new JdbcBlob(new byte[0]), 1));
         assertEquals(-1, blob.position(new JdbcBlob(new byte[17]), 1));
