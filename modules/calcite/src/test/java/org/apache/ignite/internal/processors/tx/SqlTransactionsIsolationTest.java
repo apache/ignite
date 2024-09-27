@@ -63,11 +63,16 @@ import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.ClientConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
+import org.apache.ignite.internal.processors.odbc.ClientListenerAbstractConnectionContext;
+import org.apache.ignite.internal.processors.odbc.ClientMessage;
 import org.apache.ignite.internal.processors.query.QueryUtils;
 import org.apache.ignite.internal.util.lang.RunnableX;
+import org.apache.ignite.internal.util.nio.GridNioServer;
+import org.apache.ignite.internal.util.nio.GridNioSession;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.lang.IgniteBiTuple;
+import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.transactions.Transaction;
 import org.apache.ignite.transactions.TransactionConcurrency;
@@ -79,6 +84,7 @@ import org.junit.runners.Parameterized;
 import static java.lang.String.format;
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.apache.ignite.internal.jdbc.thin.ConnectionPropertiesImpl.PROP_PREFIX;
+import static org.apache.ignite.internal.processors.odbc.ClientListenerNioListener.CONN_CTX_META_KEY;
 import static org.apache.ignite.internal.processors.tx.SqlTransactionsIsolationTest.ModifyApi.CACHE;
 import static org.apache.ignite.internal.processors.tx.SqlTransactionsIsolationTest.ModifyApi.ENTRY_PROCESSOR;
 import static org.apache.ignite.internal.processors.tx.SqlTransactionsIsolationTest.ModifyApi.SQL;
@@ -419,6 +425,24 @@ public class SqlTransactionsIsolationTest extends GridCommonAbstractTest {
         cli.cacheNames().stream()
             .filter(name -> cli.cache(name).getConfiguration(CacheConfiguration.class).getCacheMode() == CacheMode.PARTITIONED)
             .forEach(name -> assertEquals(backups, cli.cache(name).getConfiguration(CacheConfiguration.class).getBackups()));
+    }
+
+    /** {@inheritDoc} */
+    @Override protected void afterTest() throws Exception {
+        for (int i = 0; i < gridCnt + 1; i++) {
+            IgniteEx srv = i == gridCnt ? cli : grid(i);
+
+            assertTrue(srv.context().cache().context().tm().activeTransactions().isEmpty());
+
+            GridNioServer<ClientMessage> nioSrv = GridTestUtils.getFieldValue(srv.context().clientListener(), "srv");
+            for (GridNioSession ses : nioSrv.sessions()) {
+                ClientListenerAbstractConnectionContext ctx = ses.meta(CONN_CTX_META_KEY);
+
+                Map<?, ?> txs = GridTestUtils.getFieldValue(ctx, "txs");
+
+                assertTrue(txs.isEmpty());
+            }
+        }
     }
 
     /** */
