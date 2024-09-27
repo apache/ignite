@@ -28,40 +28,61 @@ import org.apache.ignite.internal.jdbc2.lob.JdbcBlobBuffer;
 /**
  * Simple BLOB implementation. Actually there is no such entity as BLOB in Ignite. So using arrays is a preferable way
  * to work with binary objects.
- * <p>
- * This implementation can be useful for reading binary fields of objects through JDBC.
+ *
+ * <p>This implementation can be useful for writting and reading binary fields of objects through JDBC.
+ *
+ * <p>This implementation stores data in memory until the configured data size limit is reached. After that
+ * data will be saved to temp file. And all subsequent operations will work with data stored in temp file.
  */
 public class JdbcBlob implements Blob {
-    /** Default max in-memory LOB size. */
-    public static final int DFLT_MAX_IN_MEMORY_LOB_SIZE = 10 * 1024 * 1024;
-
-    /** */
+    /** Buffer to store actial data. */
     private JdbcBlobBuffer data;
 
     /**
+     * Create empty Blob.
+     *
+     * <p>Once any write operation would increase the size of underlying data above the
+     * maximum value passed as {@code maxMemoryBufferBytes} data will be saved to temp file.
+     * And all subsequent operations will work with data stored in temp file.
+     *
+     * @param maxMemoryBufferBytes Max in-memory buffer size.
      */
-    public JdbcBlob() {
-        this(Integer.MAX_VALUE);
-    }
-
-    /**
-     * @param arr Byte array.
-     */
-    public JdbcBlob(byte[] arr) {
-        this(Integer.MAX_VALUE, arr);
-    }
-
-    /**
-     */
-    public JdbcBlob(int maxMemoryBufferBytes) {
+    public JdbcBlob(long maxMemoryBufferBytes) {
         data = new JdbcBlobBuffer(maxMemoryBufferBytes);
     }
 
     /**
+     * Create Blob which wraps the existing byte array.
+     *
+     * <p>Start working in in-memory mode even if the passed {@code arr} array is larger than limit
+     * specifed via the {@code maxMemoryBufferBytes}. It's done so since memory is already allocated
+     * and there is no need to save it.
+     *
+     * <p>Once any write operation would increase the size of underlying data above the
+     * maximum value passed as {@code maxMemoryBufferBytes} data will be saved to temp file.
+     * And all subsequent operations will work with data stored in temp file.
+     *
+     * @param maxMemoryBufferBytes Max in-memory buffer size.
      * @param arr Byte array.
      */
-    public JdbcBlob(int maxMemoryBufferBytes, byte[] arr) {
+    public JdbcBlob(long maxMemoryBufferBytes, byte[] arr) {
         data = new JdbcBlobBuffer(maxMemoryBufferBytes, arr);
+    }
+
+    /**
+     * Create empty Blob which always stores data in memory.
+     */
+    public JdbcBlob() {
+        this(Long.MAX_VALUE);
+    }
+
+    /**
+     * Create Blob which wraps the existing byte array and always stores data in memory.
+     *
+     * @param arr Byte array.
+     */
+    public JdbcBlob(byte[] arr) {
+        this(Long.MAX_VALUE, arr);
     }
 
     /** {@inheritDoc} */
@@ -145,62 +166,6 @@ public class JdbcBlob implements Blob {
         return idx == -1 ? -1 : idx + 1;
     }
 
-    /**
-     *
-     * @param ptrn Pattern
-     * @param ptrnLen Pattern length
-     * @param idx Start index
-     * @return Position
-     */
-    private long positionImpl(InputStream ptrn, long ptrnLen, long idx) throws SQLException {
-        assert ptrn.markSupported();
-
-        try {
-            InputStream is = data.getInputStream(idx, data.totalCnt() - idx);
-
-            boolean patternStarted = false;
-
-            long i;
-            long pos;
-            int b;
-            for (i = 0, pos = idx; (b = is.read()) != -1; ) {
-                int p = ptrn.read();
-
-                if (b == p) {
-                    if (!patternStarted) {
-                        patternStarted = true;
-
-                        is.mark(Integer.MAX_VALUE);
-                    }
-
-                    pos++;
-
-                    i++;
-
-                    if (i == ptrnLen)
-                        return pos - ptrnLen;
-                }
-                else {
-                    pos = pos - i + 1;
-
-                    i = 0;
-                    ptrn.reset();
-
-                    if (patternStarted) {
-                        patternStarted = false;
-
-                        is.reset();
-                    }
-                }
-            }
-
-            return -1;
-        }
-        catch (IOException e) {
-            throw new SQLException(e);
-        }
-    }
-
     /** {@inheritDoc} */
     @Override public int setBytes(long pos, byte[] bytes) throws SQLException {
         return setBytes(pos, bytes, 0, bytes.length);
@@ -258,6 +223,62 @@ public class JdbcBlob implements Blob {
             data.close();
 
             data = null;
+        }
+    }
+
+    /**
+     * Actial implementation of the pattern search.
+     *
+     * @param ptrn InputStream containing the pattern.
+     * @param ptrnLen Pattern length.
+     * @param idx Zero-based index in Blob to start search from.
+     * @return Zero-based position at which the pattern appears, else -1.
+     */
+    private long positionImpl(InputStream ptrn, long ptrnLen, long idx) throws SQLException {
+        assert ptrn.markSupported();
+
+        try {
+            InputStream blob = data.getInputStream(idx, data.totalCnt() - idx);
+
+            boolean patternStarted = false;
+
+            long ptrnPos = 0;
+            long blobPos = idx;
+            int b;
+
+            while ((b = blob.read()) != -1) {
+                if (b == ptrn.read()) {
+                    if (!patternStarted) {
+                        patternStarted = true;
+
+                        blob.mark(Integer.MAX_VALUE);
+                    }
+
+                    blobPos++;
+
+                    ptrnPos++;
+
+                    if (ptrnPos == ptrnLen)
+                        return blobPos - ptrnLen;
+                }
+                else {
+                    blobPos = blobPos - ptrnPos + 1;
+
+                    ptrnPos = 0;
+                    ptrn.reset();
+
+                    if (patternStarted) {
+                        patternStarted = false;
+
+                        blob.reset();
+                    }
+                }
+            }
+
+            return -1;
+        }
+        catch (IOException e) {
+            throw new SQLException(e);
         }
     }
 

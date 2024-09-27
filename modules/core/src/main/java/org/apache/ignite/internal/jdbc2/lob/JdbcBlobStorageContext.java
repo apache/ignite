@@ -20,11 +20,11 @@ package org.apache.ignite.internal.jdbc2.lob;
 /**
  * Additional storage-specific data to be saved in the {@link JdbcBlobBufferPointer}.
  */
-public interface JdbcBlobStorageContext {
+interface JdbcBlobStorageContext {
     /**
-     * Create a copy of this context.
+     * Create a deep copy of this instance.
      *
      * @return New context instance.
      */
-    JdbcBlobStorageContext copy();
+    JdbcBlobStorageContext deepCopy();
 }

@@ -565,7 +565,7 @@ public interface ConnectionProperties {
     /**
      * @return Maximum size of large objects to be materialized in-memory on the client.
      */
-    public int getMaxInMemoryLobSize();
+    public long getMaxInMemoryLobSize();
 
     /**
      * Set maximum size of large objects to be materialized in-memory on the client.

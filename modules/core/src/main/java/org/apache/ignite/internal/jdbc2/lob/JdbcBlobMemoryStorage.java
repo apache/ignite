@@ -22,9 +22,12 @@ import java.util.List;
 import org.apache.ignite.internal.util.typedef.internal.U;
 
 /**
- * Memory-based implementation of {@link JdbcBlobStorage}.
+ * In-memory based implementation of {@link JdbcBlobStorage}.
+ *
+ * <p>Keeps data in list of byte array buffers (of different size) to avoid memory
+ * reallocation and data coping on write operations (which append data in particular).
  */
-public class JdbcBlobMemoryStorage implements JdbcBlobStorage {
+class JdbcBlobMemoryStorage implements JdbcBlobStorage {
     /** The list of buffers. */
     private List<byte[]> buffers = new ArrayList<>();
 
@@ -34,7 +37,7 @@ public class JdbcBlobMemoryStorage implements JdbcBlobStorage {
     /**
      * Creates a new empty buffer.
      */
-    public JdbcBlobMemoryStorage() {
+    JdbcBlobMemoryStorage() {
         // No-op
     }
 
@@ -43,7 +46,7 @@ public class JdbcBlobMemoryStorage implements JdbcBlobStorage {
      *
      * @param arr The byte array.
      */
-    public JdbcBlobMemoryStorage(byte[] arr) {
+    JdbcBlobMemoryStorage(byte[] arr) {
         if (arr.length > 0) {
             buffers.add(arr);
 
@@ -58,7 +61,7 @@ public class JdbcBlobMemoryStorage implements JdbcBlobStorage {
 
     /** {@inheritDoc} */
     @Override public JdbcBlobBufferPointer createPointer() {
-        return new JdbcBlobBufferPointer().setContext(new Context(0, 0));
+        return new JdbcBlobBufferPointer().setContext(new InMemContext(0, 0));
     }
 
     /** {@inheritDoc} */
@@ -88,7 +91,7 @@ public class JdbcBlobMemoryStorage implements JdbcBlobStorage {
             int toCopy = Math.min(remaining, buf.length - getBufPos(pos));
 
             if (toCopy > totalCnt - pos.getPos())
-                toCopy = (int) (totalCnt - pos.getPos());
+                toCopy = (int)(totalCnt - pos.getPos());
 
             U.arrayCopy(buf, getBufPos(pos), res, off + (cnt - remaining), toCopy);
 
@@ -106,7 +109,7 @@ public class JdbcBlobMemoryStorage implements JdbcBlobStorage {
         if (getBuf(pos) == null)
             addNewBuffer(1);
 
-        getBuf(pos)[getBufPos(pos)] = (byte) (b & 0xff);
+        getBuf(pos)[getBufPos(pos)] = (byte)(b & 0xff);
 
         advance(pos, 1);
 
@@ -153,7 +156,8 @@ public class JdbcBlobMemoryStorage implements JdbcBlobStorage {
                 inBufPos = 0;
 
                 idx++;
-            } else {
+            }
+            else {
                 inBufPos += Math.toIntExact(remain);
 
                 remain = 0;
@@ -162,7 +166,7 @@ public class JdbcBlobMemoryStorage implements JdbcBlobStorage {
 
         pos.setPos(pos.getPos() + step);
 
-        ((Context)pos.getContext()).set(idx, inBufPos);
+        ((InMemContext)pos.getContext()).set(idx, inBufPos);
     }
 
     /** {@inheritDoc} */
@@ -193,36 +197,49 @@ public class JdbcBlobMemoryStorage implements JdbcBlobStorage {
 
         if (buffers.isEmpty()) {
             newBufSize = newCount;
-        } else {
+        }
+        else {
             newBufSize = Math.max(
                     buffers.get(buffers.size() - 1).length << 1,
-                    (newCount));
+                    newCount);
         }
 
         buffers.add(new byte[newBufSize]);
     }
 
-    /** */
+    /**
+     * Get buffer containing data at the given position.
+     *
+     * @param pos Position pointer.
+     */
     private byte[] getBuf(JdbcBlobBufferPointer pos) {
         return getBufIdx(pos) < buffers.size() ? buffers.get(getBufIdx(pos)) : null;
     }
 
-    /** */
+    /**
+     * Extracts the current position in the current buffer.
+     *
+     * @param pos Position pointer.
+     */
     private int getBufPos(JdbcBlobBufferPointer pos) {
-        return ((Context)pos.getContext()).inBufPos;
+        return ((InMemContext)pos.getContext()).inBufPos;
     }
 
-    /** */
+    /**
+     * Extracts index of the current buffer.
+     *
+     * @param pos Position pointer.
+     */
     private int getBufIdx(JdbcBlobBufferPointer pos) {
-        return ((Context)pos.getContext()).idx;
+        return ((InMemContext)pos.getContext()).idx;
     }
 
     /**
      * Keeps track of the current position in the current buffer.
-     * <p>
-     * Saved in the {@link JdbcBlobBufferPointer}.
+     *
+     * <p>Saved in the {@link JdbcBlobBufferPointer}.
      */
-    private static class Context implements JdbcBlobStorageContext {
+    private static class InMemContext implements JdbcBlobStorageContext {
         /** Index of the current buffer. */
         private int idx;
 
@@ -233,7 +250,7 @@ public class JdbcBlobMemoryStorage implements JdbcBlobStorage {
          * @param idx Index of the current buffer.
          * @param inBufPos Current position in the current buffer.
          */
-        public Context(int idx, int inBufPos) {
+        public InMemContext(int idx, int inBufPos) {
             set(idx, inBufPos);
         }
 
@@ -247,8 +264,8 @@ public class JdbcBlobMemoryStorage implements JdbcBlobStorage {
         }
 
         /** {@inheritDoc} */
-        @Override public JdbcBlobStorageContext copy() {
-            return new Context(idx, inBufPos);
+        @Override public JdbcBlobStorageContext deepCopy() {
+            return new InMemContext(idx, inBufPos);
         }
     }
 }

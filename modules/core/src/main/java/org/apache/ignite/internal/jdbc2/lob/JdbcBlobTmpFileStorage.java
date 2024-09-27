@@ -31,10 +31,17 @@ import static java.nio.file.StandardOpenOption.READ;
 import static java.nio.file.StandardOpenOption.WRITE;
 
 /**
- * File based implementattion of {@link JdbcBlobStorage}.
+ * Temporary file based implementattion of {@link JdbcBlobStorage}.
+ *
+ * <p>Keeps data in temporary file.
+ *
+ * <p>Makes sure file is removed once the instance become phantom reachable.
+ * In other words even if {@code close()} wasn't called properly. Say if the large InputStream
+ * or Blob was passed as argumеnt to prepared statement and statement was abandoned by client
+ * application without being closed.
  */
-public class JdbcBlobFileStorage implements JdbcBlobStorage {
-    /** */
+class JdbcBlobTmpFileStorage implements JdbcBlobStorage {
+    /** Prefix for temp file name. */
     private static final String TEMP_FILE_PREFIX = "ignite-jdbc-temp-data";
 
     /** File clean action. */
@@ -55,7 +62,7 @@ public class JdbcBlobFileStorage implements JdbcBlobStorage {
      * @param stream Input stream with data.
      * @throws IOException if an error occurred.
      */
-    public JdbcBlobFileStorage(InputStream stream) throws IOException {
+    JdbcBlobTmpFileStorage(InputStream stream) throws IOException {
         File tempFile = File.createTempFile(TEMP_FILE_PREFIX, ".tmp");
         tempFile.deleteOnExit();
 
@@ -63,7 +70,8 @@ public class JdbcBlobFileStorage implements JdbcBlobStorage {
 
         try (OutputStream diskOutputStream = Files.newOutputStream(tempFile.toPath())) {
             stream.transferTo(diskOutputStream);
-        } catch (RuntimeException | Error e) {
+        }
+        catch (RuntimeException | Error e) {
             fileCleaner.clean();
 
             throw e;
@@ -92,7 +100,8 @@ public class JdbcBlobFileStorage implements JdbcBlobStorage {
 
         if (read == -1) {
             return -1;
-        } else {
+        }
+        else {
             advance(pos, read);
 
             return res[0] & 0xff;
@@ -114,7 +123,7 @@ public class JdbcBlobFileStorage implements JdbcBlobStorage {
 
     /** {@inheritDoc} */
     @Override public void write(JdbcBlobBufferPointer pos, int b) throws IOException {
-        write(pos, new byte[]{(byte) b}, 0, 1);
+        write(pos, new byte[]{(byte)b}, 0, 1);
     }
 
     /** {@inheritDoc} */
@@ -137,7 +146,8 @@ public class JdbcBlobFileStorage implements JdbcBlobStorage {
     @Override public void close() {
         try {
             fileChannel.close();
-        } catch (IOException ignore) {
+        }
+        catch (IOException ignore) {
             // No-op
         }
 

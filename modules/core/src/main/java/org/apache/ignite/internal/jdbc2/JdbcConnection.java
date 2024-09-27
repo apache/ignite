@@ -124,6 +124,9 @@ public class JdbcConnection implements Connection {
     private static final IgniteProductVersion MULTIPLE_STATEMENTS_TASK_V3_SUPPORTED_SINCE =
         IgniteProductVersion.fromString("2.11.0");
 
+    /** Default max in-memory LOB size. */
+    public static final int DFLT_MAX_IN_MEMORY_LOB_SIZE = 10 * 1024 * 1024;
+
     /**
      * Ignite nodes cache.
      *
@@ -254,7 +257,7 @@ public class JdbcConnection implements Connection {
         schemaName = QueryUtils.normalizeSchemaName(null, props.getProperty(PROP_SCHEMA));
 
         maxInMemoryLobSize = Integer.parseInt(props.getProperty(PROP_MAX_IN_MEMORY_LOB_SIZE,
-            String.valueOf(JdbcBlob.DFLT_MAX_IN_MEMORY_LOB_SIZE)));
+            String.valueOf(DFLT_MAX_IN_MEMORY_LOB_SIZE)));
 
         String nodeIdProp = props.getProperty(PROP_NODE_ID);
 

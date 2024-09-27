@@ -35,8 +35,11 @@ import java.io.OutputStream;
  * the in-memory mode. And switches to the file mode only if any write operation increases the
  * buffer size even more.
  *
- * <p> Data is read via the InputStream API and modified via the OutputStream one. Changes done via
+ * <p>Data is read via the InputStream API and modified via the OutputStream one. Changes done via
  * OutputStream are visible via the InputStream even if InputStream is created before changes done.
+ *
+ * <p>InputStream and OutputStream created remain valid even if the underlying data storage chenged from
+ * in-memory to file based.
  *
  * <p>Note however that implementation is not thread-safe.
  */
@@ -45,14 +48,14 @@ public class JdbcBlobBuffer {
     private JdbcBlobStorage storage;
 
     /** Maximum data size to be stored in-memory. */
-    private final Integer maxMemoryBufferBytes;
+    private final long maxMemoryBufferBytes;
 
     /**
      * Create empty buffer.
      *
      * @param maxMemoryBufferBytes Maximum data size to be stored in-memory.
      */
-    public JdbcBlobBuffer(int maxMemoryBufferBytes) {
+    public JdbcBlobBuffer(long maxMemoryBufferBytes) {
         storage = new JdbcBlobMemoryStorage();
 
         this.maxMemoryBufferBytes = maxMemoryBufferBytes;
@@ -64,7 +67,7 @@ public class JdbcBlobBuffer {
      * @param maxMemoryBufferBytes Maximum data size to be stored in-memory.
      * @param arr The byte array to be wrapped.
      */
-    public JdbcBlobBuffer(int maxMemoryBufferBytes, byte[] arr) {
+    public JdbcBlobBuffer(long maxMemoryBufferBytes, byte[] arr) {
         storage = new JdbcBlobMemoryStorage(arr);
 
         this.maxMemoryBufferBytes = maxMemoryBufferBytes;
@@ -152,7 +155,7 @@ public class JdbcBlobBuffer {
      * Copies all data from the in-memory storage to the temporary file storage.
      */
     private void switchToFileStorage() throws IOException {
-        JdbcBlobStorage newStorage = new JdbcBlobFileStorage(getInputStream());
+        JdbcBlobStorage newStorage = new JdbcBlobTmpFileStorage(getInputStream());
 
         storage.close();
 

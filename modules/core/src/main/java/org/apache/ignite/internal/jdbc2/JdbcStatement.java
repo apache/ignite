@@ -666,7 +666,7 @@ public class JdbcStatement implements Statement {
      * @return Args for current statement
      */
     protected final Object[] getArgs() throws SQLException {
-        materializeInputStreamArguments();
+        materializeStreamArguments();
 
         return args != null ? args.toArray() : null;
     }
@@ -712,11 +712,11 @@ public class JdbcStatement implements Statement {
     }
 
     /**
-     * Read binary data from InputStream and Blob arguments and replace them with byte arrays.
+     * Read data from Stream and Blob arguments and replace them with actual data.
      *
      * @throws SQLException On error.
      */
-    private void materializeInputStreamArguments() throws SQLException {
+    private void materializeStreamArguments() throws SQLException {
         if (args == null)
             return;
 
@@ -725,14 +725,15 @@ public class JdbcStatement implements Statement {
                 byte[] bytes = null;
 
                 if (args.get(i) instanceof SqlInputStreamWrapper) {
-                    SqlInputStreamWrapper inWrapper = (SqlInputStreamWrapper) args.get(i);
+                    SqlInputStreamWrapper inWrapper = (SqlInputStreamWrapper)args.get(i);
 
                     bytes = getBytes(inWrapper);
                 }
                 else if (args.get(i) instanceof Blob) {
-                    Blob blob = (Blob) args.get(i);
+                    Blob blob = (Blob)args.get(i);
 
-                    SqlInputStreamWrapper inWrapper = SqlInputStreamWrapper.withKnownLength(blob.getBinaryStream(1, blob.length()), (int) blob.length());
+                    SqlInputStreamWrapper inWrapper = SqlInputStreamWrapper.withKnownLength(
+                            blob.getBinaryStream(1, blob.length()), (int)blob.length());
 
                     bytes = getBytes(inWrapper);
                 }

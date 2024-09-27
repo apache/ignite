@@ -73,7 +73,7 @@ public class SqlInputStreamWrapper implements AutoCloseable {
      * @param maxMemoryBufferBytes Maximum memory buffer size in bytes.
      * @return Input stream wrapper.
      */
-    public static SqlInputStreamWrapper withUnknownLength(InputStream inputStream, int maxMemoryBufferBytes) throws SQLException {
+    public static SqlInputStreamWrapper withUnknownLength(InputStream inputStream, long maxMemoryBufferBytes) throws SQLException {
         try {
             return new SqlInputStreamWrapper(inputStream, null, maxMemoryBufferBytes);
         }
@@ -87,7 +87,7 @@ public class SqlInputStreamWrapper implements AutoCloseable {
      * @param len Length of data in the input stream. May be null if unknown.
      * @param maxMemoryBufferBytes Maximum memory buffer size in bytes. Is null if len is not null.
      */
-    protected SqlInputStreamWrapper(InputStream inputStream, Integer len, Integer maxMemoryBufferBytes)
+    protected SqlInputStreamWrapper(InputStream inputStream, Integer len, Long maxMemoryBufferBytes)
             throws IOException, SQLException {
         if (len != null) {
             this.inputStream = inputStream;
