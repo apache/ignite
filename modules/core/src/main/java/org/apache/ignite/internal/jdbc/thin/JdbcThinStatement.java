@@ -61,6 +61,7 @@ import org.apache.ignite.internal.util.typedef.F;
 import static java.sql.ResultSet.CONCUR_READ_ONLY;
 import static java.sql.ResultSet.FETCH_FORWARD;
 import static java.sql.ResultSet.TYPE_FORWARD_ONLY;
+import static org.apache.ignite.internal.jdbc.thin.JdbcThinConnection.NO_TX;
 
 /**
  * JDBC statement implementation.
@@ -230,16 +231,18 @@ public class JdbcThinStatement implements Statement {
         }
 
         boolean autoCommit = conn.getAutoCommit();
+        boolean txEnabled = conn.txEnabledForConnection();
 
-        TxContext txCtx = conn.transactionContext();
+        TxContext txCtx = txEnabled ? conn.transactionContext() : null;
         TxContext rsetCtx = autoCommit ? txCtx : null; // Commit transaction on ResultSet#close only for autoCommit mode.
 
-        txCtx.track(this);
+        if (txCtx != null)
+            txCtx.track(this);
 
         try {
             JdbcQueryExecuteRequest req = new JdbcQueryExecuteRequest(stmtType, schema, pageSize,
                 maxRows, autoCommit, explicitTimeout, sql, args == null ? null : args.toArray(new Object[args.size()]),
-                txCtx.txId());
+                txEnabled ? txCtx.txId() : NO_TX);
 
             JdbcResultWithIo resWithIo = conn.sendRequest(req, this, null);
 
@@ -296,12 +299,12 @@ public class JdbcThinStatement implements Statement {
             else
                 throw new SQLException("Unexpected result [res=" + res0 + ']');
 
-            if (onlyUpdates && autoCommit && conn.txSupportedOnServer())
+            if (onlyUpdates && autoCommit && txEnabled)
                 conn.endTransactionIfExists(true);
         }
         catch (Exception e) {
             // Rollback in case of error.
-            if (autoCommit && conn.isTxOpen())
+            if (autoCommit && txEnabled)
                 conn.endTransactionIfExists(false);
         }
 
@@ -325,7 +328,7 @@ public class JdbcThinStatement implements Statement {
     private JdbcThinResultSet resultSetForUpdate(long cnt) {
         return new JdbcThinResultSet(this, -1, pageSize,
             true, Collections.<List<Object>>emptyList(), false,
-            conn.autoCloseServerCursor(), cnt, closeOnCompletion, conn.emptyCtx, null);
+            conn.autoCloseServerCursor(), cnt, closeOnCompletion, null, null);
     }
 
     /**

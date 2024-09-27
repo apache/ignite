@@ -50,6 +50,12 @@ public class JdbcThinTransactionalSelfTest extends GridCommonAbstractTest {
     /** URL. */
     private static final String URL = "jdbc:ignite:thin://127.0.0.1";
 
+    /** */
+    private static final String TX_CTX_FLD = "txCtx";
+
+    /** */
+    private static final String CLOSED_FLD = "closed";
+
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
@@ -89,9 +95,7 @@ public class JdbcThinTransactionalSelfTest extends GridCommonAbstractTest {
                     SQLException.class,
                     "Invalid holdability (can't hold cursor over commit)."
                 );
-
             }
-
         }
     }
 
@@ -155,19 +159,19 @@ public class JdbcThinTransactionalSelfTest extends GridCommonAbstractTest {
     @Test
     public void testTxEndOnResultSetCloseInAutoCommitMode() throws Exception {
         try (Connection conn = DriverManager.getConnection(URL)) {
-            ResultSet rset = conn.prepareStatement("SELECT 1").executeQuery();
+            ResultSet rs = conn.prepareStatement("SELECT 1").executeQuery();
 
-            assertNull(GridTestUtils.getFieldValue(conn, "txCtx"));
+            assertNull(GridTestUtils.getFieldValue(conn, TX_CTX_FLD));
 
-            TxContext txCtx = GridTestUtils.getFieldValue(rset, "txCtx");
+            TxContext txCtx = GridTestUtils.getFieldValue(rs, TX_CTX_FLD);
 
-            assertFalse(GridTestUtils.getFieldValue(txCtx, "closed"));
+            assertFalse(GridTestUtils.getFieldValue(txCtx, CLOSED_FLD));
 
-            rset.close();
+            rs.close();
 
-            assertTrue(GridTestUtils.getFieldValue(txCtx, "closed"));
+            assertTrue(GridTestUtils.getFieldValue(txCtx, CLOSED_FLD));
 
-            assertNull(GridTestUtils.getFieldValue(conn, "txCtx"));
+            assertNull(GridTestUtils.getFieldValue(conn, TX_CTX_FLD));
         }
     }
 
@@ -175,29 +179,42 @@ public class JdbcThinTransactionalSelfTest extends GridCommonAbstractTest {
     @Test
     public void testResultSetClosedOnNewTransaction() throws Exception {
         try (Connection conn = DriverManager.getConnection(URL)) {
-            ResultSet rset0 = conn.prepareStatement("SELECT 1").executeQuery();
+            ResultSet rs0 = conn.prepareStatement("SELECT 1").executeQuery();
 
-            assertFalse(GridTestUtils.getFieldValue(rset0, "closed"));
+            assertFalse(GridTestUtils.getFieldValue(rs0, CLOSED_FLD));
 
             PreparedStatement ps = conn.prepareStatement("SELECT 1");
 
-            ResultSet rset1 = ps.executeQuery();
+            ResultSet rs1 = ps.executeQuery();
 
-            assertFalse(GridTestUtils.getFieldValue(rset0, "closed"));
-            assertFalse(GridTestUtils.getFieldValue(rset1, "closed"));
+            assertFalse(GridTestUtils.getFieldValue(rs0, CLOSED_FLD));
+            assertFalse(GridTestUtils.getFieldValue(rs1, CLOSED_FLD));
 
-            TxContext txCtx0 = GridTestUtils.getFieldValue(rset0, "txCtx");
-            TxContext txCtx1 = GridTestUtils.getFieldValue(rset1, "txCtx");
+            TxContext txCtx0 = GridTestUtils.getFieldValue(rs0, TX_CTX_FLD);
+            TxContext txCtx1 = GridTestUtils.getFieldValue(rs1, TX_CTX_FLD);
 
             assertTrue(txCtx0.txId() != NO_TX);
             assertTrue(txCtx1.txId() != NO_TX);
             assertTrue(txCtx0.txId() != txCtx1.txId());
 
-            rset0.close();
+            rs0.close();
             ps.close();
 
-            assertTrue(GridTestUtils.getFieldValue(rset0, "closed"));
-            assertTrue(GridTestUtils.getFieldValue(rset1, "closed"));
+            assertTrue(GridTestUtils.getFieldValue(rs0, CLOSED_FLD));
+            assertTrue(GridTestUtils.getFieldValue(rs1, CLOSED_FLD));
+        }
+    }
+
+    /** */
+    @Test
+    public void testNoTxInNoTxIsolation() throws Exception {
+        try (Connection conn = DriverManager.getConnection(URL)) {
+            conn.setTransactionIsolation(TRANSACTION_NONE);
+
+            ResultSet rs = conn.prepareStatement("SELECT 1").executeQuery();
+
+            assertNull(GridTestUtils.getFieldValue(rs, TX_CTX_FLD));
+            assertNull(GridTestUtils.getFieldValue(conn, TX_CTX_FLD));
         }
     }
 }

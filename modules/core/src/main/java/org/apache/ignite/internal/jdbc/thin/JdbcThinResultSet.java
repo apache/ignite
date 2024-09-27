@@ -186,7 +186,7 @@ public class JdbcThinResultSet implements ResultSet {
      * @param stickyIO IO to fetch results.
      */
     JdbcThinResultSet(JdbcThinStatement stmt, long cursorId, int fetchSize, boolean finished,
-        List<List<Object>> rows, boolean isQuery, boolean autoClose, long updCnt, boolean closeStmt, TxContext txCtx,
+        List<List<Object>> rows, boolean isQuery, boolean autoClose, long updCnt, boolean closeStmt, @Nullable TxContext txCtx,
         JdbcThinTcpIo stickyIO) {
         assert stmt != null;
         assert fetchSize > 0;
