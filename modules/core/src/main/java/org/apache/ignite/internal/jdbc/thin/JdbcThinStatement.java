@@ -300,12 +300,14 @@ public class JdbcThinStatement implements Statement {
                 throw new SQLException("Unexpected result [res=" + res0 + ']');
 
             if (onlyUpdates && autoCommit && txEnabled)
-                conn.endTransactionIfExists(true);
+                txCtx.end(true);
         }
         catch (Exception e) {
             // Rollback in case of error.
             if (autoCommit && txEnabled)
-                conn.endTransactionIfExists(false);
+                txCtx.end(false);
+
+            throw e;
         }
 
         assert !resultSets.isEmpty() : "At least one results set is expected";
