@@ -218,7 +218,7 @@ public class TxWithKeyContentionSelfTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     private void runKeyCollisionsMetric(TransactionConcurrency concurrency, TransactionIsolation isolation) throws Exception {
-        Ignite ig = startGridsMultiThreaded(2);
+        Ignite ig = startGridsMultiThreaded(3);
 
         int contCnt = (int)U.staticField(IgniteTxManager.class, "COLLISIONS_QUEUE_THRESHOLD") * 20;
 
@@ -326,11 +326,9 @@ public class TxWithKeyContentionSelfTest extends GridCommonAbstractTest {
                     fail(e.toString());
                 }
 
-                CacheMetrics metrics = cache.localMetrics();
+                CacheMetrics metrics = ig.cache(DEFAULT_CACHE_NAME).localMetrics();
 
                 String coll1 = metrics.getTxKeyCollisions();
-
-                log.warning("coll1 = " + coll1);
 
                 if (!coll1.isEmpty()) {
                     String coll2 = metrics.getTxKeyCollisions();
