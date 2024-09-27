@@ -152,6 +152,9 @@ public class JdbcThinConnection implements Connection {
     /** Logger. */
     private static final Logger LOG = Logger.getLogger(JdbcThinConnection.class.getName());
 
+    /** */
+    private static final String HOLDABILITY_ERR_MSG = "Invalid holdability (can't hold cursor over commit).";
+
     /** Request timeout period. */
     private static final int REQUEST_TIMEOUT_PERIOD = 1_000;
 
@@ -174,7 +177,7 @@ public class JdbcThinConnection implements Connection {
     static final int NO_TIMEOUT = 0;
 
     /** No transaction id. */
-    static final int NO_TX = 0;
+    public static final int NO_TX = 0;
 
     /** Index generator. */
     private static final AtomicLong IDX_GEN = new AtomicLong();
@@ -246,7 +249,7 @@ public class JdbcThinConnection implements Connection {
     private final Object mux = new Object();
 
     /** Transactional context. */
-    private volatile TxContext txCtx;
+    volatile TxContext txCtx;
 
     /** */
     final TxContext emptyCtx = new TxContext() {};
@@ -517,7 +520,7 @@ public class JdbcThinConnection implements Connection {
             throw new SQLFeatureNotSupportedException("Invalid concurrency (updates are not supported).");
 
         if (txEnabledForConnection() && resSetHoldability == HOLD_CURSORS_OVER_COMMIT)
-            throw new SQLFeatureNotSupportedException("Invalid holdability (can't hold cursor over commit).");
+            throw new SQLFeatureNotSupportedException(HOLDABILITY_ERR_MSG);
     }
 
     /** {@inheritDoc} */
@@ -597,21 +600,18 @@ public class JdbcThinConnection implements Connection {
         if (isClosed())
             return;
 
+        closed = true;
+
         if (isTxOpen())
             endTransactionIfExists(false);
+
+        maintenanceExecutor.shutdown();
 
         closeStreamStateIfOpen(true);
 
         synchronized (stmtsMux) {
-            for (JdbcThinStatement stmt : stmts)
-                stmt.close();
-
-            assert stmts.isEmpty();
+            stmts.clear();
         }
-
-        closed = true;
-
-        maintenanceExecutor.shutdown();
 
         SQLException err = null;
 
@@ -735,7 +735,7 @@ public class JdbcThinConnection implements Connection {
             throw new SQLException("Invalid result set holdability value.");
 
         if (txSupportedOnServer() && holdability == HOLD_CURSORS_OVER_COMMIT)
-            throw new SQLException("When transactions enabled all cursors are closed on commit.");
+            throw new SQLException(HOLDABILITY_ERR_MSG);
 
         this.holdability = holdability;
     }
@@ -976,22 +976,18 @@ public class JdbcThinConnection implements Connection {
         if (!txEnabledForConnection())
             return emptyCtx;
 
-        if (isTxOpen())
+        // Transaction in autoCommit mode must be closed on ResultSet close.
+        if (isTxOpen() && !autoCommit)
             return txCtx;
 
-        assert txCtx == null;
+        assert txCtx == null || autoCommit;
 
-        txCtx = new TxContextImpl(txIsolation, txConcurrency);
+        TxContext txCtx0 = new TxContextImpl(txIsolation, txConcurrency);
 
-        return txCtx;
-    }
+        if (!autoCommit)
+            txCtx = txCtx0;
 
-    /**
-     * @return Transation context that must be close on ResultSet close.
-     * @throws SQLException If failed.
-     */
-    TxContext resultSetTransactionContext() throws SQLException {
-        return getAutoCommit() ? txCtx : emptyCtx;
+        return txCtx0;
     }
 
     /**
@@ -2657,7 +2653,7 @@ public class JdbcThinConnection implements Connection {
     }
 
     /** */
-    interface TxContext {
+    public interface TxContext {
         /** */
         default void end(boolean commit) throws SQLException {
             // No-op.

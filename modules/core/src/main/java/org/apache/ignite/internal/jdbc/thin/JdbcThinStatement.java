@@ -33,6 +33,7 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import org.apache.ignite.cache.query.Query;
+import org.apache.ignite.internal.jdbc.thin.JdbcThinConnection.TxContext;
 import org.apache.ignite.internal.processors.cache.query.IgniteQueryErrorCode;
 import org.apache.ignite.internal.processors.odbc.ClientListenerResponse;
 import org.apache.ignite.internal.processors.odbc.SqlStateCode;
@@ -228,13 +229,17 @@ public class JdbcThinStatement implements Statement {
             return;
         }
 
-        conn.transactionContext().track(this);
+        boolean autoCommit = conn.getAutoCommit();
+
+        TxContext txCtx = conn.transactionContext();
+        TxContext rsetCtx = autoCommit ? txCtx : null; // Commit transaction on ResultSet#close only for autoCommit mode.
+
+        txCtx.track(this);
 
         try {
-
             JdbcQueryExecuteRequest req = new JdbcQueryExecuteRequest(stmtType, schema, pageSize,
-                maxRows, conn.getAutoCommit(), explicitTimeout, sql, args == null ? null : args.toArray(new Object[args.size()]),
-                conn.transactionContext().txId());
+                maxRows, autoCommit, explicitTimeout, sql, args == null ? null : args.toArray(new Object[args.size()]),
+                txCtx.txId());
 
             JdbcResultWithIo resWithIo = conn.sendRequest(req, this, null);
 
@@ -254,7 +259,7 @@ public class JdbcThinStatement implements Statement {
 
                 resultSets = Collections.singletonList(new JdbcThinResultSet(this, res.cursorId(), pageSize,
                     res.last(), res.items(), res.isQuery(), conn.autoCloseServerCursor(), res.updateCount(),
-                    closeOnCompletion, conn.resultSetTransactionContext(), stickyIo));
+                    closeOnCompletion, rsetCtx, stickyIo));
 
                 onlyUpdates = !res.isQuery();
             }
@@ -277,12 +282,12 @@ public class JdbcThinStatement implements Statement {
                             firstRes = false;
 
                             resultSets.add(new JdbcThinResultSet(this, rsInfo.cursorId(), pageSize, res.isLast(),
-                                res.items(), true, conn.autoCloseServerCursor(), -1, closeOnCompletion, conn.resultSetTransactionContext(),
+                                res.items(), true, conn.autoCloseServerCursor(), -1, closeOnCompletion, rsetCtx,
                                 stickyIo));
                         }
                         else {
                             resultSets.add(new JdbcThinResultSet(this, rsInfo.cursorId(), pageSize, false,
-                                null, true, conn.autoCloseServerCursor(), -1, closeOnCompletion, conn.resultSetTransactionContext(),
+                                null, true, conn.autoCloseServerCursor(), -1, closeOnCompletion, rsetCtx,
                                 stickyIo));
                         }
                     }
@@ -291,12 +296,12 @@ public class JdbcThinStatement implements Statement {
             else
                 throw new SQLException("Unexpected result [res=" + res0 + ']');
 
-            if (onlyUpdates && conn.getAutoCommit() && conn.txSupportedOnServer())
+            if (onlyUpdates && autoCommit && conn.txSupportedOnServer())
                 conn.endTransactionIfExists(true);
         }
-        finally {
+        catch (Exception e) {
             // Rollback in case of error.
-            if (conn.getAutoCommit() && conn.isTxOpen())
+            if (autoCommit && conn.isTxOpen())
                 conn.endTransactionIfExists(false);
         }
 
@@ -983,14 +988,17 @@ public class JdbcThinStatement implements Statement {
         if (isClosed())
             return;
 
+        boolean allRsClosed = true;
+
         if (resultSets != null) {
             for (JdbcThinResultSet rs : resultSets) {
                 if (!rs.isClosed())
-                    return;
+                    allRsClosed = false;
             }
         }
 
-        close();
+        if (allRsClosed)
+            close();
     }
 
     /**

@@ -193,6 +193,9 @@ public class JdbcConnectionContext extends ClientListenerAbstractConnectionConte
             byte[] cliFeatures = reader.readByteArray();
 
             features = JdbcThinFeature.enumSet(cliFeatures);
+
+            if (!ctx.config().getTransactionConfiguration().isTxAwareQueriesEnabled())
+                features.remove(JdbcThinFeature.TX_AWARE_QUERIES);
         }
 
         if (ver.compareTo(VER_2_13_0) >= 0) {
