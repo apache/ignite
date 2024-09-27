@@ -257,6 +257,14 @@ public class ConnectionPropertiesImpl implements ConnectionProperties, Serializa
         null
     );
 
+    /** JDBC transaction timeout. */
+    private IntegerProperty transactionTimeout = new IntegerProperty("transactionTimeout",
+        "Sets the number of milliseconds for server-side transaction timeout. Zero means there is no limits.",
+        0, false, 0, Integer.MAX_VALUE);
+
+    /** Transaction label. */
+    private final StringProperty transactionLabel = new StringProperty("transactionLabel", "Transaction label.", null, null, false, null);
+
     /** Properties array. */
     private final ConnectionProperty[] propsArr = {
         distributedJoins, enforceJoinOrder, collocated, replicatedOnly, autoCloseServerCursor,
@@ -277,7 +285,9 @@ public class ConnectionPropertiesImpl implements ConnectionProperties, Serializa
         disabledFeatures,
         keepBinary,
         qryEngine,
-        transactionConcurrency
+        transactionConcurrency,
+        transactionTimeout,
+        transactionLabel
     };
 
     /** {@inheritDoc} */
@@ -694,6 +704,26 @@ public class ConnectionPropertiesImpl implements ConnectionProperties, Serializa
     /** {@inheritDoc} */
     @Override public void setTransactionConcurrency(String transactionConcurrency) {
         this.transactionConcurrency.setValue(transactionConcurrency);
+    }
+
+    /** {@inheritDoc} */
+    @Override public int getTransactionTimeout() {
+        return transactionTimeout.value();
+    }
+
+    /** {@inheritDoc} */
+    @Override public void setTransactionTimeout(int transactionTimeout) throws SQLException {
+        this.transactionTimeout.setValue(transactionTimeout);
+    }
+
+    /** {@inheritDoc} */
+    @Override public String getTransactionLabel() {
+        return transactionLabel.value();
+    }
+
+    /** {@inheritDoc} */
+    @Override public void setTransactionLabel(String transactionLabel) {
+        this.transactionLabel.setValue(transactionLabel);
     }
 
     /**

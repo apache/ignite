@@ -63,7 +63,6 @@ import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.ClientConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
-import org.apache.ignite.internal.processors.odbc.ClientListenerAbstractConnectionContext;
 import org.apache.ignite.internal.processors.odbc.ClientMessage;
 import org.apache.ignite.internal.processors.query.QueryUtils;
 import org.apache.ignite.internal.util.lang.RunnableX;
@@ -435,13 +434,9 @@ public class SqlTransactionsIsolationTest extends GridCommonAbstractTest {
             assertTrue(srv.context().cache().context().tm().activeTransactions().isEmpty());
 
             GridNioServer<ClientMessage> nioSrv = GridTestUtils.getFieldValue(srv.context().clientListener(), "srv");
-            for (GridNioSession ses : nioSrv.sessions()) {
-                ClientListenerAbstractConnectionContext ctx = ses.meta(CONN_CTX_META_KEY);
 
-                Map<?, ?> txs = GridTestUtils.getFieldValue(ctx, "txs");
-
-                assertTrue(txs.isEmpty());
-            }
+            for (GridNioSession ses : nioSrv.sessions())
+                assertTrue(GridTestUtils.<Map<?, ?>>getFieldValue(ses.meta(CONN_CTX_META_KEY), "txs").isEmpty());
         }
     }
 

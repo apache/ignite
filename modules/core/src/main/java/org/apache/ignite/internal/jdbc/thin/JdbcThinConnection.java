@@ -164,12 +164,6 @@ public class JdbcThinConnection implements Connection {
     /** Reconnection maximum period. */
     private static final int RECONNECTION_MAX_DELAY = 300_000;
 
-    /** Transaction label. */
-    private static final String DFLT_TX_LABEL = "JDBC_THIN";
-
-    /** Default transaction timeout. */
-    private static final long DFLT_TX_TIMEOUT = 60_000;
-
     /** Network timeout permission */
     private static final String SET_NETWORK_TIMEOUT_PERM = "setNetworkTimeout";
 
@@ -603,7 +597,7 @@ public class JdbcThinConnection implements Connection {
 
         closed = true;
 
-        if (txEnabledForConnection())
+        if ((ios != null || singleIo != null) && txEnabledForConnection())
             endTransactionIfExists(false);
 
         maintenanceExecutor.shutdown();
@@ -2584,8 +2578,8 @@ public class JdbcThinConnection implements Connection {
             JdbcResultWithIo res = sendRequest(new JdbcTxStartRequest(
                 transactionConcurrency,
                 isolation(jdbcIsolation),
-                DFLT_TX_TIMEOUT,
-                DFLT_TX_LABEL
+                connProps.getTransactionTimeout(),
+                connProps.getTransactionLabel()
             ));
 
             txIo = res.cliIo();
