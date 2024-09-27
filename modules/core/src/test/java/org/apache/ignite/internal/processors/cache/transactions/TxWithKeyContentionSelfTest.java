@@ -283,9 +283,6 @@ public class TxWithKeyContentionSelfTest extends GridCommonAbstractTest {
 
                     txLatch0.countDown();
 
-                    // Introduce an artificial delay to hold the lock longer.
-                    Thread.sleep(100);
-
                     tx.commit();
 
                     txLatch.countDown();
@@ -296,8 +293,6 @@ public class TxWithKeyContentionSelfTest extends GridCommonAbstractTest {
                     cache0.put(backKey, 0);
 
                     txLatch0.countDown();
-
-                    Thread.sleep(100);
 
                     tx.commit();
 
