@@ -25,16 +25,16 @@ import java.sql.SQLFeatureNotSupportedException;
 import org.apache.ignite.internal.jdbc2.lob.JdbcBlobBuffer;
 
 /**
- * InputStream wrapper for limited streams.
+ * InputStream wrapper used as argument for PreparedStatement.
  */
 public class SqlInputStreamWrapper implements AutoCloseable {
-    /** */
-    private InputStream inputStream;
+    /** Input stream wrapped. */
+    private InputStream stream;
 
-    /** Memory buffer for .*/
+    /** Buffer to cache data from the InputStream if lebgth is unknown. */
     private JdbcBlobBuffer rawData;
 
-    /** */
+    /** Length of data in the input stream.*/
     private final int len;
 
     /**
@@ -64,8 +64,8 @@ public class SqlInputStreamWrapper implements AutoCloseable {
 
     /**
      * Constructs wrapper for stream if length is unknown.
-     * <p>
-     * It would try to determine the data length reading the whole stream syncroniously. If the stream length is
+     *
+     * <p>It would try to determine the data length reading the whole stream syncroniously. If the stream length is
      * less than {@code maxMemoryBufferBytes} data will be stored in heap memory. Otherwise, data will be written
      * to temporary file.
      *
@@ -87,19 +87,20 @@ public class SqlInputStreamWrapper implements AutoCloseable {
      * @param len Length of data in the input stream. May be null if unknown.
      * @param maxMemoryBufferBytes Maximum memory buffer size in bytes. Is null if len is not null.
      */
-    protected SqlInputStreamWrapper(InputStream inputStream, Integer len, Long maxMemoryBufferBytes)
+    private SqlInputStreamWrapper(InputStream inputStream, Integer len, Long maxMemoryBufferBytes)
             throws IOException, SQLException {
         if (len != null) {
-            this.inputStream = inputStream;
+            stream = inputStream;
             this.len = len;
-            return;
         }
+        else {
+            rawData = new JdbcBlobBuffer(maxMemoryBufferBytes);
 
-        rawData = new JdbcBlobBuffer(maxMemoryBufferBytes);
+            copyStream(inputStream, rawData.getOutputStream(0), MAX_ARRAY_SIZE);
 
-        copyStream(inputStream, rawData.getOutputStream(0), MAX_ARRAY_SIZE);
-
-        this.len = Math.toIntExact(rawData.totalCnt());
+            stream = null;
+            this.len = Math.toIntExact(rawData.totalCnt());
+        }
     }
 
     /**
@@ -108,10 +109,10 @@ public class SqlInputStreamWrapper implements AutoCloseable {
      * @return Input stream.
      */
     public InputStream getInputStream() throws IOException {
-        if (inputStream == null)
-            inputStream = rawData.getInputStream();
+        if (stream == null)
+            stream = rawData.getInputStream();
 
-        return inputStream;
+        return stream;
     }
 
     /**
@@ -123,17 +124,18 @@ public class SqlInputStreamWrapper implements AutoCloseable {
 
     /** {@inheritDoc} */
     @Override public void close() throws Exception {
-        if (inputStream != null)
-            inputStream.close();
+        // Do not close the input stream if it was passed from outside.
+        if (rawData != null && stream != null)
+            stream.close();
     }
 
     /**
      * Copy data from the input stream to the output stream.
-     * <p>
-     * Stops and retuen -1 if count of bytes copied exceeds the {@code limit}.
      *
-     * @param inputStream input stream
-     * @param outputStream output stream
+     * <p>Stops and return -1 if count of bytes copied exceeds the {@code limit}.
+     *
+     * @param inputStream Input stream.
+     * @param outputStream Output stream.
      * @param limit Maximum bytes to copy.
      * @throws SQLException if limit exceeds.
      * @return Count of bytes copied.

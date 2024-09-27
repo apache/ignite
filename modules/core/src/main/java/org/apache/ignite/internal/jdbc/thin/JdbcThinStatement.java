@@ -408,7 +408,8 @@ public class JdbcThinStatement implements Statement {
     }
 
     /**
-     * This is guaranteed to be called exactly once even in case of concurrent {@link #close()} calls.
+     * To be redefined in subclasses.
+     *
      * @throws SQLException in case of error
      */
     protected void closeImpl() throws SQLException {

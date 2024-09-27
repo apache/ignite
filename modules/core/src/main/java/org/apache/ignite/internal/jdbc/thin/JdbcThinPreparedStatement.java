@@ -530,15 +530,17 @@ public class JdbcThinPreparedStatement extends JdbcThinStatement implements Prep
     }
 
     /** {@inheritDoc} */
-    @Override public void closeImpl() {
-        try {
-            for (Object arg : args) {
-                if (arg instanceof AutoCloseable)
-                    ((AutoCloseable)arg).close();
+    @Override public void closeImpl() throws SQLException {
+        if (args != null) {
+            try {
+                for (Object arg : args) {
+                    if (arg instanceof AutoCloseable)
+                        ((AutoCloseable)arg).close();
+                }
             }
-        }
-        catch (Exception ignored) {
-            // No-op.
+            catch (Exception e) {
+                throw new SQLException(e);
+            }
         }
     }
 

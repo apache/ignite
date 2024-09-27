@@ -34,7 +34,7 @@ import org.apache.ignite.internal.jdbc2.lob.JdbcBlobBuffer;
  * <p>This implementation stores data in memory until the configured data size limit is reached. After that
  * data will be saved to temp file. And all subsequent operations will work with data stored in temp file.
  */
-public class JdbcBlob implements Blob {
+public class JdbcBlob implements Blob, AutoCloseable {
     /** Buffer to store actial data. */
     private JdbcBlobBuffer data;
 
@@ -224,6 +224,11 @@ public class JdbcBlob implements Blob {
 
             data = null;
         }
+    }
+
+    /** {@inheritDoc} */
+    @Override public void close() throws SQLException {
+        free();
     }
 
     /**
