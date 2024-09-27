@@ -264,7 +264,7 @@ public class TxWithKeyContentionSelfTest extends GridCommonAbstractTest {
         }
 
         IgniteInternalFuture f = GridTestUtils.runAsync(() -> {
-            try (Transaction tx = cliTxMgr.txStart(PESSIMISTIC, READ_COMMITTED)) {
+            try (Transaction tx = cliTxMgr.txStart(concurrency, isolation)) {
                 cache0.put(priKeys.get(0), 0);
                 cache0.put(priKeys.get(2), 0);
                 tx.commit();
@@ -283,6 +283,9 @@ public class TxWithKeyContentionSelfTest extends GridCommonAbstractTest {
 
                     txLatch0.countDown();
 
+                    // Introduce an artificial delay to hold the lock longer.
+                    Thread.sleep(100);
+
                     tx.commit();
 
                     txLatch.countDown();
@@ -293,6 +296,8 @@ public class TxWithKeyContentionSelfTest extends GridCommonAbstractTest {
                     cache0.put(backKey, 0);
 
                     txLatch0.countDown();
+
+                    Thread.sleep(100);
 
                     tx.commit();
 
