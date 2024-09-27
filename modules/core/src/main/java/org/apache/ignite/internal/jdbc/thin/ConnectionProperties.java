@@ -579,5 +579,5 @@ public interface ConnectionProperties {
      *
      * @param maxInMemoryLobSize Maximum size in bytes.
      */
-    public void setMaxInMemoryLobSize(int maxInMemoryLobSize) throws SQLException;
+    public void setMaxInMemoryLobSize(long maxInMemoryLobSize) throws SQLException;
 }

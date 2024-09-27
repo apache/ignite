@@ -690,7 +690,7 @@ public class ConnectionPropertiesImpl implements ConnectionProperties, Serializa
     }
 
     /** {@inheritDoc} */
-    @Override public void setMaxInMemoryLobSize(int maxInMemoryLobSize) throws SQLException {
+    @Override public void setMaxInMemoryLobSize(long maxInMemoryLobSize) throws SQLException {
         this.maxInMemoryLobSize.setValue(maxInMemoryLobSize);
     }
 
