@@ -27,6 +27,7 @@ import java.util.List;
 import org.apache.ignite.calcite.CalciteQueryEngineConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.jdbc.thin.JdbcThinConnection.TxContext;
+import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.IgniteConfigVariationsAbstractTest.TestRunnable;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
@@ -215,6 +216,43 @@ public class JdbcThinTransactionalSelfTest extends GridCommonAbstractTest {
 
             assertNull(GridTestUtils.getFieldValue(rs, TX_CTX_FLD));
             assertNull(GridTestUtils.getFieldValue(conn, TX_CTX_FLD));
+        }
+    }
+
+    /** */
+    @Test
+    public void testTransactionLabel() throws Exception {
+        String url = URL + "?transactionLabel=mylabel";
+
+        try (Connection conn = DriverManager.getConnection(url)) {
+            ResultSet rs = conn.prepareStatement("SELECT 1").executeQuery();
+
+            assertEquals(1, F.size(grid().context().cache().context().tm().activeTransactions()));
+            assertEquals("mylabel", F.first(grid().context().cache().context().tm().activeTransactions()).label());
+        }
+    }
+
+    /** */
+    @Test
+    public void testTransactionTimeout() throws Exception {
+        int timeout = 1000;
+
+        String url = URL + "?transactionTimeout=" + timeout;
+
+        try (Connection conn = DriverManager.getConnection(url)) {
+            ResultSet rs = conn.prepareStatement("SELECT 1").executeQuery();
+
+            Thread.sleep(3 * timeout);
+
+            assertThrows(
+                null,
+                () -> {
+                    rs.close();
+                    return null;
+                },
+                SQLException.class,
+                "Cache transaction timed out"
+            );
         }
     }
 }

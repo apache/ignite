@@ -363,7 +363,7 @@ public class JdbcThinConnection implements Connection {
 
     /** */
     boolean txSupportedOnServer() {
-        return (partitionAwareness
+        return (singleIo != null || !ios.isEmpty()) && (partitionAwareness
             ? ios.firstEntry().getValue().isTxAwareQueriesSupported()
             : singleIo.isTxAwareQueriesSupported());
     }
@@ -597,7 +597,7 @@ public class JdbcThinConnection implements Connection {
 
         closed = true;
 
-        if ((ios != null || singleIo != null) && txEnabledForConnection())
+        if (txEnabledForConnection())
             endTransactionIfExists(false);
 
         maintenanceExecutor.shutdown();
