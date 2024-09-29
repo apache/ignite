@@ -1091,15 +1091,11 @@ public class IgniteH2Indexing implements GridQueryIndexing {
             }
         }
         catch (IgniteException e) {
-            heavyQueriesTracker().stopTracking(dmlInfo, e);
-
             failReason = e;
 
             throw e;
         }
         catch (IgniteCheckedException e) {
-            heavyQueriesTracker().stopTracking(dmlInfo, e);
-
             failReason = e;
 
             IgniteClusterReadOnlyException roEx = X.cause(e, IgniteClusterReadOnlyException.class);
@@ -1117,7 +1113,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
                     ", params=" + S.toString(QueryParameters.class, qryParams) + "]", e);
         }
         finally {
-            heavyQueriesTracker().stopTracking(dmlInfo, null);
+            heavyQueriesTracker().stopTracking(dmlInfo, failReason);
 
             runningQueryManager().unregister(qryId, failReason);
         }
