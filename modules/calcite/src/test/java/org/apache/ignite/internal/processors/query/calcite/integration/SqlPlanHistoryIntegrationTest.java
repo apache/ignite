@@ -27,7 +27,6 @@ import java.util.Collection;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
-import java.util.Objects;
 import java.util.Set;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
@@ -179,6 +178,43 @@ public class SqlPlanHistoryIntegrationTest extends GridCommonAbstractTest {
             {IndexingQueryEngineConfiguration.ENGINE_NAME, false, false, false}
         });
     }
+
+//    @Parameterized.Parameters(name = "sqlEngine={0}, isClient={1} loc={2}, fullyFetched={3}")
+//    public static Collection<Object[]> params() {
+//        return Arrays.stream(new Object[][]{
+//            {CalciteQueryEngineConfiguration.ENGINE_NAME},
+//            {IndexingQueryEngineConfiguration.ENGINE_NAME}
+//        }).flatMap(arr -> Arrays.stream(new Boolean[]{true, false})
+//                .flatMap(isClient -> Arrays.stream(new Boolean[]{true, false})
+//                    .flatMap(loc -> Arrays.stream(new Boolean[]{true, false})
+//                        .map(fullyFetched -> new Object[]{arr[0], isClient, loc, fullyFetched}))))
+//            .collect(Collectors.toList());
+//    }
+//
+//    @Parameterized.Parameters(name = "sqlEngine={0}, isClient={1}, loc={2}, fullyFetched={3}")
+//    public static Collection<Object[]> params() {
+//        return Arrays.asList(Stream.of(
+//            CalciteQueryEngineConfiguration.ENGINE_NAME, IndexingQueryEngineConfiguration.ENGINE_NAME
+//        ).flatMap(engineName -> Stream.of(true, false).flatMap(isClient -> Stream.of(
+//                true, false
+//            ).flatMap(loc -> Stream.of(
+//                true, false
+//            ).flatMap(fullyFetched -> Stream.of(
+//                    new Object[]{engineName, isClient, loc, fullyFetched}
+//                )
+//            )))
+//            .toArray(Object[][]::new));
+//    }
+//
+//    @Parameterized.Parameters(name = "sqlEngine={0}, isClient={1}, loc={2}, fullyFetched={3}")
+//    public static Collection<Object[]> params() {
+//        return Arrays.asList(Stream.of(CalciteQueryEngineConfiguration.ENGINE_NAME, IndexingQueryEngineConfiguration.ENGINE_NAME)
+//            .flatMap(engineName -> Stream.of(true, false).flatMap(isClient -> Stream.of(true, false)
+//                .flatMap(loc -> Stream.of(true, false)
+//                    .flatMap(fullyFetched -> Stream.of(new Object[] { engineName, isClient, loc, fullyFetched })
+//                        .iterator()))))
+//            .toArray(Object[][]::new));
+//    }
 
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
