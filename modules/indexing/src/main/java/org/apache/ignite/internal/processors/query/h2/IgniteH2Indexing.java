@@ -1113,7 +1113,8 @@ public class IgniteH2Indexing implements GridQueryIndexing {
                     ", params=" + S.toString(QueryParameters.class, qryParams) + "]", e);
         }
         finally {
-            heavyQueriesTracker().stopTracking(dmlInfo, failReason);
+            if (dmlInfo != null)
+                heavyQueriesTracker().stopTracking(dmlInfo, failReason);
 
             runningQueryManager().unregister(qryId, failReason);
         }
