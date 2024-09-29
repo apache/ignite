@@ -24,7 +24,9 @@ import java.sql.Statement;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.Comparator;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
@@ -444,7 +446,9 @@ public class SqlPlanHistoryIntegrationTest extends GridCommonAbstractTest {
 
         checkSqlPlanHistory(PLAN_HISTORY_SIZE);
 
-        Set<String> qrys = getSqlPlanHistory(queryNode()).stream().map(SqlPlan::query).collect(Collectors.toSet());
+        Set<String> qrys = getSqlPlanHistory(queryNode()).keySet().stream()
+            .map(SqlPlan::query)
+            .collect(Collectors.toSet());
 
         for (int i = 1; i <= PLAN_HISTORY_EXCESS; i++)
             assertFalse(qrys.contains(SQL + " where A.fail=" + i));
@@ -469,7 +473,7 @@ public class SqlPlanHistoryIntegrationTest extends GridCommonAbstractTest {
 
             checkSqlPlanHistory(1);
 
-            timeStamps[i] = getSqlPlanHistory(queryNode()).stream().findFirst().get().startTime();
+            timeStamps[i] = getSqlPlanHistory(queryNode()).values().stream().findFirst().get();
 
             Thread.sleep(10);
         }
@@ -612,8 +616,8 @@ public class SqlPlanHistoryIntegrationTest extends GridCommonAbstractTest {
     /**
      * @param node Ignite node to check SQL plan history for.
      */
-    public Collection<SqlPlan> getSqlPlanHistory(IgniteEx node) {
-        return new ArrayList<>(node.context().query().runningQueryManager().planHistoryTracker().sqlPlanHistory());
+    public Map<SqlPlan, Long> getSqlPlanHistory(IgniteEx node) {
+        return node.context().query().runningQueryManager().planHistoryTracker().sqlPlanHistory();
     }
 
     /**
@@ -622,7 +626,7 @@ public class SqlPlanHistoryIntegrationTest extends GridCommonAbstractTest {
      * @param size Number of SQL plan entries expected to be in the history.
      */
     public void checkSqlPlanHistory(int size) {
-        Collection<SqlPlan> sqlPlans = getSqlPlanHistory(queryNode());
+        Map<SqlPlan, Long> sqlPlans = getSqlPlanHistory(queryNode());
 
         assertNotNull(sqlPlans);
 
@@ -642,7 +646,7 @@ public class SqlPlanHistoryIntegrationTest extends GridCommonAbstractTest {
      * @param isSimpleQry Simple query flag.
      */
     public void checkSqlPlanHistoryDml(int size, boolean isSimpleQry) {
-        Collection<SqlPlan> sqlPlans = getSqlPlanHistory(queryNode());
+        Map<SqlPlan, Long> sqlPlans = getSqlPlanHistory(queryNode());
 
         assertNotNull(sqlPlans);
 
@@ -654,7 +658,9 @@ public class SqlPlanHistoryIntegrationTest extends GridCommonAbstractTest {
             else
                 check = "the following " + (loc ? "local " : "") + "query has been executed:";
 
-            sqlPlans = sqlPlans.stream().filter(p -> p.plan().contains(check)).collect(Collectors.toList());
+            sqlPlans = sqlPlans.entrySet().stream()
+                .filter(e -> e.getKey().plan().contains(check))
+                .collect(Collectors.toMap(e -> e.getKey(), e -> e.getValue()));
 
             checkMetrics((!isSimpleQry && !loc) ? size : 0, getSqlPlanHistory(mapNode()));
         }
@@ -668,10 +674,14 @@ public class SqlPlanHistoryIntegrationTest extends GridCommonAbstractTest {
      * @param size Number of SQL plan entries expected to be in the history.
      * @param sqlPlans Sql plans recorded in the history.
      */
-    public void checkMetrics(int size, Collection<SqlPlan> sqlPlans) {
+    public void checkMetrics(int size, Map<SqlPlan, Long> sqlPlans) {
         if (size == 1 && sqlPlans.size() == 2) {
-            String plan1 = new ArrayList<>(sqlPlans).get(0).plan();
-            String plan2 = new ArrayList<>(sqlPlans).get(1).plan();
+            List<Map.Entry<SqlPlan, Long>> sortedPlans = new ArrayList<>(sqlPlans.entrySet()).stream()
+                .sorted(Comparator.comparing(Map.Entry::getValue))
+                .collect(Collectors.toList());
+
+            String plan1 = sortedPlans.get(0).getKey().plan();
+            String plan2 = sortedPlans.get(1).getKey().plan();
 
             assertTrue(plan2.contains(plan1) && plan2.contains("/* scanCount"));
         }
@@ -681,15 +691,15 @@ public class SqlPlanHistoryIntegrationTest extends GridCommonAbstractTest {
         if (size == 0)
             return;
 
-        for (SqlPlan plan : sqlPlans) {
-            assertEquals(loc, plan.local());
-            assertEquals(sqlEngine.toString(), plan.engine());
+        for (Map.Entry<SqlPlan, Long> plan : sqlPlans.entrySet()) {
+            assertEquals(loc, plan.getKey().local());
+            assertEquals(sqlEngine, plan.getKey().engine());
 
-            assertNotNull(plan.plan());
-            assertNotNull(plan.query());
-            assertNotNull(plan.schema());
+            assertNotNull(plan.getKey().plan());
+            assertNotNull(plan.getKey().query());
+            assertNotNull(plan.getKey().schema());
 
-            assertTrue(plan.startTime() > 0);
+            assertTrue(plan.getValue() > 0);
         }
     }
 

@@ -38,9 +38,6 @@ public class SqlPlan {
     /** SQL engine. */
     private final String engine;
 
-    /** Query start timestamp. */
-    private final long startTime;
-
     /** Pre-calculated hash code. */
     private final int hash;
 
@@ -62,8 +59,6 @@ public class SqlPlan {
         this.schema = schema;
         this.loc = loc;
         this.engine = engine;
-
-        startTime = U.currentTimeMillis();
 
         hash = Objects.hash(plan, qry, schema, loc, engine);
     }
@@ -91,11 +86,6 @@ public class SqlPlan {
     /** */
     public String engine() {
         return engine;
-    }
-
-    /** */
-    public long startTime() {
-        return startTime;
     }
 
     /** {@inheritDoc} */

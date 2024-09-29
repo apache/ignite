@@ -18,13 +18,14 @@
 package org.apache.ignite.internal.processors.query.running;
 
 import java.util.Collections;
-import java.util.Set;
-import org.apache.ignite.internal.util.GridBoundedConcurrentLinkedHashSet;
+import java.util.Map;
+import org.apache.ignite.internal.util.GridBoundedConcurrentLinkedHashMap;
+import org.apache.ignite.internal.util.typedef.internal.U;
 
 /** Class that manages recording and storing SQL plans. */
 public class SqlPlanHistoryTracker {
     /** SQL plan history. */
-    private GridBoundedConcurrentLinkedHashSet<SqlPlan> sqlPlanHistory;
+    private GridBoundedConcurrentLinkedHashMap<SqlPlan, Long> sqlPlanHistory;
 
     /** SQL plan history size. */
     private int historySize;
@@ -35,7 +36,7 @@ public class SqlPlanHistoryTracker {
     public SqlPlanHistoryTracker(int historySize) {
         this.historySize = historySize;
 
-        sqlPlanHistory = (historySize > 0) ? new GridBoundedConcurrentLinkedHashSet<>(historySize) : null;
+        sqlPlanHistory = (historySize > 0) ? new GridBoundedConcurrentLinkedHashMap<>(historySize) : null;
     }
 
     /**
@@ -51,18 +52,15 @@ public class SqlPlanHistoryTracker {
 
         SqlPlan sqlPlan = new SqlPlan(plan, qry, schema, loc, engine);
 
-        if (sqlPlanHistory.contains(sqlPlan))
-            sqlPlanHistory.remove(sqlPlan);
-
-        sqlPlanHistory.add(sqlPlan);
+        sqlPlanHistory.put(sqlPlan, U.currentTimeMillis());
     }
 
     /** */
-    public Set<SqlPlan> sqlPlanHistory() {
+    public Map<SqlPlan, Long> sqlPlanHistory() {
         if (historySize <= 0)
-            return Collections.emptySet();
+            return Collections.emptyMap();
 
-        return Collections.unmodifiableSet(sqlPlanHistory);
+        return Collections.unmodifiableMap(sqlPlanHistory);
     }
 
     /**
@@ -71,6 +69,6 @@ public class SqlPlanHistoryTracker {
     public void setHistorySize(int historySize) {
         this.historySize = historySize;
 
-        sqlPlanHistory = (historySize > 0) ? new GridBoundedConcurrentLinkedHashSet<>(historySize) : null;
+        sqlPlanHistory = (historySize > 0) ? new GridBoundedConcurrentLinkedHashMap<>(historySize) : null;
     }
 }

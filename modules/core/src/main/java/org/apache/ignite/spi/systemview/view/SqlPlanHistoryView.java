@@ -18,18 +18,19 @@
 package org.apache.ignite.spi.systemview.view;
 
 import java.util.Date;
+import java.util.Map;
 import org.apache.ignite.internal.managers.systemview.walker.Order;
 import org.apache.ignite.internal.processors.query.running.SqlPlan;
 
 /** */
 public class SqlPlanHistoryView {
     /** SQL plan. */
-    private final SqlPlan plan;
+    private final Map.Entry<SqlPlan, Long> plan;
 
     /**
      * @param plan SQL plan.
      */
-    public SqlPlanHistoryView(SqlPlan plan) {
+    public SqlPlanHistoryView(Map.Entry<SqlPlan, Long> plan) {
         this.plan = plan;
     }
 
@@ -38,7 +39,7 @@ public class SqlPlanHistoryView {
      */
     @Order
     public String schemaName() {
-        return plan.schema();
+        return plan.getKey().schema();
     }
 
     /**
@@ -46,7 +47,7 @@ public class SqlPlanHistoryView {
      */
     @Order(1)
     public String sql() {
-        return plan.query();
+        return plan.getKey().query();
     }
 
     /**
@@ -54,7 +55,7 @@ public class SqlPlanHistoryView {
      */
     @Order(2)
     public String plan() {
-        return plan.plan();
+        return plan.getKey().plan();
     }
 
     /**
@@ -62,7 +63,7 @@ public class SqlPlanHistoryView {
      */
     @Order(3)
     public boolean local() {
-        return plan.local();
+        return plan.getKey().local();
     }
 
     /**
@@ -70,7 +71,7 @@ public class SqlPlanHistoryView {
      */
     @Order(4)
     public String engine() {
-        return plan.engine();
+        return plan.getKey().engine();
     }
 
     /**
@@ -78,6 +79,6 @@ public class SqlPlanHistoryView {
      */
     @Order(5)
     public Date lastStartTime() {
-        return new Date(plan.startTime());
+        return new Date(plan.getValue());
     }
 }
