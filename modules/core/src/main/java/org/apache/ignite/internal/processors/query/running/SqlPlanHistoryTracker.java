@@ -24,7 +24,7 @@ import org.apache.ignite.internal.util.GridBoundedConcurrentLinkedHashSet;
 /** Class that manages recording and storing SQL plans. */
 public class SqlPlanHistoryTracker {
     /** SQL plan history. */
-    private final GridBoundedConcurrentLinkedHashSet<SqlPlan> sqlPlanHistory;
+    private GridBoundedConcurrentLinkedHashSet<SqlPlan> sqlPlanHistory;
 
     /** SQL plan history size. */
     private int historySize;
@@ -70,5 +70,7 @@ public class SqlPlanHistoryTracker {
      */
     public void setHistorySize(int historySize) {
         this.historySize = historySize;
+
+        sqlPlanHistory = (historySize > 0) ? new GridBoundedConcurrentLinkedHashSet<>(historySize) : null;
     }
 }

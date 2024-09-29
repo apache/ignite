@@ -60,7 +60,6 @@ import org.apache.ignite.internal.processors.query.calcite.integration.SetOpInte
 import org.apache.ignite.internal.processors.query.calcite.integration.SortAggregateIntegrationTest;
 import org.apache.ignite.internal.processors.query.calcite.integration.SqlDiagnosticIntegrationTest;
 import org.apache.ignite.internal.processors.query.calcite.integration.SqlPlanHistoryClientIntegrationTest;
-import org.apache.ignite.internal.processors.query.calcite.integration.SqlPlanHistoryConfigIntegrationTest;
 import org.apache.ignite.internal.processors.query.calcite.integration.SqlPlanHistoryH2ClientIntegrationTest;
 import org.apache.ignite.internal.processors.query.calcite.integration.SqlPlanHistoryH2IntegrationTest;
 import org.apache.ignite.internal.processors.query.calcite.integration.SqlPlanHistoryIntegrationTest;
