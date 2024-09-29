@@ -27,6 +27,7 @@ import java.util.Collection;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
@@ -140,25 +141,42 @@ public class SqlPlanHistoryIntegrationTest extends GridCommonAbstractTest {
     /** Flag for queries with map-reduce phases. */
     private boolean isReducePhase;
 
-    /** Client mode flag. */
-    private boolean isClient;
-
     /** SQL engine. */
-    protected String sqlEngine = CalciteQueryEngineConfiguration.ENGINE_NAME;
+    @Parameterized.Parameter
+    public String sqlEngine;
+
+    /** Client mode flag. */
+    @Parameterized.Parameter(1)
+    public boolean isClient;
 
     /** Local query flag. */
-    @Parameterized.Parameter
+    @Parameterized.Parameter(2)
     public boolean loc;
 
     /** Fully-fetched query flag. */
-    @Parameterized.Parameter(1)
+    @Parameterized.Parameter(3)
     public boolean isFullyFetched;
 
     /** */
-    @Parameterized.Parameters(name = "loc={0}, fullyFetched={1}")
+    @Parameterized.Parameters(name = "sqlEngine={0}, isClient={1} loc={2}, fullyFetched={3}")
     public static Collection<Object[]> params() {
         return Arrays.asList(new Object[][] {
-            {true, true}, {true, false}, {false, true}, {false, false}
+            {CalciteQueryEngineConfiguration.ENGINE_NAME, true, true, true},
+            {CalciteQueryEngineConfiguration.ENGINE_NAME, true, true, false},
+            {CalciteQueryEngineConfiguration.ENGINE_NAME, true, false, true},
+            {CalciteQueryEngineConfiguration.ENGINE_NAME, true, false, false},
+            {CalciteQueryEngineConfiguration.ENGINE_NAME, false, true, true},
+            {CalciteQueryEngineConfiguration.ENGINE_NAME, false, true, false},
+            {CalciteQueryEngineConfiguration.ENGINE_NAME, false, false, true},
+            {CalciteQueryEngineConfiguration.ENGINE_NAME, false, false, false},
+            {IndexingQueryEngineConfiguration.ENGINE_NAME, true, true, true},
+            {IndexingQueryEngineConfiguration.ENGINE_NAME, true, true, false},
+            {IndexingQueryEngineConfiguration.ENGINE_NAME, true, false, true},
+            {IndexingQueryEngineConfiguration.ENGINE_NAME, true, false, false},
+            {IndexingQueryEngineConfiguration.ENGINE_NAME, false, true, true},
+            {IndexingQueryEngineConfiguration.ENGINE_NAME, false, true, false},
+            {IndexingQueryEngineConfiguration.ENGINE_NAME, false, false, true},
+            {IndexingQueryEngineConfiguration.ENGINE_NAME, false, false, false}
         });
     }
 
@@ -183,7 +201,10 @@ public class SqlPlanHistoryIntegrationTest extends GridCommonAbstractTest {
 
     /** */
     protected QueryEngineConfigurationEx configureSqlEngine() {
-        return new CalciteQueryEngineConfiguration();
+        if (sqlEngine.equals(CalciteQueryEngineConfiguration.ENGINE_NAME))
+            return new CalciteQueryEngineConfiguration();
+        else
+            return new IndexingQueryEngineConfiguration();
     }
 
     /**
@@ -203,9 +224,12 @@ public class SqlPlanHistoryIntegrationTest extends GridCommonAbstractTest {
      * @return Ignite node where queries are executed.
      */
     protected IgniteEx queryNode() {
-        IgniteEx node = grid(0);
+        IgniteEx node = isClient ? grid(2) : grid(0);
 
-        assertFalse(node.context().clientNode());
+        if (isClient)
+            assertTrue(node.context().clientNode());
+        else
+            assertFalse(node.context().clientNode());
 
         return node;
     }
@@ -228,12 +252,13 @@ public class SqlPlanHistoryIntegrationTest extends GridCommonAbstractTest {
      */
     protected void startTestGrid() throws Exception {
         startGrids(2);
+
+        if (isClient)
+            startClientGrid(2);
     }
 
     /** {@inheritDoc} */
-    @Override protected void beforeTestsStarted() throws Exception {
-        super.beforeTestsStarted();
-
+    @Override protected void beforeTest() throws Exception {
         startTestGrid();
 
         IgniteCache<Integer, String> cacheA = queryNode().cache("A");
@@ -254,15 +279,8 @@ public class SqlPlanHistoryIntegrationTest extends GridCommonAbstractTest {
     }
 
     /** {@inheritDoc} */
-    @Override protected void afterTestsStopped() throws Exception {
-        super.afterTestsStopped();
-
+    @Override protected void afterTest() throws Exception {
         stopAllGrids();
-    }
-
-    /** {@inheritDoc} */
-    @Override protected void beforeTest() throws Exception {
-        resetPlanHistory();
     }
 
     /**
