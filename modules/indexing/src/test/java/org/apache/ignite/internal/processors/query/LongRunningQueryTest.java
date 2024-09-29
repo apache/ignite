@@ -63,24 +63,24 @@ public class LongRunningQueryTest extends AbstractIndexingCommonTest {
     private static final int EXT_WAIT_TIME = 2000;
 
     /** Insert. */
-    private static final String INSERT = "insert into test (_key, _val) values (1001, sleep_func_dml())";
+    private static final String INSERT_SQL = "insert into test (_key, _val) values (1001, sleep_func(?))";
 
     /** Insert with a subquery. */
-    private static final String INSERT_WITH_SUBQUERY = "insert into test (_key, _val) select p._key, p.orgId from " +
+    private static final String INSERT_WITH_SUBQUERY_SQL = "insert into test (_key, _val) select p._key, p.orgId from " +
         "\"pers\".Person p where p._key < sleep_func(?)";
 
     /** Update. */
-    private static final String UPDATE = "update test set _val = sleep_func_dml() where _key = 1";
+    private static final String UPDATE_SQL = "update test set _val = sleep_func(?) where _key = 1";
 
     /** Update with a subquery. */
-    private static final String UPDATE_WITH_SUBQUERY = "update test set _val = 111 where _key in " +
+    private static final String UPDATE_WITH_SUBQUERY_SQL = "update test set _val = 111 where _key in " +
         "(select p._key from \"pers\".Person p where p._key < sleep_func(?))";
 
     /** Delete. */
-    private static final String DELETE = "delete from test";
+    private static final String DELETE_SQL = "delete from test where _key = sleep_func(?)";
 
     /** Delete with a subquery. */
-    private static final String DELETE_WITH_SUBQUERY = "delete from test where _key in " +
+    private static final String DELETE_WITH_SUBQUERY_SQL = "delete from test where _key in " +
         "(select p._key from \"pers\".Person p where p._key < sleep_func(?))";
 
     /** Page size. */
@@ -225,7 +225,7 @@ public class LongRunningQueryTest extends AbstractIndexingCommonTest {
     public void testLongRunningInsert() {
         local = false;
 
-        runDml(INSERT, false);
+        runDml(INSERT_SQL);
     }
 
     /** */
@@ -233,7 +233,7 @@ public class LongRunningQueryTest extends AbstractIndexingCommonTest {
     public void testLongRunningInsertWithSubquery() {
         local = false;
 
-        runDml(INSERT_WITH_SUBQUERY, true);
+        runDml(INSERT_WITH_SUBQUERY_SQL);
     }
 
     /** */
@@ -241,7 +241,7 @@ public class LongRunningQueryTest extends AbstractIndexingCommonTest {
     public void testLongRunningInsertLocal() {
         local = true;
 
-        runDml(INSERT, false);
+        runDml(INSERT_SQL);
     }
 
     /** */
@@ -249,7 +249,7 @@ public class LongRunningQueryTest extends AbstractIndexingCommonTest {
     public void testLongRunningInsertWithSubqueryLocal() {
         local = true;
 
-        runDml(INSERT_WITH_SUBQUERY, true);
+        runDml(INSERT_WITH_SUBQUERY_SQL);
     }
 
     /** */
@@ -257,7 +257,7 @@ public class LongRunningQueryTest extends AbstractIndexingCommonTest {
     public void testLongRunningUpdate() {
         local = false;
 
-        runDml(UPDATE, false);
+        runDml(UPDATE_SQL);
     }
 
     /** */
@@ -265,7 +265,7 @@ public class LongRunningQueryTest extends AbstractIndexingCommonTest {
     public void testLongRunningUpdateWithSubquery() {
         local = false;
 
-        runDml(UPDATE_WITH_SUBQUERY, true);
+        runDml(UPDATE_WITH_SUBQUERY_SQL);
     }
 
     /** */
@@ -273,7 +273,7 @@ public class LongRunningQueryTest extends AbstractIndexingCommonTest {
     public void testLongRunningUpdateLocal() {
         local = true;
 
-        runDml(UPDATE, false);
+        runDml(UPDATE_SQL);
     }
 
     /** */
@@ -281,7 +281,7 @@ public class LongRunningQueryTest extends AbstractIndexingCommonTest {
     public void testLongRunningUpdateWithSubqueryLocal() {
         local = true;
 
-        runDml(UPDATE_WITH_SUBQUERY, true);
+        runDml(UPDATE_WITH_SUBQUERY_SQL);
     }
 
     /** */
@@ -289,9 +289,7 @@ public class LongRunningQueryTest extends AbstractIndexingCommonTest {
     public void testLongRunningDelete() {
         local = false;
 
-        increaseCacheSize(1_000_000);
-
-        runDml(DELETE, false);
+        runDml(DELETE_SQL);
     }
 
     /** */
@@ -299,7 +297,7 @@ public class LongRunningQueryTest extends AbstractIndexingCommonTest {
     public void testLongRunningDeleteWithSubquery() {
         local = false;
 
-        runDml(DELETE_WITH_SUBQUERY, true);
+        runDml(DELETE_WITH_SUBQUERY_SQL);
     }
 
     /** */
@@ -307,9 +305,7 @@ public class LongRunningQueryTest extends AbstractIndexingCommonTest {
     public void testLongRunningDeleteLocal() {
         local = true;
 
-        increaseCacheSize(1_000_000);
-
-        runDml(DELETE, false);
+        runDml(DELETE_SQL);
     }
 
     /** */
@@ -317,7 +313,7 @@ public class LongRunningQueryTest extends AbstractIndexingCommonTest {
     public void testLongRunningDeleteWithSubqueryLocal() {
         local = true;
 
-        runDml(DELETE_WITH_SUBQUERY, true);
+        runDml(DELETE_WITH_SUBQUERY_SQL);
     }
 
     /**
@@ -564,9 +560,8 @@ public class LongRunningQueryTest extends AbstractIndexingCommonTest {
 
     /**
      * @param dml Dml command.
-     * @param isSubquery Flag indicating whether the Dml command has a subquery.
      */
-    public void runDml(String dml, boolean isSubquery) {
+    public void runDml(String dml) {
         lazy = false;
 
         LogListener lsnr = LogListener
@@ -578,19 +573,11 @@ public class LongRunningQueryTest extends AbstractIndexingCommonTest {
 
         long start = System.currentTimeMillis();
 
-        sql("test", dml, (isSubquery ? (LONG_QUERY_WARNING_TIMEOUT * 1.5) : null));
+        sql("test", dml, 5000);
 
         assertTrue((System.currentTimeMillis() - start) > LONG_QUERY_WARNING_TIMEOUT);
 
         assertTrue(lsnr.check());
-    }
-
-    /**
-     * @param targetCacheSize Target size of the "test" cache.
-     */
-    public void increaseCacheSize(int targetCacheSize) {
-        for (int i = KEY_CNT; i < targetCacheSize; i++)
-            sql("test", "insert into test (_key, _val) values (?, ?)", i, i);
     }
 
     /**
@@ -611,22 +598,6 @@ public class LongRunningQueryTest extends AbstractIndexingCommonTest {
                 // No-op
             }
             return v;
-        }
-
-        /**
-         * This function gets the thread to sleep for 4 seconds. It doesn't take any parameters and always returns 1.
-         */
-        @SuppressWarnings("unused")
-        @QuerySqlFunction
-        public static int sleep_func_dml() {
-            try {
-                Thread.sleep(4000);
-            }
-            catch (InterruptedException ignored) {
-                // No-op
-            }
-
-            return 1;
         }
     }
 

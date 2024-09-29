@@ -1044,12 +1044,24 @@ public class IgniteH2Indexing implements GridQueryIndexing {
 
         Exception failReason = null;
 
+        H2DmlInfo dmlInfo = null;
+
         try (TraceSurroundings ignored = MTC.support(ctx.tracing().create(SQL_DML_QRY_EXECUTE, MTC.span()))) {
             if (!updateInTxAllowed && ctx.cache().context().tm().inUserTx()) {
                 throw new IgniteSQLException("DML statements are not allowed inside a transaction over " +
                     "cache(s) with TRANSACTIONAL atomicity mode (disable this error message with system property " +
                     "\"-DIGNITE_ALLOW_DML_INSIDE_TRANSACTION=true\")");
             }
+
+            dmlInfo = new H2DmlInfo(
+                U.currentTimeMillis(),
+                qryId,
+                ctx.localNodeId(),
+                qryDesc.schemaName(),
+                qryDesc.sql()
+            );
+
+            heavyQueriesTracker().startTracking(dmlInfo);
 
             if (!qryDesc.local()) {
                 return executeUpdateDistributed(
@@ -1079,11 +1091,15 @@ public class IgniteH2Indexing implements GridQueryIndexing {
             }
         }
         catch (IgniteException e) {
+            heavyQueriesTracker().stopTracking(dmlInfo, e);
+
             failReason = e;
 
             throw e;
         }
         catch (IgniteCheckedException e) {
+            heavyQueriesTracker().stopTracking(dmlInfo, e);
+
             failReason = e;
 
             IgniteClusterReadOnlyException roEx = X.cause(e, IgniteClusterReadOnlyException.class);
@@ -1101,6 +1117,8 @@ public class IgniteH2Indexing implements GridQueryIndexing {
                     ", params=" + S.toString(QueryParameters.class, qryParams) + "]", e);
         }
         finally {
+            heavyQueriesTracker().stopTracking(dmlInfo, null);
+
             runningQueryManager().unregister(qryId, failReason);
         }
     }
@@ -2092,16 +2110,6 @@ public class IgniteH2Indexing implements GridQueryIndexing {
 
         GridCacheContext<?, ?> cctx = dml.plan().cacheContext();
 
-        H2DmlInfo dmlInfo = new H2DmlInfo(
-            U.currentTimeMillis(),
-            qryId,
-            ctx.localNodeId(),
-            qryDesc.schemaName(),
-            qryDesc.sql()
-        );
-
-        heavyQueriesTracker().startTracking(dmlInfo);
-
         for (int i = 0; i < DFLT_UPDATE_RERUN_ATTEMPTS; i++) {
             CacheOperationContext opCtx = cctx != null ? DmlUtils.setKeepBinaryContext(cctx) : null;
 
@@ -2130,8 +2138,6 @@ public class IgniteH2Indexing implements GridQueryIndexing {
             if (F.isEmpty(errKeys))
                 break;
         }
-
-        heavyQueriesTracker().stopTracking(dmlInfo, null);
 
         if (F.isEmpty(errKeys) && partRes == null) {
             if (items == 1L)
