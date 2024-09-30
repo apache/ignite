@@ -38,7 +38,7 @@ def create_jvm_settings(heap_size=DEFAULT_HEAP, gc_settings=JVM_PARAMS_GC_G1, ge
     """
     gc_dump = ""
     if gc_dump_path:
-        gc_dump = "-verbose:gc -Xloggc:" + gc_dump_path
+        gc_dump = "-Xlog:gc*=debug,gc+stats*=debug,gc+ergo*=debug:" + gc_dump_path + ":uptime,time,level,tags"
 
     out_of_mem_dump = ""
     if oom_path:

@@ -465,7 +465,7 @@ public class SqlViewExporterSpiTest extends AbstractExporterSpiTest {
 
         Set<String> actViews = new TreeSet<>();
 
-        List<List<?>> res = execute(ignite0, "SELECT * FROM SYS.VIEWS");
+        List<List<?>> res = execute(ignite0, "SELECT name FROM SYS.VIEWS");
 
         for (List<?> row : res)
             actViews.add(row.get(0).toString());

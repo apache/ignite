@@ -112,6 +112,7 @@ import org.apache.ignite.internal.processors.query.schema.SchemaOperationClientF
 import org.apache.ignite.internal.processors.query.schema.SchemaOperationException;
 import org.apache.ignite.internal.processors.query.schema.SchemaOperationManager;
 import org.apache.ignite.internal.processors.query.schema.SchemaOperationWorker;
+import org.apache.ignite.internal.processors.query.schema.SchemaSqlViewManager;
 import org.apache.ignite.internal.processors.query.schema.management.SchemaManager;
 import org.apache.ignite.internal.processors.query.schema.message.SchemaAbstractDiscoveryMessage;
 import org.apache.ignite.internal.processors.query.schema.message.SchemaFinishDiscoveryMessage;
@@ -298,8 +299,11 @@ public class GridQueryProcessor extends GridProcessorAdapter {
     /** Running query manager. */
     private RunningQueryManager runningQryMgr;
 
-    /** Schema manager. */
+    /** Local schema manager. */
     private final SchemaManager schemaMgr;
+
+    /** Global schema SQL views manager. */
+    private final SchemaSqlViewManager schemaSqlViewMgr;
 
     /** @see TransactionConfiguration#isTxAwareQueriesEnabled()  */
     private final boolean txAwareQueriesEnabled;
@@ -321,6 +325,8 @@ public class GridQueryProcessor extends GridProcessorAdapter {
             idx = INDEXING.inClassPath() ? U.newInstance(INDEXING.className()) : null;
 
         schemaMgr = new SchemaManager(ctx);
+
+        schemaSqlViewMgr = new SchemaSqlViewManager(ctx);
 
         idxProc = ctx.indexProcessor();
 
@@ -363,6 +369,8 @@ public class GridQueryProcessor extends GridProcessorAdapter {
         statsMgr = new IgniteStatisticsManagerImpl(ctx);
 
         schemaMgr.start(ctx.config().getSqlConfiguration().getSqlSchemas());
+
+        schemaSqlViewMgr.start();
 
         ctx.io().addMessageListener(TOPIC_SCHEMA, ioLsnr);
 
@@ -2435,7 +2443,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
             try {
                 ctx.indexProcessor().unregisterCache(cacheInfo);
 
-                schemaMgr.onCacheDestroyed(cacheName, destroy, clearIdx);
+                schemaMgr.onCacheStopped(cacheName, destroy, clearIdx);
 
                 // Notify indexing.
                 if (idx != null)
@@ -4390,6 +4398,13 @@ public class GridQueryProcessor extends GridProcessorAdapter {
      */
     public SchemaManager schemaManager() {
         return schemaMgr;
+    }
+
+    /**
+     * @return Schema SQL view manager.
+     */
+    public SchemaSqlViewManager sqlViewManager() {
+        return schemaSqlViewMgr;
     }
 
     /** @return Statistics manager. */
