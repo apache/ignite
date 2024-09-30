@@ -17,7 +17,6 @@
 
 package org.apache.ignite.internal.processors.query.calcite.integration;
 
-import java.math.BigDecimal;
 import java.util.List;
 
 import javax.cache.Cache;
@@ -470,31 +469,64 @@ public class SetOpIntegrationTest extends AbstractBasicIntegrationTest {
 
     /** */
     @Test
-    public void testUnionWithNumerics() {
-        sql("CREATE TABLE t0(id INT PRIMARY KEY, val INT)");
-        sql("CREATE TABLE t1(id INT PRIMARY KEY, val DECIMAL)");
-        sql("INSERT INTO t0 VALUES (1, 10)");
-        sql("INSERT INTO t1 VALUES (1, 10)");
+    public void testNumbersCastInUnion() {
+        doTestNumbersCastInSetOp("UNION", 10, 20, 30, 33, 40, 44, 50);
 
-        assertQuery(ignite(0), "SELECT val from t0 UNION select val from t1")
-            .returns(new BigDecimal(10))
-            .ordered()
-            .check();
+        doTestNumbersCastInSetOp("UNION ALL", 10, 20, 20, 30, 30, 33, 40, 44, 50, 50, 50, 50);
     }
 
     /** */
     @Test
-    public void testIntersectWithNumerics() {
-        sql("CREATE TABLE t0(id INT PRIMARY KEY, val INT) WITH \"affinity_key=ID\"");
-        sql("CREATE TABLE t1(id INT PRIMARY KEY, val DECIMAL)");
-        sql("INSERT INTO t0 VALUES (1, 10), (2, 20), (3, 30), (4, 40), (5, 50)");
-        sql("INSERT INTO t1 VALUES (1, 10), (2, 20), (3, 300), (4, 400), (5, 50)");
+    public void testNumbersCastInIntersect() {
+        doTestNumbersCastInSetOp("INTERSECT", 20, 50);
 
-        assertQuery(ignite(0), "SELECT val from t0 INTERSECT select val from t1")
-            .returns(new BigDecimal(10))
-            .returns(new BigDecimal(20))
-            .returns(new BigDecimal(50))
-            .ordered()
-            .check();
+        doTestNumbersCastInSetOp("INTERSECT ALL", 20, 50, 50);
+    }
+
+    /** */
+    @Test
+    public void testNumbersCastInExcept() {
+        doTestNumbersCastInSetOp("EXCEPT", 30, 40);
+
+        doTestNumbersCastInSetOp("EXCEPT ALL", 30, 30, 40);
+    }
+
+    /**
+     * Tests SetOp on numerics of different type with values:
+     *  TBL1: 30, 20, 30, 40, 50, 50
+     *  TBL2: 10, 20, 33, 44, 50, 50
+     *
+     * @param op       Operation like 'UNION' or 'INTERSECT'
+     * @param expected Expected result as integers.
+     */
+    private void doTestNumbersCastInSetOp(String op, int... expected) {
+        List<String> types = F.asList("TINYINT", "SMALLINT", "INTEGER", "REAL", "FLOAT", "BIGINT", "DOUBLE", "DECIMAL");
+
+        sql("CREATE TABLE t0(id INT, val INTEGER, PRIMARY KEY(id))");
+
+        try {
+            sql("INSERT INTO t0 VALUES (1, 30), (2, 20), (3, 30), (4, 40), (5, 50), (6, 50)");
+
+            for (String t2 : types) {
+                sql("CREATE TABLE t1(id INT PRIMARY KEY, val " + t2 + ")");
+
+                sql("INSERT INTO t1 VALUES (1, 10), (2, 20), (3, 33), (4, 44), (5, 50), (6, 50)");
+
+                List<List<?>> res = sql("SELECT val from t0 " + op + " select val from t1 ORDER BY 1");
+
+                sql("DROP TABLE t1");
+
+                assertEquals(expected.length, res.size());
+
+                for (int i = 0; i < expected.length; ++i) {
+                    assertEquals(1, res.get(i).size());
+
+                    assertEquals(expected[i], ((Number)res.get(i).get(0)).intValue());
+                }
+            }
+        }
+        finally {
+            sql("DROP TABLE t0");
+        }
     }
 }

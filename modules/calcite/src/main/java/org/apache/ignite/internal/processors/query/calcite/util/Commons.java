@@ -150,7 +150,7 @@ public final class Commons {
     /**
      * Finds the least restrictive type of the inputs and adds a cast projection if required.
      *
-     * @param inputs Inputs.
+     * @param inputs Inputs to try to cast.
      * @param cluster Cluster.
      * @param traits Traits.
      * @return Converted inputs.
@@ -161,45 +161,44 @@ public final class Commons {
         // Output type of a set operator is equal to leastRestrictive(inputTypes) (see SetOp::deriveRowType).
         RelDataTypeFactory typeFactory = cluster.getTypeFactory();
 
-        RelDataType resultType = typeFactory.leastRestrictive(inputRowTypes);
+        RelDataType leastRestrictive = typeFactory.leastRestrictive(inputRowTypes);
 
-        if (resultType == null)
-            throw new IllegalArgumentException("Cannot find proper row type for arguments to set op: " + inputRowTypes);
+        if (leastRestrictive == null)
+            throw new IllegalStateException("Cannot find least restrictive type for arguments to set op: " + inputRowTypes);
 
         // If input's type does not match the result type, then add a cast projection for non-matching fields.
         RexBuilder rexBuilder = cluster.getRexBuilder();
-        List<RelNode> actualInputs = new ArrayList<>(inputs.size());
+        List<RelNode> newInputs = new ArrayList<>(inputs.size());
 
         for (RelNode input : inputs) {
             RelDataType inputRowType = input.getRowType();
 
             // It is always safe to convert from [T1 nullable, T2 not nullable] to [T1 nullable, T2 nullable] and
             // the least restrictive type does exactly that.
-            if (SqlTypeUtil.equalAsStructSansNullability(typeFactory, resultType, inputRowType, null)) {
-                actualInputs.add(input);
+            if (SqlTypeUtil.equalAsStructSansNullability(typeFactory, leastRestrictive, inputRowType, null)) {
+                newInputs.add(input);
 
                 continue;
             }
 
             List<RexNode> expressions = new ArrayList<>(inputRowType.getFieldCount());
 
-            for (int i = 0; i < resultType.getFieldCount(); i++) {
+            for (int i = 0; i < leastRestrictive.getFieldCount(); i++) {
                 RelDataType fieldType = inputRowType.getFieldList().get(i).getType();
-                RelDataType outFieldType = resultType.getFieldList().get(i).getType();
+                RelDataType outFieldType = leastRestrictive.getFieldList().get(i).getType();
+
                 RexNode ref = rexBuilder.makeInputRef(input, i);
 
                 if (fieldType.equals(outFieldType))
                     expressions.add(ref);
-                else {
-                    RexNode expr = rexBuilder.makeCast(outFieldType, ref, true, false);
-                    expressions.add(expr);
-                }
+                else
+                    expressions.add(rexBuilder.makeCast(outFieldType, ref, true, false));
             }
 
-            actualInputs.add(new IgniteProject(cluster, traits, input, expressions, resultType));
+            newInputs.add(new IgniteProject(cluster, traits, input, expressions, leastRestrictive));
         }
 
-        return actualInputs;
+        return newInputs;
     }
 
     /**
