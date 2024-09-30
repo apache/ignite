@@ -982,7 +982,7 @@ class ServerImpl extends TcpDiscoveryImpl {
      */
     private void interruptPing(TcpDiscoveryNode node) {
         for (InetSocketAddress addr : spi.getAllNodeAddresses(node)) {
-            GridPingFutureAdapter fut = pingMap.get(addr);
+            GridPingFutureAdapter<?> fut = pingMap.get(addr);
 
             if (fut != null && fut.sock != null) {
                 if (fut.nodeId == null || fut.nodeId.equals(node.id()))

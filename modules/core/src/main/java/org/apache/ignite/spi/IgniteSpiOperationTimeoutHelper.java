@@ -111,7 +111,7 @@ public class IgniteSpiOperationTimeoutHelper {
      * @param e Exception to check.
      * @return {@code True} if given exception is a timeout. {@code False} otherwise.
      */
-    public boolean checkFailureTimeoutReached(Exception e) {
+    public static boolean checkFailureTimeoutReached(Exception e) {
         return X.hasCause(e, IgniteSpiOperationTimeoutException.class, SocketTimeoutException.class, SocketException.class);
     }
 }
