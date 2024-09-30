@@ -161,11 +161,11 @@ public class SharedSetOpPlannerTest extends AbstractPlannerTest {
         return nodeOrAnyChild(
             isInstanceOf(IgniteProject.class)
                 .and(projection -> {
-                    String actualProjStr = projection.getProjects().toString();
+                    String actualProj = projection.getProjects().toString();
 
-                    String expectedProjStr = Arrays.asList(exprs).toString();
+                    String expectedProj = Arrays.asList(exprs).toString();
 
-                    return actualProjStr.equals(expectedProjStr);
+                    return actualProj.equals(expectedProj);
                 })
                 .and(input(nodeOrAnyChild(isTableScan(tableName))))
         );
