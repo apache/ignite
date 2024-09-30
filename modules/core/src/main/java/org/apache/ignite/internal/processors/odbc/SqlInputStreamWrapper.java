@@ -25,14 +25,14 @@ import java.sql.SQLFeatureNotSupportedException;
 import org.apache.ignite.internal.jdbc2.lob.JdbcBlobBuffer;
 
 /**
- * InputStream wrapper used as argument for PreparedStatement.
+ * InputStream wrapper used to pass it as argument to PreparedStatement.
  */
 public class SqlInputStreamWrapper implements AutoCloseable {
     /** Input stream wrapped. */
     private InputStream stream;
 
-    /** Buffer to cache data from the InputStream if lebgth is unknown. */
-    private JdbcBlobBuffer rawData;
+    /** Buffer to cache data from the InputStream if length is unknown. */
+    private JdbcBlobBuffer data;
 
     /** Length of data in the input stream.*/
     private final int len;
@@ -94,12 +94,12 @@ public class SqlInputStreamWrapper implements AutoCloseable {
             this.len = len;
         }
         else {
-            rawData = new JdbcBlobBuffer(maxMemoryBufferBytes);
+            data = new JdbcBlobBuffer(maxMemoryBufferBytes);
 
-            copyStream(inputStream, rawData.getOutputStream(0), MAX_ARRAY_SIZE);
+            copyStream(inputStream, data.getOutputStream(0), MAX_ARRAY_SIZE);
 
             stream = null;
-            this.len = Math.toIntExact(rawData.totalCnt());
+            this.len = Math.toIntExact(data.totalCnt());
         }
     }
 
@@ -110,7 +110,7 @@ public class SqlInputStreamWrapper implements AutoCloseable {
      */
     public InputStream getInputStream() throws IOException {
         if (stream == null)
-            stream = rawData.getInputStream();
+            stream = data.getInputStream();
 
         return stream;
     }
@@ -125,7 +125,7 @@ public class SqlInputStreamWrapper implements AutoCloseable {
     /** {@inheritDoc} */
     @Override public void close() throws Exception {
         // Do not close the input stream if it was passed from outside.
-        if (rawData != null && stream != null)
+        if (data != null && stream != null)
             stream.close();
     }
 
