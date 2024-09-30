@@ -28,6 +28,9 @@ import org.apache.ignite.internal.util.typedef.internal.U;
  * reallocation and data coping on write operations (which append data in particular).
  */
 class JdbcBlobMemoryStorage implements JdbcBlobStorage {
+    /** Max capacity when it is still reasonable to double size for new buffer. */
+    private static final int MAX_CAP = 32 * 1024 * 1024;
+
     /** The list of buffers. */
     private List<byte[]> buffers = new ArrayList<>();
 
@@ -190,18 +193,21 @@ class JdbcBlobMemoryStorage implements JdbcBlobStorage {
     /**
      * Makes a new buffer available
      *
-     * @param newCount the new size of the Blob
+     * @param neededBytes count of the additional bytes needed.
      */
-    private void addNewBuffer(final int newCount) {
-        final int newBufSize;
+    private void addNewBuffer(int neededBytes) {
+        int newBufSize;
 
         if (buffers.isEmpty()) {
-            newBufSize = newCount;
+            newBufSize = neededBytes;
+        }
+        else if (buffers.get(buffers.size() - 1).length > MAX_CAP) {
+            newBufSize = neededBytes + MAX_CAP;
         }
         else {
             newBufSize = Math.max(
                     buffers.get(buffers.size() - 1).length << 1,
-                    newCount);
+                    neededBytes);
         }
 
         buffers.add(new byte[newBufSize]);
