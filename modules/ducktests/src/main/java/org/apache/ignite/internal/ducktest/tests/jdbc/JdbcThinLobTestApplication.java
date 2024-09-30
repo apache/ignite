@@ -53,7 +53,7 @@ public class JdbcThinLobTestApplication extends IgniteAwareApplication {
             markInitialized();
 
             conn.createStatement().execute("CREATE TABLE IF NOT EXISTS query(id INT, clob VARCHAR, blob BINARY, PRIMARY KEY(id)) " +
-                    "WITH \"cache_name=query,template=WITH_STATISTICS_ENABLED\"");
+                    "WITH \"cache_name=query,template=WITH_STATISTICS_ENABLED,BACKUPS=1\"");
 
             if ("insertBlob".equals(action)) {
                 PreparedStatement insertStatement = conn.prepareStatement("INSERT INTO query(id, clob, blob) VALUES(?, ?, ?)");
@@ -96,13 +96,13 @@ public class JdbcThinLobTestApplication extends IgniteAwareApplication {
 
                     if (clob != null) {
                         recordResult("CLOB_SIZE", clob.length());
-                        recordResult("CLOB", clob.getSubString(1, Math.min((int) clob.length(), 64)));
+                        recordResult("CLOB", clob.getSubString(1, Math.min((int)clob.length(), 64)));
                     }
 
                     Blob blob = resultSet.getBlob("blob");
 
                     if (blob != null) {
-                        byte[] bytes = blob.getBytes(1, Math.min((int) blob.length(), 64));
+                        byte[] bytes = blob.getBytes(1, Math.min((int)blob.length(), 64));
 
                         recordResult("BLOB_SIZE", blob.length());
                         recordResult("BLOB", U.byteArray2String(bytes, "0x%02X", ",0x%02X"));
