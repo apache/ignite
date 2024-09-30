@@ -29,9 +29,9 @@ import org.apache.ignite.internal.binary.GridBinaryMarshaller;
 import org.apache.ignite.internal.binary.streams.BinaryOutputStream;
 
 /**
- * Binary writer for SQL.
- * <p>
- * Provides ability to write byte arrays from InputStreams and Blobs.
+ * Extended binary writer for thin SQL protocols.
+ *
+ * <p>Provides ability to write byte arrays from InputStreams and Blobs.
  */
 public class SqlBinaryWriter extends BinaryWriterExImpl {
     /** Default buffer size. */
@@ -68,7 +68,7 @@ public class SqlBinaryWriter extends BinaryWriterExImpl {
         out.unsafeWriteInt(streamLength);
 
         out.unsafeEnsure(streamLength);
-        int writtenLength = writeFromStream(in, out, streamLength);
+        int writtenLength = writeFromInputStream(in, out, streamLength);
 
         if (inputStreamWrapper.getLength() != writtenLength)
             throw new IOException("Input stream length mismatch. [declaredLength= " + inputStreamWrapper.getLength() + ", " +
@@ -94,7 +94,7 @@ public class SqlBinaryWriter extends BinaryWriterExImpl {
      * @param limit Maximum bytes to copy.
      * @return Count of bytes copied.
      */
-    private int writeFromStream(InputStream in, BinaryOutputStream out, long limit) throws IOException {
+    private int writeFromInputStream(InputStream in, BinaryOutputStream out, long limit) throws IOException {
         int writtenLen = 0;
 
         byte[] buf = new byte[DEFAULT_BUFFER_SIZE];
@@ -111,7 +111,7 @@ public class SqlBinaryWriter extends BinaryWriterExImpl {
     }
 
     /**
-     * @return Return underlying array.
+     * @return The underlying array.
      */
     public byte[] arrayUnderlying() {
         return out().array();
