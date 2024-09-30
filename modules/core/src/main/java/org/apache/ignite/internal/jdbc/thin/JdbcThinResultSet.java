@@ -588,7 +588,9 @@ public class JdbcThinResultSet implements ResultSet {
 
     /** {@inheritDoc} */
     @Override public InputStream getBinaryStream(int colIdx) throws SQLException {
-        return new ByteArrayInputStream(getBytes(colIdx));
+        byte[] bytes = getBytes(colIdx);
+
+        return bytes != null ? new ByteArrayInputStream(bytes) : null;
     }
 
     /** {@inheritDoc} */
@@ -698,7 +700,9 @@ public class JdbcThinResultSet implements ResultSet {
 
     /** {@inheritDoc} */
     @Override public InputStream getBinaryStream(String colLb) throws SQLException {
-        return new ByteArrayInputStream(getBytes(colLb));
+        byte[] bytes = getBytes(colLb);
+
+        return bytes != null ? new ByteArrayInputStream(getBytes(colLb)) : null;
     }
 
     /** {@inheritDoc} */
@@ -1295,12 +1299,16 @@ public class JdbcThinResultSet implements ResultSet {
 
     /** {@inheritDoc} */
     @Override public Blob getBlob(int colIdx) throws SQLException {
-        return new JdbcBlob(getBytes(colIdx));
+        byte[] bytes = getBytes(colIdx);
+
+        return bytes != null ? new JdbcBlob(bytes) : null;
     }
 
     /** {@inheritDoc} */
     @Override public Clob getClob(int colIdx) throws SQLException {
-        return new JdbcClob(getString(colIdx));
+        String str = getString(colIdx);
+
+        return str != null ? new JdbcClob(str) : null;
     }
 
     /** {@inheritDoc} */
@@ -1324,12 +1332,16 @@ public class JdbcThinResultSet implements ResultSet {
 
     /** {@inheritDoc} */
     @Override public Blob getBlob(String colLb) throws SQLException {
-        return new JdbcBlob(getBytes(colLb));
+        byte[] bytes = getBytes(colLb);
+
+        return bytes != null ? new JdbcBlob(bytes) : null;
     }
 
     /** {@inheritDoc} */
     @Override public Clob getClob(String colLb) throws SQLException {
-        return new JdbcClob(getString(colLb));
+        String str = getString(colLb);
+
+        return str != null ? new JdbcClob(str) : null;
     }
 
     /** {@inheritDoc} */

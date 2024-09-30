@@ -623,6 +623,26 @@ public class JdbcThinResultSetSelfTest extends JdbcThinAbstractSelfTest {
      * @throws Exception If failed.
      */
     @Test
+    public void testBlobNull() throws Exception {
+        ResultSet rs = stmt.executeQuery("select id, boolVal, byteVal, shortVal, intVal, longVal, floatVal, " +
+                "doubleVal, bigVal, strVal, arrVal, dateVal, timeVal, tsVal, objVal, blobVal, clobVal " +
+                "from testObject where id = 2");
+
+        assertTrue(rs.next());
+
+        Blob blob = rs.getBlob("blobVal");
+        Assert.assertNull(blob);
+
+        blob = rs.getBlob(16);
+        Assert.assertNull(blob);
+
+        assertFalse(rs.next());
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    @Test
     public void testClob() throws Exception {
         ResultSet rs = stmt.executeQuery(SQL);
 
@@ -641,6 +661,26 @@ public class JdbcThinResultSetSelfTest extends JdbcThinAbstractSelfTest {
      * @throws Exception If failed.
      */
     @Test
+    public void testClobNull() throws Exception {
+        ResultSet rs = stmt.executeQuery("select id, boolVal, byteVal, shortVal, intVal, longVal, floatVal, " +
+                "doubleVal, bigVal, strVal, arrVal, dateVal, timeVal, tsVal, objVal, blobVal, clobVal " +
+                "from testObject where id = 2");
+
+        assertTrue(rs.next());
+
+        Clob clob = rs.getClob("clobVal");
+        Assert.assertNull(clob);
+
+        clob = rs.getClob(17);
+        Assert.assertNull(clob);
+
+        assertFalse(rs.next());
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    @Test
     public void testBinaryStream() throws Exception {
         ResultSet rs = stmt.executeQuery(SQL);
 
@@ -651,6 +691,26 @@ public class JdbcThinResultSetSelfTest extends JdbcThinAbstractSelfTest {
 
         stream = rs.getBinaryStream(16);
         Assert.assertArrayEquals(stream.readAllBytes(), new byte[] {1});
+
+        assertFalse(rs.next());
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    @Test
+    public void testBinaryStreamNull() throws Exception {
+        ResultSet rs = stmt.executeQuery("select id, boolVal, byteVal, shortVal, intVal, longVal, floatVal, " +
+                "doubleVal, bigVal, strVal, arrVal, dateVal, timeVal, tsVal, objVal, blobVal, clobVal " +
+                "from testObject where id = 2");
+
+        assertTrue(rs.next());
+
+        InputStream stream = rs.getBinaryStream("blobVal");
+        Assert.assertNull(stream);
+
+        stream = rs.getBinaryStream(16);
+        Assert.assertNull(stream);
 
         assertFalse(rs.next());
     }
