@@ -450,7 +450,8 @@ data: {
     createStatementParserMethods: [
       "SqlCreateTable",
       "SqlCreateIndex",
-      "SqlCreateUser"
+      "SqlCreateUser",
+      "SqlCreateView"
     ]
 
     # List of methods for parsing extensions to "DROP" calls.
@@ -459,7 +460,8 @@ data: {
     dropStatementParserMethods: [
       "SqlDropTable",
       "SqlDropIndex",
-      "SqlDropUser"
+      "SqlDropUser",
+      "SqlDropView"
     ]
 
     # List of methods for parsing extensions to "ALTER <scope>" calls.

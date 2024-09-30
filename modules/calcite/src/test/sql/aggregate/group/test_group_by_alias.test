@@ -8,6 +8,23 @@ CREATE TABLE integers(i INTEGER)
 statement ok
 INSERT INTO integers VALUES (1), (2), (3), (NULL)
 
+# an alias in grouping + HAVING
+# CONTROVERSIAL: this query does not work in MonetDB
+query IR
+SELECT i % 2 AS k, SUM(i) FROM integers WHERE i IS NOT NULL GROUP BY k HAVING i%2>0;
+----
+1	4.000000
+
+# select groups by constant (similar to order by constant)
+query IR
+SELECT i % 2 AS k, SUM(i) FROM integers WHERE i IS NOT NULL GROUP BY 1 HAVING i%2>0;
+----
+1	4.000000
+
+# constant out of range
+statement error
+SELECT i % 2 AS k, SUM(i) FROM integers WHERE i IS NOT NULL GROUP BY 42 HAVING i%2>0;
+
 # this now orders by the actual grouping column
 query IIR
 SELECT i, i % 2 AS k, SUM(i) FROM integers GROUP BY i ORDER BY i;

@@ -130,6 +130,43 @@ public class JdbcCrossEngineTest extends GridCommonAbstractTest {
     }
 
     /** */
+    @Test
+    public void testSqlViews() {
+        crossCheck(
+            engineIdx -> {
+                Statement stmt = stmts[engineIdx];
+
+                execute(stmt, "CREATE TABLE test_tbl (id INT PRIMARY KEY, val VARCHAR)");
+                execute(stmt, "INSERT INTO test_tbl VALUES (1, 'val1'), (2, 'val2'), (3, 'val3')");
+                execute(stmt, "CREATE VIEW test_view1 AS SELECT id, val as val1 FROM test_tbl WHERE id < 3");
+            },
+            engineIdx -> {
+                Statement stmt = stmts[engineIdx];
+
+                try {
+                    List<List<Object>> res = executeQuery(stmt, "SELECT val1 FROM test_view1 ORDER BY id");
+
+                    assertEquals(2, res.size());
+                    assertEquals("val1", res.get(0).get(0));
+                    assertEquals("val2", res.get(1).get(0));
+
+                    execute(stmt, "CREATE VIEW test_view2 AS SELECT id, val1 as val2 FROM test_view1 WHERE id > 1");
+
+                    res = executeQuery(stmt, "SELECT val2 FROM test_view2");
+
+                    assertEquals(1, res.size());
+                    assertEquals("val2", res.get(0).get(0));
+                }
+                finally {
+                    execute(stmt, "DROP TABLE IF EXISTS test_tbl");
+                    execute(stmt, "DROP VIEW IF EXISTS test_view1");
+                    execute(stmt, "DROP VIEW IF EXISTS test_view2");
+                }
+            }
+        );
+    }
+
+    /** */
     private void checkInsertDefaultValue(String sqlType, String sqlVal, Object expectedVal) {
         crossCheck(
             engineIdx -> {

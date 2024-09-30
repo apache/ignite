@@ -285,8 +285,10 @@ public class IndexRebuildIntegrationTest extends AbstractBasicIntegrationTest {
 
             executeSql(ddl);
 
+            executeSql("CREATE INDEX idx_val ON tbl3(val)");
+
             for (int i = 0; i < records; i++)
-                executeSql("INSERT INTO tbl3 VALUES (?, ?, ?)", i, "val" + i, "val" + i);
+                executeSql("INSERT INTO tbl3 VALUES (?, ?, ?)", i, i % 2 == 0 ? null : "val" + i, "val" + i);
 
             IgniteCacheTable tbl3 = (IgniteCacheTable)srvEngine.schemaHolder().schema("PUBLIC").getTable("TBL3");
 
@@ -300,8 +302,10 @@ public class IndexRebuildIntegrationTest extends AbstractBasicIntegrationTest {
             });
 
             try {
-                for (int i = 0; i < iterations; ++i)
+                for (int i = 0; i < iterations; ++i) {
                     assertQuery("select COUNT(*) from tbl3").returns((long)records).check();
+                    assertQuery("select COUNT(val) from tbl3").returns((long)records / 2L).check();
+                }
             }
             finally {
                 stop.set(true);
