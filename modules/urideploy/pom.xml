@@ -77,7 +77,7 @@
         </dependency>
 
         <dependency>
-            <groupId>net.sf.jtidy</groupId>
+            <groupId>com.github.jtidy</groupId>
             <artifactId>jtidy</artifactId>
             <version>${jtidy.version}</version>
         </dependency>

@@ -39,6 +39,7 @@ import org.apache.ignite.compute.ComputeJobResult;
 import org.apache.ignite.compute.ComputeJobResultPolicy;
 import org.apache.ignite.compute.ComputeTaskAdapter;
 import org.apache.ignite.internal.IgniteEx;
+import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.persistence.wal.FileDescriptor;
 import org.apache.ignite.internal.processors.cache.persistence.wal.FileWriteAheadLogManager;
 import org.apache.ignite.internal.processors.cache.persistence.wal.reader.IgniteWalIteratorFactory;
@@ -49,7 +50,9 @@ import org.apache.ignite.resources.IgniteInstanceResource;
 import org.apache.ignite.resources.LoggerResource;
 import org.jetbrains.annotations.NotNull;
 
+import static java.lang.String.valueOf;
 import static org.apache.ignite.internal.processors.cache.persistence.snapshot.IgniteSnapshotManager.incrementalSnapshotWalsDir;
+import static org.apache.ignite.internal.processors.cache.persistence.snapshot.IgniteSnapshotManager.snapshotMetaFileName;
 
 /** Snapshot task to verify snapshot metadata on the baseline nodes for given snapshot name. */
 @GridInternal
@@ -112,7 +115,7 @@ public class SnapshotMetadataVerificationTask
 
             if (arg.incrementIndex() > 0) {
                 List<SnapshotMetadata> metas = snpMeta.stream()
-                    .filter(m -> m.consistentId().equals(ignite.localNode().consistentId()))
+                    .filter(m -> m.consistentId().equals(valueOf(ignite.localNode().consistentId())))
                     .collect(Collectors.toList());
 
                 if (metas.size() != 1) {
@@ -174,7 +177,9 @@ public class SnapshotMetadataVerificationTask
         /** Checks that all incremental snapshots are present, contain correct metafile and WAL segments. */
         public void checkIncrementalSnapshots(SnapshotMetadata fullMeta, SnapshotMetadataVerificationTaskArg arg) {
             try {
-                IgniteSnapshotManager snpMgr = ignite.context().cache().context().snapshotMgr();
+                GridCacheSharedContext<Object, Object> ctx = ignite.context().cache().context();
+
+                IgniteSnapshotManager snpMgr = ctx.snapshotMgr();
 
                 // Incremental snapshot must contain ClusterSnapshotRecord.
                 long startSeg = fullMeta.snapshotRecordPointer().index();
@@ -187,7 +192,9 @@ public class SnapshotMetadataVerificationTask
                             "[snpName=" + arg.snapshotName() + ", snpPath=" + arg.snapshotPath() + ", incrementIndex=" + inc + ']');
                     }
 
-                    String metaFileName = IgniteSnapshotManager.snapshotMetaFileName(ignite.localNode().consistentId().toString());
+                    String folderName = ctx.kernalContext().pdsFolderResolver().resolveFolders().folderName();
+
+                    String metaFileName = snapshotMetaFileName(folderName);
 
                     File metafile = incSnpDir.toPath().resolve(metaFileName).toFile();
 
