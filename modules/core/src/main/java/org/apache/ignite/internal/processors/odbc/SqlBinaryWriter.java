@@ -109,4 +109,11 @@ public class SqlBinaryWriter extends BinaryWriterExImpl {
 
         return writtenLen;
     }
+
+    /**
+     * @return Return underlying array.
+     */
+    public byte[] arrayUnderlying() {
+        return out().array();
+    }
 }
