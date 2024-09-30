@@ -6781,7 +6781,7 @@ class ServerImpl extends TcpDiscoveryImpl {
                                         "previous [" + previous + "] with timeout " + backwardCheckTimeout);
                                 }
 
-                                liveAddr = pingPreviousNode(previous, backwardCheckTimeout);
+                                liveAddr = checkConnection(previous, backwardCheckTimeout);
                             }
 
                             ok = liveAddr != null;
@@ -7257,9 +7257,7 @@ class ServerImpl extends TcpDiscoveryImpl {
          * @param timeout Overal operation timeout.
          * @return An address successfully connected to. {@code Null} if no alive address was detected within the timeout.
          */
-        private InetSocketAddress pingPreviousNode(TcpDiscoveryNode node, int timeout) {
-            assert ring.previousNodeOf(locNode).equals(node);
-
+        private InetSocketAddress checkConnection(TcpDiscoveryNode node, int timeout) {
             long maxTimeNanos = System.nanoTime() + U.millisToNanos(timeout);
 
             AtomicReference<InetSocketAddress> liveAddrHolder = new AtomicReference<>();
