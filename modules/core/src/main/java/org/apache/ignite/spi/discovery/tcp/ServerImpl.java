@@ -7296,7 +7296,7 @@ class ServerImpl extends TcpDiscoveryImpl {
                             InetSocketAddress addr = addrs.get(addrIdx.getAndIncrement());
 
                             try {
-                                if (liveAddrHolder.get() != null) {
+                                if (liveAddrHolder.get() == null) {
                                     UUID id = pingNode(addr, node.id(), null, timeoutHelper.nextTimeoutChunk(perAddrTimeout)).get1();
 
                                     assert id == null || id.equals(node.id());
