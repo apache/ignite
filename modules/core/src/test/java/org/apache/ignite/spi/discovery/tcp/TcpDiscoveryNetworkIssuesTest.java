@@ -260,7 +260,7 @@ public class TcpDiscoveryNetworkIssuesTest extends GridCommonAbstractTest {
     }
 
     /**
-     * Tests backward ping when the discovery threads of the malfunctional node is simulated to hang at GC.
+     * Tests backward ping when the discovery threads of the malfunction node is simulated to hang at GC.
      * But the JVM is able to accept socket connections.
      */
     @Test
@@ -278,27 +278,27 @@ public class TcpDiscoveryNetworkIssuesTest extends GridCommonAbstractTest {
         // This node suspects its next failed.
         Ignite doubtNode0 = startGrid(0);
 
-        // Simulates freezed threads on node 1 but answering sockets. I.e. Socket#connect() works to node 1 but
+        // Simulates frozen threads on node 1 but answering sockets. I.e. Socket#connect() works to node 1 but
         // reading anything with Socket#read() from it would fail with the timeout.
         specialSpi = new TestDiscoverySpi();
 
-        // Node simulated 'freezed'. Can accept connections (socket accept) but won't write anything to a discovery socket.
-        Ignite freezedNode1 = startGrid(1);
+        // Node simulated 'frozen'. Can accept connections (socket accept) but won't write anything to a discovery socket.
+        Ignite frozenNode1 = startGrid(1);
 
-        UUID freezedNodeId = freezedNode1.cluster().localNode().id();
+        UUID frozenNodeId = frozenNode1.cluster().localNode().id();
 
         specialSpi = new TestDiscoverySpi();
 
         setLoggerDebugLevel();
 
-        // Node which does the backward connection check to its previous 'freezed'.
+        // Node which does the backward connection check to its previous 'frozen'.
         Ignite pingingNode2 = startGrid(2);
 
-        LogListener node1SegmentedLogLsnr = LogListener.matches("Local node SEGMENTED: TcpDiscoveryNode [id=" + freezedNodeId).build();
+        LogListener node1SegmentedLogLsnr = LogListener.matches("Local node SEGMENTED: TcpDiscoveryNode [id=" + frozenNode1).build();
 
         // Node1 must leave the cluster.
         LogListener backwardPingLogLsnr = LogListener.matches("Remote node requests topology change. Checking connection to " +
-            "previous [TcpDiscoveryNode [id=" + freezedNodeId).build();
+            "previous [TcpDiscoveryNode [id=" + frozenNodeId).build();
 
         testLog.registerListener(node1SegmentedLogLsnr);
         testLog.registerListener(backwardPingLogLsnr);
@@ -308,24 +308,24 @@ public class TcpDiscoveryNetworkIssuesTest extends GridCommonAbstractTest {
 
         // Request to establish new permanent cluster connection from doubting node0 to node2.
         testSpi(doubtNode0).hsRqLsnr.set((s, hsRq) -> {
-            if (hsRq.changeTopology() && freezedNodeId.equals(hsRq.checkPreviousNodeId())) {
-                // Continue simutation of node1 freeze at GC and processes no discovery messages.
-                testSpi(freezedNode1).addrsToBlock = Collections.emptyList();
+            if (hsRq.changeTopology() && frozenNodeId.equals(hsRq.checkPreviousNodeId())) {
+                // Continue simulation of node1 freeze at GC and processes no discovery messages.
+                testSpi(frozenNode1).addrsToBlock = Collections.emptyList();
             }
         });
 
-        // Response from node2 to node0 with negative check of freezed node1.
+        // Response from node2 to node0 with negative check of frozen node1.
         testSpi(pingingNode2).hsRespLsnr.set((s, hsResp) -> {
             backwardPingResult.set(hsResp.previousNodeAlive());
         });
 
-        // Begin simutation of node1 freeze at GC and processes no discovery messages and wait till
+        // Begin simulation of node1 freeze at GC and processes no discovery messages and wait till
         // the discovery traffic node0->node1 stops.
-        testSpi(doubtNode0).addrsToBlock = spi(freezedNode1).locNodeAddrs;
+        testSpi(doubtNode0).addrsToBlock = spi(frozenNode1).locNodeAddrs;
         assertTrue(waitForCondition(() -> testSpi(doubtNode0).blocked, getTestTimeout()));
 
         // Wait till the discovery traffic node1->node2 stops too.
-        assertTrue(waitForCondition(() -> testSpi(freezedNode1).blocked, getTestTimeout()));
+        assertTrue(waitForCondition(() -> testSpi(frozenNode1).blocked, getTestTimeout()));
 
         // Wait till the backward connection check and ensure the result is negative (node1 confirmed failed).
         assertTrue(backwardPingLogLsnr.check(getTestTimeout()));
@@ -337,11 +337,11 @@ public class TcpDiscoveryNetworkIssuesTest extends GridCommonAbstractTest {
 
         // Node0 and node2 must survive.
         assertTrue(waitForCondition(() -> doubtNode0.cluster().nodes().size() == 2
-                && !doubtNode0.cluster().nodes().stream().map(ClusterNode::id).collect(Collectors.toSet()).contains(freezedNodeId),
+                && !doubtNode0.cluster().nodes().stream().map(ClusterNode::id).collect(Collectors.toSet()).contains(frozenNodeId),
             getTestTimeout()));
 
         assertTrue(waitForCondition(() -> pingingNode2.cluster().nodes().size() == 2
-                && !pingingNode2.cluster().nodes().stream().map(ClusterNode::id).collect(Collectors.toSet()).contains(freezedNodeId),
+                && !pingingNode2.cluster().nodes().stream().map(ClusterNode::id).collect(Collectors.toSet()).contains(frozenNodeId),
             getTestTimeout()));
     }
 
