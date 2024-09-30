@@ -16,7 +16,7 @@
 """
 This module contains client queries tests.
 """
-from ducktape.mark import parametrize
+from ducktape.mark import parametrize, defaults
 
 from ignitetest.services.ignite import IgniteService
 from ignitetest.services.ignite_app import IgniteApplicationService
@@ -32,53 +32,39 @@ from ignitetest.utils.ignite_test import IgniteTest
 from ignitetest.utils.version import DEV_BRANCH, IgniteVersion
 
 
-class JdbcThinLobTest(IgniteTest):
-    """
-    cluster - cluster size.
-    JAVA_CLIENT_CLASS_NAME - running classname.
-    to use with ssl enabled:
-    export GLOBALS='{"ssl":{"enabled":true}}' .
-    """
+class JdbcThinBlobTest(IgniteTest):
     @cluster(num_nodes=4)
     @ignite_versions(str(DEV_BRANCH))
-    # @parametrize(blob_size=1*1024*1024*1024, clob_size=1*1024*1024*1024, server_heap=2, client_heap=1)
-    # @parametrize(clob_size=512*1024*1024, blob_size=1, server_heap=8, client_heap=8)
-    @parametrize(clob_size=0, blob_size=1*1024*1024*1024, server_heap=12, insert_heap=4,
-                 select_heap=5)
-    # @parametrize(clob_size=0, blob_size=500*1024*1024, server_heap=12, client_heap=12)
-    # @parametrize(clob_size=256*1024*1024, blob_size=0, server_heap=12, client_heap=12)
-    def test_jdbc_thin_lob(self, ignite_version, blob_size, clob_size, server_heap,
-                           insert_heap, select_heap):
+    @defaults(tx=[True, False], max_inmem=[None, 2*1024*1024*1024])
+    @parametrize(blob_size=1*1024*1024*1024, server_heap=12, insert_heap=6, select_heap=6)
+    def test_jdbc_thin_blob(self, ignite_version, blob_size, server_heap,
+                            insert_heap, select_heap, tx, max_inmem):
         """
-        Thin client IndexQuery test.
-        :param ignite_version Ignite node version.
+        Thin JDBC test for Blobs.
         """
+        cache_config = CacheConfiguration(name="WITH_STATISTICS_ENABLED*",
+                                          statistics_enabled=True,
+                                          backups=1,
+                                          atomicity_mode="TRANSACTIONAL" if tx else "ATOMIC"),
 
         server_config = IgniteConfiguration(version=IgniteVersion(ignite_version),
                                             client_connector_configuration=ClientConnectorConfiguration(),
                                             data_storage=DataStorageConfiguration(
                                                 checkpoint_frequency=10000,
                                                 metrics_enabled=True,
-                                                wal_segment_size=2 * 1024 * 1024 * 1024 - 1,
-                                                max_wal_archive_size=20 * 1024 * 1024 * 1024,
+                                                wal_segment_size=blob_size + 1024,
+                                                max_wal_archive_size=20 * (blob_size + 1024),
                                                 default=DataRegionConfiguration(
                                                     persistence_enabled=True,
                                                     metrics_enabled=True,
-                                                    initial_size=4 * 1024 * 1024 * 1024,
-                                                    max_size=4 * 1024 * 1024 * 1024
+                                                    initial_size=3 * blob_size,
+                                                    max_size=3 * blob_size
                                                 )
                                             ),
-
-                                            caches=[
-                                                CacheConfiguration(name="WITH_STATISTICS_ENABLED*",
-                                                                   statistics_enabled=True,
-                                                                   backups=1)
-                                            ])
+                                            caches=[cache_config])
 
         ignite = IgniteService(self.test_context, server_config, 2,
-                               merge_with_default=True,
-                               jvm_opts=["-XX:+UseG1GC", "-XX:MaxGCPauseMillis=100",
-                                         f"-Xmx{server_heap}g", f"-Xms{server_heap}g"])
+                               jvm_opts=[f"-Xmx{server_heap}g", f"-Xms{server_heap}g"])
 
         ignite.start()
 
@@ -92,17 +78,13 @@ class JdbcThinLobTest(IgniteTest):
             self.test_context,
             IgniteThinJdbcConfiguration(
                 version=IgniteVersion(ignite_version),
-                url=f"jdbc:ignite:thin://{address}?maxInMemoryLobSize={1500*1024*1024}"
-                # url=f"jdbc:ignite:thin://{address}?maxInMemoryLobSize={100*1024*1024}"
+                url=f"jdbc:ignite:thin://{address}" + (f"?maxInMemoryLobSize={max_inmem}" if max_inmem else "")
             ),
             java_class_name=cls,
             num_nodes=1,
-            merge_with_default=True,
-            jvm_opts=["-XX:+UseG1GC", "-XX:MaxGCPauseMillis=100",
-                      f"-Xmx{insert_heap}g", f"-Xms{insert_heap}g"],
+            jvm_opts=[f"-Xmx{insert_heap}g", f"-Xms{insert_heap}g"],
             params={
                 "blob_size": blob_size,
-                "clob_size": clob_size,
                 "action": "insertStream"
             })
 
@@ -117,9 +99,7 @@ class JdbcThinLobTest(IgniteTest):
             ),
             java_class_name=cls,
             num_nodes=1,
-            merge_with_default=True,
-            jvm_opts=["-XX:+UseG1GC", "-XX:MaxGCPauseMillis=100",
-                      f"-Xmx{select_heap}g", f"-Xms{select_heap}g"],
+            jvm_opts=[f"-Xmx{select_heap}g", f"-Xms{select_heap}g"],
             params={
                 "action": "select"
             })
@@ -128,9 +108,6 @@ class JdbcThinLobTest(IgniteTest):
         client_select.await_event("IGNITE_LOB_APPLICATION_DONE", 300, from_the_beginning=True)
 
         data = {
-            # "CLOB": clients.extract_result("CLOB"),
-            # "clob_size_gb": float("{:.2f}".format(int(client_select.extract_result("CLOB_SIZE")) / 1024 / 1024 / 1024)),
-            # "BLOB": clients.extract_result("BLOB"),
             "blob_size_gb": float("{:.2f}".format(int(client_select.extract_result("BLOB_SIZE")) / 1024 / 1024 / 1024)),
             "server_peak_heap_usage_gb": get_peak_memory_usage(ignite.nodes),
             "client_insert_peak_heap_usage_gb": get_peak_memory_usage(client_insert.nodes),
