@@ -17,9 +17,12 @@
 
 package org.apache.ignite.internal.ducktest.tests.jdbc;
 
+import java.io.IOException;
 import java.lang.management.ManagementFactory;
 import java.lang.management.MemoryPoolMXBean;
 import java.lang.management.MemoryUsage;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.sql.Blob;
 import java.sql.Clob;
 import java.sql.Connection;
@@ -39,7 +42,7 @@ import org.apache.ignite.internal.util.typedef.internal.U;
  */
 public class JdbcThinLobTestApplication extends IgniteAwareApplication {
     /** {@inheritDoc} */
-    @Override public void run(JsonNode jsonNode) throws ClassNotFoundException, SQLException {
+    @Override public void run(JsonNode jsonNode) throws ClassNotFoundException, SQLException, IOException {
         int blobSize = Optional.ofNullable(jsonNode.get("blob_size")).map(JsonNode::asInt).orElse(1);
         int clobSize = Optional.ofNullable(jsonNode.get("clob_size")).map(JsonNode::asInt).orElse(1);
         String action = Optional.ofNullable(jsonNode.get("action")).map(JsonNode::asText).orElse("insert");
@@ -47,10 +50,12 @@ public class JdbcThinLobTestApplication extends IgniteAwareApplication {
         int id = 1;
 
         try (Connection conn = thinJdbcDataSource.getConnection()) {
+            markInitialized();
+
             conn.createStatement().execute("CREATE TABLE IF NOT EXISTS query(id INT, clob VARCHAR, blob BINARY, PRIMARY KEY(id)) " +
                     "WITH \"cache_name=query,template=WITH_STATISTICS_ENABLED\"");
 
-            if ("insert".equals(action)) {
+            if ("insertBlob".equals(action)) {
                 PreparedStatement insertStatement = conn.prepareStatement("INSERT INTO query(id, clob, blob) VALUES(?, ?, ?)");
 
                 insertStatement.setInt(1, id);
@@ -62,6 +67,22 @@ public class JdbcThinLobTestApplication extends IgniteAwareApplication {
                 insertStatement.setBlob(3, blob);
 
                 insertStatement.execute();
+
+                insertStatement.close();
+            }
+            else if ("insertStream".equals(action)) {
+                PreparedStatement insertStatement = conn.prepareStatement("INSERT INTO query(id, blob) VALUES(?, ?)");
+
+                insertStatement.setInt(1, id);
+
+                insertStatement.setBlob(2,
+                        Files.newInputStream(Path.of("/", "dev", "random")), blobSize);
+
+                log.info("Before execute");
+                insertStatement.execute();
+                log.info("After execute");
+
+                insertStatement.close();
             }
             else if ("select".equals(action)) {
                 PreparedStatement selectStatement = conn.prepareStatement("SELECT * FROM query WHERE id = ?");
@@ -73,18 +94,28 @@ public class JdbcThinLobTestApplication extends IgniteAwareApplication {
                 while (resultSet.next()) {
                     Clob clob = resultSet.getClob("clob");
 
-                    recordResult("CLOB_SIZE", clob.length());
-                    recordResult("CLOB", clob.getSubString(1, Math.min((int)clob.length(), 64)));
+                    if (clob != null) {
+                        recordResult("CLOB_SIZE", clob.length());
+                        recordResult("CLOB", clob.getSubString(1, Math.min((int) clob.length(), 64)));
+                    }
 
                     Blob blob = resultSet.getBlob("blob");
-                    byte[] bytes = blob.getBytes(1, Math.min((int)blob.length(), 64));
 
-                    recordResult("BLOB_SIZE", blob.length());
-                    recordResult("BLOB", U.byteArray2String(bytes, "0x%02X", ",0x%02X"));
+                    if (blob != null) {
+                        byte[] bytes = blob.getBytes(1, Math.min((int) blob.length(), 64));
+
+                        recordResult("BLOB_SIZE", blob.length());
+                        recordResult("BLOB", U.byteArray2String(bytes, "0x%02X", ",0x%02X"));
+                    }
                 }
+
+                resultSet.close();
+                selectStatement.close();
             }
 
-            markInitialized();
+            recordMemoryPeakUsage();
+
+            log.info("IGNITE_LOB_APPLICATION_DONE");
 
             while (!terminated()) {
                 try {
@@ -95,9 +126,12 @@ public class JdbcThinLobTestApplication extends IgniteAwareApplication {
                 }
             }
 
-            recordMemoryPeakUsage();
-
             markFinished();
+        }
+        catch (Exception e) {
+            log.error(e);
+
+            throw e;
         }
     }
 

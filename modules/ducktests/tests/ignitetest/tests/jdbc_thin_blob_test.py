@@ -43,9 +43,12 @@ class JdbcThinLobTest(IgniteTest):
     @ignite_versions(str(DEV_BRANCH))
     # @parametrize(blob_size=1*1024*1024*1024, clob_size=1*1024*1024*1024, server_heap=2, client_heap=1)
     # @parametrize(clob_size=512*1024*1024, blob_size=1, server_heap=8, client_heap=8)
-    @parametrize(clob_size=0, blob_size=1*1024*1024*1024, server_heap=12, client_heap=12)
+    @parametrize(clob_size=0, blob_size=1*1024*1024*1024, server_heap=12, insert_heap=4,
+                 select_heap=5)
+    # @parametrize(clob_size=0, blob_size=500*1024*1024, server_heap=12, client_heap=12)
     # @parametrize(clob_size=256*1024*1024, blob_size=0, server_heap=12, client_heap=12)
-    def test_jdbc_thin_lob(self, ignite_version, blob_size, clob_size, server_heap, client_heap):
+    def test_jdbc_thin_lob(self, ignite_version, blob_size, clob_size, server_heap,
+                           insert_heap, select_heap):
         """
         Thin client IndexQuery test.
         :param ignite_version Ignite node version.
@@ -73,13 +76,9 @@ class JdbcThinLobTest(IgniteTest):
                                             ])
 
         ignite = IgniteService(self.test_context, server_config, 2,
-                               merge_with_default=False,
+                               merge_with_default=True,
                                jvm_opts=["-XX:+UseG1GC", "-XX:MaxGCPauseMillis=100",
-                                         f"-Xmx{server_heap}g", f"-Xms{server_heap}g",
-                                         "-Xlog:safepoint*=debug:file=/mnt/service/logs/safepoint.log"
-                                         ":time,uptime,level,tags",
-                                         "-Xlog:gc*=debug,gc+stats*=debug,gc+ergo*=debug"
-                                         ":/mnt/service/logs/gc.log:uptime,time,level,tags"])
+                                         f"-Xmx{server_heap}g", f"-Xms{server_heap}g"])
 
         ignite.start()
 
@@ -93,55 +92,44 @@ class JdbcThinLobTest(IgniteTest):
             self.test_context,
             IgniteThinJdbcConfiguration(
                 version=IgniteVersion(ignite_version),
-                addresses=[address]
+                url=f"jdbc:ignite:thin://{address}?maxInMemoryLobSize={1500*1024*1024}"
+                # url=f"jdbc:ignite:thin://{address}?maxInMemoryLobSize={100*1024*1024}"
             ),
             java_class_name=cls,
             num_nodes=1,
-            merge_with_default=False,
+            merge_with_default=True,
             jvm_opts=["-XX:+UseG1GC", "-XX:MaxGCPauseMillis=100",
-                      f"-Xmx{client_heap}g", f"-Xms{client_heap}g",
-                      "-Xlog:safepoint*=debug:file=/mnt/service/logs/safepoint.log"
-                      ":time,uptime,level,tags",
-                      "-Xlog:gc*=debug,gc+stats*=debug,gc+ergo*=debug"
-                      ":/mnt/service/logs/gc.log:uptime,time,level,tags",
-                      "-DappId=ignite",
-                      "-Dlog4j.configDebug=true",
-                      "-Dlog4j.configurationFile=file:/mnt/service/config/ignite-ducktape-log4j2.xml"],
+                      f"-Xmx{insert_heap}g", f"-Xms{insert_heap}g"],
             params={
                 "blob_size": blob_size,
                 "clob_size": clob_size,
-                "action": "insert"
+                "action": "insertStream"
             })
 
         client_insert.start()
+        client_insert.await_event("IGNITE_LOB_APPLICATION_DONE", 300, from_the_beginning=True)
 
         client_select = IgniteApplicationService(
             self.test_context,
             IgniteThinJdbcConfiguration(
                 version=IgniteVersion(ignite_version),
-                addresses=[address]
+                url=f"jdbc:ignite:thin://{address}"
             ),
             java_class_name=cls,
             num_nodes=1,
-            merge_with_default=False,
+            merge_with_default=True,
             jvm_opts=["-XX:+UseG1GC", "-XX:MaxGCPauseMillis=100",
-                      f"-Xmx{client_heap}g", f"-Xms{client_heap}g",
-                      "-Xlog:safepoint*=debug:file=/mnt/service/logs/safepoint.log"
-                      ":time,uptime,level,tags",
-                      "-Xlog:gc*=debug,gc+stats*=debug,gc+ergo*=debug"
-                      ":/mnt/service/logs/gc.log:uptime,time,level,tags",
-                      "-DappId=ignite",
-                      "-Dlog4j.configDebug=true",
-                      "-Dlog4j.configurationFile=file:/mnt/service/config/ignite-ducktape-log4j2.xml"],
+                      f"-Xmx{select_heap}g", f"-Xms{select_heap}g"],
             params={
                 "action": "select"
             })
 
         client_select.start()
+        client_select.await_event("IGNITE_LOB_APPLICATION_DONE", 300, from_the_beginning=True)
 
         data = {
             # "CLOB": clients.extract_result("CLOB"),
-            "clob_size_gb": float("{:.2f}".format(int(client_select.extract_result("CLOB_SIZE")) / 1024 / 1024 / 1024)),
+            # "clob_size_gb": float("{:.2f}".format(int(client_select.extract_result("CLOB_SIZE")) / 1024 / 1024 / 1024)),
             # "BLOB": clients.extract_result("BLOB"),
             "blob_size_gb": float("{:.2f}".format(int(client_select.extract_result("BLOB_SIZE")) / 1024 / 1024 / 1024)),
             "server_peak_heap_usage_gb": get_peak_memory_usage(ignite.nodes),
