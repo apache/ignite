@@ -35,17 +35,19 @@ from ignitetest.utils.version import DEV_BRANCH, IgniteVersion
 class JdbcThinBlobTest(IgniteTest):
     @cluster(num_nodes=4)
     @ignite_versions(str(DEV_BRANCH))
-    @defaults(tx=[True, False], max_inmem=[None, 2*1024*1024*1024])
+    @defaults(tx=[True, False], max_inmem=[None, 2*1024*1024*1024], mode=["blob", "stream"])
     @parametrize(blob_size=1*1024*1024*1024, server_heap=12, insert_heap=6, select_heap=6)
-    def test_jdbc_thin_blob(self, ignite_version, blob_size, server_heap,
-                            insert_heap, select_heap, tx, max_inmem):
+    def test_jdbc_thin_blob(self, ignite_version, blob_size,
+                            mode,
+                            server_heap, insert_heap, select_heap,
+                            tx, max_inmem):
         """
         Thin JDBC test for Blobs.
         """
         cache_config = CacheConfiguration(name="WITH_STATISTICS_ENABLED*",
                                           statistics_enabled=True,
                                           backups=1,
-                                          atomicity_mode="TRANSACTIONAL" if tx else "ATOMIC"),
+                                          atomicity_mode="TRANSACTIONAL" if tx else "ATOMIC")
 
         server_config = IgniteConfiguration(version=IgniteVersion(ignite_version),
                                             client_connector_configuration=ClientConnectorConfiguration(),
@@ -72,7 +74,7 @@ class JdbcThinBlobTest(IgniteTest):
 
         address = ignite.nodes[0].account.hostname + ":" + str(server_config.client_connector_configuration.port)
 
-        cls = "org.apache.ignite.internal.ducktest.tests.jdbc.JdbcThinLobTestApplication"
+        cls = "org.apache.ignite.internal.ducktest.tests.jdbc.JdbcThinBlobTestApplication"
 
         client_insert = IgniteApplicationService(
             self.test_context,
@@ -85,7 +87,8 @@ class JdbcThinBlobTest(IgniteTest):
             jvm_opts=[f"-Xmx{insert_heap}g", f"-Xms{insert_heap}g"],
             params={
                 "blob_size": blob_size,
-                "action": "insertStream"
+                "action": "insert",
+                "mode": mode
             })
 
         client_insert.start()
