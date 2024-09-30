@@ -130,35 +130,30 @@ public class SqlInputStreamWrapper implements AutoCloseable {
     }
 
     /**
-     * Copy data from the input stream to the output stream.
+     * Copy data from the input stream {@code in} to the output one {@code out}.
+     * Throws if {@code limit} is exceeded.
      *
-     * <p>Stops and return -1 if count of bytes copied exceeds the {@code limit}.
-     *
-     * @param inputStream Input stream.
-     * @param outputStream Output stream.
+     * @param in Input stream.
+     * @param out Output stream.
      * @param limit Maximum bytes to copy.
      * @throws SQLException if limit exceeds.
      * @return Count of bytes copied.
      */
-    private static int copyStream(InputStream inputStream, OutputStream outputStream, long limit) throws IOException, SQLException {
-        int totalLength = 0;
+    private int copyStream(InputStream in, OutputStream out, long limit) throws IOException, SQLException {
+        int readLen, writtenLen = 0;
 
         byte[] buf = new byte[8192];
 
-        int readLength = inputStream.read(buf, 0, (int)Math.min(buf.length, limit));
+        while (-1 != (readLen = in.read(buf, 0, (int)Math.min(buf.length, limit - writtenLen)))) {
+            out.write(buf, 0, readLen);
 
-        while (readLength > 0) {
-            totalLength += readLength;
+            writtenLen += readLen;
 
-            outputStream.write(buf, 0, readLength);
-
-            if (totalLength == limit)
+            if (writtenLen == limit && in.read() != -1)
                 throw new SQLFeatureNotSupportedException("Invalid argument. InputStreams with length greater than " +
-                        MAX_ARRAY_SIZE + " are not supported.");
-
-            readLength = inputStream.read(buf, 0, (int)Math.min(buf.length, limit - totalLength));
+                        limit + " are not supported.");
         }
 
-        return totalLength;
+        return writtenLen;
     }
 }
