@@ -137,15 +137,18 @@ public class AbstractBasicIntegrationTest extends GridCommonAbstractTest {
     }
 
     /** */
-    protected QueryChecker assertQuery(IgniteEx ignite, String qry) {
+    protected QueryChecker assertQuery(Ignite ignite, String qry) {
         return new QueryChecker(qry) {
             @Override protected QueryEngine getEngine() {
-                return Commons.lookupComponent(ignite.context(), QueryEngine.class);
+                return Commons.lookupComponent(((IgniteEx)ignite).context(), QueryEngine.class);
             }
         };
     }
 
-    /** */
+    /**
+     * @deprecated Use {@link #sql(String, Object...)} instead.
+     */
+    @Deprecated
     protected List<List<?>> executeSql(String sql, Object... args) {
         return executeSql(client, sql, args);
     }
@@ -174,7 +177,7 @@ public class AbstractBasicIntegrationTest extends GridCommonAbstractTest {
      * @param msg Error message.
      */
     protected void assertThrows(String sql, Class<? extends Exception> cls, String msg, Object... args) {
-        assertThrowsAnyCause(log, () -> executeSql(sql, args), cls, msg);
+        assertThrowsAnyCause(log, () -> sql(sql, args), cls, msg);
     }
 
     /** */

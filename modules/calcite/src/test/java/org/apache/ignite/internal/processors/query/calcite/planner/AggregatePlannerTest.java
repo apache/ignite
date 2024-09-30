@@ -29,6 +29,7 @@ import org.apache.calcite.rel.type.RelDataType;
 import org.apache.calcite.rel.type.RelDataTypeFactory;
 import org.apache.calcite.sql.SqlExplainLevel;
 import org.apache.calcite.sql.fun.SqlAvgAggFunction;
+import org.apache.calcite.sql.validate.SqlConformance;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteAggregate;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteIndexScan;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteRel;
@@ -324,6 +325,38 @@ public class AggregatePlannerTest extends AbstractAggregatePlannerTest {
         assertEquals(tf.createJavaType(BigDecimal.class), rowTypes.getFieldList().get(5).getType());
         assertEquals(tf.createJavaType(Double.class), rowTypes.getFieldList().get(6).getType());
         assertEquals(tf.createJavaType(Double.class), rowTypes.getFieldList().get(7).getType());
+    }
+
+    /**
+     * Tests that grouping plan works with an alias and an ordinal value.
+     *
+     * @see SqlConformance#isGroupByAlias()
+     * @see SqlConformance#isGroupByOrdinal()
+     */
+    @Test
+    public void groupingByAliasAndOrdinal() throws Exception {
+        IgniteSchema schema = createSchema(
+            createTable(
+                "TEST", IgniteDistributions.broadcast(),
+                "ID", Integer.class,
+                "GRP", Integer.class,
+                "VAL_INT", Integer.class
+            )
+        );
+
+        assertPlan(
+            "SELECT GRP AS ALS, SUM(VAL_INT) FROM test GROUP BY ALS",
+            schema,
+            nodeOrAnyChild(isInstanceOf(algo.colocated)),
+            algo.rulesToDisable
+        );
+
+        assertPlan(
+            "SELECT GRP, SUM(VAL_INT) FROM test GROUP BY 1",
+            schema,
+            nodeOrAnyChild(isInstanceOf(algo.colocated)),
+            algo.rulesToDisable
+        );
     }
 
     /**

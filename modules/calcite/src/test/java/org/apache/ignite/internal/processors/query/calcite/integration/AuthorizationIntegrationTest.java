@@ -21,6 +21,7 @@ import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.SQLException;
 import java.sql.Statement;
+import java.util.Arrays;
 import java.util.UUID;
 import java.util.concurrent.atomic.AtomicInteger;
 import org.apache.ignite.IgniteCheckedException;
@@ -36,6 +37,7 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.SqlConfiguration;
 import org.apache.ignite.events.CacheEvent;
 import org.apache.ignite.internal.IgniteEx;
+import org.apache.ignite.internal.processors.query.QueryUtils;
 import org.apache.ignite.internal.processors.security.AbstractSecurityTest;
 import org.apache.ignite.internal.processors.security.impl.TestSecurityData;
 import org.apache.ignite.internal.processors.security.impl.TestSecurityPluginProvider;
@@ -45,16 +47,23 @@ import org.apache.ignite.plugin.security.SecurityPermissionSet;
 import org.apache.ignite.plugin.security.SecurityPermissionSetBuilder;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.Parameterized;
 
 import static org.apache.ignite.events.EventType.EVT_CACHE_OBJECT_PUT;
 import static org.apache.ignite.events.EventType.EVT_CACHE_OBJECT_REMOVED;
+import static org.apache.ignite.plugin.security.SecurityPermission.CACHE_CREATE;
+import static org.apache.ignite.plugin.security.SecurityPermission.CACHE_DESTROY;
 import static org.apache.ignite.plugin.security.SecurityPermission.CACHE_PUT;
 import static org.apache.ignite.plugin.security.SecurityPermission.CACHE_READ;
 import static org.apache.ignite.plugin.security.SecurityPermission.CACHE_REMOVE;
+import static org.apache.ignite.plugin.security.SecurityPermission.SQL_VIEW_CREATE;
+import static org.apache.ignite.plugin.security.SecurityPermission.SQL_VIEW_DROP;
 
 /**
  * Test authorization of different operations.
  */
+@RunWith(Parameterized.class)
 public class AuthorizationIntegrationTest extends AbstractSecurityTest {
     /** */
     private static final String LOGIN = "client";
@@ -78,13 +87,16 @@ public class AuthorizationIntegrationTest extends AbstractSecurityTest {
     private static final AtomicInteger removeCnt = new AtomicInteger();
 
     /** */
-    private final SecurityPermissionSet clientPermissions = SecurityPermissionSetBuilder.create()
-        .defaultAllowAll(false)
-        .appendCachePermissions(ALLOWED_CACHE, CACHE_PUT, CACHE_READ, CACHE_REMOVE)
-        .appendCachePermissions(ALLOWED_READ_CACHE, CACHE_READ)
-        .appendCachePermissions(FORBIDDEN_CACHE, EMPTY_PERMS).build();
+    @Parameterized.Parameter
+    public boolean allowDdl;
 
     /** */
+    @Parameterized.Parameters(name = "allowDdl = {0}")
+    public static Iterable<Object> parameters() {
+        return Arrays.asList(false, true);
+    }
+
+    /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         return super.getConfiguration(igniteInstanceName)
             .setIncludeEventTypes(EVT_CACHE_OBJECT_PUT, EVT_CACHE_OBJECT_REMOVED)
@@ -95,12 +107,14 @@ public class AuthorizationIntegrationTest extends AbstractSecurityTest {
     /** {@inheritDoc} */
     @Override protected TestSecurityData[] securityData() {
         return new TestSecurityData[] {
-            new TestSecurityData(LOGIN, PWD, clientPermissions, null)
+            new TestSecurityData(LOGIN, PWD, clientPermissions(), null)
         };
     }
 
     /** {@inheritDoc} */
-    @Override protected void beforeTestsStarted() throws Exception {
+    @Override protected void beforeTest() throws Exception {
+        super.beforeTest();
+
         IgniteEx grid0 = startGridAllowAll("srv1");
         IgniteEx grid1 = startGridAllowAll("srv2");
 
@@ -132,24 +146,24 @@ public class AuthorizationIntegrationTest extends AbstractSecurityTest {
         grid1.events().localListen(lsnrRemove, EVT_CACHE_OBJECT_REMOVED);
     }
 
-    /** */
-    @Override protected void beforeTest() throws Exception {
-        super.beforeTest();
+    /** {@inheritDoc} */
+    @Override protected void afterTest() throws Exception {
+        super.afterTest();
 
-        grid("srv1").cache(ALLOWED_CACHE).clear();
-        grid("srv1").cache(ALLOWED_READ_CACHE).clear();
-        grid("srv1").cache(FORBIDDEN_CACHE).clear();
+        stopAllGrids();
+
+        cleanPersistenceDir();
     }
 
     /** */
     @Test
     public void testClientNode() throws Exception {
         try (IgniteEx clientNode = startGrid(getConfiguration("client",
-                new TestSecurityPluginProvider(LOGIN, PWD, clientPermissions, null,
+                new TestSecurityPluginProvider(LOGIN, PWD, clientPermissions(), null,
                     globalAuth, securityData())).setClientMode(true))
         ) {
             check(
-                sql -> clientNode.cache(ALLOWED_CACHE).query(new SqlFieldsQuery(sql)).getAll(),
+                sql -> clientNode.cache(ALLOWED_CACHE).query(sqlFieldsQuery(sql)).getAll(),
                 SecurityException.class,
                 "Authorization failed"
             );
@@ -163,7 +177,7 @@ public class AuthorizationIntegrationTest extends AbstractSecurityTest {
             new ClientConfiguration().setAddresses(Config.SERVER).setUserName(LOGIN).setUserPassword(PWD))
         ) {
             check(
-                sql -> client.cache(ALLOWED_CACHE).query(new SqlFieldsQuery(sql)).getAll(),
+                sql -> client.cache(ALLOWED_CACHE).query(sqlFieldsQuery(sql)).getAll(),
                 ClientAuthorizationException.class,
                 "User is not authorized"
             );
@@ -180,6 +194,20 @@ public class AuthorizationIntegrationTest extends AbstractSecurityTest {
                 check(stmt::execute, SQLException.class, "Authorization failed");
             }
         }
+    }
+
+    /** */
+    private SecurityPermissionSet clientPermissions() {
+        SecurityPermissionSetBuilder permBuilder = SecurityPermissionSetBuilder.create()
+            .defaultAllowAll(false)
+            .appendCachePermissions(ALLOWED_CACHE, CACHE_PUT, CACHE_READ, CACHE_REMOVE)
+            .appendCachePermissions(ALLOWED_READ_CACHE, CACHE_READ)
+            .appendCachePermissions(FORBIDDEN_CACHE, EMPTY_PERMS);
+
+        if (allowDdl)
+            permBuilder.appendSystemPermissions(SQL_VIEW_CREATE, SQL_VIEW_DROP, CACHE_CREATE, CACHE_DESTROY);
+
+        return permBuilder.build();
     }
 
     /** */
@@ -209,7 +237,32 @@ public class AuthorizationIntegrationTest extends AbstractSecurityTest {
         sqlExecutor.execute(selectSql(ALLOWED_READ_CACHE));
         assertThrows(sqlExecutor, deleteSql(ALLOWED_READ_CACHE), errCls, errMsg);
 
-        assertThrows(sqlExecutor, "CREATE TABLE test(id INT, val VARCHAR)", errCls, errMsg);
+        if (allowDdl) {
+            sqlExecutor.execute("CREATE TABLE test(id INT, val VARCHAR)");
+            sqlExecutor.execute("CREATE VIEW test_view AS SELECT * FROM test");
+            sqlExecutor.execute("DROP VIEW test_view");
+            sqlExecutor.execute("DROP TABLE test");
+        }
+        else {
+            assertThrows(sqlExecutor, "CREATE TABLE test(id INT, val VARCHAR)", errCls, errMsg);
+            assertThrows(sqlExecutor, "CREATE VIEW test_view AS SELECT * FROM test", errCls, errMsg);
+
+            executeOnServer("CREATE TABLE test(id INT, val VARCHAR)");
+            executeOnServer("CREATE VIEW test_view AS SELECT * FROM test");
+
+            assertThrows(sqlExecutor, "DROP VIEW test_view", errCls, errMsg);
+            assertThrows(sqlExecutor, "DROP TABLE test", errCls, errMsg);
+        }
+    }
+
+    /** */
+    private void executeOnServer(String sql) {
+        grid("srv1").cache(ALLOWED_CACHE).query(sqlFieldsQuery(sql)).getAll();
+    }
+
+    /** */
+    private SqlFieldsQuery sqlFieldsQuery(String sql) {
+        return new SqlFieldsQuery(sql).setSchema(QueryUtils.DFLT_SCHEMA);
     }
 
     /** Ensure security context subject relates to client.  */

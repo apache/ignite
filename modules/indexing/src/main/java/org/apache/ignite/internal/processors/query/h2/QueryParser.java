@@ -73,8 +73,9 @@ public class QueryParser {
 
     /** A pattern for commands having internal implementation in Ignite. */
     private static final Pattern INTERNAL_CMD_RE = Pattern.compile(
-        "^(create|drop)\\s+index|^analyze\\s|^refresh\\sstatistics|^drop\\sstatistics|^alter\\s+table|^copy" +
+        "^(create|drop)\\s+index|^analyze\\s|^refresh\\s+statistics|^drop\\s+statistics|^alter\\s+table|^copy" +
             "|^set|^begin|^start|^commit|^rollback|^(create|alter|drop)\\s+user" +
+            "|^(create|create\\s+or\\s+replace|drop)\\s+view" +
             "|^kill\\s+(query|scan|continuous|compute|service|transaction|client)|show|help|grant|revoke",
         Pattern.CASE_INSENSITIVE);
 
