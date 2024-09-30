@@ -472,6 +472,66 @@ DROP INDEX idx_person_name;
 ----
 
 
+== CREATE VIEW
+
+Creates an user definded SQL view.
+
+
+[source,sql]
+----
+CREATE [OR REPLACE] VIEW [schemaName.]viewName AS query
+----
+
+Parameters:
+
+* `schemaName` - the name of the schema, where to create view.
+* `viewName` - the name of the view to create.
+* `OR REPLACE` - replace view if a view with the specified name already exists.
+* `query` - valid SQL query.
+
+Schema changes applied by this command are persisted on disk if link:persistence/native-persistence[Ignite persistence] is enabled. Thus, the changes can survive full cluster restarts.
+
+[discrete]
+=== Examples
+Create a view:
+
+
+[source,sql]
+----
+CREATE VIEW adult AS SELECT * FROM person WHERE age >= 18;
+----
+
+
+== DROP VIEW
+
+Deletes an existing user defined SQL view.
+
+
+[source,sql]
+----
+DROP VIEW [IF EXISTS] [schemaName.]viewName
+----
+
+Parameters:
+
+* `schemaName` - the schema of the view to drop.
+* `viewName` - the name of the view to drop.
+* `IF EXISTS` - do not throw an error if a view with the specified name does not exist.
+
+Schema changes applied by this command are persisted on disk if link:persistence/native-persistence[Ignite persistence] is enabled. Thus, the changes can survive full cluster restarts.
+
+
+[discrete]
+=== Examples
+Drop a view:
+
+
+[source,sql]
+----
+DROP VIEW adult;
+----
+
+
 == CREATE USER
 
 The command creates a user with a given name and password.

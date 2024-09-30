@@ -15,30 +15,44 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.util;
-
-import org.junit.Test;
+package org.apache.ignite.internal.processors.query.schema.management;
 
 /**
- * Grid cleaner tests.
+ * Local database view object.
  */
-public class GridCleanerTest {
+public class ViewDescriptor {
+    /** View name. */
+    private final String name;
+
+    /** View SQL. */
+    private final String sql;
+
+    /** View description. */
+    private final String desc;
+
     /**
-     * @throws Exception If failed.
+     * @param name View name.
+     * @param sql View SQL.
+     * @param desc View description.
      */
-    @Test
-    public void testCreate() throws Exception {
-        Object cleaner = GridCleaner.create(this, new Runnable() {
-            @Override public void run() {
-                // no-op
-            }
-        });
+    ViewDescriptor(String name, String sql, String desc) {
+        this.name = name;
+        this.sql = sql;
+        this.desc = desc;
+    }
 
-        assert cleaner != null;
+    /** */
+    public String name() {
+        return name;
+    }
 
-        String clsName = cleaner.getClass().getName();
+    /** */
+    public String sql() {
+        return sql;
+    }
 
-        assert clsName.equals("sun.misc.Cleaner")
-            || clsName.equals("jdk.internal.ref.CleanerImpl$PhantomCleanableRef");
+    /** */
+    public String description() {
+        return desc;
     }
 }

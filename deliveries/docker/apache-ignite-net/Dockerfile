@@ -23,7 +23,7 @@ RUN mkdir -p /usr/share/man/man1
 RUN apt update && apt install apt-utils -y --no-install-recommends
 
 ## Install JRE
-RUN apt update && apt install openjdk-8-jre-headless -y --no-install-recommends
+RUN apt update && apt install openjdk-11-jre-headless -y --no-install-recommends
 
 WORKDIR /app
 

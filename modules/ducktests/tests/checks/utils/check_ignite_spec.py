@@ -81,17 +81,19 @@ def check_default_jvm_options__are_not_used__if_merge_with_default_is_false(serv
 
 def check_boolean_options__go_after_default_ones_and_overwrite_them__if_passed_via_jvm_opt(service):
     service.context.globals[JFR_ENABLED] = True
-    spec = IgniteApplicationSpec(service, jvm_opts="-XX:-UnlockCommercialFeatures")
-    assert "-XX:-UnlockCommercialFeatures" in spec.jvm_opts
-    assert "-XX:-UnlockCommercialFeatures" in spec.jvm_opts
-    assert spec.jvm_opts.index("-XX:-UnlockCommercialFeatures") >\
-           spec.jvm_opts.index("-XX:+UnlockCommercialFeatures")
+    spec = IgniteApplicationSpec(service, jvm_opts="-XX:-FlightRecorder")
+    assert "-XX:-FlightRecorder" in spec.jvm_opts
+    assert "-XX:+FlightRecorder" in spec.jvm_opts
+    assert spec.jvm_opts.index("-XX:-FlightRecorder") >\
+           spec.jvm_opts.index("-XX:+FlightRecorder")
 
 
 def check_colon_options__go_after_default_ones_and_overwrite_them__if_passed_via_jvm_opt(service):
     service.log_dir = "/default-path"
-    spec = IgniteApplicationSpec(service, jvm_opts=["-Xloggc:/some-non-default-path/gc.log"])
-    assert "-Xloggc:/some-non-default-path/gc.log" in spec.jvm_opts
-    assert "-Xloggc:/default-path/gc.log" in spec.jvm_opts
-    assert spec.jvm_opts.index("-Xloggc:/some-non-default-path/gc.log") > \
-           spec.jvm_opts.index("-Xloggc:/default-path/gc.log")
+    spec = IgniteApplicationSpec(service, jvm_opts=["-Xlog:gc:/some-non-default-path/gc.log"])
+    assert "-Xlog:gc:/some-non-default-path/gc.log" in spec.jvm_opts
+    assert "-Xlog:gc*=debug,gc+stats*=debug,gc+ergo*=debug:/default-path/gc.log:uptime,time,level,tags" \
+           in spec.jvm_opts
+    assert spec.jvm_opts.index("-Xlog:gc:/some-non-default-path/gc.log") > \
+           spec.jvm_opts.index(
+               "-Xlog:gc*=debug,gc+stats*=debug,gc+ergo*=debug:/default-path/gc.log:uptime,time,level,tags")

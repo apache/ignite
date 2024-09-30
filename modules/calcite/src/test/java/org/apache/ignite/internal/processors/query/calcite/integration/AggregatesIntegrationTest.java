@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.processors.query.calcite.integration;
 
 import java.util.List;
+import org.apache.calcite.sql.validate.SqlConformance;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.cache.CacheMode;
@@ -138,6 +139,32 @@ public class AggregatesIntegrationTest extends AbstractBasicIntegrationTest {
 
         assertQuery("SELECT COUNT(a) FROM tbl").returns(100L).check();
         assertQuery("SELECT COUNT(b) FROM tbl").returns(100L).check();
+    }
+
+    /**
+     * Tests grouping result by an alias and an ordinal value.
+     *
+     * @see SqlConformance#isGroupByAlias()
+     * @see SqlConformance#isGroupByOrdinal()
+     */
+    @Test
+    public void testGroupingByAlias() {
+        executeSql("CREATE TABLE t1(id INT, val_int INT, val_char VARCHAR, PRIMARY KEY(id))");
+
+        for (int i = 0; i < 10; i++)
+            executeSql("INSERT INTO t1 VALUES (?, ?, ?)", i, i % 3, "val" + i % 3);
+
+        assertQuery("SELECT val_char as ALS, count(val_int) FROM t1 GROUP BY ALS")
+            .returns("val0", 4L)
+            .returns("val1", 3L)
+            .returns("val2", 3L)
+            .check();
+
+        assertQuery("SELECT val_char, count(val_int) FROM t1 GROUP BY 1")
+            .returns("val0", 4L)
+            .returns("val1", 3L)
+            .returns("val2", 3L)
+            .check();
     }
 
     /** */

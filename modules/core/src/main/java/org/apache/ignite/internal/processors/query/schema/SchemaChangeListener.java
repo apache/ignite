@@ -141,10 +141,27 @@ public interface SchemaChangeListener {
     public void onFunctionCreated(String schemaName, String name, boolean deterministic, Method method);
 
     /**
-     * Callback method.
+     * Callback on system view creation.
      *
      * @param schemaName Schema name.
      * @param sysView System view.
      */
     public void onSystemViewCreated(String schemaName, SystemView<?> sysView);
+
+    /**
+     * Callback on user defined view creation.
+     *
+     * @param schemaName Schema name.
+     * @param viewName View name.
+     * @param viewSql View SQL.
+     */
+    public void onViewCreated(String schemaName, String viewName, String viewSql);
+
+    /**
+     * Callback on user defined view dropped.
+     *
+     * @param schemaName Schema name.
+     * @param viewName View name.
+     */
+    public void onViewDropped(String schemaName, String viewName);
 }

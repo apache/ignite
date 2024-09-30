@@ -20,9 +20,11 @@ package org.apache.ignite.internal.jdbc2;
 import java.io.Serializable;
 import java.io.UnsupportedEncodingException;
 import java.sql.Blob;
+import java.sql.Clob;
 import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.SQLException;
+import java.util.Arrays;
 import java.util.Collections;
 import org.apache.ignite.cache.QueryEntity;
 import org.apache.ignite.cache.query.annotations.QuerySqlField;
@@ -53,7 +55,7 @@ public abstract class JdbcAbstractDmlStatementSelfTest extends GridCommonAbstrac
         CFG_URL_PREFIX + "cache=" + DEFAULT_CACHE_NAME + "@modules/clients/src/test/config/jdbc-bin-config.xml";
 
     /** SQL SELECT query for verification. */
-    static final String SQL_SELECT = "select _key, id, firstName, lastName, age, data from Person";
+    static final String SQL_SELECT = "select _key, id, firstName, lastName, age, data, text from Person";
 
     /** Alias for _key */
     private static final String KEY_ALIAS = "key";
@@ -112,6 +114,7 @@ public abstract class JdbcAbstractDmlStatementSelfTest extends GridCommonAbstrac
         e.addQueryField("firstName", String.class.getName(), null);
         e.addQueryField("lastName", String.class.getName(), null);
         e.addQueryField("data", byte[].class.getName(), null);
+        e.addQueryField("text", String.class.getName(), null);
 
         cache.setQueryEntities(Collections.singletonList(e));
 
@@ -190,6 +193,18 @@ public abstract class JdbcAbstractDmlStatementSelfTest extends GridCommonAbstrac
     }
 
     /**
+     * @param clob Clob.
+     */
+    static String str(Clob clob) {
+        try {
+            return clob.getSubString(1, (int)clob.length());
+        }
+        catch (SQLException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    /**
      * Person.
      */
     static class Person implements Serializable {
@@ -213,6 +228,10 @@ public abstract class JdbcAbstractDmlStatementSelfTest extends GridCommonAbstrac
         @QuerySqlField
         private final byte[] data;
 
+        /** CLOB data. */
+        @QuerySqlField
+        private final String text;
+
         /**
          * @param id ID.
          * @param firstName First name.
@@ -229,6 +248,7 @@ public abstract class JdbcAbstractDmlStatementSelfTest extends GridCommonAbstrac
             this.lastName = lastName;
             this.age = age;
             this.data = getBytes(lastName);
+            this.text = firstName + " " + lastName;
         }
 
         /** {@inheritDoc} */
@@ -241,6 +261,8 @@ public abstract class JdbcAbstractDmlStatementSelfTest extends GridCommonAbstrac
             if (id != person.id) return false;
             if (age != person.age) return false;
             if (firstName != null ? !firstName.equals(person.firstName) : person.firstName != null) return false;
+            if (data != null ? !Arrays.equals(data, person.data) : person.data != null) return false;
+            if (text != null ? !text.equals(person.text) : person.text != null) return false;
             return lastName != null ? lastName.equals(person.lastName) : person.lastName == null;
 
         }
@@ -251,6 +273,8 @@ public abstract class JdbcAbstractDmlStatementSelfTest extends GridCommonAbstrac
             result = 31 * result + (firstName != null ? firstName.hashCode() : 0);
             result = 31 * result + (lastName != null ? lastName.hashCode() : 0);
             result = 31 * result + age;
+            result = 31 * result + (data != null ? Arrays.hashCode(data) : 0);
+            result = 31 * result + (text != null ? text.hashCode() : 0);
             return result;
         }
     }

@@ -89,6 +89,12 @@ public final class IgniteQueryErrorCode {
     /** Database is closed by some reasons. */
     public static final int DB_UNRECOVERABLE_ERROR = 3016;
 
+    /** View already exists. */
+    public static final int VIEW_ALREADY_EXISTS = 3017;
+
+    /** View does not exist. */
+    public static final int VIEW_NOT_FOUND = 3018;
+
     /* 4xxx - cache related runtime errors */
 
     /** Attempt to INSERT a key that is already in cache. */

@@ -36,8 +36,8 @@ public class IntervalTest extends AbstractBasicIntegrationTest {
     public void testIntervalResult() {
         assertEquals(Duration.ofSeconds(1), eval("INTERVAL 1 SECONDS"));
         assertEquals(Duration.ofSeconds(-1), eval("INTERVAL -1 SECONDS"));
-        assertThrows("SELECT INTERVAL '123' SECONDS", IgniteSQLException.class, "exceeds precision");
         assertEquals(Duration.ofSeconds(123), eval("INTERVAL 123 SECONDS"));
+        assertEquals(Duration.ofSeconds(123), eval("INTERVAL '123' SECONDS"));
         assertEquals(Duration.ofSeconds(123), eval("INTERVAL '123' SECONDS(3)"));
         assertEquals(Duration.ofMinutes(2), eval("INTERVAL 2 MINUTES"));
         assertEquals(Duration.ofHours(3), eval("INTERVAL 3 HOURS"));
@@ -363,6 +363,7 @@ public class IntervalTest extends AbstractBasicIntegrationTest {
      */
     @Test
     public void testExtract() {
+        assertEquals(0L, eval("EXTRACT(DAY FROM INTERVAL 1 MONTH)"));
         assertEquals(2L, eval("EXTRACT(MONTH FROM INTERVAL 14 MONTHS)"));
         assertEquals(0L, eval("EXTRACT(MONTH FROM INTERVAL 1 YEAR)"));
         assertEquals(2L, eval("EXTRACT(MONTH FROM INTERVAL '1-2' YEAR TO MONTH)"));
@@ -382,7 +383,7 @@ public class IntervalTest extends AbstractBasicIntegrationTest {
         assertEquals(-4L, eval("EXTRACT(SECOND FROM INTERVAL '-1 2:3:4.567' DAY TO SECOND)"));
         assertEquals(-4567L, eval("EXTRACT(MILLISECOND FROM INTERVAL '-1 2:3:4.567' DAY TO SECOND)"));
 
-        assertThrows("SELECT EXTRACT(DAY FROM INTERVAL 1 MONTH)", IgniteSQLException.class, "Cannot apply");
+        assertThrows("SELECT EXTRACT(DOW FROM INTERVAL 1 MONTH)", IgniteSQLException.class, "Cannot apply");
         assertThrows("SELECT EXTRACT(MONTH FROM INTERVAL 1 DAY)", IgniteSQLException.class, "Cannot apply");
     }
 

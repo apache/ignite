@@ -122,6 +122,7 @@ import org.apache.ignite.internal.util.lang.IgniteSingletonIterator;
 import org.apache.ignite.internal.util.lang.IgniteThrowableSupplier;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.X;
+import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiClosure;
 import org.apache.ignite.lang.IgniteBiTuple;
@@ -1090,14 +1091,14 @@ public class IgniteH2Indexing implements GridQueryIndexing {
             if (roEx != null) {
                 throw new IgniteSQLException(
                     "Failed to execute DML statement. Cluster in read-only mode [stmt=" + qryDesc.sql() +
-                    ", params=" + Arrays.deepToString(qryParams.arguments()) + "]",
+                    ", params=" + S.toString(QueryParameters.class, qryParams) + "]",
                     IgniteQueryErrorCode.CLUSTER_READ_ONLY_MODE_ENABLED,
                     e
                 );
             }
 
             throw new IgniteSQLException("Failed to execute DML statement [stmt=" + qryDesc.sql() +
-                ", params=" + Arrays.deepToString(qryParams.arguments()) + "]", e);
+                    ", params=" + S.toString(QueryParameters.class, qryParams) + "]", e);
         }
         finally {
             runningQueryManager().unregister(qryId, failReason);

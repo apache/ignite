@@ -35,7 +35,6 @@ import org.apache.ignite.internal.processors.cache.query.SqlFieldsQueryEx;
 import org.apache.ignite.internal.processors.odbc.jdbc.JdbcParameterMeta;
 import org.apache.ignite.internal.processors.query.GridQueryFieldMetadata;
 import org.apache.ignite.internal.processors.query.IgniteSQLException;
-import org.apache.ignite.internal.processors.query.NestedTxMode;
 import org.apache.ignite.internal.processors.query.QueryParserMetricsHolder;
 import org.apache.ignite.internal.processors.query.QueryUtils;
 import org.apache.ignite.internal.processors.query.h2.dml.DmlAstUtils;
@@ -74,8 +73,9 @@ public class QueryParser {
 
     /** A pattern for commands having internal implementation in Ignite. */
     private static final Pattern INTERNAL_CMD_RE = Pattern.compile(
-        "^(create|drop)\\s+index|^analyze\\s|^refresh\\sstatistics|^drop\\sstatistics|^alter\\s+table|^copy" +
+        "^(create|drop)\\s+index|^analyze\\s|^refresh\\s+statistics|^drop\\s+statistics|^alter\\s+table|^copy" +
             "|^set|^begin|^start|^commit|^rollback|^(create|alter|drop)\\s+user" +
+            "|^(create|create\\s+or\\s+replace|drop)\\s+view" +
             "|^kill\\s+(query|scan|continuous|compute|service|transaction|client)|show|help|grant|revoke",
         Pattern.CASE_INSENSITIVE);
 
@@ -147,15 +147,11 @@ public class QueryParser {
      * @return Parameters.
      */
     public QueryParameters queryParameters(SqlFieldsQuery qry) {
-        NestedTxMode nestedTxMode = NestedTxMode.DEFAULT;
         boolean autoCommit = true;
         List<Object[]> batchedArgs = null;
 
         if (qry instanceof SqlFieldsQueryEx) {
             SqlFieldsQueryEx qry0 = (SqlFieldsQueryEx)qry;
-
-            if (qry0.getNestedTxMode() != null)
-                nestedTxMode = qry0.getNestedTxMode();
 
             autoCommit = qry0.isAutoCommit();
 
@@ -174,7 +170,6 @@ public class QueryParser {
             qry.isLazy(),
             qry.getPageSize(),
             null,
-            nestedTxMode,
             autoCommit,
             batchedArgs,
             qry.getUpdateBatchSize()
