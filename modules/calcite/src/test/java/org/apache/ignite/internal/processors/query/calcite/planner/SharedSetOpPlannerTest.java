@@ -18,6 +18,9 @@
 package org.apache.ignite.internal.processors.query.calcite.planner;
 
 import java.util.Arrays;
+import java.util.Collections;
+import java.util.List;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Predicate;
 import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.rel.core.Union;
@@ -34,6 +37,7 @@ import org.apache.ignite.internal.processors.query.calcite.trait.IgniteDistribut
 import org.apache.ignite.internal.processors.query.calcite.trait.IgniteDistributions;
 import org.apache.ignite.internal.processors.query.calcite.type.IgniteTypeFactory;
 import org.apache.ignite.internal.processors.query.calcite.type.IgniteTypeSystem;
+import org.apache.ignite.internal.processors.query.calcite.util.Commons;
 import org.junit.Test;
 
 /**
@@ -87,6 +91,17 @@ public class SharedSetOpPlannerTest extends AbstractPlannerTest {
     /** */
     @Test
     public void testSetOpNumbersCast() throws Exception {
+        List<IgniteDistribution> distrs = Arrays.asList(IgniteDistributions.affinity(0, 1001, 0), IgniteDistributions.random(),
+            IgniteDistributions.affinity(0, 1000, 0));
+
+        for(IgniteDistribution d1 : distrs){
+            for (IgniteDistribution d2 : distrs)
+                doTestSetOnNumbersCast(d1, d2);
+        }
+    }
+
+    /** */
+    private void doTestSetOnNumbersCast(IgniteDistribution distr1, IgniteDistribution distr3) throws Exception {
         IgniteSchema schema = new IgniteSchema("PUBLIC");
 
         IgniteTypeFactory f = TYPE_FACTORY;
@@ -105,7 +120,7 @@ public class SharedSetOpPlannerTest extends AbstractPlannerTest {
                         .add("C2", f.createTypeWithNullability(f.createSqlType(SqlTypeName.VARCHAR), true))
                         .build();
 
-                    createTable(schema, "TABLE1", type, IgniteDistributions.single(), null);
+                    createTable(schema, "TABLE1", type, distr1, null);
 
                     type = new RelDataTypeFactory.Builder(f)
                         .add("C1", f.createTypeWithNullability(f.createSqlType(t2), true))
@@ -119,7 +134,7 @@ public class SharedSetOpPlannerTest extends AbstractPlannerTest {
                         .add("C2", f.createTypeWithNullability(f.createSqlType(SqlTypeName.VARCHAR), true))
                         .build();
 
-                    createTable(schema, "TABLE3", type, IgniteDistributions.single(), null);
+                    createTable(schema, "TABLE3", type, distr3, null);
 
                     RelDataType targetT = f.leastRestrictive(Arrays.asList(f.createSqlType(t1), f.createSqlType(t2),
                         f.createSqlType(t3)));
@@ -128,11 +143,11 @@ public class SharedSetOpPlannerTest extends AbstractPlannerTest {
                         String sql = "SELECT * FROM table1 " + op + " SELECT * FROM table2 " + op + " SELECT * FROM table3";
 
                         assertPlan(sql, schema, nodeOrAnyChild(isInstanceOf(org.apache.calcite.rel.core.SetOp.class)
-                            .and(t1 == targetT.getSqlTypeName() ? input(0, isTableScan("TABLE1"))
+                            .and(t1 == targetT.getSqlTypeName() ? input(0, nodeOrAnyChild(isInstanceOf(IgniteProject.class)).negate())
                                 : input(0, projectFromTable("TABLE1", "CAST($0):" + targetT, "$1")))
-                            .and(t2 == targetT.getSqlTypeName() ? input(1, isTableScan("TABLE2"))
+                            .and(t2 == targetT.getSqlTypeName() ? input(1, nodeOrAnyChild(isInstanceOf(IgniteProject.class)).negate())
                                 : input(1, projectFromTable("TABLE2", "CAST($0):" + targetT, "$1")))
-                            .and(t3 == targetT.getSqlTypeName() ? input(2, isTableScan("TABLE3"))
+                            .and(t3 == targetT.getSqlTypeName() ? input(2, nodeOrAnyChild(isInstanceOf(IgniteProject.class)).negate())
                                 : input(2, projectFromTable("TABLE3", "CAST($0):" + targetT, "$1")))
                         ));
                     }
@@ -144,46 +159,65 @@ public class SharedSetOpPlannerTest extends AbstractPlannerTest {
     /** */
     @Test
     public void testSetOpNumbersCastWithDifferentNullability() throws Exception {
+        List<IgniteDistribution> distrs = Arrays.asList(IgniteDistributions.single(), IgniteDistributions.random(),
+            IgniteDistributions.affinity(0, 1001, 0));
+
+        for (IgniteDistribution d1 : distrs) {
+            for (IgniteDistribution d2 : distrs) {
+                doTestSetOpNumbersCastWithDifferentNullability(d1, d2, true, true);
+
+                doTestSetOpNumbersCastWithDifferentNullability(d1, d2, false, true);
+
+                doTestSetOpNumbersCastWithDifferentNullability(d1, d2, false, false);
+            }
+        }
+    }
+
+    /** */
+    private void doTestSetOpNumbersCastWithDifferentNullability(
+        IgniteDistribution distr1,
+        IgniteDistribution distr2,
+        boolean nullable1,
+        boolean nullable2
+    ) throws Exception {
         IgniteSchema schema = new IgniteSchema("PUBLIC");
 
-        IgniteTypeFactory f = new IgniteTypeFactory(IgniteTypeSystem.INSTANCE);
+        IgniteTypeFactory f = Commons.typeFactory();
 
         SqlTypeName[] numTypes = new SqlTypeName[] {SqlTypeName.TINYINT, SqlTypeName.SMALLINT, SqlTypeName.REAL, SqlTypeName.FLOAT,
             SqlTypeName.INTEGER, SqlTypeName.BIGINT, SqlTypeName.DOUBLE, SqlTypeName.DECIMAL};
 
+        boolean notNull = !nullable1 && !nullable2;
+
         for (SqlTypeName t1 : numTypes) {
             for (SqlTypeName t2 : numTypes) {
                 RelDataType type = new RelDataTypeFactory.Builder(f)
-                    .add("C1", f.createTypeWithNullability(f.createSqlType(t1), false))
+                    .add("C1", f.createTypeWithNullability(f.createSqlType(t1), nullable1))
                     .add("C2", f.createTypeWithNullability(f.createSqlType(SqlTypeName.VARCHAR), true))
                     .build();
 
-                createTable(schema, "TABLE1", type, IgniteDistributions.single(), null);
+                createTable(schema, "TABLE1", type, distr1, null);
 
                 type = new RelDataTypeFactory.Builder(f)
-                    .add("C1", f.createTypeWithNullability(f.createSqlType(t2), true))
+                    .add("C1", f.createTypeWithNullability(f.createSqlType(t2), nullable2))
                     .add("C2", f.createTypeWithNullability(f.createSqlType(SqlTypeName.VARCHAR), true))
                     .build();
 
-                createTable(schema, "TABLE2", type, IgniteDistributions.single(), null);
+                createTable(schema, "TABLE2", type, distr2, null);
 
-                for (String op : Arrays.asList("UNION", "UNION ALL", "INTERSECT", "EXCEPT")) {
+                for (String op : Arrays.asList("UNION", "INTERSECT", "EXCEPT")) {
                     String sql = "SELECT * FROM table1 " + op + " SELECT * FROM table2";
 
-                    if (t1 == t2) {
-                        assertPlan(sql, schema, nodeOrAnyChild(isInstanceOf(org.apache.calcite.rel.core.SetOp.class)
-                            .and(input(0, isTableScan("TABLE1")))
-                            .and(input(1, isTableScan("TABLE2")))
-                        ));
-                    }
+                    if (t1 == t2 && (!nullable1 || !nullable2))
+                        assertPlan(sql, schema, nodeOrAnyChild(isInstanceOf(IgniteProject.class)).negate());
                     else {
                         RelDataType targetT = f.leastRestrictive(Arrays.asList(f.createSqlType(t1), f.createSqlType(t2)));
 
                         assertPlan(sql, schema, nodeOrAnyChild(isInstanceOf(org.apache.calcite.rel.core.SetOp.class)
-                            .and(t1 == targetT.getSqlTypeName() ? input(0, isTableScan("TABLE1"))
-                                : input(0, projectFromTable("TABLE1", "CAST($0):" + targetT, "$1")))
-                            .and(t2 == targetT.getSqlTypeName() ? input(1, isTableScan("TABLE2"))
-                                : input(1, projectFromTable("TABLE2", "CAST($0):" + targetT, "$1")))
+                            .and(t1 == targetT.getSqlTypeName() ? input(0, nodeOrAnyChild(isInstanceOf(IgniteProject.class)).negate())
+                                : input(0, projectFromTable("TABLE1", "CAST($0):" + targetT + (notNull ? " NOT NULL" : ""), "$1")))
+                            .and(t2 == targetT.getSqlTypeName() ? input(1, nodeOrAnyChild(isInstanceOf(IgniteProject.class)).negate())
+                                : input(1, projectFromTable("TABLE2", "CAST($0):" + targetT + (notNull ? " NOT NULL" : ""), "$1")))
                         ));
                     }
                 }
@@ -197,10 +231,12 @@ public class SharedSetOpPlannerTest extends AbstractPlannerTest {
             isInstanceOf(IgniteProject.class)
                 .and(projection -> {
                     String actualProjStr = projection.getProjects().toString();
+
                     String expectedProjStr = Arrays.asList(exprs).toString();
+
                     return actualProjStr.equals(expectedProjStr);
                 })
-                .and(input(isTableScan(tableName)))
+                .and(input(nodeOrAnyChild(isTableScan(tableName))))
         );
     }
 

@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.processors.query.calcite.integration;
 
+import java.math.BigDecimal;
 import java.util.List;
 
 import javax.cache.Cache;
@@ -464,6 +465,36 @@ public class SetOpIntegrationTest extends AbstractBasicIntegrationTest {
         assertQuery("SELECT (SELECT i FROM test EXCEPT SELECT test.i) FROM test")
             .returns(1)
             .returns(2)
+            .check();
+    }
+
+    /** */
+    @Test
+    public void testUnionWithNumerics() {
+        sql("CREATE TABLE t0(id INT PRIMARY KEY, val INT)");
+        sql("CREATE TABLE t1(id INT PRIMARY KEY, val DECIMAL)");
+        sql("INSERT INTO t0 VALUES (1, 10)");
+        sql("INSERT INTO t1 VALUES (1, 10)");
+
+        assertQuery(ignite(0), "SELECT val from t0 UNION select val from t1")
+            .returns(new BigDecimal(10))
+            .ordered()
+            .check();
+    }
+
+    /** */
+    @Test
+    public void testIntersectWithNumerics() {
+        sql("CREATE TABLE t0(id INT PRIMARY KEY, val INT) WITH \"affinity_key=ID\"");
+        sql("CREATE TABLE t1(id INT PRIMARY KEY, val DECIMAL)");
+        sql("INSERT INTO t0 VALUES (1, 10), (2, 20), (3, 30), (4, 40), (5, 50)");
+        sql("INSERT INTO t1 VALUES (1, 10), (2, 20), (3, 300), (4, 400), (5, 50)");
+
+        assertQuery(ignite(0), "SELECT val from t0 INTERSECT select val from t1")
+            .returns(new BigDecimal(10))
+            .returns(new BigDecimal(20))
+            .returns(new BigDecimal(50))
+            .ordered()
             .check();
     }
 }

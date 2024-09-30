@@ -417,36 +417,6 @@ public class DataTypesTest extends AbstractBasicIntegrationTest {
 
     /** */
     @Test
-    public void testUnionWithNumerics() {
-        sql("CREATE TABLE t0(id INT PRIMARY KEY, val INT)");
-        sql("CREATE TABLE t1(id INT PRIMARY KEY, val DECIMAL)");
-        sql("INSERT INTO t0 VALUES (1, 10)");
-        sql("INSERT INTO t1 VALUES (1, 10)");
-
-        assertQuery(ignite(0), "SELECT val from t0 UNION select val from t1")
-            .returns(new BigDecimal(10))
-            .ordered()
-            .check();
-    }
-
-    /** */
-    @Test
-    public void testIntersectWithNumerics() {
-        sql("CREATE TABLE t0(id INT PRIMARY KEY, val INT)");
-        sql("CREATE TABLE t1(id INT PRIMARY KEY, val DECIMAL)");
-        sql("INSERT INTO t0 VALUES (1, 10), (2, 20), (3, 30), (4, 40), (5, 50)");
-        sql("INSERT INTO t1 VALUES (1, 10), (2, 20), (3, 300), (4, 400), (5, 50)");
-
-        assertQuery(ignite(0), "SELECT val from t0 INTERSECT select val from t1")
-            .returns(new BigDecimal(10))
-            .returns(new BigDecimal(20))
-            .returns(new BigDecimal(50))
-            .ordered()
-            .check();
-    }
-
-    /** */
-    @Test
     public void testDecimalScale() {
         sql("CREATE TABLE t (id INT PRIMARY KEY, val1 DECIMAL(5, 3), val2 DECIMAL(3), val3 DECIMAL)");
 
