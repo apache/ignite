@@ -18,13 +18,14 @@ package org.apache.ignite.console.web.controller;
 
 import java.net.InetSocketAddress;
 import java.util.Collection;
+import java.util.UUID;
 
 import org.apache.ignite.Ignite;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.console.common.Test;
 import org.apache.ignite.console.dto.Account;
 import org.apache.ignite.console.dto.Activity;
-import org.apache.ignite.console.repositories.ActivitiesRepository;
+import org.apache.ignite.console.repositories.NodeRepository;
 import org.apache.ignite.console.services.AccountsService;
 import org.apache.ignite.spi.discovery.tcp.internal.TcpDiscoveryNode;
 import org.springframework.http.ResponseEntity;
@@ -50,7 +51,7 @@ public class DiscoController {
     protected AccountsService accountsSrv;
     
     /** Node Activities */
-    private final ActivitiesRepository activitiesSrv;
+    private final NodeRepository activitiesSrv;
     
     private Ignite ignite;
 
@@ -58,7 +59,7 @@ public class DiscoController {
      * @param accountsSrv Accounts server.
      * @param adminSrv Administration server.
      */
-    public DiscoController(Ignite ignite, AccountsService accountsSrv, ActivitiesRepository activitiesSrv) {
+    public DiscoController(Ignite ignite, AccountsService accountsSrv, NodeRepository activitiesSrv) {
         this.accountsSrv = accountsSrv;
         this.activitiesSrv = activitiesSrv;
         this.ignite = ignite;        
@@ -68,14 +69,11 @@ public class DiscoController {
      * @param params SignUp params.
      */
     @Operation(summary = "Register node address.")
-    @PutMapping(path = "/{group}")
+    @PutMapping(path = "/{group}/{nodeId}")
     public ResponseEntity<Void> registerActivity(@AuthenticationPrincipal Account acc,
-    		@PathVariable("group") String group,@RequestBody String addresses) {
+    		@PathVariable("group") String group, @PathVariable("nodeId") UUID nodeId, @RequestBody String addresses) {
        
-        String[] addressList = addresses.split(",");
-        for(String address: addressList) {
-        	activitiesSrv.save(acc.getId(), group, address);
-        }
+    	activitiesSrv.save(acc.getId(), nodeId, group, addresses);
 
         return ResponseEntity.ok().build();
     }
@@ -90,13 +88,17 @@ public class DiscoController {
         StringBuilder addresses = new StringBuilder();
         Collection<Activity> list = activitiesSrv.list(acc.getId(), group);
         for(Activity act: list) {
+        	if(act.getAction()==null || act.getAction().isBlank()) {
+        		continue;
+        	}
         	if(addresses.length()>0) {
         		addresses.append(",");
         	}
         	addresses.append(act.getAction());
         }
         if(group.equals(ignite.name())){
-	        TcpDiscoveryNode node = (TcpDiscoveryNode)ignite.configuration().getDiscoverySpi().getLocalNode();
+	        
+        	TcpDiscoveryNode node = (TcpDiscoveryNode)ignite.configuration().getDiscoverySpi().getLocalNode();
 	        
 	        Collection<String> adminAddress = node.addresses();
 	        for(String act: adminAddress) {
@@ -114,15 +116,10 @@ public class DiscoController {
      * @param email Account email.
      */
     @Operation(summary = "Delete node address.")
-    @DeleteMapping(path = "/{group}")
+    @DeleteMapping(path = "/{group}/{nodeId}")
     public ResponseEntity<Void> deleteActivity(@AuthenticationPrincipal Account acc,
-    		@PathVariable("group") String group,@RequestParam("addresses") String addresses) {
-        
-    	String[] addressList = addresses.split(",");
-        for(String address: addressList) {
-        	activitiesSrv.delete(acc.getId(), group, address);
-        }
-
+    		@PathVariable("group") String group, @PathVariable("nodeId") UUID nodeId) {
+        activitiesSrv.delete(acc.getId(), nodeId);
         return ResponseEntity.ok().build();
     }
 }

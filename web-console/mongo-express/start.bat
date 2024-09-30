@@ -6,6 +6,6 @@ set ME_CONFIG_MONGODB_SSL=false
 set ME_CONFIG_SITE_GRIDFS_ENABLED=true
 set ME_CONFIG_BASICAUTH=true
 
-npm run start
+rem npm run start
 
-REM node --inspect app.js
+node --inspect app.js

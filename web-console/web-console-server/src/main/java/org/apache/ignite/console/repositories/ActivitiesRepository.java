@@ -66,7 +66,7 @@ public class ActivitiesRepository {
     }
     
     /**
-     * GEt activity List.
+     * GET activity List.
      *
      * @param accId Account ID.
      * @param grp Activity group.
@@ -123,11 +123,9 @@ public class ActivitiesRepository {
 
             activity.increment(1);
 
-            activitiesTbl.save(activity);
+            activitiesTbl.save(activity);            
 
-            ids.add(activity.getId());
-
-            activitiesIdx.addAll(activityKey, ids);
+            activitiesIdx.add(activityKey, activity.getId());
 
             return activity;
         });

@@ -37,6 +37,7 @@ import java.util.HashSet;
 import java.util.LinkedList;
 import java.util.Set;
 import java.util.StringTokenizer;
+import java.util.UUID;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.atomic.AtomicBoolean;
 import org.apache.ignite.IgniteCheckedException;
@@ -326,7 +327,7 @@ public class TcpDiscoveryWebConsoleServerIpFinder extends TcpDiscoveryIpFinderAd
 
         initFolder();        
 
-        try {
+        try {        	
         	String addresses = "";
             for (String name : distinctNames(addrs)) {
                 File file = new File(folder, name);
@@ -339,14 +340,15 @@ public class TcpDiscoveryWebConsoleServerIpFinder extends TcpDiscoveryIpFinderAd
             }
             
             if(this.httpClient!=null) {
-            	String url = this.masterUrl+ "/api/v1/"+path;
+            	UUID nodeId = this.ignite.cluster().localNode().id();
+            	String url = this.masterUrl+ "/api/v1/"+path+"/"+nodeId;
             	
             	HttpRequest request = HttpRequest.newBuilder()
             			         .uri(URI.create(url))
             			         .header("Authorization", "token " + accountToken)
             			         .PUT(BodyPublishers.ofString(addresses))
             			         .build();
-            	HttpResponse<Void> resp = httpClient.send(request,BodyHandlers.discarding());
+            	httpClient.send(request,BodyHandlers.discarding());
             }
         }
         catch (IOException e) {
@@ -368,7 +370,7 @@ public class TcpDiscoveryWebConsoleServerIpFinder extends TcpDiscoveryIpFinderAd
             for (String name : distinctNames(addrs)) {
                 File file = new File(folder, name);
 
-                if (!file.delete())
+                if (file.exists() && !file.delete())
                     throw new IgniteSpiException("Failed to delete file " + file.getName());
                 
                 if(!addresses.isEmpty())
@@ -377,20 +379,22 @@ public class TcpDiscoveryWebConsoleServerIpFinder extends TcpDiscoveryIpFinderAd
             }
             
             if(this.httpClient!=null) {
-            	String url = this.masterUrl+ "/api/v1/"+path;
+            	UUID nodeId = this.ignite.cluster().localNode().id();
+            	
+            	String url = this.masterUrl+ "/api/v1/"+path+"/"+nodeId;
             	
             	HttpRequest request = HttpRequest.newBuilder()
-            			         .uri(URI.create(url+"?addresses="+URLEncoder.encode(addresses,StandardCharsets.UTF_8)))
+            			         .uri(URI.create(url))
             			         .header("Authorization", "token " + accountToken)
             			         .DELETE()
             			         .build();
-            	HttpResponse<Void> resp = httpClient.send(request,BodyHandlers.discarding());
+            	httpClient.send(request,BodyHandlers.discarding());
             }
         }
         catch (SecurityException e) {
             throw new IgniteSpiException("Failed to delete file.", e);
         } catch (IOException e) {
-        	throw new IgniteSpiException("Failed to delete address.", e);
+        	throw new IgniteSpiException("Failed to unregister address.", e);
 		} catch (InterruptedException e) {			
 			e.printStackTrace();
 		}

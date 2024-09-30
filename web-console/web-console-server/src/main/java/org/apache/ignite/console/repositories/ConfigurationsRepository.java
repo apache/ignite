@@ -89,7 +89,7 @@ public class ConfigurationsRepository {
         txMgr.registerStarter(() -> {
             clustersTbl = new Table<>(ignite, "wc_account_clusters");
             cachesTbl = new Table<>(ignite, "wc_cluster_caches");
-            modelsTbl = new Table<>(ignite, "wc_cluster_models");
+            modelsTbl = new Table<>(ignite, "wc_cluster_models");            
 
             cachesIdx = new OneToManyIndex<>(ignite, "wc_cluster_caches_idx");
             modelsIdx = new OneToManyIndex<>(ignite, "wc_cluster_models_idx");
@@ -212,6 +212,55 @@ public class ConfigurationsRepository {
         });
     }
 
+    /**
+     * @param key Configuration key.
+     * @param catalog/schema/tableName Model Path.
+     * @return Model.
+     */
+    @SuppressWarnings("unused")
+	public Model loadModel(ConfigurationKey key, String catalog, String schema, String tableName) {
+        return txMgr.doInTransaction(() -> {
+        	Set<UUID> clusterIds = clustersIdx.get(key);
+        	String clusterName = catalog+"_"+schema;        	
+
+            Collection<Cluster> clusters = clustersTbl.loadAll(clusterIds);
+            Model theMdl = null;
+            UUID clusterId = null;
+            for(Cluster cluster: clusters) {
+            	if(cluster.name().equalsIgnoreCase(catalog) || cluster.name().equalsIgnoreCase(clusterName)) {
+            		clusterId = cluster.getId();            		
+            		break;
+            	}            	
+            }
+            if(clusterId==null) {
+            	if(catalog.equalsIgnoreCase("ignite")) {
+            		clusterName = "hive_"+ schema;
+            	}
+            	for(Cluster cluster: clusters) {
+                	if(cluster.name().equalsIgnoreCase(schema) || cluster.name().equalsIgnoreCase(clusterName)) {
+                		clusterId = cluster.getId();            		
+                		break;
+                	}            	
+                }
+            }
+            if (clusterId == null)
+                throw new IllegalStateException(messages.getMessageWithArgs("err.model-not-found-by-name", catalog));
+
+            Collection<Model> models = modelsTbl.loadAll(modelsIdx.get(clusterId));
+    		for(Model mdl: models) {
+    			if(mdl.valueType().equalsIgnoreCase(tableName)) {
+    				theMdl = mdl;
+    				return mdl;
+    			}
+    		}
+    		
+            if (theMdl == null)
+                throw new IllegalStateException(messages.getMessageWithArgs("err.model-not-found-by-name", tableName));
+            return theMdl;
+
+        });
+    }
+    
     /**
      * @param key Configuration key.
      * @param clusterId Cluster ID.

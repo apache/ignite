@@ -93,6 +93,15 @@ public class ConfigurationsService {
      * @param mdlId Model ID.
      * @return Model.
      */
+    public String loadModel(ConfigurationKey key, String catalog, String schema,String tableName) {
+        return cfgsRepo.loadModel(key, catalog, schema, tableName).json();
+    }
+    
+    /**
+     * @param key Configuration key.
+     * @param mdlId Model ID.
+     * @return Model.
+     */
     public String loadModel(ConfigurationKey key, UUID mdlId) {
         return cfgsRepo.loadModel(key, mdlId).json();
     }

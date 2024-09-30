@@ -103,9 +103,8 @@ public class OneToManyIndex<K, V> extends CacheHolder<K, Set<V>> {
     public void add(K parentId, V child) {
         Set<V> childrenIds = get(parentId);
 
-        childrenIds.add(child);
-
-        cache().put(parentId, childrenIds);
+        if(childrenIds.add(child))
+        	cache().put(parentId, childrenIds);
     }
 
     /**
@@ -117,9 +116,8 @@ public class OneToManyIndex<K, V> extends CacheHolder<K, Set<V>> {
     public void addAll(K parent, Set<V> childrenToAdd) {
         Set<V> children = get(parent);
 
-        children.addAll(childrenToAdd);
-
-        cache().put(parent, children);
+        if(children.addAll(childrenToAdd))
+        	cache().put(parent, children);
     }
 
     /**
@@ -131,9 +129,8 @@ public class OneToManyIndex<K, V> extends CacheHolder<K, Set<V>> {
     public void remove(K parent, V child) {
         Set<V> children = get(parent);
 
-        children.remove(child);
-
-        cache().put(parent, children);
+        if(children.remove(child))
+        	cache().put(parent, children);
     }
 
     /**

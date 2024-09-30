@@ -158,6 +158,22 @@ public class ConfigurationsController {
     ) {
         return ResponseEntity.ok(cfgsSrv.loadModel(new ConfigurationKey(acc.getId(), demo), mdlId));
     }
+    
+    /**
+     * @param acc Account.
+     * @param {catalog}/{schema}/{table} Model Path.
+     */
+    @Operation(summary = "Get model configuration.")
+    @GetMapping(path = "/domains/{catalog}/{schema}/{table}")
+    public ResponseEntity<String> loadModelByName(
+        @AuthenticationPrincipal Account acc,
+        @RequestHeader(value = "demoMode", defaultValue = "false") boolean demo,
+        @PathVariable("catalog") String catalog,
+        @PathVariable("schema") String schema,
+        @PathVariable("table") String table
+    ) {
+        return ResponseEntity.ok(cfgsSrv.loadModel(new ConfigurationKey(acc.getId(), demo), catalog, schema, table));
+    }
 
     /**
      * Save cluster.
