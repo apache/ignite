@@ -116,6 +116,11 @@ public class TransactionConfiguration implements Serializable {
     private boolean txAwareQueriesEnabled;
 
     /**
+     * TODO: IMPLEMENT ME.
+     */
+    private int txMaxSize;
+
+    /**
      * Empty constructor.
      */
     public TransactionConfiguration() {
