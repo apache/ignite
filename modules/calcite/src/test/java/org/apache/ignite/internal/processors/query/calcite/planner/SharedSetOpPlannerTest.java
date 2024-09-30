@@ -18,9 +18,7 @@
 package org.apache.ignite.internal.processors.query.calcite.planner;
 
 import java.util.Arrays;
-import java.util.Collections;
 import java.util.List;
-import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Predicate;
 import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.rel.core.Union;
@@ -88,99 +86,32 @@ public class SharedSetOpPlannerTest extends AbstractPlannerTest {
                 .and(input(2, hasChildThat(isTableScan("TABLE3")))));
     }
 
-    /** */
+
+    /** Tests casts of numeric types in SetOps (UNION, EXCEPT, INTERSECT, etc.). */
     @Test
     public void testSetOpNumbersCast() throws Exception {
-        List<IgniteDistribution> distrs = Arrays.asList(IgniteDistributions.affinity(0, 1001, 0), IgniteDistributions.random(),
-            IgniteDistributions.affinity(0, 1000, 0));
-
-        for(IgniteDistribution d1 : distrs){
-            for (IgniteDistribution d2 : distrs)
-                doTestSetOnNumbersCast(d1, d2);
-        }
-    }
-
-    /** */
-    private void doTestSetOnNumbersCast(IgniteDistribution distr1, IgniteDistribution distr3) throws Exception {
-        IgniteSchema schema = new IgniteSchema("PUBLIC");
-
-        IgniteTypeFactory f = TYPE_FACTORY;
-
-        SqlTypeName[] numTypes = new SqlTypeName[] {SqlTypeName.TINYINT, SqlTypeName.SMALLINT, SqlTypeName.REAL, SqlTypeName.FLOAT,
-            SqlTypeName.INTEGER, SqlTypeName.BIGINT, SqlTypeName.DOUBLE, SqlTypeName.DECIMAL};
-
-        for (SqlTypeName t1 : numTypes) {
-            for (SqlTypeName t2 : numTypes) {
-                for (SqlTypeName t3 : numTypes) {
-                    if (t1 == t2 && t1 == t3)
-                        continue;
-
-                    RelDataType type = new RelDataTypeFactory.Builder(f)
-                        .add("C1", f.createTypeWithNullability(f.createSqlType(t1), true))
-                        .add("C2", f.createTypeWithNullability(f.createSqlType(SqlTypeName.VARCHAR), true))
-                        .build();
-
-                    createTable(schema, "TABLE1", type, distr1, null);
-
-                    type = new RelDataTypeFactory.Builder(f)
-                        .add("C1", f.createTypeWithNullability(f.createSqlType(t2), true))
-                        .add("C2", f.createTypeWithNullability(f.createSqlType(SqlTypeName.VARCHAR), true))
-                        .build();
-
-                    createTable(schema, "TABLE2", type, IgniteDistributions.single(), null);
-
-                    type = new RelDataTypeFactory.Builder(f)
-                        .add("C1", f.createTypeWithNullability(f.createSqlType(t3), true))
-                        .add("C2", f.createTypeWithNullability(f.createSqlType(SqlTypeName.VARCHAR), true))
-                        .build();
-
-                    createTable(schema, "TABLE3", type, distr3, null);
-
-                    RelDataType targetT = f.leastRestrictive(Arrays.asList(f.createSqlType(t1), f.createSqlType(t2),
-                        f.createSqlType(t3)));
-
-                    for (String op : Arrays.asList("UNION", "INTERSECT", "EXCEPT")) {
-                        String sql = "SELECT * FROM table1 " + op + " SELECT * FROM table2 " + op + " SELECT * FROM table3";
-
-                        assertPlan(sql, schema, nodeOrAnyChild(isInstanceOf(org.apache.calcite.rel.core.SetOp.class)
-                            .and(t1 == targetT.getSqlTypeName() ? input(0, nodeOrAnyChild(isInstanceOf(IgniteProject.class)).negate())
-                                : input(0, projectFromTable("TABLE1", "CAST($0):" + targetT, "$1")))
-                            .and(t2 == targetT.getSqlTypeName() ? input(1, nodeOrAnyChild(isInstanceOf(IgniteProject.class)).negate())
-                                : input(1, projectFromTable("TABLE2", "CAST($0):" + targetT, "$1")))
-                            .and(t3 == targetT.getSqlTypeName() ? input(2, nodeOrAnyChild(isInstanceOf(IgniteProject.class)).negate())
-                                : input(2, projectFromTable("TABLE3", "CAST($0):" + targetT, "$1")))
-                        ));
-                    }
-                }
-            }
-        }
-    }
-
-    /** */
-    @Test
-    public void testSetOpNumbersCastWithDifferentNullability() throws Exception {
         List<IgniteDistribution> distrs = Arrays.asList(IgniteDistributions.single(), IgniteDistributions.random(),
             IgniteDistributions.affinity(0, 1001, 0));
 
         for (IgniteDistribution d1 : distrs) {
             for (IgniteDistribution d2 : distrs) {
-                doTestSetOpNumbersCastWithDifferentNullability(d1, d2, true, true);
+                doTestSetOpNumbersCast(d1, d2, true, true);
 
-                doTestSetOpNumbersCastWithDifferentNullability(d1, d2, false, true);
+                doTestSetOpNumbersCast(d1, d2, false, true);
 
-                doTestSetOpNumbersCastWithDifferentNullability(d1, d2, false, false);
+                doTestSetOpNumbersCast(d1, d2, false, false);
             }
         }
     }
 
     /** */
-    private void doTestSetOpNumbersCastWithDifferentNullability(
+    private void doTestSetOpNumbersCast(
         IgniteDistribution distr1,
         IgniteDistribution distr2,
         boolean nullable1,
         boolean nullable2
     ) throws Exception {
-        IgniteSchema schema = new IgniteSchema("PUBLIC");
+        IgniteSchema schema = new IgniteSchema(DEFAULT_SCHEMA);
 
         IgniteTypeFactory f = Commons.typeFactory();
 

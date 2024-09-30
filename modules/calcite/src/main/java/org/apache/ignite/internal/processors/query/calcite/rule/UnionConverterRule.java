@@ -53,7 +53,7 @@ public class UnionConverterRule extends RelRule<UnionConverterRule.Config> {
         RelTraitSet traits = cluster.traitSetOf(IgniteConvention.INSTANCE);
         List<RelNode> inputs = Commons.transform(union.getInputs(), input -> convert(input, traits));
 
-        inputs = Commons.castInputsToLeastRestrictiveTypeIfNeeded(inputs, cluster, traits);
+        inputs = Commons.castToLeastRestrictiveIfRequired(inputs, cluster, traits);
 
         RelNode res = new IgniteUnionAll(cluster, traits, inputs);
 
