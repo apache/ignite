@@ -278,8 +278,8 @@ public class TcpDiscoveryNetworkIssuesTest extends GridCommonAbstractTest {
         // This node suspects its next failed.
         Ignite doubtNode0 = startGrid(0);
 
-        // Simulates freezed threads on node 1 but answering sockets. I.e. Soccket#connect() works to node 1 but
-        // reading anything with Socker#read() from it would fail with the timeout.
+        // Simulates freezed threads on node 1 but answering sockets. I.e. Socket#connect() works to node 1 but
+        // reading anything with Socket#read() from it would fail with the timeout.
         specialSpi = new TestDiscoverySpi();
 
         // Node simulated 'freezed'. Can accept connections (socket accept) but won't write anything to a discovery socket.

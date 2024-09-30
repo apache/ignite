@@ -7256,10 +7256,10 @@ class ServerImpl extends TcpDiscoveryImpl {
         }
 
         /**
-         * Asynchronously searches for an alive address of the previous node using a maximal timeout.
+         * Asynchronously searches for an alive address of a node using a maximal timeout.
          *
          * @param node Node to ping.
-         * @param timeout Overal operation timeout.
+         * @param timeout Overall operation timeout.
          * @return An address successfully connected to. {@code Null} if no alive address was detected within the timeout.
          * @see #pingNode(InetSocketAddress, UUID, UUID, long)
          */
