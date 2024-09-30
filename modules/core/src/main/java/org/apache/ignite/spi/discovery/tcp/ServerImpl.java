@@ -819,7 +819,7 @@ class ServerImpl extends TcpDiscoveryImpl {
      * @param addr Address of the node.
      * @param nodeId Node ID to ping. In case when client node ID is not null this node ID is an ID of the router node.
      * @param clientNodeId Client node ID.
-     * @param maxTime Maxinal time threshold in nanoseconds on operation. If 0, a default timeout based on {@link TcpDiscoverySpi} is used.
+     * @param timeout Timeout on operation in milliseconds. If 0, a value based on {@link TcpDiscoverySpi} is used.
      * @return ID of the remote node and "client exists" flag if node alive or {@code null} if the remote node has
      *         left a topology during the ping process.
      * @throws IgniteCheckedException If an error occurs.
@@ -828,16 +828,14 @@ class ServerImpl extends TcpDiscoveryImpl {
         InetSocketAddress addr,
         @Nullable UUID nodeId,
         @Nullable UUID clientNodeId,
-        long maxTime
+        long timeout
     ) throws IgniteCheckedException {
         assert addr != null;
-        assert maxTime >= 0;
+        assert timeout >= 0;
 
-        long timeout = maxTime == 0 ? spi.failureDetectionTimeout() : U.nanosToMillis(maxTime - System.nanoTime());
-
-        IgniteSpiOperationTimeoutHelper timeoutHelper = maxTime == 0
+        IgniteSpiOperationTimeoutHelper timeoutHelper = timeout == 0
             ? new IgniteSpiOperationTimeoutHelper(spi, clientNodeId == null)
-            : new IgniteSpiOperationTimeoutHelper(maxTime);
+            : new IgniteSpiOperationTimeoutHelper(timeout);
 
         UUID locNodeId = getLocalNodeId();
 
@@ -939,9 +937,9 @@ class ServerImpl extends TcpDiscoveryImpl {
                         }
 
                         if (IgniteSpiOperationTimeoutHelper.checkFailureTimeoutReached(e) && (spi.failureDetectionTimeoutEnabled()
-                            || maxTime != 0)) {
+                            || timeout != 0)) {
                             log.warning("Failed to ping node [nodeId=" + nodeId + "]. Reached the timeout " +
-                                timeout + "ms. Cause: " + e.getMessage());
+                                (timeout == 0 ? spi.failureDetectionTimeout() : timeout) + "ms. Cause: " + e.getMessage());
 
                             break;
                         }
@@ -7266,7 +7264,7 @@ class ServerImpl extends TcpDiscoveryImpl {
          * @see #pingNode(InetSocketAddress, UUID, UUID, long)
          */
         private InetSocketAddress checkConnection(TcpDiscoveryNode node, int timeout) {
-            long maxTimeNanos = System.nanoTime() + U.millisToNanos(timeout);
+            IgniteSpiOperationTimeoutHelper timeoutHelper = new IgniteSpiOperationTimeoutHelper(timeout);
 
             AtomicReference<InetSocketAddress> liveAddrHolder = new AtomicReference<>();
 
@@ -7299,9 +7297,7 @@ class ServerImpl extends TcpDiscoveryImpl {
 
                             try {
                                 if (liveAddrHolder.get() != null) {
-                                    long curMaxTimeNanos = Math.min(maxTimeNanos, System.nanoTime() + U.millisToNanos(perAddrTimeout));
-
-                                    UUID id = pingNode(addr, node.id(), null, curMaxTimeNanos).get1();
+                                    UUID id = pingNode(addr, node.id(), null, timeoutHelper.nextTimeoutChunk(perAddrTimeout)).get1();
 
                                     assert id == null || id.equals(node.id());
 

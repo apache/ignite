@@ -77,12 +77,12 @@ public class IgniteSpiOperationTimeoutHelper {
     /**
      * Creates timeout helper with an absolute time threshold. Sets {@code timeoutEnabled} to {@code false}.
      *
-     * @param absoluteThreshold Absolute time threshold (nanos) which must not be reached. Ignored if negative or 0.
+     * @param timeout Timeout in milliseconds.
      */
-    public IgniteSpiOperationTimeoutHelper(long absoluteThreshold) {
+    public IgniteSpiOperationTimeoutHelper(long timeout) {
         timeoutEnabled = false;
 
-        timeoutThreshold = absoluteThreshold;
+        timeoutThreshold = System.nanoTime() + U.millisToNanos(timeout);
     }
 
     /**
