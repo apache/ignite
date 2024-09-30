@@ -2306,19 +2306,21 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
                                     if (!F.isEmpty(txEntry.entryProcessors()))
                                         val = txEntry.applyEntryProcessors(val);
 
-                                    cacheCtx.addResult(map,
-                                        key,
-                                        val,
-                                        skipVals,
-                                        keepCacheObjects,
-                                        deserializeBinary,
-                                        false,
-                                        getRes,
-                                        readVer,
-                                        0,
-                                        0,
-                                        needVer,
-                                        U.deploymentClassLoader(cctx.kernalContext(), deploymentLdrId));
+                                    if (val != null) {
+                                        cacheCtx.addResult(map,
+                                            key,
+                                            val,
+                                            skipVals,
+                                            keepCacheObjects,
+                                            deserializeBinary,
+                                            false,
+                                            getRes,
+                                            readVer,
+                                            0,
+                                            0,
+                                            needVer,
+                                            U.deploymentClassLoader(cctx.kernalContext(), deploymentLdrId));
+                                    }
                                 }
                                 else
                                     missed.put(key, txEntry.cached().version());
@@ -3883,7 +3885,6 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
             isolation,
             createTtl,
             accessTtl,
-            CU.empty0(),
             skipStore,
             keepBinary);
 
