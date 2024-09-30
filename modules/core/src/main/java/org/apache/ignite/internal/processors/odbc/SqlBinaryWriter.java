@@ -63,23 +63,16 @@ public class SqlBinaryWriter extends BinaryWriterExImpl {
             return;
         }
 
-        int readLength;
-        int writtenLength = 0;
-        byte[] buf = new byte[DEFAULT_BUFFER_SIZE];
-
         out.unsafeEnsure(1 + 4);
         out.unsafeWriteByte(GridBinaryMarshaller.BYTE_ARR);
         out.unsafeWriteInt(streamLength);
 
-        while (-1 != (readLength = in.read(buf)) && writtenLength < streamLength) {
-            out.writeByteArray(buf, 0, readLength);
-
-            writtenLength += readLength;
-        }
+        out.unsafeEnsure(streamLength);
+        int writtenLength = writeFromStream(in, out, streamLength);
 
         if (inputStreamWrapper.getLength() != writtenLength)
-            throw new IOException("Input stream length mismatch. [streamLength= " + streamLength + ", " +
-                    "writtenLength= " + writtenLength + "]");
+            throw new IOException("Input stream length mismatch. [declaredLength= " + inputStreamWrapper.getLength() + ", " +
+                    "realLength= " + writtenLength + "]");
     }
 
     /**
@@ -89,5 +82,31 @@ public class SqlBinaryWriter extends BinaryWriterExImpl {
      */
     public void writeBlobAsByteArray(Blob blob) throws SQLException, IOException {
         writeInputStreamAsByteArray(SqlInputStreamWrapper.withKnownLength(blob.getBinaryStream(1, blob.length()), (int)blob.length()));
+    }
+
+    /**
+     * Copy data from the input stream to the binary output stream.
+     *
+     * <p>Copies no more than {@code limit} bytes.
+     *
+     * @param in Input stream.
+     * @param out Output stream.
+     * @param limit Maximum bytes to copy.
+     * @return Count of bytes copied.
+     */
+    private int writeFromStream(InputStream in, BinaryOutputStream out, long limit) throws IOException {
+        int writtenLen = 0;
+
+        byte[] buf = new byte[DEFAULT_BUFFER_SIZE];
+
+        while (writtenLen < limit) {
+            int readLen = in.read(buf, 0, (int)Math.min(buf.length, limit - writtenLen));
+
+            out.writeByteArray(buf, 0, readLen);
+
+            writtenLen += readLen;
+        }
+
+        return writtenLen;
     }
 }

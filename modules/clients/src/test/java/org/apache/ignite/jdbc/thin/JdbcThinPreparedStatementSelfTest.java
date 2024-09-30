@@ -19,6 +19,7 @@ package org.apache.ignite.jdbc.thin;
 
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
+import java.io.InputStream;
 import java.io.OutputStream;
 import java.io.Reader;
 import java.io.Serializable;
@@ -1079,7 +1080,7 @@ public class JdbcThinPreparedStatementSelfTest extends JdbcThinAbstractSelfTest 
     public void testBlobInputStream() throws Exception {
         final int BLOB_SIZE = 123000;
 
-        byte[] bytes = new byte[BLOB_SIZE];
+        byte[] bytes = new byte[BLOB_SIZE + 100];
         new Random().nextBytes(bytes);
 
         try {
@@ -1097,7 +1098,7 @@ public class JdbcThinPreparedStatementSelfTest extends JdbcThinAbstractSelfTest 
             try (PreparedStatement stmt = conn.prepareStatement(SQL_PART + " where blobVal is not distinct from ?")) {
                 ByteArrayInputStream stream2 = new ByteArrayInputStream(bytes);
 
-                stmt.setBlob(1, stream2);
+                stmt.setBlob(1, stream2, BLOB_SIZE);
 
                 ResultSet rs = stmt.executeQuery();
 
