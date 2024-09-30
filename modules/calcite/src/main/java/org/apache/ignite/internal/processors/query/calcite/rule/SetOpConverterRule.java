@@ -134,7 +134,7 @@ public class SetOpConverterRule {
             RelTraitSet outTrait = cluster.traitSetOf(IgniteConvention.INSTANCE);
             List<RelNode> inputs = Util.transform(setOp.getInputs(), rel -> convert(rel, inTrait));
 
-            //inputs = Commons.castToLeastRestrictiveIfRequired(inputs, cluster, inTrait);
+            inputs = Commons.castToLeastRestrictiveIfRequired(inputs, cluster, inTrait);
 
             RelNode map = createMapNode(cluster, outTrait, inputs, setOp.all);
 

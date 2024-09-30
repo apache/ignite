@@ -497,7 +497,7 @@ public class SetOpIntegrationTest extends AbstractBasicIntegrationTest {
      *  TBL1: 30, 20, 30, 40, 50, 50
      *  TBL2: 10, 20, 33, 44, 50, 50
      *
-     * @param op       Operation like 'UNION' or 'INTERSECT'
+     * @param op Operation like 'UNION' or 'INTERSECT'
      * @param expected Expected result as integers.
      */
     private void doTestNumbersCastInSetOp(String op, int... expected) throws InterruptedException {
