@@ -912,7 +912,7 @@ class ServerImpl extends TcpDiscoveryImpl {
 
                         return t;
                     }
-                    catch (IOException | IgniteSpiOperationTimeoutException e) {
+                    catch (IOException | IgniteCheckedException e) {
                         if (nodeId != null && !nodeAlive(nodeId)) {
                             log.warning("Failed to ping node [nodeId=" + nodeId + "]. Node has left or is " +
                                 "leaving topology. Cause: " + e.getMessage());
