@@ -107,6 +107,23 @@ public class JdbcPreparedStatement extends JdbcStatement implements PreparedStat
     }
 
     /** {@inheritDoc} */
+    @Override public void close() throws SQLException {
+        if (args != null) {
+            try {
+                for (Object arg : args) {
+                    if (arg instanceof AutoCloseable)
+                        ((AutoCloseable)arg).close();
+                }
+            }
+            catch (Exception e) {
+                throw new SQLException(e);
+            }
+        }
+
+        super.close();
+    }
+
+    /** {@inheritDoc} */
     @Override public void setNull(int paramIdx, int sqlType) throws SQLException {
         setArgument(paramIdx, null);
     }

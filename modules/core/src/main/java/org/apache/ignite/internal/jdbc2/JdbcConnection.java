@@ -719,7 +719,7 @@ public class JdbcConnection implements Connection {
     @Override public Blob createBlob() throws SQLException {
         ensureNotClosed();
 
-        return new JdbcBlob();
+        return new JdbcBlob(getMaxInMemoryLobSize());
     }
 
     /** {@inheritDoc} */

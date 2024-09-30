@@ -38,6 +38,7 @@ import java.sql.Time;
 import java.sql.Timestamp;
 import java.util.Collections;
 import java.util.Date;
+import java.util.Random;
 import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -614,12 +615,15 @@ public class JdbcPreparedStatementSelfTest extends GridCommonAbstractTest {
         assertFalse(rs.next());
 
         stream.reset();
-
         stmt.setBinaryStream(1, stream, 1L);
         rs = stmt.executeQuery();
         assertTrue(rs.next());
         assertEquals(1, rs.getInt("id"));
         assertFalse(rs.next());
+
+        stream.reset();
+        stmt.setBinaryStream(1, stream, 10L);
+        assertThrows(null, () -> stmt.executeQuery(), SQLException.class, null);
 
         stmt.setBinaryStream(1, null, 0);
         rs = stmt.executeQuery();
@@ -665,34 +669,40 @@ public class JdbcPreparedStatementSelfTest extends GridCommonAbstractTest {
 
         Connection conn = DriverManager.getConnection(url);
 
+        String sql = "insert into TestObject(_key, id, blobVal) values (?, ?, ?)";
+
         byte[] bytes = new byte[] {0, 1, 2, 3, 4, 5, 6, 7, 8, 9};
 
         Set<String> existingTempStreamFiles = getTempStreamFiles();
         Set<String> newTempStreamFiles;
 
         try (conn) {
-            PreparedStatement stmtToBeLeftUnclosed = conn.prepareStatement("insert into TestObject(_key, id, blobVal) values (?, ?, ?)");
-
+            PreparedStatement stmtToBeLeftUnclosed = conn.prepareStatement(sql);
             stmtToBeLeftUnclosed.setInt(1, 3);
             stmtToBeLeftUnclosed.setInt(2, 3);
             stmtToBeLeftUnclosed.setBinaryStream(3, new ByteArrayInputStream(bytes));
 
-            PreparedStatement stmtToBeClosed = conn.prepareStatement("insert into TestObject(_key, id, blobVal) values (?, ?, ?)");
-
+            PreparedStatement stmtToBeClosed = conn.prepareStatement(sql);
             stmtToBeClosed.setInt(1, 4);
             stmtToBeClosed.setInt(2, 4);
             stmtToBeClosed.setBinaryStream(3, new ByteArrayInputStream(bytes));
 
+            PreparedStatement stmtToBeNotExecutedButClosed = conn.prepareStatement(sql);
+            stmtToBeNotExecutedButClosed.setInt(1, 5);
+            stmtToBeNotExecutedButClosed.setInt(2, 5);
+            stmtToBeNotExecutedButClosed.setBinaryStream(3, new ByteArrayInputStream(bytes));
+
             newTempStreamFiles = getTempStreamFiles();
             newTempStreamFiles.removeAll(existingTempStreamFiles);
-            assertEquals(2, newTempStreamFiles.size());
+            assertEquals(3, newTempStreamFiles.size());
 
             assertEquals(1, stmtToBeLeftUnclosed.executeUpdate());
             assertEquals(1, stmtToBeClosed.executeUpdate());
 
-            // Abandon the statement without closing it.
+            // Abandon the statements without closing it.
             stmtToBeLeftUnclosed = null;
 
+            stmtToBeNotExecutedButClosed.close();
             stmtToBeClosed.close();
 
             stmt = conn.prepareStatement("select * from TestObject where id = ?");
@@ -750,35 +760,129 @@ public class JdbcPreparedStatementSelfTest extends GridCommonAbstractTest {
         stmt = conn.prepareStatement("select * from TestObject where blobVal is not distinct from ?");
 
         Blob blob = conn.createBlob();
-
         blob.setBytes(1, new byte[] {1});
-
         stmt.setBlob(1, blob);
-
         ResultSet rs = stmt.executeQuery();
-
         assertTrue(rs.next());
         assertEquals(1, rs.getInt("id"));
         assertFalse(rs.next());
 
         Blob blob2 = conn.createBlob();
         stmt.setBlob(1, blob2);
-        try (OutputStream out = blob2.setBinaryStream(1)) {
+        blob2.setBytes(1, new byte[] {1});
+        rs = stmt.executeQuery();
+        assertTrue(rs.next());
+        assertEquals(1, rs.getInt("id"));
+        assertFalse(rs.next());
+
+        Blob blob3 = conn.createBlob();
+        stmt.setBlob(1, blob3);
+        try (OutputStream out = blob3.setBinaryStream(1)) {
             out.write(new byte[] {1});
         }
         rs = stmt.executeQuery();
+        assertTrue(rs.next());
+        assertEquals(1, rs.getInt("id"));
+        assertFalse(rs.next());
 
+        Blob blob4 = conn.createBlob();
+        stmt.setBlob(1, blob4);
+        try (OutputStream out = blob4.setBinaryStream(1)) {
+            out.write(1);
+        }
+        rs = stmt.executeQuery();
         assertTrue(rs.next());
         assertEquals(1, rs.getInt("id"));
         assertFalse(rs.next());
 
         stmt.setNull(1, BLOB);
-
         rs = stmt.executeQuery();
-
         assertTrue(rs.next());
         assertEquals(2, rs.getInt("id"));
         assertFalse(rs.next());
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    @Test
+    public void testBlobInputStream() throws Exception {
+        final int BLOB_SIZE = 123;
+
+        byte[] bytes = new byte[BLOB_SIZE + 100];
+        new Random().nextBytes(bytes);
+
+        try {
+            try (PreparedStatement stmt = conn.prepareStatement("insert into TestObject(_key, id, blobVal) values (?, ?, ?)")) {
+                ByteArrayInputStream stream1 = new ByteArrayInputStream(bytes);
+
+                stmt.setInt(1, 3);
+                stmt.setInt(2, 3);
+                stmt.setBlob(3, stream1, BLOB_SIZE);
+
+                assertEquals(1, stmt.executeUpdate());
+            }
+
+            try (PreparedStatement stmt = conn.prepareStatement("select * from TestObject where blobVal is not distinct from ?")) {
+                ByteArrayInputStream stream2 = new ByteArrayInputStream(bytes);
+
+                stmt.setBlob(1, stream2, BLOB_SIZE);
+
+                ResultSet rs = stmt.executeQuery();
+
+                assertTrue(rs.next());
+                assertEquals(3, rs.getInt("id"));
+                assertFalse(rs.next());
+            }
+        }
+        finally {
+            grid(0).cache(DEFAULT_CACHE_NAME).remove(3);
+        }
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    @Test
+    public void testBlobOnDiskMaterialized() throws Exception {
+        String url = CFG_URL_PREFIX + "maxInMemoryLobSize=5:" + URL_DEFAULT_PARAM;
+
+        Connection conn = DriverManager.getConnection(url);
+        conn.setSchema('"' + DEFAULT_CACHE_NAME + '"');
+
+        byte[] bytes = new byte[] {1, 2, 3, 4, 5, 6, 7, 8, 9};
+
+        try {
+            try (PreparedStatement stmt = conn.prepareStatement("insert into TestObject(_key, id, blobVal) values (?, ?, ?)")) {
+                Blob blob = conn.createBlob();
+
+                try (OutputStream outputStream = blob.setBinaryStream(1)) {
+                    outputStream.write(0);
+                    outputStream.write(bytes);
+                    outputStream.write(10);
+                    outputStream.write(bytes, 2, 2);
+                }
+
+                stmt.setInt(1, 3);
+                stmt.setInt(2, 3);
+                stmt.setBlob(3, blob);
+
+                assertEquals(1, stmt.executeUpdate());
+            }
+
+            try (PreparedStatement stmt = conn.prepareStatement("select * from TestObject where blobVal is not distinct from ?")) {
+                stmt.setBlob(1, new ByteArrayInputStream(new byte[] {0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 3, 4}));
+
+                ResultSet rs = stmt.executeQuery();
+
+                assertTrue(rs.next());
+                assertEquals(3, rs.getInt("id"));
+                assertFalse(rs.next());
+            }
+        }
+        finally {
+            grid(0).cache(DEFAULT_CACHE_NAME).remove(3);
+        }
     }
 
     /**

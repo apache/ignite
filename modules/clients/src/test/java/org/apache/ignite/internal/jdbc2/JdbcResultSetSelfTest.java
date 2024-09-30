@@ -696,6 +696,24 @@ public class JdbcResultSetSelfTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     @Test
+    public void testBlobNull() throws Exception {
+        ResultSet rs = stmt.executeQuery("select id, blobVal, clobVal from testObject where id = 2");
+
+        assertTrue(rs.next());
+
+        Blob blob = rs.getBlob("blobVal");
+        Assert.assertNull(blob);
+
+        blob = rs.getBlob(2);
+        Assert.assertNull(blob);
+
+        assertFalse(rs.next());
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    @Test
     public void testClob() throws Exception {
         ResultSet rs = stmt.executeQuery(SQL);
 
@@ -705,6 +723,24 @@ public class JdbcResultSetSelfTest extends GridCommonAbstractTest {
 
         clob = rs.getClob(24);
         Assert.assertEquals("str", clob.getSubString(1, (int)clob.length()));
+        assertFalse(rs.next());
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    @Test
+    public void testClobNull() throws Exception {
+        ResultSet rs = stmt.executeQuery("select id, blobVal, clobVal from testObject where id = 2");
+
+        assertTrue(rs.next());
+
+        Clob clob = rs.getClob("clobVal");
+        Assert.assertNull(clob);
+
+        clob = rs.getClob(3);
+        Assert.assertNull(clob);
+
         assertFalse(rs.next());
     }
 
@@ -722,6 +758,24 @@ public class JdbcResultSetSelfTest extends GridCommonAbstractTest {
 
         stream = rs.getBinaryStream(23);
         Assert.assertArrayEquals(stream.readAllBytes(), new byte[] {1});
+
+        assertFalse(rs.next());
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    @Test
+    public void testBinaryStreamNull() throws Exception {
+        ResultSet rs = stmt.executeQuery("select id, blobVal, clobVal from testObject where id = 2");
+
+        assertTrue(rs.next());
+
+        InputStream stream = rs.getBinaryStream("blobVal");
+        Assert.assertNull(stream);
+
+        stream = rs.getBinaryStream(2);
+        Assert.assertNull(stream);
 
         assertFalse(rs.next());
     }

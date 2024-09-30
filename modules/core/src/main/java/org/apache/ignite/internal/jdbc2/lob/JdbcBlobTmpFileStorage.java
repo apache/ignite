@@ -110,9 +110,6 @@ class JdbcBlobTmpFileStorage implements JdbcBlobStorage {
 
     /** {@inheritDoc} */
     @Override public int read(JdbcBlobBufferPointer pos, byte[] res, int off, int cnt) throws IOException {
-        if (pos.getPos() >= fileChannel.size())
-            return -1;
-
         int read = fileChannel.read(ByteBuffer.wrap(res, off, cnt), pos.getPos());
 
         if (read != -1)

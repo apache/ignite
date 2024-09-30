@@ -17,10 +17,6 @@
 
 package org.apache.ignite.internal.jdbc2;
 
-import java.io.ByteArrayOutputStream;
-import java.io.IOException;
-import java.io.InputStream;
-import java.sql.Blob;
 import java.sql.Connection;
 import java.sql.ResultSet;
 import java.sql.SQLException;
@@ -721,53 +717,38 @@ public class JdbcStatement implements Statement {
             return;
 
         for (int i = 0; i < args.size(); i++) {
+            byte[] bytes = null;
+
             try {
-                byte[] bytes = null;
-
                 if (args.get(i) instanceof SqlInputStreamWrapper) {
-                    SqlInputStreamWrapper inWrapper = (SqlInputStreamWrapper)args.get(i);
+                    SqlInputStreamWrapper wrapper = (SqlInputStreamWrapper)args.get(i);
 
-                    bytes = getBytes(inWrapper);
+                    int streamLen = wrapper.getLength();
+
+                    bytes = new byte[streamLen];
+
+                    int readLen;
+
+                    readLen = wrapper.getInputStream().read(bytes);
+
+                    wrapper.close();
+
+                    if (readLen != streamLen)
+                        throw new SQLException("Input stream length mismatch. [declaredLength=" + streamLen + ", " +
+                                "actualLength=" + readLen + "]");
                 }
-                else if (args.get(i) instanceof Blob) {
-                    Blob blob = (Blob)args.get(i);
+                else if (args.get(i) instanceof JdbcBlob) {
+                    JdbcBlob blob = (JdbcBlob)args.get(i);
 
-                    SqlInputStreamWrapper inWrapper = SqlInputStreamWrapper.withKnownLength(
-                            blob.getBinaryStream(1, blob.length()), (int)blob.length());
-
-                    bytes = getBytes(inWrapper);
+                    bytes = blob.getBytes(1, (int)blob.length());
                 }
-
-                if (bytes != null)
-                    args.set(i, bytes);
             }
-            catch (IOException e) {
+            catch (Exception e) {
                 throw new SQLException("Failed to read from InputStream or Blob argument, parameter index = " + (i + 1), e);
             }
+
+            if (bytes != null)
+                args.set(i, bytes);
         }
-    }
-
-    /**
-     * Get bytes from InputStream enclosed in wrapper.
-     *
-     * @param inputStreamWrapper InputStream wrapper.
-     * @return Bytes from InputStream as a byte array.
-     * @throws IOException On error.
-     */
-    private byte[] getBytes(SqlInputStreamWrapper inputStreamWrapper) throws IOException {
-        InputStream in = inputStreamWrapper.getInputStream();
-        int streamLength = inputStreamWrapper.getLength();
-
-        ByteArrayOutputStream out = new ByteArrayOutputStream(streamLength) {
-            /** {@inheritDoc} */
-            @Override public synchronized byte[] toByteArray() {
-                // Intentionally do not create array copy to save memory.
-                return buf;
-            }
-        };
-
-        in.transferTo(out);
-
-        return out.toByteArray();
     }
 }

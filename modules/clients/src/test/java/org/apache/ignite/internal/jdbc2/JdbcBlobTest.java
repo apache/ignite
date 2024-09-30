@@ -120,9 +120,12 @@ public class JdbcBlobTest {
         blob.setBytes(16, new byte[] {15});
 
         InputStream is = blob.getBinaryStream();
-
         byte[] res = readBytes(is);
+        assertArrayEquals(arr, res);
 
+        is = blob.getBinaryStream();
+        res = new byte[16];
+        assertEquals(16, is.read(res, 0, 100));
         assertArrayEquals(arr, res);
 
         blob.free();

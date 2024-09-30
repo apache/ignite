@@ -57,12 +57,6 @@ public class SqlBinaryWriter extends BinaryWriterExImpl {
         InputStream in = inputStreamWrapper.getInputStream();
         int streamLength = inputStreamWrapper.getLength();
 
-        if (in == null) {
-            out.writeByte(GridBinaryMarshaller.NULL);
-
-            return;
-        }
-
         out.unsafeEnsure(1 + 4);
         out.unsafeWriteByte(GridBinaryMarshaller.BYTE_ARR);
         out.unsafeWriteInt(streamLength);
@@ -71,8 +65,8 @@ public class SqlBinaryWriter extends BinaryWriterExImpl {
         int writtenLength = writeFromInputStream(in, out, streamLength);
 
         if (inputStreamWrapper.getLength() != writtenLength)
-            throw new IOException("Input stream length mismatch. [declaredLength= " + inputStreamWrapper.getLength() + ", " +
-                    "realLength= " + writtenLength + "]");
+            throw new IOException("Input stream length mismatch. [declaredLength=" + inputStreamWrapper.getLength() + ", " +
+                    "actualLength=" + writtenLength + "]");
     }
 
     /**
@@ -95,13 +89,12 @@ public class SqlBinaryWriter extends BinaryWriterExImpl {
      * @return Count of bytes copied.
      */
     private int writeFromInputStream(InputStream in, BinaryOutputStream out, long limit) throws IOException {
-        int writtenLen = 0;
+        int readLen, writtenLen = 0;
 
         byte[] buf = new byte[DEFAULT_BUFFER_SIZE];
 
-        while (writtenLen < limit) {
-            int readLen = in.read(buf, 0, (int)Math.min(buf.length, limit - writtenLen));
-
+        while (-1 != (readLen = in.read(buf, 0, (int)Math.min(buf.length, limit - writtenLen)))
+                && writtenLen < limit) {
             out.writeByteArray(buf, 0, readLen);
 
             writtenLen += readLen;

@@ -123,10 +123,13 @@ public class SqlInputStreamWrapper implements AutoCloseable {
     }
 
     /** {@inheritDoc} */
-    @Override public void close() throws Exception {
-        // Do not close the input stream if it was passed from outside.
-        if (data != null && stream != null)
-            stream.close();
+    @Override public void close() throws IOException {
+        if (data != null) {
+            if (stream != null)
+                stream.close();
+
+            data.close();
+        }
     }
 
     /**

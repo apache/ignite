@@ -50,6 +50,7 @@ import static org.apache.ignite.cache.CacheMode.PARTITIONED;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
 import static org.apache.ignite.testframework.GridTestUtils.assertThrows;
 import static org.apache.ignite.testframework.GridTestUtils.assertThrowsAnyCause;
+import static org.junit.Assert.assertArrayEquals;
 
 /**
  * Result set test.
@@ -617,6 +618,38 @@ public class JdbcThinResultSetSelfTest extends JdbcThinAbstractSelfTest {
         Assert.assertArrayEquals(blob.getBytes(1, (int)blob.length()), new byte[] {1});
 
         assertFalse(rs.next());
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    @Test
+    public void testBlobOnDiskMaterialized() throws Exception {
+        String url = URL + "?maxInMemoryLobSize=5";
+
+        Connection conn = DriverManager.getConnection(url);
+        conn.setSchema('"' + DEFAULT_CACHE_NAME + '"');
+
+        Statement stmt = conn.createStatement();
+
+        ResultSet rs = stmt.executeQuery(SQL);
+
+        assertTrue(rs.next());
+
+        Blob blob = rs.getBlob("blobVal");
+        Assert.assertArrayEquals(blob.getBytes(1, (int)blob.length()), new byte[] {1});
+
+        InputStream stream = blob.getBinaryStream();
+        blob.setBytes(2, new byte[] {2, 3, 4, 5, 6, 7, 8, 9, 10});
+
+        assertEquals(2, stream.skip(2));
+        assertEquals(3, stream.read());
+        byte[] res = new byte[3];
+        stream.read(res);
+        assertArrayEquals(new byte[] {4, 5, 6}, res);
+        assertEquals(4, stream.skip(4));
+        assertEquals(-1, stream.read());
+        assertEquals(-1, stream.read(res));
     }
 
     /**

@@ -1301,7 +1301,9 @@ public class JdbcThinResultSet implements ResultSet {
     @Override public Blob getBlob(int colIdx) throws SQLException {
         byte[] bytes = getBytes(colIdx);
 
-        return bytes != null ? new JdbcBlob(bytes) : null;
+        return bytes != null
+                ? new JdbcBlob(stmt.connection().connectionProperties().getMaxInMemoryLobSize(), bytes)
+                : null;
     }
 
     /** {@inheritDoc} */
@@ -1334,7 +1336,9 @@ public class JdbcThinResultSet implements ResultSet {
     @Override public Blob getBlob(String colLb) throws SQLException {
         byte[] bytes = getBytes(colLb);
 
-        return bytes != null ? new JdbcBlob(bytes) : null;
+        return bytes != null
+                ? new JdbcBlob(stmt.connection().connectionProperties().getMaxInMemoryLobSize(), bytes)
+                : null;
     }
 
     /** {@inheritDoc} */
