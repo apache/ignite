@@ -151,7 +151,8 @@ public class JdbcThinBlobTestApplication extends IgniteAwareApplication {
 
         byte[] buf = new byte[8192];
 
-        while (-1 != (readLen = in.read(buf, 0, (int)Math.min(buf.length, limit - writtenLen)))) {
+        while (-1 != (readLen = in.read(buf, 0, (int)Math.min(buf.length, limit - writtenLen)))
+                && writtenLen < limit) {
             out.write(buf, 0, readLen);
 
             writtenLen += readLen;

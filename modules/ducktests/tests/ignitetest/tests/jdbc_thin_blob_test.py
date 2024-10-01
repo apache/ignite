@@ -36,7 +36,7 @@ class JdbcThinBlobTest(IgniteTest):
     @cluster(num_nodes=4)
     @ignite_versions(str(DEV_BRANCH))
     @defaults(tx=[True, False], max_inmem=[None, 2*1024*1024*1024], mode=["blob", "stream"])
-    @parametrize(blob_size=1*1024*1024*1024, server_heap=12, insert_heap=6, select_heap=6)
+    @parametrize(blob_size=1*1024*1024*1024, server_heap=12, insert_heap=10, select_heap=10)
     def test_jdbc_thin_blob(self, ignite_version, blob_size,
                             mode,
                             server_heap, insert_heap, select_heap,
