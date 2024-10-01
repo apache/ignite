@@ -689,10 +689,8 @@ public class JdbcThinConnection implements Connection {
             case Connection.TRANSACTION_READ_COMMITTED:
             case Connection.TRANSACTION_REPEATABLE_READ:
             case Connection.TRANSACTION_SERIALIZABLE:
-                if (txSupportedOnServer()) {
-                    if (!defaultIo().isIsolationLevelSupported(isolation(level)))
-                        throw new SQLException("Requested isolation level not supported by the server: " + level);
-                }
+                if (txSupportedOnServer() && !defaultIo().isIsolationLevelSupported(isolation(level)))
+                    throw new SQLException("Requested isolation level not supported by the server: " + level);
 
                 break;
 
