@@ -493,7 +493,7 @@ public class SetOpIntegrationTest extends AbstractBasicIntegrationTest {
     }
 
     /**
-     * Tests SetOp on numerics of different type with values:
+     * Tests 'SELECT TBL1.val SetOp TBL2.val' where TBL1 has `INT val` and TBL2 has 'val' of different numeric type.
      *  TBL1: 30, 20, 30, 40, 50, 50
      *  TBL2: 10, 20, 33, 44, 50, 50
      *
