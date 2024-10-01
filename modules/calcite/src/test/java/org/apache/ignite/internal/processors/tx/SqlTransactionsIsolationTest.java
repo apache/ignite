@@ -239,7 +239,6 @@ public class SqlTransactionsIsolationTest extends GridCommonAbstractTest {
                             for (boolean mutli : new boolean[] {false, true}) {
                                 for (TransactionConcurrency txConcurrency : TransactionConcurrency.values()) {
                                     ExecutorType[] nodeExecTypes = {ExecutorType.SERVER, ExecutorType.CLIENT};
-
                                     ExecutorType[] thinExecTypes;
 
                                     if (modify == SQL) {
@@ -310,7 +309,6 @@ public class SqlTransactionsIsolationTest extends GridCommonAbstractTest {
         thinCliCfg = new ClientConfiguration()
             .setAddresses(Config.SERVER)
             .setPartitionAwarenessEnabled(partitionAwareness);
-
         srv = startGrids(gridCnt);
         cli = startClientGrid("client");
         thinCli = Ignition.startClient(thinCliCfg);
@@ -504,7 +502,6 @@ public class SqlTransactionsIsolationTest extends GridCommonAbstractTest {
 
                                 if (type != ExecutorType.THIN_JDBC)
                                     assertNull(select(id, CACHE));
-
                                 assertNull(select(id, SQL));
                             };
 
@@ -717,7 +714,6 @@ public class SqlTransactionsIsolationTest extends GridCommonAbstractTest {
             for (int i = 4; i <= (multi ? 6 : 4); i++) {
                 if (type != ExecutorType.THIN_JDBC)
                     assertNull(CACHE.name(), select(i, CACHE));
-
                 assertNull(SQL.name(), select(i, SQL));
             }
         };
@@ -726,7 +722,6 @@ public class SqlTransactionsIsolationTest extends GridCommonAbstractTest {
             for (int i = 4; i <= (multi ? 6 : 4); i++) {
                 if (type != ExecutorType.THIN_JDBC)
                     assertEquals(CACHE.name(), JOHN, select(i, CACHE));
-
                 assertEquals(SQL.name(), JOHN, select(i, SQL));
             }
         };
@@ -771,7 +766,6 @@ public class SqlTransactionsIsolationTest extends GridCommonAbstractTest {
             for (int i = 1; i <= (multi ? 3 : 1); i++) {
                 if (type != ExecutorType.THIN_JDBC)
                     assertEquals(JOHN, select(i, CACHE));
-
                 assertEquals(JOHN, select(i, SQL));
             }
         };
@@ -780,7 +774,6 @@ public class SqlTransactionsIsolationTest extends GridCommonAbstractTest {
             for (int i = 1; i <= (multi ? 3 : 1); i++) {
                 if (type != ExecutorType.THIN_JDBC)
                     assertEquals(KYLE, select(i, CACHE));
-
                 assertEquals(KYLE, select(i, SQL));
             }
         };
@@ -827,7 +820,6 @@ public class SqlTransactionsIsolationTest extends GridCommonAbstractTest {
             for (int i = 1; i <= (multi ? 3 : 1); i++) {
                 if (type != ExecutorType.THIN_JDBC)
                     assertEquals(JOHN, select(i, CACHE));
-
                 assertEquals(JOHN, select(i, SQL));
             }
         };
@@ -836,9 +828,7 @@ public class SqlTransactionsIsolationTest extends GridCommonAbstractTest {
             for (int i = 1; i <= (multi ? 3 : 1); i++) {
                 if (type != ExecutorType.THIN_JDBC)
                     assertNull(select(i, CACHE));
-
                 assertNull(select(i, SQL));
-
             }
         };
 
