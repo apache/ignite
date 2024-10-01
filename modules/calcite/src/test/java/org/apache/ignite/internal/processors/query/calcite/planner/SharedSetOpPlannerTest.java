@@ -21,6 +21,7 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.function.Predicate;
 import org.apache.calcite.rel.RelNode;
+import org.apache.calcite.rel.core.SetOp;
 import org.apache.calcite.rel.core.Union;
 import org.apache.calcite.rel.type.RelDataType;
 import org.apache.calcite.rel.type.RelDataTypeFactory;
@@ -115,8 +116,8 @@ public class SharedSetOpPlannerTest extends AbstractPlannerTest {
 
         IgniteTypeFactory f = Commons.typeFactory();
 
-        SqlTypeName[] numTypes = new SqlTypeName[] {SqlTypeName.TINYINT, SqlTypeName.SMALLINT, SqlTypeName.REAL, SqlTypeName.FLOAT,
-            SqlTypeName.INTEGER, SqlTypeName.BIGINT, SqlTypeName.DOUBLE, SqlTypeName.DECIMAL};
+        SqlTypeName[] numTypes = new SqlTypeName[] {SqlTypeName.TINYINT, SqlTypeName.SMALLINT, SqlTypeName.REAL,
+            SqlTypeName.FLOAT, SqlTypeName.INTEGER, SqlTypeName.BIGINT, SqlTypeName.DOUBLE, SqlTypeName.DECIMAL};
 
         boolean notNull = !nullable1 && !nullable2;
 
@@ -144,7 +145,7 @@ public class SharedSetOpPlannerTest extends AbstractPlannerTest {
                     else {
                         RelDataType targetT = f.leastRestrictive(Arrays.asList(f.createSqlType(t1), f.createSqlType(t2)));
 
-                        assertPlan(sql, schema, nodeOrAnyChild(isInstanceOf(org.apache.calcite.rel.core.SetOp.class)
+                        assertPlan(sql, schema, nodeOrAnyChild(isInstanceOf(SetOp.class)
                             .and(t1 == targetT.getSqlTypeName() ? input(0, nodeOrAnyChild(isInstanceOf(IgniteProject.class)).negate())
                                 : input(0, projectFromTable("TABLE1", "CAST($0):" + targetT + (notNull ? " NOT NULL" : ""), "$1")))
                             .and(t2 == targetT.getSqlTypeName() ? input(1, nodeOrAnyChild(isInstanceOf(IgniteProject.class)).negate())
