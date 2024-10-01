@@ -363,9 +363,12 @@ public class JdbcThinConnection implements Connection {
 
     /** */
     boolean txSupportedOnServer() {
-        return (singleIo != null || !ios.isEmpty()) && (partitionAwareness
-            ? ios.firstEntry().getValue().isTxAwareQueriesSupported()
-            : singleIo.isTxAwareQueriesSupported());
+        return (singleIo != null || !ios.isEmpty()) && defaultIo().isTxAwareQueriesSupported();
+    }
+
+    /** */
+    private JdbcThinTcpIo defaultIo() {
+        return partitionAwareness ? ios.firstEntry().getValue() : singleIo;
     }
 
     /** */
@@ -677,14 +680,19 @@ public class JdbcThinConnection implements Connection {
         ensureNotClosed();
 
         switch (level) {
-            case Connection.TRANSACTION_READ_COMMITTED:
             case Connection.TRANSACTION_NONE:
                 break;
             case Connection.TRANSACTION_READ_UNCOMMITTED:
-            case Connection.TRANSACTION_REPEATABLE_READ:
-            case Connection.TRANSACTION_SERIALIZABLE:
                 if (txSupportedOnServer())
                     throw new SQLException("Requested isolation level not supported by the server: " + level);
+
+            case Connection.TRANSACTION_READ_COMMITTED:
+            case Connection.TRANSACTION_REPEATABLE_READ:
+            case Connection.TRANSACTION_SERIALIZABLE:
+                if (txSupportedOnServer()) {
+                    if (!defaultIo().isIsolationLevelSupported(isolation(level)))
+                        throw new SQLException("Requested isolation level not supported by the server: " + level);
+                }
 
                 break;
 
@@ -2620,21 +2628,21 @@ public class JdbcThinConnection implements Connection {
         public int txId() {
             return txId;
         }
+    }
 
-        /** */
-        private TransactionIsolation isolation(int jdbcIsolation) throws SQLException {
-            switch (jdbcIsolation) {
-                case TRANSACTION_READ_COMMITTED:
-                    return TransactionIsolation.READ_COMMITTED;
-                case TRANSACTION_REPEATABLE_READ:
-                    return TransactionIsolation.REPEATABLE_READ;
-                case TRANSACTION_SERIALIZABLE:
-                    return TransactionIsolation.SERIALIZABLE;
-                case TRANSACTION_NONE:
-                case TRANSACTION_READ_UNCOMMITTED:
-                default:
-                    throw new SQLException("Transaction level not supported by the server: " + jdbcIsolation);
-            }
+    /** */
+    private TransactionIsolation isolation(int jdbcIsolation) throws SQLException {
+        switch (jdbcIsolation) {
+            case TRANSACTION_READ_COMMITTED:
+                return TransactionIsolation.READ_COMMITTED;
+            case TRANSACTION_REPEATABLE_READ:
+                return TransactionIsolation.REPEATABLE_READ;
+            case TRANSACTION_SERIALIZABLE:
+                return TransactionIsolation.SERIALIZABLE;
+            case TRANSACTION_NONE:
+            case TRANSACTION_READ_UNCOMMITTED:
+            default:
+                throw new SQLException("Transaction level not supported by the server: " + jdbcIsolation);
         }
     }
 }

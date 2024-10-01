@@ -39,6 +39,7 @@ import org.apache.ignite.cache.query.BulkLoadContextCursor;
 import org.apache.ignite.cache.query.FieldsQueryCursor;
 import org.apache.ignite.cache.query.QueryCancelledException;
 import org.apache.ignite.cluster.ClusterNode;
+import org.apache.ignite.configuration.TransactionConfiguration;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.IgniteVersionUtils;
 import org.apache.ignite.internal.ThinProtocolFeature;
@@ -80,6 +81,7 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.internal.util.worker.GridWorker;
 import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.marshaller.MarshallerContext;
+import org.apache.ignite.transactions.TransactionIsolation;
 import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.internal.processors.odbc.jdbc.JdbcBulkLoadBatchRequest.CMD_CONTINUE;
@@ -514,8 +516,15 @@ public class JdbcRequestHandler implements ClientListenerRequestHandler, ClientT
             writer.writeUuid(connCtx.kernalContext().localNodeId());
 
         // Write all features supported by the node.
-        if (protocolVer.compareTo(VER_2_9_0) >= 0)
+        if (protocolVer.compareTo(VER_2_9_0) >= 0) {
             writer.writeByteArray(ThinProtocolFeature.featuresAsBytes(connCtx.protocolContext().features()));
+
+            if (connCtx.protocolContext().features().contains(JdbcThinFeature.TX_AWARE_QUERIES)) {
+                writer.writeIntArray(TransactionConfiguration.TX_AWARE_QUERIES_SUPPORTED_MODES.stream()
+                    .mapToInt(TransactionIsolation::ordinal)
+                    .toArray());
+            }
+        }
     }
 
     /**

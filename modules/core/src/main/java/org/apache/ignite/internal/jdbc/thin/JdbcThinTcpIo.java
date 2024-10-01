@@ -23,13 +23,16 @@ import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.net.Socket;
 import java.sql.SQLException;
+import java.util.Arrays;
 import java.util.EnumSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Random;
+import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.atomic.AtomicLong;
+import java.util.stream.Collectors;
 
 import javax.cache.configuration.Factory;
 
@@ -67,6 +70,7 @@ import org.apache.ignite.internal.util.ipc.loopback.IpcClientTcpEndpoint;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteProductVersion;
+import org.apache.ignite.transactions.TransactionIsolation;
 
 import static java.lang.Math.abs;
 import static org.apache.ignite.internal.jdbc.thin.JdbcThinUtils.nullableBooleanToByte;
@@ -160,6 +164,12 @@ public class JdbcThinTcpIo {
     /** Protocol context (version, supported features, etc). */
     private JdbcProtocolContext protoCtx;
 
+    /**
+     * Transaction modes supported by the server.
+     * @see org.apache.ignite.configuration.TransactionConfiguration#TX_AWARE_QUERIES_SUPPORTED_MODES
+     */
+    private Set<TransactionIsolation> isolationLevelsSupported;
+
     /** Binary context for serialization/deserialization of binary objects. */
     private final BinaryContext ctx;
 
@@ -245,6 +255,8 @@ public class JdbcThinTcpIo {
         nodeId = handshakeRes.nodeId();
 
         srvProtoVer = handshakeRes.serverProtocolVersion();
+
+        isolationLevelsSupported = handshakeRes.isolationLevelsSupported();
 
         protoCtx = new JdbcProtocolContext(srvProtoVer, handshakeRes.features(), connProps.isKeepBinary());
     }
@@ -357,6 +369,12 @@ public class JdbcThinTcpIo {
                     EnumSet<JdbcThinFeature> features = JdbcThinFeature.enumSet(srvFeatures);
 
                     handshakeRes.features(features);
+
+                    if (features.contains(JdbcThinFeature.TX_AWARE_QUERIES)) {
+                        handshakeRes.isolationLevelsSupported(Arrays.stream(reader.readIntArray())
+                            .mapToObj(TransactionIsolation::fromOrdinal)
+                            .collect(Collectors.toSet()));
+                    }
                 }
             }
             else {
@@ -698,6 +716,14 @@ public class JdbcThinTcpIo {
      */
     boolean isTxAwareQueriesSupported() {
         return protoCtx.isFeatureSupported(JdbcThinFeature.TX_AWARE_QUERIES);
+    }
+
+    /**
+     * @param isolation Transaction isolation level.
+     * @return {@code True} if transaction isolation mode supported by the server, {@code false} otherwise.
+     */
+    boolean isIsolationLevelSupported(TransactionIsolation isolation) {
+        return isolationLevelsSupported.contains(isolation);
     }
 
     /**
