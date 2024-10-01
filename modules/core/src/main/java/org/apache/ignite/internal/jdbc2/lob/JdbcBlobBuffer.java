@@ -151,10 +151,13 @@ public class JdbcBlobBuffer {
 
     /**
      * Switch to file mode.
-     * <p>
-     * Copies all data from the in-memory storage to the temporary file storage.
+     *
+     * <p>Copies all data from the in-memory storage to the temporary file storage.
      */
     private void switchToFileStorage() throws IOException {
+        if (storage instanceof JdbcBlobTmpFileStorage)
+            return;
+
         JdbcBlobStorage newStorage = new JdbcBlobTmpFileStorage(getInputStream());
 
         storage.close();
