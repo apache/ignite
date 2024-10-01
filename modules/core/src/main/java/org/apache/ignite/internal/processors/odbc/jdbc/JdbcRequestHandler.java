@@ -54,10 +54,10 @@ import org.apache.ignite.internal.processors.cache.DynamicCacheDescriptor;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.QueryCursorImpl;
 import org.apache.ignite.internal.processors.cache.binary.CacheObjectBinaryProcessorImpl;
-import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxLocal;
 import org.apache.ignite.internal.processors.cache.query.IgniteQueryErrorCode;
 import org.apache.ignite.internal.processors.cache.query.QueryCursorEx;
 import org.apache.ignite.internal.processors.cache.query.SqlFieldsQueryEx;
+import org.apache.ignite.internal.processors.odbc.ClientListenerAbstractConnectionContext;
 import org.apache.ignite.internal.processors.odbc.ClientListenerProtocolVersion;
 import org.apache.ignite.internal.processors.odbc.ClientListenerRequest;
 import org.apache.ignite.internal.processors.odbc.ClientListenerRequestHandler;
@@ -66,7 +66,7 @@ import org.apache.ignite.internal.processors.odbc.ClientListenerResponseSender;
 import org.apache.ignite.internal.processors.odbc.SqlListenerUtils;
 import org.apache.ignite.internal.processors.odbc.SqlStateCode;
 import org.apache.ignite.internal.processors.platform.client.tx.ClientTxContext;
-import org.apache.ignite.internal.processors.platform.client.tx.ClientTxEndRequest;
+import org.apache.ignite.internal.processors.platform.client.tx.ClientTxSupport;
 import org.apache.ignite.internal.processors.query.GridQueryCancel;
 import org.apache.ignite.internal.processors.query.IgniteSQLException;
 import org.apache.ignite.internal.processors.query.QueryUtils;
@@ -115,7 +115,7 @@ import static org.apache.ignite.internal.processors.odbc.jdbc.JdbcRequest.TX_STA
 /**
  * JDBC request handler.
  */
-public class JdbcRequestHandler implements ClientListenerRequestHandler {
+public class JdbcRequestHandler implements ClientListenerRequestHandler, ClientTxSupport {
     /** Jdbc query cancelled response. */
     private static final JdbcResponse JDBC_QUERY_CANCELLED_RESPONSE =
         new JdbcResponse(IgniteQueryErrorCode.QUERY_CANCELED, QueryCancelledException.ERR_MSG);
@@ -1363,44 +1363,18 @@ public class JdbcRequestHandler implements ClientListenerRequestHandler {
      * @return resulting {@link JdbcResponse}.
      */
     private JdbcResponse startTransaction(JdbcTxStartRequest req) {
-        GridNearTxLocal tx;
-
-        connCtx.kernalContext().gateway().readLock();
-
         try {
-            tx = connCtx.kernalContext().cache().context().tm().newTx(
-                false,
-                false,
-                null,
-                req.concurrency(),
-                req.isolation(),
-                req.timeout(),
-                true,
-                0,
-                req.label()
-            );
-        }
-        finally {
-            connCtx.kernalContext().gateway().readUnlock();
-        }
-
-        try {
-            tx.suspend();
-
-            int txId = connCtx.nextTxId();
-
-            connCtx.addTxContext(new ClientTxContext(txId, tx));
-
-            return resultToResonse(new JdbcTxStartResult(req.requestId(), txId));
+            return resultToResonse(new JdbcTxStartResult(
+                req.requestId(),
+                startClientTransaction(
+                    req.concurrency(),
+                    req.isolation(),
+                    req.timeout(),
+                    req.label()
+                )
+            ));
         }
         catch (Exception e) {
-            try {
-                tx.close();
-            }
-            catch (Exception e1) {
-                e.addSuppressed(e1);
-            }
-
             U.error(log, "Failed to start transaction [reqId=" + req.requestId() + ", req=" + req + ']', e);
 
             return exceptionToResult(e);
@@ -1415,7 +1389,7 @@ public class JdbcRequestHandler implements ClientListenerRequestHandler {
      */
     private JdbcResponse endTransaction(JdbcTxEndRequest req) {
         try {
-            ClientTxEndRequest.endTxAsync(connCtx, req.txId(), req.committed()).get();
+            endTxAsync(req.txId(), req.committed()).get();
 
             return resultToResonse(new JdbcTxEndResult(req.requestId()));
         }
@@ -1435,6 +1409,26 @@ public class JdbcRequestHandler implements ClientListenerRequestHandler {
      */
     private JdbcResponse exceptionToResult(Throwable e) {
         return new JdbcResponse(SqlListenerUtils.exceptionToSqlErrorCode(e), e.getMessage());
+    }
+
+    /** {@inheritDoc} */
+    @Override public ClientListenerAbstractConnectionContext context() {
+        return connCtx;
+    }
+
+    /** {@inheritDoc} */
+    @Override public RuntimeException startTxException(Exception cause) {
+        return cause instanceof RuntimeException ? (RuntimeException)cause : new IgniteException(cause);
+    }
+
+    /** {@inheritDoc} */
+    @Override public RuntimeException transactionNotFoundException() {
+        return new IgniteSQLException("Transaction not found", IgniteQueryErrorCode.QUERY_CANCELED);
+    }
+
+    /** {@inheritDoc} */
+    @Override public RuntimeException endTxException(IgniteCheckedException cause) {
+        return new IgniteSQLException(cause.getMessage(), IgniteQueryErrorCode.QUERY_CANCELED, cause);
     }
 
     /**

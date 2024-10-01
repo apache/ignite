@@ -20,25 +20,26 @@ package org.apache.ignite.internal.processors.platform.client.tx;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.binary.BinaryRawReader;
 import org.apache.ignite.internal.IgniteInternalFuture;
-import org.apache.ignite.internal.processors.cache.transactions.IgniteInternalTx;
 import org.apache.ignite.internal.processors.odbc.ClientListenerAbstractConnectionContext;
 import org.apache.ignite.internal.processors.platform.client.ClientConnectionContext;
 import org.apache.ignite.internal.processors.platform.client.ClientRequest;
 import org.apache.ignite.internal.processors.platform.client.ClientResponse;
 import org.apache.ignite.internal.processors.platform.client.ClientStatus;
 import org.apache.ignite.internal.processors.platform.client.IgniteClientException;
-import org.apache.ignite.internal.util.future.GridFinishedFuture;
 import org.apache.ignite.internal.util.lang.GridClosureException;
 
 /**
  * End the transaction request.
  */
-public class ClientTxEndRequest extends ClientRequest {
+public class ClientTxEndRequest extends ClientRequest implements ClientTxSupport {
     /** Transaction id. */
     private final int txId;
 
     /** Transaction committed. */
     private final boolean committed;
+
+    /** */
+    private ClientConnectionContext ctx;
 
     /**
      * Constructor.
@@ -59,7 +60,9 @@ public class ClientTxEndRequest extends ClientRequest {
 
     /** {@inheritDoc} */
     @Override public IgniteInternalFuture<ClientResponse> processAsync(ClientConnectionContext ctx) {
-        return endTxAsync(ctx).chain(f -> {
+        this.ctx = ctx;
+
+        return endTxAsync(txId, committed).chain(f -> {
             if (f.error() != null)
                 throw new GridClosureException(f.error());
             else
@@ -67,45 +70,18 @@ public class ClientTxEndRequest extends ClientRequest {
         });
     }
 
-    /** End transaction asynchronously. */
-    private IgniteInternalFuture<IgniteInternalTx> endTxAsync(ClientConnectionContext ctx) {
-        return endTxAsync(ctx, txId, committed);
+    /** {@inheritDoc} */
+    @Override public ClientListenerAbstractConnectionContext context() {
+        return ctx;
     }
 
-    /** End transaction asynchronously. */
-    public static IgniteInternalFuture<IgniteInternalTx> endTxAsync(
-        ClientListenerAbstractConnectionContext ctx,
-        int txId,
-        boolean committed
-    ) {
-        ClientTxContext txCtx = ctx.txContext(txId);
+    /** {@inheritDoc} */
+    @Override public RuntimeException transactionNotFoundException() {
+        return new IgniteClientException(ClientStatus.TX_NOT_FOUND, "Transaction with id " + txId + " not found.");
+    }
 
-        if (txCtx == null && !committed)
-            return new GridFinishedFuture<>();
-
-        if (txCtx == null)
-            throw new IgniteClientException(ClientStatus.TX_NOT_FOUND, "Transaction with id " + txId + " not found.");
-
-        try {
-            txCtx.acquire(committed);
-
-            if (committed)
-                return txCtx.tx().context().commitTxAsync(txCtx.tx());
-            else
-                return txCtx.tx().rollbackAsync();
-        }
-        catch (IgniteCheckedException e) {
-            throw new IgniteClientException(ClientStatus.FAILED, e.getMessage(), e);
-        }
-        finally {
-            ctx.removeTxContext(txId);
-
-            try {
-                txCtx.release(false);
-            }
-            catch (IgniteCheckedException ignore) {
-                // No-op.
-            }
-        }
+    /** {@inheritDoc} */
+    @Override public RuntimeException endTxException(IgniteCheckedException cause) {
+        return new IgniteClientException(ClientStatus.FAILED, cause.getMessage(), cause);
     }
 }
