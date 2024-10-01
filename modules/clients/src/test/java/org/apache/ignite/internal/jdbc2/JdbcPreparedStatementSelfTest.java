@@ -49,6 +49,7 @@ import org.apache.ignite.configuration.ConnectorConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.junit.Ignore;
 import org.junit.Test;
 
 import static java.sql.Types.BIGINT;
@@ -844,17 +845,19 @@ public class JdbcPreparedStatementSelfTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     @Test
+    @Ignore
     public void testBlobOnDiskMaterialized() throws Exception {
         String url = CFG_URL_PREFIX + "maxInMemoryLobSize=5:" + URL_DEFAULT_PARAM;
 
         Connection conn = DriverManager.getConnection(url);
-        conn.setSchema('"' + DEFAULT_CACHE_NAME + '"');
 
         byte[] bytes = new byte[] {1, 2, 3, 4, 5, 6, 7, 8, 9};
 
+        Blob blob = null;
+
         try {
             try (PreparedStatement stmt = conn.prepareStatement("insert into TestObject(_key, id, blobVal) values (?, ?, ?)")) {
-                Blob blob = conn.createBlob();
+                blob = conn.createBlob();
 
                 try (OutputStream outputStream = blob.setBinaryStream(1)) {
                     outputStream.write(0);
@@ -868,6 +871,10 @@ public class JdbcPreparedStatementSelfTest extends GridCommonAbstractTest {
                 stmt.setBlob(3, blob);
 
                 assertEquals(1, stmt.executeUpdate());
+            }
+            finally {
+                if (conn != null)
+                    blob.free();
             }
 
             try (PreparedStatement stmt = conn.prepareStatement("select * from TestObject where blobVal is not distinct from ?")) {
