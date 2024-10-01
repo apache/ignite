@@ -539,10 +539,10 @@ public class JdbcThinBatchSelfTest extends JdbcThinAbstractDmlStatementSelfTest 
             if (i % 2 == 0) {
                 Blob blob = conn.createBlob();
                 blob.setBytes(1, getBytes("White" + i));
-                pstmt.setBlob(paramCnt++, blob);
+                pstmt.setBlob(paramCnt, blob);
             }
             else {
-                pstmt.setBinaryStream(paramCnt++, new ByteArrayInputStream(getBytes("Black" + i)));
+                pstmt.setBinaryStream(paramCnt, new ByteArrayInputStream(getBytes("Black" + i)));
             }
 
             pstmt.addBatch();
@@ -554,7 +554,7 @@ public class JdbcThinBatchSelfTest extends JdbcThinAbstractDmlStatementSelfTest 
         pstmt.setString(paramCnt++, "Name" + FAILED_IDX);
         pstmt.setString(paramCnt++, "Lastname" + FAILED_IDX);
         pstmt.setInt(paramCnt++, 20 + FAILED_IDX);
-        pstmt.setBinaryStream(paramCnt++, new ByteArrayInputStream(getBytes("Black" + FAILED_IDX)));
+        pstmt.setBinaryStream(paramCnt, new ByteArrayInputStream(getBytes("Black" + FAILED_IDX)));
 
         pstmt.addBatch();
 
@@ -565,8 +565,8 @@ public class JdbcThinBatchSelfTest extends JdbcThinAbstractDmlStatementSelfTest 
         pstmt.setString(paramCnt++, "Lastname" + FAILED_IDX + 1);
         pstmt.setInt(paramCnt++, 20 + FAILED_IDX + 1);
         Blob blob = conn.createBlob();
-        blob.setBytes(1, getBytes("White"+ FAILED_IDX + 1));
-        pstmt.setBlob(paramCnt++, blob);
+        blob.setBytes(1, getBytes("White" + FAILED_IDX + 1));
+        pstmt.setBlob(paramCnt, blob);
 
         pstmt.addBatch();
 

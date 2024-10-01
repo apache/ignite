@@ -853,7 +853,7 @@ public class JdbcPreparedStatementSelfTest extends GridCommonAbstractTest {
 
         Blob blob = null;
 
-        try(conn) {
+        try (conn) {
             try (PreparedStatement stmt = conn.prepareStatement("insert into TestObject(_key, id, blobVal) values (?, ?, ?)")) {
                 blob = conn.createBlob();
 
