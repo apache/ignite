@@ -35,7 +35,7 @@ import org.apache.ignite.internal.binary.streams.BinaryOutputStream;
  */
 public class SqlBinaryWriter extends BinaryWriterExImpl {
     /** Default buffer size. */
-    public static final int DEFAULT_BUFFER_SIZE = 8192;
+    public static final int DEFAULT_BUFFER_SIZE = 1024 * 1024;
 
     /**
      * @param ctx Context.
