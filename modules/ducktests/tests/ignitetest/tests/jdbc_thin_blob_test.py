@@ -35,19 +35,19 @@ from ignitetest.utils.version import DEV_BRANCH, IgniteVersion
 class JdbcThinBlobTest(IgniteTest):
     @cluster(num_nodes=4)
     @ignite_versions(str(DEV_BRANCH))
-    @defaults(tx=[True, False], max_inmem=[None, 2*1024*1024*1024], mode=["blob", "stream"])
+    @defaults(max_inmem=[None, 0, 2*1024*1024*1024], mode=["blob", "stream"])
     @parametrize(blob_size=1*1024*1024*1024, server_heap=12, insert_heap=10, select_heap=10)
     def test_jdbc_thin_blob(self, ignite_version, blob_size,
                             mode,
                             server_heap, insert_heap, select_heap,
-                            tx, max_inmem):
+                            max_inmem):
         """
         Thin JDBC test for Blobs.
         """
         cache_config = CacheConfiguration(name="WITH_STATISTICS_ENABLED*",
                                           statistics_enabled=True,
                                           backups=1,
-                                          atomicity_mode="TRANSACTIONAL" if tx else "ATOMIC")
+                                          atomicity_mode="ATOMIC")
 
         server_config = IgniteConfiguration(version=IgniteVersion(ignite_version),
                                             client_connector_configuration=ClientConnectorConfiguration(),

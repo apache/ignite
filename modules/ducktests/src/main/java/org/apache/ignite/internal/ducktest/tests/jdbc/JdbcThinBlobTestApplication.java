@@ -142,7 +142,7 @@ public class JdbcThinBlobTestApplication extends IgniteAwareApplication {
 
     /** */
     private InputStream getRandomStream() throws IOException {
-        return Files.newInputStream(Path.of("/", "dev", "random"));
+        return Files.newInputStream(Path.of("/", "dev", "urandom"));
     }
 
     /** */
