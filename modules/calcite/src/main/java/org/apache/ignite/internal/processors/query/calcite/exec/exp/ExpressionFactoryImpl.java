@@ -237,7 +237,7 @@ public class ExpressionFactoryImpl<Row> implements ExpressionFactory<Row> {
                 }
 
                 // If compared rows contain NULLs, they shouldn't be treated as equals, since NULL <> NULL in SQL.
-                // Expect for cases with IS DISTINCT / IS NOT DISTINCT.
+                // Except cases with IS DISTINCT / IS NOT DISTINCT.
                 return hasNulls && !nullsEqual ? 1 : 0;
             }
         };
