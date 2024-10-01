@@ -261,6 +261,13 @@ public class JdbcPreparedStatement extends JdbcStatement implements PreparedStat
 
         this.batchArgs = null;
 
+        if (batchArgs != null) {
+            for (List<Object> batch : batchArgs) {
+                if (batch != null)
+                    materializeStreamArguments(batch);
+            }
+        }
+
         return doBatchUpdate(sql, null, batchArgs);
     }
 

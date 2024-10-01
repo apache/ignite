@@ -662,7 +662,8 @@ public class JdbcStatement implements Statement {
      * @return Args for current statement
      */
     protected final Object[] getArgs() throws SQLException {
-        materializeStreamArguments();
+        if (args != null)
+            materializeStreamArguments(args);
 
         return args != null ? args.toArray() : null;
     }
@@ -712,10 +713,7 @@ public class JdbcStatement implements Statement {
      *
      * @throws SQLException On error.
      */
-    private void materializeStreamArguments() throws SQLException {
-        if (args == null)
-            return;
-
+    protected void materializeStreamArguments(List<Object> args) throws SQLException {
         for (int i = 0; i < args.size(); i++) {
             byte[] bytes = null;
 
