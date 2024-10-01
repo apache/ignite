@@ -20,6 +20,7 @@ package org.apache.ignite.internal.processors.odbc.odbc;
 import java.util.HashSet;
 import java.util.Set;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.configuration.QueryEngineConfiguration;
 import org.apache.ignite.internal.GridKernalContext;
@@ -232,5 +233,10 @@ public class OdbcConnectionContext extends ClientListenerAbstractConnectionConte
         handler.onDisconnect();
 
         super.onDisconnected();
+    }
+
+    /** {@inheritDoc} */
+    @Override protected RuntimeException tooManyTransactionsException(int maxActiveTxCnt) {
+        return new IgniteException("ODBC not support transaction");
     }
 }

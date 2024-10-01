@@ -25,8 +25,6 @@ import java.util.concurrent.atomic.AtomicInteger;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.processors.authentication.IgniteAccessControlException;
-import org.apache.ignite.internal.processors.platform.client.ClientStatus;
-import org.apache.ignite.internal.processors.platform.client.IgniteClientException;
 import org.apache.ignite.internal.processors.platform.client.tx.ClientTxContext;
 import org.apache.ignite.internal.processors.security.SecurityContext;
 import org.apache.ignite.internal.util.nio.GridNioSession;
@@ -197,15 +195,14 @@ public abstract class ClientListenerAbstractConnectionContext implements ClientL
         if (txsCnt.incrementAndGet() > maxActiveTxCnt) {
             txsCnt.decrementAndGet();
 
-            // TODO: same exception for JDBC and ODBC?
-            throw new IgniteClientException(ClientStatus.TX_LIMIT_EXCEEDED, "Active transactions per connection limit " +
-                "(" + maxActiveTxCnt + ") exceeded. To start a new transaction you need to wait for some of currently " +
-                "active transactions complete. To change the limit set up " +
-                "ThinClientConfiguration.MaxActiveTxPerConnection property.");
+            throw tooManyTransactionsException(maxActiveTxCnt);
         }
 
         txs.put(txCtx.txId(), txCtx);
     }
+
+    /** */
+    protected abstract RuntimeException tooManyTransactionsException(int maxActiveTxCnt);
 
     /**
      * Remove transaction context from connection.

@@ -235,6 +235,14 @@ public class ClientConnectionContext extends ClientListenerAbstractConnectionCon
         super.onDisconnected();
     }
 
+    /** {@inheritDoc} */
+    @Override protected RuntimeException tooManyTransactionsException(int maxActiveTxCnt) {
+        return new IgniteClientException(ClientStatus.TX_LIMIT_EXCEEDED, "Active transactions per connection limit " +
+            "(" + maxActiveTxCnt + ") exceeded. To start a new transaction you need to wait for some of currently " +
+            "active transactions complete. To change the limit set up " +
+            "ThinClientConfiguration.MaxActiveTxPerConnection property.");
+    }
+
     /**
      * Increments the cursor count.
      */

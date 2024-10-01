@@ -27,12 +27,14 @@ import org.apache.ignite.configuration.QueryEngineConfiguration;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.binary.BinaryReaderExImpl;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
+import org.apache.ignite.internal.processors.cache.query.IgniteQueryErrorCode;
 import org.apache.ignite.internal.processors.odbc.ClientListenerAbstractConnectionContext;
 import org.apache.ignite.internal.processors.odbc.ClientListenerMessageParser;
 import org.apache.ignite.internal.processors.odbc.ClientListenerProtocolVersion;
 import org.apache.ignite.internal.processors.odbc.ClientListenerRequestHandler;
 import org.apache.ignite.internal.processors.odbc.ClientListenerResponse;
 import org.apache.ignite.internal.processors.odbc.ClientListenerResponseSender;
+import org.apache.ignite.internal.processors.query.IgniteSQLException;
 import org.apache.ignite.internal.processors.query.QueryEngineConfigurationEx;
 import org.apache.ignite.internal.util.GridSpinBusyLock;
 import org.apache.ignite.internal.util.nio.GridNioSession;
@@ -276,6 +278,11 @@ public class JdbcConnectionContext extends ClientListenerAbstractConnectionConte
         handler.onDisconnect();
 
         super.onDisconnected();
+    }
+
+    /** {@inheritDoc} */
+    @Override protected RuntimeException tooManyTransactionsException(int maxActiveTxCnt) {
+        return new IgniteSQLException("Too many transactions", IgniteQueryErrorCode.QUERY_CANCELED);
     }
 
     /**

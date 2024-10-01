@@ -20,7 +20,6 @@ package org.apache.ignite.internal.processors.odbc.jdbc;
 import org.apache.ignite.binary.BinaryObjectException;
 import org.apache.ignite.internal.binary.BinaryReaderExImpl;
 import org.apache.ignite.internal.binary.BinaryWriterExImpl;
-import org.apache.ignite.internal.processors.platform.client.tx.ClientTxStartRequest.ClientTransactionData;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.transactions.TransactionConcurrency;
 import org.apache.ignite.transactions.TransactionIsolation;
@@ -29,8 +28,17 @@ import org.apache.ignite.transactions.TransactionIsolation;
  * JDBC start transaction request.
  */
 public class JdbcTxStartRequest extends JdbcRequest {
-    /** */
-    private ClientTransactionData data;
+    /** Transaction concurrency control. */
+    private TransactionConcurrency concurrency;
+
+    /** Transaction isolation level. */
+    private TransactionIsolation isolation;
+
+    /** Transaction timeout. */
+    private long timeout;
+
+    /** Transaction label. */
+    private String lb;
 
     /** Default constructor is used for deserialization. */
     public JdbcTxStartRequest() {
@@ -51,7 +59,10 @@ public class JdbcTxStartRequest extends JdbcRequest {
     ) {
         this();
 
-        this.data = new ClientTransactionData(concurrency, isolation, timeout, lb);
+        this.concurrency = concurrency;
+        this.isolation = isolation;
+        this.timeout = timeout;
+        this.lb = lb;
     }
 
     /** {@inheritDoc} */
@@ -61,7 +72,10 @@ public class JdbcTxStartRequest extends JdbcRequest {
     ) throws BinaryObjectException {
         super.writeBinary(writer, protoCtx);
 
-        data.write(writer);
+        writer.writeByte((byte)concurrency.ordinal());
+        writer.writeByte((byte)isolation.ordinal());
+        writer.writeLong(timeout);
+        writer.writeString(lb);
     }
 
     /** {@inheritDoc} */
@@ -71,12 +85,30 @@ public class JdbcTxStartRequest extends JdbcRequest {
     ) throws BinaryObjectException {
         super.readBinary(reader, protoCtx);
 
-        data = ClientTransactionData.read(reader);
+        concurrency = TransactionConcurrency.fromOrdinal(reader.readByte());
+        isolation = TransactionIsolation.fromOrdinal(reader.readByte());
+        timeout = reader.readLong();
+        lb = reader.readString();
     }
 
     /** */
-    public ClientTransactionData data() {
-        return data;
+    public TransactionConcurrency concurrency() {
+        return concurrency;
+    }
+
+    /** */
+    public TransactionIsolation isolation() {
+        return isolation;
+    }
+
+    /** */
+    public long timeout() {
+        return timeout;
+    }
+
+    /** */
+    public String label() {
+        return lb;
     }
 
     /** {@inheritDoc} */

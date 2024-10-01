@@ -27,7 +27,6 @@ import org.apache.ignite.client.ClientTransactions;
 import org.apache.ignite.configuration.ClientTransactionConfiguration;
 import org.apache.ignite.internal.binary.BinaryRawWriterEx;
 import org.apache.ignite.internal.binary.BinaryWriterExImpl;
-import org.apache.ignite.internal.processors.platform.client.tx.ClientTxStartRequest;
 import org.apache.ignite.internal.util.typedef.internal.A;
 import org.apache.ignite.transactions.TransactionConcurrency;
 import org.apache.ignite.transactions.TransactionIsolation;
@@ -101,13 +100,10 @@ class TcpClientTransactions implements ClientTransactions {
                 }
 
                 try (BinaryRawWriterEx writer = new BinaryWriterExImpl(marsh.context(), req.out(), null, null)) {
-                    ClientTxStartRequest.ClientTransactionData.write(
-                        writer,
-                        concurrency == null ? txCfg.getDefaultTxConcurrency() : concurrency,
-                        isolation == null ? txCfg.getDefaultTxIsolation() : isolation,
-                        timeout == null ? txCfg.getDefaultTxTimeout() : timeout,
-                        lb
-                    );
+                    writer.writeByte((byte)(concurrency == null ? txCfg.getDefaultTxConcurrency() : concurrency).ordinal());
+                    writer.writeByte((byte)(isolation == null ? txCfg.getDefaultTxIsolation() : isolation).ordinal());
+                    writer.writeLong(timeout == null ? txCfg.getDefaultTxTimeout() : timeout);
+                    writer.writeString(lb);
                 }
             },
             res -> new TcpClientTransaction(res.in().readInt(), res.clientChannel())
