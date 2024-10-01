@@ -149,7 +149,7 @@ public class JdbcThinBlobTestApplication extends IgniteAwareApplication {
     private int copyStream(InputStream in, OutputStream out, long limit) throws IOException {
         int readLen, writtenLen = 0;
 
-        byte[] buf = new byte[8192];
+        byte[] buf = new byte[1024 * 1024];
 
         while (-1 != (readLen = in.read(buf, 0, (int)Math.min(buf.length, limit - writtenLen)))
                 && writtenLen < limit) {
