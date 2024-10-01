@@ -255,16 +255,12 @@ public class JdbcThinStatement implements Statement {
             if (res0 instanceof JdbcBulkLoadAckResult)
                 res0 = sendFile((JdbcBulkLoadAckResult)res0, stickyIo);
 
-            boolean onlyUpdates = true;
-
             if (res0 instanceof JdbcQueryExecuteResult) {
                 JdbcQueryExecuteResult res = (JdbcQueryExecuteResult)res0;
 
                 resultSets = Collections.singletonList(new JdbcThinResultSet(this, res.cursorId(), pageSize,
                     res.last(), res.items(), res.isQuery(), conn.autoCloseServerCursor(), res.updateCount(),
-                    closeOnCompletion, rsetCtx, stickyIo));
-
-                onlyUpdates = !res.isQuery();
+                    closeOnCompletion, stickyIo));
             }
             else if (res0 instanceof JdbcQueryExecuteMultipleStatementsResult) {
                 JdbcQueryExecuteMultipleStatementsResult res = (JdbcQueryExecuteMultipleStatementsResult)res0;
@@ -279,18 +275,16 @@ public class JdbcThinStatement implements Statement {
                     if (!rsInfo.isQuery())
                         resultSets.add(resultSetForUpdate(rsInfo.updateCount()));
                     else {
-                        onlyUpdates = false;
-
                         if (firstRes) {
                             firstRes = false;
 
                             resultSets.add(new JdbcThinResultSet(this, rsInfo.cursorId(), pageSize, res.isLast(),
-                                res.items(), true, conn.autoCloseServerCursor(), -1, closeOnCompletion, rsetCtx,
+                                res.items(), true, conn.autoCloseServerCursor(), -1, closeOnCompletion,
                                 stickyIo));
                         }
                         else {
                             resultSets.add(new JdbcThinResultSet(this, rsInfo.cursorId(), pageSize, false,
-                                null, true, conn.autoCloseServerCursor(), -1, closeOnCompletion, rsetCtx,
+                                null, true, conn.autoCloseServerCursor(), -1, closeOnCompletion,
                                 stickyIo));
                         }
                     }
@@ -299,7 +293,7 @@ public class JdbcThinStatement implements Statement {
             else
                 throw new SQLException("Unexpected result [res=" + res0 + ']');
 
-            if (onlyUpdates && autoCommit && txEnabled)
+            if (autoCommit && txEnabled)
                 txCtx.end(true);
         }
         catch (Exception e) {
@@ -330,7 +324,7 @@ public class JdbcThinStatement implements Statement {
     private JdbcThinResultSet resultSetForUpdate(long cnt) {
         return new JdbcThinResultSet(this, -1, pageSize,
             true, Collections.<List<Object>>emptyList(), false,
-            conn.autoCloseServerCursor(), cnt, closeOnCompletion, null, null);
+            conn.autoCloseServerCursor(), cnt, closeOnCompletion, null);
     }
 
     /**

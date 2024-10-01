@@ -29,7 +29,7 @@ import org.apache.ignite.internal.processors.query.calcite.sql.SqlCustomParserTe
 import org.apache.ignite.internal.processors.query.calcite.sql.SqlReservedWordsTest;
 import org.apache.ignite.internal.processors.tx.SqlTransactionsIsolationTest;
 import org.apache.ignite.internal.processors.tx.SqlTransactionsUnsupportedModesTest;
-import org.apache.ignite.jdbc.thin.JdbcThinTransactionalSelfTest;
+import org.apache.ignite.internal.processors.query.calcite.jdbc.JdbcThinTransactionalSelfTest;
 import org.junit.runner.RunWith;
 import org.junit.runners.Suite;
 
@@ -59,7 +59,7 @@ import org.junit.runners.Suite;
     SqlTransactionsIsolationTest.class,
     SqlTransactionsUnsupportedModesTest.class,
 
-    JdbcThinTransactionalSelfTest.class
+    JdbcThinTransactionalSelfTest.class,
 })
 public class IgniteCalciteTestSuite {
 }

@@ -15,18 +15,17 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.jdbc.thin;
+package org.apache.ignite.internal.processors.query.calcite.jdbc;
 
 import java.sql.Connection;
 import java.sql.DriverManager;
-import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.Arrays;
 import java.util.List;
 import org.apache.ignite.calcite.CalciteQueryEngineConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
-import org.apache.ignite.internal.jdbc.thin.JdbcThinConnection.TxContext;
+import org.apache.ignite.internal.jdbc.thin.JdbcThinConnection;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.IgniteConfigVariationsAbstractTest.TestRunnable;
@@ -43,19 +42,12 @@ import static java.sql.ResultSet.CLOSE_CURSORS_AT_COMMIT;
 import static java.sql.ResultSet.CONCUR_READ_ONLY;
 import static java.sql.ResultSet.HOLD_CURSORS_OVER_COMMIT;
 import static java.sql.ResultSet.TYPE_FORWARD_ONLY;
-import static org.apache.ignite.internal.jdbc.thin.JdbcThinConnection.NO_TX;
 import static org.apache.ignite.testframework.GridTestUtils.assertThrows;
 
 /** */
 public class JdbcThinTransactionalSelfTest extends GridCommonAbstractTest {
     /** URL. */
     private static final String URL = "jdbc:ignite:thin://127.0.0.1";
-
-    /** */
-    private static final String TX_CTX_FLD = "txCtx";
-
-    /** */
-    private static final String CLOSED_FLD = "closed";
 
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
@@ -158,64 +150,13 @@ public class JdbcThinTransactionalSelfTest extends GridCommonAbstractTest {
 
     /** */
     @Test
-    public void testTxEndOnResultSetCloseInAutoCommitMode() throws Exception {
-        try (Connection conn = DriverManager.getConnection(URL)) {
-            ResultSet rs = conn.prepareStatement("SELECT 1").executeQuery();
-
-            assertNull(GridTestUtils.getFieldValue(conn, TX_CTX_FLD));
-
-            TxContext txCtx = GridTestUtils.getFieldValue(rs, TX_CTX_FLD);
-
-            assertFalse(GridTestUtils.getFieldValue(txCtx, CLOSED_FLD));
-
-            rs.close();
-
-            assertTrue(GridTestUtils.getFieldValue(txCtx, CLOSED_FLD));
-
-            assertNull(GridTestUtils.getFieldValue(conn, TX_CTX_FLD));
-        }
-    }
-
-    /** */
-    @Test
-    public void testResultSetClosedOnNewTransaction() throws Exception {
-        try (Connection conn = DriverManager.getConnection(URL)) {
-            ResultSet rs0 = conn.prepareStatement("SELECT 1").executeQuery();
-
-            assertFalse(GridTestUtils.getFieldValue(rs0, CLOSED_FLD));
-
-            PreparedStatement ps = conn.prepareStatement("SELECT 1");
-
-            ResultSet rs1 = ps.executeQuery();
-
-            assertFalse(GridTestUtils.getFieldValue(rs0, CLOSED_FLD));
-            assertFalse(GridTestUtils.getFieldValue(rs1, CLOSED_FLD));
-
-            TxContext txCtx0 = GridTestUtils.getFieldValue(rs0, TX_CTX_FLD);
-            TxContext txCtx1 = GridTestUtils.getFieldValue(rs1, TX_CTX_FLD);
-
-            assertTrue(txCtx0.txId() != NO_TX);
-            assertTrue(txCtx1.txId() != NO_TX);
-            assertTrue(txCtx0.txId() != txCtx1.txId());
-
-            rs0.close();
-            ps.close();
-
-            assertTrue(GridTestUtils.getFieldValue(rs0, CLOSED_FLD));
-            assertTrue(GridTestUtils.getFieldValue(rs1, CLOSED_FLD));
-        }
-    }
-
-    /** */
-    @Test
     public void testNoTxInNoTxIsolation() throws Exception {
         try (Connection conn = DriverManager.getConnection(URL)) {
             conn.setTransactionIsolation(TRANSACTION_NONE);
 
             ResultSet rs = conn.prepareStatement("SELECT 1").executeQuery();
 
-            assertNull(GridTestUtils.getFieldValue(rs, TX_CTX_FLD));
-            assertNull(GridTestUtils.getFieldValue(conn, TX_CTX_FLD));
+            assertFalse(((JdbcThinConnection)conn).isTxOpen());
         }
     }
 
@@ -225,10 +166,12 @@ public class JdbcThinTransactionalSelfTest extends GridCommonAbstractTest {
         String url = URL + "?transactionLabel=mylabel";
 
         try (Connection conn = DriverManager.getConnection(url)) {
-            ResultSet rs = conn.prepareStatement("SELECT 1").executeQuery();
+            conn.setAutoCommit(false);
 
-            assertEquals(1, F.size(grid().context().cache().context().tm().activeTransactions()));
-            assertEquals("mylabel", F.first(grid().context().cache().context().tm().activeTransactions()).label());
+            try (ResultSet rs = conn.prepareStatement("SELECT 1").executeQuery()) {
+                assertEquals(1, F.size(grid().context().cache().context().tm().activeTransactions()));
+                assertEquals("mylabel", F.first(grid().context().cache().context().tm().activeTransactions()).label());
+            }
         }
     }
 
@@ -240,6 +183,8 @@ public class JdbcThinTransactionalSelfTest extends GridCommonAbstractTest {
         String url = URL + "?transactionTimeout=" + timeout;
 
         try (Connection conn = DriverManager.getConnection(url)) {
+            conn.setAutoCommit(false);
+
             ResultSet rs = conn.prepareStatement("SELECT 1").executeQuery();
 
             Thread.sleep(3 * timeout);
@@ -248,6 +193,7 @@ public class JdbcThinTransactionalSelfTest extends GridCommonAbstractTest {
                 null,
                 () -> {
                     rs.close();
+                    conn.commit();
                     return null;
                 },
                 SQLException.class,

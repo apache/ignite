@@ -243,7 +243,7 @@ public class JdbcThinConnection implements Connection {
     private final Object mux = new Object();
 
     /** Transactional context. */
-    volatile TxContext txCtx;
+    private volatile TxContext txCtx;
 
     /** Random generator. */
     private static final Random RND = new Random(System.currentTimeMillis());
@@ -357,7 +357,7 @@ public class JdbcThinConnection implements Connection {
     /**
      * @return {@code True} if there are open transaction, {@code false} otherwise.
      */
-    boolean isTxOpen() {
+    public boolean isTxOpen() {
         return txCtx != null;
     }
 
@@ -552,14 +552,16 @@ public class JdbcThinConnection implements Connection {
 
         this.autoCommit = autoCommit;
 
-        maybeLogTransactionWarning(!autoCommit);
+        if (!autoCommit)
+            logTransactionWarning();
     }
 
     /** {@inheritDoc} */
     @Override public boolean getAutoCommit() throws SQLException {
         ensureNotClosed();
 
-        maybeLogTransactionWarning(!autoCommit);
+        if (!autoCommit)
+            logTransactionWarning();
 
         return autoCommit;
     }
@@ -574,7 +576,7 @@ public class JdbcThinConnection implements Connection {
         if (txEnabledForConnection())
             endTransactionIfExists(true);
         else
-            maybeLogTransactionWarning(true);
+            logTransactionWarning();
     }
 
     /** {@inheritDoc} */
@@ -587,7 +589,7 @@ public class JdbcThinConnection implements Connection {
         if (txEnabledForConnection())
             endTransactionIfExists(false);
         else
-            maybeLogTransactionWarning(true);
+            logTransactionWarning();
     }
 
     /** {@inheritDoc} */
@@ -2051,8 +2053,8 @@ public class JdbcThinConnection implements Connection {
     }
 
     /** */
-    private void maybeLogTransactionWarning(boolean logRequired) {
-        if (logRequired && !txSupportedOnServer())
+    private void logTransactionWarning() {
+        if (!txSupportedOnServer())
             LOG.warning("Transactions are not supported.");
     }
 
