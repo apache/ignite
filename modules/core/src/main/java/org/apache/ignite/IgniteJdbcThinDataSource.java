@@ -101,7 +101,7 @@ public class IgniteJdbcThinDataSource implements DataSource, Serializable {
     }
 
     /**
-     * Different application servers us different format (URL & url).
+     * Different application servers us different format (URL &amp; url).
      * @return Connection URL.
      */
     public String getURL() {
@@ -109,7 +109,7 @@ public class IgniteJdbcThinDataSource implements DataSource, Serializable {
     }
 
     /**
-     * Different application servers us different format (URL & url).
+     * Different application servers us different format (URL &amp; url).
      * @param url Connection URL.
      * @throws SQLException On error whrn URL is invalid.
      */
