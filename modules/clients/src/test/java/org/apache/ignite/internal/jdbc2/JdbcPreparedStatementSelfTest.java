@@ -49,7 +49,6 @@ import org.apache.ignite.configuration.ConnectorConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
-import org.junit.Ignore;
 import org.junit.Test;
 
 import static java.sql.Types.BIGINT;
@@ -845,7 +844,6 @@ public class JdbcPreparedStatementSelfTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     @Test
-    @Ignore
     public void testBlobOnDiskMaterialized() throws Exception {
         String url = CFG_URL_PREFIX + "maxInMemoryLobSize=5:" + URL_DEFAULT_PARAM;
 
@@ -855,7 +853,7 @@ public class JdbcPreparedStatementSelfTest extends GridCommonAbstractTest {
 
         Blob blob = null;
 
-        try {
+        try(conn) {
             try (PreparedStatement stmt = conn.prepareStatement("insert into TestObject(_key, id, blobVal) values (?, ?, ?)")) {
                 blob = conn.createBlob();
 
@@ -873,7 +871,7 @@ public class JdbcPreparedStatementSelfTest extends GridCommonAbstractTest {
                 assertEquals(1, stmt.executeUpdate());
             }
             finally {
-                if (conn != null)
+                if (blob != null)
                     blob.free();
             }
 
