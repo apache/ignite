@@ -28,18 +28,19 @@ import org.apache.ignite.transactions.TransactionIsolation;
 
 /** */
 public interface ClientTxSupport {
-    /** */
+    /** @return Client connection context. */
     ClientListenerAbstractConnectionContext context();
 
     /**
+     * Starts new client transaction.
+     *
+     * @param concurrency Transaction concurrency.
+     * @param isolation Transaction isolation.
+     * @param timeout Transaction timeout.
+     * @param lb Transaction label.
      * @return Transaction id.
      */
-    default int startClientTransaction(
-        TransactionConcurrency concurrency,
-        TransactionIsolation isolation,
-        long timeout,
-        String lb
-    ) {
+    default int startClientTransaction(TransactionConcurrency concurrency, TransactionIsolation isolation, long timeout, String lb) {
         GridNearTxLocal tx;
 
         ClientListenerAbstractConnectionContext ctx = context();
@@ -84,11 +85,12 @@ public interface ClientTxSupport {
         }
     }
 
-    /** End transaction asynchronously. */
-    default IgniteInternalFuture<IgniteInternalTx> endTxAsync(
-        int txId,
-        boolean committed
-    ) {
+    /**
+     * End transaction asynchronously.
+     * @param txId Transaction id.
+     * @param committed If {@code true} transaction must be committed, rollback otherwise.
+     */
+    default IgniteInternalFuture<IgniteInternalTx> endTxAsync(int txId, boolean committed) {
         ClientListenerAbstractConnectionContext ctx = context();
 
         ClientTxContext txCtx = ctx.txContext(txId);
@@ -122,17 +124,23 @@ public interface ClientTxSupport {
         }
     }
 
-    /** */
+    /**
+     * @param cause Exception cause.
+     * @return Protocol specific start transaction exception.
+     */
     default RuntimeException startTxException(Exception cause) {
         return new UnsupportedOperationException();
     }
 
-    /** */
+    /**
+     * @param cause Exception cause.
+     * @return Protocol specific end transaction exception.
+     */
     default RuntimeException endTxException(IgniteCheckedException cause) {
         return new UnsupportedOperationException();
     }
 
-    /** */
+    /** @return Protocol specific transaction not found exception. */
     default RuntimeException transactionNotFoundException() {
         return new UnsupportedOperationException();
     }
