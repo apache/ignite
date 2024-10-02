@@ -194,9 +194,6 @@ public class IgniteJdbcDriver implements Driver {
     /** Parameter: enforce join order flag (SQL hint). */
     public static final String PARAM_ENFORCE_JOIN_ORDER = "enforceJoinOrder";
 
-    /** Parameter: maximum size of large objects to be materialized in-memory on the client. */
-    public static final String PARAM_MAX_IN_MEMORY_LOB_SIZE = "maxInMemoryLobSize";
-
     /** Parameter: replicated only flag (SQL hint). */
     public static final String PARAM_LAZY = "lazy";
 
@@ -250,9 +247,6 @@ public class IgniteJdbcDriver implements Driver {
 
     /** Transactions allowed property name. */
     public static final String PROP_ENFORCE_JOIN_ORDER = PROP_PREFIX + PARAM_ENFORCE_JOIN_ORDER;
-
-    /** Maximum size of large objects to be materialized in-memory on the client property name. */
-    public static final String PROP_MAX_IN_MEMORY_LOB_SIZE = PROP_PREFIX + PARAM_MAX_IN_MEMORY_LOB_SIZE;
 
     /** Lazy property name. */
     public static final String PROP_LAZY = PROP_PREFIX + PARAM_LAZY;

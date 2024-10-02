@@ -44,14 +44,10 @@ import java.util.List;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.internal.jdbc.thin.JdbcThinParameterMetadata;
 import org.apache.ignite.internal.processors.cache.query.SqlFieldsQueryEx;
-import org.apache.ignite.internal.processors.odbc.SqlInputStreamWrapper;
 import org.apache.ignite.internal.processors.odbc.jdbc.JdbcParameterMeta;
 import org.apache.ignite.internal.processors.query.GridQueryFieldMetadata;
 import org.apache.ignite.internal.processors.query.IgniteSQLException;
 import org.jetbrains.annotations.Nullable;
-
-import static java.sql.Types.BINARY;
-import static org.apache.ignite.internal.processors.odbc.SqlInputStreamWrapper.MAX_ARRAY_SIZE;
 
 /**
  * JDBC prepared statement implementation.
@@ -104,23 +100,6 @@ public class JdbcPreparedStatement extends JdbcStatement implements PreparedStat
         ensureNotClosed();
 
         return executeUpdate(sql);
-    }
-
-    /** {@inheritDoc} */
-    @Override public void close() throws SQLException {
-        if (args != null) {
-            try {
-                for (Object arg : args) {
-                    if (arg instanceof AutoCloseable)
-                        ((AutoCloseable)arg).close();
-                }
-            }
-            catch (Exception e) {
-                throw new SQLException(e);
-            }
-        }
-
-        super.close();
     }
 
     /** {@inheritDoc} */
@@ -209,7 +188,9 @@ public class JdbcPreparedStatement extends JdbcStatement implements PreparedStat
 
     /** {@inheritDoc} */
     @Override public void setBinaryStream(int paramIdx, InputStream x, int len) throws SQLException {
-        setBinaryStream(paramIdx, x, (long)len);
+        ensureNotClosed();
+
+        throw new SQLFeatureNotSupportedException("Streams are not supported.");
     }
 
     /** {@inheritDoc} */
@@ -261,13 +242,6 @@ public class JdbcPreparedStatement extends JdbcStatement implements PreparedStat
 
         this.batchArgs = null;
 
-        if (batchArgs != null) {
-            for (List<Object> batch : batchArgs) {
-                if (batch != null)
-                    materializeStreamArguments(batch);
-            }
-        }
-
         return doBatchUpdate(sql, null, batchArgs);
     }
 
@@ -288,7 +262,7 @@ public class JdbcPreparedStatement extends JdbcStatement implements PreparedStat
 
     /** {@inheritDoc} */
     @Override public void setBlob(int paramIdx, Blob x) throws SQLException {
-        setArgument(paramIdx, x);
+        setBytes(paramIdx, x.getBytes(1, (int)x.length()));
     }
 
     /** {@inheritDoc} */
@@ -436,7 +410,9 @@ public class JdbcPreparedStatement extends JdbcStatement implements PreparedStat
 
     /** {@inheritDoc} */
     @Override public void setBlob(int paramIdx, InputStream inputStream, long len) throws SQLException {
-        setBinaryStream(paramIdx, inputStream, len);
+        ensureNotClosed();
+
+        throw new SQLFeatureNotSupportedException("SQL-specific types are not supported.");
     }
 
     /** {@inheritDoc} */
@@ -470,17 +446,7 @@ public class JdbcPreparedStatement extends JdbcStatement implements PreparedStat
     @Override public void setBinaryStream(int paramIdx, InputStream x, long len) throws SQLException {
         ensureNotClosed();
 
-        if (len < 0)
-            throw new SQLException("Invalid argument. Length should be greater than 0.");
-
-        if (len > MAX_ARRAY_SIZE)
-            throw new SQLFeatureNotSupportedException("Invalid argument. InputStreams with length > " + MAX_ARRAY_SIZE +
-                    " are not supported.");
-
-        if (x == null)
-            setNull(paramIdx, BINARY);
-        else
-            setArgument(paramIdx, SqlInputStreamWrapper.withKnownLength(x, (int)len));
+        throw new SQLFeatureNotSupportedException("Streams are not supported.");
     }
 
     /** {@inheritDoc} */
@@ -501,10 +467,7 @@ public class JdbcPreparedStatement extends JdbcStatement implements PreparedStat
     @Override public void setBinaryStream(int paramIdx, InputStream x) throws SQLException {
         ensureNotClosed();
 
-        if (x == null)
-            setNull(paramIdx, BINARY);
-        else
-            setArgument(paramIdx, SqlInputStreamWrapper.withUnknownLength(x, conn.getMaxInMemoryLobSize()));
+        throw new SQLFeatureNotSupportedException("Streams are not supported.");
     }
 
     /** {@inheritDoc} */
@@ -530,7 +493,9 @@ public class JdbcPreparedStatement extends JdbcStatement implements PreparedStat
 
     /** {@inheritDoc} */
     @Override public void setBlob(int paramIdx, InputStream inputStream) throws SQLException {
-        setBinaryStream(paramIdx, inputStream);
+        ensureNotClosed();
+
+        throw new SQLFeatureNotSupportedException("SQL-specific types are not supported.");
     }
 
     /** {@inheritDoc} */

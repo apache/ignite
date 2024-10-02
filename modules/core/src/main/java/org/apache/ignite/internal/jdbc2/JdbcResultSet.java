@@ -17,7 +17,6 @@
 
 package org.apache.ignite.internal.jdbc2;
 
-import java.io.ByteArrayInputStream;
 import java.io.InputStream;
 import java.io.Reader;
 import java.math.BigDecimal;
@@ -592,11 +591,9 @@ public class JdbcResultSet implements ResultSet {
 
     /** {@inheritDoc} */
     @Override public InputStream getBinaryStream(int colIdx) throws SQLException {
-        byte[] bytes = getBytes(colIdx);
+        ensureNotClosed();
 
-        return bytes != null
-                ? new ByteArrayInputStream(bytes)
-                : null;
+        throw new SQLFeatureNotSupportedException("Stream are not supported.");
     }
 
     /** {@inheritDoc} */
@@ -706,11 +703,9 @@ public class JdbcResultSet implements ResultSet {
 
     /** {@inheritDoc} */
     @Override public InputStream getBinaryStream(String colLb) throws SQLException {
-        byte[] bytes = getBytes(colLb);
+        ensureNotClosed();
 
-        return bytes != null
-                ? new ByteArrayInputStream(getBytes(colLb))
-                : null;
+        throw new SQLFeatureNotSupportedException("Streams are not supported.");
     }
 
     /** {@inheritDoc} */
@@ -1299,18 +1294,12 @@ public class JdbcResultSet implements ResultSet {
 
     /** {@inheritDoc} */
     @Override public Blob getBlob(int colIdx) throws SQLException {
-        byte[] bytes = getBytes(colIdx);
-
-        return bytes != null
-                ? new JdbcBlob(((JdbcConnection)stmt.getConnection()).getMaxInMemoryLobSize(), bytes)
-                : null;
+        return new JdbcBlob(getBytes(colIdx));
     }
 
     /** {@inheritDoc} */
     @Override public Clob getClob(int colIdx) throws SQLException {
-        String str = getString(colIdx);
-
-        return str != null ? new JdbcClob(str) : null;
+        return new JdbcClob(getString(colIdx));
     }
 
     /** {@inheritDoc} */
@@ -1334,18 +1323,12 @@ public class JdbcResultSet implements ResultSet {
 
     /** {@inheritDoc} */
     @Override public Blob getBlob(String colLb) throws SQLException {
-        byte[] bytes = getBytes(colLb);
-
-        return bytes != null
-                ? new JdbcBlob(((JdbcConnection)stmt.getConnection()).getMaxInMemoryLobSize(), bytes)
-                : null;
+        return new JdbcBlob(getBytes(colLb));
     }
 
     /** {@inheritDoc} */
     @Override public Clob getClob(String colLb) throws SQLException {
-        String str = getString(colLb);
-
-        return str != null ? new JdbcClob(str) : null;
+        return new JdbcClob(getString(colLb));
     }
 
     /** {@inheritDoc} */

@@ -29,7 +29,6 @@ import java.util.List;
 import java.util.UUID;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.internal.IgniteEx;
-import org.apache.ignite.internal.processors.odbc.SqlInputStreamWrapper;
 import org.apache.ignite.internal.processors.odbc.SqlStateCode;
 import org.apache.ignite.internal.util.typedef.F;
 
@@ -661,10 +660,7 @@ public class JdbcStatement implements Statement {
     /**
      * @return Args for current statement
      */
-    protected final Object[] getArgs() throws SQLException {
-        if (args != null)
-            materializeStreamArguments(args);
-
+    protected final Object[] getArgs() {
         return args != null ? args.toArray() : null;
     }
 
@@ -705,48 +701,6 @@ public class JdbcStatement implements Statement {
 
             results = null;
             curRes = 0;
-        }
-    }
-
-    /**
-     * Read data from Stream and Blob arguments and replace them with actual data.
-     *
-     * @throws SQLException On error.
-     */
-    protected void materializeStreamArguments(List<Object> args) throws SQLException {
-        for (int i = 0; i < args.size(); i++) {
-            byte[] bytes = null;
-
-            try {
-                if (args.get(i) instanceof SqlInputStreamWrapper) {
-                    SqlInputStreamWrapper wrapper = (SqlInputStreamWrapper)args.get(i);
-
-                    int streamLen = wrapper.getLength();
-
-                    bytes = new byte[streamLen];
-
-                    int readLen;
-
-                    readLen = wrapper.getInputStream().read(bytes);
-
-                    wrapper.close();
-
-                    if (readLen != streamLen)
-                        throw new SQLException("Input stream length mismatch. [declaredLength=" + streamLen + ", " +
-                                "actualLength=" + readLen + "]");
-                }
-                else if (args.get(i) instanceof JdbcBlob) {
-                    JdbcBlob blob = (JdbcBlob)args.get(i);
-
-                    bytes = blob.getBytes(1, (int)blob.length());
-                }
-            }
-            catch (Exception e) {
-                throw new SQLException("Failed to read from InputStream or Blob argument, parameter index = " + (i + 1), e);
-            }
-
-            if (bytes != null)
-                args.set(i, bytes);
         }
     }
 }

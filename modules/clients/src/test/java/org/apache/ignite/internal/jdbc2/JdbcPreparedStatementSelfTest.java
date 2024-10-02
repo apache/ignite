@@ -17,37 +17,23 @@
 
 package org.apache.ignite.internal.jdbc2;
 
-import java.io.ByteArrayInputStream;
-import java.io.IOException;
-import java.io.OutputStream;
 import java.io.Serializable;
 import java.math.BigDecimal;
 import java.net.URL;
-import java.nio.file.Files;
-import java.nio.file.NotDirectoryException;
-import java.nio.file.Path;
 import java.sql.Blob;
 import java.sql.Clob;
 import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
-import java.sql.SQLException;
-import java.sql.SQLFeatureNotSupportedException;
 import java.sql.Time;
 import java.sql.Timestamp;
-import java.util.Collections;
 import java.util.Date;
-import java.util.Random;
-import java.util.Set;
-import java.util.stream.Collectors;
-import java.util.stream.Stream;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.cache.query.annotations.QuerySqlField;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.ConnectorConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
-import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
 
@@ -70,18 +56,13 @@ import static java.sql.Types.VARCHAR;
 import static org.apache.ignite.IgniteJdbcDriver.CFG_URL_PREFIX;
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
-import static org.apache.ignite.testframework.GridTestUtils.assertThrows;
-import static org.junit.Assert.assertArrayEquals;
 
 /**
  * Prepared statement test.
  */
 public class JdbcPreparedStatementSelfTest extends GridCommonAbstractTest {
-    /** Default URL params. */
-    private static final String URL_DEFAULT_PARAM = "cache=default@modules/clients/src/test/config/jdbc-config.xml";
-
     /** JDBC URL. */
-    private static final String BASE_URL = CFG_URL_PREFIX + URL_DEFAULT_PARAM;
+    private static final String BASE_URL = CFG_URL_PREFIX + "cache=default@modules/clients/src/test/config/jdbc-config.xml";
 
     /** Connection. */
     private Connection conn;
@@ -583,311 +564,28 @@ public class JdbcPreparedStatementSelfTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     @Test
-    public void testBinaryStreamKnownLength() throws Exception {
-        stmt = conn.prepareStatement("select * from TestObject where arrVal is not distinct from ?");
-
-        ByteArrayInputStream stream = new ByteArrayInputStream(new byte[]{1});
-
-        assertThrows(null, () -> {
-            stmt.setBinaryStream(1, stream, -1L);
-            return null;
-        }, SQLException.class, null);
-
-        assertThrows(null, () -> {
-            stmt.setBinaryStream(1, stream, (long)(Integer.MAX_VALUE - 8 + 1));
-            return null;
-        }, SQLFeatureNotSupportedException.class, null);
-
-        assertThrows(null, () -> {
-            stmt.setBinaryStream(1, stream, -1);
-            return null;
-        }, SQLException.class, null);
-
-        assertThrows(null, () -> {
-            stmt.setBinaryStream(1, stream, Integer.MAX_VALUE - 8 + 1);
-            return null;
-        }, SQLFeatureNotSupportedException.class, null);
-
-        stmt.setBinaryStream(1, stream, 1);
-        ResultSet rs = stmt.executeQuery();
-        assertTrue(rs.next());
-        assertEquals(1, rs.getInt("id"));
-        assertFalse(rs.next());
-
-        stream.reset();
-        stmt.setBinaryStream(1, stream, 1L);
-        rs = stmt.executeQuery();
-        assertTrue(rs.next());
-        assertEquals(1, rs.getInt("id"));
-        assertFalse(rs.next());
-
-        stream.reset();
-        stmt.setBinaryStream(1, stream, 10L);
-        assertThrows(null, () -> stmt.executeQuery(), SQLException.class, null);
-
-        stmt.setBinaryStream(1, null, 0);
-        rs = stmt.executeQuery();
-        assertTrue(rs.next());
-        assertEquals(2, rs.getInt("id"));
-        assertFalse(rs.next());
-
-        stmt.setBinaryStream(1, null, 0L);
-        rs = stmt.executeQuery();
-        assertTrue(rs.next());
-        assertEquals(2, rs.getInt("id"));
-        assertFalse(rs.next());
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
-    @Test
-    public void testBinaryStreamUnknownLength() throws Exception {
-        stmt = conn.prepareStatement("select * from TestObject where arrVal is not distinct from ?");
-
-        ByteArrayInputStream stream = new ByteArrayInputStream(new byte[]{1});
-
-        stmt.setBinaryStream(1, stream);
-        ResultSet rs = stmt.executeQuery();
-        assertTrue(rs.next());
-        assertEquals(1, rs.getInt("id"));
-        assertFalse(rs.next());
-
-        stmt.setBinaryStream(1, null);
-        rs = stmt.executeQuery();
-        assertTrue(rs.next());
-        assertEquals(2, rs.getInt("id"));
-        assertFalse(rs.next());
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
-    @Test
-    public void testBinaryStreamUnknownLengthOnDiskMaterialized() throws Exception {
-        String url = CFG_URL_PREFIX + "maxInMemoryLobSize=5:" + URL_DEFAULT_PARAM;
-
-        Connection conn = DriverManager.getConnection(url);
-
-        String sql = "insert into TestObject(_key, id, blobVal) values (?, ?, ?)";
-
-        byte[] bytes = new byte[] {0, 1, 2, 3, 4, 5, 6, 7, 8, 9};
-
-        Set<String> existingTempStreamFiles = getTempStreamFiles();
-        Set<String> newTempStreamFiles;
-
-        try (conn) {
-            PreparedStatement stmtToBeLeftUnclosed = conn.prepareStatement(sql);
-            stmtToBeLeftUnclosed.setInt(1, 3);
-            stmtToBeLeftUnclosed.setInt(2, 3);
-            stmtToBeLeftUnclosed.setBinaryStream(3, new ByteArrayInputStream(bytes));
-
-            PreparedStatement stmtToBeClosed = conn.prepareStatement(sql);
-            stmtToBeClosed.setInt(1, 4);
-            stmtToBeClosed.setInt(2, 4);
-            stmtToBeClosed.setBinaryStream(3, new ByteArrayInputStream(bytes));
-
-            PreparedStatement stmtToBeNotExecutedButClosed = conn.prepareStatement(sql);
-            stmtToBeNotExecutedButClosed.setInt(1, 5);
-            stmtToBeNotExecutedButClosed.setInt(2, 5);
-            stmtToBeNotExecutedButClosed.setBinaryStream(3, new ByteArrayInputStream(bytes));
-
-            newTempStreamFiles = getTempStreamFiles();
-            newTempStreamFiles.removeAll(existingTempStreamFiles);
-            assertEquals(3, newTempStreamFiles.size());
-
-            assertEquals(1, stmtToBeLeftUnclosed.executeUpdate());
-            assertEquals(1, stmtToBeClosed.executeUpdate());
-
-            // Abandon the statements without closing it.
-            stmtToBeLeftUnclosed = null;
-
-            stmtToBeNotExecutedButClosed.close();
-            stmtToBeClosed.close();
-
-            stmt = conn.prepareStatement("select * from TestObject where id = ?");
-
-            stmt.setInt(1, 3);
-            ResultSet rs = stmt.executeQuery();
-            assertTrue(rs.next());
-            assertArrayEquals(bytes, rs.getBytes("blobVal"));
-            assertFalse(rs.next());
-
-            stmt.setInt(1, 4);
-            rs = stmt.executeQuery();
-            assertTrue(rs.next());
-            assertArrayEquals(bytes, rs.getBytes("blobVal"));
-            assertFalse(rs.next());
-        }
-        finally {
-            grid(0).cache(DEFAULT_CACHE_NAME).remove(3);
-            grid(0).cache(DEFAULT_CACHE_NAME).remove(4);
-        }
-
-        // Invoke gc to force phantom references detection.
-        System.gc();
-
-        // Make sure the phantom reference to stream wrapper created inside
-        // the stmtToBeLeftUnclosed statemnt was detected and the corresponding
-        // temp file is removed by java.lang.ref.Cleaner thread.
-        assertTrue(GridTestUtils.waitForCondition(() -> !getTempStreamFiles().containsAll(newTempStreamFiles), 3_000, 10));
-    }
-
-    /** */
-    private Set<String> getTempStreamFiles() {
-        Path tmpDir = Path.of(System.getProperty("java.io.tmpdir"));
-
-        try (Stream<Path> entries = Files.list(tmpDir)) {
-            return entries
-                    .map(Path::getFileName)
-                    .map(Path::toString)
-                    .filter(e -> e.startsWith("ignite-jdbc-temp-data"))
-                    .collect(Collectors.toSet());
-        }
-        catch (NotDirectoryException e) {
-            throw new AssertionError(e);
-        }
-        catch (IOException e) {
-            return Collections.emptySet();
-        }
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
-    @Test
     public void testBlob() throws Exception {
         stmt = conn.prepareStatement("select * from TestObject where blobVal is not distinct from ?");
 
         Blob blob = conn.createBlob();
+
         blob.setBytes(1, new byte[] {1});
+
         stmt.setBlob(1, blob);
+
         ResultSet rs = stmt.executeQuery();
-        assertTrue(rs.next());
-        assertEquals(1, rs.getInt("id"));
-        assertFalse(rs.next());
 
-        Blob blob2 = conn.createBlob();
-        stmt.setBlob(1, blob2);
-        blob2.setBytes(1, new byte[] {1});
-        rs = stmt.executeQuery();
-        assertTrue(rs.next());
-        assertEquals(1, rs.getInt("id"));
-        assertFalse(rs.next());
-
-        Blob blob3 = conn.createBlob();
-        stmt.setBlob(1, blob3);
-        try (OutputStream out = blob3.setBinaryStream(1)) {
-            out.write(new byte[] {1});
-        }
-        rs = stmt.executeQuery();
-        assertTrue(rs.next());
-        assertEquals(1, rs.getInt("id"));
-        assertFalse(rs.next());
-
-        Blob blob4 = conn.createBlob();
-        stmt.setBlob(1, blob4);
-        try (OutputStream out = blob4.setBinaryStream(1)) {
-            out.write(1);
-        }
-        rs = stmt.executeQuery();
         assertTrue(rs.next());
         assertEquals(1, rs.getInt("id"));
         assertFalse(rs.next());
 
         stmt.setNull(1, BLOB);
+
         rs = stmt.executeQuery();
+
         assertTrue(rs.next());
         assertEquals(2, rs.getInt("id"));
         assertFalse(rs.next());
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
-    @Test
-    public void testBlobInputStream() throws Exception {
-        final int BLOB_SIZE = 123;
-
-        byte[] bytes = new byte[BLOB_SIZE + 100];
-        new Random().nextBytes(bytes);
-
-        try {
-            try (PreparedStatement stmt = conn.prepareStatement("insert into TestObject(_key, id, blobVal) values (?, ?, ?)")) {
-                ByteArrayInputStream stream1 = new ByteArrayInputStream(bytes);
-
-                stmt.setInt(1, 3);
-                stmt.setInt(2, 3);
-                stmt.setBlob(3, stream1, BLOB_SIZE);
-
-                assertEquals(1, stmt.executeUpdate());
-            }
-
-            try (PreparedStatement stmt = conn.prepareStatement("select * from TestObject where blobVal is not distinct from ?")) {
-                ByteArrayInputStream stream2 = new ByteArrayInputStream(bytes);
-
-                stmt.setBlob(1, stream2, BLOB_SIZE);
-
-                ResultSet rs = stmt.executeQuery();
-
-                assertTrue(rs.next());
-                assertEquals(3, rs.getInt("id"));
-                assertFalse(rs.next());
-            }
-        }
-        finally {
-            grid(0).cache(DEFAULT_CACHE_NAME).remove(3);
-        }
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
-    @Test
-    public void testBlobOnDiskMaterialized() throws Exception {
-        String url = CFG_URL_PREFIX + "maxInMemoryLobSize=5:" + URL_DEFAULT_PARAM;
-
-        Connection conn = DriverManager.getConnection(url);
-
-        byte[] bytes = new byte[] {1, 2, 3, 4, 5, 6, 7, 8, 9};
-
-        Blob blob = null;
-
-        try (conn) {
-            try (PreparedStatement stmt = conn.prepareStatement("insert into TestObject(_key, id, blobVal) values (?, ?, ?)")) {
-                blob = conn.createBlob();
-
-                try (OutputStream outputStream = blob.setBinaryStream(1)) {
-                    outputStream.write(0);
-                    outputStream.write(bytes);
-                    outputStream.write(10);
-                    outputStream.write(bytes, 2, 2);
-                }
-
-                stmt.setInt(1, 3);
-                stmt.setInt(2, 3);
-                stmt.setBlob(3, blob);
-
-                assertEquals(1, stmt.executeUpdate());
-            }
-            finally {
-                if (blob != null)
-                    blob.free();
-            }
-
-            try (PreparedStatement stmt = conn.prepareStatement("select * from TestObject where blobVal is not distinct from ?")) {
-                stmt.setBlob(1, new ByteArrayInputStream(new byte[] {0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 3, 4}));
-
-                ResultSet rs = stmt.executeQuery();
-
-                assertTrue(rs.next());
-                assertEquals(3, rs.getInt("id"));
-                assertFalse(rs.next());
-            }
-        }
-        finally {
-            grid(0).cache(DEFAULT_CACHE_NAME).remove(3);
-        }
     }
 
     /**
