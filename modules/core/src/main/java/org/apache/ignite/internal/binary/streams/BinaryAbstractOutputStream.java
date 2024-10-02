@@ -30,7 +30,7 @@ public abstract class BinaryAbstractOutputStream extends BinaryAbstractStream
     private static final int MIN_CAP = 256;
 
     /** Max capacity when it is still reasonable doubling resize. */
-    private static final int MAX_CAP = 32 * 1024 * 1024;
+    protected static final int MAX_CAP = 32 * 1024 * 1024;
 
     /**
      * The maximum size of array to allocate.
@@ -307,17 +307,16 @@ public abstract class BinaryAbstractOutputStream extends BinaryAbstractStream
         else if (reqCap < MIN_CAP)
             newCap = MIN_CAP;
         else if (reqCap > MAX_CAP) {
-            newCap = reqCap + MAX_CAP;
+            if (reqCap < MAX_ARRAY_SIZE - MAX_CAP)
+                newCap = reqCap + MAX_CAP;
+            else
+                newCap = MAX_ARRAY_SIZE;
         }
         else {
             newCap = Math.max(curCap, MIN_CAP);
 
-            while (newCap < reqCap) {
+            while (newCap < reqCap)
                 newCap = newCap << 1;
-
-                if (newCap < 0)
-                    newCap = MAX_ARRAY_SIZE;
-            }
         }
 
         return newCap;
