@@ -169,7 +169,6 @@ class IgniteThinClientConfiguration(NamedTuple):
 
 
 class IgniteThinJdbcConfiguration(NamedTuple):
-    url: str = None
     addresses: list = []
     version: IgniteVersion = DEV_BRANCH
     ssl_params: SslParams = None
