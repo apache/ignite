@@ -18,17 +18,11 @@
 package org.apache.ignite.internal.processors.query.calcite.planner;
 
 import java.util.Arrays;
-import java.util.List;
-import java.util.function.Predicate;
-import org.apache.calcite.rel.RelNode;
-import org.apache.calcite.rel.core.SetOp;
+
 import org.apache.calcite.rel.core.Union;
-import org.apache.calcite.rel.type.RelDataType;
 import org.apache.calcite.rel.type.RelDataTypeFactory;
-import org.apache.calcite.sql.type.SqlTypeName;
 import org.apache.ignite.internal.processors.query.calcite.metadata.ColocationGroup;
 import org.apache.ignite.internal.processors.query.calcite.prepare.MappingQueryContext;
-import org.apache.ignite.internal.processors.query.calcite.rel.IgniteProject;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteUnionAll;
 import org.apache.ignite.internal.processors.query.calcite.rel.agg.IgniteReduceAggregateBase;
 import org.apache.ignite.internal.processors.query.calcite.schema.IgniteSchema;
@@ -36,15 +30,14 @@ import org.apache.ignite.internal.processors.query.calcite.trait.IgniteDistribut
 import org.apache.ignite.internal.processors.query.calcite.trait.IgniteDistributions;
 import org.apache.ignite.internal.processors.query.calcite.type.IgniteTypeFactory;
 import org.apache.ignite.internal.processors.query.calcite.type.IgniteTypeSystem;
-import org.apache.ignite.internal.processors.query.calcite.util.Commons;
 import org.junit.Test;
 
 /**
- * Planner test for UNION/EXCEPT/INTERSECT.
+ *
  */
 //@WithSystemProperty(key = "calcite.debug", value = "true")
 @SuppressWarnings({"TooBroadScope", "FieldCanBeLocal", "TypeMayBeWeakened"})
-public class SharedSetOpPlannerTest extends AbstractPlannerTest {
+public class UnionPlannerTest extends AbstractPlannerTest {
     /**
      * @throws Exception If failed.
      */
@@ -85,91 +78,6 @@ public class SharedSetOpPlannerTest extends AbstractPlannerTest {
                 .and(input(0, hasChildThat(isTableScan("TABLE1"))))
                 .and(input(1, hasChildThat(isTableScan("TABLE2"))))
                 .and(input(2, hasChildThat(isTableScan("TABLE3")))));
-    }
-
-
-    /** Tests casts of numeric types in SetOps (UNION, EXCEPT, INTERSECT, etc.). */
-    @Test
-    public void testSetOpNumbersCast() throws Exception {
-        List<IgniteDistribution> distrs = Arrays.asList(IgniteDistributions.single(), IgniteDistributions.random(),
-            IgniteDistributions.affinity(0, 1001, 0));
-
-        for (IgniteDistribution d1 : distrs) {
-            for (IgniteDistribution d2 : distrs) {
-                doTestSetOpNumbersCast(d1, d2, true, true);
-
-                doTestSetOpNumbersCast(d1, d2, false, true);
-
-                doTestSetOpNumbersCast(d1, d2, false, false);
-            }
-        }
-    }
-
-    /** */
-    private void doTestSetOpNumbersCast(
-        IgniteDistribution distr1,
-        IgniteDistribution distr2,
-        boolean nullable1,
-        boolean nullable2
-    ) throws Exception {
-        IgniteSchema schema = new IgniteSchema(DEFAULT_SCHEMA);
-
-        IgniteTypeFactory f = Commons.typeFactory();
-
-        SqlTypeName[] numTypes = new SqlTypeName[] {SqlTypeName.TINYINT, SqlTypeName.SMALLINT, SqlTypeName.REAL,
-            SqlTypeName.FLOAT, SqlTypeName.INTEGER, SqlTypeName.BIGINT, SqlTypeName.DOUBLE, SqlTypeName.DECIMAL};
-
-        boolean notNull = !nullable1 && !nullable2;
-
-        for (SqlTypeName t1 : numTypes) {
-            for (SqlTypeName t2 : numTypes) {
-                RelDataType type = new RelDataTypeFactory.Builder(f)
-                    .add("C1", f.createTypeWithNullability(f.createSqlType(t1), nullable1))
-                    .add("C2", f.createTypeWithNullability(f.createSqlType(SqlTypeName.VARCHAR), true))
-                    .build();
-
-                createTable(schema, "TABLE1", type, distr1, null);
-
-                type = new RelDataTypeFactory.Builder(f)
-                    .add("C1", f.createTypeWithNullability(f.createSqlType(t2), nullable2))
-                    .add("C2", f.createTypeWithNullability(f.createSqlType(SqlTypeName.VARCHAR), true))
-                    .build();
-
-                createTable(schema, "TABLE2", type, distr2, null);
-
-                for (String op : Arrays.asList("UNION", "INTERSECT", "EXCEPT")) {
-                    String sql = "SELECT * FROM table1 " + op + " SELECT * FROM table2";
-
-                    if (t1 == t2 && (!nullable1 || !nullable2))
-                        assertPlan(sql, schema, nodeOrAnyChild(isInstanceOf(IgniteProject.class)).negate());
-                    else {
-                        RelDataType targetT = f.leastRestrictive(Arrays.asList(f.createSqlType(t1), f.createSqlType(t2)));
-
-                        assertPlan(sql, schema, nodeOrAnyChild(isInstanceOf(SetOp.class)
-                            .and(t1 == targetT.getSqlTypeName() ? input(0, nodeOrAnyChild(isInstanceOf(IgniteProject.class)).negate())
-                                : input(0, projectFromTable("TABLE1", "CAST($0):" + targetT + (notNull ? " NOT NULL" : ""), "$1")))
-                            .and(t2 == targetT.getSqlTypeName() ? input(1, nodeOrAnyChild(isInstanceOf(IgniteProject.class)).negate())
-                                : input(1, projectFromTable("TABLE2", "CAST($0):" + targetT + (notNull ? " NOT NULL" : ""), "$1")))
-                        ));
-                    }
-                }
-            }
-        }
-    }
-
-    /** */
-    protected Predicate<? extends RelNode> projectFromTable(String tableName, String... exprs) {
-        return nodeOrAnyChild(
-            isInstanceOf(IgniteProject.class)
-                .and(projection -> {
-                    String actualProj = projection.getProjects().toString();
-
-                    String expectedProj = Arrays.asList(exprs).toString();
-
-                    return actualProj.equals(expectedProj);
-                })
-                .and(input(nodeOrAnyChild(isTableScan(tableName))))
-        );
     }
 
     /**

@@ -21,6 +21,7 @@ import org.apache.ignite.internal.processors.query.calcite.planner.AggregateDist
 import org.apache.ignite.internal.processors.query.calcite.planner.AggregatePlannerTest;
 import org.apache.ignite.internal.processors.query.calcite.planner.CorrelatedNestedLoopJoinPlannerTest;
 import org.apache.ignite.internal.processors.query.calcite.planner.CorrelatedSubqueryPlannerTest;
+import org.apache.ignite.internal.processors.query.calcite.planner.DataTypesPlannerTest;
 import org.apache.ignite.internal.processors.query.calcite.planner.HashAggregatePlannerTest;
 import org.apache.ignite.internal.processors.query.calcite.planner.HashIndexSpoolPlannerTest;
 import org.apache.ignite.internal.processors.query.calcite.planner.IndexRebuildPlannerTest;
@@ -36,13 +37,13 @@ import org.apache.ignite.internal.processors.query.calcite.planner.PlannerTimeou
 import org.apache.ignite.internal.processors.query.calcite.planner.ProjectFilterScanMergePlannerTest;
 import org.apache.ignite.internal.processors.query.calcite.planner.SerializationPlannerTest;
 import org.apache.ignite.internal.processors.query.calcite.planner.SetOpPlannerTest;
-import org.apache.ignite.internal.processors.query.calcite.planner.SharedSetOpPlannerTest;
 import org.apache.ignite.internal.processors.query.calcite.planner.SortAggregatePlannerTest;
 import org.apache.ignite.internal.processors.query.calcite.planner.SortedIndexSpoolPlannerTest;
 import org.apache.ignite.internal.processors.query.calcite.planner.StatisticsPlannerTest;
 import org.apache.ignite.internal.processors.query.calcite.planner.TableDmlPlannerTest;
 import org.apache.ignite.internal.processors.query.calcite.planner.TableFunctionPlannerTest;
 import org.apache.ignite.internal.processors.query.calcite.planner.TableSpoolPlannerTest;
+import org.apache.ignite.internal.processors.query.calcite.planner.UnionPlannerTest;
 import org.apache.ignite.internal.processors.query.calcite.planner.UserDefinedViewsPlannerTest;
 import org.apache.ignite.internal.processors.query.calcite.planner.hints.HintsTestSuite;
 import org.junit.runner.RunWith;
@@ -66,7 +67,8 @@ import org.junit.runners.Suite;
     SetOpPlannerTest.class,
     TableFunctionPlannerTest.class,
     TableDmlPlannerTest.class,
-    SharedSetOpPlannerTest.class,
+    UnionPlannerTest.class,
+    DataTypesPlannerTest.class,
     JoinCommutePlannerTest.class,
     LimitOffsetPlannerTest.class,
     MergeJoinPlannerTest.class,
