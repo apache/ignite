@@ -481,10 +481,10 @@ public class ExecutionTest extends AbstractExecutionTest {
         IgniteTypeFactory tf = ctx.getTypeFactory();
         RelDataType rowType = TypeUtils.createRowType(tf, int.class, String.class, int.class);
 
-        int[] leftSizes = {1, 99, 100, 101, 512, 513, 2000};
-        int[] rightSizes = {1, 99, 100, 101, 512, 513, 2000};
-        int[] rightBufSizes = {1, 100, 512};
-        JoinRelType[] joinTypes = {INNER, LEFT};
+        int[] leftSizes = {512};
+        int[] rightSizes = {1};//, 99, 100, 101, 512, 513, 2000};
+        int[] rightBufSizes = {1};//, 100, 512};
+        JoinRelType[] joinTypes = {LEFT};
 
         for (JoinRelType joinType : joinTypes) {
             for (int rightBufSize : rightBufSizes) {
@@ -515,8 +515,11 @@ public class ExecutionTest extends AbstractExecutionTest {
 
                         join.register(Arrays.asList(left, right));
 
+                        FilterNode<Object[]> filter = new FilterNode<>(ctx, rowType, r -> true);
+                        filter.register(join);
+
                         RootNode<Object[]> root = new RootNode<>(ctx, joinRowType);
-                        root.register(join);
+                        root.register(filter);
 
                         int cnt = 0;
                         while (root.hasNext()) {

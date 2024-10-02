@@ -348,6 +348,15 @@ public class DataTypesTest extends AbstractBasicIntegrationTest {
         }
     }
 
+    /** */
+    @Test
+    public void test0(){
+        assertQuery("SELECT ARRAY[1, 2, 3] UNION ALL SELECT NULL").returns(false).check();
+
+
+
+    }
+
     /** Cache API - SQL API cross check. */
     @Test
     public void testBinaryCache() {
