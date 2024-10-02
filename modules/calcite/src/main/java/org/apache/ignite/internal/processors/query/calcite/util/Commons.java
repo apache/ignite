@@ -47,6 +47,8 @@ import org.apache.calcite.rex.RexNode;
 import org.apache.calcite.sql.SqlNodeList;
 import org.apache.calcite.sql.parser.SqlParseException;
 import org.apache.calcite.sql.parser.SqlParser;
+import org.apache.calcite.sql.type.SqlTypeFamily;
+import org.apache.calcite.sql.type.SqlTypeName;
 import org.apache.calcite.sql.type.SqlTypeUtil;
 import org.apache.calcite.util.ImmutableBitSet;
 import org.apache.calcite.util.ImmutableIntList;
@@ -148,7 +150,7 @@ public final class Commons {
     }
 
     /**
-     * Finds the least restrictive type of the inputs and adds a cast projection if required.
+     * Finds the least restrictive type of the inputs and adds a cast projection if required. Doesn't cast {@link SqlTypeName#NULL}.
      *
      * @param inputs Inputs to try to cast.
      * @param cluster Cluster.
@@ -182,9 +184,14 @@ public final class Commons {
             }
 
             List<RexNode> expressions = new ArrayList<>(inputRowType.getFieldCount());
+            boolean allNulls = true;
 
             for (int i = 0; i < leastRestrictive.getFieldCount(); i++) {
                 RelDataType fieldType = inputRowType.getFieldList().get(i).getType();
+
+                if (allNulls && fieldType.getFamily() != SqlTypeFamily.NULL)
+                    allNulls = false;
+
                 RelDataType outFieldType = leastRestrictive.getFieldList().get(i).getType();
 
                 RexNode ref = rexBuilder.makeInputRef(input, i);
@@ -195,7 +202,7 @@ public final class Commons {
                     expressions.add(rexBuilder.makeCast(outFieldType, ref, true, false));
             }
 
-            newInputs.add(new IgniteProject(cluster, traits, input, expressions, leastRestrictive));
+            newInputs.add(allNulls ? input : new IgniteProject(cluster, traits, input, expressions, leastRestrictive));
         }
 
         return newInputs;
