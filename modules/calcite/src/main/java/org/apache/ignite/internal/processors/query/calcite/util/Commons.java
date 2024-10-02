@@ -47,8 +47,6 @@ import org.apache.calcite.rex.RexNode;
 import org.apache.calcite.sql.SqlNodeList;
 import org.apache.calcite.sql.parser.SqlParseException;
 import org.apache.calcite.sql.parser.SqlParser;
-import org.apache.calcite.sql.type.SqlTypeFamily;
-import org.apache.calcite.sql.type.SqlTypeName;
 import org.apache.calcite.sql.type.SqlTypeUtil;
 import org.apache.calcite.util.ImmutableBitSet;
 import org.apache.calcite.util.ImmutableIntList;
@@ -150,7 +148,7 @@ public final class Commons {
     }
 
     /**
-     * Finds the least restrictive type of the inputs and adds a cast projection if required. Doesn't cast {@link SqlTypeName#NULL}.
+     * Finds the least restrictive type of the inputs and adds a cast projection if required.
      *
      * @param inputs Inputs to try to cast.
      * @param cluster Cluster.

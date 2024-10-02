@@ -471,17 +471,17 @@ public class SetOpIntegrationTest extends AbstractBasicIntegrationTest {
     /** */
     @Test
     public void testNumbersCastInUnion() throws Exception {
-        doTestNumbersCastInSetOp("UNION", 10, 20, 30, 33, 40, 44, 50);
+        doTestNumbersCastInSetOp("UNION", 10, 20, 30, 33, 40, 44, 50, null);
 
-        doTestNumbersCastInSetOp("UNION ALL", 10, 20, 20, 30, 30, 33, 40, 44, 50, 50, 50, 50);
+        doTestNumbersCastInSetOp("UNION ALL", 10, 20, 20, 30, 30, 33, 40, 44, 50, 50, 50, 50, null, null);
     }
 
     /** */
     @Test
     public void testNumbersCastInIntersect() throws Exception {
-        doTestNumbersCastInSetOp("INTERSECT", 20, 50);
+        doTestNumbersCastInSetOp("INTERSECT", 20, 50, null);
 
-        doTestNumbersCastInSetOp("INTERSECT ALL", 20, 50, 50);
+        doTestNumbersCastInSetOp("INTERSECT ALL", 20, 50, 50, null);
     }
 
     /** */
@@ -494,27 +494,28 @@ public class SetOpIntegrationTest extends AbstractBasicIntegrationTest {
 
     /**
      * Tests 'SELECT TBL1.val SetOp TBL2.val' where TBL1 has `INT val` and TBL2 has 'val' of different numeric type.
-     *  TBL1: 30, 20, 30, 40, 50, 50
-     *  TBL2: 10, 20, 33, 44, 50, 50
+     *  TBL1: 30, 20, 30, 40, 50, 50, null
+     *  TBL2: 10, 20, 33, 44, 50, 50, null
      *
      * @param op Operation like 'UNION' or 'INTERSECT'
      * @param expected Expected result as integers.
      */
-    private void doTestNumbersCastInSetOp(String op, int... expected) throws InterruptedException {
+    private void doTestNumbersCastInSetOp(String op, Integer... expected) throws InterruptedException {
         List<String> types = F.asList("TINYINT", "SMALLINT", "INTEGER", "REAL", "FLOAT", "BIGINT", "DOUBLE", "DECIMAL");
 
         sql(client, "CREATE TABLE t0(id INT PRIMARY KEY, val INTEGER) WITH \"affinity_key=id\"");
 
         try {
-            sql(client, "INSERT INTO t0 VALUES (1, 30), (2, 20), (3, 30), (4, 40), (5, 50), (6, 50)");
+            sql(client, "INSERT INTO t0 VALUES (1, 30), (2, 20), (3, 30), (4, 40), (5, 50), (6, 50), (7, null)");
 
             for (String tblOpts : Arrays.asList("", " WITH \"template=replicated\"", " WITH \"affinity_key=aff\"")) {
                 for (String t2 : types) {
                     sql(client, "CREATE TABLE t1(id INT, aff INT, val " + t2 + ", PRIMARY KEY(id, aff))" + tblOpts);
 
-                    sql(client, "INSERT INTO t1 VALUES (1, 1, 10), (2, 1, 20), (3, 1, 33), (4, 2, 44), (5, 2, 50), (6, 3, 50)");
+                    sql(client, "INSERT INTO t1 VALUES (1, 1, 10), (2, 1, 20), (3, 1, 33), (4, 2, 44), (5, 2, 50), " +
+                        "(6, 3, 50), (7, 3, null)");
 
-                    List<List<?>> res = sql(client, "SELECT val from t0 " + op + " select val from t1 ORDER BY 1");
+                    List<List<?>> res = sql(client, "SELECT val from t0 " + op + " select val from t1 ORDER BY 1 NULLS LAST");
 
                     sql(client, "DROP TABLE t1");
 
@@ -523,7 +524,7 @@ public class SetOpIntegrationTest extends AbstractBasicIntegrationTest {
                     for (int i = 0; i < expected.length; ++i) {
                         assertEquals(1, res.get(i).size());
 
-                        assertEquals(expected[i], ((Number)res.get(i).get(0)).intValue());
+                        assertEquals(expected[i], res.get(i).get(0) == null ? null : ((Number)res.get(i).get(0)).intValue());
                     }
                 }
             }
