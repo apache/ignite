@@ -152,6 +152,7 @@ import org.apache.ignite.resources.LoggerResource;
 import org.apache.ignite.thread.IgniteThreadFactory;
 import org.apache.ignite.transactions.Transaction;
 import org.apache.ignite.transactions.TransactionConcurrency;
+import org.apache.ignite.transactions.TransactionException;
 import org.apache.ignite.transactions.TransactionIsolation;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -1113,8 +1114,12 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
      * @param near Near cache flag.
      * @return Future.
      */
-    private IgniteInternalFuture<?> executeClearTask(@Nullable Set<? extends K> keys, boolean near) {
+    private IgniteInternalFuture<?> executeClearTask(@Nullable Set<? extends K> keys, boolean near) throws TransactionException {
         Collection<ClusterNode> srvNodes = ctx.grid().cluster().forCacheNodes(name(), !near, near, false).nodes();
+
+        if (ctx.transactional() && ctx.grid().transactions().tx() != null && keys == null)
+            throw new IgniteException("Failed to invoke a non-transactional operation within a transaction: " +
+                "IgniteCache.clear().");
 
         if (!srvNodes.isEmpty()) {
             return ctx.kernalContext().task().execute(
