@@ -41,8 +41,6 @@ public class AbstractAggregatePlannerTest extends AbstractPlannerTest {
             @Override public IgniteDistribution distribution() {
                 return distr;
             }
-
-
         };
     }
 

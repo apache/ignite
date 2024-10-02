@@ -19,17 +19,12 @@ package org.apache.ignite.internal.processors.query.calcite.planner;
 
 import java.math.BigDecimal;
 import java.util.List;
-import java.util.function.Predicate;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import org.apache.calcite.plan.RelOptUtil;
-import org.apache.calcite.rel.RelCollation;
-import org.apache.calcite.rel.RelCollations;
-import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.rel.core.Aggregate;
 import org.apache.calcite.rel.core.AggregateCall;
 import org.apache.calcite.rel.core.Join;
-import org.apache.calcite.rel.metadata.BuiltInMetadata;
 import org.apache.calcite.rel.type.RelDataType;
 import org.apache.calcite.rel.type.RelDataTypeFactory;
 import org.apache.calcite.sql.SqlExplainLevel;
@@ -363,62 +358,6 @@ public class AggregatePlannerTest extends AbstractAggregatePlannerTest {
             algo.rulesToDisable
         );
     }
-
-    /**
-     * Validates a plan for a query with aggregate and with sorting in descending order by a subset of grouping column.
-     */
-    @Test
-    public void groupsWithOrderBySubsetOfGroupColumnDescending() throws Exception {
-        IgniteSchema schema = createSchema(
-            createTable(
-                "TEST", IgniteDistributions.single(),
-                "ID", Integer.class,
-                "VAL0", Integer.class,
-                "VAL1", Integer.class
-            )
-        );
-
-        checkDerivedCollationWithOrderBySubsetOfGroupColumnsSingle(schema, "SELECT val0, val1, COUNT(*) cnt FROM test GROUP BY val0, val1 ORDER BY val1 DESC");
-
-//        checkDerivedCollationWithOrderBySubsetOfGroupColumnsHash(TestCase.CASE_26A);
-    }
-
-    private void checkDerivedCollationWithOrderBySubsetOfGroupColumnsSingle(IgniteSchema schema , String sql) throws Exception {
-        RelCollation outputCollation = RelCollations.of(
-            TraitUtils.createFieldCollation(1, true)
-        );
-
-        assertPlan(sql, schema,
-            isInstanceOf(IgniteSort.class)
-                .and(hasCollation(outputCollation))
-                .and(input(isInstanceOf(IgniteColocatedHashAggregate.class)))
-        );
-    }
-
-    <T extends RelNode> Predicate<T> hasCollation(RelCollation expected) {
-        return (node) -> {
-            RelCollation collation = TraitUtils.collation(node);
-            return expected.equals(collation);
-        };
-    }
-
-//    private void checkDerivedCollationWithOrderBySubsetOfGroupColumnsHash(TestCase testCase) throws Exception {
-//        RelCollation outputCollation = RelCollations.of(
-//            TraitUtils.createFieldCollation(1, Collation.DESC_NULLS_FIRST)
-//        );
-//
-//        assertPlan(testCase,
-//            isInstanceOf(IgniteSort.class)
-//                .and(hasCollation(outputCollation))
-//                .and(input(isInstanceOf(IgniteProject.class)
-//                    .and(input(isInstanceOf(IgniteReduceHashAggregate.class)
-//                        .and(input(isInstanceOf(IgniteExchange.class)
-//                            .and(hasDistribution(single()))
-//                            .and(input(isInstanceOf(IgniteMapHashAggregate.class)))
-//                        ))
-//                    ))
-//                )));
-//    }
 
     /**
      * @throws Exception If failed.

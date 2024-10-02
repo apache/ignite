@@ -94,7 +94,7 @@ public class TestTable implements IgniteCacheTable {
 
     /** */
     protected TestTable(RelDataType type) {
-        this(type, 500_000);
+        this(type, 100.0);
     }
 
     /** */
