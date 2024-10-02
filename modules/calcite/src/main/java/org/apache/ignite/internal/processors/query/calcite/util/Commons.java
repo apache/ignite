@@ -184,13 +184,9 @@ public final class Commons {
             }
 
             List<RexNode> expressions = new ArrayList<>(inputRowType.getFieldCount());
-            boolean allNulls = true;
 
             for (int i = 0; i < leastRestrictive.getFieldCount(); i++) {
                 RelDataType fieldType = inputRowType.getFieldList().get(i).getType();
-
-                if (allNulls && fieldType.getFamily() != SqlTypeFamily.NULL)
-                    allNulls = false;
 
                 RelDataType outFieldType = leastRestrictive.getFieldList().get(i).getType();
 
@@ -202,7 +198,7 @@ public final class Commons {
                     expressions.add(rexBuilder.makeCast(outFieldType, ref, true, false));
             }
 
-            newInputs.add(allNulls ? input : new IgniteProject(cluster, traits, input, expressions, leastRestrictive));
+            newInputs.add(new IgniteProject(cluster, traits, input, expressions, leastRestrictive));
         }
 
         return newInputs;
