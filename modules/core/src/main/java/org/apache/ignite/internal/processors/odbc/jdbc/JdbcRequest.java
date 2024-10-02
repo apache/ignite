@@ -21,10 +21,10 @@ import java.util.concurrent.atomic.AtomicLong;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.binary.BinaryObjectException;
 import org.apache.ignite.internal.binary.BinaryReaderExImpl;
+import org.apache.ignite.internal.binary.BinaryWriterExImpl;
 import org.apache.ignite.internal.binary.streams.BinaryHeapInputStream;
 import org.apache.ignite.internal.binary.streams.BinaryInputStream;
 import org.apache.ignite.internal.processors.odbc.ClientListenerRequestNoId;
-import org.apache.ignite.internal.processors.odbc.SqlBinaryWriter;
 import org.apache.ignite.internal.util.typedef.internal.S;
 
 /**
@@ -108,7 +108,7 @@ public class JdbcRequest extends ClientListenerRequestNoId implements JdbcRawBin
 
     /** {@inheritDoc} */
     @Override public void writeBinary(
-        SqlBinaryWriter writer,
+        BinaryWriterExImpl writer,
         JdbcProtocolContext protoCtx
     ) throws BinaryObjectException {
         writer.writeByte(type);

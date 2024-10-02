@@ -25,7 +25,6 @@ import org.apache.ignite.binary.BinaryObjectException;
 import org.apache.ignite.internal.binary.BinaryReaderExImpl;
 import org.apache.ignite.internal.binary.BinaryWriterExImpl;
 import org.apache.ignite.internal.binary.GridBinaryMarshaller;
-import org.apache.ignite.internal.processors.odbc.SqlBinaryWriter;
 import org.apache.ignite.internal.processors.odbc.SqlListenerUtils;
 import org.jetbrains.annotations.Nullable;
 
@@ -37,7 +36,7 @@ public class JdbcUtils {
      * @param writer Binary writer.
      * @param items Query results items.
      */
-    public static void writeItems(SqlBinaryWriter writer, List<List<Object>> items, JdbcProtocolContext protoCtx) {
+    public static void writeItems(BinaryWriterExImpl writer, List<List<Object>> items, JdbcProtocolContext protoCtx) {
         writer.writeInt(items.size());
 
         for (List<Object> row : items) {
@@ -155,7 +154,7 @@ public class JdbcUtils {
      * @throws BinaryObjectException On error.
      */
     public static void writeObject(
-        SqlBinaryWriter writer,
+        BinaryWriterExImpl writer,
         @Nullable Object obj,
         JdbcProtocolContext protoCtx
     ) throws BinaryObjectException {

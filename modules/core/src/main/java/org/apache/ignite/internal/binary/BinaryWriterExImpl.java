@@ -18,11 +18,14 @@
 package org.apache.ignite.internal.binary;
 
 import java.io.IOException;
+import java.io.InputStream;
 import java.io.ObjectOutput;
 import java.lang.reflect.InvocationHandler;
 import java.lang.reflect.Proxy;
 import java.math.BigDecimal;
 import java.math.BigInteger;
+import java.sql.Blob;
+import java.sql.SQLException;
 import java.sql.Time;
 import java.sql.Timestamp;
 import java.util.Collection;
@@ -36,6 +39,7 @@ import org.apache.ignite.binary.BinaryWriter;
 import org.apache.ignite.internal.UnregisteredClassException;
 import org.apache.ignite.internal.binary.streams.BinaryHeapOutputStream;
 import org.apache.ignite.internal.binary.streams.BinaryOutputStream;
+import org.apache.ignite.internal.processors.odbc.SqlInputStreamWrapper;
 import org.apache.ignite.internal.util.IgniteUtils;
 import org.apache.ignite.internal.util.typedef.internal.A;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -52,6 +56,9 @@ public class BinaryWriterExImpl implements BinaryWriter, BinaryRawWriterEx, Obje
 
     /** Initial capacity. */
     private static final int INIT_CAP = 1024;
+
+    /** Default buffer size for reading from streams. */
+    public static final int DEFAULT_BUFFER_SIZE = 8 * 1024;
 
     /** */
     private final BinaryContext ctx;
@@ -233,10 +240,17 @@ public class BinaryWriterExImpl implements BinaryWriter, BinaryRawWriterEx, Obje
     }
 
     /**
-     * @return Array.
+     * @return Copy of the underlying array.
      */
     public byte[] array() {
         return out.arrayCopy();
+    }
+
+    /**
+     * @return The underlying array.
+     */
+    public byte[] arrayUnderlying() {
+        return out.array();
     }
 
     /**
@@ -1829,6 +1843,63 @@ public class BinaryWriterExImpl implements BinaryWriter, BinaryRawWriterEx, Obje
     /** {@inheritDoc} */
     @Override public void writeInt(int pos, int val) throws BinaryObjectException {
         out.writeInt(pos, val);
+    }
+
+    /**
+     * Write byte array from the InputStream enclosed in the stream wrapper.
+     *
+     * @param inputStreamWrapper inputStreamWrapper
+     */
+    public void writeInputStreamAsByteArray(SqlInputStreamWrapper inputStreamWrapper) throws IOException {
+        BinaryOutputStream out = out();
+
+        InputStream in = inputStreamWrapper.getInputStream();
+        int streamLength = inputStreamWrapper.getLength();
+
+        out.unsafeEnsure(1 + 4);
+        out.unsafeWriteByte(GridBinaryMarshaller.BYTE_ARR);
+        out.unsafeWriteInt(streamLength);
+
+        out.unsafeEnsure(streamLength);
+        int writtenLength = writeFromInputStream(in, out, streamLength);
+
+        if (inputStreamWrapper.getLength() != writtenLength)
+            throw new IOException("Input stream length mismatch. [declaredLength=" + inputStreamWrapper.getLength() + ", " +
+                    "actualLength=" + writtenLength + "]");
+    }
+
+    /**
+     * Write byte array from the Blob instance.
+     *
+     * @param blob Blob.
+     */
+    public void writeBlobAsByteArray(Blob blob) throws SQLException, IOException {
+        writeInputStreamAsByteArray(SqlInputStreamWrapper.withKnownLength(blob.getBinaryStream(1, blob.length()), (int)blob.length()));
+    }
+
+    /**
+     * Copy data from the input stream to the binary output stream.
+     *
+     * <p>Copies no more than {@code limit} bytes.
+     *
+     * @param in Input stream.
+     * @param out Output stream.
+     * @param limit Maximum bytes to copy.
+     * @return Count of bytes copied.
+     */
+    private int writeFromInputStream(InputStream in, BinaryOutputStream out, long limit) throws IOException {
+        int readLen, writtenLen = 0;
+
+        byte[] buf = new byte[DEFAULT_BUFFER_SIZE];
+
+        while (-1 != (readLen = in.read(buf, 0, (int)Math.min(buf.length, limit - writtenLen)))
+                && writtenLen < limit) {
+            out.writeByteArray(buf, 0, readLen);
+
+            writtenLen += readLen;
+        }
+
+        return writtenLen;
     }
 
     /**

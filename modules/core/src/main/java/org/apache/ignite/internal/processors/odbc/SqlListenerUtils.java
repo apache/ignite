@@ -29,6 +29,7 @@ import org.apache.ignite.binary.BinaryObjectException;
 import org.apache.ignite.cache.query.QueryCancelledException;
 import org.apache.ignite.internal.binary.BinaryReaderExImpl;
 import org.apache.ignite.internal.binary.BinaryUtils;
+import org.apache.ignite.internal.binary.BinaryWriterExImpl;
 import org.apache.ignite.internal.binary.GridBinaryMarshaller;
 import org.apache.ignite.internal.processors.cache.query.IgniteQueryErrorCode;
 import org.apache.ignite.internal.processors.query.IgniteSQLException;
@@ -182,7 +183,7 @@ public abstract class SqlListenerUtils {
      * @param binObjAllow Allow to write non plain objects.
      * @throws BinaryObjectException On error.
      */
-    public static void writeObject(SqlBinaryWriter writer, @Nullable Object obj, boolean binObjAllow)
+    public static void writeObject(BinaryWriterExImpl writer, @Nullable Object obj, boolean binObjAllow)
         throws BinaryObjectException {
         if (obj == null) {
             writer.writeByte(GridBinaryMarshaller.NULL);

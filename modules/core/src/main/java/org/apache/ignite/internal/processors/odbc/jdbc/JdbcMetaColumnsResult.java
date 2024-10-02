@@ -23,7 +23,7 @@ import java.util.Collections;
 import java.util.List;
 import org.apache.ignite.binary.BinaryObjectException;
 import org.apache.ignite.internal.binary.BinaryReaderExImpl;
-import org.apache.ignite.internal.processors.odbc.SqlBinaryWriter;
+import org.apache.ignite.internal.binary.BinaryWriterExImpl;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.S;
 
@@ -78,7 +78,7 @@ public class JdbcMetaColumnsResult extends JdbcResult {
 
     /** {@inheritDoc} */
     @Override public void writeBinary(
-        SqlBinaryWriter writer,
+        BinaryWriterExImpl writer,
         JdbcProtocolContext protoCtx
     ) throws BinaryObjectException {
         super.writeBinary(writer, protoCtx);
