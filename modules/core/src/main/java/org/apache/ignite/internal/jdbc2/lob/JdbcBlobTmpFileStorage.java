@@ -71,7 +71,7 @@ class JdbcBlobTmpFileStorage implements JdbcBlobStorage {
         try (OutputStream diskOutputStream = Files.newOutputStream(tempFile.toPath())) {
             stream.transferTo(diskOutputStream);
         }
-        catch (RuntimeException | Error e) {
+        catch (Exception e) {
             fileCleaner.clean();
 
             throw e;
