@@ -204,9 +204,6 @@ public class SqlUnsupportedSelfTest extends AbstractIndexingCommonTest {
 
         assertSqlUnsupported("ALTER INDEX idx0 RENAME TO idx1");
 
-        assertSqlUnsupported("CREATE VIEW test_view AS SELECT * FROM test WHERE id < 100");
-        assertSqlUnsupported("DROP VIEW test_view");
-
         assertSqlUnsupported("CREATE SEQUENCE SEQ_0");
         assertSqlUnsupported("ALTER SEQUENCE SEQ_ID RESTART WITH 1000");
         assertSqlUnsupported("DROP SEQUENCE SEQ_0");

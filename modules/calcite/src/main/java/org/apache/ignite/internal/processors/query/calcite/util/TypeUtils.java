@@ -71,6 +71,7 @@ import org.apache.ignite.internal.processors.query.calcite.exec.ExecutionContext
 import org.apache.ignite.internal.processors.query.calcite.exec.RowHandler;
 import org.apache.ignite.internal.processors.query.calcite.schema.ColumnDescriptor;
 import org.apache.ignite.internal.processors.query.calcite.schema.TableDescriptor;
+import org.apache.ignite.internal.processors.query.calcite.schema.ViewTableImpl;
 import org.apache.ignite.internal.processors.query.calcite.type.IgniteTypeFactory;
 import org.apache.ignite.internal.processors.query.calcite.type.IgniteTypeSystem;
 import org.apache.ignite.internal.util.typedef.F;
@@ -143,6 +144,11 @@ public class TypeUtils {
             && SqlTypeUtil.isIntType(toType)) {
             return false;
         }
+
+        // Currently, RelDataTypeFactoryImpl#CLASS_FAMILIES doesn't consider the byte type as an integer.
+        if ((fromType.getSqlTypeName() == SqlTypeName.TINYINT && SqlTypeUtil.isIntType(toType))
+            || (toType.getSqlTypeName() == SqlTypeName.TINYINT && SqlTypeUtil.isIntType(fromType)))
+            return false;
 
         // Implicit type coercion does not handle nullability.
         if (SqlTypeUtil.equalSansNullability(factory, fromType, toType))
@@ -236,20 +242,41 @@ public class TypeUtils {
      * @param origin Column origin.
      * @return Result type.
      */
-    private static Type getResultClass(IgniteTypeFactory typeFactory, RelOptSchema schema, RelDataType type,
-        @Nullable List<String> origin) {
-        if (F.isEmpty(origin))
-            return typeFactory.getResultClass(type);
+    private static Type getResultClass(
+        IgniteTypeFactory typeFactory,
+        RelOptSchema schema,
+        RelDataType type,
+        @Nullable List<String> origin
+    ) {
+        int maxViewDepth = 100;
 
-        RelOptTable table = schema.getTableForMember(origin.subList(0, 2));
+        int cnt = 0; // Counter to protect from infinite recursion.
 
-        assert table != null;
+        while (true) {
+            if (F.isEmpty(origin))
+                return typeFactory.getResultClass(type);
 
-        ColumnDescriptor fldDesc = table.unwrap(TableDescriptor.class).columnDescriptor(origin.get(2));
+            if (cnt++ >= maxViewDepth)
+                throw new UnsupportedOperationException("To many inner views: " + maxViewDepth);
 
-        assert fldDesc != null;
+            RelOptTable table = schema.getTableForMember(origin.subList(0, 2));
 
-        return fldDesc.storageType();
+            assert table != null;
+
+            ViewTableImpl viewTable = table.unwrap(ViewTableImpl.class);
+
+            if (viewTable != null) {
+                origin = viewTable.fieldOrigin(origin.get(2));
+
+                continue;
+            }
+
+            ColumnDescriptor fldDesc = table.unwrap(TableDescriptor.class).columnDescriptor(origin.get(2));
+
+            assert fldDesc != null;
+
+            return fldDesc.storageType();
+        }
     }
 
     /**
