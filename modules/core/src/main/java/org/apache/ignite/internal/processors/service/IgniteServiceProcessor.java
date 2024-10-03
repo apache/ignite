@@ -402,8 +402,7 @@ public class IgniteServiceProcessor extends GridProcessorAdapter implements Igni
                 unmarshalNodeFilterIfNeeded(desc.configuration());
             }
             catch (IgniteCheckedException e) {
-                throw new IgniteException("Cannot join the cluster. " +
-                    "Failed to unmarshal service node filter [cfg=" + desc.configuration() + ']', e);
+                throw new IgniteException("Cannot join the cluster.", e);
             }
 
             registerService(desc);
@@ -439,8 +438,7 @@ public class IgniteServiceProcessor extends GridProcessorAdapter implements Igni
                 unmarshalNodeFilterIfNeeded(svc.configuration());
             }
             catch (IgniteCheckedException e) {
-                return new IgniteNodeValidationResult(node.id(), "Failed to unmarshal service node filter " +
-                    "that configured on the joining node [cfg=" + svc.configuration() + "]. " + e.getMessage());
+                return new IgniteNodeValidationResult(node.id(), "Node join is rejected: " + e.getMessage());
             }
         }
 
@@ -1453,7 +1451,12 @@ public class IgniteServiceProcessor extends GridProcessorAdapter implements Igni
 
         ClassLoader clsLdr = U.resolveClassLoader(dep != null ? dep.classLoader() : null, ctx.config());
 
-        cfg.setNodeFilter(U.unmarshal(marsh, cfg.nodeFilterBytes(), clsLdr));
+        try {
+            cfg.setNodeFilter(U.unmarshal(marsh, cfg.nodeFilterBytes(), clsLdr));
+        }
+        catch (IgniteCheckedException e) {
+            throw new IgniteCheckedException("Failed to unmarshal class of service node filter [cfg=" + cfg + ']', e);
+        }
     }
 
     /**
@@ -1809,8 +1812,7 @@ public class IgniteServiceProcessor extends GridProcessorAdapter implements Igni
                             unmarshalNodeFilterIfNeeded(cfg);
                         }
                         catch (IgniteCheckedException e) {
-                            err = new IgniteCheckedException("Failed to deploy service, " +
-                                "unable to unmarshal service node filter [cfg=" + cfg + ']', e);
+                            err = new IgniteCheckedException("Failed to deploy service.", e);
                         }
                     }
 
