@@ -131,8 +131,7 @@ public class LongRunningQueryTest extends AbstractIndexingCommonTest {
 
         IgniteCache c2 = grid().createCache(cacheConfig("pers", Integer.class, Person.class));
 
-        for (int i = 0; i < 3; ++i)
-            c2.put(1000 + i, new Person(i, "p" + i));
+        c2.put(1001, new Person(1, "p1"));
     }
 
     /** {@inheritDoc} */
