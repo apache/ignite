@@ -1698,7 +1698,7 @@ public final class IgniteSystemProperties {
     /**
      * Flag to disable memory optimization:
      *  BitSets instead of HashSets to store partitions.
-     *  When number of backups per partion is > IGNITE_AFFINITY_BACKUPS_THRESHOLD we use HashMap to improve contains()
+     *  When number of backups per partion is &gt; IGNITE_AFFINITY_BACKUPS_THRESHOLD we use HashMap to improve contains()
      * which leads to extra memory consumption, otherwise we use view on the
      * list of cluster nodes to reduce memory consumption on redundant data structures.
      */

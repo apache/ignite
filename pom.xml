@@ -150,6 +150,7 @@
                                 </goals>
                                 <phase>validate</phase>
                                 <configuration>
+                                    <failOnWarnings>true</failOnWarnings>
                                     <!--
                                     For some reason maven-javadoc-plugin 3.0+ doesn't include taglet artifact from
                                     parent configuration to -tagletpath javadoc parameter.

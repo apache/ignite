@@ -123,7 +123,7 @@ import static org.apache.ignite.events.EventType.EVT_TASK_FINISHED;
  *         if (useAvg) {
  *             double load = metrics.getAverageActiveJobs() + metrics.getAverageWaitingJobs();
  *
- *             if (load > 0) {
+ *             if (load &gt; 0) {
  *                 return load;
  *             }
  *         }
