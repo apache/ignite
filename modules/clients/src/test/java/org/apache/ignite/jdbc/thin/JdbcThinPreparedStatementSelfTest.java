@@ -1146,7 +1146,8 @@ public class JdbcThinPreparedStatementSelfTest extends JdbcThinAbstractSelfTest 
         byte[] bytes = new byte[] {1, 2, 3, 4, 5, 6, 7, 8, 9};
 
         try {
-            try (PreparedStatement insertStmt = connWithLobLimit.prepareStatement("insert into TestObject(_key, id, blobVal) values (?, ?, ?)")) {
+            try (PreparedStatement insertStmt = connWithLobLimit.prepareStatement(
+                    "insert into TestObject(_key, id, blobVal) values (?, ?, ?)")) {
                 Blob blob = connWithLobLimit.createBlob();
 
                 try (OutputStream outputStream = blob.setBinaryStream(1)) {

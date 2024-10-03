@@ -24,6 +24,7 @@ import java.sql.SQLException;
 import org.junit.Test;
 
 import static org.apache.ignite.testframework.GridTestUtils.assertThrows;
+import static org.apache.ignite.testframework.GridTestUtils.assertThrowsWithCause;
 import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
 
@@ -272,7 +273,7 @@ public class JdbcBlobTest {
         JdbcBlob blob = new JdbcBlob(arr);
 
         assertThrows(null, () -> blob.setBytes(0, new byte[4]), SQLException.class, null);
-        assertThrows(null, () -> blob.setBytes(17, new byte[4]), ArrayIndexOutOfBoundsException.class, null);
+        assertThrows(null, () -> blob.setBytes(17, new byte[4]), SQLException.class, null);
 
         assertEquals(4, blob.setBytes(1, new byte[] {3, 2, 1, 0}));
         assertEquals(8, blob.length());
@@ -304,10 +305,10 @@ public class JdbcBlobTest {
         JdbcBlob blob = new JdbcBlob(arr);
 
         assertThrows(null, () -> blob.setBytes(0, new byte[4], 0, 2), SQLException.class, null);
-        assertThrows(null, () -> blob.setBytes(17, new byte[4], 0, 2), ArrayIndexOutOfBoundsException.class, null);
-        assertThrows(null, () -> blob.setBytes(1, new byte[4], -1, 2), ArrayIndexOutOfBoundsException.class, null);
-        assertThrows(null, () -> blob.setBytes(1, new byte[4], 0, 5), ArrayIndexOutOfBoundsException.class, null);
-        assertThrows(null, () -> blob.setBytes(1, new byte[4], 4, 5), ArrayIndexOutOfBoundsException.class, null);
+        assertThrows(null, () -> blob.setBytes(17, new byte[4], 0, 2), SQLException.class, null);
+        assertThrowsWithCause(() -> blob.setBytes(1, new byte[4], -1, 2), ArrayIndexOutOfBoundsException.class);
+        assertThrowsWithCause(() -> blob.setBytes(1, new byte[4], 0, 5), ArrayIndexOutOfBoundsException.class);
+        assertThrowsWithCause(() -> blob.setBytes(1, new byte[4], 4, 5), ArrayIndexOutOfBoundsException.class);
 
         assertEquals(4, blob.setBytes(1, new byte[] {3, 2, 1, 0}, 0, 4));
         assertArrayEquals(new byte[]{3, 2, 1, 0, 4, 5, 6, 7}, blob.getBytes(1, arr.length));

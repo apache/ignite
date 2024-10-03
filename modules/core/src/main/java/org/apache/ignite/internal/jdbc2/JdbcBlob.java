@@ -96,25 +96,35 @@ public class JdbcBlob implements Blob, AutoCloseable {
     @Override public byte[] getBytes(long pos, int len) throws SQLException {
         ensureNotClosed();
 
-        try {
-            if (pos < 1 || (pos > data.totalCnt() && data.totalCnt() > 0) || len < 0)
-                throw new SQLException("Invalid argument. Position can't be less than 1 or " +
-                    "greater than size of underlying data. Requested length also can't be negative " +
-                    "[pos=" + pos + ", len=" + len + ", size=" + data.totalCnt() + ']');
+        long totalCnt = data.totalCnt();
 
-            long idx = pos - 1;
+        if (pos < 1 || (pos > totalCnt && totalCnt > 0) || len < 0)
+            throw new SQLException("Invalid argument. Position can't be less than 1 or " +
+                "greater than Blob total bytes count. Requested length also can't be negative " +
+                "[pos=" + pos + ", len=" + len + ", totalCnt=" + totalCnt + "]");
 
-            int size = len > data.totalCnt() - idx ? (int)(data.totalCnt() - idx) : len;
+        long idx = pos - 1;
 
-            byte[] res = new byte[size];
+        int size = len > totalCnt - idx ? (int)(totalCnt - idx) : len;
 
-            data.getInputStream(idx, len).read(res);
+        byte[] res = new byte[size];
 
+        if (size == 0)
             return res;
+
+        int readCnt;
+
+        try {
+            readCnt = data.getInputStream(idx, size).read(res);
         }
-        catch (IOException e) {
+        catch (Exception e) {
             throw new SQLException(e);
         }
+
+        if (readCnt == -1)
+            throw new SQLException("Failed to read bytes from Blob [pos=" + pos + ", len=" + len + "]");
+
+        return res;
     }
 
     /** {@inheritDoc} */
@@ -128,10 +138,12 @@ public class JdbcBlob implements Blob, AutoCloseable {
     @Override public InputStream getBinaryStream(long pos, long len) throws SQLException {
         ensureNotClosed();
 
-        if (pos < 1 || len < 1 || pos > data.totalCnt() || len > data.totalCnt() - (pos - 1))
+        long totalCnt = data.totalCnt();
+
+        if (pos < 1 || len < 1 || pos > totalCnt || len > totalCnt - (pos - 1))
             throw new SQLException("Invalid argument. Position can't be less than 1 or " +
-                "greater than size of underlying data. Requested length can't be negative and can't be " +
-                "greater than available bytes from given position [pos=" + pos + ", len=" + len + ", size=" + data.totalCnt() + ']');
+                "greater than Blob total bytes count. Requested length can't be negative and can't be " +
+                "greater than available bytes from given position [pos=" + pos + ", len=" + len + ", totalCnt=" + totalCnt + "]");
 
         return data.getInputStream(pos - 1, len);
     }
@@ -141,7 +153,7 @@ public class JdbcBlob implements Blob, AutoCloseable {
         ensureNotClosed();
 
         if (start < 1)
-            throw new SQLException("Invalid argument. Start position can't be less than 1 [start=" + start + ']');
+            throw new SQLException("Invalid argument. Start position can't be less than 1 [start=" + start + "]");
 
         if (start > data.totalCnt() || ptrn.length == 0 || ptrn.length > data.totalCnt())
             return -1;
@@ -156,7 +168,7 @@ public class JdbcBlob implements Blob, AutoCloseable {
         ensureNotClosed();
 
         if (start < 1)
-            throw new SQLException("Invalid argument. Start position can't be less than 1 [start=" + start + ']');
+            throw new SQLException("Invalid argument. Start position can't be less than 1 [start=" + start + "]");
 
         if (start > data.totalCnt() || ptrn.length() == 0 || ptrn.length() > data.totalCnt())
             return -1;
@@ -175,16 +187,19 @@ public class JdbcBlob implements Blob, AutoCloseable {
     @Override public int setBytes(long pos, byte[] bytes, int off, int len) throws SQLException {
         ensureNotClosed();
 
-        if (pos < 1)
+        long totalCnt = data.totalCnt();
+
+        if (pos < 1 || pos - 1 > totalCnt)
             throw new SQLException("Invalid argument. Position can't be less than 1 [pos=" + pos + ']');
 
-        if (pos - 1 > data.totalCnt() || off < 0 || off >= bytes.length || off + len > bytes.length)
-            throw new ArrayIndexOutOfBoundsException();
+        if (off < 0 || off >= bytes.length || off + len > bytes.length)
+            throw new SQLException("Invalid argument.",
+                    new ArrayIndexOutOfBoundsException("[off=" + off + ", len=" + len + ", bytes.length=" + bytes.length + "]"));
 
         try {
             data.getOutputStream(pos - 1).write(bytes, off, len);
         }
-        catch (IOException e) {
+        catch (Exception e) {
             throw new SQLException(e);
         }
 
@@ -195,19 +210,29 @@ public class JdbcBlob implements Blob, AutoCloseable {
     @Override public OutputStream setBinaryStream(long pos) throws SQLException {
         ensureNotClosed();
 
-        if (pos < 1 || pos > data.totalCnt() + 1)
-            throw new SQLException("Invalid argument. Position can't be less than 1 or greater than Blob length + 1 [pos=" + pos + ']');
+        long totalCnt = data.totalCnt();
 
-        return data.getOutputStream(pos - 1);
+        if (pos < 1 || pos > totalCnt + 1)
+            throw new SQLException("Invalid argument. Position can't be less than 1 or greater than Blob total bytes count + 1 " +
+                    "[pos=" + pos + ", totalCnt=" + totalCnt + "]");
+
+        try {
+            return data.getOutputStream(pos - 1);
+        }
+        catch (Exception e) {
+            throw new SQLException(e);
+        }
     }
 
     /** {@inheritDoc} */
     @Override public void truncate(long len) throws SQLException {
         ensureNotClosed();
 
-        if (len < 0 || len > data.totalCnt())
+        long totalCnt = data.totalCnt();
+
+        if (len < 0 || len > totalCnt)
             throw new SQLException("Invalid argument. Length can't be " +
-                "less than zero or greater than Blob length [len=" + len + ']');
+                "less than zero or greater than Blob total bytes count [len=" + len + ", totalCnt=" + totalCnt + "]");
 
         try {
             data.truncate(len);
