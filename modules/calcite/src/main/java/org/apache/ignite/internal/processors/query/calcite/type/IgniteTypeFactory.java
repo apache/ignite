@@ -27,7 +27,7 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.time.Period;
-import java.util.HashMap;
+import java.util.EnumMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -51,7 +51,7 @@ import org.apache.ignite.internal.util.typedef.F;
  */
 public class IgniteTypeFactory extends JavaTypeFactoryImpl {
     /** */
-    private static final Map<SqlTypeName, String> UNSUPPORTED_TYPES = new HashMap<>();
+    private static final EnumMap<SqlTypeName, String> UNSUPPORTED_TYPES = new EnumMap<>(SqlTypeName.class);
 
     static {
         UNSUPPORTED_TYPES.put(SqlTypeName.TIME_TZ, "TIME WITH TIME ZONE");
