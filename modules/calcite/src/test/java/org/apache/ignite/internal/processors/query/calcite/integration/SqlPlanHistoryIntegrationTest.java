@@ -157,64 +157,17 @@ public class SqlPlanHistoryIntegrationTest extends GridCommonAbstractTest {
     public boolean isFullyFetched;
 
     /** */
-    @Parameterized.Parameters(name = "sqlEngine={0}, isClient={1} loc={2}, fullyFetched={3}")
+    @Parameterized.Parameters(name = "sqlEngine={0}, isClient={1} loc={2}, isFullyFetched={3}")
     public static Collection<Object[]> params() {
-        return Arrays.asList(new Object[][] {
-            {CalciteQueryEngineConfiguration.ENGINE_NAME, true, true, true},
-            {CalciteQueryEngineConfiguration.ENGINE_NAME, true, true, false},
-            {CalciteQueryEngineConfiguration.ENGINE_NAME, true, false, true},
-            {CalciteQueryEngineConfiguration.ENGINE_NAME, true, false, false},
-            {CalciteQueryEngineConfiguration.ENGINE_NAME, false, true, true},
-            {CalciteQueryEngineConfiguration.ENGINE_NAME, false, true, false},
-            {CalciteQueryEngineConfiguration.ENGINE_NAME, false, false, true},
-            {CalciteQueryEngineConfiguration.ENGINE_NAME, false, false, false},
-            {IndexingQueryEngineConfiguration.ENGINE_NAME, true, true, true},
-            {IndexingQueryEngineConfiguration.ENGINE_NAME, true, true, false},
-            {IndexingQueryEngineConfiguration.ENGINE_NAME, true, false, true},
-            {IndexingQueryEngineConfiguration.ENGINE_NAME, true, false, false},
-            {IndexingQueryEngineConfiguration.ENGINE_NAME, false, true, true},
-            {IndexingQueryEngineConfiguration.ENGINE_NAME, false, true, false},
-            {IndexingQueryEngineConfiguration.ENGINE_NAME, false, false, true},
-            {IndexingQueryEngineConfiguration.ENGINE_NAME, false, false, false}
-        });
+        return Arrays.stream(new Object[][]{
+            {CalciteQueryEngineConfiguration.ENGINE_NAME},
+            {IndexingQueryEngineConfiguration.ENGINE_NAME}
+        }).flatMap(sqlEngine -> Arrays.stream(new Boolean[]{true, false})
+                .flatMap(isClient -> Arrays.stream(new Boolean[]{true, false})
+                    .flatMap(loc -> Arrays.stream(new Boolean[]{true, false})
+                        .map(isFullyFetched -> new Object[]{sqlEngine[0], isClient, loc, isFullyFetched})))
+        ).collect(Collectors.toList());
     }
-
-//    @Parameterized.Parameters(name = "sqlEngine={0}, isClient={1} loc={2}, fullyFetched={3}")
-//    public static Collection<Object[]> params() {
-//        return Arrays.stream(new Object[][]{
-//            {CalciteQueryEngineConfiguration.ENGINE_NAME},
-//            {IndexingQueryEngineConfiguration.ENGINE_NAME}
-//        }).flatMap(arr -> Arrays.stream(new Boolean[]{true, false})
-//                .flatMap(isClient -> Arrays.stream(new Boolean[]{true, false})
-//                    .flatMap(loc -> Arrays.stream(new Boolean[]{true, false})
-//                        .map(fullyFetched -> new Object[]{arr[0], isClient, loc, fullyFetched}))))
-//            .collect(Collectors.toList());
-//    }
-//
-//    @Parameterized.Parameters(name = "sqlEngine={0}, isClient={1}, loc={2}, fullyFetched={3}")
-//    public static Collection<Object[]> params() {
-//        return Arrays.asList(Stream.of(
-//            CalciteQueryEngineConfiguration.ENGINE_NAME, IndexingQueryEngineConfiguration.ENGINE_NAME
-//        ).flatMap(engineName -> Stream.of(true, false).flatMap(isClient -> Stream.of(
-//                true, false
-//            ).flatMap(loc -> Stream.of(
-//                true, false
-//            ).flatMap(fullyFetched -> Stream.of(
-//                    new Object[]{engineName, isClient, loc, fullyFetched}
-//                )
-//            )))
-//            .toArray(Object[][]::new));
-//    }
-//
-//    @Parameterized.Parameters(name = "sqlEngine={0}, isClient={1}, loc={2}, fullyFetched={3}")
-//    public static Collection<Object[]> params() {
-//        return Arrays.asList(Stream.of(CalciteQueryEngineConfiguration.ENGINE_NAME, IndexingQueryEngineConfiguration.ENGINE_NAME)
-//            .flatMap(engineName -> Stream.of(true, false).flatMap(isClient -> Stream.of(true, false)
-//                .flatMap(loc -> Stream.of(true, false)
-//                    .flatMap(fullyFetched -> Stream.of(new Object[] { engineName, isClient, loc, fullyFetched })
-//                        .iterator()))))
-//            .toArray(Object[][]::new));
-//    }
 
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
@@ -295,6 +248,9 @@ public class SqlPlanHistoryIntegrationTest extends GridCommonAbstractTest {
 
     /** {@inheritDoc} */
     @Override protected void beforeTest() throws Exception {
+        if (isClient && loc)
+            return;
+
         startTestGrid();
 
         IgniteCache<Integer, String> cacheA = queryNode().cache("A");
@@ -538,6 +494,8 @@ public class SqlPlanHistoryIntegrationTest extends GridCommonAbstractTest {
     /** Checks that SQL plan history remains empty if history size is set to zero. */
     @Test
     public void testEmptyPlanHistory() {
+        assumeFalse("Local queries can't be executed on client nodes", isClient && loc);
+
         queryNode().context().query().runningQueryManager().planHistoryTracker().setHistorySize(0);
 
         executeQuery(sqlFieldsQry, (q) -> cacheQuery(q, "A"));
