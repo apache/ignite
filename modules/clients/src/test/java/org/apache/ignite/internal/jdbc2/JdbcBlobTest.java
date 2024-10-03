@@ -293,6 +293,10 @@ public class JdbcBlobTest {
 
         blob2.free();
         assertThrows(null, () -> blob2.setBytes(1, new byte[] {0, 1, 2}), SQLException.class, ERROR_BLOB_FREE);
+
+        JdbcBlob blob3 = new JdbcBlob();
+        assertEquals(32 * 1024 * 1024 + 1, blob3.setBytes(1, new byte[32 * 1024 * 1024 + 1]));
+        assertEquals(1, blob3.setBytes(32 * 1024 * 1024 + 2, new byte[] {1}));
     }
 
     /**

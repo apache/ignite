@@ -618,6 +618,18 @@ public class JdbcThinResultSetSelfTest extends JdbcThinAbstractSelfTest {
         Assert.assertArrayEquals(blob.getBytes(1, (int)blob.length()), new byte[] {1});
 
         assertFalse(rs.next());
+
+        InputStream stream = blob.getBinaryStream();
+
+        assertEquals(2, blob.setBytes(2, new byte[] {2, 3}));
+        assertEquals(3, stream.skip(3));
+
+        byte[] res = new byte[1];
+        assertEquals(-1, stream.read(res));
+
+        assertEquals(2, blob.setBytes(4, new byte[] {4, 5}));
+        assertEquals(2, stream.skip(2));
+        assertEquals(-1, stream.read(res));
     }
 
     /**

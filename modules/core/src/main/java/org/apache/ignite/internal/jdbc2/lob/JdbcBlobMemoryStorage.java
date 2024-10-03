@@ -69,10 +69,10 @@ class JdbcBlobMemoryStorage implements JdbcBlobStorage {
 
     /** {@inheritDoc} */
     @Override public int read(JdbcBlobBufferPointer pos) {
-        if (pos.getPos() >= totalCnt)
-            return -1;
-
         byte[] buf = getBuf(pos);
+
+        if (buf == null || pos.getPos() >= totalCnt)
+            return -1;
 
         int res = buf[getBufPos(pos)] & 0xff;
 
@@ -83,10 +83,10 @@ class JdbcBlobMemoryStorage implements JdbcBlobStorage {
 
     /** {@inheritDoc} */
     @Override public int read(JdbcBlobBufferPointer pos, byte[] res, int off, int cnt) {
-        if (pos.getPos() >= totalCnt)
-            return -1;
-
         byte[] buf = getBuf(pos);
+
+        if (buf == null || pos.getPos() >= totalCnt)
+            return -1;
 
         int remaining = cnt;
 
@@ -109,10 +109,12 @@ class JdbcBlobMemoryStorage implements JdbcBlobStorage {
 
     /** {@inheritDoc} */
     @Override public void write(JdbcBlobBufferPointer pos, int b) {
-        if (getBuf(pos) == null)
-            addNewBuffer(1);
+        byte[] buf = getBuf(pos);
 
-        getBuf(pos)[getBufPos(pos)] = (byte)(b & 0xff);
+        if (buf == null)
+            buf = addNewBuffer(1);
+
+        buf[getBufPos(pos)] = (byte)(b & 0xff);
 
         advance(pos, 1);
 
@@ -191,11 +193,12 @@ class JdbcBlobMemoryStorage implements JdbcBlobStorage {
     }
 
     /**
-     * Makes a new buffer available
+     * Makes a new buffer available.
      *
      * @param neededBytes count of the additional bytes needed.
+     * @return The new buffer.
      */
-    private void addNewBuffer(int neededBytes) {
+    private byte[] addNewBuffer(int neededBytes) {
         int newBufSize;
 
         if (buffers.isEmpty()) {
@@ -210,7 +213,11 @@ class JdbcBlobMemoryStorage implements JdbcBlobStorage {
                     neededBytes);
         }
 
-        buffers.add(new byte[newBufSize]);
+        byte[] res = new byte[newBufSize];
+
+        buffers.add(res);
+
+        return res;
     }
 
     /**
