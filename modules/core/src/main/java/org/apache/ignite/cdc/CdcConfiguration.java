@@ -19,7 +19,6 @@ package org.apache.ignite.cdc;
 
 import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.internal.cdc.CdcMain;
-import org.apache.ignite.lang.IgniteExperimental;
 import org.apache.ignite.spi.metric.MetricExporterSpi;
 import org.apache.ignite.spi.metric.jmx.JmxMetricExporterSpi;
 
@@ -27,7 +26,6 @@ import org.apache.ignite.spi.metric.jmx.JmxMetricExporterSpi;
  * This class defines {@link CdcMain} runtime configuration.
  * Configuration is passed to {@link CdcMain} constructor.
  */
-@IgniteExperimental
 public class CdcConfiguration {
     /** */
     private static final int DFLT_LOCK_TIMEOUT = 1000;
