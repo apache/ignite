@@ -102,8 +102,8 @@ public class LongRunningQueryTest extends AbstractIndexingCommonTest {
     private Ignite ignite;
 
     /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration() throws Exception {
-        IgniteConfiguration cfg = super.getConfiguration();
+    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
+        IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
         return cfg.setSqlConfiguration(new SqlConfiguration().setLongQueryWarningTimeout(LONG_QUERY_WARNING_TIMEOUT));
     }
@@ -571,11 +571,11 @@ public class LongRunningQueryTest extends AbstractIndexingCommonTest {
 
         testLog().registerListener(lsnr);
 
-        long start = System.currentTimeMillis();
+        long start = U.currentTimeMillis();
 
-        sql("test", dml, 5000);
+        sql("test", dml, LONG_QUERY_WARNING_TIMEOUT * 1.5);
 
-        assertTrue((System.currentTimeMillis() - start) > LONG_QUERY_WARNING_TIMEOUT);
+        assertTrue((U.currentTimeMillis() - start) > LONG_QUERY_WARNING_TIMEOUT);
 
         assertTrue(lsnr.check());
     }
