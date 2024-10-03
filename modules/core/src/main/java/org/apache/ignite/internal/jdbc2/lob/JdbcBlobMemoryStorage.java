@@ -90,7 +90,7 @@ class JdbcBlobMemoryStorage implements JdbcBlobStorage {
 
         int remaining = cnt;
 
-        while (remaining > 0 && pos.getPos() < totalCnt) {
+        while (remaining > 0 && pos.getPos() < totalCnt && buf != null) {
             int toCopy = Math.min(remaining, buf.length - getBufPos(pos));
 
             if (toCopy > totalCnt - pos.getPos())
