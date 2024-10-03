@@ -54,7 +54,7 @@ interface JdbcBlobStorage {
      * @return Number of bytes read. -1 if EOF.
      * @throws IOException if an I/O error occurs.
      */
-    int read(JdbcBlobBufferPointer pos, byte res[], int off, int cnt) throws IOException;
+    int read(JdbcBlobBufferPointer pos, byte[] res, int off, int cnt) throws IOException;
 
     /**
      * Write a byte to this storage to specified position {@code pos}.

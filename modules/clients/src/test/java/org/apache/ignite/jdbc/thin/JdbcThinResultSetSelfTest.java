@@ -627,12 +627,12 @@ public class JdbcThinResultSetSelfTest extends JdbcThinAbstractSelfTest {
     public void testBlobOnDiskMaterialized() throws Exception {
         String url = URL + "?maxInMemoryLobSize=5";
 
-        Connection conn = DriverManager.getConnection(url);
-        conn.setSchema('"' + DEFAULT_CACHE_NAME + '"');
+        Connection connWithLobLimit = DriverManager.getConnection(url);
+        connWithLobLimit.setSchema('"' + DEFAULT_CACHE_NAME + '"');
 
-        Statement stmt = conn.createStatement();
+        Statement selectStmt = connWithLobLimit.createStatement();
 
-        ResultSet rs = stmt.executeQuery(SQL);
+        ResultSet rs = selectStmt.executeQuery(SQL);
 
         assertTrue(rs.next());
 

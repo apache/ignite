@@ -38,7 +38,7 @@ import java.io.OutputStream;
  * <p>Data is read via the InputStream API and modified via the OutputStream one. Changes done via
  * OutputStream are visible via the InputStream even if InputStream is created before changes done.
  *
- * <p>InputStream and OutputStream created remain valid even if the underlying data storage chenged from
+ * <p>InputStream and OutputStream created remain valid even if the underlying data storage changed from
  * in-memory to file based.
  *
  * <p>Note however that implementation is not thread-safe.
@@ -150,22 +150,6 @@ public class JdbcBlobBuffer {
     }
 
     /**
-     * Switch to file mode.
-     *
-     * <p>Copies all data from the in-memory storage to the temporary file storage.
-     */
-    private void switchToFileStorage() throws IOException {
-        if (storage instanceof JdbcBlobTmpFileStorage)
-            return;
-
-        JdbcBlobStorage newStorage = new JdbcBlobTmpFileStorage(getInputStream());
-
-        storage.close();
-
-        storage = newStorage;
-    }
-
-    /**
      * Input stream to read data from buffer.
      */
     private class BufferInputStream extends InputStream {
@@ -217,7 +201,7 @@ public class JdbcBlobBuffer {
         }
 
         /** {@inheritDoc} */
-        @Override public int read(byte res[], int off, int cnt) throws IOException {
+        @Override public int read(byte[] res, int off, int cnt) throws IOException {
             int toRead = cnt;
 
             if (limit != null) {
@@ -279,6 +263,22 @@ public class JdbcBlobBuffer {
                 switchToFileStorage();
 
             storage.write(bufPos, bytes, off, len);
+        }
+
+        /**
+         * Switch buffer to file mode.
+         *
+         * <p>Copies all data from the in-memory storage to the temporary file storage.
+         */
+        private void switchToFileStorage() throws IOException {
+            if (storage instanceof JdbcBlobTmpFileStorage)
+                return;
+
+            JdbcBlobStorage newStorage = new JdbcBlobTmpFileStorage(getInputStream());
+
+            storage.close();
+
+            storage = newStorage;
         }
     }
 }

@@ -959,8 +959,8 @@ public class JdbcThinPreparedStatementSelfTest extends JdbcThinAbstractSelfTest 
     public void testBinaryStreamUnknownLengthOnDiskMaterialized() throws Exception {
         String url = URL + "?maxInMemoryLobSize=5";
 
-        Connection conn = DriverManager.getConnection(url);
-        conn.setSchema('"' + DEFAULT_CACHE_NAME + '"');
+        Connection connWithLobLimit = DriverManager.getConnection(url);
+        connWithLobLimit.setSchema('"' + DEFAULT_CACHE_NAME + '"');
 
         String sql = "insert into TestObject(_key, id, blobVal) values (?, ?, ?)";
 
@@ -969,18 +969,18 @@ public class JdbcThinPreparedStatementSelfTest extends JdbcThinAbstractSelfTest 
         Set<String> existingTempStreamFiles = getTempStreamFiles();
         Set<String> newTempStreamFiles;
 
-        try (conn) {
-            PreparedStatement stmtToBeLeftUnclosed = conn.prepareStatement(sql);
+        try (connWithLobLimit) {
+            PreparedStatement stmtToBeLeftUnclosed = connWithLobLimit.prepareStatement(sql);
             stmtToBeLeftUnclosed.setInt(1, 3);
             stmtToBeLeftUnclosed.setInt(2, 3);
             stmtToBeLeftUnclosed.setBinaryStream(3, new ByteArrayInputStream(bytes));
 
-            PreparedStatement stmtToBeClosed = conn.prepareStatement(sql);
+            PreparedStatement stmtToBeClosed = connWithLobLimit.prepareStatement(sql);
             stmtToBeClosed.setInt(1, 4);
             stmtToBeClosed.setInt(2, 4);
             stmtToBeClosed.setBinaryStream(3, new ByteArrayInputStream(bytes));
 
-            PreparedStatement stmtToBeNotExecutedButClosed = conn.prepareStatement(sql);
+            PreparedStatement stmtToBeNotExecutedButClosed = connWithLobLimit.prepareStatement(sql);
             stmtToBeNotExecutedButClosed.setInt(1, 5);
             stmtToBeNotExecutedButClosed.setInt(2, 5);
             stmtToBeNotExecutedButClosed.setBinaryStream(3, new ByteArrayInputStream(bytes));
@@ -998,7 +998,7 @@ public class JdbcThinPreparedStatementSelfTest extends JdbcThinAbstractSelfTest 
             stmtToBeNotExecutedButClosed.close();
             stmtToBeClosed.close();
 
-            stmt = conn.prepareStatement(SQL_PART + " where id = ?");
+            stmt = connWithLobLimit.prepareStatement(SQL_PART + " where id = ?");
 
             stmt.setInt(1, 3);
             ResultSet rs = stmt.executeQuery();
@@ -1106,22 +1106,22 @@ public class JdbcThinPreparedStatementSelfTest extends JdbcThinAbstractSelfTest 
         new Random().nextBytes(bytes);
 
         try {
-            try (PreparedStatement stmt = conn.prepareStatement("insert into TestObject(_key, id, blobVal) values (?, ?, ?)")) {
+            try (PreparedStatement insertStmt = conn.prepareStatement("insert into TestObject(_key, id, blobVal) values (?, ?, ?)")) {
                 ByteArrayInputStream stream1 = new ByteArrayInputStream(bytes);
 
-                stmt.setInt(1, 3);
-                stmt.setInt(2, 3);
-                stmt.setBlob(3, stream1, BLOB_SIZE);
+                insertStmt.setInt(1, 3);
+                insertStmt.setInt(2, 3);
+                insertStmt.setBlob(3, stream1, BLOB_SIZE);
 
-                assertEquals(1, stmt.executeUpdate());
+                assertEquals(1, insertStmt.executeUpdate());
             }
 
-            try (PreparedStatement stmt = conn.prepareStatement(SQL_PART + " where blobVal is not distinct from ?")) {
+            try (PreparedStatement selectStmt = conn.prepareStatement(SQL_PART + " where blobVal is not distinct from ?")) {
                 ByteArrayInputStream stream2 = new ByteArrayInputStream(bytes);
 
-                stmt.setBlob(1, stream2, BLOB_SIZE);
+                selectStmt.setBlob(1, stream2, BLOB_SIZE);
 
-                ResultSet rs = stmt.executeQuery();
+                ResultSet rs = selectStmt.executeQuery();
 
                 assertTrue(rs.next());
                 assertEquals(3, rs.getInt("id"));
@@ -1140,14 +1140,14 @@ public class JdbcThinPreparedStatementSelfTest extends JdbcThinAbstractSelfTest 
     public void testBlobOnDiskMaterialized() throws Exception {
         String url = URL + "?maxInMemoryLobSize=5";
 
-        Connection conn = DriverManager.getConnection(url);
-        conn.setSchema('"' + DEFAULT_CACHE_NAME + '"');
+        Connection connWithLobLimit = DriverManager.getConnection(url);
+        connWithLobLimit.setSchema('"' + DEFAULT_CACHE_NAME + '"');
 
         byte[] bytes = new byte[] {1, 2, 3, 4, 5, 6, 7, 8, 9};
 
         try {
-            try (PreparedStatement stmt = conn.prepareStatement("insert into TestObject(_key, id, blobVal) values (?, ?, ?)")) {
-                Blob blob = conn.createBlob();
+            try (PreparedStatement insertStmt = connWithLobLimit.prepareStatement("insert into TestObject(_key, id, blobVal) values (?, ?, ?)")) {
+                Blob blob = connWithLobLimit.createBlob();
 
                 try (OutputStream outputStream = blob.setBinaryStream(1)) {
                     outputStream.write(0);
@@ -1156,17 +1156,17 @@ public class JdbcThinPreparedStatementSelfTest extends JdbcThinAbstractSelfTest 
                     outputStream.write(bytes, 2, 2);
                 }
 
-                stmt.setInt(1, 3);
-                stmt.setInt(2, 3);
-                stmt.setBlob(3, blob);
+                insertStmt.setInt(1, 3);
+                insertStmt.setInt(2, 3);
+                insertStmt.setBlob(3, blob);
 
-                assertEquals(1, stmt.executeUpdate());
+                assertEquals(1, insertStmt.executeUpdate());
             }
 
-            try (PreparedStatement stmt = conn.prepareStatement(SQL_PART + " where blobVal is not distinct from ?")) {
-                stmt.setBlob(1, new ByteArrayInputStream(new byte[] {0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 3, 4}));
+            try (PreparedStatement selectStmt = connWithLobLimit.prepareStatement(SQL_PART + " where blobVal is not distinct from ?")) {
+                selectStmt.setBlob(1, new ByteArrayInputStream(new byte[] {0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 3, 4}));
 
-                ResultSet rs = stmt.executeQuery();
+                ResultSet rs = selectStmt.executeQuery();
 
                 assertTrue(rs.next());
                 assertEquals(3, rs.getInt("id"));

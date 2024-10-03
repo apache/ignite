@@ -108,7 +108,7 @@ public class SqlInputStreamWrapper implements AutoCloseable {
      *
      * @return Input stream.
      */
-    public InputStream getInputStream() throws IOException {
+    public InputStream getInputStream() {
         if (stream == null)
             stream = data.getInputStream();
 
@@ -143,7 +143,8 @@ public class SqlInputStreamWrapper implements AutoCloseable {
      * @return Count of bytes copied.
      */
     private int copyStream(InputStream in, OutputStream out, long limit) throws IOException, SQLException {
-        int readLen, writtenLen = 0;
+        int readLen;
+        int writtenLen = 0;
 
         byte[] buf = new byte[8192];
 

@@ -1851,8 +1851,6 @@ public class BinaryWriterExImpl implements BinaryWriter, BinaryRawWriterEx, Obje
      * @param inputStreamWrapper inputStreamWrapper
      */
     public void writeInputStreamAsByteArray(SqlInputStreamWrapper inputStreamWrapper) throws IOException {
-        BinaryOutputStream out = out();
-
         InputStream in = inputStreamWrapper.getInputStream();
         int streamLength = inputStreamWrapper.getLength();
 
@@ -1888,7 +1886,8 @@ public class BinaryWriterExImpl implements BinaryWriter, BinaryRawWriterEx, Obje
      * @return Count of bytes copied.
      */
     private int writeFromInputStream(InputStream in, BinaryOutputStream out, long limit) throws IOException {
-        int readLen, writtenLen = 0;
+        int readLen;
+        int writtenLen = 0;
 
         byte[] buf = new byte[DEFAULT_BUFFER_SIZE];
 

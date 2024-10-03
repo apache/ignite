@@ -160,7 +160,7 @@ class JdbcBlobTmpFileStorage implements JdbcBlobStorage {
      * Holder for the temporary file.
      * <p>
      * Used to remove the temp file once the stream wrapper object has become phantom reachable.
-     * It may be if the large stream was passed as argumant to statement and this sattement
+     * It may be if the large stream was passed as argumant to statement and this statement
      * was abandoned without being closed.
      */
     private static class FileCleanAction implements Runnable {
@@ -176,7 +176,12 @@ class JdbcBlobTmpFileStorage implements JdbcBlobStorage {
 
         /** The cleaning action to be called by the {@link java.lang.ref.Cleaner}. */
         @Override public void run() {
-            path.toFile().delete();
+            try {
+                Files.deleteIfExists(path);
+            }
+            catch (IOException ignore) {
+                // No-op
+            }
         }
     }
 }
