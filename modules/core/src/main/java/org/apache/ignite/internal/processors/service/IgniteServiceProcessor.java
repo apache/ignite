@@ -439,8 +439,8 @@ public class IgniteServiceProcessor extends GridProcessorAdapter implements Igni
                 unmarshalNodeFilterIfNeeded(svc.configuration());
             }
             catch (IgniteCheckedException e) {
-                return new IgniteNodeValidationResult(node.id(),
-                    "Failed to unmarshal service node filter that configured on the joining node. " + e.getMessage());
+                return new IgniteNodeValidationResult(node.id(), "Failed to unmarshal service node filter " +
+                    "that configured on the joining node [сfg=" + svc.configuration() + "]. " + e.getMessage());
             }
         }
 
