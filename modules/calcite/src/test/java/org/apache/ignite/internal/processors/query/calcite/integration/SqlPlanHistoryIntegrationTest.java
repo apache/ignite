@@ -60,7 +60,7 @@ import org.junit.runners.Parameterized;
 
 import static org.junit.Assume.assumeFalse;
 
-/** Tests for SQL plan history (Calcite engine). */
+/** Tests for SQL plan history. */
 @RunWith(Parameterized.class)
 public class SqlPlanHistoryIntegrationTest extends GridCommonAbstractTest {
     /** SQL plan history size. */
