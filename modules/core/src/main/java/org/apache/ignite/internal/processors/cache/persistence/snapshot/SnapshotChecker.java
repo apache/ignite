@@ -295,7 +295,7 @@ public class SnapshotChecker {
             }
 
             if (incIdx > 0) {
-                List<SnapshotMetadata> metas = snpMetas.stream().filter(m -> m.consistentId().equals(consId))
+                List<SnapshotMetadata> metas = snpMetas.stream().filter(m -> m.consistentId().equals(String.valueOf(consId)))
                     .collect(Collectors.toList());
 
                 if (metas.size() != 1) {
@@ -305,7 +305,7 @@ public class SnapshotChecker {
                         "per node because they don't support restoring on a different topology.");
                 }
 
-                checkIncrementalSnapshotsExist(metas.get(0), snpDir, incIdx, consId.toString());
+                checkIncrementalSnapshotsExist(metas.get(0), snpDir, incIdx);
             }
 
             return snpMetas;
@@ -316,8 +316,7 @@ public class SnapshotChecker {
     private void checkIncrementalSnapshotsExist(
         SnapshotMetadata fullMeta,
         File snpDir,
-        int incIdx,
-        String consId
+        int incIdx
     ) {
         try {
             // Incremental snapshot must contain ClusterSnapshotRecord.
@@ -333,7 +332,7 @@ public class SnapshotChecker {
                         "[snpName=" + snpName + ", snpPath=" + snpDir.getParent() + ", incrementIndex=" + inc + ']');
                 }
 
-                String metaFileName = snapshotMetaFileName(consId);
+                String metaFileName = snapshotMetaFileName(kctx.pdsFolderResolver().resolveFolders().folderName());
 
                 File metafile = incSnpDir.toPath().resolve(metaFileName).toFile();
 
