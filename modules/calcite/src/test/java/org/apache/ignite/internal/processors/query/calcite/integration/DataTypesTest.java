@@ -351,7 +351,7 @@ public class DataTypesTest extends AbstractBasicIntegrationTest {
 
     /** */
     @Test
-    public void testUnsupportedTypes(){
+    public void testUnsupportedTypes() {
         assertThrows("CREATE TABLE test (val TIME WITH TIME ZONE)", IgniteException.class,
             "'TIME WITH TIME ZONE' is not supported.");
         assertThrows("CREATE TABLE test (val TIMESTAMP WITH TIME ZONE)", IgniteException.class,
