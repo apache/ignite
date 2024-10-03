@@ -403,7 +403,7 @@ public class IgniteServiceProcessor extends GridProcessorAdapter implements Igni
             }
             catch (IgniteCheckedException e) {
                 throw new IgniteException("Cannot join the cluster. " +
-                    "Failed to unmarshal service node filter [srvcCfg=" + desc.configuration() + ']', e);
+                    "Failed to unmarshal service node filter [сfg=" + desc.configuration() + ']', e);
             }
 
             registerService(desc);
