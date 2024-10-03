@@ -1117,7 +1117,7 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
     private IgniteInternalFuture<?> executeClearTask(@Nullable Set<? extends K> keys, boolean near) throws TransactionException {
         Collection<ClusterNode> srvNodes = ctx.grid().cluster().forCacheNodes(name(), !near, near, false).nodes();
 
-        if (ctx.transactional() && ctx.grid().transactions().tx() != null && keys == null)
+           if (ctx.transactional() && ctx.grid().transactions().tx() != null && (keys == null || keys.isEmpty()))
             throw new IgniteException("Failed to invoke a non-transactional operation within a transaction: " +
                 "IgniteCache.clear().");
 
