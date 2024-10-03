@@ -403,7 +403,7 @@ public class IgniteServiceProcessor extends GridProcessorAdapter implements Igni
             }
             catch (IgniteCheckedException e) {
                 throw new IgniteException("Cannot join the cluster. " +
-                    "Failed to unmarshal service node filter [сfg=" + desc.configuration() + ']', e);
+                    "Failed to unmarshal service node filter [cfg=" + desc.configuration() + ']', e);
             }
 
             registerService(desc);
@@ -440,7 +440,7 @@ public class IgniteServiceProcessor extends GridProcessorAdapter implements Igni
             }
             catch (IgniteCheckedException e) {
                 return new IgniteNodeValidationResult(node.id(), "Failed to unmarshal service node filter " +
-                    "that configured on the joining node [сfg=" + svc.configuration() + "]. " + e.getMessage());
+                    "that configured on the joining node [cfg=" + svc.configuration() + "]. " + e.getMessage());
             }
         }
 
