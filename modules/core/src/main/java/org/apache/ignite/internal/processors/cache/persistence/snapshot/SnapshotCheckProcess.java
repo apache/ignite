@@ -61,7 +61,7 @@ public class SnapshotCheckProcess {
     /** */
     private final GridKernalContext kctx;
 
-    /** Operation contexts by unique operation name/id. */
+    /** Operation contexts by name. */
     private final Map<String, SnapshotCheckContext> contexts = new ConcurrentHashMap<>();
 
     /** Cluster-wide operation futures per snapshot called from current node. */
@@ -229,7 +229,7 @@ public class SnapshotCheckProcess {
                     phaseFut.onDone(err);
                 else {
                     if (req.incrementalIndex() > 0)
-                        phaseFut.onDone(new SnapshotCheckResponse((SnapshotChecker.IncrementalSnapshotResult)res));
+                        phaseFut.onDone(new SnapshotCheckResponse((IncrementalSnapshotCheckResult)res));
                     else
                         phaseFut.onDone(new SnapshotCheckResponse((Map<?, ?>)res));
                 }
@@ -485,7 +485,7 @@ public class SnapshotCheckProcess {
         @Nullable private final Map<?, ?> partsResults;
 
         /** @see #incrementalResult() */
-        @Nullable private final SnapshotChecker.IncrementalSnapshotResult incRes;
+        @Nullable private final IncrementalSnapshotCheckResult incRes;
 
         /** Ctor for the phase 1. */
         private SnapshotCheckResponse(@Nullable List<SnapshotMetadata> metas) {
@@ -502,7 +502,7 @@ public class SnapshotCheckProcess {
         }
 
         /** Ctor for the phase 2 for incremental snapshot. */
-        private SnapshotCheckResponse(SnapshotChecker.IncrementalSnapshotResult incRes) {
+        private SnapshotCheckResponse(IncrementalSnapshotCheckResult incRes) {
             this.metas = null;
             this.partsResults = null;
             this.incRes = incRes;
@@ -532,7 +532,7 @@ public class SnapshotCheckProcess {
         }
 
         /** Incremental snapshot result for the phase 2. Is always {@code null} for the phase 1 or in case of normal snapshot. */
-        private @Nullable SnapshotChecker.IncrementalSnapshotResult incrementalResult() {
+        private @Nullable IncrementalSnapshotCheckResult incrementalResult() {
             return incRes;
         }
     }

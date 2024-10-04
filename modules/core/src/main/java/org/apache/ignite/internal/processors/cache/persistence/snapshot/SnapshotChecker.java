@@ -20,7 +20,6 @@ import java.io.BufferedInputStream;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
-import java.io.Serializable;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.nio.file.DirectoryStream;
@@ -58,7 +57,6 @@ import org.apache.ignite.internal.managers.encryption.EncryptionCacheKeyProvider
 import org.apache.ignite.internal.managers.encryption.GroupKey;
 import org.apache.ignite.internal.managers.encryption.GroupKeyEncrypted;
 import org.apache.ignite.internal.pagemem.store.PageStore;
-import org.apache.ignite.internal.pagemem.wal.record.DataEntry;
 import org.apache.ignite.internal.processors.cache.CacheObject;
 import org.apache.ignite.internal.processors.cache.GridCacheOperation;
 import org.apache.ignite.internal.processors.cache.GridLocalConfigManager;
@@ -142,7 +140,7 @@ public class SnapshotChecker {
     public SnapshotChecker(
         GridKernalContext kctx,
         Marshaller marshaller,
-        ExecutorService executor,
+        ExecutorService executorSrvc,
         @Nullable ClassLoader marshallerClsLdr
     ) {
         this.kctx = kctx;
@@ -152,7 +150,7 @@ public class SnapshotChecker {
 
         this.encryptionSpi = kctx.config().getEncryptionSpi() == null ? new NoopEncryptionSpi() : kctx.config().getEncryptionSpi();
 
-        this.executor = executor;
+        this.executor = executorSrvc;
 
         this.log = kctx.log(getClass());
     }
@@ -313,11 +311,7 @@ public class SnapshotChecker {
     }
 
     /** Checks that all incremental snapshots are present, contain correct metafile and WAL segments. */
-    private void checkIncrementalSnapshotsExist(
-        SnapshotMetadata fullMeta,
-        File snpDir,
-        int incIdx
-    ) {
+    private void checkIncrementalSnapshotsExist(SnapshotMetadata fullMeta, File snpDir, int incIdx) {
         try {
             // Incremental snapshot must contain ClusterSnapshotRecord.
             long startSeg = fullMeta.snapshotRecordPointer().index();
@@ -393,7 +387,7 @@ public class SnapshotChecker {
     }
 
     /** */
-    public CompletableFuture<IncrementalSnapshotResult> checkIncrementalSnapshot(
+    public CompletableFuture<IncrementalSnapshotCheckResult> checkIncrementalSnapshot(
         String snpName,
         @Nullable String snpPath,
         int incIdx
@@ -592,7 +586,7 @@ public class SnapshotChecker {
                             ", walSegments=" + procSegCnt.get() + ']');
                     }
 
-                    return new IncrementalSnapshotResult(
+                    return new IncrementalSnapshotCheckResult(
                         txHashRes,
                         partHashRes,
                         partiallyCommittedTxs,
@@ -622,7 +616,7 @@ public class SnapshotChecker {
 
     /** */
     public IdleVerifyResultV2 reduceIncrementalResults(
-        Map<ClusterNode, IncrementalSnapshotResult> results,
+        Map<ClusterNode, IncrementalSnapshotCheckResult> results,
         Map<ClusterNode, Exception> operationErrors
     ) {
         if (!operationErrors.isEmpty())
@@ -635,7 +629,7 @@ public class SnapshotChecker {
         Map<ClusterNode, Exception> errors = new HashMap<>();
 
         results.forEach((node, res) -> {
-            if (res.exceptions.isEmpty() && errors.isEmpty()) {
+            if (res.exceptions().isEmpty() && errors.isEmpty()) {
                 if (!F.isEmpty(res.partiallyCommittedTxs()))
                     partiallyCommittedTxs.put(node, res.partiallyCommittedTxs());
 
@@ -665,8 +659,8 @@ public class SnapshotChecker {
                     }
                 }
             }
-            else if (!res.exceptions.isEmpty())
-                errors.put(node, F.first(res.exceptions));
+            else if (!res.exceptions().isEmpty())
+                errors.put(node, F.first(res.exceptions()));
         });
 
         // Add all missed pairs to conflicts.
@@ -1280,65 +1274,6 @@ public class SnapshotChecker {
             GroupKey key = getActiveKey(grpId);
 
             return key != null && key.id() == keyId ? key : null;
-        }
-    }
-
-    /**  */
-    public static class IncrementalSnapshotResult implements Serializable {
-        /** */
-        private static final long serialVersionUID = 0L;
-
-        /** Transaction hashes collection. */
-        private Map<Object, TransactionsHashRecord> txHashRes;
-
-        /**
-         * Partition hashes collection. Value is a hash of data entries {@link DataEntry} from WAL segments included
-         * into the incremental snapshot.
-         */
-        private Map<PartitionKeyV2, PartitionHashRecordV2> partHashRes;
-
-        /** Partially committed transactions' collection. */
-        private Collection<GridCacheVersion> partiallyCommittedTxs;
-
-        /** Occurred exceptions. */
-        private Collection<Exception> exceptions;
-
-        /** */
-        public IncrementalSnapshotResult() {
-            // No-op.
-        }
-
-        /** */
-        private IncrementalSnapshotResult(
-            Map<Object, TransactionsHashRecord> txHashRes,
-            Map<PartitionKeyV2, PartitionHashRecordV2> partHashRes,
-            Collection<GridCacheVersion> partiallyCommittedTxs,
-            Collection<Exception> exceptions
-        ) {
-            this.txHashRes = txHashRes;
-            this.partHashRes = partHashRes;
-            this.partiallyCommittedTxs = partiallyCommittedTxs;
-            this.exceptions = exceptions;
-        }
-
-        /** */
-        public Map<PartitionKeyV2, PartitionHashRecordV2> partHashRes() {
-            return partHashRes;
-        }
-
-        /** */
-        public Map<Object, TransactionsHashRecord> txHashRes() {
-            return txHashRes;
-        }
-
-        /** */
-        public Collection<GridCacheVersion> partiallyCommittedTxs() {
-            return partiallyCommittedTxs;
-        }
-
-        /** */
-        public Collection<Exception> exceptions() {
-            return exceptions;
         }
     }
 
