@@ -438,7 +438,8 @@ public class IgniteServiceProcessor extends GridProcessorAdapter implements Igni
                 unmarshalNodeFilterIfNeeded(svc.configuration());
             }
             catch (IgniteCheckedException e) {
-                return new IgniteNodeValidationResult(node.id(), "Node join is rejected: " + e.getMessage());
+                return new IgniteNodeValidationResult(node.id(), "Node join is rejected [joiningNodeId=" + node.id() +
+                    ", msg=" + e.getMessage() + ']');
             }
         }
 
