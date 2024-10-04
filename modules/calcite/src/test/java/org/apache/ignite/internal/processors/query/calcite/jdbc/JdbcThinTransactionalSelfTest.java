@@ -27,7 +27,6 @@ import org.apache.ignite.calcite.CalciteQueryEngineConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.jdbc.thin.JdbcThinConnection;
 import org.apache.ignite.internal.util.typedef.F;
-import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.IgniteConfigVariationsAbstractTest.TestRunnable;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.transactions.TransactionConcurrency;
@@ -99,7 +98,12 @@ public class JdbcThinTransactionalSelfTest extends GridCommonAbstractTest {
             String url = URL + "?transactionConcurrency=" + txConcurrency;
 
             try (Connection conn = DriverManager.getConnection(url)) {
-                assertEquals(txConcurrency, GridTestUtils.getFieldValue(conn, "txConcurrency"));
+                conn.setAutoCommit(false);
+
+                try (ResultSet rs = conn.prepareStatement("SELECT 1").executeQuery()) {
+                    assertEquals(1, F.size(grid().context().cache().context().tm().activeTransactions()));
+                    assertEquals(txConcurrency, F.first(grid().context().cache().context().tm().activeTransactions()).concurrency());
+                }
             }
         }
     }

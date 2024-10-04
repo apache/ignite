@@ -19,6 +19,7 @@ package org.apache.ignite.internal.processors.platform.client.tx;
 
 import org.apache.ignite.binary.BinaryRawReader;
 import org.apache.ignite.internal.processors.odbc.ClientListenerAbstractConnectionContext;
+import org.apache.ignite.internal.processors.odbc.ClientTxSupport;
 import org.apache.ignite.internal.processors.platform.client.ClientConnectionContext;
 import org.apache.ignite.internal.processors.platform.client.ClientIntResponse;
 import org.apache.ignite.internal.processors.platform.client.ClientRequest;

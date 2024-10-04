@@ -171,10 +171,10 @@ public class JdbcQueryExecuteRequest extends JdbcRequest {
         if (protoCtx.isAffinityAwarenessSupported())
             writer.writeBoolean(partResReq);
 
-        if (protoCtx.features().contains(JdbcThinFeature.QUERY_TIMEOUT))
+        if (protoCtx.isFeatureSupported(JdbcThinFeature.QUERY_TIMEOUT))
             writer.writeBoolean(explicitTimeout);
 
-        if (protoCtx.features().contains(JdbcThinFeature.TX_AWARE_QUERIES))
+        if (protoCtx.isFeatureSupported(JdbcThinFeature.TX_AWARE_QUERIES))
             writer.writeInt(txId);
     }
 
@@ -213,10 +213,10 @@ public class JdbcQueryExecuteRequest extends JdbcRequest {
         if (protoCtx.isAffinityAwarenessSupported())
             partResReq = reader.readBoolean();
 
-        if (protoCtx.features().contains(JdbcThinFeature.QUERY_TIMEOUT))
+        if (protoCtx.isFeatureSupported(JdbcThinFeature.QUERY_TIMEOUT))
             explicitTimeout = reader.readBoolean();
 
-        if (protoCtx.features().contains(JdbcThinFeature.TX_AWARE_QUERIES))
+        if (protoCtx.isFeatureSupported(JdbcThinFeature.TX_AWARE_QUERIES))
             txId = reader.readInt();
     }
 

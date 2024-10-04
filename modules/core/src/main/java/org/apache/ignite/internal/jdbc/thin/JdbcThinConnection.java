@@ -197,7 +197,7 @@ public class JdbcThinConnection implements Connection {
     /** Current transaction isolation. */
     private int txIsolation;
 
-    /** Transaction concurrencty */
+    /** Transaction concurrency */
     private final TransactionConcurrency txConcurrency;
 
     /** Auto-commit flag. */
@@ -310,7 +310,7 @@ public class JdbcThinConnection implements Connection {
         }
 
         holdability = txSupportedOnServer() ? CLOSE_CURSORS_AT_COMMIT : HOLD_CURSORS_OVER_COMMIT;
-        txIsolation = txSupportedOnServer() ? TRANSACTION_READ_COMMITTED : TRANSACTION_NONE;
+        txIsolation = defaultTransactionIsolation();
         txConcurrency = TransactionConcurrency.valueOf(connProps.getTransactionConcurrency());
     }
 
@@ -361,9 +361,19 @@ public class JdbcThinConnection implements Connection {
         return txCtx != null;
     }
 
-    /** */
+    /** @return {@code True} if transactions supported by the server, {@code false} otherwise. */
     boolean txSupportedOnServer() {
         return (singleIo != null || !ios.isEmpty()) && defaultIo().isTxAwareQueriesSupported();
+    }
+
+    /** @return {@code True} if certain isolation level supported by the server, {@code false} otherwise. */
+    boolean isolationLevelSupported(int level) throws SQLException {
+        return defaultIo().isIsolationLevelSupported(isolation(level));
+    }
+
+    /** @return Default isolation level. */
+    int defaultTransactionIsolation() {
+        return txSupportedOnServer() ? TRANSACTION_READ_COMMITTED : TRANSACTION_NONE;
     }
 
     /** */
@@ -689,7 +699,7 @@ public class JdbcThinConnection implements Connection {
             case Connection.TRANSACTION_READ_COMMITTED:
             case Connection.TRANSACTION_REPEATABLE_READ:
             case Connection.TRANSACTION_SERIALIZABLE:
-                if (txSupportedOnServer() && !defaultIo().isIsolationLevelSupported(isolation(level)))
+                if (txSupportedOnServer() && !isolationLevelSupported(level))
                     throw new SQLException("Requested isolation level not supported by the server: " + level);
 
                 break;

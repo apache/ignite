@@ -64,10 +64,10 @@ import org.apache.ignite.internal.processors.odbc.ClientListenerRequest;
 import org.apache.ignite.internal.processors.odbc.ClientListenerRequestHandler;
 import org.apache.ignite.internal.processors.odbc.ClientListenerResponse;
 import org.apache.ignite.internal.processors.odbc.ClientListenerResponseSender;
+import org.apache.ignite.internal.processors.odbc.ClientTxSupport;
 import org.apache.ignite.internal.processors.odbc.SqlListenerUtils;
 import org.apache.ignite.internal.processors.odbc.SqlStateCode;
 import org.apache.ignite.internal.processors.platform.client.tx.ClientTxContext;
-import org.apache.ignite.internal.processors.platform.client.tx.ClientTxSupport;
 import org.apache.ignite.internal.processors.query.GridQueryCancel;
 import org.apache.ignite.internal.processors.query.IgniteSQLException;
 import org.apache.ignite.internal.processors.query.QueryUtils;
@@ -519,7 +519,7 @@ public class JdbcRequestHandler implements ClientListenerRequestHandler, ClientT
         if (protocolVer.compareTo(VER_2_9_0) >= 0) {
             writer.writeByteArray(ThinProtocolFeature.featuresAsBytes(connCtx.protocolContext().features()));
 
-            if (connCtx.protocolContext().features().contains(JdbcThinFeature.TX_AWARE_QUERIES)) {
+            if (connCtx.protocolContext().isFeatureSupported(JdbcThinFeature.TX_AWARE_QUERIES)) {
                 writer.writeIntArray(TransactionConfiguration.TX_AWARE_QUERIES_SUPPORTED_MODES.stream()
                     .mapToInt(TransactionIsolation::ordinal)
                     .toArray());

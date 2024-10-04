@@ -1297,7 +1297,6 @@ public class SqlTransactionsIsolationTest extends GridCommonAbstractTest {
                         }
 
                         return res;
-
                     }
                 }
                 else
