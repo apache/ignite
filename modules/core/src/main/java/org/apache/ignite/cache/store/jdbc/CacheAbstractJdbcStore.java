@@ -1943,7 +1943,7 @@ public abstract class CacheAbstractJdbcStore<K, V> implements CacheStore<K, V>, 
         /**
          * Get full table name.
          *
-         * @return &lt;schema&gt;.&lt;table name&gt
+         * @return &lt;schema&gt;.&lt;table name&gt;
          */
         protected String fullTableName() {
             return fullTblName;
