@@ -29,6 +29,7 @@ import org.apache.calcite.sql.type.SqlTypeName;
 import org.apache.calcite.tools.FrameworkConfig;
 import org.apache.calcite.tools.Frameworks;
 import org.apache.ignite.IgniteCache;
+import org.apache.ignite.IgniteException;
 import org.apache.ignite.cache.QueryEntity;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.internal.processors.query.IgniteSQLException;
@@ -349,6 +350,28 @@ public class DataTypesTest extends AbstractBasicIntegrationTest {
         finally {
             executeSql("DROP TABLE IF EXISTS tbl");
         }
+    }
+
+    /** */
+    @Test
+    public void testUnsupportedTypes() {
+        assertThrows("CREATE TABLE test (val TIME WITH TIME ZONE)", IgniteException.class,
+            "'TIME WITH TIME ZONE' is not supported.");
+        assertThrows("CREATE TABLE test (val TIMESTAMP WITH TIME ZONE)", IgniteException.class,
+            "'TIMESTAMP WITH TIME ZONE' is not supported.");
+        assertThrows("CREATE TABLE test (val TIME WITH LOCAL TIME ZONE)", IgniteException.class,
+            "'TIME WITH LOCAL TIME ZONE' is not supported.");
+        assertThrows("CREATE TABLE test (val TIMESTAMP WITH LOCAL TIME ZONE)", IgniteException.class,
+            "'TIMESTAMP WITH LOCAL TIME ZONE' is not supported.");
+
+        assertThrows("SELECT CAST (1 as TIME WITH TIME ZONE)", IgniteException.class,
+            "'TIME WITH TIME ZONE' is not supported.");
+        assertThrows("SELECT CAST (1 as TIMESTAMP WITH TIME ZONE)", IgniteException.class,
+            "'TIMESTAMP WITH TIME ZONE' is not supported.");
+        assertThrows("SELECT CAST (1 as TIME WITH LOCAL TIME ZONE)", IgniteException.class,
+            "'TIME WITH LOCAL TIME ZONE' is not supported.");
+        assertThrows("SELECT CAST (1 as TIMESTAMP WITH LOCAL TIME ZONE)", IgniteException.class,
+            "'TIMESTAMP WITH LOCAL TIME ZONE' is not supported.");
     }
 
     /** Cache API - SQL API cross check. */
