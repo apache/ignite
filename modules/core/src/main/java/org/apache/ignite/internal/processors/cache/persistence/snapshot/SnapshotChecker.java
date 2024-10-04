@@ -16,10 +16,8 @@
  */
 package org.apache.ignite.internal.processors.cache.persistence.snapshot;
 
-import java.io.BufferedInputStream;
 import java.io.File;
 import java.io.IOException;
-import java.io.InputStream;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.nio.file.DirectoryStream;
@@ -125,12 +123,6 @@ public class SnapshotChecker {
     @Nullable protected final GridKernalContext kctx;
 
     /** */
-    protected final Marshaller marshaller;
-
-    /** */
-    @Nullable protected final ClassLoader marshallerClsLdr;
-
-    /** */
     protected final EncryptionSpi encryptionSpi;
 
     /** */
@@ -140,13 +132,9 @@ public class SnapshotChecker {
     public SnapshotChecker(
         GridKernalContext kctx,
         Marshaller marshaller,
-        ExecutorService executorSrvc,
-        @Nullable ClassLoader marshallerClsLdr
+        ExecutorService executorSrvc
     ) {
         this.kctx = kctx;
-
-        this.marshaller = marshaller;
-        this.marshallerClsLdr = marshallerClsLdr;
 
         this.encryptionSpi = kctx.config().getEncryptionSpi() == null ? new NoopEncryptionSpi() : kctx.config().getEncryptionSpi();
 
@@ -180,7 +168,7 @@ public class SnapshotChecker {
 
         try {
             for (File smf : smfs) {
-                SnapshotMetadata curr = readSnapshotMetadata(smf);
+                SnapshotMetadata curr = kctx.cache().context().snapshotMgr().readSnapshotMetadata(smf);
 
                 if (prev != null && !prev.sameSnapshot(curr)) {
                     throw new IgniteException("Snapshot metadata files are from different snapshots " +
@@ -208,36 +196,6 @@ public class SnapshotChecker {
             result.addAll(metasMap.values());
 
             return result;
-        }
-    }
-
-    /** */
-    public SnapshotMetadata readSnapshotMetadata(File smf) throws IgniteCheckedException, IOException {
-        SnapshotMetadata meta = readFromFile(smf);
-
-        String smfName = smf.getName().substring(0, smf.getName().length() - SNAPSHOT_METAFILE_EXT.length());
-
-        if (!U.maskForFileName(meta.consistentId()).equals(smfName)) {
-            throw new IgniteException("Error reading snapshot metadata [smfName=" + smfName + ", consId="
-                + U.maskForFileName(meta.consistentId()));
-        }
-
-        return meta;
-    }
-
-    /** */
-    public SnapshotMetadata readSnapshotMetadata(File snpDir, String consId) throws IgniteCheckedException, IOException {
-        return readSnapshotMetadata(new File(snpDir, snapshotMetaFileName(consId)));
-    }
-
-    /** */
-    public <T> T readFromFile(File smf)
-        throws IOException, IgniteCheckedException {
-        if (!smf.exists())
-            throw new IgniteCheckedException("Snapshot metafile cannot be read due to it doesn't exist: " + smf);
-
-        try (InputStream in = new BufferedInputStream(Files.newInputStream(smf.toPath()))) {
-            return marshaller.unmarshal(in, marshallerClsLdr);
         }
     }
 
@@ -330,7 +288,7 @@ public class SnapshotChecker {
 
                 File metafile = incSnpDir.toPath().resolve(metaFileName).toFile();
 
-                IncrementalSnapshotMetadata incMeta = readFromFile(metafile);
+                IncrementalSnapshotMetadata incMeta = kctx.cache().context().snapshotMgr().readFromFile(metafile);
 
                 if (!incMeta.matchBaseSnapshot(fullMeta)) {
                     throw new IllegalArgumentException("Incremental snapshot doesn't match full snapshot " +
@@ -408,7 +366,7 @@ public class SnapshotChecker {
 
                     BaselineTopology blt = kctx.state().clusterState().baselineTopology();
 
-                    SnapshotMetadata meta = readSnapshotMetadata(snpDir, consId);
+                    SnapshotMetadata meta = kctx.cache().context().snapshotMgr().readSnapshotMetadata(snpDir, consId);
 
                     if (!F.eqNotOrdered(blt.consistentIds(), meta.baselineNodes())) {
                         throw new IgniteCheckedException("Topologies of snapshot and current cluster are different [snp=" +

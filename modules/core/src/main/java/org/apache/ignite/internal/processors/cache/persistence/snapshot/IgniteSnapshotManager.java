@@ -17,10 +17,12 @@
 
 package org.apache.ignite.internal.processors.cache.persistence.snapshot;
 
+import java.io.BufferedInputStream;
 import java.io.Closeable;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
+import java.io.InputStream;
 import java.io.OutputStream;
 import java.io.Serializable;
 import java.nio.ByteBuffer;
@@ -495,7 +497,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
         // Manage remote snapshots.
         snpRmtMgr = new SequentialRemoteSnapshotManager();
 
-        snpChecker = new SnapshotChecker(ctx, marsh, ctx.pools().getSnapshotExecutorService(), U.resolveClassLoader(ctx.config()));
+        snpChecker = new SnapshotChecker(ctx, marsh, ctx.pools().getSnapshotExecutorService());
     }
 
     /**
@@ -1984,15 +1986,25 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
      * @return Snapshot metadata instance.
      */
     public SnapshotMetadata readSnapshotMetadata(File snpDir, String consId) throws IgniteCheckedException, IOException {
-        return snpChecker.readSnapshotMetadata(snpDir, consId);
+        return readSnapshotMetadata(new File(snpDir, snapshotMetaFileName(consId)));
     }
 
     /**
      * @param smf File denoting to snapshot metafile.
      * @return Snapshot metadata instance.
      */
-    private SnapshotMetadata readSnapshotMetadata(File smf) throws IgniteCheckedException, IOException {
-        return snpChecker.readSnapshotMetadata(smf);
+    SnapshotMetadata readSnapshotMetadata(File smf) throws IgniteCheckedException, IOException {
+        SnapshotMetadata meta = readFromFile(smf);
+
+        String smfName = smf.getName().substring(0, smf.getName().length() - SNAPSHOT_METAFILE_EXT.length());
+
+        if (!U.maskForFileName(meta.consistentId()).equals(smfName)) {
+            throw new IgniteException(
+                "Error reading snapshot metadata [smfName=" + smfName + ", consId=" + U.maskForFileName(meta.consistentId())
+            );
+        }
+
+        return meta;
     }
 
     /**
@@ -2001,7 +2013,12 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
      * @param <T> Type of metadata.
      */
     public <T> T readFromFile(File smf) throws IgniteCheckedException, IOException {
-        return snpChecker.readFromFile(smf);
+        if (!smf.exists())
+            throw new IgniteCheckedException("Snapshot metafile cannot be read due to it doesn't exist: " + smf);
+
+        try (InputStream in = new BufferedInputStream(Files.newInputStream(smf.toPath()))) {
+            return marsh.unmarshal(in, U.resolveClassLoader(cctx.gridConfig()));
+        }
     }
 
     /**
