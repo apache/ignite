@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.processors.query.calcite.jdbc;
 
 import java.sql.Connection;
+import java.sql.DatabaseMetaData;
 import java.sql.DriverManager;
 import java.sql.ResultSet;
 import java.sql.SQLException;
@@ -63,6 +64,24 @@ public class JdbcThinTransactionalSelfTest extends GridCommonAbstractTest {
         super.beforeTestsStarted();
 
         startGrid();
+    }
+
+    /** */
+    @Test
+    public void testDatabaseMetadata() throws Exception {
+        try (Connection conn = DriverManager.getConnection(URL)) {
+            DatabaseMetaData meta = conn.getMetaData();
+
+            assertTrue(meta.supportsTransactions());
+            assertEquals(TRANSACTION_READ_COMMITTED, meta.getDefaultTransactionIsolation());
+            assertTrue(meta.supportsDataManipulationTransactionsOnly());
+
+            assertTrue(meta.supportsTransactionIsolationLevel(TRANSACTION_NONE));
+            assertTrue(meta.supportsTransactionIsolationLevel(TRANSACTION_READ_COMMITTED));
+            assertFalse(meta.supportsTransactionIsolationLevel(TRANSACTION_REPEATABLE_READ));
+            assertFalse(meta.supportsTransactionIsolationLevel(TRANSACTION_SERIALIZABLE));
+            assertFalse(meta.supportsTransactionIsolationLevel(TRANSACTION_READ_UNCOMMITTED));
+        }
     }
 
     /** */

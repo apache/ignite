@@ -368,6 +368,12 @@ public class JdbcThinConnection implements Connection {
 
     /** @return {@code True} if certain isolation level supported by the server, {@code false} otherwise. */
     boolean isolationLevelSupported(int level) throws SQLException {
+        if (level == TRANSACTION_NONE)
+            return true;
+
+        if (level == TRANSACTION_READ_UNCOMMITTED)
+            return false;
+
         return defaultIo().isIsolationLevelSupported(isolation(level));
     }
 
