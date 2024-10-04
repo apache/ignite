@@ -27,10 +27,10 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.configuration.ClientConnectorConfiguration;
 import org.apache.ignite.internal.processors.odbc.SqlStateCode;
 import org.apache.ignite.internal.processors.odbc.jdbc.JdbcThinFeature;
-import org.apache.ignite.internal.processors.query.NestedTxMode;
 import org.apache.ignite.internal.util.HostAndPortRange;
 import org.apache.ignite.internal.util.typedef.F;
 import org.jetbrains.annotations.Nullable;
+
 import static org.apache.ignite.cache.query.SqlFieldsQuery.DFLT_LAZY;
 
 /**
@@ -102,29 +102,6 @@ public class ConnectionPropertiesImpl implements ConnectionProperties, Serializa
     /** Executes update queries on ignite server nodes flag. */
     private BooleanProperty skipReducerOnUpdate = new BooleanProperty(
         "skipReducerOnUpdate", "Enable execution update queries on ignite server nodes", false, false);
-
-    /** Nested transactions handling strategy. */
-    private StringProperty nestedTxMode = new StringProperty(
-        "nestedTransactionsMode",
-        "Way to handle nested transactions",
-        NestedTxMode.ERROR.name(),
-        new String[] {NestedTxMode.COMMIT.name(), NestedTxMode.ERROR.name(), NestedTxMode.IGNORE.name()},
-        false,
-        new PropertyValidator() {
-            private static final long serialVersionUID = 0L;
-
-            @Override public void validate(String mode) throws SQLException {
-                if (!F.isEmpty(mode)) {
-                    try {
-                        NestedTxMode.valueOf(mode.toUpperCase());
-                    }
-                    catch (IllegalArgumentException e) {
-                        throw new SQLException("Invalid nested transactions handling mode, allowed values: " +
-                            Arrays.toString(nestedTxMode.choices), SqlStateCode.CLIENT_CONNECTION_FAILED);
-                    }
-                }
-            }
-        });
 
     /** SSL: Use SSL connection to Ignite node. */
     private StringProperty sslMode = new StringProperty("sslMode",
@@ -273,7 +250,7 @@ public class ConnectionPropertiesImpl implements ConnectionProperties, Serializa
     /** Properties array. */
     private final ConnectionProperty[] propsArr = {
         distributedJoins, enforceJoinOrder, collocated, replicatedOnly, autoCloseServerCursor,
-        tcpNoDelay, lazy, socketSendBuffer, socketReceiveBuffer, skipReducerOnUpdate, nestedTxMode,
+        tcpNoDelay, lazy, socketSendBuffer, socketReceiveBuffer, skipReducerOnUpdate,
         sslMode, sslCipherSuites, sslProtocol, sslKeyAlgorithm,
         sslClientCertificateKeyStoreUrl, sslClientCertificateKeyStorePassword, sslClientCertificateKeyStoreType,
         sslTrustCertificateKeyStoreUrl, sslTrustCertificateKeyStorePassword, sslTrustCertificateKeyStoreType,
@@ -563,16 +540,6 @@ public class ConnectionPropertiesImpl implements ConnectionProperties, Serializa
     /** {@inheritDoc} */
     @Override public void setSslFactory(String sslFactory) {
         this.sslFactory.setValue(sslFactory);
-    }
-
-    /** {@inheritDoc} */
-    @Override public String nestedTxMode() {
-        return nestedTxMode.value();
-    }
-
-    /** {@inheritDoc} */
-    @Override public void nestedTxMode(String val) {
-        nestedTxMode.setValue(val);
     }
 
     /** {@inheritDoc} */

@@ -49,9 +49,11 @@ import org.apache.ignite.internal.sql.command.SqlAnalyzeCommand;
 import org.apache.ignite.internal.sql.command.SqlCommand;
 import org.apache.ignite.internal.sql.command.SqlCreateIndexCommand;
 import org.apache.ignite.internal.sql.command.SqlCreateUserCommand;
+import org.apache.ignite.internal.sql.command.SqlCreateViewCommand;
 import org.apache.ignite.internal.sql.command.SqlDropIndexCommand;
 import org.apache.ignite.internal.sql.command.SqlDropStatisticsCommand;
 import org.apache.ignite.internal.sql.command.SqlDropUserCommand;
+import org.apache.ignite.internal.sql.command.SqlDropViewCommand;
 import org.apache.ignite.internal.sql.command.SqlIndexColumn;
 import org.apache.ignite.internal.sql.command.SqlKillClientCommand;
 import org.apache.ignite.internal.sql.command.SqlKillComputeTaskCommand;
@@ -145,7 +147,9 @@ public class SqlCommandProcessor {
             || cmd instanceof SqlKillScanQueryCommand
             || cmd instanceof SqlKillContinuousQueryCommand
             || cmd instanceof SqlKillQueryCommand
-            || cmd instanceof SqlStatisticsCommands;
+            || cmd instanceof SqlStatisticsCommands
+            || cmd instanceof SqlCreateViewCommand
+            || cmd instanceof SqlDropViewCommand;
     }
 
     /**
@@ -158,7 +162,9 @@ public class SqlCommandProcessor {
             || cmd instanceof SqlAlterTableCommand
             || cmd instanceof SqlCreateUserCommand
             || cmd instanceof SqlAlterUserCommand
-            || cmd instanceof SqlDropUserCommand;
+            || cmd instanceof SqlDropUserCommand
+            || cmd instanceof SqlCreateViewCommand
+            || cmd instanceof SqlDropViewCommand;
     }
 
     /**
@@ -408,6 +414,16 @@ public class SqlCommandProcessor {
                 SqlDropUserCommand dropCmd = (SqlDropUserCommand)cmd;
 
                 ctx.security().dropUser(dropCmd.userName());
+            }
+            else if (cmd instanceof SqlCreateViewCommand) {
+                SqlCreateViewCommand cmd0 = (SqlCreateViewCommand)cmd;
+
+                ctx.query().sqlViewManager().createView(cmd0.schemaName(), cmd0.viewName(), cmd0.viewSql(), cmd0.replace());
+            }
+            else if (cmd instanceof SqlDropViewCommand) {
+                SqlDropViewCommand cmd0 = (SqlDropViewCommand)cmd;
+
+                ctx.query().sqlViewManager().dropView(cmd0.schemaName(), cmd0.viewName(), cmd0.ifExists());
             }
             else
                 throw new IgniteSQLException("Unsupported DDL operation: " + cmd,

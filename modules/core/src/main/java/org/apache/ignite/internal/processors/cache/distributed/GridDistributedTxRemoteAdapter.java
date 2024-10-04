@@ -205,7 +205,7 @@ public abstract class GridDistributedTxRemoteAdapter extends IgniteTxAdapter imp
     }
 
     /** {@inheritDoc} */
-    @Override public void addActiveCache(GridCacheContext cacheCtx, boolean recovery) throws IgniteCheckedException {
+    @Override public void addActiveCache(GridCacheContext<?, ?> cacheCtx, boolean recovery) throws IgniteCheckedException {
         txState.addActiveCache(cacheCtx, recovery, this);
     }
 
@@ -628,7 +628,6 @@ public abstract class GridDistributedTxRemoteAdapter extends IgniteTxAdapter imp
                                                 txEntry.hasOldValue(),
                                                 txEntry.oldValue(),
                                                 topVer,
-                                                null,
                                                 replicate ? DR_BACKUP : DR_NONE,
                                                 near() ? null : explicitVer,
                                                 resolveTaskName(),
@@ -650,7 +649,6 @@ public abstract class GridDistributedTxRemoteAdapter extends IgniteTxAdapter imp
                                                 txEntry.hasOldValue(),
                                                 txEntry.oldValue(),
                                                 topVer,
-                                                null,
                                                 replicate ? DR_BACKUP : DR_NONE,
                                                 txEntry.conflictExpireTime(),
                                                 near() ? null : explicitVer,
@@ -688,7 +686,6 @@ public abstract class GridDistributedTxRemoteAdapter extends IgniteTxAdapter imp
                                             txEntry.hasOldValue(),
                                             txEntry.oldValue(),
                                             topVer,
-                                            null,
                                             replicate ? DR_BACKUP : DR_NONE,
                                             near() ? null : explicitVer,
                                             resolveTaskName(),

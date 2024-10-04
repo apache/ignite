@@ -33,7 +33,6 @@ import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.NodeStoppingException;
 import org.apache.ignite.internal.cluster.ClusterTopologyCheckedException;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
-import org.apache.ignite.internal.processors.cache.CacheEntryPredicate;
 import org.apache.ignite.internal.processors.cache.CacheInvalidStateException;
 import org.apache.ignite.internal.processors.cache.CacheObject;
 import org.apache.ignite.internal.processors.cache.CacheOperationContext;
@@ -60,7 +59,6 @@ import org.apache.ignite.internal.processors.cache.distributed.near.GridNearLock
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearLockResponse;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearSingleGetRequest;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTransactionalCache;
-import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxRemote;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearUnlockRequest;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteTxEntry;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteTxKey;
@@ -73,7 +71,6 @@ import org.apache.ignite.internal.util.GridLeanSet;
 import org.apache.ignite.internal.util.future.GridFinishedFuture;
 import org.apache.ignite.internal.util.lang.GridClosureException;
 import org.apache.ignite.internal.util.lang.IgnitePair;
-import org.apache.ignite.internal.util.typedef.C1;
 import org.apache.ignite.internal.util.typedef.C2;
 import org.apache.ignite.internal.util.typedef.CI1;
 import org.apache.ignite.internal.util.typedef.CI2;
@@ -95,7 +92,6 @@ import static org.apache.ignite.transactions.TransactionState.COMMITTING;
 /**
  * Base class for transactional DHT caches.
  */
-@SuppressWarnings("unchecked")
 public abstract class GridDhtTransactionalCacheAdapter<K, V> extends GridDhtCacheAdapter<K, V> {
     /** */
     private static final long serialVersionUID = 0L;
@@ -462,7 +458,6 @@ public abstract class GridDhtTransactionalCacheAdapter<K, V> extends GridDhtCach
         GridDhtLockResponse res;
 
         GridDhtTxRemote dhtTx = null;
-        GridNearTxRemote nearTx = null;
 
         boolean fail = false;
         boolean cancelled = false;
@@ -472,23 +467,6 @@ public abstract class GridDhtTransactionalCacheAdapter<K, V> extends GridDhtCach
                 ctx.deploymentEnabled());
 
             dhtTx = startRemoteTx(nodeId, req, res);
-            nearTx = isNearEnabled(cacheCfg) ? near().startRemoteTx(nodeId, req) : null;
-
-            if (nearTx != null && !nearTx.empty())
-                res.nearEvicted(nearTx.evicted());
-            else {
-                if (!F.isEmpty(req.nearKeys())) {
-                    Collection<IgniteTxKey> nearEvicted = new ArrayList<>(req.nearKeys().size());
-
-                    nearEvicted.addAll(F.viewReadOnly(req.nearKeys(), new C1<KeyCacheObject, IgniteTxKey>() {
-                        @Override public IgniteTxKey apply(KeyCacheObject k) {
-                            return ctx.txKey(k);
-                        }
-                    }));
-
-                    res.nearEvicted(nearEvicted);
-                }
-            }
         }
         catch (IgniteTxRollbackCheckedException e) {
             String err = "Failed processing DHT lock request (transaction has been completed): " + req;
@@ -528,7 +506,7 @@ public abstract class GridDhtTransactionalCacheAdapter<K, V> extends GridDhtCach
 
         if (res != null) {
             try {
-                // Reply back to sender.
+                // Reply to sender.
                 ctx.io().send(nodeId, res, ctx.ioPolicy());
 
                 if (txLockMsgLog.isDebugEnabled()) {
@@ -562,9 +540,6 @@ public abstract class GridDhtTransactionalCacheAdapter<K, V> extends GridDhtCach
         if (fail) {
             if (dhtTx != null)
                 dhtTx.rollbackRemoteTx();
-
-            if (nearTx != null) // Even though this should never happen, we leave this check for consistency.
-                nearTx.rollbackRemoteTx();
 
             List<KeyCacheObject> keys = req.keys();
 
@@ -638,27 +613,26 @@ public abstract class GridDhtTransactionalCacheAdapter<K, V> extends GridDhtCach
     }
 
     /**
-     * @param nearNode
-     * @param req
+     * @param nearNode Near node.
+     * @param req Near lock request.
      */
     private void processNearLockRequest0(ClusterNode nearNode, GridNearLockRequest req) {
         IgniteInternalFuture<?> f;
 
         if (req.firstClientRequest()) {
-            for (; ; ) {
+            do {
                 if (waitForExchangeFuture(nearNode, req))
                     return;
 
                 f = lockAllAsync(ctx, nearNode, req);
 
-                if (f != null)
-                    break;
             }
+            while (f == null);
         }
         else
             f = lockAllAsync(ctx, nearNode, req);
 
-        // Register listener just so we print out errors.
+        // Register listener just so we print errors.
         // Exclude lock timeout and rollback exceptions since it's not a fatal exception.
         f.listen(CU.errorLogger(log, GridCacheLockTimeoutException.class,
             GridDistributedLockCancelledException.class, IgniteTxTimeoutCheckedException.class,
@@ -762,7 +736,6 @@ public abstract class GridDhtTransactionalCacheAdapter<K, V> extends GridDhtCach
             isolation,
             createTtl,
             accessTtl,
-            CU.empty0(),
             opCtx != null && opCtx.skipStore(),
             opCtx != null && opCtx.isKeepBinary());
     }
@@ -779,7 +752,6 @@ public abstract class GridDhtTransactionalCacheAdapter<K, V> extends GridDhtCach
      * @param isolation Transaction isolation.
      * @param createTtl TTL for create operation.
      * @param accessTtl TTL for read operation.
-     * @param filter Optional filter.
      * @param skipStore Skip store flag.
      * @return Lock future.
      */
@@ -792,7 +764,6 @@ public abstract class GridDhtTransactionalCacheAdapter<K, V> extends GridDhtCach
         TransactionIsolation isolation,
         long createTtl,
         long accessTtl,
-        CacheEntryPredicate[] filter,
         boolean skipStore,
         boolean keepBinary) {
         if (keys == null || keys.isEmpty())
@@ -1075,7 +1046,7 @@ public abstract class GridDhtTransactionalCacheAdapter<K, V> extends GridDhtCach
 
                 final GridDhtTxLocal t = tx;
 
-                return new GridDhtEmbeddedFuture(
+                return new GridDhtEmbeddedFuture<>(
                     txFut,
                     new C2<GridCacheReturn, Exception, IgniteInternalFuture<GridNearLockResponse>>() {
                         @Override public IgniteInternalFuture<GridNearLockResponse> apply(
@@ -1419,7 +1390,7 @@ public abstract class GridDhtTransactionalCacheAdapter<K, V> extends GridDhtCach
     }
 
     /**
-     * Collects versions of pending candidates versions less then base.
+     * Collects versions of pending candidates versions less than base.
      *
      * @param entries Tx entries to process.
      * @param baseVer Base version.
@@ -1704,7 +1675,7 @@ public abstract class GridDhtTransactionalCacheAdapter<K, V> extends GridDhtCach
 
             try {
                 for (KeyCacheObject key : keyBytes)
-                    req.addKey(key, ctx);
+                    req.addKey(key);
 
                 keyBytes = nearMap.get(n);
 

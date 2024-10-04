@@ -368,7 +368,7 @@ namespace Apache.Ignite.Core.Impl.Unmanaged.Jni
             }
 
             var file = Shell.ExecuteSafe("/usr/bin/readlink", "-f /usr/bin/java", log: log);
-            // /usr/lib/jvm/java-8-openjdk-amd64/jre/bin/java
+            // /usr/lib/jvm/java-11-openjdk-amd64/jre/bin/java
 
             if (string.IsNullOrWhiteSpace(file))
             {
@@ -384,7 +384,7 @@ namespace Apache.Ignite.Core.Impl.Unmanaged.Jni
             log.Debug("/usr/bin/java resolved to '{0}'", file);
 
             var dir = Path.GetDirectoryName(file);
-            // /usr/lib/jvm/java-8-openjdk-amd64/jre/bin
+            // /usr/lib/jvm/java-11-openjdk-amd64/jre/bin
 
             if (dir == null)
             {
@@ -398,7 +398,7 @@ namespace Apache.Ignite.Core.Impl.Unmanaged.Jni
                 yield break;
             }
 
-            // Predefined path: /usr/lib/jvm/java-8-openjdk-amd64/jre/lib/amd64/server/libjvm.so
+            // Predefined path: /usr/lib/jvm/java-11-openjdk-amd64/jre/lib/amd64/server/libjvm.so
             yield return new KeyValuePair<string, string>(javaExec,
                 Path.Combine(libFolder, "amd64", "server", FileJvmDll));
 

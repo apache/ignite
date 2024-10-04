@@ -1378,10 +1378,15 @@ public class GridCommandHandlerClusterByClassTest extends GridCommandHandlerClus
                 SPRING_XML_CONFIG, cfgPath + "/unknown.xml"),
             "Failed to create caches. Spring XML configuration file not found");
 
-        assertEquals(CommandHandler.EXIT_CODE_OK, execute("--cache", CREATE, SPRING_XML_CONFIG,
-            cfgPath + "/cache-create-correct.xml"));
+        assertContains(log, executeCommand(EXIT_CODE_OK, "--cache", CREATE, SPRING_XML_CONFIG,
+            cfgPath + "/cache-create-correct.xml"), "Created caches: cache1, cache2");
 
         assertTrue(crd.cacheNames().containsAll(F.asList("cache1", "cache2")));
+
+        assertContains(log, executeCommand(EXIT_CODE_OK, "--cache", CREATE, SPRING_XML_CONFIG, cfgPath +
+            "/cache-create-correct-skip-existing-check.xml", "--skip-existing"), "Created caches: cache3, cache4");
+
+        assertTrue(crd.cacheNames().containsAll(F.asList("cache1", "cache2", "cache3", "cache4")));
 
         int expSize = G.allGrids().size();
 
@@ -2050,6 +2055,9 @@ public class GridCommandHandlerClusterByClassTest extends GridCommandHandlerClus
 
         createCacheAndPreload(ignite, 100);
 
+        createCacheAndPreload(client, "with-node-filter-cache", 1, 3,
+            node -> node.consistentId().toString().endsWith("0"));
+
         injectTestSystemOut();
 
         // Run distribution for all node and all cache
@@ -2062,6 +2070,9 @@ public class GridCommandHandlerClusterByClassTest extends GridCommandHandlerClus
 
         // Result include info by cache "ignite-sys-cache"
         assertContains(log, out, "[next group: id=-2100569601, name=ignite-sys-cache]");
+
+        // Result include info by cache "with-node-filter-cache"
+        assertContains(log, out, "[next group: id=-1695684207, name=with-node-filter-cache]");
 
         // Run distribution for all node and all cache and include additional user attribute
         assertEquals(EXIT_CODE_OK, execute("--cache", "distribution", "null", "--user-attributes", "ZONE,CELL,DC"));
@@ -2083,6 +2094,17 @@ public class GridCommandHandlerClusterByClassTest extends GridCommandHandlerClus
 
         // Check that number of columns increased by 3
         assertEquals(3, userArrtCommaNum - commaNum);
+
+        // Run distribution for all node and "with-node-filter-cache" cache
+        assertEquals(EXIT_CODE_OK, execute("--cache", "distribution", "null", "with-node-filter-cache"));
+
+        out = testOut.toString();
+
+        // Result include info by cache "with-node-filter-cache"
+        assertContains(log, out, "[next group: id=-1695684207, name=with-node-filter-cache]");
+
+        // Result not include error
+        assertNotContains(log, out, "Cache distrubution task failed on nodes");
     }
 
     /** */

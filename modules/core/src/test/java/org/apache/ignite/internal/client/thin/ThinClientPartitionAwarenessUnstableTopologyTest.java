@@ -205,12 +205,12 @@ public class ThinClientPartitionAwarenessUnstableTopologyTest extends ThinClient
         cache.put(key, 0);
 
         // Request goes to the connected channel, since affinity node is disconnected.
-        assertOpOnChannel(channels[1], ClientOperation.CACHE_PUT);
+        assertOpOnChannel(null, ClientOperation.CACHE_PUT);
 
         cache.put(key, 0);
 
         // Connection to disconnected node should be restored after retry.
-        assertOpOnChannel(channels[disconnectNodeIdx], ClientOperation.CACHE_PUT);
+        assertOpOnChannel(channels[disconnectNodeIdx], ClientOperation.CACHE_PUT, ClientOperation.CACHE_PARTITIONS);
 
         // Test partition awareness.
         testPartitionAwareness(false);

@@ -105,7 +105,7 @@ public class TxLocksRequest extends GridCacheMessage {
     }
 
     /** {@inheritDoc} */
-    @Override public void prepareMarshal(GridCacheSharedContext ctx) throws IgniteCheckedException {
+    @Override public void prepareMarshal(GridCacheSharedContext<?, ?> ctx) throws IgniteCheckedException {
         super.prepareMarshal(ctx);
 
         txKeysArr = new IgniteTxKey[txKeys.size()];
@@ -120,7 +120,7 @@ public class TxLocksRequest extends GridCacheMessage {
     }
 
     /** {@inheritDoc} */
-    @Override public void finishUnmarshal(GridCacheSharedContext ctx, ClassLoader ldr) throws IgniteCheckedException {
+    @Override public void finishUnmarshal(GridCacheSharedContext<?, ?> ctx, ClassLoader ldr) throws IgniteCheckedException {
         super.finishUnmarshal(ctx, ldr);
 
         txKeys = U.newHashSet(txKeysArr.length);
@@ -206,10 +206,5 @@ public class TxLocksRequest extends GridCacheMessage {
     /** {@inheritDoc} */
     @Override public byte fieldsCount() {
         return 5;
-    }
-
-    /** {@inheritDoc} */
-    @Override public void onAckReceived() {
-        // No-op.
     }
 }

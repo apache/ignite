@@ -63,6 +63,18 @@ public class LimitOffsetPlannerTest extends AbstractPlannerTest {
 
     /** */
     @Test
+    public void testNestedLimitOffsetWithUnion() throws Exception {
+        IgniteSchema publicSchema = createSchemaWithTable(IgniteDistributions.random());
+
+        assertPlan("(SELECT ID FROM TEST WHERE ID = 2) UNION ALL " +
+                "SELECT ID FROM (SELECT ID from (SELECT ID FROM TEST OFFSET 20) ORDER BY ID OFFSET 10)",
+            publicSchema,
+            nodeOrAnyChild(isInstanceOf(IgniteLimit.class).and(l -> doubleFromRex(l.offset(), -1) == 10d))
+        );
+    }
+
+    /** */
+    @Test
     public void testEstimateRows() throws Exception {
         IgniteSchema publicSchema = createSchemaWithTable(IgniteDistributions.random());
 

@@ -18,18 +18,21 @@
 package org.apache.ignite.internal.processors.query.calcite.integration;
 
 import java.math.BigDecimal;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Objects;
 import java.util.UUID;
 import java.util.stream.Collectors;
 import com.google.common.collect.ImmutableSet;
 import org.apache.calcite.runtime.CalciteException;
+import org.apache.calcite.sql.type.SqlTypeName;
 import org.apache.calcite.tools.FrameworkConfig;
 import org.apache.calcite.tools.Frameworks;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.cache.QueryEntity;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.internal.processors.query.IgniteSQLException;
+import org.apache.ignite.internal.processors.query.calcite.hint.HintDefinition;
 import org.apache.ignite.internal.util.typedef.F;
 import org.junit.Test;
 
@@ -448,6 +451,105 @@ public class DataTypesTest extends AbstractBasicIntegrationTest {
             .returns(11, new BigDecimal("11.100"), new BigDecimal("11"), new BigDecimal("11.1"))
             .returns(12, new BigDecimal("12.123"), new BigDecimal("12"), new BigDecimal("12.123456"))
             .check();
+    }
+
+    /** */
+    @Test
+    public void testIsNotDistinctFromTypeConversion() {
+        SqlTypeName[] numerics = new SqlTypeName[] {SqlTypeName.TINYINT, SqlTypeName.SMALLINT, SqlTypeName.INTEGER,
+            SqlTypeName.BIGINT, SqlTypeName.DECIMAL, SqlTypeName.FLOAT, SqlTypeName.DOUBLE};
+
+        sql("CREATE TABLE t1(key1 INTEGER, i1idx INTEGER, i1 INTEGER, chr1 VARCHAR, PRIMARY KEY(key1))");
+        sql("CREATE INDEX t1_idx ON t1(i1idx)");
+        sql("INSERT INTO t1 VALUES (1, 1, null, '1'), (2, 2, 2, '22'), (3, 33, 3, null), (4, null, 4, '4')");
+
+        for (SqlTypeName type : numerics) {
+            String t = type.getName();
+
+            sql("CREATE TABLE t2(key2 " + t + ", i2idx " + t + ", i2 " + t + ", i3 INTEGER, chr2 VARCHAR, PRIMARY KEY(key2))");
+            sql("CREATE INDEX t2_idx ON t2(i2idx)");
+            sql("INSERT INTO t2 VALUES (0, 0, 0, null, '0'), (11, null, 1, 1, '1'), (2, 2, 2, 2, '22'), (3, 3, null, 3, null)");
+
+            for (HintDefinition hint : Arrays.asList(HintDefinition.MERGE_JOIN, HintDefinition.NL_JOIN, HintDefinition.CNL_JOIN)) {
+                String h = "/*+ " + hint.name() + " */ ";
+
+                // Primary keys, indexed.
+                assertQuery("SELECT " + h + "key1, i3 FROM t1 JOIN t2 ON key2 IS NOT DISTINCT FROM key1")
+                    .returns(2, 2)
+                    .returns(3, 3)
+                    .check();
+
+                // Indexed and not indexed.
+                assertQuery("SELECT " + h + "key1, i3 FROM t1 JOIN t2 ON i2idx IS NOT DISTINCT FROM i1")
+                    .returns(1, 1)
+                    .returns(2, 2)
+                    .returns(3, 3)
+                    .check();
+
+                // Both not indexed.
+                assertQuery("SELECT " + h + "key1, i3 FROM t1 JOIN t2 ON i2 IS NOT DISTINCT FROM i1")
+                    .returns(1, 3)
+                    .returns(2, 2)
+                    .check();
+
+                // Indexed and casted.
+                assertQuery("SELECT " + h + "key1, i3 FROM t1 JOIN t2 ON i2idx IS NOT DISTINCT FROM CAST(chr1 as INTEGER)")
+                    .returns(3, 1)
+                    .check();
+
+                // Not indexed and casted.
+                assertQuery("SELECT " + h + "key1, i3 FROM t1 JOIN t2 ON i2 IS NOT DISTINCT FROM CAST(chr1 as INTEGER)")
+                    .returns(1, 1)
+                    .returns(3, 3)
+                    .check();
+
+                // @see MergeJoinConverterRule#matchesJoin(RelOptRuleCall)
+                if (hint == HintDefinition.MERGE_JOIN)
+                    continue;
+
+                // Primary keys, indexed.
+                assertQuery("SELECT " + h + "key1, i3 FROM t1 JOIN t2 ON key2 IS DISTINCT FROM key1 and key1<2")
+                    .returns(1, 1)
+                    .returns(1, 2)
+                    .returns(1, 3)
+                    .returns(1, null)
+                    .check();
+
+                // Indexed and not indexed.
+                assertQuery("SELECT " + h + "key1, i3 FROM t1 JOIN t2 ON i2idx IS NOT DISTINCT FROM i1")
+                    .returns(1, 1)
+                    .returns(2, 2)
+                    .returns(3, 3)
+                    .check();
+
+                // Both not indexed.
+                assertQuery("SELECT " + h + "key1, i3 FROM t1 JOIN t2 ON i2 IS DISTINCT FROM i1 and key1<3")
+                    .returns(1, 1)
+                    .returns(1, 2)
+                    .returns(1, null)
+                    .returns(2, 1)
+                    .returns(2, 3)
+                    .returns(2, null)
+                    .check();
+
+                // Indexed and casted.
+                assertQuery("SELECT " + h + "key1, i3 FROM t1 JOIN t2 ON i2idx IS DISTINCT FROM CAST(chr1 as INTEGER) and key1<2")
+                    .returns(1, null)
+                    .returns(1, 2)
+                    .returns(1, 3)
+                    .returns(1, 1)
+                    .check();
+
+                // Not indexed and casted.
+                assertQuery("SELECT " + h + "key1, i3 FROM t1 JOIN t2 ON i2 IS DISTINCT FROM CAST(chr1 as INTEGER) and key1<2")
+                    .returns(1, null)
+                    .returns(1, 2)
+                    .returns(1, 3)
+                    .check();
+            }
+
+            sql("DROP TABLE t2");
+        }
     }
 
     /** */

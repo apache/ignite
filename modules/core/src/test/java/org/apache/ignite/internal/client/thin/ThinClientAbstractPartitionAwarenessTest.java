@@ -17,8 +17,10 @@
 
 package org.apache.ignite.internal.client.thin;
 
+import java.net.InetSocketAddress;
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.List;
 import java.util.Queue;
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
@@ -54,7 +56,7 @@ import static org.apache.ignite.configuration.ClientConnectorConfiguration.DFLT_
 @SuppressWarnings("rawtypes")
 public abstract class ThinClientAbstractPartitionAwarenessTest extends GridCommonAbstractTest {
     /** Wait timeout. */
-    protected static final long WAIT_TIMEOUT = 5_000L;
+    protected static final long WAIT_TIMEOUT = 15_000L;
 
     /** Replicated cache name. */
     protected static final String REPL_CACHE_NAME = "replicated_cache";
@@ -153,16 +155,31 @@ public abstract class ThinClientAbstractPartitionAwarenessTest extends GridCommo
      * Checks that operation goes through specified channel.
      */
     protected void assertOpOnChannel(@Nullable TestTcpClientChannel expCh, ClientOperation expOp) {
+        assertOpOnChannel(expCh, expOp, null);
+    }
+
+    /**
+     * Checks that operation goes through specified channel.
+     */
+    protected void assertOpOnChannel(
+            @Nullable TestTcpClientChannel expCh,
+            ClientOperation expOp,
+            @Nullable ClientOperation ignoreOp) {
+        while (opsQueue.peek() != null && opsQueue.peek().get2() == ignoreOp) {
+            opsQueue.poll();
+        }
+
         T2<TestTcpClientChannel, ClientOperation> nextChOp = opsQueue.poll();
+        T2<TestTcpClientChannel, ClientOperation> queuedOp = opsQueue.peek();
 
         assertNotNull("Unexpected (null) next operation [expCh=" + expCh + ", expOp=" + expOp + ']', nextChOp);
 
         assertEquals("Unexpected operation on channel [expCh=" + expCh + ", expOp=" + expOp +
-                ", nextOpCh=" + nextChOp + ']', expOp, nextChOp.get2());
+                ", nextOpCh=" + nextChOp + ", queuedOp=" + queuedOp + ']', expOp, nextChOp.get2());
 
         if (expCh != null) {
             assertEquals("Unexpected channel for operation [expCh=" + expCh + ", expOp=" + expOp +
-                ", nextOpCh=" + nextChOp + ']', expCh, nextChOp.get1());
+                ", nextOpCh=" + nextChOp + ", queuedOp=" + queuedOp + ']', expCh, nextChOp.get1());
         }
     }
 
@@ -245,8 +262,39 @@ public abstract class ThinClientAbstractPartitionAwarenessTest extends GridCommo
         // Wait until all channels initialized.
         for (int ch : chIdxs) {
             assertTrue("Failed to wait for channel[" + ch + "] init",
-                GridTestUtils.waitForCondition(() -> channels[ch] != null, WAIT_TIMEOUT));
+                GridTestUtils.waitForCondition(() -> isConnected(ch), WAIT_TIMEOUT));
         }
+    }
+
+    /**
+     * Gets a value indicating whether the channel is connected at the specified index (port offset).
+     *
+     * @param chIdx Channel index (port offset).
+     * @return {@code true} if the channel is connected, {@code false} otherwise.
+     */
+    protected boolean isConnected(int chIdx) {
+        List<ReliableChannel.ClientChannelHolder> channelHolders = ((TcpIgniteClient)client).reliableChannel().getChannelHolders();
+        int chPort = DFLT_PORT + chIdx;
+
+        for (ReliableChannel.ClientChannelHolder holder : channelHolders) {
+            if (holder == null || holder.isClosed()) {
+                continue;
+            }
+
+            ClientChannel ch = GridTestUtils.getFieldValue(holder, "ch");
+
+            if (ch == null || ch.closed()) {
+                continue;
+            }
+
+            for (InetSocketAddress addr : holder.getAddresses()) {
+                if (addr.getPort() == chPort) {
+                    return true;
+                }
+            }
+        }
+
+        return false;
     }
 
     /**

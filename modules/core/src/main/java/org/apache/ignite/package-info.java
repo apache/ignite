@@ -16,7 +16,7 @@
  */
 
 /**
- * Contains entry-point <b>Ignite & HPC APIs.</b>
+ * Contains entry-point <b>Ignite &amp; HPC APIs.</b>
  */
 
 package org.apache.ignite;

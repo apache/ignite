@@ -707,7 +707,6 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter implements Ig
                                         txEntry.hasOldValue(),
                                         txEntry.oldValue(),
                                         topVer,
-                                        null,
                                         cached.detached() ? DR_NONE : drType,
                                         txEntry.conflictExpireTime(),
                                         cached.isNear() ? null : explicitVer,
@@ -740,7 +739,6 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter implements Ig
                                                 txEntry.hasOldValue(),
                                                 txEntry.oldValue(),
                                                 topVer,
-                                                CU.empty0(),
                                                 DR_NONE,
                                                 txEntry.conflictExpireTime(),
                                                 null,
@@ -762,7 +760,6 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter implements Ig
                                         txEntry.hasOldValue(),
                                         txEntry.oldValue(),
                                         topVer,
-                                        null,
                                         cached.detached() ? DR_NONE : drType,
                                         cached.isNear() ? null : explicitVer,
                                         resolveTaskName(),
@@ -790,7 +787,6 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter implements Ig
                                                 txEntry.hasOldValue(),
                                                 txEntry.oldValue(),
                                                 topVer,
-                                                CU.empty0(),
                                                 DR_NONE,
                                                 null,
                                                 resolveTaskName(),
@@ -1300,7 +1296,7 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter implements Ig
     }
 
     /** {@inheritDoc} */
-    @Override public final void addActiveCache(GridCacheContext cacheCtx, boolean recovery) throws IgniteCheckedException {
+    @Override public final void addActiveCache(GridCacheContext<?, ?> cacheCtx, boolean recovery) throws IgniteCheckedException {
         txState.addActiveCache(cacheCtx, recovery, this);
     }
 
