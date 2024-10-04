@@ -572,7 +572,7 @@ public class LongRunningQueryTest extends AbstractIndexingCommonTest {
 
         long start = U.currentTimeMillis();
 
-        sql("test", dml, LONG_QUERY_WARNING_TIMEOUT * 1.5);
+        sql("test", dml, LONG_QUERY_WARNING_TIMEOUT * 2);
 
         assertTrue((U.currentTimeMillis() - start) > LONG_QUERY_WARNING_TIMEOUT);
 
