@@ -26,6 +26,7 @@ from ignitetest.services.utils.ignite_configuration.cache import CacheConfigurat
 from ignitetest.services.utils.ignite_configuration.data_storage import DataRegionConfiguration, \
     DataStorageConfiguration
 from ignitetest.services.utils.jmx_utils import JmxClient
+from ignitetest.services.utils.nmon_utility import NmonUtility
 from ignitetest.services.utils.ssl.client_connector_configuration import ClientConnectorConfiguration
 from ignitetest.utils import cluster, ignite_versions
 from ignitetest.utils.ignite_test import IgniteTest
@@ -66,9 +67,12 @@ class JdbcThinBlobTest(IgniteTest):
                                             caches=[cache_config])
 
         ignite = IgniteService(self.test_context, server_config, 2,
-                               jvm_opts=[f"-Xmx{server_heap}g", f"-Xms{server_heap}g"])
+                               jvm_opts=[f"-Xmx{server_heap}g", f"-Xms{server_heap}g", ""])
 
         ignite.start()
+
+        nmon = NmonUtility(ignite)
+        nmon.start(freq_sec=1)
 
         ControlUtility(ignite).activate()
 
@@ -120,6 +124,7 @@ class JdbcThinBlobTest(IgniteTest):
         client_insert.stop()
         client_select.stop()
 
+        nmon.stop()
         ignite.stop()
 
         return data
