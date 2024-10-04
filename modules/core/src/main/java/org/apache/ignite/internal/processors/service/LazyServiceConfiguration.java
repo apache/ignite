@@ -23,7 +23,6 @@ import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.services.Service;
 import org.apache.ignite.services.ServiceCallInterceptor;
 import org.apache.ignite.services.ServiceConfiguration;
-import org.jetbrains.annotations.Nullable;
 
 /**
  * Lazy service configuration.
@@ -47,6 +46,9 @@ public class LazyServiceConfiguration extends ServiceConfiguration {
     private byte[] srvcBytes;
 
     /** */
+    private byte[] nodeFilterBytes;
+
+    /** */
     private byte[] interceptorsBytes;
 
     /** Names of platform service methods to build service statistics. */
@@ -65,7 +67,12 @@ public class LazyServiceConfiguration extends ServiceConfiguration {
      * @param srvcBytes Marshalled service.
      * @param interceptorsBytes Marshalled interceptors.
      */
-    public LazyServiceConfiguration(ServiceConfiguration cfg, byte[] srvcBytes, @Nullable byte[] interceptorsBytes) {
+    public LazyServiceConfiguration(
+        ServiceConfiguration cfg,
+        byte[] srvcBytes,
+        byte[] nodeFilterBytes,
+        byte[] interceptorsBytes
+    ) {
         assert cfg.getService() != null : cfg;
         assert srvcBytes != null;
 
@@ -75,12 +82,20 @@ public class LazyServiceConfiguration extends ServiceConfiguration {
         cacheName = cfg.getCacheName();
         affKey = cfg.getAffinityKey();
         nodeFilter = cfg.getNodeFilter();
+        this.nodeFilterBytes = nodeFilterBytes;
         this.srvcBytes = srvcBytes;
         srvc = cfg.getService();
         srvcClsName = srvc.getClass().getName();
         isStatisticsEnabled = cfg.isStatisticsEnabled();
         interceptors = cfg.getInterceptors();
         this.interceptorsBytes = interceptorsBytes;
+    }
+
+    /**
+     * @return Node filter bytes.
+     */
+    public byte[] nodeFilterBytes() {
+        return nodeFilterBytes;
     }
 
     /**
@@ -114,6 +129,19 @@ public class LazyServiceConfiguration extends ServiceConfiguration {
      */
     public byte[] interceptorBytes() {
         return interceptorsBytes;
+    }
+
+    /** {@inheritDoc} */
+    @Override public boolean equals(Object o) {
+        if (!(o instanceof LazyServiceConfiguration))
+            return super.equals(o);
+
+        if (!equalsIgnoreNodeFilter(o))
+            return false;
+
+        LazyServiceConfiguration that = (LazyServiceConfiguration)o;
+
+        return Arrays.equals(nodeFilterBytes, that.nodeFilterBytes);
     }
 
     /** {@inheritDoc} */
