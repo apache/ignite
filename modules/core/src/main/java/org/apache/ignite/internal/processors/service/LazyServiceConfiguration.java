@@ -214,6 +214,7 @@ public class LazyServiceConfiguration extends ServiceConfiguration {
         String svcCls = srvc == null ? "" : srvc.getClass().getSimpleName();
         String nodeFilterCls = nodeFilter == null ? "" : nodeFilter.getClass().getSimpleName();
 
-        return S.toString(LazyServiceConfiguration.class, this, "svcCls", svcCls, "nodeFilterCls", nodeFilterCls);
+        return S.toString(LazyServiceConfiguration.class, this, "name", name, "svcCls", svcCls,
+            "nodeFilterCls", nodeFilterCls);
     }
 }
