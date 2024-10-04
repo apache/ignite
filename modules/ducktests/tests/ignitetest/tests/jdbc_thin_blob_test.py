@@ -36,12 +36,13 @@ from ignitetest.utils.version import DEV_BRANCH, IgniteVersion
 class JdbcThinBlobTest(IgniteTest):
     @cluster(num_nodes=4)
     @ignite_versions(str(DEV_BRANCH))
-    @defaults(max_inmem=[None, 0, 2*1024*1024*1024], mode=["blob", "stream"])
+    @defaults(max_inmem=[None, 0, 2*1024*1024*1024], mode=["blob", "stream"], bias=[True, False])
     @parametrize(blob_size=1*1024*1024*1024, server_heap=12, insert_heap=10, select_heap=10)
     def test_jdbc_thin_blob(self, ignite_version, blob_size,
                             mode,
                             server_heap, insert_heap, select_heap,
-                            max_inmem):
+                            max_inmem,
+                            bias):
         """
         Thin JDBC test for Blobs.
         """
@@ -66,8 +67,16 @@ class JdbcThinBlobTest(IgniteTest):
                                             ),
                                             caches=[cache_config])
 
+        jvm_opts = [f"-Xmx{server_heap}g",
+                    f"-Xms{server_heap}g",
+                    "-XX:+SafepointTimeout",
+                    "-XX:SafepointTimeoutDelay=100"]
+
+        if not bias:
+            jvm_opts.append("-XX:-UseBiasedLocking")
+
         ignite = IgniteService(self.test_context, server_config, 2,
-                               jvm_opts=[f"-Xmx{server_heap}g", f"-Xms{server_heap}g", ""])
+                               jvm_opts=jvm_opts)
 
         ignite.start()
 
