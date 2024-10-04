@@ -145,9 +145,8 @@ public class IgniteTypeFactory extends JavaTypeFactoryImpl {
                     return Enum.class;
                 case ANY:
                 case OTHER:
-                    return Object.class;
                 case NULL:
-                    return Void.class;
+                    return Object.class;
                 default:
                     break;
             }
