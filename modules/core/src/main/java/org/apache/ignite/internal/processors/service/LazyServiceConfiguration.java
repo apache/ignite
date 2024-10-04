@@ -37,10 +37,6 @@ public class LazyServiceConfiguration extends ServiceConfiguration {
     @GridToStringExclude
     private transient Service srvc;
 
-    /** Node filter. */
-    @GridToStringExclude
-    private transient IgnitePredicate<ClusterNode> nodeFilter;
-
     /** Service interceptors. */
     @GridToStringExclude
     private transient ServiceCallInterceptor[] interceptors;
@@ -123,18 +119,6 @@ public class LazyServiceConfiguration extends ServiceConfiguration {
         assert srvc != null : this;
 
         return srvc;
-    }
-
-    /** {@inheritDoc} */
-    @Override public ServiceConfiguration setNodeFilter(IgnitePredicate<ClusterNode> nodeFilter) {
-        this.nodeFilter = nodeFilter;
-
-        return this;
-    }
-
-    /** {@inheritDoc} */
-    @Override public IgnitePredicate<ClusterNode> getNodeFilter() {
-        return nodeFilter;
     }
 
     /** {@inheritDoc} */

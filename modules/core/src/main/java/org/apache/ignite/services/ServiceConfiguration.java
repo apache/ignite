@@ -20,13 +20,16 @@ package org.apache.ignite.services;
 import java.io.Externalizable;
 import java.io.Serializable;
 import java.util.Arrays;
+import java.util.Objects;
 import org.apache.ignite.IgniteServices;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.processors.service.IgniteServiceProcessor;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
+import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.lang.IgniteExperimental;
 import org.apache.ignite.lang.IgnitePredicate;
+import org.jetbrains.annotations.Nullable;
 
 /**
  * Managed service configuration. In addition to deploying managed services by
@@ -60,6 +63,7 @@ public class ServiceConfiguration implements Serializable {
     private static final long serialVersionUID = 0L;
 
     /** Service name. */
+    @GridToStringInclude
     protected String name;
 
     /** Service instance. */
@@ -67,12 +71,15 @@ public class ServiceConfiguration implements Serializable {
     private Service svc;
 
     /** Total count. */
+    @GridToStringInclude
     protected int totalCnt;
 
     /** Max per-node count. */
+    @GridToStringInclude
     protected int maxPerNodeCnt;
 
     /** Cache name. */
+    @GridToStringInclude
     protected String cacheName;
 
     /** Affinity key. */
@@ -80,7 +87,11 @@ public class ServiceConfiguration implements Serializable {
 
     /** Node filter. */
     @GridToStringExclude
-    protected IgnitePredicate<ClusterNode> nodeFilter;
+    @Nullable protected transient IgnitePredicate<ClusterNode> nodeFilter;
+
+    /** Node filter class. */
+    @GridToStringInclude
+    @Nullable protected String nodeFilterClsName;
 
     /** Enables or disables service statistics. */
     protected boolean isStatisticsEnabled;
@@ -264,6 +275,7 @@ public class ServiceConfiguration implements Serializable {
      */
     public ServiceConfiguration setNodeFilter(IgnitePredicate<ClusterNode> nodeFilter) {
         this.nodeFilter = nodeFilter;
+        this.nodeFilterClsName = nodeFilter == null ? null : nodeFilter.getClass().getName();
 
         return this;
     }
@@ -335,7 +347,7 @@ public class ServiceConfiguration implements Serializable {
         else if (nodeFilter != null || that.nodeFilter != null)
             return false;
 
-        return true;
+        return Objects.equals(nodeFilterClsName, that.nodeFilterClsName);
     }
 
     /**
