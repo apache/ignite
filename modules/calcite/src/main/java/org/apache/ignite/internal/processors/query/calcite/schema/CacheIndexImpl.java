@@ -20,7 +20,6 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.UUID;
-import java.util.concurrent.atomic.AtomicBoolean;
 import org.apache.calcite.plan.RelOptCluster;
 import org.apache.calcite.plan.RelOptTable;
 import org.apache.calcite.rel.RelCollation;
@@ -153,63 +152,63 @@ public class CacheIndexImpl implements IgniteIndex {
 
     /** {@inheritDoc} */
     @Override public long count(ExecutionContext<?> ectx, ColocationGroup grp, boolean notNull) {
-        long cnt = 0;
+        if (idx == null || !grp.nodeIds().contains(ectx.localNodeId()))
+            return 0;
 
-        if (idx != null && grp.nodeIds().contains(ectx.localNodeId())) {
+        InlineIndex iidx = idx.unwrap(InlineIndex.class);
+
+        try {
             IndexingQueryFilter filter = new IndexingQueryFilterImpl(tbl.descriptor().cacheContext().kernalContext(),
                 ectx.topologyVersion(), grp.partitions(ectx.localNodeId()));
 
-            InlineIndex iidx = idx.unwrap(InlineIndex.class);
+            long cnt = 0;
 
-            BPlusTree.TreeRowClosure<IndexRow, IndexRow> rowFilter = null;
+            for (int i = 0; i < iidx.segmentsCount(); ++i)
+                cnt += iidx.count(i, new IndexQueryContext(filter, countRowFilter(notNull, iidx)));
 
-            boolean checkExpired = !tbl.descriptor().cacheContext().config().isEagerTtl();
+            return cnt;
+        }
+        catch (IgniteCheckedException e) {
+            throw new IgniteException("Unable to count index records.", e);
+        }
+    }
 
-            if (notNull) {
-                boolean nullsFirst = collation.getFieldCollations().get(0).nullDirection ==
-                    RelFieldCollation.NullDirection.FIRST;
+    /** */
+    private @Nullable BPlusTree.TreeRowClosure<IndexRow, IndexRow> countRowFilter(boolean notNull, InlineIndex iidx) {
+        boolean checkExpired = !tbl.descriptor().cacheContext().config().isEagerTtl();
 
-                BPlusTree.TreeRowClosure<IndexRow, IndexRow> notNullRowFilter =
-                    IndexScan.createNotNullRowFilter(iidx, checkExpired);
+        if (notNull) {
+            boolean nullsFirst = collation.getFieldCollations().get(0).nullDirection == RelFieldCollation.NullDirection.FIRST;
 
-                AtomicBoolean skipCheck = new AtomicBoolean();
+            BPlusTree.TreeRowClosure<IndexRow, IndexRow> notNullRowFilter = IndexScan.createNotNullRowFilter(iidx, checkExpired);
 
-                rowFilter = new BPlusTree.TreeRowClosure<IndexRow, IndexRow>() {
-                    @Override public boolean apply(
-                        BPlusTree<IndexRow, IndexRow> tree,
-                        BPlusIO<IndexRow> io,
-                        long pageAddr,
-                        int idx
-                    ) throws IgniteCheckedException {
-                        // If we have NULLS-FIRST collation, all values after first not-null value will be not-null,
-                        // don't need to check it with notNullRowFilter.
-                        // In case of NULL-LAST collation, all values after first null value will be null,
-                        // don't need to check it too.
-                        if (skipCheck.get() && !checkExpired)
-                            return nullsFirst;
+            return new BPlusTree.TreeRowClosure<>() {
+                private boolean skipCheck;
 
-                        boolean res = notNullRowFilter.apply(tree, io, pageAddr, idx);
+                @Override public boolean apply(
+                    BPlusTree<IndexRow, IndexRow> tree,
+                    BPlusIO<IndexRow> io,
+                    long pageAddr,
+                    int idx
+                ) throws IgniteCheckedException {
+                    // If we have NULLS-FIRST collation, all values after first not-null value will be not-null,
+                    // don't need to check it with notNullRowFilter.
+                    // In case of NULL-LAST collation, all values after first null value will be null,
+                    // don't need to check it too.
+                    if (skipCheck && !checkExpired)
+                        return nullsFirst;
 
-                        if (res == nullsFirst)
-                            skipCheck.set(true);
+                    boolean res = notNullRowFilter.apply(tree, io, pageAddr, idx);
 
-                        return res;
-                    }
-                };
-            }
-            else if (checkExpired)
-                rowFilter = IndexScan.createNotExpiredRowFilter();
+                    if (res == nullsFirst)
+                        skipCheck = true;
 
-            try {
-                for (int i = 0; i < iidx.segmentsCount(); ++i)
-                    cnt += iidx.count(i, new IndexQueryContext(filter, rowFilter));
-            }
-            catch (IgniteCheckedException e) {
-                throw new IgniteException("Unable to count index records.", e);
-            }
+                    return res;
+                }
+            };
         }
 
-        return cnt;
+        return checkExpired ? IndexScan.createNotExpiredRowFilter() : null;
     }
 
     /** {@inheritDoc} */

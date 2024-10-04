@@ -364,7 +364,6 @@ public final class GridDhtTxFinishFuture<K, V> extends GridCacheCompoundIdentity
                 tx.xidVersion(),
                 tx.commitVersion(),
                 tx.threadId(),
-                tx.isolation(),
                 false,
                 tx.isInvalidate(),
                 tx.system(),
@@ -374,7 +373,6 @@ public final class GridDhtTxFinishFuture<K, V> extends GridCacheCompoundIdentity
                 tx.completedBase(),
                 tx.committedVersions(),
                 tx.rolledbackVersions(),
-                tx.pendingVersions(),
                 tx.size(),
                 tx.taskNameHash(),
                 tx.activeCachesDeploymentEnabled(),
@@ -461,7 +459,6 @@ public final class GridDhtTxFinishFuture<K, V> extends GridCacheCompoundIdentity
                 tx.xidVersion(),
                 tx.commitVersion(),
                 tx.threadId(),
-                tx.isolation(),
                 commit,
                 tx.isInvalidate(),
                 tx.system(),
@@ -471,16 +468,12 @@ public final class GridDhtTxFinishFuture<K, V> extends GridCacheCompoundIdentity
                 tx.completedBase(),
                 tx.committedVersions(),
                 tx.rolledbackVersions(),
-                tx.pendingVersions(),
                 tx.size(),
                 tx.taskNameHash(),
                 tx.activeCachesDeploymentEnabled(),
-                null,
                 false,
                 false,
                 commit ? null : cctx.tm().txHandler().filterUpdateCountersForBackupNode(tx, n));
-
-            req.writeVersion(tx.writeVersion() != null ? tx.writeVersion() : tx.xidVersion());
 
             try {
                 if (isNull(cctx.discovery().getAlive(n.id()))) {
@@ -538,7 +531,6 @@ public final class GridDhtTxFinishFuture<K, V> extends GridCacheCompoundIdentity
                     tx.xidVersion(),
                     tx.commitVersion(),
                     tx.threadId(),
-                    tx.isolation(),
                     commit,
                     tx.isInvalidate(),
                     tx.system(),
@@ -548,15 +540,12 @@ public final class GridDhtTxFinishFuture<K, V> extends GridCacheCompoundIdentity
                     tx.completedBase(),
                     tx.committedVersions(),
                     tx.rolledbackVersions(),
-                    tx.pendingVersions(),
                     tx.size(),
                     tx.taskNameHash(),
                     tx.activeCachesDeploymentEnabled(),
                     false,
                     false,
                     null);
-
-                req.writeVersion(tx.writeVersion());
 
                 try {
                     cctx.io().send(nearMapping.primary(), req, tx.ioPolicy());

@@ -192,7 +192,7 @@ public class ExpressionFactoryImpl<Row> implements ExpressionFactory<Row> {
     }
 
     /** {@inheritDoc} */
-    @Override public Comparator<Row> comparator(List<RelFieldCollation> left, List<RelFieldCollation> right) {
+    @Override public Comparator<Row> comparator(List<RelFieldCollation> left, List<RelFieldCollation> right, boolean nullsEqual) {
         if (F.isEmpty(left) || F.isEmpty(right) || left.size() != right.size())
             throw new IllegalArgumentException("Both inputs should be non-empty and have the same size: left="
                 + (left != null ? left.size() : "null") + ", right=" + (right != null ? right.size() : "null"));
@@ -237,7 +237,8 @@ public class ExpressionFactoryImpl<Row> implements ExpressionFactory<Row> {
                 }
 
                 // If compared rows contain NULLs, they shouldn't be treated as equals, since NULL <> NULL in SQL.
-                return hasNulls ? 1 : 0;
+                // Except cases with IS DISTINCT / IS NOT DISTINCT.
+                return hasNulls && !nullsEqual ? 1 : 0;
             }
         };
     }

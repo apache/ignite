@@ -61,8 +61,6 @@ namespace ignite
                             SKIP_REDUCER_ON_UPDATE_CHECK_BOX,
                             PROTOCOL_VERSION_LABEL,
                             PROTOCOL_VERSION_COMBO_BOX,
-                            NESTED_TX_MODE_LABEL,
-                            NESTED_TX_MODE_COMBO_BOX,
                             ENGINE_MODE_LABEL,
                             ENGINE_MODE_COMBO_BOX,
                             SSL_MODE_LABEL,
@@ -316,17 +314,11 @@ namespace ignite
                     /** Password edit. */
                     std::auto_ptr<Window> passwordEdit;
 
-                    /** Nested transaction mode label. */
+                    /** Engine mode label. */
                     std::auto_ptr<Window> engineModeLabel;
 
-                    /** Nested transaction mode combo box. */
+                    /** Engine mode combo box. */
                     std::auto_ptr<Window> engineModeComboBox;
-
-                    /** Nested transaction mode label. */
-                    std::auto_ptr<Window> nestedTxModeLabel;
-
-                    /** Nested transaction mode combo box. */
-                    std::auto_ptr<Window> nestedTxModeComboBox;
 
                     /** Configuration. */
                     config::Configuration& config;
