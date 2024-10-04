@@ -97,3 +97,6 @@ CMD sudo service ssh start && tail -f /dev/null
 
 # Container port exposure
 EXPOSE 11211 47100 47500 49112 10800 8080 2888 3888 2181 1098 8082
+
+# Install utils
+RUN sudo apt install -y less nmon gawk
