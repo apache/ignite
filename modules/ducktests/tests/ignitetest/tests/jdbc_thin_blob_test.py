@@ -16,6 +16,8 @@
 """
 This module contains client queries tests.
 """
+from venv import logger
+
 from ducktape.mark import parametrize, defaults
 
 from ignitetest.services.ignite import IgniteService
@@ -37,7 +39,7 @@ class JdbcThinBlobTest(IgniteTest):
     @cluster(num_nodes=4)
     @ignite_versions(str(DEV_BRANCH))
     @defaults(max_inmem=[None, 0, 2*1024*1024*1024], mode=["blob", "stream"], bias=[True, False])
-    @parametrize(blob_size=1*1024*1024*1024, server_heap=12, insert_heap=10, select_heap=10)
+    @parametrize(blob_size=1*1024*1024*1024, server_heap=10, insert_heap=8, select_heap=8)
     def test_jdbc_thin_blob(self, ignite_version, blob_size,
                             mode,
                             server_heap, insert_heap, select_heap,
@@ -83,7 +85,8 @@ class JdbcThinBlobTest(IgniteTest):
         nmon = NmonUtility(ignite)
         nmon.start(freq_sec=1)
 
-        ControlUtility(ignite).activate()
+        control_sh = ControlUtility(ignite)
+        control_sh.activate()
 
         address = ignite.nodes[0].account.hostname + ":" + str(server_config.client_connector_configuration.port)
 
@@ -132,6 +135,12 @@ class JdbcThinBlobTest(IgniteTest):
 
         client_insert.stop()
         client_select.stop()
+
+        state = control_sh.cluster_state()
+        self.logger.info(state)
+
+        online = [n for n in state.baseline if n.state == "ONLINE"]
+        assert len(online) == 2
 
         nmon.stop()
         ignite.stop()
