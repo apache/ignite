@@ -28,6 +28,8 @@ import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.internal.util.worker.GridWorker;
 import org.apache.ignite.thread.IgniteThread;
+import org.apache.ignite.transactions.TransactionConcurrency;
+import org.apache.ignite.transactions.TransactionIsolation;
 import org.jetbrains.annotations.Nullable;
 
 /**
@@ -97,6 +99,18 @@ public class SqlClientContext implements AutoCloseable {
     /** Count of the processed ordered batch requests. Used to wait end of processing all request before starts
      * the processing the last request. */
     private long totalProcessedOrderedReqs;
+
+    /** Transaction concurrency control. */
+    private TransactionConcurrency concurrency;
+
+    /** Transaction isolation level. */
+    private @Nullable TransactionIsolation isolation;
+
+    /** Transaction timeout. */
+    private long timeout;
+
+    /** Transaction label. */
+    private String lb;
 
     /** Logger. */
     private final IgniteLogger log;
@@ -336,6 +350,40 @@ public class SqlClientContext implements AutoCloseable {
 
             muxStreamer.notifyAll();
         }
+    }
+
+    /**
+     * Sets transaction parameters.
+     * @param concurrency Transaction concurrency.
+     * @param isolation Transaction isolation.
+     * @param timeout Transaction timeout.
+     * @param lb Transaction label.
+     */
+    public void txParameters(TransactionConcurrency concurrency, @Nullable TransactionIsolation isolation, long timeout, String lb) {
+        this.concurrency = concurrency;
+        this.isolation = isolation;
+        this.timeout = timeout;
+        this.lb = lb;
+    }
+
+    /** */
+    public TransactionConcurrency concurrency() {
+        return concurrency;
+    }
+
+    /** */
+    public @Nullable TransactionIsolation isolation() {
+        return isolation;
+    }
+
+    /** */
+    public long transactionTimeout() {
+        return timeout;
+    }
+
+    /** */
+    public String transactionLabel() {
+        return lb;
     }
 
     /** {@inheritDoc} */

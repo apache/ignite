@@ -821,7 +821,7 @@ public class JdbcRequestHandler implements ClientListenerRequestHandler, ClientT
     /** @return {@code True} if transaction enabled fro connection, {@code false} otherwise. */
     private boolean txEnabledForConnection() {
         return connCtx.protocolContext().isFeatureSupported(JdbcThinFeature.TX_AWARE_QUERIES)
-            && connCtx.isolation() != null;
+            && cliCtx.isolation() != null;
     }
 
     /** */
@@ -830,10 +830,10 @@ public class JdbcRequestHandler implements ClientListenerRequestHandler, ClientT
             return txId;
 
         return startClientTransaction(
-            connCtx.concurrency(),
-            connCtx.isolation(),
-            connCtx.transactionTimeout(),
-            connCtx.transactionLabel()
+            cliCtx.concurrency(),
+            cliCtx.isolation(),
+            cliCtx.transactionTimeout(),
+            cliCtx.transactionLabel()
         );
     }
 
@@ -1414,7 +1414,7 @@ public class JdbcRequestHandler implements ClientListenerRequestHandler, ClientT
      * @return resulting {@link JdbcResponse}.
      */
     private JdbcResponse setTransactionParameters(JdbcSetTxParametersRequest req) {
-        connCtx.txParameters(
+        cliCtx.txParameters(
             req.concurrency(),
             req.isolation(),
             req.timeout(),
