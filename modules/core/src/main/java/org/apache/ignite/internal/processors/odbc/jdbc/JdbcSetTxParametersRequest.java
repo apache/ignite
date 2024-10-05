@@ -23,16 +23,17 @@ import org.apache.ignite.internal.binary.BinaryWriterExImpl;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.transactions.TransactionConcurrency;
 import org.apache.ignite.transactions.TransactionIsolation;
+import org.jetbrains.annotations.Nullable;
 
 /**
- * JDBC start transaction request.
+ * JDBC sets transactions parameters for connection.
  */
-public class JdbcTxStartRequest extends JdbcRequest {
+public class JdbcSetTxParametersRequest extends JdbcRequest {
     /** Transaction concurrency control. */
     private TransactionConcurrency concurrency;
 
     /** Transaction isolation level. */
-    private TransactionIsolation isolation;
+    private @Nullable TransactionIsolation isolation;
 
     /** Transaction timeout. */
     private long timeout;
@@ -41,8 +42,8 @@ public class JdbcTxStartRequest extends JdbcRequest {
     private String lb;
 
     /** Default constructor is used for deserialization. */
-    public JdbcTxStartRequest() {
-        super(TX_START);
+    public JdbcSetTxParametersRequest() {
+        super(TX_SET_PARAMS);
     }
 
     /**
@@ -51,9 +52,9 @@ public class JdbcTxStartRequest extends JdbcRequest {
      * @param timeout Timeout.
      * @param lb Label.
      */
-    public JdbcTxStartRequest(
+    public JdbcSetTxParametersRequest(
         TransactionConcurrency concurrency,
-        TransactionIsolation isolation,
+        @Nullable TransactionIsolation isolation,
         long timeout,
         String lb
     ) {
@@ -73,7 +74,7 @@ public class JdbcTxStartRequest extends JdbcRequest {
         super.writeBinary(writer, protoCtx);
 
         writer.writeByte((byte)concurrency.ordinal());
-        writer.writeByte((byte)isolation.ordinal());
+        writer.writeByte((byte)(isolation == null ? -1 : isolation.ordinal()));
         writer.writeLong(timeout);
         writer.writeString(lb);
     }
@@ -86,7 +87,10 @@ public class JdbcTxStartRequest extends JdbcRequest {
         super.readBinary(reader, protoCtx);
 
         concurrency = TransactionConcurrency.fromOrdinal(reader.readByte());
-        isolation = TransactionIsolation.fromOrdinal(reader.readByte());
+
+        byte isolationByte = reader.readByte();
+
+        isolation = isolationByte == -1 ? null : TransactionIsolation.fromOrdinal(isolationByte);
         timeout = reader.readLong();
         lb = reader.readString();
     }
@@ -113,6 +117,6 @@ public class JdbcTxStartRequest extends JdbcRequest {
 
     /** {@inheritDoc} */
     @Override public String toString() {
-        return S.toString(JdbcTxStartRequest.class, this);
+        return S.toString(JdbcSetTxParametersRequest.class, this);
     }
 }

@@ -84,6 +84,7 @@ import org.apache.ignite.marshaller.MarshallerContext;
 import org.apache.ignite.transactions.TransactionIsolation;
 import org.jetbrains.annotations.Nullable;
 
+import static org.apache.ignite.internal.processors.odbc.ClientListenerAbstractConnectionContext.NO_TX;
 import static org.apache.ignite.internal.processors.odbc.jdbc.JdbcBulkLoadBatchRequest.CMD_CONTINUE;
 import static org.apache.ignite.internal.processors.odbc.jdbc.JdbcBulkLoadBatchRequest.CMD_FINISHED_EOF;
 import static org.apache.ignite.internal.processors.odbc.jdbc.JdbcBulkLoadBatchRequest.CMD_FINISHED_ERROR;
@@ -112,7 +113,7 @@ import static org.apache.ignite.internal.processors.odbc.jdbc.JdbcRequest.QRY_EX
 import static org.apache.ignite.internal.processors.odbc.jdbc.JdbcRequest.QRY_FETCH;
 import static org.apache.ignite.internal.processors.odbc.jdbc.JdbcRequest.QRY_META;
 import static org.apache.ignite.internal.processors.odbc.jdbc.JdbcRequest.TX_END;
-import static org.apache.ignite.internal.processors.odbc.jdbc.JdbcRequest.TX_START;
+import static org.apache.ignite.internal.processors.odbc.jdbc.JdbcRequest.TX_SET_PARAMS;
 
 /**
  * JDBC request handler.
@@ -370,8 +371,8 @@ public class JdbcRequestHandler implements ClientListenerRequestHandler, ClientT
                     resp = getBinaryType((JdbcBinaryTypeGetRequest)req);
                     break;
 
-                case TX_START:
-                    resp = startTransaction((JdbcTxStartRequest)req);
+                case TX_SET_PARAMS:
+                    resp = setTransactionParameters((JdbcSetTxParametersRequest)req);
                     break;
 
                 case TX_END:
@@ -476,7 +477,7 @@ public class JdbcRequestHandler implements ClientListenerRequestHandler, ClientT
                     throw new IllegalArgumentException();
             }
 
-            return resultToResonse(new JdbcQueryExecuteResult(req.cursorId(), proc.updateCnt(), null));
+            return resultToResonse(new JdbcQueryExecuteResult(req.cursorId(), proc.updateCnt(), null, NO_TX));
         }
         catch (Exception e) {
             U.error(null, "Error processing file batch", e);
@@ -637,9 +638,11 @@ public class JdbcRequestHandler implements ClientListenerRequestHandler, ClientT
 
             qry.setSchema(schemaName);
 
-            List<FieldsQueryCursor<List<?>>> results = req.txId() == 0
-                ? querySqlFields(qry, cancel)
-                : querySqlFields(req.txId(), qry, cancel);
+            int txId = txId(req.txId());
+
+            List<FieldsQueryCursor<List<?>>> results = txEnabledForConnection()
+                ? querySqlFields(txId, req.autoCommit(), qry, cancel)
+                : querySqlFields(qry, cancel);
 
             FieldsQueryCursor<List<?>> fieldsCur = results.get(0);
 
@@ -672,11 +675,15 @@ public class JdbcRequestHandler implements ClientListenerRequestHandler, ClientT
                 if (fieldsCur instanceof QueryCursorImpl)
                     partRes = ((QueryCursorImpl<List<?>>)fieldsCur).partitionResult();
 
-                if (cur.isQuery())
-                    res = new JdbcQueryExecuteResult(cur.cursorId(), cur.fetchRows(), !cur.hasNext(),
-                        isClientPartitionAwarenessApplicable(req.partitionResponseRequest(), partRes) ?
-                            partRes :
-                            null);
+                if (cur.isQuery()) {
+                    res = new JdbcQueryExecuteResult(
+                        cur.cursorId(),
+                        cur.fetchRows(),
+                        !cur.hasNext(),
+                        isClientPartitionAwarenessApplicable(req.partitionResponseRequest(), partRes) ? partRes : null,
+                        req.autoCommit() ? NO_TX : txId
+                    );
+                }
                 else {
                     List<List<Object>> items = cur.fetchRows();
 
@@ -685,10 +692,12 @@ public class JdbcRequestHandler implements ClientListenerRequestHandler, ClientT
                         "Invalid result set for not-SELECT query. [qry=" + sql +
                             ", res=" + S.toString(List.class, items) + ']';
 
-                    res = new JdbcQueryExecuteResult(cur.cursorId(), (Long)items.get(0).get(0),
-                        isClientPartitionAwarenessApplicable(req.partitionResponseRequest(), partRes) ?
-                            partRes :
-                            null);
+                    res = new JdbcQueryExecuteResult(
+                        cur.cursorId(),
+                        (Long)items.get(0).get(0),
+                        isClientPartitionAwarenessApplicable(req.partitionResponseRequest(), partRes) ? partRes : null,
+                        txId
+                    );
                 }
 
                 if (res.last() && (!res.isQuery() || autoCloseCursors)) {
@@ -731,7 +740,7 @@ public class JdbcRequestHandler implements ClientListenerRequestHandler, ClientT
                     jdbcResults.add(jdbcRes);
                 }
 
-                return resultToResonse(new JdbcQueryExecuteMultipleStatementsResult(jdbcResults, items, last));
+                return resultToResonse(new JdbcQueryExecuteMultipleStatementsResult(jdbcResults, items, last, txId));
             }
         }
         catch (Exception e) {
@@ -772,6 +781,7 @@ public class JdbcRequestHandler implements ClientListenerRequestHandler, ClientT
     /** */
     private List<FieldsQueryCursor<List<?>>> querySqlFields(
         int txId,
+        boolean autoCommit,
         SqlFieldsQueryEx qry,
         GridQueryCancel cancel
     ) throws IgniteCheckedException {
@@ -780,10 +790,20 @@ public class JdbcRequestHandler implements ClientListenerRequestHandler, ClientT
         if (txCtx == null)
             throw new IgniteException("Transaction not found [txId=" + txId + ']');
 
+        boolean err = false;
+
         try {
             txCtx.acquire(true);
 
             return querySqlFields(qry, cancel);
+        }
+        catch (Exception e) {
+            err = true;
+
+            if (autoCommit)
+                endTxAsync(txId, false).get(); //TODO: Timeout here?
+
+            throw e;
         }
         finally {
             try {
@@ -792,7 +812,29 @@ public class JdbcRequestHandler implements ClientListenerRequestHandler, ClientT
             catch (Exception e) {
                 log.warning("Failed to release client transaction context", e);
             }
+
+            if (autoCommit && !err)
+                endTxAsync(txId, true).get(); //TODO: Timeout here?
         }
+    }
+
+    /** @return {@code True} if transaction enabled fro connection, {@code false} otherwise. */
+    private boolean txEnabledForConnection() {
+        return connCtx.protocolContext().isFeatureSupported(JdbcThinFeature.TX_AWARE_QUERIES)
+            && connCtx.isolation() != null;
+    }
+
+    /** */
+    private int txId(int txId) {
+        if (txId != NO_TX || !txEnabledForConnection())
+            return txId;
+
+        return startClientTransaction(
+            connCtx.concurrency(),
+            connCtx.isolation(),
+            connCtx.transactionTimeout(),
+            connCtx.transactionLabel()
+        );
     }
 
     /** */
@@ -1366,28 +1408,20 @@ public class JdbcRequestHandler implements ClientListenerRequestHandler, ClientT
     }
 
     /**
-     * Starts new transaction.
+     * Sets transaction parameters for connection.
      *
      * @param req Request
      * @return resulting {@link JdbcResponse}.
      */
-    private JdbcResponse startTransaction(JdbcTxStartRequest req) {
-        try {
-            return resultToResonse(new JdbcTxStartResult(
-                req.requestId(),
-                startClientTransaction(
-                    req.concurrency(),
-                    req.isolation(),
-                    req.timeout(),
-                    req.label()
-                )
-            ));
-        }
-        catch (Exception e) {
-            U.error(log, "Failed to start transaction [reqId=" + req.requestId() + ", req=" + req + ']', e);
+    private JdbcResponse setTransactionParameters(JdbcSetTxParametersRequest req) {
+        connCtx.txParameters(
+            req.concurrency(),
+            req.isolation(),
+            req.timeout(),
+            req.label()
+        );
 
-            return exceptionToResult(e);
-        }
+        return resultToResonse(null);
     }
 
     /**

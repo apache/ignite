@@ -48,6 +48,7 @@ import java.util.HashSet;
 import java.util.IdentityHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Properties;
 import java.util.Random;
 import java.util.Set;
@@ -109,10 +110,9 @@ import org.apache.ignite.internal.processors.odbc.jdbc.JdbcRequest;
 import org.apache.ignite.internal.processors.odbc.jdbc.JdbcResponse;
 import org.apache.ignite.internal.processors.odbc.jdbc.JdbcResult;
 import org.apache.ignite.internal.processors.odbc.jdbc.JdbcResultWithIo;
+import org.apache.ignite.internal.processors.odbc.jdbc.JdbcSetTxParametersRequest;
 import org.apache.ignite.internal.processors.odbc.jdbc.JdbcStatementType;
 import org.apache.ignite.internal.processors.odbc.jdbc.JdbcTxEndRequest;
-import org.apache.ignite.internal.processors.odbc.jdbc.JdbcTxStartRequest;
-import org.apache.ignite.internal.processors.odbc.jdbc.JdbcTxStartResult;
 import org.apache.ignite.internal.processors.odbc.jdbc.JdbcUpdateBinarySchemaResult;
 import org.apache.ignite.internal.sql.command.SqlCommand;
 import org.apache.ignite.internal.sql.command.SqlSetStreamingCommand;
@@ -128,7 +128,6 @@ import org.apache.ignite.logger.NullLogger;
 import org.apache.ignite.marshaller.MarshallerContext;
 import org.apache.ignite.marshaller.jdk.JdkMarshaller;
 import org.apache.ignite.thread.IgniteThreadFactory;
-import org.apache.ignite.transactions.TransactionConcurrency;
 import org.apache.ignite.transactions.TransactionIsolation;
 import org.jetbrains.annotations.Nullable;
 
@@ -196,9 +195,6 @@ public class JdbcThinConnection implements Connection {
 
     /** Current transaction isolation. */
     private int txIsolation;
-
-    /** Transaction concurrency */
-    private final TransactionConcurrency txConcurrency;
 
     /** Auto-commit flag. */
     private boolean autoCommit;
@@ -311,7 +307,8 @@ public class JdbcThinConnection implements Connection {
 
         holdability = txSupportedOnServer() ? CLOSE_CURSORS_AT_COMMIT : HOLD_CURSORS_OVER_COMMIT;
         txIsolation = defaultTransactionIsolation();
-        txConcurrency = TransactionConcurrency.valueOf(connProps.getTransactionConcurrency());
+
+        updateTransactionParameters();
     }
 
     /** Create new binary context. */
@@ -400,6 +397,27 @@ public class JdbcThinConnection implements Connection {
         txCtx.end(commit);
 
         txCtx = null;
+    }
+
+    /** Updates transaction parameters on all known servers. */
+    private void updateTransactionParameters() throws SQLException {
+        if (!txSupportedOnServer())
+            return;
+
+        //TODO: FIX case when txIsolation == 0;
+        JdbcSetTxParametersRequest req = new JdbcSetTxParametersRequest(
+            connProps.getTransactionConcurrency(),
+            txIsolation == TRANSACTION_NONE ? null : isolation(txIsolation),
+            connProps.getTransactionTimeout(),
+            connProps.getTransactionLabel()
+        );
+
+        if (partitionAwareness) {
+            for (JdbcThinTcpIo io : ios.values())
+                sendRequest(req, null, io);
+        }
+        else
+            sendRequest(req, null, singleIo);
     }
 
     /**
@@ -715,6 +733,8 @@ public class JdbcThinConnection implements Connection {
         }
 
         txIsolation = level;
+
+        updateTransactionParameters();
     }
 
     /** {@inheritDoc} */
@@ -991,25 +1011,28 @@ public class JdbcThinConnection implements Connection {
         return netTimeout;
     }
 
-    /**
-     * Opens transaction if required.
-     * @throws SQLException If failed.
-     */
-    TxContext transactionContext() throws SQLException {
-        assert txEnabledForConnection();
+    /** Store transaction context. */
+    void txContext(JdbcThinTcpIo txIo, int txId) {
+        if (!txEnabledForConnection() || autoCommit)
+            return;
 
-        // Transaction in autoCommit mode must be closed on ResultSet close.
-        if (isTxOpen() && !autoCommit)
-            return txCtx;
+        assert txId != NO_TX;
 
-        assert txCtx == null || autoCommit;
+        // Check same context returned from server when transaction exists, already.
+        if (txCtx != null && (txCtx.txId() != txId || !Objects.equals(txCtx.txIo().nodeId(), txIo.nodeId()))) {
+            throw new IllegalStateException("Nested transactions not supported [" +
+                "txCtx.txId=" + txId +
+                ", txCtx.nodeId=" + txCtx.txIo.nodeId() +
+                ", new.txId=" + txId +
+                ", new.nodeId=" + txIo.nodeId() + ']');
+        }
 
-        TxContext txCtx0 = new TxContext(txIsolation, txConcurrency);
+        txCtx = new TxContext(txIo, txId);
+    }
 
-        if (!autoCommit)
-            txCtx = txCtx0;
-
-        return txCtx0;
+    /** @return Current transaction context. */
+    @Nullable TxContext txContext() {
+        return txCtx;
     }
 
     /**
@@ -2586,10 +2609,10 @@ public class JdbcThinConnection implements Connection {
     /** Transaction context. */
     public class TxContext {
         /** IO to transaction coordinator. */
-        JdbcThinTcpIo txIo;
+        final JdbcThinTcpIo txIo;
 
         /** Transaction id. */
-        int txId;
+        final int txId;
 
         /** Closed flag. */
         boolean closed;
@@ -2598,16 +2621,9 @@ public class JdbcThinConnection implements Connection {
         private final Set<JdbcThinStatement> stmts = Collections.newSetFromMap(new IdentityHashMap<>());
 
         /** */
-        public TxContext(int jdbcIsolation, TransactionConcurrency transactionConcurrency) throws SQLException {
-            JdbcResultWithIo res = sendRequest(new JdbcTxStartRequest(
-                transactionConcurrency,
-                isolation(jdbcIsolation),
-                connProps.getTransactionTimeout(),
-                connProps.getTransactionLabel()
-            ));
-
-            txIo = res.cliIo();
-            txId = ((JdbcTxStartResult)res.response()).txId();
+        public TxContext(JdbcThinTcpIo txIo, int txId) {
+            this.txIo = txIo;
+            this.txId = txId;
         }
 
         /** */

@@ -47,6 +47,9 @@ public class JdbcQueryExecuteResult extends JdbcResult {
     /** Partition result. */
     private PartitionResult partRes;
 
+    /** Transaction id. */
+    private int txId;
+
     /**
      * Constructor.
      */
@@ -59,8 +62,9 @@ public class JdbcQueryExecuteResult extends JdbcResult {
      * @param items Query result rows.
      * @param last Flag indicates the query has no unfetched results.
      * @param partRes partition result to use for best affort affinity on the client side.
+     * @param txId Transaction id.
      */
-    JdbcQueryExecuteResult(long cursorId, List<List<Object>> items, boolean last, PartitionResult partRes) {
+    JdbcQueryExecuteResult(long cursorId, List<List<Object>> items, boolean last, PartitionResult partRes, int txId) {
         super(QRY_EXEC);
 
         this.cursorId = cursorId;
@@ -68,14 +72,16 @@ public class JdbcQueryExecuteResult extends JdbcResult {
         this.last = last;
         isQuery = true;
         this.partRes = partRes;
+        this.txId = txId;
     }
 
     /**
      * @param cursorId Cursor ID.
      * @param updateCnt Update count for DML queries.
      * @param partRes partition result to use for best affort affinity on the client side.
+     * @param txId Transaction id.
      */
-    public JdbcQueryExecuteResult(long cursorId, long updateCnt, PartitionResult partRes) {
+    public JdbcQueryExecuteResult(long cursorId, long updateCnt, PartitionResult partRes, int txId) {
         super(QRY_EXEC);
 
         this.cursorId = cursorId;
@@ -83,6 +89,7 @@ public class JdbcQueryExecuteResult extends JdbcResult {
         isQuery = false;
         this.updateCnt = updateCnt;
         this.partRes = partRes;
+        this.txId = txId;
     }
 
     /**
@@ -120,6 +127,20 @@ public class JdbcQueryExecuteResult extends JdbcResult {
         return updateCnt;
     }
 
+    /**
+     * @return Partition result.
+     */
+    public PartitionResult partitionResult() {
+        return partRes;
+    }
+
+    /**
+     * @return Transaction id.
+     */
+    public int txId() {
+        return txId;
+    }
+
     /** {@inheritDoc} */
     @Override public void writeBinary(
         BinaryWriterExImpl writer,
@@ -144,6 +165,9 @@ public class JdbcQueryExecuteResult extends JdbcResult {
 
         if (protoCtx.isAffinityAwarenessSupported() && partRes != null)
             PartitionResultMarshaler.marshal(writer, partRes);
+
+        if (protoCtx.isFeatureSupported(JdbcThinFeature.TX_AWARE_QUERIES))
+            writer.writeInt(txId);
     }
 
     /** {@inheritDoc} */
@@ -169,13 +193,9 @@ public class JdbcQueryExecuteResult extends JdbcResult {
 
         if (protoCtx.isAffinityAwarenessSupported() && reader.readBoolean())
             partRes = PartitionResultMarshaler.unmarshal(reader);
-    }
 
-    /**
-     * @return Partition result.
-     */
-    public PartitionResult partitionResult() {
-        return partRes;
+        if (protoCtx.isFeatureSupported(JdbcThinFeature.TX_AWARE_QUERIES))
+            txId = reader.readInt();
     }
 
     /** {@inheritDoc} */

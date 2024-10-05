@@ -20,6 +20,7 @@ package org.apache.ignite.internal.jdbc.thin;
 import java.sql.SQLException;
 import org.apache.ignite.internal.processors.odbc.jdbc.JdbcThinFeature;
 import org.apache.ignite.internal.util.HostAndPortRange;
+import org.apache.ignite.transactions.TransactionConcurrency;
 import org.jetbrains.annotations.Nullable;
 
 /**
@@ -564,7 +565,7 @@ public interface ConnectionProperties {
     /**
      * @return Transaction concurrency value.
      */
-    public String getTransactionConcurrency();
+    public TransactionConcurrency getTransactionConcurrency();
 
     /**
      * Sets transaction concurrency.

@@ -697,8 +697,8 @@ public class ConnectionPropertiesImpl implements ConnectionProperties, Serializa
     }
 
     /** {@inheritDoc} */
-    @Override public String getTransactionConcurrency() {
-        return transactionConcurrency.value();
+    @Override public TransactionConcurrency getTransactionConcurrency() {
+        return TransactionConcurrency.valueOf(transactionConcurrency.value());
     }
 
     /** {@inheritDoc} */

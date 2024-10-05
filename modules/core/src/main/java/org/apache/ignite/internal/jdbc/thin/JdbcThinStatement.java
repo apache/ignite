@@ -231,78 +231,76 @@ public class JdbcThinStatement implements Statement {
         }
 
         boolean autoCommit = conn.getAutoCommit();
-        boolean txEnabled = conn.txEnabledForConnection();
 
-        TxContext txCtx = txEnabled ? conn.transactionContext() : null;
-        TxContext rsetCtx = autoCommit ? txCtx : null; // Commit transaction on ResultSet#close only for autoCommit mode.
+        TxContext txCtx = conn.txContext();
 
         if (txCtx != null)
             txCtx.track(this);
 
-        try {
-            JdbcQueryExecuteRequest req = new JdbcQueryExecuteRequest(stmtType, schema, pageSize,
-                maxRows, autoCommit, explicitTimeout, sql, args == null ? null : args.toArray(new Object[args.size()]),
-                txEnabled ? txCtx.txId() : NO_TX);
+        JdbcQueryExecuteRequest req = new JdbcQueryExecuteRequest(
+            stmtType,
+            schema,
+            pageSize,
+            maxRows,
+            autoCommit,
+            explicitTimeout,
+            sql,
+            args == null ? null : args.toArray(new Object[args.size()]),
+            txCtx == null ? NO_TX : txCtx.txId
+        );
 
-            JdbcResultWithIo resWithIo = conn.sendRequest(req, this, null);
+        JdbcResultWithIo resWithIo = conn.sendRequest(req, this, null);
 
-            JdbcResult res0 = resWithIo.response();
+        JdbcResult res0 = resWithIo.response();
 
-            JdbcThinTcpIo stickyIo = resWithIo.cliIo();
+        JdbcThinTcpIo stickyIo = resWithIo.cliIo();
 
-            assert res0 != null;
+        assert res0 != null;
 
-            if (res0 instanceof JdbcBulkLoadAckResult)
-                res0 = sendFile((JdbcBulkLoadAckResult)res0, stickyIo);
+        if (res0 instanceof JdbcBulkLoadAckResult)
+            res0 = sendFile((JdbcBulkLoadAckResult)res0, stickyIo);
 
-            if (res0 instanceof JdbcQueryExecuteResult) {
-                JdbcQueryExecuteResult res = (JdbcQueryExecuteResult)res0;
+        if (res0 instanceof JdbcQueryExecuteResult) {
+            JdbcQueryExecuteResult res = (JdbcQueryExecuteResult)res0;
 
-                resultSets = Collections.singletonList(new JdbcThinResultSet(this, res.cursorId(), pageSize,
-                    res.last(), res.items(), res.isQuery(), conn.autoCloseServerCursor(), res.updateCount(),
-                    closeOnCompletion, stickyIo));
-            }
-            else if (res0 instanceof JdbcQueryExecuteMultipleStatementsResult) {
-                JdbcQueryExecuteMultipleStatementsResult res = (JdbcQueryExecuteMultipleStatementsResult)res0;
+            conn.txContext(stickyIo, res.txId());
 
-                List<JdbcResultInfo> resInfos = res.results();
+            resultSets = Collections.singletonList(new JdbcThinResultSet(this, res.cursorId(), pageSize,
+                res.last(), res.items(), res.isQuery(), conn.autoCloseServerCursor(), res.updateCount(),
+                closeOnCompletion, stickyIo));
+        }
+        else if (res0 instanceof JdbcQueryExecuteMultipleStatementsResult) {
+            JdbcQueryExecuteMultipleStatementsResult res = (JdbcQueryExecuteMultipleStatementsResult)res0;
 
-                resultSets = new ArrayList<>(resInfos.size());
+            conn.txContext(stickyIo, res.txId());
 
-                boolean firstRes = true;
+            List<JdbcResultInfo> resInfos = res.results();
 
-                for (JdbcResultInfo rsInfo : resInfos) {
-                    if (!rsInfo.isQuery())
-                        resultSets.add(resultSetForUpdate(rsInfo.updateCount()));
+            resultSets = new ArrayList<>(resInfos.size());
+
+            boolean firstRes = true;
+
+            for (JdbcResultInfo rsInfo : resInfos) {
+                if (!rsInfo.isQuery())
+                    resultSets.add(resultSetForUpdate(rsInfo.updateCount()));
+                else {
+                    if (firstRes) {
+                        firstRes = false;
+
+                        resultSets.add(new JdbcThinResultSet(this, rsInfo.cursorId(), pageSize, res.isLast(),
+                            res.items(), true, conn.autoCloseServerCursor(), -1, closeOnCompletion,
+                            stickyIo));
+                    }
                     else {
-                        if (firstRes) {
-                            firstRes = false;
-
-                            resultSets.add(new JdbcThinResultSet(this, rsInfo.cursorId(), pageSize, res.isLast(),
-                                res.items(), true, conn.autoCloseServerCursor(), -1, closeOnCompletion,
-                                stickyIo));
-                        }
-                        else {
-                            resultSets.add(new JdbcThinResultSet(this, rsInfo.cursorId(), pageSize, false,
-                                null, true, conn.autoCloseServerCursor(), -1, closeOnCompletion,
-                                stickyIo));
-                        }
+                        resultSets.add(new JdbcThinResultSet(this, rsInfo.cursorId(), pageSize, false,
+                            null, true, conn.autoCloseServerCursor(), -1, closeOnCompletion,
+                            stickyIo));
                     }
                 }
             }
-            else
-                throw new SQLException("Unexpected result [res=" + res0 + ']');
-
-            if (autoCommit && txEnabled)
-                txCtx.end(true);
         }
-        catch (Exception e) {
-            // Rollback in case of error.
-            if (autoCommit && txEnabled)
-                txCtx.end(false);
-
-            throw e;
-        }
+        else
+            throw new SQLException("Unexpected result [res=" + res0 + ']');
 
         assert !resultSets.isEmpty() : "At least one results set is expected";
     }

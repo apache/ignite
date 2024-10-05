@@ -40,6 +40,8 @@ import org.apache.ignite.internal.processors.query.QueryEngineConfigurationEx;
 import org.apache.ignite.internal.util.GridSpinBusyLock;
 import org.apache.ignite.internal.util.nio.GridNioSession;
 import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.transactions.TransactionConcurrency;
+import org.apache.ignite.transactions.TransactionIsolation;
 import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.internal.jdbc.thin.JdbcThinUtils.nullableBooleanFromByte;
@@ -105,6 +107,18 @@ public class JdbcConnectionContext extends ClientListenerAbstractConnectionConte
 
     /** Last reported affinity topology version. */
     private AtomicReference<AffinityTopologyVersion> lastAffinityTopVer = new AtomicReference<>();
+
+    /** Transaction concurrency control. */
+    private TransactionConcurrency concurrency;
+
+    /** Transaction isolation level. */
+    private @Nullable TransactionIsolation isolation;
+
+    /** Transaction timeout. */
+    private long timeout;
+
+    /** Transaction label. */
+    private String lb;
 
     /** Transaction context. */
     private @Nullable ClientTxContext txCtx;
@@ -302,11 +316,13 @@ public class JdbcConnectionContext extends ClientListenerAbstractConnectionConte
     /** {@inheritDoc} */
     @Override public void removeTxContext(int txId) {
         ensureSameTransaction(txId);
+
+        txCtx = null;
     }
 
     /** */
     private void ensureSameTransaction(int txId) {
-        if (txCtx == null || txCtx.txId() != txId) {
+        if (txCtx == null && txCtx.txId() != txId) {
             throw new IllegalStateException("Unknown transaction " +
                 "[serverTxId=" + (txCtx == null ? null : txCtx.txId()) + ", txId=" + txId + ']');
         }
@@ -343,5 +359,39 @@ public class JdbcConnectionContext extends ClientListenerAbstractConnectionConte
      */
     public JdbcProtocolContext protocolContext() {
         return protoCtx;
+    }
+
+    /**
+     * Sets transaction parameters.
+     * @param concurrency Transaction concurrency.
+     * @param isolation Transaction isolation.
+     * @param timeout Transaction timeout.
+     * @param lb Transaction label.
+     */
+    public void txParameters(TransactionConcurrency concurrency, @Nullable TransactionIsolation isolation, long timeout, String lb) {
+        this.concurrency = concurrency;
+        this.isolation = isolation;
+        this.timeout = timeout;
+        this.lb = lb;
+    }
+
+    /** */
+    public TransactionConcurrency concurrency() {
+        return concurrency;
+    }
+
+    /** */
+    public @Nullable TransactionIsolation isolation() {
+        return isolation;
+    }
+
+    /** */
+    public long transactionTimeout() {
+        return timeout;
+    }
+
+    /** */
+    public String transactionLabel() {
+        return lb;
     }
 }

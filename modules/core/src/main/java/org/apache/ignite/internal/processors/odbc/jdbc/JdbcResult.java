@@ -88,7 +88,7 @@ public class JdbcResult implements JdbcRawBinarylizable {
     static final byte BINARY_TYPE_NAME_GET = 22;
 
     /** Start transaction response. */
-    static final byte TX_START = 23;
+    static final byte TX_SET_PARAMS = 23;
 
     /** End transaction response. */
     static final byte TX_END = 24;
@@ -235,10 +235,8 @@ public class JdbcResult implements JdbcRawBinarylizable {
 
                 break;
 
-            case TX_START:
-                res = new JdbcTxStartResult();
-
-                break;
+            case TX_SET_PARAMS:
+                return null;
 
             case TX_END:
                 res = new JdbcTxEndResult();

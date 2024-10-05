@@ -88,8 +88,8 @@ public class JdbcRequest extends ClientListenerRequestNoId implements JdbcRawBin
     /** Update binary type name request. */
     public static final byte BINARY_TYPE_NAME_PUT = 20;
 
-    /** Start transaction request. */
-    public static final byte TX_START = 21;
+    /** Sets transaction parameters request. */
+    public static final byte TX_SET_PARAMS = 21;
 
     /** Finish transaction request. */
     public static final byte TX_END = 22;
@@ -255,8 +255,8 @@ public class JdbcRequest extends ClientListenerRequestNoId implements JdbcRawBin
 
                 break;
 
-            case TX_START:
-                req = new JdbcTxStartRequest();
+            case TX_SET_PARAMS:
+                req = new JdbcSetTxParametersRequest();
 
                 break;
 
