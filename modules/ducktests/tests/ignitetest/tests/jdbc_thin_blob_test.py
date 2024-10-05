@@ -72,7 +72,8 @@ class JdbcThinBlobTest(IgniteTest):
         jvm_opts = [f"-Xmx{server_heap}g",
                     f"-Xms{server_heap}g",
                     "-XX:+SafepointTimeout",
-                    "-XX:SafepointTimeoutDelay=100"]
+                    "-XX:SafepointTimeoutDelay=100",
+                    "-XX:StartFlightRecording=dumponexit=true,settings=/opt/ignite-dev/modules/ducktests/tests/jfr/profile-mem.jfc,filename=/mnt/service/jfr/recording.jfr"]
 
         if not bias:
             jvm_opts.append("-XX:-UseBiasedLocking")
