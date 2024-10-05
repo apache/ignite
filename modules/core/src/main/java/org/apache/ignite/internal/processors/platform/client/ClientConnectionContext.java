@@ -117,9 +117,6 @@ public class ClientConnectionContext extends ClientListenerAbstractConnectionCon
     /** Active tx count limit. */
     private final int maxActiveTxCnt;
 
-    /** Tx id. */
-    private final AtomicInteger txIdSeq = new AtomicInteger();
-
     /** Transactions by transaction id. */
     private final Map<Integer, ClientTxContext> txs = new ConcurrentHashMap<>();
 
@@ -296,13 +293,6 @@ public class ClientConnectionContext extends ClientListenerAbstractConnectionCon
 
             return new ClientAffinityTopologyVersion(newVer, changed);
         }
-    }
-
-    /** {@inheritDoc} */
-    @Override public int nextTxId() {
-        int txId = txIdSeq.incrementAndGet();
-
-        return txId == 0 ? txIdSeq.incrementAndGet() : txId;
     }
 
     /** {@inheritDoc} */
