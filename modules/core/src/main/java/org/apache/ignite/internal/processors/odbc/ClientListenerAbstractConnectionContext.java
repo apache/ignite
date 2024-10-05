@@ -20,7 +20,6 @@ package org.apache.ignite.internal.processors.odbc;
 import java.util.Collections;
 import java.util.Map;
 import java.util.UUID;
-import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicInteger;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.GridKernalContext;
@@ -64,17 +63,8 @@ public abstract class ClientListenerAbstractConnectionContext implements ClientL
      */
     private String clientDesc;
 
-    /** Active tx count limit. */
-    private final int maxActiveTxCnt;
-
     /** Tx id. */
     private final AtomicInteger txIdSeq = new AtomicInteger();
-
-    /** Transactions by transaction id. */
-    private final Map<Integer, ClientTxContext> txs = new ConcurrentHashMap<>();
-
-    /** Active transactions count. */
-    private final AtomicInteger txsCnt = new AtomicInteger();
 
     /**
      * Constructor.
@@ -82,14 +72,12 @@ public abstract class ClientListenerAbstractConnectionContext implements ClientL
      * @param ctx Kernal context.
      * @param ses Client's NIO session.
      * @param connId Connection ID.
-     * @param maxActiveTxCnt Maximum active transactions count.
      */
     protected ClientListenerAbstractConnectionContext(
-        GridKernalContext ctx, GridNioSession ses, long connId, int maxActiveTxCnt) {
+        GridKernalContext ctx, GridNioSession ses, long connId) {
         this.ctx = ctx;
         this.connId = connId;
         this.ses = ses;
-        this.maxActiveTxCnt = maxActiveTxCnt;
     }
 
     /**
@@ -182,48 +170,24 @@ public abstract class ClientListenerAbstractConnectionContext implements ClientL
      *
      * @param txId Tx ID.
      */
-    public ClientTxContext txContext(int txId) {
-        return txs.get(txId);
-    }
+    public abstract ClientTxContext txContext(int txId);
 
     /**
      * Add new transaction context to connection.
      *
      * @param txCtx Tx context.
      */
-    public void addTxContext(ClientTxContext txCtx) {
-        if (txsCnt.incrementAndGet() > maxActiveTxCnt) {
-            txsCnt.decrementAndGet();
-
-            throw tooManyTransactionsException(maxActiveTxCnt);
-        }
-
-        txs.put(txCtx.txId(), txCtx);
-    }
-
-    /** */
-    protected abstract RuntimeException tooManyTransactionsException(int maxActiveTxCnt);
+    public abstract void addTxContext(ClientTxContext txCtx);
 
     /**
      * Remove transaction context from connection.
      *
      * @param txId Tx ID.
      */
-    public void removeTxContext(int txId) {
-        txs.remove(txId);
+    public abstract void removeTxContext(int txId);
 
-        txsCnt.decrementAndGet();
-    }
-
-    /**
-     *
-     */
-    private void cleanupTxs() {
-        for (ClientTxContext txCtx : txs.values())
-            txCtx.close();
-
-        txs.clear();
-    }
+    /** */
+    protected abstract void cleanupTxs();
 
     /** {@inheritDoc} */
     @Override public Map<String, String> attributes() {

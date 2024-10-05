@@ -20,7 +20,6 @@ package org.apache.ignite.internal.processors.odbc.odbc;
 import java.util.HashSet;
 import java.util.Set;
 import org.apache.ignite.IgniteCheckedException;
-import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.configuration.QueryEngineConfiguration;
 import org.apache.ignite.internal.GridKernalContext;
@@ -31,6 +30,7 @@ import org.apache.ignite.internal.processors.odbc.ClientListenerProtocolVersion;
 import org.apache.ignite.internal.processors.odbc.ClientListenerRequestHandler;
 import org.apache.ignite.internal.processors.odbc.ClientListenerResponse;
 import org.apache.ignite.internal.processors.odbc.ClientListenerResponseSender;
+import org.apache.ignite.internal.processors.platform.client.tx.ClientTxContext;
 import org.apache.ignite.internal.processors.query.QueryEngineConfigurationEx;
 import org.apache.ignite.internal.util.GridSpinBusyLock;
 import org.apache.ignite.internal.util.nio.GridNioSession;
@@ -107,17 +107,9 @@ public class OdbcConnectionContext extends ClientListenerAbstractConnectionConte
      * @param busyLock Shutdown busy lock.
      * @param connId Connection ID.
      * @param maxCursors Maximum allowed cursors.
-     * @param maxActiveTxCnt Maximum allowed transactions.
      */
-    public OdbcConnectionContext(
-        GridKernalContext ctx,
-        GridNioSession ses,
-        GridSpinBusyLock busyLock,
-        long connId,
-        int maxCursors,
-        int maxActiveTxCnt
-    ) {
-        super(ctx, ses, connId, maxActiveTxCnt);
+    public OdbcConnectionContext(GridKernalContext ctx, GridNioSession ses, GridSpinBusyLock busyLock, long connId, int maxCursors) {
+        super(ctx, ses, connId);
 
         this.busyLock = busyLock;
         this.maxCursors = maxCursors;
@@ -236,7 +228,22 @@ public class OdbcConnectionContext extends ClientListenerAbstractConnectionConte
     }
 
     /** {@inheritDoc} */
-    @Override protected RuntimeException tooManyTransactionsException(int maxActiveTxCnt) {
-        return new IgniteException("ODBC not support transaction");
+    @Override public ClientTxContext txContext(int txId) {
+        throw new UnsupportedOperationException();
+    }
+
+    /** {@inheritDoc} */
+    @Override public void addTxContext(ClientTxContext txCtx) {
+        throw new UnsupportedOperationException();
+    }
+
+    /** {@inheritDoc} */
+    @Override public void removeTxContext(int txId) {
+        throw new UnsupportedOperationException();
+    }
+
+    /** {@inheritDoc} */
+    @Override protected void cleanupTxs() {
+        throw new UnsupportedOperationException();
     }
 }
