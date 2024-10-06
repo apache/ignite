@@ -307,16 +307,24 @@ public class SqlTransactionsIsolationTest extends GridCommonAbstractTest {
     }
 
     /** */
-    private void init() throws Exception {
+    private void startAllGrids() throws Exception {
+        srv = startGrids(gridCnt);
+        cli = startClientGrid("client");
+    }
+
+    /** */
+    private void startThinClient() {
         thinCliCfg = new ClientConfiguration()
             .setAddresses(Config.SERVER)
             .setPartitionAwarenessEnabled(partitionAwareness);
-        srv = startGrids(gridCnt);
-        cli = startClientGrid("client");
         thinCli = Ignition.startClient(thinCliCfg);
+    }
 
+    /** */
+    private void createCaches() {
         cli.createCache(new CacheConfiguration<>(DEFAULT_CACHE_NAME)
             .setAtomicityMode(CacheAtomicityMode.TRANSACTIONAL)
+            .setCacheMode(mode)
             .setBackups(backups));
 
         cli.createCache(new CacheConfiguration<Integer, Integer>()
@@ -396,20 +404,28 @@ public class SqlTransactionsIsolationTest extends GridCommonAbstractTest {
     @Override protected void beforeTest() throws Exception {
         super.beforeTest();
 
-        boolean reinit = gridCnt != Ignition.allGrids().size() - 1
-            || partitionAwareness != thinCliCfg.isPartitionAwarenessEnabled();
-
-        if (!reinit) {
-            CacheConfiguration ccfg = cli.cache(tbl()).getConfiguration(CacheConfiguration.class);
-
-            reinit = mode != ccfg.getCacheMode()
-                || (ccfg.getCacheMode() == CacheMode.PARTITIONED && backups != ccfg.getBackups());
-        }
-
-        if (reinit) {
+        if (gridCnt != Ignition.allGrids().size() - 1) {
             stopAllGrids();
 
-            init();
+            startAllGrids();
+
+            startThinClient();
+
+            createCaches();
+        }
+
+        if (partitionAwareness != thinCliCfg.isPartitionAwarenessEnabled())
+            startThinClient();
+
+        boolean recreate = cli.cacheNames().stream()
+            .map(name -> cli.cache(name).getConfiguration(CacheConfiguration.class))
+            .filter(ccfg -> ccfg.getCacheMode() == CacheMode.PARTITIONED)
+            .anyMatch(ccfg -> backups != ccfg.getBackups());
+
+        if (recreate) {
+            cli.cacheNames().forEach(cli::destroyCache);
+
+            createCaches();
         }
 
         cli.cache(users()).removeAll();
@@ -419,11 +435,12 @@ public class SqlTransactionsIsolationTest extends GridCommonAbstractTest {
         insert(F.t(1, JOHN));
 
         assertEquals(gridCnt + 1, Ignition.allGrids().size());
-        assertEquals(mode, cli.cache(tbl()).getConfiguration(CacheConfiguration.class).getCacheMode());
         assertEquals(partitionAwareness, thinCliCfg.isPartitionAwarenessEnabled());
+        assertEquals(mode, cli.cache(tbl()).getConfiguration(CacheConfiguration.class).getCacheMode());
         cli.cacheNames().stream()
-            .filter(name -> cli.cache(name).getConfiguration(CacheConfiguration.class).getCacheMode() == CacheMode.PARTITIONED)
-            .forEach(name -> assertEquals(backups, cli.cache(name).getConfiguration(CacheConfiguration.class).getBackups()));
+            .map(name -> cli.cache(name).getConfiguration(CacheConfiguration.class))
+            .filter(ccfg -> ccfg.getCacheMode() == CacheMode.PARTITIONED)
+            .forEach(ccfg -> assertEquals(ccfg.getName(), backups, ccfg.getBackups()));
     }
 
     /** {@inheritDoc} */
