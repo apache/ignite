@@ -1027,7 +1027,7 @@ public class JdbcThinConnection implements Connection {
                 ", new.nodeId=" + txIo.nodeId() + ']');
         }
 
-        txCtx.track(stmt);
+        txCtx.add(stmt);
     }
 
     /** @return Current transaction context. */
@@ -1513,7 +1513,7 @@ public class JdbcThinConnection implements Connection {
             stmts.remove(stmt);
 
             if (txCtx != null)
-                txCtx.untrack(stmt);
+                txCtx.remove(stmt);
         }
     }
 
@@ -2645,7 +2645,7 @@ public class JdbcThinConnection implements Connection {
         }
 
         /** */
-        public void track(JdbcThinStatement stmt) throws SQLException {
+        public void add(JdbcThinStatement stmt) throws SQLException {
             if (closed)
                 throw new SQLException("Transaction context closed");
 
@@ -2653,7 +2653,7 @@ public class JdbcThinConnection implements Connection {
         }
 
         /** */
-        public void untrack(JdbcThinStatement stmt) {
+        public void remove(JdbcThinStatement stmt) {
             if (closed)
                 return;
 

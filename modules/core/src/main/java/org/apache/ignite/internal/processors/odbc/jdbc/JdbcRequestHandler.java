@@ -520,9 +520,11 @@ public class JdbcRequestHandler implements ClientListenerRequestHandler, ClientT
 
         // Write all features supported by the node.
         if (protocolVer.compareTo(VER_2_9_0) >= 0) {
-            writer.writeByteArray(ThinProtocolFeature.featuresAsBytes(connCtx.protocolContext().features()));
+            JdbcProtocolContext ctx = connCtx.protocolContext();
 
-            if (connCtx.protocolContext().isFeatureSupported(JdbcThinFeature.TX_AWARE_QUERIES)) {
+            writer.writeByteArray(ThinProtocolFeature.featuresAsBytes(ctx.features()));
+
+            if (ctx.isFeatureSupported(JdbcThinFeature.TX_AWARE_QUERIES)) {
                 writer.writeIntArray(TransactionConfiguration.TX_AWARE_QUERIES_SUPPORTED_MODES.stream()
                     .mapToInt(TransactionIsolation::ordinal)
                     .toArray());
@@ -643,8 +645,8 @@ public class JdbcRequestHandler implements ClientListenerRequestHandler, ClientT
             int txId = txId(req.txId());
 
             List<FieldsQueryCursor<List<?>>> results = txEnabledForConnection()
-                ? querySqlFields(txId, req.autoCommit(), qry, cancel)
-                : querySqlFields(qry, cancel);
+                ? invokeInTransaction(txId, req.autoCommit(), qry, cancel)
+                : invokeOutsideTransaction(qry, cancel);
 
             FieldsQueryCursor<List<?>> fieldsCur = results.get(0);
 
@@ -683,7 +685,7 @@ public class JdbcRequestHandler implements ClientListenerRequestHandler, ClientT
                         cur.fetchRows(),
                         !cur.hasNext(),
                         isClientPartitionAwarenessApplicable(req.partitionResponseRequest(), partRes) ? partRes : null,
-                        req.autoCommit() ? NO_TX : txId
+                        txId
                     );
                 }
                 else {
@@ -780,8 +782,10 @@ public class JdbcRequestHandler implements ClientListenerRequestHandler, ClientT
         }
     }
 
-    /** */
-    private List<FieldsQueryCursor<List<?>>> querySqlFields(
+    /**
+     * Invokes {@code qry} inside a transaction with id equals to {@code txId}.
+     */
+    private List<FieldsQueryCursor<List<?>>> invokeInTransaction(
         int txId,
         boolean autoCommit,
         SqlFieldsQueryEx qry,
@@ -797,7 +801,7 @@ public class JdbcRequestHandler implements ClientListenerRequestHandler, ClientT
         try {
             txCtx.acquire(true);
 
-            return querySqlFields(qry, cancel);
+            return invokeOutsideTransaction(qry, cancel);
         }
         catch (Exception e) {
             err = true;
@@ -850,7 +854,7 @@ public class JdbcRequestHandler implements ClientListenerRequestHandler, ClientT
     }
 
     /** */
-    private List<FieldsQueryCursor<List<?>>> querySqlFields(SqlFieldsQueryEx qry, GridQueryCancel cancel) {
+    private List<FieldsQueryCursor<List<?>>> invokeOutsideTransaction(SqlFieldsQueryEx qry, GridQueryCancel cancel) {
         return connCtx.kernalContext().query().querySqlFields(null, qry,
             cliCtx, true, protocolVer.compareTo(VER_2_3_0) < 0, cancel);
     }

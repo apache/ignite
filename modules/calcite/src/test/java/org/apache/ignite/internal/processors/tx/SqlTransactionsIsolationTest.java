@@ -64,6 +64,8 @@ import org.apache.ignite.configuration.ClientConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.processors.odbc.ClientMessage;
+import org.apache.ignite.internal.processors.odbc.jdbc.JdbcConnectionContext;
+import org.apache.ignite.internal.processors.platform.client.ClientConnectionContext;
 import org.apache.ignite.internal.processors.query.QueryUtils;
 import org.apache.ignite.internal.util.lang.RunnableX;
 import org.apache.ignite.internal.util.nio.GridNioServer;
@@ -433,8 +435,16 @@ public class SqlTransactionsIsolationTest extends GridCommonAbstractTest {
 
             GridNioServer<ClientMessage> nioSrv = GridTestUtils.getFieldValue(srv.context().clientListener(), "srv");
 
-            for (GridNioSession ses : nioSrv.sessions())
-                assertTrue(GridTestUtils.<Map<?, ?>>getFieldValue(ses.meta(CONN_CTX_META_KEY), "txs").isEmpty());
+            for (GridNioSession ses : nioSrv.sessions()) {
+                Object meta = ses.meta(CONN_CTX_META_KEY);
+
+                if (meta instanceof ClientConnectionContext)
+                    assertTrue(GridTestUtils.<Map<?, ?>>getFieldValue(meta, "txs").isEmpty());
+                else if (meta instanceof JdbcConnectionContext)
+                    assertNull(GridTestUtils.getFieldValue(meta, "txCtx"));
+                else
+                    throw new IllegalStateException("Unknown context");
+            }
         }
     }
 
