@@ -234,9 +234,6 @@ public class JdbcThinStatement implements Statement {
 
         TxContext txCtx = conn.txContext();
 
-        if (txCtx != null)
-            txCtx.track(this);
-
         JdbcQueryExecuteRequest req = new JdbcQueryExecuteRequest(
             stmtType,
             schema,
@@ -263,7 +260,8 @@ public class JdbcThinStatement implements Statement {
         if (res0 instanceof JdbcQueryExecuteResult) {
             JdbcQueryExecuteResult res = (JdbcQueryExecuteResult)res0;
 
-            conn.txContext(stickyIo, res.txId());
+            if (!autoCommit)
+                conn.addToTransaction(stickyIo, res.txId(), this);
 
             resultSets = Collections.singletonList(new JdbcThinResultSet(this, res.cursorId(), pageSize,
                 res.last(), res.items(), res.isQuery(), conn.autoCloseServerCursor(), res.updateCount(),
@@ -272,7 +270,8 @@ public class JdbcThinStatement implements Statement {
         else if (res0 instanceof JdbcQueryExecuteMultipleStatementsResult) {
             JdbcQueryExecuteMultipleStatementsResult res = (JdbcQueryExecuteMultipleStatementsResult)res0;
 
-            conn.txContext(stickyIo, res.txId());
+            if (!autoCommit)
+                conn.addToTransaction(stickyIo, res.txId(), this);
 
             List<JdbcResultInfo> resInfos = res.results();
 

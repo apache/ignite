@@ -163,7 +163,7 @@ public class JdbcQueryExecuteRequest extends JdbcRequest {
                 JdbcUtils.writeObject(writer, arg, protoCtx);
         }
 
-        if (protoCtx.isAutoCommitSupported() )
+        if (protoCtx.isAutoCommitSupported())
             writer.writeBoolean(autoCommit);
 
         writer.writeByte((byte)stmtType.ordinal());

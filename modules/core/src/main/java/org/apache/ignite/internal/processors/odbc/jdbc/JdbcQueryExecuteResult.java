@@ -128,13 +128,6 @@ public class JdbcQueryExecuteResult extends JdbcResult {
     }
 
     /**
-     * @return Partition result.
-     */
-    public PartitionResult partitionResult() {
-        return partRes;
-    }
-
-    /**
      * @return Transaction id.
      */
     public int txId() {
@@ -196,6 +189,13 @@ public class JdbcQueryExecuteResult extends JdbcResult {
 
         if (protoCtx.isFeatureSupported(JdbcThinFeature.TX_AWARE_QUERIES))
             txId = reader.readInt();
+    }
+
+    /**
+     * @return Partition result.
+     */
+    public PartitionResult partitionResult() {
+        return partRes;
     }
 
     /** {@inheritDoc} */

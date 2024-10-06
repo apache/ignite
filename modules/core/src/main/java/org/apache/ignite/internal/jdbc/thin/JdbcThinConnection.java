@@ -351,9 +351,7 @@ public class JdbcThinConnection implements Connection {
         return streamState != null;
     }
 
-    /**
-     * @return {@code True} if there are open transaction, {@code false} otherwise.
-     */
+    /** @return {@code True} if there are open transaction, {@code false} otherwise. */
     public boolean isTxOpen() {
         return txCtx != null;
     }
@@ -379,12 +377,12 @@ public class JdbcThinConnection implements Connection {
         return txSupportedOnServer() ? TRANSACTION_READ_COMMITTED : TRANSACTION_NONE;
     }
 
-    /** */
+    /** @return Default io to make a request. */
     private JdbcThinTcpIo defaultIo() {
         return partitionAwareness ? ios.firstEntry().getValue() : singleIo;
     }
 
-    /** */
+    /** @return {@code True} if transaction support currently enabled for connection. */
     boolean txEnabledForConnection() {
         return txSupportedOnServer() && txIsolation != TRANSACTION_NONE;
     }
@@ -404,7 +402,6 @@ public class JdbcThinConnection implements Connection {
         if (!txSupportedOnServer())
             return;
 
-        //TODO: FIX case when txIsolation == 0;
         JdbcSetTxParametersRequest req = new JdbcSetTxParametersRequest(
             connProps.getTransactionConcurrency(),
             txIsolation == TRANSACTION_NONE ? null : isolation(txIsolation),
@@ -1012,14 +1009,17 @@ public class JdbcThinConnection implements Connection {
     }
 
     /** Store transaction context. */
-    void txContext(JdbcThinTcpIo txIo, int txId) {
-        if (!txEnabledForConnection() || autoCommit)
+    void addToTransaction(JdbcThinTcpIo txIo, int txId, JdbcThinStatement stmt) throws SQLException {
+        if (!txEnabledForConnection())
             return;
 
+        assert !autoCommit;
         assert txId != NO_TX;
 
+        if (txCtx == null)
+            txCtx = new TxContext(txIo, txId);
         // Check same context returned from server when transaction exists, already.
-        if (txCtx != null && (txCtx.txId() != txId || !Objects.equals(txCtx.txIo().nodeId(), txIo.nodeId()))) {
+        else if (txCtx.txId() != txId || !Objects.equals(txCtx.txIo().nodeId(), txIo.nodeId())) {
             throw new IllegalStateException("Nested transactions not supported [" +
                 "txCtx.txId=" + txId +
                 ", txCtx.nodeId=" + txCtx.txIo.nodeId() +
@@ -1027,7 +1027,7 @@ public class JdbcThinConnection implements Connection {
                 ", new.nodeId=" + txIo.nodeId() + ']');
         }
 
-        txCtx = new TxContext(txIo, txId);
+        txCtx.track(stmt);
     }
 
     /** @return Current transaction context. */
@@ -1511,6 +1511,9 @@ public class JdbcThinConnection implements Connection {
     void closeStatement(JdbcThinStatement stmt) {
         synchronized (stmtsMux) {
             stmts.remove(stmt);
+
+            if (txCtx != null)
+                txCtx.untrack(stmt);
         }
     }
 
@@ -2622,6 +2625,8 @@ public class JdbcThinConnection implements Connection {
 
         /** */
         public TxContext(JdbcThinTcpIo txIo, int txId) {
+            assert !autoCommit;
+
             this.txIo = txIo;
             this.txId = txId;
         }
@@ -2633,10 +2638,8 @@ public class JdbcThinConnection implements Connection {
 
             closed = true;
 
-            if (!autoCommit) {
-                for (JdbcThinStatement stmt : stmts)
-                    stmt.closeResults();
-            }
+            for (JdbcThinStatement stmt : stmts)
+                stmt.closeResults();
 
             sendRequest(new JdbcTxEndRequest(txId, commit), null, null);
         }
@@ -2647,6 +2650,14 @@ public class JdbcThinConnection implements Connection {
                 throw new SQLException("Transaction context closed");
 
             stmts.add(stmt);
+        }
+
+        /** */
+        public void untrack(JdbcThinStatement stmt) {
+            if (closed)
+                return;
+
+            stmts.remove(stmt);
         }
 
         /** */

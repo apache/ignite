@@ -23,13 +23,13 @@ import org.apache.ignite.internal.binary.BinaryWriterExImpl;
 import org.apache.ignite.internal.util.typedef.internal.S;
 
 /**
- * JDBC commit transaction request.
+ * JDBC ent transaction request.
  */
 public class JdbcTxEndRequest extends JdbcRequest {
     /** Transaction id. */
     private int txId;
 
-    /** Transaction committed. */
+    /** Flag whether transaction must be committed. */
     private boolean committed;
 
     /** Default constructor is used for deserialization. */

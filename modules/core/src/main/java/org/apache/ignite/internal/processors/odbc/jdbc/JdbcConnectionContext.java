@@ -308,7 +308,7 @@ public class JdbcConnectionContext extends ClientListenerAbstractConnectionConte
 
     /** */
     private void ensureSameTransaction(int txId) {
-        if (txCtx == null && txCtx.txId() != txId) {
+        if (txCtx != null && txCtx.txId() != txId) {
             throw new IllegalStateException("Unknown transaction " +
                 "[serverTxId=" + (txCtx == null ? null : txCtx.txId()) + ", txId=" + txId + ']');
         }

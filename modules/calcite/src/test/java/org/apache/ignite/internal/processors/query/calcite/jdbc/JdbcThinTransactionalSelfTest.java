@@ -20,6 +20,7 @@ package org.apache.ignite.internal.processors.query.calcite.jdbc;
 import java.sql.Connection;
 import java.sql.DatabaseMetaData;
 import java.sql.DriverManager;
+import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.Arrays;
@@ -223,5 +224,72 @@ public class JdbcThinTransactionalSelfTest extends GridCommonAbstractTest {
                 "Cache transaction timed out"
             );
         }
+    }
+
+    /** */
+    @Test
+    public void testStatementsClosedOnTxEnd() throws Exception {
+        for (boolean commit : new boolean[]{true, false}) {
+
+            try (Connection conn = DriverManager.getConnection(URL)) {
+                conn.setAutoCommit(false);
+
+                PreparedStatement stmt0 = conn.prepareStatement("SELECT 1");
+                PreparedStatement stmt1 = conn.prepareStatement("SELECT 1");
+
+                ResultSet rs0 = stmt0.executeQuery();
+                ResultSet rs1 = stmt1.executeQuery();
+
+                assertFalse(stmt0.isClosed());
+                assertFalse(stmt1.isClosed());
+                assertFalse(rs0.isClosed());
+                assertFalse(rs1.isClosed());
+
+                if (commit)
+                    conn.commit();
+                else
+                    conn.rollback();
+
+                assertFalse(stmt0.isClosed());
+                assertFalse(stmt1.isClosed());
+                assertTrue(rs0.isClosed());
+                assertTrue(rs1.isClosed());
+
+                stmt0.close();
+                assertTrue(stmt0.isClosed());
+                assertFalse(stmt1.isClosed());
+
+                assertFalse(((JdbcThinConnection)conn).isTxOpen());
+            }
+        }
+    }
+
+    /** */
+    @Test
+    public void testCloseConnectionWithoutCommit() throws Exception {
+        PreparedStatement stmt0;
+        PreparedStatement stmt1;
+        ResultSet rs0;
+        ResultSet rs1;
+
+        try (Connection conn = DriverManager.getConnection(URL)) {
+            conn.setAutoCommit(false);
+
+            stmt0 = conn.prepareStatement("SELECT 1");
+            stmt1 = conn.prepareStatement("SELECT 1");
+
+            rs0 = stmt0.executeQuery();
+            rs1 = stmt1.executeQuery();
+
+            assertFalse(stmt0.isClosed());
+            assertFalse(stmt1.isClosed());
+            assertFalse(rs0.isClosed());
+            assertFalse(rs1.isClosed());
+        }
+
+        assertTrue(stmt0.isClosed());
+        assertTrue(stmt1.isClosed());
+        assertTrue(rs0.isClosed());
+        assertTrue(rs1.isClosed());
     }
 }

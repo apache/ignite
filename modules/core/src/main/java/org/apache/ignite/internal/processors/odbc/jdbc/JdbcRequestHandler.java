@@ -40,6 +40,7 @@ import org.apache.ignite.cache.query.FieldsQueryCursor;
 import org.apache.ignite.cache.query.QueryCancelledException;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.TransactionConfiguration;
+import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.IgniteVersionUtils;
 import org.apache.ignite.internal.ThinProtocolFeature;
@@ -58,6 +59,7 @@ import org.apache.ignite.internal.processors.cache.binary.CacheObjectBinaryProce
 import org.apache.ignite.internal.processors.cache.query.IgniteQueryErrorCode;
 import org.apache.ignite.internal.processors.cache.query.QueryCursorEx;
 import org.apache.ignite.internal.processors.cache.query.SqlFieldsQueryEx;
+import org.apache.ignite.internal.processors.cache.transactions.IgniteInternalTx;
 import org.apache.ignite.internal.processors.odbc.ClientListenerAbstractConnectionContext;
 import org.apache.ignite.internal.processors.odbc.ClientListenerProtocolVersion;
 import org.apache.ignite.internal.processors.odbc.ClientListenerRequest;
@@ -801,7 +803,7 @@ public class JdbcRequestHandler implements ClientListenerRequestHandler, ClientT
             err = true;
 
             if (autoCommit)
-                endTxAsync(txId, false).get(); //TODO: Timeout here?
+                endTransaction(qry, txId, false);
 
             throw e;
         }
@@ -814,7 +816,7 @@ public class JdbcRequestHandler implements ClientListenerRequestHandler, ClientT
             }
 
             if (autoCommit && !err)
-                endTxAsync(txId, true).get(); //TODO: Timeout here?
+                endTransaction(qry, txId, true);
         }
     }
 
@@ -835,6 +837,16 @@ public class JdbcRequestHandler implements ClientListenerRequestHandler, ClientT
             cliCtx.transactionTimeout(),
             cliCtx.transactionLabel()
         );
+    }
+
+    /** */
+    private void endTransaction(SqlFieldsQueryEx qry, int txId, boolean committed) throws IgniteCheckedException {
+        IgniteInternalFuture<IgniteInternalTx> endTxFut = endTxAsync(txId, committed);
+
+        if (qry.getTimeout() != -1)
+            endTxFut.get(qry.getTimeout());
+        else
+            endTxFut.get();
     }
 
     /** */
