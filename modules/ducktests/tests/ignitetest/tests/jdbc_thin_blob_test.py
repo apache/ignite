@@ -39,7 +39,7 @@ class JdbcThinBlobTest(IgniteTest):
     @cluster(num_nodes=4)
     @ignite_versions(str(DEV_BRANCH))
     @defaults(max_inmem=[None, 0, 2*1024*1024*1024], mode=["blob", "stream"], bias=[True, False])
-    @parametrize(blob_size=1*1024*1024*1024, server_heap=10, insert_heap=8, select_heap=8)
+    @parametrize(blob_size=1*1024*1024*1024, server_heap=9, insert_heap=6, select_heap=6)
     def test_jdbc_thin_blob(self, ignite_version, blob_size,
                             mode,
                             server_heap, insert_heap, select_heap,
@@ -56,15 +56,15 @@ class JdbcThinBlobTest(IgniteTest):
         server_config = IgniteConfiguration(version=IgniteVersion(ignite_version),
                                             client_connector_configuration=ClientConnectorConfiguration(),
                                             data_storage=DataStorageConfiguration(
-                                                checkpoint_frequency=10000,
+                                                checkpoint_frequency=5000,
                                                 metrics_enabled=True,
                                                 wal_segment_size=blob_size + 1024,
                                                 max_wal_archive_size=20 * (blob_size + 1024),
                                                 default=DataRegionConfiguration(
                                                     persistence_enabled=True,
                                                     metrics_enabled=True,
-                                                    initial_size=3 * blob_size,
-                                                    max_size=3 * blob_size
+                                                    initial_size=int(1.5 * blob_size),
+                                                    max_size=int(1.5 * blob_size)
                                                 )
                                             ),
                                             caches=[cache_config])
