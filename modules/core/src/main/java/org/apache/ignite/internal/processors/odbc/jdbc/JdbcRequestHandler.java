@@ -32,6 +32,8 @@ import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
 import javax.cache.configuration.Factory;
+import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.cache.query.BulkLoadContextCursor;
 import org.apache.ignite.cache.query.FieldsQueryCursor;
@@ -62,6 +64,9 @@ import org.apache.ignite.internal.processors.odbc.ClientListenerResponse;
 import org.apache.ignite.internal.processors.odbc.ClientListenerResponseSender;
 import org.apache.ignite.internal.processors.odbc.SqlListenerUtils;
 import org.apache.ignite.internal.processors.odbc.SqlStateCode;
+import org.apache.ignite.internal.processors.platform.client.tx.ClientTxContext;
+import org.apache.ignite.internal.processors.platform.client.tx.ClientTxEndRequest;
+import org.apache.ignite.internal.processors.platform.client.tx.ClientTxStartRequest;
 import org.apache.ignite.internal.processors.query.GridQueryCancel;
 import org.apache.ignite.internal.processors.query.IgniteSQLException;
 import org.apache.ignite.internal.processors.query.QueryUtils;
@@ -104,6 +109,8 @@ import static org.apache.ignite.internal.processors.odbc.jdbc.JdbcRequest.QRY_CL
 import static org.apache.ignite.internal.processors.odbc.jdbc.JdbcRequest.QRY_EXEC;
 import static org.apache.ignite.internal.processors.odbc.jdbc.JdbcRequest.QRY_FETCH;
 import static org.apache.ignite.internal.processors.odbc.jdbc.JdbcRequest.QRY_META;
+import static org.apache.ignite.internal.processors.odbc.jdbc.JdbcRequest.TX_END;
+import static org.apache.ignite.internal.processors.odbc.jdbc.JdbcRequest.TX_START;
 
 /**
  * JDBC request handler.
@@ -361,13 +368,18 @@ public class JdbcRequestHandler implements ClientListenerRequestHandler {
                     resp = getBinaryType((JdbcBinaryTypeGetRequest)req);
                     break;
 
+                case TX_START:
+                    resp = startTransaction((JdbcTxStartRequest)req);
+                    break;
+
+                case TX_END:
+                    resp = endTransaction((JdbcTxEndRequest)req);
+                    break;
+
                 default:
                     resp = new JdbcResponse(IgniteQueryErrorCode.UNSUPPORTED_OPERATION,
                         "Unsupported JDBC request [req=" + req + ']');
             }
-
-            if (resp != null)
-                resp.activeTransaction(connCtx.kernalContext().cache().context().tm().inUserTx());
 
             return resp;
         }
@@ -616,7 +628,9 @@ public class JdbcRequestHandler implements ClientListenerRequestHandler {
 
             qry.setSchema(schemaName);
 
-            List<FieldsQueryCursor<List<?>>> results = querySqlFields(qry, cancel);
+            List<FieldsQueryCursor<List<?>>> results = req.txId() == 0
+                ? querySqlFields(qry, cancel)
+                : querySqlFields(req.txId(), qry, cancel);
 
             FieldsQueryCursor<List<?>> fieldsCur = results.get(0);
 
@@ -743,6 +757,32 @@ public class JdbcRequestHandler implements ClientListenerRequestHandler {
         }
         finally {
             cleanupQueryCancellationMeta(unregisterReq, req.requestId());
+        }
+    }
+
+    /** */
+    private List<FieldsQueryCursor<List<?>>> querySqlFields(
+        int txId,
+        SqlFieldsQueryEx qry,
+        GridQueryCancel cancel
+    ) throws IgniteCheckedException {
+        ClientTxContext txCtx = connCtx.txContext(txId);
+
+        if (txCtx == null)
+            throw new IgniteException("Transaction not found [txId=" + txId + ']');
+
+        try {
+            txCtx.acquire(true);
+
+            return querySqlFields(qry, cancel);
+        }
+        finally {
+            try {
+                txCtx.release(true);
+            }
+            catch (Exception e) {
+                log.warning("Failed to release client transaction context", e);
+            }
         }
     }
 
@@ -1311,6 +1351,45 @@ public class JdbcRequestHandler implements ClientListenerRequestHandler {
         }
         catch (Exception e) {
             U.error(log, "Failed to get schemas metadata [reqId=" + req.requestId() + ", req=" + req + ']', e);
+
+            return exceptionToResult(e);
+        }
+    }
+
+    /**
+     * Starts new transaction.
+     *
+     * @param req Request
+     * @return resulting {@link JdbcResponse}.
+     */
+    private JdbcResponse startTransaction(JdbcTxStartRequest req) {
+        try {
+            return resultToResonse(new JdbcTxStartResult(
+                req.requestId(),
+                ClientTxStartRequest.startClientTransaction(connCtx, req.data())
+            ));
+        }
+        catch (Exception e) {
+            U.error(log, "Failed to start transaction [reqId=" + req.requestId() + ", req=" + req + ']', e);
+
+            return exceptionToResult(e);
+        }
+    }
+
+    /**
+     * End transaction.
+     *
+     * @param req Request
+     * @return resulting {@link JdbcResponse}.
+     */
+    private JdbcResponse endTransaction(JdbcTxEndRequest req) {
+        try {
+            ClientTxEndRequest.endTxAsync(connCtx, req.txId(), req.committed()).get();
+
+            return resultToResonse(new JdbcTxEndResult(req.requestId()));
+        }
+        catch (IgniteCheckedException e) {
+            U.error(log, "Failed to end transaction [reqId=" + req.requestId() + ", req=" + req + ']', e);
 
             return exceptionToResult(e);
         }

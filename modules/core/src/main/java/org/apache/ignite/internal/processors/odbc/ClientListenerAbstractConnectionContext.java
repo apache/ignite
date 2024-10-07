@@ -20,9 +20,14 @@ package org.apache.ignite.internal.processors.odbc;
 import java.util.Collections;
 import java.util.Map;
 import java.util.UUID;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.atomic.AtomicInteger;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.processors.authentication.IgniteAccessControlException;
+import org.apache.ignite.internal.processors.platform.client.ClientStatus;
+import org.apache.ignite.internal.processors.platform.client.IgniteClientException;
+import org.apache.ignite.internal.processors.platform.client.tx.ClientTxContext;
 import org.apache.ignite.internal.processors.security.SecurityContext;
 import org.apache.ignite.internal.util.nio.GridNioSession;
 import org.apache.ignite.internal.util.typedef.F;
@@ -61,18 +66,32 @@ public abstract class ClientListenerAbstractConnectionContext implements ClientL
      */
     private String clientDesc;
 
+    /** Active tx count limit. */
+    private final int maxActiveTxCnt;
+
+    /** Tx id. */
+    private final AtomicInteger txIdSeq = new AtomicInteger();
+
+    /** Transactions by transaction id. */
+    private final Map<Integer, ClientTxContext> txs = new ConcurrentHashMap<>();
+
+    /** Active transactions count. */
+    private final AtomicInteger txsCnt = new AtomicInteger();
+
     /**
      * Constructor.
      *
      * @param ctx Kernal context.
      * @param ses Client's NIO session.
      * @param connId Connection ID.
+     * @param maxActiveTxCnt Maximum active transactions count.
      */
     protected ClientListenerAbstractConnectionContext(
-        GridKernalContext ctx, GridNioSession ses, long connId) {
+        GridKernalContext ctx, GridNioSession ses, long connId, int maxActiveTxCnt) {
         this.ctx = ctx;
         this.connId = connId;
         this.ses = ses;
+        this.maxActiveTxCnt = maxActiveTxCnt;
     }
 
     /**
@@ -123,6 +142,8 @@ public abstract class ClientListenerAbstractConnectionContext implements ClientL
 
     /** {@inheritDoc} */
     @Override public void onDisconnected() {
+        cleanupTxs();
+
         if (ctx.security().enabled())
             ctx.security().onSessionExpired(secCtx.subject().id());
     }
@@ -147,6 +168,64 @@ public abstract class ClientListenerAbstractConnectionContext implements ClientL
      */
     public String clientDescriptor() {
         return clientDesc;
+    }
+
+    /**
+     * Next transaction id for this connection.
+     */
+    public int nextTxId() {
+        int txId = txIdSeq.incrementAndGet();
+
+        return txId == 0 ? txIdSeq.incrementAndGet() : txId;
+    }
+
+    /**
+     * Transaction context by transaction id.
+     *
+     * @param txId Tx ID.
+     */
+    public ClientTxContext txContext(int txId) {
+        return txs.get(txId);
+    }
+
+    /**
+     * Add new transaction context to connection.
+     *
+     * @param txCtx Tx context.
+     */
+    public void addTxContext(ClientTxContext txCtx) {
+        if (txsCnt.incrementAndGet() > maxActiveTxCnt) {
+            txsCnt.decrementAndGet();
+
+            // TODO: same exception for JDBC and ODBC?
+            throw new IgniteClientException(ClientStatus.TX_LIMIT_EXCEEDED, "Active transactions per connection limit " +
+                "(" + maxActiveTxCnt + ") exceeded. To start a new transaction you need to wait for some of currently " +
+                "active transactions complete. To change the limit set up " +
+                "ThinClientConfiguration.MaxActiveTxPerConnection property.");
+        }
+
+        txs.put(txCtx.txId(), txCtx);
+    }
+
+    /**
+     * Remove transaction context from connection.
+     *
+     * @param txId Tx ID.
+     */
+    public void removeTxContext(int txId) {
+        txs.remove(txId);
+
+        txsCnt.decrementAndGet();
+    }
+
+    /**
+     *
+     */
+    private void cleanupTxs() {
+        for (ClientTxContext txCtx : txs.values())
+            txCtx.close();
+
+        txs.clear();
     }
 
     /** {@inheritDoc} */

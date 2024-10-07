@@ -17,6 +17,11 @@
 
 package org.apache.ignite.internal.processors.tx;
 
+import java.sql.Connection;
+import java.sql.DriverManager;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -28,8 +33,10 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.function.BiConsumer;
+import java.util.function.Consumer;
 import java.util.function.IntConsumer;
 import java.util.function.IntFunction;
 import java.util.function.Predicate;
@@ -58,11 +65,15 @@ import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.ClientConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
+import org.apache.ignite.internal.processors.odbc.ClientMessage;
 import org.apache.ignite.internal.processors.query.QueryUtils;
 import org.apache.ignite.internal.util.lang.RunnableX;
+import org.apache.ignite.internal.util.nio.GridNioServer;
+import org.apache.ignite.internal.util.nio.GridNioSession;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.lang.IgniteBiTuple;
+import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.transactions.Transaction;
 import org.apache.ignite.transactions.TransactionConcurrency;
@@ -73,6 +84,8 @@ import org.junit.runners.Parameterized;
 
 import static java.lang.String.format;
 import static java.util.concurrent.TimeUnit.SECONDS;
+import static org.apache.ignite.internal.jdbc.thin.ConnectionPropertiesImpl.PROP_PREFIX;
+import static org.apache.ignite.internal.processors.odbc.ClientListenerNioListener.CONN_CTX_META_KEY;
 import static org.apache.ignite.internal.processors.tx.SqlTransactionsIsolationTest.ModifyApi.CACHE;
 import static org.apache.ignite.internal.processors.tx.SqlTransactionsIsolationTest.ModifyApi.ENTRY_PROCESSOR;
 import static org.apache.ignite.internal.processors.tx.SqlTransactionsIsolationTest.ModifyApi.SQL;
@@ -105,7 +118,13 @@ public class SqlTransactionsIsolationTest extends GridCommonAbstractTest {
         THIN_VIA_CACHE_API,
 
         /** */
-        THIN_VIA_QUERY
+        THIN_VIA_QUERY,
+
+        /** */
+        THIN_JDBC,
+
+        /** */
+        JDBC
     }
 
     /** */
@@ -181,6 +200,15 @@ public class SqlTransactionsIsolationTest extends GridCommonAbstractTest {
     private static IgniteClient thinCli;
 
     /** */
+    private static ClientConfiguration thinCliCfg;
+
+    /** */
+    private static Map<Long, Connection> jdbcThinConn = new ConcurrentHashMap<>();
+
+    /** */
+    private static Map<Long, Connection> jdbcConn = new ConcurrentHashMap<>();
+
+    /** */
     private final TransactionIsolation txIsolation = READ_COMMITTED;
 
     /** */
@@ -192,18 +220,51 @@ public class SqlTransactionsIsolationTest extends GridCommonAbstractTest {
     public static Collection<?> parameters() {
         List<Object[]> params = new ArrayList<>();
 
-        for (ModifyApi modify : ModifyApi.values()) {
-            for (CacheMode cacheMode : CacheMode.values()) {
-                for (int gridCnt : new int[]{1, 3, 5}) {
-                    int[] backups = gridCnt > 1
-                        ? new int[]{1, gridCnt - 1}
-                        : new int[]{0};
-
-                    for (int backup: backups) {
+        for (CacheMode cacheMode : CacheMode.values()) {
+            for (int gridCnt : new int[]{1, 3, 5}) {
+                int[] backups = gridCnt > 1
+                    ? new int[]{1, gridCnt - 1}
+                    : new int[]{0};
+                for (int backup: backups) {
+                    for (ModifyApi modify : ModifyApi.values()) {
                         for (boolean commit : new boolean[]{false, true}) {
                             for (boolean mutli : new boolean[] {false, true}) {
                                 for (TransactionConcurrency txConcurrency : TransactionConcurrency.values()) {
-                                    for (ExecutorType execType : new ExecutorType[]{ExecutorType.SERVER, ExecutorType.CLIENT}) {
+                                    ExecutorType[] nodeExecTypes = {/*ExecutorType.SERVER, ExecutorType.CLIENT,*/};
+
+                                    ExecutorType[] thinExecTypes;
+
+                                    if (modify == SQL) {
+                                        params.add(new Object[]{
+                                            modify,
+                                            ExecutorType.JDBC,
+                                            false, //partitionAwareness
+                                            cacheMode,
+                                            gridCnt,
+                                            backup,
+                                            commit,
+                                            mutli,
+                                            txConcurrency
+                                        });
+
+                                        thinExecTypes = new ExecutorType[]{
+/*
+                                            ExecutorType.THIN_VIA_CACHE_API,
+                                            ExecutorType.THIN_VIA_QUERY,
+                                            ExecutorType.THIN_JDBC,
+*/
+                                        };
+                                    }
+                                    else {
+                                        thinExecTypes = new ExecutorType[]{
+/*
+                                            ExecutorType.THIN_VIA_CACHE_API,
+                                            ExecutorType.THIN_VIA_QUERY
+*/
+                                        };
+                                    }
+
+                                    for (ExecutorType execType : nodeExecTypes) {
                                         params.add(new Object[]{
                                             modify,
                                             execType,
@@ -217,8 +278,7 @@ public class SqlTransactionsIsolationTest extends GridCommonAbstractTest {
                                         });
                                     }
 
-                                    for (ExecutorType execType :
-                                            new ExecutorType[]{ExecutorType.THIN_VIA_CACHE_API, ExecutorType.THIN_VIA_QUERY}) {
+                                    for (ExecutorType execType : thinExecTypes) {
                                         for (boolean partitionAwareness : new boolean[]{false, true}) {
                                             params.add(new Object[]{modify,
                                                 execType,
@@ -255,18 +315,33 @@ public class SqlTransactionsIsolationTest extends GridCommonAbstractTest {
 
     /** */
     private void init() throws Exception {
+        thinCliCfg = new ClientConfiguration()
+            .setAddresses(Config.SERVER)
+            .setPartitionAwarenessEnabled(partitionAwareness);
+
         srv = startGrids(gridCnt);
         cli = startClientGrid("client");
-        thinCli = Ignition.startClient(new ClientConfiguration()
-            .setAddresses(Config.SERVER)
-            .setPartitionAwarenessEnabled(partitionAwareness));
+        thinCli = Ignition.startClient(thinCliCfg);
 
-        cli.createCache(new CacheConfiguration<>(DEFAULT_CACHE_NAME).setAtomicityMode(CacheAtomicityMode.TRANSACTIONAL));
+        cli.createCache(new CacheConfiguration<>(DEFAULT_CACHE_NAME)
+            .setAtomicityMode(CacheAtomicityMode.TRANSACTIONAL)
+            .setBackups(backups));
+
+        cli.createCache(new CacheConfiguration<Integer, Integer>()
+            .setName(tableName(TBL, mode))
+            .setAtomicityMode(CacheAtomicityMode.TRANSACTIONAL)
+            .setBackups(backups)
+            .setCacheMode(mode)
+            .setWriteSynchronizationMode(CacheWriteSynchronizationMode.FULL_SYNC)
+            .setSqlSchema(QueryUtils.DFLT_SCHEMA)
+            .setQueryEntities(Collections.singleton(new QueryEntity()
+                .setTableName(tableName(TBL, mode))
+                .setKeyType(Long.class.getName())
+                .setValueType(Long.class.getName()))));
 
         for (CacheMode mode : CacheMode.values()) {
             String users = tableName(USERS, mode);
             String deps = tableName(DEPARTMENTS, mode);
-            String tbl = tableName(TBL, mode);
 
             LinkedHashMap<String, String> userFlds = new LinkedHashMap<>();
 
@@ -315,40 +390,81 @@ public class SqlTransactionsIsolationTest extends GridCommonAbstractTest {
                     .setValueType(String.class.getName())
                     .setKeyFieldName("id")
                     .setFields(depFlds))));
-
-            cli.createCache(new CacheConfiguration<Integer, Integer>()
-                .setName(tbl)
-                .setAtomicityMode(CacheAtomicityMode.TRANSACTIONAL)
-                .setBackups(backups)
-                .setCacheMode(this.mode)
-                .setWriteSynchronizationMode(CacheWriteSynchronizationMode.FULL_SYNC)
-                .setSqlSchema(QueryUtils.DFLT_SCHEMA)
-                .setQueryEntities(Collections.singleton(new QueryEntity()
-                    .setTableName(tbl)
-                    .setKeyType(Long.class.getName())
-                    .setValueType(Long.class.getName()))));
         }
+    }
+
+    /** */
+    private void clear() {
+        Consumer<Connection> cclose = c -> {
+            try {
+                c.close();
+            }
+            catch (SQLException e) {
+                throw new RuntimeException(e);
+            }
+        };
+
+        jdbcThinConn.values().forEach(cclose);
+        jdbcConn.values().forEach(cclose);
+        jdbcThinConn.clear();
+        jdbcConn.clear();
+
+        stopAllGrids();
     }
 
     /** {@inheritDoc} */
     @Override protected void afterTestsStopped() throws Exception {
         super.afterTestsStopped();
 
-        stopAllGrids();
+        clear();
     }
 
     /** {@inheritDoc} */
     @Override protected void beforeTest() throws Exception {
         super.beforeTest();
 
-        if (F.isEmpty(Ignition.allGrids()))
+        boolean reinit = gridCnt() != Ignition.allGrids().size()
+            || partitionAwareness != thinCliCfg.isPartitionAwarenessEnabled();
+
+        if (!reinit) {
+            CacheConfiguration ccfg = cli.cache(tbl()).getConfiguration(CacheConfiguration.class);
+
+            reinit = mode != ccfg.getCacheMode()
+                || (ccfg.getCacheMode() == CacheMode.PARTITIONED && backups != ccfg.getBackups());
+        }
+
+        if (reinit) {
+            clear();
+
             init();
+        }
 
         cli.cache(users()).removeAll();
         cli.cache(tbl()).removeAll();
         cli.cache(departments()).removeAll();
 
         insert(F.t(1, JOHN));
+
+        assertEquals(gridCnt(), Ignition.allGrids().size());
+        assertEquals(mode, cli.cache(tbl()).getConfiguration(CacheConfiguration.class).getCacheMode());
+        assertEquals(partitionAwareness, thinCliCfg.isPartitionAwarenessEnabled());
+        cli.cacheNames().stream()
+            .filter(name -> cli.cache(name).getConfiguration(CacheConfiguration.class).getCacheMode() == CacheMode.PARTITIONED)
+            .forEach(name -> assertEquals(backups, cli.cache(name).getConfiguration(CacheConfiguration.class).getBackups()));
+    }
+
+    /** {@inheritDoc} */
+    @Override protected void afterTest() throws Exception {
+        for (int i = 0; i < gridCnt + 1; i++) {
+            IgniteEx srv = i == gridCnt ? cli : grid(i);
+
+            assertTrue(srv.context().cache().context().tm().activeTransactions().isEmpty());
+
+            GridNioServer<ClientMessage> nioSrv = GridTestUtils.getFieldValue(srv.context().clientListener(), "srv");
+
+            for (GridNioSession ses : nioSrv.sessions())
+                assertTrue(GridTestUtils.<Map<?, ?>>getFieldValue(ses.meta(CONN_CTX_META_KEY), "txs").isEmpty());
+        }
     }
 
     /** */
@@ -413,7 +529,9 @@ public class SqlTransactionsIsolationTest extends GridCommonAbstractTest {
                             RunnableX check = () -> {
                                 assertUsersSize(stepCnt * outOfTxSz);
 
-                                assertNull(select(id, CACHE));
+                                if (!isJdbc())
+                                    assertNull(select(id, CACHE));
+
                                 assertNull(select(id, SQL));
                             };
 
@@ -624,14 +742,18 @@ public class SqlTransactionsIsolationTest extends GridCommonAbstractTest {
 
         Runnable checkBefore = () -> {
             for (int i = 4; i <= (multi ? 6 : 4); i++) {
-                assertNull(CACHE.name(), select(i, CACHE));
+                if (!isJdbc())
+                    assertNull(CACHE.name(), select(i, CACHE));
+
                 assertNull(SQL.name(), select(i, SQL));
             }
         };
 
         Runnable checkAfter = () -> {
             for (int i = 4; i <= (multi ? 6 : 4); i++) {
-                assertEquals(CACHE.name(), JOHN, select(i, CACHE));
+                if (!isJdbc())
+                    assertEquals(CACHE.name(), JOHN, select(i, CACHE));
+
                 assertEquals(SQL.name(), JOHN, select(i, SQL));
             }
         };
@@ -674,14 +796,18 @@ public class SqlTransactionsIsolationTest extends GridCommonAbstractTest {
 
         Runnable checkBefore = () -> {
             for (int i = 1; i <= (multi ? 3 : 1); i++) {
-                assertEquals(JOHN, select(i, CACHE));
+                if (!isJdbc())
+                    assertEquals(JOHN, select(i, CACHE));
+
                 assertEquals(JOHN, select(i, SQL));
             }
         };
 
         Runnable checkAfter = () -> {
             for (int i = 1; i <= (multi ? 3 : 1); i++) {
-                assertEquals(KYLE, select(i, CACHE));
+                if (!isJdbc())
+                    assertEquals(KYLE, select(i, CACHE));
+
                 assertEquals(KYLE, select(i, SQL));
             }
         };
@@ -697,7 +823,8 @@ public class SqlTransactionsIsolationTest extends GridCommonAbstractTest {
                 update(F.t(1, SARAH));
 
             for (int i = 1; i <= (multi ? 3 : 1); i++) {
-                assertEquals(SARAH, select(i, CACHE));
+                if (!isJdbc())
+                    assertEquals(SARAH, select(i, CACHE));
                 assertEquals(SARAH, select(i, SQL));
             }
 
@@ -725,15 +852,20 @@ public class SqlTransactionsIsolationTest extends GridCommonAbstractTest {
 
         Runnable checkBefore = () -> {
             for (int i = 1; i <= (multi ? 3 : 1); i++) {
-                assertEquals(JOHN, select(i, CACHE));
+                if (!isJdbc())
+                    assertEquals(JOHN, select(i, CACHE));
+
                 assertEquals(JOHN, select(i, SQL));
             }
         };
 
         Runnable checkAfter = () -> {
             for (int i = 1; i <= (multi ? 3 : 1); i++) {
-                assertNull(select(i, CACHE));
+                if (!isJdbc())
+                    assertNull(select(i, CACHE));
+
                 assertNull(select(i, SQL));
+
             }
         };
 
@@ -759,6 +891,8 @@ public class SqlTransactionsIsolationTest extends GridCommonAbstractTest {
     /** */
     @Test
     public void testVisibility() {
+        assumeFalse(isJdbc());
+
         sql(format("DELETE FROM %s", tbl()));
 
         assertTableSize(0, tbl());
@@ -804,6 +938,33 @@ public class SqlTransactionsIsolationTest extends GridCommonAbstractTest {
                 }
                 else
                     tx.rollback();
+            }
+        }
+        else if (type == ExecutorType.THIN_JDBC || type == ExecutorType.JDBC) {
+            Connection conn = jdbc();
+
+            try {
+                conn.setAutoCommit(false);
+            }
+            catch (SQLException e) {
+                throw new RuntimeException(e);
+            }
+
+            try {
+                test.run();
+            }
+            finally {
+                try {
+                    if (commit)
+                        conn.commit();
+                    else
+                        conn.rollback();
+
+                    conn.setAutoCommit(true);
+                }
+                catch (SQLException e) {
+                    throw new RuntimeException(e);
+                }
             }
         }
         else {
@@ -1052,6 +1213,10 @@ public class SqlTransactionsIsolationTest extends GridCommonAbstractTest {
         if (mode != CacheMode.PARTITIONED)
             return;
 
+        // Partitions filter not supported by JDBC.
+        if (type == ExecutorType.THIN_JDBC)
+            return;
+
         for (Map.Entry<Integer, Set<Integer>> partToKeys : partsToKeys.entrySet()) {
             assertEquals(
                 (long)partToKeys.getValue().size(),
@@ -1144,6 +1309,47 @@ public class SqlTransactionsIsolationTest extends GridCommonAbstractTest {
             return unwrapBinary(thinCli.query(qry).getAll());
         else if (type == ExecutorType.THIN_VIA_CACHE_API)
             return unwrapBinary(thinCli.cache(F.first(thinCli.cacheNames())).query(qry).getAll());
+        else if (isJdbc()) {
+            assertTrue("Partition filter not supported", F.isEmpty(parts));
+
+            try {
+                Connection conn = jdbc();
+
+                PreparedStatement stmt = conn.prepareStatement(sqlText);
+
+                if (!F.isEmpty(args)) {
+                    for (int i = 0; i < args.length; i++)
+                        stmt.setObject(i + 1, args[i]);
+                }
+
+                List<List<?>> res = new ArrayList<>();
+
+                if (sqlText.startsWith("SELECT")) {
+                    try (ResultSet rset = stmt.executeQuery()) {
+                        int colCnt = rset.getMetaData().getColumnCount();
+
+                        while (rset.next()) {
+                            List<Object> row = new ArrayList<>();
+
+                            res.add(row);
+
+                            for (int i = 0; i < colCnt; i++)
+                                row.add(rset.getObject(i + 1));
+                        }
+
+                        return res;
+
+                    }
+                }
+                else
+                    res.add(List.of(stmt.executeUpdate()));
+
+                return res;
+            }
+            catch (SQLException e) {
+                throw new RuntimeException(e);
+            }
+        }
 
         if (multi)
             return node().context().query().querySqlFields(qry, false, false).get(0).getAll();
@@ -1156,6 +1362,49 @@ public class SqlTransactionsIsolationTest extends GridCommonAbstractTest {
         assertTrue(type == ExecutorType.CLIENT || type == ExecutorType.SERVER);
 
         return type == ExecutorType.CLIENT ? cli : srv;
+    }
+
+    /** */
+    private Connection jdbc() {
+        assertTrue(isJdbc());
+
+        return type == ExecutorType.THIN_JDBC
+            ? jdbcThinConn.computeIfAbsent(Thread.currentThread().getId(), k -> newThinJdbcConnection())
+            : jdbcConn.computeIfAbsent(Thread.currentThread().getId(), k -> newConnection());
+    }
+
+    /** */
+    private int gridCnt() {
+        return gridCnt + 1 + (type == ExecutorType.JDBC ? 1 : 0);
+    }
+
+    /** */
+    private Connection newConnection() {
+        try {
+            return DriverManager.getConnection("jdbc:ignite:cfg://jdbc-config.xml");
+        }
+        catch (SQLException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    /** */
+    private Connection newThinJdbcConnection() {
+        try {
+            String addrs = partitionAwareness
+                ? Ignition.allGrids().stream()
+                .filter(n -> !n.configuration().isClientMode())
+                .map(n -> "127.0.0.1:" + ((IgniteEx)n).context().clientListener().port())
+                .collect(Collectors.joining(","))
+                : "127.0.0.1:10800";
+
+            return DriverManager.getConnection("jdbc:ignite:thin://" + addrs + "?"
+                + PROP_PREFIX + "partitionAwareness=" + partitionAwareness + "&"
+                + PROP_PREFIX + "transactionConcurrency=" + txConcurrency);
+        }
+        catch (SQLException e) {
+            throw new RuntimeException(e);
+        }
     }
 
     /** */
@@ -1189,6 +1438,11 @@ public class SqlTransactionsIsolationTest extends GridCommonAbstractTest {
             "Thin client doesn't support multiple statements for SQL",
             multi && modify == SQL && (type == ExecutorType.THIN_VIA_CACHE_API || type == ExecutorType.THIN_VIA_QUERY)
         );
+    }
+
+    /** */
+    private boolean isJdbc() {
+        return type == ExecutorType.THIN_JDBC || type == ExecutorType.JDBC;
     }
 
     /** */

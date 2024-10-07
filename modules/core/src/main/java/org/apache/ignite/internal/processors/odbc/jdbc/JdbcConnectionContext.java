@@ -121,10 +121,11 @@ public class JdbcConnectionContext extends ClientListenerAbstractConnectionConte
      * @param busyLock Shutdown busy lock.
      * @param connId Connection ID.
      * @param maxCursors Maximum allowed cursors.
+     * @param maxActiveTxCnt Maximum allowed transactions.
      */
     public JdbcConnectionContext(GridKernalContext ctx, GridNioSession ses, GridSpinBusyLock busyLock, long connId,
-        int maxCursors) {
-        super(ctx, ses, connId);
+        int maxCursors, int maxActiveTxCnt) {
+        super(ctx, ses, connId, maxActiveTxCnt);
 
         this.busyLock = busyLock;
         this.maxCursors = maxCursors;
@@ -192,6 +193,9 @@ public class JdbcConnectionContext extends ClientListenerAbstractConnectionConte
             byte[] cliFeatures = reader.readByteArray();
 
             features = JdbcThinFeature.enumSet(cliFeatures);
+
+            if (!ctx.config().getTransactionConfiguration().isTxAwareQueriesEnabled())
+                features.remove(JdbcThinFeature.TX_AWARE_QUERIES);
         }
 
         if (ver.compareTo(VER_2_13_0) >= 0) {

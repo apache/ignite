@@ -692,6 +692,15 @@ public class JdbcThinTcpIo {
     }
 
     /**
+     * Whether SQL transactions are supported by the server or not.
+     *
+     * @return {@code true} if SQL transactions supported, {@code false} otherwise.
+     */
+    boolean isTxAwareQueriesSupported() {
+        return protoCtx.isFeatureSupported(JdbcThinFeature.TX_AWARE_QUERIES);
+    }
+
+    /**
      * Get next server index.
      *
      * @param len Number of servers.

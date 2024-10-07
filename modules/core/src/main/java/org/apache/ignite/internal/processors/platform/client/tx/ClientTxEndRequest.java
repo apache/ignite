@@ -21,6 +21,7 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.binary.BinaryRawReader;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteInternalTx;
+import org.apache.ignite.internal.processors.odbc.ClientListenerAbstractConnectionContext;
 import org.apache.ignite.internal.processors.platform.client.ClientConnectionContext;
 import org.apache.ignite.internal.processors.platform.client.ClientRequest;
 import org.apache.ignite.internal.processors.platform.client.ClientResponse;
@@ -68,6 +69,15 @@ public class ClientTxEndRequest extends ClientRequest {
 
     /** End transaction asynchronously. */
     private IgniteInternalFuture<IgniteInternalTx> endTxAsync(ClientConnectionContext ctx) {
+        return endTxAsync(ctx, txId, committed);
+    }
+
+    /** End transaction asynchronously. */
+    public static IgniteInternalFuture<IgniteInternalTx> endTxAsync(
+        ClientListenerAbstractConnectionContext ctx,
+        int txId,
+        boolean committed
+    ) {
         ClientTxContext txCtx = ctx.txContext(txId);
 
         if (txCtx == null && !committed)
