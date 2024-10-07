@@ -45,6 +45,12 @@ public class IgniteSqlFunctions {
     /** */
     public static final String NUMERIC_FIELD_OVERFLOW_ERROR = "Numeric field overflow";
 
+    /** */
+    private static final int DFLT_NUM_PRECISION = IgniteTypeSystem.INSTANCE.getDefaultPrecision(SqlTypeName.DECIMAL);
+
+    /** */
+    private static final RoundingMode NUMERIC_ROUNDING_MODE = RoundingMode.HALF_UP;
+
     /**
      * Default constructor.
      */
@@ -69,32 +75,40 @@ public class IgniteSqlFunctions {
 
     /** CAST(DOUBLE AS DECIMAL). */
     public static BigDecimal toBigDecimal(double val, int precision, int scale) {
-        return toBigDecimal((Double) val, precision, scale);
+        return removeDefaultScale(precision, scale, toBigDecimal(BigDecimal.valueOf(val), precision, scale));
     }
 
     /** CAST(FLOAT AS DECIMAL). */
     public static BigDecimal toBigDecimal(float val, int precision, int scale) {
-        return toBigDecimal((Float) val, precision, scale);
+        return removeDefaultScale(precision, scale, toBigDecimal(BigDecimal.valueOf(val), precision, scale));
+    }
+
+    /** // Removes redundant scale in case of default DECIMAL (without passed precision and scale). */
+    private static BigDecimal removeDefaultScale(int precision, int scale, BigDecimal floating) {
+        if (precision == DFLT_NUM_PRECISION && scale == 0 && floating.compareTo(floating.setScale(0, RoundingMode.CEILING)) == 0)
+            return floating.setScale(0, RoundingMode.CEILING);
+
+        return floating;
     }
 
     /** CAST(java long AS DECIMAL). */
     public static BigDecimal toBigDecimal(long val, int precision, int scale) {
-        return convertDecimal(BigDecimal.valueOf(val), precision, scale);
+        return toBigDecimal(BigDecimal.valueOf(val), precision, scale);
     }
 
     /** CAST(INT AS DECIMAL). */
     public static BigDecimal toBigDecimal(int val, int precision, int scale) {
-        return convertDecimal(new BigDecimal(val), precision, scale);
+        return toBigDecimal(BigDecimal.valueOf(val), precision, scale);
     }
 
     /** CAST(java short AS DECIMAL). */
     public static BigDecimal toBigDecimal(short val, int precision, int scale) {
-        return convertDecimal(new BigDecimal(val), precision, scale);
+        return toBigDecimal(BigDecimal.valueOf(val), precision, scale);
     }
 
     /** CAST(java byte AS DECIMAL). */
     public static BigDecimal toBigDecimal(byte val, int precision, int scale) {
-        return convertDecimal(new BigDecimal(val), precision, scale);
+        return toBigDecimal(BigDecimal.valueOf(val), precision, scale);
     }
 
     /** CAST(BOOL AS DECIMAL). */
@@ -107,60 +121,47 @@ public class IgniteSqlFunctions {
         if (s == null)
             return null;
 
-        return convertDecimal(new BigDecimal(s.trim()), precision, scale);
+        return toBigDecimal(new BigDecimal(s.trim()), precision, scale);
     }
 
     /**
-     * Converts the given {@code BigDecimal} to a decimal with the given {@code precision} and {@code scale}
+     * Converts the given {@code Number} to a decimal with the given {@code precision} and {@code scale}
      * according to SQL spec for CAST specification: General Rules, 8.
      */
-    public static BigDecimal convertDecimal(BigDecimal val, int precision, int scale) {
+    public static BigDecimal toBigDecimal(Number val, int precision, int scale) {
         assert precision > 0 : "Invalid precision: " + precision;
+        assert scale >= 0 : "Invalid scale: " + scale;
 
-        int dfltPrecision = IgniteTypeSystem.INSTANCE.getDefaultPrecision(SqlTypeName.DECIMAL);
-
-        if (precision == dfltPrecision) {
-            // This branch covers at least one known case: access to dynamic parameter from context.
-            // In this scenario precision = DefaultTypePrecision, because types for dynamic params
-            // are created by toSql(createType(param.class)).
-            return val;
-        }
-
-        boolean nonZero = !val.unscaledValue().equals(BigInteger.ZERO);
-
-        if (nonZero) {
-            if (scale > precision)
-                throw new IllegalArgumentException(NUMERIC_FIELD_OVERFLOW_ERROR);
-            else {
-                int curSignificantDigits = val.precision() - val.scale();
-                int expectedSignificantDigits = precision - scale;
-
-                if (curSignificantDigits > expectedSignificantDigits)
-                    throw new IllegalArgumentException(NUMERIC_FIELD_OVERFLOW_ERROR);
-
-            }
-        }
-
-        return val.setScale(scale, RoundingMode.HALF_UP);
-    }
-
-    /** CAST(REAL AS DECIMAL). */
-    public static BigDecimal toBigDecimal(Number num, int precision, int scale) {
-        if (num == null)
+        if (val == null)
             return null;
 
+        if (precision == DFLT_NUM_PRECISION)
+            return convertToBigDecimal(val);
+
+        BigDecimal dec = convertToBigDecimal(val);
+
+        if (scale > precision || (dec.precision() - dec.scale() > precision - scale))
+            throw new IllegalArgumentException(NUMERIC_FIELD_OVERFLOW_ERROR);
+
+        return dec.setScale(scale, NUMERIC_ROUNDING_MODE);
+    }
+
+    /** */
+    private static BigDecimal convertToBigDecimal(Number value) {
         BigDecimal dec;
 
-        if (num instanceof Float || num instanceof Double)
-            dec = BigDecimal.valueOf(num.doubleValue());
-        else if (num instanceof BigDecimal)
-            dec = (BigDecimal)num;
-        else if (num instanceof BigInteger)
-            dec = new BigDecimal((BigInteger)num);
+        if (value instanceof Float)
+            dec = BigDecimal.valueOf(value.floatValue());
+        else if (value instanceof Double)
+            dec = BigDecimal.valueOf(value.doubleValue());
+        else if (value instanceof BigDecimal)
+            dec = (BigDecimal) value;
+        else if (value instanceof BigInteger)
+            dec = new BigDecimal((BigInteger) value);
         else
-            dec = new BigDecimal(num.longValue());
+            dec = new BigDecimal(value.longValue());
 
-        return convertDecimal(dec, precision, scale);
+        return dec;
     }
 
     /** Cast object depending on type to DECIMAL. */

@@ -24,6 +24,7 @@ import java.util.EnumSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.UUID;
 import org.apache.calcite.plan.RelOptTable;
 import org.apache.calcite.prepare.CalciteCatalogReader;
 import org.apache.calcite.prepare.Prepare;
@@ -55,6 +56,7 @@ import org.apache.calcite.sql.type.SqlOperandTypeChecker;
 import org.apache.calcite.sql.type.SqlOperandTypeInference;
 import org.apache.calcite.sql.type.SqlTypeFamily;
 import org.apache.calcite.sql.type.SqlTypeName;
+import org.apache.calcite.sql.type.SqlTypeUtil;
 import org.apache.calcite.sql.validate.SelectScope;
 import org.apache.calcite.sql.validate.SqlQualified;
 import org.apache.calcite.sql.validate.SqlValidator;
@@ -283,6 +285,47 @@ public class IgniteSqlValidator extends SqlValidatorImpl {
         }
 
         super.validateCall(call, scope);
+    }
+
+    /** {@inheritDoc} */
+    @Override public RelDataType deriveType(SqlValidatorScope scope, SqlNode expr) {
+        RelDataType dataType = super.deriveType(scope, expr);
+
+        // Dynamic params
+        if (dataType.equals(unknownType) && expr instanceof SqlDynamicParam) {
+            // If type of dynamic parameter has not been inferred, use a type of its value.
+            RelDataType paramType = dynamicParameterType((SqlDynamicParam) expr);
+
+            // If paramType is unknown setValidatedNodeType is a no-op.
+            setValidatedNodeType(expr, paramType);
+
+            return paramType;
+        }
+
+        return dataType;
+    }
+
+    /** @return A type of the given dynamic parameter. */
+    private RelDataType dynamicParameterType(SqlDynamicParam dynamicParam) {
+        IgniteTypeFactory typeFactory = (IgniteTypeFactory)getTypeFactory();
+
+        Object val = parameters[dynamicParam.getIndex()];
+
+        RelDataType paramType;
+
+        // IgniteCustomType: first we must check whether dynamic parameter is a custom data type.
+        // If so call createCustomType with appropriate arguments.
+        if (val instanceof UUID)
+            paramType = typeFactory.createCustomType(UUID.class);
+        else if (val == null)
+            paramType = typeFactory.createSqlType(SqlTypeName.NULL);
+        else
+            paramType = typeFactory.toSql(typeFactory.createType(val.getClass()));
+
+        // Dynamic parameters are always nullable.
+        // Otherwise, it seems to cause "Conversion to relational algebra failed to preserve datatypes" errors
+        // in some cases.
+        return typeFactory.createTypeWithNullability(paramType, true);
     }
 
     /** {@inheritDoc} */
@@ -524,13 +567,9 @@ public class IgniteSqlValidator extends SqlValidatorImpl {
 
     /** {@inheritDoc} */
     @Override protected void inferUnknownTypes(RelDataType inferredType, SqlValidatorScope scope, SqlNode node) {
-        if (node instanceof SqlDynamicParam && inferredType.equals(unknownType)) {
-            if (parameters.length > ((SqlDynamicParam)node).getIndex()) {
-                Object param = parameters[((SqlDynamicParam)node).getIndex()];
-
-                setValidatedNodeType(node, (param == null) ? typeFactory().createSqlType(SqlTypeName.NULL) :
-                    typeFactory().toSql(typeFactory().createType(param.getClass())));
-            }
+        if (node instanceof SqlDynamicParam) {
+            if (parameters.length > ((SqlDynamicParam)node).getIndex())
+                setValidatedNodeType(node, inferDynamicParamType(inferredType, (SqlDynamicParam) node));
             else
                 setValidatedNodeType(node, typeFactory().createCustomType(Object.class));
         }
@@ -576,6 +615,35 @@ public class IgniteSqlValidator extends SqlValidatorImpl {
         }
         else
             super.inferUnknownTypes(inferredType, scope, node);
+    }
+
+    /** */
+    private RelDataType inferDynamicParamType(RelDataType inferredType, SqlDynamicParam dynamicParam) {
+        RelDataType type = dynamicParameterType(dynamicParam);
+
+        RelDataType paramTypeToUse;
+
+        /*
+         * If inferredType is unknown - use a type of dynamic parameter since there is no other source of type information.
+         *
+         * If parameter's type and the inferredType do not match - use parameter's type.
+         * This makes CAST operations to work correctly. Otherwise, cast's operand is going to have
+         * the same type as a target type which is not correct as it
+         * makes every CAST operation eligible to redundant type conversion elimination
+         * at later stages:
+         * E.g: CAST(? AS INTEGER) where ?='hello' operand is going to be inferred as INTEGER
+         * although it is a string.
+         *
+         * In other cases use the inferredType and we rely on type inference rules provided by
+         * operator's SqlOperandTypeInference and SqlOperandTypeCheckers.
+         */
+
+        if (inferredType.equals(unknownType) || (!SqlTypeUtil.equalSansNullability(type, inferredType)))
+            paramTypeToUse = type;
+        else
+            paramTypeToUse = inferredType;
+
+        return typeFactory.createTypeWithNullability(paramTypeToUse, true);
     }
 
     /** {@inheritDoc} */
