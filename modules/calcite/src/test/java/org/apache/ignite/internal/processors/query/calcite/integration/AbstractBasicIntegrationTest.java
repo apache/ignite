@@ -145,10 +145,7 @@ public class AbstractBasicIntegrationTest extends GridCommonAbstractTest {
         };
     }
 
-    /**
-     * @deprecated Use {@link #sql(String, Object...)} instead.
-     */
-    @Deprecated
+    /** */
     protected List<List<?>> executeSql(String sql, Object... args) {
         return executeSql(client, sql, args);
     }
