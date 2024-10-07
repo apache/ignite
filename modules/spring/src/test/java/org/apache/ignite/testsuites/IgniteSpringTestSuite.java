@@ -88,7 +88,7 @@ import org.junit.runners.Suite;
     // CDC tests.
     CdcConfigurationTest.class,
 
-    SqlPlanHistoryConfigTest.class
+    SqlPlanHistoryConfigTest.class,
 })
 public class IgniteSpringTestSuite {
 }

@@ -140,7 +140,6 @@ import org.junit.runners.Suite;
     DdlTransactionCalciteSelfTest.class,
     MultiLineQueryTest.class,
     ViewsIntegrationTest.class,
-    SqlPlanHistoryConfigIntegrationTest.class,
     SqlPlanHistoryIntegrationTest.class,
 })
 public class IntegrationTestSuite {

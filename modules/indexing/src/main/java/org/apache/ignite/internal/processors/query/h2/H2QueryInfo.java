@@ -122,11 +122,6 @@ public class H2QueryInfo implements TrackableQuery {
     }
 
     /** */
-    public long beginTs() {
-        return beginTs;
-    }
-
-    /** */
     public long extWait() {
         return extWait;
     }

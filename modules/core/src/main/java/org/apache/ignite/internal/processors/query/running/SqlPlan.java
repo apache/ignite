@@ -19,7 +19,6 @@ package org.apache.ignite.internal.processors.query.running;
 
 import java.util.Objects;
 import org.apache.ignite.internal.util.typedef.F;
-import org.apache.ignite.internal.util.typedef.internal.U;
 
 /** Representation of an entry in SQL plan history. */
 public class SqlPlan {
