@@ -24,15 +24,20 @@ import java.util.Objects;
 import java.util.UUID;
 import java.util.stream.Collectors;
 import com.google.common.collect.ImmutableSet;
+import org.apache.calcite.rel.type.RelDataType;
 import org.apache.calcite.runtime.CalciteException;
 import org.apache.calcite.sql.type.SqlTypeName;
+import org.apache.calcite.sql.type.SqlTypeUtil;
 import org.apache.calcite.tools.FrameworkConfig;
 import org.apache.calcite.tools.Frameworks;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.cache.QueryEntity;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.internal.processors.query.IgniteSQLException;
+import org.apache.ignite.internal.processors.query.calcite.exec.exp.IgniteSqlFunctions;
 import org.apache.ignite.internal.processors.query.calcite.hint.HintDefinition;
+import org.apache.ignite.internal.processors.query.calcite.type.IgniteTypeFactory;
+import org.apache.ignite.internal.processors.query.calcite.util.Commons;
 import org.apache.ignite.internal.util.typedef.F;
 import org.junit.Test;
 
@@ -571,6 +576,221 @@ public class DataTypesTest extends AbstractBasicIntegrationTest {
             .returns((byte)6, (short)6, 6, 6L, BigDecimal.valueOf(6), 6f, 6d)
             .returns((byte)7, (short)7, 7, 7L, BigDecimal.valueOf(7), 7f, 7d)
             .check();
+    }
+
+    /** */
+    @Test
+    public void testCastsOfVarcharLiterals() {
+        doTestCastsOfVarcharLiterals(false);
+    }
+
+    /** */
+    @Test
+    public void testCastsOfVarcharLiteralsAsDynamicparameters() {
+        doTestCastsOfVarcharLiterals(true);
+    }
+
+    /** */
+    private void doTestCastsOfVarcharLiterals(boolean dynamics) {
+        for (List<Object> params : varcharCasts()) {
+            String val = params.get(0).toString();
+            RelDataType type = (RelDataType)params.get(1);
+            String result = params.get(2).toString();
+
+            if (dynamics)
+                assertQuery(String.format("SELECT CAST(? AS %s)", type)).withParams(val).returns(result).check();
+            else
+                assertQuery(String.format("SELECT CAST('%s' AS %s)", val, type)).returns(result).check();
+        }
+    }
+
+    /** */
+    private static List<List<Object>> varcharCasts() {
+        IgniteTypeFactory tf = Commons.typeFactory();
+
+        return Arrays.asList(
+            Arrays.asList("abcde", tf.createSqlType(SqlTypeName.VARCHAR, 3), "abc"),
+            Arrays.asList("abcde", tf.createSqlType(SqlTypeName.VARCHAR, 5), "abcde"),
+            Arrays.asList("abcde", tf.createSqlType(SqlTypeName.VARCHAR, 6), "abcde"),
+            Arrays.asList("abcde", tf.createSqlType(SqlTypeName.VARCHAR), "abcde"),
+            Arrays.asList("abcde", tf.createSqlType(SqlTypeName.CHAR), "a"),
+            Arrays.asList("abcde", tf.createSqlType(SqlTypeName.CHAR, 3), "abc")
+        );
+    }
+
+    /** */
+    @Test
+    public void testCastsOfNumericLiterals() {
+        doTestCastsOfNumericLiterals(false, false);
+    }
+
+    /** */
+    @Test
+    public void testCastsOfNumericLiteralsAsNumerics() {
+        doTestCastsOfNumericLiterals(false, true);
+    }
+
+    /** */
+    @Test
+    public void testCastsOfNumericLiteralsAsDynamicParameters() {
+        doTestCastsOfNumericLiterals(true, false);
+    }
+
+    /** */
+    private void doTestCastsOfNumericLiterals(boolean dynamic, boolean numeric) {
+        assert !dynamic || !numeric;
+
+        for (List<Object> params : decimalCastsTestParams()) {
+            assert params.size() == 4 : "Wrong params lenght: " + params.size();
+
+            RelDataType inputType = (RelDataType)params.get(0);
+            Object input = params.get(1);
+            RelDataType targetType = (RelDataType)params.get(2);
+            Object result = params.get(3);
+
+            log.info("Params: inputType=" + inputType + ", inputValue=" + input + ", targetType=" + targetType
+                + ", expectedResult=" + result);
+
+            if (dynamic) {
+                String qry = String.format("SELECT CAST(? AS %s)", targetType);
+
+                if (result instanceof Exception)
+                    assertThrows(qry, (Class<? extends Exception>)result.getClass(), ((Throwable)result).getMessage(), input);
+                else
+                    assertQuery(qry).withParams(inputType).returns(result);
+            }
+            else {
+                String qry = numeric
+                    ? String.format("SELECT CAST(%s::%s AS %s)", asLiteral(input, inputType), inputType, targetType)
+                    : String.format("SELECT CAST(%s AS %s)", asLiteral(input, inputType), targetType);
+
+                if (result instanceof Exception)
+                    assertThrows(qry, (Class<? extends Exception>)result.getClass(), ((Throwable)result).getMessage());
+                else
+                    assertQuery(qry).returns(result);
+            }
+        }
+    }
+
+    /** */
+    private static String asLiteral(Object val, RelDataType type) {
+        return SqlTypeUtil.isCharacter(type) ? String.format("'%s'", val) : String.valueOf(val);
+    }
+
+    /** */
+    private static List<List<Object>> decimalCastsTestParams() {
+        IgniteTypeFactory tf = Commons.typeFactory();
+
+        RelDataType varcharType = tf.createSqlType(SqlTypeName.VARCHAR);
+        RelDataType tinyIntType = tf.createSqlType(SqlTypeName.TINYINT);
+        RelDataType smallIntType = tf.createSqlType(SqlTypeName.SMALLINT);
+        RelDataType integerType = tf.createSqlType(SqlTypeName.INTEGER);
+        RelDataType bigintType = tf.createSqlType(SqlTypeName.BIGINT);
+        RelDataType realType = tf.createSqlType(SqlTypeName.REAL);
+        RelDataType doubleType = tf.createSqlType(SqlTypeName.DOUBLE);
+        RelDataType decimal4Type = decimalType(4);
+
+        Exception overflowErr = new IllegalArgumentException(IgniteSqlFunctions.NUMERIC_FIELD_OVERFLOW_ERROR);
+        Exception numFormatErr = new NumberFormatException("is neither a decimal digit number");
+
+        return Arrays.asList(
+            // String
+            Arrays.asList(varcharType, "100", decimalType(3), new BigDecimal("100")),
+            Arrays.asList(varcharType, "100", decimalType(3, 0), new BigDecimal("100")),
+            Arrays.asList(varcharType, "100", decimalType(4, 1), new BigDecimal("100.0")),
+            Arrays.asList(varcharType, "100.12", decimalType(5, 1), new BigDecimal("100.1")),
+            Arrays.asList(varcharType, "lame", decimalType(5, 1), numFormatErr),
+            Arrays.asList(varcharType, "12345", decimalType(5, 1), overflowErr),
+            Arrays.asList(varcharType, "1234", decimalType(5, 1), new BigDecimal("1234.0")),
+            Arrays.asList(varcharType, "100.12", decimalType(1, 0), overflowErr),
+            Arrays.asList(varcharType, "100", decimalType(2, 0), overflowErr),
+
+            // Numeric
+            Arrays.asList(decimal4Type, "100", decimalType(3), new BigDecimal("100")),
+            Arrays.asList(decimal4Type, "100", decimalType(3, 0), new BigDecimal("100")),
+            Arrays.asList(decimal4Type, "100.12", decimalType(5, 1), new BigDecimal("100.1")),
+            Arrays.asList(decimal4Type, "100.12", decimalType(5, 0), new BigDecimal("100")),
+            Arrays.asList(decimal4Type, "100", decimalType(2, 0), overflowErr),
+            Arrays.asList(decimal4Type, "100.12", decimalType(5, 2), new BigDecimal("100.12")),
+
+            // Tinyint
+            Arrays.asList(tinyIntType, (byte)100, decimalType(3), new BigDecimal("100")),
+            Arrays.asList(tinyIntType, (byte)100, decimalType(3, 0), new BigDecimal("100")),
+            Arrays.asList(tinyIntType, (byte)100, decimalType(4, 1), new BigDecimal("100.0")),
+            Arrays.asList(tinyIntType, (byte)100, decimalType(2, 0), overflowErr),
+
+            // Smallint
+            Arrays.asList(smallIntType, (short)100, decimalType(3), new BigDecimal("100")),
+            Arrays.asList(smallIntType, (short)100, decimalType(3, 0), new BigDecimal("100")),
+            Arrays.asList(smallIntType, (short)100, decimalType(4, 1), new BigDecimal("100.0")),
+            Arrays.asList(smallIntType, (short)100, decimalType(2, 0), overflowErr),
+
+            // Integer
+            Arrays.asList(integerType, 100, decimalType(3), new BigDecimal("100")),
+            Arrays.asList(integerType, 100, decimalType(3, 0), new BigDecimal("100")),
+            Arrays.asList(integerType, 100, decimalType(4, 1), new BigDecimal("100.0")),
+            Arrays.asList(integerType, 100, decimalType(2, 0), overflowErr),
+
+            // Bigint
+            Arrays.asList(bigintType, 100L, decimalType(3), new BigDecimal("100")),
+            Arrays.asList(bigintType, 100L, decimalType(3, 0), new BigDecimal("100")),
+            Arrays.asList(bigintType, 100L, decimalType(4, 1), new BigDecimal("100.0")),
+            Arrays.asList(bigintType, 100L, decimalType(2, 0), overflowErr),
+
+            // Real
+            Arrays.asList(realType, 100.0f, decimalType(3), new BigDecimal("100")),
+            Arrays.asList(realType, 100.0f, decimalType(3, 0), new BigDecimal("100")),
+            Arrays.asList(realType, 100.0f, decimalType(4, 1), new BigDecimal("100.0")),
+            Arrays.asList(realType, 100.0f, decimalType(2, 0), overflowErr),
+            Arrays.asList(realType, 0.1f, decimalType(1, 1), new BigDecimal("0.1")),
+            Arrays.asList(realType, 0.1f, decimalType(2, 2), new BigDecimal("0.10")),
+            Arrays.asList(realType, 10.12f, decimalType(2, 1), overflowErr),
+            Arrays.asList(realType, 0.12f, decimalType(1, 2), overflowErr),
+
+            // Double
+            Arrays.asList(doubleType, 100.0d, decimalType(3), new BigDecimal("100")),
+            Arrays.asList(doubleType, 100.0d, decimalType(3, 0), new BigDecimal("100")),
+            Arrays.asList(doubleType, 100.0d, decimalType(4, 1), new BigDecimal("100.0")),
+            Arrays.asList(doubleType, 100.0d, decimalType(2, 0), overflowErr),
+            Arrays.asList(doubleType, 0.1d, decimalType(1, 1), new BigDecimal("0.1")),
+            Arrays.asList(doubleType, 0.1d, decimalType(2, 2), new BigDecimal("0.10")),
+            Arrays.asList(doubleType, 10.12d, decimalType(2, 1), overflowErr),
+            Arrays.asList(doubleType, 0.12d, decimalType(1, 2), overflowErr),
+
+            // Decimal
+            Arrays.asList(decimalType(1, 1), new BigDecimal("0.1"), decimalType(1, 1), new BigDecimal("0.1")),
+            Arrays.asList(decimalType(3), new BigDecimal("100"), decimalType(3), new BigDecimal("100")),
+            Arrays.asList(decimalType(3), new BigDecimal("100"), decimalType(3, 0), new BigDecimal("100")),
+            Arrays.asList(decimalType(3), new BigDecimal("100"), decimalType(4, 1), new BigDecimal("100.0")),
+            Arrays.asList(decimalType(3), new BigDecimal("100"), decimalType(2, 0), overflowErr),
+            Arrays.asList(decimalType(1, 1), new BigDecimal("0.1"), decimalType(2, 2), new BigDecimal("0.10")),
+            Arrays.asList(decimalType(4, 2), new BigDecimal("10.12"), decimalType(2, 1), overflowErr),
+            Arrays.asList(decimalType(2, 2), new BigDecimal("0.12"), decimalType(1, 2), overflowErr),
+            Arrays.asList(decimalType(1, 1), new BigDecimal("0.1"), decimalType(1, 1), new BigDecimal("0.1"))
+        );
+    }
+
+    /** */
+    private static RelDataType decimalType(int precision, int scale) {
+        return Commons.typeFactory().createSqlType(SqlTypeName.DECIMAL, precision, scale);
+    }
+
+    /** */
+    private static RelDataType decimalType(int precision) {
+        return Commons.typeFactory().createSqlType(SqlTypeName.DECIMAL, precision, RelDataType.SCALE_NOT_SPECIFIED);
+    }
+
+    /** */
+    @Test
+    public void testCastNumLiterals() throws Exception {
+        // Cast or validation error expected. Returns: 100L.
+//        assertThrows("SELECT CAST('100.1' AS BIGINT)", Exception.class, "cannot cast");
+
+        // An overflow error expected. Returns: Infinity.
+        assertThrows("SELECT CAST(1e39 AS REAL)", Exception.class, "Overflow");
+//
+//        // An overflow error expected. Returns: Infinity.
+//        assertThrows("SELECT CAST(1e39 AS FLOAT)", Exception.class, "Overflow");
     }
 
     /** */
