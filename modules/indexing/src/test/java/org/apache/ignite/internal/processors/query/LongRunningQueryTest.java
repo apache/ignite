@@ -34,6 +34,7 @@ import org.apache.ignite.cache.query.annotations.QuerySqlFunction;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.SqlConfiguration;
+import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.processors.cache.index.AbstractIndexingCommonTest;
 import org.apache.ignite.internal.processors.query.h2.H2QueryInfo;
 import org.apache.ignite.internal.processors.query.h2.IgniteH2Indexing;
@@ -63,25 +64,28 @@ public class LongRunningQueryTest extends AbstractIndexingCommonTest {
     private static final int EXT_WAIT_TIME = 2000;
 
     /** Insert. */
-    private static final String INSERT_SQL = "insert into test (_key, _val) values (1001, sleep_func(?))";
+    private static final String INSERT_SQL = "insert into test (_key, _val) values (1001, wait_func())";
 
     /** Insert with a subquery. */
     private static final String INSERT_WITH_SUBQUERY_SQL = "insert into test (_key, _val) select p._key, p.orgId from " +
-        "\"pers\".Person p where p._key < sleep_func(?)";
+        "\"pers\".Person p where p._key < wait_func()";
 
     /** Update. */
-    private static final String UPDATE_SQL = "update test set _val = sleep_func(?) where _key = 1";
+    private static final String UPDATE_SQL = "update test set _val = wait_func() where _key = 1";
 
     /** Update with a subquery. */
     private static final String UPDATE_WITH_SUBQUERY_SQL = "update test set _val = 111 where _key in " +
-        "(select p._key from \"pers\".Person p where p._key < sleep_func(?))";
+        "(select p._key from \"pers\".Person p where p._key < wait_func())";
 
     /** Delete. */
-    private static final String DELETE_SQL = "delete from test where _key = sleep_func(?)";
+    private static final String DELETE_SQL = "delete from test where _key = wait_func()";
 
     /** Delete with a subquery. */
     private static final String DELETE_WITH_SUBQUERY_SQL = "delete from test where _key in " +
-        "(select p._key from \"pers\".Person p where p._key < sleep_func(?))";
+        "(select p._key from \"pers\".Person p where p._key < wait_func())";
+
+    /** Log listener for long DMLs. */
+    private static LogListener lsnrDml;
 
     /** Page size. */
     private int pageSize = DEFAULT_PAGE_SIZE;
@@ -132,6 +136,13 @@ public class LongRunningQueryTest extends AbstractIndexingCommonTest {
         IgniteCache c2 = grid().createCache(cacheConfig("pers", Integer.class, Person.class));
 
         c2.put(1001, new Person(1, "p1"));
+
+        lsnrDml = LogListener
+            .matches(LONG_QUERY_EXEC_MSG)
+            .andMatches(s -> s.contains("type=DML"))
+            .build();
+
+        testLog().registerListener(lsnrDml);
     }
 
     /** {@inheritDoc} */
@@ -563,20 +574,13 @@ public class LongRunningQueryTest extends AbstractIndexingCommonTest {
     public void runDml(String dml) {
         lazy = false;
 
-        LogListener lsnr = LogListener
-            .matches(LONG_QUERY_EXEC_MSG)
-            .andMatches(s -> s.contains("type=DML"))
-            .build();
-
-        testLog().registerListener(lsnr);
-
         long start = U.currentTimeMillis();
 
-        sql("test", dml, LONG_QUERY_WARNING_TIMEOUT * 2);
+        sql("test", dml);
 
         assertTrue((U.currentTimeMillis() - start) > LONG_QUERY_WARNING_TIMEOUT);
 
-        assertTrue(lsnr.check());
+        assertTrue(lsnrDml.check());
     }
 
     /**
@@ -597,6 +601,20 @@ public class LongRunningQueryTest extends AbstractIndexingCommonTest {
                 // No-op
             }
             return v;
+        }
+
+        /** */
+        @SuppressWarnings("unused")
+        @QuerySqlFunction
+        public static int wait_func() {
+            try {
+                GridTestUtils.waitForCondition(() -> lsnrDml.check(), 10_000);
+            }
+            catch (IgniteInterruptedCheckedException ignored) {
+                // No-op
+            }
+
+            return 1;
         }
     }
 
