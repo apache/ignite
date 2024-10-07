@@ -66,12 +66,12 @@ import org.apache.ignite.lang.IgniteAsyncCallback;
  * ContinuousQuery&lt;Long, Person&gt; qry = new ContinuousQuery&lt;&gt;();
  *
  * // Initial iteration query will return all people with salary above 1000.
- * qry.setInitialQuery(new ScanQuery&lt;&gt;((id, p) -> p.getSalary() &gt; 1000));
+ * qry.setInitialQuery(new ScanQuery&lt;&gt;((id, p) -&gt; p.getSalary() &gt; 1000));
  *
  *
  * // Callback that is called locally when update notifications are received.
  * // It simply prints out information about all created or modified records.
- * qry.setLocalListener((evts) -> {
+ * qry.setLocalListener((evts) -&gt; {
  *     for (CacheEntryEvent&lt;? extends Long, ? extends Person&gt; e : evts) {
  *         Person p = e.getValue();
  *
@@ -80,7 +80,7 @@ import org.apache.ignite.lang.IgniteAsyncCallback;
  * });
  *
  * // The continuous listener will be notified for people with salary above 1000.
- * qry.setRemoteFilter(evt -> evt.getValue().getSalary() &gt; 1000);
+ * qry.setRemoteFilter(evt -&gt; evt.getValue().getSalary() &gt; 1000);
  *
  * // Execute the query and get a cursor that iterates through the initial data.
  * QueryCursor&lt;Cache.Entry&lt;Long, Person&gt;&gt; cur = cache.query(qry);

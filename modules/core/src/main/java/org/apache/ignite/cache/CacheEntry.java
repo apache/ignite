@@ -44,11 +44,11 @@ import org.apache.ignite.IgniteCache;
  *
  * <h2 class="header">Java Example</h2>
  * <pre name="code" class="java">
- * IgniteCache<Integer, String> cache = grid(0).cache(null);
+ * IgniteCache&lt;Integer, String&gt; cache = grid(0).cache(null);
  *
- * CacheEntry<String, Integer> entry1 = cache.invoke(100,
- *     new EntryProcessor<Integer, String, CacheEntry<String, Integer>>() {
- *          public CacheEntry<String, Integer> process(MutableEntry<Integer, String> entry,
+ * CacheEntry&lt;String, Integer&gt; entry1 = cache.invoke(100,
+ *     new EntryProcessor&lt;Integer, String, CacheEntry&lt;String, Integer&gt;&gt;() {
+ *          public CacheEntry&lt;String, Integer&gt; process(MutableEntry&lt;Integer, String&gt; entry,
  *              Object... arguments) throws EntryProcessorException {
  *                  return entry.unwrap(CacheEntry.class);
  *          }
@@ -56,16 +56,16 @@ import org.apache.ignite.IgniteCache;
  *
  * // Cache entry for the given key may be updated at some point later.
  *
- * CacheEntry<String, Integer> entry2 = cache.invoke(100,
- *     new EntryProcessor<Integer, String, CacheEntry<String, Integer>>() {
- *          public CacheEntry<String, Integer> process(MutableEntry<Integer, String> entry,
+ * CacheEntry&lt;String, Integer&gt; entry2 = cache.invoke(100,
+ *     new EntryProcessor&lt;Integer, String, CacheEntry&lt;String, Integer&gt;&gt;() {
+ *          public CacheEntry&lt;String, Integer&gt; process(MutableEntry&lt;Integer, String&gt; entry,
  *              Object... arguments) throws EntryProcessorException {
  *                  return entry.unwrap(CacheEntry.class);
  *          }
  *     });
  *
  * // Comparing entries' versions.
- * if (entry1.version().compareTo(entry2.version()) < 0) {
+ * if (entry1.version().compareTo(entry2.version()) &lt; 0) {
  *     // the entry has been updated
  * }
  * </pre>

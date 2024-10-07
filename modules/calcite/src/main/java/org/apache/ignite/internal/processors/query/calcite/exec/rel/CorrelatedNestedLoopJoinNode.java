@@ -127,7 +127,7 @@ public class CorrelatedNestedLoopJoinNode<Row> extends AbstractNode<Row> {
     /** {@inheritDoc} */
     @Override public void request(int rowsCnt) throws Exception {
         assert !F.isEmpty(sources()) && sources().size() == 2;
-        assert rowsCnt > 0 && requested == 0;
+        assert rowsCnt > 0 && requested == 0 : "rowsCnt=" + rowsCnt + ", requested=" + requested;
 
         checkState();
 
@@ -430,14 +430,21 @@ public class CorrelatedNestedLoopJoinNode<Row> extends AbstractNode<Row> {
 
                 int notMatchedIdx = leftMatched.nextClearBit(0);
 
-                while (requested > 0 && notMatchedIdx < leftInBuf.size()) {
-                    downstream().push(handler.concat(leftInBuf.get(notMatchedIdx), rightEmptyRow));
+                state = State.IN_LOOP;
 
-                    requested--;
+                try {
+                    while (requested > 0 && notMatchedIdx < leftInBuf.size()) {
+                        requested--;
 
-                    leftMatched.set(notMatchedIdx);
+                        downstream().push(handler.concat(leftInBuf.get(notMatchedIdx), rightEmptyRow));
 
-                    notMatchedIdx = leftMatched.nextClearBit(notMatchedIdx + 1);
+                        leftMatched.set(notMatchedIdx);
+
+                        notMatchedIdx = leftMatched.nextClearBit(notMatchedIdx + 1);
+                    }
+                }
+                finally {
+                    state = State.IDLE;
                 }
 
                 if (requested == 0 && notMatchedIdx < leftInBuf.size())

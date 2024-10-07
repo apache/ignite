@@ -34,7 +34,7 @@ import org.apache.ignite.lang.IgniteExperimental;
  * <p>
  * Usage example:
  * <pre name="code" class="java">
- * ServiceCallInterceptor security = (mtd, args, ctx, svcCall) -> {
+ * ServiceCallInterceptor security = (mtd, args, ctx, svcCall) -&gt; {
  *     if (!CustomSecurityProvider.get().access(mtd, ctx.currentCallContext().attribute("sessionId")))
  *         throw new SecurityException("Method invocation is not permitted");
  *
@@ -42,7 +42,7 @@ import org.apache.ignite.lang.IgniteExperimental;
  *     return svcCall.call();
  * };
  *
- * ServiceCallInterceptor audit = (mtd, args, ctx, svcCall) -> {
+ * ServiceCallInterceptor audit = (mtd, args, ctx, svcCall) -&gt; {
  *     String sessionId = ctx.currentCallContext().attribute("sessionId");
  *     AuditProvider prov = AuditProvider.get();
  *
