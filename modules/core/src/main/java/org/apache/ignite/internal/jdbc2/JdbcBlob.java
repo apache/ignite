@@ -41,6 +41,9 @@ public class JdbcBlob implements Blob, AutoCloseable {
     /**
      * Create empty Blob.
      *
+     * <p>It's supposed to be called when client application creates Blob calling the
+     * {@link java.sql.Connection#createBlob}.
+     *
      * <p>Once any write operation would increase the size of underlying data above the
      * maximum value passed as {@code maxMemoryBufferBytes} data will be saved to temp file.
      * And all subsequent operations will work with data stored in temp file.
@@ -52,21 +55,29 @@ public class JdbcBlob implements Blob, AutoCloseable {
     }
 
     /**
-     * Create Blob which wraps the existing byte array.
+     * Create Blob which wraps the existing data.
      *
-     * <p>Start working in in-memory mode even if the passed {@code arr} array is larger than limit
+     * <p>It's supposed to be called to create Blob for query result in the {@link java.sql.ResultSet}.
+     *
+     * <p>Starts working in in-memory mode even if the passed {@code buf} data is larger than limit
      * specifed via the {@code maxMemoryBufferBytes}. It's done so since memory is already allocated
      * and there is no need to save it.
+     *
+     * <p>It also can start in the read-only mode if the input {@code buf} wraps external byte array.
+     * It lazyly switched to read-write mode (creating a copy of the data) once any write
+     * operation invoked. This allows to prevent the unnecessary data copying.
      *
      * <p>Once any write operation would increase the size of underlying data above the
      * maximum value passed as {@code maxMemoryBufferBytes} data will be saved to temp file.
      * And all subsequent operations will work with data stored in temp file.
      *
      * @param maxMemoryBufferBytes Max in-memory buffer size.
-     * @param arr Byte array.
+     * @param buf Existing buffer with data.
      */
-    public JdbcBlob(long maxMemoryBufferBytes, byte[] arr) {
-        data = new JdbcBlobBuffer(maxMemoryBufferBytes, arr);
+    public JdbcBlob(long maxMemoryBufferBytes, JdbcBlobBuffer buf) {
+        buf.setMaxMemoryBufferBytes(maxMemoryBufferBytes);
+
+        data = buf;
     }
 
     /**
@@ -82,7 +93,7 @@ public class JdbcBlob implements Blob, AutoCloseable {
      * @param arr Byte array.
      */
     public JdbcBlob(byte[] arr) {
-        this(Long.MAX_VALUE, arr);
+        this(Long.MAX_VALUE, new JdbcBlobBuffer(Long.MAX_VALUE, arr));
     }
 
     /** {@inheritDoc} */

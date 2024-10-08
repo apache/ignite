@@ -235,7 +235,12 @@ class JdbcBlobMemoryStorage implements JdbcBlobStorage {
      * @param pos Position pointer.
      */
     private int getBufPos(JdbcBlobBufferPointer pos) {
-        return ((InMemContext)pos.getContext()).inBufPos;
+        InMemContext ctx = (InMemContext)pos.getContext();
+
+        if (ctx == null)
+            ctx = recoverContext(pos);
+
+        return ctx.inBufPos;
     }
 
     /**
@@ -244,7 +249,32 @@ class JdbcBlobMemoryStorage implements JdbcBlobStorage {
      * @param pos Position pointer.
      */
     private int getBufIdx(JdbcBlobBufferPointer pos) {
-        return ((InMemContext)pos.getContext()).idx;
+        InMemContext ctx = (InMemContext)pos.getContext();
+
+        if (ctx == null)
+            ctx = recoverContext(pos);
+
+        return ctx.idx;
+    }
+
+    /**
+     * Adds context to the {@code pointer}.
+     *
+     * <p>Calculates the current position in the current buffer taking into account
+     * the current position stored in pointer.
+     *
+     * @param pointer Pointer.
+     * @return InMemContext instance.
+     */
+    private InMemContext recoverContext(JdbcBlobBufferPointer pointer) {
+        long pos = pointer.getPos();
+
+        pointer.setContext(new InMemContext(0, 0));
+        pointer.setPos(0);
+
+        advance(pointer, pos);
+
+        return (InMemContext)pointer.getContext();
     }
 
     /**

@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.jdbc.thin;
 
 import java.io.ByteArrayInputStream;
+import java.io.IOException;
 import java.io.InputStream;
 import java.io.Reader;
 import java.math.BigDecimal;
@@ -49,6 +50,7 @@ import java.util.List;
 import java.util.Map;
 import org.apache.ignite.internal.jdbc2.JdbcBlob;
 import org.apache.ignite.internal.jdbc2.JdbcClob;
+import org.apache.ignite.internal.jdbc2.lob.JdbcBlobBuffer;
 import org.apache.ignite.internal.processors.odbc.SqlStateCode;
 import org.apache.ignite.internal.processors.odbc.jdbc.JdbcColumnMeta;
 import org.apache.ignite.internal.processors.odbc.jdbc.JdbcQueryCloseRequest;
@@ -473,6 +475,14 @@ public class JdbcThinResultSet implements ResultSet {
 
         if (cls == byte[].class)
             return (byte[])val;
+        else if (cls == JdbcBlobBuffer.class) {
+            try {
+                return ((JdbcBlobBuffer)val).getData();
+            }
+            catch (IOException e) {
+                throw new SQLException(e);
+            }
+        }
         else if (cls == Byte.class)
             return new byte[] {(byte)val};
         else if (cls == Short.class) {
@@ -588,9 +598,18 @@ public class JdbcThinResultSet implements ResultSet {
 
     /** {@inheritDoc} */
     @Override public InputStream getBinaryStream(int colIdx) throws SQLException {
-        byte[] bytes = getBytes(colIdx);
+        Object val = getValue(colIdx);
 
-        return bytes != null ? new ByteArrayInputStream(bytes) : null;
+        if (val == null)
+            return null;
+
+        if (val instanceof JdbcBlobBuffer)
+            return ((JdbcBlobBuffer)val).getInputStream();
+        else {
+            byte[] bytes = getBytes(colIdx);
+
+            return new ByteArrayInputStream(bytes);
+        }
     }
 
     /** {@inheritDoc} */
@@ -700,9 +719,9 @@ public class JdbcThinResultSet implements ResultSet {
 
     /** {@inheritDoc} */
     @Override public InputStream getBinaryStream(String colLb) throws SQLException {
-        byte[] bytes = getBytes(colLb);
+        int colIdx = findColumn(colLb);
 
-        return bytes != null ? new ByteArrayInputStream(getBytes(colLb)) : null;
+        return getBinaryStream(colIdx);
     }
 
     /** {@inheritDoc} */
@@ -1299,11 +1318,19 @@ public class JdbcThinResultSet implements ResultSet {
 
     /** {@inheritDoc} */
     @Override public Blob getBlob(int colIdx) throws SQLException {
-        byte[] bytes = getBytes(colIdx);
+        Object val = getValue(colIdx);
 
-        return bytes != null
-                ? new JdbcBlob(stmt.connection().connectionProperties().getMaxInMemoryLobSize(), bytes)
-                : null;
+        if (val == null)
+            return null;
+
+        if (val instanceof JdbcBlobBuffer) {
+            JdbcBlobBuffer buf = (JdbcBlobBuffer)val;
+
+            return new JdbcBlob(stmt.connection().connectionProperties().getMaxInMemoryLobSize(), buf);
+        }
+        else {
+            throw new SQLException("Cannot convert to Blob [colIdx=" + colIdx + "]");
+        }
     }
 
     /** {@inheritDoc} */
@@ -1334,11 +1361,9 @@ public class JdbcThinResultSet implements ResultSet {
 
     /** {@inheritDoc} */
     @Override public Blob getBlob(String colLb) throws SQLException {
-        byte[] bytes = getBytes(colLb);
+        int colIdx = findColumn(colLb);
 
-        return bytes != null
-                ? new JdbcBlob(stmt.connection().connectionProperties().getMaxInMemoryLobSize(), bytes)
-                : null;
+        return getBlob(colIdx);
     }
 
     /** {@inheritDoc} */

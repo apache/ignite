@@ -31,9 +31,13 @@ import java.io.OutputStream;
  * <p>Once switched to the file mode buffer doesn't return to the in-memory even if it's truncated
  * to size lower than limit.
  *
- * <p>If buffer initially wraps the existing byte array which exceeds the limit it still starts in
+ * <p>If buffer initially wraps the existing data which exceeds the limit it still starts in
  * the in-memory mode. And switches to the file mode only if any write operation increases the
  * buffer size even more.
+ *
+ * <p>Buffer can start working in read-only mode if created wrapping the existing byte array which
+ * can not be modified. Any write operation switches it lazyly to the read-write mode. This allows
+ * to prevent the unnecessary data copying.
  *
  * <p>Data is read via the InputStream API and modified via the OutputStream one. Changes done via
  * OutputStream are visible via the InputStream even if InputStream is created before changes done.
@@ -48,7 +52,7 @@ public class JdbcBlobBuffer {
     private JdbcBlobStorage storage;
 
     /** Maximum data size to be stored in-memory. */
-    private final long maxMemoryBufferBytes;
+    private long maxMemoryBufferBytes;
 
     /**
      * Create empty buffer.
@@ -62,7 +66,21 @@ public class JdbcBlobBuffer {
     }
 
     /**
-     * Create buffer wrapping the existing byte array.
+     * Create buffer which wraps the existing byte array and starts working in the read-only mode.
+     *
+     * @param maxMemoryBufferBytes Maximum data size to be stored in-memory.
+     * @param arr The byte array to be wrapped.
+     * @param off The offset to the first byte to be wrapped.
+     * @param len The length in bytes of the data to be wrapped.
+     */
+    public JdbcBlobBuffer(long maxMemoryBufferBytes, byte[] arr, int off, int len) {
+        storage = new JdbcBlobReadOnlyMemoryStorage(arr, off, len);
+
+        this.maxMemoryBufferBytes = maxMemoryBufferBytes;
+    }
+
+    /**
+     * Create buffer which wraps the existing byte array and starts working in the read-write mode.
      *
      * @param maxMemoryBufferBytes Maximum data size to be stored in-memory.
      * @param arr The byte array to be wrapped.
@@ -147,7 +165,12 @@ public class JdbcBlobBuffer {
             throw new IndexOutOfBoundsException("Length cannot be negative or greater than total count of bytes in buffer " +
                     "[len=" + len + ", totalCnt=" + totalCnt + "]");
 
-        storage.truncate(len);
+        try {
+            storage.truncate(len);
+        }
+        catch (UnsupportedOperationException e) {
+            switchToReadWriteMemoryStorage();
+        }
     }
 
     /**
@@ -155,6 +178,46 @@ public class JdbcBlobBuffer {
      */
     public void close() {
         storage.close();
+    }
+
+    /**
+     * Get copy of the buffer data.
+     *
+     * @return Byte array containing buffer data.
+     */
+    public byte[] getData() throws IOException {
+        byte[] bytes = new byte[Math.toIntExact(totalCnt())];
+
+        getInputStream().read(bytes);
+
+        return bytes;
+    }
+
+    /**
+     *
+     */
+    public void setMaxMemoryBufferBytes(long maxMemoryBufferBytes) {
+        this.maxMemoryBufferBytes = maxMemoryBufferBytes;
+    }
+
+    /**
+     * Switch buffer to RW in-memory mode.
+     *
+     * <p>Copies all data from the RO in-memory storage to the RW in-memory storage.
+     */
+    private void switchToReadWriteMemoryStorage() throws IOException {
+        if (!(storage instanceof JdbcBlobReadOnlyMemoryStorage))
+            return;
+
+        byte[] data = new byte[Math.toIntExact(storage.totalCnt())];
+
+        storage.read(storage.createPointer(), data, 0, data.length);
+
+        JdbcBlobStorage newStorage = new JdbcBlobMemoryStorage(data);
+
+        storage.close();
+
+        storage = newStorage;
     }
 
     /**
@@ -262,7 +325,17 @@ public class JdbcBlobBuffer {
 
         /** {@inheritDoc} */
         @Override public void write(int b) throws IOException {
-            storage.write(bufPos, b);
+            if (Math.max(bufPos.getPos() + 1, storage.totalCnt()) > maxMemoryBufferBytes)
+                switchToFileStorage();
+
+            try {
+                storage.write(bufPos, b);
+            }
+            catch (UnsupportedOperationException ignored) {
+                switchToReadWriteMemoryStorage();
+
+                storage.write(bufPos, b);
+            }
         }
 
         /** {@inheritDoc} */
@@ -270,7 +343,14 @@ public class JdbcBlobBuffer {
             if (Math.max(bufPos.getPos() + len, storage.totalCnt()) > maxMemoryBufferBytes)
                 switchToFileStorage();
 
-            storage.write(bufPos, bytes, off, len);
+            try {
+                storage.write(bufPos, bytes, off, len);
+            }
+            catch (UnsupportedOperationException ignored) {
+                switchToReadWriteMemoryStorage();
+
+                storage.write(bufPos, bytes, off, len);
+            }
         }
 
         /**
