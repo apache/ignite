@@ -16,8 +16,6 @@
 """
 This module contains client queries tests.
 """
-from venv import logger
-
 from ducktape.mark import parametrize, defaults
 
 from ignitetest.services.ignite import IgniteService
