@@ -83,7 +83,7 @@ public class IgniteSqlFunctions {
         return removeDefaultScale(precision, scale, toBigDecimal(BigDecimal.valueOf(val), precision, scale));
     }
 
-    /** // Removes redundant scale in case of default DECIMAL (without passed precision and scale). */
+    /** Removes redundant scale in case of default DECIMAL (without passed precision and scale). */
     private static BigDecimal removeDefaultScale(int precision, int scale, BigDecimal floating) {
         if (precision == DFLT_NUM_PRECISION && scale == 0 && floating.compareTo(floating.setScale(0, RoundingMode.CEILING)) == 0)
             return floating.setScale(0, RoundingMode.CEILING);
@@ -125,8 +125,7 @@ public class IgniteSqlFunctions {
     }
 
     /**
-     * Converts the given {@code Number} to a decimal with the given {@code precision} and {@code scale}
-     * according to SQL spec for CAST specification: General Rules, 8.
+     * Converts the given {@code val} to a decimal with the given {@code precision} and {@code scale}.
      */
     public static BigDecimal toBigDecimal(Number val, int precision, int scale) {
         assert precision > 0 : "Invalid precision: " + precision;
@@ -155,9 +154,9 @@ public class IgniteSqlFunctions {
         else if (value instanceof Double)
             dec = BigDecimal.valueOf(value.doubleValue());
         else if (value instanceof BigDecimal)
-            dec = (BigDecimal) value;
+            dec = (BigDecimal)value;
         else if (value instanceof BigInteger)
-            dec = new BigDecimal((BigInteger) value);
+            dec = new BigDecimal((BigInteger)value);
         else
             dec = new BigDecimal(value.longValue());
 

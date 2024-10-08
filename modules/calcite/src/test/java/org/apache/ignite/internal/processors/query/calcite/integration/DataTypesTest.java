@@ -602,19 +602,19 @@ public class DataTypesTest extends AbstractBasicIntegrationTest {
 
     /** */
     @Test
-    public void testCastsOfVarcharLiterals() {
-        doTestCastsOfVarcharLiterals(false);
+    public void testCastsOfVarcharsAsLiterals() {
+        doTestCastsOfVarchars(false);
     }
 
     /** */
     @Test
-    public void testCastsOfVarcharLiteralsAsDynamicParameters() {
-        doTestCastsOfVarcharLiterals(true);
+    public void testCastsOfVarcharsAsDynamicParameters() {
+        doTestCastsOfVarchars(true);
     }
 
     /** */
-    private void doTestCastsOfVarcharLiterals(boolean dynamics) {
-        for (List<Object> params : varcharCasts()) {
+    private void doTestCastsOfVarchars(boolean dynamics) {
+        for (List<Object> params : varcharsToCast()) {
             String val = params.get(0).toString();
             RelDataType type = (RelDataType)params.get(1);
             String result = params.get(2).toString();
@@ -627,7 +627,7 @@ public class DataTypesTest extends AbstractBasicIntegrationTest {
     }
 
     /** */
-    private static List<List<Object>> varcharCasts() {
+    private static List<List<Object>> varcharsToCast() {
         IgniteTypeFactory tf = Commons.typeFactory();
 
         return F.asList(
@@ -643,26 +643,26 @@ public class DataTypesTest extends AbstractBasicIntegrationTest {
     /** */
     @Test
     public void testCastsOfNumericLiterals() {
-        doTestCastsOfNumericLiterals(false, false);
+        doTestCastsOfNumeric(false, false);
     }
 
     /** */
     @Test
-    public void testCastsOfNumericLiteralsAsNumerics() {
-        doTestCastsOfNumericLiterals(false, true);
+    public void testCastsOfNumericAsDynamicParameters() {
+        doTestCastsOfNumeric(false, true);
     }
 
     /** */
     @Test
     public void testCastsOfNumericLiteralsAsDynamicParameters() {
-        doTestCastsOfNumericLiterals(true, false);
+        doTestCastsOfNumeric(true, false);
     }
 
     /** */
-    private void doTestCastsOfNumericLiterals(boolean dynamic, boolean numeric) {
+    private void doTestCastsOfNumeric(boolean dynamic, boolean numeric) {
         assert !dynamic || !numeric;
 
-        for (List<Object> params : decimalCastsTestParams()) {
+        for (List<Object> params : numericsToCast()) {
             assert params.size() == 4 : "Wrong params lenght: " + params.size();
 
             RelDataType inputType = (RelDataType)params.get(0);
@@ -700,7 +700,7 @@ public class DataTypesTest extends AbstractBasicIntegrationTest {
     }
 
     /** */
-    private static List<List<Object>> decimalCastsTestParams() {
+    private static List<List<Object>> numericsToCast() {
         IgniteTypeFactory tf = Commons.typeFactory();
 
         RelDataType varcharType = tf.createSqlType(SqlTypeName.VARCHAR);
