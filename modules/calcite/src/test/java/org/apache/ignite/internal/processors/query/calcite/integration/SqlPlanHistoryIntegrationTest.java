@@ -471,7 +471,7 @@ public class SqlPlanHistoryIntegrationTest extends GridCommonAbstractTest {
 
             timeStamps[i] = getSqlPlanHistory(queryNode()).values().stream().findFirst().get();
 
-            U.sleep(10);
+            U.sleep(1000);
         }
 
         assertTrue(timeStamps[1] > timeStamps[0]);
