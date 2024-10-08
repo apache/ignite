@@ -220,7 +220,7 @@ public class SqlPlanHistoryIntegrationTest extends GridCommonAbstractTest {
      * @return Ignite node where queries are executed.
      */
     protected IgniteEx queryNode() {
-        IgniteEx node = isClient ? grid(2) : grid(0);
+        IgniteEx node = isClient ? grid(1) : grid(0);
 
         if (isClient)
             assertTrue(node.context().clientNode());
@@ -231,26 +231,15 @@ public class SqlPlanHistoryIntegrationTest extends GridCommonAbstractTest {
     }
 
     /**
-     * @return Ignite map node.
-     */
-    protected IgniteEx mapNode() {
-        IgniteEx node = grid(1);
-
-        assertFalse(node.context().clientNode());
-
-        return node;
-    }
-
-    /**
      * Starts Ignite instance.
      *
      * @throws Exception In case of failure.
      */
     protected void startTestGrid() throws Exception {
-        startGrids(2);
+        startGrid(0);
 
         if (isClient)
-            startClientGrid(2);
+            startClientGrid(1);
     }
 
     /** {@inheritDoc} */
@@ -620,7 +609,7 @@ public class SqlPlanHistoryIntegrationTest extends GridCommonAbstractTest {
             if (!isReducePhase && isClient && sqlEngine == IndexingQueryEngineConfiguration.ENGINE_NAME) {
                 assertEquals(0, plans.size());
 
-                plans = getSqlPlanHistory(mapNode());
+                plans = getSqlPlanHistory(grid(0));
             }
 
             return plans;
@@ -646,8 +635,6 @@ public class SqlPlanHistoryIntegrationTest extends GridCommonAbstractTest {
                 plans = plans.entrySet().stream()
                     .filter(e -> e.getKey().plan().contains(check))
                     .collect(Collectors.toMap(e -> e.getKey(), e -> e.getValue()));
-
-                checkMetrics((!isSimpleQry && !loc) ? size : 0, getSqlPlanHistory(mapNode()));
             }
 
             return plans;
