@@ -70,7 +70,6 @@ import org.apache.ignite.internal.processors.query.calcite.schema.CacheTableDesc
 import org.apache.ignite.internal.processors.query.calcite.schema.IgniteCacheTable;
 import org.apache.ignite.internal.processors.query.calcite.schema.IgniteTable;
 import org.apache.ignite.internal.processors.query.calcite.sql.IgniteSqlDecimalLiteral;
-import org.apache.ignite.internal.processors.query.calcite.type.IgniteCustomType;
 import org.apache.ignite.internal.processors.query.calcite.type.IgniteTypeFactory;
 import org.apache.ignite.internal.processors.query.calcite.util.IgniteResource;
 import org.apache.ignite.internal.util.typedef.F;
@@ -574,35 +573,46 @@ public class IgniteSqlValidator extends SqlValidatorImpl {
     }
 
     /**
-     * Tries to infer set actual type of dynamic parameter if {@code node} is a {@link SqlDynamicParam} and if its index
+     * Tries to set actual type of dynamic parameter if {@code node} is a {@link SqlDynamicParam} and if its index
      * is actual to {@link #parameters}.
      *
-     * @return {@code True} is new type was set. {@code False} otherwise.
+     * @return {@code True} if a new type was set. {@code False} otherwise.
      */
     private boolean inferDynamicParamType(RelDataType inferredType, SqlNode node) {
-        SqlDynamicParam dynamicParam;
-
-        if (parameters == null || !(node instanceof SqlDynamicParam) || inferredType instanceof IgniteCustomType
-            || (dynamicParam = (SqlDynamicParam)node).getIndex() >= parameters.length)
+        if (parameters == null || !(node instanceof SqlDynamicParam) || ((SqlDynamicParam)node).getIndex() >= parameters.length)
             return false;
 
-        Object passedVal = parameters[dynamicParam.getIndex()];
+        Object val = parameters[((SqlDynamicParam)node).getIndex()];
 
-        if (passedVal == null) {
-            if (!inferredType.equals(unknownType))
-                return false;
+        if (val == null) {
+            if (inferredType.equals(unknownType)) {
+                setValidatedNodeType(node, typeFactory().createSqlType(SqlTypeName.NULL));
 
-            setValidatedNodeType(node, typeFactory.createSqlType(SqlTypeName.NULL));
+                return true;
+            }
+
+            return false;
         }
-        else {
-            RelDataType passedValType = typeFactory().toSql(typeFactory().createType(passedVal.getClass()));
 
-            if (unknownType.equals(passedValType) || SqlTypeUtil.equalSansNullability(passedValType, inferredType)
-                || inferredType == typeFactory.leastRestrictive(F.asList(inferredType, passedValType)))
+        RelDataType valType = typeFactory().toSql(typeFactory().createType(val.getClass()));
+
+        if (SqlTypeUtil.equalSansNullability(valType, inferredType))
+            return false;
+
+        assert !unknownType.equals(valType);
+
+        if (valType.getFamily().equals(inferredType.getFamily())) {
+            RelDataType leastRestrictive = typeFactory().leastRestrictive(F.asList(inferredType, valType));
+
+            assert leastRestrictive != null;
+
+            if (inferredType == leastRestrictive)
                 return false;
-
-            setValidatedNodeType(node, passedValType);
         }
+        else if (!unknownType.equals(inferredType) && SqlTypeUtil.canCastFrom(valType, inferredType, true))
+            return false;
+
+        setValidatedNodeType(node, valType);
 
         return true;
     }
