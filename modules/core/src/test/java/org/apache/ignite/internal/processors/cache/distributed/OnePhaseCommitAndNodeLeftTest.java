@@ -185,7 +185,7 @@ public class OnePhaseCommitAndNodeLeftTest extends GridCommonAbstractTest {
             return false;
         });
 
-        String testVal = "Tets value";
+        String testVal = "Test value";
 
         IgniteInternalFuture putFut = GridTestUtils.runAsync(() -> {
             try {

@@ -89,7 +89,7 @@ public class RebalanceIsProcessingWhenAssignmentIsEmptyTest extends GridCommonAb
     }
 
     /**
-     * Tets affinity function.
+     * Tests affinity function.
      * It gives same assignment on second node in topology of three nodes and differences in fours.
      */
     public static class TestAffinity extends RendezvousAffinityFunction {

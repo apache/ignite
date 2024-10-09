@@ -224,7 +224,7 @@ public class StatisticsObsolescenceTest extends StatisticsAbstractTest {
         Map<StatisticsKey, IntMap<ObjectPartitionStatisticsObsolescence>> statObs = GridTestUtils
             .getFieldValue(statisticsMgr(0).statisticsRepository(), "statObs");
 
-        Integer oldSize = statObs.get(SMALL_KEY).size();
+        int oldSize = statObs.get(SMALL_KEY).size();
 
         ignite.cluster().state(ClusterState.ACTIVE);
 

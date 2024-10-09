@@ -220,13 +220,13 @@ public class IgniteStatisticsHelper {
 
     /**
      * Calculate effective row count. If there are some overrides in statistics configuration - maximum value will be
-     * choosen. If not - will return actualRowCount.
+     * choosen. If not - will return {@code actualRowCnt}.
      *
      * @param cfg Statistics configuration to dig overrides row count from.
-     * @param actualRowCount Actual row count.
+     * @param actualRowCnt Actual row count.
      * @return Effective row count.
      */
-    public static long calculateRowCount(StatisticsObjectConfiguration cfg, long actualRowCount) {
+    public static long calculateRowCount(StatisticsObjectConfiguration cfg, long actualRowCnt) {
         long overridedRowCnt = -1;
 
         for (StatisticsColumnConfiguration ccfg : cfg.columns().values()) {
@@ -237,7 +237,7 @@ public class IgniteStatisticsHelper {
             }
         }
 
-        return (overridedRowCnt == -1) ? actualRowCount : overridedRowCnt;
+        return (overridedRowCnt == -1) ? actualRowCnt : overridedRowCnt;
     }
 
     /**
@@ -247,7 +247,7 @@ public class IgniteStatisticsHelper {
      * @return StatisticsObjectConfiguration array.
      */
     public static StatisticsObjectConfiguration[] buildDefaultConfigurations(StatisticsTarget... targets) {
-        StatisticsObjectConfiguration[] res = Arrays.stream(targets)
+        return Arrays.stream(targets)
             .map(t -> {
                 List<StatisticsColumnConfiguration> colCfgs;
                 if (t.columns() == null)
@@ -259,8 +259,6 @@ public class IgniteStatisticsHelper {
                 return new StatisticsObjectConfiguration(t.key(), colCfgs,
                     StatisticsObjectConfiguration.DEFAULT_OBSOLESCENCE_MAX_PERCENT);
             }).toArray(StatisticsObjectConfiguration[]::new);
-
-        return res;
     }
 
     /**

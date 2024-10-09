@@ -179,7 +179,7 @@ public class SupplyPartitionHistoricallyWithReorderedUpdates extends GridCommonA
     }
 
     /**
-     * Tets affinity function with one partition. This implementation maps primary partition to first node and backup
+     * Tests affinity function with one partition. This implementation maps primary partition to first node and backup
      * partition to second.
      */
     public static class TestAffinity extends RendezvousAffinityFunction {

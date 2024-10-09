@@ -126,7 +126,7 @@ public class IgniteStatisticsConfigurationManager {
                 distrMetaStorage.listen(
                     (metaKey) -> metaKey.startsWith(STAT_OBJ_PREFIX),
                     (k, oldV, newV) -> {
-                        // Skip invoke on start node (see 'ReadableDistributedMetaStorage#listen' the second case)
+                        // Skip invocation at node start (see 'ReadableDistributedMetaStorage#listen' the second case)
                         // The update statistics on start node is handled by 'scanAndCheckLocalStatistic' method
                         // called on exchange done.
                         if (topVer == null)

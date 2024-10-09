@@ -267,7 +267,7 @@ public class IgniteWalRebalanceLoggingTest extends GridCommonAbstractTest {
         }
     }
 
-    /** Tets WAL record. */
+    /** Tests WAL record. */
     private static class AdHocWALRecord extends CheckpointRecord {
         /** Default constructor. */
         private AdHocWALRecord() {

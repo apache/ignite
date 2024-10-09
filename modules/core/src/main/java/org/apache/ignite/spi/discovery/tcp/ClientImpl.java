@@ -200,7 +200,7 @@ class ClientImpl extends TcpDiscoveryImpl {
     private final CountDownLatch leaveLatch = new CountDownLatch(1);
 
     /** */
-    private final ScheduledExecutorService executorService;
+    private final ScheduledExecutorService executorSrvc;
 
     /** */
     private MessageWorker msgWorker;
@@ -221,7 +221,7 @@ class ClientImpl extends TcpDiscoveryImpl {
         String instanceName = adapter.ignite() == null || adapter.ignite().name() == null
             ? "client-node" : adapter.ignite().name();
 
-        executorService = Executors.newSingleThreadScheduledExecutor(
+        executorSrvc = Executors.newSingleThreadScheduledExecutor(
             new IgniteThreadFactory(instanceName, "tcp-discovery-exec"));
     }
 
@@ -318,7 +318,7 @@ class ClientImpl extends TcpDiscoveryImpl {
             }
         }.start();
 
-        executorService.scheduleAtFixedRate(new MetricsSender(), spi.metricsUpdateFreq, spi.metricsUpdateFreq, MILLISECONDS);
+        executorSrvc.scheduleAtFixedRate(new MetricsSender(), spi.metricsUpdateFreq, spi.metricsUpdateFreq, MILLISECONDS);
 
         try {
             joinLatch.await();
@@ -369,7 +369,7 @@ class ClientImpl extends TcpDiscoveryImpl {
         while (!U.join(sockReader, log, 200))
             U.interrupt(sockReader);
 
-        executorService.shutdownNow();
+        executorSrvc.shutdownNow();
 
         spi.printStopInfo();
     }
@@ -435,7 +435,7 @@ class ClientImpl extends TcpDiscoveryImpl {
                 else {
                     final GridFutureAdapter<Boolean> finalFut = fut;
 
-                    executorService.schedule(() -> {
+                    executorSrvc.schedule(() -> {
                         if (pingFuts.remove(nodeId, finalFut)) {
                             if (ClientImpl.this.state == DISCONNECTED)
                                 finalFut.onDone(new IgniteClientDisconnectedCheckedException(null,
@@ -2144,7 +2144,7 @@ class ClientImpl extends TcpDiscoveryImpl {
             if (spi.joinTimeout > 0) {
                 final int joinCnt0 = joinCnt;
 
-                executorService.schedule(() -> {
+                executorSrvc.schedule(() -> {
                     queue.add(new JoinTimeout(joinCnt0));
                 }, spi.joinTimeout, MILLISECONDS);
             }
@@ -2746,7 +2746,7 @@ class ClientImpl extends TcpDiscoveryImpl {
      */
     private static class JoinTimeout {
         /** */
-        private int joinCnt;
+        private final int joinCnt;
 
         /**
          * @param joinCnt Join count to compare.
