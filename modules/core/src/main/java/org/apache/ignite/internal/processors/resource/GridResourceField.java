@@ -27,7 +27,7 @@ import org.jetbrains.annotations.NotNull;
  * Wrapper for data where resource should be injected.
  * Bean contains {@link Field} and {@link Annotation} for that class field.
  */
-class GridResourceField {
+public class GridResourceField {
     /** */
     static final GridResourceField[] EMPTY_ARRAY = new GridResourceField[0];
 
