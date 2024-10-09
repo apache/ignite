@@ -84,6 +84,8 @@ import org.apache.ignite.internal.processors.cache.query.CacheQueryFuture;
 import org.apache.ignite.internal.processors.cache.query.GridCacheQueryAdapter;
 import org.apache.ignite.internal.processors.cache.query.GridCacheQueryType;
 import org.apache.ignite.internal.processors.cache.query.QueryCursorEx;
+import org.apache.ignite.internal.processors.cache.transactions.IgniteInternalTx;
+import org.apache.ignite.internal.processors.cache.transactions.IgniteTxManager;
 import org.apache.ignite.internal.processors.query.GridQueryFieldMetadata;
 import org.apache.ignite.internal.processors.query.QueryUtils;
 import org.apache.ignite.internal.util.GridCloseableIteratorAdapter;
@@ -933,6 +935,18 @@ public class IgniteCacheProxyImpl<K, V> extends AsyncSupportAdapter<IgniteCache<
             (qry instanceof SqlQuery || qry instanceof SqlFieldsQuery || qry instanceof TextQuery))
             throw new CacheException("Failed to execute query. Add module 'ignite-indexing' to the classpath " +
                     "of all Ignite nodes or configure any query engine.");
+
+        if (qry instanceof ScanQuery) {
+            if (!ctx.kernalContext().config().getTransactionConfiguration().isTxAwareQueriesEnabled())
+                return;
+
+            IgniteInternalTx tx = ctx.cache().context().tm().tx();
+
+            if (tx == null)
+                return;
+
+            IgniteTxManager.ensureTransactionModeSupported(tx.isolation());
+        }
     }
 
     /** {@inheritDoc} */
