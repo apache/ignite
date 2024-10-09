@@ -826,11 +826,6 @@ public class GridSqlQueryParser {
 
         res.columns(cols);
 
-        if (!F.isEmpty(MERGE_KEYS.get(merge))) {
-            log.warning("The search row by explicit KEY isn't supported. The primary key is always used to search row " +
-                "[sql=" + merge.getSQL() + ']');
-        }
-
         List<Expression[]> srcRows = MERGE_ROWS.get(merge);
         if (!srcRows.isEmpty()) {
             List<GridSqlElement[]> rows = new ArrayList<>(srcRows.size());
