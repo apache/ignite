@@ -111,6 +111,7 @@ import org.apache.ignite.internal.processors.query.calcite.util.ConvertingClosab
 import org.apache.ignite.internal.processors.query.calcite.util.ListFieldsQueryCursor;
 import org.apache.ignite.internal.processors.query.running.HeavyQueriesTracker;
 import org.apache.ignite.internal.processors.security.SecurityUtils;
+import org.apache.ignite.internal.util.GridBoundedConcurrentLinkedHashMap;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -125,6 +126,9 @@ import static org.apache.ignite.internal.processors.query.calcite.externalize.Re
  */
 @SuppressWarnings("TypeMayBeWeakened")
 public class ExecutionServiceImpl<Row> extends AbstractService implements ExecutionService<Row> {
+    /** */
+    private static final Map<String, FragmentPlan> PHYS_NODES_CACHE = new GridBoundedConcurrentLinkedHashMap<>(1024);
+
     /** */
     private final DiscoveryEventListener discoLsnr;
 
@@ -486,7 +490,10 @@ public class ExecutionServiceImpl<Row> extends AbstractService implements Execut
 
     /** */
     private QueryPlan prepareFragment(BaseQueryContext ctx, String jsonFragment) {
-        return new FragmentPlan(jsonFragment, fromJson(ctx, jsonFragment));
+        return PHYS_NODES_CACHE.computeIfAbsent(
+            jsonFragment,
+            key -> new FragmentPlan(key, fromJson(ctx, key))
+        );
     }
 
     /** {@inheritDoc} */
