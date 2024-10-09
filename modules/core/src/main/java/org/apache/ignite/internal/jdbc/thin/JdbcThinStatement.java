@@ -392,17 +392,28 @@ public class JdbcThinStatement implements Statement {
 
     /** {@inheritDoc} */
     @Override public void close() throws SQLException {
-        if (isClosed())
+        if (closed)
             return;
 
         try {
             closeResults();
 
             conn.closeStatement(this);
+
+            closeImpl();
         }
         finally {
             closed = true;
         }
+    }
+
+    /**
+     * To be redefined in subclasses.
+     *
+     * @throws SQLException in case of error
+     */
+    protected void closeImpl() throws SQLException {
+        // No-op.
     }
 
     /**
