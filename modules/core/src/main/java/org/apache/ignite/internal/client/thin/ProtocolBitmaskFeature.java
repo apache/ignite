@@ -80,7 +80,10 @@ public enum ProtocolBitmaskFeature {
     SERVICE_TOPOLOGY(16),
 
     /** Cache invoke/invokeAll operations. */
-    CACHE_INVOKE(17);
+    CACHE_INVOKE(17),
+
+    /** Transaction aware queries. */
+    TX_AWARE_QUERIES(18);
 
     /** */
     private static final EnumSet<ProtocolBitmaskFeature> ALL_FEATURES_AS_ENUM_SET =

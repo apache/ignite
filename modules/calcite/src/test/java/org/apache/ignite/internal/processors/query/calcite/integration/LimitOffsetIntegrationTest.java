@@ -24,7 +24,6 @@ import org.apache.calcite.sql.validate.SqlValidatorException;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.cache.QueryEntity;
-import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.processors.query.IgniteSQLException;
 import org.apache.ignite.internal.processors.query.calcite.exec.rel.AbstractNode;
@@ -38,7 +37,7 @@ import static java.util.Collections.singletonList;
 /**
  * Limit / offset tests.
  */
-public class LimitOffsetIntegrationTest extends AbstractBasicIntegrationTest {
+public class LimitOffsetIntegrationTest extends AbstractBasicIntegrationTransactionalTest {
     /** */
     private static IgniteCache<Integer, String> cacheRepl;
 
@@ -46,7 +45,9 @@ public class LimitOffsetIntegrationTest extends AbstractBasicIntegrationTest {
     private static IgniteCache<Integer, String> cachePart;
 
     /** {@inheritDoc} */
-    @Override protected void beforeTest() throws Exception {
+    @Override protected void init() throws Exception {
+        super.init();
+
         cacheRepl = client.cache("TEST_REPL");
         cachePart = client.cache("TEST_PART");
     }
@@ -78,11 +79,13 @@ public class LimitOffsetIntegrationTest extends AbstractBasicIntegrationTest {
 
         return super.getConfiguration(igniteInstanceName)
             .setCacheConfiguration(
-                new CacheConfiguration<>(eRepl.getTableName())
+                cacheConfiguration()
+                    .setName(eRepl.getTableName())
                     .setCacheMode(CacheMode.REPLICATED)
                     .setQueryEntities(singletonList(eRepl))
                     .setSqlSchema("PUBLIC"),
-                new CacheConfiguration<>(ePart.getTableName())
+                cacheConfiguration()
+                    .setName(ePart.getTableName())
                     .setCacheMode(CacheMode.PARTITIONED)
                     .setQueryEntities(singletonList(ePart))
                     .setSqlSchema("PUBLIC"));
@@ -188,10 +191,12 @@ public class LimitOffsetIntegrationTest extends AbstractBasicIntegrationTest {
      * @param rows Rows count.
      */
     private void fillCache(IgniteCache<Integer, String> c, int rows) throws InterruptedException {
+        clearTransaction();
+
         c.clear();
 
         for (int i = 0; i < rows; ++i)
-            c.put(i, "val_" + String.format("%05d", i));
+            put(client, c, i, "val_" + String.format("%05d", i));
 
         awaitPartitionMapExchange();
     }

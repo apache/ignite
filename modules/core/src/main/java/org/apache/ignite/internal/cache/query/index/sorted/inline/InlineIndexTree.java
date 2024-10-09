@@ -29,6 +29,7 @@ import org.apache.ignite.internal.cache.query.index.sorted.IndexKeyDefinition;
 import org.apache.ignite.internal.cache.query.index.sorted.IndexKeyTypeSettings;
 import org.apache.ignite.internal.cache.query.index.sorted.IndexRow;
 import org.apache.ignite.internal.cache.query.index.sorted.IndexRowCache;
+import org.apache.ignite.internal.cache.query.index.sorted.IndexRowComparator;
 import org.apache.ignite.internal.cache.query.index.sorted.IndexRowImpl;
 import org.apache.ignite.internal.cache.query.index.sorted.InlineIndexRowHandler;
 import org.apache.ignite.internal.cache.query.index.sorted.InlineIndexRowHandlerFactory;
@@ -256,7 +257,7 @@ public class InlineIndexTree extends BPlusTree<IndexRow, IndexRow> {
         if (inlineSize == 0) {
             IndexRow currRow = getRow(io, pageAddr, idx);
 
-            return compareFullRows(currRow, row, 0);
+            return compareFullRows(currRow, row, 0, rowHandler(), def.rowComparator());
         }
 
         int fieldOff = 0;
@@ -306,27 +307,35 @@ public class InlineIndexTree extends BPlusTree<IndexRow, IndexRow> {
             if (currRow == null)
                 currRow = getRow(io, pageAddr, idx);
 
-            return compareFullRows(currRow, row, keyIdx);
+            return compareFullRows(currRow, row, keyIdx, rowHandler(), def.rowComparator());
         }
 
         return 0;
     }
 
     /** */
-    private int compareFullRows(IndexRow currRow, IndexRow row, int from) throws IgniteCheckedException {
+    public static int compareFullRows(
+        IndexRow currRow,
+        IndexRow row,
+        int from,
+        InlineIndexRowHandler rowHnd,
+        IndexRowComparator rowCmp
+    ) throws IgniteCheckedException {
         if (currRow == row)
             return 0;
 
-        for (int i = from; i < rowHandler().indexKeyDefinitions().size(); i++) {
+        List<IndexKeyDefinition> idxKeyDefs = rowHnd.indexKeyDefinitions();
+
+        for (int i = from; i < idxKeyDefs.size(); i++) {
             // If a search key is null then skip other keys (consider that null shows that we should get all
             // possible keys for that comparison).
             if (row.key(i) == null)
                 return 0;
 
-            int c = def.rowComparator().compareRow(currRow, row, i);
+            int c = rowCmp.compareRow(currRow, row, i);
 
             if (c != 0)
-                return applySortOrder(Integer.signum(c), rowHnd.indexKeyDefinitions().get(i).order().sortOrder());
+                return applySortOrder(Integer.signum(c), idxKeyDefs.get(i).order().sortOrder());
         }
 
         return 0;

@@ -69,6 +69,7 @@ import org.apache.ignite.internal.binary.BinaryUtils;
 import org.apache.ignite.internal.binary.BinaryWriterExImpl;
 import org.apache.ignite.internal.binary.streams.BinaryInputStream;
 import org.apache.ignite.internal.binary.streams.BinaryOutputStream;
+import org.apache.ignite.internal.client.thin.TcpClientTransactions.TcpClientTransaction;
 import org.apache.ignite.internal.client.thin.io.ClientConnectionMultiplexer;
 import org.apache.ignite.internal.processors.platform.client.ClientStatus;
 import org.apache.ignite.internal.processors.platform.client.IgniteClientException;
@@ -323,13 +324,33 @@ public class TcpIgniteClient implements IgniteClient {
         Consumer<PayloadOutputChannel> qryWriter = payloadCh -> {
             BinaryOutputStream out = payloadCh.out();
 
+            byte flags = TcpClientCache.KEEP_BINARY_FLAG_MASK;
+
+            int txId = 0;
+
+            if (payloadCh.clientChannel().protocolCtx().isFeatureSupported(ProtocolBitmaskFeature.TX_AWARE_QUERIES)) {
+                TcpClientTransaction tx = transactions.tx();
+
+                txId = tx == null ? 0 : tx.txId();
+            }
+
             out.writeInt(0); // no cache ID
-            out.writeByte((byte)1); // keep binary
+
+            if (txId != 0) {
+                flags |= TcpClientCache.TRANSACTIONAL_FLAG_MASK;
+
+                out.writeByte(flags);
+                out.writeInt(txId);
+            }
+            else
+                out.writeByte(flags);
+
             serDes.write(qry, out);
         };
 
         return new ClientFieldsQueryCursor<>(new ClientFieldsQueryPager(
             ch,
+            transactions.tx(),
             ClientOperation.QUERY_SQL_FIELDS,
             ClientOperation.QUERY_SQL_FIELDS_CURSOR_GET_PAGE,
             qryWriter,

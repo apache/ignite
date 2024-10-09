@@ -16,6 +16,7 @@
  */
 package org.apache.ignite.internal.processors.query.calcite.integration;
 
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -27,25 +28,31 @@ import org.junit.runners.Parameterized;
 
 /** */
 @RunWith(Parameterized.class)
-public class JoinIntegrationTest extends AbstractBasicIntegrationTest {
+public class JoinIntegrationTest extends AbstractBasicIntegrationTransactionalTest {
     /** */
-    @Parameterized.Parameter
+    @Parameterized.Parameter(1)
     public JoinType joinType;
 
     /** */
-    @Parameterized.Parameters(name = "joinType={0}")
+    @Parameterized.Parameters(name = "sqlTxMode={0},joinType={1}")
     public static List<Object[]> params() {
-        return Arrays.stream(JoinType.values())
-            .map(jt -> new Object[]{jt})
-            .collect(Collectors.toList());
+        List<Object[]> params = new ArrayList<>();
+
+        for (SqlTransactionMode sqlTxMode : SqlTransactionMode.values()) {
+            for (JoinType jt : JoinType.values()) {
+                params.add(new Object[]{sqlTxMode, jt});
+            }
+        }
+
+        return params;
     }
 
     /** {@inheritDoc} */
-    @Override protected void beforeTestsStarted() throws Exception {
-        super.beforeTestsStarted();
+    @Override protected void init() throws Exception {
+        super.init();
 
-        executeSql("create table t1 (c1 int, c2 int, c3 int)");
-        executeSql("create table t2 (c1 int, c2 int, c3 int)");
+        executeSql("create table t1 (c1 int, c2 int, c3 int) WITH " + atomicity());
+        executeSql("create table t2 (c1 int, c2 int, c3 int) WITH " + atomicity());
 
         executeSql("create index t1_idx on t1 (c3, c2, c1)");
         executeSql("create index t2_idx on t2 (c3, c2, c1)");

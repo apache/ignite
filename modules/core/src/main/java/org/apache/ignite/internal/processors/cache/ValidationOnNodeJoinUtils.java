@@ -73,6 +73,7 @@ import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_ASYNC;
 import static org.apache.ignite.configuration.DeploymentMode.ISOLATED;
 import static org.apache.ignite.configuration.DeploymentMode.PRIVATE;
 import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_CONSISTENCY_CHECK_SKIPPED;
+import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_TX_AWARE_QUERIES_ENABLED;
 import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_TX_SERIALIZABLE_ENABLED;
 import static org.apache.ignite.internal.processors.cache.GridCacheUtils.isDefaultDataRegionPersistent;
 import static org.apache.ignite.internal.processors.security.SecurityUtils.nodeSecurityContext;
@@ -574,6 +575,18 @@ public class ValidationOnNodeJoinUtils {
                     "system property) [rmtNodeId=" + rmt.id() +
                     ", locTxSerializableEnabled=" + locTxCfg.isTxSerializableEnabled() +
                     ", rmtTxSerializableEnabled=" + rmtTxSer + ']');
+        }
+
+        Boolean rmtTxAwareQryEnabled = rmt.attribute(ATTR_TX_AWARE_QUERIES_ENABLED);
+
+        if (rmtTxAwareQryEnabled != null) {
+            TransactionConfiguration locTxCfg = ctx.config().getTransactionConfiguration();
+
+            if (!rmtTxAwareQryEnabled.equals(locTxCfg.isTxAwareQueriesEnabled()))
+                throw new IgniteCheckedException("Transactions aware queries enabled mismatch " +
+                    "(fix txAwareQueriesEnabled property) [rmtNodeId=" + rmt.id() +
+                    ", locTxAwareQueriesEnabled=" + locTxCfg.isTxAwareQueriesEnabled() +
+                    ", rmtTxAwareQueriesEnabled=" + rmtTxAwareQryEnabled + ']');
         }
     }
 

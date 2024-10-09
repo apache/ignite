@@ -119,6 +119,7 @@ public class RuntimeSortedIndexTest extends GridCommonAbstractTest {
                 NoOpMemoryTracker.INSTANCE,
                 NoOpIoTracker.INSTANCE,
                 0,
+                null,
                 null),
             RelCollations.of(ImmutableIntList.copyOf(idxCols)),
             (o1, o2) -> {
