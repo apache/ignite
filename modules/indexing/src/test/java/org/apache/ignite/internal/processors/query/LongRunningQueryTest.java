@@ -32,6 +32,9 @@ import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.cache.query.annotations.QuerySqlField;
 import org.apache.ignite.cache.query.annotations.QuerySqlFunction;
 import org.apache.ignite.configuration.CacheConfiguration;
+import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.configuration.SqlConfiguration;
+import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.processors.cache.index.AbstractIndexingCommonTest;
 import org.apache.ignite.internal.processors.query.h2.H2QueryInfo;
 import org.apache.ignite.internal.processors.query.h2.IgniteH2Indexing;
@@ -54,8 +57,35 @@ public class LongRunningQueryTest extends AbstractIndexingCommonTest {
     /** Keys count. */
     private static final int KEY_CNT = 1000;
 
+    /** Long query warning timeout. */
+    private static final int LONG_QUERY_WARNING_TIMEOUT = 1000;
+
     /** External wait time. */
     private static final int EXT_WAIT_TIME = 2000;
+
+    /** Insert. */
+    private static final String INSERT_SQL = "insert into test (_key, _val) values (1001, wait_func())";
+
+    /** Insert with a subquery. */
+    private static final String INSERT_WITH_SUBQUERY_SQL = "insert into test (_key, _val) select p._key, p.orgId from " +
+        "\"pers\".Person p where p._key < wait_func()";
+
+    /** Update. */
+    private static final String UPDATE_SQL = "update test set _val = wait_func() where _key = 1";
+
+    /** Update with a subquery. */
+    private static final String UPDATE_WITH_SUBQUERY_SQL = "update test set _val = 111 where _key in " +
+        "(select p._key from \"pers\".Person p where p._key < wait_func())";
+
+    /** Delete. */
+    private static final String DELETE_SQL = "delete from test where _key = wait_func()";
+
+    /** Delete with a subquery. */
+    private static final String DELETE_WITH_SUBQUERY_SQL = "delete from test where _key in " +
+        "(select p._key from \"pers\".Person p where p._key < wait_func())";
+
+    /** Log listener for long DMLs. */
+    private static LogListener lsnrDml;
 
     /** Page size. */
     private int pageSize = DEFAULT_PAGE_SIZE;
@@ -74,6 +104,13 @@ public class LongRunningQueryTest extends AbstractIndexingCommonTest {
 
     /** Ignite instance. */
     private Ignite ignite;
+
+    /** {@inheritDoc} */
+    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
+        IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
+
+        return cfg.setSqlConfiguration(new SqlConfiguration().setLongQueryWarningTimeout(LONG_QUERY_WARNING_TIMEOUT));
+    }
 
     /** {@inheritDoc} */
     @Override protected void beforeTest() throws Exception {
@@ -95,6 +132,17 @@ public class LongRunningQueryTest extends AbstractIndexingCommonTest {
 
         for (long i = 0; i < KEY_CNT; ++i)
             c.put(i, i);
+
+        IgniteCache c2 = grid().createCache(cacheConfig("pers", Integer.class, Person.class));
+
+        c2.put(1001, new Person(1, "p1"));
+
+        lsnrDml = LogListener
+            .matches(LONG_QUERY_EXEC_MSG)
+            .andMatches(s -> s.contains("type=DML"))
+            .build();
+
+        testLog().registerListener(lsnrDml);
     }
 
     /** {@inheritDoc} */
@@ -180,6 +228,102 @@ public class LongRunningQueryTest extends AbstractIndexingCommonTest {
 
         checkLongRunning();
         checkFastQueries();
+    }
+
+    /** */
+    @Test
+    public void testLongRunningInsert() {
+        local = false;
+
+        runDml(INSERT_SQL);
+    }
+
+    /** */
+    @Test
+    public void testLongRunningInsertWithSubquery() {
+        local = false;
+
+        runDml(INSERT_WITH_SUBQUERY_SQL);
+    }
+
+    /** */
+    @Test
+    public void testLongRunningInsertLocal() {
+        local = true;
+
+        runDml(INSERT_SQL);
+    }
+
+    /** */
+    @Test
+    public void testLongRunningInsertWithSubqueryLocal() {
+        local = true;
+
+        runDml(INSERT_WITH_SUBQUERY_SQL);
+    }
+
+    /** */
+    @Test
+    public void testLongRunningUpdate() {
+        local = false;
+
+        runDml(UPDATE_SQL);
+    }
+
+    /** */
+    @Test
+    public void testLongRunningUpdateWithSubquery() {
+        local = false;
+
+        runDml(UPDATE_WITH_SUBQUERY_SQL);
+    }
+
+    /** */
+    @Test
+    public void testLongRunningUpdateLocal() {
+        local = true;
+
+        runDml(UPDATE_SQL);
+    }
+
+    /** */
+    @Test
+    public void testLongRunningUpdateWithSubqueryLocal() {
+        local = true;
+
+        runDml(UPDATE_WITH_SUBQUERY_SQL);
+    }
+
+    /** */
+    @Test
+    public void testLongRunningDelete() {
+        local = false;
+
+        runDml(DELETE_SQL);
+    }
+
+    /** */
+    @Test
+    public void testLongRunningDeleteWithSubquery() {
+        local = false;
+
+        runDml(DELETE_WITH_SUBQUERY_SQL);
+    }
+
+    /** */
+    @Test
+    public void testLongRunningDeleteLocal() {
+        local = true;
+
+        runDml(DELETE_SQL);
+    }
+
+    /** */
+    @Test
+    public void testLongRunningDeleteWithSubqueryLocal() {
+        local = true;
+
+        runDml(DELETE_WITH_SUBQUERY_SQL);
     }
 
     /**
@@ -425,6 +569,21 @@ public class LongRunningQueryTest extends AbstractIndexingCommonTest {
     }
 
     /**
+     * @param dml Dml command.
+     */
+    public void runDml(String dml) {
+        lazy = false;
+
+        long start = U.currentTimeMillis();
+
+        sql("test", dml);
+
+        assertTrue((U.currentTimeMillis() - start) > LONG_QUERY_WARNING_TIMEOUT);
+
+        assertTrue(lsnrDml.check());
+    }
+
+    /**
      * Utility class with custom SQL functions.
      */
     public static class TestSQLFunctions {
@@ -442,6 +601,20 @@ public class LongRunningQueryTest extends AbstractIndexingCommonTest {
                 // No-op
             }
             return v;
+        }
+
+        /** */
+        @SuppressWarnings("unused")
+        @QuerySqlFunction
+        public static int wait_func() {
+            try {
+                GridTestUtils.waitForCondition(() -> lsnrDml.check(), 10_000);
+            }
+            catch (IgniteInterruptedCheckedException ignored) {
+                // No-op
+            }
+
+            return 1;
         }
     }
 
