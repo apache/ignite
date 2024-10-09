@@ -643,12 +643,12 @@ public class JdbcThinDatabaseMetadata implements DatabaseMetaData {
 
     /** {@inheritDoc} */
     @Override public boolean supportsTransactions() throws SQLException {
-        return conn.txSupportedOnServer();
+        return conn.isTxAwareQueriesSupported;
     }
 
     /** {@inheritDoc} */
     @Override public boolean supportsTransactionIsolationLevel(int level) throws SQLException {
-        return conn.txSupportedOnServer() && conn.isolationLevelSupported(level);
+        return conn.isTxAwareQueriesSupported && conn.isolationLevelSupported(level);
     }
 
     /** {@inheritDoc} */
@@ -658,7 +658,7 @@ public class JdbcThinDatabaseMetadata implements DatabaseMetaData {
 
     /** {@inheritDoc} */
     @Override public boolean supportsDataManipulationTransactionsOnly() throws SQLException {
-        return conn.txSupportedOnServer();
+        return conn.isTxAwareQueriesSupported;
     }
 
     /** {@inheritDoc} */

@@ -20,7 +20,6 @@ package org.apache.ignite.internal.processors.platform.client.tx;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.binary.BinaryRawReader;
 import org.apache.ignite.internal.IgniteInternalFuture;
-import org.apache.ignite.internal.processors.odbc.ClientListenerAbstractConnectionContext;
 import org.apache.ignite.internal.processors.odbc.ClientTxSupport;
 import org.apache.ignite.internal.processors.platform.client.ClientConnectionContext;
 import org.apache.ignite.internal.processors.platform.client.ClientRequest;
@@ -38,9 +37,6 @@ public class ClientTxEndRequest extends ClientRequest implements ClientTxSupport
 
     /** Transaction committed. */
     private final boolean committed;
-
-    /** */
-    private ClientConnectionContext ctx;
 
     /**
      * Constructor.
@@ -61,19 +57,12 @@ public class ClientTxEndRequest extends ClientRequest implements ClientTxSupport
 
     /** {@inheritDoc} */
     @Override public IgniteInternalFuture<ClientResponse> processAsync(ClientConnectionContext ctx) {
-        this.ctx = ctx;
-
-        return endTxAsync(txId, committed).chain(f -> {
+        return endTxAsync(ctx, txId, committed).chain(f -> {
             if (f.error() != null)
                 throw new GridClosureException(f.error());
             else
                 return process(ctx);
         });
-    }
-
-    /** {@inheritDoc} */
-    @Override public ClientListenerAbstractConnectionContext context() {
-        return ctx;
     }
 
     /** {@inheritDoc} */

@@ -27,8 +27,8 @@ import java.util.Arrays;
 import java.util.List;
 import org.apache.ignite.calcite.CalciteQueryEngineConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
-import org.apache.ignite.internal.jdbc.thin.JdbcThinConnection;
 import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.IgniteConfigVariationsAbstractTest.TestRunnable;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.transactions.TransactionConcurrency;
@@ -180,7 +180,7 @@ public class JdbcThinTransactionalSelfTest extends GridCommonAbstractTest {
 
             ResultSet rs = conn.prepareStatement("SELECT 1").executeQuery();
 
-            assertFalse(((JdbcThinConnection)conn).isTxOpen());
+            assertNull(GridTestUtils.getFieldValue(conn, "txCtx"));
         }
     }
 
@@ -259,7 +259,7 @@ public class JdbcThinTransactionalSelfTest extends GridCommonAbstractTest {
                 assertTrue(stmt0.isClosed());
                 assertFalse(stmt1.isClosed());
 
-                assertFalse(((JdbcThinConnection)conn).isTxOpen());
+                assertNull(GridTestUtils.getFieldValue(conn, "txCtx"));
             }
         }
     }

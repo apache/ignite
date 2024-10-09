@@ -245,8 +245,6 @@ public class ClientConnectionContext extends ClientListenerAbstractConnectionCon
     @Override public void onDisconnected() {
         resReg.clean();
 
-        cleanupTxs();
-
         super.onDisconnected();
     }
 

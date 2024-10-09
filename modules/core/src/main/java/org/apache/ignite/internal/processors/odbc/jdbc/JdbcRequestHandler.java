@@ -60,7 +60,6 @@ import org.apache.ignite.internal.processors.cache.query.IgniteQueryErrorCode;
 import org.apache.ignite.internal.processors.cache.query.QueryCursorEx;
 import org.apache.ignite.internal.processors.cache.query.SqlFieldsQueryEx;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteInternalTx;
-import org.apache.ignite.internal.processors.odbc.ClientListenerAbstractConnectionContext;
 import org.apache.ignite.internal.processors.odbc.ClientListenerProtocolVersion;
 import org.apache.ignite.internal.processors.odbc.ClientListenerRequest;
 import org.apache.ignite.internal.processors.odbc.ClientListenerRequestHandler;
@@ -86,7 +85,7 @@ import org.apache.ignite.marshaller.MarshallerContext;
 import org.apache.ignite.transactions.TransactionIsolation;
 import org.jetbrains.annotations.Nullable;
 
-import static org.apache.ignite.internal.processors.odbc.ClientListenerAbstractConnectionContext.NO_TX;
+import static org.apache.ignite.internal.processors.odbc.ClientListenerAbstractConnectionContext.NONE_TX;
 import static org.apache.ignite.internal.processors.odbc.jdbc.JdbcBulkLoadBatchRequest.CMD_CONTINUE;
 import static org.apache.ignite.internal.processors.odbc.jdbc.JdbcBulkLoadBatchRequest.CMD_FINISHED_EOF;
 import static org.apache.ignite.internal.processors.odbc.jdbc.JdbcBulkLoadBatchRequest.CMD_FINISHED_ERROR;
@@ -479,7 +478,7 @@ public class JdbcRequestHandler implements ClientListenerRequestHandler, ClientT
                     throw new IllegalArgumentException();
             }
 
-            return resultToResonse(new JdbcQueryExecuteResult(req.cursorId(), proc.updateCnt(), null, NO_TX));
+            return resultToResonse(new JdbcQueryExecuteResult(req.cursorId(), proc.updateCnt(), null, NONE_TX));
         }
         catch (Exception e) {
             U.error(null, "Error processing file batch", e);
@@ -832,10 +831,11 @@ public class JdbcRequestHandler implements ClientListenerRequestHandler, ClientT
 
     /** */
     private int txId(int txId) {
-        if (txId != NO_TX || !txEnabledForConnection())
+        if (txId != NONE_TX || !txEnabledForConnection())
             return txId;
 
         return startClientTransaction(
+            connCtx,
             cliCtx.concurrency(),
             cliCtx.isolation(),
             cliCtx.transactionTimeout(),
@@ -845,7 +845,7 @@ public class JdbcRequestHandler implements ClientListenerRequestHandler, ClientT
 
     /** */
     private void endTransaction(SqlFieldsQueryEx qry, int txId, boolean committed) throws IgniteCheckedException {
-        IgniteInternalFuture<IgniteInternalTx> endTxFut = endTxAsync(txId, committed);
+        IgniteInternalFuture<IgniteInternalTx> endTxFut = endTxAsync(connCtx, txId, committed);
 
         if (qry.getTimeout() != -1)
             endTxFut.get(qry.getTimeout());
@@ -1448,7 +1448,7 @@ public class JdbcRequestHandler implements ClientListenerRequestHandler, ClientT
      */
     private JdbcResponse endTransaction(JdbcTxEndRequest req) {
         try {
-            endTxAsync(req.txId(), req.committed()).get();
+            endTxAsync(connCtx, req.txId(), req.committed()).get();
 
             return resultToResonse(new JdbcTxEndResult(req.requestId()));
         }
@@ -1468,11 +1468,6 @@ public class JdbcRequestHandler implements ClientListenerRequestHandler, ClientT
      */
     private JdbcResponse exceptionToResult(Throwable e) {
         return new JdbcResponse(SqlListenerUtils.exceptionToSqlErrorCode(e), e.getMessage());
-    }
-
-    /** {@inheritDoc} */
-    @Override public ClientListenerAbstractConnectionContext context() {
-        return connCtx;
     }
 
     /** {@inheritDoc} */

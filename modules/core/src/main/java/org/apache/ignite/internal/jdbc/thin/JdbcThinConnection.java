@@ -170,7 +170,7 @@ public class JdbcThinConnection implements Connection {
     static final int NO_TIMEOUT = 0;
 
     /** No transaction id. */
-    public static final int NO_TX = 0;
+    public static final int NONE_TX = 0;
 
     /** Index generator. */
     private static final AtomicLong IDX_GEN = new AtomicLong();
@@ -239,7 +239,10 @@ public class JdbcThinConnection implements Connection {
     private final Object mux = new Object();
 
     /** Transactional context. */
-    private volatile TxContext txCtx;
+    private TxContext txCtx;
+
+    /** */
+    boolean isTxAwareQueriesSupported;
 
     /** Random generator. */
     private static final Random RND = new Random(System.currentTimeMillis());
@@ -305,7 +308,7 @@ public class JdbcThinConnection implements Connection {
             baseEndpointVer = null;
         }
 
-        holdability = txSupportedOnServer() ? CLOSE_CURSORS_AT_COMMIT : HOLD_CURSORS_OVER_COMMIT;
+        holdability = isTxAwareQueriesSupported ? CLOSE_CURSORS_AT_COMMIT : HOLD_CURSORS_OVER_COMMIT;
         txIsolation = defaultTransactionIsolation();
 
         updateTransactionParameters();
@@ -351,14 +354,9 @@ public class JdbcThinConnection implements Connection {
         return streamState != null;
     }
 
-    /** @return {@code True} if there are open transaction, {@code false} otherwise. */
-    public boolean isTxOpen() {
-        return txCtx != null;
-    }
-
     /** @return {@code True} if transactions supported by the server, {@code false} otherwise. */
-    boolean txSupportedOnServer() {
-        return (singleIo != null || !ios.isEmpty()) && defaultIo().isTxAwareQueriesSupported();
+    boolean txSupportedByServer() {
+        return isTxAwareQueriesSupported;
     }
 
     /** @return {@code True} if certain isolation level supported by the server, {@code false} otherwise. */
@@ -374,7 +372,7 @@ public class JdbcThinConnection implements Connection {
 
     /** @return Default isolation level. */
     int defaultTransactionIsolation() {
-        return txSupportedOnServer() ? TRANSACTION_READ_COMMITTED : TRANSACTION_NONE;
+        return isTxAwareQueriesSupported ? TRANSACTION_READ_COMMITTED : TRANSACTION_NONE;
     }
 
     /** @return Default io to make a request. */
@@ -384,7 +382,7 @@ public class JdbcThinConnection implements Connection {
 
     /** @return {@code True} if transaction support currently enabled for connection. */
     boolean txEnabledForConnection() {
-        return txSupportedOnServer() && txIsolation != TRANSACTION_NONE;
+        return isTxAwareQueriesSupported && txIsolation != TRANSACTION_NONE;
     }
 
     /** */
@@ -399,7 +397,7 @@ public class JdbcThinConnection implements Connection {
 
     /** Updates transaction parameters on all known servers. */
     private void updateTransactionParameters() throws SQLException {
-        if (!txSupportedOnServer())
+        if (!isTxAwareQueriesSupported)
             return;
 
         JdbcSetTxParametersRequest req = new JdbcSetTxParametersRequest(
@@ -425,7 +423,7 @@ public class JdbcThinConnection implements Connection {
      */
     void executeNative(String sql, SqlCommand cmd, JdbcThinStatement stmt) throws SQLException {
         if (cmd instanceof SqlSetStreamingCommand) {
-            if (isTxOpen())
+            if (txCtx != null)
                 throw new SQLException("Can't change stream mode inside transaction");
 
             SqlSetStreamingCommand cmd0 = (SqlSetStreamingCommand)cmd;
@@ -453,7 +451,7 @@ public class JdbcThinConnection implements Connection {
                 streamState = new StreamState((SqlSetStreamingCommand)cmd, cliIo);
 
                 sendRequest(new JdbcQueryExecuteRequest(JdbcStatementType.ANY_STATEMENT_TYPE,
-                    schema, 1, 1, autoCommit, stmt.explicitTimeout, sql, null, NO_TX), stmt, cliIo);
+                    schema, 1, 1, autoCommit, stmt.explicitTimeout, sql, null, NONE_TX), stmt, cliIo);
 
                 streamState.start();
             }
@@ -581,7 +579,7 @@ public class JdbcThinConnection implements Connection {
     @Override public void setAutoCommit(boolean autoCommit) throws SQLException {
         ensureNotClosed();
 
-        if (isTxOpen() && this.autoCommit != autoCommit)
+        if (txCtx != null && this.autoCommit != autoCommit)
             throw new SQLException("Can't change autoCommit mode when transaction open");
 
         this.autoCommit = autoCommit;
@@ -714,13 +712,13 @@ public class JdbcThinConnection implements Connection {
             case Connection.TRANSACTION_NONE:
                 break;
             case Connection.TRANSACTION_READ_UNCOMMITTED:
-                if (txSupportedOnServer())
+                if (isTxAwareQueriesSupported)
                     throw new SQLException("Requested isolation level not supported by the server: " + level);
 
             case Connection.TRANSACTION_READ_COMMITTED:
             case Connection.TRANSACTION_REPEATABLE_READ:
             case Connection.TRANSACTION_SERIALIZABLE:
-                if (txSupportedOnServer() && !isolationLevelSupported(level))
+                if (isTxAwareQueriesSupported && !isolationLevelSupported(level))
                     throw new SQLException("Requested isolation level not supported by the server: " + level);
 
                 break;
@@ -774,7 +772,7 @@ public class JdbcThinConnection implements Connection {
         if (holdability != HOLD_CURSORS_OVER_COMMIT && holdability != CLOSE_CURSORS_AT_COMMIT)
             throw new SQLException("Invalid result set holdability value.");
 
-        if (txSupportedOnServer() && holdability == HOLD_CURSORS_OVER_COMMIT)
+        if (isTxAwareQueriesSupported && holdability == HOLD_CURSORS_OVER_COMMIT)
             throw new SQLException(HOLDABILITY_ERR_MSG);
 
         this.holdability = holdability;
@@ -1008,18 +1006,18 @@ public class JdbcThinConnection implements Connection {
         return netTimeout;
     }
 
-    /** Store transaction context. */
+    /** Adds statement to transaction context. */
     void addToTransaction(JdbcThinTcpIo txIo, int txId, JdbcThinStatement stmt) throws SQLException {
         if (!txEnabledForConnection())
             return;
 
         assert !autoCommit;
-        assert txId != NO_TX;
+        assert txId != NONE_TX;
 
         if (txCtx == null)
             txCtx = new TxContext(txIo, txId);
         // Check same context returned from server when transaction exists, already.
-        else if (txCtx.txId() != txId || !Objects.equals(txCtx.txIo().nodeId(), txIo.nodeId())) {
+        else if (txCtx.txId != txId || !Objects.equals(txCtx.txIo.nodeId(), txIo.nodeId())) {
             throw new IllegalStateException("Nested transactions not supported [" +
                 "txCtx.txId=" + txId +
                 ", txCtx.nodeId=" + txCtx.txIo.nodeId() +
@@ -1030,9 +1028,9 @@ public class JdbcThinConnection implements Connection {
         txCtx.add(stmt);
     }
 
-    /** @return Current transaction context. */
-    @Nullable TxContext txContext() {
-        return txCtx;
+    /** @return Current transaction id. */
+    public int txId() {
+        return txCtx == null ? NONE_TX : txCtx.txId;
     }
 
     /**
@@ -1765,7 +1763,7 @@ public class JdbcThinConnection implements Connection {
             return singleIo;
 
         if (txCtx != null)
-            return txCtx.txIo();
+            return txCtx.txIo;
 
         if (nodeIds == null || nodeIds.isEmpty())
             return randomIo();
@@ -1882,6 +1880,8 @@ public class JdbcThinConnection implements Connection {
                             singleIo = cliIo;
 
                             connCnt.incrementAndGet();
+
+                            isTxAwareQueriesSupported = singleIo.isTxAwareQueriesSupported();
 
                             return;
                         }
@@ -2016,6 +2016,8 @@ public class JdbcThinConnection implements Connection {
 
         handleConnectExceptions(exceptions);
 
+        isTxAwareQueriesSupported = defaultIo().isTxAwareQueriesSupported();
+
         return null;
     }
 
@@ -2102,7 +2104,7 @@ public class JdbcThinConnection implements Connection {
 
     /** */
     private void logTransactionWarning() {
-        if (!txSupportedOnServer())
+        if (!isTxAwareQueriesSupported)
             LOG.warning("Transactions are not supported.");
     }
 
@@ -2610,7 +2612,7 @@ public class JdbcThinConnection implements Connection {
     }
 
     /** Transaction context. */
-    public class TxContext {
+    private class TxContext {
         /** IO to transaction coordinator. */
         final JdbcThinTcpIo txIo;
 
@@ -2658,16 +2660,6 @@ public class JdbcThinConnection implements Connection {
                 return;
 
             stmts.remove(stmt);
-        }
-
-        /** */
-        public JdbcThinTcpIo txIo() {
-            return txIo;
-        }
-
-        /** */
-        public int txId() {
-            return txId;
         }
     }
 
