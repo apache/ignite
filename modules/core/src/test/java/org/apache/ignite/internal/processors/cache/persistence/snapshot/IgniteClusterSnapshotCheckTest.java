@@ -95,7 +95,6 @@ import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteFuture;
 import org.jetbrains.annotations.Nullable;
-import org.junit.Assume;
 import org.junit.Before;
 import org.junit.Test;
 
@@ -116,6 +115,7 @@ import static org.apache.ignite.testframework.GridTestUtils.assertContains;
 import static org.apache.ignite.testframework.GridTestUtils.assertNotContains;
 import static org.apache.ignite.testframework.GridTestUtils.assertThrowsAnyCause;
 import static org.apache.ignite.testframework.GridTestUtils.waitForCondition;
+import static org.junit.Assume.assumeFalse;
 
 /**
  * Cluster-wide snapshot check procedure tests.
@@ -249,7 +249,7 @@ public class IgniteClusterSnapshotCheckTest extends AbstractSnapshotSelfTest {
     /** @throws Exception If fails. */
     @Test
     public void testClusterSnapshotCheckPartitionCounters() throws Exception {
-        Assume.assumeFalse("One copy of partiton created in only primary mode", onlyPrimary);
+        assumeFalse("One copy of partiton created in only primary mode", onlyPrimary);
 
         IgniteEx ignite = startGridsWithCache(3, dfltCacheCfg.
             setAffinity(new RendezvousAffinityFunction(false, 1)),
@@ -404,7 +404,7 @@ public class IgniteClusterSnapshotCheckTest extends AbstractSnapshotSelfTest {
     /** @throws Exception If fails. */
     @Test
     public void testClusterSnapshotCheckFailsOnPartitionDataDiffers() throws Exception {
-        Assume.assumeFalse("One copy of partiton created in only primary mode", onlyPrimary);
+        assumeFalse("One copy of partiton created in only primary mode", onlyPrimary);
 
         CacheConfiguration<Integer, Value> ccfg = txCacheConfig(new CacheConfiguration<Integer, Value>(DEFAULT_CACHE_NAME))
             .setAffinity(new RendezvousAffinityFunction(false, 1));
@@ -641,6 +641,128 @@ public class IgniteClusterSnapshotCheckTest extends AbstractSnapshotSelfTest {
         }
     }
 
+    /** Tests that concurrent full checks of normal and incremental the same snapshot are declined . */
+    @Test
+    public void testConcurrentTheSameSnpFullAndIncrementalChecksDeclined() throws Exception {
+        assumeFalse(encryption);
+
+        // 0 - coordinator; 0,1 - baselines; 2 - non-baseline; 3,4 - clients.
+        prepareGridsAndSnapshot(3, 2, 2, false);
+
+        snp(grid(3)).createIncrementalSnapshot(SNAPSHOT_NAME).get();
+
+        for (int i = 0; i < G.allGrids().size(); ++i) {
+            for (int j = 1; j < G.allGrids().size() - 1; ++j) {
+                int i0 = i;
+                int j0 = j;
+
+                doTestConcurrentSnpCheckOperations(
+                    () -> new IgniteFutureImpl<>(snp(grid(i0)).checkSnapshot(SNAPSHOT_NAME, null)),
+                    () -> new IgniteFutureImpl<>(snp(grid(j0)).checkSnapshot(SNAPSHOT_NAME, null, 1)),
+                    CHECK_SNAPSHOT_METAS,
+                    CHECK_SNAPSHOT_PARTS,
+                    true,
+                    false,
+                    null,
+                    null
+                );
+            }
+        }
+    }
+
+    /** Tests that concurrent full checks of the same incremental snapshot are declined. */
+    @Test
+    public void testConcurrentTheSameIncrementalFullChecksDeclined() throws Exception {
+        assumeFalse(encryption);
+
+        // 0 - coordinator; 0,1 - baselines; 2 - non-baseline; 3,4 - clients.
+        prepareGridsAndSnapshot(3, 2, 2, false);
+
+        snp(grid(3)).createIncrementalSnapshot(SNAPSHOT_NAME).get();
+
+        for (int i = 0; i < G.allGrids().size(); ++i) {
+            for (int j = 1; j < G.allGrids().size() - 1; ++j) {
+                int i0 = i;
+                int j0 = j;
+
+                doTestConcurrentSnpCheckOperations(
+                    () -> new IgniteFutureImpl<>(snp(grid(i0)).checkSnapshot(SNAPSHOT_NAME, null, 1)),
+                    () -> new IgniteFutureImpl<>(snp(grid(j0)).checkSnapshot(SNAPSHOT_NAME, null, 1)),
+                    CHECK_SNAPSHOT_METAS,
+                    CHECK_SNAPSHOT_PARTS,
+                    true,
+                    false,
+                    null,
+                    null
+                );
+            }
+        }
+    }
+
+    /** Tests that concurrent checks of different incremental snapshots are declined. */
+    @Test
+    public void testConcurrentDifferentIncrementalFullChecksDeclined() throws Exception {
+        assumeFalse(encryption);
+
+        // 0 - coordinator; 0,1 - baselines; 2 - non-baseline; 3,4 - clients.
+        prepareGridsAndSnapshot(3, 2, 2, false);
+
+        snp(grid(3)).createIncrementalSnapshot(SNAPSHOT_NAME).get();
+        snp(grid(3)).createIncrementalSnapshot(SNAPSHOT_NAME).get();
+
+        for (int i = 0; i < G.allGrids().size(); ++i) {
+            for (int j = 1; j < G.allGrids().size() - 1; ++j) {
+                int i0 = i;
+                int j0 = j;
+
+                doTestConcurrentSnpCheckOperations(
+                    () -> new IgniteFutureImpl<>(snp(grid(i0)).checkSnapshot(SNAPSHOT_NAME, null, 1)),
+                    () -> new IgniteFutureImpl<>(snp(grid(j0)).checkSnapshot(SNAPSHOT_NAME, null, 2)),
+                    CHECK_SNAPSHOT_METAS,
+                    CHECK_SNAPSHOT_PARTS,
+                    true,
+                    false,
+                    null,
+                    null
+                );
+            }
+        }
+    }
+
+    /** Tests that concurrent full restoration of a normal snapshot and check of an incremental are declined. */
+    @Test
+    public void testConcurrentTheSameSnpIncrementalCheckAndFullRestoreDeclined() throws Exception {
+        assumeFalse(encryption);
+
+        // 0 - coordinator; 0,1 - baselines; 2 - non-baseline; 3,4 - clients.
+        prepareGridsAndSnapshot(3, 2, 2, false);
+
+        snp(grid(3)).createIncrementalSnapshot(SNAPSHOT_NAME).get();
+
+        grid(0).destroyCache(DEFAULT_CACHE_NAME);
+
+        awaitPartitionMapExchange();
+
+        // Snapshot restoration is disallowed from client nodes.
+        for (int i = 0; i < 3; ++i) {
+            for (int j = 1; j < G.allGrids().size() - 1; ++j) {
+                int i0 = i;
+                int j0 = j;
+
+                doTestConcurrentSnpCheckOperations(
+                    () -> snp(grid(i0)).restoreSnapshot(SNAPSHOT_NAME, null, null, 0, true),
+                    () -> new IgniteFutureImpl<>(snp(grid(j0)).checkSnapshot(SNAPSHOT_NAME, null, 1)),
+                    CHECK_SNAPSHOT_METAS,
+                    CHECK_SNAPSHOT_PARTS,
+                    true,
+                    false,
+                    null,
+                    () -> grid(0).destroyCache(DEFAULT_CACHE_NAME)
+                );
+            }
+        }
+    }
+
     /** Tests that concurrent snapshot full checks are allowed for different snapshots. */
     @Test
     public void testConcurrentDifferentSnpFullChecksAllowed() throws Exception {
@@ -807,7 +929,7 @@ public class IgniteClusterSnapshotCheckTest extends AbstractSnapshotSelfTest {
 
     /** Tests that snapshot full check doesn't affect a snapshot creation. */
     @Test
-    public void testConcurrentSnpCheckAndCreateAllowed() throws Exception {
+    public void testConcurrentDifferentSnpCheckAndCreateAllowed() throws Exception {
         prepareGridsAndSnapshot(3, 2, 2, false);
 
         for (int i = 0; i < G.allGrids().size(); ++i) {
