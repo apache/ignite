@@ -43,7 +43,7 @@ import org.checkerframework.checker.nullness.qual.Nullable;
  */
 public class IgniteSqlFunctions {
     /** */
-    public static final String NUMERIC_FIELD_OVERFLOW_ERROR = "Numeric field overflow";
+    public static final String NUMERIC_OVERFLOW_ERROR = "Numeric field overflow.";
 
     /** */
     private static final int DFLT_NUM_PRECISION = IgniteTypeSystem.INSTANCE.getDefaultPrecision(SqlTypeName.DECIMAL);
@@ -84,11 +84,11 @@ public class IgniteSqlFunctions {
     }
 
     /** Removes redundant scale in case of default DECIMAL (without passed precision and scale). */
-    private static BigDecimal removeDefaultScale(int precision, int scale, BigDecimal floating) {
-        if (precision == DFLT_NUM_PRECISION && scale == 0 && floating.compareTo(floating.setScale(0, RoundingMode.CEILING)) == 0)
-            return floating.setScale(0, RoundingMode.CEILING);
+    private static BigDecimal removeDefaultScale(int precision, int scale, BigDecimal val) {
+        if (precision == DFLT_NUM_PRECISION && scale == 0 && val.compareTo(val.setScale(0, NUMERIC_ROUNDING_MODE)) == 0)
+            return val.setScale(0, NUMERIC_ROUNDING_MODE);
 
-        return floating;
+        return val;
     }
 
     /** CAST(java long AS DECIMAL). */
@@ -124,9 +124,7 @@ public class IgniteSqlFunctions {
         return toBigDecimal(new BigDecimal(s.trim()), precision, scale);
     }
 
-    /**
-     * Converts the given {@code val} to a decimal with the given {@code precision} and {@code scale}.
-     */
+    /** Converts {@code val} to a {@link BigDecimal} with the given {@code precision} and {@code scale}. */
     public static BigDecimal toBigDecimal(Number val, int precision, int scale) {
         assert precision > 0 : "Invalid precision: " + precision;
         assert scale >= 0 : "Invalid scale: " + scale;
@@ -140,7 +138,7 @@ public class IgniteSqlFunctions {
         BigDecimal dec = convertToBigDecimal(val);
 
         if (scale > precision || (dec.precision() - dec.scale() > precision - scale))
-            throw new IllegalArgumentException(NUMERIC_FIELD_OVERFLOW_ERROR);
+            throw new IllegalArgumentException(NUMERIC_OVERFLOW_ERROR);
 
         return dec.setScale(scale, NUMERIC_ROUNDING_MODE);
     }

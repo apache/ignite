@@ -574,7 +574,7 @@ public class IgniteSqlValidator extends SqlValidatorImpl {
     }
 
     /**
-     * Tries to infer set actual type of dynamic parameter if {@code node} is a {@link SqlDynamicParam}, its index
+     * Tries to infer set actual type of dynamic parameter if {@code node} is a {@link SqlDynamicParam} and if its index
      * is actual to {@link #parameters}.
      *
      * @return {@code True} is new type was set. {@code False} otherwise.

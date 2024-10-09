@@ -602,18 +602,18 @@ public class DataTypesTest extends AbstractBasicIntegrationTest {
 
     /** */
     @Test
-    public void testCastsOfVarcharsAsLiterals() {
-        doTestCastsOfVarchars(false);
+    public void testVarcharsCastsLiterals() {
+        doTestVarcharsCasts(false);
     }
 
     /** */
     @Test
-    public void testCastsOfVarcharsAsDynamicParameters() {
-        doTestCastsOfVarchars(true);
+    public void testVarcharsCastsDynamicParameters() {
+        doTestVarcharsCasts(true);
     }
 
     /** */
-    private void doTestCastsOfVarchars(boolean dynamics) {
+    private void doTestVarcharsCasts(boolean dynamics) {
         for (List<Object> params : varcharsToCast()) {
             String val = params.get(0).toString();
             RelDataType type = (RelDataType)params.get(1);
@@ -642,54 +642,54 @@ public class DataTypesTest extends AbstractBasicIntegrationTest {
 
     /** */
     @Test
-    public void testCastsOfNumericLiterals() {
-        doTestCastsOfNumeric(false, false);
+    public void testNumericsLiterals() {
+        doTestNumericsCasts(false, false);
     }
 
     /** */
     @Test
-    public void testCastsOfNumericAsDynamicParameters() {
-        doTestCastsOfNumeric(false, true);
+    public void testNumericsLiteralsPrecasted() {
+        doTestNumericsCasts(true, false);
     }
 
     /** */
     @Test
-    public void testCastsOfNumericLiteralsAsDynamicParameters() {
-        doTestCastsOfNumeric(true, false);
+    public void testNumericsCastsDynamicParameters() {
+        doTestNumericsCasts(false, true);
     }
 
     /** */
-    private void doTestCastsOfNumeric(boolean dynamic, boolean numeric) {
-        assert !dynamic || !numeric;
+    private void doTestNumericsCasts(boolean dynamic, boolean precasted) {
+        assert !dynamic || !precasted;
 
         for (List<Object> params : numericsToCast()) {
             assert params.size() == 4 : "Wrong params lenght: " + params.size();
 
             RelDataType inputType = (RelDataType)params.get(0);
-            Object input = params.get(1);
+            Object inputVal = params.get(1);
             RelDataType targetType = (RelDataType)params.get(2);
-            Object result = params.get(3);
+            Object expectedRes = params.get(3);
 
-            log.info("Params: inputType=" + inputType + ", inputValue=" + input + ", targetType=" + targetType
-                + ", expectedResult=" + result);
+            log.info("Params: inputType=" + inputType + ", inputValue=" + inputVal + ", targetType=" + targetType
+                + ", expectedResult=" + expectedRes);
 
             if (dynamic) {
                 String qry = String.format("SELECT CAST(? AS %s)", targetType);
 
-                if (result instanceof Exception)
-                    assertThrows(qry, (Class<? extends Exception>)result.getClass(), ((Throwable)result).getMessage(), input);
+                if (expectedRes instanceof Exception)
+                    assertThrows(qry, (Class<? extends Exception>)expectedRes.getClass(), ((Throwable)expectedRes).getMessage(), inputVal);
                 else
-                    assertQuery(qry).withParams(inputType).returns(result);
+                    assertQuery(qry).withParams(inputType).returns(expectedRes);
             }
             else {
-                String qry = numeric
-                    ? String.format("SELECT CAST(%s::%s AS %s)", asLiteral(input, inputType), inputType, targetType)
-                    : String.format("SELECT CAST(%s AS %s)", asLiteral(input, inputType), targetType);
+                String qry = precasted
+                    ? String.format("SELECT CAST(%s::%s AS %s)", asLiteral(inputVal, inputType), inputType, targetType)
+                    : String.format("SELECT CAST(%s AS %s)", asLiteral(inputVal, inputType), targetType);
 
-                if (result instanceof Exception)
-                    assertThrows(qry, (Class<? extends Exception>)result.getClass(), ((Throwable)result).getMessage());
+                if (expectedRes instanceof Exception)
+                    assertThrows(qry, (Class<? extends Exception>)expectedRes.getClass(), ((Throwable)expectedRes).getMessage());
                 else
-                    assertQuery(qry).returns(result);
+                    assertQuery(qry).returns(expectedRes);
             }
         }
     }
@@ -710,22 +710,30 @@ public class DataTypesTest extends AbstractBasicIntegrationTest {
         RelDataType bigintType = tf.createSqlType(SqlTypeName.BIGINT);
         RelDataType realType = tf.createSqlType(SqlTypeName.REAL);
         RelDataType doubleType = tf.createSqlType(SqlTypeName.DOUBLE);
-        RelDataType decimal4Type = decimalType(4);
 
-        Exception overflowErr = new IllegalArgumentException(IgniteSqlFunctions.NUMERIC_FIELD_OVERFLOW_ERROR);
+        Exception overflowErr = new IllegalArgumentException(IgniteSqlFunctions.NUMERIC_OVERFLOW_ERROR);
         Exception numFormatErr = new NumberFormatException("is neither a decimal digit number");
 
         //noinspection RedundantTypeArguments (explicit type arguments speedup compilation and analysis time)
         return F.<List<Object>>asList(
-            // Numeric
+            // String
+            F.asList(varcharType, "100", decimalType(3), new BigDecimal("100")),
+            F.asList(varcharType, "100", decimalType(3, 0), new BigDecimal("100")),
+            F.asList(varcharType, "100", decimalType(4, 1), new BigDecimal("100.0")),
+            F.asList(varcharType, "100.12", decimalType(5, 1), new BigDecimal("100.1")),
             F.asList(varcharType, "lame", decimalType(5, 1), numFormatErr),
             F.asList(varcharType, "12345", decimalType(5, 1), overflowErr),
-            F.asList(decimal4Type, "100", decimalType(3), new BigDecimal("100")),
-            F.asList(decimal4Type, "100", decimalType(3, 0), new BigDecimal("100")),
-            F.asList(decimal4Type, "100.12", decimalType(5, 1), new BigDecimal("100.1")),
-            F.asList(decimal4Type, "100.12", decimalType(5, 0), new BigDecimal("100")),
-            F.asList(decimal4Type, "100", decimalType(2, 0), overflowErr),
-            F.asList(decimal4Type, "100.12", decimalType(5, 2), new BigDecimal("100.12")),
+            F.asList(varcharType, "1234", decimalType(5, 1), new BigDecimal("1234.0")),
+            F.asList(varcharType, "100.12", decimalType(1, 0), overflowErr),
+            F.asList(varcharType, "100", decimalType(2, 0), overflowErr),
+
+            // Numeric
+            F.asList(decimalType(4), "100", decimalType(3), new BigDecimal("100")),
+            F.asList(decimalType(4), "100", decimalType(3, 0), new BigDecimal("100")),
+            F.asList(decimalType(4), "100.12", decimalType(5, 1), new BigDecimal("100.1")),
+            F.asList(decimalType(4), "100.12", decimalType(5, 0), new BigDecimal("100")),
+            F.asList(decimalType(4), "100", decimalType(2, 0), overflowErr),
+            F.asList(decimalType(4), "100.12", decimalType(5, 2), new BigDecimal("100.12")),
 
             // Tinyint
             F.asList(tinyIntType, (byte)100, decimalType(3), new BigDecimal("100")),
