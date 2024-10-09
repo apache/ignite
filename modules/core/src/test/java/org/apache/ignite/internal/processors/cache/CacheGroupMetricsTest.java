@@ -440,6 +440,12 @@ public class CacheGroupMetricsTest extends GridCommonAbstractTest implements Ser
             }
         };
 
+        for (CacheGroupContext grpCtx : client.context().cache().cacheGroups()) {
+            while (!grpCtx.topology().initialized()) {
+                doSleep(100);
+            }
+        }
+
         testLog.registerListener(lsnr);
 
         String[] names = new String[] {"group1", "group2", "cache4"};
