@@ -124,6 +124,20 @@ public class IgniteOwnSqlOperatorTable extends ReflectiveSqlOperatorTable {
             SqlFunctionCategory.SYSTEM);
 
     /**
+     * Returns user attribute value by the specified name. Example:
+     * <p>
+     * {@code select USER_ATTRIBUTE('sessionId');}
+     */
+    public static final SqlFunction USER_ATTRIBUTE =
+        new SqlFunction(
+            "USER_ATTRIBUTE",
+            SqlKind.OTHER_FUNCTION,
+            ReturnTypes.VARCHAR_2000_NULLABLE,
+            null,
+            OperandTypes.STRING,
+            SqlFunctionCategory.SYSTEM);
+
+    /**
      * Returns the Ignite operator table, creating it if necessary.
      */
     public static synchronized IgniteOwnSqlOperatorTable instance() {

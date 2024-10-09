@@ -52,6 +52,7 @@ import org.apache.ignite.internal.processors.cache.DynamicCacheDescriptor;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.QueryCursorImpl;
 import org.apache.ignite.internal.processors.cache.binary.CacheObjectBinaryProcessorImpl;
+import org.apache.ignite.internal.processors.cache.query.GridCacheQueryType;
 import org.apache.ignite.internal.processors.cache.query.IgniteQueryErrorCode;
 import org.apache.ignite.internal.processors.cache.query.QueryCursorEx;
 import org.apache.ignite.internal.processors.cache.query.SqlFieldsQueryEx;
@@ -616,7 +617,7 @@ public class JdbcRequestHandler implements ClientListenerRequestHandler {
 
             qry.setSchema(schemaName);
 
-            List<FieldsQueryCursor<List<?>>> results = querySqlFields(qry, cancel);
+            List<FieldsQueryCursor<List<?>>> results = querySqlFields(qry, cancel, connCtx.attributes());
 
             FieldsQueryCursor<List<?>> fieldsCur = results.get(0);
 
@@ -747,9 +748,13 @@ public class JdbcRequestHandler implements ClientListenerRequestHandler {
     }
 
     /** */
-    private List<FieldsQueryCursor<List<?>>> querySqlFields(SqlFieldsQueryEx qry, GridQueryCancel cancel) {
+    private List<FieldsQueryCursor<List<?>>> querySqlFields(
+        SqlFieldsQueryEx qry,
+        GridQueryCancel cancel,
+        Map<String, String> userAttrs
+    ) {
         return connCtx.kernalContext().query().querySqlFields(null, qry,
-            cliCtx, true, protocolVer.compareTo(VER_2_3_0) < 0, cancel);
+            cliCtx, true, protocolVer.compareTo(VER_2_3_0) < 0, GridCacheQueryType.SQL_FIELDS, cancel, userAttrs);
     }
 
     /**
@@ -1034,7 +1039,7 @@ public class JdbcRequestHandler implements ClientListenerRequestHandler {
             }
 
             List<FieldsQueryCursor<List<?>>> qryRes = connCtx.kernalContext().query().querySqlFields(
-                null, qry, cliCtx, true, true, cancel);
+                null, qry, cliCtx, true, true, GridCacheQueryType.SQL_FIELDS, cancel, connCtx.attributes());
 
             for (FieldsQueryCursor<List<?>> cur : qryRes) {
                 if (cur instanceof BulkLoadContextCursor)
