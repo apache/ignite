@@ -59,7 +59,7 @@ public class ScanQueryTransactionIsolationTest extends AbstractQueryTransactionI
                                         params.add(new Object[]{
                                             gridCnt,
                                             backup,
-                                            false, //partitionAwareness
+                                            false, //partition awareness
                                             mode,
                                             execType,
                                             modify,
@@ -75,7 +75,7 @@ public class ScanQueryTransactionIsolationTest extends AbstractQueryTransactionI
                                             backup,
                                             partitionAwareness,
                                             mode,
-                                            THIN_VIA_QUERY, // ExecType
+                                            THIN_VIA_QUERY, // executor type
                                             modify,
                                             commit,
                                             mutli,
