@@ -18,7 +18,9 @@
 package org.apache.ignite.internal.processors.query.calcite.exec;
 
 import java.util.UUID;
+import org.apache.ignite.ClientContext;
 import org.apache.ignite.internal.processors.query.calcite.util.Service;
+import org.jetbrains.annotations.Nullable;
 
 /**
  *
@@ -31,5 +33,5 @@ public interface QueryTaskExecutor extends Service {
      * @param fragmentId Fragment ID.
      * @param qryTask Query task.
      */
-    void execute(UUID qryId, long fragmentId, Runnable qryTask);
+    public void execute(UUID qryId, long fragmentId, Runnable qryTask, @Nullable ClientContext clnCtx);
 }

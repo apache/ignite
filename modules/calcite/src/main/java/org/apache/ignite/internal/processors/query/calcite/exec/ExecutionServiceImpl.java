@@ -31,6 +31,7 @@ import org.apache.calcite.plan.RelOptUtil;
 import org.apache.calcite.rel.core.TableModify;
 import org.apache.calcite.sql.SqlInsert;
 import org.apache.calcite.sql.SqlKind;
+import org.apache.ignite.ClientContext;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.cache.query.FieldsQueryCursor;
@@ -476,11 +477,12 @@ public class ExecutionServiceImpl<Row> extends AbstractService implements Execut
     }
 
     /** */
-    private BaseQueryContext createQueryContext(Context parent, @Nullable String schema) {
+    private BaseQueryContext createQueryContext(Context parent, @Nullable String schema, @Nullable ClientContext clnCtx) {
         return BaseQueryContext.builder()
             .parentContext(parent)
             .defaultSchema(schemaHolder().schema(schema))
             .logger(log)
+            .clientContext(clnCtx)
             .build();
     }
 
@@ -659,7 +661,8 @@ public class ExecutionServiceImpl<Row> extends AbstractService implements Execut
                             fragmentsPerNode.get(nodeId).intValue(),
                             qry.parameters(),
                             parametersMarshalled,
-                            timeout
+                            timeout,
+                            qry.context().clientContext()
                         );
 
                         messageService().send(nodeId, req);
@@ -846,7 +849,7 @@ public class ExecutionServiceImpl<Row> extends AbstractService implements Execut
                 )
             );
 
-            final BaseQueryContext qctx = createQueryContext(Contexts.empty(), msg.schema());
+            final BaseQueryContext qctx = createQueryContext(Contexts.empty(), msg.schema(), msg.clientContext());
 
             QueryPlan qryPlan = queryPlanCache().queryPlan(
                 new CacheKey(msg.schema(), msg.root()),

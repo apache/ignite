@@ -208,32 +208,34 @@ public class MessageServiceImpl extends AbstractService implements MessageServic
     protected void onMessage(UUID nodeId, CalciteMessage msg) {
         if (msg instanceof ExecutionContextAware) {
             ExecutionContextAware msg0 = (ExecutionContextAware)msg;
-            taskExecutor().execute(msg0.queryId(), msg0.fragmentId(), () -> onMessageInternal(nodeId, msg));
+            taskExecutor().execute(msg0.queryId(), msg0.fragmentId(), () -> onMessageInternal(nodeId, msg), msg0.clientContext());
         }
         else
             taskExecutor().execute(
                 IgniteUuid.VM_ID,
                 ThreadLocalRandom.current().nextLong(1024),
-                () -> onMessageInternal(nodeId, msg)
+                () -> onMessageInternal(nodeId, msg),
+                null
             );
     }
 
     /** */
     private void onMessage(UUID nodeId, Object msg, byte plc) {
-        if (msg instanceof CalciteMessage)
+        if (msg instanceof CalciteMessage) {
+            try {
+                prepareUnmarshal((Message)msg);
+            }
+            catch (IgniteCheckedException e) {
+                throw U.convertException(e);
+            }
+
             onMessage(nodeId, (CalciteMessage)msg);
+        }
     }
 
     /** */
     private void onMessageInternal(UUID nodeId, CalciteMessage msg) {
-        try {
-            prepareUnmarshal(msg);
-
-            MessageListener lsnr = Objects.requireNonNull(lsnrs.get(msg.type()));
-            lsnr.onMessage(nodeId, msg);
-        }
-        catch (IgniteCheckedException e) {
-            throw U.convertException(e);
-        }
+        MessageListener lsnr = Objects.requireNonNull(lsnrs.get(msg.type()));
+        lsnr.onMessage(nodeId, msg);
     }
 }

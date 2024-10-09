@@ -17,6 +17,10 @@
 
 package org.apache.ignite.internal.processors.odbc.jdbc;
 
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.Properties;
 import java.util.concurrent.atomic.AtomicLong;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.binary.BinaryObjectException;
@@ -24,8 +28,10 @@ import org.apache.ignite.internal.binary.BinaryReaderExImpl;
 import org.apache.ignite.internal.binary.BinaryWriterExImpl;
 import org.apache.ignite.internal.binary.streams.BinaryHeapInputStream;
 import org.apache.ignite.internal.binary.streams.BinaryInputStream;
+import org.apache.ignite.internal.jdbc.thin.JdbcThinConnection;
 import org.apache.ignite.internal.processors.odbc.ClientListenerRequestNoId;
 import org.apache.ignite.internal.util.typedef.internal.S;
+import org.jetbrains.annotations.Nullable;
 
 /**
  * JDBC request.
@@ -92,10 +98,13 @@ public class JdbcRequest extends ClientListenerRequestNoId implements JdbcRawBin
     private static final AtomicLong REQ_ID_GENERATOR = new AtomicLong();
 
     /** Request type. */
-    private byte type;
+    private final byte type;
 
     /** Request id. */
     private long reqId;
+
+    /** Client info set with {@link JdbcThinConnection#setClientInfo} methods. */
+    private @Nullable Map<String, Object> clientInfo;
 
     /**
      * @param type Command type.
@@ -104,6 +113,22 @@ public class JdbcRequest extends ClientListenerRequestNoId implements JdbcRawBin
         this.type = type;
 
         reqId = REQ_ID_GENERATOR.incrementAndGet();
+    }
+
+    /** @return Client info. */
+    public @Nullable Map<String, Object> clientInfo() {
+        return clientInfo == null ? null : Collections.unmodifiableMap(clientInfo);
+    }
+
+    /** @param clientInfo Client info. */
+    public void clientInfo(@Nullable Properties clientInfo) {
+        if (clientInfo == null)
+            return;
+
+        this.clientInfo = new HashMap<>(clientInfo.size());
+
+        for (Map.Entry<Object, Object> prop: clientInfo.entrySet())
+            this.clientInfo.put((String)prop.getKey(), prop.getValue());
     }
 
     /** {@inheritDoc} */
@@ -115,6 +140,9 @@ public class JdbcRequest extends ClientListenerRequestNoId implements JdbcRawBin
 
         if (protoCtx.isAffinityAwarenessSupported())
             writer.writeLong(reqId);
+
+        if (protoCtx.isFeatureSupported(JdbcThinFeature.CLIENT_INFO))
+            writer.writeMap(clientInfo);
     }
 
     /** {@inheritDoc} */
@@ -125,6 +153,9 @@ public class JdbcRequest extends ClientListenerRequestNoId implements JdbcRawBin
 
         if (protoCtx.isAffinityAwarenessSupported())
             reqId = reader.readLong();
+
+        if (protoCtx.isFeatureSupported(JdbcThinFeature.CLIENT_INFO))
+            clientInfo = reader.readMap();
     }
 
     /** {@inheritDoc} */
