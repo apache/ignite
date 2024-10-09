@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.processors.cache.transactions;
 
+import java.util.List;
 import java.util.concurrent.CountDownLatch;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
@@ -36,7 +37,7 @@ import org.apache.ignite.configuration.NearCacheConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.TestRecordingCommunicationSpi;
-import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxFinishResponse;
+import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxPrepareResponse;
 import org.apache.ignite.internal.util.future.GridCompoundFuture;
 import org.apache.ignite.internal.util.lang.GridAbsPredicate;
 import org.apache.ignite.internal.util.typedef.G;
@@ -219,10 +220,11 @@ public class TxWithKeyContentionSelfTest extends GridCommonAbstractTest {
     private void runKeyCollisionsMetric(TransactionConcurrency concurrency, TransactionIsolation isolation) throws Exception {
         Ignite ig = startGridsMultiThreaded(3);
 
-        int contCnt = (int)U.staticField(IgniteTxManager.class, "COLLISIONS_QUEUE_THRESHOLD") * 5;
+        int contCnt = (int)U.staticField(IgniteTxManager.class, "COLLISIONS_QUEUE_THRESHOLD") * 20;
 
-        CountDownLatch txLatch = new CountDownLatch(contCnt);
+        CountDownLatch txLatch = new CountDownLatch(contCnt * 2);
 
+        CountDownLatch txLatch0 = new CountDownLatch(contCnt * 2);
         ig.cluster().state(ClusterState.ACTIVE);
 
         client = true;
@@ -235,7 +237,9 @@ public class TxWithKeyContentionSelfTest extends GridCommonAbstractTest {
 
         IgniteCache<Integer, Integer> cache0 = cl.cache(DEFAULT_CACHE_NAME);
 
-        final Integer keyId = primaryKey(cache);
+        final List<Integer> priKeys = primaryKeys(cache, 3, 1);
+
+        final Integer backKey = backupKey(cache);
 
         CountDownLatch blockOnce = new CountDownLatch(1);
 
@@ -248,7 +252,7 @@ public class TxWithKeyContentionSelfTest extends GridCommonAbstractTest {
 
             commSpi0.blockMessages(new IgniteBiPredicate<ClusterNode, Message>() {
                 @Override public boolean apply(ClusterNode node, Message msg) {
-                    if (msg instanceof GridNearTxFinishResponse && blockOnce.getCount() > 0) {
+                    if (msg instanceof GridNearTxPrepareResponse && blockOnce.getCount() > 0) {
                         blockOnce.countDown();
 
                         return true;
@@ -261,7 +265,8 @@ public class TxWithKeyContentionSelfTest extends GridCommonAbstractTest {
 
         IgniteInternalFuture f = GridTestUtils.runAsync(() -> {
             try (Transaction tx = cliTxMgr.txStart(concurrency, isolation)) {
-                cache0.put(keyId, 0);
+                cache0.put(priKeys.get(0), 0);
+                cache0.put(priKeys.get(2), 0);
                 tx.commit();
             }
         });
@@ -273,7 +278,21 @@ public class TxWithKeyContentionSelfTest extends GridCommonAbstractTest {
         for (int i = 0; i < contCnt; ++i) {
             IgniteInternalFuture f0 = GridTestUtils.runAsync(() -> {
                 try (Transaction tx = cliTxMgr.txStart(concurrency, isolation)) {
-                    cache0.put(keyId, 0);
+                    cache0.put(priKeys.get(0), 0);
+                    cache0.put(priKeys.get(1), 0);
+
+                    txLatch0.countDown();
+
+                    tx.commit();
+
+                    txLatch.countDown();
+                }
+
+                try (Transaction tx = cliTxMgr.txStart(concurrency, isolation)) {
+                    cache0.put(priKeys.get(2), 0);
+                    cache0.put(backKey, 0);
+
+                    txLatch0.countDown();
 
                     tx.commit();
 
