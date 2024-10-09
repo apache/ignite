@@ -27,6 +27,9 @@ public class SqlConfiguration {
     /** Default SQL query history size. */
     public static final int DFLT_SQL_QUERY_HISTORY_SIZE = 1000;
 
+    /** Default SQL plan history size. */
+    public static final int DFLT_SQL_PLAN_HISTORY_SIZE = 1000;
+
     /** Default query timeout. */
     public static final long DFLT_QRY_TIMEOUT = 0;
 
@@ -44,6 +47,9 @@ public class SqlConfiguration {
 
     /** SQL query history size. */
     private int sqlQryHistSize = DFLT_SQL_QUERY_HISTORY_SIZE;
+
+    /** SQL plan history size. */
+    private int sqlPlanHistSize = DFLT_SQL_PLAN_HISTORY_SIZE;
 
     /** Enable validation of key & values against sql schema. */
     private boolean validationEnabled;
@@ -103,6 +109,30 @@ public class SqlConfiguration {
      */
     public SqlConfiguration setSqlQueryHistorySize(int size) {
         sqlQryHistSize = size;
+
+        return this;
+    }
+
+    /**
+     * Number of SQL plan history elements to keep in memory. If not provided, then default value {@link
+     * #DFLT_SQL_PLAN_HISTORY_SIZE} is used. If provided value is less or equals 0, then gathering SQL plan history
+     * will be switched off.
+     *
+     * @return SQL plan history size.
+     */
+    public int getSqlPlanHistorySize() {
+        return sqlPlanHistSize;
+    }
+
+    /**
+     * Sets number of SQL plan history elements kept in memory. If not explicitly set, then default value is {@link
+     * #DFLT_SQL_PLAN_HISTORY_SIZE}.
+     *
+     * @param size Number of SQL plan history elements kept in memory.
+     * @return {@code this} for chaining.
+     */
+    public SqlConfiguration setSqlPlanHistorySize(int size) {
+        sqlPlanHistSize = size;
 
         return this;
     }

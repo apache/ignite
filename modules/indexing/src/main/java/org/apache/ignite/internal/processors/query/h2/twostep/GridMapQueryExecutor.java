@@ -42,6 +42,7 @@ import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.events.CacheQueryExecutedEvent;
 import org.apache.ignite.events.DiscoveryEvent;
+import org.apache.ignite.indexing.IndexingQueryEngineConfiguration;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.GridTopic;
 import org.apache.ignite.internal.metric.IoStatisticsHolder;
@@ -475,6 +476,14 @@ public class GridMapQueryExecutor {
                                 qryInfo.plan()
                             );
                         }
+
+                        h2.runningQueryManager().planHistoryTracker().addPlan(
+                            qryInfo.plan(),
+                            sql,
+                            schemaName,
+                            false,
+                            IndexingQueryEngineConfiguration.ENGINE_NAME
+                        );
 
                         GridQueryCancel qryCancel = qryResults.queryCancel(qryIdx);
 
