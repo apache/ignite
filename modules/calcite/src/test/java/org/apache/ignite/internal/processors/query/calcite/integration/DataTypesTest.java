@@ -602,19 +602,19 @@ public class DataTypesTest extends AbstractBasicIntegrationTest {
 
     /** */
     @Test
-    public void testVarcharsCastsLiterals() {
-        doTestVarcharsCasts(false);
+    public void testCoercionOfVarcharLiterals() {
+        doTestCoercionOfVarchars(false);
     }
 
     /** */
     @Test
-    public void testVarcharsCastsDynamicParameters() {
-        doTestVarcharsCasts(true);
+    public void testCoercionOfVarcharDynamicParameters() {
+        doTestCoercionOfVarchars(true);
     }
 
     /** */
-    private void doTestVarcharsCasts(boolean dynamics) {
-        for (List<Object> params : varcharsToCast()) {
+    private void doTestCoercionOfVarchars(boolean dynamics) {
+        for (List<Object> params : varcharsToCoerce()) {
             String val = params.get(0).toString();
             RelDataType type = (RelDataType)params.get(1);
             String result = params.get(2).toString();
@@ -627,7 +627,7 @@ public class DataTypesTest extends AbstractBasicIntegrationTest {
     }
 
     /** */
-    private static List<List<Object>> varcharsToCast() {
+    private static List<List<Object>> varcharsToCoerce() {
         IgniteTypeFactory tf = Commons.typeFactory();
 
         return F.asList(
@@ -642,24 +642,24 @@ public class DataTypesTest extends AbstractBasicIntegrationTest {
 
     /** */
     @Test
-    public void testNumericsLiterals() {
-        doTestNumericsCasts(false, false);
+    public void testCoercionOfNumericLiterals() {
+        doTestCoercionOfNumerics(false, false);
     }
 
     /** */
     @Test
-    public void testNumericsLiteralsPrecasted() {
-        doTestNumericsCasts(true, false);
+    public void testCoercionOfNumericLiteralsPrecasted() {
+        doTestCoercionOfNumerics(true, false);
     }
 
     /** */
     @Test
-    public void testNumericsCastsDynamicParameters() {
-        doTestNumericsCasts(false, true);
+    public void testCoercionOfNumericDynamicParameters() {
+        doTestCoercionOfNumerics(false, true);
     }
 
     /** */
-    private void doTestNumericsCasts(boolean dynamic, boolean precasted) {
+    private void doTestCoercionOfNumerics(boolean dynamic, boolean precasted) {
         assert !dynamic || !precasted;
 
         for (List<Object> params : numericsToCast()) {

@@ -586,7 +586,7 @@ public class IgniteSqlValidator extends SqlValidatorImpl {
             || (dynamicParam = (SqlDynamicParam)node).getIndex() >= parameters.length)
             return false;
 
-        Object passedVal = parameters[((SqlDynamicParam)node).getIndex()];
+        Object passedVal = parameters[dynamicParam.getIndex()];
 
         if (passedVal == null) {
             if (!inferredType.equals(unknownType))
@@ -595,12 +595,13 @@ public class IgniteSqlValidator extends SqlValidatorImpl {
             setValidatedNodeType(node, typeFactory.createSqlType(SqlTypeName.NULL));
         }
         else {
-            RelDataType type = typeFactory().toSql(typeFactory().createType(passedVal.getClass()));
+            RelDataType passedValType = typeFactory().toSql(typeFactory().createType(passedVal.getClass()));
 
-            if (SqlTypeUtil.equalSansNullability(type, inferredType))
+            if (unknownType.equals(passedValType) || SqlTypeUtil.equalSansNullability(passedValType, inferredType)
+                || inferredType == typeFactory.leastRestrictive(F.asList(inferredType, passedValType)))
                 return false;
 
-            setValidatedNodeType(dynamicParam, type);
+            setValidatedNodeType(node, passedValType);
         }
 
         return true;
