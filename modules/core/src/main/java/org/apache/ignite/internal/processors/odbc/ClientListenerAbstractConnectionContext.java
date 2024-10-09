@@ -39,7 +39,7 @@ import static org.apache.ignite.plugin.security.SecuritySubjectType.REMOTE_CLIEN
  */
 public abstract class ClientListenerAbstractConnectionContext implements ClientListenerConnectionContext {
     /** */
-    public static final int NO_TX = 0;
+    public static final int NONE_TX = 0;
 
     /** Kernal context. */
     protected final GridKernalContext ctx;
@@ -165,7 +165,7 @@ public abstract class ClientListenerAbstractConnectionContext implements ClientL
     public int nextTxId() {
         int txId = txIdSeq.incrementAndGet();
 
-        return txId == NO_TX ? txIdSeq.incrementAndGet() : txId;
+        return txId == NONE_TX ? txIdSeq.incrementAndGet() : txId;
     }
 
     /**

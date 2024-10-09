@@ -18,7 +18,6 @@
 package org.apache.ignite.internal.processors.platform.client.tx;
 
 import org.apache.ignite.binary.BinaryRawReader;
-import org.apache.ignite.internal.processors.odbc.ClientListenerAbstractConnectionContext;
 import org.apache.ignite.internal.processors.odbc.ClientTxSupport;
 import org.apache.ignite.internal.processors.platform.client.ClientConnectionContext;
 import org.apache.ignite.internal.processors.platform.client.ClientIntResponse;
@@ -45,9 +44,6 @@ public class ClientTxStartRequest extends ClientRequest implements ClientTxSuppo
     /** Transaction label. */
     private final String lb;
 
-    /** */
-    private ClientConnectionContext ctx;
-
     /**
      * Constructor.
      *
@@ -64,19 +60,12 @@ public class ClientTxStartRequest extends ClientRequest implements ClientTxSuppo
 
     /** {@inheritDoc} */
     @Override public ClientResponse process(ClientConnectionContext ctx) {
-        this.ctx = ctx;
-
-        return new ClientIntResponse(requestId(), startClientTransaction(concurrency, isolation, timeout, lb));
+        return new ClientIntResponse(requestId(), startClientTransaction(ctx, concurrency, isolation, timeout, lb));
     }
 
     /** {@inheritDoc} */
     @Override public RuntimeException startTxException(Exception e) {
         return (e instanceof IgniteClientException) ? (IgniteClientException)e :
             new IgniteClientException(ClientStatus.FAILED, e.getMessage(), e);
-    }
-
-    /** {@inheritDoc} */
-    @Override public ClientListenerAbstractConnectionContext context() {
-        return ctx;
     }
 }

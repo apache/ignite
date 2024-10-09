@@ -33,7 +33,6 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import org.apache.ignite.cache.query.Query;
-import org.apache.ignite.internal.jdbc.thin.JdbcThinConnection.TxContext;
 import org.apache.ignite.internal.processors.cache.query.IgniteQueryErrorCode;
 import org.apache.ignite.internal.processors.odbc.ClientListenerResponse;
 import org.apache.ignite.internal.processors.odbc.SqlStateCode;
@@ -61,7 +60,6 @@ import org.apache.ignite.internal.util.typedef.F;
 import static java.sql.ResultSet.CONCUR_READ_ONLY;
 import static java.sql.ResultSet.FETCH_FORWARD;
 import static java.sql.ResultSet.TYPE_FORWARD_ONLY;
-import static org.apache.ignite.internal.jdbc.thin.JdbcThinConnection.NO_TX;
 
 /**
  * JDBC statement implementation.
@@ -232,8 +230,6 @@ public class JdbcThinStatement implements Statement {
 
         boolean autoCommit = conn.getAutoCommit();
 
-        TxContext txCtx = conn.txContext();
-
         JdbcQueryExecuteRequest req = new JdbcQueryExecuteRequest(
             stmtType,
             schema,
@@ -243,7 +239,7 @@ public class JdbcThinStatement implements Statement {
             explicitTimeout,
             sql,
             args == null ? null : args.toArray(new Object[args.size()]),
-            txCtx == null ? NO_TX : txCtx.txId
+            conn.txId()
         );
 
         JdbcResultWithIo resWithIo = conn.sendRequest(req, this, null);

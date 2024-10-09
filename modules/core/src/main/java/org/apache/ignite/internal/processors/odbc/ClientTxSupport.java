@@ -28,22 +28,24 @@ import org.apache.ignite.transactions.TransactionIsolation;
 
 /** */
 public interface ClientTxSupport {
-    /** @return Client connection context. */
-    ClientListenerAbstractConnectionContext context();
-
     /**
      * Starts new client transaction.
      *
+     * @param ctx Client connection context.
      * @param concurrency Transaction concurrency.
      * @param isolation Transaction isolation.
      * @param timeout Transaction timeout.
      * @param lb Transaction label.
      * @return Transaction id.
      */
-    default int startClientTransaction(TransactionConcurrency concurrency, TransactionIsolation isolation, long timeout, String lb) {
+    default int startClientTransaction(
+        ClientListenerAbstractConnectionContext ctx,
+        TransactionConcurrency concurrency,
+        TransactionIsolation isolation,
+        long timeout,
+        String lb
+    ) {
         GridNearTxLocal tx;
-
-        ClientListenerAbstractConnectionContext ctx = context();
 
         ctx.kernalContext().gateway().readLock();
 
@@ -87,12 +89,11 @@ public interface ClientTxSupport {
 
     /**
      * End transaction asynchronously.
+     * @param ctx Client connection context.
      * @param txId Transaction id.
      * @param committed If {@code true} transaction must be committed, rollback otherwise.
      */
-    default IgniteInternalFuture<IgniteInternalTx> endTxAsync(int txId, boolean committed) {
-        ClientListenerAbstractConnectionContext ctx = context();
-
+    default IgniteInternalFuture<IgniteInternalTx> endTxAsync(ClientListenerAbstractConnectionContext ctx, int txId, boolean committed) {
         ClientTxContext txCtx = ctx.txContext(txId);
 
         if (txCtx == null && !committed)
