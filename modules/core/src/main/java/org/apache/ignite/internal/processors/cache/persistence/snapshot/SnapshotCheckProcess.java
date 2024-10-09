@@ -221,7 +221,7 @@ public class SnapshotCheckProcess {
                 workingFut = req.allRestoreHandlers()
                     ? snpMgr.checker().invokeCustomHandlers(ctx.locMeta, req.snapshotPath(), req.groups(), true)
                     : snpMgr.checker().checkPartitions(ctx.locMeta, snpMgr.snapshotLocalDir(req.snapshotName(), req.snapshotPath()),
-                    req.groups(), false, true, false);
+                    req.groups(), false, req.fullCheck(), false);
             }
 
             workingFut.whenComplete((res, err) -> {
@@ -387,6 +387,7 @@ public class SnapshotCheckProcess {
      * @param snpName Snapshot name.
      * @param snpPath Snapshot directory path.
      * @param grpNames List of cache group names.
+     * @param fullCheck If {@code true}, calculates partition hashes. Otherwise, checks only snapshot integrity and partition counters.
      * @param incIdx Incremental snapshot index. If not positive, snapshot is not considered as incremental.
      * @param allRestoreHandlers If {@code true}, all the registered {@link IgniteSnapshotManager#handlers()} of type
      *                    {@link SnapshotHandlerType#RESTORE} are invoked. Otherwise, only snapshot metadatas and partition
@@ -396,6 +397,7 @@ public class SnapshotCheckProcess {
         String snpName,
         @Nullable String snpPath,
         @Nullable Collection<String> grpNames,
+        boolean fullCheck,
         int incIdx,
         boolean allRestoreHandlers
     ) {
@@ -414,6 +416,7 @@ public class SnapshotCheckProcess {
             snpName,
             snpPath,
             grpNames,
+            fullCheck,
             incIdx,
             allRestoreHandlers
         );
