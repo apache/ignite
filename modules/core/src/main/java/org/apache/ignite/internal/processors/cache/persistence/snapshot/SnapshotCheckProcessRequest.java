@@ -40,6 +40,10 @@ public class SnapshotCheckProcessRequest extends AbstractSnapshotOperationReques
     @GridToStringInclude
     private final boolean allRestoreHandlers;
 
+    /** Incremental snapshot index. If not positive, snapshot is not considered as incremental. */
+    @GridToStringInclude
+    private final int incIdx;
+
     /**
      * Creates snapshot check process request.
      *
@@ -48,6 +52,7 @@ public class SnapshotCheckProcessRequest extends AbstractSnapshotOperationReques
      * @param nodes Baseline node IDs that must be alive to complete the operation..
      * @param snpPath Snapshot directory path.
      * @param grps List of cache group names.
+     * @param incIdx Incremental snapshot index. If not positive, snapshot is not considered as incremental.
      * @param allRestoreHandlers If {@code true}, all the registered {@link IgniteSnapshotManager#handlers()} of type
      *                           {@link SnapshotHandlerType#RESTORE} are invoked. Otherwise, only snapshot metadatas and
      *                           partition hashes are validated.
@@ -58,6 +63,7 @@ public class SnapshotCheckProcessRequest extends AbstractSnapshotOperationReques
         String snpName,
         String snpPath,
         @Nullable Collection<String> grps,
+        int incIdx,
         boolean allRestoreHandlers
     ) {
         super(reqId, snpName, snpPath, grps, 0, nodes);
@@ -65,6 +71,7 @@ public class SnapshotCheckProcessRequest extends AbstractSnapshotOperationReques
         assert !F.isEmpty(nodes);
 
         this.allRestoreHandlers = allRestoreHandlers;
+        this.incIdx = incIdx;
     }
 
     /**
@@ -73,6 +80,11 @@ public class SnapshotCheckProcessRequest extends AbstractSnapshotOperationReques
      */
     public boolean allRestoreHandlers() {
         return allRestoreHandlers;
+    }
+
+    /** @return Incremental snapshot index. If not positive, snapshot is not considered as incremental. */
+    public int incrementalIndex() {
+        return incIdx;
     }
 
     /** {@inheritDoc} */

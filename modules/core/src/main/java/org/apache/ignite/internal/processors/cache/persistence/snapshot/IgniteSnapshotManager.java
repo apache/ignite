@@ -17,10 +17,12 @@
 
 package org.apache.ignite.internal.processors.cache.persistence.snapshot;
 
+import java.io.BufferedInputStream;
 import java.io.Closeable;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
+import java.io.InputStream;
 import java.io.OutputStream;
 import java.io.Serializable;
 import java.nio.ByteBuffer;
@@ -469,7 +471,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
     private final boolean sequentialWrite =
         IgniteSystemProperties.getBoolean(IGNITE_SNAPSHOT_SEQUENTIAL_WRITE, DFLT_IGNITE_SNAPSHOT_SEQUENTIAL_WRITE);
 
-    /** Snapshot validator. */
+    /** Snapshot checker. */
     private final SnapshotChecker snpChecker;
 
     /**
@@ -495,7 +497,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
         // Manage remote snapshots.
         snpRmtMgr = new SequentialRemoteSnapshotManager();
 
-        snpChecker = new SnapshotChecker(ctx, marsh, ctx.pools().getSnapshotExecutorService(), U.resolveClassLoader(ctx.config()));
+        snpChecker = new SnapshotChecker(ctx, marsh, ctx.pools().getSnapshotExecutorService());
     }
 
     /**
@@ -1902,8 +1904,8 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
                 ", incIdx=" + incIdx + ", grps=" + grps + ", validateParts=" + check + ']');
         }
 
-        if (check && incIdx < 1)
-            return checkSnpProc.start(name, snpPath, grps, includeCustomHandlers);
+        if (check && (incIdx < 1 || !includeCustomHandlers))
+            return checkSnpProc.start(name, snpPath, grps, incIdx, includeCustomHandlers);
 
         GridFutureAdapter<SnapshotPartitionsVerifyTaskResult> res = new GridFutureAdapter<>();
 
@@ -1926,12 +1928,9 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
             if (f0.error() == null && F.isEmpty(metasRes.exceptions())) {
                 Map<ClusterNode, List<SnapshotMetadata>> metas = metasRes.meta();
 
-                Class<? extends AbstractSnapshotVerificationTask> cls;
-
-                if (includeCustomHandlers)
-                    cls = SnapshotHandlerRestoreTask.class;
-                else
-                    cls = incIdx > 0 ? IncrementalSnapshotVerificationTask.class : SnapshotPartitionsVerifyTask.class;
+                Class<? extends AbstractSnapshotVerificationTask> cls = includeCustomHandlers
+                    ? SnapshotHandlerRestoreTask.class
+                    : SnapshotPartitionsVerifyTask.class;
 
                 kctx0.task().execute(
                         cls,
@@ -1994,8 +1993,18 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
      * @param smf File denoting to snapshot metafile.
      * @return Snapshot metadata instance.
      */
-    private SnapshotMetadata readSnapshotMetadata(File smf) throws IgniteCheckedException, IOException {
-        return snpChecker.readSnapshotMetadata(smf);
+    SnapshotMetadata readSnapshotMetadata(File smf) throws IgniteCheckedException, IOException {
+        SnapshotMetadata meta = readFromFile(smf);
+
+        String smfName = smf.getName().substring(0, smf.getName().length() - SNAPSHOT_METAFILE_EXT.length());
+
+        if (!U.maskForFileName(meta.consistentId()).equals(smfName)) {
+            throw new IgniteException(
+                "Error reading snapshot metadata [smfName=" + smfName + ", consId=" + U.maskForFileName(meta.consistentId())
+            );
+        }
+
+        return meta;
     }
 
     /**
@@ -2004,7 +2013,12 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
      * @param <T> Type of metadata.
      */
     public <T> T readFromFile(File smf) throws IgniteCheckedException, IOException {
-        return snpChecker.readFromFile(smf);
+        if (!smf.exists())
+            throw new IgniteCheckedException("Snapshot metafile cannot be read due to it doesn't exist: " + smf);
+
+        try (InputStream in = new BufferedInputStream(Files.newInputStream(smf.toPath()))) {
+            return marsh.unmarshal(in, U.resolveClassLoader(cctx.gridConfig()));
+        }
     }
 
     /**
