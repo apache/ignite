@@ -61,6 +61,7 @@ import org.apache.ignite.internal.util.GridStringBuilder;
 import org.apache.ignite.internal.util.GridUnsafe;
 import org.apache.ignite.internal.util.lang.GridTuple3;
 import org.apache.ignite.internal.util.lang.IgnitePair;
+import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.A;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiTuple;
@@ -155,7 +156,7 @@ public class IgniteIndexReaderTest extends GridCommandHandlerAbstractTest {
     /** */
     @Parameterized.Parameters(name = "cmdHnd={0}")
     public static List<String> commandHandlers() {
-        return Collections.singletonList(CLI_CMD_HND);
+        return F.asList(CLI_CMD_HND, CLI_GRID_CLIENT_CMD_HND);
     }
 
     /** {@inheritDoc} */

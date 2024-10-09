@@ -34,7 +34,6 @@ import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInternalFuture;
-import org.apache.ignite.internal.IgniteNodeAttributes;
 import org.apache.ignite.internal.processors.cache.persistence.GridCacheDatabaseSharedManager;
 import org.apache.ignite.internal.processors.cache.persistence.defragmentation.maintenance.DefragmentationParameters;
 import org.apache.ignite.internal.processors.cache.persistence.file.FileIOFactory;
@@ -188,7 +187,7 @@ public class GridCommandHandlerDefragmentationTest extends GridCommandHandlerClu
         assertEquals(EXIT_CODE_OK, execute(
             cmd,
             "--port",
-            grid(0).localNode().attribute(IgniteNodeAttributes.ATTR_REST_TCP_PORT).toString(),
+            connectorPort(grid(0)),
             "--defragmentation",
             "cancel"
         ));
@@ -204,7 +203,7 @@ public class GridCommandHandlerDefragmentationTest extends GridCommandHandlerClu
         assertEquals(EXIT_CODE_OK, execute(
             cmd,
             "--port",
-            grid(1).localNode().attribute(IgniteNodeAttributes.ATTR_REST_TCP_PORT).toString(),
+            connectorPort(grid(1)),
             "--defragmentation",
             "cancel"
         ));
@@ -242,7 +241,7 @@ public class GridCommandHandlerDefragmentationTest extends GridCommandHandlerClu
             grid0ConsId
         ));
 
-        String port = grid(0).localNode().attribute(IgniteNodeAttributes.ATTR_REST_TCP_PORT).toString();
+        String port = connectorPort(grid(0));
 
         stopGrid(0);
 
@@ -354,7 +353,7 @@ public class GridCommandHandlerDefragmentationTest extends GridCommandHandlerClu
             grid0ConsId
         ));
 
-        String port = grid(0).localNode().attribute(IgniteNodeAttributes.ATTR_REST_TCP_PORT).toString();
+        String port = connectorPort(grid(0));
 
         stopGrid(0);
 

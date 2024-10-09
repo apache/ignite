@@ -1,2 +1,3 @@
 org.apache.ignite.util.GridCommandHandlerFactoryAbstractTest$JmxCommandHandler
 org.apache.ignite.util.GridCommandHandlerFactoryAbstractTest$CliCommandHandler
+org.apache.ignite.util.GridCommandHandlerFactoryAbstractTest$CliGridClientCommandHandler

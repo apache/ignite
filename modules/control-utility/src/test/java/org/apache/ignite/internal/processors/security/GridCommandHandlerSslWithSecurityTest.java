@@ -23,6 +23,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
+import org.apache.ignite.configuration.ClientConnectorConfiguration;
 import org.apache.ignite.configuration.ConnectorConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
@@ -72,7 +73,7 @@ public class GridCommandHandlerSslWithSecurityTest extends GridCommandHandlerFac
 
     /** {@inheritDoc} */
     @Override protected void beforeTest() throws Exception {
-        Assume.assumeTrue(commandHandler.equalsIgnoreCase(CLI_CMD_HND));
+        Assume.assumeTrue(cliCommandHandler());
 
         super.beforeTest();
     }
@@ -97,14 +98,26 @@ public class GridCommandHandlerSslWithSecurityTest extends GridCommandHandlerFac
 
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
-        return super.getConfiguration(igniteInstanceName)
+        IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName)
             .setPluginProviders(new TestSecurityPluginProvider(login, pwd, ALL_PERMISSIONS, null, false))
-            .setSslContextFactory(sslTrustedFactory("node01", "trustone"))
-            .setConnectorConfiguration(
-                new ConnectorConfiguration()
-                    .setSslEnabled(true)
-                    .setSslFactory(sslTrustedFactory("connectorServer", "trustthree"))
+            .setSslContextFactory(sslTrustedFactory("node01", "trustone"));
+
+        if (commandHandler.equals(CLI_GRID_CLIENT_CMD_HND)) {
+            cfg.setConnectorConfiguration(new ConnectorConfiguration()
+                .setSslEnabled(true)
+                .setSslFactory(sslTrustedFactory("connectorServer", "trustthree"))
             );
+        }
+
+        if (commandHandler.equals(CLI_CMD_HND)) {
+            cfg.setClientConnectorConfiguration(new ClientConnectorConfiguration()
+                .setSslEnabled(true)
+                .setSslContextFactory(sslTrustedFactory("connectorServer", "trustthree"))
+                .setUseIgniteSslContextFactory(false)
+            );
+        }
+
+        return cfg;
     }
 
     /**
