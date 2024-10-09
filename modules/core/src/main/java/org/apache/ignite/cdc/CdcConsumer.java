@@ -25,7 +25,6 @@ import org.apache.ignite.binary.BinaryIdMapper;
 import org.apache.ignite.binary.BinaryType;
 import org.apache.ignite.cache.CacheEntryVersion;
 import org.apache.ignite.internal.cdc.CdcMain;
-import org.apache.ignite.lang.IgniteExperimental;
 import org.apache.ignite.metric.MetricRegistry;
 import org.apache.ignite.resources.LoggerResource;
 import org.apache.ignite.spi.systemview.view.CacheView;
@@ -65,7 +64,6 @@ import org.apache.ignite.spi.systemview.view.CacheView;
  * @see CdcEvent
  * @see CacheEntryVersion
  */
-@IgniteExperimental
 public interface CdcConsumer {
     /**
      * Starts the consumer.
