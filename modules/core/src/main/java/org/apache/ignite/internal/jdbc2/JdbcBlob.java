@@ -18,54 +18,111 @@
 package org.apache.ignite.internal.jdbc2;
 
 import java.io.ByteArrayInputStream;
+import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.sql.Blob;
 import java.sql.SQLException;
-import java.sql.SQLFeatureNotSupportedException;
-import java.util.Arrays;
-import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.internal.jdbc2.lob.JdbcBlobBuffer;
 
 /**
- * Simple BLOB implementation. Actually there is no such entity as BLOB in Ignite. So using arrays is preferable way
+ * Simple BLOB implementation. Actually there is no such entity as BLOB in Ignite. So using arrays is a preferable way
  * to work with binary objects.
  *
- * This implementation can be useful for reading binary fields of objects through JDBC.
+ * <p>This implementation can be useful for writting and reading binary fields of objects through JDBC.
+ *
+ * <p>This implementation stores data in memory until the configured data size limit is reached. After that
+ * data will be saved to temp file. And all subsequent operations will work with data stored in temp file.
  */
-public class JdbcBlob implements Blob {
-    /** Byte array. */
-    private byte[] arr;
+public class JdbcBlob implements Blob, AutoCloseable {
+    /** Buffer to store actial data. */
+    private JdbcBlobBuffer data;
 
     /**
+     * Create empty Blob.
+     *
+     * <p>Once any write operation would increase the size of underlying data above the
+     * maximum value passed as {@code maxMemoryBufferBytes} data will be saved to temp file.
+     * And all subsequent operations will work with data stored in temp file.
+     *
+     * @param maxMemoryBufferBytes Max in-memory buffer size.
+     */
+    public JdbcBlob(long maxMemoryBufferBytes) {
+        data = new JdbcBlobBuffer(maxMemoryBufferBytes);
+    }
+
+    /**
+     * Create Blob which wraps the existing byte array.
+     *
+     * <p>Start working in in-memory mode even if the passed {@code arr} array is larger than limit
+     * specifed via the {@code maxMemoryBufferBytes}. It's done so since memory is already allocated
+     * and there is no need to save it.
+     *
+     * <p>Once any write operation would increase the size of underlying data above the
+     * maximum value passed as {@code maxMemoryBufferBytes} data will be saved to temp file.
+     * And all subsequent operations will work with data stored in temp file.
+     *
+     * @param maxMemoryBufferBytes Max in-memory buffer size.
+     * @param arr Byte array.
+     */
+    public JdbcBlob(long maxMemoryBufferBytes, byte[] arr) {
+        data = new JdbcBlobBuffer(maxMemoryBufferBytes, arr);
+    }
+
+    /**
+     * Create empty Blob which always stores data in memory.
+     */
+    public JdbcBlob() {
+        this(Long.MAX_VALUE);
+    }
+
+    /**
+     * Create Blob which wraps the existing byte array and always stores data in memory.
+     *
      * @param arr Byte array.
      */
     public JdbcBlob(byte[] arr) {
-        this.arr = arr;
+        this(Long.MAX_VALUE, arr);
     }
 
     /** {@inheritDoc} */
     @Override public long length() throws SQLException {
         ensureNotClosed();
 
-        return arr.length;
+        return data.totalCnt();
     }
 
     /** {@inheritDoc} */
     @Override public byte[] getBytes(long pos, int len) throws SQLException {
         ensureNotClosed();
 
-        if (pos < 1 || (arr.length - pos < 0 && arr.length > 0) || len < 0)
+        long totalCnt = data.totalCnt();
+
+        if (pos < 1 || (pos > totalCnt && totalCnt > 0) || len < 0)
             throw new SQLException("Invalid argument. Position can't be less than 1 or " +
-                "greater than size of underlying byte array. Requested length also can't be negative " + "" +
-                "[pos=" + pos + ", len=" + len + ']');
+                "greater than Blob total bytes count. Requested length also can't be negative " +
+                "[pos=" + pos + ", len=" + len + ", totalCnt=" + totalCnt + "]");
 
-        int idx = (int)(pos - 1);
+        long idx = pos - 1;
 
-        int size = len > arr.length - idx ? arr.length - idx : len;
+        int size = len > totalCnt - idx ? (int)(totalCnt - idx) : len;
 
         byte[] res = new byte[size];
 
-        U.arrayCopy(arr, idx, res, 0, size);
+        if (size == 0)
+            return res;
+
+        int readCnt;
+
+        try {
+            readCnt = data.getInputStream(idx, size).read(res);
+        }
+        catch (Exception e) {
+            throw new SQLException(e);
+        }
+
+        if (readCnt == -1)
+            throw new SQLException("Failed to read bytes from Blob [pos=" + pos + ", len=" + len + "]");
 
         return res;
     }
@@ -74,55 +131,51 @@ public class JdbcBlob implements Blob {
     @Override public InputStream getBinaryStream() throws SQLException {
         ensureNotClosed();
 
-        return new ByteArrayInputStream(arr);
+        return data.getInputStream();
     }
 
     /** {@inheritDoc} */
     @Override public InputStream getBinaryStream(long pos, long len) throws SQLException {
         ensureNotClosed();
 
-        if (pos < 1 || len < 1 || pos > arr.length || len > arr.length - pos + 1)
-            throw new SQLException("Invalid argument. Position can't be less than 1 or " +
-                "greater than size of underlying byte array. Requested length can't be negative and can't be " +
-                "greater than available bytes from given position [pos=" + pos + ", len=" + len + ']');
+        long totalCnt = data.totalCnt();
 
-        return new ByteArrayInputStream(arr, (int)(pos - 1), (int)len);
+        if (pos < 1 || len < 1 || pos > totalCnt || len > totalCnt - (pos - 1))
+            throw new SQLException("Invalid argument. Position can't be less than 1 or " +
+                "greater than Blob total bytes count. Requested length can't be negative and can't be " +
+                "greater than available bytes from given position [pos=" + pos + ", len=" + len + ", totalCnt=" + totalCnt + "]");
+
+        return data.getInputStream(pos - 1, len);
     }
 
     /** {@inheritDoc} */
     @Override public long position(byte[] ptrn, long start) throws SQLException {
         ensureNotClosed();
 
-        if (start < 1 || start > arr.length || ptrn.length == 0 || ptrn.length > arr.length)
+        if (start < 1)
+            throw new SQLException("Invalid argument. Start position can't be less than 1 [start=" + start + "]");
+
+        if (start > data.totalCnt() || ptrn.length == 0 || ptrn.length > data.totalCnt())
             return -1;
 
-        for (int i = 0, pos = (int)(start - 1); pos < arr.length;) {
-            if (arr[pos] == ptrn[i]) {
-                pos++;
+        long idx = positionImpl(new ByteArrayInputStream(ptrn), ptrn.length, start - 1);
 
-                i++;
-
-                if (i == ptrn.length)
-                    return pos - ptrn.length + 1;
-            }
-            else {
-                pos = pos - i + 1;
-
-                i = 0;
-            }
-        }
-
-        return -1;
+        return idx == -1 ? -1 : idx + 1;
     }
 
     /** {@inheritDoc} */
     @Override public long position(Blob ptrn, long start) throws SQLException {
         ensureNotClosed();
 
-        if (start < 1 || start > arr.length || ptrn.length() == 0 || ptrn.length() > arr.length)
+        if (start < 1)
+            throw new SQLException("Invalid argument. Start position can't be less than 1 [start=" + start + "]");
+
+        if (start > data.totalCnt() || ptrn.length() == 0 || ptrn.length() > data.totalCnt())
             return -1;
 
-        return position(ptrn.getBytes(1, (int)ptrn.length()), start);
+        long idx = positionImpl(ptrn.getBinaryStream(), ptrn.length(), start - 1);
+
+        return idx == -1 ? -1 : idx + 1;
     }
 
     /** {@inheritDoc} */
@@ -134,57 +187,136 @@ public class JdbcBlob implements Blob {
     @Override public int setBytes(long pos, byte[] bytes, int off, int len) throws SQLException {
         ensureNotClosed();
 
-        if (pos < 1)
+        long totalCnt = data.totalCnt();
+
+        if (pos < 1 || pos - 1 > totalCnt)
             throw new SQLException("Invalid argument. Position can't be less than 1 [pos=" + pos + ']');
 
-        int idx = (int)(pos - 1);
+        if (off < 0 || off >= bytes.length || off + len > bytes.length)
+            throw new SQLException("Invalid argument.",
+                    new ArrayIndexOutOfBoundsException("[off=" + off + ", len=" + len + ", bytes.length=" + bytes.length + "]"));
 
-        if (pos - 1 > arr.length || off < 0 || off >= bytes.length || off + len > bytes.length)
-            throw new ArrayIndexOutOfBoundsException();
-
-        byte[] dst = arr;
-
-        if (idx + len > arr.length) {
-            dst = new byte[arr.length + (len - (arr.length - idx))];
-
-            U.arrayCopy(arr, 0, dst, 0, idx);
-
-            arr = dst;
+        try {
+            data.getOutputStream(pos - 1).write(bytes, off, len);
         }
-
-        U.arrayCopy(bytes, off, dst, idx, len);
+        catch (Exception e) {
+            throw new SQLException(e);
+        }
 
         return len;
     }
 
     /** {@inheritDoc} */
     @Override public OutputStream setBinaryStream(long pos) throws SQLException {
-        throw new SQLFeatureNotSupportedException();
+        ensureNotClosed();
+
+        long totalCnt = data.totalCnt();
+
+        if (pos < 1 || pos > totalCnt + 1)
+            throw new SQLException("Invalid argument. Position can't be less than 1 or greater than Blob total bytes count + 1 " +
+                    "[pos=" + pos + ", totalCnt=" + totalCnt + "]");
+
+        try {
+            return data.getOutputStream(pos - 1);
+        }
+        catch (Exception e) {
+            throw new SQLException(e);
+        }
     }
 
     /** {@inheritDoc} */
     @Override public void truncate(long len) throws SQLException {
         ensureNotClosed();
 
-        if (len < 0 || len > arr.length)
+        long totalCnt = data.totalCnt();
+
+        if (len < 0 || len > totalCnt)
             throw new SQLException("Invalid argument. Length can't be " +
-                "less than zero or greater than Blob length [len=" + len + ']');
+                "less than zero or greater than Blob total bytes count [len=" + len + ", totalCnt=" + totalCnt + "]");
 
-        arr = Arrays.copyOf(arr, (int)len);
-
+        try {
+            data.truncate(len);
+        }
+        catch (IOException e) {
+            throw new SQLException(e);
+        }
     }
 
     /** {@inheritDoc} */
     @Override public void free() throws SQLException {
-        if (arr != null)
-            arr = null;
+        if (data != null) {
+            data.close();
+
+            data = null;
+        }
+    }
+
+    /** {@inheritDoc} */
+    @Override public void close() throws SQLException {
+        free();
+    }
+
+    /**
+     * Actial implementation of the pattern search.
+     *
+     * @param ptrn InputStream containing the pattern.
+     * @param ptrnLen Pattern length.
+     * @param idx Zero-based index in Blob to start search from.
+     * @return Zero-based position at which the pattern appears, else -1.
+     */
+    private long positionImpl(InputStream ptrn, long ptrnLen, long idx) throws SQLException {
+        assert ptrn.markSupported();
+
+        try {
+            InputStream blob = data.getInputStream(idx, data.totalCnt() - idx);
+
+            boolean patternStarted = false;
+
+            long ptrnPos = 0;
+            long blobPos = idx;
+            int b;
+
+            while ((b = blob.read()) != -1) {
+                if (b == ptrn.read()) {
+                    if (!patternStarted) {
+                        patternStarted = true;
+
+                        blob.mark(Integer.MAX_VALUE);
+                    }
+
+                    blobPos++;
+
+                    ptrnPos++;
+
+                    if (ptrnPos == ptrnLen)
+                        return blobPos - ptrnLen;
+                }
+                else {
+                    blobPos = blobPos - ptrnPos + 1;
+
+                    ptrnPos = 0;
+                    ptrn.reset();
+
+                    if (patternStarted) {
+                        patternStarted = false;
+
+                        blob.reset();
+                    }
+                }
+            }
+
+            return -1;
+        }
+        catch (IOException e) {
+            throw new SQLException(e);
+        }
     }
 
     /**
      *
      */
     private void ensureNotClosed() throws SQLException {
-        if (arr == null)
+        if (data == null)
             throw new SQLException("Blob instance can't be used after free() has been called.");
     }
 }

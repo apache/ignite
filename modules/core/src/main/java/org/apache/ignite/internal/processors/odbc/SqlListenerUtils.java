@@ -17,7 +17,10 @@
 
 package org.apache.ignite.internal.processors.odbc;
 
+import java.io.IOException;
 import java.math.BigDecimal;
+import java.sql.Blob;
+import java.sql.SQLException;
 import java.sql.Time;
 import java.sql.Timestamp;
 import java.util.UUID;
@@ -246,6 +249,22 @@ public abstract class SqlListenerUtils {
             writer.writeTimestampArray((Timestamp[])obj);
         else if (cls == java.util.Date[].class || cls == java.sql.Date[].class)
             writer.writeDateArray((java.util.Date[])obj);
+        else if (obj instanceof SqlInputStreamWrapper) {
+            try {
+                writer.writeInputStreamAsByteArray((SqlInputStreamWrapper)obj);
+            }
+            catch (IOException e) {
+                throw new BinaryObjectException(e);
+            }
+        }
+        else if (obj instanceof Blob) {
+            try {
+                writer.writeBlobAsByteArray((Blob)obj);
+            }
+            catch (IOException | SQLException e) {
+                throw new BinaryObjectException(e);
+            }
+        }
         else if (binObjAllow)
             writer.writeObjectDetached(obj);
         else

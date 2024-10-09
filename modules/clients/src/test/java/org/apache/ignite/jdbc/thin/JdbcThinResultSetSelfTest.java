@@ -50,6 +50,7 @@ import static org.apache.ignite.cache.CacheMode.PARTITIONED;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
 import static org.apache.ignite.testframework.GridTestUtils.assertThrows;
 import static org.apache.ignite.testframework.GridTestUtils.assertThrowsAnyCause;
+import static org.junit.Assert.assertArrayEquals;
 
 /**
  * Result set test.
@@ -617,6 +618,70 @@ public class JdbcThinResultSetSelfTest extends JdbcThinAbstractSelfTest {
         Assert.assertArrayEquals(blob.getBytes(1, (int)blob.length()), new byte[] {1});
 
         assertFalse(rs.next());
+
+        InputStream stream = blob.getBinaryStream();
+
+        assertEquals(2, blob.setBytes(2, new byte[] {2, 3}));
+        assertEquals(3, stream.skip(3));
+
+        byte[] res = new byte[1];
+        assertEquals(-1, stream.read(res));
+
+        assertEquals(2, blob.setBytes(4, new byte[] {4, 5}));
+        assertEquals(2, stream.skip(2));
+        assertEquals(-1, stream.read(res));
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    @Test
+    public void testBlobOnDiskMaterialized() throws Exception {
+        String url = URL + "?maxInMemoryLobSize=5";
+
+        Connection connWithLobLimit = DriverManager.getConnection(url);
+        connWithLobLimit.setSchema('"' + DEFAULT_CACHE_NAME + '"');
+
+        Statement selectStmt = connWithLobLimit.createStatement();
+
+        ResultSet rs = selectStmt.executeQuery(SQL);
+
+        assertTrue(rs.next());
+
+        Blob blob = rs.getBlob("blobVal");
+        Assert.assertArrayEquals(blob.getBytes(1, (int)blob.length()), new byte[] {1});
+
+        InputStream stream = blob.getBinaryStream();
+        blob.setBytes(2, new byte[] {2, 3, 4, 5, 6, 7, 8, 9, 10});
+
+        assertEquals(2, stream.skip(2));
+        assertEquals(3, stream.read());
+        byte[] res = new byte[3];
+        stream.read(res);
+        assertArrayEquals(new byte[] {4, 5, 6}, res);
+        assertEquals(4, stream.skip(4));
+        assertEquals(-1, stream.read());
+        assertEquals(-1, stream.read(res));
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    @Test
+    public void testBlobNull() throws Exception {
+        ResultSet rs = stmt.executeQuery("select id, boolVal, byteVal, shortVal, intVal, longVal, floatVal, " +
+                "doubleVal, bigVal, strVal, arrVal, dateVal, timeVal, tsVal, objVal, blobVal, clobVal " +
+                "from testObject where id = 2");
+
+        assertTrue(rs.next());
+
+        Blob blob = rs.getBlob("blobVal");
+        Assert.assertNull(blob);
+
+        blob = rs.getBlob(16);
+        Assert.assertNull(blob);
+
+        assertFalse(rs.next());
     }
 
     /**
@@ -633,6 +698,64 @@ public class JdbcThinResultSetSelfTest extends JdbcThinAbstractSelfTest {
 
         clob = rs.getClob(17);
         Assert.assertEquals("str", clob.getSubString(1, (int)clob.length()));
+
+        assertFalse(rs.next());
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    @Test
+    public void testClobNull() throws Exception {
+        ResultSet rs = stmt.executeQuery("select id, boolVal, byteVal, shortVal, intVal, longVal, floatVal, " +
+                "doubleVal, bigVal, strVal, arrVal, dateVal, timeVal, tsVal, objVal, blobVal, clobVal " +
+                "from testObject where id = 2");
+
+        assertTrue(rs.next());
+
+        Clob clob = rs.getClob("clobVal");
+        Assert.assertNull(clob);
+
+        clob = rs.getClob(17);
+        Assert.assertNull(clob);
+
+        assertFalse(rs.next());
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    @Test
+    public void testBinaryStream() throws Exception {
+        ResultSet rs = stmt.executeQuery(SQL);
+
+        assertTrue(rs.next());
+
+        InputStream stream = rs.getBinaryStream("blobVal");
+        Assert.assertArrayEquals(stream.readAllBytes(), new byte[] {1});
+
+        stream = rs.getBinaryStream(16);
+        Assert.assertArrayEquals(stream.readAllBytes(), new byte[] {1});
+
+        assertFalse(rs.next());
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    @Test
+    public void testBinaryStreamNull() throws Exception {
+        ResultSet rs = stmt.executeQuery("select id, boolVal, byteVal, shortVal, intVal, longVal, floatVal, " +
+                "doubleVal, bigVal, strVal, arrVal, dateVal, timeVal, tsVal, objVal, blobVal, clobVal " +
+                "from testObject where id = 2");
+
+        assertTrue(rs.next());
+
+        InputStream stream = rs.getBinaryStream("blobVal");
+        Assert.assertNull(stream);
+
+        stream = rs.getBinaryStream(16);
+        Assert.assertNull(stream);
 
         assertFalse(rs.next());
     }
@@ -851,18 +974,6 @@ public class JdbcThinResultSetSelfTest extends JdbcThinAbstractSelfTest {
         checkNotSupported(new RunnableX() {
             @Override public void runx() throws Exception {
                 rs.getAsciiStream("id");
-            }
-        });
-
-        checkNotSupported(new RunnableX() {
-            @Override public void runx() throws Exception {
-                rs.getBinaryStream(1);
-            }
-        });
-
-        checkNotSupported(new RunnableX() {
-            @Override public void runx() throws Exception {
-                rs.getBinaryStream("id");
             }
         });
 
