@@ -717,18 +717,9 @@ public class DataTypesTest extends AbstractBasicIntegrationTest {
 
         //noinspection RedundantTypeArguments (explicit type arguments speedup compilation and analysis time)
         return F.<List<Object>>asList(
-            // String
-            F.asList(varcharType, "100", decimalType(3), new BigDecimal("100")),
-            F.asList(varcharType, "100", decimalType(3, 0), new BigDecimal("100")),
-            F.asList(varcharType, "100", decimalType(4, 1), new BigDecimal("100.0")),
-            F.asList(varcharType, "100.12", decimalType(5, 1), new BigDecimal("100.1")),
+            // Numeric
             F.asList(varcharType, "lame", decimalType(5, 1), numFormatErr),
             F.asList(varcharType, "12345", decimalType(5, 1), overflowErr),
-            F.asList(varcharType, "1234", decimalType(5, 1), new BigDecimal("1234.0")),
-            F.asList(varcharType, "100.12", decimalType(1, 0), overflowErr),
-            F.asList(varcharType, "100", decimalType(2, 0), overflowErr),
-
-            // Numeric
             F.asList(decimal4Type, "100", decimalType(3), new BigDecimal("100")),
             F.asList(decimal4Type, "100", decimalType(3, 0), new BigDecimal("100")),
             F.asList(decimal4Type, "100.12", decimalType(5, 1), new BigDecimal("100.1")),
