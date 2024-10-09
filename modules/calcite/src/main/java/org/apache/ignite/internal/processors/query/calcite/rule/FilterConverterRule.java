@@ -53,18 +53,19 @@ public class FilterConverterRule extends AbstractIgniteConverterRule<LogicalFilt
             .traitSetOf(IgniteConvention.INSTANCE)
             .replace(IgniteDistributions.single());
 
+        RelTraitSet inputTraits = traits;
+
         Set<CorrelationId> corrIds = RexUtils.extractCorrelationIds(rel.getCondition());
 
         if (!corrIds.isEmpty()) {
-            traits = traits
-                .replace(CorrelationTrait.correlations(corrIds))
-                .replace(RewindabilityTrait.REWINDABLE);
+            traits = traits.replace(CorrelationTrait.correlations(corrIds));
+            inputTraits = inputTraits.replace(RewindabilityTrait.REWINDABLE);
         }
 
         return new IgniteFilter(
             cluster,
             traits,
-            convert(rel.getInput(), traits.replace(CorrelationTrait.UNCORRELATED)),
+            convert(rel.getInput(), inputTraits),
             rel.getCondition()
         );
     }
