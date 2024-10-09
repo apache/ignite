@@ -92,6 +92,19 @@ public class JdbcBlobBuffer {
     }
 
     /**
+     * Create buffer from the another one.
+     *
+     * <p>Sharing of the underlying storage is intended.
+     *
+     * @param other Other buffer.
+     */
+    public JdbcBlobBuffer(JdbcBlobBuffer other) {
+        storage = other.storage;
+
+        maxMemoryBufferBytes = other.maxMemoryBufferBytes;
+    }
+
+    /**
      * @return Total number of bytes in the buffer.
      */
     public long totalCnt() {
@@ -170,6 +183,8 @@ public class JdbcBlobBuffer {
         }
         catch (UnsupportedOperationException e) {
             switchToReadWriteMemoryStorage();
+
+            storage.truncate(len);
         }
     }
 
@@ -301,6 +316,16 @@ public class JdbcBlobBuffer {
         /** {@inheritDoc} */
         @Override public synchronized void mark(int readlimit) {
             markedPointer.set(curPointer);
+        }
+
+        /** {@inheritDoc} */
+        @Override public long skip(long n) {
+            long toSkip = Math.min(n, storage.totalCnt() - curPointer.getPos());
+
+            if (toSkip > 0)
+                storage.advance(curPointer, toSkip);
+
+            return toSkip;
         }
     }
 

@@ -62,10 +62,10 @@ class JdbcBlobReadOnlyMemoryStorage implements JdbcBlobStorage {
 
     /** {@inheritDoc} */
     @Override public int read(JdbcBlobBufferPointer pos) throws IOException {
-        if (pos.getPos() >= totalCnt + off)
+        if (pos.getPos() >= totalCnt)
             return -1;
 
-        int res = buf[Math.toIntExact(pos.getPos())] & 0xff;
+        int res = buf[Math.toIntExact(pos.getPos() + off)] & 0xff;
 
         advance(pos, 1);
 

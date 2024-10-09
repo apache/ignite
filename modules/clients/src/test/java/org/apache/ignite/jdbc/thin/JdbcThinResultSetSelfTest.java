@@ -17,7 +17,9 @@
 
 package org.apache.ignite.jdbc.thin;
 
+import java.io.IOException;
 import java.io.InputStream;
+import java.io.OutputStream;
 import java.io.Reader;
 import java.io.Serializable;
 import java.math.BigDecimal;
@@ -607,6 +609,8 @@ public class JdbcThinResultSetSelfTest extends JdbcThinAbstractSelfTest {
      */
     @Test
     public void testBlob() throws Exception {
+        InputStream is;
+
         ResultSet rs = stmt.executeQuery(SQL);
 
         assertTrue(rs.next());
@@ -619,17 +623,81 @@ public class JdbcThinResultSetSelfTest extends JdbcThinAbstractSelfTest {
 
         assertFalse(rs.next());
 
-        InputStream stream = blob.getBinaryStream();
+        is = blob.getBinaryStream();
+        assertEquals(1, is.read());
+        assertEquals(-1, is.read());
 
-        assertEquals(2, blob.setBytes(2, new byte[] {2, 3}));
-        assertEquals(3, stream.skip(3));
-
+        is = blob.getBinaryStream();
         byte[] res = new byte[1];
-        assertEquals(-1, stream.read(res));
+        assertEquals(1, is.read(res));
+        Assert.assertArrayEquals(new byte[] {1}, res);
+        assertEquals(-1, is.read(res));
+    }
 
-        assertEquals(2, blob.setBytes(4, new byte[] {4, 5}));
-        assertEquals(2, stream.skip(2));
-        assertEquals(-1, stream.read(res));
+    /**
+     * @throws Exception If failed.
+     */
+    @Test
+    public void testBlobChangeAfterSelect() throws Exception {
+        byte[] res = new byte[1];
+
+        ResultSet rs = stmt.executeQuery(SQL);
+
+        assertTrue(rs.next());
+
+        Blob blob1 = rs.getBlob("blobVal");
+        Assert.assertArrayEquals(blob1.getBytes(1, (int)blob1.length()), new byte[] {1});
+        Blob blob2 = rs.getBlob("blobVal");
+        Assert.assertArrayEquals(blob2.getBytes(1, (int)blob2.length()), new byte[] {1});
+        Blob blob3 = rs.getBlob("blobVal");
+        Assert.assertArrayEquals(blob2.getBytes(1, (int)blob2.length()), new byte[] {1});
+
+        InputStream is1 = blob1.getBinaryStream();
+        assertEquals(1, is1.read());
+        assertEquals(-1, is1.read());
+        assertEquals(-1, is1.read(res));
+
+        OutputStream os1 = blob1.setBinaryStream(2);
+        os1.write(2);
+        assertEquals(2, is1.read());
+
+        InputStream is2 = blob2.getBinaryStream();
+
+        OutputStream os2 = blob2.setBinaryStream(2);
+        os2.write(new byte[] {3, 4});
+
+        assertEquals(1, is2.skip(1));
+        assertEquals(3, is2.read());
+        is2.mark(100);
+        assertEquals(4, is2.read());
+
+        assertEquals(2, blob2.setBytes(3, new byte[] {5, 6}));
+        is2.reset();
+        byte[] res2 = new byte[2];
+        assertEquals(2, is2.read(res2));
+        Assert.assertArrayEquals(new byte[] {5, 6}, res2);
+
+        assertEquals(0, is2.skip(2));
+        os2.write(new byte[] {7, 8});
+        is2.reset();
+        assertEquals(1, is2.skip(1));
+        assertEquals(7, is2.read());
+
+        InputStream is3 = blob3.getBinaryStream();
+        OutputStream os3 = blob3.setBinaryStream(2);
+        blob3.truncate(0);
+        assertEquals(0, blob3.length());
+        assertEquals(-1, is3.read());
+        assertThrows(null, () -> {
+            os3.write(55);
+
+            return null;
+        }, IOException.class, null);
+        assertThrows(null, () -> {
+            os3.write(new byte[] {9, 10});
+
+            return null;
+        }, IOException.class, null);
     }
 
     /**
