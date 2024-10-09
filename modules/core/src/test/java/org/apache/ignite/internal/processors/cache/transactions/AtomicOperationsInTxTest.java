@@ -28,18 +28,25 @@ import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.transactions.Transaction;
 import org.junit.Test;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.ATOMIC;
+import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
 import static org.apache.ignite.cache.CachePeekMode.ALL;
+import static org.apache.ignite.transactions.TransactionConcurrency.PESSIMISTIC;
+import static org.apache.ignite.transactions.TransactionIsolation.READ_COMMITTED;
 
 /**
- * Checks how atomic cache operations work within a transaction.
+ * Checks how atomic and transactional cache operations work within a transaction.
  */
 public class AtomicOperationsInTxTest extends GridCommonAbstractTest {
+    /** */
+    protected static IgniteEx client;
+
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(gridName);
@@ -57,11 +64,13 @@ public class AtomicOperationsInTxTest extends GridCommonAbstractTest {
     /** {@inheritDoc} */
     @Override protected void beforeTest() throws Exception {
         startGrid(0);
+
+        client = startClientGrid("client");
     }
 
     /** {@inheritDoc} */
     @Override protected void afterTest() throws Exception {
-        stopGrid(0);
+        stopAllGrids();
     }
 
     /**
@@ -134,6 +143,33 @@ public class AtomicOperationsInTxTest extends GridCommonAbstractTest {
             new SetEntryProcessor()).get());
 
         checkLock();
+    }
+
+    /**
+     * Tests that a non-transactional cache operation {@link IgniteCache#clear() is not allowed within transactions.
+     */
+    @Test
+    public void testClearInTransaction() {
+        IgniteCache<Object, Object> cache = client.createCache(new CacheConfiguration<>("my-cache")
+            .setAtomicityMode(TRANSACTIONAL));
+
+        cache.put(1, 1);
+
+        try (Transaction tx = client.transactions().txStart(PESSIMISTIC, READ_COMMITTED)) {
+            cache.put(2, 2);
+
+            cache.clear();
+
+            tx.commit();
+        }
+        catch (IgniteException e) {
+            assertTrue(e.getMessage().startsWith("Failed to invoke a non-transactional operation within a transaction: " +
+                "IgniteCache.clear()."));
+        }
+
+        assertTrue(cache.containsKey(1));
+
+        assertFalse(cache.containsKey(2));
     }
 
     /**
