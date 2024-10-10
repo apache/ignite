@@ -38,6 +38,9 @@ public class JdbcQueryExecuteMultipleStatementsResult extends JdbcResult {
     /** Flag indicating the query has no unfetched results for the first query. */
     private boolean last;
 
+    /** Transaction id. */
+    private int txId;
+
     /**
      * Default constructor.
      */
@@ -51,11 +54,12 @@ public class JdbcQueryExecuteMultipleStatementsResult extends JdbcResult {
      * @param last Flag indicating the query has no unfetched results for the first query.
      */
     public JdbcQueryExecuteMultipleStatementsResult(List<JdbcResultInfo> results,
-        List<List<Object>> items, boolean last) {
+        List<List<Object>> items, boolean last, int txId) {
         super(QRY_EXEC_MULT);
         this.results = results;
         this.items = items;
         this.last = last;
+        this.txId = txId;
     }
 
     /**
@@ -79,6 +83,13 @@ public class JdbcQueryExecuteMultipleStatementsResult extends JdbcResult {
         return last;
     }
 
+    /**
+     * @return Transaction id.
+     */
+    public int txId() {
+        return txId;
+    }
+
     /** {@inheritDoc} */
     @Override public void writeBinary(
         BinaryWriterExImpl writer,
@@ -100,6 +111,9 @@ public class JdbcQueryExecuteMultipleStatementsResult extends JdbcResult {
         }
         else
             writer.writeInt(0);
+
+        if (protoCtx.isFeatureSupported(JdbcThinFeature.TX_AWARE_QUERIES))
+            writer.writeInt(txId);
     }
 
 
@@ -131,6 +145,9 @@ public class JdbcQueryExecuteMultipleStatementsResult extends JdbcResult {
                 items = JdbcUtils.readItems(reader, protoCtx);
             }
         }
+
+        if (protoCtx.isFeatureSupported(JdbcThinFeature.TX_AWARE_QUERIES))
+            txId = reader.readInt();
     }
 
     /** {@inheritDoc} */
