@@ -181,6 +181,9 @@ public class JdbcThinConnection implements Connection {
     /** No retries. */
     public static final int NO_RETRIES = 0;
 
+    /** Default isolation level. */
+    public static final int DFLT_ISOLATION = TRANSACTION_READ_COMMITTED;
+
     /** Partition awareness enabled flag. */
     private final boolean partitionAwareness;
 
@@ -372,7 +375,7 @@ public class JdbcThinConnection implements Connection {
 
     /** @return Default isolation level. */
     int defaultTransactionIsolation() {
-        return isTxAwareQueriesSupported ? TRANSACTION_READ_COMMITTED : TRANSACTION_NONE;
+        return isTxAwareQueriesSupported ? DFLT_ISOLATION : TRANSACTION_NONE;
     }
 
     /** @return Default io to make a request. */
@@ -2666,7 +2669,7 @@ public class JdbcThinConnection implements Connection {
     }
 
     /** */
-    private TransactionIsolation isolation(int jdbcIsolation) throws SQLException {
+    public static TransactionIsolation isolation(int jdbcIsolation) throws SQLException {
         switch (jdbcIsolation) {
             case TRANSACTION_READ_COMMITTED:
                 return TransactionIsolation.READ_COMMITTED;

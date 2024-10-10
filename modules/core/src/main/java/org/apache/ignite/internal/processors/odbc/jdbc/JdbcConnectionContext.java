@@ -40,6 +40,8 @@ import org.apache.ignite.internal.processors.query.QueryEngineConfigurationEx;
 import org.apache.ignite.internal.util.GridSpinBusyLock;
 import org.apache.ignite.internal.util.nio.GridNioSession;
 import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.transactions.TransactionConcurrency;
+import org.apache.ignite.transactions.TransactionIsolation;
 import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.internal.jdbc.thin.JdbcThinUtils.nullableBooleanFromByte;
@@ -76,8 +78,11 @@ public class JdbcConnectionContext extends ClientListenerAbstractConnectionConte
     /** Version 2.13.0: adds choose of query engine support. */
     static final ClientListenerProtocolVersion VER_2_13_0 = ClientListenerProtocolVersion.create(2, 13, 0);
 
+    /** Version 2.14.0: adds transaction default parameters. */
+    static final ClientListenerProtocolVersion VER_2_14_0 = ClientListenerProtocolVersion.create(2, 14, 0);
+
     /** Current version. */
-    public static final ClientListenerProtocolVersion CURRENT_VER = VER_2_13_0;
+    public static final ClientListenerProtocolVersion CURRENT_VER = VER_2_14_0;
 
     /** Supported versions. */
     private static final Set<ClientListenerProtocolVersion> SUPPORTED_VERS = new HashSet<>();
@@ -226,6 +231,18 @@ public class JdbcConnectionContext extends ClientListenerAbstractConnectionConte
             }
         }
 
+        TransactionConcurrency concurrency = null;
+        TransactionIsolation isolation = null;
+        int timeout = 0;
+        String lb = null;
+
+        if (ver.compareTo(VER_2_14_0) >= 0) {
+            concurrency = TransactionConcurrency.fromOrdinal(reader.readByte());
+            isolation = TransactionIsolation.fromOrdinal(reader.readByte());
+            timeout = reader.readInt();
+            lb = reader.readString();
+        }
+
         if (ver.compareTo(VER_2_5_0) >= 0) {
             String user = null;
             String passwd = null;
@@ -262,7 +279,9 @@ public class JdbcConnectionContext extends ClientListenerAbstractConnectionConte
 
         handler = new JdbcRequestHandler(busyLock, snd, maxCursors, distributedJoins, enforceJoinOrder,
             collocated, replicatedOnly, autoCloseCursors, lazyExec, skipReducerOnUpdate, qryEngine,
-            dataPageScanEnabled, updateBatchSize, ver, this);
+            dataPageScanEnabled, updateBatchSize,
+            concurrency, isolation, timeout, lb,
+            ver, this);
 
         handler.start();
     }

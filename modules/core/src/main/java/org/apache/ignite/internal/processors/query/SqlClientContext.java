@@ -127,6 +127,10 @@ public class SqlClientContext implements AutoCloseable {
      * @param dataPageScanEnabled Enable scan data page mode.
      * @param updateBatchSize Size of internal batch for DML queries.
      * @param qryEngine Name of the SQL engine to use.
+     * @param concurrency Transaction concurrency.
+     * @param isolation Transaction isolation.
+     * @param timeout Transaction timeout.
+     * @param lb Transaction label.
      */
     public SqlClientContext(GridKernalContext ctx,
         Factory<GridWorker> orderedBatchWorkerFactory,
@@ -138,7 +142,11 @@ public class SqlClientContext implements AutoCloseable {
         boolean skipReducerOnUpdate,
         @Nullable Boolean dataPageScanEnabled,
         @Nullable Integer updateBatchSize,
-        @Nullable String qryEngine
+        @Nullable String qryEngine,
+        @Nullable TransactionConcurrency concurrency,
+        @Nullable TransactionIsolation isolation,
+        long timeout,
+        @Nullable String lb
     ) {
         this.ctx = ctx;
         this.orderedBatchWorkerFactory = orderedBatchWorkerFactory;
@@ -151,6 +159,10 @@ public class SqlClientContext implements AutoCloseable {
         this.dataPageScanEnabled = dataPageScanEnabled;
         this.updateBatchSize = updateBatchSize;
         this.qryEngine = qryEngine;
+        this.concurrency = concurrency;
+        this.isolation = isolation;
+        this.timeout = timeout;
+        this.lb = lb;
 
         log = ctx.log(SqlClientContext.class.getName());
     }

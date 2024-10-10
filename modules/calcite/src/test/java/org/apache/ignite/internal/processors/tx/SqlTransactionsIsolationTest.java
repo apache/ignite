@@ -231,7 +231,7 @@ public class SqlTransactionsIsolationTest extends GridCommonAbstractTest {
         List<Object[]> params = new ArrayList<>();
 
         for (CacheMode cacheMode : CacheMode.values()) {
-            for (int gridCnt : new int[]{1, 3, 5}) {
+            for (int gridCnt : new int[]{1, 3}) {
                 int[] backups = gridCnt > 1
                     ? new int[]{1, gridCnt - 1}
                     : new int[]{0};

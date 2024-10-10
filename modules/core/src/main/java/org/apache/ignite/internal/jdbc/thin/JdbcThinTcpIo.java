@@ -73,6 +73,7 @@ import org.apache.ignite.lang.IgniteProductVersion;
 import org.apache.ignite.transactions.TransactionIsolation;
 
 import static java.lang.Math.abs;
+import static org.apache.ignite.internal.jdbc.thin.JdbcThinConnection.isolation;
 import static org.apache.ignite.internal.jdbc.thin.JdbcThinUtils.nullableBooleanToByte;
 import static org.apache.ignite.internal.processors.odbc.jdbc.JdbcConnectionContext.DEFAULT_NESTED_TX_MODE;
 
@@ -107,8 +108,11 @@ public class JdbcThinTcpIo {
     /** Version 2.13.0. */
     private static final ClientListenerProtocolVersion VER_2_13_0 = ClientListenerProtocolVersion.create(2, 13, 0);
 
+    /** Version 2.14.0. */
+    private static final ClientListenerProtocolVersion VER_2_14_0 = ClientListenerProtocolVersion.create(2, 14, 0);
+
     /** Current version. */
-    private static final ClientListenerProtocolVersion CURRENT_VER = VER_2_13_0;
+    private static final ClientListenerProtocolVersion CURRENT_VER = VER_2_14_0;
 
     /** Initial output stream capacity for handshake. */
     private static final int HANDSHAKE_MSG_SIZE = 13;
@@ -330,6 +334,13 @@ public class JdbcThinTcpIo {
 
         if (ver.compareTo(VER_2_13_0) >= 0)
             writer.writeString(connProps.getQueryEngine());
+
+        if (ver.compareTo(VER_2_14_0) >= 0) {
+            writer.writeByte(connProps.getTransactionConcurrency().ordinal());
+            writer.writeByte(isolation(JdbcThinConnection.DFLT_ISOLATION).ordinal());
+            writer.writeInt(connProps.getTransactionTimeout());
+            writer.writeString(connProps.getTransactionLabel());
+        }
 
         if (!F.isEmpty(connProps.getUsername())) {
             assert ver.compareTo(VER_2_5_0) >= 0 : "Authentication is supported since 2.5";
