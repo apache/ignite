@@ -43,6 +43,7 @@ import org.apache.ignite.internal.cluster.ClusterTopologyCheckedException;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.CacheInvalidStateException;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
+import org.apache.ignite.internal.processors.cache.KeyCacheObject;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtCacheAdapter;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtUnreservedPartitionException;
 import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionTopology;
@@ -135,6 +136,9 @@ public class GridCacheQueryAdapter<T> implements CacheQuery<T> {
     /** */
     private Boolean dataPageScanEnabled;
 
+    /** */
+    private final Set<KeyCacheObject> skipKeys;
+
     /**
      * Cache query adapter for SCAN query.
      *
@@ -145,6 +149,7 @@ public class GridCacheQueryAdapter<T> implements CacheQuery<T> {
      * @param keepBinary Keep binary flag.
      * @param forceLocal Flag to force local query.
      * @param dataPageScanEnabled Flag to enable data page scan.
+     * @param skipKeys Set of keys that must be skiped during iteration.
      */
     public GridCacheQueryAdapter(
         GridCacheContext<?, ?> cctx,
@@ -154,11 +159,13 @@ public class GridCacheQueryAdapter<T> implements CacheQuery<T> {
         @Nullable Integer part,
         boolean keepBinary,
         boolean forceLocal,
-        Boolean dataPageScanEnabled
+        Boolean dataPageScanEnabled,
+        @Nullable Set<KeyCacheObject> skipKeys
     ) {
         assert cctx != null;
         assert type != null;
         assert part == null || part >= 0;
+        assert F.isEmpty(skipKeys) || type == SCAN;
 
         this.cctx = cctx;
         this.type = type;
@@ -168,6 +175,7 @@ public class GridCacheQueryAdapter<T> implements CacheQuery<T> {
         this.keepBinary = keepBinary;
         this.forceLocal = forceLocal;
         this.dataPageScanEnabled = dataPageScanEnabled;
+        this.skipKeys = skipKeys;
 
         log = cctx.logger(getClass());
 
@@ -214,6 +222,7 @@ public class GridCacheQueryAdapter<T> implements CacheQuery<T> {
         this.incMeta = incMeta;
         this.keepBinary = keepBinary;
         this.dataPageScanEnabled = dataPageScanEnabled;
+        this.skipKeys = null;
 
         log = cctx.logger(getClass());
 
@@ -240,6 +249,7 @@ public class GridCacheQueryAdapter<T> implements CacheQuery<T> {
      * @param keepBinary Keep binary flag.
      * @param taskHash Task hash.
      * @param dataPageScanEnabled Flag to enable data page scan.
+     * @param skipKeys Set of keys that must be skiped during iteration.
      */
     public GridCacheQueryAdapter(
         GridCacheContext<?, ?> cctx,
@@ -259,7 +269,8 @@ public class GridCacheQueryAdapter<T> implements CacheQuery<T> {
         boolean incMeta,
         boolean keepBinary,
         int taskHash,
-        Boolean dataPageScanEnabled
+        Boolean dataPageScanEnabled,
+        Set<KeyCacheObject> skipKeys
     ) {
         this.cctx = cctx;
         this.type = type;
@@ -279,6 +290,7 @@ public class GridCacheQueryAdapter<T> implements CacheQuery<T> {
         this.keepBinary = keepBinary;
         this.taskHash = taskHash;
         this.dataPageScanEnabled = dataPageScanEnabled;
+        this.skipKeys = skipKeys;
     }
 
     /**
@@ -310,6 +322,7 @@ public class GridCacheQueryAdapter<T> implements CacheQuery<T> {
 
         clause = null;
         incMeta = false;
+        skipKeys = null;
     }
 
     /**
@@ -317,6 +330,11 @@ public class GridCacheQueryAdapter<T> implements CacheQuery<T> {
      */
     public Boolean isDataPageScanEnabled() {
         return dataPageScanEnabled;
+    }
+
+    /** @return Set of keys that must be skiped during iteration. */
+    public Set<KeyCacheObject> skipKeys() {
+        return skipKeys;
     }
 
     /**
