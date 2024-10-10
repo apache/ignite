@@ -22,5 +22,5 @@
 # Usage: ./scripts/build-module.sh ducktests
 #
 
-mvn clean -Pall-java,all-other
-mvn package -pl :ignite-$1 -Pall-java,all-other -DskipTests -Dmaven.javadoc.skip=true -am
+mvn clean -Pall-java
+mvn package -pl :ignite-$1 -Pall-java -DskipTests -Dmaven.javadoc.skip=true -am

@@ -22,4 +22,4 @@
 # Usage: ./scripts/build.sh
 #
 
-mvn clean package -Pall-java,all-other -DskipTests -Dmaven.javadoc.skip=true
+mvn clean package -Pall-java -DskipTests -Dmaven.javadoc.skip=true
