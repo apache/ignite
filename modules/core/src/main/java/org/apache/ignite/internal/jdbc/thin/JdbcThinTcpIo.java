@@ -162,13 +162,13 @@ public class JdbcThinTcpIo {
     private final ClientListenerProtocolVersion srvProtoVer;
 
     /** Protocol context (version, supported features, etc). */
-    private JdbcProtocolContext protoCtx;
+    private final JdbcProtocolContext protoCtx;
 
     /**
      * Transaction modes supported by the server.
      * @see org.apache.ignite.configuration.TransactionConfiguration#TX_AWARE_QUERIES_SUPPORTED_MODES
      */
-    private Set<TransactionIsolation> isolationLevelsSupported;
+    private final Set<TransactionIsolation> isolationLevelsSupported;
 
     /** Binary context for serialization/deserialization of binary objects. */
     private final BinaryContext ctx;

@@ -727,9 +727,11 @@ public class JdbcThinConnection implements Connection {
                 throw new SQLException("Invalid transaction isolation level.", SqlStateCode.INVALID_TRANSACTION_LEVEL);
         }
 
-        txIsolation = level;
+        if (txIsolation != level) {
+            txIsolation = level;
 
-        updateTransactionParameters();
+            updateTransactionParameters();
+        }
     }
 
     /** {@inheritDoc} */

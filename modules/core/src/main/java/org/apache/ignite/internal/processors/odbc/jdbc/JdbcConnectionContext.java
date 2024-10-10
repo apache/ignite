@@ -285,7 +285,7 @@ public class JdbcConnectionContext extends ClientListenerAbstractConnectionConte
     }
 
     /** {@inheritDoc} */
-    @Override public ClientTxContext txContext(int txId) {
+    @Override public @Nullable ClientTxContext txContext(int txId) {
         ensureSameTransaction(txId);
 
         return txCtx;
@@ -316,6 +316,9 @@ public class JdbcConnectionContext extends ClientListenerAbstractConnectionConte
 
     /** {@inheritDoc} */
     @Override protected void cleanupTxs() {
+        if (txCtx != null)
+            txCtx.close();
+
         txCtx = null;
     }
 

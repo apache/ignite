@@ -38,7 +38,7 @@ import static org.apache.ignite.plugin.security.SecuritySubjectType.REMOTE_CLIEN
  * Base connection context.
  */
 public abstract class ClientListenerAbstractConnectionContext implements ClientListenerConnectionContext {
-    /** */
+    /** Transaciton id that mean no transaction. */
     public static final int NONE_TX = 0;
 
     /** Kernal context. */
@@ -173,7 +173,7 @@ public abstract class ClientListenerAbstractConnectionContext implements ClientL
      *
      * @param txId Tx ID.
      */
-    public abstract ClientTxContext txContext(int txId);
+    public abstract @Nullable ClientTxContext txContext(int txId);
 
     /**
      * Add new transaction context to connection.

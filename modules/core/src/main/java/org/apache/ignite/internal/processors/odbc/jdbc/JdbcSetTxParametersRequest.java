@@ -36,7 +36,7 @@ public class JdbcSetTxParametersRequest extends JdbcRequest {
     private @Nullable TransactionIsolation isolation;
 
     /** Transaction timeout. */
-    private long timeout;
+    private int timeout;
 
     /** Transaction label. */
     private String lb;
@@ -55,7 +55,7 @@ public class JdbcSetTxParametersRequest extends JdbcRequest {
     public JdbcSetTxParametersRequest(
         TransactionConcurrency concurrency,
         @Nullable TransactionIsolation isolation,
-        long timeout,
+        int timeout,
         String lb
     ) {
         this();
@@ -75,7 +75,7 @@ public class JdbcSetTxParametersRequest extends JdbcRequest {
 
         writer.writeByte((byte)concurrency.ordinal());
         writer.writeByte((byte)(isolation == null ? -1 : isolation.ordinal()));
-        writer.writeLong(timeout);
+        writer.writeInt(timeout);
         writer.writeString(lb);
     }
 
@@ -91,7 +91,7 @@ public class JdbcSetTxParametersRequest extends JdbcRequest {
         byte isolationByte = reader.readByte();
 
         isolation = isolationByte == -1 ? null : TransactionIsolation.fromOrdinal(isolationByte);
-        timeout = reader.readLong();
+        timeout = reader.readInt();
         lb = reader.readString();
     }
 
