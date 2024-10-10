@@ -119,6 +119,7 @@ import org.apache.ignite.internal.processors.query.calcite.util.LifecycleAware;
 import org.apache.ignite.internal.processors.query.calcite.util.Service;
 import org.apache.ignite.internal.processors.security.SecurityUtils;
 import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.internal.util.typedef.internal.U;
 import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.IgniteSystemProperties.getLong;
@@ -604,7 +605,7 @@ public class CalciteQueryProcessor extends GridProcessorAdapter implements Query
 
     /** */
     private void ensureTransactionModeSupported(@Nullable QueryContext qryCtx) {
-        if (!ctx.config().getTransactionConfiguration().isTxAwareQueriesEnabled())
+        if (!U.isTxAwareQueriesEnabled(ctx))
             return;
 
         GridCacheVersion ver = queryTransactionVersion(qryCtx);
