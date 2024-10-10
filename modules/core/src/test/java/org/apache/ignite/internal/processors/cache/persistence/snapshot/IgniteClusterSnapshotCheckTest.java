@@ -538,7 +538,7 @@ public class IgniteClusterSnapshotCheckTest extends AbstractSnapshotSelfTest {
     /** @throws Exception If fails. */
     @Test
     public void testClusterSnapshotCheckWithTwoCachesCheckNullInput() throws Exception {
-        SnapshotPartitionsVerifyTaskResult res = checkSnapshotWithTwoCachesWhenOneIsCorrupted(null);
+        SnapshotPartitionsVerifyResult res = checkSnapshotWithTwoCachesWhenOneIsCorrupted(null);
 
         StringBuilder b = new StringBuilder();
         res.idleVerifyResult().print(b::append, true);
@@ -552,7 +552,7 @@ public class IgniteClusterSnapshotCheckTest extends AbstractSnapshotSelfTest {
     /** @throws Exception If fails. */
     @Test
     public void testClusterSnapshotCheckWithTwoCachesCheckNotCorrupted() throws Exception {
-        SnapshotPartitionsVerifyTaskResult res = checkSnapshotWithTwoCachesWhenOneIsCorrupted(Collections.singletonList(
+        SnapshotPartitionsVerifyResult res = checkSnapshotWithTwoCachesWhenOneIsCorrupted(Collections.singletonList(
             OPTIONAL_CACHE_NAME));
 
         StringBuilder b = new StringBuilder();
@@ -567,7 +567,7 @@ public class IgniteClusterSnapshotCheckTest extends AbstractSnapshotSelfTest {
     /** @throws Exception If fails. */
     @Test
     public void testClusterSnapshotCheckWithTwoCachesCheckTwoCaches() throws Exception {
-        SnapshotPartitionsVerifyTaskResult res = checkSnapshotWithTwoCachesWhenOneIsCorrupted(Arrays.asList(
+        SnapshotPartitionsVerifyResult res = checkSnapshotWithTwoCachesWhenOneIsCorrupted(Arrays.asList(
             OPTIONAL_CACHE_NAME, DEFAULT_CACHE_NAME));
 
         StringBuilder b = new StringBuilder();
@@ -778,7 +778,7 @@ public class IgniteClusterSnapshotCheckTest extends AbstractSnapshotSelfTest {
         }
     }
 
-    /** Tests that concurrent snapshot full check and restoration (without checking) are allowed for different snapshots. */
+    /** Tests that concurrent snapshot full check and restoration (without full checking) are allowed for different snapshots. */
     @Test
     public void testConcurrentDifferentSnpFullCheckAndRestorationAllowed() throws Exception {
         prepareGridsAndSnapshot(3, 2, 2, false);
@@ -890,9 +890,9 @@ public class IgniteClusterSnapshotCheckTest extends AbstractSnapshotSelfTest {
         }
     }
 
-    /** Tests that concurrent full check and restoration (without checking) of the same snapshot are allowed. */
+    /** Tests that concurrent full check and restoration (without full checking) of the same snapshot are declined. */
     @Test
-    public void testConcurrentTheSameSnpFullCheckAndRestoreAllowed() throws Exception {
+    public void testConcurrentTheSameSnpFullCheckAndRestoreDeclined() throws Exception {
         prepareGridsAndSnapshot(3, 2, 2, true);
 
         for (int i = 0; i < G.allGrids().size(); ++i) {
@@ -905,8 +905,8 @@ public class IgniteClusterSnapshotCheckTest extends AbstractSnapshotSelfTest {
                     () -> new IgniteFutureImpl<>(snp(grid(i0)).checkSnapshot(SNAPSHOT_NAME, null)),
                     () -> snp(grid(j0)).restoreSnapshot(SNAPSHOT_NAME, null),
                     CHECK_SNAPSHOT_METAS,
-                    RESTORE_CACHE_GROUP_SNAPSHOT_START,
-                    false,
+                    CHECK_SNAPSHOT_METAS,
+                    true,
                     false,
                     null,
                     () -> grid(0).destroyCache(DEFAULT_CACHE_NAME)
@@ -1314,7 +1314,7 @@ public class IgniteClusterSnapshotCheckTest extends AbstractSnapshotSelfTest {
 
         snp(ignite).createSnapshot(SNAPSHOT_NAME).get(timeout);
 
-        SnapshotPartitionsVerifyTaskResult res = snp(ignite).checkSnapshot(SNAPSHOT_NAME, null).get(timeout);
+        SnapshotPartitionsVerifyResult res = snp(ignite).checkSnapshot(SNAPSHOT_NAME, null).get(timeout);
 
         assertFalse(res.idleVerifyResult().hasConflicts());
     }
@@ -1344,7 +1344,7 @@ public class IgniteClusterSnapshotCheckTest extends AbstractSnapshotSelfTest {
      * @return Check result.
      * @throws Exception If fails.
      */
-    private SnapshotPartitionsVerifyTaskResult checkSnapshotWithTwoCachesWhenOneIsCorrupted(
+    private SnapshotPartitionsVerifyResult checkSnapshotWithTwoCachesWhenOneIsCorrupted(
         Collection<String> cachesToCheck
     ) throws Exception {
         Random rnd = new Random();

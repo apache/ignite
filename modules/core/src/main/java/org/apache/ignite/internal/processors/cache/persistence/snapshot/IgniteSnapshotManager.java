@@ -1842,7 +1842,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
      * @return Future with the result of execution snapshot partitions verify task, which besides calculating partition
      *         hashes of {@link IdleVerifyResultV2} also contains the snapshot metadata distribution across the cluster.
      */
-    public IgniteInternalFuture<SnapshotPartitionsVerifyTaskResult> checkSnapshot(String name, @Nullable String snpPath) {
+    public IgniteInternalFuture<SnapshotPartitionsVerifyResult> checkSnapshot(String name, @Nullable String snpPath) {
         return checkSnapshot(name, snpPath, -1);
     }
 
@@ -1855,7 +1855,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
      * @return Future with the result of execution snapshot partitions verify task, which besides calculating partition
      *         hashes of {@link IdleVerifyResultV2} also contains the snapshot metadata distribution across the cluster.
      */
-    public IgniteInternalFuture<SnapshotPartitionsVerifyTaskResult> checkSnapshot(String name, @Nullable String snpPath, int incIdx) {
+    public IgniteInternalFuture<SnapshotPartitionsVerifyResult> checkSnapshot(String name, @Nullable String snpPath, int incIdx) {
         A.notNullOrEmpty(name, "Snapshot name cannot be null or empty.");
         A.ensure(U.alphanumericUnderscore(name), "Snapshot name must satisfy the following name pattern: a-zA-Z0-9_");
 
@@ -1886,7 +1886,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
      * @return Future with the result of execution snapshot partitions verify task, which besides calculating partition
      *         hashes of {@link IdleVerifyResultV2} also contains the snapshot metadata distribution across the cluster.
      */
-    public IgniteInternalFuture<SnapshotPartitionsVerifyTaskResult> checkSnapshot(
+    public IgniteInternalFuture<SnapshotPartitionsVerifyResult> checkSnapshot(
         String name,
         @Nullable String snpPath,
         @Nullable Collection<String> grps,
@@ -1904,61 +1904,15 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
                 ", incIdx=" + incIdx + ", grps=" + grps + ", validateParts=" + check + ']');
         }
 
-        if (incIdx < 1 || !includeCustomHandlers)
-            return checkSnpProc.start(name, snpPath, grps, check, incIdx, includeCustomHandlers);
+        IgniteInternalFuture<SnapshotPartitionsVerifyResult> res = checkSnpProc.start(name, snpPath, grps, check, incIdx,
+            includeCustomHandlers);
 
-        GridFutureAdapter<SnapshotPartitionsVerifyTaskResult> res = new GridFutureAdapter<>();
-
-        GridKernalContext kctx0 = cctx.kernalContext();
-
-        Collection<ClusterNode> bltNodes = F.view(cctx.discovery().serverNodes(AffinityTopologyVersion.NONE),
-            (node) -> CU.baselineNode(node, kctx0.state().clusterState()));
-
-        Collection<Integer> grpIds = grps == null ? Collections.emptySet() : F.viewReadOnly(grps, CU::cacheId);
-
-        SnapshotMetadataVerificationTaskArg taskArg = new SnapshotMetadataVerificationTaskArg(name, snpPath, incIdx, grpIds);
-
-        kctx0.task().execute(
-            SnapshotMetadataVerificationTask.class,
-            taskArg,
-            options(bltNodes)
-        ).listen(f0 -> {
-            SnapshotMetadataVerificationTaskResult metasRes = f0.result();
-
-            if (f0.error() == null && F.isEmpty(metasRes.exceptions())) {
-                Map<ClusterNode, List<SnapshotMetadata>> metas = metasRes.meta();
-
-                Class<? extends AbstractSnapshotVerificationTask> cls = SnapshotHandlerRestoreTask.class;
-
-                kctx0.task().execute(
-                        cls,
-                        new SnapshotPartitionsVerifyTaskArg(grps, metas, snpPath, incIdx, check),
-                        options(new ArrayList<>(metas.keySet()))
-                    ).listen(f1 -> {
-                        if (f1.error() == null)
-                            res.onDone(f1.result());
-                        else if (f1.error() instanceof IgniteSnapshotVerifyException)
-                            res.onDone(new SnapshotPartitionsVerifyTaskResult(metas,
-                                new IdleVerifyResultV2(((IgniteSnapshotVerifyException)f1.error()).exceptions())));
-                        else
-                            res.onDone(f1.error());
-                    });
-            }
-            else {
-                if (f0.error() == null)
-                    res.onDone(new IgniteSnapshotVerifyException(metasRes.exceptions()));
-                else if (f0.error() instanceof IgniteSnapshotVerifyException)
-                    res.onDone(new SnapshotPartitionsVerifyTaskResult(null,
-                        new IdleVerifyResultV2(((IgniteSnapshotVerifyException)f0.error()).exceptions())));
-                else
-                    res.onDone(f0.error());
+        res.listen(lsnr -> {
+            if (log.isInfoEnabled()) {
+                log.info("The check snapshot procedure finished [snpName=" + name + ", snpPath=" + snpPath
+                    + ", incIdx=" + incIdx + ", grps=" + grps + ']');
             }
         });
-
-        if (log.isInfoEnabled()) {
-            res.listen(() -> log.info("The check snapshot procedure finished [snpName=" + name +
-                ", snpPath=" + snpPath + ", incIdx=" + incIdx + ", grps=" + grps + ']'));
-        }
 
         return res;
     }
