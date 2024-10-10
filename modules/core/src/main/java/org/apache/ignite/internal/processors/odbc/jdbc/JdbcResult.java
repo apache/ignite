@@ -87,6 +87,12 @@ public class JdbcResult implements JdbcRawBinarylizable {
     /** Get binary type name result. */
     static final byte BINARY_TYPE_NAME_GET = 22;
 
+    /** Start transaction response. */
+    static final byte TX_SET_PARAMS = 23;
+
+    /** End transaction response. */
+    static final byte TX_END = 24;
+
     /** Success status. */
     private byte type;
 
@@ -226,6 +232,14 @@ public class JdbcResult implements JdbcRawBinarylizable {
 
             case BINARY_TYPE_NAME_GET:
                 res = new JdbcBinaryTypeNameGetResult();
+
+                break;
+
+            case TX_SET_PARAMS:
+                return null;
+
+            case TX_END:
+                res = new JdbcTxEndResult();
 
                 break;
 

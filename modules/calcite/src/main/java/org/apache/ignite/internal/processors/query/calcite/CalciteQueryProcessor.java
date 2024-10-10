@@ -58,8 +58,8 @@ import org.apache.ignite.configuration.QueryEngineConfiguration;
 import org.apache.ignite.events.SqlQueryExecutionEvent;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.processors.GridProcessorAdapter;
-import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxLocal;
 import org.apache.ignite.internal.processors.cache.query.IgniteQueryErrorCode;
+import org.apache.ignite.internal.processors.cache.transactions.IgniteTxManager;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.processors.failure.FailureProcessor;
 import org.apache.ignite.internal.processors.query.GridQueryFieldMetadata;
@@ -119,10 +119,10 @@ import org.apache.ignite.internal.processors.query.calcite.util.LifecycleAware;
 import org.apache.ignite.internal.processors.query.calcite.util.Service;
 import org.apache.ignite.internal.processors.security.SecurityUtils;
 import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.internal.util.typedef.internal.U;
 import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.IgniteSystemProperties.getLong;
-import static org.apache.ignite.configuration.TransactionConfiguration.TX_AWARE_QUERIES_SUPPORTED_MODES;
 import static org.apache.ignite.events.EventType.EVT_SQL_QUERY_EXECUTION;
 
 /** */
@@ -605,7 +605,7 @@ public class CalciteQueryProcessor extends GridProcessorAdapter implements Query
 
     /** */
     private void ensureTransactionModeSupported(@Nullable QueryContext qryCtx) {
-        if (!ctx.config().getTransactionConfiguration().isTxAwareQueriesEnabled())
+        if (!U.isTxAwareQueriesEnabled(ctx))
             return;
 
         GridCacheVersion ver = queryTransactionVersion(qryCtx);
@@ -613,12 +613,7 @@ public class CalciteQueryProcessor extends GridProcessorAdapter implements Query
         if (ver == null)
             return;
 
-        final GridNearTxLocal userTx = ctx.cache().context().tm().tx(ver);
-
-        if (TX_AWARE_QUERIES_SUPPORTED_MODES.contains(userTx.isolation()))
-            return;
-
-        throw new IllegalStateException("Transaction isolation mode not supported for SQL queries: " + userTx.isolation());
+        IgniteTxManager.ensureTransactionModeSupported(ctx.cache().context().tm().tx(ver).isolation());
     }
 
     /** */

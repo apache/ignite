@@ -18,7 +18,7 @@
 package org.apache.ignite.internal.processors.platform.client.tx;
 
 import org.apache.ignite.binary.BinaryRawReader;
-import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxLocal;
+import org.apache.ignite.internal.processors.odbc.ClientTxSupport;
 import org.apache.ignite.internal.processors.platform.client.ClientConnectionContext;
 import org.apache.ignite.internal.processors.platform.client.ClientIntResponse;
 import org.apache.ignite.internal.processors.platform.client.ClientRequest;
@@ -31,7 +31,7 @@ import org.apache.ignite.transactions.TransactionIsolation;
 /**
  * Start transaction request.
  */
-public class ClientTxStartRequest extends ClientRequest {
+public class ClientTxStartRequest extends ClientRequest implements ClientTxSupport {
     /** Transaction concurrency control. */
     private final TransactionConcurrency concurrency;
 
@@ -60,46 +60,12 @@ public class ClientTxStartRequest extends ClientRequest {
 
     /** {@inheritDoc} */
     @Override public ClientResponse process(ClientConnectionContext ctx) {
-        GridNearTxLocal tx;
+        return new ClientIntResponse(requestId(), startClientTransaction(ctx, concurrency, isolation, timeout, lb));
+    }
 
-        ctx.kernalContext().gateway().readLock();
-
-        try {
-            tx = ctx.kernalContext().cache().context().tm().newTx(
-                false,
-                false,
-                null,
-                concurrency,
-                isolation,
-                timeout,
-                true,
-                0,
-                lb
-            );
-        }
-        finally {
-            ctx.kernalContext().gateway().readUnlock();
-        }
-
-        try {
-            tx.suspend();
-
-            int txId = ctx.nextTxId();
-
-            ctx.addTxContext(new ClientTxContext(txId, tx));
-
-            return new ClientIntResponse(requestId(), txId);
-        }
-        catch (Exception e) {
-            try {
-                tx.close();
-            }
-            catch (Exception e1) {
-                e.addSuppressed(e1);
-            }
-
-            throw (e instanceof IgniteClientException) ? (IgniteClientException)e :
-                new IgniteClientException(ClientStatus.FAILED, e.getMessage(), e);
-        }
+    /** {@inheritDoc} */
+    @Override public RuntimeException startTxException(Exception e) {
+        return (e instanceof IgniteClientException) ? (IgniteClientException)e :
+            new IgniteClientException(ClientStatus.FAILED, e.getMessage(), e);
     }
 }

@@ -86,6 +86,9 @@ import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtCacheA
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtUnreservedPartitionException;
 import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtLocalPartition;
 import org.apache.ignite.internal.processors.cache.persistence.CacheDataRow;
+import org.apache.ignite.internal.processors.cache.transactions.IgniteInternalTx;
+import org.apache.ignite.internal.processors.cache.transactions.IgniteTxEntry;
+import org.apache.ignite.internal.processors.cache.transactions.IgniteTxManager;
 import org.apache.ignite.internal.processors.datastructures.DataStructuresProcessor;
 import org.apache.ignite.internal.processors.datastructures.GridSetQueryPredicate;
 import org.apache.ignite.internal.processors.datastructures.SetItemKey;
@@ -779,7 +782,8 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
             qry.partition(),
             false,
             true,
-            qry.isDataPageScanEnabled());
+            qry.isDataPageScanEnabled(),
+            null); // TODO: add tx info?
 
         return scanQueryLocal(qry0, false);
     }
@@ -825,7 +829,7 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
 
             final GridDhtLocalPartition locPart;
 
-            final GridIterator<CacheDataRow> it;
+            GridIterator<CacheDataRow> it;
 
             if (part != null) {
                 final GridDhtCacheAdapter dht = cctx.isNear() ? cctx.near().dht() : cctx.dht();
@@ -859,6 +863,15 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
 
                 it = cctx.offheap().cacheIterator(cctx.cacheId(), true, backups, topVer,
                     qry.isDataPageScanEnabled());
+            }
+
+            final Set<KeyCacheObject> skipKeys = qry.skipKeys();
+
+            if (!F.isEmpty(skipKeys)) {
+                // Intentionally use of `Set#remove` here.
+                // We want perform as few `toKey` as possible.
+                // So we break some rules here to optimize work with the data provided by the underlying cursor.
+                it = F.iterator0(it, true, e -> skipKeys.isEmpty() || !skipKeys.remove(e.key()));
             }
 
             ScanQueryIterator iter = new ScanQueryIterator(it, qry, topVer, locPart,
@@ -2885,20 +2898,6 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
      * Creates user's predicate based scan query.
      *
      * @param filter Scan filter.
-     * @param part Partition.
-     * @param keepBinary Keep binary flag.
-     * @param dataPageScanEnabled Flag to enable data page scan.
-     * @return Created query.
-     */
-    public <R> CacheQuery<R> createScanQuery(@Nullable IgniteBiPredicate<K, V> filter,
-        @Nullable Integer part, boolean keepBinary, Boolean dataPageScanEnabled) {
-        return createScanQuery(filter, null, part, keepBinary, false, dataPageScanEnabled);
-    }
-
-    /**
-     * Creates user's predicate based scan query.
-     *
-     * @param filter Scan filter.
      * @param trans Transformer.
      * @param part Partition.
      * @param keepBinary Keep binary flag.
@@ -2922,7 +2921,49 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
             part,
             keepBinary,
             forceLocal,
-            dataPageScanEnabled);
+            dataPageScanEnabled,
+            transactionChanges(part).get1());
+    }
+
+    /**
+     * @param part Partition.
+     * @return First, set of object changed in transaction, second, list of transaction data in required format.
+     * @param <R> Required type.
+     */
+    public <R> IgniteBiTuple<Set<KeyCacheObject>, List<IgniteTxEntry>> transactionChanges(Integer part) {
+        if (!U.isTxAwareQueriesEnabled(cctx))
+            return F.t(Collections.emptySet(), Collections.emptyList());
+
+        IgniteInternalTx tx = cctx.tm().tx();
+
+        if (tx == null)
+            return F.t(Collections.emptySet(), Collections.emptyList());
+
+        IgniteTxManager.ensureTransactionModeSupported(tx.isolation());
+
+        Set<KeyCacheObject> changedKeys = new HashSet<>();
+        List<IgniteTxEntry> newAndUpdatedRows = new ArrayList<>();
+
+        for (IgniteTxEntry e : tx.writeEntries()) {
+            if (e.cacheId() != cctx.cacheId())
+                continue;
+
+            int epart = e.key().partition();
+
+            assert epart != -1;
+
+            if (part != null && epart != part)
+                continue;
+
+            changedKeys.add(e.key());
+
+            // TODO: check entry processor.
+            // Mix only updated or inserted entries. In case val == null entry removed.
+            if (e.value() != null)
+                newAndUpdatedRows.add(e);
+        }
+
+        return F.t(changedKeys, newAndUpdatedRows);
     }
 
     /**
