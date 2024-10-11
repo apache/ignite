@@ -228,8 +228,19 @@ public class JdbcThinStatement implements Statement {
             return;
         }
 
-        JdbcQueryExecuteRequest req = new JdbcQueryExecuteRequest(stmtType, schema, pageSize,
-            maxRows, conn.getAutoCommit(), explicitTimeout, sql, args == null ? null : args.toArray(new Object[args.size()]));
+        boolean autoCommit = conn.getAutoCommit();
+
+        JdbcQueryExecuteRequest req = new JdbcQueryExecuteRequest(
+            stmtType,
+            schema,
+            pageSize,
+            maxRows,
+            autoCommit,
+            explicitTimeout,
+            sql,
+            args == null ? null : args.toArray(new Object[args.size()]),
+            conn.txId()
+        );
 
         JdbcResultWithIo resWithIo = conn.sendRequest(req, this, null);
 
@@ -245,12 +256,18 @@ public class JdbcThinStatement implements Statement {
         if (res0 instanceof JdbcQueryExecuteResult) {
             JdbcQueryExecuteResult res = (JdbcQueryExecuteResult)res0;
 
+            if (!autoCommit)
+                conn.addToTransaction(stickyIo, res.txId(), this);
+
             resultSets = Collections.singletonList(new JdbcThinResultSet(this, res.cursorId(), pageSize,
                 res.last(), res.items(), res.isQuery(), conn.autoCloseServerCursor(), res.updateCount(),
                 closeOnCompletion, stickyIo));
         }
         else if (res0 instanceof JdbcQueryExecuteMultipleStatementsResult) {
             JdbcQueryExecuteMultipleStatementsResult res = (JdbcQueryExecuteMultipleStatementsResult)res0;
+
+            if (!autoCommit)
+                conn.addToTransaction(stickyIo, res.txId(), this);
 
             List<JdbcResultInfo> resInfos = res.results();
 
@@ -409,7 +426,7 @@ public class JdbcThinStatement implements Statement {
      * Close results.
      * @throws SQLException On error.
      */
-    private void closeResults() throws SQLException {
+    void closeResults() throws SQLException {
         if (resultSets != null) {
             for (JdbcThinResultSet rs : resultSets)
                 rs.close0();

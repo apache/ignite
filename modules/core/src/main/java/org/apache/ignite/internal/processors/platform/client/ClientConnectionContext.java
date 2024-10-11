@@ -37,6 +37,7 @@ import org.apache.ignite.internal.processors.odbc.ClientListenerProtocolVersion;
 import org.apache.ignite.internal.processors.odbc.ClientListenerRequestHandler;
 import org.apache.ignite.internal.processors.platform.client.tx.ClientTxContext;
 import org.apache.ignite.internal.util.nio.GridNioSession;
+import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.internal.processors.odbc.ClientListenerNioListener.THIN_CLIENT;
 import static org.apache.ignite.internal.processors.platform.client.ClientBitmaskFeature.USER_ATTRIBUTES;
@@ -116,9 +117,6 @@ public class ClientConnectionContext extends ClientListenerAbstractConnectionCon
 
     /** Active tx count limit. */
     private final int maxActiveTxCnt;
-
-    /** Tx id. */
-    private final AtomicInteger txIdSeq = new AtomicInteger();
 
     /** Transactions by transaction id. */
     private final Map<Integer, ClientTxContext> txs = new ConcurrentHashMap<>();
@@ -248,8 +246,6 @@ public class ClientConnectionContext extends ClientListenerAbstractConnectionCon
     @Override public void onDisconnected() {
         resReg.clean();
 
-        cleanupTxs();
-
         super.onDisconnected();
     }
 
@@ -298,30 +294,13 @@ public class ClientConnectionContext extends ClientListenerAbstractConnectionCon
         }
     }
 
-    /**
-     * Next transaction id for this connection.
-     */
-    public int nextTxId() {
-        int txId = txIdSeq.incrementAndGet();
-
-        return txId == 0 ? txIdSeq.incrementAndGet() : txId;
-    }
-
-    /**
-     * Transaction context by transaction id.
-     *
-     * @param txId Tx ID.
-     */
-    public ClientTxContext txContext(int txId) {
+    /** {@inheritDoc} */
+    @Override public @Nullable ClientTxContext txContext(int txId) {
         return txs.get(txId);
     }
 
-    /**
-     * Add new transaction context to connection.
-     *
-     * @param txCtx Tx context.
-     */
-    public void addTxContext(ClientTxContext txCtx) {
+    /** {@inheritDoc} */
+    @Override public void addTxContext(ClientTxContext txCtx) {
         if (txsCnt.incrementAndGet() > maxActiveTxCnt) {
             txsCnt.decrementAndGet();
 
@@ -334,21 +313,15 @@ public class ClientConnectionContext extends ClientListenerAbstractConnectionCon
         txs.put(txCtx.txId(), txCtx);
     }
 
-    /**
-     * Remove transaction context from connection.
-     *
-     * @param txId Tx ID.
-     */
-    public void removeTxContext(int txId) {
+    /** {@inheritDoc} */
+    @Override public void removeTxContext(int txId) {
         txs.remove(txId);
 
         txsCnt.decrementAndGet();
     }
 
-    /**
-     *
-     */
-    private void cleanupTxs() {
+    /** {@inheritDoc} */
+    @Override public void cleanupTxs() {
         for (ClientTxContext txCtx : txs.values())
             txCtx.close();
 
