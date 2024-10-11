@@ -17,6 +17,7 @@
 
 package org.apache.ignite.jdbc.thin;
 
+import java.io.IOException;
 import java.io.Serializable;
 import java.math.BigDecimal;
 import java.math.BigInteger;
@@ -52,6 +53,7 @@ import org.apache.ignite.cache.QueryEntity;
 import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.internal.IgniteEx;
+import org.apache.ignite.internal.jdbc2.lob.JdbcBlobBuffer;
 import org.apache.ignite.internal.processors.cache.GridCacheDataTypesCoverageTest;
 import org.apache.ignite.internal.util.lang.GridAbsPredicateX;
 import org.apache.ignite.internal.util.lang.GridClosureException;
@@ -97,7 +99,7 @@ public class JdbcThinCacheToJdbcDataTypesCoverageTest extends GridCacheDataTypes
         innerMap.put(java.sql.Timestamp.class, new IgniteBiTuple<>(Types.TIMESTAMP, java.sql.Timestamp.class));
         innerMap.put(String.class, new IgniteBiTuple<>(Types.VARCHAR, String.class));
         innerMap.put(Character.class, new IgniteBiTuple<>(Types.OTHER, Character.class));
-        innerMap.put(byte[].class, new IgniteBiTuple<>(Types.BINARY, byte[].class));
+        innerMap.put(byte[].class, new IgniteBiTuple<>(Types.BINARY, JdbcBlobBuffer.class));
         innerMap.put(java.util.Date.class, new IgniteBiTuple<>(Types.TIMESTAMP, java.sql.Timestamp.class));
         innerMap.put(LocalDate.class, new IgniteBiTuple<>(Types.DATE, java.sql.Date.class));
         innerMap.put(LocalDateTime.class, new IgniteBiTuple<>(Types.TIMESTAMP, java.sql.Timestamp.class));
@@ -400,15 +402,31 @@ public class JdbcThinCacheToJdbcDataTypesCoverageTest extends GridCacheDataTypes
             ((SqlStrConvertedValHolder)valsToCheck[0]).originalVal() :
             valsToCheck[0];
 
-        // In case of BigDecimal, cache internally changes bitLength of BigDecimal's intValue,
-        // so that EqualsBuilder.reflectionEquals returns false.
-        // As a result in case of BigDecimal data type Objects.equals is used.
-        // Same is about BigInteger.
-        BiFunction<Object, Object, Boolean> equalsProc =
-            originalValItem instanceof BigDecimal || originalValItem instanceof BigInteger ?
-                Objects::equals :
-                (lhs, rhs) -> EqualsBuilder.reflectionEquals(
-                    lhs, rhs, false, lhs.getClass(), true);
+        BiFunction<Object, Object, Boolean> equalsProc = new BiFunction<>() {
+            @Override public Boolean apply(Object lhs, Object rhs) {
+                if (originalValItem instanceof BigDecimal || originalValItem instanceof BigInteger) {
+                    // In case of BigDecimal, cache internally changes bitLength of BigDecimal's intValue,
+                    // so that EqualsBuilder.reflectionEquals returns false.
+                    // As a result in case of BigDecimal data type Objects.equals is used.
+                    // Same is about BigInteger.
+                    return Objects.equals(lhs, rhs);
+                }
+
+                if (originalValItem instanceof byte[]) {
+                    // In case of byte[] the result set contains the JdbcBlobBuffer object
+                    // wrapping the actial array. So we need to unwrap it before comparing.
+                    try {
+                        rhs = ((JdbcBlobBuffer)rhs).getData();
+                    }
+                    catch (IOException e) {
+                        return false;
+                    }
+                }
+
+                return EqualsBuilder.reflectionEquals(
+                        lhs, rhs, false, lhs.getClass(), true);
+            }
+        };
 
         String uuidPostfix = UUID.randomUUID().toString().replaceAll("-", "_");
 

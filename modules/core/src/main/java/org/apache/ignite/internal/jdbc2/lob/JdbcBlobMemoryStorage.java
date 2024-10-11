@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.jdbc2.lob;
 
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -108,7 +109,11 @@ class JdbcBlobMemoryStorage implements JdbcBlobStorage {
     }
 
     /** {@inheritDoc} */
-    @Override public void write(JdbcBlobBufferPointer pos, int b) {
+    @Override public void write(JdbcBlobBufferPointer pos, int b) throws IOException {
+        if (pos.getPos() >= totalCnt + 1)
+            throw new IOException("Writting beyond end of Blob, it probably was truncated after OutputStream was created " +
+                    "[pos=" + pos.getPos() + ", totalCnt=" + totalCnt + "]");
+
         byte[] buf = getBuf(pos);
 
         if (buf == null)
@@ -122,7 +127,11 @@ class JdbcBlobMemoryStorage implements JdbcBlobStorage {
     }
 
     /** {@inheritDoc} */
-    @Override public void write(JdbcBlobBufferPointer pos, byte[] bytes, int off, int len) {
+    @Override public void write(JdbcBlobBufferPointer pos, byte[] bytes, int off, int len) throws IOException {
+        if (pos.getPos() >= totalCnt + 1)
+            throw new IOException("Writting beyond end of Blob, it probably was truncated after OutputStream was created " +
+                    "[pos=" + pos.getPos() + ", totalCnt=" + totalCnt + "]");
+
         int remaining = len;
 
         byte[] buf;
@@ -235,7 +244,12 @@ class JdbcBlobMemoryStorage implements JdbcBlobStorage {
      * @param pos Position pointer.
      */
     private int getBufPos(JdbcBlobBufferPointer pos) {
-        return ((InMemContext)pos.getContext()).inBufPos;
+        InMemContext ctx = (InMemContext)pos.getContext();
+
+        if (ctx == null)
+            ctx = recoverContext(pos);
+
+        return ctx.inBufPos;
     }
 
     /**
@@ -244,7 +258,32 @@ class JdbcBlobMemoryStorage implements JdbcBlobStorage {
      * @param pos Position pointer.
      */
     private int getBufIdx(JdbcBlobBufferPointer pos) {
-        return ((InMemContext)pos.getContext()).idx;
+        InMemContext ctx = (InMemContext)pos.getContext();
+
+        if (ctx == null)
+            ctx = recoverContext(pos);
+
+        return ctx.idx;
+    }
+
+    /**
+     * Adds context to the {@code pointer}.
+     *
+     * <p>Calculates the current position in the current buffer taking into account
+     * the current position stored in pointer.
+     *
+     * @param pointer Pointer.
+     * @return InMemContext instance.
+     */
+    private InMemContext recoverContext(JdbcBlobBufferPointer pointer) {
+        long pos = pointer.getPos();
+
+        pointer.setContext(new InMemContext(0, 0));
+        pointer.setPos(0);
+
+        advance(pointer, pos);
+
+        return (InMemContext)pointer.getContext();
     }
 
     /**
