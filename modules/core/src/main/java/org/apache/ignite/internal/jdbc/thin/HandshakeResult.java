@@ -17,11 +17,14 @@
 
 package org.apache.ignite.internal.jdbc.thin;
 
+import java.util.Collections;
 import java.util.EnumSet;
+import java.util.Set;
 import java.util.UUID;
 import org.apache.ignite.internal.processors.odbc.ClientListenerProtocolVersion;
 import org.apache.ignite.internal.processors.odbc.jdbc.JdbcThinFeature;
 import org.apache.ignite.lang.IgniteProductVersion;
+import org.apache.ignite.transactions.TransactionIsolation;
 
 /**
  * Handshake result.
@@ -38,6 +41,9 @@ class HandshakeResult {
 
     /** Features. */
     private EnumSet<JdbcThinFeature> features = EnumSet.noneOf(JdbcThinFeature.class);
+
+    /** Transaction isolation levels supported by the server for SQL queries. */
+    private Set<TransactionIsolation> isolationLevelsSupported = Collections.emptySet();
 
     /**
      * @return Ignite server version.
@@ -93,5 +99,19 @@ class HandshakeResult {
      */
     public EnumSet<JdbcThinFeature> features() {
         return features;
+    }
+
+    /**
+     * @param isolationLevelsSupported Transaction isolation levels supported by the server.
+     */
+    public void isolationLevelsSupported(Set<TransactionIsolation> isolationLevelsSupported) {
+        this.isolationLevelsSupported = isolationLevelsSupported;
+    }
+
+    /**
+     * @return Transaction isolation levels supported by the server.
+     */
+    public Set<TransactionIsolation> isolationLevelsSupported() {
+        return isolationLevelsSupported;
     }
 }

@@ -24,6 +24,7 @@ import org.apache.ignite.internal.processors.query.calcite.exec.LogicalRelImplem
 import org.apache.ignite.internal.processors.query.calcite.exec.NumericTypesPrecisionsTest;
 import org.apache.ignite.internal.processors.query.calcite.exec.exp.IgniteSqlFunctionsTest;
 import org.apache.ignite.internal.processors.query.calcite.exec.tracker.MemoryTrackerTest;
+import org.apache.ignite.internal.processors.query.calcite.jdbc.JdbcThinTransactionalSelfTest;
 import org.apache.ignite.internal.processors.query.calcite.message.CalciteCommunicationMessageSerializationTest;
 import org.apache.ignite.internal.processors.query.calcite.sql.SqlCustomParserTest;
 import org.apache.ignite.internal.processors.query.calcite.sql.SqlReservedWordsTest;
@@ -56,7 +57,9 @@ import org.junit.runners.Suite;
 
     KeyFilteringCursorTest.class,
     SqlTransactionsIsolationTest.class,
-    SqlTransactionsUnsupportedModesTest.class
+    SqlTransactionsUnsupportedModesTest.class,
+
+    JdbcThinTransactionalSelfTest.class,
 })
 public class IgniteCalciteTestSuite {
 }
