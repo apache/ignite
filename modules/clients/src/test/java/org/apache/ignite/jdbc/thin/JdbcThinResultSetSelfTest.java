@@ -638,6 +638,20 @@ public class JdbcThinResultSetSelfTest extends JdbcThinAbstractSelfTest {
      * @throws Exception If failed.
      */
     @Test
+    public void testBlobForNonBinaryType() throws Exception {
+        ResultSet rs = stmt.executeQuery(SQL);
+
+        assertTrue(rs.next());
+
+        assertThrows(null, () -> rs.getBlob("strVal"), SQLException.class, "Cannot convert to Blob [colIdx=10]");
+
+        assertFalse(rs.next());
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    @Test
     public void testBlobChangeAfterSelect() throws Exception {
         byte[] res = new byte[1];
 
@@ -804,6 +818,26 @@ public class JdbcThinResultSetSelfTest extends JdbcThinAbstractSelfTest {
 
         stream = rs.getBinaryStream(16);
         Assert.assertArrayEquals(stream.readAllBytes(), new byte[] {1});
+
+        assertFalse(rs.next());
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    @Test
+    public void testBinaryStreamForNonBinaryType() throws Exception {
+        byte[] expected = "1".getBytes();
+
+        ResultSet rs = stmt.executeQuery(SQL);
+
+        assertTrue(rs.next());
+
+        InputStream asStream = rs.getBinaryStream("strVal");
+        byte[] asBytes = rs.getBytes("strVal");
+
+        Assert.assertArrayEquals(expected, asStream.readAllBytes());
+        Assert.assertArrayEquals(expected, asBytes);
 
         assertFalse(rs.next());
     }
