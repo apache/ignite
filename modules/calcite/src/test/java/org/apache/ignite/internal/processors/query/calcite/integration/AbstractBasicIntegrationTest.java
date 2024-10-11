@@ -145,12 +145,14 @@ public class AbstractBasicIntegrationTest extends GridCommonAbstractTest {
         };
     }
 
-    /** */
+    /** @deprecated Use {@link #sql(String, Object...)} instead. */
+    @Deprecated
     protected List<List<?>> executeSql(String sql, Object... args) {
         return executeSql(client, sql, args);
     }
 
-    /** */
+    /** @deprecated Use {@link #sql(String, Object...)} instead. */
+    @Deprecated
     protected List<List<?>> executeSql(IgniteEx ignite, String sql, Object... args) {
         CalciteQueryProcessor qryProc = Commons.lookupComponent(ignite.context(), CalciteQueryProcessor.class);
 
