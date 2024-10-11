@@ -86,9 +86,6 @@ import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtCacheA
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtUnreservedPartitionException;
 import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtLocalPartition;
 import org.apache.ignite.internal.processors.cache.persistence.CacheDataRow;
-import org.apache.ignite.internal.processors.cache.transactions.IgniteInternalTx;
-import org.apache.ignite.internal.processors.cache.transactions.IgniteTxEntry;
-import org.apache.ignite.internal.processors.cache.transactions.IgniteTxManager;
 import org.apache.ignite.internal.processors.datastructures.DataStructuresProcessor;
 import org.apache.ignite.internal.processors.datastructures.GridSetQueryPredicate;
 import org.apache.ignite.internal.processors.datastructures.SetItemKey;
@@ -2903,6 +2900,7 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
      * @param keepBinary Keep binary flag.
      * @param forceLocal Flag to force local scan.
      * @param dataPageScanEnabled Flag to enable data page scan.
+     * @param skipKeys Set of keys that must be skiped during iteration.
      * @return Created query.
      */
     @SuppressWarnings("unchecked")
@@ -2912,7 +2910,8 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
         @Nullable Integer part,
         boolean keepBinary,
         boolean forceLocal,
-        Boolean dataPageScanEnabled
+        Boolean dataPageScanEnabled,
+        Set<KeyCacheObject> skipKeys
     ) {
         return new GridCacheQueryAdapter(cctx,
             SCAN,
@@ -2922,48 +2921,7 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
             keepBinary,
             forceLocal,
             dataPageScanEnabled,
-            transactionChanges(part).get1());
-    }
-
-    /**
-     * @param part Partition.
-     * @return First, set of object changed in transaction, second, list of transaction data in required format.
-     * @param <R> Required type.
-     */
-    public <R> IgniteBiTuple<Set<KeyCacheObject>, List<IgniteTxEntry>> transactionChanges(Integer part) {
-        if (!U.isTxAwareQueriesEnabled(cctx))
-            return F.t(Collections.emptySet(), Collections.emptyList());
-
-        IgniteInternalTx tx = cctx.tm().tx();
-
-        if (tx == null)
-            return F.t(Collections.emptySet(), Collections.emptyList());
-
-        IgniteTxManager.ensureTransactionModeSupported(tx.isolation());
-
-        Set<KeyCacheObject> changedKeys = new HashSet<>();
-        List<IgniteTxEntry> newAndUpdatedRows = new ArrayList<>();
-
-        for (IgniteTxEntry e : tx.writeEntries()) {
-            if (e.cacheId() != cctx.cacheId())
-                continue;
-
-            int epart = e.key().partition();
-
-            assert epart != -1;
-
-            if (part != null && epart != part)
-                continue;
-
-            changedKeys.add(e.key());
-
-            // TODO: check entry processor.
-            // Mix only updated or inserted entries. In case val == null entry removed.
-            if (e.value() != null)
-                newAndUpdatedRows.add(e);
-        }
-
-        return F.t(changedKeys, newAndUpdatedRows);
+            skipKeys);
     }
 
     /**

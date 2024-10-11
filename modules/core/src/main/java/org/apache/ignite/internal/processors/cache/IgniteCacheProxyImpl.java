@@ -98,6 +98,7 @@ import org.apache.ignite.internal.util.future.IgniteFinishedFutureImpl;
 import org.apache.ignite.internal.util.future.IgniteFutureImpl;
 import org.apache.ignite.internal.util.lang.GridCloseableIterator;
 import org.apache.ignite.internal.util.lang.GridClosureException;
+import org.apache.ignite.internal.util.lang.GridIterator;
 import org.apache.ignite.internal.util.lang.IgniteOutClosureX;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
@@ -472,9 +473,9 @@ public class IgniteCacheProxyImpl<K, V> extends AsyncSupportAdapter<IgniteCache<
      * @throws IgniteCheckedException If failed.
      */
     @SuppressWarnings("unchecked")
-    private <T, R> QueryCursor<R> query(
-        final ScanQuery scanQry,
-        @Nullable final IgniteClosure<T, R> transformer,
+    private <R> QueryCursor<R> query(
+        final ScanQuery<K, V> scanQry,
+        @Nullable final IgniteClosure<Cache.Entry<K, V>, R> transformer,
         @Nullable ClusterGroup grp
     ) throws IgniteCheckedException {
         GridCacheContext<K, V> ctx = getContextSafe();
@@ -485,8 +486,10 @@ public class IgniteCacheProxyImpl<K, V> extends AsyncSupportAdapter<IgniteCache<
 
         IgniteBiPredicate<K, V> p = scanQry.getFilter();
 
+        IgniteBiTuple<Set<KeyCacheObject>, List<IgniteTxEntry>> txChanges = transactionChanges(ctx, scanQry.getPartition());
+
         final CacheQuery<R> qry = ctx.queries().createScanQuery(
-            p, transformer, scanQry.getPartition(), isKeepBinary, scanQry.isLocal(), null);
+            p, transformer, scanQry.getPartition(), isKeepBinary, scanQry.isLocal(), null, txChanges.get1());
 
         if (scanQry.getPageSize() > 0)
             qry.pageSize(scanQry.getPageSize());
@@ -500,6 +503,17 @@ public class IgniteCacheProxyImpl<K, V> extends AsyncSupportAdapter<IgniteCache<
                     return qry.executeScanQuery();
                 }
             }, true);
+
+        if (!F.isEmpty(txChanges.get2())) {
+            GridIterator<Cache.Entry<K, V>> txIter = F.iterator(
+                txChanges.get2(),
+                txEntry -> new CacheEntryImpl<>((K)txEntry.key(), (V)txEntry.value(), txEntry.explicitVersion()),
+                true
+            );
+
+            // TODO: fixme
+            iter = F.concat(iter, txIter);
+        }
 
         return new QueryCursorImpl<>(iter);
     }
@@ -838,7 +852,7 @@ public class IgniteCacheProxyImpl<K, V> extends AsyncSupportAdapter<IgniteCache<
                     null, keepBinary, true).get(0);
 
             if (qry instanceof ScanQuery)
-                return query((ScanQuery)qry, null, projection(qry.isLocal()));
+                return query((ScanQuery<K, V>)qry, null, projection(qry.isLocal()));
 
             return (QueryCursor<R>)query(qry, projection(qry.isLocal()));
         }
@@ -868,7 +882,7 @@ public class IgniteCacheProxyImpl<K, V> extends AsyncSupportAdapter<IgniteCache<
 
             validate(qry);
 
-            return query((ScanQuery<K, V>)qry, transformer, projection(qry.isLocal()));
+            return query((ScanQuery<K, V>)qry, (IgniteClosure<Cache.Entry<K, V>, R>)transformer, projection(qry.isLocal()));
         }
         catch (Exception e) {
             if (e instanceof CacheException)
@@ -2393,6 +2407,48 @@ public class IgniteCacheProxyImpl<K, V> extends AsyncSupportAdapter<IgniteCache<
      */
     private Executor exec() {
         return context().kernalContext().getAsyncContinuationExecutor();
+    }
+
+    /**
+     * @param ctx Cache context.
+     * @param part Partition.
+     * @return First, set of object changed in transaction, second, list of transaction data in required format.
+     * @param <R> Required type.
+     */
+    private <R> IgniteBiTuple<Set<KeyCacheObject>, List<IgniteTxEntry>> transactionChanges(GridCacheContext<K, V> ctx, Integer part) {
+        if (!U.isTxAwareQueriesEnabled(ctx))
+            return F.t(Collections.emptySet(), Collections.emptyList());
+
+        IgniteInternalTx tx = ctx.tm().tx();
+
+        if (tx == null)
+            return F.t(Collections.emptySet(), Collections.emptyList());
+
+        IgniteTxManager.ensureTransactionModeSupported(tx.isolation());
+
+        Set<KeyCacheObject> changedKeys = new HashSet<>();
+        List<IgniteTxEntry> newAndUpdatedRows = new ArrayList<>();
+
+        for (IgniteTxEntry e : tx.writeEntries()) {
+            if (e.cacheId() != ctx.cacheId())
+                continue;
+
+            int epart = e.key().partition();
+
+            assert epart != -1;
+
+            if (part != null && epart != part)
+                continue;
+
+            changedKeys.add(e.key());
+
+            // TODO: check entry processor.
+            // Mix only updated or inserted entries. In case val == null entry removed.
+            if (e.value() != null)
+                newAndUpdatedRows.add(e);
+        }
+
+        return F.t(changedKeys, newAndUpdatedRows);
     }
 
     /**
