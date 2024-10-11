@@ -649,19 +649,23 @@ public class DataTypesTest extends AbstractBasicIntegrationTest {
     /** */
     @Test
     public void testCoercionOfNumericLiteralsPrecasted() {
-        doTestCoercionOfNumerics(true, false);
+        doTestCoercionOfNumerics(false, true);
     }
 
     /** */
     @Test
     public void testCoercionOfNumericDynamicParameters() {
-        doTestCoercionOfNumerics(false, true);
+        doTestCoercionOfNumerics(true, false);
+    }
+
+    /** */
+    @Test
+    public void testCoercionOfNumericDynamicParametersPrecasted() {
+        doTestCoercionOfNumerics(true, true);
     }
 
     /** */
     private void doTestCoercionOfNumerics(boolean dynamic, boolean precasted) {
-        assert !dynamic || !precasted;
-
         for (List<Object> params : numericsToCast()) {
             assert params.size() == 4 : "Wrong params lenght: " + params.size();
 
@@ -674,7 +678,9 @@ public class DataTypesTest extends AbstractBasicIntegrationTest {
                 + ", expectedResult=" + expectedRes);
 
             if (dynamic) {
-                String qry = String.format("SELECT CAST(? AS %s)", targetType);
+                String qry = precasted
+                    ? String.format("SELECT CAST(?::%s AS %s)", inputType, targetType)
+                    : String.format("SELECT CAST(? AS %s)", targetType);
 
                 if (expectedRes instanceof Exception)
                     assertThrows(qry, (Class<? extends Exception>)expectedRes.getClass(), ((Throwable)expectedRes).getMessage(), inputVal);
