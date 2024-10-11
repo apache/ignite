@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.processors.odbc;
 
 import java.io.IOException;
+import java.io.InputStream;
 import java.math.BigDecimal;
 import java.sql.Blob;
 import java.sql.SQLException;
@@ -182,7 +183,7 @@ public abstract class SqlListenerUtils {
      * Read byte array using the reader.
      *
      * <p>Returns either (eagerly) new instance of the byte array with all data materialized,
-     * or (lazily) {@link JdbcBlobBuffer} which wraps part of the array enclosed in
+     * or {@link JdbcBlobBuffer} which (lazily) wraps part of the array enclosed in
      * the reader's input stream.
      *
      * @param reader Reader.
@@ -277,7 +278,7 @@ public abstract class SqlListenerUtils {
             writer.writeDateArray((java.util.Date[])obj);
         else if (obj instanceof SqlInputStreamWrapper) {
             try {
-                writer.writeInputStreamAsByteArray((SqlInputStreamWrapper)obj);
+                writeInputStreamAsByteArray(writer, (SqlInputStreamWrapper)obj);
             }
             catch (IOException e) {
                 throw new BinaryObjectException(e);
@@ -285,7 +286,7 @@ public abstract class SqlListenerUtils {
         }
         else if (obj instanceof Blob) {
             try {
-                writer.writeBlobAsByteArray((Blob)obj);
+                writeBlobAsByteArray(writer, (Blob)obj);
             }
             catch (IOException | SQLException e) {
                 throw new BinaryObjectException(e);
@@ -295,6 +296,41 @@ public abstract class SqlListenerUtils {
             writer.writeObjectDetached(obj);
         else
             throw new BinaryObjectException("Custom objects are not supported");
+    }
+
+    /**
+     * Write byte array from the InputStream enclosed in the stream wrapper.
+     *
+     * @param writer Writer.
+     * @param wrapper stream wrapper
+     */
+    private static void writeInputStreamAsByteArray(BinaryWriterExImpl writer, SqlInputStreamWrapper wrapper)
+            throws IOException {
+        InputStream in = wrapper.getInputStream();
+        int len = wrapper.getLength();
+
+        int writtenLen = writer.writeByteArrayFromInputStream(in, len);
+
+        if (len != writtenLen)
+            throw new IOException("Input stream length mismatch. [declaredLength=" + len + ", " +
+                    "actualLength=" + writtenLen + "]");
+    }
+
+    /**
+     * Write byte array from the Blob instance.
+     *
+     * @param writer Writer.
+     * @param blob Blob.
+     */
+    public static void writeBlobAsByteArray(BinaryWriterExImpl writer, Blob blob) throws SQLException, IOException {
+        InputStream in = blob.getBinaryStream(1, blob.length());
+        int len = (int)blob.length();
+
+        int writtenLen = writer.writeByteArrayFromInputStream(in, len);
+
+        if (len != writtenLen)
+            throw new IOException("Blob length mismatch. [declaredLength=" + len + ", " +
+                    "actualLength=" + writtenLen + "]");
     }
 
     /**
