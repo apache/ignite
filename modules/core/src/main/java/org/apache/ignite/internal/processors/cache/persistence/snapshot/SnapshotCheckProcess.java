@@ -345,7 +345,7 @@ public class SnapshotCheckProcess {
             results.forEach((nodeId, nodeRes) -> {
                 // A node might be not required. It gives null result. But a required node might have invalid empty result
                 // which must be validated.
-                if (ctx.req.nodes().contains(nodeId) && baseline(nodeId)) {
+                if (ctx.req.nodes().contains(nodeId) && baseline(nodeId) && !nodeRes.metas.isEmpty()) {
                     assert nodeRes != null && nodeRes.partsResults == null;
 
                     metas.put(kctx.cluster().get().node(nodeId), nodeRes.metas);
