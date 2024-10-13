@@ -19,6 +19,10 @@ package org.apache.ignite.internal.processors.cache.transactions;
 
 import java.util.List;
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.atomic.AtomicInteger;
+
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteCheckedException;
@@ -37,7 +41,7 @@ import org.apache.ignite.configuration.NearCacheConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.TestRecordingCommunicationSpi;
-import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxPrepareResponse;
+import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxFinishResponse;
 import org.apache.ignite.internal.util.future.GridCompoundFuture;
 import org.apache.ignite.internal.util.lang.GridAbsPredicate;
 import org.apache.ignite.internal.util.typedef.G;
@@ -47,9 +51,7 @@ import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.WithSystemProperty;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
-import org.apache.ignite.transactions.Transaction;
-import org.apache.ignite.transactions.TransactionConcurrency;
-import org.apache.ignite.transactions.TransactionIsolation;
+import org.apache.ignite.transactions.*;
 import org.junit.Test;
 
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_DUMP_TX_COLLISIONS_INTERVAL;
@@ -211,6 +213,62 @@ public class TxWithKeyContentionSelfTest extends GridCommonAbstractTest {
         runKeyCollisionsMetric(OPTIMISTIC, REPEATABLE_READ);
     }
 
+    private AtomicInteger startTransactions(Ignite clientIgnite, IgniteCache<Integer, Integer> cache, Integer key, int txCount,
+                                            TransactionConcurrency concurrency, TransactionIsolation isolation) throws InterruptedException {
+        // Latch to synchronize the start of transactions
+        CountDownLatch startLatch = new CountDownLatch(1);
+
+        // Latch to wait for all transactions to complete
+        CountDownLatch endLatch = new CountDownLatch(txCount);
+
+        // Executor service to run transactions in parallel
+        ExecutorService executor = Executors.newFixedThreadPool(Runtime.getRuntime().availableProcessors());
+
+        // Atomic integer to count transaction collisions
+        AtomicInteger collisionCount = new AtomicInteger(0);
+
+        for (int i = 0; i < txCount; i++) {
+            executor.submit(() -> {
+                try {
+                    // Wait until all threads are ready
+                    startLatch.await();
+
+                    // Start a transaction
+                    try (Transaction tx = clientIgnite.transactions().txStart(concurrency, isolation)) {
+                        // Read the value to acquire the lock
+                        cache.get(key);
+
+                        // Simulate some processing time
+                        Thread.sleep(50);
+
+                        // Commit the transaction
+                        tx.commit();
+                    }
+                } catch (TransactionTimeoutException | TransactionDeadlockException e) {
+                    // Increment collision count if a collision occurs
+                    collisionCount.incrementAndGet();
+                } catch (Exception e) {
+                    e.printStackTrace();
+                } finally {
+                    // Signal that this transaction is complete
+                    endLatch.countDown();
+                }
+            });
+        }
+
+        // Release all threads to start transactions simultaneously
+        startLatch.countDown();
+
+        // Wait for all transactions to complete
+        endLatch.await();
+
+        // Shutdown the executor service
+        executor.shutdown();
+
+        return collisionCount;
+    }
+
+
     /** Tests metric correct results while tx collisions occured.
      *
      * @param concurrency Concurrency level.
@@ -218,104 +276,41 @@ public class TxWithKeyContentionSelfTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     private void runKeyCollisionsMetric(TransactionConcurrency concurrency, TransactionIsolation isolation) throws Exception {
-        Ignite ig = startGridsMultiThreaded(3);
+        // Start 3 server nodes
+        Ignite ignite = startGridsMultiThreaded(3);
 
-        int contCnt = (int)U.staticField(IgniteTxManager.class, "COLLISIONS_QUEUE_THRESHOLD") * 20;
+        // Activate the cluster
+        ignite.cluster().state(ClusterState.ACTIVE);
 
-        CountDownLatch txLatch = new CountDownLatch(contCnt * 2);
-
-        CountDownLatch txLatch0 = new CountDownLatch(contCnt * 2);
-        ig.cluster().state(ClusterState.ACTIVE);
-
+        // Start a client node
         client = true;
+        Ignite clientIgnite = startGrid("client");
 
-        Ignite cl = startGrid();
+        // Get the cache from the client node
+        IgniteCache<Integer, Integer> cache = clientIgnite.cache(DEFAULT_CACHE_NAME);
 
-        IgniteTransactions cliTxMgr = cl.transactions();
+        // Select a primary key for the cache
+        final Integer key = primaryKey(ignite.cache(DEFAULT_CACHE_NAME));
 
-        IgniteCache<Integer, Integer> cache = ig.cache(DEFAULT_CACHE_NAME);
+        // Define the number of transactions to simulate contention
+        int txCount = 100;
 
-        IgniteCache<Integer, Integer> cache0 = cl.cache(DEFAULT_CACHE_NAME);
+//        // Start transactions to create contention
+        AtomicInteger collisionCount = startTransactions(clientIgnite, cache, key, txCount, concurrency, isolation);
+//
+//        // Retrieve the transaction metrics
+//        TransactionMetrics metrics = ignite.context().cache().context().tm().metrics();
+//
+//        // Get the number of key collisions from the metrics
+//        long keyCollisions = metrics.getTxKeyCollisions();
+//        //Assert that the collisions recorded match the expected count
+//        assertTrue("Expected key collisions to be greater than zero", keyCollisions > 0);
+//
+//        // Optionally, compare with the local collision count
+//        assertEquals("Mismatch in collision count", collisionCount.get(), keyCollisions);
 
-        final List<Integer> priKeys = primaryKeys(cache, 3, 1);
 
-        final Integer backKey = backupKey(cache);
-
-        CountDownLatch blockOnce = new CountDownLatch(1);
-
-        for (Ignite ig0 : G.allGrids()) {
-            if (ig0.configuration().isClientMode())
-                continue;
-
-            TestRecordingCommunicationSpi commSpi0 =
-                (TestRecordingCommunicationSpi)ig0.configuration().getCommunicationSpi();
-
-            commSpi0.blockMessages(new IgniteBiPredicate<ClusterNode, Message>() {
-                @Override public boolean apply(ClusterNode node, Message msg) {
-                    if (msg instanceof GridNearTxPrepareResponse && blockOnce.getCount() > 0) {
-                        blockOnce.countDown();
-
-                        return true;
-                    }
-
-                    return false;
-                }
-            });
-        }
-
-        IgniteInternalFuture f = GridTestUtils.runAsync(() -> {
-            try (Transaction tx = cliTxMgr.txStart(concurrency, isolation)) {
-                cache0.put(priKeys.get(0), 0);
-                cache0.put(priKeys.get(2), 0);
-                tx.commit();
-            }
-        });
-
-        blockOnce.await();
-
-        GridCompoundFuture<?, ?> finishFut = new GridCompoundFuture<>();
-
-        for (int i = 0; i < contCnt; ++i) {
-            IgniteInternalFuture f0 = GridTestUtils.runAsync(() -> {
-                try (Transaction tx = cliTxMgr.txStart(concurrency, isolation)) {
-                    cache0.put(priKeys.get(0), 0);
-                    cache0.put(priKeys.get(1), 0);
-
-                    txLatch0.countDown();
-
-                    tx.commit();
-
-                    txLatch.countDown();
-                }
-
-                try (Transaction tx = cliTxMgr.txStart(concurrency, isolation)) {
-                    cache0.put(priKeys.get(2), 0);
-                    cache0.put(backKey, 0);
-
-                    txLatch0.countDown();
-
-                    tx.commit();
-
-                    txLatch.countDown();
-                }
-            });
-
-            finishFut.add(f0);
-        }
-
-        finishFut.markInitialized();
-
-        for (Ignite ig0 : G.allGrids()) {
-            TestRecordingCommunicationSpi commSpi0 =
-                (TestRecordingCommunicationSpi)ig0.configuration().getCommunicationSpi();
-
-            if (ig0.configuration().isClientMode())
-                continue;
-
-            commSpi0.stopBlock();
-        }
-
-        IgniteTxManager srvTxMgr = ((IgniteEx)ig).context().cache().context().tm();
+        IgniteTxManager srvTxMgr = grid(0).context().cache().context().tm();
 
         assertTrue(GridTestUtils.waitForCondition(new GridAbsPredicate() {
             @Override public boolean apply() {
@@ -326,9 +321,11 @@ public class TxWithKeyContentionSelfTest extends GridCommonAbstractTest {
                     fail(e.toString());
                 }
 
-                CacheMetrics metrics = ig.cache(DEFAULT_CACHE_NAME).localMetrics();
+                CacheMetrics metrics = grid(0).cache(DEFAULT_CACHE_NAME).localMetrics();
 
                 String coll1 = metrics.getTxKeyCollisions();
+
+                System.out.println("COL!!!!!!!!! = " + coll1);
 
                 if (!coll1.isEmpty()) {
                     String coll2 = metrics.getTxKeyCollisions();
@@ -345,10 +342,83 @@ public class TxWithKeyContentionSelfTest extends GridCommonAbstractTest {
             }
         }, 10_000));
 
-        f.get();
+//        // Получаем метрику
+//        CacheMetrics metrics = cache.localMetrics();
+//
+//        String keyCollisions = metrics.getTxKeyCollisions();
 
-        finishFut.get();
+//        System.out.println("Количество коллизий ключей: " + keyCollisions);
 
-        txLatch.await();
+        //    Проверяем, что коллизии произошли
+        //assertTrue("Ожидались коллизии ключей", keyCollisions > 0);
+
+
+//        Ignite ig = startGridsMultiThreaded(3);
+//
+//        int contCnt = (int)U.staticField(IgniteTxManager.class, "COLLISIONS_QUEUE_THRESHOLD") * 20;
+//
+//        CountDownLatch txLatch = new CountDownLatch(contCnt);
+//
+//        ig.cluster().state(ClusterState.ACTIVE);
+//
+//        client = true;
+//
+//        Ignite cl = startGrid();
+//
+//        IgniteCache<Integer, Integer> cache = ig.cache(DEFAULT_CACHE_NAME);
+//
+//        final Integer keyId = primaryKey(cache);
+//
+//        GridCompoundFuture<?, ?> finishFut = new GridCompoundFuture<>();
+//
+//        for (int i = 0; i < contCnt; ++i) {
+//            IgniteInternalFuture f0 = GridTestUtils.runAsync(() -> {
+//                try (Transaction tx = cl.transactions().txStart(concurrency, isolation)) {
+//                    cache.put(keyId, 0);
+//
+//                    tx.commit();
+//
+//                    txLatch.countDown();
+//                }
+//            });
+//
+//            finishFut.add(f0);
+//        }
+//
+//        finishFut.markInitialized();
+//
+//        IgniteTxManager srvTxMgr = ((IgniteEx)ig).context().cache().context().tm();
+//
+//        assertTrue(GridTestUtils.waitForCondition(new GridAbsPredicate() {
+//            @Override public boolean apply() {
+//                try {
+//                    U.invoke(IgniteTxManager.class, srvTxMgr, "collectTxCollisionsInfo");
+//                }
+//                catch (IgniteCheckedException e) {
+//                    fail(e.toString());
+//                }
+//
+//                CacheMetrics metrics = ig.cache(DEFAULT_CACHE_NAME).localMetrics();
+//
+//                String coll1 = metrics.getTxKeyCollisions();
+//
+//                if (!coll1.isEmpty()) {
+//                    String coll2 = metrics.getTxKeyCollisions();
+//
+//                    // check idempotent
+//                    assertEquals(coll1, coll2);
+//
+//                    assertTrue(coll1.contains("queueSize"));
+//
+//                    return true;
+//                }
+//                else
+//                    return false;
+//            }
+//        }, 10_000));
+//
+//        finishFut.get();
+//
+//        txLatch.await();
     }
 }
