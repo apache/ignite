@@ -634,19 +634,16 @@ public class SnapshotChecker {
 
     /** */
     public static IdleVerifyResultV2 reduceHashesResults(
-        Map<ClusterNode, Map<PartitionKeyV2, PartitionHashRecordV2>> results,
+        Map<ClusterNode, Map<PartitionKeyV2, List<PartitionHashRecordV2>>> results,
         Map<ClusterNode, Exception> ex
     ) {
         Map<PartitionKeyV2, List<PartitionHashRecordV2>> clusterHashes = new HashMap<>();
 
-        results.forEach((node, nodeHashes) -> {
+        results.forEach((node, partsHashes) -> {
             assert ex.get(node) == null;
 
-            for (Map.Entry<PartitionKeyV2, PartitionHashRecordV2> e : nodeHashes.entrySet()) {
-                List<PartitionHashRecordV2> records = clusterHashes.computeIfAbsent(e.getKey(), k -> new ArrayList<>());
-
-                records.add(e.getValue());
-            }
+            partsHashes.forEach((partKey, partsResults) -> clusterHashes.computeIfAbsent(partKey,
+                k -> new ArrayList<>()).addAll(partsResults));
         });
 
         if (results.size() != ex.size())
@@ -1024,32 +1021,35 @@ public class SnapshotChecker {
 
     /**
      * Checks results of the internal and custon snapshot validation handlres. Throws exception if a validation error occurs.
-     *
+     * @param snpName Snapshot name
+     * @param results Results: checking node -> snapshot's node consistend id -> custom handler id -> handler result.
      * @see #invokeCustomHandlers(String, String, String, Collection, boolean)
      */
     public void checkCustomHandlersResults(
         String snpName,
-        Map<ClusterNode, Map<String, SnapshotHandlerResult<?>>> results
+        Map<ClusterNode, Map<Object, Map<String, SnapshotHandlerResult<?>>>> results
     ) throws Exception {
         Map<String, List<SnapshotHandlerResult<?>>> clusterResults = new HashMap<>();
         Collection<UUID> execNodes = new ArrayList<>(results.size());
 
-        for (Map.Entry<ClusterNode, Map<String, SnapshotHandlerResult<?>>> nodeRes : results.entrySet()) {
-            ClusterNode node = nodeRes.getKey();
+        for (Map.Entry<ClusterNode, Map<Object, Map<String, SnapshotHandlerResult<?>>>> nodeRes : results.entrySet()) {
+            for (Map.Entry<Object, Map<String, SnapshotHandlerResult<?>>> nodeConsIdRes : nodeRes.getValue().entrySet()) {
+                ClusterNode node = nodeRes.getKey();
 
-            // Depending on the job mapping, we can get several different results from one node.
-            execNodes.add(node.id());
+                // Depending on the job mapping, we can get several different results from one node.
+                execNodes.add(node.id());
 
-            assert nodeRes.getValue() != null : "At least the default snapshot restore handler should have been executed ";
+                assert nodeRes.getValue() != null : "At least the default snapshot restore handler should have been executed ";
 
-            for (Map.Entry<String, SnapshotHandlerResult<?>> nodeHndRes : nodeRes.getValue().entrySet()) {
-                String hndName = nodeHndRes.getKey();
-                SnapshotHandlerResult<?> hndRes = nodeHndRes.getValue();
+                for (Map.Entry<String, SnapshotHandlerResult<?>> nodeHndRes : nodeConsIdRes.getValue().entrySet()) {
+                    String hndName = nodeHndRes.getKey();
+                    SnapshotHandlerResult<?> hndRes = nodeHndRes.getValue();
 
-                if (hndRes.error() != null)
-                    throw hndRes.error();
+                    if (hndRes.error() != null)
+                        throw hndRes.error();
 
-                clusterResults.computeIfAbsent(hndName, v -> new ArrayList<>()).add(hndRes);
+                    clusterResults.computeIfAbsent(hndName, v -> new ArrayList<>()).add(hndRes);
+                }
             }
         }
 

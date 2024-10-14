@@ -18,8 +18,10 @@
 package org.apache.ignite.internal.processors.cache.persistence.snapshot;
 
 import java.io.Serializable;
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.Comparator;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -164,9 +166,20 @@ public class SnapshotCheckProcess {
                 if (!errors.isEmpty())
                     throw F.firstValue(errors);
 
-//                Map<ClusterNode, Map<String, SnapshotHandlerResult<?>>> cstRes = mapResults(results, ctx.req.nodes(),
-//                    SnapshotCheckResponse::customHandlersResults);
-                Map<ClusterNode, Map<String, SnapshotHandlerResult<?>>> cstRes = Collections.emptyMap();
+                // Check responses: node -> consistentId -> handler name -> handler result.
+                Map<ClusterNode, Map<Object, Map<String, SnapshotHandlerResult<?>>>> cstRes = new HashMap<>();
+
+                results.forEach((nodeId, resp) -> {
+                    if (resp != null) {
+                        resp.customHandlersResults().forEach((consId, hndResMap) -> {
+                            Map<Object, Map<String, SnapshotHandlerResult<?>>> nodePerConsIdRes
+                                = cstRes.computeIfAbsent(kctx.cluster().get().localNode(), n -> new HashMap<>());
+
+                            hndResMap.forEach((hndId, hndRes) ->
+                                nodePerConsIdRes.computeIfAbsent(consId, cstId -> new HashMap<>()).put(hndId, hndRes));
+                        });
+                    }
+                });
 
                 checker.checkCustomHandlersResults(ctx.req.snapshotName(), cstRes);
 
@@ -180,12 +193,18 @@ public class SnapshotCheckProcess {
             Map<ClusterNode, Exception> errors0 = mapErrors(errors);
 
             if (!results.isEmpty()) {
-//                Map<ClusterNode, Map<PartitionKeyV2, PartitionHashRecordV2>> results0 = mapResults(results, ctx.req.nodes(),
-//                    SnapshotCheckResponse::partsHashes);
-                Map<ClusterNode, Map<PartitionKeyV2, PartitionHashRecordV2>> results0 = new HashMap<>();
+                Map<ClusterNode, Map<PartitionKeyV2, List<PartitionHashRecordV2>>> results0 = new HashMap<>();
 
-                results0.forEach((node, map) -> {
+                results.forEach((nodeId, resp) -> {
+                    if (resp != null) {
+                        resp.partsHashes().forEach((consId, partsRes) -> {
+                            Map<PartitionKeyV2, List<PartitionHashRecordV2>> partsHashes
+                                = results0.computeIfAbsent(kctx.cluster().get().localNode(), map -> new HashMap<>());
 
+                            partsRes.forEach((partKey, partHash) -> partsHashes.computeIfAbsent(partKey, k -> new ArrayList<>())
+                                .add(partHash));
+                        });
+                    }
                 });
 
                 IdleVerifyResultV2 chkRes = SnapshotChecker.reduceHashesResults(results0, errors0);
@@ -208,7 +227,7 @@ public class SnapshotCheckProcess {
 
         assert ctx != null;
 
-        if (F.isEmpty(ctx.locMetas))
+        if (F.isEmpty(ctx.metasToProcess))
             return new GridFinishedFuture<>();
 
         IgniteSnapshotManager snpMgr = kctx.cache().context().snapshotMgr();
@@ -227,10 +246,10 @@ public class SnapshotCheckProcess {
             else {
                 workingFut = new CompletableFuture<>();
 
-                Map<Object, Map<?, ?>> perMetaResults = new ConcurrentHashMap<>(ctx.locMetas.size(), 1.0f);
+                Map<Object, Map<?, ?>> perMetaResults = new ConcurrentHashMap<>(ctx.metasToProcess.size(), 1.0f);
 
-                for (SnapshotMetadata locMeta : ctx.locMetas) {
-                    CompletableFuture metaFut;
+                for (SnapshotMetadata locMeta : ctx.metasToProcess) {
+                    CompletableFuture<?> metaFut;
 
                     if (req.allRestoreHandlers())
                         metaFut = snpMgr.checker().invokeCustomHandlers(locMeta, req.snapshotPath(), req.groups(), true);
@@ -247,7 +266,7 @@ public class SnapshotCheckProcess {
 
                     metaFut.whenComplete((res, err) -> {
                         if (err != null)
-                            workingFut.completeExceptionally((Throwable)err);
+                            workingFut.completeExceptionally(err);
                         else if (req.allRestoreHandlers()) {
                             Map<String, SnapshotHandlerResult<Object>> hndRes = (Map<String, SnapshotHandlerResult<Object>>)res;
 
@@ -261,7 +280,7 @@ public class SnapshotCheckProcess {
                                 perMetaResults.putIfAbsent(F.first(partRes.values()).consistentId(), partRes);
                         }
 
-                        if (perMetaResults.size() == ctx.locMetas.size())
+                        if (perMetaResults.size() == ctx.metasToProcess.size())
                             workingFut.complete(perMetaResults);
                     });
                 }
@@ -274,7 +293,7 @@ public class SnapshotCheckProcess {
                     if (req.incrementalIndex() > 0)
                         phaseFut.onDone(new SnapshotCheckResponse((IncrementalSnapshotCheckResult)res));
                     else
-                        phaseFut.onDone(new SnapshotCheckResponse((Map<Object, Map>)res));
+                        phaseFut.onDone(new SnapshotCheckResponse((Map<Object, Map<?, ?>>)res));
                 }
             });
         }
@@ -388,7 +407,7 @@ public class SnapshotCheckProcess {
             results.forEach((nodeId, nodeRes) -> {
                 // A node might be not required. It gives null result. But a required node might have invalid empty result
                 // which must be validated.
-                if (ctx.req.nodes().contains(nodeId) && baseline(nodeId)) {
+                if (ctx.req.nodes().contains(nodeId) && baseline(nodeId) && !F.isEmpty(nodeRes.metas)) {
                     assert nodeRes != null && nodeRes.partsResults == null;
 
                     metas.put(kctx.cluster().get().node(nodeId), nodeRes.metas);
@@ -401,7 +420,8 @@ public class SnapshotCheckProcess {
             if (!metasCheck.isEmpty())
                 throw new IgniteSnapshotVerifyException(metasCheck);
 
-            ctx.locMetas = metas.get(kctx.cluster().get().localNode());
+            // If the topology is lesser that the snapshot's, we have to check partitions not only of current node.
+            ctx.metasToProcess = assingMetasToWork(metas);
 
             if (clusterOpFut != null)
                 ctx.clusterMetas = metas;
@@ -420,6 +440,32 @@ public class SnapshotCheckProcess {
             if (clusterOpFut != null)
                 clusterOpFut.onDone(th);
         }
+    }
+
+    /** */
+    private List<SnapshotMetadata> assingMetasToWork(Map<ClusterNode, List<SnapshotMetadata>> clusterMetas) {
+        List<SnapshotMetadata> locMetas = clusterMetas.get(kctx.cluster().get().localNode());
+
+        if (F.isEmpty(locMetas))
+            return null;
+
+        UUID minOrderDataNodeId = clusterMetas.keySet().stream().sorted(new Comparator<>() {
+            @Override public int compare(ClusterNode o1, ClusterNode o2) {
+                return Long.compare(o1.order(), o2.order());
+            }
+        }).map(ClusterNode::id).findFirst().get();
+
+        if (minOrderDataNodeId.equals(kctx.localNodeId())) {
+            Collection<String> onlineDataNodesIds = clusterMetas.keySet().stream().map(node -> node.consistentId().toString())
+                .collect(Collectors.toSet());
+
+            locMetas.removeIf(meta -> !meta.consistentId().equals(kctx.cluster().get().localNode().consistentId())
+                && onlineDataNodesIds.contains(meta.consistentId()));
+        }
+        else
+            locMetas = Collections.singletonList(F.first(locMetas));
+
+        return locMetas;
     }
 
     /**
@@ -495,7 +541,7 @@ public class SnapshotCheckProcess {
         private final GridFutureAdapter<SnapshotCheckResponse> locProcFut = new GridFutureAdapter<>();
 
         /** Local snapshot metadata. */
-        @Nullable private List<SnapshotMetadata> locMetas;
+        @Nullable private List<SnapshotMetadata> metasToProcess;
 
         /** All the snapshot metadatas. */
         @Nullable private Map<ClusterNode, List<SnapshotMetadata>> clusterMetas;
@@ -524,10 +570,12 @@ public class SnapshotCheckProcess {
         @Nullable private final List<SnapshotMetadata> metas;
 
         /**
+         * Partitions check result by node's consistent id.
+         *
          * @see #partsHashes()
          * @see #customHandlersResults()
          */
-        @Nullable private final Map partsResults;
+        @Nullable private final Map<Object, ? extends Map<?, ?>> partsResults;
 
         /** @see #incrementalResult() */
         @Nullable private final IncrementalSnapshotCheckResult incRes;
@@ -540,7 +588,7 @@ public class SnapshotCheckProcess {
         }
 
         /** Ctor for the phase 2 for normal snapshot. */
-        private SnapshotCheckResponse(Map<Object, Map> partsResults) {
+        private SnapshotCheckResponse(Map<Object, Map<?, ?>> partsResults) {
             this.metas = null;
             this.partsResults = partsResults;
             this.incRes = null;
@@ -559,21 +607,21 @@ public class SnapshotCheckProcess {
         }
 
         /**
-         * Node's partition hashes for the phase 2. Is always {@code null} for the phase 1 or in case of incremental
-         * snapshot.
+         * Node's partition hashes per consistent id for the phase 2. Is always {@code null} for the phase 1 or in case of
+         * incremental snapshot.
          */
         private @Nullable Map<Object, Map<PartitionKeyV2, PartitionHashRecordV2>> partsHashes() {
             return (Map<Object, Map<PartitionKeyV2, PartitionHashRecordV2>>)partsResults;
         }
 
         /**
-         * Results of the custom handlers for the phase 2. Is always {@code null} for the phase 1 or in case of incremental
-         * snapshot.
+         * Results of the custom handlers per consistent id for the phase 2. Is always {@code null} for the phase 1 or in case of
+         * incremental snapshot.
          *
          * @see IgniteSnapshotManager#handlers()
          */
-        private @Nullable Map<Object, Map<String, SnapshotHandlerResult<?>>> customHandlersResults() {
-            return (Map<Object, Map<String, SnapshotHandlerResult<?>>>)partsResults;
+        private @Nullable Map<Object, Map<String, SnapshotHandlerResult<Object>>> customHandlersResults() {
+            return (Map<Object, Map<String, SnapshotHandlerResult<Object>>>)partsResults;
         }
 
         /** Incremental snapshot result for the phase 2. Is always {@code null} for the phase 1 or in case of normal snapshot. */

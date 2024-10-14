@@ -146,7 +146,7 @@ public class VerifyBackupPartitionsTaskV2 extends ComputeTaskAdapter<CacheIdleVe
      */
     public static IdleVerifyResultV2 reduce0(List<ComputeJobResult> results) {
         Map<ClusterNode, Exception> ex = new HashMap<>();
-        Map<ClusterNode, Map<PartitionKeyV2, PartitionHashRecordV2>> hashes = new HashMap<>();
+        Map<ClusterNode, Map<PartitionKeyV2, List<PartitionHashRecordV2>>> hashes = new HashMap<>();
 
         for (ComputeJobResult res : results) {
             if (res.getException() != null) {
@@ -155,7 +155,11 @@ public class VerifyBackupPartitionsTaskV2 extends ComputeTaskAdapter<CacheIdleVe
                 continue;
             }
 
-            hashes.put(res.getNode(), res.getData());
+            Map<PartitionKeyV2, List<PartitionHashRecordV2>> nodePartsRes = hashes.computeIfAbsent(res.getNode(), node -> new HashMap<>());
+
+            Map<PartitionKeyV2, PartitionHashRecordV2> nodeData = res.getData();
+
+            nodeData.forEach((partKey, partHash) -> nodePartsRes.computeIfAbsent(partKey, k -> new ArrayList<>()).add(partHash));
         }
 
         return SnapshotChecker.reduceHashesResults(hashes, ex);
