@@ -453,15 +453,17 @@ public class DataTypesTest extends AbstractBasicIntegrationTransactionalTest {
         SqlTypeName[] numerics = new SqlTypeName[] {SqlTypeName.TINYINT, SqlTypeName.SMALLINT, SqlTypeName.INTEGER,
             SqlTypeName.BIGINT, SqlTypeName.DECIMAL, SqlTypeName.FLOAT, SqlTypeName.DOUBLE};
 
-        sql("CREATE TABLE t1(key1 INTEGER, i1idx INTEGER, i1 INTEGER, chr1 VARCHAR, PRIMARY KEY(key1))");
-        sql("CREATE INDEX t1_idx ON t1(i1idx)");
-        sql("INSERT INTO t1 VALUES (1, 1, null, '1'), (2, 2, 2, '22'), (3, 33, 3, null), (4, null, 4, '4')");
-
         for (SqlTypeName type : numerics) {
             String t = type.getName();
 
-            sql("CREATE TABLE t2(key2 " + t + ", i2idx " + t + ", i2 " + t + ", i3 INTEGER, chr2 VARCHAR, PRIMARY KEY(key2))");
+            sql("CREATE TABLE t1(key1 INTEGER, i1idx INTEGER, i1 INTEGER, chr1 VARCHAR, PRIMARY KEY(key1)) WITH " + atomicity());
+            sql("CREATE INDEX t1_idx ON t1(i1idx)");
+
+            sql("CREATE TABLE t2(key2 " + t + ", i2idx " + t + ", i2 " + t + ", i3 INTEGER, chr2 VARCHAR, PRIMARY KEY(key2)) " +
+                "WITH " + atomicity());
             sql("CREATE INDEX t2_idx ON t2(i2idx)");
+
+            sql("INSERT INTO t1 VALUES (1, 1, null, '1'), (2, 2, 2, '22'), (3, 33, 3, null), (4, null, 4, '4')");
             sql("INSERT INTO t2 VALUES (0, 0, 0, null, '0'), (11, null, 1, 1, '1'), (2, 2, 2, 2, '22'), (3, 3, null, 3, null)");
 
             for (HintDefinition hint : Arrays.asList(HintDefinition.MERGE_JOIN, HintDefinition.NL_JOIN, HintDefinition.CNL_JOIN)) {
@@ -542,7 +544,12 @@ public class DataTypesTest extends AbstractBasicIntegrationTransactionalTest {
                     .check();
             }
 
+            clearTransaction();
+
+            sql("DROP TABLE t1");
             sql("DROP TABLE t2");
+
+            clearTransaction();
         }
     }
 

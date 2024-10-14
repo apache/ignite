@@ -593,6 +593,12 @@ public class ExpressionFactoryImpl<Row> implements ExpressionFactory<Row> {
 
                     return super.visitDynamicParam(dynamicParam);
                 }
+
+                @Override public RexNode visitCorrelVariable(RexCorrelVariable variable) {
+                    b.append(", paramType=").append(variable.getType().getFullTypeString());
+
+                    return super.visitCorrelVariable(variable);
+                }
             }.apply(node);
         }
 

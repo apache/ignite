@@ -553,21 +553,24 @@ public class SetOpIntegrationTest extends AbstractBasicIntegrationTransactionalT
     private void doTestNumbersCastInSetOp(String op, Integer... expected) throws InterruptedException {
         List<String> types = F.asList("TINYINT", "SMALLINT", "INTEGER", "REAL", "FLOAT", "BIGINT", "DOUBLE", "DECIMAL");
 
-        sql(client, "CREATE TABLE t0(id INT PRIMARY KEY, val INTEGER) WITH \"affinity_key=id\"");
+        sql("CREATE TABLE t0(id INT PRIMARY KEY, val INTEGER) WITH \"affinity_key=id," + atomicity() + "\"");
 
         try {
-            sql(client, "INSERT INTO t0 VALUES (1, 30), (2, 20), (3, 30), (4, 40), (5, 50), (6, 50), (7, null)");
-
-            for (String tblOpts : Arrays.asList("", " WITH \"template=replicated\"", " WITH \"affinity_key=aff\"")) {
+            for (String tblOpts : Arrays.asList("", "template=replicated", " affinity_key=aff")) {
                 for (String t2 : types) {
-                    sql(client, "CREATE TABLE t1(id INT, aff INT, val " + t2 + ", PRIMARY KEY(id, aff))" + tblOpts);
+                    sql("CREATE TABLE t1(id INT, aff INT, val " + t2 + ", PRIMARY KEY(id, aff)) " +
+                        "WITH " + tblOpts + (tblOpts.isEmpty() ? "" : ",") + atomicity());
 
-                    sql(client, "INSERT INTO t1 VALUES (1, 1, 10), (2, 1, 20), (3, 1, 33), (4, 2, 44), (5, 2, 50), " +
+                    sql("INSERT INTO t0 VALUES (1, 30), (2, 20), (3, 30), (4, 40), (5, 50), (6, 50), (7, null)");
+
+                    sql("INSERT INTO t1 VALUES (1, 1, 10), (2, 1, 20), (3, 1, 33), (4, 2, 44), (5, 2, 50), " +
                         "(6, 3, 50), (7, 3, null)");
 
-                    List<List<?>> res = sql(client, "SELECT val from t0 " + op + " select val from t1 ORDER BY 1 NULLS LAST");
+                    List<List<?>> res = sql("SELECT val from t0 " + op + " select val from t1 ORDER BY 1 NULLS LAST");
 
-                    sql(client, "DROP TABLE t1");
+                    clearTransaction();
+
+                    sql("DROP TABLE t1");
 
                     assertEquals(expected.length, res.size());
 
@@ -576,11 +579,17 @@ public class SetOpIntegrationTest extends AbstractBasicIntegrationTransactionalT
 
                         assertEquals(expected[i], res.get(i).get(0) == null ? null : ((Number)res.get(i).get(0)).intValue());
                     }
+
+                    sql("DELETE FROM t0");
+
+                    clearTransaction();
                 }
             }
         }
         finally {
-            sql(client, "DROP TABLE t0");
+            clearTransaction();
+
+            sql("DROP TABLE t0");
 
             awaitPartitionMapExchange();
         }
