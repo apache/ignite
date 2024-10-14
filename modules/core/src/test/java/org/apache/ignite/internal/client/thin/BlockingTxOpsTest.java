@@ -23,6 +23,7 @@ import java.util.concurrent.ThreadLocalRandom;
 import javax.cache.processor.EntryProcessor;
 import javax.cache.processor.MutableEntry;
 import org.apache.ignite.Ignite;
+import org.apache.ignite.IgniteException;
 import org.apache.ignite.client.ClientCache;
 import org.apache.ignite.client.ClientCacheConfiguration;
 import org.apache.ignite.client.ClientTransaction;
@@ -37,6 +38,7 @@ import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
+import static org.apache.ignite.testframework.GridTestUtils.assertThrows;
 import static org.apache.ignite.transactions.TransactionConcurrency.OPTIMISTIC;
 import static org.apache.ignite.transactions.TransactionConcurrency.PESSIMISTIC;
 import static org.apache.ignite.transactions.TransactionIsolation.REPEATABLE_READ;
@@ -195,13 +197,6 @@ public class BlockingTxOpsTest extends AbstractThinClientTest {
                         () -> assertEquals(0, cache.get(0))
                     );
 
-                    // Remove all operation.
-                    checkOpMultithreaded(client,
-                        () -> cache.putAll(F.asMap(0, 0, 1, 1)),
-                        () -> cache.removeAll(),
-                        () -> assertEquals(0, cache.size())
-                    );
-
                     // Remove if equals operation.
                     checkOpMultithreaded(client,
                         () -> cache.put(0, 0),
@@ -249,6 +244,19 @@ public class BlockingTxOpsTest extends AbstractThinClientTest {
                         null,
                         () -> cache.invokeAll(new TreeSet<>(F.asList(0, 1)), new TestEntryProcessor(), 0),
                         () -> assertEquals(F.asMap(0, 0, 1, 0), cache.getAll(new TreeSet<>(F.asList(0, 1))))
+                    );
+
+                    // Remove all operation.
+                    assertThrows(
+                        null,
+                        () -> checkOpMultithreaded(client,
+                            () -> cache.putAll(F.asMap(0, 0, 1, 1)),
+                            () -> cache.removeAll(),
+                            () -> assertEquals(0, cache.size())
+                        ),
+                        IgniteException.class,
+                        "Failed to invoke a non-transactional operation within a transaction: " +
+                            "ClientCache.removeAll()"
                     );
                 }
             }

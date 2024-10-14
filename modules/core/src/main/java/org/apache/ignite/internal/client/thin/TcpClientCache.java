@@ -35,6 +35,7 @@ import javax.cache.expiry.ExpiryPolicy;
 import javax.cache.processor.EntryProcessor;
 import javax.cache.processor.EntryProcessorException;
 import javax.cache.processor.EntryProcessorResult;
+import org.apache.ignite.IgniteException;
 import org.apache.ignite.binary.BinaryObjectException;
 import org.apache.ignite.cache.CachePeekMode;
 import org.apache.ignite.cache.query.ContinuousQuery;
@@ -549,11 +550,17 @@ public class TcpClientCache<K, V> implements ClientCache<K, V> {
 
     /** {@inheritDoc} */
     @Override public void removeAll() throws ClientException {
+        if (transactions.tx() != null)
+            throw new IgniteException("Failed to invoke a non-transactional operation within a transaction: " +
+                "ClientCache.removeAll().");
         ch.request(ClientOperation.CACHE_REMOVE_ALL, this::writeCacheInfo);
     }
 
     /** {@inheritDoc} */
     @Override public IgniteClientFuture<Void> removeAllAsync() throws ClientException {
+        if (transactions.tx() != null)
+            throw new IgniteException("Failed to invoke a non-transactional operation within a transaction: " +
+                "ClientCache.removeAllAsync().");
         return ch.requestAsync(ClientOperation.CACHE_REMOVE_ALL, this::writeCacheInfo);
     }
 
@@ -713,11 +720,18 @@ public class TcpClientCache<K, V> implements ClientCache<K, V> {
 
     /** {@inheritDoc} */
     @Override public void clear() throws ClientException {
+        if (transactions.tx() != null)
+            throw new IgniteException("Failed to invoke a non-transactional operation within a transaction: " +
+                "ClientCache.clear().");
+
         ch.request(ClientOperation.CACHE_CLEAR, this::writeCacheInfo);
     }
 
     /** {@inheritDoc} */
     @Override public IgniteClientFuture<Void> clearAsync() throws ClientException {
+        if (transactions.tx() != null)
+            throw new IgniteException("Failed to invoke a non-transactional operation within a transaction: " +
+                "ClientCache.clearAsync().");
         return ch.requestAsync(ClientOperation.CACHE_CLEAR, this::writeCacheInfo);
     }
 

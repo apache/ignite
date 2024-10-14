@@ -625,11 +625,19 @@ public interface ClientCache<K, V> {
     /**
      * Clears the contents of the cache.
      * In contrast to {@link #removeAll()}, this method does not notify event listeners and cache writers.
+     * <p>
+     * This operation is not transactional. It calls broadcast closure that
+     * deletes all primary keys from remote nodes.
+     * <p>
      */
     public void clear() throws ClientException;
 
     /**
      * Clears the contents of the cache asynchronously.
+     * <p>
+     * This operation is not transactional. It calls broadcast closure that
+     * deletes all primary keys from remote nodes.
+     * <p>
      * In contrast to {@link #removeAll()}, this method does not notify event listeners and cache writers.
      * @return a Future representing pending completion of the operation.
      */
