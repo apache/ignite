@@ -95,6 +95,7 @@ public class WalRecordsConsumer<K, V> {
 
         return new CdcEventImpl(
             ue.unwrappedKey(),
+            ue.wrappedKeyBytes(),
             ue.unwrappedValue(),
             (e.flags() & DataEntry.PRIMARY_FLAG) != 0,
             e.partitionId(),

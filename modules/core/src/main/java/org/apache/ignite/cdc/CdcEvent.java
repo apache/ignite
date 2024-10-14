@@ -42,6 +42,11 @@ public interface CdcEvent extends Serializable {
     public Object key();
 
     /**
+     * @return Key bytes.
+     */
+    public byte[] keyBytes();
+
+    /**
      * @return Value for the changed entry or {@code null} in case of entry removal.
      */
     @Nullable public Object value();
