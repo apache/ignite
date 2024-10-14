@@ -94,8 +94,8 @@ public class CdcEventImpl implements CdcEvent {
         return key;
     }
 
-    /** {@inheritDoc} */
-    @Override public byte[] keyBytes() {
+    /** Key bytes. */
+    public byte[] keyBytes() {
         return keyBytes;
     }
 
