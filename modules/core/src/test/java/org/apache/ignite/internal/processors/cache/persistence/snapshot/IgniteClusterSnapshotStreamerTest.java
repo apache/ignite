@@ -234,21 +234,6 @@ public class IgniteClusterSnapshotStreamerTest extends AbstractSnapshotSelfTest 
     }
 
     /**
-     * Tests snapshot warning is restored from non-holding warning meta node.
-     */
-    @Test
-    public void testMetaWarningRestoredByOnlyOneNode() throws Exception {
-        doTestDataStreamerWhileSnapshot(client, false);
-
-        // Check snapshot holding by only one node.
-        stopGrid(0);
-        stopGrid(1);
-
-        createAndCheckSnapshot(client, false, DataStreamerUpdatesHandler.WRN_MSG,
-            SnapshotPartitionsQuickVerifyHandler.WRN_MSG);
-    }
-
-    /**
      * Tests not affected by streamer cache is restorable from snapshot.
      */
     @Test
@@ -351,7 +336,7 @@ public class IgniteClusterSnapshotStreamerTest extends AbstractSnapshotSelfTest 
         String notExpWrn = allowOverwrite ? null : SnapshotPartitionsQuickVerifyHandler.WRN_MSG;
 
         try {
-            SnapshotPartitionsVerifyTaskResult checkRes = createAndCheckSnapshot(snpHnd, true, expectedWrn,
+            SnapshotPartitionsVerifyResult checkRes = createAndCheckSnapshot(snpHnd, true, expectedWrn,
                 notExpWrn);
 
             if (expectedWrn != null) {
@@ -462,7 +447,7 @@ public class IgniteClusterSnapshotStreamerTest extends AbstractSnapshotSelfTest 
     }
 
     /** */
-    private SnapshotPartitionsVerifyTaskResult createAndCheckSnapshot(IgniteEx snpHnd, boolean create,
+    private SnapshotPartitionsVerifyResult createAndCheckSnapshot(IgniteEx snpHnd, boolean create,
         String expWrn, String notExpWrn) throws Exception {
         assert notExpWrn == null || expWrn != null;
 
@@ -498,7 +483,7 @@ public class IgniteClusterSnapshotStreamerTest extends AbstractSnapshotSelfTest 
             }
         }
 
-        SnapshotPartitionsVerifyTaskResult checkRes = snp(snpHnd).checkSnapshot(SNAPSHOT_NAME, null).get();
+        SnapshotPartitionsVerifyResult checkRes = snp(snpHnd).checkSnapshot(SNAPSHOT_NAME, null).get();
 
         assertTrue(checkRes.exceptions().isEmpty());
 

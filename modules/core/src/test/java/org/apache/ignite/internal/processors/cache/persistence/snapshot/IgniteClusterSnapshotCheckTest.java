@@ -52,7 +52,6 @@ import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.compute.ComputeJobResult;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
-import org.apache.ignite.internal.GridJobExecuteRequest;
 import org.apache.ignite.internal.GridTopic;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInternalFuture;
@@ -86,6 +85,7 @@ import org.apache.ignite.internal.processors.compress.CompressionProcessor;
 import org.apache.ignite.internal.util.GridUnsafe;
 import org.apache.ignite.internal.util.distributed.DistributedProcess;
 import org.apache.ignite.internal.util.distributed.FullMessage;
+import org.apache.ignite.internal.util.distributed.SingleNodeMessage;
 import org.apache.ignite.internal.util.future.IgniteFutureImpl;
 import org.apache.ignite.internal.util.lang.GridIterator;
 import org.apache.ignite.internal.util.typedef.F;
@@ -341,17 +341,18 @@ public class IgniteClusterSnapshotCheckTest extends AbstractSnapshotSelfTest {
         Set<UUID> assigns = Collections.newSetFromMap(new ConcurrentHashMap<>());
 
         for (int i = 4; i < 7; i++) {
-            startGrid(optimize(getConfiguration(getTestIgniteInstanceName(i)).setCacheConfiguration()));
+            IgniteEx grid = startGrid(optimize(getConfiguration(getTestIgniteInstanceName(i)).setCacheConfiguration()));
 
-            UUID locNodeId = grid(i).localNode().id();
+            if (!U.isLocalNodeCoordinator(grid.context().discovery()))
+                continue;
 
-            grid(i).context().io().addMessageListener(GridTopic.TOPIC_JOB, new GridMessageListener() {
+            grid.context().io().addMessageListener(GridTopic.TOPIC_DISTRIBUTED_PROCESS, new GridMessageListener() {
                 @Override public void onMessage(UUID nodeId, Object msg, byte plc) {
-                    if (msg instanceof GridJobExecuteRequest) {
-                        GridJobExecuteRequest msg0 = (GridJobExecuteRequest)msg;
+                    if (msg instanceof SingleNodeMessage) {
+                        SingleNodeMessage<?> msg0 = (SingleNodeMessage<?>)msg;
 
-                        if (msg0.getTaskName().contains(SnapshotPartitionsVerifyTask.class.getName()))
-                            assigns.add(locNodeId);
+                        if (msg0.type() == CHECK_SNAPSHOT_PARTS.ordinal())
+                            assigns.add(nodeId);
                     }
                 }
             });
@@ -361,14 +362,14 @@ public class IgniteClusterSnapshotCheckTest extends AbstractSnapshotSelfTest {
         ignite.cluster().baselineAutoAdjustEnabled(false);
         ignite.cluster().state(ACTIVE);
 
-        IdleVerifyResultV2 res = snp(ignite).checkSnapshot(SNAPSHOT_NAME, null, null, false, 0, false).get().idleVerifyResult();
+        IdleVerifyResultV2 res = snp(ignite).checkSnapshot(SNAPSHOT_NAME, null).get().idleVerifyResult();
 
         StringBuilder b = new StringBuilder();
         res.print(b::append, true);
 
         // GridJobExecuteRequest is not send to the local node.
-        assertTrue("Number of jobs must be equal to the cluster size (except local node): " + assigns + ", count: "
-                + assigns.size(), waitForCondition(() -> assigns.size() == 2, 5_000L));
+        assertTrue("Number of distributed process single messages must be equal to the cluster size: "
+            + assigns + ", count: " + assigns.size(), waitForCondition(() -> assigns.size() == 2, 5_000L));
 
         assertTrue(F.isEmpty(res.exceptions()));
         assertPartitionsSame(res);
@@ -522,20 +523,7 @@ public class IgniteClusterSnapshotCheckTest extends AbstractSnapshotSelfTest {
 
         IdleVerifyResultV2 idleVerifyRes = ignite.compute().execute(new TestVisorBackupPartitionsTask(), arg);
 
-        IdleVerifyResultV2 snpVerifyRes = ignite.compute().execute(
-            new TestSnapshotPartitionsVerifyTask(),
-            new SnapshotPartitionsVerifyTaskArg(
-                new HashSet<>(),
-                Collections.singletonMap(ignite.cluster().localNode(),
-                Collections.singletonList(snp(ignite).readSnapshotMetadata(
-                    snp(ignite).snapshotLocalDir(SNAPSHOT_NAME),
-                    (String)ignite.configuration().getConsistentId()
-                ))),
-                null,
-                0,
-                true
-            )
-        ).idleVerifyResult();
+        IdleVerifyResultV2 snpVerifyRes = snp(ignite).checkSnapshot(SNAPSHOT_NAME, null).get().idleVerifyResult();
 
         Map<PartitionKeyV2, List<PartitionHashRecordV2>> idleVerifyHashes = jobResults.get(TestVisorBackupPartitionsTask.class);
         Map<PartitionKeyV2, List<PartitionHashRecordV2>> snpCheckHashes = jobResults.get(TestVisorBackupPartitionsTask.class);
@@ -550,7 +538,7 @@ public class IgniteClusterSnapshotCheckTest extends AbstractSnapshotSelfTest {
     /** @throws Exception If fails. */
     @Test
     public void testClusterSnapshotCheckWithTwoCachesCheckNullInput() throws Exception {
-        SnapshotPartitionsVerifyTaskResult res = checkSnapshotWithTwoCachesWhenOneIsCorrupted(null);
+        SnapshotPartitionsVerifyResult res = checkSnapshotWithTwoCachesWhenOneIsCorrupted(null);
 
         StringBuilder b = new StringBuilder();
         res.idleVerifyResult().print(b::append, true);
@@ -564,7 +552,7 @@ public class IgniteClusterSnapshotCheckTest extends AbstractSnapshotSelfTest {
     /** @throws Exception If fails. */
     @Test
     public void testClusterSnapshotCheckWithTwoCachesCheckNotCorrupted() throws Exception {
-        SnapshotPartitionsVerifyTaskResult res = checkSnapshotWithTwoCachesWhenOneIsCorrupted(Collections.singletonList(
+        SnapshotPartitionsVerifyResult res = checkSnapshotWithTwoCachesWhenOneIsCorrupted(Collections.singletonList(
             OPTIONAL_CACHE_NAME));
 
         StringBuilder b = new StringBuilder();
@@ -579,7 +567,7 @@ public class IgniteClusterSnapshotCheckTest extends AbstractSnapshotSelfTest {
     /** @throws Exception If fails. */
     @Test
     public void testClusterSnapshotCheckWithTwoCachesCheckTwoCaches() throws Exception {
-        SnapshotPartitionsVerifyTaskResult res = checkSnapshotWithTwoCachesWhenOneIsCorrupted(Arrays.asList(
+        SnapshotPartitionsVerifyResult res = checkSnapshotWithTwoCachesWhenOneIsCorrupted(Arrays.asList(
             OPTIONAL_CACHE_NAME, DEFAULT_CACHE_NAME));
 
         StringBuilder b = new StringBuilder();
@@ -790,7 +778,7 @@ public class IgniteClusterSnapshotCheckTest extends AbstractSnapshotSelfTest {
         }
     }
 
-    /** Tests that concurrent snapshot full check and restoration (without checking) are allowed for different snapshots. */
+    /** Tests that concurrent snapshot full check and restoration (without full checking) are allowed for different snapshots. */
     @Test
     public void testConcurrentDifferentSnpFullCheckAndRestorationAllowed() throws Exception {
         prepareGridsAndSnapshot(3, 2, 2, false);
@@ -902,9 +890,9 @@ public class IgniteClusterSnapshotCheckTest extends AbstractSnapshotSelfTest {
         }
     }
 
-    /** Tests that concurrent full check and restoration (without checking) of the same snapshot are allowed. */
+    /** Tests that concurrent full check and restoration (without full checking) of the same snapshot are declined. */
     @Test
-    public void testConcurrentTheSameSnpFullCheckAndRestoreAllowed() throws Exception {
+    public void testConcurrentTheSameSnpFullCheckAndRestoreDeclined() throws Exception {
         prepareGridsAndSnapshot(3, 2, 2, true);
 
         for (int i = 0; i < G.allGrids().size(); ++i) {
@@ -917,8 +905,8 @@ public class IgniteClusterSnapshotCheckTest extends AbstractSnapshotSelfTest {
                     () -> new IgniteFutureImpl<>(snp(grid(i0)).checkSnapshot(SNAPSHOT_NAME, null)),
                     () -> snp(grid(j0)).restoreSnapshot(SNAPSHOT_NAME, null),
                     CHECK_SNAPSHOT_METAS,
-                    RESTORE_CACHE_GROUP_SNAPSHOT_START,
-                    false,
+                    CHECK_SNAPSHOT_METAS,
+                    true,
                     false,
                     null,
                     () -> grid(0).destroyCache(DEFAULT_CACHE_NAME)
@@ -1047,6 +1035,31 @@ public class IgniteClusterSnapshotCheckTest extends AbstractSnapshotSelfTest {
         discoSpi(grid(0)).unblock();
 
         fut.get(getTestTimeout());
+    }
+
+    /** */
+    @Test
+    public void testCheckFailsOnInsufficientTopology() throws Exception {
+        prepareGridsAndSnapshot(3, 2, 1, false);
+
+        snp(grid(3)).checkSnapshot(SNAPSHOT_NAME, null).get(getTestTimeout());
+
+        // Stop non-baseline.
+        stopGrid(2);
+
+        snp(grid(3)).checkSnapshot(SNAPSHOT_NAME, null).get(getTestTimeout());
+
+        // Stop a baseline.
+        stopGrid(1);
+
+        assertTrue(waitForCondition(() -> grid(3).cluster().forServers().nodes().size() == 1, getTestTimeout()));
+
+        assertThrowsAnyCause(
+            log,
+            () -> snp(grid(3)).checkSnapshot(SNAPSHOT_NAME, null).get(getTestTimeout()),
+            IgniteSnapshotVerifyException.class,
+            "Not enough online nodes to collect partitions check result"
+        );
     }
 
     /** Tests snapshot checking process stops when the coorditator leaves. */
@@ -1272,12 +1285,19 @@ public class IgniteClusterSnapshotCheckTest extends AbstractSnapshotSelfTest {
             }
 
             if (requredLeft) {
-                assertThrowsAnyCause(
-                    null,
-                    () -> fut.get(getTestTimeout()),
-                    ClusterTopologyCheckedException.class,
-                    "Snapshot validation stopped. A required node left the cluster"
-                );
+                try {
+                    fut.get(getTestTimeout());
+
+                    throw new IllegalStateException("No exception thrown.");
+                }
+                catch (Throwable t) {
+                    boolean cause1 = X.hasCause(t, "Snapshot validation stopped. A required node left the cluster",
+                        ClusterTopologyCheckedException.class);
+                    boolean cause2 = X.hasCause(t, "Not enough online nodes to collect partitions check result",
+                        IgniteSnapshotVerifyException.class);
+
+                    assertTrue(cause1 || cause2);
+                }
             }
             else
                 fut.get(getTestTimeout());
@@ -1285,23 +1305,6 @@ public class IgniteClusterSnapshotCheckTest extends AbstractSnapshotSelfTest {
         finally {
             if (nodeToStopIdx != coordIdx)
                 discoSpi(grid(coordIdx)).unblock();
-        }
-
-        if (requredLeft) {
-            int chkAgainIdx = -1;
-
-            for (int i = 0; i < grids; ++i) {
-                if (stopped.contains(i))
-                    continue;
-
-                chkAgainIdx = i;
-
-                break;
-            }
-
-            assert chkAgainIdx >= 0;
-
-            snp(grid(chkAgainIdx)).checkSnapshot(SNAPSHOT_NAME, null, null, false, 0, true).get(getTestTimeout());
         }
     }
 
@@ -1326,7 +1329,7 @@ public class IgniteClusterSnapshotCheckTest extends AbstractSnapshotSelfTest {
 
         snp(ignite).createSnapshot(SNAPSHOT_NAME).get(timeout);
 
-        SnapshotPartitionsVerifyTaskResult res = snp(ignite).checkSnapshot(SNAPSHOT_NAME, null).get(timeout);
+        SnapshotPartitionsVerifyResult res = snp(ignite).checkSnapshot(SNAPSHOT_NAME, null).get(timeout);
 
         assertFalse(res.idleVerifyResult().hasConflicts());
     }
@@ -1356,7 +1359,7 @@ public class IgniteClusterSnapshotCheckTest extends AbstractSnapshotSelfTest {
      * @return Check result.
      * @throws Exception If fails.
      */
-    private SnapshotPartitionsVerifyTaskResult checkSnapshotWithTwoCachesWhenOneIsCorrupted(
+    private SnapshotPartitionsVerifyResult checkSnapshotWithTwoCachesWhenOneIsCorrupted(
         Collection<String> cachesToCheck
     ) throws Exception {
         Random rnd = new Random();
@@ -1423,18 +1426,6 @@ public class IgniteClusterSnapshotCheckTest extends AbstractSnapshotSelfTest {
             IdleVerifyResultV2 res = super.reduce(results);
 
             saveHashes(TestVisorBackupPartitionsTask.class, results);
-
-            return res;
-        }
-    }
-
-    /** Test compute task to collect partition data hashes when the snapshot check procedure ends. */
-    private class TestSnapshotPartitionsVerifyTask extends SnapshotPartitionsVerifyTask {
-        /** {@inheritDoc} */
-        @Override public @Nullable SnapshotPartitionsVerifyTaskResult reduce(List<ComputeJobResult> results) throws IgniteException {
-            SnapshotPartitionsVerifyTaskResult res = super.reduce(results);
-
-            saveHashes(TestSnapshotPartitionsVerifyTask.class, results);
 
             return res;
         }

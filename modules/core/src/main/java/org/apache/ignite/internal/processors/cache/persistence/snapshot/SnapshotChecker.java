@@ -354,7 +354,7 @@ public class SnapshotChecker {
 
         return CompletableFuture.supplyAsync(
             () -> {
-                String consId = kctx.cluster().get().localNode().consistentId().toString();
+                Object consId = kctx.cluster().get().localNode().consistentId();
 
                 File snpDir = kctx.cache().context().snapshotMgr().snapshotLocalDir(snpName, snpPath);
 
@@ -366,9 +366,10 @@ public class SnapshotChecker {
 
                     BaselineTopology blt = kctx.state().clusterState().baselineTopology();
 
-                    SnapshotMetadata meta = kctx.cache().context().snapshotMgr().readSnapshotMetadata(snpDir, consId);
+                    SnapshotMetadata meta = kctx.cache().context().snapshotMgr().readSnapshotMetadata(snpDir, consId.toString());
 
-                    if (!F.eqNotOrdered(blt.consistentIds(), meta.baselineNodes())) {
+                    if (!F.eqNotOrdered(blt.consistentIds().stream().map(Object::toString).collect(Collectors.toList()),
+                        meta.baselineNodes())) {
                         throw new IgniteCheckedException("Topologies of snapshot and current cluster are different [snp=" +
                             meta.baselineNodes() + ", current=" + blt.consistentIds() + ']');
                     }
