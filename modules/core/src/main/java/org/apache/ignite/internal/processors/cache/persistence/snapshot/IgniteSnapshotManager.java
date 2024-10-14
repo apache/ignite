@@ -2306,7 +2306,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
 
             String msg =
                 "Cluster-wide snapshot operation started [snpName=" + name + ", grps=" + grps +
-                    (incremental ? "" : (", incremental=true, incrementIndex=" + incIdx)) +
+                    (incremental ? (", incremental=true, incrementIndex=" + incIdx) : "") +
                 ']';
 
             recordSnapshotEvent(name, msg, EVT_CLUSTER_SNAPSHOT_STARTED);

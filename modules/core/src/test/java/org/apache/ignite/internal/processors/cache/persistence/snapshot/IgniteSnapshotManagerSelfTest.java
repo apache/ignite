@@ -582,6 +582,36 @@ public class IgniteSnapshotManagerSelfTest extends AbstractSnapshotSelfTest {
     }
 
     /**
+     * Tests that full-copy snapshot logs correctly.
+     *
+     * @throws Exception If fails.
+     * */
+    @Test
+    public void testSnapshotCreationLog() throws Exception {
+        if (listenLog == null)
+            listenLog = new ListeningTestLogger(log);
+
+        LogListener matchLsnr = LogListener.matches("Cluster-wide snapshot operation started [snpName=testSnapshot, grps=[default, MetaStorage]]").build();
+        listenLog.registerListener(matchLsnr);
+        LogListener noMatchLsnr = LogListener.matches("Cluster-wide snapshot operation started [snpName=testSnapshot, grps=[default, MetaStorage], incremental=true, incrementIndex=-1]").build();
+        listenLog.registerListener(noMatchLsnr);
+
+        IgniteEx ignite = startGrid(getConfiguration().setConsistentId(null));
+        ignite.cluster().state(ClusterState.ACTIVE);
+
+        IgniteCache<Integer, Integer> cache = ignite.getOrCreateCache(new CacheConfiguration<>(DEFAULT_CACHE_NAME));
+        cache.put(0, 0);
+        cache.put(1, 1);
+        cache.put(2, 2);
+        cache.put(7, 42);
+
+        ignite.snapshot().createSnapshot(SNAPSHOT_NAME).get();
+
+        assertTrue(matchLsnr.check());
+        assertFalse(noMatchLsnr.check());
+    }
+
+    /**
      * @param ignite Ignite instance to set factory.
      * @param factory New factory to use.
      */
