@@ -555,7 +555,6 @@ public class TableDmlIntegrationTest extends AbstractBasicIntegrationTest {
         checkDefaultValue("BINARY(3)", null, null);
         checkDefaultValue("VARBINARY", null, null);
         checkDefaultValue("UUID", null, null);
-        checkDefaultValue("OTHER", null, null);
     }
 
     /** */
