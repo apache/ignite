@@ -716,6 +716,8 @@ public class JdbcThinConnection implements Connection {
                 if (isTxAwareQueriesSupported)
                     throw new SQLException("Requested isolation level not supported by the server: " + level);
 
+                break;
+
             case Connection.TRANSACTION_READ_COMMITTED:
             case Connection.TRANSACTION_REPEATABLE_READ:
             case Connection.TRANSACTION_SERIALIZABLE:
