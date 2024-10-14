@@ -1037,6 +1037,31 @@ public class IgniteClusterSnapshotCheckTest extends AbstractSnapshotSelfTest {
         fut.get(getTestTimeout());
     }
 
+    /** */
+    @Test
+    public void testCheckFailsOnInsufficientTopology() throws Exception {
+        prepareGridsAndSnapshot(3, 2, 1, false);
+
+        snp(grid(3)).checkSnapshot(SNAPSHOT_NAME, null).get(getTestTimeout());
+
+        // Stop non-baseline.
+        stopGrid(2);
+
+        snp(grid(3)).checkSnapshot(SNAPSHOT_NAME, null).get(getTestTimeout());
+
+        // Stop a baseline.
+        stopGrid(1);
+
+        assertTrue(waitForCondition(() -> grid(3).cluster().forServers().nodes().size() == 1, getTestTimeout()));
+
+        assertThrowsAnyCause(
+            log,
+            () -> snp(grid(3)).checkSnapshot(SNAPSHOT_NAME, null).get(getTestTimeout()),
+            IgniteSnapshotVerifyException.class,
+            "Not enough online nodes to collect partitions check result"
+        );
+    }
+
     /** Tests snapshot checking process stops when the coorditator leaves. */
     @Test
     public void testCoordinatorLeavesDuringSnapshotChecking() throws Exception {
@@ -1260,12 +1285,19 @@ public class IgniteClusterSnapshotCheckTest extends AbstractSnapshotSelfTest {
             }
 
             if (requredLeft) {
-                assertThrowsAnyCause(
-                    null,
-                    () -> fut.get(getTestTimeout()),
-                    ClusterTopologyCheckedException.class,
-                    "Snapshot validation stopped. A required node left the cluster"
-                );
+                try {
+                    fut.get(getTestTimeout());
+
+                    throw new IllegalStateException("No exception thrown.");
+                }
+                catch (Throwable t) {
+                    boolean cause1 = X.hasCause(t, "Snapshot validation stopped. A required node left the cluster",
+                        ClusterTopologyCheckedException.class);
+                    boolean cause2 = X.hasCause(t, "Not enough online nodes to collect partitions check result",
+                        IgniteSnapshotVerifyException.class);
+
+                    assertTrue(cause1 || cause2);
+                }
             }
             else
                 fut.get(getTestTimeout());
@@ -1273,23 +1305,6 @@ public class IgniteClusterSnapshotCheckTest extends AbstractSnapshotSelfTest {
         finally {
             if (nodeToStopIdx != coordIdx)
                 discoSpi(grid(coordIdx)).unblock();
-        }
-
-        if (requredLeft) {
-            int chkAgainIdx = -1;
-
-            for (int i = 0; i < grids; ++i) {
-                if (stopped.contains(i))
-                    continue;
-
-                chkAgainIdx = i;
-
-                break;
-            }
-
-            assert chkAgainIdx >= 0;
-
-            snp(grid(chkAgainIdx)).checkSnapshot(SNAPSHOT_NAME, null, null, false, 0, true).get(getTestTimeout());
         }
     }
 

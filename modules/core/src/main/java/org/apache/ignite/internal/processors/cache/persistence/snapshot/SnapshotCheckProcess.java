@@ -358,9 +358,18 @@ public class SnapshotCheckProcess {
             if (!metasCheck.isEmpty())
                 throw new IgniteSnapshotVerifyException(metasCheck);
 
+            int snpNodesCnt = F.first(metas.values()).get(0).baselineNodes().size();
+
+            if (snpNodesCnt > metas.size()) {
+                throw new IgniteSnapshotVerifyException(F.asMap(kctx.cluster().get().localNode(),
+                    new IllegalStateException("Not enough online nodes to collect partitions check result. Snapshot nodes number: "
+                        + snpNodesCnt + ". Nodes with data: " + metas.size())));
+            }
+
             List<SnapshotMetadata> locMetas = metas.get(kctx.cluster().get().localNode());
 
-            ctx.locMeta = F.isEmpty(locMetas) ? null : locMetas.get(0);
+            if (!F.isEmpty(locMetas))
+                ctx.locMeta = locMetas.get(0);
 
             if (clusterOpFut != null)
                 ctx.clusterMetas = metas;
