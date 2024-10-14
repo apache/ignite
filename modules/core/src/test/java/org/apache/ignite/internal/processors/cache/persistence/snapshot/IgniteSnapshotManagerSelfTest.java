@@ -591,23 +591,27 @@ public class IgniteSnapshotManagerSelfTest extends AbstractSnapshotSelfTest {
         if (listenLog == null)
             listenLog = new ListeningTestLogger(log);
 
-        LogListener matchLsnr = LogListener.matches("Cluster-wide snapshot operation started [snpName=testSnapshot, grps=[default, MetaStorage]]").build();
-        listenLog.registerListener(matchLsnr);
-        LogListener noMatchLsnr = LogListener.matches("Cluster-wide snapshot operation started [snpName=testSnapshot, grps=[default, MetaStorage], incremental=true, incrementIndex=-1]").build();
+        final int ENTRIES_CNT = 4;
+
+        LogListener matchLsnr1 = LogListener.matches("Cluster-wide snapshot operation started: ").build();
+        listenLog.registerListener(matchLsnr1);
+
+        LogListener matchLsnr2 = LogListener.matches("incremental=false, incIdx=-1").build();
+        listenLog.registerListener(matchLsnr2);
+
+        LogListener noMatchLsnr = LogListener.matches("incremental=true, incIdx=-1").build();
         listenLog.registerListener(noMatchLsnr);
 
         IgniteEx ignite = startGrid(getConfiguration().setConsistentId(null));
         ignite.cluster().state(ClusterState.ACTIVE);
 
         IgniteCache<Integer, Integer> cache = ignite.getOrCreateCache(new CacheConfiguration<>(DEFAULT_CACHE_NAME));
-        cache.put(0, 0);
-        cache.put(1, 1);
-        cache.put(2, 2);
-        cache.put(7, 42);
+        for (int i = 0; i < ENTRIES_CNT; i++) cache.put(i, i);
 
         ignite.snapshot().createSnapshot(SNAPSHOT_NAME).get();
 
-        assertTrue(matchLsnr.check());
+        assertTrue(matchLsnr1.check());
+        assertTrue(matchLsnr2.check());
         assertFalse(noMatchLsnr.check());
     }
 
