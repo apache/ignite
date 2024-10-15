@@ -36,10 +36,8 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.binary.BinaryObjectBuilder;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.processors.query.IgniteSQLException;
-import org.apache.ignite.internal.processors.query.QueryEngine;
 import org.apache.ignite.internal.processors.query.calcite.CalciteQueryProcessorTest;
 import org.apache.ignite.internal.processors.query.calcite.QueryChecker;
-import org.apache.ignite.internal.processors.query.calcite.util.Commons;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.testframework.GridTestUtils;
@@ -148,8 +146,6 @@ public class TableDmlIntegrationTest extends AbstractBasicIntegrationTransaction
             .setBackups(2)
         );
 
-        QueryEngine engine = Commons.lookupComponent(grid(1).context(), QueryEngine.class);
-
         List<List<?>> rows = executeSql("INSERT INTO DEVELOPER(_key, name, projectId) VALUES (?, ?, ?)", 0, "Igor", 1);
 
         assertEquals(1, rows.size());
@@ -182,8 +178,6 @@ public class TableDmlIntegrationTest extends AbstractBasicIntegrationTransaction
         );
 
         awaitPartitionMapExchange(true, true, null);
-
-        QueryEngine engine = Commons.lookupComponent(grid(1).context(), QueryEngine.class);
 
         List<?> row = F.first(executeSql("INSERT INTO DEVELOPER VALUES (?, ?, ?, ?)", 0, 0, "Igor", 1));
 

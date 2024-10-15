@@ -178,7 +178,7 @@ public class JdbcThinTransactionalSelfTest extends GridCommonAbstractTest {
         try (Connection conn = DriverManager.getConnection(URL)) {
             conn.setTransactionIsolation(TRANSACTION_NONE);
 
-            ResultSet rs = conn.prepareStatement("SELECT 1").executeQuery();
+            conn.prepareStatement("SELECT 1").executeQuery();
 
             assertNull(GridTestUtils.getFieldValue(conn, "txCtx"));
         }

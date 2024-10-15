@@ -108,11 +108,11 @@ public class JdbcThinTcpIo {
     /** Version 2.13.0. */
     private static final ClientListenerProtocolVersion VER_2_13_0 = ClientListenerProtocolVersion.create(2, 13, 0);
 
-    /** Version 2.14.0. */
-    private static final ClientListenerProtocolVersion VER_2_14_0 = ClientListenerProtocolVersion.create(2, 14, 0);
+    /** Version 2.17.0. */
+    private static final ClientListenerProtocolVersion VER_2_17_0 = ClientListenerProtocolVersion.create(2, 17, 0);
 
     /** Current version. */
-    private static final ClientListenerProtocolVersion CURRENT_VER = VER_2_14_0;
+    private static final ClientListenerProtocolVersion CURRENT_VER = VER_2_17_0;
 
     /** Initial output stream capacity for handshake. */
     private static final int HANDSHAKE_MSG_SIZE = 13;
@@ -335,7 +335,7 @@ public class JdbcThinTcpIo {
         if (ver.compareTo(VER_2_13_0) >= 0)
             writer.writeString(connProps.getQueryEngine());
 
-        if (ver.compareTo(VER_2_14_0) >= 0) {
+        if (ver.compareTo(VER_2_17_0) >= 0) {
             writer.writeByte(connProps.getTransactionConcurrency().ordinal());
             writer.writeByte(isolation(JdbcThinConnection.DFLT_ISOLATION).ordinal());
             writer.writeInt(connProps.getTransactionTimeout());
