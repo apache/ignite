@@ -362,12 +362,12 @@ public class ExecutionContext<Row> extends AbstractQueryContext implements DataC
         List<R> newAndUpdatedRows = new ArrayList<>(qryTxEntries.size());
 
         for (QueryTxEntry e : qryTxEntries) {
-            if (e.cacheId() != cacheId)
-                continue;
-
             int part = e.key().partition();
 
             assert part != -1;
+
+            if (e.cacheId() != cacheId)
+                continue;
 
             if (parts != null && Arrays.binarySearch(parts, part) < 0)
                 continue;

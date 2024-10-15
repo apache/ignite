@@ -156,7 +156,7 @@ public class AggregatesIntegrationTest extends AbstractBasicIntegrationTransacti
      */
     @Test
     public void testGroupingByAlias() {
-        executeSql("CREATE TABLE t1(id INT, val_int INT, val_char VARCHAR, PRIMARY KEY(id))");
+        executeSql("CREATE TABLE t1(id INT, val_int INT, val_char VARCHAR, PRIMARY KEY(id)) WITH " + atomicity());
 
         for (int i = 0; i < 10; i++)
             executeSql("INSERT INTO t1 VALUES (?, ?, ?)", i, i % 3, "val" + i % 3);

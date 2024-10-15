@@ -82,6 +82,7 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.internal.util.worker.GridWorker;
 import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.marshaller.MarshallerContext;
+import org.apache.ignite.transactions.TransactionConcurrency;
 import org.apache.ignite.transactions.TransactionIsolation;
 import org.jetbrains.annotations.Nullable;
 
@@ -184,6 +185,10 @@ public class JdbcRequestHandler implements ClientListenerRequestHandler, ClientT
      * @param qryEngine Name of SQL query engine to use.
      * @param dataPageScanEnabled Enable scan data page mode.
      * @param updateBatchSize Size of internal batch for DML queries.
+     * @param concurrency Transaction concurrency.
+     * @param isolation Transaction isolation.
+     * @param timeout Transaction timeout.
+     * @param lb Transaction label.
      * @param protocolVer Protocol version.
      * @param connCtx Jdbc connection context.
      */
@@ -201,6 +206,10 @@ public class JdbcRequestHandler implements ClientListenerRequestHandler, ClientT
         @Nullable String qryEngine,
         @Nullable Boolean dataPageScanEnabled,
         @Nullable Integer updateBatchSize,
+        @Nullable TransactionConcurrency concurrency,
+        @Nullable TransactionIsolation isolation,
+        long timeout,
+        @Nullable String lb,
         ClientListenerProtocolVersion protocolVer,
         JdbcConnectionContext connCtx
     ) {
@@ -226,7 +235,11 @@ public class JdbcRequestHandler implements ClientListenerRequestHandler, ClientT
             skipReducerOnUpdate,
             dataPageScanEnabled,
             updateBatchSize,
-            qryEngine
+            qryEngine,
+            concurrency,
+            isolation,
+            timeout,
+            lb
         );
 
         this.busyLock = busyLock;
@@ -645,7 +658,7 @@ public class JdbcRequestHandler implements ClientListenerRequestHandler, ClientT
 
             List<FieldsQueryCursor<List<?>>> results = txEnabledForConnection()
                 ? invokeInTransaction(txId, req.autoCommit(), qry, cancel)
-                : invokeOutsideTransaction(qry, cancel);
+                : querySqlFields(qry, cancel);
 
             FieldsQueryCursor<List<?>> fieldsCur = results.get(0);
 
@@ -800,13 +813,10 @@ public class JdbcRequestHandler implements ClientListenerRequestHandler, ClientT
         try {
             txCtx.acquire(true);
 
-            return invokeOutsideTransaction(qry, cancel);
+            return querySqlFields(qry, cancel);
         }
         catch (Exception e) {
             err = true;
-
-            if (autoCommit)
-                endTransaction(qry, txId, false);
 
             throw e;
         }
@@ -818,8 +828,8 @@ public class JdbcRequestHandler implements ClientListenerRequestHandler, ClientT
                 log.warning("Failed to release client transaction context", e);
             }
 
-            if (autoCommit && !err)
-                endTransaction(qry, txId, true);
+            if (autoCommit)
+                endTransaction(qry.getTimeout(), txId, !err);
         }
     }
 
@@ -841,6 +851,16 @@ public class JdbcRequestHandler implements ClientListenerRequestHandler, ClientT
             cliCtx.transactionTimeout(),
             cliCtx.transactionLabel()
         );
+    }
+
+    /** */
+    private void endTransaction(int timeout, int txId, boolean committed) throws IgniteCheckedException {
+        IgniteInternalFuture<IgniteInternalTx> endTxFut = endTxAsync(connCtx, txId, committed);
+
+        if (timeout != -1)
+            endTxFut.get(timeout);
+        else
+            endTxFut.get();
     }
 
     /** */

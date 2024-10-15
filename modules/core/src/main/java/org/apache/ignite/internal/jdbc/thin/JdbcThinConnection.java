@@ -181,6 +181,9 @@ public class JdbcThinConnection implements Connection {
     /** No retries. */
     public static final int NO_RETRIES = 0;
 
+    /** Default isolation level. */
+    public static final int DFLT_ISOLATION = TRANSACTION_READ_COMMITTED;
+
     /** Partition awareness enabled flag. */
     private final boolean partitionAwareness;
 
@@ -310,8 +313,6 @@ public class JdbcThinConnection implements Connection {
 
         holdability = isTxAwareQueriesSupported ? CLOSE_CURSORS_AT_COMMIT : HOLD_CURSORS_OVER_COMMIT;
         txIsolation = defaultTransactionIsolation();
-
-        updateTransactionParameters();
     }
 
     /** Create new binary context. */
@@ -372,7 +373,7 @@ public class JdbcThinConnection implements Connection {
 
     /** @return Default isolation level. */
     int defaultTransactionIsolation() {
-        return isTxAwareQueriesSupported ? TRANSACTION_READ_COMMITTED : TRANSACTION_NONE;
+        return isTxAwareQueriesSupported ? DFLT_ISOLATION : TRANSACTION_NONE;
     }
 
     /** @return Default io to make a request. */
@@ -715,6 +716,8 @@ public class JdbcThinConnection implements Connection {
                 if (isTxAwareQueriesSupported)
                     throw new SQLException("Requested isolation level not supported by the server: " + level);
 
+                break;
+
             case Connection.TRANSACTION_READ_COMMITTED:
             case Connection.TRANSACTION_REPEATABLE_READ:
             case Connection.TRANSACTION_SERIALIZABLE:
@@ -727,9 +730,11 @@ public class JdbcThinConnection implements Connection {
                 throw new SQLException("Invalid transaction isolation level.", SqlStateCode.INVALID_TRANSACTION_LEVEL);
         }
 
-        txIsolation = level;
+        if (txIsolation != level) {
+            txIsolation = level;
 
-        updateTransactionParameters();
+            updateTransactionParameters();
+        }
     }
 
     /** {@inheritDoc} */
@@ -2664,7 +2669,7 @@ public class JdbcThinConnection implements Connection {
     }
 
     /** */
-    private TransactionIsolation isolation(int jdbcIsolation) throws SQLException {
+    public static TransactionIsolation isolation(int jdbcIsolation) throws SQLException {
         switch (jdbcIsolation) {
             case TRANSACTION_READ_COMMITTED:
                 return TransactionIsolation.READ_COMMITTED;
