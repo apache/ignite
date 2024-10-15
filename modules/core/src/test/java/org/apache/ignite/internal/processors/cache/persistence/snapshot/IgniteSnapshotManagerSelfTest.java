@@ -72,6 +72,7 @@ import static org.apache.ignite.internal.processors.cache.persistence.snapshot.I
 import static org.apache.ignite.internal.processors.cache.persistence.snapshot.IgniteSnapshotManager.SNAPSHOT_RUNNER_THREAD_PREFIX;
 import static org.apache.ignite.testframework.GridTestUtils.assertThrowsAnyCause;
 import static org.apache.ignite.testframework.GridTestUtils.setFieldValue;
+import static org.junit.Assume.assumeFalse;
 
 /**
  * Default snapshot manager test.
@@ -579,6 +580,55 @@ public class IgniteSnapshotManagerSelfTest extends AbstractSnapshotSelfTest {
             .filter(info -> info.getThreadName().startsWith(SNAPSHOT_RUNNER_THREAD_PREFIX)).count();
 
         assertEquals(snapshotThreadPoolSize.longValue(), snpRunningThreads);
+    }
+
+    /**
+     * Tests that full-copy and incremental snapshots log correctly.
+     *
+     * @throws Exception If fails.
+     * */
+    @Test
+    public void testFullSnapshotCreationLog() throws Exception {
+        assumeFalse("https://issues.apache.org/jira/browse/IGNITE-17819", encryption);
+
+        listenLog = new ListeningTestLogger(log);
+
+        final int entriesCnt = 4;
+
+        LogListener matchStart = LogListener.matches("Cluster-wide snapshot operation started: ").times(entriesCnt).build();
+        listenLog.registerListener(matchStart);
+
+        LogListener matchFinish = LogListener.matches("Cluster-wide snapshot operation finished successfully: ").times(entriesCnt).build();
+        listenLog.registerListener(matchFinish);
+
+        LogListener matchFullParams = LogListener.matches("incremental=false, incIdx=-1").times(2).build();
+        listenLog.registerListener(matchFullParams);
+
+        LogListener matchIncParams = LogListener.matches("incremental=true").times(2 * (entriesCnt - 1)).build();
+        listenLog.registerListener(matchIncParams);
+
+        LogListener noMatchParams = LogListener.matches("incremental=true, incIdx=-1").build();
+        listenLog.registerListener(noMatchParams);
+
+        IgniteEx ignite = startGrid(getConfiguration().setConsistentId(null));
+        ignite.cluster().state(ClusterState.ACTIVE);
+
+        IgniteCache<Integer, Integer> cache = ignite.getOrCreateCache(new CacheConfiguration<>(DEFAULT_CACHE_NAME));
+
+        cache.put(0, 0);
+        ignite.snapshot().createSnapshot(SNAPSHOT_NAME).get();
+        for (int i = 1; i < entriesCnt; i++) {
+            cache.put(i, i);
+            ignite.snapshot().createIncrementalSnapshot(SNAPSHOT_NAME).get();
+        }
+
+        ignite.close();
+
+        assertTrue(matchStart.check());
+        assertTrue(matchFinish.check());
+        assertTrue(matchFullParams.check());
+        assertTrue(matchIncParams.check());
+        assertFalse(noMatchParams.check());
     }
 
     /**
