@@ -27,21 +27,24 @@ import java.util.List;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
-
 import org.apache.calcite.tools.FrameworkConfig;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.cache.query.FieldsQueryCursor;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
-import org.apache.ignite.internal.processors.cache.distributed.dht.atomic.GridDhtAtomicCache;
+import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtCacheAdapter;
 import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtLocalPartition;
+import org.apache.ignite.internal.processors.cache.transactions.TransactionProxyImpl;
+import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.processors.query.QueryContext;
 import org.apache.ignite.internal.processors.query.QueryEngine;
+import org.apache.ignite.internal.processors.query.calcite.integration.AbstractBasicIntegrationTransactionalTest.SqlTransactionMode;
 import org.apache.ignite.internal.processors.query.schema.management.SchemaManager;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.testframework.GridTestUtils;
+import org.apache.ignite.transactions.Transaction;
 import org.hamcrest.CoreMatchers;
 import org.hamcrest.CustomTypeSafeMatcher;
 import org.hamcrest.Matcher;
@@ -275,6 +278,9 @@ public abstract class QueryChecker {
     private final String qry;
 
     /** */
+    private final Transaction tx;
+
+    /** */
     private final ArrayList<Matcher<String>> planMatchers = new ArrayList<>();
 
     /** */
@@ -303,7 +309,16 @@ public abstract class QueryChecker {
 
     /** */
     public QueryChecker(String qry) {
+        this(qry, null, SqlTransactionMode.NONE);
+    }
+
+    /** */
+    public QueryChecker(String qry, Transaction tx, SqlTransactionMode sqlTxMode) {
+        assert (tx != null && sqlTxMode != SqlTransactionMode.NONE)
+            || (tx == null && sqlTxMode == SqlTransactionMode.NONE) : "mode = " + sqlTxMode + ", tx = " + tx;
+
         this.qry = qry;
+        this.tx = tx;
     }
 
     /** */
@@ -382,7 +397,11 @@ public abstract class QueryChecker {
         // Check plan.
         QueryEngine engine = getEngine();
 
-        QueryContext ctx = frameworkCfg != null ? QueryContext.of(frameworkCfg) : null;
+        GridCacheVersion txVer = tx != null
+            ? ((TransactionProxyImpl)tx).tx().xidVersion()
+            : null;
+
+        QueryContext ctx = (frameworkCfg != null || txVer != null) ? QueryContext.of(frameworkCfg, txVer) : null;
 
         List<FieldsQueryCursor<List<?>>> explainCursors =
             engine.query(ctx, "PUBLIC", "EXPLAIN PLAN FOR " + qry, params);
@@ -391,7 +410,8 @@ public abstract class QueryChecker {
         List<List<?>> explainRes = explainCursor.getAll();
         String actualPlan = (String)explainRes.get(0).get(0);
 
-        if (!F.isEmpty(planMatchers)) {
+        // Will not check plan in transaction, because, statistic not refreshed inside transaction, so plan differs from expected.
+        if (!F.isEmpty(planMatchers) && tx == null) {
             for (Matcher<String> matcher : planMatchers)
                 assertThat("Invalid plan:\n" + actualPlan + "\n for query: " + qry, actualPlan, matcher);
         }
@@ -520,7 +540,7 @@ public abstract class QueryChecker {
      * @param cacheName Cache to check reservations.
      */
     public static void awaitReservationsRelease(IgniteEx node, String cacheName) throws IgniteInterruptedCheckedException {
-        GridDhtAtomicCache c = GridTestUtils.getFieldValue(node.cachex(cacheName), "delegate");
+        GridDhtCacheAdapter c = GridTestUtils.getFieldValue(node.cachex(cacheName), "delegate");
 
         List<GridDhtLocalPartition> parts = c.topology().localPartitions();
 

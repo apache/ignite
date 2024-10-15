@@ -25,7 +25,6 @@ import org.apache.ignite.binary.BinaryObject;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.cache.query.annotations.QuerySqlField;
 import org.apache.ignite.calcite.CalciteQueryEngineConfiguration;
-import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.util.typedef.F;
 import org.junit.Test;
@@ -33,7 +32,7 @@ import org.junit.Test;
 /**
  * Test "keep binary" in cache queries.
  */
-public class KeepBinaryIntegrationTest extends AbstractBasicIntegrationTest {
+public class KeepBinaryIntegrationTest extends AbstractBasicIntegrationTransactionalTest {
     /** */
     private static final String CACHE_NAME = "cache";
 
@@ -41,7 +40,7 @@ public class KeepBinaryIntegrationTest extends AbstractBasicIntegrationTest {
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
         cfg.getSqlConfiguration().setQueryEnginesConfiguration(new CalciteQueryEngineConfiguration());
-        cfg.setCacheConfiguration(new CacheConfiguration<>(CACHE_NAME).setIndexedTypes(Integer.class, Person.class));
+        cfg.setCacheConfiguration(cacheConfiguration().setName(CACHE_NAME).setIndexedTypes(Integer.class, Person.class));
 
         return cfg;
     }
@@ -58,35 +57,44 @@ public class KeepBinaryIntegrationTest extends AbstractBasicIntegrationTest {
         Person p2 = new Person(2, "name2", F.asList(new Person(3, "name3", null),
             new Person(4, "name4", null)));
 
-        cache.put(0, p0);
-        cache.put(1, p1);
-        cache.put(2, p2);
+        put(client, cache, 0, p0);
+        put(client, cache, 1, p1);
+        put(client, cache, 2, p2);
 
-        List<List<?>> res = cache.query(new SqlFieldsQuery("SELECT _VAL, obj, name FROM Person ORDER BY id")).getAll();
+        SupplierX<?> checker = () -> {
+            List<List<?>> res = cache.query(new SqlFieldsQuery("SELECT _VAL, obj, name FROM Person ORDER BY id")).getAll();
 
-        assertEquals(3, res.size());
-        assertEquals(p0, res.get(0).get(0));
-        assertEquals(p1, res.get(1).get(0));
-        assertEquals(p2, res.get(2).get(0));
-        assertEquals(p0.obj, res.get(0).get(1));
-        assertEquals(p1.obj, res.get(1).get(1));
-        assertEquals(p2.obj, res.get(2).get(1));
-        assertEquals(p0.name, res.get(0).get(2));
-        assertEquals(p1.name, res.get(1).get(2));
-        assertEquals(p2.name, res.get(2).get(2));
+            assertEquals(3, res.size());
+            assertEquals(p0, res.get(0).get(0));
+            assertEquals(p1, res.get(1).get(0));
+            assertEquals(p2, res.get(2).get(0));
+            assertEquals(p0.obj, res.get(0).get(1));
+            assertEquals(p1.obj, res.get(1).get(1));
+            assertEquals(p2.obj, res.get(2).get(1));
+            assertEquals(p0.name, res.get(0).get(2));
+            assertEquals(p1.name, res.get(1).get(2));
+            assertEquals(p2.name, res.get(2).get(2));
 
-        res = cache.withKeepBinary().query(new SqlFieldsQuery("SELECT _VAL, obj, name FROM Person ORDER BY id")).getAll();
+            res = cache.withKeepBinary().query(new SqlFieldsQuery("SELECT _VAL, obj, name FROM Person ORDER BY id")).getAll();
 
-        assertEquals(3, res.size());
-        assertTrue(res.get(0).get(0) instanceof BinaryObject);
-        assertTrue(res.get(1).get(0) instanceof BinaryObject);
-        assertTrue(res.get(1).get(0) instanceof BinaryObject);
-        assertNull(res.get(0).get(1));
-        assertTrue(res.get(1).get(1) instanceof BinaryObject);
-        assertTrue(res.get(1).get(1) instanceof BinaryObject);
-        assertEquals(p0.name, res.get(0).get(2));
-        assertEquals(p1.name, res.get(1).get(2));
-        assertEquals(p2.name, res.get(2).get(2));
+            assertEquals(3, res.size());
+            assertTrue(res.get(0).get(0) instanceof BinaryObject);
+            assertTrue(res.get(1).get(0) instanceof BinaryObject);
+            assertTrue(res.get(1).get(0) instanceof BinaryObject);
+            assertNull(res.get(0).get(1));
+            assertTrue(res.get(1).get(1) instanceof BinaryObject);
+            assertTrue(res.get(1).get(1) instanceof BinaryObject);
+            assertEquals(p0.name, res.get(0).get(2));
+            assertEquals(p1.name, res.get(1).get(2));
+            assertEquals(p2.name, res.get(2).get(2));
+
+            return null;
+        };
+
+        if (sqlTxMode == SqlTransactionMode.NONE)
+            checker.get();
+        else
+            txAction(client, checker);
     }
 
     /** */
