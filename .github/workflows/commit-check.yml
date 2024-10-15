@@ -60,11 +60,11 @@ jobs:
 
       - name: Run codestyle and licenses checks
         run: |
-          ./mvnw test-compile -Pall-java,licenses,lgpl,checkstyle,examples,all-scala,scala,check-licenses -B -V
+          ./mvnw test-compile -Pall-java,licenses,lgpl,checkstyle,examples,scala,check-licenses -B -V
 
       - name: Run abandoned tests checks.
         run : |
-          ./mvnw test -Pcheck-test-suites,all-java,all-scala,scala -B -V
+          ./mvnw test -Pcheck-test-suites,all-java,scala -B -V
 
       - name: Check javadocs.
         run : |
