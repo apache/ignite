@@ -60,7 +60,10 @@ import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.internal.GridComponent;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
+import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.query.IgniteQueryErrorCode;
+import org.apache.ignite.internal.processors.cache.transactions.IgniteInternalTx;
+import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.processors.query.IgniteSQLException;
 import org.apache.ignite.internal.processors.query.QueryContext;
 import org.apache.ignite.internal.processors.query.calcite.exec.RowHandler;
@@ -516,5 +519,24 @@ public final class Commons {
             Map<String, Object> qryParams
     ) {
         return new MappingQueryContext(ctx, locNodeId, topVer, qryParams);
+    }
+
+    /**
+     * @param ctx Query context.
+     * @param cctx Grid cache shared context.
+     * @return Query transaction or {@code null}.
+     */
+    public static <T extends IgniteInternalTx> T queryTransaction(Context ctx, GridCacheSharedContext<?, ?> cctx) {
+        GridCacheVersion txId = queryTransactionVersion(ctx);
+
+        return txId == null ? null : cctx.tm().tx(txId);
+    }
+
+    /**
+     * @param ctx Context.
+     * @return Query transaction version if exists or {@code null}.
+     */
+    public static @Nullable GridCacheVersion queryTransactionVersion(Context ctx) {
+        return ctx.unwrap(GridCacheVersion.class);
     }
 }

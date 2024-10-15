@@ -21,6 +21,8 @@ import java.util.Collection;
 import java.util.function.Consumer;
 import javax.cache.Cache;
 import org.apache.ignite.internal.binary.streams.BinaryInputStream;
+import org.apache.ignite.internal.client.thin.TcpClientTransactions.TcpClientTransaction;
+import org.jetbrains.annotations.Nullable;
 
 /**
  * Client query pager.
@@ -35,13 +37,14 @@ class ClientQueryPager<K, V> extends GenericQueryPager<Cache.Entry<K, V>> {
     /** Constructor. */
     ClientQueryPager(
         ReliableChannel ch,
+        @Nullable TcpClientTransaction tx,
         ClientOperation qryOp,
         ClientOperation pageQryOp,
         Consumer<PayloadOutputChannel> qryWriter,
         boolean keepBinary,
         ClientBinaryMarshaller marsh
     ) {
-        super(ch, qryOp, pageQryOp, qryWriter);
+        super(ch, tx, qryOp, pageQryOp, qryWriter);
 
         this.keepBinary = keepBinary;
 
@@ -51,6 +54,7 @@ class ClientQueryPager<K, V> extends GenericQueryPager<Cache.Entry<K, V>> {
     /** Constructor. */
     ClientQueryPager(
         ReliableChannel ch,
+        @Nullable TcpClientTransaction tx,
         ClientOperation qryOp,
         ClientOperation pageQryOp,
         Consumer<PayloadOutputChannel> qryWriter,
@@ -59,7 +63,7 @@ class ClientQueryPager<K, V> extends GenericQueryPager<Cache.Entry<K, V>> {
         int cacheId,
         int part
     ) {
-        super(ch, qryOp, pageQryOp, qryWriter, cacheId, part);
+        super(ch, tx, qryOp, pageQryOp, qryWriter, cacheId, part);
 
         this.keepBinary = keepBinary;
 
