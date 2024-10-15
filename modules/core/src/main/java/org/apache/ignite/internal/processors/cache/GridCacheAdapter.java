@@ -1059,6 +1059,10 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
 
     /** {@inheritDoc} */
     @Override public void clear() throws IgniteCheckedException {
+        if (ctx.transactional() && ctx.grid().transactions().tx() != null)
+            throw new IgniteException("Failed to invoke a non-transactional operation within a transaction: " +
+                "IgniteCache.clear().");
+
         clear((Set<? extends K>)null);
     }
 
@@ -1074,6 +1078,10 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
 
     /** {@inheritDoc} */
     @Override public IgniteInternalFuture<?> clearAsync() {
+        if (ctx.transactional() && ctx.grid().transactions().tx() != null)
+            throw new IgniteException("Failed to invoke a non-transactional operation within a transaction: " +
+                "IgniteCache.clearAsync().");
+
         return clearAsync((Set<? extends K>)null);
     }
 
@@ -1113,14 +1121,8 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
      * @param near Near cache flag.
      * @return Future.
      */
-    private IgniteInternalFuture<?> executeClearTask(@Nullable Set<? extends K> keys, boolean near)
-        throws IgniteException {
+    private IgniteInternalFuture<?> executeClearTask(@Nullable Set<? extends K> keys, boolean near) {
         Collection<ClusterNode> srvNodes = ctx.grid().cluster().forCacheNodes(name(), !near, near, false).nodes();
-
-        if (ctx.transactional() && ctx.grid().transactions().tx() != null && (keys == null || keys.isEmpty()))
-            throw new IgniteException("Failed to invoke a non-transactional operation within a transaction: " +
-                "IgniteCache.clear().");
-
         if (!srvNodes.isEmpty()) {
             return ctx.kernalContext().task().execute(
                 new ClearTask(ctx.name(), ctx.affinity().affinityTopologyVersion(), keys, near),
