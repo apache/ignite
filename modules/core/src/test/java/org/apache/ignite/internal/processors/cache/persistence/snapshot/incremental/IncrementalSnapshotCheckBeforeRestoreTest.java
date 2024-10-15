@@ -89,6 +89,8 @@ public class IncrementalSnapshotCheckBeforeRestoreTest extends AbstractSnapshotS
     /** */
     @Test
     public void testCheckCorrectIncrementalSnapshot() throws Exception {
+        assert GRID_CNT > 2;
+
         createFullSnapshot();
 
         int incSnpCnt = 3;
@@ -103,6 +105,29 @@ public class IncrementalSnapshotCheckBeforeRestoreTest extends AbstractSnapshotS
                 assertTrue(res.exceptions().isEmpty());
                 assertTrue(res.idleVerifyResult().exceptions().isEmpty());
             }
+        }
+
+        // Check from a smaller topology.
+        stopGrid(GRID_CNT);
+
+        for (IgniteEx n : F.asList(grid(0), grid(GRID_CNT - 1))) {
+            for (int i = 0; i <= incSnpCnt; i++) {
+                SnapshotPartitionsVerifyResult res = snp(n).checkSnapshot(SNP, null, null, false, i, DFLT_CHECK_ON_RESTORE)
+                    .get(getTestTimeout());
+
+                assertTrue(res.exceptions().isEmpty());
+                assertTrue(res.idleVerifyResult().exceptions().isEmpty());
+            }
+        }
+
+        stopGrid(0);
+
+        for (int i = 0; i <= incSnpCnt; i++) {
+            SnapshotPartitionsVerifyResult res = snp(grid(1)).checkSnapshot(SNP, null, null, false, i, DFLT_CHECK_ON_RESTORE)
+                .get(getTestTimeout());
+
+            assertTrue(res.exceptions().isEmpty());
+            assertTrue(res.idleVerifyResult().exceptions().isEmpty());
         }
     }
 
