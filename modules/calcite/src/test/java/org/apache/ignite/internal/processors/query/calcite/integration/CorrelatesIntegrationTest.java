@@ -44,8 +44,8 @@ public class CorrelatesIntegrationTest extends AbstractBasicIntegrationTransacti
     public void testCorrelatesDifferentDataType() {
         for (String type : new String[] {"INTEGER", "TINYINT"}) {
             try {
-                sql("CREATE TABLE t1(v INTEGER)");
-                sql("CREATE TABLE t2(v " + type + ")");
+                sql("CREATE TABLE t1(v INTEGER) WITH " + atomicity());
+                sql("CREATE TABLE t2(v " + type + ") WITH " + atomicity());
                 sql("INSERT INTO t1 VALUES (1)");
                 sql("INSERT INTO t2 VALUES (1)");
 
@@ -54,6 +54,8 @@ public class CorrelatesIntegrationTest extends AbstractBasicIntegrationTransacti
                     .check();
             }
             finally {
+                clearTransaction();
+
                 sql("DROP TABLE t1");
                 sql("DROP TABLE t2");
             }
