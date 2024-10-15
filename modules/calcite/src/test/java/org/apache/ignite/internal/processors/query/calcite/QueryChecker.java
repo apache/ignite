@@ -410,6 +410,7 @@ public abstract class QueryChecker {
         List<List<?>> explainRes = explainCursor.getAll();
         String actualPlan = (String)explainRes.get(0).get(0);
 
+        // Will not check plan in transaction, because, statistic not refreshed inside transaction, so plan differs from expected.
         if (!F.isEmpty(planMatchers) && tx == null) {
             for (Matcher<String> matcher : planMatchers)
                 assertThat("Invalid plan:\n" + actualPlan + "\n for query: " + qry, actualPlan, matcher);
