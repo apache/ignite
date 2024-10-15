@@ -620,7 +620,8 @@ public class ExecutionServiceImpl<Row> extends AbstractService implements Execut
             qryMemoryTracker,
             createIoTracker(locNodeId, qry.localQueryId()),
             timeout,
-            qryParams);
+            qryParams,
+            (Map<String, String>)qry.context().unwrap(Map.class));
 
         Node<Row> node = new LogicalRelImplementor<>(ectx, partitionService(), mailboxRegistry(),
             exchangeService(), failureProcessor()).go(fragment.root());
@@ -659,7 +660,9 @@ public class ExecutionServiceImpl<Row> extends AbstractService implements Execut
                             fragmentsPerNode.get(nodeId).intValue(),
                             qry.parameters(),
                             parametersMarshalled,
-                            timeout
+                            timeout,
+                            ectx.userAttributes(),
+                            null
                         );
 
                         messageService().send(nodeId, req);
@@ -867,7 +870,8 @@ public class ExecutionServiceImpl<Row> extends AbstractService implements Execut
                 qry.createMemoryTracker(memoryTracker, cfg.getQueryMemoryQuota()),
                 createIoTracker(nodeId, msg.originatingQryId()),
                 msg.timeout(),
-                Commons.parametersMap(msg.parameters())
+                Commons.parametersMap(msg.parameters()),
+                msg.userAttributes()
             );
 
             executeFragment(qry, (FragmentPlan)qryPlan, ectx);

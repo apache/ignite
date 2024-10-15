@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.processors.query.calcite.message;
 
 import java.nio.ByteBuffer;
+import java.util.Map;
 import java.util.UUID;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.GridDirectTransient;
@@ -65,6 +66,13 @@ public class QueryStartRequest implements MarshalableMessage, ExecutionContextAw
     private long timeout;
 
     /** */
+    @GridDirectTransient
+    private Map<String, String> userAttrs;
+
+    /** */
+    private byte[] userAttrsBytes;
+
+    /** */
     @SuppressWarnings("AssignmentOrReturnOfFieldWithMutableType")
     public QueryStartRequest(
         UUID qryId,
@@ -76,7 +84,9 @@ public class QueryStartRequest implements MarshalableMessage, ExecutionContextAw
         int totalFragmentsCnt,
         Object[] params,
         @Nullable byte[] paramsBytes,
-        long timeout
+        long timeout,
+        @Nullable Map<String, String> userAttrs,
+        @Nullable byte[] userAttrsBytes
     ) {
         this.qryId = qryId;
         this.originatingQryId = originatingQryId;
@@ -88,6 +98,8 @@ public class QueryStartRequest implements MarshalableMessage, ExecutionContextAw
         this.params = params;
         this.paramsBytes = paramsBytes; // If we already have marshalled params, use it.
         this.timeout = timeout;
+        this.userAttrs = userAttrs;
+        this.userAttrsBytes = userAttrsBytes;
     }
 
     /** */
@@ -168,12 +180,25 @@ public class QueryStartRequest implements MarshalableMessage, ExecutionContextAw
         return timeout;
     }
 
+    /** */
+    public Map<String, String> userAttributes() {
+        return userAttrs;
+    }
+
+    /** */
+    public byte[] userAttributesMarshalled() {
+        return userAttrsBytes;
+    }
+
     /** {@inheritDoc} */
     @Override public void prepareMarshal(GridCacheSharedContext<?, ?> ctx) throws IgniteCheckedException {
         if (paramsBytes == null && params != null)
             paramsBytes = U.marshal(ctx, params);
 
         fragmentDesc.prepareMarshal(ctx);
+
+        if (userAttrsBytes == null && userAttrs != null)
+            userAttrsBytes = ctx.marshal(userAttrs);
     }
 
     /** {@inheritDoc} */
@@ -182,6 +207,9 @@ public class QueryStartRequest implements MarshalableMessage, ExecutionContextAw
             params = U.unmarshal(ctx, paramsBytes, U.resolveClassLoader(ctx.gridConfig()));
 
         fragmentDesc.prepareUnmarshal(ctx);
+
+        if (userAttrs == null && userAttrsBytes != null)
+            userAttrs = ctx.unmarshal(userAttrsBytes);
     }
 
     /** {@inheritDoc} */
@@ -250,6 +278,11 @@ public class QueryStartRequest implements MarshalableMessage, ExecutionContextAw
 
                 writer.incrementState();
 
+            case 9:
+                if (!writer.writeByteArray("userAttrsBytes", userAttrsBytes))
+                    return false;
+
+                writer.incrementState();
         }
 
         return true;
@@ -335,6 +368,13 @@ public class QueryStartRequest implements MarshalableMessage, ExecutionContextAw
 
                 reader.incrementState();
 
+            case 9:
+                userAttrsBytes = reader.readByteArray("userAttrsBytes");
+
+                if (!reader.isLastRead())
+                    return false;
+
+                reader.incrementState();
         }
 
         return reader.afterMessageRead(QueryStartRequest.class);

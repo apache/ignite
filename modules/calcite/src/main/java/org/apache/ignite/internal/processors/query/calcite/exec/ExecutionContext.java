@@ -47,6 +47,7 @@ import org.apache.ignite.internal.processors.query.calcite.util.TypeUtils;
 import org.apache.ignite.internal.util.lang.RunnableX;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.internal.processors.query.calcite.util.Commons.checkRange;
 
@@ -62,6 +63,9 @@ public class ExecutionContext<Row> extends AbstractQueryContext implements DataC
 
     /** */
     private final UUID qryId;
+
+    /** */
+    private final Map<String, String> userAttrs;
 
     /** */
     private final UUID locNodeId;
@@ -127,7 +131,8 @@ public class ExecutionContext<Row> extends AbstractQueryContext implements DataC
         MemoryTracker qryMemoryTracker,
         IoTracker ioTracker,
         long timeout,
-        Map<String, Object> params
+        Map<String, Object> params,
+        @Nullable Map<String, String> userAttrs
     ) {
         super(qctx);
 
@@ -142,6 +147,7 @@ public class ExecutionContext<Row> extends AbstractQueryContext implements DataC
         this.ioTracker = ioTracker;
         this.params = params;
         this.timeout = timeout;
+        this.userAttrs = userAttrs;
 
         startTs = U.currentTimeMillis();
 
@@ -160,6 +166,23 @@ public class ExecutionContext<Row> extends AbstractQueryContext implements DataC
      */
     public UUID queryId() {
         return qryId;
+    }
+
+    /**
+     * @return User attributes.
+     */
+    public @Nullable String userAttribute(String name) {
+        if (userAttrs == null)
+            return null;
+
+        return userAttrs.get(name);
+    }
+
+    /**
+     * @return User attributes.
+     */
+    public @Nullable Map<String, String> userAttributes() {
+        return userAttrs;
     }
 
     /**
