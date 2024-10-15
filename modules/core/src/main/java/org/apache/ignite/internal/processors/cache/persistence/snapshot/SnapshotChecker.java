@@ -637,17 +637,13 @@ public class SnapshotChecker {
         Map<ClusterNode, Map<PartitionKeyV2, List<PartitionHashRecordV2>>> results,
         Map<ClusterNode, Exception> ex
     ) {
-        Map<PartitionKeyV2, List<PartitionHashRecordV2>> clusterHashes = new HashMap<>();
+        Map<PartitionKeyV2, List<PartitionHashRecordV2>> hashesRes = new HashMap<>();
 
-        results.forEach((node, partsHashes) -> {
-            assert ex.get(node) == null;
-
-            partsHashes.forEach((partKey, partsResults) -> clusterHashes.computeIfAbsent(partKey,
-                k -> new ArrayList<>()).addAll(partsResults));
-        });
+        results.forEach((node, partsHashes) -> partsHashes.forEach((partKey, partHashLst) -> hashesRes.computeIfAbsent(partKey,
+            k -> new ArrayList<>()).addAll(partHashLst)));
 
         if (results.size() != ex.size())
-            return new IdleVerifyResultV2(clusterHashes, ex);
+            return new IdleVerifyResultV2(hashesRes, ex);
         else
             return new IdleVerifyResultV2(ex);
     }

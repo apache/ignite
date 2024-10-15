@@ -564,6 +564,58 @@ public class IgniteClusterSnapshotCheckTest extends AbstractSnapshotSelfTest {
         assertNotContains(log, b.toString(), "Failed to read page (CRC validation failed)");
     }
 
+    /** */
+    @Test
+    public void testCheckFromLesserTopology() throws Exception {
+        // {@link #corruptPartitionFile} affetchs an encrypted partition wrongly.
+        assumeFalse(encryption);
+
+        int srvCnt = 3;
+        IdleVerifyResultV2 chkRes;
+
+        IgniteEx client = startGridsWithSnapshot(srvCnt, CACHE_KEYS_RANGE, true, true);
+
+        for (int i = 1; i <= srvCnt; ++i) {
+            int i0 = i;
+
+            chkRes = snp(client).checkSnapshot(SNAPSHOT_NAME, null).get(getTestTimeout()).idleVerifyResult();
+            assertTrue(chkRes.exceptions().isEmpty());
+            assertFalse(chkRes.hasConflicts());
+
+            if (i == srvCnt)
+                break;
+
+            stopGrid(i);
+            assertTrue(waitForCondition(() -> client.cluster().forServers().nodes().size() == srvCnt - i0, getTestTimeout()));
+        }
+
+        for (int i = 1; i < srvCnt; ++i)
+            startGrid(i);
+
+        assertTrue(waitForCondition(() -> client.cluster().forServers().nodes().size() == srvCnt, getTestTimeout()));
+
+        // Now ensure that a bad partition is detected.
+        corruptPartitionFile(grid(1), SNAPSHOT_NAME, dfltCacheCfg, 3);
+
+        stopGrid(1);
+        assertTrue(waitForCondition(() -> client.cluster().forServers().nodes().size() == 2, getTestTimeout()));
+
+        for (int i = 2; i <= srvCnt; ++i) {
+            int i0 = i;
+
+            chkRes = snp(client).checkSnapshot(SNAPSHOT_NAME, null).get(getTestTimeout()).idleVerifyResult();
+
+            assertFalse(chkRes.exceptions().isEmpty());
+            assertTrue(X.hasCause(F.first(chkRes.exceptions().values()), IgniteDataIntegrityViolationException.class));
+
+            if (i == srvCnt)
+                break;
+
+            stopGrid(i);
+            assertTrue(waitForCondition(() -> client.cluster().forServers().nodes().size() == srvCnt - i0, getTestTimeout()));
+        }
+    }
+
     /** @throws Exception If fails. */
     @Test
     public void testClusterSnapshotCheckWithTwoCachesCheckTwoCaches() throws Exception {
