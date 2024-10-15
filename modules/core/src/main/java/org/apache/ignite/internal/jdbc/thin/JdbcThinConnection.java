@@ -763,7 +763,7 @@ public class JdbcThinConnection implements Connection {
     @Override public Blob createBlob() throws SQLException {
         ensureNotClosed();
 
-        return new JdbcBlob(new byte[0]);
+        return new JdbcBlob(connProps.getMaxInMemoryLobSize());
     }
 
     /** {@inheritDoc} */
@@ -925,6 +925,13 @@ public class JdbcThinConnection implements Connection {
      */
     boolean autoCloseServerCursor() {
         return connProps.isAutoCloseServerCursor();
+    }
+
+    /**
+     * @return Connection properties.
+     */
+    ConnectionProperties connectionProperties() {
+        return connProps;
     }
 
     /**

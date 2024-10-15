@@ -17,7 +17,10 @@
 
 package org.apache.ignite.internal.processors.odbc;
 
+import java.io.IOException;
 import java.math.BigDecimal;
+import java.sql.Blob;
+import java.sql.SQLException;
 import java.sql.Time;
 import java.sql.Timestamp;
 import java.util.UUID;
@@ -28,6 +31,7 @@ import org.apache.ignite.internal.binary.BinaryReaderExImpl;
 import org.apache.ignite.internal.binary.BinaryUtils;
 import org.apache.ignite.internal.binary.BinaryWriterExImpl;
 import org.apache.ignite.internal.binary.GridBinaryMarshaller;
+import org.apache.ignite.internal.jdbc2.lob.JdbcBlobBuffer;
 import org.apache.ignite.internal.processors.cache.query.IgniteQueryErrorCode;
 import org.apache.ignite.internal.processors.query.IgniteSQLException;
 import org.apache.ignite.internal.util.typedef.F;
@@ -121,7 +125,7 @@ public abstract class SqlListenerUtils {
                 return BinaryUtils.doReadBooleanArray(reader.in());
 
             case GridBinaryMarshaller.BYTE_ARR:
-                return BinaryUtils.doReadByteArray(reader.in());
+                return readByteArray(reader);
 
             case GridBinaryMarshaller.CHAR_ARR:
                 return BinaryUtils.doReadCharArray(reader.in());
@@ -171,6 +175,31 @@ public abstract class SqlListenerUtils {
                 }
                 else
                     throw new BinaryObjectException("Custom objects are not supported");
+        }
+    }
+
+    /**
+     * Read byte array using the reader.
+     *
+     * <p>Returns either (eagerly) new instance of the byte array with all data materialized,
+     * or (lazily) {@link JdbcBlobBuffer} which wraps part of the array enclosed in
+     * the reader's input stream.
+     *
+     * @param reader Reader.
+     * @return Either byte[] or {@link JdbcBlobBuffer}.
+     */
+    private static Object readByteArray(BinaryReaderExImpl reader) {
+        if (reader.in().hasArray()) {
+            int len = reader.in().readInt();
+
+            int position = reader.in().position();
+
+            reader.in().position(position + len);
+
+            return new JdbcBlobBuffer(Long.MAX_VALUE, reader.in().array(), position, len);
+        }
+        else {
+            return BinaryUtils.doReadByteArray(reader.in());
         }
     }
 
@@ -246,6 +275,22 @@ public abstract class SqlListenerUtils {
             writer.writeTimestampArray((Timestamp[])obj);
         else if (cls == java.util.Date[].class || cls == java.sql.Date[].class)
             writer.writeDateArray((java.util.Date[])obj);
+        else if (obj instanceof SqlInputStreamWrapper) {
+            try {
+                writer.writeInputStreamAsByteArray((SqlInputStreamWrapper)obj);
+            }
+            catch (IOException e) {
+                throw new BinaryObjectException(e);
+            }
+        }
+        else if (obj instanceof Blob) {
+            try {
+                writer.writeBlobAsByteArray((Blob)obj);
+            }
+            catch (IOException | SQLException e) {
+                throw new BinaryObjectException(e);
+            }
+        }
         else if (binObjAllow)
             writer.writeObjectDetached(obj);
         else
