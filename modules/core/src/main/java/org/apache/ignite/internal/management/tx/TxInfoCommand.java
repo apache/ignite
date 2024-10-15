@@ -25,6 +25,7 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.function.Consumer;
 import org.apache.ignite.Ignite;
+import org.apache.ignite.client.IgniteClient;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.client.GridClient;
 import org.apache.ignite.internal.client.GridClientNode;
@@ -54,13 +55,14 @@ public class TxInfoCommand implements LocalCommand<AbstractTxCommandArg, Map<Clu
     /** {@inheritDoc} */
     @Override public Map<ClusterNode, TxTaskResult> execute(
         @Nullable GridClient cli,
+        @Nullable IgniteClient client,
         @Nullable Ignite ignite,
         AbstractTxCommandArg arg0,
         Consumer<String> printer
     ) throws Exception {
         TxInfoCommandArg arg = (TxInfoCommandArg)arg0;
 
-        Optional<GridClientNode> node = CommandUtils.nodes(cli, ignite).stream()
+        Optional<GridClientNode> node = CommandUtils.nodes(cli, client, ignite).stream()
             .filter(n -> !n.isClient())
             .filter(GridClientNode::connectable)
             .findFirst();
@@ -70,6 +72,7 @@ public class TxInfoCommand implements LocalCommand<AbstractTxCommandArg, Map<Clu
 
         GridCacheVersion nearXidVer = CommandUtils.execute(
             cli,
+            client,
             ignite,
             FetchNearXidVersionTask.class,
             arg,
@@ -103,6 +106,7 @@ public class TxInfoCommand implements LocalCommand<AbstractTxCommandArg, Map<Clu
 
         Map<ClusterNode, TxTaskResult> res = CommandUtils.execute(
             cli,
+            client,
             ignite,
             TxTask.class,
             arg,

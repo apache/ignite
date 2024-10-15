@@ -40,6 +40,7 @@ import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.AtomicConfiguration;
 import org.apache.ignite.configuration.CacheConfiguration;
+import org.apache.ignite.configuration.ClientConnectorConfiguration;
 import org.apache.ignite.configuration.ConnectorConfiguration;
 import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
@@ -77,10 +78,12 @@ import static org.apache.ignite.configuration.DataStorageConfiguration.DFLT_CHEC
 import static org.apache.ignite.configuration.EncryptionConfiguration.DFLT_REENCRYPTION_BATCH_SIZE;
 import static org.apache.ignite.configuration.EncryptionConfiguration.DFLT_REENCRYPTION_RATE_MBPS;
 import static org.apache.ignite.events.EventType.EVT_CONSISTENCY_VIOLATION;
+import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_REST_TCP_PORT;
 import static org.apache.ignite.internal.commandline.ArgumentParser.CMD_AUTO_CONFIRMATION;
 import static org.apache.ignite.internal.encryption.AbstractEncryptionTest.KEYSTORE_PASSWORD;
 import static org.apache.ignite.internal.encryption.AbstractEncryptionTest.KEYSTORE_PATH;
 import static org.apache.ignite.internal.management.cache.VerifyBackupPartitionsDumpTask.IDLE_DUMP_FILE_PREFIX;
+import static org.apache.ignite.internal.processors.odbc.ClientListenerProcessor.CLIENT_LISTENER_PORT;
 
 /**
  * Common abstract class for testing {@link CommandHandler}.
@@ -262,6 +265,7 @@ public abstract class GridCommandHandlerAbstractTest extends GridCommandHandlerF
         cfg.setCommunicationSpi(new TestRecordingCommunicationSpi());
 
         cfg.setConnectorConfiguration(new ConnectorConfiguration().setSslEnabled(sslEnabled()));
+        cfg.setClientConnectorConfiguration(new ClientConnectorConfiguration().setSslEnabled(sslEnabled()));
 
         if (sslEnabled())
             cfg.setSslContextFactory(sslFactory());
@@ -528,5 +532,11 @@ public abstract class GridCommandHandlerAbstractTest extends GridCommandHandlerF
      */
     protected void createCacheAndPreload(Ignite ignite, int countEntries) {
         createCacheAndPreload(ignite, DEFAULT_CACHE_NAME, countEntries, 32, null);
+    }
+
+    /** */
+    protected String connectorPort(IgniteEx srv) {
+        return srv.localNode().attribute(commandHandler.equals(CLI_GRID_CLIENT_CMD_HND) ? ATTR_REST_TCP_PORT
+            : CLIENT_LISTENER_PORT).toString();
     }
 }

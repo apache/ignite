@@ -19,6 +19,7 @@ package org.apache.ignite.internal.management.api;
 
 import java.util.function.Consumer;
 import org.apache.ignite.internal.client.GridClientBeforeNodeStart;
+import org.apache.ignite.internal.client.GridClientNodeStateBeforeStart;
 import org.apache.ignite.internal.dto.IgniteDataTransferObject;
 
 /**
@@ -26,10 +27,10 @@ import org.apache.ignite.internal.dto.IgniteDataTransferObject;
  */
 public interface BeforeNodeStartCommand<A extends IgniteDataTransferObject, R> extends Command<A, R> {
     /**
-     * @param cli Grid client instance.
+     * @param beforeStart {@link GridClientBeforeNodeStart} client instance.
      * @param arg Command argument.
      * @param printer Results printer.
      * @return Command result.
      */
-    public R execute(GridClientBeforeNodeStart cli, A arg, Consumer<String> printer) throws Exception;
+    public R execute(GridClientNodeStateBeforeStart beforeStart, A arg, Consumer<String> printer) throws Exception;
 }

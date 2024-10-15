@@ -19,6 +19,7 @@ package org.apache.ignite.internal.processors.platform.client;
 
 import java.util.EnumSet;
 import org.apache.ignite.client.ClientServices;
+import org.apache.ignite.cluster.ClusterState;
 import org.apache.ignite.internal.ThinProtocolFeature;
 import org.apache.ignite.internal.client.thin.TcpClientCache;
 
@@ -78,7 +79,10 @@ public enum ClientBitmaskFeature implements ThinProtocolFeature {
     SERVICE_TOPOLOGY(16),
 
     /** Cache invoke/invokeAll operations. */
-    CACHE_INVOKE(17);
+    CACHE_INVOKE(17),
+
+    /** Force deactivation flag. See {@link org.apache.ignite.client.ClientCluster#state(ClusterState, boolean)}. */
+    FORCE_DEACTIVATION_FLAG(18);
 
     /** */
     private static final EnumSet<ClientBitmaskFeature> ALL_FEATURES_AS_ENUM_SET =

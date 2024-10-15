@@ -73,6 +73,9 @@ public class ClientListenerNioListener extends GridNioServerListenerAdapter<Clie
     /** Connection-related metadata key. */
     public static final int CONN_CTX_META_KEY = GridNioSessionMetaKey.nextUniqueKey();
 
+    /** Connection id for recovery mode. */
+    public static final long RECOVERY_CONN_ID = 1;
+
     /** Next connection id. */
     private static AtomicInteger nextConnId = new AtomicInteger(1);
 
@@ -452,7 +455,9 @@ public class ClientListenerNioListener extends GridNioServerListenerAdapter<Clie
      */
     private ClientListenerConnectionContext prepareContext(byte clientType, GridNioSession ses)
         throws IgniteCheckedException {
-        long connId = nextConnectionId();
+        long connId = ctx.recoveryMode() ? RECOVERY_CONN_ID : nextConnectionId();
+
+        assert connId != RECOVERY_CONN_ID || clientType == THIN_CLIENT;
 
         switch (clientType) {
             case ODBC_CLIENT:
