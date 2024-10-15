@@ -30,6 +30,7 @@ import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 import org.apache.ignite.IgniteException;
@@ -248,6 +249,8 @@ public class SnapshotCheckProcess {
 
                 Map<Object, Map<?, ?>> perMetaResults = new ConcurrentHashMap<>(ctx.metasToProcess.size(), 1.0f);
 
+                AtomicInteger metasProcessed = new AtomicInteger(ctx.metasToProcess.size());
+
                 for (SnapshotMetadata locMeta : ctx.metasToProcess) {
                     CompletableFuture<?> metaFut;
 
@@ -280,7 +283,7 @@ public class SnapshotCheckProcess {
                                 perMetaResults.putIfAbsent(F.first(partRes.values()).consistentId(), partRes);
                         }
 
-                        if (perMetaResults.size() == ctx.metasToProcess.size())
+                        if (metasProcessed.decrementAndGet() == 0)
                             workingFut.complete(perMetaResults);
                     });
                 }
