@@ -37,7 +37,7 @@ import static org.apache.ignite.cache.CacheAtomicityMode.ATOMIC;
 import static org.apache.ignite.cache.CachePeekMode.ALL;
 
 /**
- * Checks how atomic and transactional cache operations work within a transaction.
+ * Checks how atomic cache operations work within a transaction.
  */
 public class AtomicOperationsInTxTest extends GridCommonAbstractTest {
     /** {@inheritDoc} */
@@ -57,6 +57,11 @@ public class AtomicOperationsInTxTest extends GridCommonAbstractTest {
     /** {@inheritDoc} */
     @Override protected void beforeTest() throws Exception {
         startGrid(0);
+    }
+
+    /** {@inheritDoc} */
+    @Override protected void afterTest() throws Exception {
+        stopGrid(0);
     }
 
     /**

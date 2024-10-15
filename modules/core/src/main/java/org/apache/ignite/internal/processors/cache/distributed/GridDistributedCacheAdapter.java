@@ -184,10 +184,6 @@ public abstract class GridDistributedCacheAdapter<K, V> extends GridCacheAdapter
                 Collection<ClusterNode> nodes = ctx.grid().cluster().forDataNodes(name()).nodes();
 
                 if (!nodes.isEmpty()) {
-                    if (ctx.transactional() && ctx.grid().transactions().tx() != null)
-                        throw new IgniteException("Failed to invoke a non-transactional operation within a " +
-                            "transaction: IgniteCache.removeAll().");
-
                     retry = !ctx.kernalContext().task().execute(
                         new RemoveAllTask(ctx.name(), topVer, skipStore, keepBinary),
                         null,
@@ -230,10 +226,6 @@ public abstract class GridDistributedCacheAdapter<K, V> extends GridCacheAdapter
         Collection<ClusterNode> nodes = ctx.grid().cluster().forDataNodes(name()).nodes();
 
         if (!nodes.isEmpty()) {
-            if (ctx.transactional() && ctx.grid().transactions().tx() != null)
-                throw new IgniteException("Failed to invoke a non-transactional operation within a " +
-                    "transaction: IgniteCache.removeAllAsync().");
-
             IgniteInternalFuture<Boolean> rmvAll = ctx.kernalContext().task().execute(
                 new RemoveAllTask(ctx.name(), topVer, skipStore, keepBinary),
                 null,

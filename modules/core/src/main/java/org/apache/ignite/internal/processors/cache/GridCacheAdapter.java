@@ -1078,10 +1078,6 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
 
     /** {@inheritDoc} */
     @Override public IgniteInternalFuture<?> clearAsync() {
-        if (ctx.transactional() && ctx.grid().transactions().tx() != null)
-            throw new IgniteException("Failed to invoke a non-transactional operation within a transaction: " +
-                "IgniteCache.clearAsync().");
-
         return clearAsync((Set<? extends K>)null);
     }
 
@@ -1123,6 +1119,7 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
      */
     private IgniteInternalFuture<?> executeClearTask(@Nullable Set<? extends K> keys, boolean near) {
         Collection<ClusterNode> srvNodes = ctx.grid().cluster().forCacheNodes(name(), !near, near, false).nodes();
+
         if (!srvNodes.isEmpty()) {
             return ctx.kernalContext().task().execute(
                 new ClearTask(ctx.name(), ctx.affinity().affinityTopologyVersion(), keys, near),
