@@ -2292,7 +2292,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
             Set<UUID> bltNodeIds =
                 new HashSet<>(F.viewReadOnly(srvNodes, F.node2id(), (node) -> CU.baselineNode(node, clusterState)));
 
-            var snpOpReq = new SnapshotOperationRequest(
+            SnapshotOperationRequest snpOpReq = new SnapshotOperationRequest(
                     snpFut0.rqId,
                     cctx.localNodeId(),
                     name,
@@ -2306,6 +2306,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
                     compress,
                     encrypt
             );
+
             startSnpProc.start(snpFut0.rqId, snpOpReq);
 
             String msg = SNAPSHOT_STARTED_MSG + snpOpReq;
