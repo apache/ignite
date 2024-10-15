@@ -128,6 +128,28 @@ namespace Apache.Ignite.Core.Impl.Cache.Platform
         /** <inheritdoc /> */
         public void Update(IBinaryStream stream, Marshaller marshaller)
         {
+            if (_keepBinary)
+                Update0(stream, marshaller);
+
+            bool locRegisterSameJavaType = Marshaller.RegisterSameJavaTypeTl.Value;
+
+            Marshaller.RegisterSameJavaTypeTl.Value = true;
+
+            try
+            {
+                Update0(stream, marshaller);
+            }
+            finally
+            {
+                Marshaller.RegisterSameJavaTypeTl.Value = locRegisterSameJavaType;
+            }
+        }
+        
+        /// <summary>
+        /// Updates entry in platform cache.
+        /// </summary>
+        private void Update0(IBinaryStream stream, Marshaller marshaller)
+        {
             Debug.Assert(stream != null);
             Debug.Assert(marshaller != null);
 
