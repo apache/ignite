@@ -622,6 +622,8 @@ public class IgniteSnapshotManagerSelfTest extends AbstractSnapshotSelfTest {
             ignite.snapshot().createIncrementalSnapshot(SNAPSHOT_NAME).get();
         }
 
+        ignite.close();
+
         assertTrue(matchStart.check());
         assertTrue(matchFinish.check());
         assertTrue(matchFullParams.check());
