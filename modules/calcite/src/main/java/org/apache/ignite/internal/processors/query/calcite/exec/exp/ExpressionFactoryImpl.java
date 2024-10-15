@@ -568,6 +568,7 @@ public class ExpressionFactoryImpl<Row> implements ExpressionFactory<Row> {
             new RexShuttle() {
                 @Override public RexNode visitFieldAccess(RexFieldAccess fieldAccess) {
                     b.append(", fldIdx=").append(fieldAccess.getField().getIndex());
+                    b.append(", fldType=").append(fieldAccess.getField().getType().getFullTypeString());
 
                     return super.visitFieldAccess(fieldAccess);
                 }
