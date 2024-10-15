@@ -174,12 +174,6 @@ public class JdbcThinTcpIo {
      */
     private final Set<TransactionIsolation> isolationLevelsSupported;
 
-    /**
-     * Transaction modes supported by the server.
-     * @see org.apache.ignite.configuration.TransactionConfiguration#TX_AWARE_QUERIES_SUPPORTED_MODES
-     */
-    private Set<TransactionIsolation> isolationLevelsSupported;
-
     /** Binary context for serialization/deserialization of binary objects. */
     private final BinaryContext ctx;
 

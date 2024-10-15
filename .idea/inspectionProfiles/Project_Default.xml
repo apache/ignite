@@ -347,9 +347,6 @@
     <inspection_tool class="AssignmentToDateFieldFromParameter" enabled="true" level="WARNING" enabled_by_default="true">
       <option name="ignorePrivateMethods" value="true" />
     </inspection_tool>
-    <inspection_tool class="AutoCloseableResource" enabled="true" level="WARNING" enabled_by_default="true">
-      <option name="METHOD_MATCHER_CONFIG" value="java.util.Formatter,format,java.io.Writer,append,com.google.common.base.Preconditions,checkNotNull,org.hibernate.Session,close,java.io.PrintWriter,printf,java.io.PrintStream,printf,org.apache.ignite.IgniteTransactions,txStart" />
-    </inspection_tool>
     <inspection_tool class="BadOddness" enabled="true" level="WARNING" enabled_by_default="true" />
     <inspection_tool class="BigDecimalEquals" enabled="true" level="WARNING" enabled_by_default="true" />
     <inspection_tool class="BooleanMethodIsAlwaysInverted" enabled="false" level="WARNING" enabled_by_default="false" />
@@ -755,7 +752,7 @@
     <inspection_tool class="ZeroIndexToHead" enabled="false" level="WARNING" enabled_by_default="false" />
     <inspection_tool class="ZeroLengthArrayInitialization" enabled="true" level="WARNING" enabled_by_default="true" />
     <inspection_tool class="ZipWithIndex" enabled="false" level="WARNING" enabled_by_default="false" />
-    <inspection_tool class="unused" enabled="true" level="WARNING" enabled_by_default="true" editorAttributes="WARNING_ATTRIBUTES" checkParameterExcludingHierarchy="false">
+    <inspection_tool class="unused" enabled="true" level="ERROR" enabled_by_default="true" editorAttributes="ERRORS_ATTRIBUTES" checkParameterExcludingHierarchy="false">
       <option name="LOCAL_VARIABLE" value="true" />
       <option name="FIELD" value="true" />
       <option name="METHOD" value="false" />

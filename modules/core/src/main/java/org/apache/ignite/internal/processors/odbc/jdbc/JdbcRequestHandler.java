@@ -864,17 +864,7 @@ public class JdbcRequestHandler implements ClientListenerRequestHandler, ClientT
     }
 
     /** */
-    private void endTransaction(SqlFieldsQueryEx qry, int txId, boolean committed) throws IgniteCheckedException {
-        IgniteInternalFuture<IgniteInternalTx> endTxFut = endTxAsync(connCtx, txId, committed);
-
-        if (qry.getTimeout() != -1)
-            endTxFut.get(qry.getTimeout());
-        else
-            endTxFut.get();
-    }
-
-    /** */
-    private List<FieldsQueryCursor<List<?>>> invokeOutsideTransaction(SqlFieldsQueryEx qry, GridQueryCancel cancel) {
+    private List<FieldsQueryCursor<List<?>>> querySqlFields(SqlFieldsQueryEx qry, GridQueryCancel cancel) {
         return connCtx.kernalContext().query().querySqlFields(null, qry,
             cliCtx, true, protocolVer.compareTo(VER_2_3_0) < 0, cancel);
     }
