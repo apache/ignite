@@ -796,14 +796,10 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
     private GridCloseableIterator scanIterator(final GridCacheQueryAdapter<?> qry, IgniteClosure transformer,
         boolean locNode)
         throws IgniteCheckedException {
-        final IgniteBiPredicate<K, V> keyValFilter = qry.scanFilter();
-        final InternalScanFilter<K, V> intFilter = keyValFilter != null ? new InternalScanFilter<>(keyValFilter) : null;
+        final InternalScanFilter<K, V> intFilter = queryFilter(qry);
 
         try {
-            if (keyValFilter instanceof PlatformCacheEntryFilter)
-                ((PlatformCacheEntryFilter)keyValFilter).cacheContext(cctx);
-            else
-                injectResources(keyValFilter);
+            initFilter(intFilter);
 
             Integer part = qry.partition();
 
@@ -872,7 +868,7 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
             }
 
             ScanQueryIterator iter = new ScanQueryIterator(it, qry, topVer, locPart,
-                SecurityUtils.sandboxedProxy(cctx.kernalContext(), IgniteBiPredicate.class, keyValFilter),
+                SecurityUtils.sandboxedProxy(cctx.kernalContext(), IgniteBiPredicate.class, intFilter.scanFilter()),
                 SecurityUtils.sandboxedProxy(cctx.kernalContext(), IgniteClosure.class, transformer),
                 locNode, locNode ? locIters : null, cctx, log);
 
@@ -3395,6 +3391,24 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
         public int pageSize() {
             return pageSize;
         }
+    }
+
+    /** */
+    @Nullable InternalScanFilter<K, V> queryFilter(final GridCacheQueryAdapter<?> qry) {
+        return qry.scanFilter() == null ? null : new InternalScanFilter<>(qry.scanFilter());
+    }
+
+    /** */
+    public void initFilter(@Nullable InternalScanFilter<K, V> filter) throws IgniteCheckedException {
+        if (filter == null)
+            return;
+
+        IgniteBiPredicate<K, V> keyValFilter = filter.scanFilter();
+
+        if (keyValFilter instanceof PlatformCacheEntryFilter)
+            ((PlatformCacheEntryFilter)keyValFilter).cacheContext(cctx);
+        else
+            injectResources(keyValFilter);
     }
 
     /**

@@ -497,25 +497,54 @@ public class IgniteCacheProxyImpl<K, V> extends AsyncSupportAdapter<IgniteCache<
         if (grp != null)
             qry.projection(grp);
 
-        final GridCloseableIterator<R> iter = ctx.kernalContext().query().executeQuery(GridCacheQueryType.SCAN,
+        GridCloseableIterator<R> res = ctx.kernalContext().query().executeQuery(GridCacheQueryType.SCAN,
             cacheName, ctx, new IgniteOutClosureX<GridCloseableIterator<R>>() {
                 @Override public GridCloseableIterator<R> applyx() throws IgniteCheckedException {
                     return qry.executeScanQuery();
                 }
             }, true);
 
-        if (!F.isEmpty(txChanges.get2())) {
-            GridIterator<Cache.Entry<K, V>> txIter = F.iterator(
-                txChanges.get2(),
-                txEntry -> new CacheEntryImpl<>((K)txEntry.key(), (V)txEntry.value(), txEntry.explicitVersion()),
-                true
-            );
+        return new QueryCursorImpl<>(F.isEmpty(txChanges.get2())
+            ? res
+            : iteratorWithTxData(scanQry.getFilter(), transformer, res, txChanges)
+        );
+    }
 
-            // TODO: fixme
-            iter = F.concat(iter, txIter);
-        }
+    /** */
+    private <R> @NotNull GridCloseableIterator<R> iteratorWithTxData(
+        @Nullable IgniteBiPredicate<K, V> filter,
+        @Nullable IgniteClosure<Entry<K, V>, R> transformer,
+        final GridCloseableIterator<R> iter,
+        IgniteBiTuple<Set<KeyCacheObject>, List<IgniteTxEntry>> txChanges
+    ) {
+        final GridIterator<Entry<K, V>> entryIter =
+            F.iterator(txChanges.get2(), e -> new CacheEntryImpl<>((K)e.key(), (V)e.value(), e.explicitVersion()), true);
 
-        return new QueryCursorImpl<>(iter);
+        final GridIterator<R> txIter = F.iterator(
+            (Iterable<Entry<K, V>>)entryIter,
+            e -> (R)(transformer == null ? e : transformer.apply(e)),
+            true,
+            e -> filter == null || filter.apply(e.getKey(), e.getValue())
+        );
+
+        return new GridCloseableIteratorAdapter<>() {
+            /** {@inheritDoc} */
+            @Override protected R onNext() {
+                return iter.hasNext() ? iter.next() : txIter.next();
+            }
+
+            /** {@inheritDoc} */
+            @Override protected boolean onHasNext() {
+                return iter.hasNext() || txIter.hasNext();
+            }
+
+            /** {@inheritDoc} */
+            @Override protected void onClose() throws IgniteCheckedException {
+                iter.close();
+
+                super.onClose();
+            }
+        };
     }
 
     /**
