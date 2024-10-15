@@ -575,7 +575,7 @@ public class SnapshotChecker {
 
     /** */
     public IdleVerifyResultV2 reduceIncrementalResults(
-        Map<ClusterNode, IncrementalSnapshotCheckResult> results,
+        Map<ClusterNode, List<IncrementalSnapshotCheckResult>> results,
         Map<ClusterNode, Exception> operationErrors
     ) {
         if (!operationErrors.isEmpty())
@@ -587,7 +587,7 @@ public class SnapshotChecker {
         Map<ClusterNode, Collection<GridCacheVersion>> partiallyCommittedTxs = new HashMap<>();
         Map<ClusterNode, Exception> errors = new HashMap<>();
 
-        results.forEach((node, res) -> {
+        results.forEach((node, resLst) -> resLst.forEach(res -> {
             if (res.exceptions().isEmpty() && errors.isEmpty()) {
                 if (!F.isEmpty(res.partiallyCommittedTxs()))
                     partiallyCommittedTxs.put(node, res.partiallyCommittedTxs());
@@ -620,7 +620,7 @@ public class SnapshotChecker {
             }
             else if (!res.exceptions().isEmpty())
                 errors.put(node, F.first(res.exceptions()));
-        });
+        }));
 
         // Add all missed pairs to conflicts.
         nodeTxHashMap.values().stream()

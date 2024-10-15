@@ -576,9 +576,8 @@ public class IgniteClusterSnapshotCheckTest extends AbstractSnapshotSelfTest {
         IgniteEx client = startGridsWithSnapshot(srvCnt, CACHE_KEYS_RANGE, true, true);
 
         for (int i = 1; i <= srvCnt; ++i) {
-            int i0 = i;
-
             chkRes = snp(client).checkSnapshot(SNAPSHOT_NAME, null).get(getTestTimeout()).idleVerifyResult();
+
             assertTrue(chkRes.exceptions().isEmpty());
             assertFalse(chkRes.hasConflicts());
 
@@ -586,23 +585,15 @@ public class IgniteClusterSnapshotCheckTest extends AbstractSnapshotSelfTest {
                 break;
 
             stopGrid(i);
-            assertTrue(waitForCondition(() -> client.cluster().forServers().nodes().size() == srvCnt - i0, getTestTimeout()));
         }
 
         for (int i = 1; i < srvCnt; ++i)
             startGrid(i);
 
-        assertTrue(waitForCondition(() -> client.cluster().forServers().nodes().size() == srvCnt, getTestTimeout()));
-
         // Now ensure that a bad partition is detected.
         corruptPartitionFile(grid(1), SNAPSHOT_NAME, dfltCacheCfg, 3);
 
-        stopGrid(1);
-        assertTrue(waitForCondition(() -> client.cluster().forServers().nodes().size() == 2, getTestTimeout()));
-
-        for (int i = 2; i <= srvCnt; ++i) {
-            int i0 = i;
-
+        for (int i = 1; i <= srvCnt; ++i) {
             chkRes = snp(client).checkSnapshot(SNAPSHOT_NAME, null).get(getTestTimeout()).idleVerifyResult();
 
             assertFalse(chkRes.exceptions().isEmpty());
@@ -612,7 +603,6 @@ public class IgniteClusterSnapshotCheckTest extends AbstractSnapshotSelfTest {
                 break;
 
             stopGrid(i);
-            assertTrue(waitForCondition(() -> client.cluster().forServers().nodes().size() == srvCnt - i0, getTestTimeout()));
         }
     }
 

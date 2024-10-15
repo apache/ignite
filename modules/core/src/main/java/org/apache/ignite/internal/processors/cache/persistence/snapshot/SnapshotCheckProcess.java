@@ -31,7 +31,6 @@ import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicInteger;
-import java.util.function.Function;
 import java.util.stream.Collectors;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
@@ -72,10 +71,10 @@ public class SnapshotCheckProcess {
     private final Map<UUID, GridFutureAdapter<SnapshotPartitionsVerifyResult>> clusterOpFuts = new ConcurrentHashMap<>();
 
     /** Check metas first phase subprocess. */
-    private final DistributedProcess<SnapshotCheckProcessRequest, SnapshotCheckResponse> phase1CheckMetas;
+    private final DistributedProcess<SnapshotCheckProcessRequest, SnapshotCheckMetasResponse> phase1CheckMetas;
 
     /** Partition hashes second phase subprocess.  */
-    private final DistributedProcess<SnapshotCheckProcessRequest, SnapshotCheckResponse> phase2PartsHashes;
+    private final DistributedProcess<SnapshotCheckProcessRequest, AbstractSnapshotCheckResponse> phase2PartsHashes;
 
     /** Stop node lock. */
     private boolean nodeStopping;
@@ -132,7 +131,7 @@ public class SnapshotCheckProcess {
     /** Phase 2 and process finish. */
     private IgniteInternalFuture<?> reduceValidatePartsAndFinish(
         UUID reqId,
-        Map<UUID, SnapshotCheckResponse> results,
+        Map<UUID, AbstractSnapshotCheckResponse> results,
         Map<UUID, Throwable> errors
     ) {
         SnapshotCheckContext ctx = context(null, reqId);
@@ -150,90 +149,133 @@ public class SnapshotCheckProcess {
         if (clusterOpFut == null)
             return new GridFinishedFuture<>();
 
-        assert results.values().stream().noneMatch(res -> res != null && res.metas != null);
-
-        SnapshotChecker checker = kctx.cache().context().snapshotMgr().checker();
-
-        if (ctx.req.incrementalIndex() > 0) {
-            IdleVerifyResultV2 chkRes = checker.reduceIncrementalResults(
-                mapResults(results, ctx.req.nodes(), SnapshotCheckResponse::incrementalResult),
-                mapErrors(errors)
-            );
-
-            clusterOpFut.onDone(new SnapshotPartitionsVerifyResult(ctx.clusterMetas, chkRes));
-        }
-        else if (ctx.req.allRestoreHandlers()) {
-            try {
-                if (!errors.isEmpty())
-                    throw F.firstValue(errors);
-
-                // Check responses: node -> consistentId -> handler name -> handler result.
-                Map<ClusterNode, Map<Object, Map<String, SnapshotHandlerResult<?>>>> cstRes = new HashMap<>();
-
-                for (Map.Entry<UUID, SnapshotCheckResponse> respE : results.entrySet()) {
-                    SnapshotCheckResponse resp = respE.getValue();
-
-                    if (resp == null)
-                        break;
-
-                    if (!F.isEmpty(resp.exceptions()))
-                        throw F.firstValue(resp.exceptions());
-
-                    resp.customHandlersResults().forEach((consId, hndResMap) -> {
-                        Map<Object, Map<String, SnapshotHandlerResult<?>>> nodePerConsIdRes
-                            = cstRes.computeIfAbsent(kctx.cluster().get().localNode(), n -> new HashMap<>());
-
-                        hndResMap.forEach((hndId, hndRes) ->
-                            nodePerConsIdRes.computeIfAbsent(consId, cstId -> new HashMap<>()).put(hndId, hndRes));
-                    });
-                }
-
-                checker.checkCustomHandlersResults(ctx.req.snapshotName(), cstRes);
-
-                clusterOpFut.onDone(new SnapshotPartitionsVerifyResult(ctx.clusterMetas, null));
-            }
-            catch (Throwable err) {
-                clusterOpFut.onDone(err);
-            }
-        }
-        else {
-            Map<ClusterNode, Exception> errors0 = mapErrors(errors);
-
-            if (!results.isEmpty()) {
-                Map<ClusterNode, Map<PartitionKeyV2, List<PartitionHashRecordV2>>> results0 = new HashMap<>();
-
-                for (Map.Entry<UUID, SnapshotCheckResponse> respE : results.entrySet()) {
-                    UUID nodeId = respE.getKey();
-                    SnapshotCheckResponse resp = respE.getValue();
-
-                    if (resp == null)
-                        break;
-
-                    if (!F.isEmpty(resp.exceptions()))
-                        errors0.putIfAbsent(kctx.cluster().get().node(nodeId), asException(F.firstValue(resp.exceptions())));
-
-                    resp.partsHashes().forEach((consId, partsRes) -> {
-                        Map<PartitionKeyV2, List<PartitionHashRecordV2>> partsHashes
-                            = results0.computeIfAbsent(kctx.cluster().get().localNode(), map -> new HashMap<>());
-
-                        partsRes.forEach((partKey, partHash) -> partsHashes.computeIfAbsent(partKey, k -> new ArrayList<>())
-                            .add(partHash));
-                    });
-                }
-
-                IdleVerifyResultV2 chkRes = SnapshotChecker.reduceHashesResults(results0, errors0);
-
-                clusterOpFut.onDone(new SnapshotPartitionsVerifyResult(ctx.clusterMetas, chkRes));
-            }
-            else
-                clusterOpFut.onDone(new IgniteSnapshotVerifyException(errors0));
-        }
+        if (ctx.req.incrementalIndex() > 0)
+            reduceIncrementalCheckResults(ctx.req.nodes(), ctx.clusterMetas, results, errors, clusterOpFut);
+        else if (ctx.req.allRestoreHandlers())
+            reduceCustomHandlersResults(ctx, results, errors, clusterOpFut);
+        else
+            reducePartitionsHashesResults(ctx.clusterMetas, results, errors, clusterOpFut);
 
         return new GridFinishedFuture<>();
     }
 
+    /** */
+    private void reduceIncrementalCheckResults(
+        Set<UUID> requiredNodes,
+        Map<ClusterNode, List<SnapshotMetadata>> clusterMetas,
+        Map<UUID, AbstractSnapshotCheckResponse> results,
+        Map<UUID, Throwable> errors,
+        GridFutureAdapter<SnapshotPartitionsVerifyResult> fut
+    ) {
+        SnapshotChecker checker = kctx.cache().context().snapshotMgr().checker();
+
+        Map<ClusterNode, List<IncrementalSnapshotCheckResult>> reduced = new HashMap<>();
+
+        for (Map.Entry<UUID, AbstractSnapshotCheckResponse> resE : results.entrySet()) {
+            UUID nodeId = resE.getKey();
+            SnapshotCheckIncrementalResponse incResp = (SnapshotCheckIncrementalResponse)resE.getValue();
+
+            if (requiredNodes.contains(nodeId) || incResp == null)
+                break;
+
+            ClusterNode node = kctx.cluster().get().node(nodeId);
+
+            incResp.incremenlatSnapshotResults().forEach((consId, incResPerConsId) ->
+                reduced.computeIfAbsent(node, nid -> new ArrayList<>()).add(incResPerConsId));
+
+            if (F.isEmpty(incResp.exceptions()))
+                break;
+
+            errors.putIfAbsent(nodeId, asException(F.firstValue(incResp.exceptions())));
+        }
+
+        IdleVerifyResultV2 chkRes = checker.reduceIncrementalResults(reduced, mapErrors(errors));
+
+        fut.onDone(new SnapshotPartitionsVerifyResult(clusterMetas, chkRes));
+    }
+
+    /** */
+    private void reduceCustomHandlersResults(
+        SnapshotCheckContext ctx,
+        Map<UUID, AbstractSnapshotCheckResponse> results,
+        Map<UUID, Throwable> errors,
+        GridFutureAdapter<SnapshotPartitionsVerifyResult> fut
+    ) {
+        try {
+            if (!errors.isEmpty())
+                throw F.firstValue(errors);
+
+            // Check responses: node -> consistentId -> handler name -> handler result.
+            Map<ClusterNode, Map<Object, Map<String, SnapshotHandlerResult<?>>>> cstRes = new HashMap<>();
+
+            for (Map.Entry<UUID, AbstractSnapshotCheckResponse> respE : results.entrySet()) {
+                SnapshotCheckCustomHandlersResponse resp = (SnapshotCheckCustomHandlersResponse)respE.getValue();
+
+                if (resp == null)
+                    break;
+
+                if (!F.isEmpty(resp.exceptions()))
+                    throw F.firstValue(resp.exceptions());
+
+                resp.customHandlersResults().forEach((consId, hndResMap) -> {
+                    Map<Object, Map<String, SnapshotHandlerResult<?>>> nodePerConsIdRes
+                        = cstRes.computeIfAbsent(kctx.cluster().get().localNode(), n -> new HashMap<>());
+
+                    hndResMap.forEach((hndId, hndRes) ->
+                        nodePerConsIdRes.computeIfAbsent(consId, cstId -> new HashMap<>()).put(hndId, hndRes));
+                });
+            }
+
+            kctx.cache().context().snapshotMgr().checker().checkCustomHandlersResults(ctx.req.snapshotName(), cstRes);
+
+            fut.onDone(new SnapshotPartitionsVerifyResult(ctx.clusterMetas, null));
+        }
+        catch (Throwable err) {
+            fut.onDone(err);
+        }
+    }
+
+    /** */
+    private void reducePartitionsHashesResults(
+        Map<ClusterNode, List<SnapshotMetadata>> clusterMetas,
+        Map<UUID, AbstractSnapshotCheckResponse> results,
+        Map<UUID, Throwable> errors,
+        GridFutureAdapter<SnapshotPartitionsVerifyResult> fut
+    ) {
+        Map<ClusterNode, Exception> errors0 = mapErrors(errors);
+
+        if (!results.isEmpty()) {
+            Map<ClusterNode, Map<PartitionKeyV2, List<PartitionHashRecordV2>>> results0 = new HashMap<>();
+
+            for (Map.Entry<UUID, AbstractSnapshotCheckResponse> respE : results.entrySet()) {
+                UUID nodeId = respE.getKey();
+                SnapshotCheckPartitionsHashesResponse resp = (SnapshotCheckPartitionsHashesResponse)respE.getValue();
+
+                if (resp == null)
+                    break;
+
+                if (!F.isEmpty(resp.exceptions()))
+                    errors0.putIfAbsent(kctx.cluster().get().node(nodeId), asException(F.firstValue(resp.exceptions())));
+
+                resp.partitionsHashes().forEach((consId, partsRes) -> {
+                    Map<PartitionKeyV2, List<PartitionHashRecordV2>> partsHashes
+                        = results0.computeIfAbsent(kctx.cluster().get().localNode(), map -> new HashMap<>());
+
+                    partsRes.forEach((partKey, partHash) -> partsHashes.computeIfAbsent(partKey, k -> new ArrayList<>())
+                        .add(partHash));
+                });
+            }
+
+            IdleVerifyResultV2 chkRes = SnapshotChecker.reduceHashesResults(results0, errors0);
+
+            fut.onDone(new SnapshotPartitionsVerifyResult(clusterMetas, chkRes));
+        }
+        else
+            fut.onDone(new IgniteSnapshotVerifyException(errors0));
+    }
+
     /** Phase 2 beginning.  */
-    private IgniteInternalFuture<SnapshotCheckResponse> validateParts(SnapshotCheckProcessRequest req) {
+    private IgniteInternalFuture<AbstractSnapshotCheckResponse> validateParts(SnapshotCheckProcessRequest req) {
         if (!req.nodes().contains(kctx.localNodeId()))
             return new GridFinishedFuture<>();
 
@@ -241,88 +283,129 @@ public class SnapshotCheckProcess {
 
         assert ctx != null;
 
-        if (F.isEmpty(ctx.metasToProc))
+        if (F.isEmpty(ctx.metas))
             return new GridFinishedFuture<>();
 
-        IgniteSnapshotManager snpMgr = kctx.cache().context().snapshotMgr();
-
-        GridFutureAdapter<SnapshotCheckResponse> phaseFut = ctx.phaseFuture();
+        GridFutureAdapter<AbstractSnapshotCheckResponse> phaseFut = ctx.phaseFuture();
 
         // Might be already finished by asynchronous leave of a required node.
         if (!phaseFut.isDone()) {
-            CompletableFuture workingFut;
+            CompletableFuture<? extends AbstractSnapshotCheckResponse> workingFut;
 
             if (req.incrementalIndex() > 0) {
                 assert !req.allRestoreHandlers() : "Snapshot handlers aren't supported for incremental snapshot.";
 
-                workingFut = snpMgr.checker().checkIncrementalSnapshot(req.snapshotName(), req.snapshotPath(), req.incrementalIndex());
+                workingFut = incrementalFuture(ctx);
             }
+            else if (req.allRestoreHandlers())
+                workingFut = allHandlersFuture(ctx);
             else
-                workingFut = validatePartitionsFuture(ctx);
+                workingFut = partitionsHashesFuture(ctx);
 
             workingFut.whenComplete((res, err) -> {
                 if (err != null)
-                    phaseFut.onDone((Throwable)err);
-                else {
-                    if (req.incrementalIndex() > 0)
-                        phaseFut.onDone(new SnapshotCheckResponse((IncrementalSnapshotCheckResult)res));
-                    else
-                        phaseFut.onDone(new SnapshotCheckResponse((Map)res, req.incrementalIndex() > 0));
-                }
+                    phaseFut.onDone(err);
+                else
+                    phaseFut.onDone(res);
             });
         }
 
         return phaseFut;
     }
 
-    /** @return Composed partitions validating future regarding {@link SnapshotCheckContext#metasToProc}. */
-    private CompletableFuture<Map<String, Object>> validatePartitionsFuture(SnapshotCheckContext ctx) {
-        if (F.isEmpty(ctx.metasToProc))
-            return CompletableFuture.completedFuture(null);
+    /** @return A composed future of increment checks for each meta/consistent id regarding {@link SnapshotCheckContext#metas}. */
+    private CompletableFuture<SnapshotCheckIncrementalResponse> incrementalFuture(SnapshotCheckContext ctx) {
+        assert !F.isEmpty(ctx.metas);
 
-        // Per metas result: consistent id -> check result or an exception.
-        Map<String, Object> perMetaResults = new ConcurrentHashMap<>(ctx.metasToProc.size(), 1.0f);
+        // Per metas result: consistent id -> check result.
+        Map<String, IncrementalSnapshotCheckResult> perMetaResults = new ConcurrentHashMap<>(ctx.metas.size(), 1.0f);
+        // Exceptions: consistent id -> exceptions.
+        Map<String, Throwable> exceptions = new ConcurrentHashMap<>(ctx.metas.size(), 1.0f);
+        AtomicInteger metasProcessed = new AtomicInteger(ctx.metas.size());
+        CompletableFuture<SnapshotCheckIncrementalResponse> composedFut = new CompletableFuture<>();
 
-        CompletableFuture<Map<String, Object>> composedFut = new CompletableFuture<>();
-        AtomicInteger metasProcessed = new AtomicInteger(ctx.metasToProc.size());
+        for (SnapshotMetadata meta : ctx.metas) {
+            CompletableFuture<IncrementalSnapshotCheckResult> workingFut = kctx.cache().context().snapshotMgr().checker()
+                .checkIncrementalSnapshot(ctx.req.snapshotName(),
+                    ctx.req.snapshotPath(), ctx.req.incrementalIndex());
+
+            workingFut.whenComplete((res, err) -> {
+                if (err != null)
+                    exceptions.put(meta.consistentId(), err);
+                else
+                    perMetaResults.put(meta.consistentId(), res);
+
+                if (metasProcessed.decrementAndGet() == 0)
+                    composedFut.complete( new SnapshotCheckIncrementalResponse(perMetaResults, exceptions));
+            });
+        }
+
+        return composedFut;
+    }
+
+    /** @return A composed future of partitions checks for each meta/consistent id regarding {@link SnapshotCheckContext#metas}. */
+    private CompletableFuture<SnapshotCheckPartitionsHashesResponse> partitionsHashesFuture(SnapshotCheckContext ctx) {
+        assert !F.isEmpty(ctx.metas);
+
+        // Per metas result: consistent id -> check results per partition key.
+        Map<String, Map<PartitionKeyV2, PartitionHashRecordV2>> perMetaResults = new ConcurrentHashMap<>(ctx.metas.size(), 1.0f);
+        // Exceptions: consistent id -> exceptions.
+        Map<String, Throwable> exceptions = new ConcurrentHashMap<>(ctx.metas.size(), 1.0f);
+        CompletableFuture<SnapshotCheckPartitionsHashesResponse> composedFut = new CompletableFuture<>();
+        AtomicInteger metasProcessed = new AtomicInteger(ctx.metas.size());
 
         IgniteSnapshotManager snpMgr = kctx.cache().context().snapshotMgr();
-        SnapshotCheckProcessRequest req = ctx.req;
 
-        for (SnapshotMetadata locMeta : ctx.metasToProc) {
-            CompletableFuture<?> metaFut;
-
-            if (req.allRestoreHandlers())
-                metaFut = snpMgr.checker().invokeCustomHandlers(locMeta, req.snapshotPath(), req.groups(), true);
-            else {
-                metaFut = snpMgr.checker().checkPartitions(
-                    locMeta,
-                    snpMgr.snapshotLocalDir(req.snapshotName(), req.snapshotPath()),
-                    req.groups(),
-                    false,
-                    req.fullCheck(),
-                    false
-                );
-            }
+        for (SnapshotMetadata meta : ctx.metas) {
+            CompletableFuture<Map<PartitionKeyV2, PartitionHashRecordV2>> metaFut = snpMgr.checker().checkPartitions(
+                meta,
+                snpMgr.snapshotLocalDir(ctx.req.snapshotName(), ctx.req.snapshotPath()),
+                ctx.req.groups(),
+                false,
+                ctx.req.fullCheck(),
+                false
+            );
 
             metaFut.whenComplete((res, err) -> {
                 if (err != null)
-                    perMetaResults.put(locMeta.consistentId(), err);
-                else if (req.allRestoreHandlers()) {
-                    Map<String, SnapshotHandlerResult<Object>> hndRes = (Map<String, SnapshotHandlerResult<Object>>)res;
-
-                    if (!F.isEmpty(hndRes))
-                        perMetaResults.put(F.first(hndRes.values()).node().consistentId().toString(), hndRes);
-                }
-                else {
-                    Map<PartitionKeyV2, PartitionHashRecordV2> partRes = (Map<PartitionKeyV2, PartitionHashRecordV2>)res;
-
-                    if (!F.isEmpty(partRes))
-                        perMetaResults.putIfAbsent(F.first(partRes.values()).consistentId().toString(), partRes);
-                }
+                    exceptions.put(meta.consistentId(), err);
+                else if (!F.isEmpty(res))
+                    perMetaResults.put(meta.consistentId(), res);
 
                 if (metasProcessed.decrementAndGet() == 0)
-                    composedFut.complete(perMetaResults);
+                    composedFut.complete(new SnapshotCheckPartitionsHashesResponse(perMetaResults, exceptions));
+            });
+        }
+
+        return composedFut;
+    }
+
+    /**
+     * @return A composed future of all the snapshot handlers for each meta/consistent id regarding {@link SnapshotCheckContext#metas}.
+     * @see IgniteSnapshotManager#handlers()
+     */
+    private CompletableFuture<SnapshotCheckCustomHandlersResponse> allHandlersFuture(SnapshotCheckContext ctx) {
+        assert !F.isEmpty(ctx.metas);
+
+        // Per metas result: consistent id -> check result per handler id.
+        Map<String, Map<String, SnapshotHandlerResult<Object>>> perMetaResults = new ConcurrentHashMap<>(ctx.metas.size(), 1.0f);
+        // Exceptions: consistent id -> exceptions.
+        Map<String, Throwable> exceptions = new ConcurrentHashMap<>(ctx.metas.size(), 1.0f);
+        CompletableFuture<SnapshotCheckCustomHandlersResponse> composedFut = new CompletableFuture<>();
+        AtomicInteger metasProcessed = new AtomicInteger(ctx.metas.size());
+
+        for (SnapshotMetadata meta : ctx.metas) {
+            CompletableFuture<Map<String, SnapshotHandlerResult<Object>>> metaFut = kctx.cache().context().snapshotMgr().checker()
+                .invokeCustomHandlers(meta, ctx.req.snapshotPath(), ctx.req.groups(), true);
+
+            metaFut.whenComplete((res, err) -> {
+                if (err != null)
+                    exceptions.put(meta.consistentId(), err);
+                else if (!F.isEmpty(res))
+                    perMetaResults.put(meta.consistentId(), res);
+
+                if (metasProcessed.decrementAndGet() == 0)
+                    composedFut.complete(new SnapshotCheckCustomHandlersResponse(perMetaResults, exceptions));
             });
         }
 
@@ -340,17 +423,6 @@ public class SnapshotCheckProcess {
         return th instanceof Exception ? (Exception)th : new IgniteException(th);
     }
 
-    /** */
-    private <T> Map<ClusterNode, T> mapResults(
-        Map<UUID, SnapshotCheckResponse> results,
-        Set<UUID> requiredNodes,
-        Function<SnapshotCheckResponse, T> resExtractor
-    ) {
-        return results.entrySet().stream()
-            .filter(e -> requiredNodes.contains(e.getKey()) && e.getValue() != null)
-            .collect(Collectors.toMap(e -> kctx.cluster().get().node(e.getKey()), e -> resExtractor.apply(e.getValue())));
-    }
-
     /**
      * @param snpName Snapshot name. If {@code null}, ignored.
      * @param reqId If {@code ctxId} is {@code null}, is used to find the operation context.
@@ -363,7 +435,7 @@ public class SnapshotCheckProcess {
     }
 
     /** Phase 1 beginning: prepare, collect and check local metas. */
-    private IgniteInternalFuture<SnapshotCheckResponse> prepareAndCheckMetas(SnapshotCheckProcessRequest req) {
+    private IgniteInternalFuture<SnapshotCheckMetasResponse> prepareAndCheckMetas(SnapshotCheckProcessRequest req) {
         if (!req.nodes().contains(kctx.localNodeId()))
             return new GridFinishedFuture<>();
 
@@ -390,7 +462,7 @@ public class SnapshotCheckProcess {
 
         Collection<Integer> grpIds = F.isEmpty(req.groups()) ? null : F.viewReadOnly(req.groups(), CU::cacheId);
 
-        GridFutureAdapter<SnapshotCheckResponse> phaseFut = ctx.phaseFuture();
+        GridFutureAdapter<SnapshotCheckMetasResponse> phaseFut = ctx.phaseFuture();
 
         // Might be already finished by asynchronous leave of a required node.
         if (!phaseFut.isDone()) {
@@ -403,7 +475,7 @@ public class SnapshotCheckProcess {
                 if (err != null)
                     phaseFut.onDone(err);
                 else
-                    phaseFut.onDone(new SnapshotCheckResponse(locMetas));
+                    phaseFut.onDone(new SnapshotCheckMetasResponse(locMetas));
             });
         }
 
@@ -413,7 +485,7 @@ public class SnapshotCheckProcess {
     /** Phase 1 end. */
     private void reducePreparationAndMetasCheck(
         UUID reqId,
-        Map<UUID, SnapshotCheckResponse> results,
+        Map<UUID, SnapshotCheckMetasResponse> results,
         Map<UUID, Throwable> errors
     ) {
         SnapshotCheckContext ctx = context(null, reqId);
@@ -439,10 +511,10 @@ public class SnapshotCheckProcess {
             results.forEach((nodeId, nodeRes) -> {
                 // A node might be not required. It gives null result. But a required node might have invalid empty result
                 // which must be validated.
-                if (ctx.req.nodes().contains(nodeId) && baseline(nodeId) && !F.isEmpty(nodeRes.metas)) {
-                    assert nodeRes != null && nodeRes.partsResults == null;
+                if (ctx.req.nodes().contains(nodeId) && baseline(nodeId) && !F.isEmpty(nodeRes.metas())) {
+                    assert nodeRes != null;
 
-                    metas.put(kctx.cluster().get().node(nodeId), nodeRes.metas);
+                    metas.put(kctx.cluster().get().node(nodeId), nodeRes.metas());
                 }
             });
 
@@ -453,7 +525,7 @@ public class SnapshotCheckProcess {
                 throw new IgniteSnapshotVerifyException(metasCheck);
 
             // If the topology is lesser that the snapshot's, we have to check partitions not only of current node.
-            ctx.metasToProc = assingMetasToWork(metas);
+            ctx.metas = assingMetasToWork(metas);
 
             if (clusterOpFut != null)
                 ctx.clusterMetas = metas;
@@ -570,13 +642,13 @@ public class SnapshotCheckProcess {
         private final SnapshotCheckProcessRequest req;
 
         /** Current process' future. Listens error, stop requests, etc. */
-        private final GridFutureAdapter<SnapshotCheckResponse> locProcFut = new GridFutureAdapter<>();
+        private final GridFutureAdapter<AbstractSnapshotCheckResponse> locProcFut = new GridFutureAdapter<>();
 
         /**
-         * Metadatas to process on this node. Also indicates the snapshot part to validate on this node.
-         * @see #validatePartitionsFuture(SnapshotCheckContext)
+         * Metadatas to process on this node. Also indicates the snapshot parts to check on this node.
+         * @see #partitionsHashesFuture(SnapshotCheckContext)
          */
-        @Nullable private List<SnapshotMetadata> metasToProc;
+        @Nullable private List<SnapshotMetadata> metas;
 
         /** All the snapshot metadatas. */
         @Nullable private Map<ClusterNode, List<SnapshotMetadata>> clusterMetas;
@@ -596,119 +668,112 @@ public class SnapshotCheckProcess {
         }
     }
 
-    /** A DTO used to transfer nodes' results for the both phases. */
-    private static final class SnapshotCheckResponse implements Serializable {
+    /** A DTO base to transfer nodes' results for the both phases. */
+    private abstract static class AbstractSnapshotCheckResponse implements Serializable {
+        /** The result. */
+        protected Object result;
+
+        /** Exceptions per consistent id. */
+        @Nullable private Map<String, Throwable> exceptions;
+
+        /** */
+        private AbstractSnapshotCheckResponse(Object result, @Nullable Map<String, Throwable> exceptions) {
+            assert result instanceof Serializable : "Snapshot check result is not serializable.";
+            assert exceptions == null || exceptions instanceof Serializable : "Snapshot check exceptions aren't serializable.";
+
+            this.result = result;
+            this.exceptions = exceptions == null ? null : Collections.unmodifiableMap(exceptions);
+        }
+
+        /** @return Exceptions per consistent id. */
+        protected @Nullable Map<String, Throwable> exceptions() {
+            return exceptions;
+        }
+    }
+
+    /** A DTO to transfer metas result for phase 1. */
+    private static final class SnapshotCheckMetasResponse extends AbstractSnapshotCheckResponse {
         /** Serial version uid. */
         private static final long serialVersionUID = 0L;
 
-        /** @see #metas() */
-        @Nullable private final List<SnapshotMetadata> metas;
+        /** */
+        private SnapshotCheckMetasResponse(List<SnapshotMetadata> result) {
+            super(result, null);
+        }
+
+        /** @return All the snapshot metadatatas found on this node. */
+        private List<SnapshotMetadata> metas() {
+            return (List<SnapshotMetadata>)result;
+        }
+    }
+
+    /** A DTO used to transfer partition hashes result for phase 2. */
+    private static final class SnapshotCheckPartitionsHashesResponse extends AbstractSnapshotCheckResponse {
+        /** Serial version uid. */
+        private static final long serialVersionUID = 0L;
 
         /**
-         * @see #partsHashes()
-         * @see #customHandlersResults()
-         * @see #exceptions()
+         * @param result Partitions results per consistent id.
+         * @param exceptions Exceptions per consistent id.
          */
-        @Nullable private final Map<String, ? extends Map<?, ?>> partsResults;
-
-        /** @see #exceptions() */
-        @Nullable private final Map<String, Throwable> exceptions;
-
-        /** @see #incrementalResult() */
-        @Nullable private final IncrementalSnapshotCheckResult incRes;
-
-        /** Ctor for the phase 1. */
-        private SnapshotCheckResponse(@Nullable List<SnapshotMetadata> metas) {
-            this.metas = metas;
-            this.partsResults = null;
-            this.incRes = null;
-            this.exceptions = null;
+        private SnapshotCheckPartitionsHashesResponse(
+            Map<String, Map<PartitionKeyV2, PartitionHashRecordV2>> result,
+            Map<String, Throwable> exceptions
+        ) {
+            super(result, exceptions);
         }
+
+        /** @return Partitions hashes per consistent id. */
+        private Map<String, Map<PartitionKeyV2, PartitionHashRecordV2>> partitionsHashes() {
+            return (Map<String, Map<PartitionKeyV2, PartitionHashRecordV2>>)result;
+        }
+    }
+
+    /**
+     * A DTO used to transfer all the handlers results for phase 2.
+     *
+     * @see IgniteSnapshotManager#handlers().
+     */
+    private static final class SnapshotCheckCustomHandlersResponse extends AbstractSnapshotCheckResponse {
+        /** Serial version uid. */
+        private static final long serialVersionUID = 0L;
 
         /**
-         * Ctor for the phase 2 for normal snapshot.
-         *
-         * @param resultsPerConsId Partitions check result by node's consistent id as string: consistend id -> map of
-         *                     partition checks results by a partition id or an exception for current consistent id.
-         * @param allHandlers All handlers result flag.
+         * @param result Handlers results per consistent id.
+         * @param exceptions Exceptions per consistent id.
          */
-        private SnapshotCheckResponse(Map<String, Object> resultsPerConsId, boolean allHandlers) {
-            this.metas = null;
-            this.incRes = null;
-
-            Map<String, Throwable> exceptions = new HashMap<>();
-
-            if (allHandlers) {
-                Map<String, Map<String, SnapshotHandlerResult<Object>>> allHndResults = new HashMap<>();
-
-                resultsPerConsId.forEach((consId, consIdRes) -> {
-                    assert consIdRes instanceof Throwable || consIdRes instanceof Map;
-
-                    if (consIdRes instanceof Throwable)
-                        exceptions.put(consId, (Throwable)consIdRes);
-                    else
-                        allHndResults.put(consId, (Map<String, SnapshotHandlerResult<Object>>)consIdRes);
-                });
-
-                this.partsResults = allHndResults;
-            }
-            else {
-                Map<String, Map<PartitionKeyV2, PartitionHashRecordV2>> partsHashesResults = new HashMap<>();
-
-                resultsPerConsId.forEach((consId, consIdRes) -> {
-                    assert consIdRes instanceof Throwable || consIdRes instanceof Map;
-
-                    if (consIdRes instanceof Throwable)
-                        exceptions.put(consId, (Throwable)consIdRes);
-                    else
-                        partsHashesResults.put(consId, (Map<PartitionKeyV2, PartitionHashRecordV2>)consIdRes);
-                });
-
-                this.partsResults = partsHashesResults;
-            }
-
-            this.exceptions = exceptions;
+        private SnapshotCheckCustomHandlersResponse(
+            Map<String, Map<String, SnapshotHandlerResult<Object>>> result,
+            Map<String, Throwable> exceptions
+        ) {
+            super(result, exceptions);
         }
 
-        /** Ctor for the phase 2 for incremental snapshot. */
-        private SnapshotCheckResponse(IncrementalSnapshotCheckResult incRes) {
-            this.metas = null;
-            this.partsResults = null;
-            this.exceptions = null;
-            this.incRes = incRes;
+        /** @return Handlers results per consistent id. */
+        private Map<String, Map<String, SnapshotHandlerResult<Object>>> customHandlersResults() {
+            return (Map<String, Map<String, SnapshotHandlerResult<Object>>>)result;
         }
+    }
 
-        /** Metas for the phase 1. Is always {@code null} for the phase 2. */
-        @Nullable private List<SnapshotMetadata> metas() {
-            return metas;
-        }
-
-        /** Exceptions found on phase 2 per consistent id. Is always {@code null} for the phase 1. */
-        @Nullable private Map<String, Throwable> exceptions() {
-            return exceptions;
-        }
+    /** A DTO used to transfer incremental snapshot check results for phase 2. */
+    private static final class SnapshotCheckIncrementalResponse extends AbstractSnapshotCheckResponse {
+        /** Serial version uid. */
+        private static final long serialVersionUID = 0L;
 
         /**
-         * Node's partition hashes per consistent id for the phase 2. Is always {@code null} for the phase 1 or in case of
-         * incremental snapshot.
+         * @param result Incremental snapshot check results per consistent id.
+         * @param exceptions Exceptions per consistent id.
          */
-        private @Nullable Map<String, Map<PartitionKeyV2, PartitionHashRecordV2>> partsHashes() {
-            return (Map<String, Map<PartitionKeyV2, PartitionHashRecordV2>>)partsResults;
+        private SnapshotCheckIncrementalResponse(
+            Map<String, IncrementalSnapshotCheckResult> result,
+            Map<String, Throwable> exceptions
+        ) {
+            super(result, exceptions);
         }
 
-        /**
-         * Results of the custom handlers per consistent id for the phase 2. Is always {@code null} for the phase 1 or in case of
-         * incremental snapshot.
-         *
-         * @see IgniteSnapshotManager#handlers()
-         */
-        private @Nullable Map<String, Map<String, SnapshotHandlerResult<Object>>> customHandlersResults() {
-            return (Map<String, Map<String, SnapshotHandlerResult<Object>>>)partsResults;
-        }
-
-        /** Incremental snapshot result for the phase 2. Is always {@code null} for the phase 1 or in case of normal snapshot. */
-        private @Nullable IncrementalSnapshotCheckResult incrementalResult() {
-            return incRes;
+        /** @return Incremental snapshot check results per consistent id. */
+        private Map<String, IncrementalSnapshotCheckResult> incremenlatSnapshotResults() {
+            return (Map<String, IncrementalSnapshotCheckResult>)result;
         }
     }
 }
