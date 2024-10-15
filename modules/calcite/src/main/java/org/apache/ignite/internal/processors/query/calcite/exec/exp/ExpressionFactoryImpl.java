@@ -584,6 +584,7 @@ public class ExpressionFactoryImpl<Row> implements ExpressionFactory<Row> {
             new RexShuttle() {
                 @Override public RexNode visitFieldAccess(RexFieldAccess fieldAccess) {
                     b.append(", fldIdx=").append(fieldAccess.getField().getIndex());
+                    b.append(", fldType=").append(fieldAccess.getField().getType().getFullTypeString());
 
                     return super.visitFieldAccess(fieldAccess);
                 }
@@ -592,12 +593,6 @@ public class ExpressionFactoryImpl<Row> implements ExpressionFactory<Row> {
                     b.append(", paramType=").append(dynamicParam.getType().getFullTypeString());
 
                     return super.visitDynamicParam(dynamicParam);
-                }
-
-                @Override public RexNode visitCorrelVariable(RexCorrelVariable variable) {
-                    b.append(", paramType=").append(variable.getType().getFullTypeString());
-
-                    return super.visitCorrelVariable(variable);
                 }
             }.apply(node);
         }
