@@ -18,11 +18,14 @@
 package org.apache.ignite.internal.processors.query.calcite.exec;
 
 import java.util.UUID;
+import org.apache.ignite.ClientContext;
+import org.apache.ignite.internal.ClientContextInternal;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.processors.query.calcite.util.AbstractService;
 import org.apache.ignite.internal.processors.security.SecurityContext;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.thread.IgniteStripedThreadPoolExecutor;
+import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.internal.processors.metric.impl.MetricUtils.metricName;
 import static org.apache.ignite.internal.processors.pool.PoolProcessor.THREAD_POOLS;
@@ -64,12 +67,14 @@ public class QueryTaskExecutorImpl extends AbstractService implements QueryTaskE
     }
 
     /** {@inheritDoc} */
-    @Override public void execute(UUID qryId, long fragmentId, Runnable qryTask) {
+    @Override public void execute(UUID qryId, long fragmentId, Runnable qryTask, @Nullable ClientContext clnCtx) {
         SecurityContext secCtx = ctx.security().securityContext();
 
         stripedThreadPoolExecutor.execute(
             () -> {
-                try (AutoCloseable ignored = ctx.security().withContext(secCtx)) {
+                try (AutoCloseable ignored = ctx.security().withContext(secCtx);
+                     AutoCloseable ignored0 = ClientContextInternal.withClientContext(clnCtx)
+                ) {
                     qryTask.run();
                 }
                 catch (Throwable e) {

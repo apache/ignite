@@ -261,6 +261,9 @@ public class JdbcThinConnection implements Connection {
     /** Marshaller context. */
     private final JdbcMarshallerContext marshCtx;
 
+    /** Client info. */
+    private @Nullable ClientInfoProperties clientInfo;
+
     /**
      * Creates new connection.
      *
@@ -304,7 +307,7 @@ public class JdbcThinConnection implements Connection {
         marsh.setContext(marshCtx);
 
         BinaryConfiguration binCfg = new BinaryConfiguration().setCompactFooter(true);
-        
+
         BinaryContext ctx = new BinaryContext(metaHnd, new IgniteConfiguration(), new NullLogger());
 
         ctx.configure(marsh, binCfg);
@@ -792,26 +795,36 @@ public class JdbcThinConnection implements Connection {
     @Override public void setClientInfo(String name, String val) throws SQLClientInfoException {
         if (closed)
             throw new SQLClientInfoException("Connection is closed.", null);
+
+        if (clientInfo == null)
+            clientInfo = new ClientInfoProperties();
+
+        clientInfo.setProperty(name, val);
     }
 
     /** {@inheritDoc} */
     @Override public void setClientInfo(Properties props) throws SQLClientInfoException {
         if (closed)
             throw new SQLClientInfoException("Connection is closed.", null);
+
+        clientInfo = new ClientInfoProperties();
+
+        clientInfo.setProperties(props);
     }
 
     /** {@inheritDoc} */
     @Override public String getClientInfo(String name) throws SQLException {
         ensureNotClosed();
 
-        return null;
+        return clientInfo.getProperty(name);
     }
 
     /** {@inheritDoc} */
     @Override public Properties getClientInfo() throws SQLException {
         ensureNotClosed();
 
-        return new Properties();
+        // TODO: new ClientInfoProperties?
+        return clientInfo;
     }
 
     /** {@inheritDoc} */
@@ -981,6 +994,8 @@ public class JdbcThinConnection implements Connection {
 
                     if (req instanceof JdbcQueryExecuteRequest)
                         qryReq = (JdbcQueryExecuteRequest)req;
+
+                    req.clientInfo(clientInfo);
 
                     JdbcResponse res = cliIo.sendRequest(req, stmt);
 

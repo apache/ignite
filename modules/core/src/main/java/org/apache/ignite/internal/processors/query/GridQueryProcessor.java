@@ -39,6 +39,7 @@ import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import javax.cache.Cache;
 import javax.cache.CacheException;
+import org.apache.ignite.ClientContext;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteDataStreamer;
 import org.apache.ignite.IgniteException;
@@ -2974,6 +2975,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
             keepBinary,
             failOnMultipleStmts,
             GridCacheQueryType.SQL_FIELDS,
+            null,
             null
         );
     }
@@ -2996,7 +2998,8 @@ public class GridQueryProcessor extends GridProcessorAdapter {
         final SqlClientContext cliCtx,
         final boolean keepBinary,
         final boolean failOnMultipleStmts,
-        @Nullable final GridQueryCancel cancel
+        @Nullable final GridQueryCancel cancel,
+        @Nullable final ClientContext clnCtx
     ) {
         return querySqlFields(
             cctx,
@@ -3005,7 +3008,8 @@ public class GridQueryProcessor extends GridProcessorAdapter {
             keepBinary,
             failOnMultipleStmts,
             GridCacheQueryType.SQL_FIELDS,
-            cancel
+            cancel,
+            clnCtx
         );
     }
 
@@ -3029,7 +3033,8 @@ public class GridQueryProcessor extends GridProcessorAdapter {
         final boolean keepBinary,
         final boolean failOnMultipleStmts,
         GridCacheQueryType qryType,
-        @Nullable final GridQueryCancel cancel
+        @Nullable final GridQueryCancel cancel,
+        @Nullable final ClientContext clnCtx
     ) {
         checkxModuleEnabled();
 
@@ -3060,7 +3065,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
 
                             if (qry instanceof SqlFieldsQueryEx && ((SqlFieldsQueryEx)qry).isBatched()) {
                                 res = qryEngine.queryBatched(
-                                    QueryContext.of(qry, cliCtx, cancel, qryProps),
+                                    QueryContext.of(qry, cliCtx, cancel, qryProps, clnCtx),
                                     schemaName,
                                     qry.getSql(),
                                     ((SqlFieldsQueryEx)qry).batchedArguments()
@@ -3068,7 +3073,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
                             }
                             else {
                                 res = qryEngine.query(
-                                    QueryContext.of(qry, cliCtx, cancel, qryProps),
+                                    QueryContext.of(qry, cliCtx, cancel, qryProps, clnCtx),
                                     schemaName,
                                     qry.getSql(),
                                     qry.getArgs() != null ? qry.getArgs() : X.EMPTY_OBJECT_ARRAY
@@ -3324,6 +3329,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
             keepBinary,
             true,
             GridCacheQueryType.SQL,
+            null,
             null
         ).get(0);
 
