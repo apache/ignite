@@ -55,26 +55,51 @@ import static org.apache.ignite.IgniteSystemProperties.IGNITE_THROTTLE_LOG_THRES
  * <p>
  * There are two additional methods for interfacing with other parts of the system:
  * <ul>
+ *     <li>{@link #checkpointBufferThrottledThreadsWakeupThreshold()} which is called to check if it's a time to wake up
+ *     throttled threads.</li>
  *     <li>{@link #wakeupThrottledThreads()} which wakes up the threads currently being throttled; in the current
- *     implementation, it is called  when Checkpoint Buffer utilization falls below 1/2.</li>
+ *     implementation, it is called  when Checkpoint Buffer utilization falls
+ *     below {@link #checkpointBufferThrottledThreadsWakeupThreshold()}.</li>
  *     <li>{@link #isCpBufferOverflowThresholdExceeded()} which is called by a checkpointer to see whether the Checkpoint Buffer is
  *     in a danger zone and, if yes, it starts to prioritize writing pages from the Checkpoint Buffer over
  *     pages from the normal checkpoint sequence.</li>
  * </ul>
  */
 public interface PagesWriteThrottlePolicy {
-    /** @see IgniteSystemProperties#IGNITE_THROTTLE_LOG_THRESHOLD */
+    /**
+     * @see IgniteSystemProperties#IGNITE_THROTTLE_LOG_THRESHOLD
+     */
     static int DFLT_THROTTLE_LOG_THRESHOLD = 10;
 
-    /** Max park time. */
+    /**
+     * Max park time.
+     */
     long LOGGING_THRESHOLD = TimeUnit.SECONDS.toNanos(
         IgniteSystemProperties.getInteger(IGNITE_THROTTLE_LOG_THRESHOLD, DFLT_THROTTLE_LOG_THRESHOLD));
 
-    /** Checkpoint buffer fullfill upper bound. */
-    float CP_BUF_FILL_THRESHOLD = 2f / 3;
+    /**
+     * Checkpoint buffer danger fulfill bound.
+     */
+    float CP_BUF_DANGER_THRESHOLD = 2f / 3;
+
+    /**
+     * Checkpoint buffer fulfill bound to start throttling (fill rate based implementation).
+     */
+    float CP_BUF_THROTTLING_THRESHOLD_FILL_RATE = 1f / 4;
+
+    /**
+     * Checkpoint buffer fulfill bound to wake up throttled threads (exponential backoff implemetation).
+     */
+    float CP_BUF_WAKEUP_THRESHOLD_EXP_BACKOFF = 1f / 2;
+
+    /**
+     * Checkpoint buffer fulfill bound to wake up throttled threads (fill rate based implemetation).
+     */
+    float CP_BUF_WAKEUP_THRESHOLD_FILL_RATE = 1f / 5;
 
     /**
      * Callback to apply throttling delay.
+     *
      * @param isPageInCheckpoint flag indicating if current page is in scope of current checkpoint.
      */
     void onMarkDirty(boolean isPageInCheckpoint);
@@ -102,4 +127,11 @@ public interface PagesWriteThrottlePolicy {
      * and {@code false} otherwise.
      */
     boolean isCpBufferOverflowThresholdExceeded();
+
+    /**
+     * Checkpoint buffer threshold (pages count) to wake up throttled threads.
+     *
+     * @return Checkpoint buffer throttled threads wakeup threshold.
+     */
+    int checkpointBufferThrottledThreadsWakeupThreshold();
 }

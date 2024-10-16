@@ -74,7 +74,6 @@ import org.apache.ignite.internal.processors.cache.persistence.tree.io.DataPageI
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.PageIO;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.TrackingPageIO;
 import org.apache.ignite.internal.processors.cache.persistence.wal.WALPointer;
-import org.apache.ignite.internal.util.future.GridFinishedFuture;
 import org.apache.ignite.internal.util.lang.GridCloseableIterator;
 import org.apache.ignite.internal.util.lang.GridFilteredClosableIterator;
 import org.apache.ignite.internal.util.typedef.F;
@@ -571,7 +570,7 @@ public class IgnitePdsCheckpointSimulationWithRealCpDisabledTest extends GridCom
             ig.context().cache().context().database().checkpointReadUnlock();
         }
 
-        Collection<FullPageId> cpPages = mem.beginCheckpoint(new GridFinishedFuture());
+        Collection<FullPageId> cpPages = mem.beginCheckpoint(() -> Boolean.TRUE);
 
         ig.context().cache().context().database().checkpointReadLock();
 
@@ -603,7 +602,7 @@ public class IgnitePdsCheckpointSimulationWithRealCpDisabledTest extends GridCom
                     buf.rewind();
 
                     mem.checkpointWritePage(fullId, buf, (fullPageId, buffer, tag) -> {
-                    }, null);
+                    }, null, false);
 
                     buf.position(PageIO.COMMON_HEADER_END);
 
@@ -901,7 +900,7 @@ public class IgnitePdsCheckpointSimulationWithRealCpDisabledTest extends GridCom
             try {
                 snapshot = new HashMap<>(resMap);
 
-                pageIds = mem.beginCheckpoint(new GridFinishedFuture());
+                pageIds = mem.beginCheckpoint(() -> Boolean.TRUE);
 
                 checkpoints--;
 
@@ -940,7 +939,7 @@ public class IgnitePdsCheckpointSimulationWithRealCpDisabledTest extends GridCom
                     };
 
                     while (true) {
-                        mem.checkpointWritePage(fullId, tmpBuf, pageStoreWriter, null);
+                        mem.checkpointWritePage(fullId, tmpBuf, pageStoreWriter, null, false);
 
                         tag = tag0.get();
 
