@@ -100,7 +100,7 @@ public class SnapshotMetadata implements Serializable {
     @Nullable private List<String> warnings;
 
     /** Creation timestamp in milliseconds since Unix epoch. */
-    private @Nullable long creationTimeMillis;
+    private long creationTimeMillis;
 
     /** */
     private transient Set<Integer> comprGrpIds;
@@ -141,7 +141,7 @@ public class SnapshotMetadata implements Serializable {
         boolean comprParts,
         int pageSize,
         List<Integer> grpIds,
-        @Nullable long creationTimeMillis,
+        long creationTimeMillis,
         Collection<Integer> compGrpIds,
         Set<String> bltNodes,
         Set<GroupPartitionId> pairs,

@@ -275,7 +275,8 @@ public class IncrementalSnapshotCheckBeforeRestoreTest extends AbstractSnapshotS
             meta.snapshotName() + "1",
             meta.incrementIndex(),
             meta.consistentId(),
-            null, meta.creationTimeMillis(),
+            null,
+            meta.creationTimeMillis(),
             meta.incrementalSnapshotPointer()), incMetaFile);
 
         for (IgniteEx n : F.asList(srv, grid(GRID_CNT))) {

@@ -23,7 +23,6 @@ import org.apache.ignite.internal.pagemem.wal.record.IncrementalSnapshotFinishRe
 import org.apache.ignite.internal.processors.cache.persistence.wal.WALPointer;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
-import org.jetbrains.annotations.Nullable;
 
 /**
  * Incremental snapshot metadata file.
@@ -54,7 +53,7 @@ public class IncrementalSnapshotMetadata implements Serializable {
     private final String folderName;
 
     /** Creation timestamp in milliseconds since Unix epoch. */
-    private @Nullable long creationTimeMillis;
+    private final long creationTimeMillis;
 
     /** WAL pointer to {@link IncrementalSnapshotFinishRecord}. */
     private final WALPointer incSnpRec;
@@ -74,7 +73,7 @@ public class IncrementalSnapshotMetadata implements Serializable {
         int incIdx,
         String consId,
         String folderName,
-        @Nullable long creationTimeMillis,
+        long creationTimeMillis,
         WALPointer incSnpRec
     ) {
         this.rqId = rqId;
