@@ -27,6 +27,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.TreeSet;
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
@@ -558,35 +559,46 @@ public class SnapshotCheckProcess {
      *
      * @return Metadatas to process on current node if more than one found.
      */
-    private List<SnapshotMetadata> assingMetasToWork(Map<ClusterNode, List<SnapshotMetadata>> clusterMetas) {
+    private @Nullable List<SnapshotMetadata> assingMetasToWork(Map<ClusterNode, List<SnapshotMetadata>> clusterMetas) {
         ClusterNode locNode = kctx.cluster().get().localNode();
-        String locNodeConsIdStr = locNode.consistentId().toString();
-
         List<SnapshotMetadata> locMetas = clusterMetas.get(locNode);
 
         if (F.isEmpty(locMetas))
             return null;
 
-        locMetas = new ArrayList<>(locMetas);
+        // Nodes sorted by lessser order.
+        Map<String, Collection<ClusterNode>> metasPerRespondedNodes = new HashMap<>();
 
-        UUID minOrderOfDataNode = clusterMetas.entrySet().stream().filter(e -> !F.isEmpty(e.getValue()))
-            .sorted(Comparator.comparingLong(e -> e.getKey().order())).findFirst().get().getKey().id();
+        Set<String> onlineNodesConstIdsStr = new HashSet<>(clusterMetas.size());
 
-        if (minOrderOfDataNode.equals(locNode.id())) {
-            Collection<String> onlineDataNodesIds = clusterMetas.keySet().stream().map(node -> node.consistentId().toString())
-                .collect(Collectors.toSet());
+        clusterMetas.forEach((node, nodeMetas) -> {
+            if (!F.isEmpty(nodeMetas)) {
+                onlineNodesConstIdsStr.add(node.consistentId().toString());
 
-            locMetas.removeIf(meta -> !meta.consistentId().equals(locNodeConsIdStr) && onlineDataNodesIds.contains(meta.consistentId()));
+                nodeMetas.forEach(nodeMeta -> metasPerRespondedNodes.computeIfAbsent(nodeMeta.consistentId(),
+                    m -> new TreeSet<>(Comparator.comparingLong(ClusterNode::order))).add(node));
+            }
+        });
+
+        String locNodeConsIdStr = locNode.consistentId().toString();
+
+        List<SnapshotMetadata> metasToProc = new ArrayList<>(1);
+
+        for (SnapshotMetadata locMeta : locMetas) {
+            if (locMeta.consistentId().equals(locNodeConsIdStr)) {
+                assert !metasToProc.contains(locMeta) : "Local snapshot metadata is already assigned to process";
+
+                metasToProc.add(locMeta);
+
+                continue;
+            }
+
+            if (!onlineNodesConstIdsStr.contains(locMeta.consistentId())
+                && F.first(metasPerRespondedNodes.get(locMeta.consistentId())).id().equals(kctx.localNodeId()))
+                metasToProc.add(locMeta);
         }
-        else
-            locMetas = locMetas.stream().filter(meta -> meta.consistentId().equals(locNodeConsIdStr)).collect(Collectors.toList());
 
-        if (locMetas.isEmpty())
-            locMetas = Collections.singletonList(F.first(clusterMetas.get(locNode)));
-
-        assert locMetas.size() >= 1 : "Wrong number of metadatas to process found for current node.";
-
-        return locMetas;
+        return metasToProc;
     }
 
     /**
