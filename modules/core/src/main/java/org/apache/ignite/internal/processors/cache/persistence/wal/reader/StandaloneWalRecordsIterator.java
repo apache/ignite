@@ -463,10 +463,7 @@ class StandaloneWalRecordsIterator extends AbstractWalRecordsIterator {
      * @return Unwrapped entry.
      */
     private DataEntry unwrapDataEntry(CacheObjectContext coCtx, DataEntry dataEntry,
-        KeyCacheObject key, CacheObject val, boolean keepBinary) throws IgniteCheckedException {
-
-        key.prepareMarshal(coCtx);
-
+        KeyCacheObject key, CacheObject val, boolean keepBinary) {
         return new UnwrapDataEntry(
             dataEntry.cacheId(),
             key,
