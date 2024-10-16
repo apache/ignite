@@ -2303,7 +2303,8 @@ public class SystemViewSelfTest extends GridCommonAbstractTest {
 
                 assertEquals(ignite.localNode().consistentId().toString(), v.consistentId());
                 assertNotNull(v.snapshotRecordSegment());
-                assertTrue("Creation time should be geq than time before snapshot initialization", v.creationTimeMillis() >= snapshotInitTime);
+                assertTrue("Creation time should be geq than time before snapshot initialization",
+                        v.creationTimeMillis() >= snapshotInitTime);
 
                 Integer incIdx = v.incrementIndex();
 

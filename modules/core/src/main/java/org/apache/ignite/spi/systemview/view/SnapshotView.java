@@ -147,8 +147,10 @@ public class SnapshotView {
         return type.name();
     }
 
+    /**
+     *  @return Creation timestamp in milliseconds since Unix epoch.
+     */
     @Order(7)
-    /** @return Creation timestamp in milliseconds since Unix epoch. */
     public Long creationTimeMillis() {
         return creationTimeMillis != null && creationTimeMillis != 0 ? creationTimeMillis : null;
     }
