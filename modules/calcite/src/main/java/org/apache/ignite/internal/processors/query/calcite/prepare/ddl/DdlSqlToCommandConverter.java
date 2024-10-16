@@ -42,6 +42,7 @@ import org.apache.calcite.sql.SqlNumericLiteral;
 import org.apache.calcite.sql.ddl.SqlColumnDeclaration;
 import org.apache.calcite.sql.ddl.SqlDropTable;
 import org.apache.calcite.sql.ddl.SqlKeyConstraint;
+import org.apache.calcite.sql.type.SqlTypeName;
 import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.CacheWriteSynchronizationMode;
 import org.apache.ignite.internal.processors.cache.query.IgniteQueryErrorCode;
@@ -219,17 +220,18 @@ public class DdlSqlToCommandConverter {
 
                 String name = col.name.getSimple();
                 RelDataType type = planner.convert(col.dataType);
-
                 Object dflt = null;
-                if (col.expression != null) {
-                    assert col.expression instanceof SqlLiteral;
+
+                assert col.expression == null || col.expression instanceof SqlLiteral;
+
+                if (col.expression != null
+                    && (((SqlLiteral)col.expression).getTypeName() != SqlTypeName.NULL || type instanceof OtherType)) {
+                    if (type instanceof OtherType)
+                        throw new IgniteSQLException("Type '" + type + "' doesn't support default value.");
 
                     Type storageType = ctx.typeFactory().getResultClass(type);
 
                     DataContext dataCtx = new BaseDataContext(ctx.typeFactory());
-
-                    if (type instanceof OtherType)
-                        throw new IgniteSQLException("Type '" + type + "' doesn't support default value.");
 
                     dflt = TypeUtils.fromLiteral(dataCtx, storageType, (SqlLiteral)col.expression);
                 }
