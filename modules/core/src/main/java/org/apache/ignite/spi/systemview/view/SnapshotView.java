@@ -50,7 +50,7 @@ public class SnapshotView {
     private final Long snpRecSeg;
 
     /** Creation timestamp in milliseconds since Unix epoch. */
-    private final Long creationTimeMillis;
+    private final Long creationTime;
 
     /** Full or incremental. */
     private final SnapshotType type;
@@ -71,7 +71,7 @@ public class SnapshotView {
         consistentId = meta.consistentId();
         baselineNodes = F.concat(meta.baselineNodes(), ",");
         snpRecSeg = meta.snapshotRecordPointer() == null ? null : meta.snapshotRecordPointer().index();
-        creationTimeMillis = meta.creationTimeMillis();
+        creationTime = meta.creationTime();
         incIdx = null;
 
         this.cacheGrps = F.concat(cacheGrps, ",");
@@ -86,7 +86,7 @@ public class SnapshotView {
         consistentId = incMeta.consistentId();
         snpRecSeg = incMeta.incrementalSnapshotPointer().index();
         incIdx = incMeta.incrementIndex();
-        creationTimeMillis = incMeta.creationTimeMillis();
+        creationTime = incMeta.creationTime();
         baselineNodes = null;
         cacheGrps = null;
     }
@@ -151,8 +151,8 @@ public class SnapshotView {
      *  @return Creation timestamp in milliseconds since Unix epoch.
      */
     @Order(7)
-    public Long creationTimeMillis() {
-        return creationTimeMillis != null && creationTimeMillis != 0 ? creationTimeMillis : null;
+    public Long creationTime() {
+        return creationTime != 0 ? creationTime : null;
     }
 
     /** Snapshot types. */
