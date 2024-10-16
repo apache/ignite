@@ -328,6 +328,9 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
     @Deprecated
     private static final String SNP_RUNNING_KEY = "snapshot-running";
 
+    /** Snapshot operation start log message. */
+    private static final String SNAPSHOT_STARTED_MSG = "Cluster-wide snapshot operation started: ";
+
     /** Snapshot operation finish log message. */
     private static final String SNAPSHOT_FINISHED_MSG = "Cluster-wide snapshot operation finished successfully: ";
 
@@ -2289,25 +2292,24 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
             Set<UUID> bltNodeIds =
                 new HashSet<>(F.viewReadOnly(srvNodes, F.node2id(), (node) -> CU.baselineNode(node, clusterState)));
 
-            startSnpProc.start(snpFut0.rqId, new SnapshotOperationRequest(
-                snpFut0.rqId,
-                cctx.localNodeId(),
-                name,
-                snpPath,
-                grps,
-                bltNodeIds,
-                incremental,
-                incIdx,
-                onlyPrimary,
-                dump,
-                compress,
-                encrypt
-            ));
+            SnapshotOperationRequest snpOpReq = new SnapshotOperationRequest(
+                    snpFut0.rqId,
+                    cctx.localNodeId(),
+                    name,
+                    snpPath,
+                    grps,
+                    bltNodeIds,
+                    incremental,
+                    incIdx,
+                    onlyPrimary,
+                    dump,
+                    compress,
+                    encrypt
+            );
 
-            String msg =
-                "Cluster-wide snapshot operation started [snpName=" + name + ", grps=" + grps +
-                    (incremental ? "" : (", incremental=true, incrementIndex=" + incIdx)) +
-                ']';
+            startSnpProc.start(snpFut0.rqId, snpOpReq);
+
+            String msg = SNAPSHOT_STARTED_MSG + snpOpReq;
 
             recordSnapshotEvent(name, msg, EVT_CLUSTER_SNAPSHOT_STARTED);
 

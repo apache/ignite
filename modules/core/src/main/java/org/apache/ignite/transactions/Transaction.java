@@ -107,7 +107,7 @@ import org.jetbrains.annotations.Nullable;
  *     Integer v1 = cache.get("k1");
  *
  *     // Check if v1 satisfies some condition before doing a put.
- *     if (v1 != null && v1 > 0)
+ *     if (v1 != null &amp;&amp; v1 &gt; 0)
  *         cache.put("k1", 2);
  *
  *     cache.remove("k2");

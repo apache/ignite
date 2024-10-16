@@ -560,7 +560,7 @@ public class QueryEntity implements Serializable {
 
     /**
      * Sets mapping from full property name in dot notation to an alias that will be used as SQL column name.
-     * Example: {"parent.name" -> "parentName"}.
+     * Example: {"parent.name" -&gt; "parentName"}.
      *
      * @param aliases Aliases map.
      * @return {@code this} for chaining.
