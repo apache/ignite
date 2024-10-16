@@ -577,14 +577,14 @@ public class SnapshotCheckProcess {
                 .collect(Collectors.toSet());
 
             locMetas.removeIf(meta -> !meta.consistentId().equals(locNodeConsIdStr) && onlineDataNodesIds.contains(meta.consistentId()));
-
-            assert locMetas.size() >= 1 : "Wrong number of metadatas to process found for current node.";
         }
-        else {
+        else
             locMetas = locMetas.stream().filter(meta -> meta.consistentId().equals(locNodeConsIdStr)).collect(Collectors.toList());
 
-            assert locMetas.size() == 1 : "No metadata found for current node to process";
-        }
+        if (locMetas.isEmpty())
+            locMetas = Collections.singletonList(F.first(clusterMetas.get(locNode)));
+
+        assert locMetas.size() >= 1 : "Wrong number of metadatas to process found for current node.";
 
         return locMetas;
     }
