@@ -44,6 +44,9 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.transactions.TransactionConcurrency;
 import org.apache.ignite.transactions.TransactionIsolation;
 import org.jetbrains.annotations.Nullable;
+import org.apache.ignite.transactions.TransactionConcurrency;
+import org.apache.ignite.transactions.TransactionIsolation;
+import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.internal.jdbc.thin.JdbcThinUtils.nullableBooleanFromByte;
 import static org.apache.ignite.internal.processors.odbc.ClientListenerNioListener.JDBC_CLIENT;
@@ -79,11 +82,11 @@ public class JdbcConnectionContext extends ClientListenerAbstractConnectionConte
     /** Version 2.13.0: adds choose of query engine support. */
     static final ClientListenerProtocolVersion VER_2_13_0 = ClientListenerProtocolVersion.create(2, 13, 0);
 
-    /** Version 2.14.0: adds transaction default parameters. */
-    static final ClientListenerProtocolVersion VER_2_14_0 = ClientListenerProtocolVersion.create(2, 14, 0);
+    /** Version 2.17.0: adds transaction default parameters. */
+    static final ClientListenerProtocolVersion VER_2_17_0 = ClientListenerProtocolVersion.create(2, 17, 0);
 
     /** Current version. */
-    public static final ClientListenerProtocolVersion CURRENT_VER = VER_2_14_0;
+    public static final ClientListenerProtocolVersion CURRENT_VER = VER_2_17_0;
 
     /** Supported versions. */
     private static final Set<ClientListenerProtocolVersion> SUPPORTED_VERS = new HashSet<>();
@@ -238,7 +241,7 @@ public class JdbcConnectionContext extends ClientListenerAbstractConnectionConte
         int timeout = 0;
         String lb = null;
 
-        if (ver.compareTo(VER_2_14_0) >= 0) {
+        if (ver.compareTo(VER_2_17_0) >= 0) {
             concurrency = TransactionConcurrency.fromOrdinal(reader.readByte());
             isolation = TransactionIsolation.fromOrdinal(reader.readByte());
             timeout = reader.readInt();
