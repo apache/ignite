@@ -23,6 +23,7 @@ import org.apache.ignite.internal.pagemem.wal.record.IncrementalSnapshotFinishRe
 import org.apache.ignite.internal.processors.cache.persistence.wal.WALPointer;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
+import org.jetbrains.annotations.Nullable;
 
 /**
  * Incremental snapshot metadata file.
@@ -52,6 +53,9 @@ public class IncrementalSnapshotMetadata implements Serializable {
     /** Name of the folder that contains snapshot data. */
     private final String folderName;
 
+    /** Creation timestamp in milliseconds since Unix epoch. */
+    private @Nullable long creationTimeMillis;
+
     /** WAL pointer to {@link IncrementalSnapshotFinishRecord}. */
     private final WALPointer incSnpRec;
 
@@ -62,6 +66,7 @@ public class IncrementalSnapshotMetadata implements Serializable {
      * @param consId Consistent id of a node to which this metadata relates.
      * @param folderName Directory name which stores the data files.
      * @param incSnpRec Pointer to {@link IncrementalSnapshotFinishRecord}.
+     * @param creationTimeMillis Timestamp of the snapshot creation.
      */
     public IncrementalSnapshotMetadata(
         UUID rqId,
@@ -69,6 +74,7 @@ public class IncrementalSnapshotMetadata implements Serializable {
         int incIdx,
         String consId,
         String folderName,
+        @Nullable long creationTimeMillis,
         WALPointer incSnpRec
     ) {
         this.rqId = rqId;
@@ -76,6 +82,7 @@ public class IncrementalSnapshotMetadata implements Serializable {
         this.incIdx = incIdx;
         this.consId = consId;
         this.folderName = folderName;
+        this.creationTimeMillis = creationTimeMillis;
         this.incSnpRec = incSnpRec;
     }
 
@@ -107,6 +114,11 @@ public class IncrementalSnapshotMetadata implements Serializable {
     /** @return Name of the folder that contains snapshot data. */
     public String folderName() {
         return folderName;
+    }
+
+    /** @return Creation timestamp in milliseconds since Unix epoch. */
+    public long creationTimeMillis() {
+        return creationTimeMillis;
     }
 
     /**

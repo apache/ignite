@@ -1080,6 +1080,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
                 req.incrementIndex(),
                 cctx.localNode().consistentId().toString(),
                 pdsSettings.folderName(),
+                clusterSnpReq.startTime(),
                 markWalFut.result()
             );
 
@@ -1225,6 +1226,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
                     req.compress(),
                     cctx.gridConfig().getDataStorageConfiguration().getPageSize(),
                     grpIds,
+                    clusterSnpReq.startTime(),
                     comprGrpIds,
                     blts,
                     res.parts(),

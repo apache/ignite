@@ -49,6 +49,9 @@ public class SnapshotView {
     /** WAL segment that contains {@link ClusterSnapshotRecord} if exists. */
     private final Long snpRecSeg;
 
+    /** Creation timestamp in milliseconds since Unix epoch. */
+    private final Long creationTimeMillis;
+
     /** Full or incremental. */
     private final SnapshotType type;
 
@@ -68,6 +71,7 @@ public class SnapshotView {
         consistentId = meta.consistentId();
         baselineNodes = F.concat(meta.baselineNodes(), ",");
         snpRecSeg = meta.snapshotRecordPointer() == null ? null : meta.snapshotRecordPointer().index();
+        creationTimeMillis = meta.creationTimeMillis();
         incIdx = null;
 
         this.cacheGrps = F.concat(cacheGrps, ",");
@@ -82,7 +86,7 @@ public class SnapshotView {
         consistentId = incMeta.consistentId();
         snpRecSeg = incMeta.incrementalSnapshotPointer().index();
         incIdx = incMeta.incrementIndex();
-
+        creationTimeMillis = incMeta.creationTimeMillis();
         baselineNodes = null;
         cacheGrps = null;
     }
@@ -141,6 +145,12 @@ public class SnapshotView {
     @Order(6)
     public String type() {
         return type.name();
+    }
+
+    @Order(7)
+    /** @return Creation timestamp in milliseconds since Unix epoch. */
+    public Long creationTimeMillis() {
+        return creationTimeMillis != null && creationTimeMillis != 0 ? creationTimeMillis : null;
     }
 
     /** Snapshot types. */
