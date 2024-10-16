@@ -652,7 +652,9 @@ public class GridNioSelfTest extends GridCommonAbstractTest {
                 client = createClient(U.getLocalHost(), srvr.port(), U.getLocalHost());
 
                 client.sendMessage(createMessage(), MSG_SIZE);
+                client.receiveMessage();
                 client.sendMessage(createMessage(), MSG_SIZE);
+                client.receiveMessage();
 
                 client.close();
             }
@@ -729,8 +731,10 @@ public class GridNioSelfTest extends GridCommonAbstractTest {
                     try {
                         client = createClient(U.getLocalHost(), srvr.port(), U.getLocalHost());
 
-                        for (int i = 0; i < MSG_CNT; i++)
+                        for (int i = 0; i < MSG_CNT; i++) {
                             client.sendMessage(data, data.length);
+                            client.receiveMessage();
+                        }
                     }
                     catch (Exception e) {
                         error("Failed to send message.", e);
@@ -890,6 +894,7 @@ public class GridNioSelfTest extends GridCommonAbstractTest {
                             deliveryDurations.put(msg.getId(), start);
 
                             client.sendMessage(data, data.length);
+                            client.receiveMessage();
 
                             long end = System.currentTimeMillis();
 
@@ -1333,6 +1338,9 @@ public class GridNioSelfTest extends GridCommonAbstractTest {
 
             if (latch != null)
                 latch.countDown();
+
+            //sending ack of processing message
+            ses.send(new byte[] {(byte)0xDEADBEEF});
         }
 
         /**

@@ -38,10 +38,16 @@ import org.apache.calcite.linq4j.Ord;
 import org.apache.calcite.plan.Context;
 import org.apache.calcite.plan.Contexts;
 import org.apache.calcite.plan.RelOptCluster;
+import org.apache.calcite.plan.RelTraitSet;
 import org.apache.calcite.rel.RelNode;
+import org.apache.calcite.rel.type.RelDataType;
+import org.apache.calcite.rel.type.RelDataTypeFactory;
+import org.apache.calcite.rex.RexBuilder;
+import org.apache.calcite.rex.RexNode;
 import org.apache.calcite.sql.SqlNodeList;
 import org.apache.calcite.sql.parser.SqlParseException;
 import org.apache.calcite.sql.parser.SqlParser;
+import org.apache.calcite.sql.type.SqlTypeUtil;
 import org.apache.calcite.util.ImmutableBitSet;
 import org.apache.calcite.util.ImmutableIntList;
 import org.apache.calcite.util.SourceStringReader;
@@ -54,13 +60,17 @@ import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.internal.GridComponent;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
+import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.query.IgniteQueryErrorCode;
+import org.apache.ignite.internal.processors.cache.transactions.IgniteInternalTx;
+import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.processors.query.IgniteSQLException;
 import org.apache.ignite.internal.processors.query.QueryContext;
 import org.apache.ignite.internal.processors.query.calcite.exec.RowHandler;
 import org.apache.ignite.internal.processors.query.calcite.exec.exp.ExpressionFactoryImpl;
 import org.apache.ignite.internal.processors.query.calcite.prepare.BaseQueryContext;
 import org.apache.ignite.internal.processors.query.calcite.prepare.MappingQueryContext;
+import org.apache.ignite.internal.processors.query.calcite.rel.IgniteProject;
 import org.apache.ignite.internal.processors.query.calcite.type.IgniteTypeFactory;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.A;
@@ -138,6 +148,61 @@ public final class Commons {
         return list.stream()
             .filter(set::contains)
             .collect(Collectors.toList());
+    }
+
+    /**
+     * Finds the least restrictive type of the inputs and adds a cast projection if required.
+     *
+     * @param inputs Inputs to try to cast.
+     * @param cluster Cluster.
+     * @param traits Traits.
+     * @return Converted inputs.
+     */
+    public static List<RelNode> castToLeastRestrictiveIfRequired(List<RelNode> inputs, RelOptCluster cluster, RelTraitSet traits) {
+        List<RelDataType> inputRowTypes = inputs.stream().map(RelNode::getRowType).collect(Collectors.toList());
+
+        // Output type of a set operator is equal to leastRestrictive(inputTypes) (see SetOp::deriveRowType).
+        RelDataTypeFactory typeFactory = cluster.getTypeFactory();
+
+        RelDataType leastRestrictive = typeFactory.leastRestrictive(inputRowTypes);
+
+        if (leastRestrictive == null)
+            throw new IllegalStateException("Cannot find least restrictive type for arguments to set op: " + inputRowTypes);
+
+        // If input's type does not match the result type, then add a cast projection for non-matching fields.
+        RexBuilder rexBuilder = cluster.getRexBuilder();
+        List<RelNode> newInputs = new ArrayList<>(inputs.size());
+
+        for (RelNode input : inputs) {
+            RelDataType inputRowType = input.getRowType();
+
+            // It is always safe to convert from [T1 nullable, T2 not nullable] to [T1 nullable, T2 nullable] and
+            // the least restrictive type does exactly that.
+            if (SqlTypeUtil.equalAsStructSansNullability(typeFactory, leastRestrictive, inputRowType, null)) {
+                newInputs.add(input);
+
+                continue;
+            }
+
+            List<RexNode> expressions = new ArrayList<>(inputRowType.getFieldCount());
+
+            for (int i = 0; i < leastRestrictive.getFieldCount(); i++) {
+                RelDataType fieldType = inputRowType.getFieldList().get(i).getType();
+
+                RelDataType outFieldType = leastRestrictive.getFieldList().get(i).getType();
+
+                RexNode ref = rexBuilder.makeInputRef(input, i);
+
+                if (fieldType.equals(outFieldType))
+                    expressions.add(ref);
+                else
+                    expressions.add(rexBuilder.makeCast(outFieldType, ref, true, false));
+            }
+
+            newInputs.add(new IgniteProject(cluster, traits, input, expressions, leastRestrictive));
+        }
+
+        return newInputs;
     }
 
     /**
@@ -454,5 +519,24 @@ public final class Commons {
             Map<String, Object> qryParams
     ) {
         return new MappingQueryContext(ctx, locNodeId, topVer, qryParams);
+    }
+
+    /**
+     * @param ctx Query context.
+     * @param cctx Grid cache shared context.
+     * @return Query transaction or {@code null}.
+     */
+    public static <T extends IgniteInternalTx> T queryTransaction(Context ctx, GridCacheSharedContext<?, ?> cctx) {
+        GridCacheVersion txId = queryTransactionVersion(ctx);
+
+        return txId == null ? null : cctx.tm().tx(txId);
+    }
+
+    /**
+     * @param ctx Context.
+     * @return Query transaction version if exists or {@code null}.
+     */
+    public static @Nullable GridCacheVersion queryTransactionVersion(Context ctx) {
+        return ctx.unwrap(GridCacheVersion.class);
     }
 }

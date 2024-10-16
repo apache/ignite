@@ -314,6 +314,9 @@ public class CacheGroupMetricsImpl {
     private int clusterPartitionsCountByState(GridDhtPartitionState state) {
         GridDhtPartitionFullMap partFullMap = ctx.topology().partitionMap(true);
 
+        if (partFullMap == null)
+            return 0;
+
         int cnt = 0;
 
         for (UUID nodeId : partFullMap.keySet())

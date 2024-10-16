@@ -66,14 +66,14 @@ public abstract class AbstractIndexScan<Row, IdxRow> implements Iterable<Row>, A
     /** {@inheritDoc} */
     @Override public synchronized Iterator<Row> iterator() {
         if (ranges == null)
-            return new IteratorImpl(idx.find(null, null, true, true, indexQueryContext()));
+            return new IteratorImpl(indexCursor(null, null, true, true));
 
         IgniteClosure<RangeCondition<Row>, IteratorImpl> clo = range -> {
             IdxRow lower = range.lower() == null ? null : row2indexRow(range.lower());
             IdxRow upper = range.upper() == null ? null : row2indexRow(range.upper());
 
             return new IteratorImpl(
-                idx.find(lower, upper, range.lowerInclude(), range.upperInclude(), indexQueryContext()));
+                indexCursor(lower, upper, range.lowerInclude(), range.upperInclude()));
         };
 
         if (!ranges.multiBounds()) {
@@ -86,6 +86,11 @@ public abstract class AbstractIndexScan<Row, IdxRow> implements Iterable<Row>, A
         }
 
         return F.flat(F.iterator(ranges, clo, true));
+    }
+
+    /** */
+    protected GridCursor<IdxRow> indexCursor(IdxRow lower, IdxRow upper, boolean lowerInclude, boolean upperInclude) {
+        return idx.find(lower, upper, lowerInclude, upperInclude, indexQueryContext());
     }
 
     /** */
