@@ -44,9 +44,6 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.transactions.TransactionConcurrency;
 import org.apache.ignite.transactions.TransactionIsolation;
 import org.jetbrains.annotations.Nullable;
-import org.apache.ignite.transactions.TransactionConcurrency;
-import org.apache.ignite.transactions.TransactionIsolation;
-import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.internal.jdbc.thin.JdbcThinUtils.nullableBooleanFromByte;
 import static org.apache.ignite.internal.processors.odbc.ClientListenerNioListener.JDBC_CLIENT;
