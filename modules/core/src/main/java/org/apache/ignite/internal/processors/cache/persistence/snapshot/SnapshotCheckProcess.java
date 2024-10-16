@@ -150,7 +150,7 @@ public class SnapshotCheckProcess {
             return new GridFinishedFuture<>();
 
         if (ctx.req.incrementalIndex() > 0)
-            reduceIncrementalCheckResults(ctx.req.nodes(), ctx.clusterMetas, results, errors, clusterOpFut);
+            reduceIncrementalResults(ctx.req.nodes(), ctx.clusterMetas, results, errors, clusterOpFut);
         else if (ctx.req.allRestoreHandlers())
             reduceCustomHandlersResults(ctx, results, errors, clusterOpFut);
         else
@@ -160,7 +160,7 @@ public class SnapshotCheckProcess {
     }
 
     /** */
-    private void reduceIncrementalCheckResults(
+    private void reduceIncrementalResults(
         Set<UUID> requiredNodes,
         Map<ClusterNode, List<SnapshotMetadata>> clusterMetas,
         Map<UUID, AbstractSnapshotCheckResponse> results,
@@ -175,16 +175,16 @@ public class SnapshotCheckProcess {
             UUID nodeId = resE.getKey();
             SnapshotCheckIncrementalResponse incResp = (SnapshotCheckIncrementalResponse)resE.getValue();
 
-            if (requiredNodes.contains(nodeId) || incResp == null)
-                break;
+            if (incResp == null || !requiredNodes.contains(nodeId))
+                continue;
 
             ClusterNode node = kctx.cluster().get().node(nodeId);
 
-            incResp.incremenlatSnapshotResults().forEach((consId, incResPerConsId) ->
-                reduced.computeIfAbsent(node, nid -> new ArrayList<>()).add(incResPerConsId));
+            incResp.incremenlatSnapshotResults().forEach((consId, res) -> reduced.computeIfAbsent(node, nid -> new ArrayList<>())
+                .add(res));
 
             if (F.isEmpty(incResp.exceptions()))
-                break;
+                continue;
 
             errors.putIfAbsent(nodeId, asException(F.firstValue(incResp.exceptions())));
         }
@@ -206,27 +206,31 @@ public class SnapshotCheckProcess {
                 throw F.firstValue(errors);
 
             // Check responses: node -> consistentId -> handler name -> handler result.
-            Map<ClusterNode, Map<Object, Map<String, SnapshotHandlerResult<?>>>> cstRes = new HashMap<>();
+            Map<ClusterNode, Map<Object, Map<String, SnapshotHandlerResult<?>>>> reduced = new HashMap<>();
 
-            for (Map.Entry<UUID, AbstractSnapshotCheckResponse> respE : results.entrySet()) {
-                SnapshotCheckCustomHandlersResponse resp = (SnapshotCheckCustomHandlersResponse)respE.getValue();
+            for (Map.Entry<UUID, AbstractSnapshotCheckResponse> respEntry : results.entrySet()) {
+                SnapshotCheckCustomHandlersResponse nodeResp = (SnapshotCheckCustomHandlersResponse)respEntry.getValue();
 
-                if (resp == null)
-                    break;
+                if (nodeResp == null)
+                    continue;
 
-                if (!F.isEmpty(resp.exceptions()))
-                    throw F.firstValue(resp.exceptions());
+                if (!F.isEmpty(nodeResp.exceptions()))
+                    throw F.firstValue(nodeResp.exceptions());
 
-                resp.customHandlersResults().forEach((consId, hndResMap) -> {
-                    Map<Object, Map<String, SnapshotHandlerResult<?>>> nodePerConsIdRes
-                        = cstRes.computeIfAbsent(kctx.cluster().get().localNode(), n -> new HashMap<>());
+                UUID nodeId = respEntry.getKey();
 
-                    hndResMap.forEach((hndId, hndRes) ->
-                        nodePerConsIdRes.computeIfAbsent(consId, cstId -> new HashMap<>()).put(hndId, hndRes));
+                // Node's response results: consistent id -> map of the handlers results per consistent id.
+                nodeResp.customHandlersResults().forEach((consId, respPerConsIdMap) -> {
+                    // Reduced map of the handlers results per consistent id for certain node.
+                    Map<Object, Map<String, SnapshotHandlerResult<?>>> nodePerConsIdResultMap
+                        = reduced.computeIfAbsent(kctx.cluster().get().node(nodeId), n -> new HashMap<>());
+
+                    respPerConsIdMap.forEach((hndId, hndRes) ->
+                        nodePerConsIdResultMap.computeIfAbsent(consId, cstId -> new HashMap<>()).put(hndId, hndRes));
                 });
             }
 
-            kctx.cache().context().snapshotMgr().checker().checkCustomHandlersResults(ctx.req.snapshotName(), cstRes);
+            kctx.cache().context().snapshotMgr().checker().checkCustomHandlersResults(ctx.req.snapshotName(), reduced);
 
             fut.onDone(new SnapshotPartitionsVerifyResult(ctx.clusterMetas, null));
         }
@@ -245,28 +249,30 @@ public class SnapshotCheckProcess {
         Map<ClusterNode, Exception> errors0 = mapErrors(errors);
 
         if (!results.isEmpty()) {
-            Map<ClusterNode, Map<PartitionKeyV2, List<PartitionHashRecordV2>>> results0 = new HashMap<>();
+            Map<ClusterNode, Map<PartitionKeyV2, List<PartitionHashRecordV2>>> reduced = new HashMap<>();
 
-            for (Map.Entry<UUID, AbstractSnapshotCheckResponse> respE : results.entrySet()) {
-                UUID nodeId = respE.getKey();
-                SnapshotCheckPartitionsHashesResponse resp = (SnapshotCheckPartitionsHashesResponse)respE.getValue();
+            for (Map.Entry<UUID, AbstractSnapshotCheckResponse> respEntry : results.entrySet()) {
+                SnapshotCheckPartitionsHashesResponse resp = (SnapshotCheckPartitionsHashesResponse)respEntry.getValue();
 
                 if (resp == null)
-                    break;
+                    continue;
+
+                ClusterNode node = kctx.cluster().get().node(respEntry.getKey());
 
                 if (!F.isEmpty(resp.exceptions()))
-                    errors0.putIfAbsent(kctx.cluster().get().node(nodeId), asException(F.firstValue(resp.exceptions())));
+                    errors0.putIfAbsent(node, asException(F.firstValue(resp.exceptions())));
 
-                resp.partitionsHashes().forEach((consId, partsRes) -> {
-                    Map<PartitionKeyV2, List<PartitionHashRecordV2>> partsHashes
-                        = results0.computeIfAbsent(kctx.cluster().get().localNode(), map -> new HashMap<>());
+                // Partitions results map per consistent id for certain node responded.
+                resp.partitionsHashes().forEach((consId, partsMapPerConsId) -> {
+                    // Reduced node's hashes on certain responded node for certain consistent id.
+                    Map<PartitionKeyV2, List<PartitionHashRecordV2>> nodeHashes = reduced.computeIfAbsent(node, map -> new HashMap<>());
 
-                    partsRes.forEach((partKey, partHash) -> partsHashes.computeIfAbsent(partKey, k -> new ArrayList<>())
+                    partsMapPerConsId.forEach((partKey, partHash) -> nodeHashes.computeIfAbsent(partKey, k -> new ArrayList<>())
                         .add(partHash));
                 });
             }
 
-            IdleVerifyResultV2 chkRes = SnapshotChecker.reduceHashesResults(results0, errors0);
+            IdleVerifyResultV2 chkRes = SnapshotChecker.reduceHashesResults(reduced, errors0);
 
             fut.onDone(new SnapshotPartitionsVerifyResult(clusterMetas, chkRes));
         }
@@ -546,28 +552,39 @@ public class SnapshotCheckProcess {
         }
     }
 
-    /** */
+    /**
+     * Assigns metadatas to process. A snapshot can be checked on a smaller topology compared to the original one. In this case,
+     * some node has to check not only own partitions.
+     *
+     * @return Metadatas to process on current node if more than one found.
+     */
     private List<SnapshotMetadata> assingMetasToWork(Map<ClusterNode, List<SnapshotMetadata>> clusterMetas) {
-        List<SnapshotMetadata> locMetas = clusterMetas.get(kctx.cluster().get().localNode());
+        ClusterNode locNode = kctx.cluster().get().localNode();
+        String locNodeConsIdStr = locNode.consistentId().toString();
+
+        List<SnapshotMetadata> locMetas = clusterMetas.get(locNode);
 
         if (F.isEmpty(locMetas))
             return null;
 
-        UUID minOrderDataNodeId = clusterMetas.keySet().stream().sorted(new Comparator<>() {
-            @Override public int compare(ClusterNode o1, ClusterNode o2) {
-                return Long.compare(o1.order(), o2.order());
-            }
-        }).map(ClusterNode::id).findFirst().get();
+        locMetas = new ArrayList<>(locMetas);
 
-        if (minOrderDataNodeId.equals(kctx.localNodeId())) {
+        UUID minOrderOfDataNode = clusterMetas.entrySet().stream().filter(e -> !F.isEmpty(e.getValue()))
+            .sorted(Comparator.comparingLong(e -> e.getKey().order())).findFirst().get().getKey().id();
+
+        if (minOrderOfDataNode.equals(locNode.id())) {
             Collection<String> onlineDataNodesIds = clusterMetas.keySet().stream().map(node -> node.consistentId().toString())
                 .collect(Collectors.toSet());
 
-            locMetas.removeIf(meta -> !meta.consistentId().equals(kctx.cluster().get().localNode().consistentId())
-                && onlineDataNodesIds.contains(meta.consistentId()));
+            locMetas.removeIf(meta -> !meta.consistentId().equals(locNodeConsIdStr) && onlineDataNodesIds.contains(meta.consistentId()));
+
+            assert locMetas.size() >= 1 : "Wrong number of metadatas to process found for current node.";
         }
-        else
-            locMetas = Collections.singletonList(F.first(locMetas));
+        else {
+            locMetas = locMetas.stream().filter(meta -> meta.consistentId().equals(locNodeConsIdStr)).collect(Collectors.toList());
+
+            assert locMetas.size() == 1 : "No metadata found for current node to process";
+        }
 
         return locMetas;
     }
@@ -599,7 +616,7 @@ public class SnapshotCheckProcess {
 
         Set<UUID> requiredNodes = new HashSet<>(F.viewReadOnly(kctx.discovery().discoCache().aliveBaselineNodes(), F.node2id()));
 
-        // Initiator is also a required node. It collects the final oparation result.
+        // Initiator is also a required node. It collects the final operation result.
         requiredNodes.add(kctx.localNodeId());
 
         SnapshotCheckProcessRequest req = new SnapshotCheckProcessRequest(
@@ -755,13 +772,13 @@ public class SnapshotCheckProcess {
         }
     }
 
-    /** A DTO used to transfer incremental snapshot check results for phase 2. */
+    /** A DTO used to transfer incremental snapshot check result for phase 2. */
     private static final class SnapshotCheckIncrementalResponse extends AbstractSnapshotCheckResponse {
         /** Serial version uid. */
         private static final long serialVersionUID = 0L;
 
         /**
-         * @param result Incremental snapshot check results per consistent id.
+         * @param result Incremental snapshot check result per consistent id.
          * @param exceptions Exceptions per consistent id.
          */
         private SnapshotCheckIncrementalResponse(

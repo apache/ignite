@@ -1016,7 +1016,7 @@ public class SnapshotChecker {
     }
 
     /**
-     * Checks results of the internal and custon snapshot validation handlres. Throws exception if a validation error occurs.
+     * Checks results of the internal and custom snapshot validation handlres. Throws exception if a validation error occurs.
      * @param snpName Snapshot name
      * @param results Results: checking node -> snapshot's node consistend id -> custom handler id -> handler result.
      * @see #invokeCustomHandlers(String, String, String, Collection, boolean)
