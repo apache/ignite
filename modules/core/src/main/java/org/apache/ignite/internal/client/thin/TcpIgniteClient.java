@@ -487,11 +487,6 @@ public class TcpIgniteClient implements IgniteClient {
         return ch;
     }
 
-    /** Marshals object to byte array. */
-    public byte[] marshal(Object o) {
-        return marsh.marshal(o);
-    }
-
     /** @throws IllegalArgumentException if the specified cache name is invalid. */
     private static void ensureCacheName(String name) {
         if (name == null || name.isEmpty())

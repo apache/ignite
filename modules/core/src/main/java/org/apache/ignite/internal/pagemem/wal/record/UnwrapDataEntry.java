@@ -86,18 +86,6 @@ public class UnwrapDataEntry extends DataEntry {
         }
     }
 
-    /** @return Bytes for original (wrapped) key. */
-    public byte[] wrappedKeyBytes() {
-        try {
-            return key.valueBytes(cacheObjValCtx);
-        } catch (Exception e) {
-            cacheObjValCtx.kernalContext().log(UnwrapDataEntry.class)
-                .error("Unable to extract key bytes [" + key + "]", e);
-
-            return null;
-        }
-    }
-
     /**
      * Unwraps value from cache value object into primitive boxed type or source class. If client classes were
      * used in key, call of this method requires classes to be available in classpath.

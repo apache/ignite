@@ -20,7 +20,6 @@ package org.apache.ignite.internal.cdc;
 import org.apache.ignite.cache.CacheEntryVersion;
 import org.apache.ignite.cdc.CdcConsumer;
 import org.apache.ignite.cdc.CdcEvent;
-import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
 
 /**
@@ -36,10 +35,6 @@ public class CdcEventImpl implements CdcEvent {
 
     /** Key. */
     private final Object key;
-
-    /** Key bytes. */
-    @GridToStringExclude
-    private final byte[] keyBytes;
 
     /** Value. */
     private final Object val;
@@ -61,7 +56,6 @@ public class CdcEventImpl implements CdcEvent {
 
     /**
      * @param key Key.
-     * @param keyBytes Key bytes.
      * @param val Value.
      * @param primary {@code True} if changes made on primary node.
      * @param part Partition.
@@ -71,7 +65,6 @@ public class CdcEventImpl implements CdcEvent {
      */
     public CdcEventImpl(
         Object key,
-        byte[] keyBytes,
         Object val,
         boolean primary,
         int part,
@@ -80,7 +73,6 @@ public class CdcEventImpl implements CdcEvent {
         long expireTime
     ) {
         this.key = key;
-        this.keyBytes = keyBytes;
         this.val = val;
         this.primary = primary;
         this.part = part;
@@ -92,11 +84,6 @@ public class CdcEventImpl implements CdcEvent {
     /** {@inheritDoc} */
     @Override public Object key() {
         return key;
-    }
-
-    /** Key bytes. */
-    public byte[] keyBytes() {
-        return keyBytes;
     }
 
     /** {@inheritDoc} */
