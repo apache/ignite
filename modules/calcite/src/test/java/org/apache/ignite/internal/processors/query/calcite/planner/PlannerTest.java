@@ -425,7 +425,8 @@ public class PlannerTest extends AbstractPlannerTest {
             NoOpMemoryTracker.INSTANCE,
             NoOpIoTracker.INSTANCE,
             0,
-            Commons.parametersMap(ctx.parameters()));
+            Commons.parametersMap(ctx.parameters()),
+            null);
 
         return new LogicalRelImplementor<>(ectx, c -> r -> 0, mailboxRegistry, exchangeSvc,
             new TestFailureProcessor(kernal)).go(fragment.root());

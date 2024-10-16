@@ -62,6 +62,7 @@ import org.apache.calcite.rex.RexShuttle;
 import org.apache.calcite.rex.RexUtil;
 import org.apache.calcite.sql.type.SqlTypeName;
 import org.apache.calcite.sql.validate.SqlConformance;
+import org.apache.ignite.internal.binary.BinaryObjectImpl;
 import org.apache.ignite.internal.processors.query.calcite.exec.ExecutionContext;
 import org.apache.ignite.internal.processors.query.calcite.exec.RowHandler;
 import org.apache.ignite.internal.processors.query.calcite.exec.RowHandler.RowFactory;
@@ -246,9 +247,24 @@ public class ExpressionFactoryImpl<Row> implements ExpressionFactory<Row> {
     /** */
     @SuppressWarnings("rawtypes")
     private static int compare(Object o1, Object o2, int nullComparison) {
+        if (o1 instanceof BinaryObjectImpl)
+            return compareBinary(o1, o2, nullComparison);
+
         final Comparable c1 = (Comparable)o1;
         final Comparable c2 = (Comparable)o2;
         return RelFieldCollation.compare(c1, c2, nullComparison);
+    }
+
+    /** */
+    private static int compareBinary(Object o1, Object o2, int nullComparison) {
+        if (o1 == o2)
+            return 0;
+        else if (o1 == null)
+            return nullComparison;
+        else if (o2 == null)
+            return -nullComparison;
+
+        return BinaryObjectImpl.compareForDml(o1, o2);
     }
 
     /** {@inheritDoc} */
@@ -568,6 +584,7 @@ public class ExpressionFactoryImpl<Row> implements ExpressionFactory<Row> {
             new RexShuttle() {
                 @Override public RexNode visitFieldAccess(RexFieldAccess fieldAccess) {
                     b.append(", fldIdx=").append(fieldAccess.getField().getIndex());
+                    b.append(", fldType=").append(fieldAccess.getField().getType().getFullTypeString());
 
                     return super.visitFieldAccess(fieldAccess);
                 }
