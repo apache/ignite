@@ -26,6 +26,8 @@ import org.apache.ignite.IgniteCache;
 import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.cache.QueryEntity;
 import org.apache.ignite.configuration.CacheConfiguration;
+import org.apache.ignite.internal.processors.query.IgniteSQLException;
+import org.apache.ignite.internal.processors.query.calcite.prepare.IgniteSqlValidator;
 import org.junit.Test;
 
 import static java.util.Collections.singletonList;
@@ -224,6 +226,9 @@ public class DateTimeTest extends AbstractBasicIntegrationTest {
 
         assertQuery("SELECT CAST('01:02:03' AS TIME)")
             .returns(sqlTime("01:02:03")).check();
+
+        assertThrows("SELECT CAST('2021-01-02' AS DATE FORMAT 'DD-MM-YY')", IgniteSQLException.class,
+            IgniteSqlValidator.ERR_TXT_CAST_OPERATORS);
     }
 
     /** */
