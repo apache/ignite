@@ -98,6 +98,46 @@ public class KeepBinaryIntegrationTest extends AbstractBasicIntegrationTransacti
     }
 
     /** */
+    @Test
+    public void testDynamicParameters() {
+        IgniteCache<Integer, Person> cache = client.cache(CACHE_NAME);
+
+        Person p0 = new Person(0, "name0", null);
+        Person p1 = new Person(1, "name1", p0);
+
+        put(client, cache, 0, p0);
+        put(client, cache, 1, p1);
+
+        SupplierX<?> checker = () -> {
+            for (boolean keepBinary : new boolean[] {true, false}) {
+                for (String sql : new String[] {
+                    "SELECT ?",
+                    "SELECT _val FROM Person WHERE _val = ?",
+                    "SELECT obj FROM Person WHERE obj = ?"
+                }) {
+                    SqlFieldsQuery qry = new SqlFieldsQuery(sql).setArgs(p0);
+
+                    List<List<?>> res = keepBinary ? cache.withKeepBinary().query(qry).getAll() : cache.query(qry).getAll();
+
+                    assertEquals(1, res.size());
+
+                    if (keepBinary)
+                        assertTrue(res.get(0).get(0) instanceof BinaryObject);
+                    else
+                        assertEquals(p0, res.get(0).get(0));
+                }
+            }
+
+            return null;
+        };
+
+        if (sqlTxMode == SqlTransactionMode.NONE)
+            checker.get();
+        else
+            txAction(client, checker);
+    }
+
+    /** */
     private static class Person {
         /** */
         @QuerySqlField
