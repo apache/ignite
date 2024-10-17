@@ -130,6 +130,7 @@ import static org.apache.ignite.IgniteSystemProperties.IGNITE_LONG_OPERATIONS_DU
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_MAX_COMPLETED_TX_COUNT;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_SLOW_TX_WARN_TIMEOUT;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_TX_DEADLOCK_DETECTION_MAX_ITERS;
+import static org.apache.ignite.configuration.TransactionConfiguration.TX_AWARE_QUERIES_SUPPORTED_MODES;
 import static org.apache.ignite.events.EventType.EVT_NODE_FAILED;
 import static org.apache.ignite.events.EventType.EVT_NODE_JOINED;
 import static org.apache.ignite.events.EventType.EVT_NODE_LEFT;
@@ -3593,5 +3594,16 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
     /** Clears tx states collections. */
     public void clearUncommitedStates() {
         uncommitedTx = Collections.emptySet();
+    }
+
+    /**
+     * Checks if transaction mode supported for transaction aware queries.
+     * @param isolation Transaction isolation to check.
+     */
+    public static void ensureTransactionModeSupported(TransactionIsolation isolation) {
+        if (TX_AWARE_QUERIES_SUPPORTED_MODES.contains(isolation))
+            return;
+
+        throw new IllegalStateException("Transaction isolation mode not supported for SQL queries: " + isolation);
     }
 }

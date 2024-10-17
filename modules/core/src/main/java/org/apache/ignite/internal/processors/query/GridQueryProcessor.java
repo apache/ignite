@@ -349,8 +349,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
         initQueryEngines();
 
         idxBuildStatusStorage = new IndexBuildStatusStorage(ctx);
-
-        txAwareQueriesEnabled = ctx.config().getTransactionConfiguration().isTxAwareQueriesEnabled();
+        txAwareQueriesEnabled = U.isTxAwareQueriesEnabled(ctx);
     }
 
     /** {@inheritDoc} */
