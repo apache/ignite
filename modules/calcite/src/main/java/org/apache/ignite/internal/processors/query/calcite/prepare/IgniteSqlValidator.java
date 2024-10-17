@@ -281,6 +281,10 @@ public class IgniteSqlValidator extends SqlValidatorImpl {
             if (isSystemFieldName(alias))
                 throw newValidationError(call, IgniteResource.INSTANCE.illegalAlias(alias));
         }
+        else if (call.getKind() == SqlKind.CAST) {
+            if (call.getOperandList().size() > 2)
+                throw newValidationError(call, IgniteResource.INSTANCE.invalidCastParameters());
+        }
 
         super.validateCall(call, scope);
     }
