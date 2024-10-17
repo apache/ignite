@@ -120,14 +120,7 @@ public class JdbcQueryExecuteRequest extends JdbcRequest {
     /**
      * @return Sql query arguments.
      */
-    public Object[] arguments() throws IOException {
-        if (args != null) {
-            for (int i = 0; i < args.length; i++) {
-                if (args[i] instanceof JdbcBlobBuffer)
-                    args[i] = ((JdbcBlobBuffer)args[i]).getData();
-            }
-        }
-
+    public Object[] arguments() {
         return args;
     }
 
@@ -202,8 +195,18 @@ public class JdbcQueryExecuteRequest extends JdbcRequest {
 
         args = new Object[argsNum];
 
-        for (int i = 0; i < argsNum; ++i)
+        for (int i = 0; i < argsNum; ++i) {
             args[i] = JdbcUtils.readObject(reader, protoCtx);
+
+            if (args[i] instanceof JdbcBlobBuffer) {
+                try {
+                    args[i] = ((JdbcBlobBuffer)args[i]).getData();
+                }
+                catch (IOException e) {
+                    throw new BinaryObjectException(e);
+                }
+            }
+        }
 
         if (protoCtx.isAutoCommitSupported())
             autoCommit = reader.readBoolean();
