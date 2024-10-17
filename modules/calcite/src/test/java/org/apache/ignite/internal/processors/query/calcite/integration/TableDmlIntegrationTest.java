@@ -643,6 +643,8 @@ public class TableDmlIntegrationTest extends AbstractBasicIntegrationTransaction
         assertThrows("INSERT INTO timestamp_t VALUES ('1993-08-99 00:00:00')", errType, errDate);
         assertThrows("INSERT INTO timestamp_t VALUES ('1993-02-29 00:00:00')", errType, errDay);
         assertThrows("INSERT INTO timestamp_t VALUES ('1900-02-29 00:00:00')", errType, errDay);
+        sql("INSERT INTO timestamp_t VALUES ('1992-02-29 00:00:00')");
+        sql("INSERT INTO timestamp_t VALUES ('2000-02-29 00:00:00')");
         assertThrows("INSERT INTO timestamp_t VALUES ('02-02-1992 00:00:00')", errType, errDate);
         assertThrows("INSERT INTO timestamp_t VALUES ('1900-1-1 59:59:23')", errType, errDate);
         assertThrows("INSERT INTO timestamp_t VALUES ('1900a01a01 00:00:00')", errType, errDate);
