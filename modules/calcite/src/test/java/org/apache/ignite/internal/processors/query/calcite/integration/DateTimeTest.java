@@ -27,7 +27,6 @@ import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.cache.QueryEntity;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.internal.processors.query.IgniteSQLException;
-import org.apache.ignite.internal.processors.query.calcite.prepare.IgniteSqlValidator;
 import org.junit.Test;
 
 import static java.util.Collections.singletonList;
