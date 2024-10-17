@@ -2302,7 +2302,7 @@ public class SystemViewSelfTest extends GridCommonAbstractTest {
                 assertEquals(ignite.localNode().consistentId().toString(), v.consistentId());
                 assertNotNull(v.snapshotRecordSegment());
                 assertTrue("snapshotTime should be non-zero value",
-                        v.creationTime() > 0);
+                        v.snapshotTime() > 0);
 
                 Integer incIdx = v.incrementIndex();
 
