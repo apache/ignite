@@ -134,6 +134,7 @@ public class DynamicCacheDescriptor {
         assert grpDesc != null || template;
         assert schema != null;
 
+//        if (false)
         if (cacheCfg.getCacheMode() == CacheMode.REPLICATED && cacheCfg.getNearConfiguration() != null) {
             cacheCfg = new CacheConfiguration(cacheCfg);
 
