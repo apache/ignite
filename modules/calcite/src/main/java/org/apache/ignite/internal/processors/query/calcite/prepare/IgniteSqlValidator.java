@@ -283,7 +283,7 @@ public class IgniteSqlValidator extends SqlValidatorImpl {
         }
         else if (call.getKind() == SqlKind.CAST) {
             if (call.getOperandList().size() > 2)
-                throw newValidationError(call, IgniteResource.INSTANCE.invalidCastParameters(call.getKind().name()));
+                throw newValidationError(call, IgniteResource.INSTANCE.invalidCastParameters());
         }
 
         super.validateCall(call, scope);
