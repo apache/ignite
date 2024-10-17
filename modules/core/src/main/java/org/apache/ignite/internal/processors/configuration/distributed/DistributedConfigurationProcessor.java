@@ -25,12 +25,16 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.GridKernalContext;
+import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.processors.GridProcessorAdapter;
 import org.apache.ignite.internal.processors.metastorage.DistributedMetaStorage;
 import org.apache.ignite.internal.processors.metastorage.DistributedMetastorageLifecycleListener;
 import org.apache.ignite.internal.processors.metastorage.ReadableDistributedMetaStorage;
 import org.apache.ignite.internal.processors.subscription.GridInternalSubscriptionProcessor;
+import org.apache.ignite.internal.util.future.GridCompoundFuture;
+import org.apache.ignite.internal.util.future.GridFinishedFuture;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
+import org.apache.ignite.internal.util.typedef.F;
 import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.internal.processors.configuration.distributed.DistributedConfigurationProcessor.AllowableAction.ACTUALIZE;
@@ -47,7 +51,7 @@ public class DistributedConfigurationProcessor extends GridProcessorAdapter impl
     private static final String DIST_CONF_PREFIX = "distrConf-";
 
     /** Properties storage. */
-    private final Map<String, DistributedChangeableProperty> props = new ConcurrentHashMap<>();
+    private final Map<String, DistributedChangeableProperty<Serializable>> props = new ConcurrentHashMap<>();
 
     /** Global metastorage. */
     private volatile DistributedMetaStorage distributedMetastorage;
@@ -74,7 +78,7 @@ public class DistributedConfigurationProcessor extends GridProcessorAdapter impl
                 distributedMetastorage.listen(
                     (key) -> key.startsWith(DIST_CONF_PREFIX),
                     (String key, Serializable oldVal, Serializable newVal) -> {
-                        DistributedChangeableProperty prop = props.get(toPropertyKey(key));
+                        DistributedChangeableProperty<Serializable> prop = props.get(toPropertyKey(key));
 
                         if (prop != null)
                             prop.localUpdate(newVal);
@@ -94,10 +98,62 @@ public class DistributedConfigurationProcessor extends GridProcessorAdapter impl
                 //Switch to cluster wide update action and do it on already registered properties.
                 switchCurrentActionTo(CLUSTER_WIDE_UPDATE);
 
-                isp.getDistributedConfigurationListeners()
-                    .forEach(DistributedConfigurationLifecycleListener::onReadyToWrite);
+                IgniteInternalFuture<Void> initFut = initDefaultPropertiesValues();
+
+                // Notify registered listeners only after propagation of default values.
+                // Can't wait for initFut in the current thread, since it can block discovery and deadlock is possible.
+                initFut.listen(fut -> isp.getDistributedConfigurationListeners()
+                    .forEach(DistributedConfigurationLifecycleListener::onReadyToWrite));
             }
         });
+    }
+
+    /** Init default values for distributed properties. */
+    private IgniteInternalFuture<Void> initDefaultPropertiesValues() {
+        Map<String, ?> dfltVals = ctx.config().getDistributedPropertiesDefaultValues();
+
+        if (F.isEmpty(dfltVals))
+            return new GridFinishedFuture<>();
+
+        GridCompoundFuture<Void, Void> compFut = new GridCompoundFuture<>() {
+            @Override protected boolean ignoreFailure(Throwable err) {
+                // Do not complete the entire compound future if any property failed.
+                return true;
+            }
+        };
+
+        for (Map.Entry<String, ?> entry : dfltVals.entrySet()) {
+            DistributedChangeableProperty<Serializable> prop = props.get(entry.getKey());
+
+            if (prop == null) {
+                log.warning("Cannot set default value for distributed property '" + entry.getKey() +
+                    "', property is not registered");
+
+                continue;
+            }
+
+            if (prop.get() != null)
+                continue;
+
+            try {
+                Serializable val = entry.getValue() instanceof String ? prop.parse((String)entry.getValue()) :
+                    (Serializable)entry.getValue();
+
+                IgniteInternalFuture<?> fut = prop.propagateAsync(null, val);
+
+                fut.listen(f -> {
+                    if (f.error() != null)
+                        log.error("Cannot set default value for distributed property '" + prop.getName() + '\'', f.error());
+                });
+
+                compFut.add((IgniteInternalFuture<Void>)fut);
+            }
+            catch (Exception e) {
+                log.error("Cannot initiate setting default value for distributed property '" + prop.getName() + '\'', e);
+            }
+        }
+
+        return compFut.markInitialized();
     }
 
     /**
@@ -168,7 +224,7 @@ public class DistributedConfigurationProcessor extends GridProcessorAdapter impl
 
     /** {@inheritDoc} */
     @Override public @Nullable <T extends Serializable> DistributedChangeableProperty<T> property(String name) {
-        DistributedChangeableProperty<T> p = props.get(name);
+        DistributedChangeableProperty<T> p = (DistributedChangeableProperty<T>)props.get(name);
 
         if (!(p instanceof DistributedChangeableProperty))
             return null;
