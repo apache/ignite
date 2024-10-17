@@ -519,6 +519,21 @@ This view exposes information about currently running SQL queries.
 |LAST_START_TIME | date |    Last execution date
 |===
 
+== SQL_PLANS_HISTORY
+
+This view displays a list of plans of previously executed SQL queries.
+
+[{table_opts}]
+|===
+|NAME | TYPE |  DESCRIPTION
+|SCHEMA_NAME | string |  Schema name
+|SQL | string |  Query text
+|PLAN | string |  SQL plan text
+|LOCAL | boolean | True if local only
+|ENGINE | string |  SQL engine
+|LAST_START_TIME | date |  Last execution date
+|===
+
 == SCHEMAS
 
 This view exposes information about SQL schemas.
