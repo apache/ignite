@@ -263,6 +263,13 @@ public class MavenUtils {
 
     /** */
     private static String resolveMavenApplicationPath() {
+
+        Path mvnwPath = Paths.get(System.getProperty("user.dir"), "mvnw");
+
+        if (Files.exists(mvnwPath) && Files.isExecutable(mvnwPath)) {
+            return mvnwPath.toString();
+        }
+
         String m2Home = System.getenv("M2_HOME");
 
         if (m2Home == null)
