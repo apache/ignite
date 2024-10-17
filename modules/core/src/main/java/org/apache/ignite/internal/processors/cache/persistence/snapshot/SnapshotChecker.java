@@ -1016,9 +1016,9 @@ public class SnapshotChecker {
     }
 
     /**
-     * Checks results of the internal and custom snapshot validation handlres. Throws exception if a validation error occurs.
+     * Checks results of all the snapshot validation handlres.
      * @param snpName Snapshot name
-     * @param results Results: checking node -> snapshot's node consistend id -> custom handler id -> handler result.
+     * @param results Results: checking node -> snapshot part's consistend id -> custom handler name -> handler result.
      * @see #invokeCustomHandlers(String, String, String, Collection, boolean)
      */
     public void checkCustomHandlersResults(
@@ -1028,15 +1028,18 @@ public class SnapshotChecker {
         Map<String, List<SnapshotHandlerResult<?>>> clusterResults = new HashMap<>();
         Collection<UUID> execNodes = new ArrayList<>(results.size());
 
+        // Checking node -> Map by snapshot part's consistend id.
         for (Map.Entry<ClusterNode, Map<Object, Map<String, SnapshotHandlerResult<?>>>> nodeRes : results.entrySet()) {
+            // Consistent id -> Map by handler name.
             for (Map.Entry<Object, Map<String, SnapshotHandlerResult<?>>> nodeConsIdRes : nodeRes.getValue().entrySet()) {
                 ClusterNode node = nodeRes.getKey();
 
-                // Depending on the job mapping, we can get several different results from one node.
+                // We can get several different results from one node.
                 execNodes.add(node.id());
 
                 assert nodeRes.getValue() != null : "At least the default snapshot restore handler should have been executed ";
 
+                // Handler name -> handler result.
                 for (Map.Entry<String, SnapshotHandlerResult<?>> nodeHndRes : nodeConsIdRes.getValue().entrySet()) {
                     String hndName = nodeHndRes.getKey();
                     SnapshotHandlerResult<?> hndRes = nodeHndRes.getValue();
