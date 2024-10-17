@@ -195,4 +195,41 @@ public class GridCommandHandlerSslWithSecurityTest extends GridCommandHandlerFac
         assertContains(log, testOutput, "--keystore-password *****");
         assertContains(log, testOutput, "--truststore-password *****");
     }
+
+    /**
+     * Verify that the command work correctly when entering password
+     * for user, and that it is requested only once.
+     *
+     * @throws Exception If failed.
+     */
+    @Test
+    public void testInputKeyUserPwdOnlyOnce() throws Exception {
+        IgniteEx crd = startGrid();
+
+        crd.cluster().state(ACTIVE);
+
+        TestCommandHandler hnd = newCommandHandler();
+
+        AtomicInteger pwdCnt = new AtomicInteger();
+
+        ((CommandHandler)GridTestUtils.getFieldValue(hnd, "hnd")).console = new NoopConsole() {
+            /** {@inheritDoc} */
+            @Override public char[] readPassword(String fmt, Object... args) {
+                pwdCnt.incrementAndGet();
+
+                return pwd.toCharArray();
+            }
+        };
+
+        int exitCode = hnd.execute(Arrays.asList(
+                "--state",
+                "--user", login,
+                "--keystore", keyStorePath("connectorClient"),
+                "--keystore-password", keyStorePassword(),
+                "--truststore", keyStorePath("trustthree"),
+                "--truststore-password", keyStorePassword()));
+
+        assertEquals(EXIT_CODE_OK, exitCode);
+        assertEquals(1, pwdCnt.get());
+    }
 }
