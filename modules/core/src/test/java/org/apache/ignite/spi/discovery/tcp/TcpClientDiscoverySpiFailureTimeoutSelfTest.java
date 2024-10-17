@@ -302,7 +302,7 @@ public class TcpClientDiscoverySpiFailureTimeoutSelfTest extends TcpClientDiscov
 
             Thread.sleep(failureDetectionTimeout());
 
-            assertTrue(firstSpi.err != null && X.hasCause(firstSpi.err, SocketTimeoutException.class));
+            assertTrue(X.hasCause(firstSpi.err, SocketTimeoutException.class));
 
             firstSpi.reset();
             secondSpi.reset();
