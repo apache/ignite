@@ -64,7 +64,6 @@ import org.apache.calcite.sql.validate.SqlValidatorScope;
 import org.apache.calcite.sql.validate.SqlValidatorTable;
 import org.apache.calcite.sql.validate.SqlValidatorUtil;
 import org.apache.calcite.util.Static;
-import org.apache.ignite.internal.processors.query.IgniteSQLException;
 import org.apache.ignite.internal.processors.query.QueryUtils;
 import org.apache.ignite.internal.processors.query.calcite.schema.CacheTableDescriptor;
 import org.apache.ignite.internal.processors.query.calcite.schema.IgniteCacheTable;
@@ -87,9 +86,6 @@ public class IgniteSqlValidator extends SqlValidatorImpl {
 
     /** **/
     private static final Set<SqlKind> HUMAN_READABLE_ALIASES_FOR;
-
-    /** */
-    public static final String ERR_TXT_CAST_OPERATORS = "Operator 'CAST' supports only the parameters: value and target type.";
 
     static {
         EnumSet<SqlKind> kinds = EnumSet.noneOf(SqlKind.class);
@@ -287,7 +283,7 @@ public class IgniteSqlValidator extends SqlValidatorImpl {
         }
         else if (call.getKind() == SqlKind.CAST) {
             if (call.getOperandList().size() > 2)
-                throw new IgniteSQLException(ERR_TXT_CAST_OPERATORS);
+                throw newValidationError(call, IgniteResource.INSTANCE.invalidCastParameters(call.getKind().name()));
         }
 
         super.validateCall(call, scope);

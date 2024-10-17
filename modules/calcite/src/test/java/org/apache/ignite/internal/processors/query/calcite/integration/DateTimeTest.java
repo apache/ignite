@@ -228,7 +228,7 @@ public class DateTimeTest extends AbstractBasicIntegrationTransactionalTest {
             .returns(sqlTime("01:02:03")).check();
 
         assertThrows("SELECT CAST('2021-01-02' AS DATE FORMAT 'DD-MM-YY')", IgniteSQLException.class,
-            IgniteSqlValidator.ERR_TXT_CAST_OPERATORS);
+            "Operator 'CAST' supports only the parameters: value and target type.");
     }
 
     /** */
