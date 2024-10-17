@@ -20,19 +20,18 @@ package org.apache.ignite.internal.processors.platform.client.tx;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.binary.BinaryRawReader;
 import org.apache.ignite.internal.IgniteInternalFuture;
-import org.apache.ignite.internal.processors.cache.transactions.IgniteInternalTx;
+import org.apache.ignite.internal.processors.odbc.ClientTxSupport;
 import org.apache.ignite.internal.processors.platform.client.ClientConnectionContext;
 import org.apache.ignite.internal.processors.platform.client.ClientRequest;
 import org.apache.ignite.internal.processors.platform.client.ClientResponse;
 import org.apache.ignite.internal.processors.platform.client.ClientStatus;
 import org.apache.ignite.internal.processors.platform.client.IgniteClientException;
-import org.apache.ignite.internal.util.future.GridFinishedFuture;
 import org.apache.ignite.internal.util.lang.GridClosureException;
 
 /**
  * End the transaction request.
  */
-public class ClientTxEndRequest extends ClientRequest {
+public class ClientTxEndRequest extends ClientRequest implements ClientTxSupport {
     /** Transaction id. */
     private final int txId;
 
@@ -58,7 +57,7 @@ public class ClientTxEndRequest extends ClientRequest {
 
     /** {@inheritDoc} */
     @Override public IgniteInternalFuture<ClientResponse> processAsync(ClientConnectionContext ctx) {
-        return endTxAsync(ctx).chain(f -> {
+        return endTxAsync(ctx, txId, committed).chain(f -> {
             if (f.error() != null)
                 throw new GridClosureException(f.error());
             else
@@ -66,36 +65,13 @@ public class ClientTxEndRequest extends ClientRequest {
         });
     }
 
-    /** End transaction asynchronously. */
-    private IgniteInternalFuture<IgniteInternalTx> endTxAsync(ClientConnectionContext ctx) {
-        ClientTxContext txCtx = ctx.txContext(txId);
+    /** {@inheritDoc} */
+    @Override public RuntimeException transactionNotFoundException() {
+        return new IgniteClientException(ClientStatus.TX_NOT_FOUND, "Transaction with id " + txId + " not found.");
+    }
 
-        if (txCtx == null && !committed)
-            return new GridFinishedFuture<>();
-
-        if (txCtx == null)
-            throw new IgniteClientException(ClientStatus.TX_NOT_FOUND, "Transaction with id " + txId + " not found.");
-
-        try {
-            txCtx.acquire(committed);
-
-            if (committed)
-                return txCtx.tx().context().commitTxAsync(txCtx.tx());
-            else
-                return txCtx.tx().rollbackAsync();
-        }
-        catch (IgniteCheckedException e) {
-            throw new IgniteClientException(ClientStatus.FAILED, e.getMessage(), e);
-        }
-        finally {
-            ctx.removeTxContext(txId);
-
-            try {
-                txCtx.release(false);
-            }
-            catch (IgniteCheckedException ignore) {
-                // No-op.
-            }
-        }
+    /** {@inheritDoc} */
+    @Override public RuntimeException endTxException(IgniteCheckedException cause) {
+        return new IgniteClientException(ClientStatus.FAILED, cause.getMessage(), cause);
     }
 }

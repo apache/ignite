@@ -19,10 +19,11 @@ package org.apache.ignite.internal.client.thin;
 
 import java.util.Collection;
 import java.util.function.Consumer;
-
 import org.apache.ignite.client.ClientConnectionException;
 import org.apache.ignite.client.ClientException;
 import org.apache.ignite.client.ClientReconnectedException;
+import org.apache.ignite.internal.client.thin.TcpClientTransactions.TcpClientTransaction;
+import org.jetbrains.annotations.Nullable;
 
 /**
  * Generic query pager. Override {@link this#readResult(PayloadInputChannel)} to make it specific.
@@ -39,6 +40,9 @@ abstract class GenericQueryPager<T> implements QueryPager<T> {
 
     /** Channel. */
     private final ReliableChannel ch;
+
+    /** Client Transaction. */
+    private final @Nullable TcpClientTransaction tx;
 
     /** Has next. */
     private boolean hasNext = true;
@@ -61,6 +65,7 @@ abstract class GenericQueryPager<T> implements QueryPager<T> {
     /** Constructor. */
     GenericQueryPager(
         ReliableChannel ch,
+        @Nullable TcpClientTransaction tx,
         ClientOperation qryOp,
         ClientOperation pageQryOp,
         Consumer<PayloadOutputChannel> qryWriter,
@@ -68,6 +73,7 @@ abstract class GenericQueryPager<T> implements QueryPager<T> {
         int part
     ) {
         this.ch = ch;
+        this.tx = tx;
         this.qryOp = qryOp;
         this.pageQryOp = pageQryOp;
         this.qryWriter = qryWriter;
@@ -78,11 +84,12 @@ abstract class GenericQueryPager<T> implements QueryPager<T> {
     /** Constructor. */
     GenericQueryPager(
         ReliableChannel ch,
+        @Nullable TcpClientTransaction tx,
         ClientOperation qryOp,
         ClientOperation pageQryOp,
         Consumer<PayloadOutputChannel> qryWriter
     ) {
-        this(ch, qryOp, pageQryOp, qryWriter, 0, -1);
+        this(ch, tx, qryOp, pageQryOp, qryWriter, 0, -1);
     }
 
     /** {@inheritDoc} */
@@ -90,8 +97,15 @@ abstract class GenericQueryPager<T> implements QueryPager<T> {
         if (!hasNext)
             throw new IllegalStateException("No more query results");
 
-        return hasFirstPage ? queryPage() : part == -1 ? ch.service(qryOp, qryWriter, this::readResult) :
-            ch.affinityService(cacheId, part, qryOp, qryWriter, this::readResult);
+        if (hasFirstPage)
+            return queryPage();
+
+        if (tx != null && tx.clientChannel().protocolCtx().isFeatureSupported(ProtocolBitmaskFeature.TX_AWARE_QUERIES))
+            return tx.clientChannel().service(qryOp, qryWriter, this::readResult);
+
+        return part == -1
+                ? ch.service(qryOp, qryWriter, this::readResult)
+                : ch.affinityService(cacheId, part, qryOp, qryWriter, this::readResult);
     }
 
     /** {@inheritDoc} */

@@ -84,12 +84,6 @@
         </profile>
 
         <profile>
-            <id>all-other</id> <!-- used to update project versions and check all modules compilation -->
-            <modules> <!-- sorted alphabetically -->
-            </modules>
-        </profile>
-
-        <profile>
             <id>ducktests</id>
             <modules>
                 <module>modules/ducktests</module>

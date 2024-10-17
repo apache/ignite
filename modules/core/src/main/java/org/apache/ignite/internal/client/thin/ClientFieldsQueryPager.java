@@ -22,6 +22,8 @@ import java.util.Collection;
 import java.util.List;
 import java.util.function.Consumer;
 import org.apache.ignite.internal.binary.streams.BinaryInputStream;
+import org.apache.ignite.internal.client.thin.TcpClientTransactions.TcpClientTransaction;
+import org.jetbrains.annotations.Nullable;
 
 /**
  * Fields query pager.
@@ -39,13 +41,14 @@ class ClientFieldsQueryPager extends GenericQueryPager<List<?>> implements Field
     /** Constructor. */
     ClientFieldsQueryPager(
         ReliableChannel ch,
+        @Nullable TcpClientTransaction tx,
         ClientOperation qryOp,
         ClientOperation pageQryOp,
         Consumer<PayloadOutputChannel> qryWriter,
         boolean keepBinary,
         ClientBinaryMarshaller marsh
     ) {
-        super(ch, qryOp, pageQryOp, qryWriter);
+        super(ch, tx, qryOp, pageQryOp, qryWriter);
 
         this.keepBinary = keepBinary;
 
