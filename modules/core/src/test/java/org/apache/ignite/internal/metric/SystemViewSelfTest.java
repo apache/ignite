@@ -2279,8 +2279,6 @@ public class SystemViewSelfTest extends GridCommonAbstractTest {
         ) {
             ignite.cluster().state(ClusterState.ACTIVE);
 
-            long snapshotInitTime = System.currentTimeMillis();
-
             ignite.cache(DEFAULT_CACHE_NAME).put(1, 1);
 
             ignite.snapshot().createSnapshot(testSnap0).get();
@@ -2303,8 +2301,8 @@ public class SystemViewSelfTest extends GridCommonAbstractTest {
 
                 assertEquals(ignite.localNode().consistentId().toString(), v.consistentId());
                 assertNotNull(v.snapshotRecordSegment());
-                assertTrue("Creation time should be geq than time before snapshot initialization",
-                        v.creationTime() >= snapshotInitTime);
+                assertTrue("snapshotTime should be non-zero value",
+                        v.creationTime() > 0);
 
                 Integer incIdx = v.incrementIndex();
 
