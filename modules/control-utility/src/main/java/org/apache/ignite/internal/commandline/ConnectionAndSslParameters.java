@@ -65,6 +65,9 @@ public class ConnectionAndSslParameters<A extends IgniteDataTransferObject> {
     /** */
     private final CLIArgumentParser parser;
 
+    /**String builder for logging arguments with hidden confidential values*/
+    private final String argumentsToString;
+
     /**
      * @param cmdPath Path to the command in {@link CommandsRegistry} hierarchy.
      * @param arg Command argument.
@@ -73,11 +76,13 @@ public class ConnectionAndSslParameters<A extends IgniteDataTransferObject> {
     public ConnectionAndSslParameters(
         Deque<Command<?, ?>> cmdPath,
         A arg,
-        CLIArgumentParser parser
+        CLIArgumentParser parser,
+        String argumentsToString
     ) {
         this.cmdPath = cmdPath;
         this.arg = arg;
         this.parser = parser;
+        this.argumentsToString = argumentsToString;
 
         this.user = parser.get(CMD_USER);
         this.pwd = parser.get(CMD_PASSWORD);
@@ -248,5 +253,14 @@ public class ConnectionAndSslParameters<A extends IgniteDataTransferObject> {
      */
     public boolean verbose() {
         return parser.get(CMD_VERBOSE);
+    }
+
+    /**
+     * Return sting of arguments for logging with hidden confidential values
+     *
+     * @return arguments to string
+     */
+    public String getArgumentsToString() {
+        return argumentsToString;
     }
 }

@@ -15,16 +15,15 @@
  * limitations under the License.
  */
 
-
 package org.apache.ignite.internal.commandline;
 
 import java.lang.reflect.Field;
 import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Deque;
-import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
+import java.util.ListIterator;
 import java.util.Set;
 import java.util.function.BiConsumer;
 import java.util.function.BiFunction;
@@ -42,15 +41,17 @@ import org.apache.ignite.internal.management.api.Command;
 import org.apache.ignite.internal.management.api.CommandUtils;
 import org.apache.ignite.internal.management.api.CommandsRegistry;
 import org.apache.ignite.internal.management.api.Positional;
+import org.apache.ignite.internal.util.typedef.internal.SB;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteExperimental;
-import org.apache.ignite.ssl.SslContextFactory;
 
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_ENABLE_EXPERIMENTAL_COMMAND;
 import static org.apache.ignite.internal.commandline.CommandHandler.DFLT_HOST;
 import static org.apache.ignite.internal.commandline.CommandHandler.DFLT_PORT;
 import static org.apache.ignite.internal.commandline.CommandHandler.UTILITY_NAME;
-import static org.apache.ignite.internal.commandline.argument.parser.CLIArgument.optionalArg;
+import static org.apache.ignite.internal.commandline.argument.parser.CLIArgument.CLIArgumentBuilder.argument;
+import static org.apache.ignite.internal.commandline.argument.parser.CLIArgument.CLIArgumentBuilder.optionalArgument;
+import static org.apache.ignite.internal.commandline.argument.parser.CLIArgumentParser.readNextValueToken;
 import static org.apache.ignite.internal.management.api.CommandUtils.CMD_WORDS_DELIM;
 import static org.apache.ignite.internal.management.api.CommandUtils.NAME_PREFIX;
 import static org.apache.ignite.internal.management.api.CommandUtils.PARAM_WORDS_DELIM;
@@ -62,7 +63,9 @@ import static org.apache.ignite.internal.management.api.CommandUtils.isBoolean;
 import static org.apache.ignite.internal.management.api.CommandUtils.toFormattedCommandName;
 import static org.apache.ignite.internal.management.api.CommandUtils.toFormattedFieldName;
 import static org.apache.ignite.internal.management.api.CommandUtils.visitCommandParams;
+import static org.apache.ignite.ssl.SslContextFactory.DFLT_KEY_ALGORITHM;
 import static org.apache.ignite.ssl.SslContextFactory.DFLT_SSL_PROTOCOL;
+import static org.apache.ignite.ssl.SslContextFactory.DFLT_STORE_TYPE;
 
 /**
  * Argument parser.
@@ -131,9 +134,6 @@ public class ArgumentParser {
     /** */
     static final String CMD_SSL_FACTORY = "--ssl-factory";
 
-    /** Set of sensitive arguments */
-    private static final Set<String> SENSITIVE_ARGUMENTS = new HashSet<>();
-
     /** */
     private static final BiConsumer<String, Integer> PORT_VALIDATOR = (name, val) -> {
         if (val <= 0 || val > 65535)
@@ -143,62 +143,44 @@ public class ArgumentParser {
     /** */
     private final List<CLIArgument<?>> common = new ArrayList<>();
 
-    static {
-        SENSITIVE_ARGUMENTS.add(CMD_PASSWORD);
-        SENSITIVE_ARGUMENTS.add(CMD_KEYSTORE_PASSWORD);
-        SENSITIVE_ARGUMENTS.add(CMD_TRUSTSTORE_PASSWORD);
-    }
-
-    /**
-     * @param arg To check.
-     * @return True if provided argument is among sensitive one and not should be displayed.
-     */
-    public static boolean isSensitiveArgument(String arg) {
-        return SENSITIVE_ARGUMENTS.contains(arg);
-    }
+    /** Console instance */
+    protected final GridConsole console;
 
     /**
      * @param log Logger.
      * @param registry Supported commands.
+     * @param console Supported commands.
      */
-    public ArgumentParser(IgniteLogger log, IgniteCommandRegistry registry) {
+    public ArgumentParser(IgniteLogger log, IgniteCommandRegistry registry, GridConsole console) {
         this.log = log;
         this.registry = registry;
+        this.console = console;
 
-        BiConsumer<String, ?> securityWarn = (name, val) -> log.info(String.format("Warning: %s is insecure. " +
-                "Whenever possible, use interactive prompt for password (just discard %s option).", name, name));
-
-        arg(CMD_HOST, "HOST_OR_IP", String.class, DFLT_HOST);
-        arg(CMD_PORT, "PORT", Integer.class, DFLT_PORT, PORT_VALIDATOR);
-        arg(CMD_USER, "USER", String.class, null);
-        arg(CMD_PASSWORD, "PASSWORD", String.class, null, (BiConsumer<String, String>)securityWarn);
-        arg(CMD_VERBOSE, CMD_VERBOSE, boolean.class, false);
-        arg(CMD_SSL_PROTOCOL, "SSL_PROTOCOL[, SSL_PROTOCOL_2, ..., SSL_PROTOCOL_N]", String[].class, new String[] {DFLT_SSL_PROTOCOL});
-        arg(CMD_SSL_CIPHER_SUITES, "SSL_CIPHER_1[, SSL_CIPHER_2, ..., SSL_CIPHER_N]", String[].class, null);
-        arg(CMD_SSL_KEY_ALGORITHM, "SSL_KEY_ALGORITHM", String.class, SslContextFactory.DFLT_KEY_ALGORITHM);
-        arg(CMD_SSL_FACTORY, "SSL_FACTORY_PATH", String.class, null);
-        arg(CMD_KEYSTORE_TYPE, "KEYSTORE_TYPE", String.class, SslContextFactory.DFLT_STORE_TYPE);
-        arg(CMD_KEYSTORE, "KEYSTORE_PATH", String.class, null);
-        arg(CMD_KEYSTORE_PASSWORD, "KEYSTORE_PASSWORD", char[].class, null, (BiConsumer<String, char[]>)securityWarn);
-        arg(CMD_TRUSTSTORE_TYPE, "TRUSTSTORE_TYPE", String.class, SslContextFactory.DFLT_STORE_TYPE);
-        arg(CMD_TRUSTSTORE, "TRUSTSTORE_PATH", String.class, null);
-        arg(CMD_TRUSTSTORE_PASSWORD, "TRUSTSTORE_PASSWORD", char[].class, null, (BiConsumer<String, char[]>)securityWarn);
-        arg(CMD_AUTO_CONFIRMATION, CMD_AUTO_CONFIRMATION, boolean.class, false);
-        arg(
-            CMD_ENABLE_EXPERIMENTAL,
-            CMD_ENABLE_EXPERIMENTAL, Boolean.class,
-            IgniteSystemProperties.getBoolean(IGNITE_ENABLE_EXPERIMENTAL_COMMAND)
+        common.addAll(List.of(
+            optionalArgument(CMD_HOST, String.class).withUsage("HOST_OR_IP").withDefault(DFLT_HOST).build(),
+            optionalArgument(CMD_PORT, Integer.class).withUsage("PORT").withDefault(DFLT_PORT).withValidator(PORT_VALIDATOR).build(),
+            optionalArgument(CMD_USER, String.class).withUsage("USER").build(),
+            optionalArgument(CMD_PASSWORD, String.class).withUsage("PASSWORD").markSensitive().build(),
+            optionalArgument(CMD_VERBOSE, boolean.class).withUsage(CMD_VERBOSE).withDefault(false).build(),
+            optionalArgument(CMD_SSL_PROTOCOL, String[].class)
+                .withUsage("SSL_PROTOCOL[, SSL_PROTOCOL_2, ..., SSL_PROTOCOL_N]")
+                .withDefault(t -> new String[] {DFLT_SSL_PROTOCOL})
+                .build(),
+            optionalArgument(CMD_SSL_CIPHER_SUITES, String[].class).withUsage("SSL_CIPHER_1[, SSL_CIPHER_2, ..., SSL_CIPHER_N]").build(),
+            optionalArgument(CMD_SSL_KEY_ALGORITHM, String.class).withUsage("SSL_KEY_ALGORITHM").withDefault(DFLT_KEY_ALGORITHM).build(),
+            optionalArgument(CMD_SSL_FACTORY, String.class).withUsage("SSL_FACTORY_PATH").build(),
+            optionalArgument(CMD_KEYSTORE_TYPE, String.class).withUsage("KEYSTORE_TYPE").withDefault(DFLT_STORE_TYPE).build(),
+            optionalArgument(CMD_KEYSTORE, String.class).withUsage("KEYSTORE_PATH").build(),
+            optionalArgument(CMD_KEYSTORE_PASSWORD, char[].class).withUsage("KEYSTORE_PASSWORD").markSensitive().build(),
+            optionalArgument(CMD_TRUSTSTORE_TYPE, String.class).withUsage("TRUSTSTORE_TYPE").withDefault(DFLT_STORE_TYPE).build(),
+            optionalArgument(CMD_TRUSTSTORE, String.class).withUsage("TRUSTSTORE_PATH").build(),
+            optionalArgument(CMD_TRUSTSTORE_PASSWORD, char[].class).withUsage("TRUSTSTORE_PASSWORD").markSensitive().build(),
+            optionalArgument(CMD_AUTO_CONFIRMATION, boolean.class).withUsage(CMD_AUTO_CONFIRMATION).withDefault(false).build(),
+            optionalArgument(CMD_ENABLE_EXPERIMENTAL, Boolean.class)
+                .withUsage(CMD_ENABLE_EXPERIMENTAL)
+                .withDefault(t -> IgniteSystemProperties.getBoolean(IGNITE_ENABLE_EXPERIMENTAL_COMMAND))
+                .build())
         );
-    }
-
-    /** */
-    private <T> void arg(String name, String usage, Class<T> type, T dflt, BiConsumer<String, T> validator) {
-        common.add(optionalArg(name, usage, type, t -> dflt, validator));
-    }
-
-    /** */
-    private <T> void arg(String name, String usage, Class<T> type, T dflt) {
-        common.add(optionalArg(name, usage, type, () -> dflt));
     }
 
     /**
@@ -236,7 +218,9 @@ public class ArgumentParser {
 
         CLIArgumentParser parser = createArgumentParser();
 
-        parser.parse(args.iterator());
+        parser.parse(args.listIterator());
+
+        String argsToStr = convertCommandToString(raw.listIterator(), parser);
 
         A arg = (A)argument(
             cmdPath.peek().argClass(),
@@ -253,7 +237,7 @@ public class ArgumentParser {
             throw new IllegalArgumentException("Experimental commands disabled");
         }
 
-        return new ConnectionAndSslParameters<>(cmdPath, arg, parser);
+        return new ConnectionAndSslParameters<>(cmdPath, arg, parser, argsToStr);
     }
 
     /**
@@ -323,14 +307,11 @@ public class ArgumentParser {
         List<CLIArgument<?>> positionalArgs = new ArrayList<>();
         List<CLIArgument<?>> namedArgs = new ArrayList<>();
 
-        BiFunction<Field, Boolean, CLIArgument<?>> toArg = (fld, optional) -> new CLIArgument<>(
-            toFormattedFieldName(fld).toLowerCase(),
-            null,
-            optional,
-            fld.getType(),
-            null,
-            (name, val) -> {}
-        );
+        BiFunction<Field, Boolean, CLIArgument<?>> toArg =
+            (fld, optional) -> argument(toFormattedFieldName(fld).toLowerCase(), fld.getType())
+                .withOptional(optional)
+                .withSensitive(fld.getAnnotation(Argument.class).sensitive())
+                .build();
 
         List<Set<String>> grpdFlds = CommandUtils.argumentGroupsValues(cmdPath.peek().argClass());
 
@@ -339,14 +320,10 @@ public class ArgumentParser {
                 || fld.getAnnotation(Argument.class).optional())
         );
 
-        Consumer<Field> positionalArgCb = fld -> positionalArgs.add(new CLIArgument<>(
-            fld.getName().toLowerCase(),
-            null,
-            fld.getAnnotation(Argument.class).optional(),
-            fld.getType(),
-            null,
-            (name, val) -> {}
-        ));
+        Consumer<Field> positionalArgCb = fld -> positionalArgs.add(argument(fld.getName().toLowerCase(), fld.getType())
+            .withOptional(fld.getAnnotation(Argument.class).optional())
+            .build()
+        );
 
         BiConsumer<ArgumentGroup, List<Field>> argGrpCb = (argGrp0, flds) -> flds.forEach(fld -> {
             if (fld.isAnnotationPresent(Positional.class))
@@ -359,6 +336,42 @@ public class ArgumentParser {
 
         namedArgs.addAll(common);
 
-        return new CLIArgumentParser(positionalArgs, namedArgs);
+        return new CLIArgumentParser(positionalArgs, namedArgs, console);
+    }
+
+    /**
+     * Create string of command arguments for logging arguments with hidden confidential values
+     * @param rawIter raw command arguments iterator
+     * @param parser CLIArgumentParser
+     *
+     * @return string of command arguments for logging with hidden confidential values
+     */
+    private String convertCommandToString(ListIterator<String> rawIter, CLIArgumentParser parser) {
+        SB cmdToStr = new SB();
+
+        while (rawIter.hasNext()) {
+            String arg = rawIter.next();
+
+            CLIArgument<?> cliArg = parser.getCliArg(arg.toLowerCase());
+
+            cmdToStr.a(arg).a(' ');
+
+            if (cliArg == null || cliArg.isFlag())
+                continue;
+
+            String argVal = readNextValueToken(rawIter);
+
+            if (argVal != null) {
+                if (cliArg.isSensitive()) {
+                    cmdToStr.a("***** ");
+                    log.info(String.format("Warning: %s is insecure. Whenever possible, use interactive " +
+                            "prompt for password (just omit the argument value).", cliArg.name()));
+                }
+                else
+                    cmdToStr.a(argVal).a(' ');
+            }
+        }
+
+        return cmdToStr.toString();
     }
 }
