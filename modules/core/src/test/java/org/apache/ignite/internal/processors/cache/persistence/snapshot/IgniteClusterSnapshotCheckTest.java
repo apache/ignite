@@ -567,7 +567,7 @@ public class IgniteClusterSnapshotCheckTest extends AbstractSnapshotSelfTest {
     /** */
     @Test
     public void testCheckFromLesserTopology() throws Exception {
-        // {@link #corruptPartitionFile} affetchs an encrypted partition wrongly.
+        // {@link #corruptPartitionFile} incorrectly affects an encrypted partition.
         assumeFalse(encryption);
 
         int srvCnt = 3;
