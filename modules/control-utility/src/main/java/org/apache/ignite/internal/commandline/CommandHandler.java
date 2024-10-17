@@ -247,7 +247,7 @@ public class CommandHandler {
 
             verbose = F.exist(rawArgs, CMD_VERBOSE::equalsIgnoreCase);
 
-            ConnectionAndSslParameters<A> args = new ArgumentParser(logger, registry).parseAndValidate(rawArgs);
+            ConnectionAndSslParameters<A> args = new ArgumentParser(logger, registry, console).parseAndValidate(rawArgs);
 
             cmdName = toFormattedCommandName(args.cmdPath().peekLast().getClass()).toUpperCase();
 
@@ -457,7 +457,10 @@ public class CommandHandler {
         SB sb = new SB();
 
         for (int i = 0; i < rawArgs.size(); i++) {
-            if (hide) {
+            if (hide && !rawArgs.get(i).startsWith(NAME_PREFIX)) {
+                logger.info(String.format("Warning: %s is insecure. Whenever possible, use interactive " +
+                        "prompt for password (just omit the argument value).", rawArgs.get(i - 1)));
+
                 sb.a("***** ");
 
                 hide = false;
@@ -651,7 +654,8 @@ public class CommandHandler {
             "The command has the following syntax:");
         logger.info("");
 
-        logger.info(INDENT + join(" ", join(" ", UTILITY_NAME, join(" ", new ArgumentParser(logger, registry).getCommonOptions())),
+        logger.info(INDENT + join(" ",
+            join(" ", UTILITY_NAME, join(" ", new ArgumentParser(logger, registry, null).getCommonOptions())),
             asOptional("command", true), "<command_parameters>"));
         logger.info("");
         logger.info("");
@@ -717,8 +721,8 @@ public class CommandHandler {
         logger.info(INDENT + "The '--cache subcommand' is used to get information about and perform actions" +
             " with caches. The command has the following syntax:");
         logger.info("");
-        logger.info(INDENT + join(" ", UTILITY_NAME, join(" ", new ArgumentParser(logger, null).getCommonOptions())) + " " +
-            "--cache [subcommand] <subcommand_parameters>");
+        logger.info(INDENT + join(" ", UTILITY_NAME, join(" ", new ArgumentParser(logger, null, null).getCommonOptions())) +
+            " --cache [subcommand] <subcommand_parameters>");
         logger.info("");
         logger.info(INDENT + "The subcommands that take [nodeId] as an argument ('list', 'find_garbage', " +
             "'contention' and 'validate_indexes') will be executed on the given node or on all server nodes" +
