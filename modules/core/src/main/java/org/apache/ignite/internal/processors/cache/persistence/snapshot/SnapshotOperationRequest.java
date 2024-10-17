@@ -17,7 +17,6 @@
 
 package org.apache.ignite.internal.processors.cache.persistence.snapshot;
 
-import java.io.Serializable;
 import java.util.Collection;
 import java.util.List;
 import java.util.Set;
@@ -25,34 +24,15 @@ import java.util.UUID;
 import org.apache.ignite.internal.util.distributed.DistributedProcess;
 import org.apache.ignite.internal.util.distributed.DistributedProcess.DistributedProcessType;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
-import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
-import org.apache.ignite.internal.util.typedef.internal.U;
 import org.jetbrains.annotations.Nullable;
 
 /**
  * Snapshot operation start request for {@link DistributedProcess} initiate message.
  */
-public class SnapshotOperationRequest implements Serializable {
+public class SnapshotOperationRequest extends AbstractSnapshotOperationRequest {
     /** Serial version uid. */
     private static final long serialVersionUID = 0L;
-
-    /** Request ID. */
-    private final UUID reqId;
-
-    /** Snapshot name. */
-    private final String snpName;
-
-    /** Snapshot directory path. */
-    private final String snpPath;
-
-    /** Baseline node IDs that must be alive to complete the operation. */
-    @GridToStringInclude
-    private final Set<UUID> nodes;
-
-    /** List of cache group names. */
-    @GridToStringInclude
-    private final Collection<String> grps;
 
     /** Operational node ID. */
     private final UUID opNodeId;
@@ -78,9 +58,6 @@ public class SnapshotOperationRequest implements Serializable {
 
     /** Flag indicating that the {@link DistributedProcessType#START_SNAPSHOT} phase has completed. */
     private transient volatile boolean startStageEnded;
-
-    /** Operation start time. */
-    private final long startTime;
 
     /** If {@code true} then incremental snapshot requested. */
     private final boolean incremental;
@@ -128,54 +105,15 @@ public class SnapshotOperationRequest implements Serializable {
         boolean compress,
         boolean encrypt
     ) {
-        this.reqId = reqId;
+        super(reqId, snpName, snpPath, grps, incIdx, nodes);
+
         this.opNodeId = opNodeId;
-        this.snpName = snpName;
-        this.grps = grps;
-        this.nodes = nodes;
-        this.snpPath = snpPath;
         this.incremental = incremental;
         this.incIdx = incIdx;
         this.onlyPrimary = onlyPrimary;
         this.dump = dump;
         this.compress = compress;
         this.encrypt = encrypt;
-        startTime = U.currentTimeMillis();
-    }
-
-    /**
-     * @return Request ID.
-     */
-    public UUID requestId() {
-        return reqId;
-    }
-
-    /**
-     * @return Snapshot name.
-     */
-    public String snapshotName() {
-        return snpName;
-    }
-
-    /**
-     * @return Snapshot directory path.
-     */
-    public String snapshotPath() {
-        return snpPath;
-    }
-
-    /**
-     * @return List of cache group names.
-     */
-    public @Nullable Collection<String> groups() {
-        return grps;
-    }
-
-    /**
-     * @return Baseline node IDs that must be alive to complete the operation.
-     */
-    public Set<UUID> nodes() {
-        return nodes;
     }
 
     /**
@@ -227,11 +165,6 @@ public class SnapshotOperationRequest implements Serializable {
     /** @return If {@code true} then content of dump encrypted. */
     public boolean encrypt() {
         return encrypt;
-    }
-
-    /** @return Start time. */
-    public long startTime() {
-        return startTime;
     }
 
     /**
