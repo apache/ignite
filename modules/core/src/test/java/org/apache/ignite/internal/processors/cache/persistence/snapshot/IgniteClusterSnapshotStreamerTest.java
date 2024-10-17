@@ -244,7 +244,7 @@ public class IgniteClusterSnapshotStreamerTest extends AbstractSnapshotSelfTest 
         stopGrid(0);
         stopGrid(1);
 
-        createAndCheckSnapshot(client, false, DataStreamerUpdatesHandler.WRN_MSG,
+        createAndCheckSnapshot(client, false, false, DataStreamerUpdatesHandler.WRN_MSG,
             SnapshotPartitionsQuickVerifyHandler.WRN_MSG);
     }
 
@@ -351,7 +351,7 @@ public class IgniteClusterSnapshotStreamerTest extends AbstractSnapshotSelfTest 
         String notExpWrn = allowOverwrite ? null : SnapshotPartitionsQuickVerifyHandler.WRN_MSG;
 
         try {
-            SnapshotPartitionsVerifyTaskResult checkRes = createAndCheckSnapshot(snpHnd, true, expectedWrn,
+            SnapshotPartitionsVerifyResult checkRes = createAndCheckSnapshot(snpHnd, true, true, expectedWrn,
                 notExpWrn);
 
             if (expectedWrn != null) {
@@ -417,9 +417,9 @@ public class IgniteClusterSnapshotStreamerTest extends AbstractSnapshotSelfTest 
         waitForCondition(loadFut::isDone, getTestTimeout());
 
         if (allowOverwrite)
-            createAndCheckSnapshot(snpHnd, true, null, null);
+            createAndCheckSnapshot(snpHnd, true, true, null, null);
         else {
-            createAndCheckSnapshot(snpHnd, true, SnapshotPartitionsQuickVerifyHandler.WRN_MSG,
+            createAndCheckSnapshot(snpHnd, true, true, SnapshotPartitionsQuickVerifyHandler.WRN_MSG,
                 DataStreamerUpdatesHandler.WRN_MSG);
         }
     }
@@ -462,7 +462,7 @@ public class IgniteClusterSnapshotStreamerTest extends AbstractSnapshotSelfTest 
     }
 
     /** */
-    private SnapshotPartitionsVerifyTaskResult createAndCheckSnapshot(IgniteEx snpHnd, boolean create,
+    private SnapshotPartitionsVerifyResult createAndCheckSnapshot(IgniteEx snpHnd, boolean create, boolean expectVerifyErr,
         String expWrn, String notExpWrn) throws Exception {
         assert notExpWrn == null || expWrn != null;
 
@@ -498,11 +498,11 @@ public class IgniteClusterSnapshotStreamerTest extends AbstractSnapshotSelfTest 
             }
         }
 
-        SnapshotPartitionsVerifyTaskResult checkRes = snp(snpHnd).checkSnapshot(SNAPSHOT_NAME, null).get();
+        SnapshotPartitionsVerifyResult checkRes = snp(snpHnd).checkSnapshot(SNAPSHOT_NAME, null).get();
 
         assertTrue(checkRes.exceptions().isEmpty());
 
-        if (!onlyPrimary)
+        if (!onlyPrimary && expectVerifyErr)
             assertTrue((expWrn != null) == checkRes.idleVerifyResult().hasConflicts());
 
         if (expWrn != null) {

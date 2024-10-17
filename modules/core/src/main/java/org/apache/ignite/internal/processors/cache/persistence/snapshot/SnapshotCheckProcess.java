@@ -65,7 +65,7 @@ public class SnapshotCheckProcess {
     private final Map<String, SnapshotCheckContext> contexts = new ConcurrentHashMap<>();
 
     /** Cluster-wide operation futures per snapshot called from current node. */
-    private final Map<UUID, GridFutureAdapter<SnapshotPartitionsVerifyTaskResult>> clusterOpFuts = new ConcurrentHashMap<>();
+    private final Map<UUID, GridFutureAdapter<SnapshotPartitionsVerifyResult>> clusterOpFuts = new ConcurrentHashMap<>();
 
     /** Check metas first phase subprocess. */
     private final DistributedProcess<SnapshotCheckProcessRequest, SnapshotCheckResponse> phase1CheckMetas;
@@ -141,7 +141,7 @@ public class SnapshotCheckProcess {
         if (log.isInfoEnabled())
             log.info("Finished snapshot validation [req=" + ctx.req + ']');
 
-        GridFutureAdapter<SnapshotPartitionsVerifyTaskResult> clusterOpFut = clusterOpFuts.get(reqId);
+        GridFutureAdapter<SnapshotPartitionsVerifyResult> clusterOpFut = clusterOpFuts.get(reqId);
 
         if (clusterOpFut == null)
             return new GridFinishedFuture<>();
@@ -156,7 +156,7 @@ public class SnapshotCheckProcess {
                 mapErrors(errors)
             );
 
-            clusterOpFut.onDone(new SnapshotPartitionsVerifyTaskResult(ctx.clusterMetas, chkRes));
+            clusterOpFut.onDone(new SnapshotPartitionsVerifyResult(ctx.clusterMetas, chkRes));
         }
         else if (ctx.req.allRestoreHandlers()) {
             try {
@@ -168,7 +168,7 @@ public class SnapshotCheckProcess {
 
                 checker.checkCustomHandlersResults(ctx.req.snapshotName(), cstRes);
 
-                clusterOpFut.onDone(new SnapshotPartitionsVerifyTaskResult(ctx.clusterMetas, null));
+                clusterOpFut.onDone(new SnapshotPartitionsVerifyResult(ctx.clusterMetas, null));
             }
             catch (Throwable err) {
                 clusterOpFut.onDone(err);
@@ -183,7 +183,7 @@ public class SnapshotCheckProcess {
 
                 IdleVerifyResultV2 chkRes = SnapshotChecker.reduceHashesResults(results0, errors0);
 
-                clusterOpFut.onDone(new SnapshotPartitionsVerifyTaskResult(ctx.clusterMetas, chkRes));
+                clusterOpFut.onDone(new SnapshotPartitionsVerifyResult(ctx.clusterMetas, chkRes));
             }
             else
                 clusterOpFut.onDone(new IgniteSnapshotVerifyException(errors0));
@@ -221,7 +221,7 @@ public class SnapshotCheckProcess {
                 workingFut = req.allRestoreHandlers()
                     ? snpMgr.checker().invokeCustomHandlers(ctx.locMeta, req.snapshotPath(), req.groups(), true)
                     : snpMgr.checker().checkPartitions(ctx.locMeta, snpMgr.snapshotLocalDir(req.snapshotName(), req.snapshotPath()),
-                    req.groups(), false, true, false);
+                    req.groups(), false, req.fullCheck(), false);
             }
 
             workingFut.whenComplete((res, err) -> {
@@ -325,7 +325,7 @@ public class SnapshotCheckProcess {
         SnapshotCheckContext ctx = context(null, reqId);
 
         // The context is not stored in the case of concurrent check of the same snapshot but the operation future is registered.
-        GridFutureAdapter<SnapshotPartitionsVerifyTaskResult> clusterOpFut = clusterOpFuts.get(reqId);
+        GridFutureAdapter<SnapshotPartitionsVerifyResult> clusterOpFut = clusterOpFuts.get(reqId);
 
         try {
             if (!errors.isEmpty())
@@ -345,7 +345,7 @@ public class SnapshotCheckProcess {
             results.forEach((nodeId, nodeRes) -> {
                 // A node might be not required. It gives null result. But a required node might have invalid empty result
                 // which must be validated.
-                if (ctx.req.nodes().contains(nodeId) && baseline(nodeId)) {
+                if (ctx.req.nodes().contains(nodeId) && baseline(nodeId) && !nodeRes.metas.isEmpty()) {
                     assert nodeRes != null && nodeRes.partsResults == null;
 
                     metas.put(kctx.cluster().get().node(nodeId), nodeRes.metas);
@@ -387,15 +387,18 @@ public class SnapshotCheckProcess {
      * @param snpName Snapshot name.
      * @param snpPath Snapshot directory path.
      * @param grpNames List of cache group names.
+     * @param fullCheck If {@code true}, additionally calculates partition hashes. Otherwise, checks only snapshot integrity
+     *                  and partition counters.
      * @param incIdx Incremental snapshot index. If not positive, snapshot is not considered as incremental.
      * @param allRestoreHandlers If {@code true}, all the registered {@link IgniteSnapshotManager#handlers()} of type
      *                    {@link SnapshotHandlerType#RESTORE} are invoked. Otherwise, only snapshot metadatas and partition
      *                    hashes are validated.
      */
-    public IgniteInternalFuture<SnapshotPartitionsVerifyTaskResult> start(
+    public IgniteInternalFuture<SnapshotPartitionsVerifyResult> start(
         String snpName,
         @Nullable String snpPath,
         @Nullable Collection<String> grpNames,
+        boolean fullCheck,
         int incIdx,
         boolean allRestoreHandlers
     ) {
@@ -414,11 +417,12 @@ public class SnapshotCheckProcess {
             snpName,
             snpPath,
             grpNames,
+            fullCheck,
             incIdx,
             allRestoreHandlers
         );
 
-        GridFutureAdapter<SnapshotPartitionsVerifyTaskResult> clusterOpFut = new GridFutureAdapter<>();
+        GridFutureAdapter<SnapshotPartitionsVerifyResult> clusterOpFut = new GridFutureAdapter<>();
 
         clusterOpFut.listen(fut -> {
             clusterOpFuts.remove(reqId);

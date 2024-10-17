@@ -33,6 +33,10 @@ public class SnapshotCheckProcessRequest extends AbstractSnapshotOperationReques
     /** Serial version uid. */
     private static final long serialVersionUID = 0L;
 
+    /** If {@code true}, additionally calculates partition hashes. Otherwise, checks only snapshot integrity and partition counters. */
+    @GridToStringInclude
+    private final boolean fullCheck;
+
     /**
      * If {@code true}, all the registered {@link IgniteSnapshotManager#handlers()} of type {@link SnapshotHandlerType#RESTORE}
      * are invoked. Otherwise, only snapshot metadatas and partition hashes are validated.
@@ -52,6 +56,8 @@ public class SnapshotCheckProcessRequest extends AbstractSnapshotOperationReques
      * @param nodes Baseline node IDs that must be alive to complete the operation..
      * @param snpPath Snapshot directory path.
      * @param grps List of cache group names.
+     * @param fullCheck If {@code true}, additionally calculates partition hashes. Otherwise, checks only snapshot integrity
+     *                  and partition counters.
      * @param incIdx Incremental snapshot index. If not positive, snapshot is not considered as incremental.
      * @param allRestoreHandlers If {@code true}, all the registered {@link IgniteSnapshotManager#handlers()} of type
      *                           {@link SnapshotHandlerType#RESTORE} are invoked. Otherwise, only snapshot metadatas and
@@ -63,6 +69,7 @@ public class SnapshotCheckProcessRequest extends AbstractSnapshotOperationReques
         String snpName,
         String snpPath,
         @Nullable Collection<String> grps,
+        boolean fullCheck,
         int incIdx,
         boolean allRestoreHandlers
     ) {
@@ -70,6 +77,7 @@ public class SnapshotCheckProcessRequest extends AbstractSnapshotOperationReques
 
         assert !F.isEmpty(nodes);
 
+        this.fullCheck = fullCheck;
         this.allRestoreHandlers = allRestoreHandlers;
         this.incIdx = incIdx;
     }
@@ -80,6 +88,11 @@ public class SnapshotCheckProcessRequest extends AbstractSnapshotOperationReques
      */
     public boolean allRestoreHandlers() {
         return allRestoreHandlers;
+    }
+
+    /** If {@code true}, additionally calculates partition hashes. Otherwise, checks only snapshot integrity and partition counters. */
+    public boolean fullCheck() {
+        return fullCheck;
     }
 
     /** @return Incremental snapshot index. If not positive, snapshot is not considered as incremental. */
