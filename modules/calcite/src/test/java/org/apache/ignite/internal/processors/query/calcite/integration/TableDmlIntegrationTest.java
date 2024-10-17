@@ -630,6 +630,31 @@ public class TableDmlIntegrationTest extends AbstractBasicIntegrationTransaction
     }
 
     /** */
+    @Test
+    public void testInsertIncorrectDate() {
+        sql("CREATE TABLE timestamp_t(t TIMESTAMP) WITH " + atomicity());
+
+        String errDate = "Invalid DATE value";
+        String errDay = "Value of DAY field is out of range";
+        Class<? extends Exception> errType = IllegalArgumentException.class;
+
+        assertThrows("INSERT INTO timestamp_t VALUES ('blabla')", errType, errDate);
+        assertThrows("INSERT INTO timestamp_t VALUES ('1993-20-14 00:00:00')", errType, errDate);
+        assertThrows("INSERT INTO timestamp_t VALUES ('1993-08-99 00:00:00')", errType, errDate);
+        assertThrows("INSERT INTO timestamp_t VALUES ('1993-02-29 00:00:00')", errType, errDay);
+        assertThrows("INSERT INTO timestamp_t VALUES ('1900-02-29 00:00:00')", errType, errDay);
+        sql("INSERT INTO timestamp_t VALUES ('1992-02-29 00:00:00')");
+        sql("INSERT INTO timestamp_t VALUES ('2000-02-29 00:00:00')");
+        assertThrows("INSERT INTO timestamp_t VALUES ('02-02-1992 00:00:00')", errType, errDate);
+        assertThrows("INSERT INTO timestamp_t VALUES ('1900-1-1 59:59:23')", errType, errDate);
+        assertThrows("INSERT INTO timestamp_t VALUES ('1900a01a01 00:00:00')", errType, errDate);
+        assertThrows("INSERT INTO timestamp_t VALUES ('1900-1-1 00;00;00')", errType, errDate);
+        assertThrows("INSERT INTO timestamp_t VALUES ('1900-1-1 00a00a00')", errType, errDate);
+        assertThrows("INSERT INTO timestamp_t VALUES ('1900-1-1 00/00/00')", errType, errDate);
+        assertThrows("INSERT INTO timestamp_t VALUES ('1900-1-1 00-00-00')", errType, errDate);
+    }
+
+    /** */
     private void checkDefaultValue(String sqlType, String sqlVal, Object expectedVal) {
         try {
             executeSql("CREATE TABLE test (dummy INT, val " + sqlType + " DEFAULT " + sqlVal + ") WITH " + atomicity());
