@@ -52,6 +52,9 @@ public class IncrementalSnapshotMetadata implements Serializable {
     /** Name of the folder that contains snapshot data. */
     private final String folderName;
 
+    /** Creation timestamp in milliseconds since Unix epoch. */
+    private final long snapshotTime;
+
     /** WAL pointer to {@link IncrementalSnapshotFinishRecord}. */
     private final WALPointer incSnpRec;
 
@@ -62,6 +65,7 @@ public class IncrementalSnapshotMetadata implements Serializable {
      * @param consId Consistent id of a node to which this metadata relates.
      * @param folderName Directory name which stores the data files.
      * @param incSnpRec Pointer to {@link IncrementalSnapshotFinishRecord}.
+     * @param snapshotTime Timestamp of the snapshot creation.
      */
     public IncrementalSnapshotMetadata(
         UUID rqId,
@@ -69,6 +73,7 @@ public class IncrementalSnapshotMetadata implements Serializable {
         int incIdx,
         String consId,
         String folderName,
+        long snapshotTime,
         WALPointer incSnpRec
     ) {
         this.rqId = rqId;
@@ -76,6 +81,7 @@ public class IncrementalSnapshotMetadata implements Serializable {
         this.incIdx = incIdx;
         this.consId = consId;
         this.folderName = folderName;
+        this.snapshotTime = snapshotTime;
         this.incSnpRec = incSnpRec;
     }
 
@@ -107,6 +113,11 @@ public class IncrementalSnapshotMetadata implements Serializable {
     /** @return Name of the folder that contains snapshot data. */
     public String folderName() {
         return folderName;
+    }
+
+    /** @return Creation timestamp in milliseconds since Unix epoch. */
+    public long snapshotTime() {
+        return snapshotTime;
     }
 
     /**
