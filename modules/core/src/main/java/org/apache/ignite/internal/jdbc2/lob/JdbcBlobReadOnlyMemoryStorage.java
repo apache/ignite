@@ -21,7 +21,7 @@ import java.io.IOException;
 import org.apache.ignite.internal.util.typedef.internal.U;
 
 /**
- * In-memory based implementation of the {@link JdbcBlobStorage} which wraps
+ * Heap memory based read-only implementation of the {@link JdbcBlobStorage} which wraps
  * a part of an externally provided byte array which can not be modified.
  *
  * <p>Says, allows direct read-only access to binary data stored in the incoming JDBC

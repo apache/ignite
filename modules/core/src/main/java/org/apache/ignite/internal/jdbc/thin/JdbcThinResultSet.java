@@ -1326,8 +1326,7 @@ public class JdbcThinResultSet implements ResultSet {
         if (val instanceof JdbcBlobBuffer) {
             JdbcBlobBuffer buf = (JdbcBlobBuffer)val;
 
-            return new JdbcBlob(stmt.connection().connectionProperties().getMaxInMemoryLobSize(),
-                    new JdbcBlobBuffer(buf));
+            return new JdbcBlob(JdbcBlobBuffer.shallowCopy(buf));
         }
         else {
             throw new SQLException("Cannot convert to Blob [colIdx=" + colIdx + "]");

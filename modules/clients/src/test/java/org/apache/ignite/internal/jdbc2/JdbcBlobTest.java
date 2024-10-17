@@ -380,13 +380,6 @@ public class JdbcBlobTest {
 
             return null;
         }, SQLException.class, ERROR_BLOB_FREE);
-
-        byte[] arr = new byte[] {0, 1, 2, 3, 4, 5, 6, 7};
-        JdbcBlob blob2 = new JdbcBlob(4);
-        blob2.setBytes(1, arr);
-        blob2.truncate(4);
-        assertArrayEquals(new byte[]{0, 1, 2, 3}, blob2.getBytes(1, (int)blob2.length()));
-        blob2.free();
     }
 
     /**

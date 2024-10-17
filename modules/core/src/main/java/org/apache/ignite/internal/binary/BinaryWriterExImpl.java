@@ -43,6 +43,7 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 import org.jetbrains.annotations.Nullable;
 
 import static java.nio.charset.StandardCharsets.UTF_8;
+import static org.apache.ignite.internal.binary.streams.BinaryAbstractOutputStream.MAX_ARRAY_SIZE;
 
 /**
  * Binary writer implementation.
@@ -1892,28 +1893,67 @@ public class BinaryWriterExImpl implements BinaryWriter, BinaryRawWriterEx, Obje
     }
 
     /**
-     * Write byte array from the InputStream.
+     * Write byte array from the InputStream with the specified length.
      *
-     * @param in InputStream
+     * @param in InputStream.
      * @param len Length of data in the stream.
+     * @return Number of bytes written.
      */
     public int writeByteArrayFromInputStream(InputStream in, int len) throws IOException {
         out.unsafeEnsure(1 + 4 + len);
 
+        return doWriteByteArrayFromInputStream(in, len);
+    }
+
+    /**
+     * Write byte array from the InputStream with uknown length.
+     *
+     * @param in InputStream.
+     * @return Number of bytes written or -1 if stream contains more than {@code MAX_ARRAY_SIZE} bytes.
+     */
+    public int writeByteArrayFromInputStream(InputStream in) throws IOException {
+        out.unsafeEnsure(1 + 4);
+
+        int writtenLen = doWriteByteArrayFromInputStream(in, MAX_ARRAY_SIZE);
+
+        if (writtenLen == MAX_ARRAY_SIZE && in.read() != -1)
+            return -1;
+        else
+            return writtenLen;
+    }
+
+    /**
+     * Write byte array from the InputStream. No more than {@code limit} bytes will be written.
+     *
+     * @param in InputStream.
+     * @param limit Max length of data to be read from the stream.
+     * @return Number of bytes written.
+     * @throws IOException If an I/O error occurs.
+     */
+    private int doWriteByteArrayFromInputStream(InputStream in, int limit) throws IOException {
         out.unsafeWriteByte(GridBinaryMarshaller.BYTE_ARR);
-        out.unsafeWriteInt(len);
+
+        int lengthPos = out.position();
+        out.position(lengthPos + 4);
 
         int readLen;
         int writtenLen = 0;
 
         byte[] buf = new byte[DEFAULT_BUFFER_SIZE];
 
-        while (-1 != (readLen = in.read(buf, 0, Math.min(buf.length, len - writtenLen)))
-                && writtenLen < len) {
+        while (-1 != (readLen = in.read(buf, 0, Math.min(buf.length, limit - writtenLen)))
+                && writtenLen < limit) {
             out.writeByteArray(buf, 0, readLen);
 
             writtenLen += readLen;
         }
+
+        int savedPos = out.position();
+
+        out.position(lengthPos);
+        out.unsafeWriteInt(writtenLen);
+
+        out.position(savedPos);
 
         return writtenLen;
     }

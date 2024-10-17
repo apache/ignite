@@ -23,7 +23,7 @@ import java.util.List;
 import org.apache.ignite.internal.util.typedef.internal.U;
 
 /**
- * In-memory based implementation of {@link JdbcBlobStorage}.
+ * Heap memory based read-write implementation of {@link JdbcBlobStorage}.
  *
  * <p>Keeps data in list of byte array buffers (of different size) to avoid memory
  * reallocation and data coping on write operations (which append data in particular).

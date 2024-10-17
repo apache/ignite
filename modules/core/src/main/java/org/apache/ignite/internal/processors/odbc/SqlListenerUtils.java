@@ -38,6 +38,8 @@ import org.apache.ignite.internal.processors.query.IgniteSQLException;
 import org.apache.ignite.internal.util.typedef.F;
 import org.jetbrains.annotations.Nullable;
 
+import static org.apache.ignite.internal.binary.streams.BinaryAbstractOutputStream.MAX_ARRAY_SIZE;
+
 /**
  * Binary reader with marshaling non-primitive and non-embedded objects with JDK marshaller.
  */
@@ -197,7 +199,7 @@ public abstract class SqlListenerUtils {
 
             reader.in().position(position + len);
 
-            return new JdbcBlobBuffer(Long.MAX_VALUE, reader.in().array(), position, len);
+            return JdbcBlobBuffer.createReadOnly(reader.in().array(), position, len);
         }
         else {
             return BinaryUtils.doReadByteArray(reader.in());
@@ -307,13 +309,23 @@ public abstract class SqlListenerUtils {
     private static void writeInputStreamAsByteArray(BinaryWriterExImpl writer, SqlInputStreamWrapper wrapper)
             throws IOException {
         InputStream in = wrapper.getInputStream();
-        int len = wrapper.getLength();
+        Integer len = wrapper.getLength();
 
-        int writtenLen = writer.writeByteArrayFromInputStream(in, len);
+        int writtenLen;
+        if (len == null) {
+            writtenLen = writer.writeByteArrayFromInputStream(in);
 
-        if (len != writtenLen)
-            throw new IOException("Input stream length mismatch. [declaredLength=" + len + ", " +
-                    "actualLength=" + writtenLen + "]");
+            if (-1 == writtenLen)
+                throw new IOException("Invalid argument. InputStreams with length greater than " +
+                        MAX_ARRAY_SIZE + " are not supported.");
+        }
+        else {
+            writtenLen = writer.writeByteArrayFromInputStream(in, len);
+
+            if (len != writtenLen)
+                throw new IOException("Input stream length mismatch. [declaredLength=" + len + ", " +
+                        "actualLength=" + writtenLen + "]");
+        }
     }
 
     /**

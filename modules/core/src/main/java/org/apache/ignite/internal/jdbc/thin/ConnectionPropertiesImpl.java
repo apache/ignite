@@ -47,9 +47,6 @@ public class ConnectionPropertiesImpl implements ConnectionProperties, Serializa
     /** Default socket buffer size. */
     private static final int DFLT_SOCK_BUFFER_SIZE = 64 * 1024;
 
-    /** Default max in-memory LOB size. */
-    public static final int DFLT_MAX_IN_MEMORY_LOB_SIZE = 10 * 1024 * 1024;
-
     /** Property: schema. */
     private static final String PROP_SCHEMA = "schema";
 
@@ -268,11 +265,6 @@ public class ConnectionPropertiesImpl implements ConnectionProperties, Serializa
     /** Transaction label. */
     private final StringProperty transactionLabel = new StringProperty("transactionLabel", "Transaction label.", null, null, false, null);
 
-    /** Maximum size of large objects to be materialized in-memory on the client. */
-    private final LongProperty maxInMemoryLobSize = new LongProperty(
-            "maxInMemoryLobSize", "Maximum in-memory LOB size",
-            DFLT_MAX_IN_MEMORY_LOB_SIZE, false, 0, Long.MAX_VALUE);
-
     /** Properties array. */
     private final ConnectionProperty[] propsArr = {
         distributedJoins, enforceJoinOrder, collocated, replicatedOnly, autoCloseServerCursor,
@@ -295,8 +287,7 @@ public class ConnectionPropertiesImpl implements ConnectionProperties, Serializa
         qryEngine,
         transactionConcurrency,
         transactionTimeout,
-        transactionLabel,
-        maxInMemoryLobSize
+        transactionLabel
     };
 
     /** {@inheritDoc} */
@@ -733,16 +724,6 @@ public class ConnectionPropertiesImpl implements ConnectionProperties, Serializa
     /** {@inheritDoc} */
     @Override public void setTransactionLabel(String transactionLabel) {
         this.transactionLabel.setValue(transactionLabel);
-    }
-
-    /** {@inheritDoc} */
-    @Override public long getMaxInMemoryLobSize() {
-        return maxInMemoryLobSize.value();
-    }
-
-    /** {@inheritDoc} */
-    @Override public void setMaxInMemoryLobSize(long maxInMemoryLobSize) throws SQLException {
-        this.maxInMemoryLobSize.setValue(maxInMemoryLobSize);
     }
 
     /**
@@ -1327,38 +1308,6 @@ public class ConnectionPropertiesImpl implements ConnectionProperties, Serializa
          */
         Integer value() {
             return val != null ? val.intValue() : null;
-        }
-    }
-
-    /**
-     *
-     */
-    private static class LongProperty extends NumberProperty {
-        /** */
-        private static final long serialVersionUID = 0L;
-
-        /**
-         * @param name Name.
-         * @param desc Description.
-         * @param dfltVal Default value.
-         * @param required {@code true} if the property is required.
-         * @param min Lower bound of allowed range.
-         * @param max Upper bound of allowed range.
-         */
-        LongProperty(String name, String desc, Number dfltVal, boolean required, long min, long max) {
-            super(name, desc, dfltVal, required, min, max);
-        }
-
-        /** {@inheritDoc} */
-        @Override protected Number parse(String str) throws NumberFormatException {
-            return Long.parseLong(str);
-        }
-
-        /**
-         * @return Property value.
-         */
-        Long value() {
-            return val != null ? val.longValue() : null;
         }
     }
 

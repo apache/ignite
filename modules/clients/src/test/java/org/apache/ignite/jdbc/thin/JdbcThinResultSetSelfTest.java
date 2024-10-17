@@ -664,7 +664,9 @@ public class JdbcThinResultSetSelfTest extends JdbcThinAbstractSelfTest {
         Blob blob2 = rs.getBlob("blobVal");
         Assert.assertArrayEquals(blob2.getBytes(1, (int)blob2.length()), new byte[] {1});
         Blob blob3 = rs.getBlob("blobVal");
-        Assert.assertArrayEquals(blob2.getBytes(1, (int)blob2.length()), new byte[] {1});
+        Assert.assertArrayEquals(blob3.getBytes(1, (int)blob3.length()), new byte[] {1});
+        Blob blob4 = rs.getBlob("blobVal");
+        Assert.assertArrayEquals(blob4.getBytes(1, (int)blob4.length()), new byte[] {1});
 
         InputStream is1 = blob1.getBinaryStream();
         assertEquals(1, is1.read());
@@ -712,38 +714,18 @@ public class JdbcThinResultSetSelfTest extends JdbcThinAbstractSelfTest {
 
             return null;
         }, IOException.class, null);
-    }
 
-    /**
-     * @throws Exception If failed.
-     */
-    @Test
-    public void testBlobOnDiskMaterialized() throws Exception {
-        String url = URL + "?maxInMemoryLobSize=5";
-
-        Connection connWithLobLimit = DriverManager.getConnection(url);
-        connWithLobLimit.setSchema('"' + DEFAULT_CACHE_NAME + '"');
-
-        Statement selectStmt = connWithLobLimit.createStatement();
-
-        ResultSet rs = selectStmt.executeQuery(SQL);
-
-        assertTrue(rs.next());
-
-        Blob blob = rs.getBlob("blobVal");
-        Assert.assertArrayEquals(blob.getBytes(1, (int)blob.length()), new byte[] {1});
-
-        InputStream stream = blob.getBinaryStream();
-        blob.setBytes(2, new byte[] {2, 3, 4, 5, 6, 7, 8, 9, 10});
+        InputStream stream = blob4.getBinaryStream();
+        blob4.setBytes(2, new byte[] {2, 3, 4, 5, 6, 7, 8, 9, 10});
 
         assertEquals(2, stream.skip(2));
         assertEquals(3, stream.read());
-        byte[] res = new byte[3];
-        stream.read(res);
-        assertArrayEquals(new byte[] {4, 5, 6}, res);
+        byte[] res4 = new byte[3];
+        stream.read(res4);
+        assertArrayEquals(new byte[] {4, 5, 6}, res4);
         assertEquals(4, stream.skip(4));
         assertEquals(-1, stream.read());
-        assertEquals(-1, stream.read(res));
+        assertEquals(-1, stream.read(res4));
     }
 
     /**

@@ -48,7 +48,7 @@ import org.apache.ignite.internal.processors.odbc.jdbc.JdbcQuery;
 import org.apache.ignite.internal.processors.odbc.jdbc.JdbcStatementType;
 
 import static java.sql.Types.BINARY;
-import static org.apache.ignite.internal.processors.odbc.SqlInputStreamWrapper.MAX_ARRAY_SIZE;
+import static org.apache.ignite.internal.binary.streams.BinaryAbstractOutputStream.MAX_ARRAY_SIZE;
 
 /**
  * JDBC prepared statement implementation.
@@ -456,7 +456,7 @@ public class JdbcThinPreparedStatement extends JdbcThinStatement implements Prep
         if (x == null)
             setNull(paramIdx, BINARY);
         else
-            setArgument(paramIdx, SqlInputStreamWrapper.withKnownLength(x, (int)length));
+            setArgument(paramIdx, new SqlInputStreamWrapper(x, (int)length));
     }
 
     /** {@inheritDoc} */
@@ -480,7 +480,7 @@ public class JdbcThinPreparedStatement extends JdbcThinStatement implements Prep
         if (x == null)
             setNull(paramIdx, BINARY);
         else
-            setArgument(paramIdx, SqlInputStreamWrapper.withUnknownLength(x, conn.connectionProperties().getMaxInMemoryLobSize()));
+            setArgument(paramIdx, new SqlInputStreamWrapper(x));
     }
 
     /** {@inheritDoc} */
@@ -527,21 +527,6 @@ public class JdbcThinPreparedStatement extends JdbcThinStatement implements Prep
     /** {@inheritDoc} */
     @Override public boolean isWrapperFor(Class<?> iface) throws SQLException {
         return iface != null && iface.isAssignableFrom(JdbcThinPreparedStatement.class);
-    }
-
-    /** {@inheritDoc} */
-    @Override public void closeImpl() throws SQLException {
-        if (args != null) {
-            try {
-                for (Object arg : args) {
-                    if (arg instanceof AutoCloseable)
-                        ((AutoCloseable)arg).close();
-                }
-            }
-            catch (Exception e) {
-                throw new SQLException(e);
-            }
-        }
     }
 
     /**

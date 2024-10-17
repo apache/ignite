@@ -30,11 +30,8 @@ import org.apache.ignite.internal.jdbc2.lob.JdbcBlobBuffer;
  * to work with binary objects.
  *
  * <p>This implementation can be useful for writting and reading binary fields of objects through JDBC.
- *
- * <p>This implementation stores data in memory until the configured data size limit is reached. After that
- * data will be saved to temp file. And all subsequent operations will work with data stored in temp file.
  */
-public class JdbcBlob implements Blob, AutoCloseable {
+public class JdbcBlob implements Blob {
     /** Buffer to store actial data. */
     private JdbcBlobBuffer data;
 
@@ -43,57 +40,29 @@ public class JdbcBlob implements Blob, AutoCloseable {
      *
      * <p>It's supposed to be called when client application creates Blob calling the
      * {@link java.sql.Connection#createBlob}.
-     *
-     * <p>Once any write operation would increase the size of underlying data above the
-     * maximum value passed as {@code maxMemoryBufferBytes} data will be saved to temp file.
-     * And all subsequent operations will work with data stored in temp file.
-     *
-     * @param maxMemoryBufferBytes Max in-memory buffer size.
      */
-    public JdbcBlob(long maxMemoryBufferBytes) {
-        data = new JdbcBlobBuffer(maxMemoryBufferBytes);
+    public JdbcBlob() {
+        data = JdbcBlobBuffer.createReadWrite();
     }
 
     /**
-     * Create Blob which wraps the existing data.
+     * Create Blob which wraps the existing data stored in the buffer.
      *
      * <p>It's supposed to be called to create Blob for query result in the {@link java.sql.ResultSet}.
      *
-     * <p>Starts working in in-memory mode even if the passed {@code buf} data is larger than limit
-     * specifed via the {@code maxMemoryBufferBytes}. It's done so since memory is already allocated
-     * and there is no need to save it.
-     *
-     * <p>It also can start in the read-only mode if the input {@code buf} wraps external byte array.
-     * It lazyly switched to read-write mode (creating a copy of the data) once any write
-     * operation invoked. This allows to prevent the unnecessary data copying.
-     *
-     * <p>Once any write operation would increase the size of underlying data above the
-     * maximum value passed as {@code maxMemoryBufferBytes} data will be saved to temp file.
-     * And all subsequent operations will work with data stored in temp file.
-     *
-     * @param maxMemoryBufferBytes Max in-memory buffer size.
      * @param buf Existing buffer with data.
      */
-    public JdbcBlob(long maxMemoryBufferBytes, JdbcBlobBuffer buf) {
-        buf.setMaxMemoryBufferBytes(maxMemoryBufferBytes);
-
+    public JdbcBlob(JdbcBlobBuffer buf) {
         data = buf;
     }
 
     /**
-     * Create empty Blob which always stores data in memory.
-     */
-    public JdbcBlob() {
-        this(Long.MAX_VALUE);
-    }
-
-    /**
-     * Create Blob which wraps the existing byte array and always stores data in memory.
+     * Create Blob which wraps the existing byte array.
      *
      * @param arr Byte array.
      */
     public JdbcBlob(byte[] arr) {
-        this(Long.MAX_VALUE, new JdbcBlobBuffer(Long.MAX_VALUE, arr));
+        this(JdbcBlobBuffer.createReadWrite(arr));
     }
 
     /** {@inheritDoc} */
@@ -260,11 +229,6 @@ public class JdbcBlob implements Blob, AutoCloseable {
 
             data = null;
         }
-    }
-
-    /** {@inheritDoc} */
-    @Override public void close() throws SQLException {
-        free();
     }
 
     /**
