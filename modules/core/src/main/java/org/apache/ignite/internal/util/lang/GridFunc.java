@@ -3182,6 +3182,22 @@ public class GridFunc {
     }
 
     /**
+     * @param arr Array to check.
+     * @return {@code True} if array sorted, {@code false} otherwise.
+     */
+    public static boolean isSorted(int[] arr) {
+        if (isEmpty(arr) || arr.length == 1)
+            return true;
+
+        for (int i = 1; i < arr.length; i++) {
+            if (arr[i - 1] > arr[i])
+                return false;
+        }
+
+        return true;
+    }
+
+    /**
      * Return supplier that suppress any exception throwed by {@code s}.
      * Returned supplier will produce {@code 0} on any exception in {@code s}.
      *

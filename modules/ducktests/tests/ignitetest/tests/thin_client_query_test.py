@@ -90,6 +90,9 @@ class IgniteNodeSpecExcludeDucktests(IgniteNodeSpec):
         """
         envs = super().envs()
 
-        envs["EXCLUDE_MODULES"] = "ducktests"
+        if envs.get("EXCLUDE_MODULES") is not None:
+            envs["EXCLUDE_MODULES"] = envs["EXCLUDE_MODULES"] + ",ducktests"
+        else:
+            envs["EXCLUDE_MODULES"] = "ducktests"
 
         return envs
