@@ -21,9 +21,11 @@ import java.io.Externalizable;
 import java.io.IOException;
 import java.io.ObjectInput;
 import java.io.ObjectOutput;
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Date;
+import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
@@ -84,6 +86,9 @@ import org.apache.ignite.internal.processors.cache.query.CacheQueryFuture;
 import org.apache.ignite.internal.processors.cache.query.GridCacheQueryAdapter;
 import org.apache.ignite.internal.processors.cache.query.GridCacheQueryType;
 import org.apache.ignite.internal.processors.cache.query.QueryCursorEx;
+import org.apache.ignite.internal.processors.cache.transactions.IgniteInternalTx;
+import org.apache.ignite.internal.processors.cache.transactions.IgniteTxEntry;
+import org.apache.ignite.internal.processors.cache.transactions.IgniteTxManager;
 import org.apache.ignite.internal.processors.query.GridQueryFieldMetadata;
 import org.apache.ignite.internal.processors.query.QueryUtils;
 import org.apache.ignite.internal.util.GridCloseableIteratorAdapter;
@@ -93,17 +98,20 @@ import org.apache.ignite.internal.util.future.IgniteFinishedFutureImpl;
 import org.apache.ignite.internal.util.future.IgniteFutureImpl;
 import org.apache.ignite.internal.util.lang.GridCloseableIterator;
 import org.apache.ignite.internal.util.lang.GridClosureException;
+import org.apache.ignite.internal.util.lang.GridIterator;
 import org.apache.ignite.internal.util.lang.IgniteOutClosureX;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.CI1;
 import org.apache.ignite.internal.util.typedef.CX1;
+import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.A;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiPredicate;
+import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.lang.IgniteClosure;
 import org.apache.ignite.lang.IgniteFuture;
 import org.apache.ignite.lang.IgniteProductVersion;
@@ -465,9 +473,9 @@ public class IgniteCacheProxyImpl<K, V> extends AsyncSupportAdapter<IgniteCache<
      * @throws IgniteCheckedException If failed.
      */
     @SuppressWarnings("unchecked")
-    private <T, R> QueryCursor<R> query(
-        final ScanQuery scanQry,
-        @Nullable final IgniteClosure<T, R> transformer,
+    private <R> QueryCursor<R> query(
+        final ScanQuery<K, V> scanQry,
+        @Nullable final IgniteClosure<Cache.Entry<K, V>, R> transformer,
         @Nullable ClusterGroup grp
     ) throws IgniteCheckedException {
         GridCacheContext<K, V> ctx = getContextSafe();
@@ -478,8 +486,10 @@ public class IgniteCacheProxyImpl<K, V> extends AsyncSupportAdapter<IgniteCache<
 
         IgniteBiPredicate<K, V> p = scanQry.getFilter();
 
+        IgniteBiTuple<Set<KeyCacheObject>, List<IgniteTxEntry>> txChanges = transactionChanges(ctx, scanQry.getPartition());
+
         final CacheQuery<R> qry = ctx.queries().createScanQuery(
-            p, transformer, scanQry.getPartition(), isKeepBinary, scanQry.isLocal(), null);
+            p, transformer, scanQry.getPartition(), isKeepBinary, scanQry.isLocal(), null, txChanges.get1());
 
         if (scanQry.getPageSize() > 0)
             qry.pageSize(scanQry.getPageSize());
@@ -487,14 +497,54 @@ public class IgniteCacheProxyImpl<K, V> extends AsyncSupportAdapter<IgniteCache<
         if (grp != null)
             qry.projection(grp);
 
-        final GridCloseableIterator<R> iter = ctx.kernalContext().query().executeQuery(GridCacheQueryType.SCAN,
+        GridCloseableIterator<R> res = ctx.kernalContext().query().executeQuery(GridCacheQueryType.SCAN,
             cacheName, ctx, new IgniteOutClosureX<GridCloseableIterator<R>>() {
                 @Override public GridCloseableIterator<R> applyx() throws IgniteCheckedException {
                     return qry.executeScanQuery();
                 }
             }, true);
 
-        return new QueryCursorImpl<>(iter);
+        return new QueryCursorImpl<>(F.isEmpty(txChanges.get2())
+            ? res
+            : iteratorWithTxData(scanQry.getFilter(), transformer, res, txChanges)
+        );
+    }
+
+    /** */
+    private <R> @NotNull GridCloseableIterator<R> iteratorWithTxData(
+        @Nullable IgniteBiPredicate<K, V> filter,
+        @Nullable IgniteClosure<Entry<K, V>, R> transformer,
+        final GridCloseableIterator<R> iter,
+        IgniteBiTuple<Set<KeyCacheObject>, List<IgniteTxEntry>> txChanges
+    ) {
+        final GridIterator<Entry<K, V>> entryIter =
+            F.iterator(txChanges.get2(), e -> new CacheEntryImpl<>((K)e.key(), (V)e.value(), e.explicitVersion()), true);
+
+        final GridIterator<R> txIter = F.iterator(
+            (Iterable<Entry<K, V>>)entryIter,
+            e -> (R)(transformer == null ? e : transformer.apply(e)),
+            true,
+            e -> filter == null || filter.apply(e.getKey(), e.getValue())
+        );
+
+        return new GridCloseableIteratorAdapter<>() {
+            /** {@inheritDoc} */
+            @Override protected R onNext() {
+                return iter.hasNext() ? iter.next() : txIter.next();
+            }
+
+            /** {@inheritDoc} */
+            @Override protected boolean onHasNext() {
+                return iter.hasNext() || txIter.hasNext();
+            }
+
+            /** {@inheritDoc} */
+            @Override protected void onClose() throws IgniteCheckedException {
+                iter.close();
+
+                super.onClose();
+            }
+        };
     }
 
     /**
@@ -831,7 +881,7 @@ public class IgniteCacheProxyImpl<K, V> extends AsyncSupportAdapter<IgniteCache<
                     null, keepBinary, true).get(0);
 
             if (qry instanceof ScanQuery)
-                return query((ScanQuery)qry, null, projection(qry.isLocal()));
+                return query((ScanQuery<K, V>)qry, null, projection(qry.isLocal()));
 
             return (QueryCursor<R>)query(qry, projection(qry.isLocal()));
         }
@@ -861,7 +911,7 @@ public class IgniteCacheProxyImpl<K, V> extends AsyncSupportAdapter<IgniteCache<
 
             validate(qry);
 
-            return query((ScanQuery<K, V>)qry, transformer, projection(qry.isLocal()));
+            return query((ScanQuery<K, V>)qry, (IgniteClosure<Cache.Entry<K, V>, R>)transformer, projection(qry.isLocal()));
         }
         catch (Exception e) {
             if (e instanceof CacheException)
@@ -933,6 +983,18 @@ public class IgniteCacheProxyImpl<K, V> extends AsyncSupportAdapter<IgniteCache<
             (qry instanceof SqlQuery || qry instanceof SqlFieldsQuery || qry instanceof TextQuery))
             throw new CacheException("Failed to execute query. Add module 'ignite-indexing' to the classpath " +
                     "of all Ignite nodes or configure any query engine.");
+
+        if (qry instanceof ScanQuery) {
+            if (!U.isTxAwareQueriesEnabled(ctx))
+                return;
+
+            IgniteInternalTx tx = ctx.cache().context().tm().tx();
+
+            if (tx == null)
+                return;
+
+            IgniteTxManager.ensureTransactionModeSupported(tx.isolation());
+        }
     }
 
     /** {@inheritDoc} */
@@ -2374,6 +2436,48 @@ public class IgniteCacheProxyImpl<K, V> extends AsyncSupportAdapter<IgniteCache<
      */
     private Executor exec() {
         return context().kernalContext().getAsyncContinuationExecutor();
+    }
+
+    /**
+     * @param ctx Cache context.
+     * @param part Partition.
+     * @return First, set of object changed in transaction, second, list of transaction data in required format.
+     * @param <R> Required type.
+     */
+    private <R> IgniteBiTuple<Set<KeyCacheObject>, List<IgniteTxEntry>> transactionChanges(GridCacheContext<K, V> ctx, Integer part) {
+        if (!U.isTxAwareQueriesEnabled(ctx))
+            return F.t(Collections.emptySet(), Collections.emptyList());
+
+        IgniteInternalTx tx = ctx.tm().tx();
+
+        if (tx == null)
+            return F.t(Collections.emptySet(), Collections.emptyList());
+
+        IgniteTxManager.ensureTransactionModeSupported(tx.isolation());
+
+        Set<KeyCacheObject> changedKeys = new HashSet<>();
+        List<IgniteTxEntry> newAndUpdatedRows = new ArrayList<>();
+
+        for (IgniteTxEntry e : tx.writeEntries()) {
+            if (e.cacheId() != ctx.cacheId())
+                continue;
+
+            int epart = e.key().partition();
+
+            assert epart != -1;
+
+            if (part != null && epart != part)
+                continue;
+
+            changedKeys.add(e.key());
+
+            // TODO: check entry processor.
+            // Mix only updated or inserted entries. In case val == null entry removed.
+            if (e.value() != null)
+                newAndUpdatedRows.add(e);
+        }
+
+        return F.t(changedKeys, newAndUpdatedRows);
     }
 
     /**

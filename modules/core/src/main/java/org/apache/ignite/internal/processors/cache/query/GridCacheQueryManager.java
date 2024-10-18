@@ -779,7 +779,8 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
             qry.partition(),
             false,
             true,
-            qry.isDataPageScanEnabled());
+            qry.isDataPageScanEnabled(),
+            null); // TODO: add tx info?
 
         return scanQueryLocal(qry0, false);
     }
@@ -795,14 +796,10 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
     private GridCloseableIterator scanIterator(final GridCacheQueryAdapter<?> qry, IgniteClosure transformer,
         boolean locNode)
         throws IgniteCheckedException {
-        final IgniteBiPredicate<K, V> keyValFilter = qry.scanFilter();
-        final InternalScanFilter<K, V> intFilter = keyValFilter != null ? new InternalScanFilter<>(keyValFilter) : null;
+        final InternalScanFilter<K, V> intFilter = queryFilter(qry);
 
         try {
-            if (keyValFilter instanceof PlatformCacheEntryFilter)
-                ((PlatformCacheEntryFilter)keyValFilter).cacheContext(cctx);
-            else
-                injectResources(keyValFilter);
+            initFilter(intFilter);
 
             Integer part = qry.partition();
 
@@ -825,7 +822,7 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
 
             final GridDhtLocalPartition locPart;
 
-            final GridIterator<CacheDataRow> it;
+            GridIterator<CacheDataRow> it;
 
             if (part != null) {
                 final GridDhtCacheAdapter dht = cctx.isNear() ? cctx.near().dht() : cctx.dht();
@@ -861,8 +858,17 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
                     qry.isDataPageScanEnabled());
             }
 
+            final Set<KeyCacheObject> skipKeys = qry.skipKeys();
+
+            if (!F.isEmpty(skipKeys)) {
+                // Intentionally use of `Set#remove` here.
+                // We want perform as few `toKey` as possible.
+                // So we break some rules here to optimize work with the data provided by the underlying cursor.
+                it = F.iterator0(it, true, e -> skipKeys.isEmpty() || !skipKeys.remove(e.key()));
+            }
+
             ScanQueryIterator iter = new ScanQueryIterator(it, qry, topVer, locPart,
-                SecurityUtils.sandboxedProxy(cctx.kernalContext(), IgniteBiPredicate.class, keyValFilter),
+                SecurityUtils.sandboxedProxy(cctx.kernalContext(), IgniteBiPredicate.class, intFilter.scanFilter()),
                 SecurityUtils.sandboxedProxy(cctx.kernalContext(), IgniteClosure.class, transformer),
                 locNode, locNode ? locIters : null, cctx, log);
 
@@ -2885,25 +2891,12 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
      * Creates user's predicate based scan query.
      *
      * @param filter Scan filter.
-     * @param part Partition.
-     * @param keepBinary Keep binary flag.
-     * @param dataPageScanEnabled Flag to enable data page scan.
-     * @return Created query.
-     */
-    public <R> CacheQuery<R> createScanQuery(@Nullable IgniteBiPredicate<K, V> filter,
-        @Nullable Integer part, boolean keepBinary, Boolean dataPageScanEnabled) {
-        return createScanQuery(filter, null, part, keepBinary, false, dataPageScanEnabled);
-    }
-
-    /**
-     * Creates user's predicate based scan query.
-     *
-     * @param filter Scan filter.
      * @param trans Transformer.
      * @param part Partition.
      * @param keepBinary Keep binary flag.
      * @param forceLocal Flag to force local scan.
      * @param dataPageScanEnabled Flag to enable data page scan.
+     * @param skipKeys Set of keys that must be skiped during iteration.
      * @return Created query.
      */
     @SuppressWarnings("unchecked")
@@ -2913,7 +2906,8 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
         @Nullable Integer part,
         boolean keepBinary,
         boolean forceLocal,
-        Boolean dataPageScanEnabled
+        Boolean dataPageScanEnabled,
+        Set<KeyCacheObject> skipKeys
     ) {
         return new GridCacheQueryAdapter(cctx,
             SCAN,
@@ -2922,7 +2916,8 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
             part,
             keepBinary,
             forceLocal,
-            dataPageScanEnabled);
+            dataPageScanEnabled,
+            skipKeys);
     }
 
     /**
@@ -3396,6 +3391,24 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
         public int pageSize() {
             return pageSize;
         }
+    }
+
+    /** */
+    @Nullable InternalScanFilter<K, V> queryFilter(final GridCacheQueryAdapter<?> qry) {
+        return qry.scanFilter() == null ? null : new InternalScanFilter<>(qry.scanFilter());
+    }
+
+    /** */
+    public void initFilter(@Nullable InternalScanFilter<K, V> filter) throws IgniteCheckedException {
+        if (filter == null)
+            return;
+
+        IgniteBiPredicate<K, V> keyValFilter = filter.scanFilter();
+
+        if (keyValFilter instanceof PlatformCacheEntryFilter)
+            ((PlatformCacheEntryFilter)keyValFilter).cacheContext(cctx);
+        else
+            injectResources(keyValFilter);
     }
 
     /**
