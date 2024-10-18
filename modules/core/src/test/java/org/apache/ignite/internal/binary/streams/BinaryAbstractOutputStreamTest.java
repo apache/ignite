@@ -71,27 +71,26 @@ public class BinaryAbstractOutputStreamTest extends GridCommonAbstractTest {
 
         assertEquals(33554432, BinaryAbstractOutputStream.capacity(16777216, 16777217));
 
-        assertEquals(67108864, BinaryAbstractOutputStream.capacity(33554432, 33554433));
+        final int MAX_CAP = BinaryAbstractOutputStream.MAX_CAP;
 
-        assertEquals(134217728, BinaryAbstractOutputStream.capacity(67108864, 67108865));
+        assertEquals(33554433 + MAX_CAP, BinaryAbstractOutputStream.capacity(33554432, 33554433));
 
-        assertEquals(268435456, BinaryAbstractOutputStream.capacity(134217728, 134217729));
+        assertEquals(67108865 + MAX_CAP, BinaryAbstractOutputStream.capacity(67108864, 67108865));
 
-        assertEquals(536870912, BinaryAbstractOutputStream.capacity(268435456, 268435457));
+        assertEquals(134217729 + MAX_CAP, BinaryAbstractOutputStream.capacity(134217728, 134217729));
 
-        assertEquals(1073741824, BinaryAbstractOutputStream.capacity(536870912, 536870913));
+        assertEquals(268435457 + MAX_CAP, BinaryAbstractOutputStream.capacity(268435456, 268435457));
+
+        assertEquals(536870913 + MAX_CAP, BinaryAbstractOutputStream.capacity(536870912, 536870913));
 
         final int MAX_SIZE = BinaryAbstractOutputStream.MAX_ARRAY_SIZE;
 
-        assertEquals(MAX_SIZE, BinaryAbstractOutputStream.capacity(1073741824, 1073741825));
+        int reqCap = Integer.MAX_VALUE - 8 - (MAX_CAP << 1);
+        assertEquals(reqCap + MAX_CAP, BinaryAbstractOutputStream.capacity(1073741824, reqCap));
 
-        assertEquals(MAX_SIZE, BinaryAbstractOutputStream.capacity(0, 1073741825));
+        assertEquals(MAX_SIZE, BinaryAbstractOutputStream.capacity(1073741824, Integer.MAX_VALUE - 8 - (MAX_CAP >> 1)));
 
-        assertEquals(MAX_SIZE, BinaryAbstractOutputStream.capacity(1073741824, 1500000000));
-
-        assertEquals(MAX_SIZE, BinaryAbstractOutputStream.capacity(1073741824, 2000000000));
-
-        assertEquals(MAX_SIZE, BinaryAbstractOutputStream.capacity(1073741824, Integer.MAX_VALUE - 9));
+        assertEquals(MAX_SIZE, BinaryAbstractOutputStream.capacity(1073741824, Integer.MAX_VALUE - 8 - MAX_CAP));
 
         assertEquals(MAX_SIZE, BinaryAbstractOutputStream.capacity(1073741824, Integer.MAX_VALUE - 8));
 
