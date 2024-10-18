@@ -23,10 +23,8 @@ import java.util.Objects;
 import java.util.UUID;
 import java.util.stream.Collectors;
 import com.google.common.collect.ImmutableSet;
-import org.apache.calcite.rel.type.RelDataType;
 import org.apache.calcite.runtime.CalciteException;
 import org.apache.calcite.sql.type.SqlTypeName;
-import org.apache.calcite.sql.type.SqlTypeUtil;
 import org.apache.calcite.tools.FrameworkConfig;
 import org.apache.calcite.tools.Frameworks;
 import org.apache.ignite.IgniteCache;
@@ -35,8 +33,6 @@ import org.apache.ignite.cache.QueryEntity;
 import org.apache.ignite.internal.processors.query.IgniteSQLException;
 import org.apache.ignite.internal.processors.query.calcite.exec.exp.IgniteSqlFunctions;
 import org.apache.ignite.internal.processors.query.calcite.hint.HintDefinition;
-import org.apache.ignite.internal.processors.query.calcite.type.IgniteTypeFactory;
-import org.apache.ignite.internal.processors.query.calcite.util.Commons;
 import org.apache.ignite.internal.util.typedef.F;
 import org.junit.Test;
 
@@ -657,9 +653,9 @@ public class DataTypesTest extends AbstractBasicIntegrationTransactionalTest {
         for (List<Object> params : numericsToCast()) {
             assert params.size() == 4 : "Wrong params lenght: " + params.size();
 
-            RelDataType inputType = (RelDataType)params.get(0);
+            String inputType = params.get(0).toString();
             Object inputVal = params.get(1);
-            RelDataType targetType = (RelDataType)params.get(2);
+            String targetType = params.get(2).toString();
             Object expectedRes = params.get(3);
 
             log.info("Params: inputType=" + inputType + ", inputValue=" + inputVal + ", targetType=" + targetType
@@ -689,115 +685,95 @@ public class DataTypesTest extends AbstractBasicIntegrationTransactionalTest {
     }
 
     /** */
-    private static String asLiteral(Object val, RelDataType type) {
-        return SqlTypeUtil.isCharacter(type) ? String.format("'%s'", val) : String.valueOf(val);
+    private static String asLiteral(Object val, String type) {
+        return type.equalsIgnoreCase("VARCHAR") ? String.format("'%s'", val) : String.valueOf(val);
     }
 
     /** */
     private static List<List<Object>> numericsToCast() {
-        IgniteTypeFactory tf = Commons.typeFactory();
-
-        RelDataType varcharType = tf.createSqlType(SqlTypeName.VARCHAR);
-        RelDataType tinyIntType = tf.createSqlType(SqlTypeName.TINYINT);
-        RelDataType smallIntType = tf.createSqlType(SqlTypeName.SMALLINT);
-        RelDataType integerType = tf.createSqlType(SqlTypeName.INTEGER);
-        RelDataType bigintType = tf.createSqlType(SqlTypeName.BIGINT);
-        RelDataType realType = tf.createSqlType(SqlTypeName.REAL);
-        RelDataType doubleType = tf.createSqlType(SqlTypeName.DOUBLE);
-
         Exception overflowErr = new IllegalArgumentException(IgniteSqlFunctions.NUMERIC_OVERFLOW_ERROR);
         Exception numFormatErr = new NumberFormatException("is neither a decimal digit number");
 
         //noinspection RedundantTypeArguments (explicit type arguments speedup compilation and analysis time)
         return F.<List<Object>>asList(
             // String
-            F.asList(varcharType, "100", decimalType(3), new BigDecimal("100")),
-            F.asList(varcharType, "100", decimalType(3, 0), new BigDecimal("100")),
-            F.asList(varcharType, "100", decimalType(4, 1), new BigDecimal("100.0")),
-            F.asList(varcharType, "100.12", decimalType(5, 1), new BigDecimal("100.1")),
-            F.asList(varcharType, "100.16", decimalType(5, 1), new BigDecimal("100.1")),
-            F.asList(varcharType, "-100.16", decimalType(5, 1), new BigDecimal("-100.1")),
-            F.asList(varcharType, "lame", decimalType(5, 1), numFormatErr),
-            F.asList(varcharType, "12345", decimalType(5, 1), overflowErr),
-            F.asList(varcharType, "1234", decimalType(5, 1), new BigDecimal("1234.0")),
-            F.asList(varcharType, "100.12", decimalType(1, 0), overflowErr),
-            F.asList(varcharType, "100", decimalType(2, 0), overflowErr),
+            F.asList("VARCHAR", "100", "DECIMAL(3)", new BigDecimal("100")),
+            F.asList("VARCHAR", "100", "DECIMAL(3, 0)", new BigDecimal("100")),
+            F.asList("VARCHAR", "100", "DECIMAL(4, 1)", new BigDecimal("100.0")),
+            F.asList("VARCHAR", "100.12", "DECIMAL(5, 1)", new BigDecimal("100.1")),
+            F.asList("VARCHAR", "100.16", "DECIMAL(5, 1)", new BigDecimal("100.1")),
+            F.asList("VARCHAR", "-100.16", "DECIMAL(5, 1)", new BigDecimal("-100.1")),
+            F.asList("VARCHAR", "lame", "DECIMAL(5, 1)", numFormatErr),
+            F.asList("VARCHAR", "12345", "DECIMAL(5, 1)", overflowErr),
+            F.asList("VARCHAR", "1234", "DECIMAL(5, 1)", new BigDecimal("1234.0")),
+            F.asList("VARCHAR", "100.12", "DECIMAL(1, 0)", overflowErr),
+            F.asList("VARCHAR", "100", "DECIMAL(2, 0)", overflowErr),
 
             // Numeric
-            F.asList(decimalType(4), "100", decimalType(3), new BigDecimal("100")),
-            F.asList(decimalType(4), "100", decimalType(3, 0), new BigDecimal("100")),
-            F.asList(decimalType(4), "100.12", decimalType(5, 1), new BigDecimal("100.1")),
-            F.asList(decimalType(4), "100.12", decimalType(5, 0), new BigDecimal("100")),
-            F.asList(decimalType(4), "100.16", decimalType(5, 1), new BigDecimal("100.1")),
-            F.asList(decimalType(4), "-100.16", decimalType(5, 1), new BigDecimal("-100.1")),
-            F.asList(decimalType(4), "100", decimalType(2, 0), overflowErr),
-            F.asList(decimalType(4), "100.12", decimalType(5, 2), new BigDecimal("100.12")),
+            F.asList("DECIMAL(4)", "100", "DECIMAL(3)", new BigDecimal("100")),
+            F.asList("DECIMAL(4)", "100", "DECIMAL(3, 0)", new BigDecimal("100")),
+            F.asList("DECIMAL(4)", "100.12", "DECIMAL(5, 1)", new BigDecimal("100.1")),
+            F.asList("DECIMAL(4)", "100.12", "DECIMAL(5, 0)", new BigDecimal("100")),
+            F.asList("DECIMAL(4)", "100.16", "DECIMAL(5, 1)", new BigDecimal("100.1")),
+            F.asList("DECIMAL(4)", "-100.16", "DECIMAL(5, 1)", new BigDecimal("-100.1")),
+            F.asList("DECIMAL(4)", "100", "DECIMAL(2, 0)", overflowErr),
+            F.asList("DECIMAL(4)", "100.12", "DECIMAL(5, 2)", new BigDecimal("100.12")),
 
             // Tinyint
-            F.asList(tinyIntType, (byte)100, decimalType(3), new BigDecimal("100")),
-            F.asList(tinyIntType, (byte)100, decimalType(3, 0), new BigDecimal("100")),
-            F.asList(tinyIntType, (byte)100, decimalType(4, 1), new BigDecimal("100.0")),
-            F.asList(tinyIntType, (byte)100, decimalType(2, 0), overflowErr),
+            F.asList("TINYINT", (byte)100, "DECIMAL(3)", new BigDecimal("100")),
+            F.asList("TINYINT", (byte)100, "DECIMAL(3, 0)", new BigDecimal("100")),
+            F.asList("TINYINT", (byte)100, "DECIMAL(4, 1)", new BigDecimal("100.0")),
+            F.asList("TINYINT", (byte)100, "DECIMAL(2, 0)", overflowErr),
 
             // Smallint
-            F.asList(smallIntType, (short)100, decimalType(3), new BigDecimal("100")),
-            F.asList(smallIntType, (short)100, decimalType(3, 0), new BigDecimal("100")),
-            F.asList(smallIntType, (short)100, decimalType(4, 1), new BigDecimal("100.0")),
-            F.asList(smallIntType, (short)100, decimalType(2, 0), overflowErr),
+            F.asList("SMALLINT", (short)100, "DECIMAL(3)", new BigDecimal("100")),
+            F.asList("SMALLINT", (short)100, "DECIMAL(3, 0)", new BigDecimal("100")),
+            F.asList("SMALLINT", (short)100, "DECIMAL(4, 1)", new BigDecimal("100.0")),
+            F.asList("SMALLINT", (short)100, "DECIMAL(2, 0)", overflowErr),
 
             // Integer
-            F.asList(integerType, 100, decimalType(3), new BigDecimal("100")),
-            F.asList(integerType, 100, decimalType(3, 0), new BigDecimal("100")),
-            F.asList(integerType, 100, decimalType(4, 1), new BigDecimal("100.0")),
-            F.asList(integerType, 100, decimalType(2, 0), overflowErr),
+            F.asList("INTEGER", 100, "DECIMAL(3)", new BigDecimal("100")),
+            F.asList("INTEGER", 100, "DECIMAL(3, 0)", new BigDecimal("100")),
+            F.asList("INTEGER", 100, "DECIMAL(4, 1)", new BigDecimal("100.0")),
+            F.asList("INTEGER", 100, "DECIMAL(2, 0)", overflowErr),
 
             // Bigint
-            F.asList(bigintType, 100L, decimalType(3), new BigDecimal("100")),
-            F.asList(bigintType, 100L, decimalType(3, 0), new BigDecimal("100")),
-            F.asList(bigintType, 100L, decimalType(4, 1), new BigDecimal("100.0")),
-            F.asList(bigintType, 100L, decimalType(2, 0), overflowErr),
+            F.asList("BIGINT", 100L, "DECIMAL(3)", new BigDecimal("100")),
+            F.asList("BIGINT", 100L, "DECIMAL(3, 0)", new BigDecimal("100")),
+            F.asList("BIGINT", 100L, "DECIMAL(4, 1)", new BigDecimal("100.0")),
+            F.asList("BIGINT", 100L, "DECIMAL(2, 0)", overflowErr),
 
             // Real
-            F.asList(realType, 100.0f, decimalType(3), new BigDecimal("100")),
-            F.asList(realType, 100.0f, decimalType(3, 0), new BigDecimal("100")),
-            F.asList(realType, 100.0f, decimalType(4, 1), new BigDecimal("100.0")),
-            F.asList(realType, 100.0f, decimalType(2, 0), overflowErr),
-            F.asList(realType, 0.1f, decimalType(1, 1), new BigDecimal("0.1")),
-            F.asList(realType, 0.1f, decimalType(2, 2), new BigDecimal("0.10")),
-            F.asList(realType, 10.12f, decimalType(2, 1), overflowErr),
-            F.asList(realType, 0.12f, decimalType(1, 2), overflowErr),
+            F.asList("REAL", 100.0f, "DECIMAL(3)", new BigDecimal("100")),
+            F.asList("REAL", 100.0f, "DECIMAL(3, 0)", new BigDecimal("100")),
+            F.asList("REAL", 100.0f, "DECIMAL(4, 1)", new BigDecimal("100.0")),
+            F.asList("REAL", 100.0f, "DECIMAL(2, 0)", overflowErr),
+            F.asList("REAL", 0.1f, "DECIMAL(1, 1)", new BigDecimal("0.1")),
+            F.asList("REAL", 0.1f, "DECIMAL(2, 2)", new BigDecimal("0.10")),
+            F.asList("REAL", 10.12f, "DECIMAL(2, 1)", overflowErr),
+            F.asList("REAL", 0.12f, "DECIMAL(1, 2)", overflowErr),
 
             // Double
-            F.asList(doubleType, 100.0d, decimalType(3), new BigDecimal("100")),
-            F.asList(doubleType, 100.0d, decimalType(3, 0), new BigDecimal("100")),
-            F.asList(doubleType, 100.0d, decimalType(4, 1), new BigDecimal("100.0")),
-            F.asList(doubleType, 100.0d, decimalType(2, 0), overflowErr),
-            F.asList(doubleType, 0.1d, decimalType(1, 1), new BigDecimal("0.1")),
-            F.asList(doubleType, 0.1d, decimalType(2, 2), new BigDecimal("0.10")),
-            F.asList(doubleType, 10.12d, decimalType(2, 1), overflowErr),
-            F.asList(doubleType, 0.12d, decimalType(1, 2), overflowErr),
+            F.asList("DOUBLE", 100.0d, "DECIMAL(3)", new BigDecimal("100")),
+            F.asList("DOUBLE", 100.0d, "DECIMAL(3, 0)", new BigDecimal("100")),
+            F.asList("DOUBLE", 100.0d, "DECIMAL(4, 1)", new BigDecimal("100.0")),
+            F.asList("DOUBLE", 100.0d, "DECIMAL(2, 0)", overflowErr),
+            F.asList("DOUBLE", 0.1d, "DECIMAL(1, 1)", new BigDecimal("0.1")),
+            F.asList("DOUBLE", 0.1d, "DECIMAL(2, 2)", new BigDecimal("0.10")),
+            F.asList("DOUBLE", 10.12d, "DECIMAL(2, 1)", overflowErr),
+            F.asList("DOUBLE", 0.12d, "DECIMAL(1, 2)", overflowErr),
 
             // Decimal
-            F.asList(decimalType(1, 1), new BigDecimal("0.1"), decimalType(1, 1), new BigDecimal("0.1")),
-            F.asList(decimalType(3), new BigDecimal("100"), decimalType(3), new BigDecimal("100")),
-            F.asList(decimalType(3), new BigDecimal("100"), decimalType(3, 0), new BigDecimal("100")),
-            F.asList(decimalType(3), new BigDecimal("100"), decimalType(4, 1), new BigDecimal("100.0")),
-            F.asList(decimalType(3), new BigDecimal("100"), decimalType(2, 0), overflowErr),
-            F.asList(decimalType(1, 1), new BigDecimal("0.1"), decimalType(2, 2), new BigDecimal("0.10")),
-            F.asList(decimalType(4, 2), new BigDecimal("10.12"), decimalType(2, 1), overflowErr),
-            F.asList(decimalType(2, 2), new BigDecimal("0.12"), decimalType(1, 2), overflowErr),
-            F.asList(decimalType(1, 1), new BigDecimal("0.1"), decimalType(1, 1), new BigDecimal("0.1"))
+            F.asList("DECIMAL(1, 1)", new BigDecimal("0.1"), "DECIMAL(1, 1)", new BigDecimal("0.1")),
+            F.asList("DECIMAL(3)", new BigDecimal("100"), "DECIMAL(3)", new BigDecimal("100")),
+            F.asList("DECIMAL(3)", new BigDecimal("100"), "DECIMAL(3, 0)", new BigDecimal("100")),
+            F.asList("DECIMAL(3)", new BigDecimal("100"), "DECIMAL(4, 1)", new BigDecimal("100.0")),
+            F.asList("DECIMAL(3)", new BigDecimal("100"), "DECIMAL(2, 0)", overflowErr),
+            F.asList("DECIMAL(1, 1)", new BigDecimal("0.1"), "DECIMAL(2, 2)", new BigDecimal("0.10")),
+            F.asList("DECIMAL(4, 2)", new BigDecimal("10.12"), "DECIMAL(2, 1)", overflowErr),
+            F.asList("DECIMAL(2, 2)", new BigDecimal("0.12"), "DECIMAL(1, 2)", overflowErr),
+            F.asList("DECIMAL(1, 1)", new BigDecimal("0.1"), "DECIMAL(1, 1)", new BigDecimal("0.1"))
         );
-    }
-
-    /** */
-    private static RelDataType decimalType(int precision, int scale) {
-        return Commons.typeFactory().createSqlType(SqlTypeName.DECIMAL, precision, scale);
-    }
-
-    /** */
-    private static RelDataType decimalType(int precision) {
-        return Commons.typeFactory().createSqlType(SqlTypeName.DECIMAL, precision, RelDataType.SCALE_NOT_SPECIFIED);
     }
 
     /** */
