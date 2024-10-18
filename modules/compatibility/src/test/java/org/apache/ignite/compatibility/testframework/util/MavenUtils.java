@@ -265,22 +265,21 @@ public class MavenUtils {
     private static String resolveMavenApplicationPath() {
         String m2Home = System.getenv("M2_HOME");
 
-        if (m2Home == null) {
+        if (m2Home == null)
             m2Home = System.getProperty("M2_HOME");
-        }
 
-        if (m2Home != null) {
+        if (m2Home != null)
             return m2Home + "/bin/mvn";
-        }
 
-        File currentDir = new File(System.getProperty("user.dir"));
+        File curDir = new File(System.getProperty("user.dir"));
 
-        while (currentDir != null) {
-            Path mvnwPath = Paths.get(currentDir.getAbsolutePath(), "mvnw");
-            if (Files.exists(mvnwPath) && Files.isExecutable(mvnwPath)) {
+        while (curDir != null) {
+            Path mvnwPath = Paths.get(curDir.getAbsolutePath(), "mvnw");
+
+            if (Files.exists(mvnwPath) && Files.isExecutable(mvnwPath))
                 return mvnwPath.toString();
-            }
-            currentDir = currentDir.getParentFile();
+
+            curDir = curDir.getParentFile();
         }
 
         return "mvn";
