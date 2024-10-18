@@ -268,9 +268,20 @@ public class MavenUtils {
         if (m2Home == null)
             m2Home = System.getProperty("M2_HOME");
 
-        if (m2Home == null)
-            return "mvn";
+        if (m2Home != null)
+            return m2Home + "/bin/mvn";
 
-        return m2Home + "/bin/mvn";
+        File curDir = new File(System.getProperty("user.dir"));
+
+        while (curDir != null) {
+            Path mvnwPath = Paths.get(curDir.getAbsolutePath(), "mvnw");
+
+            if (Files.exists(mvnwPath) && Files.isExecutable(mvnwPath))
+                return mvnwPath.toString();
+
+            curDir = curDir.getParentFile();
+        }
+
+        return "mvn";
     }
 }
