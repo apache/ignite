@@ -156,25 +156,10 @@ public class GridCacheQueryAdapter<T> implements CacheQuery<T> {
         boolean forceLocal,
         Boolean dataPageScanEnabled
     ) {
-        assert cctx != null;
-        assert type != null;
-        assert part == null || part >= 0;
+        this(cctx, type, null, null, filter, part, false, keepBinary, dataPageScanEnabled);
 
-        this.cctx = cctx;
-        this.type = type;
-        this.filter = filter;
         this.transform = transform;
-        this.part = part;
-        this.keepBinary = keepBinary;
         this.forceLocal = forceLocal;
-        this.dataPageScanEnabled = dataPageScanEnabled;
-
-        log = cctx.logger(getClass());
-
-        this.incMeta = false;
-        this.clsName = null;
-        this.clause = null;
-        this.idxQryDesc = null;
     }
 
     /**
