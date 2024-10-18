@@ -85,8 +85,10 @@ public class IgniteSqlFunctions {
 
     /** Removes redundant scale in case of default DECIMAL (without passed precision and scale). */
     private static BigDecimal removeDefaultScale(int precision, int scale, BigDecimal val) {
-        if (precision == DFLT_NUM_PRECISION && scale == 0 && val.compareTo(val.setScale(0, NUMERIC_ROUNDING_MODE)) == 0)
-            return val.setScale(0, NUMERIC_ROUNDING_MODE);
+        BigDecimal unscaled;
+
+        if (precision == DFLT_NUM_PRECISION && scale == 0 && val.compareTo(unscaled = val.setScale(0, NUMERIC_ROUNDING_MODE)) == 0)
+            return unscaled;
 
         return val;
     }
@@ -137,7 +139,7 @@ public class IgniteSqlFunctions {
 
         BigDecimal dec = convertToBigDecimal(val);
 
-        if (scale > precision || (dec.precision() - dec.scale() > precision - scale))
+        if (scale > precision || (dec.precision() - dec.scale() > precision - scale && !dec.unscaledValue().equals(BigInteger.ZERO)))
             throw new IllegalArgumentException(NUMERIC_OVERFLOW_ERROR);
 
         return dec.setScale(scale, NUMERIC_ROUNDING_MODE);
