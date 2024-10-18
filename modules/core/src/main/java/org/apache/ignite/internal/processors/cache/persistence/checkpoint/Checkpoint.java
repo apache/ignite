@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.processors.cache.persistence.checkpoint;
 
 import org.apache.ignite.internal.pagemem.FullPageId;
+import org.apache.ignite.internal.pagemem.wal.record.CheckpointRecord;
 import org.apache.ignite.internal.processors.cache.persistence.pagemem.PageMemoryEx;
 import org.apache.ignite.internal.util.GridConcurrentMultiPairQueue;
 import org.apache.ignite.lang.IgniteBiTuple;
@@ -36,6 +37,9 @@ class Checkpoint {
     /** Checkpoint progress status. */
     final CheckpointProgressImpl progress;
 
+    /** Checkpoint WAL record. */
+    final CheckpointRecord cpRecord;
+
     /** WAL segments fully covered by this checkpoint. */
     IgniteBiTuple<Long, Long> walSegsCoveredRange;
 
@@ -48,15 +52,18 @@ class Checkpoint {
      * @param cpEntry Checkpoint entry.
      * @param cpPages Pages to write to the page store.
      * @param progress Checkpoint progress status.
+     * @param cpRecord Checkpoint WAL record.
      */
     Checkpoint(
         @Nullable CheckpointEntry cpEntry,
         GridConcurrentMultiPairQueue<PageMemoryEx, FullPageId> cpPages,
-        CheckpointProgressImpl progress
+        CheckpointProgressImpl progress,
+        CheckpointRecord cpRecord
     ) {
         this.cpEntry = cpEntry;
         this.cpPages = cpPages;
         this.progress = progress;
+        this.cpRecord = cpRecord;
 
         pagesSize = cpPages.initialSize();
     }

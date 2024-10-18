@@ -73,7 +73,9 @@ public class PerformanceStatisticsPropertiesTest extends AbstractPerformanceStat
     @Test
     @WithSystemProperty(key = IGNITE_PERF_STAT_FILE_MAX_SIZE, value = "" + TEST_FILE_MAX_SIZE)
     public void testFileMaxSize() throws Exception {
-        long initLen = srv.context().cache().cacheDescriptors().values().stream().mapToInt(
+        long initLen = 1 + OperationType.versionRecordSize();
+
+        initLen += srv.context().cache().cacheDescriptors().values().stream().mapToInt(
             desc -> 1 + cacheStartRecordSize(desc.cacheName().getBytes().length, false)).sum();
 
         long expOpsCnt = (TEST_FILE_MAX_SIZE - initLen) / (/*typeOp*/1 + OperationType.cacheRecordSize());
@@ -155,7 +157,7 @@ public class PerformanceStatisticsPropertiesTest extends AbstractPerformanceStat
 
         startCollectStatistics();
 
-        int expLen = 0;
+        int expLen = 1 + OperationType.versionRecordSize();
 
         for (int i = 0; i < tasksCnt; i++) {
             String taskName = "TestTask-" + i;
