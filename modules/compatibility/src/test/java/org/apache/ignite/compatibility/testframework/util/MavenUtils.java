@@ -264,7 +264,13 @@ public class MavenUtils {
     /** */
     private static String resolveMavenApplicationPath() {
 
-        Path mvnwPath = Paths.get(System.getProperty("user.dir"), "mvnw");
+        File currentDir = new File(System.getProperty("user.dir"));
+
+        while (currentDir != null && !new File(currentDir, "mvnw").exists()) {
+            currentDir = currentDir.getParentFile();
+        }
+
+        Path mvnwPath = Paths.get(currentDir.getAbsolutePath(), "mvnw");
 
         if (Files.exists(mvnwPath) && Files.isExecutable(mvnwPath)) {
             return mvnwPath.toString();
