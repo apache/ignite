@@ -35,6 +35,7 @@ import static org.apache.ignite.cache.CacheMode.REPLICATED;
  */
 public class ReplicatedNearCacheTest extends GridCommonAbstractTest {
 
+    /** */
     private static final int NODES = 3;
 
     /** {@inheritDoc} */
@@ -44,6 +45,7 @@ public class ReplicatedNearCacheTest extends GridCommonAbstractTest {
         startGrids(3);
     }
 
+    /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
@@ -71,7 +73,7 @@ public class ReplicatedNearCacheTest extends GridCommonAbstractTest {
         assertTrue(cli.configuration().isClientMode());
 
         IgniteCache<Integer, Integer> srvCache = srv.createCache(ccfg);
-        assertFalse(((GatewayProtectedCacheProxy) srvCache).context().isNear());
+        assertFalse(((GatewayProtectedCacheProxy)srvCache).context().isNear());
 
         IgniteCache<Object, Object> cliCache = cli.cache(DEFAULT_CACHE_NAME);
         assertFalse(((IgniteCacheProxy)cliCache).context().isNear());
