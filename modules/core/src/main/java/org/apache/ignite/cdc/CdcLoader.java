@@ -28,14 +28,12 @@ import org.apache.ignite.internal.util.spring.IgniteSpringHelper;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiTuple;
-import org.apache.ignite.lang.IgniteExperimental;
 
 import static org.apache.ignite.internal.IgniteComponentType.SPRING;
 
 /**
  * Utility class to load {@link CdcMain} from Spring XML configuration.
  */
-@IgniteExperimental
 public class CdcLoader {
     /**
      * Loads {@link CdcMain} from XML configuration file.
