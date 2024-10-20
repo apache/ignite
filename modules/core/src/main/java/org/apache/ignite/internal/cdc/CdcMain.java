@@ -79,6 +79,8 @@ import org.apache.ignite.spi.metric.jmx.JmxMetricExporterSpi;
 import org.apache.ignite.spi.metric.noop.NoopMetricExporterSpi;
 import org.apache.ignite.startup.cmdline.CdcCommandLineStartup;
 
+import static java.util.concurrent.TimeUnit.MILLISECONDS;
+import static java.util.concurrent.TimeUnit.NANOSECONDS;
 import static org.apache.ignite.internal.IgniteKernal.NL;
 import static org.apache.ignite.internal.IgniteKernal.SITE;
 import static org.apache.ignite.internal.IgniteVersionUtils.ACK_VER_STR;
@@ -182,6 +184,29 @@ public class CdcMain implements Runnable {
     private static final IgniteBiPredicate<WALRecord.RecordType, WALPointer> ACTIVE_RECS =
         (type, ptr) -> type == DATA_RECORD_V2 || type == CDC_DATA_RECORD;
 
+    /** Histogram buckets for duration wal processing in nanoseconds. */
+    public static final long[] HISTOGRAM_BUCKETS = new long[] {
+        NANOSECONDS.convert(1, MILLISECONDS),
+        NANOSECONDS.convert(10, MILLISECONDS),
+        NANOSECONDS.convert(100, MILLISECONDS),
+        NANOSECONDS.convert(250, MILLISECONDS),
+        NANOSECONDS.convert(1000, MILLISECONDS)
+    };
+
+    /** */
+    public static final String EVENTS_CONSUMPTION_TIME = "EventsConsumptionTime";
+
+    /** */
+    public static final String EVENTS_CONSUMPTION_TIME_DESC =
+        "Time for which this CDC client processed the WAL segment events, in nanoseconds.";
+
+    /** */
+    public static final String EVENTS_CONSUMPTION_TIME_TOTAL = "EventsConsumptionTimeTotal";
+
+    /** */
+    public static final String EVENTS_CONSUMPTION_TIME_TOTAL_DESC =
+        "The total time for which this CDC client processed the WAL segments events, in nanoseconds.";
+
     /** Ignite configuration. */
     private final IgniteConfiguration igniteCfg;
 
@@ -202,6 +227,12 @@ public class CdcMain implements Runnable {
 
     /** Time of last segment consumption. */
     private AtomicLongMetric lastSegmentConsumptionTs;
+
+    /** Metric shows duration of the last WAL segment events consumption. */
+    private HistogramMetricImpl eventsConsumptionTime;
+
+    /** Metric shows the total duration of WAL segment events consumption. */
+    private AtomicLongMetric eventsConsumptionTimeTotal;
 
     /** Metadata update time. */
     private HistogramMetricImpl metaUpdate;
@@ -443,6 +474,9 @@ public class CdcMain implements Runnable {
             new long[] {5_000, 10_000, 15_000, 30_000, 60_000},
             "Time between creating an event on Ignite node and capturing it by CdcConsumer");
         mreg.register(CDC_MODE, () -> cdcModeState.name(), String.class, "CDC mode");
+
+        eventsConsumptionTime = mreg.histogram(EVENTS_CONSUMPTION_TIME, HISTOGRAM_BUCKETS, EVENTS_CONSUMPTION_TIME_DESC);
+        eventsConsumptionTimeTotal = mreg.longMetric(EVENTS_CONSUMPTION_TIME_TOTAL, EVENTS_CONSUMPTION_TIME_TOTAL_DESC);
     }
 
     /**
@@ -591,6 +625,8 @@ public class CdcMain implements Runnable {
      * Consumes CDC events in {@link CdcMode#CDC_UTILITY_ACTIVE} mode.
      */
     private void consumeSegmentActively(IgniteWalIteratorFactory.IteratorParametersBuilder builder) {
+        long start = System.nanoTime();
+
         try (DataEntryIterator iter = new DataEntryIterator(
             new IgniteWalIteratorFactory(log).iterator(builder.addFilter(ACTIVE_RECS)),
             evtCaptureTime)
@@ -615,6 +651,18 @@ public class CdcMain implements Runnable {
         catch (IgniteCheckedException | IOException e) {
             throw new IgniteException(e);
         }
+        finally {
+            updateWalProcessingMetrics(System.nanoTime() - start);
+        }
+    }
+
+    /**
+     * Updates consumer event coonsumption metrics.
+     * @param duration - Operation durtion.
+     */
+    private void updateWalProcessingMetrics(long duration) {
+        eventsConsumptionTime.value(duration);
+        eventsConsumptionTimeTotal.add(duration);
     }
 
     /**

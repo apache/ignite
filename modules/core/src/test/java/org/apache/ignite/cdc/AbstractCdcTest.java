@@ -41,6 +41,7 @@ import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.cdc.CdcConsumerState;
 import org.apache.ignite.internal.cdc.CdcMain;
 import org.apache.ignite.internal.processors.cache.persistence.wal.WALPointer;
+import org.apache.ignite.internal.processors.metric.impl.HistogramMetricImpl;
 import org.apache.ignite.internal.util.lang.GridAbsPredicate;
 import org.apache.ignite.internal.util.typedef.CI3;
 import org.apache.ignite.internal.util.typedef.F;
@@ -61,6 +62,8 @@ import static org.apache.ignite.internal.cdc.CdcMain.CDC_DIR;
 import static org.apache.ignite.internal.cdc.CdcMain.COMMITTED_SEG_IDX;
 import static org.apache.ignite.internal.cdc.CdcMain.COMMITTED_SEG_OFFSET;
 import static org.apache.ignite.internal.cdc.CdcMain.CUR_SEG_IDX;
+import static org.apache.ignite.internal.cdc.CdcMain.EVENTS_CONSUMPTION_TIME;
+import static org.apache.ignite.internal.cdc.CdcMain.EVENTS_CONSUMPTION_TIME_TOTAL;
 import static org.apache.ignite.internal.cdc.CdcMain.EVT_CAPTURE_TIME;
 import static org.apache.ignite.internal.cdc.CdcMain.LAST_SEG_CONSUMPTION_TIME;
 import static org.apache.ignite.internal.cdc.CdcMain.MARSHALLER_DIR;
@@ -222,22 +225,11 @@ public abstract class AbstractCdcTest extends GridCommonAbstractTest {
 
     /** */
     protected void checkMetrics(CdcMain cdc, int expCnt) throws Exception {
-        IgniteConfiguration cfg = getFieldValue(cdc, "igniteCfg");
+        DynamicMBean jmxCdcReg = getJmxCdcReg(cdc);
 
-        DynamicMBean jmxCdcReg = metricRegistry(cdcInstanceName(cfg.getIgniteInstanceName()), null, "cdc");
+        checkMetrics(expCnt, (Function<String, Long>)jmxVal(jmxCdcReg), (Function<String, String>)jmxVal(jmxCdcReg));
 
-        Function<String, ?> jmxVal = m -> {
-            try {
-                return jmxCdcReg.getAttribute(m);
-            }
-            catch (Exception e) {
-                throw new IgniteException(e);
-            }
-        };
-
-        checkMetrics(expCnt, (Function<String, Long>)jmxVal, (Function<String, String>)jmxVal);
-
-        MetricRegistry mreg = getFieldValue(cdc, "mreg");
+        MetricRegistry mreg = getMetricRegistry(cdc);
 
         assertNotNull(mreg);
 
@@ -267,6 +259,55 @@ public abstract class AbstractCdcTest extends GridCommonAbstractTest {
             assertTrue(new File(strMetric.apply(m)).exists());
 
         assertEquals(expCnt, (long)longMetric.apply(EVTS_CNT));
+    }
+
+    /**
+     * @param cdc - {@link CdcMain} instance.
+     */
+    protected void checkWalProcessingMetrics(CdcMain cdc) {
+        DynamicMBean jmxCdcReg = getJmxCdcReg(cdc);
+
+        checkWalProcessingMetrics((Function<String, Long>)jmxVal(jmxCdcReg), (Function<String, long[]>)jmxVal(jmxCdcReg));
+
+        MetricRegistry mreg = getMetricRegistry(cdc);
+
+        checkWalProcessingMetrics(
+            m -> mreg.<LongMetric>findMetric(m).value(),
+            m -> mreg.<HistogramMetricImpl>findMetric(m).value()
+        );
+    }
+
+    /** Checks the metrics for WAL processing. */
+    private void checkWalProcessingMetrics(Function<String, Long> longMetric, Function<String, long[]> longMetricArray) {
+        assertNotNull(longMetric.apply(EVENTS_CONSUMPTION_TIME_TOTAL));
+
+        assertTrue(longMetric.apply(EVENTS_CONSUMPTION_TIME_TOTAL) > 0);
+
+        assertTrue(Arrays.stream(longMetricArray.apply(EVENTS_CONSUMPTION_TIME)).sum() > 0);
+    }
+
+    /** @return MBean for CDC metrics */
+    private DynamicMBean getJmxCdcReg(CdcMain cdc) {
+        IgniteConfiguration cfg = getFieldValue(cdc, "igniteCfg");
+
+        return metricRegistry(cdcInstanceName(cfg.getIgniteInstanceName()), null, "cdc");
+    }
+
+    /** @return {@link MetricRegistry} */
+    private MetricRegistry getMetricRegistry(CdcMain cdc) {
+        return getFieldValue(cdc, "mreg");
+    }
+
+    /** */
+    private Function<String, ?> jmxVal(DynamicMBean jmxCdcReg) {
+        return m -> {
+            try {
+                return jmxCdcReg.getAttribute(m);
+            }
+            catch (Exception e) {
+                throw new IgniteException(e);
+            }
+        };
     }
 
     /** */
