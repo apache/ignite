@@ -669,7 +669,7 @@ public class DataTypesTest extends AbstractBasicIntegrationTransactionalTest {
                 if (expectedRes instanceof Exception)
                     assertThrows(qry, (Class<? extends Exception>)expectedRes.getClass(), ((Throwable)expectedRes).getMessage(), inputVal);
                 else
-                    assertQuery(qry).withParams(inputType).returns(expectedRes);
+                    assertQuery(qry).withParams(inputVal).returns(expectedRes).check();
             }
             else {
                 String qry = precasted
@@ -679,7 +679,7 @@ public class DataTypesTest extends AbstractBasicIntegrationTransactionalTest {
                 if (expectedRes instanceof Exception)
                     assertThrows(qry, (Class<? extends Exception>)expectedRes.getClass(), ((Throwable)expectedRes).getMessage());
                 else
-                    assertQuery(qry).returns(expectedRes);
+                    assertQuery(qry).returns(expectedRes).check();
             }
         }
     }
@@ -689,7 +689,7 @@ public class DataTypesTest extends AbstractBasicIntegrationTransactionalTest {
         return type.equalsIgnoreCase("VARCHAR") ? String.format("'%s'", val) : String.valueOf(val);
     }
 
-    /** */
+    /** @return input type, input value, target type, expected result. */
     private static List<List<Object>> numericsToCast() {
         Exception overflowErr = new IllegalArgumentException(IgniteSqlFunctions.NUMERIC_OVERFLOW_ERROR);
         Exception numFormatErr = new NumberFormatException("is neither a decimal digit number");
@@ -701,8 +701,8 @@ public class DataTypesTest extends AbstractBasicIntegrationTransactionalTest {
             F.asList("VARCHAR", "100", "DECIMAL(3, 0)", new BigDecimal("100")),
             F.asList("VARCHAR", "100", "DECIMAL(4, 1)", new BigDecimal("100.0")),
             F.asList("VARCHAR", "100.12", "DECIMAL(5, 1)", new BigDecimal("100.1")),
-            F.asList("VARCHAR", "100.16", "DECIMAL(5, 1)", new BigDecimal("100.1")),
-            F.asList("VARCHAR", "-100.16", "DECIMAL(5, 1)", new BigDecimal("-100.1")),
+            F.asList("VARCHAR", "100.16", "DECIMAL(5, 1)", new BigDecimal("100.2")),
+            F.asList("VARCHAR", "-100.16", "DECIMAL(5, 1)", new BigDecimal("-100.2")),
             F.asList("VARCHAR", "lame", "DECIMAL(5, 1)", numFormatErr),
             F.asList("VARCHAR", "12345", "DECIMAL(5, 1)", overflowErr),
             F.asList("VARCHAR", "1234", "DECIMAL(5, 1)", new BigDecimal("1234.0")),
@@ -710,14 +710,19 @@ public class DataTypesTest extends AbstractBasicIntegrationTransactionalTest {
             F.asList("VARCHAR", "100", "DECIMAL(2, 0)", overflowErr),
 
             // Numeric
-            F.asList("DECIMAL(4)", "100", "DECIMAL(3)", new BigDecimal("100")),
-            F.asList("DECIMAL(4)", "100", "DECIMAL(3, 0)", new BigDecimal("100")),
-            F.asList("DECIMAL(4)", "100.12", "DECIMAL(5, 1)", new BigDecimal("100.1")),
-            F.asList("DECIMAL(4)", "100.12", "DECIMAL(5, 0)", new BigDecimal("100")),
-            F.asList("DECIMAL(4)", "100.16", "DECIMAL(5, 1)", new BigDecimal("100.1")),
-            F.asList("DECIMAL(4)", "-100.16", "DECIMAL(5, 1)", new BigDecimal("-100.1")),
-            F.asList("DECIMAL(4)", "100", "DECIMAL(2, 0)", overflowErr),
-            F.asList("DECIMAL(4)", "100.12", "DECIMAL(5, 2)", new BigDecimal("100.12")),
+            F.asList("DECIMAL(1, 1)", "0.1", "DECIMAL(1, 1)", new BigDecimal("0.1")),
+            F.asList("DECIMAL(3)", "100", "DECIMAL(3)", new BigDecimal("100")),
+            F.asList("DECIMAL(5, 2)", "100.16", "DECIMAL(4, 1)", new BigDecimal("100.2")),
+            F.asList("DECIMAL(5, 2)", "-100.16", "DECIMAL(4, 1)", new BigDecimal("-100.2")),
+            F.asList("DECIMAL(5, 2)", "100.16", "DECIMAL(5, 2)", new BigDecimal("100.16")),
+            F.asList("DECIMAL(5, 2)", "-100.16", "DECIMAL(5, 2)", new BigDecimal("-100.16")),
+            F.asList("DECIMAL(3)", "100", "DECIMAL(3, 0)", new BigDecimal("100")),
+            F.asList("DECIMAL(3)", "100", "DECIMAL(4, 1)", new BigDecimal("100.0")),
+            F.asList("DECIMAL(3)", "100", "DECIMAL(2, 0)", overflowErr),
+            F.asList("DECIMAL(1, 1)", "0.1", "DECIMAL(2, 2)", new BigDecimal("0.10")),
+            F.asList("DECIMAL(4, 2)", "10.12", "DECIMAL(2, 1)", overflowErr),
+            F.asList("DECIMAL(2, 2)", "0.12", "DECIMAL(1, 2)", overflowErr),
+            F.asList("DECIMAL(1, 1)", "0.1", "DECIMAL(1, 1)", new BigDecimal("0.1")),
 
             // Tinyint
             F.asList("TINYINT", (byte)100, "DECIMAL(3)", new BigDecimal("100")),
