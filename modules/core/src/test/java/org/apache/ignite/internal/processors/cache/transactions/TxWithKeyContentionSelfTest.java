@@ -214,37 +214,63 @@ public class TxWithKeyContentionSelfTest extends GridCommonAbstractTest {
     private void runKeyCollisionsMetric(TransactionConcurrency concurrency, TransactionIsolation isolation) throws Exception {
         Ignite ig = startGridsMultiThreaded(3);
 
-        int contCnt = (int)U.staticField(IgniteTxManager.class, "COLLISIONS_QUEUE_THRESHOLD") * 20;
-
-        CountDownLatch txLatch = new CountDownLatch(contCnt);
-
         ig.cluster().state(ClusterState.ACTIVE);
 
         client = true;
 
         Ignite cl = startGrid();
 
-        IgniteTransactions cliTxMgr = cl.transactions();
-
         IgniteCache<Integer, Integer> cache = cl.cache(DEFAULT_CACHE_NAME);
 
-        GridCompoundFuture<?, ?> finishFut = new GridCompoundFuture<>();
+        // Ключ, который будет использоваться для конфликта.
+        final Integer key = 1;
 
-        for (int i = 0; i < contCnt; ++i) {
-            IgniteInternalFuture f0 = GridTestUtils.runAsync(() -> {
-                try (Transaction tx = cliTxMgr.txStart(concurrency, isolation)) {
-                    cache.put(1, 1);
+        // Запускаем транзакцию, удерживающую блокировку на ключе.
+        IgniteTransactions transactions = cl.transactions();
+
+        CountDownLatch latch = new CountDownLatch(1);
+
+        // Запускаем блокирующую транзакцию T0.
+        IgniteInternalFuture<?> holdingTxFut = GridTestUtils.runAsync(() -> {
+            try (Transaction tx = transactions.txStart(concurrency, isolation)) {
+                cache.put(key, 0);
+
+                // Сигнализируем, что T0 захватила блокировку.
+                latch.countDown();
+
+                // Удерживаем транзакцию открытой в течение заданного времени.
+                doSleep(5000);
+
+                tx.commit();
+            }
+        });
+
+        // Ждем, пока T0 захватит блокировку.
+        latch.await();
+
+        int contCnt = (int)U.staticField(IgniteTxManager.class, "COLLISIONS_QUEUE_THRESHOLD") * 20;
+
+        GridCompoundFuture<?, ?> compoundFut = new GridCompoundFuture<>();
+
+        for (int i = 0; i < contCnt; i++) {
+            IgniteInternalFuture txFut = GridTestUtils.runAsync(() -> {
+                try (Transaction tx = transactions.txStart(concurrency, isolation)) {
+                    cache.put(key, 0);
 
                     tx.commit();
-
-                    txLatch.countDown();
                 }
             });
 
-            finishFut.add(f0);
+            compoundFut.add(txFut);
         }
 
-        finishFut.markInitialized();
+        compoundFut.markInitialized();
+
+        // Ждем завершения всех транзакций.
+        compoundFut.get();
+
+        // Убеждаемся, что блокирующая транзакция завершилась.
+        holdingTxFut.get();
 
         assertTrue(GridTestUtils.waitForCondition(new GridAbsPredicate() {
             @Override public boolean apply() {
@@ -258,10 +284,12 @@ public class TxWithKeyContentionSelfTest extends GridCommonAbstractTest {
 
                 CacheMetrics metrics = ig.cache(DEFAULT_CACHE_NAME).localMetrics();
 
-                String coll1 = metrics.getTxKeyCollisions();
+                String coll = metrics.getTxKeyCollisions();
 
-                if (!coll1.isEmpty()) {
-                    assertTrue(coll1.contains("queueSize"));
+                System.out.println("coll = " + coll);
+
+                if (!coll.isEmpty()) {
+                    assertTrue(coll.contains("queueSize"));
 
                     return true;
                 }
@@ -269,9 +297,5 @@ public class TxWithKeyContentionSelfTest extends GridCommonAbstractTest {
                     return false;
             }
         }, 10_000));
-
-        finishFut.get();
-
-        txLatch.await();
     }
 }
