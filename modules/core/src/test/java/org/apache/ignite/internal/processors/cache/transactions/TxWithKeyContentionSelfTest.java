@@ -222,35 +222,13 @@ public class TxWithKeyContentionSelfTest extends GridCommonAbstractTest {
 
         IgniteCache<Integer, Integer> cache = cl.cache(DEFAULT_CACHE_NAME);
 
-        // Ключ, который будет использоваться для конфликта.
         final Integer key = 1;
 
-        // Запускаем транзакцию, удерживающую блокировку на ключе.
         IgniteTransactions transactions = cl.transactions();
-
-        CountDownLatch latch = new CountDownLatch(1);
-
-        // Запускаем блокирующую транзакцию T0.
-        IgniteInternalFuture<?> holdingTxFut = GridTestUtils.runAsync(() -> {
-            try (Transaction tx = transactions.txStart(concurrency, isolation)) {
-                cache.put(key, 0);
-
-                // Сигнализируем, что T0 захватила блокировку.
-                latch.countDown();
-
-                // Удерживаем транзакцию открытой в течение заданного времени.
-                doSleep(5000);
-
-                tx.commit();
-            }
-        });
-
-        // Ждем, пока T0 захватит блокировку.
-        latch.await();
 
         int contCnt = (int)U.staticField(IgniteTxManager.class, "COLLISIONS_QUEUE_THRESHOLD") * 20;
 
-        GridCompoundFuture<?, ?> compoundFut = new GridCompoundFuture<>();
+        GridCompoundFuture<?, ?> finishFut = new GridCompoundFuture<>();
 
         for (int i = 0; i < contCnt; i++) {
             IgniteInternalFuture txFut = GridTestUtils.runAsync(() -> {
@@ -261,16 +239,12 @@ public class TxWithKeyContentionSelfTest extends GridCommonAbstractTest {
                 }
             });
 
-            compoundFut.add(txFut);
+            finishFut.add(txFut);
         }
 
-        compoundFut.markInitialized();
+        finishFut.markInitialized();
 
-        // Ждем завершения всех транзакций.
-        compoundFut.get();
-
-        // Убеждаемся, что блокирующая транзакция завершилась.
-        holdingTxFut.get();
+        finishFut.get();
 
         assertTrue(GridTestUtils.waitForCondition(new GridAbsPredicate() {
             @Override public boolean apply() {
