@@ -213,6 +213,8 @@ public class TxWithKeyContentionSelfTest extends GridCommonAbstractTest {
     private void runKeyCollisionsMetric(TransactionConcurrency concurrency, TransactionIsolation isolation) throws Exception {
         Ignite ig = startGridsMultiThreaded(3);
 
+        int contCnt = (int)U.staticField(IgniteTxManager.class, "COLLISIONS_QUEUE_THRESHOLD") * 20;
+
         ig.cluster().state(ClusterState.ACTIVE);
 
         client = true;
@@ -223,12 +225,10 @@ public class TxWithKeyContentionSelfTest extends GridCommonAbstractTest {
 
         IgniteTransactions transactions = cl.transactions();
 
-        int contCnt = (int)U.staticField(IgniteTxManager.class, "COLLISIONS_QUEUE_THRESHOLD") * 20;
-
         GridCompoundFuture<?, ?> finishFut = new GridCompoundFuture<>();
 
         for (int i = 0; i < contCnt; i++) {
-            IgniteInternalFuture txFut = GridTestUtils.runAsync(() -> {
+            IgniteInternalFuture f0 = GridTestUtils.runAsync(() -> {
                 try (Transaction tx = transactions.txStart(concurrency, isolation)) {
                     cache.put(1, 0);
 
@@ -236,12 +236,10 @@ public class TxWithKeyContentionSelfTest extends GridCommonAbstractTest {
                 }
             });
 
-            finishFut.add(txFut);
+            finishFut.add(f0);
         }
 
-        finishFut.markInitialized();
-
-        finishFut.get();
+        finishFut.markInitialized().get();
 
         assertTrue(GridTestUtils.waitForCondition(new GridAbsPredicate() {
             @Override public boolean apply() {
