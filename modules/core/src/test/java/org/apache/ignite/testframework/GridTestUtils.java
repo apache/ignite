@@ -2596,7 +2596,7 @@ public final class GridTestUtils {
         @QuerySqlFunction
         @SuppressWarnings("BusyWait")
         public static long sleep() {
-            long end = System.currentTimeMillis() + sleepMs;
+            long end = U.currentTimeMillis() + sleepMs;
 
             long remainTime = sleepMs;
 
@@ -2608,7 +2608,7 @@ public final class GridTestUtils {
                     // No-op
                 }
             }
-            while ((remainTime = end - System.currentTimeMillis()) > 0);
+            while ((remainTime = end - U.currentTimeMillis()) > 0);
 
             return sleepMs;
         }
