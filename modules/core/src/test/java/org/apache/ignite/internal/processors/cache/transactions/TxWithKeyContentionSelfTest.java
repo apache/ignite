@@ -17,7 +17,6 @@
 
 package org.apache.ignite.internal.processors.cache.transactions;
 
-import java.util.concurrent.CountDownLatch;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteCheckedException;
@@ -222,8 +221,6 @@ public class TxWithKeyContentionSelfTest extends GridCommonAbstractTest {
 
         IgniteCache<Integer, Integer> cache = cl.cache(DEFAULT_CACHE_NAME);
 
-        final Integer key = 1;
-
         IgniteTransactions transactions = cl.transactions();
 
         int contCnt = (int)U.staticField(IgniteTxManager.class, "COLLISIONS_QUEUE_THRESHOLD") * 20;
@@ -233,7 +230,7 @@ public class TxWithKeyContentionSelfTest extends GridCommonAbstractTest {
         for (int i = 0; i < contCnt; i++) {
             IgniteInternalFuture txFut = GridTestUtils.runAsync(() -> {
                 try (Transaction tx = transactions.txStart(concurrency, isolation)) {
-                    cache.put(key, 0);
+                    cache.put(1, 0);
 
                     tx.commit();
                 }
@@ -259,8 +256,6 @@ public class TxWithKeyContentionSelfTest extends GridCommonAbstractTest {
                 CacheMetrics metrics = ig.cache(DEFAULT_CACHE_NAME).localMetrics();
 
                 String coll = metrics.getTxKeyCollisions();
-
-                System.out.println("coll = " + coll);
 
                 if (!coll.isEmpty()) {
                     assertTrue(coll.contains("queueSize"));
