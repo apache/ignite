@@ -1932,10 +1932,10 @@ public class BinaryWriterExImpl implements BinaryWriter, BinaryRawWriterEx, Obje
         int readLen;
         int writtenLen = 0;
 
-        byte[] buf = new byte[DEFAULT_BUFFER_SIZE];
+        byte[] buf = new byte[Math.min(limit, DEFAULT_BUFFER_SIZE)];
 
-        while (-1 != (readLen = in.read(buf, 0, Math.min(buf.length, limit - writtenLen)))
-                && writtenLen < limit) {
+        while (writtenLen < limit &&
+                -1 != (readLen = in.read(buf, 0, Math.min(buf.length, limit - writtenLen)))) {
             out.writeByteArray(buf, 0, readLen);
 
             writtenLen += readLen;
