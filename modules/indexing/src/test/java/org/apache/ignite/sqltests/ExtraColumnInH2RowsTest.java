@@ -30,7 +30,7 @@ import org.junit.Test;
  * @see ResultInterface#currentRow()
  * @see ResultInterface#getVisibleColumnCount()
  */
-public class ExtraColumnInRowsThinClientTest extends GridCommonAbstractTest {
+public class ExtraColumnInH2RowsTest extends GridCommonAbstractTest {
     /** */
     @Test
     public void testExtraColumnIgnored() throws Exception {
