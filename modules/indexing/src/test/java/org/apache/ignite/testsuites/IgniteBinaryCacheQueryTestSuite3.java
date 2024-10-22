@@ -162,6 +162,7 @@ import org.apache.ignite.internal.processors.sql.IgniteSQLColumnConstraintsTest;
 import org.apache.ignite.internal.sql.SqlParserUserSelfTest;
 import org.apache.ignite.spi.communication.tcp.GridOrderedMessageCancelSelfTest;
 import org.apache.ignite.spi.communication.tcp.H2CommunicationMessageSerializationTest;
+import org.apache.ignite.sqltests.ExtraColumnInRowsThinClientTest;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.util.KillCommandsMXBeanTest;
 import org.apache.ignite.util.KillCommandsSQLTest;
@@ -379,6 +380,7 @@ import org.junit.runners.Suite;
     DumpCacheConfigTest.class,
 
     H2TransactionAwareQueriesEnabledTest.class,
+    ExtraColumnInRowsThinClientTest.class
 })
 public class IgniteBinaryCacheQueryTestSuite3 {
     /** Setup lazy mode default. */
