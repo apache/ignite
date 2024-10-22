@@ -56,11 +56,15 @@ public class ExtraColumnInH2RowsTest extends GridCommonAbstractTest {
                 data.put(part, F.t(key, val));
             }
 
-            try (IgniteClient client = Ignition.startClient(new ClientConfiguration().setAddresses(Config.SERVER))) {
-                check(parts, qry -> client.cache(DEFAULT_CACHE_NAME).query(qry).getAll(), data);
+            try (IgniteClient cli = Ignition.startClient(new ClientConfiguration().setAddresses(Config.SERVER))) {
+                check(parts, qry -> cli.cache(DEFAULT_CACHE_NAME).query(qry).getAll(), data);
             }
 
             check(parts, qry -> ign.cache(DEFAULT_CACHE_NAME).query(qry).getAll(), data);
+
+            try (IgniteEx cli = startClientGrid("client")) {
+                check(parts, qry -> cli.cache(DEFAULT_CACHE_NAME).query(qry).getAll(), data);
+            }
         }
     }
 
