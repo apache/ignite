@@ -104,12 +104,6 @@ public class JdbcBlobBuffer {
      * @return OutputStream instance.
      */
     public OutputStream getOutputStream(long pos) {
-        long totalCnt = storage.totalCnt();
-
-        if (pos < 0 || pos > totalCnt)
-            throw new IndexOutOfBoundsException("Position cannot be negative or greater than total count of bytes in buffer " +
-                    "[pos=" + pos + ", totalCnt=" + totalCnt + "]");
-
         return new BufferOutputStream(pos);
     }
 
@@ -136,15 +130,6 @@ public class JdbcBlobBuffer {
      * @return InputStream instance.
      */
     public InputStream getInputStream(long pos, long len) {
-        if (len < 0)
-            throw new IndexOutOfBoundsException("Length cannot be negative [len=" + len + "]");
-
-        long totalCnt = storage.totalCnt();
-
-        if (pos < 0 || pos >= totalCnt)
-            throw new IndexOutOfBoundsException("Position cannot be negative and should be less than total count of bytes in buffer " +
-                    "[pos=" + pos + ", totalCnt=" + totalCnt + "]");
-
         return new BufferInputStream(pos, len);
     }
 
@@ -155,12 +140,6 @@ public class JdbcBlobBuffer {
      *            or greater than total count of bytes in buffer.
      */
     public void truncate(long len) throws IOException {
-        long totalCnt = storage.totalCnt();
-
-        if (len < 0 || len > totalCnt)
-            throw new IndexOutOfBoundsException("Length cannot be negative or greater than total count of bytes in buffer " +
-                    "[len=" + len + ", totalCnt=" + totalCnt + "]");
-
         try {
             storage.truncate(len);
         }
