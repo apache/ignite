@@ -269,7 +269,7 @@ public abstract class BinaryObjectExImpl implements BinaryObjectEx {
     private void appendValue(Object val, SB buf, BinaryReaderHandles ctx,
         IdentityHashMap<BinaryObject, Integer> handles) {
         if (val instanceof byte[])
-            buf.a(S.arrayToString(val));
+            buf.a(Arrays.toString((byte[])val));
         else if (val instanceof short[])
             buf.a(Arrays.toString((short[])val));
         else if (val instanceof int[])
