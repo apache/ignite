@@ -598,7 +598,7 @@ public class JdbcThinTcpIo {
         req.writeBinary(writer, protoCtx);
 
         synchronized (connMux) {
-            send(writer.array());
+            send(writer.arrayUnderlying());
         }
     }
 
