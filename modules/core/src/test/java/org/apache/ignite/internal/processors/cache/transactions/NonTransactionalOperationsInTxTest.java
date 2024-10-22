@@ -10,44 +10,31 @@ import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.transactions.Transaction;
 import org.junit.Test;
 
-import static org.apache.ignite.cache.CacheAtomicityMode.ATOMIC;
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
 import static org.apache.ignite.transactions.TransactionConcurrency.PESSIMISTIC;
 import static org.apache.ignite.transactions.TransactionIsolation.READ_COMMITTED;
 
-/**
- * Checks how non transactional cache operations work within a transaction.
- */
+/** Checks how non-transactional cache operations work within a transaction. */
 public class NonTransactionalOperationsInTxTest extends GridCommonAbstractTest {
     /** */
-    protected static IgniteEx ignite;
+    protected static IgniteEx srv;
 
     /** */
-    protected static IgniteEx igniteClient;
+    protected static IgniteEx client;
 
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(gridName);
 
-        CacheConfiguration ccfg = new CacheConfiguration();
-
-        ccfg.setAtomicityMode(ATOMIC);
-        ccfg.setName(DEFAULT_CACHE_NAME);
-
-        cfg.setCacheConfiguration(ccfg);
+        cfg.setCacheConfiguration(new CacheConfiguration<>(DEFAULT_CACHE_NAME));
 
         return cfg;
     }
 
-    /** */
-    protected void startCluster() throws Exception {
-        ignite = startGrid("srv0");
-        igniteClient = startClientGrid("cli0");
-    }
-
     /** {@inheritDoc} */
     @Override protected void beforeTest() throws Exception {
-        startCluster();
+        srv = startGrid("srv0");
+        client = startClientGrid("cli0");
     }
 
     /** {@inheritDoc} */
@@ -56,31 +43,32 @@ public class NonTransactionalOperationsInTxTest extends GridCommonAbstractTest {
     }
 
     /**
-     * Tests that a non-transactional cache operation {@link IgniteCache#clear()} is not allowed within a transaction.
+     * Tests that a non-transactional cache operation {@link IgniteCache#clear()} is not allowed within a transaction
+     * and the operation works as expected.
      */
     @Test
     public void testIgniteCacheNonTransactionalOperations() {
-        checkServerNodeNonTxOperation(IgniteCache::clear);
+        checkNonTxOperation(srv, IgniteCache::clear);
 
-        checkClientNodeNonTxOperation(IgniteCache::clear);
+        checkNonTxOperation(client, IgniteCache::clear);
     }
 
     /**
-     * Otherwise - it should throw exception.
+     * It should throw exception.
      * @param op Operation.
      */
-    private void checkServerNodeNonTxOperation(Consumer<IgniteCache<Object, Object>> op) {
-        IgniteCache<Object, Object> srvNodeCache = ignite.createCache(new CacheConfiguration<>("my-cache")
+    private void checkNonTxOperation(IgniteEx ignite, Consumer<IgniteCache<Object, Object>> op) {
+        IgniteCache<Object, Object> cache = ignite.createCache(new CacheConfiguration<>("my-cache")
             .setAtomicityMode(TRANSACTIONAL));
 
-        srvNodeCache.put(1, 1);
+        cache.put(1, 1);
 
         IgniteException err = null;
 
         try (Transaction tx = ignite.transactions().txStart(PESSIMISTIC, READ_COMMITTED)) {
-            srvNodeCache.put(2, 2);
+            cache.put(2, 2);
 
-            op.accept(srvNodeCache);
+            op.accept(cache);
 
             tx.commit();
         }
@@ -88,77 +76,13 @@ public class NonTransactionalOperationsInTxTest extends GridCommonAbstractTest {
             err = e;
         }
 
-        assertTrue(err != null && err.getMessage().startsWith("Failed to invoke a non-transactional operation" +
-            " within a transaction"));
+        assertTrue(err != null && err.getMessage().startsWith("Failed to invoke a non-transactional operation " +
+            "within a transaction"));
 
-        assertTrue(srvNodeCache.containsKey(1));
+        assertTrue(cache.containsKey(1));
 
-        assertFalse(srvNodeCache.containsKey(2));
+        assertFalse(cache.containsKey(2));
 
-        srvNodeCache.destroy();
-    }
-
-    /** */
-    @Test
-    public void testClientNodeNonTxOperation() {
-        IgniteCache<Object, Object> clientNodeCache = igniteClient.createCache(new CacheConfiguration<>("my-cache")
-            .setAtomicityMode(TRANSACTIONAL));
-
-        clientNodeCache.put(1, 1);
-
-        IgniteException err = null;
-
-        try (Transaction tx = ignite.transactions().txStart(PESSIMISTIC, READ_COMMITTED)) {
-            clientNodeCache.put(2, 2);
-
-            clientNodeCache.clear();
-
-            tx.commit();
-        }
-        catch (IgniteException e) {
-            err = e;
-        }
-
-        assertTrue(err != null && err.getMessage().startsWith("Failed to invoke a non-transactional operation" +
-            " within a transaction"));
-
-        assertTrue(clientNodeCache.containsKey(1));
-
-        assertFalse(clientNodeCache.containsKey(2));
-
-        ignite.cache("my-cache").destroy();
-    }
-
-    /**
-     * Otherwise - it should throw exception.
-     * @param op Operation.
-     */
-    private void checkClientNodeNonTxOperation(Consumer<IgniteCache<Object, Object>> op) {
-        IgniteCache<Object, Object> clientNodeCache = igniteClient.createCache(new CacheConfiguration<>("my-cache")
-            .setAtomicityMode(TRANSACTIONAL));
-
-        clientNodeCache.put(1, 1);
-
-        IgniteException err = null;
-
-        try (Transaction tx = ignite.transactions().txStart(PESSIMISTIC, READ_COMMITTED)) {
-            clientNodeCache.put(2, 2);
-
-            op.accept(clientNodeCache);
-
-            tx.commit();
-        }
-        catch (IgniteException e) {
-            err = e;
-        }
-
-        assertTrue(err != null && err.getMessage().startsWith("Failed to invoke a non-transactional operation" +
-            " within a transaction"));
-
-        assertTrue(clientNodeCache.containsKey(1));
-
-        assertFalse(clientNodeCache.containsKey(2));
-
-        ignite.cache("my-cache").destroy();
+        srv.cache("my-cache").destroy();
     }
 }
