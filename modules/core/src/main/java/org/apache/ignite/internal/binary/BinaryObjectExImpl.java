@@ -269,23 +269,23 @@ public abstract class BinaryObjectExImpl implements BinaryObjectEx {
     private void appendValue(Object val, SB buf, BinaryReaderHandles ctx,
         IdentityHashMap<BinaryObject, Integer> handles) {
         if (val instanceof byte[])
-            buf.a(Arrays.toString((byte[])val));
+            buf.a(S.arrayToString(val));
         else if (val instanceof short[])
-            buf.a(Arrays.toString((short[])val));
+            buf.a(S.arrayToString(val));
         else if (val instanceof int[])
-            buf.a(Arrays.toString((int[])val));
+            buf.a(S.arrayToString(val));
         else if (val instanceof long[])
-            buf.a(Arrays.toString((long[])val));
+            buf.a(S.arrayToString(val));
         else if (val instanceof float[])
-            buf.a(Arrays.toString((float[])val));
+            buf.a(S.arrayToString(val));
         else if (val instanceof double[])
-            buf.a(Arrays.toString((double[])val));
+            buf.a(S.arrayToString(val));
         else if (val instanceof char[])
-            buf.a(Arrays.toString((char[])val));
+            buf.a(S.arrayToString(val));
         else if (val instanceof boolean[])
-            buf.a(Arrays.toString((boolean[])val));
+            buf.a(S.arrayToString(val));
         else if (val instanceof BigDecimal[])
-            buf.a(Arrays.toString((BigDecimal[])val));
+            buf.a(S.arrayToString(val));
         else if (val instanceof IgniteUuid)
             buf.a(val);
         else if (val instanceof BinaryObjectExImpl) {
