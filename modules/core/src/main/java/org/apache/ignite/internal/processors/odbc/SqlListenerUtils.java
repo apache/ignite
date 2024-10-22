@@ -278,22 +278,10 @@ public abstract class SqlListenerUtils {
             writer.writeTimestampArray((Timestamp[])obj);
         else if (cls == java.util.Date[].class || cls == java.sql.Date[].class)
             writer.writeDateArray((java.util.Date[])obj);
-        else if (obj instanceof SqlInputStreamWrapper) {
-            try {
-                writeInputStreamAsByteArray(writer, (SqlInputStreamWrapper)obj);
-            }
-            catch (IOException e) {
-                throw new BinaryObjectException(e);
-            }
-        }
-        else if (obj instanceof Blob) {
-            try {
-                writeBlobAsByteArray(writer, (Blob)obj);
-            }
-            catch (IOException | SQLException e) {
-                throw new BinaryObjectException(e);
-            }
-        }
+        else if (obj instanceof SqlInputStreamWrapper)
+            writeInputStreamAsByteArray(writer, (SqlInputStreamWrapper)obj);
+        else if (obj instanceof Blob)
+            writeBlobAsByteArray(writer, (Blob)obj);
         else if (binObjAllow)
             writer.writeObjectDetached(obj);
         else
@@ -307,23 +295,33 @@ public abstract class SqlListenerUtils {
      * @param wrapper stream wrapper
      */
     private static void writeInputStreamAsByteArray(BinaryWriterExImpl writer, SqlInputStreamWrapper wrapper)
-            throws IOException {
+            throws BinaryObjectException {
         InputStream in = wrapper.getInputStream();
         Integer len = wrapper.getLength();
 
         int writtenLen;
         if (len == null) {
-            writtenLen = writer.writeByteArrayFromInputStream(in);
+            try {
+                writtenLen = writer.writeByteArrayFromInputStream(in);
+            }
+            catch (IOException e) {
+                throw new BinaryObjectException(e);
+            }
 
             if (-1 == writtenLen)
-                throw new IOException("Invalid argument. InputStreams with length greater than " +
+                throw new BinaryObjectException("Invalid argument. InputStreams with length greater than " +
                         MAX_ARRAY_SIZE + " are not supported.");
         }
         else {
-            writtenLen = writer.writeByteArrayFromInputStream(in, len);
+            try {
+                writtenLen = writer.writeByteArrayFromInputStream(in, len);
+            }
+            catch (IOException e) {
+                throw new BinaryObjectException(e);
+            }
 
             if (len != writtenLen)
-                throw new IOException("Input stream length mismatch. [declaredLength=" + len + ", " +
+                throw new BinaryObjectException("Input stream length mismatch. [declaredLength=" + len + ", " +
                         "actualLength=" + writtenLen + "]");
         }
     }
@@ -334,14 +332,22 @@ public abstract class SqlListenerUtils {
      * @param writer Writer.
      * @param blob Blob.
      */
-    public static void writeBlobAsByteArray(BinaryWriterExImpl writer, Blob blob) throws SQLException, IOException {
-        InputStream in = blob.getBinaryStream(1, blob.length());
-        int len = (int)blob.length();
+    private static void writeBlobAsByteArray(BinaryWriterExImpl writer, Blob blob) {
+        int writtenLen;
+        int len;
 
-        int writtenLen = writer.writeByteArrayFromInputStream(in, len);
+        try {
+            len = (int)blob.length();
+            InputStream in = blob.getBinaryStream(1, len);
+
+            writtenLen = writer.writeByteArrayFromInputStream(in, len);
+        }
+        catch (IOException | SQLException e) {
+            throw new BinaryObjectException(e);
+        }
 
         if (len != writtenLen)
-            throw new IOException("Blob length mismatch. [declaredLength=" + len + ", " +
+            throw new BinaryObjectException("Blob length mismatch. [declaredLength=" + len + ", " +
                     "actualLength=" + writtenLen + "]");
     }
 
