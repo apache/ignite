@@ -349,6 +349,38 @@ public class DataTypesTest extends AbstractBasicIntegrationTransactionalTest {
             "'TIMESTAMP WITH LOCAL TIME ZONE' is not supported.");
     }
 
+    /**
+     * Test cases for decimal literals.
+     */
+    @Test
+    public void testDecimalLiteral() {
+        assumeNoTransactions();
+
+        sql("CREATE TABLE t(id integer primary key, int_col integer)");
+        sql("insert into t values (1, 1)");
+
+//        // OK
+//        assertQuery("SELECT id from t where int_col=CAST('1' as INTEGER)").returns(1).check();
+//        assertQuery("SELECT id from t where int_col=CAST('1' as TINYINT)").returns(1).check();
+//        assertQuery("SELECT id from t where int_col=CAST(1 as TINYINT)").returns(1).check();
+//
+//        // OK
+//        assertThrows("SELECT id from t where int_col=CAST(11111 as TINYINT)", ArithmeticException.class, "overflow");
+//        assertThrows("SELECT id from t where int_col=CAST('11111' as TINYINT)", ArithmeticException.class, "overflow");
+//        assertThrows("SELECT id from t where int_col=11111::TINYINT", ArithmeticException.class, "overflow");
+//        assertThrows("SELECT id from t where int_col='11111'::TINYINT", ArithmeticException.class, "overflow");
+
+        // Fails
+//        assertThrows("SELECT id from t where int_col=CAST(? as TINYINT)", ArithmeticException.class, "overflow", 1111);
+//        assertThrows("SELECT id from t where int_col=CAST(? as TINYINT)", ArithmeticException.class, "overflow", "1111");
+//        assertThrows("SELECT id from t where int_col=?::TINYINT", ArithmeticException.class, "overflow", 1111);
+//        assertThrows("SELECT id from t where int_col=?::TINYINT", ArithmeticException.class, "overflow", "1111");
+
+        // Fails
+        assertQuery("SELECT id from t where int_col=CAST(? as INTEGER)").withParams('1').returns(1).check();
+//        assertQuery("SELECT id from t where int_col=CAST(? as TINYINT)").withParams('1').returns((byte)1).check();
+    }
+
     /** Cache API - SQL API cross check. */
     @Test
     public void testBinaryCache() {
