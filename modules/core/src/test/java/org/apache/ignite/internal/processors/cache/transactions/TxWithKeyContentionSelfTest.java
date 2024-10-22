@@ -35,7 +35,6 @@ import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.TestRecordingCommunicationSpi;
 import org.apache.ignite.internal.util.future.GridCompoundFuture;
-import org.apache.ignite.internal.util.lang.GridAbsPredicate;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.WithSystemProperty;
@@ -241,28 +240,30 @@ public class TxWithKeyContentionSelfTest extends GridCommonAbstractTest {
 
         finishFut.markInitialized().get();
 
-        assertTrue(GridTestUtils.waitForCondition(new GridAbsPredicate() {
-            @Override public boolean apply() {
-                try {
-                    U.invoke(IgniteTxManager.class, ((IgniteEx)ig).context().cache().context().tm(),
-                            "collectTxCollisionsInfo");
-                }
-                catch (IgniteCheckedException e) {
-                    fail(e.toString());
-                }
+        boolean success = false;
 
-                CacheMetrics metrics = ig.cache(DEFAULT_CACHE_NAME).localMetrics();
+        while (!success) {
+            Thread.sleep(100);
 
-                String coll = metrics.getTxKeyCollisions();
-
-                if (!coll.isEmpty()) {
-                    assertTrue(coll.contains("queueSize"));
-
-                    return true;
-                }
-                else
-                    return false;
+            try {
+                U.invoke(IgniteTxManager.class, ((IgniteEx)ig).context().cache().context().tm(),
+                        "collectTxCollisionsInfo");
             }
-        }, 10_000));
+            catch (IgniteCheckedException e) {
+                fail(e.toString());
+            }
+
+            CacheMetrics metrics = ig.cache(DEFAULT_CACHE_NAME).localMetrics();
+
+            String coll = metrics.getTxKeyCollisions();
+
+            if (!coll.isEmpty()) {
+                assertTrue(coll.contains("queueSize"));
+
+                success = true;
+            }
+            else
+                success = false;
+        }
     }
 }
