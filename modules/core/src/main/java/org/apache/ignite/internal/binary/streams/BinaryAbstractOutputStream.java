@@ -29,9 +29,6 @@ public abstract class BinaryAbstractOutputStream extends BinaryAbstractStream
     /** Minimal capacity when it is reasonable to start doubling resize. */
     private static final int MIN_CAP = 256;
 
-    /** Max capacity when it is still reasonable doubling resize. */
-    protected static final int MAX_CAP = 32 * 1024 * 1024;
-
     /**
      * The maximum size of array to allocate.
      * Some VMs reserve some header words in an array.
@@ -306,17 +303,15 @@ public abstract class BinaryAbstractOutputStream extends BinaryAbstractStream
             throw new IllegalArgumentException("Required capacity exceeds allowed. Required:" + reqCap);
         else if (reqCap < MIN_CAP)
             newCap = MIN_CAP;
-        else if (reqCap > MAX_CAP) {
-            if (reqCap < MAX_ARRAY_SIZE - MAX_CAP)
-                newCap = reqCap + MAX_CAP;
-            else
-                newCap = MAX_ARRAY_SIZE;
-        }
         else {
             newCap = Math.max(curCap, MIN_CAP);
 
-            while (newCap < reqCap)
+            while (newCap < reqCap) {
                 newCap = newCap << 1;
+
+                if (newCap < 0)
+                    newCap = MAX_ARRAY_SIZE;
+            }
         }
 
         return newCap;
