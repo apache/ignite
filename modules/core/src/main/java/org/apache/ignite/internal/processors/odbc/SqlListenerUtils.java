@@ -17,7 +17,6 @@
 
 package org.apache.ignite.internal.processors.odbc;
 
-import java.io.IOException;
 import java.io.InputStream;
 import java.math.BigDecimal;
 import java.sql.Blob;
@@ -37,8 +36,6 @@ import org.apache.ignite.internal.processors.cache.query.IgniteQueryErrorCode;
 import org.apache.ignite.internal.processors.query.IgniteSQLException;
 import org.apache.ignite.internal.util.typedef.F;
 import org.jetbrains.annotations.Nullable;
-
-import static org.apache.ignite.internal.binary.streams.BinaryAbstractOutputStream.MAX_ARRAY_SIZE;
 
 /**
  * Binary reader with marshaling non-primitive and non-embedded objects with JDK marshaller.
@@ -299,30 +296,14 @@ public abstract class SqlListenerUtils {
         InputStream in = wrapper.getInputStream();
         Integer len = wrapper.getLength();
 
-        int writtenLen;
-        if (len == null) {
-            try {
-                writtenLen = writer.writeByteArrayFromInputStream(in);
-            }
-            catch (IOException e) {
-                throw new BinaryObjectException(e);
-            }
-
-            if (-1 == writtenLen)
-                throw new BinaryObjectException("Invalid argument. InputStreams with length greater than " +
-                        MAX_ARRAY_SIZE + " are not supported.");
-        }
+        if (len == null)
+            writer.writeByteArrayFromInputStream(in);
         else {
-            try {
-                writtenLen = writer.writeByteArrayFromInputStream(in, len);
-            }
-            catch (IOException e) {
-                throw new BinaryObjectException(e);
-            }
+            int written = writer.writeByteArrayFromInputStream(in, len);
 
-            if (len != writtenLen)
+            if (len != written)
                 throw new BinaryObjectException("Input stream length mismatch. [declaredLength=" + len + ", " +
-                        "actualLength=" + writtenLen + "]");
+                        "actualLength=" + written + "]");
         }
     }
 
@@ -332,23 +313,21 @@ public abstract class SqlListenerUtils {
      * @param writer Writer.
      * @param blob Blob.
      */
-    private static void writeBlobAsByteArray(BinaryWriterExImpl writer, Blob blob) {
-        int writtenLen;
-        int len;
-
+    private static void writeBlobAsByteArray(BinaryWriterExImpl writer, Blob blob)
+            throws BinaryObjectException {
         try {
-            len = (int)blob.length();
+            int len = (int)blob.length();
             InputStream in = blob.getBinaryStream(1, len);
 
-            writtenLen = writer.writeByteArrayFromInputStream(in, len);
+            int written = writer.writeByteArrayFromInputStream(in, len);
+
+            if (len != written)
+                throw new BinaryObjectException("Blob length mismatch. [declaredLength=" + len + ", " +
+                        "actualLength=" + written + "]");
         }
-        catch (IOException | SQLException e) {
+        catch (SQLException e) {
             throw new BinaryObjectException(e);
         }
-
-        if (len != writtenLen)
-            throw new BinaryObjectException("Blob length mismatch. [declaredLength=" + len + ", " +
-                    "actualLength=" + writtenLen + "]");
     }
 
     /**

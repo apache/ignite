@@ -1891,8 +1891,9 @@ public class BinaryWriterExImpl implements BinaryWriter, BinaryRawWriterEx, Obje
      * @param in InputStream.
      * @param len Length of data in the stream.
      * @return Number of bytes written.
+     * @throws BinaryObjectException If an I/O error occurs or if stream contains more than {@code MAX_ARRAY_SIZE} bytes.
      */
-    public int writeByteArrayFromInputStream(InputStream in, int len) throws IOException {
+    public int writeByteArrayFromInputStream(InputStream in, int len) throws BinaryObjectException {
         out.unsafeEnsure(1 + 4 + len);
 
         return doWriteByteArrayFromInputStream(in, len);
@@ -1902,53 +1903,67 @@ public class BinaryWriterExImpl implements BinaryWriter, BinaryRawWriterEx, Obje
      * Write byte array from the InputStream with uknown length.
      *
      * @param in InputStream.
-     * @return Number of bytes written or -1 if stream contains more than {@code MAX_ARRAY_SIZE} bytes.
+     * @return Number of bytes written
+     * @throws BinaryObjectException If an I/O error occurs or if stream contains more than {@code MAX_ARRAY_SIZE} bytes.
      */
-    public int writeByteArrayFromInputStream(InputStream in) throws IOException {
+    public int writeByteArrayFromInputStream(InputStream in) throws BinaryObjectException {
         out.unsafeEnsure(1 + 4);
 
-        int writtenLen = doWriteByteArrayFromInputStream(in, MAX_ARRAY_SIZE);
-
-        if (writtenLen == MAX_ARRAY_SIZE && in.read() != -1)
-            return -1;
-        else
-            return writtenLen;
+        return doWriteByteArrayFromInputStream(in, -1);
     }
 
     /**
-     * Write byte array from the InputStream. No more than {@code limit} bytes will be written.
+     * Write byte array from the InputStream.
+     *
+     * <p>If {@code limit} > 0 than no more than {@code limit} bytes will be read and written.
+     * If {@code limit} == -1 than it will try to read and write all bytes.
+     *
+     * <p>In any case if actual number of bytes is greater than {@code MAX_ARRAY_SIZE}
+     * than exception will be thrown.
      *
      * @param in InputStream.
-     * @param limit Max length of data to be read from the stream.
+     * @param limit Max length of data to be read from the stream or -1 if all data should be read.
      * @return Number of bytes written.
-     * @throws IOException If an I/O error occurs.
+     * @throws BinaryObjectException If an I/O error occurs or stream contains more than {@code MAX_ARRAY_SIZE} bytes.
      */
-    private int doWriteByteArrayFromInputStream(InputStream in, int limit) throws IOException {
+    private int doWriteByteArrayFromInputStream(InputStream in, int limit) throws BinaryObjectException {
         out.unsafeWriteByte(GridBinaryMarshaller.BYTE_ARR);
 
         int lengthPos = out.position();
+
         out.position(lengthPos + 4);
 
-        int readLen;
-        int writtenLen = 0;
+        int written = 0;
 
-        byte[] buf = new byte[Math.min(limit, DEFAULT_BUFFER_SIZE)];
+        byte[] buf = new byte[limit > 0 ? Math.min(limit, DEFAULT_BUFFER_SIZE) : DEFAULT_BUFFER_SIZE];
 
-        while (writtenLen < limit &&
-                -1 != (readLen = in.read(buf, 0, Math.min(buf.length, limit - writtenLen)))) {
-            out.writeByteArray(buf, 0, readLen);
+        while (limit == -1 || written < limit) {
+            int read;
+            try {
+                read = limit > 0
+                        ? in.read(buf, 0, Math.min(buf.length, limit - written))
+                        : in.read(buf, 0, buf.length);
+            }
+            catch (IOException e) {
+                throw new BinaryObjectException(e);
+            }
 
-            writtenLen += readLen;
+            if (read == -1)
+                break;
+
+            if (read + written > MAX_ARRAY_SIZE)
+                throw new BinaryObjectException("Too much data. Can't write more then " + MAX_ARRAY_SIZE + " bytes from stream.");
+
+            out.writeByteArray(buf, 0, read);
+
+            written += read;
         }
 
-        int savedPos = out.position();
-
         out.position(lengthPos);
-        out.unsafeWriteInt(writtenLen);
+        out.unsafeWriteInt(written);
+        out.position(out.position() + written);
 
-        out.position(savedPos);
-
-        return writtenLen;
+        return written;
     }
 
     /**
