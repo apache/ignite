@@ -22,7 +22,6 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.stream.Collectors;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteInternalFuture;
@@ -35,6 +34,7 @@ import org.apache.ignite.internal.util.future.GridCompoundFuture;
 import org.apache.ignite.internal.util.future.GridFinishedFuture;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.internal.util.typedef.internal.U;
 import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.internal.processors.configuration.distributed.DistributedConfigurationProcessor.AllowableAction.ACTUALIZE;
@@ -216,10 +216,7 @@ public class DistributedConfigurationProcessor extends GridProcessorAdapter impl
      * @return Public properties.
      */
     public List<DistributedChangeableProperty<Serializable>> properties() {
-        return props.values().stream()
-            .filter(p -> p instanceof DistributedChangeableProperty)
-            .map(p -> (DistributedChangeableProperty<Serializable>)p)
-            .collect(Collectors.toList());
+        return U.sealList(props.values());
     }
 
     /** {@inheritDoc} */

@@ -129,8 +129,8 @@ public class DistributedConfigurationDefaultValuesTest extends GridCommonAbstrac
         SimpleDistributedProperty<String> strProp = new SimpleDistributedProperty<>("stringProp", Function.identity(), "");
         DistributedEnumProperty<ClusterState> enumProp = new DistributedEnumProperty<>(
             "enumProp", "",
-            (ordinal) -> ordinal == null ? null : ClusterState.fromOrdinal(ordinal),
-            (state) -> state == null ? null : state.ordinal(),
+            ordinal -> ordinal == null ? null : ClusterState.fromOrdinal(ordinal),
+            state -> state == null ? null : state.ordinal(),
             ClusterState.class
         );
 
@@ -197,9 +197,7 @@ public class DistributedConfigurationDefaultValuesTest extends GridCommonAbstrac
 
         onReadyToRegister = dispatcher -> dispatcher.registerProperties(prop0);
 
-        startGrid(0);
-
-        grid(0).cluster().state(ClusterState.ACTIVE);
+        startGrid(0).cluster().state(ClusterState.ACTIVE);
 
         // Value from default configuration.
         assertEquals((Long)1L, prop0.get());
