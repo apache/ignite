@@ -110,14 +110,14 @@ public class JavaLogger implements IgniteLoggerEx {
     /** */
     private static volatile boolean quiet0;
 
+    /** Path to configuration file. */
+    @GridToStringExclude
+    private static volatile String cfg;
+
     /** Java Logging implementation proxy. */
     @GridToStringExclude
     @SuppressWarnings("FieldAccessedSynchronizedAndUnsynchronized")
     private Logger impl;
-
-    /** Path to configuration file. */
-    @GridToStringExclude
-    private String cfg;
 
     /** Quiet flag. */
     private final boolean quiet;
