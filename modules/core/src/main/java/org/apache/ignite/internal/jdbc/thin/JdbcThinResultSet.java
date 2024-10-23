@@ -605,11 +605,8 @@ public class JdbcThinResultSet implements ResultSet {
 
         if (val instanceof JdbcBlobBuffer)
             return ((JdbcBlobBuffer)val).getInputStream();
-        else {
-            byte[] bytes = getBytes(colIdx);
-
-            return new ByteArrayInputStream(bytes);
-        }
+        else
+            return new ByteArrayInputStream(getBytes(colIdx));
     }
 
     /** {@inheritDoc} */
@@ -719,9 +716,7 @@ public class JdbcThinResultSet implements ResultSet {
 
     /** {@inheritDoc} */
     @Override public InputStream getBinaryStream(String colLb) throws SQLException {
-        int colIdx = findColumn(colLb);
-
-        return getBinaryStream(colIdx);
+        return getBinaryStream(findColumn(colLb));
     }
 
     /** {@inheritDoc} */
@@ -1323,14 +1318,10 @@ public class JdbcThinResultSet implements ResultSet {
         if (val == null)
             return null;
 
-        if (val instanceof JdbcBlobBuffer) {
-            JdbcBlobBuffer buf = (JdbcBlobBuffer)val;
-
-            return new JdbcBlob(JdbcBlobBuffer.shallowCopy(buf));
-        }
-        else {
+        if (!(val instanceof JdbcBlobBuffer))
             throw new SQLException("Cannot convert to Blob [colIdx=" + colIdx + "]");
-        }
+
+        return new JdbcBlob(JdbcBlobBuffer.shallowCopy((JdbcBlobBuffer)val));
     }
 
     /** {@inheritDoc} */
@@ -1361,9 +1352,7 @@ public class JdbcThinResultSet implements ResultSet {
 
     /** {@inheritDoc} */
     @Override public Blob getBlob(String colLb) throws SQLException {
-        int colIdx = findColumn(colLb);
-
-        return getBlob(colIdx);
+        return getBlob(findColumn(colLb));
     }
 
     /** {@inheritDoc} */
