@@ -21,6 +21,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.sql.SQLException;
+import java.util.Arrays;
 import org.junit.Test;
 
 import static org.apache.ignite.testframework.GridTestUtils.assertThrows;
@@ -125,9 +126,9 @@ public class JdbcBlobTest {
         assertArrayEquals(arr, res);
 
         is = blob.getBinaryStream();
-        res = new byte[16];
-        assertEquals(16, is.read(res, 0, 100));
-        assertArrayEquals(arr, res);
+        res = new byte[20];
+        assertEquals(16, is.read(res, 0, 20));
+        assertArrayEquals(arr, Arrays.copyOfRange(res, 0, 16));
 
         blob.free();
         assertThrows(null, () -> blob.getBinaryStream(), SQLException.class, ERROR_BLOB_FREE);
@@ -178,7 +179,7 @@ public class JdbcBlobTest {
 
         is = blob.getBinaryStream(6, 10);
         res = new byte[200];
-        assertEquals(10, is.read(res, 1, 200));
+        assertEquals(10, is.read(res, 1, 199));
         assertEquals(-1, is.read());
         assertEquals(5, res[1]);
         assertEquals(14, res[10]);

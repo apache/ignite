@@ -76,16 +76,16 @@ public class JdbcBlob implements Blob {
     @Override public byte[] getBytes(long pos, int len) throws SQLException {
         ensureNotClosed();
 
-        long totalCnt = data.totalCnt();
+        int totalCnt = data.totalCnt();
 
         if (pos < 1 || (pos > totalCnt && totalCnt > 0) || len < 0)
             throw new SQLException("Invalid argument. Position can't be less than 1 or " +
                 "greater than Blob total bytes count. Requested length also can't be negative " +
                 "[pos=" + pos + ", len=" + len + ", totalCnt=" + totalCnt + "]");
 
-        long idx = pos - 1;
+        int idx = (int)pos - 1;
 
-        int size = len > totalCnt - idx ? (int)(totalCnt - idx) : len;
+        int size = Math.min(len, totalCnt - idx);
 
         byte[] res = new byte[size];
 
@@ -118,14 +118,14 @@ public class JdbcBlob implements Blob {
     @Override public InputStream getBinaryStream(long pos, long len) throws SQLException {
         ensureNotClosed();
 
-        long totalCnt = data.totalCnt();
+        int totalCnt = data.totalCnt();
 
         if (pos < 1 || len < 1 || pos > totalCnt || len > totalCnt - (pos - 1))
             throw new SQLException("Invalid argument. Position can't be less than 1 or " +
                 "greater than Blob total bytes count. Requested length can't be negative and can't be " +
                 "greater than available bytes from given position [pos=" + pos + ", len=" + len + ", totalCnt=" + totalCnt + "]");
 
-        return data.getInputStream(pos - 1, len);
+        return data.getInputStream((int)pos - 1, (int)len);
     }
 
     /** {@inheritDoc} */
@@ -138,7 +138,7 @@ public class JdbcBlob implements Blob {
         if (start > data.totalCnt() || ptrn.length == 0 || ptrn.length > data.totalCnt())
             return -1;
 
-        long idx = positionImpl(new ByteArrayInputStream(ptrn), ptrn.length, start - 1);
+        long idx = positionImpl(new ByteArrayInputStream(ptrn), ptrn.length, (int)start - 1);
 
         return idx == -1 ? -1 : idx + 1;
     }
@@ -153,7 +153,7 @@ public class JdbcBlob implements Blob {
         if (start > data.totalCnt() || ptrn.length() == 0 || ptrn.length() > data.totalCnt())
             return -1;
 
-        long idx = positionImpl(ptrn.getBinaryStream(), ptrn.length(), start - 1);
+        long idx = positionImpl(ptrn.getBinaryStream(), (int)ptrn.length(), (int)start - 1);
 
         return idx == -1 ? -1 : idx + 1;
     }
@@ -167,7 +167,7 @@ public class JdbcBlob implements Blob {
     @Override public int setBytes(long pos, byte[] bytes, int off, int len) throws SQLException {
         ensureNotClosed();
 
-        long totalCnt = data.totalCnt();
+        int totalCnt = data.totalCnt();
 
         if (pos < 1 || pos - 1 > totalCnt)
             throw new SQLException("Invalid argument. Position can't be less than 1 [pos=" + pos + ']');
@@ -177,7 +177,7 @@ public class JdbcBlob implements Blob {
                     new ArrayIndexOutOfBoundsException("[off=" + off + ", len=" + len + ", bytes.length=" + bytes.length + "]"));
 
         try {
-            data.getOutputStream(pos - 1).write(bytes, off, len);
+            data.getOutputStream((int)pos - 1).write(bytes, off, len);
         }
         catch (Exception e) {
             throw new SQLException(e);
@@ -190,14 +190,14 @@ public class JdbcBlob implements Blob {
     @Override public OutputStream setBinaryStream(long pos) throws SQLException {
         ensureNotClosed();
 
-        long totalCnt = data.totalCnt();
+        int totalCnt = data.totalCnt();
 
         if (pos < 1 || pos > totalCnt + 1)
             throw new SQLException("Invalid argument. Position can't be less than 1 or greater than Blob total bytes count + 1 " +
                     "[pos=" + pos + ", totalCnt=" + totalCnt + "]");
 
         try {
-            return data.getOutputStream(pos - 1);
+            return data.getOutputStream((int)pos - 1);
         }
         catch (Exception e) {
             throw new SQLException(e);
@@ -208,14 +208,14 @@ public class JdbcBlob implements Blob {
     @Override public void truncate(long len) throws SQLException {
         ensureNotClosed();
 
-        long totalCnt = data.totalCnt();
+        int totalCnt = data.totalCnt();
 
         if (len < 0 || len > totalCnt)
             throw new SQLException("Invalid argument. Length can't be " +
                 "less than zero or greater than Blob total bytes count [len=" + len + ", totalCnt=" + totalCnt + "]");
 
         try {
-            data.truncate(len);
+            data.truncate((int)len);
         }
         catch (IOException e) {
             throw new SQLException(e);
@@ -239,16 +239,16 @@ public class JdbcBlob implements Blob {
      * @param idx Zero-based index in Blob to start search from.
      * @return Zero-based position at which the pattern appears, else -1.
      */
-    private long positionImpl(InputStream ptrn, long ptrnLen, long idx) throws SQLException {
-        assert ptrn.markSupported();
+    private long positionImpl(InputStream ptrn, int ptrnLen, int idx) throws SQLException {
+        assert ptrn.markSupported() : "input stream supports mark() method";
 
         try {
             InputStream blob = data.getInputStream(idx, data.totalCnt() - idx);
 
             boolean patternStarted = false;
 
-            long ptrnPos = 0;
-            long blobPos = idx;
+            int ptrnPos = 0;
+            int blobPos = idx;
             int b;
 
             while ((b = blob.read()) != -1) {

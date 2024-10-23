@@ -20,6 +20,9 @@ package org.apache.ignite.internal.jdbc2.lob;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.util.Objects;
+
+import static org.apache.ignite.internal.binary.streams.BinaryAbstractOutputStream.MAX_ARRAY_SIZE;
 
 /**
  * Buffer storing the binary data.
@@ -90,7 +93,7 @@ public class JdbcBlobBuffer {
     /**
      * @return Total number of bytes in the buffer.
      */
-    public long totalCnt() {
+    public int totalCnt() {
         return storage.totalCnt();
     }
 
@@ -103,7 +106,7 @@ public class JdbcBlobBuffer {
      *
      * @return OutputStream instance.
      */
-    public OutputStream getOutputStream(long pos) {
+    public OutputStream getOutputStream(int pos) {
         return new BufferOutputStream(pos);
     }
 
@@ -129,7 +132,7 @@ public class JdbcBlobBuffer {
      * @param len The length in bytes of the data to be retrieved. Must not be negative.
      * @return InputStream instance.
      */
-    public InputStream getInputStream(long pos, long len) {
+    public InputStream getInputStream(int pos, Integer len) {
         return new BufferInputStream(pos, len);
     }
 
@@ -139,7 +142,7 @@ public class JdbcBlobBuffer {
      * @param len The length in bytes to be truncated. Must not be negative
      *            or greater than total count of bytes in buffer.
      */
-    public void truncate(long len) throws IOException {
+    public void truncate(int len) throws IOException {
         try {
             storage.truncate(len);
         }
@@ -166,7 +169,7 @@ public class JdbcBlobBuffer {
      * @return Byte array containing buffer data.
      */
     public byte[] getData() throws IOException {
-        byte[] bytes = new byte[Math.toIntExact(totalCnt())];
+        byte[] bytes = new byte[totalCnt()];
 
         getInputStream().read(bytes);
 
@@ -182,7 +185,7 @@ public class JdbcBlobBuffer {
         if (!(storage instanceof JdbcBlobReadOnlyStorage))
             return;
 
-        byte[] data = new byte[Math.toIntExact(storage.totalCnt())];
+        byte[] data = new byte[storage.totalCnt()];
 
         storage.read(storage.createPointer(), data, 0, data.length);
 
@@ -201,10 +204,10 @@ public class JdbcBlobBuffer {
         private final JdbcBlobBufferPointer curPointer;
 
         /** Stream starting position. */
-        private final long start;
+        private final int start;
 
         /** Stream length limit. May be null which means no limit. */
-        private final Long limit;
+        private final Integer limit;
 
         /** Remembered buffer position at the moment the {@link InputStream#mark} is called. */
         private final JdbcBlobBufferPointer markedPointer;
@@ -218,27 +221,26 @@ public class JdbcBlobBuffer {
 
         /**
          * Create stream to read data from the buffer starting from the specified {@code start}
-         * zere-based position.
+         * zero-based position.
          *
          * @param start The zero-based offset to the first byte to be retrieved.
          * @param limit The maximim length in bytes of the data to be retrieved. Unlimited if null.
          */
-        private BufferInputStream(long start, Long limit) {
+        private BufferInputStream(int start, Integer limit) {
             this.start = start;
 
             this.limit = limit;
 
             curPointer = storage.createPointer();
 
-            if (start > 0)
-                storage.advance(curPointer, start);
+            skip(start);
 
             markedPointer = storage.createPointer().set(curPointer);
         }
 
         /** {@inheritDoc} */
         @Override public int read() throws IOException {
-            if (limit != null && curPointer.getPos() >= start + limit)
+            if (limit != null && curPointer.getPos() - start >= limit)
                 return -1;
 
             return storage.read(curPointer);
@@ -246,16 +248,18 @@ public class JdbcBlobBuffer {
 
         /** {@inheritDoc} */
         @Override public int read(byte[] res, int off, int cnt) throws IOException {
+            Objects.checkFromIndexSize(off, cnt, res.length);
+
             int toRead = cnt;
 
             if (limit != null) {
-                if (curPointer.getPos() >= start + limit)
+                if (curPointer.getPos() - start >= limit)
                     return -1;
 
-                long availableBytes = start + limit - curPointer.getPos();
+                int availableBytes = limit - (curPointer.getPos() - start);
 
                 if (cnt > availableBytes)
-                    toRead = (int)availableBytes;
+                    toRead = availableBytes;
             }
 
             return storage.read(curPointer, res, off, toRead);
@@ -278,12 +282,10 @@ public class JdbcBlobBuffer {
 
         /** {@inheritDoc} */
         @Override public long skip(long n) {
-            long toSkip = Math.min(n, storage.totalCnt() - curPointer.getPos());
+            if (n <= 0)
+                return 0;
 
-            if (toSkip > 0)
-                storage.advance(curPointer, toSkip);
-
-            return toSkip;
+            return storage.advancePointer(curPointer, (int)Math.min(n, MAX_ARRAY_SIZE));
         }
     }
 
@@ -299,11 +301,11 @@ public class JdbcBlobBuffer {
          *
          * @param pos Starting position (zero-based).
          */
-        private BufferOutputStream(long pos) {
+        private BufferOutputStream(int pos) {
             bufPos = storage.createPointer();
 
             if (pos > 0)
-                storage.advance(bufPos, pos);
+                storage.advancePointer(bufPos, pos);
         }
 
         /** {@inheritDoc} */
@@ -320,6 +322,8 @@ public class JdbcBlobBuffer {
 
         /** {@inheritDoc} */
         @Override public void write(byte[] bytes, int off, int len) throws IOException {
+            Objects.checkFromIndexSize(off, len, bytes.length);
+
             try {
                 storage.write(bufPos, bytes, off, len);
             }

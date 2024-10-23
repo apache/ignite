@@ -22,6 +22,8 @@ import java.util.ArrayList;
 import java.util.List;
 import org.apache.ignite.internal.util.typedef.internal.U;
 
+import static org.apache.ignite.internal.binary.streams.BinaryAbstractOutputStream.MAX_ARRAY_SIZE;
+
 /**
  * Read-write implementation of {@link JdbcBlobStorage}.
  *
@@ -56,17 +58,12 @@ class JdbcBlobReadWriteStorage extends JdbcBlobStorage {
     }
 
     /** {@inheritDoc} */
-    @Override public long totalCnt() {
+    @Override int totalCnt() {
         return totalCnt;
     }
 
     /** {@inheritDoc} */
-    @Override public JdbcBlobBufferPointer createPointer() {
-        return new JdbcBlobBufferPointer();
-    }
-
-    /** {@inheritDoc} */
-    @Override public int read(JdbcBlobBufferPointer pos) {
+    @Override int read(JdbcBlobBufferPointer pos) {
         byte[] buf = getBuf(pos);
 
         if (buf == null || pos.getPos() >= totalCnt)
@@ -74,13 +71,13 @@ class JdbcBlobReadWriteStorage extends JdbcBlobStorage {
 
         int res = buf[getBufPos(pos)] & 0xff;
 
-        advance(pos, 1);
+        doAdvancePointer(pos, 1);
 
         return res;
     }
 
     /** {@inheritDoc} */
-    @Override public int read(JdbcBlobBufferPointer pos, byte[] res, int off, int cnt) {
+    @Override int read(JdbcBlobBufferPointer pos, byte[] res, int off, int cnt) {
         byte[] buf = getBuf(pos);
 
         if (buf == null || pos.getPos() >= totalCnt)
@@ -92,13 +89,14 @@ class JdbcBlobReadWriteStorage extends JdbcBlobStorage {
             int toCopy = Math.min(remaining, buf.length - getBufPos(pos));
 
             if (toCopy > totalCnt - pos.getPos())
-                toCopy = (int)(totalCnt - pos.getPos());
+                toCopy = totalCnt - pos.getPos();
 
             U.arrayCopy(buf, getBufPos(pos), res, off + (cnt - remaining), toCopy);
 
             remaining -= toCopy;
 
-            advance(pos, toCopy);
+            doAdvancePointer(pos, toCopy);
+
             buf = getBuf(pos);
         }
 
@@ -106,10 +104,13 @@ class JdbcBlobReadWriteStorage extends JdbcBlobStorage {
     }
 
     /** {@inheritDoc} */
-    @Override public void write(JdbcBlobBufferPointer pos, int b) throws IOException {
-        if (pos.getPos() >= totalCnt + 1)
+    @Override void write(JdbcBlobBufferPointer pos, int b) throws IOException {
+        if (pos.getPos() > totalCnt)
             throw new IOException("Writting beyond end of Blob, it probably was truncated after OutputStream was created " +
                     "[pos=" + pos.getPos() + ", totalCnt=" + totalCnt + "]");
+
+        if (MAX_ARRAY_SIZE - pos.getPos() < 1)
+            throw new IOException("Too much data. Can't write more then " + MAX_ARRAY_SIZE + " bytes to Blob.");
 
         byte[] buf = getBuf(pos);
 
@@ -118,16 +119,19 @@ class JdbcBlobReadWriteStorage extends JdbcBlobStorage {
 
         buf[getBufPos(pos)] = (byte)(b & 0xff);
 
-        advance(pos, 1);
+        doAdvancePointer(pos, 1);
 
         totalCnt = Math.max(pos.getPos(), totalCnt);
     }
 
     /** {@inheritDoc} */
-    @Override public void write(JdbcBlobBufferPointer pos, byte[] bytes, int off, int len) throws IOException {
-        if (pos.getPos() >= totalCnt + 1)
+    @Override void write(JdbcBlobBufferPointer pos, byte[] bytes, int off, int len) throws IOException {
+        if (pos.getPos() > totalCnt)
             throw new IOException("Writting beyond end of Blob, it probably was truncated after OutputStream was created " +
                     "[pos=" + pos.getPos() + ", totalCnt=" + totalCnt + "]");
+
+        if (MAX_ARRAY_SIZE - pos.getPos() < len)
+            throw new IOException("Too much data. Can't write more then " + MAX_ARRAY_SIZE + " bytes to Blob.");
 
         int remaining = len;
 
@@ -140,7 +144,7 @@ class JdbcBlobReadWriteStorage extends JdbcBlobStorage {
 
             remaining -= toCopy;
 
-            advance(pos, toCopy);
+            doAdvancePointer(pos, toCopy);
         }
 
         if (remaining > 0) {
@@ -148,41 +152,27 @@ class JdbcBlobReadWriteStorage extends JdbcBlobStorage {
 
             U.arrayCopy(bytes, off + len - remaining, getBuf(pos), 0, remaining);
 
-            advance(pos, remaining);
+            doAdvancePointer(pos, remaining);
         }
 
         totalCnt = Math.max(pos.getPos(), totalCnt);
     }
 
     /** {@inheritDoc} */
-    @Override public void advance(JdbcBlobBufferPointer pos, long step) {
-        int inBufPos = getBufPos(pos);
-        int idx = getBufIdx(pos);
-        long remain = step;
+    @Override int advancePointer(JdbcBlobBufferPointer pos, int step) {
+        int toAdvance = Math.min(step, totalCnt - pos.getPos());
 
-        while (remain > 0) {
-            if (remain >= buffers.get(idx).length - inBufPos) {
-                remain -= buffers.get(idx).length - inBufPos;
+        if (toAdvance > 0)
+            doAdvancePointer(pos, toAdvance);
 
-                inBufPos = 0;
-
-                idx++;
-            }
-            else {
-                inBufPos += Math.toIntExact(remain);
-
-                remain = 0;
-            }
-        }
-
-        pos.set(pos.getPos() + step, idx, inBufPos);
+        return toAdvance;
     }
 
     /** {@inheritDoc} */
-    @Override public void truncate(long len) {
+    @Override void truncate(int len) {
         JdbcBlobBufferPointer pos = createPointer();
 
-        advance(pos, len);
+        advancePointer(pos, len);
 
         if (buffers.size() > getBufIdx(pos) + 1)
             buffers.subList(getBufIdx(pos) + 1, buffers.size()).clear();
@@ -191,7 +181,7 @@ class JdbcBlobReadWriteStorage extends JdbcBlobStorage {
     }
 
     /** {@inheritDoc} */
-    @Override public void close() {
+    @Override void close() {
         buffers.clear();
         buffers = null;
     }
@@ -266,10 +256,40 @@ class JdbcBlobReadWriteStorage extends JdbcBlobStorage {
      * @param pointer Pointer.
      */
     private void recoverContext(JdbcBlobBufferPointer pointer) {
-        long pos = pointer.getPos();
+        int pos = pointer.getPos();
 
         pointer.set(0, 0, 0);
 
-        advance(pointer, pos);
+        doAdvancePointer(pointer, pos);
+    }
+
+    /**
+     * Internal implementation of a position pointer forward movement.
+     * Doesn't check the current totalCnt.
+     *
+     * @param pos Pointer to modify.
+     * @param step Number of bytes to skip forward.
+     */
+    private void doAdvancePointer(JdbcBlobBufferPointer pos, int step) {
+        int inBufPos = getBufPos(pos);
+        int idx = getBufIdx(pos);
+        int remain = step;
+
+        while (remain > 0) {
+            if (remain >= buffers.get(idx).length - inBufPos) {
+                remain -= buffers.get(idx).length - inBufPos;
+
+                inBufPos = 0;
+
+                idx++;
+            }
+            else {
+                inBufPos += remain;
+
+                remain = 0;
+            }
+        }
+
+        pos.set(pos.getPos() + step, idx, inBufPos);
     }
 }

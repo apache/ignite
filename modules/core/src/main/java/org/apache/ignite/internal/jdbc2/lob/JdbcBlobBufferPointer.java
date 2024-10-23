@@ -22,7 +22,7 @@ package org.apache.ignite.internal.jdbc2.lob;
  */
 class JdbcBlobBufferPointer {
     /** Current buffer position. */
-    private long pos;
+    private int pos;
 
     /** Index of the current buffer. */
     private Integer idx;
@@ -46,7 +46,7 @@ class JdbcBlobBufferPointer {
      *
      * @param pos New position.
      */
-    JdbcBlobBufferPointer setPos(long pos) {
+    JdbcBlobBufferPointer setPos(int pos) {
         this.pos = pos;
 
         return this;
@@ -59,7 +59,7 @@ class JdbcBlobBufferPointer {
      * @param idx Index of the current buffer.
      * @param inBufPos Current buffer position.
      */
-    JdbcBlobBufferPointer set(long pos, Integer idx, Integer inBufPos) {
+    JdbcBlobBufferPointer set(int pos, Integer idx, Integer inBufPos) {
         this.pos = pos;
         this.idx = idx;
         this.inBufPos = inBufPos;
@@ -68,7 +68,7 @@ class JdbcBlobBufferPointer {
     }
 
     /** @return Current buffer position. */
-    long getPos() {
+    int getPos() {
         return pos;
     }
 

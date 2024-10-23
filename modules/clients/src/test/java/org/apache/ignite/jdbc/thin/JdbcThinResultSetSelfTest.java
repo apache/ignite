@@ -632,6 +632,12 @@ public class JdbcThinResultSetSelfTest extends JdbcThinAbstractSelfTest {
         assertEquals(1, is.read(res));
         Assert.assertArrayEquals(new byte[] {1}, res);
         assertEquals(-1, is.read(res));
+
+        is = blob.getBinaryStream(1, 1);
+        res = new byte[] {2, 2, 2};
+        assertEquals(1, is.read(res, 1, 2));
+        Assert.assertArrayEquals(new byte[] {2, 1, 2}, res);
+        assertEquals(-1, is.read(res, 2, 1));
     }
 
     /**
@@ -661,12 +667,11 @@ public class JdbcThinResultSetSelfTest extends JdbcThinAbstractSelfTest {
 
         Blob blob1 = rs.getBlob("blobVal");
         Assert.assertArrayEquals(blob1.getBytes(1, (int)blob1.length()), new byte[] {1});
+
         Blob blob2 = rs.getBlob("blobVal");
-        Assert.assertArrayEquals(blob2.getBytes(1, (int)blob2.length()), new byte[] {1});
         Blob blob3 = rs.getBlob("blobVal");
-        Assert.assertArrayEquals(blob3.getBytes(1, (int)blob3.length()), new byte[] {1});
         Blob blob4 = rs.getBlob("blobVal");
-        Assert.assertArrayEquals(blob4.getBytes(1, (int)blob4.length()), new byte[] {1});
+        Blob blob5 = rs.getBlob("blobVal");
 
         InputStream is1 = blob1.getBinaryStream();
         assertEquals(1, is1.read());
@@ -715,17 +720,24 @@ public class JdbcThinResultSetSelfTest extends JdbcThinAbstractSelfTest {
             return null;
         }, IOException.class, null);
 
-        InputStream stream = blob4.getBinaryStream();
+        InputStream is4 = blob4.getBinaryStream();
         blob4.setBytes(2, new byte[] {2, 3, 4, 5, 6, 7, 8, 9, 10});
 
-        assertEquals(2, stream.skip(2));
-        assertEquals(3, stream.read());
+        assertEquals(2, is4.skip(2));
+        assertEquals(3, is4.read());
         byte[] res4 = new byte[3];
-        stream.read(res4);
+        is4.read(res4);
         assertArrayEquals(new byte[] {4, 5, 6}, res4);
-        assertEquals(4, stream.skip(4));
-        assertEquals(-1, stream.read());
-        assertEquals(-1, stream.read(res4));
+        assertEquals(4, is4.skip(4));
+        assertEquals(-1, is4.read());
+        assertEquals(-1, is4.read(res4));
+
+        blob5.setBytes(2, new byte[] {2, 3, 4, 5});
+        InputStream is5 = blob5.getBinaryStream();
+        assertEquals(1, is5.read());
+        blob5.truncate(1);
+        byte[] res5 = new byte[1];
+        assertEquals(-1, is5.read(res5));
     }
 
     /**
@@ -799,7 +811,10 @@ public class JdbcThinResultSetSelfTest extends JdbcThinAbstractSelfTest {
         Assert.assertArrayEquals(stream.readAllBytes(), new byte[] {1});
 
         stream = rs.getBinaryStream(16);
-        Assert.assertArrayEquals(stream.readAllBytes(), new byte[] {1});
+        byte[] res = new byte[] {2, 2, 2};
+        assertEquals(1, stream.read(res, 1, 2));
+        assertEquals(-1, stream.read(res, 2, 1));
+        Assert.assertArrayEquals(res, new byte[] {2, 1, 2});
 
         assertFalse(rs.next());
     }

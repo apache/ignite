@@ -26,12 +26,12 @@ import java.io.IOException;
  */
 abstract class JdbcBlobStorage {
     /** The total number of bytes in all buffers. */
-    protected long totalCnt;
+    protected int totalCnt;
 
     /**
      * @return Total number of bytes in the storage.
      */
-    long totalCnt() {
+    int totalCnt() {
         return totalCnt;
     }
 
@@ -89,10 +89,12 @@ abstract class JdbcBlobStorage {
 
     /**
      * Move a position pointer {@code pos} forward by {@code step}.
+     *
      * @param pos Pointer to modify.
-     * @param step Number of bytes to move forward.
+     * @param step Number of bytes to skip forward.
+     * @return Actual number of bytes the pointer moved (amy be less than {@code step} if end of data reached).
      */
-    abstract void advance(JdbcBlobBufferPointer pos, long step);
+    abstract int advancePointer(JdbcBlobBufferPointer pos, int step);
 
     /**
      * Truncate this storage to specified length.
@@ -100,7 +102,7 @@ abstract class JdbcBlobStorage {
      * @param len Length to truncate to. Must not be less than total bytes count in the storage.
      * @throws IOException if an I/O error occurs.
      */
-    abstract void truncate(long len) throws IOException;
+    abstract void truncate(int len) throws IOException;
 
     /**
      * Close this storage and release all resources used to access it.

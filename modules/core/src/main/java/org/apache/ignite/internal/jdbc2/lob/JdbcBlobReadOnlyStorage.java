@@ -17,7 +17,6 @@
 
 package org.apache.ignite.internal.jdbc2.lob;
 
-import java.io.IOException;
 import org.apache.ignite.internal.util.typedef.internal.U;
 
 /**
@@ -48,50 +47,66 @@ class JdbcBlobReadOnlyStorage extends JdbcBlobStorage {
     }
 
     /** {@inheritDoc} */
-    @Override public int read(JdbcBlobBufferPointer pos) throws IOException {
+    @Override int read(JdbcBlobBufferPointer pos) {
         if (pos.getPos() >= totalCnt)
             return -1;
 
-        int res = buf[Math.toIntExact(pos.getPos() + off)] & 0xff;
+        int res = buf[pos.getPos() + off] & 0xff;
 
-        advance(pos, 1);
+        doAdvance(pos, 1);
 
         return res;
     }
 
     /** {@inheritDoc} */
-    @Override public int read(JdbcBlobBufferPointer pos, byte[] res, int off, int cnt) throws IOException {
-        if (pos.getPos() >= totalCnt + off)
+    @Override int read(JdbcBlobBufferPointer pos, byte[] resBuf, int resOff, int cnt) {
+        if (pos.getPos() >= totalCnt)
             return -1;
 
-        int idx = Math.toIntExact(pos.getPos() + this.off);
+        int bufOff = pos.getPos() + off;
 
-        int size = cnt > totalCnt + this.off - idx ? Math.toIntExact(totalCnt + this.off - idx) : cnt;
+        int size = Math.min(cnt, totalCnt - pos.getPos());
 
-        U.arrayCopy(buf, idx, res, off, size);
+        U.arrayCopy(buf, bufOff, resBuf, resOff, size);
 
-        advance(pos, size);
+        doAdvance(pos, size);
 
         return size;
     }
 
     /** {@inheritDoc} */
-    @Override public void write(JdbcBlobBufferPointer pos, int b) throws IOException {
+    @Override void write(JdbcBlobBufferPointer pos, int b) {
         throw new UnsupportedOperationException();
     }
 
     /** {@inheritDoc} */
-    @Override public void write(JdbcBlobBufferPointer pos, byte[] bytes, int off, int len) throws IOException {
+    @Override void write(JdbcBlobBufferPointer pos, byte[] bytes, int off, int len) {
         throw new UnsupportedOperationException();
     }
 
     /** {@inheritDoc} */
-    @Override public void advance(JdbcBlobBufferPointer pos, long step) {
+    @Override void truncate(int len) {
+        throw new UnsupportedOperationException();
+    }
+
+    /** {@inheritDoc} */
+    @Override int advancePointer(JdbcBlobBufferPointer pos, int step) {
+        int toAdvance = Math.min(step, totalCnt - pos.getPos());
+
+        if (toAdvance > 0)
+            doAdvance(pos, toAdvance);
+
+        return toAdvance;
+    }
+
+    /**
+     * Internal implementation of a position pointer movement.
+     * Doesn't check the current totalCnt.
+     *
+     * @param pos Pointer to modify.
+     * @param step Number of bytes to skip forward.
+     */
+    private void doAdvance(JdbcBlobBufferPointer pos, int step) {
         pos.setPos(pos.getPos() + step);
-    }
-
-    /** {@inheritDoc} */
-    @Override public void truncate(long len) throws IOException {
-        throw new UnsupportedOperationException();
     }
 }
