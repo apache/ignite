@@ -420,6 +420,7 @@ public class CachePartitionDefragmentationManager {
                     }
 
                     PageStore oldIdxPageStore = filePageStoreMgr.getStore(grpId, INDEX_PARTITION);
+                    long oldSize = oldIdxPageStore.size();
 
                     idxDfrgFut = idxDfrgFut.chain(() -> {
                         if (log.isDebugEnabled()) {
@@ -469,7 +470,7 @@ public class CachePartitionDefragmentationManager {
 
                     status.onIndexDefragmented(
                         oldGrpCtx,
-                        oldIdxPageStore.size(),
+                        oldSize,
                         pageSize + idxAllocationTracker.get() * pageSize // + file header.
                     );
                 }
