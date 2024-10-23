@@ -450,7 +450,7 @@ public class JdbcThinPreparedStatement extends JdbcThinStatement implements Prep
             throw new SQLException("Invalid argument. Length should be greater than 0.");
 
         if (length > MAX_ARRAY_SIZE)
-            throw new SQLFeatureNotSupportedException("Invalid argument. InputStreams with length > " + MAX_ARRAY_SIZE +
+            throw new SQLFeatureNotSupportedException("Invalid argument. InputStreams with length greater than " + MAX_ARRAY_SIZE +
                     " are not supported.");
 
         if (x == null)
