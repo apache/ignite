@@ -42,15 +42,6 @@ import org.checkerframework.checker.nullness.qual.Nullable;
  * Ignite SQL functions.
  */
 public class IgniteSqlFunctions {
-    /** */
-    public static final String NUMERIC_OVERFLOW_ERROR = "Numeric field overflow.";
-
-    /** */
-    private static final int DFLT_NUM_PRECISION = IgniteTypeSystem.INSTANCE.getDefaultPrecision(SqlTypeName.DECIMAL);
-
-    /** */
-    private static final RoundingMode NUMERIC_ROUNDING_MODE = RoundingMode.HALF_UP;
-
     /**
      * Default constructor.
      */
@@ -73,44 +64,46 @@ public class IgniteSqlFunctions {
         return x == null ? null : x.toPlainString();
     }
 
+    /** */
+    private static BigDecimal setScale(int precision, int scale, BigDecimal decimal) {
+        return precision == IgniteTypeSystem.INSTANCE.getDefaultPrecision(SqlTypeName.DECIMAL)
+            ? decimal : decimal.setScale(scale, RoundingMode.HALF_UP);
+    }
+
     /** CAST(DOUBLE AS DECIMAL). */
     public static BigDecimal toBigDecimal(double val, int precision, int scale) {
-        return removeDefaultScale(precision, scale, toBigDecimal(BigDecimal.valueOf(val), precision, scale));
+        BigDecimal decimal = BigDecimal.valueOf(val);
+        return setScale(precision, scale, decimal);
     }
 
     /** CAST(FLOAT AS DECIMAL). */
     public static BigDecimal toBigDecimal(float val, int precision, int scale) {
-        return removeDefaultScale(precision, scale, toBigDecimal(BigDecimal.valueOf(val), precision, scale));
-    }
-
-    /** Removes redundant scale in case of default DECIMAL (without passed precision and scale). */
-    private static BigDecimal removeDefaultScale(int precision, int scale, BigDecimal val) {
-        BigDecimal unscaled;
-
-        if (precision == DFLT_NUM_PRECISION && scale == 0 && val.compareTo(unscaled = val.setScale(0, NUMERIC_ROUNDING_MODE)) == 0)
-            return unscaled;
-
-        return val;
+        BigDecimal decimal = new BigDecimal(String.valueOf(val));
+        return setScale(precision, scale, decimal);
     }
 
     /** CAST(java long AS DECIMAL). */
     public static BigDecimal toBigDecimal(long val, int precision, int scale) {
-        return toBigDecimal(BigDecimal.valueOf(val), precision, scale);
+        BigDecimal decimal = BigDecimal.valueOf(val);
+        return setScale(precision, scale, decimal);
     }
 
     /** CAST(INT AS DECIMAL). */
     public static BigDecimal toBigDecimal(int val, int precision, int scale) {
-        return toBigDecimal(BigDecimal.valueOf(val), precision, scale);
+        BigDecimal decimal = new BigDecimal(val);
+        return setScale(precision, scale, decimal);
     }
 
     /** CAST(java short AS DECIMAL). */
     public static BigDecimal toBigDecimal(short val, int precision, int scale) {
-        return toBigDecimal(BigDecimal.valueOf(val), precision, scale);
+        BigDecimal decimal = new BigDecimal(String.valueOf(val));
+        return setScale(precision, scale, decimal);
     }
 
     /** CAST(java byte AS DECIMAL). */
     public static BigDecimal toBigDecimal(byte val, int precision, int scale) {
-        return toBigDecimal(BigDecimal.valueOf(val), precision, scale);
+        BigDecimal decimal = new BigDecimal(String.valueOf(val));
+        return setScale(precision, scale, decimal);
     }
 
     /** CAST(BOOL AS DECIMAL). */
@@ -122,45 +115,21 @@ public class IgniteSqlFunctions {
     public static BigDecimal toBigDecimal(String s, int precision, int scale) {
         if (s == null)
             return null;
-
-        return toBigDecimal(new BigDecimal(s.trim()), precision, scale);
+        BigDecimal decimal = new BigDecimal(s.trim());
+        return setScale(precision, scale, decimal);
     }
 
-    /** Converts {@code val} to a {@link BigDecimal} with the given {@code precision} and {@code scale}. */
-    public static BigDecimal toBigDecimal(Number val, int precision, int scale) {
-        assert precision > 0 : "Invalid precision: " + precision;
-        assert scale >= 0 : "Invalid scale: " + scale;
-
-        if (val == null)
+    /** CAST(REAL AS DECIMAL). */
+    public static BigDecimal toBigDecimal(Number num, int precision, int scale) {
+        if (num == null)
             return null;
-
-        if (precision == DFLT_NUM_PRECISION)
-            return convertToBigDecimal(val);
-
-        BigDecimal dec = convertToBigDecimal(val);
-
-        if (scale > precision || (dec.precision() - dec.scale() > precision - scale && !dec.unscaledValue().equals(BigInteger.ZERO)))
-            throw new IllegalArgumentException(NUMERIC_OVERFLOW_ERROR);
-
-        return dec.setScale(scale, NUMERIC_ROUNDING_MODE);
-    }
-
-    /** */
-    private static BigDecimal convertToBigDecimal(Number value) {
-        BigDecimal dec;
-
-        if (value instanceof Float)
-            dec = BigDecimal.valueOf(value.floatValue());
-        else if (value instanceof Double)
-            dec = BigDecimal.valueOf(value.doubleValue());
-        else if (value instanceof BigDecimal)
-            dec = (BigDecimal)value;
-        else if (value instanceof BigInteger)
-            dec = new BigDecimal((BigInteger)value);
-        else
-            dec = new BigDecimal(value.longValue());
-
-        return dec;
+        // There are some values of "long" that cannot be represented as "double".
+        // Not so "int". If it isn't a long, go straight to double.
+        BigDecimal decimal = num instanceof BigDecimal ? ((BigDecimal)num)
+            : num instanceof BigInteger ? new BigDecimal((BigInteger)num)
+            : num instanceof Long ? new BigDecimal(num.longValue())
+            : BigDecimal.valueOf(num.doubleValue());
+        return setScale(precision, scale, decimal);
     }
 
     /** Cast object depending on type to DECIMAL. */

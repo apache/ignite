@@ -82,6 +82,6 @@ public interface IgniteResource {
     Resources.ExInst<SqlValidatorException> invalidCastParameters();
 
     /** */
-    @Resources.BaseMessage("Dynamic parameter validation error. ''{0}'")
+    @Resources.BaseMessage("Dynamic parameter validation error. ''{0}''")
     Resources.ExInst<SqlValidatorException> dynamicParameterValidation(String value);
 }
