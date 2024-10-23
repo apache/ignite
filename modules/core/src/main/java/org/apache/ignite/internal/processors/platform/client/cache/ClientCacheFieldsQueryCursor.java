@@ -44,7 +44,6 @@ class ClientCacheFieldsQueryCursor extends ClientCacheQueryCursor<List> {
 
     /** {@inheritDoc} */
     @Override void writeEntry(BinaryRawWriterEx writer, List e) {
-        //assert e.size() == columnCount : "Wrong column count : " + e.size() + " != " + columnCount;
         assert e.size() >= columnCount : "Column count less then requested: " + e.size() + " < " + columnCount;
 
         // H2 engine can add extra columns at the end of result set.
