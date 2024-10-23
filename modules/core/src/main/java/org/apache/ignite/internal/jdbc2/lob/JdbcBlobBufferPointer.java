@@ -18,17 +18,11 @@
 package org.apache.ignite.internal.jdbc2.lob;
 
 /**
- * Keeps a pointer to some position in a {@link JdbcBlobBuffer}.
+ * Keeps a pointer to some position in a {@link JdbcBlobStreams}.
  */
 class JdbcBlobBufferPointer {
     /** Current buffer position. */
     private int pos;
-
-    /** Index of the current buffer. */
-    private Integer idx;
-
-    /** Current position in the current buffer. */
-    private Integer inBufPos;
 
     /**
      * Initialize pointer from the another one.
@@ -36,7 +30,7 @@ class JdbcBlobBufferPointer {
      * @param pointer Another pointer.
      */
     JdbcBlobBufferPointer set(JdbcBlobBufferPointer pointer) {
-        set(pointer.pos, pointer.idx, pointer.inBufPos);
+        set(pointer.pos);
 
         return this;
     }
@@ -46,23 +40,8 @@ class JdbcBlobBufferPointer {
      *
      * @param pos New position.
      */
-    JdbcBlobBufferPointer setPos(int pos) {
+    JdbcBlobBufferPointer set(int pos) {
         this.pos = pos;
-
-        return this;
-    }
-
-    /**
-     * Set.
-     *
-     * @param pos New position.
-     * @param idx Index of the current buffer.
-     * @param inBufPos Current buffer position.
-     */
-    JdbcBlobBufferPointer set(int pos, Integer idx, Integer inBufPos) {
-        this.pos = pos;
-        this.idx = idx;
-        this.inBufPos = inBufPos;
 
         return this;
     }
@@ -70,15 +49,5 @@ class JdbcBlobBufferPointer {
     /** @return Current buffer position. */
     int getPos() {
         return pos;
-    }
-
-    /** @return Index of the current buffer. */
-    public Integer getIdx() {
-        return idx;
-    }
-
-    /** @return Current buffer position. */
-    public Integer getInBufPos() {
-        return inBufPos;
     }
 }

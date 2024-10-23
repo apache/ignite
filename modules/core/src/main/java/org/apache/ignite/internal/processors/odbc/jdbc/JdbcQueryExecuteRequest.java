@@ -22,7 +22,7 @@ import java.sql.Statement;
 import org.apache.ignite.binary.BinaryObjectException;
 import org.apache.ignite.internal.binary.BinaryReaderExImpl;
 import org.apache.ignite.internal.binary.BinaryWriterExImpl;
-import org.apache.ignite.internal.jdbc2.lob.JdbcBlobBuffer;
+import org.apache.ignite.internal.jdbc2.lob.JdbcBlobStorage;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.S;
@@ -198,14 +198,8 @@ public class JdbcQueryExecuteRequest extends JdbcRequest {
         for (int i = 0; i < argsNum; ++i) {
             args[i] = JdbcUtils.readObject(reader, protoCtx);
 
-            if (args[i] instanceof JdbcBlobBuffer) {
-                try {
-                    args[i] = ((JdbcBlobBuffer)args[i]).getData();
-                }
-                catch (IOException e) {
-                    throw new BinaryObjectException(e);
-                }
-            }
+            if (args[i] instanceof JdbcBlobStorage)
+                args[i] = ((JdbcBlobStorage)args[i]).getData();
         }
 
         if (protoCtx.isAutoCommitSupported())

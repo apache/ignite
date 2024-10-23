@@ -23,7 +23,8 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.sql.Blob;
 import java.sql.SQLException;
-import org.apache.ignite.internal.jdbc2.lob.JdbcBlobBuffer;
+import org.apache.ignite.internal.jdbc2.lob.JdbcBlobStorage;
+import org.apache.ignite.internal.jdbc2.lob.JdbcBlobStreams;
 
 /**
  * Simple BLOB implementation. Actually there is no such entity as BLOB in Ignite. So using arrays is a preferable way
@@ -33,7 +34,7 @@ import org.apache.ignite.internal.jdbc2.lob.JdbcBlobBuffer;
  */
 public class JdbcBlob implements Blob {
     /** Buffer to store actial data. */
-    private JdbcBlobBuffer data;
+    private JdbcBlobStorage data;
 
     /**
      * Create empty Blob.
@@ -42,7 +43,7 @@ public class JdbcBlob implements Blob {
      * {@link java.sql.Connection#createBlob}.
      */
     public JdbcBlob() {
-        data = JdbcBlobBuffer.createReadWrite();
+        data = new JdbcBlobStorage();
     }
 
     /**
@@ -52,7 +53,7 @@ public class JdbcBlob implements Blob {
      *
      * @param buf Existing buffer with data.
      */
-    public JdbcBlob(JdbcBlobBuffer buf) {
+    public JdbcBlob(JdbcBlobStorage buf) {
         data = buf;
     }
 
@@ -62,7 +63,7 @@ public class JdbcBlob implements Blob {
      * @param arr Byte array.
      */
     public JdbcBlob(byte[] arr) {
-        this(JdbcBlobBuffer.createReadWrite(arr));
+        this(new JdbcBlobStorage(arr));
     }
 
     /** {@inheritDoc} */
@@ -95,7 +96,7 @@ public class JdbcBlob implements Blob {
         int readCnt;
 
         try {
-            readCnt = data.getInputStream(idx, size).read(res);
+            readCnt = JdbcBlobStreams.getInputStream(data, idx, size).read(res);
         }
         catch (Exception e) {
             throw new SQLException(e);
@@ -111,7 +112,7 @@ public class JdbcBlob implements Blob {
     @Override public InputStream getBinaryStream() throws SQLException {
         ensureNotClosed();
 
-        return data.getInputStream();
+        return JdbcBlobStreams.getInputStream(data);
     }
 
     /** {@inheritDoc} */
@@ -125,7 +126,7 @@ public class JdbcBlob implements Blob {
                 "greater than Blob total bytes count. Requested length can't be negative and can't be " +
                 "greater than available bytes from given position [pos=" + pos + ", len=" + len + ", totalCnt=" + totalCnt + "]");
 
-        return data.getInputStream((int)pos - 1, (int)len);
+        return JdbcBlobStreams.getInputStream(data, (int)pos - 1, (int)len);
     }
 
     /** {@inheritDoc} */
@@ -177,7 +178,7 @@ public class JdbcBlob implements Blob {
                     new ArrayIndexOutOfBoundsException("[off=" + off + ", len=" + len + ", bytes.length=" + bytes.length + "]"));
 
         try {
-            data.getOutputStream((int)pos - 1).write(bytes, off, len);
+            JdbcBlobStreams.getOutputStream(data, (int)pos - 1).write(bytes, off, len);
         }
         catch (Exception e) {
             throw new SQLException(e);
@@ -197,7 +198,7 @@ public class JdbcBlob implements Blob {
                     "[pos=" + pos + ", totalCnt=" + totalCnt + "]");
 
         try {
-            return data.getOutputStream((int)pos - 1);
+            return JdbcBlobStreams.getOutputStream(data, (int)pos - 1);
         }
         catch (Exception e) {
             throw new SQLException(e);
@@ -214,21 +215,13 @@ public class JdbcBlob implements Blob {
             throw new SQLException("Invalid argument. Length can't be " +
                 "less than zero or greater than Blob total bytes count [len=" + len + ", totalCnt=" + totalCnt + "]");
 
-        try {
-            data.truncate((int)len);
-        }
-        catch (IOException e) {
-            throw new SQLException(e);
-        }
+        data.truncate((int)len);
     }
 
     /** {@inheritDoc} */
     @Override public void free() throws SQLException {
-        if (data != null) {
-            data.close();
-
+        if (data != null)
             data = null;
-        }
     }
 
     /**
@@ -243,7 +236,7 @@ public class JdbcBlob implements Blob {
         assert ptrn.markSupported() : "input stream supports mark() method";
 
         try {
-            InputStream blob = data.getInputStream(idx, data.totalCnt() - idx);
+            InputStream blob = JdbcBlobStreams.getInputStream(data, idx, data.totalCnt() - idx);
 
             boolean patternStarted = false;
 

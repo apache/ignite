@@ -39,64 +39,7 @@ import static org.apache.ignite.internal.binary.streams.BinaryAbstractOutputStre
  *
  * <p>Note however that implementation is not thread-safe.
  */
-public class JdbcBlobBuffer {
-    /** The underlying data storage. */
-    private JdbcBlobStorage storage;
-
-    /**
-     * Create buffer which wraps the existing byte array and start working in the read-only mode.
-     *
-     * @param arr The byte array to be wrapped.
-     * @param off The offset to the first byte to be wrapped.
-     * @param len The length in bytes of the data to be wrapped.
-     */
-    public static JdbcBlobBuffer createReadOnly(byte[] arr, int off, int len) {
-        return new JdbcBlobBuffer(new JdbcBlobReadOnlyStorage(arr, off, len));
-    }
-
-    /**
-     * Create buffer which takes ownerhip of and wraps the existing byte array and starts working in
-     * the read-write mode.
-     *
-     * @param arr The byte array to be wrapped.
-     */
-    public static JdbcBlobBuffer createReadWrite(byte[] arr) {
-        return new JdbcBlobBuffer(new JdbcBlobReadWriteStorage(arr));
-    }
-
-    /**
-     * Create empty buffer which starts working in the read-write mode.
-     */
-    public static JdbcBlobBuffer createReadWrite() {
-        return new JdbcBlobBuffer(new JdbcBlobReadWriteStorage());
-    }
-
-    /**
-     * Create shallow copy of the buffer passed.
-     *
-     * <p>Sharing of the underlying storage is intended.
-     *
-     * @param other Other buffer.
-     */
-    public static JdbcBlobBuffer shallowCopy(JdbcBlobBuffer other) {
-        return new JdbcBlobBuffer(other.storage);
-    }
-
-    /**
-     * Create buffer which wraps the passed storage instance.
-     * @param storage Storage instance.
-     */
-    private JdbcBlobBuffer(JdbcBlobStorage storage) {
-        this.storage = storage;
-    }
-
-    /**
-     * @return Total number of bytes in the buffer.
-     */
-    public int totalCnt() {
-        return storage.totalCnt();
-    }
-
+public class JdbcBlobStreams {
     /**
      * Provide OutputStream through which the data can be written to buffer starting from
      * the (zero-based) position.
@@ -106,8 +49,8 @@ public class JdbcBlobBuffer {
      *
      * @return OutputStream instance.
      */
-    public OutputStream getOutputStream(int pos) {
-        return new BufferOutputStream(pos);
+    public static OutputStream getOutputStream(JdbcBlobStorage storage, int pos) {
+        return new BufferOutputStream(storage, pos);
     }
 
     /**
@@ -119,8 +62,8 @@ public class JdbcBlobBuffer {
      *
      * @return InputStream instance.
      */
-    public InputStream getInputStream() {
-        return new BufferInputStream();
+    public static InputStream getInputStream(JdbcBlobStorage storage) {
+        return new BufferInputStream(storage);
     }
 
     /**
@@ -132,76 +75,19 @@ public class JdbcBlobBuffer {
      * @param len The length in bytes of the data to be retrieved. Must not be negative.
      * @return InputStream instance.
      */
-    public InputStream getInputStream(int pos, Integer len) {
-        return new BufferInputStream(pos, len);
-    }
-
-    /**
-     * Truncate the buffer to the specified length.
-     *
-     * @param len The length in bytes to be truncated. Must not be negative
-     *            or greater than total count of bytes in buffer.
-     */
-    public void truncate(int len) throws IOException {
-        try {
-            storage.truncate(len);
-        }
-        catch (UnsupportedOperationException e) {
-            switchToReadWriteMemoryStorage();
-
-            storage.truncate(len);
-        }
-    }
-
-    /**
-     * Close the buffer and free any resources.
-     */
-    public void close() {
-        storage.close();
-    }
-
-    /**
-     * Get copy of the buffer data as byte array.
-     *
-     * <p>Throws the overflow exception if the result can not fit into byte array
-     * which is can only store 2GB of data.
-     *
-     * @return Byte array containing buffer data.
-     */
-    public byte[] getData() throws IOException {
-        byte[] bytes = new byte[totalCnt()];
-
-        getInputStream().read(bytes);
-
-        return bytes;
-    }
-
-    /**
-     * Switch buffer to read-write mode.
-     *
-     * <p>Copies all data from the read-only storage to the read-write storage.
-     */
-    private void switchToReadWriteMemoryStorage() throws IOException {
-        if (!(storage instanceof JdbcBlobReadOnlyStorage))
-            return;
-
-        byte[] data = new byte[storage.totalCnt()];
-
-        storage.read(storage.createPointer(), data, 0, data.length);
-
-        JdbcBlobStorage newStorage = new JdbcBlobReadWriteStorage(data);
-
-        storage.close();
-
-        storage = newStorage;
+    public static InputStream getInputStream(JdbcBlobStorage storage, int pos, Integer len) {
+        return new BufferInputStream(storage, pos, len);
     }
 
     /**
      * Input stream to read data from buffer.
      */
-    private class BufferInputStream extends InputStream {
+    private static class BufferInputStream extends InputStream {
         /** Current position in the buffer. */
         private final JdbcBlobBufferPointer curPointer;
+
+        /** Storage reference. */
+        private final JdbcBlobStorage storage;
 
         /** Stream starting position. */
         private final int start;
@@ -215,18 +101,21 @@ public class JdbcBlobBuffer {
         /**
          * Create unlimited stream to read all data from the buffer starting from the beginning.
          */
-        private BufferInputStream() {
-            this(0, null);
+        private BufferInputStream(JdbcBlobStorage storage) {
+            this(storage, 0, null);
         }
 
         /**
          * Create stream to read data from the buffer starting from the specified {@code start}
          * zero-based position.
          *
+         * @param storage Storage reference.
          * @param start The zero-based offset to the first byte to be retrieved.
          * @param limit The maximim length in bytes of the data to be retrieved. Unlimited if null.
          */
-        private BufferInputStream(int start, Integer limit) {
+        private BufferInputStream(JdbcBlobStorage storage, int start, Integer limit) {
+            this.storage = storage;
+
             this.start = start;
 
             this.limit = limit;
@@ -239,7 +128,7 @@ public class JdbcBlobBuffer {
         }
 
         /** {@inheritDoc} */
-        @Override public int read() throws IOException {
+        @Override public int read() {
             if (limit != null && curPointer.getPos() - start >= limit)
                 return -1;
 
@@ -247,7 +136,7 @@ public class JdbcBlobBuffer {
         }
 
         /** {@inheritDoc} */
-        @Override public int read(byte[] res, int off, int cnt) throws IOException {
+        @Override public int read(byte[] res, int off, int cnt) {
             Objects.checkFromIndexSize(off, cnt, res.length);
 
             int toRead = cnt;
@@ -292,16 +181,22 @@ public class JdbcBlobBuffer {
     /**
      * Output stream to write data to buffer.
      */
-    private class BufferOutputStream extends OutputStream {
+    private static class BufferOutputStream extends OutputStream {
         /** Current position in the buffer. */
         private final JdbcBlobBufferPointer bufPos;
+
+        /** Storage reference. */
+        private final JdbcBlobStorage storage;
 
         /**
          * Create stream to write data to the buffer starting from the specified position {@code pos}.
          *
+         * @param storage Storage reference.
          * @param pos Starting position (zero-based).
          */
-        private BufferOutputStream(int pos) {
+        private BufferOutputStream(JdbcBlobStorage storage, int pos) {
+            this.storage = storage;
+
             bufPos = storage.createPointer();
 
             if (pos > 0)
@@ -310,28 +205,14 @@ public class JdbcBlobBuffer {
 
         /** {@inheritDoc} */
         @Override public void write(int b) throws IOException {
-            try {
-                storage.write(bufPos, b);
-            }
-            catch (UnsupportedOperationException ignored) {
-                switchToReadWriteMemoryStorage();
-
-                storage.write(bufPos, b);
-            }
+            storage.write(bufPos, b);
         }
 
         /** {@inheritDoc} */
         @Override public void write(byte[] bytes, int off, int len) throws IOException {
             Objects.checkFromIndexSize(off, len, bytes.length);
 
-            try {
-                storage.write(bufPos, bytes, off, len);
-            }
-            catch (UnsupportedOperationException ignored) {
-                switchToReadWriteMemoryStorage();
-
-                storage.write(bufPos, bytes, off, len);
-            }
+            storage.write(bufPos, bytes, off, len);
         }
     }
 }

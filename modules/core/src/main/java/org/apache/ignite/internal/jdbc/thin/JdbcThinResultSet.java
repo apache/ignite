@@ -18,7 +18,6 @@
 package org.apache.ignite.internal.jdbc.thin;
 
 import java.io.ByteArrayInputStream;
-import java.io.IOException;
 import java.io.InputStream;
 import java.io.Reader;
 import java.math.BigDecimal;
@@ -50,7 +49,8 @@ import java.util.List;
 import java.util.Map;
 import org.apache.ignite.internal.jdbc2.JdbcBlob;
 import org.apache.ignite.internal.jdbc2.JdbcClob;
-import org.apache.ignite.internal.jdbc2.lob.JdbcBlobBuffer;
+import org.apache.ignite.internal.jdbc2.lob.JdbcBlobStorage;
+import org.apache.ignite.internal.jdbc2.lob.JdbcBlobStreams;
 import org.apache.ignite.internal.processors.odbc.SqlStateCode;
 import org.apache.ignite.internal.processors.odbc.jdbc.JdbcColumnMeta;
 import org.apache.ignite.internal.processors.odbc.jdbc.JdbcQueryCloseRequest;
@@ -475,13 +475,8 @@ public class JdbcThinResultSet implements ResultSet {
 
         if (cls == byte[].class)
             return (byte[])val;
-        else if (cls == JdbcBlobBuffer.class) {
-            try {
-                return ((JdbcBlobBuffer)val).getData();
-            }
-            catch (IOException e) {
-                throw new SQLException(e);
-            }
+        else if (cls == JdbcBlobStorage.class) {
+            return ((JdbcBlobStorage)val).getData();
         }
         else if (cls == Byte.class)
             return new byte[] {(byte)val};
@@ -603,8 +598,8 @@ public class JdbcThinResultSet implements ResultSet {
         if (val == null)
             return null;
 
-        if (val instanceof JdbcBlobBuffer)
-            return ((JdbcBlobBuffer)val).getInputStream();
+        if (val instanceof JdbcBlobStorage)
+            return JdbcBlobStreams.getInputStream((JdbcBlobStorage)val);
         else
             return new ByteArrayInputStream(getBytes(colIdx));
     }
@@ -1318,10 +1313,10 @@ public class JdbcThinResultSet implements ResultSet {
         if (val == null)
             return null;
 
-        if (!(val instanceof JdbcBlobBuffer))
+        if (!(val instanceof JdbcBlobStorage))
             throw new SQLException("Cannot convert to Blob [colIdx=" + colIdx + "]");
 
-        return new JdbcBlob(JdbcBlobBuffer.shallowCopy((JdbcBlobBuffer)val));
+        return new JdbcBlob(JdbcBlobStorage.shallowCopy((JdbcBlobStorage)val));
     }
 
     /** {@inheritDoc} */
