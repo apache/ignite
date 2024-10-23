@@ -101,27 +101,16 @@ public class JdbcBlobStorage {
     }
 
     /**
-     * @return New pointer instance pointing to a zero position in the storage.
-     */
-    JdbcBlobBufferPointer createPointer() {
-        return new JdbcBlobBufferPointer();
-    }
-
-    /**
      * Read a byte from this storage from specified position {@code pos}.
      *
      * @param pos Pointer to a position.
      * @return Byte read from the Blob. -1 if EOF.
      */
-    int read(JdbcBlobBufferPointer pos) {
-        if (pos.getPos() >= totalCnt)
+    int read(int pos) {
+        if (pos >= totalCnt)
             return -1;
 
-        int res = buf[pos.getPos() + off] & 0xff;
-
-        doAdvancePointer(pos, 1);
-
-        return res;
+        return buf[pos + off] & 0xff;
     }
 
     /**
@@ -133,17 +122,15 @@ public class JdbcBlobStorage {
      * @param cnt Number of bytes to read.
      * @return Number of bytes read. -1 if EOF.
      */
-    int read(JdbcBlobBufferPointer pos, byte[] resBuf, int resOff, int cnt) {
-        if (pos.getPos() >= totalCnt)
+    int read(int pos, byte[] resBuf, int resOff, int cnt) {
+        if (pos >= totalCnt)
             return -1;
 
-        int bufOff = pos.getPos() + off;
+        int bufOff = pos + off;
 
-        int size = Math.min(cnt, totalCnt - pos.getPos());
+        int size = Math.min(cnt, totalCnt - pos);
 
         U.arrayCopy(buf, bufOff, resBuf, resOff, size);
-
-        doAdvancePointer(pos, size);
 
         return size;
     }
@@ -158,15 +145,15 @@ public class JdbcBlobStorage {
      * @param b Byte to write.
      * @throws IOException if an I/O error occurs.
      */
-    void write(JdbcBlobBufferPointer pos, int b) throws IOException {
-        if (pos.getPos() > totalCnt)
+    void write(int pos, int b) throws IOException {
+        if (pos > totalCnt)
             throw new IOException("Writting beyond end of Blob, it probably was truncated after OutputStream was created " +
-                    "[pos=" + pos.getPos() + ", totalCnt=" + totalCnt + "]");
+                    "[pos=" + pos + ", totalCnt=" + totalCnt + "]");
 
-        if (MAX_ARRAY_SIZE - pos.getPos() < 1)
+        if (MAX_ARRAY_SIZE - pos < 1)
             throw new IOException("Too much data. Can't write more then " + MAX_ARRAY_SIZE + " bytes to Blob.");
 
-        int finalLen = Math.max(pos.getPos() + 1, totalCnt);
+        int finalLen = Math.max(pos + 1, totalCnt);
 
         if (isReadOnly) {
             isReadOnly = false;
@@ -178,9 +165,7 @@ public class JdbcBlobStorage {
         else
             ensureCapacity(finalLen);
 
-        buf[pos.getPos()] = (byte)b;
-
-        doAdvancePointer(pos, 1);
+        buf[pos] = (byte)b;
 
         totalCnt = finalLen;
     }
@@ -195,17 +180,17 @@ public class JdbcBlobStorage {
      * @param len Number of bytes to write.
      * @throws IOException if an I/O error occurs.
      */
-    void write(JdbcBlobBufferPointer pos, byte[] resBuf, int resOff, int len) throws IOException {
+    void write(int pos, byte[] resBuf, int resOff, int len) throws IOException {
         Objects.checkFromIndexSize(resOff, len, resBuf.length);
 
-        if (pos.getPos() > totalCnt)
+        if (pos > totalCnt)
             throw new IOException("Writting beyond end of Blob, it probably was truncated after OutputStream was created " +
-                    "[pos=" + pos.getPos() + ", totalCnt=" + totalCnt + "]");
+                    "[pos=" + pos + ", totalCnt=" + totalCnt + "]");
 
-        if (MAX_ARRAY_SIZE - pos.getPos() < len)
+        if (MAX_ARRAY_SIZE - pos < len)
             throw new IOException("Too much data. Can't write more then " + MAX_ARRAY_SIZE + " bytes to Blob.");
 
-        int finalLen = Math.max(pos.getPos() + len, totalCnt);
+        int finalLen = Math.max(pos + len, totalCnt);
 
         if (isReadOnly) {
             isReadOnly = false;
@@ -217,9 +202,7 @@ public class JdbcBlobStorage {
         else
             ensureCapacity(finalLen);
 
-        U.arrayCopy(resBuf, resOff, buf, pos.getPos(), len);
-
-        doAdvancePointer(pos, len);
+        U.arrayCopy(resBuf, resOff, buf, pos, len);
 
         totalCnt = finalLen;
     }
@@ -235,25 +218,9 @@ public class JdbcBlobStorage {
     public byte[] getData() {
         byte[] bytes = new byte[totalCnt()];
 
-        read(new JdbcBlobBufferPointer(), bytes, 0, totalCnt);
+        read(0, bytes, 0, totalCnt);
 
         return bytes;
-    }
-
-    /**
-     * Move a position pointer {@code pos} forward by {@code step}.
-     *
-     * @param pos Pointer to modify.
-     * @param step Number of bytes to skip forward.
-     * @return Actual number of bytes the pointer moved (amy be less than {@code step} if end of data reached).
-     */
-    int advancePointer(JdbcBlobBufferPointer pos, int step) {
-        int toAdvance = Math.min(step, totalCnt - pos.getPos());
-
-        if (toAdvance > 0)
-            doAdvancePointer(pos, toAdvance);
-
-        return toAdvance;
     }
 
     /**
@@ -269,17 +236,6 @@ public class JdbcBlobStorage {
         buf = newBuf;
 
         totalCnt = len;
-    }
-
-    /**
-     * Internal implementation of a position pointer movement.
-     * Doesn't check the current totalCnt.
-     *
-     * @param pos Pointer to modify.
-     * @param step Number of bytes to skip forward.
-     */
-    private void doAdvancePointer(JdbcBlobBufferPointer pos, int step) {
-        pos.set(pos.getPos() + step);
     }
 
     /**

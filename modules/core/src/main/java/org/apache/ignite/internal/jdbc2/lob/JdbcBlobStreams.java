@@ -80,11 +80,22 @@ public class JdbcBlobStreams {
     }
 
     /**
+     * Move a position pointer {@code pos} forward by {@code step}.
+     *
+     * @param pos Pointer to modify.
+     * @param step Number of bytes to skip forward.
+     * @return Actual number of bytes the pointer moved (amy be less than {@code step} if end of data reached).
+     */
+    static int advancePointer(JdbcBlobStorage storage, int pos, int step) {
+        return Math.min(step, storage.totalCnt() - pos);
+    }
+
+    /**
      * Input stream to read data from buffer.
      */
     private static class BufferInputStream extends InputStream {
         /** Current position in the buffer. */
-        private final JdbcBlobBufferPointer curPointer;
+        private int curPointer;
 
         /** Storage reference. */
         private final JdbcBlobStorage storage;
@@ -96,7 +107,7 @@ public class JdbcBlobStreams {
         private final Integer limit;
 
         /** Remembered buffer position at the moment the {@link InputStream#mark} is called. */
-        private final JdbcBlobBufferPointer markedPointer;
+        private int markedPointer;
 
         /**
          * Create unlimited stream to read all data from the buffer starting from the beginning.
@@ -120,19 +131,24 @@ public class JdbcBlobStreams {
 
             this.limit = limit;
 
-            curPointer = storage.createPointer();
+            curPointer = 0;
 
             skip(start);
 
-            markedPointer = storage.createPointer().set(curPointer);
+            markedPointer = curPointer;
         }
 
         /** {@inheritDoc} */
         @Override public int read() {
-            if (limit != null && curPointer.getPos() - start >= limit)
+            if (limit != null && curPointer - start >= limit)
                 return -1;
 
-            return storage.read(curPointer);
+            int res = storage.read(curPointer);
+
+            if (res != -1)
+                curPointer++;
+
+            return res;
         }
 
         /** {@inheritDoc} */
@@ -142,16 +158,21 @@ public class JdbcBlobStreams {
             int toRead = cnt;
 
             if (limit != null) {
-                if (curPointer.getPos() - start >= limit)
+                if (curPointer - start >= limit)
                     return -1;
 
-                int availableBytes = limit - (curPointer.getPos() - start);
+                int availableBytes = limit - (curPointer - start);
 
                 if (cnt > availableBytes)
                     toRead = availableBytes;
             }
 
-            return storage.read(curPointer, res, off, toRead);
+            int read = storage.read(curPointer, res, off, toRead);
+
+            if (read != -1)
+                curPointer += read;
+
+            return read;
         }
 
         /** {@inheritDoc} */
@@ -161,12 +182,12 @@ public class JdbcBlobStreams {
 
         /** {@inheritDoc} */
         @Override public synchronized void reset() {
-            curPointer.set(markedPointer);
+            curPointer = markedPointer;
         }
 
         /** {@inheritDoc} */
         @Override public synchronized void mark(int readlimit) {
-            markedPointer.set(curPointer);
+            markedPointer = curPointer;
         }
 
         /** {@inheritDoc} */
@@ -174,7 +195,11 @@ public class JdbcBlobStreams {
             if (n <= 0)
                 return 0;
 
-            return storage.advancePointer(curPointer, (int)Math.min(n, MAX_ARRAY_SIZE));
+            int step = advancePointer(storage, curPointer, (int)Math.min(n, MAX_ARRAY_SIZE));
+
+            curPointer += step;
+
+            return step;
         }
     }
 
@@ -183,7 +208,7 @@ public class JdbcBlobStreams {
      */
     private static class BufferOutputStream extends OutputStream {
         /** Current position in the buffer. */
-        private final JdbcBlobBufferPointer bufPos;
+        private int bufPos;
 
         /** Storage reference. */
         private final JdbcBlobStorage storage;
@@ -197,15 +222,15 @@ public class JdbcBlobStreams {
         private BufferOutputStream(JdbcBlobStorage storage, int pos) {
             this.storage = storage;
 
-            bufPos = storage.createPointer();
+            bufPos = 0;
 
             if (pos > 0)
-                storage.advancePointer(bufPos, pos);
+                bufPos += advancePointer(storage, bufPos, pos);
         }
 
         /** {@inheritDoc} */
         @Override public void write(int b) throws IOException {
-            storage.write(bufPos, b);
+            storage.write(bufPos++, b);
         }
 
         /** {@inheritDoc} */
@@ -213,6 +238,8 @@ public class JdbcBlobStreams {
             Objects.checkFromIndexSize(off, len, bytes.length);
 
             storage.write(bufPos, bytes, off, len);
+
+            bufPos += len;
         }
     }
 }
