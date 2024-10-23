@@ -2611,12 +2611,12 @@ public final class GridTestUtils {
         /**
          * Function do fail in case of {@code fail} is true, return 0 otherwise.
          *
-         * @param canFail fail flag
+         * @param fail fail flag
          * @return in case of {@code fail} is false return 0, fail otherwise.
          */
         @QuerySqlFunction
-        public static int can_fail(boolean canFail) {
-            if (canFail)
+        public static int can_fail(boolean fail) {
+            if (fail)
                 throw new IllegalArgumentException();
             else
                 return 0;
@@ -2626,14 +2626,14 @@ public final class GridTestUtils {
          * Function do sleep {@code sleepMs} milliseconds and do fail in case of {@code fail} is true, return 0 otherwise.
          *
          * @param sleepMs time to sleep
-         * @param canFail fail flag
+         * @param fail fail flag
          * @return amount of milliseconds to sleep in case of {@code fail} is false, fail otherwise.
          */
         @QuerySqlFunction
-        public static long sleep_and_can_fail(long sleepMs, boolean canFail) {
+        public static long sleep_and_can_fail(long sleepMs, boolean fail) {
             long sleep = sleep(sleepMs);
 
-            can_fail(canFail);
+            can_fail(fail);
 
             return sleep;
         }
