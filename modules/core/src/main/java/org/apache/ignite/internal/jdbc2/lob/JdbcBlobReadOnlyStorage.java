@@ -21,21 +21,18 @@ import java.io.IOException;
 import org.apache.ignite.internal.util.typedef.internal.U;
 
 /**
- * Heap memory based read-only implementation of the {@link JdbcBlobStorage} which wraps
+ * Read-only implementation of the {@link JdbcBlobStorage} which wraps
  * a part of an externally provided byte array which can not be modified.
  *
- * <p>Says, allows direct read-only access to binary data stored in the incoming JDBC
- * responce message without copying.
+ * <p>Say, allows direct read-only access to binary data stored in the incoming JDBC
+ * response message without copying.
  */
-class JdbcBlobReadOnlyMemoryStorage implements JdbcBlobStorage {
+class JdbcBlobReadOnlyStorage extends JdbcBlobStorage {
     /** External buffer.*/
     private final byte[] buf;
 
     /** Offset to the first byte to be wrapped.*/
     private final int off;
-
-    /** The length in bytes of the data to be wrapped.*/
-    private final long totalCnt;
 
     /**
      * Constructor.
@@ -44,20 +41,10 @@ class JdbcBlobReadOnlyMemoryStorage implements JdbcBlobStorage {
      * @param off The offset to the first byte to be wrapped.
      * @param len The length in bytes of the data to be wrapped.
      */
-    JdbcBlobReadOnlyMemoryStorage(byte[] buf, int off, int len) {
+    JdbcBlobReadOnlyStorage(byte[] buf, int off, int len) {
         this.buf = buf;
         this.off = off;
         totalCnt = len;
-    }
-
-    /** {@inheritDoc} */
-    @Override public long totalCnt() {
-        return totalCnt;
-    }
-
-    /** {@inheritDoc} */
-    @Override public JdbcBlobBufferPointer createPointer() {
-        return new JdbcBlobBufferPointer();
     }
 
     /** {@inheritDoc} */
@@ -106,10 +93,5 @@ class JdbcBlobReadOnlyMemoryStorage implements JdbcBlobStorage {
     /** {@inheritDoc} */
     @Override public void truncate(long len) throws IOException {
         throw new UnsupportedOperationException();
-    }
-
-    /** {@inheritDoc} */
-    @Override public void close() {
-        // No-op.
     }
 }

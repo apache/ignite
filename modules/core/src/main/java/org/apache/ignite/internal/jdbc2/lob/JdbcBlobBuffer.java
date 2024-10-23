@@ -48,7 +48,7 @@ public class JdbcBlobBuffer {
      * @param len The length in bytes of the data to be wrapped.
      */
     public static JdbcBlobBuffer createReadOnly(byte[] arr, int off, int len) {
-        return new JdbcBlobBuffer(new JdbcBlobReadOnlyMemoryStorage(arr, off, len));
+        return new JdbcBlobBuffer(new JdbcBlobReadOnlyStorage(arr, off, len));
     }
 
     /**
@@ -58,14 +58,14 @@ public class JdbcBlobBuffer {
      * @param arr The byte array to be wrapped.
      */
     public static JdbcBlobBuffer createReadWrite(byte[] arr) {
-        return new JdbcBlobBuffer(new JdbcBlobMemoryStorage(arr));
+        return new JdbcBlobBuffer(new JdbcBlobReadWriteStorage(arr));
     }
 
     /**
      * Create empty buffer which starts working in the read-write mode.
      */
     public static JdbcBlobBuffer createReadWrite() {
-        return new JdbcBlobBuffer(new JdbcBlobMemoryStorage());
+        return new JdbcBlobBuffer(new JdbcBlobReadWriteStorage());
     }
 
     /**
@@ -179,14 +179,14 @@ public class JdbcBlobBuffer {
      * <p>Copies all data from the read-only storage to the read-write storage.
      */
     private void switchToReadWriteMemoryStorage() throws IOException {
-        if (!(storage instanceof JdbcBlobReadOnlyMemoryStorage))
+        if (!(storage instanceof JdbcBlobReadOnlyStorage))
             return;
 
         byte[] data = new byte[Math.toIntExact(storage.totalCnt())];
 
         storage.read(storage.createPointer(), data, 0, data.length);
 
-        JdbcBlobStorage newStorage = new JdbcBlobMemoryStorage(data);
+        JdbcBlobStorage newStorage = new JdbcBlobReadWriteStorage(data);
 
         storage.close();
 

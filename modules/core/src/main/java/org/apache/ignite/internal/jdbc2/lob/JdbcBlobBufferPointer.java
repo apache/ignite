@@ -24,15 +24,11 @@ class JdbcBlobBufferPointer {
     /** Current buffer position. */
     private long pos;
 
-    /** Optional storage-specific context for effective access to data in the current position. */
-    private JdbcBlobStorageContext context;
+    /** Index of the current buffer. */
+    private Integer idx;
 
-    /**
-     * Create new pointer to zero position.
-     */
-    JdbcBlobBufferPointer() {
-        pos = 0;
-    }
+    /** Current position in the current buffer. */
+    private Integer inBufPos;
 
     /**
      * Initialize pointer from the another one.
@@ -40,10 +36,7 @@ class JdbcBlobBufferPointer {
      * @param pointer Another pointer.
      */
     JdbcBlobBufferPointer set(JdbcBlobBufferPointer pointer) {
-        pos = pointer.pos;
-
-        if (pointer.context != null)
-            context = pointer.context.deepCopy();
+        set(pointer.pos, pointer.idx, pointer.inBufPos);
 
         return this;
     }
@@ -60,12 +53,16 @@ class JdbcBlobBufferPointer {
     }
 
     /**
-     * Set context.
+     * Set.
      *
-     * @param context New context.
+     * @param pos New position.
+     * @param idx Index of the current buffer.
+     * @param inBufPos Current buffer position.
      */
-    JdbcBlobBufferPointer setContext(JdbcBlobStorageContext context) {
-        this.context = context;
+    JdbcBlobBufferPointer set(long pos, Integer idx, Integer inBufPos) {
+        this.pos = pos;
+        this.idx = idx;
+        this.inBufPos = inBufPos;
 
         return this;
     }
@@ -75,8 +72,13 @@ class JdbcBlobBufferPointer {
         return pos;
     }
 
-    /** @return Context. */
-    JdbcBlobStorageContext getContext() {
-        return context;
+    /** @return Index of the current buffer. */
+    public Integer getIdx() {
+        return idx;
+    }
+
+    /** @return Current buffer position. */
+    public Integer getInBufPos() {
+        return inBufPos;
     }
 }
