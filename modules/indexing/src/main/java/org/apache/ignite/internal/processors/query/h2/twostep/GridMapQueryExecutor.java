@@ -989,8 +989,7 @@ public class GridMapQueryExecutor {
                 page == 0 ? res.rowCount() : -1,
                 res.columnCount(),
                 loc ? null : toMessages(rows, new ArrayList<>(res.columnCount()), res.columnCount()),
-                // TODO: reqduce extra copying
-                loc ? toPlainRows(rows, res.columnCount()) : null,
+                loc ? rows : null,
                 last);
 
             MTC.span().addTag(SQL_PAGE_ROWS, () -> String.valueOf(rows.size()));

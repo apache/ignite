@@ -24,6 +24,7 @@ public class Department {
 
     /** */
     public Department() {
+        // No-op.
     }
 
     /** */

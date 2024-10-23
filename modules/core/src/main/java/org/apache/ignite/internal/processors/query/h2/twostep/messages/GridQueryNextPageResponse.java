@@ -61,7 +61,7 @@ public class GridQueryNextPageResponse implements Message {
     private Collection<Message> vals;
 
     /**
-     * Note, count columns in plain row can differ from {@link #cols}.
+     * Note, columns count in plain row can differ from {@link #cols}.
      * See {@code org.apache.ignite.internal.processors.query.h2.twostep.msg.GridH2ValueMessageFactory#toMessages}.
      * See javadoc for {@code org.h2.result.ResultInterface#getVisibleColumnCount()} and {@code org.h2.result.ResultInterface#currentRow()}.
      */
