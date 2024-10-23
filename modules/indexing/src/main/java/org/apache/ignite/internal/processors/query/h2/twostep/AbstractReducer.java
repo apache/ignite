@@ -92,6 +92,9 @@ public abstract class AbstractReducer implements Reducer {
     /** */
     private int pageSize;
 
+    /** */
+    protected int colCnt;
+
     /**
      * Will be r/w from query execution thread only, does not need to be threadsafe.
      */
@@ -343,7 +346,7 @@ public abstract class AbstractReducer implements Reducer {
      * @param queue Queue to poll.
      * @return Next page.
      */
-    private ReduceResultPage takeNextPage(Pollable<ReduceResultPage> queue) {
+    protected ReduceResultPage takeNextPage(Pollable<ReduceResultPage> queue) {
         try (TraceSurroundings ignored = MTC.support(ctx.tracing().create(SQL_PAGE_WAIT, MTC.span()))) {
             ReduceResultPage page;
 
@@ -355,8 +358,11 @@ public abstract class AbstractReducer implements Reducer {
                     throw new CacheException("Query execution was interrupted.", e);
                 }
 
-                if (page != null)
+                if (page != null) {
+                    colCnt = page.columnCount();
+
                     break;
+                }
 
                 checkSourceNodesAlive();
             }

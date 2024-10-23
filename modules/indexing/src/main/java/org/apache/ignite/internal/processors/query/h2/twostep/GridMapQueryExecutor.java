@@ -998,25 +998,6 @@ public class GridMapQueryExecutor {
         }
     }
 
-    /** */
-    private static List<Value[]> toPlainRows(List<Value[]> rows, int cols) {
-        if (F.isEmpty(rows) || rows.get(0).length == cols)
-            return rows;
-
-        List<Value[]> res = new ArrayList<>(rows.size());
-
-        for (Value[] row : rows) {
-            assert row.length >= cols;
-
-            Value[] newRow = new Value[cols];
-
-            System.arraycopy(row, 0, newRow, 0, cols);
-
-            res.add(newRow);
-        }
-        return res;
-    }
-
     /**
      * @param node Node.
      * @param msg Message to send.

@@ -47,6 +47,7 @@ import org.apache.ignite.internal.client.thin.TimeoutTest;
 import org.apache.ignite.internal.client.thin.events.IgniteClientConnectionEventListenerTest;
 import org.apache.ignite.internal.client.thin.events.IgniteClientLifecycleEventListenerTest;
 import org.apache.ignite.internal.client.thin.events.IgniteClientRequestEventListenerTest;
+import org.apache.ignite.sqltests.ExtraColumnInH2RowsTest;
 import org.junit.runner.RunWith;
 import org.junit.runners.Suite;
 
@@ -98,6 +99,7 @@ import org.junit.runners.Suite;
     ClusterGroupClusterRestartTest.class,
     BlockingTxOpsTest.class,
     InvokeTest.class,
+    ExtraColumnInH2RowsTest.class
 })
 public class ClientTestSuite {
     // No-op.
