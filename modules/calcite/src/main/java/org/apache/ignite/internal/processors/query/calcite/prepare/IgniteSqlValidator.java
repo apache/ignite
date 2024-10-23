@@ -107,7 +107,7 @@ public class IgniteSqlValidator extends SqlValidatorImpl {
         HUMAN_READABLE_ALIASES_FOR = Collections.unmodifiableSet(kinds);
     }
 
-    /** Validated dynamic parameters with passed values by indexes. */
+    /** Validated dynamic parameters with passed values. */
     @Nullable private Map<Integer, DynamicParameterHolder> dynParams;
 
     /** Detected dynamic parameter nodes. */
@@ -161,6 +161,7 @@ public class IgniteSqlValidator extends SqlValidatorImpl {
             return;
         }
 
+        // TODO IGNITE-23251 : validate number of actual against passed dynamic parameters.
         if (F.isEmpty(dynParamNodes))
             return;
 
@@ -169,7 +170,8 @@ public class IgniteSqlValidator extends SqlValidatorImpl {
         for (SqlDynamicParam node : dynParamNodes) {
             DynamicParameterHolder pHolder = dynParams.get(node.getIndex());
 
-            assert pHolder != null && pHolder.type != null && pHolder.node != null : "Dynamic parameter has not been validated. Idx: " + node.getIndex();
+            assert pHolder != null && pHolder.type != null && pHolder.node != null
+                : "Dynamic parameter has not been validated. Idx: " + node.getIndex();
 
             if (pHolder.type == unknownType) {
                 throw newValidationError(pHolder.node, IgniteResource.INSTANCE.dynamicParameterValidation(
@@ -451,9 +453,10 @@ public class IgniteSqlValidator extends SqlValidatorImpl {
         return !dynamicParamater(param.getIndex()).hasValue;
     }
 
-    /** */
+    /** Binds {@code node} and {@code type} of a dynamic parameter to {@code pHolder}. */
     private void dynamicParameterType(DynamicParameterHolder pHolder, SqlDynamicParam node, RelDataType type) {
-        assert pHolder.node == null || node.equals(pHolder.node) : "Node is already set for a dynamic parameter #" + pHolder.node.getIndex();
+        assert pHolder.node == null || node.equals(pHolder.node)
+            : "Node is already set for a dynamic parameter #" + pHolder.node.getIndex();
 
         pHolder.type = type;
 

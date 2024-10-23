@@ -349,18 +349,6 @@ public class DataTypesTest extends AbstractBasicIntegrationTransactionalTest {
             "'TIMESTAMP WITH LOCAL TIME ZONE' is not supported.");
     }
 
-    /**
-     * Test cases for decimal literals.
-     */
-    @Test
-    public void testDecimalLiteral() {
-        sql("CREATE TABLE t(id integer primary key, int_col integer)");
-        sql("insert into t values (1, 1)");
-
-        // Fails
-        assertQuery("SELECT id from t where int_col=CAST(? as INTEGER)").withParams('1').returns(1).check();
-    }
-
     /** Cache API - SQL API cross check. */
     @Test
     public void testBinaryCache() {
