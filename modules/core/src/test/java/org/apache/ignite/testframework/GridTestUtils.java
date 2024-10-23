@@ -2582,20 +2582,15 @@ public final class GridTestUtils {
      *
      */
     public static class SqlTestFunctions {
-        /** Sleep milliseconds. */
-        public static volatile long sleepMs;
-
-        /** Fail flag. */
-        public static volatile boolean fail;
-
         /**
          * Do sleep {@code sleepMs} milliseconds
          *
+         * @param sleepMs time to sleep
          * @return amount of milliseconds to sleep
          */
         @QuerySqlFunction
         @SuppressWarnings("BusyWait")
-        public static long sleep() {
+        public static long sleep(long sleepMs) {
             long end = U.currentTimeMillis() + sleepMs;
 
             long remainTime = sleepMs;
@@ -2614,31 +2609,14 @@ public final class GridTestUtils {
         }
 
         /**
-         * Delays execution for {@code duration} milliseconds.
-         *
-         * @param duration Duration.
-         * @return amount of milliseconds to delay.
-         */
-        @QuerySqlFunction
-        public static long delay(long duration) {
-            try {
-                Thread.sleep(duration);
-            }
-            catch (InterruptedException ignored) {
-                // No-op
-            }
-
-            return duration;
-        }
-
-        /**
          * Function do fail in case of {@code fail} is true, return 0 otherwise.
          *
+         * @param canFail fail flag
          * @return in case of {@code fail} is false return 0, fail otherwise.
          */
         @QuerySqlFunction
-        public static int can_fail() {
-            if (fail)
+        public static int can_fail(boolean canFail) {
+            if (canFail)
                 throw new IllegalArgumentException();
             else
                 return 0;
@@ -2647,13 +2625,15 @@ public final class GridTestUtils {
         /**
          * Function do sleep {@code sleepMs} milliseconds and do fail in case of {@code fail} is true, return 0 otherwise.
          *
+         * @param sleepMs time to sleep
+         * @param canFail fail flag
          * @return amount of milliseconds to sleep in case of {@code fail} is false, fail otherwise.
          */
         @QuerySqlFunction
-        public static long sleep_and_can_fail() {
-            long sleep = sleep();
+        public static long sleep_and_can_fail(long sleepMs, boolean canFail) {
+            long sleep = sleep(sleepMs);
 
-            can_fail();
+            can_fail(canFail);
 
             return sleep;
         }

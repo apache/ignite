@@ -90,7 +90,7 @@ public class JdbcThinDefaultTimeoutTest extends GridCommonAbstractTest {
             // Set infinite timeout explicitly.
             stmt.setQueryTimeout(0);
 
-            ResultSet rs = stmt.executeQuery("select _key, _val, delay(5) from Integer");
+            ResultSet rs = stmt.executeQuery("select _key, _val, sleep(5) from Integer");
 
             int cnt = 0;
             while (rs.next())
@@ -115,7 +115,7 @@ public class JdbcThinDefaultTimeoutTest extends GridCommonAbstractTest {
             Statement stmt = conn.createStatement();
 
             GridTestUtils.assertThrows(log, () -> {
-                ResultSet rs = stmt.executeQuery("select _key, _val, delay(5) from Integer");
+                ResultSet rs = stmt.executeQuery("select _key, _val, sleep(5) from Integer");
 
                 int cnt = 0;
                 while (rs.next())
