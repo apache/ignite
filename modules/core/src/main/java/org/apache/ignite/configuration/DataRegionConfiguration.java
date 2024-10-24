@@ -20,7 +20,6 @@ import java.io.Serializable;
 import org.apache.ignite.DataRegionMetrics;
 import org.apache.ignite.internal.mem.IgniteOutOfMemoryException;
 import org.apache.ignite.internal.util.typedef.internal.S;
-import org.apache.ignite.lang.IgniteExperimental;
 import org.apache.ignite.mem.MemoryAllocator;
 import org.apache.ignite.mxbean.MetricsMxBean;
 import org.jetbrains.annotations.Nullable;
@@ -157,7 +156,6 @@ public final class DataRegionConfiguration implements Serializable {
     @Nullable private MemoryAllocator memoryAllocator = null;
 
     /** Change Data Capture enabled flag. */
-    @IgniteExperimental
     private boolean cdcEnabled;
 
     /**
@@ -566,7 +564,6 @@ public final class DataRegionConfiguration implements Serializable {
      * @param cdcEnabled CDC enabled flag.
      * @return {@code this} for chaining.
      */
-    @IgniteExperimental
     public DataRegionConfiguration setCdcEnabled(boolean cdcEnabled) {
         this.cdcEnabled = cdcEnabled;
 
@@ -579,7 +576,6 @@ public final class DataRegionConfiguration implements Serializable {
      *
      * @return CDC enabled flag.
      */
-    @IgniteExperimental
     public boolean isCdcEnabled() {
         return cdcEnabled;
     }
