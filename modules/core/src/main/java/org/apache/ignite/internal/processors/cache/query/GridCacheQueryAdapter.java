@@ -156,25 +156,10 @@ public class GridCacheQueryAdapter<T> implements CacheQuery<T> {
         boolean forceLocal,
         Boolean dataPageScanEnabled
     ) {
-        assert cctx != null;
-        assert type != null;
-        assert part == null || part >= 0;
+        this(cctx, type, null, null, filter, part, false, keepBinary, dataPageScanEnabled, null);
 
-        this.cctx = cctx;
-        this.type = type;
-        this.filter = filter;
         this.transform = transform;
-        this.part = part;
-        this.keepBinary = keepBinary;
         this.forceLocal = forceLocal;
-        this.dataPageScanEnabled = dataPageScanEnabled;
-
-        log = cctx.logger(getClass());
-
-        this.incMeta = false;
-        this.clsName = null;
-        this.clause = null;
-        this.idxQryDesc = null;
     }
 
     /**
@@ -199,7 +184,8 @@ public class GridCacheQueryAdapter<T> implements CacheQuery<T> {
         @Nullable Integer part,
         boolean incMeta,
         boolean keepBinary,
-        Boolean dataPageScanEnabled
+        Boolean dataPageScanEnabled,
+        IndexQueryDesc idxQryDesc
     ) {
         assert cctx != null;
         assert type != null;
@@ -214,10 +200,9 @@ public class GridCacheQueryAdapter<T> implements CacheQuery<T> {
         this.incMeta = incMeta;
         this.keepBinary = keepBinary;
         this.dataPageScanEnabled = dataPageScanEnabled;
+        this.idxQryDesc = idxQryDesc;
 
         log = cctx.logger(getClass());
-
-        this.idxQryDesc = null;
     }
 
     /**
@@ -299,17 +284,7 @@ public class GridCacheQueryAdapter<T> implements CacheQuery<T> {
         @Nullable String clsName,
         @Nullable IgniteBiPredicate<Object, Object> filter
     ) {
-        this.cctx = cctx;
-        this.type = type;
-        this.clsName = clsName;
-        this.idxQryDesc = idxQryDesc;
-        this.filter = filter;
-        this.part = part;
-
-        log = cctx.logger(getClass());
-
-        clause = null;
-        incMeta = false;
+        this(cctx, type, clsName, null, filter, part, false, false, null, idxQryDesc);
     }
 
     /**
