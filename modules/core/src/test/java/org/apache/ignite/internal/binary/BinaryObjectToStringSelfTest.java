@@ -17,10 +17,12 @@
 
 package org.apache.ignite.internal.binary;
 
+import java.math.BigDecimal;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
+import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.binary.BinaryObject;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
@@ -70,6 +72,36 @@ public class BinaryObjectToStringSelfTest extends GridCommonAbstractTest {
 
         // Check that toString() doesn't fail with StackOverflowError or other exceptions.
         bo.toString();
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    @Test
+    public void testToStringForLargeArrays() throws Exception {
+        checkArray("byte", new byte[101]);
+        checkArray("short", new short[101]);
+        checkArray("int", new int[101]);
+        checkArray("float", new float[101]);
+        checkArray("double", new double[101]);
+        checkArray("char", new char[101]);
+        checkArray("boolean", new boolean[101]);
+        checkArray("BigDecimal", new BigDecimal[101]);
+    }
+
+    /**
+     * Check toString for binary object containing array with size more than
+     * {@link IgniteSystemProperties#IGNITE_TO_STRING_COLLECTION_LIMIT }
+     *
+     * @param type Type name.
+     * @param val Array instance.
+    */
+    private void checkArray(String type, Object val) {
+        BinaryObject bo = grid().binary().builder(type)
+                .setField("field", val)
+                .build();
+
+        assertTrue(bo.toString().contains("... and 1 more"));
     }
 
     /**
