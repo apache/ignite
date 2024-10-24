@@ -4366,7 +4366,7 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
     /**
      * @return Application attributes.
      */
-    private Map<String ,String> applicationAttributes(GridIoMessage msg) {
+    private Map<String, String> applicationAttributes(GridIoMessage msg) {
         if (msg instanceof GridIoSecurityAwareMessage)
             return ((GridIoSecurityAwareMessage)msg).appAttrs();
 

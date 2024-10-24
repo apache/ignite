@@ -17,10 +17,9 @@
 
 package org.apache.ignite.internal.cache;
 
+import java.util.Map;
 import org.apache.ignite.IgniteCache;
 import org.jetbrains.annotations.Nullable;
-
-import java.util.Map;
 
 /** Hold application attribute set by user with {@link IgniteCache#withApplicationAttributes}. */
 public class ApplicationContextInternal implements AutoCloseable {
