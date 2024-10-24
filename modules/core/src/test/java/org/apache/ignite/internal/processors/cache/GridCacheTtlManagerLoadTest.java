@@ -43,7 +43,7 @@ public class GridCacheTtlManagerLoadTest extends GridCacheTtlManagerSelfTest {
         cacheMode = REPLICATED;
 
         final IgniteKernal g = (IgniteKernal)startGrid(0);
-        
+
         g.cluster().state(ClusterState.ACTIVE);
 
         try {
