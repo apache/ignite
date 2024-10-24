@@ -2595,7 +2595,8 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
      * @return Iterator over partition.
      * @throws IgniteCheckedException If and error occurs.
      */
-    public GridCloseableIterator<CacheDataRow> partitionRowIterator(GridKernalContext ctx,
+    public GridCloseableIterator<CacheDataRow> partitionRowIterator(
+        GridKernalContext ctx,
         String grpName,
         int partId,
         FilePageStore pageStore

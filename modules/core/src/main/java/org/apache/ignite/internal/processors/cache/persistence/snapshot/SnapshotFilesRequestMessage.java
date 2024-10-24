@@ -66,24 +66,24 @@ public class SnapshotFilesRequestMessage extends AbstractSnapshotMessage {
     }
 
     /**
-     * @param reqId Unique message id.
-     * @param requestId Snapshot operation request ID.
+     * @param msgId Unique message id.
+     * @param reqId Snapshot operation request ID.
      * @param snpName Snapshot name to request.
      * @param snpPath Snapshot directory path.
      * @param parts Map of cache group ids and corresponding set of its partition ids to be snapshot.
      */
     public SnapshotFilesRequestMessage(
-        String reqId,
-        UUID requestId,
+        String msgId,
+        UUID reqId,
         String snpName,
         @Nullable String snpPath,
         Map<Integer, Set<Integer>> parts
     ) {
-        super(reqId);
+        super(msgId);
 
         assert parts != null && !parts.isEmpty();
 
-        this.reqId = requestId;
+        this.reqId = reqId;
         this.snpName = snpName;
         this.snpPath = snpPath;
         this.parts = new HashMap<>();
