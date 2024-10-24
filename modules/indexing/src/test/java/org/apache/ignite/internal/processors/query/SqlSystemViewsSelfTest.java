@@ -508,24 +508,15 @@ public class SqlSystemViewsSelfTest extends AbstractIndexingCommonTest {
 
         cache.put(100, "200");
 
-        String sql = "SELECT \"STRING\"._KEY, \"STRING\"._VAL FROM \"STRING\" WHERE _key=100 AND sleep_and_can_fail()>0";
+        String sql = "SELECT \"STRING\"._KEY, \"STRING\"._VAL FROM \"STRING\" WHERE _key=100 AND sleep_and_can_fail(?, ?)>0";
 
-        GridTestUtils.SqlTestFunctions.sleepMs = MIN_SLEEP;
-        GridTestUtils.SqlTestFunctions.fail = false;
+        cache.query(new SqlFieldsQuery(sql).setSchema(SCHEMA_NAME).setArgs(MIN_SLEEP, false)).getAll();
 
-        cache.query(new SqlFieldsQuery(sql).setSchema(SCHEMA_NAME)).getAll();
-
-        GridTestUtils.SqlTestFunctions.sleepMs = MAX_SLEEP;
-        GridTestUtils.SqlTestFunctions.fail = false;
-
-        cache.query(new SqlFieldsQuery(sql).setSchema(SCHEMA_NAME)).getAll();
-
-        GridTestUtils.SqlTestFunctions.sleepMs = MIN_SLEEP;
-        GridTestUtils.SqlTestFunctions.fail = true;
+        cache.query(new SqlFieldsQuery(sql).setSchema(SCHEMA_NAME).setArgs(MAX_SLEEP, false)).getAll();
 
         GridTestUtils.assertThrows(log,
             () ->
-                cache.query(new SqlFieldsQuery(sql).setSchema(SCHEMA_NAME)).getAll(),
+                cache.query(new SqlFieldsQuery(sql).setSchema(SCHEMA_NAME).setArgs(MIN_SLEEP, true)).getAll(),
             CacheException.class,
             "Exception calling user-defined function");
 
