@@ -18,8 +18,6 @@
 package org.apache.ignite.internal.processors.query.calcite.prepare;
 
 import java.math.BigDecimal;
-import java.util.AbstractList;
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.EnumSet;
@@ -80,7 +78,6 @@ import org.apache.ignite.internal.processors.query.calcite.util.IgniteResource;
 import org.apache.ignite.internal.util.typedef.F;
 import org.jetbrains.annotations.Nullable;
 
-import static org.apache.calcite.sql.type.SqlTypeName.INTEGER;
 import static org.apache.calcite.util.Static.RESOURCE;
 
 /** Validator. */
@@ -770,49 +767,15 @@ public class IgniteSqlValidator extends SqlValidatorImpl {
             super.inferUnknownTypes(inferredType, scope, node);
     }
 
-    /**
-     * Tries to set actual type of dynamic parameter if {@code node} is a {@link SqlDynamicParam} and if its index
-     * is actual to {@link #parameters}.
-     *
-     * @return {@code True} if a new type was set. {@code False} otherwise.
-     */
-    private boolean inferDynamicParamType(RelDataType inferredType, SqlNode node) {
-        if (parameters == null || !(node instanceof SqlDynamicParam) || ((SqlDynamicParam)node).getIndex() >= parameters.length)
-            return false;
+    /** */
+    private void inferDynamicParamType(RelDataType inferredType, SqlDynamicParam node) {
+        DynamicParameterHolder pHolder = deriveDynamicParamType(node);
 
-        Object val = parameters[((SqlDynamicParam)node).getIndex()];
+        // Exit if the type is determined or is unknown.
+        if (inferredType.equals(unknownType) || SqlTypeUtil.equalSansNullability(typeFactory, inferredType, pHolder.type))
+            return;
 
-        if (val == null) {
-            if (inferredType.equals(unknownType)) {
-                setValidatedNodeType(node, typeFactory().createSqlType(SqlTypeName.NULL));
-
-                return true;
-            }
-
-            return false;
-        }
-
-        RelDataType valType = typeFactory().toSql(typeFactory().createType(val.getClass()));
-
-        if (SqlTypeUtil.equalSansNullability(valType, inferredType))
-            return false;
-
-        assert !unknownType.equals(valType);
-
-        if (valType.getFamily().equals(inferredType.getFamily())) {
-            RelDataType leastRestrictive = typeFactory().leastRestrictive(F.asList(inferredType, valType));
-
-            assert leastRestrictive != null;
-
-            if (inferredType == leastRestrictive)
-                return false;
-        }
-        else if (!unknownType.equals(inferredType) && SqlTypeUtil.canCastFrom(valType, inferredType, true))
-            return false;
-
-        setValidatedNodeType(node, valType);
-
-        return true;
+        dynamicParameterType(pHolder, node, typeFactory.createTypeWithNullability(inferredType, true));
     }
 
     /** {@inheritDoc} */
