@@ -1204,7 +1204,16 @@ public interface IgniteCache<K, V> extends javax.cache.Cache<K, V>, IgniteAsyncS
      */
     public IgniteFuture<Void> removeAllAsync();
 
-    /** {@inheritDoc} */
+    /**
+     * Clears all of the mappings from this cache.
+     * Entry is cleared only if it is not currently locked, and is not participating in a transaction.
+     * <p>
+     * This operation is not transactional. It calls broadcast closure that
+     * deletes all primary keys from remote nodes.
+     * <p>
+     *
+     * @throws IgniteException if is invoked within a transaction.
+     */
     @IgniteAsyncSupported
     @Override public void clear();
 
