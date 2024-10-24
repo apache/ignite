@@ -18,6 +18,8 @@
 package org.apache.ignite.internal.processors.query.calcite.prepare;
 
 import java.math.BigDecimal;
+import java.util.AbstractList;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.EnumSet;
@@ -27,7 +29,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
-import java.util.UUID;
 import org.apache.calcite.plan.RelOptTable;
 import org.apache.calcite.prepare.CalciteCatalogReader;
 import org.apache.calcite.prepare.Prepare;
@@ -60,6 +61,7 @@ import org.apache.calcite.sql.type.SqlOperandTypeInference;
 import org.apache.calcite.sql.type.SqlTypeFamily;
 import org.apache.calcite.sql.type.SqlTypeName;
 import org.apache.calcite.sql.type.SqlTypeUtil;
+import org.apache.calcite.sql.util.SqlShuttle;
 import org.apache.calcite.sql.validate.SelectScope;
 import org.apache.calcite.sql.validate.SqlQualified;
 import org.apache.calcite.sql.validate.SqlValidator;
@@ -201,18 +203,6 @@ public class IgniteSqlValidator extends SqlValidatorImpl {
         }
     }
 
-    /** */
-    private RelDataType deriveTypeFromValue(@Nullable Object val) {
-        IgniteTypeFactory tf = typeFactory();
-
-        if (val == null)
-            return tf.createSqlType(SqlTypeName.NULL);
-        else if (val instanceof UUID)
-            return tf.createCustomType(UUID.class);
-        else
-            return tf.toSql(tf.createType(val.getClass()));
-    }
-
     /** {@inheritDoc} */
     @Override public void validateInsert(SqlInsert insert) {
         validateTableModify(insert.getTargetTable());
@@ -351,31 +341,28 @@ public class IgniteSqlValidator extends SqlValidatorImpl {
         }
         else if (n instanceof SqlDynamicParam) {
             SqlDynamicParam dynamicParam = (SqlDynamicParam)n;
-            RelDataType intType = typeFactory.createSqlType(INTEGER);
-
-            if (!unspecified(dynamicParam)) {
-                Object param = dynamicParameterValue(dynamicParam);
-
-                if (param instanceof Integer) {
-                    if ((Integer)param < 0)
-                        throw newValidationError(n, IgniteResource.INSTANCE.correctIntegerLimit(nodeName));
-                }
-                else {
-                    String actualType = deriveDynamicParamType(dynamicParam).toString();
-
-                    String expectedType = intType.toString();
-
-                    String errMsg = String.format("Incorrect type of a dynamic parameter. Expected '%s' but got '%s'",
-                        expectedType, actualType);
-
-                    throw newValidationError(n, IgniteResource.INSTANCE.dynamicParameterValidation(errMsg));
-                }
-            }
 
             DynamicParameterHolder pHolder = dynamicParamater(dynamicParam.getIndex());
 
-            // Dynamic parameters are nullable.
-            dynamicParameterType(pHolder, dynamicParam, typeFactory.createTypeWithNullability(intType, true));
+            if (pHolder.hasValue && pHolder.val instanceof Integer && (Integer)pHolder.val < 0)
+                throw newValidationError(n, IgniteResource.INSTANCE.correctIntegerLimit(nodeName));
+
+//                else {
+//                    String actualType = deriveDynamicParamType(dynamicParam).toString();
+//
+//                    String expectedType = intType.toString();
+//
+//                    String errMsg = String.format("Incorrect type of a dynamic parameter. Expected '%s' but got '%s'",
+//                        expectedType, actualType);
+//
+//                    throw newValidationError(n, IgniteResource.INSTANCE.dynamicParameterValidation(errMsg));
+//                }
+//            }
+
+//            DynamicParameterHolder pHolder = dynamicParamater(dynamicParam.getIndex());
+//
+//            // Dynamic parameters are nullable.
+//            dynamicParameterType(pHolder, dynamicParam, typeFactory.createTypeWithNullability(intType, true));
         }
     }
 
@@ -390,6 +377,39 @@ public class IgniteSqlValidator extends SqlValidatorImpl {
             throw new IllegalArgumentException(String.format("Value of dynamic parameter#%d is not specified", dynamicParam.getIndex()));
 
         return valHolder.val;
+    }
+
+    /** {@inheritDoc} */
+    @Override public RelDataType getParameterRowType(SqlNode sqlQry) {
+        // We do not use calcite' version since it is contains a bug,
+        // alreadyVisited visited uses object identity, but rewrites of NULLIF, COALESCE
+        // into dynamic parameters may place the same parameter into multiple positions
+        // in SQL tree.
+        List<RelDataType> types = new ArrayList<>();
+
+        Set<Integer> alreadyVisited = new HashSet<>(F.isEmpty(dynParams) ? 1 : dynParams.size());
+
+        sqlQry.accept(
+            new SqlShuttle() {
+                @Override public SqlNode visit(SqlDynamicParam param) {
+                    if (alreadyVisited.add(param.getIndex()))
+                        types.add(getValidatedNodeType(param));
+
+                    return param;
+                }
+            });
+
+        return typeFactory.createStructType(
+            types,
+            new AbstractList<>() {
+                @Override public String get(int idx) {
+                    return "?" + idx;
+                }
+
+                @Override public int size() {
+                    return types.size();
+                }
+            });
     }
 
     /** {@inheritDoc} */
@@ -410,8 +430,8 @@ public class IgniteSqlValidator extends SqlValidatorImpl {
 
     /** {@inheritDoc} */
     @Override public RelDataType deriveType(SqlValidatorScope scope, SqlNode expr) {
-        if (expr instanceof SqlDynamicParam)
-            return deriveDynamicParamType((SqlDynamicParam)expr).type;
+//        if (expr instanceof SqlDynamicParam)
+//            return deriveDynamicParamType((SqlDynamicParam)expr).type;
 
         return super.deriveType(scope, expr);
     }
@@ -428,16 +448,22 @@ public class IgniteSqlValidator extends SqlValidatorImpl {
         DynamicParameterHolder pHolder = dynamicParamater(node.getIndex());
 
         if (pHolder.type != null && pHolder.hasValue) {
-            assert dynParamNodes.contains(node);
-            assert node.equals(pHolder.node);
+            // TODO: IGNITE-23251 - Uncomment with this ticket. Passed parameters number should be validated.
+            //assert dynParamNodes.contains(node);
+            //assert node.equals(pHolder.node);
 
             setValidatedNodeType(node, pHolder.type);
         }
         else {
             dynParamNodes.add(node);
 
-            if (pHolder.hasValue)
-                dynamicParameterType(pHolder, node, typeFactory.createTypeWithNullability(deriveTypeFromValue(pHolder.val), true));
+            if (pHolder.hasValue) {
+                RelDataType type = pHolder.val == null
+                    ? typeFactory().createSqlType(SqlTypeName.NULL)
+                    : typeFactory().toSql(typeFactory().createType(pHolder.val.getClass()));
+
+                dynamicParameterType(pHolder, node, typeFactory.createTypeWithNullability(type, true));
+            }
             else {
                 RelDataType validatedNodeType = getValidatedNodeTypeIfKnown(node);
 
@@ -448,14 +474,9 @@ public class IgniteSqlValidator extends SqlValidatorImpl {
         return pHolder;
     }
 
-    /** returns {@code True} if {@code param} has no value set. */
-    public boolean unspecified(SqlDynamicParam param) {
-        return !dynamicParamater(param.getIndex()).hasValue;
-    }
-
     /** Binds {@code node} and {@code type} of a dynamic parameter to {@code pHolder}. */
     private void dynamicParameterType(DynamicParameterHolder pHolder, SqlDynamicParam node, RelDataType type) {
-        assert pHolder.node == null || node.equals(pHolder.node)
+        assert pHolder.node == null || node.getIndex() == pHolder.node.getIndex()
             : "Node is already set for a dynamic parameter #" + pHolder.node.getIndex();
 
         pHolder.type = type;
@@ -750,34 +771,15 @@ public class IgniteSqlValidator extends SqlValidatorImpl {
             super.inferUnknownTypes(inferredType, scope, node);
     }
 
-    /**
-     * Tries to set actual type of dynamic parameter if {@code node} is a {@link SqlDynamicParam} and if its index
-     * is actual to {@link #dynParams}.
-     */
+    /** */
     private void inferDynamicParamType(RelDataType inferredType, SqlDynamicParam node) {
         DynamicParameterHolder pHolder = deriveDynamicParamType(node);
 
-        RelDataType valType = pHolder.type;
-
-        if (SqlTypeUtil.equalSansNullability(valType, inferredType))
+        // Exit if the type is determined or is unknown.
+        if (inferredType.equals(unknownType) || SqlTypeUtil.equalSansNullability(typeFactory, inferredType, pHolder.type))
             return;
 
-        if (valType.getFamily().equals(inferredType.getFamily())) {
-            RelDataType leastRestrictive = typeFactory().leastRestrictive(F.asList(inferredType, valType));
-
-            assert leastRestrictive != null;
-
-            if (inferredType == leastRestrictive)
-                return;
-
-            valType = leastRestrictive;
-        }
-        else if (!unknownType.equals(inferredType) && !unknownType.equals(valType) && SqlTypeUtil.canCastFrom(valType, inferredType, true))
-            return;
-        else
-            valType = inferredType;
-
-        dynamicParameterType(pHolder, node, valType);
+        dynamicParameterType(pHolder, node, typeFactory.createTypeWithNullability(inferredType, true));
     }
 
     /** {@inheritDoc} */
