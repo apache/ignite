@@ -35,6 +35,7 @@ import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.processors.query.h2.H2Utils;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2Cursor;
 import org.apache.ignite.internal.processors.query.h2.opt.H2PlainRowFactory;
+import org.apache.ignite.internal.util.lang.IgniteIntObjectTuple;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.h2.index.Cursor;
@@ -330,7 +331,7 @@ public class SortedReducer extends AbstractReducer {
      */
     private final class RowStream implements Pollable<ReduceResultPage> {
         /** */
-        private Iterator<Value[]> iter = emptyIterator();
+        private IgniteIntObjectTuple<Iterator<Value[]>> iter = F.intt(0, emptyIterator());
 
         /** */
         private Row cur;
@@ -400,10 +401,10 @@ public class SortedReducer extends AbstractReducer {
 
             iter = pollNextIterator(this, iter);
 
-            if (!iter.hasNext())
+            if (!iter.get2().hasNext())
                 return false;
 
-            cur = H2PlainRowFactory.create(colCnt, iter.next());
+            cur = H2PlainRowFactory.create(iter.get1(), iter.get2().next());
 
             return true;
         }
