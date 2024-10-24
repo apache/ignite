@@ -44,7 +44,7 @@ public class GridCacheTtlManagerLoadTest extends GridCacheTtlManagerSelfTest {
 
         final IgniteKernal g = (IgniteKernal)startGrid(0);
 
-        if(pds)
+        if (pds)
             g.cluster().state(ClusterState.ACTIVE);
 
         try {
