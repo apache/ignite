@@ -160,7 +160,7 @@ namespace Apache.Ignite.Core.Impl.Compute
         /// <returns>New <see cref="ComputeImpl"/> instance associated with a specified executor.</returns>
         public ComputeImpl WithExecutor(string executorName)
         {
-            var target = DoOutOpObject(OpWithExecutor, w => w.WriteString(executorName));
+            var target = DoOutOpObject(OpWithExecutor, w => w.WriteString(executorName), _keepBinary.Value);
 
             return new ComputeImpl(target, _prj, _keepBinary.Value);
         }
@@ -181,7 +181,7 @@ namespace Apache.Ignite.Core.Impl.Compute
 
             try
             {
-                return DoOutInOp<TReduceRes>(OpExec, writer => WriteTask(writer, taskName, taskArg, nodes));
+                return DoOutInOp<TReduceRes>(OpExec, writer => WriteTask(writer, taskName, taskArg, nodes), _keepBinary.Value);
             }
             finally
             {
@@ -207,7 +207,7 @@ namespace Apache.Ignite.Core.Impl.Compute
 
             try
             {
-                return DoOutOpObjectAsync<TReduceRes>(OpExecAsync, w => WriteTask(w, taskName, taskArg, nodes));
+                return DoOutOpObjectAsync<TReduceRes>(OpExecAsync, w => WriteTask(w, taskName, taskArg, nodes), _keepBinary.Value);
             }
             finally
             {
@@ -238,7 +238,7 @@ namespace Apache.Ignite.Core.Impl.Compute
                 s.WriteLong(_prj.TopologyVersion);
                 s.WriteString(GetComputeExecutableName(task));
                 s.WriteBoolean(holder.TaskSessionFullSupport);
-            });
+            }, _keepBinary.Value);
 
             var future = holder.Future;
 
@@ -566,7 +566,7 @@ namespace Apache.Ignite.Core.Impl.Compute
                     w.WriteWithPeerDeployment(func);
                     w.WriteLong(handle);
                     w.WriteString(GetComputeExecutableName(func));
-                });
+                }, _keepBinary.Value);
 
                 fut.Task.ContWith(_ => handleRegistry.Release(handle), TaskContinuationOptions.ExecuteSynchronously);
 
@@ -657,7 +657,7 @@ namespace Apache.Ignite.Core.Impl.Compute
 
                         if (writeAction != null)
                             writeAction(writer);
-                    });
+                    }, _keepBinary.Value);
 
                     holder.Future.SetTarget(new Listenable(futTarget));
                 }
@@ -708,7 +708,7 @@ namespace Apache.Ignite.Core.Impl.Compute
 
                 throw;
             }
-            
+
             writer.WriteString(job.GetName());
 
             return jobHandle;

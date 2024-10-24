@@ -53,12 +53,17 @@ public class SnapshotCreateCommandArg extends IgniteDataTransferObject {
         "Full snapshot must be accessible via --dest and snapshot_name")
     private boolean incremental;
 
+    /** Backup only primary partitions. */
+    @Argument(optional = true, description = "Only primary copies of partitions will be included in full snapshot")
+    private boolean onlyPrimary;
+
     /** {@inheritDoc} */
     @Override protected void writeExternalData(ObjectOutput out) throws IOException {
         U.writeString(out, snapshotName);
         U.writeString(out, dest);
         out.writeBoolean(sync);
         out.writeBoolean(incremental);
+        out.writeBoolean(onlyPrimary);
     }
 
     /** {@inheritDoc} */
@@ -67,6 +72,17 @@ public class SnapshotCreateCommandArg extends IgniteDataTransferObject {
         dest = U.readString(in);
         sync = in.readBoolean();
         incremental = in.readBoolean();
+        onlyPrimary = in.readBoolean();
+    }
+
+    /** */
+    public boolean onlyPrimary() {
+        return onlyPrimary;
+    }
+
+    /** */
+    public void onlyPrimary(boolean onlyPrimary) {
+        this.onlyPrimary = onlyPrimary;
     }
 
     /** */
