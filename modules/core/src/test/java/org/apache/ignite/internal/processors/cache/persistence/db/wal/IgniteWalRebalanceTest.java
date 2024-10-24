@@ -313,7 +313,7 @@ public class IgniteWalRebalanceTest extends GridCommonAbstractTest {
             IgniteCache<Object, Object> cache = crd.cache(CACHE_NAME);
 
             for (int k = 0; k < preloadEntryCnt; k++)
-                cache.put(k, new IndexedObject(k - 1));
+                cache.put(k, new IndexedObject(k));
         }
 
         forceCheckpoint();
@@ -491,7 +491,7 @@ public class IgniteWalRebalanceTest extends GridCommonAbstractTest {
             IgniteCache<Object, Object> cache = crd.cache(CACHE_NAME);
 
             for (int k = 0; k < preloadEntryCnt; k++)
-                cache.put(k, new IndexedObject(k - 1));
+                cache.put(k, new IndexedObject(k));
         }
 
         forceCheckpoint();
