@@ -35,6 +35,7 @@ import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.processors.query.h2.twostep.messages.GridQueryNextPageResponse;
 import org.apache.ignite.internal.processors.tracing.MTC;
 import org.apache.ignite.internal.processors.tracing.MTC.TraceSurroundings;
+import org.apache.ignite.internal.util.lang.IgniteIntObjectTuple;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.h2.index.Cursor;
@@ -319,20 +320,23 @@ public abstract class AbstractReducer implements Reducer {
      * @param iter Current iterator.
      * @return The same or new iterator.
      */
-    protected final Iterator<Value[]> pollNextIterator(Pollable<ReduceResultPage> queue, Iterator<Value[]> iter) {
-        if (!iter.hasNext()) {
+    protected final IgniteIntObjectTuple<Iterator<Value[]>> pollNextIterator(
+        Pollable<ReduceResultPage> queue,
+        IgniteIntObjectTuple<Iterator<Value[]>> iter
+    ) {
+        if (!iter.get2().hasNext()) {
             try (TraceSurroundings ignored = MTC.support(ctx.tracing().create(SQL_PAGE_FETCH, MTC.span()))) {
                 ReduceResultPage page = takeNextPage(queue);
 
                 if (!page.isLast())
                     page.fetchNextPage(); // Failed will throw an exception here.
 
-                iter = page.rows();
+                iter = F.intt(page.columnCount(), page.rows());
 
                 MTC.span().addTag(SQL_PAGE_ROWS, () -> Integer.toString(page.rowsInPage()));
 
                 // The received iterator must be empty in the dummy last page or on failure.
-                assert iter.hasNext() || page.isDummyLast() || page.isFail();
+                assert iter.get2().hasNext() || page.isDummyLast() || page.isFail();
             }
         }
 

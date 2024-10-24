@@ -28,6 +28,8 @@ import java.util.concurrent.atomic.AtomicInteger;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2Cursor;
+import org.apache.ignite.internal.util.lang.IgniteIntObjectTuple;
+import org.apache.ignite.internal.util.typedef.F;
 import org.h2.index.Cursor;
 import org.h2.result.Row;
 import org.h2.result.SearchRow;
@@ -45,7 +47,7 @@ public abstract class UnsortedBaseReducer extends AbstractReducer {
     protected final PollableQueue<ReduceResultPage> queue = new PollableQueue<>();
 
     /** */
-    protected Iterator<Value[]> iter = Collections.emptyIterator();
+    protected IgniteIntObjectTuple<Iterator<Value[]>> iter = F.intt(0, Collections.emptyIterator());
 
     /**
      * Constructor.
