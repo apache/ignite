@@ -857,7 +857,7 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
 
             ScanQueryIterator iter = new ScanQueryIterator(it, qry, topVer, locPart,
                 intFilter,
-                SecurityUtils.sandboxedProxy(cctx.kernalContext(), IgniteClosure.class, injectResources(transformer)),
+                prepareTransformer(transformer),
                 locNode, locNode ? locIters : null, cctx, log);
 
             if (locNode) {
@@ -874,6 +874,11 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
 
             throw e;
         }
+    }
+
+    /** */
+    private @Nullable IgniteClosure<?, ?> prepareTransformer(IgniteClosure<?, ?> transformer) throws IgniteCheckedException {
+        return SecurityUtils.sandboxedProxy(cctx.kernalContext(), IgniteClosure.class, injectResources(transformer));
     }
 
     /** */
