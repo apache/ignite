@@ -795,7 +795,7 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
     private GridCloseableIterator scanIterator(final GridCacheQueryAdapter<?> qry, IgniteClosure transformer,
         boolean locNode)
         throws IgniteCheckedException {
-        final InternalScanFilter<K, V> intFilter = toInternalFilter(qry.scanFilter());
+        final InternalScanFilter<K, V> intFilter = internalFilter(qry.scanFilter());
 
         try {
             Integer part = qry.partition();
@@ -882,7 +882,7 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
     }
 
     /** */
-    private @Nullable InternalScanFilter<K, V> toInternalFilter(IgniteBiPredicate<K, V> keyValFilter) throws IgniteCheckedException {
+    private @Nullable InternalScanFilter<K, V> internalFilter(IgniteBiPredicate<K, V> keyValFilter) throws IgniteCheckedException {
         if (keyValFilter == null)
             return null;
 
