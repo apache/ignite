@@ -762,8 +762,6 @@ public class IgniteSqlValidator extends SqlValidatorImpl {
         if (SqlTypeUtil.equalSansNullability(valType, inferredType))
             return;
 
-        assert !unknownType.equals(valType) : "Failed to guess type of a dynamic parameter.";
-
         if (valType.getFamily().equals(inferredType.getFamily())) {
             RelDataType leastRestrictive = typeFactory().leastRestrictive(F.asList(inferredType, valType));
 
@@ -771,9 +769,13 @@ public class IgniteSqlValidator extends SqlValidatorImpl {
 
             if (inferredType == leastRestrictive)
                 return;
+
+            valType = leastRestrictive;
         }
-        else if (!unknownType.equals(inferredType) && SqlTypeUtil.canCastFrom(valType, inferredType, true))
+        else if (!unknownType.equals(inferredType) && !unknownType.equals(valType) && SqlTypeUtil.canCastFrom(valType, inferredType, true))
             return;
+        else
+            valType = inferredType;
 
         dynamicParameterType(pHolder, node, valType);
     }
