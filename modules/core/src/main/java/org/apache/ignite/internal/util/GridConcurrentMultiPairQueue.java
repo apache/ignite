@@ -147,6 +147,13 @@ public class GridConcurrentMultiPairQueue<K, V> {
     }
 
     /**
+     * Rewind the queue to start iterating from the beginning.
+     */
+    public void rewind() {
+        pos.set(0);
+    }
+
+    /**
      * @return {@code true} if empty.
      */
     public boolean isEmpty() {
