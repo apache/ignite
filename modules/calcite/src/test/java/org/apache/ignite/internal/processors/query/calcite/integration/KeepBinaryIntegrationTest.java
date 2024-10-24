@@ -45,6 +45,11 @@ public class KeepBinaryIntegrationTest extends AbstractBasicIntegrationTransacti
         return cfg;
     }
 
+    /** {@inheritDoc} */
+    @Override protected boolean destroyCachesAfterTest() {
+        return false;
+    }
+
     /** */
     @Test
     public void testKeepBinary() {
@@ -126,6 +131,20 @@ public class KeepBinaryIntegrationTest extends AbstractBasicIntegrationTransacti
                     else
                         assertEquals(p0, res.get(0).get(0));
                 }
+
+                SqlFieldsQuery qry = new SqlFieldsQuery("SELECT ?").setArgs(F.asList(p0));
+
+                List<List<?>> res = keepBinary ? cache.withKeepBinary().query(qry).getAll() : cache.query(qry).getAll();
+
+                assertEquals(1, res.size());
+
+                if (keepBinary) {
+                    assertTrue(res.get(0).get(0) instanceof List);
+                    assertTrue(((List<?>)res.get(0).get(0)).get(0) instanceof BinaryObject);
+                }
+                else
+                    assertEquals(F.asList(p0), res.get(0).get(0));
+
             }
 
             return null;

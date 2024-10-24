@@ -74,6 +74,11 @@ public class AbstractBasicIntegrationTest extends GridCommonAbstractTest {
         client = startClientGrid("client");
     }
 
+    /** */
+    protected boolean destroyCachesAfterTest() {
+        return true;
+    }
+
     /** {@inheritDoc} */
     @Override protected void afterTest() throws Exception {
         // Wait for pending queries before destroying caches. If some error occurs during query execution, client code
@@ -92,8 +97,10 @@ public class AbstractBasicIntegrationTest extends GridCommonAbstractTest {
         }, INBOX_INITIALIZATION_TIMEOUT * 2);
 
         for (Ignite ign : G.allGrids()) {
-            for (String cacheName : ign.cacheNames())
-                ign.destroyCache(cacheName);
+            if (destroyCachesAfterTest()) {
+                for (String cacheName : ign.cacheNames())
+                    ign.destroyCache(cacheName);
+            }
 
             CalciteQueryProcessor qryProc = queryProcessor(ign);
 
