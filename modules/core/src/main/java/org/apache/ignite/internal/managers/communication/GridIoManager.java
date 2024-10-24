@@ -85,6 +85,7 @@ import org.apache.ignite.internal.IgniteFeatures;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.IgniteKernal;
 import org.apache.ignite.internal.NodeStoppingException;
+import org.apache.ignite.internal.cache.ApplicationContextInternal;
 import org.apache.ignite.internal.cluster.ClusterTopologyCheckedException;
 import org.apache.ignite.internal.direct.DirectMessageReader;
 import org.apache.ignite.internal.direct.DirectMessageWriter;
@@ -1373,7 +1374,7 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
 
                     assert obj != null;
 
-                    invokeListener(msg.policy(), lsnr, nodeId, obj, secSubjId(msg));
+                    invokeListener(msg.policy(), lsnr, nodeId, obj, secSubjId(msg), applicationAttributes(msg));
                 }
                 finally {
                     threadProcessingMessage(false, null);
@@ -1511,7 +1512,7 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
 
         assert obj != null;
 
-        invokeListener(msg.policy(), lsnr, nodeId, obj, secSubjId(msg));
+        invokeListener(msg.policy(), lsnr, nodeId, obj, secSubjId(msg), applicationAttributes(msg));
     }
 
     /**
@@ -1876,8 +1877,16 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
      * @param nodeId Node ID.
      * @param msg Message.
      * @param secSubjId Security subject that will be used to open a security session.
+     * @param appAttrs Application attributes.
      */
-    private void invokeListener(Byte plc, GridMessageListener lsnr, UUID nodeId, Object msg, UUID secSubjId) {
+    private void invokeListener(
+        Byte plc,
+        GridMessageListener lsnr,
+        UUID nodeId,
+        Object msg,
+        UUID secSubjId,
+        Map<String, String> appAttrs
+    ) {
         MTC.span().addLog(() -> "Invoke listener");
 
         Byte oldPlc = CUR_PLC.get();
@@ -1889,7 +1898,10 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
 
         UUID newSecSubjId = secSubjId != null ? secSubjId : nodeId;
 
-        try (OperationSecurityContext s = ctx.security().withContext(newSecSubjId)) {
+        try (
+            OperationSecurityContext ignored = ctx.security().withContext(newSecSubjId);
+            ApplicationContextInternal ignored0 = ApplicationContextInternal.withApplicationAttributes(appAttrs)
+        ) {
             lsnr.onMessage(nodeId, msg, plc);
         }
         finally {
@@ -2123,13 +2135,16 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
         long timeout,
         boolean skipOnTimeout
     ) {
-        if (ctx.security().enabled()) {
+        Map<String, String> appAttrs = ApplicationContextInternal.attributes();
+        boolean secEnabled = ctx.security().enabled();
+
+        if (secEnabled || appAttrs != null) {
             UUID secSubjId = null;
 
-            if (!ctx.security().isDefaultContext())
+            if (secEnabled && !ctx.security().isDefaultContext())
                 secSubjId = ctx.security().securityContext().subject().id();
 
-            return new GridIoSecurityAwareMessage(secSubjId, plc, topic, topicOrd, msg, ordered, timeout, skipOnTimeout);
+            return new GridIoSecurityAwareMessage(secSubjId, appAttrs, plc, topic, topicOrd, msg, ordered, timeout, skipOnTimeout);
         }
 
         return new GridIoMessage(plc, topic, topicOrd, msg, ordered, timeout, skipOnTimeout);
@@ -3906,7 +3921,7 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
 
                         MTC.span().addTag(SpanTags.MESSAGE, () -> traceName(fmc.message));
 
-                        invokeListener(plc, lsnr, nodeId, mc.message.message(), secSubjId(mc.message));
+                        invokeListener(plc, lsnr, nodeId, mc.message.message(), secSubjId(mc.message), applicationAttributes(mc.message));
                     }
                     finally {
                         if (mc.closure != null)
@@ -4344,6 +4359,16 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
 
             return ((GridIoSecurityAwareMessage)msg).secSubjId();
         }
+
+        return null;
+    }
+
+    /**
+     * @return Application attributes.
+     */
+    private Map<String ,String> applicationAttributes(GridIoMessage msg) {
+        if (msg instanceof GridIoSecurityAwareMessage)
+            return ((GridIoSecurityAwareMessage)msg).appAttrs();
 
         return null;
     }
