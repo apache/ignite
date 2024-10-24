@@ -15,11 +15,15 @@
  * limitations under the License.
  */
 
-package org.apache.ignite;
+package org.apache.ignite.internal.processors.cache;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import org.apache.ignite.Ignite;
+import org.apache.ignite.IgniteCache;
 import org.apache.ignite.cache.ApplicationContext;
+import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.cache.query.annotations.QuerySqlFunction;
 import org.apache.ignite.calcite.CalciteQueryEngineConfiguration;
@@ -29,14 +33,38 @@ import org.apache.ignite.configuration.SqlConfiguration;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.Parameterized;
 
 /** */
-public class ApplicationContextTest extends GridCommonAbstractTest {
+@RunWith(Parameterized.class)
+public class ApplicationContextSqlFunctionTest extends GridCommonAbstractTest {
     /** */
     private static final String SESSION_ID = "sessionId";
 
     /** */
     private IgniteCache<?, ?> cache;
+
+    /** */
+    @Parameterized.Parameter
+    public CacheAtomicityMode mode;
+
+    /** */
+    @Parameterized.Parameter(1)
+    public boolean clnNode;
+
+    /** */
+    @Parameterized.Parameters(name = "mode={0}, clnNode={1}")
+    public static List<Object[]> parameters() {
+        List<Object[]> params = new ArrayList<>();
+
+        for (CacheAtomicityMode m: CacheAtomicityMode.values()) {
+            params.add(new Object[] {m, false});
+            params.add(new Object[] {m, true});
+        }
+
+        return params;
+    }
 
     /** */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
@@ -56,6 +84,9 @@ public class ApplicationContextTest extends GridCommonAbstractTest {
     /** {@inheritDoc} */
     @Override protected void beforeTest() throws Exception {
         Ignite ign = startGrids(3);
+
+        if (clnNode)
+            ign = startClientGrid(3);
 
         cache = ign.cache(DEFAULT_CACHE_NAME);
 
