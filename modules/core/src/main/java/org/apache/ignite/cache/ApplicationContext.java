@@ -25,9 +25,14 @@ import org.jetbrains.annotations.Nullable;
 /**
  * Provides access to application attributes set with {@link IgniteCache#withApplicationAttributes}.
  */
-public class ApplicationContext {
+public final class ApplicationContext {
     /** @return Application attributes, or {@code null} if not set. */
     public static @Nullable Map<String, String> getAttributes() {
         return ApplicationContextInternal.attributes();
+    }
+
+    /** Forbid instantiate class. */
+    private ApplicationContext() {
+        // No-op.
     }
 }
