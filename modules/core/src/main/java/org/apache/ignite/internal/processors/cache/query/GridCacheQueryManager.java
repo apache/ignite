@@ -2883,9 +2883,8 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
             null,
             null,
             null,
-            null,
-            false,
             keepBinary,
+            false,
             null);
     }
 
@@ -2957,6 +2956,7 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
             null,
             false,
             keepBinary,
+            null,
             null)
             .limit(limit)
             .pageSize(pageSize);

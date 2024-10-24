@@ -156,7 +156,7 @@ public class GridCacheQueryAdapter<T> implements CacheQuery<T> {
         boolean forceLocal,
         Boolean dataPageScanEnabled
     ) {
-        this(cctx, type, null, null, filter, part, false, keepBinary, dataPageScanEnabled);
+        this(cctx, type, null, null, filter, part, false, keepBinary, dataPageScanEnabled, null);
 
         this.transform = transform;
         this.forceLocal = forceLocal;
@@ -184,7 +184,8 @@ public class GridCacheQueryAdapter<T> implements CacheQuery<T> {
         @Nullable Integer part,
         boolean incMeta,
         boolean keepBinary,
-        Boolean dataPageScanEnabled
+        Boolean dataPageScanEnabled,
+        IndexQueryDesc idxQryDesc
     ) {
         assert cctx != null;
         assert type != null;
@@ -199,10 +200,9 @@ public class GridCacheQueryAdapter<T> implements CacheQuery<T> {
         this.incMeta = incMeta;
         this.keepBinary = keepBinary;
         this.dataPageScanEnabled = dataPageScanEnabled;
+        this.idxQryDesc = idxQryDesc;
 
         log = cctx.logger(getClass());
-
-        this.idxQryDesc = null;
     }
 
     /**
@@ -284,17 +284,7 @@ public class GridCacheQueryAdapter<T> implements CacheQuery<T> {
         @Nullable String clsName,
         @Nullable IgniteBiPredicate<Object, Object> filter
     ) {
-        this.cctx = cctx;
-        this.type = type;
-        this.clsName = clsName;
-        this.idxQryDesc = idxQryDesc;
-        this.filter = filter;
-        this.part = part;
-
-        log = cctx.logger(getClass());
-
-        clause = null;
-        incMeta = false;
+        this(cctx, type, clsName, null, filter, part, false, false, null, idxQryDesc);
     }
 
     /**
