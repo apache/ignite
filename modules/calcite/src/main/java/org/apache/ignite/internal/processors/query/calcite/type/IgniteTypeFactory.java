@@ -44,6 +44,7 @@ import org.apache.calcite.sql.type.BasicSqlType;
 import org.apache.calcite.sql.type.IntervalSqlType;
 import org.apache.calcite.sql.type.SqlTypeName;
 import org.apache.ignite.IgniteException;
+import org.apache.ignite.binary.BinaryObject;
 import org.apache.ignite.internal.util.typedef.F;
 
 /**
@@ -315,7 +316,7 @@ public class IgniteTypeFactory extends JavaTypeFactoryImpl {
     public RelDataType createCustomType(Type type, boolean nullable) {
         if (UUID.class == type)
             return canonize(new UuidType(nullable));
-        else if (Object.class == type)
+        else if (Object.class == type || (type instanceof Class && BinaryObject.class.isAssignableFrom((Class<?>)type)))
             return canonize(new OtherType(nullable));
 
         return null;
