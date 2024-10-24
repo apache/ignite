@@ -93,7 +93,7 @@ public abstract class AbstractReducer implements Reducer {
     private int pageSize;
 
     /** */
-    protected int colCnt;
+    protected int colCnt = -1;
 
     /**
      * Will be r/w from query execution thread only, does not need to be threadsafe.
@@ -359,7 +359,8 @@ public abstract class AbstractReducer implements Reducer {
                 }
 
                 if (page != null) {
-                    colCnt = page.columnCount();
+                    if (colCnt == -1)
+                        colCnt = page.columnCount();
 
                     break;
                 }

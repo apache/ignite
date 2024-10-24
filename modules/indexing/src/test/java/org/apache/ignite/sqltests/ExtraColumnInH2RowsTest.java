@@ -103,6 +103,9 @@ public class ExtraColumnInH2RowsTest extends GridCommonAbstractTest {
 
             assertEquals(t.get1(), res.get(0).get(0));
             assertEquals(t.get2().getName(), ((Department)res.get(0).get(1)).getName());
+
+            // Check empty result set fetched OK.
+            qryExec.apply(new SqlFieldsQuery("select _key, _val from T WHERE name IS NULL order by id asc").setPartitions(part));
         }
 
         assertTrue(data.isEmpty());
