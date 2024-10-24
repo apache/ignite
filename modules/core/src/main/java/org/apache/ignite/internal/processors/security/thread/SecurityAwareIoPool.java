@@ -35,7 +35,6 @@ public class SecurityAwareIoPool implements IoPool {
 
     /** */
     public SecurityAwareIoPool(IgniteSecurity security, IoPool delegate) {
-        assert security.enabled();
         assert delegate != null;
 
         this.security = security;

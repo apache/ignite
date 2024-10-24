@@ -20,7 +20,7 @@ package org.apache.ignite.internal.processors.query.calcite.exec;
 import java.util.UUID;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.processors.query.calcite.util.AbstractService;
-import org.apache.ignite.internal.processors.security.SecurityContext;
+import org.apache.ignite.internal.processors.security.thread.SecurityAwareStripedThreadPoolExecutor;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.thread.IgniteStripedThreadPoolExecutor;
 
@@ -35,9 +35,6 @@ public class QueryTaskExecutorImpl extends AbstractService implements QueryTaskE
     public static final String THREAD_POOL_NAME = "CalciteQueryExecutor";
 
     /** */
-    private final GridKernalContext ctx;
-
-    /** */
     private IgniteStripedThreadPoolExecutor stripedThreadPoolExecutor;
 
     /** */
@@ -46,7 +43,6 @@ public class QueryTaskExecutorImpl extends AbstractService implements QueryTaskE
     /** */
     public QueryTaskExecutorImpl(GridKernalContext ctx) {
         super(ctx);
-        this.ctx = ctx;
     }
 
     /**
@@ -65,11 +61,9 @@ public class QueryTaskExecutorImpl extends AbstractService implements QueryTaskE
 
     /** {@inheritDoc} */
     @Override public void execute(UUID qryId, long fragmentId, Runnable qryTask) {
-        SecurityContext secCtx = ctx.security().securityContext();
-
         stripedThreadPoolExecutor.execute(
             () -> {
-                try (AutoCloseable ignored = ctx.security().withContext(secCtx)) {
+                try {
                     qryTask.run();
                 }
                 catch (Throwable e) {
@@ -91,7 +85,8 @@ public class QueryTaskExecutorImpl extends AbstractService implements QueryTaskE
     @Override public void onStart(GridKernalContext ctx) {
         exceptionHandler(ctx.uncaughtExceptionHandler());
 
-        IgniteStripedThreadPoolExecutor executor = new IgniteStripedThreadPoolExecutor(
+        IgniteStripedThreadPoolExecutor executor = new SecurityAwareStripedThreadPoolExecutor(
+            ctx.security(),
             ctx.config().getQueryThreadPoolSize(),
             ctx.igniteInstanceName(),
             "calciteQry",

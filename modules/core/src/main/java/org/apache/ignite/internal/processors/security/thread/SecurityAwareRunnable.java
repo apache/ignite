@@ -17,6 +17,8 @@
 
 package org.apache.ignite.internal.processors.security.thread;
 
+import java.util.Map;
+import org.apache.ignite.internal.cache.ApplicationContextInternal;
 import org.apache.ignite.internal.processors.security.IgniteSecurity;
 import org.apache.ignite.internal.processors.security.OperationSecurityContext;
 import org.apache.ignite.internal.processors.security.SecurityContext;
@@ -36,10 +38,13 @@ class SecurityAwareRunnable implements Runnable {
     private final SecurityContext secCtx;
 
     /** */
-    private SecurityAwareRunnable(IgniteSecurity security, Runnable delegate) {
-        assert security.enabled();
+    private final Map<String, String> appAttrs;
+
+    /** */
+    private SecurityAwareRunnable(IgniteSecurity security, Map<String, String> appAttrs, Runnable delegate) {
         assert delegate != null;
 
+        this.appAttrs = appAttrs;
         this.delegate = delegate;
         this.security = security;
         secCtx = security.securityContext();
@@ -47,16 +52,24 @@ class SecurityAwareRunnable implements Runnable {
 
     /** {@inheritDoc} */
     @Override public void run() {
-        try (OperationSecurityContext ignored = security.withContext(secCtx)) {
+        try (
+            OperationSecurityContext ignored = security.withContext(secCtx);
+            ApplicationContextInternal ignored0 = ApplicationContextInternal.withApplicationAttributes(appAttrs)
+        ) {
             delegate.run();
         }
     }
 
     /** */
     static Runnable of(IgniteSecurity security, Runnable delegate) {
-        if (delegate == null || security.isDefaultContext())
+        return of(security, null, delegate);
+    }
+
+    /** */
+    static Runnable of(IgniteSecurity security, Map<String, String> appAttrs, Runnable delegate) {
+        if (delegate == null || (security.isDefaultContext() && appAttrs == null))
             return delegate;
 
-        return new SecurityAwareRunnable(security, delegate);
+        return new SecurityAwareRunnable(security, appAttrs, delegate);
     }
 }

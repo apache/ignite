@@ -78,6 +78,7 @@ public class IgniteSecurityProcessorTest extends AbstractSecurityTest {
 
         spi.sendMessage(srv.localNode(), new GridIoSecurityAwareMessage(
             UUID.randomUUID(),
+            null,
             PUBLIC_POOL,
             TOPIC_CACHE,
             TOPIC_CACHE.ordinal(),

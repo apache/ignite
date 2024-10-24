@@ -60,6 +60,7 @@ import org.apache.ignite.internal.IgniteKernal;
 import org.apache.ignite.internal.IgnitionEx;
 import org.apache.ignite.internal.binary.BinaryMarshaller;
 import org.apache.ignite.internal.binary.builder.BinaryObjectBuilderImpl;
+import org.apache.ignite.internal.cache.ApplicationContextInternal;
 import org.apache.ignite.internal.managers.communication.GridIoManager;
 import org.apache.ignite.internal.managers.deployment.GridDeploymentManager;
 import org.apache.ignite.internal.managers.discovery.GridDiscoveryManager;
@@ -1339,6 +1340,8 @@ public class GridCacheContext<K, V> implements Externalizable {
             dht().near().context().opCtxPerCall.set(opCtx);
         else
             opCtxPerCall.set(opCtx);
+
+        ApplicationContextInternal.withApplicationAttributes(opCtx == null ? null : opCtx.applicationAttributes());
     }
 
     /**

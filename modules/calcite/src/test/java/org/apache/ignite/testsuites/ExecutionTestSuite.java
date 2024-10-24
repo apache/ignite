@@ -17,6 +17,7 @@
 
 package org.apache.ignite.testsuites;
 
+import org.apache.ignite.internal.processors.cache.ApplicationContextSqlFunctionTest;
 import org.apache.ignite.internal.processors.query.calcite.exec.RuntimeSortedIndexTest;
 import org.apache.ignite.internal.processors.query.calcite.exec.rel.ContinuousExecutionTest;
 import org.apache.ignite.internal.processors.query.calcite.exec.rel.ExecutionTest;
@@ -55,6 +56,7 @@ import org.junit.runners.Suite;
     RuntimeSortedIndexTest.class,
     LimitExecutionTest.class,
     TimeCalculationExecutionTest.class,
+    ApplicationContextSqlFunctionTest.class
 })
 public class ExecutionTestSuite {
 }
