@@ -527,7 +527,10 @@ public class CommandHandler {
         clientCfg.setServers(Collections.singletonList(args.host() + ":" + args.port()));
 
         if (!F.isEmpty(userName))
-            clientCfg.setSecurityCredentialsProvider(getSecurityCredentialsProvider(userName, password, clientCfg));
+            clientCfg.setSecurityCredentialsProvider(getSecurityCredentialsProvider(
+                    userName,
+                    F.isEmpty(password) ? new String(requestPasswordFromConsole("password: ")) : password,
+                    clientCfg));
 
         if (!F.isEmpty(args.sslKeyStorePath()) || !F.isEmpty(args.sslFactoryConfigPath())) {
             if (!F.isEmpty(args.sslKeyStorePath()) && !F.isEmpty(args.sslFactoryConfigPath()))
