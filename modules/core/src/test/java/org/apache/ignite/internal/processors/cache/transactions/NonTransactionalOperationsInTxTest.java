@@ -1,40 +1,28 @@
 package org.apache.ignite.internal.processors.cache.transactions;
 
-import java.util.function.Consumer;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
-import org.apache.ignite.transactions.Transaction;
 import org.junit.Test;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
-import static org.apache.ignite.transactions.TransactionConcurrency.PESSIMISTIC;
-import static org.apache.ignite.transactions.TransactionIsolation.READ_COMMITTED;
+import static org.apache.ignite.testframework.GridTestUtils.assertThrows;
 
-/** Checks how non-transactional cache operations work within a transaction. */
+/** Checks that non-transactional cache operations fail within a transaction. */
 public class NonTransactionalOperationsInTxTest extends GridCommonAbstractTest {
     /** */
-    protected static IgniteEx srv;
-
-    /** */
-    protected static IgniteEx client;
+    protected CacheConfiguration<Object, Object> ccfg;
 
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(gridName);
 
-        cfg.setCacheConfiguration(new CacheConfiguration<>(DEFAULT_CACHE_NAME));
+        ccfg = new CacheConfiguration<>("my-cache").setAtomicityMode(TRANSACTIONAL);
 
         return cfg;
-    }
-
-    /** {@inheritDoc} */
-    @Override protected void beforeTest() throws Exception {
-        srv = startGrid("srv0");
-        client = startClientGrid("cli0");
     }
 
     /** {@inheritDoc} */
@@ -42,47 +30,47 @@ public class NonTransactionalOperationsInTxTest extends GridCommonAbstractTest {
         stopAllGrids();
     }
 
-    /**
-     * Tests that a non-transactional cache operation {@link IgniteCache#clear()} is not allowed within a transaction
-     * and the operation works as expected.
-     */
+    /** */
     @Test
-    public void testIgniteCacheNonTransactionalOperations() {
-        checkNonTxOperation(srv, IgniteCache::clear);
+    public void testIgniteCacheClear() throws Exception {
+        startGrid(0);
 
-        checkNonTxOperation(client, IgniteCache::clear);
+        checkIgniteCacheClear(grid(0));
+    }
+
+    /** */
+    @Test
+    public void testIgniteCacheClearOnClientNode() throws Exception {
+        startGrid(0);
+
+        startClientGrid(1);
+
+        checkIgniteCacheClear(grid(1));
     }
 
     /**
      * It should throw exception.
-     * @param op Operation.
+     * @param ignite Ignite.
      */
-    private void checkNonTxOperation(IgniteEx ignite, Consumer<IgniteCache<Object, Object>> op) {
-        IgniteCache<Object, Object> cache = ignite.createCache(new CacheConfiguration<>("my-cache")
-            .setAtomicityMode(TRANSACTIONAL));
+    private void checkIgniteCacheClear(IgniteEx ignite) {
+        IgniteCache<Object, Object> cache = ignite.createCache(ccfg);
 
         cache.put(1, 1);
 
-        IgniteException err = null;
+        assertThrows(null,
+                () -> doInTransaction(ignite, () -> {
+                    cache.put(2, 2);
 
-        try (Transaction tx = ignite.transactions().txStart(PESSIMISTIC, READ_COMMITTED)) {
-            cache.put(2, 2);
+                    cache.clear();
 
-            op.accept(cache);
-
-            tx.commit();
-        }
-        catch (IgniteException e) {
-            err = e;
-        }
-
-        assertTrue(err != null && err.getMessage().startsWith("Failed to invoke a non-transactional operation " +
-            "within a transaction"));
+                    return null;
+                }),
+                IgniteException.class,
+                "Failed to invoke a non-transactional operation within a transaction"
+        );
 
         assertTrue(cache.containsKey(1));
 
         assertFalse(cache.containsKey(2));
-
-        srv.cache("my-cache").destroy();
     }
 }
