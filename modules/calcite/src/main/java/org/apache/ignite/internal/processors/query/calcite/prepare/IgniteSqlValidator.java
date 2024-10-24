@@ -61,7 +61,6 @@ import org.apache.calcite.sql.type.SqlOperandTypeInference;
 import org.apache.calcite.sql.type.SqlTypeFamily;
 import org.apache.calcite.sql.type.SqlTypeName;
 import org.apache.calcite.sql.type.SqlTypeUtil;
-import org.apache.calcite.sql.util.SqlShuttle;
 import org.apache.calcite.sql.validate.SelectScope;
 import org.apache.calcite.sql.validate.SqlQualified;
 import org.apache.calcite.sql.validate.SqlValidator;
@@ -379,38 +378,38 @@ public class IgniteSqlValidator extends SqlValidatorImpl {
         return valHolder.val;
     }
 
-    /** {@inheritDoc} */
-    @Override public RelDataType getParameterRowType(SqlNode sqlQry) {
-        // We do not use calcite' version since it is contains a bug,
-        // alreadyVisited visited uses object identity, but rewrites of NULLIF, COALESCE
-        // into dynamic parameters may place the same parameter into multiple positions
-        // in SQL tree.
-        List<RelDataType> types = new ArrayList<>();
-
-        Set<Integer> alreadyVisited = new HashSet<>(F.isEmpty(dynParams) ? 1 : dynParams.size());
-
-        sqlQry.accept(
-            new SqlShuttle() {
-                @Override public SqlNode visit(SqlDynamicParam param) {
-                    if (alreadyVisited.add(param.getIndex()))
-                        types.add(getValidatedNodeType(param));
-
-                    return param;
-                }
-            });
-
-        return typeFactory.createStructType(
-            types,
-            new AbstractList<>() {
-                @Override public String get(int idx) {
-                    return "?" + idx;
-                }
-
-                @Override public int size() {
-                    return types.size();
-                }
-            });
-    }
+//    /** {@inheritDoc} */
+//    @Override public RelDataType getParameterRowType(SqlNode sqlQry) {
+//        // We do not use calcite' version since it is contains a bug,
+//        // alreadyVisited visited uses object identity, but rewrites of NULLIF, COALESCE
+//        // into dynamic parameters may place the same parameter into multiple positions
+//        // in SQL tree.
+//        List<RelDataType> types = new ArrayList<>();
+//
+//        Set<Integer> alreadyVisited = new HashSet<>(F.isEmpty(dynParams) ? 1 : dynParams.size());
+//
+//        sqlQry.accept(
+//            new SqlShuttle() {
+//                @Override public SqlNode visit(SqlDynamicParam param) {
+//                    if (alreadyVisited.add(param.getIndex()))
+//                        types.add(getValidatedNodeType(param));
+//
+//                    return param;
+//                }
+//            });
+//
+//        return typeFactory.createStructType(
+//            types,
+//            new AbstractList<>() {
+//                @Override public String get(int idx) {
+//                    return "?" + idx;
+//                }
+//
+//                @Override public int size() {
+//                    return types.size();
+//                }
+//            });
+//    }
 
     /** {@inheritDoc} */
     @Override public void validateCall(SqlCall call, SqlValidatorScope scope) {
@@ -771,15 +770,49 @@ public class IgniteSqlValidator extends SqlValidatorImpl {
             super.inferUnknownTypes(inferredType, scope, node);
     }
 
-    /** */
-    private void inferDynamicParamType(RelDataType inferredType, SqlDynamicParam node) {
-        DynamicParameterHolder pHolder = deriveDynamicParamType(node);
+    /**
+     * Tries to set actual type of dynamic parameter if {@code node} is a {@link SqlDynamicParam} and if its index
+     * is actual to {@link #parameters}.
+     *
+     * @return {@code True} if a new type was set. {@code False} otherwise.
+     */
+    private boolean inferDynamicParamType(RelDataType inferredType, SqlNode node) {
+        if (parameters == null || !(node instanceof SqlDynamicParam) || ((SqlDynamicParam)node).getIndex() >= parameters.length)
+            return false;
 
-        // Exit if the type is determined or is unknown.
-        if (inferredType.equals(unknownType) || SqlTypeUtil.equalSansNullability(typeFactory, inferredType, pHolder.type))
-            return;
+        Object val = parameters[((SqlDynamicParam)node).getIndex()];
 
-        dynamicParameterType(pHolder, node, typeFactory.createTypeWithNullability(inferredType, true));
+        if (val == null) {
+            if (inferredType.equals(unknownType)) {
+                setValidatedNodeType(node, typeFactory().createSqlType(SqlTypeName.NULL));
+
+                return true;
+            }
+
+            return false;
+        }
+
+        RelDataType valType = typeFactory().toSql(typeFactory().createType(val.getClass()));
+
+        if (SqlTypeUtil.equalSansNullability(valType, inferredType))
+            return false;
+
+        assert !unknownType.equals(valType);
+
+        if (valType.getFamily().equals(inferredType.getFamily())) {
+            RelDataType leastRestrictive = typeFactory().leastRestrictive(F.asList(inferredType, valType));
+
+            assert leastRestrictive != null;
+
+            if (inferredType == leastRestrictive)
+                return false;
+        }
+        else if (!unknownType.equals(inferredType) && SqlTypeUtil.canCastFrom(valType, inferredType, true))
+            return false;
+
+        setValidatedNodeType(node, valType);
+
+        return true;
     }
 
     /** {@inheritDoc} */
