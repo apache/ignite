@@ -27,7 +27,7 @@ import org.apache.ignite.lang.IgniteClosure;
 /**
  * Collection of utility methods used in package for classes reflection.
  */
-final class GridResourceUtils {
+public final class GridResourceUtils {
     /**
      * Ensure singleton.
      */
@@ -45,7 +45,7 @@ final class GridResourceUtils {
      * @throws IgniteCheckedException Thrown if unable to inject resource.
      */
     @SuppressWarnings({"ErrorNotRethrown"})
-    static void inject(Field field, Object target, Object rsrc) throws IgniteCheckedException {
+    public static void inject(Field field, Object target, Object rsrc) throws IgniteCheckedException {
         if (rsrc != null && !field.getType().isAssignableFrom(rsrc.getClass()))
             throw new IgniteCheckedException("Resource field is not assignable from the resource: " + rsrc.getClass());
 
@@ -72,7 +72,7 @@ final class GridResourceUtils {
      * @throws IgniteCheckedException Thrown if unable to inject resource.
      */
     @SuppressWarnings({"ErrorNotRethrown"})
-    static void inject(Method mtd, Object target, Object rsrc) throws IgniteCheckedException {
+    public static void inject(Method mtd, Object target, Object rsrc) throws IgniteCheckedException {
         if (mtd.getParameterTypes().length != 1 ||
             (rsrc != null && !mtd.getParameterTypes()[0].isAssignableFrom(rsrc.getClass()))) {
             throw new IgniteCheckedException("Setter does not have single parameter of required type [type=" +
