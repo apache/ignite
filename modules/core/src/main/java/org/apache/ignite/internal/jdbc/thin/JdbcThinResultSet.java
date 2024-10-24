@@ -47,10 +47,9 @@ import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import org.apache.ignite.internal.jdbc2.JdbcBinaryBuffer;
 import org.apache.ignite.internal.jdbc2.JdbcBlob;
 import org.apache.ignite.internal.jdbc2.JdbcClob;
-import org.apache.ignite.internal.jdbc2.lob.JdbcBlobStorage;
-import org.apache.ignite.internal.jdbc2.lob.JdbcBlobStreams;
 import org.apache.ignite.internal.processors.odbc.SqlStateCode;
 import org.apache.ignite.internal.processors.odbc.jdbc.JdbcColumnMeta;
 import org.apache.ignite.internal.processors.odbc.jdbc.JdbcQueryCloseRequest;
@@ -475,8 +474,8 @@ public class JdbcThinResultSet implements ResultSet {
 
         if (cls == byte[].class)
             return (byte[])val;
-        else if (cls == JdbcBlobStorage.class) {
-            return ((JdbcBlobStorage)val).getData();
+        else if (cls == JdbcBinaryBuffer.class) {
+            return ((JdbcBinaryBuffer)val).getBytes();
         }
         else if (cls == Byte.class)
             return new byte[] {(byte)val};
@@ -598,8 +597,8 @@ public class JdbcThinResultSet implements ResultSet {
         if (val == null)
             return null;
 
-        if (val instanceof JdbcBlobStorage)
-            return JdbcBlobStreams.getInputStream((JdbcBlobStorage)val);
+        if (val instanceof JdbcBinaryBuffer)
+            return ((JdbcBinaryBuffer)val).getInputStream();
         else
             return new ByteArrayInputStream(getBytes(colIdx));
     }
@@ -1313,10 +1312,10 @@ public class JdbcThinResultSet implements ResultSet {
         if (val == null)
             return null;
 
-        if (!(val instanceof JdbcBlobStorage))
+        if (!(val instanceof JdbcBinaryBuffer))
             throw new SQLException("Cannot convert to Blob [colIdx=" + colIdx + "]");
 
-        return new JdbcBlob(JdbcBlobStorage.shallowCopy((JdbcBlobStorage)val));
+        return new JdbcBlob(((JdbcBinaryBuffer)val).shallowCopy());
     }
 
     /** {@inheritDoc} */

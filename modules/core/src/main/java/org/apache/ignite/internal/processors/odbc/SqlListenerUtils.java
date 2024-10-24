@@ -31,7 +31,7 @@ import org.apache.ignite.internal.binary.BinaryReaderExImpl;
 import org.apache.ignite.internal.binary.BinaryUtils;
 import org.apache.ignite.internal.binary.BinaryWriterExImpl;
 import org.apache.ignite.internal.binary.GridBinaryMarshaller;
-import org.apache.ignite.internal.jdbc2.lob.JdbcBlobStorage;
+import org.apache.ignite.internal.jdbc2.JdbcBinaryBuffer;
 import org.apache.ignite.internal.processors.cache.query.IgniteQueryErrorCode;
 import org.apache.ignite.internal.processors.query.IgniteSQLException;
 import org.apache.ignite.internal.util.typedef.F;
@@ -182,11 +182,11 @@ public abstract class SqlListenerUtils {
      * Read byte array using the reader.
      *
      * <p>Returns either (eagerly) new instance of the byte array with all data materialized,
-     * or {@link JdbcBlobStorage} which (lazily) wraps part of the array enclosed in
+     * or {@link JdbcBinaryBuffer} which (lazily) wraps part of the array enclosed in
      * the reader's input stream.
      *
      * @param reader Reader.
-     * @return Either byte[] or {@link JdbcBlobStorage}.
+     * @return Either byte[] or {@link JdbcBinaryBuffer}.
      */
     private static Object readByteArray(BinaryReaderExImpl reader) {
         if (reader.in().hasArray()) {
@@ -196,7 +196,7 @@ public abstract class SqlListenerUtils {
 
             reader.in().position(position + len);
 
-            return new JdbcBlobStorage(reader.in().array(), position, len);
+            return JdbcBinaryBuffer.createReadOnly(reader.in().array(), position, len);
         }
         else
             return BinaryUtils.doReadByteArray(reader.in());

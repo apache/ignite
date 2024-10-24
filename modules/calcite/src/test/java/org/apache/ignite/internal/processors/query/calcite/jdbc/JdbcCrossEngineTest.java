@@ -36,7 +36,7 @@ import org.apache.ignite.calcite.CalciteQueryEngineConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.SqlConfiguration;
 import org.apache.ignite.indexing.IndexingQueryEngineConfiguration;
-import org.apache.ignite.internal.jdbc2.lob.JdbcBlobStorage;
+import org.apache.ignite.internal.jdbc2.JdbcBinaryBuffer;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
 
@@ -195,7 +195,7 @@ public class JdbcCrossEngineTest extends GridCommonAbstractTest {
                     if (expectedVal.getClass().isArray()) {
                         byte[] data;
 
-                        data = ((JdbcBlobStorage)res.get(0).get(0)).getData();
+                        data = ((JdbcBinaryBuffer)res.get(0).get(0)).getBytes();
 
                         assertTrue(Objects.deepEquals(expectedVal, data));
                     }
