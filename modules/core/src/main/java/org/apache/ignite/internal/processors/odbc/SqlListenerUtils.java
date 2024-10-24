@@ -17,7 +17,10 @@
 
 package org.apache.ignite.internal.processors.odbc;
 
+import java.io.InputStream;
 import java.math.BigDecimal;
+import java.sql.Blob;
+import java.sql.SQLException;
 import java.sql.Time;
 import java.sql.Timestamp;
 import java.util.UUID;
@@ -28,6 +31,7 @@ import org.apache.ignite.internal.binary.BinaryReaderExImpl;
 import org.apache.ignite.internal.binary.BinaryUtils;
 import org.apache.ignite.internal.binary.BinaryWriterExImpl;
 import org.apache.ignite.internal.binary.GridBinaryMarshaller;
+import org.apache.ignite.internal.jdbc2.lob.JdbcBlobBuffer;
 import org.apache.ignite.internal.processors.cache.query.IgniteQueryErrorCode;
 import org.apache.ignite.internal.processors.query.IgniteSQLException;
 import org.apache.ignite.internal.util.typedef.F;
@@ -121,7 +125,7 @@ public abstract class SqlListenerUtils {
                 return BinaryUtils.doReadBooleanArray(reader.in());
 
             case GridBinaryMarshaller.BYTE_ARR:
-                return BinaryUtils.doReadByteArray(reader.in());
+                return readByteArray(reader);
 
             case GridBinaryMarshaller.CHAR_ARR:
                 return BinaryUtils.doReadCharArray(reader.in());
@@ -171,6 +175,31 @@ public abstract class SqlListenerUtils {
                 }
                 else
                     throw new BinaryObjectException("Custom objects are not supported");
+        }
+    }
+
+    /**
+     * Read byte array using the reader.
+     *
+     * <p>Returns either (eagerly) new instance of the byte array with all data materialized,
+     * or {@link JdbcBlobBuffer} which (lazily) wraps part of the array enclosed in
+     * the reader's input stream.
+     *
+     * @param reader Reader.
+     * @return Either byte[] or {@link JdbcBlobBuffer}.
+     */
+    private static Object readByteArray(BinaryReaderExImpl reader) {
+        if (reader.in().hasArray()) {
+            int len = reader.in().readInt();
+
+            int position = reader.in().position();
+
+            reader.in().position(position + len);
+
+            return JdbcBlobBuffer.createReadOnly(reader.in().array(), position, len);
+        }
+        else {
+            return BinaryUtils.doReadByteArray(reader.in());
         }
     }
 
@@ -246,10 +275,59 @@ public abstract class SqlListenerUtils {
             writer.writeTimestampArray((Timestamp[])obj);
         else if (cls == java.util.Date[].class || cls == java.sql.Date[].class)
             writer.writeDateArray((java.util.Date[])obj);
+        else if (obj instanceof SqlInputStreamWrapper)
+            writeInputStreamAsByteArray(writer, (SqlInputStreamWrapper)obj);
+        else if (obj instanceof Blob)
+            writeBlobAsByteArray(writer, (Blob)obj);
         else if (binObjAllow)
             writer.writeObjectDetached(obj);
         else
             throw new BinaryObjectException("Custom objects are not supported");
+    }
+
+    /**
+     * Write byte array from the InputStream enclosed in the stream wrapper.
+     *
+     * @param writer Writer.
+     * @param wrapper stream wrapper
+     */
+    private static void writeInputStreamAsByteArray(BinaryWriterExImpl writer, SqlInputStreamWrapper wrapper)
+            throws BinaryObjectException {
+        InputStream in = wrapper.getInputStream();
+        Integer len = wrapper.getLength();
+
+        if (len == null)
+            writer.writeByteArrayFromInputStream(in);
+        else {
+            int written = writer.writeByteArrayFromInputStream(in, len);
+
+            if (len != written)
+                throw new BinaryObjectException("Input stream length mismatch. [declaredLength=" + len + ", " +
+                        "actualLength=" + written + "]");
+        }
+    }
+
+    /**
+     * Write byte array from the Blob instance.
+     *
+     * @param writer Writer.
+     * @param blob Blob.
+     */
+    private static void writeBlobAsByteArray(BinaryWriterExImpl writer, Blob blob)
+            throws BinaryObjectException {
+        try {
+            int len = (int)blob.length();
+            InputStream in = blob.getBinaryStream(1, len);
+
+            int written = writer.writeByteArrayFromInputStream(in, len);
+
+            if (len != written)
+                throw new BinaryObjectException("Blob length mismatch. [declaredLength=" + len + ", " +
+                        "actualLength=" + written + "]");
+        }
+        catch (SQLException e) {
+            throw new BinaryObjectException(e);
+        }
     }
 
     /**

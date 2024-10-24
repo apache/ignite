@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.binary;
 
 import java.io.IOException;
+import java.io.InputStream;
 import java.io.ObjectOutput;
 import java.lang.reflect.InvocationHandler;
 import java.lang.reflect.Proxy;
@@ -42,6 +43,7 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 import org.jetbrains.annotations.Nullable;
 
 import static java.nio.charset.StandardCharsets.UTF_8;
+import static org.apache.ignite.internal.binary.streams.BinaryAbstractOutputStream.MAX_ARRAY_SIZE;
 
 /**
  * Binary writer implementation.
@@ -52,6 +54,9 @@ public class BinaryWriterExImpl implements BinaryWriter, BinaryRawWriterEx, Obje
 
     /** Initial capacity. */
     private static final int INIT_CAP = 1024;
+
+    /** Default buffer size for reading from streams. */
+    public static final int DEFAULT_BUFFER_SIZE = 8 * 1024;
 
     /** */
     private final BinaryContext ctx;
@@ -1878,6 +1883,87 @@ public class BinaryWriterExImpl implements BinaryWriter, BinaryRawWriterEx, Obje
         schema.push(fieldId, fieldOff);
 
         fieldCnt++;
+    }
+
+    /**
+     * Write byte array from the InputStream with the specified length.
+     *
+     * @param in InputStream.
+     * @param len Length of data in the stream.
+     * @return Number of bytes written.
+     * @throws BinaryObjectException If an I/O error occurs or if stream contains more than {@code MAX_ARRAY_SIZE} bytes.
+     */
+    public int writeByteArrayFromInputStream(InputStream in, int len) throws BinaryObjectException {
+        out.unsafeEnsure(1 + 4 + len);
+
+        return doWriteByteArrayFromInputStream(in, len);
+    }
+
+    /**
+     * Write byte array from the InputStream with uknown length.
+     *
+     * @param in InputStream.
+     * @return Number of bytes written
+     * @throws BinaryObjectException If an I/O error occurs or if stream contains more than {@code MAX_ARRAY_SIZE} bytes.
+     */
+    public int writeByteArrayFromInputStream(InputStream in) throws BinaryObjectException {
+        out.unsafeEnsure(1 + 4);
+
+        return doWriteByteArrayFromInputStream(in, -1);
+    }
+
+    /**
+     * Write byte array from the InputStream.
+     *
+     * <p>If {@code limit} > 0 than no more than {@code limit} bytes will be read and written.
+     * If {@code limit} == -1 than it will try to read and write all bytes.
+     *
+     * <p>In any case if actual number of bytes is greater than {@code MAX_ARRAY_SIZE}
+     * than exception will be thrown.
+     *
+     * @param in InputStream.
+     * @param limit Max length of data to be read from the stream or -1 if all data should be read.
+     * @return Number of bytes written.
+     * @throws BinaryObjectException If an I/O error occurs or stream contains more than {@code MAX_ARRAY_SIZE} bytes.
+     */
+    private int doWriteByteArrayFromInputStream(InputStream in, int limit) throws BinaryObjectException {
+        out.unsafeWriteByte(GridBinaryMarshaller.BYTE_ARR);
+
+        int lengthPos = out.position();
+
+        out.position(lengthPos + 4);
+
+        int written = 0;
+
+        byte[] buf = new byte[limit > 0 ? Math.min(limit, DEFAULT_BUFFER_SIZE) : DEFAULT_BUFFER_SIZE];
+
+        while (limit == -1 || written < limit) {
+            int read;
+            try {
+                read = limit > 0
+                        ? in.read(buf, 0, Math.min(buf.length, limit - written))
+                        : in.read(buf, 0, buf.length);
+            }
+            catch (IOException e) {
+                throw new BinaryObjectException(e);
+            }
+
+            if (read == -1)
+                break;
+
+            if (read + written > MAX_ARRAY_SIZE)
+                throw new BinaryObjectException("Too much data. Can't write more then " + MAX_ARRAY_SIZE + " bytes from stream.");
+
+            out.writeByteArray(buf, 0, read);
+
+            written += read;
+        }
+
+        out.position(lengthPos);
+        out.unsafeWriteInt(written);
+        out.position(out.position() + written);
+
+        return written;
     }
 
     /**
