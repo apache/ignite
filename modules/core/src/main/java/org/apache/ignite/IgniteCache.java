@@ -55,6 +55,7 @@ import org.apache.ignite.cache.query.ScanQuery;
 import org.apache.ignite.cache.query.SpiQuery;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.cache.query.TextQuery;
+import org.apache.ignite.cache.query.annotations.QuerySqlFunction;
 import org.apache.ignite.cache.store.CacheStore;
 import org.apache.ignite.cluster.ClusterGroup;
 import org.apache.ignite.configuration.CacheConfiguration;
@@ -205,6 +206,10 @@ public interface IgniteCache<K, V> extends javax.cache.Cache<K, V>, IgniteAsyncS
     /**
      * Underlying operations of returned cache are aware of application specific attributes.
      * User defined functions can access the attributes with {@link ApplicationContext} API.
+     * List of supported types of user defined functions to access the attributes:
+     * <ul>
+     *     <li>{@link QuerySqlFunction}</li>
+     * </ul>
      *
      * @param attrs Application attributes.
      * @return Cache that is aware of application attributes.
