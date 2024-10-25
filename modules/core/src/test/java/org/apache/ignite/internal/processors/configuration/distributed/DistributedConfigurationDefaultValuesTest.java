@@ -123,7 +123,7 @@ public class DistributedConfigurationDefaultValuesTest extends GridCommonAbstrac
             ClusterState.class
         );
 
-        dfltPropVals = F.asMap(
+        dfltPropVals = Map.of(
             "longProp", "1",
             "boolProp", "true",
             "stringProp", "val",
