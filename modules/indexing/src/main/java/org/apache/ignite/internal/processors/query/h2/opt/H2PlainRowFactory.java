@@ -17,6 +17,9 @@
 
 package org.apache.ignite.internal.processors.query.h2.opt;
 
+import java.util.Collection;
+import org.apache.ignite.internal.processors.query.h2.twostep.msg.GridH2ValueMessageFactory;
+import org.h2.result.ResultInterface;
 import org.h2.result.Row;
 import org.h2.result.RowFactory;
 import org.h2.value.Value;
@@ -34,11 +37,15 @@ public class H2PlainRowFactory extends RowFactory {
     }
 
     /**
+     * @param colCnt Requested column count. H2 engine can add extra columns at the end of result set.
      * @param data Values.
      * @return Row.
+     * @see ResultInterface#getVisibleColumnCount()
+     * @see GridH2ValueMessageFactory#toMessages(Collection, int)
+     * @see ResultInterface#currentRow()
      */
-    public static Row create(Value... data) {
-        switch (data.length) {
+    public static Row create(int colCnt, Value... data) {
+        switch (colCnt) {
             case 0:
                 throw new IllegalStateException("Zero columns row.");
 
@@ -49,12 +56,12 @@ public class H2PlainRowFactory extends RowFactory {
                 return new H2PlainRowPair(data[0], data[1]);
 
             default:
-                return new H2PlainRow(data);
+                return new H2PlainRow(colCnt, data);
         }
     }
 
     /** {@inheritDoc} */
     @Override public Row createRow(Value[] data, int memory) {
-        return create(data);
+        return create(data.length, data);
     }
 }
