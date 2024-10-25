@@ -897,8 +897,7 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
             return new InternalScanFilter<>(keyValFilter);
         }
         catch (IgniteCheckedException | RuntimeException e) {
-            if (keyValFilter instanceof PlatformCacheEntryFilter)
-                ((PlatformCacheEntryFilter)keyValFilter).onClose();
+            InternalScanFilter.close(keyValFilter);
 
             throw e;
         }
@@ -953,7 +952,7 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
 
             try {
                 // Preparing query closures.
-                IgniteReducer<Object, Object> rdc = injectResources((IgniteReducer<Object, Object>)qryInfo.reducer());;
+                IgniteReducer<Object, Object> rdc = injectResources((IgniteReducer<Object, Object>)qryInfo.reducer());
 
                 GridCacheQueryAdapter<?> qry = qryInfo.query();
 
@@ -3435,6 +3434,11 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
 
         /** */
         void close() {
+            close(scanFilter);
+        }
+
+        /** */
+        static void close(IgniteBiPredicate<?, ?> scanFilter) {
             if (scanFilter instanceof PlatformCacheEntryFilter)
                 ((PlatformCacheEntryFilter)scanFilter).onClose();
         }
