@@ -41,7 +41,7 @@ public class H2PlainRowFactory extends RowFactory {
      * @param data Values.
      * @return Row.
      * @see ResultInterface#getVisibleColumnCount()
-     * @see GridH2ValueMessageFactory#toMessages(Collection, Collection, int)
+     * @see GridH2ValueMessageFactory#toMessages(Collection, int)
      * @see ResultInterface#currentRow()
      */
     public static Row create(int colCnt, Value... data) {

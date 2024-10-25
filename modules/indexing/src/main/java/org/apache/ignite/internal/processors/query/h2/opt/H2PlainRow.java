@@ -39,7 +39,7 @@ public class H2PlainRow extends H2Row {
      * @param colCnt Column count. H2 engine can add extra columns at the end of result set.
      * @param vals Values.
      * @see ResultInterface#getVisibleColumnCount()
-     * @see GridH2ValueMessageFactory#toMessages(Collection, Collection, int)
+     * @see GridH2ValueMessageFactory#toMessages(Collection, int)
      * @see ResultInterface#currentRow()
      */
     @SuppressWarnings("AssignmentOrReturnOfFieldWithMutableType")
