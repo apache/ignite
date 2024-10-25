@@ -25,6 +25,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteInternalFuture;
+import org.apache.ignite.internal.cluster.DistributedConfigurationUtils;
 import org.apache.ignite.internal.processors.GridProcessorAdapter;
 import org.apache.ignite.internal.processors.metastorage.DistributedMetaStorage;
 import org.apache.ignite.internal.processors.metastorage.DistributedMetastorageLifecycleListener;
@@ -132,28 +133,7 @@ public class DistributedConfigurationProcessor extends GridProcessorAdapter impl
                 continue;
             }
 
-            if (prop.get() != null) {
-                if (log.isDebugEnabled()) {
-                    log.debug("Skip set default value for distributed property [name=" + entry.getKey() +
-                        ", clusterValue=" + prop.get() + ", configValue=" + entry.getValue() + ']');
-                }
-
-                continue;
-            }
-
-            try {
-                IgniteInternalFuture<?> fut = prop.propagateAsync(null, prop.parse(entry.getValue()));
-
-                fut.listen(f -> {
-                    if (f.error() != null)
-                        log.error("Cannot set default value for distributed property '" + prop.getName() + '\'', f.error());
-                });
-
-                compFut.add((IgniteInternalFuture<Void>)fut);
-            }
-            catch (Exception e) {
-                log.error("Cannot initiate setting default value for distributed property '" + prop.getName() + '\'', e);
-            }
+            compFut.add(DistributedConfigurationUtils.setDefaultValue(prop, prop.parse(entry.getValue()), log));
         }
 
         return compFut.markInitialized();
