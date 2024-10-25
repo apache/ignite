@@ -2375,18 +2375,6 @@ public class GridFunc {
      *
      * @param v1 1st parameter for tuple.
      * @param v2 2nd parameter for tuple.
-     * @param <V> Type of the 2nd tuple parameter.
-     * @return Newly created tuple.
-     */
-    public static <V> IgniteIntObjectTuple<V> intt(int v1, @Nullable V v2) {
-        return new IgniteIntObjectTuple<>(v1, v2);
-    }
-
-    /**
-     * Factory method returning new tuple with given parameters.
-     *
-     * @param v1 1st parameter for tuple.
-     * @param v2 2nd parameter for tuple.
      * @param <V1> Type of the 1st tuple parameter.
      * @param <V2> Type of the 2nd tuple parameter.
      * @return Newly created tuple.

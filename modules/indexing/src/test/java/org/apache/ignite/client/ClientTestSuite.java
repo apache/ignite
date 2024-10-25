@@ -99,7 +99,7 @@ import org.junit.runners.Suite;
     ClusterGroupClusterRestartTest.class,
     BlockingTxOpsTest.class,
     InvokeTest.class,
-    ExtraColumnInH2RowsTest.class
+    ExtraColumnInH2RowsTest.class,
 })
 public class ClientTestSuite {
     // No-op.
