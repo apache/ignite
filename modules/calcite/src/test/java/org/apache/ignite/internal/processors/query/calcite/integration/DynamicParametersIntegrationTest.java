@@ -26,8 +26,8 @@ import java.time.LocalDate;
 import java.time.Period;
 import java.util.List;
 import java.util.UUID;
-import org.apache.calcite.sql.validate.SqlValidatorException;
 import org.apache.ignite.IgniteCache;
+import org.apache.ignite.internal.processors.query.IgniteSQLException;
 import org.apache.ignite.internal.util.typedef.F;
 import org.junit.Test;
 
@@ -65,9 +65,9 @@ public class DynamicParametersIntegrationTest extends AbstractBasicIntegrationTe
     /** */
     @Test
     public void testMissedValue() {
-        assertThrows("SELECT ?", SqlValidatorException.class, "No value passed for dynamic parameter 1 or its type is unknown.");
+        assertThrows("SELECT ?", IgniteSQLException.class, "Illegal use of dynamic parameter");
 
-        assertThrows("SELECT ?, ?", SqlValidatorException.class, "No value passed for dynamic parameter 2 or its type is unknown.", "arg0");
+        assertThrows("SELECT ?, ?", IgniteSQLException.class, "Illegal use of dynamic parameter", "arg0");
     }
 
     /** */

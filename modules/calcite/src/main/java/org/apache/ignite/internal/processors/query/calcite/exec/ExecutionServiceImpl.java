@@ -541,7 +541,7 @@ public class ExecutionServiceImpl<Row> extends AbstractService implements Execut
 
             SqlInsert insertStmt = ((CreateTableCommand)plan.command()).insertStatement();
 
-            QueryPlan dmlPlan = prepareSvc.prepareSingle(insertStmt, insQry.planningContext(false));
+            QueryPlan dmlPlan = prepareSvc.prepareSingle(insertStmt, insQry.planningContext());
 
             return executePlan(insQry, dmlPlan);
         }

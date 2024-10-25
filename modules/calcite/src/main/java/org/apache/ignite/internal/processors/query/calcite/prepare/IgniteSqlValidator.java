@@ -109,9 +109,6 @@ public class IgniteSqlValidator extends SqlValidatorImpl {
     /** Detected dynamic parameter nodes. */
     @Nullable private Set<SqlDynamicParam> dynParamNodes;
 
-    /** Flag to enable validation of passed dynamic parameters. */
-    private final boolean validateParams;
-
     /**
      * Creates a validator.
      *
@@ -119,20 +116,16 @@ public class IgniteSqlValidator extends SqlValidatorImpl {
      * @param catalogReader Catalog reader
      * @param typeFactory   Type factory
      * @param config        Config
-     * @param ctx           Planning context
+     * @param parameters    Dynamic parameters
      */
     public IgniteSqlValidator(SqlOperatorTable opTab, CalciteCatalogReader catalogReader,
-        IgniteTypeFactory typeFactory, SqlValidator.Config config, PlanningContext ctx) {
+        IgniteTypeFactory typeFactory, SqlValidator.Config config, Object[] parameters) {
         super(opTab, catalogReader, typeFactory, config);
-
-        this.validateParams = ctx.validateParameters();
-
-        Object[] parameters = ctx.parameters();
 
         if (!F.isEmpty(parameters)) {
             dynParams = new HashMap<>(parameters.length);
 
-            for (int i = 0; i < ctx.parameters().length; ++i)
+            for (int i = 0; i < parameters.length; ++i)
                 dynParams.put(i, new DynamicParameterHolder(parameters[i]));
         }
     }
@@ -480,29 +473,6 @@ public class IgniteSqlValidator extends SqlValidatorImpl {
         return isSystemFieldName(field.getName());
     }
 
-    /** {@inheritDoc} */
-    @Override public SqlNode validate(SqlNode topNode) {
-        SqlNode res = super.validate(topNode);
-
-        if (validateParams)
-            validateDynamicParameters();
-
-        return res;
-    }
-
-    /** TODO: IGNITE-23251 - validate number of query's dynamic parameters and the passed values. */
-    private void validateDynamicParameters() {
-        if (F.isEmpty(dynParams))
-            return;
-
-        dynParams.forEach((idx, pHolder) -> {
-            assert pHolder.type != null : "No type inferred for dynamic parameter #" + idx;
-
-            if (unknownType.equals(pHolder.type) || !pHolder.hasValue)
-                throw newValidationError(pHolder.node, IgniteResource.INSTANCE.dynamicParameterValidation(idx + 1));
-        });
-    }
-
     /** */
     private void validateAggregateFunction(SqlCall call, SqlAggFunction aggFunction) {
         if (!SqlKind.AGGREGATE.contains(aggFunction.kind))
@@ -624,8 +594,9 @@ public class IgniteSqlValidator extends SqlValidatorImpl {
 
     /** {@inheritDoc} */
     @Override protected void inferUnknownTypes(RelDataType inferredType, SqlValidatorScope scope, SqlNode node) {
-        if (node instanceof SqlDynamicParam)
-            inferDynamicParamType(inferredType, (SqlDynamicParam)node);
+        if (node instanceof SqlDynamicParam && inferDynamicParamType(inferredType, (SqlDynamicParam)node)) {
+            // No-op.
+        }
         else if (node instanceof SqlCall) {
             final SqlCall call = (SqlCall)node;
 
@@ -676,15 +647,17 @@ public class IgniteSqlValidator extends SqlValidatorImpl {
             super.inferUnknownTypes(inferredType, scope, node);
     }
 
-    /** */
-    private void inferDynamicParamType(RelDataType inferredType, SqlDynamicParam node) {
+    /** @return {@code True} if type was successfully set. {@code False} if type is not determined. */
+    private boolean inferDynamicParamType(RelDataType inferredType, SqlDynamicParam node) {
         DynamicParameterHolder pHolder = deriveDynamicParamType(node);
 
-        // Exit if the type is determined or is unknown.
-        if (inferredType.equals(unknownType) || inferredType.getFamily().equals(pHolder.type.getFamily()))
-            return;
+        if (unknownType.equals(inferredType) && unknownType.equals(pHolder.type))
+            return false;
 
-        dynamicParameterType(pHolder, node, typeFactory.createTypeWithNullability(inferredType, true));
+        if (!inferredType.equals(unknownType) && !inferredType.getFamily().equals(pHolder.type.getFamily()))
+            dynamicParameterType(pHolder, node, typeFactory.createTypeWithNullability(inferredType, true));
+
+        return true;
     }
 
     /** {@inheritDoc} */

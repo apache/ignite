@@ -38,8 +38,8 @@ import org.junit.runners.Suite;
  */
 @RunWith(Suite.class)
 @Suite.SuiteClasses({
-    //PlannerTestSuite.class,
-    //ExecutionTestSuite.class,
+    PlannerTestSuite.class,
+    ExecutionTestSuite.class,
     IntegrationTestSuite.class,
 
     ClosableIteratorsHolderTest.class,
@@ -50,7 +50,7 @@ import org.junit.runners.Suite;
     IgniteSqlFunctionsTest.class,
     LogicalRelImplementorTest.class,
 
-//    ScriptTestSuite.class,
+    ScriptTestSuite.class,
     CalciteCommunicationMessageSerializationTest.class,
 
     NumericTypesPrecisionsTest.class,

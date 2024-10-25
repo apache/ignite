@@ -34,7 +34,6 @@ import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.query.QueryContext;
 import org.apache.ignite.internal.processors.query.calcite.QueryChecker;
 import org.apache.ignite.internal.util.typedef.F;
-import org.apache.ignite.internal.util.typedef.X;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
@@ -97,9 +96,6 @@ public class QueryWithPartitionsIntegrationTest extends AbstractBasicIntegration
 
     /** {@inheritDoc} */
     @Override protected List<List<?>> sql(String sql, Object... params) {
-        if (params.length == 1 && params[0] == X.EMPTY_OBJECT_ARRAY)
-            params = X.EMPTY_OBJECT_ARRAY;
-
         return sql(local ? grid(0) : client, sql, params);
     }
 
@@ -142,7 +138,7 @@ public class QueryWithPartitionsIntegrationTest extends AbstractBasicIntegration
     /** */
     @Test
     public void testSingle() {
-        Stream.of(Pair.of("SELECT * FROM T1", X.EMPTY_OBJECT_ARRAY),
+        Stream.of(Pair.of("SELECT * FROM T1", null),
                   Pair.of("SELECT * FROM T1 WHERE ID < ?", ENTRIES_COUNT))
             .forEach(query -> {
                 long cnt = sql(query.left, query.right).size();
@@ -150,7 +146,7 @@ public class QueryWithPartitionsIntegrationTest extends AbstractBasicIntegration
                 assertEquals(cacheSize("T1_CACHE", parts), cnt);
             });
 
-        Stream.of(Pair.of("SELECT count(*) FROM T1", X.EMPTY_OBJECT_ARRAY),
+        Stream.of(Pair.of("SELECT count(*) FROM T1", null),
                   Pair.of("SELECT count(*) FROM T1 WHERE ID < ?", ENTRIES_COUNT))
             .forEach(query -> {
                 Long cnt = (Long)sql(query.left, query.right).get(0).get(0);
@@ -162,7 +158,7 @@ public class QueryWithPartitionsIntegrationTest extends AbstractBasicIntegration
     /** */
     @Test
     public void testReplicated() {
-        Stream.of(Pair.of("select * from DICT", X.EMPTY_OBJECT_ARRAY),
+        Stream.of(Pair.of("select * from DICT", null),
                   Pair.of("select * from DICT where id < ?", ENTRIES_COUNT))
             .forEach(query -> {
                 List<List<?>> res = sql(query.left, query.right);
@@ -170,7 +166,7 @@ public class QueryWithPartitionsIntegrationTest extends AbstractBasicIntegration
                 assertEquals(res.size(), cacheSize("DICT_CACHE"));
             });
 
-        Stream.of(Pair.of("select count(*) from DICT", X.EMPTY_OBJECT_ARRAY),
+        Stream.of(Pair.of("select count(*) from DICT", null),
                   Pair.of("select count(*) from DICT where id < ?", ENTRIES_COUNT))
             .forEach(query -> {
                 Long size = (Long)sql(query.left, query.right).get(0).get(0);
@@ -205,7 +201,7 @@ public class QueryWithPartitionsIntegrationTest extends AbstractBasicIntegration
     @Test
     public void testInsertFromSelect() {
         Stream.of(Pair.of("SELECT ID, IDX_VAL, VAL FROM T1 WHERE ID < ?", ENTRIES_COUNT),
-                  Pair.of("SELECT ID, IDX_VAL, VAL FROM T1", X.EMPTY_OBJECT_ARRAY))
+                  Pair.of("SELECT ID, IDX_VAL, VAL FROM T1", null))
             .forEach(query -> {
                 try {
                     sql("CREATE TABLE T3(ID INT PRIMARY KEY, IDX_VAL VARCHAR, VAL VARCHAR) WITH cache_name=t3_cache,backups=1");
@@ -223,7 +219,7 @@ public class QueryWithPartitionsIntegrationTest extends AbstractBasicIntegration
     /** */
     @Test
     public void testDelete() {
-        Stream.of(Pair.of("DELETE FROM T3 WHERE ID < ?", ENTRIES_COUNT), Pair.of("DELETE FROM T3", X.EMPTY_OBJECT_ARRAY))
+        Stream.of(Pair.of("DELETE FROM T3 WHERE ID < ?", ENTRIES_COUNT), Pair.of("DELETE FROM T3", null))
             .forEach(query -> {
                 try {
                     sql("CREATE TABLE T3(ID INT PRIMARY KEY, IDX_VAL VARCHAR, VAL VARCHAR) WITH cache_name=t3_cache,backups=1");
@@ -249,7 +245,7 @@ public class QueryWithPartitionsIntegrationTest extends AbstractBasicIntegration
     @Test
     public void testCreateTableAsSelect() {
         Stream.of(Pair.of("SELECT ID, IDX_VAL, VAL FROM T1 WHERE ID < ?", ENTRIES_COUNT),
-                  Pair.of("SELECT ID, IDX_VAL, VAL FROM T1", X.EMPTY_OBJECT_ARRAY))
+                  Pair.of("SELECT ID, IDX_VAL, VAL FROM T1", null))
             .forEach(query -> {
                 try {
                     sql("CREATE TABLE T3(ID, IDX_VAL, VAL) WITH cache_name=t3_cache,backups=1 AS " + query.left, query.right);

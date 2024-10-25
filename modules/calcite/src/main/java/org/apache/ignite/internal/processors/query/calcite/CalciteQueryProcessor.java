@@ -393,7 +393,7 @@ public class CalciteQueryProcessor extends GridProcessorAdapter implements Query
         String sql,
         Object... params
     ) throws IgniteSQLException {
-        return parseAndProcessQuery(qryCtx, executionSvc::executePlan, schemaName, sql, true, params);
+        return parseAndProcessQuery(qryCtx, executionSvc::executePlan, schemaName, sql, params);
     }
 
     /** {@inheritDoc} */
@@ -402,7 +402,7 @@ public class CalciteQueryProcessor extends GridProcessorAdapter implements Query
         String schemaName,
         String sql
     ) throws IgniteSQLException {
-        return parseAndProcessQuery(ctx, (qry, plan) -> fieldsMeta(plan, true), schemaName, sql, false);
+        return parseAndProcessQuery(ctx, (qry, plan) -> fieldsMeta(plan, true), schemaName, sql);
     }
 
     /** {@inheritDoc} */
@@ -411,7 +411,7 @@ public class CalciteQueryProcessor extends GridProcessorAdapter implements Query
         String schemaName,
         String sql
     ) throws IgniteSQLException {
-        return parseAndProcessQuery(ctx, (qry, plan) -> fieldsMeta(plan, false), schemaName, sql, false);
+        return parseAndProcessQuery(ctx, (qry, plan) -> fieldsMeta(plan, false), schemaName, sql);
     }
 
     /** {@inheritDoc} */
@@ -457,7 +457,7 @@ public class CalciteQueryProcessor extends GridProcessorAdapter implements Query
                                 () -> {
                                     miss.set(true);
 
-                                    return prepareSvc.prepareSingle(qryNode, qry.planningContext(true));
+                                    return prepareSvc.prepareSingle(qryNode, qry.planningContext());
                                 });
 
                         if (miss.get())
@@ -487,7 +487,6 @@ public class CalciteQueryProcessor extends GridProcessorAdapter implements Query
         BiFunction<RootQuery<Object[]>, QueryPlan, T> action,
         @Nullable String schemaName,
         String sql,
-        boolean validateDynParams,
         Object... params
     ) throws IgniteSQLException {
         ensureTransactionModeSupported(qryCtx);
@@ -527,11 +526,11 @@ public class CalciteQueryProcessor extends GridProcessorAdapter implements Query
                     plan0 = queryPlanCache().queryPlan(
                         // Use source SQL to avoid redundant parsing next time.
                         new CacheKey(schema.getName(), sql, contextKey(qryCtx), params),
-                        () -> prepareSvc.prepareSingle(sqlNode, qry.planningContext(validateDynParams))
+                        () -> prepareSvc.prepareSingle(sqlNode, qry.planningContext())
                     );
                 }
                 else
-                    plan0 = prepareSvc.prepareSingle(sqlNode, qry.planningContext(validateDynParams));
+                    plan0 = prepareSvc.prepareSingle(sqlNode, qry.planningContext());
 
                 return action.apply(qry, plan0);
             }, schema.getName(), removeSensitive(sqlNode), qrys, params);

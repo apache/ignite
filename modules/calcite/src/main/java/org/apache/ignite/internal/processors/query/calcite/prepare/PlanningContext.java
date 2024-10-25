@@ -48,9 +48,6 @@ public final class PlanningContext implements Context {
     private final Object[] parameters;
 
     /** */
-    private boolean validateParameters;
-
-    /** */
     private final CancelFlag cancelFlag = new CancelFlag(new AtomicBoolean());
 
     /** */
@@ -95,22 +92,6 @@ public final class PlanningContext implements Context {
     @SuppressWarnings("AssignmentOrReturnOfFieldWithMutableType")
     public Object[] parameters() {
         return parameters;
-    }
-
-
-    /**
-     * @param validateParameters Flag to enable validation of passed dynamic parameters.
-     */
-    public PlanningContext validateParameters(boolean validateParameters) {
-        this.validateParameters = validateParameters;
-
-        return this;
-    }
-    /**
-     * @return Flag to enable validation of passed dynamic parameters.
-     */
-    public boolean validateParameters() {
-        return validateParameters;
     }
 
     // Helper methods

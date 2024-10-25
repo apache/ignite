@@ -357,7 +357,7 @@ public class IgnitePlanner implements Planner, RelOptTable.ViewExpander {
         }
 
         CalciteCatalogReader catalogReader = this.catalogReader.withSchemaPath(schemaPath);
-        SqlValidator validator = new IgniteSqlValidator(operatorTbl, catalogReader, typeFactory, validatorCfg, ctx);
+        SqlValidator validator = new IgniteSqlValidator(operatorTbl, catalogReader, typeFactory, validatorCfg, ctx.parameters());
         SqlToRelConverter sqlToRelConverter = sqlToRelConverter(validator, catalogReader, sqlToRelConverterCfg);
         RelRoot root = sqlToRelConverter.convertQuery(sqlNode, true, false);
         root = root.withRel(sqlToRelConverter.decorrelate(sqlNode, root.rel));
@@ -413,7 +413,7 @@ public class IgnitePlanner implements Planner, RelOptTable.ViewExpander {
     /** */
     private SqlValidator validator() {
         if (validator == null)
-            validator = new IgniteSqlValidator(operatorTbl, catalogReader, typeFactory, validatorCfg, ctx);
+            validator = new IgniteSqlValidator(operatorTbl, catalogReader, typeFactory, validatorCfg, ctx.parameters());
 
         return validator;
     }
