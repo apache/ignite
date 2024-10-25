@@ -457,8 +457,8 @@ public class DataTypesTest extends AbstractBasicIntegrationTransactionalTest {
             .check();
     }
 
-    /** TODO: incomment */
-    @Ignore @Test
+    /** */
+    @Test
     public void testIsNotDistinctFromTypeConversion() {
         SqlTypeName[] numerics = new SqlTypeName[] {SqlTypeName.TINYINT, SqlTypeName.SMALLINT, SqlTypeName.INTEGER,
             SqlTypeName.BIGINT, SqlTypeName.DECIMAL, SqlTypeName.FLOAT, SqlTypeName.DOUBLE};

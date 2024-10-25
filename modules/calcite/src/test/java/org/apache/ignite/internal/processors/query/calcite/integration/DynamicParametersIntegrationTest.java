@@ -100,28 +100,28 @@ public class DynamicParametersIntegrationTest extends AbstractBasicIntegrationTe
     /** */
     @Test
     public void testDynamicParameters() {
-//        assertQuery("SELECT COALESCE(?, ?)").withParams("a", 10).returns("a").check();
-//        assertQuery("SELECT COALESCE(null, ?)").withParams(13).returns(13).check();
-//        assertQuery("SELECT LOWER(?)").withParams("ASD").returns("asd").check();
-//        assertQuery("SELECT ?").withParams("asd").returns("asd").check();
-//        assertQuery("SELECT ? + ?, LOWER(?) ").withParams(2, 2, "TeSt").returns(4, "test").check();
-//        assertQuery("SELECT LOWER(?), ? + ? ").withParams("TeSt", 2, 2).returns("test", 4).check();
-//        assertQuery("SELECT POWER(?, ?)").withParams(2, 3).returns(8d).check();
-//        assertQuery("SELECT SQRT(?)").withParams(4d).returns(2d).check();
-//        assertQuery("SELECT ? % ?").withParams(11, 10).returns(1).check();
-//
-//        assertQuery("SELECT LAST_DAY(?)").withParams(Date.valueOf("2022-01-01"))
-//            .returns(Date.valueOf("2022-01-31")).check();
-//        assertQuery("SELECT LAST_DAY(?)").withParams(LocalDate.parse("2022-01-01"))
-//            .returns(Date.valueOf("2022-01-31")).check();
+        assertQuery("SELECT COALESCE(?, ?)").withParams("a", 10).returns("a").check();
+        assertQuery("SELECT COALESCE(null, ?)").withParams(13).returns(13).check();
+        assertQuery("SELECT LOWER(?)").withParams("ASD").returns("asd").check();
+        assertQuery("SELECT ?").withParams("asd").returns("asd").check();
+        assertQuery("SELECT ? + ?, LOWER(?) ").withParams(2, 2, "TeSt").returns(4, "test").check();
+        assertQuery("SELECT LOWER(?), ? + ? ").withParams("TeSt", 2, 2).returns("test", 4).check();
+        assertQuery("SELECT POWER(?, ?)").withParams(2, 3).returns(8d).check();
+        assertQuery("SELECT SQRT(?)").withParams(4d).returns(2d).check();
+        assertQuery("SELECT ? % ?").withParams(11, 10).returns(1).check();
+
+        assertQuery("SELECT LAST_DAY(?)").withParams(Date.valueOf("2022-01-01"))
+            .returns(Date.valueOf("2022-01-31")).check();
+        assertQuery("SELECT LAST_DAY(?)").withParams(LocalDate.parse("2022-01-01"))
+            .returns(Date.valueOf("2022-01-31")).check();
 
         createAndPopulateTable();
 
-//        assertQuery("SELECT name LIKE '%' || ? || '%' FROM person where name is not null").withParams("go")
-//            .returns(true).returns(false).returns(false).returns(false).returns(false).check();
-//
-//        assertQuery("SELECT id FROM person WHERE name LIKE ? ORDER BY id LIMIT ?").withParams("I%", 1)
-//            .returns(0).check();
+        assertQuery("SELECT name LIKE '%' || ? || '%' FROM person where name is not null").withParams("go")
+            .returns(true).returns(false).returns(false).returns(false).returns(false).check();
+
+        assertQuery("SELECT id FROM person WHERE name LIKE ? ORDER BY id LIMIT ?").withParams("I%", 1)
+            .returns(0).check();
 
         assertQuery("SELECT id FROM person WHERE name LIKE ? ORDER BY id LIMIT ? OFFSET ?").withParams("I%", 1, 1)
             .returns(2).check();

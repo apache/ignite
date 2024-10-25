@@ -457,7 +457,7 @@ public class CalciteQueryProcessor extends GridProcessorAdapter implements Query
                                 () -> {
                                     miss.set(true);
 
-                                    return prepareSvc.prepareSingle(qryNode, qry.planningContext());
+                                    return prepareSvc.prepareSingle(qryNode, qry.planningContext(true));
                                 });
 
                         if (miss.get())
@@ -527,11 +527,11 @@ public class CalciteQueryProcessor extends GridProcessorAdapter implements Query
                     plan0 = queryPlanCache().queryPlan(
                         // Use source SQL to avoid redundant parsing next time.
                         new CacheKey(schema.getName(), sql, contextKey(qryCtx), params),
-                        () -> prepareSvc.prepareSingle(sqlNode, qry.planningContext())
+                        () -> prepareSvc.prepareSingle(sqlNode, qry.planningContext(validateDynParams))
                     );
                 }
                 else
-                    plan0 = prepareSvc.prepareSingle(sqlNode, qry.planningContext());
+                    plan0 = prepareSvc.prepareSingle(sqlNode, qry.planningContext(validateDynParams));
 
                 return action.apply(qry, plan0);
             }, schema.getName(), removeSensitive(sqlNode), qrys, params);

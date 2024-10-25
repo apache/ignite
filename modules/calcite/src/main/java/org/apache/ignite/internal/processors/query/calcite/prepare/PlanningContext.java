@@ -48,7 +48,7 @@ public final class PlanningContext implements Context {
     private final Object[] parameters;
 
     /** */
-    private boolean validateParams;
+    private boolean validateParameters;
 
     /** */
     private final CancelFlag cancelFlag = new CancelFlag(new AtomicBoolean());
@@ -99,10 +99,10 @@ public final class PlanningContext implements Context {
 
 
     /**
-     * @param validateParams Flag to enable validation of passed dynamic parameters.
+     * @param validateParameters Flag to enable validation of passed dynamic parameters.
      */
-    public PlanningContext validateParameters(boolean validateParams) {
-        this.validateParams = validateParams;
+    public PlanningContext validateParameters(boolean validateParameters) {
+        this.validateParameters = validateParameters;
 
         return this;
     }
@@ -110,7 +110,7 @@ public final class PlanningContext implements Context {
      * @return Flag to enable validation of passed dynamic parameters.
      */
     public boolean validateParameters() {
-        return validateParams;
+        return validateParameters;
     }
 
     // Helper methods

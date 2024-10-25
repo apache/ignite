@@ -119,19 +119,20 @@ public class IgniteSqlValidator extends SqlValidatorImpl {
      * @param catalogReader Catalog reader
      * @param typeFactory   Type factory
      * @param config        Config
-     * @param parameters    Dynamic parameters
-     * @param validateParams  Flag to enable validation of passed dynamic parameters.
+     * @param ctx           Planning context
      */
     public IgniteSqlValidator(SqlOperatorTable opTab, CalciteCatalogReader catalogReader,
-        IgniteTypeFactory typeFactory, SqlValidator.Config config, Object[] parameters, boolean validateParams) {
+        IgniteTypeFactory typeFactory, SqlValidator.Config config, PlanningContext ctx) {
         super(opTab, catalogReader, typeFactory, config);
 
-        this.validateParams = validateParams;
+        this.validateParams = ctx.validateParameters();
+
+        Object[] parameters = ctx.parameters();
 
         if (!F.isEmpty(parameters)) {
             dynParams = new HashMap<>(parameters.length);
 
-            for (int i = 0; i < parameters.length; ++i)
+            for (int i = 0; i < ctx.parameters().length; ++i)
                 dynParams.put(i, new DynamicParameterHolder(parameters[i]));
         }
     }
@@ -317,9 +318,9 @@ public class IgniteSqlValidator extends SqlValidatorImpl {
     }
 
     /**
-     * Derives the type of the given dynamic parameter.
+     * Derives type of the passed dynamic parameter.
      *
-     * @return {@link DynamicParameterHolder} related to {@code node} with the derived type.
+     * @return A dynamic parameter holder related to {@code node} with the derived type.
      */
     private DynamicParameterHolder deriveDynamicParamType(SqlDynamicParam node) {
         if (dynParamNodes == null)
@@ -327,13 +328,8 @@ public class IgniteSqlValidator extends SqlValidatorImpl {
 
         DynamicParameterHolder pHolder = dynamicParamater(node.getIndex());
 
-        if (pHolder.type != null && pHolder.hasValue) {
-            // TODO: IGNITE-23251 - Uncomment with this ticket. Passed parameters number should be validated.
-            //assert dynParamNodes.contains(node);
-            //assert node.equals(pHolder.node);
-
+        if (pHolder.type != null && pHolder.hasValue)
             setValidatedNodeType(node, pHolder.type);
-        }
         else {
             dynParamNodes.add(node);
 
@@ -354,7 +350,7 @@ public class IgniteSqlValidator extends SqlValidatorImpl {
         return pHolder;
     }
 
-    /** Binds {@code node} and {@code type} of a dynamic parameter to {@code pHolder}. */
+    /** Sets {@code node} and {@code type} to {@code pHolder}. */
     private void dynamicParameterType(DynamicParameterHolder pHolder, SqlDynamicParam node, RelDataType type) {
         assert pHolder.node == null || node.getIndex() == pHolder.node.getIndex()
             : "Node is already set for a dynamic parameter #" + pHolder.node.getIndex();
