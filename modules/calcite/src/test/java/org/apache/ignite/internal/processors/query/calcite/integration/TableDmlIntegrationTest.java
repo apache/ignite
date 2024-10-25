@@ -498,6 +498,33 @@ public class TableDmlIntegrationTest extends AbstractBasicIntegrationTransaction
 
     /** */
     @Test
+    public void testDefaultNullValue() {
+        checkDefaultValue("TINYINT", null, null);
+        checkDefaultValue("SMALLINT", null, null);
+        checkDefaultValue("INTEGER", null, null);
+        checkDefaultValue("BIGINT", null, null);
+        checkDefaultValue("FLOAT", null, null);
+        checkDefaultValue("REAL", null, null);
+        checkDefaultValue("DOUBLE", null, null);
+        checkDefaultValue("DECIMAL", null, null);
+        checkDefaultValue("DECIMAL(5)", null, null);
+        checkDefaultValue("DECIMAL(6, 1)", null, null);
+        checkDefaultValue("CHAR(5)", null, null);
+        checkDefaultValue("VARCHAR", null, null);
+        checkDefaultValue("VARCHAR(5)", null, null);
+        checkDefaultValue("INTERVAL DAYS TO SECONDS", null, null);
+        checkDefaultValue("INTERVAL YEARS TO MONTHS", null, null);
+        checkDefaultValue("INTERVAL MONTHS", null, null);
+        checkDefaultValue("DATE", null, null);
+        checkDefaultValue("TIME", null, null);
+        checkDefaultValue("TIMESTAMP", null, null);
+        checkDefaultValue("BINARY(3)", null, null);
+        checkDefaultValue("VARBINARY", null, null);
+        checkDefaultValue("UUID", null, null);
+    }
+
+    /** */
+    @Test
     public void testInsertDefaultValue() {
         checkDefaultValue("BOOLEAN", "TRUE", Boolean.TRUE);
         checkDefaultValue("BOOLEAN NOT NULL", "TRUE", Boolean.TRUE);
@@ -603,6 +630,31 @@ public class TableDmlIntegrationTest extends AbstractBasicIntegrationTransaction
     }
 
     /** */
+    @Test
+    public void testInsertIncorrectDate() {
+        sql("CREATE TABLE timestamp_t(t TIMESTAMP) WITH " + atomicity());
+
+        String errDate = "Invalid DATE value";
+        String errDay = "Value of DAY field is out of range";
+        Class<? extends Exception> errType = IllegalArgumentException.class;
+
+        assertThrows("INSERT INTO timestamp_t VALUES ('blabla')", errType, errDate);
+        assertThrows("INSERT INTO timestamp_t VALUES ('1993-20-14 00:00:00')", errType, errDate);
+        assertThrows("INSERT INTO timestamp_t VALUES ('1993-08-99 00:00:00')", errType, errDate);
+        assertThrows("INSERT INTO timestamp_t VALUES ('1993-02-29 00:00:00')", errType, errDay);
+        assertThrows("INSERT INTO timestamp_t VALUES ('1900-02-29 00:00:00')", errType, errDay);
+        sql("INSERT INTO timestamp_t VALUES ('1992-02-29 00:00:00')");
+        sql("INSERT INTO timestamp_t VALUES ('2000-02-29 00:00:00')");
+        assertThrows("INSERT INTO timestamp_t VALUES ('02-02-1992 00:00:00')", errType, errDate);
+        assertThrows("INSERT INTO timestamp_t VALUES ('1900-1-1 59:59:23')", errType, errDate);
+        assertThrows("INSERT INTO timestamp_t VALUES ('1900a01a01 00:00:00')", errType, errDate);
+        assertThrows("INSERT INTO timestamp_t VALUES ('1900-1-1 00;00;00')", errType, errDate);
+        assertThrows("INSERT INTO timestamp_t VALUES ('1900-1-1 00a00a00')", errType, errDate);
+        assertThrows("INSERT INTO timestamp_t VALUES ('1900-1-1 00/00/00')", errType, errDate);
+        assertThrows("INSERT INTO timestamp_t VALUES ('1900-1-1 00-00-00')", errType, errDate);
+    }
+
+    /** */
     private void checkDefaultValue(String sqlType, String sqlVal, Object expectedVal) {
         try {
             executeSql("CREATE TABLE test (dummy INT, val " + sqlType + " DEFAULT " + sqlVal + ") WITH " + atomicity());
@@ -624,7 +676,7 @@ public class TableDmlIntegrationTest extends AbstractBasicIntegrationTransaction
 
     /** */
     private void checkQueryResult(String sql, Object expectedVal) {
-        if (expectedVal.getClass().isArray()) {
+        if (expectedVal != null && expectedVal.getClass().isArray()) {
             List<List<?>> res = executeSql(sql);
 
             assertEquals(1, res.size());
