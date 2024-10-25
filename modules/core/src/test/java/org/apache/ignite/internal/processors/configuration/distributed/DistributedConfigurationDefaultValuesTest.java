@@ -45,7 +45,7 @@ public class DistributedConfigurationDefaultValuesTest extends GridCommonAbstrac
     private Runnable onReadyToWrite;
 
     /** */
-    Map<String, ?> dfltPropVals;
+    Map<String, String> dfltPropVals;
 
     /** */
     private boolean pds;
@@ -112,18 +112,7 @@ public class DistributedConfigurationDefaultValuesTest extends GridCommonAbstrac
 
     /** */
     @Test
-    public void testDifferentPropertyTypesInitByString() throws Exception {
-        checkDifferentPropertyTypes(false);
-    }
-
-    /** */
-    @Test
-    public void testDifferentPropertyTypesInitByNativeType() throws Exception {
-        checkDifferentPropertyTypes(true);
-    }
-
-    /** */
-    private void checkDifferentPropertyTypes(boolean nativeType) throws Exception {
+    public void testDifferentPropertyTypes() throws Exception {
         DistributedLongProperty longProp = DistributedLongProperty.detachedLongProperty("longProp", "");
         DistributedBooleanProperty boolProp = DistributedBooleanProperty.detachedBooleanProperty("boolProp", "");
         SimpleDistributedProperty<String> strProp = new SimpleDistributedProperty<>("stringProp", Function.identity(), "");
@@ -135,19 +124,19 @@ public class DistributedConfigurationDefaultValuesTest extends GridCommonAbstrac
         );
 
         dfltPropVals = F.asMap(
-            "longProp", nativeType ? 1L : "1",
-            "boolProp", nativeType ? true : "true",
+            "longProp", "1",
+            "boolProp", "true",
             "stringProp", "val",
-            "enumProp", nativeType ? ClusterState.ACTIVE : "ACTIVE"
+            "enumProp", "ACTIVE"
         );
 
         onReadyToRegister = dispatcher -> dispatcher.registerProperties(longProp, boolProp, strProp, enumProp);
 
-        Map<String, Object> lsnrProps = new HashMap<>();
+        Map<String, String> lsnrProps = new HashMap<>();
 
         DistributePropertyListener<Object> lsnr = (name, oldVal, newVal) -> {
             if (newVal != null)
-                lsnrProps.put(name, nativeType ? newVal : newVal.toString());
+                lsnrProps.put(name, newVal.toString());
         };
 
         longProp.addListener(lsnr);
@@ -156,7 +145,7 @@ public class DistributedConfigurationDefaultValuesTest extends GridCommonAbstrac
         enumProp.addListener(lsnr);
 
         // Properties values when distributed configuration is ready to write.
-        Map<String, Object> lsnrProps0 = new HashMap<>();
+        Map<String, String> lsnrProps0 = new HashMap<>();
 
         onReadyToWrite = () -> lsnrProps0.putAll(lsnrProps);
 

@@ -110,7 +110,7 @@ public class DistributedConfigurationProcessor extends GridProcessorAdapter impl
 
     /** Init default values for distributed properties. */
     private IgniteInternalFuture<Void> initDefaultPropertiesValues() {
-        Map<String, ?> dfltVals = ctx.config().getDistributedPropertiesDefaultValues();
+        Map<String, String> dfltVals = ctx.config().getDistributedPropertiesDefaultValues();
 
         if (F.isEmpty(dfltVals))
             return new GridFinishedFuture<>();
@@ -122,7 +122,7 @@ public class DistributedConfigurationProcessor extends GridProcessorAdapter impl
             }
         };
 
-        for (Map.Entry<String, ?> entry : dfltVals.entrySet()) {
+        for (Map.Entry<String, String> entry : dfltVals.entrySet()) {
             DistributedChangeableProperty<Serializable> prop = props.get(entry.getKey());
 
             if (prop == null) {
@@ -132,12 +132,17 @@ public class DistributedConfigurationProcessor extends GridProcessorAdapter impl
                 continue;
             }
 
-            if (prop.get() != null)
+            if (prop.get() != null) {
+                if (log.isDebugEnabled()) {
+                    log.debug("Skip set default value for distributed porperty [name=" + entry.getKey() +
+                        ", clusterValue=" + prop.get() + ", configValue=" + entry.getValue() + ']');
+                }
+
                 continue;
+            }
 
             try {
-                Serializable val = entry.getValue() instanceof String ? prop.parse((String)entry.getValue()) :
-                    (Serializable)entry.getValue();
+                Serializable val = prop.parse(entry.getValue());
 
                 IgniteInternalFuture<?> fut = prop.propagateAsync(null, val);
 

@@ -606,7 +606,7 @@ public class IgniteConfiguration {
     public ShutdownPolicy shutdown = DFLT_SHUTDOWN_POLICY;
 
     /** Default values for distributed properties. */
-    private Map<String, ?> distrProps;
+    private Map<String, String> distrProps;
 
     /**
      * Creates valid grid configuration with all default values.
@@ -3608,7 +3608,7 @@ public class IgniteConfiguration {
      *
      * @return Default values for distributed properties.
      */
-    public Map<String, ?> getDistributedPropertiesDefaultValues() {
+    public Map<String, String> getDistributedPropertiesDefaultValues() {
         return distrProps;
     }
 
@@ -3618,7 +3618,7 @@ public class IgniteConfiguration {
      * @param distrProps Default values for distributed properties.
      * @return {@code this} for chaining.
      */
-    public IgniteConfiguration setDistributedPropertiesDefaultValues(Map<String, ?> distrProps) {
+    public IgniteConfiguration setDistributedPropertiesDefaultValues(Map<String, String> distrProps) {
         this.distrProps = distrProps;
 
         return this;
