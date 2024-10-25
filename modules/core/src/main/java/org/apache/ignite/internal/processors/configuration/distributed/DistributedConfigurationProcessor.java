@@ -134,7 +134,7 @@ public class DistributedConfigurationProcessor extends GridProcessorAdapter impl
 
             if (prop.get() != null) {
                 if (log.isDebugEnabled()) {
-                    log.debug("Skip set default value for distributed porperty [name=" + entry.getKey() +
+                    log.debug("Skip set default value for distributed property [name=" + entry.getKey() +
                         ", clusterValue=" + prop.get() + ", configValue=" + entry.getValue() + ']');
                 }
 
