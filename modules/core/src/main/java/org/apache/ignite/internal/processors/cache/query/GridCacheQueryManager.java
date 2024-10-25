@@ -928,7 +928,7 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
      *
      * @param qryInfo Query info.
      */
-    protected void runFieldsQuery(GridCacheQueryInfo qryInfo) {
+    protected void runFieldsQuery(final GridCacheQueryInfo qryInfo) {
         assert qryInfo != null;
 
         if (!enterBusy()) {
@@ -952,7 +952,7 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
 
             try {
                 // Preparing query closures.
-                IgniteReducer<Object, Object> rdc = injectResources((IgniteReducer<Object, Object>)qryInfo.reducer());
+                final IgniteReducer<Object, Object> rdc = injectResources((IgniteReducer<Object, Object>)qryInfo.reducer());
 
                 GridCacheQueryAdapter<?> qry = qryInfo.query();
 
@@ -961,7 +961,9 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
                 Collection<Object> data = null;
                 Collection<Object> entities = null;
 
-                if (qryInfo.local() || rdc != null || cctx.isLocalNode(qryInfo.senderId()))
+                boolean isWriteData = qryInfo.local() || rdc != null || cctx.isLocalNode(qryInfo.senderId());
+
+                if (isWriteData)
                     data = new ArrayList<>(pageSize);
                 else
                     entities = new ArrayList<>(pageSize);
@@ -1039,7 +1041,7 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
                             row));
                     }
 
-                    if ((qryInfo.local() || rdc != null || cctx.isLocalNode(qryInfo.senderId()))) {
+                    if (isWriteData) {
                         // Reduce.
                         if (rdc != null) {
                             if (!rdc.collect(row))
@@ -1424,7 +1426,7 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
                     taskName));
             }
 
-            GridCloseableIterator it = scanIterator(qry, qry.transform(), true);
+            GridCloseableIterator<?> it = scanIterator(qry, qry.transform(), true);
 
             updateStatistics = false;
 
