@@ -27,6 +27,7 @@ import java.time.Period;
 import java.util.List;
 import java.util.UUID;
 import org.apache.calcite.sql.validate.SqlValidatorException;
+import org.apache.ignite.IgniteCache;
 import org.apache.ignite.internal.util.typedef.F;
 import org.junit.Test;
 
@@ -77,7 +78,9 @@ public class DynamicParametersIntegrationTest extends AbstractBasicIntegrationTe
         assertQuery("SELECT ?::VARCHAR").withParams(1).returns("1").check();
         assertQuery("SELECT CAST(? as VARCHAR)").withParams(1).returns("1").check();
 
-        createAndPopulateTable();
+        IgniteCache<Integer, Employer> cache = createAndPopulateTable();
+
+        cache.put(cache.size(), new Employer("15", 15d));
 
         assertQuery("SELECT name FROM Person WHERE id=?::INTEGER").withParams("2").returns("Ilya").check();
         assertQuery("SELECT name FROM Person WHERE id=CAST(? as INTEGER)").withParams("2").returns("Ilya").check();
@@ -118,7 +121,7 @@ public class DynamicParametersIntegrationTest extends AbstractBasicIntegrationTe
         createAndPopulateTable();
 
         assertQuery("SELECT name LIKE '%' || ? || '%' FROM person where name is not null").withParams("go")
-            .returns(true).returns(false).returns(false).returns(false).returns(false).check();
+            .returns(true).returns(false).returns(false).returns(false).check();
 
         assertQuery("SELECT id FROM person WHERE name LIKE ? ORDER BY id LIMIT ?").withParams("I%", 1)
             .returns(0).check();

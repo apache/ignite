@@ -42,24 +42,24 @@ import org.junit.runners.Suite;
     //ExecutionTestSuite.class,
     IntegrationTestSuite.class,
 
-//    ClosableIteratorsHolderTest.class,
-//    MemoryTrackerTest.class,
-//    QueryCheckerTest.class,
-//    SqlCustomParserTest.class,
-//    SqlReservedWordsTest.class,
-//    IgniteSqlFunctionsTest.class,
-//    LogicalRelImplementorTest.class,
+    ClosableIteratorsHolderTest.class,
+    MemoryTrackerTest.class,
+    QueryCheckerTest.class,
+    SqlCustomParserTest.class,
+    SqlReservedWordsTest.class,
+    IgniteSqlFunctionsTest.class,
+    LogicalRelImplementorTest.class,
 
 //    ScriptTestSuite.class,
-//    CalciteCommunicationMessageSerializationTest.class,
-//
-//    NumericTypesPrecisionsTest.class,
-//
-//    KeyFilteringCursorTest.class,
-//    SqlTransactionsIsolationTest.class,
-//    SqlTransactionsUnsupportedModesTest.class,
-//
-//    JdbcThinTransactionalSelfTest.class,
+    CalciteCommunicationMessageSerializationTest.class,
+
+    NumericTypesPrecisionsTest.class,
+
+    KeyFilteringCursorTest.class,
+    SqlTransactionsIsolationTest.class,
+    SqlTransactionsUnsupportedModesTest.class,
+
+    JdbcThinTransactionalSelfTest.class,
 })
 public class IgniteCalciteTestSuite {
 }

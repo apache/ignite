@@ -205,7 +205,6 @@ public class AbstractBasicIntegrationTest extends GridCommonAbstractTest {
         put(ignite, person, idx++, new Employer("Ilya", 15d));
         put(ignite, person, idx++, new Employer("Roma", 10d));
         put(ignite, person, idx++, new Employer("Roma", 10d));
-        put(ignite, person, idx, new Employer("15", 15d));
 
         return person;
     }
