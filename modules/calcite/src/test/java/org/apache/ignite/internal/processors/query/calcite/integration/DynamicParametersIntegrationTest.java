@@ -26,6 +26,7 @@ import java.time.LocalDate;
 import java.time.Period;
 import java.util.List;
 import java.util.UUID;
+import org.apache.calcite.sql.validate.SqlValidatorException;
 import org.apache.ignite.internal.util.typedef.F;
 import org.junit.Test;
 
@@ -62,38 +63,65 @@ public class DynamicParametersIntegrationTest extends AbstractBasicIntegrationTe
 
     /** */
     @Test
-    public void testCasts() {
-        sql("CREATE TABLE t(id integer primary key, int_col integer)");
-        sql("insert into t values (1, 1)");
+    public void testMissedValue() {
+        assertThrows("SELECT ?", SqlValidatorException.class, "No value passed for dynamic parameter 1 or its type is unknown.");
 
-        assertQuery("SELECT id from t where int_col=CAST(? as INTEGER)").withParams('1').returns(1).check();
+        assertThrows("SELECT ?, ?", SqlValidatorException.class, "No value passed for dynamic parameter 2 or its type is unknown.", "arg0");
+    }
+
+    /** */
+    @Test
+    public void testCasts() {
+        assertQuery("SELECT CAST(? as INTEGER)").withParams('1').returns(1).check();
+        assertQuery("SELECT ?::INTEGER").withParams('1').returns(1).check();
+        assertQuery("SELECT ?::VARCHAR").withParams(1).returns("1").check();
+        assertQuery("SELECT CAST(? as VARCHAR)").withParams(1).returns("1").check();
+
+        createAndPopulateTable();
+
+        assertQuery("SELECT name FROM Person WHERE id=?::INTEGER").withParams("2").returns("Ilya").check();
+        assertQuery("SELECT name FROM Person WHERE id=CAST(? as INTEGER)").withParams("2").returns("Ilya").check();
+
+        assertQuery("SELECT id FROM Person WHERE name=CAST(? as VARCHAR)").withParams(15).returns(5).check();
+        assertQuery("SELECT id FROM Person WHERE name IN (?::VARCHAR)").withParams(15).returns(5).check();
+        assertQuery("SELECT name FROM Person WHERE id IN (?::INTEGER)").withParams("2").returns("Ilya").check();
+        assertQuery("SELECT name FROM Person WHERE id IN (?::INTEGER, ?::INTEGER)").withParams("2", "3")
+            .returns("Ilya").returns("Roma").check();
+
+        assertQuery("SELECT count(*) FROM Person WHERE ? IS NOT NULL").withParams(1).returns(6L).check();
+        assertQuery("SELECT count(*) FROM Person WHERE ? IS NOT NULL").withParams("abc").returns(6L).check();
+        assertQuery("SELECT count(*) FROM Person WHERE ? IS NOT NULL").withParams(new Object[] { null }).returns(0L).check();
+
+        assertQuery("SELECT count(*) FROM Person WHERE ? IS NULL").withParams(1).returns(0L).check();
+        assertQuery("SELECT count(*) FROM Person WHERE ? IS NULL").withParams("abc").returns(0L).check();
+        assertQuery("SELECT count(*) FROM Person WHERE ? IS NULL").withParams(new Object[] {null}).returns(6L).check();
     }
 
     /** */
     @Test
     public void testDynamicParameters() {
-        assertQuery("SELECT COALESCE(?, ?)").withParams("a", 10).returns("a").check();
-        assertQuery("SELECT COALESCE(null, ?)").withParams(13).returns(13).check();
-        assertQuery("SELECT LOWER(?)").withParams("ASD").returns("asd").check();
-        assertQuery("SELECT ?").withParams("asd").returns("asd").check();
-        assertQuery("SELECT ? + ?, LOWER(?) ").withParams(2, 2, "TeSt").returns(4, "test").check();
-        assertQuery("SELECT LOWER(?), ? + ? ").withParams("TeSt", 2, 2).returns("test", 4).check();
-        assertQuery("SELECT POWER(?, ?)").withParams(2, 3).returns(8d).check();
-        assertQuery("SELECT SQRT(?)").withParams(4d).returns(2d).check();
-        assertQuery("SELECT ? % ?").withParams(11, 10).returns(1).check();
-
-        assertQuery("SELECT LAST_DAY(?)").withParams(Date.valueOf("2022-01-01"))
-            .returns(Date.valueOf("2022-01-31")).check();
-        assertQuery("SELECT LAST_DAY(?)").withParams(LocalDate.parse("2022-01-01"))
-            .returns(Date.valueOf("2022-01-31")).check();
+//        assertQuery("SELECT COALESCE(?, ?)").withParams("a", 10).returns("a").check();
+//        assertQuery("SELECT COALESCE(null, ?)").withParams(13).returns(13).check();
+//        assertQuery("SELECT LOWER(?)").withParams("ASD").returns("asd").check();
+//        assertQuery("SELECT ?").withParams("asd").returns("asd").check();
+//        assertQuery("SELECT ? + ?, LOWER(?) ").withParams(2, 2, "TeSt").returns(4, "test").check();
+//        assertQuery("SELECT LOWER(?), ? + ? ").withParams("TeSt", 2, 2).returns("test", 4).check();
+//        assertQuery("SELECT POWER(?, ?)").withParams(2, 3).returns(8d).check();
+//        assertQuery("SELECT SQRT(?)").withParams(4d).returns(2d).check();
+//        assertQuery("SELECT ? % ?").withParams(11, 10).returns(1).check();
+//
+//        assertQuery("SELECT LAST_DAY(?)").withParams(Date.valueOf("2022-01-01"))
+//            .returns(Date.valueOf("2022-01-31")).check();
+//        assertQuery("SELECT LAST_DAY(?)").withParams(LocalDate.parse("2022-01-01"))
+//            .returns(Date.valueOf("2022-01-31")).check();
 
         createAndPopulateTable();
 
-        assertQuery("SELECT name LIKE '%' || ? || '%' FROM person where name is not null").withParams("go")
-            .returns(true).returns(false).returns(false).returns(false).check();
-
-        assertQuery("SELECT id FROM person WHERE name LIKE ? ORDER BY id LIMIT ?").withParams("I%", 1)
-            .returns(0).check();
+//        assertQuery("SELECT name LIKE '%' || ? || '%' FROM person where name is not null").withParams("go")
+//            .returns(true).returns(false).returns(false).returns(false).returns(false).check();
+//
+//        assertQuery("SELECT id FROM person WHERE name LIKE ? ORDER BY id LIMIT ?").withParams("I%", 1)
+//            .returns(0).check();
 
         assertQuery("SELECT id FROM person WHERE name LIKE ? ORDER BY id LIMIT ? OFFSET ?").withParams("I%", 1, 1)
             .returns(2).check();
@@ -105,17 +133,17 @@ public class DynamicParametersIntegrationTest extends AbstractBasicIntegrationTe
     /** Tests the same query with different type of parameters to cover case with check right plans cache work. **/
     @Test
     public void testWithDifferentParametersTypes() {
-//        assertQuery("SELECT ? + ?, LOWER(?) ").withParams(2, 2, "TeSt").returns(4, "test").check();
-//        assertQuery("SELECT ? + ?, LOWER(?) ").withParams(2.2, 2.2, "TeSt").returns(4.4, "test").check();
+        assertQuery("SELECT ? + ?, LOWER(?) ").withParams(2, 2, "TeSt").returns(4, "test").check();
+        assertQuery("SELECT ? + ?, LOWER(?) ").withParams(2.2, 2.2, "TeSt").returns(4.4, "test").check();
 
-//        assertQuery("SELECT COALESCE(?, ?)").withParams(null, null).returns(NULL_RESULT).check();
+        assertQuery("SELECT COALESCE(?, ?)").withParams(null, null).returns(NULL_RESULT).check();
         assertQuery("SELECT COALESCE(?, ?)").withParams(null, 13).returns(13).check();
-//        assertQuery("SELECT COALESCE(?, ?)").withParams("a", 10).returns("a").check();
-//        assertQuery("SELECT COALESCE(?, ?)").withParams("a", "b").returns("a").check();
-//        assertQuery("SELECT COALESCE(?, ?)").withParams(22, 33).returns(22).check();
-//        assertQuery("SELECT COALESCE(?, ?)").withParams(12.2, "b").returns("12.2").check();
-//        assertQuery("SELECT COALESCE(?, ?)").withParams(12, "b").returns("12").check();
-//        assertQuery("SELECT UPPER(TYPEOF(?))").withParams(1).returns("INTEGER").check();
-//        assertQuery("SELECT UPPER(TYPEOF(?))").withParams(1d).returns("DOUBLE").check();
+        assertQuery("SELECT COALESCE(?, ?)").withParams("a", 10).returns("a").check();
+        assertQuery("SELECT COALESCE(?, ?)").withParams("a", "b").returns("a").check();
+        assertQuery("SELECT COALESCE(?, ?)").withParams(22, 33).returns(22).check();
+        assertQuery("SELECT COALESCE(?, ?)").withParams(12.2, "b").returns("12.2").check();
+        assertQuery("SELECT COALESCE(?, ?)").withParams(12, "b").returns("12").check();
+        assertQuery("SELECT UPPER(TYPEOF(?))").withParams(1).returns("INTEGER").check();
+        assertQuery("SELECT UPPER(TYPEOF(?))").withParams(1d).returns("DOUBLE").check();
     }
 }

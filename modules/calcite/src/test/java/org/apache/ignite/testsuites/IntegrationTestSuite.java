@@ -88,7 +88,7 @@ import org.junit.runners.Suite;
 //    ProjectScanMergeRuleTest.class,
 //    CalciteQueryProcessorTest.class,
 //    CalciteErrorHandlilngIntegrationTest.class,
-//    JdbcQueryTest.class,
+    JdbcQueryTest.class,
 //    JdbcCrossEngineTest.class,
 //    CalciteBasicSecondaryIndexIntegrationTest.class,
 //    CancelTest.class,

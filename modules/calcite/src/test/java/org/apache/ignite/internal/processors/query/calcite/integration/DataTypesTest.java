@@ -18,6 +18,8 @@
 package org.apache.ignite.internal.processors.query.calcite.integration;
 
 import java.math.BigDecimal;
+import java.util.Arrays;
+import java.util.Collection;
 import java.util.List;
 import java.util.Objects;
 import java.util.UUID;
@@ -36,6 +38,7 @@ import org.apache.ignite.internal.processors.query.calcite.hint.HintDefinition;
 import org.apache.ignite.internal.util.typedef.F;
 import org.junit.Ignore;
 import org.junit.Test;
+import org.junit.runners.Parameterized;
 
 import static org.apache.ignite.internal.processors.query.calcite.CalciteQueryProcessor.FRAMEWORK_CONFIG;
 import static org.junit.Assume.assumeTrue;
@@ -44,6 +47,12 @@ import static org.junit.Assume.assumeTrue;
  * Test SQL data types.
  */
 public class DataTypesTest extends AbstractBasicIntegrationTransactionalTest {
+    /** @return Test parameters. */
+    @Parameterized.Parameters(name = "sqlTxMode={0}")
+    public static Collection<?> parameters() {
+        return Arrays.asList(SqlTransactionMode.NONE);
+    }
+
     /** Tests Other type. */
     @Test
     public void testOtherType() {

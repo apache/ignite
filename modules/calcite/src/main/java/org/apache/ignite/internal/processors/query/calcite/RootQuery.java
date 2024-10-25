@@ -293,7 +293,7 @@ public class RootQuery<RowT> extends Query<RowT> implements TrackableQuery {
     }
 
     /** */
-    public PlanningContext planningContext() {
+    public PlanningContext planningContext(boolean validateParams) {
         synchronized (mux) {
             if (state == QueryState.CLOSED || state == QueryState.CLOSING)
                 throw queryCanceledException();
@@ -323,7 +323,7 @@ public class RootQuery<RowT> extends Query<RowT> implements TrackableQuery {
                 }
             }
 
-            return pctx;
+            return pctx.validateParameters(validateParams);
         }
     }
 
