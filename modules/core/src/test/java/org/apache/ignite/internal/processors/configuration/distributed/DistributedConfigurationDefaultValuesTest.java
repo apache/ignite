@@ -54,15 +54,6 @@ public class DistributedConfigurationDefaultValuesTest extends GridCommonAbstrac
     private final ListeningTestLogger listeningLog = new ListeningTestLogger(log);
 
     /** {@inheritDoc} */
-    @Override protected void beforeTest() throws Exception {
-        super.beforeTest();
-
-        stopAllGrids();
-
-        cleanPersistenceDir();
-    }
-
-    /** {@inheritDoc} */
     @Override protected void afterTest() throws Exception {
         stopAllGrids();
 
