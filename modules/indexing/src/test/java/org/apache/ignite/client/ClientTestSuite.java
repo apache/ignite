@@ -17,6 +17,7 @@
 
 package org.apache.ignite.client;
 
+import org.apache.ignite.client.thin.ExtraColumnInH2RowsTest;
 import org.apache.ignite.internal.client.thin.AffinityMetricsTest;
 import org.apache.ignite.internal.client.thin.AtomicLongTest;
 import org.apache.ignite.internal.client.thin.BlockingTxOpsTest;
@@ -47,7 +48,6 @@ import org.apache.ignite.internal.client.thin.TimeoutTest;
 import org.apache.ignite.internal.client.thin.events.IgniteClientConnectionEventListenerTest;
 import org.apache.ignite.internal.client.thin.events.IgniteClientLifecycleEventListenerTest;
 import org.apache.ignite.internal.client.thin.events.IgniteClientRequestEventListenerTest;
-import org.apache.ignite.sqltests.ExtraColumnInH2RowsTest;
 import org.junit.runner.RunWith;
 import org.junit.runners.Suite;
 

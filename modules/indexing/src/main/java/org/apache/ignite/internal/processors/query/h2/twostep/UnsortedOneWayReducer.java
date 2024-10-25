@@ -57,11 +57,11 @@ public class UnsortedOneWayReducer extends UnsortedBaseReducer {
             @Override public boolean hasNext() {
                 iter = pollNextIterator(queue, iter);
 
-                return iter.get2().hasNext();
+                return iter.hasNext();
             }
 
             @Override public Row next() {
-                return H2PlainRowFactory.create(iter.get1(), iter.get2().next());
+                return H2PlainRowFactory.create(colCnt, iter.next());
             }
 
             @Override public void remove() {
