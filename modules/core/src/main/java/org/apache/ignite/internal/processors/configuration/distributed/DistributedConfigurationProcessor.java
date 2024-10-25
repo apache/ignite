@@ -142,9 +142,7 @@ public class DistributedConfigurationProcessor extends GridProcessorAdapter impl
             }
 
             try {
-                Serializable val = prop.parse(entry.getValue());
-
-                IgniteInternalFuture<?> fut = prop.propagateAsync(null, val);
+                IgniteInternalFuture<?> fut = prop.propagateAsync(null, prop.parse(entry.getValue()));
 
                 fut.listen(f -> {
                     if (f.error() != null)

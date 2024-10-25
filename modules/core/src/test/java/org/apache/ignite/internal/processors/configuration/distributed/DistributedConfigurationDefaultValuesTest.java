@@ -179,8 +179,7 @@ public class DistributedConfigurationDefaultValuesTest extends GridCommonAbstrac
 
         startGrid(0).cluster().state(ClusterState.ACTIVE);
 
-        // Value from default configuration.
-        assertEquals((Long)1L, prop0.get());
+        assertEquals("Expecting value from default configuration", (Long)1L, prop0.get());
 
         dfltPropVals = null;
 
@@ -188,8 +187,8 @@ public class DistributedConfigurationDefaultValuesTest extends GridCommonAbstrac
 
         startGrid(1);
 
-        // Value from cluster, when default configuration is empty.
-        assertEquals((Long)1L, prop1.get());
+        assertEquals("Expecting value from cluster, when value from cluster is not empty " +
+            "and default configuration is empty", (Long)1L, prop1.get());
 
         dfltPropVals = F.asMap(propName, "2");
 
@@ -197,8 +196,8 @@ public class DistributedConfigurationDefaultValuesTest extends GridCommonAbstrac
 
         startGrid(2);
 
-        // Value from cluster, when default configuration is not empty.
-        assertEquals((Long)1L, prop2.get());
+        assertEquals("Expecting value from cluster, when value from cluster and default configuration " +
+            "is not empty", (Long)1L, prop2.get());
 
         if (!pds) // Further checks for PDS after cluster restart.
             return;
@@ -216,8 +215,7 @@ public class DistributedConfigurationDefaultValuesTest extends GridCommonAbstrac
 
         startGrid(0);
 
-        // Value from PDS, when default configuration is not empty and PDS is not empty.
-        assertEquals((Long)1L, prop3.get());
+        assertEquals("Expecting value from PDS, when default configuration is not empty and PDS is not empty", (Long)1L, prop3.get());
 
         prop3.propagateAsync(2L).get();
 
@@ -227,8 +225,8 @@ public class DistributedConfigurationDefaultValuesTest extends GridCommonAbstrac
 
         startGrid(1);
 
-        // Value from cluster, when default configuration is empty and PDS is not empty.
-        assertEquals((Long)2L, prop4.get());
+        assertEquals("Expecting value from cluster, when value from cluster is not empty, default configuration " +
+            "is empty and PDS is not empty", (Long)2L, prop4.get());
 
         dfltPropVals = F.asMap(propName, "3");
 
@@ -236,8 +234,8 @@ public class DistributedConfigurationDefaultValuesTest extends GridCommonAbstrac
 
         startGrid(2);
 
-        // Value from cluster, when default configuration is not empty and PDS is not empty.
-        assertEquals((Long)2L, prop5.get());
+        assertEquals("Expecting value from cluster, when value from cluster is not empty, default configuration " +
+            "is not empty and PDS is not empty", (Long)2L, prop5.get());
     }
 
     /** */
