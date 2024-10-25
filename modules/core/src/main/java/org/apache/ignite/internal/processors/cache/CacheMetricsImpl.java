@@ -240,6 +240,18 @@ public class CacheMetricsImpl implements CacheMetrics {
     /** Conflict resolver merged entries count. */
     private LongAdderMetric rslvrMergedCnt;
 
+    /** PutAllConflict time. */
+    private final HistogramMetricImpl putAllConflictTime;
+
+    /** RemoveAllConflict time. */
+    private final HistogramMetricImpl rmvAllConflictTime;
+
+    /** Total PutAllConflict taken nanos. */
+    private final AtomicLongMetric putAllConflictTimeTotal;
+
+    /** Total RemoveAllConflict time taken nanos. */
+    private final AtomicLongMetric rmvAllConflictTimeTotal;
+
     /**
      * Creates cache metrics.
      *
@@ -424,6 +436,18 @@ public class CacheMetricsImpl implements CacheMetrics {
 
         idxBuildPartitionsLeftCnt = mreg.intMetric("IndexBuildPartitionsLeftCount",
             "The number of local node partitions that remain to be processed to complete indexing.");
+
+        putAllConflictTime = mreg.histogram("PutAllConflictTime", HISTOGRAM_BUCKETS,
+            "PutAllConflict time for which this node is the initiator, in nanoseconds.");
+
+        rmvAllConflictTime = mreg.histogram("RemoveAllConflictTime", HISTOGRAM_BUCKETS,
+            "RemoveAllConflict time for which this node is the initiator, in nanoseconds.");
+
+        putAllConflictTimeTotal = mreg.longMetric("PutAllConflictTimeTotal",
+            "The total time of cache putAllConflict operation for which this node is the initiator, in nanoseconds.");
+
+        rmvAllConflictTimeTotal = mreg.longMetric("RemoveAllConflictTimeTotal",
+            "The total time of cache removeAllConflict operation for which this node is the initiator, in nanoseconds.");
     }
 
     /**
@@ -753,6 +777,12 @@ public class CacheMetricsImpl implements CacheMetrics {
 
         if (rslvrMergedCnt != null)
             rslvrMergedCnt.reset();
+
+        putAllConflictTime.reset();
+        rmvAllConflictTime.reset();
+
+        putAllConflictTimeTotal.reset();
+        rmvAllConflictTimeTotal.reset();
     }
 
     /** {@inheritDoc} */
@@ -1705,6 +1735,34 @@ public class CacheMetricsImpl implements CacheMetrics {
 
         rslvrMergedCnt = mreg.longAdderMetric("ConflictResolverMergedCount",
             "Conflict resolver merged entries count");
+    }
+
+    /**
+     * Increments the putAllConflict time accumulator.
+     *
+     * @param duration the time taken in nanoseconds.
+     */
+    public void addPutAllConflictTimeNanos(long duration) {
+        putAllConflictTimeTotal.add(duration);
+
+        putAllConflictTime.value(duration);
+
+        if (delegate != null)
+            delegate.addPutAllConflictTimeNanos(duration);
+    }
+
+    /**
+     * Increments the removeAllConflict time accumulator.
+     *
+     * @param duration the time taken in nanoseconds.
+     */
+    public void addRemoveAllConflictTimeNanos(long duration) {
+        rmvAllConflictTimeTotal.add(duration);
+
+        rmvAllConflictTime.value(duration);
+
+        if (delegate != null)
+            delegate.addRemoveAllConflictTimeNanos(duration);
     }
 
     /** {@inheritDoc} */
