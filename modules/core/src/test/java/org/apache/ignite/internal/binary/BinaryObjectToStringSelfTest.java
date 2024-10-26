@@ -29,6 +29,8 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
 
+import static org.apache.ignite.internal.util.tostring.GridToStringBuilder.DFLT_TO_STRING_COLLECTION_LIMIT;
+
 /**
  * Tests for {@code BinaryObject.toString()}.
  */
@@ -99,14 +101,14 @@ public class BinaryObjectToStringSelfTest extends GridCommonAbstractTest {
         );
 
         for (String type : types) {
-            assertFalse(String.format("type=%s, size=99", type),
-                    containElipsis(type, getObject(type, 99)));
+            assertFalse(String.format("type=%s, size=%d", type, DFLT_TO_STRING_COLLECTION_LIMIT - 1),
+                    containElipsis(type, getObject(type, DFLT_TO_STRING_COLLECTION_LIMIT - 1)));
 
-            assertFalse(String.format("type=%s, size=100", type),
-                    containElipsis(type, getObject(type, 100)));
+            assertFalse(String.format("type=%s, size=%d", type, DFLT_TO_STRING_COLLECTION_LIMIT),
+                    containElipsis(type, getObject(type, DFLT_TO_STRING_COLLECTION_LIMIT)));
 
-            assertTrue(String.format("type=%s, size=101", type),
-                    containElipsis(type, getObject(type, 101)));
+            assertTrue(String.format("type=%s, size=%d", type, DFLT_TO_STRING_COLLECTION_LIMIT + 1),
+                    containElipsis(type, getObject(type, DFLT_TO_STRING_COLLECTION_LIMIT + 1)));
         }
     }
 
