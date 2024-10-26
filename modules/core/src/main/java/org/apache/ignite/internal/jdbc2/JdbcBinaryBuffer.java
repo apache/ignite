@@ -54,8 +54,8 @@ public class JdbcBinaryBuffer {
     /** Read only flag. */
     private boolean isReadOnly;
 
-    /** Minimum buffer size. */
-    private static final int MIN_BUFFER_SIZE = 8 * 1024;
+    /** Minimum buffer capacity. */
+    private static final int MIN_CAP = 256;
 
     /**
      * Create buffer which wraps the existing byte array and start working in the read-only mode.
@@ -82,7 +82,7 @@ public class JdbcBinaryBuffer {
      * Create empty buffer which starts working in the read-write mode.
      */
     public static JdbcBinaryBuffer createReadWrite() {
-        return new JdbcBinaryBuffer(new byte[MIN_BUFFER_SIZE], 0, 0, false);
+        return new JdbcBinaryBuffer(new byte[MIN_CAP], 0, 0, false);
     }
 
     /**
@@ -158,7 +158,7 @@ public class JdbcBinaryBuffer {
      * @param len New length.
      */
     public void truncate(int len) {
-        byte[] newArr = new byte[Math.max(MIN_BUFFER_SIZE, len)];
+        byte[] newArr = new byte[Math.max(MIN_CAP, len)];
 
         U.arrayCopy(arr, 0, newArr, 0, len);
 
@@ -222,21 +222,13 @@ public class JdbcBinaryBuffer {
         if (MAX_ARRAY_SIZE - pos < inpLen)
             throw new SQLException("Too much data. Can't write more then " + MAX_ARRAY_SIZE + " bytes to Blob.");
 
-        int finalLen = Math.max(pos + inpLen, length);
+        int newLen = Math.max(pos + inpLen, length);
 
-        if (isReadOnly) {
-            isReadOnly = false;
-
-            grow(finalLen);
-
-            off = 0;
-        }
-        else
-            ensureCapacity(finalLen);
+        ensureCapacity(newLen);
 
         U.arrayCopy(inpBuf, inpOff, arr, pos, inpLen);
 
-        length = finalLen;
+        length = newLen;
     }
 
     /**
@@ -269,73 +261,64 @@ public class JdbcBinaryBuffer {
         if (MAX_ARRAY_SIZE - pos < 1)
             throw new SQLException("Too much data. Can't write more then " + MAX_ARRAY_SIZE + " bytes to Blob.");
 
-        int finalLen = Math.max(pos + 1, length);
+        int newLen = Math.max(pos + 1, length);
 
-        if (isReadOnly) {
-            isReadOnly = false;
-
-            grow(finalLen);
-
-            off = 0;
-        }
-        else
-            ensureCapacity(finalLen);
+        ensureCapacity(newLen);
 
         arr[pos] = (byte)b;
 
-        length = finalLen;
+        length = newLen;
     }
 
     /**
-     * Increases the capacity if necessary to ensure that it can hold
-     * at least the number of elements specified by the minimum
-     * capacity argument.
+     * Ensure capacity.
      *
-     * @param  minCapacity the desired minimum capacity
-     * @throws OutOfMemoryError if {@code minCapacity < 0}.  This is
-     * interpreted as a request for the unsatisfiably large capacity
-     * {@code (long) Integer.MAX_VALUE + (minCapacity - Integer.MAX_VALUE)}.
+     * @param newLen The new data length the buffer should be able to hold.
      */
-    private void ensureCapacity(int minCapacity) {
-        // overflow-conscious code
-        if (minCapacity - arr.length > 0)
-            grow(minCapacity);
+    private void ensureCapacity(int newLen) {
+        if (newLen - arr.length > 0 || isReadOnly)
+            reallocate(capacity(arr.length, newLen));
     }
 
     /**
-     * Increases the capacity to ensure that it can hold at least the
-     * number of elements specified by the minimum capacity argument.
+     * Calculate new capacity.
      *
-     * @param minCapacity the desired minimum capacity
+     * @param curCap Current capacity.
+     * @param reqLen Required new data length.
+     * @return New capacity.
      */
-    private void grow(int minCapacity) {
-        // overflow-conscious code
-        int oldCapacity = arr.length;
+    private static int capacity(int curCap, int reqLen) {
+        int newCap;
 
-        int newCapacity = oldCapacity << 1;
+        if (reqLen < MIN_CAP)
+            newCap = MIN_CAP;
+        else {
+            newCap = Math.max(curCap, MIN_CAP);
 
-        if (newCapacity - minCapacity < 0)
-            newCapacity = minCapacity;
+            while (newCap < reqLen) {
+                newCap <<= 1;
 
-        if (newCapacity - MAX_ARRAY_SIZE > 0)
-            newCapacity = hugeCapacity(minCapacity);
+                if (newCap < 0)
+                    newCap = MAX_ARRAY_SIZE;
+            }
+        }
 
+        return newCap;
+    }
+
+    /**
+     * Allocate the new underlining array and copy data.
+     *
+     * @param newCapacity New capacity.
+     */
+    private void reallocate(int newCapacity) {
         byte[] newBuf = new byte[newCapacity];
 
         U.arrayCopy(arr, off, newBuf, 0, length);
 
         arr = newBuf;
-    }
-
-    /**
-     */
-    private static int hugeCapacity(int minCapacity) {
-        if (minCapacity < 0) // overflow
-            throw new OutOfMemoryError();
-
-        return (minCapacity > MAX_ARRAY_SIZE) ?
-                Integer.MAX_VALUE :
-                MAX_ARRAY_SIZE;
+        off = 0;
+        isReadOnly = false;
     }
 
     /**
