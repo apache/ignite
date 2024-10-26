@@ -23,7 +23,6 @@ import java.util.IdentityHashMap;
 import java.util.Iterator;
 import java.util.Map;
 import org.apache.ignite.IgniteException;
-import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.binary.BinaryObject;
 import org.apache.ignite.binary.BinaryObjectBuilder;
 import org.apache.ignite.binary.BinaryObjectException;
@@ -37,8 +36,7 @@ import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.thread.IgniteThread;
 import org.jetbrains.annotations.Nullable;
 
-import static org.apache.ignite.IgniteSystemProperties.IGNITE_TO_STRING_COLLECTION_LIMIT;
-import static org.apache.ignite.internal.util.tostring.GridToStringBuilder.DFLT_TO_STRING_COLLECTION_LIMIT;
+import static org.apache.ignite.internal.util.tostring.GridToStringBuilder.COLLECTION_LIMIT;
 
 /**
  * Internal binary object interface.
@@ -68,10 +66,6 @@ public abstract class BinaryObjectExImpl implements BinaryObjectEx {
      * @return Object offheap address is object is offheap based, otherwise 0.
      */
     public abstract long offheapAddress();
-
-    /** */
-    private static final int COLLECTION_LIMIT =
-            IgniteSystemProperties.getInteger(IGNITE_TO_STRING_COLLECTION_LIMIT, DFLT_TO_STRING_COLLECTION_LIMIT);
 
     /**
      * Gets field value.
@@ -315,15 +309,14 @@ public abstract class BinaryObjectExImpl implements BinaryObjectEx {
 
             buf.a('[');
 
-            for (int i = 0; i < arr.length; i++) {
+            int len = Math.min(arr.length, COLLECTION_LIMIT);
+
+            for (int i = 0; i < len; i++) {
                 Object o = arr[i];
 
                 appendValue(o, buf, ctx, handles);
 
-                if (i == COLLECTION_LIMIT - 1)
-                    break;
-
-                if (i < arr.length - 1)
+                if (i < len - 1)
                     buf.a(", ");
             }
 
