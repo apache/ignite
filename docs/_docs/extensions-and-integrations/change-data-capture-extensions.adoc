@@ -553,7 +553,7 @@ The former strategy implies that only one cluster would be activly used for data
 
 The latter approach allows users to use both cluster simultaneously, meanwhile the CDC clients transfer the updates between them. For that strategy to work, the user should configure conflict resolver.
 
-* To make strategies work you have two independent tools to configure:
+* To make things work you have two independent tools to configure:
 
 ** Thin/Thick clients for connection to destination clusters - responsible for 'put' opertaions on the destination cluster.
 
@@ -571,7 +571,7 @@ The script will use predefined configuration '.xml' files from '../examples/conf
 
 NOTE: Use `--help` to explore the manager capabilities
 
-NOTE: Please, enable `ignite-rest-http` and `ignite-json` to be able to run `cdc-start-up.sh` with `--check`.
+NOTE: Please, enable `ignite-rest-http` and `ignite-json` to be able to run `cdc-start-up.sh` with `--check-cdc`.
 
 Examples for reference:
 
@@ -600,15 +600,25 @@ NOTE: All properties files are preconfigured to work out of the box.
 
 ** There are 5 options you can specify CDC client mode from. Take a look at `--help` command output to learn about them.
 
-** You can optionaly activate both clusters at CDC client start-up with `--activate-cluster`. You need this for steady data replication. You can also use `control.sh` capabilities to activate clusters manually.
+** You can optionaly activate both clusters at CDC client start-up with `--activate-cluster`. You need this for data persistance at source and destination clusters. You can also use `control.sh` capabilities to activate clusters manually.
 
-NOTE: Start both clusters (as in previous example with Ignite nodes) before starting CDC client
+NOTE: Start both clusters (as in previous example with Ignite nodes) before starting CDC client.
 
 Here is an example on how to start Active-Passive inter-cluster communication with 2 separate nodes and one thin CDC client for Ignite-to-Ignite replication from cluster 1 to cluster 2 (Run the commands independently):
 ```
 ./cdc-start-up.sh --ignite ../examples/config/cdc-start-up/cluster-1
 ./cdc-start-up.sh --ignite ../examples/config/cdc-start-up/cluster-2
 ./cdc-start-up.sh --cdc-client --ignite-to-ignite-thin --activate-cluster ../examples/config/cdc-start-up/cluster-1
+```
+
+NOTE: Make sure clusters fully started up before starting CDC client.
+
+Here is an example on how to start Active-Active inter-cluster communication with 2 separate nodes and 2 CDC clients (thick) for Ignite-to-Ignite replication (Run the commands independently):
+```
+./cdc-start-up.sh --ignite ../examples/config/cdc-start-up/cluster-1
+./cdc-start-up.sh --ignite ../examples/config/cdc-start-up/cluster-2
+./cdc-start-up.sh --cdc-client --ignite-to-ignite --activate-cluster ../examples/config/cdc-start-up/cluster-1
+./cdc-start-up.sh --cdc-client --ignite-to-ignite ../examples/config/cdc-start-up/cluster-2
 ```
 
 NOTE: To start CDC with Kafka you need to start topics beforehand.
@@ -629,26 +639,12 @@ We use the following topics naming for our examples:
 ./kafka-topics.sh --create --partitions 1 --replication-factor 1 --topic metadata_from_dc2 --bootstrap-server localhost:9092
 ```
 
-* Start a whole replication system with specified strategy and properties for both clusters:
-
-** Use `--active-active` for Active-Active replication and `--active-passive` for Active-Passive replication.
-
-** You should provide properties files paths for both cluster nodes in the end of the command
-
-** By default, this script uses Ignite clients (thick) for replication. You can optionally use `--with-kafka` to transfer data through Kafka, and `--thin` to use thin clients for connections to the destination clusters.
-
-NOTE: There is no need to preactivate clusters, as the script will do it for you.
-
-To repeat the replication example from the previous point, you can use the following:
-
+Here is an example on how to start Active-Passive inter-cluster communication with 2 separate nodes and 2 CDC clients for replication with Kafka from cluster 1 to cluster 2 (Run the commands independently):
 ```
-./cdc-start-up.sh --active-passive --thin ../examples/config/cdc-start-up/cluster-1 ../examples/config/cdc-start-up/cluster-2
-```
-
-Active-Active with thin clients and Kafka as data transport:
-
-```
-./cdc-start-up.sh --active-active --with-kafka --thin ../examples/config/cdc-start-up/cluster-1 ../examples/config/cdc-start-up/cluster-2
+./cdc-start-up.sh --ignite ../examples/config/cdc-start-up/cluster-1
+./cdc-start-up.sh --ignite ../examples/config/cdc-start-up/cluster-2
+./cdc-start-up.sh --cdc-client --ignite-to-kafka --activate-cluster ../examples/config/cdc-start-up/cluster-1
+./cdc-start-up.sh --cdc-client --kafka-to-ignite-thin ../examples/config/cdc-start-up/cluster-2
 ```
 
 * You can check CDC replication with `--check-cdc`. Use it in parallel with Active-Passive/Active-Active replication. To start CDC check for proposed entry:
@@ -658,13 +654,7 @@ Active-Active with thin clients and Kafka as data transport:
 
 The command basically puts the entry to the chosen cluster and shows the difference between the two clusters until the data fully transfered.
 
-NOTE: To use it with Active-Passive, push entries only in the Active part of the CDC inter-cluster system. See the example below
-
-```
-./cdc-start-up.sh --active-passive ../examples/config/cdc-start-up/cluster-1 ../examples/config/cdc-start-up/cluster-2
-```
-
-`cluster-1` is an active part since its properties' directory goes first in the command. In this case there is no reason to push data to the second cluster during the check step, as the data is not replicated from the second cluster.
+NOTE: To use it with Active-Passive, push entries only in the Active part of the CDC inter-cluster system.
 
 NOTE: Try to play with version value to see how the conflict resolver works. We propose the following sequence of operations with Active-Active:
 
