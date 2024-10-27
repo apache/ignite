@@ -699,31 +699,31 @@ public class JdbcThinResultSetSelfTest extends JdbcThinAbstractSelfTest {
 
         assertTrue(rs.next());
 
-        InputStream is1 = rs.getBinaryStream("blobVal");
+        InputStream is = rs.getBinaryStream("blobVal");
 
-        assertEquals(1, is1.read());
+        assertEquals(1, is.read());
 
-        assertTrue(is1.markSupported());
-        is1.mark(100);
+        assertTrue(is.markSupported());
+        is.mark(100);
 
         byte[] res = new byte[]{33, 33, 33};
-        assertEquals(1, is1.read(res, 1, 1));
+        assertEquals(1, is.read(res, 1, 1));
         Assert.assertArrayEquals(res, new byte[] {33, 2, 33});
 
-        is1.reset();
+        is.reset();
 
-        assertEquals(2, is1.read(res));
+        assertEquals(2, is.read(res));
         Assert.assertArrayEquals(res, new byte[] {2, 3, 33});
 
-        is1.reset();
+        is.reset();
 
-        assertEquals(0, is1.skip(-1));
-        assertEquals(0, is1.skip(0));
-        assertEquals(1, is1.skip(1));
-        assertEquals(3, is1.read());
+        assertEquals(0, is.skip(-1));
+        assertEquals(0, is.skip(0));
+        assertEquals(1, is.skip(1));
+        assertEquals(3, is.read());
 
-        assertEquals(-1, is1.read());
-        assertEquals(-1, is1.read(res));
+        assertEquals(-1, is.read());
+        assertEquals(-1, is.read(res));
 
         assertFalse(rs.next());
     }
