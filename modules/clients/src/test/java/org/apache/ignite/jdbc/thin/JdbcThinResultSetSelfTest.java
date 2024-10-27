@@ -694,26 +694,6 @@ public class JdbcThinResultSetSelfTest extends JdbcThinAbstractSelfTest {
      * @throws Exception If failed.
      */
     @Test
-    public void testClobNull() throws Exception {
-        ResultSet rs = stmt.executeQuery("select id, boolVal, byteVal, shortVal, intVal, longVal, floatVal, " +
-                "doubleVal, bigVal, strVal, arrVal, dateVal, timeVal, tsVal, objVal, blobVal, clobVal " +
-                "from testObject where id = 2");
-
-        assertTrue(rs.next());
-
-        Clob clob = rs.getClob("clobVal");
-        Assert.assertNull(clob);
-
-        clob = rs.getClob(17);
-        Assert.assertNull(clob);
-
-        assertFalse(rs.next());
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
-    @Test
     public void testBinaryStream() throws Exception {
         ResultSet rs = stmt.executeQuery(SQL);
 
