@@ -737,8 +737,8 @@ public class JdbcThinResultSetSelfTest extends JdbcThinAbstractSelfTest {
 
         assertTrue(rs.next());
 
-        InputStream is1 = rs.getBinaryStream("blobVal");
-        InputStream is2 = rs.getBinaryStream("blobVal");
+        InputStream is1 = rs.getBinaryStream(16);
+        InputStream is2 = rs.getBinaryStream(16);
 
         assertEquals(1, is1.read());
         assertEquals(1, is1.skip(1));
