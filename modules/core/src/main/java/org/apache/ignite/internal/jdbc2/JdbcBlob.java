@@ -112,12 +112,12 @@ public class JdbcBlob implements Blob {
     @Override public InputStream getBinaryStream(long pos, long len) throws SQLException {
         ensureNotClosed();
 
-        int totalCnt = buf.length();
+        int blobLen = buf.length();
 
-        if (pos < 1 || len < 1 || pos > totalCnt || len > totalCnt - (pos - 1))
+        if (pos < 1 || len < 1 || pos > blobLen || len > blobLen - (pos - 1))
             throw new SQLException("Invalid argument. Position can't be less than 1 or " +
-                "greater than Blob total bytes count. Requested length can't be negative and can't be " +
-                "greater than available bytes from given position [pos=" + pos + ", len=" + len + ", totalCnt=" + totalCnt + "]");
+                "greater than Blob length. Requested length can't be negative and can't be " +
+                "greater than available bytes from given position [pos=" + pos + ", len=" + len + ", blobLen=" + blobLen + "]");
 
         return buf.getInputStream((int)pos - 1, (int)len);
     }
@@ -126,10 +126,12 @@ public class JdbcBlob implements Blob {
     @Override public long position(byte[] ptrn, long start) throws SQLException {
         ensureNotClosed();
 
+        int blobLen = buf.length();
+
         if (start < 1)
             throw new SQLException("Invalid argument. Start position can't be less than 1 [start=" + start + "]");
 
-        if (start > buf.length() || ptrn.length == 0 || ptrn.length > buf.length())
+        if (start > blobLen || ptrn.length == 0 || ptrn.length > blobLen)
             return -1;
 
         long idx = position(new ByteArrayInputStream(ptrn), ptrn.length, (int)start - 1);
@@ -141,10 +143,12 @@ public class JdbcBlob implements Blob {
     @Override public long position(Blob ptrn, long start) throws SQLException {
         ensureNotClosed();
 
+        int blobLen = buf.length();
+
         if (start < 1)
             throw new SQLException("Invalid argument. Start position can't be less than 1 [start=" + start + "]");
 
-        if (start > buf.length() || ptrn.length() == 0 || ptrn.length() > buf.length())
+        if (start > blobLen || ptrn.length() == 0 || ptrn.length() > blobLen)
             return -1;
 
         long idx = position(ptrn.getBinaryStream(), (int)ptrn.length(), (int)start - 1);
@@ -161,10 +165,11 @@ public class JdbcBlob implements Blob {
     @Override public int setBytes(long pos, byte[] bytes, int off, int len) throws SQLException {
         ensureNotClosed();
 
-        int totalCnt = buf.length();
+        int blobLen = buf.length();
 
-        if (pos < 1 || pos - 1 > totalCnt)
-            throw new SQLException("Invalid argument. Position can't be less than 1 [pos=" + pos + ']');
+        if (pos < 1 || pos - 1 > blobLen)
+            throw new SQLException("Invalid argument. Position can't be less than 1 or " +
+                "greater than Blob length + 1 [pos=" + pos + ", blobLen=" + blobLen + "]");
 
         if (off < 0 || off >= bytes.length || off + len > bytes.length)
             throw new SQLException("Invalid argument.",
@@ -179,11 +184,11 @@ public class JdbcBlob implements Blob {
     @Override public OutputStream setBinaryStream(long pos) throws SQLException {
         ensureNotClosed();
 
-        int totalCnt = buf.length();
+        int blobLen = buf.length();
 
-        if (pos < 1 || pos > totalCnt + 1)
-            throw new SQLException("Invalid argument. Position can't be less than 1 or greater than Blob total bytes count + 1 " +
-                    "[pos=" + pos + ", totalCnt=" + totalCnt + "]");
+        if (pos < 1 || pos - 1 > blobLen)
+            throw new SQLException("Invalid argument. Position can't be less than 1 or greater than Blob length + 1 " +
+                    "[pos=" + pos + ", blobLen=" + blobLen + "]");
 
         return buf.getOutputStream((int)pos - 1);
     }
@@ -192,11 +197,11 @@ public class JdbcBlob implements Blob {
     @Override public void truncate(long len) throws SQLException {
         ensureNotClosed();
 
-        int totalCnt = buf.length();
+        int blobLen = buf.length();
 
-        if (len < 0 || len > totalCnt)
+        if (len < 0 || len > blobLen)
             throw new SQLException("Invalid argument. Length can't be " +
-                "less than zero or greater than Blob total bytes count [len=" + len + ", totalCnt=" + totalCnt + "]");
+                "less than zero or greater than Blob length [len=" + len + ", blobLen=" + blobLen + "]");
 
         buf.truncate((int)len);
     }
