@@ -258,15 +258,17 @@ public class Accumulators {
         private final transient AggregateCall aggCall;
 
         /** */
+        protected List<Integer> argList;
+
+        /** */
         AbstractAccumulator(AggregateCall aggCall, RowHandler<Row> hnd) {
             this.aggCall = aggCall;
             this.hnd = hnd;
+            this.argList = aggCall.getArgList();
         }
 
         /** */
         <T> T get(int idx, Row row) {
-            List<Integer> argList = aggCall.getArgList();
-
             assert idx < argList.size() : "idx=" + idx + "; arglist=" + argList;
 
             return (T)hnd.get(argList.get(idx), row);
@@ -504,7 +506,7 @@ public class Accumulators {
 
         /** {@inheritDoc} */
         @Override public void add(Row row) {
-            int argsCnt = aggregateCall().getArgList().size();
+            int argsCnt = argList.size();
 
             assert argsCnt == 0 || argsCnt == 1;
 
@@ -1200,7 +1202,7 @@ public class Accumulators {
         public ListAggAccumulator(AggregateCall aggCall, RowHandler<Row> hnd) {
             super(aggCall, hnd);
 
-            isDfltSep = aggCall.getArgList().size() <= 1;
+            isDfltSep = argList.size() <= 1;
         }
 
         /** {@inheritDoc} */
@@ -1336,16 +1338,18 @@ public class Accumulators {
         /** */
         private DistinctAccumulator(AggregateCall aggCall, RowHandler<Row> hnd, Supplier<Accumulator<Row>> accSup) {
             super(aggCall, hnd);
+
             acc = accSup.get();
+
+            if (argList.isEmpty())
+                argList = List.of(0);
         }
 
         /** {@inheritDoc} */
         @Override public void add(Row row) {
-            if (row == null || columnCount(row) == 0 || get(0, row) == null)
-                return;
+            Object key;
 
-            Object key = get(0, row);
-            if (key == null)
+            if (row == null || columnCount(row) == 0 || (key = get(0, row)) == null)
                 return;
 
             rows.put(key, row);
