@@ -3353,7 +3353,7 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
      * Perform filtering and transformation of key-value pair.
      * @return Object to return to the user, or {@code null} if filtered.
      */
-    static final <K, V> Object filterAndTransform(
+    static <K, V> Object filterAndTransform(
         final KeyCacheObject key,
         final CacheObject val,
         final GridCacheContext<K, V> cctx,
