@@ -91,12 +91,7 @@ public class JdbcBlob implements Blob {
         if (size == 0)
             return res;
 
-        int readCnt;
-
-        readCnt = buf.read(idx, res, 0, size);
-
-        if (readCnt == -1)
-            throw new SQLException("Failed to read bytes from Blob [pos=" + pos + ", len=" + len + "]");
+        buf.read(idx, res, 0, size);
 
         return res;
     }
@@ -171,7 +166,12 @@ public class JdbcBlob implements Blob {
             throw new SQLException("Invalid argument. Position can't be less than 1 or " +
                 "greater than Blob length + 1 [pos=" + pos + ", blobLen=" + blobLen + "]");
 
-        buf.write((int)pos - 1, bytes, off, len);
+        try {
+            buf.write((int)pos - 1, bytes, off, len);
+        }
+        catch (IOException e) {
+            throw new SQLException(e);
+        }
 
         return len;
     }
@@ -217,8 +217,6 @@ public class JdbcBlob implements Blob {
      * @return Zero-based position at which the pattern appears, else -1.
      */
     private long position(InputStream ptrn, int ptrnLen, int idx) throws SQLException {
-        assert ptrn.markSupported() : "input stream supports mark() method";
-
         try {
             InputStream blob = buf.getInputStream(idx, buf.length() - idx);
 

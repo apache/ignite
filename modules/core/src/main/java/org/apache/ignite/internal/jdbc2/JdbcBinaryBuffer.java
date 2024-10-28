@@ -20,7 +20,6 @@ package org.apache.ignite.internal.jdbc2;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
-import java.sql.SQLException;
 import java.util.Objects;
 import org.apache.ignite.internal.util.typedef.internal.U;
 
@@ -218,11 +217,11 @@ public class JdbcBinaryBuffer {
      * @param inpOff Start offset in the input array.
      * @param inpLen Number of bytes to write.
      */
-    void write(int pos, byte[] inpBuf, int inpOff, int inpLen) throws SQLException {
-        Objects.checkFromIndexSize(inpOff, inpLen, inpBuf.length);
-
+    void write(int pos, byte[] inpBuf, int inpOff, int inpLen) throws IOException {
         if (MAX_ARRAY_SIZE - pos < inpLen)
-            throw new SQLException("Too much data. Can't write more then " + MAX_ARRAY_SIZE + " bytes to Blob.");
+            throw new IOException("Too much data. Can't write more then " + MAX_ARRAY_SIZE + " bytes.");
+
+        Objects.checkFromIndexSize(inpOff, inpLen, inpBuf.length);
 
         int newLen = Math.max(pos + inpLen, length);
 
@@ -239,7 +238,7 @@ public class JdbcBinaryBuffer {
      * @param pos Position.
      * @return Byte read from the Blob. -1 if end of data reached.
      */
-    private int read(int pos) {
+    int read(int pos) {
         if (pos >= length)
             return -1;
 
@@ -255,9 +254,9 @@ public class JdbcBinaryBuffer {
      * @param pos Pointer to a position.
      * @param b Byte to write.
      */
-    private void write(int pos, int b) throws SQLException {
+    void write(int pos, int b) throws IOException {
         if (MAX_ARRAY_SIZE - pos < 1)
-            throw new SQLException("Too much data. Can't write more then " + MAX_ARRAY_SIZE + " bytes to Blob.");
+            throw new IOException("Too much data. Can't write more then " + MAX_ARRAY_SIZE + " bytes.");
 
         int newLen = Math.max(pos + 1, length);
 
@@ -285,7 +284,7 @@ public class JdbcBinaryBuffer {
      * @param reqLen Required new data length.
      * @return New capacity.
      */
-    private static int capacity(int curCap, int reqLen) {
+    protected static int capacity(int curCap, int reqLen) {
         int newCap;
 
         if (reqLen < MIN_CAP)
@@ -416,7 +415,8 @@ public class JdbcBinaryBuffer {
             if (n <= 0)
                 return 0;
 
-            int step = Math.min((int)Math.min(n, MAX_ARRAY_SIZE), length - pos);
+            int step = Math.min((int)Math.min(n, MAX_ARRAY_SIZE),
+                    limit == -1 ? length - pos : limit - (pos - start));
 
             pos += step;
 
@@ -446,28 +446,16 @@ public class JdbcBinaryBuffer {
                 throw new IOException("Writting beyond end of Blob, it probably was truncated after OutputStream was created " +
                         "[pos=" + pos + ", blobLength=" + length + "]");
 
-            try {
-                JdbcBinaryBuffer.this.write(pos++, b);
-            }
-            catch (SQLException e) {
-                throw new IOException(e.getMessage());
-            }
+            JdbcBinaryBuffer.this.write(pos++, b);
         }
 
         /** {@inheritDoc} */
         @Override public void write(byte[] b, int off, int len) throws IOException {
-            Objects.checkFromIndexSize(off, len, b.length);
-
             if (pos > length)
                 throw new IOException("Writting beyond end of Blob, it probably was truncated after OutputStream was created " +
                         "[pos=" + pos + ", blobLength=" + length + "]");
 
-            try {
-                JdbcBinaryBuffer.this.write(pos, b, off, len);
-            }
-            catch (SQLException e) {
-                throw new IOException(e.getMessage());
-            }
+            JdbcBinaryBuffer.this.write(pos, b, off, len);
 
             pos += len;
         }
