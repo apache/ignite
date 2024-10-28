@@ -3282,15 +3282,19 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
                 }
 
                 if (val != null) {
-                    if (statsEnabled) {
-                        CacheMetricsImpl metrics = cctx.cache().metrics0();
-
-                        metrics.onRead(true);
-
-                        metrics.addGetTimeNanos(System.nanoTime() - start);
-                    }
-
-                    next0 = filterAndTransform(key, val, cctx, intScanFilter, transform, readEvt, keepBinary, subjId, taskName);
+                    next0 = filterAndTransform(
+                        key,
+                        val,
+                        cctx,
+                        intScanFilter,
+                        transform,
+                        readEvt,
+                        keepBinary,
+                        subjId,
+                        taskName,
+                        statsEnabled,
+                        start
+                    );
 
                     if (next0 != null)
                         break;
@@ -3360,7 +3364,10 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
         }
     }
 
-    /** */
+    /**
+     * Perform filtering and transformation of key-value pair.
+     * @return Object to return to the user, or {@code null} if filtered.
+     */
     static <K, V> Object filterAndTransform(
         final KeyCacheObject key,
         final CacheObject val,
@@ -3370,12 +3377,22 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
         final boolean readEvt,
         final boolean keepBinary,
         final UUID subjId,
-        final String taskName
+        final String taskName,
+        final boolean statsEnabled,
+        final long start
     ) {
+        if (statsEnabled) {
+            CacheMetricsImpl metrics = cctx.cache().metrics0();
+
+            metrics.onRead(true);
+
+            metrics.addGetTimeNanos(System.nanoTime() - start);
+        }
+
         K key0 = (K)CacheObjectUtils.unwrapBinaryIfNeeded(cctx.cacheObjectContext(), key, keepBinary, false);
         V val0 = (V)CacheObjectUtils.unwrapBinaryIfNeeded(cctx.cacheObjectContext(), val, keepBinary, false);
 
-        if (!(intScanFilter == null || intScanFilter.apply(key0, val0)))
+        if (intScanFilter != null && !intScanFilter.apply(key0, val0))
             return null;
 
         if (readEvt) {
@@ -3398,16 +3415,14 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
                 null));
         }
 
-        if (transform != null) {
-            try {
-                return transform.apply(new CacheQueryEntry<>(key0, val0));
-            }
-            catch (Throwable e) {
-                throw new IgniteException(e);
-            }
-        }
+        try {
+            CacheQueryEntry<K, V> res = new CacheQueryEntry<>(key0, val0);
 
-        return new CacheQueryEntry<>(key0, val0);
+            return transform == null ? res : transform.apply(res);
+        }
+        catch (Throwable e) {
+            throw new IgniteException(e);
+        }
     }
 
     /**
