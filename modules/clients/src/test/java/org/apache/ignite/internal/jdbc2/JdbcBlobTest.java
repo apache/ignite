@@ -696,7 +696,7 @@ public class JdbcBlobTest {
 
         blob.free();
 
-        assertThrows(null, blob::length, SQLException.class, "Blob instance can't be used after free() has been called.");
+        assertThrows(null, blob::length, SQLException.class, ERROR_BLOB_FREE);
     }
 
     /**
