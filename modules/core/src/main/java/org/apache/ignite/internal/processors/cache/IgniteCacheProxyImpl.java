@@ -2471,9 +2471,16 @@ public class IgniteCacheProxyImpl<K, V> extends AsyncSupportAdapter<IgniteCache<
 
             changedKeys.add(e.key());
 
-            // TODO: check entry processor.
+            CacheObject val = e.value();
+
+            if (!F.isEmpty(e.entryProcessors()))
+                val = e.applyEntryProcessors(val);
+
+            //TODO: two versions of this code: here and in ExecutionContext for SQL data.
+            // We need to merge it.
+
             // Mix only updated or inserted entries. In case val == null entry removed.
-            if (e.value() != null)
+            if (val != null)
                 newAndUpdatedRows.add(e);
         }
 

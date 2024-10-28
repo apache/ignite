@@ -25,7 +25,7 @@ import org.apache.ignite.lang.IgniteBiTuple;
 import org.jetbrains.annotations.Nullable;
 
 /** */
-final class CacheQueryEntry<K, V> extends IgniteBiTuple<K, V> implements Cache.Entry<K, V> {
+public final class CacheQueryEntry<K, V> extends IgniteBiTuple<K, V> implements Cache.Entry<K, V> {
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -38,7 +38,7 @@ final class CacheQueryEntry<K, V> extends IgniteBiTuple<K, V> implements Cache.E
      * @param key Key.
      * @param val Value.
      */
-    CacheQueryEntry(@Nullable K key, @Nullable V val) {
+    public CacheQueryEntry(@Nullable K key, @Nullable V val) {
         super(key, val);
     }
 

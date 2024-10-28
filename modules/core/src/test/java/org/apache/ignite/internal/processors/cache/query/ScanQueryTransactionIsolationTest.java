@@ -21,10 +21,15 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 import java.util.Objects;
+import java.util.stream.Collectors;
 import javax.cache.Cache;
+import org.apache.ignite.binary.BinaryObject;
 import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.cache.query.ScanQuery;
 import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.internal.processors.cache.CacheEntryImpl;
+import org.apache.ignite.internal.processors.cache.CacheObject;
+import org.apache.ignite.internal.processors.cache.KeyCacheObject;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.transactions.TransactionConcurrency;
 import org.junit.runners.Parameterized;
@@ -125,5 +130,23 @@ public class ScanQueryTransactionIsolationTest extends AbstractQueryTransactionI
         }
 
         return super.select(id, api);
+    }
+
+    /** */
+    private List<Cache.Entry<Integer, User>> unwrapBinary(List<?> all) {
+        return all.stream()
+            .map(e0 -> new CacheEntryImpl<>(
+                this.<Integer>unwrap(((Cache.Entry<?, ?>)e0).getKey()),
+                this.<User>unwrap(((Cache.Entry<?, ?>)e0).getValue()))
+            ).collect(Collectors.toList());
+    }
+
+    private <T> T unwrap(Object o) {
+        if (o instanceof KeyCacheObject)
+            return ((CacheObject)o).value(null, false);
+        else if (o instanceof BinaryObject) {
+            return ((BinaryObject)o).deserialize();
+        }
+        return (T)o;
     }
 }

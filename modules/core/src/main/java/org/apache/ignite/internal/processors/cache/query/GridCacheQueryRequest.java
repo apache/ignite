@@ -19,8 +19,10 @@ package org.apache.ignite.internal.processors.cache.query;
 
 import java.io.Externalizable;
 import java.nio.ByteBuffer;
+import java.util.Collection;
 import java.util.Set;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.internal.GridDirectCollection;
 import org.apache.ignite.internal.GridDirectTransient;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.CacheObjectContext;
@@ -152,7 +154,8 @@ public class GridCacheQueryRequest extends GridCacheIdMessage implements GridCac
     private AffinityTopologyVersion topVer;
 
     /** Set of keys that must be skiped during iteration. */
-    private Set<KeyCacheObject> skipKeys;
+    @GridDirectCollection(KeyCacheObject.class)
+    private Collection<KeyCacheObject> skipKeys;
 
     /** */
     private byte flags;
@@ -663,7 +666,7 @@ public class GridCacheQueryRequest extends GridCacheIdMessage implements GridCac
     }
 
     /** @return Set of keys that must be skiped during iteration. */
-    public Set<KeyCacheObject> skipKeys() {
+    public Collection<KeyCacheObject> skipKeys() {
         return skipKeys;
     }
 

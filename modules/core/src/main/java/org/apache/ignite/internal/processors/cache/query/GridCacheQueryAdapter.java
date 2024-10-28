@@ -256,7 +256,7 @@ public class GridCacheQueryAdapter<T> implements CacheQuery<T> {
         boolean keepBinary,
         int taskHash,
         Boolean dataPageScanEnabled,
-        @Nullable Set<KeyCacheObject> skipKeys
+        @Nullable Collection<KeyCacheObject> skipKeys
     ) {
         this.cctx = cctx;
         this.type = type;
@@ -276,7 +276,7 @@ public class GridCacheQueryAdapter<T> implements CacheQuery<T> {
         this.keepBinary = keepBinary;
         this.taskHash = taskHash;
         this.dataPageScanEnabled = dataPageScanEnabled;
-        this.skipKeys = skipKeys;
+        this.skipKeys = skipKeys == null ? null : new HashSet<>(skipKeys); //TODO: FIXME
     }
 
     /**
@@ -630,7 +630,6 @@ public class GridCacheQueryAdapter<T> implements CacheQuery<T> {
                 top.readLock();
 
                 try {
-
                     Collection<ClusterNode> affNodes = nodes(cctx, null, null);
 
                     List<ClusterNode> nodes = new ArrayList<>(affNodes);

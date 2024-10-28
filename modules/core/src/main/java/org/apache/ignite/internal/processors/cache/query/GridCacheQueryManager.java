@@ -1408,9 +1408,6 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
 
         final String namex = cctx.name();
 
-        final InternalScanFilter<K, V> intFilter = qry.scanFilter() != null ?
-            new InternalScanFilter<>(qry.scanFilter()) : null;
-
         try {
             assert qry.type() == SCAN;
 
@@ -1429,7 +1426,7 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
                     namex,
                     null,
                     null,
-                    intFilter != null ? intFilter.scanFilter() : null,
+                    qry.scanFilter(),
                     null,
                     null,
                     securitySubjectId(cctx),
@@ -1443,9 +1440,6 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
             return it;
         }
         catch (Exception e) {
-            if (intFilter != null)
-                intFilter.close();
-
             if (updateStatistics)
                 cctx.queries().collectMetrics(GridCacheQueryType.SCAN, namex, startTime,
                     U.currentTimeMillis() - startTime, true);
@@ -3076,9 +3070,6 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
         private final boolean readEvt;
 
         /** */
-        private final String cacheName;
-
-        /** */
         private final UUID subjId;
 
         /** */
@@ -3086,9 +3077,6 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
 
         /** */
         private final IgniteClosure transform;
-
-        /** */
-        private final CacheObjectContext objCtx;
 
         /** */
         private final GridCacheContext cctx;
@@ -3171,8 +3159,6 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
             transform = transformer;
             dht = cctx.isNear() ? cctx.near().dht() : cctx.dht();
             cache = dht != null ? dht : cctx.cache();
-            objCtx = cctx.cacheObjectContext();
-            cacheName = cctx.name();
 
             needAdvance = true;
             expiryPlc = this.cctx.cache().expiryPolicy(null);
@@ -3296,9 +3282,6 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
                 }
 
                 if (val != null) {
-                    K key0 = (K)CacheObjectUtils.unwrapBinaryIfNeeded(objCtx, key, keepBinary, false);
-                    V val0 = (V)CacheObjectUtils.unwrapBinaryIfNeeded(objCtx, val, keepBinary, false);
-
                     if (statsEnabled) {
                         CacheMetricsImpl metrics = cctx.cache().metrics0();
 
@@ -3307,41 +3290,10 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
                         metrics.addGetTimeNanos(System.nanoTime() - start);
                     }
 
-                    if (intScanFilter == null || intScanFilter.apply(key0, val0)) {
-                        if (readEvt) {
-                            cctx.gridEvents().record(new CacheQueryReadEvent<>(
-                                cctx.localNode(),
-                                "Scan query entry read.",
-                                EVT_CACHE_QUERY_OBJECT_READ,
-                                CacheQueryType.SCAN.name(),
-                                cacheName,
-                                null,
-                                null,
-                                intScanFilter != null ? intScanFilter.scanFilter() : null,
-                                null,
-                                null,
-                                subjId,
-                                taskName,
-                                key0,
-                                val0,
-                                null,
-                                null));
-                        }
+                    next0 = filterAndTransform(key, val, cctx, intScanFilter, transform, readEvt, keepBinary, subjId, taskName);
 
-                        if (transform != null) {
-                            try {
-                                next0 = transform.apply(new CacheQueryEntry<>(key0, val0));
-                            }
-                            catch (Throwable e) {
-                                throw new IgniteException(e);
-                            }
-                        }
-                        else
-                            next0 = !locNode ? new T2<>(key0, val0) :
-                                new CacheQueryEntry<>(key0, val0);
-
+                    if (next0 != null)
                         break;
-                    }
                 }
             }
 
@@ -3406,6 +3358,56 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
         public int pageSize() {
             return pageSize;
         }
+    }
+
+    /** */
+    public static <K, V> Object filterAndTransform(
+        final KeyCacheObject key,
+        final CacheObject val,
+        final GridCacheContext cctx,
+        final InternalScanFilter<K, V> intScanFilter,
+        final IgniteClosure transform,
+        final boolean readEvt,
+        final boolean keepBinary,
+        final UUID subjId,
+        final String taskName
+    ) {
+        K key0 = (K)CacheObjectUtils.unwrapBinaryIfNeeded(cctx.cacheObjectContext(), key, keepBinary, false);
+        V val0 = (V)CacheObjectUtils.unwrapBinaryIfNeeded(cctx.cacheObjectContext(), val, keepBinary, false);
+
+        if (!(intScanFilter == null || intScanFilter.apply(key0, val0)))
+            return null;
+
+        if (readEvt) {
+            cctx.gridEvents().record(new CacheQueryReadEvent<>(
+                cctx.localNode(),
+                "Scan query entry read.",
+                EVT_CACHE_QUERY_OBJECT_READ,
+                CacheQueryType.SCAN.name(),
+                cctx.name(),
+                null,
+                null,
+                intScanFilter != null ? intScanFilter.scanFilter() : null,
+                null,
+                null,
+                subjId,
+                taskName,
+                key0,
+                val0,
+                null,
+                null));
+        }
+
+        if (transform != null) {
+            try {
+                return transform.apply(new CacheQueryEntry<>(key0, val0));
+            }
+            catch (Throwable e) {
+                throw new IgniteException(e);
+            }
+        }
+
+        return new CacheQueryEntry<>(key0, val0);
     }
 
     /** */
