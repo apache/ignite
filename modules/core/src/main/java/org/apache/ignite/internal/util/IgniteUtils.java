@@ -12538,11 +12538,6 @@ public abstract class IgniteUtils {
     }
 
     /** */
-    public static <V, K> boolean isTxAwareQueriesEnabled(GridCacheContext<K, V> ctx) {
-        return isTxAwareQueriesEnabled(ctx.kernalContext());
-    }
-
-    /** */
     public static boolean isTxAwareQueriesEnabled(GridKernalContext kctx) {
         return kctx.config().getTransactionConfiguration().isTxAwareQueriesEnabled();
     }
