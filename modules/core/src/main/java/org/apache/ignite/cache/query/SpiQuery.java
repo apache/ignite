@@ -24,10 +24,13 @@ import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.spi.indexing.IndexingSpi;
 
 /**
+ * This class is DEPRECATED and will be removed in the future
+ *
  * Query to be used by {@link IndexingSpi} implementations.
  *
  * @see IgniteCache#query(Query)
  */
+@Deprecated
 public final class SpiQuery<K, V> extends Query<Cache.Entry<K, V>> {
     /** */
     private static final long serialVersionUID = 0L;
