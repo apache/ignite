@@ -26,12 +26,12 @@ import org.apache.ignite.spi.indexing.IndexingSpi;
 /**
  * Query to be used by {@link IndexingSpi} implementations.
  *
- * @deprecated Use {@link ScanQuery}, {@link SqlFieldsQuery}, {@link IndexQuery} instead.
- *
  * @see IgniteCache#query(Query)
  * @see ScanQuery
  * @see SqlFieldsQuery
  * @see IndexQuery
+ *
+ * @deprecated Use {@link ScanQuery}, {@link SqlFieldsQuery}, {@link IndexQuery} instead.
  */
 @Deprecated
 public final class SpiQuery<K, V> extends Query<Cache.Entry<K, V>> {
