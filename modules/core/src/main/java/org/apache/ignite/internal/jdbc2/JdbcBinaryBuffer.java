@@ -55,7 +55,7 @@ public class JdbcBinaryBuffer {
     private boolean isReadOnly;
 
     /** Minimum buffer capacity. */
-    private static final int MIN_CAP = 256;
+    public static final int MIN_CAP = 256;
 
     /**
      * Create buffer which wraps the existing byte array and start working in the read-only mode.
@@ -167,6 +167,8 @@ public class JdbcBinaryBuffer {
         length = len;
 
         off = 0;
+
+        isReadOnly = false;
     }
 
     /**

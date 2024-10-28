@@ -372,6 +372,38 @@ public class JdbcBlobTest {
      * @throws Exception If failed.
      */
     @Test
+    public void testSetBytesRO() throws Exception {
+        byte[] roArr = new byte[]{0, 1, 2, 3, 4, 5, 6, 7};
+
+        Blob blob = new JdbcBlob(JdbcBinaryBuffer.createReadOnly(roArr, 2, 4));
+
+        blob.setBytes(2, new byte[] {11, 22});
+
+        assertArrayEquals(new byte[] {2, 11, 22, 5}, blob.getBytes(1, (int)blob.length()));
+
+        assertArrayEquals(new byte[] {0, 1, 2, 3, 4, 5, 6, 7}, roArr);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    @Test
+    public void testSetBytesRealloc() throws Exception {
+        byte[] roArr = new byte[]{0, 1, 2, 3, 4, 5, 6, 7};
+
+        Blob blob = new JdbcBlob(JdbcBinaryBuffer.createReadOnly(roArr, 2, 4));
+
+        blob.setBytes(5, new byte[JdbcBinaryBuffer.MIN_CAP]);
+
+        assertEquals(JdbcBinaryBuffer.MIN_CAP + 4, blob.length());
+
+        assertArrayEquals(new byte[] {0, 1, 2, 3, 4, 5, 6, 7}, roArr);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    @Test
     public void testSetBytesWithOffsetAndLength() throws Exception {
         byte[] arr = new byte[] {0, 1, 2, 3, 4, 5, 6, 7};
 
@@ -491,6 +523,22 @@ public class JdbcBlobTest {
             // No-op.
             System.out.println();
         }
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    @Test
+    public void testTruncateRO() throws Exception {
+        byte[] roArr = new byte[]{0, 1, 2, 3, 4, 5, 6, 7};
+
+        Blob blob = new JdbcBlob(JdbcBinaryBuffer.createReadOnly(roArr, 2, 4));
+        assertArrayEquals(new byte[] {2, 3, 4, 5}, blob.getBytes(1, (int)blob.length()));
+
+        blob.truncate(2);
+        assertArrayEquals(new byte[] {2, 3}, blob.getBytes(1, (int)blob.length()));
+
+        assertArrayEquals(new byte[] {0, 1, 2, 3, 4, 5, 6, 7}, roArr);
     }
 
     /**
