@@ -539,7 +539,7 @@ public class JdbcBlobTest {
 
         // Use fake one byte array.
         assertThrows(null, () -> blob.setBytes(2, new byte[1], 0, MAX_ARRAY_SIZE),
-                SQLException.class,"Too much data. Can't write more then 2147483639 bytes.");
+                SQLException.class, "Too much data. Can't write more then 2147483639 bytes.");
     }
 
     /**
@@ -747,7 +747,7 @@ public class JdbcBlobTest {
             os.write(new byte[1], 0, MAX_ARRAY_SIZE);
 
             return null;
-        }, IOException.class,"Too much data. Can't write more then 2147483639 bytes.");
+        }, IOException.class, "Too much data. Can't write more then 2147483639 bytes.");
     }
 
     /**
@@ -785,14 +785,14 @@ public class JdbcBlobTest {
             os.write(2);
 
             return null;
-        }, IOException.class,"Writting beyond end of Blob, it probably was truncated after OutputStream " +
+        }, IOException.class, "Writting beyond end of Blob, it probably was truncated after OutputStream " +
                 "was created [pos=1, blobLength=0]");
 
         assertThrows(null, () -> {
             os.write(new byte[] {2});
 
             return null;
-        }, IOException.class,"Writting beyond end of Blob, it probably was truncated after OutputStream " +
+        }, IOException.class, "Writting beyond end of Blob, it probably was truncated after OutputStream " +
                 "was created [pos=1, blobLength=0]");
 
         os.close();

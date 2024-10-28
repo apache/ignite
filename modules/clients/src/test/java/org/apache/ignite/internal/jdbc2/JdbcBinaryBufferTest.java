@@ -50,6 +50,6 @@ public class JdbcBinaryBufferTest {
             buf.write(MAX_ARRAY_SIZE, 1);
 
             return null;
-        }, IOException.class,"Too much data. Can't write more then 2147483639 bytes.");
+        }, IOException.class, "Too much data. Can't write more then 2147483639 bytes.");
     }
 }
