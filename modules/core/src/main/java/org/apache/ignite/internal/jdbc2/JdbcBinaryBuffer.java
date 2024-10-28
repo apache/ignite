@@ -193,6 +193,8 @@ public class JdbcBinaryBuffer {
      * @return Number of bytes read. -1 if end of data reached.
      */
     public int read(int pos, byte[] resBuf, int resOff, int resLen) {
+        Objects.checkFromIndexSize(resOff, resLen, resBuf.length);
+
         if (pos >= length)
             return -1;
 

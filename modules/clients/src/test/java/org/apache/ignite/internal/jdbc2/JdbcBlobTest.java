@@ -25,6 +25,7 @@ import java.util.Arrays;
 import org.junit.Test;
 
 import static org.apache.ignite.testframework.GridTestUtils.assertThrows;
+import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
@@ -140,10 +141,13 @@ public class JdbcBlobTest {
         JdbcBlob blob = new JdbcBlob(arr);
 
         InputStream is = blob.getBinaryStream();
-
         byte[] res = readBytes(is);
-
         assertTrue(Arrays.equals(arr, res));
+
+        is = blob.getBinaryStream();
+        res = new byte[20];
+        assertEquals(16, is.read(res, 0, 20));
+        assertArrayEquals(arr, Arrays.copyOfRange(res, 0, 16));
 
         blob.free();
 
@@ -217,6 +221,12 @@ public class JdbcBlobTest {
         assertEquals(10, res.length);
         assertEquals(5, res[0]);
         assertEquals(14, res[9]);
+
+        is = blob.getBinaryStream(6, 10);
+        res = new byte[14];
+        assertEquals(10, is.read(res, 1, 13));
+        assertArrayEquals(new byte[] {0, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 0, 0, 0}, res);
+        assertEquals(-1, is.read(res, 0, 1));
 
         blob.free();
 
