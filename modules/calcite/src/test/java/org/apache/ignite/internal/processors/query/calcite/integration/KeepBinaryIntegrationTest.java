@@ -144,7 +144,6 @@ public class KeepBinaryIntegrationTest extends AbstractBasicIntegrationTransacti
                 }
                 else
                     assertEquals(F.asList(p0), res.get(0).get(0));
-
             }
 
             return null;
