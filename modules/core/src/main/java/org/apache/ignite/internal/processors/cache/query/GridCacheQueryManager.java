@@ -3200,8 +3200,6 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
         private void advance() {
             long start = statsEnabled ? System.nanoTime() : 0L;
 
-            Object next0 = null;
-
             while (it.hasNext()) {
                 CacheDataRow row = it.next();
 
@@ -3275,14 +3273,14 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
                         metrics.addGetTimeNanos(System.nanoTime() - start);
                     }
 
-                    next0 = filterAndTransform(key, val, cctx, intScanFilter, transform, readEvt, keepBinary, subjId, taskName);
+                    next = filterAndTransform(key, val, cctx, intScanFilter, transform, readEvt, keepBinary, subjId, taskName);
 
-                    if (next0 != null)
+                    if (next != null)
                         break;
                 }
             }
 
-            if ((this.next = next0) == null && expiryPlc != null && dht != null) {
+            if (next  == null && expiryPlc != null && dht != null) {
                 dht.sendTtlUpdateRequest(expiryPlc);
 
                 expiryPlc = null;
