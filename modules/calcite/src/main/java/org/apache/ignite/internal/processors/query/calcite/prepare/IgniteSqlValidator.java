@@ -281,6 +281,10 @@ public class IgniteSqlValidator extends SqlValidatorImpl {
             if (isSystemFieldName(alias))
                 throw newValidationError(call, IgniteResource.INSTANCE.illegalAlias(alias));
         }
+        else if (call.getKind() == SqlKind.CAST) {
+            if (call.getOperandList().size() > 2)
+                throw newValidationError(call, IgniteResource.INSTANCE.invalidCastParameters());
+        }
 
         super.validateCall(call, scope);
     }
@@ -524,17 +528,10 @@ public class IgniteSqlValidator extends SqlValidatorImpl {
 
     /** {@inheritDoc} */
     @Override protected void inferUnknownTypes(RelDataType inferredType, SqlValidatorScope scope, SqlNode node) {
-        if (node instanceof SqlDynamicParam && inferredType.equals(unknownType)) {
-            if (parameters.length > ((SqlDynamicParam)node).getIndex()) {
-                Object param = parameters[((SqlDynamicParam)node).getIndex()];
+        if (inferDynamicParamType(inferredType, node))
+            return;
 
-                setValidatedNodeType(node, (param == null) ? typeFactory().createSqlType(SqlTypeName.NULL) :
-                    typeFactory().toSql(typeFactory().createType(param.getClass())));
-            }
-            else
-                setValidatedNodeType(node, typeFactory().createCustomType(Object.class));
-        }
-        else if (node instanceof SqlCall) {
+        if (node instanceof SqlCall) {
             final SqlValidatorScope newScope = scopes.get(node);
 
             if (newScope != null)
@@ -576,6 +573,40 @@ public class IgniteSqlValidator extends SqlValidatorImpl {
         }
         else
             super.inferUnknownTypes(inferredType, scope, node);
+    }
+
+    /**
+     * Tries to set actual type of dynamic parameter if {@code node} is a {@link SqlDynamicParam} and if its index
+     * is actual to {@link #parameters}.
+     *
+     * @return {@code True} if a new type was set. {@code False} otherwise.
+     */
+    private boolean inferDynamicParamType(RelDataType inferredType, SqlNode node) {
+        if (parameters == null || !(node instanceof SqlDynamicParam) || ((SqlDynamicParam)node).getIndex() >= parameters.length)
+            return false;
+
+        Object val = parameters[((SqlDynamicParam)node).getIndex()];
+
+        if (val == null) {
+            if (inferredType.equals(unknownType)) {
+                setValidatedNodeType(node, typeFactory().createSqlType(SqlTypeName.NULL));
+
+                return true;
+            }
+
+            return false;
+        }
+
+        RelDataType valType = typeFactory().toSql(typeFactory().createType(val.getClass()));
+
+        assert !unknownType.equals(valType);
+
+        if (unknownType.equals(inferredType) || valType.getFamily().equals(inferredType.getFamily()))
+            setValidatedNodeType(node, valType);
+        else
+            setValidatedNodeType(node, inferredType);
+
+        return true;
     }
 
     /** {@inheritDoc} */

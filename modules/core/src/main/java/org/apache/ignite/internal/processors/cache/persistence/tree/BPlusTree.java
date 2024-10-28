@@ -5931,6 +5931,16 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
          */
         public boolean apply(BPlusTree<L, T> tree, BPlusIO<L> io, long pageAddr, int idx)
             throws IgniteCheckedException;
+
+        /**
+         * Optional operation to provide access to the last analyzed row.
+         * Can be used to optimize chained filters and omit several tree reads.
+         *
+         * @return Last row that was analyzed or {@code null}.
+         */
+        public default L lastRow() {
+            return null;
+        }
     }
 
     /**

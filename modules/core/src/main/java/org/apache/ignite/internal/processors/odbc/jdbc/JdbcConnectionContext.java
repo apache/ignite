@@ -27,16 +27,22 @@ import org.apache.ignite.configuration.QueryEngineConfiguration;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.binary.BinaryReaderExImpl;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
+import org.apache.ignite.internal.processors.cache.query.IgniteQueryErrorCode;
 import org.apache.ignite.internal.processors.odbc.ClientListenerAbstractConnectionContext;
 import org.apache.ignite.internal.processors.odbc.ClientListenerMessageParser;
 import org.apache.ignite.internal.processors.odbc.ClientListenerProtocolVersion;
 import org.apache.ignite.internal.processors.odbc.ClientListenerRequestHandler;
 import org.apache.ignite.internal.processors.odbc.ClientListenerResponse;
 import org.apache.ignite.internal.processors.odbc.ClientListenerResponseSender;
+import org.apache.ignite.internal.processors.platform.client.tx.ClientTxContext;
+import org.apache.ignite.internal.processors.query.IgniteSQLException;
 import org.apache.ignite.internal.processors.query.QueryEngineConfigurationEx;
 import org.apache.ignite.internal.util.GridSpinBusyLock;
 import org.apache.ignite.internal.util.nio.GridNioSession;
 import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.transactions.TransactionConcurrency;
+import org.apache.ignite.transactions.TransactionIsolation;
+import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.internal.jdbc.thin.JdbcThinUtils.nullableBooleanFromByte;
 import static org.apache.ignite.internal.processors.odbc.ClientListenerNioListener.JDBC_CLIENT;
@@ -72,8 +78,11 @@ public class JdbcConnectionContext extends ClientListenerAbstractConnectionConte
     /** Version 2.13.0: adds choose of query engine support. */
     static final ClientListenerProtocolVersion VER_2_13_0 = ClientListenerProtocolVersion.create(2, 13, 0);
 
+    /** Version 2.17.0: adds transaction default parameters. */
+    static final ClientListenerProtocolVersion VER_2_17_0 = ClientListenerProtocolVersion.create(2, 17, 0);
+
     /** Current version. */
-    public static final ClientListenerProtocolVersion CURRENT_VER = VER_2_13_0;
+    public static final ClientListenerProtocolVersion CURRENT_VER = VER_2_17_0;
 
     /** Supported versions. */
     private static final Set<ClientListenerProtocolVersion> SUPPORTED_VERS = new HashSet<>();
@@ -102,8 +111,12 @@ public class JdbcConnectionContext extends ClientListenerAbstractConnectionConte
     /** Last reported affinity topology version. */
     private AtomicReference<AffinityTopologyVersion> lastAffinityTopVer = new AtomicReference<>();
 
+    /** Transaction context. */
+    private @Nullable ClientTxContext txCtx;
+
     static {
         SUPPORTED_VERS.add(CURRENT_VER);
+        SUPPORTED_VERS.add(VER_2_13_0);
         SUPPORTED_VERS.add(VER_2_9_0);
         SUPPORTED_VERS.add(VER_2_8_0);
         SUPPORTED_VERS.add(VER_2_7_0);
@@ -192,6 +205,9 @@ public class JdbcConnectionContext extends ClientListenerAbstractConnectionConte
             byte[] cliFeatures = reader.readByteArray();
 
             features = JdbcThinFeature.enumSet(cliFeatures);
+
+            if (!ctx.config().getTransactionConfiguration().isTxAwareQueriesEnabled())
+                features.remove(JdbcThinFeature.TX_AWARE_QUERIES);
         }
 
         if (ver.compareTo(VER_2_13_0) >= 0) {
@@ -214,6 +230,18 @@ public class JdbcConnectionContext extends ClientListenerAbstractConnectionConte
                 if (!found)
                     throw new IgniteCheckedException("Not found configuration for query engine: " + qryEngine);
             }
+        }
+
+        TransactionConcurrency concurrency = null;
+        TransactionIsolation isolation = null;
+        int timeout = 0;
+        String lb = null;
+
+        if (ver.compareTo(VER_2_17_0) >= 0) {
+            concurrency = TransactionConcurrency.fromOrdinal(reader.readByte());
+            isolation = TransactionIsolation.fromOrdinal(reader.readByte());
+            timeout = reader.readInt();
+            lb = reader.readString();
         }
 
         if (ver.compareTo(VER_2_5_0) >= 0) {
@@ -252,7 +280,9 @@ public class JdbcConnectionContext extends ClientListenerAbstractConnectionConte
 
         handler = new JdbcRequestHandler(busyLock, snd, maxCursors, distributedJoins, enforceJoinOrder,
             collocated, replicatedOnly, autoCloseCursors, lazyExec, skipReducerOnUpdate, qryEngine,
-            dataPageScanEnabled, updateBatchSize, ver, this);
+            dataPageScanEnabled, updateBatchSize,
+            concurrency, isolation, timeout, lb,
+            ver, this);
 
         handler.start();
     }
@@ -272,6 +302,44 @@ public class JdbcConnectionContext extends ClientListenerAbstractConnectionConte
         handler.onDisconnect();
 
         super.onDisconnected();
+    }
+
+    /** {@inheritDoc} */
+    @Override public @Nullable ClientTxContext txContext(int txId) {
+        ensureSameTransaction(txId);
+
+        return txCtx;
+    }
+
+    /** {@inheritDoc} */
+    @Override public void addTxContext(ClientTxContext txCtx) {
+        if (this.txCtx != null)
+            throw new IgniteSQLException("Too many transactions", IgniteQueryErrorCode.QUERY_CANCELED);
+
+        this.txCtx = txCtx;
+    }
+
+    /** {@inheritDoc} */
+    @Override public void removeTxContext(int txId) {
+        ensureSameTransaction(txId);
+
+        txCtx = null;
+    }
+
+    /** */
+    private void ensureSameTransaction(int txId) {
+        if (txCtx != null && txCtx.txId() != txId) {
+            throw new IllegalStateException("Unknown transaction " +
+                "[serverTxId=" + (txCtx == null ? null : txCtx.txId()) + ", txId=" + txId + ']');
+        }
+    }
+
+    /** {@inheritDoc} */
+    @Override protected void cleanupTxs() {
+        if (txCtx != null)
+            txCtx.close();
+
+        txCtx = null;
     }
 
     /**

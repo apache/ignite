@@ -145,6 +145,11 @@ public class TypeUtils {
             return false;
         }
 
+        // Currently, RelDataTypeFactoryImpl#CLASS_FAMILIES doesn't consider the byte type as an integer.
+        if ((fromType.getSqlTypeName() == SqlTypeName.TINYINT && SqlTypeUtil.isIntType(toType))
+            || (toType.getSqlTypeName() == SqlTypeName.TINYINT && SqlTypeUtil.isIntType(fromType)))
+            return false;
+
         // Implicit type coercion does not handle nullability.
         if (SqlTypeUtil.equalSansNullability(factory, fromType, toType))
             return false;

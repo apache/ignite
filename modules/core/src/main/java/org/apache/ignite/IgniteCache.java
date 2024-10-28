@@ -188,12 +188,12 @@ public interface IgniteCache<K, V> extends javax.cache.Cache<K, V>, IgniteAsyncS
      * <p>
      * Full list of repairable methods:
      * <ul>
-     * <li>{@link IgniteCache#containsKey} && {@link IgniteCache#containsKeyAsync}</li>
-     * <li>{@link IgniteCache#containsKeys} && {@link IgniteCache#containsKeysAsync}</li>
-     * <li>{@link IgniteCache#getEntry} && {@link IgniteCache#getEntryAsync}</li>
-     * <li>{@link IgniteCache#getEntries} && {@link IgniteCache#getEntriesAsync}</li>
-     * <li>{@link IgniteCache#get} && {@link IgniteCache#getAsync}</li>
-     * <li>{@link IgniteCache#getAll} && {@link IgniteCache#getAllAsync}</li>
+     * <li>{@link IgniteCache#containsKey} &amp;&amp; {@link IgniteCache#containsKeyAsync}</li>
+     * <li>{@link IgniteCache#containsKeys} &amp;&amp; {@link IgniteCache#containsKeysAsync}</li>
+     * <li>{@link IgniteCache#getEntry} &amp;&amp; {@link IgniteCache#getEntryAsync}</li>
+     * <li>{@link IgniteCache#getEntries} &amp;&amp; {@link IgniteCache#getEntriesAsync}</li>
+     * <li>{@link IgniteCache#get} &amp;&amp; {@link IgniteCache#getAsync}</li>
+     * <li>{@link IgniteCache#getAll} &amp;&amp; {@link IgniteCache#getAllAsync}</li>
      * </ul>
      * @param strategy Read Repair strategy.
      * @return Cache with explicit consistency check on each read and repair if necessary.
@@ -226,7 +226,7 @@ public interface IgniteCache<K, V> extends javax.cache.Cache<K, V>, IgniteAsyncS
      * (which will be stored in binary format), you should acquire following projection
      * to avoid deserialization:
      * <pre>
-     * IgniteCache<Integer, BinaryObject> prj = cache.withKeepBinary();
+     * IgniteCache&lt;Integer, BinaryObject&gt; prj = cache.withKeepBinary();
      *
      * // Value is not deserialized and returned in binary format.
      * BinaryObject po = prj.get(1);

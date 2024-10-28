@@ -998,7 +998,7 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
     /**
      * @return Transaction for current thread.
      */
-    public <T> T tx() {
+    public <T extends IgniteInternalTx> T tx() {
         IgniteInternalTx tx = txContext();
 
         return tx != null ? (T)tx : (T)tx(null, Thread.currentThread().getId());

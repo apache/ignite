@@ -75,6 +75,17 @@ public class IgniteSpiOperationTimeoutHelper {
     }
 
     /**
+     * Creates timeout helper with an absolute time threshold. Sets {@code timeoutEnabled} to {@code false}.
+     *
+     * @param timeout Timeout in milliseconds.
+     */
+    public IgniteSpiOperationTimeoutHelper(long timeout) {
+        timeoutEnabled = false;
+
+        timeoutThreshold = System.nanoTime() + U.millisToNanos(timeout);
+    }
+
+    /**
      * Returns a timeout value to use for the next network operation.
      *
      * If failure detection timeout is enabled then the returned value is a portion of time left since the last time

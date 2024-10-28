@@ -19,7 +19,6 @@ package org.apache.ignite.internal.binary;
 
 import java.math.BigDecimal;
 import java.nio.ByteBuffer;
-import java.util.Arrays;
 import java.util.IdentityHashMap;
 import java.util.Iterator;
 import java.util.Map;
@@ -36,6 +35,8 @@ import org.apache.ignite.internal.util.typedef.internal.SB;
 import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.thread.IgniteThread;
 import org.jetbrains.annotations.Nullable;
+
+import static org.apache.ignite.internal.util.tostring.GridToStringBuilder.COLLECTION_LIMIT;
 
 /**
  * Internal binary object interface.
@@ -269,23 +270,23 @@ public abstract class BinaryObjectExImpl implements BinaryObjectEx {
     private void appendValue(Object val, SB buf, BinaryReaderHandles ctx,
         IdentityHashMap<BinaryObject, Integer> handles) {
         if (val instanceof byte[])
-            buf.a(Arrays.toString((byte[])val));
+            buf.a(S.arrayToString(val));
         else if (val instanceof short[])
-            buf.a(Arrays.toString((short[])val));
+            buf.a(S.arrayToString(val));
         else if (val instanceof int[])
-            buf.a(Arrays.toString((int[])val));
+            buf.a(S.arrayToString(val));
         else if (val instanceof long[])
-            buf.a(Arrays.toString((long[])val));
+            buf.a(S.arrayToString(val));
         else if (val instanceof float[])
-            buf.a(Arrays.toString((float[])val));
+            buf.a(S.arrayToString(val));
         else if (val instanceof double[])
-            buf.a(Arrays.toString((double[])val));
+            buf.a(S.arrayToString(val));
         else if (val instanceof char[])
-            buf.a(Arrays.toString((char[])val));
+            buf.a(S.arrayToString(val));
         else if (val instanceof boolean[])
-            buf.a(Arrays.toString((boolean[])val));
+            buf.a(S.arrayToString(val));
         else if (val instanceof BigDecimal[])
-            buf.a(Arrays.toString((BigDecimal[])val));
+            buf.a(S.arrayToString(val));
         else if (val instanceof IgniteUuid)
             buf.a(val);
         else if (val instanceof BinaryObjectExImpl) {
@@ -308,14 +309,20 @@ public abstract class BinaryObjectExImpl implements BinaryObjectEx {
 
             buf.a('[');
 
-            for (int i = 0; i < arr.length; i++) {
+            int len = Math.min(arr.length, COLLECTION_LIMIT);
+
+            for (int i = 0; i < len; i++) {
                 Object o = arr[i];
 
                 appendValue(o, buf, ctx, handles);
 
-                if (i < arr.length - 1)
+                if (i < len - 1)
                     buf.a(", ");
             }
+
+            handleOverflow(buf, arr.length);
+
+            buf.a(']');
         }
         else if (val instanceof Iterable) {
             Iterable<Object> col = (Iterable<Object>)val;
@@ -324,14 +331,22 @@ public abstract class BinaryObjectExImpl implements BinaryObjectEx {
 
             Iterator it = col.iterator();
 
+            int cnt = 0;
+
             while (it.hasNext()) {
                 Object o = it.next();
 
                 appendValue(o, buf, ctx, handles);
 
+                if (++cnt == COLLECTION_LIMIT)
+                    break;
+
                 if (it.hasNext())
                     buf.a(", ");
             }
+
+            if (it.hasNext())
+                buf.a("... and more");
 
             buf.a('}');
         }
@@ -342,6 +357,8 @@ public abstract class BinaryObjectExImpl implements BinaryObjectEx {
 
             Iterator<Map.Entry<Object, Object>> it = map.entrySet().iterator();
 
+            int cnt = 0;
+
             while (it.hasNext()) {
                 Map.Entry<Object, Object> e = it.next();
 
@@ -351,14 +368,32 @@ public abstract class BinaryObjectExImpl implements BinaryObjectEx {
 
                 appendValue(e.getValue(), buf, ctx, handles);
 
+                if (++cnt == COLLECTION_LIMIT)
+                    break;
+
                 if (it.hasNext())
                     buf.a(", ");
             }
+
+            handleOverflow(buf, map.size());
 
             buf.a('}');
         }
         else
             buf.a(val);
+    }
+
+    /**
+     * Writes overflow message to buffer if needed.
+     *
+     * @param buf String builder buffer.
+     * @param size Size to compare with limit.
+     */
+    private static void handleOverflow(SB buf, int size) {
+        int overflow = size - COLLECTION_LIMIT;
+
+        if (overflow > 0)
+            buf.a("... and ").a(overflow).a(" more");
     }
 
     /**
