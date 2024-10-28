@@ -19,6 +19,7 @@ package org.apache.ignite.internal.jdbc2;
 
 import java.io.IOException;
 import java.io.InputStream;
+import java.sql.Blob;
 import java.sql.SQLException;
 import java.util.Arrays;
 import org.junit.Test;
@@ -252,6 +253,9 @@ public class JdbcBlobTest {
         assertEquals(-1, blob.position(new byte[] {0, 2, 3}, 1));
         assertEquals(-1, blob.position(new byte[] {1, 2, 4}, 1));
 
+        blob.setBytes(17, new byte[] {16, 16, 16, 33, 46});
+        assertEquals(18, blob.position(new byte[] {16, 16, 33}, 1));
+
         blob.free();
 
         try {
@@ -286,6 +290,9 @@ public class JdbcBlobTest {
         assertEquals(-1, blob.position(new JdbcBlob(new byte[] {0, 1, 3}), 1));
         assertEquals(-1, blob.position(new JdbcBlob(new byte[] {0, 2, 3}), 1));
         assertEquals(-1, blob.position(new JdbcBlob(new byte[] {1, 2, 4}), 1));
+
+        blob.setBytes(17, new byte[] {16, 16, 16, 33, 46});
+        assertEquals(18, blob.position(new JdbcBlob(new byte[] {16, 16, 33}), 1));
 
         blob.free();
 
@@ -474,6 +481,22 @@ public class JdbcBlobTest {
             // No-op.
             System.out.println();
         }
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    @Test
+    public void testFree() throws Exception {
+        Blob blob = new JdbcBlob(new byte[] {0, 1, 2, 3, 4, 5, 6, 7});
+
+        assertEquals(8, blob.length());
+
+        blob.free();
+
+        blob.free();
+
+        assertThrows(null, blob::length, SQLException.class, "Blob instance can't be used after free() has been called.");
     }
 
     /**
