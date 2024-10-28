@@ -465,9 +465,9 @@ public class IgniteCacheProxyImpl<K, V> extends AsyncSupportAdapter<IgniteCache<
      * @throws IgniteCheckedException If failed.
      */
     @SuppressWarnings("unchecked")
-    private <R> QueryCursor<R> query(
-        final ScanQuery<K, V> scanQry,
-        @Nullable final IgniteClosure<Cache.Entry<K, V>, R> transformer,
+    private <T, R> QueryCursor<R> query(
+        final ScanQuery scanQry,
+        @Nullable final IgniteClosure<T, R> transformer,
         @Nullable ClusterGroup grp
     ) throws IgniteCheckedException {
         GridCacheContext<K, V> ctx = getContextSafe();
@@ -861,7 +861,7 @@ public class IgniteCacheProxyImpl<K, V> extends AsyncSupportAdapter<IgniteCache<
 
             validate(qry);
 
-            return query((ScanQuery<K, V>)qry, (IgniteClosure<Cache.Entry<K, V>, R>)transformer, projection(qry.isLocal()));
+            return query((ScanQuery<K, V>)qry, transformer, projection(qry.isLocal()));
         }
         catch (Exception e) {
             if (e instanceof CacheException)

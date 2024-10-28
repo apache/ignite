@@ -3200,6 +3200,8 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
         private void advance() {
             long start = statsEnabled ? System.nanoTime() : 0L;
 
+            Object next0 = null;
+
             while (it.hasNext()) {
                 CacheDataRow row = it.next();
 
@@ -3265,22 +3267,26 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
                 }
 
                 if (val != null) {
-                    if (statsEnabled) {
-                        CacheMetricsImpl metrics = cctx.cache().metrics0();
+                    next0 = filterAndTransform(
+                        key,
+                        val,
+                        cctx,
+                        intScanFilter,
+                        transform,
+                        readEvt,
+                        keepBinary,
+                        subjId,
+                        taskName,
+                        statsEnabled,
+                        start
+                    );
 
-                        metrics.onRead(true);
-
-                        metrics.addGetTimeNanos(System.nanoTime() - start);
-                    }
-
-                    next = filterAndTransform(key, val, cctx, intScanFilter, transform, readEvt, keepBinary, subjId, taskName);
-
-                    if (next != null)
+                    if (next0 != null)
                         break;
                 }
             }
 
-            if (next == null && expiryPlc != null && dht != null) {
+            if ((this.next = next0) == null && expiryPlc != null && dht != null) {
                 dht.sendTtlUpdateRequest(expiryPlc);
 
                 expiryPlc = null;
@@ -3347,7 +3353,7 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
      * Perform filtering and transformation of key-value pair.
      * @return Object to return to the user, or {@code null} if filtered.
      */
-    static <K, V> Object filterAndTransform(
+    static final <K, V> Object filterAndTransform(
         final KeyCacheObject key,
         final CacheObject val,
         final GridCacheContext<K, V> cctx,
@@ -3356,8 +3362,18 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
         final boolean readEvt,
         final boolean keepBinary,
         final UUID subjId,
-        final String taskName
+        final String taskName,
+        final boolean statsEnabled,
+        final long start
     ) {
+        if (statsEnabled) {
+            CacheMetricsImpl metrics = cctx.cache().metrics0();
+
+            metrics.onRead(true);
+
+            metrics.addGetTimeNanos(System.nanoTime() - start);
+        }
+
         K key0 = (K)CacheObjectUtils.unwrapBinaryIfNeeded(cctx.cacheObjectContext(), key, keepBinary, false);
         V val0 = (V)CacheObjectUtils.unwrapBinaryIfNeeded(cctx.cacheObjectContext(), val, keepBinary, false);
 
