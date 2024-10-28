@@ -101,16 +101,10 @@ public class JdbcBinaryBuffer {
     }
 
     /**
-     * Provide OutputStream through which the data can be written to buffer starting from
-     * the (zero-based) {@code pos} position.
-     *
-     * @param pos The zero-based offset to the first byte to be written. Must not be negative
-     *            or greater than total count of bytes in buffer.
-     *
-     * @return OutputStream instance.
+     * Create shallow read-only copy of this buffer.
      */
-    public OutputStream getOutputStream(int pos) {
-        return new BufferOutputStream(pos);
+    public JdbcBinaryBuffer shallowCopy() {
+        return new JdbcBinaryBuffer(arr, off, length, true);
     }
 
     /**
@@ -127,19 +121,6 @@ public class JdbcBinaryBuffer {
     }
 
     /**
-     * Provide InputStream through which the no more than {@code len} bytes can be read
-     * from buffer starting from the specified zero-based position {@code pos}.
-     *
-     * @param pos The zero-based offset to the first byte to be retrieved. Must not be negative
-     *            or greater than total count of bytes in buffer.
-     * @param len The length in bytes of the data to be retrieved. Must not be negative.
-     * @return InputStream instance.
-     */
-    public InputStream getInputStream(int pos, int len) {
-        return new BufferInputStream(pos, len);
-    }
-
-    /**
      * Get copy of the buffer data as byte array.
      *
      * @return Byte array containing buffer data.
@@ -153,11 +134,37 @@ public class JdbcBinaryBuffer {
     }
 
     /**
+     * Provide OutputStream through which the data can be written to buffer starting from
+     * the (zero-based) {@code pos} position.
+     *
+     * @param pos The zero-based offset to the first byte to be written. Must not be negative
+     *            or greater than total count of bytes in buffer.
+     *
+     * @return OutputStream instance.
+     */
+    OutputStream getOutputStream(int pos) {
+        return new BufferOutputStream(pos);
+    }
+
+    /**
+     * Provide InputStream through which the no more than {@code len} bytes can be read
+     * from buffer starting from the specified zero-based position {@code pos}.
+     *
+     * @param pos The zero-based offset to the first byte to be retrieved. Must not be negative
+     *            or greater than total count of bytes in buffer.
+     * @param len The length in bytes of the data to be retrieved. Must not be negative.
+     * @return InputStream instance.
+     */
+    InputStream getInputStream(int pos, int len) {
+        return new BufferInputStream(pos, len);
+    }
+
+    /**
      * Truncate data in this buffer to specified length.
      *
      * @param len New length.
      */
-    public void truncate(int len) {
+    void truncate(int len) {
         byte[] newArr = new byte[Math.max(MIN_CAP, len)];
 
         U.arrayCopy(arr, off, newArr, 0, len);
@@ -172,16 +179,9 @@ public class JdbcBinaryBuffer {
     }
 
     /**
-     * Create shallow read-only copy of this buffer.
-     */
-    public JdbcBinaryBuffer shallowCopy() {
-        return new JdbcBinaryBuffer(arr, off, length, true);
-    }
-
-    /**
      * @return Length of data in this buffer.
      */
-    public int length() {
+    int length() {
         return length;
     }
 
@@ -194,7 +194,7 @@ public class JdbcBinaryBuffer {
      * @param resLen Number of bytes to read.
      * @return Number of bytes read. -1 if end of data reached.
      */
-    public int read(int pos, byte[] resBuf, int resOff, int resLen) {
+    int read(int pos, byte[] resBuf, int resOff, int resLen) {
         Objects.checkFromIndexSize(resOff, resLen, resBuf.length);
 
         if (pos >= length)
@@ -218,12 +218,8 @@ public class JdbcBinaryBuffer {
      * @param inpOff Start offset in the input array.
      * @param inpLen Number of bytes to write.
      */
-    public void write(int pos, byte[] inpBuf, int inpOff, int inpLen) throws SQLException {
+    void write(int pos, byte[] inpBuf, int inpOff, int inpLen) throws SQLException {
         Objects.checkFromIndexSize(inpOff, inpLen, inpBuf.length);
-
-        if (pos > length)
-            throw new SQLException("Writting beyond end of Blob, it probably was truncated after OutputStream was created " +
-                    "[pos=" + pos + ", blobLength=" + length + "]");
 
         if (MAX_ARRAY_SIZE - pos < inpLen)
             throw new SQLException("Too much data. Can't write more then " + MAX_ARRAY_SIZE + " bytes to Blob.");
@@ -260,10 +256,6 @@ public class JdbcBinaryBuffer {
      * @param b Byte to write.
      */
     private void write(int pos, int b) throws SQLException {
-        if (pos > length)
-            throw new SQLException("Writting beyond end of Blob, it probably was truncated after OutputStream was created " +
-                    "[pos=" + pos + ", blobLength=" + length + "]");
-
         if (MAX_ARRAY_SIZE - pos < 1)
             throw new SQLException("Too much data. Can't write more then " + MAX_ARRAY_SIZE + " bytes to Blob.");
 
@@ -450,6 +442,10 @@ public class JdbcBinaryBuffer {
 
         /** {@inheritDoc} */
         @Override public void write(int b) throws IOException {
+            if (pos > length)
+                throw new IOException("Writting beyond end of Blob, it probably was truncated after OutputStream was created " +
+                        "[pos=" + pos + ", blobLength=" + length + "]");
+
             try {
                 JdbcBinaryBuffer.this.write(pos++, b);
             }
@@ -461,6 +457,10 @@ public class JdbcBinaryBuffer {
         /** {@inheritDoc} */
         @Override public void write(byte[] b, int off, int len) throws IOException {
             Objects.checkFromIndexSize(off, len, b.length);
+
+            if (pos > length)
+                throw new IOException("Writting beyond end of Blob, it probably was truncated after OutputStream was created " +
+                        "[pos=" + pos + ", blobLength=" + length + "]");
 
             try {
                 JdbcBinaryBuffer.this.write(pos, b, off, len);
