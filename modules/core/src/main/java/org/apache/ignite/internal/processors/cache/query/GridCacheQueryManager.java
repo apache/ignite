@@ -3345,7 +3345,10 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
         }
     }
 
-    /** */
+    /**
+     * Perform filtering and transformation of key-value pair.
+     * @return Object to return to the user, or {@code null} if filtered.
+     */
     static <K, V> Object filterAndTransform(
         final KeyCacheObject key,
         final CacheObject val,
@@ -3360,7 +3363,7 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
         K key0 = (K)CacheObjectUtils.unwrapBinaryIfNeeded(cctx.cacheObjectContext(), key, keepBinary, false);
         V val0 = (V)CacheObjectUtils.unwrapBinaryIfNeeded(cctx.cacheObjectContext(), val, keepBinary, false);
 
-        if (!(intScanFilter == null || intScanFilter.apply(key0, val0)))
+        if (intScanFilter != null && !intScanFilter.apply(key0, val0))
             return null;
 
         if (readEvt) {
@@ -3383,16 +3386,14 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
                 null));
         }
 
-        if (transform != null) {
-            try {
-                return transform.apply(new CacheQueryEntry<>(key0, val0));
-            }
-            catch (Throwable e) {
-                throw new IgniteException(e);
-            }
-        }
+        try {
+            CacheQueryEntry<K, V> res = new CacheQueryEntry<>(key0, val0);
 
-        return new CacheQueryEntry<>(key0, val0);
+            return transform == null ? res : transform.apply(res);
+        }
+        catch (Throwable e) {
+            throw new IgniteException(e);
+        }
     }
 
     /**
