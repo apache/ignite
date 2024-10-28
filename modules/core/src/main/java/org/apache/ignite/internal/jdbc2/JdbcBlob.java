@@ -171,10 +171,6 @@ public class JdbcBlob implements Blob {
             throw new SQLException("Invalid argument. Position can't be less than 1 or " +
                 "greater than Blob length + 1 [pos=" + pos + ", blobLen=" + blobLen + "]");
 
-        if (off < 0 || off >= bytes.length || off + len > bytes.length)
-            throw new SQLException("Invalid argument.",
-                    new ArrayIndexOutOfBoundsException("[off=" + off + ", len=" + len + ", bytes.length=" + bytes.length + "]"));
-
         buf.write((int)pos - 1, bytes, off, len);
 
         return len;

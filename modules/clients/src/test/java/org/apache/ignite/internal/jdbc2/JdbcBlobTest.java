@@ -23,6 +23,7 @@ import java.sql.SQLException;
 import java.util.Arrays;
 import org.junit.Test;
 
+import static org.apache.ignite.testframework.GridTestUtils.assertThrows;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
@@ -237,7 +238,7 @@ public class JdbcBlobTest {
 
         JdbcBlob blob = new JdbcBlob(arr);
 
-        assertEquals(-1, blob.position(new byte[] {1, 2, 3}, 0));
+        assertThrows(null, () -> blob.position(new byte[] {1, 2, 3}, 0), SQLException.class, null);
         assertEquals(-1, blob.position(new byte[] {1, 2, 3}, arr.length + 1));
         assertEquals(-1, blob.position(new byte[0], 1));
         assertEquals(-1, blob.position(new byte[17], 1));
@@ -272,7 +273,7 @@ public class JdbcBlobTest {
 
         JdbcBlob blob = new JdbcBlob(arr);
 
-        assertEquals(-1, blob.position(new JdbcBlob(new byte[] {1, 2, 3}), 0));
+        assertThrows(null, () -> blob.position(new JdbcBlob(new byte[] {1, 2, 3}), 0), SQLException.class, null);
         assertEquals(-1, blob.position(new JdbcBlob(new byte[] {1, 2, 3}), arr.length + 1));
         assertEquals(-1, blob.position(new JdbcBlob(new byte[0]), 1));
         assertEquals(-1, blob.position(new JdbcBlob(new byte[17]), 1));
@@ -321,7 +322,7 @@ public class JdbcBlobTest {
 
             fail();
         }
-        catch (ArrayIndexOutOfBoundsException e) {
+        catch (SQLException e) {
             // No-op.
         }
 
@@ -373,7 +374,7 @@ public class JdbcBlobTest {
 
             fail();
         }
-        catch (ArrayIndexOutOfBoundsException e) {
+        catch (SQLException e) {
             // No-op.
         }
 
@@ -382,7 +383,7 @@ public class JdbcBlobTest {
 
             fail();
         }
-        catch (ArrayIndexOutOfBoundsException e) {
+        catch (IndexOutOfBoundsException e) {
             // No-op.
         }
 
@@ -391,7 +392,7 @@ public class JdbcBlobTest {
 
             fail();
         }
-        catch (ArrayIndexOutOfBoundsException e) {
+        catch (IndexOutOfBoundsException e) {
             // No-op.
         }
 
