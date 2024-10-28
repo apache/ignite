@@ -64,6 +64,7 @@ import org.apache.ignite.internal.processors.service.ServiceInfoSelfTest;
 import org.apache.ignite.internal.processors.service.ServicePredicateAccessCacheTest;
 import org.apache.ignite.internal.processors.service.ServiceReassignmentFunctionSelfTest;
 import org.apache.ignite.internal.processors.service.SystemCacheNotConfiguredTest;
+import org.apache.ignite.internal.processors.service.IgniteServiceDeployUnknownClassTest;
 import org.apache.ignite.services.ServiceThreadPoolSelfTest;
 import org.apache.ignite.tools.junit.JUnitTeamcityReporter;
 import org.junit.BeforeClass;
@@ -106,6 +107,7 @@ import org.junit.runners.Suite;
     IgniteServiceDeployment2ClassLoadersDefaultMarshallerTest.class,
     IgniteServiceDeployment2ClassLoadersJdkMarshallerTest.class,
     IgniteServiceDeployment2ClassLoadersOptimizedMarshallerTest.class,
+    IgniteServiceDeployUnknownClassTest.class,
 
     GridServiceDeploymentExceptionPropagationTest.class,
     ServiceDeploymentProcessingOnCoordinatorLeftTest.class,
