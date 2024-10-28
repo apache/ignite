@@ -3361,10 +3361,10 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
     }
 
     /** */
-    public static <K, V> Object filterAndTransform(
+    static <K, V> Object filterAndTransform(
         final KeyCacheObject key,
         final CacheObject val,
-        final GridCacheContext cctx,
+        final GridCacheContext<K, V> cctx,
         final InternalScanFilter<K, V> intScanFilter,
         final IgniteClosure transform,
         final boolean readEvt,
@@ -3408,24 +3408,6 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
         }
 
         return new CacheQueryEntry<>(key0, val0);
-    }
-
-    /** */
-    @Nullable InternalScanFilter<K, V> queryFilter(final GridCacheQueryAdapter<?> qry) {
-        return qry.scanFilter() == null ? null : new InternalScanFilter<>(qry.scanFilter());
-    }
-
-    /** */
-    public void initFilter(@Nullable InternalScanFilter<K, V> filter) throws IgniteCheckedException {
-        if (filter == null)
-            return;
-
-        IgniteBiPredicate<K, V> keyValFilter = filter.scanFilter();
-
-        if (keyValFilter instanceof PlatformCacheEntryFilter)
-            ((PlatformCacheEntryFilter)keyValFilter).cacheContext(cctx);
-        else
-            injectResources(keyValFilter);
     }
 
     /**

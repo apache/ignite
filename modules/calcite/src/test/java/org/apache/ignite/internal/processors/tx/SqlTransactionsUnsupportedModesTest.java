@@ -17,9 +17,8 @@
 
 package org.apache.ignite.internal.processors.tx;
 
-import java.util.HashSet;
+import java.util.EnumSet;
 import java.util.List;
-import java.util.Set;
 import javax.cache.CacheException;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
@@ -55,7 +54,7 @@ public class SqlTransactionsUnsupportedModesTest extends GridCommonAbstractTest 
             sql("CREATE TABLE T1(ID BIGINT PRIMARY KEY, NAME VARCHAR(100))");
 
             for (TransactionConcurrency concurrency : TransactionConcurrency.values()) {
-                Set<TransactionIsolation> supported = new HashSet<>(TransactionConfiguration.TX_AWARE_QUERIES_SUPPORTED_MODES);
+                EnumSet<TransactionIsolation> supported = EnumSet.copyOf(TransactionConfiguration.TX_AWARE_QUERIES_SUPPORTED_MODES);
 
                 for (TransactionIsolation isolation : TransactionIsolation.values()) {
                     try (Transaction ignored = srv.transactions().txStart(concurrency, isolation)) {
