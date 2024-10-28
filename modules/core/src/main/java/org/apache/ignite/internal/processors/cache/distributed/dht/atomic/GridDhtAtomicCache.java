@@ -96,6 +96,7 @@ import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersionConflictContext;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersionEx;
 import org.apache.ignite.internal.processors.cacheobject.IgniteCacheObjectProcessor;
+import org.apache.ignite.internal.processors.performancestatistics.OperationType;
 import org.apache.ignite.internal.processors.timeout.GridTimeoutObject;
 import org.apache.ignite.internal.util.GridLongList;
 import org.apache.ignite.internal.util.future.GridFinishedFuture;
@@ -674,11 +675,19 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
 
     /** {@inheritDoc} */
     @Override public IgniteInternalFuture<?> putAllConflictAsync(Map<KeyCacheObject, GridCacheDrInfo> conflictMap) {
+        if (F.isEmpty(conflictMap))
+            return new GridFinishedFuture<Object>();
+
+        final boolean statsEnabled = ctx.statisticsEnabled();
+        final boolean performanceStatsEnabled = ctx.kernalContext().performanceStatistics().enabled();
+
+        long start = statsEnabled || performanceStatsEnabled ? System.nanoTime() : 0L;
+
         ctx.dr().onReceiveCacheEntriesReceived(conflictMap.size());
 
         warnIfUnordered(conflictMap, BulkOperation.PUT);
 
-        return updateAll0(
+        IgniteInternalFuture<?> fut = updateAll0(
             null,
             null,
             null,
@@ -687,6 +696,14 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
             false,
             UPDATE,
             true);
+
+        if (statsEnabled)
+            fut.listen(new UpdatePutAllConflictTimeStatClosure<>(metrics0(), start));
+
+        if (performanceStatsEnabled)
+            fut.listen(() -> writeStatistics(OperationType.CACHE_PUT_ALL, start));
+
+        return fut;
     }
 
     /** {@inheritDoc} */
@@ -729,9 +746,25 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
 
     /** {@inheritDoc} */
     @Override public IgniteInternalFuture<?> removeAllConflictAsync(Map<KeyCacheObject, GridCacheVersion> conflictMap) {
+        if (F.isEmpty(conflictMap))
+            return new GridFinishedFuture<Object>();
+
+        final boolean statsEnabled = ctx.statisticsEnabled();
+        final boolean performanceStatsEnabled = ctx.kernalContext().performanceStatistics().enabled();
+
+        final long start = statsEnabled || performanceStatsEnabled ? System.nanoTime() : 0L;
+
         ctx.dr().onReceiveCacheEntriesReceived(conflictMap.size());
 
-        return removeAllAsync0(null, conflictMap, false, true);
+        IgniteInternalFuture<?> fut = removeAllAsync0(null, conflictMap, false, true);
+
+        if (statsEnabled)
+            fut.listen(new UpdateRemoveAllConflictTimeStatClosure<>(metrics0(), start));
+
+        if (performanceStatsEnabled)
+            fut.listen(() -> writeStatistics(OperationType.CACHE_REMOVE_ALL, start));
+
+        return fut;
     }
 
     /**

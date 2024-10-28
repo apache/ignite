@@ -17,12 +17,23 @@
 
 package org.apache.ignite.internal.metric;
 
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collection;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
+import java.util.concurrent.ExecutionException;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.Ignition;
+import org.apache.ignite.cache.CacheAtomicityMode;
+import org.apache.ignite.client.IgniteClient;
 import org.apache.ignite.configuration.CacheConfiguration;
+import org.apache.ignite.configuration.ClientConfiguration;
+import org.apache.ignite.configuration.ClientConnectorConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
+import org.apache.ignite.internal.client.thin.TcpClientCache;
 import org.apache.ignite.internal.processors.cache.CacheConflictResolutionManager;
 import org.apache.ignite.internal.processors.cache.CacheObject;
 import org.apache.ignite.internal.processors.cache.CacheObjectImpl;
@@ -37,12 +48,19 @@ import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersionConflictContext;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersionedEntryEx;
 import org.apache.ignite.internal.processors.metric.MetricRegistryImpl;
+import org.apache.ignite.internal.processors.metric.impl.HistogramMetricImpl;
+import org.apache.ignite.internal.util.typedef.T3;
 import org.apache.ignite.plugin.AbstractTestPluginProvider;
 import org.apache.ignite.plugin.PluginContext;
 import org.apache.ignite.spi.metric.LongMetric;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.Parameterized;
 
+import static java.util.Arrays.stream;
+import static org.apache.ignite.cache.CacheAtomicityMode.ATOMIC;
+import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
 import static org.apache.ignite.cluster.ClusterState.ACTIVE;
 import static org.apache.ignite.internal.processors.metric.impl.MetricUtils.cacheMetricsRegistryName;
 
@@ -52,9 +70,28 @@ import static org.apache.ignite.internal.processors.metric.impl.MetricUtils.cach
  * @see IgniteInternalCache#putAllConflict(Map)
  * @see IgniteInternalCache#removeAllConflict(Map)
  */
+@RunWith(Parameterized.class)
 public class CacheMetricsConflictOperationsTest extends GridCommonAbstractTest {
     /** */
     private static final int KEYS_CNT = 100;
+
+    /** */
+    private static final int CLIENT_CONNECTOR_PORT = 10800;
+
+    /** */
+    @Parameterized.Parameter
+    public CacheAtomicityMode atomicityMode;
+
+    /** */
+    @Parameterized.Parameters(name = "atomicityMode={0}")
+    public static Collection<?> parameters() {
+        List<Object[]> params = new ArrayList<>();
+
+        for (CacheAtomicityMode atomicityMode : Arrays.asList(ATOMIC, TRANSACTIONAL))
+            params.add(new Object[] {atomicityMode});
+
+        return params;
+    }
 
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
@@ -64,6 +101,7 @@ public class CacheMetricsConflictOperationsTest extends GridCommonAbstractTest {
         cfg.setCacheConfiguration(
             new CacheConfiguration<>(DEFAULT_CACHE_NAME)
                 .setStatisticsEnabled(true)
+                .setAtomicityMode(atomicityMode)
         );
 
         cfg.setPluginProviders(new AbstractTestPluginProvider() {
@@ -81,6 +119,11 @@ public class CacheMetricsConflictOperationsTest extends GridCommonAbstractTest {
             }
         });
 
+        cfg.setClientConnectorConfiguration(
+            new ClientConnectorConfiguration()
+                .setPort(CLIENT_CONNECTOR_PORT)
+        );
+
         return cfg;
     }
 
@@ -93,24 +136,42 @@ public class CacheMetricsConflictOperationsTest extends GridCommonAbstractTest {
 
     /** */
     @Test
-    public void testCacheConflictResolver() throws Exception {
+    public void testCacheMetricsConflictOperationsThick() throws Exception {
         try (IgniteEx ign = startGrid(0); IgniteEx cli = startClientGrid()) {
             ign.cluster().state(ACTIVE);
 
             ign.cache(DEFAULT_CACHE_NAME).enableStatistics(true);
             cli.cache(DEFAULT_CACHE_NAME).enableStatistics(true);
 
-            IgniteInternalCache<Integer, Integer> cachex = cli.cachex(DEFAULT_CACHE_NAME);
+            IgniteInternalCache<Integer, Integer> cachex = cli.cachex(DEFAULT_CACHE_NAME).keepBinary();
 
-            putAndRemoveDataWithConflict(cachex, KEYS_CNT, false);
+            updateCacheFromThick(cachex, KEYS_CNT, false);
             checkMetrics(cli);
 
-            putAndRemoveDataWithConflict(cachex, KEYS_CNT, true);
+            updateCacheFromThick(cachex, KEYS_CNT, true);
             checkMetrics(cli);
         }
     }
 
-    private void putAndRemoveDataWithConflict(IgniteInternalCache<Integer, Integer> cachex, int cnt, boolean async) throws IgniteCheckedException {
+    /** */
+    @Test
+    public void testCacheMetricsConflictOperationsThin() throws Exception {
+        try (IgniteEx ign = startGrid(0); IgniteClient cli = Ignition.startClient(getClientConfiguration())) {
+            ign.cluster().state(ACTIVE);
+
+            ign.cache(DEFAULT_CACHE_NAME).enableStatistics(true);
+
+            TcpClientCache<Object, Object> cache = (TcpClientCache<Object, Object>)cli.cache(DEFAULT_CACHE_NAME).withKeepBinary();
+
+            updateCacheFromThin(cache, KEYS_CNT, false);
+            checkMetrics(ign);
+
+            updateCacheFromThin(cache, KEYS_CNT, true);
+            checkMetrics(ign);
+        }
+    }
+
+    private void updateCacheFromThick(IgniteInternalCache<Integer, Integer> cachex, int cnt, boolean async) throws IgniteCheckedException {
         Map<KeyCacheObject, GridCacheDrInfo> drMapPuts = new HashMap<>();
         Map<KeyCacheObject, GridCacheVersion> drMapRemoves = new HashMap<>();
 
@@ -138,18 +199,48 @@ public class CacheMetricsConflictOperationsTest extends GridCommonAbstractTest {
         }
     }
 
+    private void updateCacheFromThin(TcpClientCache<Object, Object> cache, int cnt, boolean async) {
+        Map<Object, T3<?, GridCacheVersion, Long>> drMapPuts = new HashMap<>();
+        Map<Object, GridCacheVersion> drMapRemoves = new HashMap<>();
+
+        GridCacheVersion conflict = new GridCacheVersion(1, 1, 1, (byte)2);
+        T3<?, GridCacheVersion, Long> val = new T3<>(1, conflict, 0L);
+
+        for (int i = 0; i < cnt; ++i) {
+            drMapPuts.put(i, val);
+            drMapRemoves.put(i, conflict);
+        }
+
+        if (async) {
+            try {
+                cache.putAllConflictAsync(drMapPuts).get();
+                cache.removeAllConflictAsync(drMapRemoves).get();
+            }
+            catch (InterruptedException | ExecutionException e) {
+                throw new RuntimeException(e);
+            }
+        }
+        else {
+            cache.putAllConflict(drMapPuts);
+            cache.removeAllConflict(drMapRemoves);
+        }
+    }
+
     /** */
     private void checkMetrics(IgniteEx ign) {
         MetricRegistryImpl mreg = ign.context().metric().registry(cacheMetricsRegistryName(DEFAULT_CACHE_NAME, false));
 
-        log.info("PutAllConflictTimeTotal: " + mreg.<LongMetric>findMetric("PutAllConflictTimeTotal").value());
-        log.info("RemoveAllConflictTimeTotal: " + mreg.<LongMetric>findMetric("RemoveAllConflictTimeTotal").value());
+        assertTrue(mreg.<LongMetric>findMetric("PutAllConflictTimeTotal").value() > 0);
+        assertTrue(mreg.<LongMetric>findMetric("RemoveAllConflictTimeTotal").value() > 0);
 
-//        assertTrue(mreg.<LongMetric>findMetric("PutAllConflictTimeTotal").value() > 0);
-//        assertTrue(mreg.<LongMetric>findMetric("RemoveAllConflictTimeTotal").value() > 0);
-//
-//        assertTrue(stream(mreg.<HistogramMetricImpl>findMetric("RemoveAllConflictTimeTotal").value()).sum() > 0);
-//        assertTrue(stream(mreg.<HistogramMetricImpl>findMetric("PutAllConflictTimeTotal").value()).sum() > 0);
+        assertTrue(stream(mreg.<HistogramMetricImpl>findMetric("RemoveAllConflictTime").value()).sum() > 0);
+        assertTrue(stream(mreg.<HistogramMetricImpl>findMetric("PutAllConflictTime").value()).sum() > 0);
+    }
+
+    /** */
+    private ClientConfiguration getClientConfiguration() {
+        return new ClientConfiguration()
+            .setAddresses("127.0.0.1:" + CLIENT_CONNECTOR_PORT);
     }
 
     /** */
