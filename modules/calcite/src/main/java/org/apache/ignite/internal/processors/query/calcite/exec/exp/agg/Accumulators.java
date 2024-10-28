@@ -258,25 +258,26 @@ public class Accumulators {
         private final transient AggregateCall aggCall;
 
         /** */
-        protected List<Integer> argList;
-
-        /** */
         AbstractAccumulator(AggregateCall aggCall, RowHandler<Row> hnd) {
             this.aggCall = aggCall;
             this.hnd = hnd;
-            this.argList = aggCall.getArgList();
         }
 
         /** */
         <T> T get(int idx, Row row) {
-            assert idx < argList.size() : "idx=" + idx + "; arglist=" + argList;
+            assert idx < argList().size() : "idx=" + idx + "; arglist=" + argList();
 
-            return (T)hnd.get(argList.get(idx), row);
+            return (T)hnd.get(argList().get(idx), row);
         }
 
         /** */
         protected AggregateCall aggregateCall() {
             return aggCall;
+        }
+
+        /** */
+        protected List<Integer> argList() {
+            return aggCall.getArgList();
         }
 
         /** */
@@ -506,7 +507,7 @@ public class Accumulators {
 
         /** {@inheritDoc} */
         @Override public void add(Row row) {
-            int argsCnt = argList.size();
+            int argsCnt = argList().size();
 
             assert argsCnt == 0 || argsCnt == 1;
 
@@ -1202,7 +1203,7 @@ public class Accumulators {
         public ListAggAccumulator(AggregateCall aggCall, RowHandler<Row> hnd) {
             super(aggCall, hnd);
 
-            isDfltSep = argList.size() <= 1;
+            isDfltSep = argList().size() <= 1;
         }
 
         /** {@inheritDoc} */
@@ -1336,13 +1337,20 @@ public class Accumulators {
         private final Map<Object, Row> rows = new HashMap<>();
 
         /** */
+        protected final List<Integer> argList;
+
+        /** */
         private DistinctAccumulator(AggregateCall aggCall, RowHandler<Row> hnd, Supplier<Accumulator<Row>> accSup) {
             super(aggCall, hnd);
 
             acc = accSup.get();
 
-            if (argList.isEmpty())
-                argList = List.of(0);
+            this.argList = super.argList().isEmpty() ? List.of(0) : super.argList();
+        }
+
+        /** */
+        @Override protected List<Integer> argList() {
+            return argList;
         }
 
         /** {@inheritDoc} */
