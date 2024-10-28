@@ -1204,7 +1204,14 @@ public interface IgniteCache<K, V> extends javax.cache.Cache<K, V>, IgniteAsyncS
      */
     public IgniteFuture<Void> removeAllAsync();
 
-    /** {@inheritDoc} */
+    /**
+     * Clears the contents of the cache, without notifying listeners or {@link CacheWriter}s.
+     * Entries are cleared only if they are not currently locked, and are not participating in a transaction.
+     * This operation is not transactional. It calls broadcast closure that deletes all primary keys from remote nodes.
+     *
+     * @throws IllegalStateException if the cache is {@link #isClosed()}.
+     * @throws CacheException        if there is a problem during the clear.
+     */
     @IgniteAsyncSupported
     @Override public void clear();
 
