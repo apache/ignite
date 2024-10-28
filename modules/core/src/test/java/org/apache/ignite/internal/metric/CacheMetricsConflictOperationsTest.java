@@ -134,7 +134,7 @@ public class CacheMetricsConflictOperationsTest extends GridCommonAbstractTest {
         stopAllGrids();
     }
 
-    /** */
+    /** Checks metrics with thick client. */
     @Test
     public void testCacheMetricsConflictOperationsThick() throws Exception {
         try (IgniteEx ign = startGrid(0); IgniteEx cli = startClientGrid()) {
@@ -153,7 +153,7 @@ public class CacheMetricsConflictOperationsTest extends GridCommonAbstractTest {
         }
     }
 
-    /** */
+    /** Checks metrics with thin client. */
     @Test
     public void testCacheMetricsConflictOperationsThin() throws Exception {
         try (IgniteEx ign = startGrid(0); IgniteClient cli = Ignition.startClient(getClientConfiguration())) {
@@ -171,6 +171,12 @@ public class CacheMetricsConflictOperationsTest extends GridCommonAbstractTest {
         }
     }
 
+    /** Performs {@link IgniteInternalCache#putAllConflict(Map)} and {@link IgniteInternalCache#removeAllConflict(Map)}
+     * operation on a given cache.
+     * @param cachex - {@link IgniteInternalCache} cache instance.
+     * @param cnt - number of entities to put/remove
+     * @param async - {@link Boolean} flag, indicating asynchonous operations proccessing.
+     * */
     private void updateCacheFromThick(IgniteInternalCache<Integer, Integer> cachex, int cnt, boolean async) throws IgniteCheckedException {
         Map<KeyCacheObject, GridCacheDrInfo> drMapPuts = new HashMap<>();
         Map<KeyCacheObject, GridCacheVersion> drMapRemoves = new HashMap<>();
@@ -199,6 +205,11 @@ public class CacheMetricsConflictOperationsTest extends GridCommonAbstractTest {
         }
     }
 
+    /** Performs {@link TcpClientCache#putAllConflict(Map)} and {@link TcpClientCache#removeAllConflict(Map)} operation on a given cache.
+     * @param cache - {@link TcpClientCache} cache instance.
+     * @param cnt - number of entities to put/remove
+     * @param async - {@link Boolean} flag, indicating asynchonous operations proccessing.
+     * */
     private void updateCacheFromThin(TcpClientCache<Object, Object> cache, int cnt, boolean async) {
         Map<Object, T3<?, GridCacheVersion, Long>> drMapPuts = new HashMap<>();
         Map<Object, GridCacheVersion> drMapRemoves = new HashMap<>();
@@ -226,7 +237,7 @@ public class CacheMetricsConflictOperationsTest extends GridCommonAbstractTest {
         }
     }
 
-    /** */
+    /** Performs checks for #putAllConflict() and #removeAllConflict() operations related metrics. */
     private void checkMetrics(IgniteEx ign) {
         MetricRegistryImpl mreg = ign.context().metric().registry(cacheMetricsRegistryName(DEFAULT_CACHE_NAME, false));
 
