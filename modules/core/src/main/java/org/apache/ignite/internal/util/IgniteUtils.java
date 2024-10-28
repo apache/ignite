@@ -4373,7 +4373,10 @@ public abstract class IgniteUtils {
             if (!sock.isInputShutdown())
                 sock.shutdownInput();
         }
-        catch (ClosedChannelException | SocketException ex) {
+        catch (ClosedChannelException ignored) {
+            // Socket is already closed, ignoring
+        }
+        catch (SocketException ex) {
             LT.warn(log, "Failed to shutdown socket", ex);
         }
         catch (Exception e) {
@@ -4383,7 +4386,10 @@ public abstract class IgniteUtils {
         try {
             sock.close();
         }
-        catch (ClosedChannelException | SocketException ex) {
+        catch (ClosedChannelException ignored) {
+            // Socket is already closed, ignoring
+        }
+        catch (SocketException ex) {
             LT.warn(log, "Failed to close socket", ex);
         }
         catch (Exception e) {
