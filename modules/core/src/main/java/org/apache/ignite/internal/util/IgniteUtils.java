@@ -4364,6 +4364,9 @@ public abstract class IgniteUtils {
     public static void close(@Nullable Socket sock, @Nullable IgniteLogger log) {
         if (sock == null)
             return;
+        
+        if (sock.isClosed())
+            return;
 
         try {
             // Closing output and input first to avoid tls 1.3 incompatibility
@@ -4373,10 +4376,7 @@ public abstract class IgniteUtils {
             if (!sock.isInputShutdown())
                 sock.shutdownInput();
         }
-        catch (ClosedChannelException ignored) {
-            // Socket is already closed, ignoring
-        }
-        catch (SocketException ex) {
+        catch (ClosedChannelException | SocketException ex) {
             LT.warn(log, "Failed to shutdown socket", ex);
         }
         catch (Exception e) {
@@ -4386,10 +4386,7 @@ public abstract class IgniteUtils {
         try {
             sock.close();
         }
-        catch (ClosedChannelException ignored) {
-            // Socket is already closed, ignoring
-        }
-        catch (SocketException ex) {
+        catch (ClosedChannelException | SocketException ex) {
             LT.warn(log, "Failed to close socket", ex);
         }
         catch (Exception e) {
