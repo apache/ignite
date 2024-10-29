@@ -38,23 +38,20 @@ import org.apache.ignite.cache.QueryIndexType;
 import org.apache.ignite.cluster.ClusterState;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
-import org.apache.ignite.internal.IgniteEx;
-import org.apache.ignite.internal.processors.query.QueryEngine;
-import org.apache.ignite.internal.processors.query.calcite.util.Commons;
+import org.apache.ignite.internal.processors.query.calcite.integration.AbstractBasicIntegrationTest;
 import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.spi.IgniteSpiAdapter;
 import org.apache.ignite.spi.IgniteSpiException;
 import org.apache.ignite.spi.indexing.IndexingQueryFilter;
 import org.apache.ignite.spi.indexing.IndexingSpi;
-import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.jetbrains.annotations.Nullable;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 
-/** Non stable topology tests. */
+/** Non-stable topology tests. */
 @RunWith(Parameterized.class)
-public class UnstableTopologyTest extends GridCommonAbstractTest {
+public class UnstableTopologyTest extends AbstractBasicIntegrationTest {
     /** */
     private static final String POI_CACHE_NAME = "POI_CACHE";
 
@@ -102,8 +99,16 @@ public class UnstableTopologyTest extends GridCommonAbstractTest {
     public boolean idxSlowDown;
 
     /** {@inheritDoc} */
+    @Override protected void beforeTestsStarted() throws Exception {
+        // No-op. We don't need to start anything.
+    }
+
+    /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
+
+        if (idxSlowDown)
+            cfg.setIndexingSpi(new BlockingIndexingSpi());
 
         cfg.setCacheConfiguration(new CacheConfiguration<>(POI_CACHE_NAME)
             .setAtomicityMode(CacheAtomicityMode.ATOMIC)
@@ -149,22 +154,19 @@ public class UnstableTopologyTest extends GridCommonAbstractTest {
      */
     @Test
     public void testSelectCorrectnessOnUnstableTopology() throws Exception {
-        ignitionStart(0, idxSlowDown);
-        IgniteEx ig = ignitionStart(1, idxSlowDown);
+        startGrids(2);
 
-        loadData(ig, 0, NUM_ENTITIES);
+        loadData(grid(1), 0, NUM_ENTITIES);
 
-        ignitionStart(2, idxSlowDown);
+        startGrid(2);
 
         if (awaitExchange)
             awaitPartitionMapExchange(true, true, null);
         else
             awaitPartitionMapExchange();
 
-        QueryEngine engine = Commons.lookupComponent(grid(1).context(), QueryEngine.class);
-
-        G.allGrids().forEach(g -> assertEquals(NUM_ENTITIES, engine.query(null, POI_SCHEMA_NAME,
-            "SELECT * FROM " + POI_TABLE_NAME).get(0).getAll().size()));
+        G.allGrids().forEach(g -> assertQuery(g, "SELECT * FROM " + POI_SCHEMA_NAME + '.' + POI_TABLE_NAME)
+            .resultSize(NUM_ENTITIES).check());
     }
 
     /** */
@@ -182,16 +184,6 @@ public class UnstableTopologyTest extends GridCommonAbstractTest {
                 streamer.addData(i, bo);
             }
         }
-    }
-
-    /** Start with custon indexing SPI. */
-    private IgniteEx ignitionStart(int idx, boolean slow) throws Exception {
-        IgniteConfiguration cfg = getConfiguration(getTestIgniteInstanceName(idx));
-
-        if (slow)
-            cfg.setIndexingSpi(new BlockingIndexingSpi());
-
-        return startGrid(cfg);
     }
 
     /**
