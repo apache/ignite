@@ -49,6 +49,7 @@ import org.apache.ignite.internal.processors.query.QueryUtils;
 import org.apache.ignite.internal.util.lang.RunnableX;
 import org.apache.ignite.internal.util.nio.GridNioServer;
 import org.apache.ignite.internal.util.nio.GridNioSession;
+import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.lang.IgniteBiTuple;
@@ -628,12 +629,15 @@ public abstract class AbstractQueryTransactionIsolationTest extends GridCommonAb
     /** */
     public static class User {
         /** */
+        @GridToStringInclude
         public final int userId;
 
         /** */
+        @GridToStringInclude
         public final int departmentId;
 
         /** */
+        @GridToStringInclude
         public final String fio;
 
         /** */

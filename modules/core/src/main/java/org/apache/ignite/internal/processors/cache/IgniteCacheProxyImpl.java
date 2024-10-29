@@ -487,7 +487,8 @@ public class IgniteCacheProxyImpl<K, V> extends AsyncSupportAdapter<IgniteCache<
 
         IgniteBiPredicate<K, V> p = scanQry.getFilter();
 
-        IgniteBiTuple<Set<KeyCacheObject>, List<IgniteTxEntry>> txChanges = transactionChanges(ctx, scanQry.getPartition());
+        IgniteBiTuple<Set<KeyCacheObject>, List<IgniteBiTuple<KeyCacheObject, CacheObject>>> txChanges
+            = transactionChanges(ctx, scanQry.getPartition());
 
         final GridCacheQueryAdapter<R> qry = ctx.queries().createScanQuery(
             p, transformer, scanQry.getPartition(), isKeepBinary, scanQry.isLocal(), null, txChanges.get1());
@@ -507,7 +508,7 @@ public class IgniteCacheProxyImpl<K, V> extends AsyncSupportAdapter<IgniteCache<
 
         return new QueryCursorImpl<>(F.isEmpty(txChanges.get2())
             ? res
-            : iteratorWithTxData(scanQry.getFilter(), transformer, res, qry, txChanges)
+            : iteratorWithTxData(scanQry.getFilter(), transformer, res, qry, txChanges.get2())
         );
     }
 
@@ -517,21 +518,23 @@ public class IgniteCacheProxyImpl<K, V> extends AsyncSupportAdapter<IgniteCache<
         @Nullable IgniteClosure<Entry<K, V>, R> transformer,
         final GridCloseableIterator<R> iter,
         final GridCacheQueryAdapter qry,
-        IgniteBiTuple<Set<KeyCacheObject>, List<IgniteTxEntry>> txChanges
+        List<IgniteBiTuple<KeyCacheObject, CacheObject>> newAndUpdatedEntries
     ) throws IgniteCheckedException {
         final GridIterator<R> txIter = new AbstractScanQueryIterator<>(ctx, qry, filter, transformer, true) {
-            private final Iterator<IgniteTxEntry> txData = txChanges.get2().iterator();
+            private final Iterator<IgniteBiTuple<KeyCacheObject, CacheObject>> txData = newAndUpdatedEntries.iterator();
 
             @Override protected R advance() {
                 long start = System.nanoTime();
 
                 while (txData.hasNext()) {
-                    IgniteTxEntry e = txData.next();
+                    IgniteBiTuple<KeyCacheObject, CacheObject> e = txData.next();
 
-                    R next = filterAndTransform(e.key(), e.value(), start);
+                    R next = filterAndTransform(e.get1(), e.get2(), start);
 
-                    if (next != null)
+                    if (next != null) {
+                        System.out.println("next = " + next);
                         return next;
+                    }
                 }
 
                 return null;
@@ -2455,7 +2458,10 @@ public class IgniteCacheProxyImpl<K, V> extends AsyncSupportAdapter<IgniteCache<
      * @return First, set of object changed in transaction, second, list of transaction data in required format.
      * @param <R> Required type.
      */
-    private <R> IgniteBiTuple<Set<KeyCacheObject>, List<IgniteTxEntry>> transactionChanges(GridCacheContext<K, V> ctx, Integer part) {
+    private <R> IgniteBiTuple<Set<KeyCacheObject>, List<IgniteBiTuple<KeyCacheObject, CacheObject>>> transactionChanges(
+        GridCacheContext<K, V> ctx,
+        Integer part
+    ) {
         if (!U.isTxAwareQueriesEnabled(ctx))
             return F.t(Collections.emptySet(), Collections.emptyList());
 
@@ -2467,7 +2473,7 @@ public class IgniteCacheProxyImpl<K, V> extends AsyncSupportAdapter<IgniteCache<
         IgniteTxManager.ensureTransactionModeSupported(tx.isolation());
 
         Set<KeyCacheObject> changedKeys = new HashSet<>();
-        List<IgniteTxEntry> newAndUpdatedRows = new ArrayList<>();
+        List<IgniteBiTuple<KeyCacheObject, CacheObject>> newAndUpdatedRows = new ArrayList<>();
 
         for (IgniteTxEntry e : tx.writeEntries()) {
             if (e.cacheId() != ctx.cacheId())
@@ -2492,7 +2498,8 @@ public class IgniteCacheProxyImpl<K, V> extends AsyncSupportAdapter<IgniteCache<
 
             // Mix only updated or inserted entries. In case val == null entry removed.
             if (val != null)
-                newAndUpdatedRows.add(e);
+                //TODO: get rid of new tuple if possible.
+                newAndUpdatedRows.add(F.t(e.key(), val));
         }
 
         return F.t(changedKeys, newAndUpdatedRows);
