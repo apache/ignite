@@ -41,15 +41,15 @@ Ignite includes the following exporters:
 You can create a custom exporter by implementing the javadoc:org.apache.ignite.spi.metric.MetricExporterSpi[] interface.
 
 
-== Metric Registers
+== Metric Registries [[registry]]
 
-Metrics are grouped into categories (called _registers_).
-Each register has a name.
-The full name of a specific metric within the register consists of the register name followed by a dot, followed by the name of the metric: `<register_name>.<metric_name>`.
-For example, the register for data storage metrics is called `io.datastorage`.
-The metric that return the storage size is called `io.datastorage.StorageSize`.
+Metrics are grouped into categories (called _registries_).
+Each registry has a name.
+The full name of a specific metric within the registry consists of the registry name followed by a dot, followed by the name of the metric: `<registry_name>.<metric_name>`.
+For example, the registry for data storage metrics is called `io.datastorage`.
+The metric that returns the storage size is called `io.datastorage.StorageSize`.
 
-The list of all registers and the metrics  they contain are described link:monitoring-metrics/new-metrics[here].
+The list of all registries and the metrics they contain are described link:monitoring-metrics/new-metrics[here].
 
 == Metric Exporters
 
@@ -135,7 +135,7 @@ JVM_OPTS="-Dcom.sun.management.jmxremote -Dcom.sun.management.jmxremote.port=${J
 
 ==== Understanding MBean's ObjectName
 
-Every JMX Mbean has an https://docs.oracle.com/javase/8/docs/api/javax/management/ObjectName.html[ObjectName,window=_blank].
+Every JMX Mbean has an https://docs.oracle.com/en/java/javase/11/docs/api/java.management/javax/management/ObjectName.html[ObjectName,window=_blank].
 The ObjectName is used to identify the bean.
 The ObjectName consists of a domain and a list of key properties, and can be represented as a string as follows:
 

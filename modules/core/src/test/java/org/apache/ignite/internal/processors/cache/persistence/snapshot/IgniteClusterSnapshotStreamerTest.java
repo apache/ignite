@@ -30,6 +30,7 @@ import java.util.stream.Collectors;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteDataStreamer;
 import org.apache.ignite.IgniteException;
+import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.DataPageEvictionMode;
 import org.apache.ignite.configuration.DataRegionConfiguration;
@@ -64,6 +65,9 @@ public class IgniteClusterSnapshotStreamerTest extends AbstractSnapshotSelfTest 
     private static final String INMEM_DATA_REGION = "inMemDr";
 
     /** */
+    private static final int SERVER_CNT = 3;
+
+    /** */
     private IgniteEx client;
 
     /** Non-baseline.*/
@@ -83,7 +87,7 @@ public class IgniteClusterSnapshotStreamerTest extends AbstractSnapshotSelfTest 
 
         dfltCacheCfg.setBackups(2);
 
-        startGrids(3);
+        startGrids(SERVER_CNT);
 
         grid(0).cluster().state(ACTIVE);
 
@@ -94,6 +98,8 @@ public class IgniteClusterSnapshotStreamerTest extends AbstractSnapshotSelfTest 
         nonBaseline = startGrid(G.allGrids().size());
 
         client = startClientGrid(G.allGrids().size());
+
+        dfltCacheCfg.setAffinity(new RendezvousAffinityFunction(false, 16));
 
         grid(0).createCache(dfltCacheCfg);
     }
@@ -408,6 +414,7 @@ public class IgniteClusterSnapshotStreamerTest extends AbstractSnapshotSelfTest 
 
         stopLoading.set(true);
         loadFut.cancel();
+        waitForCondition(loadFut::isDone, getTestTimeout());
 
         if (allowOverwrite)
             createAndCheckSnapshot(snpHnd, true, null, null);
@@ -424,9 +431,10 @@ public class IgniteClusterSnapshotStreamerTest extends AbstractSnapshotSelfTest 
      * @param allowOverwrite 'allowOverwrite' setting.
      * @param stop Stop load flag.
      */
-    private IgniteInternalFuture<?> runLoad(Ignite ldr, boolean allowOverwrite, AtomicBoolean stop)
-        throws InterruptedException {
-        CountDownLatch preload = new CountDownLatch(10_000);
+    private IgniteInternalFuture<?> runLoad(Ignite ldr, boolean allowOverwrite, AtomicBoolean stop) throws InterruptedException {
+        int preload = SERVER_CNT * dfltCacheCfg.getAffinity().partitions();
+
+        CountDownLatch proceed = new CountDownLatch(1);
 
         IgniteInternalFuture<?> res = runAsync(() -> {
             try (IgniteDataStreamer<Integer, Object> ds = ldr.dataStreamer(dfltCacheCfg.getName())) {
@@ -437,12 +445,18 @@ public class IgniteClusterSnapshotStreamerTest extends AbstractSnapshotSelfTest 
                 while (!stop.get()) {
                     ds.addData(++idx, idx);
 
-                    preload.countDown();
+                    if (idx == preload) {
+                        ds.flush();
+
+                        proceed.countDown();
+                    }
                 }
+
+                proceed.countDown();
             }
         }, "load-thread");
 
-        preload.await();
+        proceed.await();
 
         return res;
     }

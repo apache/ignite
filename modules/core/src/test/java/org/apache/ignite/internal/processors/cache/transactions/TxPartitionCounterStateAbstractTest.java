@@ -928,8 +928,8 @@ public abstract class TxPartitionCounterStateAbstractTest extends GridCommonAbst
                     @Override public boolean onDone(@Nullable Object res, @Nullable Throwable err) {
                         Collection<IgniteInternalFuture<?>> futures = futures();
 
-                        for (IgniteInternalFuture<?> future : futures)
-                            ((GridFutureAdapter)future).onDone();
+                        for (IgniteInternalFuture<?> fut : futures)
+                            ((GridFutureAdapter)fut).onDone();
 
                         return super.onDone(res, err);
                     }

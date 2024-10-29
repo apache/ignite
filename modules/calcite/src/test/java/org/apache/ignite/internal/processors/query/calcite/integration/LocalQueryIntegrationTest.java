@@ -73,7 +73,7 @@ public class LocalQueryIntegrationTest extends AbstractBasicIntegrationTest {
             StringBuilder sb = new StringBuilder("INSERT INTO ").append(tableName)
                     .append("(ID, IDX_VAL, VAL) VALUES ");
 
-            for (int i = 0; i < 10000; ++i) {
+            for (int i = 0; i < ENTRIES_COUNT; ++i) {
                 sb.append("(").append(i).append(", ")
                         .append("'name_").append(i).append("', ")
                         .append("'name_").append(i).append("')");
@@ -145,11 +145,11 @@ public class LocalQueryIntegrationTest extends AbstractBasicIntegrationTest {
 
             assertEquals(ENTRIES_COUNT, client.cache("T3_CACHE").sizeLong(CachePeekMode.PRIMARY));
 
-            long localSize = grid(0).cache("T3_CACHE").localSizeLong(CachePeekMode.PRIMARY);
+            long locSize = grid(0).cache("T3_CACHE").localSizeLong(CachePeekMode.PRIMARY);
 
             sql("DELETE FROM T3 WHERE ID < ?", ENTRIES_COUNT);
 
-            assertEquals(ENTRIES_COUNT - localSize, client.cache("T3_CACHE").sizeLong(CachePeekMode.PRIMARY));
+            assertEquals(ENTRIES_COUNT - locSize, client.cache("T3_CACHE").sizeLong(CachePeekMode.PRIMARY));
         }
         finally {
             grid(0).cache("T3_CACHE").destroy();
@@ -191,12 +191,12 @@ public class LocalQueryIntegrationTest extends AbstractBasicIntegrationTest {
         List<List<?>> res = sql(sql);
 
         Affinity<Object> aff = grid(0).affinity(cacheName);
-        ClusterNode localNode = grid(0).localNode();
+        ClusterNode locNode = grid(0).localNode();
 
         List<?> primaries = res.stream().filter(l -> {
                 int part = aff.partition(l.get(0));
 
-                return aff.isPrimary(localNode, part);
+                return aff.isPrimary(locNode, part);
             }
         ).collect(Collectors.toList());;
 

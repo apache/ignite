@@ -23,6 +23,7 @@ import java.util.Objects;
 import org.apache.ignite.configuration.BinaryConfiguration;
 import org.apache.ignite.internal.binary.GridBinaryMarshaller;
 import org.apache.ignite.internal.management.cache.PartitionKeyV2;
+import org.apache.ignite.internal.processors.cache.verify.IdleVerifyUtility.VerifyPartitionContext;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
@@ -95,46 +96,40 @@ public class PartitionHashRecordV2 extends VisorDataTransferObject {
     @GridToStringExclude
     private int regKeys;
 
+    /** If partition has entries to expire. */
+    @GridToStringExclude
+    private boolean hasExpiringEntries;
+
     /**
      * @param partKey Partition key.
      * @param isPrimary Is primary.
      * @param consistentId Consistent id.
-     * @param partHash Partition entries content hash.
-     * @param partVerHash Partition entries versions hash.
      * @param updateCntr Update counter.
      * @param size Size.
      * @param partitionState Partition state.
-     * @param cfKeys Count of keys with compact footer.
-     * @param noCfKeys Count of keys without compact footer.
-     * @param binKeys Count of {@link org.apache.ignite.binary.BinaryObject} keys.
-     * @param regKeys Count of type supported by Ignite out of the box (numbers, strings, etc).
+     * @param ctx Verify partition data.
      */
     public PartitionHashRecordV2(
         PartitionKeyV2 partKey,
         boolean isPrimary,
         Object consistentId,
-        int partHash,
-        int partVerHash,
         Object updateCntr,
         long size,
         PartitionState partitionState,
-        int cfKeys,
-        int noCfKeys,
-        int binKeys,
-        int regKeys
+        VerifyPartitionContext ctx
     ) {
         this.partKey = partKey;
         this.isPrimary = isPrimary;
         this.consistentId = consistentId;
-        this.partHash = partHash;
-        this.partVerHash = partVerHash;
+        this.partHash = ctx.partHash;
+        this.partVerHash = ctx.partVerHash;
         this.updateCntr = updateCntr;
         this.size = size;
         this.partitionState = partitionState;
-        this.cfKeys = cfKeys;
-        this.noCfKeys = noCfKeys;
-        this.binKeys = binKeys;
-        this.regKeys = regKeys;
+        this.cfKeys = ctx.cf;
+        this.noCfKeys = ctx.noCf;
+        this.binKeys = ctx.binary;
+        this.regKeys = ctx.regular;
     }
 
     /**
@@ -219,6 +214,16 @@ public class PartitionHashRecordV2 extends VisorDataTransferObject {
         return regKeys;
     }
 
+    /** */
+    public boolean hasExpiringEntries() {
+        return hasExpiringEntries;
+    }
+
+    /** */
+    public void hasExpiringEntries(boolean hasExpiringEntries) {
+        this.hasExpiringEntries = hasExpiringEntries;
+    }
+
     /** {@inheritDoc} */
     @Override protected void writeExternalData(ObjectOutput out) throws IOException {
         out.writeObject(partKey);
@@ -233,6 +238,7 @@ public class PartitionHashRecordV2 extends VisorDataTransferObject {
         out.writeInt(noCfKeys);
         out.writeInt(binKeys);
         out.writeInt(regKeys);
+        out.writeBoolean(hasExpiringEntries);
     }
 
     /** {@inheritDoc} */
@@ -255,6 +261,7 @@ public class PartitionHashRecordV2 extends VisorDataTransferObject {
         noCfKeys = in.readInt();
         binKeys = in.readInt();
         regKeys = in.readInt();
+        hasExpiringEntries = in.readBoolean();
     }
 
     /** {@inheritDoc} */

@@ -37,7 +37,6 @@ import org.apache.ignite.internal.processors.cache.KeyCacheObject;
 import org.apache.ignite.internal.processors.cache.ReaderArguments;
 import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtInvalidPartitionException;
 import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtLocalPartition;
-import org.apache.ignite.internal.processors.cache.mvcc.MvccSnapshot;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.typedef.F;
@@ -109,9 +108,6 @@ public final class GridDhtGetSingleFuture<K, V> extends GridFutureAdapter<GridCa
     /** Transaction label. */
     private final String txLbl;
 
-    /** */
-    private final MvccSnapshot mvccSnapshot;
-
     /**
      * @param cctx Context.
      * @param msgId Message ID.
@@ -124,7 +120,6 @@ public final class GridDhtGetSingleFuture<K, V> extends GridFutureAdapter<GridCa
      * @param expiryPlc Expiry policy.
      * @param skipVals Skip values flag.
      * @param txLbl Transaction label.
-     * @param mvccSnapshot Mvcc snapshot.
      */
     public GridDhtGetSingleFuture(
         GridCacheContext<K, V> cctx,
@@ -138,8 +133,7 @@ public final class GridDhtGetSingleFuture<K, V> extends GridFutureAdapter<GridCa
         @Nullable IgniteCacheExpiryPolicy expiryPlc,
         boolean skipVals,
         boolean recovery,
-        @Nullable String txLbl,
-        @Nullable MvccSnapshot mvccSnapshot
+        @Nullable String txLbl
     ) {
         assert reader != null;
         assert key != null;
@@ -156,7 +150,6 @@ public final class GridDhtGetSingleFuture<K, V> extends GridFutureAdapter<GridCa
         this.skipVals = skipVals;
         this.recovery = recovery;
         this.txLbl = txLbl;
-        this.mvccSnapshot = mvccSnapshot;
 
         futId = IgniteUuid.randomUuid();
 
@@ -206,8 +199,6 @@ public final class GridDhtGetSingleFuture<K, V> extends GridFutureAdapter<GridCa
     private void map() {
         // TODO Get rid of force keys request https://issues.apache.org/jira/browse/IGNITE-10251.
         if (cctx.group().preloader().needForceKeys()) {
-            assert !cctx.mvccEnabled();
-
             GridDhtFuture<Object> fut = cctx.group().preloader().request(
                 cctx,
                 Collections.singleton(key),
@@ -282,18 +273,6 @@ public final class GridDhtGetSingleFuture<K, V> extends GridFutureAdapter<GridCa
     private boolean map(KeyCacheObject key, boolean forceKeys) {
         try {
             int keyPart = cctx.affinity().partition(key);
-
-            if (cctx.mvccEnabled()) {
-                boolean noOwners = cctx.topology().owners(keyPart, topVer).isEmpty();
-
-                // Force key request is disabled for MVCC. So if there are no partition owners for the given key
-                // (we have a not strict partition loss policy if we've got here) we need to set flag forceKeys to true
-                // to avoid useless remapping to other non-owning partitions. For non-mvcc caches the force key request
-                // is also useless in the such situations, so the same flow is here: allegedly we've made a force key
-                // request with no results and therefore forceKeys flag may be set to true here.
-                if (noOwners)
-                    forceKeys = true;
-            }
 
             GridDhtLocalPartition part = topVer.topologyVersion() > 0 ?
                 cache().topology().localPartition(keyPart, topVer, true) :
@@ -399,8 +378,7 @@ public final class GridDhtGetSingleFuture<K, V> extends GridFutureAdapter<GridCa
                 expiryPlc,
                 skipVals,
                 recovery,
-                txLbl,
-                mvccSnapshot);
+                txLbl);
         }
         else {
             final ReaderArguments args = readerArgs;
@@ -425,8 +403,7 @@ public final class GridDhtGetSingleFuture<K, V> extends GridFutureAdapter<GridCa
                                 expiryPlc,
                                 skipVals,
                                 recovery,
-                                null,
-                                mvccSnapshot);
+                                null);
 
                         fut0.listen(createGetFutureListener());
                     }

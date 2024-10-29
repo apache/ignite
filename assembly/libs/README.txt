@@ -71,7 +71,6 @@ Here is how it can be imported into your POM file:
 All optional modules can be imported just like the core module, but with different artifact IDs.
 
 The following modules are available:
-- ignite-cassandra (for Apache Cassandra integration)
 - ignite-indexing (for SQL querying and indexing)
 - ignite-jcl (for Apache Commons logging)
 - ignite-jta (for XA integration)

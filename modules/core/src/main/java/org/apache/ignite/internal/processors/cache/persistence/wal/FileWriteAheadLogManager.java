@@ -161,8 +161,7 @@ import static org.apache.ignite.internal.processors.cache.persistence.wal.serial
 import static org.apache.ignite.internal.processors.cache.persistence.wal.serializer.RecordV1Serializer.HEADER_RECORD_SIZE;
 import static org.apache.ignite.internal.processors.cache.persistence.wal.serializer.RecordV1Serializer.readPosition;
 import static org.apache.ignite.internal.processors.cache.persistence.wal.serializer.RecordV1Serializer.readSegmentHeader;
-import static org.apache.ignite.internal.processors.compress.CompressionProcessor.checkCompressionLevelBounds;
-import static org.apache.ignite.internal.processors.compress.CompressionProcessor.getDefaultCompressionLevel;
+import static org.apache.ignite.internal.processors.compress.CompressionProcessor.getCompressionLevel;
 import static org.apache.ignite.internal.processors.configuration.distributed.DistributedBooleanProperty.detachedBooleanProperty;
 import static org.apache.ignite.internal.util.io.GridFileUtils.ensureHardLinkAvailable;
 
@@ -418,7 +417,10 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
     private volatile WALPointer lastCheckpointPtr = new WALPointer(0, 0, 0);
 
     /** CDC disabled flag. */
-    private final DistributedBooleanProperty cdcDisabled = detachedBooleanProperty(CDC_DISABLED);
+    private final DistributedBooleanProperty cdcDisabled = detachedBooleanProperty(CDC_DISABLED,
+        "CDC disabled flag. Disables CDC in the cluster to avoid disk overflow. " +
+            "Note that cache changes will be lost when CDC is disabled. Useful if the CDC application " +
+            "is down for a long time.");
 
     /**
      * Constructor.
@@ -515,8 +517,12 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
                                     name, oldVal, newVal));
                             }
 
-                            if (newVal != null && newVal)
+                            if (newVal != null && newVal) {
                                 log.warning("CDC was disabled.");
+
+                                if (cctx.cdc() != null)
+                                    cctx.cdc().stop(true);
+                            }
                         });
 
                         dispatcher.registerProperty(cdcDisabled);
@@ -598,11 +604,10 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
                         serializerVer);
                 }
 
-                cctx.kernalContext().compress().checkPageCompressionSupported();
+                if (pageCompression != DiskPageCompression.SKIP_GARBAGE)
+                    cctx.kernalContext().compress().checkPageCompressionSupported();
 
-                pageCompressionLevel = dsCfg.getWalPageCompressionLevel() != null ?
-                    checkCompressionLevelBounds(dsCfg.getWalPageCompressionLevel(), pageCompression) :
-                    getDefaultCompressionLevel(pageCompression);
+                pageCompressionLevel = getCompressionLevel(dsCfg.getWalPageCompressionLevel(), pageCompression);
             }
         }
     }
@@ -2969,9 +2974,6 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
         /** Optional start pointer. */
         @Nullable private final WALPointer start;
 
-        /** Optional end pointer. */
-        @Nullable private final WALPointer end;
-
         /** Manager of segment location. */
         private final SegmentRouter segmentRouter;
 
@@ -3015,6 +3017,7 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
                 serializerFactory,
                 ioFactory,
                 dsCfg.getWalRecordIteratorBufferSize(),
+                end,
                 segmentFileInputFactory
             );
 
@@ -3022,7 +3025,6 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
             this.walWorkDir = walWorkDir;
             this.archiver = archiver;
             this.start = start;
-            this.end = end;
             this.dsCfg = dsCfg;
 
             this.decompressor = decompressor;
@@ -3109,7 +3111,7 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
             curWalSegmIdx--;
 
             if (log.isDebugEnabled())
-                log.debug("Initialized WAL cursor [start=" + start + ", end=" + end + ", curWalSegmIdx=" + curWalSegmIdx + ']');
+                log.debug("Initialized WAL cursor [start=" + start + ", end=" + highBound + ", curWalSegmIdx=" + curWalSegmIdx + ']');
 
             advance();
         }
@@ -3122,7 +3124,7 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
                 curWalSegment.close();
 
             // We are past the end marker.
-            if (end != null && curWalSegmIdx + 1 > end.index())
+            if (highBound != null && curWalSegmIdx + 1 > highBound.index())
                 return null; //stop iteration
 
             curWalSegmIdx++;
@@ -3161,7 +3163,7 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
                                 "Next segment file is not found [" +
                                     "curWalSegmIdx=" + curWalSegmIdx
                                     + ", start=" + start
-                                    + ", end=" + end
+                                    + ", end=" + highBound
                                     + ", filePath=" + (fd == null ? "<empty>" : fd.file.getAbsolutePath())
                                     + ", walWorkDir=" + walWorkDir
                                     + ", walWorkDirContent=" + listFileNames(walWorkDir)
@@ -3207,7 +3209,7 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
         @Override protected IgniteCheckedException handleRecordException(Exception e, @Nullable WALPointer ptr) {
             if (e instanceof IgniteCheckedException && X.hasCause(e, IgniteDataIntegrityViolationException.class)) {
                 // This means that there is no explicit last segment, so we iterate until the very end.
-                if (end == null) {
+                if (highBound == null) {
                     long nextWalSegmentIdx = curWalSegmIdx + 1;
 
                     if (archiver == null) {

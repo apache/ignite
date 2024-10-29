@@ -177,7 +177,7 @@ public class SqlQueryHistorySelfTest extends GridCommonAbstractTest {
         List<String> cmds = Arrays.asList(
             "create table TST(id int PRIMARY KEY, name varchar)",
             "insert into TST(id) values(1)",
-            "commit"
+            "select * from TST where id=1"
         );
 
         try (Connection conn = GridTestUtils.connect(queryNode(), null); Statement stmt = conn.createStatement()) {
@@ -256,7 +256,7 @@ public class SqlQueryHistorySelfTest extends GridCommonAbstractTest {
         List<String> cmds = Arrays.asList(
             "create table TST(id int PRIMARY KEY, name varchar)",
             "insert into TST(id) values(1)",
-            "commit"
+            "drop table TST"
         );
 
         cmds.forEach((cmd) ->

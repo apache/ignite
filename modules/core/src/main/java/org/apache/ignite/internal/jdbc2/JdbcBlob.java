@@ -54,7 +54,7 @@ public class JdbcBlob implements Blob {
     @Override public byte[] getBytes(long pos, int len) throws SQLException {
         ensureNotClosed();
 
-        if (pos < 1 || arr.length - pos < 0 || len < 0)
+        if (pos < 1 || (arr.length - pos < 0 && arr.length > 0) || len < 0)
             throw new SQLException("Invalid argument. Position can't be less than 1 or " +
                 "greater than size of underlying byte array. Requested length also can't be negative " + "" +
                 "[pos=" + pos + ", len=" + len + ']');

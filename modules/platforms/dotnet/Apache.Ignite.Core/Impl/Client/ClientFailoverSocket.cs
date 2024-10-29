@@ -198,6 +198,36 @@ namespace Apache.Ignite.Core.Impl.Client
                 }
             }
         }
+        
+        /// <summary>
+        /// Performs a send-receive operation on one of passed nodes. If connection to chosen node is not available, takes
+        /// the default connection.
+        /// </summary>
+        public T DoOutInOpOnNode<T>(
+            ClientOp opId,
+            Action<ClientRequestContext> writeAction,
+            Func<ClientResponseContext, T> readFunc,
+            IList<Guid> nodeIds,
+            Func<ClientStatusCode, string, T> errorFunc = null)
+        {
+            var attempt = 0;
+            List<Exception> errors = null;
+
+            while (true)
+            {
+                try
+                {
+                    return GetRandomNodeSocket(nodeIds).DoOutInOp(opId, writeAction, readFunc, errorFunc);
+                }
+                catch (Exception e)
+                {
+                    if (!HandleOpError(e, opId, ref attempt, ref errors))
+                    {
+                        throw;
+                    }
+                }
+            }
+        }
 
         /// <summary>
         /// Performs an async send-receive operation with partition awareness.
@@ -328,9 +358,9 @@ namespace Apache.Ignite.Core.Impl.Client
         /// <summary>
         /// Checks the disposed state.
         /// </summary>
-        internal ClientSocket GetSocket()
+        internal ClientSocket GetSocket(bool transactional = true)
         {
-            var tx = _transactions.Tx;
+            var tx = transactional ? _transactions.Tx : null;
             if (tx != null)
             {
                 return tx.Socket;
@@ -392,6 +422,22 @@ namespace Apache.Ignite.Core.Impl.Client
             }
 
             return null;
+        }
+        
+        /// <summary>
+        /// Provides random socket for to of the nodes. If the is no socket for chosen node or if it is disposed,
+        /// provides the default socket. 
+        /// </summary>
+        private ClientSocket GetRandomNodeSocket(IList<Guid> nodeIds)
+        {
+            var socketMap = _nodeSocketMap;
+
+            if (nodeIds == null || nodeIds.Count == 0 || socketMap == null
+                || !socketMap.TryGetValue(nodeIds[IgniteUtils.ThreadLocalRandom.Next(nodeIds.Count)], out var socket)
+                || socket.IsDisposed)
+                socket = GetSocket(false);
+
+            return socket;
         }
 
         /// <summary>
@@ -1002,7 +1048,7 @@ namespace Apache.Ignite.Core.Impl.Client
         /// <summary>
         /// Gets current topology version.
         /// </summary>
-        private long GetTopologyVersion()
+        public long GetTopologyVersion()
         {
             var ver = _affinityTopologyVersion;
 

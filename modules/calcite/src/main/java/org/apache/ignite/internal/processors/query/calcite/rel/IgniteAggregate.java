@@ -58,10 +58,10 @@ public abstract class IgniteAggregate extends Aggregate implements IgniteRel {
 
     /** {@inheritDoc} */
     @Override public double estimateRowCount(RelMetadataQuery mq) {
-        Double groupsCnt = mq.getDistinctRowCount(getInput(), groupSet, null);
+        Double grpsCnt = mq.getDistinctRowCount(getInput(), groupSet, null);
 
-        if (groupsCnt != null)
-            return groupsCnt;
+        if (grpsCnt != null)
+            return grpsCnt;
 
         // Estimation of the groups count is not available.
         // Use heuristic estimation for result rows count.
@@ -92,13 +92,13 @@ public abstract class IgniteAggregate extends Aggregate implements IgniteRel {
         IgniteCostFactory costFactory = (IgniteCostFactory)planner.getCostFactory();
 
         double inRows = mq.getRowCount(getInput());
-        double groups = estimateRowCount(mq);
+        double grps = estimateRowCount(mq);
 
         return costFactory.makeCost(
             inRows,
             inRows * IgniteCost.ROW_PASS_THROUGH_COST,
             0,
-            groups * estimateMemoryForGroup(mq),
+            grps * estimateMemoryForGroup(mq),
             0
         );
     }

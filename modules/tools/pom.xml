@@ -36,9 +36,9 @@
 
     <profiles>
         <profile>
-            <id>java-9+</id>
+            <id>java-11+</id>
             <activation>
-                <jdk>[1.9,15)</jdk>
+                <jdk>[11,15)</jdk>
             </activation>
             <properties>
                 <src.javaspecific.dir>src/main/java11</src.javaspecific.dir>
@@ -52,16 +52,6 @@
             </activation>
             <properties>
                 <src.javaspecific.dir>src/main/java15</src.javaspecific.dir>
-            </properties>
-        </profile>
-
-        <profile>
-            <id>java-8</id>
-            <activation>
-                <jdk>1.8</jdk>
-            </activation>
-            <properties>
-                <src.javaspecific.dir>src/main/java8</src.javaspecific.dir>
             </properties>
         </profile>
 
@@ -146,7 +136,6 @@
                 <artifactId>maven-checkstyle-plugin</artifactId>
                 <configuration>
                     <sourceDirectories combine.children="append">
-                        <sourceDirectory>src/main/java8</sourceDirectory>
                         <sourceDirectory>src/main/java11</sourceDirectory>
                         <sourceDirectory>src/main/java15</sourceDirectory>
                     </sourceDirectories>
@@ -179,6 +168,12 @@
             <groupId>org.apache.maven.surefire</groupId>
             <artifactId>maven-surefire-common</artifactId>
             <version>${surefire.version}</version>
+            <exclusions>
+                <exclusion>
+                    <groupId>asm</groupId>
+                    <artifactId>asm</artifactId>
+                </exclusion>
+            </exclusions>
         </dependency>
 
         <dependency>

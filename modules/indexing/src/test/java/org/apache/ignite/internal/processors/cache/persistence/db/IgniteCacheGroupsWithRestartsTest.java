@@ -24,7 +24,6 @@ import java.util.List;
 import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ThreadLocalRandom;
-import java.util.function.BiFunction;
 import javax.cache.Cache;
 import javax.cache.configuration.Factory;
 import javax.cache.integration.CacheLoaderException;
@@ -48,6 +47,7 @@ import org.apache.ignite.internal.management.cache.CacheFindGarbageCommandArg;
 import org.apache.ignite.internal.management.cache.FindAndDeleteGarbageInPersistenceJobResult;
 import org.apache.ignite.internal.management.cache.FindAndDeleteGarbageInPersistenceTask;
 import org.apache.ignite.internal.management.cache.FindAndDeleteGarbageInPersistenceTaskResult;
+import org.apache.ignite.internal.util.function.ThrowableBiFunction;
 import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.S;
@@ -297,7 +297,7 @@ public class IgniteCacheGroupsWithRestartsTest extends GridCommonAbstractTest {
      * @param doFindAndRemove Do find and remove.
      */
     public void testFindAndDeleteGarbage(
-        BiFunction<IgniteEx, Boolean, FindAndDeleteGarbageInPersistenceTaskResult> doFindAndRemove
+        ThrowableBiFunction<IgniteEx, Boolean, FindAndDeleteGarbageInPersistenceTaskResult, Exception> doFindAndRemove
     ) throws Exception {
         IgniteEx ignite = startGrids(3);
 
@@ -347,7 +347,7 @@ public class IgniteCacheGroupsWithRestartsTest extends GridCommonAbstractTest {
     private FindAndDeleteGarbageInPersistenceTaskResult executeTask(
         IgniteEx ignite,
         boolean deleteFoundGarbage
-    ) {
+    ) throws Exception {
         CacheFindGarbageCommandArg arg0 = new CacheFindGarbageCommandArg();
 
         arg0.groups(new String[] {GROUP});
@@ -355,12 +355,10 @@ public class IgniteCacheGroupsWithRestartsTest extends GridCommonAbstractTest {
 
         UUID id = ignite.localNode().id();
 
-        VisorTaskArgument arg = new VisorTaskArgument(id, arg0, true);
-
-        FindAndDeleteGarbageInPersistenceTaskResult result =
-            ignite.compute().execute(FindAndDeleteGarbageInPersistenceTask.class, arg);
-
-        return result;
+        return ignite.compute().execute(
+            FindAndDeleteGarbageInPersistenceTask.class,
+            new VisorTaskArgument<>(id, arg0, true)
+        ).result();
     }
 
     /**

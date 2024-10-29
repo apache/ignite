@@ -17,17 +17,21 @@
 
 package org.apache.ignite.internal.processors.query.schema.management;
 
+import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.cache.query.index.Index;
 import org.apache.ignite.internal.cache.query.index.IndexName;
 import org.apache.ignite.internal.cache.query.index.sorted.IndexKeyDefinition;
+import org.apache.ignite.internal.cache.query.index.sorted.IndexKeyTypeSettings;
 import org.apache.ignite.internal.cache.query.index.sorted.QueryIndexDefinition;
 import org.apache.ignite.internal.cache.query.index.sorted.client.ClientIndexDefinition;
 import org.apache.ignite.internal.cache.query.index.sorted.client.ClientIndexFactory;
 import org.apache.ignite.internal.cache.query.index.sorted.inline.InlineIndex;
 import org.apache.ignite.internal.cache.query.index.sorted.inline.InlineIndexFactory;
+import org.apache.ignite.internal.cache.query.index.sorted.inline.InlineIndexKeyTypeRegistry;
+import org.apache.ignite.internal.cache.query.index.sorted.inline.InlineIndexTree;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.GridCacheContextInfo;
 import org.apache.ignite.internal.processors.cache.persistence.tree.BPlusTree;
@@ -92,8 +96,10 @@ public class SortedIndexDescriptorFactory extends AbstractIndexDescriptorFactory
             addAffinityColumn(unwrappedCols, tbl);
 
         LinkedHashMap<String, IndexKeyDefinition> idxCols = unwrappedCols;
+        IndexName idxFullName = new IndexName(cacheInfo.name(), typeDesc.schemaName(), typeDesc.tableName(), idxName);
 
         Index idx;
+        int inlineSize;
 
         if (cacheInfo.affinityNode()) {
             GridCacheContext<?, ?> cctx = cacheInfo.cacheContext();
@@ -108,7 +114,7 @@ public class SortedIndexDescriptorFactory extends AbstractIndexDescriptorFactory
             QueryIndexDefinition idxDef = new QueryIndexDefinition(
                 typeDesc,
                 cacheInfo,
-                new IndexName(cacheInfo.name(), typeDesc.schemaName(), typeDesc.tableName(), idxName),
+                idxFullName,
                 treeName,
                 ctx.indexProcessor().rowCacheCleaner(cacheInfo.groupId()),
                 isPk,
@@ -122,21 +128,28 @@ public class SortedIndexDescriptorFactory extends AbstractIndexDescriptorFactory
                 idx = ctx.indexProcessor().createIndexDynamically(cctx, SORTED_IDX_FACTORY, idxDef, cacheVisitor);
             else
                 idx = ctx.indexProcessor().createIndex(cctx, SORTED_IDX_FACTORY, idxDef);
+
+            assert idx instanceof InlineIndex : idx;
+
+            inlineSize = ((InlineIndex)idx).inlineSize();
         }
         else {
-            ClientIndexDefinition d = new ClientIndexDefinition(
-                new IndexName(tbl.cacheInfo().name(), tbl.type().schemaName(), tbl.type().tableName(), idxName),
-                idxCols,
-                idxDesc.inlineSize(),
-                tbl.cacheInfo().config().getSqlIndexMaxInlineSize());
+            ClientIndexDefinition def = new ClientIndexDefinition(idxFullName, idxCols);
 
-            idx = ctx.indexProcessor().createIndex(tbl.cacheInfo().cacheContext(), new ClientIndexFactory(log), d);
+            idx = ctx.indexProcessor().createIndex(cacheInfo.cacheContext(), new ClientIndexFactory(), def);
+
+            // Here inline size is just for information (to be shown in system view).
+            inlineSize = InlineIndexTree.computeInlineSize(
+                idxFullName.fullName(),
+                InlineIndexKeyTypeRegistry.types(idxCols.values(), new IndexKeyTypeSettings()),
+                new ArrayList<>(idxCols.values()),
+                idxDesc.inlineSize(),
+                tbl.cacheInfo().config().getSqlIndexMaxInlineSize(),
+                log
+            );
         }
 
-        assert idx instanceof InlineIndex : idx;
-
-        return new IndexDescriptor(tbl, idxName, idxDesc.type(), idxCols, isPk, isAff,
-            ((InlineIndex)idx).inlineSize(), idx);
+        return new IndexDescriptor(tbl, idxName, idxDesc.type(), idxCols, isPk, isAff, inlineSize, idx);
     }
 
     /** Split key into simple components and add to columns list. */

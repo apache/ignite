@@ -50,10 +50,6 @@ public class PlanExtractor {
 
     /** */
     public String extract(IgniteRel rel) {
-        // Currently, plan required only for preformance statistics, skip it if performance statistics disabled.
-        if (!perfStatProc.enabled())
-            return null;
-
         if (QueryUtils.INCLUDE_SENSITIVE)
             return RelOptUtil.toString(rel, SqlExplainLevel.ALL_ATTRIBUTES);
         else {

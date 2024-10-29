@@ -55,7 +55,7 @@ public class CommandInvoker<A extends IgniteDataTransferObject> {
     /**
      * @param printer Result printer.
      * @return {@code True} of command successfully prepared and can be invoked, {@code false} otherwise.
-     * @throws GridClientException In failed.
+     * @throws GridClientException If failed.
      */
     public boolean prepare(Consumer<String> printer) throws GridClientException {
         if (!(cmd instanceof PreparableCommand))
@@ -70,9 +70,9 @@ public class CommandInvoker<A extends IgniteDataTransferObject> {
      * @param printer Result printer.
      * @param verbose Use verbose mode or not
      * @return Result of operation (mostly usable for tests).
-     * @throws GridClientException In failed.
+     * @throws Exception If failed.
      */
-    public <R> R invoke(Consumer<String> printer, boolean verbose) throws GridClientException {
+    public <R> R invoke(Consumer<String> printer, boolean verbose) throws Exception {
         R res;
 
         if (cmd instanceof LocalCommand)

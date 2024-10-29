@@ -358,7 +358,7 @@ public class LongDestroyDurableBackgroundTaskTest extends GridCommonAbstractTest
      *
      * @param ignite Ignite instance.
      */
-    private void validateIndexes(Ignite ignite) {
+    private void validateIndexes(Ignite ignite) throws Exception {
         Set<UUID> nodeIds = new HashSet<>();
 
         nodeIds.add(grid(RESTARTED_NODE_NUM).cluster().localNode().id());
@@ -371,32 +371,31 @@ public class LongDestroyDurableBackgroundTaskTest extends GridCommonAbstractTest
 
         taskArg.caches(new String[]{"SQL_PUBLIC_T"});
         taskArg.nodeIds(nodeIds.toArray(EMPTY_UUIDS));
-        taskArg.checkFirst(0);
         taskArg.checkThrough(1);
         taskArg.checkCrc(true);
         taskArg.checkSizes(true);
 
         ValidateIndexesTaskResult taskRes =
-            ignite.compute().execute(ValidateIndexesTask.class.getName(), new VisorTaskArgument<>(nodeIds, taskArg, false));
+            ignite.compute().execute(ValidateIndexesTask.class, new VisorTaskArgument<>(nodeIds, taskArg, false)).result();
 
         if (!taskRes.exceptions().isEmpty()) {
-            for (Map.Entry<UUID, Exception> e : taskRes.exceptions().entrySet())
-                log.error("Exception while validation indexes on node id=" + e.getKey().toString(), e.getValue());
+            for (Map.Entry<ValidateIndexesTaskResult.NodeInfo, Exception> e : taskRes.exceptions().entrySet())
+                log.error("Exception while validation indexes on node id=" + e.getKey().id().toString(), e.getValue());
         }
 
-        for (Map.Entry<UUID, ValidateIndexesJobResult> nodeEntry : taskRes.results().entrySet()) {
-            if (nodeEntry.getValue().hasIssues()) {
-                log.error("Validate indexes issues had been found on node id=" + nodeEntry.getKey().toString());
+        taskRes.results().forEach((nodeInfo, res) -> {
+            if (res.hasIssues()) {
+                log.error("Validate indexes issues had been found on node id=" + nodeInfo.id().toString());
 
-                log.error("Integrity check failures: " + nodeEntry.getValue().integrityCheckFailures().size());
+                log.error("Integrity check failures: " + res.integrityCheckFailures().size());
 
-                nodeEntry.getValue().integrityCheckFailures().forEach(f -> log.error(f.toString()));
+                res.integrityCheckFailures().forEach(f -> log.error(f.toString()));
 
-                logIssuesFromMap("Partition results", nodeEntry.getValue().partitionResult());
+                logIssuesFromMap("Partition results", res.partitionResult());
 
-                logIssuesFromMap("Index validation issues", nodeEntry.getValue().indexResult());
+                logIssuesFromMap("Index validation issues", res.indexResult());
             }
-        }
+        });
 
         assertTrue(taskRes.exceptions().isEmpty());
 

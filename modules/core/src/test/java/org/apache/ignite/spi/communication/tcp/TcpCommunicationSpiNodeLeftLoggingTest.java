@@ -93,11 +93,11 @@ public class TcpCommunicationSpiNodeLeftLoggingTest extends GridCommonAbstractTe
 
         sendFailingMessage(server1, server2Node);
 
-        LogEvent event = log4jAppender.singleEventSatisfying(
-            evt -> evt.getMessage().getFormattedMessage().startsWith("Failed to send message to remote node")
+        LogEvent evt = log4jAppender.singleEventSatisfying(
+            e -> e.getMessage().getFormattedMessage().startsWith("Failed to send message to remote node")
         );
 
-        assertThat(event.getLevel(), is(Level.ERROR));
+        assertThat(evt.getLevel(), is(Level.ERROR));
     }
 
     /**
@@ -143,10 +143,10 @@ public class TcpCommunicationSpiNodeLeftLoggingTest extends GridCommonAbstractTe
 
         sendFailingMessage(server, clientNode);
 
-        LogEvent event = log4jAppender.singleEventSatisfying(
-            evt -> evt.getMessage().getFormattedMessage().startsWith("Failed to send message to remote node")
+        LogEvent evt = log4jAppender.singleEventSatisfying(
+            e -> e.getMessage().getFormattedMessage().startsWith("Failed to send message to remote node")
         );
 
-        assertThat(event.getLevel(), is(Level.WARN));
+        assertThat(evt.getLevel(), is(Level.WARN));
     }
 }

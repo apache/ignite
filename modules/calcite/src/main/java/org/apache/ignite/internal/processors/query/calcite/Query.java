@@ -34,7 +34,6 @@ import org.apache.ignite.internal.processors.query.GridQueryCancel;
 import org.apache.ignite.internal.processors.query.IgniteSQLException;
 import org.apache.ignite.internal.processors.query.calcite.exec.ExchangeService;
 import org.apache.ignite.internal.processors.query.calcite.exec.tracker.MemoryTracker;
-import org.apache.ignite.internal.processors.query.calcite.exec.tracker.NoOpMemoryTracker;
 import org.apache.ignite.internal.processors.query.calcite.exec.tracker.QueryMemoryTracker;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.jetbrains.annotations.Nullable;
@@ -261,10 +260,8 @@ public class Query<RowT> {
         synchronized (mux) {
             // Query can have multiple fragments, each fragment requests memory tracker, but there should be only
             // one memory tracker per query on each node, store it inside Query instance.
-            if (memoryTracker == null) {
-                memoryTracker = quota > 0 || globalMemoryTracker != NoOpMemoryTracker.INSTANCE ?
-                    new QueryMemoryTracker(globalMemoryTracker, quota) : NoOpMemoryTracker.INSTANCE;
-            }
+            if (memoryTracker == null)
+                memoryTracker = QueryMemoryTracker.create(globalMemoryTracker, quota);
 
             return memoryTracker;
         }

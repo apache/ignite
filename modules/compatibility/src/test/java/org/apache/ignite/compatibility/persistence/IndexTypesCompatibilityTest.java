@@ -36,13 +36,17 @@ import org.apache.ignite.IgniteCache;
 import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.cluster.ClusterState;
+import org.apache.ignite.compatibility.IgniteReleasedVersion;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.internal.IgniteEx;
+import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteInClosure;
+import org.junit.Assume;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 
+import static org.apache.ignite.compatibility.IgniteReleasedVersion.VER_2_12_0;
 import static org.apache.ignite.compatibility.IgniteReleasedVersion.VER_2_6_0;
 import static org.apache.ignite.compatibility.IgniteReleasedVersion.since;
 import static org.apache.ignite.testframework.GridTestUtils.cartesianProduct;
@@ -106,6 +110,13 @@ public class IndexTypesCompatibilityTest extends IndexAbstractCompatibilityTest 
     /** */
     @Test
     public void testQueryOldIndex() throws Exception {
+        int majorJavaVer = U.majorJavaVersion(U.jdkVersion());
+
+        if (majorJavaVer > 11) {
+            Assume.assumeTrue("Skipped on jdk " + U.jdkVersion(),
+                    VER_2_12_0.compareTo(IgniteReleasedVersion.fromString(igniteVer)) < 0);
+        }
+
         doTestStartupWithOldVersion(igniteVer, new PostStartupClosure());
     }
 

@@ -134,7 +134,7 @@ public class TcpDiscoveryNodeJoinAndFailureTest extends GridCommonAbstractTest {
 
         final AtomicInteger joinReqsCntr = new AtomicInteger(0);
 
-        final AtomicReference<IgniteInternalFuture> futureRef = new AtomicReference();
+        final AtomicReference<IgniteInternalFuture> futRef = new AtomicReference();
 
         final UUID node2Id = UUID.randomUUID();
 
@@ -179,7 +179,7 @@ public class TcpDiscoveryNodeJoinAndFailureTest extends GridCommonAbstractTest {
                             // No-op.
                         }
 
-                        futureRef.set(GridTestUtils.runAsync(() -> {
+                        futRef.set(GridTestUtils.runAsync(() -> {
                             try {
                                 startGrid(NODE_WITH_PORT_ID_3);
                             }
@@ -193,9 +193,9 @@ public class TcpDiscoveryNodeJoinAndFailureTest extends GridCommonAbstractTest {
                 if (msg instanceof TcpDiscoveryJoinRequestMessage) {
                     TcpDiscoveryJoinRequestMessage joinReq = (TcpDiscoveryJoinRequestMessage)msg;
 
-                    int joinReqsCount = joinReqsCntr.get();
+                    int joinReqsCnt = joinReqsCntr.get();
 
-                    if (joinReq.node().id().equals(node2Id) && joinReqsCount == 1)
+                    if (joinReq.node().id().equals(node2Id) && joinReqsCnt == 1)
                         throw new RuntimeException("Stop node1 exception by subsequent join req");
                 }
 
@@ -228,7 +228,7 @@ public class TcpDiscoveryNodeJoinAndFailureTest extends GridCommonAbstractTest {
 
         nodeId = node2Id;
 
-        boolean expectedExceptionThrown = false;
+        boolean expectedExThrown = false;
 
         try {
             startGrid(NODE_WITH_PORT_ID_2);
@@ -249,12 +249,12 @@ public class TcpDiscoveryNodeJoinAndFailureTest extends GridCommonAbstractTest {
                 errorMsg.contains("Failed to connect to any address from IP finder")
             );
 
-            expectedExceptionThrown = true;
+            expectedExThrown = true;
         }
 
-        assertTrue("Expected exception was not thrown.", expectedExceptionThrown);
+        assertTrue("Expected exception was not thrown.", expectedExThrown);
 
-        IgniteInternalFuture startGridFut = futureRef.get();
+        IgniteInternalFuture startGridFut = futRef.get();
 
         if (startGridFut != null)
             startGridFut.get();

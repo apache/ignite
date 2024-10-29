@@ -42,7 +42,6 @@ import org.apache.ignite.internal.processors.cache.KeyCacheObject;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionsExchangeFuture;
 import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtInvalidPartitionException;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearGetRequest;
-import org.apache.ignite.internal.processors.cache.mvcc.MvccSnapshot;
 import org.apache.ignite.internal.processors.cache.persistence.CacheDataRow;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.util.GridLeanMap;
@@ -61,9 +60,6 @@ public class GridPartitionedGetFuture<K, V> extends CacheDistributedGetFutureAda
     /** Transaction label. */
     private final String txLbl;
 
-    /** */
-    private final MvccSnapshot mvccSnapshot;
-
     /** Explicit predefined single mapping (backup or primary). */
     private final ClusterNode affNode;
 
@@ -81,7 +77,6 @@ public class GridPartitionedGetFuture<K, V> extends CacheDistributedGetFutureAda
      * @param needVer If {@code true} returns values as tuples containing value and version.
      * @param keepCacheObjects Keep cache objects flag.
      * @param txLbl Transaction label.
-     * @param mvccSnapshot Mvcc snapshot.
      */
     public GridPartitionedGetFuture(
         GridCacheContext<K, V> cctx,
@@ -96,7 +91,6 @@ public class GridPartitionedGetFuture<K, V> extends CacheDistributedGetFutureAda
         boolean needVer,
         boolean keepCacheObjects,
         @Nullable String txLbl,
-        @Nullable MvccSnapshot mvccSnapshot,
         ClusterNode affNode
     ) {
         super(
@@ -112,21 +106,10 @@ public class GridPartitionedGetFuture<K, V> extends CacheDistributedGetFutureAda
             keepCacheObjects,
             recovery
         );
-
-        assert (mvccSnapshot == null) == !cctx.mvccEnabled();
-
-        this.mvccSnapshot = mvccSnapshot;
         this.txLbl = txLbl;
         this.affNode = affNode;
 
         initLogger(GridPartitionedGetFuture.class);
-    }
-
-    /**
-     * @return Mvcc snapshot if mvcc is enabled for cache.
-     */
-    @Nullable private MvccSnapshot mvccSnapshot() {
-        return mvccSnapshot;
     }
 
     /**
@@ -261,9 +244,7 @@ public class GridPartitionedGetFuture<K, V> extends CacheDistributedGetFutureAda
                         expiryPlc,
                         skipVals,
                         recovery,
-                        txLbl,
-                        mvccSnapshot()
-                    );
+                        txLbl);
 
                 Collection<Integer> invalidParts = fut0.invalidPartitions();
 
@@ -421,10 +402,7 @@ public class GridPartitionedGetFuture<K, V> extends CacheDistributedGetFutureAda
         List<ClusterNode> affNodes,
         Map<K, V> locVals
     ) {
-        // Local get cannot be used with MVCC as local node can contain some visible version which is not latest.
-        boolean fastLocGet = !cctx.mvccEnabled() &&
-            (!forcePrimary || affNodes.get(0).isLocal()) &&
-            cctx.reserveForFastLocalGet(part, topVer);
+        boolean fastLocGet = (!forcePrimary || affNodes.get(0).isLocal()) && cctx.reserveForFastLocalGet(part, topVer);
 
         if (fastLocGet) {
             try {
@@ -467,9 +445,7 @@ public class GridPartitionedGetFuture<K, V> extends CacheDistributedGetFutureAda
                 if (readNoEntry) {
                     KeyCacheObject key0 = (KeyCacheObject)cctx.cacheObjects().prepareForCache(key, cctx);
 
-                    CacheDataRow row = cctx.mvccEnabled() ?
-                        cctx.offheap().mvccRead(cctx, key0, mvccSnapshot()) :
-                        cctx.offheap().read(cctx, key0);
+                    CacheDataRow row = cctx.offheap().read(cctx, key0);
 
                     if (row != null) {
                         long expireTime = row.expireTime();
@@ -688,8 +664,7 @@ public class GridPartitionedGetFuture<K, V> extends CacheDistributedGetFutureAda
                 skipVals,
                 cctx.deploymentEnabled(),
                 recovery,
-                txLbl,
-                mvccSnapshot()
+                txLbl
             );
         }
 

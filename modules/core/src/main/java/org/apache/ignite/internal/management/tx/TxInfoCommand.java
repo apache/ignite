@@ -27,7 +27,6 @@ import java.util.function.Consumer;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.client.GridClient;
-import org.apache.ignite.internal.client.GridClientException;
 import org.apache.ignite.internal.client.GridClientNode;
 import org.apache.ignite.internal.management.api.CommandUtils;
 import org.apache.ignite.internal.management.api.LocalCommand;
@@ -58,7 +57,7 @@ public class TxInfoCommand implements LocalCommand<AbstractTxCommandArg, Map<Clu
         @Nullable Ignite ignite,
         AbstractTxCommandArg arg0,
         Consumer<String> printer
-    ) throws GridClientException {
+    ) throws Exception {
         TxInfoCommandArg arg = (TxInfoCommandArg)arg0;
 
         Optional<GridClientNode> node = CommandUtils.nodes(cli, ignite).stream()
@@ -145,7 +144,7 @@ public class TxInfoCommand implements LocalCommand<AbstractTxCommandArg, Map<Clu
         String lb = null;
 
         Map<Integer, String> usedCaches = new HashMap<>();
-        Map<Integer, String> usedCacheGroups = new HashMap<>();
+        Map<Integer, String> usedCacheGrps = new HashMap<>();
         TxInfo firstInfo = null;
         TxVerboseInfo firstVerboseInfo = null;
         Set<TransactionState> states = new HashSet<>();
@@ -163,7 +162,7 @@ public class TxInfoCommand implements LocalCommand<AbstractTxCommandArg, Map<Clu
                 }
 
                 usedCaches.putAll(info.getTxVerboseInfo().usedCaches());
-                usedCacheGroups.putAll(info.getTxVerboseInfo().usedCacheGroups());
+                usedCacheGrps.putAll(info.getTxVerboseInfo().usedCacheGroups());
                 states.add(info.getState());
             }
         }
@@ -174,7 +173,7 @@ public class TxInfoCommand implements LocalCommand<AbstractTxCommandArg, Map<Clu
         printer.accept(indent + "Transaction detailed info:");
 
         printTransactionDetailedInfo(
-            res, usedCaches, usedCacheGroups, firstInfo, firstVerboseInfo, states, indent + DOUBLE_INDENT, printer);
+            res, usedCaches, usedCacheGrps, firstInfo, firstVerboseInfo, states, indent + DOUBLE_INDENT, printer);
     }
 
     /**

@@ -27,7 +27,6 @@ import org.apache.ignite.client.ClientCacheConfiguration;
 import org.apache.ignite.client.IgniteClient;
 import org.apache.ignite.client.Person;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
-import org.apache.ignite.internal.processors.platform.cache.expiry.PlatformExpiryPolicy;
 import org.apache.ignite.internal.util.typedef.T3;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.junit.Test;
@@ -141,33 +140,6 @@ public class DataReplicationOperationsTest extends AbstractThinClientTest {
 
     /** @throws Exception If fails. */
     @Test
-    public void testWithExpiryPolicy() throws Exception {
-        PlatformExpiryPolicy expPlc = new PlatformExpiryPolicy(TTL, TTL, TTL);
-
-        ClientCacheConfiguration ccfgWithExpPlc = new ClientCacheConfiguration()
-            .setName("cache-with-expiry-policy")
-            .setAtomicityMode(mode)
-            .setExpiryPolicy(expPlc);
-
-        TcpClientCache<Object, Object> cache = (TcpClientCache<Object, Object>)client.getOrCreateCache(ccfgWithExpPlc);
-
-        TcpClientCache<Object, Object> cacheWithExpPlc = binary ?
-            (TcpClientCache<Object, Object>)cache.withKeepBinary() : cache;
-
-        Map<Object, T3<Object, GridCacheVersion, Long>> data = createPutAllData(CU.EXPIRE_TIME_ETERNAL);
-
-        cacheWithExpPlc.putAllConflict(data);
-
-        assertTrue(cacheWithExpPlc.containsKeys(data.keySet()));
-
-        assertTrue(waitForCondition(
-            () -> data.keySet().stream().noneMatch(cacheWithExpPlc::containsKey),
-            2 * expPlc.getExpiryForCreation().getDurationAmount()
-        ));
-    }
-
-    /** @throws Exception If fails. */
-    @Test
     public void testWithPerEntryExpiry() throws Exception {
         TcpClientCache<Object, Object> cache0 =
             (TcpClientCache<Object, Object>)client.getOrCreateCache(DEFAULT_CACHE_NAME);
@@ -185,10 +157,31 @@ public class DataReplicationOperationsTest extends AbstractThinClientTest {
     }
 
     /** */
+    @Test
+    public void testMixedExpiryTime() {
+        Map<Object, T3<Object, GridCacheVersion, Long>> put0 = createPutAllData(System.currentTimeMillis() + TTL);
+        Map<Object, T3<Object, GridCacheVersion, Long>> put1 = createPutAllData(KEYS_CNT, CU.EXPIRE_TIME_ETERNAL);
+
+        Map<Object, T3<Object, GridCacheVersion, Long>> drMap = new HashMap<>();
+        drMap.putAll(put0);
+        drMap.putAll(put1);
+
+        cache.putAllConflict(drMap);
+
+        assertTrue(cache.containsKeys(put0.keySet()));
+        assertTrue(cache.containsKeys(put1.keySet()));
+    }
+
+    /** */
     private Map<Object, T3<Object, GridCacheVersion, Long>> createPutAllData(long expireTime) {
+        return createPutAllData(0, expireTime);
+    }
+
+    /** */
+    private Map<Object, T3<Object, GridCacheVersion, Long>> createPutAllData(int startKey, long expireTime) {
         Map<Object, T3<Object, GridCacheVersion, Long>> map = new HashMap<>();
 
-        for (int i = 0; i < KEYS_CNT; i++) {
+        for (int i = startKey; i < startKey + KEYS_CNT; i++) {
             Person key = new Person(i, "Person-" + i);
             Person val = new Person(i, "Person-" + i);
 

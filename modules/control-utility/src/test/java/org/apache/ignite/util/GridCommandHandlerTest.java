@@ -34,6 +34,7 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Random;
 import java.util.Set;
 import java.util.TreeMap;
 import java.util.TreeSet;
@@ -52,6 +53,9 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
+import javax.cache.expiry.CreatedExpiryPolicy;
+import javax.cache.expiry.Duration;
+import javax.cache.expiry.ExpiryPolicy;
 import javax.cache.processor.EntryProcessor;
 import javax.cache.processor.EntryProcessorException;
 import javax.cache.processor.MutableEntry;
@@ -80,7 +84,7 @@ import org.apache.ignite.internal.client.impl.GridClientImpl;
 import org.apache.ignite.internal.client.util.GridConcurrentHashSet;
 import org.apache.ignite.internal.management.cache.FindAndDeleteGarbageInPersistenceTaskResult;
 import org.apache.ignite.internal.management.cache.IdleVerifyDumpTask;
-import org.apache.ignite.internal.management.snapshot.SnapshotTaskResult;
+import org.apache.ignite.internal.management.cache.VerifyBackupPartitionsTaskV2;
 import org.apache.ignite.internal.management.tx.TxInfo;
 import org.apache.ignite.internal.management.tx.TxTaskResult;
 import org.apache.ignite.internal.managers.communication.GridIoMessage;
@@ -110,7 +114,7 @@ import org.apache.ignite.internal.processors.cache.warmup.WarmUpTestPluginProvid
 import org.apache.ignite.internal.processors.cluster.ChangeGlobalStateFinishMessage;
 import org.apache.ignite.internal.processors.cluster.GridClusterStateProcessor;
 import org.apache.ignite.internal.processors.datastreamer.DataStreamerRequest;
-import org.apache.ignite.internal.processors.metric.MetricRegistry;
+import org.apache.ignite.internal.processors.metric.MetricRegistryImpl;
 import org.apache.ignite.internal.util.BasicRateLimiter;
 import org.apache.ignite.internal.util.distributed.SingleNodeMessage;
 import org.apache.ignite.internal.util.future.IgniteFinishedFutureImpl;
@@ -126,6 +130,7 @@ import org.apache.ignite.lang.IgniteFuture;
 import org.apache.ignite.lang.IgniteInClosure;
 import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.lang.IgniteUuid;
+import org.apache.ignite.metric.MetricRegistry;
 import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi;
 import org.apache.ignite.spi.metric.LongMetric;
@@ -722,6 +727,32 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
     }
 
     /**
+     * Tests idle_verify working on an inactive cluster with persistence. Works via control.sh.
+     *
+     * @throws IgniteException if succeeded.
+     */
+    @Test
+    public void testIdleVerifyOnInactiveClusterWithPersistence() throws Exception {
+        IgniteEx srv = startGrids(2);
+
+        assertTrue(CU.isPersistenceEnabled(getConfiguration()));
+        assertFalse(srv.cluster().state().active());
+
+        injectTestSystemOut();
+
+        assertEquals(EXIT_CODE_UNEXPECTED_ERROR, execute("--cache", "idle_verify"));
+
+        assertContains(log, testOut.toString(), VerifyBackupPartitionsTaskV2.IDLE_VERIFY_ON_INACTIVE_CLUSTER_ERROR_MESSAGE);
+        assertContains(log, testOut.toString(), "Failed to perform operation");
+
+        srv.cluster().state(ACTIVE);
+        srv.createCache(DEFAULT_CACHE_NAME);
+
+        assertEquals(EXIT_CODE_OK, execute("--cache", "idle_verify"));
+        assertContains(log, testOut.toString(), "The check procedure has finished, no conflicts have been found.");
+    }
+
+    /**
      * Test deactivation works via control.sh
      *
      * @throws Exception If failed.
@@ -899,7 +930,7 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
 
         assertEquals(EXIT_CODE_OK, execute("--state"));
 
-        assertContains(log, testOut.toString(), "Cluster is inactive");
+        assertClusterState(INACTIVE, testOut.toString());
 
         String out = testOut.toString();
 
@@ -915,7 +946,7 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
 
         assertEquals(EXIT_CODE_OK, execute("--state"));
 
-        assertContains(log, testOut.toString(), "Cluster is active");
+        assertClusterState(ACTIVE, testOut.toString());
 
         ignite.cluster().state(ACTIVE_READ_ONLY);
 
@@ -925,7 +956,7 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
 
         assertEquals(EXIT_CODE_OK, execute("--state"));
 
-        assertContains(log, testOut.toString(), "Cluster is active (read-only)");
+        assertClusterState(ACTIVE_READ_ONLY, testOut.toString());
 
         boolean tagUpdated = GridTestUtils.waitForCondition(() -> {
             try {
@@ -1055,9 +1086,9 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
         Ignite ignite = startGrid(
             optimize(getConfiguration(getTestIgniteInstanceName(0))).setLocalHost("0.0.0.0"));
 
-        Field addresses = ignite.cluster().node().getClass().getDeclaredField("addrs");
-        addresses.setAccessible(true);
-        addresses.set(ignite.cluster().node(), Arrays.asList("127.0.0.1", "0:0:0:0:0:0:0:1", "10.19.112.175", "188.166.164.247"));
+        Field addrs = ignite.cluster().node().getClass().getDeclaredField("addrs");
+        addrs.setAccessible(true);
+        addrs.set(ignite.cluster().node(), Arrays.asList("127.0.0.1", "0:0:0:0:0:0:0:1", "10.19.112.175", "188.166.164.247"));
         Field hostNames = ignite.cluster().node().getClass().getDeclaredField("hostNames");
         hostNames.setAccessible(true);
         hostNames.set(ignite.cluster().node(), Arrays.asList("10.19.112.175.hostname"));
@@ -1089,7 +1120,7 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
         }
 
         { // empty resolved addresses
-            addresses.set(ignite.cluster().node(), Collections.emptyList());
+            addrs.set(ignite.cluster().node(), Collections.emptyList());
             hostNames.set(ignite.cluster().node(), Collections.emptyList());
 
             assertEquals(EXIT_CODE_OK, execute("--verbose", "--baseline"));
@@ -1421,7 +1452,7 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
 
         ignite.cluster().state(ClusterState.ACTIVE);
 
-        ShutdownPolicy policy = ignite.cluster().shutdownPolicy();
+        ShutdownPolicy plc = ignite.cluster().shutdownPolicy();
 
         injectTestSystemOut();
 
@@ -1429,7 +1460,7 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
 
         String out = testOut.toString();
 
-        assertContains(log, out, "Cluster shutdown policy is " + policy);
+        assertContains(log, out, "Cluster shutdown policy is " + plc);
     }
 
     /**
@@ -1445,24 +1476,24 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
 
         ignite.cluster().state(ClusterState.ACTIVE);
 
-        ShutdownPolicy policyToChange = null;
+        ShutdownPolicy plcToChange = null;
 
-        for (ShutdownPolicy policy : ShutdownPolicy.values()) {
-            if (policy != ignite.cluster().shutdownPolicy())
-                policyToChange = policy;
+        for (ShutdownPolicy plc : ShutdownPolicy.values()) {
+            if (plc != ignite.cluster().shutdownPolicy())
+                plcToChange = plc;
         }
 
-        assertNotNull(policyToChange);
+        assertNotNull(plcToChange);
 
         injectTestSystemOut();
 
-        assertEquals(EXIT_CODE_OK, execute("--shutdown-policy", policyToChange.name()));
+        assertEquals(EXIT_CODE_OK, execute("--shutdown-policy", plcToChange.name()));
 
-        assertSame(policyToChange, ignite.cluster().shutdownPolicy());
+        assertSame(plcToChange, ignite.cluster().shutdownPolicy());
 
         String out = testOut.toString();
 
-        assertContains(log, out, "Cluster shutdown policy is " + policyToChange);
+        assertContains(log, out, "Cluster shutdown policy is " + plcToChange);
     }
 
     /**
@@ -2049,14 +2080,14 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
         String testOutStr = testOut.toString();
 
         // Ignite instase 1 can be logged only in arguments list.
-        boolean isInstanse1Found = Arrays.stream(testOutStr.split("\n"))
+        boolean isInstance1Found = Arrays.stream(testOutStr.split("\n"))
                                         .filter(s -> s.contains("Arguments:"))
                                         .noneMatch(s -> s.contains(getTestIgniteInstanceName() + "1"));
 
         assertTrue(testOutStr, testOutStr.contains("Node not found for consistent ID:"));
 
         if (commandHandler.equals(CLI_CMD_HND))
-            assertFalse(testOutStr, isInstanse1Found);
+            assertFalse(testOutStr, isInstance1Found);
     }
 
     /** */
@@ -2391,6 +2422,38 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
         assertEquals(EXIT_CODE_OK, execute("--cache", "idle_verify"));
 
         assertContains(log, testOut.toString(), "MOVING partitions");
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    @Test
+    public void testCacheIdleVerifyExpiringEntries() throws Exception {
+        IgniteEx ignite = startGrids(3);
+
+        ignite.cluster().state(ACTIVE);
+
+        IgniteCache<Object, Object> cache = ignite.createCache(new CacheConfiguration<>(DEFAULT_CACHE_NAME)
+            .setAffinity(new RendezvousAffinityFunction(false, 32))
+            .setBackups(1));
+
+        Random rnd = new Random();
+
+        // Put without expiry policy.
+        for (int i = 0; i < 5_000; i++)
+            cache.put(i, i);
+
+        // Put with expiry policy.
+        for (int i = 5_000; i < 10_000; i++) {
+            ExpiryPolicy expPol = new CreatedExpiryPolicy(new Duration(TimeUnit.MILLISECONDS, rnd.nextInt(1_000)));
+            cache.withExpiryPolicy(expPol).put(i, i);
+        }
+
+        injectTestSystemOut();
+
+        assertEquals(EXIT_CODE_OK, execute("--cache", "idle_verify"));
+
+        assertContains(log, testOut.toString(), "no conflicts have been found");
     }
 
     /** */
@@ -3210,7 +3273,7 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
                 waitForCondition(endTimeMetricPredicate::getAsBoolean, getTestTimeout()));
         }
 
-        assertContains(log, (String)((SnapshotTaskResult)h.getLastOperationResult()).result(), snpName);
+        assertContains(log, (String)h.getLastOperationResult(), snpName);
 
         stopAllGrids();
 
@@ -3276,8 +3339,7 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
 
         createCacheAndPreload(ig, 1000);
 
-        snp(ig).createSnapshot(snpName)
-            .get();
+        snp(ig).createSnapshot(snpName).get();
 
         TestCommandHandler h = newCommandHandler();
 
@@ -3285,7 +3347,7 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
 
         StringBuilder sb = new StringBuilder();
 
-        ((SnapshotPartitionsVerifyTaskResult)((SnapshotTaskResult)h.getLastOperationResult()).result()).print(sb::append);
+        ((SnapshotPartitionsVerifyTaskResult)h.getLastOperationResult()).print(sb::append);
 
         assertContains(log, sb.toString(), "The check procedure has finished, no conflicts have been found");
     }
@@ -3398,7 +3460,7 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
 
         waitForCondition(() -> ig.cache(cacheName1) != null, getTestTimeout());
 
-        MetricRegistry metrics = ig.context().metric().registry(SNAPSHOT_RESTORE_METRICS);
+        MetricRegistryImpl metrics = ig.context().metric().registry(SNAPSHOT_RESTORE_METRICS);
         Metric operIdMetric = metrics.findMetric("requestId");
         assertNotNull(operIdMetric);
 
@@ -3545,7 +3607,8 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
             assertContains(log, testOut.toString(), "--increment argument specified twice");
 
             // Non existent increment.
-            assertEquals(EXIT_CODE_UNEXPECTED_ERROR, execute("--snapshot", "restore", snpName, "--increment", "2", "--sync"));
+            assertEquals(EXIT_CODE_INVALID_ARGUMENTS, execute("--snapshot", "restore", snpName, "--increment", "2", "--sync"));
+            assertContains(log, testOut.toString(), "No incremental snapshot found [snpName=" + snpName);
         }
         finally {
             autoConfirmation = autoConfirmation0;
@@ -3610,8 +3673,7 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
                 execute("--snapshot", "restore", snpName, "--src", "A", "--src", "B"));
             assertContains(log, testOut.toString(), "--src argument specified twice");
 
-            // The check command simply prints the results of the check, it always ends with a zero exit code.
-            assertEquals(EXIT_CODE_OK, execute("--snapshot", "check", snpName));
+            assertEquals(EXIT_CODE_INVALID_ARGUMENTS, execute("--snapshot", "check", snpName));
             assertContains(log, testOut.toString(), "Snapshot does not exists [snapshot=" + snpName);
 
             assertEquals(EXIT_CODE_OK, execute("--snapshot", "check", snpName, "--src", snpDir.getAbsolutePath()));
@@ -3915,6 +3977,46 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
         assertEquals(EXIT_CODE_UNEXPECTED_ERROR, execute("--warm-up", "--stop"));
     }
 
+    /** @throws Exception If fails. */
+    @Test
+    public void testCacheIdleVerifyLogLevelDebug() throws Exception {
+        IgniteEx ignite = startGrids(2);
+
+        ignite.cluster().state(ACTIVE);
+
+        IgniteCache<Object, Object> cache = ignite.createCache(new CacheConfiguration<>(DEFAULT_CACHE_NAME)
+                .setAffinity(new RendezvousAffinityFunction(false, 32))
+                .setBackups(1));
+
+        cache.put("key", "value");
+
+        injectTestSystemOut();
+
+        setLoggerDebugLevel();
+
+        assertEquals(EXIT_CODE_OK, execute("--cache", "idle_verify"));
+        assertContains(log, testOut.toString(), "no conflicts have been found");
+    }
+
+    /**
+     * Test to make sure that the '--baseline' command shows correct cluster state
+     *
+     * @throws Exception if failed.
+     */
+    @Test
+    public void testClusterStateInBaselineCommand() throws Exception {
+        Ignite ignite = startGrids(1);
+
+        injectTestSystemOut();
+
+        for (ClusterState state : ClusterState.values()) {
+            ignite.cluster().state(state);
+            assertEquals(EXIT_CODE_OK, execute("--baseline"));
+            assertEquals(state, ignite.cluster().state());
+            assertClusterState(state, testOut.toString());
+        }
+    }
+
     /**
      * @param ignite Ignite to execute task on.
      * @param delFoundGarbage If clearing mode should be used.
@@ -4002,5 +4104,13 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
                 throw new RuntimeException(e);
             }
         }
+    }
+
+    /**
+     * @param state Current state of the cluster.
+     * @param logOutput Logger output where current cluster state is supposed to be specified.
+     */
+    public static void assertClusterState(ClusterState state, String logOutput) {
+        assertTrue(Pattern.compile("Cluster state: " + state + "\\s+").matcher(logOutput).find());
     }
 }

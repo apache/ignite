@@ -18,10 +18,15 @@
 package org.apache.ignite.internal.management.cache;
 
 import java.util.Collection;
+import java.util.HashMap;
 import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
 import java.util.Set;
+import java.util.UUID;
 import java.util.stream.Collectors;
 import org.apache.ignite.IgniteException;
+import org.apache.ignite.compute.ComputeJobResult;
 import org.apache.ignite.internal.processors.cache.CacheGroupContext;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.GridCacheProcessor;
@@ -29,13 +34,14 @@ import org.apache.ignite.internal.processors.cache.IgniteInternalCache;
 import org.apache.ignite.internal.processors.task.GridInternal;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.visor.VisorJob;
-import org.apache.ignite.internal.visor.VisorOneNodeTask;
+import org.apache.ignite.internal.visor.VisorMultiNodeTask;
 
 /**
  * Task that triggers indexes force rebuild for specified caches or cache groups.
  */
 @GridInternal
-public class IndexForceRebuildTask extends VisorOneNodeTask<CacheIndexesForceRebuildCommandArg, IndexForceRebuildTaskRes> {
+public class IndexForceRebuildTask extends VisorMultiNodeTask<CacheIndexesForceRebuildCommandArg,
+    Map<UUID, IndexForceRebuildTaskRes>, IndexForceRebuildTaskRes> {
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -67,11 +73,11 @@ public class IndexForceRebuildTask extends VisorOneNodeTask<CacheIndexesForceReb
             Set<GridCacheContext> cachesToRebuild = new HashSet<>();
             Set<String> notFound = new HashSet<>();
 
-            final GridCacheProcessor cacheProcessor = ignite.context().cache();
+            final GridCacheProcessor cacheProc = ignite.context().cache();
 
             if (arg.cacheNames() != null) {
                 for (String cacheName : arg.cacheNames()) {
-                    IgniteInternalCache cache = cacheProcessor.cache(cacheName);
+                    IgniteInternalCache cache = cacheProc.cache(cacheName);
 
                     if (cache != null)
                         cachesToRebuild.add(cache.context());
@@ -81,7 +87,7 @@ public class IndexForceRebuildTask extends VisorOneNodeTask<CacheIndexesForceReb
             }
             else {
                 for (String cacheGrpName : arg.groupNames()) {
-                    CacheGroupContext grpCtx = cacheProcessor.cacheGroup(CU.cacheId(cacheGrpName));
+                    CacheGroupContext grpCtx = cacheProc.cacheGroup(CU.cacheId(cacheGrpName));
 
                     if (grpCtx != null)
                         cachesToRebuild.addAll(grpCtx.caches());
@@ -95,12 +101,12 @@ public class IndexForceRebuildTask extends VisorOneNodeTask<CacheIndexesForceReb
 
             Set<IndexRebuildStatusInfoContainer> cachesWithRebuildingInProgress =
                 cachesCtxWithRebuildingInProgress.stream()
-                    .map(c -> new IndexRebuildStatusInfoContainer(c.config()))
+                    .map(IndexRebuildStatusInfoContainer::new)
                     .collect(Collectors.toSet());
 
             Set<IndexRebuildStatusInfoContainer> cachesWithStartedRebuild =
                 cachesToRebuild.stream()
-                    .map(c -> new IndexRebuildStatusInfoContainer(c.config()))
+                    .map(IndexRebuildStatusInfoContainer::new)
                     .filter(c -> !cachesWithRebuildingInProgress.contains(c))
                     .collect(Collectors.toSet());
 
@@ -110,5 +116,21 @@ public class IndexForceRebuildTask extends VisorOneNodeTask<CacheIndexesForceReb
                 notFound
             );
         }
+    }
+
+    /** {@inheritDoc} */
+    @Override protected Map<UUID, IndexForceRebuildTaskRes> reduce0(List<ComputeJobResult> results)
+        throws IgniteException {
+
+        Map<UUID, IndexForceRebuildTaskRes> res = new HashMap<>();
+
+        for (ComputeJobResult jobRes : results) {
+            if (jobRes.getException() != null)
+                throw jobRes.getException();
+
+            res.put(jobRes.getNode().id(), jobRes.getData());
+        }
+
+        return res;
     }
 }

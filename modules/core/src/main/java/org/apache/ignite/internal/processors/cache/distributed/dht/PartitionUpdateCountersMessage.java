@@ -111,19 +111,6 @@ public class PartitionUpdateCountersMessage implements Message {
 
     /**
      * @param idx Item number.
-     * @param value Initial partition counter.
-     */
-    public void initialCounter(int idx, long value) {
-        if (idx >= size)
-            throw new ArrayIndexOutOfBoundsException();
-
-        long off = GridUnsafe.BYTE_ARR_OFF + idx * ITEM_SIZE + 4;
-
-        GridUnsafe.putLong(data, off, value);
-    }
-
-    /**
-     * @param idx Item number.
      * @return Update counter delta.
      */
     public long updatesCount(int idx) {

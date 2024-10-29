@@ -67,7 +67,7 @@ import static org.apache.logging.log4j.core.appender.ConsoleAppender.Target.SYST
  *      &lt;property name="gridLogger"&gt;
  *          &lt;bean class="org.apache.ignite.logger.log4j2.Log4J2Logger"&gt;
  *              &lt;constructor-arg type="java.lang.String" value="config/ignite-log4j.xml"/&gt;
- *          &lt;/bean>
+ *          &lt;/bean&gt;
  *      &lt;/property&gt;
  * </pre>
  * and from your code:
@@ -399,7 +399,7 @@ public class Log4J2Logger implements IgniteLoggerEx {
     /** */
     private void addConsoleAppender(Configuration logCfg, boolean clearOutput) {
         PatternLayout layout = PatternLayout.newBuilder()
-            .withPattern(clearOutput ? "%m%n" : "%d{ISO8601}][%-5p][%t][%c{1}] %m%n")
+            .withPattern(clearOutput ? "%m%n" : "[%d{ISO8601}][%-5p][%t][%c{1}] %m%n")
             .withCharset(Charset.defaultCharset())
             .withAlwaysWriteExceptions(false)
             .withNoConsoleNoAnsi(false)

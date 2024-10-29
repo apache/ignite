@@ -209,8 +209,7 @@ class GridDeploymentCommunication {
             // In case the class loader is ours - skip the check
             // since it was already performed before (and was successful).
             if (!(ldr instanceof GridDeploymentClassLoader)) {
-                // First check for @GridNotPeerDeployable annotation.
-                String clsName = req.resourceName().replace('/', '.');
+                String clsName = clsNameFromResourceName(req.resourceName());
 
                 try {
                     if (clsName.endsWith(CLASS_FILE_EXTENSION))
@@ -218,6 +217,7 @@ class GridDeploymentCommunication {
 
                     Class<?> cls = Class.forName(clsName, true, ldr);
 
+                    // First check for @GridNotPeerDeployable annotation.
                     if (U.getAnnotation(cls, IgniteNotPeerDeployable.class) != null) {
                         String errMsg = "Attempt to peer deploy class that has @IgniteNotPeerDeployable " +
                             "annotation: " + clsName;
@@ -292,6 +292,17 @@ class GridDeploymentCommunication {
         }
 
         sendResponse(nodeId, req.responseTopic(), res);
+    }
+
+    /** */
+    private static String clsNameFromResourceName(String reqResourceName) {
+        String clsName = reqResourceName.replace('/', '.');
+
+        // Java 21+ uses '/' in lambda class names, we must account for that.
+        if (!reqResourceName.contains("$$Lambda/"))
+            return clsName;
+
+        return clsName.replace("$$Lambda.", "$$Lambda/");
     }
 
     /** */

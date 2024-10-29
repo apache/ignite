@@ -213,9 +213,9 @@ public class GridCacheRebalancingOrderingTest extends GridCommonAbstractTest {
      * @return Map of partition number to randomly generated key.
      */
     private Map<Integer, IntegerKey> generateKeysForPartitions(Ignite ignite, IgniteCache<IntegerKey, Integer> cache) {
-        Affinity<IntegerKey> affinity = ignite.affinity(cache.getName());
+        Affinity<IntegerKey> aff = ignite.affinity(cache.getName());
 
-        int parts = affinity.partitions();
+        int parts = aff.partitions();
 
         Map<Integer, IntegerKey> keyMap = new HashMap<>(parts);
 
@@ -225,7 +225,7 @@ public class GridCacheRebalancingOrderingTest extends GridCommonAbstractTest {
             do {
                 IntegerKey key = new IntegerKey(RANDOM.nextInt(10000));
 
-                if (affinity.partition(key) == i) {
+                if (aff.partition(key) == i) {
                     keyMap.put(i, key);
                     found = true;
                 }
@@ -233,13 +233,13 @@ public class GridCacheRebalancingOrderingTest extends GridCommonAbstractTest {
         }
 
         // Sanity check.
-        if (keyMap.size() != affinity.partitions())
+        if (keyMap.size() != aff.partitions())
             throw new IllegalStateException("Inconsistent partition count");
 
         for (int i = 0; i < parts; i++) {
             IntegerKey key = keyMap.get(i);
 
-            if (affinity.partition(key) != i)
+            if (aff.partition(key) != i)
                 throw new IllegalStateException("Inconsistent partition");
         }
 
@@ -285,13 +285,13 @@ public class GridCacheRebalancingOrderingTest extends GridCommonAbstractTest {
 
         for (Map.Entry<Integer, IntegerKey> entry : keyMap.entrySet()) {
             Integer part = entry.getKey();
-            int affinity = entry.getValue().getKey();
+            int aff = entry.getValue().getKey();
             int cnt = RANDOM.nextInt(10) + 1;
 
             Set<IntegerKey> keys = new HashSet<>(cnt);
 
             for (int i = 0; i < cnt; i++) {
-                IntegerKey key = new IntegerKey(RANDOM.nextInt(10000), affinity);
+                IntegerKey key = new IntegerKey(RANDOM.nextInt(10000), aff);
                 keys.add(key);
                 cache.put(key, RANDOM.nextInt());
             }
@@ -306,7 +306,7 @@ public class GridCacheRebalancingOrderingTest extends GridCommonAbstractTest {
             X.println(entry.getKey() + ": " + entry.getValue());
 
         // Validate keys across all partitions.
-        Affinity<IntegerKey> affinity = ignite.affinity(cache.getName());
+        Affinity<IntegerKey> aff = ignite.affinity(cache.getName());
 
         Map<IntegerKey, KeySetValidator> validatorMap = new HashMap<>(partMap.size());
 
@@ -327,12 +327,12 @@ public class GridCacheRebalancingOrderingTest extends GridCommonAbstractTest {
             for (Map.Entry<IntegerKey, EntryProcessorResult<KeySetValidator.Result>> result : results.entrySet()) {
                 try {
                     if (result.getValue().get() == KeySetValidator.Result.RETRY)
-                        retries.add(affinity.partition(result.getKey()));
+                        retries.add(aff.partition(result.getKey()));
                 }
                 catch (Exception e) {
                     X.println("!!! " + e.getMessage());
                     e.printStackTrace();
-                    failures.add(affinity.partition(result.getKey()));
+                    failures.add(aff.partition(result.getKey()));
                 }
             }
 
@@ -383,7 +383,7 @@ public class GridCacheRebalancingOrderingTest extends GridCommonAbstractTest {
 
                 IgniteCache<IntegerKey, Integer> cache = ignite.cache(TEST_CACHE_NAME);
 
-                Affinity<IntegerKey> affinity = ignite.affinity(TEST_CACHE_NAME);
+                Affinity<IntegerKey> aff = ignite.affinity(TEST_CACHE_NAME);
 
                 Set<IntegerKey> exp = this.keys;
 
@@ -391,9 +391,9 @@ public class GridCacheRebalancingOrderingTest extends GridCommonAbstractTest {
 
                 IntegerKey key = entry.getKey();
 
-                int part = affinity.partition(key);
+                int part = aff.partition(key);
 
-                String ownership = affinity.isPrimary(ignite.cluster().localNode(), key) ? "primary" : "backup";
+                String ownership = aff.isPrimary(ignite.cluster().localNode(), key) ? "primary" : "backup";
 
                 // Wait for the local listener to sync past events.
                 if (!observer.getIgniteLocalSyncListener().isSynced()) {
@@ -522,12 +522,12 @@ public class GridCacheRebalancingOrderingTest extends GridCommonAbstractTest {
         /** {@inheritDoc} */
         @Override public String toString() {
             int val = this.val;
-            Integer affinity = this.affinity;
+            Integer aff = this.affinity;
 
-            if (val == affinity)
+            if (val == aff)
                 return String.valueOf(val);
 
-            return "IntKey [val=" + val + ", aff=" + affinity + ']';
+            return "IntKey [val=" + val + ", aff=" + aff + ']';
         }
 
         /** {@inheritDoc} */
@@ -596,15 +596,15 @@ public class GridCacheRebalancingOrderingTest extends GridCommonAbstractTest {
                             },
                             this.causes);
 
-                        for (Event event : evts) {
+                        for (Event evt : evts) {
                             // Events returned from localQuery() are ordered by increasing local ID. Update the sync ID
                             // within a finally block to avoid applying duplicate events if the delegate listener
                             // throws an exception while processing the event.
                             try {
-                                applyInternal(event);
+                                applyInternal(evt);
                             }
                             finally {
-                                this.syncedId = event.localOrder();
+                                this.syncedId = evt.localOrder();
                             }
                         }
 

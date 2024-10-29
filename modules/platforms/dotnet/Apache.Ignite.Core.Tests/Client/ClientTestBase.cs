@@ -153,6 +153,7 @@ namespace Apache.Ignite.Core.Tests.Client
             {
                 return Ignition.GetAll().First(i => i.Name == null);
             }
+
             return Ignition.GetIgnite(idx.ToString());
         }
 

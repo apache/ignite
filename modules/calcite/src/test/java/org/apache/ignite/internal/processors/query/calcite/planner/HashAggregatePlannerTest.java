@@ -267,10 +267,10 @@ public class HashAggregatePlannerTest extends AbstractAggregatePlannerTest {
 
         publicSchema.addTable("TEST", tbl);
 
-        String sqlCount = "SELECT COUNT(*) FROM test";
+        String sqlCnt = "SELECT COUNT(*) FROM test";
 
         IgniteRel phys = physicalPlan(
-            sqlCount,
+            sqlCnt,
             publicSchema
         );
 

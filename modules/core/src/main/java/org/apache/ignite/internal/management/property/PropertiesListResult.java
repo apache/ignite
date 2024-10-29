@@ -21,9 +21,9 @@ import java.io.IOException;
 import java.io.ObjectInput;
 import java.io.ObjectOutput;
 import java.util.Collection;
-import java.util.Collections;
 import org.apache.ignite.internal.dto.IgniteDataTransferObject;
 import org.apache.ignite.internal.processors.task.GridInternal;
+import org.apache.ignite.internal.util.typedef.T3;
 import org.apache.ignite.internal.util.typedef.internal.U;
 
 /**
@@ -34,8 +34,8 @@ public class PropertiesListResult extends IgniteDataTransferObject {
     /** */
     private static final long serialVersionUID = 0L;
 
-    /** Properties names. */
-    private Collection<String> props = Collections.emptyList();
+    /** Properties info: name, value, description. */
+    private Collection<T3<String, String, String>> props;
 
     /**
      * Constructor for optimized marshaller.
@@ -47,7 +47,7 @@ public class PropertiesListResult extends IgniteDataTransferObject {
     /**
      * @param props Properties.
      */
-    public PropertiesListResult(Collection<String> props) {
+    public PropertiesListResult(Collection<T3<String, String, String>> props) {
         this.props = props;
     }
 
@@ -65,9 +65,9 @@ public class PropertiesListResult extends IgniteDataTransferObject {
     }
 
     /**
-     * @return Properties (name, description) collection.
+     * @return Properties (name, value, description) collection.
      */
-    public Collection<String> properties() {
+    public Collection<T3<String, String, String>> properties() {
         return props;
     }
 }

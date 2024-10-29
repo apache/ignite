@@ -28,7 +28,6 @@ namespace Apache.Ignite.Core.Impl
     using Apache.Ignite.Core.Impl.Binary;
     using Apache.Ignite.Core.Impl.Cluster;
     using Apache.Ignite.Core.Impl.Common;
-    using Apache.Ignite.Core.Impl.Compute;
     using BinaryReader = Apache.Ignite.Core.Impl.Binary.BinaryReader;
 
     /// <summary>
@@ -126,26 +125,6 @@ namespace Apache.Ignite.Core.Impl
 
                 prop0.SetValue(target, prop.Value, null);
             }
-        }
-
-        /// <summary>
-        /// Convert unmanaged char array to string.
-        /// </summary>
-        /// <param name="chars">Char array.</param>
-        /// <param name="charsLen">Char array length.</param>
-        /// <returns></returns>
-        public static unsafe string Utf8UnmanagedToString(sbyte* chars, int charsLen)
-        {
-            IntPtr ptr = new IntPtr(chars);
-
-            if (ptr == IntPtr.Zero)
-                return null;
-
-            byte[] arr = new byte[charsLen];
-
-            Marshal.Copy(ptr, arr, 0, arr.Length);
-
-            return Encoding.UTF8.GetString(arr);
         }
 
         /// <summary>

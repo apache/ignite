@@ -67,7 +67,7 @@ public class IndexListTask extends VisorOneNodeTask<CacheIndexesListCommandArg, 
                 throw new IgniteException("CacheIndexesListCommandArg is null");
 
             Pattern indexesPtrn = getPattern(arg.indexName());
-            Pattern groupsPtrn = getPattern(arg.groupName());
+            Pattern grpsPtrn = getPattern(arg.groupName());
             Pattern cachesPtrn = getPattern(arg.cacheName());
 
             Set<IndexListInfoContainer> idxInfos = new HashSet<>();
@@ -78,7 +78,7 @@ public class IndexListTask extends VisorOneNodeTask<CacheIndexesListCommandArg, 
                 final String grpName = ctx.config().getGroupName();
                 final String grpNameToValidate = grpName == null ? EMPTY_GROUP_NAME : grpName;
 
-                if (!isNameValid(groupsPtrn, grpNameToValidate))
+                if (!isNameValid(grpsPtrn, grpNameToValidate))
                     continue;
 
                 if (!isNameValid(cachesPtrn, cacheName))

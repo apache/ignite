@@ -44,39 +44,5 @@ namespace Apache.Ignite.Core.Tests.Cache
         {
             return 1;
         }
-
-        /// <summary>
-        /// Test MVCC transaction.
-        /// </summary>
-        [Test]
-        public void TestMvccTransaction()
-        {
-            IIgnite ignite = GetIgnite(0);
-
-            ICache<int, int> cache = ignite.GetOrCreateCache<int, int>(new CacheConfiguration
-            {
-                Name = "mvcc",
-                AtomicityMode = CacheAtomicityMode.TransactionalSnapshot
-            });
-
-            ITransaction tx = ignite.GetTransactions().TxStart();
-
-            cache.Put(1, 1);
-            cache.Put(2, 2);
-
-            tx.Commit();
-
-            Assert.AreEqual(1, cache.Get(1));
-            Assert.AreEqual(2, cache.Get(2));
-
-            tx = ignite.GetTransactions().TxStart();
-
-            Assert.AreEqual(1, cache.Get(1));
-            Assert.AreEqual(2, cache.Get(2));
-
-            tx.Commit();
-
-            ignite.DestroyCache("mvcc");
-        }
     }
 }

@@ -22,6 +22,7 @@ import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.processors.GridProcessorAdapter;
 import org.apache.ignite.internal.processors.cache.persistence.DatabaseLifecycleListener;
 import org.apache.ignite.internal.processors.cache.persistence.metastorage.MetastorageLifecycleListener;
+import org.apache.ignite.internal.processors.cluster.IgniteChangeGlobalStateSupport;
 import org.apache.ignite.internal.processors.configuration.distributed.DistributedConfigurationLifecycleListener;
 import org.apache.ignite.internal.processors.metastorage.DistributedMetastorageLifecycleListener;
 import org.apache.ignite.internal.processors.query.schema.SchemaChangeListener;
@@ -53,7 +54,10 @@ public class GridInternalSubscriptionProcessor extends GridProcessorAdapter {
      * Listeners of distributed configuration controlled by
      * {@link org.apache.ignite.internal.processors.configuration.distributed.DistributedConfigurationProcessor}.
      */
-    private List<DistributedConfigurationLifecycleListener> distributedConfigurationListeners = new ArrayList<>();
+    private final List<DistributedConfigurationLifecycleListener> distributedConfigurationListeners = new ArrayList<>();
+
+    /** */
+    private final List<IgniteChangeGlobalStateSupport> globalStateListeners = new ArrayList<>();
 
     /**
      * @param ctx Kernal context.
@@ -121,5 +125,15 @@ public class GridInternalSubscriptionProcessor extends GridProcessorAdapter {
     /** */
     public List<DistributedConfigurationLifecycleListener> getDistributedConfigurationListeners() {
         return distributedConfigurationListeners;
+    }
+
+    /** */
+    public void registerGlobalStateListener(@NotNull IgniteChangeGlobalStateSupport globalStateListener) {
+        globalStateListeners.add(globalStateListener);
+    }
+
+    /** */
+    public List<IgniteChangeGlobalStateSupport> getGlobalStateListeners() {
+        return globalStateListeners;
     }
 }

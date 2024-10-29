@@ -113,12 +113,12 @@ public class SerializationUtil {
         if (schemaVersionNumber >= REGISTERED_SCHEMA_VERSIONS.length || schemaVersionNumber < 0)
             throw new RuntimeException("Invalid schema version number " + schemaVersionNumber);
 
-        final ISchemaVersion schemaVersion = REGISTERED_SCHEMA_VERSIONS[schemaVersionNumber];
+        final ISchemaVersion schemaVer = REGISTERED_SCHEMA_VERSIONS[schemaVersionNumber];
 
-        if (schemaVersion == null)
+        if (schemaVer == null)
             throw new RuntimeException("Unknown schema version number " + schemaVersionNumber);
 
-        return schemaVersion;
+        return schemaVer;
     }
 
     /**
@@ -130,10 +130,10 @@ public class SerializationUtil {
      *         be <code>null</code>.
      */
     public static ISchemaVersion getSchemaVersion(final byte[] bytes) {
-        final byte versionByte = bytes[0];
-        final int schemaVersionNumber = schemaVersion(versionByte);
+        final byte verByte = bytes[0];
+        final int schemaVerNumber = schemaVersion(verByte);
 
-        return getSchemaVersion(schemaVersionNumber);
+        return getSchemaVersion(schemaVerNumber);
     }
 
     // ************************************************************************
@@ -206,8 +206,8 @@ public class SerializationUtil {
      */
     public static byte packParametersByte(final int registerWidth, final int registerCountLog2) {
         final int widthBits = ((registerWidth - 1) & REGISTER_WIDTH_MASK);
-        final int countBits = (registerCountLog2 & LOG2_REGISTER_COUNT_MASK);
-        return (byte)((widthBits << LOG2_REGISTER_COUNT_BITS) | countBits);
+        final int cntBits = (registerCountLog2 & LOG2_REGISTER_COUNT_MASK);
+        return (byte)((widthBits << LOG2_REGISTER_COUNT_BITS) | cntBits);
     }
 
     /**

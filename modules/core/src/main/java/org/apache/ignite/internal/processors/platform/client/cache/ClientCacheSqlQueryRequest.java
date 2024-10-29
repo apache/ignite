@@ -54,7 +54,7 @@ public class ClientCacheSqlQueryRequest extends ClientCacheQueryRequest implemen
 
     /** {@inheritDoc} */
     @Override public ClientResponse process(ClientConnectionContext ctx) {
-        IgniteCache cache = cache(ctx);
+        IgniteCache<Object, Object> cache = cache(ctx);
 
         ctx.incrementCursors();
 

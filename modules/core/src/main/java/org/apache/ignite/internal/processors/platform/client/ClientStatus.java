@@ -70,6 +70,9 @@ public final class ClientStatus {
     /** Too many compute tasks. */
     public static final int TOO_MANY_COMPUTE_TASKS = 1030;
 
+    /** Entry processor invokation error. */
+    public static final int ENTRY_PROCESSOR_EXCEPTION = 1040;
+
     /** Authentication failed. */
     public static final int AUTH_FAILED = 2000;
 }

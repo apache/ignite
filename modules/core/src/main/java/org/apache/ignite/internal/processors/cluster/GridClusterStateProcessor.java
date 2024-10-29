@@ -74,6 +74,8 @@ import org.apache.ignite.internal.processors.cache.persistence.metastorage.ReadW
 import org.apache.ignite.internal.processors.cluster.baseline.autoadjust.BaselineAutoAdjustStatus;
 import org.apache.ignite.internal.processors.cluster.baseline.autoadjust.BaselineTopologyUpdater;
 import org.apache.ignite.internal.processors.configuration.distributed.DistributePropertyListener;
+import org.apache.ignite.internal.processors.security.SecurityUtils;
+import org.apache.ignite.internal.processors.subscription.GridInternalSubscriptionProcessor;
 import org.apache.ignite.internal.util.future.GridFinishedFuture;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.future.IgniteFinishedFutureImpl;
@@ -793,7 +795,8 @@ public class GridClusterStateProcessor extends GridProcessorAdapter implements I
                             state.state(),
                             newState.state(),
                             ctx.discovery().localNode(),
-                            "Cluster state change started."
+                            "Cluster state change started.",
+                            SecurityUtils.securitySubjectId(ctx)
                         ))
                     );
                 }
@@ -1435,13 +1438,10 @@ public class GridClusterStateProcessor extends GridProcessorAdapter implements I
                 boolean client = ctx.clientNode();
 
                 try {
-                    ctx.dataStructures().onActivate(ctx);
+                    GridInternalSubscriptionProcessor isp = ctx.internalSubscriptionProcessor();
 
-                    ctx.task().onActivate(ctx);
-
-                    ctx.encryption().onActivate(ctx);
-
-                    distributedBaselineConfiguration.onActivate();
+                    for (IgniteChangeGlobalStateSupport lsnr : isp.getGlobalStateListeners())
+                        lsnr.onActivate(ctx);
 
                     if (log.isInfoEnabled())
                         log.info("Successfully performed final activation steps [nodeId="
@@ -1536,11 +1536,11 @@ public class GridClusterStateProcessor extends GridProcessorAdapter implements I
                 ", nodeId=" + nodeId + "]");
         }
 
-        UUID requestId = msg.getRequestId();
+        UUID reqId = msg.getRequestId();
 
         final GridChangeGlobalStateFuture fut = stateChangeFut.get();
 
-        if (fut != null && requestId.equals(fut.requestId)) {
+        if (fut != null && reqId.equals(fut.requestId)) {
             if (fut.initFut.isDone())
                 fut.onResponse(nodeId, msg);
             else {

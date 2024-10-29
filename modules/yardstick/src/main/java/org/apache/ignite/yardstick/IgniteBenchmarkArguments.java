@@ -293,15 +293,6 @@ public class IgniteBenchmarkArguments {
     @GridToStringInclude
     public UploadBenchmarkArguments upload = new UploadBenchmarkArguments();
 
-    /** */
-    @Parameter(names = {"--mvcc-contention-range", "--mvccContentionRange"},
-        description = "Mvcc benchmark specific: " +
-            "Size of range of table keys that should be used in query. " +
-            "Should be less than 'range'. " +
-            "Useful together with 'sqlRange' to control, how often key contentions of sql operations occur.")
-    @GridToStringInclude
-    public long mvccContentionRange = 10_000;
-
     /** See {@link #selectCommand()}. */
     @Parameter(names = {"--select-command"})
     private SelectCommand selectCommand = SelectCommand.BY_PRIMARY_KEY;
@@ -731,13 +722,6 @@ public class IgniteBenchmarkArguments {
      */
     public int clientNodesAfterId() {
         return clientNodesAfterId;
-    }
-
-    /**
-     * @return Mvcc contention range.
-     */
-    public long mvccContentionRange() {
-        return mvccContentionRange;
     }
 
     /**

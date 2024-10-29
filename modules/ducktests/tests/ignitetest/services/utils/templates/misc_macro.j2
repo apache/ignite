@@ -57,7 +57,11 @@
 
 {% macro bean(bean_object) %}
     {% if bean_object.properties | length > 0 or bean_object.constructor_args | length > 0 %}
+        {% if bean_object.id != "" %}
+        <bean id="{{ bean_object.id }}" class="{{ bean_object }}">
+        {% else %}
         <bean class="{{ bean_object }}">
+        {% endif %}
             {% for name, value in bean_object.properties.items() %}
                 {% if value is string or value is number or value is boolean %}
                     <property name="{{ name  | snake_to_camel }}" value="{{ value }}"/>
@@ -86,6 +90,6 @@
             {% endfor %}
         </bean>
     {% else %}
-        <bean class="{{ bean_object }}"/>
+        <bean id="{{ bean_object.id }}" class="{{ bean_object }}"/>
     {% endif %}
 {% endmacro %}

@@ -198,9 +198,7 @@ public class CacheEventSecurityContextTest extends AbstractEventSecurityContextT
             checkEvents(cli, k -> cache.removeAsync(k).get(), true, EVT_CACHE_OBJECT_REMOVED);
 
             checkEvents(cli, k -> cache.remove(k, "val"), true, EVT_CACHE_OBJECT_REMOVED);
-
-            // TODO Add test case inside transaction after resolving IGNITE-14317.
-            checkEvents(k -> cache.removeAsync(k, "val").get(), true, EVT_CACHE_OBJECT_REMOVED);
+            checkEvents(cli, k -> cache.removeAsync(k, "val").get(), true, EVT_CACHE_OBJECT_REMOVED);
 
             checkEvents(cli, k -> cache.removeAll(of(k)), true, EVT_CACHE_OBJECT_REMOVED);
             checkEvents(cli, k -> cache.removeAllAsync(of(k)).get(), true, EVT_CACHE_OBJECT_REMOVED);
@@ -339,9 +337,7 @@ public class CacheEventSecurityContextTest extends AbstractEventSecurityContextT
         checkEvents(ignite, k -> cache.removeAsync(k).get(), true, EVT_CACHE_OBJECT_REMOVED);
 
         checkEvents(ignite, k -> cache.remove(k, "val"), true, EVT_CACHE_OBJECT_REMOVED);
-
-        // TODO Add test case inside transaction after resolving IGNITE-14317.
-        checkEvents(k -> cache.removeAsync(k, "val").get(), true, EVT_CACHE_OBJECT_REMOVED);
+        checkEvents(ignite, k -> cache.removeAsync(k, "val").get(), true, EVT_CACHE_OBJECT_REMOVED);
 
         checkEvents(ignite, k -> cache.removeAll(of(k)), true, EVT_CACHE_OBJECT_REMOVED);
         checkEvents(ignite, k -> cache.removeAllAsync(of(k)).get(), true, EVT_CACHE_OBJECT_REMOVED);

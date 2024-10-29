@@ -17,7 +17,6 @@
 package org.apache.ignite.internal.processors.query.calcite.rel;
 
 import java.util.List;
-
 import com.google.common.collect.ImmutableList;
 import org.apache.calcite.plan.RelOptCluster;
 import org.apache.calcite.plan.RelOptCost;
@@ -36,6 +35,7 @@ import org.apache.ignite.internal.processors.query.calcite.metadata.cost.IgniteC
 import org.apache.ignite.internal.processors.query.calcite.metadata.cost.IgniteCostFactory;
 import org.apache.ignite.internal.processors.query.calcite.trait.IgniteDistributions;
 import org.apache.ignite.internal.processors.query.calcite.trait.TraitUtils;
+import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.internal.processors.query.calcite.metadata.cost.IgniteCost.FETCH_IS_PARAM_FACTOR;
 import static org.apache.ignite.internal.processors.query.calcite.metadata.cost.IgniteCost.OFFSET_IS_PARAM_FACTOR;
@@ -65,8 +65,8 @@ public class IgniteSort extends Sort implements IgniteRel {
         RelTraitSet traits,
         RelNode child,
         RelCollation collation,
-        RexNode offset,
-        RexNode fetch,
+        @Nullable RexNode offset,
+        @Nullable RexNode fetch,
         boolean enforcer
     ) {
         super(cluster, traits, child, collation, offset, fetch);
@@ -106,8 +106,8 @@ public class IgniteSort extends Sort implements IgniteRel {
         RelTraitSet traitSet,
         RelNode newInput,
         RelCollation newCollation,
-        RexNode offset,
-        RexNode fetch
+        @Nullable RexNode offset,
+        @Nullable RexNode fetch
     ) {
         return new IgniteSort(getCluster(), traitSet, newInput, traitSet.getCollation(), offset, fetch, enforcer);
     }

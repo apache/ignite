@@ -128,7 +128,6 @@
                 <exclude>${project.groupId}:ignite-schedule</exclude>
                 <exclude>${project.groupId}:ignite-appserver-test</exclude>
                 <exclude>${project.groupId}:ignite-websphere-test</exclude>
-                <exclude>${project.groupId}:ignite-cassandra</exclude>
                 <exclude>${project.groupId}:ignite-yardstick</exclude>
                 <exclude>${project.groupId}:ignite-benchmarks</exclude>
                 <exclude>${project.groupId}:ignite-dev-utils</exclude>
@@ -136,8 +135,6 @@
                 <exclude>${project.groupId}:ignite-compatibility</exclude>
                 <exclude>${project.groupId}:ignite-sqlline</exclude>
                 <!-- Removed from slim packaging are: -->
-                <exclude>${project.groupId}:ignite-cassandra-serializers</exclude>
-                <exclude>${project.groupId}:ignite-cassandra-store</exclude>
                 <exclude>${project.groupId}:ignite-direct-io</exclude>
                 <exclude>${project.groupId}:ignite-jcl</exclude>
                 <exclude>${project.groupId}:ignite-web</exclude>

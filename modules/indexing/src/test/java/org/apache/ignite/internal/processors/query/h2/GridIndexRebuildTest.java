@@ -42,7 +42,6 @@ import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
-import org.apache.ignite.internal.ComputeTaskInternalFuture;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.management.cache.CacheValidateIndexesCommandArg;
 import org.apache.ignite.internal.management.cache.ValidateIndexesJobResult;
@@ -223,14 +222,12 @@ public class GridIndexRebuildTest extends GridCommonAbstractTest {
         arg.checkCrc(true);
         arg.checkSizes(true);
 
-        VisorTaskArgument<CacheValidateIndexesCommandArg> visorTaskArg = new VisorTaskArgument<>(nodes, arg, true);
+        ValidateIndexesTaskResult res = grid1.context().task().execute(
+            new ValidateIndexesTask(),
+            new VisorTaskArgument<>(nodes, arg, true)
+        ).get().result();
 
-        ComputeTaskInternalFuture<ValidateIndexesTaskResult> exec = grid1.context().task().
-            execute(new ValidateIndexesTask(), visorTaskArg);
-
-        ValidateIndexesTaskResult res = exec.get();
-
-        Map<UUID, ValidateIndexesJobResult> results = res.results();
+        Map<?, ValidateIndexesJobResult> results = res.results();
 
         boolean hasIssue = false;
 
@@ -322,14 +319,12 @@ public class GridIndexRebuildTest extends GridCommonAbstractTest {
         arg.checkCrc(true);
         arg.checkSizes(true);
 
-        VisorTaskArgument<CacheValidateIndexesCommandArg> visorTaskArg = new VisorTaskArgument<>(nodes, arg, true);
+        ValidateIndexesTaskResult res = grid1.context().task().execute(
+            new ValidateIndexesTask(),
+            new VisorTaskArgument<>(nodes, arg, true)
+        ).get().result();
 
-        ComputeTaskInternalFuture<ValidateIndexesTaskResult> execute = grid1.context().task().
-            execute(new ValidateIndexesTask(), visorTaskArg);
-
-        ValidateIndexesTaskResult res = execute.get();
-
-        Map<UUID, ValidateIndexesJobResult> results = res.results();
+        Map<?, ValidateIndexesJobResult> results = res.results();
 
         boolean hasIssue = false;
 

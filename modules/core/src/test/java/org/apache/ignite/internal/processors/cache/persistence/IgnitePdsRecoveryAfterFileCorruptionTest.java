@@ -359,10 +359,10 @@ public class IgnitePdsRecoveryAfterFileCorruptionTest extends GridCommonAbstract
             AtomicLong write = new AtomicLong();
 
             PageStoreWriter pageStoreWriter = (fullPageId, buf, tag) -> {
-                int groupId = fullPageId.groupId();
+                int grpId = fullPageId.groupId();
                 long pageId = fullPageId.pageId();
 
-                for (int j = PageIO.COMMON_HEADER_END; j < mem.realPageSize(groupId); j += 4)
+                for (int j = PageIO.COMMON_HEADER_END; j < mem.realPageSize(grpId); j += 4)
                     assertEquals(j + (int)pageId, buf.getInt(j));
 
                 buf.rewind();

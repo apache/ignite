@@ -58,6 +58,9 @@ import org.apache.ignite.plugin.security.SecurityPermissionSet;
 import org.apache.ignite.spi.IgniteSpiException;
 import org.apache.ignite.spi.discovery.DiscoverySpiNodeAuthenticator;
 
+import static org.apache.ignite.internal.util.IgniteUtils.IGNITE_PKG;
+import static org.apache.ignite.internal.util.IgniteUtils.packageName;
+
 /**
  * Security utilities.
  */
@@ -243,6 +246,14 @@ public class SecurityUtils {
     /** */
     public static Object unwrap(Object target) {
         return target instanceof GridInternalWrapper ? ((GridInternalWrapper<?>)target).userObject() : target;
+    }
+
+    /**
+     * @param cls Class instance.
+     * @return Whether specified class is in Ignite package.
+     */
+    public static boolean isInIgnitePackage(Class<?> cls) {
+        return packageName(cls).startsWith(IGNITE_PKG);
     }
 
     /**

@@ -64,9 +64,6 @@ public class GridCacheTwoStepQuery {
     /** */
     private final PartitionResult derivedPartitions;
 
-    /** */
-    private final boolean mvccEnabled;
-
     /** Number of positional arguments in the sql. */
     private final int paramsCnt;
 
@@ -85,7 +82,6 @@ public class GridCacheTwoStepQuery {
      * @param replicatedOnly Replicated only flag.
      * @param derivedPartitions Derived partitions.
      * @param cacheIds Cache ids.
-     * @param mvccEnabled Mvcc flag.
      * @param locSplit Local split flag.
      * @param treatReplicatedAsPartitioned Treat replicated as partitioned flag.
      */
@@ -101,7 +97,6 @@ public class GridCacheTwoStepQuery {
         boolean replicatedOnly,
         PartitionResult derivedPartitions,
         List<Integer> cacheIds,
-        boolean mvccEnabled,
         boolean locSplit,
         boolean treatReplicatedAsPartitioned
     ) {
@@ -116,7 +111,6 @@ public class GridCacheTwoStepQuery {
         this.distributedJoins = distributedJoins;
         this.derivedPartitions = derivedPartitions;
         this.cacheIds = cacheIds;
-        this.mvccEnabled = mvccEnabled;
         this.locSplit = locSplit;
         this.mapQrys = mapQrys;
         this.replicatedOnly = replicatedOnly;
@@ -223,13 +217,6 @@ public class GridCacheTwoStepQuery {
      */
     public Set<QueryTable> tables() {
         return tbls;
-    }
-
-    /**
-     * @return Mvcc flag.
-     */
-    public boolean mvccEnabled() {
-        return mvccEnabled;
     }
 
     /**

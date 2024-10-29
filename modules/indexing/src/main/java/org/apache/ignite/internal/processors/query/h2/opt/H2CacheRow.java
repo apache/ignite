@@ -239,46 +239,6 @@ public class H2CacheRow extends H2Row implements CacheDataRow {
     }
 
     /** {@inheritDoc} */
-    @Override public long mvccCoordinatorVersion() {
-        return row.mvccCoordinatorVersion();
-    }
-
-    /** {@inheritDoc} */
-    @Override public long mvccCounter() {
-        return row.mvccCounter();
-    }
-
-    /** {@inheritDoc} */
-    @Override public int mvccOperationCounter() {
-        return row.mvccOperationCounter();
-    }
-
-    /** {@inheritDoc} */
-    @Override public byte mvccTxState() {
-        return row.mvccTxState();
-    }
-
-    /** {@inheritDoc} */
-    @Override public long newMvccCoordinatorVersion() {
-        return row.newMvccCoordinatorVersion();
-    }
-
-    /** {@inheritDoc} */
-    @Override public long newMvccCounter() {
-        return row.newMvccCounter();
-    }
-
-    /** {@inheritDoc} */
-    @Override public int newMvccOperationCounter() {
-        return row.newMvccOperationCounter();
-    }
-
-    /** {@inheritDoc} */
-    @Override public byte newMvccTxState() {
-        return row.newMvccTxState();
-    }
-
-    /** {@inheritDoc} */
     @Override public boolean indexSearchRow() {
         return false;
     }
@@ -300,11 +260,6 @@ public class H2CacheRow extends H2Row implements CacheDataRow {
 
     /** {@inheritDoc} */
     @Override public int size() {
-        throw new UnsupportedOperationException();
-    }
-
-    /** {@inheritDoc} */
-    @Override public int headerSize() {
         throw new UnsupportedOperationException();
     }
 

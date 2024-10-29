@@ -437,9 +437,9 @@ public class SchemaExchangeSelfTest extends AbstractSchemaSelfTest {
 
         IgniteEx node2 = startClientNoCache(2);
 
-        GridCacheContext<Object, Object> context0 = node2.context().cache().context().cacheContext(CU.cacheId(CACHE_NAME));
+        GridCacheContext<Object, Object> ctx0 = node2.context().cache().context().cacheContext(CU.cacheId(CACHE_NAME));
         node2.cache(CACHE_NAME);
-        GridCacheContext<Object, Object> context = node2.context().cache().context().cacheContext(CU.cacheId(CACHE_NAME));
+        GridCacheContext<Object, Object> ctx = node2.context().cache().context().cacheContext(CU.cacheId(CACHE_NAME));
         GridCacheAdapter<Object, Object> entries = node2.context().cache().internalCache(CACHE_NAME);
         assertTrue(entries.active());
 

@@ -36,6 +36,9 @@ public class SimpleDistributedProperty<T extends Serializable> implements Distri
     /** Name of property. */
     private final String name;
 
+    /** Description of property. */
+    private final String description;
+
     /** Property value. */
     protected volatile T val;
 
@@ -59,10 +62,12 @@ public class SimpleDistributedProperty<T extends Serializable> implements Distri
     /**
      * @param name Name of property.
      * @param parser Property value parser.
+     * @param description Description of property.
      */
-    public SimpleDistributedProperty(String name, Function<String, T> parser) {
+    public SimpleDistributedProperty(String name, Function<String, T> parser, String description) {
         this.name = name;
         this.parser = parser;
+        this.description = description;
     }
 
     /** {@inheritDoc} */
@@ -115,6 +120,11 @@ public class SimpleDistributedProperty<T extends Serializable> implements Distri
     /** {@inheritDoc} */
     @Override public String getName() {
         return name;
+    }
+
+    /** {@inheritDoc} */
+    @Override public String description() {
+        return description;
     }
 
     /** {@inheritDoc} */

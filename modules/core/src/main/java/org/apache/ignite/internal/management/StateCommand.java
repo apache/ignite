@@ -23,7 +23,6 @@ import org.apache.ignite.Ignite;
 import org.apache.ignite.cluster.ClusterState;
 import org.apache.ignite.internal.client.GridClient;
 import org.apache.ignite.internal.client.GridClientClusterState;
-import org.apache.ignite.internal.client.GridClientException;
 import org.apache.ignite.internal.management.api.LocalCommand;
 import org.apache.ignite.internal.management.api.NoArg;
 import org.apache.ignite.internal.util.lang.GridTuple3;
@@ -50,7 +49,7 @@ public class StateCommand implements LocalCommand<NoArg, GridTuple3<UUID, String
         @Nullable Ignite ignite,
         NoArg arg,
         Consumer<String> printer
-    ) throws GridClientException {
+    ) throws Exception {
         ClusterState state;
         UUID id;
         String tag;
@@ -73,25 +72,7 @@ public class StateCommand implements LocalCommand<NoArg, GridTuple3<UUID, String
 
         printer.accept(DELIM);
 
-        switch (state) {
-            case ACTIVE:
-                printer.accept("Cluster is active");
-
-                break;
-
-            case INACTIVE:
-                printer.accept("Cluster is inactive");
-
-                break;
-
-            case ACTIVE_READ_ONLY:
-                printer.accept("Cluster is active (read-only)");
-
-                break;
-
-            default:
-                throw new IllegalStateException("Unknown state: " + state);
-        }
+        printer.accept("Cluster state: " + state);
 
         return F.t(id, tag, state);
     }

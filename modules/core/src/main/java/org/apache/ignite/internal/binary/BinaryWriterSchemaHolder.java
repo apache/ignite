@@ -71,7 +71,9 @@ public class BinaryWriterSchemaHolder {
     }
 
     /**
-     * Write collected frames and pop them.
+     * Write collected frames.
+     * Note, that after writing collected frames, you must call {@link BinaryWriterSchemaHolder#pop(int)} method with
+     * the total number of written frames as an argument.
      *
      * @param out Output stream.
      * @param fieldCnt Count.

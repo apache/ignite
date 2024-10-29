@@ -22,17 +22,17 @@ import org.apache.ignite.IgniteException;
 import org.apache.ignite.internal.dto.IgniteDataTransferObject;
 import org.apache.ignite.internal.management.kill.SnapshotCancelTask.CancelSnapshotArg;
 import org.apache.ignite.internal.management.snapshot.SnapshotJob;
-import org.apache.ignite.internal.management.snapshot.SnapshotOneNodeTask;
 import org.apache.ignite.internal.processors.cache.persistence.snapshot.IgniteSnapshotManager;
 import org.apache.ignite.internal.processors.cache.persistence.snapshot.SnapshotMXBeanImpl;
 import org.apache.ignite.internal.processors.task.GridInternal;
 import org.apache.ignite.internal.visor.VisorJob;
+import org.apache.ignite.internal.visor.VisorOneNodeTask;
 
 /**
  * @see IgniteSnapshotManager#cancelSnapshotOperation(UUID)
  */
 @GridInternal
-public class SnapshotCancelTask extends SnapshotOneNodeTask<CancelSnapshotArg, String> {
+public class SnapshotCancelTask extends VisorOneNodeTask<CancelSnapshotArg, String> {
     /** Serial version uid. */
     private static final long serialVersionUID = 0L;
 

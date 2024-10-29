@@ -266,7 +266,7 @@ public class GatherPartitionStatistics implements Callable<ObjectPartitionStatis
                 GridQueryRowDescriptor rowDesc = new GridQueryRowDescriptorImpl(gathCtx.cacheContextInfo(), tbl);
 
                 for (CacheDataRow row : grp.offheap().cachePartitionIterator(gathCtx.cacheContextInfo().cacheId(), partId,
-                    null, false)) {
+                    false)) {
                     if (--checkInt == 0) {
                         if (gathCtx.future().isCancelled())
                             throw new GatherStatisticCancelException();

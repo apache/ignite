@@ -51,8 +51,8 @@ If you want to connect to a node that is running on a remove machine, specify th
 | --password PASSWORD |The user password. |
 | --ping-interval PING_INTERVAL | The ping interval. | 5000
 | --ping-timeout PING_TIMEOUT | Ping response timeout. | 30000
-| --ssl-protocol PROTOCOL1, PROTOCOL2... | A list of SSL protocols to try when connecting to the cluster. link:https://docs.oracle.com/javase/8/docs/technotes/guides/security/SunProviders.html#SunJSSE_Protocols[Supported protocols,window=_blank]. | `TLS`
-| --ssl-cipher-suites CIPHER1,CIPHER2...  | A list of SSL ciphers. link:https://docs.oracle.com/javase/8/docs/technotes/guides/security/SunProviders.html#SupportedCipherSuites[Supported ciphers,window=_blank]. |
+| --ssl-protocol PROTOCOL1, PROTOCOL2... | A list of SSL protocols to try when connecting to the cluster. link:https://docs.oracle.com/en/java/javase/11/security/java-security-overview1.html#GUID-FCF419A7-B856-46DD-A36F-C6F88F9AF37F[Supported protocols,window=_blank]. | `TLS`
+| --ssl-cipher-suites CIPHER1,CIPHER2...  | A list of SSL ciphers. link:https://docs.oracle.com/en/java/javase/11/docs/specs/security/standard-names.html#jsse-cipher-suite-names[Supported ciphers,window=_blank]. |
 | --ssl-key-algorithm ALG | The SSL key algorithm. | `SunX509`
 | --keystore-type KEYSTORE_TYPE | The keystore type. | `JKS`
 | --keystore KEYSTORE_PATH | The path to the keystore. Specify a keystore to enable SSL for the control script.|
@@ -430,7 +430,7 @@ NOTE: The 'ignite-spring' module should be enabled.
 
 [source, shell]
 ----
-control.sh|bat --cache create --springXmlConfig springXmlFilePath
+control.sh|bat --cache create --springXmlConfig springXmlFilePath --skip-existing
 ----
 
 Parameters:
@@ -440,13 +440,17 @@ Parameters:
 | Parameter | Description
 | `--springXmlConfig springXmlConfigPath` | Path to the Spring XML configuration that contains
 'org.apache.ignite.configuration.CacheConfiguration' beans to create caches from.
+|`--skip-existing`| Optional flag to skip existing caches.
 |===
 
 Examples:
 [source, shell]
 ----
 # Create caches from the `/ignite/config/userCaches.xml` configuration.
-control.sh|bat --cache create --springXmlConfig /ignite/config/userCaches.xml`
+control.sh|bat --cache create --springXmlConfig /ignite/config/userCaches.xml
+
+# Create caches from the `/ignite/config/userCaches.xml` configuration except existing ones.
+control.sh|bat --cache create --springXmlConfig /ignite/config/userCaches.xml --skip-existing
 ----
 
 == Destroying Caches
@@ -1071,12 +1075,12 @@ To trigger the rebuild process of all indexes for the specified caches or the ca
 tab:Unix[]
 [source,shell]
 ----
-control.sh --cache indexes_force_rebuild --node-id nodeId --cache-names cacheName1,...cacheNameN|--group-names groupName1,...groupNameN
+control.sh --cache indexes_force_rebuild --node-ids nodeId1,...nodeIdN|--all-nodes --cache-names cacheName1,...cacheNameN|--group-names groupName1,...groupNameN
 ----
 tab:Window[]
 [source,shell]
 ----
-control.bat --cache indexes_force_rebuild --node-id nodeId --cache-names cacheName1,...cacheNameN|--group-names groupName1,...groupNameN
+control.bat --cache indexes_force_rebuild --node-ids nodeId1,...nodeIdN|--all-nodes --cache-names cacheName1,...cacheNameN|--group-names groupName1,...groupNameN
 ----
 --
 
@@ -1278,7 +1282,7 @@ The `schedule_indexes_rebuild` commands Apache Ignite to rebuild indexes for spe
 
 [source, shell]
 ----
- control.sh|bat --cache schedule_indexes_rebuild --node-id nodeId --cache-names cacheName[index1,...indexN],cacheName2,cacheName3[index1] --group-names groupName1,groupName2,...groupNameN
+ control.sh|bat --cache schedule_indexes_rebuild --node-ids nodeId1,...nodeIdN|--all-nodes --cache-names cacheName[index1,...indexN],cacheName2,cacheName3[index1] --group-names groupName1,groupName2,...groupNameN
 ----
 
 Parameters:

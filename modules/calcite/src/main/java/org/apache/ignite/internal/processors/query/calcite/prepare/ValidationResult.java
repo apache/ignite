@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.processors.query.calcite.prepare;
 
+import java.util.Collections;
 import java.util.List;
 
 import org.apache.calcite.rel.type.RelDataType;
@@ -35,16 +36,26 @@ public class ValidationResult {
     /** */
     private final List<List<String>> origins;
 
+    /** */
+    private final List<String> aliases;
+
     /**
      *
      * @param sqlNode Validated SQL node.
      * @param dataType Validated type.
      * @param origins Type fields provenance.
+     * @param aliases Derived name aliases.
      */
-    public ValidationResult(SqlNode sqlNode, RelDataType dataType, List<List<String>> origins) {
+    public ValidationResult(
+        SqlNode sqlNode,
+        RelDataType dataType,
+        List<List<String>> origins,
+        List<String> aliases
+    ) {
         this.sqlNode = sqlNode;
         this.dataType = dataType;
         this.origins = origins;
+        this.aliases = aliases;
     }
 
     /**
@@ -65,6 +76,13 @@ public class ValidationResult {
      * @return Type fields provenance.
      */
     public List<List<String>> origins() {
-        return origins;
+        return origins != null ? Collections.unmodifiableList(origins) : Collections.emptyList();
+    }
+
+    /**
+     *
+     */
+    public List<String> aliases() {
+        return aliases != null ? Collections.unmodifiableList(aliases) : Collections.emptyList();
     }
 }

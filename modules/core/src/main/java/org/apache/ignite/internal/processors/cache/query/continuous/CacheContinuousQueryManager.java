@@ -66,7 +66,6 @@ import org.apache.ignite.internal.processors.cache.IgniteCacheProxy;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
 import org.apache.ignite.internal.processors.cache.distributed.dht.atomic.GridDhtAtomicAbstractUpdateFuture;
 import org.apache.ignite.internal.processors.cache.persistence.CacheDataRow;
-import org.apache.ignite.internal.processors.cache.transactions.IgniteInternalTx;
 import org.apache.ignite.internal.processors.continuous.GridContinuousHandler;
 import org.apache.ignite.internal.processors.timeout.GridTimeoutProcessor;
 import org.apache.ignite.internal.util.GridLongList;
@@ -207,15 +206,6 @@ public class CacheContinuousQueryManager<K, V> extends GridCacheManagerAdapter<K
                     log.debug("Failed to stop JCache entry listener: " + e.getMessage());
             }
         }
-    }
-
-    /**
-     * @param tx Transaction.
-     * @return {@code True} if should notify continuous query manager.
-     */
-    public boolean notifyContinuousQueries(@Nullable IgniteInternalTx tx) {
-        return cctx.isReplicated() ||
-            (!cctx.isNear() && !(tx != null && tx.onePhaseCommit() && !tx.local()));
     }
 
     /**
@@ -434,7 +424,7 @@ public class CacheContinuousQueryManager<K, V> extends GridCacheManagerAdapter<K
                 cctx.cacheId(),
                 evtType,
                 key,
-                (!internal && evtType == REMOVED && lsnr.oldValueRequired()) ? oldVal : newVal,
+                newVal,
                 lsnr.oldValueRequired() ? oldVal : null,
                 lsnr.keepBinary(),
                 partId,
@@ -496,7 +486,7 @@ public class CacheContinuousQueryManager<K, V> extends GridCacheManagerAdapter<K
                     cctx.cacheId(),
                     EXPIRED,
                     key,
-                    lsnr.oldValueRequired() ? oldVal : null,
+                    null,
                     lsnr.oldValueRequired() ? oldVal : null,
                     lsnr.keepBinary(),
                     e.partition(),
@@ -791,7 +781,6 @@ public class CacheContinuousQueryManager<K, V> extends GridCacheManagerAdapter<K
                 true,
                 true,
                 AffinityTopologyVersion.NONE,
-                null,
                 null);
 
             locLsnr.onUpdated(new Iterable<CacheEntryEvent>() {
@@ -895,9 +884,9 @@ public class CacheContinuousQueryManager<K, V> extends GridCacheManagerAdapter<K
         GridKernalContext ctx = cctx.kernalContext();
 
         if (ctx.security().enabled() && allNodesSupports(ctx.discovery().allNodes(), CONT_QRY_SECURITY_AWARE)) {
-            final UUID subjectId = ctx.security().securityContext().subject().id();
+            final UUID subjId = ctx.security().securityContext().subject().id();
 
-            return f.apply(subjectId, component);
+            return f.apply(subjId, component);
         }
 
         return component;
@@ -1433,16 +1422,8 @@ public class CacheContinuousQueryManager<K, V> extends GridCacheManagerAdapter<K
         }
 
         /** {@inheritDoc} */
-        @Override public Object getValue() {
+        @Override public Object getNewValue() {
             return val;
-        }
-
-        /** {@inheritDoc} */
-        @Override public Object unwrap(Class cls) {
-            if (cls.isAssignableFrom(getClass()))
-                return cls.cast(this);
-
-            throw new IllegalArgumentException("Unwrapping to class is not supported: " + cls);
         }
 
         /** {@inheritDoc} */

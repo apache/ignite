@@ -85,8 +85,8 @@ public class BlockingSslHandler {
         SocketChannel ch,
         boolean directBuf,
         ByteOrder order,
-        IgniteLogger log)
-        throws SSLException {
+        IgniteLogger log
+    ) {
         this.ch = ch;
         this.log = log;
         this.sslEngine = sslEngine;

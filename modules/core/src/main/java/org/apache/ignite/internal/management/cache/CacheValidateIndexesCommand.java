@@ -19,7 +19,6 @@ package org.apache.ignite.internal.management.cache;
 
 import java.util.Collection;
 import java.util.Map;
-import java.util.UUID;
 import java.util.function.Consumer;
 import org.apache.ignite.internal.client.GridClientNode;
 import org.apache.ignite.internal.management.api.CommandUtils;
@@ -64,9 +63,15 @@ public class CacheValidateIndexesCommand
         ValidateIndexesTaskResult res0,
         Consumer<String> printer
     ) {
-        boolean errors = CommandUtils.printErrors(res0.exceptions(), "Index validation failed on nodes:", printer);
+        boolean errors = !F.isEmpty(res0.exceptions());
 
-        for (Map.Entry<UUID, ValidateIndexesJobResult> nodeEntry : res0.results().entrySet()) {
+        if (errors) {
+            printer.accept("Index validation failed on nodes:");
+
+            res0.exceptions().forEach((node, err) -> CommandUtils.printNodeError(printer, node.id(), node.consistentId(), err));
+        }
+
+        for (Map.Entry<ValidateIndexesTaskResult.NodeInfo, ValidateIndexesJobResult> nodeEntry : res0.results().entrySet()) {
             ValidateIndexesJobResult jobRes = nodeEntry.getValue();
 
             if (!jobRes.hasIssues())
@@ -74,7 +79,8 @@ public class CacheValidateIndexesCommand
 
             errors = true;
 
-            printer.accept("Index issues found on node " + nodeEntry.getKey() + ":");
+            printer.accept("Index issues found on node " + nodeEntry.getKey().id() + " [consistentId='"
+                + nodeEntry.getKey().consistentId() + "']:");
 
             for (IndexIntegrityCheckIssue is : jobRes.integrityCheckFailures())
                 printer.accept(INDENT + is);

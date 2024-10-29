@@ -23,18 +23,28 @@ import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.processors.rest.request.GridRestRequest;
+import org.apache.ignite.internal.processors.rest.request.GridRestTaskRequest;
+import org.apache.ignite.internal.processors.security.AbstractSecurityTest;
+import org.apache.ignite.internal.processors.security.impl.TestSecurityData;
+import org.apache.ignite.internal.processors.security.impl.TestSecurityPluginProvider;
+import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.plugin.AbstractTestPluginProvider;
 import org.apache.ignite.plugin.PluginContext;
 import org.apache.ignite.plugin.PluginProvider;
-import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.apache.ignite.plugin.security.SecurityCredentials;
 import org.jetbrains.annotations.Nullable;
 import org.junit.Test;
+
+import static org.apache.ignite.internal.processors.rest.GridRestResponse.STATUS_SUCCESS;
+import static org.apache.ignite.plugin.security.SecurityPermission.JOIN_AS_SERVER;
+import static org.apache.ignite.plugin.security.SecurityPermissionSetBuilder.ALL_PERMISSIONS;
+import static org.apache.ignite.plugin.security.SecurityPermissionSetBuilder.systemPermissions;
 
 /**
  * Tests REST processor configuration via Ignite plugins functionality.
  */
-public class RestProcessorInitializationTest extends GridCommonAbstractTest {
+public class RestProcessorInitializationTest extends AbstractSecurityTest {
     /** {@inheritDoc} */
     @Override protected void afterTest() throws Exception {
         stopAllGrids(true);
@@ -55,22 +65,21 @@ public class RestProcessorInitializationTest extends GridCommonAbstractTest {
      */
     @Test
     public void testCustomRestProcessorInitialization() throws Exception {
-        IgniteConfiguration cfg = getConfiguration(getTestIgniteInstanceName(0))
-            .setConnectorConfiguration(new ConnectorConfiguration());
-
-        cfg.setPluginProviders(new TestRestProcessorProvider());
-
-        IgniteEx ignite = startGrid(cfg);
+        IgniteEx ignite = startGrid(configuration(0));
 
         assertEquals(ignite.context().rest().getClass(), TestGridRestProcessorImpl.class);
 
         TestGridRestProcessorImpl rest = (TestGridRestProcessorImpl)ignite.context().rest();
 
-        GridRestRequest req = new GridRestRequest();
+        GridRestTaskRequest req = new GridRestTaskRequest();
 
-        req.command(GridRestCommand.VERSION);
+        req.credentials(new SecurityCredentials("client", ""));
+        req.command(GridRestCommand.NOOP);
 
         GridRestResponse res = rest.handleAsync0(req).get();
+
+        assertEquals(STATUS_SUCCESS, res.getSuccessStatus());
+        assertEquals(req.clientId(), res.getSecuritySubjectId());
 
         IgniteBiTuple<GridRestRequest, IgniteInternalFuture<GridRestResponse>> entry = rest.getTuple();
 
@@ -123,5 +132,24 @@ public class RestProcessorInitializationTest extends GridCommonAbstractTest {
         public IgniteBiTuple<GridRestRequest, IgniteInternalFuture<GridRestResponse>> getTuple() {
             return tuple;
         }
+    }
+
+    /** */
+    private IgniteConfiguration configuration(int idx) throws Exception {
+        String login = getTestIgniteInstanceName(idx);
+
+        IgniteConfiguration cfg = getConfiguration(
+            login,
+            new TestSecurityPluginProvider(
+                login,
+                "",
+                systemPermissions(JOIN_AS_SERVER),
+                null,
+                false,
+                new TestSecurityData("client", ALL_PERMISSIONS)));
+
+        return cfg
+            .setConnectorConfiguration(new ConnectorConfiguration())
+            .setPluginProviders(F.concat(cfg.getPluginProviders(), new TestRestProcessorProvider()));
     }
 }

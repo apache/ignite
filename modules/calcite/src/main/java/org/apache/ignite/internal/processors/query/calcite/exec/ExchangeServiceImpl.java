@@ -21,7 +21,6 @@ import java.util.Collection;
 import java.util.List;
 import java.util.Objects;
 import java.util.UUID;
-
 import com.google.common.collect.ImmutableMap;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
@@ -51,6 +50,9 @@ import org.apache.ignite.internal.util.typedef.F;
  */
 public class ExchangeServiceImpl extends AbstractService implements ExchangeService {
     /** */
+    public static final long INBOX_INITIALIZATION_TIMEOUT = 1_000L;
+
+    /** */
     private final UUID locaNodeId;
 
     /** */
@@ -61,6 +63,9 @@ public class ExchangeServiceImpl extends AbstractService implements ExchangeServ
 
     /** */
     private MessageService msgSvc;
+
+    /** */
+    private TimeoutService timeoutSvc;
 
     /** */
     private QueryRegistry qryRegistry;
@@ -116,6 +121,20 @@ public class ExchangeServiceImpl extends AbstractService implements ExchangeServ
         return msgSvc;
     }
 
+    /**
+     * @param timeoutSvc Timeout service.
+     */
+    public void timeoutService(TimeoutService timeoutSvc) {
+        this.timeoutSvc = timeoutSvc;
+    }
+
+    /**
+     * @return Timeout service.
+     */
+    public TimeoutService timeoutService() {
+        return timeoutSvc;
+    }
+
     /** */
     public void queryRegistry(QueryRegistry qryRegistry) {
         this.qryRegistry = qryRegistry;
@@ -163,6 +182,7 @@ public class ExchangeServiceImpl extends AbstractService implements ExchangeServ
         taskExecutor(proc.taskExecutor());
         mailboxRegistry(proc.mailboxRegistry());
         messageService(proc.messageService());
+        timeoutService(proc.timeoutService());
         queryRegistry(proc.queryRegistry());
 
         init();
@@ -226,6 +246,9 @@ public class ExchangeServiceImpl extends AbstractService implements ExchangeServ
         if (qry != null)
             qry.cancel();
         else {
+            for (Inbox<?> inbox : mailboxRegistry().inboxes(msg.queryId(), -1, -1))
+                mailboxRegistry().unregister(inbox);
+
             if (log.isDebugEnabled()) {
                 log.debug("Stale query close message received: [" +
                     "nodeId=" + nodeId +
@@ -269,6 +292,24 @@ public class ExchangeServiceImpl extends AbstractService implements ExchangeServ
                 this, mailboxRegistry(), msg.exchangeId(), msg.exchangeId());
 
             inbox = mailboxRegistry().register(newInbox);
+
+            if (inbox == newInbox) {
+                // New inbox for query batch message can be registered in the following cases:
+                // 1. Race between messages (when first batch arrived to node before query start request). In this case
+                // query start request eventually will be delivered and query execution context will be initialized.
+                // Inbox will be closed by standard query execution workflow.
+                // 2. Stale first message (query already has been closed by some event). In this case query execution
+                // workflow already completed and inbox can leak. To prevent leakage, schedule task to check that
+                // query context is initialized within reasonable time (assume that race between messages can't be more
+                // than INBOX_INITIALIZATION_TIMEOUT milliseconds).
+                timeoutService().schedule(() -> {
+                    Inbox<?> timeoutInbox = mailboxRegistry().inbox(msg.queryId(), msg.exchangeId());
+
+                    // Inbox is not unregistered and still not initialized.
+                    if (timeoutInbox != null && timeoutInbox.context().topologyVersion() == null)
+                        taskExecutor().execute(msg.queryId(), msg.fragmentId(), timeoutInbox::close);
+                }, INBOX_INITIALIZATION_TIMEOUT);
+            }
         }
 
         if (inbox != null) {
@@ -320,6 +361,7 @@ public class ExchangeServiceImpl extends AbstractService implements ExchangeServ
             NoOpMemoryTracker.INSTANCE,
             NoOpIoTracker.INSTANCE,
             0,
-            ImmutableMap.of());
+            ImmutableMap.of(),
+            null);
     }
 }

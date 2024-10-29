@@ -32,6 +32,7 @@ import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicIntegerArray;
 import java.util.concurrent.atomic.AtomicLong;
@@ -51,15 +52,18 @@ import org.apache.ignite.events.CacheQueryReadEvent;
 import org.apache.ignite.events.SqlQueryExecutionEvent;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.processors.cache.query.GridCacheQueryType;
-import org.apache.ignite.internal.processors.metric.MetricRegistry;
+import org.apache.ignite.internal.processors.metric.MetricRegistryImpl;
 import org.apache.ignite.internal.processors.performancestatistics.AbstractPerformanceStatisticsTest;
+import org.apache.ignite.internal.processors.pool.PoolProcessor;
 import org.apache.ignite.internal.processors.query.IgniteSQLException;
 import org.apache.ignite.internal.processors.query.QueryUtils;
 import org.apache.ignite.internal.processors.query.calcite.Query;
 import org.apache.ignite.internal.processors.query.calcite.QueryRegistry;
+import org.apache.ignite.internal.processors.query.calcite.exec.QueryTaskExecutorImpl;
 import org.apache.ignite.internal.processors.security.SecurityContext;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.metric.MetricRegistry;
 import org.apache.ignite.spi.metric.LongMetric;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.ListeningTestLogger;
@@ -73,6 +77,7 @@ import static org.apache.ignite.internal.processors.authentication.Authenticatio
 import static org.apache.ignite.internal.processors.authentication.AuthenticationProcessorSelfTest.withSecurityContextOnAllNodes;
 import static org.apache.ignite.internal.processors.authentication.User.DFAULT_USER_NAME;
 import static org.apache.ignite.internal.processors.cache.query.GridCacheQueryType.SQL_FIELDS;
+import static org.apache.ignite.internal.processors.metric.impl.MetricUtils.metricName;
 import static org.apache.ignite.internal.processors.performancestatistics.AbstractPerformanceStatisticsTest.cleanPerformanceStatisticsDir;
 import static org.apache.ignite.internal.processors.performancestatistics.AbstractPerformanceStatisticsTest.startCollectStatistics;
 import static org.apache.ignite.internal.processors.performancestatistics.AbstractPerformanceStatisticsTest.stopCollectStatisticsAndRead;
@@ -144,6 +149,8 @@ public class SqlDiagnosticIntegrationTest extends AbstractBasicIntegrationTest {
         super.afterTest();
 
         stopAllGrids();
+
+        cleanPerformanceStatisticsDir();
     }
 
     /** */
@@ -154,8 +161,8 @@ public class SqlDiagnosticIntegrationTest extends AbstractBasicIntegrationTest {
     /** */
     @Test
     public void testParserMetrics() {
-        MetricRegistry mreg0 = grid(0).context().metric().registry(QUERY_PARSER_METRIC_GROUP_NAME);
-        MetricRegistry mreg1 = grid(1).context().metric().registry(QUERY_PARSER_METRIC_GROUP_NAME);
+        MetricRegistryImpl mreg0 = grid(0).context().metric().registry(QUERY_PARSER_METRIC_GROUP_NAME);
+        MetricRegistryImpl mreg1 = grid(1).context().metric().registry(QUERY_PARSER_METRIC_GROUP_NAME);
         mreg0.reset();
         mreg1.reset();
 
@@ -194,8 +201,8 @@ public class SqlDiagnosticIntegrationTest extends AbstractBasicIntegrationTest {
     public void testBatchParserMetrics() throws Exception {
         withSecurityContextOnAllNodes(secCtxDflt);
 
-        MetricRegistry mreg0 = grid(0).context().metric().registry(QUERY_PARSER_METRIC_GROUP_NAME);
-        MetricRegistry mreg1 = grid(1).context().metric().registry(QUERY_PARSER_METRIC_GROUP_NAME);
+        MetricRegistryImpl mreg0 = grid(0).context().metric().registry(QUERY_PARSER_METRIC_GROUP_NAME);
+        MetricRegistryImpl mreg1 = grid(1).context().metric().registry(QUERY_PARSER_METRIC_GROUP_NAME);
         mreg0.reset();
         mreg1.reset();
 
@@ -263,8 +270,8 @@ public class SqlDiagnosticIntegrationTest extends AbstractBasicIntegrationTest {
     public void testUserQueriesMetrics() throws Exception {
         sql(grid(0), "CREATE TABLE test_metric (a INT)");
 
-        MetricRegistry mreg0 = grid(0).context().metric().registry(SQL_USER_QUERIES_REG_NAME);
-        MetricRegistry mreg1 = grid(1).context().metric().registry(SQL_USER_QUERIES_REG_NAME);
+        MetricRegistryImpl mreg0 = grid(0).context().metric().registry(SQL_USER_QUERIES_REG_NAME);
+        MetricRegistryImpl mreg1 = grid(1).context().metric().registry(SQL_USER_QUERIES_REG_NAME);
         mreg0.reset();
         mreg1.reset();
 
@@ -304,6 +311,23 @@ public class SqlDiagnosticIntegrationTest extends AbstractBasicIntegrationTest {
 
     /** */
     @Test
+    public void testThreadPoolMetrics() {
+        String regName = metricName(PoolProcessor.THREAD_POOLS, QueryTaskExecutorImpl.THREAD_POOL_NAME);
+        MetricRegistry mreg = client.context().metric().registry(regName);
+
+        LongMetric tasksCnt = mreg.findMetric("CompletedTaskCount");
+
+        tasksCnt.reset();
+
+        assertEquals(0, tasksCnt.value());
+
+        sql("SELECT 'test'");
+
+        assertTrue(tasksCnt.value() > 0);
+    }
+
+    /** */
+    @Test
     public void testPerformanceStatistics() throws Exception {
         cleanPerformanceStatisticsDir();
         startCollectStatistics();
@@ -336,7 +360,7 @@ public class SqlDiagnosticIntegrationTest extends AbstractBasicIntegrationTest {
         Set<UUID> dataNodesIds = new HashSet<>(F.asList(grid(0).localNode().id(), grid(1).localNode().id()));
         Set<UUID> readsNodes = new HashSet<>(dataNodesIds);
         Set<Long> readsQueries = new HashSet<>();
-        Map<Long, Long> rowsFetchedPerQuery = new HashMap<>();
+        Map<Long, Long> rowsFetchedPerQry = new HashMap<>();
         AtomicLong firstQryId = new AtomicLong(-1);
         AtomicLong lastQryId = new AtomicLong();
 
@@ -397,7 +421,7 @@ public class SqlDiagnosticIntegrationTest extends AbstractBasicIntegrationTest {
                 }
                 else if ("Fetched".equals(action)) {
                     assertEquals(grid(0).localNode().id(), nodeId);
-                    assertNull(rowsFetchedPerQuery.put(id, rows));
+                    assertNull(rowsFetchedPerQry.put(id, rows));
                 }
             }
         });
@@ -405,9 +429,132 @@ public class SqlDiagnosticIntegrationTest extends AbstractBasicIntegrationTest {
         assertEquals(4, qryCnt.get());
         assertTrue("Query reads expected on nodes: " + readsNodes, readsNodes.isEmpty());
         assertEquals(Collections.singleton(lastQryId.get()), readsQueries);
-        assertEquals((Long)1000L, rowsFetchedPerQuery.get(firstQryId.get()));
-        assertEquals((Long)4L, rowsFetchedPerQuery.get(lastQryId.get()));
+        assertEquals((Long)1000L, rowsFetchedPerQry.get(firstQryId.get()));
+        assertEquals((Long)4L, rowsFetchedPerQry.get(lastQryId.get()));
         assertEquals(5L, rowsScanned.get());
+    }
+
+    /** */
+    @Test
+    public void testPerformanceStatisticsEnableAfterQuery() throws Exception {
+        cleanPerformanceStatisticsDir();
+
+        String qry = "SELECT * FROM table(system_range(1, 1000))";
+
+        sql(grid(0), qry);
+
+        startCollectStatistics();
+
+        AtomicInteger finishQryCnt = new AtomicInteger();
+        grid(0).context().query().runningQueryManager().registerQueryFinishedListener(q -> finishQryCnt.incrementAndGet());
+
+        sql(grid(0), qry);
+
+        assertTrue(GridTestUtils.waitForCondition(() -> finishQryCnt.get() == 1, 1_000L));
+
+        AtomicInteger qryCnt = new AtomicInteger();
+        AtomicBoolean hasPlan = new AtomicBoolean();
+
+        stopCollectStatisticsAndRead(new AbstractPerformanceStatisticsTest.TestHandler() {
+            @Override public void query(
+                UUID nodeId,
+                GridCacheQueryType type,
+                String text,
+                long id,
+                long qryStartTime,
+                long duration,
+                boolean success
+            ) {
+                qryCnt.incrementAndGet();
+
+                assertEquals(grid(0).localNode().id(), nodeId);
+                assertEquals(SQL_FIELDS, type);
+                assertTrue(success);
+            }
+
+            @Override public void queryProperty(
+                UUID nodeId,
+                GridCacheQueryType type,
+                UUID qryNodeId,
+                long id,
+                String name,
+                String val
+            ) {
+                if ("Query plan".equals(name)) {
+                    assertFalse(F.isEmpty(val));
+                    hasPlan.set(true);
+                }
+            }
+        });
+
+        assertEquals(1, qryCnt.get());
+        assertTrue(hasPlan.get());
+    }
+
+    /** */
+    @Test
+    public void testPerformanceStatisticsNestedScan() throws Exception {
+        sql(grid(0), "CREATE TABLE test_perf_stat_nested (a INT) WITH template=REPLICATED");
+        sql(grid(0), "INSERT INTO test_perf_stat_nested VALUES (0), (1), (2), (3), (4)");
+
+        cleanPerformanceStatisticsDir();
+        startCollectStatistics();
+
+        AtomicInteger finishQryCnt = new AtomicInteger();
+        grid(0).context().query().runningQueryManager().registerQueryFinishedListener(q -> finishQryCnt.incrementAndGet());
+
+        sql(grid(0), "SELECT * FROM test_perf_stat_nested UNION ALL SELECT * FROM test_perf_stat_nested");
+
+        assertTrue(GridTestUtils.waitForCondition(() -> finishQryCnt.get() == 1, 1_000L));
+
+        AtomicInteger qryCnt = new AtomicInteger();
+        AtomicInteger readsCnt = new AtomicInteger();
+        AtomicLong rowsCnt = new AtomicLong();
+
+        stopCollectStatisticsAndRead(new AbstractPerformanceStatisticsTest.TestHandler() {
+            @Override public void query(
+                UUID nodeId,
+                GridCacheQueryType type,
+                String text,
+                long id,
+                long qryStartTime,
+                long duration,
+                boolean success
+            ) {
+                qryCnt.incrementAndGet();
+                assertTrue(success);
+            }
+
+            @Override public void queryReads(
+                UUID nodeId,
+                GridCacheQueryType type,
+                UUID qryNodeId,
+                long id,
+                long logicalReads,
+                long physicalReads
+            ) {
+                readsCnt.incrementAndGet();
+                assertTrue(logicalReads > 0);
+            }
+
+            @Override public void queryRows(
+                UUID nodeId,
+                GridCacheQueryType type,
+                UUID qryNodeId,
+                long id,
+                String action,
+                long rows
+            ) {
+                if ("Fetched".equals(action))
+                    rowsCnt.addAndGet(rows);
+            }
+        });
+
+        assertEquals(1, qryCnt.get());
+        // The second scan is executed inside the first scan processNextBatch() method,
+        // after the first scan invoke downstream().end(), so here we have only one read record.
+        assertEquals(1, readsCnt.get());
+        assertEquals(10, rowsCnt.get());
     }
 
     /** */
@@ -515,7 +662,7 @@ public class SqlDiagnosticIntegrationTest extends AbstractBasicIntegrationTest {
 
             // Test bounds hiding in index scans.
             sql(grid(0), "CREATE TABLE test_sens (id int, val varchar)");
-            sql(grid(0), "CREATE INDEX test_sens_idx ON test_sens(val)");
+            sql(grid(0), "CREATE INDEX test_sens_idx ON test_sens(val) INLINE_SIZE 10");
             sql(grid(0), "INSERT INTO test_sens (id, val) VALUES (0, 'sensitive0'), (1, 'sensitive1'), " +
                 "(2, 'sensitive2'), (3, 'sensitive3'), (4, 'sensitive4'), (5, 'sensitive5'), (6, 'sensitive6')");
             sql(grid(0), "SELECT * FROM test_sens WHERE val IN ('sensitive0', 'sensitive1')");

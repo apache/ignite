@@ -206,7 +206,7 @@ public class ServiceHotRedeploymentViaDeploymentSpiTest extends GridCommonAbstra
      * @throws Exception In case of an error.
      */
     private URLClassLoader prepareClassLoader(int ver) throws Exception {
-        String source = "import org.apache.ignite.internal.processors.service.ServiceHotRedeploymentViaDeploymentSpiTest;\n" +
+        String src = "import org.apache.ignite.internal.processors.service.ServiceHotRedeploymentViaDeploymentSpiTest;\n" +
             "import org.apache.ignite.services.ServiceContext;\n" +
             "public class MyRenewServiceImpl implements ServiceHotRedeploymentViaDeploymentSpiTest.MyRenewService {\n" +
             "    @Override public int version() {\n" +
@@ -221,7 +221,7 @@ public class ServiceHotRedeploymentViaDeploymentSpiTest extends GridCommonAbstra
 
         File srcFile = new File(srcTmpDir.toFile(), "MyRenewServiceImpl.java");
 
-        Path srcFilePath = Files.write(srcFile.toPath(), source.getBytes(StandardCharsets.UTF_8));
+        Path srcFilePath = Files.write(srcFile.toPath(), src.getBytes(StandardCharsets.UTF_8));
 
         JavaCompiler compiler = ToolProvider.getSystemJavaCompiler();
 

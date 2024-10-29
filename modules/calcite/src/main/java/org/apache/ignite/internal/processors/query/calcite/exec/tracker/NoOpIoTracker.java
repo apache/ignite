@@ -28,8 +28,8 @@ public class NoOpIoTracker implements IoTracker {
     public static final IoTracker INSTANCE = new NoOpIoTracker();
 
     /** {@inheritDoc} */
-    @Override public void startTracking() {
-        // No-op.
+    @Override public boolean startTracking() {
+        return false;
     }
 
     /** {@inheritDoc} */

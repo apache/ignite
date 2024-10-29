@@ -160,7 +160,7 @@ public class GridDhtTxPrepareResponse extends GridDistributedTxPrepareResponse {
      * @param invalidPartsByCacheId Map from cache ID to an array of invalid partitions.
      */
     public void invalidPartitionsByCacheId(Map<Integer, Set<Integer>> invalidPartsByCacheId) {
-        this.invalidParts = CU.convertInvalidPartitions(invalidPartsByCacheId);
+        invalidParts = CU.convertInvalidPartitions(invalidPartsByCacheId);
     }
 
     /**
@@ -169,7 +169,7 @@ public class GridDhtTxPrepareResponse extends GridDistributedTxPrepareResponse {
      * @return Collection of entry infos need to be preloaded.
      */
     Collection<GridCacheEntryInfo> preloadEntries() {
-        return preloadEntries == null ? Collections.<GridCacheEntryInfo>emptyList() : preloadEntries;
+        return preloadEntries == null ? Collections.emptyList() : preloadEntries;
     }
 
     /**
@@ -187,12 +187,12 @@ public class GridDhtTxPrepareResponse extends GridDistributedTxPrepareResponse {
     }
 
     /** {@inheritDoc} */
-    @Override public void prepareMarshal(GridCacheSharedContext ctx) throws IgniteCheckedException {
+    @Override public void prepareMarshal(GridCacheSharedContext<?, ?> ctx) throws IgniteCheckedException {
         super.prepareMarshal(ctx);
 
         if (nearEvicted != null) {
             for (IgniteTxKey key : nearEvicted) {
-                GridCacheContext cctx = ctx.cacheContext(key.cacheId());
+                GridCacheContext<?, ?> cctx = ctx.cacheContext(key.cacheId());
 
                 // Can be null if client near cache was removed, in this case assume do not need prepareMarshal.
                 if (cctx != null)
@@ -202,7 +202,7 @@ public class GridDhtTxPrepareResponse extends GridDistributedTxPrepareResponse {
 
         if (preloadEntries != null) {
             for (GridCacheEntryInfo info : preloadEntries) {
-                GridCacheContext cctx = ctx.cacheContext(info.cacheId());
+                GridCacheContext<?, ?> cctx = ctx.cacheContext(info.cacheId());
 
                 info.marshal(cctx);
             }
@@ -210,12 +210,12 @@ public class GridDhtTxPrepareResponse extends GridDistributedTxPrepareResponse {
     }
 
     /** {@inheritDoc} */
-    @Override public void finishUnmarshal(GridCacheSharedContext ctx, ClassLoader ldr) throws IgniteCheckedException {
+    @Override public void finishUnmarshal(GridCacheSharedContext<?, ?> ctx, ClassLoader ldr) throws IgniteCheckedException {
         super.finishUnmarshal(ctx, ldr);
 
         if (nearEvicted != null) {
             for (IgniteTxKey key : nearEvicted) {
-                GridCacheContext cctx = ctx.cacheContext(key.cacheId());
+                GridCacheContext<?, ?> cctx = ctx.cacheContext(key.cacheId());
 
                 key.finishUnmarshal(cctx, ldr);
             }
@@ -223,7 +223,7 @@ public class GridDhtTxPrepareResponse extends GridDistributedTxPrepareResponse {
 
         if (preloadEntries != null) {
             for (GridCacheEntryInfo info : preloadEntries) {
-                GridCacheContext cctx = ctx.cacheContext(info.cacheId());
+                GridCacheContext<?, ?> cctx = ctx.cacheContext(info.cacheId());
 
                 info.unmarshal(cctx, ldr);
             }

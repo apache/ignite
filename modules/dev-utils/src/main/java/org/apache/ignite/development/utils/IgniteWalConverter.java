@@ -80,7 +80,7 @@ public class IgniteWalConverter {
 
         final WalStat stat = params.isPrintStat() ? new WalStat() : null;
 
-        IgniteWalIteratorFactory.IteratorParametersBuilder iteratorParametersBuilder =
+        IgniteWalIteratorFactory.IteratorParametersBuilder iterParametersBuilder =
             new IgniteWalIteratorFactory.IteratorParametersBuilder()
                 .pageSize(params.getPageSize())
                 .binaryMetadataFileStoreDir(params.getBinaryMetadataFileStoreDir())
@@ -88,25 +88,25 @@ public class IgniteWalConverter {
                 .keepBinary(params.isKeepBinary());
 
         if (params.getWalDir() != null)
-            iteratorParametersBuilder.filesOrDirs(params.getWalDir());
+            iterParametersBuilder.filesOrDirs(params.getWalDir());
 
         if (params.getWalArchiveDir() != null)
-            iteratorParametersBuilder.filesOrDirs(params.getWalArchiveDir());
+            iterParametersBuilder.filesOrDirs(params.getWalArchiveDir());
 
         final IgniteWalIteratorFactory factory = new IgniteWalIteratorFactory();
 
         boolean printAlways = F.isEmpty(params.getRecordTypes());
 
-        try (WALIterator stIt = walIterator(factory.iterator(iteratorParametersBuilder), params.getPages())) {
-            String currentWalPath = null;
+        try (WALIterator stIt = walIterator(factory.iterator(iterParametersBuilder), params.getPages())) {
+            String curWalPath = null;
 
             while (stIt.hasNextX()) {
-                final String currentRecordWalPath = getCurrentWalFilePath(stIt);
+                final String curRecordWalPath = getCurrentWalFilePath(stIt);
 
-                if (currentWalPath == null || !currentWalPath.equals(currentRecordWalPath)) {
-                    out.println("File: " + currentRecordWalPath);
+                if (curWalPath == null || !curWalPath.equals(curRecordWalPath)) {
+                    out.println("File: " + curRecordWalPath);
 
-                    currentWalPath = currentRecordWalPath;
+                    curWalPath = curRecordWalPath;
                 }
 
                 IgniteBiTuple<WALPointer, WALRecord> next = stIt.nextX();

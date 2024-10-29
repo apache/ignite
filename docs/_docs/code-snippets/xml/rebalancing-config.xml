@@ -19,33 +19,34 @@
     <!-- tag::ignite-config[] -->
     <bean class="org.apache.ignite.configuration.IgniteConfiguration" id="ignite.cfg">
         <!-- tag::pool-size[] -->
-
         <property name="rebalanceThreadPoolSize" value="4"/>
-
         <!-- end::pool-size[] -->
+        <!-- tag::mode[] -->
         <property name="cacheConfiguration">
             <list>
                 <bean class="org.apache.ignite.configuration.CacheConfiguration">
                     <property name="name" value="mycache"/>
-                    <!-- tag::mode[] -->
                     <!-- enable synchronous rebalance mode -->
                     <property name="rebalanceMode" value="SYNC"/>
-                    <!-- end::mode[] -->
-                    <!-- tag::throttling[] -->
-                    <!-- Set batch size. -->
-                    <property name="rebalanceBatchSize" value="#{2 * 1024 * 1024}"/>
-                    <!-- Set throttle interval. -->
-                    <property name="rebalanceThrottle" value="100"/>
-                    <!-- end::throttling[] -->
                 </bean>
             </list>
         </property>
+        <!-- end::mode[] -->
+        <!-- tag::throttling[] -->
+        <!-- Set batch size. -->
+        <property name="rebalanceBatchSize" value="#{2 * 1024 * 1024}"/>
+        <!-- Set batches prefetch count. -->
+        <property name="rebalanceBatchesPrefetchCount" value="3"/>
+        <!-- Set throttle interval. -->
+        <property name="rebalanceThrottle" value="100"/>
+        <!-- end::throttling[] -->
+
         <!-- tag::discovery[] -->
         <!-- Explicitly configure TCP discovery SPI to provide list of initial nodes. -->
         <property name="discoverySpi">
             <bean class="org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi">
                 <property name="ipFinder">
-                   
+
                     <!-- Uncomment static IP finder to enable static-based discovery of initial nodes. -->
                     <bean class="org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder">
                         <!--bean class="org.apache.ignite.spi.discovery.tcp.ipfinder.multicast.TcpDiscoveryMulticastIpFinder"-->

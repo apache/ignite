@@ -28,6 +28,7 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.cache.CacheWriteSynchronizationMode;
 import org.apache.ignite.internal.cluster.ClusterTopologyServerNotFoundException;
 import org.apache.ignite.internal.processors.cache.CacheStoppedException;
+import org.apache.ignite.internal.processors.cache.GridCacheAdapter;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
@@ -59,9 +60,6 @@ public class IgniteTxImplicitSingleStateImpl extends IgniteTxLocalStateAdapter {
     /** */
     private boolean recovery;
 
-    /** */
-    private volatile boolean useMvccCaching;
-
     /** {@inheritDoc} */
     @Override public void addActiveCache(GridCacheContext ctx, boolean recovery, IgniteTxAdapter tx) {
         assert cacheCtx == null : "Cache already set [cur=" + cacheCtx.name() + ", new=" + ctx.name() + ']';
@@ -71,18 +69,11 @@ public class IgniteTxImplicitSingleStateImpl extends IgniteTxLocalStateAdapter {
         this.recovery = recovery;
 
         tx.activeCachesDeploymentEnabled(cacheCtx.deploymentEnabled());
-
-        useMvccCaching = cacheCtx.mvccEnabled() && (cacheCtx.isDrEnabled() || cacheCtx.hasContinuousQueryListeners(tx));
     }
 
     /** {@inheritDoc} */
     @Nullable @Override public GridIntList cacheIds() {
         return GridIntList.asList(cacheCtx.cacheId());
-    }
-
-    /** {@inheritDoc} */
-    @Nullable @Override public GridCacheContext singleCacheContext(GridCacheSharedContext cctx) {
-        return cacheCtx;
     }
 
     /** {@inheritDoc} */
@@ -104,11 +95,16 @@ public class IgniteTxImplicitSingleStateImpl extends IgniteTxLocalStateAdapter {
     }
 
     /** {@inheritDoc} */
-    @Override public void awaitLastFuture(GridCacheSharedContext ctx) {
+    @Override public void awaitLastFuture() {
         if (cacheCtx == null)
             return;
 
-        cacheCtx.cache().awaitLastFut();
+        cacheCtx.cache().lastAsyncFuture().await();
+    }
+
+    /** {@inheritDoc} */
+    @Override public GridCacheAdapter.FutureHolder lastAsyncFuture() {
+        return cacheCtx != null ? cacheCtx.cache().lastAsyncFuture() : null;
     }
 
     /** {@inheritDoc} */
@@ -314,20 +310,6 @@ public class IgniteTxImplicitSingleStateImpl extends IgniteTxLocalStateAdapter {
     /** {@inheritDoc} */
     @Override public IgniteTxEntry singleWrite() {
         return entry != null ? entry.get(0) : null;
-    }
-
-    /** {@inheritDoc} */
-    @Override public boolean mvccEnabled() {
-        GridCacheContext ctx0 = cacheCtx;
-
-        return ctx0 != null && ctx0.mvccEnabled();
-    }
-
-    /** {@inheritDoc} */
-    @Override public boolean useMvccCaching(int cacheId) {
-        assert cacheCtx == null || cacheCtx.cacheId() == cacheId;
-
-        return useMvccCaching;
     }
 
     /** {@inheritDoc} */

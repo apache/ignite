@@ -25,7 +25,7 @@ public class SnapshotFinishedFutureTask extends AbstractSnapshotFutureTask<Void>
      * @param e Finished snapshot task future with particular exception.
      */
     public SnapshotFinishedFutureTask(IgniteCheckedException e) {
-        super(null, null, null, null, null, null, null, null);
+        super(null, null, null, null, null, null);
 
         onDone(e);
     }

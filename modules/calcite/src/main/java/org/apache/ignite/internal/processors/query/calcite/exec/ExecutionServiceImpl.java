@@ -28,9 +28,9 @@ import java.util.stream.Collectors;
 import org.apache.calcite.plan.Context;
 import org.apache.calcite.plan.Contexts;
 import org.apache.calcite.plan.RelOptUtil;
+import org.apache.calcite.rel.core.TableModify;
 import org.apache.calcite.sql.SqlInsert;
 import org.apache.calcite.sql.SqlKind;
-import org.apache.calcite.tools.Frameworks;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.cache.query.FieldsQueryCursor;
@@ -47,6 +47,7 @@ import org.apache.ignite.internal.processors.cache.CacheObjectUtils;
 import org.apache.ignite.internal.processors.cache.CacheObjectValueContext;
 import org.apache.ignite.internal.processors.cache.GridCachePartitionExchangeManager;
 import org.apache.ignite.internal.processors.cache.QueryCursorImpl;
+import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxLocal;
 import org.apache.ignite.internal.processors.cache.query.CacheQueryType;
 import org.apache.ignite.internal.processors.cache.query.GridCacheQueryType;
 import org.apache.ignite.internal.processors.cache.query.IgniteQueryErrorCode;
@@ -70,31 +71,39 @@ import org.apache.ignite.internal.processors.query.calcite.exec.tracker.MemoryTr
 import org.apache.ignite.internal.processors.query.calcite.exec.tracker.NoOpIoTracker;
 import org.apache.ignite.internal.processors.query.calcite.exec.tracker.NoOpMemoryTracker;
 import org.apache.ignite.internal.processors.query.calcite.exec.tracker.PerformanceStatisticsIoTracker;
+import org.apache.ignite.internal.processors.query.calcite.exec.tracker.QueryMemoryTracker;
 import org.apache.ignite.internal.processors.query.calcite.message.ErrorMessage;
 import org.apache.ignite.internal.processors.query.calcite.message.MessageService;
 import org.apache.ignite.internal.processors.query.calcite.message.MessageType;
 import org.apache.ignite.internal.processors.query.calcite.message.QueryStartRequest;
 import org.apache.ignite.internal.processors.query.calcite.message.QueryStartResponse;
 import org.apache.ignite.internal.processors.query.calcite.metadata.AffinityService;
-import org.apache.ignite.internal.processors.query.calcite.metadata.ColocationMappingException;
 import org.apache.ignite.internal.processors.query.calcite.metadata.FragmentDescription;
 import org.apache.ignite.internal.processors.query.calcite.metadata.FragmentMapping;
-import org.apache.ignite.internal.processors.query.calcite.metadata.FragmentMappingException;
 import org.apache.ignite.internal.processors.query.calcite.metadata.MappingService;
 import org.apache.ignite.internal.processors.query.calcite.metadata.RemoteException;
 import org.apache.ignite.internal.processors.query.calcite.prepare.BaseQueryContext;
 import org.apache.ignite.internal.processors.query.calcite.prepare.CacheKey;
 import org.apache.ignite.internal.processors.query.calcite.prepare.DdlPlan;
+import org.apache.ignite.internal.processors.query.calcite.prepare.ExecutionPlan;
 import org.apache.ignite.internal.processors.query.calcite.prepare.ExplainPlan;
 import org.apache.ignite.internal.processors.query.calcite.prepare.FieldsMetadataImpl;
 import org.apache.ignite.internal.processors.query.calcite.prepare.Fragment;
 import org.apache.ignite.internal.processors.query.calcite.prepare.FragmentPlan;
+import org.apache.ignite.internal.processors.query.calcite.prepare.IgniteRelShuttle;
 import org.apache.ignite.internal.processors.query.calcite.prepare.MappingQueryContext;
 import org.apache.ignite.internal.processors.query.calcite.prepare.MultiStepPlan;
 import org.apache.ignite.internal.processors.query.calcite.prepare.PrepareServiceImpl;
 import org.apache.ignite.internal.processors.query.calcite.prepare.QueryPlan;
 import org.apache.ignite.internal.processors.query.calcite.prepare.QueryPlanCache;
 import org.apache.ignite.internal.processors.query.calcite.prepare.ddl.CreateTableCommand;
+import org.apache.ignite.internal.processors.query.calcite.rel.IgniteIndexBound;
+import org.apache.ignite.internal.processors.query.calcite.rel.IgniteIndexCount;
+import org.apache.ignite.internal.processors.query.calcite.rel.IgniteIndexScan;
+import org.apache.ignite.internal.processors.query.calcite.rel.IgniteRel;
+import org.apache.ignite.internal.processors.query.calcite.rel.IgniteTableModify;
+import org.apache.ignite.internal.processors.query.calcite.rel.IgniteTableScan;
+import org.apache.ignite.internal.processors.query.calcite.schema.IgniteTable;
 import org.apache.ignite.internal.processors.query.calcite.schema.SchemaHolder;
 import org.apache.ignite.internal.processors.query.calcite.type.IgniteTypeFactory;
 import org.apache.ignite.internal.processors.query.calcite.util.AbstractService;
@@ -110,7 +119,6 @@ import org.jetbrains.annotations.Nullable;
 
 import static java.util.Collections.singletonList;
 import static org.apache.ignite.events.EventType.EVT_CACHE_QUERY_OBJECT_READ;
-import static org.apache.ignite.internal.processors.query.calcite.CalciteQueryProcessor.FRAMEWORK_CONFIG;
 import static org.apache.ignite.internal.processors.query.calcite.externalize.RelJsonReader.fromJson;
 
 /**
@@ -472,11 +480,7 @@ public class ExecutionServiceImpl<Row> extends AbstractService implements Execut
     private BaseQueryContext createQueryContext(Context parent, @Nullable String schema) {
         return BaseQueryContext.builder()
             .parentContext(parent)
-            .frameworkConfig(
-                Frameworks.newConfigBuilder(FRAMEWORK_CONFIG)
-                    .defaultSchema(schemaHolder().schema(schema))
-                    .build()
-            )
+            .defaultSchema(schemaHolder().schema(schema))
             .logger(log)
             .build();
     }
@@ -548,7 +552,7 @@ public class ExecutionServiceImpl<Row> extends AbstractService implements Execut
             IgniteTypeFactory typeFactory = qry.context().typeFactory();
 
             resCur.fieldsMeta(new FieldsMetadataImpl(RelOptUtil.createDmlRowType(
-                SqlKind.INSERT, typeFactory), null).queryFieldsMetadata(typeFactory));
+                SqlKind.INSERT, typeFactory), null, null).queryFieldsMetadata(typeFactory));
 
             return resCur;
         }
@@ -561,21 +565,17 @@ public class ExecutionServiceImpl<Row> extends AbstractService implements Execut
     ) {
         qry.mapping();
 
-        MappingQueryContext mapCtx = Commons.mapContext(locNodeId, topologyVersion(), qry.context().isLocal());
+        Map<String, Object> qryParams = Commons.parametersMap(qry.parameters());
 
-        plan.init(mappingSvc, mapCtx);
+        MappingQueryContext mapCtx = Commons.mapContext(locNodeId, topologyVersion(), qry.context(), qryParams);
 
-        List<Fragment> fragments = plan.fragments();
+        ExecutionPlan execPlan = plan.init(mappingSvc, partSvc, mapCtx);
 
-        if (!F.isEmpty(qry.context().partitions())) {
-            fragments = Commons.transform(fragments, f -> {
-                try {
-                    return f.filterByPartitions(qry.context().partitions());
-                }
-                catch (ColocationMappingException e) {
-                    throw new FragmentMappingException("Failed to calculate physical distribution", f, f.root(), e);
-                }
-            });
+        List<Fragment> fragments = execPlan.fragments();
+
+        if (ctx.security().enabled()) {
+            for (Fragment fragment : fragments)
+                checkPermissions(fragment.root());
         }
 
         // Local execution
@@ -584,13 +584,13 @@ public class ExecutionServiceImpl<Row> extends AbstractService implements Execut
         if (U.assertionsEnabled()) {
             assert fragment != null;
 
-            FragmentMapping mapping = plan.mapping(fragment);
+            FragmentMapping mapping = execPlan.mapping(fragment);
 
             assert mapping != null;
 
             List<UUID> nodes = mapping.nodeIds();
 
-            assert nodes != null && nodes.size() == 1 && F.first(nodes).equals(localNodeId())
+            assert nodes != null && (nodes.size() == 1 && F.first(nodes).equals(localNodeId()) || nodes.isEmpty())
                     : "nodes=" + nodes + ", localNode=" + localNodeId();
         }
 
@@ -603,9 +603,13 @@ public class ExecutionServiceImpl<Row> extends AbstractService implements Execut
 
         FragmentDescription fragmentDesc = new FragmentDescription(
             fragment.fragmentId(),
-            plan.mapping(fragment),
-            plan.target(fragment),
-            plan.remotes(fragment));
+            execPlan.mapping(fragment),
+            execPlan.target(fragment),
+            execPlan.remotes(fragment));
+
+        MemoryTracker qryMemoryTracker = qry.createMemoryTracker(memoryTracker, cfg.getQueryMemoryQuota());
+
+        final GridNearTxLocal userTx = Commons.queryTransaction(qry.context(), ctx.cache().context());
 
         ExecutionContext<Row> ectx = new ExecutionContext<>(
             qry.context(),
@@ -616,15 +620,16 @@ public class ExecutionServiceImpl<Row> extends AbstractService implements Execut
             mapCtx.topologyVersion(),
             fragmentDesc,
             handler,
-            qry.createMemoryTracker(memoryTracker, cfg.getQueryMemoryQuota()),
+            qryMemoryTracker,
             createIoTracker(locNodeId, qry.localQueryId()),
             timeout,
-            Commons.parametersMap(qry.parameters()));
+            qryParams,
+            userTx == null ? null : ExecutionContext.transactionChanges(userTx.writeEntries()));
 
         Node<Row> node = new LogicalRelImplementor<>(ectx, partitionService(), mailboxRegistry(),
             exchangeService(), failureProcessor()).go(fragment.root());
 
-        qry.run(ectx, plan, node);
+        qry.run(ectx, execPlan, plan.fieldsMetadata(), node);
 
         Map<UUID, Long> fragmentsPerNode = fragments.stream()
             .skip(1)
@@ -636,9 +641,9 @@ public class ExecutionServiceImpl<Row> extends AbstractService implements Execut
             fragment = fragments.get(i);
             fragmentDesc = new FragmentDescription(
                 fragment.fragmentId(),
-                plan.mapping(fragment),
-                plan.target(fragment),
-                plan.remotes(fragment));
+                execPlan.mapping(fragment),
+                execPlan.target(fragment),
+                execPlan.remotes(fragment));
 
             Throwable ex = null;
             byte[] parametersMarshalled = null;
@@ -658,7 +663,8 @@ public class ExecutionServiceImpl<Row> extends AbstractService implements Execut
                             fragmentsPerNode.get(nodeId).intValue(),
                             qry.parameters(),
                             parametersMarshalled,
-                            timeout
+                            timeout,
+                            ectx.getQryTxEntries()
                         );
 
                         messageService().send(nodeId, req);
@@ -748,7 +754,47 @@ public class ExecutionServiceImpl<Row> extends AbstractService implements Execut
         Iterator<List<?>> it = new ConvertingClosableIterator<>(iteratorsHolder().iterator(qry.iterator()), ectx,
             fieldConverter, rowConverter, onClose);
 
-        return new ListFieldsQueryCursor<>(plan, it, ectx);
+        // Make yet another tracking layer for cursor.getAll(), so tracking hierarchy will look like:
+        // Row tracker -> Cursor memory tracker -> Query memory tracker -> Global memory tracker.
+        // It's required, since query memory tracker can be closed concurrently during getAll() and
+        // tracked data for cursor can be lost without additional tracker.
+        MemoryTracker curMemoryTracker = QueryMemoryTracker.create(qryMemoryTracker, cfg.getQueryMemoryQuota());
+
+        return new ListFieldsQueryCursor<>(plan, it, ectx, curMemoryTracker);
+    }
+
+    /** */
+    private void checkPermissions(IgniteRel root) {
+        IgniteRelShuttle shuttle = new IgniteRelShuttle() {
+            @Override public IgniteRel visit(IgniteTableModify rel) {
+                return authorize(rel, rel.getOperation() == TableModify.Operation.DELETE ?
+                    IgniteTable.Operation.REMOVE : IgniteTable.Operation.PUT);
+            }
+
+            @Override public IgniteRel visit(IgniteTableScan rel) {
+                return authorize(rel, IgniteTable.Operation.READ);
+            }
+
+            @Override public IgniteRel visit(IgniteIndexScan rel) {
+                return authorize(rel, IgniteTable.Operation.READ);
+            }
+
+            @Override public IgniteRel visit(IgniteIndexCount rel) {
+                return authorize(rel, IgniteTable.Operation.READ);
+            }
+
+            @Override public IgniteRel visit(IgniteIndexBound rel) {
+                return authorize(rel, IgniteTable.Operation.READ);
+            }
+
+            private IgniteRel authorize(IgniteRel rel, IgniteTable.Operation op) {
+                rel.getTable().unwrap(IgniteTable.class).authorize(op);
+
+                return rel;
+            }
+        };
+
+        shuttle.visit(root);
     }
 
     /** */
@@ -826,7 +872,8 @@ public class ExecutionServiceImpl<Row> extends AbstractService implements Execut
                 qry.createMemoryTracker(memoryTracker, cfg.getQueryMemoryQuota()),
                 createIoTracker(nodeId, msg.originatingQryId()),
                 msg.timeout(),
-                Commons.parametersMap(msg.parameters())
+                Commons.parametersMap(msg.parameters()),
+                msg.queryTransactionEntries()
             );
 
             executeFragment(qry, (FragmentPlan)qryPlan, ectx);

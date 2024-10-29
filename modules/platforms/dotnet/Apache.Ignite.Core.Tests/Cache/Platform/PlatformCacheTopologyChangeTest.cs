@@ -465,6 +465,32 @@ namespace Apache.Ignite.Core.Tests.Cache.Platform
         }
 
         /// <summary>
+        /// Tests platform cache with negative cache ID updated correctly on topology change.
+        /// </summary>
+        [Test]
+        public void TestPlatformCacheWithNegativeId()
+        {
+            InitNodes(1);
+
+            var cacheName = "negative_cache_id";
+
+            var cacheConfiguration = new CacheConfiguration(cacheName)
+            {
+                PlatformCacheConfiguration = new PlatformCacheConfiguration()
+            };
+            
+            var cache = _ignite[0].GetOrCreateCache<int, Foo>(cacheConfiguration);
+
+            var key = 0;
+            var val = new Foo(-1);
+            cache[key] = val;
+
+            InitNode(1);
+
+            Assert.AreEqual(val, cache[key]);
+        }
+
+        /// <summary>
         /// Inits a number of grids.
         /// </summary>
         private void InitNodes(int count, bool serverNear = true, int backups = 0)

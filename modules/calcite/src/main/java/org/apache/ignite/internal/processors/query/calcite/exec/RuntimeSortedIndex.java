@@ -18,7 +18,6 @@ package org.apache.ignite.internal.processors.query.calcite.exec;
 
 import java.util.ArrayList;
 import java.util.Comparator;
-import java.util.List;
 import java.util.Objects;
 import org.apache.calcite.rel.RelCollation;
 import org.apache.calcite.rel.type.RelDataType;
@@ -26,7 +25,6 @@ import org.apache.ignite.internal.cache.query.index.sorted.inline.IndexQueryCont
 import org.apache.ignite.internal.processors.query.calcite.exec.exp.RangeIterable;
 import org.apache.ignite.internal.util.lang.GridCursor;
 import org.apache.ignite.internal.util.typedef.F;
-import org.jetbrains.annotations.Nullable;
 
 /**
  * Runtime sorted index.
@@ -90,7 +88,7 @@ public class RuntimeSortedIndex<Row> implements RuntimeIndex<Row>, TreeIndex<Row
         Row lowerRow = (lowerBound == null) ? null : lower;
         Row upperRow = (upperBound == null) ? null : upper;
 
-        return new Cursor(rows, lowerRow, upperRow, lowerInclude, upperInclude);
+        return new SortedListRangeCursor<>(comp, rows, lowerRow, upperRow, lowerInclude, upperInclude);
     }
 
     /**
@@ -102,83 +100,6 @@ public class RuntimeSortedIndex<Row> implements RuntimeIndex<Row>, TreeIndex<Row
         RangeIterable<Row> ranges
     ) {
         return new IndexScan(rowType, this, ranges);
-    }
-
-    /**
-     * Cursor to navigate through a sorted list with duplicates.
-     */
-    private class Cursor implements GridCursor<Row> {
-        /** List of rows. */
-        private final List<Row> rows;
-
-        /** Upper bound. */
-        private final Row upper;
-
-        /** Include upper bound. */
-        private final boolean includeUpper;
-
-        /** Current row. */
-        private Row row;
-
-        /** Current index of list element. */
-        private int idx;
-
-        /**
-         * @param rows List of rows.
-         * @param lower Lower bound.
-         * @param upper Upper bound.
-         * @param lowerInclude {@code True} for inclusive lower bound.
-         * @param upperInclude {@code True} for inclusive upper bound.
-         */
-        Cursor(List<Row> rows, @Nullable Row lower, @Nullable Row upper, boolean lowerInclude, boolean upperInclude) {
-            this.rows = rows;
-            this.upper = upper;
-            this.includeUpper = upperInclude;
-
-            idx = lower == null ? 0 : lowerBound(rows, lower, lowerInclude);
-        }
-
-        /**
-         * Searches the lower bound (skipping duplicates) using a binary search.
-         *
-         * @param rows List of rows.
-         * @param bound Lower bound.
-         * @return Lower bound position in the list.
-         */
-        private int lowerBound(List<Row> rows, Row bound, boolean includeBound) {
-            int low = 0, high = rows.size() - 1, idx = -1;
-
-            while (low <= high) {
-                int mid = (high - low) / 2 + low;
-                int compRes = comp.compare(rows.get(mid), bound);
-
-                if (compRes > 0)
-                    high = mid - 1;
-                else if (compRes == 0 && includeBound) {
-                    idx = mid;
-                    high = mid - 1;
-                }
-                else
-                    low = mid + 1;
-            }
-
-            return idx == -1 ? low : idx;
-        }
-
-        /** {@inheritDoc} */
-        @Override public boolean next() {
-            if (idx == rows.size() || (upper != null && comp.compare(upper, rows.get(idx)) < (includeUpper ? 0 : 1)))
-                return false;
-
-            row = rows.get(idx++);
-
-            return true;
-        }
-
-        /** {@inheritDoc} */
-        @Override public Row get() {
-            return row;
-        }
     }
 
     /**

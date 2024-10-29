@@ -103,11 +103,12 @@ public class CacheReadThroughRestartSelfTest extends GridCacheAbstractSelfTest {
 
         Ignite ignite = grid(1);
 
-        cache = ignite.cache(DEFAULT_CACHE_NAME).withAllowAtomicOpsInTx();
+        cache = ignite.cache(DEFAULT_CACHE_NAME);
 
         for (TransactionConcurrency txConcurrency : TransactionConcurrency.values()) {
             for (TransactionIsolation txIsolation : TransactionIsolation.values()) {
-                try (Transaction tx = ignite.transactions().txStart(txConcurrency, txIsolation, 100000, 1000)) {
+                try (Transaction tx = cache.getConfiguration(CacheConfiguration.class).getAtomicityMode() == TRANSACTIONAL ?
+                    ignite.transactions().txStart(txConcurrency, txIsolation, 100000, 1000) : null) {
                     for (int k = 0; k < 1000; k++) {
                         String key = "key" + k;
 
@@ -121,7 +122,8 @@ public class CacheReadThroughRestartSelfTest extends GridCacheAbstractSelfTest {
                         }
                     }
 
-                    tx.commit();
+                    if (tx != null)
+                        tx.commit();
                 }
             }
         }

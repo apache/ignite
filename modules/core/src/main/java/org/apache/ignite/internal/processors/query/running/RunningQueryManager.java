@@ -47,7 +47,7 @@ import org.apache.ignite.internal.managers.systemview.walker.SqlQueryHistoryView
 import org.apache.ignite.internal.managers.systemview.walker.SqlQueryViewWalker;
 import org.apache.ignite.internal.processors.cache.query.GridCacheQueryType;
 import org.apache.ignite.internal.processors.closure.GridClosureProcessor;
-import org.apache.ignite.internal.processors.metric.MetricRegistry;
+import org.apache.ignite.internal.processors.metric.MetricRegistryImpl;
 import org.apache.ignite.internal.processors.metric.impl.AtomicLongMetric;
 import org.apache.ignite.internal.processors.metric.impl.LongAdderMetric;
 import org.apache.ignite.internal.processors.query.GridQueryCancel;
@@ -195,7 +195,7 @@ public class RunningQueryManager {
             qryHistTracker.queryHistory().values(),
             SqlQueryHistoryView::new);
 
-        MetricRegistry userMetrics = ctx.metric().registry(SQL_USER_QUERIES_REG_NAME);
+        MetricRegistryImpl userMetrics = ctx.metric().registry(SQL_USER_QUERIES_REG_NAME);
 
         successQrsCnt = userMetrics.longAdderMetric("success",
             "Number of successfully executed user queries that have been started on this node.");
@@ -270,7 +270,7 @@ public class RunningQueryManager {
             qry,
             qryType,
             schemaName,
-            System.currentTimeMillis(),
+            U.currentTimeMillis(),
             ctx.performanceStatistics().enabled() ? System.nanoTime() : 0,
             cancel,
             loc,
@@ -411,7 +411,7 @@ public class RunningQueryManager {
                     qry.queryType(),
                     qry.schemaName(),
                     qry.startTime(),
-                    System.currentTimeMillis(),
+                    U.currentTimeMillis(),
                     qry.local(),
                     qry.enforceJoinOrder(),
                     qry.lazy(),
@@ -523,7 +523,7 @@ public class RunningQueryManager {
     public Collection<GridRunningQueryInfo> runningQueries(long duration) {
         Collection<GridRunningQueryInfo> res = new ArrayList<>();
 
-        long curTime = System.currentTimeMillis();
+        long curTime = U.currentTimeMillis();
 
         for (GridRunningQueryInfo runningQryInfo : runs.values()) {
             if (curTime - runningQryInfo.startTime() > duration)
@@ -598,10 +598,10 @@ public class RunningQueryManager {
 
                 cancellationRuns.put(reqId, fut);
 
-                final GridQueryKillRequest request = new GridQueryKillRequest(reqId, queryId, async);
+                final GridQueryKillRequest req = new GridQueryKillRequest(reqId, queryId, async);
 
                 if (node.isLocal() && !async)
-                    locNodeMsgHnd.apply(node, request);
+                    locNodeMsgHnd.apply(node, req);
                 else {
                     try {
                         if (node.isLocal()) {
@@ -611,7 +611,7 @@ public class RunningQueryManager {
                                         return;
 
                                     try {
-                                        locNodeMsgHnd.apply(node, request);
+                                        locNodeMsgHnd.apply(node, req);
                                     }
                                     finally {
                                         busyLock.leaveBusy();
@@ -620,7 +620,7 @@ public class RunningQueryManager {
                             }, GridIoPolicy.MANAGEMENT_POOL);
                         }
                         else {
-                            ctx.io().sendGeneric(node, GridTopic.TOPIC_QUERY, GridTopic.TOPIC_QUERY.ordinal(), request,
+                            ctx.io().sendGeneric(node, GridTopic.TOPIC_QUERY, GridTopic.TOPIC_QUERY.ordinal(), req,
                                 GridIoPolicy.MANAGEMENT_POOL);
                         }
                     }
@@ -755,20 +755,20 @@ public class RunningQueryManager {
      * @param err Error message
      */
     private void sendKillResponse(GridQueryKillRequest request, ClusterNode node, @Nullable String err) {
-        GridQueryKillResponse response = new GridQueryKillResponse(request.requestId(), err);
+        GridQueryKillResponse res = new GridQueryKillResponse(request.requestId(), err);
 
         if (node.isLocal()) {
-            locNodeMsgHnd.apply(node, response);
+            locNodeMsgHnd.apply(node, res);
 
             return;
         }
 
         try {
-            ctx.io().sendGeneric(node, GridTopic.TOPIC_QUERY, GridTopic.TOPIC_QUERY.ordinal(), response,
+            ctx.io().sendGeneric(node, GridTopic.TOPIC_QUERY, GridTopic.TOPIC_QUERY.ordinal(), res,
                 GridIoPolicy.MANAGEMENT_POOL);
         }
         catch (IgniteCheckedException e) {
-            U.warn(log, "Failed to send message [node=" + node + ", msg=" + response +
+            U.warn(log, "Failed to send message [node=" + node + ", msg=" + res +
                 ", errMsg=" + e.getMessage() + "]");
 
             U.warn(log, "Response on query cancellation wasn't send back: [qryId=" + request.nodeQryId() + "]");

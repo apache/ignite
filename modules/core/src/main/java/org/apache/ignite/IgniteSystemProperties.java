@@ -90,7 +90,6 @@ import static org.apache.ignite.internal.processors.cache.distributed.dht.preloa
 import static org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPreloader.DFLT_PRELOAD_RESEND_TIMEOUT;
 import static org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtLocalPartition.DFLT_ATOMIC_CACHE_DELETE_HISTORY_SIZE;
 import static org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtLocalPartition.DFLT_CACHE_REMOVE_ENTRIES_TTL;
-import static org.apache.ignite.internal.processors.cache.mvcc.MvccCachingManager.DFLT_MVCC_TX_SIZE_CACHING_THRESHOLD;
 import static org.apache.ignite.internal.processors.cache.persistence.GridCacheDatabaseSharedManager.DFLT_DEFRAGMENTATION_REGION_SIZE_PERCENTAGE;
 import static org.apache.ignite.internal.processors.cache.persistence.GridCacheDatabaseSharedManager.DFLT_PDS_WAL_REBALANCE_THRESHOLD;
 import static org.apache.ignite.internal.processors.cache.persistence.checkpoint.CheckpointHistory.DFLT_PDS_MAX_CHECKPOINT_MEMORY_HISTORY_SIZE;
@@ -597,12 +596,11 @@ public final class IgniteSystemProperties {
     public static final String IGNITE_PERFORMANCE_SUGGESTIONS_DISABLED = "IGNITE_PERFORMANCE_SUGGESTIONS_DISABLED";
 
     /**
-     * Flag indicating whether atomic operations allowed to be used inside transactions.
-     * Since 2.15.0 atomic operations inside transactions are not allowed by default.
+     * Flag indicating whether atomic and transactional caches are allowed inside the same cache group.
+     * Since 2.16.0 mixed cache groups are not allowed by default.
      */
-    @SystemProperty(value = "Allows atomic operations inside transactions",
-        defaults = "false")
-    public static final String IGNITE_ALLOW_ATOMIC_OPS_IN_TX = "IGNITE_ALLOW_ATOMIC_OPS_IN_TX";
+    @SystemProperty(value = "Allows mixed cache groups", defaults = "false")
+    public static final String IGNITE_ALLOW_MIXED_CACHE_GROUPS = "IGNITE_ALLOW_MIXED_CACHE_GROUPS";
 
     /**
      * Atomic cache deferred update response buffer size.
@@ -1437,6 +1435,12 @@ public final class IgniteSystemProperties {
     public static final String IGNITE_BPLUS_TREE_LOCK_RETRIES = "IGNITE_BPLUS_TREE_LOCK_RETRIES";
 
     /**
+     * Disables secondary indexes B+Tree metrics.
+     */
+    @SystemProperty(value = "Disables secondary indexes B+Tree metrics", defaults = "false")
+    public static final String IGNITE_BPLUS_TREE_DISABLE_METRICS = "IGNITE_BPLUS_TREE_DISABLE_METRICS";
+
+    /**
      * Amount of memory reserved in the heap at node start, which can be dropped to increase the chances of success when
      * handling OutOfMemoryError.
      *
@@ -1550,12 +1554,12 @@ public final class IgniteSystemProperties {
 
     /**
      * When set to {@code true}, Ignite will allow execute DML operation (MERGE|INSERT|UPDATE|DELETE)
-     * within transaction for non MVCC mode.
+     * within transaction.
      *
      * Default is {@code false}.
      */
     @SystemProperty("When set to true, Ignite will allow executing DML operation " +
-        "(MERGE|INSERT|UPDATE|DELETE) within transactions for non MVCC mode")
+        "(MERGE|INSERT|UPDATE|DELETE) within transactions")
     public static final String IGNITE_ALLOW_DML_INSIDE_TRANSACTION = "IGNITE_ALLOW_DML_INSIDE_TRANSACTION";
 
     /**
@@ -1571,14 +1575,6 @@ public final class IgniteSystemProperties {
     @SystemProperty(value = "Number of attempts to reconnect to ZooKeeper", type = Integer.class,
         defaults = "10")
     public static final String IGNITE_ZOOKEEPER_DISCOVERY_MAX_RETRY_COUNT = "IGNITE_ZOOKEEPER_DISCOVERY_MAX_RETRY_COUNT";
-
-    /**
-     * Maximum number for cached MVCC transaction updates. This caching is used for continuous query with MVCC caches.
-     */
-    @SystemProperty(value = "Maximum number for cached MVCC transaction updates. This caching is used " +
-        "for continuous query with MVCC caches", type = Integer.class,
-        defaults = "" + DFLT_MVCC_TX_SIZE_CACHING_THRESHOLD)
-    public static final String IGNITE_MVCC_TX_SIZE_CACHING_THRESHOLD = "IGNITE_MVCC_TX_SIZE_CACHING_THRESHOLD";
 
     /**
      * Try reuse memory on deactivation. Useful in case of huge page memory region size.
@@ -1702,7 +1698,7 @@ public final class IgniteSystemProperties {
     /**
      * Flag to disable memory optimization:
      *  BitSets instead of HashSets to store partitions.
-     *  When number of backups per partion is > IGNITE_AFFINITY_BACKUPS_THRESHOLD we use HashMap to improve contains()
+     *  When number of backups per partion is &gt; IGNITE_AFFINITY_BACKUPS_THRESHOLD we use HashMap to improve contains()
      * which leads to extra memory consumption, otherwise we use view on the
      * list of cluster nodes to reduce memory consumption on redundant data structures.
      */

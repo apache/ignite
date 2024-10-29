@@ -74,7 +74,6 @@ public class GridNearAtomicSingleUpdateFuture extends GridNearAtomicAbstractUpda
      * @param val Values or transform closure.
      * @param invokeArgs Optional arguments for entry processor.
      * @param retval Return value require flag.
-     * @param rawRetval {@code True} if should return {@code GridCacheReturn} as future result.
      * @param expiryPlc Expiry policy explicitly specified for cache operation.
      * @param filter Entry filter.
      * @param taskNameHash Task name hash code.
@@ -92,7 +91,6 @@ public class GridNearAtomicSingleUpdateFuture extends GridNearAtomicAbstractUpda
         @Nullable Object val,
         @Nullable Object[] invokeArgs,
         final boolean retval,
-        final boolean rawRetval,
         @Nullable ExpiryPolicy expiryPlc,
         final CacheEntryPredicate[] filter,
         int taskNameHash,
@@ -107,7 +105,6 @@ public class GridNearAtomicSingleUpdateFuture extends GridNearAtomicAbstractUpda
             op,
             invokeArgs,
             retval,
-            rawRetval,
             expiryPlc,
             filter,
             taskNameHash,

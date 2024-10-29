@@ -80,8 +80,6 @@ import org.apache.ignite.internal.pagemem.wal.record.IndexRenameRootPageRecord;
 import org.apache.ignite.internal.pagemem.wal.record.MasterKeyChangeRecordV2;
 import org.apache.ignite.internal.pagemem.wal.record.MemoryRecoveryRecord;
 import org.apache.ignite.internal.pagemem.wal.record.MetastoreDataRecord;
-import org.apache.ignite.internal.pagemem.wal.record.MvccDataEntry;
-import org.apache.ignite.internal.pagemem.wal.record.MvccTxRecord;
 import org.apache.ignite.internal.pagemem.wal.record.PageSnapshot;
 import org.apache.ignite.internal.pagemem.wal.record.PartitionClearingStartRecord;
 import org.apache.ignite.internal.pagemem.wal.record.ReencryptionStartRecord;
@@ -102,8 +100,6 @@ import org.apache.ignite.internal.processors.cache.IgniteCacheOffheapManager;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionsExchangeFuture;
 import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtLocalPartition;
 import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionState;
-import org.apache.ignite.internal.processors.cache.mvcc.txlog.TxLog;
-import org.apache.ignite.internal.processors.cache.mvcc.txlog.TxState;
 import org.apache.ignite.internal.processors.cache.persistence.checkpoint.CheckpointEntry;
 import org.apache.ignite.internal.processors.cache.persistence.checkpoint.CheckpointHistory;
 import org.apache.ignite.internal.processors.cache.persistence.checkpoint.CheckpointHistoryResult;
@@ -159,7 +155,6 @@ import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.maintenance.MaintenanceRegistry;
 import org.apache.ignite.maintenance.MaintenanceTask;
 import org.apache.ignite.spi.systemview.view.MetastorageView;
-import org.apache.ignite.transactions.TransactionState;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -173,7 +168,6 @@ import static org.apache.ignite.IgniteSystemProperties.IGNITE_PDS_WAL_REBALANCE_
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_PREFER_WAL_REBALANCE;
 import static org.apache.ignite.IgniteSystemProperties.getBoolean;
 import static org.apache.ignite.IgniteSystemProperties.getInteger;
-import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL_SNAPSHOT;
 import static org.apache.ignite.internal.cluster.DistributedConfigurationUtils.makeUpdateListener;
 import static org.apache.ignite.internal.cluster.DistributedConfigurationUtils.setDefaultValue;
 import static org.apache.ignite.internal.pagemem.PageIdUtils.partId;
@@ -361,7 +355,8 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
 
     /** WAL rebalance threshold. */
     private final SimpleDistributedProperty<Integer> historicalRebalanceThreshold =
-        new SimpleDistributedProperty<>(HISTORICAL_REBALANCE_THRESHOLD_DMS_KEY, Integer::parseInt);
+        new SimpleDistributedProperty<>(HISTORICAL_REBALANCE_THRESHOLD_DMS_KEY, Integer::parseInt,
+            "WAL rebalance threshold. Threshold value to use history or full rebalance for local partition.");
 
     /** */
     private GridKernalContext ctx;
@@ -540,7 +535,10 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
         if (!kernalCtx.clientNode()) {
             kernalCtx.internalSubscriptionProcessor().registerDatabaseListener(new MetastorageRecoveryLifecycle());
 
-            cpFreqDeviation = new SimpleDistributedProperty<>("checkpoint.deviation", Integer::parseInt);
+            cpFreqDeviation = new SimpleDistributedProperty<>("checkpoint.deviation", Integer::parseInt,
+                "Checkpoint frequency deviation from the configured frequency in percentage. " +
+                    "Gets a checkpoint interval with a randomized delay. It helps when the cluster makes a checkpoint " +
+                    "in the same time in every node.");
 
             kernalCtx.internalSubscriptionProcessor().registerDistributedConfigurationListener(dispatcher -> {
                 cpFreqDeviation.addListener((name, oldVal, newVal) ->
@@ -699,11 +697,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
         if (dataRegionMap.isEmpty())
             return;
 
-        boolean hasMvccCache = false;
-
         for (CacheGroupDescriptor grpDesc : cctx.cache().cacheGroupDescriptors().values()) {
-            hasMvccCache |= grpDesc.config().getAtomicityMode() == TRANSACTIONAL_SNAPSHOT;
-
             String regionName = grpDesc.config().getDataRegionName();
 
             DataRegion region = regionName != null ? dataRegionMap.get(regionName) : dfltDataRegion;
@@ -729,20 +723,10 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
                 cctx.kernalContext().encryption().onCacheGroupStop(grpDesc.groupId());
         }
 
-        if (!hasMvccCache && dataRegionMap.containsKey(TxLog.TX_LOG_CACHE_NAME)) {
-            PageMemory memory = dataRegionMap.get(TxLog.TX_LOG_CACHE_NAME).pageMemory();
-
-            if (memory instanceof PageMemoryEx)
-                ((PageMemoryEx)memory).invalidate(TxLog.TX_LOG_CACHE_ID, PageIdAllocator.INDEX_PARTITION);
-        }
-
-        final boolean hasMvccCache0 = hasMvccCache;
-
         storeMgr.cleanupPageStoreIfMatch(
             new Predicate<Integer>() {
                 @Override public boolean test(Integer grpId) {
-                    return MetaStorage.METASTORAGE_CACHE_ID != grpId &&
-                        (TxLog.TX_LOG_CACHE_ID != grpId || !hasMvccCache0);
+                    return MetaStorage.METASTORAGE_CACHE_ID != grpId;
                 }
             },
             true);
@@ -1106,6 +1090,9 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
             // Wal logging is now available.
             cctx.wal().resumeLogging(restored);
 
+            if (cctx.cdc() != null && cctx.cdc().enabled())
+                cctx.cdc().afterBinaryMemoryRestore(this, binaryState);
+
             // Log MemoryRecoveryRecord to make sure that old physical records are not replayed during
             // next physical recovery.
             checkpointManager.memoryRecoveryRecordPtr(cctx.wal().log(new MemoryRecoveryRecord(U.currentTimeMillis())));
@@ -1330,6 +1317,8 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
 
                 if (anyIdxPartFile != null) {
                     memCfg.setPageSize(resolvePageSizeFromPartitionFile(anyIdxPartFile));
+                    log.info("The DataStorageConfiguration.pageSize property has been restored from persistence to: "
+                            + memCfg.getPageSize() + " bytes");
 
                     return;
                 }
@@ -1341,6 +1330,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
             }
 
             memCfg.setPageSize(DataStorageConfiguration.DFLT_PAGE_SIZE);
+            log.info("The DataStorageConfiguration.pageSize property has been set to: " + memCfg.getPageSize() + " bytes");
         }
     }
 
@@ -1622,7 +1612,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
     @Override public synchronized Map<Integer, Map<Integer, Long>> reserveHistoryForExchange() {
         assert reservedForExchange == null : reservedForExchange;
 
-        Map</*grpId*/Integer, Set</*partId*/Integer>> applicableGroupsAndPartitions = partitionsApplicableForWalRebalance();
+        Map</*grpId*/Integer, Set</*partId*/Integer>> applicableGrpsAndPartitions = partitionsApplicableForWalRebalance();
 
         Map</*grpId*/Integer, T2</*reason*/ReservationReason, Map</*partId*/Integer, CheckpointEntry>>> earliestValidCheckpoints;
 
@@ -1632,7 +1622,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
 
         try {
             CheckpointHistoryResult checkpointHistoryResult =
-                checkpointHistory().searchAndReserveCheckpoints(applicableGroupsAndPartitions);
+                checkpointHistory().searchAndReserveCheckpoints(applicableGrpsAndPartitions);
 
             earliestValidCheckpoints = checkpointHistoryResult.earliestValidCheckpoints();
 
@@ -1993,12 +1983,12 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
      * @return Accumulated result for all page stores.
      */
     public long forGroupPageStores(CacheGroupContext gctx, ToLongFunction<PageStore> f) {
-        int groupId = gctx.groupId();
+        int grpId = gctx.groupId();
 
         long res = 0;
 
         try {
-            Collection<PageStore> stores = storeMgr.getStores(groupId);
+            Collection<PageStore> stores = storeMgr.getStores(grpId);
 
             if (stores != null) {
                 for (PageStore store : stores)
@@ -2169,10 +2159,10 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
 
                             // Here we do not require tag check because we may be applying memory changes after
                             // several repetitive restarts and the same pages may have changed several times.
-                            int groupId = pageSnapshot.fullPageId().groupId();
+                            int grpId = pageSnapshot.fullPageId().groupId();
                             int partId = partId(pageSnapshot.fullPageId().pageId());
 
-                            if (skipRemovedIndexUpdates(groupId, partId))
+                            if (skipRemovedIndexUpdates(grpId, partId))
                                 break;
 
                             stripedApplyPage((pageMem) -> {
@@ -2189,7 +2179,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
                                                 (IgniteCheckedException)t :
                                                 new IgniteCheckedException("Failed to apply page snapshot", t));
                                     }
-                                }, groupId, partId, exec
+                                }, grpId, partId, exec
                             );
                         }
 
@@ -2199,17 +2189,17 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
                         PartitionMetaStateRecord metaStateRecord = (PartitionMetaStateRecord)rec;
 
                     {
-                        int groupId = metaStateRecord.groupId();
+                        int grpId = metaStateRecord.groupId();
                         int partId = metaStateRecord.partitionId();
 
                         stripedApplyPage((pageMem) -> {
                             GridDhtPartitionState state = fromOrdinal(metaStateRecord.state());
 
                             if (state == null || state == GridDhtPartitionState.EVICTED)
-                                schedulePartitionDestroy(groupId, partId);
+                                schedulePartitionDestroy(grpId, partId);
                             else {
                                 try {
-                                    cancelOrWaitPartitionDestroy(groupId, partId);
+                                    cancelOrWaitPartitionDestroy(grpId, partId);
                                 }
                                 catch (Throwable t) {
                                     U.error(log, "Failed to cancel or wait partition destroy. rec=[" + metaStateRecord + ']');
@@ -2220,7 +2210,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
                                             new IgniteCheckedException("Failed to cancel or wait partition destroy", t));
                                 }
                             }
-                        }, groupId, partId, exec);
+                        }, grpId, partId, exec);
                     }
 
                         break;
@@ -2229,14 +2219,14 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
                         PartitionDestroyRecord destroyRecord = (PartitionDestroyRecord)rec;
 
                     {
-                        int groupId = destroyRecord.groupId();
+                        int grpId = destroyRecord.groupId();
                         int partId = destroyRecord.partitionId();
 
                         stripedApplyPage((pageMem) -> {
-                            pageMem.invalidate(groupId, partId);
+                            pageMem.invalidate(grpId, partId);
 
-                            schedulePartitionDestroy(groupId, partId);
-                        }, groupId, partId, exec);
+                            schedulePartitionDestroy(grpId, partId);
+                        }, grpId, partId, exec);
 
                     }
                         break;
@@ -2245,10 +2235,10 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
                         if (restoreBinaryState.needApplyBinaryUpdate() && rec instanceof PageDeltaRecord) {
                             PageDeltaRecord pageDelta = (PageDeltaRecord)rec;
 
-                            int groupId = pageDelta.groupId();
+                            int grpId = pageDelta.groupId();
                             int partId = partId(pageDelta.pageId());
 
-                            if (skipRemovedIndexUpdates(groupId, partId))
+                            if (skipRemovedIndexUpdates(grpId, partId))
                                 break;
 
                             stripedApplyPage((pageMem) -> {
@@ -2265,7 +2255,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
                                             (IgniteCheckedException)t :
                                             new IgniteCheckedException("Failed to apply page delta", t));
                                 }
-                            }, groupId, partId, exec);
+                            }, grpId, partId, exec);
                         }
                 }
             }
@@ -2403,10 +2393,6 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
         if (grpId == MetaStorage.METASTORAGE_CACHE_ID)
             return (PageMemoryEx)dataRegion(METASTORE_DATA_REGION_NAME).pageMemory();
 
-        // TODO IGNITE-7792 add generic mapping.
-        if (grpId == TxLog.TX_LOG_CACHE_ID)
-            return (PageMemoryEx)dataRegion(TxLog.TX_LOG_CACHE_NAME).pageMemory();
-
         // TODO IGNITE-5075: cache descriptor can be removed.
         GridCacheSharedContext sharedCtx = context();
 
@@ -2445,7 +2431,6 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
                     break;
 
                 switch (rec.type()) {
-                    case MVCC_DATA_RECORD:
                     case DATA_RECORD:
                     case DATA_RECORD_V2:
                         checkpointReadLock();
@@ -2480,22 +2465,6 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
                         }
                         catch (IgniteCheckedException e) {
                             throw new IgniteException(e);
-                        }
-                        finally {
-                            checkpointReadUnlock();
-                        }
-
-                        break;
-
-                    case MVCC_TX_RECORD:
-                        checkpointReadLock();
-
-                        try {
-                            MvccTxRecord txRecord = (MvccTxRecord)rec;
-
-                            byte txState = convertToTxState(txRecord.state());
-
-                            cctx.coordinators().updateState(txRecord.mvccVersion(), txState, true);
                         }
                         finally {
                             checkpointReadUnlock();
@@ -2544,7 +2513,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
         RestoreLogicalState restoreLogicalState =
             new RestoreLogicalState(status, it, lastArchivedSegment, cacheGroupsPredicate, partitionRecoveryStates);
 
-        final IgniteTxManager txManager = cctx.tm();
+        final IgniteTxManager txMgr = cctx.tm();
 
         try {
             while (restoreLogicalState.hasNext()) {
@@ -2558,7 +2527,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
                         if (restoreMeta) { // Also restore tx states.
                             TxRecord txRec = (TxRecord)rec;
 
-                            txManager.collectTxStates(txRec);
+                            txMgr.collectTxStates(txRec);
                         }
 
                         break;
@@ -2595,7 +2564,6 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
 
                         break;
 
-                    case MVCC_DATA_RECORD:
                     case DATA_RECORD:
                     case DATA_RECORD_V2:
                     case ENCRYPTED_DATA_RECORD:
@@ -2608,7 +2576,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
                         for (int i = 0; i < entryCnt; i++) {
                             DataEntry dataEntry = dataRec.get(i);
 
-                            if (!restoreMeta && txManager.uncommitedTx(dataEntry))
+                            if (!restoreMeta && txMgr.uncommitedTx(dataEntry))
                                 continue;
 
                             int cacheId = dataEntry.cacheId();
@@ -2641,23 +2609,14 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
 
                         break;
 
-                    case MVCC_TX_RECORD:
-                        MvccTxRecord txRecord = (MvccTxRecord)rec;
-
-                        byte txState = convertToTxState(txRecord.state());
-
-                        cctx.coordinators().updateState(txRecord.mvccVersion(), txState, true);
-
-                        break;
-
                     case PART_META_UPDATE_STATE:
                         PartitionMetaStateRecord metaStateRecord = (PartitionMetaStateRecord)rec;
 
-                        GroupPartitionId groupPartitionId = new GroupPartitionId(
+                        GroupPartitionId grpPartitionId = new GroupPartitionId(
                             metaStateRecord.groupId(), metaStateRecord.partitionId()
                         );
 
-                        restoreLogicalState.partitionRecoveryStates.put(groupPartitionId, (int)metaStateRecord.state());
+                        restoreLogicalState.partitionRecoveryStates.put(grpPartitionId, (int)metaStateRecord.state());
 
                         break;
 
@@ -2778,28 +2737,6 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
     }
 
     /**
-     * Convert {@link TransactionState} to Mvcc {@link TxState}.
-     *
-     * @param state TransactionState.
-     * @return TxState.
-     */
-    private byte convertToTxState(TransactionState state) {
-        switch (state) {
-            case PREPARED:
-                return TxState.PREPARED;
-
-            case COMMITTED:
-                return TxState.COMMITTED;
-
-            case ROLLED_BACK:
-                return TxState.ABORTED;
-
-            default:
-                throw new IllegalStateException("Unsupported TxState.");
-        }
-    }
-
-    /**
      * Wal truncate callback.
      *
      * @param highBound Upper bound.
@@ -2844,42 +2781,19 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
         switch (dataEntry.op()) {
             case CREATE:
             case UPDATE:
-                if (dataEntry instanceof MvccDataEntry) {
-                    cacheCtx.offheap().mvccApplyUpdate(
-                        cacheCtx,
-                        dataEntry.key(),
-                        dataEntry.value(),
-                        dataEntry.writeVersion(),
-                        dataEntry.expireTime(),
-                        locPart,
-                        ((MvccDataEntry)dataEntry).mvccVer());
-                }
-                else {
-                    cacheCtx.offheap().update(
-                        cacheCtx,
-                        dataEntry.key(),
-                        dataEntry.value(),
-                        dataEntry.writeVersion(),
-                        dataEntry.expireTime(),
-                        locPart,
-                        null);
-                }
+                cacheCtx.offheap().update(
+                    cacheCtx,
+                    dataEntry.key(),
+                    dataEntry.value(),
+                    dataEntry.writeVersion(),
+                    dataEntry.expireTime(),
+                    locPart,
+                    null);
 
                 return true;
 
             case DELETE:
-                if (dataEntry instanceof MvccDataEntry) {
-                    cacheCtx.offheap().mvccApplyUpdate(
-                        cacheCtx,
-                        dataEntry.key(),
-                        null,
-                        dataEntry.writeVersion(),
-                        0L,
-                        locPart,
-                        ((MvccDataEntry)dataEntry).mvccVer());
-                }
-                else
-                    cacheCtx.offheap().remove(cacheCtx, dataEntry.key(), locPart.id(), locPart);
+                cacheCtx.offheap().remove(cacheCtx, dataEntry.key(), locPart.id(), locPart);
 
                 return true;
 

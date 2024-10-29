@@ -368,15 +368,15 @@ public class JdbcThinPartitionAwarenessSelfTest extends JdbcThinAbstractSelfTest
 
         stmt.executeQuery(sqlQry);
 
-        AffinityCache affinityCache = GridTestUtils.getFieldValue(conn, "affinityCache");
+        AffinityCache affCache = GridTestUtils.getFieldValue(conn, "affinityCache");
 
         startGrid(3);
 
         stmt.executeQuery(sqlQry);
 
-        AffinityCache recreatedAffinityCache = GridTestUtils.getFieldValue(conn, "affinityCache");
+        AffinityCache recreatedAffCache = GridTestUtils.getFieldValue(conn, "affinityCache");
 
-        assertTrue(recreatedAffinityCache.version().compareTo(affinityCache.version()) > 0);
+        assertTrue(recreatedAffCache.version().compareTo(affCache.version()) > 0);
     }
 
     /**
@@ -392,15 +392,15 @@ public class JdbcThinPartitionAwarenessSelfTest extends JdbcThinAbstractSelfTest
         stmt.executeQuery(sqlQry);
         stmt.executeQuery(sqlQry);
 
-        AffinityCache affinityCache = GridTestUtils.getFieldValue(conn, "affinityCache");
+        AffinityCache affCache = GridTestUtils.getFieldValue(conn, "affinityCache");
 
         startGrid(4);
 
         stmt.executeQuery("select * from Person where _key = 2");
 
-        AffinityCache recreatedAffinityCache = GridTestUtils.getFieldValue(conn, "affinityCache");
+        AffinityCache recreatedAffCache = GridTestUtils.getFieldValue(conn, "affinityCache");
 
-        assertTrue(recreatedAffinityCache.version().compareTo(affinityCache.version()) > 0);
+        assertTrue(recreatedAffCache.version().compareTo(affCache.version()) > 0);
     }
 
     /**
@@ -415,15 +415,15 @@ public class JdbcThinPartitionAwarenessSelfTest extends JdbcThinAbstractSelfTest
 
         ResultSet rs = stmt.executeQuery(sqlQry);
 
-        AffinityCache affinityCache = GridTestUtils.getFieldValue(conn, "affinityCache");
+        AffinityCache affCache = GridTestUtils.getFieldValue(conn, "affinityCache");
 
         startGrid(5);
 
         rs.getMetaData();
 
-        AffinityCache recreatedAffinityCache = GridTestUtils.getFieldValue(conn, "affinityCache");
+        AffinityCache recreatedAffCache = GridTestUtils.getFieldValue(conn, "affinityCache");
 
-        assertTrue(recreatedAffinityCache.version().compareTo(affinityCache.version()) > 0);
+        assertTrue(recreatedAffCache.version().compareTo(affCache.version()) > 0);
     }
 
     /**
@@ -445,9 +445,9 @@ public class JdbcThinPartitionAwarenessSelfTest extends JdbcThinAbstractSelfTest
 
             stmt.executeQuery("select * from \"" + cacheName + "\".Person where _key = 1");
 
-            AffinityCache affinityCache = GridTestUtils.getFieldValue(conn, "affinityCache");
+            AffinityCache affCache = GridTestUtils.getFieldValue(conn, "affinityCache");
 
-            assertNull("Affinity cache is not null.", affinityCache);
+            assertNull("Affinity cache is not null.", affCache);
         }
     }
 
@@ -470,9 +470,9 @@ public class JdbcThinPartitionAwarenessSelfTest extends JdbcThinAbstractSelfTest
 
             stmt.executeQuery("select * from \"" + cacheName + "\".Person where _key = 1");
 
-            AffinityCache affinityCache = GridTestUtils.getFieldValue(conn, "affinityCache");
+            AffinityCache affCache = GridTestUtils.getFieldValue(conn, "affinityCache");
 
-            assertNull("Affinity cache is not null.", affinityCache);
+            assertNull("Affinity cache is not null.", affCache);
         }
     }
 
@@ -500,10 +500,10 @@ public class JdbcThinPartitionAwarenessSelfTest extends JdbcThinAbstractSelfTest
 
         stmt.execute("select * from \"" + cacheName.toUpperCase() + "\".Person where _key = 1");
 
-        AffinityCache affinityCache = GridTestUtils.getFieldValue(conn, "affinityCache");
+        AffinityCache affCache = GridTestUtils.getFieldValue(conn, "affinityCache");
 
         GridBoundedLinkedHashMap<QualifiedSQLQuery, JdbcThinPartitionResultDescriptor> sqlCache =
-            GridTestUtils.getFieldValue(affinityCache, "sqlCache");
+            GridTestUtils.getFieldValue(affCache, "sqlCache");
 
         Set<String> schemas = sqlCache.keySet().stream().map(QualifiedSQLQuery::schemaName).collect(Collectors.toSet());
 
@@ -534,13 +534,13 @@ public class JdbcThinPartitionAwarenessSelfTest extends JdbcThinAbstractSelfTest
         stmt.execute("select * from \"" + cacheName + "\".Person where _key = 2");
         stmt.execute("select * from \"" + cacheName + "\".Person where _key = 2");
 
-        AffinityCache affinityCache = GridTestUtils.getFieldValue(conn, "affinityCache");
+        AffinityCache affCache = GridTestUtils.getFieldValue(conn, "affinityCache");
 
         GridBoundedLinkedHashMap<QualifiedSQLQuery, JdbcThinPartitionResultDescriptor> sqlCache =
-            GridTestUtils.getFieldValue(affinityCache, "sqlCache");
+            GridTestUtils.getFieldValue(affCache, "sqlCache");
 
         GridBoundedLinkedHashMap<Integer, UUID[]> cachePartitionsDistribution =
-            GridTestUtils.getFieldValue(affinityCache, "cachePartitionsDistribution");
+            GridTestUtils.getFieldValue(affCache, "cachePartitionsDistribution");
 
         assertEquals("Sql sub-cache of affinity cache has unexpected number of elements.",
             2, sqlCache.size());
@@ -588,13 +588,13 @@ public class JdbcThinPartitionAwarenessSelfTest extends JdbcThinAbstractSelfTest
             stmt.executeQuery("select * from \"" + cacheName2 + "\".Person where _key = 1");
             stmt.executeQuery("select * from \"" + cacheName2 + "\".Person where _key = 1");
 
-            AffinityCache affinityCache = GridTestUtils.getFieldValue(conn, "affinityCache");
+            AffinityCache affCache = GridTestUtils.getFieldValue(conn, "affinityCache");
 
             GridBoundedLinkedHashMap<Integer, UUID[]> partitionsDistributionCache =
-                GridTestUtils.getFieldValue(affinityCache, "cachePartitionsDistribution");
+                GridTestUtils.getFieldValue(affCache, "cachePartitionsDistribution");
 
             GridBoundedLinkedHashMap<QualifiedSQLQuery, JdbcThinPartitionResultDescriptor> sqlCache =
-                GridTestUtils.getFieldValue(affinityCache, "sqlCache");
+                GridTestUtils.getFieldValue(affCache, "sqlCache");
 
             assertEquals("Unexpected count of partitions distributions.", 1,
                 partitionsDistributionCache.size());
@@ -650,9 +650,9 @@ public class JdbcThinPartitionAwarenessSelfTest extends JdbcThinAbstractSelfTest
 
         assertEquals("Rows counter doesn't match expected value.", expRowsCnt, rowCntr);
 
-        AffinityCache affinityCache = GridTestUtils.getFieldValue(conn, "affinityCache");
+        AffinityCache affCache = GridTestUtils.getFieldValue(conn, "affinityCache");
 
-        PartitionResult gotPartRes = affinityCache.partitionResult(
+        PartitionResult gotPartRes = affCache.partitionResult(
             new QualifiedSQLQuery("default", sqlQry)).partitionResult();
 
         assertNull("Partition result descriptor is not null.", gotPartRes);

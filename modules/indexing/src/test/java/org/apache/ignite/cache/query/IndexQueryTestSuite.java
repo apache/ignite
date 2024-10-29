@@ -47,7 +47,8 @@ import org.junit.runners.Suite;
     RepeatedFieldIndexQueryTest.class,
     IndexQueryInCriterionTest.class,
     IndexQueryInCriterionDescTest.class,
-    IndexQueryLimitTest.class
+    IndexQueryLimitTest.class,
+    IndexQueryPaginationTest.class
 })
 public class IndexQueryTestSuite {
 }

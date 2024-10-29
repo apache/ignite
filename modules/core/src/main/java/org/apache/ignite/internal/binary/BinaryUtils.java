@@ -67,12 +67,7 @@ import org.apache.ignite.binary.BinaryType;
 import org.apache.ignite.binary.Binarylizable;
 import org.apache.ignite.internal.binary.builder.BinaryLazyValue;
 import org.apache.ignite.internal.binary.streams.BinaryInputStream;
-import org.apache.ignite.internal.processors.cache.CacheObjectByteArrayImpl;
-import org.apache.ignite.internal.processors.cache.CacheObjectImpl;
-import org.apache.ignite.internal.processors.cache.KeyCacheObjectImpl;
-import org.apache.ignite.internal.processors.cacheobject.UserCacheObjectByteArrayImpl;
-import org.apache.ignite.internal.processors.cacheobject.UserCacheObjectImpl;
-import org.apache.ignite.internal.processors.cacheobject.UserKeyCacheObjectImpl;
+import org.apache.ignite.internal.processors.cache.CacheObject;
 import org.apache.ignite.internal.util.MutableSingletonList;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -159,7 +154,7 @@ public class BinaryUtils {
         !IgniteSystemProperties.getBoolean(IgniteSystemProperties.IGNITE_BINARY_DONT_WRAP_TREE_STRUCTURES);
 
     /** Whether to sort field in binary objects (doesn't affect Binarylizable). */
-    public static final boolean FIELDS_SORTED_ORDER =
+    public static boolean FIELDS_SORTED_ORDER =
         IgniteSystemProperties.getBoolean(IgniteSystemProperties.IGNITE_BINARY_SORT_OBJECT_FIELDS);
 
     /** Field type names. */
@@ -737,19 +732,7 @@ public class BinaryUtils {
      * @return True if this is an object of a known type.
      */
     public static boolean knownCacheObject(Object obj) {
-        if (obj == null)
-            return false;
-
-        Class<?> cls = obj.getClass();
-
-        return cls == KeyCacheObjectImpl.class ||
-            cls == BinaryObjectImpl.class ||
-            cls == CacheObjectImpl.class ||
-            cls == CacheObjectByteArrayImpl.class ||
-            cls == BinaryEnumObjectImpl.class ||
-            cls == UserKeyCacheObjectImpl.class ||
-            cls == UserCacheObjectImpl.class ||
-            cls == UserCacheObjectByteArrayImpl.class;
+        return obj instanceof CacheObject;
     }
 
     /**
@@ -832,6 +815,20 @@ public class BinaryUtils {
      */
     public static int length(BinaryPositionReadable in, int start) {
         return in.readIntPositioned(start + GridBinaryMarshaller.TOTAL_LEN_POS);
+    }
+
+    /** */
+    public static int dataStartRelative(BinaryPositionReadable in, int start) {
+        int typeId = in.readIntPositioned(start + GridBinaryMarshaller.TYPE_ID_POS);
+
+        if (typeId == GridBinaryMarshaller.UNREGISTERED_TYPE_ID) {
+            // Gets the length of the type name which is stored as string.
+            int len = in.readIntPositioned(start + GridBinaryMarshaller.DFLT_HDR_LEN + /** object type */1);
+
+            return GridBinaryMarshaller.DFLT_HDR_LEN + /** object type */1 + /** string length */ 4 + len;
+        }
+        else
+            return GridBinaryMarshaller.DFLT_HDR_LEN;
     }
 
     /**
@@ -1927,10 +1924,11 @@ public class BinaryUtils {
                 BinaryObjectExImpl po;
 
                 if (detach) {
-                    // In detach mode we simply copy object's content.
-                    in.position(start);
+                    BinaryObjectImpl binObj = new BinaryObjectImpl(ctx, in.array(), start);
 
-                    po = new BinaryObjectImpl(ctx, in.readByteArray(len), 0);
+                    binObj.detachAllowed(true);
+
+                    po = binObj.detach(!handles.isEmpty());
                 }
                 else {
                     if (in.offheapPointer() == 0)
@@ -1938,9 +1936,9 @@ public class BinaryUtils {
                     else
                         po = new BinaryObjectOffheapImpl(ctx, in.offheapPointer(), start,
                             in.remaining() + in.position());
-
-                    in.position(start + po.length());
                 }
+
+                in.position(start + len);
 
                 handles.setHandle(po, start);
 

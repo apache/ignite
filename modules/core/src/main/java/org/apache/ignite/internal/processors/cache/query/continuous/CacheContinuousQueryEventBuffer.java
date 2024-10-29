@@ -31,6 +31,7 @@ import java.util.concurrent.ConcurrentLinkedDeque;
 import java.util.concurrent.ConcurrentSkipListMap;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.concurrent.locks.ReentrantReadWriteLock;
 import java.util.function.BiFunction;
 import java.util.function.LongUnaryOperator;
 import org.apache.ignite.IgniteLogger;
@@ -80,6 +81,9 @@ public class CacheContinuousQueryEventBuffer {
     /** Batch of entries currently being collected to send to the remote. */
     private final AtomicReference<Batch> curBatch = new AtomicReference<>();
 
+    /** */
+    private final ReentrantReadWriteLock backupQueueGuard = new ReentrantReadWriteLock();
+
     /** Queue for keeping backup entries which partition counter less the counter processing by current batch. */
     private final Deque<CacheContinuousQueryEntry> backupQ = new ConcurrentLinkedDeque<>();
 
@@ -93,7 +97,7 @@ public class CacheContinuousQueryEventBuffer {
     private final AtomicInteger pendingCurrSize = new AtomicInteger();
 
     /** Last seen ack partition counter tracked by the CQ handler partition recovery queue. */
-    private final GridAtomicLong ackedUpdCntr = new GridAtomicLong(0);
+    final GridAtomicLong maxReceivedBackupAckUpdCntr = new GridAtomicLong(0);
 
     /**
      * @param currPartCntr Current partition counter.
@@ -115,9 +119,15 @@ public class CacheContinuousQueryEventBuffer {
      * @param updateCntr Acknowledged counter.
      */
     void cleanupOnAck(long updateCntr) {
-        backupQ.removeIf(backupEntry -> backupEntry.updateCounter() <= updateCntr);
+        backupQueueGuard.writeLock().lock();
 
-        ackedUpdCntr.setIfGreater(updateCntr);
+        try {
+            if (maxReceivedBackupAckUpdCntr.setIfGreater(updateCntr))
+                backupQ.removeIf(backupEntry -> backupEntry.updateCounter() <= updateCntr);
+        }
+        finally {
+            backupQueueGuard.writeLock().unlock();
+        }
     }
 
     /**
@@ -188,8 +198,8 @@ public class CacheContinuousQueryEventBuffer {
             batch = initBatch(backup);
 
             if (batch == null || cntr < batch.startCntr) {
-                if (backup && cntr > ackedUpdCntr.get())
-                    backupQ.add(entry);
+                if (backup)
+                    addToBackupQueue(entry);
 
                 return backup ? null : entry;
             }
@@ -201,7 +211,7 @@ public class CacheContinuousQueryEventBuffer {
                     continue;
             }
             else {
-                if (batch.endCntr < ackedUpdCntr.get() && batch.tryRollOver() == RETRY)
+                if (batch.endCntr < maxReceivedBackupAckUpdCntr.get() && batch.tryRollOver() == RETRY)
                     continue;
 
                 pendingCurrSize.incrementAndGet();
@@ -310,7 +320,7 @@ public class CacheContinuousQueryEventBuffer {
     @Nullable private Object addResult(@Nullable Object res, CacheContinuousQueryEntry entry, boolean backup) {
         if (res == null) {
             if (backup)
-                backupQ.add(entry);
+                addToBackupQueue(entry);
             else
                 res = entry;
         }
@@ -341,6 +351,26 @@ public class CacheContinuousQueryEventBuffer {
     /** */
     int backupQueueSize() {
         return backupQ.size();
+    }
+
+    /** */
+    CacheContinuousQueryEntry[] bufferedEntries() {
+        Batch curBatch = this.curBatch.get();
+
+        return curBatch == null ? null : curBatch.entries;
+    }
+
+    /** */
+    private void addToBackupQueue(CacheContinuousQueryEntry entry) {
+        backupQueueGuard.readLock().lock();
+
+        try {
+            if (entry.updateCounter() > maxReceivedBackupAckUpdCntr.get())
+                backupQ.add(entry);
+        }
+        finally {
+            backupQueueGuard.readLock().unlock();
+        }
     }
 
     /**
@@ -409,10 +439,11 @@ public class CacheContinuousQueryEventBuffer {
                     if (e.isFiltered())
                         filtered++;
                     else {
-                        flushEntry = new CacheContinuousQueryEntry(e.cacheId(),
+                        flushEntry = new CacheContinuousQueryEntry(
+                            e.cacheId(),
                             e.eventType(),
                             e.key(),
-                            e.value(),
+                            e.newValue(),
                             e.oldValue(),
                             e.isKeepBinary(),
                             e.partition(),
@@ -464,7 +495,7 @@ public class CacheContinuousQueryEventBuffer {
                 entries[pos] = entry;
 
                 int next = lastProc + 1;
-                long ackedUpdCntr0 = ackedUpdCntr.get();
+                long ackedUpdCntr0 = maxReceivedBackupAckUpdCntr.get();
 
                 if (next == pos) {
                     for (int i = next; i < entries.length; i++) {
@@ -477,6 +508,8 @@ public class CacheContinuousQueryEventBuffer {
                                 filtered = 0;
 
                                 res = addResult(res, entry0, backup);
+
+                                entries[i] = null;
                             }
                             else
                                 filtered++;
@@ -504,7 +537,7 @@ public class CacheContinuousQueryEventBuffer {
             if (entries == null)
                 return RETRY;
 
-            long ackedUpdCntr0 = ackedUpdCntr.get();
+            long ackedUpdCntr0 = maxReceivedBackupAckUpdCntr.get();
 
             if (endCntr < ackedUpdCntr0) {
                 rollOver(ackedUpdCntr0 + 1, 0);

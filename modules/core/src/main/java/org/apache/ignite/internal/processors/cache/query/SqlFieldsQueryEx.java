@@ -21,7 +21,6 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
-import org.apache.ignite.internal.processors.query.NestedTxMode;
 import org.apache.ignite.internal.util.typedef.F;
 
 /**
@@ -39,9 +38,6 @@ public final class SqlFieldsQueryEx extends SqlFieldsQuery {
 
     /** Auto commit flag. */
     private boolean autoCommit = true;
-
-    /** Nested transactions handling mode. */
-    private NestedTxMode nestedTxMode = NestedTxMode.DEFAULT;
 
     /** Batched arguments list. */
     private List<Object[]> batchedArgs;
@@ -65,7 +61,6 @@ public final class SqlFieldsQueryEx extends SqlFieldsQuery {
         this.isQry = qry.isQry;
         this.skipReducerOnUpdate = qry.skipReducerOnUpdate;
         this.autoCommit = qry.autoCommit;
-        this.nestedTxMode = qry.nestedTxMode;
         this.batchedArgs = qry.batchedArgs;
     }
 
@@ -166,22 +161,6 @@ public final class SqlFieldsQueryEx extends SqlFieldsQuery {
      */
     public boolean isSkipReducerOnUpdate() {
         return skipReducerOnUpdate;
-    }
-
-    /**
-     * @return Nested transactions handling mode - behavior when the user attempts to open a transaction in scope of
-     * another transaction.
-     */
-    public NestedTxMode getNestedTxMode() {
-        return nestedTxMode;
-    }
-
-    /**
-     * @param nestedTxMode Nested transactions handling mode - behavior when the user attempts to open a transaction
-     * in scope of another transaction.
-     */
-    public void setNestedTxMode(NestedTxMode nestedTxMode) {
-        this.nestedTxMode = nestedTxMode;
     }
 
     /**

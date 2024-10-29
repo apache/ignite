@@ -28,6 +28,7 @@ import org.apache.ignite.internal.direct.stream.DirectByteBufferStream;
 import org.apache.ignite.internal.direct.stream.v1.DirectByteBufferStreamImplV1;
 import org.apache.ignite.internal.direct.stream.v2.DirectByteBufferStreamImplV2;
 import org.apache.ignite.internal.direct.stream.v3.DirectByteBufferStreamImplV3;
+import org.apache.ignite.internal.direct.stream.v4.DirectByteBufferStreamImplV4;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
@@ -436,6 +437,11 @@ public class DirectMessageReader implements MessageReader {
 
                 case 3:
                     stream = new DirectByteBufferStreamImplV3(msgFactory);
+
+                    break;
+
+                case 4:
+                    stream = new DirectByteBufferStreamImplV4(msgFactory);
 
                     break;
 

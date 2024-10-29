@@ -14,7 +14,7 @@
 // limitations under the License.
 [width="100%",cols="1,3"]
 |===
-|JDK|Oracle JDK 8, 11 or 17, Open JDK 8, 11 or 17, IBM JDK 8, 11 or 17
+|JDK|Oracle JDK 11 or 17, Open JDK 11 or 17, IBM JDK 11 or 17
 |OS|Windows Vista, Windows Server 2008 and later versions, Ubuntu (18.04 64 bit)
 |Network|No restrictions (10G recommended)
 |Hardware|No restrictions

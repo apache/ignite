@@ -85,22 +85,22 @@ public class ViewCacheClosure implements IgniteCallable<List<CacheInfo>> {
                 return cacheInfo;
 
             case GROUPS:
-                Collection<CacheGroupContext> contexts = k.context().cache().cacheGroups();
+                Collection<CacheGroupContext> ctxs = k.context().cache().cacheGroups();
 
-                for (CacheGroupContext context : contexts) {
-                    if (!context.userCache() || !compiled.matcher(context.cacheOrGroupName()).find())
+                for (CacheGroupContext ctx : ctxs) {
+                    if (!ctx.userCache() || !compiled.matcher(ctx.cacheOrGroupName()).find())
                         continue;
 
                     CacheInfo ci = new CacheInfo();
-                    ci.setGrpName(context.cacheOrGroupName());
-                    ci.setGrpId(context.groupId());
-                    ci.setCachesCnt(context.caches().size());
-                    ci.setPartitions(context.config().getAffinity().partitions());
-                    ci.setBackupsCnt(context.config().getBackups());
-                    ci.setAffinityClsName(context.config().getAffinity().getClass().getSimpleName());
-                    ci.setMode(context.config().getCacheMode());
-                    ci.setAtomicityMode(context.config().getAtomicityMode());
-                    ci.setMapped(mapped(context.caches().iterator().next().name()));
+                    ci.setGrpName(ctx.cacheOrGroupName());
+                    ci.setGrpId(ctx.groupId());
+                    ci.setCachesCnt(ctx.caches().size());
+                    ci.setPartitions(ctx.config().getAffinity().partitions());
+                    ci.setBackupsCnt(ctx.config().getBackups());
+                    ci.setAffinityClsName(ctx.config().getAffinity().getClass().getSimpleName());
+                    ci.setMode(ctx.config().getCacheMode());
+                    ci.setAtomicityMode(ctx.config().getAtomicityMode());
+                    ci.setMapped(mapped(ctx.caches().iterator().next().name()));
 
                     cacheInfo.add(ci);
                 }

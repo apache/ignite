@@ -20,6 +20,7 @@ package org.apache.ignite.internal.processors.query.calcite.exec.tracker;
 import java.util.List;
 import java.util.UUID;
 import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
 import org.apache.ignite.internal.metric.IoStatisticsHolder;
 import org.apache.ignite.internal.metric.IoStatisticsQueryHelper;
@@ -47,6 +48,9 @@ public class PerformanceStatisticsIoTracker implements IoTracker {
     private final AtomicLong physicalReads = new AtomicLong();
 
     /** */
+    private final AtomicBoolean started = new AtomicBoolean();
+
+    /** */
     private final List<T2<String, AtomicLong>> cntrs = new CopyOnWriteArrayList<>();
 
     /** */
@@ -61,8 +65,13 @@ public class PerformanceStatisticsIoTracker implements IoTracker {
     }
 
     /** {@inheritDoc} */
-    @Override public void startTracking() {
-        IoStatisticsQueryHelper.startGatheringQueryStatistics();
+    @Override public boolean startTracking() {
+        if (started.compareAndSet(false, true)) {
+            IoStatisticsQueryHelper.startGatheringQueryStatistics();
+            return true;
+        }
+        else
+            return false;
     }
 
     /** {@inheritDoc} */
@@ -71,6 +80,8 @@ public class PerformanceStatisticsIoTracker implements IoTracker {
 
         logicalReads.addAndGet(stat.logicalReads());
         physicalReads.addAndGet(stat.physicalReads());
+
+        started.compareAndSet(true, false);
     }
 
     /** {@inheritDoc} */

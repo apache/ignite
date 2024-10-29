@@ -85,7 +85,7 @@ public class TransactionsMXBeanImpl implements TransactionsMXBean {
             Map<ClusterNode, TxTaskResult> res = ctx.task().execute(
                 new TxTask(),
                 new VisorTaskArgument<>(ctx.cluster().get().localNode().id(), arg, false)
-            ).get();
+            ).get().result();
 
             if (detailed) {
                 StringWriter sw = new StringWriter();

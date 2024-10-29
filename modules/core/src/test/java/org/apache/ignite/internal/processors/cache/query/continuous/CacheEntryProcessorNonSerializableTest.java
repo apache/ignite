@@ -412,32 +412,6 @@ public class CacheEntryProcessorNonSerializableTest extends GridCommonAbstractTe
     }
 
     /**
-     * @param node Grid node.
-     * @param cache Node cache.
-     * @param txConcurrency Transaction concurrency.
-     * @param txIsolation Transaction isolation.
-     */
-    @SuppressWarnings({"unchecked", "ThrowableNotThrown"})
-    private void checkMvccInvoke(Ignite node, IgniteCache cache, TransactionConcurrency txConcurrency,
-        TransactionIsolation txIsolation) {
-        try (final Transaction tx = node.transactions().txStart(txConcurrency, txIsolation)) {
-            cache.put(KEY, WRONG_VALUE);
-
-            GridTestUtils.assertThrowsWithCause(new Callable<Object>() {
-                @Override public Object call() {
-                    cache.invoke(KEY, new NonSerialazibleEntryProcessor());
-
-                    fail("Should never happened.");
-
-                    tx.commit();
-
-                    return null;
-                }
-            }, NotSerializableException.class);
-        }
-    }
-
-    /**
      * @return Cache configuration.
      */
     private CacheConfiguration<?, ?> cacheConfiguration(CacheWriteSynchronizationMode wrMode, int backup) {

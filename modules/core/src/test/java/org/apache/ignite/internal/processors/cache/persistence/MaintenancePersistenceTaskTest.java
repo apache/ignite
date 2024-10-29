@@ -146,14 +146,14 @@ public class MaintenancePersistenceTaskTest extends GridCommonAbstractTest {
      * @param node Ignite node.
      * @return Execution's result.
      */
-    private PersistenceTaskResult executeInfo(IgniteEx node) {
-        VisorTaskArgument<PersistenceCommand.PersistenceTaskArg> infoArgument = new VisorTaskArgument<>(
+    private PersistenceTaskResult executeInfo(IgniteEx node) throws Exception {
+        VisorTaskArgument<PersistenceCommand.PersistenceTaskArg> infoArg = new VisorTaskArgument<>(
             node.localNode().id(),
             new PersistenceCommand.PersistenceInfoTaskArg(),
             false
         );
 
-        return node.compute().execute(new PersistenceTask(), infoArgument);
+        return node.compute().execute(new PersistenceTask(), infoArg).result();
     }
 
     /**
@@ -162,17 +162,17 @@ public class MaintenancePersistenceTaskTest extends GridCommonAbstractTest {
      * @param node Ignite node.
      * @return Execution's result.
      */
-    private PersistenceTaskResult executeClean(IgniteEx node) {
+    private PersistenceTaskResult executeClean(IgniteEx node) throws Exception {
         PersistenceCleanCachesTaskArg arg = new PersistenceCleanCachesTaskArg();
 
         arg.caches(new String[]{CACHE_NAME});
 
-        VisorTaskArgument<PersistenceCommand.PersistenceTaskArg> cleanArgument = new VisorTaskArgument<>(
+        VisorTaskArgument<PersistenceCommand.PersistenceTaskArg> cleanArg = new VisorTaskArgument<>(
             node.localNode().id(),
             arg,
             false
         );
 
-        return node.compute().execute(new PersistenceTask(), cleanArgument);
+        return node.compute().execute(new PersistenceTask(), cleanArg).result();
     }
 }

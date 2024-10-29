@@ -19,18 +19,12 @@ package org.apache.ignite.internal.cache.query.index.sorted;
 
 import org.apache.ignite.internal.cache.query.index.sorted.inline.InlineIndexTree;
 import org.apache.ignite.internal.cache.query.index.sorted.keys.IndexKey;
-import org.apache.ignite.internal.processors.cache.mvcc.MvccVersionAware;
-import org.apache.ignite.internal.processors.cache.mvcc.txlog.TxState;
 import org.apache.ignite.internal.processors.cache.persistence.CacheDataRow;
-
-import static org.apache.ignite.internal.processors.cache.mvcc.MvccUtils.MVCC_COUNTER_NA;
-import static org.apache.ignite.internal.processors.cache.mvcc.MvccUtils.MVCC_CRD_COUNTER_NA;
-import static org.apache.ignite.internal.processors.cache.mvcc.MvccUtils.MVCC_OP_COUNTER_NA;
 
 /**
  * Represents an index row stored in a tree.
  */
-public interface IndexRow extends MvccVersionAware {
+public interface IndexRow {
     /**
      * @param idx Index of a key.
      * @return Underlying key by specified index.
@@ -56,28 +50,6 @@ public interface IndexRow extends MvccVersionAware {
      * @return Cache row.
      */
     public CacheDataRow cacheDataRow();
-
-    // MVCC stuff.
-
-    /** {@inheritDoc} */
-    @Override public default long mvccCoordinatorVersion() {
-        return MVCC_CRD_COUNTER_NA;
-    }
-
-    /** {@inheritDoc} */
-    @Override public default long mvccCounter() {
-        return MVCC_COUNTER_NA;
-    }
-
-    /** {@inheritDoc} */
-    @Override public default int mvccOperationCounter() {
-        return MVCC_OP_COUNTER_NA;
-    }
-
-    /** {@inheritDoc} */
-    @Override public default byte mvccTxState() {
-        return TxState.NA;
-    }
 
     /**
      * @return {@code True} for rows used for index search (as opposed to rows stored in {@link InlineIndexTree}.

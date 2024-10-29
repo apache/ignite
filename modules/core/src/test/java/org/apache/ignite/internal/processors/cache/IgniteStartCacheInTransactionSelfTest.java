@@ -90,7 +90,7 @@ public class IgniteStartCacheInTransactionSelfTest extends GridCommonAbstractTes
         final String key = "key";
         final String val = "val";
 
-        IgniteCache<String, String> cache = ignite.cache(DEFAULT_CACHE_NAME).withAllowAtomicOpsInTx();
+        IgniteCache<String, String> cache = ignite.cache(DEFAULT_CACHE_NAME);
 
         try (Transaction tx = ignite.transactions().txStart(PESSIMISTIC, REPEATABLE_READ)) {
             cache.put(key, val);
@@ -117,7 +117,7 @@ public class IgniteStartCacheInTransactionSelfTest extends GridCommonAbstractTes
         final String key = "key";
         final String val = "val";
 
-        IgniteCache<String, String> cache = ignite.cache(DEFAULT_CACHE_NAME).withAllowAtomicOpsInTx();
+        IgniteCache<String, String> cache = ignite.cache(DEFAULT_CACHE_NAME);
 
         try (Transaction tx = ignite.transactions().txStart(PESSIMISTIC, REPEATABLE_READ)) {
             cache.put(key, val);
@@ -144,7 +144,7 @@ public class IgniteStartCacheInTransactionSelfTest extends GridCommonAbstractTes
         final String key = "key";
         final String val = "val";
 
-        IgniteCache<String, String> cache = ignite.cache(DEFAULT_CACHE_NAME).withAllowAtomicOpsInTx();
+        IgniteCache<String, String> cache = ignite.cache(DEFAULT_CACHE_NAME);
 
         try (Transaction tx = ignite.transactions().txStart(PESSIMISTIC, REPEATABLE_READ)) {
             cache.put(key, val);
@@ -171,7 +171,7 @@ public class IgniteStartCacheInTransactionSelfTest extends GridCommonAbstractTes
         final String key = "key";
         final String val = "val";
 
-        IgniteCache<String, String> cache = ignite.cache(DEFAULT_CACHE_NAME).withAllowAtomicOpsInTx();
+        IgniteCache<String, String> cache = ignite.cache(DEFAULT_CACHE_NAME);
 
         try (Transaction tx = ignite.transactions().txStart(PESSIMISTIC, REPEATABLE_READ)) {
             cache.put(key, val);
@@ -198,7 +198,7 @@ public class IgniteStartCacheInTransactionSelfTest extends GridCommonAbstractTes
         final String key = "key";
         final String val = "val";
 
-        IgniteCache<String, String> cache = ignite.cache(DEFAULT_CACHE_NAME).withAllowAtomicOpsInTx();
+        IgniteCache<String, String> cache = ignite.cache(DEFAULT_CACHE_NAME);
 
         try (Transaction tx = ignite.transactions().txStart(PESSIMISTIC, REPEATABLE_READ)) {
             cache.put(key, val);
@@ -225,7 +225,7 @@ public class IgniteStartCacheInTransactionSelfTest extends GridCommonAbstractTes
         final String key = "key";
         final String val = "val";
 
-        IgniteCache<String, String> cache = ignite.cache(DEFAULT_CACHE_NAME).withAllowAtomicOpsInTx();
+        IgniteCache<String, String> cache = ignite.cache(DEFAULT_CACHE_NAME);
 
         try (Transaction tx = ignite.transactions().txStart(PESSIMISTIC, REPEATABLE_READ)) {
             cache.put(key, val);

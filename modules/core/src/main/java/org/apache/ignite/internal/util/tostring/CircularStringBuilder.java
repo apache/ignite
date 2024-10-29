@@ -181,13 +181,13 @@ public class CircularStringBuilder {
     @Override public String toString() {
         // Create a copy, don't share the array
         if (full) {
-            char strValue[] = new char[value.length];
+            char strVal[] = new char[value.length];
             int firstPart = value.length - finishAt - 1;
 
-            System.arraycopy(value, finishAt + 1, strValue, 0, firstPart);
-            System.arraycopy(value, 0, strValue, firstPart, value.length - firstPart);
+            System.arraycopy(value, finishAt + 1, strVal, 0, firstPart);
+            System.arraycopy(value, 0, strVal, firstPart, value.length - firstPart);
 
-            return new String(strValue, 0, strValue.length);
+            return new String(strVal, 0, strVal.length);
         }
         else
             return new String(value, 0, finishAt + 1);

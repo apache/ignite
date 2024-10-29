@@ -12,14 +12,14 @@
 #
 
 Name:             apache-ignite
-Version:          2.15.0
+Version:          2.16.0
 Release:          1
 Summary:          Apache Ignite In-Memory Computing, Database and Caching Platform
 Group:            Development/System
 License:          ASL 2.0
 URL:              https://ignite.apache.org/
 Source:           %{name}-%{version}-bin.zip
-Requires:         java-1.8.0, chkconfig
+Requires:         java-11, chkconfig
 Requires(pre):    shadow-utils
 Provides:         %{name}
 AutoReq:          no
@@ -45,7 +45,7 @@ in-memory speeds at petabyte scale
 #
 # Preinstall scripts
 # $1 can be:
-#     1 - Initial install 
+#     1 - Initial install
 #     2 - Upgrade
 #
 

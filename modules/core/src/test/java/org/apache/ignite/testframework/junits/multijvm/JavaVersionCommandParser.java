@@ -41,8 +41,8 @@ class JavaVersionCommandParser {
                 versionCommandOutput + "'");
         }
 
-        String fullJavaVersion = matcher.group(2);
+        String fullJavaVer = matcher.group(2);
 
-        return U.majorJavaVersion(fullJavaVersion);
+        return U.majorJavaVersion(fullJavaVer);
     }
 }

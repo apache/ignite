@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.management.api;
 
 import java.lang.annotation.ElementType;
+import java.lang.annotation.Repeatable;
 import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
@@ -28,9 +29,11 @@ import java.lang.annotation.Target;
  * If values from {@link #value()} not conform restrictions then error will be thrown.
  *
  * @see org.apache.ignite.internal.management.SystemViewCommandArg
+ * @see ArgumentGroupsHolder
  */
 @Retention(RetentionPolicy.RUNTIME)
 @Target(ElementType.TYPE)
+@Repeatable(ArgumentGroupsHolder.class)
 public @interface ArgumentGroup {
     /** @return Names of argument class fields to forms "group" restriction. */
     public String[] value();

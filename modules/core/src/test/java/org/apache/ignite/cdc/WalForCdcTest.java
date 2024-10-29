@@ -354,6 +354,10 @@ public class WalForCdcTest extends GridCommonAbstractTest {
         while (iter.hasNext()) {
             IgniteBiTuple<WALPointer, WALRecord> rec = iter.next();
 
+            // Custom records could be written in WAL even if persistence isn't enabled.
+            if (rec.get2().type().purpose() == WALRecord.RecordPurpose.CUSTOM)
+                continue;
+
             if (persistenceEnabled && (!(rec.get2() instanceof DataRecord)))
                 continue;
 

@@ -35,7 +35,6 @@ import javax.management.MBeanParameterInfo;
 import javax.management.ReflectionException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.internal.IgniteEx;
-import org.apache.ignite.internal.client.GridClientException;
 import org.apache.ignite.internal.dto.IgniteDataTransferObject;
 import org.apache.ignite.internal.util.typedef.F;
 
@@ -129,15 +128,10 @@ public class CommandMBean<A extends IgniteDataTransferObject, R> implements Dyna
 
             return resStr.toString();
         }
-        catch (GridClientException e) {
-            log.error("Invoke error:", e);
-
-            throw new RuntimeException(e);
-        }
         catch (Exception e) {
             log.error("Invoke error:", e);
 
-            throw e;
+            throw new RuntimeException(e);
         }
     }
 

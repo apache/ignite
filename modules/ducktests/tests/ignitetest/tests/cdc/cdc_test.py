@@ -25,7 +25,7 @@ from ignitetest.tests.client_test import check_topology
 from ignitetest.utils import cluster, ignite_versions, ignore_if
 from ignitetest.utils.bean import Bean
 from ignitetest.utils.ignite_test import IgniteTest
-from ignitetest.utils.version import LATEST, IgniteVersion, DEV_BRANCH, V_2_14_0
+from ignitetest.utils.version import LATEST, IgniteVersion, DEV_BRANCH, V_2_16_0
 
 
 class CdcTest(IgniteTest):
@@ -37,7 +37,7 @@ class CdcTest(IgniteTest):
 
     @cluster(num_nodes=5)
     @ignite_versions(str(DEV_BRANCH), str(LATEST))
-    @ignore_if(lambda version, _: version <= V_2_14_0)
+    @ignore_if(lambda version, _: version <= V_2_16_0)
     @parametrize(num_nodes=5, wal_force_archive_timeout=100, pacing=10, duration_sec=10)
     def test_cdc_start_stop(self, ignite_version, num_nodes, wal_force_archive_timeout, pacing, duration_sec):
         """

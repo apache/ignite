@@ -17,12 +17,11 @@
 
 package org.apache.ignite.internal.processors.cache.persistence.wal.reader;
 
-import java.util.Collections;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.processors.plugin.IgnitePluginProcessor;
-import org.apache.ignite.plugin.PluginProvider;
+import org.apache.ignite.internal.util.typedef.internal.U;
 
 /**
  * No operation, empty plugin processor for creating WAL iterator without node start up
@@ -33,6 +32,6 @@ class StandaloneIgnitePluginProcessor extends IgnitePluginProcessor {
      * @param cfg Ignite configuration.
      */
     StandaloneIgnitePluginProcessor(GridKernalContext ctx, IgniteConfiguration cfg) throws IgniteCheckedException {
-        super(ctx, cfg, Collections.<PluginProvider>emptyList());
+        super(ctx, cfg, U.allPluginProviders(cfg, false));
     }
 }

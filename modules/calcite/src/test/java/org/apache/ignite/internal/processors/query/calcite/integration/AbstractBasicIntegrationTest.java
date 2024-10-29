@@ -47,17 +47,16 @@ import org.apache.ignite.internal.processors.query.calcite.schema.IgniteTable;
 import org.apache.ignite.internal.processors.query.calcite.util.Commons;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.G;
-import org.apache.ignite.testframework.junits.WithSystemProperty;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.jetbrains.annotations.Nullable;
 
+import static org.apache.ignite.internal.processors.query.calcite.exec.ExchangeServiceImpl.INBOX_INITIALIZATION_TIMEOUT;
 import static org.apache.ignite.testframework.GridTestUtils.assertThrowsAnyCause;
 import static org.apache.ignite.testframework.GridTestUtils.waitForCondition;
 
 /**
  *
  */
-@WithSystemProperty(key = "calcite.debug", value = "false")
 public class AbstractBasicIntegrationTest extends GridCommonAbstractTest {
     /** */
     protected static final Object[] NULL_RESULT = new Object[] { null };
@@ -75,6 +74,11 @@ public class AbstractBasicIntegrationTest extends GridCommonAbstractTest {
         client = startClientGrid("client");
     }
 
+    /** */
+    protected boolean destroyCachesAfterTest() {
+        return true;
+    }
+
     /** {@inheritDoc} */
     @Override protected void afterTest() throws Exception {
         // Wait for pending queries before destroying caches. If some error occurs during query execution, client code
@@ -83,11 +87,22 @@ public class AbstractBasicIntegrationTest extends GridCommonAbstractTest {
         assertTrue("Not finished queries found on client", waitForCondition(
             () -> queryProcessor(client).queryRegistry().runningQueries().isEmpty(), 1_000L));
 
-        for (Ignite ign : G.allGrids()) {
-            for (String cacheName : ign.cacheNames())
-                ign.destroyCache(cacheName);
+        waitForCondition(() -> {
+            for (Ignite ign : G.allGrids()) {
+                if (!queryProcessor(ign).mailboxRegistry().inboxes().isEmpty())
+                    return false;
+            }
 
-            CalciteQueryProcessor qryProc = queryProcessor(((IgniteEx)ign));
+            return true;
+        }, INBOX_INITIALIZATION_TIMEOUT * 2);
+
+        for (Ignite ign : G.allGrids()) {
+            if (destroyCachesAfterTest()) {
+                for (String cacheName : ign.cacheNames())
+                    ign.destroyCache(cacheName);
+            }
+
+            CalciteQueryProcessor qryProc = queryProcessor(ign);
 
             assertEquals("Not finished queries found [ignite=" + ign.name() + ']',
                 0, qryProc.queryRegistry().runningQueries().size());
@@ -95,6 +110,12 @@ public class AbstractBasicIntegrationTest extends GridCommonAbstractTest {
             ExecutionServiceImpl<Object[]> execSvc = (ExecutionServiceImpl<Object[]>)qryProc.executionService();
             assertEquals("Tracked memory must be 0 after test [ignite=" + ign.name() + ']',
                 0, execSvc.memoryTracker().allocated());
+
+            assertEquals("Count of inboxes must be 0 after test [ignite=" + ign.name() + ']',
+                0, qryProc.mailboxRegistry().inboxes().size());
+
+            assertEquals("Count of outboxes must be 0 after test [ignite=" + ign.name() + ']',
+                0, qryProc.mailboxRegistry().outboxes().size());
         }
 
         awaitPartitionMapExchange();
@@ -126,14 +147,21 @@ public class AbstractBasicIntegrationTest extends GridCommonAbstractTest {
     protected QueryChecker assertQuery(IgniteEx ignite, String qry) {
         return new QueryChecker(qry) {
             @Override protected QueryEngine getEngine() {
-                return Commons.lookupComponent(ignite.context(), QueryEngine.class);
+                return Commons.lookupComponent(((IgniteEx)ignite).context(), QueryEngine.class);
             }
         };
     }
 
-    /** */
+    /** @deprecated Use {@link #sql(String, Object...)} instead. */
+    @Deprecated
     protected List<List<?>> executeSql(String sql, Object... args) {
-        CalciteQueryProcessor qryProc = Commons.lookupComponent(client.context(), CalciteQueryProcessor.class);
+        return executeSql(client, sql, args);
+    }
+
+    /** @deprecated Use {@link #sql(String, Object...)} instead. */
+    @Deprecated
+    protected List<List<?>> executeSql(IgniteEx ignite, String sql, Object... args) {
+        CalciteQueryProcessor qryProc = Commons.lookupComponent(ignite.context(), CalciteQueryProcessor.class);
 
         List<FieldsQueryCursor<List<?>>> cur = qryProc.query(queryContext(), "PUBLIC", sql, args);
 
@@ -155,17 +183,17 @@ public class AbstractBasicIntegrationTest extends GridCommonAbstractTest {
      * @param msg Error message.
      */
     protected void assertThrows(String sql, Class<? extends Exception> cls, String msg, Object... args) {
-        assertThrowsAnyCause(log, () -> executeSql(sql, args), cls, msg);
+        assertThrowsAnyCause(log, () -> sql(sql, args), cls, msg);
     }
 
     /** */
     protected IgniteCache<Integer, Employer> createAndPopulateTable() {
-        return createAndPopulateTable(2, CacheMode.PARTITIONED);
+        return createAndPopulateTable(client, 2, CacheMode.PARTITIONED);
     }
 
     /** */
-    protected IgniteCache<Integer, Employer> createAndPopulateTable(int backups, CacheMode cacheMode) {
-        IgniteCache<Integer, Employer> person = client.getOrCreateCache(new CacheConfiguration<Integer, Employer>()
+    protected IgniteCache<Integer, Employer> createAndPopulateTable(Ignite ignite, int backups, CacheMode cacheMode) {
+        IgniteCache<Integer, Employer> person = ignite.getOrCreateCache(this.<Integer, Employer>cacheConfiguration()
             .setName(TABLE_NAME)
             .setSqlSchema("PUBLIC")
             .setQueryEntities(F.asList(new QueryEntity(Integer.class, Employer.class)
@@ -179,18 +207,28 @@ public class AbstractBasicIntegrationTest extends GridCommonAbstractTest {
 
         int idx = 0;
 
-        person.put(idx++, new Employer("Igor", 10d));
-        person.put(idx++, new Employer(null, 15d));
-        person.put(idx++, new Employer("Ilya", 15d));
-        person.put(idx++, new Employer("Roma", 10d));
-        person.put(idx++, new Employer("Roma", 10d));
+        put(ignite, person, idx++, new Employer("Igor", 10d));
+        put(ignite, person, idx++, new Employer(null, 15d));
+        put(ignite, person, idx++, new Employer("Ilya", 15d));
+        put(ignite, person, idx++, new Employer("Roma", 10d));
+        put(ignite, person, idx, new Employer("Roma", 10d));
 
         return person;
     }
 
     /** */
-    protected CalciteQueryProcessor queryProcessor(IgniteEx ignite) {
-        return Commons.lookupComponent(ignite.context(), CalciteQueryProcessor.class);
+    protected <K, V> void put(Ignite ignite, IgniteCache<K, V> c, K key, V val) {
+        c.put(key, val);
+    }
+
+    /** */
+    protected <K, V> CacheConfiguration<K, V> cacheConfiguration() {
+        return new CacheConfiguration<>();
+    }
+
+    /** */
+    protected CalciteQueryProcessor queryProcessor(Ignite ignite) {
+        return Commons.lookupComponent(((IgniteEx)ignite).context(), CalciteQueryProcessor.class);
     }
 
     /** */

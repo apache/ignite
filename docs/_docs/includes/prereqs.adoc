@@ -14,10 +14,10 @@
 // limitations under the License.
 [width="100%",cols="1,3"]
 |===
-|JDK |Oracle JDK 8, 11 or 17 Open JDK 8, 11 or 17, IBM JDK 8, 11 or 17
+|JDK |Oracle JDK 11 or 17 Open JDK 11 or 17, IBM JDK 11 or 17
 |OS |Linux (any flavor), Mac OSX (10.6 and up), Windows (XP and up),
 Windows Server (2008 and up), Oracle Solaris
-|ISA |x86, x64, SPARC, PowerPC
+|ISA |x86, x64, SPARC, PowerPC, ARM64
 
 |Network |No restrictions (10G recommended)
 |===

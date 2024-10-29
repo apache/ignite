@@ -232,13 +232,13 @@ public class CachePartitionDefragmentationManager {
         // CacheGroupContext for defragmentation and at least clears shared CheckpointProgress#clearCounters().
         // Should be properly reconfigured and restarted after the defragmentation task to have ability launch
         // other maintenance tasks after.
-        Checkpointer defaultCheckpointer = nodeCheckpoint.getCheckpointer();
+        Checkpointer dfltCheckpointer = nodeCheckpoint.getCheckpointer();
 
-        if (defaultCheckpointer != null && !defaultCheckpointer.isDone()) {
+        if (dfltCheckpointer != null && !dfltCheckpointer.isDone()) {
             if (log.isDebugEnabled())
                 log.debug("Stopping default checkpointer.");
 
-            defaultCheckpointer.shutdownNow();
+            dfltCheckpointer.shutdownNow();
         }
 
         dbMgr.preserveWalTailPointer();
@@ -281,9 +281,9 @@ public class CachePartitionDefragmentationManager {
             oldStores.put(grpId, oldCacheDataStores);
         }
 
-        int partitionCount = oldStores.values().stream().mapToInt(List::size).sum();
+        int partitionCnt = oldStores.values().stream().mapToInt(List::size).sum();
 
-        status.onStart(cacheGrpCtxsForDefragmentation, partitionCount);
+        status.onStart(cacheGrpCtxsForDefragmentation, partitionCnt);
 
         try {
             // Now the actual process starts.
@@ -420,6 +420,7 @@ public class CachePartitionDefragmentationManager {
                     }
 
                     PageStore oldIdxPageStore = filePageStoreMgr.getStore(grpId, INDEX_PARTITION);
+                    long oldSize = oldIdxPageStore.size();
 
                     idxDfrgFut = idxDfrgFut.chain(() -> {
                         if (log.isDebugEnabled()) {
@@ -469,7 +470,7 @@ public class CachePartitionDefragmentationManager {
 
                     status.onIndexDefragmented(
                         oldGrpCtx,
-                        oldIdxPageStore.size(),
+                        oldSize,
                         pageSize + idxAllocationTracker.get() * pageSize // + file header.
                     );
                 }
@@ -902,9 +903,9 @@ public class CachePartitionDefragmentationManager {
         CacheGroupContext grpCtx,
         CacheGroupContext newCtx
     ) throws IgniteCheckedException {
-        GridQueryProcessor query = grpCtx.caches().get(0).kernalContext().query();
+        GridQueryProcessor qry = grpCtx.caches().get(0).kernalContext().query();
 
-        if (!query.moduleEnabled())
+        if (!qry.moduleEnabled())
             return;
 
         IndexProcessor idx = grpCtx.caches().get(0).kernalContext().indexProcessor();

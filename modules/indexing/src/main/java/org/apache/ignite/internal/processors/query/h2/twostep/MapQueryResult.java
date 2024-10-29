@@ -325,6 +325,11 @@ class MapQueryResult {
     }
 
     /** */
+    public MapH2QueryInfo qryInfo() {
+        return res.qryInfo;
+    }
+
+    /** */
     private class Result {
         /** */
         private final ResultInterface res;

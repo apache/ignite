@@ -31,6 +31,7 @@ import org.apache.calcite.plan.RelOptCluster;
 import org.apache.calcite.plan.RelOptTable;
 import org.apache.calcite.rel.RelCollation;
 import org.apache.calcite.rel.RelFieldCollation;
+import org.apache.calcite.rel.hint.RelHint;
 import org.apache.calcite.rel.type.RelDataType;
 import org.apache.calcite.rel.type.RelDataTypeFactory;
 import org.apache.calcite.rel.type.RelDataTypeField;
@@ -48,8 +49,8 @@ import org.apache.ignite.internal.cache.query.index.Order;
 import org.apache.ignite.internal.cache.query.index.SortOrder;
 import org.apache.ignite.internal.cache.query.index.sorted.IndexKeyDefinition;
 import org.apache.ignite.internal.cache.query.index.sorted.IndexKeyType;
+import org.apache.ignite.internal.cache.query.index.sorted.client.ClientIndex;
 import org.apache.ignite.internal.cache.query.index.sorted.client.ClientIndexDefinition;
-import org.apache.ignite.internal.cache.query.index.sorted.client.ClientInlineIndex;
 import org.apache.ignite.internal.processors.query.QueryUtils;
 import org.apache.ignite.internal.processors.query.calcite.exec.ExecutionContext;
 import org.apache.ignite.internal.processors.query.calcite.metadata.ColocationGroup;
@@ -140,9 +141,10 @@ public class TestTable implements IgniteCacheTable {
         RelOptTable relOptTbl,
         @Nullable List<RexNode> proj,
         @Nullable RexNode cond,
-        @Nullable ImmutableBitSet requiredColumns
+        @Nullable ImmutableBitSet requiredColumns,
+        @Nullable List<RelHint> hints
     ) {
-        return IgniteLogicalTableScan.create(cluster, cluster.traitSet(), relOptTbl, proj, cond, requiredColumns);
+        return IgniteLogicalTableScan.create(cluster, cluster.traitSet(), relOptTbl, hints, proj, cond, requiredColumns);
     }
 
     /** {@inheritDoc} */
@@ -244,12 +246,10 @@ public class TestTable implements IgniteCacheTable {
 
         IndexDefinition idxDef = new ClientIndexDefinition(
             new IndexName(QueryUtils.createTableCacheName(DEFAULT_SCHEMA, this.name), DEFAULT_SCHEMA, this.name, name),
-            keyDefs,
-            -1,
-            -1
+            keyDefs
         );
 
-        indexes.put(name, new CacheIndexImpl(collation, name, new ClientInlineIndex(idxDef, -1), this));
+        indexes.put(name, new CacheIndexImpl(collation, name, new ClientIndex(idxDef), this));
 
         return this;
     }
@@ -294,5 +294,10 @@ public class TestTable implements IgniteCacheTable {
     /** */
     @Override public String name() {
         return name;
+    }
+
+    /** {@inheritDoc} */
+    @Override public void authorize(Operation op) {
+        // No-op.
     }
 }

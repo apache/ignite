@@ -83,15 +83,15 @@ public class ClusterNodeAttributeAffinityBackupFilter implements IgniteBiPredica
     private static final long serialVersionUID = 1L;
 
     /** Attribute names. */
-    private final String[] attributeNames;
+    private final String[] attrNames;
 
     /**
-     * @param attributeNames The list of attribute names for the set of attributes to compare. Must be at least one.
+     * @param attrNames The list of attribute names for the set of attributes to compare. Must be at least one.
      */
-    public ClusterNodeAttributeAffinityBackupFilter(String... attributeNames) {
-        A.ensure(attributeNames.length > 0, "attributeNames.length > 0");
+    public ClusterNodeAttributeAffinityBackupFilter(String... attrNames) {
+        A.ensure(attrNames.length > 0, "attributeNames.length > 0");
 
-        this.attributeNames = attributeNames.clone();
+        this.attrNames = attrNames.clone();
     }
 
     /**
@@ -113,8 +113,8 @@ public class ClusterNodeAttributeAffinityBackupFilter implements IgniteBiPredica
         for (ClusterNode node : previouslySelected) {
             boolean match = true;
 
-            for (String attribute : attributeNames) {
-                if (!Objects.equals(candidate.attribute(attribute), node.attribute(attribute))) {
+            for (String attr : attrNames) {
+                if (!Objects.equals(candidate.attribute(attr), node.attribute(attr))) {
                     match = false;
 
                     break;
@@ -134,6 +134,6 @@ public class ClusterNodeAttributeAffinityBackupFilter implements IgniteBiPredica
      * @return Attribute names.
      */
     public String[] getAttributeNames() {
-        return attributeNames.clone();
+        return attrNames.clone();
     }
 }

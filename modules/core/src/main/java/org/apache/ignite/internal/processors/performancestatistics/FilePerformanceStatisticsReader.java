@@ -219,8 +219,8 @@ public class FilePerformanceStatisticsReader {
             long startTime = buf.getLong();
             long duration = buf.getLong();
 
-            for (PerformanceStatisticsHandler handler : curHnd)
-                handler.cacheOperation(nodeId, opType, cacheId, startTime, duration);
+            for (PerformanceStatisticsHandler hnd : curHnd)
+                hnd.cacheOperation(nodeId, opType, cacheId, startTime, duration);
 
             return true;
         }
@@ -241,8 +241,8 @@ public class FilePerformanceStatisticsReader {
             long startTime = buf.getLong();
             long duration = buf.getLong();
 
-            for (PerformanceStatisticsHandler handler : curHnd)
-                handler.transaction(nodeId, cacheIds, startTime, duration, opType == TX_COMMIT);
+            for (PerformanceStatisticsHandler hnd : curHnd)
+                hnd.transaction(nodeId, cacheIds, startTime, duration, opType == TX_COMMIT);
 
             return true;
         }
@@ -278,7 +278,7 @@ public class FilePerformanceStatisticsReader {
                 text = readString(buf, textLen);
             }
 
-            GridCacheQueryType queryType = GridCacheQueryType.fromOrdinal(buf.get());
+            GridCacheQueryType qryType = GridCacheQueryType.fromOrdinal(buf.get());
             long id = buf.getLong();
             long startTime = buf.getLong();
             long duration = buf.getLong();
@@ -287,8 +287,8 @@ public class FilePerformanceStatisticsReader {
             if (text == null)
                 forwardRead(hash);
 
-            for (PerformanceStatisticsHandler handler : curHnd)
-                handler.query(nodeId, queryType, text, id, startTime, duration, success);
+            for (PerformanceStatisticsHandler hnd : curHnd)
+                hnd.query(nodeId, qryType, text, id, startTime, duration, success);
 
             return true;
         }
@@ -296,14 +296,14 @@ public class FilePerformanceStatisticsReader {
             if (buf.remaining() < queryReadsRecordSize())
                 return false;
 
-            GridCacheQueryType queryType = GridCacheQueryType.fromOrdinal(buf.get());
+            GridCacheQueryType qryType = GridCacheQueryType.fromOrdinal(buf.get());
             UUID uuid = readUuid(buf);
             long id = buf.getLong();
             long logicalReads = buf.getLong();
             long physicalReads = buf.getLong();
 
-            for (PerformanceStatisticsHandler handler : curHnd)
-                handler.queryReads(nodeId, queryType, uuid, id, logicalReads, physicalReads);
+            for (PerformanceStatisticsHandler hnd : curHnd)
+                hnd.queryReads(nodeId, qryType, uuid, id, logicalReads, physicalReads);
 
             return true;
         }
@@ -318,8 +318,8 @@ public class FilePerformanceStatisticsReader {
             long id = buf.getLong();
             long rows = buf.getLong();
 
-            for (PerformanceStatisticsHandler handler : curHnd)
-                handler.queryRows(nodeId, qryType, uuid, id, action, rows);
+            for (PerformanceStatisticsHandler hnd : curHnd)
+                hnd.queryRows(nodeId, qryType, uuid, id, action, rows);
 
             return true;
         }
@@ -341,8 +341,8 @@ public class FilePerformanceStatisticsReader {
             UUID uuid = readUuid(buf);
             long id = buf.getLong();
 
-            for (PerformanceStatisticsHandler handler : curHnd)
-                handler.queryProperty(nodeId, qryType, uuid, id, name, val);
+            for (PerformanceStatisticsHandler hnd : curHnd)
+                hnd.queryProperty(nodeId, qryType, uuid, id, name, val);
 
             return true;
         }
@@ -386,8 +386,8 @@ public class FilePerformanceStatisticsReader {
             if (taskName == null)
                 forwardRead(hash);
 
-            for (PerformanceStatisticsHandler handler : curHnd)
-                handler.task(nodeId, sesId, taskName, startTime, duration, affPartId);
+            for (PerformanceStatisticsHandler hnd : curHnd)
+                hnd.task(nodeId, sesId, taskName, startTime, duration, affPartId);
 
             return true;
         }
@@ -401,8 +401,8 @@ public class FilePerformanceStatisticsReader {
             long duration = buf.getLong();
             boolean timedOut = buf.get() != 0;
 
-            for (PerformanceStatisticsHandler handler : curHnd)
-                handler.job(nodeId, sesId, queuedTime, startTime, duration, timedOut);
+            for (PerformanceStatisticsHandler hnd : curHnd)
+                hnd.job(nodeId, sesId, queuedTime, startTime, duration, timedOut);
 
             return true;
         }
@@ -440,8 +440,8 @@ public class FilePerformanceStatisticsReader {
 
             int cacheId = buf.getInt();
 
-            for (PerformanceStatisticsHandler handler : curHnd)
-                handler.cacheStart(nodeId, cacheId, cacheName);
+            for (PerformanceStatisticsHandler hnd : curHnd)
+                hnd.cacheStart(nodeId, cacheId, cacheName);
 
             return true;
         }
@@ -465,8 +465,8 @@ public class FilePerformanceStatisticsReader {
             int dataPagesWritten = buf.getInt();
             int cowPagesWritten = buf.getInt();
 
-            for (PerformanceStatisticsHandler handler : curHnd) {
-                handler.checkpoint(nodeId,
+            for (PerformanceStatisticsHandler hnd : curHnd) {
+                hnd.checkpoint(nodeId,
                     beforeLockDuration,
                     lockWaitDuration,
                     listenersExecDuration,
@@ -493,8 +493,8 @@ public class FilePerformanceStatisticsReader {
             long endTime = buf.getLong();
             long duration = buf.getLong();
 
-            for (PerformanceStatisticsHandler handler : curHnd)
-                handler.pagesWriteThrottle(nodeId, endTime, duration);
+            for (PerformanceStatisticsHandler hnd : curHnd)
+                hnd.pagesWriteThrottle(nodeId, endTime, duration);
 
             return true;
         }

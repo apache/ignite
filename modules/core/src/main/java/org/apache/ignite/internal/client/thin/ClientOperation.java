@@ -126,6 +126,12 @@ public enum ClientOperation {
     /** Cache remove all conflict. */
     CACHE_REMOVE_ALL_CONFLICT(1023),
 
+    /** Cache invoke. */
+    CACHE_INVOKE(1024),
+
+    /** Cache invoke all. */
+    CACHE_INVOKE_ALL(1025),
+
     /** Cache partitions. */
     CACHE_PARTITIONS(1101),
 
@@ -215,6 +221,9 @@ public enum ClientOperation {
 
     /** Get service descriptors. */
     SERVICE_GET_DESCRIPTOR(7002),
+
+    /** Get service topology. */
+    SERVICE_GET_TOPOLOGY(7003),
 
     /** Get or create an AtomicLong by name. */
     ATOMIC_LONG_CREATE(9000),
@@ -387,6 +396,12 @@ public enum ClientOperation {
 
             case CACHE_GET_AND_PUT_IF_ABSENT:
                 return ClientOperationType.CACHE_GET_AND_PUT_IF_ABSENT;
+
+            case CACHE_INVOKE:
+                return ClientOperationType.CACHE_INVOKE;
+
+            case CACHE_INVOKE_ALL:
+                return ClientOperationType.CACHE_INVOKE_ALL;
 
             case CACHE_CLEAR:
                 return ClientOperationType.CACHE_CLEAR_EVERYTHING;

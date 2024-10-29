@@ -24,12 +24,16 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Calendar;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
+import java.util.Scanner;
 import java.util.Set;
 import java.util.TreeMap;
 import java.util.TreeSet;
@@ -41,6 +45,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Consumer;
 import java.util.function.Function;
+import java.util.function.LongSupplier;
 import java.util.logging.Formatter;
 import java.util.logging.LogRecord;
 import java.util.logging.Logger;
@@ -48,6 +53,8 @@ import java.util.logging.StreamHandler;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
+import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.github.difflib.text.DiffRow;
 import com.github.difflib.text.DiffRowGenerator;
 import org.apache.ignite.Ignite;
@@ -72,6 +79,7 @@ import org.apache.ignite.internal.client.thin.TcpIgniteClient;
 import org.apache.ignite.internal.commandline.ArgumentParser;
 import org.apache.ignite.internal.commandline.CommandHandler;
 import org.apache.ignite.internal.dto.IgniteDataTransferObject;
+import org.apache.ignite.internal.jackson.IgniteObjectMapper;
 import org.apache.ignite.internal.management.IgniteCommandRegistry;
 import org.apache.ignite.internal.management.api.HelpCommand;
 import org.apache.ignite.internal.management.api.Positional;
@@ -79,6 +87,9 @@ import org.apache.ignite.internal.management.cache.CacheClearCommand;
 import org.apache.ignite.internal.management.cache.CacheCommand;
 import org.apache.ignite.internal.management.cache.CacheDestroyCommand;
 import org.apache.ignite.internal.management.cache.IdleVerifyDumpTask;
+import org.apache.ignite.internal.management.cache.scan.DefaultCacheScanTaskFormat;
+import org.apache.ignite.internal.management.cache.scan.JsonCacheScanTaskFormat;
+import org.apache.ignite.internal.management.cache.scan.TableCacheScanTaskFormat;
 import org.apache.ignite.internal.management.tx.TxTaskResult;
 import org.apache.ignite.internal.processors.cache.CacheGroupContext;
 import org.apache.ignite.internal.processors.cache.CacheType;
@@ -95,11 +106,15 @@ import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteInClosure;
 import org.apache.ignite.logger.java.JavaLogger;
+import org.apache.ignite.platform.model.AccessLevel;
+import org.apache.ignite.platform.model.Employee;
+import org.apache.ignite.platform.model.Key;
 import org.apache.ignite.testframework.junits.GridAbstractTest;
 import org.apache.ignite.testframework.junits.WithSystemProperty;
 import org.apache.ignite.transactions.Transaction;
 import org.apache.ignite.transactions.TransactionRollbackException;
 import org.apache.ignite.transactions.TransactionState;
+import org.apache.maven.surefire.shared.lang3.StringUtils;
 import org.jetbrains.annotations.NotNull;
 import org.junit.Assume;
 import org.junit.Test;
@@ -184,6 +199,18 @@ public class GridCommandHandlerClusterByClassTest extends GridCommandHandlerClus
 
     /** */
     public static final String SCAN = "scan";
+
+    /** */
+    public static final String JOHN = "John Connor";
+
+    /** */
+    public static final String SARAH = "Sarah Connor";
+
+    /** */
+    public static final String KYLE = "Kyle Reese";
+
+    /** */
+    public static final Date DATE = new Date(104, Calendar.JULY, 25);
 
     /**
      * Very basic tests for running the command in different environment which other command are running in.
@@ -703,9 +730,9 @@ public class GridCommandHandlerClusterByClassTest extends GridCommandHandlerClus
     public void testCacheIdleVerifyDump() throws Exception {
         IgniteEx ignite = crd;
 
-        int keysCount = 20; //less than parts number for ability to check skipZeros flag.
+        int keysCnt = 20; //less than parts number for ability to check skipZeros flag.
 
-        createCacheAndPreload(ignite, keysCount);
+        createCacheAndPreload(ignite, keysCnt);
 
         int parts = ignite.affinity(DEFAULT_CACHE_NAME).partitions();
 
@@ -727,7 +754,7 @@ public class GridCommandHandlerClusterByClassTest extends GridCommandHandlerClus
             assertContains(log, dumpWithZeros, "Partition: PartitionKeyV2 [grpId=1544803905, grpName=default, partId=0]");
             assertContains(log, dumpWithZeros, "updateCntr=0, partitionState=OWNING, size=0, partHash=0");
             assertContains(log, dumpWithZeros, "no conflicts have been found");
-            assertCompactFooterStat(dumpWithZeros, 0, 0, 0, keysCount);
+            assertCompactFooterStat(dumpWithZeros, 0, 0, 0, keysCnt);
 
             assertSort(parts, dumpWithZeros);
         }
@@ -739,21 +766,21 @@ public class GridCommandHandlerClusterByClassTest extends GridCommandHandlerClus
         if (fileNameMatcher.find()) {
             String dumpWithoutZeros = new String(Files.readAllBytes(Paths.get(fileNameMatcher.group(1))));
 
-            assertContains(log, dumpWithoutZeros, "The check procedure has finished, found " + keysCount + " partitions");
-            assertContains(log, dumpWithoutZeros, (parts - keysCount) + " partitions was skipped");
+            assertContains(log, dumpWithoutZeros, "The check procedure has finished, found " + keysCnt + " partitions");
+            assertContains(log, dumpWithoutZeros, (parts - keysCnt) + " partitions was skipped");
             assertContains(log, dumpWithoutZeros, "Partition: PartitionKeyV2 [grpId=1544803905, grpName=default, partId=");
 
             assertNotContains(log, dumpWithoutZeros, "updateCntr=0, partitionState=OWNING, size=0, partHash=0");
 
             assertContains(log, dumpWithoutZeros, "no conflicts have been found");
-            assertCompactFooterStat(dumpWithoutZeros, 0, 0, 0, keysCount);
+            assertCompactFooterStat(dumpWithoutZeros, 0, 0, 0, keysCnt);
 
-            assertSort(keysCount, dumpWithoutZeros);
+            assertSort(keysCnt, dumpWithoutZeros);
         }
         else
             fail("Should be found both files");
 
-        for (int i = 0; i < keysCount / 2; i++)
+        for (int i = 0; i < keysCnt / 2; i++)
             ignite.cache(DEFAULT_CACHE_NAME).put(new TestClass(i, String.valueOf(i)), i);
 
         assertEquals(EXIT_CODE_OK, execute("--cache", "idle_verify", "--dump", DEFAULT_CACHE_NAME));
@@ -764,7 +791,7 @@ public class GridCommandHandlerClusterByClassTest extends GridCommandHandlerClus
 
         String report = new String(Files.readAllBytes(Paths.get(fileNameMatcher.group(1))));
 
-        assertCompactFooterStat(report, keysCount / 2, 0, keysCount / 2, keysCount);
+        assertCompactFooterStat(report, keysCnt / 2, 0, keysCnt / 2, keysCnt);
 
         ClientConfiguration cliCfg = new ClientConfiguration()
             .setAddresses("127.0.0.1:10800")
@@ -772,11 +799,11 @@ public class GridCommandHandlerClusterByClassTest extends GridCommandHandlerClus
             .setBinaryConfiguration(new BinaryConfiguration().setCompactFooter(false));
 
         try (IgniteClient cli = TcpIgniteClient.start(cliCfg)) {
-            for (int i = keysCount; i < keysCount * 3; i++)
+            for (int i = keysCnt; i < keysCnt * 3; i++)
                 cli.cache(DEFAULT_CACHE_NAME).put(new TestClass(i, String.valueOf(i)), i);
         }
 
-        for (int i = 0; i < keysCount; i++)
+        for (int i = 0; i < keysCnt; i++)
             ignite.cache(DEFAULT_CACHE_NAME).put(String.valueOf(i), i);
 
         assertEquals(EXIT_CODE_OK, execute("--cache", "idle_verify", "--dump", DEFAULT_CACHE_NAME));
@@ -787,7 +814,7 @@ public class GridCommandHandlerClusterByClassTest extends GridCommandHandlerClus
 
         report = new String(Files.readAllBytes(Paths.get(fileNameMatcher.group(1))));
 
-        assertCompactFooterStat(report, keysCount / 2, keysCount * 2, keysCount / 2 + keysCount * 2, keysCount * 2);
+        assertCompactFooterStat(report, keysCnt / 2, keysCnt * 2, keysCnt / 2 + keysCnt * 2, keysCnt * 2);
     }
 
     /** */
@@ -1351,10 +1378,15 @@ public class GridCommandHandlerClusterByClassTest extends GridCommandHandlerClus
                 SPRING_XML_CONFIG, cfgPath + "/unknown.xml"),
             "Failed to create caches. Spring XML configuration file not found");
 
-        assertEquals(CommandHandler.EXIT_CODE_OK, execute("--cache", CREATE, SPRING_XML_CONFIG,
-            cfgPath + "/cache-create-correct.xml"));
+        assertContains(log, executeCommand(EXIT_CODE_OK, "--cache", CREATE, SPRING_XML_CONFIG,
+            cfgPath + "/cache-create-correct.xml"), "Created caches: cache1, cache2");
 
         assertTrue(crd.cacheNames().containsAll(F.asList("cache1", "cache2")));
+
+        assertContains(log, executeCommand(EXIT_CODE_OK, "--cache", CREATE, SPRING_XML_CONFIG, cfgPath +
+            "/cache-create-correct-skip-existing-check.xml", "--skip-existing"), "Created caches: cache3, cache4");
+
+        assertTrue(crd.cacheNames().containsAll(F.asList("cache1", "cache2", "cache3", "cache4")));
 
         int expSize = G.allGrids().size();
 
@@ -1531,14 +1563,14 @@ public class GridCommandHandlerClusterByClassTest extends GridCommandHandlerClus
             assertNotContains(log, testOut.toString(), String.format(CLEAR_MSG, ""));
 
         for (String cache: caches) {
-            int count;
+            int cnt0;
 
             if (sql)
-                count = sql("select * from tbl_" + cache).size();
+                cnt0 = sql("select * from tbl_" + cache).size();
             else
-                count = crd.cache(cache).size();
+                cnt0 = crd.cache(cache).size();
 
-            assertEquals(cache, clearCaches.contains(cache) ? 0 : cnt, count);
+            assertEquals(cache, clearCaches.contains(cache) ? 0 : cnt, cnt0);
         }
 
         if (sql) {
@@ -1655,6 +1687,261 @@ public class GridCommandHandlerClusterByClassTest extends GridCommandHandlerClus
     }
 
     /** */
+    private void dataForScanTest() {
+        IgniteCache<Key, Employee> c1 = crd.createCache(new CacheConfiguration<>("cache1"));
+
+        c1.put(new Key(1), new Employee(JOHN, 2));
+        c1.put(new Key(2), new Employee(SARAH, 3));
+        c1.put(new Key(3), new Employee(KYLE, 4));
+
+        IgniteCache<Integer, String> c2 = crd.createCache(new CacheConfiguration<>("cache2"));
+
+        c2.put(1, JOHN);
+        c2.put(2, SARAH);
+        c2.put(3, KYLE);
+
+        IgniteCache<Integer, TestClass2> c3 = crd.createCache(new CacheConfiguration<>("cache3"));
+
+        c3.put(1, new TestClass2(
+            1,
+            new boolean[]{true, false},
+            new char[] {'t', 'e', 's', 't'},
+            new short[] {1, 2, 3},
+            new int[]{2, 3},
+            new long[] {4, 5},
+            new float[]{},
+            new double[]{42.0},
+            Collections.singletonMap("some_key", "some_value"),
+            new String[] {"s1", "s2", "s3"},
+            DATE,
+            Arrays.asList(1, 2, 3),
+            AccessLevel.USER
+        ));
+
+        c3.put(2, new TestClass2(
+            2,
+            new boolean[]{true, false},
+            new char[] {'t', 'e', 's', 't'},
+            new short[] {1, 2, 3},
+            new int[]{2, 3},
+            new long[] {4, 5},
+            new float[]{123.0f},
+            new double[] {0},
+            Collections.singletonMap("1", "2"),
+            new String[] {"s4", "s5", "s6"},
+            DATE,
+            Arrays.asList(1, 2, 3),
+            AccessLevel.USER
+        ));
+
+        c3.put(3, new TestClass2(
+            3,
+            new boolean[]{true, false},
+            new char[] {'t', 'e', 's', 't'},
+            new short[] {1, 2, 3},
+            new int[]{2, 3},
+            new long[] {4, 5},
+            new float[]{123.0f},
+            new double[] {1},
+            Collections.singletonMap("xxx", "yyy"),
+            new String[] {"s7", "s8", "s9"},
+            DATE,
+            Arrays.asList(1, 2, 3),
+            AccessLevel.SUPER
+        ));
+    }
+
+    /** */
+    @Test
+    public void testCacheScanTableFormat() {
+        injectTestSystemOut();
+
+        autoConfirmation = false;
+
+        dataForScanTest();
+
+        assertEquals(EXIT_CODE_OK, execute("--cache", SCAN, "--output-format", TableCacheScanTaskFormat.NAME, "cache1"));
+
+        assertContains(log, testOut.toString(), Pattern.compile("id *fio *salary *\n"));
+        assertContains(log, testOut.toString(), Pattern.compile("1 *" + JOHN + " *2 *\n"));
+        assertContains(log, testOut.toString(), Pattern.compile("2 *" + SARAH + " *3 *\n"));
+        assertContains(log, testOut.toString(), Pattern.compile("3 *" + KYLE + " *4 *\n"));
+
+        assertEquals(EXIT_CODE_OK, execute("--cache", SCAN, "--output-format", TableCacheScanTaskFormat.NAME, "cache2"));
+
+        assertContains(
+            log,
+            testOut.toString(),
+            Pattern.compile(DefaultCacheScanTaskFormat.KEY + " *" + DefaultCacheScanTaskFormat.VALUE + " *\n")
+        );
+        assertContains(log, testOut.toString(), Pattern.compile("1 *" + JOHN + " *\n"));
+        assertContains(log, testOut.toString(), Pattern.compile("2 *" + SARAH + " *\n"));
+        assertContains(log, testOut.toString(), Pattern.compile("3 *" + KYLE + " *\n"));
+
+        assertEquals(EXIT_CODE_OK, execute("--cache", SCAN, "--output-format", TableCacheScanTaskFormat.NAME, "cache3"));
+
+        assertContains(log, testOut.toString(), "some_key=some_value");
+        assertContains(log, testOut.toString(), "xxx=yyy");
+        assertContains(log, testOut.toString(), "[s1, s2, s3]");
+        assertContains(log, testOut.toString(), DATE.toString());
+    }
+
+    /** */
+    @Test
+    public void testCacheScanJsonFormat() throws Exception {
+        injectTestSystemOut();
+
+        autoConfirmation = false;
+
+        dataForScanTest();
+
+        assertEquals(EXIT_CODE_OK, execute("--cache", SCAN, "--output-format", JsonCacheScanTaskFormat.NAME, "cache1"));
+
+        Scanner sc = new Scanner(testOut.toString());
+
+        while (sc.hasNextLine() && !Objects.equals(sc.nextLine().trim(), "data")) ;
+
+        TypeReference<HashMap<String, Object>> typeRef = new TypeReference<HashMap<String, Object>>() {
+            // No-op.
+        };
+
+        ObjectMapper mapper = new ObjectMapper();
+
+        Set<Integer> keys = new HashSet<>();
+
+        for (int i = 0; i < 3; i++) {
+            assertTrue(sc.hasNextLine());
+
+            Map<String, Object> entryFromJson = mapper.readValue(sc.nextLine(), typeRef);
+
+            int key = (int)((Map<String, Object>)entryFromJson.get("key")).get("id");
+
+            keys.add(key);
+
+            Map<String, Object> val = (Map<String, Object>)entryFromJson.get("value");
+
+            if (key == 1)
+                assertEquals(JOHN, val.get("fio"));
+            else if (key == 2)
+                assertEquals(SARAH, val.get("fio"));
+            else
+                assertEquals(KYLE, val.get("fio"));
+
+            assertEquals(key + 1, val.get("salary"));
+        }
+
+        assertTrue(keys.containsAll(Arrays.asList(1, 2, 3)));
+
+        keys.clear();
+
+        assertEquals(EXIT_CODE_OK, execute("--cache", SCAN, "--output-format", JsonCacheScanTaskFormat.NAME, "cache2"));
+
+        sc = new Scanner(testOut.toString());
+
+        while (sc.hasNextLine() && !Objects.equals(sc.nextLine().trim(), "data")) ;
+
+        for (int i = 0; i < 3; i++) {
+            assertTrue(sc.hasNextLine());
+
+            Map<String, Object> entryFromJson = mapper.readValue(sc.nextLine(), typeRef);
+
+            int key = (int)entryFromJson.get("key");
+
+            keys.add(key);
+
+            String val = (String)entryFromJson.get("value");
+
+            if (key == 1)
+                assertEquals(JOHN, val);
+            else if (key == 2)
+                assertEquals(SARAH, val);
+            else
+                assertEquals(KYLE, val);
+        }
+
+        assertTrue(keys.containsAll(Arrays.asList(1, 2, 3)));
+
+        keys.clear();
+
+        assertEquals(EXIT_CODE_OK, execute("--cache", SCAN, "--output-format", JsonCacheScanTaskFormat.NAME, "cache3"));
+
+        sc = new Scanner(testOut.toString());
+
+        while (sc.hasNextLine() && !Objects.equals(sc.nextLine().trim(), "data")) ;
+
+        for (int i = 0; i < 3; i++) {
+            assertTrue(sc.hasNextLine());
+
+            Map<String, Object> entryFromJson = mapper.readValue(sc.nextLine(), typeRef);
+
+            int key = (int)entryFromJson.get("key");
+
+            keys.add(key);
+
+            Map<String, Object> val = (Map<String, Object>)entryFromJson.get("value");
+
+            assertEquals(key, val.get("i"));
+            assertEquals(Arrays.asList(true, false), val.get("booleans"));
+            assertEquals("test", val.get("chars"));
+            assertEquals(Arrays.asList(1, 2, 3), val.get("shorts"));
+            assertEquals(Arrays.asList(2, 3), val.get("ints"));
+            assertEquals(Arrays.asList(4, 5), val.get("longs"));
+            assertEquals(Arrays.asList(1, 2, 3), val.get("list"));
+            assertEquals(IgniteObjectMapper.DATE_FORMAT.format(DATE), val.get("date"));
+
+            int firstIdx = i * 3 + 1;
+
+            assertEquals(Arrays.asList("s" + firstIdx, "s" + (firstIdx + 1), "s" + (firstIdx + 2)), val.get("strArr"));
+
+            if (key == 1) {
+                assertTrue(((List<?>)val.get("floats")).isEmpty());
+                assertEquals(Arrays.asList(42.0d), val.get("doubles"));
+                assertEquals(Collections.singletonMap("some_key", "some_value"), val.get("map"));
+                assertEquals(AccessLevel.USER.toString(), val.get("enm"));
+            }
+            else if (key == 2) {
+                assertEquals(Arrays.asList(123d), val.get("floats"));
+                assertEquals(Arrays.asList(0d), val.get("doubles"));
+                assertEquals(Collections.singletonMap("1", "2"), val.get("map"));
+                assertEquals(AccessLevel.USER.toString(), val.get("enm"));
+            }
+            else {
+                assertEquals(Arrays.asList(123d), val.get("floats"));
+                assertEquals(Arrays.asList(1d), val.get("doubles"));
+                assertEquals(Collections.singletonMap("xxx", "yyy"), val.get("map"));
+                assertEquals(AccessLevel.SUPER.toString(), val.get("enm"));
+            }
+        }
+
+        assertTrue(keys.containsAll(Arrays.asList(1, 2, 3)));
+    }
+
+    /** */
+    @Test
+    public void testCacheScanLimit() {
+        injectTestSystemOut();
+
+        IgniteCache<Integer, Object> c = crd.createCache(new CacheConfiguration<Integer, Object>("testCache")
+            .setStatisticsEnabled(true));
+
+        for (int i = 0; i < 1000; i++)
+            c.put(i, false);
+
+        LongSupplier reads = () -> G.allGrids().stream().mapToLong(srv -> srv.cache(c.getName())
+            .metrics(srv.cluster().forLocal()).getCacheGets()).sum();
+
+        long before = reads.getAsLong();
+
+        int limit = 5;
+
+        assertEquals(EXIT_CODE_OK, execute("--cache", SCAN, "testCache", "--limit", String.valueOf(limit)));
+
+        assertTrue(reads.getAsLong() - before < limit * 3);
+        assertEquals(limit, StringUtils.countMatches(testOut.toString(), Integer.class.getName()));
+        assertContains(log, testOut.toString(), "Result limited");
+    }
+
+    /** */
     @Test
     public void testCacheConfigNoOutputFormat() {
         testCacheConfig(null, 1, 1);
@@ -1768,6 +2055,9 @@ public class GridCommandHandlerClusterByClassTest extends GridCommandHandlerClus
 
         createCacheAndPreload(ignite, 100);
 
+        createCacheAndPreload(client, "with-node-filter-cache", 1, 3,
+            node -> node.consistentId().toString().endsWith("0"));
+
         injectTestSystemOut();
 
         // Run distribution for all node and all cache
@@ -1781,6 +2071,9 @@ public class GridCommandHandlerClusterByClassTest extends GridCommandHandlerClus
         // Result include info by cache "ignite-sys-cache"
         assertContains(log, out, "[next group: id=-2100569601, name=ignite-sys-cache]");
 
+        // Result include info by cache "with-node-filter-cache"
+        assertContains(log, out, "[next group: id=-1695684207, name=with-node-filter-cache]");
+
         // Run distribution for all node and all cache and include additional user attribute
         assertEquals(EXIT_CODE_OK, execute("--cache", "distribution", "null", "--user-attributes", "ZONE,CELL,DC"));
 
@@ -1790,17 +2083,28 @@ public class GridCommandHandlerClusterByClassTest extends GridCommandHandlerClus
                                 .map(String::trim)
                                 .collect(toList());
 
-        int firstIndex = outLines.indexOf("[next group: id=1544803905, name=default]");
-        int lastIndex = outLines.lastIndexOf("[next group: id=1544803905, name=default]");
+        int firstIdx = outLines.indexOf("[next group: id=1544803905, name=default]");
+        int lastIdx = outLines.lastIndexOf("[next group: id=1544803905, name=default]");
 
-        String dataLine = outLines.get(firstIndex + 1);
-        String userArrtDataLine = outLines.get(lastIndex + 1);
+        String dataLine = outLines.get(firstIdx + 1);
+        String userArrtDataLine = outLines.get(lastIdx + 1);
 
         long commaNum = dataLine.chars().filter(i -> i == ',').count();
         long userArrtCommaNum = userArrtDataLine.chars().filter(i -> i == ',').count();
 
         // Check that number of columns increased by 3
         assertEquals(3, userArrtCommaNum - commaNum);
+
+        // Run distribution for all node and "with-node-filter-cache" cache
+        assertEquals(EXIT_CODE_OK, execute("--cache", "distribution", "null", "with-node-filter-cache"));
+
+        out = testOut.toString();
+
+        // Result include info by cache "with-node-filter-cache"
+        assertContains(log, out, "[next group: id=-1695684207, name=with-node-filter-cache]");
+
+        // Result not include error
+        assertNotContains(log, out, "Cache distrubution task failed on nodes");
     }
 
     /** */
@@ -2243,6 +2547,79 @@ public class GridCommandHandlerClusterByClassTest extends GridCommandHandlerClus
         public TestClass(int i, String s) {
             this.i = i;
             this.s = s;
+        }
+    }
+
+    /** */
+    private static class TestClass2 {
+        /** */
+        private final int i;
+
+        /** */
+        private final boolean[] booleans;
+
+        /** */
+        private final char[] chars;
+
+        /** */
+        private final short[] shorts;
+
+        /** */
+        private final int[] ints;
+
+        /** */
+        private final long[] longs;
+
+        /** */
+        private final float[] floats;
+
+        /** */
+        private final double[] doubles;
+
+        /** */
+        private final Map<?, ?> map;
+
+        /** */
+        private final String[] strArr;
+
+        /** */
+        private final Date date;
+
+        /** */
+        private final List<?> list;
+
+        /** */
+        private final AccessLevel enm;
+
+        /** */
+        public TestClass2(
+            int i,
+            boolean[] booleans,
+            char[] chars,
+            short[] shorts,
+            int[] ints,
+            long[] longs,
+            float[] floats,
+            double[] doubles,
+            Map<?, ?> map,
+            String[] strArr,
+            Date date,
+            List<?> list,
+            AccessLevel enm
+        ) {
+            this.i = i;
+            this.booleans = booleans;
+            this.chars = chars;
+            this.shorts = shorts;
+            this.ints = ints;
+            this.longs = longs;
+            this.floats = floats;
+            this.doubles = doubles;
+            this.map = map;
+            this.strArr = strArr;
+            this.date = date;
+            this.list = list;
+            this.enm = enm;
         }
     }
 }

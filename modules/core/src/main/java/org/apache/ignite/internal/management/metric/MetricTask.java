@@ -18,17 +18,17 @@
 package org.apache.ignite.internal.management.metric;
 
 import java.util.Collections;
-import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.Map;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.internal.processors.metric.GridMetricManager;
 import org.apache.ignite.internal.processors.task.GridInternal;
-import org.apache.ignite.internal.processors.task.GridVisorManagementTask;
 import org.apache.ignite.internal.visor.VisorJob;
 import org.apache.ignite.internal.visor.VisorOneNodeTask;
 import org.apache.ignite.spi.metric.BooleanMetric;
 import org.apache.ignite.spi.metric.DoubleMetric;
+import org.apache.ignite.spi.metric.HistogramMetric;
 import org.apache.ignite.spi.metric.IntMetric;
 import org.apache.ignite.spi.metric.LongMetric;
 import org.apache.ignite.spi.metric.Metric;
@@ -37,11 +37,11 @@ import org.apache.ignite.spi.metric.ReadOnlyMetricRegistry;
 import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.internal.processors.metric.impl.MetricUtils.SEPARATOR;
+import static org.apache.ignite.internal.processors.metric.impl.MetricUtils.histogramBucketNames;
 import static org.apache.ignite.spi.metric.jmx.MetricRegistryMBean.searchHistogram;
 
 /** Reperesents visor task for obtaining metric values. */
 @GridInternal
-@GridVisorManagementTask
 public class MetricTask extends VisorOneNodeTask<MetricCommandArg, Map<String, ?>> {
     /** */
     private static final long serialVersionUID = 0L;
@@ -92,9 +92,9 @@ public class MetricTask extends VisorOneNodeTask<MetricCommandArg, Map<String, ?
                 String mregName = mreg.name();
 
                 if (mregName.equals(name)) {
-                    Map<String, Object> res = new HashMap<>();
+                    Map<String, Object> res = new LinkedHashMap<>();
 
-                    mreg.forEach(metric -> res.put(metric.name(), valueOf(metric)));
+                    mreg.forEach(metric -> res.putAll(exportMetric(metric)));
 
                     return res;
                 }
@@ -112,7 +112,7 @@ public class MetricTask extends VisorOneNodeTask<MetricCommandArg, Map<String, ?
                 Metric metric = mreg.findMetric(metricName);
 
                 if (metric != null)
-                    return Collections.singletonMap(name, valueOf(metric));
+                    return exportMetric(metric);
 
                 Object val = searchHistogram(metricName, mreg);
 
@@ -142,6 +142,26 @@ public class MetricTask extends VisorOneNodeTask<MetricCommandArg, Map<String, ?
                 return metric.getAsString();
 
             throw new IllegalArgumentException("Unknown metric class [class=" + metric.getClass() + ']');
+        }
+
+        /** @return The metric value prepared to output. */
+        private Map<String, Object> exportMetric(Metric metric) {
+            if (metric instanceof HistogramMetric) {
+                HistogramMetric hist = (HistogramMetric)metric;
+                String[] names = histogramBucketNames(hist);
+
+                Map<String, Object> res = new LinkedHashMap<>();
+
+                for (int i = 0; i < names.length; i++)
+                    res.put(names[i], hist.value()[i]);
+
+                // For compatibility with old output.
+                res.put(metric.name(), valueOf(metric));
+
+                return res;
+            }
+
+            return Collections.singletonMap(metric.name(), valueOf(metric));
         }
     }
 }

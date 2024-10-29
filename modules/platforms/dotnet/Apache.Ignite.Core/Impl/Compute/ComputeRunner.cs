@@ -15,6 +15,8 @@
  * limitations under the License.
  */
 
+using Apache.Ignite.Core.Compute;
+
 namespace Apache.Ignite.Core.Impl.Compute
 {
     using System;
@@ -37,7 +39,11 @@ namespace Apache.Ignite.Core.Impl.Compute
         /// </summary>
         [SuppressMessage("Microsoft.Design", "CA1031:DoNotCatchGeneralExceptionTypes",
             Justification = "User code can throw any exception type.")]
-        public static void ExecuteJobAndWriteResults<T>(IIgniteInternal ignite, PlatformMemoryStream stream, T job,
+        public static void ExecuteJobAndWriteResults<T>(
+            IIgniteInternal ignite,
+            IComputeTaskSession taskSes,
+            PlatformMemoryStream stream,
+            T job,
             Func<T, object> execFunc)
         {
             Debug.Assert(stream != null);
@@ -46,7 +52,7 @@ namespace Apache.Ignite.Core.Impl.Compute
             Debug.Assert(execFunc != null);
             
             // 0. Inject resources.
-            InjectResources(ignite, job);
+            InjectResources(ignite, taskSes, job);
 
             // 1. Execute job.
             object res;
@@ -84,14 +90,18 @@ namespace Apache.Ignite.Core.Impl.Compute
         /// <summary>
         /// Performs compute-specific resource injection.
         /// </summary>
-        public static void InjectResources(IIgniteInternal ignite, object job)
+        public static void InjectResources(IIgniteInternal ignite, IComputeTaskSession computeTaskSession, object job)
         {
             var injector = job as IComputeResourceInjector;
 
+            // Injecting task session is supported only for 
             if (injector != null)
                 injector.Inject(ignite);
             else
+            {
                 ResourceProcessor.Inject(job, ignite);
+                ResourceProcessor.InjectComputeTaskSession(job, computeTaskSession);
+            }
         }
     }
 }

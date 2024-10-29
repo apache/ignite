@@ -33,8 +33,8 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
             bool clientMode, bool userLogger, long igniteId, bool redirectConsole)
         {
             using (var mem = IgniteManager.Memory.Allocate().GetStream())
-            using (var cfgPath0 = env.NewStringUtf(cfgPath))
-            using (var gridName0 = env.NewStringUtf(gridName))
+            using (var cfgPath0 = env.NewString(cfgPath))
+            using (var gridName0 = env.NewString(gridName))
             {
                 mem.WriteBool(clientMode);
                 mem.WriteBool(userLogger);
@@ -58,7 +58,7 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
             var env = Jvm.Get().AttachCurrentThread();
             var methodId = env.Jvm.MethodId;
 
-            using (var gridName1 = env.NewStringUtf(gridName))
+            using (var gridName1 = env.NewString(gridName))
             {
                 long* args = stackalloc long[2];
                 args[0] = gridName == null ? 0 : gridName1.Target.ToInt64();

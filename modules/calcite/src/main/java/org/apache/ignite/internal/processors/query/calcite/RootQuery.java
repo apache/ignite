@@ -29,7 +29,7 @@ import java.util.function.BiConsumer;
 import java.util.stream.Collectors;
 import org.apache.calcite.plan.Context;
 import org.apache.calcite.schema.SchemaPlus;
-import org.apache.calcite.tools.Frameworks;
+import org.apache.calcite.tools.FrameworkConfig;
 import org.apache.calcite.util.CancelFlag;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
@@ -46,8 +46,9 @@ import org.apache.ignite.internal.processors.query.calcite.exec.ExecutionContext
 import org.apache.ignite.internal.processors.query.calcite.exec.rel.Node;
 import org.apache.ignite.internal.processors.query.calcite.exec.rel.RootNode;
 import org.apache.ignite.internal.processors.query.calcite.prepare.BaseQueryContext;
+import org.apache.ignite.internal.processors.query.calcite.prepare.ExecutionPlan;
+import org.apache.ignite.internal.processors.query.calcite.prepare.FieldsMetadata;
 import org.apache.ignite.internal.processors.query.calcite.prepare.Fragment;
-import org.apache.ignite.internal.processors.query.calcite.prepare.MultiStepPlan;
 import org.apache.ignite.internal.processors.query.calcite.prepare.PlanningContext;
 import org.apache.ignite.internal.processors.query.calcite.util.Commons;
 import org.apache.ignite.internal.processors.query.running.TrackableQuery;
@@ -55,8 +56,6 @@ import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.jetbrains.annotations.Nullable;
-
-import static org.apache.ignite.internal.processors.query.calcite.CalciteQueryProcessor.FRAMEWORK_CONFIG;
 
 /**
  * The RootQuery is created on the query initiator (originator) node as the first step of a query run;
@@ -107,6 +106,7 @@ public class RootQuery<RowT> extends Query<RowT> implements TrackableQuery {
         Object[] params,
         QueryContext qryCtx,
         boolean isLocal,
+        boolean forcedJoinOrder,
         int[] parts,
         ExchangeService exch,
         BiConsumer<Query<RowT>, Throwable> unregister,
@@ -137,14 +137,14 @@ public class RootQuery<RowT> extends Query<RowT> implements TrackableQuery {
 
         Context parent = Commons.convert(qryCtx);
 
+        FrameworkConfig frameworkCfg = qryCtx != null ? qryCtx.unwrap(FrameworkConfig.class) : null;
+
         ctx = BaseQueryContext.builder()
             .parentContext(parent)
-            .frameworkConfig(
-                Frameworks.newConfigBuilder(FRAMEWORK_CONFIG)
-                    .defaultSchema(schema)
-                    .build()
-            )
+            .frameworkConfig(frameworkCfg)
+            .defaultSchema(schema)
             .local(isLocal)
+            .forcedJoinOrder(forcedJoinOrder)
             .partitions(parts)
             .logger(log)
             .build();
@@ -159,8 +159,8 @@ public class RootQuery<RowT> extends Query<RowT> implements TrackableQuery {
      * @param schema new schema.
      */
     public RootQuery<RowT> childQuery(SchemaPlus schema) {
-        return new RootQuery<>(sql, schema, params, QueryContext.of(cancel), ctx.isLocal(), ctx.partitions(), exch, unregister, log,
-            plannerTimeout, totalTimeout);
+        return new RootQuery<>(sql, schema, params, QueryContext.of(cancel), ctx.isLocal(), ctx.isForcedJoinOrder(),
+            ctx.partitions(), exch, unregister, log, plannerTimeout, totalTimeout);
     }
 
     /** */
@@ -193,14 +193,14 @@ public class RootQuery<RowT> extends Query<RowT> implements TrackableQuery {
     /**
      * Starts execution phase for the query and setup remote fragments.
      */
-    public void run(ExecutionContext<RowT> ctx, MultiStepPlan plan, Node<RowT> root) {
+    public void run(ExecutionContext<RowT> ctx, ExecutionPlan plan, FieldsMetadata metadata, Node<RowT> root) {
         synchronized (mux) {
             if (state == QueryState.CLOSED)
                 throw queryCanceledException();
 
             planningTime = U.currentTimeMillis() - startTs;
 
-            RootNode<RowT> rootNode = new RootNode<>(ctx, plan.fieldsMetadata().rowType(), this::tryClose);
+            RootNode<RowT> rootNode = new RootNode<>(ctx, metadata.rowType(), this::tryClose);
             rootNode.register(root);
 
             addFragment(new RunningFragment<>(F.first(plan.fragments()).root(), rootNode, ctx));

@@ -16,7 +16,7 @@
 #
 
 # Use Java 8 image as default one.
-FROM openjdk:8
+FROM openjdk:11
 
 # Set Apache Ignite configuration file name.
 ARG IGNITE_CFG_XML="example-kube.xml"

@@ -279,6 +279,8 @@ public class DistributedMetaStorageImpl extends GridProcessorAdapter
             DistributedMetaStorageUpdateAckMessage.class,
             this::onAckMessage
         );
+
+        ctx.internalSubscriptionProcessor().registerGlobalStateListener(this);
     }
 
     /**
@@ -368,6 +370,7 @@ public class DistributedMetaStorageImpl extends GridProcessorAdapter
 
     /** {@inheritDoc} */
     @Override public void onActivate(GridKernalContext kctx) {
+        // No-op.
     }
 
     /**

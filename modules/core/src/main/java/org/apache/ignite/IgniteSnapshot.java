@@ -34,6 +34,8 @@ import org.jetbrains.annotations.Nullable;
  * <li>Concurrent updates from {@link IgniteDataStreamer} with default {@link IgniteDataStreamer#allowOverwrite()}
  * setting (false) into a persistent cache can cause that cache data stored inconsistent.</li>
  * </ul>
+ * You can create cache dump, also. Cache dump is consistent files consist of entry by entry cache content.
+ * This type of snapshots supports in-memory caches.
  */
 public interface IgniteSnapshot {
     /**
@@ -60,6 +62,17 @@ public interface IgniteSnapshot {
      * @return Future which will be completed when cancel operation finished.
      */
     public IgniteFuture<Void> cancelSnapshot(String name);
+
+    /**
+     * Creates cache groups dump.
+     * Dump is consistent entry by entry backup of cache group content.
+     * In-memory cache groups also supported.
+     *
+     * @param name Dump name.
+     * @param cacheGroupNames Cache groups to include in snapshot or {@code null} to include all.
+     * @return Future which will be completed when dump ends.
+     */
+    public IgniteFuture<Void> createDump(String name, @Nullable Collection<String> cacheGroupNames);
 
     /**
      * Restore cache group(s) from the snapshot.

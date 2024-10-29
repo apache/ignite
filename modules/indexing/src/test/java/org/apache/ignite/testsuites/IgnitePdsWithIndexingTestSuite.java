@@ -41,6 +41,7 @@ import org.apache.ignite.internal.processors.database.IgniteTwoRegionsRebuildInd
 import org.apache.ignite.internal.processors.database.RebuildIndexTest;
 import org.apache.ignite.internal.processors.database.RebuildIndexWithHistoricalRebalanceTest;
 import org.apache.ignite.internal.processors.database.WalDisabledDuringIndexRecreateTest;
+import org.apache.ignite.internal.processors.query.IndexWithSameNameH2Test;
 import org.apache.ignite.internal.processors.query.h2.maintenance.MaintenanceRebuildIndexUtilsSelfTest;
 import org.junit.runner.RunWith;
 import org.junit.runners.Suite;
@@ -72,7 +73,8 @@ import org.junit.runners.Suite;
     ResumeCreateIndexTest.class,
     RenameIndexTreeTest.class,
     DropIndexTest.class,
-    MaintenanceRebuildIndexUtilsSelfTest.class
+    MaintenanceRebuildIndexUtilsSelfTest.class,
+    IndexWithSameNameH2Test.class,
 })
 public class IgnitePdsWithIndexingTestSuite {
 }

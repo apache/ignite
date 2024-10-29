@@ -43,13 +43,6 @@ public class CacheEntryInfoCollection implements Message {
     }
 
     /**
-     * @param infos List of cache entry info.
-     */
-    public CacheEntryInfoCollection(List<GridCacheEntryInfo> infos) {
-        this.infos = infos;
-    }
-
-    /**
      *
      */
     public void init() {

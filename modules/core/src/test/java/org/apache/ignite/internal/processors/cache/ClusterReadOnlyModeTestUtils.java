@@ -71,8 +71,8 @@ public class ClusterReadOnlyModeTestUtils {
         return F.asArray(
             cacheConfiguration(REPL_ATOMIC_CACHE, REPLICATED, ATOMIC, null),
             cacheConfiguration(REPL_TX_CACHE, REPLICATED, TRANSACTIONAL, null),
-            cacheConfiguration(PART_ATOMIC_CACHE, PARTITIONED, ATOMIC, "part_grp"),
-            cacheConfiguration(PART_TX_CACHE, PARTITIONED, TRANSACTIONAL, "part_grp")
+            cacheConfiguration(PART_ATOMIC_CACHE, PARTITIONED, ATOMIC, "part_grp_atomic"),
+            cacheConfiguration(PART_TX_CACHE, PARTITIONED, TRANSACTIONAL, "part_grp_tx")
         );
     }
 

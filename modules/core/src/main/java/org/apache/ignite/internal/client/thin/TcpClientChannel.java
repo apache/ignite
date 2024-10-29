@@ -73,6 +73,7 @@ import org.apache.ignite.internal.processors.platform.client.ClientStatus;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.T2;
+import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.logger.NullLogger;
 import org.jetbrains.annotations.Nullable;
@@ -280,7 +281,8 @@ class TcpClientChannel implements ClientChannel, ClientMessageHandler, ClientCon
 
             try {
                 for (ClientRequestFuture pendingReq : pendingReqs.values())
-                    pendingReq.onDone(new ClientConnectionException("Channel is closed", cause));
+                    pendingReq.onDone(new ClientConnectionException("Channel is closed [remoteAddress="
+                        + sock.remoteAddress() + ']', cause));
             }
             finally {
                 pendingReqsLock.writeLock().unlock();
@@ -349,7 +351,8 @@ class TcpClientChannel implements ClientChannel, ClientMessageHandler, ClientCon
 
             try {
                 if (closed()) {
-                    ClientConnectionException err = new ClientConnectionException("Channel is closed");
+                    ClientConnectionException err = new ClientConnectionException("Channel is closed [remoteAddress="
+                        + sock.remoteAddress() + ']');
 
                     eventListener.onRequestFail(connDesc, id, op.code(), op.name(), System.nanoTime() - startTimeNanos, err);
 
@@ -400,7 +403,7 @@ class TcpClientChannel implements ClientChannel, ClientMessageHandler, ClientCon
      */
     private <T> T receive(ClientRequestFuture pendingReq, Function<PayloadInputChannel, T> payloadReader)
         throws ClientException {
-        long requestId = pendingReq.requestId;
+        long reqId = pendingReq.requestId;
         ClientOperation op = pendingReq.operation;
         long startTimeNanos = pendingReq.startTimeNanos;
 
@@ -411,7 +414,7 @@ class TcpClientChannel implements ClientChannel, ClientMessageHandler, ClientCon
             if (payload != null && payloadReader != null)
                 res = payloadReader.apply(new PayloadInputChannel(this, payload));
 
-            eventListener.onRequestSuccess(connDesc, requestId, op.code(), op.name(), System.nanoTime() - startTimeNanos);
+            eventListener.onRequestSuccess(connDesc, reqId, op.code(), op.name(), System.nanoTime() - startTimeNanos);
 
             return res;
         }
@@ -420,7 +423,7 @@ class TcpClientChannel implements ClientChannel, ClientMessageHandler, ClientCon
 
             RuntimeException err = convertException(e);
 
-            eventListener.onRequestFail(connDesc, requestId, op.code(), op.name(), System.nanoTime() - startTimeNanos, err);
+            eventListener.onRequestFail(connDesc, reqId, op.code(), op.name(), System.nanoTime() - startTimeNanos, err);
 
             throw err;
         }
@@ -435,7 +438,7 @@ class TcpClientChannel implements ClientChannel, ClientMessageHandler, ClientCon
      */
     private <T> CompletableFuture<T> receiveAsync(ClientRequestFuture pendingReq, Function<PayloadInputChannel, T> payloadReader) {
         CompletableFuture<T> fut = new CompletableFuture<>();
-        long requestId = pendingReq.requestId;
+        long reqId = pendingReq.requestId;
         ClientOperation op = pendingReq.operation;
         long startTimeNanos = pendingReq.startTimeNanos;
 
@@ -447,7 +450,7 @@ class TcpClientChannel implements ClientChannel, ClientMessageHandler, ClientCon
                 if (payload != null && payloadReader != null)
                     res = payloadReader.apply(new PayloadInputChannel(this, payload));
 
-                eventListener.onRequestSuccess(connDesc, requestId, op.code(), op.name(), System.nanoTime() - startTimeNanos);
+                eventListener.onRequestSuccess(connDesc, reqId, op.code(), op.name(), System.nanoTime() - startTimeNanos);
 
                 fut.complete(res);
             }
@@ -456,7 +459,7 @@ class TcpClientChannel implements ClientChannel, ClientMessageHandler, ClientCon
 
                 RuntimeException err = convertException(t);
 
-                eventListener.onRequestFail(connDesc, requestId, op.code(), op.name(), System.nanoTime() - startTimeNanos, err);
+                eventListener.onRequestFail(connDesc, reqId, op.code(), op.name(), System.nanoTime() - startTimeNanos, err);
 
                 fut.completeExceptionally(err);
             }
@@ -631,7 +634,7 @@ class TcpClientChannel implements ClientChannel, ClientMessageHandler, ClientCon
 
         try {
             if (closed())
-                throw new ClientConnectionException("Channel is closed");
+                throw new ClientConnectionException("Channel is closed [remoteAddress=" + sock.remoteAddress() + ']');
 
             Map<Long, NotificationListener> lsnrs = notificationLsnrs[type.ordinal()];
 
@@ -697,7 +700,7 @@ class TcpClientChannel implements ClientChannel, ClientMessageHandler, ClientCon
     /** Client handshake. */
     private void handshake(ProtocolVersion ver, String user, String pwd, Map<String, String> userAttrs)
         throws ClientConnectionException, ClientAuthenticationException, ClientProtocolError {
-        long requestId = -1L;
+        long reqId = -1L;
         long startTime = System.nanoTime();
 
         eventListener.onHandshakeStart(new ConnectionDescription(sock.localAddress(), sock.remoteAddress(),
@@ -710,11 +713,11 @@ class TcpClientChannel implements ClientChannel, ClientMessageHandler, ClientCon
 
             try {
                 if (closed())
-                    throw new ClientConnectionException("Channel is closed");
+                    throw new ClientConnectionException("Channel is closed [remoteAddress=" + sock.remoteAddress() + ']');
 
-                fut = new ClientRequestFuture(requestId, ClientOperation.HANDSHAKE);
+                fut = new ClientRequestFuture(reqId, ClientOperation.HANDSHAKE);
 
-                pendingReqs.put(requestId, fut);
+                pendingReqs.put(reqId, fut);
             }
             finally {
                 pendingReqsLock.readLock().unlock();
@@ -807,7 +810,7 @@ class TcpClientChannel implements ClientChannel, ClientMessageHandler, ClientCon
                 if (e instanceof IOException)
                     err = handleIOError((IOException)e);
                 else
-                    err = new ClientConnectionException(e.getMessage(), e);
+                    err = new ClientConnectionException(e.getMessage() + " [remoteAddress=" + sock.remoteAddress() + ']', e);
 
                 eventListener.onHandshakeFail(
                     new ConnectionDescription(sock.localAddress(), sock.remoteAddress(), new ProtocolContext(ver).toString(), null),
@@ -879,7 +882,7 @@ class TcpClientChannel implements ClientChannel, ClientMessageHandler, ClientCon
             lastSendMillis = System.currentTimeMillis();
         }
         catch (IgniteCheckedException e) {
-            throw new ClientConnectionException(e.getMessage(), e);
+            throw new ClientConnectionException(e.getMessage() + " [remoteAddress=" + sock.remoteAddress() + ']', e);
         }
     }
 
@@ -887,7 +890,7 @@ class TcpClientChannel implements ClientChannel, ClientMessageHandler, ClientCon
      * @param ex IO exception (cause).
      */
     private ClientException handleIOError(@Nullable IOException ex) {
-        return handleIOError("sock=" + sock, ex);
+        return handleIOError(S.toString(ConnectionDescription.class, connDesc), ex);
     }
 
     /**

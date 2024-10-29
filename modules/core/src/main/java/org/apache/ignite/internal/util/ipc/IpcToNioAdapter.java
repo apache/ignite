@@ -26,7 +26,7 @@ import java.util.concurrent.atomic.AtomicReference;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
-import org.apache.ignite.internal.processors.metric.MetricRegistry;
+import org.apache.ignite.internal.processors.metric.MetricRegistryImpl;
 import org.apache.ignite.internal.processors.metric.impl.LongAdderMetric;
 import org.apache.ignite.internal.util.nio.GridNioFilter;
 import org.apache.ignite.internal.util.nio.GridNioFilterAdapter;
@@ -86,7 +86,7 @@ public class IpcToNioAdapter<T> {
      * @param writerFactory Writer factory.
      * @param filters Filters.
      */
-    public IpcToNioAdapter(MetricRegistry mreg, IgniteLogger log, IpcEndpoint endp,
+    public IpcToNioAdapter(MetricRegistryImpl mreg, IgniteLogger log, IpcEndpoint endp,
         GridNioServerListener<T> lsnr, GridNioMessageWriterFactory writerFactory, GridNioFilter... filters
     ) {
         assert mreg != null;

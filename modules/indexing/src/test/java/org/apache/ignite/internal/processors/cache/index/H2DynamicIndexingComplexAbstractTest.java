@@ -107,9 +107,9 @@ public abstract class H2DynamicIndexingComplexAbstractTest extends DynamicIndexA
             "London", 8000000
         );
 
-        final long PERSON_COUNT = 100;
+        final long PERSON_CNT = 100;
 
-        for (int i = 0; i < PERSON_COUNT; i++)
+        for (int i = 0; i < PERSON_CNT; i++)
             executeSql("INSERT INTO person (id, name, age, company, city) values (?, ?, ?, ?, ?)",
                 i,
                 "Person " + i,
@@ -125,7 +125,7 @@ public abstract class H2DynamicIndexingComplexAbstractTest extends DynamicIndexA
 
         long r = (Long)executeSqlSingle("SELECT COUNT(*) from Person");
 
-        assertEquals(PERSON_COUNT, r);
+        assertEquals(PERSON_CNT, r);
 
         r = (Long)executeSqlSingle("SELECT COUNT(*) from Person p inner join City c on p.city = c.name");
 

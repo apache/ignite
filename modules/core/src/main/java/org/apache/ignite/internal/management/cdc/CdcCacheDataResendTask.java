@@ -39,6 +39,8 @@ import org.apache.ignite.internal.processors.cache.IgniteInternalCache;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionsExchangeFuture;
 import org.apache.ignite.internal.processors.cache.persistence.CacheDataRow;
+import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
+import org.apache.ignite.internal.processors.cache.version.GridCacheVersionEx;
 import org.apache.ignite.internal.processors.task.GridInternal;
 import org.apache.ignite.internal.util.lang.GridIterator;
 import org.apache.ignite.internal.util.typedef.F;
@@ -142,9 +144,6 @@ public class CdcCacheDataResendTask extends VisorMultiNodeTask<CdcResendCommandA
                         ", dataRegionName=" + cache.context().dataRegion().config().getName() + ']');
                 }
 
-                if (cache.context().mvccEnabled())
-                    throw new UnsupportedOperationException("The TRANSACTIONAL_SNAPSHOT mode is not supported.");
-
                 caches.add(cache);
             }
 
@@ -181,13 +180,13 @@ public class CdcCacheDataResendTask extends VisorMultiNodeTask<CdcResendCommandA
 
             GridCacheContext<?, ?> cctx = cache.context();
 
-            GridIterator<CacheDataRow> localRows = cctx.offheap()
-                .cacheIterator(cctx.cacheId(), true, false, AffinityTopologyVersion.NONE, null, null);
+            GridIterator<CacheDataRow> locRows = cctx.offheap()
+                .cacheIterator(cctx.cacheId(), true, false, AffinityTopologyVersion.NONE, null);
 
             long cnt = 0;
             Set<Integer> parts = new TreeSet<>();
 
-            for (CacheDataRow row : localRows) {
+            for (CacheDataRow row : locRows) {
                 if (isCancelled())
                     break;
 
@@ -198,13 +197,19 @@ public class CdcCacheDataResendTask extends VisorMultiNodeTask<CdcResendCommandA
                 if (log.isTraceEnabled())
                     log.trace("Resend key: " + key);
 
+                GridCacheVersion ver = row.version();
+
+                // Entries must not hold otherClusterVersion to be inserted into a receiver cluster.
+                if (ver instanceof GridCacheVersionEx)
+                    ver = new GridCacheVersion(ver.topologyVersion(), ver.order(), ver.nodeOrder(), ver.clusterId());
+
                 CdcDataRecord rec = new CdcDataRecord(new DataEntry(
                     cctx.cacheId(),
                     key,
                     row.value(),
                     GridCacheOperation.CREATE,
                     null,
-                    row.version(),
+                    ver,
                     row.expireTime(),
                     key.partition(),
                     -1,

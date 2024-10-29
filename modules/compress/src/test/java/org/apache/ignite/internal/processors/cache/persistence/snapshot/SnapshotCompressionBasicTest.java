@@ -121,12 +121,12 @@ public class SnapshotCompressionBasicTest extends AbstractSnapshotSelfTest {
 
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
-        IgniteConfiguration config = super.getConfiguration(igniteInstanceName);
+        IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
-        config.getDataStorageConfiguration().setPageSize(PAGE_SIZE);
-        config.setWorkDirectory(workingDirectory(config).toString());
+        cfg.getDataStorageConfiguration().setPageSize(PAGE_SIZE);
+        cfg.setWorkDirectory(workingDirectory(cfg).toString());
 
-        return config;
+        return cfg;
     }
 
     /** {@inheritDoc} */
@@ -217,9 +217,14 @@ public class SnapshotCompressionBasicTest extends AbstractSnapshotSelfTest {
 
         G.allGrids().forEach(this::failCompressionProcessor);
 
-        for (String snpName: Arrays.asList(SNAPSHOT_WITH_HOLES, SNAPSHOT_WITHOUT_HOLES)) {
-            GridTestUtils.assertThrows(log, () -> ignite.snapshot().restoreSnapshot(snpName, null).get(TIMEOUT),
-                IgniteException.class, "Snapshot contains compressed cache groups");
+        for (String snpName : Arrays.asList(SNAPSHOT_WITH_HOLES, SNAPSHOT_WITHOUT_HOLES)) {
+            GridTestUtils.assertThrowsAnyCause(
+                log,
+                () -> ignite.snapshot().restoreSnapshot(snpName, null).get(TIMEOUT),
+                IllegalStateException.class,
+                "from snapshot '" + snpName + "' are compressed while disk page compression is disabled. To check " +
+                    "these groups please start Ignite with ignite-compress"
+            );
         }
     }
 
@@ -232,14 +237,14 @@ public class SnapshotCompressionBasicTest extends AbstractSnapshotSelfTest {
 
         G.allGrids().forEach(i -> failCompressionProcessor(i));
 
-        Collection<String> groupsWithoutCompression = CACHES.entrySet().stream()
+        Collection<String> grpsWithoutCompression = CACHES.entrySet().stream()
             .filter(e -> !COMPRESSED_CACHES.contains(e.getKey()))
             .map(e -> e.getValue() != null ? e.getValue() : e.getKey())
             .distinct().collect(Collectors.toList());
 
         for (String snpName: Arrays.asList(SNAPSHOT_WITH_HOLES, SNAPSHOT_WITHOUT_HOLES)) {
             try {
-                ignite.snapshot().restoreSnapshot(snpName, groupsWithoutCompression).get(TIMEOUT);
+                ignite.snapshot().restoreSnapshot(snpName, grpsWithoutCompression).get(TIMEOUT);
 
                 waitForEvents(EVT_CLUSTER_SNAPSHOT_RESTORE_STARTED, EVT_CLUSTER_SNAPSHOT_RESTORE_FINISHED);
 
@@ -300,9 +305,9 @@ public class SnapshotCompressionBasicTest extends AbstractSnapshotSelfTest {
     protected void createTestSnapshot() throws Exception {
         CacheConfiguration[] caches = CACHES.entrySet().stream()
             .map(cache -> {
-                CacheConfiguration config = new CacheConfiguration(cache.getKey());
+                CacheConfiguration cfg = new CacheConfiguration(cache.getKey());
 
-                config.setQueryEntities(Collections.singletonList(
+                cfg.setQueryEntities(Collections.singletonList(
                     new QueryEntity()
                         .setKeyType(Integer.class.getName())
                         .setValueType(Value.class.getName())
@@ -312,14 +317,14 @@ public class SnapshotCompressionBasicTest extends AbstractSnapshotSelfTest {
                 ));
 
                 if (cache.getValue() != null)
-                    config.setGroupName(cache.getValue());
+                    cfg.setGroupName(cache.getValue());
 
                 if (COMPRESSED_CACHES.contains(cache.getKey()))
-                    config.setDiskPageCompression(DISK_PAGE_COMPRESSION);
+                    cfg.setDiskPageCompression(DISK_PAGE_COMPRESSION);
                 else
-                    config.setDiskPageCompression(DiskPageCompression.DISABLED);
+                    cfg.setDiskPageCompression(DiskPageCompression.DISABLED);
 
-                return config;
+                return cfg;
             }).toArray(CacheConfiguration[]::new);
 
         IgniteEx ignite = startGridsWithCache(DFLT_GRIDS_CNT, 1000, valueBuilder(), caches);
@@ -483,9 +488,9 @@ public class SnapshotCompressionBasicTest extends AbstractSnapshotSelfTest {
             if (o == null || getClass() != o.getClass())
                 return false;
 
-            Value value = (Value)o;
+            Value val = (Value)o;
 
-            return Objects.equals(name, value.name);
+            return Objects.equals(name, val.name);
         }
 
         /** {@inheritDoc} */

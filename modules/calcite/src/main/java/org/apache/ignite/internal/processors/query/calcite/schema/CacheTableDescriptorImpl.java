@@ -255,19 +255,19 @@ public class CacheTableDescriptorImpl extends NullInitializerExpressionFactory
         RowHandler.RowFactory<Row> factory,
         @Nullable ImmutableBitSet requiredColumns
     ) throws IgniteCheckedException {
-        RowHandler<Row> handler = factory.handler();
+        RowHandler<Row> hnd = factory.handler();
 
-        assert handler == ectx.rowHandler();
+        assert hnd == ectx.rowHandler();
 
         Row res = factory.create();
 
-        assert handler.columnCount(res) == (requiredColumns == null ? descriptors.length : requiredColumns.cardinality());
+        assert hnd.columnCount(res) == (requiredColumns == null ? descriptors.length : requiredColumns.cardinality());
 
         if (requiredColumns == null) {
             for (int i = 0; i < descriptors.length; i++) {
                 CacheColumnDescriptor desc = descriptors[i];
 
-                handler.set(i, res, TypeUtils.toInternal(ectx,
+                hnd.set(i, res, TypeUtils.toInternal(ectx,
                     desc.value(ectx, cacheContext(), row), desc.storageType()));
             }
         }
@@ -275,7 +275,7 @@ public class CacheTableDescriptorImpl extends NullInitializerExpressionFactory
             for (int i = 0, j = requiredColumns.nextSetBit(0); j != -1; j = requiredColumns.nextSetBit(j + 1), i++) {
                 CacheColumnDescriptor desc = descriptors[j];
 
-                handler.set(i, res, TypeUtils.toInternal(ectx,
+                hnd.set(i, res, TypeUtils.toInternal(ectx,
                     desc.value(ectx, cacheContext(), row), desc.storageType()));
             }
         }
@@ -350,9 +350,9 @@ public class CacheTableDescriptorImpl extends NullInitializerExpressionFactory
 
     /** */
     private <Row> Object insertKey(Row row, ExecutionContext<Row> ectx) throws IgniteCheckedException {
-        RowHandler<Row> handler = ectx.rowHandler();
+        RowHandler<Row> hnd = ectx.rowHandler();
 
-        Object key = handler.get(keyField, row);
+        Object key = hnd.get(keyField, row);
 
         if (key != null)
             return TypeUtils.fromInternal(ectx, key, descriptors[QueryUtils.KEY_COL].storageType());
@@ -364,7 +364,7 @@ public class CacheTableDescriptorImpl extends NullInitializerExpressionFactory
             if (!desc.field() || !desc.key())
                 continue;
 
-            Object fieldVal = handler.get(i, row);
+            Object fieldVal = hnd.get(i, row);
 
             if (fieldVal != null) {
                 if (key == null)
@@ -382,9 +382,9 @@ public class CacheTableDescriptorImpl extends NullInitializerExpressionFactory
 
     /** */
     private <Row> Object insertVal(Row row, ExecutionContext<Row> ectx) throws IgniteCheckedException {
-        RowHandler<Row> handler = ectx.rowHandler();
+        RowHandler<Row> hnd = ectx.rowHandler();
 
-        Object val = handler.get(valField, row);
+        Object val = hnd.get(valField, row);
 
         if (val == null) {
             val = newVal(typeDesc.valueTypeName(), typeDesc.valueClass());
@@ -393,7 +393,7 @@ public class CacheTableDescriptorImpl extends NullInitializerExpressionFactory
             for (int i = 2; i < descriptors.length; i++) {
                 final CacheColumnDescriptor desc = descriptors[i];
 
-                Object fieldVal = handler.get(i, row);
+                Object fieldVal = hnd.get(i, row);
 
                 if (desc.field() && !desc.key() && fieldVal != null)
                     desc.set(val, TypeUtils.fromInternal(ectx, fieldVal, desc.storageType()));
@@ -449,10 +449,10 @@ public class CacheTableDescriptorImpl extends NullInitializerExpressionFactory
     /** */
     private <Row> ModifyTuple updateTuple(Row row, List<String> updateColList, int offset, ExecutionContext<Row> ectx)
         throws IgniteCheckedException {
-        RowHandler<Row> handler = ectx.rowHandler();
+        RowHandler<Row> hnd = ectx.rowHandler();
 
-        Object key = Objects.requireNonNull(handler.get(offset + QueryUtils.KEY_COL, row));
-        Object val = clone(Objects.requireNonNull(handler.get(offset + QueryUtils.VAL_COL, row)));
+        Object key = Objects.requireNonNull(hnd.get(offset + QueryUtils.KEY_COL, row));
+        Object val = clone(Objects.requireNonNull(hnd.get(offset + QueryUtils.VAL_COL, row)));
 
         offset += descriptorsMap.size();
 
@@ -461,7 +461,7 @@ public class CacheTableDescriptorImpl extends NullInitializerExpressionFactory
 
             assert !desc.key();
 
-            Object fieldVal = handler.get(i + offset, row);
+            Object fieldVal = hnd.get(i + offset, row);
 
             if (desc.field())
                 desc.set(val, TypeUtils.fromInternal(ectx, fieldVal, desc.storageType()));
@@ -701,7 +701,8 @@ public class CacheTableDescriptorImpl extends NullInitializerExpressionFactory
                     f,
                     storageType,
                     desc != null && desc.precision() != -1 ? desc.precision() : PRECISION_NOT_SPECIFIED,
-                    desc != null && desc.scale() != -1 ? desc.scale() : SCALE_NOT_SPECIFIED
+                    desc != null && desc.scale() != -1 ? desc.scale() : SCALE_NOT_SPECIFIED,
+                    desc == null || !desc.notNull()
                 );
             }
 
@@ -785,7 +786,9 @@ public class CacheTableDescriptorImpl extends NullInitializerExpressionFactory
             if (logicalType == null) {
                 logicalType = TypeUtils.sqlType(f, storageType,
                     desc.precision() == -1 ? PRECISION_NOT_SPECIFIED : desc.precision(),
-                    desc.scale() == -1 ? SCALE_NOT_SPECIFIED : desc.scale());
+                    desc.scale() == -1 ? SCALE_NOT_SPECIFIED : desc.scale(),
+                    !desc.notNull()
+                );
             }
 
             return logicalType;

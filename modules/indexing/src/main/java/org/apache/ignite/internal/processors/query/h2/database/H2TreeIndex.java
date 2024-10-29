@@ -186,8 +186,10 @@ public class H2TreeIndex extends H2TreeIndexBase {
         ctx.io().addMessageListener(msgTopic, msgLsnr);
     }
 
-    /** {@inheritDoc} */
-    @Override public int inlineSize() {
+    /**
+     * @return Inline size.
+     */
+    public int inlineSize() {
         return queryIndex.inlineSize();
     }
 
@@ -224,12 +226,10 @@ public class H2TreeIndex extends H2TreeIndexBase {
 
     /** */
     private IndexQueryContext idxQryContext(QueryContext qctx) {
-        assert qctx != null || !cctx.mvccEnabled();
-
         if (qctx == null)
             return null;
 
-        return new IndexQueryContext(qctx.filter(), null, qctx.mvccSnapshot());
+        return new IndexQueryContext(qctx.filter(), null);
     }
 
     /** */

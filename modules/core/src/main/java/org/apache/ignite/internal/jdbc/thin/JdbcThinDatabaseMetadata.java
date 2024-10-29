@@ -46,8 +46,6 @@ import org.apache.ignite.internal.processors.odbc.jdbc.JdbcPrimaryKeyMeta;
 import org.apache.ignite.internal.processors.odbc.jdbc.JdbcTableMeta;
 import org.apache.ignite.internal.processors.query.schema.management.IndexDescriptor;
 
-import static java.sql.Connection.TRANSACTION_NONE;
-import static java.sql.Connection.TRANSACTION_REPEATABLE_READ;
 import static java.sql.ResultSet.CONCUR_READ_ONLY;
 import static java.sql.ResultSet.HOLD_CURSORS_OVER_COMMIT;
 import static java.sql.ResultSet.TYPE_FORWARD_ONLY;
@@ -640,19 +638,17 @@ public class JdbcThinDatabaseMetadata implements DatabaseMetaData {
 
     /** {@inheritDoc} */
     @Override public int getDefaultTransactionIsolation() throws SQLException {
-        return conn.igniteVersion().greaterThanEqual(2, 5, 0) ? TRANSACTION_REPEATABLE_READ :
-            TRANSACTION_NONE;
+        return conn.defaultTransactionIsolation();
     }
 
     /** {@inheritDoc} */
     @Override public boolean supportsTransactions() throws SQLException {
-        return conn.igniteVersion().greaterThanEqual(2, 5, 0);
+        return conn.isTxAwareQueriesSupported;
     }
 
     /** {@inheritDoc} */
     @Override public boolean supportsTransactionIsolationLevel(int level) throws SQLException {
-        return conn.igniteVersion().greaterThanEqual(2, 5, 0) &&
-            TRANSACTION_REPEATABLE_READ == level;
+        return conn.isTxAwareQueriesSupported && conn.isolationLevelSupported(level);
     }
 
     /** {@inheritDoc} */
@@ -662,7 +658,7 @@ public class JdbcThinDatabaseMetadata implements DatabaseMetaData {
 
     /** {@inheritDoc} */
     @Override public boolean supportsDataManipulationTransactionsOnly() throws SQLException {
-        return false;
+        return conn.isTxAwareQueriesSupported;
     }
 
     /** {@inheritDoc} */

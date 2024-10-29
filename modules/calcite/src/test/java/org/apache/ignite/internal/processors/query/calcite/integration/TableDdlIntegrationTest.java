@@ -117,7 +117,7 @@ public class TableDdlIntegrationTest extends AbstractDdlIntegrationTest {
             "'test', " +
             "date '2021-01-01', " +
             "time '12:34:56', " +
-            "timestamp '2021-01-01 12:34:56', " +
+            "timestamp '2021-01-01 12:34:56.789', " +
             "1, " +
             "9876543210, " +
             "3, " +
@@ -138,7 +138,7 @@ public class TableDdlIntegrationTest extends AbstractDdlIntegrationTest {
         assertEquals("test", row.get(1));
         assertEquals(Date.valueOf("2021-01-01"), row.get(2));
         assertEquals(Time.valueOf("12:34:56"), row.get(3));
-        assertEquals(Timestamp.valueOf("2021-01-01 12:34:56"), row.get(4));
+        assertEquals(Timestamp.valueOf("2021-01-01 12:34:56.789"), row.get(4));
         assertEquals(1, row.get(5));
         assertEquals(9876543210L, row.get(6));
         assertEquals((short)3, row.get(7));
@@ -497,6 +497,35 @@ public class TableDdlIntegrationTest extends AbstractDdlIntegrationTest {
     }
 
     /**
+     * Creates table with nullabale/not nullable columns and checks nullability.
+     */
+    @Test
+    public void createTableWithNullability() {
+        List<String> dataTypes = F.asList("INT", "FLOAT", "DOUBLE", "DECIMAL", "DECIMAL(10,2)", "VARCHAR",
+            "VARCHAR(10)", "CHAR", "CHAR(10)", "DATE", "TIME", "TIMESTAMP", "BINARY", "BINARY(10)", "VARBINARY",
+            "VARBINARY(10)", "UUID", "OTHER");
+
+        for (String dataType : dataTypes) {
+            try {
+                sql("CREATE TABLE my_table (id INT PRIMARY KEY, val " + dataType + ')');
+                sql("INSERT INTO my_table(id, val) VALUES (0, NULL)");
+            }
+            finally {
+                sql("DROP TABLE my_table");
+            }
+
+            try {
+                sql("CREATE TABLE my_table (id INT PRIMARY KEY, val " + dataType + " NOT NULL)");
+                assertThrows("INSERT INTO my_table(id, val) VALUES (0, NULL)", IgniteSQLException.class,
+                    "does not allow NULLs");
+            }
+            finally {
+                sql("DROP TABLE my_table");
+            }
+        }
+    }
+
+    /**
      * Drops a table created in a default schema.
      */
     @Test
@@ -741,7 +770,7 @@ public class TableDdlIntegrationTest extends AbstractDdlIntegrationTest {
         sql("alter table my_table add column val2 varchar not null");
 
         assertThrows("insert into my_table (id, val, val2) values (0, '1', null)", IgniteSQLException.class,
-            "Null value is not allowed");
+            "does not allow NULLs");
 
         sql("insert into my_table (id, val, val2) values (0, '1', '2')");
 
@@ -850,7 +879,7 @@ public class TableDdlIntegrationTest extends AbstractDdlIntegrationTest {
         assertEquals("2", res.get(0).get(2));
 
         assertThrows("insert into my_table (id, val, val2) values (1, '2', null)", IgniteSQLException.class,
-            "Null value is not allowed");
+            "does not allow NULLs");
 
         sql("insert into my_table (id, val, val2) values (1, '2', '3')");
 
@@ -928,13 +957,13 @@ public class TableDdlIntegrationTest extends AbstractDdlIntegrationTest {
      */
     @Test
     public void testMulitlineWithCreateTable() {
-        String multiLineQuery = "CREATE TABLE test (val0 int primary key, val1 varchar);" +
+        String multiLineQry = "CREATE TABLE test (val0 int primary key, val1 varchar);" +
             "INSERT INTO test(val0, val1) VALUES (0, 'test0');" +
             "ALTER TABLE test ADD COLUMN val2 int;" +
             "INSERT INTO test(val0, val1, val2) VALUES(1, 'test1', 10);" +
             "ALTER TABLE test DROP COLUMN val2;";
 
-        sql(multiLineQuery);
+        sql(multiLineQry);
 
         List<List<?>> res = sql("SELECT * FROM test order by val0");
         assertEquals(2, res.size());

@@ -173,14 +173,14 @@ public class SystemViewRowAttributeWalkerGenerator {
      * @throws IOException If generation failed.
      */
     private <T> void generateAndWrite(Class<T> clazz, String srcRoot) throws IOException {
-        File walkerClass = new File(srcRoot + '/' + WALKER_PACKAGE.replaceAll("\\.", "/") + '/' +
+        File walkerCls = new File(srcRoot + '/' + WALKER_PACKAGE.replaceAll("\\.", "/") + '/' +
             clazz.getSimpleName() + "Walker.java");
 
         Collection<String> code = generate(clazz);
 
-        walkerClass.createNewFile();
+        walkerCls.createNewFile();
 
-        try (FileWriter writer = new FileWriter(walkerClass)) {
+        try (FileWriter writer = new FileWriter(walkerCls)) {
             for (String line : code) {
                 writer.write(line);
                 writer.write('\n');

@@ -76,6 +76,7 @@ public class IndexCountRule extends RelRule<IndexCountRule.Config> {
 
         IgniteIndex idx = null;
         boolean notNull = false;
+        int fieldIdx = 0;
 
         if (argList.isEmpty())
             idx = table.getIndex(QueryUtils.PRIMARY_KEY_INDEX);
@@ -84,7 +85,7 @@ public class IndexCountRule extends RelRule<IndexCountRule.Config> {
                 return;
 
             notNull = true;
-            int fieldIdx = argList.get(0);
+            fieldIdx = argList.get(0);
 
             if (!scan.requiredColumns().isEmpty())
                 fieldIdx = scan.requiredColumns().nth(fieldIdx);
@@ -121,7 +122,8 @@ public class IndexCountRule extends RelRule<IndexCountRule.Config> {
             idxTraits,
             scan.getTable(),
             idx.name(),
-            notNull
+            notNull,
+            fieldIdx
         );
 
         RelBuilder b = call.builder();

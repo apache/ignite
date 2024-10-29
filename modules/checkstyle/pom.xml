@@ -37,10 +37,11 @@
     <version>${revision}</version>
 
     <properties>
-        <maven.compiler.source>1.8</maven.compiler.source>
-        <maven.compiler.target>1.8</maven.compiler.target>
+        <maven.compiler.source>11</maven.compiler.source>
+        <maven.compiler.target>11</maven.compiler.target>
         <maven.flatten.file.name>pom-installed.xml</maven.flatten.file.name>
-        <revision>2.16.0-SNAPSHOT</revision>
+        <revision>2.17.0-SNAPSHOT</revision>
+        <checkstyle.puppycrawl.version>8.45</checkstyle.puppycrawl.version>
     </properties>
 
     <url>https://ignite.apache.org</url>
@@ -63,6 +64,21 @@
             <archive>https://mail-archives.apache.org/mod_mbox/ignite-dev</archive>
         </mailingList>
     </mailingLists>
+
+    <dependencies>
+        <dependency>
+            <groupId>com.puppycrawl.tools</groupId>
+            <artifactId>checkstyle</artifactId>
+            <version>${checkstyle.puppycrawl.version}</version>
+        </dependency>
+
+        <dependency>
+            <groupId>junit</groupId>
+            <artifactId>junit</artifactId>
+            <version>4.12</version>
+            <scope>test</scope>
+        </dependency>
+    </dependencies>
 
     <build>
         <plugins>

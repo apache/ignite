@@ -22,7 +22,7 @@ Ignite was officially tested on:
 
 include::includes/prereqs.adoc[]
 
-If you use Java version 11 or later, see <<Running Ignite with Java 11 or later>> for details.
+See <<Running Ignite with Java 11 or later>> for additional JVM parameters.
 
 == Installing Ignite
 
@@ -136,7 +136,7 @@ public class HelloWorld {
 ====
 Don't forget to add imports for HelloWorld.java. It should be trivial as long as Maven solves all of the dependencies.
 
-Plus, you might need to add these settings to your pom.xml if the IDE keeps using Java compiler from a version earlier than 1.8:
+Plus, you might need to add these settings to your pom.xml if the IDE keeps using Java compiler from a version earlier than 11:
 [source,xml]
 ----
 <build>
@@ -145,8 +145,8 @@ Plus, you might need to add these settings to your pom.xml if the IDE keeps usin
             <groupId>org.apache.maven.plugins</groupId>
             <artifactId>maven-compiler-plugin</artifactId>
             <configuration>
-                <source>1.8</source>
-                <target>1.8</target>
+                <source>11</source>
+                <target>11</target>
             </configuration>
         </plugin>
     </plugins>

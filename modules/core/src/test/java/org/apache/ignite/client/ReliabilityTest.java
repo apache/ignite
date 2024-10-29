@@ -205,7 +205,11 @@ public class ReliabilityTest extends AbstractThinClientTest {
             // Fail.
             dropAllThinClientConnections(Ignition.allGrids().get(0));
 
-            GridTestUtils.assertThrowsWithCause(() -> cachePut(cache, 0, 0), ClientConnectionException.class);
+            if (!partitionAware) {
+                Throwable ex = GridTestUtils.assertThrowsWithCause(() -> cachePut(cache, 0, 0), ClientConnectionException.class);
+
+                GridTestUtils.assertContains(null, ex.getMessage(), F.first(cluster.clientAddresses()));
+            }
 
             // Recover after fail.
             cachePut(cache, 0, 0);
@@ -278,10 +282,14 @@ public class ReliabilityTest extends AbstractThinClientTest {
             Throwable asyncEx = GridTestUtils.assertThrows(null, () -> cache.getAsync(0).get(),
                     ExecutionException.class, "Channel is closed");
 
+            GridTestUtils.assertContains(null, asyncEx.getMessage(), F.first(cluster.clientAddresses()));
+
             dropAllThinClientConnections(Ignition.allGrids().get(0));
 
             Throwable syncEx = GridTestUtils.assertThrows(null, () -> cache.get(0),
-                    ClientConnectionException.class, "Channel is closed");
+                ClientConnectionException.class, "Channel is closed");
+
+            GridTestUtils.assertContains(null, syncEx.getMessage(), F.first(cluster.clientAddresses()));
 
             for (Throwable t : new Throwable[] {asyncEx.getCause(), syncEx}) {
                 assertEquals("Error in policy.", t.getSuppressed()[0].getMessage());
@@ -380,7 +388,7 @@ public class ReliabilityTest extends AbstractThinClientTest {
 
         String nullOpsNames = nullOps.stream().map(Enum::name).collect(Collectors.joining(", "));
 
-        long expectedNullCnt = 21;
+        long expectedNullCnt = 22;
 
         String msg = nullOps.size()
                 + " operation codes do not have public equivalent. When adding new codes, update ClientOperationType too. Missing ops: "
@@ -590,16 +598,16 @@ public class ReliabilityTest extends AbstractThinClientTest {
     public void testServiceMethodInvocationAfterFailover() throws Exception {
         PersonExternalizable person = new PersonExternalizable("Person 1");
 
-        ServiceConfiguration testServiceConfig = new ServiceConfiguration();
-        testServiceConfig.setName(SERVICE_NAME);
-        testServiceConfig.setService(new TestService());
-        testServiceConfig.setTotalCount(1);
+        ServiceConfiguration testSrvcCfg = new ServiceConfiguration();
+        testSrvcCfg.setName(SERVICE_NAME);
+        testSrvcCfg.setService(new TestService());
+        testSrvcCfg.setTotalCount(1);
 
         Ignite ignite = null;
         IgniteClient client = null;
         try {
             // Initialize cluster and client
-            ignite = startGrid(getConfiguration().setServiceConfiguration(testServiceConfig));
+            ignite = startGrid(getConfiguration().setServiceConfiguration(testSrvcCfg));
             client = startClient(ignite);
             TestServiceInterface svc = client.services().serviceProxy(SERVICE_NAME, TestServiceInterface.class);
 
@@ -621,7 +629,7 @@ public class ReliabilityTest extends AbstractThinClientTest {
             GridTestUtils.assertThrowsWithCause(() -> svc.testMethod(person), ClientConnectionException.class);
 
             // Restore the cluster and redeploy the service.
-            ignite = startGrid(getConfiguration().setServiceConfiguration(testServiceConfig));
+            ignite = startGrid(getConfiguration().setServiceConfiguration(testSrvcCfg));
 
             // Invoke the service method with Externalizable parameter once again.
             // This should restore the client connection and trigger registration of the

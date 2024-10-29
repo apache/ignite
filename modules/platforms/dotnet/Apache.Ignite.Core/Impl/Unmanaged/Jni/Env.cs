@@ -21,6 +21,7 @@ namespace Apache.Ignite.Core.Impl.Unmanaged.Jni
     using System.Diagnostics;
     using System.Runtime.InteropServices;
     using System.Security;
+    using System.Text;
     using Apache.Ignite.Core.Common;
 
     /// <summary>
@@ -54,7 +55,7 @@ namespace Apache.Ignite.Core.Impl.Unmanaged.Jni
         private readonly EnvDelegates.GetStaticMethodId _getStaticMethodId;
 
         /** */
-        private readonly EnvDelegates.NewStringUtf _newStringUtf;
+        private readonly EnvDelegates.NewString _newString;
 
         /** */
         private readonly EnvDelegates.ExceptionOccurred _exceptionOccurred;
@@ -72,23 +73,13 @@ namespace Apache.Ignite.Core.Impl.Unmanaged.Jni
         private readonly EnvDelegates.CallVoidMethod _callVoidMethod;
 
         /** */
-        // ReSharper disable once PrivateFieldCanBeConvertedToLocalVariable
-        // ReSharper disable once NotAccessedField.Local
-        private readonly EnvDelegates.GetStringChars _getStringChars;
+        private readonly EnvDelegates.GetStringCritical _getStringCritical;
 
         /** */
-        private readonly EnvDelegates.GetStringUtfChars _getStringUtfChars;
+        private readonly EnvDelegates.GetStringLength _getStringLength;
 
         /** */
-        private readonly EnvDelegates.GetStringUtfLength _getStringUtfLength;
-
-        /** */
-        private readonly EnvDelegates.ReleaseStringUtfChars _releaseStringUtfChars;
-
-        /** */
-        // ReSharper disable once PrivateFieldCanBeConvertedToLocalVariable
-        // ReSharper disable once NotAccessedField.Local
-        private readonly EnvDelegates.ReleaseStringChars _releaseStringChars;
+        private readonly EnvDelegates.ReleaseStringCritical _releaseStringCritical;
 
         /** */
         private readonly EnvDelegates.ExceptionClear _exceptionClear;
@@ -134,7 +125,7 @@ namespace Apache.Ignite.Core.Impl.Unmanaged.Jni
             GetDelegate(func.FindClass, out _findClass);
             GetDelegate(func.GetMethodID, out _getMethodId);
             GetDelegate(func.GetStaticMethodID, out _getStaticMethodId);
-            GetDelegate(func.NewStringUTF, out _newStringUtf);
+            GetDelegate(func.NewString, out _newString);
             GetDelegate(func.ExceptionOccurred, out _exceptionOccurred);
             GetDelegate(func.ExceptionClear, out _exceptionClear);
             GetDelegate(func.ExceptionCheck, out _exceptionCheck);
@@ -144,13 +135,9 @@ namespace Apache.Ignite.Core.Impl.Unmanaged.Jni
             GetDelegate(func.CallLongMethod, out _callLongMethod);
             GetDelegate(func.CallVoidMethod, out _callVoidMethod);
 
-            GetDelegate(func.GetStringChars, out _getStringChars);
-            GetDelegate(func.ReleaseStringChars, out _releaseStringChars);
-
-            GetDelegate(func.GetStringUTFChars, out _getStringUtfChars);
-            GetDelegate(func.ReleaseStringUTFChars, out _releaseStringUtfChars);
-
-            GetDelegate(func.GetStringUTFLength, out _getStringUtfLength);
+            GetDelegate(func.GetStringLength, out _getStringLength);
+            GetDelegate(func.GetStringCritical, out _getStringCritical);
+            GetDelegate(func.ReleaseStringCritical, out _releaseStringCritical);
 
             GetDelegate(func.RegisterNatives, out _registerNatives);
             GetDelegate(func.DeleteLocalRef, out _deleteLocalRef);
@@ -317,16 +304,16 @@ namespace Apache.Ignite.Core.Impl.Unmanaged.Jni
         }
 
         /// <summary>
-        /// Creates new jstring from UTF chars.
+        /// Creates new jstring from UTF16 chars.
         /// </summary>
-        private GlobalRef NewStringUtf(sbyte* utf)
+        private GlobalRef NewStringUtf16(IntPtr utf16, int len)
         {
-            if (utf == null)
+            if (utf16 == IntPtr.Zero)
             {
                 return null;
             }
 
-            var res = _newStringUtf(_envPtr, new IntPtr(utf));
+            var res = _newString(_envPtr, utf16, len);
 
             ExceptionCheck();
 
@@ -336,52 +323,47 @@ namespace Apache.Ignite.Core.Impl.Unmanaged.Jni
         /// <summary>
         /// Creates new jstring from string.
         /// </summary>
-        public GlobalRef NewStringUtf(string str)
+        public GlobalRef NewString(string str)
         {
             if (str == null)
             {
                 return null;
             }
 
-            var chars = IgniteUtils.StringToUtf8Unmanaged(str);
-
-            try
+            // .NET uses UTF-16 to represent strings internally - no conversion required, just take a pointer.
+            fixed (char* strPtr = str)
             {
-                return NewStringUtf(chars);
-            }
-            finally
-            {
-                Marshal.FreeHGlobal(new IntPtr(chars));
+                return NewStringUtf16(new IntPtr(strPtr), str.Length);
             }
         }
 
         /// <summary>
-        /// Gets the utf chars from jstring.
+        /// Gets UTF16 chars from jstring.
         /// </summary>
-        private IntPtr GetStringUtfChars(IntPtr jstring)
+        private IntPtr GetStringCritical(IntPtr jstring)
         {
             Debug.Assert(jstring != IntPtr.Zero);
 
             byte isCopy;
-            return _getStringUtfChars(_envPtr, jstring, &isCopy);
+            return _getStringCritical(_envPtr, jstring, &isCopy);
         }
 
         /// <summary>
-        /// Releases the string utf chars allocated by <see cref="GetStringUtfChars"/>.
+        /// Releases the chars allocated by <see cref="GetStringCritical"/>.
         /// </summary>
-        private void ReleaseStringUtfChars(IntPtr jstring, IntPtr chars)
+        private void ReleaseStringCritical(IntPtr jstring, IntPtr chars)
         {
-            _releaseStringUtfChars(_envPtr, jstring, chars);
+            _releaseStringCritical(_envPtr, jstring, chars);
         }
 
         /// <summary>
         /// Gets the length of the jstring.
         /// </summary>
-        private int GetStringUtfLength(IntPtr jstring)
+        private int GetStringLength(IntPtr jstring)
         {
             Debug.Assert(jstring != IntPtr.Zero);
 
-            return _getStringUtfLength(_envPtr, jstring);
+            return _getStringLength(_envPtr, jstring);
         }
 
         /// <summary>
@@ -425,16 +407,27 @@ namespace Apache.Ignite.Core.Impl.Unmanaged.Jni
                 return null;
             }
 
-            var chars = GetStringUtfChars(jstring);
-            var len = GetStringUtfLength(jstring);
+            // 1. Use UTF16 to avoid Java-specific "modified UTF-8" issues.
+            //    https://stackoverflow.com/questions/32205446/getting-true-utf-8-characters-in-java-jni
+            // 2. Use GetStringCritical to avoid copying (when possible).
+            //    NOTE: The code block between GetStringCritical and ReleaseStringCritical
+            //    must not perform JNI calls (except GetStringLength) or block the thread.
+            var charsPtr = GetStringCritical(jstring);
+            if (charsPtr == IntPtr.Zero)
+            {
+                return null;
+            }
 
             try
             {
-                return IgniteUtils.Utf8UnmanagedToString((sbyte*) chars, len);
+                var charCount = GetStringLength(jstring);
+                var byteCount = charCount * 2; // UTF16 => x2 bytes.
+
+                return Encoding.Unicode.GetString((byte*)charsPtr, byteCount);
             }
             finally
             {
-                ReleaseStringUtfChars(jstring, chars);
+                ReleaseStringCritical(jstring, charsPtr);
             }
         }
 

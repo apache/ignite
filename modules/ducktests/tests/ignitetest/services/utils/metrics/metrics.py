@@ -56,7 +56,7 @@ def is_opencensus_metrics_enabled(service):
         service.context.globals[METRICS_KEY][OPENCENSUS_KEY_NAME].get(ENABLED, False)
 
 
-def configure_opencensus_metrics(config, _globals):
+def configure_opencensus_metrics(config, _globals, spec):
     """
     Adds OpenCensus metrics exporter beans into the Ignite node configuration
 
@@ -72,7 +72,10 @@ def configure_opencensus_metrics(config, _globals):
                                      period=metrics_params.period,
                                      sendInstanceName=True))
 
-    if not any((bean[1].name and bean[1].name == OPENCENSUS_NAME) for bean in config.ext_beans):
+    if not any("opencensus.metrics.port" in jvm_opt for jvm_opt in spec.jvm_opts):
+        spec.jvm_opts.append("-Dopencensus.metrics.port=%d" % metrics_params.port)
+
+    if not any(bean[0] == OPENCENSUS_TEMPLATE_FILE for bean in config.ext_beans):
         config.ext_beans.append((OPENCENSUS_TEMPLATE_FILE, metrics_params))
 
     return config

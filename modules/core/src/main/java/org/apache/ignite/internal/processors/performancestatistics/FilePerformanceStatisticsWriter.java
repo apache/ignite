@@ -311,6 +311,9 @@ public class FilePerformanceStatisticsWriter {
      * @param val Query property value.
      */
     public void queryProperty(GridCacheQueryType type, UUID qryNodeId, long id, String name, String val) {
+        if (val == null)
+            return;
+
         boolean cachedName = cacheIfPossible(name);
         boolean cachedVal = cacheIfPossible(val);
 

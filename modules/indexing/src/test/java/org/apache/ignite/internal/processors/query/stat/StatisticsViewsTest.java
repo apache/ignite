@@ -59,13 +59,13 @@ public abstract class StatisticsViewsTest extends StatisticsAbstractTest {
         long bVer = smallStat.columnStatistics("B").version();
         long cVer = smallStat.columnStatistics("C").version();
 
-        List<List<Object>> config = Arrays.asList(
+        List<List<Object>> cfg = Arrays.asList(
             Arrays.asList(SCHEMA, "TABLE", "SMALL", "A", (byte)15, null, null, null, null, aVer),
             Arrays.asList(SCHEMA, "TABLE", "SMALL", "B", (byte)15, null, null, null, null, bVer),
             Arrays.asList(SCHEMA, "TABLE", "SMALL", "C", (byte)15, null, null, null, null, cVer)
         );
 
-        checkSqlResult("select * from SYS.STATISTICS_CONFIGURATION where name = 'SMALL'", null, config::equals);
+        checkSqlResult("select * from SYS.STATISTICS_CONFIGURATION where name = 'SMALL'", null, cfg::equals);
     }
 
     /**
@@ -90,20 +90,20 @@ public abstract class StatisticsViewsTest extends StatisticsAbstractTest {
         grid(0).cache(DEFAULT_CACHE_NAME).query(new SqlFieldsQuery("ANALYZE " + name)).getAll();
 
         // 3) Check statistics configuration presence.
-        List<List<Object>> config = new ArrayList<>();
-        config.add(Arrays.asList(SCHEMA, "TABLE", name, "A", (byte)15, null, null, null, null, 1L));
-        config.add(Arrays.asList(SCHEMA, "TABLE", name, "B", (byte)15, null, null, null, null, 1L));
-        config.add(Arrays.asList(SCHEMA, "TABLE", name, "C", (byte)15, null, null, null, null, 1L));
+        List<List<Object>> cfg = new ArrayList<>();
+        cfg.add(Arrays.asList(SCHEMA, "TABLE", name, "A", (byte)15, null, null, null, null, 1L));
+        cfg.add(Arrays.asList(SCHEMA, "TABLE", name, "B", (byte)15, null, null, null, null, 1L));
+        cfg.add(Arrays.asList(SCHEMA, "TABLE", name, "C", (byte)15, null, null, null, null, 1L));
 
-        checkSqlResult("select * from SYS.STATISTICS_CONFIGURATION where NAME = '" + name + "'", null, config::equals);
+        checkSqlResult("select * from SYS.STATISTICS_CONFIGURATION where NAME = '" + name + "'", null, cfg::equals);
 
         // 4) Drop statistics for some column of new table.
         grid(0).cache(DEFAULT_CACHE_NAME).query(new SqlFieldsQuery("DROP STATISTICS " + name + "(A);")).getAll();
 
         // 5) Check statistics configuration without dropped column.
-        List<Object> removed = config.remove(0);
+        List<Object> removed = cfg.remove(0);
         checkSqlResult("select * from SYS.STATISTICS_CONFIGURATION where NAME = '" + name + "'", null,
-            act -> testContains(config, act) == null && testContains(Arrays.asList(removed), act) != null);
+            act -> testContains(cfg, act) == null && testContains(Arrays.asList(removed), act) != null);
 
         // 6) Drop statistics for new table.
         grid(0).cache(DEFAULT_CACHE_NAME).query(new SqlFieldsQuery("DROP STATISTICS " + name)).getAll();
@@ -141,13 +141,13 @@ public abstract class StatisticsViewsTest extends StatisticsAbstractTest {
         Timestamp tsB = new Timestamp(smallStat.columnStatistics("B").createdAt());
         Timestamp tsC = new Timestamp(smallStat.columnStatistics("C").createdAt());
 
-        List<List<Object>> localData = Arrays.asList(
+        List<List<Object>> locData = Arrays.asList(
             Arrays.asList(SCHEMA, "TABLE", "SMALL", "A", size, size, 0L, size, 4, 1L, tsA.toString()),
             Arrays.asList(SCHEMA, "TABLE", "SMALL", "B", size, size, 0L, size, 4, 1L, tsB.toString()),
             Arrays.asList(SCHEMA, "TABLE", "SMALL", "C", size, 10L, 0L, size, 4, 1L, tsC.toString())
         );
 
-        checkSqlResult("select * from SYS.STATISTICS_LOCAL_DATA", null, localData::equals);
+        checkSqlResult("select * from SYS.STATISTICS_LOCAL_DATA", null, locData::equals);
     }
 
     /**
@@ -192,13 +192,13 @@ public abstract class StatisticsViewsTest extends StatisticsAbstractTest {
         long bVer = smallStat.columnStatistics("B").version();
         long cVer = smallStat.columnStatistics("C").version();
 
-        List<List<Object>> localData = Arrays.asList(
+        List<List<Object>> locData = Arrays.asList(
             Arrays.asList(SCHEMA, "TABLE", "SMALL", "A", 8L, 5L, 6L, 7L, 8, aVer, tsA.toString()),
             Arrays.asList(SCHEMA, "TABLE", "SMALL", "B", 8L, 6L, 7L, 8L, 4, bVer, tsB.toString()),
             Arrays.asList(SCHEMA, "TABLE", "SMALL", "C", 8L, 10L, 0L, size, 4, cVer, tsC.toString())
         );
 
         checkSqlResult("select * from SYS.STATISTICS_LOCAL_DATA where NAME = 'SMALL'", null,
-            localData::equals);
+            locData::equals);
     }
 }

@@ -97,6 +97,9 @@ public abstract class AbstractWalRecordsIterator
     /** Factory to provide I/O interfaces for read primitives with files. */
     private final SegmentFileInputFactory segmentFileInputFactory;
 
+    /** Optional inclusive high bound. */
+    protected final @Nullable WALPointer highBound;
+
     /** Position of last read valid record. */
     private WALPointer lastRead;
 
@@ -106,6 +109,7 @@ public abstract class AbstractWalRecordsIterator
      * @param serializerFactory Serializer of current version to read headers.
      * @param ioFactory ioFactory for file IO access.
      * @param initialReadBufferSize buffer for reading records size.
+     * @param highBound Optional inclusive high bound.
      * @param segmentFileInputFactory Factory to provide I/O interfaces for read primitives with files.
      */
     protected AbstractWalRecordsIterator(
@@ -114,12 +118,14 @@ public abstract class AbstractWalRecordsIterator
         @NotNull final RecordSerializerFactory serializerFactory,
         @NotNull final FileIOFactory ioFactory,
         final int initialReadBufferSize,
+        @Nullable WALPointer highBound,
         SegmentFileInputFactory segmentFileInputFactory) {
         this.log = log;
         this.sharedCtx = sharedCtx;
         this.serializerFactory = serializerFactory;
         this.ioFactory = ioFactory;
         this.segmentFileInputFactory = segmentFileInputFactory;
+        this.highBound = highBound;
 
         buf = new ByteBufferExpander(initialReadBufferSize, ByteOrder.nativeOrder());
     }
@@ -269,6 +275,10 @@ public abstract class AbstractWalRecordsIterator
 
         WALPointer actualFilePtr = new WALPointer(hnd.idx(), (int)hnd.in().position(), 0);
 
+        // Fast stop condition, after high bound reached.
+        if (highBound != null && actualFilePtr.compareTo(highBound) > 0)
+            return null;
+
         try {
             WALRecord rec = hnd.ser().readRecord(hnd.in(), actualFilePtr);
 
@@ -410,10 +420,10 @@ public abstract class AbstractWalRecordsIterator
         try {
             fileIO = desc.toReadOnlyIO(ioFactory);
 
-            SegmentHeader segmentHeader;
+            SegmentHeader segmentHdr;
 
             try {
-                segmentHeader = readSegmentHeader(fileIO, segmentFileInputFactory);
+                segmentHdr = readSegmentHeader(fileIO, segmentFileInputFactory);
             }
             catch (SegmentEofException | EOFException ignore) {
                 try {
@@ -431,7 +441,7 @@ public abstract class AbstractWalRecordsIterator
                 throw e;
             }
 
-            return initReadHandle(desc, start, fileIO, segmentHeader);
+            return initReadHandle(desc, start, fileIO, segmentHdr);
         }
         catch (FileNotFoundException e) {
             U.closeQuiet(fileIO);

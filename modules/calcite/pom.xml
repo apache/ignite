@@ -35,14 +35,16 @@
 
     <!-- Module specific package versions -->
     <properties>
-        <avatica.version>1.22.0</avatica.version>
-        <calcite.version>1.32.0</calcite.version>
+        <avatica.version>1.25.0</avatica.version>
+        <calcite.version>1.37.0</calcite.version>
         <checker.version>3.10.0</checker.version>
+        <failureaccess.version>1.0.1</failureaccess.version>
         <immutables.version>2.8.2</immutables.version>
-        <janino.version>3.1.6</janino.version>
+        <janino.version>3.1.12</janino.version>
         <javacc-maven-plugin>2.4</javacc-maven-plugin>
-        <jsonpath.version>2.7.0</jsonpath.version>
+        <jsonpath.version>2.9.0</jsonpath.version>
         <reflections.version>0.10.2</reflections.version>
+        <commons.math.version>3.6.1</commons.math.version>
     </properties>
 
     <url>https://ignite.apache.org</url>
@@ -78,6 +80,12 @@
             <groupId>com.google.guava</groupId>
             <artifactId>guava</artifactId>
             <version>${guava.version}</version>
+        </dependency>
+
+        <dependency>
+            <groupId>com.google.guava</groupId>
+            <artifactId>failureaccess</artifactId>
+            <version>${failureaccess.version}</version>
         </dependency>
 
         <dependency>
@@ -159,6 +167,12 @@
         </dependency>
 
         <dependency>
+            <groupId>org.apache.commons</groupId>
+            <artifactId>commons-math3</artifactId>
+            <version>${commons.math.version}</version>
+        </dependency>
+
+        <dependency>
             <groupId>org.immutables</groupId>
             <artifactId>value</artifactId>
             <version>${immutables.version}</version>
@@ -234,7 +248,7 @@
                 <executions>
                     <execution>
                         <id>copy-fmpp-resources</id>
-                        <phase>validate</phase>
+                        <phase>initialize</phase>
                         <goals>
                             <goal>copy-resources</goal>
                         </goals>
@@ -256,7 +270,7 @@
                 <executions>
                     <execution>
                         <id>unpack-parser-template</id>
-                        <phase>validate</phase>
+                        <phase>initialize</phase>
                         <goals>
                             <goal>unpack</goal>
                         </goals>
@@ -296,7 +310,7 @@
                 <executions>
                     <execution>
                         <id>generate-fmpp-sources</id>
-                        <phase>validate</phase>
+                        <phase>initialize</phase>
                         <goals>
                             <goal>run</goal>
                         </goals>

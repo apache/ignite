@@ -41,7 +41,7 @@ public class SnapshotHandlerContext {
     /** Warning flag of concurrent inconsistent-by-nature streamer updates. */
     private final boolean streamerWrn;
 
-    /** If {@code true} check snapshot integrity. */
+    /** If {@code true}, calculates and compares partition hashes. Otherwise, only basic snapshot validation is launched.*/
     private final boolean check;
 
     /**
@@ -51,7 +51,7 @@ public class SnapshotHandlerContext {
      * @param locNode Local node.
      * @param snpDir The full path to the snapshot files.
      * @param streamerWrn {@code True} if concurrent streaming updates occurred during snapshot operation.
-     * @param check If {@code true} check snapshot integrity.
+     * @param check If {@code true}, calculates and compares partition hashes. Otherwise, only basic snapshot validation is launched.
      */
     public SnapshotHandlerContext(
         SnapshotMetadata metadata,
@@ -105,7 +105,7 @@ public class SnapshotHandlerContext {
         return streamerWrn;
     }
 
-    /** @return If {@code true} check snapshot integrity. */
+    /** @return If {@code true}, calculates and compares partition hashes. Otherwise, only basic snapshot validation is launched. */
     public boolean check() {
         return check;
     }

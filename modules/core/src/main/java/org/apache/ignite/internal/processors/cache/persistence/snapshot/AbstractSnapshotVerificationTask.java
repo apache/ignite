@@ -23,16 +23,18 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
+import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.compute.ComputeJob;
+import org.apache.ignite.compute.ComputeJobAdapter;
 import org.apache.ignite.compute.ComputeJobResult;
 import org.apache.ignite.compute.ComputeJobResultPolicy;
 import org.apache.ignite.compute.ComputeTaskAdapter;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.resources.IgniteInstanceResource;
+import org.apache.ignite.resources.LoggerResource;
 import org.jetbrains.annotations.Nullable;
 
 /**
@@ -50,6 +52,10 @@ public abstract class AbstractSnapshotVerificationTask extends
     @IgniteInstanceResource
     protected IgniteEx ignite;
 
+    /** Injected logger. */
+    @LoggerResource
+    protected IgniteLogger log;
+
     /** {@inheritDoc} */
     @Override public Map<ComputeJob, ClusterNode> map(List<ClusterNode> subgrid, SnapshotPartitionsVerifyTaskArg arg) {
         Map<ClusterNode, List<SnapshotMetadata>> clusterMetas = arg.clusterMetadata();
@@ -64,14 +70,6 @@ public abstract class AbstractSnapshotVerificationTask extends
         Map<ComputeJob, ClusterNode> jobs = new HashMap<>();
         Set<SnapshotMetadata> allMetas = new HashSet<>();
         clusterMetas.values().forEach(allMetas::addAll);
-
-        try {
-            checkMissedMetadata(allMetas);
-        }
-        catch (IgniteCheckedException e) {
-            throw new IgniteSnapshotVerifyException(F.asMap(ignite.localNode(), new IgniteException(e.getMessage())));
-        }
-
         metas.putAll(clusterMetas);
 
         while (!allMetas.isEmpty()) {
@@ -81,17 +79,7 @@ public abstract class AbstractSnapshotVerificationTask extends
                 if (meta == null)
                     continue;
 
-                jobs.put(
-                    createJob(
-                        meta.snapshotName(),
-                        arg.snapshotPath(),
-                        arg.incrementIndex(),
-                        meta.consistentId(),
-                        arg.cacheGroupNames(),
-                        arg.check()
-                    ),
-                    e.getKey()
-                );
+                jobs.put(createJob(meta.snapshotName(), meta.consistentId(), arg), e.getKey());
 
                 if (allMetas.isEmpty())
                     break;
@@ -108,43 +96,61 @@ public abstract class AbstractSnapshotVerificationTask extends
     }
 
     /**
-     * Ensures that all parts of the snapshot are available according to the metadata.
-     *
-     * @param clusterMetas List of snapshot metadata found in the cluster.
-     * @throws IgniteCheckedException If some metadata is missing.
-     */
-    public static void checkMissedMetadata(Collection<SnapshotMetadata> clusterMetas) throws IgniteCheckedException {
-        Set<String> missed = null;
-
-        for (SnapshotMetadata meta : clusterMetas) {
-            if (missed == null)
-                missed = new HashSet<>(meta.baselineNodes());
-
-            missed.remove(meta.consistentId());
-
-            if (missed.isEmpty())
-                break;
-        }
-
-        if (!missed.isEmpty())
-            throw new IgniteCheckedException("Some metadata is missing from the snapshot: " + missed);
-    }
-
-    /**
      * @param name Snapshot name.
-     * @param path Snapshot directory path.
-     * @param incIdx Incremental snapshot index.
-     * @param constId Snapshot metadata file name.
-     * @param groups Cache groups to be restored from the snapshot. May be empty if all cache groups are being restored.
-     * @param check If {@code true} check snapshot before restore.
+     * @param consId Consistent id of the related node.
+     * @param args Check snapshot parameters.
+     *
      * @return Compute job.
      */
-    protected abstract ComputeJob createJob(
-        String name,
-        @Nullable String path,
-        int incIdx,
-        String constId,
-        Collection<String> groups,
-        boolean check
-    );
+    protected abstract AbstractSnapshotVerificationJob createJob(String name, String consId, SnapshotPartitionsVerifyTaskArg args);
+
+    /** */
+    protected abstract static class AbstractSnapshotVerificationJob extends ComputeJobAdapter {
+        /** Serial version uid. */
+        private static final long serialVersionUID = 0L;
+
+        /** Ignite instance. */
+        @IgniteInstanceResource
+        protected IgniteEx ignite;
+
+        /** Injected logger. */
+        @LoggerResource
+        protected IgniteLogger log;
+
+        /** Snapshot name. */
+        protected final String snpName;
+
+        /** Snapshot directory path. */
+        @Nullable protected final String snpPath;
+
+        /** Consistent id of the related node. */
+        protected final String consId;
+
+        /** Set of cache groups to be checked in the snapshot. {@code Null} or empty to check everything. */
+        @Nullable protected final Collection<String> rqGrps;
+
+        /** If {@code true}, calculates and compares partition hashes. Otherwise, only basic snapshot validation is launched. */
+        protected final boolean check;
+
+        /**
+         * @param snpName Snapshot name.
+         * @param snpPath Snapshot directory path.
+         * @param consId Consistent id of the related node.
+         * @param rqGrps Set of cache groups to be checked in the snapshot. {@code Null} or empty to check everything.
+         * @param check If {@code true}, calculates and compares partition hashes. Otherwise, only basic snapshot validation is launched.
+         */
+        protected AbstractSnapshotVerificationJob(
+            String snpName,
+            @Nullable String snpPath,
+            String consId,
+            @Nullable Collection<String> rqGrps,
+            boolean check
+        ) {
+            this.snpName = snpName;
+            this.snpPath = snpPath;
+            this.consId = consId;
+            this.rqGrps = rqGrps;
+            this.check = check;
+        }
+    }
 }

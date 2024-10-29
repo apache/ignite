@@ -204,9 +204,6 @@ public class SqlUnsupportedSelfTest extends AbstractIndexingCommonTest {
 
         assertSqlUnsupported("ALTER INDEX idx0 RENAME TO idx1");
 
-        assertSqlUnsupported("CREATE VIEW test_view AS SELECT * FROM test WHERE id < 100");
-        assertSqlUnsupported("DROP VIEW test_view");
-
         assertSqlUnsupported("CREATE SEQUENCE SEQ_0");
         assertSqlUnsupported("ALTER SEQUENCE SEQ_ID RESTART WITH 1000");
         assertSqlUnsupported("DROP SEQUENCE SEQ_0");
@@ -257,6 +254,27 @@ public class SqlUnsupportedSelfTest extends AbstractIndexingCommonTest {
 
         assertSqlUnsupported("GRANT SELECT ON test TO PUBLIC");
         assertSqlUnsupported("REVOKE SELECT ON test FROM PUBLIC");
+
+        assertSqlUnsupported("SELECT * FROM TEST FOR UPDATE");
+
+        assertTxCommandsUnsupported();
+    }
+
+    /**
+     *
+     */
+    private void assertTxCommandsUnsupported() {
+        assertSqlUnsupported("BEGIN");
+        assertSqlUnsupported("BEGIN TRANSACTION");
+        assertSqlUnsupported("BEGIN WORK");
+
+        assertSqlUnsupported("START TRANSACTION");
+
+        assertSqlUnsupported("ROLLBACK");
+        assertSqlUnsupported("ROLLBACK TRANSACTION");
+
+        assertSqlUnsupported("COMMIT");
+        assertSqlUnsupported("COMMIT TRANSACTION");
     }
 
     /**

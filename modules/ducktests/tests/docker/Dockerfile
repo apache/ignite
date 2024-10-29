@@ -13,7 +13,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-ARG jdk_version=openjdk:8
+ARG jdk_version=openjdk:11
 FROM $jdk_version
 
 MAINTAINER Apache Ignite dev@ignite.apache.org
@@ -49,7 +49,7 @@ ARG APACHE_MIRROR="https://apache-mirror.rbc.ru/pub/apache/"
 ARG APACHE_ARCHIVE="https://archive.apache.org/dist/"
 
 # Install binary test dependencies.
-RUN for v in "2.7.6" "2.8.0" "2.8.1" "2.9.0" "2.9.1" "2.10.0" "2.11.0" "2.11.1" "2.12.0" "2.13.0" "2.14.0"; \
+RUN for v in "2.7.6" "2.16.0"; \
     do cd /opt; \
     curl -O $APACHE_ARCHIVE/ignite/$v/apache-ignite-$v-bin.zip;\
     unzip apache-ignite-$v-bin.zip && mv /opt/apache-ignite-$v-bin /opt/ignite-$v;\
@@ -66,14 +66,6 @@ RUN echo $APACHE_ARCHIVE/zookeeper/$ZOOKEEPER_NAME/$ZOOKEEPER_RELEASE_ARTIFACT
 RUN cd /opt && curl -O $APACHE_ARCHIVE/zookeeper/$ZOOKEEPER_NAME/$ZOOKEEPER_RELEASE_ARTIFACT \
  && tar xvf $ZOOKEEPER_RELEASE_ARTIFACT && rm $ZOOKEEPER_RELEASE_ARTIFACT
 RUN mv /opt/$ZOOKEEPER_RELEASE_NAME /opt/$ZOOKEEPER_NAME
-
-# Install spark
-ARG SPARK_VERSION="2.3.4"
-ARG SPARK_NAME="spark-$SPARK_VERSION"
-ARG SPARK_RELEASE_NAME="spark-$SPARK_VERSION-bin-hadoop2.7"
-
-RUN cd /opt && curl -O $APACHE_ARCHIVE/spark/$SPARK_NAME/$SPARK_RELEASE_NAME.tgz && tar xvf $SPARK_RELEASE_NAME.tgz && rm $SPARK_RELEASE_NAME.tgz
-RUN mv /opt/$SPARK_RELEASE_NAME /opt/$SPARK_NAME
 
 # The version of Kibosh to use for testing.
 # If you update this, also update vagrant/base.sh
@@ -94,7 +86,7 @@ RUN cd /opt && curl -OL https://github.com/jiaqi/jmxterm/releases/download/v$JMX
 RUN useradd -ms /bin/bash ducker \
     && mkdir -p /home/ducker/ \
     && rsync -aiq /root/.ssh/ /home/ducker/.ssh \
-    && chown -R ducker /home/ducker/ /mnt/ /var/log/ \
+    && chown -R ducker /home/ducker/ /mnt/ /var/log/ /opt \
     && echo "LANG=C.UTF-8" >> /home/ducker/.ssh/environment \
     && echo "PATH=$(runuser -l ducker -c 'echo $PATH'):$JAVA_HOME/bin" >> /home/ducker/.ssh/environment \
     && echo 'PATH=$PATH:'"$JAVA_HOME/bin" >> /home/ducker/.profile \

@@ -313,11 +313,11 @@ public class IgnitePdsDiskErrorsRecoveringTest extends GridCommonAbstractTest {
 
         int failedPosition = -1;
 
-        final int keysCount = 2000;
+        final int keysCnt = 2000;
 
         final int dataSize = 2048;
 
-        for (int i = 0; i < keysCount; i++) {
+        for (int i = 0; i < keysCnt; i++) {
             byte payload = (byte)i;
             byte[] data = new byte[dataSize];
             Arrays.fill(data, payload);

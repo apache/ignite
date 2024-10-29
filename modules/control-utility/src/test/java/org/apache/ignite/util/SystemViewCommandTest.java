@@ -243,7 +243,7 @@ public class SystemViewCommandTest extends GridCommandHandlerClusterByClassAbstr
 
         assertContains(log,
             executeCommand(EXIT_CODE_INVALID_ARGUMENTS, CMD_SYS_VIEW, NODE_ID, incorrectNodeId, CACHES_VIEW),
-            "Failed to perform operation.\nNode with id=" + incorrectNodeId + " not found");
+            "Check arguments. Node with id=" + incorrectNodeId + " not found");
     }
 
     /** Tests command output in case nonexistent system view names is specified. */
@@ -502,7 +502,7 @@ public class SystemViewCommandTest extends GridCommandHandlerClusterByClassAbstr
 
         List<List<String>> sqlViewsView = systemView(ignite0, SQL_VIEWS_VIEW);
 
-        sqlViewsView.forEach(row -> viewNames.add(row.get(0))); // name
+        sqlViewsView.forEach(row -> viewNames.add(row.get(1))); // name
 
         assertEquals(expViewNames, viewNames);
     }
@@ -1193,9 +1193,9 @@ public class SystemViewCommandTest extends GridCommandHandlerClusterByClassAbstr
 
             for (List<String> row : rows) {
                 UUID rowNodeId = UUID.fromString(row.get(0));
-                boolean isLocal = Boolean.parseBoolean(row.get(7));
+                boolean isLoc = Boolean.parseBoolean(row.get(7));
 
-                assertEquals(nodeId.equals(rowNodeId), isLocal);
+                assertEquals(nodeId.equals(rowNodeId), isLoc);
             }
         });
     }

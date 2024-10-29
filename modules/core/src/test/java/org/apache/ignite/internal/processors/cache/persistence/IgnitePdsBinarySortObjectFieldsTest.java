@@ -19,7 +19,6 @@ package org.apache.ignite.internal.processors.cache.persistence;
 
 import java.util.concurrent.TimeUnit;
 import org.apache.ignite.IgniteCache;
-import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
 import org.apache.ignite.cluster.ClusterState;
 import org.apache.ignite.configuration.CacheConfiguration;
@@ -27,8 +26,8 @@ import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
+import org.apache.ignite.internal.binary.BinaryUtils;
 import org.apache.ignite.testframework.GridTestUtils;
-import org.apache.ignite.testframework.junits.WithSystemProperty;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
 
@@ -78,19 +77,27 @@ public class IgnitePdsBinarySortObjectFieldsTest extends GridCommonAbstractTest 
      * @throws Exception if failed.
      */
     @Test
-    @WithSystemProperty(key = IgniteSystemProperties.IGNITE_BINARY_SORT_OBJECT_FIELDS, value = "true")
     public void testGivenCacheWithPojoValueAndPds_WhenPut_ThenNoHangup() throws Exception {
-        IgniteEx ignite = startGrid(0);
+        boolean prev = BinaryUtils.FIELDS_SORTED_ORDER;
 
-        ignite.cluster().state(ClusterState.ACTIVE);
+        BinaryUtils.FIELDS_SORTED_ORDER = true;
 
-        final IgniteCache<Long, Value> cache = ignite.getOrCreateCache(
-            new CacheConfiguration<Long, Value>(CACHE_NAME)
-                .setAffinity(new RendezvousAffinityFunction().setPartitions(32)));
+        try {
+            IgniteEx ignite = startGrid(0);
 
-        GridTestUtils.assertTimeout(5, TimeUnit.SECONDS, () -> cache.put(1L, new Value(1L)));
+            ignite.cluster().state(ClusterState.ACTIVE);
 
-        assertEquals(1, cache.size());
+            final IgniteCache<Long, Value> cache = ignite.getOrCreateCache(
+                new CacheConfiguration<Long, Value>(CACHE_NAME)
+                    .setAffinity(new RendezvousAffinityFunction().setPartitions(32)));
+
+            GridTestUtils.assertTimeout(5, TimeUnit.SECONDS, () -> cache.put(1L, new Value(1L)));
+
+            assertEquals(1, cache.size());
+        }
+        finally {
+            BinaryUtils.FIELDS_SORTED_ORDER = prev;
+        }
     }
 
     /**

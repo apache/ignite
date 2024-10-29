@@ -228,8 +228,8 @@ public class ComputeTaskTest extends AbstractThinClientTest {
         try (IgniteClient client = startClient(0)) {
             IgniteClientFuture<Object> fut = client.compute().executeAsync2(TestExceptionalTask.class.getName(), null);
 
-            String errMessage = fut.handle((f, t) -> t.getMessage()).toCompletableFuture().get(2, TimeUnit.SECONDS);
-            assertTrue(errMessage.contains("cause=Foo"));
+            String errMsg = fut.handle((f, t) -> t.getMessage()).toCompletableFuture().get(2, TimeUnit.SECONDS);
+            assertTrue(errMsg.contains("cause=Foo"));
         }
     }
 
@@ -420,13 +420,13 @@ public class ComputeTaskTest extends AbstractThinClientTest {
             Future<Object> fut1 = compute.executeAsync(TestLatchTask.class.getName(), null);
 
             // Wait for the task to start, then drop connections.
-            TestLatchTask.startLatch.await();
+            assertTrue(TestLatchTask.startLatch.await(TIMEOUT, TimeUnit.MILLISECONDS));
             dropAllThinClientConnections();
 
             TestLatchTask.startLatch = new CountDownLatch(1);
             Future<Object> fut2 = compute.executeAsync(TestLatchTask.class.getName(), null);
 
-            TestLatchTask.startLatch.await();
+            assertTrue(TestLatchTask.startLatch.await(TIMEOUT, TimeUnit.MILLISECONDS));
             dropAllThinClientConnections();
 
             TestLatchTask.latch = new CountDownLatch(1);

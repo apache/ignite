@@ -120,15 +120,15 @@ public class IgniteWalRebalanceLoggingTest extends GridCommonAbstractTest {
                 (str.contains("cache_group1") || str.contains("cache_group2")) &&
                 str.contains("fullPartitions=[], histPartitions=[0,1,2,3,4,5,6,7]")).times(2).build();
 
-        LogListener unexpectedMessagesLsnr = LogListener.matches((str) ->
+        LogListener unexpectedMsgsLsnr = LogListener.matches((str) ->
             str.startsWith("Partitions weren't present in any history reservation:") ||
                 str.startsWith("Partitions were reserved, but maximum available counter is greater than demanded:")
         ).build();
 
-        checkFollowingPartitionsWereReservedForPotentialHistoryRebalanceMsg(expMsgsLsnr, unexpectedMessagesLsnr);
+        checkFollowingPartitionsWereReservedForPotentialHistoryRebalanceMsg(expMsgsLsnr, unexpectedMsgsLsnr);
 
         assertTrue(expMsgsLsnr.check());
-        assertFalse(unexpectedMessagesLsnr.check());
+        assertFalse(unexpectedMsgsLsnr.check());
     }
 
     /**

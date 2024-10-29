@@ -32,8 +32,6 @@ import org.apache.ignite.internal.QueryMXBeanImpl;
 import org.apache.ignite.internal.ServiceMXBeanImpl;
 import org.apache.ignite.internal.TransactionsMXBeanImpl;
 import org.apache.ignite.internal.processors.cache.GridCacheContextInfo;
-import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxLocal;
-import org.apache.ignite.internal.processors.cache.mvcc.MvccUtils;
 import org.apache.ignite.internal.processors.cache.query.IgniteQueryErrorCode;
 import org.apache.ignite.internal.processors.query.GridQueryProperty;
 import org.apache.ignite.internal.processors.query.GridQueryTypeDescriptor;
@@ -51,9 +49,11 @@ import org.apache.ignite.internal.sql.command.SqlAnalyzeCommand;
 import org.apache.ignite.internal.sql.command.SqlCommand;
 import org.apache.ignite.internal.sql.command.SqlCreateIndexCommand;
 import org.apache.ignite.internal.sql.command.SqlCreateUserCommand;
+import org.apache.ignite.internal.sql.command.SqlCreateViewCommand;
 import org.apache.ignite.internal.sql.command.SqlDropIndexCommand;
 import org.apache.ignite.internal.sql.command.SqlDropStatisticsCommand;
 import org.apache.ignite.internal.sql.command.SqlDropUserCommand;
+import org.apache.ignite.internal.sql.command.SqlDropViewCommand;
 import org.apache.ignite.internal.sql.command.SqlIndexColumn;
 import org.apache.ignite.internal.sql.command.SqlKillClientCommand;
 import org.apache.ignite.internal.sql.command.SqlKillComputeTaskCommand;
@@ -147,7 +147,9 @@ public class SqlCommandProcessor {
             || cmd instanceof SqlKillScanQueryCommand
             || cmd instanceof SqlKillContinuousQueryCommand
             || cmd instanceof SqlKillQueryCommand
-            || cmd instanceof SqlStatisticsCommands;
+            || cmd instanceof SqlStatisticsCommands
+            || cmd instanceof SqlCreateViewCommand
+            || cmd instanceof SqlDropViewCommand;
     }
 
     /**
@@ -160,7 +162,9 @@ public class SqlCommandProcessor {
             || cmd instanceof SqlAlterTableCommand
             || cmd instanceof SqlCreateUserCommand
             || cmd instanceof SqlAlterUserCommand
-            || cmd instanceof SqlDropUserCommand;
+            || cmd instanceof SqlDropUserCommand
+            || cmd instanceof SqlCreateViewCommand
+            || cmd instanceof SqlDropViewCommand;
     }
 
     /**
@@ -309,8 +313,6 @@ public class SqlCommandProcessor {
         try {
             isDdlOnSchemaSupported(cmd.schemaName());
 
-            finishActiveTxIfNecessary();
-
             if (cmd instanceof SqlCreateIndexCommand) {
                 SqlCreateIndexCommand cmd0 = (SqlCreateIndexCommand)cmd;
 
@@ -413,6 +415,16 @@ public class SqlCommandProcessor {
 
                 ctx.security().dropUser(dropCmd.userName());
             }
+            else if (cmd instanceof SqlCreateViewCommand) {
+                SqlCreateViewCommand cmd0 = (SqlCreateViewCommand)cmd;
+
+                ctx.query().sqlViewManager().createView(cmd0.schemaName(), cmd0.viewName(), cmd0.viewSql(), cmd0.replace());
+            }
+            else if (cmd instanceof SqlDropViewCommand) {
+                SqlDropViewCommand cmd0 = (SqlDropViewCommand)cmd;
+
+                ctx.query().sqlViewManager().dropView(cmd0.schemaName(), cmd0.viewName(), cmd0.ifExists());
+            }
             else
                 throw new IgniteSQLException("Unsupported DDL operation: " + cmd,
                     IgniteQueryErrorCode.UNSUPPORTED_OPERATION);
@@ -428,23 +440,6 @@ public class SqlCommandProcessor {
         }
         catch (Exception e) {
             throw new IgniteSQLException(e.getMessage(), e);
-        }
-    }
-
-    /**
-     * Commits active transaction if exists.
-     *
-     * @throws IgniteCheckedException If failed.
-     */
-    protected void finishActiveTxIfNecessary() throws IgniteCheckedException {
-        try (GridNearTxLocal tx = MvccUtils.tx(ctx)) {
-            if (tx == null)
-                return;
-
-            if (!tx.isRollbackOnly())
-                tx.commit();
-            else
-                tx.rollback();
         }
     }
 }

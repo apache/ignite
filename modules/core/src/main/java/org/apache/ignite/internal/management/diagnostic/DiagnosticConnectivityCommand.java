@@ -99,9 +99,9 @@ public class DiagnosticConnectivityCommand
             String consId = key.consistentId().toString();
             String isClient = key.isClient() ? NODE_TYPE_CLIENT : NODE_TYPE_SERVER;
 
-            ConnectivityResult value = entry.getValue();
+            ConnectivityResult val = entry.getValue();
 
-            Map<ClusterNode, Boolean> statuses = value.getNodeIds();
+            Map<ClusterNode, Boolean> statuses = val.getNodeIds();
 
             List<List<String>> row = statuses.entrySet().stream().map(nodeStat -> {
                 ClusterNode remoteNode = nodeStat.getKey();

@@ -105,16 +105,14 @@ public class IgniteCacheTxIteratorSelfTest extends GridCommonAbstractTest {
 
         try {
             for (CacheMode mode : CacheMode.values()) {
-                for (CacheAtomicityMode atomMode : CacheAtomicityMode._values()) {
-                    if (mode == CacheMode.PARTITIONED) {
-                        // Near cache makes sense only for partitioned cache.
-                        checkTxCache(CacheMode.PARTITIONED, atomMode, true, false);
-                    }
-
-                    checkTxCache(mode, atomMode, false, true);
-
-                    checkTxCache(mode, atomMode, false, false);
+                if (mode == CacheMode.PARTITIONED) {
+                    // Near cache makes sense only for partitioned cache.
+                    checkTxCache(CacheMode.PARTITIONED, true, false);
                 }
+
+                checkTxCache(mode, false, true);
+
+                checkTxCache(mode, false, false);
             }
         }
         finally {
@@ -127,7 +125,6 @@ public class IgniteCacheTxIteratorSelfTest extends GridCommonAbstractTest {
      */
     private void checkTxCache(
         CacheMode mode,
-        CacheAtomicityMode atomMode,
         boolean nearEnabled,
         boolean useEvicPlc
     ) throws Exception {
@@ -135,13 +132,13 @@ public class IgniteCacheTxIteratorSelfTest extends GridCommonAbstractTest {
 
         final CacheConfiguration<String, TestClass> ccfg = cacheConfiguration(
             mode,
-            atomMode,
+            CacheAtomicityMode.TRANSACTIONAL,
             nearEnabled,
             useEvicPlc);
 
-        final IgniteCache<String, TestClass> cache = ignite.createCache(ccfg).withAllowAtomicOpsInTx();
+        final IgniteCache<String, TestClass> cache = ignite.createCache(ccfg);
 
-        info("Checking cache [mode=" + mode + ", atomMode=" + atomMode + ", near=" + nearEnabled +
+        info("Checking cache [mode=" + mode + ", near=" + nearEnabled +
             ", evict=" + useEvicPlc + ']');
 
         try {

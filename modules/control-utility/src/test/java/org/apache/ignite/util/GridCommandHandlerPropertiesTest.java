@@ -71,13 +71,32 @@ public class GridCommandHandlerPropertiesTest extends GridCommandHandlerClusterB
         assertContains(log, out, "control.(sh|bat) --property help");
 
         assertContains(log, out, "Print list of available properties:");
-        assertContains(log, out, "control.(sh|bat) --property list");
+        assertContains(log, out, "control.(sh|bat) --property list [--info]");
+        assertContains(log, out, "--info  - Print detailed information: name, value, description.");
 
         assertContains(log, out, "Get the property value:");
         assertContains(log, out, "control.(sh|bat) --property get --name <property_name>");
 
         assertContains(log, out, "Set the property value:");
         assertContains(log, out, "control.(sh|bat) --property set --name <property_name> --val <property_value>");
+    }
+
+    /**
+     * Check the command ' --property list [--info]'.
+     * Steps:
+     */
+    @Test
+    public void testListWithValues() {
+        assertEquals(EXIT_CODE_OK, execute("--property", "list", "--info"));
+
+        String out = testOut.toString();
+
+        for (DistributedChangeableProperty<Serializable> pd : crd.context()
+            .distributedConfiguration().properties()) {
+            assertContains(log, out, pd.getName());
+            assertContains(log, out, String.valueOf(pd.get()));
+            assertContains(log, out, pd.description());
+        }
     }
 
     /**
@@ -111,7 +130,7 @@ public class GridCommandHandlerPropertiesTest extends GridCommandHandlerClusterB
     }
 
     /**
-     * Check the set command fro property 'sql.disabledFunctions'.
+     * Check the set command for property 'sql.disabledFunctions'.
      * Steps:
      */
     @Test
@@ -177,7 +196,7 @@ public class GridCommandHandlerPropertiesTest extends GridCommandHandlerClusterB
     }
 
     /**
-     * Check the set command fro property 'sql.defaultQueryTimeout'.
+     * Check the set command for property 'sql.defaultQueryTimeout'.
      * Steps:
      */
     @Test

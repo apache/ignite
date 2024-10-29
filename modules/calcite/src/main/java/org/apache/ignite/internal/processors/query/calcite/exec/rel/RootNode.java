@@ -327,6 +327,6 @@ public class RootNode<Row> extends AbstractNode<Row> implements SingleNode<Row>,
         if (e instanceof IgniteSQLException)
             throw (IgniteSQLException)e;
         else
-            throw new IgniteSQLException("An error occurred while query executing.", IgniteQueryErrorCode.UNKNOWN, e);
+            throw new IgniteSQLException("An error occurred while query executing - " + e.getMessage(), IgniteQueryErrorCode.UNKNOWN, e);
     }
 }

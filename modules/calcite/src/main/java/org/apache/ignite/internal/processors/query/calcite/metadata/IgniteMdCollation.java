@@ -286,15 +286,15 @@ public class IgniteMdCollation implements MetadataHandler<BuiltInMetadata.Collat
             new ArrayList<>();
         for (Map.Entry<Integer, SqlMonotonicity> entry
             : targetsWithMonotonicity.entrySet()) {
-            final SqlMonotonicity value = entry.getValue();
-            switch (value) {
+            final SqlMonotonicity val = entry.getValue();
+            switch (val) {
                 case NOT_MONOTONIC:
                 case CONSTANT:
                     break;
                 default:
                     fieldCollationsForRexCalls.add(
                         new RelFieldCollation(entry.getKey(),
-                            RelFieldCollation.Direction.of(value)));
+                            RelFieldCollation.Direction.of(val)));
                     break;
             }
         }

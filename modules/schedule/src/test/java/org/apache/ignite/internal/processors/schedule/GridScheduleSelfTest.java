@@ -425,10 +425,10 @@ public class GridScheduleSelfTest extends GridCommonAbstractTest {
             }
         };
 
-        SchedulerFuture<Integer> future = grid(0).scheduler().scheduleLocal(run, "{55} 53 3/5 * * *");
+        SchedulerFuture<Integer> fut = grid(0).scheduler().scheduleLocal(run, "{55} 53 3/5 * * *");
 
         try {
-            future.get();
+            fut.get();
 
             fail("Accepted wrong cron expression");
         }
@@ -436,11 +436,11 @@ public class GridScheduleSelfTest extends GridCommonAbstractTest {
             assertTrue(e.getMessage().startsWith("Invalid cron expression in schedule pattern"));
         }
 
-        assertTrue(future.isDone());
+        assertTrue(fut.isDone());
 
-        assertEquals(0, future.nextExecutionTime());
+        assertEquals(0, fut.nextExecutionTime());
 
-        assertEquals(0, future.nextExecutionTimes(2, System.currentTimeMillis()).length);
+        assertEquals(0, fut.nextExecutionTimes(2, System.currentTimeMillis()).length);
     }
 
     /**

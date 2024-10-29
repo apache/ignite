@@ -755,12 +755,12 @@ public class KillQueryTest extends GridCommonAbstractTest {
     public void testCancelQueryPartitionPruning() throws Exception {
         IgniteInternalFuture cancelRes = cancel(1, asyncCancel);
 
-        final int ROWS_ALLOWED_TO_PROCESS_AFTER_CANCEL = 400;
+        final int ROWS_ALLOWED_TO_PROC_AFTER_CANCEL = 400;
 
         GridTestUtils.assertThrows(log, () -> {
             stmt.executeQuery("select * from Integer where _key between 1000 and 2000 " +
                 "and awaitLatchCancelled() = 0 " +
-                "and shouldNotBeCalledMoreThan(" + ROWS_ALLOWED_TO_PROCESS_AFTER_CANCEL + ")");
+                "and shouldNotBeCalledMoreThan(" + ROWS_ALLOWED_TO_PROC_AFTER_CANCEL + ")");
 
             return null;
         }, SQLException.class, "The query was cancelled while executing.");
@@ -822,14 +822,14 @@ public class KillQueryTest extends GridCommonAbstractTest {
     public void testCancelDistributeJoin() throws Exception {
         IgniteInternalFuture cancelRes = cancel(1, asyncCancel);
 
-        final int ROWS_ALLOWED_TO_PROCESS_AFTER_CANCEL = MAX_ROWS - 1;
+        final int ROWS_ALLOWED_TO_PROC_AFTER_CANCEL = MAX_ROWS - 1;
 
         GridTestUtils.assertThrows(log, () -> {
             ignite.cache(DEFAULT_CACHE_NAME).query(
                 new SqlFieldsQuery("SELECT p1.rec_id, p1.id, p2.rec_id " +
                     "FROM PERS1.Person p1 JOIN PERS2.Person p2 " +
                     "ON p1.id = p2.id " +
-                    "AND shouldNotBeCalledMoreThan(" + ROWS_ALLOWED_TO_PROCESS_AFTER_CANCEL + ")" +
+                    "AND shouldNotBeCalledMoreThan(" + ROWS_ALLOWED_TO_PROC_AFTER_CANCEL + ")" +
                     "AND awaitLatchCancelled() = 0")
                     .setDistributedJoins(true)
             ).getAll();
@@ -954,7 +954,7 @@ public class KillQueryTest extends GridCommonAbstractTest {
 
         String select = "select * from Integer where _val <> 42";
 
-        IgniteInternalFuture runQueryFut = GridTestUtils.runAsync(() ->
+        IgniteInternalFuture runQryFut = GridTestUtils.runAsync(() ->
             ignite.cache(DEFAULT_CACHE_NAME).query(
                 new SqlFieldsQuery(select)
             ).getAll());
@@ -963,8 +963,8 @@ public class KillQueryTest extends GridCommonAbstractTest {
             () -> findQueriesOnNode(select, ignite).size() == 1, TIMEOUT);
 
         if (!gotOneFreezedSelect) {
-            if (runQueryFut.isDone())
-                printFuturesException("Got exception getting running the query.", runQueryFut);
+            if (runQryFut.isDone())
+                printFuturesException("Got exception getting running the query.", runQryFut);
 
             Assert.fail("Failed to wait for query to be in running queries list exactly one time " +
                 "[select=" + select + ", node=" + ignite.localNode().id() + ", timeout=" + TIMEOUT + "ms].");
@@ -976,7 +976,7 @@ public class KillQueryTest extends GridCommonAbstractTest {
 
         GridTestUtils.assertThrowsAnyCause(
             log,
-            () -> runQueryFut.get(CHECK_RESULT_TIMEOUT),
+            () -> runQryFut.get(CHECK_RESULT_TIMEOUT),
             CacheException.class,
             "The query was cancelled while executing.");
 
@@ -1093,9 +1093,9 @@ public class KillQueryTest extends GridCommonAbstractTest {
 
                 assertFalse(runningQueries.isEmpty());
 
-                for (GridRunningQueryInfo runningQuery : runningQueries) {
+                for (GridRunningQueryInfo runningQry : runningQueries) {
                     GridTestUtils.assertThrowsAnyCause(log,
-                        () -> igniteForKillRequest.cache(DEFAULT_CACHE_NAME).query(createKillQuery(runningQuery.globalQueryId(), async)),
+                        () -> igniteForKillRequest.cache(DEFAULT_CACHE_NAME).query(createKillQuery(runningQry.globalQueryId(), async)),
                         CacheException.class, expErrMsg);
                 }
             }
@@ -1131,10 +1131,10 @@ public class KillQueryTest extends GridCommonAbstractTest {
 
                 List<IgniteInternalFuture> res = new ArrayList<>();
 
-                for (GridRunningQueryInfo runningQuery : runningQueries) {
-                    if (Stream.of(skipSqls).noneMatch((skipSql -> runningQuery.query().equals(skipSql))))
+                for (GridRunningQueryInfo runningQry : runningQueries) {
+                    if (Stream.of(skipSqls).noneMatch((skipSql -> runningQry.query().equals(skipSql))))
                         res.add(GridTestUtils.runAsync(() -> {
-                                igniteForKillRequest.cache(DEFAULT_CACHE_NAME).query(createKillQuery(runningQuery.globalQueryId(), async));
+                                igniteForKillRequest.cache(DEFAULT_CACHE_NAME).query(createKillQuery(runningQry.globalQueryId(), async));
                             }
                         ));
                 }

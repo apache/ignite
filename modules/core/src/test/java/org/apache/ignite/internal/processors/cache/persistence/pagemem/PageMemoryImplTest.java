@@ -279,7 +279,7 @@ public class PageMemoryImplTest extends GridCommonAbstractTest {
         int pagesForStartThrottling = 10;
 
         //Number of pages which were poll from checkpoint buffer for throttling.
-        AtomicInteger cpBufferPollPages = new AtomicInteger();
+        AtomicInteger cpBufPollPages = new AtomicInteger();
 
         // Create a 1 mb page memory.
         PageMemoryImpl memory = createPageMemory(
@@ -290,7 +290,7 @@ public class PageMemoryImplTest extends GridCommonAbstractTest {
             (IgniteInClosure<FullPageId>)fullPageId -> {
                 //First increment then get because pageStoreMgr.storedPages always contains at least one page
                 // which was written before throttling.
-                assertEquals(cpBufferPollPages.incrementAndGet(), pageStoreMgr.storedPages.size());
+                assertEquals(cpBufPollPages.incrementAndGet(), pageStoreMgr.storedPages.size());
             }
         );
 
@@ -317,7 +317,7 @@ public class PageMemoryImplTest extends GridCommonAbstractTest {
         // from checkpoint buffer before throttling will be disabled but at least one page always would be written
         // outside of throttling and in our case we certainly know that this page is also contained in checkpoint buffer
         // (because all of our pages are in checkpoint buffer).
-        assertEquals(pagesForStartThrottling - 1, cpBufferPollPages.get());
+        assertEquals(pagesForStartThrottling - 1, cpBufPollPages.get());
     }
 
     /**
@@ -536,13 +536,13 @@ public class PageMemoryImplTest extends GridCommonAbstractTest {
     private void acquireAndReleaseWriteLock(PageMemoryImpl memory, FullPageId fullPageId) throws IgniteCheckedException {
         long page = memory.acquirePage(1, fullPageId.pageId());
 
-        long address = memory.writeLock(1, fullPageId.pageId(), page);
+        long addr = memory.writeLock(1, fullPageId.pageId(), page);
 
-        PageIO.setPageId(address, fullPageId.pageId());
+        PageIO.setPageId(addr, fullPageId.pageId());
 
-        PageIO.setType(address, PageIO.T_BPLUS_META);
+        PageIO.setType(addr, PageIO.T_BPLUS_META);
 
-        PageUtils.putShort(address, PageIO.VER_OFF, (short)1);
+        PageUtils.putShort(addr, PageIO.VER_OFF, (short)1);
 
         memory.writeUnlock(1, fullPageId.pageId(), page, Boolean.FALSE, true);
 
@@ -611,29 +611,11 @@ public class PageMemoryImplTest extends GridCommonAbstractTest {
 
         kernalCtx.add(failureProc);
 
-        GridCacheSharedContext<Object, Object> sharedCtx = new GridCacheSharedContext<>(
-            kernalCtx,
-            null,
-            null,
-            null,
-            mgr,
-            new NoOpWALManager(),
-            null,
-            new IgniteCacheDatabaseSharedManager(kernalCtx),
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null
-        );
+        GridCacheSharedContext<Object, Object> sharedCtx = GridCacheSharedContext.builder()
+            .setPageStoreManager(mgr)
+            .setWalManager(new NoOpWALManager())
+            .setDatabaseManager(new IgniteCacheDatabaseSharedManager(kernalCtx))
+            .build(kernalCtx, null);
 
         CheckpointProgressImpl cl0 = Mockito.mock(CheckpointProgressImpl.class);
 

@@ -27,6 +27,7 @@ import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.Executor;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
@@ -40,6 +41,7 @@ import org.apache.ignite.internal.LongJVMPauseDetector;
 import org.apache.ignite.internal.MarshallerContextImpl;
 import org.apache.ignite.internal.binary.BinaryMarshaller;
 import org.apache.ignite.internal.cache.query.index.IndexProcessor;
+import org.apache.ignite.internal.cache.transform.CacheObjectTransformerProcessor;
 import org.apache.ignite.internal.managers.checkpoint.GridCheckpointManager;
 import org.apache.ignite.internal.managers.collision.GridCollisionManager;
 import org.apache.ignite.internal.managers.communication.GridIoManager;
@@ -55,7 +57,6 @@ import org.apache.ignite.internal.managers.systemview.JmxSystemViewExporterSpi;
 import org.apache.ignite.internal.processors.affinity.GridAffinityProcessor;
 import org.apache.ignite.internal.processors.cache.GridCacheProcessor;
 import org.apache.ignite.internal.processors.cache.binary.CacheObjectBinaryProcessorImpl;
-import org.apache.ignite.internal.processors.cache.mvcc.MvccProcessor;
 import org.apache.ignite.internal.processors.cache.persistence.defragmentation.IgniteDefragmentation;
 import org.apache.ignite.internal.processors.cache.persistence.filename.PdsFolderSettings;
 import org.apache.ignite.internal.processors.cache.persistence.filename.PdsFoldersResolver;
@@ -97,6 +98,7 @@ import org.apache.ignite.internal.processors.tracing.NoopTracing;
 import org.apache.ignite.internal.processors.tracing.Tracing;
 import org.apache.ignite.internal.suggestions.GridPerformanceSuggestions;
 import org.apache.ignite.internal.util.IgniteExceptionRegistry;
+import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.internal.worker.WorkersRegistry;
 import org.apache.ignite.maintenance.MaintenanceRegistry;
@@ -134,6 +136,13 @@ public class StandaloneGridKernalContext implements GridKernalContext {
 
     /** System view manager. */
     private final GridSystemViewManager sysViewMgr;
+
+    /** Timeout processor. */
+    private final GridTimeoutProcessor timeoutProc;
+
+    /** */
+    @GridToStringExclude
+    private CacheObjectTransformerProcessor transProc;
 
     /**
      * Cache object processor. Used for converting cache objects and keys into binary objects. Null means there is no
@@ -182,28 +191,32 @@ public class StandaloneGridKernalContext implements GridKernalContext {
     ) throws IgniteCheckedException {
         this.log = log;
 
+        marshallerCtx = new MarshallerContextImpl(null, null);
+        cfg = prepareIgniteConfiguration();
+
         try {
-            pluginProc = new StandaloneIgnitePluginProcessor(this, config());
+            pluginProc = new StandaloneIgnitePluginProcessor(this, cfg);
         }
         catch (IgniteCheckedException e) {
             throw new IllegalStateException("Must not fail on empty providers list.", e);
         }
 
-        this.marshallerCtx = new MarshallerContextImpl(null, null);
-        this.cfg = prepareIgniteConfiguration();
-        this.rsrcProc = new GridResourceProcessor(this);
-        this.metricMgr = new GridMetricManager(this);
-        this.sysViewMgr = new GridSystemViewManager(this);
+        rsrcProc = new GridResourceProcessor(this);
+        metricMgr = new GridMetricManager(this);
+        sysViewMgr = new GridSystemViewManager(this);
+        timeoutProc = new GridTimeoutProcessor(this);
+        transProc = createComponent(CacheObjectTransformerProcessor.class);
 
         // Fake folder provided to perform processor startup on empty folder.
         if (binaryMetadataFileStoreDir == null)
             binaryMetadataFileStoreDir = new File(DataStorageConfiguration.DFLT_BINARY_METADATA_PATH).getAbsoluteFile();
 
-        this.cacheObjProcessor = binaryProcessor(this, binaryMetadataFileStoreDir);
+        cacheObjProcessor = binaryProcessor(this, binaryMetadataFileStoreDir);
 
         comps.add(rsrcProc);
         comps.add(cacheObjProcessor);
         comps.add(metricMgr);
+        comps.add(timeoutProc);
 
         if (marshallerMappingFileStoreDir != null) {
             marshallerCtx.setMarshallerMappingFileStoreDir(marshallerMappingFileStoreDir);
@@ -227,10 +240,10 @@ public class StandaloneGridKernalContext implements GridKernalContext {
         final GridKernalContext ctx,
         final File binaryMetadataFileStoreDir) {
 
-        final CacheObjectBinaryProcessorImpl processor = new CacheObjectBinaryProcessorImpl(ctx);
-        processor.setBinaryMetadataFileStoreDir(binaryMetadataFileStoreDir);
+        final CacheObjectBinaryProcessorImpl proc = new CacheObjectBinaryProcessorImpl(ctx);
+        proc.setBinaryMetadataFileStoreDir(binaryMetadataFileStoreDir);
 
-        return processor;
+        return proc;
     }
 
     /**
@@ -298,7 +311,20 @@ public class StandaloneGridKernalContext implements GridKernalContext {
 
     /** {@inheritDoc} */
     @Override public IgniteEx grid() {
-        final IgniteEx kernal = new IgniteKernal();
+        final IgniteEx kernal = new IgniteKernal() {
+            /**
+             * Override to return the non-null context instance to make metric SPIs happy.<br>
+             *
+             * Say the SqlViewMetricExporterSpi one which may be automatically added by
+             * the {@link GridMetricManager} if indexing or query engine are found in classpath
+             * (which is the default behaviour).
+             *
+             * @return Kernal context.
+             */
+            @Override public GridKernalContext context() {
+                return StandaloneGridKernalContext.this;
+            }
+        };
         try {
             setField(kernal, "cfg", cfg);
             setField(kernal, "igniteInstanceName", cfg.getIgniteInstanceName());
@@ -311,7 +337,7 @@ public class StandaloneGridKernalContext implements GridKernalContext {
 
     /** */
     private void setField(IgniteEx kernal, String name, Object val) throws NoSuchFieldException, IllegalAccessException {
-        Field field = kernal.getClass().getDeclaredField(name);
+        Field field = kernal.getClass().getSuperclass().getDeclaredField(name);
         field.setAccessible(true);
         field.set(kernal, val);
     }
@@ -338,7 +364,7 @@ public class StandaloneGridKernalContext implements GridKernalContext {
 
     /** {@inheritDoc} */
     @Override public GridTimeoutProcessor timeout() {
-        return null;
+        return timeoutProc;
     }
 
     /** {@inheritDoc} */
@@ -414,6 +440,11 @@ public class StandaloneGridKernalContext implements GridKernalContext {
     /** {@inheritDoc} */
     @Override public MaintenanceRegistry maintenanceRegistry() {
         return null;
+    }
+
+    /** {@inheritDoc} */
+    @Override public CacheObjectTransformerProcessor transformer() {
+        return transProc;
     }
 
     /** {@inheritDoc} */
@@ -542,11 +573,6 @@ public class StandaloneGridKernalContext implements GridKernalContext {
     }
 
     /** {@inheritDoc} */
-    @Override public MvccProcessor coordinators() {
-        return null;
-    }
-
-    /** {@inheritDoc} */
     @Override public boolean invalid() {
         return false;
     }
@@ -577,12 +603,25 @@ public class StandaloneGridKernalContext implements GridKernalContext {
 
     /** {@inheritDoc} */
     @Override public PluginProvider pluginProvider(String name) throws PluginNotFoundException {
-        return null;
+        PluginProvider plugin = pluginProc.pluginProvider(name);
+
+        if (plugin == null)
+            throw new PluginNotFoundException(name);
+
+        return plugin;
     }
 
     /** {@inheritDoc} */
     @Override public <T> T createComponent(Class<T> cls) {
-        return null;
+        T res = pluginProc.createComponent(cls);
+
+        if (res != null)
+            return res;
+
+        if (cls.equals(CacheObjectTransformerProcessor.class))
+            return null;
+
+        throw new IgniteException("Unsupported component type: " + cls);
     }
 
     /** {@inheritDoc} */
@@ -693,5 +732,23 @@ public class StandaloneGridKernalContext implements GridKernalContext {
     /** {@inheritDoc} */
     @Override public Executor getAsyncContinuationExecutor() {
         return null;
+    }
+
+    /**
+     * @param kctx Kernal context.
+     * @throws IgniteCheckedException In case of any error.
+     */
+    public static void startAllComponents(GridKernalContext kctx) throws IgniteCheckedException {
+        for (GridComponent comp : kctx)
+            comp.start();
+    }
+
+    /**
+     * @param kctx Kernal context.
+     * @throws IgniteCheckedException In case of any error.
+     */
+    public static void closeAllComponents(GridKernalContext kctx) throws IgniteCheckedException {
+        for (GridComponent comp : kctx)
+            comp.stop(true);
     }
 }

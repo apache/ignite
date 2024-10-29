@@ -52,8 +52,10 @@ import org.apache.ignite.internal.processors.query.calcite.metadata.cost.IgniteC
 import org.apache.ignite.internal.processors.query.calcite.type.IgniteTypeFactory;
 import org.apache.ignite.logger.NullLogger;
 import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 
 import static org.apache.calcite.tools.Frameworks.createRootSchema;
+import static org.apache.calcite.tools.Frameworks.newConfigBuilder;
 import static org.apache.ignite.internal.processors.query.calcite.CalciteQueryProcessor.FRAMEWORK_CONFIG;
 
 /**
@@ -161,6 +163,9 @@ public final class BaseQueryContext extends AbstractQueryContext {
     private final boolean isLocal;
 
     /** */
+    private final boolean forcedJoinOrder;
+
+    /** */
     private final int[] parts;
 
     /**
@@ -171,6 +176,7 @@ public final class BaseQueryContext extends AbstractQueryContext {
         Context parentCtx,
         IgniteLogger log,
         boolean isLocal,
+        boolean forcedJoinOrder,
         int[] parts
     ) {
         super(Contexts.chain(parentCtx, cfg.getContext()));
@@ -181,6 +187,8 @@ public final class BaseQueryContext extends AbstractQueryContext {
         this.log = log;
 
         this.isLocal = isLocal;
+
+        this.forcedJoinOrder = forcedJoinOrder;
 
         this.parts = parts;
 
@@ -284,6 +292,11 @@ public final class BaseQueryContext extends AbstractQueryContext {
     }
 
     /** */
+    public boolean isForcedJoinOrder() {
+        return forcedJoinOrder;
+    }
+
+    /** */
     public int[] partitions() {
         if (parts != null)
             return Arrays.copyOf(parts, parts.length);
@@ -312,7 +325,10 @@ public final class BaseQueryContext extends AbstractQueryContext {
         private IgniteLogger log = new NullLogger();
 
         /** */
-        private boolean isLocal = false;
+        private boolean isLocal;
+
+        /** */
+        private boolean forcedJoinOrder;
 
         /** */
         private int[] parts = null;
@@ -321,8 +337,31 @@ public final class BaseQueryContext extends AbstractQueryContext {
          * @param frameworkCfg Framework config.
          * @return Builder for chaining.
          */
-        public Builder frameworkConfig(@NotNull FrameworkConfig frameworkCfg) {
-            this.frameworkCfg = frameworkCfg;
+        public Builder frameworkConfig(@Nullable FrameworkConfig frameworkCfg) {
+            if (frameworkCfg == null)
+                return this;
+
+            if (this.frameworkCfg != EMPTY_CONFIG) {
+                // Schema was set explicitely earlier.
+                SchemaPlus schema = this.frameworkCfg.getDefaultSchema();
+
+                this.frameworkCfg = newConfigBuilder(frameworkCfg).defaultSchema(schema).build();
+            }
+            else
+                this.frameworkCfg = frameworkCfg;
+
+            return this;
+        }
+
+        /**
+         * @param schema Default schema.
+         * @return Builder for chaining.
+         */
+        public Builder defaultSchema(SchemaPlus schema) {
+            frameworkCfg = newConfigBuilder(frameworkCfg)
+                .defaultSchema(schema)
+                .build();
+
             return this;
         }
 
@@ -354,6 +393,15 @@ public final class BaseQueryContext extends AbstractQueryContext {
         }
 
         /**
+         * @param forcedJoinOrder Forced join orders flag.
+         * @return Builder for chaining.
+         */
+        public Builder forcedJoinOrder(boolean forcedJoinOrder) {
+            this.forcedJoinOrder = forcedJoinOrder;
+            return this;
+        }
+
+        /**
          * @param parts Array of partitions' numbers.
          * @return Builder for chaining.
          */
@@ -370,7 +418,7 @@ public final class BaseQueryContext extends AbstractQueryContext {
          * @return Planner context.
          */
         public BaseQueryContext build() {
-            return new BaseQueryContext(frameworkCfg, parentCtx, log, isLocal, parts);
+            return new BaseQueryContext(frameworkCfg, parentCtx, log, isLocal, forcedJoinOrder, parts);
         }
     }
 }

@@ -119,12 +119,12 @@ public class GridCacheNearMetricsSelfTest extends GridCacheAbstractSelfTest {
 
         IgniteCache<Integer, Integer> cache1 = g1.cache(DEFAULT_CACHE_NAME);
 
-        ClusterNode localNode = g1.cluster().localNode();
+        ClusterNode locNode = g1.cluster().localNode();
 
         int beforeSize = cache1.localMetrics().getSize();
 
         for (int i = 0; i < 100; i++) {
-            if (!affinity(cache1).isPrimaryOrBackup(localNode, i))
+            if (!affinity(cache1).isPrimaryOrBackup(locNode, i))
                 cache1.get(i); // put entry to near cache
         }
 

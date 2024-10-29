@@ -46,18 +46,19 @@ import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.Gri
 import org.apache.ignite.internal.processors.cache.persistence.wal.FileWriteAheadLogManager;
 import org.apache.ignite.internal.processors.cache.persistence.wal.WALPointer;
 import org.apache.ignite.internal.processors.configuration.distributed.DistributedChangeableProperty;
-import org.apache.ignite.internal.processors.metric.MetricRegistry;
 import org.apache.ignite.internal.util.lang.IgniteThrowableConsumer;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.metric.MetricRegistry;
 import org.apache.ignite.plugin.AbstractTestPluginProvider;
 import org.apache.ignite.plugin.PluginContext;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.jetbrains.annotations.Nullable;
 import org.junit.Assume;
 import org.junit.Test;
+
 import static org.apache.ignite.cdc.AbstractCdcTest.ChangeEventType.UPDATE;
 import static org.apache.ignite.cdc.AbstractCdcTest.KEYS_CNT;
 import static org.apache.ignite.cdc.CdcSelfTest.addData;
@@ -448,7 +449,7 @@ public class CdcCommandTest extends GridCommandHandlerAbstractTest {
         addData(srv0.cache(DEFAULT_CACHE_NAME), 0, KEYS_CNT);
 
         CountDownLatch preload = new CountDownLatch(1);
-        CountDownLatch topologyChanged = new CountDownLatch(1);
+        CountDownLatch topChanged = new CountDownLatch(1);
 
         AtomicInteger cnt = new AtomicInteger();
 
@@ -458,7 +459,7 @@ public class CdcCommandTest extends GridCommandHandlerAbstractTest {
 
             preload.countDown();
 
-            U.await(topologyChanged);
+            U.await(topChanged);
         };
 
         IgniteInternalFuture<Object> fut = GridTestUtils.runAsync(() -> {
@@ -473,7 +474,7 @@ public class CdcCommandTest extends GridCommandHandlerAbstractTest {
 
         startGrid(3);
 
-        topologyChanged.countDown();
+        topChanged.countDown();
 
         fut.get();
     }

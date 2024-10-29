@@ -329,6 +329,26 @@ public class GridDeploymentPerVersionStore extends GridDeploymentStoreAdapter {
                 if (isDeadClassLoader(meta))
                     return null;
 
+                boolean skipSearchDeployment = false;
+
+                // Check already exist deployment.
+                if (meta.deploymentMode() == SHARED) {
+                    Collection<GridDeployment> created = getDeployments();
+
+                    for (GridDeployment dep0 : created) {
+                        // hot redeploy from same node
+                        if (dep0.participants().containsKey(meta.senderNodeId()) || dep0.undeployed())
+                            continue;
+
+                        IgniteBiTuple<Class<?>, Throwable> cls = dep0.deployedClass(meta.className(), meta.alias());
+
+                        if (cls.getKey() != null && cls.getValue() == null) {
+                            ((SharedDeployment)dep0).addParticipant(meta.senderNodeId(), meta.classLoaderId());
+                            skipSearchDeployment = true;
+                        }
+                    }
+                }
+
                 if (!F.isEmpty(meta.participants())) {
                     Map<UUID, IgniteUuid> participants = new LinkedHashMap<>();
 
@@ -376,7 +396,8 @@ public class GridDeploymentPerVersionStore extends GridDeploymentStoreAdapter {
                     return null;
                 }
 
-                dep = (SharedDeployment)searchDeploymentCache(meta);
+                if (!skipSearchDeployment)
+                    dep = (SharedDeployment)searchDeploymentCache(meta);
 
                 if (dep == null) {
                     List<SharedDeployment> deps = cache.get(meta.userVersion());
@@ -1243,8 +1264,6 @@ public class GridDeploymentPerVersionStore extends GridDeploymentStoreAdapter {
 
         /** {@inheritDoc} */
         @Override public void onDeployed(Class<?> cls) {
-            assert !Thread.holdsLock(mux);
-
             boolean isTask = isTask(cls);
 
             String msg = (isTask ? "Task" : "Class") + " was deployed in SHARED or CONTINUOUS mode: " + cls;

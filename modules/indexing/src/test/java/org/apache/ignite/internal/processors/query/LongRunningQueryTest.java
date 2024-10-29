@@ -22,17 +22,24 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 import java.util.regex.Pattern;
+import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.cache.QueryEntity;
 import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
 import org.apache.ignite.cache.query.FieldsQueryCursor;
 import org.apache.ignite.cache.query.QueryCancelledException;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
+import org.apache.ignite.cache.query.annotations.QuerySqlField;
 import org.apache.ignite.cache.query.annotations.QuerySqlFunction;
 import org.apache.ignite.configuration.CacheConfiguration;
+import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.configuration.SqlConfiguration;
+import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.processors.cache.index.AbstractIndexingCommonTest;
+import org.apache.ignite.internal.processors.query.h2.H2QueryInfo;
 import org.apache.ignite.internal.processors.query.h2.IgniteH2Indexing;
 import org.apache.ignite.internal.processors.query.running.HeavyQueriesTracker;
+import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.internal.util.worker.GridWorker;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.ListeningTestLogger;
@@ -41,6 +48,7 @@ import org.junit.Test;
 
 import static java.lang.Thread.currentThread;
 import static org.apache.ignite.internal.processors.query.running.HeavyQueriesTracker.LONG_QUERY_EXEC_MSG;
+import static org.h2.engine.Constants.DEFAULT_PAGE_SIZE;
 
 /**
  * Tests for log print for long-running query.
@@ -49,21 +57,69 @@ public class LongRunningQueryTest extends AbstractIndexingCommonTest {
     /** Keys count. */
     private static final int KEY_CNT = 1000;
 
+    /** Long query warning timeout. */
+    private static final int LONG_QUERY_WARNING_TIMEOUT = 1000;
+
+    /** External wait time. */
+    private static final int EXT_WAIT_TIME = 2000;
+
+    /** Insert. */
+    private static final String INSERT_SQL = "insert into test (_key, _val) values (1001, wait_func())";
+
+    /** Insert with a subquery. */
+    private static final String INSERT_WITH_SUBQUERY_SQL = "insert into test (_key, _val) select p._key, p.orgId from " +
+        "\"pers\".Person p where p._key < wait_func()";
+
+    /** Update. */
+    private static final String UPDATE_SQL = "update test set _val = wait_func() where _key = 1";
+
+    /** Update with a subquery. */
+    private static final String UPDATE_WITH_SUBQUERY_SQL = "update test set _val = 111 where _key in " +
+        "(select p._key from \"pers\".Person p where p._key < wait_func())";
+
+    /** Delete. */
+    private static final String DELETE_SQL = "delete from test where _key = wait_func()";
+
+    /** Delete with a subquery. */
+    private static final String DELETE_WITH_SUBQUERY_SQL = "delete from test where _key in " +
+        "(select p._key from \"pers\".Person p where p._key < wait_func())";
+
+    /** Log listener for long DMLs. */
+    private static LogListener lsnrDml;
+
+    /** Page size. */
+    private int pageSize = DEFAULT_PAGE_SIZE;
+
     /** Local query mode. */
     private boolean local;
 
     /** Lazy query mode. */
     private boolean lazy;
 
+    /** Merge table usage flag. */
+    private boolean withMergeTable;
+
+    /** Distributed joins flag. */
+    private boolean distributedJoins;
+
+    /** Ignite instance. */
+    private Ignite ignite;
+
+    /** {@inheritDoc} */
+    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
+        IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
+
+        return cfg.setSqlConfiguration(new SqlConfiguration().setLongQueryWarningTimeout(LONG_QUERY_WARNING_TIMEOUT));
+    }
+
     /** {@inheritDoc} */
     @Override protected void beforeTest() throws Exception {
         super.beforeTest();
 
-        startGrid();
+        ignite = startGrid();
 
         IgniteCache c = grid().createCache(new CacheConfiguration<Long, Long>()
             .setName("test")
-            .setSqlSchema("TEST")
             .setQueryEntities(Collections.singleton(new QueryEntity(Long.class, Long.class)
                 .setTableName("test")
                 .addQueryField("id", Long.class.getName(), null)
@@ -76,6 +132,17 @@ public class LongRunningQueryTest extends AbstractIndexingCommonTest {
 
         for (long i = 0; i < KEY_CNT; ++i)
             c.put(i, i);
+
+        IgniteCache c2 = grid().createCache(cacheConfig("pers", Integer.class, Person.class));
+
+        c2.put(1001, new Person(1, "p1"));
+
+        lsnrDml = LogListener
+            .matches(LONG_QUERY_EXEC_MSG)
+            .andMatches(s -> s.contains("type=DML"))
+            .build();
+
+        testLog().registerListener(lsnrDml);
     }
 
     /** {@inheritDoc} */
@@ -83,6 +150,18 @@ public class LongRunningQueryTest extends AbstractIndexingCommonTest {
         stopAllGrids();
 
         super.afterTest();
+    }
+
+    /**
+     * @param name Name.
+     * @param idxTypes Index types.
+     */
+    @SuppressWarnings("unchecked")
+    private static CacheConfiguration cacheConfig(String name, Class<?>... idxTypes) {
+        return new CacheConfiguration()
+            .setName(name)
+            .setIndexedTypes(idxTypes)
+            .setSqlFunctionClasses(TestSQLFunctions.class);
     }
 
     /**
@@ -107,6 +186,168 @@ public class LongRunningQueryTest extends AbstractIndexingCommonTest {
 
         checkLongRunning();
         checkFastQueries();
+    }
+
+    /**
+     *
+     */
+    @Test
+    public void testLongDistributedLazy() {
+        local = false;
+        lazy = true;
+
+        checkLongRunning();
+        checkFastQueries();
+    }
+
+    /**
+     *
+     */
+    @Test
+    public void testLongDistributedLazyWithMergeTable() {
+        local = false;
+        lazy = true;
+
+        withMergeTable = true;
+
+        try {
+            checkLongRunning();
+        }
+        finally {
+            withMergeTable = false;
+        }
+    }
+
+    /**
+     *
+     */
+    @Test
+    public void testLongLocalLazy() {
+        local = true;
+        lazy = true;
+
+        checkLongRunning();
+        checkFastQueries();
+    }
+
+    /** */
+    @Test
+    public void testLongRunningInsert() {
+        local = false;
+
+        runDml(INSERT_SQL);
+    }
+
+    /** */
+    @Test
+    public void testLongRunningInsertWithSubquery() {
+        local = false;
+
+        runDml(INSERT_WITH_SUBQUERY_SQL);
+    }
+
+    /** */
+    @Test
+    public void testLongRunningInsertLocal() {
+        local = true;
+
+        runDml(INSERT_SQL);
+    }
+
+    /** */
+    @Test
+    public void testLongRunningInsertWithSubqueryLocal() {
+        local = true;
+
+        runDml(INSERT_WITH_SUBQUERY_SQL);
+    }
+
+    /** */
+    @Test
+    public void testLongRunningUpdate() {
+        local = false;
+
+        runDml(UPDATE_SQL);
+    }
+
+    /** */
+    @Test
+    public void testLongRunningUpdateWithSubquery() {
+        local = false;
+
+        runDml(UPDATE_WITH_SUBQUERY_SQL);
+    }
+
+    /** */
+    @Test
+    public void testLongRunningUpdateLocal() {
+        local = true;
+
+        runDml(UPDATE_SQL);
+    }
+
+    /** */
+    @Test
+    public void testLongRunningUpdateWithSubqueryLocal() {
+        local = true;
+
+        runDml(UPDATE_WITH_SUBQUERY_SQL);
+    }
+
+    /** */
+    @Test
+    public void testLongRunningDelete() {
+        local = false;
+
+        runDml(DELETE_SQL);
+    }
+
+    /** */
+    @Test
+    public void testLongRunningDeleteWithSubquery() {
+        local = false;
+
+        runDml(DELETE_WITH_SUBQUERY_SQL);
+    }
+
+    /** */
+    @Test
+    public void testLongRunningDeleteLocal() {
+        local = true;
+
+        runDml(DELETE_SQL);
+    }
+
+    /** */
+    @Test
+    public void testLongRunningDeleteWithSubqueryLocal() {
+        local = true;
+
+        runDml(DELETE_WITH_SUBQUERY_SQL);
+    }
+
+    /**
+     * Test checks that no long-running queries warnings are printed in case of external waits during
+     * the execution of distributed queries.
+     */
+    @Test
+    public void testDistributedLazyWithExternalWait() {
+        local = false;
+        lazy = true;
+
+        checkLazyWithExternalWait();
+    }
+
+    /**
+     * Test checks that no long-running queries warnings are printed in case of external waits during
+     * the execution of local queries.
+     */
+    @Test
+    public void testlocalLazyWithExternalWait() {
+        local = true;
+        lazy = true;
+
+        checkLazyWithExternalWait();
     }
 
     /**
@@ -166,7 +407,7 @@ public class LongRunningQueryTest extends AbstractIndexingCommonTest {
 
         // Several fast queries.
         for (int i = 0; i < 10; ++i)
-            sql("SELECT * FROM test").getAll();
+            sql("test", "SELECT * FROM test").getAll();
 
         assertFalse(lsnr.check());
     }
@@ -200,7 +441,7 @@ public class LongRunningQueryTest extends AbstractIndexingCommonTest {
 
         testLog.registerListener(lsnr);
 
-        try (FieldsQueryCursor cur = sql("SELECT T0.id FROM test AS T0, test AS T1")) {
+        try (FieldsQueryCursor cur = sql("test", "SELECT T0.id FROM test AS T0, test AS T1")) {
             Iterator it = cur.iterator();
 
             while (it.hasNext())
@@ -215,28 +456,131 @@ public class LongRunningQueryTest extends AbstractIndexingCommonTest {
      * @param args Query parameters.
      */
     private void sqlCheckLongRunning(String sql, Object... args) {
-        GridTestUtils.assertThrowsAnyCause(log, () -> sql(sql, args).getAll(), QueryCancelledException.class, "");
+        GridTestUtils.assertThrowsAnyCause(log, () -> sql("test", sql, args).getAll(), QueryCancelledException.class, "");
+    }
+
+    /**
+     * @param sql SQL query.
+     * @param args Query parameters.
+     */
+    private void sqlCheckLongRunningLazy(String sql, Object... args) {
+        pageSize = 1;
+
+        try {
+            assertFalse(sql("test", sql, args).iterator().next().isEmpty());
+        }
+        finally {
+            pageSize = DEFAULT_PAGE_SIZE;
+        }
+    }
+
+    /**
+     * @param sql SQL query.
+     * @param args Query parameters.
+     */
+    private void sqlCheckLongRunningLazyWithMergeTable(String sql, Object... args) {
+        distributedJoins = true;
+
+        try {
+            CacheConfiguration ccfg1 = cacheConfig("pers", Integer.class, Person.class);
+            CacheConfiguration ccfg2 = cacheConfig("org", Integer.class, Organization.class);
+
+            IgniteCache<Integer, Person> cache1 = ignite.getOrCreateCache(ccfg1);
+            IgniteCache<Integer, Organization> cache2 = ignite.getOrCreateCache(ccfg2);
+
+            cache2.put(1, new Organization("o1"));
+            cache2.put(2, new Organization("o2"));
+            cache1.put(3, new Person(1, "p1"));
+            cache1.put(4, new Person(2, "p2"));
+            cache1.put(5, new Person(3, "p3"));
+
+            assertFalse(sql("pers", sql, args).getAll().isEmpty());
+        }
+        finally {
+            distributedJoins = false;
+        }
     }
 
     /**
      * Execute long-running sql with a check for errors.
      */
     private void sqlCheckLongRunning() {
-        sqlCheckLongRunning("SELECT T0.id FROM test AS T0, test AS T1, test AS T2 where T0.id > ?", 0);
+        if (lazy && withMergeTable) {
+            String select = "select o.name n1, p.name n2 from Person p, \"org\".Organization o" +
+                " where p.orgId = o._key and o._key=1 and o._key < sleep_func(?)" +
+                " union select o.name n1, p.name n2 from Person p, \"org\".Organization o" +
+                " where p.orgId = o._key and o._key=2";
+
+            sqlCheckLongRunningLazyWithMergeTable(select, 2000);
+        }
+        else if (lazy && !withMergeTable)
+            sqlCheckLongRunningLazy("SELECT * FROM test WHERE _key < sleep_func(?)", 2000);
+        else
+            sqlCheckLongRunning("SELECT T0.id FROM test AS T0, test AS T1, test AS T2 where T0.id > ?", 0);
     }
 
     /**
+     * @param cacheName Cache name.
      * @param sql SQL query.
      * @param args Query parameters.
      * @return Results cursor.
      */
-    private FieldsQueryCursor<List<?>> sql(String sql, Object... args) {
-        return grid().context().query().querySqlFields(new SqlFieldsQuery(sql)
+    private FieldsQueryCursor<List<?>> sql(String cacheName, String sql, Object... args) {
+        return ignite.cache(cacheName).query(new SqlFieldsQuery(sql)
             .setTimeout(10, TimeUnit.SECONDS)
             .setLocal(local)
             .setLazy(lazy)
-            .setSchema("TEST")
-            .setArgs(args), false);
+            .setPageSize(pageSize)
+            .setDistributedJoins(distributedJoins)
+            .setArgs(args));
+    }
+
+    /** */
+    public void checkLazyWithExternalWait() {
+        pageSize = 1;
+
+        LogListener lsnr = LogListener
+            .matches(LONG_QUERY_EXEC_MSG)
+            .build();
+
+        testLog().registerListener(lsnr);
+
+        try {
+            Iterator<List<?>> it = sql("test", "select * from test").iterator();
+
+            it.next();
+
+            long sleepStartTs = U.currentTimeMillis();
+
+            while (U.currentTimeMillis() - sleepStartTs <= EXT_WAIT_TIME)
+                doSleep(100L);
+
+            it.next();
+
+            H2QueryInfo qry = (H2QueryInfo)heavyQueriesTracker().getQueries().iterator().next();
+
+            assertTrue(qry.extWait() >= EXT_WAIT_TIME);
+
+            assertFalse(lsnr.check());
+        }
+        finally {
+            pageSize = DEFAULT_PAGE_SIZE;
+        }
+    }
+
+    /**
+     * @param dml Dml command.
+     */
+    public void runDml(String dml) {
+        lazy = false;
+
+        long start = U.currentTimeMillis();
+
+        sql("test", dml);
+
+        assertTrue((U.currentTimeMillis() - start) > LONG_QUERY_WARNING_TIMEOUT);
+
+        assertTrue(lsnrDml.check());
     }
 
     /**
@@ -257,6 +601,20 @@ public class LongRunningQueryTest extends AbstractIndexingCommonTest {
                 // No-op
             }
             return v;
+        }
+
+        /** */
+        @SuppressWarnings("unused")
+        @QuerySqlFunction
+        public static int wait_func() {
+            try {
+                GridTestUtils.waitForCondition(() -> lsnrDml.check(), 10_000);
+            }
+            catch (IgniteInterruptedCheckedException ignored) {
+                // No-op
+            }
+
+            return 1;
         }
     }
 
@@ -286,5 +644,39 @@ public class LongRunningQueryTest extends AbstractIndexingCommonTest {
      */
     private HeavyQueriesTracker heavyQueriesTracker() {
         return ((IgniteH2Indexing)grid().context().query().getIndexing()).heavyQueriesTracker();
+    }
+
+    /** */
+    private static class Person {
+        /** */
+        @QuerySqlField(index = true)
+        int orgId;
+
+        /** */
+        @QuerySqlField(index = true)
+        String name;
+
+        /**
+         * @param orgId Organization ID.
+         * @param name Name.
+         */
+        public Person(int orgId, String name) {
+            this.orgId = orgId;
+            this.name = name;
+        }
+    }
+
+    /** */
+    private static class Organization {
+        /** */
+        @QuerySqlField
+        String name;
+
+        /**
+         * @param name Organization name.
+         */
+        public Organization(String name) {
+            this.name = name;
+        }
     }
 }

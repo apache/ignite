@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.commandline;
 
+import java.lang.reflect.Field;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -27,6 +28,7 @@ import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Set;
 import java.util.UUID;
+import java.util.function.Consumer;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
 import org.apache.ignite.IgniteCheckedException;
@@ -44,30 +46,38 @@ import org.apache.ignite.internal.management.ShutdownPolicyCommand;
 import org.apache.ignite.internal.management.ShutdownPolicyCommandArg;
 import org.apache.ignite.internal.management.SystemViewCommand;
 import org.apache.ignite.internal.management.WarmUpCommand;
-import org.apache.ignite.internal.management.api.BeforeNodeStartCommand;
+import org.apache.ignite.internal.management.api.Argument;
 import org.apache.ignite.internal.management.api.Command;
-import org.apache.ignite.internal.management.api.ComputeCommand;
-import org.apache.ignite.internal.management.api.HelpCommand;
-import org.apache.ignite.internal.management.api.LocalCommand;
-import org.apache.ignite.internal.management.baseline.BaselineAddCommand;
-import org.apache.ignite.internal.management.baseline.BaselineAddCommandArg;
-import org.apache.ignite.internal.management.baseline.BaselineCommand;
-import org.apache.ignite.internal.management.baseline.BaselineRemoveCommand;
-import org.apache.ignite.internal.management.baseline.BaselineSetCommand;
+import org.apache.ignite.internal.management.api.CommandsRegistry;
+import org.apache.ignite.internal.management.api.EnumDescription;
+import org.apache.ignite.internal.management.api.Positional;
+import org.apache.ignite.internal.management.baseline.AbstractBaselineCommand;
+import org.apache.ignite.internal.management.baseline.BaselineAutoAdjustCommand;
+import org.apache.ignite.internal.management.baseline.BaselineVersionCommand;
+import org.apache.ignite.internal.management.cache.CacheClearCommand;
+import org.apache.ignite.internal.management.cache.CacheClearCommandArg;
 import org.apache.ignite.internal.management.cache.CacheCommand;
+import org.apache.ignite.internal.management.cache.CacheDestroyCommand;
+import org.apache.ignite.internal.management.cache.CacheDestroyCommandArg;
 import org.apache.ignite.internal.management.cache.CacheFindGarbageCommandArg;
 import org.apache.ignite.internal.management.cache.CacheScheduleIndexesRebuildCommandArg;
 import org.apache.ignite.internal.management.cache.CacheValidateIndexesCommandArg;
 import org.apache.ignite.internal.management.cdc.CdcCommand;
+import org.apache.ignite.internal.management.cdc.CdcDeleteLostSegmentLinksCommand;
 import org.apache.ignite.internal.management.consistency.ConsistencyCommand;
 import org.apache.ignite.internal.management.defragmentation.DefragmentationCommand;
+import org.apache.ignite.internal.management.encryption.EncryptionChangeCacheKeyCommand;
+import org.apache.ignite.internal.management.encryption.EncryptionChangeMasterKeyCommand;
 import org.apache.ignite.internal.management.encryption.EncryptionCommand;
 import org.apache.ignite.internal.management.kill.KillCommand;
 import org.apache.ignite.internal.management.meta.MetaCommand;
+import org.apache.ignite.internal.management.meta.MetaRemoveCommand;
+import org.apache.ignite.internal.management.meta.MetaUpdateCommand;
 import org.apache.ignite.internal.management.metric.MetricCommand;
 import org.apache.ignite.internal.management.performancestatistics.PerformanceStatisticsCommand;
 import org.apache.ignite.internal.management.property.PropertyCommand;
 import org.apache.ignite.internal.management.snapshot.SnapshotCommand;
+import org.apache.ignite.internal.management.snapshot.SnapshotRestoreCommand;
 import org.apache.ignite.internal.management.tx.TxCommand;
 import org.apache.ignite.internal.management.tx.TxCommandArg;
 import org.apache.ignite.internal.management.tx.TxSortOrder;
@@ -75,6 +85,7 @@ import org.apache.ignite.internal.management.wal.WalCommand;
 import org.apache.ignite.internal.management.wal.WalDeleteCommandArg;
 import org.apache.ignite.internal.management.wal.WalPrintCommand;
 import org.apache.ignite.internal.management.wal.WalPrintCommand.WalPrintCommandArg;
+import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.testframework.GridTestUtils;
@@ -87,6 +98,7 @@ import org.junit.Test;
 import org.junit.rules.TestRule;
 
 import static java.util.Arrays.asList;
+import static java.util.Arrays.stream;
 import static java.util.Collections.emptySet;
 import static java.util.Collections.singletonList;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_ENABLE_EXPERIMENTAL_COMMAND;
@@ -95,8 +107,9 @@ import static org.apache.ignite.internal.commandline.ArgumentParser.CMD_VERBOSE;
 import static org.apache.ignite.internal.commandline.CommandHandler.DFLT_HOST;
 import static org.apache.ignite.internal.commandline.CommandHandler.DFLT_PORT;
 import static org.apache.ignite.internal.management.api.CommandUtils.cmdText;
+import static org.apache.ignite.internal.management.api.CommandUtils.executable;
+import static org.apache.ignite.internal.management.api.CommandUtils.visitCommandParams;
 import static org.apache.ignite.testframework.GridTestUtils.assertThrows;
-import static org.apache.ignite.util.CdcCommandTest.DELETE_LOST_SEGMENT_LINKS;
 import static org.apache.ignite.util.GridCommandHandlerIndexingCheckSizeTest.CACHE;
 import static org.apache.ignite.util.SystemViewCommandTest.NODE_ID;
 import static org.junit.Assert.assertArrayEquals;
@@ -218,13 +231,13 @@ public class CommandHandlerParsingTest {
     public void testFindAndDeleteGarbage() {
         String nodeId = UUID.randomUUID().toString();
         String delete = "--delete";
-        String groups = "group1,grpoup2,group3";
+        String grps = "group1,grpoup2,group3";
 
         List<List<String>> lists = generateArgumentList(
             "find_garbage",
             new T2<>(nodeId, false),
             new T2<>(delete, false),
-            new T2<>(groups, false)
+            new T2<>(grps, false)
         );
 
         for (List<String> list : lists) {
@@ -239,7 +252,7 @@ public class CommandHandlerParsingTest {
 
             assertEquals(list.contains(delete), arg.delete());
 
-            if (list.contains(groups))
+            if (list.contains(grps))
                 assertEquals(3, arg.groups().length);
             else
                 assertNull(arg.groups());
@@ -275,11 +288,11 @@ public class CommandHandlerParsingTest {
         List<List<T>> res = new ArrayList<>();
 
         for (int i = 0; i < source.size(); i++) {
-            List<T> sourceCopy = new ArrayList<>(source);
+            List<T> srcCopy = new ArrayList<>(source);
 
-            T removed = sourceCopy.remove(i);
+            T removed = srcCopy.remove(i);
 
-            generateAllCombinations(singletonList(removed), sourceCopy, stopFunc, res);
+            generateAllCombinations(singletonList(removed), srcCopy, stopFunc, res);
         }
 
         return res;
@@ -305,13 +318,13 @@ public class CommandHandlerParsingTest {
         for (int i = 0; i < source.size(); i++) {
             ArrayList<T> res0 = new ArrayList<>(res);
 
-            List<T> sourceCopy = new ArrayList<>(source);
+            List<T> srcCopy = new ArrayList<>(source);
 
-            T removed = sourceCopy.remove(i);
+            T removed = srcCopy.remove(i);
 
             res0.add(removed);
 
-            generateAllCombinations(res0, sourceCopy, stopFunc, acc);
+            generateAllCombinations(res0, srcCopy, stopFunc, acc);
         }
     }
 
@@ -416,12 +429,12 @@ public class CommandHandlerParsingTest {
 
         assertNull(((ShutdownPolicyCommandArg)args.commandArg()).shutdownPolicy());
 
-        for (ShutdownPolicy policy : ShutdownPolicy.values()) {
-            args = parseArgs(asList(SHUTDOWN_POLICY, String.valueOf(policy)));
+        for (ShutdownPolicy plc : ShutdownPolicy.values()) {
+            args = parseArgs(asList(SHUTDOWN_POLICY, String.valueOf(plc)));
 
             assertEquals(ShutdownPolicyCommand.class, args.command().getClass());
 
-            assertSame(policy, ((ShutdownPolicyCommandArg)args.commandArg()).shutdownPolicy());
+            assertSame(plc, ((ShutdownPolicyCommandArg)args.commandArg()).shutdownPolicy());
         }
     }
 
@@ -430,122 +443,115 @@ public class CommandHandlerParsingTest {
      */
     @Test
     public <A extends IgniteDataTransferObject> void testParseAutoConfirmationFlag() {
-        new IgniteCommandRegistry().commands().forEachRemaining(e -> {
-            Command<A, ?> cmdL = (Command<A, ?>)e.getValue();
+        new IgniteCommandRegistry().commands()
+            .forEachRemaining(e -> checkParseAutoConfirmationFlag(e.getValue(), null));
+    }
 
-            // SET_STATE command has mandatory argument used in confirmation message.
-            CliCommandInvoker<A> cmd = cmdL.getClass() != SetStateCommand.class
-                ? new CliCommandInvoker<>(cmdL, null, null)
-                : new CliCommandInvoker<>(parseArgs(asList(cmdText(cmdL), "ACTIVE")).command(), null, null);
+    /** */
+    private <A extends IgniteDataTransferObject> void checkParseAutoConfirmationFlag(
+        Command<A, ?> cmd,
+        CommandsRegistry<A, ?> parent
+    ) {
+        if (cmd instanceof CommandsRegistry) {
+            ((CommandsRegistry<A, ?>)cmd).commands().forEachRemaining(
+                e -> checkParseAutoConfirmationFlag((Command<A, ?>)e.getValue(), (CommandsRegistry<A, ?>)cmd));
+        }
 
-            if (!(cmd instanceof ComputeCommand)
-                && !(cmd instanceof LocalCommand)
-                && !(cmd instanceof BeforeNodeStartCommand)
-                && !(cmd instanceof HelpCommand)) {
+        if (!executable(cmd))
+            return;
+
+        try {
+            A arg;
+
+            if (cmd.getClass() == CacheDestroyCommand.class) {
+                CacheDestroyCommandArg a = new CacheDestroyCommandArg();
+
+                a.caches(F.asArray("cache1"));
+
+                arg = (A)a;
+            }
+            else if (cmd.getClass() == CacheClearCommand.class) {
+                CacheClearCommandArg a = new CacheClearCommandArg();
+
+                a.caches(F.asArray("cache1"));
+
+                arg = (A)a;
+            }
+            else
+                arg = cmd.argClass().newInstance();
+
+            if (cmd.confirmationPrompt(arg) == null)
                 return;
-            }
+        }
+        catch (InstantiationException | IllegalAccessException ex) {
+            throw new IgniteException(ex);
+        }
 
-            try {
-                if (cmdL.confirmationPrompt(cmdL.argClass().newInstance()) == null)
-                    return;
-            }
-            catch (InstantiationException | IllegalAccessException ex) {
-                throw new IgniteException(ex);
-            }
+        CommandHandler.CommandName cmdPrinter = new CommandHandler.CommandName();
 
-            ConnectionAndSslParameters args;
+        if (parent != null)
+            cmdPrinter.accept(parent);
 
-            if (cmdL.getClass() == SetStateCommand.class)
-                args = parseArgs(asList(cmdText(cmdL), "ACTIVE"));
-            else if (cmdL.getClass() == ChangeTagCommand.class)
-                args = parseArgs(asList(cmdText(cmdL), "newTagValue"));
-            else if (cmdL.getClass() == WarmUpCommand.class)
-                args = parseArgs(asList(cmdText(cmdL), "--stop"));
-            else if (cmdL.getClass() == CdcCommand.class)
-                args = parseArgs(asList(cmdText(cmdL), DELETE_LOST_SEGMENT_LINKS, NODE_ID, UUID.randomUUID().toString()));
-            else
-                args = parseArgs(asList(cmdText(cmdL)));
+        cmdPrinter.accept(cmd);
 
-            checkCommonParametersCorrectlyParsed(cmdL, args, false);
+        String[] cmdText = cmdPrinter.name.substring(1).split(" ");
 
-            if (cmdL.getClass() == DeactivateCommand.class) {
-                args = parseArgs(asList(cmdText(cmdL), "--yes"));
+        ConnectionAndSslParameters<A> args;
 
-                checkCommonParametersCorrectlyParsed(cmdL, args, true);
+        if (cmd.getClass() == SetStateCommand.class)
+            cmdText = F.concat(cmdText, "ACTIVE");
+        else if (cmd.getClass() == ChangeTagCommand.class)
+            cmdText = F.concat(cmdText, "newTagValue");
+        else if (cmd.getClass() == CdcDeleteLostSegmentLinksCommand.class)
+            cmdText = F.concat(cmdText, NODE_ID, UUID.randomUUID().toString());
+        else if (cmd.getClass() == BaselineVersionCommand.class)
+            cmdText = F.concat(cmdText, "1");
+        else if (cmd.getClass() == BaselineAutoAdjustCommand.class)
+            cmdText = F.concat(cmdText, "enable");
+        else if (AbstractBaselineCommand.class.isAssignableFrom(cmd.getClass()))
+            cmdText = F.concat(cmdText, "consistentId1");
+        else if (cmd.getClass() == CacheDestroyCommand.class || cmd.getClass() == CacheClearCommand.class)
+            cmdText = F.concat(cmdText, "--caches", "cache1");
+        else if (cmd.getClass() == EncryptionChangeMasterKeyCommand.class)
+            cmdText = F.concat(cmdText, "masterKeyName1");
+        else if (cmd.getClass() == EncryptionChangeCacheKeyCommand.class)
+            cmdText = F.concat(cmdText, "cacheGroup1");
+        else if (cmd.getClass() == SnapshotRestoreCommand.class)
+            cmdText = F.concat(cmdText, "snp1");
+        else if (cmd.getClass() == MetaUpdateCommand.class)
+            return;
+        else if (cmd.getClass() == MetaRemoveCommand.class)
+            cmdText = F.concat(cmdText, "--typeId", "1");
 
-                args = parseArgs(asList(cmdText(cmdL), "--force", "--yes"));
+        args = parseArgs(asList(cmdText));
 
-                checkCommonParametersCorrectlyParsed(cmdL, args, true);
-            }
-            else if (cmdL.getClass() == SetStateCommand.class) {
-                for (String newState : asList("ACTIVE_READ_ONLY", "ACTIVE", "INACTIVE")) {
-                    args = parseArgs(asList(cmdText(cmdL), newState, "--yes"));
+        checkCommonParametersCorrectlyParsed(cmd, args, false);
 
-                    checkCommonParametersCorrectlyParsed(cmdL, args, true);
+        args = parseArgs(asList(F.concat(cmdText, "--yes")));
 
-                    ClusterState argState = (((SetStateCommandArg)args.commandArg())).state();
+        checkCommonParametersCorrectlyParsed(cmd, args, true);
 
-                    assertEquals(newState, argState.toString());
-                }
+        if (cmd.getClass() == DeactivateCommand.class) {
+            args = parseArgs(asList(F.concat(cmdText, "--force", "--yes")));
 
-                for (String newState : asList("ACTIVE_READ_ONLY", "ACTIVE", "INACTIVE")) {
-                    args = parseArgs(asList(cmdText(cmdL), newState, "--force", "--yes"));
+            checkCommonParametersCorrectlyParsed(cmd, args, true);
+        }
+        else if (cmd.getClass() == SetStateCommand.class) {
+            ClusterState argState = (((SetStateCommandArg)args.commandArg())).state();
 
-                    checkCommonParametersCorrectlyParsed(cmdL, args, true);
+            assertEquals("ACTIVE", argState.toString());
+        }
+        else if (cmd.getClass() == TxCommand.class) {
+            args = parseArgs(asList(F.concat(cmdText, "--xid", "xid1", "--min-duration", "10", "--kill", "--yes")));
 
-                    ClusterState argState = (((SetStateCommandArg)args.commandArg())).state();
+            checkCommonParametersCorrectlyParsed(cmd, args, true);
 
-                    assertEquals(newState, argState.toString());
-                }
-            }
-            else if (cmdL.getClass() == BaselineCommand.class) {
-                for (String baselineAct : asList("add", "remove", "set")) {
-                    args = parseArgs(asList(cmdText(cmdL), baselineAct, "c_id1,c_id2", "--yes"));
+            TxCommandArg txTaskArg = (TxCommandArg)args.commandArg();
 
-                    checkCommonParametersCorrectlyParsed(cmdL, args, true);
-
-                    BaselineAddCommandArg arg = (BaselineAddCommandArg)args.commandArg();
-
-                    if (baselineAct.equals("add"))
-                        assertEquals(BaselineAddCommand.class, args.command().getClass());
-                    else if (baselineAct.equals("remove"))
-                        assertEquals(BaselineRemoveCommand.class, args.command().getClass());
-                    else if (baselineAct.equals("set"))
-                        assertEquals(BaselineSetCommand.class, args.command().getClass());
-
-                    assertEquals(new HashSet<>(asList("c_id1", "c_id2")), new HashSet<>(Arrays.asList(arg.consistentIDs())));
-                }
-            }
-            else if (cmdL.getClass() == TxCommand.class) {
-                args = parseArgs(asList(cmdText(cmdL), "--xid", "xid1", "--min-duration", "10", "--kill", "--yes"));
-
-                checkCommonParametersCorrectlyParsed(cmdL, args, true);
-
-                TxCommandArg txTaskArg = (TxCommandArg)args.commandArg();
-
-                assertEquals("xid1", txTaskArg.xid());
-                assertEquals(10_000, txTaskArg.minDuration().longValue());
-                assertTrue(txTaskArg.kill());
-            }
-            else if (cmdL.getClass() == ChangeTagCommand.class) {
-                args = parseArgs(asList(cmdText(cmdL), "newTagValue", "--yes"));
-
-                checkCommonParametersCorrectlyParsed(cmdL, args, true);
-            }
-            else if (cmdL.getClass() == WarmUpCommand.class) {
-                args = parseArgs(asList(cmdText(cmdL), "--stop", "--yes"));
-
-                checkCommonParametersCorrectlyParsed(cmdL, args, true);
-            }
-            else if (cmdL.getClass() == CdcCommand.class) {
-                args = parseArgs(asList(cmdText(cmdL), DELETE_LOST_SEGMENT_LINKS,
-                    NODE_ID, UUID.randomUUID().toString(), "--yes"));
-
-                checkCommonParametersCorrectlyParsed(cmdL, args, true);
-            }
-            else
-                fail("Unknown command: " + cmd);
-        });
+            assertEquals("xid1", txTaskArg.xid());
+            assertEquals(10_000, txTaskArg.minDuration().longValue());
+            assertTrue(txTaskArg.kill());
+        }
     }
 
     /** */
@@ -980,6 +986,52 @@ public class CommandHandlerParsingTest {
             IllegalArgumentException.class,
             "Unexpected value: --some-other-arg"
         );
+
+        GridTestUtils.assertThrows(
+            null,
+            () -> parseArgs(asList(
+                CACHE, "indexes_force_rebuild",
+                "--node-id", nodeId,
+                "--node-ids", nodeId + ',' + nodeId,
+                "--cache-names", "someNames"
+            )),
+            IllegalArgumentException.class,
+            "Only one of [--node-ids, --all-nodes, --node-id] allowed"
+        );
+
+        GridTestUtils.assertThrows(
+            null,
+            () -> parseArgs(asList(
+                CACHE, "indexes_force_rebuild",
+                "--node-id", nodeId,
+                "--all-nodes"
+            )),
+            IllegalArgumentException.class,
+            "Only one of [--node-ids, --all-nodes, --node-id] allowed"
+        );
+
+        GridTestUtils.assertThrows(
+            null,
+            () -> parseArgs(asList(
+                CACHE, "indexes_force_rebuild",
+                "--node-ids", nodeId + ',' + nodeId,
+                "--all-nodes"
+            )),
+            IllegalArgumentException.class,
+            "Only one of [--node-ids, --all-nodes, --node-id] allowed"
+        );
+
+        GridTestUtils.assertThrows(
+            null,
+            () -> parseArgs(asList(
+                CACHE, "indexes_force_rebuild",
+                "--node-id", nodeId,
+                "--node-ids", nodeId + ',' + nodeId,
+                "--all-nodes"
+            )),
+            IllegalArgumentException.class,
+            "Only one of [--node-ids, --all-nodes, --node-id] allowed"
+        );
     }
 
     /** */
@@ -1036,6 +1088,37 @@ public class CommandHandlerParsingTest {
             () -> parseArgs(asList(CACHE, "schedule_indexes_rebuild", "--cache-names", "foo[]")),
             IllegalArgumentException.class,
             "Square brackets must contain comma-separated indexes or not be used at all."
+        );
+
+        GridTestUtils.assertThrows(
+            null,
+            () -> parseArgs(asList(CACHE, "schedule_indexes_rebuild", "--node-id", nodeId, "--all-nodes", "--group-names", "a")),
+            IllegalArgumentException.class,
+            "Only one of [--node-ids, --all-nodes, --node-id]"
+        );
+
+        GridTestUtils.assertThrows(
+            null,
+            () -> parseArgs(asList(CACHE, "schedule_indexes_rebuild", "--node-id", nodeId, "--node-ids", nodeId + ',' + nodeId,
+                "--group-names", "a")),
+            IllegalArgumentException.class,
+            "Only one of [--node-ids, --all-nodes, --node-id]"
+        );
+
+        GridTestUtils.assertThrows(
+            null,
+            () -> parseArgs(asList(CACHE, "schedule_indexes_rebuild", "--all-nodes", "--node-ids", nodeId + ',' + nodeId,
+                "--group-names", "a")),
+            IllegalArgumentException.class,
+            "Only one of [--node-ids, --all-nodes, --node-id]"
+        );
+
+        GridTestUtils.assertThrows(
+            null,
+            () -> parseArgs(asList(CACHE, "schedule_indexes_rebuild", "--node-id", nodeId, "--all-nodes",
+                "--node-ids", nodeId + ',' + nodeId, "--group-names", "a")),
+            IllegalArgumentException.class,
+            "Only one of [--node-ids, --all-nodes, --node-id]"
         );
     }
 
@@ -1206,11 +1289,61 @@ public class CommandHandlerParsingTest {
         assertNotNull(parseArgs(asList("--warm-up", "--stop")));
     }
 
+    /** Tests that enum {@link Argument} has enum constants description: {@link EnumDescription}. */
+    @Test
+    public void testEnumParameterDescription() {
+        new IgniteCommandRegistry().commands().forEachRemaining(e -> checkEnumDescription(e.getValue()));
+    }
+
+    /** */
+    private void checkEnumDescription(Command<?, ?> cmd) {
+        if (cmd instanceof CommandsRegistry)
+            ((CommandsRegistry<?, ?>)cmd).commands().forEachRemaining(e -> checkEnumDescription(e.getValue()));
+
+        if (!executable(cmd))
+            return;
+
+        Consumer<Field> fldCnsmr = fld -> {
+            if (!fld.getType().isEnum())
+                return;
+
+            EnumDescription descAnn = fld.getAnnotation(EnumDescription.class);
+
+            assertNotNull("Please, specify a description to the enum parameter using " +
+                "@" + EnumDescription.class.getSimpleName() + " annotation. " +
+                "Parameter: " + cmd.argClass().getSimpleName() + "#" + fld.getName(),
+                descAnn);
+
+            assertEquals("Please, specify a description to enum constants: " +
+                    stream(fld.getType().getEnumConstants())
+                        .filter(e -> stream(descAnn.names()).noneMatch(n -> n.equals(((Enum<?>)e).name())))
+                        .collect(Collectors.toSet()) +
+                    ". Parameter: " + cmd.argClass().getSimpleName() + "#" + fld.getName(),
+                fld.getType().getEnumConstants().length, descAnn.names().length);
+
+            Argument argAnn = fld.getAnnotation(Argument.class);
+            Positional posAnn = fld.getAnnotation(Positional.class);
+
+            if (posAnn == null) {
+                assertFalse("Please, set a description for the argument: " +
+                        cmd.argClass().getSimpleName() + "#" + fld.getName(),
+                    argAnn.description().isEmpty());
+            }
+            else {
+                assertTrue("Please, remove a description for the positional argument: " +
+                        cmd.argClass().getSimpleName() + "#" + fld.getName(),
+                    argAnn.description().isEmpty());
+            }
+        };
+
+        visitCommandParams(cmd.argClass(), fldCnsmr, fldCnsmr, (grp, flds) -> flds.forEach(fldCnsmr));
+    }
+
     /**
      * @param args Raw arg list.
      * @return Common parameters container object.
      */
-    private ConnectionAndSslParameters parseArgs(List<String> args) {
+    private <A extends IgniteDataTransferObject> ConnectionAndSslParameters<A> parseArgs(List<String> args) {
         return new ArgumentParser(setupTestLogger(), new IgniteCommandRegistry()).parseAndValidate(args);
     }
 

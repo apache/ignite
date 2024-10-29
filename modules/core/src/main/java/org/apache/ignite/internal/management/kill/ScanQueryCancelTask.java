@@ -20,7 +20,6 @@ package org.apache.ignite.internal.management.kill;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.internal.QueryMXBeanImpl;
 import org.apache.ignite.internal.processors.task.GridInternal;
-import org.apache.ignite.internal.processors.task.GridVisorManagementTask;
 import org.apache.ignite.internal.visor.VisorJob;
 import org.apache.ignite.internal.visor.VisorOneNodeTask;
 
@@ -28,7 +27,6 @@ import org.apache.ignite.internal.visor.VisorOneNodeTask;
  * Task to cancel scan queries.
  */
 @GridInternal
-@GridVisorManagementTask
 public class ScanQueryCancelTask extends VisorOneNodeTask<KillScanCommandArg, Void> {
     /** */
     private static final long serialVersionUID = 0L;

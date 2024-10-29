@@ -30,6 +30,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.BiFunction;
 import java.util.function.Function;
@@ -64,6 +66,7 @@ import static org.apache.ignite.events.EventType.EVT_CLUSTER_SNAPSHOT_RESTORE_ST
 import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.partId;
 import static org.apache.ignite.internal.processors.cache.persistence.snapshot.IgniteSnapshotManager.resolveSnapshotWorkDirectory;
 import static org.apache.ignite.testframework.GridTestUtils.assertContains;
+import static org.apache.ignite.testframework.GridTestUtils.assertThrowsWithCause;
 
 /** */
 public class IgniteSnapshotRestoreFromRemoteTest extends IgniteClusterSnapshotRestoreBaseTest {
@@ -321,6 +324,58 @@ public class IgniteSnapshotRestoreFromRemoteTest extends IgniteClusterSnapshotRe
             "Test exception. Uploading partition file failed");
         assertNull(scc.cache(DEFAULT_CACHE_NAME));
         ensureCacheAbsent(dfltCacheCfg);
+    }
+
+    /** @throws Exception If failed. */
+    @Test
+    public void testRestoreConnectionLost() throws Exception {
+        IgniteEx coord = startDedicatedGrids(SECOND_CLUSTER_PREFIX, 2);
+
+        copyAndShuffle(snpParts, G.allGrids());
+
+        // Start a new node without snapshot working directory.
+        IgniteEx emptyNode = startDedicatedGrid(SECOND_CLUSTER_PREFIX, 2);
+
+        emptyNode.cluster().state(ClusterState.ACTIVE);
+
+        emptyNode.cache(DEFAULT_CACHE_NAME).destroy();
+
+        awaitPartitionMapExchange();
+
+        CountDownLatch restoreStarted = new CountDownLatch(1);
+        CountDownLatch nodeStopped = new CountDownLatch(1);
+
+        IgniteSnapshotManager mgr = snp(coord);
+
+        mgr.remoteSnapshotSenderFactory(new BiFunction<String, UUID, SnapshotSender>() {
+            @Override public SnapshotSender apply(String s, UUID uuid) {
+                return new DelegateSnapshotSender(log, mgr.snapshotExecutorService(), mgr.remoteSnapshotSenderFactory(s, uuid)) {
+                    @Override public void sendPart0(File part, String cacheDirName, GroupPartitionId pair, Long length) {
+                        delegate.sendPart0(part, cacheDirName, pair, length);
+
+                        restoreStarted.countDown();
+
+                        try {
+                            nodeStopped.await(TIMEOUT, TimeUnit.MILLISECONDS);
+                        }
+                        catch (InterruptedException e) {
+                            throw new RuntimeException(e);
+                        }
+                    }
+                };
+            }
+        });
+
+        // Restore all cache groups.
+        IgniteFuture<Void> fut = emptyNode.snapshot().restoreSnapshot(SNAPSHOT_NAME, null);
+
+        restoreStarted.await(TIMEOUT, TimeUnit.MILLISECONDS);
+
+        coord.close();
+
+        nodeStopped.countDown();
+
+        assertThrowsWithCause(() -> fut.get(TIMEOUT), IgniteException.class);
     }
 
     /**

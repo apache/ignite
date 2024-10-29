@@ -68,6 +68,8 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.BooleanSupplier;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import javax.cache.CacheException;
@@ -104,6 +106,7 @@ import org.apache.ignite.internal.processors.cache.persistence.IgniteCacheDataba
 import org.apache.ignite.internal.processors.odbc.ClientListenerProcessor;
 import org.apache.ignite.internal.processors.port.GridPortRecord;
 import org.apache.ignite.internal.util.GridBusyLock;
+import org.apache.ignite.internal.util.GridUnsafe;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.lang.GridAbsClosure;
 import org.apache.ignite.internal.util.lang.GridAbsPredicate;
@@ -348,13 +351,13 @@ public final class GridTestUtils {
         for (Map.Entry<IgnitePair<UUID>, IgnitePair<Queue<Message>>> entry : msgMap.entrySet()) {
             U.debug("\n" + entry.getKey().get1() + " [sent to] " + entry.getKey().get2());
 
-            for (Message message : entry.getValue().get1())
-                U.debug("\t" + message);
+            for (Message msg : entry.getValue().get1())
+                U.debug("\t" + msg);
 
             U.debug(entry.getKey().get2() + " [received from] " + entry.getKey().get1());
 
-            for (Message message : entry.getValue().get2())
-                U.debug("\t" + message);
+            for (Message msg : entry.getValue().get2())
+                U.debug("\t" + msg);
         }
     }
 
@@ -403,6 +406,28 @@ public final class GridTestUtils {
         }
         catch (AssertionError e) {
             U.warn(log, String.format("String does not contain substring: '%s':", substr));
+            U.warn(log, "String:");
+            U.warn(log, str);
+
+            throw e;
+        }
+    }
+
+    /**
+     * Checks that string {@param str} matches {@param pattern}. Logs both strings
+     * and throws {@link java.lang.AssertionError}, if not.
+     *
+     * @param log Logger (optional).
+     * @param str String.
+     * @param pattern Pattern.
+     */
+    public static void assertContains(@Nullable IgniteLogger log, String str, Pattern pattern) {
+        try {
+            Matcher m = pattern.matcher(str);
+            assertTrue(str != null && m.find());
+        }
+        catch (AssertionError e) {
+            U.warn(log, String.format("String does not match pattern: '%s':", pattern));
             U.warn(log, "String:");
             U.warn(log, str);
 
@@ -1799,6 +1824,14 @@ public final class GridTestUtils {
             if (isFinal && isStatic)
                 throw new IgniteException("Modification of static final field through reflection.");
 
+            if (isFinal && U.majorJavaVersion(U.jdkVersion()) >= 12) {
+                long fieldOffset = GridUnsafe.objectFieldOffset(field);
+
+                GridUnsafe.putObjectField(obj, fieldOffset, val);
+
+                return;
+            }
+
             if (isFinal) {
                 Field modifiersField = Field.class.getDeclaredField("modifiers");
 
@@ -2549,21 +2582,16 @@ public final class GridTestUtils {
      *
      */
     public static class SqlTestFunctions {
-        /** Sleep milliseconds. */
-        public static volatile long sleepMs;
-
-        /** Fail flag. */
-        public static volatile boolean fail;
-
         /**
          * Do sleep {@code sleepMs} milliseconds
          *
+         * @param sleepMs time to sleep
          * @return amount of milliseconds to sleep
          */
         @QuerySqlFunction
         @SuppressWarnings("BusyWait")
-        public static long sleep() {
-            long end = System.currentTimeMillis() + sleepMs;
+        public static long sleep(long sleepMs) {
+            long end = U.currentTimeMillis() + sleepMs;
 
             long remainTime = sleepMs;
 
@@ -2575,36 +2603,19 @@ public final class GridTestUtils {
                     // No-op
                 }
             }
-            while ((remainTime = end - System.currentTimeMillis()) > 0);
+            while ((remainTime = end - U.currentTimeMillis()) > 0);
 
             return sleepMs;
         }
 
         /**
-         * Delays execution for {@code duration} milliseconds.
-         *
-         * @param duration Duration.
-         * @return amount of milliseconds to delay.
-         */
-        @QuerySqlFunction
-        public static long delay(long duration) {
-            try {
-                Thread.sleep(duration);
-            }
-            catch (InterruptedException ignored) {
-                // No-op
-            }
-
-            return duration;
-        }
-
-        /**
          * Function do fail in case of {@code fail} is true, return 0 otherwise.
          *
+         * @param fail fail flag
          * @return in case of {@code fail} is false return 0, fail otherwise.
          */
         @QuerySqlFunction
-        public static int can_fail() {
+        public static int can_fail(boolean fail) {
             if (fail)
                 throw new IllegalArgumentException();
             else
@@ -2614,13 +2625,15 @@ public final class GridTestUtils {
         /**
          * Function do sleep {@code sleepMs} milliseconds and do fail in case of {@code fail} is true, return 0 otherwise.
          *
+         * @param sleepMs time to sleep
+         * @param fail fail flag
          * @return amount of milliseconds to sleep in case of {@code fail} is false, fail otherwise.
          */
         @QuerySqlFunction
-        public static long sleep_and_can_fail() {
-            long sleep = sleep();
+        public static long sleep_and_can_fail(long sleepMs, boolean fail) {
+            long sleep = sleep(sleepMs);
 
-            can_fail();
+            can_fail(fail);
 
             return sleep;
         }

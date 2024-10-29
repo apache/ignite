@@ -68,6 +68,9 @@ Register name: `cache.{cache_name}.{near}`
 |CacheSize|long|Local cache size.
 |CommitTime  |histogram  | Commit time in nanoseconds.
 |CommitTimeTotal |long| The total time of commit, in nanoseconds.
+|ConflictResolverAcceptedCount|long|Conflict resolver accepted entries count.
+|ConflictResolverRejectedCount|long|Conflict resolver rejected entries count.
+|ConflictResolverMergedCount|long|Conflict resolver merged entries count.
 |EntryProcessorHits | long|The total number of invocations on keys, which exist in cache.
 |EntryProcessorInvokeTimeNanos | long | The total time of cache invocations for which this node is the initiator, in nanoseconds.
 |EntryProcessorMaxInvocationTime |long | So far, the maximum time to execute cache invokes for which this node is the initiator.
@@ -241,7 +244,7 @@ Register name: `io.statistics.cacheGroups.{group_name}`
 |===
 
 
-== Sorted Indexes
+== Sorted Indexes I/O statistics
 
 Register name: `io.statistics.sortedIndexes.{cache_name}.{index_name}`
 
@@ -257,8 +260,21 @@ Register name: `io.statistics.sortedIndexes.{cache_name}.{index_name}`
 |startTime|   long|    Statistics collection start time
 |===
 
+== Sorted Indexes operations
 
-== Hash Indexes
+Contains metrics about low-level operations (such as `Insert`, `Search`, etc.) on pages of sorted secondary indexes.
+
+Register name: `index.{schema_name}.{table_name}.{index_name}`
+
+[cols="2,1,3",opts="header"]
+|===
+|Name |    Type |    Description
+|{opType}Count|   long|   Count of {opType} operations on index.
+|{opType}Time|   long|   Total duration (nanoseconds) of {opType} operations on index.
+|===
+
+
+== Hash Indexes I/O statistics
 
 Register name: `io.statistics.hashIndexes.{cache_name}.{index_name}`
 
@@ -494,6 +510,3 @@ Register name: `sql.queries.user`
 |failed| long | The number of failed SQL queries (including canceled).
 |canceled| long | The number of canceled SQL queries.
 |===
-
-
-

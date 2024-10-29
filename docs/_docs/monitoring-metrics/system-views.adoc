@@ -115,6 +115,7 @@ control.bat --system-view NODE_METRICS --node-id a1b77663-b37f-4ddf-87a6-1e2d684
 |EVICTION_POLICY_FACTORY | string |  toString representation of eviction policy factory
 |EXPIRY_POLICY_FACTORY | string |  toString representation of expiry policy factory
 |CONFLICT_RESOLVER | string |  toString representation of cache conflict resolver
+|HAS_EXPIRING_ENTRIES | string | Yes if cache has entries pending expire
 |INTERCEPTOR | string |  toString representation of interceptor
 |IS_COPY_ON_READ | boolean | Flag indicating whether a copy of the value stored in the on-heap cache
 |IS_EAGER_TTL | boolean | Flag indicating whether expired cache entries will be eagerly removed from cache
@@ -644,8 +645,9 @@ This view exposes information about SQL views.
 [{table_opts}]
 |===
 |NAME | TYPE |    DESCRIPTION
-|NAME | string |  Name
 |SCHEMA | string |  Schema
+|NAME | string |  Name
+|SQL | string | SQL query for view
 |DESCRIPTION | string |  Description
 |===
 
@@ -1007,4 +1009,5 @@ The SNAPSHOT view exposes information about local snapshots.
 | SNAPSHOT_RECORD_SEGMENT | BIGINT | Index of WAL segment containing snapshot's WAL record.
 | INCREMENT_INDEX | INTEGER | Incremental snapshot index.
 | TYPE | VARCHAR | Type of snapshot - full or incremental.
+| SNAPSHOT_TIME | BIGINT | Snapshot creation time.
 |===

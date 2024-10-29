@@ -170,7 +170,7 @@ public class MovingPartitionIsEvictedDuringClearingTest extends GridCommonAbstra
     /**
      * @param size Size.
      */
-    private void validadate(int size) {
+    private void validadate(int size) throws Exception {
         assertPartitionsSame(idleVerify(grid(0), DEFAULT_CACHE_NAME));
 
         for (Ignite grid : G.allGrids())

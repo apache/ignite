@@ -23,6 +23,7 @@ import java.io.ObjectOutput;
 import org.apache.ignite.internal.management.api.Argument;
 import org.apache.ignite.internal.management.api.ArgumentGroup;
 import org.apache.ignite.internal.management.api.CliConfirmArgument;
+import org.apache.ignite.internal.management.api.EnumDescription;
 import org.apache.ignite.internal.management.api.Positional;
 import org.apache.ignite.internal.management.baseline.BaselineCommand.BaselineTaskArg;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -37,6 +38,16 @@ public class BaselineAutoAdjustCommandArg extends BaselineTaskArg {
     /** */
     @Positional
     @Argument(optional = true)
+    @EnumDescription(
+        names = {
+            "ENABLE",
+            "DISABLE"
+        },
+        descriptions = {
+            "Enable baseline auto adjust",
+            "Disable baseline auto adjust"
+        }
+    )
     private Enabled enabled;
 
     /** */

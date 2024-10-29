@@ -296,7 +296,9 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
 
         IgniteCache<String, Integer> cache = jcache(0);
 
-        try (final Transaction transaction = grid(0).transactions().txStart()) {
+        try (Transaction tx =
+                 cache.getConfiguration(CacheConfiguration.class).getAtomicityMode() == TRANSACTIONAL ?
+                     grid(0).transactions().txStart() : null) {
             // retrieve market type from the grid
             Integer old = cache.withSkipStore().get(key);
 
@@ -306,7 +308,8 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
             cache.put(key, 2);
 
             // finally commit the transaction
-            transaction.commit();
+            if (tx != null)
+                tx.commit();
         }
 
         assertEquals(2, storeStgy.getFromStore(key));
@@ -327,7 +330,9 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
 
         storeStgy.putToStore(key, 2);
 
-        try (final Transaction transaction = grid(0).transactions().txStart()) {
+        try (Transaction tx =
+                 cache.getConfiguration(CacheConfiguration.class).getAtomicityMode() == TRANSACTIONAL ?
+                     grid(0).transactions().txStart() : null) {
             Integer old = cache.get(key);
 
             assertEquals((Integer)1, old);
@@ -336,7 +341,8 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
             cache.put(key, 2);
 
             // finally commit the transaction
-            transaction.commit();
+            if (tx != null)
+                tx.commit();
         }
 
         assertEquals(0, storeStgy.getReads());
@@ -486,22 +492,28 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
         for (int i = 0; i < 10; i++) {
             String key = String.valueOf(i);
 
-            try (Transaction tx = txs.txStart()) {
+            try (Transaction tx =
+                     cache.getConfiguration(CacheConfiguration.class).getAtomicityMode() == TRANSACTIONAL ?
+                         txs.txStart() : null) {
                 assertNull(key, cache.get(key));
 
                 assertFalse(cache.containsKey(key));
 
-                tx.commit();
+                if (tx != null)
+                    tx.commit();
             }
 
-            try (Transaction tx = txs.txStart()) {
+            try (Transaction tx =
+                     cache.getConfiguration(CacheConfiguration.class).getAtomicityMode() == TRANSACTIONAL ?
+                         txs.txStart() : null) {
                 assertNull(key, cache.get(key));
 
                 cache.put(key, i);
 
                 assertTrue(cache.containsKey(key));
 
-                tx.commit();
+                if (tx != null)
+                    tx.commit();
             }
         }
     }
@@ -526,16 +538,19 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
             keys.add(key);
         }
 
-        try (Transaction tx = txs.txStart()) {
+        try (Transaction tx =
+                 cache.getConfiguration(CacheConfiguration.class).getAtomicityMode() == TRANSACTIONAL ? txs.txStart() : null) {
             for (String key : keys)
                 assertNull(key, cache.get(key));
 
             assertFalse(cache.containsKeys(keys));
 
-            tx.commit();
+            if (tx != null)
+                tx.commit();
         }
 
-        try (Transaction tx = txs.txStart()) {
+        try (Transaction tx =
+                 cache.getConfiguration(CacheConfiguration.class).getAtomicityMode() == TRANSACTIONAL ? txs.txStart() : null) {
             for (String key : keys)
                 assertNull(key, cache.get(key));
 
@@ -544,7 +559,8 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
 
             assertTrue(cache.containsKeys(keys));
 
-            tx.commit();
+            if (tx != null)
+                tx.commit();
         }
     }
 
@@ -1843,11 +1859,11 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
         for (int i = 0; i < gridCount(); i++)
             assertNull(jcache(i).localPeek("k1", ONHEAP));
 
-        final EntryProcessor<String, Integer, Integer> errProcessor = new FailedEntryProcessor();
+        final EntryProcessor<String, Integer, Integer> errProc = new FailedEntryProcessor();
 
         GridTestUtils.assertThrows(log, new Callable<Void>() {
             @Override public Void call() throws Exception {
-                cache.invoke("k1", errProcessor);
+                cache.invoke("k1", errProc);
 
                 return null;
             }
@@ -4120,7 +4136,7 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
     private void checkPeekTxRemove(TransactionConcurrency concurrency) throws Exception {
         if (txShouldBeUsed()) {
             Ignite ignite = primaryIgnite("key");
-            IgniteCache<String, Integer> cache = ignite.cache(DEFAULT_CACHE_NAME).withAllowAtomicOpsInTx();
+            IgniteCache<String, Integer> cache = ignite.cache(DEFAULT_CACHE_NAME);
 
             cache.put("key", 1);
 
@@ -6001,7 +6017,9 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
 
             grid(0).events().localListen(lsnr, EVT_CACHE_OBJECT_LOCKED, EVT_CACHE_OBJECT_UNLOCKED);
 
-            try (Transaction tx = transactions().txStart(PESSIMISTIC, REPEATABLE_READ)) {
+            try (Transaction ignored =
+                     cache.getConfiguration(CacheConfiguration.class).getAtomicityMode() == TRANSACTIONAL ?
+                         transactions().txStart(PESSIMISTIC, REPEATABLE_READ) : null) {
                 Integer val0;
 
                 if (async)
@@ -6079,7 +6097,9 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
                     @Override public Object call() throws Exception {
                         IgniteCache<String, Integer> cache = jcache(0);
 
-                        try (Transaction tx = ignite(0).transactions().txStart()) {
+                        try (Transaction ignored =
+                                 cache.getConfiguration(CacheConfiguration.class).getAtomicityMode() == TRANSACTIONAL ?
+                                     ignite(0).transactions().txStart() : null) {
                             cache.lock("key").lock();
                         }
 
@@ -6087,7 +6107,9 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
                     }
                 },
                 CacheException.class,
-                "Explicit lock can't be acquired within a transaction."
+                atomicityMode() == TRANSACTIONAL ?
+                    "Explicit lock can't be acquired within a transaction." :
+                    "Locks are not supported for CacheAtomicityMode.ATOMIC mode"
             );
 
             GridTestUtils.assertThrows(
@@ -6096,7 +6118,9 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
                     @Override public Object call() throws Exception {
                         IgniteCache<String, Integer> cache = jcache(0);
 
-                        try (Transaction tx = ignite(0).transactions().txStart()) {
+                        try (Transaction tx =
+                                 cache.getConfiguration(CacheConfiguration.class).getAtomicityMode() == TRANSACTIONAL ?
+                                     ignite(0).transactions().txStart() : null) {
                             cache.lockAll(Arrays.asList("key1", "key2")).lock();
                         }
 
@@ -6104,7 +6128,9 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
                     }
                 },
                 CacheException.class,
-                "Explicit lock can't be acquired within a transaction."
+                atomicityMode() == TRANSACTIONAL ?
+                    "Explicit lock can't be acquired within a transaction." :
+                    "Locks are not supported for CacheAtomicityMode.ATOMIC mode"
             );
         }
     }
@@ -6148,10 +6174,13 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
             for (TransactionIsolation isolation : TransactionIsolation.values()) {
                 IgniteTransactions txs = ignite.transactions();
 
-                try (Transaction tx = txs.txStart(concurrency, isolation)) {
+                try (Transaction tx =
+                         cache.getConfiguration(CacheConfiguration.class).getAtomicityMode() == TRANSACTIONAL ?
+                             txs.txStart(concurrency, isolation) : null) {
                     doTransformResourceInjection(ignite, cache, async, oldAsync);
 
-                    tx.commit();
+                    if (tx != null)
+                        tx.commit();
                 }
             }
         }
@@ -6555,12 +6584,12 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
         @Override public List<String> call(Ignite ignite, IgniteCache<String, Integer> cache) throws Exception {
             List<String> found = new ArrayList<>();
 
-            Affinity<Object> affinity = ignite.affinity(cache.getName());
+            Affinity<Object> aff = ignite.affinity(cache.getName());
 
             for (int i = startFrom; i < startFrom + 100_000; i++) {
                 String key = "key" + i;
 
-                if (affinity.isPrimary(ignite.cluster().localNode(), key)) {
+                if (aff.isPrimary(ignite.cluster().localNode(), key)) {
                     found.add(key);
 
                     if (found.size() == cnt)
@@ -6666,7 +6695,7 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
     /**
      *
      */
-    private static class RemoveAndReturnNullEntryProcessor implements
+    public static class RemoveAndReturnNullEntryProcessor implements
         EntryProcessor<String, Integer, Integer>, Serializable {
 
         /** {@inheritDoc} */
@@ -6777,9 +6806,9 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
             if (!(o instanceof TestValue))
                 return false;
 
-            TestValue value = (TestValue)o;
+            TestValue val = (TestValue)o;
 
-            if (val != value.val)
+            if (this.val != val.val)
                 return false;
 
             return true;

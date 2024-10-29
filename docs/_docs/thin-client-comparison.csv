@@ -1,7 +1,7 @@
 ﻿Thin Client Feature,Java,.NET,C++,Python,Node.js,PHP
-Scan Query,{yes},{yes},No,{yes},{yes},{yes}
+Scan Query,{yes},{yes},{yes},{yes},{yes},{yes}
 Scan Query with a filter,{yes},{yes},No,No,No,No
-SqlFieldsQuery,{yes},{yes},No,{yes},{yes},{yes}
+SqlFieldsQuery,{yes},{yes},{yes},{yes},{yes},{yes}
 Binary Object API,{yes},{yes},No,No,{yes},{yes}
 Failover,{yes},{yes},{yes},{yes},{yes},{yes}
 Async Operations,{yes},{yes},No,{yes},{yes},{yes}
@@ -17,3 +17,4 @@ Server Discovery,{yes},{yes},No,No,No,No
 Server Discovery in Kubernetes,{yes},No,No,No,No,No
 Data Streamer,No,{Yes},No,No,No,No
 Retry Policy,{yes},{yes},No,No,No,No
+Entry processor invocation,{yes},No,No,No,No,No

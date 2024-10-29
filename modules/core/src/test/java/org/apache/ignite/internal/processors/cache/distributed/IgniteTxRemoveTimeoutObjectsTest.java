@@ -141,8 +141,8 @@ public class IgniteTxRemoveTimeoutObjectsTest extends GridCacheAbstractSelfTest 
     private void assertDoesNotContainLockTimeoutObjects() throws IgniteInterruptedCheckedException {
         boolean noLockTimeoutObjs = GridTestUtils.waitForCondition(() -> {
             for (Ignite ignite : G.allGrids()) {
-                for (GridTimeoutObject object : getTimeoutObjects((IgniteEx)ignite)) {
-                    if (object.getClass().getSimpleName().equals("LockTimeoutObject"))
+                for (GridTimeoutObject obj : getTimeoutObjects((IgniteEx)ignite)) {
+                    if (obj.getClass().getSimpleName().equals("LockTimeoutObject"))
                         return false;
                 }
             }

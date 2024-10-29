@@ -32,9 +32,9 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.cache.query.index.IndexProcessor;
 import org.apache.ignite.internal.processors.cache.index.AbstractIndexingCommonTest;
-import org.apache.ignite.internal.processors.metric.MetricRegistry;
 import org.apache.ignite.internal.util.lang.GridAbsPredicate;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.metric.MetricRegistry;
 import org.apache.ignite.spi.IgniteSpiAdapter;
 import org.apache.ignite.spi.IgniteSpiException;
 import org.apache.ignite.spi.indexing.IndexingQueryFilter;
@@ -127,12 +127,12 @@ public class CacheGroupMetricsWithIndexBuildFailTest extends AbstractIndexingCom
 
         MetricRegistry grpMreg = ignite.context().metric().registry(metricName(CACHE_GROUP_METRICS_PREFIX, GROUP_NAME));
 
-        LongMetric indexBuildCountPartitionsLeft = grpMreg.findMetric("IndexBuildCountPartitionsLeft");
+        LongMetric idxBuildCntPartitionsLeft = grpMreg.findMetric("IndexBuildCountPartitionsLeft");
 
         assertTrue(GridTestUtils.waitForCondition(
             new GridAbsPredicate() {
                 @Override public boolean apply() {
-                    return parts1 + parts2 == indexBuildCountPartitionsLeft.value();
+                    return parts1 + parts2 == idxBuildCntPartitionsLeft.value();
                 }
             },
             5000
@@ -146,7 +146,7 @@ public class CacheGroupMetricsWithIndexBuildFailTest extends AbstractIndexingCom
         GridTestUtils.assertThrows(log, () -> ignite.cache(cacheName1).indexReadyFuture().get(30_000),
             IgniteSpiException.class, "Test exception.");
 
-        assertEquals(parts2, indexBuildCountPartitionsLeft.value());
+        assertEquals(parts2, idxBuildCntPartitionsLeft.value());
 
         failIndexRebuild.set(false);
 
@@ -155,7 +155,7 @@ public class CacheGroupMetricsWithIndexBuildFailTest extends AbstractIndexingCom
 
         ignite.cache(cacheName2).indexReadyFuture().get(30_000);
 
-        assertEquals(0, indexBuildCountPartitionsLeft.value());
+        assertEquals(0, idxBuildCntPartitionsLeft.value());
     }
 
     /** */

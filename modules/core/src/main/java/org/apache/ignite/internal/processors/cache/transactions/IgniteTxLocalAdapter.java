@@ -144,9 +144,6 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter implements Ig
     /** */
     private CacheWriteSynchronizationMode syncMode;
 
-    /** */
-    protected volatile boolean qryEnlisted;
-
     /**
      * @param cctx Cache registry.
      * @param xidVer Transaction ID.
@@ -404,9 +401,6 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter implements Ig
 
         try {
             cctx.tm().prepareTx(this, entries);
-
-            if (txState().mvccEnabled())
-                calculatePartitionUpdateCounters();
         }
         catch (IgniteCheckedException e) {
             throw e;
@@ -541,7 +535,7 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter implements Ig
 
         Collection<IgniteTxEntry> commitEntries = near() ? allEntries() : writeEntries();
 
-        boolean empty = F.isEmpty(commitEntries) && !queryEnlisted();
+        boolean empty = F.isEmpty(commitEntries);
 
         // Register this transaction as completed prior to write-phase to
         // ensure proper lock ordering for removed entries.
@@ -713,7 +707,6 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter implements Ig
                                         txEntry.hasOldValue(),
                                         txEntry.oldValue(),
                                         topVer,
-                                        null,
                                         cached.detached() ? DR_NONE : drType,
                                         txEntry.conflictExpireTime(),
                                         cached.isNear() ? null : explicitVer,
@@ -746,7 +739,6 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter implements Ig
                                                 txEntry.hasOldValue(),
                                                 txEntry.oldValue(),
                                                 topVer,
-                                                CU.empty0(),
                                                 DR_NONE,
                                                 txEntry.conflictExpireTime(),
                                                 null,
@@ -768,7 +760,6 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter implements Ig
                                         txEntry.hasOldValue(),
                                         txEntry.oldValue(),
                                         topVer,
-                                        null,
                                         cached.detached() ? DR_NONE : drType,
                                         cached.isNear() ? null : explicitVer,
                                         resolveTaskName(),
@@ -796,7 +787,6 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter implements Ig
                                                 txEntry.hasOldValue(),
                                                 txEntry.oldValue(),
                                                 topVer,
-                                                CU.empty0(),
                                                 DR_NONE,
                                                 null,
                                                 resolveTaskName(),
@@ -859,7 +849,7 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter implements Ig
                     }
                 }
 
-                if (!txState.mvccEnabled() && txCounters != null) {
+                if (txCounters != null) {
                     cctx.tm().txHandler().applyPartitionsUpdatesCounters(txCounters.updateCounters());
 
                     for (IgniteTxEntry entry : commitEntries) {
@@ -870,8 +860,6 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter implements Ig
 
                 // Apply cache sizes only for primary nodes. Update counters were applied on prepare state.
                 applyTxSizes();
-
-                cctx.mvccCaching().onTxFinished(this, true);
 
                 if (ptr != null)
                     cctx.wal(true).flush(ptr, false);
@@ -996,8 +984,6 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter implements Ig
                 assert !needsCompletedVersions || committedVers != null : "Missing committed versions for transaction: " + this;
                 assert !needsCompletedVersions || rolledbackVers != null : "Missing rolledback versions for transaction: " + this;
             }
-
-            cctx.mvccCaching().onTxFinished(this, commit);
         }
     }
 
@@ -1052,8 +1038,6 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter implements Ig
 
         if (DONE_FLAG_UPD.compareAndSet(this, 0, 1)) {
             cctx.tm().rollbackTx(this, clearThreadMap, skipCompletedVersions());
-
-            cctx.mvccCaching().onTxFinished(this, false);
 
             if (!internal()) {
                 Collection<CacheStoreManager> stores = txState.stores(cctx);
@@ -1312,7 +1296,7 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter implements Ig
     }
 
     /** {@inheritDoc} */
-    @Override public final void addActiveCache(GridCacheContext cacheCtx, boolean recovery) throws IgniteCheckedException {
+    @Override public final void addActiveCache(GridCacheContext<?, ?> cacheCtx, boolean recovery) throws IgniteCheckedException {
         txState.addActiveCache(cacheCtx, recovery, this);
     }
 
@@ -1527,11 +1511,6 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter implements Ig
     }
 
     /** {@inheritDoc} */
-    @Override public void touchPartition(int cacheId, int partId) {
-        txState.touchPartition(cacheId, partId);
-    }
-
-    /** {@inheritDoc} */
     @Override public String toString() {
         return GridToStringBuilder.toString(IgniteTxLocalAdapter.class, this, "super", super.toString(),
             "size", allEntries().size());
@@ -1607,27 +1586,6 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter implements Ig
         }
 
         return 0;
-    }
-
-    /**
-     * @return {@code True} if there are entries, enlisted by query.
-     */
-    public boolean queryEnlisted() {
-        return qryEnlisted;
-    }
-
-    /**
-     * Marks that there are entries, enlisted by query.
-     */
-    public void markQueryEnlisted() {
-        assert mvccSnapshot != null && txState.mvccEnabled();
-
-        if (!qryEnlisted) {
-            qryEnlisted = true;
-
-            if (!cctx.localNode().isClient())
-                cctx.coordinators().registerLocalTransaction(mvccSnapshot.coordinatorVersion(), mvccSnapshot.counter());
-        }
     }
 
     /**

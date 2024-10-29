@@ -30,9 +30,9 @@ import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.processors.cache.persistence.DataRegion;
-import org.apache.ignite.internal.processors.metric.MetricRegistry;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.G;
+import org.apache.ignite.metric.MetricRegistry;
 import org.apache.ignite.spi.metric.IntMetric;
 import org.apache.ignite.spi.metric.LongMetric;
 import org.apache.ignite.spi.metric.ObjectMetric;
@@ -159,12 +159,12 @@ public class MetricsClusterActivationTest extends GridCommonAbstractTest {
         }
 
         long offHeapSize = mreg.<LongMetric>findMetric("OffHeapSize").value();
-        long initialSize = mreg.<LongMetric>findMetric("InitialSize").value();
+        long initSize = mreg.<LongMetric>findMetric("InitialSize").value();
         long maxSize = mreg.<LongMetric>findMetric("MaxSize").value();
 
         assertTrue(offHeapSize > 0);
         assertTrue(offHeapSize <= region.config().getMaxSize());
-        assertEquals(region.config().getInitialSize(), initialSize);
+        assertEquals(region.config().getInitialSize(), initSize);
         assertEquals(region.config().getMaxSize(), maxSize);
     }
 
@@ -202,19 +202,19 @@ public class MetricsClusterActivationTest extends GridCommonAbstractTest {
             return;
         }
 
-        long offHeapEntriesCount = mreg.<LongMetric>findMetric("OffHeapEntriesCount").value();
-        long offHeapPrimaryEntriesCount = mreg.<LongMetric>findMetric("OffHeapPrimaryEntriesCount").value();
-        long offHeapBackupEntriesCount = mreg.<LongMetric>findMetric("OffHeapBackupEntriesCount").value();
+        long offHeapEntriesCnt = mreg.<LongMetric>findMetric("OffHeapEntriesCount").value();
+        long offHeapPrimaryEntriesCnt = mreg.<LongMetric>findMetric("OffHeapPrimaryEntriesCount").value();
+        long offHeapBackupEntriesCnt = mreg.<LongMetric>findMetric("OffHeapBackupEntriesCount").value();
 
         if (expEntries) {
-            assertEquals(ENTRY_CNT, offHeapEntriesCount);
-            assertTrue(offHeapPrimaryEntriesCount > 0);
-            assertTrue(offHeapBackupEntriesCount > 0);
+            assertEquals(ENTRY_CNT, offHeapEntriesCnt);
+            assertTrue(offHeapPrimaryEntriesCnt > 0);
+            assertTrue(offHeapBackupEntriesCnt > 0);
         }
         else {
-            assertEquals(0, offHeapEntriesCount);
-            assertEquals(0, offHeapPrimaryEntriesCount);
-            assertEquals(0, offHeapBackupEntriesCount);
+            assertEquals(0, offHeapEntriesCnt);
+            assertEquals(0, offHeapPrimaryEntriesCnt);
+            assertEquals(0, offHeapBackupEntriesCnt);
         }
     }
 }

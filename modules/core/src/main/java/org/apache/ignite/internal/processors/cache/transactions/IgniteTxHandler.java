@@ -23,7 +23,6 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 import java.util.UUID;
-import javax.cache.processor.EntryProcessor;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
@@ -35,7 +34,6 @@ import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.cluster.ClusterTopologyCheckedException;
 import org.apache.ignite.internal.pagemem.wal.record.RollbackRecord;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
-import org.apache.ignite.internal.processors.cache.CacheEntryInfoCollection;
 import org.apache.ignite.internal.processors.cache.CacheGroupContext;
 import org.apache.ignite.internal.processors.cache.CacheObject;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
@@ -45,14 +43,11 @@ import org.apache.ignite.internal.processors.cache.GridCacheEntryRemovedExceptio
 import org.apache.ignite.internal.processors.cache.GridCacheMessage;
 import org.apache.ignite.internal.processors.cache.GridCacheReturnCompletableWrapper;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
-import org.apache.ignite.internal.processors.cache.GridCacheUpdateTxResult;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
 import org.apache.ignite.internal.processors.cache.distributed.GridCacheTxRecoveryFuture;
 import org.apache.ignite.internal.processors.cache.distributed.GridCacheTxRecoveryRequest;
 import org.apache.ignite.internal.processors.cache.distributed.GridCacheTxRecoveryResponse;
 import org.apache.ignite.internal.processors.cache.distributed.GridDistributedTxRemoteAdapter;
-import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtCacheAdapter;
-import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtCacheEntry;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtTopologyFuture;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtTxFinishFuture;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtTxFinishRequest;
@@ -63,7 +58,6 @@ import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtTxPrep
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtTxPrepareRequest;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtTxPrepareResponse;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtTxRemote;
-import org.apache.ignite.internal.processors.cache.distributed.dht.GridInvokeValue;
 import org.apache.ignite.internal.processors.cache.distributed.dht.PartitionUpdateCountersMessage;
 import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtInvalidPartitionException;
 import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtLocalPartition;
@@ -77,13 +71,9 @@ import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxPr
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxPrepareRequest;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxPrepareResponse;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxRemote;
-import org.apache.ignite.internal.processors.cache.mvcc.MvccSnapshot;
 import org.apache.ignite.internal.processors.cache.persistence.snapshot.IncrementalSnapshotAwareMessage;
 import org.apache.ignite.internal.processors.cache.persistence.wal.WALPointer;
-import org.apache.ignite.internal.processors.cache.query.IgniteQueryErrorCode;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
-import org.apache.ignite.internal.processors.query.EnlistOperation;
-import org.apache.ignite.internal.processors.query.IgniteSQLException;
 import org.apache.ignite.internal.processors.tracing.MTC;
 import org.apache.ignite.internal.transactions.IgniteTxHeuristicCheckedException;
 import org.apache.ignite.internal.transactions.IgniteTxOptimisticCheckedException;
@@ -96,8 +86,6 @@ import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteFutureCancelledException;
-import org.apache.ignite.lang.IgniteUuid;
-import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.thread.IgniteThread;
 import org.apache.ignite.transactions.TransactionState;
 import org.jetbrains.annotations.Nullable;
@@ -742,8 +730,6 @@ public class IgniteTxHandler {
      * @return {@code True} if cache affinity changed and request should be remapped.
      */
     private boolean needRemap(AffinityTopologyVersion rmtVer, GridNearTxPrepareRequest req) {
-        // TODO IGNITE-6754 check mvcc crd for mvcc enabled txs.
-
         for (IgniteTxEntry e : F.concat(false, req.reads(), req.writes())) {
             if (!e.context().affinity().isCompatibleWithCurrentTopologyVersion(rmtVer))
                 return true;
@@ -993,11 +979,8 @@ public class IgniteTxHandler {
         else
             tx = ctx.tm().tx(dhtVer);
 
-        if (tx != null) {
-            tx.mvccSnapshot(req.mvccSnapshot());
-
+        if (tx != null)
             req.txState(tx.txState());
-        }
 
         if (tx == null && locTx != null && !req.commit()) {
             U.warn(log, "DHT local tx not found for near local tx rollback " +
@@ -1431,7 +1414,6 @@ public class IgniteTxHandler {
                     tx.invalidate(true);
                 if (req.isSystemInvalidate())
                     tx.systemInvalidate(true);
-                tx.mvccSnapshot(req.mvccSnapshot());
 
                 // Complete remote candidates.
                 tx.doneRemote(req.baseVersion(), null, null, null);
@@ -1443,7 +1425,6 @@ public class IgniteTxHandler {
                     tx.txCounters(true).updateCounters(req.updateCounters());
 
                 tx.doneRemote(req.baseVersion(), null, null, null);
-                tx.mvccSnapshot(req.mvccSnapshot());
                 tx.rollbackRemoteTx();
             }
         }
@@ -1481,7 +1462,6 @@ public class IgniteTxHandler {
         try {
             tx.commitVersion(req.writeVersion());
             tx.invalidate(req.isInvalidate());
-            tx.mvccSnapshot(req.mvccSnapshot());
 
             // Complete remote candidates.
             tx.doneRemote(req.version(), null, null, null);
@@ -1672,7 +1652,7 @@ public class IgniteTxHandler {
         GridDhtTxPrepareRequest req,
         GridDhtTxPrepareResponse res
     ) throws IgniteCheckedException {
-        if (req.queryUpdate() || !F.isEmpty(req.writes())) {
+        if (!F.isEmpty(req.writes())) {
             GridDhtTxRemote tx = ctx.tm().tx(req.version());
 
             if (tx == null) {
@@ -1861,7 +1841,7 @@ public class IgniteTxHandler {
 
             res.invalidPartitionsByCacheId(tx.invalidPartitions());
 
-            if (!req.queryUpdate() && tx.empty() && req.last()) {
+            if (tx.empty() && req.last()) {
                 tx.skipCompletedVersions(req.skipCompletedVersion());
 
                 tx.rollbackRemoteTx();
@@ -1873,165 +1853,6 @@ public class IgniteTxHandler {
         }
 
         return null;
-    }
-
-    /**
-     * Writes updated values on the backup node.
-     *
-     * @param tx Transaction.
-     * @param ctx Cache context.
-     * @param op Operation.
-     * @param keys Keys.
-     * @param vals Values sent from the primary node.
-     * @param snapshot Mvcc snapshot.
-     * @param batchNum Batch number.
-     * @param futId Future id.
-     * @throws IgniteCheckedException If failed.
-     */
-    public void mvccEnlistBatch(GridDhtTxRemote tx, GridCacheContext ctx, EnlistOperation op, List<KeyCacheObject> keys,
-        List<Message> vals, MvccSnapshot snapshot, IgniteUuid futId, int batchNum) throws IgniteCheckedException {
-        assert keys != null && (vals == null || vals.size() == keys.size());
-        assert tx != null;
-
-        GridDhtCacheAdapter dht = ctx.dht();
-
-        tx.addActiveCache(ctx, false);
-
-        for (int i = 0; i < keys.size(); i++) {
-            KeyCacheObject key = keys.get(i);
-
-            assert key != null;
-
-            int part = ctx.affinity().partition(key);
-
-            try {
-                GridDhtLocalPartition locPart = ctx.topology().localPartition(part, tx.topologyVersion(), false);
-
-                if (locPart != null && locPart.reserve()) {
-                    try {
-                        // Skip renting partitions.
-                        if (locPart.state() == RENTING) {
-                            tx.addInvalidPartition(ctx.cacheId(), part);
-
-                            continue;
-                        }
-
-                        CacheObject val = null;
-                        EntryProcessor entryProc = null;
-                        Object[] invokeArgs = null;
-
-                        boolean needOldVal = tx.txState().useMvccCaching(ctx.cacheId());
-
-                        Message val0 = vals != null ? vals.get(i) : null;
-
-                        CacheEntryInfoCollection entries =
-                            val0 instanceof CacheEntryInfoCollection ? (CacheEntryInfoCollection)val0 : null;
-
-                        if (entries == null && !op.isDeleteOrLock() && !op.isInvoke())
-                            val = (val0 instanceof CacheObject) ? (CacheObject)val0 : null;
-
-                        if (entries == null && op.isInvoke()) {
-                            assert val0 instanceof GridInvokeValue;
-
-                            GridInvokeValue invokeVal = (GridInvokeValue)val0;
-
-                            entryProc = invokeVal.entryProcessor();
-                            invokeArgs = invokeVal.invokeArgs();
-                        }
-
-                        assert entries != null || entryProc != null || !op.isInvoke() : "entryProc=" + entryProc + ", op=" + op;
-
-                        GridDhtCacheEntry entry = dht.entryExx(key, tx.topologyVersion());
-
-                        GridCacheUpdateTxResult updRes;
-
-                        while (true) {
-                            ctx.shared().database().checkpointReadLock();
-
-                            try {
-                                if (entries == null) {
-                                    switch (op) {
-                                        case DELETE:
-                                            updRes = entry.mvccRemove(
-                                                tx,
-                                                ctx.localNodeId(),
-                                                tx.topologyVersion(),
-                                                snapshot,
-                                                false,
-                                                needOldVal,
-                                                null,
-                                                false);
-
-                                            break;
-
-                                        case INSERT:
-                                        case TRANSFORM:
-                                        case UPSERT:
-                                        case UPDATE:
-                                            updRes = entry.mvccSet(
-                                                tx,
-                                                ctx.localNodeId(),
-                                                val,
-                                                entryProc,
-                                                invokeArgs,
-                                                0,
-                                                tx.topologyVersion(),
-                                                snapshot,
-                                                op.cacheOperation(),
-                                                false,
-                                                false,
-                                                needOldVal,
-                                                null,
-                                                false,
-                                                false);
-
-                                            break;
-
-                                        default:
-                                            throw new IgniteSQLException("Cannot acquire lock for operation [op= "
-                                                + op + "]" + "Operation is unsupported at the moment ",
-                                                IgniteQueryErrorCode.UNSUPPORTED_OPERATION);
-                                    }
-                                }
-                                else {
-                                    updRes = entry.mvccUpdateRowsWithPreloadInfo(tx,
-                                        ctx.localNodeId(),
-                                        tx.topologyVersion(),
-                                        entries.infos(),
-                                        op.cacheOperation(),
-                                        snapshot,
-                                        futId,
-                                        batchNum);
-                                }
-
-                                break;
-                            }
-                            catch (GridCacheEntryRemovedException ignore) {
-                                entry = dht.entryExx(key);
-                            }
-                            finally {
-                                ctx.shared().database().checkpointReadUnlock();
-                            }
-                        }
-
-                        if (!updRes.filtered())
-                            ctx.shared().mvccCaching().addEnlisted(key, updRes.newValue(), 0, 0, tx.xidVersion(),
-                                updRes.oldValue(), tx.local(), tx.topologyVersion(), snapshot, ctx.cacheId(), tx, futId, batchNum);
-
-                        assert updRes.updateFuture() == null : "Entry should not be locked on the backup";
-                    }
-
-                    finally {
-                        locPart.release();
-                    }
-                }
-                else
-                    tx.addInvalidPartition(ctx.cacheId(), part);
-            }
-            catch (GridDhtInvalidPartitionException e) {
-                tx.addInvalidPartition(ctx.cacheId(), e.partition());
-            }
-        }
     }
 
     /**
@@ -2288,7 +2109,7 @@ public class IgniteTxHandler {
                                     if (updated && rollback) {
                                         CacheGroupContext grpCtx = part.group();
 
-                                        if (grpCtx.persistenceEnabled() && grpCtx.walEnabled() && !grpCtx.mvccEnabled()) {
+                                        if (grpCtx.persistenceEnabled() && grpCtx.walEnabled()) {
                                             RollbackRecord rec =
                                                 new RollbackRecord(grpCtx.groupId(), part.id(), start, delta);
 

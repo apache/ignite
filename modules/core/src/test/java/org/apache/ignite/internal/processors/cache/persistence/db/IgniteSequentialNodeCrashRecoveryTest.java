@@ -242,8 +242,8 @@ public class IgniteSequentialNodeCrashRecoveryTest extends GridCommonAbstractTes
         dbMgr.checkpointReadLock();
         try {
             //Moving free list pages to offheap.
-            for (CacheGroupContext group : g.context().cache().cacheGroups()) {
-                ((GridCacheOffheapManager)group.offheap()).onMarkCheckpointBegin(new DummyCheckpointContext());
+            for (CacheGroupContext grp : g.context().cache().cacheGroups()) {
+                ((GridCacheOffheapManager)grp.offheap()).onMarkCheckpointBegin(new DummyCheckpointContext());
             }
         }
         finally {

@@ -36,6 +36,7 @@ import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.U;
 
 /** */
+@ArgumentGroup(value = {"nodeIds", "allNodes", "nodeId"}, onlyOneOf = true, optional = true)
 @ArgumentGroup(value = {"cacheNames", "groupNames"}, optional = false)
 public class CacheScheduleIndexesRebuildCommandArg extends IgniteDataTransferObject {
     /** */
@@ -46,10 +47,21 @@ public class CacheScheduleIndexesRebuildCommandArg extends IgniteDataTransferObj
 
     /** */
     @Argument(
-        description = "(Optional) Specify node for indexes rebuild. If not specified, schedules rebuild on all nodes",
-        example = "nodeId",
-        optional = true)
+        description = "(Optional) Specify node for indexes rebuild. If not specified, schedules rebuild on all nodes " +
+            "(deprecated. Use --node-ids or --all-nodes instead)",
+        example = "nodeId")
     private UUID nodeId;
+
+    /** */
+    @Argument(
+        description = "Comma-separated list of nodes ids to schedule index rebuild on",
+        example = "nodeId1,...nodeIdN"
+    )
+    private UUID[] nodeIds;
+
+    /** Flag to launch index rebuild on all nodes. */
+    @Argument(description = "Rebuild index on all nodes")
+    private boolean allNodes;
 
     /** */
     @Argument(description = "Comma-separated list of cache names with optionally specified indexes. " +
@@ -73,6 +85,8 @@ public class CacheScheduleIndexesRebuildCommandArg extends IgniteDataTransferObj
         U.writeString(out, cacheNames);
         U.writeArray(out, groupNames);
         U.writeMap(out, cacheToIndexes);
+        U.writeArray(out, nodeIds);
+        out.writeBoolean(allNodes);
     }
 
     /** {@inheritDoc} */
@@ -81,6 +95,8 @@ public class CacheScheduleIndexesRebuildCommandArg extends IgniteDataTransferObj
         cacheNames = U.readString(in);
         groupNames = U.readArray(in, String.class);
         cacheToIndexes = U.readMap(in);
+        nodeIds = U.readArray(in, UUID.class);
+        allNodes = in.readBoolean();
     }
 
     /** */
@@ -126,6 +142,26 @@ public class CacheScheduleIndexesRebuildCommandArg extends IgniteDataTransferObj
     /** */
     public void nodeId(UUID nodeId) {
         this.nodeId = nodeId;
+    }
+
+    /** */
+    public UUID[] nodeIds() {
+        return nodeIds;
+    }
+
+    /** */
+    public void allNodes(boolean allNodes) {
+        this.allNodes = allNodes;
+    }
+
+    /** */
+    public boolean allNodes() {
+        return allNodes;
+    }
+
+    /** */
+    public void nodeIds(UUID[] nodeIds) {
+        this.nodeIds = nodeIds;
     }
 
     /** */

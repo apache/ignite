@@ -32,6 +32,7 @@ import org.apache.ignite.plugin.extensions.communication.MessageCollectionItemTy
 import org.apache.ignite.plugin.extensions.communication.MessageFactory;
 import org.apache.ignite.plugin.extensions.communication.MessageReader;
 import org.apache.ignite.plugin.extensions.communication.MessageWriter;
+import org.apache.ignite.spi.communication.tcp.messages.HandshakeMessage;
 import org.junit.Test;
 
 import static java.lang.Integer.MAX_VALUE;
@@ -110,6 +111,14 @@ public abstract class AbstractCommunicationMessageSerializationTest {
 
         assertEquals("The serialization and deserialization protocol is not consistent for the message [cls="
             + msg.getClass().getName() + ']', writer.writtenFields, reader.readFields);
+
+        if (!(msg instanceof HandshakeMessage)) {
+            assertEquals("Unexpected write count for the message [cls="
+                + msg.getClass().getName() + ']', msg.fieldsCount(), writer.writtenFields.size());
+
+            assertEquals("Unexpected read count for the message [cls="
+                + msg.getClass().getName() + ']', msg.fieldsCount(), reader.readFields.size());
+        }
     }
 
     /** */

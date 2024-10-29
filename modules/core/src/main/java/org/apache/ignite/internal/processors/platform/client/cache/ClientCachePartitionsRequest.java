@@ -41,7 +41,6 @@ import org.apache.ignite.internal.processors.platform.client.ClientRequest;
 import org.apache.ignite.internal.processors.platform.client.ClientResponse;
 import org.apache.ignite.internal.util.lang.gridfunc.NotContainsPredicate;
 import org.apache.ignite.internal.util.typedef.F;
-import org.apache.ignite.lang.IgnitePredicate;
 import org.jetbrains.annotations.Nullable;
 import static java.util.Optional.ofNullable;
 import static org.apache.ignite.internal.processors.query.QueryUtils.isCustomAffinityMapper;
@@ -86,9 +85,9 @@ public class ClientCachePartitionsRequest extends ClientRequest {
             return new ClientResponse(requestId(), "Cannot perform cache operation because the cluster is inactive.");
 
         Map<ClientCachePartitionAwarenessGroup, ClientCachePartitionAwarenessGroup> grps = new HashMap<>(cacheIds.length);
-        ClientAffinityTopologyVersion affinityVer = ctx.checkAffinityTopologyVersion();
+        ClientAffinityTopologyVersion affVer = ctx.checkAffinityTopologyVersion();
 
-        Set<Integer> affectedGroupIds = Arrays.stream(cacheIds)
+        Set<Integer> affectedGrpIds = Arrays.stream(cacheIds)
             .mapToObj(id -> ctx.kernalContext().cache().cacheDescriptor(id))
             .filter(Objects::nonNull)
             .map(DynamicCacheDescriptor::groupId)
@@ -102,8 +101,8 @@ public class ClientCachePartitionsRequest extends ClientRequest {
 
         // As a first step, get a set of mappings that we need to return.
         // To do that, check if any of the caches listed in request can be grouped.
-        for (List<DynamicCacheDescriptor> affected : F.view(allCaches, affectedGroupIds::contains).values()) {
-            ClientCachePartitionAwarenessGroup grp = processCache(ctx, affinityVer, F.first(affected), withCustomMappings);
+        for (List<DynamicCacheDescriptor> affected : F.view(allCaches, affectedGrpIds::contains).values()) {
+            ClientCachePartitionAwarenessGroup grp = processCache(ctx, affVer, F.first(affected), withCustomMappings);
 
             if (grp == null)
                 continue;
@@ -114,8 +113,8 @@ public class ClientCachePartitionsRequest extends ClientRequest {
         }
 
         // As a second step, check all other caches and add them to groups they are compatible with.
-        for (List<DynamicCacheDescriptor> descs : F.view(allCaches, new NotContainsPredicate<>(affectedGroupIds)).values()) {
-            ClientCachePartitionAwarenessGroup grp = processCache(ctx, affinityVer, F.first(descs), withCustomMappings);
+        for (List<DynamicCacheDescriptor> descs : F.view(allCaches, new NotContainsPredicate<>(affectedGrpIds)).values()) {
+            ClientCachePartitionAwarenessGroup grp = processCache(ctx, affVer, F.first(descs), withCustomMappings);
 
             if (grp == null)
                 continue;
@@ -126,7 +125,7 @@ public class ClientCachePartitionsRequest extends ClientRequest {
                 grp0.addAll(descs);
         }
 
-        return new ClientCachePartitionsResponse(requestId(), new ArrayList<>(grps.keySet()), affinityVer);
+        return new ClientCachePartitionsResponse(requestId(), new ArrayList<>(grps.keySet()), affVer);
     }
 
     /**
@@ -169,8 +168,8 @@ public class ClientCachePartitionsRequest extends ClientRequest {
     @Nullable private static AffinityAssignment getCacheAssignment(ClientConnectionContext ctx,
         ClientAffinityTopologyVersion affinityVer, int cacheId) {
         try {
-            GridCacheContext cacheContext = ctx.kernalContext().cache().context().cacheContext(cacheId);
-            return cacheContext.affinity().assignment(affinityVer.getVersion());
+            GridCacheContext cacheCtx = ctx.kernalContext().cache().context().cacheContext(cacheId);
+            return cacheCtx.affinity().assignment(affinityVer.getVersion());
         }
         catch (Exception e) {
             return null;
@@ -185,15 +184,6 @@ public class ClientCachePartitionsRequest extends ClientRequest {
     private static boolean isApplicable(CacheConfiguration<?, ?> ccfg, boolean withCustomMappings) {
         // Partition could be extracted only from PARTITIONED caches.
         if (ccfg.getCacheMode() != CacheMode.PARTITIONED)
-            return false;
-
-        IgnitePredicate<?> filter = ccfg.getNodeFilter();
-        boolean hasNodeFilter = filter != null && !(filter instanceof CacheConfiguration.IgniteAllNodesPredicate);
-
-        // We cannot be sure that two caches are co-located if custom node filter is present.
-        // Note that technically we may try to compare two filters. However, this adds unnecessary complexity
-        // and potential deserialization issues.
-        if (hasNodeFilter)
             return false;
 
         return withCustomMappings || isDefaultMapping(ccfg);

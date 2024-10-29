@@ -163,14 +163,14 @@ public class IndexCorruptionRebuildTest extends GridCommonAbstractTest {
         for (int i = 0; i < 100; i++) {
             int counter = i;
 
-            String value = "test" + i;
+            String val = "test" + i;
 
-            String query = "insert into %s(col1, col2, col3, col4) values (?1, ?2, ?3, ?4)";
+            String insertQry = "insert into %s(col1, col2, col3, col4) values (?1, ?2, ?3, ?4)";
 
             Stream.of(TABLE_NAME_1, TABLE_NAME_2)
                 .map(tableName ->
-                    new SqlFieldsQuery(String.format(query, tableName))
-                        .setArgs(String.valueOf(counter), value, value, value)
+                    new SqlFieldsQuery(String.format(insertQry, tableName))
+                        .setArgs(String.valueOf(counter), val, val, val)
                 ).forEach(cache::query);
         }
 
@@ -208,12 +208,12 @@ public class IndexCorruptionRebuildTest extends GridCommonAbstractTest {
 
         Collection<DurableBackgroundTaskState<?>> durableTasks = tasks(srv.context().durableBackgroundTask()).values();
 
-        Map<Integer, Set<String>> indexTasksByCache = durableTasks.stream().collect(Collectors.groupingBy(
+        Map<Integer, Set<String>> idxTasksByCache = durableTasks.stream().collect(Collectors.groupingBy(
             state -> CU.cacheId(((DurableBackgroundCleanupIndexTreeTaskV2)state.task()).cacheName()),
             Collectors.mapping(state -> ((DurableBackgroundCleanupIndexTreeTaskV2)state.task()).idxName(), toSet())
         ));
 
-        checkCacheToCorruptedIndexMap(indexTasksByCache);
+        checkCacheToCorruptedIndexMap(idxTasksByCache);
 
         stopGrid(0);
 
@@ -400,10 +400,10 @@ public class IndexCorruptionRebuildTest extends GridCommonAbstractTest {
             boolean force,
             IndexRebuildCancelToken cancelTok
         ) {
-            IgniteInternalFuture<?> future = super.rebuild(cctx, force, cancelTok);
-            rebuiltIndexes = future != null;
+            IgniteInternalFuture<?> fut = super.rebuild(cctx, force, cancelTok);
+            rebuiltIndexes = fut != null;
 
-            return future;
+            return fut;
         }
 
         /**

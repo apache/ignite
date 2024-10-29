@@ -42,6 +42,7 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 
+import static java.util.stream.IntStream.range;
 import static org.apache.ignite.testframework.GridTestUtils.getFieldValue;
 import static org.apache.ignite.testframework.GridTestUtils.setFieldValue;
 import static org.apache.ignite.testframework.GridTestUtils.waitForCondition;
@@ -55,10 +56,18 @@ public class ThinClientPartitionAwarenessUnstableTopologyTest extends ThinClient
     @Parameterized.Parameter
     public boolean sslEnabled;
 
+    /** */
+    @Parameterized.Parameter(1)
+    public String cacheName;
+
     /** @return Test parameters. */
-    @Parameterized.Parameters(name = "sslEnabled={0}")
+    @Parameterized.Parameters(name = "sslEnabled={0},cache={1}")
     public static Collection<?> parameters() {
-        return Arrays.asList(new Object[][] {{false}, {true}});
+        return Arrays.asList(new Object[][] {
+            {false, PART_CACHE_NAME},
+            {false, PART_CACHE_1_BACKUPS_NF_NAME},
+            {true, PART_CACHE_NAME}
+        });
     }
 
     /** {@inheritDoc} */
@@ -116,13 +125,13 @@ public class ThinClientPartitionAwarenessUnstableTopologyTest extends ThinClient
         awaitPartitionMapExchange();
 
         // Send non-affinity request to detect topology change.
-        ClientCache<Object, Object> cache = client.getOrCreateCache(PART_CACHE_NAME);
+        ClientCache<Object, Object> cache = client.getOrCreateCache(cacheName);
 
         awaitChannelsInit(3);
 
         assertOpOnChannel(null, ClientOperation.CACHE_GET_OR_CREATE_WITH_NAME);
 
-        Integer key = primaryKey(grid(3).cache(PART_CACHE_NAME));
+        Integer key = primaryKey(grid(3).cache(cacheName));
 
         assertNotNull("Not found key for node 3", key);
 
@@ -187,21 +196,21 @@ public class ThinClientPartitionAwarenessUnstableTopologyTest extends ThinClient
         channels[disconnectNodeIdx] = null;
 
         // Send request to disconnected node.
-        ClientCache<Object, Object> cache = client.cache(PART_CACHE_NAME);
+        ClientCache<Object, Object> cache = client.cache(cacheName);
 
-        Integer key = primaryKey(grid(disconnectNodeIdx).cache(PART_CACHE_NAME));
+        Integer key = primaryKey(grid(disconnectNodeIdx).cache(cacheName));
 
         assertNotNull("Not found key for node " + disconnectNodeIdx, key);
 
         cache.put(key, 0);
 
         // Request goes to the connected channel, since affinity node is disconnected.
-        assertOpOnChannel(channels[1], ClientOperation.CACHE_PUT);
+        assertOpOnChannel(null, ClientOperation.CACHE_PUT);
 
         cache.put(key, 0);
 
         // Connection to disconnected node should be restored after retry.
-        assertOpOnChannel(channels[disconnectNodeIdx], ClientOperation.CACHE_PUT);
+        assertOpOnChannel(channels[disconnectNodeIdx], ClientOperation.CACHE_PUT, ClientOperation.CACHE_PARTITIONS);
 
         // Test partition awareness.
         testPartitionAwareness(false);
@@ -211,12 +220,25 @@ public class ThinClientPartitionAwarenessUnstableTopologyTest extends ThinClient
      * Test that partition awareness works when reconnecting to the new cluster (with lower topology version)
      */
     @Test
-    public void testPartitionAwarenessOnClusterRestart() throws Exception {
-        startGrids(3);
+    public void testPartitionAwarenessOnClusterRestartWithLowerTopologyVersion() throws Exception {
+        doPartitionAwarenessOnClusterRestartTest(3, 2);
+    }
+
+    /**
+     * Test that partition awareness works when reconnecting to the new cluster (with the same topology version)
+     */
+    @Test
+    public void testPartitionAwarenessOnClusterRestartWithSameTopologyVersion() throws Exception {
+        doPartitionAwarenessOnClusterRestartTest(3, 3);
+    }
+
+    /** */
+    private void doPartitionAwarenessOnClusterRestartTest(int initialClusterSize, int restartedClusterSize) throws Exception {
+        startGrids(initialClusterSize);
 
         awaitPartitionMapExchange();
 
-        initClient(getClientConfiguration(0, 1, 2), 0, 1, 2);
+        initClient(getClientConfiguration(range(0, initialClusterSize).toArray()), range(0, initialClusterSize).toArray());
 
         // Test partition awareness before cluster restart.
         testPartitionAwareness(true);
@@ -225,17 +247,16 @@ public class ThinClientPartitionAwarenessUnstableTopologyTest extends ThinClient
 
         Arrays.fill(channels, null);
 
-        // Start 2 grids, so topology version of the new cluster will be less then old cluster.
-        startGrids(2);
+        startGrids(restartedClusterSize);
 
         awaitPartitionMapExchange();
 
         // Send any request to failover.
-        client.cache(REPL_CACHE_NAME).put(0, 0);
+        client.cache(cacheName).put(0, 0);
 
         detectTopologyChange();
 
-        awaitChannelsInit(0, 1);
+        awaitChannelsInit(range(0, restartedClusterSize).toArray());
 
         testPartitionAwareness(true);
     }
@@ -246,8 +267,8 @@ public class ThinClientPartitionAwarenessUnstableTopologyTest extends ThinClient
      * @param partReq Next operation should request partitions map.
      */
     private void testPartitionAwareness(boolean partReq) {
-        ClientCache<Object, Object> clientCache = client.cache(PART_CACHE_NAME);
-        IgniteInternalCache<Object, Object> igniteCache = grid(0).context().cache().cache(PART_CACHE_NAME);
+        ClientCache<Object, Object> clientCache = client.cache(cacheName);
+        IgniteInternalCache<Object, Object> igniteCache = grid(0).context().cache().cache(cacheName);
 
         for (int i = 0; i < KEY_CNT; i++) {
             TestTcpClientChannel opCh = affinityChannel(i, igniteCache);

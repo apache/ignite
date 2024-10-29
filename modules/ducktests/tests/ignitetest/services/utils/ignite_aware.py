@@ -38,13 +38,13 @@ from ignitetest.services.utils.background_thread import BackgroundThreadService
 from ignitetest.services.utils.concurrent import CountDownLatch, AtomicValue
 from ignitetest.services.utils.ignite_spec import resolve_spec, SHARED_PREPARED_FILE
 from ignitetest.services.utils.jmx_utils import ignite_jmx_mixin, JmxClient
-from ignitetest.services.utils.jvm_utils import JvmProcessMixin
+from ignitetest.services.utils.jvm_utils import JvmProcessMixin, JvmVersionMixin
 from ignitetest.services.utils.log_utils import monitor_log
 from ignitetest.services.utils.path import IgnitePathAware
 from ignitetest.utils.enum import constructible
 
 
-class IgniteAwareService(BackgroundThreadService, IgnitePathAware, JvmProcessMixin, metaclass=ABCMeta):
+class IgniteAwareService(BackgroundThreadService, IgnitePathAware, JvmProcessMixin, JvmVersionMixin, metaclass=ABCMeta):
     """
     The base class to build services aware of Ignite.
     """
@@ -97,16 +97,17 @@ class IgniteAwareService(BackgroundThreadService, IgnitePathAware, JvmProcessMix
         self.start_async(**kwargs)
         self.await_started()
 
-    def await_started(self):
+    def await_started(self, nodes=None):
         """
         Awaits start finished.
         """
-        if self.config.service_type in (IgniteServiceType.NONE, IgniteServiceType.THIN_CLIENT):
+        if self.config.service_type in (IgniteServiceType.NONE, IgniteServiceType.THIN_CLIENT,
+                                        IgniteServiceType.THIN_JDBC):
             return
 
         self.logger.info("Waiting for IgniteAware(s) to start ...")
 
-        self.await_event("Topology snapshot", self.startup_timeout_sec, from_the_beginning=True)
+        self.await_event("Topology snapshot", self.startup_timeout_sec, nodes=nodes, from_the_beginning=True)
 
     def start_node(self, node, **kwargs):
         self.init_shared(node)
@@ -254,17 +255,22 @@ class IgniteAwareService(BackgroundThreadService, IgnitePathAware, JvmProcessMix
                                err_msg="Event [%s] was not triggered on '%s' in %d seconds" % (evt_message, node.name,
                                                                                                timeout_sec))
 
-    def await_event(self, evt_message, timeout_sec, from_the_beginning=False, backoff_sec=.1, log_file=None):
+    def await_event(self, evt_message, timeout_sec, nodes=None, from_the_beginning=False, backoff_sec=.1,
+                    log_file=None):
         """
         Await for specific event messages on all nodes.
         :param evt_message: Event message.
         :param timeout_sec: Number of seconds to check the condition for before failing.
+        :param nodes: Nodes to await event or None, for all nodes.
         :param from_the_beginning: If True, search for message from the beggining of log file.
         :param backoff_sec: Number of seconds to back off between each failure to meet the condition
                 before checking again.
         :param log_file: Explicit log file.
         """
-        for node in self.nodes:
+        if nodes is None:
+            nodes = self.nodes
+
+        for node in nodes:
             self.await_event_on_node(evt_message, node, timeout_sec, from_the_beginning=from_the_beginning,
                                      backoff_sec=backoff_sec, log_file=log_file)
 
@@ -580,6 +586,14 @@ class IgniteAwareService(BackgroundThreadService, IgnitePathAware, JvmProcessMix
         :return List of alives nodes.
         """
         return [node for node in self.nodes if self.alive(node)]
+
+    @staticmethod
+    def get_file_size(node, file):
+        out = IgniteAwareService.exec_command(node, f'du -s --block-size=1 {file}')
+
+        data = out.split("\t")
+
+        return int(data[0])
 
 
 def node_failed_event_pattern(failed_node_id=None):

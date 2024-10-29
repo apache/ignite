@@ -25,14 +25,12 @@ import org.apache.ignite.internal.management.performancestatistics.PerformanceSt
 import org.apache.ignite.internal.management.performancestatistics.PerformanceStatisticsCommand.PerformanceStatisticsStatusCommandArg;
 import org.apache.ignite.internal.management.performancestatistics.PerformanceStatisticsCommand.PerformanceStatisticsStopCommandArg;
 import org.apache.ignite.internal.processors.task.GridInternal;
-import org.apache.ignite.internal.processors.task.GridVisorManagementTask;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.internal.visor.VisorJob;
 import org.apache.ignite.internal.visor.VisorOneNodeTask;
 
 /** Represents visor task to manage performance statistics. */
 @GridInternal
-@GridVisorManagementTask
 public class PerformanceStatisticsTask extends VisorOneNodeTask<IgniteDataTransferObject, String> {
     /** Performance statistics enabled status. */
     public static final String STATUS_ENABLED = "Enabled.";

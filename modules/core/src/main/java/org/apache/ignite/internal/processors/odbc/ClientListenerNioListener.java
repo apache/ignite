@@ -171,7 +171,7 @@ public class ClientListenerNioListener extends GridNioServerListenerAdapter<Clie
         }
 
         ClientListenerMessageParser parser = connCtx.parser();
-        ClientListenerRequestHandler handler = connCtx.handler();
+        ClientListenerRequestHandler hnd = connCtx.handler();
 
         ClientListenerRequest req;
 
@@ -180,7 +180,7 @@ public class ClientListenerNioListener extends GridNioServerListenerAdapter<Clie
         }
         catch (Exception e) {
             try {
-                handler.unregisterRequest(parser.decodeRequestId(msg));
+                hnd.unregisterRequest(parser.decodeRequestId(msg));
             }
             catch (Exception e1) {
                 U.error(log, "Failed to unregister request.", e1);
@@ -196,7 +196,7 @@ public class ClientListenerNioListener extends GridNioServerListenerAdapter<Clie
         assert req != null;
 
         try {
-            long startTime = 0;
+            long startTime;
 
             if (log.isTraceEnabled()) {
                 startTime = System.nanoTime();
@@ -204,42 +204,77 @@ public class ClientListenerNioListener extends GridNioServerListenerAdapter<Clie
                 log.trace("Client request received [reqId=" + req.requestId() + ", addr=" +
                     ses.remoteAddress() + ", req=" + req + ']');
             }
+            else
+                startTime = 0;
 
             ClientListenerResponse resp;
 
-            try (OperationSecurityContext s = ctx.security().withContext(connCtx.securityContext())) {
-                resp = handler.handle(req);
+            try (OperationSecurityContext ignored = ctx.security().withContext(connCtx.securityContext())) {
+                resp = hnd.handle(req);
             }
 
             if (resp != null) {
-                if (log.isTraceEnabled()) {
-                    long dur = (System.nanoTime() - startTime) / 1000;
-
-                    log.trace("Client request processed [reqId=" + req.requestId() + ", dur(mcs)=" + dur +
-                        ", resp=" + resp.status() + ']');
+                if (resp instanceof ClientListenerAsyncResponse) {
+                    ((ClientListenerAsyncResponse)resp).future().listen(fut -> {
+                        try {
+                            handleResponse(req, fut.get(), startTime, ses, parser);
+                        }
+                        catch (Throwable e) {
+                            handleError(req, e, ses, parser, hnd);
+                        }
+                    });
                 }
-
-                GridNioFuture<?> fut = ses.send(parser.encode(resp));
-
-                fut.listen(() -> {
-                    if (fut.error() == null)
-                        resp.onSent();
-                });
+                else
+                    handleResponse(req, resp, startTime, ses, parser);
             }
         }
         catch (Throwable e) {
-            handler.unregisterRequest(req.requestId());
-
-            if (e instanceof Error)
-                U.error(log, "Failed to process client request [req=" + req + ", msg=" + e.getMessage() + "]", e);
-            else
-                U.warn(log, "Failed to process client request [req=" + req + ", msg=" + e.getMessage() + "]", e);
-
-            ses.send(parser.encode(handler.handleException(e, req)));
-
-            if (e instanceof Error)
-                throw (Error)e;
+            handleError(req, e, ses, parser, hnd);
         }
+    }
+
+    /** */
+    private void handleResponse(
+        ClientListenerRequest req,
+        ClientListenerResponse resp,
+        long startTime,
+        GridNioSession ses,
+        ClientListenerMessageParser parser
+    ) {
+        if (log.isTraceEnabled()) {
+            long dur = (System.nanoTime() - startTime) / 1000;
+
+            log.trace("Client request processed [reqId=" + req.requestId() + ", dur(mcs)=" + dur +
+                ", resp=" + resp.status() + ']');
+        }
+
+        GridNioFuture<?> fut = ses.send(parser.encode(resp));
+
+        fut.listen(() -> {
+            if (fut.error() == null)
+                resp.onSent();
+        });
+    }
+
+    /** */
+    private void handleError(
+        ClientListenerRequest req,
+        Throwable e,
+        GridNioSession ses,
+        ClientListenerMessageParser parser,
+        ClientListenerRequestHandler hnd
+    ) {
+        hnd.unregisterRequest(req.requestId());
+
+        if (e instanceof Error)
+            U.error(log, "Failed to process client request [req=" + req + ", msg=" + e.getMessage() + "]", e);
+        else
+            U.warn(log, "Failed to process client request [req=" + req + ", msg=" + e.getMessage() + "]", e);
+
+        ses.send(parser.encode(hnd.handleException(e, req)));
+
+        if (e instanceof Error)
+            throw (Error)e;
     }
 
     /** {@inheritDoc} */

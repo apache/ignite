@@ -184,10 +184,10 @@ public class SortAggregateNode<Row> extends AggregateNode<Row> {
         final Object[] grpKeys = new Object[grpSet.cardinality()];
         List<Integer> fldIdxs = grpSet.asList();
 
-        final RowHandler<Row> rowHandler = rowFactory.handler();
+        final RowHandler<Row> rowHnd = rowFactory.handler();
 
         for (int i = 0; i < grpKeys.length; ++i)
-            grpKeys[i] = rowHandler.get(fldIdxs.get(i), r);
+            grpKeys[i] = rowHnd.get(fldIdxs.get(i), r);
 
         Group grp = new Group(grpKeys);
 
@@ -249,10 +249,10 @@ public class SortAggregateNode<Row> extends AggregateNode<Row> {
 
         /** */
         private void addOnReducer(Row row) {
-            RowHandler<Row> handler = context().rowHandler();
+            RowHandler<Row> hnd = context().rowHandler();
 
             List<Accumulator> accums = hasAccumulators() ?
-                (List<Accumulator>)handler.get(handler.columnCount(row) - 1, row)
+                (List<Accumulator>)hnd.get(hnd.columnCount(row) - 1, row)
                 : Collections.emptyList();
 
             for (int i = 0; i < accums.size(); i++) {

@@ -39,13 +39,13 @@ import org.jetbrains.annotations.Nullable;
  * {@link IgniteConfiguration#getUserAttributes()} method to initialize your custom
  * node attributes at startup. Here is an example of how to assign an attribute to a node at startup:
  * <pre name="code" class="xml">
- * &lt;bean class="org.apache.ignite.configuration.IgniteConfiguration">
+ * &lt;bean class="org.apache.ignite.configuration.IgniteConfiguration"&gt;
  *     ...
- *     &lt;property name="userAttributes">
- *         &lt;map>
- *             &lt;entry key="worker" value="true"/>
- *         &lt;/map>
- *     &lt;/property>
+ *     &lt;property name="userAttributes"&gt;
+ *         &lt;map&gt;
+ *             &lt;entry key="worker" value="true"/&gt;
+ *         &lt;/map&gt;
+ *     &lt;/property&gt;
  *     ...
  * &lt;/bean&gt;
  * </pre>

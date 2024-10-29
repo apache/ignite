@@ -421,12 +421,12 @@ public class GridH2Table extends TableBase {
      * @return Table statistics or {@code null} if there is no statistics available.
      */
     public ObjectStatistics tableStatistics() {
-        GridCacheContext cacheContext = cacheInfo.cacheContext();
+        GridCacheContext cacheCtx = cacheInfo.cacheContext();
 
-        if (cacheContext == null)
+        if (cacheCtx == null)
             return null;
 
-        return cacheContext.kernalContext().query().statsManager()
+        return cacheCtx.kernalContext().query().statsManager()
             .getLocalStatistics(new StatisticsKey(identifier.schema(), identifier.table()));
     }
 
@@ -1043,16 +1043,16 @@ public class GridH2Table extends TableBase {
 
             // After restart of node with persistence and before affinity exchange - PRIMARY partitions are empty.
             // Try to predict local row count take into account ideal distribution.
-            long localOwnerRowCnt = cacheSize(CachePeekMode.PRIMARY, CachePeekMode.BACKUP) / (backups + 1);
+            long locOwnerRowCnt = cacheSize(CachePeekMode.PRIMARY, CachePeekMode.BACKUP) / (backups + 1);
 
             int owners = cacheContext().discovery().cacheNodes(cacheContext().name(), NONE).size();
 
-            long totalRowCnt = owners * localOwnerRowCnt;
+            long totalRowCnt = owners * locOwnerRowCnt;
 
             size.reset();
             size.add(totalRowCnt);
 
-            tblStats = new TableStatistics(totalRowCnt, localOwnerRowCnt);
+            tblStats = new TableStatistics(totalRowCnt, locOwnerRowCnt);
         }
     }
 
@@ -1077,7 +1077,7 @@ public class GridH2Table extends TableBase {
      */
     private long cacheSize(CachePeekMode... modes) {
         try {
-            return cacheInfo.cacheContext().cache().localSize(modes);
+            return cacheInfo.cacheContext().cache().localSizeLong(modes);
         }
         catch (IgniteCheckedException e) {
             throw new IgniteException(e);

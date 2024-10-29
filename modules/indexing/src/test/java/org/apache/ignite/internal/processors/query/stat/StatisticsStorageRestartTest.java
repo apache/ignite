@@ -125,8 +125,8 @@ public class StatisticsStorageRestartTest extends StatisticsAbstractTest {
         metastorage.write(statKeyInvalid, new byte[2]);
 
         String outerStatKey = "some.key.1";
-        byte[] outerStatValue = new byte[] {1, 2};
-        metastorage.write(outerStatKey, outerStatValue);
+        byte[] outerStatVal = new byte[] {1, 2};
+        metastorage.write(outerStatKey, outerStatVal);
 
         IgniteStatisticsPersistenceStoreImpl statStore2 = new IgniteStatisticsPersistenceStoreImpl(subscriptionProcessor,
             new IgniteCacheDatabaseSharedManager(new GridTestKernalContext(log)){}, cls -> log);
@@ -136,6 +136,6 @@ public class StatisticsStorageRestartTest extends StatisticsAbstractTest {
         assertNull(metastorage.read(statKeyInvalid));
         assertTrue(statStore.getLocalPartitionsStatistics(k1).isEmpty());
         assertFalse(statStore.getLocalPartitionsStatistics(k2).isEmpty());
-        assertTrue(Arrays.equals(outerStatValue, (byte[])metastorage.read(outerStatKey)));
+        assertTrue(Arrays.equals(outerStatVal, (byte[])metastorage.read(outerStatKey)));
     }
 }

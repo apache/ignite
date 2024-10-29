@@ -101,12 +101,6 @@ public class IncrementalSnapshotWarnAtomicCachesTest extends GridCommonAbstractT
     }
 
     /** */
-    @Test
-    public void testMixedGroupWarnOnlyAtomic() throws Exception {
-        checkCachesSnapshotCreationAndRestore(prepareCacheConfs(null, null, "grp0", "grp0"));
-    }
-
-    /** */
     private CacheConfiguration<Integer, Integer>[] prepareCacheConfs(String grp0, String grp1, String grp2, String grp3) {
         return new CacheConfiguration[] {
             cacheConfiguration(CacheAtomicityMode.ATOMIC, 0, "cache0", grp0),

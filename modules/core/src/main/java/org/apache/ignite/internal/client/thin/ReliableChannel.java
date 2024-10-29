@@ -20,6 +20,7 @@ package org.apache.ignite.internal.client.thin;
 import java.net.InetSocketAddress;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
@@ -74,7 +75,7 @@ final class ReliableChannel implements AutoCloseable {
     private volatile int curChIdx = -1;
 
     /** Partition awareness enabled. */
-    private final boolean partitionAwarenessEnabled;
+    final boolean partitionAwarenessEnabled;
 
     /** Cache partition awareness context. */
     private final ClientCacheAffinityContext affinityCtx;
@@ -138,7 +139,12 @@ final class ReliableChannel implements AutoCloseable {
 
         partitionAwarenessEnabled = clientCfg.isPartitionAwarenessEnabled();
 
-        affinityCtx = new ClientCacheAffinityContext(binary, clientCfg.getPartitionAwarenessMapperFactory());
+        affinityCtx = new ClientCacheAffinityContext(
+            binary,
+            clientCfg.getPartitionAwarenessMapperFactory(),
+            this::isConnectionEstablished
+        );
+
         discoveryCtx = new ClientDiscoveryContext(clientCfg);
 
         connMgr = new GridNioClientConnectionMultiplexer(clientCfg);
@@ -182,7 +188,32 @@ final class ReliableChannel implements AutoCloseable {
         Consumer<PayloadOutputChannel> payloadWriter,
         Function<PayloadInputChannel, T> payloadReader
     ) throws ClientException, ClientError {
-        return applyOnDefaultChannel(channel -> channel.service(op, payloadWriter, payloadReader), op);
+        return service(op, payloadWriter, payloadReader, Collections.emptyList());
+    }
+
+    /**
+     * Send request to one of the passed nodes and handle response.
+     *
+     * @throws ClientException Thrown by {@code payloadWriter} or {@code payloadReader}.
+     * @throws ClientAuthenticationException When user name or password is invalid.
+     * @throws ClientAuthorizationException When user has no permission to perform operation.
+     * @throws ClientProtocolError When failed to handshake with server.
+     * @throws ClientServerError When failed to process request on server.
+     */
+    public <T> T service(
+        ClientOperation op,
+        Consumer<PayloadOutputChannel> payloadWriter,
+        Function<PayloadInputChannel, T> payloadReader,
+        List<UUID> targetNodes
+    ) throws ClientException, ClientError {
+        if (F.isEmpty(targetNodes))
+            return applyOnDefaultChannel(channel -> channel.service(op, payloadWriter, payloadReader), op);
+
+        return applyOnNodeChannelWithFallback(
+            targetNodes.get(ThreadLocalRandom.current().nextInt(targetNodes.size())),
+            channel -> channel.service(op, payloadWriter, payloadReader),
+            op
+        );
     }
 
     /**
@@ -600,6 +631,19 @@ final class ReliableChannel implements AutoCloseable {
             return;
         }
 
+        // Add connected channels to the list to avoid unnecessary reconnects, unless address finder is used.
+        if (holders != null && clientCfg.getAddressesFinder() == null) {
+            // Do not modify the original list.
+            newAddrs = new ArrayList<>(newAddrs);
+
+            for (ClientChannelHolder h : holders) {
+                ClientChannel ch = h.ch;
+
+                if (ch != null && !ch.closed())
+                    newAddrs.add(h.getAddresses());
+            }
+        }
+
         Map<InetSocketAddress, ClientChannelHolder> curAddrs = new HashMap<>();
 
         Set<InetSocketAddress> newAddrsSet = newAddrs.stream().flatMap(Collection::stream).collect(Collectors.toSet());
@@ -713,13 +757,16 @@ final class ReliableChannel implements AutoCloseable {
         initChannelHolders();
 
         if (failures == null || failures.size() < attemptsLimit) {
+            // Establish default channel connection.
+            applyOnDefaultChannel(channel -> null, null, failures);
+
             if (channelsCnt.get() == 0) {
                 // Establish default channel connection and retrive nodes endpoints if applicable.
-                if (applyOnDefaultChannel(discoveryCtx::refresh, null, failures))
+                boolean discoveryUpdated = applyOnDefaultChannel(discoveryCtx::refresh, null, failures);
+
+                if (discoveryUpdated)
                     initChannelHolders();
             }
-            else // Apply no-op function. Establish default channel connection.
-                applyOnDefaultChannel(channel -> null, null, failures);
         }
 
         if (partitionAwarenessEnabled)
@@ -932,6 +979,18 @@ final class ReliableChannel implements AutoCloseable {
         return affinityCtx;
     }
 
+    /** */
+    private boolean isConnectionEstablished(UUID node) {
+        ClientChannelHolder chHolder = nodeChannels.get(node);
+
+        if (chHolder == null || chHolder.isClosed())
+            return false;
+
+        ClientChannel ch = chHolder.ch;
+
+        return ch != null && !ch.closed();
+    }
+
     /**
      * Channels holder.
      */
@@ -943,7 +1002,7 @@ final class ReliableChannel implements AutoCloseable {
         /** Channel. */
         private volatile ClientChannel ch;
 
-        /** ID of the last server node that {@link ch} is or was connected to. */
+        /** ID of the last server node that {@link #ch} is or was connected to. */
         private volatile UUID serverNodeId;
 
         /** Address that holder is bind to (chCfg.addr) is not in use now. So close the holder. */
@@ -996,18 +1055,19 @@ final class ReliableChannel implements AutoCloseable {
         private ClientChannel getOrCreateChannel(boolean ignoreThrottling)
             throws ClientConnectionException, ClientAuthenticationException, ClientProtocolError {
             if (close)
-                throw new ClientConnectionException("Channel is closed");
+                throw new ClientConnectionException("Channel is closed [addresses=" + getAddresses() + ']');
 
             if (ch == null) {
                 synchronized (this) {
                     if (close)
-                        throw new ClientConnectionException("Channel is closed");
+                        throw new ClientConnectionException("Channel is closed [addresses=" + getAddresses() + ']');
 
                     if (ch != null)
                         return ch;
 
                     if (!ignoreThrottling && applyReconnectionThrottling())
-                        throw new ClientConnectionException("Reconnect is not allowed due to applied throttling");
+                        throw new ClientConnectionException("Reconnect is not allowed due to applied throttling" +
+                            " [addresses=" + getAddresses() + ']');
 
                     ClientChannel channel = chFactory.apply(chCfg, connMgr);
 

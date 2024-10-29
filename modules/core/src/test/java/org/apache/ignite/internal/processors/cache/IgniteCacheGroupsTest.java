@@ -98,17 +98,20 @@ import org.apache.ignite.lang.IgniteFuture;
 import org.apache.ignite.lang.IgniteInClosure;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.GridTestUtils.SF;
+import org.apache.ignite.testframework.junits.WithSystemProperty;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.transactions.Transaction;
 import org.apache.ignite.transactions.TransactionRollbackException;
 import org.jetbrains.annotations.Nullable;
 import org.junit.Test;
 
+import static org.apache.ignite.IgniteSystemProperties.IGNITE_ALLOW_MIXED_CACHE_GROUPS;
 import static org.apache.ignite.cache.CacheAtomicityMode.ATOMIC;
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
 import static org.apache.ignite.cache.CacheMode.REPLICATED;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
+import static org.apache.ignite.testframework.GridTestUtils.assertThrows;
 import static org.apache.ignite.transactions.TransactionConcurrency.OPTIMISTIC;
 import static org.apache.ignite.transactions.TransactionConcurrency.PESSIMISTIC;
 import static org.apache.ignite.transactions.TransactionIsolation.REPEATABLE_READ;
@@ -222,7 +225,7 @@ public class IgniteCacheGroupsTest extends GridCommonAbstractTest {
 
         ignite.createCache(cacheConfiguration(GROUP1, CACHE1, PARTITIONED, ATOMIC, 2, false));
 
-        GridTestUtils.assertThrows(null, new GridPlainCallable<Void>() {
+        assertThrows(null, new GridPlainCallable<Void>() {
             @Override public Void call() throws Exception {
                 ignite(1).createCache(cacheConfiguration(GROUP2, CACHE1, PARTITIONED, ATOMIC, 2, false));
                 return null;
@@ -1204,15 +1207,15 @@ public class IgniteCacheGroupsTest extends GridCommonAbstractTest {
 
     /**
      * @param cnt Caches number.
-     * @param grp Cache groups.
      * @param baseName Caches name prefix.
      * @return Cache configurations.
      */
-    private CacheConfiguration[] cacheConfigurations(int cnt, String grp, String baseName) {
+    private CacheConfiguration[] cacheConfigurations(int cnt, String baseName) {
         CacheConfiguration[] ccfgs = new CacheConfiguration[cnt];
 
         for (int i = 0; i < cnt; i++) {
-            ccfgs[i] = cacheConfiguration(grp,
+            ccfgs[i] = cacheConfiguration(
+                i % 2 == 0 ? GROUP1 : GROUP2,
                 baseName + i, PARTITIONED,
                 i % 2 == 0 ? TRANSACTIONAL : ATOMIC,
                 2,
@@ -1232,7 +1235,7 @@ public class IgniteCacheGroupsTest extends GridCommonAbstractTest {
         final int NODES = 4;
 
         for (int i = 0; i < NODES; i++) {
-            ccfgs = cacheConfigurations(CACHES, GROUP1, "testCache1-");
+            ccfgs = cacheConfigurations(CACHES, "testCache1-");
 
             boolean client = i == NODES - 1;
 
@@ -1245,7 +1248,7 @@ public class IgniteCacheGroupsTest extends GridCommonAbstractTest {
 
         Ignite client = ignite(NODES - 1);
 
-        client.createCaches(Arrays.asList(cacheConfigurations(CACHES, GROUP2, "testCache2-")));
+        client.createCaches(Arrays.asList(cacheConfigurations(CACHES, "testCache2-")));
 
         checkCacheDiscoveryDataConsistent();
 
@@ -2671,8 +2674,8 @@ public class IgniteCacheGroupsTest extends GridCommonAbstractTest {
 
         srv0.createCache(cacheConfiguration(GROUP1, "a0", PARTITIONED, ATOMIC, 1, false));
         srv0.createCache(cacheConfiguration(GROUP1, "a1", PARTITIONED, ATOMIC, 1, false));
-        srv0.createCache(cacheConfiguration(GROUP1, "t0", PARTITIONED, TRANSACTIONAL, 1, false));
-        srv0.createCache(cacheConfiguration(GROUP1, "t1", PARTITIONED, TRANSACTIONAL, 1, false));
+        srv0.createCache(cacheConfiguration(GROUP2, "t0", PARTITIONED, TRANSACTIONAL, 1, false));
+        srv0.createCache(cacheConfiguration(GROUP2, "t1", PARTITIONED, TRANSACTIONAL, 1, false));
 
         F.view(G.allGrids(), ignite -> ignite.cluster().localNode().isClient())
             .forEach(ignite -> awaitCacheOnClient(ignite, "t1"));
@@ -2788,8 +2791,6 @@ public class IgniteCacheGroupsTest extends GridCommonAbstractTest {
 
             srv0.createCache(
                 cacheConfiguration(GROUP2, GROUP2 + "-" + i, PARTITIONED, TRANSACTIONAL, grp2Backups, i % 2 == 0));
-
-            // TODO IGNITE-7164: add Mvcc cache to test.
         }
 
         F.view(G.allGrids(), ignite -> ignite.cluster().localNode().isClient())
@@ -2853,7 +2854,9 @@ public class IgniteCacheGroupsTest extends GridCommonAbstractTest {
                         String grp;
                         int backups;
 
-                        if (rnd.nextBoolean()) {
+                        boolean option = rnd.nextBoolean();
+
+                        if (option) {
                             grp = GROUP1;
                             backups = grp1Backups;
                         }
@@ -2868,7 +2871,7 @@ public class IgniteCacheGroupsTest extends GridCommonAbstractTest {
 
                         IgniteCache cache = node.createCache(cacheConfiguration(grp, "tmpCache-" + cntr++,
                             PARTITIONED,
-                            rnd.nextBoolean() ? ATOMIC : TRANSACTIONAL,
+                            option ? ATOMIC : TRANSACTIONAL,
                             backups,
                             rnd.nextBoolean()));
 
@@ -2959,7 +2962,7 @@ public class IgniteCacheGroupsTest extends GridCommonAbstractTest {
     public void testCacheIdConflict() throws Exception {
         ccfgs = new CacheConfiguration[]{new CacheConfiguration("AaAaAa"), new CacheConfiguration("AaAaBB")};
 
-        GridTestUtils.assertThrows(log, new Callable<Void>() {
+        assertThrows(log, new Callable<Void>() {
             @Override public Void call() throws Exception {
                 startGrid(0);
 
@@ -2973,7 +2976,7 @@ public class IgniteCacheGroupsTest extends GridCommonAbstractTest {
 
         ccfgs = new CacheConfiguration[]{new CacheConfiguration("AaAaBB")};
 
-        GridTestUtils.assertThrows(log, new Callable<Void>() {
+        assertThrows(log, new Callable<Void>() {
             @Override public Void call() throws Exception {
                 startGrid(1);
 
@@ -2985,7 +2988,7 @@ public class IgniteCacheGroupsTest extends GridCommonAbstractTest {
 
         final Ignite ignite1 = startGrid(1);
 
-        GridTestUtils.assertThrows(log, new Callable<Void>() {
+        assertThrows(log, new Callable<Void>() {
             @Override public Void call() throws Exception {
                 ignite1.createCache(new CacheConfiguration("AaAaBB"));
 
@@ -3004,7 +3007,7 @@ public class IgniteCacheGroupsTest extends GridCommonAbstractTest {
         ccfgs = new CacheConfiguration[]{new CacheConfiguration(CACHE1).setGroupName("AaAaAa"),
             new CacheConfiguration(CACHE2).setGroupName("AaAaBB")};
 
-        GridTestUtils.assertThrows(log, new Callable<Void>() {
+        assertThrows(log, new Callable<Void>() {
             @Override public Void call() throws Exception {
                 startGrid(0);
 
@@ -3018,7 +3021,7 @@ public class IgniteCacheGroupsTest extends GridCommonAbstractTest {
 
         ccfgs = new CacheConfiguration[]{new CacheConfiguration(CACHE2).setGroupName("AaAaBB")};
 
-        GridTestUtils.assertThrows(log, new Callable<Void>() {
+        assertThrows(log, new Callable<Void>() {
             @Override public Void call() throws Exception {
                 startGrid(1);
 
@@ -3030,7 +3033,7 @@ public class IgniteCacheGroupsTest extends GridCommonAbstractTest {
 
         final Ignite ignite1 = startGrid(1);
 
-        GridTestUtils.assertThrows(log, new Callable<Void>() {
+        assertThrows(log, new Callable<Void>() {
             @Override public Void call() throws Exception {
                 ignite1.createCache(new CacheConfiguration(CACHE2).setGroupName("AaAaBB"));
 
@@ -3049,7 +3052,7 @@ public class IgniteCacheGroupsTest extends GridCommonAbstractTest {
         ccfgs = new CacheConfiguration[]{new CacheConfiguration("AaAaAa"),
             new CacheConfiguration(CACHE2).setGroupName("AaAaBB")};
 
-        GridTestUtils.assertThrows(log, new Callable<Void>() {
+        assertThrows(log, new Callable<Void>() {
             @Override public Void call() throws Exception {
                 startGrid(0);
 
@@ -3063,7 +3066,7 @@ public class IgniteCacheGroupsTest extends GridCommonAbstractTest {
 
         ccfgs = new CacheConfiguration[]{new CacheConfiguration(CACHE2).setGroupName("AaAaBB")};
 
-        GridTestUtils.assertThrows(log, new Callable<Void>() {
+        assertThrows(log, new Callable<Void>() {
             @Override public Void call() throws Exception {
                 startGrid(1);
 
@@ -3075,7 +3078,7 @@ public class IgniteCacheGroupsTest extends GridCommonAbstractTest {
 
         final Ignite ignite1 = startGrid(1);
 
-        GridTestUtils.assertThrows(log, new Callable<Void>() {
+        assertThrows(log, new Callable<Void>() {
             @Override public Void call() throws Exception {
                 ignite1.createCache(new CacheConfiguration(CACHE2).setGroupName("AaAaBB"));
 
@@ -3094,7 +3097,7 @@ public class IgniteCacheGroupsTest extends GridCommonAbstractTest {
         ccfgs = new CacheConfiguration[]{new CacheConfiguration(CACHE2).setGroupName("AaAaBB"),
             new CacheConfiguration("AaAaAa")};
 
-        GridTestUtils.assertThrows(log, new Callable<Void>() {
+        assertThrows(log, new Callable<Void>() {
             @Override public Void call() throws Exception {
                 startGrid(0);
 
@@ -3108,7 +3111,7 @@ public class IgniteCacheGroupsTest extends GridCommonAbstractTest {
 
         ccfgs = new CacheConfiguration[]{new CacheConfiguration("AaAaAa")};
 
-        GridTestUtils.assertThrows(log, new Callable<Void>() {
+        assertThrows(log, new Callable<Void>() {
             @Override public Void call() throws Exception {
                 startGrid(1);
 
@@ -3120,7 +3123,7 @@ public class IgniteCacheGroupsTest extends GridCommonAbstractTest {
 
         final Ignite ignite1 = startGrid(1);
 
-        GridTestUtils.assertThrows(log, new Callable<Void>() {
+        assertThrows(log, new Callable<Void>() {
             @Override public Void call() throws Exception {
                 ignite1.createCache(new CacheConfiguration("AaAaAa"));
 
@@ -3138,7 +3141,7 @@ public class IgniteCacheGroupsTest extends GridCommonAbstractTest {
     public void testCacheGroupNameConflict1() throws Exception {
         ccfgs = new CacheConfiguration[]{new CacheConfiguration("cache1"), new CacheConfiguration("cache2").setGroupName("cache1")};
 
-        GridTestUtils.assertThrows(log, new Callable<Void>() {
+        assertThrows(log, new Callable<Void>() {
             @Override public Void call() throws Exception {
                 startGrid(0);
 
@@ -3152,7 +3155,7 @@ public class IgniteCacheGroupsTest extends GridCommonAbstractTest {
 
         ccfgs = new CacheConfiguration[]{new CacheConfiguration("cache2").setGroupName("cache1")};
 
-        GridTestUtils.assertThrows(log, new Callable<Void>() {
+        assertThrows(log, new Callable<Void>() {
             @Override public Void call() throws Exception {
                 startGrid(1);
 
@@ -3164,7 +3167,7 @@ public class IgniteCacheGroupsTest extends GridCommonAbstractTest {
 
         final Ignite ignite1 = startGrid(1);
 
-        GridTestUtils.assertThrows(log, new Callable<Void>() {
+        assertThrows(log, new Callable<Void>() {
             @Override public Void call() throws Exception {
                 ignite1.createCache(new CacheConfiguration("cache2").setGroupName("cache1"));
 
@@ -3182,7 +3185,7 @@ public class IgniteCacheGroupsTest extends GridCommonAbstractTest {
     public void testCacheGroupNameConflict2() throws Exception {
         ccfgs = new CacheConfiguration[]{new CacheConfiguration("cache2").setGroupName("cache1"), new CacheConfiguration("cache1")};
 
-        GridTestUtils.assertThrows(log, new Callable<Void>() {
+        assertThrows(log, new Callable<Void>() {
             @Override public Void call() throws Exception {
                 startGrid(0);
 
@@ -3196,7 +3199,7 @@ public class IgniteCacheGroupsTest extends GridCommonAbstractTest {
 
         ccfgs = new CacheConfiguration[]{new CacheConfiguration("cache1")};
 
-        GridTestUtils.assertThrows(log, new Callable<Void>() {
+        assertThrows(log, new Callable<Void>() {
             @Override public Void call() throws Exception {
                 startGrid(1);
 
@@ -3208,7 +3211,7 @@ public class IgniteCacheGroupsTest extends GridCommonAbstractTest {
 
         final Ignite ignite1 = startGrid(1);
 
-        GridTestUtils.assertThrows(log, new Callable<Void>() {
+        assertThrows(log, new Callable<Void>() {
             @Override public Void call() throws Exception {
                 ignite1.createCache(new CacheConfiguration("cache1"));
 
@@ -3261,12 +3264,10 @@ public class IgniteCacheGroupsTest extends GridCommonAbstractTest {
 
         ccfgs[0] = cacheConfiguration(GROUP1, "c1", PARTITIONED, ATOMIC, 2, false).setInterceptor(new Interceptor1());
         ccfgs[1] = cacheConfiguration(GROUP1, "c2", PARTITIONED, ATOMIC, 2, false).setInterceptor(new Interceptor2());
-        ccfgs[2] = cacheConfiguration(GROUP1, "c3", PARTITIONED, TRANSACTIONAL, 2, false).setInterceptor(new Interceptor1());
-        ccfgs[3] = cacheConfiguration(GROUP1, "c4", PARTITIONED, TRANSACTIONAL, 2, false).setInterceptor(new Interceptor2());
+        ccfgs[2] = cacheConfiguration(GROUP2, "c3", PARTITIONED, TRANSACTIONAL, 2, false).setInterceptor(new Interceptor1());
+        ccfgs[3] = cacheConfiguration(GROUP2, "c4", PARTITIONED, TRANSACTIONAL, 2, false).setInterceptor(new Interceptor2());
         ccfgs[4] = cacheConfiguration(GROUP1, "c5", PARTITIONED, ATOMIC, 2, false);
-        ccfgs[5] = cacheConfiguration(GROUP1, "c6", PARTITIONED, TRANSACTIONAL, 2, false);
-
-        //TODO IGNITE-9323: Check Mvcc mode.
+        ccfgs[5] = cacheConfiguration(GROUP2, "c6", PARTITIONED, TRANSACTIONAL, 2, false);
 
         return ccfgs;
     }
@@ -3323,16 +3324,14 @@ public class IgniteCacheGroupsTest extends GridCommonAbstractTest {
         ccfgs[1] = cacheConfiguration(GROUP1, "c2", PARTITIONED, ATOMIC, 2, false).
             setCacheStoreFactory(new StoreFactory2()).setReadThrough(true).setWriteThrough(true);
 
-        ccfgs[2] = cacheConfiguration(GROUP1, "c3", PARTITIONED, TRANSACTIONAL, 2, false).
+        ccfgs[2] = cacheConfiguration(GROUP2, "c3", PARTITIONED, TRANSACTIONAL, 2, false).
             setCacheStoreFactory(new StoreFactory1()).setReadThrough(true).setWriteThrough(true);
 
-        ccfgs[3] = cacheConfiguration(GROUP1, "c4", PARTITIONED, TRANSACTIONAL, 2, false).
+        ccfgs[3] = cacheConfiguration(GROUP2, "c4", PARTITIONED, TRANSACTIONAL, 2, false).
             setCacheStoreFactory(new StoreFactory2()).setReadThrough(true).setWriteThrough(true);
 
         ccfgs[4] = cacheConfiguration(GROUP1, "c5", PARTITIONED, ATOMIC, 2, false);
-        ccfgs[5] = cacheConfiguration(GROUP1, "c6", PARTITIONED, TRANSACTIONAL, 2, false);
-
-        //TODO IGNITE-8582: Check Mvcc mode.
+        ccfgs[5] = cacheConfiguration(GROUP2, "c6", PARTITIONED, TRANSACTIONAL, 2, false);
 
         return ccfgs;
     }
@@ -3404,10 +3403,10 @@ public class IgniteCacheGroupsTest extends GridCommonAbstractTest {
 
         ccfgs[0] = cacheConfiguration(GROUP1, "c1", PARTITIONED, ATOMIC, 2, false).setAffinityMapper(new Mapper1());
         ccfgs[1] = cacheConfiguration(GROUP1, "c2", PARTITIONED, ATOMIC, 2, false).setAffinityMapper(new Mapper2());
-        ccfgs[2] = cacheConfiguration(GROUP1, "c3", PARTITIONED, TRANSACTIONAL, 2, false).setAffinityMapper(new Mapper1());
-        ccfgs[3] = cacheConfiguration(GROUP1, "c4", PARTITIONED, TRANSACTIONAL, 2, false).setAffinityMapper(new Mapper2());
+        ccfgs[2] = cacheConfiguration(GROUP2, "c3", PARTITIONED, TRANSACTIONAL, 2, false).setAffinityMapper(new Mapper1());
+        ccfgs[3] = cacheConfiguration(GROUP2, "c4", PARTITIONED, TRANSACTIONAL, 2, false).setAffinityMapper(new Mapper2());
         ccfgs[4] = cacheConfiguration(GROUP1, "c5", PARTITIONED, ATOMIC, 2, false);
-        ccfgs[5] = cacheConfiguration(GROUP1, "c6", PARTITIONED, TRANSACTIONAL, 2, false);
+        ccfgs[5] = cacheConfiguration(GROUP2, "c6", PARTITIONED, TRANSACTIONAL, 2, false);
 
         return ccfgs;
     }
@@ -3499,11 +3498,11 @@ public class IgniteCacheGroupsTest extends GridCommonAbstractTest {
         Ignite client = startClientGrid(srvs);
 
         client.createCache(cacheConfiguration(GROUP1, "c1", PARTITIONED, ATOMIC, 1, false));
-        client.createCache(cacheConfiguration(GROUP1, "c2", PARTITIONED, TRANSACTIONAL, 1, false));
+        client.createCache(cacheConfiguration(GROUP2, "c2", PARTITIONED, TRANSACTIONAL, 1, false));
         client.createCache(cacheConfiguration(GROUP1, "c3", PARTITIONED, ATOMIC, 1, false));
 
         client.createCache(cacheConfiguration(GROUP2, "c4", PARTITIONED, TRANSACTIONAL, 1, false));
-        client.createCache(cacheConfiguration(GROUP2, "c5", PARTITIONED, ATOMIC, 1, false));
+        client.createCache(cacheConfiguration(GROUP1, "c5", PARTITIONED, ATOMIC, 1, false));
         client.createCache(cacheConfiguration(GROUP2, "c6", PARTITIONED, TRANSACTIONAL, 1, false));
 
         client.createCache(cacheConfiguration(null, "c7", PARTITIONED, ATOMIC, 1, false));
@@ -3522,6 +3521,41 @@ public class IgniteCacheGroupsTest extends GridCommonAbstractTest {
             srv0.cache(cache).put(1, 1);
 
         waitForEvents(c1, 1);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    @Test
+    public void mixedCacheGroupsForbiddenTest() throws Exception {
+        Ignite ignite = startGrids(2);
+
+        ignite.createCache(cacheConfiguration(GROUP1, "c1", PARTITIONED, ATOMIC, 1, false));
+        ignite.createCache(cacheConfiguration(GROUP1, "c2", PARTITIONED, ATOMIC, 1, false));
+
+        GridTestUtils.assertThrows(
+            null,
+            () -> {
+                // Same cache group, but different atomicity.
+                ignite.createCache(cacheConfiguration(GROUP1, "c3", PARTITIONED, TRANSACTIONAL, 1, false));
+
+                return null;
+            },
+            IgniteCheckedException.class,
+            "Atomicity mode mismatch");
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    @Test
+    @WithSystemProperty(key = IGNITE_ALLOW_MIXED_CACHE_GROUPS, value = "true")
+    public void mixedCacheGroupsAllowedTest() throws Exception {
+        Ignite ignite = startGrids(2);
+
+        ignite.createCache(cacheConfiguration(GROUP1, "c1", PARTITIONED, ATOMIC, 1, false));
+        ignite.createCache(cacheConfiguration(GROUP1, "c2", PARTITIONED, ATOMIC, 1, false));
+        ignite.createCache(cacheConfiguration(GROUP1, "c3", PARTITIONED, TRANSACTIONAL, 1, false));
     }
 
     /**
@@ -3606,20 +3640,25 @@ public class IgniteCacheGroupsTest extends GridCommonAbstractTest {
     public void testDataCleanup() throws Exception {
         Ignite node = startGrid(0);
 
-        IgniteCache cache0 = node.createCache(cacheConfiguration(GROUP1, "c0", PARTITIONED, ATOMIC, 1, false));
+        IgniteCache cache0a = node.createCache(cacheConfiguration(GROUP1, "ca", PARTITIONED, ATOMIC, 1, false));
+        IgniteCache cache0t = node.createCache(cacheConfiguration(GROUP2, "ct", PARTITIONED, TRANSACTIONAL, 1, false));
 
-        for (int i = 0; i < 100; i++)
-            assertNull(cache0.get(i));
+        for (int i = 0; i < 100; i++) {
+            assertNull(cache0a.get(i));
+            assertNull(cache0t.get(i));
+        }
 
-        for (int i = 0; i < 100; i++)
-            cache0.put(i, i);
+        for (int i = 0; i < 100; i++) {
+            cache0a.put(i, i);
+            cache0t.put(i, i);
+        }
 
         List<CacheConfiguration> ccfgs = new ArrayList<>();
 
         ccfgs.add(cacheConfiguration(GROUP1, "c1", PARTITIONED, ATOMIC, 1, false));
         ccfgs.add(cacheConfiguration(GROUP1, "c1", PARTITIONED, ATOMIC, 1, true));
-        ccfgs.add(cacheConfiguration(GROUP1, "c1", PARTITIONED, TRANSACTIONAL, 1, false));
-        ccfgs.add(cacheConfiguration(GROUP1, "c1", PARTITIONED, TRANSACTIONAL, 1, true));
+        ccfgs.add(cacheConfiguration(GROUP2, "c1", PARTITIONED, TRANSACTIONAL, 1, false));
+        ccfgs.add(cacheConfiguration(GROUP2, "c1", PARTITIONED, TRANSACTIONAL, 1, true));
 
         for (CacheConfiguration ccfg : ccfgs) {
             IgniteCache cache = node.createCache(ccfg);
@@ -3643,21 +3682,31 @@ public class IgniteCacheGroupsTest extends GridCommonAbstractTest {
             node.destroyCache(ccfg.getName());
         }
 
-        for (int i = 0; i < 100; i++)
-            assertEquals(i, cache0.get(i));
+        for (int i = 0; i < 100; i++) {
+            assertEquals(i, cache0a.get(i));
+            assertEquals(i, cache0t.get(i));
+        }
 
-        node.destroyCache(cache0.getName());
+        node.destroyCache(cache0a.getName());
+        node.destroyCache(cache0t.getName());
 
-        cache0 = node.createCache(cacheConfiguration(GROUP1, "c0", PARTITIONED, ATOMIC, 1, false));
+        cache0a = node.createCache(cacheConfiguration(GROUP1, "ca", PARTITIONED, ATOMIC, 1, false));
+        cache0t = node.createCache(cacheConfiguration(GROUP2, "ct", PARTITIONED, TRANSACTIONAL, 1, false));
 
-        for (int i = 0; i < 100; i++)
-            assertNull(cache0.get(i));
+        for (int i = 0; i < 100; i++) {
+            assertNull(cache0a.get(i));
+            assertNull(cache0t.get(i));
+        }
 
-        for (int i = 0; i < 100; i++)
-            cache0.put(i, i);
+        for (int i = 0; i < 100; i++) {
+            cache0a.put(i, i);
+            cache0t.put(i, i);
+        }
 
-        for (int i = 0; i < 100; i++)
-            assertEquals(i, cache0.get(i));
+        for (int i = 0; i < 100; i++) {
+            assertEquals(i, cache0a.get(i));
+            assertEquals(i, cache0t.get(i));
+        }
     }
 
     /**
@@ -3679,15 +3728,16 @@ public class IgniteCacheGroupsTest extends GridCommonAbstractTest {
             CacheAtomicityMode atomicityMode = i % 2 == 0 ? ATOMIC : TRANSACTIONAL;
 
             caches.set(i,
-                clientNode.createCache(cacheConfiguration(GROUP1, "c" + i, PARTITIONED, atomicityMode, 0, false)));
+                clientNode.createCache(cacheConfiguration(atomicityMode == ATOMIC ? GROUP1 : GROUP2,
+                    "c" + i, PARTITIONED, atomicityMode, 0, false)));
         }
 
         final AtomicBoolean stop = new AtomicBoolean();
         final AtomicInteger cacheCntr = new AtomicInteger();
 
         try {
-            final int ITERATIONS_COUNT = SF.applyLB(10, 1);
-            for (int i = 0; i < ITERATIONS_COUNT; i++) {
+            final int ITERATIONS_CNT = SF.applyLB(10, 1);
+            for (int i = 0; i < ITERATIONS_CNT; i++) {
                 stop.set(false);
 
                 final AtomicReference<Exception> err = new AtomicReference<>();
@@ -3751,7 +3801,8 @@ public class IgniteCacheGroupsTest extends GridCommonAbstractTest {
                                     String name = "newName-" + cacheCntr.incrementAndGet();
 
                                     cache = clientNode.createCache(
-                                        cacheConfiguration(GROUP1, name, PARTITIONED, atomicityMode, 0, false));
+                                        cacheConfiguration(atomicityMode == ATOMIC ? GROUP1 : GROUP2,
+                                            name, PARTITIONED, atomicityMode, 0, false));
 
                                     caches.set(idx, cache);
                                 }

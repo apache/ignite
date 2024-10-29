@@ -57,7 +57,7 @@ public abstract class AbstractBaselineCommand implements ComputeCommand<Baseline
         BaselineTaskResult res,
         Consumer<String> printer
     ) {
-        printer.accept("Cluster state: " + (res.isActive() ? "active" : "inactive"));
+        printer.accept("Cluster state: " + res.clusterState());
         printer.accept("Current topology version: " + res.getTopologyVersion());
         BaselineAutoAdjustSettings autoAdjustSettings = res.getAutoAdjustSettings();
 

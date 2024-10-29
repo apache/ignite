@@ -31,6 +31,8 @@ import java.util.function.Supplier;
 import org.apache.calcite.avatica.util.ByteString;
 import org.apache.calcite.rel.core.AggregateCall;
 import org.apache.calcite.rel.type.RelDataType;
+import org.apache.calcite.rex.RexLiteral;
+import org.apache.calcite.rex.RexNode;
 import org.apache.ignite.internal.processors.query.calcite.exec.ExecutionContext;
 import org.apache.ignite.internal.processors.query.calcite.exec.RowHandler;
 import org.apache.ignite.internal.processors.query.calcite.type.IgniteTypeFactory;
@@ -84,6 +86,8 @@ public class Accumulators {
                 return maxFactory(call, hnd);
             case "SINGLE_VALUE":
                 return () -> new SingleVal<>(call, hnd);
+            case "LITERAL_AGG":
+                return () -> new LiteralVal<>(call, hnd);
             case "ANY_VALUE":
                 return () -> new AnyVal<>(call, hnd);
             case "LISTAGG":
@@ -312,6 +316,48 @@ public class Accumulators {
         }
     }
 
+    /**
+     * LITERAL_AGG accumulator, returns predefined literal value.
+     * Calcite`s implementation RexImpTable#LiteralAggImplementor.
+     */
+    private static class LiteralVal<Row> extends AbstractAccumulator<Row> {
+        /** */
+        public LiteralVal(AggregateCall aggCall, RowHandler<Row> hnd) {
+            super(aggCall, hnd);
+        }
+
+        /** {@inheritDoc} */
+        @Override public void add(Row row) {
+            // No-op.
+        }
+
+        /** {@inheritDoc} */
+        @Override public void apply(Accumulator<Row> other) {
+            // No-op.
+        }
+
+        /** {@inheritDoc} */
+        @Override public Object end() {
+            assert !F.isEmpty(aggregateCall().rexList) : "aggregateCall().rexList is empty for LITERAL_AGG";
+
+            RexNode rexNode = aggregateCall().rexList.get(0);
+
+            assert rexNode instanceof RexLiteral;
+
+            return ((RexLiteral)rexNode).getValue();
+        }
+
+        /** {@inheritDoc} */
+        @Override public List<RelDataType> argumentTypes(IgniteTypeFactory typeFactory) {
+            return F.asList(typeFactory.createTypeWithNullability(typeFactory.createSqlType(ANY), true));
+        }
+
+        /** {@inheritDoc} */
+        @Override public RelDataType returnType(IgniteTypeFactory typeFactory) {
+            return aggregateCall().getType();
+        }
+    }
+
     /** */
     private static class AnyVal<Row> extends AbstractAccumulator<Row> {
         /** */
@@ -458,11 +504,11 @@ public class Accumulators {
 
         /** {@inheritDoc} */
         @Override public void add(Row row) {
-            int argsCount = aggregateCall().getArgList().size();
+            int argsCnt = aggregateCall().getArgList().size();
 
-            assert argsCount == 0 || argsCount == 1;
+            assert argsCnt == 0 || argsCnt == 1;
 
-            if (argsCount == 0 || get(0, row) != null)
+            if (argsCnt == 0 || get(0, row) != null)
                 cnt++;
         }
 

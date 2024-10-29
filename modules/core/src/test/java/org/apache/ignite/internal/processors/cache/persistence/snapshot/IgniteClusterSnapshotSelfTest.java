@@ -70,7 +70,6 @@ import org.apache.ignite.internal.processors.cache.persistence.file.FileIO;
 import org.apache.ignite.internal.processors.cache.persistence.file.FileIOFactory;
 import org.apache.ignite.internal.processors.cache.persistence.file.RandomAccessFileIOFactory;
 import org.apache.ignite.internal.processors.cache.persistence.partstate.GroupPartitionId;
-import org.apache.ignite.internal.processors.metric.MetricRegistry;
 import org.apache.ignite.internal.processors.metric.impl.ObjectGauge;
 import org.apache.ignite.internal.util.distributed.DistributedProcess;
 import org.apache.ignite.internal.util.distributed.FullMessage;
@@ -81,6 +80,7 @@ import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteFuture;
+import org.apache.ignite.metric.MetricRegistry;
 import org.apache.ignite.spi.metric.LongMetric;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.transactions.Transaction;
@@ -119,6 +119,14 @@ public class IgniteClusterSnapshotSelfTest extends AbstractSnapshotSelfTest {
 
     /** {@code true} if node should be started in separate jvm. */
     protected volatile boolean jvm;
+
+    /** Any node failed. */
+    private boolean failed;
+
+    /** {@inheritDoc} */
+    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
+        return super.getConfiguration(igniteInstanceName).setFailureHandler((ignite, ctx) -> failed = true);
+    }
 
     /** @throws Exception If fails. */
     @Before
@@ -321,9 +329,8 @@ public class IgniteClusterSnapshotSelfTest extends AbstractSnapshotSelfTest {
 
             TestRecordingCommunicationSpi.stopBlockAll();
         }
-        else {
+        else
             snpIg0.cluster().state(ACTIVE);
-        }
 
         assertPartitionsSame(idleVerify(snpIg0, dfltCacheCfg.getName(), atomicCcfg.getName()));
     }
@@ -563,6 +570,28 @@ public class IgniteClusterSnapshotSelfTest extends AbstractSnapshotSelfTest {
             stopAllGrids();
             cleanPersistenceDir();
         }
+    }
+
+    /** @throws Exception If fails. */
+    @Test
+    public void testExceptionOnStartStage() throws Exception {
+        IgniteEx ignite = startGridsWithCache(2, dfltCacheCfg, CACHE_KEYS_RANGE);
+
+        IgniteFuture<Void> fut = snp(ignite).createSnapshot(SNAPSHOT_NAME, null, false, onlyPrimary);
+
+        File snpDir = snp(ignite).snapshotLocalDir(SNAPSHOT_NAME);
+
+        assertTrue(snpDir.mkdirs());
+
+        File snpMeta = new File(snpDir, IgniteSnapshotManager.snapshotMetaFileName(ignite.localNode().consistentId().toString()));
+
+        assertTrue(snpMeta.createNewFile());
+
+        assertThrowsAnyCause(log, fut::get, IgniteException.class, "Snapshot metafile must not exist");
+
+        assertFalse(failed);
+
+        createAndCheckSnapshot(ignite, SNAPSHOT_NAME);
     }
 
     /** @throws Exception If fails. */

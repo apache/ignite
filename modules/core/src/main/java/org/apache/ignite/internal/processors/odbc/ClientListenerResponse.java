@@ -56,7 +56,7 @@ public abstract class ClientListenerResponse {
     /**
      * @param status Status.
      */
-    public void status(int status) {
+    protected void status(int status) {
         this.status = status;
     }
 
@@ -70,7 +70,7 @@ public abstract class ClientListenerResponse {
     /**
      * @param err Error message.
      */
-    public void error(String err) {
+    protected void error(String err) {
         this.err = err;
     }
 

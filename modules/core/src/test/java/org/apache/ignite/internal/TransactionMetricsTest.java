@@ -26,8 +26,8 @@ import org.apache.ignite.cache.CacheRebalanceMode;
 import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
-import org.apache.ignite.internal.processors.metric.MetricRegistry;
 import org.apache.ignite.internal.processors.metric.impl.ObjectGauge;
+import org.apache.ignite.metric.MetricRegistry;
 import org.apache.ignite.mxbean.TransactionMetricsMxBean;
 import org.apache.ignite.spi.metric.IntMetric;
 import org.apache.ignite.spi.metric.LongMetric;
@@ -107,17 +107,19 @@ public class TransactionMetricsTest extends GridCommonAbstractTest {
         //when: transaction is opening
         final Transaction tx1 = ignite.transactions().txStart(PESSIMISTIC, REPEATABLE_READ);
 
-        int localKeysNum = 0;
+        assertEquals(0, txMXBean.getTransactionsHoldingLockNumber());
+
+        int locKeysNum = 0;
 
         for (int i = 0; i < keysNumber; i++) {
             cache.put(i, "");
 
             if (affinity(cache).isPrimary(ignite.localNode(), i))
-                localKeysNum++;
+                locKeysNum++;
         }
 
         //then:
-        assertEquals(localKeysNum, mreg.<LongMetric>findMetric("LockedKeysNumber").value());
+        assertEquals(locKeysNum, mreg.<LongMetric>findMetric("LockedKeysNumber").value());
         assertEquals(1, mreg.<LongMetric>findMetric("TransactionsHoldingLockNumber").value());
         assertEquals(1, mreg.<LongMetric>findMetric("OwnerTransactionsNumber").value());
 

@@ -19,7 +19,9 @@ package org.apache.ignite.internal.processors.cache.transform;
 
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.function.Function;
 import org.apache.commons.io.FileUtils;
 import org.apache.ignite.DataRegionMetrics;
@@ -34,9 +36,12 @@ import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
-import org.apache.ignite.internal.processors.metric.MetricRegistry;
+import org.apache.ignite.internal.client.thin.TcpClientCache;
+import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.util.typedef.G;
+import org.apache.ignite.internal.util.typedef.T3;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.metric.MetricRegistry;
 import org.apache.ignite.spi.communication.CommunicationSpi;
 import org.apache.ignite.spi.metric.LongMetric;
 import org.apache.ignite.testframework.GridTestUtils;
@@ -285,7 +290,7 @@ public class CacheObjectCompressionConsumptionTest extends AbstractCacheObjectCo
 
             Ignite prim = primaryNode(0, CACHE_NAME);
 
-            if (mode == ConsumptionTestMode.THIN_CLIENT) {
+            if (mode == ConsumptionTestMode.THIN_CLIENT || mode == ConsumptionTestMode.THIN_CLIENT_INTERNAL_API) {
                 String host = prim.configuration().getLocalHost();
                 int port = prim.configuration().getClientConnectorConfiguration().getPort();
 
@@ -296,7 +301,19 @@ public class CacheObjectCompressionConsumptionTest extends AbstractCacheObjectCo
                         Object key = keyGen.apply(i);
                         Object val = valGen.apply(i);
 
-                        cache.put(key, val);
+                        if (mode == ConsumptionTestMode.THIN_CLIENT)
+                            cache.put(key, val);
+                        else {
+                            assert mode == ConsumptionTestMode.THIN_CLIENT_INTERNAL_API;
+
+                            Map<Object, T3<Object, GridCacheVersion, Long>> data = new HashMap<>();
+
+                            GridCacheVersion otherVer = new GridCacheVersion(1, 1, 1, 0);
+
+                            data.put(key, new T3<>(val, otherVer, 0L));
+
+                            ((TcpClientCache)cache).putAllConflict(data);
+                        }
 
                         assertEqualsArraysAware(cache.get(key), val);
                     }
@@ -335,7 +352,7 @@ public class CacheObjectCompressionConsumptionTest extends AbstractCacheObjectCo
                 clNet += reg.<LongMetric>findMetric(SENT_BYTES_METRIC_NAME).value();
                 clNet += reg.<LongMetric>findMetric(RECEIVED_BYTES_METRIC_NAME).value();
 
-                if (mode != ConsumptionTestMode.THIN_CLIENT)
+                if (mode != ConsumptionTestMode.THIN_CLIENT && mode != ConsumptionTestMode.THIN_CLIENT_INTERNAL_API)
                     assertEquals(0, clNet);
 
                 net += clNet;
@@ -405,6 +422,9 @@ public class CacheObjectCompressionConsumptionTest extends AbstractCacheObjectCo
 
         /** Thin client. */
         THIN_CLIENT,
+
+        /** Thin client uses internal API. */
+        THIN_CLIENT_INTERNAL_API,
 
         /** Node + Persistent. */
         PERSISTENT

@@ -20,7 +20,7 @@ package org.apache.ignite.internal.management.snapshot;
 import org.jetbrains.annotations.Nullable;
 
 /** */
-public class SnapshotRestoreCommand extends AbstractSnapshotCommand<SnapshotRestoreCommandArg> {
+public class SnapshotRestoreCommand extends AbstractSnapshotCommand<SnapshotRestoreCommandArg, String> {
     /** {@inheritDoc} */
     @Override public String description() {
         return "Restore snapshot";

@@ -18,11 +18,10 @@
 package org.apache.ignite.internal.management.snapshot;
 
 import java.util.function.Consumer;
-import org.apache.ignite.IgniteException;
 import org.apache.ignite.internal.processors.cache.persistence.snapshot.SnapshotPartitionsVerifyTaskResult;
 
 /** */
-public class SnapshotCheckCommand extends AbstractSnapshotCommand<SnapshotCheckCommandArg> {
+public class SnapshotCheckCommand extends AbstractSnapshotCommand<SnapshotCheckCommandArg, SnapshotPartitionsVerifyTaskResult> {
     /** {@inheritDoc} */
     @Override public String description() {
         return "Check snapshot";
@@ -39,12 +38,7 @@ public class SnapshotCheckCommand extends AbstractSnapshotCommand<SnapshotCheckC
     }
 
     /** {@inheritDoc} */
-    @Override public void printResult(SnapshotCheckCommandArg arg, SnapshotTaskResult res0, Consumer<String> printer) {
-        try {
-            ((SnapshotPartitionsVerifyTaskResult)res0.result()).print(printer);
-        }
-        catch (Exception e) {
-            throw new IgniteException(e);
-        }
+    @Override public void printResult(SnapshotCheckCommandArg arg, SnapshotPartitionsVerifyTaskResult res, Consumer<String> printer) {
+        res.print(printer);
     }
 }

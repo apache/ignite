@@ -260,28 +260,28 @@ public class IgniteCacheRandomOperationBenchmark extends IgniteAbstractBenchmark
                 if (configuration.getQueryEntities() != null) {
                     Collection<QueryEntity> entries = configuration.getQueryEntities();
 
-                    for (QueryEntity queryEntity : entries) {
+                    for (QueryEntity qryEntity : entries) {
                         try {
-                            if (queryEntity.getKeyType() != null) {
-                                Class keyCls = Class.forName(queryEntity.getKeyType());
+                            if (qryEntity.getKeyType() != null) {
+                                Class keyCls = Class.forName(qryEntity.getKeyType());
 
                                 if (ModelUtil.canCreateInstance(keyCls))
                                     keys.add(keyCls);
                                 else
                                     throw new IgniteException("Class is unknown for the load test. Make sure you " +
-                                        "specified its full name [cache=" + cacheName + ", clsName=" + queryEntity.getKeyType() + ']');
+                                        "specified its full name [cache=" + cacheName + ", clsName=" + qryEntity.getKeyType() + ']');
                             }
 
-                            if (queryEntity.getValueType() != null) {
-                                Class valCls = Class.forName(queryEntity.getValueType());
+                            if (qryEntity.getValueType() != null) {
+                                Class valCls = Class.forName(qryEntity.getValueType());
 
                                 if (ModelUtil.canCreateInstance(valCls))
                                     values.add(valCls);
                                 else
                                     throw new IgniteException("Class is unknown for the load test. Make sure you " +
-                                        "specified its full name [cache=" + cacheName + ", clsName=" + queryEntity.getValueType() + ']');
+                                        "specified its full name [cache=" + cacheName + ", clsName=" + qryEntity.getValueType() + ']');
 
-                                configureCacheSqlDescriptor(cacheName, queryEntity, valCls);
+                                configureCacheSqlDescriptor(cacheName, qryEntity, valCls);
                             }
                         }
                         catch (ClassNotFoundException e) {
@@ -419,8 +419,8 @@ public class IgniteCacheRandomOperationBenchmark extends IgniteAbstractBenchmark
 
         Map<String, Class> indexedFields = new HashMap<>();
 
-        for (QueryIndex index : qryEntity.getIndexes()) {
-            for (String iField : index.getFieldNames()) {
+        for (QueryIndex idx : qryEntity.getIndexes()) {
+            for (String iField : idx.getFieldNames()) {
                 indexedFields.put(iField,
                     Class.forName(qryEntity.getFields().get(iField)));
             }
@@ -491,20 +491,20 @@ public class IgniteCacheRandomOperationBenchmark extends IgniteAbstractBenchmark
      */
     private Map<UUID, List<Integer>> personCachePartitions(String cacheName) {
         // Getting affinity for person cache.
-        Affinity<Object> affinity = ignite().affinity(cacheName);
+        Affinity<Object> aff = ignite().affinity(cacheName);
 
         // Building a list of all partitions numbers.
         List<Integer> rndParts = new ArrayList<>(10);
 
-        if (affinity.partitions() <= SCAN_QUERY_PARTITION_AMOUNT)
-            for (int i = 0; i < affinity.partitions(); i++)
+        if (aff.partitions() <= SCAN_QUERY_PARTITION_AMOUNT)
+            for (int i = 0; i < aff.partitions(); i++)
                 rndParts.add(i);
         else {
             for (int i = 0; i < SCAN_QUERY_PARTITION_AMOUNT; i++) {
                 int partNum;
 
                 do
-                    partNum = nextRandom(affinity.partitions());
+                    partNum = nextRandom(aff.partitions());
                 while (rndParts.contains(partNum));
 
                 rndParts.add(partNum);
@@ -514,7 +514,7 @@ public class IgniteCacheRandomOperationBenchmark extends IgniteAbstractBenchmark
         Collections.sort(rndParts);
 
         // Getting partition to node mapping.
-        Map<Integer, ClusterNode> partPerNodes = affinity.mapPartitionsToNodes(rndParts);
+        Map<Integer, ClusterNode> partPerNodes = aff.mapPartitionsToNodes(rndParts);
 
         // Building node to partitions mapping.
         Map<UUID, List<Integer>> nodesToPart = new HashMap<>();

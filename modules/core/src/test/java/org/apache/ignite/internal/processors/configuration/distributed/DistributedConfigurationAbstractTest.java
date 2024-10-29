@@ -85,7 +85,7 @@ public abstract class DistributedConfigurationAbstractTest extends GridCommonAbs
 
         ignite0.cluster().state(ClusterState.ACTIVE);
 
-        DistributedProperty<Long> long0 = distr(ignite0).registerProperty(detachedLongProperty(TEST_PROP));
+        DistributedProperty<Long> long0 = distr(ignite0).registerProperty(detachedLongProperty(TEST_PROP, ""));
 
         long0.propagate(0L);
 
@@ -93,7 +93,7 @@ public abstract class DistributedConfigurationAbstractTest extends GridCommonAbs
 
         assertTrue(long0.propagate(2L));
 
-        DistributedProperty<Long> long1 = distr(ignite1).registerProperty(detachedLongProperty(TEST_PROP));
+        DistributedProperty<Long> long1 = distr(ignite1).registerProperty(detachedLongProperty(TEST_PROP, ""));
 
         //Already changed to 2.
         assertEquals(2, long1.get().longValue());
@@ -104,7 +104,7 @@ public abstract class DistributedConfigurationAbstractTest extends GridCommonAbs
      */
     @Test(expected = DetachedPropertyException.class)
     public void testNotAttachedProperty() throws Exception {
-        DistributedLongProperty long0 = detachedLongProperty(TEST_PROP);
+        DistributedLongProperty long0 = detachedLongProperty(TEST_PROP, "");
 
         long0.propagate(1L);
     }

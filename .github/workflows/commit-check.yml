@@ -13,7 +13,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-name: Code Style, Abandoned Tests
+name: Code Style, Abandoned Tests, Javadocs
 on:
   pull_request:
   push:
@@ -31,15 +31,15 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        java: [ '8', '11' ]
+        java: [ '11' ]
     name: Check java code on JDK ${{ matrix.java }}
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
         with:
           ref: ${{ github.event.pull_request.head.sha }}
 
       - name: Setup java
-        uses: actions/setup-java@v3
+        uses: actions/setup-java@v4
         with:
           distribution: 'temurin'
           java-version: ${{ matrix.java }}
@@ -60,23 +60,26 @@ jobs:
 
       - name: Run codestyle and licenses checks
         run: |
-          ./mvnw test-compile -Pall-java,licenses,lgpl,checkstyle,examples,all-scala,scala,check-licenses -B -V
+          ./mvnw test-compile -Pall-java,licenses,lgpl,checkstyle,examples,scala,check-licenses -B -V
 
       - name: Run abandoned tests checks.
-        if: ${{ matrix.java == '8' }}
         run : |
-          ./mvnw test -Pcheck-test-suites,all-java,all-scala,scala -B -V
+          ./mvnw test -Pcheck-test-suites,all-java,scala -B -V
+
+      - name: Check javadocs.
+        run : |
+          ./mvnw -DskipTests install -pl modules/tools -B -V && ./mvnw initialize -Pjavadoc -B -V
 
   check-dotnet:
     name: Сheck .NET code
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
         with:
           ref: ${{ github.event.pull_request.head.sha }}
 
       - name: Setup .NET SDK
-        uses: actions/setup-dotnet@v3
+        uses: actions/setup-dotnet@v4
         with:
           dotnet-version: '6.0.x'
 
@@ -96,12 +99,12 @@ jobs:
           - { python: "3.8", toxenv: "py38" }
           - { python: "3.8", toxenv: "codestyle" }
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
         with:
           ref: ${{ github.event.pull_request.head.sha }}
 
       - name: Set up Python ${{ matrix.python-version }}
-        uses: actions/setup-python@v4
+        uses: actions/setup-python@v5
         with:
           python-version: ${{ matrix.cfg.python}}
 

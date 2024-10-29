@@ -48,7 +48,7 @@ class PerfStatTest(IgniteTest):
             params={
                 "cacheName": "test-cache",
                 "range": 200_000,
-                "warmUpRange":  100_000,
+                "warmUpRange":  10_000,
                 "transactional": False
             }
         )

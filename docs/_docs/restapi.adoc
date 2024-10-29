@@ -199,21 +199,21 @@ of the argument. The REST API supports both <<Java Types>> and <<Custom Types>>.
 |`date`
 |`java.sql.Date`
 
-The date value should be in the format as specified in the `valueOf(String)` method in the link:https://docs.oracle.com/javase/8/docs/api/java/sql/Date.html#valueOf-java.lang.String-[Java documentation ,window=_blank]
+The date value should be in the format as specified in the `valueOf(String)` method in the link:https://docs.oracle.com/en/java/javase/11/docs/api/java.sql/java/sql/Date.html#valueOf(java.lang.String)[Java documentation ,window=_blank]
 
 Example: 2018-01-01
 
 |`time`
 |`java.sql.Time`
 
-The time value should be in the format as specified in the `valueOf(String)` method in the link:https://docs.oracle.com/javase/8/docs/api/java/sql/Date.html#valueOf-java.lang.String-[Java documentation ,window=_blank]
+The time value should be in the format as specified in the `valueOf(String)` method in the link:https://docs.oracle.com/en/java/javase/11/docs/api/java.sql/java/sql/Date.html#valueOf(java.lang.String)[Java documentation ,window=_blank]
 
 Example: 01:01:01
 
 |`timestamp`
 |`java.sql.Timestamp`
 
-The timestamp value should be in the format as specified in the `valueOf(String)` method in the link:https://docs.oracle.com/javase/8/docs/api/java/sql/Date.html#valueOf-java.lang.String-[Java documentation ,window=_blank]
+The timestamp value should be in the format as specified in the `valueOf(String)` method in the link:https://docs.oracle.com/en/java/javase/11/docs/api/java.sql/java/sql/Date.html#valueOf(java.lang.String)[Java documentation ,window=_blank]
 
 Example: 2018-02-18%2001:01:01
 
@@ -494,7 +494,7 @@ Adds and gets current value of given atomic long.
 +
 [source,shell]
 ----
-http://host:port/ignite?cmd=incr&cacheName={cacheName}&key={incrKey}&init={initialValue}&delta={delta}
+http://host:port/ignite?cmd=incr&key={incrKey}&init={initialValue}&delta={delta}
 ----
 +
 [{request_table_props}]
@@ -505,12 +505,6 @@ http://host:port/ignite?cmd=incr&cacheName={cacheName}&key={incrKey}&init={initi
 |Description
 |Example
 
-
-|`cacheName`
-| string
-| Yes
-| Cache name. If not provided, default cache is used.
-| partitionedCache
 
 |`key`
 | string
@@ -553,7 +547,7 @@ Subtracts and gets current value of given atomic long.
 +
 [source,shell]
 ----
-http://host:port/ignite?cmd=decr&cacheName={cacheName}&key={key}&init={init_value}&delta={delta}
+http://host:port/ignite?cmd=decr&key={key}&init={init_value}&delta={delta}
 ----
 +
 [{request_table_props}]
@@ -564,11 +558,6 @@ http://host:port/ignite?cmd=decr&cacheName={cacheName}&key={key}&init={init_valu
 |Description
 |Example
 
-|`cacheName`
-| string
-|Yes
-|Cache name. If not provided, the default cache ("default") is used.
-|partitionedCache
 
 |`key`
 |string
@@ -2936,3 +2925,26 @@ The command returns 'true' if the query was closed successfully.
 ----
 
 
+=== Probe
+
+Returns whether Ignite kernal as started.
+
+
+*Request:*::
++
+[source,shell]
+----
+http://host:port/ignite?cmd=probe
+----
+
+*Response:*::
+Returns HTTP Status code 200 if kernal has started, and 503 otherwise
++
+[source,json]
+----
+{
+  "error": "",
+  "response": "grid has started",
+  "successStatus": 0
+}
+----

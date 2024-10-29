@@ -65,16 +65,16 @@ DataStreamer doesn't guarantee:
 - Data order. Data records may be loaded into a cache in a different order compared to load into the streamer;
 - By default, working with external storages.
 
-If <<overwritting, 'allowOverwrite'>> property is 'false' (default), consider:
+If <<overwriting, 'allowOverwrite'>> property is 'false' (default), consider:
 []
 - You should not have the same keys repeating in the data being streamed;
 - Streamer cancelation or streamer node failure can cause data inconsistency;
 - If loading into a persistent cache, concurrently created snapshot may contain inconsistent data and might not be restored entirely.
 
 Most important behavior of Ignite Data Streamer is defined by <<receivers, stream receiver>> and
-<<overwritting, 'allowOverwite' setting.>>
+<<overwriting, 'allowOverwite' setting.>>
 
-== Streamer receivers. [[receivers]]
+== Streamer Receivers [[receivers]]
 
 Ignite DataStreamer is an orchestrator and doesn't write data itself. link:{javadoc_base_url}/org/apache/ignite/stream/StreameReceiver.html[StreamerReceiver] does. The default receiver is designed for fastest load and fewer network requests. With this receiver, streamer focuses on parallel transfer of backup and primary records.
 
@@ -110,7 +110,7 @@ Changing receiver to non-default changes data distribution algorithm. With non-d
 NOTE: A stream receiver does not put data into cache automatically. You need to call one of the `put` methods explicitly.
 
 
-== Overwritting data. [[overwritting]]
+== Overwriting Data [[overwriting]]
 
 By default, existing keys aren't overwritten. You can change that behavior by setting the `allowOverwrite` property of the data streamer to `true`. Since the default receiver does not overwrite data, other provided one is automatically chosen. Any non-default receiver is considered as not-overwriting. And `allowOverwrite` property says `true`. However, your own receiver may use `putIfAbsent` for instance.
 

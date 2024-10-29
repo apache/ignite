@@ -36,17 +36,26 @@ namespace Apache.Ignite.Core.Impl.Resource
         /** Attribute type: StoreSessionResourceAttribute. */
         private static readonly Type TypAttrStoreSes = typeof(StoreSessionResourceAttribute);
 
+        /** Attribute type: TaskSessionResourceAttribute. */
+        private static readonly Type TypAttrTaskSes = typeof(TaskSessionResourceAttribute);
+
         /** Type: IGrid. */
         private static readonly Type TypIgnite = typeof(IIgnite);
 
         /** Type: ICacheStoreSession. */
         private static readonly Type TypStoreSes = typeof (ICacheStoreSession);
 
+        /** Type: IComputeTaskSession. */
+        private static readonly Type TypTaskSes = typeof (IComputeTaskSession);
+
         /** Type: ComputeTaskNoResultCacheAttribute. */
         private static readonly Type TypComputeTaskNoResCache = typeof(ComputeTaskNoResultCacheAttribute);
 
+        /** Type: ComputeTaskSessionFullSupportAttribute. */
+        private static readonly Type TypComputeTaskSessionFullSupport = typeof(ComputeTaskSessionFullSupportAttribute);
+
         /** Cached binding flags. */
-        private const BindingFlags Flags = BindingFlags.Instance | BindingFlags.Public | 
+        private const BindingFlags Flags = BindingFlags.Instance | BindingFlags.Public |
             BindingFlags.NonPublic | BindingFlags.DeclaredOnly;
 
         /** Ignite injectors. */
@@ -54,10 +63,13 @@ namespace Apache.Ignite.Core.Impl.Resource
 
         /** Session injectors. */
         private readonly IList<IResourceInjector> _storeSesInjectors;
-        
+
+        /** Compute task session injectors. */
+        private readonly IList<IResourceInjector> _taskSesInjectors;
+
         /** Task "no result cache" flag. */
         private readonly bool _taskNoResCache;
-        
+
         /// <summary>
         /// Constructor.
         /// </summary>
@@ -66,20 +78,23 @@ namespace Apache.Ignite.Core.Impl.Resource
         {
             Collector gridCollector = new Collector(TypAttrIgnite, TypIgnite);
             Collector storeSesCollector = new Collector(TypAttrStoreSes, TypStoreSes);
+            var taskSesCollector = new Collector(TypAttrTaskSes, TypTaskSes);
 
             Type curType = type;
 
             while (curType != null)
             {
-                CreateInjectors(curType, gridCollector, storeSesCollector);
+                CreateInjectors(curType, gridCollector, storeSesCollector, taskSesCollector);
 
                 curType = curType.BaseType;
             }
 
             _igniteInjectors = gridCollector.Injectors;
             _storeSesInjectors = storeSesCollector.Injectors;
+            _taskSesInjectors = taskSesCollector.Injectors;
 
             _taskNoResCache = ContainsAttribute(type, TypComputeTaskNoResCache, true);
+            TaskSessionFullSupport = ContainsAttribute(type, TypComputeTaskSessionFullSupport, true);
         }
 
         /// <summary>
@@ -100,6 +115,19 @@ namespace Apache.Ignite.Core.Impl.Resource
         public void InjectStoreSession(object target, ICacheStoreSession ses)
         {
             Inject0(target, ses, _storeSesInjectors);
+        }
+
+        /// <summary>
+        /// Inject compute task session.
+        /// </summary>
+        /// <param name="target">Target.</param>
+        /// <param name="ses">Compute task session.</param>
+        public void InjectTaskSession(object target, IComputeTaskSession ses)
+        {
+            if (ses != null)
+            {
+                Inject0(target, ses, _taskSesInjectors);
+            }
         }
 
         /// <summary>
@@ -127,7 +155,10 @@ namespace Apache.Ignite.Core.Impl.Resource
                 return _taskNoResCache;
             }
         }
-        
+
+        /// <inheritdoc cref="ComputeTaskSessionFullSupportAttribute"/>
+        public bool TaskSessionFullSupport { get; }
+
         /// <summary>
         /// Create gridInjectors for the given type.
         /// </summary>

@@ -74,7 +74,16 @@ public enum ProtocolBitmaskFeature {
     INDEX_QUERY(14),
 
     /** IndexQuery limit. */
-    INDEX_QUERY_LIMIT(15);
+    INDEX_QUERY_LIMIT(15),
+
+    /** Service topology. */
+    SERVICE_TOPOLOGY(16),
+
+    /** Cache invoke/invokeAll operations. */
+    CACHE_INVOKE(17),
+
+    /** Transaction aware queries. */
+    TX_AWARE_QUERIES(18);
 
     /** */
     private static final EnumSet<ProtocolBitmaskFeature> ALL_FEATURES_AS_ENUM_SET =

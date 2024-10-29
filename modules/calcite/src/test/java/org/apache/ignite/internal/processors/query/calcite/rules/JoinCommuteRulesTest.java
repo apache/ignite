@@ -60,8 +60,7 @@ public class JoinCommuteRulesTest extends GridCommonAbstractTest {
     /** */
     @Test
     public void testCommuteOuter() {
-        String sql = "SELECT /*+ DISABLE_RULE('CorrelatedNestedLoopJoin', 'MergeJoinConverter') */ " +
-            "COUNT(*) FROM SMALL s RIGHT JOIN HUGE h on h.id = s.id";
+        String sql = "SELECT /*+ NL_JOIN */ COUNT(*) FROM SMALL s RIGHT JOIN HUGE h on h.id = s.id";
 
         checkQuery(sql)
             .matches(containsTableScan("PUBLIC", "HUGE"))
@@ -69,7 +68,7 @@ public class JoinCommuteRulesTest extends GridCommonAbstractTest {
             .matches(containsSubPlan("IgniteNestedLoopJoin(condition=[=($0, $1)], joinType=[left]"))
             .check();
 
-        sql = "SELECT /*+ DISABLE_RULE('CorrelatedNestedLoopJoin', 'MergeJoinConverter', 'JoinCommuteRule') */ " +
+        sql = "SELECT /*+ NL_JOIN, DISABLE_RULE('JoinCommuteRule') */ " +
             "COUNT(*) FROM SMALL s RIGHT JOIN HUGE h on h.id = s.id";
 
         checkQuery(sql)
@@ -82,8 +81,7 @@ public class JoinCommuteRulesTest extends GridCommonAbstractTest {
     /** */
     @Test
     public void testCommuteInner() {
-        String sql = "SELECT /*+ DISABLE_RULE('CorrelatedNestedLoopJoin', 'MergeJoinConverter') */ " +
-            "COUNT(*) FROM SMALL s JOIN HUGE h on h.id = s.id";
+        String sql = "SELECT /*+ NL_JOIN */ COUNT(*) FROM SMALL s JOIN HUGE h on h.id = s.id";
 
         checkQuery(sql)
             .matches(containsTableScan("PUBLIC", "HUGE"))
@@ -91,8 +89,7 @@ public class JoinCommuteRulesTest extends GridCommonAbstractTest {
             .matches(containsSubPlan("IgniteNestedLoopJoin(condition=[=($0, $1)], joinType=[inner]"))
             .check();
 
-        sql = "SELECT /*+ DISABLE_RULE('CorrelatedNestedLoopJoin', 'MergeJoinConverter', 'JoinCommuteRule') */ " +
-            "COUNT(*) FROM SMALL s JOIN HUGE h on h.id = s.id";
+        sql = "SELECT /*+ NL_JOIN, DISABLE_RULE('JoinCommuteRule') */ COUNT(*) FROM SMALL s JOIN HUGE h on h.id = s.id";
 
         checkQuery(sql)
             .matches(containsTableScan("PUBLIC", "HUGE"))

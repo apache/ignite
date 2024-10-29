@@ -19,6 +19,7 @@ package org.apache.ignite.internal.client.thin;
 
 import java.io.IOException;
 import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -31,6 +32,10 @@ import javax.cache.configuration.FactoryBuilder;
 import javax.cache.event.CacheEntryExpiredListener;
 import javax.cache.event.CacheEntryListener;
 import javax.cache.expiry.ExpiryPolicy;
+import javax.cache.processor.EntryProcessor;
+import javax.cache.processor.EntryProcessorException;
+import javax.cache.processor.EntryProcessorResult;
+import org.apache.ignite.binary.BinaryObjectException;
 import org.apache.ignite.cache.CachePeekMode;
 import org.apache.ignite.cache.query.ContinuousQuery;
 import org.apache.ignite.cache.query.FieldsQueryCursor;
@@ -49,6 +54,7 @@ import org.apache.ignite.client.ClientException;
 import org.apache.ignite.client.ClientFeatureNotSupportedByServerException;
 import org.apache.ignite.client.IgniteClientFuture;
 import org.apache.ignite.internal.binary.BinaryRawWriterEx;
+import org.apache.ignite.internal.binary.BinaryReaderExImpl;
 import org.apache.ignite.internal.binary.BinaryWriterExImpl;
 import org.apache.ignite.internal.binary.GridBinaryMarshaller;
 import org.apache.ignite.internal.binary.streams.BinaryInputStream;
@@ -56,8 +62,11 @@ import org.apache.ignite.internal.binary.streams.BinaryOutputStream;
 import org.apache.ignite.internal.cache.query.InIndexQueryCriterion;
 import org.apache.ignite.internal.cache.query.RangeIndexQueryCriterion;
 import org.apache.ignite.internal.client.thin.TcpClientTransactions.TcpClientTransaction;
+import org.apache.ignite.internal.processors.cache.CacheInvokeResult;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
+import org.apache.ignite.internal.processors.platform.client.ClientStatus;
 import org.apache.ignite.internal.util.typedef.T3;
+import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.A;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.jetbrains.annotations.Nullable;
@@ -71,10 +80,10 @@ import static org.apache.ignite.internal.processors.platform.cache.expiry.Platfo
  */
 public class TcpClientCache<K, V> implements ClientCache<K, V> {
     /** "Keep binary" flag mask. */
-    private static final byte KEEP_BINARY_FLAG_MASK = 0x01;
+    static final byte KEEP_BINARY_FLAG_MASK = 0x01;
 
     /** "Transactional" flag mask. */
-    private static final byte TRANSACTIONAL_FLAG_MASK = 0x02;
+    static final byte TRANSACTIONAL_FLAG_MASK = 0x02;
 
     /** "With expiry policy" flag mask. */
     private static final byte WITH_EXPIRY_POLICY_FLAG_MASK = 0x04;
@@ -773,6 +782,155 @@ public class TcpClientCache<K, V> implements ClientCache<K, V> {
     }
 
     /** {@inheritDoc} */
+    @Override public <T> T invoke(
+        K key,
+        EntryProcessor<K, V, T> entryProc,
+        Object... arguments
+    ) throws EntryProcessorException, ClientException {
+        if (key == null)
+            throw new NullPointerException("key");
+
+        if (entryProc == null)
+            throw new NullPointerException("entryProc");
+
+        try {
+            return cacheSingleKeyOperation(
+                key,
+                ClientOperation.CACHE_INVOKE,
+                req -> writeEntryProcessor(req, entryProc, arguments),
+                this::readObject
+            );
+        }
+        catch (Exception e) {
+            ClientServerError serverErr = X.cause(e, ClientServerError.class);
+
+            if (serverErr != null && serverErr.getCode() == ClientStatus.ENTRY_PROCESSOR_EXCEPTION)
+                throw new EntryProcessorException(serverErr.getServerErrorMessage());
+            else
+                throw e;
+        }
+    }
+
+    /** {@inheritDoc} */
+    @Override public <T> IgniteClientFuture<T> invokeAsync(
+        K key,
+        EntryProcessor<K, V, T> entryProc,
+        Object... arguments
+    ) throws ClientException {
+        if (key == null)
+            throw new NullPointerException("key");
+
+        if (entryProc == null)
+            throw new NullPointerException("entryProc");
+
+        CompletableFuture<T> resFut = new CompletableFuture<>();
+
+        IgniteClientFuture<T> opFut = cacheSingleKeyOperationAsync(
+            key,
+            ClientOperation.CACHE_INVOKE,
+            req -> writeEntryProcessor(req, entryProc, arguments),
+            this::readObject
+        );
+
+        opFut.whenComplete((res, err) -> {
+            ClientServerError serverErr = X.cause(err, ClientServerError.class);
+
+            if (serverErr != null && serverErr.getCode() == ClientStatus.ENTRY_PROCESSOR_EXCEPTION)
+                resFut.completeExceptionally(new EntryProcessorException(serverErr.getServerErrorMessage()));
+            else if (err != null)
+                resFut.completeExceptionally(err);
+            else
+                resFut.complete(res);
+        });
+
+        return new IgniteClientFutureImpl<>(resFut);
+    }
+
+    /** {@inheritDoc} */
+    @Override public <T> Map<K, EntryProcessorResult<T>> invokeAll(
+        Set<? extends K> keys,
+        EntryProcessor<K, V, T> entryProc,
+        Object... arguments
+    ) throws ClientException {
+        if (keys == null)
+            throw new NullPointerException("keys");
+
+        if (entryProc == null)
+            throw new NullPointerException("entryProc");
+
+        TcpClientTransaction tx = transactions.tx();
+
+        return txAwareService(null, tx,
+            ClientOperation.CACHE_INVOKE_ALL,
+            req -> {
+                writeKeys(keys, req, tx);
+                writeEntryProcessor(req, entryProc, arguments);
+            },
+            this::readEntryProcessorResult);
+    }
+
+    /** {@inheritDoc} */
+    @Override public <T> IgniteClientFuture<Map<K, EntryProcessorResult<T>>> invokeAllAsync(
+        Set<? extends K> keys,
+        EntryProcessor<K, V, T> entryProc,
+        Object... arguments
+    ) throws ClientException {
+        if (keys == null)
+            throw new NullPointerException("keys");
+
+        if (entryProc == null)
+            throw new NullPointerException("entryProc");
+
+        TcpClientTransaction tx = transactions.tx();
+
+        return txAwareServiceAsync(null, tx,
+            ClientOperation.CACHE_INVOKE_ALL,
+            req -> {
+                writeKeys(keys, req, tx);
+                writeEntryProcessor(req, entryProc, arguments);
+            },
+            this::readEntryProcessorResult);
+    }
+
+    /** */
+    private <T> void writeEntryProcessor(PayloadOutputChannel ch, EntryProcessor<K, V, T> entryProc, Object... arguments) {
+        if (!ch.clientChannel().protocolCtx().isFeatureSupported(ProtocolBitmaskFeature.CACHE_INVOKE))
+            throw new ClientFeatureNotSupportedByServerException(ProtocolBitmaskFeature.CACHE_INVOKE);
+
+        writeObject(ch, entryProc);
+        ch.out().writeByte(JAVA_PLATFORM);
+        ch.out().writeInt(arguments.length);
+        for (int i = 0; i < arguments.length; i++)
+            writeObject(ch, arguments[i]);
+    }
+
+    /** */
+    private <T> Map<K, EntryProcessorResult<T>> readEntryProcessorResult(PayloadInputChannel ch) {
+        try (BinaryReaderExImpl r = serDes.createBinaryReader(ch.in())) {
+            int cnt = r.readInt();
+            Map<K, EntryProcessorResult<T>> res = new LinkedHashMap<>();
+
+            for (int i = 0; i < cnt; i++) {
+                K key = readObject(ch);
+                EntryProcessorResult<T> val;
+
+                boolean success = r.readBoolean();
+                if (success)
+                    val = CacheInvokeResult.fromResult(readObject(ch));
+                else
+                    val = CacheInvokeResult.fromError(new EntryProcessorException(r.readString()));
+
+                res.put(key, val);
+            }
+
+            return res;
+        }
+        catch (IOException e) {
+            throw new BinaryObjectException(e);
+        }
+    }
+
+    /** {@inheritDoc} */
     @Override public <K1, V1> ClientCache<K1, V1> withKeepBinary() {
         return keepBinary ? (ClientCache<K1, V1>)this :
             new TcpClientCache<>(name, ch, marsh, transactions, lsnrsRegistry, true, expiryPlc);
@@ -815,12 +973,18 @@ public class TcpClientCache<K, V> implements ClientCache<K, V> {
             throw new NullPointerException("qry");
 
         Consumer<PayloadOutputChannel> qryWriter = payloadCh -> {
-            writeCacheInfo(payloadCh);
+            writeCacheInfo(
+                payloadCh,
+                payloadCh.clientChannel().protocolCtx().isFeatureSupported(ProtocolBitmaskFeature.TX_AWARE_QUERIES)
+                    ? transactions.tx()
+                    : null
+            );
             serDes.write(qry, payloadCh.out());
         };
 
         return new ClientFieldsQueryCursor<>(new ClientFieldsQueryPager(
             ch,
+            transactions.tx(),
             ClientOperation.QUERY_SQL_FIELDS,
             ClientOperation.QUERY_SQL_FIELDS_CURSOR_GET_PAGE,
             qryWriter,
@@ -991,6 +1155,7 @@ public class TcpClientCache<K, V> implements ClientCache<K, V> {
 
         return new ClientQueryCursor<>(new ClientQueryPager<>(
             ch,
+            null,
             ClientOperation.QUERY_SCAN,
             ClientOperation.QUERY_SCAN_CURSOR_GET_PAGE,
             qryWriter,
@@ -1077,6 +1242,7 @@ public class TcpClientCache<K, V> implements ClientCache<K, V> {
 
         return new ClientQueryCursor<>(new ClientQueryPager<>(
             ch,
+            null,
             ClientOperation.QUERY_INDEX,
             ClientOperation.QUERY_INDEX_CURSOR_GET_PAGE,
             qryWriter,
@@ -1106,6 +1272,7 @@ public class TcpClientCache<K, V> implements ClientCache<K, V> {
 
         return new ClientQueryCursor<>(new ClientQueryPager<>(
             ch,
+            null,
             ClientOperation.QUERY_SQL,
             ClientOperation.QUERY_SQL_CURSOR_GET_PAGE,
             qryWriter,

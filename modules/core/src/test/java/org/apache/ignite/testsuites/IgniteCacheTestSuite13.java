@@ -21,6 +21,8 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 import org.apache.ignite.internal.metric.CacheMetricsAddRemoveTest;
+import org.apache.ignite.internal.metric.CacheMetricsConflictResolverTest;
+import org.apache.ignite.internal.metric.CustomMetricsTest;
 import org.apache.ignite.internal.metric.IoStatisticsCachePersistenceSelfTest;
 import org.apache.ignite.internal.metric.IoStatisticsCacheSelfTest;
 import org.apache.ignite.internal.metric.IoStatisticsMetricsLocalMXBeanImplSelfTest;
@@ -31,20 +33,26 @@ import org.apache.ignite.internal.metric.MetricsConfigurationTest;
 import org.apache.ignite.internal.metric.MetricsSelfTest;
 import org.apache.ignite.internal.metric.ReadMetricsOnNodeStartupTest;
 import org.apache.ignite.internal.metric.SystemMetricsTest;
+import org.apache.ignite.internal.metric.SystemViewCacheExpiryPolicyTest;
 import org.apache.ignite.internal.metric.SystemViewClusterActivationTest;
 import org.apache.ignite.internal.metric.SystemViewComputeJobTest;
 import org.apache.ignite.internal.metric.SystemViewSelfTest;
 import org.apache.ignite.internal.processors.cache.CacheClearAsyncDeadlockTest;
+import org.apache.ignite.internal.processors.cache.CacheDistributedGetLongRunningFutureDumpTest;
+import org.apache.ignite.internal.processors.cache.EntriesRemoveOnShutdownTest;
 import org.apache.ignite.internal.processors.cache.GridCacheDataTypesCoverageTest;
+import org.apache.ignite.internal.processors.cache.GridCacheIoManagerRetryTest;
 import org.apache.ignite.internal.processors.cache.GridCacheLongRunningTransactionDiagnosticsTest;
 import org.apache.ignite.internal.processors.cache.GridCacheVersionGenerationWithCacheStorageTest;
 import org.apache.ignite.internal.processors.cache.distributed.FailBackupOnAtomicOperationTest;
 import org.apache.ignite.internal.processors.cache.distributed.rebalancing.RebalanceStatisticsTest;
 import org.apache.ignite.internal.processors.cache.transactions.TxAsyncOpsSemaphorePermitsExceededTest;
 import org.apache.ignite.internal.processors.cache.transactions.TxRecoveryOnCoordniatorFailTest;
+import org.apache.ignite.internal.processors.cache.transform.CacheObjectTransformationCacheApiTest;
 import org.apache.ignite.internal.processors.cache.transform.CacheObjectTransformationEvolutionTest;
 import org.apache.ignite.internal.processors.cache.transform.CacheObjectTransformationTest;
 import org.apache.ignite.internal.processors.cluster.ClusterNameBeforeActivation;
+import org.apache.ignite.internal.processors.continuous.ContinuousQueryBuffersCleanupTest;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.DynamicSuite;
 import org.junit.runner.RunWith;
@@ -75,11 +83,14 @@ public class IgniteCacheTestSuite13 {
         GridTestUtils.addTestIfNeeded(suite, IoStatisticsMetricsLocalMXBeanImplSelfTest.class, ignoredTests);
         GridTestUtils.addTestIfNeeded(suite, MetricsSelfTest.class, ignoredTests);
         GridTestUtils.addTestIfNeeded(suite, SystemMetricsTest.class, ignoredTests);
+        GridTestUtils.addTestIfNeeded(suite, CustomMetricsTest.class, ignoredTests);
         GridTestUtils.addTestIfNeeded(suite, MetricsConfigurationTest.class, ignoredTests);
         GridTestUtils.addTestIfNeeded(suite, SystemViewSelfTest.class, ignoredTests);
         GridTestUtils.addTestIfNeeded(suite, SystemViewClusterActivationTest.class, ignoredTests);
         GridTestUtils.addTestIfNeeded(suite, SystemViewComputeJobTest.class, ignoredTests);
+        GridTestUtils.addTestIfNeeded(suite, SystemViewCacheExpiryPolicyTest.class, ignoredTests);
         GridTestUtils.addTestIfNeeded(suite, CacheMetricsAddRemoveTest.class, ignoredTests);
+        GridTestUtils.addTestIfNeeded(suite, CacheMetricsConflictResolverTest.class, ignoredTests);
         GridTestUtils.addTestIfNeeded(suite, JmxExporterSpiTest.class, ignoredTests);
         GridTestUtils.addTestIfNeeded(suite, LogExporterSpiTest.class, ignoredTests);
         GridTestUtils.addTestIfNeeded(suite, ReadMetricsOnNodeStartupTest.class, ignoredTests);
@@ -105,6 +116,14 @@ public class IgniteCacheTestSuite13 {
 
         GridTestUtils.addTestIfNeeded(suite, CacheObjectTransformationTest.class, ignoredTests);
         GridTestUtils.addTestIfNeeded(suite, CacheObjectTransformationEvolutionTest.class, ignoredTests);
+        GridTestUtils.addTestIfNeeded(suite, CacheObjectTransformationCacheApiTest.class, ignoredTests);
+
+        GridTestUtils.addTestIfNeeded(suite, ContinuousQueryBuffersCleanupTest.class, ignoredTests);
+
+        GridTestUtils.addTestIfNeeded(suite, CacheDistributedGetLongRunningFutureDumpTest.class, ignoredTests);
+        GridTestUtils.addTestIfNeeded(suite, EntriesRemoveOnShutdownTest.class, ignoredTests);
+
+        GridTestUtils.addTestIfNeeded(suite, GridCacheIoManagerRetryTest.class, ignoredTests);
 
         return suite;
     }

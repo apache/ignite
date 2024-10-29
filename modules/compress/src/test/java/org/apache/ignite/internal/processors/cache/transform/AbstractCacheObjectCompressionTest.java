@@ -89,7 +89,7 @@ public abstract class AbstractCacheObjectCompressionTest extends AbstractCacheOb
     /**
      *
      */
-    protected static class CompressionTransformer extends TestCacheObjectTransformerManagerAdapter {
+    protected static class CompressionTransformer extends TestCacheObjectTransformerProcessorAdapter {
         /** Comptession type. */
         protected static volatile CompressionType type = CompressionType.defaultType();
 

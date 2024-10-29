@@ -110,10 +110,10 @@ class ClientCachePartitionAwarenessGroup {
 
         for (CacheKeyConfiguration keyCfg : keyCfgs) {
             int keyTypeId = binProc.typeId(keyCfg.getTypeName());
-            int affinityKeyFieldId = binProc.binaryContext().fieldId(keyTypeId, keyCfg.getAffinityKeyFieldName());
+            int affKeyFieldId = binProc.binaryContext().fieldId(keyTypeId, keyCfg.getAffinityKeyFieldName());
 
             writer.writeInt(keyTypeId);
-            writer.writeInt(affinityKeyFieldId);
+            writer.writeInt(affKeyFieldId);
         }
     }
 
@@ -125,9 +125,9 @@ class ClientCachePartitionAwarenessGroup {
         if (o == null || getClass() != o.getClass())
             return false;
 
-        ClientCachePartitionAwarenessGroup group = (ClientCachePartitionAwarenessGroup)o;
+        ClientCachePartitionAwarenessGroup grp = (ClientCachePartitionAwarenessGroup)o;
 
-        return dfltAffinity == group.dfltAffinity && Objects.equals(mapping, group.mapping);
+        return dfltAffinity == grp.dfltAffinity && Objects.equals(mapping, grp.mapping);
     }
 
     /** {@inheritDoc} */

@@ -69,9 +69,9 @@ public class IgniteCacheDistributedPartitionQuerySelfTest extends IgniteCacheDis
     /** Tests local query over partitions. */
     @Test
     public void testLocalQuery() {
-        Affinity<Object> affinity = grid(0).affinity("cl");
+        Affinity<Object> aff = grid(0).affinity("cl");
 
-        int[] parts = affinity.primaryPartitions(grid(0).localNode());
+        int[] parts = aff.primaryPartitions(grid(0).localNode());
 
         Arrays.sort(parts);
 
@@ -84,7 +84,7 @@ public class IgniteCacheDistributedPartitionQuerySelfTest extends IgniteCacheDis
         List<Cache.Entry<ClientKey, Client>> clients = cl.query(qry1).getAll();
 
         for (Cache.Entry<ClientKey, Client> client : clients)
-            assertEquals("Incorrect partition", parts[0], affinity.partition(client.getKey()));
+            assertEquals("Incorrect partition", parts[0], aff.partition(client.getKey()));
 
         SqlFieldsQuery qry2 = new SqlFieldsQuery("select cl._KEY, cl._VAL from \"cl\".Client cl");
         qry2.setLocal(true);
@@ -93,6 +93,6 @@ public class IgniteCacheDistributedPartitionQuerySelfTest extends IgniteCacheDis
         List<List<?>> rows = cl.query(qry2).getAll();
 
         for (List<?> row : rows)
-            assertEquals("Incorrect partition", parts[0], affinity.partition(row.get(0)));
+            assertEquals("Incorrect partition", parts[0], aff.partition(row.get(0)));
     }
 }

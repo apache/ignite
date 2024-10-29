@@ -20,7 +20,7 @@ package org.apache.ignite.spi.discovery.tcp.internal;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicLong;
-import org.apache.ignite.internal.processors.metric.MetricRegistry;
+import org.apache.ignite.internal.processors.metric.MetricRegistryImpl;
 import org.apache.ignite.internal.processors.metric.impl.IntMetricImpl;
 import org.apache.ignite.internal.util.GridBoundedLinkedHashMap;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
@@ -96,7 +96,7 @@ public class TcpDiscoveryStatistics {
     /**
      * @param discoReg Discovery metric registry.
      */
-    public void registerMetrics(MetricRegistry discoReg) {
+    public void registerMetrics(MetricRegistryImpl discoReg) {
         discoReg.register("TotalProcessedMessages", this::totalProcessedMessages, "Total processed messages count");
 
         discoReg.register("TotalReceivedMessages", this::totalReceivedMessages, "Total received messages count");

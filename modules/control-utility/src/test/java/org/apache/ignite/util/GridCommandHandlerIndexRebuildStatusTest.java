@@ -17,14 +17,21 @@
 
 package org.apache.ignite.util;
 
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
+import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.IgniteException;
+import org.apache.ignite.Ignition;
 import org.apache.ignite.cluster.ClusterState;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
@@ -39,9 +46,11 @@ import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.junit.Test;
 
+import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static org.apache.ignite.internal.commandline.CommandHandler.EXIT_CODE_OK;
 import static org.apache.ignite.testframework.GridTestUtils.assertContains;
 import static org.apache.ignite.testframework.GridTestUtils.deleteIndexBin;
+import static org.apache.ignite.testframework.GridTestUtils.waitForCondition;
 import static org.apache.ignite.util.GridCommandHandlerIndexingUtils.createAndFillCache;
 import static org.apache.ignite.util.GridCommandHandlerIndexingUtils.createAndFillThreeFieldsEntryCache;
 import static org.apache.ignite.util.GridCommandHandlerIndexingUtils.simpleIndexEntity;
@@ -90,6 +99,7 @@ public class GridCommandHandlerIndexRebuildStatusTest extends GridCommandHandler
 
         idxRebuildsStartedNum.set(0);
         statusRequestingFinished.set(false);
+        BlockingSchemaIndexCacheVisitorClosure.rowIndexListener = null;
     }
 
     /** {@inheritDoc} */
@@ -134,7 +144,7 @@ public class GridCommandHandlerIndexRebuildStatusTest extends GridCommandHandler
         injectTestSystemOut();
         idxRebuildsStartedNum.set(0);
 
-        final TestCommandHandler handler = newCommandHandler(createTestLogger());
+        final TestCommandHandler hnd = newCommandHandler(createTestLogger());
 
         stopGrid(GRIDS_NUM - 1);
         stopGrid(GRIDS_NUM - 2);
@@ -143,22 +153,45 @@ public class GridCommandHandlerIndexRebuildStatusTest extends GridCommandHandler
         deleteIndexBin(getTestIgniteInstanceName(GRIDS_NUM - 2));
 
         IndexProcessor.idxRebuildCls = BlockingIndexesRebuildTask.class;
-        IgniteEx ignite1 = startGrid(GRIDS_NUM - 1);
+        startGrid(GRIDS_NUM - 1);
 
         IndexProcessor.idxRebuildCls = BlockingIndexesRebuildTask.class;
-        IgniteEx ignite2 = startGrid(GRIDS_NUM - 2);
+        startGrid(GRIDS_NUM - 2);
 
-        final UUID id1 = ignite1.localNode().id();
-        final UUID id2 = ignite2.localNode().id();
+        grid(0).cache("cache1").enableStatistics(true);
 
         boolean allRebuildsStarted = GridTestUtils.waitForCondition(() -> idxRebuildsStartedNum.get() == 6, 30_000);
         assertTrue("Failed to wait for all indexes to start being rebuilt", allRebuildsStarted);
 
-        assertEquals(EXIT_CODE_OK, execute(handler, "--cache", "indexes_rebuild_status"));
+        assertEquals(EXIT_CODE_OK, execute(hnd, "--cache", "indexes_rebuild_status"));
+
+        checkResult(hnd, 1, 2);
 
         statusRequestingFinished.set(true);
 
-        checkResult(handler, id1, id2);
+        CountDownLatch idxProgressBlockedLatch = new CountDownLatch(1);
+        CountDownLatch idxProgressUnblockedLatch = new CountDownLatch(1);
+
+        BlockingSchemaIndexCacheVisitorClosure.rowIndexListener = () -> {
+            if (isIndexRebuildInProgress("cache1")) {
+                try {
+                    idxProgressBlockedLatch.countDown();
+
+                    idxProgressUnblockedLatch.await(getTestTimeout(), MILLISECONDS);
+                }
+                catch (InterruptedException e) {
+                    throw new IgniteException(e);
+                }
+            }
+        };
+
+        assertTrue(idxProgressBlockedLatch.await(getTestTimeout(), MILLISECONDS));
+
+        assertEquals(EXIT_CODE_OK, execute(hnd, "--cache", "indexes_rebuild_status"));
+
+        checkRebuildInProgressOutputFor("cache1");
+
+        idxProgressUnblockedLatch.countDown();
     }
 
     /**
@@ -169,7 +202,7 @@ public class GridCommandHandlerIndexRebuildStatusTest extends GridCommandHandler
         injectTestSystemOut();
         idxRebuildsStartedNum.set(0);
 
-        final TestCommandHandler handler = newCommandHandler(createTestLogger());
+        final TestCommandHandler hnd = newCommandHandler(createTestLogger());
 
         stopGrid(GRIDS_NUM - 1);
         stopGrid(GRIDS_NUM - 2);
@@ -188,11 +221,11 @@ public class GridCommandHandlerIndexRebuildStatusTest extends GridCommandHandler
         boolean allRebuildsStarted = GridTestUtils.waitForCondition(() -> idxRebuildsStartedNum.get() == 6, 30_000);
         assertTrue("Failed to wait for all indexes to start being rebuilt", allRebuildsStarted);
 
-        assertEquals(EXIT_CODE_OK, execute(handler, "--cache", "indexes_rebuild_status", "--node-id", id1.toString()));
+        assertEquals(EXIT_CODE_OK, execute(hnd, "--cache", "indexes_rebuild_status", "--node-id", id1.toString()));
 
         statusRequestingFinished.set(true);
 
-        checkResult(handler, id1);
+        checkResult(hnd, 2);
     }
 
     /**
@@ -214,26 +247,82 @@ public class GridCommandHandlerIndexRebuildStatusTest extends GridCommandHandler
      * in {@code handler} last operation result and in {@code testOut}.
      *
      * @param handler CommandHandler used to run command.
-     * @param nodeIds Ids to check.
+     * @param nodeIdxs Indexes of node to check.
      */
-    private void checkResult(TestCommandHandler handler, UUID... nodeIds) {
+    private void checkResult(TestCommandHandler handler, int... nodeIdxs) {
         String output = testOut.toString();
 
         Map<UUID, Set<IndexRebuildStatusInfoContainer>> cmdResult = handler.getLastOperationResult();
-        assertNotNull(cmdResult);
-        assertEquals("Unexpected number of nodes in result", nodeIds.length, cmdResult.size());
 
-        for (UUID nodeId: nodeIds) {
-            Set<IndexRebuildStatusInfoContainer> cacheInfos = cmdResult.get(nodeId);
+        assertNotNull(cmdResult);
+        assertEquals("Unexpected number of nodes in result", nodeIdxs.length, cmdResult.size());
+
+        for (int nodeIdx : nodeIdxs) {
+            Set<IndexRebuildStatusInfoContainer> cacheInfos = cmdResult.get(grid(nodeIdx).localNode().id());
+
             assertNotNull(cacheInfos);
             assertEquals("Unexpected number of cacheInfos in result", 3, cacheInfos.size());
 
-            final String nodeStr = "node_id=" + nodeId + ", groupName=group1, cacheName=cache2\n" +
-                "node_id=" + nodeId + ", groupName=group2, cacheName=cache1\n" +
-                "node_id=" + nodeId + ", groupName=no_group, cacheName=cache_no_group";
-
-            assertContains(log, output, nodeStr);
+            checkRebuildStartOutput(output, nodeIdx, "group1", "cache2");
+            checkRebuildStartOutput(output, nodeIdx, "group2", "cache1");
+            checkRebuildStartOutput(output, nodeIdx, "no_group", "cache_no_group");
         }
+    }
+
+    /** */
+    private void checkRebuildStartOutput(String output, int nodeIdx, String grpName, String cacheName) {
+        IgniteEx ignite = grid(nodeIdx);
+
+        int locPartsCnt = ignite.context().cache().cache(cacheName).context().topology().localPartitions().size();
+
+        assertContains(
+            log,
+            output,
+            "node_id=" + ignite.localNode().id() +
+                ", groupName=" + grpName +
+                ", cacheName=" + cacheName +
+                ", indexBuildPartitionsLeftCount=" + locPartsCnt +
+                ", totalPartitionsCount=" + locPartsCnt +
+                ", progress=0%");
+    }
+
+    /** */
+    private void checkRebuildInProgressOutputFor(String cacheName) throws Exception {
+        Matcher matcher = Pattern.compile(
+            "cacheName=" + cacheName + ", indexBuildPartitionsLeftCount=(\\d+), totalPartitionsCount=(\\d+), progress=(\\d+)%"
+        ).matcher(testOut.toString());
+
+        List<Integer> rebuildProgressStatuses = new ArrayList<>();
+        List<Integer> idxBuildPartitionsLeftCounts = new ArrayList<>();
+
+        while (matcher.find()) {
+            idxBuildPartitionsLeftCounts.add(Integer.parseInt(matcher.group(1)));
+
+            rebuildProgressStatuses.add(Integer.parseInt(matcher.group(3)));
+        }
+
+        assertTrue(rebuildProgressStatuses.stream().anyMatch(progress -> progress > 0));
+
+        int cacheTotalRebuildingPartsCnt = idxBuildPartitionsLeftCounts.stream().mapToInt(Integer::intValue).sum();
+
+        assertTrue(waitForCondition(
+            () -> grid(0).cache(cacheName).metrics().getIndexBuildPartitionsLeftCount() == cacheTotalRebuildingPartsCnt,
+            getTestTimeout())
+        );
+    }
+
+    /** */
+    private boolean isIndexRebuildInProgress(String cacheName) {
+        for (Ignite ignite : Ignition.allGrids()) {
+            GridCacheContext<Object, Object> cctx = ((IgniteEx)ignite).context().cache().cache(cacheName).context();
+
+            long parts = cctx.cache().metrics0().getIndexBuildPartitionsLeftCount();
+
+            if (parts > 0 && parts < cctx.topology().partitions() / 2)
+                return true;
+        }
+
+        return false;
     }
 
     /**
@@ -256,6 +345,9 @@ public class GridCommandHandlerIndexRebuildStatusTest extends GridCommandHandler
         /** */
         private SchemaIndexCacheVisitorClosure original;
 
+        /** */
+        public static Runnable rowIndexListener;
+
         /**
          * @param original Original.
          */
@@ -273,6 +365,9 @@ public class GridCommandHandlerIndexRebuildStatusTest extends GridCommandHandler
 
                 statusRequestingFinished.set(true);
             }
+
+            if (rowIndexListener != null)
+                rowIndexListener.run();
 
             original.apply(row);
         }

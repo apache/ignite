@@ -59,6 +59,7 @@ import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.NodeStoppingException;
 import org.apache.ignite.internal.cluster.ClusterTopologyCheckedException;
 import org.apache.ignite.internal.compute.ComputeTaskCancelledCheckedException;
+import org.apache.ignite.internal.events.ManagementTaskEvent;
 import org.apache.ignite.internal.managers.communication.GridIoManager;
 import org.apache.ignite.internal.managers.communication.GridMessageListener;
 import org.apache.ignite.internal.managers.deployment.GridDeployment;
@@ -68,8 +69,9 @@ import org.apache.ignite.internal.processors.GridProcessorAdapter;
 import org.apache.ignite.internal.processors.cache.IgniteInternalCache;
 import org.apache.ignite.internal.processors.cluster.IgniteChangeGlobalStateSupport;
 import org.apache.ignite.internal.processors.job.ComputeJobStatusEnum;
-import org.apache.ignite.internal.processors.metric.MetricRegistry;
+import org.apache.ignite.internal.processors.metric.MetricRegistryImpl;
 import org.apache.ignite.internal.processors.metric.impl.LongAdderMetric;
+import org.apache.ignite.internal.processors.platform.compute.PlatformFullTask;
 import org.apache.ignite.internal.processors.task.monitor.ComputeGridMonitor;
 import org.apache.ignite.internal.processors.task.monitor.ComputeTaskStatus;
 import org.apache.ignite.internal.processors.task.monitor.ComputeTaskStatusSnapshot;
@@ -178,7 +180,7 @@ public class GridTaskProcessor extends GridProcessorAdapter implements IgniteCha
 
         discoLsnr = new TaskDiscoveryListener();
 
-        MetricRegistry sysreg = ctx.metric().registry(SYS_METRICS);
+        MetricRegistryImpl sysreg = ctx.metric().registry(SYS_METRICS);
 
         execTasks = sysreg.longAdderMetric(TOTAL_EXEC_TASKS, "Total executed tasks.");
 
@@ -197,6 +199,8 @@ public class GridTaskProcessor extends GridProcessorAdapter implements IgniteCha
         ctx.io().addMessageListener(TOPIC_JOB_SIBLINGS, new JobSiblingsMessageListener());
         ctx.io().addMessageListener(TOPIC_TASK_CANCEL, new TaskCancelMessageListener());
         ctx.io().addMessageListener(TOPIC_TASK, new JobMessageListener(true));
+
+        ctx.internalSubscriptionProcessor().registerGlobalStateListener(this);
 
         if (log.isDebugEnabled())
             log.debug("Started task processor.");
@@ -641,8 +645,9 @@ public class GridTaskProcessor extends GridProcessorAdapter implements IgniteCha
         if (log.isDebugEnabled())
             log.debug("Task deployment: " + dep);
 
-        boolean fullSup = dep != null && taskCls != null &&
-            dep.annotation(taskCls, ComputeTaskSessionFullSupport.class) != null;
+        boolean fullSup = (dep != null && taskCls != null &&
+            dep.annotation(taskCls, ComputeTaskSessionFullSupport.class) != null) ||
+            (task instanceof PlatformFullTask && ((PlatformFullTask)task).taskSessionFullSupport());
 
         Collection<UUID> top = null;
 
@@ -714,18 +719,19 @@ public class GridTaskProcessor extends GridProcessorAdapter implements IgniteCha
                 assert taskWorker0 == null : "Session ID is not unique: " + sesId;
 
                 if (ctx.event().isRecordable(EVT_MANAGEMENT_TASK_STARTED) && dep.visorManagementTask(task, taskCls)) {
-                    VisorTaskArgument visorTaskArgument = (VisorTaskArgument)arg;
+                    VisorTaskArgument visorTaskArg = (VisorTaskArgument)arg;
 
-                    Event evt = new TaskEvent(
+                    Event evt = new ManagementTaskEvent(
                         ctx.discovery().localNode(),
-                        visorTaskArgument != null && visorTaskArgument.getArgument() != null
-                            ? visorTaskArgument.getArgument().toString() : "[]",
+                        visorTaskArg != null && visorTaskArg.getArgument() != null
+                            ? visorTaskArg.getArgument().toString() : "[]",
                         EVT_MANAGEMENT_TASK_STARTED,
                         ses.getId(),
-                        taskCls == null ? null : taskCls.getSimpleName(),
-                        "VisorManagementTask",
+                        taskName,
+                        taskCls == null ? null : taskCls.getName(),
                         false,
-                        securitySubjectId(ctx)
+                        securitySubjectId(ctx),
+                        visorTaskArg
                     );
 
                     ctx.event().record(evt);
@@ -1165,7 +1171,7 @@ public class GridTaskProcessor extends GridProcessorAdapter implements IgniteCha
 
     /** {@inheritDoc} */
     @Override public void onDeActivate(GridKernalContext kctx) {
-        onKernalStop(true);
+        // No-op.
     }
 
     /**
@@ -1195,16 +1201,16 @@ public class GridTaskProcessor extends GridProcessorAdapter implements IgniteCha
             if (worker.endTime() < Long.MAX_VALUE)
                 ctx.timeout().addTimeoutObject(worker);
 
-            GridTaskSessionImpl session = worker.getSession();
+            GridTaskSessionImpl ses = worker.getSession();
 
-            notifyTaskStatusMonitors(ComputeTaskStatus.snapshot(session), false);
+            notifyTaskStatusMonitors(ComputeTaskStatus.snapshot(ses), false);
         }
 
         /** {@inheritDoc} */
         @Override public void onJobsMapped(GridTaskWorker<?, ?> worker) {
-            GridTaskSessionImpl session = worker.getSession();
+            GridTaskSessionImpl ses = worker.getSession();
 
-            notifyTaskStatusMonitors(ComputeTaskStatus.snapshot(session), false);
+            notifyTaskStatusMonitors(ComputeTaskStatus.snapshot(ses), false);
         }
 
         /** {@inheritDoc} */

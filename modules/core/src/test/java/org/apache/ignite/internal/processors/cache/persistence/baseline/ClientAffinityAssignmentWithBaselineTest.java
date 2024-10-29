@@ -795,11 +795,14 @@ public class ClientAffinityAssignmentWithBaselineTest extends GridCommonAbstract
         AtomicReference<Throwable> loadError,
         ConcurrentMap<Long, Long> threadProgressTracker
     ) {
+        if (cacheConfig(cacheName).getAtomicityMode() == CacheAtomicityMode.ATOMIC)
+            return;
+
         GridTestUtils.runAsync(new Runnable() {
             @Override public void run() {
                 ThreadLocalRandom r = ThreadLocalRandom.current();
 
-                IgniteCache<Integer, String> cache = ig.cache(cacheName).withAllowAtomicOpsInTx();
+                IgniteCache<Integer, String> cache = ig.cache(cacheName);
 
                 boolean pessimistic = r.nextBoolean();
                 boolean rollback = r.nextBoolean();
@@ -947,7 +950,6 @@ public class ClientAffinityAssignmentWithBaselineTest extends GridCommonAbstract
         ClusterTopologyException ex = X.cause(e, ClusterTopologyException.class);
         IgniteFuture f;
 
-        // For now in MVCC case the topology exception doesn't have a remap future.
         if (ex != null && (f = ex.retryReadyFuture()) != null)
             f.get();
     }

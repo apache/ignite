@@ -89,20 +89,20 @@ public class EventListenerDemultiplexer {
         if (F.isEmpty(cfg.getEventListeners()))
             return NO_OP;
 
-        List<RequestEventListener> qryEventListeners = new ArrayList<>();
-        List<ConnectionEventListener> connEventListeners = new ArrayList<>();
+        List<RequestEventListener> qryEvtListeners = new ArrayList<>();
+        List<ConnectionEventListener> connEvtListeners = new ArrayList<>();
 
         for (EventListener l: cfg.getEventListeners()) {
             if (l instanceof RequestEventListener)
-                qryEventListeners.add((RequestEventListener)l);
+                qryEvtListeners.add((RequestEventListener)l);
             else if (l instanceof ConnectionEventListener)
-                connEventListeners.add((ConnectionEventListener)l);
+                connEvtListeners.add((ConnectionEventListener)l);
         }
 
-        if (F.isEmpty(qryEventListeners) && F.isEmpty(connEventListeners))
+        if (F.isEmpty(qryEvtListeners) && F.isEmpty(connEvtListeners))
             return NO_OP;
 
-        return new EventListenerDemultiplexer(qryEventListeners, connEventListeners, NullLogger.whenNull(cfg.getLogger()));
+        return new EventListenerDemultiplexer(qryEvtListeners, connEvtListeners, NullLogger.whenNull(cfg.getLogger()));
     }
 
     /**

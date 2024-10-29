@@ -75,16 +75,16 @@ public class IgniteSqlQueryMinMaxTest extends AbstractIndexingCommonTest {
         try (Ignite client = startClientGrid("client")) {
             IgniteCache<Integer, ValueObj> cache = client.cache(CACHE_NAME_2);
 
-            int count = 1_000;
-            for (int idx = 0; idx < count; ++idx)
-                cache.put(idx, new ValueObj(count - idx - 1, 0));
+            int cnt = 1_000;
+            for (int idx = 0; idx < cnt; ++idx)
+                cache.put(idx, new ValueObj(cnt - idx - 1, 0));
 
             long start = System.currentTimeMillis();
             QueryCursor<List<?>> cursor = cache.query(new SqlFieldsQuery("select min(_key), max(_key) from ValueObj"));
             List<List<?>> result = cursor.getAll();
             assertEquals(1, result.size());
             assertEquals(0, result.get(0).get(0));
-            assertEquals(count - 1, result.get(0).get(1));
+            assertEquals(cnt - 1, result.get(0).get(1));
             if (log.isDebugEnabled())
                 log.debug("Elapsed(1): " + (System.currentTimeMillis() - start));
 
@@ -93,7 +93,7 @@ public class IgniteSqlQueryMinMaxTest extends AbstractIndexingCommonTest {
             result = cursor.getAll();
             assertEquals(1, result.size());
             assertEquals(0, result.get(0).get(0));
-            assertEquals(count - 1, result.get(0).get(1));
+            assertEquals(cnt - 1, result.get(0).get(1));
             if (log.isDebugEnabled())
                 log.debug("Elapsed(2): " + (System.currentTimeMillis() - start));
 
@@ -102,7 +102,7 @@ public class IgniteSqlQueryMinMaxTest extends AbstractIndexingCommonTest {
             result = cursor.getAll();
             assertEquals(1, result.size());
             assertEquals(0, result.get(0).get(0));
-            assertEquals(count - 1, result.get(0).get(1));
+            assertEquals(cnt - 1, result.get(0).get(1));
             if (log.isDebugEnabled())
                 log.debug("Elapsed(3): " + (System.currentTimeMillis() - start));
         }
@@ -198,22 +198,22 @@ public class IgniteSqlQueryMinMaxTest extends AbstractIndexingCommonTest {
         try (Ignite client = startClientGrid("client")) {
             IgniteCache<Integer, ValueObj> cache = client.cache(CACHE_NAME_2);
 
-            int count = 1_000;
-            int groupSize = 100;
-            for (int idx = 0; idx < count; ++idx)
-                cache.put(idx, new ValueObj(count - idx - 1, groupSize));
+            int cnt = 1_000;
+            int grpSize = 100;
+            for (int idx = 0; idx < cnt; ++idx)
+                cache.put(idx, new ValueObj(cnt - idx - 1, grpSize));
 
             QueryCursor<List<?>> cursor = cache.query(new SqlFieldsQuery(
                     "select groupVal, min(idxVal), max(idxVal), min(nonIdxVal), max(nonIdxVal) " +
                     " from ValueObj group by groupVal order by groupVal"));
             List<List<?>> result = cursor.getAll();
 
-            assertEquals(count / groupSize, result.size());
+            assertEquals(cnt / grpSize, result.size());
 
             for (int idx = 0; idx < result.size(); ++idx) {
                 assertEquals(idx, result.get(idx).get(0)); //groupVal
-                int min = idx * groupSize;
-                int max = (idx + 1) * groupSize - 1;
+                int min = idx * grpSize;
+                int max = (idx + 1) * grpSize - 1;
                 assertEquals(min, result.get(idx).get(1)); //min(idxVal)
                 assertEquals(max, result.get(idx).get(2)); //max(idxVal)
                 assertEquals(min, result.get(idx).get(3)); //min(nonIdxVal)
@@ -228,10 +228,10 @@ public class IgniteSqlQueryMinMaxTest extends AbstractIndexingCommonTest {
         try (Ignite client = startClientGrid("client")) {
             IgniteCache<Integer, ValueObj> cache = client.cache(CACHE_NAME_2);
 
-            int count = 1_000;
-            int groupSize = 100;
-            for (int idx = 0; idx < count; ++idx)
-                cache.put(idx, new ValueObj(count - idx - 1, groupSize));
+            int cnt = 1_000;
+            int grpSize = 100;
+            for (int idx = 0; idx < cnt; ++idx)
+                cache.put(idx, new ValueObj(cnt - idx - 1, grpSize));
 
             QueryCursor<List<?>> cursor = cache.query(new SqlFieldsQuery(
                     "select groupVal, min(idxVal), max(idxVal), min(nonIdxVal), max(nonIdxVal) " +
@@ -241,21 +241,21 @@ public class IgniteSqlQueryMinMaxTest extends AbstractIndexingCommonTest {
             assertEquals(1, result.size());
             assertEquals(0, result.get(0).get(0)); //groupVal
             assertEquals(0, result.get(0).get(1)); //min(idxVal)
-            assertEquals(groupSize - 1, result.get(0).get(2)); //max(idxVal)
+            assertEquals(grpSize - 1, result.get(0).get(2)); //max(idxVal)
             assertEquals(0, result.get(0).get(3)); //min(nonIdxVal)
-            assertEquals(groupSize - 1, result.get(0).get(4)); //max(nonIdxVal)
+            assertEquals(grpSize - 1, result.get(0).get(4)); //max(nonIdxVal)
 
             cursor = cache.query(new SqlFieldsQuery(
                     "select groupVal, min(idxVal), max(idxVal), min(nonIdxVal), max(nonIdxVal) " +
-                         "from ValueObj group by groupVal having max(idxVal) = ?" ).setArgs(count - 1));
+                         "from ValueObj group by groupVal having max(idxVal) = ?" ).setArgs(cnt - 1));
 
             result = cursor.getAll();
             assertEquals(1, result.size());
-            assertEquals((count - 1) / groupSize, result.get(0).get(0)); //groupVal
-            assertEquals(count - groupSize, result.get(0).get(1)); //min(idxVal)
-            assertEquals(count - 1, result.get(0).get(2)); //max(idxVal)
-            assertEquals(count - groupSize, result.get(0).get(3)); //min(nonIdxVal)
-            assertEquals(count - 1, result.get(0).get(4)); //max(nonIdxVal)
+            assertEquals((cnt - 1) / grpSize, result.get(0).get(0)); //groupVal
+            assertEquals(cnt - grpSize, result.get(0).get(1)); //min(idxVal)
+            assertEquals(cnt - 1, result.get(0).get(2)); //max(idxVal)
+            assertEquals(cnt - grpSize, result.get(0).get(3)); //min(nonIdxVal)
+            assertEquals(cnt - 1, result.get(0).get(4)); //max(nonIdxVal)
         }
     }
 
@@ -266,11 +266,11 @@ public class IgniteSqlQueryMinMaxTest extends AbstractIndexingCommonTest {
             IgniteCache<Integer, Integer> cache = client.cache(CACHE_NAME);
             IgniteCache<Integer, ValueObj> cache2 = client.cache(CACHE_NAME_2);
 
-            int count = 1_000;
-            int groupSize = 100;
-            for (int idx = 0; idx < count; ++idx) {
+            int cnt = 1_000;
+            int grpSize = 100;
+            for (int idx = 0; idx < cnt; ++idx) {
                 cache.put(idx, idx);
-                cache2.put(idx, new ValueObj(count - idx - 1, groupSize));
+                cache2.put(idx, new ValueObj(cnt - idx - 1, grpSize));
             }
 
             //join a.key = b.key, collocated
@@ -281,13 +281,13 @@ public class IgniteSqlQueryMinMaxTest extends AbstractIndexingCommonTest {
                             "group by b.groupVal order by b.groupVal"));
 
             List<List<?>> result = cursor.getAll();
-            assertEquals(count / groupSize, result.size());
+            assertEquals(cnt / grpSize, result.size());
             for (int idx = 0; idx < result.size(); ++idx) {
                 assertEquals(idx, result.get(idx).get(0));
-                int min = idx * groupSize;
-                int max = (idx + 1) * groupSize - 1;
-                int revMin = count - max - 1;
-                int revMax = count - min - 1;
+                int min = idx * grpSize;
+                int max = (idx + 1) * grpSize - 1;
+                int revMin = cnt - max - 1;
+                int revMax = cnt - min - 1;
 
                 assertEquals(revMin, result.get(idx).get(1)); //min(a._key)
                 assertEquals(revMax, result.get(idx).get(2)); //max(a._key)
@@ -311,13 +311,13 @@ public class IgniteSqlQueryMinMaxTest extends AbstractIndexingCommonTest {
 
             result = cursor.getAll();
 
-            assertEquals(count / groupSize, result.size());
+            assertEquals(cnt / grpSize, result.size());
             for (int idx = 0; idx < result.size(); ++idx) {
                 assertEquals(idx, result.get(idx).get(0));
-                int min = idx * groupSize;
-                int max = (idx + 1) * groupSize - 1;
-                int revMin = count - max - 1;
-                int revMax = count - min - 1;
+                int min = idx * grpSize;
+                int max = (idx + 1) * grpSize - 1;
+                int revMin = cnt - max - 1;
+                int revMax = cnt - min - 1;
 
                 assertEquals(min, result.get(idx).get(1)); //min(a._key)
                 assertEquals(max, result.get(idx).get(2)); //max(a._key)

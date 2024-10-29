@@ -20,7 +20,6 @@ package org.apache.ignite.internal.management.api;
 import java.util.function.Consumer;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.internal.client.GridClient;
-import org.apache.ignite.internal.client.GridClientException;
 import org.apache.ignite.internal.dto.IgniteDataTransferObject;
 import org.jetbrains.annotations.Nullable;
 
@@ -44,5 +43,5 @@ public interface LocalCommand<A extends IgniteDataTransferObject, R> extends Com
      * @param printer Results printer.
      * @return Command result.
      */
-    public R execute(@Nullable GridClient cli, @Nullable Ignite ignite, A arg, Consumer<String> printer) throws GridClientException;
+    R execute(@Nullable GridClient cli, @Nullable Ignite ignite, A arg, Consumer<String> printer) throws Exception;
 }

@@ -84,6 +84,10 @@ public class VerifyBackupPartitionsTaskV2 extends ComputeTaskAdapter<CacheIdleVe
     /** First version of Ignite that is capable of executing Idle Verify V2. */
     public static final IgniteProductVersion V2_SINCE_VER = IgniteProductVersion.fromString("2.5.3");
 
+    /** Error thrown when idle_verify is called on an inactive cluster with persistence. */
+    public static final String IDLE_VERIFY_ON_INACTIVE_CLUSTER_ERROR_MESSAGE = "Cannot perform the operation because " +
+        "the cluster is inactive.";
+
     /** Injected logger. */
     @LoggerResource
     private IgniteLogger log;
@@ -194,6 +198,9 @@ public class VerifyBackupPartitionsTaskV2 extends ComputeTaskAdapter<CacheIdleVe
 
         /** {@inheritDoc} */
         @Override public Map<PartitionKeyV2, PartitionHashRecordV2> execute() throws IgniteException {
+            if (!ignite.context().state().publicApiActiveState(true))
+                throw new IgniteException(IDLE_VERIFY_ON_INACTIVE_CLUSTER_ERROR_MESSAGE);
+
             try {
                 ignite.context().cache().context().database().waitForCheckpoint("VerifyBackupPartitions");
             }
@@ -322,9 +329,9 @@ public class VerifyBackupPartitionsTaskV2 extends ComputeTaskAdapter<CacheIdleVe
 
         /** */
         private Set<Integer> getGroupIds() {
-            Collection<CacheGroupContext> cacheGroups = ignite.context().cache().cacheGroups();
+            Collection<CacheGroupContext> cacheGrps = ignite.context().cache().cacheGroups();
 
-            Set<Integer> grpIds = new CachesFiltering(cacheGroups)
+            Set<Integer> grpIds = new CachesFiltering(cacheGrps)
                 .filter(this::filterByCacheNames)
                 .filter(this::filterByCacheFilter)
                 .filter(this::filterByExcludeCaches)

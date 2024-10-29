@@ -165,6 +165,7 @@ data: {
       "CURSOR"
       "CYCLE"
       "DATE"
+      "DATETIME"
       "DAY"
       "DEALLOCATE"
       "DEC"
@@ -226,6 +227,7 @@ data: {
       "JSON_OBJECT"
       "JSON_OBJECTAGG"
       "JSON_QUERY"
+      "JSON_SCOPE"
       "JSON_VALUE"
       "LAG"
       "LANGUAGE"
@@ -272,6 +274,7 @@ data: {
       "ONE"
       "ONLY"
       "OPEN"
+      "ORDINAL"
       "OUT"
       "OVER"
       "OVERLAPS"
@@ -294,6 +297,7 @@ data: {
       "PREPARE"
       "PREV"
       "PROCEDURE"
+      "QUALIFY"
       "RANGE"
       "RANK"
       "READS"
@@ -322,6 +326,9 @@ data: {
       "ROWS"
       "ROW_NUMBER"
       "RUNNING"
+      "SAFE_CAST"
+      "SAFE_OFFSET"
+      "SAFE_ORDINAL"
       "SAVEPOINT"
       "SCOPE"
       "SCROLL"
@@ -369,6 +376,7 @@ data: {
       "TRIM"
       "TRIM_ARRAY"
       "TRUNCATE"
+      "TRY_CAST"
       "UESCAPE"
       "UNIQUE"
       "UNKNOWN"
@@ -389,6 +397,13 @@ data: {
       "WITHIN"
       "WITHOUT"
       "YEAR"
+      "MONDAY"
+      "TUESDAY"
+      "WEDNESDAY"
+      "THURSDAY"
+      "FRIDAY"
+      "SATURDAY"
+      "SUNDAY"
     ]
 
     # List of non-reserved keywords to remove;
@@ -435,7 +450,8 @@ data: {
     createStatementParserMethods: [
       "SqlCreateTable",
       "SqlCreateIndex",
-      "SqlCreateUser"
+      "SqlCreateUser",
+      "SqlCreateView"
     ]
 
     # List of methods for parsing extensions to "DROP" calls.
@@ -444,7 +460,8 @@ data: {
     dropStatementParserMethods: [
       "SqlDropTable",
       "SqlDropIndex",
-      "SqlDropUser"
+      "SqlDropUser",
+      "SqlDropView"
     ]
 
     # List of methods for parsing extensions to "ALTER <scope>" calls.

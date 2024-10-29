@@ -32,11 +32,10 @@ import java.util.stream.Collectors;
 import java.util.stream.LongStream;
 import org.apache.ignite.internal.GridDirectCollection;
 import org.apache.ignite.internal.GridDirectTransient;
+import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionState;
 import org.apache.ignite.internal.processors.query.calcite.message.MarshalableMessage;
-import org.apache.ignite.internal.processors.query.calcite.message.MarshallingContext;
 import org.apache.ignite.internal.processors.query.calcite.message.MessageType;
-import org.apache.ignite.internal.processors.query.calcite.rel.IgniteRel;
 import org.apache.ignite.internal.processors.query.calcite.util.Commons;
 import org.apache.ignite.internal.util.GridIntIterator;
 import org.apache.ignite.internal.util.GridIntList;
@@ -79,15 +78,15 @@ public class ColocationGroup implements MarshalableMessage {
 
     /** */
     public ColocationGroup local(UUID nodeId) {
-        List<List<UUID>> localAssignments = null;
+        List<List<UUID>> locAssignments = null;
         if (assignments != null) {
-            localAssignments = assignments.stream()
+            locAssignments = assignments.stream()
                     .map(l -> nodeId.equals(l.get(0)) ? l : Collections.<UUID>emptyList())
                     .collect(Collectors.toList());
         }
 
         return new ColocationGroup(Arrays.copyOf(sourceIds, sourceIds.length), Collections.singletonList(nodeId),
-                localAssignments);
+                locAssignments);
     }
 
     /** */
@@ -122,16 +121,6 @@ public class ColocationGroup implements MarshalableMessage {
         return Collections.emptyList();
     }
 
-    /**
-     * Prunes involved partitions (hence nodes, involved in query execution) on the basis of filter,
-     * its distribution, query parameters and original nodes mapping.
-     * @param rel Filter.
-     * @return Resulting nodes mapping.
-     */
-    public ColocationGroup prune(IgniteRel rel) {
-        return this; // TODO https://issues.apache.org/jira/browse/IGNITE-12455
-    }
-
     /** */
     public boolean belongs(long sourceId) {
         if (sourceIds == null)
@@ -153,11 +142,11 @@ public class ColocationGroup implements MarshalableMessage {
      * being calculated fragment.
      */
     public ColocationGroup colocate(ColocationGroup other) throws ColocationMappingException {
-        long[] sourceIds;
+        long[] srcIds;
         if (this.sourceIds == null || other.sourceIds == null)
-            sourceIds = U.firstNotNull(this.sourceIds, other.sourceIds);
+            srcIds = U.firstNotNull(this.sourceIds, other.sourceIds);
         else
-            sourceIds = LongStream.concat(Arrays.stream(this.sourceIds), Arrays.stream(other.sourceIds)).distinct().toArray();
+            srcIds = LongStream.concat(Arrays.stream(this.sourceIds), Arrays.stream(other.sourceIds)).distinct().toArray();
 
         List<UUID> nodeIds;
         if (this.nodeIds == null || other.nodeIds == null)
@@ -209,7 +198,7 @@ public class ColocationGroup implements MarshalableMessage {
             }
         }
 
-        return new ColocationGroup(sourceIds, nodeIds, assignments);
+        return new ColocationGroup(srcIds, nodeIds, assignments);
     }
 
     /** */
@@ -236,16 +225,22 @@ public class ColocationGroup implements MarshalableMessage {
             List<List<UUID>> assignments = new ArrayList<>(this.assignments.size());
             Set<UUID> nodes = new HashSet<>();
 
-            if (F.isEmpty(parts))
+            if (parts == null)
                 return this;
 
-            for (int i = 0; i < this.assignments.size(); ++i) {
-                UUID first = Arrays.binarySearch(parts, i) >= 0 ? F.first(this.assignments.get(i)) : null;
+            if (parts.length > 0) {
+                for (int i = 0; i < this.assignments.size(); ++i) {
+                    UUID first = Arrays.binarySearch(parts, i) >= 0 ? F.first(this.assignments.get(i)) : null;
 
-                if (first != null)
-                    nodes.add(first);
+                    if (first != null)
+                        nodes.add(first);
 
-                assignments.add(first != null ? this.assignments.get(i) : Collections.emptyList());
+                    assignments.add(first != null ? this.assignments.get(i) : Collections.emptyList());
+                }
+            }
+            else {
+                for (int i = 0; i < this.assignments.size(); ++i)
+                    assignments.add(Collections.emptyList());
             }
 
             return new ColocationGroup(sourceIds, new ArrayList<>(nodes), assignments);
@@ -363,7 +358,7 @@ public class ColocationGroup implements MarshalableMessage {
     }
 
     /** {@inheritDoc} */
-    @Override public void prepareMarshal(MarshallingContext ctx) {
+    @Override public void prepareMarshal(GridCacheSharedContext<?, ?> ctx) {
         if (assignments != null && marshalledAssignments == null) {
             Map<UUID, Integer> nodeIdxs = new HashMap<>();
 
@@ -391,7 +386,7 @@ public class ColocationGroup implements MarshalableMessage {
     }
 
     /** {@inheritDoc} */
-    @Override public void prepareUnmarshal(MarshallingContext ctx) {
+    @Override public void prepareUnmarshal(GridCacheSharedContext<?, ?> ctx) {
         if (marshalledAssignments != null && assignments == null) {
             int bitsPerPart = Integer.SIZE - Integer.numberOfLeadingZeros(nodeIds.size());
 

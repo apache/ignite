@@ -17,7 +17,7 @@
 
 package org.apache.ignite.internal.processors.cache.transform;
 
-import org.apache.ignite.internal.cache.transform.CacheObjectTransformerManager;
+import org.apache.ignite.internal.cache.transform.CacheObjectTransformerProcessor;
 import org.apache.ignite.plugin.AbstractTestPluginProvider;
 import org.apache.ignite.plugin.PluginContext;
 import org.jetbrains.annotations.Nullable;
@@ -27,12 +27,12 @@ import org.jetbrains.annotations.Nullable;
  */
 public class TestCacheObjectTransformerPluginProvider extends AbstractTestPluginProvider {
     /** Manager. */
-    private final CacheObjectTransformerManager mgr;
+    private final CacheObjectTransformerProcessor mgr;
 
     /**
      * @param mgr Manager.
      */
-    public TestCacheObjectTransformerPluginProvider(CacheObjectTransformerManager mgr) {
+    public TestCacheObjectTransformerPluginProvider(CacheObjectTransformerProcessor mgr) {
         this.mgr = mgr;
     }
 
@@ -43,7 +43,7 @@ public class TestCacheObjectTransformerPluginProvider extends AbstractTestPlugin
 
     /** {@inheritDoc} */
     @Nullable @Override public <T> T createComponent(PluginContext ctx, Class<T> cls) {
-        if (CacheObjectTransformerManager.class.equals(cls))
+        if (CacheObjectTransformerProcessor.class.equals(cls))
             return (T)mgr;
 
         return null;

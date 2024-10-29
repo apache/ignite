@@ -16,6 +16,9 @@
 """
 This module contains JVM utilities.
 """
+
+from ignitetest.services.utils.decorators import memoize
+
 DEFAULT_HEAP = "768M"
 
 JVM_PARAMS_GC_G1 = "-XX:+UseG1GC -XX:MaxGCPauseMillis=100 " \
@@ -35,7 +38,7 @@ def create_jvm_settings(heap_size=DEFAULT_HEAP, gc_settings=JVM_PARAMS_GC_G1, ge
     """
     gc_dump = ""
     if gc_dump_path:
-        gc_dump = "-verbose:gc -Xloggc:" + gc_dump_path
+        gc_dump = "-Xlog:gc*=debug,gc+stats*=debug,gc+ergo*=debug:" + gc_dump_path + ":uptime,time,level,tags"
 
     out_of_mem_dump = ""
     if oom_path:
@@ -74,6 +77,31 @@ def merge_jvm_settings(src_settings, additionals):
     return listed
 
 
+def java_major_version(version):
+    """
+    :param version: Full java version
+    :return: Java major version
+    """
+    if version:
+        version = version.split('.')
+
+        return int(version[1]) if version[0] == '1' else int(version[0])
+
+    return -1
+
+
+def java_version(node):
+    """
+    :param node: Ducktape cluster node
+    :return: java version
+    """
+    cmd = r"java -version 2>&1 | awk -F[\"\-] '/version/ {print $2}'"
+
+    raw_version = list(node.account.ssh_capture(cmd, allow_fail=False))
+
+    return raw_version[0].strip() if raw_version else ''
+
+
 def _to_map(params):
     """"""
     assert isinstance(params, (str, list)), "JVM params an be string or list only."
@@ -107,6 +135,7 @@ class JvmProcessMixin:
     """
     Mixin to work with JVM processes
     """
+
     @staticmethod
     def pids(node, java_class):
         """
@@ -118,3 +147,15 @@ class JvmProcessMixin:
         cmd = "ps -C java -wwo pid,args | grep '%s' | awk -F' ' '{print $1}'" % java_class
 
         return [int(pid) for pid in node.account.ssh_capture(cmd, allow_fail=True)]
+
+
+class JvmVersionMixin:
+    """
+    Mixin to get java version on node.
+    """
+    @memoize
+    def java_version(self):
+        """
+        :return: Full java version of service.
+        """
+        return java_version(self.nodes[0])

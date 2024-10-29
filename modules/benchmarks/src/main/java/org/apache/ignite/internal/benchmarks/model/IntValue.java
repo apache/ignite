@@ -90,9 +90,9 @@ public class IntValue implements Externalizable, Binarylizable {
         if (o == null || getClass() != o.getClass())
             return false;
 
-        IntValue value = (IntValue)o;
+        IntValue val = (IntValue)o;
 
-        return val == value.val;
+        return this.val == val.val;
     }
 
     /** {@inheritDoc} */

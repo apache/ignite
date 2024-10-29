@@ -76,11 +76,11 @@ public class BitSetIntSetTest extends GridCommonAbstractTest {
         IntSet intSet = new BitSetIntSet(2);
         intSet.add(1);
         intSet.add(2);
-        Iterator<Integer> iterator = intSet.iterator();
+        Iterator<Integer> iter = intSet.iterator();
 
-        iterator.next();
-        iterator.next();
-        iterator.next();
+        iter.next();
+        iter.next();
+        iter.next();
     }
 
     /** */
@@ -146,24 +146,24 @@ public class BitSetIntSetTest extends GridCommonAbstractTest {
         assertTrue(bitSet.add(11));
         assertTrue(bitSet.add(1025));
 
-        Iterator<Integer> iterator = bitSet.iterator();
+        Iterator<Integer> iter = bitSet.iterator();
 
-        assertTrue(iterator.hasNext());
-        assertEquals(0, (int)iterator.next());
+        assertTrue(iter.hasNext());
+        assertEquals(0, (int)iter.next());
 
-        assertTrue(iterator.hasNext());
-        assertEquals(1, (int)iterator.next());
+        assertTrue(iter.hasNext());
+        assertEquals(1, (int)iter.next());
 
-        assertTrue(iterator.hasNext());
-        assertEquals(10, (int)iterator.next());
+        assertTrue(iter.hasNext());
+        assertEquals(10, (int)iter.next());
 
-        assertTrue(iterator.hasNext());
-        assertEquals(11, (int)iterator.next());
+        assertTrue(iter.hasNext());
+        assertEquals(11, (int)iter.next());
 
-        assertTrue(iterator.hasNext());
-        assertEquals(1025, (int)iterator.next());
+        assertTrue(iter.hasNext());
+        assertEquals(1025, (int)iter.next());
 
-        assertFalse(iterator.hasNext());
+        assertFalse(iter.hasNext());
 
         List<Integer> list = new ArrayList<>();
 

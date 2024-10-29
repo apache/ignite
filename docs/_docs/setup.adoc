@@ -326,7 +326,7 @@ Example of the output:
 ignite.sh -systemProps
 IGNITE_AFFINITY_HISTORY_SIZE                                    - [Integer] Maximum size for affinity assignment history. Default is 25.
 IGNITE_ALLOW_ATOMIC_OPS_IN_TX                                   - [Boolean] Allows atomic operations inside transactions. Default is true.
-IGNITE_ALLOW_DML_INSIDE_TRANSACTION                             - [Boolean] When set to true, Ignite will allow executing DML operation (MERGE|INSERT|UPDATE|DELETE) within transactions for non MVCC mode. Default is false.
+IGNITE_ALLOW_DML_INSIDE_TRANSACTION                             - [Boolean] When set to true, Ignite will allow executing DML operation (MERGE|INSERT|UPDATE|DELETE) within transactions. Default is false.
 IGNITE_ALLOW_START_CACHES_IN_PARALLEL                           - [Boolean] Allows to start multiple caches in parallel. Default is true.
 ...
 

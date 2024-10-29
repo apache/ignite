@@ -49,7 +49,7 @@ public class CacheKey {
         this.query = query;
         this.contextKey = contextKey;
         paramTypes = params.length == 0 ? null :
-            Arrays.stream(params).map(p -> (p != null) ? p.getClass() : Void.class).toArray(Class[]::new);;
+            Arrays.stream(params).map(p -> (p != null) ? p.getClass() : Void.class).toArray(Class[]::new);
     }
 
     /**

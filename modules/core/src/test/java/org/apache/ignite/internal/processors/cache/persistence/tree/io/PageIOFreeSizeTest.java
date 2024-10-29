@@ -177,7 +177,7 @@ public class PageIOFreeSizeTest extends GridCommonAbstractTest {
     /** */
     @Test
     public void testBPlusIO() throws IgniteCheckedException {
-        BPlusInnerIO<IndexRow> io = io(AbstractInlineInnerIO.versions(42, false));
+        BPlusInnerIO<IndexRow> io = io(AbstractInlineInnerIO.versions(42));
 
         int emptyPageSz = io.getMaxCount(addr, pageSz) * io.getItemSize();
 

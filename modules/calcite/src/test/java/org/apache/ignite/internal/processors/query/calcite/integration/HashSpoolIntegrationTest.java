@@ -23,11 +23,11 @@ import org.junit.Test;
 /**
  * Hash spool test.
  */
-public class HashSpoolIntegrationTest extends AbstractBasicIntegrationTest {
+public class HashSpoolIntegrationTest extends AbstractBasicIntegrationTransactionalTest {
     /** */
     @Test
     public void testNullsInSearchRow() {
-        executeSql("CREATE TABLE t(i1 INTEGER, i2 INTEGER)");
+        executeSql("CREATE TABLE t(i1 INTEGER, i2 INTEGER) WITH " + atomicity());
         executeSql("INSERT INTO t VALUES (null, 0), (1, 1), (2, 2), (3, null)");
 
         assertQuery("SELECT i1, (SELECT i2 FROM t WHERE i1=t1.i1) FROM t t1")
@@ -50,13 +50,12 @@ public class HashSpoolIntegrationTest extends AbstractBasicIntegrationTest {
     /** */
     @Test
     public void testNullsInSearchRowMultipleColumns() {
-        executeSql("CREATE TABLE t0(i1 INTEGER, i2 INTEGER)");
-        executeSql("CREATE TABLE t1(i1 INTEGER, i2 INTEGER)");
+        executeSql("CREATE TABLE t0(i1 INTEGER, i2 INTEGER) WITH " + atomicity());
+        executeSql("CREATE TABLE t1(i1 INTEGER, i2 INTEGER) WITH " + atomicity());
         executeSql("INSERT INTO t0 VALUES (null, 0), (1, null), (null, 2), (3, null), (1, 1)");
         executeSql("INSERT INTO t1 VALUES (null, 0), (null, 1), (2, null), (3, null), (1, 1)");
 
-        String sql = "SELECT /*+ DISABLE_RULE ('MergeJoinConverter', 'NestedLoopJoinConverter', " +
-            "'FilterSpoolMergeToSortedIndexSpoolRule')*/ * " +
+        String sql = "SELECT /*+ CNL_JOIN, DISABLE_RULE('FilterSpoolMergeToSortedIndexSpoolRule') */ * " +
             "FROM t0 JOIN t1 ON t0.i1=t1.i1 AND t0.i2=t1.i2";
 
         assertQuery(sql)
@@ -68,7 +67,7 @@ public class HashSpoolIntegrationTest extends AbstractBasicIntegrationTest {
     /** */
     @Test
     public void testHashSpoolCondition() {
-        executeSql("CREATE TABLE t(i INTEGER)");
+        executeSql("CREATE TABLE t(i INTEGER) WITH " + atomicity());
         executeSql("INSERT INTO t VALUES (0), (1), (2)");
 
         String sql = "SELECT i, (SELECT i FROM t WHERE i=t1.i AND i-1=0) FROM t AS t1";
@@ -84,14 +83,13 @@ public class HashSpoolIntegrationTest extends AbstractBasicIntegrationTest {
     /** */
     @Test
     public void testIsNotDistinctFrom() {
-        executeSql("CREATE TABLE t1(i1 INTEGER, i2 INTEGER)");
-        executeSql("INSERT INTO t1 VALUES (1, null), (2, 2), (null, 3), (3, null)");
+        executeSql("CREATE TABLE t1(i1 INTEGER, i2 INTEGER) WITH " + atomicity());
+        executeSql("CREATE TABLE t2(i3 INTEGER, i4 INTEGER) WITH " + atomicity());
 
-        executeSql("CREATE TABLE t2(i3 INTEGER, i4 INTEGER)");
+        executeSql("INSERT INTO t1 VALUES (1, null), (2, 2), (null, 3), (3, null)");
         executeSql("INSERT INTO t2 VALUES (1, 1), (2, 2), (null, 3), (4, null)");
 
-        String sql = "SELECT /*+ DISABLE_RULE('NestedLoopJoinConverter', 'MergeJoinConverter') */ i1, i4 " +
-            "FROM t1 JOIN t2 ON i1 IS NOT DISTINCT FROM i3";
+        String sql = "SELECT /*+ CNL_JOIN */ i1, i4 FROM t1 JOIN t2 ON i1 IS NOT DISTINCT FROM i3";
 
         assertQuery(sql)
             .matches(QueryChecker.containsSubPlan("IgniteHashIndexSpool"))
@@ -100,8 +98,7 @@ public class HashSpoolIntegrationTest extends AbstractBasicIntegrationTest {
             .returns(null, 3)
             .check();
 
-        sql = "SELECT /*+ DISABLE_RULE('NestedLoopJoinConverter', 'MergeJoinConverter') */ i1, i4 " +
-            "FROM t1 JOIN t2 ON i1 IS NOT DISTINCT FROM i3 AND i2 = i4";
+        sql = "SELECT /*+ CNL_JOIN */ i1, i4 FROM t1 JOIN t2 ON i1 IS NOT DISTINCT FROM i3 AND i2 = i4";
 
         assertQuery(sql)
             .matches(QueryChecker.containsSubPlan("IgniteHashIndexSpool"))

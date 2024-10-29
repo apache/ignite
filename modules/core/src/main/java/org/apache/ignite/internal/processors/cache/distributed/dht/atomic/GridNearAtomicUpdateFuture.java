@@ -104,7 +104,6 @@ public class GridNearAtomicUpdateFuture extends GridNearAtomicAbstractUpdateFutu
      * @param conflictPutVals Conflict put values (optional).
      * @param conflictRmvVals Conflict remove values (optional).
      * @param retval Return value require flag.
-     * @param rawRetval {@code True} if should return {@code GridCacheReturn} as future result.
      * @param expiryPlc Expiry policy explicitly specified for cache operation.
      * @param filter Entry filter.
      * @param taskNameHash Task name hash code.
@@ -123,7 +122,6 @@ public class GridNearAtomicUpdateFuture extends GridNearAtomicAbstractUpdateFutu
         @Nullable Collection<GridCacheDrInfo> conflictPutVals,
         @Nullable Collection<GridCacheVersion> conflictRmvVals,
         final boolean retval,
-        final boolean rawRetval,
         @Nullable ExpiryPolicy expiryPlc,
         final CacheEntryPredicate[] filter,
         int taskNameHash,
@@ -132,13 +130,13 @@ public class GridNearAtomicUpdateFuture extends GridNearAtomicAbstractUpdateFutu
         boolean recovery,
         int remapCnt
     ) {
-        super(cctx,
+        super(
+            cctx,
             cache,
             syncMode,
             op,
             invokeArgs,
             retval,
-            rawRetval,
             expiryPlc,
             filter,
             taskNameHash,

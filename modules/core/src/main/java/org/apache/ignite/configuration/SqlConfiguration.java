@@ -158,18 +158,18 @@ public class SqlConfiguration {
     }
 
     /**
-     * Is key & value validation enabled.
+     * Is key &amp; value validation enabled.
      *
-     * @return {@code true} When key & value shall be validated against SQL schema.
+     * @return {@code true} When key &amp; value shall be validated against SQL schema.
      */
     public boolean isValidationEnabled() {
         return validationEnabled;
     }
 
     /**
-     * Enable/disable key & value validation.
+     * Enable/disable key &amp; value validation.
      *
-     * @param validationEnabled {@code true} When key & value shall be validated against SQL schema.
+     * @param validationEnabled {@code true} When key &amp; value shall be validated against SQL schema.
      * Default value is {@code false}.
      * @return {@code this} for chaining.
      */

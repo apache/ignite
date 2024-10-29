@@ -21,7 +21,6 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.internal.cluster.IgniteClusterEx;
 import org.apache.ignite.internal.processors.task.GridInternal;
-import org.apache.ignite.internal.processors.task.GridVisorManagementTask;
 import org.apache.ignite.internal.visor.VisorJob;
 import org.apache.ignite.internal.visor.VisorOneNodeTask;
 
@@ -29,7 +28,6 @@ import org.apache.ignite.internal.visor.VisorOneNodeTask;
  *
  */
 @GridInternal
-@GridVisorManagementTask
 public class ClusterChangeTagTask extends VisorOneNodeTask<ChangeTagCommandArg, ClusterChangeTagTaskResult> {
     /** */
     private static final long serialVersionUID = 0L;

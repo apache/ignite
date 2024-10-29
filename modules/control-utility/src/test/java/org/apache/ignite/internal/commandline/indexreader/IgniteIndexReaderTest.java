@@ -743,7 +743,7 @@ public class IgniteIndexReaderTest extends GridCommandHandlerAbstractTest {
     ) throws IgniteCheckedException {
         testOut.reset();
 
-        IgniteLogger logger = createTestLogger();
+        IgniteLogger log = createTestLogger();
 
         IgniteIndexReader reader0 = new IgniteIndexReader(
             PAGE_SIZE,
@@ -752,7 +752,7 @@ public class IgniteIndexReaderTest extends GridCommandHandlerAbstractTest {
             new File(workDir, dataDir(cacheGrp)),
             isNull(idxs) ? null : idx -> Arrays.stream(idxs).anyMatch(idx::endsWith),
             checkParts,
-            logger
+            log
         ) {
             /** {@inheritDoc} */
             @Override ProgressPrinter createProgressPrinter(String caption, long total) {
@@ -763,8 +763,8 @@ public class IgniteIndexReaderTest extends GridCommandHandlerAbstractTest {
             reader.readIndex();
         }
 
-        if (logger instanceof IgniteLoggerEx)
-            ((IgniteLoggerEx)logger).flush();
+        if (log instanceof IgniteLoggerEx)
+            ((IgniteLoggerEx)log).flush();
 
         return testOut.toString();
     }

@@ -27,7 +27,6 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.management.cache.PartitionKeyV2;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.verify.PartitionHashRecordV2;
-import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.S;
 
 /**
@@ -71,27 +70,36 @@ public class SnapshotPartitionsQuickVerifyHandler extends SnapshotPartitionsVeri
         String name,
         Collection<SnapshotHandlerResult<Map<PartitionKeyV2, PartitionHashRecordV2>>> results
     ) throws IgniteCheckedException {
-        for (SnapshotHandlerResult<Map<PartitionKeyV2, PartitionHashRecordV2>> result : results) {
-            if (result.error() != null)
-                throw new IgniteCheckedException(result.error());
-        }
-
-        if (results.stream().anyMatch(r -> r.data() == null))
-            return;
+        boolean noData = false;
 
         Set<Integer> wrnGrps = new HashSet<>();
 
         Map<PartitionKeyV2, PartitionHashRecordV2> total = new HashMap<>();
 
-        F.viewReadOnly(results, SnapshotHandlerResult::data).forEach(m -> m.forEach((part, val) -> {
-            PartitionHashRecordV2 other = total.putIfAbsent(part, val);
+        for (SnapshotHandlerResult<Map<PartitionKeyV2, PartitionHashRecordV2>> result : results) {
+            if (result.error() != null)
+                throw new IgniteCheckedException(result.error());
 
-            if (other == null)
-                return;
+            if (result.data() == null) {
+                noData = true;
 
-            if (val.size() != other.size() || !Objects.equals(val.updateCounter(), other.updateCounter()))
-                wrnGrps.add(part.groupId());
-        }));
+                continue;
+            }
+
+            Map<PartitionKeyV2, PartitionHashRecordV2> partsData = result.data();
+
+            partsData.forEach((part, val) -> {
+                PartitionHashRecordV2 other = total.putIfAbsent(part, val);
+
+                if ((other != null && !wrnGrps.contains(part.groupId()))
+                    && ((!val.hasExpiringEntries() && !other.hasExpiringEntries() && val.size() != other.size())
+                        || !Objects.equals(val.updateCounter(), other.updateCounter())))
+                    wrnGrps.add(part.groupId());
+            });
+        }
+
+        if (noData)
+            return;
 
         if (!wrnGrps.isEmpty()) {
             throw new SnapshotWarningException("Cache partitions differ for cache groups " +

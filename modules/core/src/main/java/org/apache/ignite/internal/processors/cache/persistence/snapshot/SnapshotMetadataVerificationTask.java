@@ -20,9 +20,14 @@ package org.apache.ignite.internal.processors.cache.persistence.snapshot;
 import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.Collections;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.stream.Collectors;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
@@ -34,17 +39,20 @@ import org.apache.ignite.compute.ComputeJobResult;
 import org.apache.ignite.compute.ComputeJobResultPolicy;
 import org.apache.ignite.compute.ComputeTaskAdapter;
 import org.apache.ignite.internal.IgniteEx;
+import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.persistence.wal.FileDescriptor;
 import org.apache.ignite.internal.processors.cache.persistence.wal.FileWriteAheadLogManager;
 import org.apache.ignite.internal.processors.cache.persistence.wal.reader.IgniteWalIteratorFactory;
 import org.apache.ignite.internal.processors.task.GridInternal;
+import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.resources.IgniteInstanceResource;
 import org.apache.ignite.resources.LoggerResource;
 import org.jetbrains.annotations.NotNull;
-import org.jetbrains.annotations.Nullable;
 
+import static java.lang.String.valueOf;
 import static org.apache.ignite.internal.processors.cache.persistence.snapshot.IgniteSnapshotManager.incrementalSnapshotWalsDir;
+import static org.apache.ignite.internal.processors.cache.persistence.snapshot.IgniteSnapshotManager.snapshotMetaFileName;
 
 /** Snapshot task to verify snapshot metadata on the baseline nodes for given snapshot name. */
 @GridInternal
@@ -53,11 +61,20 @@ public class SnapshotMetadataVerificationTask
     /** Serial version uid. */
     private static final long serialVersionUID = 0L;
 
+    /** */
+    private SnapshotMetadataVerificationTaskArg arg;
+
+    /** */
+    @IgniteInstanceResource
+    private transient IgniteEx ignite;
+
     /** {@inheritDoc} */
     @Override public @NotNull Map<? extends ComputeJob, ClusterNode> map(
         List<ClusterNode> subgrid,
         SnapshotMetadataVerificationTaskArg arg
     ) throws IgniteException {
+        this.arg = arg;
+
         Map<ComputeJob, ClusterNode> map = U.newHashMap(subgrid.size());
 
         for (ClusterNode node : subgrid)
@@ -88,19 +105,24 @@ public class SnapshotMetadataVerificationTask
         }
 
         /** {@inheritDoc} */
-        @Override public List<SnapshotMetadata> execute() throws IgniteException {
+        @Override public List<SnapshotMetadata> execute() {
             IgniteSnapshotManager snpMgr = ignite.context().cache().context().snapshotMgr();
 
             List<SnapshotMetadata> snpMeta = snpMgr.readSnapshotMetadatas(arg.snapshotName(), arg.snapshotPath());
 
+            for (SnapshotMetadata meta : snpMeta)
+                checkMeta(meta);
+
             if (arg.incrementIndex() > 0) {
                 List<SnapshotMetadata> metas = snpMeta.stream()
-                    .filter(m -> m.consistentId().equals(ignite.localNode().consistentId()))
+                    .filter(m -> m.consistentId().equals(valueOf(ignite.localNode().consistentId())))
                     .collect(Collectors.toList());
 
                 if (metas.size() != 1) {
-                    throw new IgniteException("Failed to find snapshot metafile [metas=" + metas +
-                        ", snpName=" + arg.snapshotName() + ", snpPath=" + arg.snapshotPath() + ']');
+                    throw new IgniteException("Failed to find single snapshot metafile on local node [locNodeId="
+                        + ignite.localNode().consistentId() + ", metas=" + snpMeta + ", snpName=" + arg.snapshotName()
+                        + ", snpPath=" + arg.snapshotPath() + "]. Incremental snapshots requires exactly one meta file " +
+                        "per node because they don't support restoring on a different topology.");
                 }
 
                 checkIncrementalSnapshots(metas.get(0), arg);
@@ -109,10 +131,55 @@ public class SnapshotMetadataVerificationTask
             return snpMeta;
         }
 
+        /** */
+        private void checkMeta(SnapshotMetadata meta) {
+            byte[] snpMasterKeyDigest = meta.masterKeyDigest();
+            byte[] masterKeyDigest = ignite.context().config().getEncryptionSpi().masterKeyDigest();
+
+            if (masterKeyDigest == null && snpMasterKeyDigest != null) {
+                throw new IllegalStateException("Snapshot '" + meta.snapshotName() + "' has encrypted caches " +
+                    "while encryption is disabled. To restore this snapshot, start Ignite with configured " +
+                    "encryption and the same master key.");
+            }
+
+            if (snpMasterKeyDigest != null && !Arrays.equals(snpMasterKeyDigest, masterKeyDigest)) {
+                throw new IllegalStateException("Snapshot '" + meta.snapshotName() + "' has different master " +
+                    "key digest. To restore this snapshot, start Ignite with the same master key.");
+            }
+
+            Collection<Integer> grpIds = new HashSet<>(F.isEmpty(arg.grpIds()) ? meta.cacheGroupIds() : arg.grpIds());
+
+            if (meta.hasCompressedGroups() && grpIds.stream().anyMatch(meta::isGroupWithCompression)) {
+                try {
+                    ignite.context().compress().checkPageCompressionSupported();
+                }
+                catch (NullPointerException | IgniteCheckedException e) {
+                    String grpWithCompr = grpIds.stream().filter(meta::isGroupWithCompression)
+                        .map(String::valueOf).collect(Collectors.joining(", "));
+
+                    String msg = "Requested cache groups [" + grpWithCompr + "] for check " +
+                        "from snapshot '" + meta.snapshotName() + "' are compressed while " +
+                        "disk page compression is disabled. To check these groups please " +
+                        "start Ignite with ignite-compress module in classpath";
+
+                    throw new IllegalStateException(msg);
+                }
+            }
+
+            grpIds.removeAll(meta.partitions().keySet());
+
+            if (!grpIds.isEmpty() && !new HashSet<>(meta.cacheGroupIds()).containsAll(grpIds)) {
+                throw new IllegalArgumentException("Cache group(s) was not found in the snapshot [groups=" + grpIds +
+                    ", snapshot=" + arg.snapshotName() + ']');
+            }
+        }
+
         /** Checks that all incremental snapshots are present, contain correct metafile and WAL segments. */
         public void checkIncrementalSnapshots(SnapshotMetadata fullMeta, SnapshotMetadataVerificationTaskArg arg) {
             try {
-                IgniteSnapshotManager snpMgr = ignite.context().cache().context().snapshotMgr();
+                GridCacheSharedContext<Object, Object> ctx = ignite.context().cache().context();
+
+                IgniteSnapshotManager snpMgr = ctx.snapshotMgr();
 
                 // Incremental snapshot must contain ClusterSnapshotRecord.
                 long startSeg = fullMeta.snapshotRecordPointer().index();
@@ -121,18 +188,20 @@ public class SnapshotMetadataVerificationTask
                     File incSnpDir = snpMgr.incrementalSnapshotLocalDir(arg.snapshotName(), arg.snapshotPath(), inc);
 
                     if (!incSnpDir.exists()) {
-                        throw new IgniteException("No incremental snapshot found " +
+                        throw new IllegalArgumentException("No incremental snapshot found " +
                             "[snpName=" + arg.snapshotName() + ", snpPath=" + arg.snapshotPath() + ", incrementIndex=" + inc + ']');
                     }
 
-                    String metaFileName = IgniteSnapshotManager.snapshotMetaFileName(ignite.localNode().consistentId().toString());
+                    String folderName = ctx.kernalContext().pdsFolderResolver().resolveFolders().folderName();
+
+                    String metaFileName = snapshotMetaFileName(folderName);
 
                     File metafile = incSnpDir.toPath().resolve(metaFileName).toFile();
 
                     IncrementalSnapshotMetadata incMeta = snpMgr.readFromFile(metafile);
 
                     if (!incMeta.matchBaseSnapshot(fullMeta)) {
-                        throw new IgniteException("Incremental snapshot doesn't match full snapshot " +
+                        throw new IllegalArgumentException("Incremental snapshot doesn't match full snapshot " +
                             "[incMeta=" + incMeta + ", fullMeta=" + fullMeta + ']');
                     }
 
@@ -187,13 +256,14 @@ public class SnapshotMetadataVerificationTask
     }
 
     /** {@inheritDoc} */
-    @Override public @Nullable SnapshotMetadataVerificationTaskResult reduce(List<ComputeJobResult> results) throws IgniteException {
+    @Override public SnapshotMetadataVerificationTaskResult reduce(List<ComputeJobResult> results) throws IgniteException {
         Map<ClusterNode, List<SnapshotMetadata>> reduceRes = new HashMap<>();
         Map<ClusterNode, Exception> exs = new HashMap<>();
 
         SnapshotMetadata first = null;
+        Set<String> baselineMetasLeft = Collections.emptySet();
 
-        for (ComputeJobResult res: results) {
+        for (ComputeJobResult res : results) {
             if (res.getException() != null) {
                 exs.put(res.getNode(), res.getException());
 
@@ -203,8 +273,13 @@ public class SnapshotMetadataVerificationTask
             List<SnapshotMetadata> metas = res.getData();
 
             for (SnapshotMetadata meta : metas) {
-                if (first == null)
+                if (first == null) {
                     first = meta;
+
+                    baselineMetasLeft = new HashSet<>(meta.baselineNodes());
+                }
+
+                baselineMetasLeft.remove(meta.consistentId());
 
                 if (!first.sameSnapshot(meta)) {
                     exs.put(res.getNode(),
@@ -214,9 +289,25 @@ public class SnapshotMetadataVerificationTask
                     continue;
                 }
 
-                reduceRes.computeIfAbsent(res.getNode(), n -> new ArrayList<>())
-                        .add(meta);
+                reduceRes.computeIfAbsent(res.getNode(), n -> new ArrayList<>()).add(meta);
             }
+        }
+
+        if (first == null && exs.isEmpty()) {
+            assert !results.isEmpty();
+
+            for (ComputeJobResult res : results) {
+                Exception e = new IllegalArgumentException("Snapshot does not exists [snapshot=" + arg.snapshotName()
+                    + (arg.snapshotPath() != null ? ", baseDir=" + arg.snapshotPath() : "") + ", consistentId="
+                    + res.getNode().consistentId() + ']');
+
+                exs.put(res.getNode(), e);
+            }
+        }
+
+        if (!F.isEmpty(baselineMetasLeft) && F.isEmpty(exs)) {
+            exs.put(ignite.localNode(), new IgniteException("No snapshot metadatas found for the baseline nodes " +
+                "with consistent ids: " + String.join(", ", baselineMetasLeft)));
         }
 
         return new SnapshotMetadataVerificationTaskResult(reduceRes, exs);

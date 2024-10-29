@@ -25,18 +25,12 @@ import java.util.Map;
 import java.util.Objects;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
-import org.apache.ignite.IgniteLogger;
-import org.apache.ignite.compute.ComputeJob;
-import org.apache.ignite.compute.ComputeJobAdapter;
 import org.apache.ignite.compute.ComputeJobResult;
-import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.management.cache.PartitionKeyV2;
 import org.apache.ignite.internal.management.cache.VerifyBackupPartitionsTaskV2;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.verify.PartitionHashRecordV2;
 import org.apache.ignite.internal.processors.task.GridInternal;
-import org.apache.ignite.resources.IgniteInstanceResource;
-import org.apache.ignite.resources.LoggerResource;
 import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.internal.management.cache.VerifyBackupPartitionsTaskV2.reduce0;
@@ -52,15 +46,8 @@ public class SnapshotPartitionsVerifyTask extends AbstractSnapshotVerificationTa
     private static final long serialVersionUID = 0L;
 
     /** {@inheritDoc} */
-    @Override protected ComputeJob createJob(
-        String name,
-        String path,
-        int incIdx,
-        String constId,
-        Collection<String> groups,
-        boolean check
-    ) {
-        return new VerifySnapshotPartitionsJob(name, path, constId, groups, check);
+    @Override protected VerifySnapshotPartitionsJob createJob(String name, String consId, SnapshotPartitionsVerifyTaskArg args) {
+        return new VerifySnapshotPartitionsJob(name, args.snapshotPath(), consId, args.cacheGroupNames(), args.check());
     }
 
     /** {@inheritDoc} */
@@ -69,36 +56,13 @@ public class SnapshotPartitionsVerifyTask extends AbstractSnapshotVerificationTa
     }
 
     /** Job that collects update counters of snapshot partitions on the node it executes. */
-    private static class VerifySnapshotPartitionsJob extends ComputeJobAdapter {
+    private static class VerifySnapshotPartitionsJob extends AbstractSnapshotVerificationJob {
         /** Serial version uid. */
         private static final long serialVersionUID = 0L;
 
-        /** Ignite instance. */
-        @IgniteInstanceResource
-        private IgniteEx ignite;
-
-        /** Injected logger. */
-        @LoggerResource
-        private IgniteLogger log;
-
-        /** Snapshot name to validate. */
-        private final String snpName;
-
-        /** Snapshot directory path. */
-        private final String snpPath;
-
-        /** Consistent snapshot metadata file name. */
-        private final String consId;
-
-        /** Set of cache groups to be checked in the snapshot or {@code empty} to check everything. */
-        private final Collection<String> rqGrps;
-
-        /** If {@code true} check snapshot before restore. */
-        private final boolean check;
-
         /**
          * @param snpName Snapshot name to validate.
-         * @param consId Consistent snapshot metadata file name.
+         * @param consId Consistent id of the related node.
          * @param rqGrps Set of cache groups to be checked in the snapshot or {@code empty} to check everything.
          * @param snpPath Snapshot directory path.
          * @param check If {@code true} check snapshot before restore.
@@ -110,11 +74,7 @@ public class SnapshotPartitionsVerifyTask extends AbstractSnapshotVerificationTa
             Collection<String> rqGrps,
             boolean check
         ) {
-            this.snpName = snpName;
-            this.consId = consId;
-            this.rqGrps = rqGrps;
-            this.snpPath = snpPath;
-            this.check = check;
+            super(snpName, snpPath, consId, rqGrps, check);
         }
 
         /** {@inheritDoc} */

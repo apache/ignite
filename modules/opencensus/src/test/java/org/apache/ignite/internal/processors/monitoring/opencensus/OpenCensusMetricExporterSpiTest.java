@@ -153,8 +153,8 @@ public class OpenCensusMetricExporterSpiTest extends AbstractExporterSpiTest {
         HistogramMetricImpl histogramMetric =
             ignite.context().metric().registry(registryName).histogram(histogramName, bounds, histogramDesc);
 
-        for (long value : testValues)
-            histogramMetric.value(value);
+        for (long val : testValues)
+            histogramMetric.value(val);
 
         assertTrue("Histogram metrics should be exported via http", checkHttpMetrics(expectedValuesPtrn));
 
@@ -162,8 +162,8 @@ public class OpenCensusMetricExporterSpiTest extends AbstractExporterSpiTest {
 
         histogramMetric.reset(bounds);
 
-        for (long value : testValues)
-            histogramMetric.value(value);
+        for (long val : testValues)
+            histogramMetric.value(val);
 
         expectedValuesPtrn = new String[] {
             "test_registry_test_histogram_0_50.* 3",

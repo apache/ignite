@@ -21,8 +21,6 @@ package org.apache.ignite.internal.commandline;
 import java.lang.reflect.Field;
 import java.util.ArrayDeque;
 import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collections;
 import java.util.Deque;
 import java.util.HashSet;
 import java.util.Iterator;
@@ -42,6 +40,7 @@ import org.apache.ignite.internal.management.api.Argument;
 import org.apache.ignite.internal.management.api.ArgumentGroup;
 import org.apache.ignite.internal.management.api.CliSubcommandsWithPrefix;
 import org.apache.ignite.internal.management.api.Command;
+import org.apache.ignite.internal.management.api.CommandUtils;
 import org.apache.ignite.internal.management.api.CommandsRegistry;
 import org.apache.ignite.internal.management.api.Positional;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -350,13 +349,11 @@ public class ArgumentParser {
             (name, val) -> {}
         );
 
-        ArgumentGroup argGrp = cmdPath.peek().argClass().getAnnotation(ArgumentGroup.class);
-        Set<String> grpdFlds = argGrp == null
-            ? Collections.emptySet()
-            : new HashSet<>(Arrays.asList(argGrp.value()));
+        List<Set<String>> grpdFlds = CommandUtils.argumentGroupsValues(cmdPath.peek().argClass());
 
         Consumer<Field> namedArgCb = fld -> namedArgs.add(
-            toArg.apply(fld, grpdFlds.contains(fld.getName()) || fld.getAnnotation(Argument.class).optional())
+            toArg.apply(fld, CommandUtils.argumentGroupIdx(grpdFlds, fld.getName()) >= 0
+                || fld.getAnnotation(Argument.class).optional())
         );
 
         Consumer<Field> positionalArgCb = fld -> positionalArgs.add(new CLIArgument<>(

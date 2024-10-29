@@ -28,7 +28,7 @@ import java.util.concurrent.Semaphore;
 import java.util.concurrent.atomic.AtomicBoolean;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
-import org.apache.ignite.internal.processors.metric.MetricRegistry;
+import org.apache.ignite.internal.processors.metric.MetricRegistryImpl;
 import org.apache.ignite.internal.processors.metric.impl.LongAdderMetric;
 import org.apache.ignite.internal.processors.tracing.MTC;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
@@ -112,7 +112,7 @@ public class GridSelectorNioSessionImpl extends GridNioSessionImpl implements Gr
         InetSocketAddress rmtAddr,
         boolean accepted,
         int sndQueueLimit,
-        @Nullable MetricRegistry mreg,
+        @Nullable MetricRegistryImpl mreg,
         @Nullable ByteBuffer writeBuf,
         @Nullable ByteBuffer readBuf
     ) {

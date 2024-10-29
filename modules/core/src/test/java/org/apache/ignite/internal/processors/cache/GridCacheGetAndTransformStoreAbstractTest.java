@@ -106,7 +106,7 @@ public abstract class GridCacheGetAndTransformStoreAbstractTest extends GridComm
             startGrid(1);
             startGrid(2);
 
-            final Processor entryProcessor = new Processor();
+            final Processor entryProc = new Processor();
 
             IgniteInternalFuture<?> fut = multithreadedAsync(
                 new Callable<Object>() {
@@ -120,7 +120,7 @@ public abstract class GridCacheGetAndTransformStoreAbstractTest extends GridComm
 
                             c.invoke(
                                 ThreadLocalRandom.current().nextInt(100),
-                                entryProcessor);
+                                entryProc);
                         }
 
                         return null;

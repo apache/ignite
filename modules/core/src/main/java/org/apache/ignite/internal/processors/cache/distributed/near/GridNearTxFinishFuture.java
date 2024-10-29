@@ -40,7 +40,6 @@ import org.apache.ignite.internal.processors.cache.GridCacheVersionedFuture;
 import org.apache.ignite.internal.processors.cache.distributed.GridDistributedTxMapping;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtTxFinishRequest;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtTxFinishResponse;
-import org.apache.ignite.internal.processors.cache.mvcc.MvccFuture;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteInternalTx;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.processors.tracing.MTC;
@@ -740,11 +739,11 @@ public final class GridNearTxFinishFuture<K, V> extends GridCacheCompoundIdentit
     private void finish(int miniId, GridDistributedTxMapping m, boolean commit) {
         ClusterNode n = m.primary();
 
-        assert !m.empty() || m.queryUpdate() : m + " " + tx.state();
+        assert !m.empty() : m + " " + tx.state();
 
         CacheWriteSynchronizationMode syncMode = tx.syncMode();
 
-        if (m.explicitLock() || m.queryUpdate())
+        if (m.explicitLock())
             syncMode = FULL_SYNC;
 
         GridNearTxFinishRequest req = new GridNearTxFinishRequest(
@@ -764,7 +763,6 @@ public final class GridNearTxFinishFuture<K, V> extends GridCacheCompoundIdentit
             null,
             tx.size(),
             tx.taskNameHash(),
-            tx.mvccSnapshot(),
             tx.activeCachesDeploymentEnabled()
         );
 
@@ -854,11 +852,6 @@ public final class GridNearTxFinishFuture<K, V> extends GridCacheCompoundIdentit
 
                 return "CheckRemoteTxMiniFuture[nodes=" + fut.nodes() + ", done=" + f.isDone() + "]";
             }
-            else if (f instanceof MvccFuture) {
-                MvccFuture fut = (MvccFuture)f;
-
-                return "WaitPreviousTxsFut[mvccCrd=" + fut.coordinatorNodeId() + ", done=" + f.isDone() + "]";
-            }
             else
                 return "[loc=true, done=" + f.isDone() + "]";
         });
@@ -882,7 +875,6 @@ public final class GridNearTxFinishFuture<K, V> extends GridCacheCompoundIdentit
             tx.xidVersion(),
             tx.commitVersion(),
             tx.threadId(),
-            tx.isolation(),
             true,
             false,
             tx.system(),
@@ -892,13 +884,11 @@ public final class GridNearTxFinishFuture<K, V> extends GridCacheCompoundIdentit
             null,
             null,
             null,
-            null,
             0,
             0,
             tx.activeCachesDeploymentEnabled(),
             !waitRemoteTxs && (tx.needReturnValue() && tx.implicit()),
             waitRemoteTxs,
-            null,
             null);
 
         finishReq.checkCommitted(true);

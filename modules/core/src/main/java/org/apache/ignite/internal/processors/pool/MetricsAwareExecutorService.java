@@ -17,7 +17,7 @@
 
 package org.apache.ignite.internal.processors.pool;
 
-import org.apache.ignite.internal.processors.metric.MetricRegistry;
+import org.apache.ignite.internal.processors.metric.MetricRegistryImpl;
 
 /**
  * Executor service that supports self-registration of metrics.
@@ -28,5 +28,5 @@ public interface MetricsAwareExecutorService {
      *
      * @param mreg Metrics registry.
      */
-    public void registerMetrics(MetricRegistry mreg);
+    public void registerMetrics(MetricRegistryImpl mreg);
 }

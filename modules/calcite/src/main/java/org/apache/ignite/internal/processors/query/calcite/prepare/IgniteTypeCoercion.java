@@ -18,12 +18,14 @@
 package org.apache.ignite.internal.processors.query.calcite.prepare;
 
 import java.nio.charset.Charset;
+import java.util.Arrays;
 import org.apache.calcite.adapter.java.JavaTypeFactory;
 import org.apache.calcite.rel.type.DynamicRecordType;
 import org.apache.calcite.rel.type.RelDataType;
 import org.apache.calcite.rel.type.RelDataTypeFactory;
 import org.apache.calcite.rel.type.RelDataTypeFactoryImpl;
 import org.apache.calcite.sql.SqlCall;
+import org.apache.calcite.sql.SqlCallBinding;
 import org.apache.calcite.sql.SqlCollation;
 import org.apache.calcite.sql.SqlDataTypeSpec;
 import org.apache.calcite.sql.SqlIdentifier;
@@ -33,6 +35,7 @@ import org.apache.calcite.sql.SqlNodeList;
 import org.apache.calcite.sql.SqlUserDefinedTypeNameSpec;
 import org.apache.calcite.sql.fun.SqlStdOperatorTable;
 import org.apache.calcite.sql.parser.SqlParserPos;
+import org.apache.calcite.sql.type.SqlTypeFamily;
 import org.apache.calcite.sql.type.SqlTypeUtil;
 import org.apache.calcite.sql.validate.SqlValidator;
 import org.apache.calcite.sql.validate.SqlValidatorScope;
@@ -53,6 +56,41 @@ public class IgniteTypeCoercion extends TypeCoercionImpl {
     /** Ctor. */
     public IgniteTypeCoercion(RelDataTypeFactory typeFactory, SqlValidator validator) {
         super(typeFactory, validator);
+    }
+
+    /** {@inheritDoc} **/
+    @Override public boolean binaryComparisonCoercion(SqlCallBinding binding) {
+        // Although it is not reflected in the docs, this method is also invoked for MAX, MIN (and other similar operators)
+        // by ComparableOperandTypeChecker. When that is the case, fallback to default rules.
+        SqlCall call = binding.getCall();
+
+        if (binding.getOperandCount() != 2 || !SqlKind.BINARY_COMPARISON.contains(call.getKind()))
+            return super.binaryComparisonCoercion(binding);
+
+        SqlValidatorScope scope = binding.getScope();
+
+        RelDataType leftType = validator.deriveType(scope, call.operand(0));
+        RelDataType rightType = validator.deriveType(scope, call.operand(1));
+
+        if (leftType.equals(rightType))
+            return super.binaryComparisonCoercion(binding);
+        else {
+            // Find the least restrictive type among the operand types
+            // and coerce the operands to that type if such type exists.
+            //
+            // An example of a least restrictive type from the javadoc for RelDataTypeFactory::leastRestrictive:
+            // leastRestrictive(INT, NUMERIC(3, 2)) could be NUMERIC(12, 2)
+            //
+            // A least restrictive type between types of different type families does not exist -
+            // the method returns null (See SqlTypeFactoryImpl::leastRestrictive).
+            //
+            RelDataType targetType = factory.leastRestrictive(Arrays.asList(leftType, rightType));
+
+            if (targetType == null || targetType.getFamily() == SqlTypeFamily.ANY)
+                return super.binaryComparisonCoercion(binding);
+            else
+                return coerceOperandsType(scope, call, targetType);
+        }
     }
 
     /** {@inheritDoc} */

@@ -25,7 +25,6 @@ import org.apache.ignite.cache.CacheWriteSynchronizationMode;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtTopologyFuture;
-import org.apache.ignite.internal.processors.cache.mvcc.MvccCachingManager;
 import org.apache.ignite.internal.processors.cache.store.CacheStoreManager;
 import org.apache.ignite.internal.util.GridIntList;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
@@ -58,17 +57,6 @@ public interface IgniteTxState {
      * @param cctx Grid cache shared context.
      */
     public void unwindEvicts(GridCacheSharedContext cctx);
-
-    /**
-     * @param cctx Context.
-     * @return cctx Non-null cache context if tx has only one active cache.
-     */
-    @Nullable public GridCacheContext singleCacheContext(GridCacheSharedContext cctx);
-
-    /**
-     * @param cctx Awaits for previous async operations on active caches to be completed.
-     */
-    public void awaitLastFuture(GridCacheSharedContext cctx);
 
     /**
      * @param cctx Context.
@@ -189,16 +177,4 @@ public interface IgniteTxState {
      * @return {@code True} if transaction is empty.
      */
     public boolean empty();
-
-    /**
-     * @return {@code True} if MVCC mode is enabled for transaction.
-     */
-    public boolean mvccEnabled();
-
-    /**
-     * @param cacheId Cache id.
-     * @return {@code True} if it is need to store in the heap updates made by the current TX for the given cache.
-     * These updates will be used for CQ and DR. See {@link MvccCachingManager}.
-     */
-    public boolean useMvccCaching(int cacheId);
 }

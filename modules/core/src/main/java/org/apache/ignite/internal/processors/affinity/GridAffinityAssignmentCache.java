@@ -366,10 +366,10 @@ public class GridAffinityAssignmentCache {
                don't belong to affinity for current group (client node or filtered by nodeFilter). */
             boolean skipCalculation = true;
 
-            for (DiscoveryEvent event : events.events()) {
-                boolean affinityNode = CU.affinityNode(event.eventNode(), nodeFilter);
+            for (DiscoveryEvent evt : events.events()) {
+                boolean affNode = CU.affinityNode(evt.eventNode(), nodeFilter);
 
-                if (affinityNode || event.type() == EVT_DISCOVERY_CUSTOM_EVT) {
+                if (affNode || evt.type() == EVT_DISCOVERY_CUSTOM_EVT) {
                     skipCalculation = false;
 
                     break;
@@ -465,17 +465,17 @@ public class GridAffinityAssignmentCache {
         List<ClusterNode> sorted,
         BaselineTopology blt
     ) {
-        List<ClusterNode> baselineAffinityNodes = blt.createBaselineView(sorted, nodeFilter);
+        List<ClusterNode> baselineAffNodes = blt.createBaselineView(sorted, nodeFilter);
 
         List<List<ClusterNode>> calculated = aff.assignPartitions(new GridAffinityFunctionContextImpl(
-            baselineAffinityNodes,
+            baselineAffNodes,
             prevAssignment != null ? prevAssignment.assignment() : null,
             events != null ? events.lastEvent() : null,
             topVer,
             backups
         ));
 
-        baselineAssignment = IdealAffinityAssignment.create(topVer, baselineAffinityNodes, calculated);
+        baselineAssignment = IdealAffinityAssignment.create(topVer, baselineAffNodes, calculated);
     }
 
     /**
@@ -494,20 +494,20 @@ public class GridAffinityAssignmentCache {
 
         for (int p = 0; p < assignment.size(); p++) {
             List<ClusterNode> baselineMapping = assignment.get(p);
-            List<ClusterNode> currentMapping = null;
+            List<ClusterNode> curMapping = null;
 
             for (ClusterNode node : baselineMapping) {
                 ClusterNode aliveNode = alives.get(node.consistentId());
 
                 if (aliveNode != null) {
-                    if (currentMapping == null)
-                        currentMapping = new ArrayList<>();
+                    if (curMapping == null)
+                        curMapping = new ArrayList<>();
 
-                    currentMapping.add(aliveNode);
+                    curMapping.add(aliveNode);
                 }
             }
 
-            result.add(p, currentMapping != null ? currentMapping : Collections.<ClusterNode>emptyList());
+            result.add(p, curMapping != null ? curMapping : Collections.<ClusterNode>emptyList());
         }
 
         return result;
@@ -575,7 +575,7 @@ public class GridAffinityAssignmentCache {
 
         Map.Entry<AffinityTopologyVersion, HistoryAffinityAssignment> prevHistEntry = affCache.floorEntry(prevVer);
 
-        HistoryAffinityAssignment newHistEntry = (prevHistEntry == null) ?
+        HistoryAffinityAssignment newHistEntry = (prevHistEntry == null || shouldCleanupShallows()) ?
             new HistoryAffinityAssignmentImpl(assignmentCpy, backups) :
             new HistoryAffinityAssignmentShallowCopy(prevHistEntry.getValue().origin(), topVer);
 
@@ -1017,6 +1017,11 @@ public class GridAffinityAssignmentCache {
             return false;
 
         return nonShallowSize > MAX_NON_SHALLOW_HIST_SIZE || totalSize > MAX_TOTAL_HIST_SIZE;
+    }
+
+    /** */
+    private boolean shouldCleanupShallows() {
+        return nonShallowHistSize.get() <= MIN_NON_SHALLOW_HIST_SIZE && affCache.size() > MAX_TOTAL_HIST_SIZE;
     }
 
     /**

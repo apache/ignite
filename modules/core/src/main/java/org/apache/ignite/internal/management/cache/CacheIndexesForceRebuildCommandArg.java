@@ -27,14 +27,27 @@ import org.apache.ignite.internal.management.api.ArgumentGroup;
 import org.apache.ignite.internal.util.typedef.internal.U;
 
 /** */
+@ArgumentGroup(value = {"nodeIds", "allNodes", "nodeId"}, onlyOneOf = true, optional = false)
 @ArgumentGroup(value = {"cacheNames", "groupNames"}, onlyOneOf = true, optional = false)
 public class CacheIndexesForceRebuildCommandArg extends IgniteDataTransferObject {
     /** */
     private static final long serialVersionUID = 0;
 
     /** */
-    @Argument(description = "Specify node for indexes rebuild", example = "nodeId")
+    @Argument(description = "Specify node for indexes rebuild (deprecated. Use --node-ids or --all-nodes instead)",
+        example = "nodeId")
     private UUID nodeId;
+
+    /** */
+    @Argument(
+        description = "Comma-separated list of nodes ids to run index rebuild on",
+        example = "nodeId1,...nodeIdN"
+    )
+    private UUID[] nodeIds;
+
+    /** Flag to launch index rebuild on all nodes. */
+    @Argument(description = "Rebuild index on all nodes")
+    private boolean allNodes;
 
     /** */
     @Argument(description = "Comma-separated list of cache names for which indexes should be rebuilt",
@@ -51,6 +64,8 @@ public class CacheIndexesForceRebuildCommandArg extends IgniteDataTransferObject
         U.writeUuid(out, nodeId);
         U.writeArray(out, cacheNames);
         U.writeArray(out, groupNames);
+        U.writeArray(out, nodeIds);
+        out.writeBoolean(allNodes);
     }
 
     /** {@inheritDoc} */
@@ -58,6 +73,8 @@ public class CacheIndexesForceRebuildCommandArg extends IgniteDataTransferObject
         nodeId = U.readUuid(in);
         cacheNames = U.readArray(in, String.class);
         groupNames = U.readArray(in, String.class);
+        nodeIds = U.readArray(in, UUID.class);
+        allNodes = in.readBoolean();
     }
 
     /** */
@@ -68,6 +85,26 @@ public class CacheIndexesForceRebuildCommandArg extends IgniteDataTransferObject
     /** */
     public void nodeId(UUID nodeId) {
         this.nodeId = nodeId;
+    }
+
+    /** */
+    public UUID[] nodeIds() {
+        return nodeIds;
+    }
+
+    /** */
+    public void allNodes(boolean allNodes) {
+        this.allNodes = allNodes;
+    }
+
+    /** */
+    public boolean allNodes() {
+        return allNodes;
+    }
+
+    /** */
+    public void nodeIds(UUID[] nodeIds) {
+        this.nodeIds = nodeIds;
     }
 
     /** */

@@ -220,6 +220,17 @@ class ControlUtility:
         raise TimeoutError(f'Failed to wait for the snapshot operation to complete: '
                            f'snapshot_name={snapshot_name} in {timeout_sec} seconds.')
 
+    def snapshot_check(self, snapshot_name: str):
+        """
+        Check snapshot.
+        :param snapshot_name: Name of snapshot.
+        """
+        res = self.__run(f"--snapshot check {snapshot_name}")
+
+        assert "The check procedure has finished, no conflicts have been found." in res
+
+        return res
+
     def start_performance_statistics(self):
         """
         Start performance statistics collecting in the cluster.
@@ -425,10 +436,10 @@ class ControlUtility:
             auth = f" --user {self.username} --password {self.password} "
 
         return "%s %s" % \
-               (envs_to_exports(self.__envs()),
+               (envs_to_exports(self.envs()),
                 self._cluster.script(f"{self.BASE_COMMAND} --host {node_ip} {cmd} {ssl} {auth}"))
 
-    def __envs(self):
+    def envs(self):
         """
         :return: environment set.
         """

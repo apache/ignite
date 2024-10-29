@@ -29,14 +29,14 @@ from itertools import chain
 
 from ignitetest.services.utils import IgniteServiceType
 from ignitetest.services.utils.config_template import IgniteClientConfigTemplate, IgniteServerConfigTemplate, \
-    IgniteLoggerConfigTemplate, IgniteThinClientConfigTemplate
+    IgniteLoggerConfigTemplate, IgniteThinClientConfigTemplate, IgniteThinJdbcConfigTemplate
 from ignitetest.services.utils.jvm_utils import create_jvm_settings, merge_jvm_settings
 from ignitetest.services.utils.path import get_home_dir, IgnitePathAware
 from ignitetest.services.utils.ssl.ssl_params import is_ssl_enabled
 from ignitetest.services.utils.metrics.metrics import is_opencensus_metrics_enabled, configure_opencensus_metrics,\
     is_jmx_metrics_enabled, configure_jmx_metrics
 from ignitetest.services.utils.jmx_remote.jmx_remote_params import get_jmx_remote_params
-from ignitetest.utils.ignite_test import JFR_ENABLED
+from ignitetest.utils.ignite_test import JFR_ENABLED, SAFEPOINT_LOGS_ENABLED
 from ignitetest.utils.version import DEV_BRANCH
 
 SHARED_PREPARED_FILE = ".ignite_prepared"
@@ -102,6 +102,11 @@ class IgniteSpec(metaclass=ABCMeta):
                                                oom_path=os.path.join(self.service.log_dir, "out_of_mem.hprof"),
                                                vm_error_path=os.path.join(self.service.log_dir, "hs_err_pid%p.log"))
 
+        if self.service.context.globals.get(SAFEPOINT_LOGS_ENABLED, False):
+            default_jvm_opts = merge_jvm_settings(
+                default_jvm_opts, ["-Xlog:safepoint*=debug:file=" + os.path.join(self.service.log_dir, "safepoint.log")
+                                   + ":time,uptime,level,tags"])
+
         default_jvm_opts = merge_jvm_settings(
             default_jvm_opts, ["-DIGNITE_SUCCESS_FILE=" + os.path.join(self.service.persistent_root, "success_file"),
                                "-Dlog4j.configDebug=true"])
@@ -112,8 +117,7 @@ class IgniteSpec(metaclass=ABCMeta):
 
         if self.service.context.globals.get(JFR_ENABLED, False):
             default_jvm_opts = merge_jvm_settings(default_jvm_opts,
-                                                  ["-XX:+UnlockCommercialFeatures",
-                                                   "-XX:+FlightRecorder",
+                                                  ["-XX:+FlightRecorder",
                                                    "-XX:StartFlightRecording=dumponexit=true," +
                                                    f"filename={self.service.jfr_dir}/recording.jfr"])
 
@@ -142,6 +146,9 @@ class IgniteSpec(metaclass=ABCMeta):
         if self.service.config.service_type == IgniteServiceType.THIN_CLIENT:
             config_templates.append((IgnitePathAware.IGNITE_THIN_CLIENT_CONFIG_NAME, IgniteThinClientConfigTemplate()))
 
+        if self.service.config.service_type == IgniteServiceType.THIN_JDBC:
+            config_templates.append((IgnitePathAware.IGNITE_THIN_JDBC_CONFIG_NAME, IgniteThinJdbcConfigTemplate()))
+
         return config_templates
 
     def extend_config(self, config):
@@ -150,14 +157,21 @@ class IgniteSpec(metaclass=ABCMeta):
         """
         if config.service_type == IgniteServiceType.NODE:
             if is_opencensus_metrics_enabled(self.service):
-                config = configure_opencensus_metrics(config, self.service.context.globals)
+                config = configure_opencensus_metrics(config, self.service.context.globals, self)
 
             if is_jmx_metrics_enabled(self.service):
                 config = configure_jmx_metrics(config)
 
             if (is_opencensus_metrics_enabled(self.service) or
                     is_jmx_metrics_enabled(self.service)):
-                config = config._replace(ignite_instance_name=self._test_id)
+
+                ignite_instance_name = self._test_id
+
+                if config.ignite_instance_name:
+                    ignite_instance_name = ignite_instance_name[:250 - 2 - len(config.ignite_instance_name)] +\
+                                           "--" + config.ignite_instance_name
+
+                config = config._replace(ignite_instance_name=ignite_instance_name)
 
         config = config.prepare_ssl(self.service.globals, self.service.shared_root)
 
@@ -165,7 +179,7 @@ class IgniteSpec(metaclass=ABCMeta):
 
     @property
     def _test_id(self):
-        return re.sub("^[0-9A-Fa-f]+@ignitetest\\.tests\\.", "", self.service.context.test_name).replace("=", ".")[:255]
+        return re.sub("^[0-9A-Fa-f]+@ignitetest\\.tests\\.", "", self.service.context.test_name).replace("=", ".")[:250]
 
     def __home(self, product=None):
         """
@@ -235,11 +249,17 @@ class IgniteSpec(metaclass=ABCMeta):
         """
         :return: environment set.
         """
-        return {
+        environment_dict = {
             'EXCLUDE_TEST_CLASSES': 'true',
             'IGNITE_LOG_DIR': self.service.log_dir,
-            'USER_LIBS': ":".join(self.libs())
+            'USER_LIBS': ":".join(self.libs()),
+            "MAIN_CLASS": self.service.main_java_class
         }
+
+        if "direct-io" not in self.modules():
+            environment_dict['EXCLUDE_MODULES'] = "direct-io"
+
+        return environment_dict
 
     def config_file_path(self):
         """
@@ -347,8 +367,9 @@ class IgniteApplicationSpec(IgniteSpec):
         return cmd
 
     def config_file_path(self):
-        return self.service.config_file if self.service.config.service_type == IgniteServiceType.NODE \
-            else self.service.thin_client_config_file
-
-    def envs(self):
-        return {**super().envs(), **{"MAIN_CLASS": self.service.main_java_class}}
+        if self.service.config.service_type == IgniteServiceType.NODE:
+            return self.service.config_file
+        elif self.service.config.service_type == IgniteServiceType.THIN_CLIENT:
+            return self.service.thin_client_config_file
+        else:
+            return self.service.thin_jdbc_config_file

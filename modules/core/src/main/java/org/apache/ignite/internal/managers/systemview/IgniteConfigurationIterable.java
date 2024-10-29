@@ -146,15 +146,15 @@ public class IgniteConfigurationIterable implements Iterable<ConfigurationView> 
 
         Class<?> cls = val.getClass();
 
-        boolean isArray = cls.isArray();
+        boolean isArr = cls.isArray();
 
-        if (isArray)
+        if (isArr)
             cls = cls.getComponentType();
 
         if (!checkPkg(cls.getName()))
             return false;
 
-        if (isArray) {
+        if (isArr) {
             int length = Array.getLength(val);
 
             if (length == 0)

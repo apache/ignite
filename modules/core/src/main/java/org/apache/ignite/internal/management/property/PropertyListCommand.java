@@ -17,20 +17,25 @@
 
 package org.apache.ignite.internal.management.property;
 
+import java.util.List;
 import java.util.function.Consumer;
+import java.util.stream.Collectors;
+import org.apache.ignite.internal.management.SystemViewCommand;
+import org.apache.ignite.internal.management.SystemViewTask;
 import org.apache.ignite.internal.management.api.ComputeCommand;
-import org.apache.ignite.internal.management.api.NoArg;
+import org.apache.ignite.internal.util.lang.GridTuple3;
+import org.apache.ignite.internal.util.typedef.F;
 
 /** */
-public class PropertyListCommand implements ComputeCommand<NoArg, PropertiesListResult> {
+public class PropertyListCommand implements ComputeCommand<PropertyListCommandArg, PropertiesListResult> {
     /** {@inheritDoc} */
     @Override public String description() {
         return "Print list of available properties";
     }
 
     /** {@inheritDoc} */
-    @Override public Class<NoArg> argClass() {
-        return NoArg.class;
+    @Override public Class<PropertyListCommandArg> argClass() {
+        return PropertyListCommandArg.class;
     }
 
     /** {@inheritDoc} */
@@ -39,8 +44,21 @@ public class PropertyListCommand implements ComputeCommand<NoArg, PropertiesList
     }
 
     /** {@inheritDoc} */
-    @Override public void printResult(NoArg arg, PropertiesListResult res, Consumer<String> printer) {
-        for (String prop : res.properties())
-            printer.accept(prop);
+    @Override public void printResult(PropertyListCommandArg arg, PropertiesListResult res, Consumer<String> printer) {
+        if (arg.info()) {
+            List<SystemViewTask.SimpleType> types = F.asList("Name", "Value", "Description").stream()
+                .map(x -> SystemViewTask.SimpleType.STRING).collect(Collectors.toList());
+
+            List<List<?>> data = res.properties().stream()
+                .map(p -> F.asList(p.get1(), p.get2(), p.get3()))
+                .collect(Collectors.toList());
+
+            SystemViewCommand.printTable(F.asList("Name", "Value", "Description"), types, data, printer);
+        }
+        else {
+            res.properties().stream()
+                .map(GridTuple3::get1)
+                .forEach(printer);
+        }
     }
 }

@@ -227,12 +227,9 @@ import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.IgnitePeerToPeerClassLoadingException;
 import org.apache.ignite.internal.processors.cluster.BaselineTopology;
-import org.apache.ignite.internal.transactions.IgniteTxAlreadyCompletedCheckedException;
-import org.apache.ignite.internal.transactions.IgniteTxDuplicateKeyCheckedException;
 import org.apache.ignite.internal.transactions.IgniteTxHeuristicCheckedException;
 import org.apache.ignite.internal.transactions.IgniteTxOptimisticCheckedException;
 import org.apache.ignite.internal.transactions.IgniteTxRollbackCheckedException;
-import org.apache.ignite.internal.transactions.IgniteTxSerializationCheckedException;
 import org.apache.ignite.internal.transactions.IgniteTxTimeoutCheckedException;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.future.IgniteFinishedFutureImpl;
@@ -276,13 +273,10 @@ import org.apache.ignite.spi.discovery.DiscoverySpi;
 import org.apache.ignite.spi.discovery.DiscoverySpiOrderSupport;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.thread.IgniteThreadFactory;
-import org.apache.ignite.transactions.TransactionAlreadyCompletedException;
 import org.apache.ignite.transactions.TransactionDeadlockException;
-import org.apache.ignite.transactions.TransactionDuplicateKeyException;
 import org.apache.ignite.transactions.TransactionHeuristicException;
 import org.apache.ignite.transactions.TransactionOptimisticException;
 import org.apache.ignite.transactions.TransactionRollbackException;
-import org.apache.ignite.transactions.TransactionSerializationException;
 import org.apache.ignite.transactions.TransactionTimeoutException;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -1054,24 +1048,6 @@ public abstract class IgniteUtils {
             }
         });
 
-        m.put(IgniteTxSerializationCheckedException.class, new C1<IgniteCheckedException, IgniteException>() {
-            @Override public IgniteException apply(IgniteCheckedException e) {
-                return new TransactionSerializationException(e.getMessage(), e);
-            }
-        });
-
-        m.put(IgniteTxDuplicateKeyCheckedException.class, new C1<IgniteCheckedException, IgniteException>() {
-            @Override public IgniteException apply(IgniteCheckedException e) {
-                return new TransactionDuplicateKeyException(e.getMessage(), e);
-            }
-        });
-
-        m.put(IgniteTxAlreadyCompletedCheckedException.class, new C1<IgniteCheckedException, IgniteException>() {
-            @Override public IgniteException apply(IgniteCheckedException e) {
-                return new TransactionAlreadyCompletedException(e.getMessage(), e);
-            }
-        });
-
         return m;
     }
 
@@ -1089,6 +1065,21 @@ public abstract class IgniteUtils {
             providers.add(provider);
 
         return providers;
+    }
+
+    /**
+     * Gets all plugin providers.
+     *
+     * @param cfg Configuration.
+     * @param includeClsPath Include classpath plugins on empty config.
+     * @return Plugins.
+     */
+    public static List<PluginProvider> allPluginProviders(IgniteConfiguration cfg, boolean includeClsPath) {
+        return cfg.getPluginProviders() != null && cfg.getPluginProviders().length > 0 ?
+            Arrays.asList(cfg.getPluginProviders()) :
+            includeClsPath ?
+                U.allPluginProviders() :
+                Collections.emptyList();
     }
 
     /**
@@ -2322,12 +2313,12 @@ public abstract class IgniteUtils {
 
         addrs.add(ipAddr);
 
-        boolean ignoreLocalHostName = getBoolean(IGNITE_IGNORE_LOCAL_HOST_NAME, true);
+        boolean ignoreLocHostName = getBoolean(IGNITE_IGNORE_LOCAL_HOST_NAME, true);
 
-        String userDefinedLocalHost = getString(IGNITE_LOCAL_HOST);
+        String userDefinedLocHost = getString(IGNITE_LOCAL_HOST);
 
         // If IGNITE_LOCAL_HOST is defined and IGNITE_IGNORE_LOCAL_HOST_NAME is not false, then ignore local address's hostname
-        if (!F.isEmpty(userDefinedLocalHost) && ignoreLocalHostName)
+        if (!F.isEmpty(userDefinedLocHost) && ignoreLocHostName)
             return;
 
         String hostName = addr.getHostName();
@@ -7690,6 +7681,17 @@ public abstract class IgniteUtils {
     }
 
     /**
+     * Concats two integers to long.
+     *
+     * @param high Highest bits.
+     * @param low Lowest bits.
+     * @return Long.
+     */
+    public static long toLong(int high, int low) {
+        return (((long)high) << Integer.SIZE) | (low & 0xffffffffL);
+    }
+
+    /**
      * Copies all elements from collection to array and asserts that
      * array is big enough to hold the collection. This method should
      * always be preferred to {@link Collection#toArray(Object[])}
@@ -9674,67 +9676,7 @@ public abstract class IgniteUtils {
     }
 
     /**
-     * Returns tha list of resolved inet addresses. First addresses are resolved by host names,
-     * if this attempt fails then the addresses are resolved by ip addresses.
-     *
-     * @param node Grid node.
-     * @return Inet addresses for given addresses and host names.
-     * @throws IgniteCheckedException If non of addresses can be resolved.
-     */
-    public static Collection<InetAddress> toInetAddresses(ClusterNode node) throws IgniteCheckedException {
-        return toInetAddresses(node.addresses(), node.hostNames());
-    }
-
-    /**
-     * Returns tha list of resolved inet addresses. First addresses are resolved by host names,
-     * if this attempt fails then the addresses are resolved by ip addresses.
-     *
-     * @param addrs Addresses.
-     * @param hostNames Host names.
-     * @return Inet addresses for given addresses and host names.
-     * @throws IgniteCheckedException If non of addresses can be resolved.
-     */
-    public static Collection<InetAddress> toInetAddresses(Collection<String> addrs,
-        Collection<String> hostNames) throws IgniteCheckedException {
-        Set<InetAddress> res = new HashSet<>(addrs.size());
-
-        Iterator<String> hostNamesIt = hostNames.iterator();
-
-        for (String addr : addrs) {
-            String hostName = hostNamesIt.hasNext() ? hostNamesIt.next() : null;
-
-            InetAddress inetAddr = null;
-
-            if (!F.isEmpty(hostName)) {
-                try {
-                    inetAddr = InetAddress.getByName(hostName);
-                }
-                catch (UnknownHostException ignored) {
-                }
-            }
-
-            if (inetAddr == null || inetAddr.isLoopbackAddress()) {
-                try {
-                    inetAddr = InetAddress.getByName(addr);
-                }
-                catch (UnknownHostException ignored) {
-                }
-            }
-
-            if (inetAddr != null)
-                res.add(inetAddr);
-        }
-
-        if (res.isEmpty())
-            throw new IgniteCheckedException("Addresses can not be resolved [addr=" + addrs +
-                ", hostNames=" + hostNames + ']');
-
-        return res;
-    }
-
-    /**
-     * Returns tha list of resolved socket addresses. First addresses are resolved by host names,
-     * if this attempt fails then the addresses are resolved by ip addresses.
+     * Returns the list of resolved socket addresses.
      *
      * @param node Grid node.
      * @param port Port.
@@ -9745,37 +9687,38 @@ public abstract class IgniteUtils {
     }
 
     /**
-     * Returns tha list of resolved socket addresses. First addresses are resolved by host names,
-     * if this attempt fails then the addresses are resolved by ip addresses.
+     * Returns the list of resolved socket addresses.
      *
      * @param addrs Addresses.
      * @param hostNames Host names.
      * @param port Port.
      * @return Socket addresses for given addresses and host names.
      */
-    public static Collection<InetSocketAddress> toSocketAddresses(Collection<String> addrs,
-        Collection<String> hostNames, int port) {
+    public static Collection<InetSocketAddress> toSocketAddresses(
+        Collection<String> addrs,
+        Collection<String> hostNames,
+        int port
+    ) {
         Set<InetSocketAddress> res = new HashSet<>(addrs.size());
 
-        Iterator<String> hostNamesIt = hostNames.iterator();
+        boolean hasAddr = false;
 
         for (String addr : addrs) {
-            String hostName = hostNamesIt.hasNext() ? hostNamesIt.next() : null;
+            InetSocketAddress inetSockAddr = createResolved(addr, port);
+            res.add(inetSockAddr);
 
-            if (!F.isEmpty(hostName)) {
-                InetSocketAddress inetSockAddr = createResolved(hostName, port);
+            if (!inetSockAddr.isUnresolved() && !inetSockAddr.getAddress().isLoopbackAddress())
+                hasAddr = true;
+        }
 
-                if (inetSockAddr.isUnresolved() ||
-                    (!inetSockAddr.isUnresolved() && inetSockAddr.getAddress().isLoopbackAddress())
-                )
-                    inetSockAddr = createResolved(addr, port);
+        // Try to resolve addresses from host names if no external addresses found.
+        if (!hasAddr) {
+            for (String host : hostNames) {
+                InetSocketAddress inetSockAddr = createResolved(host, port);
 
-                res.add(inetSockAddr);
+                if (!inetSockAddr.isUnresolved())
+                    res.add(inetSockAddr);
             }
-
-            // Always append address because local and remote nodes may have the same hostname
-            // therefore remote hostname will always be resolved to local address.
-            res.add(createResolved(addr, port));
         }
 
         return res;
@@ -9865,8 +9808,8 @@ public abstract class IgniteUtils {
 
         Collection<InetSocketAddress> resolved = new HashSet<>();
 
-        for (InetSocketAddress address : sockAddr)
-            resolved.addAll(resolveAddress(addrRslvr, address));
+        for (InetSocketAddress addr : sockAddr)
+            resolved.addAll(resolveAddress(addrRslvr, addr));
 
         return resolved;
     }
@@ -10025,7 +9968,21 @@ public abstract class IgniteUtils {
      * @return Resolved work directory.
      * @throws IgniteCheckedException If failed.
      */
-    public static File resolveWorkDirectory(String workDir, String path, boolean delIfExist)
+    public static File resolveWorkDirectory(String workDir, String path, boolean delIfExist) throws IgniteCheckedException {
+        return resolveWorkDirectory(workDir, path, delIfExist, true);
+    }
+
+    /**
+     * Resolves work directory.
+     *
+     * @param workDir Work directory.
+     * @param path Path to resolve.
+     * @param delIfExist Flag indicating whether to delete the specify directory or not.
+     * @param create If {@code true} then directory must be created if not exists.
+     * @return Resolved work directory.
+     * @throws IgniteCheckedException If failed.
+     */
+    public static File resolveWorkDirectory(String workDir, String path, boolean delIfExist, boolean create)
         throws IgniteCheckedException {
         File dir = new File(path);
 
@@ -10040,6 +9997,9 @@ public abstract class IgniteUtils {
             if (!U.delete(dir))
                 throw new IgniteCheckedException("Failed to delete directory: " + dir);
         }
+
+        if (!create)
+            return dir;
 
         if (!mkdirs(dir))
             throw new IgniteCheckedException("Directory does not exist and cannot be created: " + dir);
@@ -10128,9 +10088,13 @@ public abstract class IgniteUtils {
      *      {@code null} if passed in name is not related to lambda.
      */
     @Nullable public static String lambdaEnclosingClassName(String clsName) {
-        int idx = clsName.indexOf("$$Lambda$");
+        int idx0 = clsName.indexOf("$$Lambda$"); // Java 8+
+        int idx1 = clsName.indexOf("$$Lambda/"); // Java 21+
 
-        return idx != -1 ? clsName.substring(0, idx) : null;
+        if (idx0 == idx1)
+            return null;
+
+        return clsName.substring(0, idx0 >= 0 ? idx0 : idx1);
     }
 
     /**
@@ -10484,7 +10448,7 @@ public abstract class IgniteUtils {
      * @param cls Class.
      * @return Package name.
      */
-    private static String packageName(Class<?> cls) {
+    public static String packageName(Class<?> cls) {
         Package pkg = cls.getPackage();
 
         return pkg == null ? "" : pkg.getName();
@@ -11632,7 +11596,7 @@ public abstract class IgniteUtils {
         // If executor cannot perform immediately, we will execute task in the current thread.
         Set<Batch<T, R>> sharedBatchesSet = new GridConcurrentHashSet<>(batchSizes.length);
 
-        Iterator<T> iterator = srcDatas.iterator();
+        Iterator<T> iter = srcDatas.iterator();
 
         for (int idx = 0; idx < batchSizes.length; idx++) {
             int batchSize = batchSizes[idx];
@@ -11640,7 +11604,7 @@ public abstract class IgniteUtils {
             Batch<T, R> batch = new Batch<>(batchSize, uninterruptible);
 
             for (int i = 0; i < batchSize; i++)
-                batch.addTask(iterator.next());
+                batch.addTask(iter.next());
 
             batches.add(batch);
         }

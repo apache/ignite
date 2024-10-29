@@ -18,6 +18,10 @@
 
 package org.apache.ignite.internal.processors.query.calcite.integration;
 
+import java.util.Collections;
+import org.apache.ignite.IgniteCache;
+import org.apache.ignite.cache.QueryEntity;
+import org.apache.ignite.configuration.CacheConfiguration;
 import org.junit.Test;
 
 import static java.util.stream.Collectors.joining;
@@ -41,7 +45,36 @@ public class MetadataIntegrationTest extends AbstractBasicIntegrationTest {
     /** */
     @Test
     public void columnNames() {
-        createAndPopulateTable();
+        sql("CREATE TABLE person (ID INT PRIMARY KEY, NAME VARCHAR, SALARY DOUBLE)");
+        sql("CREATE TABLE address (ID INT PRIMARY KEY, PERSON_ID INT, DATA VARCHAR)");
+
+        assertQuery("select salary , *, name, * from person order by person.name")
+            .columnNames("SALARY", "ID", "NAME", "SALARY", "NAME", "ID", "NAME", "SALARY")
+            .check();
+
+        assertQuery("select salary as salary10, * from person where id = 10 union select salary, * from person where id <> 10")
+            .columnNames("SALARY10", "ID", "NAME", "SALARY")
+            .check();
+
+        assertQuery("select *, salary as \"SaLaRy\", * from person")
+            .columnNames("ID", "NAME", "SALARY", "SaLaRy", "ID", "NAME", "SALARY")
+            .check();
+
+        assertQuery("select salary * 2, *, salary / 2, * from person")
+            .columnNames("SALARY * 2", "ID", "NAME", "SALARY", "SALARY / 2", "ID", "NAME", "SALARY")
+            .check();
+
+        assertQuery("select *, trim(name) from person")
+            .columnNames("ID", "NAME", "SALARY", "TRIM(BOTH ' ' FROM NAME)")
+            .check();
+
+        assertQuery("select salary * 2, * , trim(name) from person")
+            .columnNames("SALARY * 2", "ID", "NAME", "SALARY", "TRIM(BOTH ' ' FROM NAME)")
+            .check();
+
+        assertQuery("select p.*, salary / 2, a.* from person p, address a where p.id = a.person_id")
+            .columnNames("ID", "NAME", "SALARY", "SALARY / 2", "ID", "PERSON_ID", "DATA")
+            .check();
 
         assertQuery("select count(_key), _key from person group by _key")
             .columnNames("COUNT(_KEY)", "_KEY")
@@ -71,5 +104,37 @@ public class MetadataIntegrationTest extends AbstractBasicIntegrationTest {
         assertQuery("select salary, count(name) from person group by salary").columnNames("SALARY", "COUNT(NAME)").check();
 
         assertQuery("select 1, -1, 'some string' from person").columnNames("1", "-1", "'some string'").check();
+    }
+
+    /** Test implicit system fields expand by star. */
+    @Test
+    public void testSystemFieldsStarExpand() {
+        IgniteCache<Integer, Integer> cache = client.createCache(new CacheConfiguration<Integer, Integer>("test")
+            .setSqlSchema("PUBLIC")
+            .setQueryEntities(
+                Collections.singletonList(new QueryEntity()
+                    .setTableName("test")
+                    .setKeyType(Integer.class.getName())
+                    .setValueType(Integer.class.getName())
+                )
+            )
+        );
+
+        cache.put(0, 0);
+
+        assertQuery("select * from test")
+            .columnNames("_KEY", "_VAL").returns(0, 0).check();
+
+        assertQuery("select * from (select * from test)")
+            .columnNames("_KEY", "_VAL").returns(0, 0).check();
+
+        assertQuery("select _KEY, _VAL from (select * from test) as t")
+            .columnNames("_KEY", "_VAL").returns(0, 0).check();
+
+        assertQuery("select * from (select _KEY, _VAL from test) as t")
+            .columnNames("_KEY", "_VAL").returns(0, 0).check();
+
+        assertQuery("select * from (select _KEY, _VAL as OTHER from test) as t")
+            .columnNames("_KEY", "OTHER").returns(0, 0).check();
     }
 }

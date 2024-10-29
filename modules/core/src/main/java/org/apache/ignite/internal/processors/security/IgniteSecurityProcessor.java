@@ -53,6 +53,7 @@ import static org.apache.ignite.internal.processors.security.SecurityUtils.MSG_S
 import static org.apache.ignite.internal.processors.security.SecurityUtils.hasSecurityManager;
 import static org.apache.ignite.internal.processors.security.SecurityUtils.nodeSecurityContext;
 import static org.apache.ignite.plugin.security.SecurityPermission.ADMIN_USER_ACCESS;
+import static org.apache.ignite.plugin.security.SecurityPermission.JOIN_AS_SERVER;
 
 /**
  * Default {@code IgniteSecurity} implementation.
@@ -363,7 +364,14 @@ public class IgniteSecurityProcessor extends IgniteSecurityAdapter {
     @Override public @Nullable IgniteNodeValidationResult validateNode(ClusterNode node) {
         IgniteNodeValidationResult res = validateSecProcClass(node);
 
-        return res != null ? res : secPrc.validateNode(node);
+        if (res == null) {
+            res = validateNodeJoinPermission(node);
+
+            if (res == null)
+                res = secPrc.validateNode(node);
+        }
+
+        return res;
     }
 
     /** {@inheritDoc} */
@@ -441,6 +449,30 @@ public class IgniteSecurityProcessor extends IgniteSecurityAdapter {
         }
 
         return null;
+    }
+
+    /** */
+    private IgniteNodeValidationResult validateNodeJoinPermission(ClusterNode node) {
+        if (node.isClient())
+            return null;
+
+        SecurityContext secCtx = nodeSecurityContext(
+            marsh,
+            U.resolveClassLoader(ctx.config()),
+            node
+        );
+
+        try {
+            secPrc.authorize(null, JOIN_AS_SERVER, secCtx);
+
+            return null;
+        }
+        catch (SecurityException e) {
+            String msg = "Node is not authorized to join as a server node [joiningNodeId=" + node.id() +
+                ", addrs=" + U.addressesAsString(node) + ']';
+
+            return new IgniteNodeValidationResult(node.id(), msg, msg);
+        }
     }
 
     /** @return Security processor implementation to which current security facade delegates operations. */

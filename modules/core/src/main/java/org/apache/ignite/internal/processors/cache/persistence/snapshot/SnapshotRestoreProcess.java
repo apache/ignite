@@ -84,7 +84,6 @@ import org.apache.ignite.internal.processors.cache.persistence.snapshot.IgniteSn
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.PageIO;
 import org.apache.ignite.internal.processors.cluster.DiscoveryDataClusterState;
 import org.apache.ignite.internal.processors.compress.CompressionProcessor;
-import org.apache.ignite.internal.processors.metric.MetricRegistry;
 import org.apache.ignite.internal.util.distributed.DistributedProcess;
 import org.apache.ignite.internal.util.future.GridFinishedFuture;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
@@ -96,6 +95,7 @@ import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteFuture;
 import org.apache.ignite.lang.IgniteUuid;
+import org.apache.ignite.metric.MetricRegistry;
 import org.jetbrains.annotations.Nullable;
 
 import static java.util.Optional.ofNullable;
@@ -402,12 +402,8 @@ public class SnapshotRestoreProcess {
                 return;
             }
 
-            if (!reqGrpIds.isEmpty()) {
-                finishProcess(fut0.rqId, new IllegalArgumentException(OP_REJECT_MSG + "Cache group(s) was not " +
-                    "found in the snapshot [groups=" + reqGrpIds.values() + ", snapshot=" + snpName + ']'));
-
-                return;
-            }
+            assert reqGrpIds.isEmpty() : "Cache group(s) was not found in the snapshot [groups=" + reqGrpIds.values()
+                + ", snapshot=" + snpName + ']';
 
             Collection<UUID> bltNodes = F.viewReadOnly(ctx.discovery().discoCache().aliveBaselineNodes(), F.node2id());
 
@@ -420,7 +416,10 @@ public class SnapshotRestoreProcess {
                 new HashSet<>(bltNodes),
                 false,
                 incIdx,
-                onlyPrimary
+                onlyPrimary,
+                false,
+                false,
+                false
             );
 
             prepareRestoreProc.start(req.requestId(), req);
@@ -775,7 +774,6 @@ public class SnapshotRestoreProcess {
 
         // Collect the cache configurations and prepare a temporary directory for copying files.
         // Metastorage can be restored only manually by directly copying files.
-        boolean skipCompressCheck = false;
         for (SnapshotMetadata meta : metas) {
             for (File snpCacheDir : cctx.snapshotMgr().snapshotCacheDirectories(req.snapshotName(), req.snapshotPath(), meta.folderName(),
                 name -> !METASTORAGE_CACHE_NAME.equals(name))) {
@@ -783,28 +781,6 @@ public class SnapshotRestoreProcess {
 
                 if (!F.isEmpty(req.groups()) && !req.groups().contains(grpName))
                     continue;
-
-                if (!skipCompressCheck && meta.isGroupWithCompresion(CU.cacheId(grpName))) {
-                    try {
-                        File path = ctx.pdsFolderResolver().resolveFolders().persistentStoreRootPath();
-
-                        ctx.compress().checkPageCompressionSupported(path.toPath(), meta.pageSize());
-                    }
-                    catch (Exception e) {
-                        String grpWithCompr = req.groups().stream().filter(s -> meta.isGroupWithCompresion(CU.cacheId(grpName)))
-                            .collect(Collectors.joining(", "));
-
-                        String msg = "Requested cache groups [" + grpWithCompr + "] for restore " +
-                            "from snapshot '" + meta.snapshotName() + "' are compressed while " +
-                            "disk page compression is disabled. To restore these groups please " +
-                            "start Ignite with configured disk page compression";
-
-                        throw new IgniteCheckedException(msg);
-                    }
-                    finally {
-                        skipCompressCheck = true;
-                    }
-                }
 
                 File cacheDir = pageStore.cacheWorkDir(snpCacheDir.getName().startsWith(CACHE_GRP_DIR_PREFIX), grpName);
 
@@ -887,7 +863,7 @@ public class SnapshotRestoreProcess {
 
             if (!F.isEmpty(e.getValue().metas)) {
                 e.getValue().metas.stream().filter(SnapshotMetadata::hasCompressedGroups)
-                    .forEach(meta -> meta.cacheGroupIds().stream().filter(meta::isGroupWithCompresion)
+                    .forEach(meta -> meta.cacheGroupIds().stream().filter(meta::isGroupWithCompression)
                         .forEach(opCtx0::addCompressedGroup));
             }
 
@@ -933,11 +909,11 @@ public class SnapshotRestoreProcess {
         // Try to copy everything right from the single snapshot part.
         for (SnapshotMetadata meta : metas) {
             Set<Integer> grpParts = meta.partitions().get(grpId);
-            Set<Integer> grpWoIndex = grpParts == null ? Collections.emptySet() : new HashSet<>(grpParts);
+            Set<Integer> grpWoIdx = grpParts == null ? Collections.emptySet() : new HashSet<>(grpParts);
 
-            grpWoIndex.remove(INDEX_PARTITION);
+            grpWoIdx.remove(INDEX_PARTITION);
 
-            if (grpWoIndex.equals(parts))
+            if (grpWoIdx.equals(parts))
                 return meta;
         }
 
@@ -967,8 +943,6 @@ public class SnapshotRestoreProcess {
 
             Set<SnapshotMetadata> allMetas =
                 opCtx0.metasPerNode.values().stream().flatMap(List::stream).collect(Collectors.toSet());
-
-            AbstractSnapshotVerificationTask.checkMissedMetadata(allMetas);
 
             IgniteSnapshotManager snpMgr = ctx.cache().context().snapshotMgr();
 
@@ -1076,9 +1050,8 @@ public class SnapshotRestoreProcess {
                             .orElse(Collections.emptySet())
                             .contains(partFut.partId);
 
-                        if (doCopy) {
+                        if (doCopy)
                             copyLocalAsync(opCtx0, snpCacheDir, tmpCacheDir, partFut);
-                        }
 
                         return doCopy;
                     });
@@ -1228,7 +1201,7 @@ public class SnapshotRestoreProcess {
         catch (Exception ex) {
             opCtx0.errHnd.accept(ex);
 
-            return new GridFinishedFuture<>(ex);
+            retFut.onDone(ex);
         }
 
         return retFut;
@@ -1359,6 +1332,8 @@ public class SnapshotRestoreProcess {
         if (!U.isLocalNodeCoordinator(ctx.discovery()))
             return new GridFinishedFuture<>();
 
+        assert opCtx.reqId == reqId;
+
         SnapshotRestoreContext opCtx0 = opCtx;
 
         Collection<String> stopCaches = opCtx0.cfgs.values()
@@ -1367,7 +1342,7 @@ public class SnapshotRestoreProcess {
             .collect(Collectors.toSet());
 
         if (log.isInfoEnabled())
-            log.info("Stopping caches [reqId=" + opCtx0.reqId + ", caches=" + stopCaches + ']');
+            log.info("Stopping caches [reqId=" + reqId + ", caches=" + stopCaches + ']');
 
         // Skip deleting cache files as they will be removed during rollback.
         return ctx.cache().dynamicDestroyCaches(stopCaches, false, false)
@@ -2033,9 +2008,9 @@ public class SnapshotRestoreProcess {
             if (o == null || getClass() != o.getClass())
                 return false;
 
-            PartitionRestoreFuture future = (PartitionRestoreFuture)o;
+            PartitionRestoreFuture fut = (PartitionRestoreFuture)o;
 
-            return partId == future.partId;
+            return partId == fut.partId;
         }
 
         /** {@inheritDoc} */

@@ -163,8 +163,10 @@ public class PlatformCompute extends PlatformAbstractTarget {
                 long taskPtr = reader.readLong();
                 long topVer = reader.readLong();
                 String taskName = reader.readString();
+                boolean taskSesFullSupport = reader.readBoolean();
 
-                final PlatformFullTask task = new PlatformFullTask(platformCtx, platformGrp, taskPtr, topVer, taskName);
+                final PlatformFullTask task = new PlatformFullTask(
+                    platformCtx, platformGrp, taskPtr, topVer, taskName, taskSesFullSupport);
 
                 return executeNative0(task);
             }
@@ -193,9 +195,9 @@ public class PlatformCompute extends PlatformAbstractTarget {
 
                 PlatformCallable callable = new PlatformCallable(func, ptr, funcName);
 
-                IgniteInternalFuture future = compute.affinityCallAsync(cacheNames, part, callable);
+                IgniteInternalFuture fut = compute.affinityCallAsync(cacheNames, part, callable);
 
-                return wrapListenable(readAndListenFuture(reader, future));
+                return wrapListenable(readAndListenFuture(reader, fut));
             }
 
             case OP_AFFINITY_CALL: {
@@ -207,9 +209,9 @@ public class PlatformCompute extends PlatformAbstractTarget {
 
                 PlatformCallable callable = new PlatformCallable(func, ptr, callableName);
 
-                IgniteInternalFuture future = compute.affinityCallAsync(Collections.singletonList(cacheName), key, callable);
+                IgniteInternalFuture fut = compute.affinityCallAsync(Collections.singletonList(cacheName), key, callable);
 
-                return wrapListenable(readAndListenFuture(reader, future));
+                return wrapListenable(readAndListenFuture(reader, fut));
             }
 
             case OP_AFFINITY_RUN_PARTITION: {
@@ -221,9 +223,9 @@ public class PlatformCompute extends PlatformAbstractTarget {
 
                 PlatformRunnable runnable = new PlatformRunnable(func, ptr, runnableName);
 
-                IgniteInternalFuture future = compute.affinityRunAsync(cacheNames, part, runnable);
+                IgniteInternalFuture fut = compute.affinityRunAsync(cacheNames, part, runnable);
 
-                return wrapListenable(readAndListenFuture(reader, future));
+                return wrapListenable(readAndListenFuture(reader, fut));
             }
 
             case OP_AFFINITY_RUN: {
@@ -235,9 +237,9 @@ public class PlatformCompute extends PlatformAbstractTarget {
 
                 PlatformRunnable runnable = new PlatformRunnable(func, ptr, runnableName);
 
-                IgniteInternalFuture future = compute.affinityRunAsync(Collections.singleton(cacheName), key, runnable);
+                IgniteInternalFuture fut = compute.affinityRunAsync(Collections.singleton(cacheName), key, runnable);
 
-                return wrapListenable(readAndListenFuture(reader, future));
+                return wrapListenable(readAndListenFuture(reader, fut));
             }
 
             default:

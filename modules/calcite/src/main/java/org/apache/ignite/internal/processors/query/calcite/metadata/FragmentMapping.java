@@ -24,10 +24,9 @@ import java.util.UUID;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
 import org.apache.ignite.internal.GridDirectCollection;
+import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.query.calcite.message.MarshalableMessage;
-import org.apache.ignite.internal.processors.query.calcite.message.MarshallingContext;
 import org.apache.ignite.internal.processors.query.calcite.message.MessageType;
-import org.apache.ignite.internal.processors.query.calcite.rel.IgniteRel;
 import org.apache.ignite.internal.processors.query.calcite.util.Commons;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -89,14 +88,6 @@ public class FragmentMapping implements MarshalableMessage {
     }
 
     /** */
-    public FragmentMapping prune(IgniteRel rel) {
-        if (colocationGroups.size() != 1)
-            return this;
-
-        return new FragmentMapping(F.first(colocationGroups).prune(rel));
-    }
-
-    /** */
     public FragmentMapping combine(FragmentMapping other) {
         return new FragmentMapping(Commons.combine(colocationGroups, other.colocationGroups));
     }
@@ -132,52 +123,57 @@ public class FragmentMapping implements MarshalableMessage {
     }
 
     /** */
+    public List<ColocationGroup> colocationGroups() {
+        return Collections.unmodifiableList(colocationGroups);
+    }
+
+    /** */
     public FragmentMapping finalizeMapping(Supplier<List<UUID>> nodesSource) {
         if (colocationGroups.isEmpty())
             return this;
 
-        List<ColocationGroup> colocationGroups = this.colocationGroups;
+        List<ColocationGroup> colocationGrps = this.colocationGroups;
 
-        colocationGroups = Commons.transform(colocationGroups, ColocationGroup::finalizeMapping);
+        colocationGrps = Commons.transform(colocationGrps, ColocationGroup::finalizeMapping);
         List<UUID> nodes = nodeIds(), nodes0 = nodes.isEmpty() ? nodesSource.get() : nodes;
-        colocationGroups = Commons.transform(colocationGroups, g -> g.mapToNodes(nodes0));
+        colocationGrps = Commons.transform(colocationGrps, g -> g.mapToNodes(nodes0));
 
-        return new FragmentMapping(colocationGroups);
+        return new FragmentMapping(colocationGrps);
     }
 
     /** */
     public FragmentMapping filterByPartitions(int[] parts) throws ColocationMappingException {
-        List<ColocationGroup> colocationGroups = this.colocationGroups;
+        List<ColocationGroup> colocationGrps = this.colocationGroups;
 
-        if (!F.isEmpty(parts) && colocationGroups.size() > 1)
+        if (!F.isEmpty(parts) && colocationGrps.size() > 1)
             throw new ColocationMappingException("Execution of non-collocated query with partition parameter is not possible");
 
-        colocationGroups = Commons.transform(colocationGroups, g -> g.filterByPartitions(parts));
+        colocationGrps = Commons.transform(colocationGrps, g -> g.filterByPartitions(parts));
 
-        return new FragmentMapping(colocationGroups);
+        return new FragmentMapping(colocationGrps);
     }
 
     /** */
     public @NotNull ColocationGroup findGroup(long sourceId) {
-        List<ColocationGroup> groups = colocationGroups.stream()
+        List<ColocationGroup> grps = colocationGroups.stream()
             .filter(c -> c.belongs(sourceId))
             .collect(Collectors.toList());
 
-        if (groups.isEmpty())
+        if (grps.isEmpty())
             throw new IllegalStateException("Failed to find group with given id. [sourceId=" + sourceId + "]");
-        else if (groups.size() > 1)
+        else if (grps.size() > 1)
             throw new IllegalStateException("Multiple groups with the same id found. [sourceId=" + sourceId + "]");
 
-        return F.first(groups);
+        return F.first(grps);
     }
 
     /** {@inheritDoc} */
-    @Override public void prepareMarshal(MarshallingContext ctx) {
+    @Override public void prepareMarshal(GridCacheSharedContext<?, ?> ctx) {
         colocationGroups.forEach(g -> g.prepareMarshal(ctx));
     }
 
     /** {@inheritDoc} */
-    @Override public void prepareUnmarshal(MarshallingContext ctx) {
+    @Override public void prepareUnmarshal(GridCacheSharedContext<?, ?> ctx) {
         colocationGroups.forEach(g -> g.prepareUnmarshal(ctx));
     }
 

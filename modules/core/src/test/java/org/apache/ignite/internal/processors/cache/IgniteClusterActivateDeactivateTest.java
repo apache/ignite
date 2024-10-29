@@ -479,14 +479,14 @@ public class IgniteClusterActivateDeactivateTest extends GridCommonAbstractTest 
 
                 for (int j = 0; j < 10; j++) {
                     Integer key = ThreadLocalRandom.current().nextInt(1000);
-                    Integer value = j;
+                    Integer val = j;
 
                     if (state == ACTIVE)
                         cache.put(key, j);
                     else
-                        assertThrowsWithCause(() -> cache.put(key, value), IgniteClusterReadOnlyException.class);
+                        assertThrowsWithCause(() -> cache.put(key, val), IgniteClusterReadOnlyException.class);
 
-                    assertEquals(state == ACTIVE ? value : null, cache.get(key));
+                    assertEquals(state == ACTIVE ? val : null, cache.get(key));
                 }
             }
         }

@@ -348,11 +348,11 @@ public class IgniteIndexReader implements AutoCloseable {
         log.info("Partitions files num: " + Arrays.stream(partStores).filter(Objects::nonNull).count());
         log.info("Going to check " + pagesCnt + " pages.");
 
-        long[] indexPartitionRoots = partitionRoots(PageIdAllocator.META_PAGE_ID);
+        long[] idxPartitionRoots = partitionRoots(PageIdAllocator.META_PAGE_ID);
 
         Map<String, ScanContext> recursiveScans = scanAllTrees(
             "Scan index trees recursively",
-            indexPartitionRoots[0],
+            idxPartitionRoots[0],
             CountOnlyStorage::new,
             this::recursiveTreeScan,
             pagesCnt
@@ -360,7 +360,7 @@ public class IgniteIndexReader implements AutoCloseable {
 
         Map<String, ScanContext> horizontalScans = scanAllTrees(
             "Scan index trees horizontally",
-            indexPartitionRoots[0],
+            idxPartitionRoots[0],
             checkParts ? LinkStorage::new : CountOnlyStorage::new,
             this::horizontalTreeScan,
             pagesCnt
@@ -371,7 +371,7 @@ public class IgniteIndexReader implements AutoCloseable {
 
         compareScans(recursiveScans, horizontalScans);
 
-        printPagesListsInfo(indexPartitionRoots[1]);
+        printPagesListsInfo(idxPartitionRoots[1]);
 
         printSequentialScanInfo(scanIndexSequentially());
 

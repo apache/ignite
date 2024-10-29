@@ -60,7 +60,6 @@ import org.apache.ignite.internal.managers.eventstorage.DiscoveryEventListener;
 import org.apache.ignite.internal.managers.eventstorage.HighPriorityListener;
 import org.apache.ignite.internal.managers.systemview.walker.TransactionViewWalker;
 import org.apache.ignite.internal.pagemem.wal.record.DataEntry;
-import org.apache.ignite.internal.pagemem.wal.record.MvccTxRecord;
 import org.apache.ignite.internal.pagemem.wal.record.TxRecord;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.CacheObjectsReleaseFuture;
@@ -90,9 +89,6 @@ import org.apache.ignite.internal.processors.cache.distributed.near.GridNearCach
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearLockFuture;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearOptimisticTxPrepareFuture;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxLocal;
-import org.apache.ignite.internal.processors.cache.mvcc.MvccCoordinator;
-import org.apache.ignite.internal.processors.cache.mvcc.msg.MvccRecoveryFinishedMessage;
-import org.apache.ignite.internal.processors.cache.mvcc.txlog.TxState;
 import org.apache.ignite.internal.processors.cache.persistence.wal.WALPointer;
 import org.apache.ignite.internal.processors.cache.transactions.TxDeadlockDetection.TxDeadlockFuture;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
@@ -138,7 +134,6 @@ import static org.apache.ignite.events.EventType.EVT_NODE_FAILED;
 import static org.apache.ignite.events.EventType.EVT_NODE_JOINED;
 import static org.apache.ignite.events.EventType.EVT_NODE_LEFT;
 import static org.apache.ignite.events.EventType.EVT_TX_STARTED;
-import static org.apache.ignite.internal.GridTopic.TOPIC_CACHE_COORDINATOR;
 import static org.apache.ignite.internal.GridTopic.TOPIC_TX;
 import static org.apache.ignite.internal.managers.communication.GridIoPolicy.SYSTEM_POOL;
 import static org.apache.ignite.internal.processors.cache.GridCacheOperation.READ;
@@ -693,7 +688,6 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
      * @param concurrency Concurrency.
      * @param isolation Isolation.
      * @param timeout transaction timeout.
-     * @param mvccOp Whether this transaction is being started via SQL API or not, or {@code null} if unknown.
      * @param txSize Expected transaction size.
      * @param lb Label.
      * @return New transaction.
@@ -706,7 +700,6 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
         TransactionIsolation isolation,
         long timeout,
         boolean storeEnabled,
-        Boolean mvccOp,
         int txSize,
         @Nullable String lb
     ) {
@@ -724,7 +717,6 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
             isolation,
             timeout,
             storeEnabled,
-            mvccOp,
             txSize,
             securitySubjectId(cctx),
             taskNameHash,
@@ -924,8 +916,8 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
      * @return {@code True} if transaction is not in completed set.
      */
     public boolean onStarted(IgniteInternalTx tx) {
-        assert tx.state() == ACTIVE || tx.isRollbackOnly() : "Invalid transaction state [locId=" + cctx.localNodeId() +
-            ", tx=" + tx + ']';
+        assert tx.state() == ACTIVE || tx.state() == SUSPENDED || tx.isRollbackOnly() :
+            "Invalid transaction state [locId=" + cctx.localNodeId() + ", tx=" + tx + ']';
 
         if (isCompleted(tx)) {
             ConcurrentMap<GridCacheVersion, IgniteInternalTx> txIdMap = transactionMap(tx);
@@ -1006,7 +998,7 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
     /**
      * @return Transaction for current thread.
      */
-    public <T> T tx() {
+    public <T extends IgniteInternalTx> T tx() {
         IgniteInternalTx tx = txContext();
 
         return tx != null ? (T)tx : (T)tx(null, Thread.currentThread().getId());
@@ -1736,35 +1728,6 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
 
                 tx.txState().onTxEnd(cctx, tx, commit);
             }
-        }
-    }
-
-    /**
-     * Removes Tx from manager. Can be used only if there were no updates.
-     *
-     * @param tx Transaction to finish.
-     */
-    public void forgetTx(IgniteInternalTx tx) {
-        assert tx != null;
-
-        if (transactionMap(tx).remove(tx.xidVersion(), tx)) {
-            // 1. Remove from per-thread storage.
-            clearThreadMap(tx);
-
-            // 2. Unregister explicit locks.
-            if (!tx.alternateVersions().isEmpty())
-                for (GridCacheVersion ver : tx.alternateVersions())
-                    idMap.remove(ver);
-
-            // 3. Remove Near-2-DHT mappings.
-            if (tx instanceof GridCacheMappedVersion)
-                mappedVers.remove(((GridCacheMappedVersion)tx).mappedVersion());
-
-            // 4. Clear context.
-            resetContext();
-
-            // 5. Complete finish future.
-            tx.state(UNKNOWN);
         }
     }
 
@@ -2737,53 +2700,6 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
     }
 
     /**
-     * Sets MVCC state.
-     *
-     * @param tx Transaction.
-     * @param state New state.
-     */
-    public void setMvccState(IgniteInternalTx tx, TransactionState state) {
-        if (cctx.kernalContext().clientNode() || tx.mvccSnapshot() == null || tx.near() && !tx.local())
-            return;
-
-        byte state0 = toMvccState(state);
-
-        cctx.database().checkpointReadLock();
-
-        try {
-            cctx.coordinators().updateState(tx.mvccSnapshot(), state0, tx.local());
-        }
-        finally {
-            cctx.database().checkpointReadUnlock();
-        }
-    }
-
-    /** */
-    private byte toMvccState(TransactionState state) {
-        switch (state) {
-            case PREPARED:
-                return TxState.PREPARED;
-            case COMMITTED:
-                return TxState.COMMITTED;
-            case ROLLED_BACK:
-                return TxState.ABORTED;
-            default:
-                throw new IllegalStateException("Unexpected state: " + state);
-        }
-    }
-
-    /**
-     *  Finishes MVCC transaction.
-     *  @param tx Transaction.
-     */
-    public void mvccFinish(IgniteTxAdapter tx) {
-        if (cctx.kernalContext().clientNode() || tx.mvccSnapshot == null || !tx.local())
-            return;
-
-        cctx.coordinators().releaseWaiters(tx.mvccSnapshot);
-    }
-
-    /**
      * Logs Tx state to WAL if needed.
      *
      * @param tx Transaction.
@@ -2800,12 +2716,7 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
 
         Map<Short, Collection<Short>> nodes = tx.consistentIdMapper.mapToCompactIds(tx.topVer, tx.txNodes, baselineTop);
 
-        TxRecord record;
-
-        if (tx.txState().mvccEnabled())
-            record = new MvccTxRecord(tx.state(), tx.nearXidVersion(), tx.writeVersion(), nodes, tx.mvccSnapshot());
-        else
-            record = new TxRecord(tx.state(), tx.nearXidVersion(), tx.writeVersion(), nodes);
+        TxRecord record = new TxRecord(tx.state(), tx.nearXidVersion(), tx.writeVersion(), nodes);
 
         try {
             return cctx.wal().log(record);
@@ -3188,9 +3099,6 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
         /** */
         private final ClusterNode node;
 
-        /** */
-        private final MvccCoordinator mvccCrd;
-
         /** Time bag to measure and store tx recovery stages times. */
         private final TimeBag timeBag = new TimeBag(log.isInfoEnabled());
 
@@ -3202,11 +3110,9 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
 
         /**
          * @param node Failed node.
-         * @param mvccCrd Mvcc coordinator at time of node failure.
          */
-        private TxRecoveryInitRunnable(ClusterNode node, MvccCoordinator mvccCrd) {
+        private TxRecoveryInitRunnable(ClusterNode node) {
             this.node = node;
-            this.mvccCrd = mvccCrd;
         }
 
         /** {@inheritDoc} */
@@ -3229,10 +3135,6 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
                 if (log.isDebugEnabled())
                     log.debug("Processing node failed event [locNodeId=" + cctx.localNodeId() +
                         ", failedNodeId=" + evtNodeId + ']');
-
-                // Null means that recovery voting is not needed.
-                GridCompoundFuture<IgniteInternalTx, Void> allTxFinFut = isMvccRecoveryMessageRequired()
-                    ? new GridCompoundFuture<>() : null;
 
                 for (final IgniteInternalTx tx : activeTransactions()) {
                     if ((tx.near() && !tx.local() && tx.originatingNodeId().equals(evtNodeId))
@@ -3263,11 +3165,6 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
                                     tx.rollbackAsync();
                             }
                         }
-
-                        // Await only mvcc transactions initiated by failed client node.
-                        if (allTxFinFut != null && tx.eventNodeId().equals(evtNodeId)
-                            && tx.mvccSnapshot() != null)
-                            allTxFinFut.add(tx.finishFuture());
                     }
                 }
 
@@ -3277,55 +3174,10 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
 
                 if (log.isInfoEnabled() && preparedTxCnt.get() > 0)
                     doneFut.listen(this::finishAndRecordTimings);
-
-                if (allTxFinFut == null)
-                    return;
-
-                allTxFinFut.markInitialized();
-
-                // Send vote to mvcc coordinator when all recovering transactions have finished.
-                allTxFinFut.listen(() -> {
-                    // If mvcc coordinator issued snapshot for recovering transaction has failed during recovery,
-                    // then there is no need to send messages to new coordinator.
-                    try {
-                        cctx.kernalContext().io().sendToGridTopic(
-                            mvccCrd.nodeId(),
-                            TOPIC_CACHE_COORDINATOR,
-                            new MvccRecoveryFinishedMessage(evtNodeId),
-                            SYSTEM_POOL);
-                    }
-                    catch (ClusterTopologyCheckedException e) {
-                        if (log.isInfoEnabled())
-                            log.info("Mvcc coordinator issued snapshots for recovering transactions " +
-                                "has left the cluster (will ignore) [locNodeId=" + cctx.localNodeId() +
-                                    ", failedNodeId=" + evtNodeId +
-                                    ", mvccCrdNodeId=" + mvccCrd.nodeId() + ']');
-                    }
-                    catch (IgniteCheckedException e) {
-                        log.warning("Failed to notify mvcc coordinator that all recovering transactions were " +
-                            "finished [locNodeId=" + cctx.localNodeId() +
-                            ", failedNodeId=" + evtNodeId +
-                            ", mvccCrdNodeId=" + mvccCrd.nodeId() + ']', e);
-                    }
-                });
             }
             finally {
                 cctx.kernalContext().gateway().readUnlock();
             }
-        }
-
-        /**
-         * Determines need to send a recovery message or not.
-         *
-         * @return True if message required, false otherwise.
-         */
-        private boolean isMvccRecoveryMessageRequired() {
-            ClusterNode mvccCrdNode = null;
-
-            if (mvccCrd != null && mvccCrd.nodeId() != null)
-                mvccCrdNode = cctx.node(mvccCrd.nodeId());
-
-            return node.isClient() && mvccCrdNode != null && cctx.kernalContext().coordinators().mvccEnabled();
         }
 
         /**
@@ -3704,7 +3556,7 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
         /** {@inheritDoc} */
         @Override public void onEvent(DiscoveryEvent evt, DiscoCache discoCache) {
             IgniteInternalFuture<?> recInitFut = cctx.kernalContext().closure().runLocalSafe(
-                new TxRecoveryInitRunnable(evt.eventNode(), cctx.coordinators().currentCoordinator()));
+                new TxRecoveryInitRunnable(evt.eventNode()));
 
             recInitFut.listen(() -> {
                 if (recInitFut.error() != null)

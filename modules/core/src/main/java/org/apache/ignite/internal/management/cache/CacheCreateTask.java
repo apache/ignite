@@ -33,9 +33,11 @@ import org.apache.ignite.internal.util.spring.IgniteSpringHelper;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.visor.VisorJob;
 import org.apache.ignite.internal.visor.VisorOneNodeTask;
+import org.apache.ignite.plugin.security.SecurityPermissionSet;
 import org.apache.ignite.resources.IgniteInstanceResource;
 
 import static org.apache.ignite.internal.IgniteComponentType.SPRING;
+import static org.apache.ignite.plugin.security.SecurityPermissionSetBuilder.NO_PERMISSIONS;
 
 /**
  * Task to create caches from Spring XML configuration.
@@ -89,9 +91,26 @@ public class CacheCreateTask extends VisorOneNodeTask<CacheCreateCommandArg, Set
                     CacheConfiguration.class.getName() + "' beans.", e);
             }
 
-            Collection<IgniteCache> caches = ignite.createCaches(ccfgs);
+            Collection<IgniteCache> caches;
+
+            if (arg.skipExisting()) {
+                Collection<String> existingCacheNames = ignite.cacheNames();
+
+                ccfgs.removeIf(ccfg -> ccfg.getName() != null && existingCacheNames.contains(ccfg.getName()));
+
+                caches = ignite.getOrCreateCaches(ccfgs);
+            }
+            else
+                caches = ignite.createCaches(ccfgs);
 
             return caches.stream().map(Cache::getName).collect(Collectors.toCollection(TreeSet::new));
+        }
+
+        /** {@inheritDoc} */
+        @Override public SecurityPermissionSet requiredPermissions() {
+            // This task does nothing but delegates the call to the Ignite public API.
+            // Therefore, it is safe to execute task without any additional permissions check.
+            return NO_PERMISSIONS;
         }
     }
 }

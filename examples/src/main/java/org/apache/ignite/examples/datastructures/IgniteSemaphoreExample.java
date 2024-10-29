@@ -35,7 +35,7 @@ import org.apache.ignite.lang.IgniteRunnable;
  */
 public class IgniteSemaphoreExample {
     /** Number of items for each producer/consumer to produce/consume. */
-    private static final int OPS_COUNT = 100;
+    private static final int OPS_CNT = 100;
 
     /** Synchronization semaphore name. */
     private static final String SEM_NAME = IgniteSemaphoreExample.class.getSimpleName();
@@ -47,12 +47,12 @@ public class IgniteSemaphoreExample {
      */
     public static void main(String[] args) {
         try (Ignite ignite = Ignition.start("examples/config/example-ignite.xml")) {
-            int nodeCount = ignite.cluster().forServers().nodes().size();
+            int nodeCnt = ignite.cluster().forServers().nodes().size();
 
             // Number of producers should be equal to number of consumers.
             // This value should not exceed overall number of public thread pools in a cluster,
             // otherwise blocking consumer jobs can occupy all the threads leading to starvation.
-            int jobCount = ignite.configuration().getPublicThreadPoolSize() * nodeCount / 2;
+            int jobCnt = ignite.configuration().getPublicThreadPoolSize() * nodeCnt / 2;
 
             System.out.println();
             System.out.println(">>> Cache atomic semaphore example started.");
@@ -67,17 +67,17 @@ public class IgniteSemaphoreExample {
             IgniteSemaphore semaphore = ignite.semaphore(semaphoreName, 0, false, true);
 
             // Start consumers on all cluster nodes.
-            for (int i = 0; i < jobCount; i++)
+            for (int i = 0; i < jobCnt; i++)
                 ignite.compute().runAsync(new Consumer(semaphoreName));
 
             // Start producers on all cluster nodes.
-            for (int i = 0; i < jobCount; i++)
+            for (int i = 0; i < jobCnt; i++)
                 ignite.compute().runAsync(new Producer(semaphoreName));
 
             System.out.println("Master node is waiting for all other nodes to finish...");
 
             // Wait for everyone to finish.
-            syncSemaphore.acquire(2 * jobCount);
+            syncSemaphore.acquire(2 * jobCnt);
         }
 
         System.out.flush();
@@ -116,7 +116,7 @@ public class IgniteSemaphoreExample {
         @Override public void run() {
             IgniteSemaphore semaphore = Ignition.ignite().semaphore(semaphoreName, 0, true, true);
 
-            for (int i = 0; i < OPS_COUNT; i++) {
+            for (int i = 0; i < OPS_CNT; i++) {
                 System.out.println("Producer [nodeId=" + Ignition.ignite().cluster().localNode().id() +
                     ", available=" + semaphore.availablePermits() + ']');
 
@@ -149,7 +149,7 @@ public class IgniteSemaphoreExample {
         @Override public void run() {
             IgniteSemaphore sem = Ignition.ignite().semaphore(semaphoreName, 0, true, true);
 
-            for (int i = 0; i < OPS_COUNT; i++) {
+            for (int i = 0; i < OPS_CNT; i++) {
                 // Block if no permits are available.
                 sem.acquire();
 
