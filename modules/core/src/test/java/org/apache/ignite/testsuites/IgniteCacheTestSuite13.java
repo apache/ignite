@@ -21,6 +21,7 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 import org.apache.ignite.internal.metric.CacheMetricsAddRemoveTest;
+import org.apache.ignite.internal.metric.CacheMetricsConflictOperationsTest;
 import org.apache.ignite.internal.metric.CacheMetricsConflictResolverTest;
 import org.apache.ignite.internal.metric.CustomMetricsTest;
 import org.apache.ignite.internal.metric.IoStatisticsCachePersistenceSelfTest;
@@ -90,6 +91,7 @@ public class IgniteCacheTestSuite13 {
         GridTestUtils.addTestIfNeeded(suite, SystemViewComputeJobTest.class, ignoredTests);
         GridTestUtils.addTestIfNeeded(suite, SystemViewCacheExpiryPolicyTest.class, ignoredTests);
         GridTestUtils.addTestIfNeeded(suite, CacheMetricsAddRemoveTest.class, ignoredTests);
+        GridTestUtils.addTestIfNeeded(suite, CacheMetricsConflictOperationsTest.class, ignoredTests);
         GridTestUtils.addTestIfNeeded(suite, CacheMetricsConflictResolverTest.class, ignoredTests);
         GridTestUtils.addTestIfNeeded(suite, JmxExporterSpiTest.class, ignoredTests);
         GridTestUtils.addTestIfNeeded(suite, LogExporterSpiTest.class, ignoredTests);
