@@ -112,10 +112,10 @@ public abstract class AbstractBasicIntegrationTransactionalTest extends Abstract
     }
 
     /** {@inheritDoc} */
-    @Override protected QueryChecker assertQuery(IgniteEx ignite, String qry) {
+    @Override protected QueryChecker assertQuery(Ignite ignite, String qry) {
         return new QueryChecker(qry, tx, sqlTxMode) {
             @Override protected QueryEngine getEngine() {
-                return Commons.lookupComponent(ignite.context(), QueryEngine.class);
+                return Commons.lookupComponent(((IgniteEx)ignite).context(), QueryEngine.class);
             }
         };
     }
