@@ -594,10 +594,10 @@ public class IgniteSqlValidator extends SqlValidatorImpl {
 
     /** {@inheritDoc} */
     @Override protected void inferUnknownTypes(RelDataType inferredType, SqlValidatorScope scope, SqlNode node) {
-        if (node instanceof SqlDynamicParam && inferDynamicParamType(inferredType, (SqlDynamicParam)node)) {
-            // No-op.
-        }
-        else if (node instanceof SqlCall) {
+        if (inferDynamicParamType(inferredType, node))
+            return;
+
+        if (node instanceof SqlCall) {
             final SqlCall call = (SqlCall)node;
 
             // SqlStdOperatorTable::IS_NULL and SqlStdOperatorTable::IS_NOT_NULL overrides with VARCHAR_1024 for argument type inference.
@@ -647,15 +647,20 @@ public class IgniteSqlValidator extends SqlValidatorImpl {
             super.inferUnknownTypes(inferredType, scope, node);
     }
 
-    /** @return {@code True} if type was successfully set. {@code False} if type is not determined. */
-    private boolean inferDynamicParamType(RelDataType inferredType, SqlDynamicParam node) {
-        DynamicParameterHolder pHolder = deriveDynamicParamType(node);
+    /** @return {@code True} if a type was successfully set to {@code node}. {@code False} if type is not determined. */
+    private boolean inferDynamicParamType(RelDataType inferredType, SqlNode node) {
+        if (!(node instanceof SqlDynamicParam))
+            return false;
+
+        SqlDynamicParam dpNode = (SqlDynamicParam)node;
+
+        DynamicParameterHolder pHolder = deriveDynamicParamType(dpNode);
 
         if (unknownType.equals(inferredType) && unknownType.equals(pHolder.type))
             return false;
 
         if (!inferredType.equals(unknownType) && !inferredType.getFamily().equals(pHolder.type.getFamily()))
-            dynamicParameterType(pHolder, node, typeFactory.createTypeWithNullability(inferredType, true));
+            dynamicParameterType(pHolder, dpNode, typeFactory.createTypeWithNullability(inferredType, true));
 
         return true;
     }
