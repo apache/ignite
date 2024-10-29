@@ -141,6 +141,7 @@ public class ScanQueryTransactionIsolationTest extends AbstractQueryTransactionI
             ).collect(Collectors.toList());
     }
 
+    /** */
     private <T> T unwrap(Object o) {
         if (o instanceof KeyCacheObject)
             return ((CacheObject)o).value(null, false);
