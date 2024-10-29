@@ -40,15 +40,15 @@ import org.apache.ignite.lang.IgniteBiTuple;
 import org.jetbrains.annotations.Nullable;
 
 /** */
-public class TableScan<Row> extends AbstractCacheScan<Row> {
+public class TableScan<Row> extends AbstractCacheColumnsScan<Row> {
     /** */
     public TableScan(
         ExecutionContext<Row> ectx,
         CacheTableDescriptor desc,
         int[] parts,
-        @Nullable ImmutableBitSet requiredColunms
+        @Nullable ImmutableBitSet requiredColumns
     ) {
-        super(ectx, desc, parts, requiredColunms);
+        super(ectx, desc, parts, requiredColumns);
     }
 
     /** {@inheritDoc} */

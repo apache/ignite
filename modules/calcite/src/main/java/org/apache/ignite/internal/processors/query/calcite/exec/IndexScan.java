@@ -58,7 +58,7 @@ import org.jetbrains.annotations.Nullable;
 /**
  * Scan on index.
  */
-public class IndexScan<Row> extends AbstractCacheScan<Row> {
+public class IndexScan<Row> extends AbstractCacheColumnsScan<Row> {
     /** */
     private final GridKernalContext kctx;
 

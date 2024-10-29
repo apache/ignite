@@ -21,8 +21,6 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
-import org.apache.calcite.rel.type.RelDataType;
-import org.apache.calcite.util.ImmutableBitSet;
 import org.apache.ignite.cluster.ClusterTopologyException;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
@@ -30,10 +28,7 @@ import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtTopolo
 import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtLocalPartition;
 import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionState;
 import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionTopology;
-import org.apache.ignite.internal.processors.query.calcite.exec.RowHandler.RowFactory;
-import org.apache.ignite.internal.processors.query.calcite.schema.CacheTableDescriptor;
 import org.apache.ignite.internal.util.typedef.F;
-import org.jetbrains.annotations.Nullable;
 
 /** */
 public abstract class AbstractCacheScan<Row> implements Iterable<Row>, AutoCloseable {
@@ -44,15 +39,6 @@ public abstract class AbstractCacheScan<Row> implements Iterable<Row>, AutoClose
     protected final ExecutionContext<Row> ectx;
 
     /** */
-    protected final CacheTableDescriptor desc;
-
-    /** */
-    protected final RowFactory<Row> factory;
-
-    /** */
-    protected final RelDataType rowType;
-
-    /** */
     protected final AffinityTopologyVersion topVer;
 
     /** */
@@ -61,24 +47,12 @@ public abstract class AbstractCacheScan<Row> implements Iterable<Row>, AutoClose
     /** */
     protected volatile List<GridDhtLocalPartition> reserved;
 
-    /** Participating colunms. */
-    protected final ImmutableBitSet requiredColumns;
-
     /** */
-    AbstractCacheScan(
-        ExecutionContext<Row> ectx,
-        CacheTableDescriptor desc,
-        int[] parts,
-        @Nullable ImmutableBitSet requiredColumns
-    ) {
+    AbstractCacheScan(ExecutionContext<Row> ectx, GridCacheContext<?, ?> cctx, int[] parts) {
         this.ectx = ectx;
-        cctx = desc.cacheContext();
-        this.desc = desc;
+        this.cctx = cctx;
         this.parts = parts;
-        this.requiredColumns = requiredColumns;
 
-        rowType = desc.rowType(ectx.getTypeFactory(), requiredColumns);
-        factory = ectx.rowHandler().factory(ectx.getTypeFactory(), rowType);
         topVer = ectx.topologyVersion();
     }
 
