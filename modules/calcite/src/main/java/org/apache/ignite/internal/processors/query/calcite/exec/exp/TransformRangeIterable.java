@@ -24,7 +24,7 @@ import org.apache.ignite.internal.util.typedef.F;
 /**
  * Row-transformable range iterable.
  */
-public class TransformRangeIterable<FromRow, ToRow> implements RangeIterable<ToRow>{
+public class TransformRangeIterable<FromRow, ToRow> implements RangeIterable<ToRow> {
     /** */
     private final RangeIterable<FromRow> delegate;
 
@@ -39,7 +39,7 @@ public class TransformRangeIterable<FromRow, ToRow> implements RangeIterable<ToR
 
     /** {@inheritDoc} */
     @Override public Iterator<RangeCondition<ToRow>> iterator() {
-        return F.iterator(delegate.iterator(), c -> new RangeConditionImpl<>(c, rowTransformer), true);
+        return F.iterator(delegate.iterator(), c -> new TransformRangeCondition<>(c, rowTransformer), true);
     }
 
     /** {@inheritDoc} */
@@ -48,7 +48,7 @@ public class TransformRangeIterable<FromRow, ToRow> implements RangeIterable<ToR
     }
 
     /** */
-    private static class RangeConditionImpl<FromRow, ToRow> implements RangeCondition<ToRow> {
+    private static class TransformRangeCondition<FromRow, ToRow> implements RangeCondition<ToRow> {
         /** */
         private final RangeCondition<FromRow> delegate;
 
@@ -56,7 +56,7 @@ public class TransformRangeIterable<FromRow, ToRow> implements RangeIterable<ToR
         private final Function<FromRow, ToRow> rowTransformer;
 
         /** */
-        public RangeConditionImpl(RangeCondition<FromRow> delegate, Function<FromRow, ToRow> rowTransformer) {
+        public TransformRangeCondition(RangeCondition<FromRow> delegate, Function<FromRow, ToRow> rowTransformer) {
             this.delegate = delegate;
             this.rowTransformer = rowTransformer;
         }

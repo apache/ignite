@@ -194,7 +194,7 @@ public class IndexScan<Row> extends AbstractCacheScan<Row> {
         return new TreeIndexWrapper(idx, indexQueryContext());
     }
 
-    /** {@inheritDoc} */
+    /** From Row to IndexRow convertor. */
     protected IndexRow row2indexRow(Row bound) {
         if (bound == null)
             return null;
@@ -226,7 +226,7 @@ public class IndexScan<Row> extends AbstractCacheScan<Row> {
         return nullSearchRow ? null : new IndexPlainRowImpl(keys, idxRowHnd);
     }
 
-    /** {@inheritDoc} */
+    /** From IndexRow to Row convertor. */
     protected Row indexRow2Row(IndexRow row) {
         try {
             if (row.indexPlainRow())
@@ -251,7 +251,7 @@ public class IndexScan<Row> extends AbstractCacheScan<Row> {
         return res;
     }
 
-    /** {@inheritDoc} */
+    /** Query context. */
     protected IndexQueryContext indexQueryContext() {
         IndexingQueryFilter filter = new IndexingQueryFilterImpl(kctx, topVer, parts);
 
@@ -338,7 +338,7 @@ public class IndexScan<Row> extends AbstractCacheScan<Row> {
 
         InlineIndexKeyType keyType = F.isEmpty(inlineKeyTypes) ? null : inlineKeyTypes.get(0);
 
-        return new BPlusTree.TreeRowClosure<IndexRow, IndexRow>() {
+        return new BPlusTree.TreeRowClosure<>() {
             private IndexRow idxRow;
 
             /** {@inheritDoc} */
@@ -377,7 +377,7 @@ public class IndexScan<Row> extends AbstractCacheScan<Row> {
 
     /** */
     public static BPlusTree.TreeRowClosure<IndexRow, IndexRow> createNotExpiredRowFilter() {
-        return new BPlusTree.TreeRowClosure<IndexRow, IndexRow>() {
+        return new BPlusTree.TreeRowClosure<>() {
             private IndexRow idxRow;
 
             @Override public boolean apply(
@@ -421,7 +421,8 @@ public class IndexScan<Row> extends AbstractCacheScan<Row> {
             assert txChanges != null;
 
             // `txChanges` returns single thread data structures e.g. `HashSet`, `ArrayList`.
-            // It safe to use them in multiple `FilteredCursor` instances, because, multi range index scan will be flat to the single cursor.
+            // It safe to use them in multiple `FilteredCursor` instances, because, multi range index scan will be
+            // flat to the single cursor.
             // See AbstractIndexScan#iterator.
             try {
                 return new SortedSegmentedIndexCursor(

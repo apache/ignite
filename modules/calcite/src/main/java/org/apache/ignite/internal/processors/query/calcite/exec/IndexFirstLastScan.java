@@ -58,6 +58,7 @@ public class IndexFirstLastScan<Row> extends IndexScan<Row> {
         this.first = first;
     }
 
+    /** {@inheritDoc} */
     @Override protected TreeIndex<IndexRow> treeIndex() {
         return new FirstLastIndexWrapper(idx, indexQueryContext(), first);
     }
