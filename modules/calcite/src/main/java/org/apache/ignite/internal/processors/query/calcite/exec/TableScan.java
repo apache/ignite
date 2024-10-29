@@ -131,6 +131,7 @@ public class TableScan<Row> implements Iterable<Row>, AutoCloseable {
         }
 
         List<GridDhtLocalPartition> toReserve;
+
         if (cctx.isReplicated()) {
             int partsCnt = cctx.affinity().partitions();
             toReserve = new ArrayList<>(partsCnt);

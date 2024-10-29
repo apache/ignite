@@ -22,6 +22,7 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.internal.cache.query.index.sorted.IndexRow;
 import org.apache.ignite.internal.cache.query.index.sorted.inline.IndexQueryContext;
+import org.apache.ignite.internal.cache.query.index.sorted.inline.InlineIndex;
 import org.apache.ignite.internal.cache.query.index.sorted.inline.InlineIndexImpl;
 import org.apache.ignite.internal.processors.query.calcite.schema.CacheTableDescriptor;
 import org.apache.ignite.internal.util.lang.GridCursor;
@@ -31,6 +32,9 @@ import org.jetbrains.annotations.Nullable;
  * Takes only first or last index value excluding nulls.
  */
 public class IndexFirstLastScan<Row> extends IndexScan<Row> {
+    /** First or last field value. */
+    private final boolean first;
+
     /**
      * @param first {@code True} to take first index value. {@code False} to take last value.
      * @param ectx Execution context.
@@ -49,7 +53,13 @@ public class IndexFirstLastScan<Row> extends IndexScan<Row> {
         int[] parts,
         @Nullable ImmutableBitSet requiredColumns
     ) {
-        super(ectx, desc, new FirstLastIndexWrapper(idx, first), idxFieldMapping, parts, null, requiredColumns);
+        super(ectx, desc, idx, idxFieldMapping, parts, null, requiredColumns);
+
+        this.first = first;
+    }
+
+    @Override protected TreeIndex<IndexRow> treeIndex() {
+        return new FirstLastIndexWrapper(idx, indexQueryContext(), first);
     }
 
     /** {@inheritDoc} */
@@ -69,10 +79,12 @@ public class IndexFirstLastScan<Row> extends IndexScan<Row> {
 
         /**
          * @param idx   Index
+         * @param qctx  Query context.
          * @param first {@code True} to take first index value. {@code False} to take last value.
          */
-        protected FirstLastIndexWrapper(InlineIndexImpl idx, boolean first) {
-            super(idx);
+        protected FirstLastIndexWrapper(InlineIndex idx, IndexQueryContext qctx, boolean first) {
+            super(idx, qctx);
+
             this.first = first;
         }
 
@@ -81,8 +93,7 @@ public class IndexFirstLastScan<Row> extends IndexScan<Row> {
             IndexRow lower,
             IndexRow upper,
             boolean lowerInclude,
-            boolean upperInclude,
-            IndexQueryContext qctx
+            boolean upperInclude
         ) {
             assert lower == null && upper == null;
             assert lowerInclude && upperInclude;

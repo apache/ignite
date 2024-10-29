@@ -53,6 +53,7 @@ import org.apache.ignite.internal.processors.cache.persistence.tree.BPlusTree;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.BPlusIO;
 import org.apache.ignite.internal.processors.query.calcite.exec.RowHandler.RowFactory;
 import org.apache.ignite.internal.processors.query.calcite.exec.exp.RangeIterable;
+import org.apache.ignite.internal.processors.query.calcite.exec.exp.TransformRangeIterable;
 import org.apache.ignite.internal.processors.query.calcite.schema.CacheTableDescriptor;
 import org.apache.ignite.internal.processors.query.calcite.type.IgniteTypeFactory;
 import org.apache.ignite.internal.processors.query.calcite.util.TypeUtils;
@@ -67,7 +68,7 @@ import org.jetbrains.annotations.Nullable;
 /**
  * Scan on index.
  */
-public class IndexScan<Row> extends AbstractIndexScan<Row, IndexRow> {
+public class IndexScan<Row> implements Iterable<Row>, AutoCloseable {
     /** */
     private final GridKernalContext kctx;
 
@@ -82,6 +83,15 @@ public class IndexScan<Row> extends AbstractIndexScan<Row, IndexRow> {
 
     /** */
     private final AffinityTopologyVersion topVer;
+
+    /** Index scan bounds. */
+    private final RangeIterable<Row> ranges;
+
+    /** */
+    protected final ExecutionContext<Row> ectx;
+
+    /** */
+    protected final RelDataType rowType;
 
     /** */
     private final int[] parts;
@@ -126,34 +136,12 @@ public class IndexScan<Row> extends AbstractIndexScan<Row, IndexRow> {
         RangeIterable<Row> ranges,
         @Nullable ImmutableBitSet requiredColumns
     ) {
-        this(ectx, desc, new TreeIndexWrapper(idx), idxFieldMapping, parts, ranges, requiredColumns);
-    }
-
-    /**
-     * @param ectx Execution context.
-     * @param desc Table descriptor.
-     * @param idxFieldMapping Mapping from index keys to row fields.
-     * @param treeIdx Physical index wrapper.
-     * @param ranges Index scan bounds.
-     */
-    protected IndexScan(
-        ExecutionContext<Row> ectx,
-        CacheTableDescriptor desc,
-        TreeIndexWrapper treeIdx,
-        ImmutableIntList idxFieldMapping,
-        int[] parts,
-        RangeIterable<Row> ranges,
-        @Nullable ImmutableBitSet requiredColumns
-    ) {
-        super(
-            ectx,
-            desc.rowType(ectx.getTypeFactory(), requiredColumns),
-            treeIdx,
-            ranges
-        );
+        this.ectx = ectx;
+        this.ranges = ranges;
+        this.rowType = desc.rowType(ectx.getTypeFactory(), requiredColumns);
 
         this.desc = desc;
-        this.idx = treeIdx.idx;
+        this.idx = idx;
         cctx = desc.cacheContext();
         kctx = cctx.kernalContext();
 
@@ -185,7 +173,6 @@ public class IndexScan<Row> extends AbstractIndexScan<Row, IndexRow> {
         }
         else
             txChanges = null;
-
     }
 
     /**
@@ -239,7 +226,14 @@ public class IndexScan<Row> extends AbstractIndexScan<Row, IndexRow> {
         reserve();
 
         try {
-            return super.iterator();
+            RangeIterable<IndexRow> ranges0 = new TransformRangeIterable<>(ranges, this::row2indexRow);
+
+            TreeIndex<IndexRow> treeIdx = treeIndex();
+
+            if (txChanges != null)
+                treeIdx = new TxAwareTreeIndexWrapper(treeIdx);
+
+            return F.iterator(new TreeIndexIterable<>(treeIdx, ranges0), this::indexRow2Row, true);
         }
         catch (Exception e) {
             release();
@@ -248,34 +242,12 @@ public class IndexScan<Row> extends AbstractIndexScan<Row, IndexRow> {
         }
     }
 
-    /** {@inheritDoc} */
-    @Override protected GridCursor<IndexRow> indexCursor(IndexRow lower, IndexRow upper, boolean lowerInclude, boolean upperInclude) {
-        GridCursor<IndexRow> idxCursor = super.indexCursor(lower, upper, lowerInclude, upperInclude);
-
-        if (txChanges == null)
-            return idxCursor;
-
-        // `txChanges` returns single thread data structures e.g. `HashSet`, `ArrayList`.
-        // It safe to use them in multiple `FilteredCursor` instances, because, multi range index scan will be flat to the single cursor.
-        // See AbstractIndexScan#iterator.
-        try {
-            return new SortedSegmentedIndexCursor(
-                new GridCursor[]{
-                    // This call will change `txChanges.get1()` content.
-                    // Removing found key from set more efficient so we break some rules here.
-                    new KeyFilteringCursor<>(idxCursor, txChanges.get1(), r -> r.cacheDataRow().key()),
-                    new SortedListRangeCursor<>(this::compare, txChanges.get2(), lower, upper, lowerInclude, upperInclude)
-                },
-                idx.indexDefinition()
-            );
-        }
-        catch (IgniteCheckedException e) {
-            throw new IgniteException(e);
-        }
+    protected TreeIndex<IndexRow> treeIndex() {
+        return new TreeIndexWrapper(idx, indexQueryContext());
     }
 
     /** {@inheritDoc} */
-    @Override protected IndexRow row2indexRow(Row bound) {
+    protected IndexRow row2indexRow(Row bound) {
         if (bound == null)
             return null;
 
@@ -307,11 +279,16 @@ public class IndexScan<Row> extends AbstractIndexScan<Row, IndexRow> {
     }
 
     /** {@inheritDoc} */
-    @Override protected Row indexRow2Row(IndexRow row) throws IgniteCheckedException {
-        if (row.indexPlainRow())
-            return inlineIndexRow2Row(row);
-        else
-            return desc.toRow(ectx, row.cacheDataRow(), factory, requiredColumns);
+    protected Row indexRow2Row(IndexRow row) {
+        try {
+            if (row.indexPlainRow())
+                return inlineIndexRow2Row(row);
+            else
+                return desc.toRow(ectx, row.cacheDataRow(), factory, requiredColumns);
+        }
+        catch (IgniteCheckedException e) {
+            throw new IgniteException(e);
+        }
     }
 
     /** */
@@ -410,7 +387,7 @@ public class IndexScan<Row> extends AbstractIndexScan<Row, IndexRow> {
     }
 
     /** {@inheritDoc} */
-    @Override protected IndexQueryContext indexQueryContext() {
+    protected IndexQueryContext indexQueryContext() {
         IndexingQueryFilter filter = new IndexingQueryFilterImpl(kctx, topVer, parts);
 
         InlineIndexRowHandler rowHnd = idx.segment(0).rowHandler();
@@ -558,13 +535,59 @@ public class IndexScan<Row> extends AbstractIndexScan<Row, IndexRow> {
     }
 
     /** */
+    protected class TxAwareTreeIndexWrapper implements TreeIndex<IndexRow> {
+        /** */
+        private final TreeIndex<IndexRow> delegate;
+
+        /** */
+        protected TxAwareTreeIndexWrapper(TreeIndex<IndexRow> delegate) {
+            this.delegate = delegate;
+        }
+
+        /** {@inheritDoc} */
+        @Override public GridCursor<IndexRow> find(
+                IndexRow lower,
+                IndexRow upper,
+                boolean lowerInclude,
+                boolean upperInclude
+        ) {
+            GridCursor<IndexRow> idxCursor = delegate.find(lower, upper, lowerInclude, upperInclude);
+
+            assert txChanges != null;
+
+            // `txChanges` returns single thread data structures e.g. `HashSet`, `ArrayList`.
+            // It safe to use them in multiple `FilteredCursor` instances, because, multi range index scan will be flat to the single cursor.
+            // See AbstractIndexScan#iterator.
+            try {
+                return new SortedSegmentedIndexCursor(
+                    new GridCursor[]{
+                        // This call will change `txChanges.get1()` content.
+                        // Removing found key from set more efficient so we break some rules here.
+                        new KeyFilteringCursor<>(idxCursor, txChanges.get1(), r -> r.cacheDataRow().key()),
+                        new SortedListRangeCursor<>(
+                            IndexScan.this::compare, txChanges.get2(), lower, upper, lowerInclude, upperInclude)
+                    },
+                    idx.indexDefinition()
+                );
+            }
+            catch (IgniteCheckedException e) {
+                throw new IgniteException(e);
+            }
+        }
+    }
+
+    /** */
     protected static class TreeIndexWrapper implements TreeIndex<IndexRow> {
         /** Underlying index. */
         protected final InlineIndex idx;
 
+        /** Query context. */
+        protected final IndexQueryContext qctx;
+
         /** */
-        protected TreeIndexWrapper(InlineIndex idx) {
+        protected TreeIndexWrapper(InlineIndex idx, IndexQueryContext qctx) {
             this.idx = idx;
+            this.qctx = qctx;
         }
 
         /** {@inheritDoc} */
@@ -572,8 +595,7 @@ public class IndexScan<Row> extends AbstractIndexScan<Row, IndexRow> {
             IndexRow lower,
             IndexRow upper,
             boolean lowerInclude,
-            boolean upperInclude,
-            IndexQueryContext qctx
+            boolean upperInclude
         ) {
             try {
                 return idx.find(lower, upper, lowerInclude, upperInclude, qctx);
