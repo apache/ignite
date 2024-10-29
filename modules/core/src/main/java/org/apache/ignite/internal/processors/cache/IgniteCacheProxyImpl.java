@@ -81,6 +81,7 @@ import org.apache.ignite.internal.AsyncSupportAdapter;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
+import org.apache.ignite.internal.processors.cache.query.AbstractScanQueryIterator;
 import org.apache.ignite.internal.processors.cache.query.CacheQuery;
 import org.apache.ignite.internal.processors.cache.query.CacheQueryFuture;
 import org.apache.ignite.internal.processors.cache.query.GridCacheQueryAdapter;
@@ -488,7 +489,7 @@ public class IgniteCacheProxyImpl<K, V> extends AsyncSupportAdapter<IgniteCache<
 
         IgniteBiTuple<Set<KeyCacheObject>, List<IgniteTxEntry>> txChanges = transactionChanges(ctx, scanQry.getPartition());
 
-        final CacheQuery<R> qry = ctx.queries().createScanQuery(
+        final GridCacheQueryAdapter<R> qry = ctx.queries().createScanQuery(
             p, transformer, scanQry.getPartition(), isKeepBinary, scanQry.isLocal(), null, txChanges.get1());
 
         if (scanQry.getPageSize() > 0)
@@ -506,7 +507,7 @@ public class IgniteCacheProxyImpl<K, V> extends AsyncSupportAdapter<IgniteCache<
 
         return new QueryCursorImpl<>(F.isEmpty(txChanges.get2())
             ? res
-            : iteratorWithTxData(scanQry.getFilter(), transformer, res, txChanges)
+            : iteratorWithTxData(scanQry.getFilter(), transformer, res, qry, txChanges)
         );
     }
 
@@ -515,17 +516,27 @@ public class IgniteCacheProxyImpl<K, V> extends AsyncSupportAdapter<IgniteCache<
         @Nullable IgniteBiPredicate<K, V> filter,
         @Nullable IgniteClosure<Entry<K, V>, R> transformer,
         final GridCloseableIterator<R> iter,
+        final GridCacheQueryAdapter qry,
         IgniteBiTuple<Set<KeyCacheObject>, List<IgniteTxEntry>> txChanges
-    ) {
-        final GridIterator<Entry<K, V>> entryIter =
-            F.iterator(txChanges.get2(), e -> new CacheEntryImpl<>((K)e.key(), (V)e.value(), e.explicitVersion()), true);
+    ) throws IgniteCheckedException {
+        final GridIterator<R> txIter = new AbstractScanQueryIterator<>(ctx, qry, filter, transformer, true) {
+            private final Iterator<IgniteTxEntry> txData = txChanges.get2().iterator();
 
-        final GridIterator<R> txIter = F.iterator(
-            (Iterable<Entry<K, V>>)entryIter,
-            e -> (R)(transformer == null ? e : transformer.apply(e)),
-            true,
-            e -> filter == null || filter.apply(e.getKey(), e.getValue())
-        );
+            @Override protected R advance() {
+                long start = System.nanoTime();
+
+                while (txData.hasNext()) {
+                    IgniteTxEntry e = txData.next();
+
+                    R next = filterAndTransform(e.key(), e.value(), start);
+
+                    if (next != null)
+                        return next;
+                }
+
+                return null;
+            }
+        };
 
         return new GridCloseableIteratorAdapter<>() {
             /** {@inheritDoc} */
