@@ -70,8 +70,6 @@ public class SnapshotPartitionsQuickVerifyHandler extends SnapshotPartitionsVeri
         String name,
         Collection<SnapshotHandlerResult<Map<PartitionKeyV2, PartitionHashRecordV2>>> results
     ) throws IgniteCheckedException {
-        boolean noData = false;
-
         Set<Integer> wrnGrps = new HashSet<>();
 
         Map<PartitionKeyV2, PartitionHashRecordV2> total = new HashMap<>();
@@ -80,11 +78,8 @@ public class SnapshotPartitionsQuickVerifyHandler extends SnapshotPartitionsVeri
             if (result.error() != null)
                 throw new IgniteCheckedException(result.error());
 
-            if (result.data() == null) {
-                noData = true;
-
+            if (result.data() == null)
                 continue;
-            }
 
             Map<PartitionKeyV2, PartitionHashRecordV2> partsData = result.data();
 
@@ -97,9 +92,6 @@ public class SnapshotPartitionsQuickVerifyHandler extends SnapshotPartitionsVeri
                     wrnGrps.add(part.groupId());
             });
         }
-
-        if (noData)
-            return;
 
         if (!wrnGrps.isEmpty()) {
             throw new SnapshotWarningException("Cache partitions differ for cache groups " +
