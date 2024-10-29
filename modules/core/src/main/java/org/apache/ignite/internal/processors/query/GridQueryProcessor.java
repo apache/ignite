@@ -90,6 +90,7 @@ import org.apache.ignite.internal.processors.cache.KeyCacheObject;
 import org.apache.ignite.internal.processors.cache.QueryCursorImpl;
 import org.apache.ignite.internal.processors.cache.binary.CacheObjectBinaryProcessorImpl;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionsExchangeFuture;
+import org.apache.ignite.internal.processors.cache.distributed.dht.topology.PartitionReservationManager;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxLocal;
 import org.apache.ignite.internal.processors.cache.persistence.CacheDataRow;
 import org.apache.ignite.internal.processors.cache.query.CacheQueryFuture;
@@ -308,6 +309,9 @@ public class GridQueryProcessor extends GridProcessorAdapter {
     /** Global schema SQL views manager. */
     private final SchemaSqlViewManager schemaSqlViewMgr;
 
+    /** Partition reservation manager. */
+    private final PartitionReservationManager partReservationMgr;
+
     /** @see TransactionConfiguration#isTxAwareQueriesEnabled()  */
     private final boolean txAwareQueriesEnabled;
 
@@ -330,6 +334,8 @@ public class GridQueryProcessor extends GridProcessorAdapter {
         schemaMgr = new SchemaManager(ctx);
 
         schemaSqlViewMgr = new SchemaSqlViewManager(ctx);
+
+        partReservationMgr = new PartitionReservationManager(ctx);
 
         idxProc = ctx.indexProcessor();
 
@@ -1060,6 +1066,11 @@ public class GridQueryProcessor extends GridProcessorAdapter {
         return runningQryMgr;
     }
 
+    /** Partition reservation manager. */
+    public PartitionReservationManager partitionReservationManager() {
+        return partReservationMgr;
+    }
+
     /**
      * Create type descriptors from schema and initialize indexing for given cache.<p>
      * Use with {@link #busyLock} where appropriate.
@@ -1327,6 +1338,8 @@ public class GridQueryProcessor extends GridProcessorAdapter {
 
         try {
             if (schemaMgr.clearCacheContext(cacheInfo.cacheContext())) {
+                partReservationMgr.onCacheStop(cacheInfo.name());
+
                 if (idx != null)
                     idx.unregisterCache(cacheInfo);
             }
@@ -2447,6 +2460,8 @@ public class GridQueryProcessor extends GridProcessorAdapter {
                 ctx.indexProcessor().unregisterCache(cacheInfo);
 
                 schemaMgr.onCacheStopped(cacheName, destroy, clearIdx);
+
+                partReservationMgr.onCacheStop(cacheName);
 
                 // Notify indexing.
                 if (idx != null)

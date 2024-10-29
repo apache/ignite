@@ -58,12 +58,24 @@ public class ColocationGroup implements MarshalableMessage {
     @GridDirectTransient
     private List<List<UUID>> assignments;
 
+    /**
+     * Flag, indacating that assignment is formed by original cache assignment for given topology.
+     * In case of {@code true} value we can skip assignment marshalling and calc assignment on remote nodes.
+     */
+    @GridDirectTransient
+    private boolean cacheAssignment;
+
     /** Marshalled assignments. */
     private int[] marshalledAssignments;
 
     /** */
     public static ColocationGroup forNodes(List<UUID> nodeIds) {
         return new ColocationGroup(null, nodeIds, null);
+    }
+
+    /** */
+    public static ColocationGroup forCacheAssignment(List<List<UUID>> assignments) {
+        return new ColocationGroup(null, null, assignments, true);
     }
 
     /** */
@@ -98,6 +110,13 @@ public class ColocationGroup implements MarshalableMessage {
         this.sourceIds = sourceIds;
         this.nodeIds = nodeIds;
         this.assignments = assignments;
+    }
+
+    /** */
+    private ColocationGroup(long[] sourceIds, List<UUID> nodeIds, List<List<UUID>> assignments, boolean cacheAssignment) {
+        this(sourceIds, nodeIds, assignments);
+
+        this.cacheAssignment = cacheAssignment;
     }
 
     /**
@@ -159,6 +178,8 @@ public class ColocationGroup implements MarshalableMessage {
                 "Replicated query parts are not co-located on all nodes");
         }
 
+        boolean cacheAssignment = this.cacheAssignment || other.cacheAssignment;
+
         List<List<UUID>> assignments;
         if (this.assignments == null || other.assignments == null) {
             assignments = U.firstNotNull(this.assignments, other.assignments);
@@ -174,6 +195,9 @@ public class ColocationGroup implements MarshalableMessage {
                         throw new ColocationMappingException("Failed to map fragment to location. " +
                             "Partition mapping is empty [part=" + i + "]");
                     }
+
+                    if (!assignment.get(0).equals(assignments.get(i).get(0)))
+                        cacheAssignment = false;
 
                     assignments0.add(assignment);
                 }
@@ -194,11 +218,14 @@ public class ColocationGroup implements MarshalableMessage {
                 if (assignment.isEmpty()) // TODO check with partition filters
                     throw new ColocationMappingException("Failed to map fragment to location. Partition mapping is empty [part=" + i + "]");
 
+                if (!assignment.get(0).equals(this.assignments.get(i).get(0)) || !assignment.get(0).equals(other.assignments.get(i).get(0)))
+                    cacheAssignment = false;
+
                 assignments.add(assignment);
             }
         }
 
-        return new ColocationGroup(srcIds, nodeIds, assignments);
+        return new ColocationGroup(srcIds, nodeIds, assignments, cacheAssignment);
     }
 
     /** */
@@ -216,7 +243,16 @@ public class ColocationGroup implements MarshalableMessage {
             assignments.add(first != null ? Collections.singletonList(first) : Collections.emptyList());
         }
 
-        return new ColocationGroup(sourceIds, new ArrayList<>(nodes), assignments);
+        return new ColocationGroup(sourceIds, new ArrayList<>(nodes), assignments, cacheAssignment);
+    }
+
+    /** */
+    public ColocationGroup explicitMapping() {
+        if (assignments == null || !cacheAssignment)
+            return this;
+
+        // Make a shallow copy without cacheAssignment flag.
+        return new ColocationGroup(sourceIds, nodeIds, assignments, false);
     }
 
     /** */
@@ -359,7 +395,7 @@ public class ColocationGroup implements MarshalableMessage {
 
     /** {@inheritDoc} */
     @Override public void prepareMarshal(GridCacheSharedContext<?, ?> ctx) {
-        if (assignments != null && marshalledAssignments == null) {
+        if (assignments != null && marshalledAssignments == null && !cacheAssignment) {
             Map<UUID, Integer> nodeIdxs = new HashMap<>();
 
             for (int i = 0; i < nodeIds.size(); i++)
