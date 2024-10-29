@@ -119,10 +119,10 @@ public class ActivationOnJoinWithoutPermissionsWithPersistenceTest extends Abstr
         startGrid(getConfiguration(getTestIgniteInstanceName(NUM_NODES - 1), EMPTY_PERMS));
 
         // Check for state and topology.
-        waitForTopology(3);
+        waitForTopology(NUM_NODES);
 
         assertTrue(grid(0).cluster().state() == INACTIVE);
-        assertEquals(3, grid(0).cluster().forServers().nodes().size());
+        assertEquals(NUM_NODES, grid(0).cluster().forServers().nodes().size());
 
         assertTrue(G.allGrids().stream().allMatch(ig -> consistentIds.contains(ig.cluster().localNode().consistentId())));
     }
