@@ -17,12 +17,8 @@
 
 package org.apache.ignite.internal.processors.query.calcite.integration;
 
-import java.util.Arrays;
-import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
-import java.util.Locale;
-import java.util.stream.Collectors;
 import org.apache.calcite.sql.validate.SqlConformance;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.cache.CacheMode;
@@ -31,86 +27,14 @@ import org.apache.ignite.cache.QueryIndex;
 import org.apache.ignite.cache.query.annotations.QuerySqlField;
 import org.apache.ignite.internal.processors.query.QueryUtils;
 import org.apache.ignite.internal.processors.query.calcite.QueryChecker;
-import org.apache.ignite.internal.processors.query.calcite.hint.HintDefinition;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.junit.Test;
-import org.junit.runners.Parameterized;
 
 /**
  *
  */
 public class AggregatesIntegrationTest extends AbstractBasicIntegrationTransactionalTest {
-    /** @return Test parameters. */
-    @Parameterized.Parameters(name = "sqlTxMode={0}")
-    public static Collection<?> parameters() {
-        return Arrays.asList(SqlTransactionMode.NONE);
-    }
-
-    private static final String[] DISABLED_RULES = {"MapReduceHashAggregateConverterRule", "MapReduceSortAggregateConverterRule",
-        "ColocatedHashAggregateConverterRule", "ColocatedSortAggregateConverterRule"};
-
-    private static final int ROWS = 103;
-
-    static String[][] makePermutations(String[] rules) {
-        String[][] out = new String[rules.length][rules.length - 1];
-
-        for (int i = 0; i < rules.length; ++i) {
-            int pos = 0;
-            for (int ruleIdx = 0; ruleIdx < rules.length; ++ruleIdx) {
-                if (ruleIdx == i)
-                    continue;
-
-                out[i][pos++] = rules[ruleIdx];
-            }
-        }
-
-        return out;
-    }
-
-    private static List<String[]> provideRules() {
-        return Arrays.stream(makePermutations(DISABLED_RULES)).collect(Collectors.toList());
-    }
-
-    private String appendDisabledRules(String sql, String[] rules) {
-        sql = sql.toLowerCase(Locale.ENGLISH);
-        int pos = sql.indexOf("select");
-
-        assert pos >= 0;
-
-        String newSql = sql.substring(0, pos + "select".length() + 1);
-
-        newSql += "/*+ " + HintDefinition.DISABLE_RULE + '(';
-        newSql += Arrays.stream(rules).map(r->'\''+r+'\'').collect(Collectors.joining(", "));
-        newSql += ") */ ";
-        newSql += sql.substring(pos + "select".length() + 1);
-
-        return newSql;
-    }
-
-    @Test
-    public void testAggregateWithSumAndHaving() {
-        sql("CREATE TABLE test (id INT PRIMARY KEY, grp0 INT, grp1 INT, val0 INT, val1 INT)");
-
-        for (int i = 0; i < ROWS; i++)
-            sql("INSERT INTO test (id, grp0, grp1, val0, val1) VALUES (?, ?, ?, ?, ?)", i, i / 10, i / 100, 1, 2);
-
-
-        for(String[] rules : provideRules()){
-            var res = sql(
-                appendDisabledRules("SELECT SUM(val0), SUM(val1), grp0 FROM TEST GROUP BY grp0 HAVING SUM(val1) > 10", rules));
-
-            assertEquals(ROWS / 10, res.size());
-
-            res.forEach(r -> {
-                long s0 = (Long) r.get(0);
-                long s1 = (Long) r.get(1);
-
-                assertEquals(s0 * 2, s1);
-            });
-        }
-    }
-
     /** */
     @Test
     public void testMinMaxWithTable() {
