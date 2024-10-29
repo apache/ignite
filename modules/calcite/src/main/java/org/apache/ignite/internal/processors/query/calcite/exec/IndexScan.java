@@ -17,8 +17,6 @@
 package org.apache.ignite.internal.processors.query.calcite.exec;
 
 import java.lang.reflect.Type;
-import java.util.ArrayList;
-import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Set;
@@ -27,7 +25,6 @@ import org.apache.calcite.util.ImmutableBitSet;
 import org.apache.calcite.util.ImmutableIntList;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
-import org.apache.ignite.cluster.ClusterTopologyException;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.cache.query.index.sorted.IndexKeyType;
 import org.apache.ignite.internal.cache.query.index.sorted.IndexPlainRowImpl;
@@ -42,16 +39,9 @@ import org.apache.ignite.internal.cache.query.index.sorted.inline.SortedSegmente
 import org.apache.ignite.internal.cache.query.index.sorted.inline.io.InlineIO;
 import org.apache.ignite.internal.cache.query.index.sorted.keys.IndexKey;
 import org.apache.ignite.internal.cache.query.index.sorted.keys.IndexKeyFactory;
-import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
-import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
-import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtTopologyFuture;
-import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtLocalPartition;
-import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionState;
-import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionTopology;
 import org.apache.ignite.internal.processors.cache.persistence.tree.BPlusTree;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.BPlusIO;
-import org.apache.ignite.internal.processors.query.calcite.exec.RowHandler.RowFactory;
 import org.apache.ignite.internal.processors.query.calcite.exec.exp.RangeIterable;
 import org.apache.ignite.internal.processors.query.calcite.exec.exp.TransformRangeIterable;
 import org.apache.ignite.internal.processors.query.calcite.schema.CacheTableDescriptor;
@@ -68,39 +58,12 @@ import org.jetbrains.annotations.Nullable;
 /**
  * Scan on index.
  */
-public class IndexScan<Row> implements Iterable<Row>, AutoCloseable {
+public class IndexScan<Row> extends AbstractCacheScan<Row> {
     /** */
     private final GridKernalContext kctx;
 
-    /** */
-    private final GridCacheContext<?, ?> cctx;
-
-    /** */
-    private final CacheTableDescriptor desc;
-
-    /** */
-    private final RowFactory<Row> factory;
-
-    /** */
-    private final AffinityTopologyVersion topVer;
-
     /** Index scan bounds. */
     private final RangeIterable<Row> ranges;
-
-    /** */
-    protected final ExecutionContext<Row> ectx;
-
-    /** */
-    protected final RelDataType rowType;
-
-    /** */
-    private final int[] parts;
-
-    /** */
-    private volatile List<GridDhtLocalPartition> reserved;
-
-    /** */
-    private final ImmutableBitSet requiredColumns;
 
     /** */
     protected final InlineIndex idx;
@@ -136,19 +99,12 @@ public class IndexScan<Row> implements Iterable<Row>, AutoCloseable {
         RangeIterable<Row> ranges,
         @Nullable ImmutableBitSet requiredColumns
     ) {
-        this.ectx = ectx;
+        super(ectx, desc, parts, requiredColumns);
         this.ranges = ranges;
-        this.rowType = desc.rowType(ectx.getTypeFactory(), requiredColumns);
 
-        this.desc = desc;
         this.idx = idx;
-        cctx = desc.cacheContext();
         kctx = cctx.kernalContext();
 
-        factory = ectx.rowHandler().factory(ectx.getTypeFactory(), rowType);
-        topVer = ectx.topologyVersion();
-        this.parts = parts;
-        this.requiredColumns = requiredColumns;
         this.idxFieldMapping = idxFieldMapping;
 
         RelDataType srcRowType = desc.rowType(ectx.getTypeFactory(), null);
@@ -222,26 +178,18 @@ public class IndexScan<Row> implements Iterable<Row>, AutoCloseable {
     }
 
     /** {@inheritDoc} */
-    @Override public synchronized Iterator<Row> iterator() {
-        reserve();
+    @Override protected Iterator<Row> createIterator() {
+        RangeIterable<IndexRow> ranges0 = ranges == null ? null : new TransformRangeIterable<>(ranges, this::row2indexRow);
 
-        try {
-            RangeIterable<IndexRow> ranges0 = new TransformRangeIterable<>(ranges, this::row2indexRow);
+        TreeIndex<IndexRow> treeIdx = treeIndex();
 
-            TreeIndex<IndexRow> treeIdx = treeIndex();
+        if (txChanges != null)
+            treeIdx = new TxAwareTreeIndexWrapper(treeIdx);
 
-            if (txChanges != null)
-                treeIdx = new TxAwareTreeIndexWrapper(treeIdx);
-
-            return F.iterator(new TreeIndexIterable<>(treeIdx, ranges0), this::indexRow2Row, true);
-        }
-        catch (Exception e) {
-            release();
-
-            throw e;
-        }
+        return F.iterator(new TreeIndexIterable<>(treeIdx, ranges0), this::indexRow2Row, true);
     }
 
+    /** */
     protected TreeIndex<IndexRow> treeIndex() {
         return new TreeIndexWrapper(idx, indexQueryContext());
     }
@@ -301,89 +249,6 @@ public class IndexScan<Row> implements Iterable<Row>, AutoCloseable {
             hnd.set(i, res, TypeUtils.toInternal(ectx, row.key(fieldIdxMapping[i]).key()));
 
         return res;
-    }
-
-    /** */
-    @Override public void close() {
-        release();
-    }
-
-    /** */
-    private synchronized void reserve() {
-        if (reserved != null)
-            return;
-
-        GridDhtPartitionTopology top = cctx.topology();
-        top.readLock();
-
-        GridDhtTopologyFuture topFut = top.topologyVersionFuture();
-
-        boolean done = topFut.isDone();
-
-        if (!done || !(topFut.topologyVersion().compareTo(topVer) >= 0
-            && cctx.shared().exchange().lastAffinityChangedTopologyVersion(topFut.initialVersion()).compareTo(topVer) <= 0)) {
-            top.readUnlock();
-
-            throw new ClusterTopologyException("Topology was changed. Please retry on stable topology.");
-        }
-
-        List<GridDhtLocalPartition> toReserve;
-
-        if (cctx.isReplicated()) {
-            int partsCnt = cctx.affinity().partitions();
-            toReserve = new ArrayList<>(partsCnt);
-            for (int i = 0; i < partsCnt; i++)
-                toReserve.add(top.localPartition(i));
-        }
-        else if (cctx.isPartitioned()) {
-            assert parts != null;
-
-            toReserve = new ArrayList<>(parts.length);
-            for (int i = 0; i < parts.length; i++)
-                toReserve.add(top.localPartition(parts[i]));
-        }
-        else
-            toReserve = Collections.emptyList();
-
-        reserved = new ArrayList<>(toReserve.size());
-
-        try {
-            for (GridDhtLocalPartition part : toReserve) {
-                if (part == null || !part.reserve()) {
-                    throw new ClusterTopologyException(
-                        "Failed to reserve partition for query execution. Retry on stable topology."
-                    );
-                }
-                else if (part.state() != GridDhtPartitionState.OWNING) {
-                    part.release();
-
-                    throw new ClusterTopologyException(
-                        "Failed to reserve partition for query execution. Retry on stable topology."
-                    );
-                }
-
-                reserved.add(part);
-            }
-        }
-        catch (Exception e) {
-            release();
-
-            throw e;
-        }
-        finally {
-            top.readUnlock();
-        }
-    }
-
-    /** */
-    private synchronized void release() {
-        if (reserved == null)
-            return;
-
-        for (GridDhtLocalPartition part : reserved)
-            part.release();
-
-        reserved = null;
     }
 
     /** {@inheritDoc} */

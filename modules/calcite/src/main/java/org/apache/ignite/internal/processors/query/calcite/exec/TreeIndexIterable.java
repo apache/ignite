@@ -16,8 +16,10 @@
  */
 package org.apache.ignite.internal.processors.query.calcite.exec;
 
+import java.util.Collections;
+import java.util.Iterator;
+import java.util.NoSuchElementException;
 import org.apache.ignite.IgniteCheckedException;
-import org.apache.ignite.internal.cache.query.index.sorted.inline.IndexQueryContext;
 import org.apache.ignite.internal.processors.query.calcite.exec.exp.RangeCondition;
 import org.apache.ignite.internal.processors.query.calcite.exec.exp.RangeIterable;
 import org.apache.ignite.internal.util.lang.GridCursor;
@@ -25,10 +27,6 @@ import org.apache.ignite.internal.util.lang.GridIteratorAdapter;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.lang.IgniteClosure;
 import org.jetbrains.annotations.NotNull;
-
-import java.util.Collections;
-import java.util.Iterator;
-import java.util.NoSuchElementException;
 
 /**
  * Tree index iterable.
@@ -52,10 +50,10 @@ public class TreeIndexIterable<Row> implements Iterable<Row> {
     /** {@inheritDoc} */
     @Override public synchronized Iterator<Row> iterator() {
         if (ranges == null)
-            return new CursorIteratorImpl(idx.find(null, null, true, true, indexQueryContext()));
+            return new CursorIteratorImpl(idx.find(null, null, true, true));
 
         IgniteClosure<RangeCondition<Row>, CursorIteratorImpl> clo = range -> new CursorIteratorImpl(
-                idx.find(range.lower(), range.upper(), range.lowerInclude(), range.upperInclude(), indexQueryContext()));
+                idx.find(range.lower(), range.upper(), range.lowerInclude(), range.upperInclude()));
 
         if (!ranges.multiBounds()) {
             Iterator<RangeCondition<Row>> it = ranges.iterator();
@@ -68,12 +66,6 @@ public class TreeIndexIterable<Row> implements Iterable<Row> {
 
         return F.flat(F.iterator(ranges, clo, true));
     }
-
-    /** */
-    protected IndexQueryContext indexQueryContext() {
-        // TODO: Implement.
-        return null;
-    };
 
     /** */
     private class CursorIteratorImpl extends GridIteratorAdapter<Row> {
