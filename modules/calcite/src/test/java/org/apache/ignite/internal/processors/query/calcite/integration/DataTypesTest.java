@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.processors.query.calcite.integration;
 
 import java.math.BigDecimal;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 import java.util.UUID;
@@ -43,6 +44,73 @@ import static org.junit.Assume.assumeTrue;
  * Test SQL data types.
  */
 public class DataTypesTest extends AbstractBasicIntegrationTransactionalTest {
+    /** */
+    @Test
+    public void testRoundingOfNumerics() {
+        doTestCoercionOfNumerics(numericsToRound(), false, false);
+    }
+
+    /** */
+    @Test
+    public void testRoundingOfNumericsPrecasted() {
+        doTestCoercionOfNumerics(numericsToRound(), false, true);
+    }
+
+    /** */
+    @Test
+    public void testRoundingOfDynamicNumerics() {
+        doTestCoercionOfNumerics(numericsToRound(), true, false);
+    }
+
+    /** */
+    @Test
+    public void testRoundingOfDynamicNumericsPrecasted() {
+        doTestCoercionOfNumerics(numericsToRound(), true, true);
+    }
+
+    /** @return input type, input value, target type, expected result. */
+    private static List<List<Object>> numericsToRound() {
+        List<List<Object>> lst = new ArrayList<>(100);
+
+        lst.add(F.asList("DOUBLE", 1.4999d, "DECIMAL(1)", new BigDecimal(1)));
+        lst.add(F.asList("DOUBLE", -1.4999d, "DECIMAL(1)", new BigDecimal(-1)));
+        lst.add(F.asList("DOUBLE", 1.5d, "DECIMAL(1)", new BigDecimal(2)));
+        lst.add(F.asList("DOUBLE", -1.5d, "DECIMAL(1)", new BigDecimal(-2)));
+
+        lst.add(F.asList("DECIMAL(5,4)", BigDecimal.valueOf(1.4999d), "DECIMAL(1)", new BigDecimal(1)));
+        lst.add(F.asList("DECIMAL(5,4)", BigDecimal.valueOf(-1.4999d), "DECIMAL(1)", new BigDecimal(-1)));
+        lst.add(F.asList("DECIMAL(2,1)", BigDecimal.valueOf(1.5d), "DECIMAL(1)", new BigDecimal(2)));
+        lst.add(F.asList("DECIMAL(2,1)", BigDecimal.valueOf(-1.5d), "DECIMAL(1)", new BigDecimal(-2)));
+
+        for (String numTypeName : F.asList("DOUBLE", "FLOAT")) {
+            lst.add(F.asList(numTypeName, 1.4999d, "BIGINT", 1L));
+            lst.add(F.asList(numTypeName, -1.4999d, "BIGINT", -1L));
+            lst.add(F.asList(numTypeName, 1.5d, "BIGINT", 2L));
+            lst.add(F.asList(numTypeName, -1.5d, "BIGINT", -2L));
+            lst.add(F.asList(numTypeName, 1.4999d, "INT", 1));
+            lst.add(F.asList(numTypeName, -1.4999d, "INT", -1));
+            lst.add(F.asList(numTypeName, 1.5d, "INT", 2));
+            lst.add(F.asList(numTypeName, -1.5d, "INT", -2));
+
+            lst.add(F.asList(numTypeName, 1.4999d, "INT", 1));
+            lst.add(F.asList(numTypeName, -1.4999d, "INT", -1));
+            lst.add(F.asList(numTypeName, 1.5d, "INT", 2));
+            lst.add(F.asList(numTypeName, -1.5d, "INT", -2));
+
+            lst.add(F.asList(numTypeName, 1.4999d, "SMALLINT", (short)1));
+            lst.add(F.asList(numTypeName, -1.4999d, "SMALLINT", (short)-1));
+            lst.add(F.asList(numTypeName, 1.5d, "SMALLINT", (short)2));
+            lst.add(F.asList(numTypeName, -1.5d, "SMALLINT", (short)-2));
+
+            lst.add(F.asList(numTypeName, 1.4999d, "TINYINT", (byte)1));
+            lst.add(F.asList(numTypeName, -1.4999d, "TINYINT", (byte)-1));
+            lst.add(F.asList(numTypeName, 1.5d, "TINYINT", (byte)2));
+            lst.add(F.asList(numTypeName, -1.5d, "TINYINT", (byte)-2));
+        }
+
+        return lst;
+    }
+
     /** Tests Other type. */
     @Test
     public void testOtherType() {
@@ -619,38 +687,32 @@ public class DataTypesTest extends AbstractBasicIntegrationTransactionalTest {
     /** */
     @Test
     public void testCoercionOfNumericLiterals() {
-        assumeNoTransactions();
-
-        doTestCoercionOfNumerics(false, false);
+        doTestCoercionOfNumerics(numericsToCast(), false, false);
     }
 
     /** */
     @Test
     public void testCoercionOfNumericLiteralsPrecasted() {
-        assumeNoTransactions();
-
-        doTestCoercionOfNumerics(false, true);
+        doTestCoercionOfNumerics(numericsToCast(), false, true);
     }
 
     /** */
     @Test
     public void testCoercionOfNumericDynamicParameters() {
-        assumeNoTransactions();
-
-        doTestCoercionOfNumerics(true, false);
+        doTestCoercionOfNumerics(numericsToCast(), true, false);
     }
 
     /** */
     @Test
     public void testCoercionOfNumericDynamicParametersPrecasted() {
-        assumeNoTransactions();
-
-        doTestCoercionOfNumerics(true, true);
+        doTestCoercionOfNumerics(numericsToCast(), true, true);
     }
 
     /** */
-    private void doTestCoercionOfNumerics(boolean dynamic, boolean precasted) {
-        for (List<Object> params : numericsToCast()) {
+    private void doTestCoercionOfNumerics(List<List<Object>> tetsSuite, boolean dynamic, boolean precasted) {
+        assumeNoTransactions();
+
+        for (List<Object> params : tetsSuite) {
             assert params.size() == 4 : "Wrong params lenght: " + params.size();
 
             String inputType = params.get(0).toString();

@@ -18,6 +18,11 @@
 package org.apache.ignite.internal.processors.query.calcite.util;
 
 import java.math.BigDecimal;
+import java.math.BigInteger;
+import java.math.RoundingMode;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.function.Consumer;
 import org.apache.calcite.sql.type.SqlTypeName;
 
 import static org.apache.calcite.sql.type.SqlTypeName.BIGINT;
@@ -27,6 +32,20 @@ import static org.apache.calcite.sql.type.SqlTypeName.TINYINT;
 
 /** Math operations with overflow checking. */
 public class IgniteMath {
+    /** */
+    private static final Map<Class<? extends Number>, Map<Class<? extends Number>, Number>> UPPER_LIMITS = new HashMap<>();
+
+    /** */
+    static {
+        Map<Class<? extends Number>, Number> map = new HashMap<>(3, 1.0f);
+
+        map.put(BigDecimal.class, BigDecimal.valueOf(Integer.MAX_VALUE).add(BigDecimal.ONE));
+        map.put(Double.class, (double)Integer.MAX_VALUE);
+        map.put(Float.class, (float)Integer.MAX_VALUE);
+
+        UPPER_LIMITS.put(Integer.class, map);
+    }
+
     /** */
     private static final BigDecimal UPPER_LONG_BIG_DECIMAL = BigDecimal.valueOf(Long.MAX_VALUE).add(BigDecimal.ONE);
 
@@ -44,6 +63,9 @@ public class IgniteMath {
 
     /** */
     private static final Float LOWER_LONG_FLOAT = (float)Long.MIN_VALUE;
+
+    /** */
+    public static final RoundingMode NUMERIC_ROUNDING_MODE = RoundingMode.HALF_UP;
 
     /** Returns the sum of its arguments, throwing an exception if the result overflows an {@code long}. */
     public static long addExact(long x, long y) {
@@ -237,6 +259,24 @@ public class IgniteMath {
     }
 
     /** */
+    public static BigDecimal convertToBigDecimal(Number val) {
+        BigDecimal dec;
+
+        if (val instanceof Float)
+            dec = BigDecimal.valueOf(val.floatValue());
+        else if (val instanceof Double)
+            dec = BigDecimal.valueOf(val.doubleValue());
+        else if (val instanceof BigDecimal)
+            dec = (BigDecimal)val;
+        else if (val instanceof BigInteger)
+            dec = new BigDecimal((BigInteger)val);
+        else
+            dec = BigDecimal.valueOf(val.longValue());
+
+        return dec;
+    }
+
+    /** */
     private static void checkNumberLongBounds(SqlTypeName type, Number x) {
         if (x instanceof BigDecimal) {
             if ((((BigDecimal)x).compareTo(UPPER_LONG_BIG_DECIMAL) < 0 && ((BigDecimal)x).compareTo(LOWER_LONG_BIG_DECIMAL) > 0))
@@ -260,7 +300,7 @@ public class IgniteMath {
     public static long convertToLongExact(Number x) {
         checkNumberLongBounds(BIGINT, x);
 
-        return x.longValue();
+        return convertToBigDecimal(x).setScale(0, NUMERIC_ROUNDING_MODE).longValue();
     }
 
     /** Cast value to {@code long}, throwing an exception if the result overflows an {@code long}. */
@@ -268,17 +308,15 @@ public class IgniteMath {
         if (x > Long.MAX_VALUE || x < Long.MIN_VALUE)
             throw new ArithmeticException(BIGINT.getName() + " overflow");
 
-        return (long)x;
+        assert NUMERIC_ROUNDING_MODE == RoundingMode.HALF_UP
+            : "Converting primitive double to long isn't implemented with global rounding " + RoundingMode.HALF_UP;
+
+        return (long)(x < 0.0d ? x - 0.5d : x + 0.5d);
     }
 
     /** Cast value to {@code int}, throwing an exception if the result overflows an {@code int}. */
     public static int convertToIntExact(long x) {
-        int res = (int)x;
-
-        if (res != x)
-            throw new ArithmeticException(INTEGER.getName() + " overflow");
-
-        return res;
+        return checkIntPrimitiveLimit(x);
     }
 
     /** Cast value to {@code int}, throwing an exception if the result overflows an {@code int}. */
@@ -286,24 +324,67 @@ public class IgniteMath {
         if (x > Integer.MAX_VALUE || x < Integer.MIN_VALUE)
             throw new ArithmeticException(INTEGER.getName() + " overflow");
 
-        return (int)x;
+        assert NUMERIC_ROUNDING_MODE == RoundingMode.HALF_UP
+            : "Converting primitive double to int isn't implemented with global rounding " + RoundingMode.HALF_UP;
+
+        return (int)(x < 0.0d ? x - 0.5d : x + 0.5d);
     }
 
     /** Cast value to {@code int}, throwing an exception if the result overflows an {@code int}. */
-    public static int convertToIntExact(Number x) {
-        checkNumberLongBounds(INTEGER, x);
+    public static int convertToIntExact(Number val) {
+        checkNumberLongBounds(INTEGER, val);
 
-        return convertToIntExact(x.longValue());
+        checkIntPrimitiveLimit(val.longValue());
+
+        return convertToBigDecimal(val).setScale(0, NUMERIC_ROUNDING_MODE).intValue();
     }
 
-    /** Cast value to {@code short}, throwing an exception if the result overflows an {@code short}. */
-    public static short convertToShortExact(long x) {
-        short res = (short)x;
+    /** */
+    private static int checkIntPrimitiveLimit(long val) {
+        int res = (int)val;
 
-        if (res != x)
+        if (res != val)
+            throw new ArithmeticException(INTEGER.getName() + " overflow");
+
+        return res;
+    }
+
+    /** */
+    private static short checkShortPrimitiveLimit(long val) {
+        short res = (short)val;
+
+        if (res != val)
             throw new ArithmeticException(SMALLINT.getName() + " overflow");
 
         return res;
+    }
+
+    /** */
+    private static byte checkBytePrimitiveLimit(long val) {
+        byte res = (byte)val;
+
+        if (res != val)
+            throw new ArithmeticException(TINYINT.getName() + " overflow");
+
+        return res;
+    }
+
+    /** */
+    private static void checkNumberLimit(Number x, Consumer<Number> checker) {
+        Map<Class<? extends Number>, Number> toTypeMap = UPPER_LIMITS.get(x.getClass());
+
+        assert toTypeMap != null : "No upper limit check type map found for type " + x.getClass().getSimpleName();
+
+        Number max = toTypeMap.get(x.getClass());
+
+        assert max != null : "No upper limit value found for type " + x.getClass().getSimpleName();
+
+        checker.accept(max);
+    }
+
+    /** Cast value to {@code short}, throwing an exception if the result overflows an {@code short}. */
+    public static short convertToShortExact(long val) {
+        return checkShortPrimitiveLimit(val);
     }
 
     /** Cast value to {@code short}, throwing an exception if the result overflows an {@code short}. */
@@ -311,24 +392,24 @@ public class IgniteMath {
         if (x > Short.MAX_VALUE || x < Short.MIN_VALUE)
             throw new ArithmeticException(SMALLINT.getName() + " overflow");
 
-        return (short)x;
+        assert NUMERIC_ROUNDING_MODE == RoundingMode.HALF_UP
+            : "Converting primitive double to short isn't implemented with global rounding " + RoundingMode.HALF_UP;
+
+        return (short)(x < 0.0d ? x - 0.5d : x + 0.5d);
     }
 
     /** Cast value to {@code short}, throwing an exception if the result overflows an {@code short}. */
-    public static short convertToShortExact(Number x) {
-        checkNumberLongBounds(SMALLINT, x);
+    public static short convertToShortExact(Number val) {
+        checkNumberLongBounds(SMALLINT, val);
 
-        return convertToShortExact(x.longValue());
+        checkShortPrimitiveLimit(val.longValue());
+
+        return convertToBigDecimal(val).setScale(0, NUMERIC_ROUNDING_MODE).shortValue();
     }
 
     /** Cast value to {@code byte}, throwing an exception if the result overflows an {@code byte}. */
-    public static byte convertToByteExact(long x) {
-        byte res = (byte)x;
-
-        if (res != x)
-            throw new ArithmeticException(TINYINT.getName() + " overflow");
-
-        return res;
+    public static byte convertToByteExact(long val) {
+        return checkBytePrimitiveLimit(val);
     }
 
     /** Cast value to {@code byte}, throwing an exception if the result overflows an {@code byte}. */
@@ -336,13 +417,18 @@ public class IgniteMath {
         if (x > Byte.MAX_VALUE || x < Byte.MIN_VALUE)
             throw new ArithmeticException(TINYINT.getName() + " overflow");
 
-        return (byte)x;
+        assert NUMERIC_ROUNDING_MODE == RoundingMode.HALF_UP
+            : "Converting primitive double to byte isn't implemented with global rounding " + RoundingMode.HALF_UP;
+
+        return (byte)(x < 0.0d ? x - 0.5d : x + 0.5d);
     }
 
     /** Cast value to {@code byte}, throwing an exception if the result overflows an {@code byte}. */
-    public static byte convertToByteExact(Number x) {
-        checkNumberLongBounds(TINYINT, x);
+    public static byte convertToByteExact(Number val) {
+        checkNumberLongBounds(TINYINT, val);
 
-        return convertToByteExact(x.longValue());
+        checkBytePrimitiveLimit(val.longValue());
+
+        return convertToBigDecimal(val).setScale(0, NUMERIC_ROUNDING_MODE).byteValue();
     }
 }
