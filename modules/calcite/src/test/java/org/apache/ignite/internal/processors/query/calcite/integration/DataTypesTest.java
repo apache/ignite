@@ -35,6 +35,13 @@ import org.junit.Test;
  * Test SQL data types.
  */
 public class DataTypesTest extends AbstractBasicIntegrationTest {
+    /** */
+    @Test
+    public void test0() {
+        assertQuery("select 1.5::DECIMAL(1)").returns(1).check();
+        assertQuery("select 1.5::BigInt").returns(1).check();
+    }
+
     /** Tests Other type. */
     @Test
     public void testOtherType() {
