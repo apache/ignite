@@ -4362,10 +4362,7 @@ public abstract class IgniteUtils {
      * @param log Logger to log possible checked exception with (optional).
      */
     public static void close(@Nullable Socket sock, @Nullable IgniteLogger log) {
-        if (sock == null)
-            return;
-        
-        if (sock.isClosed())
+        if (sock == null || sock.isClosed())
             return;
 
         try {
