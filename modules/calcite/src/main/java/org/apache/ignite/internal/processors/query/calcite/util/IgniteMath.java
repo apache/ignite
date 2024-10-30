@@ -20,9 +20,6 @@ package org.apache.ignite.internal.processors.query.calcite.util;
 import java.math.BigDecimal;
 import java.math.BigInteger;
 import java.math.RoundingMode;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.function.Consumer;
 import org.apache.calcite.sql.type.SqlTypeName;
 
 import static org.apache.calcite.sql.type.SqlTypeName.BIGINT;
@@ -32,20 +29,6 @@ import static org.apache.calcite.sql.type.SqlTypeName.TINYINT;
 
 /** Math operations with overflow checking. */
 public class IgniteMath {
-    /** */
-    private static final Map<Class<? extends Number>, Map<Class<? extends Number>, Number>> UPPER_LIMITS = new HashMap<>();
-
-    /** */
-    static {
-        Map<Class<? extends Number>, Number> map = new HashMap<>(3, 1.0f);
-
-        map.put(BigDecimal.class, BigDecimal.valueOf(Integer.MAX_VALUE).add(BigDecimal.ONE));
-        map.put(Double.class, (double)Integer.MAX_VALUE);
-        map.put(Float.class, (float)Integer.MAX_VALUE);
-
-        UPPER_LIMITS.put(Integer.class, map);
-    }
-
     /** */
     private static final BigDecimal UPPER_LONG_BIG_DECIMAL = BigDecimal.valueOf(Long.MAX_VALUE).add(BigDecimal.ONE);
 
@@ -367,19 +350,6 @@ public class IgniteMath {
             throw new ArithmeticException(TINYINT.getName() + " overflow");
 
         return res;
-    }
-
-    /** */
-    private static void checkNumberLimit(Number x, Consumer<Number> checker) {
-        Map<Class<? extends Number>, Number> toTypeMap = UPPER_LIMITS.get(x.getClass());
-
-        assert toTypeMap != null : "No upper limit check type map found for type " + x.getClass().getSimpleName();
-
-        Number max = toTypeMap.get(x.getClass());
-
-        assert max != null : "No upper limit value found for type " + x.getClass().getSimpleName();
-
-        checker.accept(max);
     }
 
     /** Cast value to {@code short}, throwing an exception if the result overflows an {@code short}. */

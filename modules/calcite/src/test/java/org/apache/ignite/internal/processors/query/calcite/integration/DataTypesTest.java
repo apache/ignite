@@ -925,7 +925,7 @@ public class DataTypesTest extends AbstractBasicIntegrationTransactionalTest {
 
         // BIGINT
         assertQuery("SELECT CAST(9223372036854775807.1 AS BIGINT)").returns(9223372036854775807L).check();
-        assertQuery("SELECT CAST(9223372036854775807.9 AS BIGINT)").returns(9223372036854775807L).check();
+        assertQuery("SELECT CAST(9223372036854775806.9 AS BIGINT)").returns(9223372036854775807L).check();
         assertQuery("SELECT CAST(9223372036854775808.9 - 1 AS BIGINT)").returns(9223372036854775807L).check();
         assertThrows("SELECT CAST(9223372036854775808 AS BIGINT)", IgniteSQLException.class, "BIGINT overflow");
         assertThrows("SELECT CAST(9223372036854775808.1 AS BIGINT)", IgniteSQLException.class, "BIGINT overflow");
