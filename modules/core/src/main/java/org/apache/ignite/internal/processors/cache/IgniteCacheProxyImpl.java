@@ -499,7 +499,7 @@ public class IgniteCacheProxyImpl<K, V> extends AsyncSupportAdapter<IgniteCache<
         if (grp != null)
             qry.projection(grp);
 
-        GridCloseableIterator<R> res = ctx.kernalContext().query().executeQuery(GridCacheQueryType.SCAN,
+        final GridCloseableIterator<R> iter = ctx.kernalContext().query().executeQuery(GridCacheQueryType.SCAN,
             cacheName, ctx, new IgniteOutClosureX<GridCloseableIterator<R>>() {
                 @Override public GridCloseableIterator<R> applyx() throws IgniteCheckedException {
                     return qry.executeScanQuery();
@@ -507,22 +507,23 @@ public class IgniteCacheProxyImpl<K, V> extends AsyncSupportAdapter<IgniteCache<
             }, true);
 
         return new QueryCursorImpl<>(F.isEmpty(txChanges.get2())
-            ? res
-            : iteratorWithTxData(scanQry.getFilter(), transformer, res, qry, txChanges.get2())
+            ? iter
+            : iteratorWithTxData(scanQry.getFilter(), transformer, iter, qry, txChanges.get2())
         );
     }
 
     /** */
     private <R> @NotNull GridCloseableIterator<R> iteratorWithTxData(
-        @Nullable IgniteBiPredicate<K, V> filter,
-        @Nullable IgniteClosure<Entry<K, V>, R> transformer,
+        final @Nullable IgniteBiPredicate<K, V> filter,
+        final @Nullable IgniteClosure<Entry<K, V>, R> transformer,
         final GridCloseableIterator<R> iter,
-        final GridCacheQueryAdapter qry,
+        final GridCacheQueryAdapter<R> qry,
         List<IgniteBiTuple<KeyCacheObject, CacheObject>> newAndUpdatedEntries
     ) throws IgniteCheckedException {
         final GridIterator<R> txIter = new AbstractScanQueryIterator<>(ctx, qry, filter, transformer, true) {
             private final Iterator<IgniteBiTuple<KeyCacheObject, CacheObject>> txData = newAndUpdatedEntries.iterator();
 
+            /** {@inheritDoc} */
             @Override protected R advance() {
                 long start = System.nanoTime();
 

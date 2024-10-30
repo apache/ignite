@@ -85,12 +85,12 @@ public abstract class AbstractScanQueryIterator<K, V, R> extends GridCloseableIt
         GridCacheContext cctx,
         GridCacheQueryAdapter qry,
         IgniteBiPredicate<K, V> scanFilter,
-        IgniteClosure transform,
+        IgniteClosure<Cache.Entry<K, V>, R> transform,
         boolean locNode
     ) throws IgniteCheckedException {
         this.cctx = cctx;
         this.intScanFilter = internalFilter(scanFilter);
-        this.transform = transform;
+        this.transform = prepareTransformer(transform);
         this.locNode = locNode;
 
         statsEnabled = cctx.statisticsEnabled();
@@ -209,6 +209,13 @@ public abstract class AbstractScanQueryIterator<K, V, R> extends GridCloseableIt
 
             throw e;
         }
+    }
+
+    /** */
+    private @Nullable IgniteClosure<Cache.Entry<K, V>, R> prepareTransformer(
+        IgniteClosure<Cache.Entry<K, V>, R> transformer
+    ) throws IgniteCheckedException {
+        return SecurityUtils.sandboxedProxy(cctx.kernalContext(), IgniteClosure.class, injectResources(transformer, cctx));
     }
 
     /** Wrap scan filter in order to catch unhandled errors. */
