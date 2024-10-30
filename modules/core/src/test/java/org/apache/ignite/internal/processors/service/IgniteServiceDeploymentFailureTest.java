@@ -15,7 +15,11 @@ import java.util.UUID;
 
 import static org.apache.ignite.testframework.GridTestUtils.assertThrowsWithCause;
 
-public class IgniteServiceDeployUnknownClassTest extends GridCommonAbstractTest {
+/**
+ * Test class for verifying the behavior of Ignite service deployment when
+ * specified service classes are not found or when service initialization fails.
+ */
+public class IgniteServiceDeploymentFailureTest extends GridCommonAbstractTest {
     /** */
     private static final String NOOP_SERVICE_CLS_NAME = "org.apache.ignite.tests.p2p.NoopService";
 
@@ -51,7 +55,11 @@ public class IgniteServiceDeployUnknownClassTest extends GridCommonAbstractTest 
         extClsLdr = null;
     }
 
-    /** @throws Exception If failed. */
+    /**
+     *  Tests that deploying a service with a missing class causes a ServiceDeploymentException.
+     *
+     * @throws Exception If failed.
+     * */
     @Test
     public void testFailWhenClassNotFound() throws Exception {
         IgniteEx srv = startGrid(getConfiguration("server"));
@@ -64,6 +72,33 @@ public class IgniteServiceDeployUnknownClassTest extends GridCommonAbstractTest 
                         .getConstructor(UUID.class)
                         .newInstance(cli.configuration().getNodeId()))
                 .setTotalCount(1);
+
+        assertThrowsWithCause(() -> cli.services().deploy(svcCfg), ServiceDeploymentException.class);
+
+        assertTrue(cli.services().serviceDescriptors().isEmpty());
+    }
+
+    private class InitThrowingService implements Service {
+        /** {@inheritDoc} */
+        @Override public void init() throws Exception {
+            throw new Exception("Service init exception");
+        }
+    }
+
+    /**
+     * Tests that deploying a service which throws an exception during initialization
+     * results in a ServiceDeploymentException.
+     *
+     * @throws Exception If failed.
+     * */
+    @Test
+    public void testFailWhenServiceInitThrows() throws Exception {
+        IgniteEx srv = startGrid(getConfiguration("server"));
+        IgniteEx cli = startClientGrid(1);
+
+        ServiceConfiguration svcCfg = new ServiceConfiguration()
+                .setName("TestDeploymentService")
+                .setService(new InitThrowingService());
 
         assertThrowsWithCause(() -> cli.services().deploy(svcCfg), ServiceDeploymentException.class);
 
