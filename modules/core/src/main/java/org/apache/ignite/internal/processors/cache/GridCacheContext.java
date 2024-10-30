@@ -2358,7 +2358,7 @@ public class GridCacheContext<K, V> implements Externalizable {
      * @return First, set of object changed in transaction, second, list of transaction data in required format.
      * @param <R> Required type.
      */
-    public <R> IgniteBiTuple<Set<KeyCacheObject>, List<IgniteBiTuple<KeyCacheObject, CacheObject>>> transactionChanges(Integer part) {
+    public <R> IgniteBiTuple<Set<KeyCacheObject>, List<Object>> transactionChanges(Integer part) {
         if (!U.isTxAwareQueriesEnabled(ctx))
             return F.t(Collections.emptySet(), Collections.emptyList());
 
@@ -2370,7 +2370,7 @@ public class GridCacheContext<K, V> implements Externalizable {
         IgniteTxManager.ensureTransactionModeSupported(tx.isolation());
 
         Set<KeyCacheObject> changedKeys = new HashSet<>();
-        List<IgniteBiTuple<KeyCacheObject, CacheObject>> newAndUpdatedRows = new ArrayList<>();
+        List<Object> newAndUpdatedRows = new ArrayList<>();
 
         for (IgniteTxEntry e : tx.writeEntries()) {
             if (e.cacheId() != cacheId)
@@ -2387,7 +2387,9 @@ public class GridCacheContext<K, V> implements Externalizable {
 
             CacheObject val = e.value();
 
-            if (!F.isEmpty(e.entryProcessors()))
+            boolean hasEntryProcessors = !F.isEmpty(e.entryProcessors());
+
+            if (hasEntryProcessors)
                 val = e.applyEntryProcessors(val);
 
             //TODO: two versions of this code: here and in ExecutionContext for SQL data.
@@ -2395,8 +2397,7 @@ public class GridCacheContext<K, V> implements Externalizable {
 
             // Mix only updated or inserted entries. In case val == null entry removed.
             if (val != null)
-                //TODO: get rid of new tuple if possible.
-                newAndUpdatedRows.add(F.t(e.key(), val));
+                newAndUpdatedRows.add(hasEntryProcessors ? F.t(e.key(), val) : e);
         }
 
         return F.t(changedKeys, newAndUpdatedRows);

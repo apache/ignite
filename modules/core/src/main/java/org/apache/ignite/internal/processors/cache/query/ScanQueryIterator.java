@@ -36,7 +36,6 @@ import org.apache.ignite.internal.util.GridConcurrentHashSet;
 import org.apache.ignite.internal.util.lang.GridIterator;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
-import org.apache.ignite.lang.IgniteBiPredicate;
 import org.apache.ignite.lang.IgniteClosure;
 import org.jetbrains.annotations.Nullable;
 
@@ -123,7 +122,7 @@ public final class ScanQueryIterator<K, V, R> extends AbstractScanQueryIterator<
     }
 
     /** {@inheritDoc} */
-    @Override protected void onClose() {
+    @Override protected void onClose() throws IgniteCheckedException {
         if (expiryPlc != null && dht != null) {
             dht.sendTtlUpdateRequest(expiryPlc);
 
@@ -133,8 +132,7 @@ public final class ScanQueryIterator<K, V, R> extends AbstractScanQueryIterator<
         if (locPart != null)
             locPart.release();
 
-        if (intScanFilter != null)
-            intScanFilter.close();
+        super.onClose();
 
         if (locIters != null)
             locIters.remove(this);
@@ -225,12 +223,6 @@ public final class ScanQueryIterator<K, V, R> extends AbstractScanQueryIterator<
         }
 
         return next0;
-    }
-
-    /** */
-    @Nullable
-    public IgniteBiPredicate<K, V> filter() {
-        return intScanFilter == null ? null : intScanFilter.scanFilter;
     }
 
     /** */

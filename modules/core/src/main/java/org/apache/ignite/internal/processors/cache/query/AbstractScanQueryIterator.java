@@ -133,6 +133,13 @@ public abstract class AbstractScanQueryIterator<K, V, R> extends GridCloseableIt
         return next != null;
     }
 
+    /** {@inheritDoc} */
+    @Override protected void onClose() throws IgniteCheckedException {
+        //TODO: check tx iter for close call.
+        if (intScanFilter != null)
+            intScanFilter.close();
+    }
+
     /** Moves the iterator to the next cache entry. */
     protected abstract R advance();
 
@@ -191,6 +198,12 @@ public abstract class AbstractScanQueryIterator<K, V, R> extends GridCloseableIt
     }
 
     /** */
+    @Nullable
+    public IgniteBiPredicate<K, V> filter() {
+        return intScanFilter == null ? null : intScanFilter.scanFilter;
+    }
+
+    /** */
     private @Nullable InternalScanFilter<K, V> prepareFilter(IgniteBiPredicate<K, V> keyValFilter) throws IgniteCheckedException {
         if (keyValFilter == null)
             return null;
@@ -220,7 +233,7 @@ public abstract class AbstractScanQueryIterator<K, V, R> extends GridCloseableIt
     }
 
     /** Wrap scan filter in order to catch unhandled errors. */
-    public static class InternalScanFilter<K, V> implements IgniteBiPredicate<K, V> {
+    private static class InternalScanFilter<K, V> implements IgniteBiPredicate<K, V> {
         /** */
         private static final long serialVersionUID = 0L;
 

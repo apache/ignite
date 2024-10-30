@@ -50,6 +50,7 @@ import org.apache.ignite.internal.processors.cache.KeyCacheObject;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtCacheAdapter;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtUnreservedPartitionException;
 import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionTopology;
+import org.apache.ignite.internal.processors.cache.transactions.IgniteTxEntry;
 import org.apache.ignite.internal.processors.query.QueryUtils;
 import org.apache.ignite.internal.util.GridCloseableIteratorAdapter;
 import org.apache.ignite.internal.util.GridEmptyCloseableIterator;
@@ -565,7 +566,7 @@ public class GridCacheQueryAdapter<T> implements CacheQuery<T> {
 
     /** {@inheritDoc} */
     @Override public GridCloseableIterator executeScanQuery(
-        List<IgniteBiTuple<KeyCacheObject, CacheObject>> newAndUpdatedEntries
+        List<Object> newAndUpdatedEntries
     ) throws IgniteCheckedException {
         assert type == SCAN : "Wrong processing of query: " + type;
 
@@ -699,26 +700,35 @@ public class GridCacheQueryAdapter<T> implements CacheQuery<T> {
     /** */
     private <R> @NotNull GridCloseableIterator<R> iteratorWithTxData(
         final GridCloseableIterator<R> iter,
-        List<IgniteBiTuple<KeyCacheObject, CacheObject>> newAndUpdatedEntries
+        List<Object> newAndUpdatedEntries
     ) throws IgniteCheckedException {
         IgniteClosure<Cache.Entry<Object, Object>, R> t0 = (IgniteClosure<Cache.Entry<Object, Object>, R>)transform;
 
         final GridIterator<R> txIter = new AbstractScanQueryIterator<>(cctx, this, t0, true) {
-            private final Iterator<IgniteBiTuple<KeyCacheObject, CacheObject>> txData = newAndUpdatedEntries.iterator();
+            private final Iterator<Object> txData = newAndUpdatedEntries.iterator();
 
             /** {@inheritDoc} */
             @Override protected R advance() {
                 long start = System.nanoTime();
 
                 while (txData.hasNext()) {
-                    IgniteBiTuple<KeyCacheObject, CacheObject> e = txData.next();
+                    final Object e0 = txData.next();
+                    final KeyCacheObject key;
+                    final CacheObject val;
 
-                    R next = filterAndTransform(e.get1(), e.get2(), start);
-
-                    if (next != null) {
-                        System.out.println("next = " + next);
-                        return next;
+                    if (e0 instanceof IgniteTxEntry) {
+                        key = ((IgniteTxEntry)e0).key();
+                        val = ((IgniteTxEntry)e0).value();
                     }
+                    else {
+                        key = ((IgniteBiTuple<KeyCacheObject, CacheObject>)e0).get1();
+                        val = ((IgniteBiTuple<KeyCacheObject, CacheObject>)e0).get2();
+                    }
+
+                    R next = filterAndTransform(key, val, start);
+
+                    if (next != null)
+                        return next;
                 }
 
                 return null;

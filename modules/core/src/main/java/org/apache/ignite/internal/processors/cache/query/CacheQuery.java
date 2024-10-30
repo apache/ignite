@@ -25,10 +25,7 @@ import org.apache.ignite.cache.query.annotations.QuerySqlField;
 import org.apache.ignite.cache.query.annotations.QuerySqlFunction;
 import org.apache.ignite.cache.query.annotations.QueryTextField;
 import org.apache.ignite.cluster.ClusterGroup;
-import org.apache.ignite.internal.processors.cache.CacheObject;
-import org.apache.ignite.internal.processors.cache.KeyCacheObject;
 import org.apache.ignite.internal.util.lang.GridCloseableIterator;
-import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.lang.IgniteReducer;
 import org.jetbrains.annotations.Nullable;
 
@@ -273,8 +270,6 @@ public interface CacheQuery<T> {
      * @param newAndUpdatedEntries Collection of entries created or updated in transaction.
      * @return Scan query iterator.
      */
-    public GridCloseableIterator executeScanQuery(
-        @Nullable List<IgniteBiTuple<KeyCacheObject, CacheObject>> newAndUpdatedEntries
-    ) throws IgniteCheckedException;
+    public GridCloseableIterator executeScanQuery(@Nullable List<Object> newAndUpdatedEntries) throws IgniteCheckedException;
 
 }
