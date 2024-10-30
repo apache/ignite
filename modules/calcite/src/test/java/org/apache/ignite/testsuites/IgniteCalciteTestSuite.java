@@ -38,28 +38,28 @@ import org.junit.runners.Suite;
  */
 @RunWith(Suite.class)
 @Suite.SuiteClasses({
-//    PlannerTestSuite.class,
-//    ExecutionTestSuite.class,
+    PlannerTestSuite.class,
+    ExecutionTestSuite.class,
     IntegrationTestSuite.class,
 
-//    ClosableIteratorsHolderTest.class,
-//    MemoryTrackerTest.class,
-//    QueryCheckerTest.class,
-//    SqlCustomParserTest.class,
-//    SqlReservedWordsTest.class,
-//    IgniteSqlFunctionsTest.class,
-//    LogicalRelImplementorTest.class,
+    ClosableIteratorsHolderTest.class,
+    MemoryTrackerTest.class,
+    QueryCheckerTest.class,
+    SqlCustomParserTest.class,
+    SqlReservedWordsTest.class,
+    IgniteSqlFunctionsTest.class,
+    LogicalRelImplementorTest.class,
 
-//    ScriptTestSuite.class,
-//    CalciteCommunicationMessageSerializationTest.class,
+    ScriptTestSuite.class,
+    CalciteCommunicationMessageSerializationTest.class,
 
-//    NumericTypesPrecisionsTest.class,
+    NumericTypesPrecisionsTest.class,
 
-//    KeyFilteringCursorTest.class,
-    //SqlTransactionsIsolationTest.class,
-//    SqlTransactionsUnsupportedModesTest.class,
+    KeyFilteringCursorTest.class,
+    SqlTransactionsIsolationTest.class,
+    SqlTransactionsUnsupportedModesTest.class,
 
-//    JdbcThinTransactionalSelfTest.class,
+    JdbcThinTransactionalSelfTest.class,
 })
 public class IgniteCalciteTestSuite {
 }
