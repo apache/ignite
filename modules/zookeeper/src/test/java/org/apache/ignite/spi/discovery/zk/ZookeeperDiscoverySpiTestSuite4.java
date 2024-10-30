@@ -52,7 +52,7 @@ import org.junit.runners.Suite;
     DiscoverySpiDataExchangeTest.class,
     CacheCreateDestroyEventSecurityContextTest.class,
     NodeJoinPermissionsTest.class,
-    ActivationOnJoinWithoutPermissionsWithPersistenceTest.class
+    ActivationOnJoinWithoutPermissionsWithPersistenceTest.class,
 })
 public class ZookeeperDiscoverySpiTestSuite4 {
     /** */

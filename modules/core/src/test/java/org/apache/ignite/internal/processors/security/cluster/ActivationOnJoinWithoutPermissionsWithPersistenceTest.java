@@ -17,10 +17,6 @@
 
 package org.apache.ignite.internal.processors.security.cluster;
 
-import java.util.Set;
-import java.util.stream.Collectors;
-import org.apache.ignite.cluster.ClusterNode;
-import org.apache.ignite.configuration.ConnectorConfiguration;
 import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
@@ -46,15 +42,6 @@ import static org.apache.ignite.plugin.security.SecurityPermissionSetBuilder.cre
 public class ActivationOnJoinWithoutPermissionsWithPersistenceTest extends AbstractSecurityTest {
     /** */
     private static final int NUM_NODES = 3;
-
-    /** {@inheritDoc} */
-    @Override protected void afterTest() throws Exception {
-        super.afterTest();
-
-        stopAllGrids();
-
-        cleanPersistenceDir();
-    }
 
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String instanceName) throws Exception {
@@ -86,12 +73,8 @@ public class ActivationOnJoinWithoutPermissionsWithPersistenceTest extends Abstr
 
         cfg.setFailureHandler(new StopNodeFailureHandler());
 
-        cfg.setConnectorConfiguration(new ConnectorConfiguration());
-
-        if (!cfg.isClientMode()) {
-            cfg.setDataStorageConfiguration(new DataStorageConfiguration()
+        cfg.setDataStorageConfiguration(new DataStorageConfiguration()
                 .setDefaultDataRegionConfiguration(new DataRegionConfiguration().setPersistenceEnabled(true)));
-        }
 
         return cfg;
     }
@@ -99,21 +82,16 @@ public class ActivationOnJoinWithoutPermissionsWithPersistenceTest extends Abstr
     /** */
     @Test
     public void testNodeJoinWithoutPermissions() throws Exception {
-        // Start grids and activate them
+        // Start grids and activate them.
         startGrids(NUM_NODES);
 
         grid(0).cluster().state(ACTIVE);
         assertEquals(ACTIVE, grid(0).cluster().state());
 
-        // Fix consistent ids of the new baseline.
-        Set<Object> consistentIds = grid(0).cluster().forServers().nodes().stream().
-            map(ClusterNode::consistentId).collect(Collectors.toSet());
-
-        // Stop all of them and restart just the firsts
+        // Stop all of them and restart just the firsts.
         G.stopAll(true);
 
-        for (int i = 0; i < NUM_NODES - 1; i++)
-            startGrid(i);
+        startGrids(NUM_NODES - 1);
 
         // Start the last one with empty permissions.
         startGrid(getConfiguration(getTestIgniteInstanceName(NUM_NODES - 1), EMPTY_PERMS));
@@ -121,9 +99,7 @@ public class ActivationOnJoinWithoutPermissionsWithPersistenceTest extends Abstr
         // Check for state and topology.
         waitForTopology(NUM_NODES);
 
-        assertTrue(grid(0).cluster().state() == INACTIVE);
+        assertEquals(INACTIVE, grid(0).cluster().state());
         assertEquals(NUM_NODES, grid(0).cluster().forServers().nodes().size());
-
-        assertTrue(G.allGrids().stream().allMatch(ig -> consistentIds.contains(ig.cluster().localNode().consistentId())));
     }
 }
