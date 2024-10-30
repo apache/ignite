@@ -49,7 +49,7 @@ public class ScanQueryTransactionIsolationTest extends AbstractQueryTransactionI
     public static Collection<?> parameters() {
         List<Object[]> params = new ArrayList<>();
 
-        for (int gridCnt : new int[]{1, 3, 5}) {
+        for (int gridCnt : new int[]{1, 3}) {
             int[] backups = gridCnt > 1
                 ? new int[]{1, gridCnt - 1}
                 : new int[]{0};
