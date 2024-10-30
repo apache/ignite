@@ -703,7 +703,7 @@ public class GridCacheQueryAdapter<T> implements CacheQuery<T> {
     ) throws IgniteCheckedException {
         IgniteClosure<Cache.Entry<Object, Object>, R> t0 = (IgniteClosure<Cache.Entry<Object, Object>, R>)transform;
 
-        final GridIterator<R> txIter = new AbstractScanQueryIterator<>(cctx, this, filter, t0, true) {
+        final GridIterator<R> txIter = new AbstractScanQueryIterator<>(cctx, this, t0, true) {
             private final Iterator<IgniteBiTuple<KeyCacheObject, CacheObject>> txData = newAndUpdatedEntries.iterator();
 
             /** {@inheritDoc} */

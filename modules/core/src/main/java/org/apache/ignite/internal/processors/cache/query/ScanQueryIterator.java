@@ -84,7 +84,6 @@ public final class ScanQueryIterator<K, V, R> extends AbstractScanQueryIterator<
      * @param qry           Query.
      * @param topVer        Topology version.
      * @param locPart       Local partition.
-     * @param scanFilter    Scan filter.
      * @param transformer   Transformer.
      * @param locNode       Local node flag.
      * @param locIters      Local iterators set.
@@ -96,13 +95,12 @@ public final class ScanQueryIterator<K, V, R> extends AbstractScanQueryIterator<
         GridCacheQueryAdapter qry,
         AffinityTopologyVersion topVer,
         GridDhtLocalPartition locPart,
-        IgniteBiPredicate<K, V> scanFilter,
         IgniteClosure transformer,
         boolean locNode,
         @Nullable GridConcurrentHashSet<ScanQueryIterator> locIters,
         GridCacheContext cctx,
         IgniteLogger log) throws IgniteCheckedException {
-        super(cctx, qry, scanFilter, transformer, locNode);
+        super(cctx, qry, transformer, locNode);
 
         assert !locNode || locIters != null : "Local iterators can't be null for local query.";
 

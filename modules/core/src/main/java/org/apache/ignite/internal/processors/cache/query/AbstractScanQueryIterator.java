@@ -39,7 +39,9 @@ import static org.apache.ignite.events.EventType.EVT_CACHE_QUERY_OBJECT_READ;
 import static org.apache.ignite.internal.processors.cache.query.GridCacheQueryManager.injectResources;
 import static org.apache.ignite.internal.processors.security.SecurityUtils.securitySubjectId;
 
-/** */
+/**
+ * Abstract scan query iterator.
+ */
 public abstract class AbstractScanQueryIterator<K, V, R> extends GridCloseableIteratorAdapter<R> {
     /** */
     protected final InternalScanFilter<K, V> intScanFilter;
@@ -75,21 +77,20 @@ public abstract class AbstractScanQueryIterator<K, V, R> extends GridCloseableIt
     private boolean needAdvance;
 
     /**
-     * @param qry Query.
-     * @param scanFilter Filter.
-     * @param transform Transformer.
-     * @param cctx Cache context.
-     * @param locNode Local node flag.
+     * @param cctx Grid cache context.
+     * @param qry Query adapter.
+     * @param transform
+     * @param locNode
+     * @throws IgniteCheckedException
      */
     protected AbstractScanQueryIterator(
         GridCacheContext cctx,
         GridCacheQueryAdapter qry,
-        IgniteBiPredicate<K, V> scanFilter,
         IgniteClosure<Cache.Entry<K, V>, R> transform,
         boolean locNode
     ) throws IgniteCheckedException {
         this.cctx = cctx;
-        this.intScanFilter = internalFilter(scanFilter);
+        this.intScanFilter = prepareFilter(qry.scanFilter());
         this.transform = prepareTransformer(transform);
         this.locNode = locNode;
 
@@ -190,7 +191,7 @@ public abstract class AbstractScanQueryIterator<K, V, R> extends GridCloseableIt
     }
 
     /** */
-    private @Nullable InternalScanFilter<K, V> internalFilter(IgniteBiPredicate<K, V> keyValFilter) throws IgniteCheckedException {
+    private @Nullable InternalScanFilter<K, V> prepareFilter(IgniteBiPredicate<K, V> keyValFilter) throws IgniteCheckedException {
         if (keyValFilter == null)
             return null;
 

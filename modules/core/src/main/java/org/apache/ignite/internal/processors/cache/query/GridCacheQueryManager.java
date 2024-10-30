@@ -850,7 +850,6 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
         }
 
         ScanQueryIterator iter = new ScanQueryIterator(it, qry, topVer, locPart,
-            qry.scanFilter(),
             transformer,
             locNode, locNode ? locIters : null, cctx, log);
 

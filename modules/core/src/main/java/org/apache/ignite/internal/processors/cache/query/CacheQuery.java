@@ -270,7 +270,7 @@ public interface CacheQuery<T> {
     public <R> CacheQueryFuture<R> execute(IgniteReducer<T, R> rmtReducer, @Nullable Object... args);
 
     /**
-     * @param newAndUpdatedEntries
+     * @param newAndUpdatedEntries Collection of entries created or updated in transaction.
      * @return Scan query iterator.
      */
     public GridCloseableIterator executeScanQuery(
