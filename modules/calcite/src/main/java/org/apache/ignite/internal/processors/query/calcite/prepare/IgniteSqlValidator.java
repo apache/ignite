@@ -31,6 +31,7 @@ import org.apache.calcite.rel.type.RelDataType;
 import org.apache.calcite.rel.type.RelDataTypeField;
 import org.apache.calcite.sql.JoinConditionType;
 import org.apache.calcite.sql.SqlAggFunction;
+import org.apache.calcite.sql.SqlBasicCall;
 import org.apache.calcite.sql.SqlCall;
 import org.apache.calcite.sql.SqlCallBinding;
 import org.apache.calcite.sql.SqlDelete;
@@ -44,6 +45,7 @@ import org.apache.calcite.sql.SqlMerge;
 import org.apache.calcite.sql.SqlNode;
 import org.apache.calcite.sql.SqlNodeList;
 import org.apache.calcite.sql.SqlNumericLiteral;
+import org.apache.calcite.sql.SqlOperator;
 import org.apache.calcite.sql.SqlOperatorTable;
 import org.apache.calcite.sql.SqlSelect;
 import org.apache.calcite.sql.SqlUpdate;
@@ -55,6 +57,7 @@ import org.apache.calcite.sql.type.SqlOperandTypeChecker;
 import org.apache.calcite.sql.type.SqlOperandTypeInference;
 import org.apache.calcite.sql.type.SqlTypeFamily;
 import org.apache.calcite.sql.type.SqlTypeName;
+import org.apache.calcite.sql.type.SqlTypeUtil;
 import org.apache.calcite.sql.validate.SelectScope;
 import org.apache.calcite.sql.validate.SqlQualified;
 import org.apache.calcite.sql.validate.SqlValidator;
@@ -74,6 +77,7 @@ import org.apache.ignite.internal.processors.query.calcite.util.IgniteResource;
 import org.apache.ignite.internal.util.typedef.F;
 import org.jetbrains.annotations.Nullable;
 
+import static org.apache.calcite.sql.type.SqlTypeUtil.isNull;
 import static org.apache.calcite.util.Static.RESOURCE;
 
 /** Validator. */
@@ -287,6 +291,59 @@ public class IgniteSqlValidator extends SqlValidatorImpl {
         }
 
         super.validateCall(call, scope);
+    }
+
+    /** {@inheritDoc} */
+    @Override public RelDataType deriveType(SqlValidatorScope scope, SqlNode expr) {
+        checkTypesInteroperability(scope, expr);
+
+        return super.deriveType(scope, expr);
+    }
+
+    /** Check appropriate type cast availability. */
+    private void checkTypesInteroperability(SqlValidatorScope scope, SqlNode expr) {
+        boolean castOp = expr.getKind() == SqlKind.CAST;
+
+        if (castOp || SqlKind.BINARY_COMPARISON.contains(expr.getKind())) {
+            SqlBasicCall expr0 = (SqlBasicCall)expr;
+            SqlNode first = expr0.getOperandList().get(0);
+            SqlNode ret = expr0.getOperandList().get(1);
+
+            RelDataType returnType = super.deriveType(scope, ret);
+
+            if (returnType.isStruct())
+                throw newValidationError(expr, IgniteResource.INSTANCE.dataTypeIsNotSupported(returnType.getSqlTypeName().getName()));
+
+            //TODO: https://issues.apache.org/jira/browse/IGNITE-23414 - fix cast of dynamic params.
+            RelDataType firstType = super.deriveType(scope, first);
+
+            boolean nullType = isNull(returnType) || isNull(firstType);
+
+            // propagate null type validation
+            if (nullType)
+                return;
+
+            boolean check = SqlTypeUtil.canCastFrom(returnType, firstType, true);
+
+            if (!check) {
+                if (castOp)
+                    throw newValidationError(expr, RESOURCE.cannotCastValue(firstType.toString(), returnType.toString()));
+                else {
+                    SqlBasicCall call = (SqlBasicCall)expr;
+                    SqlOperator operator = call.getOperator();
+
+                    throw SqlUtil.newContextException(expr.getParserPosition(), RESOURCE.incompatibleValueType(operator.getName()));
+                }
+            }
+
+            if (castOp) {
+                if (SqlTypeUtil.isString(returnType) && returnType.getPrecision() == 0) {
+                    String typeName = returnType.getSqlTypeName().getSpaceName();
+
+                    throw newValidationError(expr, IgniteResource.INSTANCE.invalidStringLength(typeName));
+                }
+            }
+        }
     }
 
     /** {@inheritDoc} */

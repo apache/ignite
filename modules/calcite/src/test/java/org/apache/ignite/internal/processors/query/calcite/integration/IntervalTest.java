@@ -22,6 +22,7 @@ import java.sql.Time;
 import java.sql.Timestamp;
 import java.time.Duration;
 import java.time.Period;
+import org.apache.calcite.sql.validate.SqlValidatorException;
 import org.apache.ignite.internal.processors.query.IgniteSQLException;
 import org.junit.Test;
 
@@ -159,8 +160,8 @@ public class IntervalTest extends AbstractBasicIntegrationTest {
             .returns(null, null)
             .check();
 
-        assertThrows("SELECT * FROM test WHERE ym = INTERVAL 6 DAYS", IgniteSQLException.class, "Cannot apply");
-        assertThrows("SELECT * FROM test WHERE dt = INTERVAL 6 YEARS", IgniteSQLException.class, "Cannot apply");
+        assertThrows("SELECT * FROM test WHERE ym = INTERVAL 6 DAYS", SqlValidatorException.class, "operator must have compatible types");
+        assertThrows("SELECT * FROM test WHERE dt = INTERVAL 6 YEARS", SqlValidatorException.class, "operator must have compatible types");
 
         executeSql("UPDATE test SET dt = INTERVAL 3 DAYS WHERE ym = INTERVAL 1 MONTH");
         executeSql("UPDATE test SET ym = INTERVAL 5 YEARS WHERE dt = INTERVAL 4 HOURS");
@@ -170,8 +171,8 @@ public class IntervalTest extends AbstractBasicIntegrationTest {
         assertThrows("UPDATE test SET dt = INTERVAL 5 YEARS WHERE ym = INTERVAL 1 MONTH", IgniteSQLException.class,
             "Cannot assign");
 
-        assertThrows("UPDATE test SET ym = INTERVAL 8 YEARS WHERE dt = INTERVAL 1 MONTH", IgniteSQLException.class,
-            "Cannot apply");
+        assertThrows("UPDATE test SET ym = INTERVAL 8 YEARS WHERE dt = INTERVAL 1 MONTH", SqlValidatorException.class,
+            "operator must have compatible types");
 
         assertQuery("SELECT * FROM test")
             .returns(Period.ofMonths(1), Duration.ofDays(3))
@@ -180,8 +181,8 @@ public class IntervalTest extends AbstractBasicIntegrationTest {
             .returns(null, null)
             .check();
 
-        assertThrows("DELETE FROM test WHERE ym = INTERVAL 6 DAYS", IgniteSQLException.class, "Cannot apply");
-        assertThrows("DELETE FROM test WHERE dt = INTERVAL 6 YEARS", IgniteSQLException.class, "Cannot apply");
+        assertThrows("DELETE FROM test WHERE ym = INTERVAL 6 DAYS", IgniteSQLException.class, "operator must have compatible types");
+        assertThrows("DELETE FROM test WHERE dt = INTERVAL 6 YEARS", IgniteSQLException.class, "operator must have compatible types");
 
         executeSql("DELETE FROM test WHERE ym = INTERVAL 1 MONTH");
         executeSql("DELETE FROM test WHERE dt = INTERVAL 4 HOURS");
