@@ -710,10 +710,10 @@ public class DataTypesTest extends AbstractBasicIntegrationTransactionalTest {
     }
 
     /** */
-    private void doTestCoercionOfNumerics(List<List<Object>> tetsSuite, boolean dynamic, boolean precasted) {
+    private void doTestCoercionOfNumerics(List<List<Object>> testSuite, boolean dynamic, boolean precasted) {
         assumeNoTransactions();
 
-        for (List<Object> params : tetsSuite) {
+        for (List<Object> params : testSuite) {
             assert params.size() == 4 : "Wrong params lenght: " + params.size();
 
             String inputType = params.get(0).toString();
@@ -928,6 +928,8 @@ public class DataTypesTest extends AbstractBasicIntegrationTransactionalTest {
         assertQuery("SELECT CAST(9223372036854775807.1 AS BIGINT)").returns(9223372036854775807L).check();
         assertQuery("SELECT CAST(9223372036854775807.4 AS BIGINT)").returns(9223372036854775807L).check();
         assertQuery("SELECT CAST(9223372036854775806.9 AS BIGINT)").returns(9223372036854775807L).check();
+        assertThrows("SELECT CAST(9223372036854775807.5 AS BIGINT)", IgniteSQLException.class, "BIGINT overflow");
+        assertThrows("SELECT CAST(9223372036854775807.9 AS BIGINT)", IgniteSQLException.class, "BIGINT overflow");
         assertQuery("SELECT CAST(9223372036854775807.9 - 1 AS BIGINT)").returns(9223372036854775807L).check();
         assertThrows("SELECT CAST(9223372036854775808 AS BIGINT)", IgniteSQLException.class, "BIGINT overflow");
         assertThrows("SELECT CAST(9223372036854775808.1 AS BIGINT)", IgniteSQLException.class, "BIGINT overflow");
@@ -935,8 +937,11 @@ public class DataTypesTest extends AbstractBasicIntegrationTransactionalTest {
         assertThrows("SELECT CAST(-9223372036854775809.1 AS BIGINT)", IgniteSQLException.class, "BIGINT overflow");
         assertQuery("SELECT CAST(-9223372036854775808.1 AS BIGINT)").returns(-9223372036854775808L).check();
         assertQuery("SELECT CAST(-9223372036854775807.9 AS BIGINT)").returns(-9223372036854775808L).check();
+        assertQuery("SELECT CAST(-9223372036854775808.4 AS BIGINT)").returns(-9223372036854775808L).check();
         assertQuery("SELECT CAST(-9223372036854775808.9 + 1 AS BIGINT)").returns(-9223372036854775808L).check();
         assertQuery("SELECT CAST('9223372036854775807.1' AS BIGINT)").returns(9223372036854775807L).check();
+        assertQuery("SELECT CAST('9223372036854775807.4' AS BIGINT)").returns(9223372036854775807L).check();
+        assertThrows("SELECT CAST('9223372036854775807.5' AS BIGINT)", IgniteSQLException.class, "BIGINT overflow");
         assertThrows("SELECT CAST('9223372036854775807.9' AS BIGINT)", IgniteSQLException.class, "BIGINT overflow");
         assertThrows("SELECT CAST('9223372036854775808' AS BIGINT)", IgniteSQLException.class, "BIGINT overflow");
         assertThrows("SELECT CAST('9223372036854775808.1' AS BIGINT)", IgniteSQLException.class, "BIGINT overflow");
@@ -955,6 +960,8 @@ public class DataTypesTest extends AbstractBasicIntegrationTransactionalTest {
         assertQuery("SELECT CAST(2147483647.9 - 1 AS INTEGER)").returns(2147483647).check();
         assertThrows("SELECT CAST(2147483648 AS INTEGER)", IgniteSQLException.class, "INTEGER overflow");
         assertThrows("SELECT CAST(2147483648.1 AS INTEGER)", IgniteSQLException.class, "INTEGER overflow");
+        assertThrows("SELECT CAST(-2147483649 AS INTEGER)", IgniteSQLException.class, "INTEGER overflow");
+        assertThrows("SELECT CAST(-2147483649.1 AS INTEGER)", IgniteSQLException.class, "INTEGER overflow");
         assertQuery("SELECT CAST(-2147483648.1 AS INTEGER)").returns(-2147483648).check();
         assertQuery("SELECT CAST(-2147483648.4 AS INTEGER)").returns(-2147483648).check();
         assertThrows("SELECT CAST(-2147483648.5 AS INTEGER)", IgniteSQLException.class, "INTEGER overflow");
@@ -969,6 +976,10 @@ public class DataTypesTest extends AbstractBasicIntegrationTransactionalTest {
         assertThrows("SELECT CAST('2147483648.5' AS INTEGER)", IgniteSQLException.class, "INTEGER overflow");
         assertThrows("SELECT CAST('-2147483649' AS INTEGER)", IgniteSQLException.class, "INTEGER overflow");
         assertThrows("SELECT CAST('-2147483649.4' AS INTEGER)", IgniteSQLException.class, "INTEGER overflow");
+        assertQuery("SELECT CAST('-2147483648.1' AS INTEGER)").returns(-2147483648).check();
+        assertQuery("SELECT CAST('-2147483648.4' AS INTEGER)").returns(-2147483648).check();
+        assertThrows("SELECT CAST('-2147483648.5' AS INTEGER)", IgniteSQLException.class, "INTEGER overflow");
+        assertThrows("SELECT CAST('-2147483648.9' AS INTEGER)", IgniteSQLException.class, "INTEGER overflow");
 
         // SMALLINT
         assertQuery("SELECT CAST(32767.1 AS SMALLINT)").returns((short)32767).check();
@@ -982,6 +993,14 @@ public class DataTypesTest extends AbstractBasicIntegrationTransactionalTest {
         assertThrows("SELECT CAST(32768 AS SMALLINT)", IgniteSQLException.class, "SMALLINT overflow");
         assertThrows("SELECT CAST(32768.1 AS SMALLINT)", IgniteSQLException.class, "SMALLINT overflow");
         assertThrows("SELECT CAST(-32769 AS SMALLINT)", IgniteSQLException.class, "SMALLINT overflow");
+        assertThrows("SELECT CAST(-32769.1 AS SMALLINT)", IgniteSQLException.class, "SMALLINT overflow");
+        assertQuery("SELECT CAST(-32768.1 AS SMALLINT)").returns((short)-32768).check();
+        assertQuery("SELECT CAST(-32768.4 AS SMALLINT)").returns((short)-32768).check();
+        assertThrows("SELECT CAST(-32768.5 AS SMALLINT)", IgniteSQLException.class, "SMALLINT overflow");
+        assertThrows("SELECT CAST(-32768.9 AS SMALLINT)", IgniteSQLException.class, "SMALLINT overflow");
+        assertQuery("SELECT CAST('32767.1' AS SMALLINT)").returns((short)32767).check();
+        assertQuery("SELECT CAST('32767.4' AS SMALLINT)").returns((short)32767).check();
+        assertThrows("SELECT CAST('32767.9' AS SMALLINT)", IgniteSQLException.class, "SMALLINT overflow");
         assertThrows("SELECT CAST('32768' AS SMALLINT)", IgniteSQLException.class, "SMALLINT overflow");
         assertThrows("SELECT CAST('32768.1' AS SMALLINT)", IgniteSQLException.class, "SMALLINT overflow");
         assertThrows("SELECT CAST('-32769' AS SMALLINT)", IgniteSQLException.class, "SMALLINT overflow");
@@ -1004,6 +1023,14 @@ public class DataTypesTest extends AbstractBasicIntegrationTransactionalTest {
         assertThrows("SELECT CAST(128.1 AS TINYINT)", IgniteSQLException.class, "TINYINT overflow");
         assertThrows("SELECT CAST(-129 AS TINYINT)", IgniteSQLException.class, "TINYINT overflow");
         assertThrows("SELECT CAST(-129.1 AS TINYINT)", IgniteSQLException.class, "TINYINT overflow");
+        assertQuery("SELECT CAST(-128.1 AS TINYINT)").returns((byte)-128).check();
+        assertQuery("SELECT CAST(-128.4 AS TINYINT)").returns((byte)-128).check();
+        assertThrows("SELECT CAST(-128.5 AS TINYINT)", IgniteSQLException.class, "TINYINT overflow");
+        assertThrows("SELECT CAST(-128.9 AS TINYINT)", IgniteSQLException.class, "TINYINT overflow");
+        assertQuery("SELECT CAST('127.1' AS TINYINT)").returns((byte)127).check();
+        assertQuery("SELECT CAST('127.4' AS TINYINT)").returns((byte)127).check();
+        assertThrows("SELECT CAST('127.5' AS TINYINT)", IgniteSQLException.class, "TINYINT overflow");
+        assertThrows("SELECT CAST('127.9' AS TINYINT)", IgniteSQLException.class, "TINYINT overflow");
         assertThrows("SELECT CAST('128' AS TINYINT)", IgniteSQLException.class, "TINYINT overflow");
         assertThrows("SELECT CAST('128.1' AS TINYINT)", IgniteSQLException.class, "TINYINT overflow");
         assertThrows("SELECT CAST('-129' AS TINYINT)", IgniteSQLException.class, "TINYINT overflow");
