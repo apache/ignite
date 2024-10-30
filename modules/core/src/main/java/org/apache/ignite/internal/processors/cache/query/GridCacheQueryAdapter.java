@@ -22,12 +22,14 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.Deque;
 import java.util.HashSet;
+import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.NoSuchElementException;
 import java.util.Queue;
 import java.util.Set;
+import javax.cache.Cache;
 import javax.cache.CacheException;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
@@ -42,6 +44,7 @@ import org.apache.ignite.internal.cluster.ClusterGroupEmptyCheckedException;
 import org.apache.ignite.internal.cluster.ClusterTopologyCheckedException;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.CacheInvalidStateException;
+import org.apache.ignite.internal.processors.cache.CacheObject;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtCacheAdapter;
@@ -51,6 +54,7 @@ import org.apache.ignite.internal.processors.query.QueryUtils;
 import org.apache.ignite.internal.util.GridCloseableIteratorAdapter;
 import org.apache.ignite.internal.util.GridEmptyCloseableIterator;
 import org.apache.ignite.internal.util.lang.GridCloseableIterator;
+import org.apache.ignite.internal.util.lang.GridIterator;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.P1;
@@ -60,9 +64,11 @@ import org.apache.ignite.internal.util.typedef.internal.A;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.lang.IgniteBiPredicate;
+import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.lang.IgniteClosure;
 import org.apache.ignite.lang.IgniteReducer;
 import org.apache.ignite.plugin.security.SecurityPermission;
+import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.internal.processors.cache.query.GridCacheQueryType.INDEX;
@@ -558,7 +564,9 @@ public class GridCacheQueryAdapter<T> implements CacheQuery<T> {
     }
 
     /** {@inheritDoc} */
-    @Override public GridCloseableIterator executeScanQuery() throws IgniteCheckedException {
+    @Override public GridCloseableIterator executeScanQuery(
+        List<IgniteBiTuple<KeyCacheObject, CacheObject>> newAndUpdatedEntries
+    ) throws IgniteCheckedException {
         assert type == SCAN : "Wrong processing of query: " + type;
 
         GridDhtCacheAdapter<?, ?> cacheAdapter = cctx.isNear() ? cctx.near().dht() : cctx.dht();
@@ -599,14 +607,15 @@ public class GridCacheQueryAdapter<T> implements CacheQuery<T> {
 
         final GridCacheQueryManager qryMgr = cctx.queries();
 
-        boolean loc = nodes.size() == 1 && F.first(nodes).id().equals(cctx.localNodeId());
+        final GridCloseableIterator<Object> iter = (nodes.size() == 1 && F.first(nodes).id().equals(cctx.localNodeId()))
+            ? qryMgr.scanQueryLocal(this, true)
+            : part != null
+                ? new ScanQueryFallbackClosableIterator(part, this, qryMgr, cctx)
+                : qryMgr.scanQueryDistributed(this, nodes);
 
-        if (loc)
-            return qryMgr.scanQueryLocal(this, true);
-        else if (part != null)
-            return new ScanQueryFallbackClosableIterator(part, this, qryMgr, cctx);
-        else
-            return qryMgr.scanQueryDistributed(this, nodes);
+        return F.isEmpty(newAndUpdatedEntries)
+            ? iter
+            : iteratorWithTxData(iter, newAndUpdatedEntries);
     }
 
     /**
@@ -685,6 +694,55 @@ public class GridCacheQueryAdapter<T> implements CacheQuery<T> {
                     (part == null || owners.contains(n));
             }
         });
+    }
+
+    /** */
+    private <R> @NotNull GridCloseableIterator<R> iteratorWithTxData(
+        final GridCloseableIterator<R> iter,
+        List<IgniteBiTuple<KeyCacheObject, CacheObject>> newAndUpdatedEntries
+    ) throws IgniteCheckedException {
+        IgniteClosure<Cache.Entry<Object, Object>, R> t0 = (IgniteClosure<Cache.Entry<Object, Object>, R>)transform;
+
+        final GridIterator<R> txIter = new AbstractScanQueryIterator<>(cctx, this, filter, t0, true) {
+            private final Iterator<IgniteBiTuple<KeyCacheObject, CacheObject>> txData = newAndUpdatedEntries.iterator();
+
+            /** {@inheritDoc} */
+            @Override protected R advance() {
+                long start = System.nanoTime();
+
+                while (txData.hasNext()) {
+                    IgniteBiTuple<KeyCacheObject, CacheObject> e = txData.next();
+
+                    R next = filterAndTransform(e.get1(), e.get2(), start);
+
+                    if (next != null) {
+                        System.out.println("next = " + next);
+                        return next;
+                    }
+                }
+
+                return null;
+            }
+        };
+
+        return new GridCloseableIteratorAdapter<>() {
+            /** {@inheritDoc} */
+            @Override protected R onNext() {
+                return iter.hasNext() ? iter.next() : txIter.next();
+            }
+
+            /** {@inheritDoc} */
+            @Override protected boolean onHasNext() {
+                return iter.hasNext() || txIter.hasNext();
+            }
+
+            /** {@inheritDoc} */
+            @Override protected void onClose() throws IgniteCheckedException {
+                iter.close();
+
+                super.onClose();
+            }
+        };
     }
 
     /** {@inheritDoc} */

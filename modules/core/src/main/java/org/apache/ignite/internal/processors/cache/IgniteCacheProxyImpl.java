@@ -21,11 +21,9 @@ import java.io.Externalizable;
 import java.io.IOException;
 import java.io.ObjectInput;
 import java.io.ObjectOutput;
-import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Date;
-import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
@@ -81,15 +79,11 @@ import org.apache.ignite.internal.AsyncSupportAdapter;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
-import org.apache.ignite.internal.processors.cache.query.AbstractScanQueryIterator;
 import org.apache.ignite.internal.processors.cache.query.CacheQuery;
 import org.apache.ignite.internal.processors.cache.query.CacheQueryFuture;
 import org.apache.ignite.internal.processors.cache.query.GridCacheQueryAdapter;
 import org.apache.ignite.internal.processors.cache.query.GridCacheQueryType;
 import org.apache.ignite.internal.processors.cache.query.QueryCursorEx;
-import org.apache.ignite.internal.processors.cache.transactions.IgniteInternalTx;
-import org.apache.ignite.internal.processors.cache.transactions.IgniteTxEntry;
-import org.apache.ignite.internal.processors.cache.transactions.IgniteTxManager;
 import org.apache.ignite.internal.processors.query.GridQueryFieldMetadata;
 import org.apache.ignite.internal.processors.query.QueryUtils;
 import org.apache.ignite.internal.util.GridCloseableIteratorAdapter;
@@ -99,13 +93,11 @@ import org.apache.ignite.internal.util.future.IgniteFinishedFutureImpl;
 import org.apache.ignite.internal.util.future.IgniteFutureImpl;
 import org.apache.ignite.internal.util.lang.GridCloseableIterator;
 import org.apache.ignite.internal.util.lang.GridClosureException;
-import org.apache.ignite.internal.util.lang.GridIterator;
 import org.apache.ignite.internal.util.lang.IgniteOutClosureX;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.CI1;
 import org.apache.ignite.internal.util.typedef.CX1;
-import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.A;
 import org.apache.ignite.internal.util.typedef.internal.CU;
@@ -488,7 +480,7 @@ public class IgniteCacheProxyImpl<K, V> extends AsyncSupportAdapter<IgniteCache<
         IgniteBiPredicate<K, V> p = scanQry.getFilter();
 
         IgniteBiTuple<Set<KeyCacheObject>, List<IgniteBiTuple<KeyCacheObject, CacheObject>>> txChanges
-            = transactionChanges(ctx, scanQry.getPartition());
+            = ctx.transactionChanges(scanQry.getPartition());
 
         final GridCacheQueryAdapter<R> qry = ctx.queries().createScanQuery(
             p, transformer, scanQry.getPartition(), isKeepBinary, scanQry.isLocal(), null, txChanges.get1());
@@ -502,64 +494,11 @@ public class IgniteCacheProxyImpl<K, V> extends AsyncSupportAdapter<IgniteCache<
         final GridCloseableIterator<R> iter = ctx.kernalContext().query().executeQuery(GridCacheQueryType.SCAN,
             cacheName, ctx, new IgniteOutClosureX<GridCloseableIterator<R>>() {
                 @Override public GridCloseableIterator<R> applyx() throws IgniteCheckedException {
-                    return qry.executeScanQuery();
+                    return qry.executeScanQuery(txChanges.get2());
                 }
             }, true);
 
-        return new QueryCursorImpl<>(F.isEmpty(txChanges.get2())
-            ? iter
-            : iteratorWithTxData(scanQry.getFilter(), transformer, iter, qry, txChanges.get2())
-        );
-    }
-
-    /** */
-    private <R> @NotNull GridCloseableIterator<R> iteratorWithTxData(
-        final @Nullable IgniteBiPredicate<K, V> filter,
-        final @Nullable IgniteClosure<Entry<K, V>, R> transformer,
-        final GridCloseableIterator<R> iter,
-        final GridCacheQueryAdapter<R> qry,
-        List<IgniteBiTuple<KeyCacheObject, CacheObject>> newAndUpdatedEntries
-    ) throws IgniteCheckedException {
-        final GridIterator<R> txIter = new AbstractScanQueryIterator<>(ctx, qry, filter, transformer, true) {
-            private final Iterator<IgniteBiTuple<KeyCacheObject, CacheObject>> txData = newAndUpdatedEntries.iterator();
-
-            /** {@inheritDoc} */
-            @Override protected R advance() {
-                long start = System.nanoTime();
-
-                while (txData.hasNext()) {
-                    IgniteBiTuple<KeyCacheObject, CacheObject> e = txData.next();
-
-                    R next = filterAndTransform(e.get1(), e.get2(), start);
-
-                    if (next != null) {
-                        System.out.println("next = " + next);
-                        return next;
-                    }
-                }
-
-                return null;
-            }
-        };
-
-        return new GridCloseableIteratorAdapter<>() {
-            /** {@inheritDoc} */
-            @Override protected R onNext() {
-                return iter.hasNext() ? iter.next() : txIter.next();
-            }
-
-            /** {@inheritDoc} */
-            @Override protected boolean onHasNext() {
-                return iter.hasNext() || txIter.hasNext();
-            }
-
-            /** {@inheritDoc} */
-            @Override protected void onClose() throws IgniteCheckedException {
-                iter.close();
-
-                super.onClose();
-            }
-        };
+        return new QueryCursorImpl<>(iter);
     }
 
     /**
@@ -998,18 +937,6 @@ public class IgniteCacheProxyImpl<K, V> extends AsyncSupportAdapter<IgniteCache<
             (qry instanceof SqlQuery || qry instanceof SqlFieldsQuery || qry instanceof TextQuery))
             throw new CacheException("Failed to execute query. Add module 'ignite-indexing' to the classpath " +
                     "of all Ignite nodes or configure any query engine.");
-
-        if (qry instanceof ScanQuery) {
-            if (!U.isTxAwareQueriesEnabled(ctx))
-                return;
-
-            IgniteInternalTx tx = ctx.cache().context().tm().tx();
-
-            if (tx == null)
-                return;
-
-            IgniteTxManager.ensureTransactionModeSupported(tx.isolation());
-        }
     }
 
     /** {@inheritDoc} */
@@ -2451,59 +2378,6 @@ public class IgniteCacheProxyImpl<K, V> extends AsyncSupportAdapter<IgniteCache<
      */
     private Executor exec() {
         return context().kernalContext().getAsyncContinuationExecutor();
-    }
-
-    /**
-     * @param ctx Cache context.
-     * @param part Partition.
-     * @return First, set of object changed in transaction, second, list of transaction data in required format.
-     * @param <R> Required type.
-     */
-    private <R> IgniteBiTuple<Set<KeyCacheObject>, List<IgniteBiTuple<KeyCacheObject, CacheObject>>> transactionChanges(
-        GridCacheContext<K, V> ctx,
-        Integer part
-    ) {
-        if (!U.isTxAwareQueriesEnabled(ctx))
-            return F.t(Collections.emptySet(), Collections.emptyList());
-
-        IgniteInternalTx tx = ctx.tm().tx();
-
-        if (tx == null)
-            return F.t(Collections.emptySet(), Collections.emptyList());
-
-        IgniteTxManager.ensureTransactionModeSupported(tx.isolation());
-
-        Set<KeyCacheObject> changedKeys = new HashSet<>();
-        List<IgniteBiTuple<KeyCacheObject, CacheObject>> newAndUpdatedRows = new ArrayList<>();
-
-        for (IgniteTxEntry e : tx.writeEntries()) {
-            if (e.cacheId() != ctx.cacheId())
-                continue;
-
-            int epart = e.key().partition();
-
-            assert epart != -1;
-
-            if (part != null && epart != part)
-                continue;
-
-            changedKeys.add(e.key());
-
-            CacheObject val = e.value();
-
-            if (!F.isEmpty(e.entryProcessors()))
-                val = e.applyEntryProcessors(val);
-
-            //TODO: two versions of this code: here and in ExecutionContext for SQL data.
-            // We need to merge it.
-
-            // Mix only updated or inserted entries. In case val == null entry removed.
-            if (val != null)
-                //TODO: get rid of new tuple if possible.
-                newAndUpdatedRows.add(F.t(e.key(), val));
-        }
-
-        return F.t(changedKeys, newAndUpdatedRows);
     }
 
     /**

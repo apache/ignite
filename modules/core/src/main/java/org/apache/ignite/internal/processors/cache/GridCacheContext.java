@@ -27,6 +27,8 @@ import java.io.ObjectStreamException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.Collections;
+import java.util.HashSet;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
@@ -83,6 +85,7 @@ import org.apache.ignite.internal.processors.cache.persistence.snapshot.dump.Dum
 import org.apache.ignite.internal.processors.cache.query.GridCacheQueryManager;
 import org.apache.ignite.internal.processors.cache.query.continuous.CacheContinuousQueryManager;
 import org.apache.ignite.internal.processors.cache.store.CacheStoreManager;
+import org.apache.ignite.internal.processors.cache.transactions.IgniteInternalTx;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteTxEntry;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteTxKey;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteTxManager;
@@ -2348,6 +2351,55 @@ public class GridCacheContext<K, V> implements Externalizable {
         assert cacheType == CacheType.USER;
 
         this.dumpLsnr = dumpEntryChangeLsnr;
+    }
+
+    /**
+     * @param part Partition.
+     * @return First, set of object changed in transaction, second, list of transaction data in required format.
+     * @param <R> Required type.
+     */
+    public <R> IgniteBiTuple<Set<KeyCacheObject>, List<IgniteBiTuple<KeyCacheObject, CacheObject>>> transactionChanges(Integer part) {
+        if (!U.isTxAwareQueriesEnabled(ctx))
+            return F.t(Collections.emptySet(), Collections.emptyList());
+
+        IgniteInternalTx tx = tm().tx();
+
+        if (tx == null)
+            return F.t(Collections.emptySet(), Collections.emptyList());
+
+        IgniteTxManager.ensureTransactionModeSupported(tx.isolation());
+
+        Set<KeyCacheObject> changedKeys = new HashSet<>();
+        List<IgniteBiTuple<KeyCacheObject, CacheObject>> newAndUpdatedRows = new ArrayList<>();
+
+        for (IgniteTxEntry e : tx.writeEntries()) {
+            if (e.cacheId() != cacheId)
+                continue;
+
+            int epart = e.key().partition();
+
+            assert epart != -1;
+
+            if (part != null && epart != part)
+                continue;
+
+            changedKeys.add(e.key());
+
+            CacheObject val = e.value();
+
+            if (!F.isEmpty(e.entryProcessors()))
+                val = e.applyEntryProcessors(val);
+
+            //TODO: two versions of this code: here and in ExecutionContext for SQL data.
+            // We need to merge it.
+
+            // Mix only updated or inserted entries. In case val == null entry removed.
+            if (val != null)
+                //TODO: get rid of new tuple if possible.
+                newAndUpdatedRows.add(F.t(e.key(), val));
+        }
+
+        return F.t(changedKeys, newAndUpdatedRows);
     }
 
     /** {@inheritDoc} */
