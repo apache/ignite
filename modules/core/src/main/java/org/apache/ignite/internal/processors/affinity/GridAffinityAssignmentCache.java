@@ -978,8 +978,14 @@ public class GridAffinityAssignmentCache {
 
             Iterator<HistoryAffinityAssignment> it = affCache.values().iterator();
 
+            AffinityTopologyVersion lastAffChangeTopVer =
+                ctx.cache().context().exchange().lastAffinityChangedTopologyVersion(head.get().topologyVersion());
+
             while (it.hasNext()) {
                 HistoryAffinityAssignment aff0 = it.next();
+
+                if (aff0.topologyVersion().equals(lastAffChangeTopVer))
+                    continue; // Keep lastAffinityChangedTopologyVersion, it's required for some operations.
 
                 if (aff0.requiresHistoryCleanup()) {
                     // We can stop cleanup only on non-shallow item.
