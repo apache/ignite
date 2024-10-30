@@ -913,6 +913,38 @@ public class JdbcThinResultSetSelfTest extends JdbcThinAbstractSelfTest {
      * @throws Exception If failed.
      */
     @Test
+    public void testObjectForBinaryType() throws Exception {
+        ResultSet rs = stmt.executeQuery(SQL);
+
+        assertTrue(rs.next());
+
+        Object res = rs.getObject("blobVal");
+        assertTrue(res instanceof byte[]);
+
+        res = rs.getObject(16);
+        assertTrue(res instanceof byte[]);
+
+        res = rs.getObject("blobVal", byte[].class);
+        assertTrue(res instanceof byte[]);
+
+        res = rs.getObject(16, byte[].class);
+        assertTrue(res instanceof byte[]);
+
+        res = rs.getObject("blobVal", Blob.class);
+        assertTrue(res instanceof Blob);
+
+        res = rs.getObject(16, Blob.class);
+        assertTrue(res instanceof Blob);
+
+        assertThrows(null, () -> rs.getObject("strVal", Blob.class),
+                SQLException.class,
+                "Cannot convert to Blob [colIdx=10]");
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    @Test
     public void testNavigation() throws Exception {
         ResultSet rs = stmt.executeQuery("select id from TestObject where id > 0");
 

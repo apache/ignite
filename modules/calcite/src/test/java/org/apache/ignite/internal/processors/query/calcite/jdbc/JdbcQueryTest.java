@@ -43,7 +43,6 @@ import java.util.stream.Stream;
 import org.apache.ignite.calcite.CalciteQueryEngineConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.SqlConfiguration;
-import org.apache.ignite.internal.jdbc2.JdbcBinaryBuffer;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.testframework.GridTestUtils;
@@ -166,7 +165,7 @@ public class JdbcQueryTest extends GridCommonAbstractTest {
                 assertTrue(rs.next());
 
                 if (F.isArray(obj))
-                    F.compareArrays(obj, ((JdbcBinaryBuffer)rs.getObject(2)).getBytes());
+                    F.compareArrays(obj, rs.getObject(2));
                 else
                     assertEquals(obj, rs.getObject(2));
             }

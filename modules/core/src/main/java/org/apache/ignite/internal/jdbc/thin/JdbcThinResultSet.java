@@ -747,14 +747,19 @@ public class JdbcThinResultSet implements ResultSet {
 
     /** {@inheritDoc} */
     @Override public Object getObject(int colIdx) throws SQLException {
-        return getValue(colIdx);
+        Object val = getValue(colIdx);
+
+        if (val instanceof JdbcBinaryBuffer)
+            return ((JdbcBinaryBuffer)val).getBytes();
+        else
+            return val;
     }
 
     /** {@inheritDoc} */
     @Override public Object getObject(String colLb) throws SQLException {
         int colIdx = findColumn(colLb);
 
-        return getValue(colIdx);
+        return getObject(colIdx);
     }
 
     /** {@inheritDoc} */
@@ -1834,6 +1839,8 @@ public class JdbcThinResultSet implements ResultSet {
             return getTimestamp(colIdx);
         else if (targetCls == byte[].class)
             return getBytes(colIdx);
+        else if (targetCls == Blob.class)
+            return getBlob(colIdx);
         else if (targetCls == URL.class)
             return getURL(colIdx);
         else {
