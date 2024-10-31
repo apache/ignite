@@ -1004,6 +1004,7 @@ public class GridAffinityAssignmentCache {
 
                 totalSize--;
 
+                log.info(">>>> removed " + aff0.topologyVersion());
                 it.remove();
             }
 
