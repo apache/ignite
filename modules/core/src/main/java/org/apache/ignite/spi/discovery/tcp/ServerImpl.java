@@ -937,8 +937,11 @@ class ServerImpl extends TcpDiscoveryImpl {
 
                         if (IgniteSpiOperationTimeoutHelper.checkFailureTimeoutReached(e)
                             && (spi.failureDetectionTimeoutEnabled() || timeout != 0)) {
-                            log.warning("Failed to ping node [nodeId=" + nodeId + "]. Reached the timeout " +
-                                (timeout == 0 ? spi.failureDetectionTimeout() : timeout) + "ms. Cause: " + e.getMessage());
+                            if (log.isDebugEnabled()) {
+                                log.debug("Failed to ping node [nodeId=" + nodeId + ", address=" + addr + "]. " +
+                                    "Reached the timeout " + (timeout == 0 ? spi.failureDetectionTimeout() : timeout) +
+                                    "ms. Cause: " + e.getMessage());
+                            }
 
                             break;
                         }
