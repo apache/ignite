@@ -70,16 +70,16 @@ public class SnapshotPartitionsQuickVerifyHandler extends SnapshotPartitionsVeri
         String name,
         Collection<SnapshotHandlerResult<Map<PartitionKeyV2, PartitionHashRecordV2>>> results
     ) throws IgniteCheckedException {
-        Set<Integer> wrnGrps = new HashSet<>();
+        // Null means that the streamer was already detected (See #invoke).
+        if (results.stream().anyMatch(res -> res.data() == null))
+            return;
 
+        Set<Integer> wrnGrps = new HashSet<>();
         Map<PartitionKeyV2, PartitionHashRecordV2> total = new HashMap<>();
 
         for (SnapshotHandlerResult<Map<PartitionKeyV2, PartitionHashRecordV2>> result : results) {
             if (result.error() != null)
                 throw new IgniteCheckedException(result.error());
-
-            if (result.data() == null)
-                continue;
 
             Map<PartitionKeyV2, PartitionHashRecordV2> partsData = result.data();
 
