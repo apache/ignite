@@ -1109,7 +1109,12 @@ public class GridClusterStateProcessor extends GridProcessorAdapter implements I
         boolean forceChangeBaselineTopology,
         boolean isAutoAdjust
     ) {
-        ctx.security().authorize(SecurityPermission.ADMIN_CLUSTER_STATE);
+        try {
+            ctx.security().authorize(SecurityPermission.ADMIN_CLUSTER_STATE);
+        }
+        catch (org.apache.ignite.plugin.security.SecurityException secEx) {
+            return new GridFinishedFuture<>(secEx);
+        }
 
         if (ctx.maintenanceRegistry().isMaintenanceMode()) {
             return new GridFinishedFuture<>(
