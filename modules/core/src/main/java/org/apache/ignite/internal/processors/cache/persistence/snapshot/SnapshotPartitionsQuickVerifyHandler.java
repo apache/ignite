@@ -28,6 +28,7 @@ import org.apache.ignite.internal.management.cache.PartitionKeyV2;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.verify.PartitionHashRecordV2;
 import org.apache.ignite.internal.util.typedef.internal.S;
+import org.apache.ignite.internal.util.typedef.internal.U;
 
 /**
  * Quick partitions verifier. Warns if partiton counters or size are different among the nodes what can be caused by
@@ -70,6 +71,11 @@ public class SnapshotPartitionsQuickVerifyHandler extends SnapshotPartitionsVeri
         String name,
         Collection<SnapshotHandlerResult<Map<PartitionKeyV2, PartitionHashRecordV2>>> results
     ) throws IgniteCheckedException {
+        Exception err = results.stream().map(SnapshotHandlerResult::error).filter(Objects::nonNull).findAny().get();
+
+        if (err != null)
+            throw U.cast(err);
+
         // Null means that the streamer was already detected (See #invoke).
         if (results.stream().anyMatch(res -> res.data() == null))
             return;
@@ -78,12 +84,7 @@ public class SnapshotPartitionsQuickVerifyHandler extends SnapshotPartitionsVeri
         Map<PartitionKeyV2, PartitionHashRecordV2> total = new HashMap<>();
 
         for (SnapshotHandlerResult<Map<PartitionKeyV2, PartitionHashRecordV2>> result : results) {
-            if (result.error() != null)
-                throw new IgniteCheckedException(result.error());
-
-            Map<PartitionKeyV2, PartitionHashRecordV2> partsData = result.data();
-
-            partsData.forEach((part, val) -> {
+            result.data().forEach((part, val) -> {
                 PartitionHashRecordV2 other = total.putIfAbsent(part, val);
 
                 if ((other != null && !wrnGrps.contains(part.groupId()))
