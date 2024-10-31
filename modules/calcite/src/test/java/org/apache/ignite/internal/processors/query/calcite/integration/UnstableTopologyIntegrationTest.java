@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.query.calcite;
+package org.apache.ignite.internal.processors.query.calcite.integration;
 
 import java.util.Collection;
 import java.util.Collections;
@@ -38,7 +38,6 @@ import org.apache.ignite.cache.QueryIndexType;
 import org.apache.ignite.cluster.ClusterState;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
-import org.apache.ignite.internal.processors.query.calcite.integration.AbstractBasicIntegrationTest;
 import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.spi.IgniteSpiAdapter;
 import org.apache.ignite.spi.IgniteSpiException;
@@ -51,7 +50,7 @@ import org.junit.runners.Parameterized;
 
 /** Non-stable topology tests. */
 @RunWith(Parameterized.class)
-public class UnstableTopologyTest extends AbstractBasicIntegrationTest {
+public class UnstableTopologyIntegrationTest extends AbstractBasicIntegrationTest {
     /** */
     private static final String POI_CACHE_NAME = "POI_CACHE";
 
