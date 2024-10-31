@@ -22,7 +22,6 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Objects;
-import java.util.Optional;
 import java.util.Set;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.management.cache.PartitionKeyV2;
@@ -72,10 +71,10 @@ public class SnapshotPartitionsQuickVerifyHandler extends SnapshotPartitionsVeri
         String name,
         Collection<SnapshotHandlerResult<Map<PartitionKeyV2, PartitionHashRecordV2>>> results
     ) throws IgniteCheckedException {
-        Optional<Exception> err = results.stream().map(SnapshotHandlerResult::error).filter(Objects::nonNull).findAny();
+        Exception err = results.stream().map(SnapshotHandlerResult::error).filter(Objects::nonNull).findAny().orElse(null);
 
-        if (err.isPresent())
-            throw U.cast(err.get());
+        if (err != null)
+            throw U.cast(err);
 
         // Null means that the streamer was already detected (See #invoke).
         if (results.stream().anyMatch(res -> res.data() == null))
