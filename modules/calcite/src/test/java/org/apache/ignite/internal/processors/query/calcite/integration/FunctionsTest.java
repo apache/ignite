@@ -243,6 +243,8 @@ public class FunctionsTest extends AbstractBasicIntegrationTest {
         assertQuery("SELECT TYPEOF(NULL::VARCHAR(100))").returns("VARCHAR(100)").check();
         assertThrows("SELECT TYPEOF()", SqlValidatorException.class, "Invalid number of arguments");
         assertThrows("SELECT TYPEOF(1, 2)", SqlValidatorException.class, "Invalid number of arguments");
+        assertThrows("SELECT TYPEOF(CAST('NONE' as INTEGER))", IgniteSQLException.class,
+            "is neither a decimal digit number, decimal point");
     }
 
     /** */
