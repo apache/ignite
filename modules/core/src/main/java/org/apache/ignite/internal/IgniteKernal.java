@@ -942,8 +942,6 @@ public class IgniteKernal implements IgniteEx, Externalizable {
 
             mBeansMgr = new IgniteMBeansManager(this);
 
-            cfg.getMarshaller().setContext(ctx.marshallerContext());
-
             startProcessor(new GridInternalSubscriptionProcessor(ctx));
 
             ClusterProcessor clusterProc = new ClusterProcessor(ctx);
@@ -1443,7 +1441,6 @@ public class IgniteKernal implements IgniteEx, Externalizable {
             A.notNull(cfg.getMBeanServer(), "cfg.getMBeanServer()");
 
         A.notNull(cfg.getGridLogger(), "cfg.getGridLogger()");
-        A.notNull(cfg.getMarshaller(), "cfg.getMarshaller()");
         A.notNull(cfg.getUserAttributes(), "cfg.getUserAttributes()");
 
         // All SPIs should be non-null.

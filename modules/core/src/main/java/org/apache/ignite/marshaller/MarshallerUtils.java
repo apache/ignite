@@ -66,20 +66,6 @@ public class MarshallerUtils {
     }
 
     /**
-     * Create JDK marshaller with provided node name.
-     *
-     * @param nodeName Node name.
-     * @return JDK marshaller.
-     */
-    public static JdkMarshaller jdkMarshaller(@Nullable String nodeName) {
-        JdkMarshaller marsh = new JdkMarshaller();
-
-        setNodeName(marsh, nodeName);
-
-        return marsh;
-    }
-
-    /**
      * Private constructor.
      */
     private MarshallerUtils() {

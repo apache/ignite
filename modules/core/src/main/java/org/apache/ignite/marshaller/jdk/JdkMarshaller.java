@@ -67,14 +67,14 @@ import org.jetbrains.annotations.Nullable;
  * For information about Spring framework visit <a href="http://www.springframework.org/">www.springframework.org</a>
  */
 public class JdkMarshaller extends AbstractNodeNameAwareMarshaller {
-    /** Default instance. */
-    public static final JdkMarshaller DEFAULT = new JdkMarshaller();
-
     /** Class name filter. */
     private final IgnitePredicate<String> clsFilter;
 
     /**
      * Default constructor.
+     * Use this constructor with caution. It creates a JdkMarshaller instance that has class filtering DISABLED. Therefore,
+     * if the created JdkMarshaller instance is used on the server side to unmarshal user data received from the network,
+     * it may lead to security breaches.
      */
     public JdkMarshaller() {
         this(null);

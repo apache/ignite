@@ -634,10 +634,7 @@ public class TcpDiscoverySpi extends IgniteSpiAdapter implements IgniteDiscovery
             setLocalAddress(ignite.configuration().getLocalHost());
             setAddressResolver(ignite.configuration().getAddressResolver());
 
-            if (ignite instanceof IgniteKernal) // IgniteMock instance can be injected from tests.
-                marsh = ((IgniteKernal)ignite).context().marshallerContext().jdkMarshaller();
-            else
-                marsh = new JdkMarshaller();
+            marsh = ((IgniteKernal)ignite).context().marshallerContext().jdkMarshaller();
         }
     }
 
