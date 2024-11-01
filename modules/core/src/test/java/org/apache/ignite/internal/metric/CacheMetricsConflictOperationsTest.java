@@ -30,28 +30,19 @@ import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.client.IgniteClient;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.ClientConfiguration;
-import org.apache.ignite.configuration.ClientConnectorConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.client.thin.TcpClientCache;
-import org.apache.ignite.internal.processors.cache.CacheConflictResolutionManager;
 import org.apache.ignite.internal.processors.cache.CacheObject;
 import org.apache.ignite.internal.processors.cache.CacheObjectImpl;
-import org.apache.ignite.internal.processors.cache.CacheObjectValueContext;
-import org.apache.ignite.internal.processors.cache.GridCacheManagerAdapter;
 import org.apache.ignite.internal.processors.cache.IgniteInternalCache;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
 import org.apache.ignite.internal.processors.cache.KeyCacheObjectImpl;
 import org.apache.ignite.internal.processors.cache.dr.GridCacheDrInfo;
-import org.apache.ignite.internal.processors.cache.version.CacheVersionConflictResolver;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
-import org.apache.ignite.internal.processors.cache.version.GridCacheVersionConflictContext;
-import org.apache.ignite.internal.processors.cache.version.GridCacheVersionedEntryEx;
 import org.apache.ignite.internal.processors.metric.MetricRegistryImpl;
 import org.apache.ignite.internal.processors.metric.impl.HistogramMetricImpl;
 import org.apache.ignite.internal.util.typedef.T3;
-import org.apache.ignite.plugin.AbstractTestPluginProvider;
-import org.apache.ignite.plugin.PluginContext;
 import org.apache.ignite.spi.metric.LongMetric;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
@@ -61,7 +52,6 @@ import org.junit.runners.Parameterized;
 import static java.util.Arrays.stream;
 import static org.apache.ignite.cache.CacheAtomicityMode.ATOMIC;
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
-import static org.apache.ignite.cluster.ClusterState.ACTIVE;
 import static org.apache.ignite.internal.processors.metric.impl.MetricUtils.cacheMetricsRegistryName;
 
 /**
@@ -83,12 +73,18 @@ public class CacheMetricsConflictOperationsTest extends GridCommonAbstractTest {
     public CacheAtomicityMode atomicityMode;
 
     /** */
+    @Parameterized.Parameter(1)
+    public boolean async;
+
+    /** */
     @Parameterized.Parameters(name = "atomicityMode={0}")
     public static Collection<?> parameters() {
         List<Object[]> params = new ArrayList<>();
 
-        for (CacheAtomicityMode atomicityMode : Arrays.asList(ATOMIC, TRANSACTIONAL))
-            params.add(new Object[] {atomicityMode});
+        for (CacheAtomicityMode atomicityMode : Arrays.asList(ATOMIC, TRANSACTIONAL)) {
+            params.add(new Object[] {atomicityMode, true});
+            params.add(new Object[] {atomicityMode, false});
+        }
 
         return params;
     }
@@ -104,26 +100,6 @@ public class CacheMetricsConflictOperationsTest extends GridCommonAbstractTest {
                 .setAtomicityMode(atomicityMode)
         );
 
-        cfg.setPluginProviders(new AbstractTestPluginProvider() {
-            /** {@inheritDoc} */
-            @Override public String name() {
-                return "ConflictResolverProvider";
-            }
-
-            /** {@inheritDoc} */
-            @Override public <T> T createComponent(PluginContext ctx, Class<T> cls) {
-                if (cls != CacheConflictResolutionManager.class)
-                    return null;
-
-                return (T)new AlwaysNewResolutionManager<>();
-            }
-        });
-
-        cfg.setClientConnectorConfiguration(
-            new ClientConnectorConfiguration()
-                .setPort(CLIENT_CONNECTOR_PORT)
-        );
-
         return cfg;
     }
 
@@ -137,18 +113,12 @@ public class CacheMetricsConflictOperationsTest extends GridCommonAbstractTest {
     /** Checks metrics with thick client. */
     @Test
     public void testCacheMetricsConflictOperationsThick() throws Exception {
-        try (IgniteEx ign = startGrid(0); IgniteEx cli = startClientGrid()) {
-            ign.cluster().state(ACTIVE);
+        startGrid(0);
 
-            ign.cache(DEFAULT_CACHE_NAME).enableStatistics(true);
-            cli.cache(DEFAULT_CACHE_NAME).enableStatistics(true);
+        try (IgniteEx cli = startClientGrid()) {
+            IgniteInternalCache<Integer, Integer> cachex = cli.cachex(DEFAULT_CACHE_NAME);
 
-            IgniteInternalCache<Integer, Integer> cachex = cli.cachex(DEFAULT_CACHE_NAME).keepBinary();
-
-            updateCacheFromThick(cachex, KEYS_CNT, false);
-            checkMetrics(cli);
-
-            updateCacheFromThick(cachex, KEYS_CNT, true);
+            updateCacheFromThick(cachex, KEYS_CNT);
             checkMetrics(cli);
         }
     }
@@ -157,16 +127,9 @@ public class CacheMetricsConflictOperationsTest extends GridCommonAbstractTest {
     @Test
     public void testCacheMetricsConflictOperationsThin() throws Exception {
         try (IgniteEx ign = startGrid(0); IgniteClient cli = Ignition.startClient(getClientConfiguration())) {
-            ign.cluster().state(ACTIVE);
+            TcpClientCache<Object, Object> cache = (TcpClientCache<Object, Object>)cli.cache(DEFAULT_CACHE_NAME);
 
-            ign.cache(DEFAULT_CACHE_NAME).enableStatistics(true);
-
-            TcpClientCache<Object, Object> cache = (TcpClientCache<Object, Object>)cli.cache(DEFAULT_CACHE_NAME).withKeepBinary();
-
-            updateCacheFromThin(cache, KEYS_CNT, false);
-            checkMetrics(ign);
-
-            updateCacheFromThin(cache, KEYS_CNT, true);
+            updateCacheFromThin(cache, KEYS_CNT);
             checkMetrics(ign);
         }
     }
@@ -175,9 +138,8 @@ public class CacheMetricsConflictOperationsTest extends GridCommonAbstractTest {
      * operation on a given cache.
      * @param cachex - {@link IgniteInternalCache} cache instance.
      * @param cnt - number of entities to put/remove
-     * @param async - {@link Boolean} flag, indicating asynchonous operations proccessing.
      * */
-    private void updateCacheFromThick(IgniteInternalCache<Integer, Integer> cachex, int cnt, boolean async) throws IgniteCheckedException {
+    private void updateCacheFromThick(IgniteInternalCache<Integer, Integer> cachex, int cnt) throws IgniteCheckedException {
         Map<KeyCacheObject, GridCacheDrInfo> drMapPuts = new HashMap<>();
         Map<KeyCacheObject, GridCacheVersion> drMapRemoves = new HashMap<>();
 
@@ -208,9 +170,8 @@ public class CacheMetricsConflictOperationsTest extends GridCommonAbstractTest {
     /** Performs {@link TcpClientCache#putAllConflict(Map)} and {@link TcpClientCache#removeAllConflict(Map)} operation on a given cache.
      * @param cache - {@link TcpClientCache} cache instance.
      * @param cnt - number of entities to put/remove
-     * @param async - {@link Boolean} flag, indicating asynchonous operations proccessing.
      * */
-    private void updateCacheFromThin(TcpClientCache<Object, Object> cache, int cnt, boolean async) {
+    private void updateCacheFromThin(TcpClientCache<Object, Object> cache, int cnt) {
         Map<Object, T3<?, GridCacheVersion, Long>> drMapPuts = new HashMap<>();
         Map<Object, GridCacheVersion> drMapRemoves = new HashMap<>();
 
@@ -244,43 +205,13 @@ public class CacheMetricsConflictOperationsTest extends GridCommonAbstractTest {
         assertTrue(mreg.<LongMetric>findMetric("PutAllConflictTimeTotal").value() > 0);
         assertTrue(mreg.<LongMetric>findMetric("RemoveAllConflictTimeTotal").value() > 0);
 
-        assertTrue(stream(mreg.<HistogramMetricImpl>findMetric("RemoveAllConflictTime").value()).sum() > 0);
         assertTrue(stream(mreg.<HistogramMetricImpl>findMetric("PutAllConflictTime").value()).sum() > 0);
+        assertTrue(stream(mreg.<HistogramMetricImpl>findMetric("RemoveAllConflictTime").value()).sum() > 0);
     }
 
     /** */
     private ClientConfiguration getClientConfiguration() {
         return new ClientConfiguration()
             .setAddresses("127.0.0.1:" + CLIENT_CONNECTOR_PORT);
-    }
-
-    /** */
-    private static class AlwaysNewResolutionManager<K, V>
-        extends GridCacheManagerAdapter<K, V> implements CacheConflictResolutionManager<K, V> {
-        /** */
-        private final CacheVersionConflictResolver rslv;
-
-        /** */
-        AlwaysNewResolutionManager() {
-            rslv = new CacheVersionConflictResolver() {
-                @Override public <K1, V1> GridCacheVersionConflictContext<K1, V1> resolve(
-                    CacheObjectValueContext ctx,
-                    GridCacheVersionedEntryEx<K1, V1> oldEntry,
-                    GridCacheVersionedEntryEx<K1, V1> newEntry,
-                    boolean atomicVerComparator
-                ) {
-                    GridCacheVersionConflictContext<K1, V1> res = new GridCacheVersionConflictContext<>(ctx, oldEntry, newEntry);
-
-                    res.useNew();
-
-                    return res;
-                }
-            };
-        }
-
-        /** {@inheritDoc} */
-        @Override public CacheVersionConflictResolver conflictResolver() {
-            return rslv;
-        }
     }
 }
