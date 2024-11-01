@@ -23,8 +23,8 @@ import java.util.function.Consumer;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCluster;
 import org.apache.ignite.IgniteException;
-import org.apache.ignite.client.ClientAuthorizationException;
 import org.apache.ignite.client.ClientCluster;
+import org.apache.ignite.client.ClientException;
 import org.apache.ignite.client.Config;
 import org.apache.ignite.client.IgniteClient;
 import org.apache.ignite.cluster.ClusterState;
@@ -224,15 +224,15 @@ public class ClusterStatePermissionTest extends AbstractSecurityTest {
      * Ensures that a proper error occurs on cluster change state action.
      */
     private void ensureThrows(Consumer<ClusterState> action, ClusterState stateTo) {
-        Class<? extends Throwable> cause = SecurityException.class;
         String errMsg = "Authorization failed [perm=" + ADMIN_CLUSTER_STATE;
+        Class<? extends Throwable> cause;
 
-        if (Initiator.THIN_CLIENT == initiator) {
-            cause = ClientAuthorizationException.class;
-            errMsg = "User is not authorized to perform this operation";
-        }
+        if (Initiator.THIN_CLIENT == initiator)
+            cause = ClientException.class;
         else if (Initiator.REMOTE_CONTROL == initiator)
             cause = GridClientException.class;
+        else
+            cause = SecurityException.class;
 
         assertThrowsAnyCause(
             null,
