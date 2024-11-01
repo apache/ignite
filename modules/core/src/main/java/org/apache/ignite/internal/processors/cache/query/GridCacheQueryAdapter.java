@@ -712,17 +712,17 @@ public class GridCacheQueryAdapter<T> implements CacheQuery<T> {
                 long start = System.nanoTime();
 
                 while (txData.hasNext()) {
-                    final Object e0 = txData.next();
+                    final Object e = txData.next();
                     final KeyCacheObject key;
                     final CacheObject val;
 
-                    if (e0 instanceof IgniteTxEntry) {
-                        key = ((IgniteTxEntry)e0).key();
-                        val = ((IgniteTxEntry)e0).value();
+                    if (e instanceof IgniteTxEntry) {
+                        key = ((IgniteTxEntry)e).key();
+                        val = ((IgniteTxEntry)e).value();
                     }
                     else {
-                        key = ((IgniteBiTuple<KeyCacheObject, CacheObject>)e0).get1();
-                        val = ((IgniteBiTuple<KeyCacheObject, CacheObject>)e0).get2();
+                        key = ((IgniteBiTuple<KeyCacheObject, CacheObject>)e).get1();
+                        val = ((IgniteBiTuple<KeyCacheObject, CacheObject>)e).get2();
                     }
 
                     R next = filterAndTransform(key, val, start);

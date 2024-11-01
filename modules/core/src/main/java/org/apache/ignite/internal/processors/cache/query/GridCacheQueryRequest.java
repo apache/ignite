@@ -460,9 +460,8 @@ public class GridCacheQueryRequest extends GridCacheIdMessage implements GridCac
         }
 
         if (!F.isEmpty(skipKeys)) {
-            for (KeyCacheObject k : skipKeys) {
+            for (KeyCacheObject k : skipKeys)
                 k.prepareMarshal(cctx.cacheObjectContext());
-            }
         }
     }
 

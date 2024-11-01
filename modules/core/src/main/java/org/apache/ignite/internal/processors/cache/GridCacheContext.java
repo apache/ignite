@@ -2356,9 +2356,8 @@ public class GridCacheContext<K, V> implements Externalizable {
     /**
      * @param part Partition.
      * @return First, set of object changed in transaction, second, list of transaction data in required format.
-     * @param <R> Required type.
      */
-    public <R> IgniteBiTuple<Set<KeyCacheObject>, List<Object>> transactionChanges(Integer part) {
+    public IgniteBiTuple<Set<KeyCacheObject>, List<Object>> transactionChanges(Integer part) {
         if (!U.isTxAwareQueriesEnabled(ctx))
             return F.t(Collections.emptySet(), Collections.emptyList());
 

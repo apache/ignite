@@ -271,5 +271,4 @@ public interface CacheQuery<T> {
      * @return Scan query iterator.
      */
     public GridCloseableIterator executeScanQuery(@Nullable List<Object> newAndUpdatedEntries) throws IgniteCheckedException;
-
 }

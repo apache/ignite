@@ -68,6 +68,7 @@ public class KeyFilteringQueryCursor<T> implements QueryCursor<T> {
     /** {@inheritDoc} */
     @NotNull
     @Override public Iterator<T> iterator() {
+        //TODO: implement me.
         return null;
     }
 }

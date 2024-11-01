@@ -773,7 +773,7 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
             false,
             true,
             qry.isDataPageScanEnabled(),
-            null); // TODO: add tx info?
+            null);
 
         return scanQueryLocal(qry0, false);
     }
