@@ -679,9 +679,8 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
             return new GridFinishedFuture<Object>();
 
         final boolean statsEnabled = ctx.statisticsEnabled();
-        final boolean performanceStatsEnabled = ctx.kernalContext().performanceStatistics().enabled();
 
-        long start = statsEnabled || performanceStatsEnabled ? System.nanoTime() : 0L;
+        long start = statsEnabled ? System.nanoTime() : 0L;
 
         ctx.dr().onReceiveCacheEntriesReceived(conflictMap.size());
 
@@ -699,9 +698,6 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
 
         if (statsEnabled)
             fut.listen(new UpdatePutAllConflictTimeStatClosure<>(metrics0(), start));
-
-        if (performanceStatsEnabled)
-            fut.listen(() -> writeStatistics(OperationType.CACHE_PUT_ALL, start));
 
         return fut;
     }
@@ -750,9 +746,8 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
             return new GridFinishedFuture<Object>();
 
         final boolean statsEnabled = ctx.statisticsEnabled();
-        final boolean performanceStatsEnabled = ctx.kernalContext().performanceStatistics().enabled();
 
-        final long start = statsEnabled || performanceStatsEnabled ? System.nanoTime() : 0L;
+        final long start = statsEnabled ? System.nanoTime() : 0L;
 
         ctx.dr().onReceiveCacheEntriesReceived(conflictMap.size());
 
@@ -760,9 +755,6 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
 
         if (statsEnabled)
             fut.listen(new UpdateRemoveAllConflictTimeStatClosure<>(metrics0(), start));
-
-        if (performanceStatsEnabled)
-            fut.listen(() -> writeStatistics(OperationType.CACHE_REMOVE_ALL, start));
 
         return fut;
     }
