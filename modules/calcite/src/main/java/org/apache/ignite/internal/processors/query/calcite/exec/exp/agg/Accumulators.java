@@ -265,9 +265,9 @@ public class Accumulators {
 
         /** */
         <T> T get(int idx, Row row) {
-            assert idx < argList().size() : "idx=" + idx + "; arglist=" + argList();
+            assert idx < arguments().size() : "idx=" + idx + "; arguments=" + arguments();
 
-            return (T)hnd.get(argList().get(idx), row);
+            return (T)hnd.get(arguments().get(idx), row);
         }
 
         /** */
@@ -276,7 +276,7 @@ public class Accumulators {
         }
 
         /** */
-        protected List<Integer> argList() {
+        protected List<Integer> arguments() {
             return aggCall.getArgList();
         }
 
@@ -507,7 +507,7 @@ public class Accumulators {
 
         /** {@inheritDoc} */
         @Override public void add(Row row) {
-            int argsCnt = argList().size();
+            int argsCnt = arguments().size();
 
             assert argsCnt == 0 || argsCnt == 1;
 
@@ -1203,7 +1203,7 @@ public class Accumulators {
         public ListAggAccumulator(AggregateCall aggCall, RowHandler<Row> hnd) {
             super(aggCall, hnd);
 
-            isDfltSep = argList().size() <= 1;
+            isDfltSep = arguments().size() <= 1;
         }
 
         /** {@inheritDoc} */
@@ -1337,7 +1337,7 @@ public class Accumulators {
         private final Map<Object, Row> rows = new HashMap<>();
 
         /** */
-        protected final List<Integer> argList;
+        private final List<Integer> args;
 
         /** */
         private DistinctAccumulator(AggregateCall aggCall, RowHandler<Row> hnd, Supplier<Accumulator<Row>> accSup) {
@@ -1345,12 +1345,12 @@ public class Accumulators {
 
             acc = accSup.get();
 
-            argList = super.argList().isEmpty() ? List.of(0) : super.argList();
+            args = super.arguments().isEmpty() ? List.of(0) : super.arguments();
         }
 
         /** */
-        @Override protected List<Integer> argList() {
-            return argList;
+        @Override protected List<Integer> arguments() {
+            return args;
         }
 
         /** {@inheritDoc} */
