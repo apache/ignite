@@ -100,9 +100,27 @@ public class IgniteServiceDeploymentFailureTest extends GridCommonAbstractTest {
                 .setName("TestDeploymentService")
                 .setService(new InitThrowingService());
 
+
         assertThrowsWithCause(() -> cli.services().deploy(svcCfg), ServiceDeploymentException.class);
 
         assertTrue(cli.services().serviceDescriptors().isEmpty());
+    }
+
+    /* @throws Exception If failed. */
+    @Test
+    public void testClearServerServiceDescriptors() throws Exception {
+        IgniteEx srv = startGrid(getConfiguration("server"));
+        IgniteEx cli = startClientGrid(1);
+
+        ServiceConfiguration svcCfg = new ServiceConfiguration()
+                .setName("TestDeploymentService")
+                .setService(new InitThrowingService())
+                .setTotalCount(1);
+
+
+        assertThrowsWithCause(() -> cli.services().deploy(svcCfg), ServiceDeploymentException.class);
+
+        assertTrue(srv.services().serviceDescriptors().isEmpty());
     }
 }
 

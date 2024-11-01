@@ -823,8 +823,12 @@ public class IgniteServiceProcessor extends GridProcessorAdapter implements Igni
                         log.debug("Services have been sent to deploy, req=" + msg);
                 }
                 catch (IgniteException | IgniteCheckedException e) {
-                    for (IgniteUuid id : res.servicesToRollback())
+                    for (IgniteUuid id : res.servicesToRollback()) {
                         depFuts.remove(id).onDone(e);
+                    }
+
+                    registeredServices.clear();
+                    registeredServicesByName.clear();
 
                     res.onDone(new IgniteCheckedException(
                         new ServiceDeploymentException("Failed to deploy provided services.", e, cfgs)));
