@@ -46,6 +46,7 @@ import org.apache.ignite.internal.util.typedef.internal.SB;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiPredicate;
 import org.apache.ignite.lang.IgniteFuture;
+import org.apache.ignite.marshaller.MarshallerContext;
 import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.plugin.extensions.communication.MessageFactory;
 import org.apache.ignite.plugin.extensions.communication.MessageFormatter;
@@ -989,6 +990,11 @@ public abstract class IgniteSpiAdapter implements IgniteSpi {
         /** {@inheritDoc} */
         @Override public void addMetricRegistryCreationListener(Consumer<ReadOnlyMetricRegistry> lsnr) {
             // No-op.
+        }
+
+        /** {@inheritDoc} */
+        @Override public MarshallerContext marshallerContext() {
+            return null;
         }
     }
 }

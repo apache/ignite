@@ -29,6 +29,7 @@ import org.apache.ignite.events.Event;
 import org.apache.ignite.internal.managers.communication.GridMessageListener;
 import org.apache.ignite.internal.managers.eventstorage.GridLocalEventListener;
 import org.apache.ignite.lang.IgniteBiPredicate;
+import org.apache.ignite.marshaller.MarshallerContext;
 import org.apache.ignite.plugin.extensions.communication.MessageFactory;
 import org.apache.ignite.plugin.extensions.communication.MessageFormatter;
 import org.apache.ignite.plugin.security.SecuritySubject;
@@ -398,4 +399,7 @@ public interface IgniteSpiContext {
      * @param lsnr Listener.
      */
     public void addMetricRegistryCreationListener(Consumer<ReadOnlyMetricRegistry> lsnr);
+
+    /** */
+    public MarshallerContext marshallerContext();
 }

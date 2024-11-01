@@ -203,7 +203,6 @@ import org.apache.ignite.lifecycle.LifecycleBean;
 import org.apache.ignite.lifecycle.LifecycleEventType;
 import org.apache.ignite.marshaller.MarshallerExclusions;
 import org.apache.ignite.marshaller.MarshallerUtils;
-import org.apache.ignite.marshaller.jdk.JdkMarshaller;
 import org.apache.ignite.metric.IgniteMetrics;
 import org.apache.ignite.metric.MetricRegistry;
 import org.apache.ignite.plugin.IgnitePlugin;
@@ -1750,7 +1749,7 @@ public class IgniteKernal implements IgniteEx, Externalizable {
         }
 
         // Save data storage configuration.
-        add(ATTR_DATA_STORAGE_CONFIG, new JdkMarshaller().marshal(cfg.getDataStorageConfiguration()));
+        add(ATTR_DATA_STORAGE_CONFIG, ctx.marshallerContext().jdkMarshaller().marshal(cfg.getDataStorageConfiguration()));
     }
 
     /**

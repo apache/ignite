@@ -108,6 +108,9 @@ public class CheckpointMarkersStorage {
     /** Guards checkpoint snapshot operation, so that it couldn't run in parallel. */
     private final AtomicBoolean checkpointSnapshotInProgress = new AtomicBoolean(false);
 
+    /** */
+    private final JdkMarshaller marsh;
+
     /**
      * @param igniteInstanceName Ignite instance name.
      * @param logger Ignite logger.
@@ -125,7 +128,8 @@ public class CheckpointMarkersStorage {
         FileIOFactory factory,
         String absoluteWorkDir,
         CheckpointReadWriteLock lock,
-        Executor checkpointMapSnapshotExecutor
+        Executor checkpointMapSnapshotExecutor,
+        JdkMarshaller marsh
     ) throws IgniteCheckedException {
         this.log = logger.apply(getClass());
         cpHistory = history;
@@ -143,6 +147,7 @@ public class CheckpointMarkersStorage {
         tmpWriteBuf.order(ByteOrder.nativeOrder());
 
         this.checkpointMapSnapshotExecutor = checkpointMapSnapshotExecutor;
+        this.marsh = marsh;
     }
 
     /**
@@ -200,7 +205,7 @@ public class CheckpointMarkersStorage {
             try {
                 byte[] bytes = Files.readAllBytes(snapshotFile.toPath());
 
-                snap = JdkMarshaller.DEFAULT.unmarshal(bytes, null);
+                snap = marsh.unmarshal(bytes, null);
             }
             catch (IOException | IgniteCheckedException e) {
                 log.error("Failed to unmarshal earliest checkpoint map snapshot", e);

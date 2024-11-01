@@ -33,6 +33,7 @@ import java.util.List;
 import java.util.Set;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
+import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.typedef.F;
@@ -41,7 +42,7 @@ import org.apache.ignite.internal.util.typedef.internal.LT;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.marshaller.Marshaller;
-import org.apache.ignite.marshaller.jdk.JdkMarshaller;
+import org.apache.ignite.resources.IgniteInstanceResource;
 import org.apache.ignite.resources.LoggerResource;
 import org.apache.ignite.spi.IgniteSpiConfiguration;
 import org.apache.ignite.spi.IgniteSpiContext;
@@ -95,7 +96,11 @@ public class TcpDiscoveryMulticastIpFinder extends TcpDiscoveryVmIpFinder {
     private static final byte[] MSG_ADDR_REQ_DATA = U.IGNITE_HEADER;
 
     /** */
-    private static final Marshaller marsh = new JdkMarshaller();
+    private Marshaller marsh;
+
+    /** */
+    @IgniteInstanceResource
+    private IgniteEx ignite;
 
     /** Grid logger. */
     @LoggerResource
@@ -146,6 +151,12 @@ public class TcpDiscoveryMulticastIpFinder extends TcpDiscoveryVmIpFinder {
      */
     public TcpDiscoveryMulticastIpFinder() {
         setShared(true);
+    }
+
+    /** */
+    @IgniteInstanceResource
+    private void setIgnite(IgniteEx ignite) {
+        marsh = ignite.context().marshallerContext().jdkMarshaller() ;
     }
 
     /**
@@ -622,7 +633,7 @@ public class TcpDiscoveryMulticastIpFinder extends TcpDiscoveryVmIpFinder {
                             AddressResponse addrRes;
 
                             try {
-                                addrRes = new AddressResponse(data);
+                                addrRes = AddressResponse.of(marsh, data);
                             }
                             catch (IgniteCheckedException e) {
                                 LT.error(log, e, "Failed to deserialize multicast response.");
@@ -721,29 +732,32 @@ public class TcpDiscoveryMulticastIpFinder extends TcpDiscoveryVmIpFinder {
          * @param addrs Addresses discovery SPI binds to.
          * @throws IgniteCheckedException If marshalling failed.
          */
-        private AddressResponse(Collection<InetSocketAddress> addrs) throws IgniteCheckedException {
+        private AddressResponse(Collection<InetSocketAddress> addrs, byte[] data) throws IgniteCheckedException {
             this.addrs = addrs;
+            this.data = data;
+        }
 
+        /** */
+        private static AddressResponse of(Marshaller marsh, Collection<InetSocketAddress> addrs) throws IgniteCheckedException {
             byte[] addrsData = U.marshal(marsh, addrs);
-            data = new byte[U.IGNITE_HEADER.length + addrsData.length];
+            byte[] data = new byte[U.IGNITE_HEADER.length + addrsData.length];
 
             if (data.length > MAX_DATA_LENGTH)
                 throw new IgniteCheckedException("Too long data packet [size=" + data.length + ", max=" + MAX_DATA_LENGTH + "]");
 
             System.arraycopy(U.IGNITE_HEADER, 0, data, 0, U.IGNITE_HEADER.length);
             System.arraycopy(addrsData, 0, data, 4, addrsData.length);
+
+            return new AddressResponse(addrs, data);
         }
 
-        /**
-         * @param data Message data.
-         * @throws IgniteCheckedException If unmarshalling failed.
-         */
-        private AddressResponse(byte[] data) throws IgniteCheckedException {
+        /** */
+        private static AddressResponse of(Marshaller marsh, byte[] data) throws IgniteCheckedException {
             assert U.bytesEqual(U.IGNITE_HEADER, 0, data, 0, U.IGNITE_HEADER.length);
 
-            this.data = data;
+            Collection<InetSocketAddress> addrs = U.unmarshal(marsh, Arrays.copyOfRange(data, U.IGNITE_HEADER.length, data.length), null);
 
-            addrs = U.unmarshal(marsh, Arrays.copyOfRange(data, U.IGNITE_HEADER.length, data.length), null);
+            return new AddressResponse(addrs, data);
         }
 
         /**
@@ -861,7 +875,7 @@ public class TcpDiscoveryMulticastIpFinder extends TcpDiscoveryVmIpFinder {
             AddressResponse res;
 
             try {
-                res = new AddressResponse(addrs);
+                res = AddressResponse.of(marsh, addrs);
             }
             catch (IgniteCheckedException e) {
                 U.error(log, "Failed to prepare multicast message.", e);

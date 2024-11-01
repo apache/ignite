@@ -47,6 +47,7 @@ import org.apache.ignite.internal.util.lang.IgniteThrowableBiPredicate;
 import org.apache.ignite.internal.util.lang.IgniteThrowableFunction;
 import org.apache.ignite.internal.worker.WorkersRegistry;
 import org.apache.ignite.lang.IgniteInClosure;
+import org.apache.ignite.marshaller.jdk.JdkMarshaller;
 import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_CHECKPOINT_READ_LOCK_TIMEOUT;
@@ -126,7 +127,8 @@ public class CheckpointManager {
         FailureProcessor failureProcessor,
         GridCacheProcessor cacheProcessor,
         Supplier<Integer> cpFreqDeviation,
-        Executor checkpointMapSnapshotExecutor
+        Executor checkpointMapSnapshotExecutor,
+        JdkMarshaller marshaller
     ) throws IgniteCheckedException {
         CheckpointHistory cpHistory = new CheckpointHistory(
             persistenceCfg,
@@ -146,7 +148,8 @@ public class CheckpointManager {
             ioFactory,
             pageStoreManager.workDir().getAbsolutePath(),
             lock,
-            checkpointMapSnapshotExecutor
+            checkpointMapSnapshotExecutor,
+            marshaller
         );
 
         checkpointWorkflow = new CheckpointWorkflow(

@@ -58,7 +58,7 @@ import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.A;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.U;
-import org.apache.ignite.marshaller.MarshallerUtils;
+import org.apache.ignite.marshaller.Marshaller;
 import org.apache.ignite.marshaller.jdk.JdkMarshaller;
 import org.apache.ignite.spi.encryption.EncryptionSpi;
 import org.jetbrains.annotations.Nullable;
@@ -144,9 +144,9 @@ public class Dump implements AutoCloseable {
 
         this.dumpDir = dumpDir;
         this.consistentId = consistentId == null ? null : U.maskForFileName(consistentId);
-        this.metadata = metadata(dumpDir, this.consistentId);
-        this.keepBinary = keepBinary;
         this.cctx = standaloneKernalContext(dumpDir, log);
+        this.metadata = metadata(dumpDir, this.consistentId, cctx.marshallerContext().jdkMarshaller());
+        this.keepBinary = keepBinary;
         this.raw = raw;
         this.encSpi = encSpi;
         this.comprParts = metadata.get(0).compressPartitions();
@@ -204,9 +204,7 @@ public class Dump implements AutoCloseable {
     }
 
     /** @return List of snapshot metadata saved in {@link #dumpDir}. */
-    private static List<SnapshotMetadata> metadata(File dumpDir, @Nullable String consistentId) {
-        JdkMarshaller marsh = MarshallerUtils.jdkMarshaller("fake-node");
-
+    private static List<SnapshotMetadata> metadata(File dumpDir, @Nullable String consistentId, Marshaller marsh) {
         ClassLoader clsLdr = U.resolveClassLoader(new IgniteConfiguration());
 
         File[] files = dumpDir.listFiles(f ->
@@ -232,7 +230,7 @@ public class Dump implements AutoCloseable {
      * @return List of cache configs saved in dump for group.
      */
     public List<StoredCacheData> configs(String node, int grp) {
-        JdkMarshaller marsh = MarshallerUtils.jdkMarshaller(cctx.igniteInstanceName());
+        JdkMarshaller marsh = cctx.marshallerContext().jdkMarshaller();
 
         return Arrays.stream(FilePageStoreManager.cacheDataFiles(dumpGroupDirectory(node, grp))).map(f -> {
             try {
