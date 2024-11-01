@@ -198,14 +198,14 @@ public class CdcMain implements Runnable {
 
     /** */
     public static final String EVENTS_CONSUMPTION_TIME_DESC =
-        "Time for which this CDC client processed the WAL segment events, in nanoseconds.";
+        "Time of WAL segment events processing by a CDC consumer, in nanoseconds.";
 
     /** */
     public static final String EVENTS_CONSUMPTION_TIME_TOTAL = "EventsConsumptionTimeTotal";
 
     /** */
     public static final String EVENTS_CONSUMPTION_TIME_TOTAL_DESC =
-        "The total time for which this CDC client processed the WAL segments events, in nanoseconds.";
+        "Total time of events processing by a CDC consumer, in nanoseconds.";
 
     /** Ignite configuration. */
     private final IgniteConfiguration igniteCfg;
@@ -228,10 +228,10 @@ public class CdcMain implements Runnable {
     /** Time of last segment consumption. */
     private AtomicLongMetric lastSegmentConsumptionTs;
 
-    /** Metric shows duration of the last WAL segment events consumption. */
+    /** Time of WAL segment events processing by a CDC consumer, in nanoseconds. */
     private HistogramMetricImpl eventsConsumptionTime;
 
-    /** Metric shows the total duration of WAL segment events consumption. */
+    /** Total time of events processing by a CDC consumer, in nanoseconds. */
     private AtomicLongMetric eventsConsumptionTimeTotal;
 
     /** Metadata update time. */
