@@ -1345,7 +1345,7 @@ public class Accumulators {
 
             acc = accSup.get();
 
-            this.argList = super.argList().isEmpty() ? List.of(0) : super.argList();
+            argList = super.argList().isEmpty() ? List.of(0) : super.argList();
         }
 
         /** */

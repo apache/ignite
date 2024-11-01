@@ -1,7 +1,6 @@
 # name: test/sql/subquery/any_all/test_correlated_any_all.test
 # description: Test correlated ANY/ALL subqueries
 # group: [any_all]
-# Ignore https://issues.apache.org/jira/browse/IGNITE-15580
 
 statement ok
 PRAGMA enable_verification
