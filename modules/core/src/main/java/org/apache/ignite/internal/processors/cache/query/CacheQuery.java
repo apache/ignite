@@ -756,14 +756,11 @@ public class CacheQuery<T> {
 
         final GridCacheQueryManager qryMgr = cctx.queries();
 
-        boolean loc = nodes.size() == 1 && F.first(nodes).id().equals(cctx.localNodeId());
-
-        if (loc)
-            return qryMgr.scanQueryLocal(this, true);
-        else if (part != null)
-            return new ScanQueryFallbackClosableIterator(part, this, qryMgr, cctx);
-        else
-            return qryMgr.scanQueryDistributed(this, nodes);
+        return (nodes.size() == 1 && F.first(nodes).id().equals(cctx.localNodeId()))
+            ? qryMgr.scanQueryLocal(this, true)
+            : part != null
+                ? new ScanQueryFallbackClosableIterator(part, this, qryMgr, cctx)
+                : qryMgr.scanQueryDistributed(this, nodes);
     }
 
     /** @return Nodes to execute on. */
@@ -785,7 +782,6 @@ public class CacheQuery<T> {
                 top.readLock();
 
                 try {
-
                     Collection<ClusterNode> affNodes = nodes(cctx, null, null);
 
                     List<ClusterNode> nodes = new ArrayList<>(affNodes);

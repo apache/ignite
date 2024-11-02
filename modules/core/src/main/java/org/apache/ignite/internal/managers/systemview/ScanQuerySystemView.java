@@ -28,7 +28,7 @@ import org.apache.ignite.IgniteException;
 import org.apache.ignite.internal.managers.systemview.walker.ScanQueryViewWalker;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.query.GridCacheQueryManager;
-import org.apache.ignite.internal.processors.cache.query.GridCacheQueryManager.ScanQueryIterator;
+import org.apache.ignite.internal.processors.cache.query.ScanQueryIterator;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.spi.IgniteSpiCloseableIterator;
