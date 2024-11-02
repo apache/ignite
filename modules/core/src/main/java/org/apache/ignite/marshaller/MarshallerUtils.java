@@ -120,7 +120,10 @@ public class MarshallerUtils {
         return new IgniteMarshallerClassFilter(classWhiteList(clsLdr), classBlackList(clsLdr));
     }
 
-    /** */
+    /**
+     * @param clsFilter Ignite marshaller class filter to which class validation will be delegated.
+     * @throws IgniteCheckedException if autoconfiguration failed.
+     */
     public static void autoconfigureObjectInputFilter(IgniteMarshallerClassFilter clsFilter) throws IgniteCheckedException {
         assert clsFilter != null;
 
@@ -136,9 +139,9 @@ public class MarshallerUtils {
         }
 
         if (curFilter instanceof IgniteObjectInputFilter) {
-            IgniteObjectInputFilter igniteFilter = (IgniteObjectInputFilter)curFilter;
+            IgniteObjectInputFilter curIgniteFilter = (IgniteObjectInputFilter)curFilter;
 
-            if (Objects.equals(igniteFilter.classFilter(), clsFilter))
+            if (Objects.equals(curIgniteFilter.classFilter(), clsFilter))
                 return;
 
             throw new IgniteCheckedException("Failed to autoconfigure Ignite Object Input Filter for the current JVM" +

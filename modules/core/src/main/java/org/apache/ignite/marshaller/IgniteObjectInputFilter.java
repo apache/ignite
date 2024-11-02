@@ -24,7 +24,7 @@ public class IgniteObjectInputFilter implements ObjectInputFilter {
     /** */
     private final IgniteMarshallerClassFilter clsFilter;
 
-    /** */
+    /** @param clsFilter Ignite marshaller class filter to which class validation will be delegated. */
     public IgniteObjectInputFilter(IgniteMarshallerClassFilter clsFilter) {
         this.clsFilter = clsFilter;
     }
@@ -39,7 +39,7 @@ public class IgniteObjectInputFilter implements ObjectInputFilter {
         return clsFilter.apply(cls.getName()) ? Status.ALLOWED : Status.REJECTED;
     }
 
-    /** */
+    /** @return Ignite marshaller class filter. */
     public IgniteMarshallerClassFilter classFilter() {
         return clsFilter;
     }

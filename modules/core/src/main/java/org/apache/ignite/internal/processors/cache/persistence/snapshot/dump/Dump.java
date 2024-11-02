@@ -58,7 +58,6 @@ import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.A;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.U;
-import org.apache.ignite.marshaller.Marshaller;
 import org.apache.ignite.marshaller.jdk.JdkMarshaller;
 import org.apache.ignite.spi.encryption.EncryptionSpi;
 import org.jetbrains.annotations.Nullable;
@@ -145,7 +144,7 @@ public class Dump implements AutoCloseable {
         this.dumpDir = dumpDir;
         this.consistentId = consistentId == null ? null : U.maskForFileName(consistentId);
         this.cctx = standaloneKernalContext(dumpDir, log);
-        this.metadata = metadata(dumpDir, this.consistentId, cctx.marshallerContext().jdkMarshaller());
+        this.metadata = metadata(dumpDir, this.consistentId);
         this.keepBinary = keepBinary;
         this.raw = raw;
         this.encSpi = encSpi;
@@ -204,7 +203,7 @@ public class Dump implements AutoCloseable {
     }
 
     /** @return List of snapshot metadata saved in {@link #dumpDir}. */
-    private static List<SnapshotMetadata> metadata(File dumpDir, @Nullable String consistentId, Marshaller marsh) {
+    private List<SnapshotMetadata> metadata(File dumpDir, @Nullable String consistentId) {
         ClassLoader clsLdr = U.resolveClassLoader(new IgniteConfiguration());
 
         File[] files = dumpDir.listFiles(f ->
@@ -216,7 +215,7 @@ public class Dump implements AutoCloseable {
 
         return Arrays.stream(files).map(meta -> {
             try (InputStream in = new BufferedInputStream(Files.newInputStream(meta.toPath()))) {
-                return marsh.<SnapshotMetadata>unmarshal(in, clsLdr);
+                return cctx.marshallerContext().jdkMarshaller().<SnapshotMetadata>unmarshal(in, clsLdr);
             }
             catch (IOException | IgniteCheckedException e) {
                 throw new IgniteException(e);

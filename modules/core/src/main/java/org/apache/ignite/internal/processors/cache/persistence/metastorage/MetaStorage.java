@@ -144,7 +144,7 @@ public class MetaStorage implements CheckpointListener, ReadWriteMetastorage {
     private SortedMap<String, byte[]> lastUpdates;
 
     /** */
-    private final Marshaller marshaller;
+    private final Marshaller marsh;
 
     /** Partition id. */
     private int partId;
@@ -163,7 +163,7 @@ public class MetaStorage implements CheckpointListener, ReadWriteMetastorage {
         this.dataRegion = dataRegion;
         this.readOnly = readOnly;
         log = cctx.logger(getClass());
-        marshaller = cctx.kernalContext().marshallerContext().jdkMarshaller();
+        marsh = cctx.kernalContext().marshallerContext().jdkMarshaller();
     }
 
     /** */
@@ -316,7 +316,7 @@ public class MetaStorage implements CheckpointListener, ReadWriteMetastorage {
         Serializable res = null;
 
         if (data != null)
-            res = marshaller.unmarshal(data, U.gridClassLoader());
+            res = marsh.unmarshal(data, U.gridClassLoader());
 
         return res;
     }
@@ -402,7 +402,7 @@ public class MetaStorage implements CheckpointListener, ReadWriteMetastorage {
     ) throws IgniteCheckedException {
         if (valBytes != TOMBSTONE) {
             if (unmarshal) {
-                Serializable val = marshaller.unmarshal(valBytes, U.gridClassLoader());
+                Serializable val = marsh.unmarshal(valBytes, U.gridClassLoader());
 
                 cb.accept(key, val);
             }
@@ -416,7 +416,7 @@ public class MetaStorage implements CheckpointListener, ReadWriteMetastorage {
         assert val != null;
 
         if (!readOnly)
-            writeRaw(key, marshaller.marshal(val));
+            writeRaw(key, marsh.marshal(val));
     }
 
     /** {@inheritDoc} */
@@ -719,7 +719,7 @@ public class MetaStorage implements CheckpointListener, ReadWriteMetastorage {
 
     /** */
     public Marshaller marshaller() {
-        return marshaller;
+        return marsh;
     }
 
     /**

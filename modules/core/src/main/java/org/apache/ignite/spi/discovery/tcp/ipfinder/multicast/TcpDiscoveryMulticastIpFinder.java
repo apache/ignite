@@ -98,10 +98,6 @@ public class TcpDiscoveryMulticastIpFinder extends TcpDiscoveryVmIpFinder {
     /** */
     private Marshaller marsh;
 
-    /** */
-    @IgniteInstanceResource
-    private IgniteEx ignite;
-
     /** Grid logger. */
     @LoggerResource
     private IgniteLogger log;
@@ -153,12 +149,6 @@ public class TcpDiscoveryMulticastIpFinder extends TcpDiscoveryVmIpFinder {
         setShared(true);
     }
 
-    /** */
-    @IgniteInstanceResource
-    private void setIgnite(IgniteEx ignite) {
-        marsh = ignite.context().marshallerContext().jdkMarshaller() ;
-    }
-
     /**
      * Sets IP address of multicast group.
      * <p>
@@ -172,6 +162,12 @@ public class TcpDiscoveryMulticastIpFinder extends TcpDiscoveryVmIpFinder {
         this.mcastGrp = mcastGrp;
 
         return this;
+    }
+
+    /** @param ignite Ignite instance. */
+    @IgniteInstanceResource
+    public void setIgnite(IgniteEx ignite) {
+        marsh = ignite.context().marshallerContext().jdkMarshaller() ;
     }
 
     /**

@@ -29,7 +29,10 @@ public class IgniteMarshallerClassFilter implements IgnitePredicate<String> {
     /** */
     private final ClassSet blackList;
 
-    /** */
+    /**
+     * @param whiteList Class white list.
+     * @param blackList Class black list.
+     */
     public IgniteMarshallerClassFilter(ClassSet whiteList, ClassSet blackList) {
         this.whiteList = whiteList;
         this.blackList = blackList;
