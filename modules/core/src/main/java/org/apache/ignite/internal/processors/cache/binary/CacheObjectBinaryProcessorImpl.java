@@ -114,7 +114,6 @@ import org.apache.ignite.lang.IgniteClosure;
 import org.apache.ignite.lang.IgniteFuture;
 import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.marshaller.Marshaller;
-import org.apache.ignite.marshaller.MarshallerUtils;
 import org.apache.ignite.spi.IgniteNodeValidationResult;
 import org.apache.ignite.spi.discovery.DiscoveryDataBag;
 import org.apache.ignite.spi.discovery.DiscoveryDataBag.GridDiscoveryData;
@@ -218,6 +217,8 @@ public class CacheObjectBinaryProcessorImpl extends GridProcessorAdapter impleme
     public CacheObjectBinaryProcessorImpl(GridKernalContext ctx) {
         super(ctx);
 
+        marsh = ctx.grid().configuration().getMarshaller();
+
         ctx.systemView().registerView(BINARY_METADATA_VIEW, BINARY_METADATA_DESC, new BinaryMetadataViewWalker(),
             metadataLocCache.values(), val -> new BinaryMetadataView(val.metadata()));
     }
@@ -252,8 +253,6 @@ public class CacheObjectBinaryProcessorImpl extends GridProcessorAdapter impleme
 
     /** {@inheritDoc} */
     @Override public void start() throws IgniteCheckedException {
-        initializeMarshaller();
-
         if (marsh instanceof BinaryMarshaller) {
             if (!ctx.clientNode()) {
                 metadataFileStore = new BinaryMetadataFileStore(metadataLocCache,
@@ -441,28 +440,6 @@ public class CacheObjectBinaryProcessorImpl extends GridProcessorAdapter impleme
     /** {@inheritDoc} */
     @Override public void onContinuousProcessorStarted(GridKernalContext ctx) {
         // No-op.
-    }
-
-    /** */
-    private void initializeMarshaller() {
-        marsh = ctx.config().getMarshaller();
-
-        if (marsh == null) {
-            if (!BinaryMarshaller.available()) {
-                U.warn(log, "Standard BinaryMarshaller can't be used on this JVM. " +
-                    "Switch to HotSpot JVM or reach out Apache Ignite community for recommendations.");
-
-                marsh = ctx.marshallerContext().jdkMarshaller();
-            }
-            else
-                marsh = new BinaryMarshaller();
-
-            ctx.config().setMarshaller(marsh);
-        }
-
-        marsh.setContext(ctx.marshallerContext());
-
-        MarshallerUtils.setNodeName(marsh, ctx.igniteInstanceName());
     }
 
     /**

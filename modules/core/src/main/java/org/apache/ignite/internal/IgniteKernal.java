@@ -202,6 +202,7 @@ import org.apache.ignite.lifecycle.LifecycleAware;
 import org.apache.ignite.lifecycle.LifecycleBean;
 import org.apache.ignite.lifecycle.LifecycleEventType;
 import org.apache.ignite.marshaller.IgniteMarshallerClassFilter;
+import org.apache.ignite.marshaller.Marshaller;
 import org.apache.ignite.marshaller.MarshallerExclusions;
 import org.apache.ignite.marshaller.MarshallerUtils;
 import org.apache.ignite.metric.IgniteMetrics;
@@ -947,6 +948,8 @@ public class IgniteKernal implements IgniteEx, Externalizable {
 
             mBeansMgr = new IgniteMBeansManager(this);
 
+            initializeMarshaller();
+
             startProcessor(new GridInternalSubscriptionProcessor(ctx));
 
             ClusterProcessor clusterProc = new ClusterProcessor(ctx);
@@ -1519,6 +1522,28 @@ public class IgniteKernal implements IgniteEx, Externalizable {
                     (ram >> 20) + "MB]");
             }
         }
+    }
+
+    /** */
+    private void initializeMarshaller() {
+        Marshaller marsh = ctx.config().getMarshaller();
+
+        if (marsh == null) {
+            if (!BinaryMarshaller.available()) {
+                U.warn(log, "Standard BinaryMarshaller can't be used on this JVM. " +
+                    "Switch to HotSpot JVM or reach out Apache Ignite community for recommendations.");
+
+                marsh = ctx.marshallerContext().jdkMarshaller();
+            }
+            else
+                marsh = new BinaryMarshaller();
+
+            ctx.config().setMarshaller(marsh);
+        }
+
+        marsh.setContext(ctx.marshallerContext());
+
+        MarshallerUtils.setNodeName(marsh, ctx.igniteInstanceName());
     }
 
     /**
