@@ -82,6 +82,8 @@ public class DataTypesTest extends AbstractBasicIntegrationTransactionalTest {
             lst.add(F.asList(numTypeName, floatingVal(-1.4999f, numTypeName), "DECIMAL(1)", new BigDecimal(-1)));
             lst.add(F.asList(numTypeName, floatingVal(1.5f, numTypeName), "DECIMAL(1)", new BigDecimal(2)));
             lst.add(F.asList(numTypeName, floatingVal(-1.5f, numTypeName), "DECIMAL(1)", new BigDecimal(-2)));
+            lst.add(F.asList("DECIMAL(5,4)", BigDecimal.valueOf(1.4999d), "DECIMAL(2,1)", BigDecimal.valueOf(1.5)));
+            lst.add(F.asList("DECIMAL(5,4)", BigDecimal.valueOf(-1.4999d), "DECIMAL(2,1)", BigDecimal.valueOf(-1.5)));
 
             lst.add(F.asList(numTypeName, floatingVal(1.4999f, numTypeName), "BIGINT", 1L));
             lst.add(F.asList(numTypeName, floatingVal(-1.4999f, numTypeName), "BIGINT", -1L));
