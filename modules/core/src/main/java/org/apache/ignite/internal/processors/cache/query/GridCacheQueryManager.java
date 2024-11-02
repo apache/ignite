@@ -844,7 +844,7 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
 
         if (!F.isEmpty(skipKeys)) {
             // Intentionally use of `Set#remove` here.
-            // We want perform as few `toKey` as possible.
+            // We want to perform as few `toKey` as possible.
             // So we break some rules here to optimize work with the data provided by the underlying cursor.
             it = F.iterator0(it, true, e -> skipKeys.isEmpty() || !skipKeys.remove(e.key()));
         }
