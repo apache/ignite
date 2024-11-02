@@ -327,7 +327,7 @@ public class CacheQuery<T> {
         Boolean dataPageScanEnabled,
         @Nullable Set<KeyCacheObject> skipKeys
     ) {
-        this(cctx, type, null, null, filter, part, false, keepBinary, dataPageScanEnabled, null);
+        this(cctx, type, null, null, filter, part, false, keepBinary, dataPageScanEnabled, null, skipKeys);
 
         assert F.isEmpty(skipKeys) || type == SCAN;
 
@@ -358,7 +358,8 @@ public class CacheQuery<T> {
         boolean incMeta,
         boolean keepBinary,
         Boolean dataPageScanEnabled,
-        IndexQueryDesc idxQryDesc
+        IndexQueryDesc idxQryDesc,
+        @Nullable Set<KeyCacheObject> skipKeys
     ) {
         assert cctx != null;
         assert type != null;
@@ -374,6 +375,7 @@ public class CacheQuery<T> {
         this.keepBinary = keepBinary;
         this.dataPageScanEnabled = dataPageScanEnabled;
         this.idxQryDesc = idxQryDesc;
+        this.skipKeys = skipKeys;
 
         log = cctx.logger(getClass());
     }
@@ -417,7 +419,8 @@ public class CacheQuery<T> {
         boolean incMeta,
         boolean keepBinary,
         int taskHash,
-        Boolean dataPageScanEnabled
+        Boolean dataPageScanEnabled,
+        @Nullable Set<KeyCacheObject> skipKeys
     ) {
         this.cctx = cctx;
         this.type = type;
@@ -437,6 +440,7 @@ public class CacheQuery<T> {
         this.keepBinary = keepBinary;
         this.taskHash = taskHash;
         this.dataPageScanEnabled = dataPageScanEnabled;
+        this.skipKeys = skipKeys;
     }
 
     /**
@@ -457,12 +461,17 @@ public class CacheQuery<T> {
         @Nullable String clsName,
         @Nullable IgniteBiPredicate<Object, Object> filter
     ) {
-        this(cctx, type, clsName, null, filter, part, false, false, null, idxQryDesc);
+        this(cctx, type, clsName, null, filter, part, false, false, null, idxQryDesc, null);
     }
 
     /** @return Flag to enable data page scan. */
     public Boolean isDataPageScanEnabled() {
         return dataPageScanEnabled;
+    }
+
+    /** @return Set of keys that must be skiped during iteration. */
+    public Set<KeyCacheObject> skipKeys() {
+        return skipKeys;
     }
 
     /** @return Type. */
@@ -774,7 +783,7 @@ public class CacheQuery<T> {
 
         final GridCacheQueryManager qryMgr = cctx.queries();
 
-        final GridCloseableIterator<Object> iter = (nodes.size() == 1 && F.first(nodes).id().equals(cctx.localNodeId()))
+        final GridCloseableIterator<T> iter = (nodes.size() == 1 && F.first(nodes).id().equals(cctx.localNodeId()))
             ? qryMgr.scanQueryLocal(this, true)
             : part != null
                 ? new ScanQueryFallbackClosableIterator(part, this, qryMgr, cctx)
@@ -862,17 +871,17 @@ public class CacheQuery<T> {
     }
 
     /** */
-    private <R> @NotNull GridCloseableIterator<R> iteratorWithTxData(
-        final GridCloseableIterator<R> iter,
+    private @NotNull GridCloseableIterator<T> iteratorWithTxData(
+        final GridCloseableIterator<T> iter,
         List<Object> newAndUpdatedEntries
     ) throws IgniteCheckedException {
-        IgniteClosure<Cache.Entry<Object, Object>, R> t0 = (IgniteClosure<Cache.Entry<Object, Object>, R>)transform;
+        IgniteClosure<Cache.Entry<Object, Object>, T> t0 = (IgniteClosure<Cache.Entry<Object, Object>, T>)transform;
 
-        final GridIterator<R> txIter = new AbstractScanQueryIterator<>(cctx, this, t0, true) {
+        final GridIterator<T> txIter = new AbstractScanQueryIterator<Object, Object, T>(cctx, this, t0, true) {
             private final Iterator<Object> txData = newAndUpdatedEntries.iterator();
 
             /** {@inheritDoc} */
-            @Override protected R advance() {
+            @Override protected T advance() {
                 long start = System.nanoTime();
 
                 while (txData.hasNext()) {
@@ -889,7 +898,7 @@ public class CacheQuery<T> {
                         val = ((IgniteBiTuple<KeyCacheObject, CacheObject>)e).get2();
                     }
 
-                    R next = filterAndTransform(key, val, start);
+                    T next = filterAndTransform(key, val, start);
 
                     if (next != null)
                         return next;
@@ -901,7 +910,7 @@ public class CacheQuery<T> {
 
         return new GridCloseableIteratorAdapter<>() {
             /** {@inheritDoc} */
-            @Override protected R onNext() {
+            @Override protected T onNext() {
                 return iter.hasNext() ? iter.next() : txIter.next();
             }
 
