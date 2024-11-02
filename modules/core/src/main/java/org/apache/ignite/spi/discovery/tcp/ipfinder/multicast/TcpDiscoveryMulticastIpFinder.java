@@ -728,7 +728,7 @@ public class TcpDiscoveryMulticastIpFinder extends TcpDiscoveryVmIpFinder {
          * @param addrs Addresses discovery SPI binds to.
          * @throws IgniteCheckedException If marshalling failed.
          */
-        private AddressResponse(Collection<InetSocketAddress> addrs, byte[] data) throws IgniteCheckedException {
+        private AddressResponse(Collection<InetSocketAddress> addrs, byte[] data) {
             this.addrs = addrs;
             this.data = data;
         }
