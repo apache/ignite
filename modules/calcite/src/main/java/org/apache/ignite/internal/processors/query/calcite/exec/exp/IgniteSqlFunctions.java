@@ -190,6 +190,11 @@ public class IgniteSqlFunctions {
         return leastOrGreatest(true, arg0, arg1);
     }
 
+    /** @return The second argument and ignores the first. */
+    public static Object skipFirstArgument(Object v1, Object v2) {
+        return v2;
+    }
+
     /** GREATEST2. */
     public static Object greatest2(Object arg0, Object arg1) {
         return leastOrGreatest(false, arg0, arg1);
