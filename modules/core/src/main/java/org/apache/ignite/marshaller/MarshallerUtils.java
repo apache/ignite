@@ -157,7 +157,8 @@ public class MarshallerUtils {
             " it was already set via `jdk.serialFilter` JVM system property or programmatically. You can disable" +
             " Object Input Stream Filter autoconfiguration by setting `IGNITE_ENABLE_OBJECT_INPUT_FILTER_AUTOCONFIGURATION`" +
             " system property to `false`. Note that in this case you must configure Java Serialization" +
-            " Filtering manually to filter out classes defined by the `IGNITE_MARSHALLER_BLACKLIST` system property.");
+            " Filtering manually to filter out classes defined by the `IGNITE_MARSHALLER_BLACKLIST` system property" +
+            " [objectInputFilterClass=" + curFilter.getClass().getName() + ']');
     }
 
     /**
