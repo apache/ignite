@@ -24,19 +24,21 @@ import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
+import java.io.ObjectInputFilter;
 import java.net.URL;
 import java.util.Collection;
 import java.util.Enumeration;
+import java.util.Objects;
 import java.util.function.Consumer;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.internal.ClassSet;
-import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.lang.IgniteProductVersion;
-import org.apache.ignite.marshaller.jdk.JdkMarshaller;
 import org.apache.ignite.plugin.PluginProvider;
 import org.jetbrains.annotations.Nullable;
+
+import static org.apache.ignite.IgniteSystemProperties.IGNITE_ENABLE_OBJECT_INPUT_FILTER_AUTOCONFIGURATION;
 
 /**
  * Utility marshaller methods.
@@ -114,23 +116,41 @@ public class MarshallerUtils {
      * @param clsLdr Class loader.
      * @return Class name filter for marshaller.
      */
-    public static IgnitePredicate<String> classNameFilter(ClassLoader clsLdr) throws IgniteCheckedException {
-        ClassSet whiteList = classWhiteList(clsLdr);
-        ClassSet blackList = classBlackList(clsLdr);
+    public static IgniteMarshallerClassFilter classNameFilter(ClassLoader clsLdr) throws IgniteCheckedException {
+        return new IgniteMarshallerClassFilter(classWhiteList(clsLdr), classBlackList(clsLdr));
+    }
 
-        return new IgnitePredicate<String>() {
-            @Override public boolean apply(String s) {
-                // Allows all primitive arrays and checks arrays' type.
-                if ((blackList != null || whiteList != null) && s.charAt(0) == '[') {
-                    if (s.charAt(1) == 'L' && s.length() > 2)
-                        s = s.substring(2, s.length() - 1);
-                    else
-                        return true;
-                }
+    /** */
+    public static void autoconfigureObjectInputFilter(IgniteMarshallerClassFilter clsFilter) throws IgniteCheckedException {
+        assert clsFilter != null;
 
-                return (blackList == null || !blackList.contains(s)) && (whiteList == null || whiteList.contains(s));
-            }
-        };
+        if (!IgniteSystemProperties.getBoolean(IGNITE_ENABLE_OBJECT_INPUT_FILTER_AUTOCONFIGURATION, true))
+            return;
+
+        ObjectInputFilter curFilter = ObjectInputFilter.Config.getSerialFilter();
+
+        if (curFilter == null) {
+            ObjectInputFilter.Config.setSerialFilter(new IgniteObjectInputFilter(clsFilter));
+
+            return;
+        }
+
+        if (curFilter instanceof IgniteObjectInputFilter) {
+            IgniteObjectInputFilter igniteFilter = (IgniteObjectInputFilter)curFilter;
+
+            if (Objects.equals(igniteFilter.classFilter(), clsFilter))
+                return;
+
+            throw new IgniteCheckedException("Failed to autoconfigure Ignite Object Input Filter for the current JVM" +
+                " because it was already set by another Ignite instance which is running in the same JVM and is" +
+                " configured with a different Marshaller Black or White lists.");
+        }
+
+        throw new IgniteCheckedException("Failed to autoconfigure Ignite Object Input Filter for the current JVM as" +
+            " it was already set via `jdk.serialFilter` JVM system property or programmatically. You can disable" +
+            " Object Input Stream Filter autoconfiguration by setting `IGNITE_ENABLE_OBJECT_INPUT_FILTER_AUTOCONFIGURATION`" +
+            " system property to `false`. Note that in this case you must configure Java Serialization" +
+            " Filtering manually to filter out classes defined by the `IGNITE_MARSHALLER_BLACKLIST` system property.");
     }
 
     /**

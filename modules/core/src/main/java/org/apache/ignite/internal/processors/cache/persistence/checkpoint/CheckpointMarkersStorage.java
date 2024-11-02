@@ -642,7 +642,7 @@ public class CheckpointMarkersStorage {
                     final byte[] bytes;
 
                     try {
-                        bytes = JdkMarshaller.DEFAULT.marshal(snapshot);
+                        bytes = marsh.marshal(snapshot);
                     }
                     catch (IgniteCheckedException e) {
                         log.error("Failed to marshal checkpoint snapshot: " + e.getMessage(), e);

@@ -29,6 +29,8 @@ import java.util.Queue;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
+import org.apache.ignite.internal.IgniteEx;
+import org.apache.ignite.internal.binary.BinaryMarshaller;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.A;
 import org.apache.ignite.internal.util.typedef.internal.S;
@@ -40,7 +42,6 @@ import org.apache.ignite.resources.LoggerResource;
 import org.apache.ignite.spi.IgniteSpiAdapter;
 import org.apache.ignite.spi.IgniteSpiConfiguration;
 import org.apache.ignite.spi.IgniteSpiConsistencyChecked;
-import org.apache.ignite.spi.IgniteSpiContext;
 import org.apache.ignite.spi.IgniteSpiException;
 import org.apache.ignite.spi.IgniteSpiMBeanAdapter;
 import org.apache.ignite.spi.IgniteSpiMultipleInstancesSupport;
@@ -224,6 +225,11 @@ public class SharedFsCheckpointSpi extends IgniteSpiAdapter implements Checkpoin
         assertParameter(!F.isEmpty(dirPaths), "!F.isEmpty(dirPaths)");
 
         this.igniteInstanceName = igniteInstanceName;
+
+        if (ignite.configuration().getMarshaller() instanceof BinaryMarshaller)
+            marsh = ((IgniteEx)ignite).context().marshallerContext().jdkMarshaller();
+        else
+            marsh = ignite.configuration().getMarshaller();
 
         folder = getNextSharedPath();
 
@@ -415,13 +421,6 @@ public class SharedFsCheckpointSpi extends IgniteSpiAdapter implements Checkpoin
         }
 
         return null;
-    }
-
-    /** {@inheritDoc} */
-    @Override protected void onContextInitialized0(IgniteSpiContext spiCtx) throws IgniteSpiException {
-        super.onContextInitialized0(spiCtx);
-
-        marsh = spiCtx.marshallerContext().jdkMarshaller();
     }
 
     /** {@inheritDoc} */
