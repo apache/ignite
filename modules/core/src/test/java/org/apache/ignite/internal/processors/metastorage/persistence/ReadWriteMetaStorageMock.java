@@ -36,7 +36,7 @@ public class ReadWriteMetaStorageMock implements ReadWriteMetastorage {
     @Override public void write(@NotNull String key, @NotNull Serializable val) throws IgniteCheckedException {
         assertLockIsHeldByWorkerThread();
 
-        cache.put(key,TEST_JDK_MARSHALLER.marshal(val));
+        cache.put(key, TEST_JDK_MARSHALLER.marshal(val));
     }
 
     /** {@inheritDoc} */

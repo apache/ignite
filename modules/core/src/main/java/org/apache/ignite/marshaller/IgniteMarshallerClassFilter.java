@@ -24,6 +24,9 @@ import org.apache.ignite.lang.IgnitePredicate;
 /** */
 public class IgniteMarshallerClassFilter implements IgnitePredicate<String> {
     /** */
+    private static final long serialVersionUID = 0L;
+
+    /** */
     private final ClassSet whiteList;
 
     /** */

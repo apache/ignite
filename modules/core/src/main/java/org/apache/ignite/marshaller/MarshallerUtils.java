@@ -39,6 +39,7 @@ import org.apache.ignite.plugin.PluginProvider;
 import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_ENABLE_OBJECT_INPUT_FILTER_AUTOCONFIGURATION;
+import static org.apache.ignite.IgniteSystemProperties.IGNITE_MARSHALLER_BLACKLIST;
 
 /**
  * Utility marshaller methods.
@@ -49,6 +50,9 @@ public class MarshallerUtils {
 
     /** Class names file. */
     public static final String CLS_NAMES_FILE = "META-INF/classnames.properties";
+
+    /** Default black list class names file. */
+    public static final String DEFAULT_BLACKLIST_CLS_NAMES_FILE = "META-INF/classnames-default-blacklist.properties";
 
     /** Job sender node version. */
     private static final ThreadLocal<IgniteProductVersion> JOB_SND_NODE_VER = new ThreadLocal<>();
@@ -181,12 +185,11 @@ public class MarshallerUtils {
      * @return Black list of classes.
      */
     private static ClassSet classBlackList(ClassLoader clsLdr) throws IgniteCheckedException {
-        ClassSet clsSet = null;
+        ClassSet clsSet = new ClassSet();
 
-        String blackListFileName = IgniteSystemProperties.getString(IgniteSystemProperties.IGNITE_MARSHALLER_BLACKLIST);
+        String blackListFileName = IgniteSystemProperties.getString(IGNITE_MARSHALLER_BLACKLIST, DEFAULT_BLACKLIST_CLS_NAMES_FILE);
 
-        if (blackListFileName != null)
-            addClassNames(blackListFileName, clsSet = new ClassSet(), clsLdr);
+        addClassNames(blackListFileName, clsSet, clsLdr);
 
         return clsSet;
     }
