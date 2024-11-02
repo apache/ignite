@@ -1703,7 +1703,7 @@ public class RexImpTable {
             else if (op == TYPEOF) {
                 assert call.getOperands().size() == 1 : call.getOperands();
 
-                return Expressions.constant(call.getOperands().get(0).getType().toString());
+                return typeOfImplementor().implement(translator, call, NullAs.NOT_POSSIBLE);
             }
             else if (op == QUERY_ENGINE)
                 return Expressions.constant(CalciteQueryEngineConfiguration.ENGINE_NAME);
@@ -1712,6 +1712,24 @@ public class RexImpTable {
 
             throw new AssertionError("unknown function " + op);
         }
+    }
+
+    /** */
+    private static CallImplementor typeOfImplementor() {
+        return createImplementor((translator, call, translatedOperands) -> {
+            Method method = IgniteMethod.SKIP_FIRST_ARGUMENT.method();
+
+            RexNode operand = call.getOperands().get(0);
+            String operandType = operand.getType().toString();
+
+            List<Expression> finalOperands = new ArrayList<>(2);
+            // The first argument is an arbitrary expression (must be evaluated).
+            // The second argument is a type of the first expression (a constant).
+            finalOperands.add(translatedOperands.get(0));
+            finalOperands.add(Expressions.constant(operandType));
+
+            return Expressions.call(method, finalOperands);
+        }, NullPolicy.NONE, false);
     }
 
     /** Implementor for the {@code NOT} operator. */
