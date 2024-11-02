@@ -186,11 +186,17 @@ public class CdcMain implements Runnable {
 
     /** Histogram buckets for duration wal processing in nanoseconds. */
     public static final long[] HISTOGRAM_BUCKETS = new long[] {
-        NANOSECONDS.convert(1, MILLISECONDS),
-        NANOSECONDS.convert(10, MILLISECONDS),
+        NANOSECONDS.convert(25, MILLISECONDS),
+        NANOSECONDS.convert(50, MILLISECONDS),
         NANOSECONDS.convert(100, MILLISECONDS),
         NANOSECONDS.convert(250, MILLISECONDS),
-        NANOSECONDS.convert(1000, MILLISECONDS)
+        NANOSECONDS.convert(500, MILLISECONDS),
+        NANOSECONDS.convert(1000, MILLISECONDS),
+        NANOSECONDS.convert(2500, MILLISECONDS),
+        NANOSECONDS.convert(5000, MILLISECONDS),
+        NANOSECONDS.convert(10000, MILLISECONDS),
+        NANOSECONDS.convert(25000, MILLISECONDS),
+        NANOSECONDS.convert(50000, MILLISECONDS)
     };
 
     /** */
@@ -652,17 +658,11 @@ public class CdcMain implements Runnable {
             throw new IgniteException(e);
         }
         finally {
-            updateWalProcessingMetrics(System.nanoTime() - start);
-        }
-    }
+            long duration = System.nanoTime() - start;
 
-    /**
-     * Updates consumer event coonsumption metrics.
-     * @param duration - Operation durtion.
-     */
-    private void updateWalProcessingMetrics(long duration) {
-        eventsConsumptionTime.value(duration);
-        eventsConsumptionTimeTotal.add(duration);
+            eventsConsumptionTime.value(duration);
+            eventsConsumptionTimeTotal.add(duration);
+        }
     }
 
     /**
