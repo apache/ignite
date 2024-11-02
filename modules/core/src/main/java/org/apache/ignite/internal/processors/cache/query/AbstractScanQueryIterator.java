@@ -44,7 +44,7 @@ import static org.apache.ignite.internal.processors.security.SecurityUtils.secur
  */
 public abstract class AbstractScanQueryIterator<K, V, R> extends GridCloseableIteratorAdapter<R> {
     /** */
-    protected final InternalScanFilter<K, V> intScanFilter;
+    protected final IgniteBiPredicate<K, V> filter;
 
     /** */
     protected final boolean statsEnabled;
@@ -65,7 +65,7 @@ public abstract class AbstractScanQueryIterator<K, V, R> extends GridCloseableIt
     protected final IgniteClosure<Cache.Entry<K, V>, R> transform;
 
     /** */
-    protected final GridCacheContext cctx;
+    protected final GridCacheContext<K, V> cctx;
 
     /** */
     protected final boolean locNode;
@@ -79,19 +79,19 @@ public abstract class AbstractScanQueryIterator<K, V, R> extends GridCloseableIt
     /**
      * @param cctx Grid cache context.
      * @param qry Query adapter.
-     * @param transform
-     * @param locNode
-     * @throws IgniteCheckedException
+     * @param transform Optional transformer.
+     * @param locNode Flag for local node iterator.
+     * @throws IgniteCheckedException If failed.
      */
     protected AbstractScanQueryIterator(
-        GridCacheContext cctx,
-        CacheQuery qry,
+        GridCacheContext<K, V> cctx,
+        CacheQuery<R> qry,
         IgniteClosure<Cache.Entry<K, V>, R> transform,
         boolean locNode
     ) throws IgniteCheckedException {
         this.cctx = cctx;
-        this.intScanFilter = prepareFilter(qry.scanFilter());
-        this.transform = prepareTransformer(transform);
+        this.filter = prepareFilter(qry.scanFilter());
+        this.transform = SecurityUtils.sandboxedProxy(cctx.kernalContext(), IgniteClosure.class, injectResources(transform, cctx));
         this.locNode = locNode;
 
         statsEnabled = cctx.statisticsEnabled();
@@ -104,7 +104,7 @@ public abstract class AbstractScanQueryIterator<K, V, R> extends GridCloseableIt
         subjId = securitySubjectId(cctx);
 
         // keep binary for remote scans if possible
-        keepBinary = (!locNode && intScanFilter == null && transform == null && !readEvt) || qry.keepBinary();
+        keepBinary = (!locNode && filter == null && transform == null && !readEvt) || qry.keepBinary();
 
         needAdvance = true;
     }
@@ -135,9 +135,7 @@ public abstract class AbstractScanQueryIterator<K, V, R> extends GridCloseableIt
 
     /** {@inheritDoc} */
     @Override protected void onClose() throws IgniteCheckedException {
-        //TODO: check tx iter for close call.
-        if (intScanFilter != null)
-            intScanFilter.close();
+        close(filter);
     }
 
     /** Moves the iterator to the next cache entry. */
@@ -164,8 +162,15 @@ public abstract class AbstractScanQueryIterator<K, V, R> extends GridCloseableIt
         K key0 = (K)CacheObjectUtils.unwrapBinaryIfNeeded(cctx.cacheObjectContext(), key, keepBinary, false);
         V val0 = (V)CacheObjectUtils.unwrapBinaryIfNeeded(cctx.cacheObjectContext(), val, keepBinary, false);
 
-        if (intScanFilter != null && !intScanFilter.apply(key0, val0))
-            return null;
+        if (filter != null) {
+            try {
+                if (!filter.apply(key0, val0))
+                    return null;
+            }
+            catch (Throwable e) {
+                throw new IgniteException(e);
+            }
+        }
 
         if (readEvt) {
             cctx.gridEvents().record(new CacheQueryReadEvent<>(
@@ -176,7 +181,7 @@ public abstract class AbstractScanQueryIterator<K, V, R> extends GridCloseableIt
                 cctx.name(),
                 null,
                 null,
-                intScanFilter != null ? intScanFilter.scanFilter() : null,
+                filter,
                 null,
                 null,
                 subjId,
@@ -200,11 +205,11 @@ public abstract class AbstractScanQueryIterator<K, V, R> extends GridCloseableIt
     /** */
     @Nullable
     public IgniteBiPredicate<K, V> filter() {
-        return intScanFilter == null ? null : intScanFilter.scanFilter;
+        return filter;
     }
 
     /** */
-    private @Nullable InternalScanFilter<K, V> prepareFilter(IgniteBiPredicate<K, V> keyValFilter) throws IgniteCheckedException {
+    private @Nullable IgniteBiPredicate<K, V> prepareFilter(IgniteBiPredicate<K, V> keyValFilter) throws IgniteCheckedException {
         if (keyValFilter == null)
             return null;
 
@@ -216,63 +221,17 @@ public abstract class AbstractScanQueryIterator<K, V, R> extends GridCloseableIt
 
             keyValFilter = SecurityUtils.sandboxedProxy(cctx.kernalContext(), IgniteBiPredicate.class, keyValFilter);
 
-            return new InternalScanFilter<>(keyValFilter);
+            return keyValFilter;
         }
         catch (IgniteCheckedException | RuntimeException e) {
-            InternalScanFilter.close(keyValFilter);
+            close(keyValFilter);
 
             throw e;
         }
     }
 
-    /** */
-    private @Nullable IgniteClosure<Cache.Entry<K, V>, R> prepareTransformer(
-        IgniteClosure<Cache.Entry<K, V>, R> transformer
-    ) throws IgniteCheckedException {
-        return SecurityUtils.sandboxedProxy(cctx.kernalContext(), IgniteClosure.class, injectResources(transformer, cctx));
-    }
-
-    /** Wrap scan filter in order to catch unhandled errors. */
-    private static class InternalScanFilter<K, V> implements IgniteBiPredicate<K, V> {
-        /** */
-        private static final long serialVersionUID = 0L;
-
-        /** */
-        final IgniteBiPredicate<K, V> scanFilter;
-
-        /**
-         * @param scanFilter User scan filter.
-         */
-        InternalScanFilter(IgniteBiPredicate<K, V> scanFilter) {
-            this.scanFilter = scanFilter;
-        }
-
-        /** {@inheritDoc} */
-        @Override public boolean apply(K k, V v) {
-            try {
-                return scanFilter == null || scanFilter.apply(k, v);
-            }
-            catch (Throwable e) {
-                throw new IgniteException(e);
-            }
-        }
-
-        /** */
-        void close() {
-            close(scanFilter);
-        }
-
-        /** */
-        static void close(IgniteBiPredicate<?, ?> scanFilter) {
-            if (scanFilter instanceof PlatformCacheEntryFilter)
-                ((PlatformCacheEntryFilter)scanFilter).onClose();
-        }
-
-        /**
-         * @return Wrapped scan filter.
-         */
-        IgniteBiPredicate<K, V> scanFilter() {
-            return scanFilter;
-        }
+    private void close(IgniteBiPredicate<?, ?> scanFilter) {
+        if (scanFilter instanceof PlatformCacheEntryFilter)
+            ((PlatformCacheEntryFilter)scanFilter).onClose();
     }
 }
