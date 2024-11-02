@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.processors.cache.query;
 
 import java.util.UUID;
+import javax.cache.Cache;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.cluster.ClusterNode;
@@ -45,7 +46,7 @@ public final class ScanQueryIterator<K, V, R> extends AbstractScanQueryIterator<
     private static final long serialVersionUID = 0L;
 
     /** */
-    private final GridDhtCacheAdapter dht;
+    private final GridDhtCacheAdapter<K, V> dht;
 
     /** */
     private final GridDhtLocalPartition locPart;
@@ -54,7 +55,7 @@ public final class ScanQueryIterator<K, V, R> extends AbstractScanQueryIterator<
     private final GridIterator<CacheDataRow> it;
 
     /** */
-    private final GridCacheAdapter cache;
+    private final GridCacheAdapter<K, V> cache;
 
     /** */
     private final AffinityTopologyVersion topVer;
@@ -76,28 +77,28 @@ public final class ScanQueryIterator<K, V, R> extends AbstractScanQueryIterator<
 
     /** */
     @Nullable
-    private final GridConcurrentHashSet<ScanQueryIterator> locIters;
+    private final GridConcurrentHashSet<ScanQueryIterator<K, V, R>> locIters;
 
     /**
-     * @param it            Iterator.
-     * @param qry           Query.
-     * @param topVer        Topology version.
-     * @param locPart       Local partition.
-     * @param transformer   Transformer.
-     * @param locNode       Local node flag.
-     * @param locIters      Local iterators set.
-     * @param cctx          Cache context.
-     * @param log           Logger.
+     * @param it Iterator.
+     * @param qry Query.
+     * @param topVer Topology version.
+     * @param locPart Local partition.
+     * @param transformer Transformer.
+     * @param locNode Local node flag.
+     * @param locIters Local iterators set.
+     * @param cctx Cache context.
+     * @param log Logger.
      */
     ScanQueryIterator(
         GridIterator<CacheDataRow> it,
-        CacheQuery qry,
+        CacheQuery<R> qry,
         AffinityTopologyVersion topVer,
         GridDhtLocalPartition locPart,
-        IgniteClosure transformer,
+        IgniteClosure<Cache.Entry<K, V>, R> transformer,
         boolean locNode,
-        @Nullable GridConcurrentHashSet<ScanQueryIterator> locIters,
-        GridCacheContext cctx,
+        @Nullable GridConcurrentHashSet<ScanQueryIterator<K, V, R>> locIters,
+        GridCacheContext<K, V> cctx,
         IgniteLogger log) throws IgniteCheckedException {
         super(cctx, qry, transformer, locNode);
 
@@ -236,7 +237,7 @@ public final class ScanQueryIterator<K, V, R> extends AbstractScanQueryIterator<
     }
 
     /** */
-    public IgniteClosure transformer() {
+    public IgniteClosure<Cache.Entry<K, V>, R> transformer() {
         return transform;
     }
 
@@ -266,7 +267,7 @@ public final class ScanQueryIterator<K, V, R> extends AbstractScanQueryIterator<
     }
 
     /** */
-    public GridCacheContext cacheContext() {
+    public GridCacheContext<K, V> cacheContext() {
         return cctx;
     }
 

@@ -327,7 +327,7 @@ public class CacheQuery<T> {
         Boolean dataPageScanEnabled,
         @Nullable Set<KeyCacheObject> skipKeys
     ) {
-        this(cctx, type, null, null, filter, part, false, keepBinary, dataPageScanEnabled, null, skipKeys);
+        this(cctx, type, null, null, filter, part, false, keepBinary, dataPageScanEnabled, null);
 
         assert F.isEmpty(skipKeys) || type == SCAN;
 
@@ -358,8 +358,7 @@ public class CacheQuery<T> {
         boolean incMeta,
         boolean keepBinary,
         Boolean dataPageScanEnabled,
-        IndexQueryDesc idxQryDesc,
-        @Nullable Set<KeyCacheObject> skipKeys
+        IndexQueryDesc idxQryDesc
     ) {
         assert cctx != null;
         assert type != null;
@@ -375,7 +374,6 @@ public class CacheQuery<T> {
         this.keepBinary = keepBinary;
         this.dataPageScanEnabled = dataPageScanEnabled;
         this.idxQryDesc = idxQryDesc;
-        this.skipKeys = skipKeys;
 
         log = cctx.logger(getClass());
     }
@@ -400,7 +398,6 @@ public class CacheQuery<T> {
      * @param keepBinary Keep binary flag.
      * @param taskHash Task hash.
      * @param dataPageScanEnabled Flag to enable data page scan.
-     * @param skipKeys Set of keys that must be skiped during iteration.
      */
     public CacheQuery(
         GridCacheContext<?, ?> cctx,
@@ -420,8 +417,7 @@ public class CacheQuery<T> {
         boolean incMeta,
         boolean keepBinary,
         int taskHash,
-        Boolean dataPageScanEnabled,
-        @Nullable Collection<KeyCacheObject> skipKeys
+        Boolean dataPageScanEnabled
     ) {
         this.cctx = cctx;
         this.type = type;
@@ -441,7 +437,6 @@ public class CacheQuery<T> {
         this.keepBinary = keepBinary;
         this.taskHash = taskHash;
         this.dataPageScanEnabled = dataPageScanEnabled;
-        this.skipKeys = skipKeys == null ? null : new HashSet<>(skipKeys); //TODO: FIXME
     }
 
     /**
@@ -462,17 +457,12 @@ public class CacheQuery<T> {
         @Nullable String clsName,
         @Nullable IgniteBiPredicate<Object, Object> filter
     ) {
-        this(cctx, type, clsName, null, filter, part, false, false, null, idxQryDesc, null);
+        this(cctx, type, clsName, null, filter, part, false, false, null, idxQryDesc);
     }
 
     /** @return Flag to enable data page scan. */
     public Boolean isDataPageScanEnabled() {
         return dataPageScanEnabled;
-    }
-
-    /** @return Set of keys that must be skiped during iteration. */
-    public Set<KeyCacheObject> skipKeys() {
-        return skipKeys;
     }
 
     /** @return Type. */
