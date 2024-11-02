@@ -465,9 +465,7 @@ public class CacheQuery<T> {
         this(cctx, type, clsName, null, filter, part, false, false, null, idxQryDesc, null);
     }
 
-    /**
-     * @return Flag to enable data page scan.
-     */
+    /** @return Flag to enable data page scan. */
     public Boolean isDataPageScanEnabled() {
         return dataPageScanEnabled;
     }
@@ -477,37 +475,27 @@ public class CacheQuery<T> {
         return skipKeys;
     }
 
-    /**
-     * @return Type.
-     */
+    /** @return Type. */
     public GridCacheQueryType type() {
         return type;
     }
 
-    /**
-     * @return Class name.
-     */
+    /** @return Class name. */
     @Nullable public String queryClassName() {
         return clsName;
     }
 
-    /**
-     * @return Clause.
-     */
+    /** @return Clause. */
     @Nullable public String clause() {
         return clause;
     }
 
-    /**
-     * @return Include metadata flag.
-     */
+    /** @return Include metadata flag. */
     public boolean includeMetadata() {
         return incMeta;
     }
 
-    /**
-     * @return {@code True} if binary should not be deserialized.
-     */
+    /** @return {@code True} if binary should not be deserialized. */
     public boolean keepBinary() {
         return keepBinary;
     }
@@ -521,16 +509,12 @@ public class CacheQuery<T> {
         this.keepBinary = keepBinary;
     }
 
-    /**
-     * @return {@code True} if the query is forced local.
-     */
+    /** @return {@code True} if the query is forced local. */
     public boolean forceLocal() {
         return forceLocal;
     }
 
-    /**
-     * @return Task hash.
-     */
+    /** @return Task hash. */
     public int taskHash() {
         return taskHash;
     }
@@ -550,9 +534,7 @@ public class CacheQuery<T> {
         return this;
     }
 
-    /**
-     * @return Page size.
-     */
+    /** @return Page size. */
     public int pageSize() {
         return pageSize;
     }
@@ -572,9 +554,7 @@ public class CacheQuery<T> {
         return this;
     }
 
-    /**
-     * @return Response limit. Returns 0 for no limits.
-     **/
+    /** @return Response limit. Returns 0 for no limits. */
     public int limit() {
         return limit;
     }
@@ -591,9 +571,7 @@ public class CacheQuery<T> {
         return this;
     }
 
-    /**
-     * @return Timeout.
-     */
+    /** @return Timeout. */
     public long timeout() {
         return timeout;
     }
@@ -611,9 +589,7 @@ public class CacheQuery<T> {
         return this;
     }
 
-    /**
-     * @return Include backups.
-     */
+    /** @return Include backups. */
     public boolean includeBackups() {
         return incBackups;
     }
@@ -632,9 +608,7 @@ public class CacheQuery<T> {
         return this;
     }
 
-    /**
-     * @return Enable dedup flag.
-     */
+    /** @return Enable dedup flag. */
     public boolean enableDedup() {
         return dedup;
     }
@@ -651,44 +625,32 @@ public class CacheQuery<T> {
         return this;
     }
 
-    /**
-     * @return Grid projection.
-     */
+    /** @return Grid projection. */
     public ClusterGroup projection() {
         return prj;
     }
 
-    /**
-     * @return Key-value filter.
-     */
+    /** @return Key-value filter. */
     @Nullable public <K, V> IgniteBiPredicate<K, V> scanFilter() {
         return (IgniteBiPredicate<K, V>)filter;
     }
 
-    /**
-     * @return Transformer.
-     */
+    /** @return Transformer. */
     @Nullable public <K, V> IgniteClosure<Map.Entry<K, V>, Object> transform() {
         return (IgniteClosure<Map.Entry<K, V>, Object>)transform;
     }
 
-    /**
-     * @return Partition.
-     */
+    /** @return Partition. */
     @Nullable public Integer partition() {
         return part;
     }
 
-    /**
-     * @return Index query description.
-     */
+    /** @return Index query description. */
     @Nullable public IndexQueryDesc idxQryDesc() {
         return idxQryDesc;
     }
 
-    /**
-     * @throws IgniteCheckedException If query is invalid.
-     */
+    /** @throws IgniteCheckedException If query is invalid. */
     public void validate() throws IgniteCheckedException {
         if ((type != SCAN && type != SET && type != SPI && type != INDEX)
             && !QueryUtils.isEnabled(cctx.config()))
@@ -833,9 +795,7 @@ public class CacheQuery<T> {
             : iteratorWithTxData(iter, newAndUpdatedEntries);
     }
 
-    /**
-     * @return Nodes to execute on.
-     */
+    /** @return Nodes to execute on. */
     private Collection<ClusterNode> nodes() throws IgniteCheckedException {
         CacheMode cacheMode = cctx.config().getCacheMode();
 
@@ -974,9 +934,7 @@ public class CacheQuery<T> {
         return S.toString(CacheQuery.class, this);
     }
 
-    /**
-     * Wrapper for queries with fallback.
-     */
+    /** Wrapper for queries with fallback. */
     private static class ScanQueryFallbackClosableIterator extends GridCloseableIteratorAdapter {
         /** */
         private static final long serialVersionUID = 0L;
@@ -1060,9 +1018,7 @@ public class CacheQuery<T> {
             return fallbacks;
         }
 
-        /**
-         *
-         */
+        /** */
         @SuppressWarnings("unchecked")
         private void init() {
             final ClusterNode node = nodes.poll();
@@ -1160,9 +1116,7 @@ public class CacheQuery<T> {
             return e == null ? null : new CacheQueryEntry(e.getKey(), e.getValue());
         }
 
-        /**
-         * @param e Exception for query run.
-         */
+        /** @param e Exception for query run. */
         private void retryIfPossible(IgniteCheckedException e) {
             try {
                 IgniteInternalFuture<?> retryFut;
