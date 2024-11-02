@@ -81,7 +81,6 @@ import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.query.CacheQuery;
 import org.apache.ignite.internal.processors.cache.query.CacheQueryFuture;
-import org.apache.ignite.internal.processors.cache.query.GridCacheQueryAdapter;
 import org.apache.ignite.internal.processors.cache.query.GridCacheQueryType;
 import org.apache.ignite.internal.processors.cache.query.QueryCursorEx;
 import org.apache.ignite.internal.processors.query.GridQueryFieldMetadata;
@@ -482,7 +481,7 @@ public class IgniteCacheProxyImpl<K, V> extends AsyncSupportAdapter<IgniteCache<
         IgniteBiTuple<Set<KeyCacheObject>, List<Object>> txChanges
             = ctx.transactionChanges(scanQry.getPartition());
 
-        final GridCacheQueryAdapter<R> qry = ctx.queries().createScanQuery(
+        final CacheQuery<R> qry = ctx.queries().createScanQuery(
             p, transformer, scanQry.getPartition(), isKeepBinary, scanQry.isLocal(), null, txChanges.get1());
 
         if (scanQry.getPageSize() > 0)
@@ -566,7 +565,7 @@ public class IgniteCacheProxyImpl<K, V> extends AsyncSupportAdapter<IgniteCache<
                 final GridCloseableIterator iter = ctx.kernalContext().query().executeQuery(GridCacheQueryType.INDEX,
                     cacheName, ctx, new IgniteOutClosureX<GridCloseableIterator>() {
                         @Override public GridCloseableIterator applyx() throws IgniteCheckedException {
-                            return ctx.queries().indexQueryLocal((GridCacheQueryAdapter)qry);
+                            return ctx.queries().indexQueryLocal(qry);
                         }
                     }, true);
 

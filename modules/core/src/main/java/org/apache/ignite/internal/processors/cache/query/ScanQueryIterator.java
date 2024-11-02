@@ -91,7 +91,7 @@ public final class ScanQueryIterator<K, V, R> extends AbstractScanQueryIterator<
      */
     ScanQueryIterator(
         GridIterator<CacheDataRow> it,
-        GridCacheQueryAdapter qry,
+        CacheQuery qry,
         AffinityTopologyVersion topVer,
         GridDhtLocalPartition locPart,
         IgniteClosure transformer,

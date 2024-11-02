@@ -85,7 +85,7 @@ public abstract class AbstractScanQueryIterator<K, V, R> extends GridCloseableIt
      */
     protected AbstractScanQueryIterator(
         GridCacheContext cctx,
-        GridCacheQueryAdapter qry,
+        CacheQuery qry,
         IgniteClosure<Cache.Entry<K, V>, R> transform,
         boolean locNode
     ) throws IgniteCheckedException {

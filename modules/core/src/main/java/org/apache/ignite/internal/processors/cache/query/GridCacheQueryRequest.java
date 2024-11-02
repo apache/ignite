@@ -176,7 +176,7 @@ public class GridCacheQueryRequest extends GridCacheIdMessage implements GridCac
     public static GridCacheQueryRequest startQueryRequest(GridCacheContext<?, ?> cctx, long reqId,
         GridCacheDistributedQueryFuture<?, ?, ?> fut) {
         GridCacheQueryBean bean = fut.query();
-        GridCacheQueryAdapter<?> qry = bean.query();
+        CacheQuery<?> qry = bean.query();
 
         boolean deployFilterOrTransformer = (qry.scanFilter() != null || qry.transform() != null)
             && cctx.gridDeploy().enabled();
@@ -214,7 +214,7 @@ public class GridCacheQueryRequest extends GridCacheIdMessage implements GridCac
      * @param reqId Request (cache query) ID.
      */
     public static GridCacheQueryRequest pageRequest(GridCacheContext<?, ?> cctx, long reqId,
-        GridCacheQueryAdapter<?> qry, boolean fields) {
+        CacheQuery<?> qry, boolean fields) {
 
         return new GridCacheQueryRequest(
             cctx.cacheId(),
