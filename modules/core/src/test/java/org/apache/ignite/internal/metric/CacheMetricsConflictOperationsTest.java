@@ -77,6 +77,9 @@ public class CacheMetricsConflictOperationsTest extends GridCommonAbstractTest {
     public boolean async;
 
     /** */
+    private IgniteEx ign;
+
+    /** */
     @Parameterized.Parameters(name = "atomicityMode={0}")
     public static Collection<?> parameters() {
         List<Object[]> params = new ArrayList<>();
@@ -104,6 +107,13 @@ public class CacheMetricsConflictOperationsTest extends GridCommonAbstractTest {
     }
 
     /** {@inheritDoc} */
+    @Override protected void beforeTest() throws Exception {
+        super.beforeTest();
+
+        ign = startGrid(0);
+    }
+
+    /** {@inheritDoc} */
     @Override protected void afterTest() throws Exception {
         super.afterTest();
 
@@ -113,24 +123,22 @@ public class CacheMetricsConflictOperationsTest extends GridCommonAbstractTest {
     /** Checks metrics with thick client. */
     @Test
     public void testCacheMetricsConflictOperationsThick() throws Exception {
-        startGrid(0);
-
         try (IgniteEx cli = startClientGrid()) {
             IgniteInternalCache<Integer, Integer> cachex = cli.cachex(DEFAULT_CACHE_NAME);
 
             updateCacheFromThick(cachex, KEYS_CNT);
-            checkMetrics(cli);
+            checkMetrics(cli, KEYS_CNT);
         }
     }
 
     /** Checks metrics with thin client. */
     @Test
-    public void testCacheMetricsConflictOperationsThin() throws Exception {
-        try (IgniteEx ign = startGrid(0); IgniteClient cli = Ignition.startClient(getClientConfiguration())) {
+    public void testCacheMetricsConflictOperationsThin() throws ExecutionException, InterruptedException {
+        try (IgniteClient cli = Ignition.startClient(getClientConfiguration())) {
             TcpClientCache<Object, Object> cache = (TcpClientCache<Object, Object>)cli.cache(DEFAULT_CACHE_NAME);
 
             updateCacheFromThin(cache, KEYS_CNT);
-            checkMetrics(ign);
+            checkMetrics(ign, KEYS_CNT);
         }
     }
 
@@ -171,7 +179,7 @@ public class CacheMetricsConflictOperationsTest extends GridCommonAbstractTest {
      * @param cache - {@link TcpClientCache} cache instance.
      * @param cnt - number of entities to put/remove
      * */
-    private void updateCacheFromThin(TcpClientCache<Object, Object> cache, int cnt) {
+    private void updateCacheFromThin(TcpClientCache<Object, Object> cache, int cnt) throws ExecutionException, InterruptedException {
         Map<Object, T3<?, GridCacheVersion, Long>> drMapPuts = new HashMap<>();
         Map<Object, GridCacheVersion> drMapRemoves = new HashMap<>();
 
@@ -184,13 +192,8 @@ public class CacheMetricsConflictOperationsTest extends GridCommonAbstractTest {
         }
 
         if (async) {
-            try {
-                cache.putAllConflictAsync(drMapPuts).get();
-                cache.removeAllConflictAsync(drMapRemoves).get();
-            }
-            catch (InterruptedException | ExecutionException e) {
-                throw new RuntimeException(e);
-            }
+            cache.putAllConflictAsync(drMapPuts).get();
+            cache.removeAllConflictAsync(drMapRemoves).get();
         }
         else {
             cache.putAllConflict(drMapPuts);
@@ -199,7 +202,7 @@ public class CacheMetricsConflictOperationsTest extends GridCommonAbstractTest {
     }
 
     /** Performs checks for #putAllConflict() and #removeAllConflict() operations related metrics. */
-    private void checkMetrics(IgniteEx ign) {
+    private void checkMetrics(IgniteEx ign, int cnt) {
         MetricRegistryImpl mreg = ign.context().metric().registry(cacheMetricsRegistryName(DEFAULT_CACHE_NAME, false));
 
         assertTrue(mreg.<LongMetric>findMetric("PutAllConflictTimeTotal").value() > 0);
@@ -207,6 +210,16 @@ public class CacheMetricsConflictOperationsTest extends GridCommonAbstractTest {
 
         assertTrue(stream(mreg.<HistogramMetricImpl>findMetric("PutAllConflictTime").value()).sum() > 0);
         assertTrue(stream(mreg.<HistogramMetricImpl>findMetric("RemoveAllConflictTime").value()).sum() > 0);
+
+        checkMetricsDestinationCount(cnt);
+    }
+
+    /** Performs check on destination cluster */
+    private void checkMetricsDestinationCount(int cnt) {
+        MetricRegistryImpl mreg = ign.context().metric().registry(cacheMetricsRegistryName(DEFAULT_CACHE_NAME, false));
+
+        assertEquals(cnt, mreg.<LongMetric>findMetric("CachePuts").value());
+        assertEquals(cnt, mreg.<LongMetric>findMetric("CacheRemovals").value());
     }
 
     /** */
