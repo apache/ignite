@@ -20,7 +20,7 @@ package org.apache.ignite.internal.processors.query.calcite.util;
 import java.math.BigDecimal;
 import java.math.BigInteger;
 import java.math.RoundingMode;
-import org.jetbrains.annotations.Nullable;
+import org.apache.calcite.sql.type.SqlTypeName;
 
 import static org.apache.calcite.sql.type.SqlTypeName.BIGINT;
 import static org.apache.calcite.sql.type.SqlTypeName.INTEGER;
@@ -30,23 +30,25 @@ import static org.apache.calcite.sql.type.SqlTypeName.TINYINT;
 /** Math operations with overflow checking. */
 public class IgniteMath {
     /** */
+    private static final BigDecimal UPPER_LONG_BIG_DECIMAL = BigDecimal.valueOf(Long.MAX_VALUE).add(BigDecimal.ONE);
+
+    /** */
+    private static final BigDecimal LOWER_LONG_BIG_DECIMAL = BigDecimal.valueOf(Long.MIN_VALUE).subtract(BigDecimal.ONE);
+
+    /** */
+    private static final Double UPPER_LONG_DOUBLE = (double)Long.MAX_VALUE;
+
+    /** */
+    private static final Double LOWER_LONG_DOUBLE = (double)Long.MIN_VALUE;
+
+    /** */
+    private static final Float UPPER_LONG_FLOAT = (float)Long.MAX_VALUE;
+
+    /** */
+    private static final Float LOWER_LONG_FLOAT = (float)Long.MIN_VALUE;
+
+    /** */
     public static final RoundingMode NUMERIC_ROUNDING_MODE = RoundingMode.HALF_UP;
-
-    /** Cached bounds of long type, min and max for Float, Double, BigDecimal. */
-    private static final Number[] LONG_BOUNDS = new Number[] {Long.MIN_VALUE - 0.5f, Long.MAX_VALUE + 0.5f,
-        Long.MIN_VALUE - 0.5d, Long.MAX_VALUE + 0.5d, BigDecimal.valueOf(Long.MIN_VALUE), BigDecimal.valueOf(Long.MAX_VALUE)};
-
-    /** Cached bounds of integer type, min and max for Float, Double, BigDecimal. */
-    private static final Number[] INT_BOUNDS = new Number[] {Integer.MIN_VALUE - 0.5f, Integer.MAX_VALUE + 0.5f,
-        Integer.MIN_VALUE - 0.5d, Integer.MAX_VALUE + 0.5d, BigDecimal.valueOf(Integer.MIN_VALUE), BigDecimal.valueOf(Integer.MAX_VALUE)};
-
-    /** Cached bounds of short type, min and max for Float, Double, BigDecimal. */
-    private static final Number[] SHORT_BOUNDS = new Number[] {Short.MIN_VALUE - 0.5f, Short.MAX_VALUE + 0.5f,
-        Short.MIN_VALUE - 0.5d, Short.MAX_VALUE + 0.5d, BigDecimal.valueOf(Short.MIN_VALUE), BigDecimal.valueOf(Short.MAX_VALUE)};
-
-    /** Cached bounds of byte type, min and max for Float, Double, BigDecimal. */
-    private static final Number[] BYTE_BOUNDS = new Number[] {Byte.MIN_VALUE - 0.5f, Byte.MAX_VALUE + 0.5f,
-        Byte.MIN_VALUE - 0.5d, Byte.MAX_VALUE + 0.5d, BigDecimal.valueOf(Byte.MIN_VALUE), BigDecimal.valueOf(Byte.MAX_VALUE)};
 
     /** Returns the sum of its arguments, throwing an exception if the result overflows an {@code long}. */
     public static long addExact(long x, long y) {
@@ -241,20 +243,18 @@ public class IgniteMath {
 
     /** Cast value to {@code long}, throwing an exception if the result overflows an {@code long}. */
     public static long convertToLongExact(Number x) {
-        BigDecimal rounded = checkLongBounds(x);
+        x = round(x);
 
-        if (rounded != null)
-            return rounded.longValue();
+        checkNumberLongBounds(BIGINT, x);
 
-        return convertToBigDecimal(x).setScale(0, NUMERIC_ROUNDING_MODE).longValue();
+        return x.longValue();
     }
 
     /** Cast value to {@code long}, throwing an exception if the result overflows an {@code long}. */
     public static long convertToLongExact(double x) {
-        if (x < (Double)LONG_BOUNDS[2] || x > (Double)LONG_BOUNDS[3])
-            throw new ArithmeticException(BIGINT.getName() + " overflow");
+        checkNumberLongBounds(BIGINT, x = round(x));
 
-        return (long)round(x);
+        return (long)x;
     }
 
     /** Cast value to {@code int}, throwing an exception if the result overflows an {@code int}. */
@@ -269,20 +269,16 @@ public class IgniteMath {
 
     /** Cast value to {@code int}, throwing an exception if the result overflows an {@code int}. */
     public static int convertToIntExact(double x) {
-        if (x < (Double)INT_BOUNDS[2] || x > (Double)INT_BOUNDS[3])
-            throw new ArithmeticException(INTEGER.getName() + " overflow");
-
-        return (int)round(x);
+        return convertToIntExact((long)round(x));
     }
 
     /** Cast value to {@code int}, throwing an exception if the result overflows an {@code int}. */
     public static int convertToIntExact(Number x) {
-        BigDecimal rounded = checkIntegerBounds(x);
+        x = round(x);
 
-        if (rounded != null)
-            return rounded.intValue();
+        checkNumberLongBounds(INTEGER, x);
 
-        return convertToBigDecimal(x).setScale(0, NUMERIC_ROUNDING_MODE).intValue();
+        return convertToIntExact(x.longValue());
     }
 
     /** Cast value to {@code short}, throwing an exception if the result overflows an {@code short}. */
@@ -297,20 +293,16 @@ public class IgniteMath {
 
     /** Cast value to {@code short}, throwing an exception if the result overflows an {@code short}. */
     public static short convertToShortExact(double x) {
-        if (x < (Double)SHORT_BOUNDS[2] || x > (Double)SHORT_BOUNDS[3])
-            throw new ArithmeticException(SMALLINT.getName() + " overflow");
-
-        return (short)round(x);
+        return convertToShortExact((long)round(x));
     }
 
     /** Cast value to {@code short}, throwing an exception if the result overflows an {@code short}. */
     public static short convertToShortExact(Number x) {
-        BigDecimal rounded = checkShortBounds(x);
+        x = round(x);
 
-        if (rounded != null)
-            return rounded.shortValue();
+        checkNumberLongBounds(SMALLINT, x);
 
-        return convertToBigDecimal(x).setScale(0, NUMERIC_ROUNDING_MODE).shortValue();
+        return convertToShortExact(x.longValue());
     }
 
     /** Cast value to {@code byte}, throwing an exception if the result overflows an {@code byte}. */
@@ -325,20 +317,16 @@ public class IgniteMath {
 
     /** Cast value to {@code byte}, throwing an exception if the result overflows an {@code byte}. */
     public static byte convertToByteExact(double x) {
-        if (x < (Double)BYTE_BOUNDS[2] || x > (Double)BYTE_BOUNDS[3])
-            throw new ArithmeticException(TINYINT.getName() + " overflow");
-
-        return (byte)round(x);
+        return convertToByteExact((long)round(x));
     }
 
     /** Cast value to {@code byte}, throwing an exception if the result overflows an {@code byte}. */
     public static byte convertToByteExact(Number x) {
-        BigDecimal rounded = checkByteBounds(x);
+        x = round(x);
 
-        if (rounded != null)
-            return rounded.byteValue();
+        checkNumberLongBounds(TINYINT, x);
 
-        return convertToBigDecimal(x).setScale(0, NUMERIC_ROUNDING_MODE).byteValue();
+        return convertToByteExact(x.longValue());
     }
 
     /** */
@@ -360,107 +348,32 @@ public class IgniteMath {
     }
 
     /** */
-    @Nullable private static BigDecimal checkLongBounds(Number x) {
+    private static void checkNumberLongBounds(SqlTypeName type, Number x) {
         if (x instanceof BigDecimal) {
-            BigDecimal rounded = ((BigDecimal)x).setScale(0, NUMERIC_ROUNDING_MODE);
-
-            if (rounded.compareTo((BigDecimal)LONG_BOUNDS[4]) >= 0 && rounded.compareTo((BigDecimal)LONG_BOUNDS[5]) <= 0)
-                return rounded;
+            if ((((BigDecimal)x).compareTo(UPPER_LONG_BIG_DECIMAL) < 0 && ((BigDecimal)x).compareTo(LOWER_LONG_BIG_DECIMAL) > 0))
+                return;
         }
         else if (x instanceof Double) {
-            if (((Double)x).compareTo((Double)LONG_BOUNDS[2]) < 0 && ((Double)x).compareTo((Double)LONG_BOUNDS[3]) > 0)
-                return null;
+            if ((((Double)x).compareTo(UPPER_LONG_DOUBLE) <= 0 && ((Double)x).compareTo(LOWER_LONG_DOUBLE) >= 0))
+                return;
         }
         else if (x instanceof Float) {
-            if (((Float)x).compareTo((Float)LONG_BOUNDS[0]) < 0 && ((Float)x).compareTo((Float)LONG_BOUNDS[1]) > 0)
-                return null;
+            if ((((Float)x).compareTo(UPPER_LONG_FLOAT) <= 0 && ((Float)x).compareTo(LOWER_LONG_FLOAT) >= 0))
+                return;
         }
         else
-            return null;
+            return;
 
-        throw new ArithmeticException(BIGINT.getName() + " overflow");
-    }
-
-    /** */
-    @Nullable private static BigDecimal checkIntegerBounds(Number x) {
-        if (x instanceof BigDecimal) {
-            BigDecimal rounded = ((BigDecimal)x).setScale(0, NUMERIC_ROUNDING_MODE);
-
-            if (rounded.compareTo((BigDecimal)INT_BOUNDS[4]) >= 0 && rounded.compareTo((BigDecimal)INT_BOUNDS[5]) <= 0)
-                return rounded;
-        }
-        else if (x instanceof Double) {
-            if (((Double)x).compareTo((Double)INT_BOUNDS[2]) < 0 && ((Double)x).compareTo((Double)INT_BOUNDS[3]) > 0)
-                return null;
-        }
-        else if (x instanceof Float) {
-            if (((Float)x).compareTo((Float)INT_BOUNDS[0]) < 0 && ((Float)x).compareTo((Float)INT_BOUNDS[1]) > 0)
-                return null;
-        }
-        else {
-            long longVal = x.longValue();
-
-            if (longVal >= Integer.MIN_VALUE && longVal <= Integer.MAX_VALUE)
-                return null;
-        }
-
-        throw new ArithmeticException(INTEGER.getName() + " overflow");
-    }
-
-    /** */
-    @Nullable private static BigDecimal checkShortBounds(Number x) {
-        if (x instanceof BigDecimal) {
-            BigDecimal rounded = ((BigDecimal)x).setScale(0, NUMERIC_ROUNDING_MODE);
-
-            if (rounded.compareTo((BigDecimal)SHORT_BOUNDS[4]) >= 0 && rounded.compareTo((BigDecimal)SHORT_BOUNDS[5]) <= 0)
-                return rounded;
-        }
-        else if (x instanceof Double) {
-            if (((Double)x).compareTo((Double)SHORT_BOUNDS[2]) < 0 && ((Double)x).compareTo((Double)SHORT_BOUNDS[3]) > 0)
-                return null;
-        }
-        else if (x instanceof Float) {
-            if (((Float)x).compareTo((Float)SHORT_BOUNDS[0]) < 0 && ((Float)x).compareTo((Float)SHORT_BOUNDS[1]) > 0)
-                return null;
-        }
-        else {
-            long longVal = x.longValue();
-
-            if (longVal >= Short.MIN_VALUE && longVal <= Short.MAX_VALUE)
-                return null;
-        }
-
-        throw new ArithmeticException(SMALLINT.getName() + " overflow");
-    }
-
-    /** */
-    @Nullable private static BigDecimal checkByteBounds(Number x) {
-        if (x instanceof BigDecimal) {
-            BigDecimal rounded = ((BigDecimal)x).setScale(0, NUMERIC_ROUNDING_MODE);
-
-            if (rounded.compareTo((BigDecimal)BYTE_BOUNDS[4]) >= 0 && rounded.compareTo((BigDecimal)BYTE_BOUNDS[5]) <= 0)
-                return rounded;
-        }
-        else if (x instanceof Double) {
-            if (((Double)x).compareTo((Double)BYTE_BOUNDS[2]) < 0 && ((Double)x).compareTo((Double)BYTE_BOUNDS[3]) > 0)
-                return null;
-        }
-        else if (x instanceof Float) {
-            if (((Float)x).compareTo((Float)BYTE_BOUNDS[0]) < 0 && ((Float)x).compareTo((Float)BYTE_BOUNDS[1]) > 0)
-                return null;
-        }
-        else {
-            long longVal = x.longValue();
-
-            if (longVal >= Byte.MIN_VALUE && longVal <= Byte.MAX_VALUE)
-                return null;
-        }
-
-        throw new ArithmeticException(TINYINT.getName() + " overflow");
+        throw new ArithmeticException(type.getName() + " overflow");
     }
 
     /** */
     private static double round(double x) {
         return x < 0.0d ? x - 0.5d : x + 0.5d;
+    }
+
+    /** */
+    private static Number round(Number x) {
+        return convertToBigDecimal(x).setScale(0, NUMERIC_ROUNDING_MODE);
     }
 }
