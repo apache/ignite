@@ -143,9 +143,9 @@ public class Dump implements AutoCloseable {
 
         this.dumpDir = dumpDir;
         this.consistentId = consistentId == null ? null : U.maskForFileName(consistentId);
-        this.cctx = standaloneKernalContext(dumpDir, log);
         this.metadata = metadata(dumpDir, this.consistentId);
         this.keepBinary = keepBinary;
+        this.cctx = standaloneKernalContext(dumpDir, log);
         this.raw = raw;
         this.encSpi = encSpi;
         this.comprParts = metadata.get(0).compressPartitions();
@@ -203,7 +203,9 @@ public class Dump implements AutoCloseable {
     }
 
     /** @return List of snapshot metadata saved in {@link #dumpDir}. */
-    private List<SnapshotMetadata> metadata(File dumpDir, @Nullable String consistentId) {
+    private static List<SnapshotMetadata> metadata(File dumpDir, @Nullable String consistentId) {
+        JdkMarshaller marsh = new JdkMarshaller();
+
         ClassLoader clsLdr = U.resolveClassLoader(new IgniteConfiguration());
 
         File[] files = dumpDir.listFiles(f ->
@@ -215,7 +217,7 @@ public class Dump implements AutoCloseable {
 
         return Arrays.stream(files).map(meta -> {
             try (InputStream in = new BufferedInputStream(Files.newInputStream(meta.toPath()))) {
-                return cctx.marshallerContext().jdkMarshaller().<SnapshotMetadata>unmarshal(in, clsLdr);
+                return marsh.<SnapshotMetadata>unmarshal(in, clsLdr);
             }
             catch (IOException | IgniteCheckedException e) {
                 throw new IgniteException(e);

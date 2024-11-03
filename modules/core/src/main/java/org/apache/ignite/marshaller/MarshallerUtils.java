@@ -60,6 +60,9 @@ public class MarshallerUtils {
     /** Job sender node version. */
     private static final ThreadLocal<IgniteProductVersion> JOB_RCV_NODE_VER = new ThreadLocal<>();
 
+    /** */
+    private static final Object MUX = new Object();
+
     /**
      * Set node name to marshaller context if possible.
      *
@@ -134,31 +137,30 @@ public class MarshallerUtils {
         if (!IgniteSystemProperties.getBoolean(IGNITE_ENABLE_OBJECT_INPUT_FILTER_AUTOCONFIGURATION, true))
             return;
 
-        ObjectInputFilter curFilter = ObjectInputFilter.Config.getSerialFilter();
+        synchronized (MUX) {
+            ObjectInputFilter objFilter = ObjectInputFilter.Config.getSerialFilter();
 
-        if (curFilter == null) {
-            ObjectInputFilter.Config.setSerialFilter(new IgniteObjectInputFilter(clsFilter));
+            if (objFilter == null) {
+                ObjectInputFilter.Config.setSerialFilter(new IgniteObjectInputFilter(clsFilter));
+            }
+            else if (objFilter instanceof IgniteObjectInputFilter) {
+                IgniteObjectInputFilter igniteObjFilter = (IgniteObjectInputFilter)objFilter;
 
-            return;
+                if (!Objects.equals(igniteObjFilter.classFilter(), clsFilter)) {
+                    throw new IgniteCheckedException("Failed to autoconfigure Ignite Object Input Filter for the current JVM" +
+                        " because it was already set by another Ignite instance which is running in the same JVM and is" +
+                        " configured with a different Marshaller Black or White lists.");
+                }
+            }
+            else {
+                throw new IgniteCheckedException("Failed to autoconfigure Ignite Object Input Filter for the current JVM as" +
+                    " it was already set via `jdk.serialFilter` JVM system property or programmatically. You can disable" +
+                    " Object Input Stream Filter autoconfiguration by setting `IGNITE_ENABLE_OBJECT_INPUT_FILTER_AUTOCONFIGURATION`" +
+                    " system property to `false`. Note that in this case you must configure Java Serialization" +
+                    " Filtering manually to filter out classes defined by the `IGNITE_MARSHALLER_BLACKLIST` system property" +
+                    " [objectInputFilterClass=" + objFilter.getClass().getName() + ']');
+            }
         }
-
-        if (curFilter instanceof IgniteObjectInputFilter) {
-            IgniteObjectInputFilter curIgniteFilter = (IgniteObjectInputFilter)curFilter;
-
-            if (Objects.equals(curIgniteFilter.classFilter(), clsFilter))
-                return;
-
-            throw new IgniteCheckedException("Failed to autoconfigure Ignite Object Input Filter for the current JVM" +
-                " because it was already set by another Ignite instance which is running in the same JVM and is" +
-                " configured with a different Marshaller Black or White lists.");
-        }
-
-        throw new IgniteCheckedException("Failed to autoconfigure Ignite Object Input Filter for the current JVM as" +
-            " it was already set via `jdk.serialFilter` JVM system property or programmatically. You can disable" +
-            " Object Input Stream Filter autoconfiguration by setting `IGNITE_ENABLE_OBJECT_INPUT_FILTER_AUTOCONFIGURATION`" +
-            " system property to `false`. Note that in this case you must configure Java Serialization" +
-            " Filtering manually to filter out classes defined by the `IGNITE_MARSHALLER_BLACKLIST` system property" +
-            " [objectInputFilterClass=" + curFilter.getClass().getName() + ']');
     }
 
     /**
