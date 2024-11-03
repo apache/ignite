@@ -795,20 +795,11 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
     private GridCloseableIterator scanIterator(final CacheQuery<?> qry, IgniteClosure transformer,
         boolean locNode)
         throws IgniteCheckedException {
-        final InternalScanFilter<K, V> intFilter = internalFilter(qry.scanFilter());
-
         try {
             Integer part = qry.partition();
 
             if (part != null && (part < 0 || part >= cctx.affinity().partitions()))
-                return new GridEmptyCloseableIterator() {
-                    @Override public void close() throws IgniteCheckedException {
-                        if (intFilter != null)
-                            intFilter.close();
-
-                        super.close();
-                    }
-                };
+                return new GridEmptyCloseableIterator<>();
 
             AffinityTopologyVersion topVer = GridQueryProcessor.getRequestAffinityTopologyVersion();
 
@@ -856,8 +847,7 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
             }
 
             ScanQueryIterator iter = new ScanQueryIterator(it, qry, topVer, locPart,
-                intFilter,
-                prepareTransformer(transformer),
+                transformer,
                 locNode, locNode ? locIters : null, cctx, log);
 
             if (locNode) {
@@ -869,36 +859,6 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
             return iter;
         }
         catch (IgniteCheckedException | RuntimeException e) {
-            if (intFilter != null)
-                intFilter.close();
-
-            throw e;
-        }
-    }
-
-    /** */
-    private @Nullable IgniteClosure<?, ?> prepareTransformer(IgniteClosure<?, ?> transformer) throws IgniteCheckedException {
-        return SecurityUtils.sandboxedProxy(cctx.kernalContext(), IgniteClosure.class, injectResources(transformer, cctx));
-    }
-
-    /** */
-    private @Nullable InternalScanFilter<K, V> internalFilter(IgniteBiPredicate<K, V> keyValFilter) throws IgniteCheckedException {
-        if (keyValFilter == null)
-            return null;
-
-        try {
-            if (keyValFilter instanceof PlatformCacheEntryFilter)
-                ((PlatformCacheEntryFilter)keyValFilter).cacheContext(cctx);
-            else
-                injectResources(keyValFilter, cctx);
-
-            keyValFilter = SecurityUtils.sandboxedProxy(cctx.kernalContext(), IgniteBiPredicate.class, keyValFilter);
-
-            return new InternalScanFilter<>(keyValFilter);
-        }
-        catch (IgniteCheckedException | RuntimeException e) {
-            InternalScanFilter.close(keyValFilter);
-
             throw e;
         }
     }
@@ -3119,7 +3079,6 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
          * @param qry Query.
          * @param topVer Topology version.
          * @param locPart Local partition.
-         * @param intScanFilter Internal scan filter.
          * @param transformer Transformer.
          * @param locNode Local node flag.
          * @param locIters Local iterators set.
@@ -3131,18 +3090,16 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
             CacheQuery qry,
             AffinityTopologyVersion topVer,
             GridDhtLocalPartition locPart,
-            InternalScanFilter<K, V> intScanFilter,
             IgniteClosure transformer,
             boolean locNode,
             @Nullable GridConcurrentHashSet<ScanQueryIterator> locIters,
             GridCacheContext cctx,
-            IgniteLogger log) {
+            IgniteLogger log) throws IgniteCheckedException {
             assert !locNode || locIters != null : "Local iterators can't be null for local query.";
 
             this.it = it;
             this.topVer = topVer;
             this.locPart = locPart;
-            this.intScanFilter = intScanFilter;
             this.cctx = cctx;
 
             this.log = log;
@@ -3160,9 +3117,6 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
 
             subjId = securitySubjectId(cctx);
 
-            // keep binary for remote scans if possible
-            keepBinary = (!locNode && intScanFilter == null && transformer == null && !readEvt) || qry.keepBinary();
-            transform = transformer;
             dht = cctx.isNear() ? cctx.near().dht() : cctx.dht();
             cache = dht != null ? dht : cctx.cache();
             objCtx = cctx.cacheObjectContext();
@@ -3173,6 +3127,10 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
 
             startTime = U.currentTimeMillis();
             pageSize = qry.pageSize();
+            transform = prepareTransformer(transformer);
+            intScanFilter = internalFilter(qry.scanFilter());
+            // keep binary for remote scans if possible
+            keepBinary = (!locNode && intScanFilter == null && transformer == null && !readEvt) || qry.keepBinary();
         }
 
         /** {@inheritDoc} */
@@ -3399,6 +3357,33 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
         /** */
         public int pageSize() {
             return pageSize;
+        }
+
+        /** */
+        private @Nullable IgniteClosure<?, ?> prepareTransformer(IgniteClosure<?, ?> transformer) throws IgniteCheckedException {
+            return SecurityUtils.sandboxedProxy(cctx.kernalContext(), IgniteClosure.class, injectResources(transformer, cctx));
+        }
+
+        /** */
+        private @Nullable InternalScanFilter<K, V> internalFilter(IgniteBiPredicate<K, V> keyValFilter) throws IgniteCheckedException {
+            if (keyValFilter == null)
+                return null;
+
+            try {
+                if (keyValFilter instanceof PlatformCacheEntryFilter)
+                    ((PlatformCacheEntryFilter)keyValFilter).cacheContext(cctx);
+                else
+                    injectResources(keyValFilter, cctx);
+
+                keyValFilter = SecurityUtils.sandboxedProxy(cctx.kernalContext(), IgniteBiPredicate.class, keyValFilter);
+
+                return new InternalScanFilter<>(keyValFilter);
+            }
+            catch (IgniteCheckedException | RuntimeException e) {
+                InternalScanFilter.close(keyValFilter);
+
+                throw e;
+            }
         }
     }
 
