@@ -878,7 +878,7 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
 
     /** */
     private @Nullable IgniteClosure<?, ?> prepareTransformer(IgniteClosure<?, ?> transformer) throws IgniteCheckedException {
-        return SecurityUtils.sandboxedProxy(cctx.kernalContext(), IgniteClosure.class, injectResources(transformer));
+        return SecurityUtils.sandboxedProxy(cctx.kernalContext(), IgniteClosure.class, injectResources(transformer, cctx));
     }
 
     /** */
@@ -890,7 +890,7 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
             if (keyValFilter instanceof PlatformCacheEntryFilter)
                 ((PlatformCacheEntryFilter)keyValFilter).cacheContext(cctx);
             else
-                injectResources(keyValFilter);
+                injectResources(keyValFilter, cctx);
 
             keyValFilter = SecurityUtils.sandboxedProxy(cctx.kernalContext(), IgniteBiPredicate.class, keyValFilter);
 
@@ -907,7 +907,7 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
      * @param o Object to inject resources to.
      * @throws IgniteCheckedException If failure occurred while injecting resources.
      */
-    private <R> R injectResources(@Nullable R o) throws IgniteCheckedException {
+    static <R> R injectResources(@Nullable R o, GridCacheContext<?, ?> cctx) throws IgniteCheckedException {
         if (o == null)
             return null;
 
@@ -952,7 +952,7 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
 
             try {
                 // Preparing query closures.
-                final IgniteReducer<Object, Object> rdc = injectResources((IgniteReducer<Object, Object>)qryInfo.reducer());
+                final IgniteReducer<Object, Object> rdc = injectResources((IgniteReducer<Object, Object>)qryInfo.reducer(), cctx);
 
                 CacheQuery<?> qry = qryInfo.query();
 
@@ -1149,7 +1149,8 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
             CacheQuery<?> qry = qryInfo.query();
 
             try {
-                IgniteReducer<Cache.Entry<K, V>, Object> rdc = injectResources((IgniteReducer<Cache.Entry<K, V>, Object>)qryInfo.reducer());
+                IgniteReducer<Cache.Entry<K, V>, Object> rdc =
+                    injectResources((IgniteReducer<Cache.Entry<K, V>, Object>)qryInfo.reducer(), cctx);
 
                 int pageSize = qry.pageSize();
 
@@ -1398,9 +1399,6 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
 
         final String namex = cctx.name();
 
-        final InternalScanFilter<K, V> intFilter = qry.scanFilter() != null ?
-            new InternalScanFilter<>(qry.scanFilter()) : null;
-
         try {
             assert qry.type() == SCAN;
 
@@ -1419,7 +1417,7 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
                     namex,
                     null,
                     null,
-                    intFilter != null ? intFilter.scanFilter() : null,
+                    qry.scanFilter(),
                     null,
                     null,
                     securitySubjectId(cctx),
@@ -1433,9 +1431,6 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
             return it;
         }
         catch (Exception e) {
-            if (intFilter != null)
-                intFilter.close();
-
             if (updateStatistics)
                 cctx.queries().collectMetrics(GridCacheQueryType.SCAN, namex, startTime,
                     U.currentTimeMillis() - startTime, true);
