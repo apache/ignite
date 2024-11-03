@@ -24,10 +24,10 @@ import java.util.Deque;
 import java.util.HashSet;
 import java.util.LinkedList;
 import java.util.List;
-import java.util.Map;
 import java.util.NoSuchElementException;
 import java.util.Queue;
 import java.util.Set;
+import javax.cache.Cache;
 import javax.cache.CacheException;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
@@ -261,7 +261,7 @@ public class CacheQuery<T> {
     private IgniteClosure<?, ?> transform;
 
     /** Partition. */
-    private Integer part;
+    private final Integer part;
 
     /** */
     private final boolean incMeta;
@@ -291,7 +291,7 @@ public class CacheQuery<T> {
     private int taskHash;
 
     /** */
-    private Boolean dataPageScanEnabled;
+    private final Boolean dataPageScanEnabled;
 
     /**
      * Cache query adapter for SCAN query.
@@ -308,7 +308,7 @@ public class CacheQuery<T> {
         GridCacheContext<?, ?> cctx,
         GridCacheQueryType type,
         @Nullable IgniteBiPredicate<Object, Object> filter,
-        @Nullable IgniteClosure<Map.Entry, Object> transform,
+        @Nullable IgniteClosure<Cache.Entry, Object> transform,
         @Nullable Integer part,
         boolean keepBinary,
         boolean forceLocal,
@@ -611,8 +611,8 @@ public class CacheQuery<T> {
     }
 
     /** @return Transformer. */
-    @Nullable public <K, V> IgniteClosure<Map.Entry<K, V>, Object> transform() {
-        return (IgniteClosure<Map.Entry<K, V>, Object>)transform;
+    @Nullable public <K, V> IgniteClosure<Cache.Entry<K, V>, Object> transform() {
+        return (IgniteClosure<Cache.Entry<K, V>, Object>)transform;
     }
 
     /** @return Partition. */
@@ -994,14 +994,14 @@ public class CacheQuery<T> {
                     assert fut != null;
 
                     if (firstItemReturned)
-                        return (cur = convert(fut.next())) != null;
+                        return (cur = fut.next()) != null;
 
                     try {
                         fut.awaitFirstItemAvailable();
 
                         firstItemReturned = true;
 
-                        return (cur = convert(fut.next())) != null;
+                        return (cur = fut.next()) != null;
                     }
                     catch (IgniteClientDisconnectedCheckedException e) {
                         throw CU.convertToCacheException(e);
@@ -1011,19 +1011,6 @@ public class CacheQuery<T> {
                     }
                 }
             }
-        }
-
-        /**
-         * @param obj Entry to convert.
-         * @return Cache entry
-         */
-        private Object convert(Object obj) {
-            if (qry.transform() != null)
-                return obj;
-
-            Map.Entry e = (Map.Entry)obj;
-
-            return e == null ? null : new CacheQueryEntry(e.getKey(), e.getValue());
         }
 
         /** @param e Exception for query run. */

@@ -46,7 +46,6 @@ import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteSystemProperties;
-import org.apache.ignite.cache.CacheEntry;
 import org.apache.ignite.cache.QueryIndexType;
 import org.apache.ignite.cache.query.IndexQuery;
 import org.apache.ignite.cache.query.QueryMetrics;
@@ -757,15 +756,15 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
 
         IgniteUuid id = filter.setId();
 
-        CacheQuery<CacheEntry<K, ?>> qry0 = new CacheQuery<>(cctx,
+        CacheQuery<Cache.Entry<K, ?>> qry0 = new CacheQuery<>(cctx,
             SCAN,
             new IgniteBiPredicate<Object, Object>() {
                 @Override public boolean apply(Object k, Object v) {
                     return k instanceof SetItemKey && id.equals(((SetItemKey)k).setId());
                 }
             },
-            new IgniteClosure<Map.Entry, Object>() {
-                @Override public Object apply(Map.Entry entry) {
+            new IgniteClosure<Cache.Entry, Object>() {
+                @Override public Object apply(Cache.Entry entry) {
                     return new IgniteBiTuple<K, V>((K)((SetItemKey)entry.getKey()).item(), (V)Boolean.TRUE);
                 }
             },
@@ -2873,12 +2872,12 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
      * @param keepBinary Keep binary flag.
      * @return Created query.
      */
-    public CacheQuery<Map.Entry<K, V>> createFullTextQuery(String clsName,
+    public CacheQuery<Cache.Entry<K, V>> createFullTextQuery(String clsName,
         String search, int limit, int pageSize, boolean keepBinary) {
         A.notNull("clsName", clsName);
         A.notNull("search", search);
 
-        return new CacheQuery<Map.Entry<K, V>>(cctx,
+        return new CacheQuery<Cache.Entry<K, V>>(cctx,
             TEXT,
             clsName,
             search,
