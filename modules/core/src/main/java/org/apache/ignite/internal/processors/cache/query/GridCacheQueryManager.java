@@ -41,6 +41,7 @@ import java.util.concurrent.Callable;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
+import java.util.concurrent.locks.ReentrantReadWriteLock;
 import java.util.function.BiFunction;
 import javax.cache.Cache;
 import org.apache.ignite.Ignite;
@@ -1196,7 +1197,13 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
                     if (!iter.hasNext())
                         break;
 
-                    Object row0 = iter.next();
+                    Object row0 = null;
+                    try {
+                        row0 = iter.next();
+                    } catch (NoSuchElementException e) {
+                        onPageReady(loc, qryInfo, null, true, null);
+                        break;
+                    }
 
                     // Query is cancelled.
                     if (row0 == null) {
@@ -3116,6 +3123,7 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
         /** */
         private final int pageSize;
 
+        private ReentrantReadWriteLock lock ;
         /** */
         @Nullable private final GridConcurrentHashSet<ScanQueryIterator> locIters;
 
@@ -3178,48 +3186,64 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
 
             startTime = U.currentTimeMillis();
             pageSize = qry.pageSize();
+
+            lock = new ReentrantReadWriteLock() ;
         }
 
         /** {@inheritDoc} */
         @Override protected Object onNext() {
-            if (needAdvance)
-                advance();
-            else
-                needAdvance = true;
+            lock.readLock().lock();
+            try {
+                if (needAdvance)
+                    advance();
+                else
+                    needAdvance = true;
 
-            if (next == null)
-                throw new NoSuchElementException();
+                if (next == null)
+                    throw new NoSuchElementException();
 
-            return next;
+                return next;
+            }finally {
+                lock.readLock().unlock();
+            }
         }
 
         /** {@inheritDoc} */
         @Override protected boolean onHasNext() {
-            if (needAdvance) {
-                advance();
+            lock.readLock().lock();
+            try {
+                if (needAdvance) {
+                    advance();
 
-                needAdvance = false;
+                    needAdvance = false;
+                }
+                return next != null;
+            }finally {
+                lock.readLock().unlock();
             }
-
-            return next != null;
         }
 
         /** {@inheritDoc} */
         @Override protected void onClose() {
-            if (expiryPlc != null && dht != null) {
-                dht.sendTtlUpdateRequest(expiryPlc);
+            lock.writeLock().lock();
+            try {
+                if (expiryPlc != null && dht != null) {
+                    dht.sendTtlUpdateRequest(expiryPlc);
 
-                expiryPlc = null;
+                    expiryPlc = null;
+                }
+
+                if (locPart != null)
+                    locPart.release();
+
+                if (intScanFilter != null)
+                    intScanFilter.close();
+
+                if (locIters != null)
+                    locIters.remove(this);
+            }finally {
+                lock.writeLock().unlock();
             }
-
-            if (locPart != null)
-                locPart.release();
-
-            if (intScanFilter != null)
-                intScanFilter.close();
-
-            if (locIters != null)
-                locIters.remove(this);
         }
 
         /**
