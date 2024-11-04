@@ -19,6 +19,7 @@ package org.apache.ignite.internal.processors.cache.query;
 
 import java.util.NoSuchElementException;
 import java.util.UUID;
+import javax.cache.Cache;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
@@ -55,12 +56,12 @@ import static org.apache.ignite.internal.processors.cache.query.GridCacheQueryMa
 import static org.apache.ignite.internal.processors.security.SecurityUtils.securitySubjectId;
 
 /** */
-public final class ScanQueryIterator<K, V> extends GridCloseableIteratorAdapter<Object> {
+public final class ScanQueryIterator<K, V, R> extends GridCloseableIteratorAdapter<R> {
     /** */
     private static final long serialVersionUID = 0L;
 
     /** */
-    private final GridDhtCacheAdapter dht;
+    private final GridDhtCacheAdapter<K, V> dht;
 
     /** */
     private final GridDhtLocalPartition locPart;
@@ -75,7 +76,7 @@ public final class ScanQueryIterator<K, V> extends GridCloseableIteratorAdapter<
     private final GridIterator<CacheDataRow> it;
 
     /** */
-    private final GridCacheAdapter cache;
+    private final GridCacheAdapter<K, V> cache;
 
     /** */
     private final AffinityTopologyVersion topVer;
@@ -96,19 +97,19 @@ public final class ScanQueryIterator<K, V> extends GridCloseableIteratorAdapter<
     private final String taskName;
 
     /** */
-    private final IgniteClosure transform;
+    private final IgniteClosure<Cache.Entry<K, V>, R> transform;
 
     /** */
     private final CacheObjectContext objCtx;
 
     /** */
-    private final GridCacheContext cctx;
+    private final GridCacheContext<K, V> cctx;
 
     /** */
     private final IgniteLogger log;
 
     /** */
-    private Object next;
+    private R next;
 
     /** */
     private boolean needAdvance;
@@ -129,7 +130,7 @@ public final class ScanQueryIterator<K, V> extends GridCloseableIteratorAdapter<
     private final int pageSize;
 
     /** */
-    @Nullable private final GridConcurrentHashSet<ScanQueryIterator> locIters;
+    @Nullable private final GridConcurrentHashSet<ScanQueryIterator<K, V, R>> locIters;
 
     /**
      * @param it Iterator.
@@ -144,13 +145,13 @@ public final class ScanQueryIterator<K, V> extends GridCloseableIteratorAdapter<
      */
     ScanQueryIterator(
         GridIterator<CacheDataRow> it,
-        CacheQuery qry,
+        CacheQuery<R> qry,
         AffinityTopologyVersion topVer,
         GridDhtLocalPartition locPart,
-        IgniteClosure transformer,
+        IgniteClosure<Cache.Entry<K, V>, R> transformer,
         boolean locNode,
-        @Nullable GridConcurrentHashSet<ScanQueryIterator> locIters,
-        GridCacheContext cctx,
+        @Nullable GridConcurrentHashSet<ScanQueryIterator<K, V, R>> locIters,
+        GridCacheContext<K, V> cctx,
         IgniteLogger log) throws IgniteCheckedException {
         assert !locNode || locIters != null : "Local iterators can't be null for local query.";
 
@@ -191,7 +192,7 @@ public final class ScanQueryIterator<K, V> extends GridCloseableIteratorAdapter<
     }
 
     /** {@inheritDoc} */
-    @Override protected Object onNext() {
+    @Override protected R onNext() {
         if (needAdvance)
             advance();
         else
@@ -237,7 +238,7 @@ public final class ScanQueryIterator<K, V> extends GridCloseableIteratorAdapter<
     private void advance() {
         long start = statsEnabled ? System.nanoTime() : 0L;
 
-        Object next0 = null;
+        R next0 = null;
 
         while (it.hasNext()) {
             CacheDataRow row = it.next();
@@ -345,8 +346,8 @@ public final class ScanQueryIterator<K, V> extends GridCloseableIteratorAdapter<
                         }
                     }
                     else
-                        next0 = !locNode ? new T2<>(key0, val0) :
-                            new CacheQueryEntry<>(key0, val0);
+                        next0 = (R)(!locNode ? new T2<>(key0, val0) :
+                            new CacheQueryEntry<>(key0, val0));
 
                     break;
                 }
@@ -376,7 +377,7 @@ public final class ScanQueryIterator<K, V> extends GridCloseableIteratorAdapter<
     }
 
     /** */
-    public IgniteClosure transformer() {
+    public IgniteClosure<Cache.Entry<K, V>, R> transformer() {
         return transform;
     }
 
@@ -406,7 +407,7 @@ public final class ScanQueryIterator<K, V> extends GridCloseableIteratorAdapter<
     }
 
     /** */
-    public GridCacheContext cacheContext() {
+    public GridCacheContext<K, V> cacheContext() {
         return cctx;
     }
 
