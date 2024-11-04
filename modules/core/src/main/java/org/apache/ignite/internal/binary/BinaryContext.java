@@ -45,6 +45,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.jar.JarEntry;
 import java.util.jar.JarFile;
+import javax.cache.configuration.FactoryBuilder;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
@@ -110,6 +111,8 @@ public class BinaryContext {
     /* Binarylizable system classes set initialization. */
     static {
         Set<String> sysClss = new HashSet<>();
+
+        sysClss.add(FactoryBuilder.SingletonFactory.class.getName());
 
         // Closure processor classes.
         sysClss.add(GridClosureProcessor.C1.class.getName());

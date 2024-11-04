@@ -927,7 +927,7 @@ public final class IgniteSystemProperties {
             " instance for the current JVM it is running in. Filtering is based on class lists defined by the" +
             " `IGNITE_MARSHALLER_WHITELIST` and `IGNITE_MARSHALLER_BLACKLIST` system properties or their default values." +
             " Disabling it is not recommended because the Ignite host may be vulnerable to RCE attacks based on Java" +
-            " serialization mechanisms.",
+            " serialization mechanisms",
         defaults = "true"
     )
     public static final String IGNITE_ENABLE_OBJECT_INPUT_FILTER_AUTOCONFIGURATION = "IGNITE_ENABLE_OBJECT_INPUT_FILTER_AUTOCONFIGURATION";
