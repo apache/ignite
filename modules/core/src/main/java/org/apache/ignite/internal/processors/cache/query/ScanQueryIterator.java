@@ -66,7 +66,7 @@ public final class ScanQueryIterator<K, V> extends GridCloseableIteratorAdapter<
     private final GridDhtLocalPartition locPart;
 
     /** */
-    private final InternalScanFilter<K, V> intScanFilter;
+    private final IgniteBiPredicate<K, V> scanFilter;
 
     /** */
     private final boolean statsEnabled;
@@ -184,10 +184,10 @@ public final class ScanQueryIterator<K, V> extends GridCloseableIteratorAdapter<
 
         startTime = U.currentTimeMillis();
         pageSize = qry.pageSize();
-        transform = prepareTransformer(transformer);
-        intScanFilter = internalFilter(qry.scanFilter());
+        transform = SecurityUtils.sandboxedProxy(cctx.kernalContext(), IgniteClosure.class, injectResources(transformer, cctx));
+        scanFilter = prepareScanFilter(qry.scanFilter());
         // keep binary for remote scans if possible
-        keepBinary = (!locNode && intScanFilter == null && transformer == null && !readEvt) || qry.keepBinary();
+        keepBinary = (!locNode && scanFilter == null && transformer == null && !readEvt) || qry.keepBinary();
     }
 
     /** {@inheritDoc} */
@@ -225,8 +225,7 @@ public final class ScanQueryIterator<K, V> extends GridCloseableIteratorAdapter<
         if (locPart != null)
             locPart.release();
 
-        if (intScanFilter != null)
-            intScanFilter.close();
+        closeFilter(scanFilter);
 
         if (locIters != null)
             locIters.remove(this);
@@ -316,7 +315,7 @@ public final class ScanQueryIterator<K, V> extends GridCloseableIteratorAdapter<
                     metrics.addGetTimeNanos(System.nanoTime() - start);
                 }
 
-                if (intScanFilter == null || intScanFilter.apply(key0, val0)) {
+                if (filter(key0, val0)) {
                     if (readEvt) {
                         cctx.gridEvents().record(new CacheQueryReadEvent<>(
                             cctx.localNode(),
@@ -326,7 +325,7 @@ public final class ScanQueryIterator<K, V> extends GridCloseableIteratorAdapter<
                             cacheName,
                             null,
                             null,
-                            intScanFilter != null ? intScanFilter.scanFilter() : null,
+                            scanFilter,
                             null,
                             null,
                             subjId,
@@ -363,7 +362,7 @@ public final class ScanQueryIterator<K, V> extends GridCloseableIteratorAdapter<
 
     /** */
     @Nullable public IgniteBiPredicate<K, V> filter() {
-        return intScanFilter == null ? null : intScanFilter.scanFilter;
+        return scanFilter;
     }
 
     /** */
@@ -417,12 +416,7 @@ public final class ScanQueryIterator<K, V> extends GridCloseableIteratorAdapter<
     }
 
     /** */
-    private @Nullable IgniteClosure<?, ?> prepareTransformer(IgniteClosure<?, ?> transformer) throws IgniteCheckedException {
-        return SecurityUtils.sandboxedProxy(cctx.kernalContext(), IgniteClosure.class, injectResources(transformer, cctx));
-    }
-
-    /** */
-    private @Nullable InternalScanFilter<K, V> internalFilter(IgniteBiPredicate<K, V> keyValFilter) throws IgniteCheckedException {
+    private @Nullable IgniteBiPredicate<K, V> prepareScanFilter(IgniteBiPredicate<K, V> keyValFilter) throws IgniteCheckedException {
         if (keyValFilter == null)
             return null;
 
@@ -432,60 +426,28 @@ public final class ScanQueryIterator<K, V> extends GridCloseableIteratorAdapter<
             else
                 injectResources(keyValFilter, cctx);
 
-            keyValFilter = SecurityUtils.sandboxedProxy(cctx.kernalContext(), IgniteBiPredicate.class, keyValFilter);
-
-            return new InternalScanFilter<>(keyValFilter);
+            return SecurityUtils.sandboxedProxy(cctx.kernalContext(), IgniteBiPredicate.class, keyValFilter);
         }
         catch (IgniteCheckedException | RuntimeException e) {
-            InternalScanFilter.close(keyValFilter);
+            closeFilter(keyValFilter);
 
             throw e;
         }
     }
 
-    /**
-     * Wrap scan filter in order to catch unhandled errors.
-     */
-    private static class InternalScanFilter<K, V> implements IgniteBiPredicate<K, V> {
-        /** */
-        private static final long serialVersionUID = 0L;
-
-        /** */
-        private final IgniteBiPredicate<K, V> scanFilter;
-
-        /**
-         * @param scanFilter User scan filter.
-         */
-        InternalScanFilter(IgniteBiPredicate<K, V> scanFilter) {
-            this.scanFilter = scanFilter;
+    /** */
+    private boolean filter(K k, V v) {
+        try {
+            return scanFilter == null || scanFilter.apply(k, v);
         }
-
-        /** {@inheritDoc} */
-        @Override public boolean apply(K k, V v) {
-            try {
-                return scanFilter == null || scanFilter.apply(k, v);
-            }
-            catch (Throwable e) {
-                throw new IgniteException(e);
-            }
+        catch (Throwable e) {
+            throw new IgniteException(e);
         }
+    }
 
-        /** */
-        void close() {
-            close(scanFilter);
-        }
-
-        /** */
-        static void close(IgniteBiPredicate<?, ?> scanFilter) {
-            if (scanFilter instanceof PlatformCacheEntryFilter)
-                ((PlatformCacheEntryFilter)scanFilter).onClose();
-        }
-
-        /**
-         * @return Wrapped scan filter.
-         */
-        IgniteBiPredicate<K, V> scanFilter() {
-            return scanFilter;
-        }
+    /** */
+    static void closeFilter(IgniteBiPredicate<?, ?> filter) {
+        if (filter instanceof PlatformCacheEntryFilter)
+            ((PlatformCacheEntryFilter)filter).onClose();
     }
 }
