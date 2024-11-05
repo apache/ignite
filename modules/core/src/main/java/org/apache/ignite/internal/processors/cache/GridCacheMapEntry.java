@@ -4161,8 +4161,6 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
 
     /** {@inheritDoc} */
     @Override public void lockEntry() {
-        assert cctx.shared().database().checkpointLockIsHeldByThread();
-
         lock.lock();
     }
 

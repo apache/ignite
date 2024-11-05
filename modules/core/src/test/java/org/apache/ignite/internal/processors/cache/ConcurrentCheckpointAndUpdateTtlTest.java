@@ -17,6 +17,8 @@
 
 package org.apache.ignite.internal.processors.cache;
 
+import java.util.ArrayList;
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.ThreadLocalRandom;
@@ -26,6 +28,7 @@ import javax.cache.expiry.Duration;
 import javax.cache.expiry.TouchedExpiryPolicy;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteDataStreamer;
+import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.query.ScanQuery;
 import org.apache.ignite.cluster.ClusterState;
 import org.apache.ignite.configuration.CacheConfiguration;
@@ -50,6 +53,27 @@ public class ConcurrentCheckpointAndUpdateTtlTest extends GridCommonAbstractTest
     /** */
     private final ThreadLocalRandom rnd = ThreadLocalRandom.current();
 
+    /** */
+    @Parameterized.Parameter
+    public boolean dataStreamer;
+
+    /** */
+    @Parameterized.Parameter(1)
+    public CacheAtomicityMode mode;
+
+    /** */
+    @Parameterized.Parameters(name = "dataStreamer={0}, cacheMode={1}")
+    public static Collection<Object[]> params() {
+        Collection<Object[]> params = new ArrayList<>();
+
+        for (CacheAtomicityMode mode: CacheAtomicityMode.values()) {
+            params.add(new Object[] { false, mode });
+            params.add(new Object[] { true, mode });
+        }
+
+        return params;
+    }
+
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
@@ -58,21 +82,12 @@ public class ConcurrentCheckpointAndUpdateTtlTest extends GridCommonAbstractTest
             cfg.setDataStorageConfiguration(new DataStorageConfiguration()
                     .setDefaultDataRegionConfiguration(new DataRegionConfiguration().setPersistenceEnabled(true)))
                 .setCacheConfiguration(new CacheConfiguration<>(DEFAULT_CACHE_NAME)
+                    .setAtomicityMode(mode)
                     .setBackups(1)
                     .setExpiryPolicyFactory(TouchedExpiryPolicy.factoryOf(new Duration(TimeUnit.SECONDS, 10))));
         }
 
         return cfg;
-    }
-
-    /** */
-    @Parameterized.Parameter
-    public boolean dataStreamer;
-
-    /** */
-    @Parameterized.Parameters(name = "dataStreamer={0}")
-    public static Object[] params() {
-        return new Object[] { false, true };
     }
 
     /** {@inheritDoc} */
