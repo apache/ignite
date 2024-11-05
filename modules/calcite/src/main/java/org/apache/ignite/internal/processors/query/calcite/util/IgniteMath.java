@@ -252,9 +252,11 @@ public class IgniteMath {
 
     /** Cast value to {@code long}, throwing an exception if the result overflows an {@code long}. */
     public static long convertToLongExact(double x) {
-        checkNumberLongBounds(BIGINT, x = extendToRound(x));
+        Number res = round(convertToBigDecimal(x));
 
-        return (long)x;
+        checkNumberLongBounds(BIGINT, res);
+
+        return res.longValue();
     }
 
     /** Cast value to {@code int}, throwing an exception if the result overflows an {@code int}. */
@@ -269,7 +271,12 @@ public class IgniteMath {
 
     /** Cast value to {@code int}, throwing an exception if the result overflows an {@code int}. */
     public static int convertToIntExact(double x) {
-        return convertToIntExact((long)extendToRound(x));
+        x = extendToRound(x);
+
+        if (x <= Integer.MIN_VALUE || x >= Integer.MAX_VALUE)
+            throw new ArithmeticException(INTEGER.getName() + " overflow");
+
+        return (int)x;
     }
 
     /** Cast value to {@code int}, throwing an exception if the result overflows an {@code int}. */
@@ -293,7 +300,12 @@ public class IgniteMath {
 
     /** Cast value to {@code short}, throwing an exception if the result overflows an {@code short}. */
     public static short convertToShortExact(double x) {
-        return convertToShortExact((long)extendToRound(x));
+        x = extendToRound(x);
+
+        if (x <= Short.MIN_VALUE || x >= Short.MAX_VALUE)
+            throw new ArithmeticException(SMALLINT.getName() + " overflow");
+
+        return (short)x;
     }
 
     /** Cast value to {@code short}, throwing an exception if the result overflows an {@code short}. */
@@ -317,7 +329,12 @@ public class IgniteMath {
 
     /** Cast value to {@code byte}, throwing an exception if the result overflows an {@code byte}. */
     public static byte convertToByteExact(double x) {
-        return convertToByteExact((long)extendToRound(x));
+        x = extendToRound(x);
+
+        if (x <= Byte.MIN_VALUE || x >= Byte.MAX_VALUE)
+            throw new ArithmeticException(TINYINT.getName() + " overflow");
+
+        return (byte)x;
     }
 
     /** Cast value to {@code byte}, throwing an exception if the result overflows an {@code byte}. */
