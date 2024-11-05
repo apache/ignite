@@ -243,7 +243,7 @@ public class IgniteMath {
 
     /** Cast value to {@code long}, throwing an exception if the result overflows an {@code long}. */
     public static long convertToLongExact(Number x) {
-        x = round(x);
+        x = extendToRound(x);
 
         checkNumberLongBounds(BIGINT, x);
 
@@ -252,7 +252,7 @@ public class IgniteMath {
 
     /** Cast value to {@code long}, throwing an exception if the result overflows an {@code long}. */
     public static long convertToLongExact(double x) {
-        checkNumberLongBounds(BIGINT, x = round(x));
+        checkNumberLongBounds(BIGINT, x = extendToRound(x));
 
         return (long)x;
     }
@@ -269,12 +269,12 @@ public class IgniteMath {
 
     /** Cast value to {@code int}, throwing an exception if the result overflows an {@code int}. */
     public static int convertToIntExact(double x) {
-        return convertToIntExact((long)round(x));
+        return convertToIntExact((long)extendToRound(x));
     }
 
     /** Cast value to {@code int}, throwing an exception if the result overflows an {@code int}. */
     public static int convertToIntExact(Number x) {
-        x = round(x);
+        x = extendToRound(x);
 
         checkNumberLongBounds(INTEGER, x);
 
@@ -293,12 +293,12 @@ public class IgniteMath {
 
     /** Cast value to {@code short}, throwing an exception if the result overflows an {@code short}. */
     public static short convertToShortExact(double x) {
-        return convertToShortExact((long)round(x));
+        return convertToShortExact((long)extendToRound(x));
     }
 
     /** Cast value to {@code short}, throwing an exception if the result overflows an {@code short}. */
     public static short convertToShortExact(Number x) {
-        x = round(x);
+        x = extendToRound(x);
 
         checkNumberLongBounds(SMALLINT, x);
 
@@ -317,12 +317,12 @@ public class IgniteMath {
 
     /** Cast value to {@code byte}, throwing an exception if the result overflows an {@code byte}. */
     public static byte convertToByteExact(double x) {
-        return convertToByteExact((long)round(x));
+        return convertToByteExact((long)extendToRound(x));
     }
 
     /** Cast value to {@code byte}, throwing an exception if the result overflows an {@code byte}. */
     public static byte convertToByteExact(Number x) {
-        x = round(x);
+        x = extendToRound(x);
 
         checkNumberLongBounds(TINYINT, x);
 
@@ -368,12 +368,12 @@ public class IgniteMath {
     }
 
     /** */
-    private static double round(double x) {
+    private static double extendToRound(double x) {
         return x < 0.0d ? x - 0.5d : x + 0.5d;
     }
 
     /** */
-    private static Number round(Number x) {
+    private static Number extendToRound(Number x) {
         return convertToBigDecimal(x).setScale(0, NUMERIC_ROUNDING_MODE);
     }
 }
