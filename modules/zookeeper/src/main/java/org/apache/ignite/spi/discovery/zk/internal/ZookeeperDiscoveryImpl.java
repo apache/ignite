@@ -230,6 +230,7 @@ public class ZookeeperDiscoveryImpl {
      * @param exchange Discovery data exchange.
      * @param internalLsnr Internal listener (used for testing only).
      * @param stats Zookeeper DiscoverySpi statistics collector.
+     * @param marsh Marshaller.
      */
     public ZookeeperDiscoveryImpl(
         ZookeeperDiscoverySpi spi,
