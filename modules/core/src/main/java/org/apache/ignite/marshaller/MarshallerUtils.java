@@ -54,6 +54,9 @@ public class MarshallerUtils {
     /** Default black list class names file. */
     public static final String DEFAULT_BLACKLIST_CLS_NAMES_FILE = "META-INF/classnames-default-blacklist.properties";
 
+    /** Default white list class names file. */
+    public static final String DEFAULT_WHITELIST_CLS_NAMES_FILE = "META-INF/classnames-default-whitelist.properties";
+
     /** Job sender node version. */
     private static final ThreadLocal<IgniteProductVersion> JOB_SND_NODE_VER = new ThreadLocal<>();
 
@@ -177,6 +180,7 @@ public class MarshallerUtils {
 
             addClassNames(JDK_CLS_NAMES_FILE, clsSet, clsLdr);
             addClassNames(CLS_NAMES_FILE, clsSet, clsLdr);
+            addClassNames(DEFAULT_WHITELIST_CLS_NAMES_FILE, clsSet, clsLdr);
             addClassNames(fileName, clsSet, clsLdr);
         }
 
