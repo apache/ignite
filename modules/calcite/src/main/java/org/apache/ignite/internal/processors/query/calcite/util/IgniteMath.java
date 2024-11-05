@@ -251,10 +251,10 @@ public class IgniteMath {
 
     /** Cast value to {@code long}, throwing an exception if the result overflows an {@code long}. */
     public static long convertToLongExact(double x) {
-        if (x < (Double)LONG_BOUNDS[2] || x > (Double)LONG_BOUNDS[3])
+        if (x <= (Double)LONG_BOUNDS[2] || x >= (Double)LONG_BOUNDS[3])
             throw new ArithmeticException(BIGINT.getName() + " overflow");
 
-        return (long)round(x);
+        return (long)prepareToRound(x);
     }
 
     /** Cast value to {@code int}, throwing an exception if the result overflows an {@code int}. */
@@ -269,10 +269,10 @@ public class IgniteMath {
 
     /** Cast value to {@code int}, throwing an exception if the result overflows an {@code int}. */
     public static int convertToIntExact(double x) {
-        if (x < (Double)INT_BOUNDS[2] || x > (Double)INT_BOUNDS[3])
+        if (x <= (Double)INT_BOUNDS[2] || x >= (Double)INT_BOUNDS[3])
             throw new ArithmeticException(INTEGER.getName() + " overflow");
 
-        return (int)round(x);
+        return (int)prepareToRound(x);
     }
 
     /** Cast value to {@code int}, throwing an exception if the result overflows an {@code int}. */
@@ -297,10 +297,10 @@ public class IgniteMath {
 
     /** Cast value to {@code short}, throwing an exception if the result overflows an {@code short}. */
     public static short convertToShortExact(double x) {
-        if (x < (Double)SHORT_BOUNDS[2] || x > (Double)SHORT_BOUNDS[3])
+        if (x <= (Double)SHORT_BOUNDS[2] || x >= (Double)SHORT_BOUNDS[3])
             throw new ArithmeticException(SMALLINT.getName() + " overflow");
 
-        return (short)round(x);
+        return (short)prepareToRound(x);
     }
 
     /** Cast value to {@code short}, throwing an exception if the result overflows an {@code short}. */
@@ -325,10 +325,10 @@ public class IgniteMath {
 
     /** Cast value to {@code byte}, throwing an exception if the result overflows an {@code byte}. */
     public static byte convertToByteExact(double x) {
-        if (x < (Double)BYTE_BOUNDS[2] || x > (Double)BYTE_BOUNDS[3])
+        if (x <= (Double)BYTE_BOUNDS[2] || x >= (Double)BYTE_BOUNDS[3])
             throw new ArithmeticException(TINYINT.getName() + " overflow");
 
-        return (byte)round(x);
+        return (byte)prepareToRound(x);
     }
 
     /** Cast value to {@code byte}, throwing an exception if the result overflows an {@code byte}. */
@@ -460,7 +460,7 @@ public class IgniteMath {
     }
 
     /** */
-    private static double round(double x) {
+    private static double prepareToRound(double x) {
         return x < 0.0d ? x - 0.5d : x + 0.5d;
     }
 }
