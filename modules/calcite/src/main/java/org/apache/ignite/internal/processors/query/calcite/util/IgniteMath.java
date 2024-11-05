@@ -243,7 +243,7 @@ public class IgniteMath {
 
     /** Cast value to {@code long}, throwing an exception if the result overflows an {@code long}. */
     public static long convertToLongExact(Number x) {
-        x = extendToRound(x);
+        x = round(x);
 
         checkNumberLongBounds(BIGINT, x);
 
@@ -274,7 +274,7 @@ public class IgniteMath {
 
     /** Cast value to {@code int}, throwing an exception if the result overflows an {@code int}. */
     public static int convertToIntExact(Number x) {
-        x = extendToRound(x);
+        x = round(x);
 
         checkNumberLongBounds(INTEGER, x);
 
@@ -298,7 +298,7 @@ public class IgniteMath {
 
     /** Cast value to {@code short}, throwing an exception if the result overflows an {@code short}. */
     public static short convertToShortExact(Number x) {
-        x = extendToRound(x);
+        x = round(x);
 
         checkNumberLongBounds(SMALLINT, x);
 
@@ -322,7 +322,7 @@ public class IgniteMath {
 
     /** Cast value to {@code byte}, throwing an exception if the result overflows an {@code byte}. */
     public static byte convertToByteExact(Number x) {
-        x = extendToRound(x);
+        x = round(x);
 
         checkNumberLongBounds(TINYINT, x);
 
@@ -373,7 +373,7 @@ public class IgniteMath {
     }
 
     /** */
-    private static Number extendToRound(Number x) {
+    private static Number round(Number x) {
         return convertToBigDecimal(x).setScale(0, NUMERIC_ROUNDING_MODE);
     }
 }
