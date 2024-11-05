@@ -230,6 +230,7 @@ public abstract class AbstractScanQueryIterator<K, V, R> extends GridCloseableIt
         }
     }
 
+    /** */
     private void close(IgniteBiPredicate<?, ?> scanFilter) {
         if (scanFilter instanceof PlatformCacheEntryFilter)
             ((PlatformCacheEntryFilter)scanFilter).onClose();
