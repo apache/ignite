@@ -478,8 +478,7 @@ public class IgniteCacheProxyImpl<K, V> extends AsyncSupportAdapter<IgniteCache<
 
         IgniteBiPredicate<K, V> p = scanQry.getFilter();
 
-        IgniteBiTuple<Set<KeyCacheObject>, List<Object>> txChanges
-            = ctx.transactionChanges(scanQry.getPartition());
+        IgniteBiTuple<Set<KeyCacheObject>, List<Object>> txChanges = ctx.transactionChanges(scanQry.getPartition());
 
         final CacheQuery<R> qry = ctx.queries().createScanQuery(
             p, transformer, scanQry.getPartition(), isKeepBinary, scanQry.isLocal(), null, txChanges.get1());

@@ -840,7 +840,7 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
         }
 
         // TODO: Fix new instance here. Copy required only for local node (?)
-        final Set<KeyCacheObject> skipKeys = new HashSet<>(qry.skipKeys());
+        final Set<KeyCacheObject> skipKeys = qry.skipKeys() == null ? Collections.emptySet() : new HashSet<>(qry.skipKeys());
 
         if (!F.isEmpty(skipKeys)) {
             // Intentionally use of `Set#remove` here.

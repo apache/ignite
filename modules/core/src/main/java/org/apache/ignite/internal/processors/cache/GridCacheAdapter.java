@@ -3536,9 +3536,10 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
 
         final CacheOperationContext opCtx = ctx.operationContextPerCall();
 
-        //TODO: add tx info here.
-        final GridCloseableIterator<Map.Entry<K, V>> iter = ctx0.queries().createScanQuery(p, null, null, keepBinary, false, null, null)
-            .executeScanQuery(null);
+        final IgniteBiTuple<Set<KeyCacheObject>, List<Object>> txChanges = ctx.transactionChanges(null);
+
+        final GridCloseableIterator<Map.Entry<K, V>> iter
+            = ctx0.queries().createScanQuery(p, null, null, keepBinary, false, null, txChanges.get1()).executeScanQuery(txChanges.get2());
 
         return ctx.itHolder().iterator(iter, new CacheIteratorConverter<Cache.Entry<K, V>, Map.Entry<K, V>>() {
             @Override protected Cache.Entry<K, V> convert(Map.Entry<K, V> e) {

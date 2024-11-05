@@ -19,6 +19,7 @@ package org.apache.ignite.internal.processors.cache.query;
 
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Objects;
 import java.util.concurrent.ThreadLocalRandom;
@@ -118,51 +119,64 @@ public class ScanQueryTransactionIsolationTest extends AbstractQueryTransactionI
             ScanQuery<Integer, User> qry = new ScanQuery<Integer, User>()
                 .setFilter((id0, user) -> Objects.equals(id0, id));
 
-            if (ThreadLocalRandom.current().nextBoolean() || type == THIN_VIA_QUERY) {
-                QueryCursor<Cache.Entry<Integer, User>> cursor = null;
+            boolean withTrasformer = (type == SERVER || type == CLIENT) && ThreadLocalRandom.current().nextBoolean();
+            boolean useGetAll = ThreadLocalRandom.current().nextBoolean();
+            boolean useCacheIter = (type == SERVER || type == CLIENT) && ThreadLocalRandom.current().nextBoolean();
 
-                if (type == THIN_VIA_QUERY)
-                    cursor = thinCli.<Integer, User>cache(users()).query(qry);
-                else if (type == SERVER || type == CLIENT) {
-                    cursor = node().<Integer, User>cache(users()).query(qry);
+            if (!withTrasformer) {
+                if (useCacheIter) {
+                    assertTrue(type == SERVER || type == CLIENT);
+
+                    List<Cache.Entry<Integer, User>> res =
+                        toList(F.iterator0(node().cache(users()), true, e -> Objects.equals(e.getKey(), id)));
+
+                    assertTrue(F.size(res) + "", F.size(res) <= 1);
+
+                    return F.isEmpty(res) ? null : res.get(0).getValue();
                 }
-                else
-                    fail("Unsupported executor type: " + type);
-
-                List<Cache.Entry<Integer, User>> res;
-
-                if (ThreadLocalRandom.current().nextBoolean())
-                    res = cursor.getAll();
                 else {
-                    res = new ArrayList<>();
-                    cursor.iterator().forEachRemaining(res::add);
+                    QueryCursor<Cache.Entry<Integer, User>> cursor = null;
+
+                    if (type == THIN_VIA_QUERY)
+                        cursor = thinCli.<Integer, User>cache(users()).query(qry);
+                    else if (type == SERVER || type == CLIENT) {
+                        cursor = node().<Integer, User>cache(users()).query(qry);
+                    }
+                    else
+                        fail("Unsupported executor type: " + type);
+
+                    List<Cache.Entry<Integer, User>> res = toList(cursor, useGetAll);
+
+                    assertTrue("useGetAll=" + useGetAll + ", useCacheIter=" + useCacheIter, F.size(res) <= 1);
+
+                    return F.isEmpty(res) ? null : res.get(0).getValue();
                 }
-
-                assertTrue(F.size(res) <= 1);
-
-                return F.isEmpty(res) ? null : res.get(0).getValue();
             }
             else {
                 assertTrue(type == SERVER || type == CLIENT);
-                QueryCursor<User> cursor = node().<Integer, User>cache(users()).query(qry, Cache.Entry::getValue);
 
-                List<User> res;
+                List<User> res = toList(node().<Integer, User>cache(users()).query(qry, Cache.Entry::getValue), useGetAll);
 
-                if (ThreadLocalRandom.current().nextBoolean())
-                    res = cursor.getAll();
-                else {
-                    res = new ArrayList<>();
-                    cursor.iterator().forEachRemaining(res::add);
-                }
+                assertTrue("withTransformer=" + withTrasformer + ", useGetAll=" + useGetAll, F.size(res) <= 1);
 
-                assertTrue(F.size(res) <= 1);
-
-                return F.isEmpty(res) ? null : res.get(0);
+                return F.first(res);
             }
 
         }
 
         return super.select(id, api);
+    }
+
+    private static <R> List<R> toList(QueryCursor<R> cursor, boolean useGetAll) {
+        return useGetAll ? cursor.getAll() : toList(cursor.iterator());
+    }
+
+    private static <R> List<R> toList(Iterator<R> iter) {
+        List<R> res = new ArrayList<>();
+
+        iter.forEachRemaining(res::add);
+
+        return res;
     }
 
     /** */
