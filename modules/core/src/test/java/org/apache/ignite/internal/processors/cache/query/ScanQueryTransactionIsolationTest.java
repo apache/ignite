@@ -115,29 +115,51 @@ public class ScanQueryTransactionIsolationTest extends AbstractQueryTransactionI
         assertTrue(type != THIN_JDBC);
 
         if (api == QUERY) {
-            ScanQuery<Integer, User> qry = new ScanQuery<Integer, User>().setFilter((id0, user) -> Objects.equals(id0, id));
+            ScanQuery<Integer, User> qry = new ScanQuery<Integer, User>()
+                .setFilter((id0, user) -> Objects.equals(id0, id));
 
-            QueryCursor<Cache.Entry<Integer, User>> cursor = null;
+            if (ThreadLocalRandom.current().nextBoolean() || type == THIN_VIA_QUERY) {
+                QueryCursor<Cache.Entry<Integer, User>> cursor = null;
 
-            if (type == THIN_VIA_QUERY)
-                cursor = thinCli.<Integer, User>cache(users()).query(qry);
-            else if (type == SERVER || type == CLIENT)
-                cursor = node().<Integer, User>cache(users()).query(qry);
-            else
-                fail("Unsupported executor type: " + type);
+                if (type == THIN_VIA_QUERY)
+                    cursor = thinCli.<Integer, User>cache(users()).query(qry);
+                else if (type == SERVER || type == CLIENT) {
+                    cursor = node().<Integer, User>cache(users()).query(qry);
+                }
+                else
+                    fail("Unsupported executor type: " + type);
 
-            List<Cache.Entry<Integer, User>> res;
+                List<Cache.Entry<Integer, User>> res;
 
-            if (ThreadLocalRandom.current().nextBoolean())
-                res = cursor.getAll();
+                if (ThreadLocalRandom.current().nextBoolean())
+                    res = cursor.getAll();
+                else {
+                    res = new ArrayList<>();
+                    cursor.iterator().forEachRemaining(res::add);
+                }
+
+                assertTrue(F.size(res) <= 1);
+
+                return F.isEmpty(res) ? null : res.get(0).getValue();
+            }
             else {
-                res = new ArrayList<>();
-                cursor.iterator().forEachRemaining(res::add);
+                assertTrue(type == SERVER || type == CLIENT);
+                QueryCursor<User> cursor = node().<Integer, User>cache(users()).query(qry, Cache.Entry::getValue);
+
+                List<User> res;
+
+                if (ThreadLocalRandom.current().nextBoolean())
+                    res = cursor.getAll();
+                else {
+                    res = new ArrayList<>();
+                    cursor.iterator().forEachRemaining(res::add);
+                }
+
+                assertTrue(F.size(res) <= 1);
+
+                return F.isEmpty(res) ? null : res.get(0);
             }
 
-            assertTrue(F.size(res) <= 1);
-
-            return F.isEmpty(res) ? null : res.get(0).getValue();
         }
 
         return super.select(id, api);

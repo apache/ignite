@@ -19,6 +19,7 @@ package org.apache.ignite.internal.processors.cache.query;
 
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.NoSuchElementException;
@@ -264,7 +265,7 @@ public class GridCacheDistributedQueryManager<K, V> extends GridCacheQueryManage
                 req.keepBinary(),
                 req.taskHash(),
                 req.isDataPageScanEnabled(),
-                req.skipKeys()
+                new HashSet<>(req.skipKeys())
             );
 
         return new GridCacheQueryInfo(

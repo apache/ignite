@@ -877,7 +877,7 @@ public class CacheQuery<T> {
     ) throws IgniteCheckedException {
         IgniteClosure<Cache.Entry<Object, Object>, T> t0 = (IgniteClosure<Cache.Entry<Object, Object>, T>)transform;
 
-        final GridIterator<T> txIter = new AbstractScanQueryIterator<Object, Object, T>(cctx, this, t0, true) {
+        final GridIterator<T> txIter = new AbstractScanQueryIterator<>((GridCacheContext<Object, Object>)cctx, this, t0, true) {
             private final Iterator<Object> txData = newAndUpdatedEntries.iterator();
 
             /** {@inheritDoc} */
