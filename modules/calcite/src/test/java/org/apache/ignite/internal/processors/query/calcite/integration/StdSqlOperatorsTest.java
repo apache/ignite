@@ -26,7 +26,6 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
-import org.apache.ignite.internal.processors.query.IgniteSQLException;
 import org.apache.ignite.internal.processors.query.calcite.QueryChecker;
 import org.apache.ignite.internal.processors.query.calcite.sql.fun.IgniteStdSqlOperatorTable;
 import org.apache.ignite.internal.util.typedef.F;
@@ -298,9 +297,7 @@ public class StdSqlOperatorsTest extends AbstractBasicIntegrationTest {
         assertExpression("DECODE(1, 1, 1, 2)").returns(1).check();
         assertExpression("LEAST('a', 'b')").returns("a").check();
         assertExpression("GREATEST('a', 'b')").returns("b").check();
-        assertThrows("SELECT COMPRESS('')::VARCHAR", IgniteSQLException.class,
-            "Cast function cannot convert value of type VARBINARY to type VARCHAR");
-        assertExpression("COMPRESS('')").returns(new byte[]{}).check();
+        assertExpression("COMPRESS('')::VARCHAR").returns("").check();
         assertExpression("OCTET_LENGTH(x'01')").returns(1).check();
         assertExpression("CAST(INTERVAL 1 SECONDS AS INT)").returns(1).check(); // Converted to REINTERPRED.
     }
