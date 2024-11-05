@@ -167,10 +167,12 @@ public class ScanQueryTransactionIsolationTest extends AbstractQueryTransactionI
         return super.select(id, api);
     }
 
+    /** */
     private static <R> List<R> toList(QueryCursor<R> cursor, boolean useGetAll) {
         return useGetAll ? cursor.getAll() : toList(cursor.iterator());
     }
 
+    /** */
     private static <R> List<R> toList(Iterator<R> iter) {
         List<R> res = new ArrayList<>();
 
