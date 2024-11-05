@@ -3229,11 +3229,11 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
 
                 if (expiryPlc != null) {
                     try {
-                        cctx.shared().database().checkpointReadLock();
-
                         CacheDataRow tmp = row;
 
                         while (true) {
+                            cctx.shared().database().checkpointReadLock();
+
                             try {
                                 GridCacheEntryEx entry = cache.entryEx(key);
 
@@ -3248,6 +3248,9 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
                             catch (GridCacheEntryRemovedException ignore) {
                                 tmp = null;
                             }
+                            finally {
+                                cctx.shared().database().checkpointReadUnlock();
+                            }
                         }
                     }
                     catch (IgniteCheckedException e) {
@@ -3255,9 +3258,6 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
                             log.debug("Failed to peek value: " + e);
 
                         val = null;
-                    }
-                    finally {
-                        cctx.shared().database().checkpointReadUnlock();
                     }
 
                     if (dht != null && expiryPlc.readyToFlush(100))

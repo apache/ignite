@@ -36,7 +36,9 @@ import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
+import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -55,20 +57,26 @@ public class ConcurrentCheckpointAndUpdateTtlTest extends GridCommonAbstractTest
 
     /** */
     @Parameterized.Parameter
-    public boolean dataStreamer;
+    public boolean updateWithDataStreamer;
 
     /** */
     @Parameterized.Parameter(1)
+    public boolean touchWithScanQuery;
+
+    /** */
+    @Parameterized.Parameter(2)
     public CacheAtomicityMode mode;
 
     /** */
-    @Parameterized.Parameters(name = "dataStreamer={0}, cacheMode={1}")
+    @Parameterized.Parameters(name = "dataStreamer={0}, touchQuery={1}, cacheMode={2}")
     public static Collection<Object[]> params() {
         Collection<Object[]> params = new ArrayList<>();
 
-        for (CacheAtomicityMode mode: CacheAtomicityMode.values()) {
-            params.add(new Object[] { false, mode });
-            params.add(new Object[] { true, mode });
+        for (CacheAtomicityMode cacheMode: CacheAtomicityMode.values()) {
+            for (boolean updateMode: new boolean[] {true, false}) {
+                for (boolean touchMode: new boolean[] {true, false})
+                    params.add(new Object[] { updateMode, touchMode, cacheMode });
+            }
         }
 
         return params;
@@ -115,21 +123,26 @@ public class ConcurrentCheckpointAndUpdateTtlTest extends GridCommonAbstractTest
 
         AtomicBoolean stop = new AtomicBoolean();
 
-        runMultiThreadedAsync(() -> {
+        IgniteInternalFuture<?> updateFut = runMultiThreadedAsync(() -> {
             while (!stop.get()) {
-                if (dataStreamer)
+                if (updateWithDataStreamer)
                     stream(cln);
                 else
-                    put(cln);
+                    cln.cache(DEFAULT_CACHE_NAME).put(KEY, rnd.nextInt());
             }
-        }, 1, "streamer");
+        }, 1, "update");
 
-        runMultiThreadedAsync(() -> {
-            while (!stop.get())
-                grid(0).cache(DEFAULT_CACHE_NAME).query(new ScanQuery<>()).getAll();
+        IgniteInternalFuture<?> touchFut = runMultiThreadedAsync(() -> {
+            while (!stop.get()) {
+                if (touchWithScanQuery)
+                    cln.cache(DEFAULT_CACHE_NAME).query(new ScanQuery<>()).getAll();
+                else
+                    cln.cache(DEFAULT_CACHE_NAME).get(KEY);
+            }
+
         }, 1, "touch");
 
-        runMultiThreadedAsync(() -> {
+        IgniteInternalFuture<?> cpFut = runMultiThreadedAsync(() -> {
             while (!stop.get()) {
                 try {
                     forceCheckpoint(F.asList(grid(0), grid(1)));
@@ -140,14 +153,11 @@ public class ConcurrentCheckpointAndUpdateTtlTest extends GridCommonAbstractTest
             }
         }, 1, "checkpoint");
 
-        Thread.sleep(60_000);
+        Thread.sleep(30_000);
 
         stop.set(true);
-    }
 
-    /** */
-    private void put(Ignite cln) {
-        cln.cache(DEFAULT_CACHE_NAME).put(KEY, rnd.nextInt());
+        GridTestUtils.waitForAllFutures(updateFut, touchFut, cpFut);
     }
 
     /** */
