@@ -164,17 +164,9 @@ public class JdbcBinaryBuffer {
      * @param len New length.
      */
     void truncate(int len) {
-        byte[] newArr = new byte[Math.max(MIN_CAP, len)];
-
-        U.arrayCopy(arr, off, newArr, 0, len);
-
-        arr = newArr;
-
         this.len = len;
 
-        off = 0;
-
-        isReadOnly = false;
+        reallocate(Math.max(MIN_CAP, len));
     }
 
     /**
