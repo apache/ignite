@@ -1103,8 +1103,8 @@ public class TcpClientCache<K, V> implements ClientCache<K, V> {
      * @param drMap DR map.
      * @return Future.
      */
-    public IgniteClientFuture<Void> putAllConflictAsync(Map<? extends K, T3<? extends V, GridCacheVersion, Long>> drMap)
-        throws ClientException {
+    public IgniteClientFuture<Void> putAllConflictAsync(Map<? extends K,
+        ? extends T3<? extends V, GridCacheVersion, Long>> drMap) throws ClientException {
         A.notNull(drMap, "drMap");
 
         return ch.requestAsync(ClientOperation.CACHE_PUT_ALL_CONFLICT, req -> writePutAllConflict(drMap, req));

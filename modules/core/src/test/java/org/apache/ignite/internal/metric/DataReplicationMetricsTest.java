@@ -22,8 +22,7 @@ import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.ExecutionException;
-import org.apache.ignite.IgniteCheckedException;
+import java.util.function.IntFunction;
 import org.apache.ignite.Ignition;
 import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.client.Config;
@@ -32,8 +31,8 @@ import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.ClientConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
+import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.client.thin.TcpClientCache;
-import org.apache.ignite.internal.processors.cache.CacheObject;
 import org.apache.ignite.internal.processors.cache.CacheObjectImpl;
 import org.apache.ignite.internal.processors.cache.IgniteInternalCache;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
@@ -42,6 +41,7 @@ import org.apache.ignite.internal.processors.cache.dr.GridCacheDrInfo;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.processors.metric.MetricRegistryImpl;
 import org.apache.ignite.internal.processors.metric.impl.HistogramMetricImpl;
+import org.apache.ignite.internal.util.lang.ConsumerX;
 import org.apache.ignite.internal.util.typedef.T3;
 import org.apache.ignite.spi.metric.LongMetric;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
@@ -51,17 +51,18 @@ import org.junit.runners.Parameterized;
 
 import static java.util.Arrays.stream;
 import static org.apache.ignite.internal.processors.metric.impl.MetricUtils.cacheMetricsRegistryName;
+import static org.apache.ignite.testframework.GridTestUtils.waitForCondition;
 
 /**
- * {@link IgniteInternalCache#putAllConflict(Map)} and {@link IgniteInternalCache#removeAllConflict(Map)} cache
- * operations test.
- * @see IgniteInternalCache#putAllConflict(Map)
- * @see IgniteInternalCache#removeAllConflict(Map)
+ * Test metrics of DR operations.
  */
 @RunWith(Parameterized.class)
-public class CacheMetricsConflictOperationsTest extends GridCommonAbstractTest {
+public class DataReplicationMetricsTest extends GridCommonAbstractTest {
     /** */
-    private static final int KEYS_CNT = 100;
+    private static final int KEYS_PUT_CNT = 100;
+
+    /** */
+    private static final int KEYS_REMOVE_CNT = 50;
 
     /** */
     @Parameterized.Parameter
@@ -117,98 +118,80 @@ public class CacheMetricsConflictOperationsTest extends GridCommonAbstractTest {
 
     /** */
     @Test
-    public void testCacheMetricsConflictOperationsThick() throws Exception {
-        try (IgniteEx cli = startClientGrid()) {
-            IgniteInternalCache<Integer, Integer> cachex = cli.cachex(DEFAULT_CACHE_NAME);
+    public void testConflict() throws Exception {
+        IgniteEx cli = startClientGrid();
 
-            updateCacheFromThick(cachex, KEYS_CNT);
-            checkMetrics(cli, KEYS_CNT);
-        }
+        IgniteInternalCache<Integer, Integer> cachex = cli.cachex(DEFAULT_CACHE_NAME);
+
+        GridCacheVersion confl = new GridCacheVersion(1, 0, 1, (byte)2);
+        GridCacheDrInfo val = new GridCacheDrInfo(new CacheObjectImpl(1, null), confl);
+
+        IntFunction<KeyCacheObject> keyGen = i -> new KeyCacheObjectImpl(i, null, cachex.affinity().partition(0));
+
+        updateCache(
+            keyGen,
+            val,
+            confl,
+            async ? m -> cachex.putAllConflictAsync(m).get() : cachex::putAllConflict,
+            async ? m -> cachex.removeAllConflictAsync(m).get() : cachex::removeAllConflict
+        );
+
+        checkMetrics(cli);
     }
 
     /** */
     @Test
-    public void testCacheMetricsConflictOperationsThin() throws ExecutionException, InterruptedException {
+    public void testConflictThin() throws Exception {
         try (IgniteClient cli = Ignition.startClient(new ClientConfiguration().setAddresses(Config.SERVER))) {
-            TcpClientCache<Object, Object> cache = (TcpClientCache<Object, Object>)cli.cache(DEFAULT_CACHE_NAME);
+            TcpClientCache<Integer, Integer> cache = (TcpClientCache<Integer, Integer>)cli.<Integer, Integer>cache(DEFAULT_CACHE_NAME);
 
-            updateCacheFromThin(cache, KEYS_CNT);
-            checkMetrics(ign, KEYS_CNT);
-        }
-    }
+            GridCacheVersion confl = new GridCacheVersion(1, 1, 1, (byte)2);
+            T3<Integer, GridCacheVersion, Long> val = new T3<>(1, confl, 0L);
 
-    /** Performs {@link IgniteInternalCache#putAllConflict(Map)} and {@link IgniteInternalCache#removeAllConflict(Map)}
-     * operation on a given cache.
-     * @param cachex - {@link IgniteInternalCache} cache instance.
-     * @param cnt - number of entities to put/remove
-     * */
-    private void updateCacheFromThick(IgniteInternalCache<Integer, Integer> cachex, int cnt) throws IgniteCheckedException {
-        Map<KeyCacheObject, GridCacheDrInfo> drMapPuts = new HashMap<>();
-        Map<KeyCacheObject, GridCacheVersion> drMapRemoves = new HashMap<>();
+            updateCache(
+                i -> i,
+                val,
+                confl,
+                async ? m -> cache.putAllConflictAsync(m).get() : cache::putAllConflict,
+                async ? m -> cache.removeAllConflictAsync(m).get() : cache::removeAllConflict
+            );
 
-        KeyCacheObject key;
-
-        CacheObject val = new CacheObjectImpl(1, null);
-        val.prepareMarshal(cachex.context().cacheObjectContext());
-
-        GridCacheVersion conflict = new GridCacheVersion(1, 0, 1, (byte)2);
-
-        for (int i = 0; i < cnt; ++i) {
-            key = new KeyCacheObjectImpl(i, null, cachex.affinity().partition(0));
-
-            drMapPuts.put(key, new GridCacheDrInfo(val, conflict));
-            drMapRemoves.put(key, conflict);
-        }
-
-        if (async) {
-            cachex.putAllConflictAsync(drMapPuts).get();
-            cachex.removeAllConflictAsync(drMapRemoves).get();
-        }
-        else {
-            cachex.putAllConflict(drMapPuts);
-            cachex.removeAllConflict(drMapRemoves);
-        }
-    }
-
-    /** Performs {@link TcpClientCache#putAllConflict(Map)} and {@link TcpClientCache#removeAllConflict(Map)} operation on a given cache.
-     * @param cache - {@link TcpClientCache} cache instance.
-     * @param cnt - number of entities to put/remove
-     * */
-    private void updateCacheFromThin(TcpClientCache<Object, Object> cache, int cnt) throws ExecutionException, InterruptedException {
-        Map<Object, T3<?, GridCacheVersion, Long>> drMapPuts = new HashMap<>();
-        Map<Object, GridCacheVersion> drMapRemoves = new HashMap<>();
-
-        GridCacheVersion conflict = new GridCacheVersion(1, 1, 1, (byte)2);
-        T3<?, GridCacheVersion, Long> val = new T3<>(1, conflict, 0L);
-
-        for (int i = 0; i < cnt; ++i) {
-            drMapPuts.put(i, val);
-            drMapRemoves.put(i, conflict);
-        }
-
-        if (async) {
-            cache.putAllConflictAsync(drMapPuts).get();
-            cache.removeAllConflictAsync(drMapRemoves).get();
-        }
-        else {
-            cache.putAllConflict(drMapPuts);
-            cache.removeAllConflict(drMapRemoves);
+            checkMetrics(ign);
         }
     }
 
     /** */
-    private void checkMetrics(IgniteEx ignFrom, int cnt) {
+    private <K, V, C> void updateCache(IntFunction<K> keyGen, V val, C confl, ConsumerX<Map<K, V>> putAction,
+        ConsumerX<Map<K, C>> removeAction) throws Exception {
+        Map<K, V> putMap = new HashMap<>();
+        Map<K, C> removeMap = new HashMap<>();
+
+        for (int i = 0; i < KEYS_PUT_CNT; i++) {
+            K key = keyGen.apply(i);
+
+            putMap.put(key, val);
+
+            if (i < KEYS_REMOVE_CNT)
+                removeMap.put(key, confl);
+        }
+
+        putAction.accept(putMap);
+        removeAction.accept(removeMap);
+    }
+
+    /** */
+    private void checkMetrics(IgniteEx ignFrom) throws IgniteInterruptedCheckedException {
         MetricRegistryImpl mreg = ignFrom.context().metric().registry(cacheMetricsRegistryName(DEFAULT_CACHE_NAME, false));
 
-        assertTrue(mreg.<LongMetric>findMetric("PutAllConflictTimeTotal").value() > 0);
-        assertTrue(mreg.<LongMetric>findMetric("RemoveAllConflictTimeTotal").value() > 0);
+        waitForCondition(() -> mreg.<LongMetric>findMetric("PutAllConflictTimeTotal").value() > 0, getTestTimeout());
+        waitForCondition(() -> mreg.<LongMetric>findMetric("RemoveAllConflictTimeTotal").value() > 0, getTestTimeout());
 
         assertTrue(stream(mreg.<HistogramMetricImpl>findMetric("PutAllConflictTime").value()).sum() > 0);
         assertTrue(stream(mreg.<HistogramMetricImpl>findMetric("RemoveAllConflictTime").value()).sum() > 0);
 
         MetricRegistryImpl mregDest = ign.context().metric().registry(cacheMetricsRegistryName(DEFAULT_CACHE_NAME, false));
 
-        assertEquals(cnt, mregDest.<LongMetric>findMetric("CachePuts").value());
-        assertEquals(cnt, mregDest.<LongMetric>findMetric("CacheRemovals").value());
+        assertEquals(KEYS_PUT_CNT, mregDest.<LongMetric>findMetric("CachePuts").value());
+        assertEquals(KEYS_REMOVE_CNT, mregDest.<LongMetric>findMetric("CacheRemovals").value());
     }
 }
