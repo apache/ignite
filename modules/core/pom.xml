@@ -440,7 +440,6 @@
                         <groupId>org.apache.maven.plugins</groupId>
                         <artifactId>maven-surefire-plugin</artifactId>
                         <configuration>
-                            <forkCount>1</forkCount>
                             <systemPropertyVariables>
                                 <domainJar>${domain-lib-dir}/${domain-jar}</domainJar>
                                 <javax.management.builder.initial>org.apache.ignite.internal.tck.TCKMBeanServerBuilder</javax.management.builder.initial>

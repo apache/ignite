@@ -175,14 +175,6 @@
                 </executions>
             </plugin>
 
-            <plugin>
-                <groupId>org.apache.maven.plugins</groupId>
-                <artifactId>maven-surefire-plugin</artifactId>
-                <configuration>
-                    <forkCount>1</forkCount>
-                </configuration>
-            </plugin>
-
             <!-- Generate the OSGi MANIFEST.MF for this bundle.
                  This bundle is a fragment attached to the ignite-core bundle, as it contains and exports classes in
                  the org.apache.ignite.internal.processors.query.h2.opt, thus leading to a split package situation in OSGi.
