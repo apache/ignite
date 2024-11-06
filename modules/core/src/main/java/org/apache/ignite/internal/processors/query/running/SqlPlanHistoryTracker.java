@@ -25,18 +25,13 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 /** Class that manages recording and storing SQL plans. */
 public class SqlPlanHistoryTracker {
     /** SQL plan history. */
-    private GridBoundedConcurrentLinkedHashMap<SqlPlan, Long> sqlPlanHistory;
-
-    /** SQL plan history size. */
-    private int historySize;
+    private Map<SqlPlan, Long> sqlPlanHistory;
 
     /**
-     * @param historySize SQL plan history size.
+     * @param histSize SQL plan history size.
      */
-    public SqlPlanHistoryTracker(int historySize) {
-        this.historySize = historySize;
-
-        sqlPlanHistory = (historySize > 0) ? new GridBoundedConcurrentLinkedHashMap<>(historySize) : null;
+    public SqlPlanHistoryTracker(int histSize) {
+        sqlPlanHistory = (histSize > 0) ? new GridBoundedConcurrentLinkedHashMap<>(histSize) : null;
     }
 
     /**
@@ -47,7 +42,7 @@ public class SqlPlanHistoryTracker {
      * @param engine SQL engine.
      */
     public void addPlan(String plan, String qry, String schema, boolean loc, String engine) {
-        if (historySize <= 0)
+        if (sqlPlanHistory.getClass().equals(Collections.emptyMap().getClass()))
             return;
 
         SqlPlan sqlPlan = new SqlPlan(plan, qry, schema, loc, engine);
@@ -57,18 +52,13 @@ public class SqlPlanHistoryTracker {
 
     /** */
     public Map<SqlPlan, Long> sqlPlanHistory() {
-        if (historySize <= 0)
-            return Collections.emptyMap();
-
         return Collections.unmodifiableMap(sqlPlanHistory);
     }
 
     /**
-     * @param historySize History size.
+     * @param histSize History size.
      */
-    public void setHistorySize(int historySize) {
-        this.historySize = historySize;
-
-        sqlPlanHistory = (historySize > 0) ? new GridBoundedConcurrentLinkedHashMap<>(historySize) : null;
+    public void setHistorySize(int histSize) {
+        sqlPlanHistory = (histSize > 0) ? new GridBoundedConcurrentLinkedHashMap<>(histSize) : Collections.emptyMap();
     }
 }
