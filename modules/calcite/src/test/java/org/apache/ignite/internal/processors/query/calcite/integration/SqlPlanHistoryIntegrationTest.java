@@ -58,6 +58,7 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 
+import static org.junit.Assert.assertNotEquals;
 import static org.junit.Assume.assumeFalse;
 
 /** Tests for SQL plan history. */
@@ -452,6 +453,18 @@ public class SqlPlanHistoryIntegrationTest extends GridCommonAbstractTest {
         assertTrue(getSqlPlanHistory().isEmpty());
     }
 
+    /** Checks that new entries are present in the plan history after history size is reset. */
+    @Test
+    public void testResetPlanHistorySize() {
+        checkReset(() -> queryNode().context().query().runningQueryManager().planHistoryTracker().setHistorySize(5));
+    }
+
+    /** Checks that new entries are present in the plan history after PlanHistoryTracker is reset. */
+    @Test
+    public void testResetPlanHistoryMetrics() {
+        checkReset(() -> queryNode().context().query().runningQueryManager().resetPlanHistoryMetrics());
+    }
+
     /**
      * @param qry Query.
      */
@@ -671,6 +684,40 @@ public class SqlPlanHistoryIntegrationTest extends GridCommonAbstractTest {
 
             assertTrue(plan.getValue() > 0);
         }
+    }
+
+    /**
+     * Compares entries in the plan history before and after the reset event.
+     *
+     * @param reset Reset.
+     */
+    public void checkReset(Runnable reset) {
+        assumeFalse("No SQL plans are written on the client node when using the H2 engine", isClient);
+
+        SqlFieldsQuery qryBefore = new SqlFieldsQuery(SQL + " where A.fail()=" + 1);
+        SqlFieldsQuery qryAfter = new SqlFieldsQuery(SQL + " where A.fail()=" + 2);
+
+        try {
+            cacheQuery(qryBefore.setLocal(loc), "A");
+        }
+        catch (Exception ignore) {
+            //No-Op
+        }
+
+        String qryBeforeStr = getSqlPlanHistory().keySet().stream().findFirst().map(SqlPlan::query).get();
+
+        reset.run();
+
+        try {
+            cacheQuery(qryAfter.setLocal(loc), "A");
+        }
+        catch (Exception ignore) {
+            //No-Op
+        }
+
+        String qryAfterStr = getSqlPlanHistory().keySet().stream().findFirst().map(SqlPlan::query).get();
+
+        assertNotEquals(qryBeforeStr, qryAfterStr);
     }
 
     /** */
