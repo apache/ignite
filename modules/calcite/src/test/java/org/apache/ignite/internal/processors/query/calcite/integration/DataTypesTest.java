@@ -72,12 +72,24 @@ public class DataTypesTest extends AbstractBasicIntegrationTransactionalTest {
     private static List<List<Object>> numericsToRound() {
         List<List<Object>> lst = new ArrayList<>(50);
 
+        Exception overflowErr = new ArithmeticException("overflow");
+
         lst.add(F.asList("DECIMAL(5,4)", BigDecimal.valueOf(1.4999d), "DECIMAL(1)", new BigDecimal(1)));
         lst.add(F.asList("DECIMAL(5,4)", BigDecimal.valueOf(-1.4999d), "DECIMAL(1)", new BigDecimal(-1)));
         lst.add(F.asList("DECIMAL(2,1)", BigDecimal.valueOf(1.5d), "DECIMAL(1)", new BigDecimal(2)));
         lst.add(F.asList("DECIMAL(2,1)", BigDecimal.valueOf(-1.5d), "DECIMAL(1)", new BigDecimal(-2)));
         lst.add(F.asList("DECIMAL(5,4)", BigDecimal.valueOf(1.4999d), "DECIMAL(2,1)", BigDecimal.valueOf(1.5)));
         lst.add(F.asList("DECIMAL(5,4)", BigDecimal.valueOf(-1.4999d), "DECIMAL(2,1)", BigDecimal.valueOf(-1.5)));
+
+        lst.add(F.asList("DECIMAL", new BigDecimal("-9223372036854775808.4"), "BIGINT", -9223372036854775808L));
+        lst.add(F.asList("DECIMAL", new BigDecimal("-9223372036854775808.5"), "BIGINT", overflowErr));
+        lst.add(F.asList("DECIMAL", new BigDecimal("9223372036854775807.4"), "BIGINT", 9223372036854775807L));
+        lst.add(F.asList("DECIMAL", new BigDecimal("9223372036854775807.5"), "BIGINT", overflowErr));
+
+        lst.add(F.asList("DOUBLE", -2147483648.4d, "INT", -2147483648));
+        lst.add(F.asList("DOUBLE", -2147483648.5d, "INT", overflowErr));
+        lst.add(F.asList("DOUBLE", 2147483647.4d, "INT", 2147483647));
+        lst.add(F.asList("DOUBLE", 2147483647.5d, "INT", overflowErr));
 
         for (String numTypeName : F.asList("DOUBLE", "FLOAT")) {
             lst.add(F.asList(numTypeName, floatingVal(1.4999f, numTypeName), "DECIMAL(1)", new BigDecimal(1)));
@@ -99,11 +111,19 @@ public class DataTypesTest extends AbstractBasicIntegrationTransactionalTest {
             lst.add(F.asList(numTypeName, floatingVal(-1.4999f, numTypeName), "SMALLINT", (short)-1));
             lst.add(F.asList(numTypeName, floatingVal(1.5f, numTypeName), "SMALLINT", (short)2));
             lst.add(F.asList(numTypeName, floatingVal(-1.5f, numTypeName), "SMALLINT", (short)-2));
+            lst.add(F.asList(numTypeName, floatingVal(32767.4f, numTypeName), "SMALLINT", (short)32767));
+            lst.add(F.asList(numTypeName, floatingVal(32767.5f, numTypeName), "SMALLINT", overflowErr));
+            lst.add(F.asList(numTypeName, floatingVal(-32768.4f, numTypeName), "SMALLINT", (short)-32768));
+            lst.add(F.asList(numTypeName, floatingVal(-32768.5f, numTypeName), "SMALLINT", overflowErr));
 
             lst.add(F.asList(numTypeName, floatingVal(1.4999f, numTypeName), "TINYINT", (byte)1));
             lst.add(F.asList(numTypeName, floatingVal(-1.4999f, numTypeName), "TINYINT", (byte)-1));
             lst.add(F.asList(numTypeName, floatingVal(1.5f, numTypeName), "TINYINT", (byte)2));
             lst.add(F.asList(numTypeName, floatingVal(-1.5f, numTypeName), "TINYINT", (byte)-2));
+            lst.add(F.asList(numTypeName, floatingVal(127.4f, numTypeName), "TINYINT", (byte)127));
+            lst.add(F.asList(numTypeName, floatingVal(127.5f, numTypeName), "TINYINT", overflowErr));
+            lst.add(F.asList(numTypeName, floatingVal(-128.4f, numTypeName), "TINYINT", (byte)-128));
+            lst.add(F.asList(numTypeName, floatingVal(-128.5f, numTypeName), "TINYINT", overflowErr));
         }
 
         return lst;
@@ -111,7 +131,10 @@ public class DataTypesTest extends AbstractBasicIntegrationTransactionalTest {
 
     /** */
     private static Number floatingVal(float v, String typeName) {
-        return "DOUBLE".equalsIgnoreCase(typeName) ? (double)v : v;
+        if ("DOUBLE".equalsIgnoreCase(typeName))
+            return (double)v;
+
+        return v;
     }
 
     /** Tests Other type. */
