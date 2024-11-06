@@ -501,9 +501,8 @@ public class JdbcThinBatchSelfTest extends JdbcThinAbstractDmlStatementSelfTest 
                 blob.setBytes(1, getBytes("White"));
                 pstmt.setBlob(paramCnt, blob);
             }
-            else {
+            else
                 pstmt.setBinaryStream(paramCnt, new ByteArrayInputStream(getBytes("Black")));
-            }
 
             pstmt.addBatch();
         }
@@ -541,9 +540,8 @@ public class JdbcThinBatchSelfTest extends JdbcThinAbstractDmlStatementSelfTest 
                 blob.setBytes(1, getBytes("White" + i));
                 pstmt.setBlob(paramCnt, blob);
             }
-            else {
+            else
                 pstmt.setBinaryStream(paramCnt, new ByteArrayInputStream(getBytes("Black" + i)));
-            }
 
             pstmt.addBatch();
         }
