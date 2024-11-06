@@ -48,6 +48,30 @@ public class IgniteMath {
     private static final Float LOWER_LONG_FLOAT = (float)Long.MIN_VALUE;
 
     /** */
+    private static final double LONG_MAX_EXT = Long.MAX_VALUE + 1.d;
+
+    /** */
+    private static final double LONG_MIN_EXT = Long.MIN_VALUE - 1d;
+
+    /** */
+    private static final double INT_MAX_EXT = Integer.MAX_VALUE + 1.d;
+
+    /** */
+    private static final double INT_MIN_EXT = Integer.MIN_VALUE - 1d;
+
+    /** */
+    private static final double SHORT_MAX_EXT = Short.MAX_VALUE + 1.d;
+
+    /** */
+    private static final double SHORT_MIN_EXT = Short.MIN_VALUE - 1d;
+
+    /** */
+    private static final double BYTE_MAX_EXT = Byte.MAX_VALUE + 1.d;
+
+    /** */
+    private static final double BYTE_MIN_EXT = Byte.MIN_VALUE - 1d;
+
+    /** */
     public static final RoundingMode NUMERIC_ROUNDING_MODE = RoundingMode.HALF_UP;
 
     /** Returns the sum of its arguments, throwing an exception if the result overflows an {@code long}. */
@@ -252,11 +276,12 @@ public class IgniteMath {
 
     /** Cast value to {@code long}, throwing an exception if the result overflows an {@code long}. */
     public static long convertToLongExact(double x) {
-        Number res = round(convertToBigDecimal(x));
+        x = extendToRound(x);
 
-        checkNumberLongBounds(BIGINT, res);
+        if (x <= LONG_MIN_EXT || x >= LONG_MAX_EXT)
+            throw new ArithmeticException(INTEGER.getName() + " overflow");
 
-        return res.longValue();
+        return (long)x;
     }
 
     /** Cast value to {@code int}, throwing an exception if the result overflows an {@code int}. */
@@ -273,7 +298,7 @@ public class IgniteMath {
     public static int convertToIntExact(double x) {
         x = extendToRound(x);
 
-        if (x <= Integer.MIN_VALUE || x >= Integer.MAX_VALUE)
+        if (x <= INT_MIN_EXT || x >= INT_MAX_EXT)
             throw new ArithmeticException(INTEGER.getName() + " overflow");
 
         return (int)x;
@@ -302,7 +327,7 @@ public class IgniteMath {
     public static short convertToShortExact(double x) {
         x = extendToRound(x);
 
-        if (x <= Short.MIN_VALUE || x >= Short.MAX_VALUE)
+        if (x <= SHORT_MIN_EXT|| x >= SHORT_MAX_EXT)
             throw new ArithmeticException(SMALLINT.getName() + " overflow");
 
         return (short)x;
@@ -331,7 +356,7 @@ public class IgniteMath {
     public static byte convertToByteExact(double x) {
         x = extendToRound(x);
 
-        if (x <= Byte.MIN_VALUE || x >= Byte.MAX_VALUE)
+        if (x <= BYTE_MIN_EXT || x >= BYTE_MAX_EXT)
             throw new ArithmeticException(TINYINT.getName() + " overflow");
 
         return (byte)x;
@@ -390,7 +415,7 @@ public class IgniteMath {
     }
 
     /** */
-    private static Number round(Number x) {
+    private static BigDecimal round(Number x) {
         return convertToBigDecimal(x).setScale(0, NUMERIC_ROUNDING_MODE);
     }
 }
