@@ -361,7 +361,7 @@ public class JdbcBlobTest {
 
         assertEquals(12, is.read());
 
-        byte[] res = is.readAllBytes();
+        byte[] res = is.readNBytes(4);
         assertArrayEquals(new byte[] {4, 5, 6, 7}, res);
 
         blob.setBytes(blob.length() + 1, new byte[] {13});
