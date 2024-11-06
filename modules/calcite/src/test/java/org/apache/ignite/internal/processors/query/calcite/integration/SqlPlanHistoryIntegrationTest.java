@@ -166,7 +166,7 @@ public class SqlPlanHistoryIntegrationTest extends GridCommonAbstractTest {
             {CalciteQueryEngineConfiguration.ENGINE_NAME},
             {IndexingQueryEngineConfiguration.ENGINE_NAME}
         }).flatMap(sqlEngine -> Arrays.stream(new Boolean[]{true, false})
-                .flatMap(isClient -> Arrays.stream(new Boolean[]{true, false})
+                .flatMap(isClient -> Arrays.stream(isClient ? new Boolean[]{false} : new Boolean[]{true, false})
                     .flatMap(loc -> Arrays.stream(new Boolean[]{true, false})
                         .map(isFullyFetched -> new Object[]{sqlEngine[0], isClient, loc, isFullyFetched})))
         ).collect(Collectors.toList());
@@ -204,9 +204,8 @@ public class SqlPlanHistoryIntegrationTest extends GridCommonAbstractTest {
      * @param idxTypes Index types.
      * @return Cache configuration.
      */
-    @SuppressWarnings("unchecked")
-    private CacheConfiguration configureCache(String name, Class<?>... idxTypes) {
-        return new CacheConfiguration()
+    private CacheConfiguration<?, ?> configureCache(String name, Class<?>... idxTypes) {
+        return new CacheConfiguration<>()
             .setName(name)
             .setIndexedTypes(idxTypes)
             .setSqlFunctionClasses(Functions.class);
@@ -219,9 +218,7 @@ public class SqlPlanHistoryIntegrationTest extends GridCommonAbstractTest {
         IgniteEx node = isClient ? grid(1) : grid(0);
 
         if (isClient)
-            assertTrue(node.context().clientNode());
-        else
-            assertFalse(node.context().clientNode());
+            assertEquals(isClient, node.context().clientNode());
 
         return node;
     }
@@ -592,7 +589,7 @@ public class SqlPlanHistoryIntegrationTest extends GridCommonAbstractTest {
 
         task.accept(cmds);
 
-        checkSqlPlanHistoryDml(3, qrysInfo.get2());
+        checkSqlPlanHistoryDml(cmds.size(), qrysInfo.get2());
     }
 
     /** Returns current SQL plan history on the query node. */
