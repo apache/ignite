@@ -280,27 +280,24 @@ public class JdbcBinaryBuffer {
     /**
      * Calculate new capacity.
      *
-     * @param curCap Current capacity.
-     * @param reqLen Required new data length.
+     * @param cap Current capacity.
+     * @param reqCap Required new capacity.
      * @return New capacity.
      */
-    protected static int capacity(int curCap, int reqLen) {
-        int newCap;
+    protected static int capacity(int cap, int reqCap) {
+        if (reqCap <= MIN_CAP)
+            return MIN_CAP;
 
-        if (reqLen < MIN_CAP)
-            newCap = MIN_CAP;
-        else {
-            newCap = Math.max(curCap, MIN_CAP);
+        int resCap = Math.max(cap, MIN_CAP);
 
-            while (newCap < reqLen) {
-                newCap <<= 1;
+        while (resCap < reqCap) {
+            resCap <<= 1;
 
-                if (newCap < 0)
-                    newCap = MAX_ARRAY_SIZE;
-            }
+            if (resCap < 0)
+                return MAX_ARRAY_SIZE;
         }
 
-        return newCap;
+        return resCap;
     }
 
     /**
