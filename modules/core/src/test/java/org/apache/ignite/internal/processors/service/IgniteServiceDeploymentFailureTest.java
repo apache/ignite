@@ -94,8 +94,8 @@ public class IgniteServiceDeploymentFailureTest extends GridCommonAbstractTest {
     }
 
     /**
-     * Tests that service descriptors are clear on server node after attempt of
-     * deploying a service which throws an exception during initialization
+     * Tests that service descriptors are clear after an attempt of deploying
+     * a service which throws an exception during initialization
      *
      * @throws Exception If failed.
      * */
@@ -119,41 +119,10 @@ public class IgniteServiceDeploymentFailureTest extends GridCommonAbstractTest {
             assertThrowsWithCause(() -> clients[finalI].services().deploy(configs[finalI]), ServiceDeploymentException.class);
         }
 
-        System.out.println("init attemps: " + initCounter.get());
+        System.out.println("init attempts: " + initCounter.get());
 
         assertTrue(srv.services().serviceDescriptors().isEmpty());
-    }
-
-    /**
-     * Tests that service descriptors are clear on client nodes after attempt of
-     * deploying a service which throws an exception during initialization
-     *
-     * @throws Exception If failed.
-     * */
-    @Test
-    public void testClientDescriptorsOfFailedServices() throws Exception {
-        IgniteEx srv = startGrid(getConfiguration("server"));
-
-        IgniteEx[] clients = new IgniteEx[1];
-        ServiceConfiguration[] configs = new ServiceConfiguration[clients.length];
-
-        for (int i = 0; i < clients.length; i++) {
-            clients[i] = startClientGrid(i);
-            configs[i] = new ServiceConfiguration()
-                    .setName("TestDeploymentService" + i)
-                    .setService(new InitThrowingService())
-                    .setTotalCount(1);
-        }
-
-        for (int i = 0; i < clients.length; i++) {
-            int finalI = i;
-            assertThrowsWithCause(() -> clients[finalI].services().deploy(configs[finalI]), ServiceDeploymentException.class);
-        }
-
-        System.out.println("init attemps: " + initCounter.get());
-
         for (int i = 0; i < clients.length; i++)
             assertTrue(clients[i].services().serviceDescriptors().isEmpty());
     }
 }
-
