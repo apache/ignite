@@ -34,6 +34,7 @@ import org.apache.ignite.internal.processors.query.IgniteSQLException;
 import org.apache.ignite.internal.processors.query.calcite.exec.exp.IgniteSqlFunctions;
 import org.apache.ignite.internal.processors.query.calcite.hint.HintDefinition;
 import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.testframework.SupplierX;
 import org.junit.Test;
 
 import static org.apache.ignite.internal.processors.query.calcite.CalciteQueryProcessor.FRAMEWORK_CONFIG;
