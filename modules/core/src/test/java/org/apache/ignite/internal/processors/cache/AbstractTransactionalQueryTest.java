@@ -15,56 +15,50 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.query.calcite.integration;
+package org.apache.ignite.internal.processors.cache;
 
 import java.util.Arrays;
 import java.util.Collection;
-import java.util.List;
 import java.util.concurrent.ThreadLocalRandom;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.cache.CacheAtomicityMode;
-import org.apache.ignite.calcite.CalciteQueryEngineConfiguration;
-import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
-import org.apache.ignite.internal.IgniteEx;
-import org.apache.ignite.internal.processors.cache.transactions.TransactionProxyImpl;
-import org.apache.ignite.internal.processors.query.QueryContext;
-import org.apache.ignite.internal.processors.query.QueryEngine;
-import org.apache.ignite.internal.processors.query.calcite.QueryChecker;
-import org.apache.ignite.internal.processors.query.calcite.util.Commons;
-import org.apache.ignite.testframework.SupplierX;
+import org.apache.ignite.internal.util.lang.RunnableX;
+import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.transactions.Transaction;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 
+import static org.apache.ignite.cache.CacheAtomicityMode.ATOMIC;
+import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
 import static org.apache.ignite.transactions.TransactionConcurrency.PESSIMISTIC;
 import static org.apache.ignite.transactions.TransactionIsolation.READ_COMMITTED;
 
 /** */
 @RunWith(Parameterized.class)
-public abstract class AbstractBasicIntegrationTransactionalTest extends AbstractBasicIntegrationTest {
+public abstract class AbstractTransactionalQueryTest extends GridCommonAbstractTest {
     /** */
     @Parameterized.Parameter()
-    public SqlTransactionMode sqlTxMode;
+    public TestTransactionMode sqlTxMode;
 
     /** @return Test parameters. */
     @Parameterized.Parameters(name = "sqlTxMode={0}")
     public static Collection<?> parameters() {
-        return Arrays.asList(SqlTransactionMode.values());
+        return Arrays.asList(TestTransactionMode.values());
     }
 
     /** */
-    protected static SqlTransactionMode currentMode;
+    protected static TestTransactionMode currentMode;
 
     /** */
     protected static Transaction tx;
+
 
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
-        cfg.getSqlConfiguration().setQueryEnginesConfiguration(new CalciteQueryEngineConfiguration());
         cfg.getTransactionConfiguration().setTxAwareQueriesEnabled(true);
 
         return cfg;
@@ -106,83 +100,50 @@ public abstract class AbstractBasicIntegrationTransactionalTest extends Abstract
     }
 
     /** */
-    protected void init() throws Exception {
-        startGrids(nodeCount());
+    protected abstract void init() throws Exception;
 
-        client = startClientGrid("client");
-    }
-
-    /** {@inheritDoc} */
-    @Override protected QueryChecker assertQuery(IgniteEx ignite, String qry) {
-        return new QueryChecker(qry, tx, sqlTxMode) {
-            @Override protected QueryEngine getEngine() {
-                return Commons.lookupComponent(ignite.context(), QueryEngine.class);
-            }
-        };
-    }
-
-    /** {@inheritDoc} */
-    @Override protected List<List<?>> executeSql(IgniteEx ignite, String sql, Object... args) {
-        if (sqlTxMode != SqlTransactionMode.NONE && tx == null)
-            startTransaction(ignite);
-
-        return super.executeSql(ignite, sql, args);
-    }
-
-    /** {@inheritDoc} */
-    @Override protected QueryContext queryContext() {
-        return QueryContext.of(tx != null ? ((TransactionProxyImpl<?, ?>)tx).tx().xidVersion() : null);
-    }
-
-    /** {@inheritDoc} */
-    @Override protected List<List<?>> sql(IgniteEx ignite, String sql, Object... params) {
-        if (sqlTxMode != SqlTransactionMode.NONE && tx == null)
-            startTransaction(ignite);
-
-        return super.sql(ignite, sql, params);
-    }
-
-    /** {@inheritDoc} */
-    @Override protected <K, V> void put(Ignite node, IgniteCache<K, V> cache, K key, V val) {
-        invokeAction(node, () -> {
-            cache.put(key, val);
-            return null;
-        });
-    }
-
-    /** {@inheritDoc} */
-    @Override protected <K, V> CacheConfiguration<K, V> cacheConfiguration() {
-        return super.<K, V>cacheConfiguration().setAtomicityMode(sqlTxMode == SqlTransactionMode.NONE
-            ? CacheAtomicityMode.ATOMIC
-            : CacheAtomicityMode.TRANSACTIONAL);
+    /** */
+    protected CacheAtomicityMode atomicity() {
+        return sqlTxMode == TestTransactionMode.NONE ? ATOMIC : TRANSACTIONAL;
     }
 
     /** */
-    protected <T> T invokeAction(Ignite node, SupplierX<T> action) {
-        if (tx == null && sqlTxMode != SqlTransactionMode.NONE)
+    protected <K, V> void put(Ignite node, IgniteCache<K, V> cache, K key, V val) {
+        invokeAction(node, () -> cache.put(key, val));
+    }
+
+    /** */
+    protected void invokeAction(Ignite node, RunnableX action) {
+        if (tx == null && sqlTxMode != TestTransactionMode.NONE)
             startTransaction(node);
 
         switch (sqlTxMode) {
             case ALL:
-                return txAction(node, action);
+                txAction(node, action);
+
+                break;
             case NONE:
-                return action.get();
+                action.run();
+
+                break;
             case RANDOM:
                 if (ThreadLocalRandom.current().nextBoolean())
-                    return action.get();
+                    action.run();
                 else
-                    return txAction(node, action);
+                    txAction(node, action);
+
+                break;
             default:
                 throw new IllegalArgumentException();
         }
     }
 
     /** */
-    public <T> T txAction(Ignite node, SupplierX<T> action) {
+    public void txAction(Ignite node, RunnableX action) {
         tx.resume();
 
         try {
-            return action.get();
+            action.run();
         }
         finally {
             tx.suspend();
@@ -209,12 +170,7 @@ public abstract class AbstractBasicIntegrationTransactionalTest extends Abstract
     }
 
     /** */
-    public String atomicity() {
-        return "atomicity=" + (sqlTxMode == SqlTransactionMode.NONE ? CacheAtomicityMode.ATOMIC : CacheAtomicityMode.TRANSACTIONAL);
-    }
-
-    /** */
-    public enum SqlTransactionMode {
+    public enum TestTransactionMode {
         /** All put, remove and SQL dml will be executed inside transaction. */
         ALL,
 
