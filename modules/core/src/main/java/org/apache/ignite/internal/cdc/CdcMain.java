@@ -653,15 +653,14 @@ public class CdcMain implements Runnable {
 
             if (interrupted)
                 throw new IgniteException("Change Data Capture Application interrupted");
-        }
-        catch (IgniteCheckedException | IOException e) {
-            throw new IgniteException(e);
-        }
-        finally {
+
             long duration = System.nanoTime() - start;
 
             eventsConsumptionTime.value(duration);
             eventsConsumptionTimeTotal.add(duration);
+        }
+        catch (IgniteCheckedException | IOException e) {
+            throw new IgniteException(e);
         }
     }
 
