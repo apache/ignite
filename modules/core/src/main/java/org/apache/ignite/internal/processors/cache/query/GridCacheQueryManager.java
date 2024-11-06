@@ -792,7 +792,13 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
             Integer part = qry.partition();
 
             if (part != null && (part < 0 || part >= cctx.affinity().partitions()))
-                return new GridEmptyCloseableIterator<>();
+                return new GridEmptyCloseableIterator() {
+                    @Override public void close() throws IgniteCheckedException {
+                        ScanQueryIterator.closeFilter(qry.scanFilter());
+
+                        super.close();
+                    }
+                };
 
             AffinityTopologyVersion topVer = GridQueryProcessor.getRequestAffinityTopologyVersion();
 
@@ -852,6 +858,8 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
             return iter;
         }
         catch (IgniteCheckedException | RuntimeException e) {
+            ScanQueryIterator.closeFilter(qry.scanFilter());
+
             throw e;
         }
     }
