@@ -77,10 +77,11 @@ public class JdbcBlob implements Blob {
 
         int blobLen = buf.length();
 
-        if (pos < 1 || (pos > blobLen && blobLen > 0) || len < 0)
+        if (pos < 1 || (pos > blobLen && blobLen > 0) || len < 0) {
             throw new SQLException("Invalid argument. Position can't be less than 1 or " +
                 "greater than Blob length. Requested length also can't be negative " +
                 "[pos=" + pos + ", len=" + len + ", blobLen=" + blobLen + "]");
+        }
 
         int idx = (int)pos - 1;
 
@@ -109,10 +110,11 @@ public class JdbcBlob implements Blob {
 
         int blobLen = buf.length();
 
-        if (pos < 1 || len < 1 || pos > blobLen || len > blobLen - (pos - 1))
+        if (pos < 1 || len < 1 || pos > blobLen || len > blobLen - (pos - 1)) {
             throw new SQLException("Invalid argument. Position can't be less than 1 or " +
                 "greater than Blob length. Requested length can't be negative and can't be " +
                 "greater than available bytes from given position [pos=" + pos + ", len=" + len + ", blobLen=" + blobLen + "]");
+        }
 
         return buf.getInputStream((int)pos - 1, (int)len);
     }
@@ -162,9 +164,10 @@ public class JdbcBlob implements Blob {
 
         int blobLen = buf.length();
 
-        if (pos < 1 || pos - 1 > blobLen)
+        if (pos < 1 || pos - 1 > blobLen) {
             throw new SQLException("Invalid argument. Position can't be less than 1 or " +
                 "greater than Blob length + 1 [pos=" + pos + ", blobLen=" + blobLen + "]");
+        }
 
         try {
             buf.write((int)pos - 1, bytes, off, len);
@@ -182,9 +185,10 @@ public class JdbcBlob implements Blob {
 
         int blobLen = buf.length();
 
-        if (pos < 1 || pos - 1 > blobLen)
+        if (pos < 1 || pos - 1 > blobLen) {
             throw new SQLException("Invalid argument. Position can't be less than 1 or greater than Blob length + 1 " +
                     "[pos=" + pos + ", blobLen=" + blobLen + "]");
+        }
 
         return buf.getOutputStream((int)pos - 1);
     }
@@ -195,9 +199,10 @@ public class JdbcBlob implements Blob {
 
         int blobLen = buf.length();
 
-        if (len < 0 || len > blobLen)
+        if (len < 0 || len > blobLen) {
             throw new SQLException("Invalid argument. Length can't be " +
                 "less than zero or greater than Blob length [len=" + len + ", blobLen=" + blobLen + "]");
+        }
 
         buf.truncate((int)len);
     }

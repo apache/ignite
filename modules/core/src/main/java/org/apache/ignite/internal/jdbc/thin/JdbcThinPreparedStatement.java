@@ -539,8 +539,7 @@ public class JdbcThinPreparedStatement extends JdbcThinStatement implements Prep
     private void setArgument(int paramIdx, Object val) throws SQLException {
         ensureNotClosed();
 
-        if (val != null && !SqlListenerUtils.isPlainType(val.getClass())
-                && !(val instanceof SqlInputStreamWrapper) && !(val instanceof Blob))
+        if (val != null && !SqlListenerUtils.isPlainType(val.getClass()))
             ensureCustomObjectsSupported();
 
         if (paramIdx < 1)

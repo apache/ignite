@@ -275,9 +275,9 @@ public abstract class SqlListenerUtils {
         else if (cls == java.util.Date[].class || cls == java.sql.Date[].class)
             writer.writeDateArray((java.util.Date[])obj);
         else if (obj instanceof SqlInputStreamWrapper)
-            writeInputStreamAsByteArray(writer, (SqlInputStreamWrapper)obj);
+            writeByteArray(writer, (SqlInputStreamWrapper)obj);
         else if (obj instanceof Blob)
-            writeBlobAsByteArray(writer, (Blob)obj);
+            writeByteArray(writer, (Blob)obj);
         else if (binObjAllow)
             writer.writeObjectDetached(obj);
         else
@@ -290,19 +290,15 @@ public abstract class SqlListenerUtils {
      * @param writer Writer.
      * @param wrapper stream wrapper
      */
-    private static void writeInputStreamAsByteArray(BinaryWriterExImpl writer, SqlInputStreamWrapper wrapper)
-            throws BinaryObjectException {
-        InputStream in = wrapper.getInputStream();
-        Integer len = wrapper.getLength();
+    private static void writeByteArray(BinaryWriterExImpl writer, SqlInputStreamWrapper wrapper) throws BinaryObjectException {
+        InputStream in = wrapper.inputStream();
+        int len = wrapper.length();
 
-        if (len == null)
-            writer.writeByteArrayFromInputStream(in);
-        else {
-            int written = writer.writeByteArrayFromInputStream(in, len);
+        int written = writer.writeByteArray(in, len);
 
-            if (len != written)
-                throw new BinaryObjectException("Input stream length mismatch. [declaredLength=" + len + ", " +
-                        "actualLength=" + written + "]");
+        if (len != -1 && len != written) {
+            throw new BinaryObjectException("Input stream length mismatch. [declaredLength=" + len + ", " +
+                    "actualLength=" + written + "]");
         }
     }
 
@@ -312,17 +308,16 @@ public abstract class SqlListenerUtils {
      * @param writer Writer.
      * @param blob Blob.
      */
-    private static void writeBlobAsByteArray(BinaryWriterExImpl writer, Blob blob)
-            throws BinaryObjectException {
+    private static void writeByteArray(BinaryWriterExImpl writer, Blob blob) throws BinaryObjectException {
         try {
             int len = (int)blob.length();
-            InputStream in = blob.getBinaryStream(1, len);
 
-            int written = writer.writeByteArrayFromInputStream(in, len);
+            int written = writer.writeByteArray(blob.getBinaryStream(), len);
 
-            if (len != written)
+            if (len != written) {
                 throw new BinaryObjectException("Blob length mismatch. [declaredLength=" + len + ", " +
                         "actualLength=" + written + "]");
+            }
         }
         catch (SQLException e) {
             throw new BinaryObjectException(e);
@@ -361,7 +356,9 @@ public abstract class SqlListenerUtils {
             || cls == UUID[].class
             || cls == Time[].class
             || cls == Timestamp[].class
-            || cls == java.util.Date[].class || cls == java.sql.Date[].class;
+            || cls == java.util.Date[].class || cls == java.sql.Date[].class
+            || cls == SqlInputStreamWrapper.class
+            || cls == Blob.class;
     }
 
     /**

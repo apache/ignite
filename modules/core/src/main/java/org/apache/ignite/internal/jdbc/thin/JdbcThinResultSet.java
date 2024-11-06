@@ -474,9 +474,8 @@ public class JdbcThinResultSet implements ResultSet {
 
         if (cls == byte[].class)
             return (byte[])val;
-        else if (cls == JdbcBinaryBuffer.class) {
+        else if (cls == JdbcBinaryBuffer.class)
             return ((JdbcBinaryBuffer)val).getBytes();
-        }
         else if (cls == Byte.class)
             return new byte[] {(byte)val};
         else if (cls == Short.class) {

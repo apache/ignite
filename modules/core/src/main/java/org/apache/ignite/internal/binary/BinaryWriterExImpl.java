@@ -1886,33 +1886,6 @@ public class BinaryWriterExImpl implements BinaryWriter, BinaryRawWriterEx, Obje
     }
 
     /**
-     * Write byte array from the InputStream with the specified length.
-     *
-     * @param in InputStream.
-     * @param len Length of data in the stream.
-     * @return Number of bytes written.
-     * @throws BinaryObjectException If an I/O error occurs or if stream contains more than {@code MAX_ARRAY_SIZE} bytes.
-     */
-    public int writeByteArrayFromInputStream(InputStream in, int len) throws BinaryObjectException {
-        out.unsafeEnsure(1 + 4 + len);
-
-        return doWriteByteArrayFromInputStream(in, len);
-    }
-
-    /**
-     * Write byte array from the InputStream with uknown length.
-     *
-     * @param in InputStream.
-     * @return Number of bytes written
-     * @throws BinaryObjectException If an I/O error occurs or if stream contains more than {@code MAX_ARRAY_SIZE} bytes.
-     */
-    public int writeByteArrayFromInputStream(InputStream in) throws BinaryObjectException {
-        out.unsafeEnsure(1 + 4);
-
-        return doWriteByteArrayFromInputStream(in, -1);
-    }
-
-    /**
      * Write byte array from the InputStream.
      *
      * <p>If {@code limit} > 0 than no more than {@code limit} bytes will be read and written.
@@ -1926,7 +1899,12 @@ public class BinaryWriterExImpl implements BinaryWriter, BinaryRawWriterEx, Obje
      * @return Number of bytes written.
      * @throws BinaryObjectException If an I/O error occurs or stream contains more than {@code MAX_ARRAY_SIZE} bytes.
      */
-    private int doWriteByteArrayFromInputStream(InputStream in, int limit) throws BinaryObjectException {
+    public int writeByteArray(InputStream in, int limit) throws BinaryObjectException {
+        if (limit != -1)
+            out.unsafeEnsure(1 + 4 + limit);
+        else
+            out.unsafeEnsure(1 + 4);
+
         out.unsafeWriteByte(GridBinaryMarshaller.BYTE_ARR);
 
         int lengthPos = out.position();

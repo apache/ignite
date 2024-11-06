@@ -26,24 +26,23 @@ public class SqlInputStreamWrapper {
     /** Input stream wrapped. */
     private final InputStream stream;
 
-    /** Length of data in the input stream. May be null if unknown. */
-    private final Integer len;
+    /** Length of data in the input stream. -1 if unknown. */
+    private final int len;
 
     /**
-     * @param inputStream Input stream.
-     * @param len Length of data in the input stream. May be null if unknown.
+     * @param stream Input stream.
+     * @param len Length of data in the input stream. -1 if unknown.
      */
-    public SqlInputStreamWrapper(InputStream inputStream, Integer len) {
-        stream = inputStream;
+    public SqlInputStreamWrapper(InputStream stream, int len) {
+        this.stream = stream;
         this.len = len;
     }
 
     /**
-     * @param inputStream Input stream.
+     * @param stream Input stream.
      */
-    public SqlInputStreamWrapper(InputStream inputStream) {
-        stream = inputStream;
-        len = null;
+    public SqlInputStreamWrapper(InputStream stream) {
+        this(stream, -1);
     }
 
     /**
@@ -51,14 +50,14 @@ public class SqlInputStreamWrapper {
      *
      * @return Input stream.
      */
-    public InputStream getInputStream() {
+    public InputStream inputStream() {
         return stream;
     }
 
     /**
      * @return Length of data in the input stream.
      */
-    public Integer getLength() {
+    public int length() {
         return len;
     }
 }

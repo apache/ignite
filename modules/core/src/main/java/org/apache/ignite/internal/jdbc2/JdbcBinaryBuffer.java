@@ -48,7 +48,7 @@ public class JdbcBinaryBuffer {
     private int off;
 
     /** The length of data. */
-    private int length;
+    private int len;
 
     /** Read only flag. */
     private boolean isReadOnly;
@@ -89,13 +89,13 @@ public class JdbcBinaryBuffer {
      *
      * @param arr The byte array to be wrapped.
      * @param off The offset to the first byte to be wrapped.
-     * @param length The length in bytes of the data to be wrapped.
+     * @param len The length in bytes of the data to be wrapped.
      * @param isReadOnly The read-only flag.
      */
-    private JdbcBinaryBuffer(byte[] arr, int off, int length, boolean isReadOnly) {
+    private JdbcBinaryBuffer(byte[] arr, int off, int len, boolean isReadOnly) {
         this.arr = arr;
         this.off = off;
-        this.length = length;
+        this.len = len;
         this.isReadOnly = isReadOnly;
     }
 
@@ -103,7 +103,7 @@ public class JdbcBinaryBuffer {
      * Create shallow read-only copy of this buffer.
      */
     public JdbcBinaryBuffer shallowCopy() {
-        return new JdbcBinaryBuffer(arr, off, length, true);
+        return new JdbcBinaryBuffer(arr, off, len, true);
     }
 
     /**
@@ -125,9 +125,9 @@ public class JdbcBinaryBuffer {
      * @return Byte array containing buffer data.
      */
     public byte[] getBytes() {
-        byte[] bytes = new byte[length];
+        byte[] bytes = new byte[len];
 
-        read(0, bytes, 0, length);
+        read(0, bytes, 0, len);
 
         return bytes;
     }
@@ -170,7 +170,7 @@ public class JdbcBinaryBuffer {
 
         arr = newArr;
 
-        length = len;
+        this.len = len;
 
         off = 0;
 
@@ -181,7 +181,7 @@ public class JdbcBinaryBuffer {
      * @return Length of data in this buffer.
      */
     int length() {
-        return length;
+        return len;
     }
 
     /**
@@ -196,12 +196,12 @@ public class JdbcBinaryBuffer {
     int read(int pos, byte[] resBuf, int resOff, int resLen) {
         Objects.checkFromIndexSize(resOff, resLen, resBuf.length);
 
-        if (pos >= length)
+        if (pos >= len)
             return -1;
 
         int bufOff = pos + off;
 
-        int size = Math.min(resLen, length - pos);
+        int size = Math.min(resLen, len - pos);
 
         U.arrayCopy(arr, bufOff, resBuf, resOff, size);
 
@@ -223,13 +223,13 @@ public class JdbcBinaryBuffer {
 
         Objects.checkFromIndexSize(inpOff, inpLen, inpBuf.length);
 
-        int newLen = Math.max(pos + inpLen, length);
+        int newLen = Math.max(pos + inpLen, len);
 
         ensureCapacity(newLen);
 
         U.arrayCopy(inpBuf, inpOff, arr, pos, inpLen);
 
-        length = newLen;
+        len = newLen;
     }
 
     /**
@@ -239,7 +239,7 @@ public class JdbcBinaryBuffer {
      * @return Byte read from the Blob. -1 if end of data reached.
      */
     int read(int pos) {
-        if (pos >= length)
+        if (pos >= len)
             return -1;
 
         return arr[pos + off] & 0xff;
@@ -258,13 +258,13 @@ public class JdbcBinaryBuffer {
         if (MAX_ARRAY_SIZE - pos < 1)
             throw new IOException("Too much data. Can't write more then " + MAX_ARRAY_SIZE + " bytes.");
 
-        int newLen = Math.max(pos + 1, length);
+        int newLen = Math.max(pos + 1, len);
 
         ensureCapacity(newLen);
 
         arr[pos] = (byte)b;
 
-        length = newLen;
+        len = newLen;
     }
 
     /**
@@ -311,7 +311,7 @@ public class JdbcBinaryBuffer {
     private void reallocate(int newCapacity) {
         byte[] newBuf = new byte[newCapacity];
 
-        U.arrayCopy(arr, off, newBuf, 0, length);
+        U.arrayCopy(arr, off, newBuf, 0, len);
 
         arr = newBuf;
         off = 0;
@@ -416,7 +416,7 @@ public class JdbcBinaryBuffer {
                 return 0;
 
             int step = Math.min((int)Math.min(n, MAX_ARRAY_SIZE),
-                    limit == -1 ? length - pos : limit - (pos - start));
+                    limit == -1 ? len - pos : limit - (pos - start));
 
             pos += step;
 
@@ -442,18 +442,20 @@ public class JdbcBinaryBuffer {
 
         /** {@inheritDoc} */
         @Override public void write(int b) throws IOException {
-            if (pos > length)
+            if (pos > length()) {
                 throw new IOException("Writting beyond end of Blob, it probably was truncated after OutputStream was created " +
-                        "[pos=" + pos + ", blobLength=" + length + "]");
+                        "[pos=" + pos + ", blobLength=" + length() + "]");
+            }
 
             JdbcBinaryBuffer.this.write(pos++, b);
         }
 
         /** {@inheritDoc} */
         @Override public void write(byte[] b, int off, int len) throws IOException {
-            if (pos > length)
+            if (pos > length()) {
                 throw new IOException("Writting beyond end of Blob, it probably was truncated after OutputStream was created " +
-                        "[pos=" + pos + ", blobLength=" + length + "]");
+                        "[pos=" + pos + ", blobLength=" + length() + "]");
+            }
 
             JdbcBinaryBuffer.this.write(pos, b, off, len);
 
