@@ -70,6 +70,9 @@ public final class ScanQueryIterator<K, V, R> extends GridCloseableIteratorAdapt
     private final IgniteBiPredicate<K, V> scanFilter;
 
     /** */
+    private final Runnable closeFilterClo;
+
+    /** */
     private final boolean statsEnabled;
 
     /** */
@@ -186,6 +189,10 @@ public final class ScanQueryIterator<K, V, R> extends GridCloseableIteratorAdapt
         startTime = U.currentTimeMillis();
         pageSize = qry.pageSize();
         transform = SecurityUtils.sandboxedProxy(cctx.kernalContext(), IgniteClosure.class, injectResources(transformer, cctx));
+        closeFilterClo = qry.scanFilter() instanceof PlatformCacheEntryFilter
+            ? ((PlatformCacheEntryFilter)qry.scanFilter())::onClose
+            : null;
+
         scanFilter = prepareScanFilter(qry.scanFilter());
         // keep binary for remote scans if possible
         keepBinary = (!locNode && scanFilter == null && transformer == null && !readEvt) || qry.keepBinary();
@@ -226,7 +233,7 @@ public final class ScanQueryIterator<K, V, R> extends GridCloseableIteratorAdapt
         if (locPart != null)
             locPart.release();
 
-        closeFilter(scanFilter);
+        closeFilter();
 
         if (locIters != null)
             locIters.remove(this);
@@ -430,7 +437,7 @@ public final class ScanQueryIterator<K, V, R> extends GridCloseableIteratorAdapt
             return SecurityUtils.sandboxedProxy(cctx.kernalContext(), IgniteBiPredicate.class, keyValFilter);
         }
         catch (IgniteCheckedException | RuntimeException e) {
-            closeFilter(keyValFilter);
+            closeFilter();
 
             throw e;
         }
@@ -446,9 +453,8 @@ public final class ScanQueryIterator<K, V, R> extends GridCloseableIteratorAdapt
         }
     }
 
-    /** */
-    static void closeFilter(IgniteBiPredicate<?, ?> filter) {
-        if (filter instanceof PlatformCacheEntryFilter)
-            ((PlatformCacheEntryFilter)filter).onClose();
+    private void closeFilter() {
+        if (closeFilterClo != null)
+            closeFilterClo.run();
     }
 }
