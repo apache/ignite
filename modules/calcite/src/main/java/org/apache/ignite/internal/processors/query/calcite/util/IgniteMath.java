@@ -327,7 +327,7 @@ public class IgniteMath {
     public static short convertToShortExact(double x) {
         x = extendToRound(x);
 
-        if (x <= SHORT_MIN_EXT|| x >= SHORT_MAX_EXT)
+        if (x <= SHORT_MIN_EXT || x >= SHORT_MAX_EXT)
             throw new ArithmeticException(SMALLINT.getName() + " overflow");
 
         return (short)x;
