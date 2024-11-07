@@ -18,9 +18,11 @@
 package org.apache.ignite.internal.management.kill;
 
 import java.util.Collection;
+import org.apache.ignite.client.ClientConnectionException;
 import org.apache.ignite.internal.client.GridClientNode;
 import org.apache.ignite.internal.management.api.CommandUtils;
 import org.apache.ignite.internal.management.api.ComputeCommand;
+import org.apache.ignite.internal.util.typedef.X;
 
 /** */
 public class KillClientCommand implements ComputeCommand<KillClientCommandArg, Void> {
@@ -42,5 +44,13 @@ public class KillClientCommand implements ComputeCommand<KillClientCommandArg, V
     /** {@inheritDoc} */
     @Override public Collection<GridClientNode> nodes(Collection<GridClientNode> nodes, KillClientCommandArg arg) {
         return CommandUtils.nodeOrAll(arg.nodeId(), nodes);
+    }
+
+    /** {@inheritDoc} */
+    @Override public Void handleException(Exception e) throws Exception {
+        if (X.hasCause(e, ClientConnectionException.class))
+            return null;
+
+        throw e;
     }
 }

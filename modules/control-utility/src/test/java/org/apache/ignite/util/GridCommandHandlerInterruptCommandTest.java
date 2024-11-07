@@ -66,7 +66,7 @@ public class GridCommandHandlerInterruptCommandTest extends GridCommandHandlerAb
 
     /** {@inheritDoc} */
     @Override protected void beforeTest() throws Exception {
-        Assume.assumeTrue(commandHandler.equals(CLI_CMD_HND));
+        Assume.assumeTrue(commandHandler.equals(CLI_GRID_CLIENT_CMD_HND));
 
         super.beforeTest();
 
