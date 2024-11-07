@@ -119,6 +119,7 @@ public class CheckpointMarkersStorage {
      * @param absoluteWorkDir Directory path to checkpoint markers folder.
      * @param lock Checkpoint read-write lock.
      * @param checkpointMapSnapshotExecutor Checkpoint map snapshot executor.
+     * @param marsh JDK marshaler.
      * @throws IgniteCheckedException if fail.
      */
     CheckpointMarkersStorage(

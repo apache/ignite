@@ -107,6 +107,7 @@ public class CheckpointManager {
      * @param cacheProcessor Cache processor.
      * @param cpFreqDeviation Distributed checkpoint frequency deviation.
      * @param checkpointMapSnapshotExecutor Checkpoint map snapshot executor.
+     * @param marsh JDK marshaller.
      * @throws IgniteCheckedException if fail.
      */
     public CheckpointManager(
@@ -128,7 +129,7 @@ public class CheckpointManager {
         GridCacheProcessor cacheProcessor,
         Supplier<Integer> cpFreqDeviation,
         Executor checkpointMapSnapshotExecutor,
-        JdkMarshaller marshaller
+        JdkMarshaller marsh
     ) throws IgniteCheckedException {
         CheckpointHistory cpHistory = new CheckpointHistory(
             persistenceCfg,
@@ -149,7 +150,7 @@ public class CheckpointManager {
             pageStoreManager.workDir().getAbsolutePath(),
             lock,
             checkpointMapSnapshotExecutor,
-            marshaller
+            marsh
         );
 
         checkpointWorkflow = new CheckpointWorkflow(
