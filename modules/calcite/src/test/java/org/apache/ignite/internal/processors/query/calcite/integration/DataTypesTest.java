@@ -349,12 +349,6 @@ public class DataTypesTest extends AbstractBasicIntegrationTransactionalTest {
             "'TIMESTAMP WITH LOCAL TIME ZONE' is not supported.");
     }
 
-    /** */
-    @Test
-    public void test0() {
-        assertQuery("SELECT BIT_AND(1, 1)").returns(1).check();
-    }
-
     /** Cache API - SQL API cross check. */
     @Test
     public void testBinaryCache() {
