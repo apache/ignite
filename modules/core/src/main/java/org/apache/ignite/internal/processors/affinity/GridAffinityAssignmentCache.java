@@ -76,23 +76,23 @@ public class GridAffinityAssignmentCache {
      * Affinity cache will shrink when total number of non-shallow (see {@link HistoryAffinityAssignmentImpl})
      * historical instances will be greater than value of this constant.
      */
-    private final int MAX_NON_SHALLOW_HIST_SIZE = getInteger(IGNITE_AFFINITY_HISTORY_SIZE, DFLT_AFFINITY_HISTORY_SIZE);
+    final int maxNonShallowHistSize = getInteger(IGNITE_AFFINITY_HISTORY_SIZE, DFLT_AFFINITY_HISTORY_SIZE);
 
     /**
      * Affinity cache will also shrink when total number of both shallow ({@link HistoryAffinityAssignmentShallowCopy})
      * and non-shallow (see {@link HistoryAffinityAssignmentImpl}) historical instances will be greater than
      * value of this constant.
      */
-    private final int MAX_TOTAL_HIST_SIZE = MAX_NON_SHALLOW_HIST_SIZE * 10;
+    final int maxTotalHistSize = maxNonShallowHistSize * 10;
 
     /**
-     * Independent of {@link #MAX_NON_SHALLOW_HIST_SIZE} and {@link #MAX_TOTAL_HIST_SIZE}, affinity cache will always
+     * Independent of {@link #maxNonShallowHistSize} and {@link #maxTotalHistSize}, affinity cache will always
      * keep this number of non-shallow (see {@link HistoryAffinityAssignmentImpl}) instances.
      * We need at least one real instance, otherwise we won't be able to get affinity cache for
      * {@link GridCachePartitionExchangeManager#lastAffinityChangedTopologyVersion} in case cluster has experienced
      * too many client joins / client leaves / local cache starts.
      */
-    private final int MIN_NON_SHALLOW_HIST_SIZE = 2;
+    private static final int MIN_NON_SHALLOW_HIST_SIZE = 2;
 
     /** Partition distribution. */
     private final float partDistribution =
@@ -575,7 +575,7 @@ public class GridAffinityAssignmentCache {
 
         Map.Entry<AffinityTopologyVersion, HistoryAffinityAssignment> prevHistEntry = affCache.floorEntry(prevVer);
 
-        HistoryAffinityAssignment newHistEntry = (prevHistEntry == null || shouldCleanupShallows()) ?
+        HistoryAffinityAssignment newHistEntry = (prevHistEntry == null) ?
             new HistoryAffinityAssignmentImpl(assignmentCpy, backups) :
             new HistoryAffinityAssignmentShallowCopy(prevHistEntry.getValue().origin(), topVer);
 
@@ -759,7 +759,7 @@ public class GridAffinityAssignmentCache {
                     ", topVer=" + topVer +
                     ", head=" + head.get().topologyVersion() +
                     ", history=" + affCache.keySet() +
-                    ", maxNonShallowHistorySize=" + MAX_NON_SHALLOW_HIST_SIZE +
+                    ", maxNonShallowHistorySize=" + maxNonShallowHistSize +
                     ']');
             }
         }
@@ -826,7 +826,7 @@ public class GridAffinityAssignmentCache {
                     ", lastAffChangeTopVer=" + lastAffChangeTopVer +
                     ", head=" + head.get().topologyVersion() +
                     ", history=" + affCache.keySet() +
-                    ", maxNonShallowHistorySize=" + MAX_NON_SHALLOW_HIST_SIZE +
+                    ", maxNonShallowHistorySize=" + maxNonShallowHistSize +
                     ']');
             }
 
@@ -839,7 +839,7 @@ public class GridAffinityAssignmentCache {
                     ", lastAffChangeTopVer=" + lastAffChangeTopVer +
                     ", head=" + head.get().topologyVersion() +
                     ", history=" + affCache.keySet() +
-                    ", maxNonShallowHistorySize=" + MAX_NON_SHALLOW_HIST_SIZE +
+                    ", maxNonShallowHistorySize=" + maxNonShallowHistSize +
                     ']');
             }
         }
@@ -946,28 +946,18 @@ public class GridAffinityAssignmentCache {
         HistoryAffinityAssignment replaced,
         HistoryAffinityAssignment added
     ) {
-        boolean cleanupNeeded = false;
-
         if (replaced == null) {
-            cleanupNeeded = true;
-
-            if (added.requiresHistoryCleanup())
+            if (added.isFullSizeInstance())
                 nonShallowHistSize.incrementAndGet();
         }
         else {
-            if (replaced.requiresHistoryCleanup() != added.requiresHistoryCleanup()) {
-                if (added.requiresHistoryCleanup()) {
-                    cleanupNeeded = true;
-
+            if (replaced.isFullSizeInstance() != added.isFullSizeInstance()) {
+                if (added.isFullSizeInstance())
                     nonShallowHistSize.incrementAndGet();
-                }
                 else
                     nonShallowHistSize.decrementAndGet();
             }
         }
-
-        if (!cleanupNeeded)
-            return;
 
         int nonShallowSize = nonShallowHistSize.get();
 
@@ -995,8 +985,12 @@ public class GridAffinityAssignmentCache {
                 if (aff0.topologyVersion().equals(lastAffChangeTopVer))
                     continue; // Keep lastAffinityChangedTopologyVersion, it's required for some operations.
 
-                if (aff0.requiresHistoryCleanup())
+                if (aff0.isFullSizeInstance()) {
+                    if (nonShallowSize <= MIN_NON_SHALLOW_HIST_SIZE)
+                        continue;
+
                     nonShallowSize--;
+                }
 
                 totalSize--;
 
@@ -1015,15 +1009,7 @@ public class GridAffinityAssignmentCache {
      * @return <code>true</code> if affinity cache cleanup is not finished yet.
      */
     private boolean shouldContinueCleanup(int nonShallowSize, int totalSize) {
-        if (nonShallowSize <= MIN_NON_SHALLOW_HIST_SIZE)
-            return false;
-
-        return nonShallowSize > MAX_NON_SHALLOW_HIST_SIZE || totalSize > MAX_TOTAL_HIST_SIZE;
-    }
-
-    /** */
-    private boolean shouldCleanupShallows() {
-        return nonShallowHistSize.get() <= MIN_NON_SHALLOW_HIST_SIZE && affCache.size() > MAX_TOTAL_HIST_SIZE;
+        return nonShallowSize > maxNonShallowHistSize || totalSize > maxTotalHistSize;
     }
 
     /**

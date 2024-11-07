@@ -17,6 +17,7 @@
 
 package org.apache.ignite.cache.affinity;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -175,12 +176,67 @@ public class AffinityHistoryCleanupTest extends GridCommonAbstractTest {
         startGrid(4);
 
         checkHistory(ignite, F.asList(
+            topVer(5, 0), // Client event -> FullHistSize = 5.
+            topVer(6, 0), // Client event -> FullHistSize = 5.
+            topVer(7, 0), // Client event -> FullHistSize = 5.
+            topVer(8, 0), // Client event -> FullHistSize = 5.
+            topVer(9, 0), // Client event -> FullHistSize = 5.
+            topVer(10, 0), // Client event -> FullHistSize = 5.
             topVer(11, 0), // FullHistSize = 5.
             topVer(11, 1), // FullHistSize = 5.
             topVer(12, 0), // FullHistSize = 6 - 1 = 5.
             topVer(13, 0), // FullHistSize = 5.
             topVer(13, 1)), // FullHistSize = 6 - 1 = 5.
             5);
+
+        stopGrid(4);
+
+        checkHistory(ignite, F.asList(
+                topVer(11, 1), // FullHistSize = 5.
+                topVer(12, 0), // FullHistSize = 6 - 1 = 5.
+                topVer(13, 0), // FullHistSize = 5.
+                topVer(13, 1), // FullHistSize = 6 - 1 = 5.
+                topVer(14, 0)), // FullHistSize = 6 - 1 = 5.
+            5);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    @Test
+    @WithSystemProperty(key = IGNITE_AFFINITY_HISTORY_SIZE, value = "2")
+    public void testAffinityShallowHistoryCleanup() throws Exception {
+        Ignite ignite = startGrid(0);
+
+        checkHistory(ignite, F.asList(topVer(1, 0)), 1);
+
+        for (int i = 0; i < 15; i++) {
+            startClientGrid(1);
+            stopGrid(1);
+        }
+
+        List<AffinityTopologyVersion> expVers = new ArrayList<>();
+        expVers.add(topVer(1, 0));
+
+        for (int i = 13; i <= 31; i++)
+            expVers.add(topVer(i, 0));
+
+        checkHistory(ignite, expVers, 1);
+
+        startGrid(1);
+
+        expVers.clear();
+
+        for (int i = 14; i <= 32; i++)
+            expVers.add(topVer(i, 0));
+
+        expVers.add(topVer(32, 1));
+
+        checkHistory(ignite, expVers, 2);
+
+        stopGrid(1);
+
+        checkHistory(ignite, F.asList(topVer(32, 1), topVer(33, 0)), 2);
     }
 
     /**
