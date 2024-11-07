@@ -846,7 +846,6 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
                     qry.isDataPageScanEnabled());
             }
 
-            // TODO: Fix new instance here. Copy required only for local node (?)
             final Set<KeyCacheObject> skipKeys = qry.skipKeys() == null ? Collections.emptySet() : new HashSet<>(qry.skipKeys());
 
             if (!F.isEmpty(skipKeys)) {

@@ -269,7 +269,7 @@ public class CacheQuery<T> {
     private IgniteClosure<?, ?> transform;
 
     /** Partition. */
-    private Integer part;
+    private final Integer part;
 
     /** */
     private final boolean incMeta;
@@ -299,7 +299,7 @@ public class CacheQuery<T> {
     private int taskHash;
 
     /** */
-    private Boolean dataPageScanEnabled;
+    private final Boolean dataPageScanEnabled;
 
     /** */
     private final Collection<KeyCacheObject> skipKeys;

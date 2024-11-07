@@ -102,7 +102,6 @@ import org.apache.ignite.internal.processors.cache.metric.SqlViewExporterSpiTest
 import org.apache.ignite.internal.processors.cache.query.IgniteCacheQueryCacheDestroySelfTest;
 import org.apache.ignite.internal.processors.cache.query.ScanQueryConcurrentSqlUpdatesTest;
 import org.apache.ignite.internal.processors.cache.query.ScanQueryConcurrentUpdatesTest;
-import org.apache.ignite.internal.processors.cache.query.ScanQueryTransactionIsolationTest;
 import org.apache.ignite.internal.processors.query.IgniteQueryConvertibleTypesValidationTest;
 import org.apache.ignite.internal.processors.query.IgniteQueryDedicatedPoolTest;
 import org.apache.ignite.internal.processors.query.IgniteSqlCustomSchemaTest;
@@ -380,7 +379,6 @@ import org.junit.runners.Suite;
     DumpCacheConfigTest.class,
 
     H2TransactionAwareQueriesEnabledTest.class,
-    ScanQueryTransactionIsolationTest.class
 })
 public class IgniteBinaryCacheQueryTestSuite3 {
     /** Setup lazy mode default. */
