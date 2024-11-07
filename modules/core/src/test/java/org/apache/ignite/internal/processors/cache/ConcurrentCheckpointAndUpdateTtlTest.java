@@ -125,7 +125,7 @@ public class ConcurrentCheckpointAndUpdateTtlTest extends GridCommonAbstractTest
         IgniteInternalFuture<?> updateFut = runMultiThreadedAsync(() -> {
             while (!stop.get()) {
                 if (updateWithDataStreamer) {
-                    // SKip annoying warnings.
+                    // Skip annoying warnings.
                     Configurator.setLevel(DataStreamerImpl.class.getName(), org.apache.logging.log4j.Level.ERROR);
 
                     try (IgniteDataStreamer<Integer, Integer> stream = cln.dataStreamer(DEFAULT_CACHE_NAME)) {
