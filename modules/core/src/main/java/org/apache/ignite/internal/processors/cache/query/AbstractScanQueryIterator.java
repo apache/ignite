@@ -44,34 +44,37 @@ import static org.apache.ignite.internal.processors.security.SecurityUtils.secur
  */
 public abstract class AbstractScanQueryIterator<K, V, R> extends GridCloseableIteratorAdapter<R> {
     /** */
-    protected final IgniteBiPredicate<K, V> filter;
+    private final IgniteBiPredicate<K, V> filter;
+
+    /** */
+    private final Runnable closeFilterClo;
 
     /** */
     protected final boolean statsEnabled;
 
     /** */
-    protected final boolean keepBinary;
+    private final boolean keepBinary;
 
     /** */
-    protected final boolean readEvt;
+    private final boolean readEvt;
 
     /** */
-    protected final UUID subjId;
+    private final UUID subjId;
 
     /** */
-    protected final String taskName;
+    private final String taskName;
 
     /** */
-    protected final IgniteClosure<Cache.Entry<K, V>, R> transform;
+    private final IgniteClosure<Cache.Entry<K, V>, R> transform;
 
     /** */
     protected final GridCacheContext<K, V> cctx;
 
     /** */
-    protected final boolean locNode;
+    private final boolean locNode;
 
     /** */
-    protected R next;
+    private R next;
 
     /** */
     private boolean needAdvance;
@@ -90,9 +93,12 @@ public abstract class AbstractScanQueryIterator<K, V, R> extends GridCloseableIt
         boolean locNode
     ) throws IgniteCheckedException {
         this.cctx = cctx;
-        this.filter = prepareFilter(qry.scanFilter());
-        this.transform = SecurityUtils.sandboxedProxy(cctx.kernalContext(), IgniteClosure.class, injectResources(transform, cctx));
         this.locNode = locNode;
+        closeFilterClo = qry.scanFilter() instanceof PlatformCacheEntryFilter
+            ? () -> closeFilter(qry.scanFilter())
+            : null;
+        filter = prepareFilter(qry.scanFilter());
+        this.transform = SecurityUtils.sandboxedProxy(cctx.kernalContext(), IgniteClosure.class, injectResources(transform, cctx));
 
         statsEnabled = cctx.statisticsEnabled();
 
@@ -134,8 +140,9 @@ public abstract class AbstractScanQueryIterator<K, V, R> extends GridCloseableIt
     }
 
     /** {@inheritDoc} */
-    @Override protected void onClose() throws IgniteCheckedException {
-        close(filter);
+    @Override protected void onClose() {
+        if (closeFilterClo != null)
+            closeFilterClo.run();
     }
 
     /** Moves the iterator to the next cache entry. */
@@ -219,20 +226,48 @@ public abstract class AbstractScanQueryIterator<K, V, R> extends GridCloseableIt
             else
                 injectResources(keyValFilter, cctx);
 
-            keyValFilter = SecurityUtils.sandboxedProxy(cctx.kernalContext(), IgniteBiPredicate.class, keyValFilter);
-
-            return keyValFilter;
+            return SecurityUtils.sandboxedProxy(cctx.kernalContext(), IgniteBiPredicate.class, keyValFilter);
         }
         catch (IgniteCheckedException | RuntimeException e) {
-            close(keyValFilter);
+            closeFilter(keyValFilter);
 
             throw e;
         }
     }
 
     /** */
-    private void close(IgniteBiPredicate<?, ?> scanFilter) {
-        if (scanFilter instanceof PlatformCacheEntryFilter)
-            ((PlatformCacheEntryFilter)scanFilter).onClose();
+    public static void closeFilter(IgniteBiPredicate<?, ?> filter) {
+        if (filter instanceof PlatformCacheEntryFilter)
+            ((PlatformCacheEntryFilter)filter).onClose();
+    }
+
+    /** */
+    public IgniteClosure<Cache.Entry<K, V>, R> transformer() {
+        return transform;
+    }
+
+    /** */
+    public boolean local() {
+        return locNode;
+    }
+
+    /** */
+    public boolean keepBinary() {
+        return keepBinary;
+    }
+
+    /** */
+    public UUID subjectId() {
+        return subjId;
+    }
+
+    /** */
+    public String taskName() {
+        return taskName;
+    }
+
+    /** */
+    public GridCacheContext<K, V> cacheContext() {
+        return cctx;
     }
 }

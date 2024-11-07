@@ -810,7 +810,7 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
 
             final GridDhtLocalPartition locPart;
 
-            final GridIterator<CacheDataRow> it;
+            GridIterator<CacheDataRow> it;
 
             if (part != null) {
                 final GridDhtCacheAdapter dht = cctx.isNear() ? cctx.near().dht() : cctx.dht();
@@ -845,10 +845,6 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
                 it = cctx.offheap().cacheIterator(cctx.cacheId(), true, backups, topVer,
                     qry.isDataPageScanEnabled());
             }
-
-            ScanQueryIterator iter = new ScanQueryIterator(it, qry, topVer, locPart,
-                transformer,
-                locNode, locNode ? locIters : null, cctx, log);
 
             // TODO: Fix new instance here. Copy required only for local node (?)
             final Set<KeyCacheObject> skipKeys = qry.skipKeys() == null ? Collections.emptySet() : new HashSet<>(qry.skipKeys());
