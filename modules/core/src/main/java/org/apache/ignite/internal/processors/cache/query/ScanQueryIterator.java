@@ -190,7 +190,7 @@ public final class ScanQueryIterator<K, V, R> extends GridCloseableIteratorAdapt
         pageSize = qry.pageSize();
         transform = SecurityUtils.sandboxedProxy(cctx.kernalContext(), IgniteClosure.class, injectResources(transformer, cctx));
         closeFilterClo = qry.scanFilter() instanceof PlatformCacheEntryFilter
-            ? ((PlatformCacheEntryFilter)qry.scanFilter())::onClose
+            ? () -> closeFilter(qry.scanFilter())
             : null;
         filter = prepareFilter(qry.scanFilter());
         // keep binary for remote scans if possible

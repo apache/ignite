@@ -1392,6 +1392,8 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
             return it;
         }
         catch (Exception e) {
+            ScanQueryIterator.closeFilter(qry.scanFilter());
+
             if (updateStatistics)
                 cctx.queries().collectMetrics(GridCacheQueryType.SCAN, namex, startTime,
                     U.currentTimeMillis() - startTime, true);
