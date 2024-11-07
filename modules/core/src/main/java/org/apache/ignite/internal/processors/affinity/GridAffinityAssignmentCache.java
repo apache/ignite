@@ -984,27 +984,22 @@ public class GridAffinityAssignmentCache {
             while (it.hasNext()) {
                 HistoryAffinityAssignment aff0 = it.next();
 
+                if (!shouldContinueCleanup(nonShallowSize, totalSize)) {
+                    nonShallowHistSize.getAndAdd(nonShallowSize - initNonShallowSize);
+
+                    ctx.affinity().removeCachedAffinity(aff0.topologyVersion());
+
+                    return;
+                }
+
                 if (aff0.topologyVersion().equals(lastAffChangeTopVer))
                     continue; // Keep lastAffinityChangedTopologyVersion, it's required for some operations.
 
-                if (aff0.requiresHistoryCleanup()) {
-                    // We can stop cleanup only on non-shallow item.
-                    // Keeping part of shallow items chain if corresponding real item is missing makes no sense.
-                    if (!shouldContinueCleanup(nonShallowSize, totalSize)) {
-                        nonShallowHistSize.getAndAdd(nonShallowSize - initNonShallowSize);
-
-                        // GridAffinityProcessor#affMap has the same size and instance set as #affCache.
-                        ctx.affinity().removeCachedAffinity(aff0.topologyVersion());
-
-                        return;
-                    }
-
+                if (aff0.requiresHistoryCleanup())
                     nonShallowSize--;
-                }
 
                 totalSize--;
 
-                log.info(">>>> removed " + aff0.topologyVersion());
                 it.remove();
             }
 
