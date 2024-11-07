@@ -789,77 +789,94 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
     private GridCloseableIterator scanIterator(final CacheQuery<?> qry, IgniteClosure transformer,
         boolean locNode)
         throws IgniteCheckedException {
-        Integer part = qry.partition();
+        try {
+            Integer part = qry.partition();
 
-        if (part != null && (part < 0 || part >= cctx.affinity().partitions()))
-            return new GridEmptyCloseableIterator();
+            if (part != null && (part < 0 || part >= cctx.affinity().partitions()))
+                return new GridEmptyCloseableIterator() {
+                    @Override public void close() throws IgniteCheckedException {
+                        ScanQueryIterator.closeFilter(qry.scanFilter());
 
-        AffinityTopologyVersion topVer = GridQueryProcessor.getRequestAffinityTopologyVersion();
+                        super.close();
+                    }
+                };
 
-        if (topVer == null)
-            topVer = cctx.affinity().affinityTopologyVersion();
+            AffinityTopologyVersion topVer = GridQueryProcessor.getRequestAffinityTopologyVersion();
 
-        final boolean backups = qry.includeBackups() || cctx.isReplicated();
+            if (topVer == null)
+                topVer = cctx.affinity().affinityTopologyVersion();
 
-        final GridDhtLocalPartition locPart;
+            final boolean backups = qry.includeBackups() || cctx.isReplicated();
 
-        GridIterator<CacheDataRow> it;
+            final GridDhtLocalPartition locPart;
 
-        if (part != null) {
-            final GridDhtCacheAdapter dht = cctx.isNear() ? cctx.near().dht() : cctx.dht();
+            final GridIterator<CacheDataRow> it;
 
-            GridDhtLocalPartition locPart0 = dht.topology().localPartition(part, topVer, false);
+            if (part != null) {
+                final GridDhtCacheAdapter dht = cctx.isNear() ? cctx.near().dht() : cctx.dht();
 
-            if (locPart0 == null || locPart0.state() != OWNING || !locPart0.reserve()) {
-                throw locPart0 != null && locPart0.state() == LOST ?
-                    new CacheInvalidStateException("Failed to execute scan query because cache partition has been " +
-                        "lost [cacheName=" + cctx.name() + ", part=" + part + "]") :
-                    new GridDhtUnreservedPartitionException(part, cctx.affinity().affinityTopologyVersion(),
-                        "Partition can not be reserved");
+                GridDhtLocalPartition locPart0 = dht.topology().localPartition(part, topVer, false);
+
+                if (locPart0 == null || locPart0.state() != OWNING || !locPart0.reserve()) {
+                    throw locPart0 != null && locPart0.state() == LOST ?
+                        new CacheInvalidStateException("Failed to execute scan query because cache partition has been " +
+                            "lost [cacheName=" + cctx.name() + ", part=" + part + "]") :
+                        new GridDhtUnreservedPartitionException(part, cctx.affinity().affinityTopologyVersion(),
+                            "Partition can not be reserved");
+                }
+
+                locPart = locPart0;
+
+                it = cctx.offheap().cachePartitionIterator(cctx.cacheId(), part,
+                    qry.isDataPageScanEnabled());
+            }
+            else {
+                locPart = null;
+
+                final GridDhtCacheAdapter dht = cctx.isNear() ? cctx.near().dht() : cctx.dht();
+
+                Set<Integer> lostParts = dht.topology().lostPartitions();
+
+                if (!lostParts.isEmpty()) {
+                    throw new CacheInvalidStateException("Failed to execute scan query because cache partition " +
+                        "has been lost [cacheName=" + cctx.name() + ", part=" + lostParts.iterator().next() + "]");
+                }
+
+                it = cctx.offheap().cacheIterator(cctx.cacheId(), true, backups, topVer,
+                    qry.isDataPageScanEnabled());
             }
 
-            locPart = locPart0;
+            ScanQueryIterator iter = new ScanQueryIterator(it, qry, topVer, locPart,
+                transformer,
+                locNode, locNode ? locIters : null, cctx, log);
 
-            it = cctx.offheap().cachePartitionIterator(cctx.cacheId(), part,
-                qry.isDataPageScanEnabled());
-        }
-        else {
-            locPart = null;
+            // TODO: Fix new instance here. Copy required only for local node (?)
+            final Set<KeyCacheObject> skipKeys = qry.skipKeys() == null ? Collections.emptySet() : new HashSet<>(qry.skipKeys());
 
-            final GridDhtCacheAdapter dht = cctx.isNear() ? cctx.near().dht() : cctx.dht();
-
-            Set<Integer> lostParts = dht.topology().lostPartitions();
-
-            if (!lostParts.isEmpty()) {
-                throw new CacheInvalidStateException("Failed to execute scan query because cache partition " +
-                    "has been lost [cacheName=" + cctx.name() + ", part=" + lostParts.iterator().next() + "]");
+            if (!F.isEmpty(skipKeys)) {
+                // Intentionally use of `Set#remove` here.
+                // We want to perform as few `toKey` as possible.
+                // So we break some rules here to optimize work with the data provided by the underlying cursor.
+                it = F.iterator0(it, true, e -> skipKeys.isEmpty() || !skipKeys.remove(e.key()));
             }
 
-            it = cctx.offheap().cacheIterator(cctx.cacheId(), true, backups, topVer,
-                qry.isDataPageScanEnabled());
+            ScanQueryIterator iter = new ScanQueryIterator(it, qry, topVer, locPart,
+                transformer,
+                locNode, locNode ? locIters : null, cctx, log);
+
+            if (locNode) {
+                ScanQueryIterator old = locIters.addx(iter);
+
+                assert old == null;
+            }
+
+            return iter;
         }
+        catch (IgniteCheckedException | RuntimeException e) {
+            ScanQueryIterator.closeFilter(qry.scanFilter());
 
-        // TODO: Fix new instance here. Copy required only for local node (?)
-        final Set<KeyCacheObject> skipKeys = qry.skipKeys() == null ? Collections.emptySet() : new HashSet<>(qry.skipKeys());
-
-        if (!F.isEmpty(skipKeys)) {
-            // Intentionally use of `Set#remove` here.
-            // We want to perform as few `toKey` as possible.
-            // So we break some rules here to optimize work with the data provided by the underlying cursor.
-            it = F.iterator0(it, true, e -> skipKeys.isEmpty() || !skipKeys.remove(e.key()));
+            throw e;
         }
-
-        ScanQueryIterator iter = new ScanQueryIterator(it, qry, topVer, locPart,
-            transformer,
-            locNode, locNode ? locIters : null, cctx, log);
-
-        if (locNode) {
-            ScanQueryIterator old = locIters.addx(iter);
-
-            assert old == null;
-        }
-
-        return iter;
     }
 
     /**
@@ -1390,6 +1407,8 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
             return it;
         }
         catch (Exception e) {
+            ScanQueryIterator.closeFilter(qry.scanFilter());
+
             if (updateStatistics)
                 cctx.queries().collectMetrics(GridCacheQueryType.SCAN, namex, startTime,
                     U.currentTimeMillis() - startTime, true);
