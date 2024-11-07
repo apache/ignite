@@ -452,6 +452,11 @@ public class TcpIgniteClient implements IgniteClient {
         });
     }
 
+    /** Stops cache warmup. */
+    public void stopWarmUp() {
+        ch.service(ClientOperation.OP_STOP_WARMUP, null, null);
+    }
+
     /**
      * Initializes new instance of {@link IgniteClient}.
      *
