@@ -36,6 +36,7 @@ import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.resources.ApplicationContextResource;
 import org.apache.ignite.resources.CacheNameResource;
 import org.apache.ignite.resources.CacheStoreSessionResource;
 import org.apache.ignite.resources.IgniteInstanceResource;
@@ -510,7 +511,10 @@ public class GridResourceIoc {
         CACHE_STORE_SESSION(CacheStoreSessionResource.class),
 
         /** */
-        SERVICE_CONTEXT(ServiceContextResource.class);
+        SERVICE_CONTEXT(ServiceContextResource.class),
+
+        /** */
+        APPLICATION_CONTEXT(ApplicationContextResource.class);
 
         /** */
         public final Class<? extends Annotation> clazz;
@@ -570,6 +574,10 @@ public class GridResourceIoc {
             ResourceAnnotation.IGNITE_INSTANCE,
             ResourceAnnotation.LOGGER,
             ResourceAnnotation.SERVICE
+        ),
+
+        USER_DEFINED_FUNCTION(
+            ResourceAnnotation.APPLICATION_CONTEXT
         );
 
         /** Resource annotations bits for fast checks. */

@@ -78,6 +78,8 @@ public class GridResourceProcessor extends GridProcessorAdapter {
             new GridResourceLoggerInjector(ctx.config().getGridLogger());
         injectorByAnnotation[GridResourceIoc.ResourceAnnotation.IGNITE_INSTANCE.ordinal()] =
             new GridResourceBasicInjector<>(ctx.grid());
+        injectorByAnnotation[GridResourceIoc.ResourceAnnotation.APPLICATION_CONTEXT.ordinal()] =
+            new GridResourceApplicationContextInjector();
     }
 
     /** {@inheritDoc} */
@@ -228,6 +230,16 @@ public class GridResourceProcessor extends GridProcessorAdapter {
      */
     public void injectGeneric(Object obj) throws IgniteCheckedException {
         inject(obj, GridResourceIoc.AnnotationSet.GENERIC);
+    }
+
+    /**
+     * Inject resources to object contained a user defined function.
+     *
+     * @param obj Object to inject.
+     * @throws IgniteCheckedException If failed to inject.
+     */
+    public void injectToUserDefinedFunction(Object obj) throws IgniteCheckedException {
+        inject(obj, GridResourceIoc.AnnotationSet.USER_DEFINED_FUNCTION);
     }
 
     /**

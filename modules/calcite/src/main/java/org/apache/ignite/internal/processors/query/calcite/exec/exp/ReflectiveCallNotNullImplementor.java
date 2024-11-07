@@ -23,6 +23,7 @@ import java.util.List;
 import org.apache.calcite.linq4j.tree.Expression;
 import org.apache.calcite.linq4j.tree.Expressions;
 import org.apache.calcite.rex.RexCall;
+import org.apache.ignite.internal.processors.query.calcite.util.IgniteMethod;
 
 /**
  * Implementation of {@link NotNullImplementor} that calls a given {@link Method}.
@@ -57,9 +58,15 @@ public class ReflectiveCallNotNullImplementor implements NotNullImplementor {
         else {
             // The UDF class must have a public zero-args constructor.
             // Assume that the validator checked already.
-            final Expression target =
-                Expressions.new_(method.getDeclaringClass());
-            callExpr = Expressions.call(target, method, translatedOperands);
+            final Expression target = Expressions.call(
+                translator.getRoot(),
+                IgniteMethod.INJECT.method(),
+                Expressions.new_(method.getDeclaringClass()));
+
+            callExpr = Expressions.call(
+                Expressions.convert_(target, method.getDeclaringClass()),
+                method,
+                translatedOperands);
         }
         if (!containsCheckedException(method))
             return callExpr;

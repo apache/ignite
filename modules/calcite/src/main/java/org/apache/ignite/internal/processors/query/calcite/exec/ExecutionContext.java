@@ -44,6 +44,7 @@ import org.apache.ignite.internal.processors.query.calcite.prepare.BaseQueryCont
 import org.apache.ignite.internal.processors.query.calcite.type.IgniteTypeFactory;
 import org.apache.ignite.internal.processors.query.calcite.util.Commons;
 import org.apache.ignite.internal.processors.query.calcite.util.TypeUtils;
+import org.apache.ignite.internal.processors.resource.GridResourceProcessor;
 import org.apache.ignite.internal.util.lang.RunnableX;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.jetbrains.annotations.NotNull;
@@ -348,6 +349,23 @@ public class ExecutionContext<Row> extends AbstractQueryContext implements DataC
     /** */
     public IoTracker ioTracker() {
         return ioTracker;
+    }
+
+    /**
+     * Inject resources to object contained a user defined function.
+     *
+     * @param o Object to inject.
+     * @return Object with injected resources.
+     */
+    public Object inject(Object o) {
+        try {
+            unwrap(GridResourceProcessor.class).injectToUserDefinedFunction(o);
+
+            return o;
+        }
+        catch (Exception e) {
+            throw new IgniteException(e);
+        }
     }
 
     /** {@inheritDoc} */

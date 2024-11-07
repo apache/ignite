@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.processors.security.thread;
 
+import org.apache.ignite.cache.ApplicationContext;
 import org.apache.ignite.internal.cache.ApplicationContextInternal;
 import org.apache.ignite.internal.processors.security.IgniteSecurity;
 import org.apache.ignite.thread.IgniteStripedThreadPoolExecutor;
@@ -45,6 +46,8 @@ public class SecurityAwareStripedThreadPoolExecutor extends IgniteStripedThreadP
 
     /** {@inheritDoc} */
     @Override public void execute(Runnable task, int idx) {
-        super.execute(SecurityAwareRunnable.of(security, ApplicationContextInternal.attributes(), task), idx);
+        ApplicationContext appCtx = ApplicationContextInternal.applicationContext();
+
+        super.execute(SecurityAwareRunnable.of(security, appCtx == null ? null : appCtx.getAttributes(), task), idx);
     }
 }

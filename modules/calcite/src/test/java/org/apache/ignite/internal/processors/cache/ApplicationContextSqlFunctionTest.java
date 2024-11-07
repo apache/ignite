@@ -31,6 +31,7 @@ import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.SqlConfiguration;
 import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.resources.ApplicationContextResource;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -178,11 +179,15 @@ public class ApplicationContextSqlFunctionTest extends GridCommonAbstractTest {
     /** */
     public static class ApplicationContextSqlFunctions {
         /** */
-        @QuerySqlFunction
-        public static String sessionId() {
-            Map<String, String> ctx = ApplicationContext.getAttributes();
+        @ApplicationContextResource
+        public ApplicationContext ctx;
 
-            return ctx == null ? null : ctx.get(SESSION_ID);
+        /** */
+        @QuerySqlFunction
+        public String sessionId() {
+            Map<String, String> attrs = ctx.getAttributes();
+
+            return attrs == null ? null : attrs.get(SESSION_ID);
         }
     }
 }

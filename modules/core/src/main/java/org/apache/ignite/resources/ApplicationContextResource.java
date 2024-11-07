@@ -15,15 +15,18 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.cache;
+package org.apache.ignite.resources;
 
-import java.util.Map;
-import org.apache.ignite.IgniteCache;
+import java.lang.annotation.Documented;
+import java.lang.annotation.ElementType;
+import java.lang.annotation.Retention;
+import java.lang.annotation.RetentionPolicy;
+import java.lang.annotation.Target;
 
-/**
- * Provides access to application attributes set with {@link IgniteCache#withApplicationAttributes}.
- */
-public interface ApplicationContext {
-    /** @return Application attributes. */
-    public Map<String, String> getAttributes();
+/** */
+@Documented
+@Retention(RetentionPolicy.RUNTIME)
+@Target({ElementType.FIELD})
+public @interface ApplicationContextResource {
+    // No-op.
 }

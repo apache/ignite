@@ -17,12 +17,14 @@
 
 package org.apache.ignite.internal.cache;
 
+import java.util.Collections;
 import java.util.Map;
 import org.apache.ignite.IgniteCache;
+import org.apache.ignite.cache.ApplicationContext;
 import org.jetbrains.annotations.Nullable;
 
 /** Hold application attribute set by user with {@link IgniteCache#withApplicationAttributes}. */
-public class ApplicationContextInternal implements AutoCloseable {
+public class ApplicationContextInternal implements ApplicationContext, AutoCloseable {
     /** Holds application context for current thread. */
     private static final ThreadLocal<ApplicationContextInternal> ctx = new ThreadLocal<>();
 
@@ -51,14 +53,17 @@ public class ApplicationContextInternal implements AutoCloseable {
     }
 
     /** @return Application context for current thread. */
-    public static @Nullable Map<String, String> attributes() {
-        ApplicationContextInternal appCtx = ctx.get();
-
-        return appCtx == null ? null : appCtx.attrs;
+    public static @Nullable ApplicationContext applicationContext() {
+        return ctx.get();
     }
 
     /** Unset context for current thread. */
     @Override public void close() {
         ctx.remove();
+    }
+
+    /** */
+    @Override public Map<String, String> getAttributes() {
+        return Collections.unmodifiableMap(attrs);
     }
 }
