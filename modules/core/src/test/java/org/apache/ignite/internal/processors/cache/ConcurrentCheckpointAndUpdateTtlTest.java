@@ -19,14 +19,11 @@ package org.apache.ignite.internal.processors.cache;
 
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.HashMap;
-import java.util.Map;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import javax.cache.expiry.Duration;
 import javax.cache.expiry.TouchedExpiryPolicy;
-import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteDataStreamer;
 import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.query.ScanQuery;
@@ -37,9 +34,11 @@ import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInternalFuture;
+import org.apache.ignite.internal.processors.datastreamer.DataStreamerImpl;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.apache.logging.log4j.core.config.Configurator;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
@@ -125,8 +124,14 @@ public class ConcurrentCheckpointAndUpdateTtlTest extends GridCommonAbstractTest
 
         IgniteInternalFuture<?> updateFut = runMultiThreadedAsync(() -> {
             while (!stop.get()) {
-                if (updateWithDataStreamer)
-                    stream(cln);
+                if (updateWithDataStreamer) {
+                    // SKip annoying warnings.
+                    Configurator.setLevel(DataStreamerImpl.class.getName(), org.apache.logging.log4j.Level.ERROR);
+
+                    try (IgniteDataStreamer<Integer, Integer> stream = cln.dataStreamer(DEFAULT_CACHE_NAME)) {
+                        stream.addData(KEY, rnd.nextInt());
+                    }
+                }
                 else
                     cln.cache(DEFAULT_CACHE_NAME).put(KEY, rnd.nextInt());
             }
@@ -139,11 +144,10 @@ public class ConcurrentCheckpointAndUpdateTtlTest extends GridCommonAbstractTest
                 else
                     cln.cache(DEFAULT_CACHE_NAME).get(KEY);
             }
-
         }, 1, "touch");
 
         IgniteInternalFuture<?> cpFut = runMultiThreadedAsync(() -> {
-            while (!stop.get()) {
+            for (int i = 0; i < 1_000; i++) {
                 try {
                     forceCheckpoint(F.asList(grid(0), grid(1)));
                 }
@@ -151,27 +155,10 @@ public class ConcurrentCheckpointAndUpdateTtlTest extends GridCommonAbstractTest
                     // No-op.
                 }
             }
+
+            stop.set(true);
         }, 1, "checkpoint");
 
-        Thread.sleep(30_000);
-
-        stop.set(true);
-
         GridTestUtils.waitForAllFutures(updateFut, touchFut, cpFut);
-    }
-
-    /** */
-    private void stream(Ignite cln) {
-        try (IgniteDataStreamer<Integer, Integer> stream = cln.dataStreamer(DEFAULT_CACHE_NAME)) {
-            // Skip annoying warnings.
-            stream.allowOverwrite(true);
-
-            Map<Integer, Integer> map = new HashMap<>();
-
-            map.put(KEY, rnd.nextInt());
-
-            stream.addData(map);
-            stream.flush();
-        }
     }
 }
