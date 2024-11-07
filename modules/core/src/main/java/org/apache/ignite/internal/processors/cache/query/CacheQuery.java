@@ -785,7 +785,6 @@ public class CacheQuery<T> {
                 top.readLock();
 
                 try {
-
                     Collection<ClusterNode> affNodes = nodes(cctx, null, null);
 
                     List<ClusterNode> nodes = new ArrayList<>(affNodes);
