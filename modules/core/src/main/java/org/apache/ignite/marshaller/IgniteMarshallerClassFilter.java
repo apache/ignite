@@ -27,10 +27,10 @@ public class IgniteMarshallerClassFilter implements IgnitePredicate<String> {
     private static final long serialVersionUID = 0L;
 
     /** */
-    private final ClassSet whiteList;
+    private final transient ClassSet whiteList;
 
     /** */
-    private final ClassSet blackList;
+    private final transient ClassSet blackList;
 
     /**
      * @param whiteList Class white list.
@@ -65,5 +65,10 @@ public class IgniteMarshallerClassFilter implements IgnitePredicate<String> {
         IgniteMarshallerClassFilter other = (IgniteMarshallerClassFilter)o;
 
         return Objects.equals(whiteList, other.whiteList) && Objects.equals(blackList, other.blackList);
+    }
+
+    /** {@inheritDoc} */
+    @Override public int hashCode() {
+        return Objects.hash(whiteList, blackList);
     }
 }

@@ -135,8 +135,6 @@ public class MarshallerUtils {
      * @throws IgniteCheckedException if autoconfiguration failed.
      */
     public static void autoconfigureObjectInputFilter(IgniteMarshallerClassFilter clsFilter) throws IgniteCheckedException {
-        assert clsFilter != null;
-
         if (!IgniteSystemProperties.getBoolean(IGNITE_ENABLE_OBJECT_INPUT_FILTER_AUTOCONFIGURATION, true))
             return;
 

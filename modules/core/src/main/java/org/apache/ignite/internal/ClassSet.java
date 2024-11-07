@@ -113,6 +113,11 @@ public class ClassSet {
         return Objects.equals(root, other.root);
     }
 
+    /** {@inheritDoc} */
+    @Override public int hashCode() {
+        return Objects.hashCode(root);
+    }
+
     /** */
     private static class Node {
         /** Children. */
@@ -129,6 +134,11 @@ public class ClassSet {
             Node other = (Node)o;
 
             return Objects.equals(children, other.children);
+        }
+
+        /** {@inheritDoc} */
+        @Override public int hashCode() {
+            return Objects.hashCode(children);
         }
     }
 }
