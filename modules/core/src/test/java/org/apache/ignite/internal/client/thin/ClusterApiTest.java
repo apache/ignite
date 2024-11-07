@@ -18,6 +18,8 @@
 package org.apache.ignite.internal.client.thin;
 
 import org.apache.ignite.IgniteCluster;
+import org.apache.ignite.IgniteException;
+import org.apache.ignite.client.ClientCacheConfiguration;
 import org.apache.ignite.client.ClientCluster;
 import org.apache.ignite.client.IgniteClient;
 import org.apache.ignite.cluster.ClusterState;
@@ -25,6 +27,8 @@ import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.junit.Test;
+
+import static org.apache.ignite.testframework.GridTestUtils.assertThrows;
 
 /**
  * Checks cluster state/WAL state operations for thin client.
@@ -36,6 +40,9 @@ public class ClusterApiTest extends AbstractThinClientTest {
             .setDataStorageConfiguration(new DataStorageConfiguration()
                 .setDefaultDataRegionConfiguration(new DataRegionConfiguration()
                     .setPersistenceEnabled(true)))
+            .setDataStorageConfiguration(new DataStorageConfiguration()
+                .setDataRegionConfigurations(new DataRegionConfiguration()
+                    .setName("non-persistent")))
             .setClusterStateOnStart(ClusterState.INACTIVE);
     }
 
@@ -70,6 +77,29 @@ public class ClusterApiTest extends AbstractThinClientTest {
             changeAndCheckState(clientCluster, igniteCluster, ClusterState.ACTIVE_READ_ONLY);
             changeAndCheckState(clientCluster, igniteCluster, ClusterState.ACTIVE);
             changeAndCheckState(clientCluster, igniteCluster, ClusterState.INACTIVE);
+        }
+    }
+
+    /**
+     * Test change cluster state operation by thin client.
+     */
+    @Test
+    public void testForceDeactivation() {
+        try (IgniteClient client = startClient(0)) {
+            client.cluster().state(ClusterState.ACTIVE);
+
+            client.getOrCreateCache(new ClientCacheConfiguration()
+                .setName(DEFAULT_CACHE_NAME)
+                .setDataRegionName("non-persistent"));
+
+            assertThrows(log, () -> client.cluster().state(ClusterState.INACTIVE, false), IgniteException.class,
+                "Deactivation stopped. Deactivation clears in-memory caches (without persistence) including the system caches.");
+
+            assertTrue(grid(0).cluster().state().active());
+
+            client.cluster().state(ClusterState.INACTIVE, true);
+
+            assertFalse(grid(0).cluster().state().active());
         }
     }
 

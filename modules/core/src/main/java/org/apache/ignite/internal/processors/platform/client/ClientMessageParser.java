@@ -620,7 +620,7 @@ public class ClientMessageParser implements ClientListenerMessageParser {
                 return new ClientClusterGetStateRequest(reader);
 
             case OP_CLUSTER_CHANGE_STATE:
-                return new ClientClusterChangeStateRequest(reader);
+                return new ClientClusterChangeStateRequest(reader, protocolCtx);
 
             case OP_CLUSTER_CHANGE_WAL_STATE:
                 return new ClientClusterWalChangeStateRequest(reader);
