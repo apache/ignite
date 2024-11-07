@@ -17,6 +17,7 @@
 
 package org.apache.ignite.client;
 
+import org.apache.ignite.client.thin.ExtraColumnInH2RowsTest;
 import org.apache.ignite.internal.client.thin.AffinityMetricsTest;
 import org.apache.ignite.internal.client.thin.AtomicLongTest;
 import org.apache.ignite.internal.client.thin.BlockingTxOpsTest;
@@ -98,6 +99,7 @@ import org.junit.runners.Suite;
     ClusterGroupClusterRestartTest.class,
     BlockingTxOpsTest.class,
     InvokeTest.class,
+    ExtraColumnInH2RowsTest.class,
 })
 public class ClientTestSuite {
     // No-op.

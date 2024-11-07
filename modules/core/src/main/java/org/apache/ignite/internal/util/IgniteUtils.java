@@ -4362,7 +4362,7 @@ public abstract class IgniteUtils {
      * @param log Logger to log possible checked exception with (optional).
      */
     public static void close(@Nullable Socket sock, @Nullable IgniteLogger log) {
-        if (sock == null)
+        if (sock == null || sock.isClosed())
             return;
 
         try {
@@ -12535,5 +12535,10 @@ public abstract class IgniteUtils {
             sb.a(" ");
 
         return sb.toString();
+    }
+
+    /** */
+    public static boolean isTxAwareQueriesEnabled(GridKernalContext kctx) {
+        return kctx.config().getTransactionConfiguration().isTxAwareQueriesEnabled();
     }
 }

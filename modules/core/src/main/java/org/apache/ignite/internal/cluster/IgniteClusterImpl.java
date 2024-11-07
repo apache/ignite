@@ -49,7 +49,6 @@ import org.apache.ignite.cluster.ClusterGroupEmptyException;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.cluster.ClusterStartNodeResult;
 import org.apache.ignite.cluster.ClusterState;
-import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteComponentType;
 import org.apache.ignite.internal.IgniteInternalFuture;
@@ -90,12 +89,9 @@ import static org.apache.ignite.plugin.security.SecurityPermission.ADMIN_CLUSTER
 /**
  *
  */
-public class IgniteClusterImpl extends ClusterGroupAdapter implements IgniteClusterEx, Externalizable {
+public class IgniteClusterImpl extends ClusterGroupAdapter implements IgniteClusterEx {
     /** */
     private static final long serialVersionUID = 0L;
-
-    /** */
-    private IgniteConfiguration cfg;
 
     /** Node local store. */
     @GridToStringExclude
@@ -140,8 +136,6 @@ public class IgniteClusterImpl extends ClusterGroupAdapter implements IgniteClus
      */
     public IgniteClusterImpl(GridKernalContext ctx) {
         super(ctx, (IgnitePredicate<ClusterNode>)null);
-
-        cfg = ctx.config();
 
         nodeLoc = new ClusterNodeLocalMapImpl(ctx);
 

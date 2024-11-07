@@ -71,7 +71,7 @@ public class DynamicParametersIntegrationTest extends AbstractBasicIntegrationTe
         assertQuery("SELECT LOWER(?), ? + ? ").withParams("TeSt", 2, 2).returns("test", 4).check();
         assertQuery("SELECT POWER(?, ?)").withParams(2, 3).returns(8d).check();
         assertQuery("SELECT SQRT(?)").withParams(4d).returns(2d).check();
-        assertQuery("SELECT ? % ?").withParams(11, 10).returns(BigDecimal.ONE).check();
+        assertQuery("SELECT ? % ?").withParams(11, 10).returns(1).check();
 
         assertQuery("SELECT LAST_DAY(?)").withParams(Date.valueOf("2022-01-01"))
             .returns(Date.valueOf("2022-01-31")).check();

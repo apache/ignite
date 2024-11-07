@@ -23,6 +23,16 @@ public class Department {
     private String name;
 
     /** */
+    public Department() {
+        // No-op.
+    }
+
+    /** */
+    public Department(String name) {
+        this.name = name;
+    }
+
+    /** */
     public String getName() {
         return name;
     }
