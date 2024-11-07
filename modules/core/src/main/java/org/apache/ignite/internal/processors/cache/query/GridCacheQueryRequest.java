@@ -20,7 +20,6 @@ package org.apache.ignite.internal.processors.cache.query;
 import java.io.Externalizable;
 import java.nio.ByteBuffer;
 import java.util.Collection;
-import java.util.Set;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.GridDirectCollection;
 import org.apache.ignite.internal.GridDirectTransient;
@@ -364,7 +363,7 @@ public class GridCacheQueryRequest extends GridCacheIdMessage implements GridCac
         AffinityTopologyVersion topVer,
         boolean addDepInfo,
         Boolean dataPageScanEnabled,
-        @Nullable Set<KeyCacheObject> skipKeys
+        @Nullable Collection<KeyCacheObject> skipKeys
     ) {
         assert type != null || fields;
         assert clause != null || (type == SCAN || type == SET || type == SPI || type == INDEX);

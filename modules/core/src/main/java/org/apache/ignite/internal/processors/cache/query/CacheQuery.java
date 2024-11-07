@@ -302,7 +302,7 @@ public class CacheQuery<T> {
     private Boolean dataPageScanEnabled;
 
     /** */
-    private final Set<KeyCacheObject> skipKeys;
+    private final Collection<KeyCacheObject> skipKeys;
 
     /**
      * Cache query adapter for SCAN query.
@@ -359,7 +359,7 @@ public class CacheQuery<T> {
         boolean keepBinary,
         Boolean dataPageScanEnabled,
         IndexQueryDesc idxQryDesc,
-        @Nullable Set<KeyCacheObject> skipKeys
+        @Nullable Collection<KeyCacheObject> skipKeys
     ) {
         assert cctx != null;
         assert type != null;
@@ -420,7 +420,7 @@ public class CacheQuery<T> {
         boolean keepBinary,
         int taskHash,
         Boolean dataPageScanEnabled,
-        @Nullable Set<KeyCacheObject> skipKeys
+        @Nullable Collection<KeyCacheObject> skipKeys
     ) {
         this.cctx = cctx;
         this.type = type;
@@ -470,7 +470,7 @@ public class CacheQuery<T> {
     }
 
     /** @return Set of keys that must be skiped during iteration. */
-    public Set<KeyCacheObject> skipKeys() {
+    public Collection<KeyCacheObject> skipKeys() {
         return skipKeys;
     }
 

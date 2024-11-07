@@ -38,6 +38,7 @@ import java.util.concurrent.Callable;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.function.Function;
 import javax.cache.Cache;
 import javax.cache.configuration.Factory;
 import javax.cache.expiry.EternalExpiryPolicy;
@@ -2356,6 +2357,7 @@ public class GridCacheContext<K, V> implements Externalizable {
     /**
      * @param part Partition.
      * @return First, set of object changed in transaction, second, list of transaction data in required format.
+     * @see ExecutionContext#transactionChanges(int, int[], Function)
      */
     public IgniteBiTuple<Set<KeyCacheObject>, List<Object>> transactionChanges(Integer part) {
         if (!U.isTxAwareQueriesEnabled(ctx))
@@ -2390,9 +2392,6 @@ public class GridCacheContext<K, V> implements Externalizable {
 
             if (hasEntryProcessors)
                 val = e.applyEntryProcessors(val);
-
-            //TODO: two versions of this code: here and in ExecutionContext for SQL data.
-            // We need to merge it.
 
             // Mix only updated or inserted entries. In case val == null entry removed.
             if (val != null)
