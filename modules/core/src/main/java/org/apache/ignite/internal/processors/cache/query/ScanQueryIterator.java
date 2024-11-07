@@ -258,6 +258,8 @@ public final class ScanQueryIterator<K, V, R> extends GridCloseableIteratorAdapt
                     CacheDataRow tmp = row;
 
                     while (true) {
+                        cctx.shared().database().checkpointReadLock();
+
                         try {
                             GridCacheEntryEx entry = cache.entryEx(key);
 
@@ -271,6 +273,9 @@ public final class ScanQueryIterator<K, V, R> extends GridCloseableIteratorAdapt
                         }
                         catch (GridCacheEntryRemovedException ignore) {
                             tmp = null;
+                        }
+                        finally {
+                            cctx.shared().database().checkpointReadUnlock();
                         }
                     }
                 }
