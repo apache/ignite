@@ -95,10 +95,7 @@ public enum IgniteMethod {
     GREATEST2(IgniteSqlFunctions.class, "greatest2", Object.class, Object.class),
 
     /** See {@link Objects#equals(Object, Object)} */
-    IS_NOT_DISTINCT_FROM(Objects.class, "equals", Object.class, Object.class),
-
-    /** See {@link ExecutionContext#inject(Object)}. */
-    INJECT(ExecutionContext.class, "inject", Object.class);
+    IS_NOT_DISTINCT_FROM(Objects.class, "equals", Object.class, Object.class);
 
     /** */
     private final Method method;
