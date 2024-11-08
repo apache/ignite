@@ -1578,6 +1578,17 @@ public class IgniteServiceProcessor extends GridProcessorAdapter implements Igni
 
         try {
             updateServicesMap(deployedServices, fullTops);
+            fullTops.forEach((srvcId, top) -> {
+                ServiceInfo desc = registeredServices.get(srvcId);
+
+                if (desc != null) {
+                    desc.topologySnapshot(top);
+                    if (top.entrySet().stream().allMatch(e -> e.getValue() == 0)) {
+                        registeredServices.remove(srvcId);
+                        registeredServicesByName.remove(desc.name());
+                    }
+                }
+            });
         }
         finally {
             leaveBusy();
@@ -2009,13 +2020,8 @@ public class IgniteServiceProcessor extends GridProcessorAdapter implements Igni
         tops.forEach((srvcId, top) -> {
             ServiceInfo desc = services.get(srvcId);
 
-            if (desc != null) {
+            if (desc != null)
                 desc.topologySnapshot(top);
-                if (top.entrySet().stream().allMatch(e -> e.getValue() == 0)) {
-                    registeredServices.remove(srvcId);
-                    registeredServicesByName.remove(desc.name());
-                }
-            }
         });
     }
 
