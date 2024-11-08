@@ -112,7 +112,7 @@ public class IgniteCacheBinaryObjectsScanSelfTest extends AbstractTransactionalQ
     public void testScanNoClasses() throws Exception {
         Ignite client = grid("client");
 
-        invokeAction(client, () -> {
+        txAction(client, () -> {
             IgniteCache<Object, Object> cache = client.cache("testCache");
 
             List<Cache.Entry<Object, Object>> entries = cache.query(new ScanQuery<>()).getAll();
