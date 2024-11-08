@@ -75,15 +75,15 @@ public class JdbcBlob implements Blob {
     @Override public byte[] getBytes(long pos, int len) throws SQLException {
         ensureNotClosed();
 
-        if (pos < 1 || (pos > buf.length() && buf.length() > 0) || len < 0) {
+        if (pos < 1 || (buf.length() - pos < 0 && buf.length() > 0) || len < 0) {
             throw new SQLException("Invalid argument. Position can't be less than 1 or " +
                 "greater than Blob length. Requested length also can't be negative " +
                 "[pos=" + pos + ", len=" + len + ", blobLen=" + buf.length() + "]");
         }
 
-        int idx = (int)pos - 1;
+        int idx = (int)(pos - 1);
 
-        int size = Math.min(len, buf.length() - idx);
+        int size = len > buf.length() - idx ? buf.length() - idx : len;
 
         byte[] res = new byte[size];
 
@@ -106,7 +106,7 @@ public class JdbcBlob implements Blob {
     @Override public InputStream getBinaryStream(long pos, long len) throws SQLException {
         ensureNotClosed();
 
-        if (pos < 1 || len < 1 || pos > buf.length() || len > buf.length() - (pos - 1)) {
+        if (pos < 1 || len < 1 || pos > buf.length() || len > buf.length() - pos + 1) {
             throw new SQLException("Invalid argument. Position can't be less than 1 or " +
                 "greater than Blob length. Requested length can't be negative and can't be " +
                 "greater than available bytes from given position [pos=" + pos + ", len=" + len + ", blobLen=" + buf.length() + "]");
