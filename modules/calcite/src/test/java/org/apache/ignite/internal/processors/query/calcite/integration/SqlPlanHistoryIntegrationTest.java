@@ -384,27 +384,29 @@ public class SqlPlanHistoryIntegrationTest extends GridCommonAbstractTest {
     /** Checks that older plan entries are evicted when maximum history size is reached. */
     @Test
     public void testPlanHistoryEviction() throws Exception {
-        for (int i = 1; i <= (PLAN_HISTORY_SIZE + PLAN_HISTORY_EXCESS); i++) {
-            try {
-                SqlFieldsQuery qry = new SqlFieldsQuery(SQL + " where A.fail()=" + i);
+        IgniteCache<Integer, String> cache = queryNode().cache("A");
 
-                cacheQuery(qry.setLocal(loc), "A");
-            }
-            catch (Exception ignore) {
-                //No-op
-            }
+        for (int i = 1; i <= (PLAN_HISTORY_SIZE + PLAN_HISTORY_EXCESS); i++) {
+            cache.put(100 + i, "STR" + String.format("%02d", i));
+
+            SqlFieldsQuery qry = new SqlFieldsQuery(SQL + " where _val='STR" + String.format("%02d", i) + "'");
+
+            cacheQuery(qry.setLocal(loc), "A");
         }
 
-        GridTestUtils.waitForCondition(() -> getSqlPlanHistory().size() == PLAN_HISTORY_SIZE, 1000);
-
-        checkSqlPlanHistory(PLAN_HISTORY_SIZE);
+        assertTrue(GridTestUtils.waitForCondition(() -> getSqlPlanHistory().size() == PLAN_HISTORY_SIZE, 1000));
 
         Set<String> qrys = getSqlPlanHistory().keySet().stream()
             .map(SqlPlan::query)
             .collect(Collectors.toSet());
 
-        for (int i = 1; i <= PLAN_HISTORY_EXCESS; i++)
-            assertFalse(qrys.contains(SQL + " where A.fail=" + i));
+        for (int i = 1; i <= PLAN_HISTORY_EXCESS; i++) {
+            int finI = i;
+
+            assertFalse(qrys.stream().anyMatch(str -> str.contains("STR" + String.format("%02d", finI))));
+        }
+
+        assertTrue(qrys.stream().anyMatch(str -> str.contains("STR" + String.format("%02d", PLAN_HISTORY_EXCESS + 1))));
     }
 
     /**
