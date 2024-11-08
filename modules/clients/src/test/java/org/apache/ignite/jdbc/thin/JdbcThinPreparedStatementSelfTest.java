@@ -868,6 +868,87 @@ public class JdbcThinPreparedStatementSelfTest extends JdbcThinAbstractSelfTest 
      * @throws Exception If failed.
      */
     @Test
+    public void testBlob() throws Exception {
+        stmt = conn.prepareStatement(SQL_PART + " where blobVal is not distinct from ?");
+
+        Blob blob = conn.createBlob();
+
+        blob.setBytes(1, new byte[] {1, 2, 3});
+
+        stmt.setBlob(1, blob);
+
+        ResultSet rs = stmt.executeQuery();
+
+        assertTrue(rs.next());
+        assertEquals(1, rs.getInt("id"));
+        assertFalse(rs.next());
+
+        stmt.setNull(1, BLOB);
+
+        rs = stmt.executeQuery();
+
+        assertTrue(rs.next());
+        assertEquals(2, rs.getInt("id"));
+        assertFalse(rs.next());
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    @Test
+    public void testBlobWrittenViaOutputStream() throws Exception {
+        stmt = conn.prepareStatement(SQL_PART + " where blobVal is not distinct from ?");
+
+        Blob blob = conn.createBlob();
+
+        try (OutputStream out = blob.setBinaryStream(1)) {
+            out.write(new byte[] {1, 2, 3});
+        }
+
+        stmt.setBlob(1, blob);
+
+        checkStmtExec(1);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    @Test
+    public void testBlobSeeChangesDoneAfterAddToStatement() throws Exception {
+        stmt = conn.prepareStatement(SQL_PART + " where blobVal is not distinct from ?");
+
+        Blob blob = conn.createBlob();
+
+        stmt.setBlob(1, blob);
+
+        try (OutputStream out = blob.setBinaryStream(1)) {
+            out.write(new byte[] {1});
+            out.write(2);
+        }
+
+        blob.setBytes(3, new byte[] {3});
+
+        checkStmtExec(1);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    @Test
+    public void testBlobNull() throws Exception {
+        stmt = conn.prepareStatement(SQL_PART + " where blobVal is not distinct from ?");
+
+        stmt.setBlob(1, (Blob)null);
+        checkStmtExec(2);
+
+        stmt.setNull(1, BLOB);
+        checkStmtExec(2);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    @Test
     public void testBinaryStreamKnownLength() throws Exception {
         stmt = conn.prepareStatement(SQL_PART + " where blobVal is not distinct from ?");
 
@@ -937,47 +1018,6 @@ public class JdbcThinPreparedStatementSelfTest extends JdbcThinAbstractSelfTest 
         stmt.setBinaryStream(1, new ThrowingInputStream());
 
         assertThrows(null, () -> stmt.executeQuery(), SQLException.class, null);
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
-    @Test
-    public void testBlob() throws Exception {
-        stmt = conn.prepareStatement(SQL_PART + " where blobVal is not distinct from ?");
-
-        Blob blob1 = conn.createBlob();
-        blob1.setBytes(1, new byte[] {1, 2, 3});
-        stmt.setBlob(1, blob1);
-        checkStmtExec(1);
-
-        Blob blob2 = conn.createBlob();
-        stmt.setBlob(1, blob2);
-        blob2.setBytes(1, new byte[] {1, 2, 3});
-        checkStmtExec(1);
-
-        Blob blob3 = conn.createBlob();
-        try (OutputStream out = blob3.setBinaryStream(1)) {
-            out.write(new byte[] {1, 2});
-        }
-        blob3.setBytes(3, new byte[] {3});
-        stmt.setBlob(1, blob3);
-        checkStmtExec(1);
-
-        Blob blob4 = conn.createBlob();
-        stmt.setBlob(1, blob4);
-        try (OutputStream out = blob4.setBinaryStream(1)) {
-            out.write(1);
-            out.write(2);
-            out.write(3);
-        }
-        checkStmtExec(1);
-
-        stmt.setBlob(1, (Blob)null);
-        checkStmtExec(2);
-
-        stmt.setNull(1, BLOB);
-        checkStmtExec(2);
     }
 
     /**
