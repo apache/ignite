@@ -109,7 +109,7 @@ public class JdbcBlob implements Blob {
         if (pos < 1 || len < 1 || pos > buf.length() || len > buf.length() - (pos - 1)) {
             throw new SQLException("Invalid argument. Position can't be less than 1 or " +
                 "greater than Blob length. Requested length can't be negative and can't be " +
-                "greater than available bytes from given position [pos=" + pos + ", len=" + len +", blobLen=" + buf.length() + "]");
+                "greater than available bytes from given position [pos=" + pos + ", len=" + len + ", blobLen=" + buf.length() + "]");
         }
 
         return buf.inputStream((int)pos - 1, (int)len);
