@@ -17,7 +17,6 @@
 
 package org.apache.ignite.internal.processors.odbc;
 
-import java.io.InputStream;
 import java.math.BigDecimal;
 import java.sql.Blob;
 import java.sql.SQLException;
@@ -291,13 +290,10 @@ public abstract class SqlListenerUtils {
      * @param wrapper stream wrapper
      */
     private static void writeByteArray(BinaryWriterExImpl writer, SqlInputStreamWrapper wrapper) throws BinaryObjectException {
-        InputStream in = wrapper.inputStream();
-        int len = wrapper.length();
+        int written = writer.writeByteArray(wrapper.inputStream(), wrapper.length());
 
-        int written = writer.writeByteArray(in, len);
-
-        if (len != -1 && len != written) {
-            throw new BinaryObjectException("Input stream length mismatch. [declaredLength=" + len + ", " +
+        if (wrapper.length() != -1 && wrapper.length() != written) {
+            throw new BinaryObjectException("Input stream length mismatch. [declaredLength=" + wrapper.length() + ", " +
                     "actualLength=" + written + "]");
         }
     }
@@ -310,12 +306,10 @@ public abstract class SqlListenerUtils {
      */
     private static void writeByteArray(BinaryWriterExImpl writer, Blob blob) throws BinaryObjectException {
         try {
-            int len = (int)blob.length();
+            int written = writer.writeByteArray(blob.getBinaryStream(), (int)blob.length());
 
-            int written = writer.writeByteArray(blob.getBinaryStream(), len);
-
-            if (len != written) {
-                throw new BinaryObjectException("Blob length mismatch. [declaredLength=" + len + ", " +
+            if ((int)blob.length() != written) {
+                throw new BinaryObjectException("Blob length mismatch. [declaredLength=" + (int)blob.length() + ", " +
                         "actualLength=" + written + "]");
             }
         }
