@@ -112,31 +112,37 @@ public class IgniteCacheBinaryObjectsScanSelfTest extends AbstractTransactionalQ
     public void testScanNoClasses() throws Exception {
         Ignite client = grid("client");
 
-        txAction(client, () -> {
-            IgniteCache<Object, Object> cache = client.cache("testCache");
+        if (sqlTxMode == TestTransactionMode.NONE)
+            doTestScanNoClasses(client);
+        else
+            txAction(client, () -> doTestScanNoClasses(client));
+    }
 
-            List<Cache.Entry<Object, Object>> entries = cache.query(new ScanQuery<>()).getAll();
+    /** */
+    private static void doTestScanNoClasses(Ignite client) {
+        IgniteCache<Object, Object> cache = client.cache("testCache");
 
-            assertEquals(100, entries.size());
+        List<Cache.Entry<Object, Object>> entries = cache.query(new ScanQuery<>()).getAll();
 
-            for (Cache.Entry<Object, Object> entry : entries) {
-                assertEquals(PERSON_KEY_CLS_NAME, entry.getKey().getClass().getName());
-                assertEquals(PERSON_CLS_NAME, entry.getValue().getClass().getName());
-            }
+        assertEquals(100, entries.size());
 
-            entries = new ArrayList<>();
+        for (Cache.Entry<Object, Object> entry : entries) {
+            assertEquals(PERSON_KEY_CLS_NAME, entry.getKey().getClass().getName());
+            assertEquals(PERSON_CLS_NAME, entry.getValue().getClass().getName());
+        }
 
-            int partCnt = client.affinity("testCache").partitions();
+        entries = new ArrayList<>();
 
-            for (int i = 0; i < partCnt; i++)
-                entries.addAll(cache.query(new ScanQuery<>(i)).getAll());
+        int partCnt = client.affinity("testCache").partitions();
 
-            assertEquals(100, entries.size());
+        for (int i = 0; i < partCnt; i++)
+            entries.addAll(cache.query(new ScanQuery<>(i)).getAll());
 
-            for (Cache.Entry<Object, Object> entry : entries) {
-                assertEquals(PERSON_KEY_CLS_NAME, entry.getKey().getClass().getName());
-                assertEquals(PERSON_CLS_NAME, entry.getValue().getClass().getName());
-            }
-        });
+        assertEquals(100, entries.size());
+
+        for (Cache.Entry<Object, Object> entry : entries) {
+            assertEquals(PERSON_KEY_CLS_NAME, entry.getKey().getClass().getName());
+            assertEquals(PERSON_CLS_NAME, entry.getValue().getClass().getName());
+        }
     }
 }
