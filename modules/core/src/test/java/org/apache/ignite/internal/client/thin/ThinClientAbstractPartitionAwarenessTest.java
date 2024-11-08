@@ -259,24 +259,10 @@ public abstract class ThinClientAbstractPartitionAwarenessTest extends GridCommo
      * @param chIdxs Channel idxs.
      */
     protected void awaitChannelsInit(int... chIdxs) throws IgniteInterruptedCheckedException {
-        client.cluster().forServers().nodes().forEach(node -> {
-            String consistentId = node.consistentId().toString();
-
-            if (consistentId.endsWith("Test1")) {
-                System.out.println("Skipping initialization check for node with consistentId: " + consistentId);
-                return;
-            }
-
-            try {
-                for (int ch : chIdxs) {
-                    assertTrue("Failed to wait for channel[" + ch + "] init",
-                        GridTestUtils.waitForCondition(() -> isConnected(ch), WAIT_TIMEOUT));
-                }
-            }
-            catch (Exception e) {
-                log.warning("Failed to initialize channel: " + e.getMessage());
-            }
-        });
+        for (int ch : chIdxs) {
+            assertTrue("Failed to wait for channel[" + ch + "] init",
+                GridTestUtils.waitForCondition(() -> isConnected(ch), WAIT_TIMEOUT));
+        }
     }
 
     /**
