@@ -25,6 +25,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Comparator;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -50,6 +51,8 @@ import org.apache.ignite.internal.processors.query.QueryEngineConfigurationEx;
 import org.apache.ignite.internal.processors.query.running.SqlPlan;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiTuple;
+import org.apache.ignite.spi.systemview.view.SqlPlanHistoryView;
+import org.apache.ignite.spi.systemview.view.SystemView;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.AssumptionViolatedException;
@@ -57,6 +60,7 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 
+import static org.apache.ignite.internal.processors.query.running.RunningQueryManager.SQL_PLAN_HIST_VIEW;
 import static org.junit.Assert.assertNotEquals;
 import static org.junit.Assume.assumeFalse;
 
@@ -565,7 +569,13 @@ public class SqlPlanHistoryIntegrationTest extends GridCommonAbstractTest {
 
     /** Returns current SQL plan history on the query node. */
     public Map<SqlPlan, Long> getSqlPlanHistory() {
-        return queryNode().context().query().runningQueryManager().planHistoryTracker().sqlPlanHistory();
+        SystemView<SqlPlanHistoryView> views = queryNode().context().systemView().view(SQL_PLAN_HIST_VIEW);
+
+        Map<SqlPlan, Long> res = new HashMap<>();
+
+        views.forEach(entry -> res.put(entry.sqlPlan().getKey(), entry.sqlPlan().getValue()));
+
+        return res;
     }
 
     /**
