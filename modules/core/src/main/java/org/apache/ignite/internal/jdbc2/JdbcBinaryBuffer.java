@@ -155,7 +155,7 @@ public class JdbcBinaryBuffer {
      * @return InputStream instance.
      */
     InputStream inputStream(int pos, int len) {
-        return new BufferInputStream(pos, len);
+        return new BufferInputStream(pos, pos + len);
     }
 
     /**
@@ -217,7 +217,7 @@ public class JdbcBinaryBuffer {
 
         int newLen = Math.max(pos + inpLen, len);
 
-        ensureCapacity(newLen);
+        reallocateIfRequired(newLen);
 
         U.arrayCopy(inpBuf, inpOff, arr, pos, inpLen);
 
@@ -252,7 +252,7 @@ public class JdbcBinaryBuffer {
 
         int newLen = Math.max(pos + 1, len);
 
-        ensureCapacity(newLen);
+        reallocateIfRequired(newLen);
 
         arr[pos] = (byte)b;
 
@@ -264,7 +264,7 @@ public class JdbcBinaryBuffer {
      *
      * @param newLen The new data length the buffer should be able to hold.
      */
-    private void ensureCapacity(int newLen) {
+    private void reallocateIfRequired(int newLen) {
         if (newLen - arr.length > 0 || isReadOnly)
             reallocate(capacity(arr.length, newLen));
     }
@@ -311,10 +311,7 @@ public class JdbcBinaryBuffer {
      * Input stream to read data from buffer.
      */
     private class BufferInputStream extends InputStream {
-        /** Stream starting position. */
-        private final int start;
-
-        /** Stream length limit. -1 means no limit. */
+        /** Max position in the buffer. -1 means no max position (for unlimited stream). */
         private final int limit;
 
         /** Current position in the buffer. */
@@ -338,8 +335,6 @@ public class JdbcBinaryBuffer {
          * @param limit The maximim length in bytes of the data to be retrieved. Unlimited if null.
          */
         private BufferInputStream(int start, int limit) {
-            this.start = start;
-
             pos = start;
 
             markedPos = start;
@@ -349,7 +344,7 @@ public class JdbcBinaryBuffer {
 
         /** {@inheritDoc} */
         @Override public int read() {
-            if (limit != -1 && pos - start >= limit)
+            if (limit != -1 && pos >= limit)
                 return -1;
 
             int res = JdbcBinaryBuffer.this.read(pos);
@@ -367,10 +362,10 @@ public class JdbcBinaryBuffer {
             int toRead = cnt;
 
             if (limit != -1) {
-                if (pos - start >= limit)
+                if (pos >= limit)
                     return -1;
 
-                int availableBytes = limit - (pos - start);
+                int availableBytes = limit - pos;
 
                 if (cnt > availableBytes)
                     toRead = availableBytes;
@@ -405,7 +400,7 @@ public class JdbcBinaryBuffer {
                 return 0;
 
             int step = Math.min((int)Math.min(n, MAX_ARRAY_SIZE),
-                    limit == -1 ? len - pos : limit - (pos - start));
+                    limit == -1 ? len - pos : limit - pos);
 
             pos += step;
 
