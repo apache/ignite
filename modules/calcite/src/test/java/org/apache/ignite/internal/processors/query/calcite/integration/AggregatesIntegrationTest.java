@@ -363,6 +363,11 @@ public class AggregatesIntegrationTest extends AbstractBasicIntegrationTransacti
                 assertQuery("SELECT BIT_" + op + "(i) FROM tbl WHERE " + where).returns(0).check();
                 assertQuery("SELECT BIT_" + op + "(b) FROM tbl WHERE " + where).returns(0L).check();
             }
+
+            sql("INSERT INTO tbl values (1, 1, 1, 1)");
+
+            assertQuery("SELECT BIT_XOR(i) from tbl where i=1").returns(0).check();
+            assertQuery("SELECT BIT_XOR(DISTINCT i) from tbl where i=1").returns(1).check();
         }
         finally {
             sql("DROP TABLE IF EXISTS tbl");
@@ -605,7 +610,7 @@ public class AggregatesIntegrationTest extends AbstractBasicIntegrationTransacti
 
     /** */
     private void assumeNoTransactions() {
-        assumeTrue("Test use queries that doesn't touch any data. Skip for tx modes", sqlTxMode == SqlTransactionMode.NONE);
+        assumeTrue("Transactions aren't important here.", sqlTxMode == SqlTransactionMode.NONE);
     }
 
     /** */
