@@ -149,11 +149,6 @@ public class JdbcBlobTest {
         byte[] res = readBytes(is);
         assertTrue(Arrays.equals(arr, res));
 
-        is = blob.getBinaryStream();
-        res = new byte[20];
-        assertEquals(16, is.read(res, 0, 20));
-        assertArrayEquals(arr, Arrays.copyOfRange(res, 0, 16));
-
         blob.free();
 
         try {
@@ -164,6 +159,21 @@ public class JdbcBlobTest {
         catch (SQLException e) {
             // No-op.
         }
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    @Test
+    public void testGetBinaryStreamReadMoreThenBlobSize() throws Exception {
+        byte[] arr = new byte[] {1, 2, 3, 4, 5};
+
+        JdbcBlob blob = new JdbcBlob(arr);
+
+        InputStream is = blob.getBinaryStream();
+        byte[] res = new byte[7];
+        assertEquals(5, is.read(res, 0, 7));
+        assertArrayEquals(new byte[] {1, 2, 3, 4, 5, 0, 0}, res);
     }
 
     /**
@@ -227,12 +237,6 @@ public class JdbcBlobTest {
         assertEquals(5, res[0]);
         assertEquals(14, res[9]);
 
-        is = blob.getBinaryStream(6, 10);
-        res = new byte[14];
-        assertEquals(10, is.read(res, 1, 13));
-        assertArrayEquals(new byte[] {0, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 0, 0, 0}, res);
-        assertEquals(-1, is.read(res, 0, 1));
-
         blob.free();
 
         try {
@@ -243,6 +247,22 @@ public class JdbcBlobTest {
         catch (SQLException e) {
             // No-op.
         }
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    @Test
+    public void testGetBinaryStreamWithParamsReadMoreThenStreamLimit() throws Exception {
+        byte[] arr = new byte[] {1, 2, 3, 4, 5};
+
+        JdbcBlob blob = new JdbcBlob(arr);
+
+        InputStream is = blob.getBinaryStream(2, 3);
+        byte[] res = new byte[6];
+        assertEquals(3, is.read(res, 1, 5));
+        assertArrayEquals(new byte[] {0, 2, 3, 4, 0, 0}, res);
+        assertEquals(-1, is.read(res, 0, 1));
     }
 
     /**
