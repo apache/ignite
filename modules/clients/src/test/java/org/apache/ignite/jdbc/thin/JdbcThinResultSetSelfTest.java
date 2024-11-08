@@ -732,7 +732,7 @@ public class JdbcThinResultSetSelfTest extends JdbcThinAbstractSelfTest {
      * @throws Exception If failed.
      */
     @Test
-    public void testBinaryStreamIndependentInstances() throws Exception {
+    public void testBinaryStreamInstancesAreIndependent() throws Exception {
         ResultSet rs = stmt.executeQuery(SQL);
 
         assertTrue(rs.next());
