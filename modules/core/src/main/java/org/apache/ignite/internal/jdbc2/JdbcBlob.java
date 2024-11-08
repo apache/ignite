@@ -75,17 +75,15 @@ public class JdbcBlob implements Blob {
     @Override public byte[] getBytes(long pos, int len) throws SQLException {
         ensureNotClosed();
 
-        int blobLen = buf.length();
-
-        if (pos < 1 || (pos > blobLen && blobLen > 0) || len < 0) {
+        if (pos < 1 || (pos > buf.length() && buf.length() > 0) || len < 0) {
             throw new SQLException("Invalid argument. Position can't be less than 1 or " +
                 "greater than Blob length. Requested length also can't be negative " +
-                "[pos=" + pos + ", len=" + len + ", blobLen=" + blobLen + "]");
+                "[pos=" + pos + ", len=" + len + ", blobLen=" + buf.length() + "]");
         }
 
         int idx = (int)pos - 1;
 
-        int size = Math.min(len, blobLen - idx);
+        int size = Math.min(len, buf.length() - idx);
 
         byte[] res = new byte[size];
 
@@ -108,12 +106,10 @@ public class JdbcBlob implements Blob {
     @Override public InputStream getBinaryStream(long pos, long len) throws SQLException {
         ensureNotClosed();
 
-        int blobLen = buf.length();
-
-        if (pos < 1 || len < 1 || pos > blobLen || len > blobLen - (pos - 1)) {
+        if (pos < 1 || len < 1 || pos > buf.length() || len > buf.length() - (pos - 1)) {
             throw new SQLException("Invalid argument. Position can't be less than 1 or " +
                 "greater than Blob length. Requested length can't be negative and can't be " +
-                "greater than available bytes from given position [pos=" + pos + ", len=" + len + ", blobLen=" + blobLen + "]");
+                "greater than available bytes from given position [pos=" + pos + ", len=" + len +", blobLen=" + buf.length() + "]");
         }
 
         return buf.inputStream((int)pos - 1, (int)len);
@@ -123,34 +119,26 @@ public class JdbcBlob implements Blob {
     @Override public long position(byte[] ptrn, long start) throws SQLException {
         ensureNotClosed();
 
-        int blobLen = buf.length();
-
         if (start < 1)
             throw new SQLException("Invalid argument. Start position can't be less than 1 [start=" + start + "]");
 
-        if (start > blobLen || ptrn.length == 0 || ptrn.length > blobLen)
+        if (start > buf.length() || ptrn.length == 0 || ptrn.length > buf.length())
             return -1;
 
-        long idx = position(new ByteArrayInputStream(ptrn), ptrn.length, (int)start - 1);
-
-        return idx == -1 ? -1 : idx + 1;
+        return position(new ByteArrayInputStream(ptrn), ptrn.length, (int)start);
     }
 
     /** {@inheritDoc} */
     @Override public long position(Blob ptrn, long start) throws SQLException {
         ensureNotClosed();
 
-        int blobLen = buf.length();
-
         if (start < 1)
             throw new SQLException("Invalid argument. Start position can't be less than 1 [start=" + start + "]");
 
-        if (start > blobLen || ptrn.length() == 0 || ptrn.length() > blobLen)
+        if (start > buf.length() || ptrn.length() == 0 || ptrn.length() > buf.length())
             return -1;
 
-        long idx = position(ptrn.getBinaryStream(), (int)ptrn.length(), (int)start - 1);
-
-        return idx == -1 ? -1 : idx + 1;
+        return position(ptrn.getBinaryStream(), (int)ptrn.length(), (int)start);
     }
 
     /** {@inheritDoc} */
@@ -162,11 +150,9 @@ public class JdbcBlob implements Blob {
     @Override public int setBytes(long pos, byte[] bytes, int off, int len) throws SQLException {
         ensureNotClosed();
 
-        int blobLen = buf.length();
-
-        if (pos < 1 || pos - 1 > blobLen) {
+        if (pos < 1 || pos - 1 > buf.length()) {
             throw new SQLException("Invalid argument. Position can't be less than 1 or " +
-                "greater than Blob length + 1 [pos=" + pos + ", blobLen=" + blobLen + "]");
+                "greater than Blob length + 1 [pos=" + pos + ", blobLen=" + buf.length() + "]");
         }
 
         try {
@@ -183,11 +169,9 @@ public class JdbcBlob implements Blob {
     @Override public OutputStream setBinaryStream(long pos) throws SQLException {
         ensureNotClosed();
 
-        int blobLen = buf.length();
-
-        if (pos < 1 || pos - 1 > blobLen) {
+        if (pos < 1 || pos - 1 > buf.length()) {
             throw new SQLException("Invalid argument. Position can't be less than 1 or greater than Blob length + 1 " +
-                    "[pos=" + pos + ", blobLen=" + blobLen + "]");
+                    "[pos=" + pos + ", blobLen=" + buf.length() + "]");
         }
 
         return buf.outputStream((int)pos - 1);
@@ -197,11 +181,9 @@ public class JdbcBlob implements Blob {
     @Override public void truncate(long len) throws SQLException {
         ensureNotClosed();
 
-        int blobLen = buf.length();
-
-        if (len < 0 || len > blobLen) {
+        if (len < 0 || len > buf.length()) {
             throw new SQLException("Invalid argument. Length can't be " +
-                "less than zero or greater than Blob length [len=" + len + ", blobLen=" + blobLen + "]");
+                "less than zero or greater than Blob length [len=" + len + ", blobLen=" + buf.length() + "]");
         }
 
         buf.truncate((int)len);
@@ -218,17 +200,17 @@ public class JdbcBlob implements Blob {
      *
      * @param ptrn InputStream containing the pattern.
      * @param ptrnLen Pattern length.
-     * @param idx Zero-based index in Blob to start search from.
-     * @return Zero-based position at which the pattern appears, else -1.
+     * @param idx 1-based index in Blob to start search from.
+     * @return 1-based position at which the pattern appears, else -1.
      */
     private long position(InputStream ptrn, int ptrnLen, int idx) throws SQLException {
         try {
-            InputStream blob = buf.inputStream(idx, buf.length() - idx);
+            InputStream blob = buf.inputStream(idx - 1, buf.length() - idx + 1);
 
             boolean patternStarted = false;
 
             int ptrnPos = 0;
-            int blobPos = idx;
+            int blobPos = idx - 1;
             int b;
 
             while ((b = blob.read()) != -1) {
@@ -244,7 +226,7 @@ public class JdbcBlob implements Blob {
                     ptrnPos++;
 
                     if (ptrnPos == ptrnLen)
-                        return blobPos - ptrnLen;
+                        return blobPos - ptrnLen + 1;
                 }
                 else {
                     blobPos = blobPos - ptrnPos + 1;
