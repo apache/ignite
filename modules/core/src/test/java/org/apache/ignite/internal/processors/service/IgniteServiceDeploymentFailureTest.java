@@ -12,11 +12,9 @@ import org.apache.ignite.services.ServiceDescriptor;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
 
-import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
 import java.util.concurrent.atomic.AtomicInteger;
-import java.util.stream.Stream;
 
 import static org.apache.ignite.testframework.GridTestUtils.assertThrowsWithCause;
 
@@ -121,12 +119,12 @@ public class IgniteServiceDeploymentFailureTest extends GridCommonAbstractTest {
      * */
     @Test
     public void testServerDescriptorsOfFailedServices() throws Exception {
-        final int NOOP_SERVICE_TOTAL_COUNT = 20;
-        final int NOOP_SERVICE_MAX_PER_NODE_COUNT_0 = 2;
-        final int NOOP_SERVICE_MAX_PER_NODE_COUNT_1 = 4;
+        final int NOOP_SRVC_TOTAL_CNT = 20;
+        final int NOOP_SRVC_MAX_PER_NODE_CNT_0 = 2;
+        final int NOOP_SRVC_MAX_PER_NODE_CNT_1 = 4;
 
-        final int THROW_SERVICE_TOTAL_COUNT = 10;
-        final int THROW_SERVICE_MAX_PER_NODE_COUNT = 2;
+        final int THROW_SRVC_TOTAL_CNT = 10;
+        final int THROW_SRVC_MAX_PER_NODE_CNT = 2;
 
         IgniteEx[] servers = new IgniteEx[SERVER_NODES_CNT];
         for (int i = 0; i < SERVER_NODES_CNT; i++)
@@ -139,45 +137,46 @@ public class IgniteServiceDeploymentFailureTest extends GridCommonAbstractTest {
         ServiceConfiguration noopServiceConfig = new ServiceConfiguration()
                 .setName(NoopService.class.getSimpleName())
                 .setService(new NoopService())
-                .setTotalCount(NOOP_SERVICE_TOTAL_COUNT)
-                .setMaxPerNodeCount(NOOP_SERVICE_MAX_PER_NODE_COUNT_0);
+                .setTotalCount(NOOP_SRVC_TOTAL_CNT)
+                .setMaxPerNodeCount(NOOP_SRVC_MAX_PER_NODE_CNT_0);
 
         ServiceConfiguration throwServiceConfig = new ServiceConfiguration()
                 .setName(InitThrowingService.class.getSimpleName())
                 .setService(new InitThrowingService())
-                .setTotalCount(THROW_SERVICE_TOTAL_COUNT)
-                .setMaxPerNodeCount(THROW_SERVICE_MAX_PER_NODE_COUNT);
+                .setTotalCount(THROW_SRVC_TOTAL_CNT)
+                .setMaxPerNodeCount(THROW_SRVC_MAX_PER_NODE_CNT);
 
         clients[0].services().deploy(noopServiceConfig);
-        assertEquals(NOOP_SERVICE_MAX_PER_NODE_COUNT_0 * SERVER_NODES_CNT,
+        assertEquals(NOOP_SRVC_MAX_PER_NODE_CNT_0 * SERVER_NODES_CNT,
                 getTotalInstancesCount(clients[0], NoopService.class.getSimpleName()));
-        System.out.println("NoopService instances count before faulty deploy: " + getTotalInstancesCount(clients[0], NoopService.class.getSimpleName()));
 
 
-        assertThrowsWithCause(() -> clients[0].services().deploy(throwServiceConfig), ServiceDeploymentException.class);
+        var e = assertThrowsWithCause(() -> clients[0].services().deploy(throwServiceConfig), ServiceDeploymentException.class);
+        System.out.println("deploy exception stacktrace:");
+        e.printStackTrace();
 
         for (IgniteEx server : servers)
-            assertTrue(server.services().serviceDescriptors().isEmpty());
+            assertTrue(server.services().serviceDescriptors().stream().noneMatch(desc -> {
+                return desc.name().equals(InitThrowingService.class.getSimpleName());
+            }));
         for (IgniteEx client : clients)
-            assertTrue(client.services().serviceDescriptors().isEmpty());
-
-        System.out.println("InitThrowingService instances count: " + getTotalInstancesCount(clients[0], "InitThrowingService"));
+            assertTrue(client.services().serviceDescriptors().stream().noneMatch(desc -> {
+                return desc.name().equals(InitThrowingService.class.getSimpleName());
+            }));
 
 
         clients[0].services().cancel(NoopService.class.getSimpleName());
 
-        noopServiceConfig.setMaxPerNodeCount(NOOP_SERVICE_MAX_PER_NODE_COUNT_1);
+        noopServiceConfig.setMaxPerNodeCount(NOOP_SRVC_MAX_PER_NODE_CNT_1);
         clients[0].services().deploy(noopServiceConfig);
 
-        assertEquals(NOOP_SERVICE_TOTAL_COUNT, getTotalInstancesCount(clients[0], InitThrowingService.class.getSimpleName()));
-
-        System.out.println("NoopService instances count after faulty deploy: " + getTotalInstancesCount(clients[0], NoopService.class.getSimpleName()));
+        assertEquals(NOOP_SRVC_TOTAL_CNT, getTotalInstancesCount(clients[0], NoopService.class.getSimpleName()));
     }
 
     private static int getTotalInstancesCount(IgniteEx igniteEx, String serviceName) {
         Optional<ServiceDescriptor> desc = igniteEx.services().serviceDescriptors().stream().
                 filter(descriptor -> descriptor.name().equals(serviceName)).findAny();
         assertTrue(desc.isPresent());
-        return desc.get().topologySnapshot().values().stream().mapToInt(i -> i).sum();
+        return desc.get().topologySnapshot().values().stream().mapToInt(Integer::intValue).sum();
     }
 }
