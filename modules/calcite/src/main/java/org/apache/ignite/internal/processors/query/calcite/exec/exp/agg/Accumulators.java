@@ -446,7 +446,7 @@ public class Accumulators {
 
         /** */
         private void apply(long val) {
-            if(updated) {
+            if (updated) {
                 switch (kind) {
                     case BIT_AND:
                         res &= val;
@@ -458,7 +458,8 @@ public class Accumulators {
                         res ^= val;
                         break;
                 }
-            } else {
+            }
+            else {
                 res = val;
 
                 updated = true;
