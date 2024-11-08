@@ -38,6 +38,8 @@ import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.regex.Pattern;
+
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteCheckedException;
@@ -136,6 +138,9 @@ public class TcpDiscoverySelfTest extends GridCommonAbstractTest {
     /** */
     private SegmentationPolicy segPlc;
 
+    /** */
+    private ListeningTestLogger testLog;
+
     /**
      * @throws Exception If fails.
      */
@@ -199,6 +204,12 @@ public class TcpDiscoverySelfTest extends GridCommonAbstractTest {
 
         if (nodeId != null)
             cfg.setNodeId(nodeId);
+
+        if (testLog != null) {
+            cfg.setGridLogger(testLog);
+
+            testLog = null;
+        }
 
         if (igniteInstanceName.contains("NonSharedIpFinder")) {
             TcpDiscoveryVmIpFinder finder = new TcpDiscoveryVmIpFinder();
@@ -2201,6 +2212,18 @@ public class TcpDiscoverySelfTest extends GridCommonAbstractTest {
      */
     @Test
     public void testFailedNodeRestoreConnection() throws Exception {
+        ListeningTestLogger testLog = new ListeningTestLogger(log);
+
+        LogListener lsnr = LogListener
+                .matches(Pattern.compile("Failed to ping node \\[.*\\]\\. Reached the timeout"))
+                .build();
+
+        testLog.registerListener(lsnr);
+
+        this.testLog = testLog;
+
+        setLoggerDebugLevel();
+
         try {
             TestRestoreConnectedSpi.startTest = false;
 
@@ -2231,6 +2254,8 @@ public class TcpDiscoverySelfTest extends GridCommonAbstractTest {
                     assertEquals(3, node.cluster().nodes().size());
                 }
             }
+
+            assertTrue(lsnr.check());
         }
         finally {
             stopAllGrids();
