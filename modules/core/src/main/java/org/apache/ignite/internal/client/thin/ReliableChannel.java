@@ -451,9 +451,9 @@ final class ReliableChannel implements AutoCloseable {
                             return false;
 
                         Boolean result = applyOnNodeChannel(nodeId, channel ->
-                                channel.service(ClientOperation.CACHE_PARTITIONS,
-                                    affinityCtx::writePartitionsUpdateRequest,
-                                    affinityCtx::readPartitionsUpdateResponse),
+                            channel.service(ClientOperation.CACHE_PARTITIONS,
+                                affinityCtx::writePartitionsUpdateRequest,
+                                affinityCtx::readPartitionsUpdateResponse),
                             failures
                         );
 

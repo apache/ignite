@@ -259,6 +259,7 @@ public abstract class ThinClientAbstractPartitionAwarenessTest extends GridCommo
      * @param chIdxs Channel idxs.
      */
     protected void awaitChannelsInit(int... chIdxs) throws IgniteInterruptedCheckedException {
+        // Wait until all channels initialized.
         for (int ch : chIdxs) {
             assertTrue("Failed to wait for channel[" + ch + "] init",
                 GridTestUtils.waitForCondition(() -> isConnected(ch), WAIT_TIMEOUT));
