@@ -39,7 +39,6 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.regex.Pattern;
-
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteCheckedException;
@@ -2212,6 +2211,15 @@ public class TcpDiscoverySelfTest extends GridCommonAbstractTest {
      */
     @Test
     public void testFailedNodeRestoreConnection() throws Exception {
+        assertFalse(checkRestoreConnection());
+
+        setLoggerDebugLevel();
+
+        assertTrue(checkRestoreConnection());
+    }
+
+    /** @throws Exception If failed.*/
+    private boolean checkRestoreConnection() throws Exception {
         ListeningTestLogger testLog = new ListeningTestLogger(log);
 
         LogListener lsnr = LogListener
@@ -2220,9 +2228,9 @@ public class TcpDiscoverySelfTest extends GridCommonAbstractTest {
 
         testLog.registerListener(lsnr);
 
-        this.testLog = testLog;
+        boolean result;
 
-        setLoggerDebugLevel();
+        this.testLog = testLog;
 
         try {
             TestRestoreConnectedSpi.startTest = false;
@@ -2255,11 +2263,13 @@ public class TcpDiscoverySelfTest extends GridCommonAbstractTest {
                 }
             }
 
-            assertTrue(lsnr.check());
+            result = lsnr.check();
         }
         finally {
             stopAllGrids();
         }
+
+        return result;
     }
 
     /**
@@ -2275,6 +2285,8 @@ public class TcpDiscoverySelfTest extends GridCommonAbstractTest {
         LogListener lsnr = LogListener.matches("Latency check has been discarded").times(hops).build();
 
         testLog.registerListener(lsnr);
+
+        this.testLog = testLog;
 
         try {
             IgniteEx node = startGrid(getConfiguration("server").setGridLogger(testLog));
