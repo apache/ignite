@@ -154,6 +154,8 @@ public final class ScanQueryIterator<K, V, R> extends AbstractScanQueryIterator<
                     CacheDataRow tmp = row;
 
                     while (true) {
+                        cctx.shared().database().checkpointReadLock();
+
                         try {
                             GridCacheEntryEx entry = cache.entryEx(key);
 
@@ -167,6 +169,9 @@ public final class ScanQueryIterator<K, V, R> extends AbstractScanQueryIterator<
                         }
                         catch (GridCacheEntryRemovedException ignore) {
                             tmp = null;
+                        }
+                        finally {
+                            cctx.shared().database().checkpointReadUnlock();
                         }
                     }
                 }
