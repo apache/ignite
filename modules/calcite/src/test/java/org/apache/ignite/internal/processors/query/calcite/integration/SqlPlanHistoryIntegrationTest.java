@@ -25,7 +25,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Comparator;
-import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -571,7 +571,7 @@ public class SqlPlanHistoryIntegrationTest extends GridCommonAbstractTest {
     public Map<SqlPlan, Long> getSqlPlanHistory() {
         SystemView<SqlPlanHistoryView> views = queryNode().context().systemView().view(SQL_PLAN_HIST_VIEW);
 
-        Map<SqlPlan, Long> res = new HashMap<>();
+        Map<SqlPlan, Long> res = new LinkedHashMap<>();
 
         views.forEach(entry -> res.put(entry.sqlPlan().getKey(), entry.sqlPlan().getValue()));
 
