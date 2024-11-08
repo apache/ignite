@@ -29,7 +29,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.function.Consumer;
-import java.util.function.Function;
 import java.util.stream.Collectors;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.cache.query.Query;
@@ -120,13 +119,9 @@ public class SqlPlanHistoryIntegrationTest extends GridCommonAbstractTest {
     /** Failed cross-cache SqlFieldsQuery. */
     private final SqlFieldsQuery sqlFieldsQryCrossCacheFailed = new SqlFieldsQuery(SQL_CROSS_CACHE_FAILED);
 
-    /** Successful SqlFieldsQuery with reduce phase. */
+    /** SqlFieldsQuery with reduce phase. */
     private final SqlFieldsQuery sqlFieldsQryWithReducePhase = new SqlFieldsQuery(SQL_WITH_REDUCE_PHASE)
         .setDistributedJoins(true);
-
-    /** Failed SqlFieldsQuery with reduce phase. */
-    private final SqlFieldsQuery sqlFieldsQryWithReducePhaseFailed =
-        new SqlFieldsQuery(SQL_WITH_REDUCE_PHASE.replace("o._key=101", "fail()"));
 
     /** Successful SqlQuery. */
     private final SqlQuery sqlQry = new SqlQuery<>("String", "from String");
@@ -139,9 +134,6 @@ public class SqlPlanHistoryIntegrationTest extends GridCommonAbstractTest {
 
     /** TextQuery. */
     private final TextQuery<Integer, String> textQry = new TextQuery<>("String", "2");
-
-    /** Flag for queries with map-reduce phases. */
-    private boolean isReducePhase;
 
     /** SQL engine. */
     @Parameterized.Parameter
@@ -165,7 +157,8 @@ public class SqlPlanHistoryIntegrationTest extends GridCommonAbstractTest {
         return Arrays.stream(new Object[][]{
             {CalciteQueryEngineConfiguration.ENGINE_NAME},
             {IndexingQueryEngineConfiguration.ENGINE_NAME}
-        }).flatMap(sqlEngine -> Arrays.stream(new Boolean[]{true, false})
+        }).flatMap(sqlEngine -> Arrays.stream(sqlEngine[0].equals(IndexingQueryEngineConfiguration.ENGINE_NAME) ?
+                new Boolean[]{false} : new Boolean[]{true, false})
                 .flatMap(isClient -> Arrays.stream(isClient ? new Boolean[]{false} : new Boolean[]{true, false})
                     .flatMap(loc -> Arrays.stream(new Boolean[]{true, false})
                         .map(isFullyFetched -> new Object[]{sqlEngine[0], isClient, loc, isFullyFetched})))
@@ -229,7 +222,10 @@ public class SqlPlanHistoryIntegrationTest extends GridCommonAbstractTest {
      * @throws Exception In case of failure.
      */
     protected void startTestGrid() throws Exception {
-        startGrid(0);
+        if (sqlEngine == IndexingQueryEngineConfiguration.ENGINE_NAME && !loc)
+            startGrids(3);
+        else
+            startGrid(0);
 
         if (isClient)
             startClientGrid(1);
@@ -311,29 +307,26 @@ public class SqlPlanHistoryIntegrationTest extends GridCommonAbstractTest {
         runFailedQuery(sqlFieldsQryCrossCacheFailed);
     }
 
-    /** Checks successful SqlFieldsQuery with reduce phase. */
+    /** Checks SqlFieldsQuery with reduce phase. */
     @Test
     public void testSqlFieldsQueryWithReducePhase() {
-        runQueryWithReducePhase(() -> {
-            cacheQuery(sqlFieldsQryWithReducePhase.setLocal(loc), "pers");
+        assumeFalse("Map/reduce queries are only applicable to H2 engine",
+            sqlEngine != IndexingQueryEngineConfiguration.ENGINE_NAME);
 
-            checkSqlPlanHistory((!isClient && sqlEngine == IndexingQueryEngineConfiguration.ENGINE_NAME) ? 3 : 1);
-        });
-    }
+        assumeFalse("Only distributed queries have map and reduce phases", loc);
 
-    /** Checks failed SqlFieldsQuery with reduce phase. */
-    @Test
-    public void testSqlFieldsQueryWithReducePhaseFailed() {
-        runQueryWithReducePhase(() -> {
-            try {
-                cacheQuery(sqlFieldsQryWithReducePhaseFailed.setLocal(loc), "pers");
-            }
-            catch (Exception ignore) {
-                //No-Op
-            }
+        cacheQuery(sqlFieldsQryWithReducePhase, "pers");
 
-            checkSqlPlanHistory((!isClient && sqlEngine == IndexingQueryEngineConfiguration.ENGINE_NAME) ? 1 : 0);
-        });
+        checkSqlPlanHistory(3);
+
+        for (int i = 1; i <= 2; i++) {
+            Map<SqlPlan, Long> sqlPlansOnMapNode = grid(i).context().query().runningQueryManager().planHistoryTracker()
+                .sqlPlanHistory();
+
+            assertNotNull(sqlPlansOnMapNode);
+
+            checkMetrics(2, sqlPlansOnMapNode);
+        }
     }
 
     /** Checks successful SqlQuery. */
@@ -387,9 +380,6 @@ public class SqlPlanHistoryIntegrationTest extends GridCommonAbstractTest {
     /** Checks that older plan entries are evicted when maximum history size is reached. */
     @Test
     public void testPlanHistoryEviction() throws Exception {
-        assumeFalse("No SQL plans are written on the client node when using the H2 engine",
-            isClient && sqlEngine == IndexingQueryEngineConfiguration.ENGINE_NAME);
-
         for (int i = 1; i <= (PLAN_HISTORY_SIZE + PLAN_HISTORY_EXCESS); i++) {
             try {
                 SqlFieldsQuery qry = new SqlFieldsQuery(SQL + " where A.fail()=" + i);
@@ -421,9 +411,6 @@ public class SqlPlanHistoryIntegrationTest extends GridCommonAbstractTest {
     public void testEntryReplacement() throws IgniteInterruptedCheckedException {
         assumeFalse("With the H2 engine, scan counts can be added to SQL plans for local queries ",
             loc && sqlEngine == IndexingQueryEngineConfiguration.ENGINE_NAME);
-
-        assumeFalse("No SQL plans are written on the client node when using the H2 engine",
-            isClient && sqlEngine == IndexingQueryEngineConfiguration.ENGINE_NAME);
 
         long[] timeStamps = new long[2];
 
@@ -494,22 +481,6 @@ public class SqlPlanHistoryIntegrationTest extends GridCommonAbstractTest {
         cacheQuery(qry.setLocal(loc), "A");
 
         checkSqlPlanHistory(0);
-    }
-
-    /**
-     * @param task Task to execute.
-     */
-    public void runQueryWithReducePhase(Runnable task) {
-        assumeFalse("Only distributed queries have map and reduce phases", loc);
-
-        isReducePhase = true;
-
-        try {
-            task.run();
-        }
-        finally {
-            isReducePhase = false;
-        }
     }
 
     /**
@@ -603,10 +574,11 @@ public class SqlPlanHistoryIntegrationTest extends GridCommonAbstractTest {
      * @param size Number of SQL plan entries expected to be in the history.
      */
     public void checkSqlPlanHistory(int size) {
-        if (!isReducePhase && isClient && sqlEngine == IndexingQueryEngineConfiguration.ENGINE_NAME)
-            size = 0;
+        Map<SqlPlan, Long> sqlPlans = getSqlPlanHistory();
 
-        executeHistoryCheck(size, plans -> plans);
+        assertNotNull(sqlPlans);
+
+        checkMetrics(size, sqlPlans);
     }
 
     /**
@@ -616,34 +588,22 @@ public class SqlPlanHistoryIntegrationTest extends GridCommonAbstractTest {
      * @param isSimpleQry Simple query flag.
      */
     public void checkSqlPlanHistoryDml(int size, boolean isSimpleQry) {
-        executeHistoryCheck(size, plans -> {
-            if (sqlEngine == IndexingQueryEngineConfiguration.ENGINE_NAME) {
-                String check;
-
-                if (isSimpleQry)
-                    check = "no SELECT queries have been executed.";
-                else
-                    check = "the following " + (loc ? "local " : "") + "query has been executed:";
-
-                plans = plans.entrySet().stream()
-                    .filter(e -> e.getKey().plan().contains(check))
-                    .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
-            }
-
-            return plans;
-        });
-    }
-
-    /**
-     * @param size Number of SQL plan entries expected to be in the history.
-     * @param func Function to get the correct collection of plans for further checking.
-     */
-    public void executeHistoryCheck(int size, Function<Map<SqlPlan, Long>, Map<SqlPlan, Long>> func) {
         Map<SqlPlan, Long> sqlPlans = getSqlPlanHistory();
 
         assertNotNull(sqlPlans);
 
-        sqlPlans = func.apply(sqlPlans);
+        if (sqlEngine == IndexingQueryEngineConfiguration.ENGINE_NAME) {
+            String check;
+
+            if (isSimpleQry)
+                check = "no SELECT queries have been executed.";
+            else
+                check = "the following " + (loc ? "local " : "") + "query has been executed:";
+
+            sqlPlans = sqlPlans.entrySet().stream()
+                .filter(e -> e.getKey().plan().contains(check))
+                .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
+        }
 
         checkMetrics(size, sqlPlans);
     }
@@ -686,35 +646,26 @@ public class SqlPlanHistoryIntegrationTest extends GridCommonAbstractTest {
     /**
      * Compares entries in the plan history before and after the reset event.
      *
-     * @param reset Reset.
+     * @param reset Reset event.
      */
     public void checkReset(Runnable reset) {
-        assumeFalse("No SQL plans are written on the client node when using the H2 engine", isClient);
+        String[] qryText = new String[2];
 
-        SqlFieldsQuery qryBefore = new SqlFieldsQuery(SQL + " where A.fail()=" + 1);
-        SqlFieldsQuery qryAfter = new SqlFieldsQuery(SQL + " where A.fail()=" + 2);
+        for (int i = 0; i < 2; i++) {
+            try {
+                cacheQuery(new SqlFieldsQuery(SQL + " where A.fail()=" + i).setLocal(loc), "A");
+            }
+            catch (Exception ignore) {
+                //No-Op
+            }
 
-        try {
-            cacheQuery(qryBefore.setLocal(loc), "A");
-        }
-        catch (Exception ignore) {
-            //No-Op
-        }
+            qryText[i] = getSqlPlanHistory().keySet().stream().findFirst().map(SqlPlan::query).orElse("");
 
-        String qryBeforeStr = getSqlPlanHistory().keySet().stream().findFirst().map(SqlPlan::query).get();
-
-        reset.run();
-
-        try {
-            cacheQuery(qryAfter.setLocal(loc), "A");
-        }
-        catch (Exception ignore) {
-            //No-Op
+            if (i == 0)
+                reset.run();
         }
 
-        String qryAfterStr = getSqlPlanHistory().keySet().stream().findFirst().map(SqlPlan::query).get();
-
-        assertNotEquals(qryBeforeStr, qryAfterStr);
+        assertNotEquals(qryText[0], qryText[1]);
     }
 
     /** */
