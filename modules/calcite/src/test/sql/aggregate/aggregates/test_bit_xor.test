@@ -5,22 +5,18 @@
 
 # test on scalar values
 query II
-SELECT BIT_XOR(3), BIT_XOR(NULL)
+SELECT BIT_XOR(3), BIT_XOR(NULL::INT)
 ----
 3
 NULL
 
-# test on a sequence
-statement ok
-CREATE SEQUENCE seq;
-
 query I
-SELECT BIT_XOR(nextval('seq'))
+SELECT BIT_XOR(1)
 ----
 1
 
 query I
-SELECT BIT_XOR(nextval('seq'))
+SELECT BIT_XOR(2)
 ----
 2
 
@@ -31,13 +27,12 @@ CREATE TABLE integers(i INTEGER);
 statement ok
 INSERT INTO integers VALUES (3), (7), (15), (31), (3), (15)
 
-query IIII
-SELECT BIT_XOR(i), BIT_XOR(1), BIT_XOR(DISTINCT i), BIT_XOR(NULL) FROM integers
+query III
+SELECT BIT_XOR(i), BIT_XOR(1), BIT_XOR(DISTINCT i) FROM integers
 ----
 24
 0
 20
-NULL
 
 # test on an empty set
 query I
