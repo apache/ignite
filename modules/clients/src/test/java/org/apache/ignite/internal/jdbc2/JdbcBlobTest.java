@@ -146,7 +146,9 @@ public class JdbcBlobTest {
         JdbcBlob blob = new JdbcBlob(arr);
 
         InputStream is = blob.getBinaryStream();
+
         byte[] res = readBytes(is);
+
         assertTrue(Arrays.equals(arr, res));
 
         blob.free();
