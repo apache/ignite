@@ -475,7 +475,7 @@ public class JdbcThinResultSet implements ResultSet {
         if (cls == byte[].class)
             return (byte[])val;
         else if (cls == JdbcBinaryBuffer.class)
-            return ((JdbcBinaryBuffer)val).getBytes();
+            return ((JdbcBinaryBuffer)val).bytes();
         else if (cls == Byte.class)
             return new byte[] {(byte)val};
         else if (cls == Short.class) {
@@ -597,7 +597,7 @@ public class JdbcThinResultSet implements ResultSet {
             return null;
 
         if (val instanceof JdbcBinaryBuffer)
-            return ((JdbcBinaryBuffer)val).getInputStream();
+            return ((JdbcBinaryBuffer)val).inputStream();
         else
             return new ByteArrayInputStream(getBytes(colIdx));
     }
@@ -749,7 +749,7 @@ public class JdbcThinResultSet implements ResultSet {
         Object val = getValue(colIdx);
 
         if (val instanceof JdbcBinaryBuffer)
-            return ((JdbcBinaryBuffer)val).getBytes();
+            return ((JdbcBinaryBuffer)val).bytes();
         else
             return val;
     }

@@ -199,7 +199,7 @@ public class JdbcQueryExecuteRequest extends JdbcRequest {
             args[i] = JdbcUtils.readObject(reader, protoCtx);
 
             if (args[i] instanceof JdbcBinaryBuffer)
-                args[i] = ((JdbcBinaryBuffer)args[i]).getBytes();
+                args[i] = ((JdbcBinaryBuffer)args[i]).bytes();
         }
 
         if (protoCtx.isAutoCommitSupported())

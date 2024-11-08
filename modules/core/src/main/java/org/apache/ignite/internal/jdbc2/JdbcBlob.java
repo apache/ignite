@@ -101,7 +101,7 @@ public class JdbcBlob implements Blob {
     @Override public InputStream getBinaryStream() throws SQLException {
         ensureNotClosed();
 
-        return buf.getInputStream();
+        return buf.inputStream();
     }
 
     /** {@inheritDoc} */
@@ -116,7 +116,7 @@ public class JdbcBlob implements Blob {
                 "greater than available bytes from given position [pos=" + pos + ", len=" + len + ", blobLen=" + blobLen + "]");
         }
 
-        return buf.getInputStream((int)pos - 1, (int)len);
+        return buf.inputStream((int)pos - 1, (int)len);
     }
 
     /** {@inheritDoc} */
@@ -190,7 +190,7 @@ public class JdbcBlob implements Blob {
                     "[pos=" + pos + ", blobLen=" + blobLen + "]");
         }
 
-        return buf.getOutputStream((int)pos - 1);
+        return buf.outputStream((int)pos - 1);
     }
 
     /** {@inheritDoc} */
@@ -223,7 +223,7 @@ public class JdbcBlob implements Blob {
      */
     private long position(InputStream ptrn, int ptrnLen, int idx) throws SQLException {
         try {
-            InputStream blob = buf.getInputStream(idx, buf.length() - idx);
+            InputStream blob = buf.inputStream(idx, buf.length() - idx);
 
             boolean patternStarted = false;
 

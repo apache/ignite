@@ -115,7 +115,7 @@ public class JdbcBinaryBuffer {
      *
      * @return InputStream instance.
      */
-    public InputStream getInputStream() {
+    public InputStream inputStream() {
         return new BufferInputStream();
     }
 
@@ -124,7 +124,7 @@ public class JdbcBinaryBuffer {
      *
      * @return Byte array containing buffer data.
      */
-    public byte[] getBytes() {
+    public byte[] bytes() {
         byte[] bytes = new byte[len];
 
         read(0, bytes, 0, len);
@@ -141,7 +141,7 @@ public class JdbcBinaryBuffer {
      *
      * @return OutputStream instance.
      */
-    OutputStream getOutputStream(int pos) {
+    OutputStream outputStream(int pos) {
         return new BufferOutputStream(pos);
     }
 
@@ -154,7 +154,7 @@ public class JdbcBinaryBuffer {
      * @param len The length in bytes of the data to be retrieved. Must not be negative.
      * @return InputStream instance.
      */
-    InputStream getInputStream(int pos, int len) {
+    InputStream inputStream(int pos, int len) {
         return new BufferInputStream(pos, len);
     }
 
