@@ -31,6 +31,7 @@ import org.apache.ignite.internal.processors.cache.KeyCacheObject;
 import org.apache.ignite.internal.processors.platform.cache.PlatformCacheEntryFilter;
 import org.apache.ignite.internal.processors.security.SecurityUtils;
 import org.apache.ignite.internal.util.GridCloseableIteratorAdapter;
+import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.lang.IgniteBiPredicate;
 import org.apache.ignite.lang.IgniteClosure;
 import org.jetbrains.annotations.Nullable;
@@ -199,14 +200,17 @@ public abstract class AbstractScanQueryIterator<K, V, R> extends GridCloseableIt
                 null));
         }
 
-        try {
-            Cache.Entry<K, V> res = new CacheQueryEntry<>(key0, val0);
+        if (transform != null) {
+            try {
+                return transform.apply(new CacheQueryEntry<>(key0, val0));
+            }
+            catch (Throwable e) {
+                throw new IgniteException(e);
+            }
+        }
 
-            return transform == null ? (R)res : transform.apply(res);
-        }
-        catch (Throwable e) {
-            throw new IgniteException(e);
-        }
+        return (R)(!locNode ? new T2<>(key0, val0) :
+            new CacheQueryEntry<>(key0, val0));
     }
 
     /** */
