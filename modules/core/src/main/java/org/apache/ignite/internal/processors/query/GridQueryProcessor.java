@@ -349,9 +349,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
         initQueryEngines();
 
         idxBuildStatusStorage = new IndexBuildStatusStorage(ctx);
-
         txAwareQueriesEnabled = U.isTxAwareQueriesEnabled(ctx);
-
         marsh = ctx.marshallerContext().jdkMarshaller();
     }
 
