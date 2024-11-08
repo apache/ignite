@@ -215,7 +215,7 @@ public class RunningQueryManager {
 
         ctx.systemView().registerView(SQL_PLAN_HIST_VIEW, SQL_PLAN_HIST_VIEW_DESC,
             new SqlPlanHistoryViewWalker(),
-            planHistTracker.sqlPlanHistory().entrySet(),
+            () -> planHistTracker.sqlPlanHistory().entrySet(),
             SqlPlanHistoryView::new);
 
         MetricRegistryImpl userMetrics = ctx.metric().registry(SQL_USER_QUERIES_REG_NAME);
