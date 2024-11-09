@@ -38,9 +38,6 @@ public class IgniteServiceDeploymentFailureTest extends GridCommonAbstractTest {
     /** */
     private static ClassLoader extClsLdr;
 
-    /** Atomic InitThrowService#init calls counter */
-    private static AtomicInteger initCounter = new AtomicInteger();
-
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
