@@ -189,6 +189,8 @@ public class TxWithKeyContentionSelfTest extends GridCommonAbstractTest {
 
         IgniteTransactions transactions = cl.transactions();
 
+        assertFalse(checkMetrics(ig));
+
         AtomicBoolean doTest = new AtomicBoolean(true);
 
         IgniteInternalFuture<Long> fut = GridTestUtils.runMultiThreadedAsync(
