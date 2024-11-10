@@ -46,6 +46,7 @@ import org.apache.ignite.internal.processors.service.IgniteServiceDeployment2Cla
 import org.apache.ignite.internal.processors.service.IgniteServiceDeploymentClassLoadingDefaultMarshallerTest;
 import org.apache.ignite.internal.processors.service.IgniteServiceDeploymentClassLoadingJdkMarshallerTest;
 import org.apache.ignite.internal.processors.service.IgniteServiceDeploymentClassLoadingOptimizedMarshallerTest;
+import org.apache.ignite.internal.processors.service.IgniteServiceDeploymentFailureTest;
 import org.apache.ignite.internal.processors.service.IgniteServiceDynamicCachesSelfTest;
 import org.apache.ignite.internal.processors.service.IgniteServiceProxyTimeoutInitializedTest;
 import org.apache.ignite.internal.processors.service.IgniteServiceReassignmentTest;
@@ -64,7 +65,6 @@ import org.apache.ignite.internal.processors.service.ServiceInfoSelfTest;
 import org.apache.ignite.internal.processors.service.ServicePredicateAccessCacheTest;
 import org.apache.ignite.internal.processors.service.ServiceReassignmentFunctionSelfTest;
 import org.apache.ignite.internal.processors.service.SystemCacheNotConfiguredTest;
-import org.apache.ignite.internal.processors.service.IgniteServiceDeploymentFailureTest;
 import org.apache.ignite.services.ServiceThreadPoolSelfTest;
 import org.apache.ignite.tools.junit.JUnitTeamcityReporter;
 import org.junit.BeforeClass;

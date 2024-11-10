@@ -1,5 +1,9 @@
 package org.apache.ignite.internal.processors.service;
 
+import java.util.Optional;
+import java.util.UUID;
+import java.util.concurrent.atomic.AtomicInteger;
+
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.failure.StopNodeFailureHandler;
@@ -11,10 +15,6 @@ import org.apache.ignite.services.ServiceDeploymentException;
 import org.apache.ignite.services.ServiceDescriptor;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
-
-import java.util.Optional;
-import java.util.UUID;
-import java.util.concurrent.atomic.AtomicInteger;
 
 import static org.apache.ignite.testframework.GridTestUtils.assertThrowsWithCause;
 
@@ -87,6 +87,9 @@ public class IgniteServiceDeploymentFailureTest extends GridCommonAbstractTest {
         assertTrue(cli.services().serviceDescriptors().isEmpty());
     }
 
+    /**
+     * Service that throws an exception in init.
+     * */
     private static class InitThrowingService implements Service {
         /** */
         public static final AtomicInteger initCounter = new AtomicInteger();
@@ -98,6 +101,9 @@ public class IgniteServiceDeploymentFailureTest extends GridCommonAbstractTest {
         }
     }
 
+    /**
+     * NoopService for testing.
+     * */
     private static class NoopService implements Service {
         /** */
         public static final AtomicInteger initCounter = new AtomicInteger();
@@ -131,26 +137,23 @@ public class IgniteServiceDeploymentFailureTest extends GridCommonAbstractTest {
         for (int i = 0; i < clients.length; i++)
             clients[i] = startClientGrid(i);
 
-        ServiceConfiguration noopServiceConfig = new ServiceConfiguration()
+        ServiceConfiguration noopSrvcCfg = new ServiceConfiguration()
                 .setName(NoopService.class.getSimpleName())
                 .setService(new NoopService())
                 .setTotalCount(NOOP_SRVC_TOTAL_CNT)
                 .setMaxPerNodeCount(NOOP_SRVC_MAX_PER_NODE_CNT_0);
 
-        ServiceConfiguration throwServiceConfig = new ServiceConfiguration()
+        ServiceConfiguration throwSrvcCfg = new ServiceConfiguration()
                 .setName(InitThrowingService.class.getSimpleName())
                 .setService(new InitThrowingService())
                 .setTotalCount(THROW_SRVC_TOTAL_CNT)
                 .setMaxPerNodeCount(THROW_SRVC_MAX_PER_NODE_CNT);
 
-        clients[0].services().deploy(noopServiceConfig);
+        clients[0].services().deploy(noopSrvcCfg);
         assertEquals(NOOP_SRVC_MAX_PER_NODE_CNT_0 * SERVER_NODES_CNT,
                 getTotalInstancesCount(clients[0], NoopService.class.getSimpleName()));
 
-
-        var e = assertThrowsWithCause(() -> clients[0].services().deploy(throwServiceConfig), ServiceDeploymentException.class);
-        System.out.println("deploy exception stacktrace:");
-        e.printStackTrace();
+        assertThrowsWithCause(() -> clients[0].services().deploy(throwSrvcCfg), ServiceDeploymentException.class);
 
         for (IgniteEx server : servers)
             assertTrue(server.services().serviceDescriptors().stream().noneMatch(desc -> {
@@ -161,18 +164,24 @@ public class IgniteServiceDeploymentFailureTest extends GridCommonAbstractTest {
                 return desc.name().equals(InitThrowingService.class.getSimpleName());
             }));
 
-
         clients[0].services().cancel(NoopService.class.getSimpleName());
 
-        noopServiceConfig.setMaxPerNodeCount(NOOP_SRVC_MAX_PER_NODE_CNT_1);
-        clients[0].services().deploy(noopServiceConfig);
+        noopSrvcCfg.setMaxPerNodeCount(NOOP_SRVC_MAX_PER_NODE_CNT_1);
+        clients[0].services().deploy(noopSrvcCfg);
 
         assertEquals(NOOP_SRVC_TOTAL_CNT, getTotalInstancesCount(clients[0], NoopService.class.getSimpleName()));
     }
 
-    private static int getTotalInstancesCount(IgniteEx igniteEx, String serviceName) {
+    /**
+     * Retrieves the total instances count of the service.
+     *
+     * @param igniteEx Ignite instance.
+     * @param srvcName Service name.
+     * @return Total instances count of the service named {@code srvcName} from the given {@code igniteEx} instance.
+     */
+    private static int getTotalInstancesCount(IgniteEx igniteEx, String srvcName) {
         Optional<ServiceDescriptor> desc = igniteEx.services().serviceDescriptors().stream().
-                filter(descriptor -> descriptor.name().equals(serviceName)).findAny();
+                filter(descriptor -> descriptor.name().equals(srvcName)).findAny();
         assertTrue(desc.isPresent());
         return desc.get().topologySnapshot().values().stream().mapToInt(Integer::intValue).sum();
     }
