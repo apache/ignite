@@ -255,9 +255,9 @@ public class AffinityHistoryCleanupTest extends GridCommonAbstractTest {
         for (GridCacheContext cctx : proc.context().cacheContexts()) {
             GridAffinityAssignmentCache aff = GridTestUtils.getFieldValue(cctx.affinity(), "aff");
 
-            AtomicInteger fullHistSize = GridTestUtils.getFieldValue(aff, "nonShallowHistSize");
+            int fullHistSize = GridTestUtils.getFieldValue(aff, "nonShallowHistSize");
 
-            assertEquals(expSize, fullHistSize.get());
+            assertEquals(expSize, fullHistSize);
 
             Map<AffinityTopologyVersion, Object> cache = GridTestUtils.getFieldValue(aff, "affCache");
 

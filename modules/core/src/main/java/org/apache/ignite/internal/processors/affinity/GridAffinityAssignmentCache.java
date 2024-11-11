@@ -29,7 +29,6 @@ import java.util.UUID;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.ConcurrentNavigableMap;
 import java.util.concurrent.ConcurrentSkipListMap;
-import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
@@ -55,6 +54,7 @@ import org.apache.ignite.internal.util.typedef.internal.SB;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgnitePredicate;
 import org.jetbrains.annotations.Nullable;
+
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_AFFINITY_HISTORY_SIZE;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_PART_DISTRIBUTION_WARN_THRESHOLD;
 import static org.apache.ignite.IgniteSystemProperties.getFloat;
@@ -144,7 +144,7 @@ public class GridAffinityAssignmentCache {
     private volatile IgniteCheckedException stopErr;
 
     /** Number of non-shallow (see {@link HistoryAffinityAssignmentImpl}) affinity cache instances. */
-    private final AtomicInteger nonShallowHistSize = new AtomicInteger();
+    private volatile int nonShallowHistSize;
 
     /** */
     private final Object similarAffKey;
@@ -311,7 +311,7 @@ public class GridAffinityAssignmentCache {
 
         affCache.clear();
 
-        nonShallowHistSize.set(0);
+        nonShallowHistSize = 0;
 
         head.set(new GridAffinityAssignmentV2(AffinityTopologyVersion.NONE));
 
@@ -942,63 +942,52 @@ public class GridAffinityAssignmentCache {
      * @param replaced Replaced entry in case history item was already present, null otherwise.
      * @param added New history item.
      */
-    private void onHistoryAdded(
+    private synchronized void onHistoryAdded(
         HistoryAffinityAssignment replaced,
         HistoryAffinityAssignment added
     ) {
         if (replaced == null) {
             if (added.isFullSizeInstance())
-                nonShallowHistSize.incrementAndGet();
+                nonShallowHistSize++;
         }
-        else {
-            if (replaced.isFullSizeInstance() != added.isFullSizeInstance()) {
-                if (added.isFullSizeInstance())
-                    nonShallowHistSize.incrementAndGet();
-                else
-                    nonShallowHistSize.decrementAndGet();
-            }
-        }
-
-        int nonShallowSize = nonShallowHistSize.get();
+        else if (replaced.isFullSizeInstance() != added.isFullSizeInstance())
+            nonShallowHistSize += added.isFullSizeInstance() ? 1 : -1;
 
         int totalSize = affCache.size();
 
-        if (shouldContinueCleanup(nonShallowSize, totalSize)) {
-            int initNonShallowSize = nonShallowSize;
+        if (!shouldContinueCleanup(nonShallowHistSize, totalSize))
+            return;
 
-            Iterator<HistoryAffinityAssignment> it = affCache.values().iterator();
+        AffinityTopologyVersion lastAffChangeTopVer =
+            ctx.cache().context().exchange().lastAffinityChangedTopologyVersion(head.get().topologyVersion());
 
-            AffinityTopologyVersion lastAffChangeTopVer =
-                ctx.cache().context().exchange().lastAffinityChangedTopologyVersion(head.get().topologyVersion());
+        HistoryAffinityAssignment aff0 = null;
 
-            while (it.hasNext()) {
-                HistoryAffinityAssignment aff0 = it.next();
+        Iterator<HistoryAffinityAssignment> it = affCache.values().iterator();
 
-                if (!shouldContinueCleanup(nonShallowSize, totalSize)) {
-                    nonShallowHistSize.getAndAdd(nonShallowSize - initNonShallowSize);
+        while (it.hasNext() && shouldContinueCleanup(nonShallowHistSize, totalSize)) {
+            aff0 = it.next();
 
-                    ctx.affinity().removeCachedAffinity(aff0.topologyVersion());
+            if (aff0.topologyVersion().equals(lastAffChangeTopVer))
+                continue; // Keep lastAffinityChangedTopologyVersion, it's required for some operations.
 
-                    return;
-                }
+            if (aff0.isFullSizeInstance()) {
+                if (nonShallowHistSize <= MIN_NON_SHALLOW_HIST_SIZE)
+                    continue;
 
-                if (aff0.topologyVersion().equals(lastAffChangeTopVer))
-                    continue; // Keep lastAffinityChangedTopologyVersion, it's required for some operations.
-
-                if (aff0.isFullSizeInstance()) {
-                    if (nonShallowSize <= MIN_NON_SHALLOW_HIST_SIZE)
-                        continue;
-
-                    nonShallowSize--;
-                }
-
-                totalSize--;
-
-                it.remove();
+                nonShallowHistSize--;
             }
 
-            assert false : "All elements have been removed from affinity cache during cleanup";
+            totalSize--;
+
+            it.remove();
         }
+
+        assert aff0 != null;
+
+        ctx.affinity().removeCachedAffinity(aff0.topologyVersion());
+
+        assert it.hasNext() : "All elements have been removed from affinity cache during cleanup";
     }
 
     /**
