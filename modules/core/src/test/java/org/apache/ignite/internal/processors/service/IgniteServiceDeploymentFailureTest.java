@@ -101,8 +101,8 @@ public class IgniteServiceDeploymentFailureTest extends GridCommonAbstractTest {
 
         ServiceConfiguration svcCfg = new ServiceConfiguration()
                 .setName(srvcName)
-                .setService(((Class<Service>) extClsLdr.loadClass(NOOP_SERVICE_CLS_NAME)).getDeclaredConstructor().newInstance())
-                .setNodeFilter(((Class<IgnitePredicate<ClusterNode>>) extClsLdr.loadClass(NODE_FILTER_CLS_NAME))
+                .setService(((Class<Service>)extClsLdr.loadClass(NOOP_SERVICE_CLS_NAME)).getDeclaredConstructor().newInstance())
+                .setNodeFilter(((Class<IgnitePredicate<ClusterNode>>)extClsLdr.loadClass(NODE_FILTER_CLS_NAME))
                         .getConstructor(UUID.class)
                         .newInstance(cli.configuration().getNodeId()))
                 .setTotalCount(1);
