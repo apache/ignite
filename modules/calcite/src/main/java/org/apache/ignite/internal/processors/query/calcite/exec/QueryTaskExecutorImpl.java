@@ -87,6 +87,7 @@ public class QueryTaskExecutorImpl extends AbstractService implements QueryTaskE
 
         IgniteStripedThreadPoolExecutor executor = new SecurityAwareStripedThreadPoolExecutor(
             ctx.security(),
+            ctx.applicationContext(),
             ctx.config().getQueryThreadPoolSize(),
             ctx.igniteInstanceName(),
             "calciteQry",

@@ -86,7 +86,7 @@ import org.apache.ignite.internal.IgniteFeatures;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.IgniteKernal;
 import org.apache.ignite.internal.NodeStoppingException;
-import org.apache.ignite.internal.cache.ApplicationContextInternal;
+import org.apache.ignite.internal.cache.context.ApplicationContextInternal;
 import org.apache.ignite.internal.cluster.ClusterTopologyCheckedException;
 import org.apache.ignite.internal.direct.DirectMessageReader;
 import org.apache.ignite.internal.direct.DirectMessageWriter;
@@ -1901,7 +1901,7 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
 
         try (
             OperationSecurityContext ignored = ctx.security().withContext(newSecSubjId);
-            ApplicationContextInternal ignored0 = ApplicationContextInternal.withApplicationAttributes(appAttrs)
+            ApplicationContextInternal ignored0 = ctx.applicationContext().applicationContext(appAttrs)
         ) {
             lsnr.onMessage(nodeId, msg, plc);
         }
@@ -2136,7 +2136,7 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
         long timeout,
         boolean skipOnTimeout
     ) {
-        ApplicationContext appCtx = ApplicationContextInternal.applicationContext();
+        ApplicationContext appCtx = ctx.applicationContext().applicationContext();
 
         boolean secEnabled = ctx.security().enabled();
 

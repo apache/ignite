@@ -19,25 +19,24 @@ package org.apache.ignite.internal.processors.resource;
 
 import java.util.Collection;
 import org.apache.ignite.IgniteCheckedException;
-import org.apache.ignite.cache.ApplicationContext;
-import org.apache.ignite.internal.cache.ApplicationContextInternal;
+import org.apache.ignite.cache.ApplicationContextProvider;
+import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.managers.deployment.GridDeployment;
 
-/**
- * {@link ApplicationContext} injector.
- */
-public class GridResourceApplicationContextInjector extends GridResourceBasicInjector<Collection<ApplicationContext>> {
+/** {@link ApplicationContextProvider} injector. */
+public class GridResourceApplicationContextProviderInjector extends GridResourceBasicInjector<Collection<ApplicationContextProvider>> {
     /** */
-    public GridResourceApplicationContextInjector() {
+    private final IgniteEx ign;
+
+    /** */
+    public GridResourceApplicationContextProviderInjector(IgniteEx ign) {
         super(null);
+
+        this.ign = ign;
     }
 
     /** {@inheritDoc} */
-    @Override public void inject(GridResourceField field, Object target, Class<?> depCls, GridDeployment dep)
-        throws IgniteCheckedException {
-        ApplicationContext ctx = ApplicationContextInternal.applicationContext();
-
-        if (ctx != null)
-            GridResourceUtils.inject(field.getField(), target, ctx);
+    @Override public void inject(GridResourceField fld, Object target, Class<?> depCls, GridDeployment dep) throws IgniteCheckedException {
+        GridResourceUtils.inject(fld.getField(), target, ign.context().applicationContext().provider());
     }
 }

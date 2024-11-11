@@ -78,8 +78,8 @@ public class GridResourceProcessor extends GridProcessorAdapter {
             new GridResourceLoggerInjector(ctx.config().getGridLogger());
         injectorByAnnotation[GridResourceIoc.ResourceAnnotation.IGNITE_INSTANCE.ordinal()] =
             new GridResourceBasicInjector<>(ctx.grid());
-        injectorByAnnotation[GridResourceIoc.ResourceAnnotation.APPLICATION_CONTEXT.ordinal()] =
-            new GridResourceApplicationContextInjector();
+        injectorByAnnotation[GridResourceIoc.ResourceAnnotation.APPLICATION_CONTEXT_PROVIDER.ordinal()] =
+            new GridResourceApplicationContextProviderInjector(ctx.grid());
     }
 
     /** {@inheritDoc} */

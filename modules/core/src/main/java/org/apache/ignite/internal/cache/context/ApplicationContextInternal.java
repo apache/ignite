@@ -15,55 +15,32 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.cache;
+package org.apache.ignite.internal.cache.context;
 
 import java.util.Collections;
 import java.util.Map;
-import org.apache.ignite.IgniteCache;
 import org.apache.ignite.cache.ApplicationContext;
-import org.jetbrains.annotations.Nullable;
 
-/** Hold application attribute set by user with {@link IgniteCache#withApplicationAttributes}. */
 public class ApplicationContextInternal implements ApplicationContext, AutoCloseable {
-    /** Holds application context for current thread. */
-    private static final ThreadLocal<ApplicationContextInternal> ctx = new ThreadLocal<>();
+    /** */
+    private final ApplicationContextProcessor proc;
 
     /** Application attributes. */
     private final Map<String, String> attrs;
 
     /** @param attrs Application attributes. */
-    private ApplicationContextInternal(Map<String, String> attrs) {
+    public ApplicationContextInternal(ApplicationContextProcessor proc, Map<String, String> attrs) {
         this.attrs = attrs;
-    }
-
-    /**
-     * Set context for current thread.
-     *
-     * @param attrs Application attributes to set.
-     */
-    public static ApplicationContextInternal withApplicationAttributes(@Nullable Map<String, String> attrs) {
-        if (attrs == null)
-            return null;
-
-        ApplicationContextInternal appCtx = new ApplicationContextInternal(attrs);
-
-        ctx.set(appCtx);
-
-        return appCtx;
-    }
-
-    /** @return Application context for current thread. */
-    public static @Nullable ApplicationContext applicationContext() {
-        return ctx.get();
-    }
-
-    /** Unset context for current thread. */
-    @Override public void close() {
-        ctx.remove();
+        this.proc = proc;
     }
 
     /** */
     @Override public Map<String, String> getAttributes() {
         return Collections.unmodifiableMap(attrs);
+    }
+
+    /** Unset context for current thread. */
+    @Override public void close() {
+        proc.clean();
     }
 }

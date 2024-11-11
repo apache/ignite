@@ -18,10 +18,13 @@
 package org.apache.ignite.internal.processors.security.thread;
 
 import java.util.Map;
-import org.apache.ignite.internal.cache.ApplicationContextInternal;
+import org.apache.ignite.cache.ApplicationContext;
+import org.apache.ignite.internal.cache.context.ApplicationContextInternal;
+import org.apache.ignite.internal.cache.context.ApplicationContextProcessor;
 import org.apache.ignite.internal.processors.security.IgniteSecurity;
 import org.apache.ignite.internal.processors.security.OperationSecurityContext;
 import org.apache.ignite.internal.processors.security.SecurityContext;
+import org.jetbrains.annotations.Nullable;
 
 /**
  * Represents a {@link Runnable} wrapper that executes the original {@link Runnable} with the security context
@@ -35,26 +38,38 @@ class SecurityAwareRunnable implements Runnable {
     private final IgniteSecurity security;
 
     /** */
+    private final @Nullable ApplicationContextProcessor appCtxProc;
+
+    /** */
     private final SecurityContext secCtx;
 
     /** */
     private final Map<String, String> appAttrs;
 
     /** */
-    private SecurityAwareRunnable(IgniteSecurity security, Map<String, String> appAttrs, Runnable delegate) {
+    private SecurityAwareRunnable(IgniteSecurity security, @Nullable ApplicationContextProcessor appCtxProc, Runnable delegate) {
         assert delegate != null;
 
-        this.appAttrs = appAttrs;
         this.delegate = delegate;
         this.security = security;
+        this.appCtxProc = appCtxProc;
+
         secCtx = security.securityContext();
+
+        if (appCtxProc != null) {
+            ApplicationContext appCtx = appCtxProc.applicationContext();
+
+            appAttrs = appCtx == null ? null : appCtx.getAttributes();
+        }
+        else
+            appAttrs = null;
     }
 
     /** {@inheritDoc} */
     @Override public void run() {
         try (
             OperationSecurityContext ignored = security.withContext(secCtx);
-            ApplicationContextInternal ignored0 = ApplicationContextInternal.withApplicationAttributes(appAttrs)
+            ApplicationContextInternal ignored0 = appCtxProc == null ? null : appCtxProc.applicationContext(appAttrs)
         ) {
             delegate.run();
         }
@@ -66,10 +81,10 @@ class SecurityAwareRunnable implements Runnable {
     }
 
     /** */
-    static Runnable of(IgniteSecurity security, Map<String, String> appAttrs, Runnable delegate) {
-        if (delegate == null || (security.isDefaultContext() && appAttrs == null))
+    static Runnable of(IgniteSecurity security, ApplicationContextProcessor appCtxProc, Runnable delegate) {
+        if (delegate == null || (security.isDefaultContext() && appCtxProc != null && appCtxProc.applicationContext() == null))
             return delegate;
 
-        return new SecurityAwareRunnable(security, appAttrs, delegate);
+        return new SecurityAwareRunnable(security, appCtxProc, delegate);
     }
 }

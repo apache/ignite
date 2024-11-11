@@ -19,10 +19,10 @@ package org.apache.ignite.internal.processors.cache;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Map;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.cache.ApplicationContext;
+import org.apache.ignite.cache.ApplicationContextProvider;
 import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.cache.query.annotations.QuerySqlFunction;
@@ -31,7 +31,7 @@ import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.SqlConfiguration;
 import org.apache.ignite.internal.util.typedef.F;
-import org.apache.ignite.resources.ApplicationContextResource;
+import org.apache.ignite.resources.ApplicationContextProviderResource;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -179,15 +179,15 @@ public class ApplicationContextSqlFunctionTest extends GridCommonAbstractTest {
     /** */
     public static class ApplicationContextSqlFunctions {
         /** */
-        @ApplicationContextResource
-        public ApplicationContext ctx;
+        @ApplicationContextProviderResource
+        public ApplicationContextProvider appCtxProv;
 
         /** */
         @QuerySqlFunction
         public String sessionId() {
-            Map<String, String> attrs = ctx.getAttributes();
+            ApplicationContext appCtx = appCtxProv.getApplicationContext();
 
-            return attrs == null ? null : attrs.get(SESSION_ID);
+            return appCtx == null ? null : appCtx.getAttributes().get(SESSION_ID);
         }
     }
 }
