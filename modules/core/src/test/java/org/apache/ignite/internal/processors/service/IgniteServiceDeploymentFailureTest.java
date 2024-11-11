@@ -106,7 +106,7 @@ public class IgniteServiceDeploymentFailureTest extends GridCommonAbstractTest {
 
         assertThrowsWithCause(() -> cli.services().deploy(svcCfg), ServiceDeploymentException.class);
 
-        assertTrue(cli.services().serviceDescriptors().isEmpty());
+        assertTrue(waitForCondition(() -> cli.services().serviceDescriptors().isEmpty(), TIMEOUT));
     }
 
     /**
@@ -138,6 +138,7 @@ public class IgniteServiceDeploymentFailureTest extends GridCommonAbstractTest {
 
         // Deploying NoopService - should be completed successfully.
         client.services().deploy(noopSrvcCfg);
+
         // Check that the expected number of instances has been deployed
         assertEquals(noopSrvcMaxPerNodeCnt0 * SERVER_NODES_CNT,
                 getTotalInstancesCount(client, NoopService.class.getSimpleName()));
@@ -151,17 +152,16 @@ public class IgniteServiceDeploymentFailureTest extends GridCommonAbstractTest {
                 ServiceDeploymentException.class);
 
         // Wait until the descriptors are updated on all nodes and check that there are no descriptors of an undeployed service.
-        assertTrue(waitForCondition(() -> {
-            return Ignition.allGrids().stream().allMatch(
+        assertTrue(waitForCondition(() -> Ignition.allGrids().stream().allMatch(
                     node -> node.services().serviceDescriptors().stream().noneMatch(
                             desc -> desc.name().equals(InitThrowingService.class.getSimpleName()))
-            );
-        }, TIMEOUT));
+        ), TIMEOUT));
 
         client.services().cancel(NoopService.class.getSimpleName());
 
         // Deploy some additional NoopService instances.
         noopSrvcCfg.setMaxPerNodeCount(noopSrvcMaxPerNodeCnt1);
+
         client.services().deploy(noopSrvcCfg);
 
         // Check that the expected number of NoopService instances has been deployed.
@@ -191,6 +191,7 @@ public class IgniteServiceDeploymentFailureTest extends GridCommonAbstractTest {
         /** {@inheritDoc} */
         @Override public void init() throws Exception {
             initCounter.incrementAndGet();
+
             throw new Exception("Service init exception");
         }
     }
