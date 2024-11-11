@@ -21,6 +21,7 @@ import java.util.Optional;
 import java.util.UUID;
 import java.util.concurrent.atomic.AtomicInteger;
 
+import org.apache.ignite.Ignition;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.failure.StopNodeFailureHandler;
@@ -86,7 +87,7 @@ public class IgniteServiceDeploymentFailureTest extends GridCommonAbstractTest {
     }
 
     /**
-     *  Tests that deploying a service with a missing class causes a ServiceDeploymentException.
+     * Tests that deploying a service with a missing class causes a ServiceDeploymentException.
      *
      * @throws Exception If failed.
      */
@@ -97,8 +98,8 @@ public class IgniteServiceDeploymentFailureTest extends GridCommonAbstractTest {
 
         ServiceConfiguration svcCfg = new ServiceConfiguration()
                 .setName("TestDeploymentService")
-                .setService(((Class<Service>)extClsLdr.loadClass(NOOP_SERVICE_CLS_NAME)).getDeclaredConstructor().newInstance())
-                .setNodeFilter(((Class<IgnitePredicate<ClusterNode>>)extClsLdr.loadClass(NODE_FILTER_CLS_NAME))
+                .setService(((Class<Service>) extClsLdr.loadClass(NOOP_SERVICE_CLS_NAME)).getDeclaredConstructor().newInstance())
+                .setNodeFilter(((Class<IgnitePredicate<ClusterNode>>) extClsLdr.loadClass(NODE_FILTER_CLS_NAME))
                         .getConstructor(UUID.class)
                         .newInstance(cli.configuration().getNodeId()))
                 .setTotalCount(1);
@@ -150,13 +151,11 @@ public class IgniteServiceDeploymentFailureTest extends GridCommonAbstractTest {
         final int throwSrvcTotalCnt = 10;
         final int throwSrvcMaxPerNodeCnt = 2;
 
-        IgniteEx[] servers = new IgniteEx[SERVER_NODES_CNT];
-        for (int i = 0; i < SERVER_NODES_CNT; i++)
-            servers[i] = startGrid(getConfiguration("server" + i));
+        startGrids(SERVER_NODES_CNT);
 
         IgniteEx[] clients = new IgniteEx[CLIENT_NODES_CNT];
         for (int i = 0; i < clients.length; i++)
-            clients[i] = startClientGrid(i);
+            clients[i] = startClientGrid(SERVER_NODES_CNT + i);
 
         ServiceConfiguration noopSrvcCfg = new ServiceConfiguration()
                 .setName(NoopService.class.getSimpleName())
@@ -172,27 +171,18 @@ public class IgniteServiceDeploymentFailureTest extends GridCommonAbstractTest {
 
         // Deploy InitThrowingService that throws an exception in init - should not be deployed.
         assertThrowsWithCause(() -> clients[0].services().deploy(new ServiceConfiguration()
-                .setName(InitThrowingService.class.getSimpleName())
-                .setService(new InitThrowingService())
-                .setTotalCount(throwSrvcTotalCnt)
-                .setMaxPerNodeCount(throwSrvcMaxPerNodeCnt)),
+                        .setName(InitThrowingService.class.getSimpleName())
+                        .setService(new InitThrowingService())
+                        .setTotalCount(throwSrvcTotalCnt)
+                        .setMaxPerNodeCount(throwSrvcMaxPerNodeCnt)),
                 ServiceDeploymentException.class);
 
         // Wait until the descriptors are updated on all nodes and check that there are no descriptors of an undeployed service.
         assertTrue(waitForCondition(() -> {
-            boolean noSrvcOnServers = Arrays.stream(servers).allMatch(server ->
-                    server.services().serviceDescriptors().stream().noneMatch(desc ->
-                            desc.name().equals(InitThrowingService.class.getSimpleName())
-                    )
+            return Ignition.allGrids().stream().allMatch(
+                    server -> server.services().serviceDescriptors().stream().noneMatch(
+                            desc -> desc.name().equals(InitThrowingService.class.getSimpleName()))
             );
-
-            boolean noSrvcOnClients = Arrays.stream(clients).allMatch(client ->
-                    client.services().serviceDescriptors().stream().noneMatch(desc ->
-                            desc.name().equals(InitThrowingService.class.getSimpleName())
-                    )
-            );
-
-            return noSrvcOnServers && noSrvcOnClients;
         }, TIMEOUT));
 
         clients[0].services().cancel(NoopService.class.getSimpleName());
