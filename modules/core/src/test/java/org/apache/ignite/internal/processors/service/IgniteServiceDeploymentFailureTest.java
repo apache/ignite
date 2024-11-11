@@ -16,6 +16,7 @@
  */
 package org.apache.ignite.internal.processors.service;
 
+import java.util.Arrays;
 import java.util.Optional;
 import java.util.UUID;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -33,6 +34,7 @@ import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
 
 import static org.apache.ignite.testframework.GridTestUtils.assertThrowsWithCause;
+import static org.apache.ignite.testframework.GridTestUtils.waitForCondition;
 
 /**
  * Test class for verifying the behavior of Ignite service deployment when
@@ -50,6 +52,9 @@ public class IgniteServiceDeploymentFailureTest extends GridCommonAbstractTest {
 
     /** */
     private static final int CLIENT_NODES_CNT = 4;
+
+    /** */
+    private static final int TIMEOUT = 10_000;
 
     /** */
     private static ClassLoader extClsLdr;
@@ -171,14 +176,21 @@ public class IgniteServiceDeploymentFailureTest extends GridCommonAbstractTest {
 
         assertThrowsWithCause(() -> clients[0].services().deploy(throwSrvcCfg), ServiceDeploymentException.class);
 
-        for (IgniteEx server : servers)
-            assertTrue(server.services().serviceDescriptors().stream().noneMatch(desc -> {
-                return desc.name().equals(InitThrowingService.class.getSimpleName());
-            }));
-        for (IgniteEx client : clients)
-            assertTrue(client.services().serviceDescriptors().stream().noneMatch(desc -> {
-                return desc.name().equals(InitThrowingService.class.getSimpleName());
-            }));
+        assertTrue(waitForCondition(() -> {
+            boolean noServiceOnServers = Arrays.stream(servers).allMatch(server ->
+                    server.services().serviceDescriptors().stream().noneMatch(desc ->
+                            desc.name().equals(InitThrowingService.class.getSimpleName())
+                    )
+            );
+
+            boolean noServiceOnClients = Arrays.stream(clients).allMatch(client ->
+                    client.services().serviceDescriptors().stream().noneMatch(desc ->
+                            desc.name().equals(InitThrowingService.class.getSimpleName())
+                    )
+            );
+
+            return noServiceOnServers && noServiceOnClients;
+        }, TIMEOUT));
 
         clients[0].services().cancel(NoopService.class.getSimpleName());
 
