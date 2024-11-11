@@ -215,13 +215,9 @@ public class JdbcBinaryBuffer {
 
         Objects.checkFromIndexSize(inpOff, inpLen, inpBuf.length);
 
-        int newLen = Math.max(pos + inpLen, len);
-
-        reallocateIfRequired(newLen);
+        updateLength(Math.max(pos + inpLen, len));
 
         U.arrayCopy(inpBuf, inpOff, arr, pos, inpLen);
-
-        len = newLen;
     }
 
     /**
@@ -250,23 +246,21 @@ public class JdbcBinaryBuffer {
         if (MAX_ARRAY_SIZE - pos < 1)
             throw new IOException("Too much data. Can't write more then " + MAX_ARRAY_SIZE + " bytes.");
 
-        int newLen = Math.max(pos + 1, len);
-
-        reallocateIfRequired(newLen);
+        updateLength(Math.max(pos + 1, len));
 
         arr[pos] = (byte)b;
-
-        len = newLen;
     }
 
     /**
-     * Ensure capacity.
+     * Update data length. Reallocate underlining array if needed.
      *
      * @param newLen The new data length the buffer should be able to hold.
      */
-    private void reallocateIfRequired(int newLen) {
-        if (newLen - arr.length > 0 || isReadOnly)
+    private void updateLength(int newLen) {
+        if (newLen > arr.length || isReadOnly)
             reallocate(capacity(arr.length, newLen));
+
+        len = newLen;
     }
 
     /**
