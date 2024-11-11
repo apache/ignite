@@ -19,6 +19,7 @@ package org.apache.ignite.internal.processors.service;
 import java.util.Optional;
 import java.util.UUID;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.function.Predicate;
 
 import org.apache.ignite.Ignition;
 import org.apache.ignite.cluster.ClusterNode;
@@ -31,6 +32,7 @@ import org.apache.ignite.services.ServiceConfiguration;
 import org.apache.ignite.services.ServiceDeploymentException;
 import org.apache.ignite.services.ServiceDescriptor;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.jetbrains.annotations.NotNull;
 import org.junit.Test;
 
 import static org.apache.ignite.testframework.GridTestUtils.assertThrowsWithCause;
@@ -92,11 +94,13 @@ public class IgniteServiceDeploymentFailureTest extends GridCommonAbstractTest {
      */
     @Test
     public void testFailWhenClassNotFound() throws Exception {
+        final String srvcName = "TestDeploymentService";
+
         IgniteEx srv = startGrid(getConfiguration("server"));
         IgniteEx cli = startClientGrid(1);
 
         ServiceConfiguration svcCfg = new ServiceConfiguration()
-                .setName("TestDeploymentService")
+                .setName(srvcName)
                 .setService(((Class<Service>) extClsLdr.loadClass(NOOP_SERVICE_CLS_NAME)).getDeclaredConstructor().newInstance())
                 .setNodeFilter(((Class<IgnitePredicate<ClusterNode>>) extClsLdr.loadClass(NODE_FILTER_CLS_NAME))
                         .getConstructor(UUID.class)
@@ -105,7 +109,7 @@ public class IgniteServiceDeploymentFailureTest extends GridCommonAbstractTest {
 
         assertThrowsWithCause(() -> cli.services().deploy(svcCfg), ServiceDeploymentException.class);
 
-        assertTrue(waitForCondition(() -> cli.services().serviceDescriptors().isEmpty(), TIMEOUT));
+        assertTrue(waitForCondition(() -> noDescriptorInClusterForService(srvcName), TIMEOUT));
     }
 
     /**
@@ -126,6 +130,7 @@ public class IgniteServiceDeploymentFailureTest extends GridCommonAbstractTest {
         startGrids(SERVER_NODES_CNT);
 
         IgniteEx client = startClientGrid(SERVER_NODES_CNT);
+
         for (int i = 1; i < CLIENT_NODES_CNT; i++)
             startClientGrid(SERVER_NODES_CNT + i);
 
@@ -151,10 +156,7 @@ public class IgniteServiceDeploymentFailureTest extends GridCommonAbstractTest {
                 ServiceDeploymentException.class);
 
         // Wait until the descriptors are updated on all nodes and check that there are no descriptors of an undeployed service.
-        assertTrue(waitForCondition(() -> Ignition.allGrids().stream().allMatch(
-                    node -> node.services().serviceDescriptors().stream().noneMatch(
-                            desc -> desc.name().equals(InitThrowingService.class.getSimpleName()))
-        ), TIMEOUT));
+        assertTrue(waitForCondition(() -> noDescriptorInClusterForService(InitThrowingService.class.getSimpleName()), TIMEOUT));
 
         client.services().cancel(NoopService.class.getSimpleName());
 
@@ -168,6 +170,15 @@ public class IgniteServiceDeploymentFailureTest extends GridCommonAbstractTest {
     }
 
     /**
+     * @param srvcName Service name.
+     */
+    private static boolean noDescriptorInClusterForService(String srvcName) {
+        return Ignition.allGrids().stream().allMatch(
+                node -> node.services().serviceDescriptors().stream().noneMatch(filterByName(srvcName))
+        );
+    }
+
+    /**
      * Retrieves the total instances count of the service.
      *
      * @param igniteEx Ignite instance.
@@ -176,8 +187,18 @@ public class IgniteServiceDeploymentFailureTest extends GridCommonAbstractTest {
      */
     private static int getTotalInstancesCount(IgniteEx igniteEx, String srvcName) {
         Optional<ServiceDescriptor> desc = igniteEx.services().serviceDescriptors().stream().
-                filter(descriptor -> descriptor.name().equals(srvcName)).findAny();
+                filter(filterByName(srvcName)).findAny();
+
         return desc.orElseThrow().topologySnapshot().values().stream().mapToInt(Integer::intValue).sum();
+    }
+
+    /**
+     * Filters descriptors of services with given name.
+     *
+     * @param srvcName Service name.
+     */
+    private static @NotNull Predicate<ServiceDescriptor> filterByName(String srvcName) {
+        return desc -> desc.name().equals(srvcName);
     }
 
     /**
