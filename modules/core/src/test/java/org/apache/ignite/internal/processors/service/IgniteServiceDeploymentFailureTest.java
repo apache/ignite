@@ -89,7 +89,7 @@ public class IgniteServiceDeploymentFailureTest extends GridCommonAbstractTest {
      *  Tests that deploying a service with a missing class causes a ServiceDeploymentException.
      *
      * @throws Exception If failed.
-     * */
+     */
     @Test
     public void testFailWhenClassNotFound() throws Exception {
         IgniteEx srv = startGrid(getConfiguration("server"));
@@ -110,7 +110,7 @@ public class IgniteServiceDeploymentFailureTest extends GridCommonAbstractTest {
 
     /**
      * Service that throws an exception in init.
-     * */
+     */
     private static class InitThrowingService implements Service {
         /** */
         public static final AtomicInteger initCounter = new AtomicInteger();
@@ -124,7 +124,7 @@ public class IgniteServiceDeploymentFailureTest extends GridCommonAbstractTest {
 
     /**
      * NoopService for testing.
-     * */
+     */
     private static class NoopService implements Service {
         /** */
         public static final AtomicInteger initCounter = new AtomicInteger();
@@ -140,15 +140,15 @@ public class IgniteServiceDeploymentFailureTest extends GridCommonAbstractTest {
      * a service which throws an exception during initialization
      *
      * @throws Exception If failed.
-     * */
+     */
     @Test
     public void testServerDescriptorsOfFailedServices() throws Exception {
-        final int NOOP_SRVC_TOTAL_CNT = 20;
-        final int NOOP_SRVC_MAX_PER_NODE_CNT_0 = 2;
-        final int NOOP_SRVC_MAX_PER_NODE_CNT_1 = 4;
+        final int noopSrvcTotalCnt = 20;
+        final int noopSrvcMaxPerNodeCnt0 = 2;
+        final int noopSrvcMaxPerNodeCnt1 = 4;
 
-        final int THROW_SRVC_TOTAL_CNT = 10;
-        final int THROW_SRVC_MAX_PER_NODE_CNT = 2;
+        final int throwSrvcTotalCnt = 10;
+        final int throwSrvcMaxPerNodeCnt = 2;
 
         IgniteEx[] servers = new IgniteEx[SERVER_NODES_CNT];
         for (int i = 0; i < SERVER_NODES_CNT; i++)
@@ -161,43 +161,48 @@ public class IgniteServiceDeploymentFailureTest extends GridCommonAbstractTest {
         ServiceConfiguration noopSrvcCfg = new ServiceConfiguration()
                 .setName(NoopService.class.getSimpleName())
                 .setService(new NoopService())
-                .setTotalCount(NOOP_SRVC_TOTAL_CNT)
-                .setMaxPerNodeCount(NOOP_SRVC_MAX_PER_NODE_CNT_0);
+                .setTotalCount(noopSrvcTotalCnt)
+                .setMaxPerNodeCount(noopSrvcMaxPerNodeCnt0);
 
-        ServiceConfiguration throwSrvcCfg = new ServiceConfiguration()
-                .setName(InitThrowingService.class.getSimpleName())
-                .setService(new InitThrowingService())
-                .setTotalCount(THROW_SRVC_TOTAL_CNT)
-                .setMaxPerNodeCount(THROW_SRVC_MAX_PER_NODE_CNT);
-
+        // Deploying NoopService - should be completed successfully.
         clients[0].services().deploy(noopSrvcCfg);
-        assertEquals(NOOP_SRVC_MAX_PER_NODE_CNT_0 * SERVER_NODES_CNT,
+        // Check that the expected number of instances has been deployed
+        assertEquals(noopSrvcMaxPerNodeCnt0 * SERVER_NODES_CNT,
                 getTotalInstancesCount(clients[0], NoopService.class.getSimpleName()));
 
-        assertThrowsWithCause(() -> clients[0].services().deploy(throwSrvcCfg), ServiceDeploymentException.class);
+        // Deploy InitThrowingService that throws an exception in init - should not be deployed.
+        assertThrowsWithCause(() -> clients[0].services().deploy(new ServiceConfiguration()
+                .setName(InitThrowingService.class.getSimpleName())
+                .setService(new InitThrowingService())
+                .setTotalCount(throwSrvcTotalCnt)
+                .setMaxPerNodeCount(throwSrvcMaxPerNodeCnt)),
+                ServiceDeploymentException.class);
 
+        // Wait until the descriptors are updated on all nodes and check that there are no descriptors of an undeployed service.
         assertTrue(waitForCondition(() -> {
-            boolean noServiceOnServers = Arrays.stream(servers).allMatch(server ->
+            boolean noSrvcOnServers = Arrays.stream(servers).allMatch(server ->
                     server.services().serviceDescriptors().stream().noneMatch(desc ->
                             desc.name().equals(InitThrowingService.class.getSimpleName())
                     )
             );
 
-            boolean noServiceOnClients = Arrays.stream(clients).allMatch(client ->
+            boolean noSrvcOnClients = Arrays.stream(clients).allMatch(client ->
                     client.services().serviceDescriptors().stream().noneMatch(desc ->
                             desc.name().equals(InitThrowingService.class.getSimpleName())
                     )
             );
 
-            return noServiceOnServers && noServiceOnClients;
+            return noSrvcOnServers && noSrvcOnClients;
         }, TIMEOUT));
 
         clients[0].services().cancel(NoopService.class.getSimpleName());
 
-        noopSrvcCfg.setMaxPerNodeCount(NOOP_SRVC_MAX_PER_NODE_CNT_1);
+        // Deploy some additional NoopService instances.
+        noopSrvcCfg.setMaxPerNodeCount(noopSrvcMaxPerNodeCnt1);
         clients[0].services().deploy(noopSrvcCfg);
 
-        assertEquals(NOOP_SRVC_TOTAL_CNT, getTotalInstancesCount(clients[0], NoopService.class.getSimpleName()));
+        // Check that the expected number of NoopService instances has been deployed.
+        assertEquals(noopSrvcTotalCnt, getTotalInstancesCount(clients[0], NoopService.class.getSimpleName()));
     }
 
     /**
