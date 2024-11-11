@@ -25,6 +25,8 @@ import org.apache.calcite.sql.type.SqlTypeName;
 import org.apache.calcite.sql.type.SqlTypeTransforms;
 import org.apache.calcite.sql.util.ReflectiveSqlOperatorTable;
 
+import static org.apache.calcite.sql.type.OperandTypes.SAME_SAME;
+
 /**
  * Operator table that contains Ignite own functions and operators.
  *
@@ -122,6 +124,56 @@ public class IgniteOwnSqlOperatorTable extends ReflectiveSqlOperatorTable {
             null,
             OperandTypes.SAME_SAME,
             SqlFunctionCategory.SYSTEM);
+
+    /** Bitwise '&' of two values. */
+    public static final SqlFunction BITAND =
+        new SqlFunction(
+            "BITAND",
+            SqlKind.OTHER_FUNCTION,
+            ReturnTypes.LEAST_RESTRICTIVE.andThen(SqlTypeTransforms.TO_NULLABLE),
+            null,
+            SAME_SAME,
+            SqlFunctionCategory.NUMERIC);
+
+//    new SqlOperandTypeInference() {
+//                *//** *//*
+//        @Nullable private RelDataType type;
+//
+//                *//** {@inheritDoc} *//*
+//        @Override public void inferOperandTypes(SqlCallBinding binding, RelDataType returnType, RelDataType[] operandTypes) {
+//            if (binding.operands().size() != 2)
+//                return;
+//
+//            if (type == null) {
+//                RelDataTypeFactory tf = binding.getValidator().getTypeFactory();
+//
+//                type = tf.createTypeWithNullability(tf.createSqlType(SqlTypeName.BIGINT), true);
+//            }
+//
+//            for (SqlNode node : binding.operands())
+//                binding.getValidator().setValidatedNodeType(node, type);
+//        }
+//    }
+
+    /** Bitwise '|' of two values. */
+    public static final SqlFunction BITOR =
+        new SqlFunction(
+            "BITOR",
+            SqlKind.OTHER_FUNCTION,
+            ReturnTypes.LEAST_RESTRICTIVE.andThen(SqlTypeTransforms.TO_NULLABLE),
+            null,
+            OperandTypes.SAME_SAME,
+            SqlFunctionCategory.NUMERIC);
+
+    /** Bitwise '^' of two values. */
+    public static final SqlFunction BITXOR =
+        new SqlFunction(
+            "BITXOR",
+            SqlKind.OTHER_FUNCTION,
+            ReturnTypes.LEAST_RESTRICTIVE.andThen(SqlTypeTransforms.TO_NULLABLE),
+            null,
+            OperandTypes.SAME_SAME,
+            SqlFunctionCategory.NUMERIC);
 
     /**
      * Returns the Ignite operator table, creating it if necessary.

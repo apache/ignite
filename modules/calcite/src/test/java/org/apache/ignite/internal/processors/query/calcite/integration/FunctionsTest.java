@@ -28,6 +28,7 @@ import org.apache.ignite.IgniteCache;
 import org.apache.ignite.calcite.CalciteQueryEngineConfiguration;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.internal.processors.query.IgniteSQLException;
+import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.junit.Test;
 
@@ -56,6 +57,83 @@ public class FunctionsTest extends AbstractBasicIntegrationTest {
     @Test
     public void testQueryEngine() {
         assertQuery("SELECT QUERY_ENGINE()").returns(CalciteQueryEngineConfiguration.ENGINE_NAME).check();
+    }
+
+    /** */
+    @Test
+    public void testBitwiseOperations() {
+        doTestBitwiseOperations(bitwiseTestParams(), false);
+
+        // TODO: https://issues.apache.org/jira/browse/IGNITE-23414 - uncomment after fix.
+//        doTestBitwiseOperations(bitwiseTestParams(), true);
+    }
+
+    /** */
+    private void doTestBitwiseOperations(Iterable<List<Object>> params, boolean dynamic) {
+        for (List<Object> paramSet : bitwiseTestParams()) {
+            assert paramSet.size() == 6;
+
+            int idx = 0;
+
+            String op = paramSet.get(idx++).toString();
+            Number p1 = (Number)paramSet.get(idx++);
+            String cast1 = (String)paramSet.get(idx++);
+            Number p2 = (Number)paramSet.get(idx++);
+            String cast2 = (String)paramSet.get(idx++);
+            Object res = paramSet.get(idx++);
+
+            cast1 = cast1 == null ? "" : "::" + cast1;
+            cast2 = cast2 == null ? "" : "::" + cast2;
+
+            if (dynamic)
+                assertQuery("SELECT BIT" + op + "(?" + cast1 + ", ?" + cast2+')').withParams(p1, p2).returns(res).check();
+            else
+                assertQuery("SELECT BIT" + op + '(' + p1 + cast1 + ", " + p2 + cast2 + ')').returns(res).check();
+        }
+    }
+
+    /** Bitwise operation params: operation, param1, cast1, param2, cast2, result. */
+    private Iterable<List<Object>> bitwiseTestParams() {
+        return F.asList(
+            // BITAND
+            F.asList("AND", 1, null, 1, null, 1),
+            F.asList("AND", 1, null, 0, null, 0),
+            F.asList("AND", 0, null, 1, null, 0),
+            F.asList("AND", 1, null, 1, "BIGINT", 1L),
+            F.asList("AND", 1, "TINYINT", 1, "INT", 1),
+            F.asList("AND", 1, "TINYINT", 1, "SMALLINT", (short)1),
+            F.asList("AND", 0, "TINYINT", 0, "TINYINT", (byte)0),
+            F.asList("AND", 1, "TINYINT", 1, "SMALLINT", (short)1),
+            F.asList("AND", 15, null, 7, null, 7),
+            F.asList("AND", -1, null, 1, null, 1),
+            F.asList("AND", (short)32767, null, 65535, null, 32767),
+            // BITOR
+            F.asList("OR", 1, null, 1, null, 1),
+            F.asList("OR", 1, null, 0, null, 1),
+            F.asList("OR", 0, null, 1, null, 1),
+            F.asList("OR", 1, null, 1, "BIGINT", 1L),
+            F.asList("OR", 1, "TINYINT", 1, "INT", 1),
+            F.asList("OR", 1, "TINYINT", 1, "SMALLINT", (short)1),
+            F.asList("OR", 0, "TINYINT", 0, "TINYINT", (byte)0),
+            F.asList("OR", 1, "TINYINT", 1, "SMALLINT", (short)1),
+            F.asList("OR", 8, null, 7, null, 15),
+            F.asList("OR", -1, null, 1, null, -1),
+            F.asList("OR", (short)32767, null, 65535, null, 65535),
+            F.asList("OR", (short)32767, null, 65536, null, 98303),
+            // BITXOR
+            F.asList("XOR", 1, null, 1, null, 0),
+            F.asList("XOR", 1, null, 0, null, 1),
+            F.asList("XOR", 0, null, 1, null, 1),
+            F.asList("XOR", 1, null, 1, "BIGINT", 0L),
+            F.asList("XOR", 1, "TINYINT", 1, "INT", 0),
+            F.asList("XOR", 1, "TINYINT", 1, "SMALLINT", (short)0),
+            F.asList("XOR", 0, "TINYINT", 0, "TINYINT", (byte)0),
+            F.asList("XOR", 1, "TINYINT", 1, "SMALLINT", (short)0),
+            F.asList("XOR", 8, null, 7, null, 15),
+            F.asList("XOR", -1, null, 1, null, -2),
+            F.asList("XOR", (short)32767, null, 65535, null, 32768),
+            F.asList("XOR", (short)32767, null, 65536, null, 98303)
+        );
     }
 
     /** */
