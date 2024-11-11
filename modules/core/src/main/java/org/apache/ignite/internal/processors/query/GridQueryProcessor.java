@@ -3060,7 +3060,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
 
                             if (qry instanceof SqlFieldsQueryEx && ((SqlFieldsQueryEx)qry).isBatched()) {
                                 res = qryEngine.queryBatched(
-                                    QueryContext.of(qry, cliCtx, cancel, qryProps, ctx.resource()),
+                                    QueryContext.of(qry, cliCtx, cancel, qryProps),
                                     schemaName,
                                     qry.getSql(),
                                     ((SqlFieldsQueryEx)qry).batchedArguments()
@@ -3111,7 +3111,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
 
             if (qryEngine != null) {
                 List<List<GridQueryFieldMetadata>> meta = qryEngine.parameterMetaData(
-                    QueryContext.of(qry, cliCtx, ctx.resource()),
+                    QueryContext.of(qry, cliCtx),
                     schemaName,
                     qry.getSql());
 
@@ -3139,7 +3139,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
 
             if (qryEngine != null) {
                 List<List<GridQueryFieldMetadata>> meta = qryEngine.resultSetMetaData(
-                    QueryContext.of(qry, cliCtx, ctx.resource()),
+                    QueryContext.of(qry, cliCtx),
                     schemaName,
                     qry.getSql());
 

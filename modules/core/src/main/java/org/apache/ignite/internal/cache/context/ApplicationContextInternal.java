@@ -21,6 +21,7 @@ import java.util.Collections;
 import java.util.Map;
 import org.apache.ignite.cache.ApplicationContext;
 
+/** */
 public class ApplicationContextInternal implements ApplicationContext, AutoCloseable {
     /** */
     private final ApplicationContextProcessor proc;

@@ -30,6 +30,9 @@ public class ApplicationContextProcessor extends GridProcessorAdapter {
     private final ThreadLocal<ApplicationContext> ctx = new ThreadLocal<>();
 
     /** */
+    private final ApplicationContextProvider appCtxProvider = new Provider();
+
+    /** */
     public ApplicationContextProcessor(GridKernalContext ctx) {
         super(ctx);
     }
@@ -57,11 +60,18 @@ public class ApplicationContextProcessor extends GridProcessorAdapter {
 
     /** @return Provider for application context. */
     public ApplicationContextProvider provider() {
-        return this::applicationContext;
+        return appCtxProvider;
     }
 
     /** Unset context for current thread. */
     public void clean() {
         ctx.remove();
+    }
+
+    /** */
+    private class Provider implements ApplicationContextProvider {
+        @Override public @Nullable ApplicationContext getApplicationContext() {
+            return ctx.get();
+        }
     }
 }
