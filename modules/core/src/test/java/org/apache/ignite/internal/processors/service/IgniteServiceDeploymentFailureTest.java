@@ -110,6 +110,78 @@ public class IgniteServiceDeploymentFailureTest extends GridCommonAbstractTest {
     }
 
     /**
+     * Tests that service descriptors are clear after an attempt of deploying
+     * a service which throws an exception during initialization
+     *
+     * @throws Exception If failed.
+     */
+    @Test
+    public void testServerDescriptorsOfFailedServices() throws Exception {
+        final int noopSrvcTotalCnt = 20;
+        final int noopSrvcMaxPerNodeCnt0 = 2;
+        final int noopSrvcMaxPerNodeCnt1 = 4;
+
+        final int throwSrvcTotalCnt = 10;
+        final int throwSrvcMaxPerNodeCnt = 2;
+
+        startGrids(SERVER_NODES_CNT);
+
+        IgniteEx client = startClientGrid(SERVER_NODES_CNT);
+        for (int i = 1; i < CLIENT_NODES_CNT; i++)
+            startClientGrid(SERVER_NODES_CNT + i);
+
+        ServiceConfiguration noopSrvcCfg = new ServiceConfiguration()
+                .setName(NoopService.class.getSimpleName())
+                .setService(new NoopService())
+                .setTotalCount(noopSrvcTotalCnt)
+                .setMaxPerNodeCount(noopSrvcMaxPerNodeCnt0);
+
+        // Deploying NoopService - should be completed successfully.
+        client.services().deploy(noopSrvcCfg);
+        // Check that the expected number of instances has been deployed
+        assertEquals(noopSrvcMaxPerNodeCnt0 * SERVER_NODES_CNT,
+                getTotalInstancesCount(client, NoopService.class.getSimpleName()));
+
+        // Deploy InitThrowingService that throws an exception in init - should not be deployed.
+        assertThrowsWithCause(() -> client.services().deploy(new ServiceConfiguration()
+                        .setName(InitThrowingService.class.getSimpleName())
+                        .setService(new InitThrowingService())
+                        .setTotalCount(throwSrvcTotalCnt)
+                        .setMaxPerNodeCount(throwSrvcMaxPerNodeCnt)),
+                ServiceDeploymentException.class);
+
+        // Wait until the descriptors are updated on all nodes and check that there are no descriptors of an undeployed service.
+        assertTrue(waitForCondition(() -> {
+            return Ignition.allGrids().stream().allMatch(
+                    node -> node.services().serviceDescriptors().stream().noneMatch(
+                            desc -> desc.name().equals(InitThrowingService.class.getSimpleName()))
+            );
+        }, TIMEOUT));
+
+        client.services().cancel(NoopService.class.getSimpleName());
+
+        // Deploy some additional NoopService instances.
+        noopSrvcCfg.setMaxPerNodeCount(noopSrvcMaxPerNodeCnt1);
+        client.services().deploy(noopSrvcCfg);
+
+        // Check that the expected number of NoopService instances has been deployed.
+        assertEquals(noopSrvcTotalCnt, getTotalInstancesCount(client, NoopService.class.getSimpleName()));
+    }
+
+    /**
+     * Retrieves the total instances count of the service.
+     *
+     * @param igniteEx Ignite instance.
+     * @param srvcName Service name.
+     * @return Total instances count of the service named {@code srvcName} from the given {@code igniteEx} instance.
+     */
+    private static int getTotalInstancesCount(IgniteEx igniteEx, String srvcName) {
+        Optional<ServiceDescriptor> desc = igniteEx.services().serviceDescriptors().stream().
+                filter(descriptor -> descriptor.name().equals(srvcName)).findAny();
+        return desc.orElseThrow().topologySnapshot().values().stream().mapToInt(Integer::intValue).sum();
+    }
+
+    /**
      * Service that throws an exception in init.
      */
     private static class InitThrowingService implements Service {
@@ -134,78 +206,5 @@ public class IgniteServiceDeploymentFailureTest extends GridCommonAbstractTest {
         @Override public void init() throws Exception {
             initCounter.incrementAndGet();
         }
-    }
-
-    /**
-     * Tests that service descriptors are clear after an attempt of deploying
-     * a service which throws an exception during initialization
-     *
-     * @throws Exception If failed.
-     */
-    @Test
-    public void testServerDescriptorsOfFailedServices() throws Exception {
-        final int noopSrvcTotalCnt = 20;
-        final int noopSrvcMaxPerNodeCnt0 = 2;
-        final int noopSrvcMaxPerNodeCnt1 = 4;
-
-        final int throwSrvcTotalCnt = 10;
-        final int throwSrvcMaxPerNodeCnt = 2;
-
-        startGrids(SERVER_NODES_CNT);
-
-        IgniteEx[] clients = new IgniteEx[CLIENT_NODES_CNT];
-        for (int i = 0; i < clients.length; i++)
-            clients[i] = startClientGrid(SERVER_NODES_CNT + i);
-
-        ServiceConfiguration noopSrvcCfg = new ServiceConfiguration()
-                .setName(NoopService.class.getSimpleName())
-                .setService(new NoopService())
-                .setTotalCount(noopSrvcTotalCnt)
-                .setMaxPerNodeCount(noopSrvcMaxPerNodeCnt0);
-
-        // Deploying NoopService - should be completed successfully.
-        clients[0].services().deploy(noopSrvcCfg);
-        // Check that the expected number of instances has been deployed
-        assertEquals(noopSrvcMaxPerNodeCnt0 * SERVER_NODES_CNT,
-                getTotalInstancesCount(clients[0], NoopService.class.getSimpleName()));
-
-        // Deploy InitThrowingService that throws an exception in init - should not be deployed.
-        assertThrowsWithCause(() -> clients[0].services().deploy(new ServiceConfiguration()
-                        .setName(InitThrowingService.class.getSimpleName())
-                        .setService(new InitThrowingService())
-                        .setTotalCount(throwSrvcTotalCnt)
-                        .setMaxPerNodeCount(throwSrvcMaxPerNodeCnt)),
-                ServiceDeploymentException.class);
-
-        // Wait until the descriptors are updated on all nodes and check that there are no descriptors of an undeployed service.
-        assertTrue(waitForCondition(() -> {
-            return Ignition.allGrids().stream().allMatch(
-                    server -> server.services().serviceDescriptors().stream().noneMatch(
-                            desc -> desc.name().equals(InitThrowingService.class.getSimpleName()))
-            );
-        }, TIMEOUT));
-
-        clients[0].services().cancel(NoopService.class.getSimpleName());
-
-        // Deploy some additional NoopService instances.
-        noopSrvcCfg.setMaxPerNodeCount(noopSrvcMaxPerNodeCnt1);
-        clients[0].services().deploy(noopSrvcCfg);
-
-        // Check that the expected number of NoopService instances has been deployed.
-        assertEquals(noopSrvcTotalCnt, getTotalInstancesCount(clients[0], NoopService.class.getSimpleName()));
-    }
-
-    /**
-     * Retrieves the total instances count of the service.
-     *
-     * @param igniteEx Ignite instance.
-     * @param srvcName Service name.
-     * @return Total instances count of the service named {@code srvcName} from the given {@code igniteEx} instance.
-     */
-    private static int getTotalInstancesCount(IgniteEx igniteEx, String srvcName) {
-        Optional<ServiceDescriptor> desc = igniteEx.services().serviceDescriptors().stream().
-                filter(descriptor -> descriptor.name().equals(srvcName)).findAny();
-        assertTrue(desc.isPresent());
-        return desc.get().topologySnapshot().values().stream().mapToInt(Integer::intValue).sum();
     }
 }
