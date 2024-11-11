@@ -22,6 +22,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.UUID;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Consumer;
 import org.apache.calcite.DataContext;
@@ -105,6 +106,9 @@ public class ExecutionContext<Row> extends AbstractQueryContext implements DataC
 
     /** */
     private final long startTs;
+
+    /** Objects to call UDF with injected resources. */
+    private final Map<String, Object> funcTargets = new ConcurrentHashMap<>();
 
     /** */
     private Object[] correlations = new Object[16];
@@ -352,20 +356,27 @@ public class ExecutionContext<Row> extends AbstractQueryContext implements DataC
     }
 
     /**
-     * Inject resources to object contained a user defined function.
+     * Create an object contained a user defined function and inject resources.
      *
-     * @param o Object to inject.
+     * @param targetCls Classname of the object.
      * @return Object with injected resources.
      */
-    public Object inject(Object o) {
-        try {
-            unwrap(GridResourceProcessor.class).injectToUserDefinedFunction(o);
+    public Object target(String targetCls) {
+        return funcTargets.computeIfAbsent(targetCls, ignore -> {
+            try {
+                Class<?> funcCls = getClass().getClassLoader().loadClass(targetCls);
 
-            return o;
-        }
-        catch (Exception e) {
-            throw new IgniteException(e);
-        }
+                Object target = funcCls.getConstructor().newInstance();
+
+                unwrap(GridResourceProcessor.class).injectToUserDefinedFunction(target);
+
+                return target;
+            }
+            catch (Exception e) {
+                throw new IgniteException("Failed to construct object for UDF. " +
+                    "Class " + targetCls + " must have public zero-args constructor.", e);
+            }
+        });
     }
 
     /** {@inheritDoc} */

@@ -57,19 +57,14 @@ public class ReflectiveCallNotNullImplementor implements NotNullImplementor {
             callExpr = Expressions.call(method, translatedOperands);
 
         else {
-            Method injectMethod = Types.lookupMethod(ExecutionContext.class, "inject", Object.class);
+            final Expression target = Expressions.convert_(
+                Expressions.call(
+                    translator.getRoot(),
+                    Types.lookupMethod(ExecutionContext.class, "target", String.class),
+                    Expressions.constant(method.getDeclaringClass().getName())),
+                method.getDeclaringClass());
 
-            // The UDF class must have a public zero-args constructor.
-            // Assume that the validator checked already.
-            final Expression target = Expressions.call(
-                translator.getRoot(),
-                injectMethod,
-                Expressions.new_(method.getDeclaringClass()));
-
-            callExpr = Expressions.call(
-                Expressions.convert_(target, method.getDeclaringClass()),
-                method,
-                translatedOperands);
+            callExpr = Expressions.call(target, method, translatedOperands);
         }
         if (!containsCheckedException(method))
             return callExpr;
