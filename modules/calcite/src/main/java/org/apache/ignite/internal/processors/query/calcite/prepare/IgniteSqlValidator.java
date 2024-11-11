@@ -429,9 +429,6 @@ public class IgniteSqlValidator extends SqlValidatorImpl {
             case GROUP_CONCAT:
             case LISTAGG:
             case STRING_AGG:
-            case BIT_AND:
-            case BIT_OR:
-            case BIT_XOR:
                 return;
             default:
                 throw newValidationError(call,

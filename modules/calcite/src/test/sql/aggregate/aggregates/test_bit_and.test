@@ -5,18 +5,22 @@
 
 # test on scalar values
 query II
-SELECT BIT_AND(3), BIT_AND(NULL::INT)
+SELECT BIT_AND(3), BIT_AND(NULL)
 ----
 3
 NULL
 
+# test on a sequence
+statement ok
+CREATE SEQUENCE seq;
+
 query I
-SELECT BIT_AND(1)
+SELECT BIT_AND(nextval('seq'))
 ----
 1
 
 query I
-SELECT BIT_AND(2)
+SELECT BIT_AND(nextval('seq'))
 ----
 2
 
@@ -27,12 +31,13 @@ CREATE TABLE integers(i INTEGER);
 statement ok
 INSERT INTO integers VALUES (3), (7), (15), (31), (3), (15)
 
-query III
-SELECT BIT_AND(i), BIT_AND(1), BIT_AND(DISTINCT i) FROM integers
+query IIII
+SELECT BIT_AND(i), BIT_AND(1), BIT_AND(DISTINCT i), BIT_AND(NULL) FROM integers
 ----
 3
 1
 3
+NULL
 
 # test on an empty set
 query I

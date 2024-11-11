@@ -5,18 +5,22 @@
 
 # test on scalar values
 query II
-SELECT BIT_OR(3), BIT_OR(NULL::INT)
+SELECT BIT_OR(3), BIT_OR(NULL)
 ----
 3
 NULL
 
+# test on a sequence
+statement ok
+CREATE SEQUENCE seq;
+
 query I
-SELECT BIT_OR(1)
+SELECT BIT_OR(nextval('seq'))
 ----
 1
 
 query I
-SELECT BIT_OR(2)
+SELECT BIT_OR(nextval('seq'))
 ----
 2
 
@@ -27,12 +31,13 @@ CREATE TABLE integers(i INTEGER);
 statement ok
 INSERT INTO integers VALUES (3), (7), (15), (31), (3), (15)
 
-query III
-SELECT BIT_OR(i), BIT_OR(1), BIT_OR(DISTINCT i) FROM integers
+query IIII
+SELECT BIT_OR(i), BIT_OR(1), BIT_OR(DISTINCT i), BIT_OR(NULL) FROM integers
 ----
 31
 1
 31
+NULL
 
 # test on an empty set
 query I

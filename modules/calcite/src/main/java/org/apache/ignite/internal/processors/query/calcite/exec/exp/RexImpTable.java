@@ -251,6 +251,7 @@ import static org.apache.ignite.internal.processors.query.calcite.sql.fun.Ignite
 import static org.apache.ignite.internal.processors.query.calcite.sql.fun.IgniteOwnSqlOperatorTable.QUERY_ENGINE;
 import static org.apache.ignite.internal.processors.query.calcite.sql.fun.IgniteOwnSqlOperatorTable.SYSTEM_RANGE;
 import static org.apache.ignite.internal.processors.query.calcite.sql.fun.IgniteOwnSqlOperatorTable.TYPEOF;
+import static org.apache.ignite.internal.processors.query.calcite.util.IgniteMethod.SKIP_FIRST_ARGUMENT;
 
 /**
  * Contains implementations of Rex operators as Java code.
@@ -568,9 +569,9 @@ public class RexImpTable {
         // implementation required.
         defineMethod(IS_NOT_DISTINCT_FROM, IgniteMethod.IS_NOT_DISTINCT_FROM.method(), NullPolicy.NONE);
 
-        defineMethod(BITAND, BuiltInMethod.BIT_AND.method, NullPolicy.ALL);
-        defineMethod(BITOR, BuiltInMethod.BIT_OR.method, NullPolicy.ALL);
-        defineMethod(BITXOR, BuiltInMethod.BIT_XOR.method, NullPolicy.ALL);
+        map.put(BITAND, new BitwiseImplementor(BuiltInMethod.BIT_AND.method));
+        map.put(BITOR, new BitwiseImplementor(BuiltInMethod.BIT_OR.method));
+        map.put(BITXOR, new BitwiseImplementor(BuiltInMethod.BIT_XOR.method));
     }
 
     /** */
@@ -1313,6 +1314,46 @@ public class RexImpTable {
         }
     }
 
+    /** */
+    private static class BitwiseImplementor extends AbstractRexCallImplementor {
+        /** */
+        private final Method method;
+
+        /** */
+        private BitwiseImplementor(Method method) {
+            super("bitwise_" + method.getName(), NullPolicy.NONE, false);
+
+            this.method = method;
+        }
+
+        /** {@inheritDoc} */
+        @Override Expression implementSafe(RexToLixTranslator translator, RexCall call, List<Expression> argValList) {
+            assert call.getOperands().size() == 2 : "Unexpected size of a bitwise call operands: " + call.getOperands().size();
+            assert argValList.size() == 2 : "Unexpected size of a bitwise call argVals: " + argValList.size();
+
+            List<Expression> castedArgs = new ArrayList<>(argValList.size());
+
+            for (int i = 0; i < 2; ++i) {
+                if (call.getOperands().get(i).getType().getSqlTypeName() == SqlTypeName.NULL) {
+                    int otherIdx = i ^ 1;
+
+                    // Other is null too.
+                    if(call.getOperands().get(otherIdx).getType().getSqlTypeName() == SqlTypeName.NULL)
+                        return Expressions.constant(null);
+
+                    return argValList.get(otherIdx);
+                }
+                else {
+                    Expression argExpr = argValList.get(i);
+
+                    castedArgs.add(Primitive.isBox(argExpr.getType()) ? Expressions.unbox(argExpr) : argExpr);
+                }
+            }
+
+            return Expressions.call(method, castedArgs);
+        }
+    }
+
     /** Implementor for the {@code EXTRACT(unit FROM datetime)} function. */
     private static class ExtractImplementor extends AbstractRexCallImplementor {
         /** */
@@ -1724,7 +1765,7 @@ public class RexImpTable {
     /** */
     private static CallImplementor typeOfImplementor() {
         return createImplementor((translator, call, translatedOperands) -> {
-            Method method = IgniteMethod.SKIP_FIRST_ARGUMENT.method();
+            Method method = SKIP_FIRST_ARGUMENT.method();
 
             RexNode operand = call.getOperands().get(0);
             String operandType = operand.getType().toString();

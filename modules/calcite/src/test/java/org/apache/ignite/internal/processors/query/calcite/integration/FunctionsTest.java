@@ -62,40 +62,60 @@ public class FunctionsTest extends AbstractBasicIntegrationTest {
     /** */
     @Test
     public void testBitwiseOperations() {
-        doTestBitwiseOperations(bitwiseTestParams(), false);
+        doTestBitwiseOperations(false);
 
-        // TODO: https://issues.apache.org/jira/browse/IGNITE-23414 - uncomment after fix.
-//        doTestBitwiseOperations(bitwiseTestParams(), true);
+        doTestBitwiseOperations(true);
     }
 
     /** */
-    private void doTestBitwiseOperations(Iterable<List<Object>> params, boolean dynamic) {
-        for (List<Object> paramSet : bitwiseTestParams()) {
+    private void doTestBitwiseOperations(boolean dynamic) {
+        for (List<Object> paramSet : bitwiseParams()) {
             assert paramSet.size() == 6;
 
             int idx = 0;
 
             String op = paramSet.get(idx++).toString();
-            Number p1 = (Number)paramSet.get(idx++);
+            Object p1 = paramSet.get(idx++);
             String cast1 = (String)paramSet.get(idx++);
-            Number p2 = (Number)paramSet.get(idx++);
+            Object p2 = paramSet.get(idx++);
             String cast2 = (String)paramSet.get(idx++);
             Object res = paramSet.get(idx++);
 
             cast1 = cast1 == null ? "" : "::" + cast1;
             cast2 = cast2 == null ? "" : "::" + cast2;
 
-            if (dynamic)
-                assertQuery("SELECT BIT" + op + "(?" + cast1 + ", ?" + cast2+')').withParams(p1, p2).returns(res).check();
-            else
-                assertQuery("SELECT BIT" + op + '(' + p1 + cast1 + ", " + p2 + cast2 + ')').returns(res).check();
+            log.info("Op: " + op + ", p1=" + p1 + ", p2=" + p2 + ", expected=" + res);
+
+            if (dynamic) {
+                String sql = "SELECT BIT" + op + "(?" + cast1 + ", ?" + cast2 + ')';
+
+                if (res instanceof Exception)
+                    assertThrows(sql, (Class<? extends Exception>)res.getClass(), ((Exception)res).getMessage(), p1, p2);
+                else
+                    assertQuery(sql).withParams(p1, p2).returns(res).check();
+            }
+            else {
+                String sql = "SELECT BIT" + op + '(' + p1 + cast1 + ", " + p2 + cast2 + ')';
+
+                if (res instanceof Exception)
+                    assertThrows(sql, (Class<? extends Exception>)res.getClass(), ((Exception)res).getMessage());
+                else
+                    assertQuery(sql).returns(res).check();
+            }
         }
     }
 
     /** Bitwise operation params: operation, param1, cast1, param2, cast2, result. */
-    private Iterable<List<Object>> bitwiseTestParams() {
+    private Iterable<List<Object>> bitwiseParams() {
         return F.asList(
             // BITAND
+            F.asList("AND", null, null, 1, null, 1),
+//            F.asList("AND", 1, null, 1.0, null, new SqlValidatorException("Cannot apply 'BITAND' to arguments of type", null)),
+//            F.asList("AND", 1.0, null, 1, null, new SqlValidatorException("Cannot apply 'BITAND' to arguments of type", null)),
+//            F.asList("AND", 1, null, 1.0f, null, new SqlValidatorException("Cannot apply 'BITAND' to arguments of type", null)),
+//            F.asList("AND", 1.0f, null, 1, null, new SqlValidatorException("Cannot apply 'BITAND' to arguments of type", null)),
+//            F.asList("AND", null, null, null, null, null),
+//            F.asList("AND", null, null, 1, null, 1),
             F.asList("AND", 1, null, 1, null, 1),
             F.asList("AND", 1, null, 0, null, 0),
             F.asList("AND", 0, null, 1, null, 0),
@@ -108,6 +128,10 @@ public class FunctionsTest extends AbstractBasicIntegrationTest {
             F.asList("AND", -1, null, 1, null, 1),
             F.asList("AND", (short)32767, null, 65535, null, 32767),
             // BITOR
+            F.asList("OR", 1, null, 1.0, null, new SqlValidatorException("Cannot apply 'BITOR' to arguments of type", null)),
+            F.asList("OR", 1.0, null, 1, null, new SqlValidatorException("Cannot apply 'BITOR' to arguments of type", null)),
+            F.asList("OR", 1, null, 1.0f, null, new SqlValidatorException("Cannot apply 'BITOR' to arguments of type", null)),
+            F.asList("OR", 1.0f, null, 1, null, new SqlValidatorException("Cannot apply 'BITOR' to arguments of type", null)),
             F.asList("OR", 1, null, 1, null, 1),
             F.asList("OR", 1, null, 0, null, 1),
             F.asList("OR", 0, null, 1, null, 1),
@@ -121,6 +145,10 @@ public class FunctionsTest extends AbstractBasicIntegrationTest {
             F.asList("OR", (short)32767, null, 65535, null, 65535),
             F.asList("OR", (short)32767, null, 65536, null, 98303),
             // BITXOR
+            F.asList("XOR", 1, null, 1.0, null, new SqlValidatorException("Cannot apply 'BITXOR' to arguments of type", null)),
+            F.asList("XOR", 1.0, null, 1, null, new SqlValidatorException("Cannot apply 'BITXOR' to arguments of type", null)),
+            F.asList("XOR", 1, null, 1.0f, null, new SqlValidatorException("Cannot apply 'BITXOR' to arguments of type", null)),
+            F.asList("XOR", 1.0f, null, 1, null, new SqlValidatorException("Cannot apply 'BITXOR' to arguments of type", null)),
             F.asList("XOR", 1, null, 1, null, 0),
             F.asList("XOR", 1, null, 0, null, 1),
             F.asList("XOR", 0, null, 1, null, 1),

@@ -309,10 +309,5 @@ public class IgniteStdSqlOperatorTable extends ReflectiveSqlOperatorTable {
         register(SqlStdOperatorTable.CURRENT_DATE);
         register(SqlStdOperatorTable.LOCALTIME);
         register(SqlStdOperatorTable.LOCALTIMESTAMP);
-
-        // Bit wise operations.
-        register(SqlStdOperatorTable.BIT_AND);
-        register(SqlStdOperatorTable.BIT_OR);
-        register(SqlStdOperatorTable.BIT_XOR);
     }
 }
