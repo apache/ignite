@@ -685,7 +685,6 @@ public class JdbcBlobTest {
         }
         catch (SQLException e) {
             // No-op.
-            System.out.println();
         }
     }
 
