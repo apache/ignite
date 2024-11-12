@@ -2211,26 +2211,22 @@ public class TcpDiscoverySelfTest extends GridCommonAbstractTest {
      */
     @Test
     public void testFailedNodeRestoreConnection() throws Exception {
-        assertFalse(checkRestoreConnection());
+        checkRestoreConnection(false);
 
         setLoggerDebugLevel();
 
-        assertTrue(checkRestoreConnection());
+        checkRestoreConnection(true);
     }
 
     /** @throws Exception If failed.*/
-    private boolean checkRestoreConnection() throws Exception {
-        ListeningTestLogger testLog = new ListeningTestLogger(log);
+    private void checkRestoreConnection(boolean logMsgExpected) throws Exception {
+        testLog = new ListeningTestLogger(log);
 
         LogListener lsnr = LogListener
                 .matches(Pattern.compile("Failed to ping node \\[.*\\]\\. Reached the timeout"))
                 .build();
 
         testLog.registerListener(lsnr);
-
-        boolean result;
-
-        this.testLog = testLog;
 
         try {
             TestRestoreConnectedSpi.startTest = false;
@@ -2263,13 +2259,11 @@ public class TcpDiscoverySelfTest extends GridCommonAbstractTest {
                 }
             }
 
-            result = lsnr.check();
+            assertEquals(logMsgExpected, lsnr.check());
         }
         finally {
             stopAllGrids();
         }
-
-        return result;
     }
 
     /**
@@ -2279,17 +2273,15 @@ public class TcpDiscoverySelfTest extends GridCommonAbstractTest {
     public void testCheckRingLatency() throws Exception {
         int hops = 1;
 
-        ListeningTestLogger testLog = new ListeningTestLogger(log);
+        testLog = new ListeningTestLogger(log);
 
         // We should discard ring check latency on server node.
         LogListener lsnr = LogListener.matches("Latency check has been discarded").times(hops).build();
 
         testLog.registerListener(lsnr);
 
-        this.testLog = testLog;
-
         try {
-            IgniteEx node = startGrid(getConfiguration("server").setGridLogger(testLog));
+            IgniteEx node = startGrid(getConfiguration("server"));
 
             startGrid(getConfiguration("client").setClientMode(true));
 
