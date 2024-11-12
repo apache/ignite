@@ -19,7 +19,6 @@ This module contains smoke tests that checks that services work
 
 from ignitetest.services.ignite import IgniteService
 from ignitetest.services.ignite_app import IgniteApplicationService
-from ignitetest.services.spark import SparkService
 from ignitetest.services.utils.ignite_configuration.discovery import from_ignite_cluster
 from ignitetest.services.utils.ignite_configuration import IgniteConfiguration
 from ignitetest.services.zk.zookeeper import ZookeeperService
@@ -66,15 +65,6 @@ class SmokeServicesTest(IgniteTest):
         app.start()
         app.stop()
         ignite.stop()
-
-    @cluster(num_nodes=2)
-    def test_spark_start_stop(self):
-        """
-        Test that SparkService correctly start and stop
-        """
-        spark = SparkService(self.test_context, num_nodes=2)
-        spark.start()
-        spark.stop()
 
     @cluster(num_nodes=3)
     def test_zk_start_stop(self):

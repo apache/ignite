@@ -106,7 +106,8 @@ public class DataStorageConfiguration implements Serializable {
     /** Lock default wait time, 10 sec. */
     public static final int DFLT_LOCK_WAIT_TIME = 10 * 1000;
 
-    /** */
+    /** @deprecated Will be removed in upcoming releases. */
+    @Deprecated
     public static final boolean DFLT_METRICS_ENABLED = false;
 
     /** Default amount of sub intervals to calculate rate-based metric. */
@@ -162,6 +163,9 @@ public class DataStorageConfiguration implements Serializable {
 
     /** Default change data capture directory. */
     public static final String DFLT_WAL_CDC_PATH = "db/wal/cdc";
+
+    /** Default change data capture directory maximum size. */
+    public static final long DFLT_CDC_WAL_DIRECTORY_MAX_SIZE = 0;
 
     /** Default path (relative to working directory) of binary metadata folder */
     public static final String DFLT_BINARY_METADATA_PATH = "db/binary_meta";
@@ -244,7 +248,15 @@ public class DataStorageConfiguration implements Serializable {
     @IgniteExperimental
     private String cdcWalPath = DFLT_WAL_CDC_PATH;
 
-    /** Metrics enabled flag. */
+    /** Change Data Capture directory size limit. */
+    @IgniteExperimental
+    private long cdcWalDirMaxSize = DFLT_CDC_WAL_DIRECTORY_MAX_SIZE;
+
+    /**
+     * Metrics enabled flag.
+     * @deprecated Will be removed in upcoming releases.
+     */
+    @Deprecated
     private boolean metricsEnabled = DFLT_METRICS_ENABLED;
 
     /** Wal mode. */
@@ -797,11 +809,39 @@ public class DataStorageConfiguration implements Serializable {
     }
 
     /**
+     * Sets the {@link #getCdcWalPath CDC directory} maximum size in bytes.
+     *
+     * @return CDC directory maximum size in bytes.
+     */
+    @IgniteExperimental
+    public long getCdcWalDirectoryMaxSize() {
+        return cdcWalDirMaxSize;
+    }
+
+    /**
+     * Sets the CDC directory maximum size in bytes. Zero or negative means no limit. Creation of segment CDC link
+     * will be skipped when the total size of CDC files in the {@link #getCdcWalPath directory} exceeds the limit.
+     * The CDC application will log an error due to a gap in wal files sequence. Note that cache changes will be lost.
+     * Default is no limit.
+     *
+     * @param cdcWalDirMaxSize CDC directory maximum size in bytes.
+     * @return {@code this} for chaining.
+     */
+    @IgniteExperimental
+    public DataStorageConfiguration setCdcWalDirectoryMaxSize(long cdcWalDirMaxSize) {
+        this.cdcWalDirMaxSize = cdcWalDirMaxSize;
+
+        return this;
+    }
+
+    /**
      * Gets flag indicating whether persistence metrics collection is enabled.
      * Default value is {@link #DFLT_METRICS_ENABLED}.
      *
      * @return Metrics enabled flag.
+     * @deprecated Will be removed in upcoming releases.
      */
+    @Deprecated
     public boolean isMetricsEnabled() {
         return metricsEnabled;
     }
@@ -811,7 +851,9 @@ public class DataStorageConfiguration implements Serializable {
      *
      * @param metricsEnabled Metrics enabled flag.
      * @return {@code this} for chaining.
+     * @deprecated Will be removed in upcoming releases.
      */
+    @Deprecated
     public DataStorageConfiguration setMetricsEnabled(boolean metricsEnabled) {
         this.metricsEnabled = metricsEnabled;
 
@@ -1297,7 +1339,7 @@ public class DataStorageConfiguration implements Serializable {
      * @return {@code this} for chaining.
      */
     public DataStorageConfiguration setDefragmentationThreadPoolSize(int defragmentationThreadPoolSize) {
-        A.ensure(defragmentationThreadPoolSize > 1, "Defragmentation thread pool size must be greater or equal to 1.");
+        A.ensure(defragmentationThreadPoolSize > 0, "Defragmentation thread pool size must be greater or equal to 1.");
 
         this.defragmentationThreadPoolSize = defragmentationThreadPoolSize;
 

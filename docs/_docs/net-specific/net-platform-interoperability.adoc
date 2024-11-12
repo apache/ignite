@@ -183,7 +183,6 @@ The following Ignite.NET functionality is not supported when there is at least o
 * Continuous Queries with filter
 * ICache.Invoke methods
 * ICache.LoadCache with filter
-* Services
 * IMessaging.RemoteListen
 * IEvents.RemoteQuery
 

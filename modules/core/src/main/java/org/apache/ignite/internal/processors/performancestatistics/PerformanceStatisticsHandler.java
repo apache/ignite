@@ -76,6 +76,30 @@ public interface PerformanceStatisticsHandler {
         long physicalReads);
 
     /**
+     * Count of rows processed by query.
+     *
+     * @param nodeId Node id.
+     * @param type Cache query type.
+     * @param qryNodeId Originating node id.
+     * @param id Query id.
+     * @param action Action with rows.
+     * @param rows Number of rows processed.
+     */
+    void queryRows(UUID nodeId, GridCacheQueryType type, UUID qryNodeId, long id, String action, long rows);
+
+    /**
+     * Custom query property.
+     *
+     * @param nodeId Node id.
+     * @param type Cache query type.
+     * @param qryNodeId Originating node id.
+     * @param id Query id.
+     * @param name Query property name.
+     * @param val Query property value.
+     */
+    void queryProperty(UUID nodeId, GridCacheQueryType type, UUID qryNodeId, long id, String name, String val);
+
+    /**
      * @param nodeId Node id.
      * @param sesId Session id.
      * @param taskName Task name.

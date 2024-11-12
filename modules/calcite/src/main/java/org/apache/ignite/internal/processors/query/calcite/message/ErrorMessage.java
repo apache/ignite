@@ -21,6 +21,8 @@ import java.nio.ByteBuffer;
 import java.util.UUID;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.GridDirectTransient;
+import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
+import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.plugin.extensions.communication.MessageReader;
 import org.apache.ignite.plugin.extensions.communication.MessageWriter;
 
@@ -161,13 +163,13 @@ public class ErrorMessage implements MarshalableMessage {
     }
 
     /** {@inheritDoc} */
-    @Override public void prepareMarshal(MarshallingContext ctx) throws IgniteCheckedException {
-        errBytes = ctx.marshal(err);
+    @Override public void prepareMarshal(GridCacheSharedContext<?, ?> ctx) throws IgniteCheckedException {
+        errBytes = U.marshal(ctx, err);
     }
 
     /** {@inheritDoc} */
-    @Override public void prepareUnmarshal(MarshallingContext ctx) throws IgniteCheckedException {
+    @Override public void prepareUnmarshal(GridCacheSharedContext<?, ?> ctx) throws IgniteCheckedException {
         if (errBytes != null)
-            err = ctx.unmarshal(errBytes);
+            err = U.unmarshal(ctx, errBytes, U.resolveClassLoader(ctx.gridConfig()));
     }
 }

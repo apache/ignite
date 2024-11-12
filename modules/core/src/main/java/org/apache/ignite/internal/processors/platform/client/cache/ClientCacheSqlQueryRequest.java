@@ -31,7 +31,7 @@ import org.apache.ignite.internal.processors.platform.client.tx.ClientTxAwareReq
  * Sql query request.
  */
 @SuppressWarnings("unchecked")
-public class ClientCacheSqlQueryRequest extends ClientCacheDataRequest implements ClientTxAwareRequest {
+public class ClientCacheSqlQueryRequest extends ClientCacheQueryRequest implements ClientTxAwareRequest {
     /** Query. */
     private final SqlQuery qry;
 
@@ -54,7 +54,7 @@ public class ClientCacheSqlQueryRequest extends ClientCacheDataRequest implement
 
     /** {@inheritDoc} */
     @Override public ClientResponse process(ClientConnectionContext ctx) {
-        IgniteCache cache = cache(ctx);
+        IgniteCache<Object, Object> cache = cache(ctx);
 
         ctx.incrementCursors();
 

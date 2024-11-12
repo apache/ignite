@@ -36,37 +36,35 @@ public class IgniteSQLColumnConstraintsTest extends AbstractIndexingCommonTest {
     @Override protected void beforeTestsStarted() throws Exception {
         startGrid(0);
 
-        String mvccQry = mvccEnabled() ? " WITH \"atomicity=transactional_snapshot\"" : "";
-
-        runSQL("CREATE TABLE varchar_table(id INT PRIMARY KEY, str VARCHAR(5))" + mvccQry);
+        runSQL("CREATE TABLE varchar_table(id INT PRIMARY KEY, str VARCHAR(5))");
 
         execSQL("INSERT INTO varchar_table VALUES(?, ?)", 1, "12345");
 
         checkSQLResults("SELECT * FROM varchar_table WHERE id = 1", 1, "12345");
 
-        runSQL("CREATE TABLE decimal_table(id INT PRIMARY KEY, val DECIMAL(4, 2))" + mvccQry);
+        runSQL("CREATE TABLE decimal_table(id INT PRIMARY KEY, val DECIMAL(4, 2))");
 
         execSQL("INSERT INTO decimal_table VALUES(?, ?)", 1, 12.34);
 
         checkSQLResults("SELECT * FROM decimal_table WHERE id = 1", 1, BigDecimal.valueOf(12.34));
 
-        runSQL("CREATE TABLE char_table(id INT PRIMARY KEY, str CHAR(5))" + mvccQry);
+        runSQL("CREATE TABLE char_table(id INT PRIMARY KEY, str CHAR(5))");
 
         execSQL("INSERT INTO char_table VALUES(?, ?)", 1, "12345");
 
         checkSQLResults("SELECT * FROM char_table WHERE id = 1", 1, "12345");
 
-        runSQL("CREATE TABLE decimal_table_4(id INT PRIMARY KEY, field DECIMAL(4, 2))" + mvccQry);
+        runSQL("CREATE TABLE decimal_table_4(id INT PRIMARY KEY, field DECIMAL(4, 2))");
 
-        runSQL("CREATE TABLE char_table_2(id INT PRIMARY KEY, field INTEGER)" + mvccQry);
+        runSQL("CREATE TABLE char_table_2(id INT PRIMARY KEY, field INTEGER)");
 
-        runSQL("CREATE TABLE decimal_table_2(id INT PRIMARY KEY, field INTEGER)" + mvccQry);
+        runSQL("CREATE TABLE decimal_table_2(id INT PRIMARY KEY, field INTEGER)");
 
-        runSQL("CREATE TABLE char_table_3(id INT PRIMARY KEY, field CHAR(5), field2 INTEGER)" + mvccQry);
+        runSQL("CREATE TABLE char_table_3(id INT PRIMARY KEY, field CHAR(5), field2 INTEGER)");
 
-        runSQL("CREATE TABLE decimal_table_3(id INT PRIMARY KEY, field DECIMAL(4, 2), field2 INTEGER)" + mvccQry);
+        runSQL("CREATE TABLE decimal_table_3(id INT PRIMARY KEY, field DECIMAL(4, 2), field2 INTEGER)");
 
-        runSQL("CREATE TABLE char_table_4(id INT PRIMARY KEY, field CHAR(5))" + mvccQry);
+        runSQL("CREATE TABLE char_table_4(id INT PRIMARY KEY, field CHAR(5))");
     }
 
     /**
@@ -370,10 +368,5 @@ public class IgniteSQLColumnConstraintsTest extends AbstractIndexingCommonTest {
 
         for (int i = 0; i < args.length; i++)
             assertTrue(args[i] + " != " + row.get(i), Objects.equals(args[i], row.get(i)));
-    }
-
-    /** */
-    protected boolean mvccEnabled() {
-        return false;
     }
 }

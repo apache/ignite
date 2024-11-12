@@ -48,13 +48,10 @@ import org.jetbrains.annotations.Nullable;
  */
 public class GridNearTxRemote extends GridDistributedTxRemoteAdapter {
     /** Evicted keys. */
-    private Collection<IgniteTxKey> evicted = new LinkedList<>();
+    private final Collection<IgniteTxKey> evicted = new LinkedList<>();
 
     /** Near node ID. */
-    private UUID nearNodeId;
-
-    /** Near transaction ID. */
-    private GridCacheVersion nearXidVer;
+    private final UUID nearNodeId;
 
     /** Owned versions. */
     private Map<IgniteTxKey, GridCacheVersion> owned;
@@ -83,7 +80,7 @@ public class GridNearTxRemote extends GridDistributedTxRemoteAdapter {
      * @throws IgniteCheckedException If unmarshalling failed.
      */
     public GridNearTxRemote(
-        GridCacheSharedContext ctx,
+        GridCacheSharedContext<?, ?> ctx,
         AffinityTopologyVersion topVer,
         ClassLoader ldr,
         UUID nodeId,
@@ -125,8 +122,7 @@ public class GridNearTxRemote extends GridDistributedTxRemoteAdapter {
 
         int writeSize = writeEntries != null ? Math.max(txSize, writeEntries.size()) : txSize;
 
-        txState = new IgniteTxRemoteStateImpl(Collections.<IgniteTxKey, IgniteTxEntry>emptyMap(),
-            U.<IgniteTxKey, IgniteTxEntry>newLinkedHashMap(writeSize));
+        txState = new IgniteTxRemoteStateImpl(Collections.emptyMap(), U.newLinkedHashMap(writeSize));
 
         if (writeEntries != null) {
             for (IgniteTxEntry entry : writeEntries) {
@@ -135,76 +131,6 @@ public class GridNearTxRemote extends GridDistributedTxRemoteAdapter {
                 addEntry(entry);
             }
         }
-
-        assert topVer != null && topVer.topologyVersion() > 0 : topVer;
-
-        topologyVersion(topVer);
-    }
-
-    /**
-     * This constructor is meant for pessimistic transactions.
-     *
-     * @param topVer Transaction topology version.
-     * @param nodeId Node ID.
-     * @param nearNodeId Near node ID.
-     * @param nearXidVer Near transaction ID.
-     * @param xidVer XID version.
-     * @param commitVer Commit version.
-     * @param sys System flag.
-     * @param plc IO policy.
-     * @param concurrency Concurrency level (should be pessimistic).
-     * @param isolation Transaction isolation.
-     * @param invalidate Invalidate flag.
-     * @param timeout Timeout.
-     * @param ctx Cache registry.
-     * @param txSize Expected transaction size.
-     * @param subjId Subject ID.
-     * @param taskNameHash Task name hash code.
-     * @param txLbl Transaction label.
-     */
-    public GridNearTxRemote(
-        GridCacheSharedContext ctx,
-        AffinityTopologyVersion topVer,
-        UUID nodeId,
-        UUID nearNodeId,
-        GridCacheVersion nearXidVer,
-        GridCacheVersion xidVer,
-        GridCacheVersion commitVer,
-        boolean sys,
-        byte plc,
-        TransactionConcurrency concurrency,
-        TransactionIsolation isolation,
-        boolean invalidate,
-        long timeout,
-        int txSize,
-        @Nullable UUID subjId,
-        int taskNameHash,
-        @Nullable String txLbl
-    ) {
-        super(
-            ctx,
-            nodeId,
-            xidVer,
-            commitVer,
-            sys,
-            plc,
-            concurrency,
-            isolation,
-            invalidate,
-            timeout,
-            txSize,
-            subjId,
-            taskNameHash,
-            txLbl
-        );
-
-        assert nearNodeId != null;
-
-        this.nearXidVer = nearXidVer;
-        this.nearNodeId = nearNodeId;
-
-        txState = new IgniteTxRemoteStateImpl(U.<IgniteTxKey, IgniteTxEntry>newLinkedHashMap(1),
-            U.<IgniteTxKey, IgniteTxEntry>newLinkedHashMap(txSize));
 
         assert topVer != null && topVer.topologyVersion() > 0 : topVer;
 
@@ -231,15 +157,8 @@ public class GridNearTxRemote extends GridDistributedTxRemoteAdapter {
         return owned == null ? null : owned.get(key);
     }
 
-    /**
-     * @return Near transaction ID.
-     */
-    @Override public GridCacheVersion nearXidVersion() {
-        return nearXidVer;
-    }
-
     /** {@inheritDoc} */
-    @Override public void addActiveCache(GridCacheContext cacheCtx, boolean recovery) throws IgniteCheckedException {
+    @Override public void addActiveCache(GridCacheContext<?, ?> cacheCtx, boolean recovery) {
         throw new UnsupportedOperationException("Near tx doesn't track active caches.");
     }
 
@@ -256,13 +175,6 @@ public class GridNearTxRemote extends GridDistributedTxRemoteAdapter {
             owned = new GridLeanMap<>(vers.size());
 
         owned.putAll(vers);
-    }
-
-    /**
-     * @return Near node ID.
-     */
-    public UUID nearNodeId() {
-        return nearNodeId;
     }
 
     /** {@inheritDoc} */
@@ -283,15 +195,6 @@ public class GridNearTxRemote extends GridDistributedTxRemoteAdapter {
     }
 
     /**
-     * Adds evicted key bytes to evicted collection.
-     *
-     * @param key Evicted key.
-     */
-    void addEvicted(IgniteTxKey key) {
-        evicted.add(key);
-    }
-
-    /**
      * Adds entries to started near remote tx.
      *
      * @param ldr Class loader.
@@ -309,33 +212,25 @@ public class GridNearTxRemote extends GridDistributedTxRemoteAdapter {
     /**
      * @param entry Entry to enlist.
      * @throws IgniteCheckedException If failed.
-     * @return {@code True} if entry was enlisted.
      */
-    private boolean addEntry(IgniteTxEntry entry) throws IgniteCheckedException {
+    private void addEntry(IgniteTxEntry entry) throws IgniteCheckedException {
         checkInternal(entry.txKey());
 
-        GridCacheContext cacheCtx = entry.context();
+        GridCacheContext<?, ?> cacheCtx = entry.context();
 
         assert cacheCtx.isNear() : entry;
 
         GridNearCacheEntry cached = cacheCtx.near().peekExx(entry.key());
 
-        if (cached == null) {
+        if (cached == null)
             evicted.add(entry.txKey());
-
-            return false;
-        }
         else {
             try {
                 // Unswap is no-op for near cache.
-
                 CacheObject val = cached.peek();
 
-                if (val == null && cached.evictInternal(xidVer, null, false)) {
+                if (val == null && cached.evictInternal(xidVer, null, false))
                     evicted.add(entry.txKey());
-
-                    return false;
-                }
                 else {
                     // Initialize cache entry.
                     entry.cached(cached);
@@ -343,8 +238,6 @@ public class GridNearTxRemote extends GridDistributedTxRemoteAdapter {
                     txState.addWriteEntry(entry.txKey(), entry);
 
                     addExplicit(entry);
-
-                    return true;
                 }
             }
             catch (GridCacheEntryRemovedException ignore) {
@@ -352,8 +245,6 @@ public class GridNearTxRemote extends GridDistributedTxRemoteAdapter {
 
                 if (log.isDebugEnabled())
                     log.debug("Got removed entry when adding to remote transaction (will ignore): " + cached);
-
-                return false;
             }
         }
     }
@@ -369,7 +260,7 @@ public class GridNearTxRemote extends GridDistributedTxRemoteAdapter {
      * @return {@code True} if entry has been enlisted.
      */
     public boolean addEntry(
-        GridCacheContext cacheCtx,
+        GridCacheContext<?, ?> cacheCtx,
         IgniteTxKey key,
         GridCacheOperation op,
         CacheObject val,

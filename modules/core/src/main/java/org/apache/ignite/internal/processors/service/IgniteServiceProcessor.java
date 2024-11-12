@@ -56,7 +56,6 @@ import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteClientDisconnectedCheckedException;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
-import org.apache.ignite.internal.SkipDaemon;
 import org.apache.ignite.internal.managers.deployment.GridDeployment;
 import org.apache.ignite.internal.managers.discovery.CustomEventListener;
 import org.apache.ignite.internal.managers.discovery.DiscoCache;
@@ -69,7 +68,7 @@ import org.apache.ignite.internal.processors.cache.ValidationOnNodeJoinUtils;
 import org.apache.ignite.internal.processors.cluster.ChangeGlobalStateMessage;
 import org.apache.ignite.internal.processors.cluster.DiscoveryDataClusterState;
 import org.apache.ignite.internal.processors.cluster.IgniteChangeGlobalStateSupport;
-import org.apache.ignite.internal.processors.metric.MetricRegistry;
+import org.apache.ignite.internal.processors.metric.MetricRegistryImpl;
 import org.apache.ignite.internal.processors.platform.services.PlatformService;
 import org.apache.ignite.internal.processors.platform.services.PlatformServiceConfiguration;
 import org.apache.ignite.internal.processors.security.OperationSecurityContext;
@@ -126,7 +125,6 @@ import static org.apache.ignite.plugin.security.SecurityPermission.SERVICE_DEPLO
  * @see ServiceDeploymentActions
  * @see ServiceChangeBatchRequest
  */
-@SkipDaemon
 @SuppressWarnings("SynchronizationOnLocalVariableOrMethodParameter")
 public class IgniteServiceProcessor extends GridProcessorAdapter implements IgniteChangeGlobalStateSupport {
     /** */
@@ -399,8 +397,16 @@ public class IgniteServiceProcessor extends GridProcessorAdapter implements Igni
 
         ServiceProcessorCommonDiscoveryData clusterData = (ServiceProcessorCommonDiscoveryData)data.commonData();
 
-        for (ServiceInfo desc : clusterData.registeredServices())
+        for (ServiceInfo desc : clusterData.registeredServices()) {
+            try {
+                unmarshalNodeFilterIfNeeded(desc.configuration());
+            }
+            catch (IgniteCheckedException e) {
+                throw new IgniteException("Cannot join the cluster.", e);
+            }
+
             registerService(desc);
+        }
     }
 
     /** {@inheritDoc} */
@@ -415,15 +421,27 @@ public class IgniteServiceProcessor extends GridProcessorAdapter implements Igni
         ClusterNode node,
         DiscoveryDataBag.JoiningNodeDiscoveryData data
     ) {
-        if (data.joiningNodeData() == null || !ctx.security().enabled())
+        if (data.joiningNodeData() == null)
             return null;
 
         List<ServiceInfo> svcs = ((ServiceProcessorJoinNodeDiscoveryData)data.joiningNodeData()).services();
 
-        SecurityException err = checkDeployPermissionDuringJoin(node, svcs);
+        if (ctx.security().enabled()) {
+            SecurityException err = checkDeployPermissionDuringJoin(node, svcs);
 
-        if (err != null)
-            return new IgniteNodeValidationResult(node.id(), err.getMessage());
+            if (err != null)
+                return new IgniteNodeValidationResult(node.id(), err.getMessage());
+        }
+
+        for (ServiceInfo svc : svcs) {
+            try {
+                unmarshalNodeFilterIfNeeded(svc.configuration());
+            }
+            catch (IgniteCheckedException e) {
+                return new IgniteNodeValidationResult(node.id(), "Node join is rejected [joiningNodeId=" + node.id() +
+                    ", msg=" + e.getMessage() + ']');
+            }
+        }
 
         return null;
     }
@@ -656,7 +674,7 @@ public class IgniteServiceProcessor extends GridProcessorAdapter implements Igni
      */
     private PreparedConfigurations<IgniteUuid> prepareServiceConfigurations(Collection<ServiceConfiguration> cfgs,
         IgnitePredicate<ClusterNode> dfltNodeFilter) {
-        List<ServiceConfiguration> cfgsCp = new ArrayList<>(cfgs.size());
+        List<LazyServiceConfiguration> cfgsCp = new ArrayList<>(cfgs.size());
 
         List<GridServiceDeploymentFuture<IgniteUuid>> failedFuts = null;
 
@@ -681,12 +699,14 @@ public class IgniteServiceProcessor extends GridProcessorAdapter implements Igni
             if (err == null) {
                 try {
                     byte[] srvcBytes = U.marshal(marsh, cfg.getService());
+                    byte[] nodeFilterBytes = U.marshal(marsh, cfg.getNodeFilter());
                     byte[] interceptorsBytes = U.marshal(marsh, cfg.getInterceptors());
 
                     String[] knownSvcMdtNames = cfg instanceof PlatformServiceConfiguration ?
                         ((PlatformServiceConfiguration)cfg).mtdNames() : null;
 
-                    cfgsCp.add(new LazyServiceConfiguration(cfg, srvcBytes, interceptorsBytes).platformMtdNames(knownSvcMdtNames));
+                    cfgsCp.add(new LazyServiceConfiguration(cfg, srvcBytes, nodeFilterBytes, interceptorsBytes)
+                        .platformMtdNames(knownSvcMdtNames));
                 }
                 catch (Exception e) {
                     U.error(log, "Failed to marshal service with configured marshaller " +
@@ -773,7 +793,7 @@ public class IgniteServiceProcessor extends GridProcessorAdapter implements Igni
 
             PreparedConfigurations<IgniteUuid> srvcCfg = prepareServiceConfigurations(cfgs, dfltNodeFilter);
 
-            List<ServiceConfiguration> cfgsCp = srvcCfg.cfgs;
+            List<LazyServiceConfiguration> cfgsCp = srvcCfg.cfgs;
 
             List<GridServiceDeploymentFuture<IgniteUuid>> failedFuts = srvcCfg.failedFuts;
 
@@ -783,7 +803,7 @@ public class IgniteServiceProcessor extends GridProcessorAdapter implements Igni
                 try {
                     Collection<ServiceChangeAbstractRequest> reqs = new ArrayList<>();
 
-                    for (ServiceConfiguration cfg : cfgsCp) {
+                    for (LazyServiceConfiguration cfg : cfgsCp) {
                         IgniteUuid srvcId = IgniteUuid.randomUuid();
 
                         GridServiceDeploymentFuture<IgniteUuid> fut = new GridServiceDeploymentFuture<>(cfg, srvcId);
@@ -938,7 +958,7 @@ public class IgniteServiceProcessor extends GridProcessorAdapter implements Igni
      * @return Service topology.
      * @throws IgniteCheckedException On error.
      */
-    public Map<UUID, Integer> serviceTopology(String name, long timeout) throws IgniteCheckedException {
+    @Nullable public Map<UUID, Integer> serviceTopology(String name, long timeout) throws IgniteCheckedException {
         assert timeout >= 0;
 
         long startTime = U.currentTimeMillis();
@@ -1423,6 +1443,23 @@ public class IgniteServiceProcessor extends GridProcessorAdapter implements Igni
         }
     }
 
+    /** @param cfg Lazy service configuration. */
+    private void unmarshalNodeFilterIfNeeded(LazyServiceConfiguration cfg) throws IgniteCheckedException {
+        if (cfg.getNodeFilter() != null)
+            return;
+
+        GridDeployment dep = ctx.deploy().getDeployment(cfg.serviceClassName());
+
+        ClassLoader clsLdr = U.resolveClassLoader(dep != null ? dep.classLoader() : null, ctx.config());
+
+        try {
+            cfg.setNodeFilter(U.unmarshal(marsh, cfg.nodeFilterBytes(), clsLdr));
+        }
+        catch (IgniteCheckedException e) {
+            throw new IgniteCheckedException("Failed to unmarshal class of service node filter [cfg=" + cfg + ']', e);
+        }
+    }
+
     /**
      * @param ctxs Contexts to cancel.
      * @param cancelCnt Number of contexts to cancel.
@@ -1552,9 +1589,9 @@ public class IgniteServiceProcessor extends GridProcessorAdapter implements Igni
      * @return @return Service's id if exists, otherwise {@code null};
      */
     @Nullable private IgniteUuid lookupDeployedServiceId(String name) {
-        ServiceInfo serviceInfo = deployedServicesByName.get(name);
-        if (serviceInfo != null) {
-            return serviceInfo.serviceId();
+        ServiceInfo srvcInfo = deployedServicesByName.get(name);
+        if (srvcInfo != null) {
+            return srvcInfo.serviceId();
         }
 
         return null;
@@ -1714,12 +1751,12 @@ public class IgniteServiceProcessor extends GridProcessorAdapter implements Igni
                 }
             }
 
-            for (ServiceConfiguration srvcCfg : prepCfgs.cfgs) {
-                ServiceInfo serviceInfo = new ServiceInfo(ctx.localNodeId(), IgniteUuid.randomUuid(), srvcCfg, true);
+            for (LazyServiceConfiguration srvcCfg : prepCfgs.cfgs) {
+                ServiceInfo srvcInfo = new ServiceInfo(ctx.localNodeId(), IgniteUuid.randomUuid(), srvcCfg, true);
 
-                serviceInfo.context(ctx);
+                srvcInfo.context(ctx);
 
-                staticServicesInfo.add(serviceInfo);
+                staticServicesInfo.add(srvcInfo);
             }
         }
 
@@ -1766,10 +1803,19 @@ public class IgniteServiceProcessor extends GridProcessorAdapter implements Igni
                         "exists : [" + "srvcId" + reqSrvcId + ", srvcTop=" + oldDesc.topologySnapshot() + ']');
                 }
                 else {
-                    ServiceConfiguration cfg = ((ServiceDeploymentRequest)req).configuration();
+                    LazyServiceConfiguration cfg = ((ServiceDeploymentRequest)req).configuration();
 
                     if (ctx.security().enabled())
                         err = checkPermissions(((ServiceDeploymentRequest)req).configuration().getName(), SERVICE_DEPLOY);
+
+                    if (err == null) {
+                        try {
+                            unmarshalNodeFilterIfNeeded(cfg);
+                        }
+                        catch (IgniteCheckedException e) {
+                            err = new IgniteCheckedException("Failed to deploy service.", e);
+                        }
+                    }
 
                     if (err == null) {
                         oldDesc = lookupInRegisteredServices(cfg.getName());
@@ -2026,7 +2072,7 @@ public class IgniteServiceProcessor extends GridProcessorAdapter implements Igni
      * @return Created metric registry.
      */
     private ReadOnlyMetricRegistry createServiceMetrics(ServiceContextImpl srvcCtx, ServiceConfiguration cfg) {
-        MetricRegistry metricRegistry = ctx.metric().registry(serviceMetricRegistryName(srvcCtx.name()));
+        MetricRegistryImpl metricRegistry = ctx.metric().registry(serviceMetricRegistryName(srvcCtx.name()));
 
         if (cfg instanceof LazyServiceConfiguration && ((LazyServiceConfiguration)cfg).platformMtdNames() != null) {
             for (String definedMtdName : ((LazyServiceConfiguration)cfg).platformMtdNames()) {

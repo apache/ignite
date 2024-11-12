@@ -25,6 +25,7 @@ import org.apache.ignite.IgniteCache;
 import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
+import org.apache.ignite.cluster.ClusterState;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
@@ -82,14 +83,14 @@ public class IgniteCacheStartWithLoadTest extends GridCommonAbstractTest {
     public void testNoRebalanceDuringCacheStart() throws Exception {
         IgniteEx crd = (IgniteEx)startGrids(4);
 
-        crd.cluster().active(true);
+        crd.cluster().state(ClusterState.ACTIVE);
 
         AtomicBoolean txLoadStop = new AtomicBoolean();
 
-        AtomicInteger txLoaderNo = new AtomicInteger(0);
+        AtomicInteger txLdrNo = new AtomicInteger(0);
 
-        IgniteInternalFuture txLoadFuture = GridTestUtils.runMultiThreadedAsync(() -> {
-            Ignite node = grid(txLoaderNo.getAndIncrement());
+        IgniteInternalFuture txLoadFut = GridTestUtils.runMultiThreadedAsync(() -> {
+            Ignite node = grid(txLdrNo.getAndIncrement());
             IgniteCache<Object, Object> cache = node.cache(CACHE_NAME);
             ThreadLocalRandom rnd = ThreadLocalRandom.current();
 
@@ -100,9 +101,9 @@ public class IgniteCacheStartWithLoadTest extends GridCommonAbstractTest {
                 try (Transaction tx = node.transactions().txStart(PESSIMISTIC, REPEATABLE_READ)) {
                     for (int it = 0; it < keys; it++) {
                         int key = rnd.nextInt(keysSpace);
-                        byte[] value = new byte[2048];
+                        byte[] val = new byte[2048];
 
-                        cache.put(key, value);
+                        cache.put(key, val);
                     }
                     tx.commit();
 
@@ -118,7 +119,7 @@ public class IgniteCacheStartWithLoadTest extends GridCommonAbstractTest {
 
         AtomicBoolean cacheRestartStop = new AtomicBoolean();
 
-        IgniteInternalFuture cacheRestartFuture = GridTestUtils.runAsync(() -> {
+        IgniteInternalFuture cacheRestartFut = GridTestUtils.runAsync(() -> {
             Ignite node = grid(0);
 
             final String tmpCacheName = "tmp";
@@ -155,8 +156,8 @@ public class IgniteCacheStartWithLoadTest extends GridCommonAbstractTest {
         cacheRestartStop.set(true);
         txLoadStop.set(true);
 
-        cacheRestartFuture.get();
-        txLoadFuture.get();
+        cacheRestartFut.get();
+        txLoadFut.get();
 
         Assert.assertFalse(hasRebalance.get());
     }

@@ -19,8 +19,6 @@ package org.apache.ignite.internal.cache.query.index.sorted.inline;
 
 import java.util.ArrayDeque;
 import java.util.Collections;
-import java.util.Comparator;
-import java.util.PriorityQueue;
 import java.util.Queue;
 import java.util.UUID;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -31,12 +29,9 @@ import org.apache.ignite.IgniteException;
 import org.apache.ignite.failure.FailureContext;
 import org.apache.ignite.internal.cache.query.index.AbstractIndex;
 import org.apache.ignite.internal.cache.query.index.SingleCursor;
-import org.apache.ignite.internal.cache.query.index.SortOrder;
 import org.apache.ignite.internal.cache.query.index.sorted.DurableBackgroundCleanupIndexTreeTaskV2;
-import org.apache.ignite.internal.cache.query.index.sorted.IndexKeyDefinition;
 import org.apache.ignite.internal.cache.query.index.sorted.IndexKeyTypeSettings;
 import org.apache.ignite.internal.cache.query.index.sorted.IndexRow;
-import org.apache.ignite.internal.cache.query.index.sorted.IndexRowComparator;
 import org.apache.ignite.internal.cache.query.index.sorted.IndexRowImpl;
 import org.apache.ignite.internal.cache.query.index.sorted.IndexValueCursor;
 import org.apache.ignite.internal.cache.query.index.sorted.InlineIndexRowHandler;
@@ -44,8 +39,8 @@ import org.apache.ignite.internal.cache.query.index.sorted.SortedIndexDefinition
 import org.apache.ignite.internal.cache.query.index.sorted.ThreadLocalRowHandlerHolder;
 import org.apache.ignite.internal.metric.IoStatisticsHolderIndex;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
-import org.apache.ignite.internal.processors.cache.mvcc.MvccSnapshot;
 import org.apache.ignite.internal.processors.cache.persistence.CacheDataRow;
+import org.apache.ignite.internal.processors.cache.persistence.tree.BPlusTree;
 import org.apache.ignite.internal.util.lang.GridCursor;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.spi.indexing.IndexingQueryCacheFilter;
@@ -53,11 +48,15 @@ import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.cluster.ClusterState.INACTIVE;
 import static org.apache.ignite.failure.FailureType.CRITICAL_ERROR;
+import static org.apache.ignite.internal.processors.metric.impl.MetricUtils.metricName;
 
 /**
  * Sorted index implementation.
  */
 public class InlineIndexImpl extends AbstractIndex implements InlineIndex {
+    /** */
+    public static final String INDEX_METRIC_PREFIX = "index";
+
     /** Unique ID. */
     private final UUID id = UUID.randomUUID();
 
@@ -103,6 +102,7 @@ public class InlineIndexImpl extends AbstractIndex implements InlineIndex {
         IndexQueryContext qryCtx
     ) throws IgniteCheckedException {
         InlineTreeFilterClosure closure = filterClosure(qryCtx);
+        BPlusTree.TreeRowFactory<IndexRow, IndexRow> rowFactory = qryCtx == null ? null : qryCtx.rowFactory();
 
         lock.readLock().lock();
 
@@ -117,7 +117,7 @@ public class InlineIndexImpl extends AbstractIndex implements InlineIndex {
                 return new SingleCursor<>(row);
             }
 
-            return segments[segment].find(lower, upper, lowIncl, upIncl, closure, null);
+            return segments[segment].find(lower, upper, lowIncl, upIncl, closure, rowFactory, null);
         }
         finally {
             lock.readLock().unlock();
@@ -165,7 +165,7 @@ public class InlineIndexImpl extends AbstractIndex implements InlineIndex {
             for (int i = 0; i < segmentsCnt; i++)
                 segmentCursors[i] = find(lower, upper, lowIncl, upIncl, i, qryCtx);
 
-            return new SegmentedIndexCursor(segmentCursors, def);
+            return new SortedSegmentedIndexCursor(segmentCursors, def);
         }
         finally {
             lock.readLock().unlock();
@@ -220,7 +220,7 @@ public class InlineIndexImpl extends AbstractIndex implements InlineIndex {
 
     /** */
     private boolean isSingleRowLookup(IndexRow lower, IndexRow upper) throws IgniteCheckedException {
-        return !cctx.mvccEnabled() && def.primary() && lower != null && isFullSchemaSearch(lower) && checkRowsTheSame(lower, upper);
+        return def.primary() && lower != null && isFullSchemaSearch(lower) && checkRowsTheSame(lower, upper);
     }
 
     /**
@@ -471,15 +471,10 @@ public class InlineIndexImpl extends AbstractIndex implements InlineIndex {
         IndexingQueryCacheFilter cacheFilter = qryCtx.cacheFilter() == null ? null
             : qryCtx.cacheFilter().forCache(cctx.cache().name());
 
-        MvccSnapshot v = qryCtx.mvccSnapshot();
-
-        assert !cctx.mvccEnabled() || v != null;
-
-        if (cacheFilter == null && v == null && qryCtx.rowFilter() == null)
+        if (cacheFilter == null && qryCtx.rowFilter() == null)
             return null;
 
-        return new InlineTreeFilterClosure(
-            cacheFilter, qryCtx.rowFilter(), v, cctx, cctx.kernalContext().config().getGridLogger());
+        return new InlineTreeFilterClosure(cacheFilter, qryCtx.rowFilter());
     }
 
     /** {@inheritDoc} */
@@ -553,6 +548,7 @@ public class InlineIndexImpl extends AbstractIndex implements InlineIndex {
                 }
 
                 cctx.kernalContext().metric().remove(stats.metricRegistryName());
+                cctx.kernalContext().metric().remove(metricName(INDEX_METRIC_PREFIX, def.idxName().fullName()));
 
                 if (cctx.group().persistenceEnabled() ||
                     cctx.shared().kernalContext().state().clusterState().state() != INACTIVE) {
@@ -587,93 +583,13 @@ public class InlineIndexImpl extends AbstractIndex implements InlineIndex {
             cctx, def.idxName().cacheName(), def.idxName().tableName(), row.key(), row.value());
     }
 
-    /**
-     * @return Index definition.
-     */
-    public SortedIndexDefinition indexDefinition() {
+    /** {@inheritDoc} */
+    @Override public SortedIndexDefinition indexDefinition() {
         return def;
     }
 
-    /** Single cursor over multiple segments. The next value is chosen with the index row comparator. */
-    private static class SegmentedIndexCursor implements GridCursor<IndexRow> {
-        /** Cursors over segments. */
-        private final Queue<GridCursor<IndexRow>> cursors;
-
-        /** Comparator to compare index rows. */
-        private final Comparator<GridCursor<IndexRow>> cursorComp;
-
-        /** */
-        private IndexRow head;
-
-        /** */
-        SegmentedIndexCursor(GridCursor<IndexRow>[] cursors, SortedIndexDefinition idxDef) throws IgniteCheckedException {
-            cursorComp = new Comparator<GridCursor<IndexRow>>() {
-                private final IndexRowComparator rowComparator = idxDef.rowComparator();
-
-                private final IndexKeyDefinition[] keyDefs =
-                    idxDef.indexKeyDefinitions().values().toArray(new IndexKeyDefinition[0]);
-
-                @Override public int compare(GridCursor<IndexRow> o1, GridCursor<IndexRow> o2) {
-                    try {
-                        int keysLen = o1.get().keys().length;
-
-                        for (int i = 0; i < keysLen; i++) {
-                            int cmp = rowComparator.compareRow(o1.get(), o2.get(), i);
-
-                            if (cmp != 0) {
-                                boolean desc = keyDefs[i].order().sortOrder() == SortOrder.DESC;
-
-                                return desc ? -cmp : cmp;
-                            }
-                        }
-
-                        return 0;
-                    }
-                    catch (IgniteCheckedException e) {
-                        throw new IgniteException("Failed to sort remote index rows", e);
-                    }
-                }
-            };
-
-            this.cursors = cursorsQueue(cursors);
-        }
-
-        /** {@inheritDoc} */
-        @Override public boolean next() throws IgniteCheckedException {
-            if (cursors.isEmpty())
-                return false;
-
-            GridCursor<IndexRow> c = cursors.poll();
-
-            head = c.get();
-
-            if (c.next())
-                cursors.add(c);
-
-            return true;
-        }
-
-        /** {@inheritDoc} */
-        @Override public IndexRow get() throws IgniteCheckedException {
-            return head;
-        }
-
-        /** */
-        protected Queue<GridCursor<IndexRow>> cursorsQueue(GridCursor<IndexRow>[] cursors)
-            throws IgniteCheckedException {
-            PriorityQueue<GridCursor<IndexRow>> q = new PriorityQueue<>(cursors.length, cursorComp);
-
-            for (GridCursor<IndexRow> c: cursors) {
-                if (c.next())
-                    q.add(c);
-            }
-
-            return q;
-        }
-    }
-
     /** First-only, single-value-only segmented cursor. */
-    private static class SingleValueSegmentedIndexCursor extends SegmentedIndexCursor {
+    private static class SingleValueSegmentedIndexCursor extends SortedSegmentedIndexCursor {
         /** Ctor. */
         SingleValueSegmentedIndexCursor(
             GridCursor<IndexRow>[] cursors,

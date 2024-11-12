@@ -528,13 +528,13 @@ public class IgniteSqlSkipReducerOnUpdateDmlFlagSelfTest extends AbstractIndexin
     private Map<Integer, Account> getAccounts(int num, int numCopy, int depo) {
         Map<Integer, Account> res = new HashMap<>();
 
-        int count = 0;
+        int cnt = 0;
 
         for (int i = 0; i < num; ++i) {
             String name = "John doe #" + i;
 
             for (int j = 0; j < numCopy; ++j)
-                res.put(count++, new Account(name, i, depo));
+                res.put(cnt++, new Account(name, i, depo));
         }
 
         return res;
@@ -565,11 +565,11 @@ public class IgniteSqlSkipReducerOnUpdateDmlFlagSelfTest extends AbstractIndexin
     private Map<Integer, Trade> getTrades(int numAccounts, int numStocks) {
         Map<Integer, Trade> res = new HashMap<>();
 
-        int count = 0;
+        int cnt = 0;
 
         for (int i = 0; i < numAccounts; ++i) {
             for (int j = 0; j < numStocks; ++j)
-                res.put(count++, new Trade(i, j, 100, 100));
+                res.put(cnt++, new Trade(i, j, 100, 100));
         }
 
         return res;

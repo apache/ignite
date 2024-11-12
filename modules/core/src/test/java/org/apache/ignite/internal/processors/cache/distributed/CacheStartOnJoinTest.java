@@ -45,7 +45,6 @@ import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
-import static org.apache.ignite.testframework.MvccFeatureChecker.assertMvccWriteConflict;
 
 /**
  *
@@ -179,18 +178,7 @@ public class CacheStartOnJoinTest extends GridCommonAbstractTest {
                     if (createCache) {
                         for (int c = 0; c < 5; c++) {
                             for (IgniteCache cache : node.getOrCreateCaches(cacheConfigurations())) {
-                                boolean updated = false;
-
-                                while (!updated) {
-                                    try {
-                                        cache.put(c, c);
-
-                                        updated = true;
-                                    }
-                                    catch (Exception e) {
-                                        assertMvccWriteConflict(e);
-                                    }
-                                }
+                                cache.put(c, c);
 
                                 assertEquals(c, cache.get(c));
                             }

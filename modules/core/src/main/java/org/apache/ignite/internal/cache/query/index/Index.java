@@ -66,4 +66,9 @@ public interface Index {
      * @param softDelete if {@code true} then perform logical deletion.
      */
     public void destroy(boolean softDelete);
+
+    /**
+     * @return Index definition.
+     */
+    public IndexDefinition indexDefinition();
 }

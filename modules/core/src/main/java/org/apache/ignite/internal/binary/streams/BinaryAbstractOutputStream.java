@@ -53,6 +53,13 @@ public abstract class BinaryAbstractOutputStream extends BinaryAbstractStream
     }
 
     /** {@inheritDoc} */
+    @Override public void writeByteArray(byte[] val, int off, int len) {
+        ensureCapacity(pos + len);
+
+        copyAndShift(val, GridUnsafe.BYTE_ARR_OFF + off, len);
+    }
+
+    /** {@inheritDoc} */
     @Override public void writeBoolean(boolean val) {
         writeByte(val ? BYTE_ONE : BYTE_ZERO);
     }

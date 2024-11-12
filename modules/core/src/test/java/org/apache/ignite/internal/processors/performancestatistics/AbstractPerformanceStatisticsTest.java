@@ -187,6 +187,18 @@ public abstract class AbstractPerformanceStatisticsTest extends GridCommonAbstra
         }
 
         /** {@inheritDoc} */
+        @Override public void queryRows(UUID nodeId, GridCacheQueryType type, UUID qryNodeId, long id, String action,
+            long rows) {
+            // No-op.
+        }
+
+        /** {@inheritDoc} */
+        @Override public void queryProperty(UUID nodeId, GridCacheQueryType type, UUID qryNodeId, long id, String name,
+            String val) {
+            // No-op.
+        }
+
+        /** {@inheritDoc} */
         @Override public void task(UUID nodeId, IgniteUuid sesId, String taskName, long startTime, long duration,
             int affPartId) {
             // No-op.

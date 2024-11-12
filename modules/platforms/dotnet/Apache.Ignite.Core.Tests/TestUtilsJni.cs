@@ -76,12 +76,12 @@ namespace Apache.Ignite.Core.Tests
                 var methodId = env.GetStaticMethodId(cls, "startProcess",
                     "(Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;)V");
 
-                using (var fileRef = env.NewStringUtf(file))
-                using (var arg1Ref = env.NewStringUtf(arg1))
-                using (var arg2Ref = env.NewStringUtf(arg2))
-                using (var envRef = env.NewStringUtf(envVars))
-                using (var workDirRef = env.NewStringUtf(workDir))
-                using (var waitForOutputRef = env.NewStringUtf(waitForOutput))
+                using (var fileRef = env.NewString(file))
+                using (var arg1Ref = env.NewString(arg1))
+                using (var arg2Ref = env.NewString(arg2))
+                using (var envRef = env.NewString(envVars))
+                using (var workDirRef = env.NewString(workDir))
+                using (var waitForOutputRef = env.NewString(waitForOutput))
                 {
                     var methodArgs = stackalloc long[6];
                     methodArgs[0] = fileRef.Target.ToInt64();
@@ -128,6 +128,11 @@ namespace Apache.Ignite.Core.Tests
             return CallIntMethod(ClassPlatformTestUtils, "majorJavaVersion", "()I");
         }
 
+        public static void Println(string str)
+        {
+            CallStringMethod(ClassPlatformTestUtils, "println", "(Ljava/lang/String;)V", str);
+        }
+
         /** */
         private static unsafe void CallStringMethod(string className, string methodName, string methodSig, string arg)
         {
@@ -135,7 +140,7 @@ namespace Apache.Ignite.Core.Tests
             using (var cls = env.FindClass(className))
             {
                 var methodId = env.GetStaticMethodId(cls, methodName, methodSig);
-                using (var gridNameRef = env.NewStringUtf(arg))
+                using (var gridNameRef = env.NewString(arg))
                 {
                     var args = stackalloc long[1];
                     args[0] = gridNameRef.Target.ToInt64();

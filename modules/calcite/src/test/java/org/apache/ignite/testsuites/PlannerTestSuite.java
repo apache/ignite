@@ -21,10 +21,12 @@ import org.apache.ignite.internal.processors.query.calcite.planner.AggregateDist
 import org.apache.ignite.internal.processors.query.calcite.planner.AggregatePlannerTest;
 import org.apache.ignite.internal.processors.query.calcite.planner.CorrelatedNestedLoopJoinPlannerTest;
 import org.apache.ignite.internal.processors.query.calcite.planner.CorrelatedSubqueryPlannerTest;
+import org.apache.ignite.internal.processors.query.calcite.planner.DataTypesPlannerTest;
 import org.apache.ignite.internal.processors.query.calcite.planner.HashAggregatePlannerTest;
 import org.apache.ignite.internal.processors.query.calcite.planner.HashIndexSpoolPlannerTest;
 import org.apache.ignite.internal.processors.query.calcite.planner.IndexRebuildPlannerTest;
 import org.apache.ignite.internal.processors.query.calcite.planner.IndexSearchBoundsPlannerTest;
+import org.apache.ignite.internal.processors.query.calcite.planner.InlineIndexScanPlannerTest;
 import org.apache.ignite.internal.processors.query.calcite.planner.JoinColocationPlannerTest;
 import org.apache.ignite.internal.processors.query.calcite.planner.JoinCommutePlannerTest;
 import org.apache.ignite.internal.processors.query.calcite.planner.JoinWithUsingPlannerTest;
@@ -33,6 +35,7 @@ import org.apache.ignite.internal.processors.query.calcite.planner.MergeJoinPlan
 import org.apache.ignite.internal.processors.query.calcite.planner.PlannerTest;
 import org.apache.ignite.internal.processors.query.calcite.planner.PlannerTimeoutTest;
 import org.apache.ignite.internal.processors.query.calcite.planner.ProjectFilterScanMergePlannerTest;
+import org.apache.ignite.internal.processors.query.calcite.planner.SerializationPlannerTest;
 import org.apache.ignite.internal.processors.query.calcite.planner.SetOpPlannerTest;
 import org.apache.ignite.internal.processors.query.calcite.planner.SortAggregatePlannerTest;
 import org.apache.ignite.internal.processors.query.calcite.planner.SortedIndexSpoolPlannerTest;
@@ -41,6 +44,8 @@ import org.apache.ignite.internal.processors.query.calcite.planner.TableDmlPlann
 import org.apache.ignite.internal.processors.query.calcite.planner.TableFunctionPlannerTest;
 import org.apache.ignite.internal.processors.query.calcite.planner.TableSpoolPlannerTest;
 import org.apache.ignite.internal.processors.query.calcite.planner.UnionPlannerTest;
+import org.apache.ignite.internal.processors.query.calcite.planner.UserDefinedViewsPlannerTest;
+import org.apache.ignite.internal.processors.query.calcite.planner.hints.HintsTestSuite;
 import org.junit.runner.RunWith;
 import org.junit.runners.Suite;
 
@@ -63,6 +68,7 @@ import org.junit.runners.Suite;
     TableFunctionPlannerTest.class,
     TableDmlPlannerTest.class,
     UnionPlannerTest.class,
+    DataTypesPlannerTest.class,
     JoinCommutePlannerTest.class,
     LimitOffsetPlannerTest.class,
     MergeJoinPlannerTest.class,
@@ -73,6 +79,11 @@ import org.junit.runners.Suite;
     IndexRebuildPlannerTest.class,
     PlannerTimeoutTest.class,
     IndexSearchBoundsPlannerTest.class,
+    InlineIndexScanPlannerTest.class,
+    UserDefinedViewsPlannerTest.class,
+
+    HintsTestSuite.class,
+    SerializationPlannerTest.class,
 })
 public class PlannerTestSuite {
 }

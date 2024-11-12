@@ -17,8 +17,10 @@
 
 package org.apache.ignite.internal.processors.query.h2.twostep.msg;
 
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Iterator;
+import java.util.List;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.processors.query.h2.QueryTable;
@@ -63,7 +65,6 @@ public class GridH2ValueMessageFactory implements MessageFactoryProvider {
         factory.register((short)-54, QueryTable::new);
         factory.register((short)-55, GridH2DmlRequest::new);
         factory.register((short)-56, GridH2DmlResponse::new);
-        factory.register((short)-57, GridH2SelectForUpdateTxDetails::new);
     }
 
     /** {@inheritDoc} */
@@ -73,13 +74,14 @@ public class GridH2ValueMessageFactory implements MessageFactoryProvider {
 
     /**
      * @param src Source values.
-     * @param dst Destination collection.
      * @param cnt Number of columns to actually send.
      * @return Destination collection.
      * @throws IgniteCheckedException If failed.
      */
-    public static Collection<Message> toMessages(Collection<Value[]> src, Collection<Message> dst, int cnt)
+    public static Collection<Message> toMessages(Collection<Value[]> src, int cnt)
         throws IgniteCheckedException {
+        List<Message> dst = new ArrayList<>(src.size() * cnt);
+
         for (Value[] row : src) {
             assert row.length >= cnt;
 

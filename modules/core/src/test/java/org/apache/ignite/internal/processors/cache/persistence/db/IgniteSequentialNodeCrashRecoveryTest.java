@@ -31,6 +31,7 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.ShutdownPolicy;
 import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
+import org.apache.ignite.cluster.ClusterState;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
@@ -141,7 +142,7 @@ public class IgniteSequentialNodeCrashRecoveryTest extends GridCommonAbstractTes
     public void testCrashOnCheckpointAfterLogicalRecovery() throws Exception {
         IgniteEx g = startGrid(0);
 
-        g.cluster().active(true);
+        g.cluster().state(ClusterState.ACTIVE);
 
         g.getOrCreateCache(new CacheConfiguration<>("cache")
             .setAtomicityMode(CacheAtomicityMode.TRANSACTIONAL)
@@ -241,8 +242,8 @@ public class IgniteSequentialNodeCrashRecoveryTest extends GridCommonAbstractTes
         dbMgr.checkpointReadLock();
         try {
             //Moving free list pages to offheap.
-            for (CacheGroupContext group : g.context().cache().cacheGroups()) {
-                ((GridCacheOffheapManager)group.offheap()).onMarkCheckpointBegin(new DummyCheckpointContext());
+            for (CacheGroupContext grp : g.context().cache().cacheGroups()) {
+                ((GridCacheOffheapManager)grp.offheap()).onMarkCheckpointBegin(new DummyCheckpointContext());
             }
         }
         finally {
@@ -302,11 +303,6 @@ public class IgniteSequentialNodeCrashRecoveryTest extends GridCommonAbstractTes
         }
 
         /** {@inheritDoc} */
-        @Override public boolean nextSnapshot() {
-            return false;
-        }
-
-        /** {@inheritDoc} */
         @Override public IgniteInternalFuture<?> finishedStateFut() {
             return null;
         }
@@ -314,11 +310,6 @@ public class IgniteSequentialNodeCrashRecoveryTest extends GridCommonAbstractTes
         /** {@inheritDoc} */
         @Override public PartitionAllocationMap partitionStatMap() {
             return null;
-        }
-
-        /** {@inheritDoc} */
-        @Override public boolean needToSnapshot(String cacheOrGrpName) {
-            return false;
         }
 
         /** {@inheritDoc} */

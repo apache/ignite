@@ -39,10 +39,10 @@ import org.jetbrains.annotations.Nullable;
  * is transparent to your code and is handled automatically by the adapter.
  * Here is an example of how your task will look:
  * <pre name="code" class="java">
- * public class MyFooBarTask extends ComputeTaskSplitAdapter&lt;String> {
+ * public class MyFooBarTask extends ComputeTaskSplitAdapter&lt;String&gt; {
  *     &#64;Override
- *     protected Collection&lt;? extends ComputeJob> split(int gridSize, String arg) throws IgniteCheckedException {
- *         List&lt;MyFooBarJob> jobs = new ArrayList&lt;MyFooBarJob>(gridSize);
+ *     protected Collection&lt;? extends ComputeJob&gt; split(int gridSize, String arg) throws IgniteCheckedException {
+ *         List&lt;MyFooBarJob&gt; jobs = new ArrayList&lt;MyFooBarJob&gt;(gridSize);
  *
  *         for (int i = 0; i &lt; gridSize; i++) {
  *             jobs.add(new MyFooBarJob(arg));
@@ -61,14 +61,14 @@ import org.jetbrains.annotations.Nullable;
  * case we manually inject load balancer and use it to pick the best node. Doing it in
  * such way would allow user to map some jobs manually and for others use load balancer.
  * <pre name="code" class="java">
- * public class MyFooBarTask extends ComputeTaskAdapter&lt;String, String> {
+ * public class MyFooBarTask extends ComputeTaskAdapter&lt;String, String&gt; {
  *     // Inject load balancer.
  *     &#64;LoadBalancerResource
  *     ComputeLoadBalancer balancer;
  *
  *     // Map jobs to grid nodes.
- *     public Map&lt;? extends ComputeJob, ClusterNode> map(List&lt;ClusterNode> subgrid, String arg) throws IgniteCheckedException {
- *         Map&lt;MyFooBarJob, ClusterNode> jobs = new HashMap&lt;MyFooBarJob, ClusterNode>(subgrid.size());
+ *     public Map&lt;? extends ComputeJob, ClusterNode&gt; map(List&lt;ClusterNode&gt; subgrid, String arg) throws IgniteCheckedException {
+ *         Map&lt;MyFooBarJob, ClusterNode&gt; jobs = new HashMap&lt;MyFooBarJob, ClusterNode&gt;(subgrid.size());
  *
  *         // In more complex cases, you can actually do
  *         // more complicated assignments of jobs to nodes.

@@ -59,9 +59,10 @@ import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_REST_TCP_HOST
 import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_REST_TCP_PORT;
 import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_SECURITY_CREDENTIALS;
 import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_SECURITY_SUBJECT_V2;
-import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_TX_CONFIG;
+import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_TX_SERIALIZABLE_ENABLED;
 import static org.apache.ignite.internal.processors.rest.GridRestCommand.NODE;
 import static org.apache.ignite.internal.processors.rest.GridRestCommand.TOPOLOGY;
+import static org.apache.ignite.internal.util.IgniteUtils.IGNITE_PKG;
 
 /**
  * Command handler for API requests.
@@ -101,8 +102,7 @@ public class GridTopologyCommandHandler extends GridRestCommandHandlerAdapter {
 
         switch (req.command()) {
             case TOPOLOGY: {
-                Collection<ClusterNode> allNodes = F.concat(false,
-                    ctx.discovery().allNodes(), ctx.discovery().daemonNodes());
+                Collection<ClusterNode> allNodes = ctx.discovery().allNodes();
 
                 Collection<GridClientNodeBean> top =
                     new ArrayList<>(allNodes.size());
@@ -291,7 +291,7 @@ public class GridTopologyCommandHandler extends GridRestCommandHandlerAdapter {
             Map<String, Object> attrs = new HashMap<>(node.attributes());
 
             attrs.remove(ATTR_CACHE);
-            attrs.remove(ATTR_TX_CONFIG);
+            attrs.remove(ATTR_TX_SERIALIZABLE_ENABLED);
             attrs.remove(ATTR_SECURITY_SUBJECT_V2);
             attrs.remove(ATTR_SECURITY_CREDENTIALS);
             attrs.remove(ATTR_BINARY_CONFIGURATION);
@@ -300,7 +300,7 @@ public class GridTopologyCommandHandler extends GridRestCommandHandlerAdapter {
             for (Iterator<Map.Entry<String, Object>> i = attrs.entrySet().iterator(); i.hasNext();) {
                 Map.Entry<String, Object> e = i.next();
 
-                if (!e.getKey().startsWith("org.apache.ignite.") && !e.getKey().startsWith("plugins.") &&
+                if (!e.getKey().startsWith(IGNITE_PKG) && !e.getKey().startsWith("plugins.") &&
                     System.getProperty(e.getKey()) == null) {
                     i.remove();
 

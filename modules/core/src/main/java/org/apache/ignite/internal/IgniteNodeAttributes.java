@@ -79,10 +79,10 @@ public final class IgniteNodeAttributes {
     public static final String ATTR_CACHE = ATTR_PREFIX + ".cache";
 
     /** Internal attribute name constant. */
-    public static final String ATTR_TX_CONFIG = ATTR_PREFIX + ".tx";
+    public static final String ATTR_TX_SERIALIZABLE_ENABLED = ATTR_PREFIX + ".tx.serializable.enabled";
 
     /** Internal attribute name constant. */
-    public static final String ATTR_DAEMON = ATTR_PREFIX + ".daemon";
+    public static final String ATTR_TX_AWARE_QUERIES_ENABLED = ATTR_PREFIX + ".tx.aware.queries.enabled";
 
     /** Internal attribute name constant. */
     public static final String ATTR_JMX_PORT = ATTR_PREFIX + ".jmx.port";

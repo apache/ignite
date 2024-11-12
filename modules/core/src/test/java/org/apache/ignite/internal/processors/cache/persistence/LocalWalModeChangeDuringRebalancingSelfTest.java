@@ -65,7 +65,6 @@ import org.apache.ignite.resources.IgniteInstanceResource;
 import org.apache.ignite.spi.IgniteSpiException;
 import org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi;
 import org.apache.ignite.testframework.GridTestUtils;
-import org.apache.ignite.testframework.MvccFeatureChecker;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Assert;
 import org.junit.Test;
@@ -844,12 +843,7 @@ public class LocalWalModeChangeDuringRebalancingSelfTest extends GridCommonAbstr
             ThreadLocalRandom rnd = ThreadLocalRandom.current();
 
             do {
-                try {
-                    cache.put(rnd.nextInt(keysCnt), rnd.nextInt());
-                }
-                catch (Exception ex) {
-                    MvccFeatureChecker.assertMvccWriteConflict(ex);
-                }
+                cache.put(rnd.nextInt(keysCnt), rnd.nextInt());
             }
             while (U.currentTimeMillis() < stopTs);
         }, threadCnt, "load-cache");

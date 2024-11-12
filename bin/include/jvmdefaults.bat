@@ -24,32 +24,26 @@ set value=""
 :: First argument is the version of the java
 :: Second argument is the current value of the jvm options
 :: Third value is the name of the environment variable that jvm options should be set to
-if %java_version% == 8 (
+if %java_version% GEQ 11 if %java_version% LSS 14 (
     set value= ^
-    -XX:+AggressiveOpts ^
-    %current_value%
-)
-
-if %java_version% GEQ 9 if %java_version% LSS 11 (
-    set value= ^
-    -XX:+AggressiveOpts ^
     --add-exports=java.base/jdk.internal.misc=ALL-UNNAMED ^
     --add-exports=java.base/sun.nio.ch=ALL-UNNAMED ^
     --add-exports=java.management/com.sun.jmx.mbeanserver=ALL-UNNAMED ^
     --add-exports=jdk.internal.jvmstat/sun.jvmstat.monitor=ALL-UNNAMED ^
     --add-exports=java.base/sun.reflect.generics.reflectiveObjects=ALL-UNNAMED ^
+    --add-opens=jdk.management/com.sun.management.internal=ALL-UNNAMED ^
     --illegal-access=permit ^
-    --add-modules=java.xml.bind ^
     %current_value%
 )
 
-if %java_version% GEQ 11 if %java_version% LSS 15 (
+if %java_version% GEQ 14 if %java_version% LSS 15 (
     set value= ^
     --add-exports=java.base/jdk.internal.misc=ALL-UNNAMED ^
     --add-exports=java.base/sun.nio.ch=ALL-UNNAMED ^
     --add-exports=java.management/com.sun.jmx.mbeanserver=ALL-UNNAMED ^
     --add-exports=jdk.internal.jvmstat/sun.jvmstat.monitor=ALL-UNNAMED ^
     --add-exports=java.base/sun.reflect.generics.reflectiveObjects=ALL-UNNAMED ^
+    --add-opens=java.base/jdk.internal.access=ALL-UNNAMED ^
     --add-opens=jdk.management/com.sun.management.internal=ALL-UNNAMED ^
     --illegal-access=permit ^
     %current_value%
@@ -57,14 +51,17 @@ if %java_version% GEQ 11 if %java_version% LSS 15 (
 
 if %java_version% GEQ 15 (
     set value= ^
+    --add-opens=java.base/jdk.internal.access=ALL-UNNAMED ^
     --add-opens=java.base/jdk.internal.misc=ALL-UNNAMED ^
     --add-opens=java.base/sun.nio.ch=ALL-UNNAMED ^
+    --add-opens=java.base/sun.util.calendar=ALL-UNNAMED ^
     --add-opens=java.management/com.sun.jmx.mbeanserver=ALL-UNNAMED ^
     --add-opens=jdk.internal.jvmstat/sun.jvmstat.monitor=ALL-UNNAMED ^
     --add-opens=java.base/sun.reflect.generics.reflectiveObjects=ALL-UNNAMED ^
     --add-opens=jdk.management/com.sun.management.internal=ALL-UNNAMED ^
     --add-opens=java.base/java.io=ALL-UNNAMED ^
     --add-opens=java.base/java.nio=ALL-UNNAMED ^
+    --add-opens=java.base/java.net=ALL-UNNAMED ^
     --add-opens=java.base/java.util=ALL-UNNAMED ^
     --add-opens=java.base/java.util.concurrent=ALL-UNNAMED ^
     --add-opens=java.base/java.util.concurrent.locks=ALL-UNNAMED ^
@@ -73,6 +70,11 @@ if %java_version% GEQ 15 (
     --add-opens=java.base/java.lang.invoke=ALL-UNNAMED ^
     --add-opens=java.base/java.math=ALL-UNNAMED ^
     --add-opens=java.sql/java.sql=ALL-UNNAMED ^
+    --add-opens=java.base/java.lang.reflect=ALL-UNNAMED ^
+    --add-opens=java.base/java.time=ALL-UNNAMED ^
+    --add-opens=java.base/java.text=ALL-UNNAMED ^
+    --add-opens=java.management/sun.management=ALL-UNNAMED ^
+    --add-opens java.desktop/java.awt.font=ALL-UNNAMED ^
     %current_value%
 )
 

@@ -27,7 +27,6 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
-
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 import org.apache.calcite.util.ImmutableIntList;
@@ -45,6 +44,7 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.processors.cache.query.QueryCursorEx;
+import org.apache.ignite.internal.processors.query.IgniteSQLException;
 import org.apache.ignite.internal.processors.query.QueryEngine;
 import org.apache.ignite.internal.processors.query.calcite.exec.MailboxRegistryImpl;
 import org.apache.ignite.internal.processors.query.calcite.exec.rel.Inbox;
@@ -65,6 +65,7 @@ import org.junit.Test;
 import static org.apache.ignite.internal.processors.query.calcite.QueryChecker.awaitReservationsRelease;
 import static org.apache.ignite.internal.processors.query.calcite.QueryChecker.containsIndexScan;
 import static org.apache.ignite.internal.processors.query.calcite.QueryChecker.containsSubPlan;
+import static org.apache.ignite.testframework.GridTestUtils.assertThrows;
 import static org.apache.ignite.testframework.GridTestUtils.waitForCondition;
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.CoreMatchers.not;
@@ -436,16 +437,16 @@ public class CalciteQueryProcessorTest extends GridCommonAbstractTest {
 
         QueryEngine engine = Commons.lookupComponent(grid(1).context(), QueryEngine.class);
 
-        List<FieldsQueryCursor<List<?>>> query = engine.query(null, "PUBLIC",
+        List<FieldsQueryCursor<List<?>>> qry = engine.query(null, "PUBLIC",
             "SELECT * FROM employer1 " +
                 "UNION " +
                 "SELECT * FROM employer2 " +
                 "UNION " +
                 "SELECT * FROM employer3 ");
 
-        assertEquals(1, query.size());
+        assertEquals(1, qry.size());
 
-        List<List<?>> rows = query.get(0).getAll();
+        List<List<?>> rows = qry.get(0).getAll();
         assertEquals(3, rows.size());
     }
 
@@ -587,7 +588,6 @@ public class CalciteQueryProcessorTest extends GridCommonAbstractTest {
         assertEquals(2, rows.size());
     }
 
-
     /** */
     @Test
     public void testUnion() throws Exception {
@@ -695,12 +695,12 @@ public class CalciteQueryProcessorTest extends GridCommonAbstractTest {
 
         QueryEngine engine = Commons.lookupComponent(grid(1).context(), QueryEngine.class);
 
-        List<FieldsQueryCursor<List<?>>> query = engine.query(null, "PUBLIC",
+        List<FieldsQueryCursor<List<?>>> qry = engine.query(null, "PUBLIC",
             "SELECT * FROM employer WHERE employer.salary = (SELECT AVG(employer.salary) FROM employer)");
 
-        assertEquals(1, query.size());
+        assertEquals(1, qry.size());
 
-        List<List<?>> rows = query.get(0).getAll();
+        List<List<?>> rows = qry.get(0).getAll();
         assertEquals(1, rows.size());
         assertEquals(Arrays.asList("Roman", 15d), F.first(rows));
     }
@@ -768,12 +768,12 @@ public class CalciteQueryProcessorTest extends GridCommonAbstractTest {
 
         QueryEngine engine = Commons.lookupComponent(grid(1).context(), QueryEngine.class);
 
-        List<FieldsQueryCursor<List<?>>> query = engine.query(null, "PUBLIC",
+        List<FieldsQueryCursor<List<?>>> qry = engine.query(null, "PUBLIC",
             "select * from DEVELOPER d, PROJECT p where d.projectId = p._key and d._key = ?", 0);
 
-        assertEquals(1, query.size());
+        assertEquals(1, qry.size());
 
-        assertEqualsCollections(Arrays.asList("Igor", 1, "Calcite"), F.first(query.get(0).getAll()));
+        assertEqualsCollections(Arrays.asList("Igor", 1, "Calcite"), F.first(qry.get(0).getAll()));
     }
 
     /** */
@@ -801,12 +801,12 @@ public class CalciteQueryProcessorTest extends GridCommonAbstractTest {
 
         QueryEngine engine = Commons.lookupComponent(grid(1).context(), QueryEngine.class);
 
-        List<FieldsQueryCursor<List<?>>> query = engine.query(null, "PUBLIC",
+        List<FieldsQueryCursor<List<?>>> qry = engine.query(null, "PUBLIC",
             "select * from DEVELOPER d, PROJECT p where d.projectId = p._key and d._key = ?", 0);
 
-        assertEquals(1, query.size());
+        assertEquals(1, qry.size());
 
-        assertEqualsCollections(Arrays.asList("Igor", 1, "Calcite"), F.first(query.get(0).getAll()));
+        assertEqualsCollections(Arrays.asList("Igor", 1, "Calcite"), F.first(qry.get(0).getAll()));
     }
 
     /** */
@@ -838,17 +838,17 @@ public class CalciteQueryProcessorTest extends GridCommonAbstractTest {
 
         QueryEngine engine = Commons.lookupComponent(grid(1).context(), QueryEngine.class);
 
-        List<FieldsQueryCursor<List<?>>> query = engine.query(null, "PUBLIC",
+        List<FieldsQueryCursor<List<?>>> qry = engine.query(null, "PUBLIC",
             "" +
                 "select * from DEVELOPER d, PROJECT p where d.projectId = p._key and d._key = ?;" +
                 "select * from DEVELOPER d, PROJECT p where d.projectId = p._key and d._key = 10;" +
                 "select * from DEVELOPER d, PROJECT p where d.projectId = p._key and d._key = ?", 0, 1);
 
-        assertEquals(3, query.size());
+        assertEquals(3, qry.size());
 
-        assertEqualsCollections(Arrays.asList("Igor", 1, "Calcite"), F.first(query.get(0).getAll()));
-        assertEquals(0, query.get(1).getAll().size());
-        assertEqualsCollections(Arrays.asList("Roman", 0, "Ignite"), F.first(query.get(2).getAll()));
+        assertEqualsCollections(Arrays.asList("Igor", 1, "Calcite"), F.first(qry.get(0).getAll()));
+        assertEquals(0, qry.get(1).getAll().size());
+        assertEqualsCollections(Arrays.asList("Roman", 0, "Ignite"), F.first(qry.get(2).getAll()));
     }
 
     /**
@@ -1149,6 +1149,13 @@ public class CalciteQueryProcessorTest extends GridCommonAbstractTest {
     }
 
     /** */
+    @Test
+    @SuppressWarnings("ThrowableNotThrown")
+    public void testEmptyQuery() {
+        assertThrows(log, () -> sql(""), IgniteSQLException.class, "Failed to parse query");
+    }
+
+    /** */
     private static List<String> deriveColumnNamesFromCursor(FieldsQueryCursor cursor) {
         List<String> names = new ArrayList<>(cursor.getColumnsCount());
 
@@ -1185,29 +1192,29 @@ public class CalciteQueryProcessorTest extends GridCommonAbstractTest {
 
         // warmup
         for (int i = 0; i < numIterations; i++) {
-            List<FieldsQueryCursor<List<?>>> query = engine.query(null, "PUBLIC", "select * from DEVELOPER");
-            query.get(0).getAll();
+            List<FieldsQueryCursor<List<?>>> qry = engine.query(null, "PUBLIC", "select * from DEVELOPER");
+            qry.get(0).getAll();
         }
 
         long start = System.currentTimeMillis();
         for (int i = 0; i < numIterations; i++) {
-            List<FieldsQueryCursor<List<?>>> query = engine.query(null, "PUBLIC", "select * from DEVELOPER");
-            query.get(0).getAll();
+            List<FieldsQueryCursor<List<?>>> qry = engine.query(null, "PUBLIC", "select * from DEVELOPER");
+            qry.get(0).getAll();
         }
         System.out.println("Calcite duration = " + (System.currentTimeMillis() - start));
 
         // warmup
         for (int i = 0; i < numIterations; i++) {
-            List<FieldsQueryCursor<List<?>>> query = client.context().query().querySqlFields(
+            List<FieldsQueryCursor<List<?>>> qry = client.context().query().querySqlFields(
                 new SqlFieldsQuery("select * from DEVELOPER").setSchema("PUBLIC"), false, false);
-            query.get(0).getAll();
+            qry.get(0).getAll();
         }
 
         start = System.currentTimeMillis();
         for (int i = 0; i < numIterations; i++) {
-            List<FieldsQueryCursor<List<?>>> query = client.context().query().querySqlFields(
+            List<FieldsQueryCursor<List<?>>> qry = client.context().query().querySqlFields(
                 new SqlFieldsQuery("select * from DEVELOPER").setSchema("PUBLIC"), false, false);
-            query.get(0).getAll();
+            qry.get(0).getAll();
         }
         System.out.println("H2 duration = " + (System.currentTimeMillis() - start));
     }

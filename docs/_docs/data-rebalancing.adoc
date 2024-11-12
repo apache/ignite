@@ -16,7 +16,7 @@
 
 == Overview
 
-When a new node joins the cluster, some of the partitions are relocated to the new node so that the data remains distributed equally in the cluster. This process is called _data rebalancing_.
+When a new node joins the cluster, some partitions are relocated to the new node so that the data remains distributed equally in the cluster. This process is called _data rebalancing_.
 
 If an existing node permanently leaves the cluster and backups are not configured, you lose the partitions stored on this node.
 When backups are configured, one of the backup copies of the lost partitions becomes a primary partition and the rebalancing process is initiated.
@@ -27,8 +27,6 @@ Data rebalancing is triggered by changes in the link:clustering/baseline-topolog
 In pure in-memory clusters, the default behavior is to start rebalancing immediately when a node leaves or joins the cluster (the baseline topology changes automatically).
 In clusters with persistence, the baseline topology has to be changed manually (default behavior), or can be changed automatically when link:clustering/baseline-topology#baseline-topology-autoadjustment[automatic baseline adjustment] is enabled.
 ====
-
-Rebalancing is configured per cache.
 
 == Configuring Rebalancing Mode
 
@@ -66,14 +64,9 @@ include::code-snippets/dotnet/DataRebalancing.cs[tag=RebalanceMode,indent=0]
 tab:C++[unsupported]
 --
 
-== Configuring Rebalance Thread Pool
+== Configuring Rebalance Thread Pool [[threadpool]]
 
-By default, rebalancing is performed in one thread on each node.
-It means that at each point in time only one thread is used to transfer batches from one node to another, or to process batches coming from the remote node.
-////
-For example, if the cluster has two nodes and a single cache, all the cache's partitions will be re-balanced sequentially, one by one.
-If the cluster has two nodes and two caches, then the caches will be re-balanced in-parallel *TODO*
-////
+By default, Ignite uses either 4 threads, or 1/4 of the number of processor cores available, whichever is lower. For example, on an 8-core processor, 2 threads will be used.
 
 You can increase the number of threads that are taken from the system thread pool and used for rebalancing.
 A system thread is taken from the pool every time a node needs to send a batch of data to a remote node or needs to process a batch that came from a remote node.
@@ -127,7 +120,7 @@ tab:C++[unsupported]
 
 == Other Properties
 
-The following table lists the properties of `CacheConfiguration` related to rebalancing:
+The following table lists the properties of `IgniteConfiguration` related to rebalancing:
 
 [CAUTION]
 ====
@@ -137,19 +130,23 @@ The following table lists the properties of `CacheConfiguration` related to reba
 [cols="1,4,1",opts="header"]
 |===
 | Property | Description  | Default Value
-| `rebalanceDelay` | A delay in milliseconds before the rebalancing process starts after a node joins or leaves the topology. Rebalancing delay is useful if you plan to restart nodes or start multiple nodes at once or one after another and don't want to repartition and rebalance the data until all nodes are started.
-|0 (no delay)
+| `rebalanceThreadPoolSize` |Rebalance thread pool size. Limit of threads used for rebalance. See <<#threadpool>> | min(4, max(1, AVAILABLE_PROC_CNT / 4))
 
 |`rebalanceBatchSize` | The size in bytes of a single rebalance message. The rebalancing algorithm splits the data on every node into multiple batches prior to sending it to other nodes. | 512KB
+
+|`rebalanceBatchesPrefetchCount` | Rebalance batches prefetch count. | 3
 
 |`rebalanceThrottle`  | See <<#throttling>>.| 0 (throttling disabled)
 
 | `rebalanceOrder` | The order in which rebalancing should be done. Rebalance order can be set to a non-zero value for caches with SYNC or ASYNC rebalance modes only. Rebalancing for caches with smaller rebalance order is completed first. By default, rebalancing is not ordered. | 0
 
 |`rebalanceTimeout` | Timeout for pending rebalancing messages when they are exchanged between the nodes. | 10 seconds
+
+| `rebalanceDelay` | [Deprecated]  A delay in milliseconds before the rebalancing process starts after a node joins or leaves the topology. Rebalancing delay is useful if you plan to restart nodes or start multiple nodes at once or one after another and don't want to repartition and rebalance the data until all nodes are started.
+| 0 (no delay)
 |===
 
 
 == Monitoring Rebalancing Process
 
-You can monitor the link:monitoring-metrics/metrics#monitoring-rebalancing[rebalancing process for specific caches using JMX].
+You can monitor the link:monitoring-metrics/metrics/new-metrics#caches[rebalancing process for specific caches using JMX].

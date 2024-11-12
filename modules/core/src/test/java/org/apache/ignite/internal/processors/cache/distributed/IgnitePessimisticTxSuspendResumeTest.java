@@ -46,10 +46,6 @@ public class IgnitePessimisticTxSuspendResumeTest extends IgniteAbstractTxSuspen
      */
     @Test
     public void testExplicitLockAndSuspendResume() throws Exception {
-        // TODO: IGNITE-9324 Lock operations are not supported when MVCC is enabled.
-        if (FORCE_MVCC)
-            return;
-
         executeTestForAllCaches(new CI2Exc<Ignite, IgniteCache<Integer, Integer>>() {
             @Override public void applyx(Ignite ignite, final IgniteCache<Integer, Integer> cache) throws Exception {
                 for (TransactionIsolation isolation : TransactionIsolation.values()) {

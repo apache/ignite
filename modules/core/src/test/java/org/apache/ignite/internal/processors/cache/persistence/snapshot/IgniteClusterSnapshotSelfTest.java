@@ -49,6 +49,7 @@ import org.apache.ignite.cache.query.ScanQuery;
 import org.apache.ignite.cluster.ClusterTopologyException;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.failure.StopNodeFailureHandler;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInternalFuture;
@@ -69,7 +70,6 @@ import org.apache.ignite.internal.processors.cache.persistence.file.FileIO;
 import org.apache.ignite.internal.processors.cache.persistence.file.FileIOFactory;
 import org.apache.ignite.internal.processors.cache.persistence.file.RandomAccessFileIOFactory;
 import org.apache.ignite.internal.processors.cache.persistence.partstate.GroupPartitionId;
-import org.apache.ignite.internal.processors.metric.MetricRegistry;
 import org.apache.ignite.internal.processors.metric.impl.ObjectGauge;
 import org.apache.ignite.internal.util.distributed.DistributedProcess;
 import org.apache.ignite.internal.util.distributed.FullMessage;
@@ -80,6 +80,7 @@ import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteFuture;
+import org.apache.ignite.metric.MetricRegistry;
 import org.apache.ignite.spi.metric.LongMetric;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.transactions.Transaction;
@@ -101,6 +102,7 @@ import static org.apache.ignite.internal.processors.cache.persistence.snapshot.I
 import static org.apache.ignite.testframework.GridTestUtils.assertThrowsAnyCause;
 import static org.apache.ignite.testframework.GridTestUtils.assertThrowsWithCause;
 import static org.apache.ignite.testframework.GridTestUtils.waitForCondition;
+import static org.junit.Assume.assumeFalse;
 
 /**
  * Cluster-wide snapshot test.
@@ -117,6 +119,14 @@ public class IgniteClusterSnapshotSelfTest extends AbstractSnapshotSelfTest {
 
     /** {@code true} if node should be started in separate jvm. */
     protected volatile boolean jvm;
+
+    /** Any node failed. */
+    private boolean failed;
+
+    /** {@inheritDoc} */
+    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
+        return super.getConfiguration(igniteInstanceName).setFailureHandler((ignite, ctx) -> failed = true);
+    }
 
     /** @throws Exception If fails. */
     @Before
@@ -213,11 +223,13 @@ public class IgniteClusterSnapshotSelfTest extends AbstractSnapshotSelfTest {
         }, 3, "cache-put-");
 
         try {
-            IgniteFuture<Void> fut = ignite.snapshot().createSnapshot(snpName);
+            IgniteFuture<Void> fut = snp(ignite).createSnapshot(snpName, null, false, onlyPrimary);
 
             U.await(loadLatch, 10, TimeUnit.SECONDS);
 
             fut.get();
+
+            checkSnapshot(SNAPSHOT_NAME, null);
 
             waitForEvents(EVT_CLUSTER_SNAPSHOT_STARTED, EVT_CLUSTER_SNAPSHOT_FINISHED);
         }
@@ -286,9 +298,7 @@ public class IgniteClusterSnapshotSelfTest extends AbstractSnapshotSelfTest {
         }, 5, "atomic-cache-put-");
 
         try {
-            IgniteFuture<Void> fut = ignite.snapshot().createSnapshot(SNAPSHOT_NAME);
-
-            fut.get();
+            createAndCheckSnapshot(ignite, SNAPSHOT_NAME);
         }
         finally {
             txLoadFut.cancel();
@@ -299,23 +309,28 @@ public class IgniteClusterSnapshotSelfTest extends AbstractSnapshotSelfTest {
 
         IgniteEx snpIg0 = startGridsFromSnapshot(grids, cfg -> resolveSnapshotWorkDirectory(cfg).getAbsolutePath(), SNAPSHOT_NAME, false);
 
-        // Block whole rebalancing.
-        for (Ignite g : G.allGrids())
-            TestRecordingCommunicationSpi.spi(g).blockMessages((node, msg) -> msg instanceof GridDhtPartitionDemandMessage);
+        if (!onlyPrimary) {
+            // Block whole rebalancing.
+            for (Ignite g : G.allGrids())
+                TestRecordingCommunicationSpi.spi(g)
+                    .blockMessages((node, msg) -> msg instanceof GridDhtPartitionDemandMessage);
 
-        snpIg0.cluster().state(ACTIVE);
+            snpIg0.cluster().state(ACTIVE);
 
-        assertFalse("Primary and backup in snapshot must have the same counters. Rebalance must not happen.",
-            GridTestUtils.waitForCondition(() -> {
-                boolean hasMsgs = false;
+            assertFalse("Primary and backup in snapshot must have the same counters. Rebalance must not happen.",
+                GridTestUtils.waitForCondition(() -> {
+                    boolean hasMsgs = false;
 
-                for (Ignite g : G.allGrids())
-                    hasMsgs |= TestRecordingCommunicationSpi.spi(g).hasBlockedMessages();
+                    for (Ignite g : G.allGrids())
+                        hasMsgs |= TestRecordingCommunicationSpi.spi(g).hasBlockedMessages();
 
-                return hasMsgs;
-            }, REBALANCE_AWAIT_TIME));
+                    return hasMsgs;
+                }, REBALANCE_AWAIT_TIME));
 
-        TestRecordingCommunicationSpi.stopBlockAll();
+            TestRecordingCommunicationSpi.stopBlockAll();
+        }
+        else
+            snpIg0.cluster().state(ACTIVE);
 
         assertPartitionsSame(idleVerify(snpIg0, dfltCacheCfg.getName(), atomicCcfg.getName()));
     }
@@ -388,7 +403,7 @@ public class IgniteClusterSnapshotSelfTest extends AbstractSnapshotSelfTest {
         try {
             U.await(txStarted);
 
-            grid(0).snapshot().createSnapshot(SNAPSHOT_NAME).get();
+            snp(grid(0)).createSnapshot(SNAPSHOT_NAME, null, false, onlyPrimary).get();
         }
         finally {
             stop.set(true);
@@ -420,7 +435,7 @@ public class IgniteClusterSnapshotSelfTest extends AbstractSnapshotSelfTest {
         for (int i = 0; i < CACHE_KEYS_RANGE; i++)
             ig0.getOrCreateCache(ccfg).put(i, i);
 
-        ig0.snapshot().createSnapshot(SNAPSHOT_NAME).get();
+        snp(ig0).createSnapshot(SNAPSHOT_NAME, null, false, onlyPrimary).get();
 
         stopAllGrids();
 
@@ -464,9 +479,9 @@ public class IgniteClusterSnapshotSelfTest extends AbstractSnapshotSelfTest {
             return false;
         });
 
-        IgniteFuture<Void> fut = ignite.snapshot().createSnapshot(SNAPSHOT_NAME);
+        IgniteFuture<Void> fut = snp(ignite).createSnapshot(SNAPSHOT_NAME, null, false, onlyPrimary);
 
-        spi.waitBlocked(10_000L);
+        spi.waitBlocked(TIMEOUT);
 
         // Creating of new caches should not be blocked.
         ignite.getOrCreateCache(dfltCacheCfg.setName("default2"))
@@ -500,9 +515,9 @@ public class IgniteClusterSnapshotSelfTest extends AbstractSnapshotSelfTest {
         BlockingCustomMessageDiscoverySpi spi = discoSpi(ignite);
         spi.block((msg) -> msg instanceof FullMessage);
 
-        IgniteFuture<Void> fut = ignite.snapshot().createSnapshot(SNAPSHOT_NAME);
+        IgniteFuture<Void> fut = snp(ignite).createSnapshot(SNAPSHOT_NAME, null, false, onlyPrimary);
 
-        spi.waitBlocked(10_000L);
+        spi.waitBlocked(TIMEOUT);
 
         // Not baseline node joins successfully.
         String grid4Dir = folderName(startGrid(4));
@@ -527,21 +542,56 @@ public class IgniteClusterSnapshotSelfTest extends AbstractSnapshotSelfTest {
     /** @throws Exception If fails. */
     @Test
     public void testClusterSnapshotExOnInitiatorLeft() throws Exception {
+        for (boolean inc : new boolean[] {false, true}) {
+            IgniteEx ignite = startGridsWithCache(2, dfltCacheCfg, CACHE_KEYS_RANGE);
+
+            if (inc) {
+                assumeFalse("https://issues.apache.org/jira/browse/IGNITE-17819", encryption);
+
+                createAndCheckSnapshot(ignite, SNAPSHOT_NAME, null, TIMEOUT);
+            }
+
+            BlockingCustomMessageDiscoverySpi spi = discoSpi(ignite);
+            spi.block((msg) -> msg instanceof FullMessage);
+
+            IgniteFuture<Void> fut = inc
+                ? ignite.snapshot().createIncrementalSnapshot(SNAPSHOT_NAME)
+                : snp(ignite).createSnapshot(SNAPSHOT_NAME, null, false, onlyPrimary);
+
+            spi.waitBlocked(TIMEOUT);
+
+            ignite.close();
+
+            assertThrowsAnyCause(log,
+                fut::get,
+                NodeStoppingException.class,
+                SNP_NODE_STOPPING_ERR_MSG);
+
+            stopAllGrids();
+            cleanPersistenceDir();
+        }
+    }
+
+    /** @throws Exception If fails. */
+    @Test
+    public void testExceptionOnStartStage() throws Exception {
         IgniteEx ignite = startGridsWithCache(2, dfltCacheCfg, CACHE_KEYS_RANGE);
 
-        BlockingCustomMessageDiscoverySpi spi = discoSpi(ignite);
-        spi.block((msg) -> msg instanceof FullMessage);
+        IgniteFuture<Void> fut = snp(ignite).createSnapshot(SNAPSHOT_NAME, null, false, onlyPrimary);
 
-        IgniteFuture<Void> fut = ignite.snapshot().createSnapshot(SNAPSHOT_NAME);
+        File snpDir = snp(ignite).snapshotLocalDir(SNAPSHOT_NAME);
 
-        spi.waitBlocked(10_000L);
+        assertTrue(snpDir.mkdirs());
 
-        ignite.close();
+        File snpMeta = new File(snpDir, IgniteSnapshotManager.snapshotMetaFileName(ignite.localNode().consistentId().toString()));
 
-        assertThrowsAnyCause(log,
-            fut::get,
-            NodeStoppingException.class,
-            SNP_NODE_STOPPING_ERR_MSG);
+        assertTrue(snpMeta.createNewFile());
+
+        assertThrowsAnyCause(log, fut::get, IgniteException.class, "Snapshot metafile must not exist");
+
+        assertFalse(failed);
+
+        createAndCheckSnapshot(ignite, SNAPSHOT_NAME);
     }
 
     /** @throws Exception If fails. */
@@ -549,10 +599,10 @@ public class IgniteClusterSnapshotSelfTest extends AbstractSnapshotSelfTest {
     public void testSnapshotExistsException() throws Exception {
         IgniteEx ignite = startGridsWithCache(2, dfltCacheCfg, CACHE_KEYS_RANGE);
 
-        ignite.snapshot().createSnapshot(SNAPSHOT_NAME).get();
+        createAndCheckSnapshot(ignite, SNAPSHOT_NAME);
 
         assertThrowsAnyCause(log,
-            () -> ignite.snapshot().createSnapshot(SNAPSHOT_NAME).get(),
+            () -> snp(ignite).createSnapshot(SNAPSHOT_NAME, null, false, onlyPrimary).get(),
             IgniteException.class,
             "Snapshot with given name already exists on local node.");
 
@@ -585,7 +635,7 @@ public class IgniteClusterSnapshotSelfTest extends AbstractSnapshotSelfTest {
         TestRecordingCommunicationSpi commSpi1 = TestRecordingCommunicationSpi.spi(grid(1));
         commSpi1.blockMessages((node, msg) -> msg instanceof SingleNodeMessage);
 
-        IgniteFuture<?> fut = ignite.snapshot().createSnapshot(SNAPSHOT_NAME);
+        IgniteFuture<?> fut = snp(ignite).createSnapshot(SNAPSHOT_NAME, null, false, onlyPrimary);
 
         U.await(partProcessed, TIMEOUT, TimeUnit.MILLISECONDS);
 
@@ -611,7 +661,7 @@ public class IgniteClusterSnapshotSelfTest extends AbstractSnapshotSelfTest {
         assertTrue("Snapshot directory must be empty for node 1 due to snapshot future fail: " + dirNameIgnite1,
             !searchDirectoryRecursively(locSnpDir.toPath(), dirNameIgnite1).isPresent());
 
-        List<String> allSnapshots = snp(ignite).localSnapshotNames();
+        List<String> allSnapshots = snp(ignite).localSnapshotNames(null);
 
         assertTrue("Snapshot directory must be empty due to snapshot fail: " + allSnapshots,
             allSnapshots.isEmpty());
@@ -648,7 +698,7 @@ public class IgniteClusterSnapshotSelfTest extends AbstractSnapshotSelfTest {
         awaitPartitionMapExchange();
 
         assertThrowsAnyCause(log,
-            () -> ignite.snapshot().createSnapshot(SNAPSHOT_NAME).get(),
+            () -> snp(ignite).createSnapshot(SNAPSHOT_NAME, null, false, onlyPrimary).get(),
             ClusterTopologyException.class,
             "Snapshot operation interrupted, because baseline node left the cluster");
 
@@ -668,14 +718,16 @@ public class IgniteClusterSnapshotSelfTest extends AbstractSnapshotSelfTest {
 
         awaitPartitionMapExchange();
 
-        assertTrue("Snapshot directory must be empty", grid2.context().cache().context().snapshotMgr().localSnapshotNames().isEmpty());
+        assertTrue(
+            "Snapshot directory must be empty",
+            grid2.context().cache().context().snapshotMgr().localSnapshotNames(null).isEmpty()
+        );
 
-        ignite.snapshot().createSnapshot(SNAPSHOT_NAME)
-            .get();
+        createAndCheckSnapshot(ignite, SNAPSHOT_NAME);
 
         stopAllGrids();
 
-        IgniteEx snp = startGridsFromSnapshot(2, SNAPSHOT_NAME);
+        IgniteEx snp = startGridsFromSnapshot(onlyPrimary ? 3 : 2, SNAPSHOT_NAME);
 
         assertSnapshotCacheKeys(snp.cache(dfltCacheCfg.getName()));
     }
@@ -694,7 +746,7 @@ public class IgniteClusterSnapshotSelfTest extends AbstractSnapshotSelfTest {
 
         commSpi.waitForBlocked();
 
-        IgniteFuture<Void> fut = ignite.snapshot().createSnapshot(SNAPSHOT_NAME);
+        IgniteFuture<Void> fut = snp(ignite).createSnapshot(SNAPSHOT_NAME, null, false, onlyPrimary);
 
         commSpi.stopBlock(true);
 
@@ -746,8 +798,9 @@ public class IgniteClusterSnapshotSelfTest extends AbstractSnapshotSelfTest {
             for (int i = 0; i < CACHE_KEYS_RANGE; i++)
                 ignite.cache(DEFAULT_CACHE_NAME).put(i, i);
 
-            ignite.context().cache().context().snapshotMgr()
-                .createSnapshot(SNAPSHOT_NAME, cfgPath ? null : snpDir.getAbsolutePath()).get();
+            String snpPath = cfgPath ? null : snpDir.getAbsolutePath();
+
+            createAndCheckSnapshot(ignite, SNAPSHOT_NAME, snpPath);
 
             stopAllGrids();
 
@@ -773,7 +826,9 @@ public class IgniteClusterSnapshotSelfTest extends AbstractSnapshotSelfTest {
             GridKernalContext kctx = grid(idx).context();
 
             assertThrowsAnyCause(log,
-                () -> kctx.cache().context().snapshotMgr().createSnapshot(SNAPSHOT_NAME, invalidPath).get(TIMEOUT),
+                () -> kctx.cache().context().snapshotMgr()
+                    .createSnapshot(SNAPSHOT_NAME, invalidPath, false, onlyPrimary)
+                    .get(TIMEOUT),
                 IgniteCheckedException.class,
                 invalidPath);
 
@@ -821,7 +876,7 @@ public class IgniteClusterSnapshotSelfTest extends AbstractSnapshotSelfTest {
 
         long cutoffStartTime = U.currentTimeMillis();
 
-        IgniteFuture<Void> fut0 = ignite.snapshot().createSnapshot(SNAPSHOT_NAME);
+        IgniteFuture<Void> fut0 = snp(ignite).createSnapshot(SNAPSHOT_NAME, null, false, onlyPrimary);
 
         U.await(deltaApply);
 
@@ -835,7 +890,7 @@ public class IgniteClusterSnapshotSelfTest extends AbstractSnapshotSelfTest {
         assertTrue("Snapshot error message must null prior to snapshot operation started.",
             errMsg.value().isEmpty());
 
-        IgniteFuture<Void> fut1 = grid(1).snapshot().createSnapshot(newSnapshotName);
+        IgniteFuture<Void> fut1 = snp(grid(1)).createSnapshot(newSnapshotName, null, false, onlyPrimary);
 
         assertThrowsWithCause((Callable<Object>)fut1::get, IgniteException.class);
 
@@ -877,7 +932,7 @@ public class IgniteClusterSnapshotSelfTest extends AbstractSnapshotSelfTest {
         IgniteEx ignite = startGridsWithCache(1, dfltCacheCfg, CACHE_KEYS_RANGE);
 
         assertThrowsAnyCause(log,
-            () -> ignite.snapshot().createSnapshot("--№=+.:(snapshot)").get(),
+            () -> snp(ignite).createSnapshot("--№=+.:(snapshot)", null, false, onlyPrimary).get(),
             IllegalArgumentException.class,
             "Snapshot name must satisfy the following name pattern: a-zA-Z0-9_");
     }
@@ -889,8 +944,7 @@ public class IgniteClusterSnapshotSelfTest extends AbstractSnapshotSelfTest {
 
         stopGrid(2);
 
-        ignite.snapshot().createSnapshot(SNAPSHOT_NAME)
-            .get();
+        createAndCheckSnapshot(ignite, SNAPSHOT_NAME);
 
         stopAllGrids();
 
@@ -914,7 +968,7 @@ public class IgniteClusterSnapshotSelfTest extends AbstractSnapshotSelfTest {
 
         IgniteEx ignite = startGridsWithCache(3, CACHE_KEYS_RANGE, Integer::new, ccfg1, ccfg2);
 
-        ignite.snapshot().createSnapshot(SNAPSHOT_NAME).get();
+        createAndCheckSnapshot(ignite, SNAPSHOT_NAME);
 
         waitForEvents(EVT_CLUSTER_SNAPSHOT_STARTED, EVT_CLUSTER_SNAPSHOT_FINISHED);
 
@@ -962,7 +1016,7 @@ public class IgniteClusterSnapshotSelfTest extends AbstractSnapshotSelfTest {
                 });
         }
 
-        IgniteFuture<Void> fut = grid(1).snapshot().createSnapshot(SNAPSHOT_NAME);
+        IgniteFuture<Void> fut = snp(grid(1)).createSnapshot(SNAPSHOT_NAME, null, false, onlyPrimary);
 
         stopGrid(0);
 
@@ -1004,7 +1058,7 @@ public class IgniteClusterSnapshotSelfTest extends AbstractSnapshotSelfTest {
                 .blockMessages((node, msg) -> msg instanceof GridDhtPartitionSupplyMessage);
         }
 
-        Ignite ignite = startGrid(2);
+        IgniteEx ignite = startGrid(2);
 
         ignite.cluster().setBaselineTopology(ignite.cluster().topologyVersion());
 
@@ -1046,7 +1100,7 @@ public class IgniteClusterSnapshotSelfTest extends AbstractSnapshotSelfTest {
                 });
         }
 
-        IgniteFuture<Void> fut = ignite.snapshot().createSnapshot(SNAPSHOT_NAME);
+        IgniteFuture<Void> fut = snp(ignite).createSnapshot(SNAPSHOT_NAME, null, false, onlyPrimary);
 
         stopFut.get();
 
@@ -1095,7 +1149,7 @@ public class IgniteClusterSnapshotSelfTest extends AbstractSnapshotSelfTest {
             comps.put(((IgniteEx)ig).localNode().id(), comp);
         }
 
-        ignite.snapshot().createSnapshot(SNAPSHOT_NAME).get();
+        createAndCheckSnapshot(ignite, SNAPSHOT_NAME);
 
         for (Ignite ig : G.allGrids()) {
             ((IgniteEx)ig).context().cache().context().exchange()
@@ -1115,11 +1169,36 @@ public class IgniteClusterSnapshotSelfTest extends AbstractSnapshotSelfTest {
 
     /** @throws Exception If fails. */
     @Test
+    public void testClusterSnapshotFromNonBaseline() throws Exception {
+        startGridsWithCache(2, dfltCacheCfg, CACHE_KEYS_RANGE);
+
+        grid(0).cluster().baselineAutoAdjustEnabled(false);
+
+        grid(0).cluster().setBaselineTopology(grid(0).cluster().topologyVersion());
+
+        IgniteEx nonBaseLineNode = startGrid(G.allGrids().size());
+
+        // Yet another non-baseline.
+        startGrid(G.allGrids().size());
+
+        createAndCheckSnapshot(nonBaseLineNode, SNAPSHOT_NAME);
+
+        stopAllGrids();
+
+        IgniteEx snp = startGridsFromSnapshot(2, SNAPSHOT_NAME);
+
+        awaitPartitionMapExchange();
+
+        assertSnapshotCacheKeys(snp.cache(dfltCacheCfg.getName()));
+    }
+
+    /** @throws Exception If fails. */
+    @Test
     public void testClusterSnapshotFromClient() throws Exception {
         startGridsWithCache(2, dfltCacheCfg, CACHE_KEYS_RANGE);
         IgniteEx clnt = startClientGrid(2);
 
-        clnt.snapshot().createSnapshot(SNAPSHOT_NAME).get();
+        createAndCheckSnapshot(clnt, SNAPSHOT_NAME);
 
         waitForEvents(EVT_CLUSTER_SNAPSHOT_STARTED, EVT_CLUSTER_SNAPSHOT_FINISHED);
 
@@ -1146,10 +1225,10 @@ public class IgniteClusterSnapshotSelfTest extends AbstractSnapshotSelfTest {
         mgr.localSnapshotSenderFactory((snpName, snpPath) ->
             new DelegateSnapshotSender(log, block, old.apply(snpName, snpPath)));
 
-        IgniteFuture<Void> fut = grid.snapshot().createSnapshot(SNAPSHOT_NAME);
+        IgniteFuture<Void> fut = snp(grid).createSnapshot(SNAPSHOT_NAME, null, false, onlyPrimary);
 
         assertThrowsAnyCause(log,
-            () -> clnt.snapshot().createSnapshot(SNAPSHOT_NAME).get(),
+            () -> snp(clnt).createSnapshot(SNAPSHOT_NAME, null, false, onlyPrimary).get(),
             IgniteException.class,
             "Snapshot has not been created");
 
@@ -1166,7 +1245,7 @@ public class IgniteClusterSnapshotSelfTest extends AbstractSnapshotSelfTest {
         stopGrid(0);
 
         assertThrowsAnyCause(log,
-            () -> clnt.snapshot().createSnapshot(SNAPSHOT_NAME).get(),
+            () -> snp(clnt).createSnapshot(SNAPSHOT_NAME, null, false, onlyPrimary).get(),
             IgniteException.class,
             "Client disconnected. Snapshot result is unknown");
     }
@@ -1174,9 +1253,9 @@ public class IgniteClusterSnapshotSelfTest extends AbstractSnapshotSelfTest {
     /** @throws Exception If fails. */
     @Test
     public void testClusterSnapshotInProgressCancelled() throws Exception {
-        IgniteEx srv = startGridsWithCache(1, dfltCacheCfg, CACHE_KEYS_RANGE);
-        IgniteEx startCli = startClientGrid(1);
-        IgniteEx killCli = startClientGrid(2);
+        IgniteEx srv = startGridsWithCache(3, dfltCacheCfg, CACHE_KEYS_RANGE);
+        IgniteEx startCli = startClientGrid(3);
+        IgniteEx killCli = startClientGrid(4);
 
         doSnapshotCancellationTest(startCli, Collections.singletonList(srv), srv.cache(dfltCacheCfg.getName()),
             snpName -> killCli.snapshot().cancelSnapshot(snpName).get());
@@ -1189,7 +1268,7 @@ public class IgniteClusterSnapshotSelfTest extends AbstractSnapshotSelfTest {
     public void testClusterSnapshotFinishedTryCancel() throws Exception {
         IgniteEx ignite = startGridsWithCache(2, dfltCacheCfg, CACHE_KEYS_RANGE);
 
-        ignite.snapshot().createSnapshot(SNAPSHOT_NAME).get();
+        createAndCheckSnapshot(ignite, SNAPSHOT_NAME);
         ignite.snapshot().cancelSnapshot(SNAPSHOT_NAME).get();
 
         stopAllGrids();
@@ -1197,6 +1276,38 @@ public class IgniteClusterSnapshotSelfTest extends AbstractSnapshotSelfTest {
         IgniteEx snpIg = startGridsFromSnapshot(2, SNAPSHOT_NAME);
 
         assertSnapshotCacheKeys(snpIg.cache(dfltCacheCfg.getName()));
+    }
+
+    /** @throws Exception If fails. */
+    @Test
+    public void testClientHandlesSnapshotFailOnStartStage() throws Exception {
+        int grids = 2;
+
+        IgniteEx ignite = startGridsWithCache(grids, dfltCacheCfg, CACHE_KEYS_RANGE);
+
+        Ignite cln = startClientGrid(optimize(getConfiguration(getTestIgniteInstanceName(grids))
+            .setCacheConfiguration(dfltCacheCfg))
+            .setFailureHandler(new StopNodeFailureHandler()));
+
+        TestRecordingCommunicationSpi failNodeSpi = TestRecordingCommunicationSpi.spi(grid(1));
+
+        failNodeSpi.blockMessages((n, msg) ->
+            msg instanceof SingleNodeMessage
+                && ((SingleNodeMessage<?>)msg).type() == DistributedProcess.DistributedProcessType.START_SNAPSHOT.ordinal());
+
+        IgniteFuture<Void> fut = snp(ignite).createSnapshot(SNAPSHOT_NAME, null, false, onlyPrimary);
+
+        failNodeSpi.waitForBlocked(1, 10_000L);
+
+        grid(1).close();
+
+        assertThrowsAnyCause(log,
+            fut::get,
+            ClusterTopologyException.class,
+            "Snapshot operation interrupted, because baseline node left the cluster");
+
+        // Check that client node is alive.
+        assertSnapshotCacheKeys(cln.cache(dfltCacheCfg.getName()));
     }
 
     /**

@@ -28,7 +28,6 @@ import java.util.concurrent.CompletableFuture;
 import java.util.function.Function;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
-import org.apache.ignite.internal.processors.cache.persistence.file.FileIOFactory;
 import org.apache.ignite.internal.processors.cache.persistence.partstate.GroupPartitionId;
 import org.apache.ignite.internal.util.typedef.F;
 import org.jetbrains.annotations.Nullable;
@@ -48,8 +47,6 @@ public class SnapshotResponseRemoteFutureTask extends AbstractSnapshotFutureTask
      * @param reqId Snapshot operation request ID.
      * @param snpName Unique identifier of snapshot process.
      * @param snpPath Snapshot directory path.
-     * @param tmpWorkDir Working directory for intermediate snapshot results.
-     * @param ioFactory Factory to working with snapshot files.
      * @param snpSndr Factory which produces snapshot receiver instance.
      * @param parts Partition to be processed.
      */
@@ -59,12 +56,10 @@ public class SnapshotResponseRemoteFutureTask extends AbstractSnapshotFutureTask
         UUID reqId,
         String snpName,
         String snpPath,
-        File tmpWorkDir,
-        FileIOFactory ioFactory,
         SnapshotSender snpSndr,
         Map<Integer, Set<Integer>> parts
     ) {
-        super(cctx, srcNodeId, reqId, snpName, tmpWorkDir, ioFactory, snpSndr, parts);
+        super(cctx, srcNodeId, reqId, snpName, snpSndr, parts);
 
         this.snpPath = snpPath;
     }

@@ -17,6 +17,7 @@
 package org.apache.ignite.internal.processors.query.calcite.externalize;
 
 import java.io.IOException;
+import java.math.BigDecimal;
 import java.util.AbstractList;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
@@ -40,6 +41,7 @@ import org.apache.calcite.rel.core.AggregateCall;
 import org.apache.calcite.rel.type.RelDataType;
 import org.apache.calcite.rex.RexLiteral;
 import org.apache.calcite.rex.RexNode;
+import org.apache.calcite.runtime.SqlFunctions;
 import org.apache.calcite.sql.SqlAggFunction;
 import org.apache.calcite.util.ImmutableBitSet;
 import org.apache.calcite.util.Pair;
@@ -221,6 +223,11 @@ public class RelJsonReader {
         }
 
         /** {@inheritDoc} */
+        @Override public BigDecimal getBigDecimal(String tag) {
+            return SqlFunctions.toBigDecimal(jsonRel.get(tag));
+        }
+
+        /** {@inheritDoc} */
         @Override public boolean getBoolean(String tag, boolean default_) {
             Boolean b = (Boolean)jsonRel.get(tag);
             return b != null ? b : default_;
@@ -243,6 +250,9 @@ public class RelJsonReader {
         /** {@inheritDoc} */
         @Override public List<RexNode> getExpressionList(String tag) {
             List<Object> jsonNodes = (List)jsonRel.get(tag);
+            if (jsonNodes == null)
+                return null;
+
             List<RexNode> nodes = new ArrayList<>();
             for (Object jsonNode : jsonNodes)
                 nodes.add(relJson.toRex(this, jsonNode));
@@ -316,8 +326,8 @@ public class RelJsonReader {
         private ImmutableList<RexLiteral> getTuple(List jsonTuple) {
             ImmutableList.Builder<RexLiteral> builder =
                 ImmutableList.builder();
-            for (Object jsonValue : jsonTuple)
-                builder.add((RexLiteral)relJson.toRex(this, jsonValue));
+            for (Object jsonVal : jsonTuple)
+                builder.add((RexLiteral)relJson.toRex(this, jsonVal));
             return builder.build();
         }
 
@@ -328,10 +338,13 @@ public class RelJsonReader {
             Boolean distinct = (Boolean)jsonAggCall.get("distinct");
             List<Integer> operands = (List<Integer>)jsonAggCall.get("operands");
             Integer filterOperand = (Integer)jsonAggCall.get("filter");
-            RelDataType type = relJson.toType(Commons.typeFactory(Commons.emptyCluster()), jsonAggCall.get("type"));
+            RelDataType type = relJson.toType(Commons.typeFactory(), jsonAggCall.get("type"));
             String name = (String)jsonAggCall.get("name");
             RelCollation collation = relJson.toCollation((List<Map<String, Object>>)jsonAggCall.get("coll"));
-            return AggregateCall.create(aggregation, distinct, false, false, operands,
+            List<RexNode> rexList = Commons.transform((List<Object>)jsonAggCall.get("rexList"),
+                node -> relJson.toRex(this, node));
+
+            return AggregateCall.create(aggregation, distinct, false, false, rexList, operands,
                 filterOperand == null ? -1 : filterOperand, null, collation, type, name);
         }
     }

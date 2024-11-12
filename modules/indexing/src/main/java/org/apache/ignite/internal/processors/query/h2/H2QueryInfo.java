@@ -20,26 +20,35 @@ package org.apache.ignite.internal.processors.query.h2;
 import java.sql.PreparedStatement;
 import java.sql.SQLException;
 import java.util.UUID;
-import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.internal.processors.cache.query.IgniteQueryErrorCode;
 import org.apache.ignite.internal.processors.query.IgniteSQLException;
 import org.apache.ignite.internal.processors.query.QueryUtils;
-import org.apache.ignite.internal.processors.query.RunningQueryManager;
 import org.apache.ignite.internal.processors.query.h2.sql.GridSqlQueryParser;
-import org.apache.ignite.internal.util.typedef.internal.LT;
+import org.apache.ignite.internal.processors.query.running.RunningQueryManager;
+import org.apache.ignite.internal.processors.query.running.TrackableQuery;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.h2.command.Prepared;
 import org.h2.engine.Session;
+import org.jetbrains.annotations.Nullable;
 
 /**
  * Base H2 query info with commons for MAP, LOCAL, REDUCE queries.
  */
-public class H2QueryInfo {
+public class H2QueryInfo implements TrackableQuery {
     /** Type. */
     private final QueryType type;
 
     /** Begin timestamp. */
     private final long beginTs;
+
+    /** The most recent point in time when the tracking of a long query was suspended. */
+    private volatile long lastSuspendTs;
+
+    /** External wait time. */
+    private volatile long extWait;
+
+    /** Long query time tracking suspension flag. */
+    private volatile boolean isSuspended;
 
     /** Query schema. */
     private final String schema;
@@ -97,6 +106,26 @@ public class H2QueryInfo {
         }
     }
 
+    /** */
+    public UUID nodeId() {
+        return nodeId;
+    }
+
+    /** */
+    public long queryId() {
+        return queryId;
+    }
+
+    /** */
+    public String plan() {
+        return stmt.getPlanSQL();
+    }
+
+    /** */
+    public long extWait() {
+        return extWait;
+    }
+
     /**
      * Print info specified by children.
      *
@@ -106,20 +135,34 @@ public class H2QueryInfo {
         // No-op.
     }
 
-    /**
-     * @return Query execution time.
-     */
-    public long time() {
-        return U.currentTimeMillis() - beginTs;
+    /** {@inheritDoc} */
+    @Override public long time() {
+        return (isSuspended ? lastSuspendTs : U.currentTimeMillis()) - beginTs - extWait;
+    }
+
+    /** */
+    public synchronized void suspendTracking() {
+        if (!isSuspended) {
+            isSuspended = true;
+
+            lastSuspendTs = U.currentTimeMillis();
+        }
+    }
+
+    /** */
+    public synchronized void resumeTracking() {
+        if (isSuspended) {
+            isSuspended = false;
+
+            extWait += U.currentTimeMillis() - lastSuspendTs;
+        }
     }
 
     /**
-     * @param log Logger.
-     * @param msg Log message
      * @param additionalInfo Additional query info.
      */
-    public void printLogMessage(IgniteLogger log, String msg, String additionalInfo) {
-        StringBuilder msgSb = new StringBuilder(msg);
+    @Override public String queryInfo(@Nullable String additionalInfo) {
+        StringBuilder msgSb = new StringBuilder();
 
         if (queryId == RunningQueryManager.UNDEFINED_QUERY_ID)
             msgSb.append(" [globalQueryId=(undefined), node=").append(nodeId);
@@ -142,7 +185,12 @@ public class H2QueryInfo {
 
         msgSb.append(']');
 
-        LT.warn(log, msgSb.toString());
+        return msgSb.toString();
+    }
+
+    /** */
+    public boolean isSuspended() {
+        return isSuspended;
     }
 
     /**

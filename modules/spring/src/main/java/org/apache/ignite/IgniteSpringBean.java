@@ -25,6 +25,7 @@ import java.util.Collection;
 import java.util.concurrent.ExecutorService;
 import org.apache.ignite.cache.affinity.Affinity;
 import org.apache.ignite.cluster.ClusterGroup;
+import org.apache.ignite.cluster.ClusterState;
 import org.apache.ignite.configuration.AtomicConfiguration;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.CollectionConfiguration;
@@ -33,6 +34,7 @@ import org.apache.ignite.configuration.NearCacheConfiguration;
 import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.lang.IgniteProductVersion;
+import org.apache.ignite.metric.IgniteMetrics;
 import org.apache.ignite.plugin.IgnitePlugin;
 import org.apache.ignite.plugin.PluginNotFoundException;
 import org.apache.ignite.spi.tracing.TracingConfigurationManager;
@@ -200,6 +202,13 @@ public class IgniteSpringBean implements Ignite, DisposableBean, SmartInitializi
     }
 
     /** {@inheritDoc} */
+    @Override public IgniteMetrics metrics() {
+        checkIgnite();
+
+        return g.metrics();
+    }
+
+    /** {@inheritDoc} */
     @Override public IgniteServices services() {
         checkIgnite();
 
@@ -302,13 +311,6 @@ public class IgniteSpringBean implements Ignite, DisposableBean, SmartInitializi
         checkIgnite();
 
         return g.dataRegionMetrics(memPlcName);
-    }
-
-    /** {@inheritDoc} */
-    @Override public DataStorageMetrics dataStorageMetrics() {
-        checkIgnite();
-
-        return g.dataStorageMetrics();
     }
 
     /** {@inheritDoc} */
@@ -609,14 +611,14 @@ public class IgniteSpringBean implements Ignite, DisposableBean, SmartInitializi
     @Override public boolean active() {
         checkIgnite();
 
-        return g.active();
+        return g.cluster().state().active();
     }
 
     /** {@inheritDoc} */
     @Override public void active(boolean active) {
         checkIgnite();
 
-        g.active(active);
+        g.cluster().state(active ? ClusterState.ACTIVE : ClusterState.INACTIVE);
     }
 
     /** {@inheritDoc} */

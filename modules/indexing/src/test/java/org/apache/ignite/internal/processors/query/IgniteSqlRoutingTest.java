@@ -383,11 +383,11 @@ public class IgniteSqlRoutingTest extends AbstractIndexingCommonTest {
         IgniteCache<UUID, UUID> cache = grid(NODE_CLIENT).createCache(ccfg);
 
         try {
-            int count = 10;
+            int cnt = 10;
 
-            UUID values[] = new UUID[count];
+            UUID values[] = new UUID[cnt];
 
-            for (int i = 0; i < count; i++) {
+            for (int i = 0; i < cnt; i++) {
                 UUID val = UUID.randomUUID();
 
                 cache.put(val, val);
@@ -424,13 +424,13 @@ public class IgniteSqlRoutingTest extends AbstractIndexingCommonTest {
         IgniteCache<Date, Date> cache = grid(NODE_CLIENT).createCache(ccfg);
 
         try {
-            int count = 30;
+            int cnt = 30;
 
-            Date values[] = new Date[count];
+            Date values[] = new Date[cnt];
 
             DateFormat dateFormat = new SimpleDateFormat("dd/MM/yyyy");
 
-            for (int i = 0; i < count; i++) {
+            for (int i = 0; i < cnt; i++) {
                 Date val = dateFormat.parse(String.format("%02d/06/2017", i + 1));
 
                 cache.put(val, val);
@@ -476,11 +476,11 @@ public class IgniteSqlRoutingTest extends AbstractIndexingCommonTest {
         IgniteCache<CallKey, Call> callCache = grid(NODE_CLIENT).cache(CACHE_CALL);
         IgniteCache<Integer, Person> personCache = grid(NODE_CLIENT).cache(CACHE_PERSON);
 
-        int count = affinity(personCache).partitions();
+        int cnt = affinity(personCache).partitions();
 
         String[] names = {"John", "Bob", "James", "David", "Chuck"};
 
-        for (int i = 0; i < count; i++) {
+        for (int i = 0; i < cnt; i++) {
             Person person = new Person(names[i % names.length], 20 + (i % names.length));
 
             personCache.put(i, person);

@@ -28,7 +28,6 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.Supplier;
 import org.apache.ignite.IgniteCheckedException;
-import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.failure.FailureContext;
 import org.apache.ignite.failure.FailureType;
@@ -724,7 +723,7 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
 
             // Search row should point to the rightmost element, otherwise we won't find it on the inner node.
             if (res == FOUND && r.needReplaceInner == TRUE)
-                r.row = getRow(io, leafAddr, highIdx);
+                r.row = getRow(io, leafAddr, highIdx, r.x);
 
             return res;
         }
@@ -987,7 +986,8 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
             pageFlag,
             failureProcessor,
             pageLockTrackerManager,
-            DEFAULT_PAGE_IO_RESOLVER
+            DEFAULT_PAGE_IO_RESOLVER,
+            null
         );
 
         setIos(innerIos, leafIos);
@@ -1018,7 +1018,8 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
         byte pageFlag,
         @Nullable FailureProcessor failureProcessor,
         PageLockTrackerManager pageLockTrackerManager,
-        PageIoResolver pageIoRslvr
+        PageIoResolver pageIoRslvr,
+        @Nullable PageHandlerWrapper<Result> hndWrapper
     ) {
         super(name, cacheGrpId, grpName, pageMem, wal, pageLockTrackerManager, pageIoRslvr, pageFlag);
 
@@ -1034,31 +1035,33 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
         this.failureProcessor = failureProcessor;
 
         // Initialize page handlers.
-        askNeighbor = (PageHandler<Get, Result>)wrap(this, new AskNeighbor());
-        search = (PageHandler<Get, Result>)wrap(this, new Search());
-        lockTailExact = (PageHandler<Update, Result>)wrap(this, new LockTailExact());
-        lockTail = (PageHandler<Remove, Result>)wrap(this, new LockTail());
-        lockTailForward = (PageHandler<Remove, Result>)wrap(this, new LockTailForward());
-        lockBackAndTail = (PageHandler<Remove, Result>)wrap(this, new LockBackAndTail());
-        lockBackAndRmvFromLeaf = (PageHandler<Remove, Result>)wrap(this, new LockBackAndRmvFromLeaf());
-        rmvFromLeaf = (PageHandler<Remove, Result>)wrap(this, new RemoveFromLeaf());
-        insert = (PageHandler<Put, Result>)wrap(this, new Insert());
-        replace = (PageHandler<Put, Result>)wrap(this, new Replace());
-        rmvRangeFromLeaf = (PageHandler<Remove, Result>)wrap(this, new RemoveRangeFromLeaf());
+        askNeighbor = wrap(hndWrapper, new AskNeighbor());
+        search = wrap(hndWrapper, new Search());
+        lockTailExact = wrap(hndWrapper, new LockTailExact());
+        lockTail = wrap(hndWrapper, new LockTail());
+        lockTailForward = wrap(hndWrapper, new LockTailForward());
+        lockBackAndTail = wrap(hndWrapper, new LockBackAndTail());
+        lockBackAndRmvFromLeaf = wrap(hndWrapper, new LockBackAndRmvFromLeaf());
+        rmvFromLeaf = wrap(hndWrapper, new RemoveFromLeaf<>());
+        insert = wrap(hndWrapper, new Insert());
+        replace = wrap(hndWrapper, new Replace());
+        rmvRangeFromLeaf = wrap(hndWrapper, new RemoveRangeFromLeaf());
     }
 
     /**
-     * Returns a wrapper for page handler. By default, there is no wrapper.
+     * Returns a wrapped page handler. By default, there is no wrapper.
      *
-     * @param tree B-plus tree.
+     * @param hndWrapper Page handler wrapper for this tree.
      * @param hnd Page handler.
-     * @return Page handler wrapper.
+     * @return Wrapped page handler.
      */
-    private PageHandler<?, Result> wrap(BPlusTree<?, ?> tree, PageHandler<?, Result> hnd) {
-        if (testHndWrapper == null)
-            return hnd;
-        else
-            return testHndWrapper.wrap(tree, hnd);
+    private <X> PageHandler<X, Result> wrap(PageHandlerWrapper<Result> hndWrapper, PageHandler<?, Result> hnd) {
+        // Wrap handler using test wrapper.
+        if (testHndWrapper != null)
+            hnd = testHndWrapper.wrap(this, hnd);
+
+        // Additionally wrap using tree page handler wrapper, if it's specified.
+        return (PageHandler<X, Result>)(hndWrapper == null ? hnd : hndWrapper.wrap(this, hnd));
     }
 
     /**
@@ -1231,12 +1234,19 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
      * @param upper Upper bound.
      * @param upIncl {@code true} if upper bound is inclusive.
      * @param c Filter closure.
+     * @param rowFactory Row factory or (@code null} for default factory.
      * @param x Implementation specific argument, {@code null} always means that we need to return full detached data row.
      * @return Cursor.
      * @throws IgniteCheckedException If failed.
      */
-    private GridCursor<T> findLowerUnbounded(L upper, boolean upIncl, TreeRowClosure<L, T> c, Object x) throws IgniteCheckedException {
-        ForwardCursor cursor = new ForwardCursor(upper, upIncl, c, x);
+    private GridCursor<T> findLowerUnbounded(
+        L upper,
+        boolean upIncl,
+        TreeRowClosure<L, T> c,
+        TreeRowFactory<L, T> rowFactory,
+        Object x
+    ) throws IgniteCheckedException {
+        ForwardCursor cursor = new ForwardCursor(upper, upIncl, c, rowFactory, x);
 
         long firstPageId;
 
@@ -1299,7 +1309,7 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
      * @throws IgniteCheckedException If failed.
      */
     public GridCursor<T> find(L lower, L upper, TreeRowClosure<L, T> c, Object x) throws IgniteCheckedException {
-        return find(lower, upper, true, true, c, x);
+        return find(lower, upper, true, true, c, null, x);
     }
 
     /**
@@ -1308,6 +1318,7 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
      * @param lowIncl {@code true} if lower bound is inclusive.
      * @param upIncl {@code true} if upper bound is inclusive.
      * @param c Filter closure.
+     * @param rowFactory Row factory or (@code null} for default factory.
      * @param x Implementation specific argument, {@code null} always means that we need to return full detached data row.
      * @return Cursor.
      * @throws IgniteCheckedException If failed.
@@ -1318,15 +1329,16 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
         boolean lowIncl,
         boolean upIncl,
         TreeRowClosure<L, T> c,
+        TreeRowFactory<L, T> rowFactory,
         Object x
     ) throws IgniteCheckedException {
         checkDestroyed();
 
-        ForwardCursor cursor = new ForwardCursor(lower, upper, lowIncl, upIncl, c, x);
+        ForwardCursor cursor = new ForwardCursor(lower, upper, lowIncl, upIncl, c, rowFactory, x);
 
         try {
             if (lower == null)
-                return findLowerUnbounded(upper, upIncl, c, x);
+                return findLowerUnbounded(upper, upIncl, c, rowFactory, x);
 
             cursor.find();
 
@@ -1348,63 +1360,6 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
                 "Runtime failure on bounds: [lower=" + lower + ", upper=" + upper + "]",
                 e, grpId, pageIds
             );
-        }
-        finally {
-            checkDestroyed();
-        }
-    }
-
-    /**
-     * @param lower Lower bound inclusive.
-     * @param upper Upper bound inclusive.
-     * @param c Closure applied for all found items, iteration is stopped if closure returns {@code false}.
-     * @throws IgniteCheckedException If failed.
-     */
-    public void iterate(L lower, L upper, TreeRowClosure<L, T> c) throws IgniteCheckedException {
-        checkDestroyed();
-
-        ClosureCursor cursor = new ClosureCursor(lower, upper, c);
-
-        try {
-            cursor.iterate();
-        }
-        catch (CorruptedDataStructureException e) {
-            throw e;
-        }
-        catch (IgniteCheckedException e) {
-            throw new IgniteCheckedException("Runtime failure on bounds: [lower=" + lower + ", upper=" + upper + "]", e);
-        }
-        catch (RuntimeException | AssertionError e) {
-            throw corruptedTreeException(
-                "Runtime failure on bounds: [lower=" + lower + ", upper=" + upper + "]",
-                e, grpId, pages(cursor.getCursor != null, () -> new long[]{cursor.getCursor.pageId})
-            );
-        }
-        finally {
-            checkDestroyed();
-        }
-    }
-
-    /**
-     * @param lower Lower bound inclusive.
-     * @param upper Upper bound inclusive.
-     * @param c Closure applied for all found items.
-     * @throws IgniteCheckedException If failed.
-     */
-    public void visit(L lower, L upper, TreeVisitorClosure<L, T> c) throws IgniteCheckedException {
-        checkDestroyed();
-
-        try {
-            new TreeVisitor(lower, upper, c).visit();
-        }
-        catch (IgniteCheckedException e) {
-            throw new IgniteCheckedException("Runtime failure on bounds: [lower=" + lower + ", upper=" + upper + "]", e);
-        }
-        catch (RuntimeException e) {
-            throw new IgniteException("Runtime failure on bounds: [lower=" + lower + ", upper=" + upper + "]", e);
-        }
-        catch (AssertionError e) {
-            throw new AssertionError("Assertion error on bounds: [lower=" + lower + ", upper=" + upper + "]", e);
         }
         finally {
             checkDestroyed();
@@ -2147,13 +2102,27 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
         assert canGetRowFromInner : "Not supported";
         assert limit >= 0 : limit;
 
-        RemoveRange rmvOp = new RemoveRange(lower, upper, true, limit);
+        RemoveRange rmvOp = new RemoveRange(lower, upper, true, null, limit);
 
         doRemove(rmvOp);
 
         assert rmvOp.isDone();
 
         return Collections.unmodifiableList(rmvOp.removedRows);
+    }
+
+    /**
+     * @param lower Lower bound (inclusive).
+     * @param upper Upper bound (inclusive).
+     * @param x Implementation specific argument.
+     * @param limit Limit of processed entries by single call, {@code 0} or negative value for no limit.
+     * @return {@code True} if removed at least one row.
+     * @throws IgniteCheckedException If failed.
+     */
+    protected boolean removex(L lower, L upper, Object x, int limit) throws IgniteCheckedException {
+        Boolean res = (Boolean)doRemove(new RemoveRange(lower, upper, false, x, limit));
+
+        return res != null ? res : false;
     }
 
     /** {@inheritDoc} */
@@ -3111,87 +3080,6 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
     }
 
     /**
-     * @param c Get.
-     * @throws IgniteCheckedException If failed.
-     */
-    private void doVisit(TreeVisitor c) throws IgniteCheckedException {
-        for (;;) { // Go down with retries.
-            c.init();
-
-            switch (visitDown(c, c.rootId, 0L, c.rootLvl)) {
-                case RETRY:
-                case RETRY_ROOT:
-                    checkInterrupted();
-
-                    continue;
-
-                default:
-                    return;
-            }
-        }
-    }
-
-    /**
-     * @param v Tree visitor.
-     * @param pageId Page ID.
-     * @param fwdId Expected forward page ID.
-     * @param lvl Level.
-     * @return Result code.
-     * @throws IgniteCheckedException If failed.
-     */
-    private Result visitDown(final TreeVisitor v, final long pageId, final long fwdId, final int lvl)
-            throws IgniteCheckedException {
-        long page = acquirePage(pageId);
-
-        try {
-            for (;;) {
-                v.checkLockRetry();
-
-                // Init args.
-                v.pageId = pageId;
-                v.fwdId = fwdId;
-
-                Result res = read(pageId, page, search, v, lvl, RETRY);
-
-                switch (res) {
-                    case GO_DOWN:
-                    case GO_DOWN_X:
-                        assert v.pageId != pageId;
-                        assert v.fwdId != fwdId || fwdId == 0;
-
-                        // Go down recursively.
-                        res = visitDown(v, v.pageId, v.fwdId, lvl - 1);
-
-                        switch (res) {
-                            case RETRY:
-                                checkInterrupted();
-
-                                continue; // The child page got split, need to reread our page.
-
-                            default:
-                                return res;
-                        }
-
-                    case NOT_FOUND:
-                        assert lvl == 0 : lvl;
-
-                        return v.init(pageId, page, fwdId);
-
-                    case FOUND:
-                        throw new IllegalStateException(); // Must never be called because we always have a shift.
-
-                    default:
-                        return res;
-                }
-            }
-        }
-        finally {
-            if (v.canRelease(pageId, lvl))
-                releasePage(pageId, page);
-        }
-    }
-
-    /**
      * @param io IO.
      * @param pageAddr Page address.
      * @param back Backward page.
@@ -3465,259 +3353,6 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
             cursor.init(pageAddr, io, idx);
 
             return true;
-        }
-    }
-
-    /**
-     * Get a cursor for range.
-     */
-    private final class TreeVisitor extends Get {
-        /** */
-        long nextPageId;
-
-        /** */
-        L upper;
-
-        /** */
-        TreeVisitorClosure<L, T> p;
-
-        /** */
-        private boolean dirty;
-
-        /** */
-        private boolean writing;
-
-        /**
-         * @param lower Lower bound.
-         */
-        TreeVisitor(L lower, L upper, TreeVisitorClosure<L, T> p) {
-            super(lower, false);
-
-            this.shift = -1;
-            this.upper = upper;
-            this.p = p;
-        }
-
-        /** {@inheritDoc} */
-        @Override boolean found(BPlusIO<L> io, long pageAddr, int idx, int lvl) throws IgniteCheckedException {
-            throw new IllegalStateException(); // Must never be called because we always have a shift.
-        }
-
-        /** {@inheritDoc} */
-        @Override boolean notFound(BPlusIO<L> io, long pageAddr, int idx, int lvl) throws IgniteCheckedException {
-            if (lvl != 0)
-                return false;
-
-            if (!(writing = (p.state() & TreeVisitorClosure.CAN_WRITE) != 0))
-                init(pageAddr, io, idx);
-
-            return true;
-        }
-
-        /** */
-        Result init(long pageId, long page, long fwdId) throws IgniteCheckedException {
-            // Init args.
-            this.pageId = pageId;
-            this.fwdId = fwdId;
-
-            if (writing) {
-                long pageAddr = writeLock(pageId, page);
-
-                if (pageAddr == 0)
-                    return RETRY;
-
-                try {
-                    BPlusIO<L> io = io(pageAddr);
-
-                    // Check triangle invariant.
-                    if (io.getForward(pageAddr) != fwdId)
-                        return RETRY;
-
-                    init(pageAddr, io, -1);
-                }
-                finally {
-                    unlock(pageId, page, pageAddr);
-                }
-            }
-
-            return NOT_FOUND;
-        }
-
-        /**
-         * @param pageAddr Page address.
-         * @param io IO.
-         * @param startIdx Start index.
-         * @throws IgniteCheckedException If failed.
-         */
-        private void init(long pageAddr, BPlusIO<L> io, int startIdx) throws IgniteCheckedException {
-            nextPageId = 0;
-
-            int cnt = io.getCount(pageAddr);
-
-            if (cnt != 0)
-                visit(pageAddr, io, startIdx, cnt);
-        }
-
-        /**
-         * @param pageAddr Page address.
-         * @param io IO.
-         * @param startIdx Start index.
-         * @param cnt Number of rows in the buffer.
-         * @throws IgniteCheckedException If failed.
-         */
-        private void visit(long pageAddr, BPlusIO<L> io, int startIdx, int cnt)
-                throws IgniteCheckedException {
-            assert io.isLeaf() : io;
-            assert cnt != 0 : cnt; // We can not see empty pages (empty tree handled in init).
-            assert startIdx >= -1 : startIdx;
-            assert cnt >= startIdx;
-
-            checkDestroyed();
-
-            nextPageId = io.getForward(pageAddr);
-
-            if (startIdx == -1)
-                startIdx = findLowerBound(pageAddr, io, cnt);
-
-            if (cnt == startIdx)
-                return; // Go to the next page;
-
-            cnt = findUpperBound(pageAddr, io, startIdx, cnt);
-
-            for (int i = startIdx; i < cnt; i++) {
-                int state = p.visit(BPlusTree.this, io, pageAddr, i, wal);
-
-                boolean stop = (state & TreeVisitorClosure.STOP) != 0;
-
-                if (writing)
-                    dirty = dirty || (state & TreeVisitorClosure.DIRTY) != 0;
-
-                if (stop) {
-                    nextPageId = 0; // The End.
-
-                    return;
-                }
-            }
-
-            if (nextPageId != 0) {
-                row = io.getLookupRow(BPlusTree.this, pageAddr, cnt - 1); // Need save last row.
-
-                shift = 1;
-            }
-        }
-
-        /**
-         * @param pageAddr Page address.
-         * @param io IO.
-         * @param cnt Count.
-         * @return Adjusted to lower bound start index.
-         * @throws IgniteCheckedException If failed.
-         */
-        private int findLowerBound(long pageAddr, BPlusIO<L> io, int cnt) throws IgniteCheckedException {
-            assert io.isLeaf();
-
-            // Compare with the first row on the page.
-            int cmp = compare(0, io, pageAddr, 0, row);
-
-            if (cmp < 0 || (cmp == 0 && shift == 1)) {
-                int idx = findInsertionPoint(0, io, pageAddr, 0, cnt, row, shift);
-
-                assert idx < 0;
-
-                return fix(idx);
-            }
-
-            return 0;
-        }
-
-        /**
-         * @param pageAddr Page address.
-         * @param io IO.
-         * @param low Start index.
-         * @param cnt Number of rows in the buffer.
-         * @return Corrected number of rows with respect to upper bound.
-         * @throws IgniteCheckedException If failed.
-         */
-        private int findUpperBound(long pageAddr, BPlusIO<L> io, int low, int cnt) throws IgniteCheckedException {
-            assert io.isLeaf();
-
-            // Compare with the last row on the page.
-            int cmp = compare(0, io, pageAddr, cnt - 1, upper);
-
-            if (cmp > 0) {
-                int idx = findInsertionPoint(0, io, pageAddr, low, cnt, upper, 1);
-
-                assert idx < 0;
-
-                cnt = fix(idx);
-
-                nextPageId = 0; // The End.
-            }
-
-            return cnt;
-        }
-
-        /**
-         * @throws IgniteCheckedException If failed.
-         */
-        private void nextPage() throws IgniteCheckedException {
-            for (;;) {
-                if (nextPageId == 0)
-                    return;
-
-                long pageId = nextPageId;
-                long page = acquirePage(pageId);
-                try {
-                    long pageAddr = lock(pageId, page); // Doing explicit null check.
-
-                    // If concurrent merge occurred we have to reinitialize cursor from the last returned row.
-                    if (pageAddr == 0L)
-                        break;
-
-                    try {
-                        BPlusIO<L> io = io(pageAddr);
-
-                        visit(pageAddr, io, -1, io.getCount(pageAddr));
-                    }
-                    finally {
-                        unlock(pageId, page, pageAddr);
-                    }
-                }
-                finally {
-                    releasePage(pageId, page);
-                }
-            }
-
-            doVisit(this); // restart from last read row
-        }
-
-        /** */
-        private void unlock(long pageId, long page, long pageAddr) {
-            if (writing) {
-                writeUnlock(pageId, page, pageAddr, dirty);
-
-                dirty = false; // reset dirty flag
-            }
-            else
-                readUnlock(pageId, page, pageAddr);
-        }
-
-        /** */
-        private long lock(long pageId, long page) {
-            if (writing = ((p.state() & TreeVisitorClosure.CAN_WRITE) != 0))
-                return writeLock(pageId, page);
-            else
-                return readLock(pageId, page);
-        }
-
-        /**
-         * @throws IgniteCheckedException If failed.
-         */
-        private void visit() throws IgniteCheckedException {
-            doVisit(this);
-
-            while (nextPageId != 0)
-                nextPage();
         }
     }
 
@@ -4704,6 +4339,9 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
         final boolean needOld;
 
         /** */
+        final Object x;
+
+        /** */
         final PageHandler<Remove, Result> rmvFromLeafHnd;
 
         /**
@@ -4711,18 +4349,20 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
          * @param needOld {@code True} If need return old value.
          */
         private Remove(L row, boolean needOld) {
-            this(row, needOld, rmvFromLeaf);
+            this(row, needOld, null, rmvFromLeaf);
         }
 
         /**
          * @param row Row.
          * @param needOld {@code True} If need return old value.
+         * @param x Implementation specific argument.
          * @param rmvFromLeaf Remove from leaf page handler.
          */
-        private Remove(L row, boolean needOld, PageHandler<Remove, Result> rmvFromLeaf) {
+        private Remove(L row, boolean needOld, Object x, PageHandler<Remove, Result> rmvFromLeaf) {
             super(row);
 
             this.needOld = needOld;
+            this.x = x;
 
             rmvFromLeafHnd = rmvFromLeaf;
         }
@@ -5180,7 +4820,7 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
             assert !isRemoved() : "already removed";
 
             // Detach the row.
-            rmvd = needOld ? getRow(io, pageAddr, idx) : (T)Boolean.TRUE;
+            rmvd = needOld ? getRow(io, pageAddr, idx, x) : (T)Boolean.TRUE;
 
             doRemove(pageId, page, pageAddr, walPlc, io, cnt, idx);
 
@@ -6004,101 +5644,6 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
     }
 
     /**
-     * Closure cursor.
-     */
-    private final class ClosureCursor extends AbstractForwardCursor {
-        /** */
-        private final TreeRowClosure<L, T> p;
-
-        /** */
-        private L lastRow;
-
-        /**
-         * @param lowerBound Lower bound inclusive.
-         * @param upperBound Upper bound inclusive.
-         * @param p Row predicate.
-         */
-        ClosureCursor(L lowerBound, L upperBound, TreeRowClosure<L, T> p) {
-            super(lowerBound, upperBound, true, true);
-
-            assert lowerBound != null;
-            assert upperBound != null;
-            assert p != null;
-
-            this.p = p;
-        }
-
-        /** {@inheritDoc} */
-        @Override void init0() {
-            // No-op.
-        }
-
-        /** {@inheritDoc} */
-        @Override boolean fillFromBuffer0(long pageAddr, BPlusIO<L> io, int startIdx, int cnt)
-            throws IgniteCheckedException {
-            if (startIdx == -1)
-                startIdx = findLowerBound(pageAddr, io, cnt);
-
-            if (cnt == startIdx)
-                return false;
-
-            for (int i = startIdx; i < cnt; i++) {
-                int cmp = compare(0, io, pageAddr, i, upperBound);
-
-                if (cmp > 0) {
-                    nextPageId = 0; // The End.
-
-                    return false;
-                }
-
-                boolean stop = !p.apply(BPlusTree.this, io, pageAddr, i);
-
-                if (stop) {
-                    nextPageId = 0; // The End.
-
-                    return true;
-                }
-            }
-
-            if (nextPageId != 0)
-                lastRow = io.getLookupRow(BPlusTree.this, pageAddr, cnt - 1); // Need save last row.
-
-            return true;
-        }
-
-        /** {@inheritDoc} */
-        @Override boolean reinitialize0() throws IgniteCheckedException {
-            return true;
-        }
-
-        /** {@inheritDoc} */
-        @Override void onNotFound(boolean readDone) {
-            nextPageId = 0;
-        }
-
-        /**
-         * @throws IgniteCheckedException If failed.
-         */
-        private void iterate() throws IgniteCheckedException {
-            find();
-
-            if (nextPageId == 0)
-                return;
-
-            for (;;) {
-                L lastRow0 = lastRow;
-
-                lastRow = null;
-
-                nextPage(lastRow0);
-
-                if (nextPageId == 0)
-                    return;
-            }
-        }
-    }
-
-    /**
      * Forward cursor.
      */
     private final class ForwardCursor extends AbstractForwardCursor implements GridCursor<T> {
@@ -6114,16 +5659,20 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
         /** */
         private final TreeRowClosure<L, T> c;
 
+        /** */
+        private final TreeRowFactory<L, T> rowFactory;
+
         /**
          * Lower unbound cursor.
          *
          * @param upperBound Upper bound.
          * @param upIncl {@code true} if upper bound is inclusive.
          * @param c Filter closure.
+         * @param rowFactory Row factory or (@code null} for default factory.
          * @param x Implementation specific argument, {@code null} always means that we need to return full detached data row.
          */
-        ForwardCursor(L upperBound, boolean upIncl, TreeRowClosure<L, T> c, Object x) {
-            this(null, upperBound, true, upIncl, c, x);
+        ForwardCursor(L upperBound, boolean upIncl, TreeRowClosure<L, T> c, TreeRowFactory<L, T> rowFactory, Object x) {
+            this(null, upperBound, true, upIncl, c, rowFactory, x);
         }
 
         /**
@@ -6132,12 +5681,22 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
          * @param lowIncl {@code true} if lower bound is inclusive.
          * @param upIncl {@code true} if upper bound is inclusive.
          * @param c Filter closure.
+         * @param rowFactory Row factory or (@code null} for default factory.
          * @param x Implementation specific argument, {@code null} always means that we need to return full detached data row.
          */
-        ForwardCursor(L lowerBound, L upperBound, boolean lowIncl, boolean upIncl, TreeRowClosure<L, T> c, Object x) {
+        ForwardCursor(
+            L lowerBound,
+            L upperBound,
+            boolean lowIncl,
+            boolean upIncl,
+            TreeRowClosure<L, T> c,
+            TreeRowFactory<L, T> rowFactory,
+            Object x
+        ) {
             super(lowerBound, upperBound, lowIncl, upIncl);
 
             this.c = c;
+            this.rowFactory = rowFactory;
             this.x = x;
         }
 
@@ -6164,8 +5723,10 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
             int resCnt = 0;
 
             for (int idx = startIdx; idx < cnt; idx++) {
-                if (c == null || c.apply(BPlusTree.this, io, pageAddr, idx))
-                    rows = GridArrays.set(rows, resCnt++, getRow(io, pageAddr, idx, x));
+                if (c == null || c.apply(BPlusTree.this, io, pageAddr, idx)) {
+                    rows = GridArrays.set(rows, resCnt++, rowFactory == null ? getRow(io, pageAddr, idx, x) :
+                        rowFactory.create(BPlusTree.this, io, pageAddr, idx));
+                }
             }
 
             if (resCnt == 0) {
@@ -6370,36 +5931,34 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
          */
         public boolean apply(BPlusTree<L, T> tree, BPlusIO<L> io, long pageAddr, int idx)
             throws IgniteCheckedException;
+
+        /**
+         * Optional operation to provide access to the last analyzed row.
+         * Can be used to optimize chained filters and omit several tree reads.
+         *
+         * @return Last row that was analyzed or {@code null}.
+         */
+        public default L lastRow() {
+            return null;
+        }
     }
 
     /**
-     * A generic visitor-style interface for performing inspection/modification operations on the tree.
+     * Row factory from page memory.
      */
-    public interface TreeVisitorClosure<L, T extends L> {
-        /** */
-        int STOP = 0x01;
-        /** */
-        int CAN_WRITE = STOP << 1;
-        /** */
-        int DIRTY = CAN_WRITE << 1;
-
+    public interface TreeRowFactory<L, T extends L> {
         /**
-         * Performs inspection or operation on a specified row.
+         * Creates row.
          *
          * @param tree The tree.
-         * @param io Th tree IO object.
+         * @param io The tree IO object.
          * @param pageAddr The page address.
          * @param idx The item index.
-         * @return state bitset.
+         * @return Created index row.
          * @throws IgniteCheckedException If failed.
          */
-        public int visit(BPlusTree<L, T> tree, BPlusIO<L> io, long pageAddr, int idx, IgniteWriteAheadLogManager wal)
+        public T create(BPlusTree<L, T> tree, BPlusIO<L> io, long pageAddr, int idx)
             throws IgniteCheckedException;
-
-        /**
-         * @return state bitset.
-         */
-        public int state();
     }
 
     /**
@@ -6555,9 +6114,11 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
          * @param lower Lower bound (inclusive).
          * @param upper Upper bound (inclusive).
          * @param needOld {@code True} If need return old value.
+         * @param x Implementation specific argument, {@code null} always means that we need a full detached data row.
+         * @param limit Limit of processed entries by single call, {@code 0} or negative value for no limit.
          */
-        protected RemoveRange(L lower, L upper, boolean needOld, int limit) {
-            super(lower, needOld, rmvRangeFromLeaf);
+        protected RemoveRange(L lower, L upper, boolean needOld, Object x, int limit) {
+            super(lower, needOld, x, rmvRangeFromLeaf);
 
             this.lower = lower;
             this.upper = upper;
@@ -6620,7 +6181,7 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
             // Delete from right to left to reduce the number of items moved during the delete operation.
             for (int i = highIdx; i >= idx; i--) {
                 if (needOld)
-                    removedRows.add(getRow(io, pageAddr, i));
+                    removedRows.add(getRow(io, pageAddr, i, x));
 
                 doRemove(pageId, page, pageAddr, walPlc, io, cnt - highIdx + i, i);
 

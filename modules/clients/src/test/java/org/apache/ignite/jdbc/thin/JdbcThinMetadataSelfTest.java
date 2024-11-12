@@ -419,12 +419,14 @@ public class JdbcThinMetadataSelfTest extends JdbcThinAbstractSelfTest {
             new TreeSet<>(Arrays.asList(
                 "SYS.METRICS",
                 "SYS.SERVICES",
+                "SYS.SNAPSHOT",
                 "SYS.CACHE_GROUPS",
                 "SYS.CACHES",
                 "SYS.TASKS",
                 "SYS.JOBS",
                 "SYS.SQL_QUERIES_HISTORY",
                 "SYS.NODES",
+                "SYS.CONFIGURATION",
                 "SYS.SCHEMAS",
                 "SYS.NODE_METRICS",
                 "SYS.BASELINE_NODES",
@@ -436,6 +438,7 @@ public class JdbcThinMetadataSelfTest extends JdbcThinAbstractSelfTest {
                 "SYS.NODE_ATTRIBUTES",
                 "SYS.TABLES",
                 "SYS.CLIENT_CONNECTIONS",
+                "SYS.CLIENT_CONNECTION_ATTRIBUTES",
                 "SYS.TRANSACTIONS",
                 "SYS.VIEWS",
                 "SYS.TABLE_COLUMNS",
@@ -638,7 +641,7 @@ public class JdbcThinMetadataSelfTest extends JdbcThinAbstractSelfTest {
 
             Set<String> actualUserCols = new TreeSet<>();
 
-            Set<String> actualSystemCols = new TreeSet<>();
+            Set<String> actualSysCols = new TreeSet<>();
 
             while (rs.next()) {
                 int precision = rs.getInt("COLUMN_SIZE");
@@ -657,7 +660,7 @@ public class JdbcThinMetadataSelfTest extends JdbcThinAbstractSelfTest {
                 if (!schemaName.equals(SCHEMA_SYS))
                     actualUserCols.add(colDefinition);
                 else
-                    actualSystemCols.add(colDefinition);
+                    actualSysCols.add(colDefinition);
             }
 
             Assert.assertEquals(expectedCols, actualUserCols);
@@ -705,6 +708,7 @@ public class JdbcThinMetadataSelfTest extends JdbcThinAbstractSelfTest {
                 "SYS.CACHES.NEAR_CACHE_EVICTION_POLICY_FACTORY.null",
                 "SYS.CACHES.NEAR_CACHE_START_SIZE.null",
                 "SYS.CACHES.DEFAULT_LOCK_TIMEOUT.null",
+                "SYS.CACHES.HAS_EXPIRING_ENTRIES.null",
                 "SYS.CACHES.INTERCEPTOR.null",
                 "SYS.CACHES.CACHE_STORE_FACTORY.null",
                 "SYS.CACHES.IS_STORE_KEEP_BINARY.null",
@@ -801,7 +805,6 @@ public class JdbcThinMetadataSelfTest extends JdbcThinAbstractSelfTest {
                 "SYS.NODES.CONSISTENT_ID.null",
                 "SYS.NODES.VERSION.null",
                 "SYS.NODES.IS_CLIENT.null",
-                "SYS.NODES.IS_DAEMON.null",
                 "SYS.NODES.IS_LOCAL.null",
                 "SYS.NODES.NODE_ORDER.null",
                 "SYS.NODES.ADDRESSES.null",
@@ -809,6 +812,8 @@ public class JdbcThinMetadataSelfTest extends JdbcThinAbstractSelfTest {
                 "SYS.NODE_ATTRIBUTES.NODE_ID.null",
                 "SYS.NODE_ATTRIBUTES.NAME.null",
                 "SYS.NODE_ATTRIBUTES.VALUE.null",
+                "SYS.CONFIGURATION.NAME.null",
+                "SYS.CONFIGURATION.VALUE.null",
                 "SYS.NODE_METRICS.NODE_ID.null",
                 "SYS.NODE_METRICS.LAST_UPDATE_TIME.null",
                 "SYS.NODE_METRICS.MAX_ACTIVE_JOBS.null",
@@ -892,6 +897,15 @@ public class JdbcThinMetadataSelfTest extends JdbcThinAbstractSelfTest {
                 "SYS.SERVICES.NODE_FILTER.null",
                 "SYS.SERVICES.STATICALLY_CONFIGURED.null",
                 "SYS.SERVICES.SERVICE_ID.null",
+                "SYS.SERVICES.TOPOLOGY_SNAPSHOT.null",
+                "SYS.SNAPSHOT.BASELINE_NODES.null",
+                "SYS.SNAPSHOT.CACHE_GROUPS.null",
+                "SYS.SNAPSHOT.CONSISTENT_ID.null",
+                "SYS.SNAPSHOT.INCREMENT_INDEX.null",
+                "SYS.SNAPSHOT.NAME.null",
+                "SYS.SNAPSHOT.SNAPSHOT_RECORD_SEGMENT.null",
+                "SYS.SNAPSHOT.TYPE.null",
+                "SYS.SNAPSHOT.SNAPSHOT_TIME.null",
                 "SYS.TASKS.AFFINITY_CACHE_NAME.null",
                 "SYS.TASKS.INTERNAL.null",
                 "SYS.TASKS.END_TIME.null",
@@ -926,6 +940,9 @@ public class JdbcThinMetadataSelfTest extends JdbcThinAbstractSelfTest {
                 "SYS.CLIENT_CONNECTIONS.TYPE.null",
                 "SYS.CLIENT_CONNECTIONS.USER.null",
                 "SYS.CLIENT_CONNECTIONS.VERSION.null",
+                "SYS.CLIENT_CONNECTION_ATTRIBUTES.CONNECTION_ID.null",
+                "SYS.CLIENT_CONNECTION_ATTRIBUTES.NAME.null",
+                "SYS.CLIENT_CONNECTION_ATTRIBUTES.VALUE.null",
                 "SYS.TASKS.EXEC_NAME.null",
                 "SYS.TRANSACTIONS.LOCAL_NODE_ID.null",
                 "SYS.TRANSACTIONS.STATE.null",
@@ -954,9 +971,10 @@ public class JdbcThinMetadataSelfTest extends JdbcThinAbstractSelfTest {
                 "SYS.TRANSACTIONS.CACHE_IDS.null",
                 "SYS.SCHEMAS.SCHEMA_NAME.null",
                 "SYS.SCHEMAS.PREDEFINED.null",
-                "SYS.VIEWS.NAME.null",
-                "SYS.VIEWS.DESCRIPTION.null",
                 "SYS.VIEWS.SCHEMA.null",
+                "SYS.VIEWS.NAME.null",
+                "SYS.VIEWS.SQL.null",
+                "SYS.VIEWS.DESCRIPTION.null",
                 "SYS.TABLE_COLUMNS.AFFINITY_COLUMN.null",
                 "SYS.TABLE_COLUMNS.COLUMN_NAME.null",
                 "SYS.TABLE_COLUMNS.SCALE.null",
@@ -1010,11 +1028,13 @@ public class JdbcThinMetadataSelfTest extends JdbcThinAbstractSelfTest {
                 "SYS.CACHE_GROUP_PAGE_LISTS.BUCKET_SIZE.null",
                 "SYS.CACHE_GROUP_PAGE_LISTS.STRIPES_COUNT.null",
                 "SYS.CACHE_GROUP_PAGE_LISTS.CACHED_PAGES_COUNT.null",
+                "SYS.CACHE_GROUP_PAGE_LISTS.PAGE_FREE_SPACE.null",
                 "SYS.DATA_REGION_PAGE_LISTS.NAME.null",
                 "SYS.DATA_REGION_PAGE_LISTS.BUCKET_NUMBER.null",
                 "SYS.DATA_REGION_PAGE_LISTS.BUCKET_SIZE.null",
                 "SYS.DATA_REGION_PAGE_LISTS.STRIPES_COUNT.null",
                 "SYS.DATA_REGION_PAGE_LISTS.CACHED_PAGES_COUNT.null",
+                "SYS.DATA_REGION_PAGE_LISTS.PAGE_FREE_SPACE.null",
                 "SYS.PARTITION_STATES.CACHE_GROUP_ID.null",
                 "SYS.PARTITION_STATES.PARTITION_ID.null",
                 "SYS.PARTITION_STATES.NODE_ID.null",
@@ -1143,7 +1163,7 @@ public class JdbcThinMetadataSelfTest extends JdbcThinAbstractSelfTest {
                 "SYS.PAGES_TIMESTAMP_HISTOGRAM.PAGES_COUNT.null"
                 ));
 
-            Assert.assertEquals(expectedCols, actualSystemCols);
+            Assert.assertEquals(expectedCols, actualSysCols);
         }
     }
 

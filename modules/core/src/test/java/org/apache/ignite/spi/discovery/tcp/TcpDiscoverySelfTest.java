@@ -177,8 +177,7 @@ public class TcpDiscoverySelfTest extends GridCommonAbstractTest {
         else
             cfg.setCacheConfiguration();
 
-        if (segPlc != null)
-            cfg.setSegmentationPolicy(segPlc);
+        cfg.setSegmentationPolicy(segPlc != null ? segPlc : SegmentationPolicy.STOP);
 
         cfg.setIncludeEventTypes(EVT_TASK_FAILED, EVT_TASK_FINISHED, EVT_JOB_MAPPED);
 
@@ -281,7 +280,7 @@ public class TcpDiscoverySelfTest extends GridCommonAbstractTest {
             assertNotNull(node);
             assertNotNull(node.lastSuccessfulAddress());
 
-            LinkedHashSet<InetSocketAddress> addrs = spi1.getNodeAddresses(node);
+            LinkedHashSet<InetSocketAddress> addrs = spi1.getEffectiveNodeAddresses(node);
 
             assertEquals(addrs.iterator().next(), node.lastSuccessfulAddress());
 
@@ -292,7 +291,7 @@ public class TcpDiscoverySelfTest extends GridCommonAbstractTest {
             assertNotNull(node);
             assertNotNull(node.lastSuccessfulAddress());
 
-            addrs = spi1.getNodeAddresses(node);
+            addrs = spi1.getEffectiveNodeAddresses(node);
             assertEquals(addrs.iterator().next(), node.lastSuccessfulAddress());
 
             node = (TcpDiscoveryNode)spi2.getNode(ignite1.localNode().id());
@@ -478,7 +477,7 @@ public class TcpDiscoverySelfTest extends GridCommonAbstractTest {
 
             final CountDownLatch pingLatch = new CountDownLatch(1);
 
-            final CountDownLatch eventLatch = new CountDownLatch(1);
+            final CountDownLatch evtLatch = new CountDownLatch(1);
 
             final AtomicBoolean pingRes = new AtomicBoolean(true);
 
@@ -491,7 +490,7 @@ public class TcpDiscoverySelfTest extends GridCommonAbstractTest {
                     @Override public boolean apply(Event event) {
                         if (((DiscoveryEvent)event).eventNode().id().equals(failedNodeId)) {
                             failRes.set(true);
-                            eventLatch.countDown();
+                            evtLatch.countDown();
                         }
 
                         return true;
@@ -532,7 +531,7 @@ public class TcpDiscoverySelfTest extends GridCommonAbstractTest {
             assertTrue(System.currentTimeMillis() - startTs <
                 pingingNode.configuration().getFailureDetectionTimeout() / 2);
 
-            assertTrue(eventLatch.await(7, TimeUnit.SECONDS));
+            assertTrue(evtLatch.await(7, TimeUnit.SECONDS));
             assertTrue(failRes.get());
         }
         finally {

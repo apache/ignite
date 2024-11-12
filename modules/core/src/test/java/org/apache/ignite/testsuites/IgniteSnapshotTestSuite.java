@@ -17,42 +17,44 @@
 
 package org.apache.ignite.testsuites;
 
-import org.apache.ignite.internal.processors.cache.persistence.snapshot.EncryptedSnapshotTest;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.List;
 import org.apache.ignite.internal.processors.cache.persistence.snapshot.IgniteClusterSnapshotCheckTest;
-import org.apache.ignite.internal.processors.cache.persistence.snapshot.IgniteClusterSnapshotDeltaTest;
 import org.apache.ignite.internal.processors.cache.persistence.snapshot.IgniteClusterSnapshotHandlerTest;
 import org.apache.ignite.internal.processors.cache.persistence.snapshot.IgniteClusterSnapshotRestoreSelfTest;
 import org.apache.ignite.internal.processors.cache.persistence.snapshot.IgniteClusterSnapshotSelfTest;
-import org.apache.ignite.internal.processors.cache.persistence.snapshot.IgniteClusterSnapshotStreamerTest;
-import org.apache.ignite.internal.processors.cache.persistence.snapshot.IgniteClusterSnapshotWalRecordTest;
-import org.apache.ignite.internal.processors.cache.persistence.snapshot.IgniteSnapshotConsistencyTest;
 import org.apache.ignite.internal.processors.cache.persistence.snapshot.IgniteSnapshotMXBeanTest;
 import org.apache.ignite.internal.processors.cache.persistence.snapshot.IgniteSnapshotManagerSelfTest;
 import org.apache.ignite.internal.processors.cache.persistence.snapshot.IgniteSnapshotRemoteRequestTest;
 import org.apache.ignite.internal.processors.cache.persistence.snapshot.IgniteSnapshotRestoreFromRemoteTest;
 import org.apache.ignite.internal.processors.cache.persistence.snapshot.IgniteSnapshotWithMetastorageTest;
-import org.apache.ignite.internal.processors.cache.persistence.snapshot.PlainSnapshotTest;
+import org.apache.ignite.testframework.GridTestUtils;
+import org.apache.ignite.testframework.junits.DynamicSuite;
 import org.junit.runner.RunWith;
-import org.junit.runners.Suite;
 
 /** */
-@RunWith(Suite.class)
-@Suite.SuiteClasses({
-    IgniteSnapshotManagerSelfTest.class,
-    IgniteClusterSnapshotSelfTest.class,
-    IgniteSnapshotRemoteRequestTest.class,
-    IgniteClusterSnapshotCheckTest.class,
-    IgniteSnapshotWithMetastorageTest.class,
-    IgniteSnapshotMXBeanTest.class,
-    IgniteClusterSnapshotRestoreSelfTest.class,
-    IgniteClusterSnapshotHandlerTest.class,
-    IgniteSnapshotRestoreFromRemoteTest.class,
-    PlainSnapshotTest.class,
-    EncryptedSnapshotTest.class,
-    IgniteClusterSnapshotWalRecordTest.class,
-    IgniteClusterSnapshotStreamerTest.class,
-    IgniteSnapshotConsistencyTest.class,
-    IgniteClusterSnapshotDeltaTest.class
-})
+@RunWith(DynamicSuite.class)
 public class IgniteSnapshotTestSuite {
+    /** */
+    public static List<Class<?>> suite() {
+        List<Class<?>> suite = new ArrayList<>();
+
+        addSnapshotTests(suite, null);
+
+        return suite;
+    }
+
+    /** */
+    public static void addSnapshotTests(List<Class<?>> suite, Collection<Class> ignoredTests) {
+        GridTestUtils.addTestIfNeeded(suite, IgniteSnapshotManagerSelfTest.class, ignoredTests);
+        GridTestUtils.addTestIfNeeded(suite, IgniteClusterSnapshotSelfTest.class, ignoredTests);
+        GridTestUtils.addTestIfNeeded(suite, IgniteSnapshotRemoteRequestTest.class, ignoredTests);
+        GridTestUtils.addTestIfNeeded(suite, IgniteClusterSnapshotCheckTest.class, ignoredTests);
+        GridTestUtils.addTestIfNeeded(suite, IgniteSnapshotWithMetastorageTest.class, ignoredTests);
+        GridTestUtils.addTestIfNeeded(suite, IgniteSnapshotMXBeanTest.class, ignoredTests);
+        GridTestUtils.addTestIfNeeded(suite, IgniteClusterSnapshotRestoreSelfTest.class, ignoredTests);
+        GridTestUtils.addTestIfNeeded(suite, IgniteClusterSnapshotHandlerTest.class, ignoredTests);
+        GridTestUtils.addTestIfNeeded(suite, IgniteSnapshotRestoreFromRemoteTest.class, ignoredTests);
+    }
 }

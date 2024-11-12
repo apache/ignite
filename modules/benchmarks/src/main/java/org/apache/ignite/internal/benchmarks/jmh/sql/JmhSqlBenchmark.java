@@ -149,7 +149,8 @@ public class JmhSqlBenchmark {
 
         List<?> res = executeSql("SELECT name FROM Item WHERE fld=?", key);
 
-        assert res.size() == 1;
+        if (res.size() != 1)
+            throw new AssertionError("Unexpected result size: " + res.size());
     }
 
     /**
@@ -161,7 +162,8 @@ public class JmhSqlBenchmark {
 
         List<?> res = executeSql("SELECT name FROM Item WHERE fldIdx=?", key);
 
-        assert res.size() == 1;
+        if (res.size() != 1)
+            throw new AssertionError("Unexpected result size: " + res.size());
     }
 
     /**
@@ -173,7 +175,8 @@ public class JmhSqlBenchmark {
 
         List<?> res = executeSql("SELECT name FROM Item WHERE fldBatch=?", key / BATCH_SIZE);
 
-        assert res.size() == BATCH_SIZE;
+        if (res.size() != BATCH_SIZE)
+            throw new AssertionError("Unexpected result size: " + res.size());
     }
 
     /**
@@ -185,7 +188,8 @@ public class JmhSqlBenchmark {
 
         List<?> res = executeSql("SELECT name FROM Item WHERE fldIdxBatch=?", key / BATCH_SIZE);
 
-        assert res.size() == BATCH_SIZE;
+        if (res.size() != BATCH_SIZE)
+            throw new AssertionError("Unexpected result size: " + res.size());
     }
 
     /**
@@ -195,7 +199,8 @@ public class JmhSqlBenchmark {
     public void queryGroupBy() {
         List<?> res = executeSql("SELECT fldBatch, AVG(fld) FROM Item GROUP BY fldBatch");
 
-        assert res.size() == KEYS_CNT / BATCH_SIZE;
+        if (res.size() != KEYS_CNT / BATCH_SIZE)
+            throw new AssertionError("Unexpected result size: " + res.size());
     }
 
     /**
@@ -205,7 +210,8 @@ public class JmhSqlBenchmark {
     public void queryGroupByIndexed() {
         List<?> res = executeSql("SELECT fldIdxBatch, AVG(fld) FROM Item GROUP BY fldIdxBatch");
 
-        assert res.size() == KEYS_CNT / BATCH_SIZE;
+        if (res.size() != KEYS_CNT / BATCH_SIZE)
+            throw new AssertionError("Unexpected result size: " + res.size());
     }
 
     /**
@@ -215,7 +221,8 @@ public class JmhSqlBenchmark {
     public void queryOrderByFull() {
         List<?> res = executeSql("SELECT name, fld FROM Item ORDER BY fld DESC");
 
-        assert res.size() == KEYS_CNT;
+        if (res.size() != KEYS_CNT)
+            throw new AssertionError("Unexpected result size: " + res.size());
     }
 
     /**
@@ -227,14 +234,26 @@ public class JmhSqlBenchmark {
 
         List<?> res = executeSql("SELECT name, fld FROM Item WHERE fldIdxBatch=? ORDER BY fld DESC", key / BATCH_SIZE);
 
-        assert res.size() == BATCH_SIZE;
+        if (res.size() != BATCH_SIZE)
+            throw new AssertionError("Unexpected result size: " + res.size());
+    }
+
+    /**
+     * Query sum of indexed field.
+     */
+    @Benchmark
+    public void querySumIndexed() {
+        List<List<?>> res = executeSql("SELECT sum(fldIdx) FROM Item");
+
+        Long expRes = ((long)KEYS_CNT) * (KEYS_CNT - 1) / 2;
+
+        if (!expRes.equals(res.get(0).get(0)))
+            throw new AssertionError("Unexpected result: " + res.get(0));
     }
 
     /** */
-    private List<?> executeSql(String sql, Object... args) {
-        List<List<?>> res = cache.query(new SqlFieldsQuery(sql).setArgs(args)).getAll();
-
-        return res.get(0);
+    private List<List<?>> executeSql(String sql, Object... args) {
+        return cache.query(new SqlFieldsQuery(sql).setArgs(args)).getAll();
     }
 
     /**

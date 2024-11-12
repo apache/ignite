@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.processors.configuration.distributed;
 
 import java.util.concurrent.atomic.AtomicReference;
+import org.apache.ignite.cluster.ClusterState;
 import org.apache.ignite.internal.IgniteEx;
 import org.junit.Test;
 
@@ -39,10 +40,10 @@ public class DistributedConfigurationPersistentTest extends DistributedConfigura
         IgniteEx ignite0 = startGrid(0);
         IgniteEx ignite1 = startGrid(1);
 
-        ignite0.cluster().active(true);
+        ignite0.cluster().state(ClusterState.ACTIVE);
 
-        DistributedProperty<Long> long0 = distr(ignite0).registerProperty(detachedLongProperty(TEST_PROP));
-        DistributedProperty<Long> long1 = distr(ignite1).registerProperty(detachedLongProperty(TEST_PROP));
+        DistributedProperty<Long> long0 = distr(ignite0).registerProperty(detachedLongProperty(TEST_PROP, ""));
+        DistributedProperty<Long> long1 = distr(ignite1).registerProperty(detachedLongProperty(TEST_PROP, ""));
 
         long0.propagate(0L);
 
@@ -60,10 +61,10 @@ public class DistributedConfigurationPersistentTest extends DistributedConfigura
         ignite0 = startGrid(0);
         ignite1 = startGrid(1);
 
-        ignite0.cluster().active(true);
+        ignite0.cluster().state(ClusterState.ACTIVE);
 
-        long0 = distr(ignite0).registerProperty(detachedLongProperty(TEST_PROP));
-        long1 = distr(ignite1).registerProperty(detachedLongProperty(TEST_PROP));
+        long0 = distr(ignite0).registerProperty(detachedLongProperty(TEST_PROP, ""));
+        long1 = distr(ignite1).registerProperty(detachedLongProperty(TEST_PROP, ""));
 
         assertEquals(2, long0.get().longValue());
         assertEquals(2, long1.get().longValue());
@@ -79,9 +80,9 @@ public class DistributedConfigurationPersistentTest extends DistributedConfigura
         IgniteEx ignite0 = startGrid(0);
         startGrid(1);
 
-        ignite0.cluster().active(true);
+        ignite0.cluster().state(ClusterState.ACTIVE);
 
-        DistributedProperty<Long> long0 = distr(ignite0).registerProperty(detachedLongProperty(TEST_PROP));
+        DistributedProperty<Long> long0 = distr(ignite0).registerProperty(detachedLongProperty(TEST_PROP, ""));
 
         long0.propagate(0L);
 
@@ -93,7 +94,7 @@ public class DistributedConfigurationPersistentTest extends DistributedConfigura
 
         ignite0 = startGrid(0);
 
-        long0 = distr(ignite0).registerProperty(detachedLongProperty(TEST_PROP));
+        long0 = distr(ignite0).registerProperty(detachedLongProperty(TEST_PROP, ""));
 
         assertEquals(2, long0.get().longValue());
     }
@@ -107,7 +108,7 @@ public class DistributedConfigurationPersistentTest extends DistributedConfigura
 
         IgniteEx ignite0 = (IgniteEx)startGrids(2);
 
-        DistributedProperty<Long> long0 = distr(ignite0).registerProperty(detachedLongProperty(TEST_PROP));
+        DistributedProperty<Long> long0 = distr(ignite0).registerProperty(detachedLongProperty(TEST_PROP, ""));
 
         long0.propagate(2L);
     }
@@ -122,9 +123,9 @@ public class DistributedConfigurationPersistentTest extends DistributedConfigura
         IgniteEx ignite0 = startGrid(0);
         IgniteEx ignite1 = startGrid(1);
 
-        ignite0.cluster().active(true);
+        ignite0.cluster().state(ClusterState.ACTIVE);
 
-        DistributedProperty<Long> long0 = distr(ignite0).registerProperty(detachedLongProperty(TEST_PROP));
+        DistributedProperty<Long> long0 = distr(ignite0).registerProperty(detachedLongProperty(TEST_PROP, ""));
 
         long0.propagate(0L);
 
@@ -138,14 +139,14 @@ public class DistributedConfigurationPersistentTest extends DistributedConfigura
 
         TestDistibutedConfigurationPlugin.supplier = (ctx) -> {
             if (holder.get() == null)
-                holder.set(ctx.distributedConfiguration().registerProperty(detachedLongProperty(TEST_PROP)));
+                holder.set(ctx.distributedConfiguration().registerProperty(detachedLongProperty(TEST_PROP, "")));
         };
 
         ignite0 = startGrid(0);
         ignite1 = startGrid(1);
 
         long0 = holder.get();
-        DistributedProperty<Long> long1 = distr(ignite1).registerProperty(detachedLongProperty(TEST_PROP));
+        DistributedProperty<Long> long1 = distr(ignite1).registerProperty(detachedLongProperty(TEST_PROP, ""));
 
         //After start it should read from local storage.
         assertEquals(2, long0.get().longValue());

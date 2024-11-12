@@ -425,13 +425,13 @@ public class CacheSerializableTransactionsTest extends GridCommonAbstractTest {
 
                 List<Integer> keys = testKeys(cache0);
 
-                final int ITERATIONS_COUNT = SF.applyLB(100, 5);
+                final int ITERATIONS_CNT = SF.applyLB(100, 5);
                 for (Integer key : keys) {
                     log.info("Test key: " + key);
 
                     Integer expVal = null;
 
-                    for (int i = 0; i < ITERATIONS_COUNT; i++) {
+                    for (int i = 0; i < ITERATIONS_CNT; i++) {
                         try (Transaction tx = txs0.txStart(OPTIMISTIC, SERIALIZABLE)) {
                             Integer val = cache0.get(key);
 
@@ -3891,8 +3891,8 @@ public class CacheSerializableTransactionsTest extends GridCommonAbstractTest {
 
                         barrier.await();
 
-                        final int ITERATIONS_COUNT = SF.applyLB(1000, 50);
-                        for (int i = 0; i < ITERATIONS_COUNT; i++) {
+                        final int ITERATIONS_CNT = SF.applyLB(1000, 50);
+                        for (int i = 0; i < ITERATIONS_CNT; i++) {
                             try {
                                 try (Transaction tx = txs.txStart(OPTIMISTIC, SERIALIZABLE)) {
                                     Integer val1 = cache.get(key1);

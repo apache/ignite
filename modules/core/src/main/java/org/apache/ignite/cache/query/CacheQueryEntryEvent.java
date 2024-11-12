@@ -18,7 +18,6 @@
 package org.apache.ignite.cache.query;
 
 import javax.cache.Cache;
-import javax.cache.event.CacheEntryEvent;
 import javax.cache.event.EventType;
 
 /**
@@ -27,7 +26,7 @@ import javax.cache.event.EventType;
  * @param <K> The type of key.
  * @param <V> The type of value.
  */
-public abstract class CacheQueryEntryEvent<K, V> extends CacheEntryEvent<K, V> {
+public abstract class CacheQueryEntryEvent<K, V> extends CacheEntryEventAdapter<K, V> {
     /**
      * Constructs a cache entry event from a given cache as source.
      *

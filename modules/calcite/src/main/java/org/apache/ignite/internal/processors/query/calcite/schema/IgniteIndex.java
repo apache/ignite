@@ -17,8 +17,6 @@
 package org.apache.ignite.internal.processors.query.calcite.schema;
 
 import java.util.List;
-import java.util.function.Function;
-import java.util.function.Predicate;
 import org.apache.calcite.plan.RelOptCluster;
 import org.apache.calcite.plan.RelOptTable;
 import org.apache.calcite.rel.RelCollation;
@@ -80,9 +78,7 @@ public interface IgniteIndex {
     public <Row> Iterable<Row> scan(
         ExecutionContext<Row> execCtx,
         ColocationGroup grp,
-        Predicate<Row> filters,
         RangeIterable<Row> ranges,
-        Function<Row, Row> rowTransformer,
         @Nullable ImmutableBitSet requiredColumns
     );
 
@@ -91,9 +87,10 @@ public interface IgniteIndex {
      *
      * @param ectx Execution context.
      * @param grp  Colocation group.
+     * @param notNull Exclude null values.
      * @return Index records number for {@code group}.
      */
-    public long count(ExecutionContext<?> ectx, ColocationGroup grp);
+    public long count(ExecutionContext<?> ectx, ColocationGroup grp, boolean notNull);
 
     /**
      * Takes only first or last not-null index value.
@@ -110,4 +107,9 @@ public interface IgniteIndex {
         ColocationGroup grp,
         @Nullable ImmutableBitSet requiredColumns
     );
+
+    /**
+     * If its possible to scan requred columns using inlined index keys.
+     */
+    public boolean isInlineScanPossible(@Nullable ImmutableBitSet requiredColumns);
 }

@@ -27,12 +27,10 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.jetbrains.annotations.Nullable;
-import org.junit.Ignore;
 import org.junit.Test;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.ATOMIC;
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
-import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL_SNAPSHOT;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
 
 /**
@@ -76,23 +74,6 @@ public class CacheKeepBinaryWithInterceptorTest extends GridCommonAbstractTest {
 
         keepBinaryWithInterceptorPrimitives(cacheConfiguration(ATOMIC, true));
         keepBinaryWithInterceptorPrimitives(cacheConfiguration(TRANSACTIONAL, true));
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
-    @Ignore("https://issues.apache.org/jira/browse/IGNITE-9323")
-    @Test
-    public void testKeepBinaryWithInterceptorOnMvccCache() throws Exception {
-        startGrid(0);
-
-        keepBinaryWithInterceptor(cacheConfiguration(TRANSACTIONAL_SNAPSHOT, false));
-        keepBinaryWithInterceptorPrimitives(cacheConfiguration(TRANSACTIONAL_SNAPSHOT, true));
-
-        startGridsMultiThreaded(1, 3);
-
-        keepBinaryWithInterceptor(cacheConfiguration(TRANSACTIONAL_SNAPSHOT, false));
-        keepBinaryWithInterceptorPrimitives(cacheConfiguration(TRANSACTIONAL_SNAPSHOT, true));
     }
 
     /**

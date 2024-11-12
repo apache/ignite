@@ -27,7 +27,6 @@ import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.services.Service;
-import org.apache.ignite.services.ServiceConfiguration;
 import org.apache.ignite.services.ServiceDescriptor;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -49,7 +48,7 @@ public class ServiceInfo implements ServiceDescriptor {
     private final IgniteUuid srvcId;
 
     /** Service configuration. */
-    private final ServiceConfiguration cfg;
+    private final LazyServiceConfiguration cfg;
 
     /** Statically configured flag. */
     private final boolean staticCfg;
@@ -66,7 +65,7 @@ public class ServiceInfo implements ServiceDescriptor {
      * @param srvcId Service id.
      * @param cfg Service configuration.
      */
-    public ServiceInfo(@NotNull UUID originNodeId, @NotNull IgniteUuid srvcId, @NotNull ServiceConfiguration cfg) {
+    public ServiceInfo(@NotNull UUID originNodeId, @NotNull IgniteUuid srvcId, @NotNull LazyServiceConfiguration cfg) {
         this(originNodeId, srvcId, cfg, false);
     }
 
@@ -76,7 +75,7 @@ public class ServiceInfo implements ServiceDescriptor {
      * @param cfg Service configuration.
      * @param staticCfg Statically configured flag.
      */
-    public ServiceInfo(@NotNull UUID originNodeId, @NotNull IgniteUuid srvcId, @NotNull ServiceConfiguration cfg,
+    public ServiceInfo(@NotNull UUID originNodeId, @NotNull IgniteUuid srvcId, @NotNull LazyServiceConfiguration cfg,
         boolean staticCfg) {
         this.originNodeId = originNodeId;
         this.srvcId = srvcId;
@@ -107,7 +106,7 @@ public class ServiceInfo implements ServiceDescriptor {
      *
      * @return Service configuration.
      */
-    public ServiceConfiguration configuration() {
+    public LazyServiceConfiguration configuration() {
         return cfg;
     }
 
@@ -134,34 +133,30 @@ public class ServiceInfo implements ServiceDescriptor {
 
     /** {@inheritDoc} */
     @Override public Class<? extends Service> serviceClass() {
-        if (cfg instanceof LazyServiceConfiguration) {
-            if (srvcCls != null)
-                return srvcCls;
+        if (srvcCls != null)
+            return srvcCls;
 
-            String clsName = ((LazyServiceConfiguration)cfg).serviceClassName();
+        String clsName = cfg.serviceClassName();
 
-            try {
-                srvcCls = (Class<? extends Service>)Class.forName(clsName);
+        try {
+            srvcCls = (Class<? extends Service>)Class.forName(clsName);
 
-                return srvcCls;
-            }
-            catch (ClassNotFoundException e) {
-                if (ctx != null) {
-                    GridDeployment srvcDep = ctx.deploy().getDeployment(clsName);
-
-                    if (srvcDep != null) {
-                        srvcCls = (Class<? extends Service>)srvcDep.deployedClass(clsName).get1();
-
-                        if (srvcCls != null)
-                            return srvcCls;
-                    }
-                }
-
-                throw new IgniteException("Failed to find service class: " + clsName, e);
-            }
+            return srvcCls;
         }
-        else
-            return cfg.getService().getClass();
+        catch (ClassNotFoundException e) {
+            if (ctx != null) {
+                GridDeployment srvcDep = ctx.deploy().getDeployment(clsName);
+
+                if (srvcDep != null) {
+                    srvcCls = (Class<? extends Service>)srvcDep.deployedClass(clsName).get1();
+
+                    if (srvcCls != null)
+                        return srvcCls;
+                }
+            }
+
+            throw new IgniteException("Failed to find service class: " + clsName, e);
+        }
     }
 
     /** {@inheritDoc} */
@@ -180,7 +175,6 @@ public class ServiceInfo implements ServiceDescriptor {
     }
 
     /** {@inheritDoc} */
-    @SuppressWarnings("unchecked")
     @Nullable @Override public <K> K affinityKey() {
         return (K)cfg.getAffinityKey();
     }

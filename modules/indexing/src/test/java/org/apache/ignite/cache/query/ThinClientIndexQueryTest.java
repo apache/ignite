@@ -17,11 +17,15 @@
 
 package org.apache.ignite.cache.query;
 
+import java.lang.reflect.Field;
+import java.util.ArrayList;
 import java.util.Collections;
+import java.util.EnumSet;
 import java.util.List;
 import java.util.Random;
 import java.util.function.Consumer;
 import java.util.function.Function;
+import java.util.stream.Collectors;
 import javax.cache.Cache;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteDataStreamer;
@@ -31,11 +35,15 @@ import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.query.annotations.QuerySqlField;
 import org.apache.ignite.client.ClientCache;
 import org.apache.ignite.client.ClientException;
+import org.apache.ignite.client.ClientFeatureNotSupportedByServerException;
 import org.apache.ignite.client.IgniteClient;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.ClientConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.TestRecordingCommunicationSpi;
+import org.apache.ignite.internal.client.thin.ProtocolBitmaskFeature;
+import org.apache.ignite.internal.processors.cache.query.GridCacheQueryRequest;
+import org.apache.ignite.internal.processors.cache.query.GridCacheQueryResponse;
 import org.apache.ignite.internal.processors.query.h2.twostep.messages.GridQueryNextPageRequest;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.F;
@@ -220,14 +228,46 @@ public class ThinClientIndexQueryTest extends GridCommonAbstractTest {
             for (int pageSize: F.asList(1, 10, 100, 1000, 10_000)) {
                 idxQry.setPageSize(pageSize);
 
-                TestRecordingCommunicationSpi.spi(grid(0)).record(GridQueryNextPageRequest.class);
+                for (int i = 0; i < NODES; i++) {
+                    TestRecordingCommunicationSpi.spi(grid(i)).record(
+                        GridCacheQueryRequest.class,
+                        GridCacheQueryResponse.class);
+                }
 
                 assertClientQuery(cache, NULLS_CNT, CNT, idxQry);
 
-                List<Object> reqs = TestRecordingCommunicationSpi.spi(grid(0)).recordedMessages(true);
+                int nodeOneEntries = cache.query(new ScanQuery<Integer, Person>().setLocal(true)).getAll().size();
+                int nodeTwoEntries = (CNT - NULLS_CNT) - nodeOneEntries;
 
-                for (Object r: reqs)
-                    assertEquals(pageSize, ((GridQueryNextPageRequest)r).pageSize());
+                int nodeOneExpectedReqs = (nodeOneEntries + pageSize - 1) / pageSize;
+                int nodeTwoExpectedReqs = (nodeTwoEntries + pageSize - 1) / pageSize;
+
+                int nodeOneLastPageEntries = nodeOneEntries % pageSize;
+                int nodeTwoLastPageEntries = nodeTwoEntries % pageSize;
+
+                List<Object> msgs = new ArrayList<>();
+
+                for (int i = 0; i < NODES; i++)
+                    msgs.addAll(TestRecordingCommunicationSpi.spi(grid(i)).recordedMessages(true));
+
+                List<GridCacheQueryRequest> reqs = getFilteredMessages(msgs, GridCacheQueryRequest.class);
+                List<GridCacheQueryResponse> resp = getFilteredMessages(msgs, GridCacheQueryResponse.class);
+
+                int reqsSize = reqs.size();
+
+                assert (reqsSize == nodeOneExpectedReqs || reqsSize == nodeTwoExpectedReqs) && reqsSize == resp.size();
+
+                for (int i = 0; i < reqsSize; i++) {
+                    int reqPage = reqs.get(i).pageSize();
+                    int respData = resp.get(i).data().size();
+
+                    assert reqPage == pageSize;
+
+                    if (i == reqsSize - 1 && (nodeOneLastPageEntries != 0 || nodeTwoLastPageEntries != 0))
+                        assert respData == nodeOneLastPageEntries || respData == nodeTwoLastPageEntries;
+                    else
+                        assert respData == reqPage;
+                }
             }
 
             for (int pageSize: F.asList(-10, -1, 0)) {
@@ -344,6 +384,26 @@ public class ThinClientIndexQueryTest extends GridCommonAbstractTest {
             .setCriteria(crit);
 
         assertClientQuery(cache, left, right, idxQry);
+
+        if (left < right) {
+            Random r = new Random();
+
+            int limit = 1 + r.nextInt(right - left);
+
+            idxQry = new IndexQuery<Integer, Person>(Person.class, idxName)
+                .setCriteria(crit)
+                .setLimit(limit);
+
+            assertClientQuery(cache, left, left + limit, idxQry);
+
+            limit = right - left + r.nextInt(right - left);
+
+            idxQry = new IndexQuery<Integer, Person>(Person.class, idxName)
+                .setCriteria(crit)
+                .setLimit(limit);
+
+            assertClientQuery(cache, left, right, idxQry);
+        }
     }
 
     /** */
@@ -370,6 +430,47 @@ public class ThinClientIndexQueryTest extends GridCommonAbstractTest {
     }
 
     /** */
+    @Test
+    public void testIndexQueryLimitOnOlderProtocolVersion() throws Exception {
+        // Exclude INDEX_QUERY_LIMIT from protocol.
+        Class<?> clazz = Class.forName("org.apache.ignite.internal.client.thin.ProtocolBitmaskFeature");
+
+        Field field = clazz.getDeclaredField("ALL_FEATURES_AS_ENUM_SET");
+
+        field.setAccessible(true);
+
+        EnumSet<ProtocolBitmaskFeature> allFeaturesEnumSet = (EnumSet<ProtocolBitmaskFeature>)field.get(null);
+
+        allFeaturesEnumSet.remove(ProtocolBitmaskFeature.INDEX_QUERY_LIMIT);
+
+        try {
+            withClientCache((cache) -> {
+                // No limit.
+                IndexQuery<Integer, Person> idxQry = new IndexQuery<>(Person.class, IDX_FLD1);
+
+                assertClientQuery(cache, NULLS_CNT, CNT, idxQry);
+
+                // With limit.
+                IndexQuery<Integer, Person> idxQryWithLImit = new IndexQuery<Integer, Person>(Person.class, IDX_FLD1)
+                    .setLimit(10);
+
+                GridTestUtils.assertThrowsAnyCause(
+                    log,
+                    () -> {
+                        cache.query(idxQryWithLImit).getAll();
+                        return null;
+                    },
+                    ClientFeatureNotSupportedByServerException.class,
+                    "Feature INDEX_QUERY_LIMIT is not supported by the server");
+            });
+        }
+        finally {
+            //revert the features set
+            allFeaturesEnumSet.add(ProtocolBitmaskFeature.INDEX_QUERY_LIMIT);
+        }
+    }
+
+    /** */
     private void withClientCache(Consumer<ClientCache<Integer, Person>> consumer) {
         ClientConfiguration clnCfg = new ClientConfiguration()
             .setAddresses("127.0.0.1:10800");
@@ -382,6 +483,20 @@ public class ThinClientIndexQueryTest extends GridCommonAbstractTest {
 
             consumer.accept(cache);
         }
+    }
+
+    /**
+     * Filter messages in a collection by a certain class.
+     *
+     * @param msgs List of mixed messages.
+     * @param cls Class of messages that need to be filtered.
+     * @return List of messages filtered by the specified class.
+     */
+    public static <T> List<T> getFilteredMessages(List<Object> msgs, Class<T> cls) {
+        return msgs.stream()
+            .filter(msg -> msg.getClass().equals(cls))
+            .map(msg -> (T)msg)
+            .collect(Collectors.toList());
     }
 
     /** */

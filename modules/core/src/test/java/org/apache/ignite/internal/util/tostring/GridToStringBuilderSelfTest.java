@@ -455,9 +455,9 @@ public class GridToStringBuilderSelfTest extends GridCommonAbstractTest {
         Map strMap = new TreeMap<>();
         List strList = new ArrayList<>(limit + 1);
 
-        TestClass1 testClass = new TestClass1();
-        testClass.strMap = strMap;
-        testClass.strListIncl = strList;
+        TestClass1 testCls = new TestClass1();
+        testCls.strMap = strMap;
+        testCls.strListIncl = strList;
 
         Map m = new TreeMap();
         m.put("m", strMap);
@@ -473,7 +473,7 @@ public class GridToStringBuilderSelfTest extends GridCommonAbstractTest {
             strList.add("e");
         }
 
-        checkColAndMap(testClass);
+        checkColAndMap(testCls);
     }
 
     /**
@@ -597,22 +597,18 @@ public class GridToStringBuilderSelfTest extends GridCommonAbstractTest {
 
     /**
      * Checking that method
-     * {@link GridToStringBuilder#compact(Collection, Function) compact} works
+     * {@link GridToStringBuilder#toStringSortedDistinct(Collection)} works
      * correctly for {@link Integer}.
      */
     @Test
-    public void testCompactIntegers() {
+    public void testSortedDistinctIntegers() {
         List<Integer> emptyList = emptyList();
-        List<Integer> intList = asList(1, 2, 3, 9, 8, 7, 12);
+        List<Integer> intList = asList(12, 1, 7, 2, 3, 9, 8, 7, 12);
 
-        String compactStr = "[1-3, 7-9, 12]";
+        String sortedDistinctStr = "[1,2,3,7,8,9,12]";
 
-        Function<Integer, Integer> nextVal = i -> i + 1;
-
-        checkCompact(emptyList, intList, nextVal, compactStr);
-
-        assertEquals("[]", compact(emptyList));
-        assertEquals(compactStr, compact(intList));
+        assertEquals("[]", S.toStringSortedDistinct(emptyList));
+        assertEquals(sortedDistinctStr, S.toStringSortedDistinct(intList));
     }
 
     /**

@@ -23,7 +23,6 @@ import org.apache.ignite.internal.processors.cache.persistence.CacheDataRowAdapt
 import org.apache.ignite.internal.processors.cache.persistence.CacheSearchRow;
 import org.apache.ignite.internal.processors.cache.persistence.RowStore;
 import org.apache.ignite.internal.processors.cache.persistence.freelist.FreeList;
-import org.apache.ignite.internal.processors.cache.tree.mvcc.data.MvccDataRow;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 
 /**
@@ -76,40 +75,6 @@ public class CacheDataRowStore extends RowStore {
      */
     protected CacheSearchRow keySearchRow(int cacheId, int hash, long link) {
         return dataRow(cacheId, hash, link, CacheDataRowAdapter.RowData.KEY_ONLY);
-    }
-
-    /**
-     * @param cacheId Cache ID.
-     * @param hash Hash code.
-     * @param link Link.
-     * @param rowData Required row data.
-     * @param crdVer Mvcc coordinator version.
-     * @param mvccCntr Mvcc counter.
-     * @param opCntr Mvcc operation counter.
-     * @return Search row.
-     */
-    protected MvccDataRow mvccRow(
-        int cacheId,
-        int hash,
-        long link,
-        CacheDataRowAdapter.RowData rowData,
-        long crdVer,
-        long mvccCntr,
-        int opCntr
-    ) {
-        MvccDataRow row = new MvccDataRow(
-            grp,
-            hash,
-            link,
-            partId,
-            rowData,
-            crdVer,
-            mvccCntr,
-            opCntr,
-            SKIP_VER.get()
-        );
-
-        return initDataRow(row, cacheId);
     }
 
     /**

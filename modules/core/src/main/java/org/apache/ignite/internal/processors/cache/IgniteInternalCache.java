@@ -49,7 +49,6 @@ import org.apache.ignite.internal.processors.cache.dr.GridCacheDrInfo;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.lang.IgniteBiInClosure;
 import org.apache.ignite.lang.IgniteBiPredicate;
-import org.apache.ignite.mxbean.CacheMetricsMXBean;
 import org.apache.ignite.transactions.Transaction;
 import org.apache.ignite.transactions.TransactionConcurrency;
 import org.apache.ignite.transactions.TransactionIsolation;
@@ -1510,20 +1509,6 @@ public interface IgniteInternalCache<K, V> extends Iterable<Cache.Entry<K, V>> {
     public CacheMetrics localMetrics();
 
     /**
-     * Gets whole cluster metrics (statistics) for this cache.
-     *
-     * @return Cache metrics.
-     */
-    public CacheMetricsMXBean clusterMxBean();
-
-    /**
-     * Gets local metrics (statistics) for this cache.
-     *
-     * @return Cache metrics.
-     */
-    public CacheMetricsMXBean localMxBean();
-
-    /**
      * Gets number of cache entries stored in off-heap memory.
      *
      * @return Number of cache entries stored in off-heap memory.
@@ -1655,11 +1640,6 @@ public interface IgniteInternalCache<K, V> extends Iterable<Cache.Entry<K, V>> {
      * @return Cache with no-retries behavior enabled.
      */
     public IgniteInternalCache<K, V> withNoRetries();
-
-    /**
-     * @return New projection based on this one, but with atomic cache operations allowed to be used.
-     */
-    public <K1, V1> IgniteInternalCache<K1, V1> withAllowAtomicOpsInTx();
 
     /**
      * @param key Key.

@@ -23,9 +23,11 @@ import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 import java.sql.Timestamp;
 import java.time.Duration;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.time.Period;
+import java.util.EnumMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -40,12 +42,25 @@ import org.apache.calcite.sql.SqlUtil;
 import org.apache.calcite.sql.parser.SqlParserPos;
 import org.apache.calcite.sql.type.BasicSqlType;
 import org.apache.calcite.sql.type.IntervalSqlType;
+import org.apache.calcite.sql.type.SqlTypeName;
+import org.apache.ignite.IgniteException;
+import org.apache.ignite.binary.BinaryObject;
 import org.apache.ignite.internal.util.typedef.F;
 
 /**
  * Ignite type factory.
  */
 public class IgniteTypeFactory extends JavaTypeFactoryImpl {
+    /** */
+    private static final EnumMap<SqlTypeName, String> UNSUPPORTED_TYPES = new EnumMap<>(SqlTypeName.class);
+
+    static {
+        UNSUPPORTED_TYPES.put(SqlTypeName.TIME_TZ, "TIME WITH TIME ZONE");
+        UNSUPPORTED_TYPES.put(SqlTypeName.TIMESTAMP_TZ, "TIMESTAMP WITH TIME ZONE");
+        UNSUPPORTED_TYPES.put(SqlTypeName.TIMESTAMP_WITH_LOCAL_TIME_ZONE, "TIMESTAMP WITH LOCAL TIME ZONE");
+        UNSUPPORTED_TYPES.put(SqlTypeName.TIME_WITH_LOCAL_TIME_ZONE, "TIME WITH LOCAL TIME ZONE");
+    }
+
     /** Interval qualifier to create year-month interval types. */
     private static final SqlIntervalQualifier INTERVAL_QUALIFIER_YEAR_MONTH = new SqlIntervalQualifier(TimeUnit.YEAR,
         TimeUnit.MONTH, SqlParserPos.ZERO);
@@ -131,9 +146,8 @@ public class IgniteTypeFactory extends JavaTypeFactoryImpl {
                     return Enum.class;
                 case ANY:
                 case OTHER:
-                    return Object.class;
                 case NULL:
-                    return Void.class;
+                    return Object.class;
                 default:
                     break;
             }
@@ -248,7 +262,18 @@ public class IgniteTypeFactory extends JavaTypeFactoryImpl {
         if (types.size() == 1 || allEquals(types))
             return F.first(types);
 
-        return super.leastRestrictive(types);
+        RelDataType res = super.leastRestrictive(types);
+
+        // Calcite compares approximate numerics by their precisions. While FLOAT has the same precision as DOUBLE, the
+        // least restrictive may variate between them and issue FLOAT instead of DOUBLE. DOUBLE is more preferable.
+        if (res != null && res.getSqlTypeName() == SqlTypeName.FLOAT && types.size() > 1) {
+            for (RelDataType type : types) {
+                if (type.getSqlTypeName() == SqlTypeName.DOUBLE && type.getPrecision() >= res.getPrecision())
+                    return type;
+            }
+        }
+
+        return res;
     }
 
     /** {@inheritDoc} */
@@ -265,6 +290,12 @@ public class IgniteTypeFactory extends JavaTypeFactoryImpl {
                 return createTypeWithNullability(createSqlIntervalType(INTERVAL_QUALIFIER_DAY_TIME), true);
             else if (clazz == Period.class)
                 return createTypeWithNullability(createSqlIntervalType(INTERVAL_QUALIFIER_YEAR_MONTH), true);
+            else if (clazz == LocalDateTime.class)
+                return createTypeWithNullability(createSqlType(SqlTypeName.TIMESTAMP), true);
+            else if (clazz == LocalDate.class)
+                return createTypeWithNullability(createSqlType(SqlTypeName.DATE), true);
+            else if (clazz == LocalTime.class)
+                return createTypeWithNullability(createSqlType(SqlTypeName.TIME), true);
             else {
                 RelDataType relType = createCustomType(clazz);
 
@@ -285,7 +316,7 @@ public class IgniteTypeFactory extends JavaTypeFactoryImpl {
     public RelDataType createCustomType(Type type, boolean nullable) {
         if (UUID.class == type)
             return canonize(new UuidType(nullable));
-        else if (Object.class == type)
+        else if (Object.class == type || (type instanceof Class && BinaryObject.class.isAssignableFrom((Class<?>)type)))
             return canonize(new OtherType(nullable));
 
         return null;
@@ -301,7 +332,8 @@ public class IgniteTypeFactory extends JavaTypeFactoryImpl {
 
     /** {@inheritDoc} */
     @Override public RelDataType createType(Type type) {
-        if (type == Duration.class || type == Period.class)
+        if (type == Duration.class || type == Period.class || type == LocalDateTime.class || type == LocalTime.class
+            || type == LocalDate.class)
             return createJavaType((Class<?>)type);
 
         RelDataType customType = createCustomType(type, false);
@@ -323,5 +355,41 @@ public class IgniteTypeFactory extends JavaTypeFactoryImpl {
         }
 
         return true;
+    }
+
+    /** {@inheritDoc} */
+    @Override public RelDataType createSqlType(SqlTypeName typeName) {
+        checkUnsupportedType(typeName);
+
+        return super.createSqlType(typeName);
+    }
+
+    /** {@inheritDoc} */
+    @Override public RelDataType createSqlType(SqlTypeName typeName, int precision) {
+        checkUnsupportedType(typeName);
+
+        return super.createSqlType(typeName, precision);
+    }
+
+    /** {@inheritDoc} */
+    @Override public RelDataType createSqlType(SqlTypeName typeName, int precision, int scale) {
+        checkUnsupportedType(typeName);
+
+        return super.createSqlType(typeName, precision, scale);
+    }
+
+    /** */
+    private static void checkUnsupportedType(SqlTypeName typeName) {
+        String unsupportedTypeName = UNSUPPORTED_TYPES.get(typeName);
+
+        if (unsupportedTypeName != null)
+            throw new IgniteException("Type '" + unsupportedTypeName + "' is not supported.");
+    }
+
+    /** {@inheritDoc} */
+    @Override public RelDataType createUnknownType() {
+        // TODO workaround for https://issues.apache.org/jira/browse/CALCITE-5297
+        // Remove this after update to Calcite 1.33.
+        return createTypeWithNullability(super.createUnknownType(), true);
     }
 }

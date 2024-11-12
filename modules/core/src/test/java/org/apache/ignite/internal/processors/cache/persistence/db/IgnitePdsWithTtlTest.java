@@ -35,6 +35,7 @@ import org.apache.ignite.cache.CachePeekMode;
 import org.apache.ignite.cache.CacheRebalanceMode;
 import org.apache.ignite.cache.CacheWriteSynchronizationMode;
 import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
+import org.apache.ignite.cluster.ClusterState;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
@@ -61,10 +62,10 @@ import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.testframework.GridTestUtils;
-import org.apache.ignite.testframework.MvccFeatureChecker;
 import org.apache.ignite.testframework.junits.WithSystemProperty;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
+
 import static org.apache.ignite.cache.CacheAtomicityMode.ATOMIC;
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
 import static org.apache.ignite.cluster.ClusterState.ACTIVE;
@@ -116,8 +117,6 @@ public class IgnitePdsWithTtlTest extends GridCommonAbstractTest {
 
     /** {@inheritDoc} */
     @Override protected void beforeTest() throws Exception {
-        MvccFeatureChecker.skipIfNotSupported(MvccFeatureChecker.Feature.EXPIRATION);
-
         super.beforeTest();
 
         cleanPersistenceDir();
@@ -250,7 +249,7 @@ public class IgnitePdsWithTtlTest extends GridCommonAbstractTest {
 
         AtomicBoolean timeoutReached = new AtomicBoolean(false);
 
-        CheckpointManager checkpointManager = U.field(ig0.context().cache().context().database(), "checkpointManager");
+        CheckpointManager checkpointMgr = U.field(ig0.context().cache().context().database(), "checkpointManager");
 
         IgniteInternalFuture<?> ldrFut = runMultiThreadedAsync(() -> {
             while (!timeoutReached.get()) {
@@ -272,7 +271,7 @@ public class IgnitePdsWithTtlTest extends GridCommonAbstractTest {
 
         IgniteInternalFuture<?> cpWriteLockUnlockFut = runAsync(() -> {
             Object checkpointReadWriteLock = U.field(
-                checkpointManager.checkpointTimeoutLock(), "checkpointReadWriteLock"
+                checkpointMgr.checkpointTimeoutLock(), "checkpointReadWriteLock"
             );
 
             ReentrantReadWriteLockWithTracking lock = U.field(checkpointReadWriteLock, "checkpointLock");
@@ -420,7 +419,7 @@ public class IgnitePdsWithTtlTest extends GridCommonAbstractTest {
             srv.cluster().baselineAutoAdjustEnabled(false);
 
             startGrid(1);
-            srv.cluster().active(true);
+            srv.cluster().state(ClusterState.ACTIVE);
 
             ExpiryPolicy plc = CreatedExpiryPolicy.factoryOf(Duration.ONE_DAY).create();
 

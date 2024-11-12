@@ -45,7 +45,6 @@ import org.apache.ignite.configuration.WALMode;
 import org.apache.ignite.failure.StopNodeFailureHandler;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.TestRecordingCommunicationSpi;
-import org.apache.ignite.internal.commandline.consistency.ConsistencyCommand;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtTxFinishRequest;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtTxPrepareRequest;
 import org.apache.ignite.internal.processors.cache.distributed.dht.atomic.GridDhtAtomicSingleUpdateRequest;
@@ -72,9 +71,9 @@ import static org.apache.ignite.cache.ReadRepairStrategy.PRIMARY;
 import static org.apache.ignite.cache.ReadRepairStrategy.RELATIVE_MAJORITY;
 import static org.apache.ignite.cache.ReadRepairStrategy.REMOVE;
 import static org.apache.ignite.internal.commandline.CommandHandler.EXIT_CODE_OK;
+import static org.apache.ignite.internal.management.consistency.ConsistencyRepairTask.CONSISTENCY_VIOLATIONS_FOUND;
+import static org.apache.ignite.internal.management.consistency.ConsistencyRepairTask.NOTHING_FOUND;
 import static org.apache.ignite.internal.processors.cache.persistence.GridCacheOffheapManager.DFLT_WAL_MARGIN_FOR_ATOMIC_CACHE_HISTORICAL_REBALANCE;
-import static org.apache.ignite.internal.visor.consistency.VisorConsistencyRepairTask.CONSISTENCY_VIOLATIONS_FOUND;
-import static org.apache.ignite.internal.visor.consistency.VisorConsistencyRepairTask.NOTHING_FOUND;
 import static org.apache.ignite.testframework.GridTestUtils.assertContains;
 import static org.apache.ignite.testframework.GridTestUtils.assertNotContains;
 import static org.apache.ignite.testframework.LogListener.matches;
@@ -85,15 +84,37 @@ import static org.apache.ignite.testframework.LogListener.matches;
 @RunWith(Parameterized.class)
 public class GridCommandHandlerConsistencyCountersTest extends GridCommandHandlerClusterPerMethodAbstractTest {
     /** */
-    @Parameterized.Parameters(name = "strategy={0}, reuse={1}, historical={2}, atomicity={3}")
+    public static final String CACHE = "--cache";
+
+    /** */
+    public static final String STRATEGY = "--strategy";
+
+    /** */
+    public static final String PARTITIONS = "--partitions";
+
+    /** */
+    @Parameterized.Parameters(name = "strategy={0}, reuse={1}, historical={2}, atomicity={3}, walRestore={4}")
     public static Iterable<Object[]> data() {
         List<Object[]> res = new ArrayList<>();
+
+        int cntr = 0;
+        List<String> invokers = commandHandlers();
 
         for (ReadRepairStrategy strategy : ReadRepairStrategy.values()) {
             for (boolean reuse : new boolean[] {false, true}) {
                 for (boolean historical : new boolean[] {false, true}) {
-                    for (CacheAtomicityMode atomicityMode : new CacheAtomicityMode[] {ATOMIC, TRANSACTIONAL})
-                        res.add(new Object[] {strategy, reuse, historical, atomicityMode});
+                    for (CacheAtomicityMode atomicityMode : new CacheAtomicityMode[] {ATOMIC, TRANSACTIONAL}) {
+                        for (boolean walRestore: new boolean[] {false, true}) {
+                            res.add(new Object[]{
+                                invokers.get(cntr++ % invokers.size()),
+                                strategy,
+                                reuse,
+                                historical,
+                                atomicityMode,
+                                walRestore
+                            });
+                        }
+                    }
                 }
             }
         }
@@ -104,26 +125,32 @@ public class GridCommandHandlerConsistencyCountersTest extends GridCommandHandle
     /**
      * ReadRepair strategy
      */
-    @Parameterized.Parameter
+    @Parameterized.Parameter(1)
     public ReadRepairStrategy strategy;
 
     /**
      * When true, updates will reuse already existing keys.
      */
-    @Parameterized.Parameter(1)
+    @Parameterized.Parameter(2)
     public boolean reuseKeys;
 
     /**
      * When true, historical rebalance will be used instead of full.
      */
-    @Parameterized.Parameter(2)
+    @Parameterized.Parameter(3)
     public boolean historical;
 
     /**
      * Cache atomicity mode
      */
-    @Parameterized.Parameter(3)
+    @Parameterized.Parameter(4)
     public CacheAtomicityMode atomicityMode;
+
+    /**
+     * Ignite nodes use WAL for restoring logical updates at restart after the crash.
+     */
+    @Parameterized.Parameter(5)
+    public boolean walRestore;
 
     /** Listening logger. */
     protected final ListeningTestLogger listeningLog = new ListeningTestLogger(log);
@@ -294,6 +321,7 @@ public class GridCommandHandlerConsistencyCountersTest extends GridCommandHandle
         String backupMissedTail = null; // Misses after backupHwm, which backups are not aware of before the recovery.
 
         int primaryKeysCnt = preloadCnt; // Keys present on primary.
+        int backupsKeysCnt = preloadCnt; // Keys present on backups.
 
         int iters = 11;
 
@@ -357,6 +385,7 @@ public class GridCommandHandlerConsistencyCountersTest extends GridCommandHandle
                     committedKey++;
                     updateCnt++;
                     primaryKeysCnt++;
+                    backupsKeysCnt++;
 
                     cachePut.accept(committedKey);
                 }
@@ -390,18 +419,39 @@ public class GridCommandHandlerConsistencyCountersTest extends GridCommandHandle
 
         injectTestSystemOut();
 
-        assertEquals(EXIT_CODE_OK, execute("--cache", "idle_verify"));
+        if (!walRestore) {
+            // Idle verify triggers checkpoint and then no WAL restore is performed after cluster restart.
+            assertEquals(EXIT_CODE_OK, execute("--cache", "idle_verify"));
 
-        assertConflicts(true, true);
+            assertConflicts(true, true);
 
-        if (atomicityMode == TRANSACTIONAL) {
-            assertTxCounters(primaryLwm, primaryMissed, updateCnt); // Primary
-            assertTxCounters(preloadCnt, backupMissed, backupHwm); // Backups
+            if (atomicityMode == TRANSACTIONAL) {
+                assertTxCounters(primaryLwm, primaryMissed, updateCnt); // Primary
+                assertTxCounters(preloadCnt, backupMissed, backupHwm); // Backups
+            }
+            else {
+                assertAtomicCounters(updateCnt); // Primary
+                assertAtomicCounters(backupHwm); // Backups
+            }
         }
-        else {
-            assertAtomicCounters(updateCnt); // Primary
-            assertAtomicCounters(backupHwm); // Backups
-        }
+
+        // On node start up it applies WAL changes twice: one for metastore updates, second for logical updates.
+        // Then this record is written to log (2 * nodes) times. This test doesn't perform metastore updates.
+        LogListener lsnrWalRestoreNoUpdates = LogListener
+            .matches("Finished applying WAL changes [updatesApplied=0,")
+            .times(walRestore ? nodes : 2 * nodes) // For walRestore=false nodes have neither metastore nor logical updates.
+                                                   // For walRestore=true nodes don't have metastore updates.
+            .build();
+
+        LogListener lsnrPrimaryWalRestoreUpdates = LogListener
+            .matches("Finished applying WAL changes [updatesApplied=" + (historical ? primaryKeysCnt - preloadCnt : primaryKeysCnt) + ',')
+            .times(walRestore ? 1 : 0)  // Only for walRestore=true nodes have logical updates.
+            .build();
+
+        LogListener lsnrBackupsWalRestoreUpdates = LogListener
+            .matches("Finished applying WAL changes [updatesApplied=" + (historical ? backupsKeysCnt - preloadCnt : backupsKeysCnt) + ',')
+            .times(walRestore ? nodes - 1 : 0) // Only for walRestore=true nodes have logical updates.
+            .build();
 
         LogListener lsnrRebalanceType = matches("fullPartitions=[" + (historical ? "" : 0) + "], " +
             "histPartitions=[" + (historical ? 0 : "") + "]").times(backupNodes).build();
@@ -421,6 +471,9 @@ public class GridCommandHandlerConsistencyCountersTest extends GridCommandHandle
 
         listeningLog.registerListener(lsnrRebalanceType);
         listeningLog.registerListener(lsnrRebalanceAmount);
+        listeningLog.registerListener(lsnrWalRestoreNoUpdates);
+        listeningLog.registerListener(lsnrBackupsWalRestoreUpdates);
+        listeningLog.registerListener(lsnrPrimaryWalRestoreUpdates);
 
         ioBlocked = true; // Emulating power off, OOM or disk overflow. Keeping data as is, with missed counters updates.
 
@@ -435,6 +488,9 @@ public class GridCommandHandlerConsistencyCountersTest extends GridCommandHandle
         awaitPartitionMapExchange();
 
         assertTrue(lsnrRebalanceType.check());
+        assertTrue(lsnrWalRestoreNoUpdates.check());
+        assertTrue(lsnrBackupsWalRestoreUpdates.check());
+        assertTrue(lsnrPrimaryWalRestoreUpdates.check());
 
         assertEquals(EXIT_CODE_OK, execute("--cache", "idle_verify"));
 
@@ -459,9 +515,9 @@ public class GridCommandHandlerConsistencyCountersTest extends GridCommandHandle
             assertNoneAtomicCounters();
 
         assertEquals(EXIT_CODE_OK, execute("--consistency", "repair",
-            ConsistencyCommand.CACHE, DEFAULT_CACHE_NAME,
-            ConsistencyCommand.PARTITIONS, "0",
-            ConsistencyCommand.STRATEGY, strategy.toString()));
+            CACHE, DEFAULT_CACHE_NAME,
+            PARTITIONS, "0",
+            STRATEGY, strategy.toString()));
 
         int repairedCnt = repairedEntriesCount();
 
@@ -503,9 +559,9 @@ public class GridCommandHandlerConsistencyCountersTest extends GridCommandHandle
 
         // Repairing one more time, but with guarantee to fix (primary strategy);
         assertEquals(EXIT_CODE_OK, execute("--consistency", "repair",
-            ConsistencyCommand.CACHE, DEFAULT_CACHE_NAME,
-            ConsistencyCommand.PARTITIONS, "0",
-            ConsistencyCommand.STRATEGY, PRIMARY.toString()));
+            CACHE, DEFAULT_CACHE_NAME,
+            PARTITIONS, "0",
+            STRATEGY, PRIMARY.toString()));
 
         repairedCnt += repairedEntriesCount();
 

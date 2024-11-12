@@ -29,6 +29,7 @@ import java.util.function.Function;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.cache.QueryEntity;
 import org.apache.ignite.cache.QueryIndex;
+import org.apache.ignite.cluster.ClusterState;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
@@ -95,7 +96,7 @@ public class IgniteWalConverterSensitiveDataTest extends GridCommonAbstractTest 
         int nodeId = 0;
 
         IgniteEx crd = startGrid(nodeId);
-        crd.cluster().active(true);
+        crd.cluster().state(ClusterState.ACTIVE);
 
         try (Transaction tx = crd.transactions().txStart()) {
             IgniteCache<Object, Object> cache = crd.cache(DEFAULT_CACHE_NAME);
@@ -257,11 +258,11 @@ public class IgniteWalConverterSensitiveDataTest extends GridCommonAbstractTest 
         else
             assertNotContains(log, testOutStr, SENSITIVE_DATA_VALUE_PREFIX);
 
-        for (String sensitiveDataValue : sensitiveValues) {
+        for (String sensitiveDataVal : sensitiveValues) {
             if (containsData)
-                assertContains(log, testOutStr, converter.apply(sensitiveDataValue));
+                assertContains(log, testOutStr, converter.apply(sensitiveDataVal));
             else
-                assertNotContains(log, testOutStr, converter.apply(sensitiveDataValue));
+                assertNotContains(log, testOutStr, converter.apply(sensitiveDataVal));
         }
     }
 

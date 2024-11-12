@@ -331,7 +331,7 @@ public class HistoryAffinityAssignmentImpl implements HistoryAffinityAssignment 
     }
 
     /** {@inheritDoc} */
-    @Override public boolean requiresHistoryCleanup() {
+    @Override public boolean isFullSizeInstance() {
         return true;
     }
 

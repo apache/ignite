@@ -55,7 +55,9 @@ import static org.apache.ignite.internal.processors.performancestatistics.Operat
 import static org.apache.ignite.internal.processors.performancestatistics.OperationType.JOB;
 import static org.apache.ignite.internal.processors.performancestatistics.OperationType.PAGES_WRITE_THROTTLE;
 import static org.apache.ignite.internal.processors.performancestatistics.OperationType.QUERY;
+import static org.apache.ignite.internal.processors.performancestatistics.OperationType.QUERY_PROPERTY;
 import static org.apache.ignite.internal.processors.performancestatistics.OperationType.QUERY_READS;
+import static org.apache.ignite.internal.processors.performancestatistics.OperationType.QUERY_ROWS;
 import static org.apache.ignite.internal.processors.performancestatistics.OperationType.TASK;
 import static org.apache.ignite.internal.processors.performancestatistics.OperationType.TX_COMMIT;
 import static org.apache.ignite.internal.processors.performancestatistics.OperationType.TX_ROLLBACK;
@@ -64,8 +66,10 @@ import static org.apache.ignite.internal.processors.performancestatistics.Operat
 import static org.apache.ignite.internal.processors.performancestatistics.OperationType.checkpointRecordSize;
 import static org.apache.ignite.internal.processors.performancestatistics.OperationType.jobRecordSize;
 import static org.apache.ignite.internal.processors.performancestatistics.OperationType.pagesWriteThrottleRecordSize;
+import static org.apache.ignite.internal.processors.performancestatistics.OperationType.queryPropertyRecordSize;
 import static org.apache.ignite.internal.processors.performancestatistics.OperationType.queryReadsRecordSize;
 import static org.apache.ignite.internal.processors.performancestatistics.OperationType.queryRecordSize;
+import static org.apache.ignite.internal.processors.performancestatistics.OperationType.queryRowsRecordSize;
 import static org.apache.ignite.internal.processors.performancestatistics.OperationType.taskRecordSize;
 import static org.apache.ignite.internal.processors.performancestatistics.OperationType.transactionRecordSize;
 
@@ -90,7 +94,7 @@ public class FilePerformanceStatisticsWriter {
     public static final int DFLT_FLUSH_SIZE = (int)(8 * U.MB);
 
     /** Default maximum cached strings threshold. String caching will stop on threshold excess. */
-    public static final int DFLT_CACHED_STRINGS_THRESHOLD = 1024;
+    public static final int DFLT_CACHED_STRINGS_THRESHOLD = 10 * 1024;
 
     /** File writer thread name. */
     static final String WRITER_THREAD_NAME = "performance-statistics-writer";
@@ -278,6 +282,50 @@ public class FilePerformanceStatisticsWriter {
             buf.putLong(logicalReads);
             buf.putLong(physicalReads);
         });
+    }
+
+    /**
+     * @param type Cache query type.
+     * @param qryNodeId Originating node id.
+     * @param id Query id.
+     * @param action Action with rows.
+     * @param rows Number of rows.
+     */
+    public void queryRows(GridCacheQueryType type, UUID qryNodeId, long id, String action, long rows) {
+        boolean cached = cacheIfPossible(action);
+
+        doWrite(QUERY_ROWS, queryRowsRecordSize(cached ? 0 : action.getBytes().length, cached), buf -> {
+            writeString(buf, action, cached);
+            buf.put((byte)type.ordinal());
+            writeUuid(buf, qryNodeId);
+            buf.putLong(id);
+            buf.putLong(rows);
+        });
+    }
+
+    /**
+     * @param type Cache query type.
+     * @param qryNodeId Originating node id.
+     * @param id Query id.
+     * @param name Query property name.
+     * @param val Query property value.
+     */
+    public void queryProperty(GridCacheQueryType type, UUID qryNodeId, long id, String name, String val) {
+        if (val == null)
+            return;
+
+        boolean cachedName = cacheIfPossible(name);
+        boolean cachedVal = cacheIfPossible(val);
+
+        doWrite(QUERY_PROPERTY,
+            queryPropertyRecordSize(cachedName ? 0 : name.getBytes().length, cachedName, cachedVal ? 0 : val.getBytes().length, cachedVal),
+            buf -> {
+                writeString(buf, name, cachedName);
+                writeString(buf, val, cachedVal);
+                buf.put((byte)type.ordinal());
+                writeUuid(buf, qryNodeId);
+                buf.putLong(id);
+            });
     }
 
     /**

@@ -25,7 +25,6 @@ import org.apache.ignite.cache.CacheWriteSynchronizationMode;
 import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
-import org.apache.ignite.testframework.MvccFeatureChecker;
 
 /**
  * Cause by https://issues.apache.org/jira/browse/IGNITE-5879
@@ -57,13 +56,6 @@ public class IgnitePdsContinuousRestartTestWithExpiryPolicy extends IgnitePdsCon
         cfg.setCacheConfiguration(ccfg);
 
         return cfg;
-    }
-
-    /** {@inheritDoc} */
-    @Override protected void beforeTest() throws Exception {
-        MvccFeatureChecker.skipIfNotSupported(MvccFeatureChecker.Feature.EXPIRATION);
-
-        super.beforeTest();
     }
 
     /** {@inheritDoc} */

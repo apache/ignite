@@ -20,6 +20,7 @@ package org.apache.ignite.internal.processors.cache.persistence.standbycluster;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteDataStreamer;
+import org.apache.ignite.cluster.ClusterState;
 import org.junit.Test;
 
 /**
@@ -49,13 +50,13 @@ public class IgniteChangeGlobalStateDataStreamerTest extends IgniteChangeGlobalS
         Ignite ig2C = primaryClient(1);
         Ignite ig3C = primaryClient(2);
 
-        assertTrue(ig1.active());
-        assertTrue(ig2.active());
-        assertTrue(ig3.active());
+        assertTrue(ig1.cluster().state().active());
+        assertTrue(ig2.cluster().state().active());
+        assertTrue(ig3.cluster().state().active());
 
-        assertTrue(ig1C.active());
-        assertTrue(ig2C.active());
-        assertTrue(ig3C.active());
+        assertTrue(ig1C.cluster().state().active());
+        assertTrue(ig2C.cluster().state().active());
+        assertTrue(ig3C.cluster().state().active());
 
         String cacheName = "myStreamCache";
 
@@ -66,15 +67,15 @@ public class IgniteChangeGlobalStateDataStreamerTest extends IgniteChangeGlobalS
                 stmr.addData(i, Integer.toString(i));
         }
 
-        ig2C.active(false);
+        ig2C.cluster().state(ClusterState.INACTIVE);
 
-        assertTrue(!ig1.active());
-        assertTrue(!ig2.active());
-        assertTrue(!ig3.active());
+        assertTrue(!ig1.cluster().state().active());
+        assertTrue(!ig2.cluster().state().active());
+        assertTrue(!ig3.cluster().state().active());
 
-        assertTrue(!ig1C.active());
-        assertTrue(!ig2C.active());
-        assertTrue(!ig3C.active());
+        assertTrue(!ig1C.cluster().state().active());
+        assertTrue(!ig2C.cluster().state().active());
+        assertTrue(!ig3C.cluster().state().active());
 
         boolean fail = false;
 
@@ -90,15 +91,15 @@ public class IgniteChangeGlobalStateDataStreamerTest extends IgniteChangeGlobalS
         if (!fail)
             fail("exception was not throw");
 
-        ig3C.active(true);
+        ig3C.cluster().state(ClusterState.ACTIVE);
 
-        assertTrue(ig1.active());
-        assertTrue(ig2.active());
-        assertTrue(ig3.active());
+        assertTrue(ig1.cluster().state().active());
+        assertTrue(ig2.cluster().state().active());
+        assertTrue(ig3.cluster().state().active());
 
-        assertTrue(ig1C.active());
-        assertTrue(ig2C.active());
-        assertTrue(ig3C.active());
+        assertTrue(ig1C.cluster().state().active());
+        assertTrue(ig2C.cluster().state().active());
+        assertTrue(ig3C.cluster().state().active());
 
         try (IgniteDataStreamer<Integer, String> stmr2 = ig2.dataStreamer(cacheName)) {
             for (int i = 100; i < 200; i++)

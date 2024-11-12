@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.processors.query.calcite.trait;
 
+import java.math.BigDecimal;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
@@ -144,6 +145,10 @@ public class TraitUtils {
 
         if (fromTrait.satisfies(toTrait))
             return rel;
+
+        // Cannot enforce node to correlated distribution, this distribution is only set by trait propagation.
+        if (toTrait.function().correlated())
+            return null;
 
         // right now we cannot create a multi-column affinity
         // key object, thus this conversion is impossible
@@ -315,6 +320,10 @@ public class TraitUtils {
 
             @Override public float getFloat(String tag) {
                 return input.getFloat(tag);
+            }
+
+            @Override public BigDecimal getBigDecimal(String tag) {
+                return input.getBigDecimal(tag);
             }
 
             @Override public <E extends Enum<E>> E getEnum(String tag, Class<E> enumClass) {

@@ -26,6 +26,7 @@ import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.Ignition;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
+import org.apache.ignite.cluster.ClusterState;
 import org.apache.ignite.configuration.ClientConfiguration;
 import org.apache.ignite.configuration.ClientConnectorConfiguration;
 import org.apache.ignite.configuration.DataRegionConfiguration;
@@ -67,6 +68,25 @@ public class SecurityTest {
     /** Test SSL/TLS encryption. */
     @Test
     public void testEncryption() throws Exception {
+        // Do not test old protocols.
+        SslProtocol[] protocols = new SslProtocol[] {
+            SslProtocol.TLS,
+            SslProtocol.TLSv1_2,
+            SslProtocol.TLSv1_3
+        };
+
+        for (SslProtocol protocol : protocols) {
+            try {
+                testEncryption(protocol);
+            }
+            catch (Throwable t) {
+                throw new Exception("Failed for protocol: " + protocol, t);
+            }
+        }
+    }
+
+    /** Test SSL/TLS encryption. */
+    private void testEncryption(SslProtocol protocol) {
         // Server-side security configuration
         IgniteConfiguration srvCfg = Config.getServerConfiguration();
 
@@ -122,7 +142,7 @@ public class SecurityTest {
                 .setSslTrustCertificateKeyStorePassword("123456")
                 .setSslKeyAlgorithm(DFLT_KEY_ALGORITHM)
                 .setSslTrustAll(false)
-                .setSslProtocol(SslProtocol.TLS)
+                .setSslProtocol(protocol)
             )) {
                 client.<Integer, String>cache(Config.DEFAULT_CACHE_NAME).put(1, "1");
             }
@@ -234,7 +254,7 @@ public class SecurityTest {
             )
         );
 
-        ignite.cluster().active(true);
+        ignite.cluster().state(ClusterState.ACTIVE);
 
         for (SimpleEntry<String, String> u : users)
             createUser(u.getKey(), u.getValue());

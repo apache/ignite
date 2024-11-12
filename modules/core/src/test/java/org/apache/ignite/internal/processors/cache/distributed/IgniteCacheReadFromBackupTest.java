@@ -44,12 +44,10 @@ import org.apache.ignite.internal.processors.cache.distributed.near.GridNearSing
 import org.apache.ignite.lang.IgniteBiPredicate;
 import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
-import org.junit.Ignore;
 import org.junit.Test;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.ATOMIC;
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
-import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL_SNAPSHOT;
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
 import static org.apache.ignite.cache.CacheMode.REPLICATED;
 
@@ -84,15 +82,6 @@ public class IgniteCacheReadFromBackupTest extends GridCommonAbstractTest {
     @Test
     public void testGetFromBackupStoreReadThroughEnabled() throws Exception {
         checkGetFromBackupStoreReadThroughEnabled(cacheConfigurations());
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
-    @Ignore("https://issues.apache.org/jira/browse/IGNITE-10274")
-    @Test
-    public void testMvccGetFromBackupStoreReadThroughEnabled() throws Exception {
-        checkGetFromBackupStoreReadThroughEnabled(mvccCacheConfigurations());
     }
 
     /**
@@ -150,15 +139,6 @@ public class IgniteCacheReadFromBackupTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
-    @Ignore("https://issues.apache.org/jira/browse/IGNITE-10274")
-    @Test
-    public void testMvccGetFromBackupStoreReadThroughDisabled() throws Exception {
-        checkGetFromBackupStoreReadThroughDisabled(mvccCacheConfigurations());
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
     private void checkGetFromBackupStoreReadThroughDisabled(List<CacheConfiguration<Object, Object>> cacheCfgs) throws Exception {
         for (CacheConfiguration<Object, Object> ccfg : cacheCfgs) {
             ccfg.setCacheStoreFactory(new TestStoreFactory());
@@ -190,15 +170,6 @@ public class IgniteCacheReadFromBackupTest extends GridCommonAbstractTest {
     @Test
     public void testGetFromPrimaryPreloadInProgress() throws Exception {
         checkGetFromPrimaryPreloadInProgress(cacheConfigurations());
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
-    @Ignore("https://issues.apache.org/jira/browse/IGNITE-10274")
-    @Test
-    public void testMvccGetFromPrimaryPreloadInProgress() throws Exception {
-        checkGetFromPrimaryPreloadInProgress(mvccCacheConfigurations());
     }
 
     /**
@@ -293,16 +264,6 @@ public class IgniteCacheReadFromBackupTest extends GridCommonAbstractTest {
     @Test
     public void testNoPrimaryReadPreloadFinished() throws Exception {
         checkNoPrimaryReadPreloadFinished(cacheConfigurations());
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
-    @Ignore("https://issues.apache.org/jira/browse/IGNITE-10274")
-    @Test
-    public void testMvccNoPrimaryReadPreloadFinished() throws Exception {
-        checkNoPrimaryReadPreloadFinished(mvccCacheConfigurations());
-
     }
 
     /**
@@ -429,21 +390,6 @@ public class IgniteCacheReadFromBackupTest extends GridCommonAbstractTest {
         ccfgs.add(cacheConfiguration(PARTITIONED, TRANSACTIONAL, 1, false));
         ccfgs.add(cacheConfiguration(PARTITIONED, TRANSACTIONAL, 1, true));
         ccfgs.add(cacheConfiguration(PARTITIONED, TRANSACTIONAL, 2, false));
-
-        return ccfgs;
-    }
-
-    /**
-     * @return Cache configurations to test.
-     */
-    private List<CacheConfiguration<Object, Object>> mvccCacheConfigurations() {
-        List<CacheConfiguration<Object, Object>> ccfgs = new ArrayList<>();
-
-        ccfgs.add(cacheConfiguration(REPLICATED, TRANSACTIONAL_SNAPSHOT, 0, false));
-
-        ccfgs.add(cacheConfiguration(PARTITIONED, TRANSACTIONAL_SNAPSHOT, 1, false));
-        ccfgs.add(cacheConfiguration(PARTITIONED, TRANSACTIONAL_SNAPSHOT, 1, true));
-        ccfgs.add(cacheConfiguration(PARTITIONED, TRANSACTIONAL_SNAPSHOT, 2, false));
 
         return ccfgs;
     }

@@ -48,7 +48,6 @@ import org.apache.ignite.spi.discovery.DiscoveryMetricsProvider;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.jetbrains.annotations.Nullable;
 
-import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_DAEMON;
 import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_NODE_CONSISTENT_ID;
 
 /**
@@ -107,9 +106,6 @@ public class TcpDiscoveryNode extends GridMetadataAwareAdapter implements Ignite
     private volatile long lastUpdateTimeNanos = System.nanoTime();
 
     /** The most recent time when node exchanged a message with a remote node. */
-    private volatile long lastExchangeTime = U.currentTimeMillis();
-
-    /** Same as {@link #lastExchangeTime} but as returned by {@link System#nanoTime()} */
     @GridToStringExclude
     private volatile long lastExchangeTimeNanos = System.nanoTime();
 
@@ -146,14 +142,6 @@ public class TcpDiscoveryNode extends GridMetadataAwareAdapter implements Ignite
     /** Cache client flag. */
     @GridToStringExclude
     private transient boolean cacheCli;
-
-    /** Daemon node initialization flag. */
-    @GridToStringExclude
-    private transient volatile boolean daemonInit;
-
-    /** Daemon node flag. */
-    @GridToStringExclude
-    private transient boolean daemon;
 
     /**
      * Public default no-arg constructor for {@link Externalizable} interface.
@@ -382,17 +370,6 @@ public class TcpDiscoveryNode extends GridMetadataAwareAdapter implements Ignite
     }
 
     /** {@inheritDoc} */
-    @Override public boolean isDaemon() {
-        if (!daemonInit) {
-            daemon = "true".equalsIgnoreCase((String)attribute(ATTR_DAEMON));
-
-            daemonInit = true;
-        }
-
-        return daemon;
-    }
-
-    /** {@inheritDoc} */
     @Override public Collection<String> hostNames() {
         return hostNames;
     }
@@ -458,11 +435,9 @@ public class TcpDiscoveryNode extends GridMetadataAwareAdapter implements Ignite
     /**
      * Sets the last time a node exchanged a message with a remote node.
      *
-     * @param lastExchangeTime Time in milliseconds.
      * @param lastExchangeTimeNanos Time in nanoseconds.
      */
-    public void lastExchangeTime(long lastExchangeTime, long lastExchangeTimeNanos) {
-        this.lastExchangeTime = lastExchangeTime;
+    public void lastExchangeTime(long lastExchangeTimeNanos) {
         this.lastExchangeTimeNanos = lastExchangeTimeNanos;
     }
 
@@ -668,7 +643,6 @@ public class TcpDiscoveryNode extends GridMetadataAwareAdapter implements Ignite
         this.hostNames = node.hostNames();
         this.order = node.order();
         this.ver = node.version();
-        this.daemon = node.isDaemon();
         this.clientRouterNodeId = node.isClient() ? node.id() : null;
 
         attrs = Collections.singletonMap(ATTR_NODE_CONSISTENT_ID, consistentId);

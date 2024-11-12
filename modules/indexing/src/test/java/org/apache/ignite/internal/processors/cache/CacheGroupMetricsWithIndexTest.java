@@ -33,10 +33,11 @@ import org.apache.ignite.binary.BinaryObjectBuilder;
 import org.apache.ignite.cache.QueryEntity;
 import org.apache.ignite.cache.QueryIndex;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
+import org.apache.ignite.cluster.ClusterState;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
-import org.apache.ignite.internal.processors.metric.MetricRegistry;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.metric.MetricRegistry;
 import org.apache.ignite.spi.metric.LongMetric;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.junit.Test;
@@ -133,7 +134,7 @@ public class CacheGroupMetricsWithIndexTest extends CacheGroupMetricsTest {
 
         Ignite ignite = startGrid(0);
 
-        ignite.cluster().active(true);
+        ignite.cluster().state(ClusterState.ACTIVE);
 
         IgniteCache<Object, Object> cache1 = ignite.cache(CACHE_NAME);
 
@@ -148,7 +149,7 @@ public class CacheGroupMetricsWithIndexTest extends CacheGroupMetricsTest {
             cache1.put(id, o.build());
         }
 
-        ignite.cluster().active(false);
+        ignite.cluster().state(ClusterState.INACTIVE);
 
         File dir = U.resolveWorkDirectory(U.defaultWorkDirectory(), DFLT_STORE_DIR, false);
 
@@ -156,10 +157,10 @@ public class CacheGroupMetricsWithIndexTest extends CacheGroupMetricsTest {
 
         Collection<File> idxBinFiles = FileUtils.listFiles(dir, filter, TrueFileFilter.TRUE);
 
-        for (File indexBin : idxBinFiles)
-            U.delete(indexBin);
+        for (File idxBin : idxBinFiles)
+            U.delete(idxBin);
 
-        ignite.cluster().active(true);
+        ignite.cluster().state(ClusterState.ACTIVE);
 
         MetricRegistry metrics = cacheGroupMetrics(0, GROUP_NAME);
 
@@ -181,7 +182,7 @@ public class CacheGroupMetricsWithIndexTest extends CacheGroupMetricsTest {
 
         Ignite ignite = startGrid(0);
 
-        ignite.cluster().active(true);
+        ignite.cluster().state(ClusterState.ACTIVE);
 
         IgniteCache<Object, Object> cache1 = ignite.cache(CACHE_NAME);
 
@@ -243,7 +244,7 @@ public class CacheGroupMetricsWithIndexTest extends CacheGroupMetricsTest {
 
         startGrid(1);
 
-        ignite.cluster().active(true);
+        ignite.cluster().state(ClusterState.ACTIVE);
 
         IgniteCache<Object, Object> cache1 = ignite.cache(CACHE_NAME);
 
@@ -268,9 +269,9 @@ public class CacheGroupMetricsWithIndexTest extends CacheGroupMetricsTest {
 
         Collection<File> idxBinFiles = FileUtils.listFiles(dir, filter, TrueFileFilter.TRUE);
 
-        for (File indexBin : idxBinFiles)
-            if (indexBin.getAbsolutePath().contains(consistentId))
-                U.delete(indexBin);
+        for (File idxBin : idxBinFiles)
+            if (idxBin.getAbsolutePath().contains(consistentId))
+                U.delete(idxBin);
 
         startGrid(0);
 
@@ -304,7 +305,7 @@ public class CacheGroupMetricsWithIndexTest extends CacheGroupMetricsTest {
 
         startGrid(1);
 
-        ignite.cluster().active(true);
+        ignite.cluster().state(ClusterState.ACTIVE);
 
         IgniteCache<Object, Object> cache1 = ignite.cache(CACHE_NAME);
 

@@ -51,7 +51,6 @@ import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.lang.IgniteInClosure;
-import org.apache.ignite.transactions.TransactionDuplicateKeyException;
 import org.h2.util.DateTimeUtils;
 import org.h2.util.LocalDateTimeUtils;
 import org.h2.value.Value;
@@ -196,6 +195,8 @@ public class DmlUtils {
     private static long dmlDoInsert(UpdatePlan plan, Iterable<List<?>> cursor, int pageSize) throws IgniteCheckedException {
         GridCacheContext cctx = plan.cacheContext();
 
+        final String errMsg = "Failed to INSERT some keys because they are already in cache [keys=";
+
         // If we have just one item to put, just do so
         if (plan.rowCount() == 1) {
             IgniteBiTuple t = plan.processRow(cursor.iterator().next());
@@ -208,26 +209,25 @@ public class DmlUtils {
                 if (cctx.cache().putIfAbsent(t.getKey(), t.getValue()))
                     return 1;
                 else
-                    throw new TransactionDuplicateKeyException("Duplicate key during INSERT [key=" + t.getKey() + ']');
+                    throw new IgniteSQLException(errMsg + '[' + t.getKey() + "]]", DUPLICATE_KEY);
             }
         }
         else {
             // Keys that failed to INSERT due to duplication.
-            DmlBatchSender sender = new DmlBatchSender(cctx, pageSize, 1);
+            DmlBatchSender snd = new DmlBatchSender(cctx, pageSize, 1);
 
             for (List<?> row : cursor) {
                 final IgniteBiTuple keyValPair = plan.processRow(row);
 
-                sender.add(keyValPair.getKey(), new DmlStatementsProcessor.InsertEntryProcessor(keyValPair.getValue()), 0);
+                snd.add(keyValPair.getKey(), new DmlStatementsProcessor.InsertEntryProcessor(keyValPair.getValue()), 0);
             }
 
-            sender.flush();
+            snd.flush();
 
-            SQLException resEx = sender.error();
+            SQLException resEx = snd.error();
 
-            if (!F.isEmpty(sender.failedKeys())) {
-                String msg = "Failed to INSERT some keys because they are already in cache " +
-                    "[keys=" + sender.failedKeys() + ']';
+            if (!F.isEmpty(snd.failedKeys())) {
+                String msg = errMsg + snd.failedKeys() + ']';
 
                 SQLException dupEx = new SQLException(msg, SqlStateCode.CONSTRAINT_VIOLATION);
 
@@ -240,7 +240,7 @@ public class DmlUtils {
             if (resEx != null)
                 throw new IgniteSQLException(resEx);
 
-            return sender.updateCount();
+            return snd.updateCount();
         }
     }
 
@@ -255,7 +255,7 @@ public class DmlUtils {
         throws IgniteCheckedException {
         GridCacheContext cctx = plan.cacheContext();
 
-        DmlBatchSender sender = new DmlBatchSender(cctx, pageSize, 1);
+        DmlBatchSender snd = new DmlBatchSender(cctx, pageSize, 1);
 
         for (List<?> row : cursor) {
             T3<Object, Object, Object> row0 = plan.processRowForUpdate(row);
@@ -264,23 +264,23 @@ public class DmlUtils {
             Object oldVal = row0.get2();
             Object newVal = row0.get3();
 
-            sender.add(key, new DmlStatementsProcessor.ModifyingEntryProcessor(
+            snd.add(key, new DmlStatementsProcessor.ModifyingEntryProcessor(
                 oldVal,
                 new DmlStatementsProcessor.EntryValueUpdater(newVal)),
                 0
             );
         }
 
-        sender.flush();
+        snd.flush();
 
-        SQLException resEx = sender.error();
+        SQLException resEx = snd.error();
 
         if (resEx != null) {
-            if (!F.isEmpty(sender.failedKeys())) {
+            if (!F.isEmpty(snd.failedKeys())) {
                 // Don't go for a re-run if processing of some keys yielded exceptions and report keys that
                 // had been modified concurrently right away.
                 String msg = "Failed to UPDATE some keys because they had been modified concurrently " +
-                    "[keys=" + sender.failedKeys() + ']';
+                    "[keys=" + snd.failedKeys() + ']';
 
                 SQLException dupEx = createJdbcSqlException(msg, IgniteQueryErrorCode.CONCURRENT_UPDATE);
 
@@ -292,7 +292,7 @@ public class DmlUtils {
             throw new IgniteSQLException(resEx);
         }
 
-        return new UpdateResult(sender.updateCount(), sender.failedKeys().toArray(),
+        return new UpdateResult(snd.updateCount(), snd.failedKeys().toArray(),
             cursor instanceof QueryCursorImpl ? ((QueryCursorImpl)cursor).partitionResult() : null);
     }
 
@@ -363,7 +363,7 @@ public class DmlUtils {
      */
     private static UpdateResult doDelete(GridCacheContext cctx, Iterable<List<?>> cursor, int pageSize)
         throws IgniteCheckedException {
-        DmlBatchSender sender = new DmlBatchSender(cctx, pageSize, 1);
+        DmlBatchSender snd = new DmlBatchSender(cctx, pageSize, 1);
 
         for (List<?> row : cursor) {
             if (row.size() != 2)
@@ -371,28 +371,28 @@ public class DmlUtils {
 
             Object key = row.get(0);
 
-            ClusterNode node = sender.primaryNodeByKey(key);
+            ClusterNode node = snd.primaryNodeByKey(key);
 
             IgniteInClosure<MutableEntry<Object, Object>> rmvC =
                 DmlStatementsProcessor.getRemoveClosure(node, key);
 
-            sender.add(
+            snd.add(
                 key,
                 new DmlStatementsProcessor.ModifyingEntryProcessor(row.get(1), rmvC),
                 0
             );
         }
 
-        sender.flush();
+        snd.flush();
 
-        SQLException resEx = sender.error();
+        SQLException resEx = snd.error();
 
         if (resEx != null) {
-            if (!F.isEmpty(sender.failedKeys())) {
+            if (!F.isEmpty(snd.failedKeys())) {
                 // Don't go for a re-run if processing of some keys yielded exceptions and report keys that
                 // had been modified concurrently right away.
                 String msg = "Failed to DELETE some keys because they had been modified concurrently " +
-                    "[keys=" + sender.failedKeys() + ']';
+                    "[keys=" + snd.failedKeys() + ']';
 
                 SQLException conEx = createJdbcSqlException(msg, IgniteQueryErrorCode.CONCURRENT_UPDATE);
 
@@ -404,7 +404,7 @@ public class DmlUtils {
             throw new IgniteSQLException(resEx);
         }
 
-        return new UpdateResult(sender.updateCount(), sender.failedKeys().toArray(),
+        return new UpdateResult(snd.updateCount(), snd.failedKeys().toArray(),
             cursor instanceof QueryCursorImpl ? ((QueryCursorImpl)cursor).partitionResult() : null);
     }
 
@@ -559,7 +559,7 @@ public class DmlUtils {
 
             if (opCtx == null)
                 // Mimics behavior of GridCacheAdapter#keepBinary and GridCacheProxyImpl#keepBinary
-                newOpCtx = new CacheOperationContext(false, true, null, false, null, false, null, true);
+                newOpCtx = new CacheOperationContext(false, true, null, false, null, false, null);
             else if (!opCtx.isKeepBinary())
                 newOpCtx = opCtx.keepBinary();
 

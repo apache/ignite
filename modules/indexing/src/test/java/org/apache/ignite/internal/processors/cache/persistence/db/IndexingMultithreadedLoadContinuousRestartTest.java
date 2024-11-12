@@ -27,14 +27,15 @@ import org.apache.ignite.cache.QueryEntity;
 import org.apache.ignite.cache.QueryIndex;
 import org.apache.ignite.cache.QueryIndexType;
 import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
+import org.apache.ignite.cluster.ClusterState;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInternalFuture;
-import org.apache.ignite.internal.visor.verify.ValidateIndexesClosure;
-import org.apache.ignite.internal.visor.verify.VisorValidateIndexesJobResult;
+import org.apache.ignite.internal.management.cache.ValidateIndexesClosure;
+import org.apache.ignite.internal.management.cache.ValidateIndexesJobResult;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
@@ -151,7 +152,7 @@ public class IndexingMultithreadedLoadContinuousRestartTest extends GridCommonAb
         for (int i = 0; i < RESTARTS; i++) {
             IgniteEx ignite = startGrid(0);
 
-            ignite.cluster().active(true);
+            ignite.cluster().state(ClusterState.ACTIVE);
 
             // Ensure that checkpoint isn't running - otherwise validate indexes task may fail.
             forceCheckpoint();
@@ -160,7 +161,7 @@ public class IndexingMultithreadedLoadContinuousRestartTest extends GridCommonAb
             ValidateIndexesClosure clo = new ValidateIndexesClosure(() -> false, Collections.singleton(CACHE_NAME),
                 0, 0, false, true);
             ignite.context().resource().injectGeneric(clo);
-            VisorValidateIndexesJobResult res = clo.call();
+            ValidateIndexesJobResult res = clo.call();
 
             assertFalse(res.hasIssues());
 

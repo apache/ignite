@@ -26,6 +26,7 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.NavigableMap;
 import java.util.Set;
 import java.util.TreeSet;
 import java.util.UUID;
@@ -216,13 +217,6 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
     /** Name of the discovery metrics registry. */
     public static final String DISCO_METRICS = metricName("io", "discovery");
 
-    /** Predicate filtering out daemon nodes. */
-    private static final IgnitePredicate<ClusterNode> FILTER_NOT_DAEMON = new P1<ClusterNode>() {
-        @Override public boolean apply(ClusterNode n) {
-            return !n.isDaemon();
-        }
-    };
-
     /** Predicate filtering client nodes. */
     private static final IgnitePredicate<ClusterNode> FILTER_CLI = new P1<ClusterNode>() {
         @Override public boolean apply(ClusterNode n) {
@@ -254,9 +248,6 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
     /** Local node. */
     private ClusterNode locNode;
 
-    /** Local node daemon flag. */
-    private boolean isLocDaemon;
-
     /** {@code True} if resolvers were configured and network segment check is enabled. */
     private boolean hasRslvrs;
 
@@ -268,7 +259,7 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
         new GridBoundedConcurrentLinkedHashMap<>(DISCOVERY_HISTORY_SIZE);
 
     /** Topology snapshots history. */
-    private volatile Map<Long, Collection<ClusterNode>> topHist = new HashMap<>();
+    private volatile NavigableMap<Long, Collection<ClusterNode>> topHist = Collections.emptyNavigableMap();
 
     /** Topology version. */
     private final AtomicReference<Snapshot> topSnap =
@@ -326,7 +317,7 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
                 NODES_SYS_VIEW,
                 NODES_SYS_VIEW_DESC,
                 new ClusterNodeViewWalker(),
-                () -> F.concat(false, allNodes(), daemonNodes()),
+                this::allNodes,
                 ClusterNodeView::new
             );
 
@@ -334,7 +325,7 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
                 NODE_METRICS_SYS_VIEW,
                 NODE_METRICS_SYS_VIEW_DESC,
                 new NodeMetricsViewWalker(),
-                () -> F.concat(false, allNodes(), daemonNodes()),
+                this::allNodes,
                 NodeMetricsView::new
             );
 
@@ -505,8 +496,6 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
 
         histSupported = historySupported();
 
-        isLocDaemon = ctx.isDaemon();
-
         hasRslvrs = !ctx.config().isClientMode() && !F.isEmpty(ctx.config().getSegmentationResolvers());
 
         segChkFreq = ctx.config().getSegmentCheckFrequency();
@@ -618,7 +607,7 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
                 final ClusterNode locNode = localNode();
 
                 if (notification.getTopHist() != null)
-                    topHist = notification.getTopHist();
+                    topHist = Collections.unmodifiableNavigableMap(notification.getTopHist());
 
                 boolean verChanged;
 
@@ -737,7 +726,7 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
                     // Current version.
                     discoCache = discoCache();
 
-                if (locJoinEvt || !node.isClient() && !node.isDaemon()) {
+                if (locJoinEvt || !node.isClient()) {
                     if (type == EVT_NODE_LEFT || type == EVT_NODE_FAILED || type == EVT_NODE_JOINED) {
                         boolean discoCacheRecalculationRequired = ctx.state().autoAdjustInMemoryClusterState(
                             node.id(),
@@ -796,7 +785,7 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
                     discoEvt.eventNode(node);
                     discoEvt.type(EVT_NODE_JOINED);
 
-                    discoEvt.topologySnapshot(topVer, new ArrayList<>(F.view(notification.getTopSnapshot(), FILTER_NOT_DAEMON)));
+                    discoEvt.topologySnapshot(topVer, new ArrayList<>(notification.getTopSnapshot()));
 
                     if (notification.getSpanContainer() != null)
                         discoEvt.span(notification.getSpanContainer().span());
@@ -809,19 +798,15 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
                         // components.
                         ctx.security().onLocalJoin();
 
-                        if (!isLocDaemon) {
-                            ctx.cache().context().versions().onLocalJoin(topVer);
+                        ctx.cache().context().versions().onLocalJoin(topVer);
 
-                            ctx.cache().context().coordinators().onLocalJoin(discoEvt, discoCache);
+                        ctx.cache().context().exchange().onLocalJoin(discoEvt, discoCache);
 
-                            ctx.cache().context().exchange().onLocalJoin(discoEvt, discoCache);
+                        ctx.service().onLocalJoin(discoEvt, discoCache);
 
-                            ctx.service().onLocalJoin(discoEvt, discoCache);
+                        ctx.encryption().onLocalJoin();
 
-                            ctx.encryption().onLocalJoin();
-
-                            ctx.cluster().onLocalJoin();
-                        }
+                        ctx.cluster().onLocalJoin();
                     }
 
                     IgniteInternalFuture<Boolean> transitionWaitFut = ctx.state().onLocalJoin(discoCache);
@@ -829,7 +814,7 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
                     locJoin.onDone(new DiscoveryLocalJoinData(discoEvt,
                         discoCache,
                         transitionWaitFut,
-                        ctx.state().clusterState().active()));
+                        ctx.state().clusterState().state().active()));
 
                     return;
                 }
@@ -858,7 +843,7 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
                         assert rmvd != null : histVer;
                     }
 
-                    topHist.clear();
+                    topHist = Collections.emptyNavigableMap();
 
                     topSnap.set(new Snapshot(AffinityTopologyVersion.ZERO,
                         createDiscoCache(AffinityTopologyVersion.ZERO, ctx.state().clusterState(), locNode,
@@ -876,8 +861,6 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
                     gridStartTime = getSpi().getGridStartTime();
 
                     ((IgniteKernal)ctx.grid()).onReconnected(clusterRestarted);
-
-                    ctx.cache().context().coordinators().onLocalJoin(localJoinEvent(), discoCache);
 
                     ctx.cache().context().exchange().onLocalJoin(localJoinEvent(), discoCache);
 
@@ -1284,7 +1267,7 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
 
         boolean locP2pEnabled = locNode.attribute(ATTR_PEER_CLASSLOADING);
 
-        ShutdownPolicy locShutdownPolicy = ShutdownPolicy.fromOrdinal(locNode.attribute(ATTR_SHUTDOWN_POLICY));
+        ShutdownPolicy locShutdownPlc = ShutdownPolicy.fromOrdinal(locNode.attribute(ATTR_SHUTDOWN_POLICY));
 
         boolean ipV4Warned = false;
 
@@ -1326,25 +1309,21 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
                 ipV4Warned = true;
             }
 
-            // Daemon nodes are allowed to have any deployment they need.
-            // Skip data center ID check for daemon nodes.
-            if (!isLocDaemon && !n.isDaemon()) {
-                Object rmtMode = n.attribute(ATTR_DEPLOYMENT_MODE);
+            Object rmtMode = n.attribute(ATTR_DEPLOYMENT_MODE);
 
-                if (!locMode.equals(rmtMode))
-                    throw new IgniteCheckedException("Remote node has deployment mode different from local " +
-                        "[locId8=" + U.id8(locNode.id()) + ", locMode=" + locMode +
-                        ", rmtId8=" + U.id8(n.id()) + ", rmtMode=" + rmtMode +
-                        ", rmtAddrs=" + U.addressesAsString(n) + ", rmtNode=" + U.toShortString(n) + "]");
+            if (!locMode.equals(rmtMode))
+                throw new IgniteCheckedException("Remote node has deployment mode different from local " +
+                    "[locId8=" + U.id8(locNode.id()) + ", locMode=" + locMode +
+                    ", rmtId8=" + U.id8(n.id()) + ", rmtMode=" + rmtMode +
+                    ", rmtAddrs=" + U.addressesAsString(n) + ", rmtNode=" + U.toShortString(n) + "]");
 
-                boolean rmtP2pEnabled = n.attribute(ATTR_PEER_CLASSLOADING);
+            boolean rmtP2pEnabled = n.attribute(ATTR_PEER_CLASSLOADING);
 
-                if (locP2pEnabled != rmtP2pEnabled)
-                    throw new IgniteCheckedException("Remote node has peer class loading enabled flag different from" +
-                        " local [locId8=" + U.id8(locNode.id()) + ", locPeerClassLoading=" + locP2pEnabled +
-                        ", rmtId8=" + U.id8(n.id()) + ", rmtPeerClassLoading=" + rmtP2pEnabled +
-                        ", rmtAddrs=" + U.addressesAsString(n) + ", rmtNode=" + U.toShortString(n) + "]");
-            }
+            if (locP2pEnabled != rmtP2pEnabled)
+                throw new IgniteCheckedException("Remote node has peer class loading enabled flag different from" +
+                    " local [locId8=" + U.id8(locNode.id()) + ", locPeerClassLoading=" + locP2pEnabled +
+                    ", rmtId8=" + U.id8(n.id()) + ", rmtPeerClassLoading=" + rmtP2pEnabled +
+                    ", rmtAddrs=" + U.addressesAsString(n) + ", rmtNode=" + U.toShortString(n) + "]");
 
             Boolean rmtMarshUseDfltSuid = n.attribute(ATTR_MARSHALLER_USE_DFLT_SUID);
             boolean rmtMarshUseDfltSuidBool = rmtMarshUseDfltSuid == null ? true : rmtMarshUseDfltSuid;
@@ -1385,13 +1364,13 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
                     ", rmtAddrs=" + U.addressesAsString(n) + ", rmtNode=" + U.toShortString(n) + "]");
             }
 
-            ShutdownPolicy rmtShutdownPolicy = n.attribute(ATTR_SHUTDOWN_POLICY) == null ? null :
+            ShutdownPolicy rmtShutdownPlc = n.attribute(ATTR_SHUTDOWN_POLICY) == null ? null :
                 ShutdownPolicy.fromOrdinal(n.attribute(ATTR_SHUTDOWN_POLICY));
 
-            if (rmtShutdownPolicy != null && !F.eq(locShutdownPolicy, rmtShutdownPolicy)) {
+            if (rmtShutdownPlc != null && !F.eq(locShutdownPlc, rmtShutdownPlc)) {
                 throw new IgniteCheckedException("Remote node has shutdoun policy different from local" +
-                    " local [locId8=" + U.id8(locNode.id()) + ", locShutdownPolicy=" + locShutdownPolicy +
-                    ", rmtId8=" + U.id8(n.id()) + ", rmtShutdownPolicy=" + rmtShutdownPolicy +
+                    " local [locId8=" + U.id8(locNode.id()) + ", locShutdownPolicy=" + locShutdownPlc +
+                    ", rmtId8=" + U.id8(n.id()) + ", rmtShutdownPolicy=" + rmtShutdownPlc +
                     ", rmtAddrs=" + U.addressesAsString(n) + ", rmtNode=" + U.toShortString(n) + "]");
             }
 
@@ -1475,8 +1454,6 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
      * @param throttle Suppress printing if this topology was already printed.
      */
     private void ackTopology(long topVer, int evtType, ClusterNode evtNode, boolean throttle) {
-        assert !isLocDaemon;
-
         DiscoCache discoCache = discoCacheHist.get(new AffinityTopologyVersion(topVer));
 
         if (discoCache == null) {
@@ -1690,7 +1667,7 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
         ClusterNode currCrd = discoCache.oldestServerNode();
 
         if ((evtType == EventType.EVT_NODE_FAILED || evtType == EventType.EVT_NODE_LEFT) &&
-                currCrd != null && currCrd.order() > evtNode.order() && !evtNode.isClient() && !evtNode.isDaemon())
+                currCrd != null && currCrd.order() > evtNode.order() && !evtNode.isClient())
             clo.apply("Coordinator changed [prev=" + evtNode + ", cur=" + currCrd + "]");
 
         BaselineTopology blt = state.baselineTopology();
@@ -1945,12 +1922,12 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
         return discoCacheHist.get(topVer);
     }
 
-    /** @return All non-daemon remote nodes in topology. */
+    /** @return All remote nodes in topology. */
     public Collection<ClusterNode> remoteNodes() {
         return discoCache().remoteNodes();
     }
 
-    /** @return All non-daemon nodes in topology. */
+    /** @return All nodes in topology. */
     public Collection<ClusterNode> allNodes() {
         return discoCache().allNodes();
     }
@@ -2232,12 +2209,7 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
      * @return Server topology nodes.
      */
     public Collection<ClusterNode> serverTopologyNodes(long topVer) {
-        return F.view(topology(topVer), F.not(FILTER_CLI), FILTER_NOT_DAEMON);
-    }
-
-    /** @return All daemon nodes in topology. */
-    public Collection<ClusterNode> daemonNodes() {
-        return discoCache().daemonNodes();
+        return F.view(topology(topVer), F.not(FILTER_CLI));
     }
 
     /** @return Local node. */
@@ -2486,7 +2458,6 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
         HashSet<UUID> alives = U.newHashSet(topSnapshot.size());
         HashMap<UUID, ClusterNode> nodeMap = U.newHashMap(topSnapshot.size());
 
-        ArrayList<ClusterNode> daemonNodes = new ArrayList<>(topSnapshot.size());
         ArrayList<ClusterNode> srvNodes = new ArrayList<>(topSnapshot.size());
         ArrayList<ClusterNode> rmtNodes = new ArrayList<>(topSnapshot.size());
         ArrayList<ClusterNode> allNodes = new ArrayList<>(topSnapshot.size());
@@ -2502,22 +2473,18 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
             if (alive(node))
                 alives.add(node.id());
 
-            if (node.isDaemon())
-                daemonNodes.add(node);
-            else {
-                allNodes.add(node);
+            allNodes.add(node);
 
-                if (!node.isLocal())
-                    rmtNodes.add(node);
+            if (!node.isLocal())
+                rmtNodes.add(node);
 
-                if (!node.isClient()) {
-                    srvNodes.add(node);
+            if (!node.isClient()) {
+                srvNodes.add(node);
 
-                    if (minSrvVer == null)
-                        minSrvVer = node.version();
-                    else if (node.version().compareTo(minSrvVer) < 0)
-                        minSrvVer = node.version();
-                }
+                if (minSrvVer == null)
+                    minSrvVer = node.version();
+                else if (node.version().compareTo(minSrvVer) < 0)
+                    minSrvVer = node.version();
             }
 
             nodeMap.put(node.id(), node);
@@ -2587,7 +2554,6 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
             Collections.unmodifiableList(rmtNodes),
             Collections.unmodifiableList(allNodes),
             Collections.unmodifiableList(srvNodes),
-            Collections.unmodifiableList(daemonNodes),
             U.sealList(rmtNodesWithCaches),
             baselineNodes == null ? null : Collections.unmodifiableList(baselineNodes),
             Collections.unmodifiableMap(allCacheNodes),
@@ -2702,11 +2668,25 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
      * @return resolved node, or <code>null</code> if node not found.
      */
     public ClusterNode historicalNode(UUID nodeId) {
+        long lastCheckedLocTopVer = Long.MAX_VALUE;
+
         for (DiscoCache discoCache : discoCacheHist.descendingValues()) {
             ClusterNode node = discoCache.node(nodeId);
 
             if (node != null)
                 return node;
+
+            lastCheckedLocTopVer = discoCache.version().topologyVersion();
+        }
+
+        // We did not find node with given ID in the discovery history of the local node. This means that the local
+        // node could join the cluster after the node with given ID left it. Let's check in the global topology history,
+        // which contains all topology versions since the cluster was started.
+        for (Collection<ClusterNode> top : topHist.headMap(lastCheckedLocTopVer, false).descendingMap().values()) {
+            for (ClusterNode node : top) {
+                if (F.eq(node.id(), nodeId))
+                    return node;
+            }
         }
 
         return null;
@@ -2891,14 +2871,14 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
                     body0();
                 }
                 catch (Throwable t) {
-                    boolean isInterruptedException = X.hasCause(t, InterruptedException.class)
+                    boolean isInterruptedEx = X.hasCause(t, InterruptedException.class)
                         || X.hasCause(t, IgniteInterruptedException.class)
                         || X.hasCause(t, IgniteInterruptedCheckedException.class);
 
-                    if (!isInterruptedException)
+                    if (!isInterruptedEx)
                         U.error(log, "Exception in discovery notifier worker thread.", t);
 
-                    if (!isInterruptedException || !isCancelled.get()) {
+                    if (!isInterruptedEx || !isCancelled.get()) {
                         FailureType type = t instanceof OutOfMemoryError ? CRITICAL_ERROR : SYSTEM_WORKER_TERMINATION;
 
                         ctx.failure().process(new FailureContext(type, t));
@@ -3026,7 +3006,7 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
                 evt.node(ctx.discovery().localNode());
                 evt.eventNode(node);
                 evt.type(type);
-                evt.topologySnapshot(topVer, U.<ClusterNode, ClusterNode>arrayList(topSnapshot, FILTER_NOT_DAEMON));
+                evt.topologySnapshot(topVer, U.<ClusterNode, ClusterNode>arrayList(topSnapshot));
                 evt.span(spanContainer != null ? spanContainer.span() : null);
 
                 if (type == EVT_NODE_METRICS_UPDATED)
@@ -3118,8 +3098,6 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
 
                 ClusterNode node = evt.node;
 
-                boolean isDaemon = node.isDaemon();
-
                 boolean segmented = false;
 
                 if (evt.discoCache != null)
@@ -3137,18 +3115,10 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
                             U.warn(log, e.getMessage()); // We a have well-formed attribute warning here.
                         }
 
-                        if (!isDaemon) {
-                            if (!isLocDaemon) {
-                                if (log.isInfoEnabled())
-                                    log.info("Added new node to topology: " + node);
+                        if (log.isInfoEnabled())
+                            log.info("Added new node to topology: " + node);
 
-                                ackTopology(topVer.topologyVersion(), type, node, true);
-                            }
-                            else if (log.isDebugEnabled())
-                                log.debug("Added new node to topology: " + node);
-                        }
-                        else if (log.isDebugEnabled())
-                            log.debug("Added new daemon node to topology: " + node);
+                        ackTopology(topVer.topologyVersion(), type, node, true);
 
                         break;
                     }
@@ -3158,18 +3128,10 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
                         if (hasRslvrs)
                             segChkWrk.scheduleSegmentCheck();
 
-                        if (!isDaemon) {
-                            if (!isLocDaemon) {
-                                if (log.isInfoEnabled())
-                                    log.info("Node left topology: " + node);
+                        if (log.isInfoEnabled())
+                            log.info("Node left topology: " + node);
 
-                                ackTopology(topVer.topologyVersion(), type, node, true);
-                            }
-                            else if (log.isDebugEnabled())
-                                log.debug("Node left topology: " + node);
-                        }
-                        else if (log.isDebugEnabled())
-                            log.debug("Daemon node left topology: " + node);
+                        ackTopology(topVer.topologyVersion(), type, node, true);
 
                         break;
                     }
@@ -3184,8 +3146,7 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
                         if (log.isInfoEnabled())
                             log.info("Client node reconnected to topology: " + node);
 
-                        if (!isLocDaemon)
-                            ackTopology(topVer.topologyVersion(), type, node, true);
+                        ackTopology(topVer.topologyVersion(), type, node, true);
 
                         break;
                     }
@@ -3195,17 +3156,9 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
                         if (hasRslvrs)
                             segChkWrk.scheduleSegmentCheck();
 
-                        if (!isDaemon) {
-                            if (!isLocDaemon) {
-                                U.warn(log, "Node FAILED: " + node);
+                        U.warn(log, "Node FAILED: " + node);
 
-                                ackTopology(topVer.topologyVersion(), type, node, true);
-                            }
-                            else if (log.isDebugEnabled())
-                                log.debug("Node FAILED: " + node);
-                        }
-                        else if (log.isDebugEnabled())
-                            log.debug("Daemon node FAILED: " + node);
+                        ackTopology(topVer.topologyVersion(), type, node, true);
 
                         break;
                     }
@@ -3230,10 +3183,7 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
 
                         segmented = true;
 
-                        if (!isLocDaemon)
-                            U.warn(log, "Local node SEGMENTED: " + node);
-                        else if (log.isDebugEnabled())
-                            log.debug("Local node SEGMENTED: " + node);
+                        U.warn(log, "Local node SEGMENTED: " + node);
 
                         break;
                     }
@@ -3299,6 +3249,11 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
 
                 case STOP:
                     ctx.failure().process(new FailureContext(FailureType.SEGMENTATION, null), stopNodeHnd);
+
+                    break;
+
+                case USE_FAILURE_HANDLER:
+                    ctx.failure().process(new FailureContext(FailureType.SEGMENTATION, null));
 
                     break;
 
@@ -3511,7 +3466,7 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
          * @return {@code True} if cache is accessible on the given node.
          */
         boolean cacheNode(ClusterNode node) {
-            return !node.isDaemon() && (CU.affinityNode(node, aff.cacheFilter) ||
+            return (CU.affinityNode(node, aff.cacheFilter) ||
                 cacheClientNode(node) != null);
         }
 
@@ -3533,9 +3488,6 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
          * @return {@code True} if client cache is present on the given nodes.
          */
         public boolean clientNode(ClusterNode node) {
-            if (node.isDaemon())
-                return false;
-
             Boolean near = cacheClientNode(node);
 
             return near != null && !near;
@@ -3574,7 +3526,6 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
     ) {
         for (ClusterNode node : allNodes) {
             assert node.order() != 0 : "Invalid node order [locNode=" + localNode() + ", node=" + node + ']';
-            assert !node.isDaemon();
 
             for (Map.Entry<Integer, CacheGroupAffinity> e : registeredCacheGrps.entrySet()) {
                 CacheGroupAffinity grpAff = e.getValue();
@@ -3630,7 +3581,6 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
             discoCache.remoteNodes(),
             allNodes,
             discoCache.serverNodes(),
-            discoCache.daemonNodes(),
             U.sealList(rmtNodesWithCaches),
             discoCache.baselineNodes(),
             allCacheNodes,
@@ -3677,7 +3627,7 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
                 nodes = Collections.emptySet();
         }
         else
-            nodes = F.concat(false, allNodes(), daemonNodes());
+            nodes = allNodes();
 
         String attrName = (String)filter.get(NodeAttributeViewWalker.NAME_FILTER);
 

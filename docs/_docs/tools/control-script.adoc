@@ -51,8 +51,8 @@ If you want to connect to a node that is running on a remove machine, specify th
 | --password PASSWORD |The user password. |
 | --ping-interval PING_INTERVAL | The ping interval. | 5000
 | --ping-timeout PING_TIMEOUT | Ping response timeout. | 30000
-| --ssl-protocol PROTOCOL1, PROTOCOL2... | A list of SSL protocols to try when connecting to the cluster. link:https://docs.oracle.com/javase/8/docs/technotes/guides/security/SunProviders.html#SunJSSE_Protocols[Supported protocols,window=_blank]. | `TLS`
-| --ssl-cipher-suites CIPHER1,CIPHER2...  | A list of SSL ciphers. link:https://docs.oracle.com/javase/8/docs/technotes/guides/security/SunProviders.html#SupportedCipherSuites[Supported ciphers,window=_blank]. |
+| --ssl-protocol PROTOCOL1, PROTOCOL2... | A list of SSL protocols to try when connecting to the cluster. link:https://docs.oracle.com/en/java/javase/11/security/java-security-overview1.html#GUID-FCF419A7-B856-46DD-A36F-C6F88F9AF37F[Supported protocols,window=_blank]. | `TLS`
+| --ssl-cipher-suites CIPHER1,CIPHER2...  | A list of SSL ciphers. link:https://docs.oracle.com/en/java/javase/11/docs/specs/security/standard-names.html#jsse-cipher-suite-names[Supported ciphers,window=_blank]. |
 | --ssl-key-algorithm ALG | The SSL key algorithm. | `SunX509`
 | --keystore-type KEYSTORE_TYPE | The keystore type. | `JKS`
 | --keystore KEYSTORE_PATH | The path to the keystore. Specify a keystore to enable SSL for the control script.|
@@ -60,6 +60,7 @@ If you want to connect to a node that is running on a remove machine, specify th
 | --truststore-type TRUSTSTORE_TYPE | The type of the truststore. | `JKS`
 | --truststore TRUSTSTORE_PATH | The path to the truststore. |
 | --truststore-password TRUSTSTORE_PWD | The password to the truststore. |
+| --ssl-factory SSL_FACTORY_PATH | Custom SSL factory Spring xml file path. |
 |===
 
 
@@ -421,6 +422,37 @@ control.sh|bat --cache list . --seq
 control.sh|bat --cache list counter-.* --seq
 ----
 
+== Creating Caches
+
+You can use the control script to create specific caches.
+
+NOTE: The 'ignite-spring' module should be enabled.
+
+[source, shell]
+----
+control.sh|bat --cache create --springXmlConfig springXmlFilePath --skip-existing
+----
+
+Parameters:
+
+[cols="1,3",opts="header"]
+|===
+| Parameter | Description
+| `--springXmlConfig springXmlConfigPath` | Path to the Spring XML configuration that contains
+'org.apache.ignite.configuration.CacheConfiguration' beans to create caches from.
+|`--skip-existing`| Optional flag to skip existing caches.
+|===
+
+Examples:
+[source, shell]
+----
+# Create caches from the `/ignite/config/userCaches.xml` configuration.
+control.sh|bat --cache create --springXmlConfig /ignite/config/userCaches.xml
+
+# Create caches from the `/ignite/config/userCaches.xml` configuration except existing ones.
+control.sh|bat --cache create --springXmlConfig /ignite/config/userCaches.xml --skip-existing
+----
+
 == Destroying Caches
 
 You can use the control script to destroy specific caches.
@@ -447,6 +479,56 @@ control.sh|bat --cache destroy --caches cache1,cache2
 
 # Destroy all user-created caches.
 control.sh|bat --cache destroy --destroy-all-caches
+----
+
+== Clearing Caches
+
+You can use the control script to clear specific caches.
+
+[source, shell]
+----
+control.sh|bat --cache clear --caches cache1,...,cacheN
+----
+
+Parameters:
+
+[cols="1,3",opts="header"]
+|===
+| Parameter | Description
+| `--caches cache1,...,cacheN`| Specifies a comma-separated list of cache names to be cleared.
+|===
+
+Examples:
+[source, shell]
+----
+# Clear cache1 and cache2.
+control.sh|bat --cache clear --caches cache1,cache2
+----
+
+== Scanning Caches
+
+You can use the control script to scan cache entries.
+
+[source, shell]
+----
+control.sh|bat --cache scan cacheName [--limit N]
+----
+
+For each entry four columns will be displayed: key class, string representation of key, value class, and string representation of value.
+
+Parameters:
+
+[cols="1,3",opts="header"]
+|===
+| Parameter | Description
+| `--limit N`| Limit amount of entries to scan (default 1000).
+|===
+
+Examples:
+[source, shell]
+----
+# Query no more than 10 entries from cache "cache1"
+control.sh|bat --cache scan cache1 --limit 10
 ----
 
 == Resetting Lost Partitions
@@ -656,6 +738,19 @@ a primary partition and a corresponding backup partitions and prints a report if
 Differences may be the result of inconsistencies in some data on the cluster from which the snapshot was taken. It is
 recommended to perform the `idle_verify` procedure on the cluster if this case occurs.
 
+The checking incremental snapshot command verifies data in WAL segments only. It checks that every transaction included into
+snapshot is fully committed on every participated node. It also calculates hashes of these transactions and committed data
+changes and compares it between nodes.
+
+[WARNING]
+====
+[discrete]
+=== The Incremental Snapshot Check verifies transactional caches only
+Please note, incremental snapshots doesn't guarantee consistency of atomic caches. It is highly recommended verifying these
+caches after restoring with the `idle_verify` command. If it is needed it's possible to repair inconsistent partitions with
+the `--consistency` command.
+====
+
 This procedure does not require the cluster to be in the `idle` state.
 
 [tabs]
@@ -665,6 +760,10 @@ tab:Shell[]
 ----
 # Checks that partitions of all snapshot caches have the correct checksums and primary/backup ones actually contain the same data.
 control.(sh|bat) --snapshot check snapshot_name
+
+# Checks the transactional data included into incremental snapshots. Incremental snapshots with indices from 1 to 3 are checked.
+control.(sh|bat) --snapshot check snapshot_name --increment 3
+
 ----
 --
 
@@ -898,6 +997,28 @@ io.dataregion.default.PagesReplaceAge             0
 io.dataregion.default.PhysicalMemoryPages         0
 Command [METRIC] finished with code: 0
 
+== Metric configure command
+
+The metrics command configure bounds of histogram metrics or rate time interval of hitrate metric.
+
+[tabs]
+--
+tab:Unix[]
+[source,shell,subs="verbatim,quotes"]
+----
+control.sh --metric --configure-histogram histogram-metric-name 1,2,3
+control.sh --metric --configure-hitrate hitrate-metric-name 1000
+----
+tab:Windows[]
+[source,shell,subs="verbatim,quotes"]
+----
+control.bat --metric --configure-histogram histogram-metric-name 1,2,3
+control.bat --metric --configure-hitrate hitrate-metric-name 1000
+----
+--
+
+NOTE: For metric command use following format as metric name: `<register-name>.<metric-name>`. For example: `io.datastorage.WalLoggingRate` must be set for `WalLoggingRate` metric.
+
 == Indexes Management
 
 The commands below allow to get a specific information on indexes and to trigger the indexes rebuild process.
@@ -954,12 +1075,12 @@ To trigger the rebuild process of all indexes for the specified caches or the ca
 tab:Unix[]
 [source,shell]
 ----
-control.sh --cache indexes_force_rebuild --node-id nodeId --cache-names cacheName1,...cacheNameN|--group-names groupName1,...groupNameN
+control.sh --cache indexes_force_rebuild --node-ids nodeId1,...nodeIdN|--all-nodes --cache-names cacheName1,...cacheNameN|--group-names groupName1,...groupNameN
 ----
 tab:Window[]
 [source,shell]
 ----
-control.bat --cache indexes_force_rebuild --node-id nodeId --cache-names cacheName1,...cacheNameN|--group-names groupName1,...groupNameN
+control.bat --cache indexes_force_rebuild --node-ids nodeId1,...nodeIdN|--all-nodes --cache-names cacheName1,...cacheNameN|--group-names groupName1,...groupNameN
 ----
 --
 
@@ -1000,9 +1121,9 @@ control.sh --system-view nodes
 Command [SYSTEM-VIEW] started
 Arguments: --system-view nodes
 --------------------------------------------------------------------------------
-nodeId                                  consistentId                                         version                          isClient    isDaemon    nodeOrder    addresses                                          hostnames          isLocal
-a8a28869-cac6-4b17-946a-6f7f547b9f62    0:0:0:0:0:0:0:1%lo0,127.0.0.1,192.168.31.45:47500    2.10.0#20201230-sha1:00000000    false       false               1    [0:0:0:0:0:0:0:1%lo0, 127.0.0.1, 192.168.31.45]    [192.168.31.45]    true
-d580433d-c621-45ff-a558-b4df82d09613    0:0:0:0:0:0:0:1%lo0,127.0.0.1,192.168.31.45:47501    2.10.0#20201230-sha1:00000000    false       false               2    [0:0:0:0:0:0:0:1%lo0, 127.0.0.1, 192.168.31.45]    [192.168.31.45]    false
+nodeId                                  consistentId                                         version                          isClient    nodeOrder    addresses                                          hostnames          isLocal
+a8a28869-cac6-4b17-946a-6f7f547b9f62    0:0:0:0:0:0:0:1%lo0,127.0.0.1,192.168.31.45:47500    2.10.0#20201230-sha1:00000000    false               1    [0:0:0:0:0:0:0:1%lo0, 127.0.0.1, 192.168.31.45]    [192.168.31.45]    true
+d580433d-c621-45ff-a558-b4df82d09613    0:0:0:0:0:0:0:1%lo0,127.0.0.1,192.168.31.45:47501    2.10.0#20201230-sha1:00000000    false               2    [0:0:0:0:0:0:0:1%lo0, 127.0.0.1, 192.168.31.45]    [192.168.31.45]    false
 Command [SYSTEM-VIEW] finished with code: 0
 
 
@@ -1161,7 +1282,7 @@ The `schedule_indexes_rebuild` commands Apache Ignite to rebuild indexes for spe
 
 [source, shell]
 ----
- control.sh|bat --cache schedule_indexes_rebuild --node-id nodeId --cache-names cacheName[index1,...indexN],cacheName2,cacheName3[index1] --group-names groupName1,groupName2,...groupNameN
+ control.sh|bat --cache schedule_indexes_rebuild --node-ids nodeId1,...nodeIdN|--all-nodes --cache-names cacheName[index1,...indexN],cacheName2,cacheName3[index1] --group-names groupName1,groupName2,...groupNameN
 ----
 
 Parameters:

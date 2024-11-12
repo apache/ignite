@@ -21,6 +21,7 @@ import java.io.Externalizable;
 import java.io.IOException;
 import java.io.ObjectInput;
 import java.io.ObjectOutput;
+import java.util.UUID;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -66,6 +67,9 @@ public class GridRestResponse implements Externalizable {
     /** Response object. */
     @GridToStringInclude(sensitive = true)
     private Object obj;
+
+    /** */
+    private UUID secSubjId;
 
     /**
      *
@@ -160,6 +164,16 @@ public class GridRestResponse implements Externalizable {
         this.sesTokStr = sesTokStr;
     }
 
+    /** */
+    public UUID getSecuritySubjectId() {
+        return secSubjId;
+    }
+
+    /** */
+    public void setSecuritySubjectId(UUID secSubjId) {
+        this.secSubjId = secSubjId;
+    }
+
     /** {@inheritDoc} */
     @Override public String toString() {
         return S.toString(GridRestResponse.class, this);
@@ -172,6 +186,7 @@ public class GridRestResponse implements Externalizable {
         U.writeString(out, sesTokStr);
         U.writeString(out, err);
         out.writeObject(obj);
+        U.writeUuid(out, secSubjId);
     }
 
     /** {@inheritDoc} */
@@ -181,5 +196,6 @@ public class GridRestResponse implements Externalizable {
         sesTokStr = U.readString(in);
         err = U.readString(in);
         obj = in.readObject();
+        secSubjId = U.readUuid(in);
     }
 }

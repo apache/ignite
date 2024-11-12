@@ -105,8 +105,8 @@ public class BasicIndexTest extends AbstractIndexingCommonTest {
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         assertNotNull(inlineSize);
 
-        for (QueryIndex index : indexes)
-            index.setInlineSize(inlineSize);
+        for (QueryIndex idx : indexes)
+            idx.setInlineSize(inlineSize);
 
         IgniteConfiguration igniteCfg = super.getConfiguration(igniteInstanceName);
 
@@ -510,7 +510,7 @@ public class BasicIndexTest extends AbstractIndexingCommonTest {
         IgniteEx ig0 = startGrid(0);
 
         if (persistEnabled)
-            ig0.cluster().active(true);
+            ig0.cluster().state(ClusterState.ACTIVE);
 
         IgniteCache<Key, Val> cache = grid(0).cache(DEFAULT_CACHE_NAME);
 
@@ -1180,7 +1180,7 @@ public class BasicIndexTest extends AbstractIndexingCommonTest {
 
         IgniteEx ig0 = startGrid(0);
 
-        ig0.cluster().active(true);
+        ig0.cluster().state(ClusterState.ACTIVE);
 
         populateCache();
 
@@ -1206,7 +1206,7 @@ public class BasicIndexTest extends AbstractIndexingCommonTest {
 
         ig0 = startGrid(0);
 
-        ig0.cluster().active(true);
+        ig0.cluster().state(ClusterState.ACTIVE);
 
         cache = ig0.cache(DEFAULT_CACHE_NAME);
 
@@ -1335,7 +1335,7 @@ public class BasicIndexTest extends AbstractIndexingCommonTest {
 
             // Shutdown gracefully to ensure there is a checkpoint with index.bin.
             // Otherwise index.bin rebuilding may not work.
-            grid(0).cluster().active(false);
+            grid(0).cluster().state(ClusterState.INACTIVE);
 
             stopAllGrids();
 
@@ -1384,7 +1384,7 @@ public class BasicIndexTest extends AbstractIndexingCommonTest {
 
             // Shutdown gracefully to ensure there is a checkpoint with index.bin.
             // Otherwise index.bin rebuilding may not work.
-            grid(0).cluster().active(false);
+            grid(0).cluster().state(ClusterState.INACTIVE);
 
             stopAllGrids();
 
@@ -1433,7 +1433,7 @@ public class BasicIndexTest extends AbstractIndexingCommonTest {
 
             // Shutdown gracefully to ensure there is a checkpoint with index.bin.
             // Otherwise index.bin rebuilding may not work.
-            grid(0).cluster().active(false);
+            grid(0).cluster().state(ClusterState.INACTIVE);
 
             stopAllGrids();
 
@@ -1775,11 +1775,11 @@ public class BasicIndexTest extends AbstractIndexingCommonTest {
         IgniteCache<Key, Val> cache = grid(0).cache(DEFAULT_CACHE_NAME);
 
         for (String col : cols) {
-            String indexName = col + "_idx";
+            String idxName = col + "_idx";
             String schemaName = DEFAULT_CACHE_NAME;
 
             cache.query(new SqlFieldsQuery(
-                String.format("create index %s on \"%s\".Val(%s) INLINE_SIZE %s;", indexName, schemaName, col, inlineSize)
+                String.format("create index %s on \"%s\".Val(%s) INLINE_SIZE %s;", idxName, schemaName, col, inlineSize)
             )).getAll();
         }
 
@@ -1791,10 +1791,10 @@ public class BasicIndexTest extends AbstractIndexingCommonTest {
         IgniteCache<Key, Val> cache = grid(0).cache(DEFAULT_CACHE_NAME);
 
         for (String col : cols) {
-            String indexName = col + "_idx";
+            String idxName = col + "_idx";
 
             cache.query(new SqlFieldsQuery(
-                String.format("drop index %s;", indexName)
+                String.format("drop index %s;", idxName)
             )).getAll();
         }
 

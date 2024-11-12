@@ -54,7 +54,6 @@ import org.apache.ignite.internal.processors.cacheobject.IgniteCacheObjectProces
 import org.apache.ignite.internal.processors.dr.GridDrType;
 import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.internal.util.typedef.T2;
-import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.JUnitAssertAware;
 import org.mockito.ArgumentMatchers;
@@ -411,7 +410,6 @@ public class ReadRepairDataGenerator extends JUnitAssertAware {
                             false,
                             null,
                             AffinityTopologyVersion.NONE,
-                            CU.empty0(),
                             GridDrType.DR_NONE,
                             null,
                             null,
@@ -496,9 +494,9 @@ public class ReadRepairDataGenerator extends JUnitAssertAware {
                     repairable = !(sorted.length > 1 && sorted[1] == max);
 
                     if (repairable)
-                        for (Map.Entry<T2<Object, GridCacheVersion>, Integer> count : counts.entrySet())
-                            if (count.getValue().equals(max)) {
-                                repaired = count.getKey().getKey();
+                        for (Map.Entry<T2<Object, GridCacheVersion>, Integer> cnt : counts.entrySet())
+                            if (cnt.getValue().equals(max)) {
+                                repaired = cnt.getKey().getKey();
 
                                 break;
                             }

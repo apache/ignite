@@ -93,9 +93,6 @@ namespace Apache.Ignite.Core.Impl.Cluster
         private const int OpForRemotes = 17;
 
         /** */
-        private const int OpForDaemons = 18;
-
-        /** */
         private const int OpForRandom = 19;
         
         /** */
@@ -145,9 +142,6 @@ namespace Apache.Ignite.Core.Impl.Cluster
 
         /** */
         private const int OpDataRegionMetricsByName = 36;
-
-        /** */
-        private const int OpDataStorageMetrics = 37;
 
         /** */
         private const int OpEnableStatistics = 38;
@@ -327,12 +321,6 @@ namespace Apache.Ignite.Core.Impl.Cluster
         public IClusterGroup ForRemotes()
         {
             return GetClusterGroup(DoOutOpObject(OpForRemotes));
-        }
-
-        /** <inheritDoc /> */
-        public IClusterGroup ForDaemons()
-        {
-            return GetClusterGroup(DoOutOpObject(OpForDaemons));
         }
 
         /** <inheritDoc /> */
@@ -674,15 +662,6 @@ namespace Apache.Ignite.Core.Impl.Cluster
         {
             return DoOutInOp(OpDataRegionMetricsByName, w => w.WriteString(memoryPolicyName),
                 stream => stream.ReadBool() ? new DataRegionMetrics(Marshaller.StartUnmarshal(stream, false)) : null);
-        }
-
-        /// <summary>
-        /// Gets the data storage metrics.
-        /// </summary>
-        public IDataStorageMetrics GetDataStorageMetrics()
-        {
-            return DoInOp(OpDataStorageMetrics, stream =>
-                new DataStorageMetrics(Marshaller.StartUnmarshal(stream, false)));
         }
 
         /// <summary>

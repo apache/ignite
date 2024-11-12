@@ -21,6 +21,7 @@ import java.util.Collections;
 import java.util.List;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
+import org.apache.ignite.cluster.ClusterState;
 import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
@@ -88,7 +89,7 @@ public class IgniteAbsentEvictionNodeOutOfBaselineTest extends GridCommonAbstrac
         Ignite ignite0 = startGrids(3);
 
         ignite0.cluster().baselineAutoAdjustEnabled(false);
-        ignite0.cluster().active(true);
+        ignite0.cluster().state(ClusterState.ACTIVE);
 
         IgniteCache<Object, Object> cache = ignite0.getOrCreateCache(TEST_CACHE_NAME);
 

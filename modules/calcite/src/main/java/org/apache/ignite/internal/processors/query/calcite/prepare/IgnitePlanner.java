@@ -21,11 +21,13 @@ import java.io.PrintWriter;
 import java.io.Reader;
 import java.io.StringWriter;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 import com.google.common.collect.ImmutableList;
 import org.apache.calcite.plan.Context;
@@ -56,13 +58,18 @@ import org.apache.calcite.rex.RexCorrelVariable;
 import org.apache.calcite.rex.RexExecutor;
 import org.apache.calcite.rex.RexNode;
 import org.apache.calcite.rex.RexShuttle;
+import org.apache.calcite.sql.SqlBasicCall;
 import org.apache.calcite.sql.SqlDataTypeSpec;
+import org.apache.calcite.sql.SqlIdentifier;
 import org.apache.calcite.sql.SqlKind;
 import org.apache.calcite.sql.SqlNode;
 import org.apache.calcite.sql.SqlNodeList;
 import org.apache.calcite.sql.SqlOperatorTable;
+import org.apache.calcite.sql.SqlOrderBy;
+import org.apache.calcite.sql.SqlSelect;
 import org.apache.calcite.sql.parser.SqlParseException;
 import org.apache.calcite.sql.parser.SqlParser;
+import org.apache.calcite.sql.validate.SqlNonNullableAccessors;
 import org.apache.calcite.sql.validate.SqlValidator;
 import org.apache.calcite.sql2rel.SqlRexConvertletTable;
 import org.apache.calcite.sql2rel.SqlToRelConverter;
@@ -78,7 +85,9 @@ import org.apache.ignite.internal.processors.query.calcite.metadata.IgniteMetada
 import org.apache.ignite.internal.processors.query.calcite.metadata.RelMetadataQueryEx;
 import org.apache.ignite.internal.processors.query.calcite.type.IgniteTypeFactory;
 import org.apache.ignite.internal.processors.query.calcite.util.Commons;
+import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.jetbrains.annotations.Nullable;
 
 /**
  * Query planer.
@@ -130,6 +139,9 @@ public class IgnitePlanner implements Planner, RelOptTable.ViewExpander {
     /** */
     private RelOptCluster cluster;
 
+    /** */
+    private @Nullable SqlNode validatedSqlNode;
+
     /**
      * @param ctx Planner context.
      */
@@ -177,10 +189,12 @@ public class IgnitePlanner implements Planner, RelOptTable.ViewExpander {
     /** {@inheritDoc} */
     @Override public SqlNode validate(SqlNode sqlNode) throws ValidationException {
         try {
-            return validator().validate(sqlNode);
+            validatedSqlNode = validator().validate(sqlNode);
+
+            return validatedSqlNode;
         }
         catch (RuntimeException e) {
-            throw new ValidationException(e);
+            throw new ValidationException(e.getMessage(), e);
         }
     }
 
@@ -189,6 +203,11 @@ public class IgnitePlanner implements Planner, RelOptTable.ViewExpander {
         SqlNode validatedNode = validator().validate(sqlNode);
         RelDataType type = validator().getValidatedNodeType(validatedNode);
         return Pair.of(validatedNode, type);
+    }
+
+    /** {@inheritDoc} */
+    @Override public RelDataType getParameterRowType() {
+        return validator.getParameterRowType(validatedSqlNode);
     }
 
     /**
@@ -208,11 +227,105 @@ public class IgnitePlanner implements Planner, RelOptTable.ViewExpander {
      * @return Validated node, its validated type and type's origins.
      */
     public ValidationResult validateAndGetTypeMetadata(SqlNode sqlNode) {
+        List<SqlNode> selectItems = null;
+        List<SqlNode> selectItemsNoStar = null;
+        SqlNode sqlNode0 = sqlNode instanceof SqlOrderBy ? ((SqlOrderBy)sqlNode).query : sqlNode;
+
+        boolean hasStar = false;
+        if (sqlNode0 instanceof SqlSelect) {
+            selectItems = SqlNonNullableAccessors.getSelectList((SqlSelect)sqlNode0);
+            selectItemsNoStar = new ArrayList<>(selectItems.size());
+
+            for (SqlNode node : selectItems) {
+                if (node instanceof SqlIdentifier) {
+                    if (((SqlIdentifier)node).isStar())
+                        hasStar = true;
+                }
+                else {
+                    // We should track all non-identifiers for further processing if any star operator presents.
+                    selectItemsNoStar.add(node);
+                }
+            }
+        }
+
         SqlNode validatedNode = validator().validate(sqlNode);
         RelDataType type = validator().getValidatedNodeType(validatedNode);
         List<List<String>> origins = validator().getFieldOrigins(validatedNode);
 
-        return new ValidationResult(validatedNode, type, origins);
+        //    There is four cases.
+        //    1. Simple column (SqlIdentifier) -- alias will be obtained from origins.
+        //    2. Expanded column from star -- alias will be obtained from origins.
+        //    3. AS call -- alias will be obtained from original call (second operand).
+        //    4. Other call -- alias will be obtained via SqlValidator#deriveAlias.
+
+        List<String> derived = null;
+        if (validatedNode instanceof SqlSelect && !F.isEmpty(selectItems) && !F.isEmpty(selectItemsNoStar)) {
+            derived = new ArrayList<>(selectItems.size());
+
+            if (hasStar) {
+                // If original SqlSelectNode has star, we should process expanded items.
+                SqlNodeList expandedItems = ((SqlSelect)validatedNode).getSelectList();
+
+                int cnt = 0;
+                for (SqlNode node : expandedItems) {
+                    // If the node is SqlIdentifier, alias will be obtained from origins.
+                    if (node instanceof SqlIdentifier) {
+                        derived.add(null);
+
+                        continue;
+                    }
+
+                    if (node instanceof SqlBasicCall) {
+                        if (cnt < selectItemsNoStar.size()) {
+                            SqlNode noStarItem = selectItemsNoStar.get(cnt);
+
+                            // The validator can transform SqlIdentifier to AS call. We should check whether
+                            // AS call is a real one and take the second operand from original one.
+                            if (isAsCall(noStarItem) && isAsCall(node)) {
+                                SqlBasicCall origItem = (SqlBasicCall)noStarItem;
+                                SqlBasicCall expandedItem = (SqlBasicCall)node;
+
+                                if (Objects.equals(origItem.getParserPosition(), expandedItem.getParserPosition())) {
+                                    derived.add(((SqlIdentifier)origItem.operand(1)).getSimple());
+                                    cnt++;
+
+                                    continue;
+                                }
+                            }
+                            else {
+                                // Other calls should be processed via SqlValidator#deriveAlias
+                                derived.add(validator().deriveAlias(noStarItem, cnt++));
+
+                                continue;
+                            }
+                        }
+                        derived.add(null);
+
+                        continue;
+                    }
+
+                    if (cnt < selectItemsNoStar.size())
+                        derived.add(validator().deriveAlias(selectItemsNoStar.get(cnt), cnt++));
+                    else
+                        derived.add(null);
+                }
+            }
+            else {
+                int cnt = 0;
+                for (SqlNode node : selectItems)
+                    derived.add(validator().deriveAlias(node, cnt++));
+            }
+        }
+
+        return new ValidationResult(validatedNode, type, origins, derived);
+    }
+
+    /** */
+    private static boolean isAsCall(SqlNode node) {
+        return node instanceof SqlBasicCall && node.getKind() == SqlKind.AS
+                && ((SqlBasicCall)node).operandCount() == 2
+                && ((SqlBasicCall)node).operand(0) instanceof SqlIdentifier
+                && ((SqlBasicCall)node).operand(1) instanceof SqlIdentifier;
     }
 
     /** {@inheritDoc} */
@@ -342,10 +455,10 @@ public class IgnitePlanner implements Planner, RelOptTable.ViewExpander {
         // For now, don't trim if there are more than 3 joins. The projects
         // near the leaves created by trim migrate past joins and seem to
         // prevent join-reordering.
-        final SqlToRelConverter.Config config = sqlToRelConverterCfg
+        final SqlToRelConverter.Config cfg = sqlToRelConverterCfg
             .withExpand(false)
             .withTrimUnusedFields(RelOptUtil.countJoins(root.rel) < 2);
-        SqlToRelConverter converter = sqlToRelConverter(validator(), catalogReader, config);
+        SqlToRelConverter converter = sqlToRelConverter(validator(), catalogReader, cfg);
         boolean ordered = !root.collation.getFieldCollations().isEmpty();
         boolean dml = SqlKind.DML.contains(root.kind);
         return root.withRel(converter.trimUnusedFields(dml || ordered, root.rel));
@@ -484,7 +597,10 @@ public class IgnitePlanner implements Planner, RelOptTable.ViewExpander {
     }
 
     /** */
-    public void setDisabledRules(Set<String> disabledRuleNames) {
+    public void setDisabledRules(Collection<String> disabledRuleNames) {
+        if (F.isEmpty(disabledRuleNames))
+            return;
+
         ctx.rulesFilter(rulesSet -> {
             List<RelOptRule> newSet = new ArrayList<>();
 

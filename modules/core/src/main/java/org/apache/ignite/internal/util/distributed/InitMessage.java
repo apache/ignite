@@ -44,7 +44,7 @@ public class InitMessage<I extends Serializable> implements DiscoveryCustomMessa
     private final IgniteUuid id = IgniteUuid.randomUuid();
 
     /** Process id. */
-    private final UUID processId;
+    private final UUID procId;
 
     /** Process type. */
     private final int type;
@@ -52,15 +52,19 @@ public class InitMessage<I extends Serializable> implements DiscoveryCustomMessa
     /** Request. */
     private final I req;
 
+    /** Whether coordinator waits client nodes results. */
+    private final boolean waitClnRes;
+
     /**
-     * @param processId Process id.
+     * @param procId Process id.
      * @param type Process type.
      * @param req Request.
      */
-    public InitMessage(UUID processId, DistributedProcessType type, I req) {
-        this.processId = processId;
+    public InitMessage(UUID procId, DistributedProcessType type, I req, boolean waitClnRes) {
+        this.procId = procId;
         this.type = type.ordinal();
         this.req = req;
+        this.waitClnRes = waitClnRes;
     }
 
     /** {@inheritDoc} */
@@ -86,7 +90,7 @@ public class InitMessage<I extends Serializable> implements DiscoveryCustomMessa
 
     /** @return Process id. */
     public UUID processId() {
-        return processId;
+        return procId;
     }
 
     /** @return Process type. */
@@ -97,6 +101,11 @@ public class InitMessage<I extends Serializable> implements DiscoveryCustomMessa
     /** @return Request. */
     public I request() {
         return req;
+    }
+
+    /** @return Whether coordinator waits client nodes results. */
+    public boolean waitClientResults() {
+        return waitClnRes;
     }
 
     /** {@inheritDoc} */

@@ -422,13 +422,13 @@ public class GridFutureAdapterSelfTest extends GridCommonAbstractTest {
             futureOnDone(fut0, res0);
         }
 
-        boolean exceptionThrown = false;
+        boolean exThrown = false;
 
         try {
             chainedFut.get(1000);
         }
         catch (Exception e) {
-            exceptionThrown = true;
+            exThrown = true;
 
             if (cbException)
                 assertEquals("cbException", e.getMessage());
@@ -438,13 +438,13 @@ public class GridFutureAdapterSelfTest extends GridCommonAbstractTest {
                 throw e;
         }
 
-        assertEquals(withException || cbException, exceptionThrown);
+        assertEquals(withException || cbException, exThrown);
 
         assertTrue(chainedFut.isDone());
     }
 
     /**
-     * Completes the future exceptionally, if {@code res} is the instanse of {@link Throwable}.
+     * Completes the future exceptionally, if {@code res} is the instance of {@link Throwable}.
      *
      * @param fut Future.
      * @param res Result.

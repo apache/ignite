@@ -335,12 +335,12 @@ public class BinaryClassDescriptor {
                     if (BinaryUtils.FIELDS_SORTED_ORDER) {
                         fields0 = new TreeMap<>();
 
-                        stableFieldsMeta = metaDataEnabled ? new TreeMap<String, BinaryFieldMetadata>() : null;
+                        stableFieldsMeta = metaDataEnabled ? new TreeMap<>() : null;
                     }
                     else {
                         fields0 = new LinkedHashMap<>();
 
-                        stableFieldsMeta = metaDataEnabled ? new LinkedHashMap<String, BinaryFieldMetadata>() : null;
+                        stableFieldsMeta = metaDataEnabled ? new LinkedHashMap<>() : null;
                     }
 
                     Set<String> duplicates = duplicateFields(cls);
@@ -1089,6 +1089,11 @@ public class BinaryClassDescriptor {
         catch (InstantiationException | InvocationTargetException | IllegalAccessException e) {
             throw new BinaryObjectException("Failed to instantiate instance: " + cls, e);
         }
+    }
+
+    /** */
+    Constructor<?> ctor() {
+        return ctor;
     }
 
     /**

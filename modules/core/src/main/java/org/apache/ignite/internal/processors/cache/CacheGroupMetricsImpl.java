@@ -39,10 +39,10 @@ import org.apache.ignite.internal.processors.cache.distributed.dht.topology.Grid
 import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionState;
 import org.apache.ignite.internal.processors.cache.persistence.GridCacheDatabaseSharedManager;
 import org.apache.ignite.internal.processors.cache.persistence.pagemem.PageMetrics;
-import org.apache.ignite.internal.processors.metric.MetricRegistry;
+import org.apache.ignite.internal.processors.metric.MetricRegistryImpl;
 import org.apache.ignite.internal.processors.metric.impl.AtomicLongMetric;
 import org.apache.ignite.internal.util.typedef.internal.CU;
-import org.apache.ignite.spi.metric.LongMetric;
+import org.apache.ignite.metric.MetricRegistry;
 import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.internal.processors.metric.impl.MetricUtils.cacheMetricsRegistryName;
@@ -55,26 +55,18 @@ public class CacheGroupMetricsImpl {
     /** Cache group metrics prefix. */
     public static final String CACHE_GROUP_METRICS_PREFIX = "cacheGroups";
 
-    /** Number of partitions need processed for finished indexes create or rebuilding. */
-    private final AtomicLongMetric idxBuildCntPartitionsLeft;
-
     /** Cache group context. */
     private final CacheGroupContext ctx;
-
-    /** */
-    private final LongMetric storageSize;
-
-    /** */
-    private final LongMetric sparseStorageSize;
 
     /** Number of local partitions initialized on current node. */
     private final AtomicLongMetric initLocPartitionsNum;
 
-    /**
-     * Memory page metrics. Will be {@code null} on client nodes.
-     */
+    /** Memory page metrics. Will be {@code null} on client nodes. */
     @Nullable
     private final PageMetrics pageMetrics;
+
+    /** Enabled persistence flag. */
+    private final boolean persistenceEnabled;
 
     /** Interface describing a predicate of two integers. */
     private interface IntBiPredicate {
@@ -97,22 +89,22 @@ public class CacheGroupMetricsImpl {
 
         DataStorageConfiguration dsCfg = kernalCtx.config().getDataStorageConfiguration();
 
-        boolean persistenceEnabled = !kernalCtx.clientNode() && CU.isPersistentCache(cacheCfg, dsCfg);
+        persistenceEnabled = !kernalCtx.clientNode() && CU.isPersistentCache(cacheCfg, dsCfg);
 
-        MetricRegistry mreg = kernalCtx.metric().registry(metricGroupName());
+        MetricRegistryImpl mreg = kernalCtx.metric().registry(metricGroupName());
 
         mreg.register("Caches", this::getCaches, List.class, null);
 
-        storageSize = mreg.register("StorageSize",
-            () -> persistenceEnabled ? database().forGroupPageStores(ctx, PageStore::size) : 0,
-            "Storage space allocated for group, in bytes.");
+        mreg.register("StorageSize", this::getStorageSize, "Storage space allocated for group, in bytes.");
 
-        sparseStorageSize = mreg.register("SparseStorageSize",
-            () -> persistenceEnabled ? database().forGroupPageStores(ctx, PageStore::getSparseSize) : 0,
+        mreg.register("SparseStorageSize", this::getSparseStorageSize,
             "Storage space allocated for group adjusted for possible sparsity, in bytes.");
 
-        idxBuildCntPartitionsLeft = mreg.longMetric("IndexBuildCountPartitionsLeft",
-            "Number of partitions need processed for finished indexes create or rebuilding.");
+        mreg.register(
+            "IndexBuildCountPartitionsLeft",
+            this::getIndexBuildCountPartitionsLeft,
+            "Number of partitions need processed for finished indexes create or rebuilding."
+        );
 
         initLocPartitionsNum = mreg.longMetric("InitializedLocalPartitionsNumber",
             "Number of local partitions initialized on current node.");
@@ -196,19 +188,7 @@ public class CacheGroupMetricsImpl {
 
     /** */
     public long getIndexBuildCountPartitionsLeft() {
-        return idxBuildCntPartitionsLeft.value();
-    }
-
-    /** Add number of partitions need processed for finished indexes create or rebuilding. */
-    public void addIndexBuildCountPartitionsLeft(long idxBuildCntPartitionsLeft) {
-        this.idxBuildCntPartitionsLeft.add(idxBuildCntPartitionsLeft);
-    }
-
-    /**
-     * Decrement number of partitions need processed for finished indexes create or rebuilding.
-     */
-    public void decrementIndexBuildCountPartitionsLeft() {
-        idxBuildCntPartitionsLeft.decrement();
+        return ctx.caches().stream().mapToLong(cctx -> cctx.cache().metrics0().getIndexBuildPartitionsLeftCount()).sum();
     }
 
     /**
@@ -333,6 +313,9 @@ public class CacheGroupMetricsImpl {
      */
     private int clusterPartitionsCountByState(GridDhtPartitionState state) {
         GridDhtPartitionFullMap partFullMap = ctx.topology().partitionMap(true);
+
+        if (partFullMap == null)
+            return 0;
 
         int cnt = 0;
 
@@ -493,12 +476,12 @@ public class CacheGroupMetricsImpl {
 
     /** */
     public long getStorageSize() {
-        return storageSize == null ? 0 : storageSize.value();
+        return persistenceEnabled ? database().forGroupPageStores(ctx, PageStore::size) : 0;
     }
 
     /** */
     public long getSparseStorageSize() {
-        return sparseStorageSize == null ? 0 : sparseStorageSize.value();
+        return persistenceEnabled ? database().forGroupPageStores(ctx, PageStore::getSparseSize) : 0;
     }
 
     /**

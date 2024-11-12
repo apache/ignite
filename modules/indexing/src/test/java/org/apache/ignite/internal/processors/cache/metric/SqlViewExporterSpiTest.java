@@ -52,6 +52,7 @@ import org.apache.ignite.cache.query.ScanQuery;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.client.IgniteClient;
 import org.apache.ignite.cluster.ClusterNode;
+import org.apache.ignite.cluster.ClusterState;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.ClientConfiguration;
 import org.apache.ignite.configuration.DataRegionConfiguration;
@@ -139,7 +140,7 @@ public class SqlViewExporterSpiTest extends AbstractExporterSpiTest {
         ignite1 = startGrid(1);
 
         ignite0.cluster().baselineAutoAdjustEnabled(false);
-        ignite0.cluster().active(true);
+        ignite0.cluster().state(ClusterState.ACTIVE);
     }
 
     /** {@inheritDoc} */
@@ -159,7 +160,7 @@ public class SqlViewExporterSpiTest extends AbstractExporterSpiTest {
 
     /** */
     @Test
-    public void testEmptyFilter() throws Exception {
+    public void testEmptyFilter() {
         List<List<?>> res = execute(ignite0, "SELECT * FROM SYS.METRICS");
 
         assertNotNull(res);
@@ -168,7 +169,7 @@ public class SqlViewExporterSpiTest extends AbstractExporterSpiTest {
 
     /** */
     @Test
-    public void testDataRegionMetrics() throws Exception {
+    public void testDataRegionMetrics() {
         List<List<?>> res = execute(ignite0,
             "SELECT REPLACE(name, 'io.dataregion.persistent.'), value, description FROM SYS.METRICS");
 
@@ -197,7 +198,7 @@ public class SqlViewExporterSpiTest extends AbstractExporterSpiTest {
 
     /** */
     @Test
-    public void testCachesView() throws Exception {
+    public void testCachesView() {
         Set<String> cacheNames = new HashSet<>(asList("cache-1", "cache-2"));
 
         for (String name : cacheNames)
@@ -215,7 +216,7 @@ public class SqlViewExporterSpiTest extends AbstractExporterSpiTest {
 
     /** */
     @Test
-    public void testCacheGroupsView() throws Exception {
+    public void testCacheGroupsView() {
         Set<String> grpNames = new HashSet<>(asList("grp-1", "grp-2"));
 
         for (String grpName : grpNames)
@@ -278,7 +279,7 @@ public class SqlViewExporterSpiTest extends AbstractExporterSpiTest {
 
     /** */
     @Test
-    public void testServices() throws Exception {
+    public void testServices() {
         ServiceConfiguration srvcCfg = new ServiceConfiguration();
 
         srvcCfg.setName("service");
@@ -298,7 +299,8 @@ public class SqlViewExporterSpiTest extends AbstractExporterSpiTest {
                 "  AFFINITY_KEY, " +
                 "  NODE_FILTER, " +
                 "  STATICALLY_CONFIGURED, " +
-                "  ORIGIN_NODE_ID " +
+                "  ORIGIN_NODE_ID, " +
+                "  TOPOLOGY_SNAPSHOT " +
                 "FROM SYS.SERVICES");
 
         assertEquals(ignite0.context().service().serviceDescriptors().size(), srvs.size());
@@ -308,6 +310,7 @@ public class SqlViewExporterSpiTest extends AbstractExporterSpiTest {
         assertEquals(srvcCfg.getName(), sysView.get(0));
         assertEquals(DummyService.class.getName(), sysView.get(2));
         assertEquals(srvcCfg.getMaxPerNodeCount(), sysView.get(4));
+        assertEquals(F.first(ignite0.services().serviceDescriptors()).topologySnapshot().toString(), sysView.get(10));
     }
 
     /** */
@@ -407,7 +410,7 @@ public class SqlViewExporterSpiTest extends AbstractExporterSpiTest {
 
     /** */
     @Test
-    public void testViews() throws Exception {
+    public void testViews() {
         Set<String> expViews = new TreeSet<>(asList(
             "METRICS",
             "SERVICES",
@@ -419,6 +422,7 @@ public class SqlViewExporterSpiTest extends AbstractExporterSpiTest {
             "NODES",
             "SCHEMAS",
             "NODE_METRICS",
+            "CONFIGURATION",
             "BASELINE_NODES",
             "BASELINE_NODE_ATTRIBUTES",
             "INDEXES",
@@ -429,6 +433,7 @@ public class SqlViewExporterSpiTest extends AbstractExporterSpiTest {
             "SNAPSHOT",
             "TABLES",
             "CLIENT_CONNECTIONS",
+            "CLIENT_CONNECTION_ATTRIBUTES",
             "VIEWS",
             "TABLE_COLUMNS",
             "VIEW_COLUMNS",
@@ -460,7 +465,7 @@ public class SqlViewExporterSpiTest extends AbstractExporterSpiTest {
 
         Set<String> actViews = new TreeSet<>();
 
-        List<List<?>> res = execute(ignite0, "SELECT * FROM SYS.VIEWS");
+        List<List<?>> res = execute(ignite0, "SELECT name FROM SYS.VIEWS");
 
         for (List<?> row : res)
             actViews.add(row.get(0).toString());
@@ -935,9 +940,9 @@ public class SqlViewExporterSpiTest extends AbstractExporterSpiTest {
             dbMgr.enableCheckpoints(true).get();
         }
 
-        ignite0.cluster().active(false);
+        ignite0.cluster().state(ClusterState.INACTIVE);
 
-        ignite0.cluster().active(true);
+        ignite0.cluster().state(ClusterState.ACTIVE);
 
         IgniteCache<Integer, Integer> cacheInMemory = ignite0.getOrCreateCache(new CacheConfiguration<Integer, Integer>()
             .setName("cacheFLInMemory").setDataRegionName("in-memory"));

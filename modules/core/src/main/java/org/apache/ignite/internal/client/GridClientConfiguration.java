@@ -25,18 +25,19 @@ import java.util.Collections;
 import java.util.Map;
 import java.util.Properties;
 import java.util.concurrent.ExecutorService;
+import javax.cache.configuration.Factory;
+import javax.net.ssl.SSLContext;
 import org.apache.ignite.internal.client.balancer.GridClientLoadBalancer;
 import org.apache.ignite.internal.client.balancer.GridClientRandomBalancer;
 import org.apache.ignite.internal.client.balancer.GridClientRoundRobinBalancer;
 import org.apache.ignite.internal.client.marshaller.GridClientMarshaller;
 import org.apache.ignite.internal.client.marshaller.optimized.GridClientOptimizedMarshaller;
-import org.apache.ignite.internal.client.ssl.GridSslBasicContextFactory;
-import org.apache.ignite.internal.client.ssl.GridSslContextFactory;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.plugin.security.SecurityCredentials;
 import org.apache.ignite.plugin.security.SecurityCredentialsBasicProvider;
 import org.apache.ignite.plugin.security.SecurityCredentialsProvider;
+import org.apache.ignite.ssl.SslContextFactory;
 import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.ssl.SslContextFactory.DFLT_KEY_ALGORITHM;
@@ -84,7 +85,7 @@ public class GridClientConfiguration {
     private boolean tcpNoDelay = DFLT_TCP_NODELAY;
 
     /** SSL context factory  */
-    private GridSslContextFactory sslCtxFactory;
+    private Factory<SSLContext> sslCtxFactory;
 
     /** Flag indicating whether metrics cache is enabled. */
     private boolean enableMetricsCache = true;
@@ -338,9 +339,8 @@ public class GridClientConfiguration {
      * If it returns {@code null} then SSL is considered disabled.
      *
      * @return Factory instance.
-     * @see GridSslContextFactory
      */
-    public GridSslContextFactory getSslContextFactory() {
+    public Factory<SSLContext> getSslContextFactory() {
         return sslCtxFactory;
     }
 
@@ -350,7 +350,7 @@ public class GridClientConfiguration {
      * @param sslCtxFactory Context factory.
      * @return {@code this} for chaining.
      */
-    public GridClientConfiguration setSslContextFactory(GridSslContextFactory sslCtxFactory) {
+    public GridClientConfiguration setSslContextFactory(Factory<SSLContext> sslCtxFactory) {
         this.sslCtxFactory = sslCtxFactory;
 
         return this;
@@ -782,7 +782,7 @@ public class GridClientConfiguration {
         //
 
         if (!F.isEmpty(sslEnabled) && Boolean.parseBoolean(sslEnabled)) {
-            GridSslBasicContextFactory factory = new GridSslBasicContextFactory();
+            SslContextFactory factory = new SslContextFactory();
 
             factory.setProtocol(F.isEmpty(sslProto) ? DFLT_SSL_PROTOCOL : sslProto);
             factory.setKeyAlgorithm(F.isEmpty(sslKeyAlg) ? DFLT_KEY_ALGORITHM : sslKeyAlg);
@@ -798,7 +798,7 @@ public class GridClientConfiguration {
             factory.setKeyStoreType(F.isEmpty(keyStoreType) ? DFLT_STORE_TYPE : keyStoreType);
 
             if (F.isEmpty(trustStorePath))
-                factory.setTrustManagers(GridSslBasicContextFactory.getDisabledTrustManager());
+                factory.setTrustManagers(SslContextFactory.getDisabledTrustManager());
             else {
                 factory.setTrustStoreFilePath(trustStorePath);
 

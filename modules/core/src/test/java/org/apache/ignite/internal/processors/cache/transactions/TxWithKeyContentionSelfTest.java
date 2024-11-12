@@ -27,6 +27,7 @@ import org.apache.ignite.cache.CacheMetrics;
 import org.apache.ignite.cache.CacheWriteSynchronizationMode;
 import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
 import org.apache.ignite.cluster.ClusterNode;
+import org.apache.ignite.cluster.ClusterState;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
@@ -43,7 +44,6 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiPredicate;
 import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.testframework.GridTestUtils;
-import org.apache.ignite.testframework.MvccFeatureChecker;
 import org.apache.ignite.testframework.junits.WithSystemProperty;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.transactions.Transaction;
@@ -217,22 +217,19 @@ public class TxWithKeyContentionSelfTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     private void runKeyCollisionsMetric(TransactionConcurrency concurrency, TransactionIsolation isolation) throws Exception {
-        if (MvccFeatureChecker.forcedMvcc())
-            return; // Not supported.
-
         Ignite ig = startGridsMultiThreaded(3);
 
         int contCnt = (int)U.staticField(IgniteTxManager.class, "COLLISIONS_QUEUE_THRESHOLD") * 5;
 
         CountDownLatch txLatch = new CountDownLatch(contCnt);
 
-        ig.cluster().active(true);
+        ig.cluster().state(ClusterState.ACTIVE);
 
         client = true;
 
         Ignite cl = startGrid();
 
-        IgniteTransactions txMgr = cl.transactions();
+        IgniteTransactions cliTxMgr = cl.transactions();
 
         IgniteCache<Integer, Integer> cache = ig.cache(DEFAULT_CACHE_NAME);
 
@@ -263,7 +260,7 @@ public class TxWithKeyContentionSelfTest extends GridCommonAbstractTest {
         }
 
         IgniteInternalFuture f = GridTestUtils.runAsync(() -> {
-            try (Transaction tx = txMgr.txStart(concurrency, isolation)) {
+            try (Transaction tx = cliTxMgr.txStart(concurrency, isolation)) {
                 cache0.put(keyId, 0);
                 tx.commit();
             }
@@ -275,7 +272,7 @@ public class TxWithKeyContentionSelfTest extends GridCommonAbstractTest {
 
         for (int i = 0; i < contCnt; ++i) {
             IgniteInternalFuture f0 = GridTestUtils.runAsync(() -> {
-                try (Transaction tx = txMgr.txStart(concurrency, isolation)) {
+                try (Transaction tx = cliTxMgr.txStart(concurrency, isolation)) {
                     cache0.put(keyId, 0);
 
                     tx.commit();
@@ -299,12 +296,12 @@ public class TxWithKeyContentionSelfTest extends GridCommonAbstractTest {
             commSpi0.stopBlock();
         }
 
-        IgniteTxManager txManager = ((IgniteEx)ig).context().cache().context().tm();
+        IgniteTxManager srvTxMgr = ((IgniteEx)ig).context().cache().context().tm();
 
         assertTrue(GridTestUtils.waitForCondition(new GridAbsPredicate() {
             @Override public boolean apply() {
                 try {
-                    U.invoke(IgniteTxManager.class, txManager, "collectTxCollisionsInfo");
+                    U.invoke(IgniteTxManager.class, srvTxMgr, "collectTxCollisionsInfo");
                 }
                 catch (IgniteCheckedException e) {
                     fail(e.toString());

@@ -24,6 +24,7 @@ import java.util.Set;
 import java.util.UUID;
 import org.apache.ignite.internal.util.distributed.DistributedProcess;
 import org.apache.ignite.internal.util.distributed.DistributedProcess.DistributedProcessType;
+import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -61,13 +62,18 @@ public class SnapshotOperationRequest implements Serializable {
 
     /**
      * Snapshot operation warnings. Warnings do not interrupt snapshot process but raise exception at the end to make
-     * the operation status 'not OK' if no other error occured.
+     * the operation status 'not OK' if no other error occurred.
      */
     private volatile List<String> warnings;
+
+    /** Snapshot metadata. */
+    @GridToStringExclude
+    private transient SnapshotMetadata meta;
 
     /**
      * Warning flag of concurrent inconsistent-by-nature streamer updates.
      */
+    @GridToStringExclude
     private transient volatile boolean streamerWrn;
 
     /** Flag indicating that the {@link DistributedProcessType#START_SNAPSHOT} phase has completed. */
@@ -76,6 +82,24 @@ public class SnapshotOperationRequest implements Serializable {
     /** Operation start time. */
     private final long startTime;
 
+    /** If {@code true} then incremental snapshot requested. */
+    private final boolean incremental;
+
+    /** Index of incremental snapshot. */
+    private final int incIdx;
+
+    /** If {@code true} snapshot only primary copies of partitions. */
+    private final boolean onlyPrimary;
+
+    /** If {@code true} then create dump. */
+    private final boolean dump;
+
+    /** If {@code true} then compress partition files. */
+    private final boolean compress;
+
+    /** If {@code true} then content of dump encrypted. */
+    private final boolean encrypt;
+
     /**
      * @param reqId Request ID.
      * @param opNodeId Operational node ID.
@@ -83,6 +107,12 @@ public class SnapshotOperationRequest implements Serializable {
      * @param snpPath Snapshot directory path.
      * @param grps List of cache group names.
      * @param nodes Baseline node IDs that must be alive to complete the operation.
+     * @param incremental {@code True} if incremental snapshot requested.
+     * @param incIdx Incremental snapshot index.
+     * @param onlyPrimary If {@code true} snapshot only primary copies of partitions.
+     * @param dump If {@code true} then create dump.
+     * @param compress If {@code true} then compress partition files.
+     * @param encrypt If {@code true} then content of dump encrypted.
      */
     public SnapshotOperationRequest(
         UUID reqId,
@@ -90,7 +120,13 @@ public class SnapshotOperationRequest implements Serializable {
         String snpName,
         String snpPath,
         @Nullable Collection<String> grps,
-        Set<UUID> nodes
+        Set<UUID> nodes,
+        boolean incremental,
+        int incIdx,
+        boolean onlyPrimary,
+        boolean dump,
+        boolean compress,
+        boolean encrypt
     ) {
         this.reqId = reqId;
         this.opNodeId = opNodeId;
@@ -98,6 +134,12 @@ public class SnapshotOperationRequest implements Serializable {
         this.grps = grps;
         this.nodes = nodes;
         this.snpPath = snpPath;
+        this.incremental = incremental;
+        this.incIdx = incIdx;
+        this.onlyPrimary = onlyPrimary;
+        this.dump = dump;
+        this.compress = compress;
+        this.encrypt = encrypt;
         startTime = U.currentTimeMillis();
     }
 
@@ -157,6 +199,36 @@ public class SnapshotOperationRequest implements Serializable {
         this.err = err;
     }
 
+    /** @return {@code True} if incremental snapshot requested. */
+    public boolean incremental() {
+        return incremental;
+    }
+
+    /** @return Incremental index. */
+    public int incrementIndex() {
+        return incIdx;
+    }
+
+    /** @return If {@code true} snapshot only primary copies of partitions. */
+    public boolean onlyPrimary() {
+        return onlyPrimary;
+    }
+
+    /** @return If {@code true} then create dump. */
+    public boolean dump() {
+        return dump;
+    }
+
+    /** @return If {@code true} then compress partition files. */
+    public boolean compress() {
+        return compress;
+    }
+
+    /** @return If {@code true} then content of dump encrypted. */
+    public boolean encrypt() {
+        return encrypt;
+    }
+
     /** @return Start time. */
     public long startTime() {
         return startTime;
@@ -187,6 +259,8 @@ public class SnapshotOperationRequest implements Serializable {
      * @param warnings Warnings of snapshot operation.
      */
     public void warnings(List<String> warnings) {
+        assert this.warnings == null;
+
         this.warnings = warnings;
     }
 
@@ -202,6 +276,20 @@ public class SnapshotOperationRequest implements Serializable {
      */
     public boolean streamerWarning(boolean val) {
         return streamerWrn = val;
+    }
+
+    /**
+     * @return Snapshot metadata.
+     */
+    public SnapshotMetadata meta() {
+        return meta;
+    }
+
+    /**
+     * Stores snapshot metadata.
+     */
+    public void meta(SnapshotMetadata meta) {
+        this.meta = meta;
     }
 
     /** {@inheritDoc} */

@@ -18,9 +18,12 @@
 package org.apache.ignite.internal.jdbc2;
 
 import java.io.Serializable;
+import java.lang.reflect.Field;
 import java.math.BigDecimal;
 import java.net.MalformedURLException;
 import java.net.URL;
+import java.sql.Blob;
+import java.sql.Clob;
 import java.sql.Date;
 import java.sql.DriverManager;
 import java.sql.ResultSet;
@@ -29,10 +32,12 @@ import java.sql.Statement;
 import java.sql.Time;
 import java.sql.Timestamp;
 import java.util.Arrays;
+import java.util.Objects;
 import java.util.concurrent.Callable;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteBinary;
 import org.apache.ignite.IgniteCache;
+import org.apache.ignite.binary.BinaryObject;
 import org.apache.ignite.cache.query.annotations.QuerySqlField;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.ConnectorConfiguration;
@@ -42,12 +47,13 @@ import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.jetbrains.annotations.Nullable;
+import org.junit.Assert;
 import org.junit.Test;
 
 import static org.apache.ignite.IgniteJdbcDriver.CFG_URL_PREFIX;
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
-import static org.apache.ignite.jdbc.JdbcResultSetSelfTest.assertEqualsToStringRepresentation;
 
 /**
  * Result set test.
@@ -61,7 +67,7 @@ public class JdbcResultSetSelfTest extends GridCommonAbstractTest {
     private static final String SQL =
         "select id, boolVal, byteVal, shortVal, intVal, longVal, floatVal, " +
             "doubleVal, bigVal, strVal, arrVal, dateVal, timeVal, tsVal, urlVal, f1, f2, f3, _val, " +
-            "boolVal2, boolVal3, boolVal4 " +
+            "boolVal2, boolVal3, boolVal4, blobVal, clobVal " +
             "from TestObject where id = 1";
 
     /** Statement. */
@@ -142,6 +148,8 @@ public class JdbcResultSetSelfTest extends GridCommonAbstractTest {
         o.bigVal = new BigDecimal(1);
         o.strVal = "1";
         o.arrVal = new byte[] {1};
+        o.blobVal = new byte[] {1};
+        o.clobVal = "str";
         o.dateVal = new Date(1, 1, 1);
         o.timeVal = new Time(1, 1, 1);
         o.tsVal = new Timestamp(1);
@@ -670,6 +678,38 @@ public class JdbcResultSetSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
+    public void testBlob() throws Exception {
+        ResultSet rs = stmt.executeQuery(SQL);
+
+        assertTrue(rs.next());
+        Blob blob = rs.getBlob("blobVal");
+        Assert.assertArrayEquals(blob.getBytes(1, (int)blob.length()), new byte[] {1});
+
+        blob = rs.getBlob(23);
+        Assert.assertArrayEquals(blob.getBytes(1, (int)blob.length()), new byte[] {1});
+        assertFalse(rs.next());
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    @Test
+    public void testClob() throws Exception {
+        ResultSet rs = stmt.executeQuery(SQL);
+
+        assertTrue(rs.next());
+        Clob clob = rs.getClob("clobVal");
+        Assert.assertEquals("str", clob.getSubString(1, (int)clob.length()));
+
+        clob = rs.getClob(24);
+        Assert.assertEquals("str", clob.getSubString(1, (int)clob.length()));
+        assertFalse(rs.next());
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
     @SuppressWarnings("deprecation")
     @Test
     public void testDate() throws Exception {
@@ -989,6 +1029,14 @@ public class JdbcResultSetSelfTest extends GridCommonAbstractTest {
 
         /** */
         @QuerySqlField(index = false)
+        private byte[] blobVal;
+
+        /** */
+        @QuerySqlField(index = false)
+        private String clobVal;
+
+        /** */
+        @QuerySqlField(index = false)
         private Date dateVal;
 
         /** */
@@ -1053,6 +1101,8 @@ public class JdbcResultSetSelfTest extends GridCommonAbstractTest {
             if (timeVal != null ? !timeVal.equals(that.timeVal) : that.timeVal != null) return false;
             if (tsVal != null ? !tsVal.equals(that.tsVal) : that.tsVal != null) return false;
             if (urlVal != null ? !urlVal.equals(that.urlVal) : that.urlVal != null) return false;
+            if (!Arrays.equals(blobVal, that.blobVal)) return false;
+            if (clobVal != null ? !clobVal.equals(that.clobVal) : that.clobVal != null) return false;
 
             return true;
         }
@@ -1079,6 +1129,8 @@ public class JdbcResultSetSelfTest extends GridCommonAbstractTest {
             res = 31 * res + (f1 != null ? f1.hashCode() : 0);
             res = 31 * res + (f2 != null ? f2.hashCode() : 0);
             res = 31 * res + (f3 != null ? f3.hashCode() : 0);
+            res = 31 * res + (blobVal != null ? Arrays.hashCode(blobVal) : 0);
+            res = 31 * res + (clobVal != null ? clobVal.hashCode() : 0);
 
             return res;
         }
@@ -1127,5 +1179,63 @@ public class JdbcResultSetSelfTest extends GridCommonAbstractTest {
         @Override public String toString() {
             return S.toString(TestObjectField.class, this);
         }
+    }
+
+    /**
+     * This does extended toString compare. <p> For binary marshaller result of such BinaryObjectImpl.toString will be unexpected
+     * by this test: <br> <code>org.apache.ignite.jdbc.JdbcResultSetSelfTest$TestObjectField [idHash=1624306582,
+     * hash=11433031, a=100, b=AAAA]</code> <br>
+     *
+     * @param originalObj object initially placed to cache
+     * @param binary optional parameter, if absent, direct toString compare is used
+     * @param resSetObj object returned by result set
+     */
+    public static void assertEqualsToStringRepresentation(
+        final Object originalObj,
+        @Nullable final IgniteBinary binary,
+        final Object resSetObj) {
+        if (binary != null) {
+            final BinaryObject origObjAsBinary = binary.toBinary(originalObj);
+            final String strFromResSet = Objects.toString(resSetObj);
+            for (Field declaredField : originalObj.getClass().getDeclaredFields()) {
+                checkFieldPresenceInToString(origObjAsBinary, strFromResSet, declaredField.getName());
+            }
+        }
+        else
+            assertEquals(originalObj.toString(), Objects.toString(resSetObj));
+    }
+
+    /**
+     * Checks particular field from original binary object
+     *
+     * @param original binary object representation of original object
+     * @param strToCheck string from result set, to be checked for presence of all fields
+     * @param fieldName field name have being checked
+     */
+    private static void checkFieldPresenceInToString(final BinaryObject original,
+                                                     final String strToCheck,
+                                                     final String fieldName) {
+
+        final Object fieldVal = original.field(fieldName);
+        String strValToSearch = Objects.toString(fieldVal);
+        if (fieldVal != null) {
+            final Class<?> aCls = fieldVal.getClass();
+            if (aCls.isArray()) {
+                final Class<?> elemCls = aCls.getComponentType();
+                if (elemCls == Byte.TYPE)
+                    strValToSearch = Arrays.toString((byte[])fieldVal);
+            }
+            else if (BinaryObject.class.isAssignableFrom(aCls)) {
+                // hack to avoid search of unpredictable toString representation like
+                // JdbcResultSetSelfTest$TestObjectField [idHash=1518952510, hash=11433031, a=100, b=AAAA]
+                // in toString
+                // other way to fix: iterate on binary object fields: final BinaryObject binVal = (BinaryObject)fieldVal;
+                strValToSearch = "";
+            }
+        }
+        assertTrue("Expected to find field "
+                + fieldName + " having value " + strValToSearch
+                + " in toString representation [" + strToCheck + "]",
+            strToCheck.contains(fieldName + "=" + strValToSearch));
     }
 }

@@ -74,11 +74,6 @@ namespace Apache.Ignite.Core.Tests.Cache
                 var cache = ignite.CreateCache<int, int>(cacheName);
 
                 cache[1] = 1;
-
-                // Check some metrics.
-                var metrics = ignite.GetDataStorageMetrics();
-                Assert.Greater(metrics.WalLoggingRate, 0);
-                Assert.Greater(metrics.WalFsyncTimeAverage, 0);
             }
 
             // Verify directories.

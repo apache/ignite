@@ -191,6 +191,11 @@ SqlCreate SqlCreateTable(Span s, boolean replace) :
     final SqlNode query;
 }
 {
+    {
+        if (replace)
+            throw SqlUtil.newContextException(getPos(), IgniteResource.INSTANCE.unsupportedClause("REPLACE"));
+    }
+
     <TABLE>
     ifNotExists = IfNotExistsOpt()
     id = CompoundIdentifier()
@@ -258,6 +263,11 @@ SqlCreate SqlCreateIndex(Span s, boolean replace) :
     SqlNumericLiteral inlineSize = null;
 }
 {
+    {
+        if (replace)
+            throw SqlUtil.newContextException(getPos(), IgniteResource.INSTANCE.unsupportedClause("REPLACE"));
+    }
+
     <INDEX>
     ifNotExists = IfNotExistsOpt()
     [ idxId = SimpleIdentifier() ]
@@ -412,6 +422,11 @@ SqlCreate SqlCreateUser(Span s, boolean replace) :
     final SqlNode password;
 }
 {
+    {
+        if (replace)
+            throw SqlUtil.newContextException(getPos(), IgniteResource.INSTANCE.unsupportedClause("REPLACE"));
+    }
+
     <USER> user = SimpleIdentifier()
     <WITH> <PASSWORD> password = StringLiteral() {
         return new IgniteSqlCreateUser(s.end(this), user, SqlLiteral.unchain(password));
@@ -750,5 +765,28 @@ SqlNode SqlStatisticsAnalyze():
     optionsList = WithStatisticsAnalyzeOptionList()
     {
         return new IgniteSqlStatisticsAnalyze(tablesList, optionsList, s.end(this));
+    }
+}
+
+SqlCreate SqlCreateView(Span s, boolean replace) :
+{
+    final SqlIdentifier id;
+    final SqlNode query;
+}
+{
+    <VIEW> id = CompoundIdentifier()
+    <AS> query = OrderedQueryOrExpr(ExprContext.ACCEPT_QUERY) {
+        return SqlDdlNodes.createView(s.end(this), replace, id, null, query);
+    }
+}
+
+SqlDrop SqlDropView(Span s, boolean replace) :
+{
+    final boolean ifExists;
+    final SqlIdentifier id;
+}
+{
+    <VIEW> ifExists = IfExistsOpt() id = CompoundIdentifier() {
+        return SqlDdlNodes.dropView(s.end(this), ifExists, id);
     }
 }

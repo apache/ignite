@@ -25,7 +25,6 @@ import org.apache.ignite.IgniteCache;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.lang.IgniteBiTuple;
-import org.apache.ignite.testframework.MvccFeatureChecker;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.jetbrains.annotations.Nullable;
 import org.junit.Test;
@@ -42,8 +41,6 @@ public class GridCacheLoadOnlyStoreAdapterSelfTest extends GridCommonAbstractTes
 
     /** {@inheritDoc} */
     @Override protected void beforeTestsStarted() throws Exception {
-        MvccFeatureChecker.skipIfNotSupported(MvccFeatureChecker.Feature.CACHE_STORE);
-
         super.beforeTestsStarted();
 
         startGrid(0);
@@ -61,8 +58,6 @@ public class GridCacheLoadOnlyStoreAdapterSelfTest extends GridCommonAbstractTes
      */
     @SuppressWarnings("unchecked")
     private CacheConfiguration<?, ?> cacheConfiguration() {
-        MvccFeatureChecker.skipIfNotSupported(MvccFeatureChecker.Feature.CACHE_STORE);
-
         CacheConfiguration cfg = defaultCacheConfiguration();
 
         assertNotNull(store);

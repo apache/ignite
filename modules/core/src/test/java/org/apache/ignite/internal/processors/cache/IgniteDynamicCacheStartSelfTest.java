@@ -89,9 +89,6 @@ public class IgniteDynamicCacheStartSelfTest extends GridCommonAbstractTest {
     /** */
     private boolean testAttribute = true;
 
-    /** */
-    private boolean daemon;
-
     /**
      * @return Number of nodes for this test.
      */
@@ -119,9 +116,6 @@ public class IgniteDynamicCacheStartSelfTest extends GridCommonAbstractTest {
         cfg.setCacheConfiguration(cacheCfg);
 
         cfg.setIncludeEventTypes(EVT_CACHE_STARTED, EVT_CACHE_STOPPED, EventType.EVT_CACHE_NODES_LEFT);
-
-        if (daemon)
-            cfg.setDaemon(true);
 
         return cfg;
     }
@@ -281,14 +275,6 @@ public class IgniteDynamicCacheStartSelfTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     @Test
-    public void testStartStopCacheSimpleTransactionalMvcc() throws Exception {
-        checkStartStopCacheSimple(CacheAtomicityMode.TRANSACTIONAL_SNAPSHOT);
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
-    @Test
     public void testStartStopCacheSimpleAtomic() throws Exception {
         checkStartStopCacheSimple(CacheAtomicityMode.ATOMIC);
     }
@@ -299,14 +285,6 @@ public class IgniteDynamicCacheStartSelfTest extends GridCommonAbstractTest {
     @Test
     public void testStartStopCachesSimpleTransactional() throws Exception {
         checkStartStopCachesSimple(CacheAtomicityMode.TRANSACTIONAL);
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
-    @Test
-    public void testStartStopCachesSimpleTransactionalMvcc() throws Exception {
-        checkStartStopCachesSimple(CacheAtomicityMode.TRANSACTIONAL_SNAPSHOT);
     }
 
     /**
@@ -1249,39 +1227,6 @@ public class IgniteDynamicCacheStartSelfTest extends GridCommonAbstractTest {
             ignite(i).events().stopLocalListen(lsnrs[i]);
 
         cache.destroy();
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
-    @Test
-    public void testDaemonNode() throws Exception {
-        daemon = true;
-
-        Ignite dNode = startGrid(nodeCount());
-
-        try {
-            CacheConfiguration cfg = new CacheConfiguration(DYNAMIC_CACHE_NAME);
-
-            IgniteCache cache = ignite(0).createCache(cfg);
-
-            try {
-                for (int i = 0; i < 100; i++) {
-                    assertFalse(ignite(0).affinity(DYNAMIC_CACHE_NAME).mapKeyToPrimaryAndBackups(i)
-                        .contains(dNode.cluster().localNode()));
-
-                    cache.put(i, i);
-                }
-            }
-            finally {
-                cache.destroy();
-            }
-        }
-        finally {
-            stopGrid(nodeCount());
-
-            daemon = false;
-        }
     }
 
     /**

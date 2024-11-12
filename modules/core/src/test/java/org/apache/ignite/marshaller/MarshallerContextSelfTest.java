@@ -103,13 +103,13 @@ public class MarshallerContextSelfTest extends GridCommonAbstractTest {
      */
     @Test
     public void testMultiplatformMappingsCollecting() throws Exception {
-        String nonJavaClassName = "random.platform.Mapping";
+        String nonJavaClsName = "random.platform.Mapping";
 
         MarshallerContextImpl marshCtx = new MarshallerContextImpl(null, null);
 
         marshCtx.onMarshallerProcessorStarted(ctx, null);
 
-        MarshallerMappingItem item = new MarshallerMappingItem((byte)2, 101, nonJavaClassName);
+        MarshallerMappingItem item = new MarshallerMappingItem((byte)2, 101, nonJavaClsName);
 
         marshCtx.onMappingProposed(item);
 
@@ -129,7 +129,7 @@ public class MarshallerContextSelfTest extends GridCommonAbstractTest {
 
         assertNotNull(nonJavaMappings.get(101));
 
-        assertEquals(nonJavaClassName, nonJavaMappings.get(101).className());
+        assertEquals(nonJavaClsName, nonJavaMappings.get(101).className());
     }
 
     /**
@@ -140,13 +140,13 @@ public class MarshallerContextSelfTest extends GridCommonAbstractTest {
      */
     @Test
     public void testMultiplatformMappingsDistributing() throws Exception {
-        String nonJavaClassName = "random.platform.Mapping";
+        String nonJavaClsName = "random.platform.Mapping";
 
         Ignite grid0 = startGrid(0);
 
         MarshallerContextImpl marshCtx0 = ((IgniteKernal)grid0).context().marshallerContext();
 
-        MarshallerMappingItem item = new MarshallerMappingItem((byte)2, 101, nonJavaClassName);
+        MarshallerMappingItem item = new MarshallerMappingItem((byte)2, 101, nonJavaClsName);
 
         marshCtx0.onMappingProposed(item);
 
@@ -156,7 +156,7 @@ public class MarshallerContextSelfTest extends GridCommonAbstractTest {
 
         MarshallerContextImpl marshCtx1 = ((IgniteKernal)grid1).context().marshallerContext();
 
-        assertEquals(nonJavaClassName, marshCtx1.getClassName((byte)2, 101));
+        assertEquals(nonJavaClsName, marshCtx1.getClassName((byte)2, 101));
     }
 
     /**

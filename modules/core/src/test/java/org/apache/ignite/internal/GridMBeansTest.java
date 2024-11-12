@@ -22,7 +22,6 @@ import org.apache.ignite.configuration.ExecutorConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.util.IgniteUtils;
 import org.apache.ignite.internal.util.typedef.G;
-import org.apache.ignite.spi.metric.jmx.JmxMetricExporterSpi;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
 
@@ -53,8 +52,6 @@ public class GridMBeansTest extends GridCommonAbstractTest {
 
         cfg.setExecutorConfiguration(new ExecutorConfiguration(CUSTOM_EXECUTOR_0),
             new ExecutorConfiguration(CUSTOM_EXECUTOR_1));
-
-        cfg.setMetricExporterSpi(new JmxMetricExporterSpi());
 
         return cfg;
     }
@@ -88,9 +85,9 @@ public class GridMBeansTest extends GridCommonAbstractTest {
     /** Checks that a bean with the specified group and name is available and has the expected attribute */
     private void checkBean(String grp, String name, String attributeName, Object expAttributeVal) throws Exception {
         ObjectName mBeanName = IgniteUtils.makeMBeanName(grid().name(), grp, name);
-        Object attributeVal = grid().configuration().getMBeanServer().getAttribute(mBeanName, attributeName);
+        Object attrVal = grid().configuration().getMBeanServer().getAttribute(mBeanName, attributeName);
 
-        assertEquals(expAttributeVal, attributeVal);
+        assertEquals(expAttributeVal, attrVal);
     }
 
     /**
@@ -104,7 +101,6 @@ public class GridMBeansTest extends GridCommonAbstractTest {
             "org.apache.ignite.internal.IgnitionMXBeanAdapter",
             "org.apache.ignite.internal.TransactionMetricsMxBeanImpl",
             "org.apache.ignite.internal.TransactionsMXBeanImpl",
-            "org.apache.ignite.internal.processors.cache.persistence.DataRegionMetricsMXBeanImpl",
             "org.apache.ignite.internal.processors.cache.persistence.DataStorageMXBeanImpl",
             "org.apache.ignite.internal.processors.cache.persistence.diagnostic.pagelocktracker.PageLockTrackerMXBeanImpl",
             "org.apache.ignite.internal.processors.cluster.BaselineAutoAdjustMXBeanImpl",

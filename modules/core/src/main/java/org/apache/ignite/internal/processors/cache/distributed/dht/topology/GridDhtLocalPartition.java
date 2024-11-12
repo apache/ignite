@@ -911,6 +911,14 @@ public class GridDhtLocalPartition extends GridCacheConcurrentMapImpl implements
         return store.updateCounter();
     }
 
+    //TODO: https://issues.apache.org/jira/browse/IGNITE-18343: Refactor partition counters API.
+    /**
+     * @return Highest applied update counter.
+     */
+    public long highestAppliedCounter() {
+        return store.highestAppliedCounter();
+    }
+
     /**
      * @return Current reserved counter (HWM).
      */
@@ -943,7 +951,7 @@ public class GridDhtLocalPartition extends GridCacheConcurrentMapImpl implements
     }
 
     /**
-     * Updates MVCC cache update counter on backup node.
+     * Updates cache update counter on backup node.
      *
      * @param start Start position
      * @param delta Delta.

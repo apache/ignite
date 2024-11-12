@@ -25,6 +25,7 @@ import java.util.stream.StreamSupport;
 import com.google.common.collect.Sets;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.cache.CacheAtomicityMode;
+import org.apache.ignite.cluster.ClusterState;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
@@ -32,7 +33,7 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.WALMode;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.processors.metric.GridMetricManager;
-import org.apache.ignite.internal.processors.metric.MetricRegistry;
+import org.apache.ignite.metric.MetricRegistry;
 import org.apache.ignite.spi.metric.LongMetric;
 import org.apache.ignite.spi.metric.Metric;
 import org.apache.ignite.spi.metric.ReadOnlyMetricRegistry;
@@ -56,9 +57,6 @@ public class IoStatisticsCacheSelfTest extends GridCommonAbstractTest {
     protected static final String ATOMIC_CACHE_NAME = "ATOMIC_CACHE";
 
     /** */
-    protected static final String MVCC_CACHE_NAME = "MVCC_CACHE";
-
-    /** */
     protected static final String TRANSACTIONAL_CACHE_NAME = "TRANSACTIONAL_CACHE";
 
     /** */
@@ -72,7 +70,7 @@ public class IoStatisticsCacheSelfTest extends GridCommonAbstractTest {
 
     /** */
     protected static final Set<String> ALL_CACHE_GROUP_NAMES = Sets.newHashSet(
-        ATOMIC_CACHE_NAME, MVCC_CACHE_NAME, TRANSACTIONAL_CACHE_NAME, CACHE_GROUP_NAME);
+        ATOMIC_CACHE_NAME, TRANSACTIONAL_CACHE_NAME, CACHE_GROUP_NAME);
 
     /** */
     protected static final int RECORD_COUNT = 100;
@@ -96,10 +94,6 @@ public class IoStatisticsCacheSelfTest extends GridCommonAbstractTest {
         final CacheConfiguration atomicCacheCfg = new CacheConfiguration()
             .setAtomicityMode(CacheAtomicityMode.ATOMIC)
             .setName(ATOMIC_CACHE_NAME);
-
-        final CacheConfiguration mvccCacheCfg = new CacheConfiguration()
-            .setAtomicityMode(CacheAtomicityMode.TRANSACTIONAL_SNAPSHOT)
-            .setName(MVCC_CACHE_NAME);
 
         final CacheConfiguration transactionalCacheCfg = new CacheConfiguration()
             .setAtomicityMode(CacheAtomicityMode.TRANSACTIONAL)
@@ -125,8 +119,7 @@ public class IoStatisticsCacheSelfTest extends GridCommonAbstractTest {
 
         cfg.setDataStorageConfiguration(dsCfg);
 
-        cfg.setCacheConfiguration(transactionalCacheCfg, atomicCacheCfg, mvccCacheCfg,
-            atomic1CacheGrpCfg, atomic2CacheGrpCfg);
+        cfg.setCacheConfiguration(transactionalCacheCfg, atomicCacheCfg, atomic1CacheGrpCfg, atomic2CacheGrpCfg);
 
         return cfg;
     }
@@ -140,7 +133,7 @@ public class IoStatisticsCacheSelfTest extends GridCommonAbstractTest {
         ignite = (IgniteEx)startGrid();
 
         if (persist())
-            ignite.active(true);
+            ignite.cluster().state(ClusterState.ACTIVE);
     }
 
     /** {@inheritDoc} */
@@ -168,14 +161,6 @@ public class IoStatisticsCacheSelfTest extends GridCommonAbstractTest {
     }
 
     /**
-     * Test statistics for MVCC cache.
-     */
-    @Test
-    public void testMvccCache() throws Exception {
-        cacheTest(MVCC_CACHE_NAME, RECORD_COUNT, RECORD_COUNT * 6, RECORD_COUNT * 3);
-    }
-
-    /**
      * Test statistics for ATOMIC cache.
      */
     @Test
@@ -188,7 +173,7 @@ public class IoStatisticsCacheSelfTest extends GridCommonAbstractTest {
      */
     @Test
     public void testForThreeCaches() throws Exception {
-        prepareData(RECORD_COUNT, ATOMIC_CACHE_NAME, TRANSACTIONAL_CACHE_NAME, MVCC_CACHE_NAME);
+        prepareData(RECORD_COUNT, ATOMIC_CACHE_NAME, TRANSACTIONAL_CACHE_NAME);
 
         GridMetricManager mmgr = ignite.context().metric();
 
@@ -196,7 +181,7 @@ public class IoStatisticsCacheSelfTest extends GridCommonAbstractTest {
 
         assertEquals(ALL_CACHE_GROUP_NAMES, statisticCacheNames);
 
-        Stream.of(ATOMIC_CACHE_NAME, TRANSACTIONAL_CACHE_NAME, MVCC_CACHE_NAME).forEach((cacheName) -> {
+        Stream.of(ATOMIC_CACHE_NAME, TRANSACTIONAL_CACHE_NAME).forEach((cacheName) -> {
             long logicalReads = logicalReads(mmgr, CACHE_GROUP, cacheName);
 
             assertTrue(logicalReads > RECORD_COUNT);

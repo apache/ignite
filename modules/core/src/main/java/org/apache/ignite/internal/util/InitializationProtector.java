@@ -43,19 +43,19 @@ public class InitializationProtector {
      */
     public <T> T protect(Object protectedKey, Supplier<T> initializedVal,
         IgniteThrowableRunner initializationCode) throws IgniteCheckedException {
-        T value = initializedVal.get();
+        T val = initializedVal.get();
 
-        if (value != null)
-            return value;
+        if (val != null)
+            return val;
 
         Lock lock = stripedLock.getLock(protectedKey.hashCode() % stripedLock.concurrencyLevel());
 
         lock.lock();
         try {
-            value = initializedVal.get();
+            val = initializedVal.get();
 
-            if (value != null)
-                return value;
+            if (val != null)
+                return val;
 
             initializationCode.run();
 

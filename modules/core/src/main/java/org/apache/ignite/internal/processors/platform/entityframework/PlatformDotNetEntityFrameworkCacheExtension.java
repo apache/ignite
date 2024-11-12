@@ -31,15 +31,19 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.cache.CachePeekMode;
 import org.apache.ignite.cluster.ClusterGroup;
 import org.apache.ignite.cluster.ClusterNode;
+import org.apache.ignite.internal.IgniteEx;
+import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.binary.BinaryRawReaderEx;
 import org.apache.ignite.internal.processors.platform.cache.PlatformCache;
 import org.apache.ignite.internal.processors.platform.cache.PlatformCacheExtension;
 import org.apache.ignite.internal.processors.platform.memory.PlatformMemory;
 import org.apache.ignite.internal.util.typedef.internal.S;
-import org.apache.ignite.lang.IgniteFuture;
 import org.apache.ignite.lang.IgniteInClosure;
 import org.apache.ignite.lang.IgniteRunnable;
 import org.apache.ignite.resources.IgniteInstanceResource;
+
+import static org.apache.ignite.internal.GridClosureCallMode.BROADCAST;
+import static org.apache.ignite.internal.processors.task.TaskExecutionOptions.options;
 
 /**
  * EntityFramework cache extension.
@@ -103,7 +107,7 @@ public class PlatformDotNetEntityFrameworkCacheExtension implements PlatformCach
             }
 
             case OP_PUT_ITEM: {
-                String query = reader.readString();
+                String qry = reader.readString();
 
                 long[] versions = null;
                 String[] entitySets = null;
@@ -128,7 +132,7 @@ public class PlatformDotNetEntityFrameworkCacheExtension implements PlatformCach
                 IgniteCache<PlatformDotNetEntityFrameworkCacheKey, PlatformDotNetEntityFrameworkCacheEntry> dataCache
                     = target.rawCache();
 
-                PlatformDotNetEntityFrameworkCacheKey key = new PlatformDotNetEntityFrameworkCacheKey(query, versions);
+                PlatformDotNetEntityFrameworkCacheKey key = new PlatformDotNetEntityFrameworkCacheKey(qry, versions);
 
                 dataCache.put(key, efEntry);
 
@@ -136,7 +140,7 @@ public class PlatformDotNetEntityFrameworkCacheExtension implements PlatformCach
             }
 
             case OP_GET_ITEM: {
-                String query = reader.readString();
+                String qry = reader.readString();
 
                 long[] versions = null;
 
@@ -152,7 +156,7 @@ public class PlatformDotNetEntityFrameworkCacheExtension implements PlatformCach
                 IgniteCache<PlatformDotNetEntityFrameworkCacheKey, PlatformDotNetEntityFrameworkCacheEntry> dataCache
                     = target.rawCache();
 
-                PlatformDotNetEntityFrameworkCacheKey key = new PlatformDotNetEntityFrameworkCacheKey(query, versions);
+                PlatformDotNetEntityFrameworkCacheKey key = new PlatformDotNetEntityFrameworkCacheKey(qry, versions);
 
                 PlatformDotNetEntityFrameworkCacheEntry entry = dataCache.get(key);
 
@@ -185,8 +189,11 @@ public class PlatformDotNetEntityFrameworkCacheExtension implements PlatformCach
 
         final ClusterGroup dataNodes = grid.cluster().forDataNodes(dataCacheName);
 
-        IgniteFuture f = grid.compute(dataNodes).broadcastAsync(
-            new RemoveOldEntriesRunnable(dataCacheName, currentVersions));
+        IgniteInternalFuture<?> f = ((IgniteEx)grid).context().closure().runAsync(
+            BROADCAST,
+            new RemoveOldEntriesRunnable(dataCacheName, currentVersions),
+            options(dataNodes.nodes())
+        );
 
         f.listen(new CleanupCompletionListener(metaCache, dataCacheName));
     }
@@ -200,28 +207,28 @@ public class PlatformDotNetEntityFrameworkCacheExtension implements PlatformCach
      * @return True if successfully set the flag indicating that current node performs the cleanup; otherwise false.
      */
     private boolean trySetGlobalCleanupFlag(Ignite grid, final Cache<CleanupNodeId, UUID> metaCache) {
-        final UUID localNodeId = grid.cluster().localNode().id();
+        final UUID locNodeId = grid.cluster().localNode().id();
 
         while (true) {
             // Get the node performing cleanup.
             UUID nodeId = metaCache.get(CLEANUP_NODE_ID);
 
             if (nodeId == null) {
-                if (metaCache.putIfAbsent(CLEANUP_NODE_ID, localNodeId))
+                if (metaCache.putIfAbsent(CLEANUP_NODE_ID, locNodeId))
                     return true;  // Successfully reserved cleanup to local node.
 
                 // Failed putIfAbsent: someone else may have started cleanup. Retry the check.
                 continue;
             }
 
-            if (nodeId.equals(localNodeId))
+            if (nodeId.equals(locNodeId))
                 return false;  // Current node already performs cleanup.
 
             if (grid.cluster().node(nodeId) != null)
                 return false;  // Another node already performs cleanup and is alive.
 
             // Node that performs cleanup has disconnected.
-            if (metaCache.replace(CLEANUP_NODE_ID, nodeId, localNodeId))
+            if (metaCache.replace(CLEANUP_NODE_ID, nodeId, locNodeId))
                 return true;  // Successfully replaced disconnected node id with our id.
 
             // Replace failed: someone else started cleanup.
@@ -244,13 +251,13 @@ public class PlatformDotNetEntityFrameworkCacheExtension implements PlatformCach
 
         Set<PlatformDotNetEntityFrameworkCacheKey> keysToRemove = new TreeSet<>();
 
-        ClusterNode localNode = ignite.cluster().localNode();
+        ClusterNode locNode = ignite.cluster().localNode();
 
         for (Cache.Entry<PlatformDotNetEntityFrameworkCacheKey, PlatformDotNetEntityFrameworkCacheEntry> cacheEntry :
             cache.localEntries(CachePeekMode.ALL)) {
             // Check if we are on a primary node for the key, since we use CachePeekMode.ALL
             // and we don't want to process backup entries.
-            if (!ignite.affinity(dataCacheName).isPrimary(localNode, cacheEntry.getKey()))
+            if (!ignite.affinity(dataCacheName).isPrimary(locNode, cacheEntry.getKey()))
                 continue;
 
             long[] versions = cacheEntry.getKey().versions();
@@ -317,7 +324,7 @@ public class PlatformDotNetEntityFrameworkCacheExtension implements PlatformCach
     /**
      * Cleanup completion listener.
      */
-    private class CleanupCompletionListener implements IgniteInClosure<IgniteFuture<Object>> {
+    private class CleanupCompletionListener implements IgniteInClosure<IgniteInternalFuture<?>> {
         /** */
         private static final long serialVersionUID = 0L;
 
@@ -339,7 +346,7 @@ public class PlatformDotNetEntityFrameworkCacheExtension implements PlatformCach
         }
 
         /** {@inheritDoc} */
-        @Override public void apply(IgniteFuture<Object> future) {
+        @Override public void apply(IgniteInternalFuture<?> future) {
             // Reset distributed cleanup flag.
             metaCache.remove(CLEANUP_NODE_ID);
 

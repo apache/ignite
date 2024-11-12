@@ -79,7 +79,6 @@ import org.apache.ignite.internal.AsyncSupportAdapter;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
-import org.apache.ignite.internal.processors.cache.mvcc.MvccUtils;
 import org.apache.ignite.internal.processors.cache.query.CacheQuery;
 import org.apache.ignite.internal.processors.cache.query.CacheQueryFuture;
 import org.apache.ignite.internal.processors.cache.query.GridCacheQueryType;
@@ -107,7 +106,6 @@ import org.apache.ignite.lang.IgniteBiPredicate;
 import org.apache.ignite.lang.IgniteClosure;
 import org.apache.ignite.lang.IgniteFuture;
 import org.apache.ignite.lang.IgniteProductVersion;
-import org.apache.ignite.mxbean.CacheMetricsMXBean;
 import org.apache.ignite.plugin.security.SecurityPermission;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -268,11 +266,11 @@ public class IgniteCacheProxyImpl<K, V> extends AsyncSupportAdapter<IgniteCache<
                 ctx = this.ctx;
 
                 if (ctx == null) {
-                    GridCacheContext<K, V> context = oldContext;
+                    ctx = oldContext;
 
-                    assert context != null;
+                    assert ctx != null;
 
-                    return context;
+                    return ctx;
                 }
             }
         }
@@ -316,20 +314,6 @@ public class IgniteCacheProxyImpl<K, V> extends AsyncSupportAdapter<IgniteCache<
         GridCacheContext<K, V> ctx = getContextSafe();
 
         return ctx.cache().localMetrics();
-    }
-
-    /** {@inheritDoc} */
-    @Override public CacheMetricsMXBean mxBean() {
-        GridCacheContext<K, V> ctx = getContextSafe();
-
-        return ctx.cache().clusterMxBean();
-    }
-
-    /** {@inheritDoc} */
-    @Override public CacheMetricsMXBean localMxBean() {
-        GridCacheContext<K, V> ctx = getContextSafe();
-
-        return ctx.cache().localMxBean();
     }
 
     /** {@inheritDoc} */
@@ -462,9 +446,6 @@ public class IgniteCacheProxyImpl<K, V> extends AsyncSupportAdapter<IgniteCache<
         IgniteInternalCache<K, V> delegate = getDelegateSafe();
         GridCacheContext<K, V> ctx = getContextSafe();
 
-        //TODO: IGNITE-9324: add explicit locks support.
-        MvccUtils.verifyMvccOperationSupport(ctx, "Lock");
-
         return new CacheLockImpl<>(ctx.gate(), delegate, ctx.operationContextPerCall(), keys);
     }
 
@@ -572,6 +553,20 @@ public class IgniteCacheProxyImpl<K, V> extends AsyncSupportAdapter<IgniteCache<
 
             if (grp != null)
                 qry.projection(grp);
+
+            if (q.getLimit() > 0)
+                qry.limit(q.getLimit());
+
+            if (query.isLocal()) {
+                final GridCloseableIterator iter = ctx.kernalContext().query().executeQuery(GridCacheQueryType.INDEX,
+                    cacheName, ctx, new IgniteOutClosureX<GridCloseableIterator>() {
+                        @Override public GridCloseableIterator applyx() throws IgniteCheckedException {
+                            return ctx.queries().indexQueryLocal(qry);
+                        }
+                    }, true);
+
+                return new QueryCursorImpl(iter);
+            }
 
             fut = ctx.kernalContext().query().executeQuery(GridCacheQueryType.INDEX, q.getValueType(), ctx,
                 new IgniteOutClosureX<CacheQueryFuture<Map.Entry<K, V>>>() {
@@ -2056,11 +2051,6 @@ public class IgniteCacheProxyImpl<K, V> extends AsyncSupportAdapter<IgniteCache<
         throw new UnsupportedOperationException();
     }
 
-    /** {@inheritDoc} */
-    @Override public IgniteCache<K, V> withAllowAtomicOpsInTx() {
-        throw new UnsupportedOperationException();
-    }
-
     /**
      * Method converts exception to IgniteCacheRestartingException in case of cache restarting
      * or to CacheException in other cases.
@@ -2072,9 +2062,9 @@ public class IgniteCacheProxyImpl<K, V> extends AsyncSupportAdapter<IgniteCache<
         GridFutureAdapter<Void> restartFut = this.restartFut.get();
 
         if (X.hasCause(e, IgniteCacheRestartingException.class)) {
-            IgniteCacheRestartingException restartingException = X.cause(e, IgniteCacheRestartingException.class);
+            IgniteCacheRestartingException restartingEx = X.cause(e, IgniteCacheRestartingException.class);
 
-            if (restartingException.restartFuture() == null) {
+            if (restartingEx.restartFuture() == null) {
                 if (restartFut == null)
                     restartFut = suspend();
 
@@ -2083,7 +2073,7 @@ public class IgniteCacheProxyImpl<K, V> extends AsyncSupportAdapter<IgniteCache<
                 throw new IgniteCacheRestartingException(new IgniteFutureImpl<>(restartFut, exec()), cacheName);
             }
             else
-                throw restartingException;
+                throw restartingEx;
         }
 
         if (restartFut != null) {
@@ -2258,12 +2248,12 @@ public class IgniteCacheProxyImpl<K, V> extends AsyncSupportAdapter<IgniteCache<
      * Throws {@code IgniteCacheRestartingException} if proxy is restarting.
      */
     public void checkRestart(boolean noWait) {
-        RestartFuture currentFut = restartFut.get();
+        RestartFuture curFut = restartFut.get();
 
-        if (currentFut != null) {
+        if (curFut != null) {
             try {
                 if (!noWait) {
-                    currentFut.get(1, TimeUnit.SECONDS);
+                    curFut.get(1, TimeUnit.SECONDS);
 
                     return;
                 }
@@ -2272,7 +2262,7 @@ public class IgniteCacheProxyImpl<K, V> extends AsyncSupportAdapter<IgniteCache<
                 //do nothing
             }
 
-            throw new IgniteCacheRestartingException(new IgniteFutureImpl<>(currentFut, exec()), cacheName);
+            throw new IgniteCacheRestartingException(new IgniteFutureImpl<>(curFut, exec()), cacheName);
         }
     }
 
@@ -2317,10 +2307,10 @@ public class IgniteCacheProxyImpl<K, V> extends AsyncSupportAdapter<IgniteCache<
      * @param fut Finish restart future.
      */
     public void registrateFutureRestart(GridFutureAdapter<?> fut) {
-        RestartFuture currentFut = restartFut.get();
+        RestartFuture curFut = restartFut.get();
 
-        if (currentFut != null)
-            currentFut.addRestartFinishedFuture(fut);
+        if (curFut != null)
+            curFut.addRestartFinishedFuture(fut);
     }
 
     /**

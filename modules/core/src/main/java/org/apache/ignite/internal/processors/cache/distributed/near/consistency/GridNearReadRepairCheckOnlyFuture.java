@@ -236,7 +236,7 @@ public class GridNearReadRepairCheckOnlyFuture extends GridNearReadRepairAbstrac
      * @return Future represents 1 entry's value.
      */
     public <K, V> IgniteInternalFuture<V> single() {
-        return init().chain((fut) -> {
+        return init().chain(fut -> {
             try {
                 final Map<K, V> map = new IgniteBiTuple<>();
 
@@ -262,7 +262,7 @@ public class GridNearReadRepairCheckOnlyFuture extends GridNearReadRepairAbstrac
      * @return Future represents entries map.
      */
     public <K, V> IgniteInternalFuture<Map<K, V>> multi() {
-        return init().chain((fut) -> {
+        return init().chain(fut -> {
             try {
                 final Map<K, V> map = U.newHashMap(keys.size());
 

@@ -23,8 +23,11 @@ import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 import java.util.HashMap;
 import java.util.UUID;
+import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.cluster.ClusterNode;
+import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteUuid;
+import org.apache.ignite.marshaller.jdk.JdkMarshaller;
 import org.apache.ignite.services.Service;
 import org.apache.ignite.services.ServiceConfiguration;
 import org.apache.ignite.services.ServiceContext;
@@ -32,7 +35,6 @@ import org.junit.Test;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotSame;
-import static org.junit.Assert.assertSame;
 
 /**
  * Tests of {@link ServiceInfo} class.
@@ -48,15 +50,13 @@ public class ServiceInfoSelfTest {
     private ServiceConfiguration cfg = configuration();
 
     /** Subject under test. */
-    private ServiceInfo sut = new ServiceInfo(nodeId, srvcId, cfg);
+    private ServiceInfo sut = serviceInfo(cfg);
 
     /**
      * Tests {@link ServiceInfo#configuration()}.
      */
     @Test
     public void testConfigurationEquality() {
-        assertSame(cfg, sut.configuration());
-
         assertEquals(cfg.getService().getClass(), sut.serviceClass());
 
         assertEquals(cfg.getName(), sut.name());
@@ -136,6 +136,24 @@ public class ServiceInfoSelfTest {
         cfg.setNodeFilter(ClusterNode::isLocal);
 
         return cfg;
+    }
+
+    /** */
+    private ServiceInfo serviceInfo(ServiceConfiguration cfg) {
+        try {
+            JdkMarshaller marsh = new JdkMarshaller();
+
+            byte[] srvcBytes = U.marshal(marsh, cfg.getService());
+            byte[] nodeFilterBytes = U.marshal(marsh, cfg.getNodeFilter());
+            byte[] interceptorsBytes = U.marshal(marsh, cfg.getInterceptors());
+
+            LazyServiceConfiguration lazyCfg = new LazyServiceConfiguration(cfg, srvcBytes, nodeFilterBytes, interceptorsBytes);
+
+            return new ServiceInfo(nodeId, srvcId, lazyCfg);
+        }
+        catch (IgniteCheckedException e) {
+            throw new RuntimeException(e);
+        }
     }
 
     /**

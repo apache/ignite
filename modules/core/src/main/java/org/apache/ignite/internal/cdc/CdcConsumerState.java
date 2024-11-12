@@ -71,6 +71,15 @@ public class CdcConsumerState {
     /** */
     public static final String CACHES_STATE_FILE_NAME = "cdc-caches-state" + FILE_SUFFIX;
 
+    /**
+     * The file stores state of CDC mode. Content of the file is a {@link CdcMode} value:
+     * <ul>
+     *     <li>{@link CdcMode#CDC_UTILITY_ACTIVE} means that {@link CdcMain} utility captures data.</li>
+     *     <li>{@link CdcMode#IGNITE_NODE_ACTIVE} means that {@link CdcManager} captures data within Ignite node.</li>
+     * </ul>
+     */
+    public static final String CDC_MODE_FILE_NAME = "cdc-mode" + FILE_SUFFIX;
+
     /** Log. */
     private final IgniteLogger log;
 
@@ -98,6 +107,12 @@ public class CdcConsumerState {
     /** Mappings types state file. */
     private final Path tmpCaches;
 
+    /** CDC manager mode state file. */
+    private final Path cdcMode;
+
+    /** Temp CDC manager mode state file. */
+    private final Path tmpCdcMode;
+
     /**
      * @param stateDir State directory.
      */
@@ -111,6 +126,8 @@ public class CdcConsumerState {
         tmpMappings = stateDir.resolve(MAPPINGS_STATE_FILE_NAME + TMP_SUFFIX);
         caches = stateDir.resolve(CACHES_STATE_FILE_NAME);
         tmpCaches = stateDir.resolve(CACHES_STATE_FILE_NAME + TMP_SUFFIX);
+        cdcMode = stateDir.resolve(CDC_MODE_FILE_NAME);
+        tmpCdcMode = stateDir.resolve(CDC_MODE_FILE_NAME + TMP_SUFFIX);
     }
 
     /**
@@ -277,5 +294,27 @@ public class CdcConsumerState {
         catch (IOException | ClassNotFoundException e) {
             throw new RuntimeException(e);
         }
+    }
+
+    /**
+     * Loads CDC mode state from file.
+     *
+     * @return CDC mode state.
+     */
+    public CdcMode loadCdcMode() {
+        CdcMode state = load(cdcMode, () -> CdcMode.IGNITE_NODE_ACTIVE);
+
+        log.info("CDC mode loaded [" + state + ']');
+
+        return state;
+    }
+
+    /**
+     * Saves CDC mode state to file.
+     *
+     * @param mode CDC mode.
+     */
+    public void saveCdcMode(CdcMode mode) throws IOException {
+        save(mode, tmpCdcMode, cdcMode);
     }
 }

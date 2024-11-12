@@ -20,6 +20,7 @@ package org.apache.ignite.cdc;
 import java.io.File;
 import java.io.Serializable;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.EnumSet;
@@ -46,15 +47,25 @@ import org.apache.ignite.configuration.WALMode;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.cdc.CdcMain;
+import org.apache.ignite.internal.management.cdc.CdcDeleteLostSegmentsTask;
+import org.apache.ignite.internal.pagemem.FullPageId;
+import org.apache.ignite.internal.pagemem.wal.IgniteWriteAheadLogManager;
 import org.apache.ignite.internal.pagemem.wal.WALIterator;
 import org.apache.ignite.internal.pagemem.wal.record.DataRecord;
+import org.apache.ignite.internal.pagemem.wal.record.PageSnapshot;
 import org.apache.ignite.internal.pagemem.wal.record.WALRecord;
+import org.apache.ignite.internal.processors.cache.persistence.wal.FileWriteAheadLogManager;
 import org.apache.ignite.internal.processors.cache.persistence.wal.reader.IgniteWalIteratorFactory;
 import org.apache.ignite.internal.processors.cache.persistence.wal.reader.IgniteWalIteratorFactory.IteratorParametersBuilder;
-import org.apache.ignite.internal.processors.metric.MetricRegistry;
+import org.apache.ignite.internal.processors.configuration.distributed.DistributedChangeableProperty;
+import org.apache.ignite.internal.processors.platform.cache.expiry.PlatformExpiryPolicy;
 import org.apache.ignite.internal.util.lang.GridAbsPredicate;
+import org.apache.ignite.internal.util.lang.RunnableX;
 import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.internal.visor.VisorTaskArgument;
+import org.apache.ignite.metric.MetricRegistry;
 import org.apache.ignite.testframework.junits.WithSystemProperty;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -66,8 +77,11 @@ import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
 import static org.apache.ignite.cdc.AbstractCdcTest.ChangeEventType.DELETE;
 import static org.apache.ignite.cdc.AbstractCdcTest.ChangeEventType.UPDATE;
 import static org.apache.ignite.cluster.ClusterState.ACTIVE;
+import static org.apache.ignite.configuration.DataStorageConfiguration.DFLT_CDC_WAL_DIRECTORY_MAX_SIZE;
+import static org.apache.ignite.configuration.DataStorageConfiguration.DFLT_PAGE_SIZE;
 import static org.apache.ignite.configuration.DataStorageConfiguration.DFLT_WAL_ARCHIVE_PATH;
 import static org.apache.ignite.internal.processors.cache.GridCacheUtils.cacheId;
+import static org.apache.ignite.testframework.GridTestUtils.assertThrows;
 import static org.apache.ignite.testframework.GridTestUtils.runAsync;
 import static org.apache.ignite.testframework.GridTestUtils.waitForCondition;
 import static org.junit.Assume.assumeTrue;
@@ -79,7 +93,10 @@ public class CdcSelfTest extends AbstractCdcTest {
     public static final String TX_CACHE_NAME = "tx-cache";
 
     /** */
-    public static final int WAL_ARCHIVE_TIMEOUT = 5_000;
+    public static final long CREATE_TTL = 500_000L;
+
+    /** */
+    public static final long UPDATE_TTL = 60_000L;
 
     /** */
     @Parameterized.Parameter
@@ -92,6 +109,9 @@ public class CdcSelfTest extends AbstractCdcTest {
     /** */
     @Parameterized.Parameter(2)
     public boolean persistenceEnabled;
+
+    /** */
+    private long cdcWalDirMaxSize = DFLT_CDC_WAL_DIRECTORY_MAX_SIZE;
 
     /** */
     @Parameterized.Parameters(name = "consistentId={0}, wal={1}, persistence={2}")
@@ -119,7 +139,8 @@ public class CdcSelfTest extends AbstractCdcTest {
             .setDefaultDataRegionConfiguration(new DataRegionConfiguration()
                 .setPersistenceEnabled(persistenceEnabled)
                 .setCdcEnabled(true))
-            .setWalArchivePath(DFLT_WAL_ARCHIVE_PATH + "/" + U.maskForFileName(igniteInstanceName)));
+            .setWalArchivePath(DFLT_WAL_ARCHIVE_PATH + "/" + U.maskForFileName(igniteInstanceName))
+            .setCdcWalDirectoryMaxSize(cdcWalDirMaxSize));
 
         cfg.setCacheConfiguration(
             new CacheConfiguration<>(TX_CACHE_NAME)
@@ -143,7 +164,8 @@ public class CdcSelfTest extends AbstractCdcTest {
         // Read one record per call.
         readAll(new UserCdcConsumer() {
             @Override public boolean onEvents(Iterator<CdcEvent> evts) {
-                super.onEvents(Collections.singleton(evts.next()).iterator());
+                if (evts.hasNext())
+                    super.onEvents(Collections.singleton(evts.next()).iterator());
 
                 return false;
             }
@@ -156,11 +178,85 @@ public class CdcSelfTest extends AbstractCdcTest {
         // Read one record per call and commit.
         readAll(new UserCdcConsumer() {
             @Override public boolean onEvents(Iterator<CdcEvent> evts) {
-                super.onEvents(Collections.singleton(evts.next()).iterator());
+                if (evts.hasNext())
+                    super.onEvents(Collections.singleton(evts.next()).iterator());
 
                 return true;
             }
         }, true);
+    }
+
+    /** */
+    @Test
+    public void testReadExpireTime() throws Exception {
+        IgniteConfiguration cfg = getConfiguration("ignite-0");
+
+        Ignite ign = startGrid(cfg);
+
+        ign.cluster().state(ACTIVE);
+
+        IgniteCache<Integer, User> cache = ign.getOrCreateCache(DEFAULT_CACHE_NAME);
+
+        IgniteCache<Integer, User> withExpiry =
+            cache.withExpiryPolicy(new PlatformExpiryPolicy(CREATE_TTL, UPDATE_TTL, 0L));
+
+        for (int i = 0; i < KEYS_CNT; i++) {
+            if (i % 2 == 0) {
+                withExpiry.put(i, createUser(i)); // Create.
+                withExpiry.put(i, createUser(i)); // Update.
+            }
+            else {
+                cache.put(i, createUser(i)); // Create.
+                cache.put(i, createUser(i)); // Update.
+            }
+        }
+
+        removeData(cache, 0, KEYS_CNT);
+
+        Set<Integer> seen = new HashSet<>();
+
+        UserCdcConsumer cnsmr = new UserCdcConsumer() {
+            /** {@inheritDoc} */
+            @Override public void checkEvent(CdcEvent evt) {
+                super.checkEvent(evt);
+
+                Integer key = (Integer)evt.key();
+
+                if (evt.value() == null || key % 2 != 0) {
+                    assertEquals("Expire time must not be set [key=" + key + ']', CU.EXPIRE_TIME_ETERNAL, evt.expireTime());
+
+                    return;
+                }
+
+                assertTrue(
+                    "Expire must be set [key=" + key + ']',
+                    evt.expireTime() != CU.EXPIRE_TIME_ETERNAL
+                );
+
+                long ttl = evt.expireTime() - System.currentTimeMillis();
+
+                assertTrue("Expire for operation", ttl <= (seen.contains(key) ? UPDATE_TTL : CREATE_TTL));
+
+                seen.add(key);
+            }
+        };
+
+        CdcMain cdcMain = createCdc(cnsmr, cfg);
+
+        IgniteInternalFuture<?> cdcFut = runAsync(cdcMain);
+
+        waitForSize(KEYS_CNT * 2, DEFAULT_CACHE_NAME, UPDATE, cnsmr);
+        waitForSize(KEYS_CNT, DEFAULT_CACHE_NAME, DELETE, cnsmr);
+
+        cdcFut.cancel();
+
+        assertTrue(cnsmr.stopped());
+
+        assertEquals(KEYS_CNT / 2, seen.size());
+
+        stopAllGrids();
+
+        cleanPersistenceDir();
     }
 
     /** */
@@ -261,10 +357,11 @@ public class CdcSelfTest extends AbstractCdcTest {
 
             CdcConsumer cnsmr = new CdcConsumer() {
                 @Override public boolean onEvents(Iterator<CdcEvent> evts) {
+                    if (!evts.hasNext())
+                        return true;
+
                     if (!firstEvt.get())
                         throw new RuntimeException("Expected fail.");
-
-                    assertTrue(evts.hasNext());
 
                     data.add((Integer)evts.next().key());
 
@@ -349,6 +446,9 @@ public class CdcSelfTest extends AbstractCdcTest {
                 boolean oneConsumed;
 
                 @Override public boolean onEvents(Iterator<CdcEvent> evts) {
+                    if (!evts.hasNext())
+                        return true;
+
                     // Fail application after one event read AND state committed.
                     if (oneConsumed)
                         throw new RuntimeException(errMsg);
@@ -689,6 +789,105 @@ public class CdcSelfTest extends AbstractCdcTest {
         fut.cancel();
 
         assertTrue(cnsmr.stopped());
+    }
+
+    /** */
+    @Test
+    public void testDisable() throws Exception {
+        IgniteEx ign = startGrid(0);
+
+        ign.cluster().state(ACTIVE);
+
+        IgniteCache<Integer, User> cache = ign.getOrCreateCache(DEFAULT_CACHE_NAME);
+
+        addData(cache, 0, 1);
+
+        File walCdcDir = U.field(ign.context().cache().context().wal(true), "walCdcDir");
+
+        assertTrue(waitForCondition(() -> 1 == walCdcDir.list().length, 2 * WAL_ARCHIVE_TIMEOUT));
+
+        DistributedChangeableProperty<Serializable> disabled = ign.context().distributedConfiguration()
+            .property(FileWriteAheadLogManager.CDC_DISABLED);
+
+        disabled.propagate(true);
+
+        addData(cache, 0, 1);
+
+        Thread.sleep(2 * WAL_ARCHIVE_TIMEOUT);
+
+        assertEquals(1, walCdcDir.list().length);
+
+        disabled.propagate(false);
+
+        addData(cache, 0, 1);
+
+        assertTrue(waitForCondition(() -> 2 == walCdcDir.list().length, 2 * WAL_ARCHIVE_TIMEOUT));
+    }
+
+    /** */
+    @Test
+    public void testCdcDirectoryMaxSize() throws Exception {
+        cdcWalDirMaxSize = 10 * U.MB;
+        int segmentSize = (int)(cdcWalDirMaxSize / 2);
+
+        IgniteEx ign = startGrid(0);
+
+        ign.cluster().state(ACTIVE);
+
+        IgniteCache<Integer, User> cache = ign.getOrCreateCache(DEFAULT_CACHE_NAME);
+        IgniteWriteAheadLogManager wal = ign.context().cache().context().wal(true);
+        File walCdcDir = U.field(ign.context().cache().context().wal(true), "walCdcDir");
+
+        RunnableX writeSgmnt = () -> {
+            int sgmnts = wal.walArchiveSegments();
+            int dataSize = (int)(segmentSize * 0.8);
+
+            for (int i = 0; i < dataSize / DFLT_PAGE_SIZE; i++)
+                wal.log(new PageSnapshot(new FullPageId(-1, -1), new byte[DFLT_PAGE_SIZE], 1));
+
+            addData(cache, 0, 1);
+
+            waitForCondition(() -> wal.walArchiveSegments() > sgmnts, 2 * WAL_ARCHIVE_TIMEOUT);
+        };
+
+        // Write to the WAL to exceed the configured max size.
+        writeSgmnt.run();
+        writeSgmnt.run();
+
+        // The segment link creation should be skipped.
+        writeSgmnt.run();
+
+        assertTrue(cdcWalDirMaxSize >= Arrays.stream(walCdcDir.listFiles()).mapToLong(File::length).sum());
+
+        UserCdcConsumer cnsmr = new UserCdcConsumer();
+
+        CdcMain cdc = createCdc(cnsmr, getConfiguration(ign.name()));
+
+        IgniteInternalFuture<?> fut = runAsync(cdc);
+
+        waitForSize(2, DEFAULT_CACHE_NAME, UPDATE, cnsmr);
+
+        assertFalse(fut.isDone());
+
+        // Write next segment after skipped.
+        writeSgmnt.run();
+
+        assertThrows(log, () -> fut.get(getTestTimeout()), IgniteCheckedException.class,
+            "Found missed segments. Some events are missed.");
+
+        ign.compute().execute(CdcDeleteLostSegmentsTask.class, new VisorTaskArgument<>(ign.localNode().id(), false));
+
+        cnsmr.data.clear();
+
+        cdc = createCdc(cnsmr, getConfiguration(ign.name()));
+
+        IgniteInternalFuture<?> f = runAsync(cdc);
+
+        waitForSize(1, DEFAULT_CACHE_NAME, UPDATE, cnsmr);
+
+        assertFalse(f.isDone());
+
+        f.cancel();
     }
 
     /** */

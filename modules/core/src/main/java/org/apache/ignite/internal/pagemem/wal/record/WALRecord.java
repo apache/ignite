@@ -196,12 +196,15 @@ public abstract class WALRecord {
         ROTATED_ID_PART_RECORD(48, PHYSICAL),
 
         /** */
+        @Deprecated
         MVCC_DATA_PAGE_MARK_UPDATED_RECORD(49, PHYSICAL),
 
         /** */
+        @Deprecated
         MVCC_DATA_PAGE_TX_STATE_HINT_UPDATED_RECORD(50, PHYSICAL),
 
         /** */
+        @Deprecated
         MVCC_DATA_PAGE_NEW_TX_STATE_HINT_UPDATED_RECORD(51, PHYSICAL),
 
         /** Encrypted WAL-record. */
@@ -215,9 +218,11 @@ public abstract class WALRecord {
         ENCRYPTED_DATA_RECORD(53, LOGICAL),
 
         /** Mvcc data record. */
+        @Deprecated
         MVCC_DATA_RECORD(54, LOGICAL),
 
         /** Mvcc Tx state change record. */
+        @Deprecated
         MVCC_TX_RECORD(55, LOGICAL),
 
         /** Consistent cut record. */
@@ -282,7 +287,28 @@ public abstract class WALRecord {
         ENCRYPTED_OUT_OF_ORDER_UPDATE(74, LOGICAL),
 
         /** ClusterSnapshot start. */
-        CLUSTER_SNAPSHOT(75, LOGICAL);
+        CLUSTER_SNAPSHOT(75, LOGICAL),
+
+        /** Incremental snapshot start record. */
+        INCREMENTAL_SNAPSHOT_START_RECORD(76, LOGICAL),
+
+        /** Incremental snapshot finish record. */
+        INCREMENTAL_SNAPSHOT_FINISH_RECORD(77, LOGICAL),
+
+        /** CDC data record. */
+        CDC_DATA_RECORD(78, CUSTOM),
+
+        /** CDC manager record. */
+        CDC_MANAGER_RECORD(79, CUSTOM),
+
+        /** CDC manager record. */
+        CDC_MANAGER_STOP_RECORD(80, CUSTOM),
+
+        /** Physical WAL record that represents a fragment of an entry update. (Placeholder) */
+        DATA_PAGE_FRAGMENTED_UPDATE_RECORD(81, PHYSICAL),
+
+        /** Reserved for further improvements. */
+        RESERVED_IDX2(82);
 
         /** Index for serialization. Should be consistent throughout all versions. */
         private final int idx;

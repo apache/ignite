@@ -153,9 +153,6 @@ namespace Apache.Ignite.Core
         private TimeSpan? _networkTimeout;
 
         /** */
-        private bool? _isDaemon;
-
-        /** */
         private bool? _javaPeerClassLoadingEnabled;
 
         /** */
@@ -209,12 +206,6 @@ namespace Apache.Ignite.Core
         /** Map from user-defined listener to it's id. */
         private Dictionary<object, int> _localEventListenerIds;
 
-        /** MVCC vacuum frequency. */
-        private long? _mvccVacuumFreq;
-
-        /** MVCC vacuum thread count. */
-        private int? _mvccVacuumThreadCnt;
-
         /** SQL query history size. */
         private int? _sqlQueryHistorySize;
 
@@ -248,16 +239,6 @@ namespace Apache.Ignite.Core
         /// Default value for <see cref="AuthenticationEnabled"/> property.
         /// </summary>
         public const bool DefaultAuthenticationEnabled = false;
-
-        /// <summary>
-        /// Default value for <see cref="MvccVacuumFrequency"/> property.
-        /// </summary>
-        public const long DefaultMvccVacuumFrequency = 5000;
-
-        /// <summary>
-        /// Default value for <see cref="MvccVacuumThreadCount"/> property.
-        /// </summary>
-        public const int DefaultMvccVacuumThreadCount = 2;
 
         /// <summary>
         /// Default value for <see cref="SqlQueryHistorySize"/> property.
@@ -334,14 +315,11 @@ namespace Apache.Ignite.Core
             writer.WriteTimeSpanAsLongNullable(_networkTimeout);
             writer.WriteString(WorkDirectory);
             writer.WriteString(Localhost);
-            writer.WriteBooleanNullable(_isDaemon);
             writer.WriteTimeSpanAsLongNullable(_failureDetectionTimeout);
             writer.WriteTimeSpanAsLongNullable(_clientFailureDetectionTimeout);
             writer.WriteTimeSpanAsLongNullable(_longQueryWarningTimeout);
             writer.WriteBooleanNullable(_isActiveOnStart);
             writer.WriteBooleanNullable(_authenticationEnabled);
-            writer.WriteLongNullable(_mvccVacuumFreq);
-            writer.WriteIntNullable(_mvccVacuumThreadCnt);
             writer.WriteTimeSpanAsLongNullable(_sysWorkerBlockedTimeout);
             writer.WriteIntNullable(_sqlQueryHistorySize);
             writer.WriteBooleanNullable(_javaPeerClassLoadingEnabled);
@@ -492,7 +470,6 @@ namespace Apache.Ignite.Core
                 writer.WriteLong((long) TransactionConfiguration.DefaultTimeout.TotalMilliseconds);
                 writer.WriteInt((int) TransactionConfiguration.PessimisticTransactionLogLinger.TotalMilliseconds);
                 writer.WriteLong((long) TransactionConfiguration.DefaultTimeoutOnPartitionMapExchange.TotalMilliseconds);
-                writer.WriteLong((long) TransactionConfiguration.DeadlockTimeout.TotalMilliseconds);
             }
             else
                 writer.WriteBoolean(false);
@@ -740,14 +717,11 @@ namespace Apache.Ignite.Core
             _networkTimeout = r.ReadTimeSpanNullable();
             WorkDirectory = r.ReadString();
             Localhost = r.ReadString();
-            _isDaemon = r.ReadBooleanNullable();
             _failureDetectionTimeout = r.ReadTimeSpanNullable();
             _clientFailureDetectionTimeout = r.ReadTimeSpanNullable();
             _longQueryWarningTimeout = r.ReadTimeSpanNullable();
             _isActiveOnStart = r.ReadBooleanNullable();
             _authenticationEnabled = r.ReadBooleanNullable();
-            _mvccVacuumFreq = r.ReadLongNullable();
-            _mvccVacuumThreadCnt = r.ReadIntNullable();
             _sysWorkerBlockedTimeout = r.ReadTimeSpanNullable();
             _sqlQueryHistorySize = r.ReadIntNullable();
             _javaPeerClassLoadingEnabled = r.ReadBooleanNullable();
@@ -830,7 +804,6 @@ namespace Apache.Ignite.Core
                     DefaultTimeout = TimeSpan.FromMilliseconds(r.ReadLong()),
                     PessimisticTransactionLogLinger = TimeSpan.FromMilliseconds(r.ReadInt()),
                     DefaultTimeoutOnPartitionMapExchange = TimeSpan.FromMilliseconds(r.ReadLong()),
-                    DeadlockTimeout = TimeSpan.FromMilliseconds(r.ReadLong())
                 };
             }
 
@@ -1298,22 +1271,6 @@ namespace Apache.Ignite.Core
         public string Localhost { get; set; }
 
         /// <summary>
-        /// Gets or sets a value indicating whether this node should be a daemon node.
-        /// <para />
-        /// Daemon nodes are the usual grid nodes that participate in topology but not visible on the main APIs,
-        /// i.e. they are not part of any cluster groups.
-        /// <para />
-        /// Daemon nodes are used primarily for management and monitoring functionality that is built on Ignite
-        /// and needs to participate in the topology, but also needs to be excluded from the "normal" topology,
-        /// so that it won't participate in the task execution or in-memory data grid storage.
-        /// </summary>
-        public bool IsDaemon
-        {
-            get { return _isDaemon ?? default(bool); }
-            set { _isDaemon = value; }
-        }
-
-        /// <summary>
         /// Gets or sets the user attributes for this node.
         /// <para />
         /// These attributes can be retrieved later via <see cref="IBaselineNode.Attributes"/>.
@@ -1658,32 +1615,6 @@ namespace Apache.Ignite.Core
         {
             get { return _authenticationEnabled ?? DefaultAuthenticationEnabled; }
             set { _authenticationEnabled = value; }
-        }
-
-        /// <summary>
-        /// This is an experimental feature. Transactional SQL is currently in a beta status.
-        /// <para/>
-        /// Time interval between MVCC vacuum runs in milliseconds.
-        /// </summary>
-        [DefaultValue(DefaultMvccVacuumFrequency)]
-        [IgniteExperimental]
-        public long MvccVacuumFrequency
-        {
-            get { return _mvccVacuumFreq ?? DefaultMvccVacuumFrequency; }
-            set { _mvccVacuumFreq = value; }
-        }
-
-        /// <summary>
-        /// This is an experimental feature. Transactional SQL is currently in a beta status.
-        /// <para/>
-        /// Number of MVCC vacuum threads.
-        /// </summary>
-        [DefaultValue(DefaultMvccVacuumThreadCount)]
-        [IgniteExperimental]
-        public int MvccVacuumThreadCount
-        {
-            get { return _mvccVacuumThreadCnt ?? DefaultMvccVacuumThreadCount; }
-            set { _mvccVacuumThreadCnt = value; }
         }
 
         /// <summary>

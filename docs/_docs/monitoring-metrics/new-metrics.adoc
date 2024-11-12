@@ -68,6 +68,9 @@ Register name: `cache.{cache_name}.{near}`
 |CacheSize|long|Local cache size.
 |CommitTime  |histogram  | Commit time in nanoseconds.
 |CommitTimeTotal |long| The total time of commit, in nanoseconds.
+|ConflictResolverAcceptedCount|long|Conflict resolver accepted entries count.
+|ConflictResolverRejectedCount|long|Conflict resolver rejected entries count.
+|ConflictResolverMergedCount|long|Conflict resolver merged entries count.
 |EntryProcessorHits | long|The total number of invocations on keys, which exist in cache.
 |EntryProcessorInvokeTimeNanos | long | The total time of cache invocations for which this node is the initiator, in nanoseconds.
 |EntryProcessorMaxInvocationTime |long | So far, the maximum time to execute cache invokes for which this node is the initiator.
@@ -241,7 +244,7 @@ Register name: `io.statistics.cacheGroups.{group_name}`
 |===
 
 
-== Sorted Indexes
+== Sorted Indexes I/O statistics
 
 Register name: `io.statistics.sortedIndexes.{cache_name}.{index_name}`
 
@@ -257,8 +260,21 @@ Register name: `io.statistics.sortedIndexes.{cache_name}.{index_name}`
 |startTime|   long|    Statistics collection start time
 |===
 
+== Sorted Indexes operations
 
-== Hash Indexes
+Contains metrics about low-level operations (such as `Insert`, `Search`, etc.) on pages of sorted secondary indexes.
+
+Register name: `index.{schema_name}.{table_name}.{index_name}`
+
+[cols="2,1,3",opts="header"]
+|===
+|Name |    Type |    Description
+|{opType}Count|   long|   Count of {opType} operations on index.
+|{opType}Time|   long|   Total duration (nanoseconds) of {opType} operations on index.
+|===
+
+
+== Hash Indexes I/O statistics
 
 Register name: `io.statistics.hashIndexes.{cache_name}.{index_name}`
 
@@ -315,6 +331,10 @@ Register name: `client.connector`
 |SentBytesCount|   long|   Sent bytes count.
 |SslEnabled|   boolean|   Indicates whether SSL is enabled.
 |SslHandshakeDurationHistogram|   histogram|   Histogram of SSL handshake duration in milliseconds (metric is exported only if SSL is enabled).
+|AffinityKeyRequestsHits|   long|   The number of affinity-aware cache key requests that were sent to the primary node.
+|AffinityKeyRequestsMisses|   long|   The number of affinity-aware cache key requests that were sent not to the primary node.
+|AffinityQueryRequestsHits|   long|   The number of affinity-aware query requests that were sent to the primary node.
+|AffinityQueryRequestsMisses|   long|   The number of affinity-aware query requests that were sent not to the primary node.
 |===
 
 
@@ -364,18 +384,18 @@ Register name: `io.dataregion.{data_region_name}`
 [cols="2,1,3",opts="header"]
 |===
 |Name |    Type |    Description
-|AllocationRate | long|    Allocation rate (pages per second) averaged across rateTimeInternal.
+|AllocationRate | hitrate|    Allocation rate (pages per second) averaged across rateTimeInterval.
 |CheckpointBufferSize |    long |    Checkpoint buffer size in bytes.
 |DirtyPages |  long|    Number of pages in memory not yet synchronized with persistent storage.
 |EmptyDataPages|  long|    Calculates empty data pages count for region. It counts only totally free pages that can be reused (e. g. pages that are contained in reuse bucket of free list).
-|EvictionRate|    long|    Eviction rate (pages per second).
+|EvictionRate|    hitrate|    Eviction rate (pages per second).
 |LargeEntriesPagesCount|  long|    Count of pages that fully ocupied by large entries that go beyond page size
 |OffHeapSize| long|    Offheap size in bytes.
 |OffheapUsedSize| long|    Offheap used size in bytes.
 |PagesFillFactor| double|  The percentage of the used space.
 |PagesRead|   long|    Number of pages read from last restart.
-|PagesReplaceAge| long|    Average age at which pages in memory are replaced with pages from persistent storage (milliseconds).
-|PagesReplaceRate|    long|    Rate at which pages in memory are replaced with pages from persistent storage (pages per second).
+|PagesReplaceAge| hitrate|    Average age at which pages in memory are replaced with pages from persistent storage (milliseconds).
+|PagesReplaceRate|    hitrate|    Rate at which pages in memory are replaced with pages from persistent storage (pages per second).
 |PagesReplaced|   long|    Number of pages replaced from last restart.
 |PagesWritten|    long|    Number of pages written from last restart.
 |PhysicalMemoryPages| long|    Number of pages residing in physical RAM.
@@ -427,13 +447,13 @@ Register name: `io.datastorage`
 |SparseStorageSize  | long|    Storage space allocated adjusted for possible sparsity, in bytes.
 |StorageSize | long|    Storage space allocated, in bytes.
 |WalArchiveSegments | integer| Current number of WAL segments in the WAL archive.
-|WalBuffPollSpinsRate|    long  |  WAL buffer poll spins number over the last time interval.
-|WalFsyncTimeDuration |   long |   Total duration of fsync
-|WalFsyncTimeNum |long  |  Total count of fsync
+|WalBuffPollSpinsRate|    hitrate  |  WAL buffer poll spins number over the last time interval.
+|WalFsyncTimeDuration |   hitrate |   Total duration of fsync
+|WalFsyncTimeNum |hitrate  |  Total count of fsync
 |WalLastRollOverTime |long |   Time of the last WAL segment rollover.
-|WalLoggingRate | long|    Average number of WAL records per second written during the last time interval.
+|WalLoggingRate | hitrate|    Average number of WAL records per second written during the last time interval.
 |WalTotalSize|    long  |  Total size in bytes for storage wal files.
-|WalWritingRate|  long  |  Average number of bytes per second written during the last time interval.
+|WalWritingRate|  hitrate  |  Average number of bytes per second written during the last time interval.
 |===
 
 
@@ -466,4 +486,27 @@ Register name: `cache`
 |Name|    Type|    Description
 |LastDataVer| long | The latest data version on the node.
 |DataVersionClusterId| integer | Data version cluster id.
+|===
+
+== SQL parser metrics
+
+Register name: `sql.parser.cache`
+
+[cols="2,1,3",opts="header"]
+|===
+|Name|    Type|    Description
+|hits| long | The number of SQL queries that were found in the parsers cache (doesn't require to be parsed and planned before execution).
+|misses| long | The number of SQL queries that were parsed and planned.
+|===
+
+== SQL executor metrics
+
+Register name: `sql.queries.user`
+
+[cols="2,1,3",opts="header"]
+|===
+|Name|    Type|    Description
+|success| long | The number of succesfully executed SQL queries.
+|failed| long | The number of failed SQL queries (including canceled).
+|canceled| long | The number of canceled SQL queries.
 |===

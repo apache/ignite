@@ -33,6 +33,7 @@ namespace Apache.Ignite.Core.Tests.Compute
     using Apache.Ignite.Core.Compute;
     using Apache.Ignite.Core.Impl;
     using Apache.Ignite.Core.Resource;
+    using Apache.Ignite.Core.Tests.Client.Compute;
     using NUnit.Framework;
 
     /// <summary>
@@ -456,32 +457,6 @@ namespace Apache.Ignite.Core.Tests.Compute
             Assert.AreEqual(2, prj.GetNodes().Count);
             Assert.IsTrue(nodes.Contains(prj.GetNodes().ElementAt(0)));
             Assert.IsTrue(nodes.Contains(prj.GetNodes().ElementAt(1)));
-        }
-
-        /// <summary>
-        /// Test for daemon nodes projection.
-        /// </summary>
-        [Test]
-        public void TestForDaemons()
-        {
-            Assert.AreEqual(0, _grid1.GetCluster().ForDaemons().GetNodes().Count);
-
-            using (var ignite = Ignition.Start(new IgniteConfiguration(TestUtils.GetTestConfiguration())
-                {
-                    SpringConfigUrl = GetConfigs().Item1,
-                    IgniteInstanceName = "daemonGrid",
-                    IsDaemon = true
-                })
-            )
-            {
-                var prj = _grid1.GetCluster().ForDaemons();
-
-                Assert.AreEqual(1, prj.GetNodes().Count);
-                Assert.AreEqual(ignite.GetCluster().GetLocalNode().Id, prj.GetNode().Id);
-
-                Assert.IsTrue(prj.GetNode().IsDaemon);
-                Assert.IsTrue(ignite.GetCluster().GetLocalNode().IsDaemon);
-            }
         }
 
         /// <summary>
@@ -1007,6 +982,19 @@ namespace Apache.Ignite.Core.Tests.Compute
 
             foreach (var g in new[] {_grid1, _grid2, _grid3})
                 Assert.AreEqual(CompactFooter, g.GetConfiguration().BinaryConfiguration.CompactFooter);
+        }
+        
+        /// <summary>
+        /// Tests that compute modifiers are reset between calls.
+        /// </summary>
+        [Test]
+        public void TestTaskOptionsPropagation()
+        {
+            ICompute compute = _grid1.GetCompute();
+            
+            compute.WithTimeout(500).Call(new ComputeFunc());
+
+            compute.ExecuteJavaTask<object>(ComputeClientTests.TestTask, (long)1000);
         }
 
         /// <summary>

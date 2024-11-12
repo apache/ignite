@@ -17,7 +17,6 @@
 
 package org.apache.ignite.internal.processors.cache.persistence.snapshot;
 
-import java.io.File;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
@@ -25,7 +24,6 @@ import java.util.concurrent.atomic.AtomicReference;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.internal.IgniteFutureCancelledCheckedException;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
-import org.apache.ignite.internal.processors.cache.persistence.file.FileIOFactory;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
@@ -49,12 +47,6 @@ abstract class AbstractSnapshotFutureTask<T> extends GridFutureAdapter<T> {
     /** Unique identifier of snapshot process. */
     protected final String snpName;
 
-    /** Snapshot working directory on file system. */
-    protected final File tmpSnpWorkDir;
-
-    /** IO factory which will be used for creating snapshot delta-writers. */
-    protected final FileIOFactory ioFactory;
-
     /** Snapshot data sender. */
     @GridToStringExclude
     protected final SnapshotSender snpSndr;
@@ -70,8 +62,6 @@ abstract class AbstractSnapshotFutureTask<T> extends GridFutureAdapter<T> {
      * @param srcNodeId Node id which cause snapshot task creation.
      * @param reqId Snapshot operation request ID.
      * @param snpName Unique identifier of snapshot process.
-     * @param tmpWorkDir Working directory for intermediate snapshot results.
-     * @param ioFactory Factory to working with snapshot files.
      * @param snpSndr Factory which produces snapshot receiver instance.
      * @param parts Partition to be processed.
      */
@@ -80,8 +70,6 @@ abstract class AbstractSnapshotFutureTask<T> extends GridFutureAdapter<T> {
         UUID srcNodeId,
         UUID reqId,
         String snpName,
-        File tmpWorkDir,
-        FileIOFactory ioFactory,
         SnapshotSender snpSndr,
         Map<Integer, Set<Integer>> parts
     ) {
@@ -90,12 +78,10 @@ abstract class AbstractSnapshotFutureTask<T> extends GridFutureAdapter<T> {
         assert snpSndr.executor() != null : "Executor service must be not null.";
 
         this.cctx = cctx;
-        this.log = cctx.logger(AbstractSnapshotFutureTask.class);
+        this.log = cctx.logger(this.getClass());
         this.srcNodeId = srcNodeId;
         this.reqId = reqId;
         this.snpName = snpName;
-        this.tmpSnpWorkDir = new File(tmpWorkDir, snpName);
-        this.ioFactory = ioFactory;
         this.snpSndr = snpSndr;
         this.parts = parts;
     }
@@ -119,6 +105,13 @@ abstract class AbstractSnapshotFutureTask<T> extends GridFutureAdapter<T> {
      */
     public UUID requestId() {
         return reqId;
+    }
+
+    /**
+     * @return Set of cache groups included into snapshot operation.
+     */
+    public Set<Integer> affectedCacheGroups() {
+        return parts.keySet();
     }
 
     /**

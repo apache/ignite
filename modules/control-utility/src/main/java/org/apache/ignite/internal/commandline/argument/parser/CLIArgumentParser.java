@@ -17,34 +17,52 @@
 
 package org.apache.ignite.internal.commandline.argument.parser;
 
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.util.UUID;
-import java.util.function.Supplier;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.internal.util.GridStringBuilder;
 
 import static java.util.stream.Collectors.toSet;
+import static org.apache.ignite.internal.management.api.CommandUtils.NAME_PREFIX;
+import static org.apache.ignite.internal.management.api.CommandUtils.parseVal;
 
 /**
  * Parser for command line arguments.
  */
 public class CLIArgumentParser {
     /** */
+    private final List<CLIArgument<?>> positionalArgCfg;
+
+    /** */
     private final Map<String, CLIArgument<?>> argConfiguration = new LinkedHashMap<>();
+
+    /** */
+    private final List<Object> parsedPositionalArgs = new ArrayList<>();
 
     /** */
     private final Map<String, Object> parsedArgs = new HashMap<>();
 
     /** */
     public CLIArgumentParser(List<CLIArgument<?>> argConfiguration) {
-        for (CLIArgument<?> cliArgument : argConfiguration)
-            this.argConfiguration.put(cliArgument.name(), cliArgument);
+        this(Collections.emptyList(), argConfiguration);
+    }
+
+    /** */
+    public CLIArgumentParser(
+        List<CLIArgument<?>> positionalArgConfig,
+        List<CLIArgument<?>> argConfiguration
+    ) {
+        this.positionalArgCfg = positionalArgConfig;
+
+        for (CLIArgument<?> cliArg : argConfiguration)
+            this.argConfiguration.put(cliArg.name(), cliArg);
     }
 
     /**
@@ -57,63 +75,60 @@ public class CLIArgumentParser {
         Set<String> obligatoryArgs =
             argConfiguration.values().stream().filter(a -> !a.optional()).map(CLIArgument::name).collect(toSet());
 
+        int positionalIdx = 0;
+
         while (argsIter.hasNext()) {
             String arg = argsIter.next();
 
-            CLIArgument<?> cliArg = argConfiguration.get(arg);
+            CLIArgument<?> cliArg = argConfiguration.get(arg.toLowerCase());
 
-            if (cliArg == null)
-                throw new IgniteException("Unexpected argument: " + arg);
+            if (cliArg == null) {
+                if (positionalIdx < positionalArgCfg.size()) {
+                    cliArg = positionalArgCfg.get(positionalIdx);
 
-            if (cliArg.type().equals(Boolean.class))
-                parsedArgs.put(cliArg.name(), true);
-            else {
-                if (!argsIter.hasNext())
-                    throw new IgniteException("Please specify a value for argument: " + arg);
+                    Object val = parseVal(arg, cliArg.type());
 
-                String strVal = argsIter.next();
+                    ((CLIArgument<Object>)cliArg).validator().accept(cliArg.name(), val);
 
-                parsedArgs.put(cliArg.name(), parseVal(strVal, cliArg.type()));
+                    parsedPositionalArgs.add(val);
+
+                    positionalIdx++;
+                }
+                else
+                    throw new IllegalArgumentException("Unexpected argument: " + arg);
+
+                continue;
+            }
+            else if (parsedArgs.get(cliArg.name()) != null)
+                throw new IllegalArgumentException(cliArg.name() + " argument specified twice");
+
+            boolean bool = cliArg.type().equals(Boolean.class) || cliArg.type().equals(boolean.class);
+
+            if (!bool && !argsIter.hasNext())
+                throw new IllegalArgumentException("Please specify a value for argument: " + arg);
+
+            String strVal = bool ? "true" : argsIter.next();
+
+            if (strVal != null && strVal.startsWith(NAME_PREFIX))
+                throw new IllegalArgumentException("Unexpected value: " + strVal);
+
+            try {
+                Object val = parseVal(strVal, cliArg.type());
+
+                ((CLIArgument<Object>)cliArg).validator().accept(cliArg.name(), val);
+
+                parsedArgs.put(cliArg.name(), val);
+            }
+            catch (IllegalArgumentException e) {
+                throw new IllegalArgumentException("Failed to parse " + cliArg.name() + " command argument. "
+                    + e.getMessage());
             }
 
             obligatoryArgs.remove(cliArg.name());
         }
 
         if (!obligatoryArgs.isEmpty())
-            throw new IgniteException("Mandatory argument(s) missing: " + obligatoryArgs);
-    }
-
-    /** */
-    private <T> T parseVal(String val, Class<T> type) {
-        if (type == String.class)
-            return (T)val;
-        else if (type == String[].class)
-            return (T)val.split(",");
-        else if (type == Integer.class)
-            return (T)wrapNumberFormatException(() -> Integer.parseInt(val), val, Integer.class);
-        else if (type == Long.class)
-            return (T)wrapNumberFormatException(() -> Long.parseLong(val), val, Long.class);
-        else if (type == UUID.class)
-            return (T)UUID.fromString(val);
-
-        throw new IgniteException("Unsupported argument type: " + type.getName());
-    }
-
-    /**
-     * Wrap {@link NumberFormatException} to get more user friendly message.
-     *
-     * @param closure Closure that parses number.
-     * @param val String value.
-     * @param expectedType Expected type.
-     * @return Parsed result, if parse had success.
-     */
-    private Object wrapNumberFormatException(Supplier<Object> closure, String val, Class<? extends Number> expectedType) {
-        try {
-            return closure.get();
-        }
-        catch (NumberFormatException e) {
-            throw new NumberFormatException("Can't parse number '" + val + "', expected type: " + expectedType.getName());
-        }
+            throw new IllegalArgumentException("Mandatory argument(s) missing: " + obligatoryArgs);
     }
 
     /**
@@ -146,6 +161,20 @@ public class CLIArgumentParser {
             throw new IgniteException("No such argument: " + name);
 
         return get(arg);
+    }
+
+    /**
+     * Get parsed positional argument value.
+     *
+     * @param position Argument position.
+     * @param <T> Value type.
+     * @return Value.
+     */
+    public <T> T get(int position) {
+        if (parsedPositionalArgs.size() - 1 < position)
+            return null;
+
+        return (T)parsedPositionalArgs.get(position);
     }
 
     /**

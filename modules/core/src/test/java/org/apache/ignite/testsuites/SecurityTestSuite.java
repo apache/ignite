@@ -19,6 +19,7 @@ package org.apache.ignite.testsuites;
 
 import org.apache.ignite.internal.processors.security.IgniteSecurityProcessorTest;
 import org.apache.ignite.internal.processors.security.InvalidServerTest;
+import org.apache.ignite.internal.processors.security.NodeSecurityContextPropagationTest;
 import org.apache.ignite.internal.processors.security.cache.CacheOperationPermissionCheckTest;
 import org.apache.ignite.internal.processors.security.cache.CacheOperationPermissionCreateDestroyCheckTest;
 import org.apache.ignite.internal.processors.security.cache.ContinuousQueryPermissionCheckTest;
@@ -38,12 +39,15 @@ import org.apache.ignite.internal.processors.security.client.ThinClientPermissio
 import org.apache.ignite.internal.processors.security.client.ThinClientPermissionCheckTest;
 import org.apache.ignite.internal.processors.security.client.ThinClientSecurityContextOnRemoteNodeTest;
 import org.apache.ignite.internal.processors.security.client.ThinClientSslPermissionCheckTest;
+import org.apache.ignite.internal.processors.security.cluster.ActivationOnJoinWithoutPermissionsWithPersistenceTest;
+import org.apache.ignite.internal.processors.security.cluster.ClusterNodeOperationPermissionTest;
+import org.apache.ignite.internal.processors.security.cluster.ClusterStatePermissionTest;
+import org.apache.ignite.internal.processors.security.cluster.NodeJoinPermissionsTest;
 import org.apache.ignite.internal.processors.security.compute.ComputePermissionCheckTest;
 import org.apache.ignite.internal.processors.security.compute.closure.ComputeTaskCancelRemoteSecurityContextCheckTest;
 import org.apache.ignite.internal.processors.security.compute.closure.ComputeTaskRemoteSecurityContextCheckTest;
 import org.apache.ignite.internal.processors.security.compute.closure.DistributedClosureRemoteSecurityContextCheckTest;
 import org.apache.ignite.internal.processors.security.compute.closure.ExecutorServiceRemoteSecurityContextCheckTest;
-import org.apache.ignite.internal.processors.security.daemon.DaemonNodeBasicSecurityTest;
 import org.apache.ignite.internal.processors.security.datastreamer.DataStreamerPermissionCheckTest;
 import org.apache.ignite.internal.processors.security.datastreamer.closure.DataStreamerRemoteSecurityContextCheckTest;
 import org.apache.ignite.internal.processors.security.events.EventsRemoteSecurityContextCheckTest;
@@ -51,6 +55,7 @@ import org.apache.ignite.internal.processors.security.maintenance.MaintenanceMod
 import org.apache.ignite.internal.processors.security.messaging.MessagingRemoteSecurityContextCheckTest;
 import org.apache.ignite.internal.processors.security.sandbox.AccessToClassesInsideInternalPackageTest;
 import org.apache.ignite.internal.processors.security.sandbox.CacheSandboxTest;
+import org.apache.ignite.internal.processors.security.sandbox.CacheStoreFactorySandboxTest;
 import org.apache.ignite.internal.processors.security.sandbox.ComputeSandboxTest;
 import org.apache.ignite.internal.processors.security.sandbox.ContinuousQuerySandboxTest;
 import org.apache.ignite.internal.processors.security.sandbox.ContinuousQueryWithTransformerSandboxTest;
@@ -90,6 +95,7 @@ import org.junit.runners.Suite;
     IgniteClientContainSubjectAddressTest.class,
     ClientReconnectTest.class,
     SnapshotPermissionCheckTest.class,
+    ClusterStatePermissionTest.class,
 
     DistributedClosureRemoteSecurityContextCheckTest.class,
     ComputeTaskRemoteSecurityContextCheckTest.class,
@@ -126,13 +132,17 @@ import org.junit.runners.Suite;
     EventsSandboxTest.class,
     PrivilegedProxyTest.class,
     SchedulerSandboxTest.class,
+    CacheStoreFactorySandboxTest.class,
 
     IgniteSecurityProcessorTest.class,
     MultipleSSLContextsTest.class,
     MaintenanceModeNodeSecurityTest.class,
-    DaemonNodeBasicSecurityTest.class,
     ServiceAuthorizationTest.class,
-    ServiceStaticConfigTest.class
+    ServiceStaticConfigTest.class,
+    ClusterNodeOperationPermissionTest.class,
+    NodeSecurityContextPropagationTest.class,
+    NodeJoinPermissionsTest.class,
+    ActivationOnJoinWithoutPermissionsWithPersistenceTest.class,
 })
 public class SecurityTestSuite {
     /** */

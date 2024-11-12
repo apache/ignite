@@ -19,7 +19,6 @@ package org.apache.ignite.internal.processors.query.h2.database;
 
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.internal.cache.query.index.Index;
-import org.apache.ignite.internal.cache.query.index.sorted.inline.InlineIndex;
 import org.apache.ignite.internal.processors.query.IgniteSQLException;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2Table;
 import org.apache.ignite.internal.processors.query.h2.opt.H2CacheRow;
@@ -35,7 +34,7 @@ import org.h2.table.IndexColumn;
  */
 public class H2TreeClientIndex extends H2TreeIndexBase {
     /** */
-    private final InlineIndex clientIdx;
+    private final Index clientIdx;
 
     /**
      * @param tbl Table.
@@ -43,15 +42,10 @@ public class H2TreeClientIndex extends H2TreeIndexBase {
      * @param cols Index columns.
      * @param idxType Index type.
      */
-    public H2TreeClientIndex(InlineIndex idx, GridH2Table tbl, String name, IndexColumn[] cols, IndexType idxType) {
+    public H2TreeClientIndex(Index idx, GridH2Table tbl, String name, IndexColumn[] cols, IndexType idxType) {
         super(tbl, name, cols, idxType);
 
         clientIdx = idx;
-    }
-
-    /** {@inheritDoc} */
-    @Override public int inlineSize() {
-        return clientIdx.inlineSize();
     }
 
     /** {@inheritDoc} */

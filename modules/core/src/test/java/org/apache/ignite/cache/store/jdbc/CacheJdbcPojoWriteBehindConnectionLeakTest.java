@@ -54,7 +54,7 @@ public class CacheJdbcPojoWriteBehindConnectionLeakTest extends GridCommonAbstra
      * @return Cache configuration.
      */
     public CacheConfiguration<Integer, Person> cacheConfig() {
-        CacheConfiguration<Integer, Person> cacheConfig = new CacheConfiguration<Integer, Person>()
+        CacheConfiguration<Integer, Person> cacheCfg = new CacheConfiguration<Integer, Person>()
             .setName(DEFAULT_CACHE_NAME)
             .setAtomicityMode(CacheAtomicityMode.TRANSACTIONAL)
             .setReadThrough(true)
@@ -75,9 +75,9 @@ public class CacheJdbcPojoWriteBehindConnectionLeakTest extends GridCommonAbstra
                 .setValueFields(new JdbcTypeField(Types.VARCHAR, "name", String.class, "name"))
             );
 
-        cacheConfig.setCacheStoreFactory(cacheStoreFactory);
+        cacheCfg.setCacheStoreFactory(cacheStoreFactory);
 
-        return cacheConfig;
+        return cacheCfg;
     }
 
     /** */

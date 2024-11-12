@@ -69,7 +69,19 @@ public enum ClientBitmaskFeature implements ThinProtocolFeature {
     ALL_AFFINITY_MAPPINGS(13),
 
     /** IndexQuery. */
-    INDEX_QUERY(14);
+    INDEX_QUERY(14),
+
+    /** IndexQuery limit. */
+    INDEX_QUERY_LIMIT(15),
+
+    /** Service topology. */
+    SERVICE_TOPOLOGY(16),
+
+    /** Cache invoke/invokeAll operations. */
+    CACHE_INVOKE(17),
+
+    /** Transaction aware queries. */
+    TX_AWARE_QUERIES(18);
 
     /** */
     private static final EnumSet<ClientBitmaskFeature> ALL_FEATURES_AS_ENUM_SET =

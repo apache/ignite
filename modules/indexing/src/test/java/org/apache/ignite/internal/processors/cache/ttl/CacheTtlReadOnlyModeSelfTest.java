@@ -25,7 +25,6 @@ import java.util.stream.Stream;
 import javax.cache.expiry.AccessedExpiryPolicy;
 import javax.cache.expiry.Duration;
 import org.apache.ignite.Ignite;
-import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
@@ -108,11 +107,6 @@ public class CacheTtlReadOnlyModeSelfTest extends GridCommonAbstractTest {
         List<CacheConfiguration> newCfgs = new ArrayList<>(cfgs.length);
 
         for (CacheConfiguration cfg : cfgs) {
-            if (cfg.getAtomicityMode() == CacheAtomicityMode.TRANSACTIONAL_SNAPSHOT) {
-                // Expiry policy cannot be used with TRANSACTIONAL_SNAPSHOT.
-                continue;
-            }
-
             cfg.setExpiryPolicyFactory(AccessedExpiryPolicy.factoryOf(new Duration(SECONDS, EXPIRATION_TIMEOUT)));
             cfg.setEagerTtl(true);
 

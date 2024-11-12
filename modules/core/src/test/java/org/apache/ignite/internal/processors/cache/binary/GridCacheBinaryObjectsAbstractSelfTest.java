@@ -123,9 +123,9 @@ public abstract class GridCacheBinaryObjectsAbstractSelfTest extends GridCommonA
 
         cfg.setBinaryConfiguration(binCfg);
 
-        CacheKeyConfiguration arrayHashCfg = new CacheKeyConfiguration("ArrayHashedKey", "fld1");
+        CacheKeyConfiguration arrHashCfg = new CacheKeyConfiguration("ArrayHashedKey", "fld1");
 
-        cfg.setCacheKeyConfiguration(arrayHashCfg);
+        cfg.setCacheKeyConfiguration(arrHashCfg);
 
         GridCacheBinaryObjectsAbstractSelfTest.cfg = cfg;
 

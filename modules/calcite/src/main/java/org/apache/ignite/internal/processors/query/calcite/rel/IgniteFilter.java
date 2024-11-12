@@ -19,23 +19,40 @@ package org.apache.ignite.internal.processors.query.calcite.rel;
 
 import java.util.List;
 import java.util.Set;
-
 import com.google.common.collect.ImmutableList;
 import org.apache.calcite.plan.RelOptCluster;
 import org.apache.calcite.plan.RelOptCost;
 import org.apache.calcite.plan.RelOptPlanner;
+import org.apache.calcite.plan.RelOptUtil;
 import org.apache.calcite.plan.RelTraitSet;
+import org.apache.calcite.rel.RelDistribution;
 import org.apache.calcite.rel.RelInput;
 import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.rel.core.CorrelationId;
 import org.apache.calcite.rel.core.Filter;
 import org.apache.calcite.rel.metadata.RelMetadataQuery;
+import org.apache.calcite.rex.RexCall;
+import org.apache.calcite.rex.RexCorrelVariable;
+import org.apache.calcite.rex.RexFieldAccess;
+import org.apache.calcite.rex.RexInputRef;
 import org.apache.calcite.rex.RexNode;
+import org.apache.calcite.rex.RexUtil;
+import org.apache.calcite.rex.RexVisitor;
+import org.apache.calcite.rex.RexVisitorImpl;
+import org.apache.calcite.sql.SqlKind;
 import org.apache.calcite.util.Pair;
+import org.apache.calcite.util.Util;
+import org.apache.calcite.util.mapping.Mapping;
+import org.apache.calcite.util.mapping.MappingType;
+import org.apache.calcite.util.mapping.Mappings;
 import org.apache.ignite.internal.processors.query.calcite.metadata.cost.IgniteCost;
 import org.apache.ignite.internal.processors.query.calcite.trait.CorrelationTrait;
+import org.apache.ignite.internal.processors.query.calcite.trait.DistributionFunction;
+import org.apache.ignite.internal.processors.query.calcite.trait.IgniteDistribution;
+import org.apache.ignite.internal.processors.query.calcite.trait.IgniteDistributions;
 import org.apache.ignite.internal.processors.query.calcite.trait.TraitUtils;
 import org.apache.ignite.internal.processors.query.calcite.trait.TraitsAwareIgniteRel;
+import org.apache.ignite.internal.processors.query.calcite.util.Commons;
 import org.apache.ignite.internal.processors.query.calcite.util.RexUtils;
 
 import static org.apache.ignite.internal.processors.query.calcite.trait.TraitUtils.changeTraits;
@@ -125,11 +142,75 @@ public class IgniteFilter extends Filter implements TraitsAwareIgniteRel {
     }
 
     /** {@inheritDoc} */
-    @Override public RelOptCost computeSelfCost(RelOptPlanner planner, RelMetadataQuery mq) {
-        double rowCount = mq.getRowCount(getInput());
+    @Override public Pair<RelTraitSet, List<RelTraitSet>> passThroughDistribution(RelTraitSet nodeTraits,
+        List<RelTraitSet> inTraits) {
+        IgniteDistribution distribution = TraitUtils.distribution(nodeTraits);
 
-        return planner.getCostFactory().makeCost(rowCount,
-            rowCount * (IgniteCost.ROW_COMPARISON_COST + IgniteCost.ROW_PASS_THROUGH_COST), 0);
+        if (distribution.function().correlated()) {
+            // Check if filter contains condition with required correlate.
+            DistributionFunction.CorrelatedDistribution func = (DistributionFunction.CorrelatedDistribution)distribution.function();
+
+            RexVisitor<Void> visitor = new RexVisitorImpl<Void>(true) {
+                @Override public Void visitCorrelVariable(RexCorrelVariable variable) {
+                    if (variable.id.equals(func.correlationId()))
+                        throw new Util.FoundOne(variable);
+
+                    return null;
+                }
+            };
+
+            try {
+                condition.accept(visitor);
+            }
+            catch (Util.FoundOne corr) {
+                // Found required correlate.
+                IgniteDistribution corrDistr = func.target();
+
+                assert corrDistr.getType() == RelDistribution.Type.HASH_DISTRIBUTED;
+
+                // Remap correlate fields to input fields.
+                int corrFieldsCnt = ((RexNode)corr.getNode()).getType().getFieldCount();
+                int inputFieldsCnt = getRowType().getFieldCount();
+                Mapping mapping = Mappings.create(MappingType.PARTIAL_FUNCTION, corrFieldsCnt, inputFieldsCnt);
+
+                List<RexNode> conds = RelOptUtil.conjunctions(RexUtil.toCnf(getCluster().getRexBuilder(), condition));
+
+                for (RexNode cond : conds) {
+                    if (cond instanceof RexCall && ((RexCall)cond).getOperator().getKind() == SqlKind.EQUALS) {
+                        RexNode left = ((RexCall)cond).getOperands().get(0);
+                        RexNode right = ((RexCall)cond).getOperands().get(1);
+
+                        RexInputRef inputRef = left instanceof RexInputRef ? (RexInputRef)left :
+                            right instanceof RexInputRef ? (RexInputRef)right : null;
+
+                        RexFieldAccess fieldAccess = left instanceof RexFieldAccess ? (RexFieldAccess)left :
+                            right instanceof RexFieldAccess ? (RexFieldAccess)right : null;
+
+                        if (inputRef != null && fieldAccess != null &&
+                            fieldAccess.getReferenceExpr() instanceof RexCorrelVariable &&
+                            ((RexCorrelVariable)fieldAccess.getReferenceExpr()).id.equals(func.correlationId())
+                        )
+                            mapping.set(fieldAccess.getField().getIndex(), inputRef.getIndex());
+                    }
+                }
+
+                IgniteDistribution inputDistr = corrDistr.apply(mapping);
+
+                // Found all keys in filter conditions, replace correlated distribution with the real one.
+                if (inputDistr != IgniteDistributions.random())
+                    return Pair.of(nodeTraits, Commons.transform(inTraits, t -> t.replace(inputDistr)));
+            }
+        }
+
+        return Pair.of(nodeTraits, Commons.transform(inTraits, t -> t.replace(distribution)));
+    }
+
+    /** {@inheritDoc} */
+    @Override public RelOptCost computeSelfCost(RelOptPlanner planner, RelMetadataQuery mq) {
+        double rowCnt = mq.getRowCount(getInput());
+
+        return planner.getCostFactory().makeCost(rowCnt,
+            rowCnt * (IgniteCost.ROW_COMPARISON_COST + IgniteCost.ROW_PASS_THROUGH_COST), 0);
     }
 
     /** {@inheritDoc} */

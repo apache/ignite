@@ -312,7 +312,6 @@ The NODES view contains information about the cluster nodes.
 |CONSISTENT_ID |VARCHAR |Node's consistent ID.
 |HOSTNAMES |VARCHAR |The host names of the node.
 |IS_CLIENT |BOOLEAN |Indicates whether the node is a client.
-|IS_DAEMON |BOOLEAN |Indicates whether the node is a daemon node.
 |NODE_ID |UUID |Node ID.
 |NODE_ORDER |INT |Node order within the topology.
 |VERSION |VARCHAR |Node version.
@@ -330,6 +329,20 @@ The NODE_ATTRIBUTES view contains the attributes of all nodes.
 
 |NODE_ID |UUID |Node ID.
 |NAME |VARCHAR |Attribute name.
+
+|===
+
+== CONFIGURATION
+
+
+The CONFIGURATION view contains the configuration properties of node.
+
+[{table_opts}]
+|===
+| Column |Data Type |Description
+
+|NAME |VARCHAR |Configuration property name.
+|VALUE |VARCHAR |Configuration property value.
 
 |===
 
@@ -375,6 +388,20 @@ This view exposes information about currently opened client connections: JDBC, O
 |TYPE | string |  Type of the connection
 |USER | string |  User name
 |VERSION | string |  Protocol version
+|===
+
+== CLIENT_CONNECTION_ATTRIBUTES
+
+
+The CLIENT_CONNECTION_ATTRIBUTES view exposes user defined attributes of client connections (thin, JDBC, ODBC). Attributes for the connection are provided by clients. For example, attributes for java thin client can be specified using `ClientConfiguration.setUserAttributes` method.
+
+[{table_opts}]
+|===
+| Column | Data Type | Description
+| CONNECTION_ID | long | ID of the connection
+| NAME | VARCHAR | Name of the attribute
+| VALUE | VARCHAR | Attribute value
+
 |===
 
 == STRIPED_THREADPOOL_QUEUE
@@ -618,8 +645,9 @@ This view exposes information about SQL views.
 [{table_opts}]
 |===
 |NAME | TYPE |    DESCRIPTION
-|NAME | string |  Name
 |SCHEMA | string |  Schema
+|NAME | string |  Name
+|SQL | string | SQL query for view
 |DESCRIPTION | string |  Description
 |===
 
@@ -684,6 +712,7 @@ and also helps to detect skews in page lists utilization.
 |BUCKET_SIZE | long  |  Count of pages in the bucket
 |STRIPES_COUNT |   int| Count of stripes used by this bucket. Stripes are used to avoid contention.
 |CACHED_PAGES_COUNT |  int| Count of pages in an on-heap page list cache for this bucket.
+|PAGE_FREE_SPACE | int | Free space (in bytes) available to use for each page in this bucket.
 |===
 
 === DATA_REGION_PAGE_LISTS
@@ -696,6 +725,7 @@ and also helps to detect skews in page lists utilization.
 |BUCKET_SIZE | long  |  Count of pages in the bucket
 |STRIPES_COUNT |   int| Count of stripes used by this bucket. Stripes are used to avoid contention.
 |CACHED_PAGES_COUNT |  int| Count of pages in an on-heap page list cache for this bucket.
+|PAGE_FREE_SPACE | int | Free space (in bytes) available to use for each page in this bucket.
 |===
 
 == PARTITION_STATES
@@ -731,6 +761,17 @@ This view exposes information about all available binary types.
 == METASTORAGE
 
 This view exposes the contents of the metastorage cache.
+
+[{table_opts}]
+|===
+|Column | Data type |  Description
+|NAME | string | Name
+|VALUE | string | String or raw binary (if data could not be deserialized for some reason) representation of an element
+|===
+
+== DISTRIBUTED_METASTORAGE
+
+This view exposes the contents of the distributed metastorage cache.
 
 [{table_opts}]
 |===
@@ -965,4 +1006,8 @@ The SNAPSHOT view exposes information about local snapshots.
 | CONSISTENT_ID | VARCHAR | Consistent ID of a node to which snapshot data relates.
 | BASELINE_NODES | VARCHAR | Baseline nodes affected by the snapshot.
 | CACHE_GROUPS | VARCHAR | Cache group names that were included in the snapshot.
+| SNAPSHOT_RECORD_SEGMENT | BIGINT | Index of WAL segment containing snapshot's WAL record.
+| INCREMENT_INDEX | INTEGER | Incremental snapshot index.
+| TYPE | VARCHAR | Type of snapshot - full or incremental.
+| SNAPSHOT_TIME | BIGINT | Snapshot creation time.
 |===

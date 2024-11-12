@@ -77,13 +77,13 @@ public class FastSessionMoveAndKeyCancellationTest extends GridCommonAbstractTes
     @Test
     @WithSystemProperty(key = GridNioServer.IGNITE_IO_BALANCE_RANDOM_BALANCE, value = "true")
     public void quickSessionMovingBetweenWorkersShouldNotTriggerCancelledKeyException() throws Exception {
-        CountDownLatch failureLogMessagesLatch = new CountDownLatch(2);
+        CountDownLatch failureLogMsgsLatch = new CountDownLatch(2);
 
         logger.registerListener(
             message -> {
                 if (message.contains("Caught unhandled exception in NIO worker thread")
                     || message.contains("java.nio.channels.CancelledKeyException")) {
-                    failureLogMessagesLatch.countDown();
+                    failureLogMsgsLatch.countDown();
                 }
             }
         );
@@ -92,13 +92,13 @@ public class FastSessionMoveAndKeyCancellationTest extends GridCommonAbstractTes
             IgniteEx ignite = startGrid(1);
             IgniteClient client1 = startClient()
         ) {
-            IgniteInternalFuture<?> clientJobsFuture = multithreadedAsync(new ReconnectConstantly(), 2);
+            IgniteInternalFuture<?> clientJobsFut = multithreadedAsync(new ReconnectConstantly(), 2);
 
             try {
-                assertFalse("CancelledKeyException was thrown", failureLogMessagesLatch.await(1, TimeUnit.MINUTES));
+                assertFalse("CancelledKeyException was thrown", failureLogMsgsLatch.await(1, TimeUnit.MINUTES));
             }
             finally {
-                clientJobsFuture.cancel();
+                clientJobsFut.cancel();
             }
         }
     }

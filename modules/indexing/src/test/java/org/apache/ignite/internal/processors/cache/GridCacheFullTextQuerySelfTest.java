@@ -289,14 +289,14 @@ public class GridCacheFullTextQuerySelfTest extends GridCommonAbstractTest {
 
         Affinity<Integer> aff = cache.affinity();
 
-        ClusterNode localNode = cache.context().localNode();
+        ClusterNode locNode = cache.context().localNode();
 
         for (int i = 0; i < cnt; i++) {
             int val = rand.nextInt(cnt);
 
             cache.put(val, new Person(String.valueOf(val), val));
 
-            if (expectedEntryFilter.apply(val) && (!loc || aff.isPrimary(localNode, val)))
+            if (expectedEntryFilter.apply(val) && (!loc || aff.isPrimary(locNode, val)))
                 exp.add(val);
         }
 

@@ -372,19 +372,14 @@ public class GridCacheDeploymentManager<K, V> extends GridCacheSharedManagerAdap
                 return;
             }
 
-            boolean daemon = node.isDaemon();
-
             // Always output in debug.
             if (log.isDebugEnabled())
                 log.debug("Ignoring deployment in PRIVATE or ISOLATED mode [sndId=" + sndId + ", ldrId=" + ldrId +
-                    ", userVer=" + userVer + ", mode=" + mode + ", participants=" + participants +
-                    ", daemon=" + daemon + ']');
+                    ", userVer=" + userVer + ", mode=" + mode + ", participants=" + participants + ']');
 
-            if (!daemon) {
-                LT.warn(log, "Ignoring deployment in PRIVATE or ISOLATED mode " +
-                    "[sndId=" + sndId + ", ldrId=" + ldrId + ", userVer=" + userVer + ", mode=" + mode +
-                    ", participants=" + participants + ", daemon=" + daemon + ']');
-            }
+            LT.warn(log, "Ignoring deployment in PRIVATE or ISOLATED mode " +
+                "[sndId=" + sndId + ", ldrId=" + ldrId + ", userVer=" + userVer + ", mode=" + mode +
+                ", participants=" + participants + ']');
 
             return;
         }
@@ -641,9 +636,9 @@ public class GridCacheDeploymentManager<K, V> extends GridCacheSharedManagerAdap
         if (cctx.gridConfig().getDeploymentMode() == CONTINUOUS)
             return null;
 
-        IgniteUuid localLdrId0 = localLdrId.get();
+        IgniteUuid locLdrId0 = localLdrId.get();
 
-        if (localLdrId0 != null) {
+        if (locLdrId0 != null) {
             GridDeploymentInfoBean deploymentInfoBean = getDepBean(deps.get(localLdrId.get()));
 
             if (deploymentInfoBean != null)

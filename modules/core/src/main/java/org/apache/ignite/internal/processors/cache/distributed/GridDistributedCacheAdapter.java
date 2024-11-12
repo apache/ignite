@@ -62,7 +62,7 @@ import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionState.OWNING;
-import static org.apache.ignite.internal.processors.task.GridTaskThreadContextKey.TC_SUBGRID;
+import static org.apache.ignite.internal.processors.task.TaskExecutionOptions.options;
 
 /**
  * Distributed cache implementation.
@@ -184,10 +184,11 @@ public abstract class GridDistributedCacheAdapter<K, V> extends GridCacheAdapter
                 Collection<ClusterNode> nodes = ctx.grid().cluster().forDataNodes(name()).nodes();
 
                 if (!nodes.isEmpty()) {
-                    ctx.kernalContext().task().setThreadContext(TC_SUBGRID, nodes);
-
                     retry = !ctx.kernalContext().task().execute(
-                        new RemoveAllTask(ctx.name(), topVer, skipStore, keepBinary), null).get();
+                        new RemoveAllTask(ctx.name(), topVer, skipStore, keepBinary),
+                        null,
+                        options(nodes)
+                    ).get();
                 }
             }
             while (ctx.affinity().affinityTopologyVersion().compareTo(topVer) != 0 || retry);
@@ -225,10 +226,11 @@ public abstract class GridDistributedCacheAdapter<K, V> extends GridCacheAdapter
         Collection<ClusterNode> nodes = ctx.grid().cluster().forDataNodes(name()).nodes();
 
         if (!nodes.isEmpty()) {
-            ctx.kernalContext().task().setThreadContext(TC_SUBGRID, nodes);
-
             IgniteInternalFuture<Boolean> rmvAll = ctx.kernalContext().task().execute(
-                new RemoveAllTask(ctx.name(), topVer, skipStore, keepBinary), null);
+                new RemoveAllTask(ctx.name(), topVer, skipStore, keepBinary),
+                null,
+                options(nodes)
+            );
 
             rmvAll.listen(new IgniteInClosure<IgniteInternalFuture<Boolean>>() {
                 @Override public void apply(IgniteInternalFuture<Boolean> fut) {
@@ -482,12 +484,12 @@ public abstract class GridDistributedCacheAdapter<K, V> extends GridCacheAdapter
                             IgniteInternalFuture<Boolean> lastFut = ctx.lastRemoveAllJobFut().get();
 
                             if (lastFut != locFut) {
-                                lastFut.listen((IgniteInClosure<IgniteInternalFuture<Boolean>>)fut -> {
+                                lastFut.listen(() -> {
                                     if (lastFut.error() != null)
                                         locFut.onDone(lastFut.error());
                                     else {
                                         try {
-                                            completeWithResult(fut.get());
+                                            completeWithResult(lastFut.get());
                                         }
                                         catch (IgniteCheckedException ignored) {
                                             // Should be never thrown.

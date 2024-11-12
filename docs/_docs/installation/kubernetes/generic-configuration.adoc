@@ -159,9 +159,7 @@ include::{script}[tags=create-configmap]
 
 === Creating Pod Configuration
 
-Now we will create a configuration for pods.
-In the case of stateless deployment, we will use a link:https://kubernetes.io/docs/concepts/workloads/controllers/deployment/[Deployment,window=_blank].
-For a stateful deployment, we will use a link:https://kubernetes.io/docs/concepts/workloads/controllers/statefulset/[StatefulSet,window=_blank].
+Now we create a configuration for pods that use a link:https://kubernetes.io/docs/concepts/workloads/controllers/statefulset/[StatefulSet,window=_blank].
 
 
 [tabs]
@@ -181,7 +179,7 @@ In the container's configuration, we will:
 ** 10800 — thin client/JDBC/ODBC port
 ** 8080 — REST API port
 
-The deployment configuration file might look like as follows:
+The configuration file might look like as follows:
 
 .deployment.yaml
 [source, yaml,subs="attributes,specialchars"]
@@ -284,6 +282,16 @@ $ {command} logs ignite-cluster-5b69557db6-lcglw -n ignite
 ----
 
 The string `servers=2` in the last line indicates that the two nodes joined into a single cluster.
+
+=== Readiness Probe Setup
+
+To set up a readiness probe uncomment the relevant section inside the yaml definitions
+below. A special REST command (link:restapi#probe[PROBE]) is used to determine when an Ignite Kernal has started.
+
+=== Liveness Probe
+
+To set up a liveness probe uncomment the relevant section inside the yaml definitions
+below. The REST command (link:restapi#version[VERSION]) is used to verify that Ignite is running properly.
 
 == Activating the Cluster
 

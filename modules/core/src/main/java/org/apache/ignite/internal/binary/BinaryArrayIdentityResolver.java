@@ -50,30 +50,29 @@ public class BinaryArrayIdentityResolver extends BinaryAbstractIdentityResolver 
 
     /** {@inheritDoc} */
     @Override protected int hashCode0(BinaryObject obj) {
-        int hash = 1;
-
         if (obj instanceof BinaryObjectExImpl) {
             BinaryObjectExImpl ex = (BinaryObjectExImpl)obj;
 
             int start = ex.dataStartOffset();
             int end = ex.footerStartOffset();
 
-            if (ex.hasArray()) {
-                // Handle heap object.
-                byte[] data = ex.array();
-
-                for (int i = start; i < end; i++)
-                    hash = 31 * hash + data[i];
-            }
+            if (ex.hasArray())
+                return hashCode(ex.array(), start, end);
             else {
                 // Handle offheap object.
+                int hash = 1;
+
                 long ptr = ex.offheapAddress();
 
                 for (int i = start; i < end; i++)
                     hash = 31 * hash + BinaryPrimitives.readByte(ptr, i);
+
+                return hash;
             }
         }
         else if (obj instanceof BinaryEnumObjectImpl) {
+            int hash = 1;
+
             int ord = obj.enumOrdinal();
 
             // Construct hash as if it was an int serialized in little-endian form.
@@ -81,10 +80,20 @@ public class BinaryArrayIdentityResolver extends BinaryAbstractIdentityResolver 
             hash = 31 * hash + (ord & 0x0000FF00);
             hash = 31 * hash + (ord & 0x00FF0000);
             hash = 31 * hash + (ord & 0xFF000000);
+
+            return hash;
         }
         else
             throw new BinaryObjectException("Array identity resolver cannot be used with provided BinaryObject " +
                 "implementation: " + obj.getClass().getName());
+    }
+
+    /** */
+    public int hashCode(byte[] data, int startPos, int endPos) {
+        int hash = 1;
+
+        for (int i = startPos; i < endPos; i++)
+            hash = 31 * hash + data[i];
 
         return hash;
     }

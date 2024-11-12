@@ -58,7 +58,7 @@ public class PlatformCacheManager implements GridCacheManager {
         GridCacheContext ctx = cctx;
 
         if (ctx != null) {
-            gate.onCacheStopped(cctx.cacheId());
+            gate.onCacheStopped(cctx.cacheId(), cancel, destroy);
             cctx = null;
         }
     }

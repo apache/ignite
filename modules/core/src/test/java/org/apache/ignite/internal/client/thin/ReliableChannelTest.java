@@ -17,12 +17,15 @@
 
 package org.apache.ignite.internal.client.thin;
 
+import java.net.InetSocketAddress;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.HashSet;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Queue;
+import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -77,7 +80,7 @@ public class ReliableChannelTest {
 
     /**
      * Checks that in case if address specified without port, the default port will be processed first
-     * */
+     */
     @Test
     public void testAddressWithoutPort() {
         ClientConfiguration ccfg = new ClientConfiguration().setAddresses("127.0.0.1");
@@ -88,28 +91,41 @@ public class ReliableChannelTest {
 
         assertEquals(ClientConnectorConfiguration.DFLT_PORT_RANGE + 1, rc.getChannelHolders().size());
 
-        assertEquals(ClientConnectorConfiguration.DFLT_PORT, rc.getChannelHolders().iterator().next().getAddress().getPort());
+        assertEquals(ClientConnectorConfiguration.DFLT_PORT,
+            F.first(F.first(rc.getChannelHolders()).getAddresses()).getPort());
+
+        assertEquals(0, rc.getCurrentChannelIndex());
     }
 
     /**
-     * Checks that ReliableChannel provides channels in the same order as in ClientConfiguration.
-     * */
+     * Checks that ReliableChannel chooses random address as default from the set of addresses with the same (minimal) port.
+     */
     @Test
-    public void testAddressesOrder() {
-        String[] addrs = new String[] {"127.0.0.1:10803", "127.0.0.1:10802", "127.0.0.1:10801", "127.0.0.1:10800"};
+    public void testDefaultChannelBalancing() {
+        assertEquals(new HashSet<>(F.asList("127.0.0.2:10800", "127.0.0.3:10800", "127.0.0.4:10800")),
+            usedDefaultChannels("127.0.0.1:10801..10809", "127.0.0.2", "127.0.0.3:10800", "127.0.0.4:10800..10809"));
 
+        assertEquals(new HashSet<>(F.asList("127.0.0.1:10800", "127.0.0.2:10800", "127.0.0.3:10800", "127.0.0.4:10800")),
+            usedDefaultChannels("127.0.0.1:10800", "127.0.0.2:10800", "127.0.0.3:10800", "127.0.0.4:10800"));
+    }
+
+    /** */
+    private Set<String> usedDefaultChannels(String... addrs) {
         ClientConfiguration ccfg = new ClientConfiguration().setAddresses(addrs);
 
-        ReliableChannel rc = new ReliableChannel(chFactory, ccfg, null);
+        Set<String> usedChannels = new HashSet<>();
 
-        rc.channelsInit();
+        for (int i = 0; i < 100; i++) {
+            ReliableChannel rc = new ReliableChannel(chFactory, ccfg, null);
 
-        List<ReliableChannel.ClientChannelHolder> holders = rc.getChannelHolders();
+            rc.channelsInit();
 
-        assertEquals(addrs.length, holders.size());
+            InetSocketAddress addr = F.first(rc.getChannelHolders().get(rc.getCurrentChannelIndex()).getAddresses());
 
-        for (int i = 0; i < addrs.length; i++)
-            assertEquals(addrs[i], holders.get(i).getAddress().toString());
+            usedChannels.add(addr.toString().replace("/<unresolved>", "")); // Remove unnecessary part on JDK 17.
+        }
+
+        return usedChannels;
     }
 
     /**
@@ -130,15 +146,15 @@ public class ReliableChannelTest {
         ClientConfiguration ccfg = new ClientConfiguration().setAddressesFinder(finder);
         ReliableChannel rc = new ReliableChannel(chFactory, ccfg, null);
 
-        Supplier<List<String>> holderAddresses = () -> rc.getChannelHolders().stream()
-            .map(h -> h.getAddress().toString())
+        Supplier<List<String>> holderAddrs = () -> rc.getChannelHolders().stream()
+            .map(h -> F.first(h.getAddresses()).toString().replace("/<unresolved>", "")) // Replace unnecessary part on JDK 17.
             .sorted()
             .collect(Collectors.toList());
 
         Consumer<List<String>> assertAddrReInitAndEqualsTo = (addrs) -> {
             rc.channelsInit();
 
-            assertEquals(addrs, holderAddresses.get());
+            assertEquals(addrs, holderAddrs.get());
         };
 
         assertAddrReInitAndEqualsTo.accept(Arrays.asList("127.0.0.1:10800", "127.0.0.1:10801", "127.0.0.1:10802"));
@@ -391,7 +407,7 @@ public class ReliableChannelTest {
 
         /** {@inheritDoc} */
         @Override public ProtocolContext protocolCtx() {
-            return null;
+            return new ProtocolContext(ProtocolVersion.LATEST_VER, null);
         }
 
         /** {@inheritDoc} */

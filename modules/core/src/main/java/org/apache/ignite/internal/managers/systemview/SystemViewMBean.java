@@ -20,6 +20,7 @@ package org.apache.ignite.internal.managers.systemview;
 import java.math.BigDecimal;
 import java.math.BigInteger;
 import java.net.InetSocketAddress;
+import java.util.AbstractMap;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.HashMap;
@@ -289,7 +290,7 @@ public class SystemViewMBean<R> extends ReadOnlyDynamicMBean {
             else if (clazz.isAssignableFrom(Class.class))
                 data.put(name, ((Class<?>)val).getName());
             else if (clazz.isAssignableFrom(IgniteUuid.class) || clazz.isAssignableFrom(UUID.class) ||
-                clazz.isAssignableFrom(InetSocketAddress.class))
+                clazz.isAssignableFrom(InetSocketAddress.class) || clazz.isAssignableFrom(AbstractMap.class))
                 data.put(name, String.valueOf(val));
             else
                 data.put(name, val);

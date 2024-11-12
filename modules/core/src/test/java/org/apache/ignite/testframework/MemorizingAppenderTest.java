@@ -66,13 +66,13 @@ public class MemorizingAppenderTest {
     public void memorizesLoggingEvents() {
         LogManager.getLogger(MemorizingAppenderTest.class).info("Hello!");
 
-        List<LogEvent> events = appender.events();
+        List<LogEvent> evts = appender.events();
 
-        assertThat(events, hasSize(1));
+        assertThat(evts, hasSize(1));
 
-        LogEvent event = events.get(0);
+        LogEvent evt = evts.get(0);
 
-        assertThat(event.getLevel(), is(Level.INFO));
-        assertThat(event.getMessage().getFormattedMessage(), is("Hello!"));
+        assertThat(evt.getLevel(), is(Level.INFO));
+        assertThat(evt.getMessage().getFormattedMessage(), is("Hello!"));
     }
 }

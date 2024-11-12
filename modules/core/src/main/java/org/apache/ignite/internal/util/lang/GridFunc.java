@@ -3012,7 +3012,7 @@ public class GridFunc {
             V v2 = m2.get(e.getKey());
 
             if (v1 == v2)
-                return true;
+                continue;
 
             if (v1 == null || v2 == null)
                 return false;
@@ -3027,7 +3027,7 @@ public class GridFunc {
                         return false;
                 }
                 else {
-                    if (!eq(v1, v2))
+                    if (!(v1.getClass().isArray() ? arrayEq(v1, v2) : eq(v1, v2)))
                         return false;
                 }
             }
@@ -3170,6 +3170,22 @@ public class GridFunc {
      * @return {@code True} if array sorted, {@code false} otherwise.
      */
     public static boolean isSorted(long[] arr) {
+        if (isEmpty(arr) || arr.length == 1)
+            return true;
+
+        for (int i = 1; i < arr.length; i++) {
+            if (arr[i - 1] > arr[i])
+                return false;
+        }
+
+        return true;
+    }
+
+    /**
+     * @param arr Array to check.
+     * @return {@code True} if array sorted, {@code false} otherwise.
+     */
+    public static boolean isSorted(int[] arr) {
         if (isEmpty(arr) || arr.length == 1)
             return true;
 

@@ -19,6 +19,7 @@ package org.apache.ignite.client;
 
 import java.util.Collection;
 import java.util.Set;
+import javax.cache.processor.EntryProcessor;
 import org.apache.ignite.cache.query.ContinuousQuery;
 import org.apache.ignite.cache.query.Query;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
@@ -150,6 +151,16 @@ public enum ClientOperationType {
      * Get and put if absent ({@link ClientCache#getAndPutIfAbsent(Object, Object)}).
      */
     CACHE_GET_AND_PUT_IF_ABSENT,
+
+    /**
+     * Get and put if absent ({@link ClientCache#invoke(Object, EntryProcessor, Object...)}).
+     */
+    CACHE_INVOKE,
+
+    /**
+     * Get and put if absent ({@link ClientCache#invokeAll(Set, EntryProcessor, Object...)}).
+     */
+    CACHE_INVOKE_ALL,
 
     /**
      * Scan query ({@link ClientCache#query(Query)}).

@@ -30,6 +30,7 @@ from ignitetest.services.utils.ignite_configuration.binary_configuration import 
 from ignitetest.services.utils.ignite_configuration.transaction import TransactionConfiguration
 from ignitetest.services.utils.ssl.ssl_params import SslParams, is_ssl_enabled, get_ssl_params, IGNITE_CLIENT_ALIAS, \
     IGNITE_SERVER_ALIAS
+from ignitetest.utils.bean import Bean
 from ignitetest.utils.version import IgniteVersion, DEV_BRANCH
 
 
@@ -72,8 +73,9 @@ class IgniteConfiguration(NamedTuple):
     sql_schemas: list = []
     auto_activation_enabled: bool = None
     transaction_configuration: TransactionConfiguration = None
+    sql_configuration: Bean = None
 
-    def __prepare_ssl(self, test_globals, shared_root):
+    def prepare_ssl(self, test_globals, shared_root):
         """
         Updates ssl configuration from globals.
         """
@@ -112,7 +114,7 @@ class IgniteConfiguration(NamedTuple):
         """
         Updates configuration based on current environment.
         """
-        return self.__prepare_ssl(cluster.globals, cluster.shared_root).__prepare_discovery(cluster, node)
+        return self.__prepare_discovery(cluster, node)
 
     @property
     def service_type(self):
@@ -133,13 +135,15 @@ class IgniteThinClientConfiguration(NamedTuple):
     """
     Thin client configuration.
     """
-    addresses: str = None
+    addresses: list = []
     version: IgniteVersion = DEV_BRANCH
     ssl_params: SslParams = None
     username: str = None
     password: str = None
+    ext_beans: list = []
+    partition_awareness_enabled: bool = None
 
-    def __prepare_ssl(self, test_globals, shared_root):
+    def prepare_ssl(self, test_globals, shared_root):
         """
         Updates ssl configuration from globals.
         """
@@ -154,7 +158,7 @@ class IgniteThinClientConfiguration(NamedTuple):
         """
         Updates configuration based on current environment.
         """
-        return self.__prepare_ssl(cluster.globals, cluster.shared_root)
+        return self
 
     @property
     def service_type(self):
@@ -162,3 +166,35 @@ class IgniteThinClientConfiguration(NamedTuple):
         Application mode.
         """
         return IgniteServiceType.THIN_CLIENT
+
+
+class IgniteThinJdbcConfiguration(NamedTuple):
+    addresses: list = []
+    version: IgniteVersion = DEV_BRANCH
+    ssl_params: SslParams = None
+    username: str = None
+    password: str = None
+
+    def prepare_ssl(self, test_globals, shared_root):
+        """
+        Updates ssl configuration from globals.
+        """
+        ssl_params = None
+        if self.ssl_params is None and is_ssl_enabled(test_globals):
+            ssl_params = get_ssl_params(test_globals, shared_root, IGNITE_CLIENT_ALIAS)
+        if ssl_params:
+            return self._replace(ssl_params=ssl_params)
+        return self
+
+    def prepare_for_env(self, cluster, node):
+        """
+        Updates configuration based on current environment.
+        """
+        return self
+
+    @property
+    def service_type(self):
+        """
+        Application mode.
+        """
+        return IgniteServiceType.THIN_JDBC

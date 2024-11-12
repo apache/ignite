@@ -63,6 +63,18 @@ public class LimitOffsetPlannerTest extends AbstractPlannerTest {
 
     /** */
     @Test
+    public void testNestedLimitOffsetWithUnion() throws Exception {
+        IgniteSchema publicSchema = createSchemaWithTable(IgniteDistributions.random());
+
+        assertPlan("(SELECT ID FROM TEST WHERE ID = 2) UNION ALL " +
+                "SELECT ID FROM (SELECT ID from (SELECT ID FROM TEST OFFSET 20) ORDER BY ID OFFSET 10)",
+            publicSchema,
+            nodeOrAnyChild(isInstanceOf(IgniteLimit.class).and(l -> doubleFromRex(l.offset(), -1) == 10d))
+        );
+    }
+
+    /** */
+    @Test
     public void testEstimateRows() throws Exception {
         IgniteSchema publicSchema = createSchemaWithTable(IgniteDistributions.random());
 
@@ -77,6 +89,12 @@ public class LimitOffsetPlannerTest extends AbstractPlannerTest {
         assertPlan("SELECT * FROM TEST ORDER BY ID OFFSET 60", publicSchema,
             nodeOrAnyChild(isInstanceOf(IgniteLimit.class)
                 .and(l -> l.getCluster().getMetadataQuery().getRowCount(l) == ROW_CNT - 60d)));
+
+        assertPlan("SELECT * FROM TEST ORDER BY ID LIMIT 1 OFFSET " + ROW_CNT * 2, publicSchema,
+            nodeOrAnyChild(isInstanceOf(IgniteLimit.class)
+                // Estimated row count returned by IgniteLimit node is 0, but after validation it becomes 1
+                // if it less than 1.
+                .and(l -> l.getCluster().getMetadataQuery().getRowCount(l) == 1)));
     }
 
     /** */

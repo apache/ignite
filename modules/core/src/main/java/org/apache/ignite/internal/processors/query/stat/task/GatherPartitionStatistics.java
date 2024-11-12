@@ -154,8 +154,7 @@ public class GatherPartitionStatistics implements Callable<ObjectPartitionStatis
     private ObjectPartitionStatisticsImpl processPartition(
         GridCacheContext<?, ?> cctx
     ) {
-        ObjectPartitionStatisticsImpl partStat = statRepo.getLocalPartitionStatistics(
-            gathCtx.configuration().key(), partId);
+        ObjectPartitionStatisticsImpl partStat = statRepo.getLocalPartitionStatistics(gathCtx.configuration().key(), partId);
 
         Map<String, StatisticsColumnConfiguration> colsToCollect = getColumnsToCollect(partStat);
         Set<String> colsToRemove = getColumnsToRemove(partStat);
@@ -266,7 +265,7 @@ public class GatherPartitionStatistics implements Callable<ObjectPartitionStatis
                 GridQueryRowDescriptor rowDesc = new GridQueryRowDescriptorImpl(gathCtx.cacheContextInfo(), tbl);
 
                 for (CacheDataRow row : grp.offheap().cachePartitionIterator(gathCtx.cacheContextInfo().cacheId(), partId,
-                    null, false)) {
+                    false)) {
                     if (--checkInt == 0) {
                         if (gathCtx.future().isCancelled())
                             throw new GatherStatisticCancelException();

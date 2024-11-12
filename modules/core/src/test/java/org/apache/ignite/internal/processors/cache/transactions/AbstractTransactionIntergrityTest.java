@@ -37,6 +37,7 @@ import org.apache.ignite.cache.affinity.Affinity;
 import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
 import org.apache.ignite.cache.query.annotations.QuerySqlField;
 import org.apache.ignite.cluster.ClusterNode;
+import org.apache.ignite.cluster.ClusterState;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
@@ -206,7 +207,7 @@ public class AbstractTransactionIntergrityTest extends GridCommonAbstractTest {
 
         IgniteEx igniteClient = startClientGrid(getConfiguration(getTestIgniteInstanceName(nodesCount())));
 
-        igniteClient.cluster().active(true);
+        igniteClient.cluster().state(ClusterState.ACTIVE);
 
         int[] initAmounts = new int[txThreadsCount()];
         completedTxs = new ConcurrentLinkedHashMap[txThreadsCount()];
@@ -538,12 +539,12 @@ public class AbstractTransactionIntergrityTest extends GridCommonAbstractTest {
                 if (accIdFrom == accIdTo)
                     continue;
 
-                Affinity<Object> affinity = ignite.affinity(cacheName);
+                Affinity<Object> aff = ignite.affinity(cacheName);
 
-                ClusterNode primaryForAccFrom = affinity.mapKeyToNode(accIdFrom);
+                ClusterNode primaryForAccFrom = aff.mapKeyToNode(accIdFrom);
                 assertNotNull(primaryForAccFrom);
 
-                ClusterNode primaryForAccTo = affinity.mapKeyToNode(accIdTo);
+                ClusterNode primaryForAccTo = aff.mapKeyToNode(accIdTo);
                 assertNotNull(primaryForAccTo);
 
                 // Allows only transaction between accounts that primary on the same node if corresponding flag is enabled.

@@ -18,26 +18,37 @@
 package org.apache.ignite.internal.processors.query.calcite.exec;
 
 import java.lang.reflect.Type;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Consumer;
+import java.util.function.Function;
 import org.apache.calcite.DataContext;
 import org.apache.calcite.linq4j.QueryProvider;
 import org.apache.calcite.schema.SchemaPlus;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
-import org.apache.ignite.internal.processors.cache.mvcc.MvccSnapshot;
+import org.apache.ignite.internal.processors.cache.CacheObject;
+import org.apache.ignite.internal.processors.cache.KeyCacheObject;
+import org.apache.ignite.internal.processors.cache.persistence.CacheDataRow;
+import org.apache.ignite.internal.processors.cache.persistence.CacheDataRowAdapter;
+import org.apache.ignite.internal.processors.cache.transactions.IgniteTxEntry;
 import org.apache.ignite.internal.processors.query.calcite.exec.exp.ExpressionFactory;
 import org.apache.ignite.internal.processors.query.calcite.exec.exp.ExpressionFactoryImpl;
 import org.apache.ignite.internal.processors.query.calcite.exec.tracker.ExecutionNodeMemoryTracker;
+import org.apache.ignite.internal.processors.query.calcite.exec.tracker.IoTracker;
 import org.apache.ignite.internal.processors.query.calcite.exec.tracker.MemoryTracker;
-import org.apache.ignite.internal.processors.query.calcite.exec.tracker.NoOpMemoryTracker;
-import org.apache.ignite.internal.processors.query.calcite.exec.tracker.NoOpRowTracker;
 import org.apache.ignite.internal.processors.query.calcite.exec.tracker.RowTracker;
+import org.apache.ignite.internal.processors.query.calcite.message.QueryTxEntry;
 import org.apache.ignite.internal.processors.query.calcite.metadata.ColocationGroup;
 import org.apache.ignite.internal.processors.query.calcite.metadata.FragmentDescription;
 import org.apache.ignite.internal.processors.query.calcite.prepare.AbstractQueryContext;
@@ -47,7 +58,12 @@ import org.apache.ignite.internal.processors.query.calcite.type.IgniteTypeFactor
 import org.apache.ignite.internal.processors.query.calcite.util.Commons;
 import org.apache.ignite.internal.processors.query.calcite.util.TypeUtils;
 import org.apache.ignite.internal.util.lang.RunnableX;
+import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.internal.util.typedef.internal.CU;
+import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.lang.IgniteBiTuple;
 import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.internal.processors.query.calcite.util.Commons.checkRange;
 
@@ -98,6 +114,18 @@ public class ExecutionContext<Row> extends AbstractQueryContext implements DataC
     private final MemoryTracker qryMemoryTracker;
 
     /** */
+    private final IoTracker ioTracker;
+
+    /** */
+    private final long timeout;
+
+    /** */
+    private final Collection<QueryTxEntry> qryTxEntries;
+
+    /** */
+    private final long startTs;
+
+    /** */
     private Object[] correlations = new Object[16];
 
     /**
@@ -117,7 +145,10 @@ public class ExecutionContext<Row> extends AbstractQueryContext implements DataC
         FragmentDescription fragmentDesc,
         RowHandler<Row> handler,
         MemoryTracker qryMemoryTracker,
-        Map<String, Object> params
+        IoTracker ioTracker,
+        long timeout,
+        Map<String, Object> params,
+        @Nullable Collection<QueryTxEntry> qryTxEntries
     ) {
         super(qctx);
 
@@ -129,7 +160,12 @@ public class ExecutionContext<Row> extends AbstractQueryContext implements DataC
         this.fragmentDesc = fragmentDesc;
         this.handler = handler;
         this.qryMemoryTracker = qryMemoryTracker;
+        this.ioTracker = ioTracker;
         this.params = params;
+        this.timeout = timeout;
+        this.qryTxEntries = qryTxEntries;
+
+        startTs = U.currentTimeMillis();
 
         baseDataContext = new BaseDataContext(qctx.typeFactory());
 
@@ -177,13 +213,6 @@ public class ExecutionContext<Row> extends AbstractQueryContext implements DataC
      */
     public boolean keepBinary() {
         return true; // TODO
-    }
-
-    /**
-     * @return MVCC snapshot.
-     */
-    public MvccSnapshot mvccSnapshot() {
-        return null; // TODO
     }
 
     /**
@@ -283,6 +312,84 @@ public class ExecutionContext<Row> extends AbstractQueryContext implements DataC
     }
 
     /**
+     * @return Transaction write map.
+     */
+    public Collection<QueryTxEntry> getQryTxEntries() {
+        return qryTxEntries;
+    }
+
+    /** */
+    public static Collection<QueryTxEntry> transactionChanges(
+        Collection<IgniteTxEntry> writeEntries
+    ) {
+        if (F.isEmpty(writeEntries))
+            return null;
+
+        Collection<QueryTxEntry> res = new ArrayList<>();
+
+        for (IgniteTxEntry e : writeEntries) {
+            CacheObject val = e.value();
+
+            if (!F.isEmpty(e.entryProcessors()))
+                val = e.applyEntryProcessors(val);
+
+            res.add(new QueryTxEntry(e.cacheId(), e.key(), val, e.explicitVersion()));
+        }
+
+        return res;
+    }
+
+    /**
+     * @param cacheId Cache id.
+     * @param parts Partitions set.
+     * @param mapper Mapper to specific data type.
+     * @return First, set of object changed in transaction, second, list of transaction data in required format.
+     * @param <R> Required type.
+     */
+    public <R> IgniteBiTuple<Set<KeyCacheObject>, List<R>> transactionChanges(
+        int cacheId,
+        int[] parts,
+        Function<CacheDataRow, R> mapper
+    ) {
+        if (F.isEmpty(qryTxEntries))
+            return F.t(Collections.emptySet(), Collections.emptyList());
+
+        // Expecting parts are sorted or almost sorted and amount of transaction entries are relatively small.
+        if (parts != null && !F.isSorted(parts))
+            Arrays.sort(parts);
+
+        Set<KeyCacheObject> changedKeys = new HashSet<>(qryTxEntries.size());
+        List<R> newAndUpdatedRows = new ArrayList<>(qryTxEntries.size());
+
+        for (QueryTxEntry e : qryTxEntries) {
+            int part = e.key().partition();
+
+            assert part != -1;
+
+            if (e.cacheId() != cacheId)
+                continue;
+
+            if (parts != null && Arrays.binarySearch(parts, part) < 0)
+                continue;
+
+            changedKeys.add(e.key());
+
+            CacheObject val = e.value();
+
+            if (val != null) { // Mix only updated or inserted entries. In case val == null entry removed.
+                newAndUpdatedRows.add(mapper.apply(new CacheDataRowAdapter(
+                    e.key(),
+                    val,
+                    e.version(),
+                    CU.EXPIRE_TIME_ETERNAL // Expire time calculated on commit, can use eternal here.
+                )));
+            }
+        }
+
+        return F.t(changedKeys, newAndUpdatedRows);
+    }
+
+    /**
      * Executes a query task.
      *
      * @param task Query task.
@@ -319,6 +426,11 @@ public class ExecutionContext<Row> extends AbstractQueryContext implements DataC
     }
 
     /** */
+    public boolean isTimedOut() {
+        return timeout > 0 && U.currentTimeMillis() - startTs >= timeout;
+    }
+
+    /** */
     public Object unspecifiedValue() {
         return UNSPECIFIED_VALUE;
     }
@@ -330,10 +442,12 @@ public class ExecutionContext<Row> extends AbstractQueryContext implements DataC
 
     /** */
     public <R> RowTracker<R> createNodeMemoryTracker(long rowOverhead) {
-        if (qryMemoryTracker == NoOpMemoryTracker.INSTANCE)
-            return NoOpRowTracker.instance();
-        else
-            return new ExecutionNodeMemoryTracker<R>(qryMemoryTracker, rowOverhead);
+        return ExecutionNodeMemoryTracker.create(qryMemoryTracker, rowOverhead);
+    }
+
+    /** */
+    public IoTracker ioTracker() {
+        return ioTracker;
     }
 
     /** {@inheritDoc} */
@@ -343,9 +457,9 @@ public class ExecutionContext<Row> extends AbstractQueryContext implements DataC
         if (o == null || getClass() != o.getClass())
             return false;
 
-        ExecutionContext<?> context = (ExecutionContext<?>)o;
+        ExecutionContext<?> ctx = (ExecutionContext<?>)o;
 
-        return qryId.equals(context.qryId) && fragmentDesc.fragmentId() == context.fragmentDesc.fragmentId();
+        return qryId.equals(ctx.qryId) && fragmentDesc.fragmentId() == ctx.fragmentDesc.fragmentId();
     }
 
     /** {@inheritDoc} */

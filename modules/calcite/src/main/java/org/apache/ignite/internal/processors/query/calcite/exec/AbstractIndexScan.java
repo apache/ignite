@@ -19,8 +19,6 @@ package org.apache.ignite.internal.processors.query.calcite.exec;
 import java.util.Collections;
 import java.util.Iterator;
 import java.util.NoSuchElementException;
-import java.util.function.Function;
-import java.util.function.Predicate;
 import org.apache.calcite.rel.type.RelDataType;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.cache.query.index.sorted.inline.IndexQueryContext;
@@ -39,14 +37,8 @@ public abstract class AbstractIndexScan<Row, IdxRow> implements Iterable<Row>, A
     /** */
     private final TreeIndex<IdxRow> idx;
 
-    /** Additional filters. */
-    private final Predicate<Row> filters;
-
     /** Index scan bounds. */
     private final RangeIterable<Row> ranges;
-
-    /** */
-    private final Function<Row, Row> rowTransformer;
 
     /** */
     protected final ExecutionContext<Row> ectx;
@@ -57,36 +49,31 @@ public abstract class AbstractIndexScan<Row, IdxRow> implements Iterable<Row>, A
     /**
      * @param ectx Execution context.
      * @param idx Physical index.
-     * @param filters Additional filters.
      * @param ranges Index scan bounds.
      */
     protected AbstractIndexScan(
         ExecutionContext<Row> ectx,
         RelDataType rowType,
         TreeIndex<IdxRow> idx,
-        Predicate<Row> filters,
-        RangeIterable<Row> ranges,
-        Function<Row, Row> rowTransformer
+        RangeIterable<Row> ranges
     ) {
         this.ectx = ectx;
         this.rowType = rowType;
         this.idx = idx;
-        this.filters = filters;
         this.ranges = ranges;
-        this.rowTransformer = rowTransformer;
     }
 
     /** {@inheritDoc} */
     @Override public synchronized Iterator<Row> iterator() {
         if (ranges == null)
-            return new IteratorImpl(idx.find(null, null, true, true, indexQueryContext()));
+            return new IteratorImpl(indexCursor(null, null, true, true));
 
         IgniteClosure<RangeCondition<Row>, IteratorImpl> clo = range -> {
             IdxRow lower = range.lower() == null ? null : row2indexRow(range.lower());
             IdxRow upper = range.upper() == null ? null : row2indexRow(range.upper());
 
             return new IteratorImpl(
-                idx.find(lower, upper, range.lowerInclude(), range.upperInclude(), indexQueryContext()));
+                indexCursor(lower, upper, range.lowerInclude(), range.upperInclude()));
         };
 
         if (!ranges.multiBounds()) {
@@ -99,6 +86,11 @@ public abstract class AbstractIndexScan<Row, IdxRow> implements Iterable<Row>, A
         }
 
         return F.flat(F.iterator(ranges, clo, true));
+    }
+
+    /** */
+    protected GridCursor<IdxRow> indexCursor(IdxRow lower, IdxRow upper, boolean lowerInclude, boolean upperInclude) {
+        return idx.find(lower, upper, lowerInclude, upperInclude, indexQueryContext());
     }
 
     /** */
@@ -164,15 +156,7 @@ public abstract class AbstractIndexScan<Row, IdxRow> implements Iterable<Row>, A
             while (next == null && cursor.next()) {
                 IdxRow idxRow = cursor.get();
 
-                Row r = indexRow2Row(idxRow);
-
-                if (filters != null && !filters.test(r))
-                    continue;
-
-                if (rowTransformer != null)
-                    r = rowTransformer.apply(r);
-
-                next = r;
+                next = indexRow2Row(idxRow);
             }
         }
     }

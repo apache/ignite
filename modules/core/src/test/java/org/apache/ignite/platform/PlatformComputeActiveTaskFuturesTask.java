@@ -40,9 +40,9 @@ public class PlatformComputeActiveTaskFuturesTask extends ComputeTaskAdapter<Obj
     /** {@inheritDoc} */
     @NotNull @Override public Map<? extends ComputeJob, ClusterNode> map(List<ClusterNode> subgrid,
                                                                          @Nullable Object arg) {
-        ClusterNode localNode = subgrid.stream().filter(ClusterNode::isLocal).findFirst().get();
+        ClusterNode locNode = subgrid.stream().filter(ClusterNode::isLocal).findFirst().get();
 
-        return Collections.singletonMap(new ActiveTaskFuturesJob(), localNode);
+        return Collections.singletonMap(new ActiveTaskFuturesJob(), locNode);
     }
 
     /** {@inheritDoc} */

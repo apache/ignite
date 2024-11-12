@@ -628,7 +628,7 @@ public class TcpCommunicationSpi extends TcpCommunicationConfigInitializer {
         final Supplier<ClusterNode> locNodeSupplier = () -> getSpiContext().localNode();
         final Supplier<Ignite> igniteExSupplier = this::ignite;
         final Function<UUID, Boolean> pingNode = (nodeId) -> getSpiContext().pingNode(nodeId);
-        final Supplier<FailureProcessor> failureProcessorSupplier =
+        final Supplier<FailureProcessor> failureProcSupplier =
             () -> ignite instanceof IgniteEx ? ((IgniteEx)ignite).context().failure() : null;
         final Supplier<Boolean> isStopped = () -> getSpiContext().isStopping();
 
@@ -677,7 +677,7 @@ public class TcpCommunicationSpi extends TcpCommunicationConfigInitializer {
             clientPool,
             commWorker,
             connectGate,
-            failureProcessorSupplier,
+            failureProcSupplier,
             attributeNames,
             metricsLsnr,
             nioSrvWrapper,
@@ -831,7 +831,7 @@ public class TcpCommunicationSpi extends TcpCommunicationConfigInitializer {
             cfg,
             attributeNames,
             clientPool,
-            failureProcessorSupplier,
+            failureProcSupplier,
             nodeGetter,
             pingNode,
             this::getExceptionRegistry,
@@ -1131,16 +1131,16 @@ public class TcpCommunicationSpi extends TcpCommunicationConfigInitializer {
                 if (stopping)
                     throw new IgniteSpiException("Node is stopping.", t);
 
-                String messageForLog = "Failed to send message to remote node [node=" + node + ", msg=" + msg + ']';
+                String msgForLog = "Failed to send message to remote node [node=" + node + ", msg=" + msg + ']';
 
                 if (ClientExceptionsUtils.isClientNodeTopologyException(t, node)
                     || ClientExceptionsUtils.isAttemptToEstablishDirectConnectionWhenOnlyInverseIsAllowed(t))
-                    log.warning(messageForLog, t);
+                    log.warning(msgForLog, t);
                 else {
                     // NodeUnreachableException should not be explicitly logged. Error message will appear if inverse
                     // connection attempt fails as well.
                     if (!(t instanceof NodeUnreachableException))
-                        log.error(messageForLog, t);
+                        log.error(msgForLog, t);
                 }
 
                 if (t instanceof Error)

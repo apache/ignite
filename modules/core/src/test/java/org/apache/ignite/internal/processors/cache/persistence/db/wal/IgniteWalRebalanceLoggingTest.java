@@ -20,6 +20,7 @@ package org.apache.ignite.internal.processors.cache.persistence.db.wal;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
+import org.apache.ignite.cluster.ClusterState;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
@@ -117,17 +118,17 @@ public class IgniteWalRebalanceLoggingTest extends GridCommonAbstractTest {
                 str.contains("cache_group1") && str.contains("cache_group2")).times(3).
             andMatches(str -> str.startsWith("Starting rebalance routine") &&
                 (str.contains("cache_group1") || str.contains("cache_group2")) &&
-                str.contains("fullPartitions=[], histPartitions=[0-7]")).times(2).build();
+                str.contains("fullPartitions=[], histPartitions=[0,1,2,3,4,5,6,7]")).times(2).build();
 
-        LogListener unexpectedMessagesLsnr = LogListener.matches((str) ->
+        LogListener unexpectedMsgsLsnr = LogListener.matches((str) ->
             str.startsWith("Partitions weren't present in any history reservation:") ||
                 str.startsWith("Partitions were reserved, but maximum available counter is greater than demanded:")
         ).build();
 
-        checkFollowingPartitionsWereReservedForPotentialHistoryRebalanceMsg(expMsgsLsnr, unexpectedMessagesLsnr);
+        checkFollowingPartitionsWereReservedForPotentialHistoryRebalanceMsg(expMsgsLsnr, unexpectedMsgsLsnr);
 
         assertTrue(expMsgsLsnr.check());
-        assertFalse(unexpectedMessagesLsnr.check());
+        assertFalse(unexpectedMsgsLsnr.check());
     }
 
     /**
@@ -151,10 +152,10 @@ public class IgniteWalRebalanceLoggingTest extends GridCommonAbstractTest {
     public void testFullRebalanceLogMsgs() throws Exception {
         LogListener expMsgsLsnr = LogListener.
             matches("Partitions weren't present in any history reservation: " +
-                "[[grp=cache_group2 part=[[0-7]]], [grp=cache_group1 part=[[0-7]]]]").
+                "[[grp=cache_group2 part=[[0,1,2,3,4,5,6,7]]], [grp=cache_group1 part=[[0,1,2,3,4,5,6,7]]]]").
             andMatches(str -> str.startsWith("Starting rebalance routine") &&
                 (str.contains("cache_group1") || str.contains("cache_group2")) &&
-                str.contains("fullPartitions=[0-7], histPartitions=[]")).times(2).build();
+                str.contains("fullPartitions=[0,1,2,3,4,5,6,7], histPartitions=[]")).times(2).build();
 
         checkFollowingPartitionsWereReservedForPotentialHistoryRebalanceMsg(expMsgsLsnr);
 
@@ -176,7 +177,7 @@ public class IgniteWalRebalanceLoggingTest extends GridCommonAbstractTest {
                 str.contains("grp=cache_group1") && str.contains("grp=cache_group2")).
             andMatches(str -> str.startsWith("Starting rebalance routine") &&
                 (str.contains("cache_group1") || str.contains("cache_group2")) &&
-                str.contains("fullPartitions=[0-7], histPartitions=[]")).times(2).build();
+                str.contains("fullPartitions=[0,1,2,3,4,5,6,7], histPartitions=[]")).times(2).build();
 
         checkFollowingPartitionsWereReservedForPotentialHistoryRebalanceMsg(expMsgsLsnr);
 
@@ -191,7 +192,7 @@ public class IgniteWalRebalanceLoggingTest extends GridCommonAbstractTest {
      */
     private void checkFollowingPartitionsWereReservedForPotentialHistoryRebalanceMsg(LogListener... lsnrs)
         throws Exception {
-        startGridsMultiThreaded(2).cluster().active(true);
+        startGridsMultiThreaded(2).cluster().state(ClusterState.ACTIVE);
 
         IgniteCache<Integer, String> cache1 = createCache("cache1", "cache_group1");
         IgniteCache<Integer, String> cache2 = createCache("cache2", "cache_group2");
@@ -266,7 +267,7 @@ public class IgniteWalRebalanceLoggingTest extends GridCommonAbstractTest {
         }
     }
 
-    /** Tets WAL record. */
+    /** Tests WAL record. */
     private static class AdHocWALRecord extends CheckpointRecord {
         /** Default constructor. */
         private AdHocWALRecord() {

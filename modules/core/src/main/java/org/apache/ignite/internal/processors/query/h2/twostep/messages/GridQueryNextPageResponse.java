@@ -60,21 +60,22 @@ public class GridQueryNextPageResponse implements Message {
     @GridDirectCollection(Message.class)
     private Collection<Message> vals;
 
-    /** */
+    /**
+     * Note, columns count in plain row can differ from {@link #cols}.
+     * See {@code org.apache.ignite.internal.processors.query.h2.twostep.msg.GridH2ValueMessageFactory#toMessages}.
+     * See javadoc for {@code org.h2.result.ResultInterface#getVisibleColumnCount()} and {@code org.h2.result.ResultInterface#currentRow()}.
+     */
     @GridDirectTransient
     private transient Collection<?> plainRows;
 
     /** */
     private AffinityTopologyVersion retry;
 
-    /** Retry cause description*/
+    /** Retry cause description. */
     private String retryCause;
 
     /** Last page flag. */
     private boolean last;
-
-    /** Remove mapping flag. */
-    private boolean removeMapping;
 
     /**
      * For {@link Externalizable}.
@@ -242,12 +243,6 @@ public class GridQueryNextPageResponse implements Message {
                     return false;
 
                 writer.incrementState();
-
-            case 10:
-                if (!writer.writeBoolean("removeMapping", removeMapping))
-                    return false;
-
-                writer.incrementState();
         }
 
         return true;
@@ -340,15 +335,6 @@ public class GridQueryNextPageResponse implements Message {
                     return false;
 
                 reader.incrementState();
-
-            case 10:
-                removeMapping = reader.readBoolean("removeMapping");
-
-                if (!reader.isLastRead())
-                    return false;
-
-                reader.incrementState();
-
         }
 
         return reader.afterMessageRead(GridQueryNextPageResponse.class);
@@ -361,7 +347,7 @@ public class GridQueryNextPageResponse implements Message {
 
     /** {@inheritDoc} */
     @Override public byte fieldsCount() {
-        return 11;
+        return 10;
     }
 
     /**
@@ -404,20 +390,6 @@ public class GridQueryNextPageResponse implements Message {
      */
     public void last(boolean last) {
         this.last = last;
-    }
-
-    /**
-     * @param removeMapping Remove mapping flag.
-     */
-    public void removeMapping(boolean removeMapping) {
-        this.removeMapping = removeMapping;
-    }
-
-    /**
-     * @return Remove mapping flag.
-     */
-    public boolean removeMapping() {
-        return removeMapping;
     }
 
     /** {@inheritDoc} */

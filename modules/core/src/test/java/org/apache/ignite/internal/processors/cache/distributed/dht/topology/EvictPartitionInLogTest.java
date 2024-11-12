@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.processors.cache.distributed.dht.topology;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
@@ -26,13 +27,11 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
-import java.util.stream.IntStream;
 import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.util.typedef.internal.CU;
-import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.testframework.ListeningTestLogger;
 import org.apache.ignite.testframework.LogListener;
 import org.apache.ignite.testframework.junits.WithSystemProperty;
@@ -227,8 +226,13 @@ public class EvictPartitionInLogTest extends GridCommonAbstractTest {
 
                 //find and parsing grpId and partitions
                 if (grpIdMatcher.find() && partsMatcher.find()) {
-                    evictParts.computeIfAbsent(parseInt(grpIdMatcher.group(1)), i -> new ConcurrentLinkedQueue<>())
-                        .addAll(parseContentCompactStr(partsMatcher.group(1)));
+                    List<Integer> parts = Arrays.stream(partsMatcher.group(1)
+                            .split(","))
+                        .map(Integer::parseInt)
+                        .collect(toList());
+
+                    evictParts.computeIfAbsent(parseInt(grpIdMatcher.group(1)),
+                        i -> new ConcurrentLinkedQueue<>()).addAll(parts);
                 }
             });
 
@@ -236,27 +240,5 @@ public class EvictPartitionInLogTest extends GridCommonAbstractTest {
         });
 
         return builder.build();
-    }
-
-    /**
-     * Parse contents of compact string after a {@link S#compact(Collection)}.
-     *
-     * @param str Compact string content.
-     * @return Parsed numbers.
-     */
-    private Collection<Integer> parseContentCompactStr(String str) {
-        assertNotNull(str);
-
-        return of(str.split(","))
-            .map(String::trim)
-            .flatMap(s -> {
-                if (s.contains("-")) {
-                    String[] range = s.split("-");
-
-                    return IntStream.rangeClosed(parseInt(range[0]), parseInt(range[1])).boxed();
-                }
-                else
-                    return of(parseInt(s));
-            }).collect(toList());
     }
 }

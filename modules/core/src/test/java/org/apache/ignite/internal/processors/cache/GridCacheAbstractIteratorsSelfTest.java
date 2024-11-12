@@ -23,8 +23,6 @@ import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.util.typedef.CA;
 import org.apache.ignite.internal.util.typedef.CAX;
 import org.apache.ignite.testframework.GridTestUtils;
-import org.apache.ignite.testframework.MvccFeatureChecker;
-import org.junit.Assume;
 import org.junit.Test;
 
 /**
@@ -98,8 +96,6 @@ public abstract class GridCacheAbstractIteratorsSelfTest extends GridCacheAbstra
     /** */
     @Test
     public void testEntrySetIterator() {
-        Assume.assumeFalse("https://issues.apache.org/jira/browse/IGNITE-10082", MvccFeatureChecker.forcedMvcc());
-
         assert jcache().localSize(CachePeekMode.ALL) == entryCount();
 
         int cnt = 0;

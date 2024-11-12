@@ -32,12 +32,12 @@ import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.IgniteKernal;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.testframework.GridTestUtils;
+import org.apache.ignite.testframework.junits.WithSystemProperty;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.transactions.Transaction;
 import org.apache.ignite.transactions.TransactionConcurrency;
 import org.junit.Test;
 
-import static org.apache.ignite.IgniteSystemProperties.IGNITE_TX_DEADLOCK_DETECTION_MAX_ITERS;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_TX_DEADLOCK_DETECTION_TIMEOUT;
 import static org.apache.ignite.IgniteSystemProperties.getInteger;
 import static org.apache.ignite.transactions.TransactionConcurrency.OPTIMISTIC;
@@ -107,44 +107,42 @@ public class TxDeadlockDetectionNoHangsTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     @Test
-    public void testNoHangsPessimistic() throws Exception {
+    public void testNoHangsPessimisticDetectionEnabled() throws Exception {
         assertTrue(grid(0).context().cache().context().tm().deadlockDetectionEnabled());
 
         doTest(PESSIMISTIC);
-
-        try {
-            GridTestUtils.setFieldValue(IgniteTxManager.class, "DEADLOCK_MAX_ITERS", 0);
-
-            assertFalse(grid(0).context().cache().context().tm().deadlockDetectionEnabled());
-
-            doTest(PESSIMISTIC);
-        }
-        finally {
-            GridTestUtils.setFieldValue(IgniteTxManager.class, "DEADLOCK_MAX_ITERS",
-                IgniteSystemProperties.getInteger(IGNITE_TX_DEADLOCK_DETECTION_MAX_ITERS, 1000));
-        }
     }
 
     /**
      * @throws Exception If failed.
      */
     @Test
-    public void testNoHangsOptimistic() throws Exception {
+    @WithSystemProperty(key = IgniteSystemProperties.IGNITE_TX_DEADLOCK_DETECTION_MAX_ITERS, value = "0")
+    public void testNoHangsPessimisticDetectionDisabled() throws Exception {
+        assertFalse(grid(0).context().cache().context().tm().deadlockDetectionEnabled());
+
+        doTest(PESSIMISTIC);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    @Test
+    public void testNoHangsOptimisticDetectionEnabled() throws Exception {
         assertTrue(grid(0).context().cache().context().tm().deadlockDetectionEnabled());
 
         doTest(OPTIMISTIC);
+    }
 
-        try {
-            GridTestUtils.setFieldValue(IgniteTxManager.class, "DEADLOCK_MAX_ITERS", 0);
+    /**
+     * @throws Exception If failed.
+     */
+    @Test
+    @WithSystemProperty(key = IgniteSystemProperties.IGNITE_TX_DEADLOCK_DETECTION_MAX_ITERS, value = "0")
+    public void testNoHangsOptimisticDetectionDisabled() throws Exception {
+        assertFalse(grid(0).context().cache().context().tm().deadlockDetectionEnabled());
 
-            assertFalse(grid(0).context().cache().context().tm().deadlockDetectionEnabled());
-
-            doTest(OPTIMISTIC);
-        }
-        finally {
-            GridTestUtils.setFieldValue(IgniteTxManager.class, "DEADLOCK_MAX_ITERS",
-                IgniteSystemProperties.getInteger(IGNITE_TX_DEADLOCK_DETECTION_MAX_ITERS, 1000));
-        }
+        doTest(OPTIMISTIC);
     }
 
     /**

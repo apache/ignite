@@ -36,7 +36,11 @@ import java.util.Random;
 import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
+import javax.cache.expiry.CreatedExpiryPolicy;
+import javax.cache.expiry.Duration;
+import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
@@ -47,13 +51,18 @@ import org.apache.ignite.internal.GridTopic;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.binary.BinaryContext;
 import org.apache.ignite.internal.binary.BinaryObjectImpl;
+import org.apache.ignite.internal.management.cache.CacheFilterEnum;
+import org.apache.ignite.internal.management.cache.CacheIdleVerifyCommandArg;
+import org.apache.ignite.internal.management.cache.IdleVerifyResultV2;
+import org.apache.ignite.internal.management.cache.PartitionKeyV2;
+import org.apache.ignite.internal.management.cache.VerifyBackupPartitionsTaskV2;
 import org.apache.ignite.internal.managers.communication.GridMessageListener;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
+import org.apache.ignite.internal.processors.cache.CacheGroupContext;
 import org.apache.ignite.internal.processors.cache.GridCacheAdapter;
 import org.apache.ignite.internal.processors.cache.GridCacheEntryEx;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.binary.CacheObjectBinaryProcessorImpl;
-import org.apache.ignite.internal.processors.cache.mvcc.txlog.TxState;
 import org.apache.ignite.internal.processors.cache.persistence.CacheDataRow;
 import org.apache.ignite.internal.processors.cache.persistence.GridCacheDatabaseSharedManager;
 import org.apache.ignite.internal.processors.cache.persistence.checkpoint.CheckpointListener;
@@ -62,24 +71,20 @@ import org.apache.ignite.internal.processors.cache.persistence.file.FilePageStor
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.PageIO;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.PagePartitionMetaIO;
 import org.apache.ignite.internal.processors.cache.persistence.wal.crc.IgniteDataIntegrityViolationException;
-import org.apache.ignite.internal.processors.cache.verify.IdleVerifyResultV2;
 import org.apache.ignite.internal.processors.cache.verify.PartitionHashRecordV2;
-import org.apache.ignite.internal.processors.cache.verify.PartitionKeyV2;
-import org.apache.ignite.internal.processors.cache.verify.VerifyBackupPartitionsTaskV2;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
+import org.apache.ignite.internal.processors.compress.CompressionProcessor;
 import org.apache.ignite.internal.util.GridUnsafe;
 import org.apache.ignite.internal.util.lang.GridIterator;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.U;
-import org.apache.ignite.internal.visor.verify.CacheFilterEnum;
-import org.apache.ignite.internal.visor.verify.VisorIdleVerifyTaskArg;
 import org.jetbrains.annotations.Nullable;
+import org.junit.Assume;
 import org.junit.Before;
 import org.junit.Test;
 
-import static java.util.Collections.singletonList;
 import static org.apache.ignite.cluster.ClusterState.ACTIVE;
 import static org.apache.ignite.configuration.IgniteConfiguration.DFLT_SNAPSHOT_DIRECTORY;
 import static org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion.NONE;
@@ -92,6 +97,7 @@ import static org.apache.ignite.internal.processors.cache.persistence.snapshot.I
 import static org.apache.ignite.internal.processors.dr.GridDrType.DR_NONE;
 import static org.apache.ignite.testframework.GridTestUtils.assertContains;
 import static org.apache.ignite.testframework.GridTestUtils.assertNotContains;
+import static org.apache.ignite.testframework.GridTestUtils.assertThrowsAnyCause;
 import static org.apache.ignite.testframework.GridTestUtils.waitForCondition;
 
 /**
@@ -120,9 +126,9 @@ public class IgniteClusterSnapshotCheckTest extends AbstractSnapshotSelfTest {
 
         startClientGrid();
 
-        ignite.snapshot().createSnapshot(SNAPSHOT_NAME).get();
+        createAndCheckSnapshot(ignite, SNAPSHOT_NAME);
 
-        IdleVerifyResultV2 res = snp(ignite).checkSnapshot(SNAPSHOT_NAME, null).get();
+        IdleVerifyResultV2 res = snp(ignite).checkSnapshot(SNAPSHOT_NAME, null).get().idleVerifyResult();
 
         StringBuilder b = new StringBuilder();
         res.print(b::append, true);
@@ -137,8 +143,7 @@ public class IgniteClusterSnapshotCheckTest extends AbstractSnapshotSelfTest {
     public void testClusterSnapshotCheckMissedPart() throws Exception {
         IgniteEx ignite = startGridsWithCache(3, dfltCacheCfg, CACHE_KEYS_RANGE);
 
-        ignite.snapshot().createSnapshot(SNAPSHOT_NAME)
-            .get();
+        createAndCheckSnapshot(ignite, SNAPSHOT_NAME);
 
         Path part0 = U.searchFileRecursively(snp(ignite).snapshotLocalDir(SNAPSHOT_NAME).toPath(),
             getPartitionFileName(0));
@@ -147,7 +152,7 @@ public class IgniteClusterSnapshotCheckTest extends AbstractSnapshotSelfTest {
         assertTrue(part0.toString(), part0.toFile().exists());
         assertTrue(part0.toFile().delete());
 
-        IdleVerifyResultV2 res = snp(ignite).checkSnapshot(SNAPSHOT_NAME, null).get();
+        IdleVerifyResultV2 res = snp(ignite).checkSnapshot(SNAPSHOT_NAME, null).get().idleVerifyResult();
 
         StringBuilder b = new StringBuilder();
         res.print(b::append, true);
@@ -161,8 +166,7 @@ public class IgniteClusterSnapshotCheckTest extends AbstractSnapshotSelfTest {
     public void testClusterSnapshotCheckMissedGroup() throws Exception {
         IgniteEx ignite = startGridsWithCache(3, dfltCacheCfg, CACHE_KEYS_RANGE);
 
-        ignite.snapshot().createSnapshot(SNAPSHOT_NAME)
-            .get();
+        createAndCheckSnapshot(ignite, SNAPSHOT_NAME);
 
         Path dir = Files.walk(snp(ignite).snapshotLocalDir(SNAPSHOT_NAME).toPath())
             .filter(d -> d.toFile().getName().equals(cacheDirName(dfltCacheCfg)))
@@ -172,7 +176,7 @@ public class IgniteClusterSnapshotCheckTest extends AbstractSnapshotSelfTest {
         assertTrue(dir.toString(), dir.toFile().exists());
         assertTrue(U.delete(dir));
 
-        IdleVerifyResultV2 res = snp(ignite).checkSnapshot(SNAPSHOT_NAME, null).get();
+        IdleVerifyResultV2 res = snp(ignite).checkSnapshot(SNAPSHOT_NAME, null).get().idleVerifyResult();
 
         StringBuilder b = new StringBuilder();
         res.print(b::append, true);
@@ -186,8 +190,7 @@ public class IgniteClusterSnapshotCheckTest extends AbstractSnapshotSelfTest {
     public void testClusterSnapshotCheckMissedMeta() throws Exception {
         IgniteEx ignite = startGridsWithCache(3, dfltCacheCfg, CACHE_KEYS_RANGE);
 
-        ignite.snapshot().createSnapshot(SNAPSHOT_NAME)
-            .get();
+        createAndCheckSnapshot(ignite, SNAPSHOT_NAME);
 
         File[] smfs = snp(ignite).snapshotLocalDir(SNAPSHOT_NAME).listFiles((dir, name) ->
             name.toLowerCase().endsWith(SNAPSHOT_METAFILE_EXT));
@@ -196,13 +199,12 @@ public class IgniteClusterSnapshotCheckTest extends AbstractSnapshotSelfTest {
         assertTrue(smfs[0].toString(), smfs[0].exists());
         assertTrue(U.delete(smfs[0]));
 
-        IdleVerifyResultV2 res = snp(ignite).checkSnapshot(SNAPSHOT_NAME, null).get();
-
-        StringBuilder b = new StringBuilder();
-        res.print(b::append, true);
-
-        assertFalse(F.isEmpty(res.exceptions()));
-        assertContains(log, b.toString(), "Some metadata is missing from the snapshot");
+        assertThrowsAnyCause(
+            log,
+            () -> snp(ignite).checkSnapshot(SNAPSHOT_NAME, null).get().idleVerifyResult(),
+            IgniteException.class,
+            "No snapshot metadatas found for the baseline nodes with consistent ids: "
+        );
     }
 
     /** @throws Exception If fails. */
@@ -215,9 +217,9 @@ public class IgniteClusterSnapshotCheckTest extends AbstractSnapshotSelfTest {
                 .setNodeFilter(node -> node.consistentId().toString().endsWith("0"))).put(i, i);
         }
 
-        ig0.snapshot().createSnapshot(SNAPSHOT_NAME).get();
+        createAndCheckSnapshot(ig0, SNAPSHOT_NAME);
 
-        IdleVerifyResultV2 res = snp(ig0).checkSnapshot(SNAPSHOT_NAME, null).get();
+        IdleVerifyResultV2 res = snp(ig0).checkSnapshot(SNAPSHOT_NAME, null).get().idleVerifyResult();
 
         StringBuilder b = new StringBuilder();
         res.print(b::append, true);
@@ -230,11 +232,13 @@ public class IgniteClusterSnapshotCheckTest extends AbstractSnapshotSelfTest {
     /** @throws Exception If fails. */
     @Test
     public void testClusterSnapshotCheckPartitionCounters() throws Exception {
+        Assume.assumeFalse("One copy of partiton created in only primary mode", onlyPrimary);
+
         IgniteEx ignite = startGridsWithCache(3, dfltCacheCfg.
             setAffinity(new RendezvousAffinityFunction(false, 1)),
             CACHE_KEYS_RANGE);
 
-        ignite.snapshot().createSnapshot(SNAPSHOT_NAME).get();
+        createAndCheckSnapshot(ignite, SNAPSHOT_NAME);
 
         Path part0 = U.searchFileRecursively(snp(ignite).snapshotLocalDir(SNAPSHOT_NAME).toPath(),
             getPartitionFileName(PART_ID));
@@ -257,20 +261,41 @@ public class IgniteClusterSnapshotCheckTest extends AbstractSnapshotSelfTest {
             buff.clear();
             pageStore.read(0, buff, false);
 
-            PagePartitionMetaIO io = PageIO.getPageIO(buff);
-
             long pageAddr = GridUnsafe.bufferAddress(buff);
+
+            boolean shouldCompress = false;
+            if (PageIO.getCompressionType(pageAddr) != CompressionProcessor.UNCOMPRESSED_PAGE) {
+                shouldCompress = true;
+
+                ignite.context().compress().decompressPage(buff, pageStore.getPageSize());
+            }
+
+            PagePartitionMetaIO io = PageIO.getPageIO(buff);
 
             io.setUpdateCounter(pageAddr, CACHE_KEYS_RANGE * 2);
 
-            pageStore.beginRecover();
+            if (shouldCompress) {
+                CacheGroupContext grpCtx = ignite.context().cache().cacheGroup(grpId);
 
-            buff.flip();
+                assertNotNull("Group context for grpId:" + grpId, grpCtx);
+
+                ByteBuffer compressedPageBuf = grpCtx.compressionHandler().compressPage(buff, pageStore);
+
+                if (compressedPageBuf != buff) {
+                    buff = compressedPageBuf;
+
+                    PageIO.setCrc(buff, 0);
+                }
+            }
+            else
+                buff.flip();
+
+            pageStore.beginRecover();
             pageStore.write(PageIO.getPageId(buff), buff, 0, true);
             pageStore.finishRecover();
         }
 
-        IdleVerifyResultV2 res = snp(ignite).checkSnapshot(SNAPSHOT_NAME, null).get();
+        IdleVerifyResultV2 res = snp(ignite).checkSnapshot(SNAPSHOT_NAME, null).get().idleVerifyResult();
 
         StringBuilder b = new StringBuilder();
         res.print(b::append, true);
@@ -287,7 +312,8 @@ public class IgniteClusterSnapshotCheckTest extends AbstractSnapshotSelfTest {
                 setAffinity(new RendezvousAffinityFunction(false, 1)),
             CACHE_KEYS_RANGE);
 
-        ig0.snapshot().createSnapshot(SNAPSHOT_NAME).get();
+        createAndCheckSnapshot(ig0, SNAPSHOT_NAME);
+
         stopAllGrids();
 
         // Cleanup persistence directory except created snapshots.
@@ -318,7 +344,7 @@ public class IgniteClusterSnapshotCheckTest extends AbstractSnapshotSelfTest {
         ignite.cluster().baselineAutoAdjustEnabled(false);
         ignite.cluster().state(ACTIVE);
 
-        IdleVerifyResultV2 res = snp(ignite).checkSnapshot(SNAPSHOT_NAME, null).get();
+        IdleVerifyResultV2 res = snp(ignite).checkSnapshot(SNAPSHOT_NAME, null).get().idleVerifyResult();
 
         StringBuilder b = new StringBuilder();
         res.print(b::append, true);
@@ -338,11 +364,15 @@ public class IgniteClusterSnapshotCheckTest extends AbstractSnapshotSelfTest {
         IgniteEx ignite = startGridsWithCache(3, dfltCacheCfg.
                 setAffinity(new RendezvousAffinityFunction(false, 1)), CACHE_KEYS_RANGE);
 
-        ignite.snapshot().createSnapshot(SNAPSHOT_NAME).get();
+        createAndCheckSnapshot(ignite, SNAPSHOT_NAME);
 
         corruptPartitionFile(ignite, SNAPSHOT_NAME, dfltCacheCfg, PART_ID);
 
-        IdleVerifyResultV2 res = snp(ignite).checkSnapshot(SNAPSHOT_NAME, null).get();
+        IdleVerifyResultV2 res = snp(ignite).checkSnapshot(SNAPSHOT_NAME, null, null, false, -1, false).get().idleVerifyResult();
+
+        assertEquals("Check must be disabled", 0, res.exceptions().size());
+
+        res = snp(ignite).checkSnapshot(SNAPSHOT_NAME, null, null, false, -1, true).get().idleVerifyResult();
 
         StringBuilder b = new StringBuilder();
         res.print(b::append, true);
@@ -357,6 +387,8 @@ public class IgniteClusterSnapshotCheckTest extends AbstractSnapshotSelfTest {
     /** @throws Exception If fails. */
     @Test
     public void testClusterSnapshotCheckFailsOnPartitionDataDiffers() throws Exception {
+        Assume.assumeFalse("One copy of partiton created in only primary mode", onlyPrimary);
+
         CacheConfiguration<Integer, Value> ccfg = txCacheConfig(new CacheConfiguration<Integer, Value>(DEFAULT_CACHE_NAME))
             .setAffinity(new RendezvousAffinityFunction(false, 1));
 
@@ -403,10 +435,6 @@ public class IgniteClusterSnapshotCheckTest extends AbstractSnapshotSelfTest {
                         new GridCacheVersion(row0.version().topologyVersion(),
                             row0.version().nodeOrder(),
                             row0.version().order() + 1),
-                        null,
-                        null,
-                        TxState.NA,
-                        TxState.NA,
                         TTL_ETERNAL,
                         row0.expireTime(),
                         true,
@@ -440,7 +468,7 @@ public class IgniteClusterSnapshotCheckTest extends AbstractSnapshotSelfTest {
 
         db.waitForCheckpoint("test-checkpoint");
 
-        ignite.snapshot().createSnapshot(SNAPSHOT_NAME).get();
+        createAndCheckSnapshot(ignite, SNAPSHOT_NAME);
 
         Path part0 = U.searchFileRecursively(snp(ignite).snapshotLocalDir(SNAPSHOT_NAME).toPath(),
             getPartitionFileName(PART_ID));
@@ -448,7 +476,7 @@ public class IgniteClusterSnapshotCheckTest extends AbstractSnapshotSelfTest {
         assertNotNull(part0);
         assertTrue(part0.toString(), part0.toFile().exists());
 
-        IdleVerifyResultV2 res = snp(ignite).checkSnapshot(SNAPSHOT_NAME, null).get();
+        IdleVerifyResultV2 res = snp(ignite).checkSnapshot(SNAPSHOT_NAME, null).get().idleVerifyResult();
 
         StringBuilder b = new StringBuilder();
         res.print(b::append, true);
@@ -466,20 +494,31 @@ public class IgniteClusterSnapshotCheckTest extends AbstractSnapshotSelfTest {
 
         IgniteEx ignite = startGridsWithCache(1, CACHE_KEYS_RANGE, k -> new Value(new byte[rnd.nextInt(32768)]), ccfg);
 
-        ignite.snapshot().createSnapshot(SNAPSHOT_NAME).get();
+        createAndCheckSnapshot(ignite, SNAPSHOT_NAME);
 
-        IdleVerifyResultV2 idleVerifyRes = ignite.compute().execute(new TestVisorBackupPartitionsTask(),
-            new VisorIdleVerifyTaskArg(new HashSet<>(singletonList(ccfg.getName())),
+        CacheIdleVerifyCommandArg arg = new CacheIdleVerifyCommandArg();
+
+        arg.caches(new String[] {ccfg.getName()});
+        arg.skipZeros(false);
+        arg.cacheFilter(CacheFilterEnum.USER);
+        arg.checkCrc(true);
+
+        IdleVerifyResultV2 idleVerifyRes = ignite.compute().execute(new TestVisorBackupPartitionsTask(), arg);
+
+        IdleVerifyResultV2 snpVerifyRes = ignite.compute().execute(
+            new TestSnapshotPartitionsVerifyTask(),
+            new SnapshotPartitionsVerifyTaskArg(
                 new HashSet<>(),
-                false,
-                CacheFilterEnum.USER,
-                true));
-
-        IdleVerifyResultV2 snpVerifyRes = ignite.compute().execute(new TestSnapshotPartitionsVerifyTask(),
-            new SnapshotPartitionsVerifyTaskArg(new HashSet<>(), Collections.singletonMap(ignite.cluster().localNode(),
-                Collections.singletonList(snp(ignite).readSnapshotMetadata(snp(ignite).snapshotLocalDir(SNAPSHOT_NAME),
-                    (String)ignite.configuration().getConsistentId()))), null))
-            .idleVerifyResult();
+                Collections.singletonMap(ignite.cluster().localNode(),
+                Collections.singletonList(snp(ignite).readSnapshotMetadata(
+                    snp(ignite).snapshotLocalDir(SNAPSHOT_NAME),
+                    (String)ignite.configuration().getConsistentId()
+                ))),
+                null,
+                0,
+                true
+            )
+        ).idleVerifyResult();
 
         Map<PartitionKeyV2, List<PartitionHashRecordV2>> idleVerifyHashes = jobResults.get(TestVisorBackupPartitionsTask.class);
         Map<PartitionKeyV2, List<PartitionHashRecordV2>> snpCheckHashes = jobResults.get(TestVisorBackupPartitionsTask.class);
@@ -542,7 +581,7 @@ public class IgniteClusterSnapshotCheckTest extends AbstractSnapshotSelfTest {
 
         startClientGrid();
 
-        ignite.snapshot().createSnapshot(SNAPSHOT_NAME).get();
+        createAndCheckSnapshot(ignite, SNAPSHOT_NAME);
 
         int iterations = 10;
 
@@ -558,6 +597,32 @@ public class IgniteClusterSnapshotCheckTest extends AbstractSnapshotSelfTest {
         int createdThreads = Thread.activeCount() - activeThreadsCntBefore;
 
         assertTrue("Threads created: " + createdThreads, createdThreads < iterations);
+    }
+
+    /** */
+    @Test
+    public void testClusterSnapshotCheckWithExpiring() throws Exception {
+        IgniteEx ignite = startGrids(3);
+
+        ignite.cluster().state(ACTIVE);
+
+        IgniteCache<Object, Object> cache = ignite.getOrCreateCache(new CacheConfiguration<>("expCache")
+            .setAffinity(new RendezvousAffinityFunction(false, 32)).setBackups(1));
+
+        Random rnd = new Random();
+
+        for (int i = 0; i < 10_000; i++) {
+            cache.withExpiryPolicy(new CreatedExpiryPolicy(new Duration(TimeUnit.MILLISECONDS,
+                rnd.nextInt(10_000)))).put(i, i);
+        }
+
+        long timeout = getTestTimeout();
+
+        snp(ignite).createSnapshot(SNAPSHOT_NAME).get(timeout);
+
+        SnapshotPartitionsVerifyTaskResult res = snp(ignite).checkSnapshot(SNAPSHOT_NAME, null).get(timeout);
+
+        assertFalse(res.idleVerifyResult().hasConflicts());
     }
 
     /**
@@ -595,11 +660,11 @@ public class IgniteClusterSnapshotCheckTest extends AbstractSnapshotSelfTest {
         IgniteEx ignite = startGridsWithCache(2, CACHE_KEYS_RANGE, k -> new Value(new byte[rnd.nextInt(32768)]),
             ccfg1, ccfg2);
 
-        ignite.snapshot().createSnapshot(SNAPSHOT_NAME).get();
+        createAndCheckSnapshot(ignite, SNAPSHOT_NAME);
 
         corruptPartitionFile(ignite, SNAPSHOT_NAME, ccfg1, PART_ID);
 
-        return snp(ignite).checkSnapshot(SNAPSHOT_NAME, null, cachesToCheck, false).get(TIMEOUT);
+        return snp(ignite).checkSnapshot(SNAPSHOT_NAME, null, cachesToCheck, false, 0, true).get(TIMEOUT);
     }
 
     /**

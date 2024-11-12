@@ -27,19 +27,26 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.function.BiConsumer;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
+import org.apache.ignite.cache.CacheEntryVersion;
 import org.apache.ignite.internal.IgniteEx;
+import org.apache.ignite.internal.binary.BinaryObjectEx;
+import org.apache.ignite.internal.management.cache.PartitionKeyV2;
 import org.apache.ignite.internal.pagemem.PageIdAllocator;
 import org.apache.ignite.internal.pagemem.PageIdUtils;
 import org.apache.ignite.internal.processors.cache.CacheGroupContext;
+import org.apache.ignite.internal.processors.cache.CacheObject;
 import org.apache.ignite.internal.processors.cache.DynamicCacheDescriptor;
+import org.apache.ignite.internal.processors.cache.KeyCacheObject;
 import org.apache.ignite.internal.processors.cache.PartitionUpdateCounter;
 import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtLocalPartition;
 import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionState;
 import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionTopology;
 import org.apache.ignite.internal.processors.cache.persistence.CacheDataRow;
 import org.apache.ignite.internal.processors.cache.persistence.file.FilePageStore;
+import org.apache.ignite.internal.processors.cache.persistence.snapshot.IncrementalSnapshotVerificationTask.HashHolder;
 import org.apache.ignite.internal.util.lang.GridIterator;
 import org.apache.ignite.internal.util.lang.IgniteThrowableSupplier;
 import org.apache.ignite.internal.util.typedef.F;
@@ -47,9 +54,11 @@ import org.apache.ignite.internal.util.typedef.internal.SB;
 import org.apache.ignite.lang.IgniteInClosure;
 import org.jetbrains.annotations.Nullable;
 
+import static org.apache.ignite.internal.binary.BinaryUtils.FLAG_COMPACT_FOOTER;
 import static org.apache.ignite.internal.pagemem.PageIdAllocator.FLAG_AUX;
 import static org.apache.ignite.internal.pagemem.PageIdAllocator.FLAG_DATA;
 import static org.apache.ignite.internal.pagemem.PageIdAllocator.FLAG_IDX;
+import static org.apache.ignite.internal.processors.cache.CacheObject.TYPE_BINARY;
 import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.cacheGroupName;
 
 /**
@@ -74,6 +83,25 @@ public class IdleVerifyUtility {
         int partId,
         byte pageType
     ) {
+        checkPartitionsPageCrcSum(pageStoreSup, partId, pageType, null);
+    }
+
+    /**
+     * Checks CRC sum of pages with {@code pageType} page type stored in partition with {@code partId} id
+     * and associated with cache group.
+     *
+     * @param pageStoreSup Page store supplier.
+     * @param partId Partition id.
+     * @param pageType Page type. Possible types {@link PageIdAllocator#FLAG_DATA}, {@link PageIdAllocator#FLAG_IDX}
+     *      and {@link PageIdAllocator#FLAG_AUX}.
+     * @param pagePostProc Page post processor closure.
+     */
+    public static void checkPartitionsPageCrcSum(
+        IgniteThrowableSupplier<FilePageStore> pageStoreSup,
+        int partId,
+        byte pageType,
+        @Nullable BiConsumer<Long, ByteBuffer> pagePostProc
+    ) {
         assert pageType == FLAG_DATA || pageType == FLAG_IDX || pageType == FLAG_AUX : pageType;
 
         FilePageStore pageStore = null;
@@ -89,6 +117,9 @@ public class IdleVerifyUtility {
                 buf.clear();
 
                 pageStore.read(pageId, buf, true, true);
+
+                if (pagePostProc != null)
+                    pagePostProc.accept(pageId, buf);
             }
         }
         catch (Throwable e) {
@@ -251,33 +282,38 @@ public class IdleVerifyUtility {
             return new PartitionHashRecordV2(partKey,
                 isPrimary,
                 consId,
-                0,
-                0,
                 updCntr,
                 state == GridDhtPartitionState.MOVING ?
                     PartitionHashRecordV2.MOVING_PARTITION_SIZE : 0,
                 state == GridDhtPartitionState.MOVING ?
-                    PartitionHashRecordV2.PartitionState.MOVING : PartitionHashRecordV2.PartitionState.LOST);
+                    PartitionHashRecordV2.PartitionState.MOVING : PartitionHashRecordV2.PartitionState.LOST,
+                new VerifyPartitionContext()
+            );
         }
 
         if (state != GridDhtPartitionState.OWNING)
             return null;
 
-        int partHash = 0;
-        int partVerHash = 0;
+        VerifyPartitionContext ctx = new VerifyPartitionContext();
 
         while (it.hasNextX()) {
             CacheDataRow row = it.nextX();
 
-            partHash += row.key().hashCode();
-            partVerHash += row.version().hashCode(); // Detects ABA problem.
+            if (row.expireTime() > 0)
+                continue;
 
-            // Object context is not required since the valueBytes have been read directly from page.
-            partHash += Arrays.hashCode(row.value().valueBytes(null));
+            ctx.update(row.key(), row.value(), row.version());
         }
 
-        return new PartitionHashRecordV2(partKey, isPrimary, consId, partHash, partVerHash, updCntr,
-            partSize, PartitionHashRecordV2.PartitionState.OWNING);
+        return new PartitionHashRecordV2(
+            partKey,
+            isPrimary,
+            consId,
+            updCntr,
+            partSize,
+            PartitionHashRecordV2.PartitionState.OWNING,
+            ctx
+        );
     }
 
     /**
@@ -317,5 +353,65 @@ public class IdleVerifyUtility {
     /** */
     private IdleVerifyUtility() {
         /* No-op. */
+    }
+
+    /** */
+    public static class VerifyPartitionContext {
+        /** */
+        public int partHash;
+
+        /** */
+        public int partVerHash;
+
+        /** */
+        public int cf;
+
+        /** */
+        public int noCf;
+
+        /** */
+        public int binary;
+
+        /** */
+        public int regular;
+
+        /** */
+        public VerifyPartitionContext() {
+            // No-op.
+        }
+
+        /**
+         * @param hash Incremental snapshot hash holder.
+         */
+        public VerifyPartitionContext(HashHolder hash) {
+            this.partHash = hash.hash;
+            this.partVerHash = hash.verHash;
+        }
+
+        /** */
+        public void update(
+            KeyCacheObject key,
+            CacheObject val,
+            CacheEntryVersion ver
+        ) throws IgniteCheckedException {
+            partHash += key.hashCode();
+
+            if (ver != null)
+                partVerHash += ver.hashCode(); // Detects ABA problem.
+
+            // Object context is not required since the valueBytes have been read directly from page.
+            partHash += Arrays.hashCode(val.valueBytes(null));
+
+            if (key.cacheObjectType() == TYPE_BINARY) {
+                binary++;
+
+                if (((BinaryObjectEx)key).isFlagSet(FLAG_COMPACT_FOOTER))
+                    cf++;
+                else
+                    noCf++;
+            }
+            else
+                regular++;
+        }
     }
 }

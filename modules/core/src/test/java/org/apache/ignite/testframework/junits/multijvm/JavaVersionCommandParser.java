@@ -26,7 +26,7 @@ import org.apache.ignite.internal.util.typedef.internal.U;
  */
 class JavaVersionCommandParser {
     /** Pattern for parsing 'java -version' command output. */
-    private static final Pattern versionPattern = Pattern.compile("java version \"([^\"]+)\".*", Pattern.DOTALL);
+    private static final Pattern versionPattern = Pattern.compile("(java|openjdk) version \"([^\"]+)\".*", Pattern.DOTALL);
 
     /**
      * Extracts major java version (like '17' or '1.8') from 'java -version' output.
@@ -41,8 +41,8 @@ class JavaVersionCommandParser {
                 versionCommandOutput + "'");
         }
 
-        String fullJavaVersion = matcher.group(1);
+        String fullJavaVer = matcher.group(2);
 
-        return U.majorJavaVersion(fullJavaVersion);
+        return U.majorJavaVersion(fullJavaVer);
     }
 }

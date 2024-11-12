@@ -66,7 +66,6 @@ import org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi;
 import org.apache.ignite.spi.discovery.tcp.internal.TcpDiscoveryNode;
 
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_CONFIG_URL;
-import static org.apache.ignite.IgniteSystemProperties.IGNITE_DAEMON;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_LOG_CLASSPATH_CONTENT_ON_STARTUP;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_NO_ASCII;
 import static org.apache.ignite.internal.IgniteKernal.DFLT_LOG_CLASSPATH_CONTENT_ON_STARTUP;
@@ -96,7 +95,6 @@ public class IgniteLogInfoProviderImpl implements IgniteLogInfoProvider {
         ackAsciiLogo(log, cfg, rtBean);
         ackConfigUrl(log);
         ackConfiguration(log, cfg);
-        ackDaemon(log, cfg);
         ackOsInfo(log);
         ackLanguageRuntime(log, cfg);
         ackRemoteManagement(log, cfg);
@@ -144,7 +142,6 @@ public class IgniteLogInfoProviderImpl implements IgniteLogInfoProvider {
 
         ackSecurity(log, ignite);
         ackPerformanceSuggestions(log, igEx);
-        ackVisorConsole(log);
         ackClassPathContent(log);
         ackNodeInfo(log, igEx);
     }
@@ -223,14 +220,6 @@ public class IgniteLogInfoProviderImpl implements IgniteLogInfoProvider {
     }
 
     /**
-     * Acks daemon mode status.
-     */
-    void ackDaemon(IgniteLogger log, IgniteConfiguration cfg) {
-        if (log.isInfoEnabled())
-            log.info("Daemon mode: " + onOff(cfg.isDaemon() || IgniteSystemProperties.getBoolean(IGNITE_DAEMON)));
-    }
-
-    /**
      * Logs out OS information.
      */
     void ackOsInfo(IgniteLogger log) {
@@ -286,7 +275,7 @@ public class IgniteLogInfoProviderImpl implements IgniteLogInfoProvider {
             sb.a("auth: ").a(onOff(Boolean.getBoolean("com.sun.management.jmxremote.authenticate"))).a(", ");
 
             // By default, SSL is enabled, that's why additional check for null is needed.
-            // See http://docs.oracle.com/javase/6/docs/technotes/guides/management/agent.html
+            // See https://docs.oracle.com/en/java/javase/11/management/monitoring-and-management-using-jmx-technology.html
             sb.a("ssl: ").a(onOff(Boolean.getBoolean("com.sun.management.jmxremote.ssl") ||
                 System.getProperty("com.sun.management.jmxremote.ssl") == null));
         }
@@ -534,13 +523,6 @@ public class IgniteLogInfoProviderImpl implements IgniteLogInfoProvider {
     }
 
     /**
-     * Print info about visor commandline console.
-     */
-    void ackVisorConsole(IgniteLogger log) {
-        U.quietAndInfo(log, "To start Console Management & Monitoring run ignitevisorcmd.{sh|bat}");
-    }
-
-    /**
      * Prints the list of {@code *.jar} and {@code *.class} files containing in the classpath.
      */
     void ackClassPathContent(IgniteLogger log) {
@@ -703,7 +685,7 @@ public class IgniteLogInfoProviderImpl implements IgniteLogInfoProvider {
 
         ClusterMetrics m = ignite.cluster().localNode().metrics();
 
-        int localCpus = m.getTotalCpus();
+        int locCpus = m.getTotalCpus();
         double cpuLoadPct = m.getCurrentCpuLoad() * 100;
         double avgCpuLoadPct = m.getAverageCpuLoad() * 100;
         double gcPct = m.getCurrentGcCpuLoad() * 100;
@@ -742,16 +724,16 @@ public class IgniteLogInfoProviderImpl implements IgniteLogInfoProvider {
 
         ClusterNode locNode = ctx.discovery().localNode();
 
-        String networkDetails = "";
+        String netDetails = "";
 
         if (!F.isEmpty(cfg.getLocalHost()))
-            networkDetails += ", localHost=" + cfg.getLocalHost();
+            netDetails += ", localHost=" + cfg.getLocalHost();
 
         if (locNode instanceof TcpDiscoveryNode)
-            networkDetails += ", discoPort=" + ((TcpDiscoveryNode)locNode).discoveryPort();
+            netDetails += ", discoPort=" + ((TcpDiscoveryNode)locNode).discoveryPort();
 
         if (cfg.getCommunicationSpi() instanceof TcpCommunicationSpi)
-            networkDetails += ", commPort=" + ((TcpCommunicationSpi)cfg.getCommunicationSpi()).boundPort();
+            netDetails += ", commPort=" + ((TcpCommunicationSpi)cfg.getCommunicationSpi()).boundPort();
 
         SB msg = new SB();
 
@@ -762,8 +744,8 @@ public class IgniteLogInfoProviderImpl implements IgniteLogInfoProvider {
             .a("    ^-- Cluster [hosts=").a(hosts).a(", CPUs=").a(cpus).a(", servers=").a(servers)
             .a(", clients=").a(clients).a(", topVer=").a(topVer.topologyVersion())
             .a(", minorTopVer=").a(topVer.minorTopologyVersion()).a("]").nl()
-            .a("    ^-- Network [addrs=").a(locNode.addresses()).a(networkDetails).a("]").nl()
-            .a("    ^-- CPU [CPUs=").a(localCpus).a(", curLoad=").a(dblFmt.format(cpuLoadPct))
+            .a("    ^-- Network [addrs=").a(locNode.addresses()).a(netDetails).a("]").nl()
+            .a("    ^-- CPU [CPUs=").a(locCpus).a(", curLoad=").a(dblFmt.format(cpuLoadPct))
             .a("%, avgLoad=").a(dblFmt.format(avgCpuLoadPct)).a("%, GC=").a(dblFmt.format(gcPct)).a("%]").nl()
             .a("    ^-- Heap [used=").a(dblFmt.format(heapUsedInMBytes))
             .a("MB, free=").a(dblFmt.format(freeHeapPct))

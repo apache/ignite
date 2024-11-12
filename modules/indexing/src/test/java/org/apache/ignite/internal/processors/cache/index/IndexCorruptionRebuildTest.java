@@ -40,6 +40,8 @@ import org.apache.ignite.internal.cache.query.index.sorted.inline.InlineIndexImp
 import org.apache.ignite.internal.cache.query.index.sorted.inline.InlineIndexTree;
 import org.apache.ignite.internal.cache.query.index.sorted.inline.io.LeafIO;
 import org.apache.ignite.internal.cache.query.index.sorted.maintenance.MaintenanceRebuildIndexTarget;
+import org.apache.ignite.internal.management.cache.ValidateIndexesClosure;
+import org.apache.ignite.internal.management.cache.ValidateIndexesJobResult;
 import org.apache.ignite.internal.managers.indexing.IndexesRebuildTask;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.persistence.CacheDataRowAdapter;
@@ -53,8 +55,6 @@ import org.apache.ignite.internal.processors.query.schema.IndexRebuildCancelToke
 import org.apache.ignite.internal.processors.query.schema.management.IndexDescriptor;
 import org.apache.ignite.internal.processors.query.schema.management.SchemaManager;
 import org.apache.ignite.internal.util.typedef.internal.CU;
-import org.apache.ignite.internal.visor.verify.ValidateIndexesClosure;
-import org.apache.ignite.internal.visor.verify.VisorValidateIndexesJobResult;
 import org.apache.ignite.maintenance.MaintenanceRegistry;
 import org.apache.ignite.maintenance.MaintenanceTask;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
@@ -163,14 +163,14 @@ public class IndexCorruptionRebuildTest extends GridCommonAbstractTest {
         for (int i = 0; i < 100; i++) {
             int counter = i;
 
-            String value = "test" + i;
+            String val = "test" + i;
 
-            String query = "insert into %s(col1, col2, col3, col4) values (?1, ?2, ?3, ?4)";
+            String insertQry = "insert into %s(col1, col2, col3, col4) values (?1, ?2, ?3, ?4)";
 
             Stream.of(TABLE_NAME_1, TABLE_NAME_2)
                 .map(tableName ->
-                    new SqlFieldsQuery(String.format(query, tableName))
-                        .setArgs(String.valueOf(counter), value, value, value)
+                    new SqlFieldsQuery(String.format(insertQry, tableName))
+                        .setArgs(String.valueOf(counter), val, val, val)
                 ).forEach(cache::query);
         }
 
@@ -208,12 +208,12 @@ public class IndexCorruptionRebuildTest extends GridCommonAbstractTest {
 
         Collection<DurableBackgroundTaskState<?>> durableTasks = tasks(srv.context().durableBackgroundTask()).values();
 
-        Map<Integer, Set<String>> indexTasksByCache = durableTasks.stream().collect(Collectors.groupingBy(
+        Map<Integer, Set<String>> idxTasksByCache = durableTasks.stream().collect(Collectors.groupingBy(
             state -> CU.cacheId(((DurableBackgroundCleanupIndexTreeTaskV2)state.task()).cacheName()),
             Collectors.mapping(state -> ((DurableBackgroundCleanupIndexTreeTaskV2)state.task()).idxName(), toSet())
         ));
 
-        checkCacheToCorruptedIndexMap(indexTasksByCache);
+        checkCacheToCorruptedIndexMap(idxTasksByCache);
 
         stopGrid(0);
 
@@ -298,7 +298,7 @@ public class IndexCorruptionRebuildTest extends GridCommonAbstractTest {
 
         node.context().resource().injectGeneric(clo);
 
-        VisorValidateIndexesJobResult call = clo.call();
+        ValidateIndexesJobResult call = clo.call();
 
         assertFalse(call.hasIssues());
     }
@@ -400,10 +400,10 @@ public class IndexCorruptionRebuildTest extends GridCommonAbstractTest {
             boolean force,
             IndexRebuildCancelToken cancelTok
         ) {
-            IgniteInternalFuture<?> future = super.rebuild(cctx, force, cancelTok);
-            rebuiltIndexes = future != null;
+            IgniteInternalFuture<?> fut = super.rebuild(cctx, force, cancelTok);
+            rebuiltIndexes = fut != null;
 
-            return future;
+            return fut;
         }
 
         /**

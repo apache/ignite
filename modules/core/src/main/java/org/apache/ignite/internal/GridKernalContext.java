@@ -24,6 +24,7 @@ import java.util.concurrent.Executor;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.cache.query.index.IndexProcessor;
+import org.apache.ignite.internal.cache.transform.CacheObjectTransformerProcessor;
 import org.apache.ignite.internal.managers.checkpoint.GridCheckpointManager;
 import org.apache.ignite.internal.managers.collision.GridCollisionManager;
 import org.apache.ignite.internal.managers.communication.GridIoManager;
@@ -37,7 +38,6 @@ import org.apache.ignite.internal.managers.loadbalancer.GridLoadBalancerManager;
 import org.apache.ignite.internal.managers.systemview.GridSystemViewManager;
 import org.apache.ignite.internal.processors.affinity.GridAffinityProcessor;
 import org.apache.ignite.internal.processors.cache.GridCacheProcessor;
-import org.apache.ignite.internal.processors.cache.mvcc.MvccProcessor;
 import org.apache.ignite.internal.processors.cache.persistence.defragmentation.IgniteDefragmentation;
 import org.apache.ignite.internal.processors.cache.persistence.filename.PdsFoldersResolver;
 import org.apache.ignite.internal.processors.cacheobject.IgniteCacheObjectProcessor;
@@ -208,6 +208,13 @@ public interface GridKernalContext extends Iterable<GridComponent> {
     public MaintenanceRegistry maintenanceRegistry();
 
     /**
+     * Gets transformation processor.
+     *
+     * @return Transformation processor.
+     */
+    public CacheObjectTransformerProcessor transformer();
+
+    /**
      * Gets system view manager.
      *
      * @return Monitoring manager.
@@ -341,11 +348,11 @@ public interface GridKernalContext extends Iterable<GridComponent> {
     public GridQueryProcessor query();
 
     /**
-     * Gets SQL listener processor.
+     * Gets client listener processor.
      *
-     * @return SQL listener processor.
+     * @return Client listener processor.
      */
-    public ClientListenerProcessor sqlListener();
+    public ClientListenerProcessor clientListener();
 
     /**
      * @return Plugin processor.
@@ -498,13 +505,6 @@ public interface GridKernalContext extends Iterable<GridComponent> {
     public void printMemoryStats();
 
     /**
-     * Checks whether this node is daemon.
-     *
-     * @return {@code True} if this node is daemon, {@code false} otherwise.
-     */
-    public boolean isDaemon();
-
-    /**
      * @return Performance suggestions object.
      */
     public GridPerformanceSuggestions performance();
@@ -601,11 +601,6 @@ public interface GridKernalContext extends Iterable<GridComponent> {
      * @return Platform processor.
      */
     public PlatformProcessor platform();
-
-    /**
-     * @return Cache mvcc coordinator processor.
-     */
-    public MvccProcessor coordinators();
 
     /**
      * @return PDS mode folder name resolver, also generates consistent ID in case new folder naming is used

@@ -21,6 +21,7 @@ import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteBinary;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.binary.BinaryObject;
+import org.apache.ignite.compatibility.testframework.junits.SkipTestIfIsJdkNewer;
 import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
@@ -30,6 +31,7 @@ import org.junit.Test;
 /**
  * Test for moving binary_meta and marshaller folders to PDS.
  */
+@SkipTestIfIsJdkNewer(11)
 public class MoveBinaryMetadataCompatibility extends IgnitePersistenceCompatibilityAbstractTest {
     /** Test Ignite version. */
     private static final String IGNITE_VERSION = "2.8.0";

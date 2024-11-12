@@ -40,6 +40,7 @@ import org.apache.ignite.cache.affinity.Affinity;
 import org.apache.ignite.cache.store.CacheStore;
 import org.apache.ignite.cache.store.CacheStoreAdapter;
 import org.apache.ignite.cluster.ClusterNode;
+import org.apache.ignite.cluster.ClusterState;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
@@ -64,10 +65,10 @@ import org.apache.ignite.lang.IgniteFutureCancelledException;
 import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.stream.StreamReceiver;
 import org.apache.ignite.testframework.GridTestUtils;
-import org.apache.ignite.testframework.MvccFeatureChecker;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.jetbrains.annotations.Nullable;
 import org.junit.Test;
+
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
@@ -183,8 +184,6 @@ public class DataStreamProcessorSelfTest extends GridCommonAbstractTest {
      */
     @Test
     public void testPartitioned() throws Exception {
-        MvccFeatureChecker.skipIfNotSupported(MvccFeatureChecker.Feature.NEAR_CACHE);
-
         mode = PARTITIONED;
 
         checkDataStreamer();
@@ -839,8 +838,6 @@ public class DataStreamProcessorSelfTest extends GridCommonAbstractTest {
      */
     @Test
     public void testFlushTimeout() throws Exception {
-        MvccFeatureChecker.skipIfNotSupported(MvccFeatureChecker.Feature.CACHE_EVENTS);
-
         mode = PARTITIONED;
 
         useCache = true;
@@ -895,8 +892,6 @@ public class DataStreamProcessorSelfTest extends GridCommonAbstractTest {
      */
     @Test
     public void testUpdateStore() throws Exception {
-        MvccFeatureChecker.skipIfNotSupported(MvccFeatureChecker.Feature.CACHE_STORE);
-
         storeMap = new ConcurrentHashMap<>();
 
         try {
@@ -1131,8 +1126,8 @@ public class DataStreamProcessorSelfTest extends GridCommonAbstractTest {
         G.allGrids().stream()
             .filter(g -> !g.cluster().node().isClient())
             .findAny()
-            .filter(g -> !g.cluster().active())
-            .ifPresent(g -> g.cluster().active(true));
+            .filter(g -> !g.cluster().state().active())
+            .ifPresent(g -> g.cluster().state(ClusterState.ACTIVE));
 
         awaitPartitionMapExchange();
     }

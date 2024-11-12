@@ -31,7 +31,6 @@ import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.testframework.ListeningTestLogger;
-import org.apache.ignite.testframework.MvccFeatureChecker;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.transactions.Transaction;
 import org.apache.ignite.transactions.TransactionConcurrency;
@@ -66,13 +65,13 @@ public class GridCacheHashMapPutAllWarningsTest extends GridCommonAbstractTest {
      */
     @Test
     public void testHashMapPutAllExactMessage() throws Exception {
-        List<String> messages = Collections.synchronizedList(new ArrayList<>());
+        List<String> msgs = Collections.synchronizedList(new ArrayList<>());
 
         testLog = new ListeningTestLogger(log());
 
         testLog.registerListener((s) -> {
             if (s.contains("deadlock"))
-                messages.add(s);
+                msgs.add(s);
         });
 
         Ignite ignite = startGrid(0);
@@ -91,8 +90,8 @@ public class GridCacheHashMapPutAllWarningsTest extends GridCommonAbstractTest {
 
         int found = 0;
 
-        for (String message : messages) {
-            if (message.contains("Unordered map java.util.HashMap is used for putAll operation on cache exact. " +
+        for (String msg : msgs) {
+            if (msg.contains("Unordered map java.util.HashMap is used for putAll operation on cache exact. " +
                 "This can lead to a distributed deadlock. Switch to a sorted map like TreeMap instead."))
                 found++;
         }
@@ -105,16 +104,13 @@ public class GridCacheHashMapPutAllWarningsTest extends GridCommonAbstractTest {
      */
     @Test
     public void testHashMapPutAllExplicitOptimistic() throws Exception {
-        if (MvccFeatureChecker.forcedMvcc())
-            return;
-
-        List<String> messages = Collections.synchronizedList(new ArrayList<>());
+        List<String> msgs = Collections.synchronizedList(new ArrayList<>());
 
         testLog = new ListeningTestLogger(log());
 
         testLog.registerListener((s) -> {
             if (s.contains("deadlock"))
-                messages.add(s);
+                msgs.add(s);
         });
 
         Ignite ignite = startGrid(0);
@@ -135,9 +131,9 @@ public class GridCacheHashMapPutAllWarningsTest extends GridCommonAbstractTest {
 
         assertEquals(2, c.size());
 
-        for (String message : messages) {
-            assertFalse(message.contains("Unordered map"));
-            assertFalse(message.contains("operation on cache"));
+        for (String msg : msgs) {
+            assertFalse(msg.contains("Unordered map"));
+            assertFalse(msg.contains("operation on cache"));
         }
     }
 
@@ -146,13 +142,13 @@ public class GridCacheHashMapPutAllWarningsTest extends GridCommonAbstractTest {
      */
     @Test
     public void testTreeMapRemoveAll() throws Exception {
-        List<String> messages = Collections.synchronizedList(new ArrayList<>());
+        List<String> msgs = Collections.synchronizedList(new ArrayList<>());
 
         testLog = new ListeningTestLogger(log());
 
         testLog.registerListener((s) -> {
             if (s.contains("deadlock"))
-                messages.add(s);
+                msgs.add(s);
         });
 
         Ignite ignite = startGrid(0);
@@ -169,11 +165,11 @@ public class GridCacheHashMapPutAllWarningsTest extends GridCommonAbstractTest {
 
         int found = 0;
 
-        for (String message : messages) {
-            if (message.contains("Unordered collection "))
+        for (String msg : msgs) {
+            if (msg.contains("Unordered collection "))
                 found++;
 
-            if (message.contains("operation on cache"))
+            if (msg.contains("operation on cache"))
                 found++;
         }
 
@@ -185,13 +181,13 @@ public class GridCacheHashMapPutAllWarningsTest extends GridCommonAbstractTest {
      */
     @Test
     public void testTreeMapRemoveAllEntries() throws Exception {
-        List<String> messages = Collections.synchronizedList(new ArrayList<>());
+        List<String> msgs = Collections.synchronizedList(new ArrayList<>());
 
         testLog = new ListeningTestLogger(log());
 
         testLog.registerListener((s) -> {
             if (s.contains("deadlock"))
-                messages.add(s);
+                msgs.add(s);
         });
 
         Ignite ignite = startGrid(0);
@@ -211,10 +207,10 @@ public class GridCacheHashMapPutAllWarningsTest extends GridCommonAbstractTest {
 
         assertEquals(0, c.size());
 
-        for (String message : messages) {
-            assertFalse(message.contains("Unordered collection "));
+        for (String msg : msgs) {
+            assertFalse(msg.contains("Unordered collection "));
 
-            assertFalse(message.contains("operation on cache"));
+            assertFalse(msg.contains("operation on cache"));
         }
     }
 
@@ -223,13 +219,13 @@ public class GridCacheHashMapPutAllWarningsTest extends GridCommonAbstractTest {
      */
     @Test
     public void testTreeMapClearEntries() throws Exception {
-        List<String> messages = Collections.synchronizedList(new ArrayList<>());
+        List<String> msgs = Collections.synchronizedList(new ArrayList<>());
 
         testLog = new ListeningTestLogger(log());
 
         testLog.registerListener((s) -> {
             if (s.contains("deadlock"))
-                messages.add(s);
+                msgs.add(s);
         });
 
         Ignite ignite = startGrid(0);
@@ -249,10 +245,10 @@ public class GridCacheHashMapPutAllWarningsTest extends GridCommonAbstractTest {
 
         assertEquals(0, c.size());
 
-        for (String message : messages) {
-            assertFalse(message.contains("Unordered "));
+        for (String msg : msgs) {
+            assertFalse(msg.contains("Unordered "));
 
-            assertFalse(message.contains("operation on cache"));
+            assertFalse(msg.contains("operation on cache"));
         }
     }
 
@@ -261,13 +257,13 @@ public class GridCacheHashMapPutAllWarningsTest extends GridCommonAbstractTest {
      */
     @Test
     public void testHashSetGetAllReplicated() throws Exception {
-        List<String> messages = Collections.synchronizedList(new ArrayList<>());
+        List<String> msgs = Collections.synchronizedList(new ArrayList<>());
 
         testLog = new ListeningTestLogger(log());
 
         testLog.registerListener((s) -> {
             if (s.contains("deadlock"))
-                messages.add(s);
+                msgs.add(s);
         });
 
         Ignite ignite = startGrid(0);
@@ -282,11 +278,11 @@ public class GridCacheHashMapPutAllWarningsTest extends GridCommonAbstractTest {
 
         int found = 0;
 
-        for (String message : messages) {
-            if (message.contains("Unordered collection "))
+        for (String msg : msgs) {
+            if (msg.contains("Unordered collection "))
                 found++;
 
-            if (message.contains("operation on cache"))
+            if (msg.contains("operation on cache"))
                 found++;
         }
 
@@ -298,13 +294,13 @@ public class GridCacheHashMapPutAllWarningsTest extends GridCommonAbstractTest {
      */
     @Test
     public void testHashSetGetAllTx() throws Exception {
-        List<String> messages = Collections.synchronizedList(new ArrayList<>());
+        List<String> msgs = Collections.synchronizedList(new ArrayList<>());
 
         testLog = new ListeningTestLogger(log());
 
         testLog.registerListener((s) -> {
             if (s.contains("deadlock"))
-                messages.add(s);
+                msgs.add(s);
         });
 
         Ignite ignite = startGrid(0);
@@ -324,8 +320,8 @@ public class GridCacheHashMapPutAllWarningsTest extends GridCommonAbstractTest {
 
         int found = 0;
 
-        for (String message : messages) {
-            if (message.contains("Unordered collection java.util.HashSet is used for getAll operation on cache getTx."))
+        for (String msg : msgs) {
+            if (msg.contains("Unordered collection java.util.HashSet is used for getAll operation on cache getTx."))
                 found++;
         }
 
@@ -337,13 +333,13 @@ public class GridCacheHashMapPutAllWarningsTest extends GridCommonAbstractTest {
      */
     @Test
     public void testHashMapAtomic() throws Exception {
-        List<String> messages = Collections.synchronizedList(new ArrayList<>());
+        List<String> msgs = Collections.synchronizedList(new ArrayList<>());
 
         testLog = new ListeningTestLogger(log());
 
         testLog.registerListener((s) -> {
             if (s.contains("deadlock"))
-                messages.add(s);
+                msgs.add(s);
         });
 
         Ignite ignite = startGrid(0);
@@ -363,10 +359,10 @@ public class GridCacheHashMapPutAllWarningsTest extends GridCommonAbstractTest {
 
         assertEquals(0, c.size());
 
-        for (String message : messages) {
-            assertFalse(message.contains("Unordered "));
+        for (String msg : msgs) {
+            assertFalse(msg.contains("Unordered "));
 
-            assertFalse(message.contains("operation on cache"));
+            assertFalse(msg.contains("operation on cache"));
         }
     }
 }

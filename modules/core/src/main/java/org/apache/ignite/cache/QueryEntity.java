@@ -180,7 +180,7 @@ public class QueryEntity implements Serializable {
         checkEquals(conflicts, "valueFieldName", valueFieldName, target.valueFieldName);
         checkEquals(conflicts, "tableName", tableName, target.tableName);
 
-        List<QueryField> queryFieldsToAdd = checkFields(target, conflicts);
+        List<QueryField> qryFieldsToAdd = checkFields(target, conflicts);
 
         Collection<QueryIndex> indexesToAdd = checkIndexes(target, conflicts);
 
@@ -189,25 +189,25 @@ public class QueryEntity implements Serializable {
 
         Collection<SchemaAbstractOperation> patchOperations = new ArrayList<>();
 
-        if (!queryFieldsToAdd.isEmpty())
+        if (!qryFieldsToAdd.isEmpty())
             patchOperations.add(new SchemaAlterTableAddColumnOperation(
                 UUID.randomUUID(),
                 null,
                 null,
                 tableName,
-                queryFieldsToAdd,
+                qryFieldsToAdd,
                 true,
                 true
             ));
 
         if (!indexesToAdd.isEmpty()) {
-            for (QueryIndex index : indexesToAdd) {
+            for (QueryIndex idx : indexesToAdd) {
                 patchOperations.add(new SchemaIndexCreateOperation(
                     UUID.randomUUID(),
                     null,
                     null,
                     tableName,
-                    index,
+                    idx,
                     true,
                     0
                 ));
@@ -227,24 +227,24 @@ public class QueryEntity implements Serializable {
     @NotNull private Collection<QueryIndex> checkIndexes(QueryEntity target, StringBuilder conflicts) {
         HashSet<QueryIndex> indexesToAdd = new HashSet<>();
 
-        Map<String, QueryIndex> currentIndexes = new HashMap<>();
+        Map<String, QueryIndex> curIndexes = new HashMap<>();
 
-        for (QueryIndex index : getIndexes()) {
-            if (currentIndexes.put(index.getName(), index) != null)
+        for (QueryIndex idx : getIndexes()) {
+            if (curIndexes.put(idx.getName(), idx) != null)
                 throw new IllegalStateException("Duplicate key");
         }
 
-        for (QueryIndex queryIndex : target.getIndexes()) {
-            if (currentIndexes.containsKey(queryIndex.getName())) {
+        for (QueryIndex qryIdx : target.getIndexes()) {
+            if (curIndexes.containsKey(qryIdx.getName())) {
                 checkEquals(
                     conflicts,
-                    "index " + queryIndex.getName(),
-                    currentIndexes.get(queryIndex.getName()),
-                    queryIndex
+                    "index " + qryIdx.getName(),
+                    curIndexes.get(qryIdx.getName()),
+                    qryIdx
                 );
             }
             else
-                indexesToAdd.add(queryIndex);
+                indexesToAdd.add(qryIdx);
         }
         return indexesToAdd;
     }
@@ -257,13 +257,21 @@ public class QueryEntity implements Serializable {
      * @return Fields which exist in target and not exist in local.
      */
     private List<QueryField> checkFields(QueryEntity target, StringBuilder conflicts) {
-        List<QueryField> queryFieldsToAdd = new ArrayList<>();
+        List<QueryField> qryFieldsToAdd = new ArrayList<>();
 
         for (Map.Entry<String, String> targetField : target.getFields().entrySet()) {
             String targetFieldName = targetField.getKey();
             String targetFieldType = targetField.getValue();
+            String targetFieldAlias = target.getAliases().get(targetFieldName);
 
             if (getFields().containsKey(targetFieldName)) {
+                checkEquals(
+                    conflicts,
+                    "alias of " + targetFieldName,
+                    getAliases().get(targetFieldName),
+                    targetFieldAlias
+                );
+
                 checkEquals(
                     conflicts,
                     "fieldType of " + targetFieldName,
@@ -297,21 +305,48 @@ public class QueryEntity implements Serializable {
                     getFromMap(target.getFieldsScale(), targetFieldName));
             }
             else {
-                Integer precision = getFromMap(target.getFieldsPrecision(), targetFieldName);
-                Integer scale = getFromMap(target.getFieldsScale(), targetFieldName);
+                boolean isAliasConflictsFound = findAliasConflicts(targetFieldAlias, targetFieldName, conflicts);
 
-                queryFieldsToAdd.add(new QueryField(
-                    targetFieldName,
-                    targetFieldType,
-                    !contains(target.getNotNullFields(), targetFieldName),
-                    getFromMap(target.getDefaultFieldValues(), targetFieldName),
-                    precision == null ? -1 : precision,
-                    scale == null ? -1 : scale
-                ));
+                if (!isAliasConflictsFound) {
+                    Integer precision = getFromMap(target.getFieldsPrecision(), targetFieldName);
+                    Integer scale = getFromMap(target.getFieldsScale(), targetFieldName);
+
+                    qryFieldsToAdd.add(new QueryField(
+                        targetFieldName,
+                        targetFieldType,
+                        targetFieldAlias,
+                        !contains(target.getNotNullFields(), targetFieldName),
+                        getFromMap(target.getDefaultFieldValues(), targetFieldName),
+                        precision == null ? -1 : precision,
+                        scale == null ? -1 : scale
+                    ));
+                }
             }
         }
 
-        return queryFieldsToAdd;
+        return qryFieldsToAdd;
+    }
+
+    /**
+     * Checks if received query entity field has the alias which is already used by a field on the local node.
+     *
+     * @return Whether conflicts were found.
+     */
+    private boolean findAliasConflicts(String targetFieldAlias, String targetFieldName, StringBuilder conflicts) {
+        for (Map.Entry<String, String> entry : getAliases().entrySet()) {
+            if (Objects.equals(entry.getValue(), targetFieldAlias)) {
+                conflicts.append(String.format(
+                    "multiple fields are associated with the same alias: alias=%s, localField=%s, receivedField=%s\n",
+                    targetFieldAlias,
+                    entry.getKey(),
+                    targetFieldName)
+                );
+
+                return true;
+            }
+        }
+
+        return false;
     }
 
     /**
@@ -525,7 +560,7 @@ public class QueryEntity implements Serializable {
 
     /**
      * Sets mapping from full property name in dot notation to an alias that will be used as SQL column name.
-     * Example: {"parent.name" -> "parentName"}.
+     * Example: {"parent.name" -&gt; "parentName"}.
      *
      * @param aliases Aliases map.
      * @return {@code this} for chaining.
@@ -883,8 +918,8 @@ public class QueryEntity implements Serializable {
             }
 
             if (!F.isEmpty(sqlAnn.groups())) {
-                for (String group : sqlAnn.groups())
-                    desc.addFieldToIndex(group, prop.fullName(), 0, false);
+                for (String grp : sqlAnn.groups())
+                    desc.addFieldToIndex(grp, prop.fullName(), 0, false);
             }
 
             if (!F.isEmpty(sqlAnn.orderedGroups())) {

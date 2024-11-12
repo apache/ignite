@@ -17,14 +17,16 @@
 
 package org.apache.ignite.jdbc.thin;
 
+import java.sql.Blob;
+import java.sql.Clob;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.Arrays;
 import java.util.HashSet;
-import java.util.concurrent.Callable;
 import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.internal.util.lang.RunnableX;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.ListeningTestLogger;
 import org.apache.ignite.testframework.LogListener;
@@ -35,23 +37,23 @@ import org.junit.Test;
  */
 public class JdbcThinInsertStatementSelfTest extends JdbcThinAbstractDmlStatementSelfTest {
     /** SQL query. */
-    private static final String SQL = "insert into Person(_key, id, firstName, lastName, age) values " +
-        "('p1', 1, 'John', 'White', 25), " +
-        "('p2', 2, 'Joe', 'Black', 35), " +
-        "('p3', 3, 'Mike', 'Green', 40)";
+    private static final String SQL = "insert into Person(_key, id, firstName, lastName, age, data, text) values " +
+        "('p1', 1, 'John', 'White', 25, RAWTOHEX('White'), 'John White'), " +
+        "('p2', 2, 'Joe', 'Black', 35, RAWTOHEX('Black'), 'Joe Black'), " +
+        "('p3', 3, 'Mike', 'Green', 40, RAWTOHEX('Green'), 'Mike Green')";
 
     /** SQL query. */
-    private static final String SQL_PREPARED = "insert into Person(_key, id, firstName, lastName, age) values " +
-        "(?, ?, ?, ?, ?), (?, ?, ?, ?, ?), (?, ?, ?, ?, ?)";
+    private static final String SQL_PREPARED = "insert into Person(_key, id, firstName, lastName, age, data, text) " +
+        "values (?, ?, ?, ?, ?, ?, ?), (?, ?, ?, ?, ?, ?, ?), (?, ?, ?, ?, ?, ?, ?)";
 
     /** Test logger. */
     private static ListeningTestLogger srvLog;
 
     /** Arguments for prepared statement. */
     private final Object[][] args = new Object[][] {
-        {"p1", 1, "John", "White", 25},
-        {"p3", 3, "Mike", "Green", 40},
-        {"p2", 2, "Joe", "Black", 35}
+        {"p1", 1, "John", "White", 25, getBytes("White"), "John White"},
+        {"p3", 3, "Mike", "Green", 40, getBytes("Green"), "Mike Green"},
+        {"p2", 2, "Joe", "Black", 35, getBytes("Black"), "Joe Black"}
     };
 
     /** Statement. */
@@ -95,6 +97,14 @@ public class JdbcThinInsertStatementSelfTest extends JdbcThinAbstractDmlStatemen
             prepStmt.setString(paramCnt++, (String)arg[2]);
             prepStmt.setString(paramCnt++, (String)arg[3]);
             prepStmt.setInt(paramCnt++, (Integer)arg[4]);
+
+            Blob blob = conn.createBlob();
+            blob.setBytes(1, (byte[])arg[5]);
+            prepStmt.setBlob(paramCnt++, blob);
+
+            Clob clob = conn.createClob();
+            clob.setString(1, (String)arg[6]);
+            prepStmt.setClob(paramCnt++, clob);
         }
     }
 
@@ -116,6 +126,8 @@ public class JdbcThinInsertStatementSelfTest extends JdbcThinAbstractDmlStatemen
                         assertEquals("John", rs.getString("firstName"));
                         assertEquals("White", rs.getString("lastName"));
                         assertEquals(25, rs.getInt("age"));
+                        assertEquals("White", str(getBytes(rs.getBlob("data"))));
+                        assertEquals("John White", str(rs.getClob("text")));
                         break;
 
                     case 2:
@@ -123,6 +135,8 @@ public class JdbcThinInsertStatementSelfTest extends JdbcThinAbstractDmlStatemen
                         assertEquals("Joe", rs.getString("firstName"));
                         assertEquals("Black", rs.getString("lastName"));
                         assertEquals(35, rs.getInt("age"));
+                        assertEquals("Black", str(getBytes(rs.getBlob("data"))));
+                        assertEquals("Joe Black", str(rs.getClob("text")));
                         break;
 
                     case 3:
@@ -130,13 +144,8 @@ public class JdbcThinInsertStatementSelfTest extends JdbcThinAbstractDmlStatemen
                         assertEquals("Mike", rs.getString("firstName"));
                         assertEquals("Green", rs.getString("lastName"));
                         assertEquals(40, rs.getInt("age"));
-                        break;
-
-                    case 4:
-                        assertEquals("p4", rs.getString("_key"));
-                        assertEquals("Leah", rs.getString("firstName"));
-                        assertEquals("Grey", rs.getString("lastName"));
-                        assertEquals(22, rs.getInt("age"));
+                        assertEquals("Green", str(getBytes(rs.getBlob("data"))));
+                        assertEquals("Mike Green", str(rs.getClob("text")));
                         break;
 
                     default:
@@ -190,11 +199,33 @@ public class JdbcThinInsertStatementSelfTest extends JdbcThinAbstractDmlStatemen
     }
 
     /**
-     *
+     * Checks whether it's impossible to insert duplicate in single key statement.
      */
     @Test
-    public void testDuplicateKeys() throws InterruptedException {
-        jcache(0).put("p2", new Person(2, "Joe", "Black", 35));
+    public void testDuplicateSingleKey() throws InterruptedException {
+        doTestDuplicate(
+            () -> stmt.execute(SQL),
+            "insert into Person(_key, id, firstName, lastName, age) values " +
+                    "('p2', 2, 'Joe', 'Black', 35)"
+        );
+    }
+
+    /**
+     * Checks whether it's impossible to insert duplicate in multiple keys statement.
+     */
+    @Test
+    public void testDuplicateMultipleKeys() throws InterruptedException {
+        doTestDuplicate(
+            () -> jcache(0).put("p2", new Person(2, "Joe", "Black", 35)),
+            SQL
+        );
+    }
+
+    /**
+     *
+     */
+    private void doTestDuplicate(RunnableX initClosure, String sql) throws InterruptedException {
+        initClosure.run();
 
         LogListener lsnr = LogListener
             .matches("Failed to execute SQL query")
@@ -202,12 +233,7 @@ public class JdbcThinInsertStatementSelfTest extends JdbcThinAbstractDmlStatemen
 
         srvLog.registerListener(lsnr);
 
-        GridTestUtils.assertThrowsAnyCause(log, new Callable<Object>() {
-                /** {@inheritDoc} */
-                @Override public Object call() throws Exception {
-                    return stmt.execute(SQL);
-                }
-            }, SQLException.class,
+        GridTestUtils.assertThrowsAnyCause(log, () -> stmt.execute(sql), SQLException.class,
             "Failed to INSERT some keys because they are already in cache [keys=[p2]]");
 
         assertFalse(lsnr.check(1000L));

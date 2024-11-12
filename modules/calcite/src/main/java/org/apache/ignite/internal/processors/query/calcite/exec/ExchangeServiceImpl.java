@@ -21,17 +21,16 @@ import java.util.Collection;
 import java.util.List;
 import java.util.Objects;
 import java.util.UUID;
-
 import com.google.common.collect.ImmutableMap;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.internal.GridKernalContext;
-import org.apache.ignite.internal.processors.query.RunningQuery;
 import org.apache.ignite.internal.processors.query.calcite.CalciteQueryProcessor;
 import org.apache.ignite.internal.processors.query.calcite.Query;
 import org.apache.ignite.internal.processors.query.calcite.QueryRegistry;
 import org.apache.ignite.internal.processors.query.calcite.exec.rel.Inbox;
 import org.apache.ignite.internal.processors.query.calcite.exec.rel.Outbox;
+import org.apache.ignite.internal.processors.query.calcite.exec.tracker.NoOpIoTracker;
 import org.apache.ignite.internal.processors.query.calcite.exec.tracker.NoOpMemoryTracker;
 import org.apache.ignite.internal.processors.query.calcite.message.ErrorMessage;
 import org.apache.ignite.internal.processors.query.calcite.message.InboxCloseMessage;
@@ -51,6 +50,9 @@ import org.apache.ignite.internal.util.typedef.F;
  */
 public class ExchangeServiceImpl extends AbstractService implements ExchangeService {
     /** */
+    public static final long INBOX_INITIALIZATION_TIMEOUT = 1_000L;
+
+    /** */
     private final UUID locaNodeId;
 
     /** */
@@ -61,6 +63,9 @@ public class ExchangeServiceImpl extends AbstractService implements ExchangeServ
 
     /** */
     private MessageService msgSvc;
+
+    /** */
+    private TimeoutService timeoutSvc;
 
     /** */
     private QueryRegistry qryRegistry;
@@ -116,6 +121,20 @@ public class ExchangeServiceImpl extends AbstractService implements ExchangeServ
         return msgSvc;
     }
 
+    /**
+     * @param timeoutSvc Timeout service.
+     */
+    public void timeoutService(TimeoutService timeoutSvc) {
+        this.timeoutSvc = timeoutSvc;
+    }
+
+    /**
+     * @return Timeout service.
+     */
+    public TimeoutService timeoutService() {
+        return timeoutSvc;
+    }
+
     /** */
     public void queryRegistry(QueryRegistry qryRegistry) {
         this.qryRegistry = qryRegistry;
@@ -127,7 +146,7 @@ public class ExchangeServiceImpl extends AbstractService implements ExchangeServ
         messageService().send(nodeId, new QueryBatchMessage(qryId, fragmentId, exchangeId, batchId, last, Commons.cast(rows)));
 
         if (batchId == 0) {
-            Query<?> qry = (Query<?>)qryRegistry.query(qryId);
+            Query<?> qry = qryRegistry.query(qryId);
 
             if (qry != null)
                 qry.onOutboundExchangeStarted(nodeId, exchangeId);
@@ -163,6 +182,7 @@ public class ExchangeServiceImpl extends AbstractService implements ExchangeServ
         taskExecutor(proc.taskExecutor());
         mailboxRegistry(proc.mailboxRegistry());
         messageService(proc.messageService());
+        timeoutService(proc.timeoutService());
         queryRegistry(proc.queryRegistry());
 
         init();
@@ -183,7 +203,7 @@ public class ExchangeServiceImpl extends AbstractService implements ExchangeServ
 
     /** {@inheritDoc} */
     @Override public void onOutboundExchangeFinished(UUID qryId, long exchangeId) {
-        Query<?> qry = (Query<?>)qryRegistry.query(qryId);
+        Query<?> qry = qryRegistry.query(qryId);
 
         if (qry != null)
             qry.onOutboundExchangeFinished(exchangeId);
@@ -191,10 +211,15 @@ public class ExchangeServiceImpl extends AbstractService implements ExchangeServ
 
     /** {@inheritDoc} */
     @Override public void onInboundExchangeFinished(UUID nodeId, UUID qryId, long exchangeId) {
-        Query<?> qry = (Query<?>)qryRegistry.query(qryId);
+        Query<?> qry = qryRegistry.query(qryId);
 
         if (qry != null)
             qry.onInboundExchangeFinished(nodeId, exchangeId);
+    }
+
+    /** {@inheritDoc} */
+    @Override public UUID localNodeId() {
+        return locaNodeId;
     }
 
     /** */
@@ -216,11 +241,14 @@ public class ExchangeServiceImpl extends AbstractService implements ExchangeServ
 
     /** */
     protected void onMessage(UUID nodeId, QueryCloseMessage msg) {
-        RunningQuery qry = qryRegistry.query(msg.queryId());
+        Query<?> qry = qryRegistry.query(msg.queryId());
 
         if (qry != null)
             qry.cancel();
         else {
+            for (Inbox<?> inbox : mailboxRegistry().inboxes(msg.queryId(), -1, -1))
+                mailboxRegistry().unregister(inbox);
+
             if (log.isDebugEnabled()) {
                 log.debug("Stale query close message received: [" +
                     "nodeId=" + nodeId +
@@ -264,12 +292,30 @@ public class ExchangeServiceImpl extends AbstractService implements ExchangeServ
                 this, mailboxRegistry(), msg.exchangeId(), msg.exchangeId());
 
             inbox = mailboxRegistry().register(newInbox);
+
+            if (inbox == newInbox) {
+                // New inbox for query batch message can be registered in the following cases:
+                // 1. Race between messages (when first batch arrived to node before query start request). In this case
+                // query start request eventually will be delivered and query execution context will be initialized.
+                // Inbox will be closed by standard query execution workflow.
+                // 2. Stale first message (query already has been closed by some event). In this case query execution
+                // workflow already completed and inbox can leak. To prevent leakage, schedule task to check that
+                // query context is initialized within reasonable time (assume that race between messages can't be more
+                // than INBOX_INITIALIZATION_TIMEOUT milliseconds).
+                timeoutService().schedule(() -> {
+                    Inbox<?> timeoutInbox = mailboxRegistry().inbox(msg.queryId(), msg.exchangeId());
+
+                    // Inbox is not unregistered and still not initialized.
+                    if (timeoutInbox != null && timeoutInbox.context().topologyVersion() == null)
+                        taskExecutor().execute(msg.queryId(), msg.fragmentId(), timeoutInbox::close);
+                }, INBOX_INITIALIZATION_TIMEOUT);
+            }
         }
 
         if (inbox != null) {
             try {
                 if (msg.batchId() == 0) {
-                    Query<?> qry = (Query<?>)qryRegistry.query(msg.queryId());
+                    Query<?> qry = qryRegistry.query(msg.queryId());
 
                     if (qry != null)
                         qry.onInboundExchangeStarted(nodeId, msg.exchangeId());
@@ -313,6 +359,9 @@ public class ExchangeServiceImpl extends AbstractService implements ExchangeServ
                 null),
             null,
             NoOpMemoryTracker.INSTANCE,
-            ImmutableMap.of());
+            NoOpIoTracker.INSTANCE,
+            0,
+            ImmutableMap.of(),
+            null);
     }
 }

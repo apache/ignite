@@ -89,6 +89,12 @@ public final class IgniteQueryErrorCode {
     /** Database is closed by some reasons. */
     public static final int DB_UNRECOVERABLE_ERROR = 3016;
 
+    /** View already exists. */
+    public static final int VIEW_ALREADY_EXISTS = 3017;
+
+    /** View does not exist. */
+    public static final int VIEW_NOT_FOUND = 3018;
+
     /* 4xxx - cache related runtime errors */
 
     /** Attempt to INSERT a key that is already in cache. */
@@ -123,23 +129,6 @@ public final class IgniteQueryErrorCode {
 
     /** Attempt to INSERT, UPDATE or DELETE value on read-only cluster. */
     public static final int CLUSTER_READ_ONLY_MODE_ENABLED = 4011;
-
-    /* 5xxx - transactions related runtime errors. */
-
-    /** Transaction is already open. */
-    public static final int TRANSACTION_EXISTS = 5001;
-
-    /** MVCC disabled. */
-    public static final int MVCC_DISABLED = 5002;
-
-    /** Transaction type mismatch (SQL/non SQL). */
-    public static final int TRANSACTION_TYPE_MISMATCH = 5003;
-
-    /** Transaction is already completed. */
-    public static final int TRANSACTION_COMPLETED = 5004;
-
-    /** Transaction serialization error. */
-    public static final int TRANSACTION_SERIALIZATION_ERROR = 5005;
 
     /** Field type mismatch. e.g.: cause is {@link ClassCastException}. */
     public static final int FIELD_TYPE_MISMATCH = 5006;
@@ -198,15 +187,6 @@ public final class IgniteQueryErrorCode {
             case UNEXPECTED_ELEMENT_TYPE:
             case KEY_UPDATE:
                 return SqlStateCode.PARSING_EXCEPTION;
-
-            case MVCC_DISABLED:
-            case TRANSACTION_EXISTS:
-            case TRANSACTION_TYPE_MISMATCH:
-            case TRANSACTION_COMPLETED:
-                return SqlStateCode.TRANSACTION_STATE_EXCEPTION;
-
-            case TRANSACTION_SERIALIZATION_ERROR:
-                return SqlStateCode.SERIALIZATION_FAILURE;
 
             case QUERY_CANCELED:
                 return SqlStateCode.QUERY_CANCELLED;

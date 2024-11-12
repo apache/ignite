@@ -17,8 +17,6 @@
 package org.apache.ignite.internal.processors.query.calcite.schema;
 
 import java.util.List;
-import java.util.function.Function;
-import java.util.function.Predicate;
 import org.apache.calcite.plan.RelOptCluster;
 import org.apache.calcite.plan.RelOptTable;
 import org.apache.calcite.rel.RelCollation;
@@ -75,30 +73,29 @@ public class SystemViewIndexImpl implements IgniteIndex {
         @Nullable RexNode cond,
         @Nullable ImmutableBitSet requiredColumns
     ) {
-        return IgniteLogicalIndexScan.create(cluster, cluster.traitSet(), relOptTbl, idxName, proj, cond, requiredColumns);
+        return IgniteLogicalIndexScan.create(cluster, cluster.traitSet(), relOptTbl, idxName, proj, cond,
+            requiredColumns);
     }
 
     /** */
     @Override public <Row> Iterable<Row> scan(
         ExecutionContext<Row> execCtx,
         ColocationGroup grp,
-        Predicate<Row> filters,
         RangeIterable<Row> ranges,
-        Function<Row, Row> rowTransformer,
         @Nullable ImmutableBitSet requiredColumns
     ) {
         return new SystemViewScan<>(
             execCtx,
             tbl.descriptor(),
             ranges,
-            filters,
-            rowTransformer,
             requiredColumns
         );
     }
 
     /** {@inheritDoc} */
-    @Override public long count(ExecutionContext<?> ectx, ColocationGroup grp) {
+    @Override public long count(ExecutionContext<?> ectx, ColocationGroup grp, boolean notNull) {
+        assert !notNull; // Collation is empty, cannot come here with "notNull" flag.
+
         return tbl.descriptor().systemView().size();
     }
 
@@ -124,5 +121,10 @@ public class SystemViewIndexImpl implements IgniteIndex {
         RelDataType rowType = tbl.getRowType(cluster.getTypeFactory());
 
         return RexUtils.buildHashSearchBounds(cluster, cond, rowType, requiredColumns, true);
+    }
+
+    /** {@inheritDoc} */
+    @Override public boolean isInlineScanPossible(@Nullable ImmutableBitSet requiredColumns) {
+        return false;
     }
 }

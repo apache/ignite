@@ -23,7 +23,12 @@ import java.sql.Date;
 import java.sql.Time;
 import java.sql.Timestamp;
 import java.time.Duration;
+import java.time.Instant;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.time.LocalTime;
 import java.time.Period;
+import java.time.ZoneOffset;
 import java.util.Arrays;
 import java.util.HashSet;
 import java.util.List;
@@ -52,6 +57,7 @@ import org.apache.calcite.runtime.SqlFunctions;
 import org.apache.calcite.sql.SqlCharStringLiteral;
 import org.apache.calcite.sql.SqlIntervalLiteral;
 import org.apache.calcite.sql.SqlLiteral;
+import org.apache.calcite.sql.SqlUnknownLiteral;
 import org.apache.calcite.sql.type.SqlTypeName;
 import org.apache.calcite.sql.type.SqlTypeUtil;
 import org.apache.calcite.util.DateString;
@@ -59,11 +65,13 @@ import org.apache.calcite.util.Pair;
 import org.apache.calcite.util.TimeString;
 import org.apache.calcite.util.TimestampString;
 import org.apache.ignite.IgniteException;
+import org.apache.ignite.internal.cache.query.index.sorted.inline.types.DateValueUtils;
 import org.apache.ignite.internal.processors.query.IgniteSQLException;
 import org.apache.ignite.internal.processors.query.calcite.exec.ExecutionContext;
 import org.apache.ignite.internal.processors.query.calcite.exec.RowHandler;
 import org.apache.ignite.internal.processors.query.calcite.schema.ColumnDescriptor;
 import org.apache.ignite.internal.processors.query.calcite.schema.TableDescriptor;
+import org.apache.ignite.internal.processors.query.calcite.schema.ViewTableImpl;
 import org.apache.ignite.internal.processors.query.calcite.type.IgniteTypeFactory;
 import org.apache.ignite.internal.processors.query.calcite.type.IgniteTypeSystem;
 import org.apache.ignite.internal.util.typedef.F;
@@ -81,6 +89,9 @@ public class TypeUtils {
         java.sql.Date.class,
         java.sql.Time.class,
         java.sql.Timestamp.class,
+        LocalDateTime.class,
+        LocalDate.class,
+        LocalTime.class,
         Duration.class,
         Period.class,
         byte[].class
@@ -134,6 +145,11 @@ public class TypeUtils {
             return false;
         }
 
+        // Currently, RelDataTypeFactoryImpl#CLASS_FAMILIES doesn't consider the byte type as an integer.
+        if ((fromType.getSqlTypeName() == SqlTypeName.TINYINT && SqlTypeUtil.isIntType(toType))
+            || (toType.getSqlTypeName() == SqlTypeName.TINYINT && SqlTypeUtil.isIntType(fromType)))
+            return false;
+
         // Implicit type coercion does not handle nullability.
         if (SqlTypeUtil.equalSansNullability(factory, fromType, toType))
             return false;
@@ -170,14 +186,22 @@ public class TypeUtils {
     }
 
     /** */
-    public static RelDataType sqlType(IgniteTypeFactory typeFactory, Class<?> cls, int precision, int scale) {
+    public static RelDataType sqlType(
+        IgniteTypeFactory typeFactory,
+        Class<?> cls,
+        int precision,
+        int scale,
+        boolean nullability
+    ) {
         RelDataType javaType = typeFactory.createJavaType(cls);
 
         if (javaType.getSqlTypeName().allowsPrecScale(true, true) &&
-            (precision != RelDataType.PRECISION_NOT_SPECIFIED || scale != RelDataType.SCALE_NOT_SPECIFIED))
-            return typeFactory.createSqlType(javaType.getSqlTypeName(), precision, scale);
+            (precision != RelDataType.PRECISION_NOT_SPECIFIED || scale != RelDataType.SCALE_NOT_SPECIFIED)) {
+            return typeFactory.createTypeWithNullability(
+                typeFactory.createSqlType(javaType.getSqlTypeName(), precision, scale), nullability);
+        }
 
-        return sqlType(typeFactory, javaType);
+        return typeFactory.createTypeWithNullability(sqlType(typeFactory, javaType), nullability);
     }
 
     /** */
@@ -218,20 +242,41 @@ public class TypeUtils {
      * @param origin Column origin.
      * @return Result type.
      */
-    private static Type getResultClass(IgniteTypeFactory typeFactory, RelOptSchema schema, RelDataType type,
-        @Nullable List<String> origin) {
-        if (F.isEmpty(origin))
-            return typeFactory.getResultClass(type);
+    private static Type getResultClass(
+        IgniteTypeFactory typeFactory,
+        RelOptSchema schema,
+        RelDataType type,
+        @Nullable List<String> origin
+    ) {
+        int maxViewDepth = 100;
 
-        RelOptTable table = schema.getTableForMember(origin.subList(0, 2));
+        int cnt = 0; // Counter to protect from infinite recursion.
 
-        assert table != null;
+        while (true) {
+            if (F.isEmpty(origin))
+                return typeFactory.getResultClass(type);
 
-        ColumnDescriptor fldDesc = table.unwrap(TableDescriptor.class).columnDescriptor(origin.get(2));
+            if (cnt++ >= maxViewDepth)
+                throw new UnsupportedOperationException("To many inner views: " + maxViewDepth);
 
-        assert fldDesc != null;
+            RelOptTable table = schema.getTableForMember(origin.subList(0, 2));
 
-        return fldDesc.storageType();
+            assert table != null;
+
+            ViewTableImpl viewTable = table.unwrap(ViewTableImpl.class);
+
+            if (viewTable != null) {
+                origin = viewTable.fieldOrigin(origin.get(2));
+
+                continue;
+            }
+
+            ColumnDescriptor fldDesc = table.unwrap(TableDescriptor.class).columnDescriptor(origin.get(2));
+
+            assert fldDesc != null;
+
+            return fldDesc.storageType();
+        }
     }
 
     /**
@@ -242,16 +287,16 @@ public class TypeUtils {
         assert resultType.isStruct();
 
         if (hasConvertableFields(resultType)) {
-            RowHandler<Row> handler = ectx.rowHandler();
+            RowHandler<Row> hnd = ectx.rowHandler();
             List<RelDataType> types = RelOptUtil.getFieldTypeList(resultType);
-            RowHandler.RowFactory<Row> factory = handler.factory(ectx.getTypeFactory(), types);
+            RowHandler.RowFactory<Row> factory = hnd.factory(ectx.getTypeFactory(), types);
             List<Function<Object, Object>> converters = transform(types, t -> fieldConverter(ectx, t));
             return r -> {
                 Row newRow = factory.create();
-                assert handler.columnCount(newRow) == converters.size();
-                assert handler.columnCount(r) == converters.size();
+                assert hnd.columnCount(newRow) == converters.size();
+                assert hnd.columnCount(r) == converters.size();
                 for (int i = 0; i < converters.size(); i++)
-                    handler.set(i, newRow, converters.get(i).apply(handler.get(i, r)));
+                    hnd.set(i, newRow, converters.get(i).apply(hnd.get(i, r)));
                 return newRow;
             };
         }
@@ -316,13 +361,19 @@ public class TypeUtils {
         if (val == null)
             return null;
         else if (storageType == java.sql.Date.class)
-            return (int)(SqlFunctions.toLong((java.util.Date)val, DataContext.Variable.TIME_ZONE.get(ctx)) / DateTimeUtils.MILLIS_PER_DAY);
+            return (int)(toLong(ctx, val) / DateTimeUtils.MILLIS_PER_DAY);
+        else if (storageType == LocalDate.class)
+            return (int)(toLong(ctx, val) / DateTimeUtils.MILLIS_PER_DAY);
         else if (storageType == java.sql.Time.class)
-            return (int)(SqlFunctions.toLong((java.util.Date)val, DataContext.Variable.TIME_ZONE.get(ctx)) % DateTimeUtils.MILLIS_PER_DAY);
-        else if (storageType == Timestamp.class)
-            return SqlFunctions.toLong((java.util.Date)val, DataContext.Variable.TIME_ZONE.get(ctx));
+            return (int)(toLong(ctx, val) % DateTimeUtils.MILLIS_PER_DAY);
+        else if (storageType == LocalTime.class)
+            return (int)(toLong(ctx, val) % DateTimeUtils.MILLIS_PER_DAY);
+        else if (storageType == Timestamp.class || storageType == LocalDateTime.class)
+            return toLong(ctx, val);
         else if (storageType == java.util.Date.class)
-            return SqlFunctions.toLong((java.util.Date)val, DataContext.Variable.TIME_ZONE.get(ctx));
+            return toLong(ctx, val);
+        else if (storageType == java.util.Date.class)
+            return toLong(ctx, val);
         else if (storageType == Duration.class) {
             return TimeUnit.SECONDS.toMillis(((Duration)val).getSeconds())
                 + TimeUnit.NANOSECONDS.toMillis(((Duration)val).getNano());
@@ -348,16 +399,48 @@ public class TypeUtils {
             return val;
     }
 
+    /** Converts temporal objects to long.
+     *
+     * @param ctx Data context.
+     * @param val Temporal value.
+     * @return Millis value.
+     */
+    private static long toLong(DataContext ctx, Object val) {
+        if (val instanceof LocalDateTime)
+            return toLong(DateValueUtils.convertToTimestamp((LocalDateTime)val), DataContext.Variable.TIME_ZONE.get(ctx));
+
+        if (val instanceof LocalDate)
+            return toLong(DateValueUtils.convertToSqlDate((LocalDate)val), DataContext.Variable.TIME_ZONE.get(ctx));
+
+        if (val instanceof LocalTime)
+            return toLong(DateValueUtils.convertToSqlTime((LocalTime)val), DataContext.Variable.TIME_ZONE.get(ctx));
+
+        return toLong((java.util.Date)val, DataContext.Variable.TIME_ZONE.get(ctx));
+    }
+
+    /** */
+    private static long toLong(java.util.Date val, TimeZone tz) {
+        long time = val.getTime();
+
+        return time + tz.getOffset(time);
+    }
+
     /** */
     public static Object fromInternal(DataContext ctx, Object val, Type storageType) {
         if (val == null)
             return null;
         else if (storageType == java.sql.Date.class && val instanceof Integer)
             return new java.sql.Date(fromLocalTs(ctx, (Integer)val * DateTimeUtils.MILLIS_PER_DAY));
+        else if (storageType == LocalDate.class && val instanceof Integer)
+            return new java.sql.Date(fromLocalTs(ctx, (Integer)val * DateTimeUtils.MILLIS_PER_DAY)).toLocalDate();
         else if (storageType == java.sql.Time.class && val instanceof Integer)
             return new java.sql.Time(fromLocalTs(ctx, (Integer)val));
+        else if (storageType == LocalTime.class && val instanceof Integer)
+            return Instant.ofEpochMilli((Integer)val).atZone(ZoneOffset.UTC).toLocalTime();
         else if (storageType == Timestamp.class && val instanceof Long)
             return new Timestamp(fromLocalTs(ctx, (Long)val));
+        else if (storageType == LocalDateTime.class && val instanceof Long)
+            return new Timestamp(fromLocalTs(ctx, (Long)val)).toLocalDateTime();
         else if (storageType == java.util.Date.class && val instanceof Long)
             return new java.util.Date(fromLocalTs(ctx, (Long)val));
         else if (storageType == Duration.class && val instanceof Long)
@@ -379,12 +462,21 @@ public class TypeUtils {
         try {
             storageType = Primitive.box(storageType); // getValueAs() implemented only for boxed classes.
 
-            if (Date.class.equals(storageType))
-                internalVal = literal.getValueAs(DateString.class).getDaysSinceEpoch();
-            else if (Time.class.equals(storageType))
-                internalVal = literal.getValueAs(TimeString.class).getMillisOfDay();
-            else if (Timestamp.class.equals(storageType))
-                internalVal = literal.getValueAs(TimestampString.class).getMillisSinceEpoch();
+            if (Date.class.equals(storageType)) {
+                SqlLiteral literal0 = ((SqlUnknownLiteral)literal).resolve(SqlTypeName.DATE);
+
+                internalVal = literal0.getValueAs(DateString.class).getDaysSinceEpoch();
+            }
+            else if (Time.class.equals(storageType)) {
+                SqlLiteral literal0 = ((SqlUnknownLiteral)literal).resolve(SqlTypeName.TIME);
+
+                internalVal = literal0.getValueAs(TimeString.class).getMillisOfDay();
+            }
+            else if (Timestamp.class.equals(storageType)) {
+                SqlLiteral literal0 = ((SqlUnknownLiteral)literal).resolve(SqlTypeName.TIMESTAMP);
+
+                internalVal = literal0.getValueAs(TimestampString.class).getMillisSinceEpoch();
+            }
             else if (Duration.class.equals(storageType)) {
                 if (literal instanceof SqlIntervalLiteral &&
                     !literal.getValueAs(SqlIntervalLiteral.IntervalValue.class).getIntervalQualifier().isYearMonth())

@@ -21,6 +21,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
+import org.apache.ignite.cluster.ClusterState;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
@@ -99,38 +100,38 @@ public class CheckpointListenerForRegionTest extends GridCommonAbstractTest {
         //given: One started node with default cache.
         IgniteEx ignite0 = startGrid(0);
 
-        ignite0.cluster().active(true);
+        ignite0.cluster().state(ClusterState.ACTIVE);
 
         IgniteCache<Integer, Object> cache = ignite0.cache(DEFAULT_CACHE_NAME);
 
         GridCacheDatabaseSharedManager db = (GridCacheDatabaseSharedManager)(ignite0.context().cache().context().database());
 
-        DataRegion defaultRegion = db.checkpointedDataRegions().stream()
+        DataRegion dfltRegion = db.checkpointedDataRegions().stream()
             .filter(region -> DFLT_DATA_REG_DEFAULT_NAME.equals(region.config().getName()))
             .findFirst()
             .orElse(null);
 
-        assertNotNull("Expected default data region in checkpoint list is not found.", defaultRegion);
+        assertNotNull("Expected default data region in checkpoint list is not found.", dfltRegion);
 
         //and: Configure the listeners(for default region and for all regions) for watching for checkpoint.
-        AtomicInteger checkpointListenerDefaultRegionCounter = checkpointListenerWatcher(db, defaultRegion);
+        AtomicInteger checkpointListenerDfltRegionCounter = checkpointListenerWatcher(db, dfltRegion);
         AtomicInteger checkpointListenerAllRegionCounter = checkpointListenerWatcher(db, null);
 
         //when: Checkpoint happened.
         fillDataAndCheckpoint(ignite0, cache);
 
         //then: Both listeners should be called.
-        assertEquals(CALLS_COUNT_PER_CHECKPOINT, checkpointListenerDefaultRegionCounter.get());
+        assertEquals(CALLS_COUNT_PER_CHECKPOINT, checkpointListenerDfltRegionCounter.get());
         assertEquals(CALLS_COUNT_PER_CHECKPOINT, checkpointListenerAllRegionCounter.get());
 
         //Remove the default region from checkpoint.
-        db.checkpointedDataRegions().remove(defaultRegion);
+        db.checkpointedDataRegions().remove(dfltRegion);
 
         //when: Checkpoint happened.
         fillDataAndCheckpoint(ignite0, cache);
 
         //then: Only listener for all regions should be called.
-        assertEquals(CALLS_COUNT_PER_CHECKPOINT, checkpointListenerDefaultRegionCounter.get());
+        assertEquals(CALLS_COUNT_PER_CHECKPOINT, checkpointListenerDfltRegionCounter.get());
         assertEquals(2 * CALLS_COUNT_PER_CHECKPOINT, checkpointListenerAllRegionCounter.get());
 
         assertTrue(
@@ -139,13 +140,13 @@ public class CheckpointListenerForRegionTest extends GridCommonAbstractTest {
         );
 
         //Return default region back to the checkpoint.
-        db.checkpointedDataRegions().add(defaultRegion);
+        db.checkpointedDataRegions().add(dfltRegion);
 
         //when: Checkpoint happened.
         fillDataAndCheckpoint(ignite0, cache);
 
         //then: Both listeners should be called.
-        assertEquals(2 * CALLS_COUNT_PER_CHECKPOINT, checkpointListenerDefaultRegionCounter.get());
+        assertEquals(2 * CALLS_COUNT_PER_CHECKPOINT, checkpointListenerDfltRegionCounter.get());
         assertEquals(3 * CALLS_COUNT_PER_CHECKPOINT, checkpointListenerAllRegionCounter.get());
     }
 

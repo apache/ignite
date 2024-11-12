@@ -24,6 +24,7 @@ import javax.cache.CacheException;
 import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.cache.affinity.Affinity;
 import org.apache.ignite.cluster.ClusterGroup;
+import org.apache.ignite.cluster.ClusterState;
 import org.apache.ignite.configuration.AtomicConfiguration;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.CollectionConfiguration;
@@ -34,6 +35,7 @@ import org.apache.ignite.configuration.NearCacheConfiguration;
 import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.lang.IgniteExperimental;
 import org.apache.ignite.lang.IgniteProductVersion;
+import org.apache.ignite.metric.IgniteMetrics;
 import org.apache.ignite.plugin.IgnitePlugin;
 import org.apache.ignite.plugin.PluginNotFoundException;
 import org.apache.ignite.spi.metric.ReadOnlyMetricRegistry;
@@ -118,6 +120,14 @@ public interface Ignite extends AutoCloseable {
      * @return Compute instance over all cluster nodes started in server mode.
      */
     public IgniteCompute compute();
+
+    /**
+     * Gets custom metrics facade over current node.
+     *
+     * @return {@link IgniteMetrics} instance for current node.
+     */
+    @IgniteExperimental
+    public IgniteMetrics metrics();
 
     /**
      * Gets {@code compute} facade over the specified cluster group. All operations
@@ -687,7 +697,7 @@ public interface Ignite extends AutoCloseable {
      * Checks Ignite grid is active or not active.
      *
      * @return {@code True} if grid is active. {@code False} If grid is not active.
-     * @deprecated Use {@link IgniteCluster#active()} instead.
+     * @deprecated Use {@link IgniteCluster#state()} instead.
      */
     @Deprecated
     public boolean active();
@@ -700,7 +710,7 @@ public interface Ignite extends AutoCloseable {
      *
      * @param active If {@code True} start activation process. If {@code False} start deactivation process.
      * @throws IgniteException If there is an already started transaction or lock in the same thread.
-     * @deprecated Use {@link IgniteCluster#active(boolean)} instead.
+     * @deprecated Use {@link IgniteCluster#state(ClusterState)} instead.
      */
     @Deprecated
     public void active(boolean active);
@@ -752,12 +762,6 @@ public interface Ignite extends AutoCloseable {
      * @return {@link DataRegionMetrics} snapshot or {@code null} if no memory region is configured under specified name.
      */
     @Nullable public DataRegionMetrics dataRegionMetrics(String memPlcName);
-
-    /**
-     * @return {@link DataStorageMetrics} snapshot.
-     * @deprecated Check the {@link ReadOnlyMetricRegistry} with "name=io.datastorage" instead.
-     */
-    public DataStorageMetrics dataStorageMetrics();
 
     /**
      * Gets an instance of {@link IgniteEncryption} interface.

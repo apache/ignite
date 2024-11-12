@@ -27,7 +27,7 @@ import org.jetbrains.annotations.Nullable;
  */
 public class GridCacheQueryBean {
     /** */
-    private final GridCacheQueryAdapter<?> qry;
+    private final CacheQuery<?> qry;
 
     /** */
     private final IgniteReducer<Object, Object> rdc;
@@ -44,8 +44,8 @@ public class GridCacheQueryBean {
      * @param trans Optional transformer.
      * @param args Optional arguments.
      */
-    public GridCacheQueryBean(GridCacheQueryAdapter<?> qry, @Nullable IgniteReducer<Object, Object> rdc,
-        @Nullable IgniteClosure<?, ?> trans, @Nullable Object[] args) {
+    public GridCacheQueryBean(CacheQuery<?> qry, @Nullable IgniteReducer<Object, Object> rdc,
+                              @Nullable IgniteClosure<?, ?> trans, @Nullable Object[] args) {
         assert qry != null;
 
         this.qry = qry;
@@ -57,7 +57,7 @@ public class GridCacheQueryBean {
     /**
      * @return Query.
      */
-    public GridCacheQueryAdapter<?> query() {
+    public CacheQuery<?> query() {
         return qry;
     }
 

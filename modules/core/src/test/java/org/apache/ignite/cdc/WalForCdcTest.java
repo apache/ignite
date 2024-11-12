@@ -36,6 +36,7 @@ import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
+import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.pagemem.wal.IgniteWriteAheadLogManager;
 import org.apache.ignite.internal.pagemem.wal.WALIterator;
 import org.apache.ignite.internal.pagemem.wal.record.DataRecord;
@@ -62,6 +63,7 @@ import static org.apache.ignite.configuration.DataStorageConfiguration.UNLIMITED
 import static org.apache.ignite.internal.util.IgniteUtils.KB;
 import static org.apache.ignite.internal.util.IgniteUtils.MB;
 import static org.apache.ignite.testframework.GridTestUtils.getFieldValue;
+import static org.apache.ignite.testframework.GridTestUtils.runMultiThreadedAsync;
 import static org.apache.ignite.testframework.GridTestUtils.waitForCondition;
 
 /** Check only {@link DataRecord} written to the WAL for in-memory cache. */
@@ -69,6 +71,9 @@ import static org.apache.ignite.testframework.GridTestUtils.waitForCondition;
 public class WalForCdcTest extends GridCommonAbstractTest {
     /** */
     private static final int RECORD_COUNT = 10;
+
+    /** */
+    public static final int DFLT_WAL_SGMNT_SZ = (int)(2 * MB);
 
     /** */
     @Parameterized.Parameter
@@ -88,6 +93,9 @@ public class WalForCdcTest extends GridCommonAbstractTest {
     private long archiveSz = UNLIMITED_WAL_ARCHIVE;
 
     /** */
+    private int walSgmntSz = DFLT_WAL_SGMNT_SZ;
+
+    /** */
     @Parameterized.Parameters(name = "mode={0}, atomicityMode={1}")
     public static Collection<?> parameters() {
         List<Object[]> params = new ArrayList<>();
@@ -105,7 +113,7 @@ public class WalForCdcTest extends GridCommonAbstractTest {
 
         cfg.setDataStorageConfiguration(new DataStorageConfiguration()
             .setWalForceArchiveTimeout(WAL_ARCHIVE_TIMEOUT)
-            .setWalSegmentSize((int)(2 * MB))
+            .setWalSegmentSize(walSgmntSz)
             .setMaxWalArchiveSize(archiveSz)
             .setDefaultDataRegionConfiguration(new DataRegionConfiguration()
                 .setPersistenceEnabled(persistenceEnabled)
@@ -263,6 +271,53 @@ public class WalForCdcTest extends GridCommonAbstractTest {
         );
     }
 
+    /** Tests that WAL rollover by timeout will happen if concurrent operations exists. */
+    @Test
+    public void testTimeoutRolloverWithConcurrentLoad() throws Exception {
+        persistenceEnabled = true;
+        cdcEnabled = true;
+        walSgmntSz = Integer.MAX_VALUE;
+
+        try {
+            IgniteEx ignite = startGrid(0);
+
+            ignite.cluster().state(ClusterState.ACTIVE);
+
+            IgniteCache<Long, Long> cache = ignite.getOrCreateCache(
+                new CacheConfiguration<Long, Long>(DEFAULT_CACHE_NAME)
+                    .setCacheMode(mode)
+                    .setAtomicityMode(atomicityMode));
+
+            IgniteInternalFuture<Long> genFut = runMultiThreadedAsync(() -> {
+                long cntr = 0;
+
+                while (!Thread.currentThread().isInterrupted())
+                    cache.put(cntr++, cntr);
+            }, 2, "data-generator");
+
+            try {
+                IgniteWriteAheadLogManager wal = ignite.context().cache().context().wal(true);
+
+                for (int i = 0; i < 3; i++) {
+                    log.info("Waiting for WAL rollover[iter=" + i + 1 + ']');
+
+                    long startSgmnt = wal.currentSegment();
+
+                    assertTrue(
+                        "Timeout rollover must happen",
+                        waitForCondition(() -> startSgmnt < wal.currentSegment(), WAL_ARCHIVE_TIMEOUT * 2)
+                    );
+                }
+            }
+            finally {
+                genFut.cancel();
+            }
+        }
+        finally {
+            walSgmntSz = DFLT_WAL_SGMNT_SZ;
+        }
+    }
+
     /** */
     private void doTestWal(
         IgniteEx ignite,
@@ -298,6 +353,10 @@ public class WalForCdcTest extends GridCommonAbstractTest {
 
         while (iter.hasNext()) {
             IgniteBiTuple<WALPointer, WALRecord> rec = iter.next();
+
+            // Custom records could be written in WAL even if persistence isn't enabled.
+            if (rec.get2().type().purpose() == WALRecord.RecordPurpose.CUSTOM)
+                continue;
 
             if (persistenceEnabled && (!(rec.get2() instanceof DataRecord)))
                 continue;

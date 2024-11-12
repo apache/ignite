@@ -33,7 +33,6 @@ import org.apache.ignite.internal.processors.cache.distributed.near.GridNearCach
 import org.apache.ignite.internal.processors.query.GridQueryIndexDescriptor;
 import org.apache.ignite.internal.processors.query.QueryTypeDescriptorImpl;
 import org.apache.ignite.internal.processors.query.QueryUtils;
-import org.apache.ignite.internal.util.future.GridCompoundFuture;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.SB;
@@ -103,7 +102,7 @@ public class SchemaIndexCacheVisitorImpl implements SchemaIndexCacheVisitor {
             return;
         }
 
-        cctx.group().metrics().addIndexBuildCountPartitionsLeft(locParts.size());
+        cctx.cache().metrics0().addIndexBuildPartitionsLeftCount(locParts.size());
         cctx.cache().metrics0().resetIndexRebuildKeyProcessed();
 
         beforeExecute();
@@ -128,17 +127,14 @@ public class SchemaIndexCacheVisitorImpl implements SchemaIndexCacheVisitor {
             cctx.kernalContext().pools().buildIndexExecutorService().execute(worker);
         }
 
-        buildIdxCompoundFut.listen(fut -> {
-            Throwable err = fut.error();
+        buildIdxCompoundFut.listen(() -> {
+            Throwable err = buildIdxCompoundFut.error();
 
             if (isNull(err) && collectStat && log.isInfoEnabled()) {
                 try {
-                    GridCompoundFuture<SchemaIndexCacheStat, SchemaIndexCacheStat> compoundFut =
-                        (GridCompoundFuture<SchemaIndexCacheStat, SchemaIndexCacheStat>)fut;
-
                     SchemaIndexCacheStat resStat = new SchemaIndexCacheStat();
 
-                    compoundFut.futures().stream()
+                    buildIdxCompoundFut.futures().stream()
                         .map(IgniteInternalFuture::result)
                         .filter(Objects::nonNull)
                         .forEach(resStat::accumulate);

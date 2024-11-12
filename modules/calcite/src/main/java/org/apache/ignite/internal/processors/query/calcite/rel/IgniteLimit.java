@@ -18,7 +18,6 @@
 package org.apache.ignite.internal.processors.query.calcite.rel;
 
 import java.util.List;
-
 import com.google.common.collect.ImmutableList;
 import org.apache.calcite.plan.RelOptCluster;
 import org.apache.calcite.plan.RelOptCost;
@@ -35,6 +34,7 @@ import org.apache.calcite.util.Pair;
 import org.apache.ignite.internal.processors.query.calcite.metadata.cost.IgniteCost;
 import org.apache.ignite.internal.processors.query.calcite.trait.IgniteDistributions;
 import org.apache.ignite.internal.processors.query.calcite.trait.TraitUtils;
+import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.internal.processors.query.calcite.metadata.cost.IgniteCost.FETCH_IS_PARAM_FACTOR;
 import static org.apache.ignite.internal.processors.query.calcite.metadata.cost.IgniteCost.OFFSET_IS_PARAM_FACTOR;
@@ -43,10 +43,10 @@ import static org.apache.ignite.internal.processors.query.calcite.util.RexUtils.
 /** */
 public class IgniteLimit extends SingleRel implements IgniteRel {
     /** Offset. */
-    private final RexNode offset;
+    @Nullable private final RexNode offset;
 
     /** Fetches rows expression (limit) */
-    private final RexNode fetch;
+    @Nullable private final RexNode fetch;
 
     /**
      * Constructor.
@@ -61,8 +61,8 @@ public class IgniteLimit extends SingleRel implements IgniteRel {
         RelOptCluster cluster,
         RelTraitSet traits,
         RelNode child,
-        RexNode offset,
-        RexNode fetch
+        @Nullable RexNode offset,
+        @Nullable RexNode fetch
     ) {
         super(cluster, traits, child);
         this.offset = offset;
@@ -136,37 +136,32 @@ public class IgniteLimit extends SingleRel implements IgniteRel {
 
     /** {@inheritDoc} */
     @Override public RelOptCost computeSelfCost(RelOptPlanner planner, RelMetadataQuery mq) {
-        double inputRowCount = mq.getRowCount(getInput());
-
-        double lim = fetch != null ? doubleFromRex(fetch, inputRowCount * FETCH_IS_PARAM_FACTOR) : inputRowCount;
-        double off = offset != null ? doubleFromRex(offset, inputRowCount * OFFSET_IS_PARAM_FACTOR) : 0;
-
-        double rows = Math.min(lim + off, inputRowCount);
+        double rows = estimateRowCount(mq);
 
         return planner.getCostFactory().makeCost(rows, rows * IgniteCost.ROW_PASS_THROUGH_COST, 0);
     }
 
     /** {@inheritDoc} */
     @Override public double estimateRowCount(RelMetadataQuery mq) {
-        double inputRowCount = mq.getRowCount(getInput());
+        double inputRowCnt = mq.getRowCount(getInput());
 
-        double lim = fetch != null ? doubleFromRex(fetch, inputRowCount * FETCH_IS_PARAM_FACTOR) : inputRowCount;
-        double off = offset != null ? doubleFromRex(offset, inputRowCount * OFFSET_IS_PARAM_FACTOR) : 0;
+        double lim = fetch != null ? doubleFromRex(fetch, inputRowCnt * FETCH_IS_PARAM_FACTOR) : inputRowCnt;
+        double off = offset != null ? doubleFromRex(offset, inputRowCnt * OFFSET_IS_PARAM_FACTOR) : 0;
 
-        return Math.min(lim, inputRowCount - off);
+        return Math.max(0, Math.min(lim, inputRowCnt - off));
     }
 
     /**
      * @return Offset.
      */
-    public RexNode offset() {
+    @Nullable public RexNode offset() {
         return offset;
     }
 
     /**
      * @return Fetches rows expression (limit)
      */
-    public RexNode fetch() {
+    @Nullable public RexNode fetch() {
         return fetch;
     }
 

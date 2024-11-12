@@ -197,7 +197,7 @@ If the memory-mapped file approach is disabled then the changes stay in node's i
 Otherwise, recent data updates may get lost in case of a process crash or other outages.
 
 | `NONE` | WAL is disabled. The changes are persisted only if you shut down the node gracefully.
-Use `Ignite.active(false)` to deactivate the cluster and shut down the node.
+Use `Ignite.cluster().state(ClusterState.INACTIVE)` to deactivate the cluster and shut down the node.
 
 | Data loss might occur.
 
@@ -298,6 +298,10 @@ To enable it, set the compression algorithm and compression level in the data st
 [tabs]
 --
 tab:XML[]
+[source, xml]
+----
+include::code-snippets/xml/wal-compress.xml[tags=ignite-config,indent=0]
+----
 
 tab:Java[]
 [source, java]

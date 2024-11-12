@@ -227,12 +227,9 @@ import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.IgnitePeerToPeerClassLoadingException;
 import org.apache.ignite.internal.processors.cluster.BaselineTopology;
-import org.apache.ignite.internal.transactions.IgniteTxAlreadyCompletedCheckedException;
-import org.apache.ignite.internal.transactions.IgniteTxDuplicateKeyCheckedException;
 import org.apache.ignite.internal.transactions.IgniteTxHeuristicCheckedException;
 import org.apache.ignite.internal.transactions.IgniteTxOptimisticCheckedException;
 import org.apache.ignite.internal.transactions.IgniteTxRollbackCheckedException;
-import org.apache.ignite.internal.transactions.IgniteTxSerializationCheckedException;
 import org.apache.ignite.internal.transactions.IgniteTxTimeoutCheckedException;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.future.IgniteFinishedFutureImpl;
@@ -276,13 +273,10 @@ import org.apache.ignite.spi.discovery.DiscoverySpi;
 import org.apache.ignite.spi.discovery.DiscoverySpiOrderSupport;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.thread.IgniteThreadFactory;
-import org.apache.ignite.transactions.TransactionAlreadyCompletedException;
 import org.apache.ignite.transactions.TransactionDeadlockException;
-import org.apache.ignite.transactions.TransactionDuplicateKeyException;
 import org.apache.ignite.transactions.TransactionHeuristicException;
 import org.apache.ignite.transactions.TransactionOptimisticException;
 import org.apache.ignite.transactions.TransactionRollbackException;
-import org.apache.ignite.transactions.TransactionSerializationException;
 import org.apache.ignite.transactions.TransactionTimeoutException;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -378,6 +372,9 @@ public abstract class IgniteUtils {
     /** Empty fields array. */
     public static final Field[] EMPTY_FIELDS = new Field[0];
 
+    /** */
+    public static final UUID[] EMPTY_UUIDS = new UUID[0];
+
     /** System line separator. */
     private static final String NL = System.getProperty("line.separator");
 
@@ -399,6 +396,12 @@ public abstract class IgniteUtils {
 
     /** Alphanumeric with underscore regexp pattern. */
     private static final Pattern ALPHANUMERIC_UNDERSCORE_PATTERN = Pattern.compile("^[a-zA-Z_0-9]+$");
+
+    /** Length of numbered file name. */
+    public static final int NUMBER_FILE_NAME_LENGTH = 16;
+
+    /** Ignite package. */
+    public static final String IGNITE_PKG = "org.apache.ignite.";
 
     /** Project home directory. */
     private static volatile GridTuple<String> ggHome;
@@ -565,6 +568,9 @@ public abstract class IgniteUtils {
     /** MAC OS invalid argument socket error message. */
     public static final String MAC_INVALID_ARG_MSG = "On MAC OS you may have too many file descriptors open " +
         "(simple restart usually solves the issue)";
+
+    /** */
+    public static final String DELIM = "--------------------------------------------------------------------------------";
 
     /** Ignite Logging Directory. */
     public static final String IGNITE_LOG_DIR = System.getenv(IgniteSystemProperties.IGNITE_LOG_DIR);
@@ -1042,24 +1048,6 @@ public abstract class IgniteUtils {
             }
         });
 
-        m.put(IgniteTxSerializationCheckedException.class, new C1<IgniteCheckedException, IgniteException>() {
-            @Override public IgniteException apply(IgniteCheckedException e) {
-                return new TransactionSerializationException(e.getMessage(), e);
-            }
-        });
-
-        m.put(IgniteTxDuplicateKeyCheckedException.class, new C1<IgniteCheckedException, IgniteException>() {
-            @Override public IgniteException apply(IgniteCheckedException e) {
-                return new TransactionDuplicateKeyException(e.getMessage(), e);
-            }
-        });
-
-        m.put(IgniteTxAlreadyCompletedCheckedException.class, new C1<IgniteCheckedException, IgniteException>() {
-            @Override public IgniteException apply(IgniteCheckedException e) {
-                return new TransactionAlreadyCompletedException(e.getMessage(), e);
-            }
-        });
-
         return m;
     }
 
@@ -1077,6 +1065,21 @@ public abstract class IgniteUtils {
             providers.add(provider);
 
         return providers;
+    }
+
+    /**
+     * Gets all plugin providers.
+     *
+     * @param cfg Configuration.
+     * @param includeClsPath Include classpath plugins on empty config.
+     * @return Plugins.
+     */
+    public static List<PluginProvider> allPluginProviders(IgniteConfiguration cfg, boolean includeClsPath) {
+        return cfg.getPluginProviders() != null && cfg.getPluginProviders().length > 0 ?
+            Arrays.asList(cfg.getPluginProviders()) :
+            includeClsPath ?
+                U.allPluginProviders() :
+                Collections.emptyList();
     }
 
     /**
@@ -1957,6 +1960,29 @@ public abstract class IgniteUtils {
     }
 
     /**
+     * Reads typed array from input stream.
+     *
+     * @param in Input stream.
+     * @return Deserialized array.
+     * @throws IOException If failed.
+     * @throws ClassNotFoundException If class not found.
+     */
+    @Nullable public static <T> T[] readArray(ObjectInput in, Class<T> cls) throws IOException, ClassNotFoundException {
+        int len = in.readInt();
+
+        T[] arr = null;
+
+        if (len > 0) {
+            arr = (T[])Array.newInstance(cls, len);
+
+            for (int i = 0; i < len; i++)
+                arr[i] = (T)in.readObject();
+        }
+
+        return arr;
+    }
+
+    /**
      * Reads array from input stream.
      *
      * @param in Input stream.
@@ -2287,12 +2313,12 @@ public abstract class IgniteUtils {
 
         addrs.add(ipAddr);
 
-        boolean ignoreLocalHostName = getBoolean(IGNITE_IGNORE_LOCAL_HOST_NAME, true);
+        boolean ignoreLocHostName = getBoolean(IGNITE_IGNORE_LOCAL_HOST_NAME, true);
 
-        String userDefinedLocalHost = getString(IGNITE_LOCAL_HOST);
+        String userDefinedLocHost = getString(IGNITE_LOCAL_HOST);
 
         // If IGNITE_LOCAL_HOST is defined and IGNITE_IGNORE_LOCAL_HOST_NAME is not false, then ignore local address's hostname
-        if (!F.isEmpty(userDefinedLocalHost) && ignoreLocalHostName)
+        if (!F.isEmpty(userDefinedLocHost) && ignoreLocHostName)
             return;
 
         String hostName = addr.getHostName();
@@ -3364,6 +3390,50 @@ public abstract class IgniteUtils {
     }
 
     /**
+     * Generates file name from index.
+     *
+     * @param num Number to generate file name.
+     * @param ext Optional extension
+     * @return File name.
+     */
+    public static String fixedLengthNumberName(long num, @Nullable String ext) {
+        SB b = new SB();
+
+        String segmentStr = Long.toString(num);
+
+        for (int i = segmentStr.length(); i < NUMBER_FILE_NAME_LENGTH; i++)
+            b.a('0');
+
+        b.a(segmentStr);
+
+        if (ext != null)
+            b.a(ext);
+
+        return b.toString();
+    }
+
+    /**
+     * @param fileName File name.
+     * @return Number of this file.
+     */
+    public static long fixedLengthFileNumber(String fileName) {
+        return Long.parseLong(fileName.substring(0, NUMBER_FILE_NAME_LENGTH));
+    }
+
+    /**
+     * @param ext Optional extension.
+     * @return Pattern to match numbered file name with the specific extension.
+     */
+    public static Pattern fixedLengthNumberNamePattern(@Nullable String ext) {
+        String pattern = "\\d{" + NUMBER_FILE_NAME_LENGTH + "}";
+
+        if (ext != null)
+            pattern += ext.replaceAll("\\.", "\\\\\\.");
+
+        return Pattern.compile(pattern);
+    }
+
+    /**
      * Verifier always returns successful result for any host.
      */
     private static class DeploymentHostnameVerifier implements HostnameVerifier {
@@ -3735,7 +3805,7 @@ public abstract class IgniteUtils {
     }
 
     /**
-     * Deletes file or directory with all sub-directories and files.
+     * Deletes file or directory with all sub-directories and files. Not thread-safe.
      *
      * @param file File or directory to delete.
      * @return {@code true} if and only if the file or directory is successfully deleted,
@@ -3756,7 +3826,7 @@ public abstract class IgniteUtils {
     }
 
     /**
-     * Deletes file or directory with all sub-directories and files.
+     * Deletes file or directory with all sub-directories and files. Not thread-safe.
      *
      * @param path File or directory to delete.
      * @return {@code true} if and only if the file or directory is successfully deleted,
@@ -4292,7 +4362,7 @@ public abstract class IgniteUtils {
      * @param log Logger to log possible checked exception with (optional).
      */
     public static void close(@Nullable Socket sock, @Nullable IgniteLogger log) {
-        if (sock == null)
+        if (sock == null || sock.isClosed())
             return;
 
         try {
@@ -4974,6 +5044,26 @@ public abstract class IgniteUtils {
      */
     public static ObjectName makeMBeanName(@Nullable String igniteInstanceName, @Nullable String grp, String name)
         throws MalformedObjectNameException {
+        return makeMBeanName(igniteInstanceName, grp, Collections.emptyList(), name);
+    }
+
+    /**
+     * Constructs JMX object name with given properties.
+     * Map with ordered {@code groups} used for proper object name construction.
+     *
+     * @param igniteInstanceName Ignite instance name.
+     * @param grp Name of the group.
+     * @param grps Names of extended groups.
+     * @param name Name of mbean.
+     * @return JMX object name.
+     * @throws MalformedObjectNameException Thrown in case of any errors.
+     */
+    public static ObjectName makeMBeanName(
+        @Nullable String igniteInstanceName,
+        @Nullable String grp,
+        List<String> grps,
+        String name
+    ) throws MalformedObjectNameException {
         SB sb = new SB(JMX_DOMAIN + ':');
 
         appendClassLoaderHash(sb);
@@ -4985,6 +5075,9 @@ public abstract class IgniteUtils {
 
         if (grp != null)
             sb.a("group=").a(escapeObjectNameValue(grp)).a(',');
+
+        for (int i = 0; i < grps.size(); i++)
+            sb.a("group").a(i).a("=").a(grps.get(i)).a(',');
 
         sb.a("name=").a(escapeObjectNameValue(name));
 
@@ -6827,7 +6920,7 @@ public abstract class IgniteUtils {
     public static String compact(String s) {
         return s.replace("org.apache.ignite.internal.visor.", "o.a.i.i.v.").
             replace("org.apache.ignite.internal.", "o.a.i.i.").
-            replace("org.apache.ignite.", "o.a.i.");
+            replace(IGNITE_PKG, "o.a.i.");
     }
 
     /**
@@ -7449,8 +7542,7 @@ public abstract class IgniteUtils {
      * @return Short string representing the node.
      */
     public static String toShortString(ClusterNode n) {
-        return "ClusterNode [id=" + n.id() + ", order=" + n.order() + ", addr=" + n.addresses() +
-            ", daemon=" + n.isDaemon() + ']';
+        return "ClusterNode [id=" + n.id() + ", order=" + n.order() + ", addr=" + n.addresses() + ']';
     }
 
     /**
@@ -7586,6 +7678,17 @@ public abstract class IgniteUtils {
             ret.add(l);
 
         return ret;
+    }
+
+    /**
+     * Concats two integers to long.
+     *
+     * @param high Highest bits.
+     * @param low Lowest bits.
+     * @return Long.
+     */
+    public static long toLong(int high, int low) {
+        return (((long)high) << Integer.SIZE) | (low & 0xffffffffL);
     }
 
     /**
@@ -9573,67 +9676,7 @@ public abstract class IgniteUtils {
     }
 
     /**
-     * Returns tha list of resolved inet addresses. First addresses are resolved by host names,
-     * if this attempt fails then the addresses are resolved by ip addresses.
-     *
-     * @param node Grid node.
-     * @return Inet addresses for given addresses and host names.
-     * @throws IgniteCheckedException If non of addresses can be resolved.
-     */
-    public static Collection<InetAddress> toInetAddresses(ClusterNode node) throws IgniteCheckedException {
-        return toInetAddresses(node.addresses(), node.hostNames());
-    }
-
-    /**
-     * Returns tha list of resolved inet addresses. First addresses are resolved by host names,
-     * if this attempt fails then the addresses are resolved by ip addresses.
-     *
-     * @param addrs Addresses.
-     * @param hostNames Host names.
-     * @return Inet addresses for given addresses and host names.
-     * @throws IgniteCheckedException If non of addresses can be resolved.
-     */
-    public static Collection<InetAddress> toInetAddresses(Collection<String> addrs,
-        Collection<String> hostNames) throws IgniteCheckedException {
-        Set<InetAddress> res = new HashSet<>(addrs.size());
-
-        Iterator<String> hostNamesIt = hostNames.iterator();
-
-        for (String addr : addrs) {
-            String hostName = hostNamesIt.hasNext() ? hostNamesIt.next() : null;
-
-            InetAddress inetAddr = null;
-
-            if (!F.isEmpty(hostName)) {
-                try {
-                    inetAddr = InetAddress.getByName(hostName);
-                }
-                catch (UnknownHostException ignored) {
-                }
-            }
-
-            if (inetAddr == null || inetAddr.isLoopbackAddress()) {
-                try {
-                    inetAddr = InetAddress.getByName(addr);
-                }
-                catch (UnknownHostException ignored) {
-                }
-            }
-
-            if (inetAddr != null)
-                res.add(inetAddr);
-        }
-
-        if (res.isEmpty())
-            throw new IgniteCheckedException("Addresses can not be resolved [addr=" + addrs +
-                ", hostNames=" + hostNames + ']');
-
-        return res;
-    }
-
-    /**
-     * Returns tha list of resolved socket addresses. First addresses are resolved by host names,
-     * if this attempt fails then the addresses are resolved by ip addresses.
+     * Returns the list of resolved socket addresses.
      *
      * @param node Grid node.
      * @param port Port.
@@ -9644,37 +9687,38 @@ public abstract class IgniteUtils {
     }
 
     /**
-     * Returns tha list of resolved socket addresses. First addresses are resolved by host names,
-     * if this attempt fails then the addresses are resolved by ip addresses.
+     * Returns the list of resolved socket addresses.
      *
      * @param addrs Addresses.
      * @param hostNames Host names.
      * @param port Port.
      * @return Socket addresses for given addresses and host names.
      */
-    public static Collection<InetSocketAddress> toSocketAddresses(Collection<String> addrs,
-        Collection<String> hostNames, int port) {
+    public static Collection<InetSocketAddress> toSocketAddresses(
+        Collection<String> addrs,
+        Collection<String> hostNames,
+        int port
+    ) {
         Set<InetSocketAddress> res = new HashSet<>(addrs.size());
 
-        Iterator<String> hostNamesIt = hostNames.iterator();
+        boolean hasAddr = false;
 
         for (String addr : addrs) {
-            String hostName = hostNamesIt.hasNext() ? hostNamesIt.next() : null;
+            InetSocketAddress inetSockAddr = createResolved(addr, port);
+            res.add(inetSockAddr);
 
-            if (!F.isEmpty(hostName)) {
-                InetSocketAddress inetSockAddr = createResolved(hostName, port);
+            if (!inetSockAddr.isUnresolved() && !inetSockAddr.getAddress().isLoopbackAddress())
+                hasAddr = true;
+        }
 
-                if (inetSockAddr.isUnresolved() ||
-                    (!inetSockAddr.isUnresolved() && inetSockAddr.getAddress().isLoopbackAddress())
-                )
-                    inetSockAddr = createResolved(addr, port);
+        // Try to resolve addresses from host names if no external addresses found.
+        if (!hasAddr) {
+            for (String host : hostNames) {
+                InetSocketAddress inetSockAddr = createResolved(host, port);
 
-                res.add(inetSockAddr);
+                if (!inetSockAddr.isUnresolved())
+                    res.add(inetSockAddr);
             }
-
-            // Always append address because local and remote nodes may have the same hostname
-            // therefore remote hostname will always be resolved to local address.
-            res.add(createResolved(addr, port));
         }
 
         return res;
@@ -9764,8 +9808,8 @@ public abstract class IgniteUtils {
 
         Collection<InetSocketAddress> resolved = new HashSet<>();
 
-        for (InetSocketAddress address : sockAddr)
-            resolved.addAll(resolveAddress(addrRslvr, address));
+        for (InetSocketAddress addr : sockAddr)
+            resolved.addAll(resolveAddress(addrRslvr, addr));
 
         return resolved;
     }
@@ -9924,7 +9968,21 @@ public abstract class IgniteUtils {
      * @return Resolved work directory.
      * @throws IgniteCheckedException If failed.
      */
-    public static File resolveWorkDirectory(String workDir, String path, boolean delIfExist)
+    public static File resolveWorkDirectory(String workDir, String path, boolean delIfExist) throws IgniteCheckedException {
+        return resolveWorkDirectory(workDir, path, delIfExist, true);
+    }
+
+    /**
+     * Resolves work directory.
+     *
+     * @param workDir Work directory.
+     * @param path Path to resolve.
+     * @param delIfExist Flag indicating whether to delete the specify directory or not.
+     * @param create If {@code true} then directory must be created if not exists.
+     * @return Resolved work directory.
+     * @throws IgniteCheckedException If failed.
+     */
+    public static File resolveWorkDirectory(String workDir, String path, boolean delIfExist, boolean create)
         throws IgniteCheckedException {
         File dir = new File(path);
 
@@ -9939,6 +9997,9 @@ public abstract class IgniteUtils {
             if (!U.delete(dir))
                 throw new IgniteCheckedException("Failed to delete directory: " + dir);
         }
+
+        if (!create)
+            return dir;
 
         if (!mkdirs(dir))
             throw new IgniteCheckedException("Directory does not exist and cannot be created: " + dir);
@@ -10027,9 +10088,13 @@ public abstract class IgniteUtils {
      *      {@code null} if passed in name is not related to lambda.
      */
     @Nullable public static String lambdaEnclosingClassName(String clsName) {
-        int idx = clsName.indexOf("$$Lambda$");
+        int idx0 = clsName.indexOf("$$Lambda$"); // Java 8+
+        int idx1 = clsName.indexOf("$$Lambda/"); // Java 21+
 
-        return idx != -1 ? clsName.substring(0, idx) : null;
+        if (idx0 == idx1)
+            return null;
+
+        return clsName.substring(0, idx0 >= 0 ? idx0 : idx1);
     }
 
     /**
@@ -10383,7 +10448,7 @@ public abstract class IgniteUtils {
      * @param cls Class.
      * @return Package name.
      */
-    private static String packageName(Class<?> cls) {
+    public static String packageName(Class<?> cls) {
         Package pkg = cls.getPackage();
 
         return pkg == null ? "" : pkg.getName();
@@ -11531,7 +11596,7 @@ public abstract class IgniteUtils {
         // If executor cannot perform immediately, we will execute task in the current thread.
         Set<Batch<T, R>> sharedBatchesSet = new GridConcurrentHashSet<>(batchSizes.length);
 
-        Iterator<T> iterator = srcDatas.iterator();
+        Iterator<T> iter = srcDatas.iterator();
 
         for (int idx = 0; idx < batchSizes.length; idx++) {
             int batchSize = batchSizes[idx];
@@ -11539,7 +11604,7 @@ public abstract class IgniteUtils {
             Batch<T, R> batch = new Batch<>(batchSize, uninterruptible);
 
             for (int i = 0; i < batchSize; i++)
-                batch.addTask(iterator.next());
+                batch.addTask(iter.next());
 
             batches.add(batch);
         }
@@ -11663,7 +11728,7 @@ public abstract class IgniteUtils {
      * @return {@code true} if local node is coordinator.
      */
     public static boolean isLocalNodeCoordinator(GridDiscoveryManager discoMgr) {
-        if (discoMgr.localNode().isClient() || discoMgr.localNode().isDaemon())
+        if (discoMgr.localNode().isClient())
             return false;
 
         DiscoverySpi spi = discoMgr.getInjectedDiscoverySpi();
@@ -12403,7 +12468,7 @@ public abstract class IgniteUtils {
      * @return {@code true} if the REST processor is enabled, {@code false} the otherwise.
      */
     public static boolean isRestEnabled(IgniteConfiguration cfg) {
-        boolean isClientNode = cfg.isClientMode() || cfg.isDaemon();
+        boolean isClientNode = cfg.isClientMode();
 
         // By default, rest processor doesn't start on client nodes.
         return cfg.getConnectorConfiguration() != null &&
@@ -12446,5 +12511,34 @@ public abstract class IgniteUtils {
         catch (ClassNotFoundException e) {
             return true;
         }
+    }
+
+    /**
+     * Appends spaces to end of input string for extending to needed length.
+     *
+     * @param s Input string.
+     * @param targetLen Needed length.
+     * @return String with appended spaces on the end.
+     */
+    public static String extendToLen(String s, int targetLen) {
+        assert targetLen >= 0;
+        assert s.length() <= targetLen;
+
+        if (s.length() == targetLen)
+            return s;
+
+        SB sb = new SB(targetLen);
+
+        sb.a(s);
+
+        for (int i = 0; i < targetLen - s.length(); i++)
+            sb.a(" ");
+
+        return sb.toString();
+    }
+
+    /** */
+    public static boolean isTxAwareQueriesEnabled(GridKernalContext kctx) {
+        return kctx.config().getTransactionConfiguration().isTxAwareQueriesEnabled();
     }
 }

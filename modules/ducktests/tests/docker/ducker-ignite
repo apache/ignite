@@ -42,7 +42,7 @@ docker_run_memory_limit="8000m"
 default_num_nodes=4
 
 # The default OpenJDK base image.
-default_jdk="openjdk:8"
+default_jdk="openjdk:11"
 
 # The default ducker-ignite image name.
 default_image_name="ducker-ignite"
@@ -230,6 +230,14 @@ ask_yes_no() {
         echo "Please respond 'yes' or 'no'."
         echo
     done
+}
+
+# Wait for all the background jobs
+wait_jobs() {
+  for job in `jobs -p`
+  do
+    wait $job
+  done
 }
 
 # Build a docker image.
@@ -487,7 +495,11 @@ ducker_test() {
     must_popd
     if [[ -n "${DUCKTAPE_EXTRA_SETUP}" ]]; then
         echo "executing extra ducktape setup with '${DUCKTAPE_EXTRA_SETUP}'"
-        docker exec --user=root ducker01 bash -c "${DUCKTAPE_EXTRA_SETUP}"
+        local nodes=$(echo_running_container_names)
+        for node in ${nodes}; do
+          docker exec --user=root ${node} bash -c "${DUCKTAPE_EXTRA_SETUP}" &
+        done
+        wait_jobs
         [[ $? -ne 0 ]] && die "failed to execute extra ducktape setup."
     fi
     cmd="cd /opt/ignite-dev && ducktape --cluster-file /opt/ignite-dev/modules/ducktests/tests/docker/build/cluster.json $args"

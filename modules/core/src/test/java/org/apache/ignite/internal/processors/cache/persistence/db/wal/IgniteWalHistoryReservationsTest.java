@@ -26,6 +26,7 @@ import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.CacheWriteSynchronizationMode;
 import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
+import org.apache.ignite.cluster.ClusterState;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
@@ -40,7 +41,6 @@ import org.apache.ignite.internal.processors.cache.persistence.wal.FileWriteAhea
 import org.apache.ignite.internal.util.lang.GridAbsPredicate;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.testframework.GridTestUtils;
-import org.apache.ignite.testframework.MvccFeatureChecker;
 import org.apache.ignite.testframework.junits.WithSystemProperty;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Assert;
@@ -127,8 +127,6 @@ public class IgniteWalHistoryReservationsTest extends GridCommonAbstractTest {
      */
     @Test
     public void testReservedOnExchange() throws Exception {
-        MvccFeatureChecker.skipIfNotSupported(MvccFeatureChecker.Feature.ENTRY_LOCK);
-
         System.setProperty(IGNITE_PDS_WAL_REBALANCE_THRESHOLD, "0");
 
         final int entryCnt = 10_000;
@@ -136,7 +134,7 @@ public class IgniteWalHistoryReservationsTest extends GridCommonAbstractTest {
 
         final IgniteEx ig0 = (IgniteEx)startGrids(initGridCnt + 1);
 
-        ig0.cluster().active(true);
+        ig0.cluster().state(ClusterState.ACTIVE);
 
         stopGrid(initGridCnt);
 
@@ -286,13 +284,11 @@ public class IgniteWalHistoryReservationsTest extends GridCommonAbstractTest {
      */
     @Test
     public void testRemovesArePreloadedIfHistoryIsAvailable() throws Exception {
-        Assume.assumeFalse("https://issues.apache.org/jira/browse/IGNITE-10551", MvccFeatureChecker.forcedMvcc());
-
         int entryCnt = 10_000;
 
         IgniteEx ig0 = (IgniteEx)startGrids(2);
 
-        ig0.cluster().active(true);
+        ig0.cluster().state(ClusterState.ACTIVE);
 
         IgniteCache<Integer, Integer> cache = ig0.cache("cache1");
 
@@ -338,13 +334,11 @@ public class IgniteWalHistoryReservationsTest extends GridCommonAbstractTest {
      */
     @Test
     public void testNodeIsClearedIfHistoryIsUnavailable() throws Exception {
-        Assume.assumeFalse("https://issues.apache.org/jira/browse/IGNITE-10551", MvccFeatureChecker.forcedMvcc());
-
         int entryCnt = 10_000;
 
         IgniteEx ig0 = (IgniteEx)startGrids(2);
 
-        ig0.cluster().active(true);
+        ig0.cluster().state(ClusterState.ACTIVE);
 
         IgniteCache<Integer, Integer> cache = ig0.cache("cache1");
 
@@ -401,7 +395,6 @@ public class IgniteWalHistoryReservationsTest extends GridCommonAbstractTest {
      */
     @Test
     public void testWalHistoryPartiallyRemoved() throws Exception {
-        Assume.assumeFalse("https://issues.apache.org/jira/browse/IGNITE-10551", MvccFeatureChecker.forcedMvcc());
         Assume.assumeTrue(
             "https://issues.apache.org/jira/browse/IGNITE-16891",
             IgniteSystemProperties.getString(IGNITE_DEFAULT_DISK_PAGE_COMPRESSION) == null
@@ -411,7 +404,7 @@ public class IgniteWalHistoryReservationsTest extends GridCommonAbstractTest {
 
         IgniteEx ig0 = startGrids(2);
 
-        ig0.cluster().active(true);
+        ig0.cluster().state(ClusterState.ACTIVE);
 
         IgniteCache<Integer, Integer> cache = ig0.cache("cache1");
 
@@ -439,7 +432,7 @@ public class IgniteWalHistoryReservationsTest extends GridCommonAbstractTest {
 
         Ignite ig1 = startGrid(1);
 
-        ig1.cluster().active(true);
+        ig1.cluster().state(ClusterState.ACTIVE);
     }
 
     /**
@@ -447,8 +440,6 @@ public class IgniteWalHistoryReservationsTest extends GridCommonAbstractTest {
      */
     @Test
     public void testNodeLeftDuringExchange() throws Exception {
-        MvccFeatureChecker.skipIfNotSupported(MvccFeatureChecker.Feature.ENTRY_LOCK);
-
         System.setProperty(IGNITE_PDS_WAL_REBALANCE_THRESHOLD, "0");
 
         final int entryCnt = 10_000;
@@ -456,7 +447,7 @@ public class IgniteWalHistoryReservationsTest extends GridCommonAbstractTest {
 
         final Ignite ig0 = startGrids(initGridCnt);
 
-        ig0.cluster().active(true);
+        ig0.cluster().state(ClusterState.ACTIVE);
 
         IgniteCache<Object, Object> cache = ig0.cache("cache1");
 
@@ -541,7 +532,7 @@ public class IgniteWalHistoryReservationsTest extends GridCommonAbstractTest {
 
         IgniteEx grid = startGrids(2);
 
-        grid.cluster().active(true);
+        grid.cluster().state(ClusterState.ACTIVE);
 
         IgniteCache<Object, Object> cache = grid.createCache(new CacheConfiguration<>("cache").setBackups(1));
 

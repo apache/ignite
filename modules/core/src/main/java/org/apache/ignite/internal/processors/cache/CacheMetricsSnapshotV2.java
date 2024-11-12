@@ -329,6 +329,9 @@ public class CacheMetricsSnapshotV2 extends IgniteDataTransferObject implements 
     /** Number of keys processed during index rebuilding. */
     private long idxRebuildKeyProcessed;
 
+    /** The number of local node partitions that remain to be processed to complete indexing. */
+    private int idxBuildPartitionsLeftCount;
+
     /**
      * Default constructor.
      */
@@ -442,6 +445,8 @@ public class CacheMetricsSnapshotV2 extends IgniteDataTransferObject implements 
 
         idxRebuildInProgress = m.isIndexRebuildInProgress();
         idxRebuildKeyProcessed = m.getIndexRebuildKeysProcessed();
+
+        idxBuildPartitionsLeftCount = m.getIndexBuildPartitionsLeftCount();
     }
 
     /**
@@ -587,6 +592,7 @@ public class CacheMetricsSnapshotV2 extends IgniteDataTransferObject implements 
             keysToRebalanceLeft += e.getKeysToRebalanceLeft();
             rebalancingBytesRate += e.getRebalancingBytesRate();
             rebalancingKeysRate += e.getRebalancingKeysRate();
+            idxBuildPartitionsLeftCount += e.getIndexBuildPartitionsLeftCount();
         }
 
         int size = metrics.size();
@@ -1073,6 +1079,11 @@ public class CacheMetricsSnapshotV2 extends IgniteDataTransferObject implements 
     }
 
     /** {@inheritDoc} */
+    @Override public int getIndexBuildPartitionsLeftCount() {
+        return idxBuildPartitionsLeftCount;
+    }
+
+    /** {@inheritDoc} */
     @Override public String toString() {
         return S.toString(CacheMetricsSnapshotV2.class, this);
     }
@@ -1154,6 +1165,7 @@ public class CacheMetricsSnapshotV2 extends IgniteDataTransferObject implements 
         out.writeInt(size);
         out.writeInt(keySize);
         U.writeLongString(out, txKeyCollisions);
+        out.writeInt(idxBuildPartitionsLeftCount);
     }
 
     /** {@inheritDoc} */
@@ -1233,5 +1245,6 @@ public class CacheMetricsSnapshotV2 extends IgniteDataTransferObject implements 
         size = in.readInt();
         keySize = in.readInt();
         txKeyCollisions = U.readLongString(in);
+        idxBuildPartitionsLeftCount = in.readInt();
     }
 }

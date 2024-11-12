@@ -41,21 +41,32 @@ public class SnapshotHandlerContext {
     /** Warning flag of concurrent inconsistent-by-nature streamer updates. */
     private final boolean streamerWrn;
 
+    /** If {@code true}, calculates and compares partition hashes. Otherwise, only basic snapshot validation is launched.*/
+    private final boolean check;
+
     /**
      * @param metadata Snapshot metadata.
      * @param grps The names of the cache groups on which the operation is performed.
      * {@code False} otherwise. Always {@code false} for snapshot restoration.
      * @param locNode Local node.
      * @param snpDir The full path to the snapshot files.
-     * @param streamerWrn {@code True} if concurrent streaming updates occured during snapshot operation.
+     * @param streamerWrn {@code True} if concurrent streaming updates occurred during snapshot operation.
+     * @param check If {@code true}, calculates and compares partition hashes. Otherwise, only basic snapshot validation is launched.
      */
-    public SnapshotHandlerContext(SnapshotMetadata metadata, @Nullable Collection<String> grps, ClusterNode locNode,
-        File snpDir, boolean streamerWrn) {
+    public SnapshotHandlerContext(
+        SnapshotMetadata metadata,
+        @Nullable Collection<String> grps,
+        ClusterNode locNode,
+        File snpDir,
+        boolean streamerWrn,
+        boolean check
+    ) {
         this.metadata = metadata;
         this.grps = grps;
         this.locNode = locNode;
         this.snpDir = snpDir;
         this.streamerWrn = streamerWrn;
+        this.check = check;
     }
 
     /**
@@ -88,9 +99,14 @@ public class SnapshotHandlerContext {
     }
 
     /**
-     * @return {@code True} if concurrent streaming updates occured during snapshot operation. {@code False} otherwise.
+     * @return {@code True} if concurrent streaming updates occurred during snapshot operation. {@code False} otherwise.
      */
     public boolean streamerWarning() {
         return streamerWrn;
+    }
+
+    /** @return If {@code true}, calculates and compares partition hashes. Otherwise, only basic snapshot validation is launched. */
+    public boolean check() {
+        return check;
     }
 }

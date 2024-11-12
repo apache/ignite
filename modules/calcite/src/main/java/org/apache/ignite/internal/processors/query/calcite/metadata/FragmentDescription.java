@@ -24,8 +24,8 @@ import java.util.Map;
 import java.util.UUID;
 import org.apache.ignite.internal.GridDirectMap;
 import org.apache.ignite.internal.GridDirectTransient;
+import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.query.calcite.message.MarshalableMessage;
-import org.apache.ignite.internal.processors.query.calcite.message.MarshallingContext;
 import org.apache.ignite.internal.processors.query.calcite.message.MessageType;
 import org.apache.ignite.internal.util.UUIDCollectionMessage;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -188,7 +188,7 @@ public class FragmentDescription implements MarshalableMessage {
     }
 
     /** {@inheritDoc} */
-    @Override public void prepareMarshal(MarshallingContext ctx) {
+    @Override public void prepareMarshal(GridCacheSharedContext<?, ?> ctx) {
         if (mapping != null)
             mapping.prepareMarshal(ctx);
 
@@ -204,7 +204,7 @@ public class FragmentDescription implements MarshalableMessage {
     }
 
     /** {@inheritDoc} */
-    @Override public void prepareUnmarshal(MarshallingContext ctx) {
+    @Override public void prepareUnmarshal(GridCacheSharedContext<?, ?> ctx) {
         if (mapping != null)
             mapping.prepareUnmarshal(ctx);
 

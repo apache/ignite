@@ -19,7 +19,6 @@ package org.apache.ignite.internal.processors.cache;
 
 import java.util.Arrays;
 import java.util.Collection;
-import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Random;
@@ -45,19 +44,15 @@ import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.TestRecordingCommunicationSpi;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionSupplyMessage;
-import org.apache.ignite.internal.processors.metric.MetricRegistry;
 import org.apache.ignite.internal.processors.metric.impl.ObjectGauge;
 import org.apache.ignite.internal.util.lang.GridAbsPredicate;
 import org.apache.ignite.internal.util.typedef.PA;
 import org.apache.ignite.internal.util.typedef.internal.A;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.U;
-import org.apache.ignite.internal.visor.VisorTaskArgument;
-import org.apache.ignite.internal.visor.node.VisorNodeDataCollectorTask;
-import org.apache.ignite.internal.visor.node.VisorNodeDataCollectorTaskArg;
-import org.apache.ignite.internal.visor.node.VisorNodeDataCollectorTaskResult;
 import org.apache.ignite.lang.IgniteBiPredicate;
 import org.apache.ignite.lang.IgnitePredicate;
+import org.apache.ignite.metric.MetricRegistry;
 import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.spi.metric.IntMetric;
 import org.apache.ignite.spi.metric.LongMetric;
@@ -219,7 +214,7 @@ public class CacheGroupsMetricsRebalanceTest extends GridCommonAbstractTest {
 
         List<String> cacheNames = Arrays.asList(CACHE4, CACHE5);
 
-        int allKeysCount = 0;
+        int allKeysCnt = 0;
 
         for (String cacheName : cacheNames) {
             Map<Integer, Long> data = new Random().ints(KEYS_COUNT).distinct().boxed()
@@ -227,7 +222,7 @@ public class CacheGroupsMetricsRebalanceTest extends GridCommonAbstractTest {
 
             ignite0.getOrCreateCache(cacheName).putAll(data);
 
-            allKeysCount += data.size();
+            allKeysCnt += data.size();
         }
 
         TestRecordingCommunicationSpi.spi(ignite0)
@@ -315,11 +310,11 @@ public class CacheGroupsMetricsRebalanceTest extends GridCommonAbstractTest {
 
         String wrongReceivedKeyCntMsg = "The number of currently rebalanced keys for the whole cache group should " +
             "be equal to the number of entries in the caches.";
-        assertEquals(wrongReceivedKeyCntMsg, allKeysCount, receivedKeys.value());
-        assertEquals(wrongReceivedKeyCntMsg, allKeysCount, sumFunc.applyAsLong(fullReceivedKeys.value()));
+        assertEquals(wrongReceivedKeyCntMsg, allKeysCnt, receivedKeys.value());
+        assertEquals(wrongReceivedKeyCntMsg, allKeysCnt, sumFunc.applyAsLong(fullReceivedKeys.value()));
         assertEquals(0, sumFunc.applyAsLong(histReceivedKeys.value()));
 
-        int estimateByteCnt = allKeysCount * (Integer.BYTES + Long.BYTES);
+        int estimateByteCnt = allKeysCnt * (Integer.BYTES + Long.BYTES);
 
         String wrongReceivedByteCntMsg = "The number of currently rebalanced bytes of this cache group was expected " +
             "more " + estimateByteCnt + " bytes.";
@@ -456,23 +451,11 @@ public class CacheGroupsMetricsRebalanceTest extends GridCommonAbstractTest {
 
         latch.await();
 
-        VisorNodeDataCollectorTaskArg taskArg = new VisorNodeDataCollectorTaskArg();
-        taskArg.setCacheGroups(Collections.emptySet());
-
-        VisorTaskArgument<VisorNodeDataCollectorTaskArg> arg = new VisorTaskArgument<>(
-            Collections.singletonList(ignite.cluster().localNode().id()),
-            taskArg,
-            false
-        );
-
         GridTestUtils.waitForCondition(new GridAbsPredicate() {
             @Override public boolean apply() {
-                VisorNodeDataCollectorTaskResult res = ignite.compute().execute(VisorNodeDataCollectorTask.class, arg);
-
                 CacheMetrics snapshot = ig.cache(CACHE1).metrics();
 
                 return snapshot.getRebalancedKeys() > snapshot.getEstimatedRebalancingKeys()
-                    && Double.compare(res.getRebalance().get(ignite.cluster().localNode().id()), 1.0) == 0
                     && snapshot.getRebalancingPartitionsCount() == 0;
             }
         }, 5000);

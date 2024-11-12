@@ -42,14 +42,12 @@ import org.apache.ignite.internal.TransactionsMXBeanImpl;
 import org.apache.ignite.internal.managers.communication.GridIoMessage;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearLockRequest;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxPrepareRequest;
-import org.apache.ignite.internal.processors.cache.mvcc.msg.MvccTxSnapshotRequest;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteTxAdapter;
 import org.apache.ignite.lang.IgniteInClosure;
 import org.apache.ignite.mxbean.TransactionsMXBean;
 import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.spi.IgniteSpiException;
 import org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi;
-import org.apache.ignite.spi.metric.jmx.JmxMetricExporterSpi;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.ListeningTestLogger;
 import org.apache.ignite.testframework.LogListener;
@@ -170,8 +168,6 @@ public class GridTransactionsSystemUserTimeMetricsTest extends GridCommonAbstrac
 
             cfg.setCacheConfiguration(ccfg);
         }
-
-        cfg.setMetricExporterSpi(new JmxMetricExporterSpi());
 
         cfg.setCommunicationSpi(new TestCommunicationSpi());
 
@@ -775,7 +771,7 @@ public class GridTransactionsSystemUserTimeMetricsTest extends GridCommonAbstrac
             if (msg instanceof GridIoMessage) {
                 Object msg0 = ((GridIoMessage)msg).message();
 
-                if (msg0 instanceof GridNearLockRequest || msg0 instanceof MvccTxSnapshotRequest) {
+                if (msg0 instanceof GridNearLockRequest) {
                     if (slowSystem) {
                         slowSystem = false;
 

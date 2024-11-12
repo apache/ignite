@@ -44,11 +44,17 @@ public class SqlKeyword {
     /** Keyword: SERVICE. */
     public static final String SERVICE = "SERVICE";
 
+    /** Keyword: CLIENT. */
+    public static final String CLIENT = "CLIENT";
+
     /** Keyword: ALTER. */
     public static final String ALTER = "ALTER";
 
     /** Keyword: ALLOW_OVERWRITE */
     public static final String ALLOW_OVERWRITE = "ALLOW_OVERWRITE";
+
+    /** Keyword: AS. */
+    public static final String AS = "AS";
 
     /** Keyword: ASC. */
     public static final String ASC = "ASC";
@@ -328,6 +334,18 @@ public class SqlKeyword {
 
     /** Keyword: REFRESH. */
     public static final String REFRESH = "REFRESH";
+
+    /** Keyword: OR. */
+    public static final String OR = "OR";
+
+    /** Keyword: REPLACE. */
+    public static final String REPLACE = "REPLACE";
+
+    /** Keyword: VIEW. */
+    public static final String VIEW = "VIEW";
+
+    /** Keyword: SELECT. */
+    public static final String SELECT = "SELECT";
 
     /** All keywords. */
     private static final HashSet<String> KEYWORDS;

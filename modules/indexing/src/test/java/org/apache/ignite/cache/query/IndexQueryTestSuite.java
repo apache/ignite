@@ -38,6 +38,7 @@ import org.junit.runners.Suite;
     IndexQueryPartitionTest.class,
     IndexQueryCacheKeyValueFieldsTest.class,
     IndexQueryCacheKeyValueEscapedFieldsTest.class,
+    IndexQueryCacheKeyValueTransformedFieldsTest.class,
     IndexQueryWrongIndexTest.class,
     MultifieldIndexQueryTest.class,
     MultiTableIndexQuery.class,
@@ -45,7 +46,9 @@ import org.junit.runners.Suite;
     ThinClientIndexQueryTest.class,
     RepeatedFieldIndexQueryTest.class,
     IndexQueryInCriterionTest.class,
-    IndexQueryInCriterionDescTest.class
+    IndexQueryInCriterionDescTest.class,
+    IndexQueryLimitTest.class,
+    IndexQueryPaginationTest.class
 })
 public class IndexQueryTestSuite {
 }

@@ -22,19 +22,24 @@ import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import org.apache.ignite.IgniteException;
+import org.apache.ignite.cluster.ClusterGroup;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.compute.ComputeJob;
 import org.apache.ignite.compute.ComputeTaskNoResultCache;
-import org.apache.ignite.internal.IgniteComputeImpl;
+import org.apache.ignite.compute.ComputeTaskSession;
 import org.apache.ignite.internal.binary.BinaryRawReaderEx;
 import org.apache.ignite.internal.binary.BinaryRawWriterEx;
 import org.apache.ignite.internal.managers.discovery.GridDiscoveryManager;
 import org.apache.ignite.internal.processors.platform.PlatformContext;
+import org.apache.ignite.internal.processors.platform.PlatformTarget;
+import org.apache.ignite.internal.processors.platform.PlatformTargetProxy;
+import org.apache.ignite.internal.processors.platform.PlatformTargetProxyImpl;
 import org.apache.ignite.internal.processors.platform.memory.PlatformInputStream;
 import org.apache.ignite.internal.processors.platform.memory.PlatformMemory;
 import org.apache.ignite.internal.processors.platform.memory.PlatformMemoryManager;
 import org.apache.ignite.internal.processors.platform.memory.PlatformOutputStream;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.resources.TaskSessionResource;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -49,22 +54,42 @@ public final class PlatformFullTask extends PlatformAbstractTask {
     /** Initial topology version. */
     private final long topVer;
 
-    /** Compute instance. */
-    private final IgniteComputeImpl compute;
+    /** Cluster group. */
+    private final ClusterGroup grp;
+
+    /** Platform task name. */
+    private final String taskName;
+
+    /** {@code true} if distribution of the session attributes should be enabled. */
+    private final boolean taskSesFullSupport;
+
+    /** The task session. */
+    @TaskSessionResource
+    private ComputeTaskSession ses;
 
     /**
      * Constructor.
      *
      * @param ctx Platform context.
-     * @param compute Target compute instance.
+     * @param grp Cluster group.
      * @param taskPtr Pointer to the task in the native platform.
      * @param topVer Initial topology version.
+     * @param taskName Task name.
+     * @param taskSesFullSupport {@code true} if distribution of the session attributes should be enabled.
      */
-    public PlatformFullTask(PlatformContext ctx, IgniteComputeImpl compute, long taskPtr, long topVer) {
+    public PlatformFullTask(
+        PlatformContext ctx,
+        ClusterGroup grp,
+        long taskPtr,
+        long topVer,
+        String taskName,
+        boolean taskSesFullSupport) {
         super(ctx, taskPtr);
 
-        this.compute = compute;
+        this.grp = grp;
         this.topVer = topVer;
+        this.taskName = taskName;
+        this.taskSesFullSupport = taskSesFullSupport;
     }
 
     /** {@inheritDoc} */
@@ -77,9 +102,12 @@ public final class PlatformFullTask extends PlatformAbstractTask {
         try {
             assert !done;
 
-            Collection<ClusterNode> nodes = compute.clusterGroup().nodes();
+            Collection<ClusterNode> nodes = grp.nodes();
 
             PlatformMemoryManager memMgr = ctx.memory();
+
+            final PlatformTarget platformSes = new PlatformComputeTaskSession(ctx, ses);
+            final PlatformTargetProxy platformSesProxy = new PlatformTargetProxyImpl(platformSes, ctx);
 
             try (PlatformMemory mem = memMgr.allocate()) {
                 PlatformOutputStream out = mem.output();
@@ -92,7 +120,7 @@ public final class PlatformFullTask extends PlatformAbstractTask {
 
                 out.synchronize();
 
-                ctx.gateway().computeTaskMap(mem.pointer());
+                ctx.gateway().computeTaskMap(mem.pointer(), platformSesProxy);
 
                 PlatformInputStream in = mem.input();
 
@@ -106,6 +134,11 @@ public final class PlatformFullTask extends PlatformAbstractTask {
         finally {
             lock.readLock().unlock();
         }
+    }
+
+    /** {@code true} if distribution of session attributes should be enabled. */
+    public boolean taskSessionFullSupport() {
+        return taskSesFullSupport;
     }
 
     /**
@@ -160,7 +193,7 @@ public final class PlatformFullTask extends PlatformAbstractTask {
 
                 Object nativeJob = reader.readBoolean() ? reader.readObjectDetached() : null;
 
-                PlatformJob job = ctx.createJob(this, ptr, nativeJob);
+                PlatformJob job = ctx.createJob(this, ptr, nativeJob, taskName);
 
                 UUID jobNodeId = reader.readUuid();
 

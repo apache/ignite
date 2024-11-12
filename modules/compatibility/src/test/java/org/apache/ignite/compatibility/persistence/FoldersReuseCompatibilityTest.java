@@ -25,6 +25,7 @@ import java.util.TreeSet;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.compatibility.testframework.junits.SkipTestIfIsJdkNewer;
 import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.MemoryConfiguration;
@@ -44,6 +45,7 @@ import static org.apache.ignite.internal.processors.cache.persistence.filename.P
 /**
  * Test for new and old style persistent storage folders generation and compatible startup of current ignite version
  */
+@SkipTestIfIsJdkNewer(8)
 public class FoldersReuseCompatibilityTest extends IgnitePersistenceCompatibilityAbstractTest {
     /** Cache name for test. */
     private static final String CACHE_NAME = "dummy";

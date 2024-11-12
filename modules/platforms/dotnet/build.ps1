@@ -83,7 +83,7 @@ param (
     [switch]$clean,
     [ValidateSet("Release", "Debug")]
     [string]$configuration="Release",
-    [string]$mavenOpts="-U -P-lgpl,-scala,-all-scala,-spark-2.4,-examples,-test,-benchmarks -Dmaven.javadoc.skip=true",
+    [string]$mavenOpts="-U -P-lgpl,-scala,-spark-2.4,-examples,-test,-benchmarks -Dmaven.javadoc.skip=true",
 	[string]$jarDirs="modules\indexing\target,modules\core\target,modules\spring\target",
 	[string]$version="",
 	[string]$versionSuffix=""
@@ -190,7 +190,7 @@ if (!$skipDotNet) {
 }
 
 if(!$skipDotNetCore) {
-    Build-Solution ".\Apache.Ignite\Apache.Ignite.DotNetCore.csproj" "bin\netcoreapp3.1"
+    Build-Solution ".\Apache.Ignite.DotNetCore.sln" "bin\net6.0"
 }
 
 

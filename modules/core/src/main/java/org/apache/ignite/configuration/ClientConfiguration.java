@@ -19,6 +19,7 @@ package org.apache.ignite.configuration;
 
 import java.io.Serializable;
 import java.util.Arrays;
+import java.util.EventListener;
 import java.util.Map;
 import java.util.concurrent.Executor;
 import java.util.concurrent.ForkJoinPool;
@@ -26,11 +27,14 @@ import javax.cache.configuration.Factory;
 import javax.net.ssl.SSLContext;
 
 import org.apache.ignite.IgniteLogger;
+import org.apache.ignite.cache.query.IndexQuery;
+import org.apache.ignite.cache.query.ScanQuery;
 import org.apache.ignite.client.ClientAddressFinder;
 import org.apache.ignite.client.ClientPartitionAwarenessMapper;
 import org.apache.ignite.client.ClientPartitionAwarenessMapperFactory;
 import org.apache.ignite.client.ClientRetryAllPolicy;
 import org.apache.ignite.client.ClientRetryPolicy;
+import org.apache.ignite.client.ClientTransactions;
 import org.apache.ignite.client.SslMode;
 import org.apache.ignite.client.SslProtocol;
 import org.apache.ignite.internal.client.thin.TcpIgniteClient;
@@ -123,6 +127,11 @@ public final class ClientConfiguration implements Serializable {
     private ClientPartitionAwarenessMapperFactory partitionAwarenessMapperFactory;
 
     /**
+     * Whether cluster discovery should be enabled.
+     */
+    private boolean clusterDiscoveryEnabled = true;
+
+    /**
      * Reconnect throttling period (in milliseconds). There are no more than {@code reconnectThrottlingRetries}
      * attempts to reconnect will be made within {@code reconnectThrottlingPeriod} in case of connection loss.
      * Throttling is disabled if either {@code reconnectThrottlingRetries} or {@code reconnectThrottlingPeriod} is 0.
@@ -154,6 +163,9 @@ public final class ClientConfiguration implements Serializable {
 
     /** Logger. */
     private IgniteLogger logger;
+
+    /** */
+    private EventListener[] eventListeners;
 
     /**
      * @return Host addresses.
@@ -525,12 +537,20 @@ public final class ClientConfiguration implements Serializable {
     }
 
     /**
-     * @return A value indicating whether partition awareness should be enabled.
-     * <p>
-     * Default is {@code true}: client sends requests directly to the primary node for the given cache key.
-     * To do so, connection is established to every known server node.
-     * <p>
+     * <p>Default is {@code true}: client sends requests directly to the primary node for the given cache key.
+     * To do so, connection is established to every known server node.</p>
      * When {@code false}, only one connection is established at a given moment to a random server node.
+     * <p>
+     * Partition awareness functionality helps to avoid an additional network hop in the following scenarios:
+     * <ul>
+     *     <li>1. Single-key operations API, like put(), get(), etc. However, the functionality has no effect on those
+     *     operations within explicit transactions {@link ClientTransactions#txStart()}.</li>
+     *     <li>2. {@link ScanQuery#setPartition(Integer)} and {@link IndexQuery#setPartition(Integer)} accept a
+     *     partition number as a parameter with which the query is routed to a particular server node that stores
+     *     the requested data.</li>
+     * </ul>
+     * </p>
+     * @return A value indicating whether partition awareness should be enabled.
      */
     public boolean isPartitionAwarenessEnabled() {
         return partitionAwarenessEnabled;
@@ -538,17 +558,53 @@ public final class ClientConfiguration implements Serializable {
 
     /**
      * Sets a value indicating whether partition awareness should be enabled.
-     * <p>
-     * Default is {@code true}: client sends requests directly to the primary node for the given cache key.
-     * To do so, connection is established to every known server node.
-     * <p>
+     * <p>Default is {@code true}: client sends requests directly to the primary node for the given cache key.
+     * To do so, connection is established to every known server node.</p>
      * When {@code false}, only one connection is established at a given moment to a random server node.
-     *
+     * <p>
+     * Partition awareness functionality helps to avoid an additional network hop in the following scenarios:
+     * <ul>
+     *     <li>1. Single-key operations API, like put(), get(), etc. However, the functionality has no effect on
+     *     those operations within explicit transactions {@link ClientTransactions#txStart()}.</li>
+     *     <li>2. {@link ScanQuery#setPartition(Integer)} and {@link IndexQuery#setPartition(Integer)} accept
+     *     a partition number as a parameter with which the query is routed to a particular server node that stores
+     *     the requested data.</li>
+     * </ul>
+     * </p>
      * @param partitionAwarenessEnabled Value indicating whether partition awareness should be enabled.
      * @return {@code this} for chaining.
      */
     public ClientConfiguration setPartitionAwarenessEnabled(boolean partitionAwarenessEnabled) {
         this.partitionAwarenessEnabled = partitionAwarenessEnabled;
+
+        return this;
+    }
+
+    /**
+     * Gets a value indicating whether cluster discovery should be enabled.
+     * <p>
+     * Default is {@code true}: client get addresses of server nodes from the cluster and connects to all of them.
+     * <p>
+     * When {@code false}, client only connects to the addresses provided in {@link #setAddresses(String...)} and
+     * {@link #setAddressesFinder(ClientAddressFinder)}.
+     * @return A value indicating whether cluster discovery should be enabled.
+     */
+    public boolean isClusterDiscoveryEnabled() {
+        return clusterDiscoveryEnabled;
+    }
+
+    /**
+     * Sets a value indicating whether cluster discovery should be enabled.
+     * <p>
+     * Default is {@code true}: client get addresses of server nodes from the cluster and connects to all of them.
+     * <p>
+     * When {@code false}, client only connects to the addresses provided in {@link #setAddresses(String...)} and
+     * {@link #setAddressesFinder(ClientAddressFinder)}.
+     * @param clusterDiscoveryEnabled Value indicating whether cluster discovery should be enabled.
+     * @return {@code this} for chaining.
+     */
+    public ClientConfiguration setClusterDiscoveryEnabled(boolean clusterDiscoveryEnabled) {
+        this.clusterDiscoveryEnabled = clusterDiscoveryEnabled;
 
         return this;
     }
@@ -839,5 +895,22 @@ public final class ClientConfiguration implements Serializable {
      */
     public IgniteLogger getLogger() {
         return logger;
+    }
+
+    /**
+     * @param listeners Clent event listeners.
+     * @return {@code this} for chaining.
+     */
+    public ClientConfiguration setEventListeners(EventListener... listeners) {
+        eventListeners = listeners;
+
+        return this;
+    }
+
+    /**
+     * @return Client event listeners.
+     */
+    public EventListener[] getEventListeners() {
+        return eventListeners;
     }
 }

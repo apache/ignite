@@ -36,7 +36,6 @@ import org.junit.Test;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.ATOMIC;
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
-import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL_SNAPSHOT;
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
 
@@ -96,19 +95,6 @@ public class CacheKeepBinaryIterationTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     @Test
-    public void testMvccTxOnHeap() throws Exception {
-        CacheConfiguration<Object, Object> ccfg = cacheConfiguration(PARTITIONED, 1, TRANSACTIONAL_SNAPSHOT);
-
-        doTestScanQuery(ccfg, true, true);
-        doTestScanQuery(ccfg, true, false);
-        doTestScanQuery(ccfg, false, true);
-        doTestScanQuery(ccfg, false, false);
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
-    @Test
     public void testAtomicOnHeapLocalEntries() throws Exception {
         CacheConfiguration<Object, Object> ccfg = cacheConfiguration(PARTITIONED, 1, ATOMIC);
 
@@ -124,19 +110,6 @@ public class CacheKeepBinaryIterationTest extends GridCommonAbstractTest {
     @Test
     public void testTxOnHeapLocalEntries() throws Exception {
         CacheConfiguration<Object, Object> ccfg = cacheConfiguration(PARTITIONED, 1, TRANSACTIONAL);
-
-        doTestLocalEntries(ccfg, true, true);
-        doTestLocalEntries(ccfg, true, false);
-        doTestLocalEntries(ccfg, false, true);
-        doTestLocalEntries(ccfg, false, false);
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
-    @Test
-    public void testMvccTxOnHeapLocalEntries() throws Exception {
-        CacheConfiguration<Object, Object> ccfg = cacheConfiguration(PARTITIONED, 1, TRANSACTIONAL_SNAPSHOT);
 
         doTestLocalEntries(ccfg, true, true);
         doTestLocalEntries(ccfg, true, false);

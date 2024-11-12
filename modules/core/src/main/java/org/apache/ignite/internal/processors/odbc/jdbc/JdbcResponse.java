@@ -34,9 +34,6 @@ public class JdbcResponse extends ClientListenerResponse implements JdbcRawBinar
     @GridToStringInclude
     private JdbcResult res;
 
-    /** Signals that there is active transactional context. */
-    private boolean activeTx;
-
     /** Affinity version. */
     private AffinityTopologyVersion affinityVer;
 
@@ -95,20 +92,6 @@ public class JdbcResponse extends ClientListenerResponse implements JdbcRawBinar
         return affinityVer;
     }
 
-    /**
-     * @return True if there's an active transactional on server.
-     */
-    public boolean activeTransaction() {
-        return activeTx;
-    }
-
-    /**
-     * @param activeTx Sets active transaction flag.
-     */
-    public void activeTransaction(boolean activeTx) {
-        this.activeTx = activeTx;
-    }
-
     /** {@inheritDoc} */
     @Override public String toString() {
         return S.toString(JdbcResponse.class, this, "status", status(), "err", error());
@@ -131,7 +114,7 @@ public class JdbcResponse extends ClientListenerResponse implements JdbcRawBinar
             writer.writeString(error());
 
         if (protoCtx.isAffinityAwarenessSupported()) {
-            writer.writeBoolean(activeTx);
+            writer.writeBoolean(false); // Keeping compatibility.
 
             writer.writeBoolean(affinityVer != null);
 
@@ -157,11 +140,11 @@ public class JdbcResponse extends ClientListenerResponse implements JdbcRawBinar
             error(reader.readString());
 
         if (protoCtx.isAffinityAwarenessSupported()) {
-            activeTx = reader.readBoolean();
+            reader.readBoolean(); // Keeping compatibility.
 
-            boolean affinityVerChanged = reader.readBoolean();
+            boolean affVerChanged = reader.readBoolean();
 
-            if (affinityVerChanged) {
+            if (affVerChanged) {
                 long topVer = reader.readLong();
                 int minorTopVer = reader.readInt();
 

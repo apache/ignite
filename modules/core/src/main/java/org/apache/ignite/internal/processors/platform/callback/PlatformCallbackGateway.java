@@ -181,12 +181,14 @@ public class PlatformCallbackGateway {
      * Perform native task map. Do not throw exceptions, serializing them to the output stream instead.
      *
      * @param memPtr Memory pointer.
+     * @param ses Platform compute task session proxy.
      */
-    public void computeTaskMap(long memPtr) {
+    public void computeTaskMap(long memPtr, PlatformTargetProxy ses) {
         enter();
 
         try {
-            PlatformCallbackUtils.inLongOutLong(envPtr, PlatformCallbackOp.ComputeTaskMap, memPtr);
+            PlatformCallbackUtils.inLongLongLongObjectOutLong(
+                envPtr, PlatformCallbackOp.ComputeTaskMap, memPtr, 0, 0, ses);
         }
         finally {
             leave();
@@ -304,13 +306,14 @@ public class PlatformCallbackGateway {
      *
      * @param jobPtr Job pointer.
      * @param cancel Cancel flag.
+     * @param ses Platform compute task session proxy.
      */
-    public void computeJobExecuteLocal(long jobPtr, long cancel) {
+    public void computeJobExecuteLocal(long jobPtr, long cancel, PlatformTargetProxy ses) {
         enter();
 
         try {
             PlatformCallbackUtils.inLongLongLongObjectOutLong(envPtr,
-                PlatformCallbackOp.ComputeJobExecuteLocal, jobPtr, cancel, 0, null);
+                PlatformCallbackOp.ComputeJobExecuteLocal, jobPtr, cancel, 0, ses);
         }
         finally {
             leave();
@@ -321,12 +324,14 @@ public class PlatformCallbackGateway {
      * Execute native job on a node other than where it was created.
      *
      * @param memPtr Memory pointer.
+     * @param ses Platform compute task session proxy.
      */
-    public void computeJobExecute(long memPtr) {
+    public void computeJobExecute(long memPtr, PlatformTargetProxy ses) {
         enter();
 
         try {
-            PlatformCallbackUtils.inLongOutLong(envPtr, PlatformCallbackOp.ComputeJobExecute, memPtr);
+            PlatformCallbackUtils.inLongLongLongObjectOutLong(
+                envPtr, PlatformCallbackOp.ComputeJobExecute, memPtr, 0, 0, ses);
         }
         finally {
             leave();
@@ -1264,14 +1269,17 @@ public class PlatformCallbackGateway {
      * Notifies about cache stop.
      *
      * @param cacheId Cache id.
+     * @param cancel Cancel flag.
+     * @param destroy Cache destroy flag.
      */
-    public void onCacheStopped(int cacheId) {
+    public void onCacheStopped(int cacheId, boolean cancel, boolean destroy) {
         // Ignore cache stop during grid stop.
         if (!tryEnter())
             return;
 
         try {
-            PlatformCallbackUtils.inLongOutLong(envPtr, PlatformCallbackOp.OnCacheStopped, cacheId);
+            PlatformCallbackUtils.inLongLongLongObjectOutLong(envPtr, PlatformCallbackOp.OnCacheStopped,
+                cacheId, cancel ? 1L : 0L, destroy ? 1L : 0L, null);
         }
         finally {
             leave();

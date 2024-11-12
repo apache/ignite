@@ -40,6 +40,7 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.SqlConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
+import org.apache.ignite.internal.processors.query.running.QueryHistory;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
@@ -176,7 +177,7 @@ public class SqlQueryHistorySelfTest extends GridCommonAbstractTest {
         List<String> cmds = Arrays.asList(
             "create table TST(id int PRIMARY KEY, name varchar)",
             "insert into TST(id) values(1)",
-            "commit"
+            "select * from TST where id=1"
         );
 
         try (Connection conn = GridTestUtils.connect(queryNode(), null); Statement stmt = conn.createStatement()) {
@@ -255,7 +256,7 @@ public class SqlQueryHistorySelfTest extends GridCommonAbstractTest {
         List<String> cmds = Arrays.asList(
             "create table TST(id int PRIMARY KEY, name varchar)",
             "insert into TST(id) values(1)",
-            "commit"
+            "drop table TST"
         );
 
         cmds.forEach((cmd) ->

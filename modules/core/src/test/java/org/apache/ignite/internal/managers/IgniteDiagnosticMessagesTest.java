@@ -54,15 +54,12 @@ import org.apache.ignite.testframework.GridStringLogger;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.ListeningTestLogger;
 import org.apache.ignite.testframework.LogListener;
-import org.apache.ignite.testframework.MvccFeatureChecker;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.transactions.Transaction;
-import org.junit.Ignore;
 import org.junit.Test;
 
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_LONG_OPERATIONS_DUMP_TIMEOUT;
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
-import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL_SNAPSHOT;
 import static org.apache.ignite.cache.CacheMode.REPLICATED;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
 import static org.apache.ignite.testframework.GridTestUtils.runAsync;
@@ -129,14 +126,6 @@ public class IgniteDiagnosticMessagesTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     @Test
-    public void testDiagnosticMessagesMvcc1() throws Exception {
-        checkBasicDiagnosticInfo(CacheAtomicityMode.TRANSACTIONAL_SNAPSHOT);
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
-    @Test
     public void testDiagnosticMessages2() throws Exception {
         connectionsPerNode = 5;
 
@@ -147,26 +136,8 @@ public class IgniteDiagnosticMessagesTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     @Test
-    public void testDiagnosticMessagesMvcc2() throws Exception {
-        connectionsPerNode = 5;
-
-        checkBasicDiagnosticInfo(CacheAtomicityMode.TRANSACTIONAL_SNAPSHOT);
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
-    @Test
     public void testLongRunning() throws Exception {
         checkLongRunning(TRANSACTIONAL);
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
-    @Test
-    public void testLongRunningMvcc() throws Exception {
-        checkLongRunning(TRANSACTIONAL_SNAPSHOT);
     }
 
     /**
@@ -239,15 +210,6 @@ public class IgniteDiagnosticMessagesTest extends GridCommonAbstractTest {
             .setAtomicityMode(atomicityMode)
             .setWriteSynchronizationMode(FULL_SYNC)
             .setNearConfiguration(null);
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
-    @Ignore("https://issues.apache.org/jira/browse/IGNITE-10637") // Support diagnostics message or disable test.
-    @Test
-    public void testSeveralLongRunningMvccTxs() throws Exception {
-        checkSeveralLongRunningTxs(TRANSACTIONAL_SNAPSHOT);
     }
 
     /**
@@ -361,15 +323,6 @@ public class IgniteDiagnosticMessagesTest extends GridCommonAbstractTest {
         }
 
         return cnt;
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
-    @Ignore("https://issues.apache.org/jira/browse/IGNITE-10637") // Support diagnostic messages or disable test.
-    @Test
-    public void testLongRunningMvccTx() throws Exception {
-        checkLongRunningTx(TRANSACTIONAL_SNAPSHOT);
     }
 
     /**
@@ -578,22 +531,6 @@ public class IgniteDiagnosticMessagesTest extends GridCommonAbstractTest {
      */
     @Test
     public void testRemoteTx() throws Exception {
-        checkRemoteTx(TRANSACTIONAL);
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
-    @Test
-    public void testRemoteMvccTx() throws Exception {
-        checkRemoteTx(TRANSACTIONAL_SNAPSHOT);
-    }
-
-    /**
-     * @param atomicityMode Cache atomicity mode.
-     * @throws Exception If failed.
-     */
-    public void checkRemoteTx(CacheAtomicityMode atomicityMode) throws Exception {
         int timeout = 3500;
 
         System.setProperty(IGNITE_LONG_OPERATIONS_DUMP_TIMEOUT, String.valueOf(timeout));
@@ -611,11 +548,9 @@ public class IgniteDiagnosticMessagesTest extends GridCommonAbstractTest {
 
             awaitPartitionMapExchange();
 
-            CacheConfiguration ccfg = cacheConfiguration(atomicityMode).setBackups(1);
+            CacheConfiguration ccfg = cacheConfiguration(TRANSACTIONAL).setBackups(1);
 
-            if (atomicityMode != TRANSACTIONAL_SNAPSHOT ||
-                MvccFeatureChecker.isSupported(MvccFeatureChecker.Feature.NEAR_CACHE))
-                ccfg.setNearConfiguration(new NearCacheConfiguration<>());
+            ccfg.setNearConfiguration(new NearCacheConfiguration<>());
 
             final Ignite node0 = ignite(0);
             final Ignite node1 = ignite(1);

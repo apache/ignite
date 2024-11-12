@@ -84,8 +84,8 @@ public class ClusterActivationStartedEventTest extends GridCommonAbstractTest {
             EventType.EVT_CLUSTER_STATE_CHANGE_STARTED
         );
 
-        ignite.cluster().active(false);
-        ignite.cluster().active(true);
+        ignite.cluster().state(ClusterState.INACTIVE);
+        ignite.cluster().state(ClusterState.ACTIVE);
 
         assertEquals(0, evtsTriggered.get());
     }
@@ -100,7 +100,7 @@ public class ClusterActivationStartedEventTest extends GridCommonAbstractTest {
         AtomicBoolean deactivationFinished = new AtomicBoolean();
 
         IgniteEx ignite = startGrid(0);
-        ignite.cluster().active(false);
+        ignite.cluster().state(ClusterState.INACTIVE);
 
         ignite.events().localListen(
             event -> {
@@ -149,7 +149,7 @@ public class ClusterActivationStartedEventTest extends GridCommonAbstractTest {
             EventType.EVT_CLUSTER_DEACTIVATED
         );
 
-        ignite.cluster().active(true);
+        ignite.cluster().state(ClusterState.ACTIVE);
 
         assertTrue(activationStarted.get());
         assertTrue(GridTestUtils.waitForCondition(activationFinished::get, 5_000));
@@ -158,10 +158,10 @@ public class ClusterActivationStartedEventTest extends GridCommonAbstractTest {
         activationStarted.set(false);
         activationFinished.set(false);
 
-        ignite.cluster().active(true);
+        ignite.cluster().state(ClusterState.ACTIVE);
         assertFalse(activationStarted.get());
 
-        ignite.cluster().active(false);
+        ignite.cluster().state(ClusterState.INACTIVE);
 
         assertTrue(deactivationStarted.get());
         assertTrue(GridTestUtils.waitForCondition(deactivationFinished::get, 5_000));
@@ -170,7 +170,7 @@ public class ClusterActivationStartedEventTest extends GridCommonAbstractTest {
         deactivationStarted.set(false);
         deactivationFinished.set(false);
 
-        ignite.cluster().active(false);
+        ignite.cluster().state(ClusterState.INACTIVE);
         assertFalse(deactivationStarted.get());
     }
 
@@ -184,7 +184,7 @@ public class ClusterActivationStartedEventTest extends GridCommonAbstractTest {
         AtomicBoolean deactivationFinished = new AtomicBoolean();
 
         IgniteEx ignite = startGrid(0);
-        ignite.cluster().active(false);
+        ignite.cluster().state(ClusterState.INACTIVE);
 
         startGrid(1);
 
@@ -223,7 +223,7 @@ public class ClusterActivationStartedEventTest extends GridCommonAbstractTest {
             EventType.EVT_CLUSTER_DEACTIVATED
         );
 
-        ignite.cluster().active(true);
+        ignite.cluster().state(ClusterState.ACTIVE);
 
         assertTrue(GridTestUtils.waitForCondition(activationStarted::get, 5_000));
         assertTrue(GridTestUtils.waitForCondition(activationFinished::get, 5_000));
@@ -232,7 +232,7 @@ public class ClusterActivationStartedEventTest extends GridCommonAbstractTest {
         activationStarted.set(false);
         activationFinished.set(false);
 
-        ignite.cluster().active(false);
+        ignite.cluster().state(ClusterState.INACTIVE);
 
         assertTrue(GridTestUtils.waitForCondition(deactivationStarted::get, 5_000));
         assertTrue(GridTestUtils.waitForCondition(deactivationFinished::get, 5_000));

@@ -46,6 +46,7 @@ import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.cache.CacheWriteSynchronizationMode;
 import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
+import org.apache.ignite.cluster.ClusterState;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
@@ -157,7 +158,7 @@ public class CheckpointFreeListTest extends GridCommonAbstractTest {
     public void testFreeListRestoredCorrectly() throws Exception {
         IgniteEx ignite0 = startGrid(0);
 
-        ignite0.cluster().active(true);
+        ignite0.cluster().state(ClusterState.ACTIVE);
 
         IgniteEx igniteClient = startClientGrid(getClientConfiguration("client"));
 
@@ -186,7 +187,7 @@ public class CheckpointFreeListTest extends GridCommonAbstractTest {
 
         ignite0 = startGrid(0);
 
-        ignite0.cluster().active(true);
+        ignite0.cluster().state(ClusterState.ACTIVE);
 
         GridCacheOffheapManager offheap2 = cacheOffheapManager();
 
@@ -230,7 +231,7 @@ public class CheckpointFreeListTest extends GridCommonAbstractTest {
     @WithSystemProperty(key = IgniteSystemProperties.IGNITE_PAGES_LIST_DISABLE_ONHEAP_CACHING, value = "true")
     public void testRestoreFreeListCorrectlyAfterRandomStop() throws Exception {
         IgniteEx ignite0 = startGrid(0);
-        ignite0.cluster().active(true);
+        ignite0.cluster().state(ClusterState.ACTIVE);
 
         Random random = new Random();
 
@@ -273,10 +274,10 @@ public class CheckpointFreeListTest extends GridCommonAbstractTest {
 
         CyclicBarrier nodeStartBarrier = new CyclicBarrier(2);
 
-        int approximateIterationCount = SF.applyLB(10, 6);
+        int approximateIterationCnt = SF.applyLB(10, 6);
 
         //Approximate count of entries to put per one iteration.
-        int iterationDataCount = entriesToRemove.size() / approximateIterationCount;
+        int iterationDataCnt = entriesToRemove.size() / approximateIterationCnt;
 
         startAsyncPutThread(entriesToRemove, nodeStartBarrier);
 
@@ -286,7 +287,7 @@ public class CheckpointFreeListTest extends GridCommonAbstractTest {
 
             ignite0 = startGrid(0);
 
-            ignite0.cluster().active(true);
+            ignite0.cluster().state(ClusterState.ACTIVE);
 
             if (entriesToRemove.isEmpty())
                 break;
@@ -295,7 +296,7 @@ public class CheckpointFreeListTest extends GridCommonAbstractTest {
             nodeStartBarrier.await();
             nodeStartBarrier.reset();
 
-            int awaitSize = entriesToRemove.size() - iterationDataCount;
+            int awaitSize = entriesToRemove.size() - iterationDataCnt;
 
             waitForCondition(() -> entriesToRemove.size() < awaitSize || entriesToRemove.size() == 0, 20000);
         }
@@ -320,7 +321,7 @@ public class CheckpointFreeListTest extends GridCommonAbstractTest {
     public void testFreeListUnderLoadMultipleCheckpoints() throws Throwable {
         IgniteEx ignite = startGrid(0);
 
-        ignite.cluster().active(true);
+        ignite.cluster().state(ClusterState.ACTIVE);
 
         int minValSize = 64;
         int maxValSize = 128;

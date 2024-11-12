@@ -26,7 +26,6 @@ import org.apache.ignite.cache.QueryIndexType;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.cache.query.index.SortOrder;
 import org.apache.ignite.internal.cache.query.index.sorted.IndexKeyDefinition;
-import org.apache.ignite.internal.cache.query.index.sorted.inline.InlineIndex;
 import org.apache.ignite.internal.cache.query.index.sorted.inline.InlineIndexImpl;
 import org.apache.ignite.internal.processors.cache.GridCacheContextInfo;
 import org.apache.ignite.internal.processors.query.h2.database.H2TreeClientIndex;
@@ -90,12 +89,10 @@ class H2IndexFactory {
                 return new H2TreeIndex(qryIdx, tbl, idxColsArr, idxDesc.isPk(), log);
             }
             else {
-                InlineIndex qryIdx = idxDesc.index().unwrap(InlineIndex.class);
-
                 IndexType idxType = idxDesc.isPk() ? IndexType.createPrimaryKey(false, false) :
                     IndexType.createNonUnique(false, false, false);
 
-                return new H2TreeClientIndex(qryIdx, tbl, idxDesc.name(), idxColsArr, idxType);
+                return new H2TreeClientIndex(idxDesc.index(), tbl, idxDesc.name(), idxColsArr, idxType);
             }
         }
         else if (idxDesc.type() == QueryIndexType.GEOSPATIAL) {

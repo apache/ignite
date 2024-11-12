@@ -18,23 +18,25 @@
 package org.apache.ignite.tools.surefire.testsuites;
 
 import java.util.Collections;
+import org.apache.maven.surefire.api.provider.AbstractProvider;
+import org.apache.maven.surefire.api.provider.ProviderParameters;
+import org.apache.maven.surefire.api.report.OutputReportEntry;
+import org.apache.maven.surefire.api.report.ReporterFactory;
+import org.apache.maven.surefire.api.report.RunListener;
+import org.apache.maven.surefire.api.report.SimpleReportEntry;
+import org.apache.maven.surefire.api.report.TestOutputReceiver;
+import org.apache.maven.surefire.api.suite.RunResult;
+import org.apache.maven.surefire.api.testset.TestSetFailedException;
+import org.apache.maven.surefire.api.util.ScanResult;
+import org.apache.maven.surefire.api.util.ScannerFilter;
 import org.apache.maven.surefire.common.junit4.JUnit4StackTraceWriter;
 import org.apache.maven.surefire.common.junit48.JUnit48TestChecker;
-import org.apache.maven.surefire.providerapi.AbstractProvider;
-import org.apache.maven.surefire.providerapi.ProviderParameters;
-import org.apache.maven.surefire.report.ConsoleOutputReceiver;
-import org.apache.maven.surefire.report.ReporterFactory;
-import org.apache.maven.surefire.report.RunListener;
-import org.apache.maven.surefire.report.SimpleReportEntry;
-import org.apache.maven.surefire.suite.RunResult;
-import org.apache.maven.surefire.testset.TestSetFailedException;
-import org.apache.maven.surefire.util.ScanResult;
-import org.apache.maven.surefire.util.ScannerFilter;
 import org.junit.runner.JUnitCore;
 import org.junit.runner.Result;
 import org.junit.runner.notification.Failure;
 
-import static org.apache.maven.surefire.report.ConsoleOutputCapture.startCapture;
+import static org.apache.maven.surefire.api.report.ConsoleOutputCapture.startCapture;
+import static org.apache.maven.surefire.api.report.RunMode.NORMAL_RUN;
 
 /**
  * Goal of the provider to find unit tests that are not part of any test suite and notify user about it.
@@ -108,17 +110,17 @@ public class IgniteTestsProvider extends AbstractProvider {
     private void writeFailureToOutput(Failure failure) throws TestSetFailedException {
         try {
             SimpleReportEntry report = SimpleReportEntry.withException(
+                NORMAL_RUN, 0L,
                 failure.getDescription().getClassName(), null,
                 failure.getDescription().getMethodName(), null,
                 new JUnit4StackTraceWriter(failure));
 
-            RunListener reporter = reporterFactory.createReporter();
+            RunListener reporter = reporterFactory.createTestReportListener();
 
-            startCapture((ConsoleOutputReceiver)reporter);
+            startCapture((TestOutputReceiver<OutputReportEntry>)reporter);
 
             reporter.testFailed(report);
             reporter.testSetCompleted(report);
-
         }
         catch (Exception e) {
             throw new TestSetFailedException("Failed to dump exception to stdout");

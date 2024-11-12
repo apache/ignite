@@ -153,9 +153,9 @@ public class GridP2PScanQueryWithTransformerTest extends GridCommonAbstractTest 
 
         IgniteCache<Object, Object> clientCache = client.getOrCreateCache(DEFAULT_CACHE_NAME);
 
-        QueryCursor<Integer> query = clientCache.query(new ScanQuery<Integer, Integer>(), loadTransformerClass());
+        QueryCursor<Integer> qry = clientCache.query(new ScanQuery<Integer, Integer>(), loadTransformerClass());
 
-        List<Integer> results = query.getAll();
+        List<Integer> results = qry.getAll();
 
         assertNotNull(results);
         assertEquals(CACHE_SIZE, results.size());
@@ -183,11 +183,11 @@ public class GridP2PScanQueryWithTransformerTest extends GridCommonAbstractTest 
 
         IgniteCache<Object, Object> clientCache = client.getOrCreateCache(DEFAULT_CACHE_NAME);
 
-        QueryCursor<Integer> query = clientCache.query(new ScanQuery<Integer, Integer>(), loadTransformerClosure());
+        QueryCursor<Integer> qry = clientCache.query(new ScanQuery<Integer, Integer>(), loadTransformerClosure());
 
         int sumQueried = 0;
 
-        for (Integer val : query)
+        for (Integer val : qry)
             sumQueried += val;
 
         assertTrue(sumQueried == sumPopulated * SCALE_FACTOR);
@@ -238,10 +238,10 @@ public class GridP2PScanQueryWithTransformerTest extends GridCommonAbstractTest 
 
         IgniteCache<Object, Object> clientCache = client.getOrCreateCache(DEFAULT_CACHE_NAME);
 
-        QueryCursor<Integer> query = clientCache.query(new ScanQuery<Integer, Integer>(),
+        QueryCursor<Integer> qry = clientCache.query(new ScanQuery<Integer, Integer>(),
             new SharedTransformer(SCALE_FACTOR));
 
-        List<Integer> results = query.getAll();
+        List<Integer> results = qry.getAll();
 
         assertNotNull(results);
         assertEquals(CACHE_SIZE, results.size());
@@ -255,13 +255,13 @@ public class GridP2PScanQueryWithTransformerTest extends GridCommonAbstractTest 
      * @throws Exception If failed.
      */
     private void executeP2PClassLoadingEnabledTest(boolean withClientNode) throws Exception {
-        ListeningTestLogger listeningLogger = new ListeningTestLogger();
+        ListeningTestLogger listeningLog = new ListeningTestLogger();
         LogListener clsDeployedMsgLsnr = LogListener.matches(
             "Class was deployed in SHARED or CONTINUOUS mode: " +
                 "class org.apache.ignite.tests.p2p.cache.ScanQueryTestTransformer")
             .build();
-        listeningLogger.registerListener(clsDeployedMsgLsnr);
-        logger = listeningLogger;
+        listeningLog.registerListener(clsDeployedMsgLsnr);
+        logger = listeningLog;
 
         IgniteEx ig0 = startGrid(0);
 
@@ -285,11 +285,11 @@ public class GridP2PScanQueryWithTransformerTest extends GridCommonAbstractTest 
 
         IgniteCache<Object, Object> reqNodeCache = requestingNode.getOrCreateCache(DEFAULT_CACHE_NAME);
 
-        QueryCursor<Integer> query = reqNodeCache.query(new ScanQuery<Integer, Integer>(), loadTransformerClass());
+        QueryCursor<Integer> qry = reqNodeCache.query(new ScanQuery<Integer, Integer>(), loadTransformerClass());
 
         int sumQueried = 0;
 
-        for (Integer val : query)
+        for (Integer val : qry)
             sumQueried += val;
 
         assertTrue(sumQueried == sumPopulated * SCALE_FACTOR);
@@ -304,13 +304,13 @@ public class GridP2PScanQueryWithTransformerTest extends GridCommonAbstractTest 
      * @throws Exception If test scenario failed.
      */
     private void executeP2PClassLoadingDisabledTest(boolean withClientNode) throws Exception {
-        ListeningTestLogger listeningLogger = new ListeningTestLogger();
+        ListeningTestLogger listeningLog = new ListeningTestLogger();
         LogListener clsDeployedMsgLsnr = LogListener.matches(
             "Class was deployed in SHARED or CONTINUOUS mode: " +
                 "class org.apache.ignite.tests.p2p.cache.ScanQueryTestTransformerWrapper")
             .build();
-        listeningLogger.registerListener(clsDeployedMsgLsnr);
-        logger = listeningLogger;
+        listeningLog.registerListener(clsDeployedMsgLsnr);
+        logger = listeningLog;
 
         IgniteEx ig0 = startGrid(0);
 
@@ -320,21 +320,21 @@ public class GridP2PScanQueryWithTransformerTest extends GridCommonAbstractTest 
 
         populateCache(cache);
 
-        IgniteEx requestNode;
+        IgniteEx reqNode;
 
         if (withClientNode)
-            requestNode = startClientGrid(1);
+            reqNode = startClientGrid(1);
         else {
             clsLoader = TEST_CLASS_LOADER;
-            requestNode = startGrid(1);
+            reqNode = startGrid(1);
         }
 
-        IgniteCache<Object, Object> reqNodeCache = requestNode.getOrCreateCache(DEFAULT_CACHE_NAME);
+        IgniteCache<Object, Object> reqNodeCache = reqNode.getOrCreateCache(DEFAULT_CACHE_NAME);
 
-        QueryCursor<Integer> query = reqNodeCache.query(new ScanQuery<Integer, Integer>(), loadTransformerClosure());
+        QueryCursor<Integer> qry = reqNodeCache.query(new ScanQuery<Integer, Integer>(), loadTransformerClosure());
 
         try {
-            List<Integer> all = query.getAll();
+            List<Integer> all = qry.getAll();
         }
         catch (Exception e) {
             //No-op.

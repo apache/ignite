@@ -28,7 +28,6 @@ import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxFa
 import org.apache.ignite.internal.processors.cache.transactions.IgniteInternalTx;
 import org.apache.ignite.internal.processors.cache.transactions.TransactionProxyImpl;
 import org.apache.ignite.testframework.GridTestUtils;
-import org.apache.ignite.testframework.MvccFeatureChecker;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.transactions.Transaction;
 import org.apache.ignite.transactions.TransactionConcurrency;
@@ -38,7 +37,6 @@ import org.junit.Test;
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
-import static org.apache.ignite.testframework.MvccFeatureChecker.Feature.NEAR_CACHE;
 import static org.apache.ignite.transactions.TransactionConcurrency.OPTIMISTIC;
 import static org.apache.ignite.transactions.TransactionConcurrency.PESSIMISTIC;
 import static org.apache.ignite.transactions.TransactionIsolation.READ_COMMITTED;
@@ -83,8 +81,6 @@ public class CacheTxFastFinishTest extends GridCommonAbstractTest {
      */
     @Test
     public void testFastFinishTxNearCache() throws Exception {
-        MvccFeatureChecker.skipIfNotSupported(NEAR_CACHE);
-
         nearCache = true;
 
         fastFinishTx();

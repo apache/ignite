@@ -259,13 +259,12 @@ public final class DataStructuresProcessor extends GridProcessorAdapter implemen
     /** {@inheritDoc} */
     @Override public void start() {
         ctx.event().addLocalEventListener(lsnr, EVT_NODE_LEFT, EVT_NODE_FAILED);
+
+        ctx.internalSubscriptionProcessor().registerGlobalStateListener(this);
     }
 
     /** {@inheritDoc} */
     @Override public void onKernalStart(boolean active) {
-        if (ctx.config().isDaemon())
-            return;
-
         registerSystemViews();
 
         if (!active)
@@ -350,9 +349,10 @@ public final class DataStructuresProcessor extends GridProcessorAdapter implemen
 
     /** {@inheritDoc} */
     @Override public void onActivate(GridKernalContext ctx) {
-        if (log.isDebugEnabled())
+        if (log.isDebugEnabled()) {
             log.debug("Activating data structure processor [nodeId=" + ctx.localNodeId() +
                 " topVer=" + ctx.discovery().topologyVersionEx() + " ]");
+        }
 
         initFailed = false;
 
@@ -467,9 +467,10 @@ public final class DataStructuresProcessor extends GridProcessorAdapter implemen
 
     /** {@inheritDoc} */
     @Override public void onDeActivate(GridKernalContext ctx) {
-        if (log.isDebugEnabled())
+        if (log.isDebugEnabled()) {
             log.debug("DeActivate data structure processor [nodeId=" + ctx.localNodeId() +
                 ", topVer=" + ctx.discovery().topologyVersionEx() + "]");
+        }
 
         ctx.event().removeLocalEventListener(lsnr, EVT_NODE_LEFT, EVT_NODE_FAILED);
 

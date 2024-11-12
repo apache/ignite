@@ -34,7 +34,6 @@ import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
 import org.apache.ignite.cluster.ClusterState;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
-import org.apache.ignite.internal.commandline.consistency.ConsistencyCommand;
 import org.apache.ignite.internal.processors.cache.consistency.ReadRepairDataGenerator;
 import org.apache.ignite.internal.processors.cache.consistency.ReadRepairDataGenerator.InconsistentMapping;
 import org.apache.ignite.internal.processors.cache.consistency.ReadRepairDataGenerator.ReadRepairData;
@@ -56,10 +55,25 @@ import static org.apache.ignite.testframework.GridTestUtils.assertContains;
 @RunWith(Parameterized.class)
 @WithSystemProperty(key = IGNITE_ENABLE_EXPERIMENTAL_COMMAND, value = "true")
 public class GridCommandHandlerConsistencyRepairCorrectnessTransactionalTest extends GridCommandHandlerAbstractTest {
+    /** */
+    public static final String CACHE = "--cache";
+
+    /** */
+    public static final String STRATEGY = "--strategy";
+
+    /** */
+    public static final String PARTITIONS_ARG = "--partitions";
+
+    /** */
+    public static final String PARALLEL = "--parallel";
+
     /** Test parameters. */
-    @Parameterized.Parameters(name = "misses={0}, nulls={1}, strategy={2}, parallel={3}")
+    @Parameterized.Parameters(name = "cmdHnd={0}, misses={1}, nulls={2}, strategy={3}, parallel={4}")
     public static Iterable<Object[]> parameters() {
         List<Object[]> res = new ArrayList<>();
+
+        int cntr = 0;
+        List<String> invokers = commandHandlers();
 
         for (boolean misses : new boolean[] {false, true}) {
             for (boolean nulls : new boolean[] {false, true}) {
@@ -68,7 +82,7 @@ public class GridCommandHandlerConsistencyRepairCorrectnessTransactionalTest ext
                         if (parallel && strategy != ReadRepairStrategy.CHECK_ONLY)
                             continue; // see https://issues.apache.org/jira/browse/IGNITE-15316
 
-                        res.add(new Object[] {misses, nulls, strategy, parallel});
+                        res.add(new Object[] {invokers.get(cntr++ % invokers.size()), misses, nulls, strategy, parallel});
                     }
                 }
             }
@@ -78,19 +92,19 @@ public class GridCommandHandlerConsistencyRepairCorrectnessTransactionalTest ext
     }
 
     /** Misses. */
-    @Parameterized.Parameter
+    @Parameterized.Parameter(1)
     public boolean misses;
 
     /** Nulls. */
-    @Parameterized.Parameter(1)
+    @Parameterized.Parameter(2)
     public boolean nulls;
 
     /** Strategy. */
-    @Parameterized.Parameter(2)
+    @Parameterized.Parameter(3)
     public ReadRepairStrategy strategy;
 
     /** Parallel consistency check. */
-    @Parameterized.Parameter(3)
+    @Parameterized.Parameter(4)
     public boolean parallel;
 
     /** Partitions. */
@@ -328,12 +342,12 @@ public class GridCommandHandlerConsistencyRepairCorrectnessTransactionalTest ext
             for (String cacheName : caches) {
                 List<String> cmd = new ArrayList<>(Arrays.asList(
                     "--consistency", "repair",
-                    ConsistencyCommand.CACHE, cacheName,
-                    ConsistencyCommand.PARTITIONS, String.valueOf(i),
-                    ConsistencyCommand.STRATEGY, strategy.toString()));
+                    CACHE, cacheName,
+                    PARTITIONS_ARG, String.valueOf(i),
+                    STRATEGY, strategy.toString()));
 
                 if (parallel)
-                    cmd.add(ConsistencyCommand.PARALLEL);
+                    cmd.add(PARALLEL);
 
                 assertEquals(EXIT_CODE_OK, execute(cmd));
 

@@ -36,9 +36,6 @@ import org.junit.Test;
  */
 public class FunctionsTest extends AbstractBasicIntegrationTest {
     /** */
-    private static final Object[] NULL_RESULT = new Object[] { null };
-
-    /** */
     @Test
     public void testTimestampDiffWithFractionsOfSecond() {
         assertQuery("SELECT TIMESTAMPDIFF(MICROSECOND, TIMESTAMP '2022-02-01 10:30:28.000', " +
@@ -246,6 +243,8 @@ public class FunctionsTest extends AbstractBasicIntegrationTest {
         assertQuery("SELECT TYPEOF(NULL::VARCHAR(100))").returns("VARCHAR(100)").check();
         assertThrows("SELECT TYPEOF()", SqlValidatorException.class, "Invalid number of arguments");
         assertThrows("SELECT TYPEOF(1, 2)", SqlValidatorException.class, "Invalid number of arguments");
+        assertThrows("SELECT TYPEOF(CAST('NONE' as INTEGER))", IgniteSQLException.class,
+            "is neither a decimal digit number, decimal point");
     }
 
     /** */
@@ -280,13 +279,26 @@ public class FunctionsTest extends AbstractBasicIntegrationTest {
 
     /** */
     @Test
-    public void testDynamicParameterTypesInference() {
-        assertQuery("SELECT lower(?)").withParams("ASD").returns("asd").check();
-        assertQuery("SELECT ? % ?").withParams(11, 10).returns(BigDecimal.valueOf(1)).check();
-        assertQuery("SELECT sqrt(?)").withParams(4d).returns(2d).check();
-        assertQuery("SELECT last_day(?)").withParams(Date.valueOf("2022-01-01"))
-            .returns(Date.valueOf("2022-01-31")).check();
-        assertQuery("SELECT ?").withParams("asd").returns("asd").check();
-        assertQuery("SELECT coalesce(?, ?)").withParams("a", 10).returns("a").check();
+    public void testCastToBoolean() {
+        assertQuery("SELECT CAST(CAST(null AS DOUBLE) AS BOOLEAN)").returns(NULL_RESULT).check();
+        assertQuery("SELECT CAST(CAST('1' AS DOUBLE) AS BOOLEAN)").returns(true).check();
+        assertQuery("SELECT CAST(1.0 AS BOOLEAN)").returns(true).check();
+        assertQuery("SELECT CAST(0.1 AS BOOLEAN)").returns(true).check();
+        assertQuery("SELECT CAST(1 AS BOOLEAN)").returns(true).check();
+        assertQuery("SELECT CAST(CAST('0' AS DOUBLE) AS BOOLEAN)").returns(false).check();
+        assertQuery("SELECT CAST(0.0 AS BOOLEAN)").returns(false).check();
+        assertQuery("SELECT CAST(0 AS BOOLEAN)").returns(false).check();
+        assertQuery("SELECT CAST(CAST(? AS INT) AS BOOLEAN)").withParams(0).returns(false).check();
+        assertQuery("SELECT CAST(CAST(? AS INT) AS BOOLEAN)").withParams(1).returns(true).check();
+        assertQuery("SELECT CAST(CAST(? AS INT) AS BOOLEAN)").withParams(NULL_RESULT).returns(NULL_RESULT).check();
+        assertQuery("SELECT CAST(CAST(? AS DOUBLE) AS BOOLEAN)").withParams(0.0d).returns(false).check();
+        assertQuery("SELECT CAST(CAST(? AS DOUBLE) AS BOOLEAN)").withParams(1.0d).returns(true).check();
+        assertQuery("SELECT CAST(CAST(? AS DOUBLE) AS BOOLEAN)").withParams(NULL_RESULT).returns(NULL_RESULT).check();
+        assertQuery("SELECT CAST(CAST(? AS DECIMAL(2, 1)) AS BOOLEAN)")
+            .withParams(BigDecimal.valueOf(0, 1)).returns(false).check();
+        assertQuery("SELECT CAST(CAST(? AS DECIMAL(2, 1)) AS BOOLEAN)")
+            .withParams(BigDecimal.valueOf(10, 1)).returns(true).check();
+        assertQuery("SELECT CAST(CAST(? AS DECIMAL(2, 1)) AS BOOLEAN)")
+            .withParams(NULL_RESULT).returns(NULL_RESULT).check();
     }
 }

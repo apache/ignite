@@ -66,13 +66,13 @@ public class CsvLineProcessorBlock extends PipelineBlock<String, String[]> {
     @Override public void accept(String input, boolean isLastPortion) throws IgniteCheckedException {
         List<String> fields = new ArrayList<>();
 
-        StringBuilder currentField = new StringBuilder(256);
+        StringBuilder curField = new StringBuilder(256);
 
         ReaderState state = ReaderState.IDLE;
 
         final int length = input.length();
         int copy = 0;
-        int current = 0;
+        int cur = 0;
         int prev = -1;
         int copyStart = 0;
 
@@ -82,20 +82,20 @@ public class CsvLineProcessorBlock extends PipelineBlock<String, String[]> {
         symbol = 0;
 
         while (true) {
-            if (current == length) {
+            if (cur == length) {
                 if (!quotesMatched)
                     throw new IgniteCheckedException(new SQLException("Unmatched quote found at the end of line "
                         + line + ", symbol " + symbol));
 
                 if (copy > 0)
-                    currentField.append(input, copyStart, copyStart + copy);
+                    curField.append(input, copyStart, copyStart + copy);
 
-                addField(fields, currentField, prev == quoteChars);
+                addField(fields, curField, prev == quoteChars);
 
                 break;
             }
 
-            final char c = input.charAt(current++);
+            final char c = input.charAt(cur++);
             symbol++;
 
             if (state == ReaderState.QUOTED) {
@@ -104,12 +104,12 @@ public class CsvLineProcessorBlock extends PipelineBlock<String, String[]> {
                     quotesMatched = !quotesMatched;
 
                     if (copy > 0) {
-                        currentField.append(input, copyStart, copyStart + copy);
+                        curField.append(input, copyStart, copyStart + copy);
 
                         copy = 0;
                     }
 
-                    copyStart = current;
+                    copyStart = cur;
                 }
                 else
                     copy++;
@@ -117,15 +117,15 @@ public class CsvLineProcessorBlock extends PipelineBlock<String, String[]> {
             else {
                 if (c == fldDelim) {
                     if (copy > 0) {
-                        currentField.append(input, copyStart, copyStart + copy);
+                        curField.append(input, copyStart, copyStart + copy);
 
                         copy = 0;
                     }
 
-                    addField(fields, currentField, prev == quoteChars);
+                    addField(fields, curField, prev == quoteChars);
 
-                    currentField = new StringBuilder();
-                    copyStart = current;
+                    curField = new StringBuilder();
+                    copyStart = cur;
 
                     state = ReaderState.IDLE;
                 }
@@ -137,7 +137,7 @@ public class CsvLineProcessorBlock extends PipelineBlock<String, String[]> {
                     if (prev == quoteChars)
                         copy++;
                     else
-                        copyStart = current;
+                        copyStart = cur;
                 }
                 else {
                     if (c == quoteChars) {

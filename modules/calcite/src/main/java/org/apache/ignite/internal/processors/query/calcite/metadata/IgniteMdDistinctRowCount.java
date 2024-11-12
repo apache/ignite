@@ -44,10 +44,10 @@ public class IgniteMdDistinctRowCount extends RelMdDistinctRowCount {
         if (groupKey.cardinality() == 0)
             return 1d;
 
-        double rowCount = mq.getRowCount(rel);
+        double rowCnt = mq.getRowCount(rel);
 
-        rowCount *= 1.0 - Math.pow(.5, groupKey.cardinality());
+        rowCnt *= 1.0 - Math.pow(.5, groupKey.cardinality());
 
-        return rowCount;
+        return rowCnt;
     }
 }

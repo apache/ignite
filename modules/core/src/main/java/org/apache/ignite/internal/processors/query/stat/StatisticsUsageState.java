@@ -31,7 +31,7 @@ public enum StatisticsUsageState {
     NO_UPDATE(1),
 
     /**
-     * Statistics used and updated after each changes.
+     * Statistics used and updated after each change.
      */
     ON(2);
 
@@ -42,7 +42,7 @@ public enum StatisticsUsageState {
     private static final StatisticsUsageState[] VALS;
 
     static {
-        StatisticsUsageState[] statisticsUsageStates = StatisticsUsageState.values();
+        StatisticsUsageState[] statisticsUsageStates = values();
 
         int maxIdx = 0;
         for (StatisticsUsageState recordType : statisticsUsageStates)
@@ -50,8 +50,8 @@ public enum StatisticsUsageState {
 
         VALS = new StatisticsUsageState[maxIdx + 1];
 
-        for (StatisticsUsageState policyType : statisticsUsageStates)
-            VALS[policyType.idx] = policyType;
+        for (StatisticsUsageState plcType : statisticsUsageStates)
+            VALS[plcType.idx] = plcType;
     }
 
     /**

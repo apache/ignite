@@ -122,7 +122,6 @@ import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.spi.eventstorage.memory.MemoryEventStorageSpi;
 import org.apache.ignite.spi.systemview.view.SystemView;
 import org.apache.ignite.testframework.GridTestUtils;
-import org.apache.ignite.testframework.MvccFeatureChecker;
 import org.apache.ignite.testframework.config.GridTestProperties;
 import org.apache.ignite.testframework.configvariations.VariationsTestsConfig;
 import org.apache.ignite.testframework.junits.logger.GridTestLog4jLogger;
@@ -157,7 +156,6 @@ import org.springframework.context.ApplicationContext;
 import org.springframework.context.support.FileSystemXmlApplicationContext;
 
 import static java.util.Collections.newSetFromMap;
-import static org.apache.ignite.IgniteSystemProperties.IGNITE_ALLOW_ATOMIC_OPS_IN_TX;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_ATOMIC_CACHE_DELETE_HISTORY_SIZE;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_CLIENT_CACHE_CHANGE_MESSAGE_TIMEOUT;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_DISCO_FAILED_CLIENT_RECONNECT_DELAY;
@@ -167,7 +165,6 @@ import static org.apache.ignite.IgniteSystemProperties.IGNITE_TO_STRING_INCLUDE_
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_UPDATE_NOTIFIER;
 import static org.apache.ignite.IgniteSystemProperties.getBoolean;
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
-import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL_SNAPSHOT;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
 import static org.apache.ignite.internal.GridKernalState.DISCONNECTED;
 import static org.apache.ignite.internal.IgnitionEx.gridx;
@@ -289,7 +286,6 @@ public abstract class GridAbstractTest extends JUnitAssertAware {
 
     /** */
     static {
-        System.setProperty(IGNITE_ALLOW_ATOMIC_OPS_IN_TX, "false");
         System.setProperty(IGNITE_ATOMIC_CACHE_DELETE_HISTORY_SIZE, "10000");
         System.setProperty(IGNITE_UPDATE_NOTIFIER, "false");
         System.setProperty(IGNITE_DISCO_FAILED_CLIENT_RECONNECT_DELAY, "1");
@@ -778,10 +774,10 @@ public abstract class GridAbstractTest extends JUnitAssertAware {
      */
     private ScheduledExecutorService scheduleThreadDumpOnAfterTestTimeOut(AtomicBoolean afterTestFinished) {
         // Compute class name as string to avoid holding reference to the test class instance in task.
-        String testClassName = getClass().getName();
+        String testClsName = getClass().getName();
 
         ScheduledExecutorService scheduler = Executors.newScheduledThreadPool(1, task -> {
-            Thread thread = new Thread(task, "after-test-timeout-" + testClassName);
+            Thread thread = new Thread(task, "after-test-timeout-" + testClsName);
             thread.setDaemon(true);
             return thread;
         });
@@ -790,7 +786,7 @@ public abstract class GridAbstractTest extends JUnitAssertAware {
             scheduler.shutdownNow();
 
             if (!afterTestFinished.get()) {
-                log.info(testClassName +
+                log.info(testClsName +
                     ".afterTest() timed out, dumping threads (afterTest() still keeps running)");
 
                 dumpThreadsReliably();
@@ -1787,16 +1783,16 @@ public abstract class GridAbstractTest extends JUnitAssertAware {
      * @param node Node.
      * @return Ignite instance with given local node.
      */
-    protected final Ignite grid(ClusterNode node) {
+    protected final IgniteEx grid(ClusterNode node) {
         if (!isMultiJvm())
-            return G.ignite(node.id());
+            return (IgniteEx)G.ignite(node.id());
         else {
             try {
-                return IgniteProcessProxy.ignite(node.id());
+                return (IgniteEx)IgniteProcessProxy.ignite(node.id());
             }
             catch (Exception ignore) {
                 // A hack if it is local grid.
-                return G.ignite(node.id());
+                return (IgniteEx)G.ignite(node.id());
             }
         }
     }
@@ -2193,10 +2189,7 @@ public abstract class GridAbstractTest extends JUnitAssertAware {
     public static <K, V> CacheConfiguration<K, V> defaultCacheConfiguration() {
         CacheConfiguration<K, V> cfg = new CacheConfiguration<>(DEFAULT_CACHE_NAME);
 
-        if (MvccFeatureChecker.forcedMvcc())
-            cfg.setAtomicityMode(TRANSACTIONAL_SNAPSHOT);
-        else
-            cfg.setAtomicityMode(TRANSACTIONAL).setNearConfiguration(new NearCacheConfiguration<>());
+        cfg.setAtomicityMode(TRANSACTIONAL).setNearConfiguration(new NearCacheConfiguration<>());
         cfg.setWriteSynchronizationMode(FULL_SYNC);
         cfg.setEvictionPolicy(null);
 
@@ -3153,10 +3146,25 @@ public abstract class GridAbstractTest extends JUnitAssertAware {
      * @throws Exception If failed.
      */
     public static <T> T getMxBean(String igniteInstanceName, String grp, String name, Class<T> clazz) {
+        return getMxBean(igniteInstanceName, grp, Collections.emptyList(), name, clazz);
+    }
+
+    /**
+     * Return JMX bean.
+     *
+     * @param igniteInstanceName Ignite instance name.
+     * @param grp Name of the group.
+     * @param grps Extended groups.
+     * @param name Name of the bean.
+     * @param clazz Class of the mbean.
+     * @return MX bean.
+     * @throws Exception If failed.
+     */
+    public static <T> T getMxBean(String igniteInstanceName, String grp, List<String> grps, String name, Class<T> clazz) {
         ObjectName mbeanName = null;
 
         try {
-            mbeanName = U.makeMBeanName(igniteInstanceName, grp, name);
+            mbeanName = U.makeMBeanName(igniteInstanceName, grp, grps, name);
         }
         catch (MalformedObjectNameException e) {
             fail("Failed to register MBean.");
@@ -3165,7 +3173,7 @@ public abstract class GridAbstractTest extends JUnitAssertAware {
         MBeanServer mbeanSrv = ManagementFactory.getPlatformMBeanServer();
 
         if (!mbeanSrv.isRegistered(mbeanName))
-            throw new IgniteException("MBean not registered.");
+            throw new IgniteException("MBean not registered: " + mbeanName);
 
         return MBeanServerInvocationHandler.newProxyInstance(mbeanSrv, mbeanName, clazz, false);
     }

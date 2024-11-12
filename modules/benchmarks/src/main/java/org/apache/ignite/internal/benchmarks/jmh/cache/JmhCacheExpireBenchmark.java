@@ -24,7 +24,10 @@ import javax.cache.expiry.Duration;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.Ignition;
+import org.apache.ignite.cluster.ClusterState;
 import org.apache.ignite.configuration.CacheConfiguration;
+import org.apache.ignite.configuration.DataRegionConfiguration;
+import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.openjdk.jmh.annotations.Benchmark;
 import org.openjdk.jmh.annotations.BenchmarkMode;
@@ -33,6 +36,7 @@ import org.openjdk.jmh.annotations.Level;
 import org.openjdk.jmh.annotations.Measurement;
 import org.openjdk.jmh.annotations.Mode;
 import org.openjdk.jmh.annotations.OutputTimeUnit;
+import org.openjdk.jmh.annotations.Param;
 import org.openjdk.jmh.annotations.Scope;
 import org.openjdk.jmh.annotations.Setup;
 import org.openjdk.jmh.annotations.State;
@@ -66,6 +70,10 @@ public class JmhCacheExpireBenchmark {
     /** Cache with expire policy. */
     private IgniteCache<Integer, Integer> cacheExp;
 
+    /** Persistence enabled. */
+    @Param({"FALSE", "TRUE"})
+    private String persistence;
+
     /** */
     @Benchmark
     public void putWithExpire() {
@@ -87,7 +95,13 @@ public class JmhCacheExpireBenchmark {
      */
     @Setup(Level.Trial)
     public void setup() {
-        ignite = Ignition.start(new IgniteConfiguration().setIgniteInstanceName("test"));
+        ignite = Ignition.start(new IgniteConfiguration().setIgniteInstanceName("test")
+            .setDataStorageConfiguration(new DataStorageConfiguration().setDefaultDataRegionConfiguration(
+                new DataRegionConfiguration().setPersistenceEnabled(Boolean.parseBoolean(persistence))
+            ))
+        );
+
+        ignite.cluster().state(ClusterState.ACTIVE);
 
         cacheReg = ignite.getOrCreateCache(new CacheConfiguration<>("CACHE_REG"));
 

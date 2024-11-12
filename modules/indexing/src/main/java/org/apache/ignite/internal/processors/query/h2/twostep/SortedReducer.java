@@ -142,11 +142,11 @@ public class SortedReducer extends AbstractReducer {
         for (Map.Entry<ClusterNode, BitSet> e : nodesToSegments.entrySet()) {
             BitSet activeSegments = e.getValue();
 
-            int segmentsCount = activeSegments.length();
+            int segmentsCnt = activeSegments.length();
 
-            RowStream[] segments = new RowStream[segmentsCount];
+            RowStream[] segments = new RowStream[segmentsCnt];
 
-            for (int s = 0; s < segmentsCount; s++) {
+            for (int s = 0; s < segmentsCnt; s++) {
                 if (activeSegments.get(s))
                     streams[i++] = segments[s] = new RowStream();
                 else
@@ -403,7 +403,7 @@ public class SortedReducer extends AbstractReducer {
             if (!iter.hasNext())
                 return false;
 
-            cur = H2PlainRowFactory.create(iter.next());
+            cur = H2PlainRowFactory.create(colCnt, iter.next());
 
             return true;
         }

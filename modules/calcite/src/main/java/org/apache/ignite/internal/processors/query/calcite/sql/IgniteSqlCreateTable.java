@@ -18,9 +18,11 @@ package org.apache.ignite.internal.processors.query.calcite.sql;
 
 import java.util.List;
 import java.util.Objects;
+import org.apache.calcite.sql.SqlCall;
 import org.apache.calcite.sql.SqlCreate;
 import org.apache.calcite.sql.SqlIdentifier;
 import org.apache.calcite.sql.SqlKind;
+import org.apache.calcite.sql.SqlLiteral;
 import org.apache.calcite.sql.SqlNode;
 import org.apache.calcite.sql.SqlNodeList;
 import org.apache.calcite.sql.SqlOperator;
@@ -47,8 +49,21 @@ public class IgniteSqlCreateTable extends SqlCreate {
     private final @Nullable SqlNodeList createOptionList;
 
     /** */
-    private static final SqlOperator OPERATOR =
-        new SqlSpecialOperator("CREATE TABLE", SqlKind.CREATE_TABLE);
+    private static final SqlOperator OPERATOR = new SqlSpecialOperator("CREATE TABLE", SqlKind.CREATE_TABLE) {
+            /**
+             * Required to override this method to correctly copy SQL nodes on SqlShuttle.
+             */
+            @Override public SqlCall createCall(
+                @Nullable SqlLiteral functionQualifier,
+                SqlParserPos pos,
+                @Nullable SqlNode... operands
+            ) {
+                assert operands != null && operands.length == 4 : operands;
+
+                return new IgniteSqlCreateTable(pos, false, (SqlIdentifier)operands[0],
+                    (SqlNodeList)operands[1], operands[2], (SqlNodeList)operands[3]);
+            }
+        };
 
     /** Creates a SqlCreateTable. */
     public IgniteSqlCreateTable(SqlParserPos pos, boolean ifNotExists, SqlIdentifier name,

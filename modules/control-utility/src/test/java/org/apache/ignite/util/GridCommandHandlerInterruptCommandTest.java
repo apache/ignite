@@ -27,6 +27,7 @@ import org.apache.ignite.IgniteException;
 import org.apache.ignite.cache.QueryEntity;
 import org.apache.ignite.cache.QueryIndex;
 import org.apache.ignite.cache.QueryIndexType;
+import org.apache.ignite.cluster.ClusterState;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
@@ -35,11 +36,14 @@ import org.apache.ignite.events.DeploymentEvent;
 import org.apache.ignite.events.EventType;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInternalFuture;
+import org.apache.ignite.internal.management.cache.IdleVerifyTaskV2;
+import org.apache.ignite.internal.management.cache.ValidateIndexesClosure;
+import org.apache.ignite.internal.management.cache.ValidateIndexesTask;
 import org.apache.ignite.internal.util.typedef.internal.S;
-import org.apache.ignite.internal.visor.verify.ValidateIndexesClosure;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.ListeningTestLogger;
 import org.apache.ignite.testframework.LogListener;
+import org.junit.Assume;
 import org.junit.Test;
 
 import static org.apache.ignite.internal.commandline.CommandHandler.EXIT_CODE_UNEXPECTED_ERROR;
@@ -52,16 +56,18 @@ public class GridCommandHandlerInterruptCommandTest extends GridCommandHandlerAb
     private static final int LOAD_LOOP = 500_000;
 
     /** Idle verify task name. */
-    private static final String IDLE_VERIFY_TASK_V2 = "org.apache.ignite.internal.visor.verify.VisorIdleVerifyTaskV2";
+    private static final String IDLE_VERIFY_TASK_V2 = IdleVerifyTaskV2.class.getName();
 
     /** Validate index task name. */
-    private static final String VALIDATE_INDEX_TASK = "org.apache.ignite.internal.visor.verify.VisorValidateIndexesTask";
+    private static final String VALIDATE_INDEX_TASK = ValidateIndexesTask.class.getName();
 
     /** Log listener. */
     private ListeningTestLogger lnsrLog;
 
     /** {@inheritDoc} */
     @Override protected void beforeTest() throws Exception {
+        Assume.assumeTrue(commandHandler.equals(CLI_CMD_HND));
+
         super.beforeTest();
 
         cleanPersistenceDir();
@@ -187,7 +193,7 @@ public class GridCommandHandlerInterruptCommandTest extends GridCommandHandlerAb
 
         IgniteEx ignite = startGrid(0);
 
-        ignite.cluster().active(true);
+        ignite.cluster().state(ClusterState.ACTIVE);
 
         preloadeData(ignite);
 
@@ -223,7 +229,7 @@ public class GridCommandHandlerInterruptCommandTest extends GridCommandHandlerAb
 
         IgniteEx ignite = startGrid(0);
 
-        ignite.cluster().active(true);
+        ignite.cluster().state(ClusterState.ACTIVE);
 
         preloadeData(ignite);
 
@@ -294,7 +300,7 @@ public class GridCommandHandlerInterruptCommandTest extends GridCommandHandlerAb
     public void testCancelValidateIndexesClosure() throws Exception {
         IgniteEx ignite0 = startGrid(0);
 
-        ignite0.cluster().active(true);
+        ignite0.cluster().state(ClusterState.ACTIVE);
 
         preloadeData(ignite0);
 
@@ -303,14 +309,14 @@ public class GridCommandHandlerInterruptCommandTest extends GridCommandHandlerAb
         ValidateIndexesClosure clo = new ValidateIndexesClosure(cancelled::get, Collections.singleton(DEFAULT_CACHE_NAME),
             0, 0, false, true);
 
-        ListeningTestLogger listeningLogger = new ListeningTestLogger(log);
+        ListeningTestLogger listeningLog = new ListeningTestLogger(log);
 
         GridTestUtils.setFieldValue(clo, "ignite", ignite0);
-        GridTestUtils.setFieldValue(clo, "log", listeningLogger);
+        GridTestUtils.setFieldValue(clo, "log", listeningLog);
 
         LogListener lnsrValidationStarted = LogListener.matches("Current progress of ValidateIndexesClosure").build();
 
-        listeningLogger.registerListener(lnsrValidationStarted);
+        listeningLog.registerListener(lnsrValidationStarted);
 
         IgniteInternalFuture fut = GridTestUtils.runAsync(() ->
             GridTestUtils.assertThrows(log, clo::call, IgniteException.class, ValidateIndexesClosure.CANCELLED_MSG));

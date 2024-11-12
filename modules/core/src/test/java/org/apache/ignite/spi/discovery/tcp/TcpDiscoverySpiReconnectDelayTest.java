@@ -149,9 +149,9 @@ public class TcpDiscoverySpiReconnectDelayTest extends GridCommonAbstractTest {
             // If exactly numOfFailedRequests fail, counter will be at -1.
             // If unexpected additional requests are sent, counter will be <= -2.
             int cntr = failJoinReq.get();
-            int numOfMessages = numOfFailedRequests - cntr;
-            int expNumOfMessages = numOfFailedRequests + 1;
-            assertEquals("Unexpected number of messages", expNumOfMessages, numOfMessages);
+            int numOfMsgs = numOfFailedRequests - cntr;
+            int expNumOfMsgs = numOfFailedRequests + 1;
+            assertEquals("Unexpected number of messages", expNumOfMsgs, numOfMsgs);
         }
     }
 
@@ -215,9 +215,9 @@ public class TcpDiscoverySpiReconnectDelayTest extends GridCommonAbstractTest {
             // If exactly numOfFailedRequests fail, counter will be at -1.
             // If unexpected additional requests are sent, counter will be <= -2.
             int cntr = failCntr.get();
-            int numOfMessages = numOfFailedRequests - cntr;
-            int expNumOfMessages = numOfFailedRequests + 1;
-            assertEquals("Unexpected number of messages", expNumOfMessages, numOfMessages);
+            int numOfMsgs = numOfFailedRequests - cntr;
+            int expNumOfMsgs = numOfFailedRequests + 1;
+            assertEquals("Unexpected number of messages", expNumOfMsgs, numOfMsgs);
         }
     }
 
@@ -298,9 +298,9 @@ public class TcpDiscoverySpiReconnectDelayTest extends GridCommonAbstractTest {
                 // If exactly numOfFailedRequests fail, counter will be at -1.
                 // If unexpected additional requests are sent, counter will be <= -2.
                 int cntr = failJoinReq.get();
-                int numOfMessages = numOfFailedRequests - cntr;
-                int expNumOfMessages = numOfFailedRequests + 1;
-                assertEquals("Unexpected number of messages", expNumOfMessages, numOfMessages);
+                int numOfMsgs = numOfFailedRequests - cntr;
+                int expNumOfMsgs = numOfFailedRequests + 1;
+                assertEquals("Unexpected number of messages", expNumOfMsgs, numOfMsgs);
             }
         }
     }
@@ -353,9 +353,9 @@ public class TcpDiscoverySpiReconnectDelayTest extends GridCommonAbstractTest {
                 // If exactly numOfFailedRequests fail, counter will be at -1.
                 // If unexpected additional requests are sent, counter will be <= -2.
                 int cntr = failJoinReqRes.get();
-                int numOfMessages = numOfFailedRequests - cntr;
-                int expNumOfMessages = numOfFailedRequests + 1;
-                assertEquals("Unexpected number of messages", expNumOfMessages, numOfMessages);
+                int numOfMsgs = numOfFailedRequests - cntr;
+                int expNumOfMsgs = numOfFailedRequests + 1;
+                assertEquals("Unexpected number of messages", expNumOfMsgs, numOfMsgs);
             }
         }
     }

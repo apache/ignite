@@ -38,7 +38,6 @@ import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.TimeUnit;
-
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteSystemProperties;
@@ -72,9 +71,6 @@ import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.A;
 import org.apache.ignite.internal.util.typedef.internal.U;
-import org.apache.ignite.transactions.TransactionAlreadyCompletedException;
-import org.apache.ignite.transactions.TransactionDuplicateKeyException;
-import org.apache.ignite.transactions.TransactionSerializationException;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -620,6 +616,10 @@ public class QueryUtils {
 
             desc.primaryKeyInlineSize(qe.getPrimaryKeyInlineSize() != null ? qe.getPrimaryKeyInlineSize() : -1);
             desc.affinityFieldInlineSize(qe.getAffinityKeyInlineSize() != null ? qe.getAffinityKeyInlineSize() : -1);
+        }
+        else {
+            desc.primaryKeyInlineSize(-1);
+            desc.affinityFieldInlineSize(-1);
         }
 
         return new QueryTypeCandidate(typeId, altTypeId, desc);
@@ -1342,6 +1342,8 @@ public class QueryUtils {
                 ", valFieldName=" + valFieldName + "]");
         }
 
+        validateAliases(entity);
+
         Collection<QueryIndex> idxs = entity.getIndexes();
 
         if (!F.isEmpty(idxs)) {
@@ -1397,6 +1399,21 @@ public class QueryUtils {
                             ", actual scale: " + dec.scale(), VALUE_SCALE_OUT_OF_RANGE);
                     }
                 }
+            }
+        }
+    }
+
+    /**
+     * @param entity Query entity which aliases should be validated.
+     * @throws IgniteException If validation failed.
+     */
+    private static void validateAliases(QueryEntity entity) {
+        Set<String> aliases = new HashSet<>();
+
+        for (String alias : entity.getAliases().values()) {
+            if (!aliases.add(alias)) {
+                throw new IgniteException(
+                    "Multiple query fields are associated with the same alias [alias=" + alias + "]");
             }
         }
     }
@@ -1572,21 +1589,6 @@ public class QueryUtils {
 
             code = ((IgniteSQLException)e).statusCode();
         }
-        else if (e instanceof TransactionDuplicateKeyException) {
-            code = IgniteQueryErrorCode.DUPLICATE_KEY;
-
-            sqlState = IgniteQueryErrorCode.codeToSqlState(code);
-        }
-        else if (e instanceof TransactionSerializationException) {
-            code = IgniteQueryErrorCode.TRANSACTION_SERIALIZATION_ERROR;
-
-            sqlState = IgniteQueryErrorCode.codeToSqlState(code);
-        }
-        else if (e instanceof TransactionAlreadyCompletedException) {
-            code = IgniteQueryErrorCode.TRANSACTION_COMPLETED;
-
-            sqlState = IgniteQueryErrorCode.codeToSqlState(code);
-        }
         else {
             sqlState = SqlStateCode.INTERNAL_ERROR;
 
@@ -1686,6 +1688,21 @@ public class QueryUtils {
 
                 break;
 
+            case SchemaOperationException.CODE_VIEW_NOT_FOUND:
+                sqlCode = IgniteQueryErrorCode.VIEW_NOT_FOUND;
+
+                break;
+
+            case SchemaOperationException.CODE_VIEW_EXISTS:
+                sqlCode = IgniteQueryErrorCode.VIEW_ALREADY_EXISTS;
+
+                break;
+
+            case SchemaOperationException.CODE_SCHEMA_NOT_FOUND:
+                sqlCode = IgniteQueryErrorCode.SCHEMA_NOT_FOUND;
+
+                break;
+
             default:
                 sqlCode = IgniteQueryErrorCode.UNKNOWN;
         }
@@ -1705,14 +1722,22 @@ public class QueryUtils {
     }
 
     /**
-     * Remove field by alias.
+     * Remove field and corresponding alias by the alias name.
      *
      * @param entity Query entity.
-     * @param alias Filed's alias.
-     * @return {@code true} if the field is removed. Otherwise returns {@code false}.
+     * @param alias Name of the field alias.
+     * @return {@code true} if the field and corresponding alias is removed. Otherwise, returns {@code false}.
      */
-    public static boolean removeField(QueryEntity entity, String alias) {
-        return entity.getFields().remove(fieldNameByAlias(entity, alias)) != null;
+    public static boolean removeFieldAndAlias(QueryEntity entity, String alias) {
+        String fieldName = fieldNameByAlias(entity, alias);
+
+        if (entity.getFields().remove(fieldName) != null) {
+            entity.getAliases().remove(fieldName);
+
+            return true;
+        }
+
+        return false;
     }
 
     /**
@@ -1746,6 +1771,23 @@ public class QueryUtils {
             return SPACE_DELIM;
 
         return DEFAULT_DELIM;
+    }
+
+    /** */
+    public static boolean isConvertibleTypes(Object val, Class<?> expCls) {
+        if (val == null)
+            return true;
+
+        if (expCls == java.sql.Date.class || expCls == java.time.LocalDate.class)
+            return val instanceof java.sql.Date || val instanceof java.time.LocalDate;
+
+        if (expCls == java.sql.Time.class || expCls == java.time.LocalTime.class)
+            return val instanceof java.sql.Time || val instanceof java.time.LocalTime;
+
+        if (expCls == java.sql.Timestamp.class || expCls == java.util.Date.class || expCls == java.time.LocalDateTime.class)
+            return val instanceof java.time.LocalDateTime || val instanceof java.util.Date;
+
+        return false;
     }
 
     /**

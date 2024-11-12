@@ -124,10 +124,10 @@ public class QuerySchema implements Serializable {
                 return new QuerySchemaPatch(Collections.singletonList(op), Collections.emptyList(), "");
             }
 
-            Map<String, QueryEntity> localEntities = new HashMap<>();
+            Map<String, QueryEntity> locEntities = new HashMap<>();
 
             for (QueryEntity entity : entities) {
-                if (localEntities.put(entity.getTableName(), entity) != null)
+                if (locEntities.put(entity.getTableName(), entity) != null)
                     throw new IllegalStateException("Duplicate key");
             }
 
@@ -136,11 +136,11 @@ public class QuerySchema implements Serializable {
 
             StringBuilder conflicts = new StringBuilder();
 
-            for (QueryEntity queryEntity : target) {
-                if (localEntities.containsKey(queryEntity.getTableName())) {
-                    QueryEntity localEntity = localEntities.get(queryEntity.getTableName());
+            for (QueryEntity qryEntity : target) {
+                if (locEntities.containsKey(qryEntity.getTableName())) {
+                    QueryEntity locEntity = locEntities.get(qryEntity.getTableName());
 
-                    QueryEntityPatch entityPatch = localEntity.makePatch(queryEntity);
+                    QueryEntityPatch entityPatch = locEntity.makePatch(qryEntity);
 
                     if (entityPatch.hasConflict()) {
                         if (conflicts.length() > 0)
@@ -153,7 +153,7 @@ public class QuerySchema implements Serializable {
                         patchOperations.addAll(entityPatch.getPatchOperations());
                 }
                 else
-                    entityToAdd.add(QueryUtils.copy(queryEntity));
+                    entityToAdd.add(QueryUtils.copy(qryEntity));
             }
 
             return new QuerySchemaPatch(patchOperations, entityToAdd, conflicts.toString());
@@ -279,7 +279,7 @@ public class QuerySchema implements Serializable {
                 QueryEntity target = ((List<QueryEntity>)entities).get(targetIdx);
 
                 for (QueryField field : op0.columns()) {
-                    target.getFields().put(field.name(), field.typeName());
+                    target.addQueryField(field.name(), field.typeName(), field.alias());
 
                     if (!field.isNullable()) {
                         if (!(target instanceof QueryEntityEx)) {
@@ -326,7 +326,7 @@ public class QuerySchema implements Serializable {
                 QueryEntity entity = ((List<QueryEntity>)entities).get(targetIdx);
 
                 for (String field : op0.columns()) {
-                    boolean rmv = QueryUtils.removeField(entity, field);
+                    boolean rmv = QueryUtils.removeFieldAndAlias(entity, field);
 
                     assert rmv || op0.ifExists() : "Invalid operation state [removed=" + rmv
                         + ", ifExists=" + op0.ifExists() + ']';

@@ -20,6 +20,7 @@ package org.apache.ignite.internal.client.thin;
 import java.io.IOException;
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.EventListener;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
@@ -50,6 +51,10 @@ import org.apache.ignite.client.ClientServices;
 import org.apache.ignite.client.ClientTransactions;
 import org.apache.ignite.client.IgniteClient;
 import org.apache.ignite.client.IgniteClientFuture;
+import org.apache.ignite.client.events.ClientFailEvent;
+import org.apache.ignite.client.events.ClientLifecycleEventListener;
+import org.apache.ignite.client.events.ClientStartEvent;
+import org.apache.ignite.client.events.ClientStopEvent;
 import org.apache.ignite.configuration.BinaryConfiguration;
 import org.apache.ignite.configuration.ClientConfiguration;
 import org.apache.ignite.configuration.ClientTransactionConfiguration;
@@ -64,10 +69,12 @@ import org.apache.ignite.internal.binary.BinaryUtils;
 import org.apache.ignite.internal.binary.BinaryWriterExImpl;
 import org.apache.ignite.internal.binary.streams.BinaryInputStream;
 import org.apache.ignite.internal.binary.streams.BinaryOutputStream;
+import org.apache.ignite.internal.client.thin.TcpClientTransactions.TcpClientTransaction;
 import org.apache.ignite.internal.client.thin.io.ClientConnectionMultiplexer;
 import org.apache.ignite.internal.processors.platform.client.ClientStatus;
 import org.apache.ignite.internal.processors.platform.client.IgniteClientException;
 import org.apache.ignite.internal.util.GridArgumentCheck;
+import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.logger.NullLogger;
@@ -101,11 +108,17 @@ public class TcpIgniteClient implements IgniteClient {
     /** Registered entry listeners for all caches. */
     private final ClientCacheEntryListenersRegistry lsnrsRegistry;
 
+    /** Event listeners. */
+    private final EventListener[] evtLsnrs;
+
     /** Marshaller. */
     private final ClientBinaryMarshaller marsh;
 
     /** Serializer/deserializer. */
     private final ClientUtils serDes;
+
+    /** Logger. */
+    private final IgniteLogger log;
 
     /**
      * Private constructor. Use {@link TcpIgniteClient#start(ClientConfiguration)} to create an instance of
@@ -122,6 +135,8 @@ public class TcpIgniteClient implements IgniteClient {
             BiFunction<ClientChannelConfiguration, ClientConnectionMultiplexer, ClientChannel> chFactory,
             ClientConfiguration cfg
     ) throws ClientException {
+        log = NullLogger.whenNull(cfg.getLogger());
+
         final ClientBinaryMetadataHandler metadataHnd = new ClientBinaryMetadataHandler();
 
         ClientMarshallerContext marshCtx = new ClientMarshallerContext();
@@ -134,6 +149,8 @@ public class TcpIgniteClient implements IgniteClient {
         binary = new ClientBinary(marsh);
 
         ch = new ReliableChannel(chFactory, cfg, binary);
+
+        evtLsnrs = cfg.getEventListeners() == null ? null : cfg.getEventListeners().clone();
 
         try {
             ch.channelsInit();
@@ -159,7 +176,7 @@ public class TcpIgniteClient implements IgniteClient {
 
             compute = new ClientComputeImpl(ch, marsh, cluster.defaultClusterGroup());
 
-            services = new ClientServicesImpl(ch, marsh, cluster.defaultClusterGroup());
+            services = new ClientServicesImpl(ch, marsh, cluster.defaultClusterGroup(), log);
 
             lsnrsRegistry = new ClientCacheEntryListenersRegistry();
         }
@@ -172,6 +189,10 @@ public class TcpIgniteClient implements IgniteClient {
     /** {@inheritDoc} */
     @Override public void close() {
         ch.close();
+
+        ClientStopEvent evt = new ClientStopEvent(this);
+
+        triggerLifecycleEventListeners(log, evtLsnrs, lsnr -> lsnr.onClientStop(evt));
     }
 
     /** {@inheritDoc} */
@@ -303,13 +324,33 @@ public class TcpIgniteClient implements IgniteClient {
         Consumer<PayloadOutputChannel> qryWriter = payloadCh -> {
             BinaryOutputStream out = payloadCh.out();
 
+            byte flags = TcpClientCache.KEEP_BINARY_FLAG_MASK;
+
+            int txId = 0;
+
+            if (payloadCh.clientChannel().protocolCtx().isFeatureSupported(ProtocolBitmaskFeature.TX_AWARE_QUERIES)) {
+                TcpClientTransaction tx = transactions.tx();
+
+                txId = tx == null ? 0 : tx.txId();
+            }
+
             out.writeInt(0); // no cache ID
-            out.writeByte((byte)1); // keep binary
+
+            if (txId != 0) {
+                flags |= TcpClientCache.TRANSACTIONAL_FLAG_MASK;
+
+                out.writeByte(flags);
+                out.writeInt(txId);
+            }
+            else
+                out.writeByte(flags);
+
             serDes.write(qry, out);
         };
 
         return new ClientFieldsQueryCursor<>(new ClientFieldsQueryPager(
             ch,
+            transactions.tx(),
             ClientOperation.QUERY_SQL_FIELDS,
             ClientOperation.QUERY_SQL_FIELDS_CURSOR_GET_PAGE,
             qryWriter,
@@ -418,7 +459,46 @@ public class TcpIgniteClient implements IgniteClient {
      * @return Client with successfully opened thin client connection.
      */
     public static IgniteClient start(ClientConfiguration cfg) throws ClientException {
-        return new TcpIgniteClient(cfg);
+        try {
+            TcpIgniteClient client = new TcpIgniteClient(cfg);
+
+            ClientStartEvent evt = new ClientStartEvent(client, cfg);
+
+            triggerLifecycleEventListeners(client.log, client.evtLsnrs, lsnr -> lsnr.onClientStart(evt));
+
+            return client;
+        }
+        catch (Throwable throwable) {
+            ClientFailEvent evt = new ClientFailEvent(cfg, throwable);
+
+            triggerLifecycleEventListeners(cfg.getLogger(), cfg.getEventListeners(), lsnr -> lsnr.onClientFail(evt));
+
+            throw throwable;
+        }
+    }
+
+    /** */
+    private static void triggerLifecycleEventListeners(
+        @Nullable IgniteLogger log,
+        EventListener[] lsnrs,
+        Consumer<ClientLifecycleEventListener> action
+    ) {
+        if (F.isEmpty(lsnrs))
+            return;
+
+        for (EventListener lsnr: lsnrs) {
+            if (lsnr instanceof ClientLifecycleEventListener) {
+                try {
+                    ClientLifecycleEventListener lsnr0 = (ClientLifecycleEventListener)lsnr;
+
+                    action.accept(lsnr0);
+                }
+                catch (Exception e) {
+                    if (log != null)
+                        log.warning("Exception thrown while consuming event in listener " + lsnr, e);
+                }
+            }
+        }
     }
 
     /**
@@ -474,8 +554,6 @@ public class TcpIgniteClient implements IgniteClient {
 
         if (clusterCfg == null)
             return;
-
-        IgniteLogger log = NullLogger.whenNull(cfg.getLogger());
 
         if (log.isDebugEnabled())
             log.debug("Cluster binary configuration retrieved: " + clusterCfg);

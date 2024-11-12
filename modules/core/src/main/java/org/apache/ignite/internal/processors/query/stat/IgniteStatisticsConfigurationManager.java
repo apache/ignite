@@ -126,7 +126,7 @@ public class IgniteStatisticsConfigurationManager {
                 distrMetaStorage.listen(
                     (metaKey) -> metaKey.startsWith(STAT_OBJ_PREFIX),
                     (k, oldV, newV) -> {
-                        // Skip invoke on start node (see 'ReadableDistributedMetaStorage#listen' the second case)
+                        // Skip invocation at node start (see 'ReadableDistributedMetaStorage#listen' the second case)
                         // The update statistics on start node is handled by 'scanAndCheckLocalStatistic' method
                         // called on exchange done.
                         if (topVer == null)
@@ -165,11 +165,13 @@ public class IgniteStatisticsConfigurationManager {
             assert !F.isEmpty(cols);
 
             // Drop statistics after columns dropped.
-            dropStatistics(
-                Collections.singletonList(
-                    new StatisticsTarget(schemaName, typeDesc.tableName(), cols.toArray(EMPTY_STRINGS))
-                ),
-                false
+            mgmtBusyExecutor.execute(() ->
+                dropStatistics(
+                    Collections.singletonList(
+                        new StatisticsTarget(schemaName, typeDesc.tableName(), cols.toArray(EMPTY_STRINGS))
+                    ),
+                    false
+                )
             );
         }
 
@@ -185,18 +187,22 @@ public class IgniteStatisticsConfigurationManager {
 
             assert !F.isEmpty(schemaName) && !F.isEmpty(name) : schemaName + ":" + name;
 
-            StatisticsKey key = new StatisticsKey(schemaName, name);
+            // Drop statistics asynchronously to avoid possible deadlock between schema manager lock and distributed
+            // metastorage lock.
+            mgmtBusyExecutor.execute(() -> {
+                StatisticsKey key = new StatisticsKey(schemaName, name);
 
-            try {
-                StatisticsObjectConfiguration cfg = config(key);
+                try {
+                    StatisticsObjectConfiguration cfg = config(key);
 
-                if (cfg != null && !F.isEmpty(cfg.columns()))
-                    dropStatistics(Collections.singletonList(new StatisticsTarget(schemaName, name)), false);
-            }
-            catch (Throwable e) {
-                if (!X.hasCause(e, NodeStoppingException.class))
-                    throw new IgniteSQLException("Error on drop statistics for dropped table [key=" + key + ']', e);
-            }
+                    if (cfg != null && !F.isEmpty(cfg.columns()))
+                        dropStatistics(Collections.singletonList(new StatisticsTarget(schemaName, name)), false);
+                }
+                catch (Throwable e) {
+                    if (!X.hasCause(e, NodeStoppingException.class))
+                        throw new IgniteSQLException("Error on drop statistics for dropped table [key=" + key + ']', e);
+                }
+            });
         }
     };
 
@@ -373,18 +379,18 @@ public class IgniteStatisticsConfigurationManager {
      */
     public void updateAllLocalStatistics() {
         try {
-            GridCompoundFuture<Boolean, Boolean> compoundFuture = new GridCompoundFuture<>(CU.boolReducer());
+            GridCompoundFuture<Boolean, Boolean> compoundFut = new GridCompoundFuture<>(CU.boolReducer());
 
             distrMetaStorage.iterate(STAT_OBJ_PREFIX, (k, v) -> {
                 StatisticsObjectConfiguration cfg = (StatisticsObjectConfiguration)v;
 
-                compoundFuture.add(updateLocalStatisticsAsync(cfg));
+                compoundFut.add(updateLocalStatisticsAsync(cfg));
             });
 
-            compoundFuture.markInitialized();
+            compoundFut.markInitialized();
 
-            compoundFuture.listen(future -> {
-                if (future.error() == null && !future.result())
+            compoundFut.listen(() -> {
+                if (compoundFut.error() == null && !compoundFut.result())
                     mgmtBusyExecutor.execute(this::updateAllLocalStatistics);
             });
         }
@@ -486,11 +492,11 @@ public class IgniteStatisticsConfigurationManager {
         if (log.isDebugEnabled())
             log.debug("Drop statistics [targets=" + targets + ']');
 
-        GridFutureAdapter<Boolean> resultFuture = new GridFutureAdapter<>();
-        IgniteInternalFuture<Boolean> chainFuture = new GridFinishedFuture<>(true);
+        GridFutureAdapter<Boolean> resultFut = new GridFutureAdapter<>();
+        IgniteInternalFuture<Boolean> chainFut = new GridFinishedFuture<>(true);
 
         for (StatisticsTarget target : targets) {
-            chainFuture = chainFuture.chainCompose(f -> {
+            chainFut = chainFut.chainCompose(f -> {
                 if (f.error() == null && f.result() == Boolean.TRUE)
                     return removeFromMetastore(target, validate);
 
@@ -498,14 +504,14 @@ public class IgniteStatisticsConfigurationManager {
             });
         }
 
-        chainFuture.listen(f -> {
+        chainFut.listen(f -> {
             if (f.error() != null)
-                resultFuture.onDone(f.error());
+                resultFut.onDone(f.error());
             else
-                resultFuture.onDone(f.result() == null || f.result().booleanValue());
+                resultFut.onDone(f.result() == null || f.result().booleanValue());
         });
 
-        return resultFuture;
+        return resultFut;
     }
 
     /**

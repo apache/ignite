@@ -18,11 +18,16 @@
 package org.apache.ignite.internal.processors.query.calcite.message;
 
 import java.nio.ByteBuffer;
+import java.util.Collection;
 import java.util.UUID;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.internal.GridDirectCollection;
 import org.apache.ignite.internal.GridDirectTransient;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
+import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.query.calcite.metadata.FragmentDescription;
+import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.plugin.extensions.communication.MessageCollectionItemType;
 import org.apache.ignite.plugin.extensions.communication.MessageReader;
 import org.apache.ignite.plugin.extensions.communication.MessageWriter;
 import org.jetbrains.annotations.Nullable;
@@ -36,6 +41,9 @@ public class QueryStartRequest implements MarshalableMessage, ExecutionContextAw
 
     /** */
     private UUID qryId;
+
+    /** */
+    private long originatingQryId;
 
     /** */
     private AffinityTopologyVersion ver;
@@ -57,18 +65,29 @@ public class QueryStartRequest implements MarshalableMessage, ExecutionContextAw
     private byte[] paramsBytes;
 
     /** */
+    private long timeout;
+
+    /** */
+    @GridDirectCollection(QueryTxEntry.class)
+    private @Nullable Collection<QueryTxEntry> qryTxEntries;
+
+    /** */
     @SuppressWarnings("AssignmentOrReturnOfFieldWithMutableType")
     public QueryStartRequest(
         UUID qryId,
+        long originatingQryId,
         String schema,
         String root,
         AffinityTopologyVersion ver,
         FragmentDescription fragmentDesc,
         int totalFragmentsCnt,
         Object[] params,
-        @Nullable byte[] paramsBytes
+        @Nullable byte[] paramsBytes,
+        long timeout,
+        Collection<QueryTxEntry> qryTxEntries
     ) {
         this.qryId = qryId;
+        this.originatingQryId = originatingQryId;
         this.schema = schema;
         this.root = root;
         this.ver = ver;
@@ -76,6 +95,8 @@ public class QueryStartRequest implements MarshalableMessage, ExecutionContextAw
         this.totalFragmentsCnt = totalFragmentsCnt;
         this.params = params;
         this.paramsBytes = paramsBytes; // If we already have marshalled params, use it.
+        this.timeout = timeout;
+        this.qryTxEntries = qryTxEntries;
     }
 
     /** */
@@ -91,6 +112,13 @@ public class QueryStartRequest implements MarshalableMessage, ExecutionContextAw
     /** {@inheritDoc} */
     @Override public UUID queryId() {
         return qryId;
+    }
+
+    /**
+     * @return Registered local query ID on originating node.
+     */
+    public long originatingQryId() {
+        return originatingQryId;
     }
 
     /** {@inheritDoc} */
@@ -142,20 +170,46 @@ public class QueryStartRequest implements MarshalableMessage, ExecutionContextAw
         return paramsBytes;
     }
 
-    /** {@inheritDoc} */
-    @Override public void prepareMarshal(MarshallingContext ctx) throws IgniteCheckedException {
-        if (paramsBytes == null && params != null)
-            paramsBytes = ctx.marshal(params);
+    /**
+     * @return Query timeout.
+     */
+    public long timeout() {
+        return timeout;
+    }
 
-        fragmentDesc.prepareMarshal(ctx);
+    /**
+     * @return Transaction entries to mixin on query processing.
+     */
+    public @Nullable Collection<QueryTxEntry> queryTransactionEntries() {
+        return qryTxEntries;
     }
 
     /** {@inheritDoc} */
-    @Override public void prepareUnmarshal(MarshallingContext ctx) throws IgniteCheckedException {
+    @Override public void prepareMarshal(GridCacheSharedContext<?, ?> ctx) throws IgniteCheckedException {
+        if (paramsBytes == null && params != null)
+            paramsBytes = U.marshal(ctx, params);
+
+        fragmentDesc.prepareMarshal(ctx);
+
+        if (qryTxEntries != null) {
+            for (QueryTxEntry e : qryTxEntries)
+                e.prepareMarshal(ctx);
+        }
+    }
+
+    /** {@inheritDoc} */
+    @Override public void prepareUnmarshal(GridCacheSharedContext<?, ?> ctx) throws IgniteCheckedException {
+        ClassLoader ldr = U.resolveClassLoader(ctx.gridConfig());
+
         if (params == null && paramsBytes != null)
-            params = ctx.unmarshal(paramsBytes);
+            params = U.unmarshal(ctx, paramsBytes, ldr);
 
         fragmentDesc.prepareUnmarshal(ctx);
+
+        if (qryTxEntries != null) {
+            for (QueryTxEntry e : qryTxEntries)
+                e.prepareUnmarshal(ctx, ldr);
+        }
     }
 
     /** {@inheritDoc} */
@@ -171,46 +225,65 @@ public class QueryStartRequest implements MarshalableMessage, ExecutionContextAw
 
         switch (writer.state()) {
             case 0:
-                if (!writer.writeMessage("fragmentDescription", fragmentDesc))
+                if (!writer.writeMessage("fragmentDesc", fragmentDesc))
                     return false;
 
                 writer.incrementState();
 
             case 1:
-                if (!writer.writeByteArray("paramsBytes", paramsBytes))
+                if (!writer.writeLong("originatingQryId", originatingQryId))
                     return false;
 
                 writer.incrementState();
 
             case 2:
-                if (!writer.writeUuid("queryId", qryId))
+                if (!writer.writeByteArray("paramsBytes", paramsBytes))
                     return false;
 
                 writer.incrementState();
 
             case 3:
-                if (!writer.writeString("root", root))
+                if (!writer.writeUuid("qryId", qryId))
                     return false;
 
                 writer.incrementState();
 
             case 4:
-                if (!writer.writeString("schema", schema))
+                if (!writer.writeString("root", root))
                     return false;
 
                 writer.incrementState();
 
             case 5:
-                if (!writer.writeAffinityTopologyVersion("version", ver))
+                if (!writer.writeString("schema", schema))
                     return false;
 
                 writer.incrementState();
 
             case 6:
+                if (!writer.writeLong("timeout", timeout))
+                    return false;
+
+                writer.incrementState();
+
+            case 7:
                 if (!writer.writeInt("totalFragmentsCnt", totalFragmentsCnt))
                     return false;
 
                 writer.incrementState();
+
+            case 8:
+                if (!writer.writeCollection("qryTxEntries", qryTxEntries, MessageCollectionItemType.MSG))
+                    return false;
+
+                writer.incrementState();
+
+            case 9:
+                if (!writer.writeAffinityTopologyVersion("ver", ver))
+                    return false;
+
+                writer.incrementState();
+
         }
 
         return true;
@@ -225,7 +298,7 @@ public class QueryStartRequest implements MarshalableMessage, ExecutionContextAw
 
         switch (reader.state()) {
             case 0:
-                fragmentDesc = reader.readMessage("fragmentDescription");
+                fragmentDesc = reader.readMessage("fragmentDesc");
 
                 if (!reader.isLastRead())
                     return false;
@@ -233,7 +306,7 @@ public class QueryStartRequest implements MarshalableMessage, ExecutionContextAw
                 reader.incrementState();
 
             case 1:
-                paramsBytes = reader.readByteArray("paramsBytes");
+                originatingQryId = reader.readLong("originatingQryId");
 
                 if (!reader.isLastRead())
                     return false;
@@ -241,7 +314,7 @@ public class QueryStartRequest implements MarshalableMessage, ExecutionContextAw
                 reader.incrementState();
 
             case 2:
-                qryId = reader.readUuid("queryId");
+                paramsBytes = reader.readByteArray("paramsBytes");
 
                 if (!reader.isLastRead())
                     return false;
@@ -249,7 +322,7 @@ public class QueryStartRequest implements MarshalableMessage, ExecutionContextAw
                 reader.incrementState();
 
             case 3:
-                root = reader.readString("root");
+                qryId = reader.readUuid("qryId");
 
                 if (!reader.isLastRead())
                     return false;
@@ -257,7 +330,7 @@ public class QueryStartRequest implements MarshalableMessage, ExecutionContextAw
                 reader.incrementState();
 
             case 4:
-                schema = reader.readString("schema");
+                root = reader.readString("root");
 
                 if (!reader.isLastRead())
                     return false;
@@ -265,7 +338,7 @@ public class QueryStartRequest implements MarshalableMessage, ExecutionContextAw
                 reader.incrementState();
 
             case 5:
-                ver = reader.readAffinityTopologyVersion("version");
+                schema = reader.readString("schema");
 
                 if (!reader.isLastRead())
                     return false;
@@ -273,12 +346,37 @@ public class QueryStartRequest implements MarshalableMessage, ExecutionContextAw
                 reader.incrementState();
 
             case 6:
+                timeout = reader.readLong("timeout");
+
+                if (!reader.isLastRead())
+                    return false;
+
+                reader.incrementState();
+
+            case 7:
                 totalFragmentsCnt = reader.readInt("totalFragmentsCnt");
 
                 if (!reader.isLastRead())
                     return false;
 
                 reader.incrementState();
+
+            case 8:
+                qryTxEntries = reader.readCollection("qryTxEntries", MessageCollectionItemType.MSG);
+
+                if (!reader.isLastRead())
+                    return false;
+
+                reader.incrementState();
+
+            case 9:
+                ver = reader.readAffinityTopologyVersion("ver");
+
+                if (!reader.isLastRead())
+                    return false;
+
+                reader.incrementState();
+
         }
 
         return reader.afterMessageRead(QueryStartRequest.class);
@@ -291,6 +389,6 @@ public class QueryStartRequest implements MarshalableMessage, ExecutionContextAw
 
     /** {@inheritDoc} */
     @Override public byte fieldsCount() {
-        return 7;
+        return 10;
     }
 }

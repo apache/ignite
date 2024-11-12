@@ -169,7 +169,6 @@ namespace Apache.Ignite.Core.Tests
                 Assert.AreEqual(cfg.JvmOptions, resCfg.JvmOptions);
                 Assert.AreEqual(cfg.JvmDllPath, resCfg.JvmDllPath);
                 Assert.AreEqual(cfg.Localhost, resCfg.Localhost);
-                Assert.AreEqual(cfg.IsDaemon, resCfg.IsDaemon);
                 Assert.AreEqual(IgniteConfiguration.DefaultIsLateAffinityAssignment, resCfg.IsLateAffinityAssignment);
                 Assert.AreEqual(cfg.UserAttributes, resCfg.UserAttributes);
 
@@ -263,8 +262,6 @@ namespace Apache.Ignite.Core.Tests
 
                 AssertExtensions.ReflectionEqual(cfg.DataStorageConfiguration, resCfg.DataStorageConfiguration);
 
-                Assert.AreEqual(cfg.MvccVacuumFrequency, resCfg.MvccVacuumFrequency);
-                Assert.AreEqual(cfg.MvccVacuumThreadCount, resCfg.MvccVacuumThreadCount);
                 Assert.AreEqual(cfg.SqlQueryHistorySize, resCfg.SqlQueryHistorySize);
 
                 Assert.IsNotNull(resCfg.SqlSchemas);
@@ -554,8 +551,6 @@ namespace Apache.Ignite.Core.Tests
                 cfg.ClientConnectorConfigurationEnabled);
             Assert.AreEqual(IgniteConfiguration.DefaultRedirectJavaConsoleOutput, cfg.RedirectJavaConsoleOutput);
             Assert.AreEqual(IgniteConfiguration.DefaultAuthenticationEnabled, cfg.AuthenticationEnabled);
-            Assert.AreEqual(IgniteConfiguration.DefaultMvccVacuumFrequency, cfg.MvccVacuumFrequency);
-            Assert.AreEqual(IgniteConfiguration.DefaultMvccVacuumThreadCount, cfg.MvccVacuumThreadCount);
             Assert.AreEqual(AsyncContinuationExecutor.ThreadPool, cfg.AsyncContinuationExecutor);
 
             // Thread pools.
@@ -781,7 +776,6 @@ namespace Apache.Ignite.Core.Tests
                 NetworkSendRetryDelay = TimeSpan.FromMinutes(11),
                 WorkDirectory = Path.GetTempPath(),
                 Localhost = "127.0.0.1",
-                IsDaemon = false,
                 IsLateAffinityAssignment = false,
                 UserAttributes = Enumerable.Range(1, 10).ToDictionary(x => x.ToString(), x => (object) x),
                 AtomicConfiguration = new AtomicConfiguration
@@ -937,8 +931,6 @@ namespace Apache.Ignite.Core.Tests
                     }
                 },
                 AuthenticationEnabled = false,
-                MvccVacuumFrequency = 20000,
-                MvccVacuumThreadCount = 8,
                 SqlQueryHistorySize = 99,
                 JavaPeerClassLoadingEnabled = false,
                 SqlSchemas = new List<string> { "SCHEMA_3", "schema_4" },

@@ -26,6 +26,8 @@ import java.util.List;
 import java.util.UUID;
 import java.util.concurrent.Callable;
 import java.util.concurrent.CountDownLatch;
+import javax.cache.configuration.Factory;
+import javax.net.ssl.SSLContext;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.cluster.ClusterNode;
@@ -50,7 +52,6 @@ import org.apache.ignite.internal.client.GridClientProtocol;
 import org.apache.ignite.internal.client.GridClientTopologyListener;
 import org.apache.ignite.internal.client.balancer.GridClientLoadBalancer;
 import org.apache.ignite.internal.client.balancer.GridClientRoundRobinBalancer;
-import org.apache.ignite.internal.client.ssl.GridSslContextFactory;
 import org.apache.ignite.internal.managers.communication.GridIoMessage;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.distributed.GridDistributedLockRequest;
@@ -71,6 +72,7 @@ import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.jetbrains.annotations.Nullable;
 import org.junit.Test;
+
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
 import static org.apache.ignite.cache.CacheMode.REPLICATED;
@@ -140,7 +142,7 @@ public abstract class ClientAbstractMultiNodeSelfTest extends GridCommonAbstract
     /**
      * @return SSL context factory to use if SSL or {@code null} to disable SSL usage.
      */
-    @Nullable protected GridSslContextFactory sslContextFactory() {
+    @Nullable protected Factory<SSLContext> sslContextFactory() {
         return null;
     }
 
@@ -157,11 +159,11 @@ public abstract class ClientAbstractMultiNodeSelfTest extends GridCommonAbstract
 
             clientCfg.setPort(REST_TCP_PORT_BASE);
 
-            GridSslContextFactory sslCtxFactory = sslContextFactory();
+            Factory<SSLContext> sslCtxFactory = sslContextFactory();
 
             if (sslCtxFactory != null) {
                 clientCfg.setSslEnabled(true);
-                clientCfg.setSslContextFactory(sslCtxFactory);
+                clientCfg.setSslFactory(sslCtxFactory);
             }
 
             c.setConnectorConfiguration(clientCfg);
