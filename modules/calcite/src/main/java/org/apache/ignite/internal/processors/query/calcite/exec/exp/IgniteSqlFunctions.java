@@ -32,7 +32,6 @@ import org.apache.calcite.schema.ScannableTable;
 import org.apache.calcite.schema.Schema;
 import org.apache.calcite.schema.Statistic;
 import org.apache.calcite.sql.SqlCall;
-import org.apache.calcite.sql.SqlKind;
 import org.apache.calcite.sql.SqlNode;
 import org.apache.calcite.sql.type.SqlTypeName;
 import org.apache.ignite.internal.processors.query.calcite.type.IgniteTypeSystem;
@@ -194,26 +193,6 @@ public class IgniteSqlFunctions {
     /** @return The second argument and ignores the first. */
     public static Object skipFirstArgument(Object v1, Object v2) {
         return v2;
-    }
-
-    /** */
-    public static Number bitwise(SqlKind kind, Number v1, Number v2) {
-        if (v1 == null)
-            return v2;
-
-        if (v2 == null)
-            return v1;
-
-        switch (kind) {
-            case BIT_AND:
-                return v1.longValue() & v2.longValue();
-            case BIT_OR:
-                return v1.longValue() | v2.longValue();
-            case BIT_XOR:
-                return v1.longValue() ^ v2.longValue();
-            default:
-                throw new IllegalArgumentException("Unexpected bitwise operation: " + kind);
-        }
     }
 
     /** GREATEST2. */

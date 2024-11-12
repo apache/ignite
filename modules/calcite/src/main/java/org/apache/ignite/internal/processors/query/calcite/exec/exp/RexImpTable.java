@@ -71,6 +71,7 @@ import org.apache.calcite.sql.validate.SqlUserDefinedTableMacro;
 import org.apache.calcite.util.BuiltInMethod;
 import org.apache.calcite.util.Util;
 import org.apache.ignite.calcite.CalciteQueryEngineConfiguration;
+import org.apache.ignite.internal.processors.query.calcite.util.IgniteMath;
 import org.apache.ignite.internal.processors.query.calcite.util.IgniteMethod;
 
 import static org.apache.calcite.adapter.enumerable.EnumUtils.generateCollatorExpression;
@@ -1313,7 +1314,7 @@ public class RexImpTable {
         }
     }
 
-    /** */
+    /** Implementor for {@link IgniteMath#bitwise(SqlKind, Number, Number)}. */
     private static class BitwiseImplementor extends AbstractRexCallImplementor {
         /** */
         private final SqlKind kind;

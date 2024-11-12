@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.processors.query.calcite.util;
 
 import java.math.BigDecimal;
+import org.apache.calcite.sql.SqlKind;
 import org.apache.calcite.sql.type.SqlTypeName;
 
 import static org.apache.calcite.sql.type.SqlTypeName.BIGINT;
@@ -344,5 +345,25 @@ public class IgniteMath {
         checkNumberLongBounds(TINYINT, x);
 
         return convertToByteExact(x.longValue());
+    }
+
+    /** */
+    public static Number bitwise(SqlKind kind, Number v1, Number v2) {
+        if (v1 == null)
+            return v2;
+
+        if (v2 == null)
+            return v1;
+
+        switch (kind) {
+            case BIT_AND:
+                return v1.longValue() & v2.longValue();
+            case BIT_OR:
+                return v1.longValue() | v2.longValue();
+            case BIT_XOR:
+                return v1.longValue() ^ v2.longValue();
+            default:
+                throw new IllegalArgumentException("Unexpected bitwise operation: " + kind);
+        }
     }
 }

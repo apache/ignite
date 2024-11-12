@@ -62,6 +62,41 @@ public class FunctionsTest extends AbstractBasicIntegrationTest {
 
     /** */
     @Test
+    public void testBitwiseOperationsWithTable() {
+        try {
+            sql("CREATE TABLE TBL(i INT PRIMARY KEY, s SMALLINT, l BIGINT)");
+
+            for (int i = 0; i < 100; ++i)
+                sql("INSERT INTO TBL values (?, ?, ?)", i, i, i);
+
+            sql("INSERT INTO TBL values (?, ?, ?)", Short.MAX_VALUE + 1, Short.MAX_VALUE, Short.MAX_VALUE);
+
+            assertQuery("SELECT BITAND(i + 1, i + 1) FROM TBL WHERE i=0").returns(1).check();
+            assertQuery("SELECT BITAND(s, s) FROM TBL WHERE i=1").returns((short)1).check();
+            assertQuery("SELECT BITAND((SELECT l FROM TBL WHERE i=3), (SELECT l FROM TBL WHERE i=1))").returns(1L).check();
+            assertQuery("SELECT BITOR((SELECT s FROM TBL WHERE i=?), (SELECT i FROM TBL WHERE i=?))").withParams(14, 1)
+                .returns(15).check();
+
+            assertQuery("SELECT BITAND((SELECT s FROM TBL WHERE s=3), (SELECT l FROM TBL WHERE i=1))").returns(1L).check();
+
+            assertQuery("SELECT BITXOR(1000::BIGINT, i) FROM TBL WHERE i=93").returns(949L).check();
+            assertQuery("SELECT BITAND(?, i) FROM TBL WHERE i=73").withParams(new Object[]{null}).returns(73L).check();
+            assertQuery("SELECT BITAND(l, ?) FROM TBL WHERE l=45").withParams(new Object[]{null}).returns(45L).check();
+            assertQuery("SELECT BITAND(?, s) FROM TBL WHERE s=40").withParams(new Object[]{null}).returns(40L).check();
+
+            assertThrows("SELECT BITXOR(40000::SMALLINT, s) FROM TBL WHERE s=55", ArithmeticException.class, "overflow");
+
+            assertQuery("SELECT BITOR(i, s) FROM TBL WHERE l=?").withParams(Short.MAX_VALUE).returns(65535).check();
+            assertQuery("SELECT BITOR(i, s) FROM TBL WHERE l=?").withParams(Short.MAX_VALUE).returns(65535).check();
+            assertQuery("SELECT BITAND(i, s) FROM TBL WHERE l=?").withParams(Short.MAX_VALUE).returns(0).check();
+        }
+        finally {
+            sql("DROP TABLE if EXISTS TBL");
+        }
+    }
+
+    /** */
+    @Test
     public void testBitwiseOperations() {
         doTestBitwiseOperations(false);
 
@@ -162,7 +197,7 @@ public class FunctionsTest extends AbstractBasicIntegrationTest {
         res.add(F.asList("XOR", (short)32767, null, 65535, null, 32768));
         res.add(F.asList("XOR", (short)32767, null, 65536, null, 98303));
 
-        // Calcite implicitly casts nullsof a dynamic parameters to family's default type: BIGINT. This makes the least
+        // Calcite implicitly casts nulls of a dynamic parameters to family's default type: BIGINT. This makes the least
         // restrictive type BIGINT. The NULL literal is correctly recognized and coerced to type of the other not-null value.
         if (dynamic) {
             res.add(F.asList("AND", null, null, 1, null, 1L));
