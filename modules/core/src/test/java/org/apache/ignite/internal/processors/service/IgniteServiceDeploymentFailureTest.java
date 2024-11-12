@@ -145,7 +145,7 @@ public class IgniteServiceDeploymentFailureTest extends GridCommonAbstractTest {
 
         // Check that the expected number of instances has been deployed
         assertEquals(noopSrvcMaxPerNodeCnt0 * SERVER_NODES_CNT,
-                getTotalInstancesCount(client, NoopService.class.getSimpleName()));
+                totalInstancesCount(client, NoopService.class.getSimpleName()));
 
         // Deploy InitThrowingService that throws an exception in init - should not be deployed.
         assertThrowsWithCause(() -> client.services().deploy(new ServiceConfiguration()
@@ -166,7 +166,7 @@ public class IgniteServiceDeploymentFailureTest extends GridCommonAbstractTest {
         client.services().deploy(noopSrvcCfg);
 
         // Check that the expected number of NoopService instances has been deployed.
-        assertEquals(noopSrvcTotalCnt, getTotalInstancesCount(client, NoopService.class.getSimpleName()));
+        assertEquals(noopSrvcTotalCnt, totalInstancesCount(client, NoopService.class.getSimpleName()));
     }
 
     /**
@@ -185,11 +185,11 @@ public class IgniteServiceDeploymentFailureTest extends GridCommonAbstractTest {
      * @param srvcName Service name.
      * @return Total instances count of the service named {@code srvcName} from the given {@code igniteEx} instance.
      */
-    private static int getTotalInstancesCount(IgniteEx igniteEx, String srvcName) {
-        Optional<ServiceDescriptor> desc = igniteEx.services().serviceDescriptors().stream().
-                filter(filterByName(srvcName)).findAny();
-
-        return desc.orElseThrow().topologySnapshot().values().stream().mapToInt(Integer::intValue).sum();
+    private static int totalInstancesCount(IgniteEx igniteEx, String srvcName) {
+        return igniteEx.services().serviceDescriptors().stream()
+                .filter(filterByName(srvcName))
+                .flatMap(desc -> desc.topologySnapshot().values().stream())
+                .mapToInt(Integer::intValue).sum();
     }
 
     /**
