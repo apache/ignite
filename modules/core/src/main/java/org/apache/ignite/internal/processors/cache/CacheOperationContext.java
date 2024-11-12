@@ -18,8 +18,6 @@
 package org.apache.ignite.internal.processors.cache;
 
 import java.io.Serializable;
-import java.util.Collections;
-import java.util.HashMap;
 import java.util.Map;
 import javax.cache.expiry.ExpiryPolicy;
 import org.apache.ignite.cache.ReadRepairStrategy;
@@ -57,10 +55,6 @@ public class CacheOperationContext implements Serializable {
     /** Data center Id. */
     private final Byte dataCenterId;
 
-    /** Application attributes. */
-    @GridToStringInclude
-    private final Map<String, String> appAttrs;
-
     /**
      * Constructor with default values.
      */
@@ -72,7 +66,6 @@ public class CacheOperationContext implements Serializable {
         recovery = false;
         readRepairStrategy = null;
         dataCenterId = null;
-        appAttrs = null;
     }
 
     /**
@@ -81,7 +74,6 @@ public class CacheOperationContext implements Serializable {
      * @param expiryPlc Expiry policy.
      * @param dataCenterId Data center id.
      * @param readRepairStrategy Read-repair strategy.
-     * @param appAttrs Application attributes.
      */
     public CacheOperationContext(
         boolean skipStore,
@@ -90,8 +82,7 @@ public class CacheOperationContext implements Serializable {
         boolean noRetries,
         @Nullable Byte dataCenterId,
         boolean recovery,
-        @Nullable ReadRepairStrategy readRepairStrategy,
-        @Nullable Map<String, String> appAttrs
+        @Nullable ReadRepairStrategy readRepairStrategy
     ) {
         this.skipStore = skipStore;
         this.keepBinary = keepBinary;
@@ -100,7 +91,6 @@ public class CacheOperationContext implements Serializable {
         this.dataCenterId = dataCenterId;
         this.recovery = recovery;
         this.readRepairStrategy = readRepairStrategy;
-        this.appAttrs = appAttrs == null ? null : new HashMap<>(appAttrs);
     }
 
     /**
@@ -130,8 +120,7 @@ public class CacheOperationContext implements Serializable {
             noRetries,
             dataCenterId,
             recovery,
-            readRepairStrategy,
-            appAttrs);
+            readRepairStrategy);
     }
 
     /**
@@ -164,8 +153,7 @@ public class CacheOperationContext implements Serializable {
             noRetries,
             dataCenterId,
             recovery,
-            readRepairStrategy,
-            appAttrs);
+            readRepairStrategy);
     }
 
     /**
@@ -189,8 +177,7 @@ public class CacheOperationContext implements Serializable {
             noRetries,
             dataCenterId,
             recovery,
-            readRepairStrategy,
-            appAttrs);
+            readRepairStrategy);
     }
 
     /**
@@ -205,8 +192,7 @@ public class CacheOperationContext implements Serializable {
             noRetries,
             dataCenterId,
             recovery,
-            readRepairStrategy,
-            appAttrs);
+            readRepairStrategy);
     }
 
     /**
@@ -221,8 +207,7 @@ public class CacheOperationContext implements Serializable {
             noRetries,
             dataCenterId,
             recovery,
-            readRepairStrategy,
-            appAttrs);
+            readRepairStrategy);
     }
 
     /**
@@ -237,8 +222,7 @@ public class CacheOperationContext implements Serializable {
             noRetries,
             dataCenterId,
             recovery,
-            readRepairStrategy,
-            appAttrs);
+            readRepairStrategy);
     }
 
     /**
@@ -253,8 +237,7 @@ public class CacheOperationContext implements Serializable {
             noRetries,
             dataCenterId,
             recovery,
-            readRepairStrategy,
-            appAttrs);
+            readRepairStrategy);
     }
 
     /**
@@ -269,15 +252,7 @@ public class CacheOperationContext implements Serializable {
                 noRetries,
                 dataCenterId,
                 recovery,
-                readRepairStrategy,
-                appAttrs);
-    }
-
-    /**
-     * @return Application attributes.
-     */
-    public @Nullable Map<String, String> applicationAttributes() {
-        return appAttrs == null ? null : Collections.unmodifiableMap(appAttrs);
+                readRepairStrategy);
     }
 
     /**

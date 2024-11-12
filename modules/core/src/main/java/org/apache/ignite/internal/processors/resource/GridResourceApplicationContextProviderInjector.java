@@ -17,26 +17,19 @@
 
 package org.apache.ignite.internal.processors.resource;
 
-import java.util.Collection;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.cache.ApplicationContextProvider;
-import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.managers.deployment.GridDeployment;
 
 /** {@link ApplicationContextProvider} injector. */
-public class GridResourceApplicationContextProviderInjector extends GridResourceBasicInjector<Collection<ApplicationContextProvider>> {
+public class GridResourceApplicationContextProviderInjector extends GridResourceBasicInjector<ApplicationContextProvider> {
     /** */
-    private final IgniteEx ign;
-
-    /** */
-    public GridResourceApplicationContextProviderInjector(IgniteEx ign) {
-        super(null);
-
-        this.ign = ign;
+    public GridResourceApplicationContextProviderInjector(ApplicationContextProvider rsrc) {
+        super(rsrc);
     }
 
     /** {@inheritDoc} */
     @Override public void inject(GridResourceField fld, Object target, Class<?> depCls, GridDeployment dep) throws IgniteCheckedException {
-        GridResourceUtils.inject(fld.getField(), target, ign.context().applicationContext().provider());
+        super.inject(fld, target, depCls, dep);
     }
 }

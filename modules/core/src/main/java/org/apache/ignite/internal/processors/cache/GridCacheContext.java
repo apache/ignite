@@ -1339,8 +1339,6 @@ public class GridCacheContext<K, V> implements Externalizable {
             dht().near().context().opCtxPerCall.set(opCtx);
         else
             opCtxPerCall.set(opCtx);
-
-        ctx.applicationContext().applicationContext(opCtx == null ? null : opCtx.applicationAttributes());
     }
 
     /**

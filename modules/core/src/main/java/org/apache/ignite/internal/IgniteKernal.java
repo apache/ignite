@@ -67,6 +67,7 @@ import org.apache.ignite.IgniteQueue;
 import org.apache.ignite.IgniteScheduler;
 import org.apache.ignite.IgniteSemaphore;
 import org.apache.ignite.IgniteServices;
+import org.apache.ignite.IgniteSession;
 import org.apache.ignite.IgniteSet;
 import org.apache.ignite.IgniteSnapshot;
 import org.apache.ignite.IgniteSystemProperties;
@@ -90,6 +91,7 @@ import org.apache.ignite.events.EventType;
 import org.apache.ignite.internal.binary.BinaryEnumCache;
 import org.apache.ignite.internal.binary.BinaryMarshaller;
 import org.apache.ignite.internal.binary.BinaryUtils;
+import org.apache.ignite.internal.cache.IgniteSessionImpl;
 import org.apache.ignite.internal.cache.context.ApplicationContextProcessor;
 import org.apache.ignite.internal.cache.query.index.IndexProcessor;
 import org.apache.ignite.internal.cache.transform.CacheObjectTransformerProcessor;
@@ -2870,6 +2872,11 @@ public class IgniteKernal implements IgniteEx, Externalizable {
         finally {
             unguard();
         }
+    }
+
+    /** {@inheritDoc} */
+    @Override public IgniteSession session() {
+        return new IgniteSessionImpl(this, null, false);
     }
 
     /** {@inheritDoc} */

@@ -30,6 +30,8 @@ import org.apache.calcite.linq4j.QueryProvider;
 import org.apache.calcite.schema.SchemaPlus;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
+import org.apache.ignite.cache.ApplicationContext;
+import org.apache.ignite.cache.ApplicationContextProvider;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.query.calcite.exec.exp.ExpressionFactory;
 import org.apache.ignite.internal.processors.query.calcite.exec.exp.ExpressionFactoryImpl;
@@ -50,6 +52,7 @@ import org.apache.ignite.internal.processors.resource.GridResourceProcessor;
 import org.apache.ignite.internal.util.lang.RunnableX;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.internal.processors.query.calcite.util.Commons.checkRange;
 
@@ -110,6 +113,9 @@ public class ExecutionContext<Row> extends AbstractQueryContext implements DataC
 
     /** Objects to call UDF with injected resources. */
     private final Map<String, Object> funcTargets = new ConcurrentHashMap<>();
+
+    /** Application context provider for UDF. */
+    private final ApplicationContextProvider appCtxProv = new ApplicationContextProviderImpl();
 
     /** */
     private Object[] correlations = new Object[16];
@@ -370,7 +376,7 @@ public class ExecutionContext<Row> extends AbstractQueryContext implements DataC
 
                 Object target = funcCls.getConstructor().newInstance();
 
-                unwrap(GridResourceProcessor.class).injectToUserDefinedFunction(target);
+                unwrap(GridResourceProcessor.class).injectToUserDefinedFunction(target, appCtxProv);
 
                 return target;
             }
@@ -396,5 +402,12 @@ public class ExecutionContext<Row> extends AbstractQueryContext implements DataC
     /** {@inheritDoc} */
     @Override public int hashCode() {
         return Objects.hash(qryId, fragmentDesc.fragmentId());
+    }
+
+    /** */
+    private class ApplicationContextProviderImpl implements ApplicationContextProvider {
+        @Override public @Nullable ApplicationContext getApplicationContext() {
+            return unwrap(ApplicationContext.class);
+        }
     }
 }

@@ -37,7 +37,6 @@ import javax.cache.integration.CacheWriter;
 import javax.cache.processor.EntryProcessor;
 import javax.cache.processor.EntryProcessorException;
 import javax.cache.processor.EntryProcessorResult;
-import org.apache.ignite.cache.ApplicationContext;
 import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.CacheEntry;
 import org.apache.ignite.cache.CacheEntryProcessor;
@@ -55,7 +54,6 @@ import org.apache.ignite.cache.query.ScanQuery;
 import org.apache.ignite.cache.query.SpiQuery;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.cache.query.TextQuery;
-import org.apache.ignite.cache.query.annotations.QuerySqlFunction;
 import org.apache.ignite.cache.store.CacheStore;
 import org.apache.ignite.cluster.ClusterGroup;
 import org.apache.ignite.configuration.CacheConfiguration;
@@ -202,20 +200,6 @@ public interface IgniteCache<K, V> extends javax.cache.Cache<K, V>, IgniteAsyncS
      */
     @IgniteExperimental
     public IgniteCache<K, V> withReadRepair(ReadRepairStrategy strategy);
-
-    /**
-     * Underlying operations of returned cache are aware of application specific attributes.
-     * User defined functions can access the attributes with {@link ApplicationContext} API.
-     * List of supported types of user defined functions to access the attributes:
-     * <ul>
-     *     <li>{@link QuerySqlFunction}</li>
-     * </ul>
-     *
-     * @param attrs Application attributes.
-     * @return Cache that is aware of application attributes.
-     */
-    @IgniteExperimental
-    public IgniteCache<K, V> withApplicationAttributes(Map<String, String> attrs);
 
     /**
      * Returns cache that will operate with binary objects.

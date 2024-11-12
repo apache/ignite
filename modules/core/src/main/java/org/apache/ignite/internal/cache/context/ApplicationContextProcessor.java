@@ -19,7 +19,6 @@ package org.apache.ignite.internal.cache.context;
 
 import java.util.Map;
 import org.apache.ignite.cache.ApplicationContext;
-import org.apache.ignite.cache.ApplicationContextProvider;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.processors.GridProcessorAdapter;
 import org.jetbrains.annotations.Nullable;
@@ -28,9 +27,6 @@ import org.jetbrains.annotations.Nullable;
 public class ApplicationContextProcessor extends GridProcessorAdapter {
     /** Holds application context for current thread. */
     private final ThreadLocal<ApplicationContext> ctx = new ThreadLocal<>();
-
-    /** */
-    private final ApplicationContextProvider appCtxProvider = new Provider();
 
     /** */
     public ApplicationContextProcessor(GridKernalContext ctx) {
@@ -42,11 +38,15 @@ public class ApplicationContextProcessor extends GridProcessorAdapter {
      *
      * @param appAttrs Application attributes to set.
      */
-    public ApplicationContextInternal applicationContext(@Nullable Map<String, String> appAttrs) {
+    public ApplicationContextInternal withApplicationContext(@Nullable Map<String, String> appAttrs) {
         if (appAttrs == null)
             return null;
 
-        ApplicationContextInternal appCtx = new ApplicationContextInternal(this, appAttrs);
+        ApplicationContextInternal appCtx = new ApplicationContextInternal(appAttrs) {
+            @Override public void close() {
+                ctx.remove();
+            }
+        };
 
         ctx.set(appCtx);
 
@@ -56,22 +56,5 @@ public class ApplicationContextProcessor extends GridProcessorAdapter {
     /** @return Application context for current thread. */
     public @Nullable ApplicationContext applicationContext() {
         return ctx.get();
-    }
-
-    /** @return Provider for application context. */
-    public ApplicationContextProvider provider() {
-        return appCtxProvider;
-    }
-
-    /** Unset context for current thread. */
-    public void clean() {
-        ctx.remove();
-    }
-
-    /** */
-    private class Provider implements ApplicationContextProvider {
-        @Override public @Nullable ApplicationContext getApplicationContext() {
-            return ctx.get();
-        }
     }
 }

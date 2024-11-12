@@ -238,20 +238,6 @@ public class GatewayProtectedCacheProxy<K, V> extends AsyncSupportAdapter<Ignite
     }
 
     /** {@inheritDoc} */
-    @Override public IgniteCache<K, V> withApplicationAttributes(Map<String, String> attrs) {
-        A.notNull(attrs, "application attributes");
-
-        CacheOperationGate opGate = onEnter();
-
-        try {
-            return new GatewayProtectedCacheProxy<>(delegate, opCtx.setApplicationAttributes(attrs), lock);
-        }
-        finally {
-            onLeave(opGate);
-        }
-    }
-
-    /** {@inheritDoc} */
     @Override public <K1, V1> GatewayProtectedCacheProxy<K1, V1> withKeepBinary() {
         return keepBinary();
     }

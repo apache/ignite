@@ -45,6 +45,7 @@ import org.apache.ignite.IgniteQueue;
 import org.apache.ignite.IgniteScheduler;
 import org.apache.ignite.IgniteSemaphore;
 import org.apache.ignite.IgniteServices;
+import org.apache.ignite.IgniteSession;
 import org.apache.ignite.IgniteSet;
 import org.apache.ignite.IgniteSnapshot;
 import org.apache.ignite.IgniteTransactions;
@@ -492,6 +493,11 @@ public class IgniteMock implements Ignite {
     /** {@inheritDoc} */
     @Override public @NotNull TracingConfigurationManager tracingConfiguration() {
         return NoopTracingConfigurationManager.INSTANCE;
+    }
+
+    /** {@inheritDoc} */
+    @Override public IgniteSession session() {
+        return null;
     }
 
     /** {@inheritDoc} */

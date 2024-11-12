@@ -21,8 +21,10 @@ import java.util.Collection;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutorService;
 import javax.cache.CacheException;
+import org.apache.ignite.cache.ApplicationContextProvider;
 import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.cache.affinity.Affinity;
+import org.apache.ignite.cache.query.annotations.QuerySqlFunction;
 import org.apache.ignite.cluster.ClusterGroup;
 import org.apache.ignite.cluster.ClusterState;
 import org.apache.ignite.configuration.AtomicConfiguration;
@@ -788,4 +790,17 @@ public interface Ignite extends AutoCloseable {
      */
     @IgniteExperimental
     public @NotNull TracingConfigurationManager tracingConfiguration();
+
+     /**
+     * Underlying operations of returned session are aware of application specific attributes.
+     * User defined functions can access the attributes with {@link ApplicationContextProvider} API.
+     * List of supported types of user defined functions to access the attributes:
+     * <ul>
+     *     <li>{@link QuerySqlFunction}</li>
+     * </ul>
+     *
+     * @return Session that is aware of application attributes.
+     */
+    @IgniteExperimental
+    public IgniteSession session();
 }

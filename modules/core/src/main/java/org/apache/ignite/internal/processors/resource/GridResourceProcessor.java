@@ -21,6 +21,7 @@ import java.lang.annotation.Annotation;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.cache.ApplicationContextProvider;
 import org.apache.ignite.cache.store.CacheStoreSession;
 import org.apache.ignite.compute.ComputeJob;
 import org.apache.ignite.compute.ComputeJobContext;
@@ -78,8 +79,6 @@ public class GridResourceProcessor extends GridProcessorAdapter {
             new GridResourceLoggerInjector(ctx.config().getGridLogger());
         injectorByAnnotation[GridResourceIoc.ResourceAnnotation.IGNITE_INSTANCE.ordinal()] =
             new GridResourceBasicInjector<>(ctx.grid());
-        injectorByAnnotation[GridResourceIoc.ResourceAnnotation.APPLICATION_CONTEXT_PROVIDER.ordinal()] =
-            new GridResourceApplicationContextProviderInjector(ctx.grid());
     }
 
     /** {@inheritDoc} */
@@ -235,11 +234,11 @@ public class GridResourceProcessor extends GridProcessorAdapter {
     /**
      * Inject resources to object contained a user defined function.
      *
-     * @param obj Object to inject.
+     * @param appCtxProv Application context provider.
      * @throws IgniteCheckedException If failed to inject.
      */
-    public void injectToUserDefinedFunction(Object obj) throws IgniteCheckedException {
-        inject(obj, GridResourceIoc.AnnotationSet.USER_DEFINED_FUNCTION);
+    public void injectToUserDefinedFunction(Object obj, ApplicationContextProvider appCtxProv) throws IgniteCheckedException {
+        inject(obj, GridResourceIoc.AnnotationSet.USER_DEFINED_FUNCTION, appCtxProv);
     }
 
     /**
@@ -348,6 +347,10 @@ public class GridResourceProcessor extends GridProcessorAdapter {
 
             case JOB_CONTEXT:
                 res = new GridResourceJobContextInjector((ComputeJobContext)param);
+                break;
+
+            case APPLICATION_CONTEXT_PROVIDER:
+                res = new GridResourceApplicationContextProviderInjector((ApplicationContextProvider)param);
                 break;
 
             default:

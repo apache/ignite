@@ -1901,7 +1901,7 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
 
         try (
             OperationSecurityContext ignored = ctx.security().withContext(newSecSubjId);
-            ApplicationContextInternal ignored0 = ctx.applicationContext().applicationContext(appAttrs)
+            ApplicationContextInternal ignored0 = ctx.applicationContext().withApplicationContext(appAttrs)
         ) {
             lsnr.onMessage(nodeId, msg, plc);
         }

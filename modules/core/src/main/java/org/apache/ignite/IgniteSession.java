@@ -15,15 +15,27 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.cache;
+package org.apache.ignite;
 
+import java.util.List;
 import java.util.Map;
-import org.apache.ignite.IgniteSession;
+import org.apache.ignite.cache.query.FieldsQueryCursor;
+import org.apache.ignite.cache.query.SqlFieldsQuery;
 
-/**
- * Provides access to application attributes set with {@link IgniteSession#withApplicationAttributes}.
- */
-public interface ApplicationContext {
-    /** @return Application attributes. */
-    public Map<String, String> getAttributes();
+/** */
+public interface IgniteSession {
+    /** */
+    public IgniteSession withKeepBinary(boolean keepBinary);
+
+    /** */
+    public IgniteSession withApplicationAttributes(Map<String, String> attrs);
+
+    /**
+     * Query Ignite with {@link SqlFieldsQuery} and session attributes.
+     *
+     * @param qry SqlFieldsQuery.
+     * @return Cursor.
+     * @see SqlFieldsQuery
+     */
+    public FieldsQueryCursor<List<?>> query(SqlFieldsQuery qry);
 }

@@ -34,6 +34,7 @@ import org.apache.calcite.util.CancelFlag;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
+import org.apache.ignite.cache.ApplicationContext;
 import org.apache.ignite.cache.query.QueryCancelledException;
 import org.apache.ignite.internal.cluster.ClusterTopologyCheckedException;
 import org.apache.ignite.internal.processors.cache.query.IgniteQueryErrorCode;
@@ -164,7 +165,7 @@ public class RootQuery<RowT> extends Query<RowT> implements TrackableQuery {
             sql,
             schema,
             params,
-            QueryContext.of(cancel, ctx.unwrap(GridResourceProcessor.class)),
+            QueryContext.of(cancel, ctx.unwrap(GridResourceProcessor.class), ctx.unwrap(ApplicationContext.class)),
             ctx.isLocal(),
             ctx.isForcedJoinOrder(),
             ctx.partitions(),

@@ -69,7 +69,7 @@ class SecurityAwareRunnable implements Runnable {
     @Override public void run() {
         try (
             OperationSecurityContext ignored = security.withContext(secCtx);
-            ApplicationContextInternal ignored0 = appCtxProc == null ? null : appCtxProc.applicationContext(appAttrs)
+            ApplicationContextInternal ignored0 = appCtxProc == null ? null : appCtxProc.withApplicationContext(appAttrs)
         ) {
             delegate.run();
         }

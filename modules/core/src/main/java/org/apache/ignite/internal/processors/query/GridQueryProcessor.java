@@ -3068,7 +3068,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
                             }
                             else {
                                 res = qryEngine.query(
-                                    QueryContext.of(qry, cliCtx, cancel, qryProps, ctx.resource()),
+                                    QueryContext.of(qry, cliCtx, cancel, qryProps, ctx.resource(), ctx.applicationContext().applicationContext()),
                                     schemaName,
                                     qry.getSql(),
                                     qry.getArgs() != null ? qry.getArgs() : X.EMPTY_OBJECT_ARRAY

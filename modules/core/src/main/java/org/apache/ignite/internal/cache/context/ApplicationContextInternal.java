@@ -18,21 +18,18 @@
 package org.apache.ignite.internal.cache.context;
 
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.Map;
 import org.apache.ignite.cache.ApplicationContext;
 
 /** */
-public class ApplicationContextInternal implements ApplicationContext, AutoCloseable {
-    /** */
-    private final ApplicationContextProcessor proc;
-
+public abstract class ApplicationContextInternal implements ApplicationContext, AutoCloseable {
     /** Application attributes. */
     private final Map<String, String> attrs;
 
     /** @param attrs Application attributes. */
-    public ApplicationContextInternal(ApplicationContextProcessor proc, Map<String, String> attrs) {
-        this.attrs = attrs;
-        this.proc = proc;
+    ApplicationContextInternal(Map<String, String> attrs) {
+        this.attrs = new HashMap<>(attrs);
     }
 
     /** */
@@ -40,8 +37,6 @@ public class ApplicationContextInternal implements ApplicationContext, AutoClose
         return Collections.unmodifiableMap(attrs);
     }
 
-    /** Unset context for current thread. */
-    @Override public void close() {
-        proc.clean();
-    }
+    /** */
+    @Override public abstract void close();
 }
