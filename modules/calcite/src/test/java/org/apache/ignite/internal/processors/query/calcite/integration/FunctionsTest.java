@@ -21,6 +21,7 @@ import java.math.BigDecimal;
 import java.sql.Date;
 import java.sql.Time;
 import java.sql.Timestamp;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.function.LongFunction;
 import org.apache.calcite.sql.validate.SqlValidatorException;
@@ -69,7 +70,7 @@ public class FunctionsTest extends AbstractBasicIntegrationTest {
 
     /** */
     private void doTestBitwiseOperations(boolean dynamic) {
-        for (List<Object> paramSet : bitwiseParams()) {
+        for (List<Object> paramSet : bitwiseParams(dynamic)) {
             assert paramSet.size() == 6;
 
             int idx = 0;
@@ -79,18 +80,18 @@ public class FunctionsTest extends AbstractBasicIntegrationTest {
             String cast1 = (String)paramSet.get(idx++);
             Object p2 = paramSet.get(idx++);
             String cast2 = (String)paramSet.get(idx++);
-            Object res = paramSet.get(idx++);
+            Object res = paramSet.get(idx);
 
             cast1 = cast1 == null ? "" : "::" + cast1;
             cast2 = cast2 == null ? "" : "::" + cast2;
 
-            log.info("Op: " + op + ", p1=" + p1 + ", p2=" + p2 + ", expected=" + res);
+            log.info("Op: " + op + ", dynamic=" + dynamic + ", p1=" + p1 + ", p2=" + p2 + ", expected=" + res);
 
             if (dynamic) {
                 String sql = "SELECT BIT" + op + "(?" + cast1 + ", ?" + cast2 + ')';
 
                 if (res instanceof Exception)
-                    assertThrows(sql, (Class<? extends Exception>)res.getClass(), ((Exception)res).getMessage(), p1, p2);
+                    assertThrows(sql, (Class<? extends Exception>)res.getClass(), ((Throwable)res).getMessage(), p1, p2);
                 else
                     assertQuery(sql).withParams(p1, p2).returns(res).check();
             }
@@ -98,7 +99,7 @@ public class FunctionsTest extends AbstractBasicIntegrationTest {
                 String sql = "SELECT BIT" + op + '(' + p1 + cast1 + ", " + p2 + cast2 + ')';
 
                 if (res instanceof Exception)
-                    assertThrows(sql, (Class<? extends Exception>)res.getClass(), ((Exception)res).getMessage());
+                    assertThrows(sql, (Class<? extends Exception>)res.getClass(), ((Throwable)res).getMessage());
                 else
                     assertQuery(sql).returns(res).check();
             }
@@ -106,62 +107,81 @@ public class FunctionsTest extends AbstractBasicIntegrationTest {
     }
 
     /** Bitwise operation params: operation, param1, cast1, param2, cast2, result. */
-    private Iterable<List<Object>> bitwiseParams() {
-        return F.asList(
-            // BITAND
-            F.asList("AND", null, null, 1, null, 1),
-//            F.asList("AND", 1, null, 1.0, null, new SqlValidatorException("Cannot apply 'BITAND' to arguments of type", null)),
-//            F.asList("AND", 1.0, null, 1, null, new SqlValidatorException("Cannot apply 'BITAND' to arguments of type", null)),
-//            F.asList("AND", 1, null, 1.0f, null, new SqlValidatorException("Cannot apply 'BITAND' to arguments of type", null)),
-//            F.asList("AND", 1.0f, null, 1, null, new SqlValidatorException("Cannot apply 'BITAND' to arguments of type", null)),
-//            F.asList("AND", null, null, null, null, null),
-//            F.asList("AND", null, null, 1, null, 1),
-            F.asList("AND", 1, null, 1, null, 1),
-            F.asList("AND", 1, null, 0, null, 0),
-            F.asList("AND", 0, null, 1, null, 0),
-            F.asList("AND", 1, null, 1, "BIGINT", 1L),
-            F.asList("AND", 1, "TINYINT", 1, "INT", 1),
-            F.asList("AND", 1, "TINYINT", 1, "SMALLINT", (short)1),
-            F.asList("AND", 0, "TINYINT", 0, "TINYINT", (byte)0),
-            F.asList("AND", 1, "TINYINT", 1, "SMALLINT", (short)1),
-            F.asList("AND", 15, null, 7, null, 7),
-            F.asList("AND", -1, null, 1, null, 1),
-            F.asList("AND", (short)32767, null, 65535, null, 32767),
-            // BITOR
-            F.asList("OR", 1, null, 1.0, null, new SqlValidatorException("Cannot apply 'BITOR' to arguments of type", null)),
-            F.asList("OR", 1.0, null, 1, null, new SqlValidatorException("Cannot apply 'BITOR' to arguments of type", null)),
-            F.asList("OR", 1, null, 1.0f, null, new SqlValidatorException("Cannot apply 'BITOR' to arguments of type", null)),
-            F.asList("OR", 1.0f, null, 1, null, new SqlValidatorException("Cannot apply 'BITOR' to arguments of type", null)),
-            F.asList("OR", 1, null, 1, null, 1),
-            F.asList("OR", 1, null, 0, null, 1),
-            F.asList("OR", 0, null, 1, null, 1),
-            F.asList("OR", 1, null, 1, "BIGINT", 1L),
-            F.asList("OR", 1, "TINYINT", 1, "INT", 1),
-            F.asList("OR", 1, "TINYINT", 1, "SMALLINT", (short)1),
-            F.asList("OR", 0, "TINYINT", 0, "TINYINT", (byte)0),
-            F.asList("OR", 1, "TINYINT", 1, "SMALLINT", (short)1),
-            F.asList("OR", 8, null, 7, null, 15),
-            F.asList("OR", -1, null, 1, null, -1),
-            F.asList("OR", (short)32767, null, 65535, null, 65535),
-            F.asList("OR", (short)32767, null, 65536, null, 98303),
-            // BITXOR
-            F.asList("XOR", 1, null, 1.0, null, new SqlValidatorException("Cannot apply 'BITXOR' to arguments of type", null)),
-            F.asList("XOR", 1.0, null, 1, null, new SqlValidatorException("Cannot apply 'BITXOR' to arguments of type", null)),
-            F.asList("XOR", 1, null, 1.0f, null, new SqlValidatorException("Cannot apply 'BITXOR' to arguments of type", null)),
-            F.asList("XOR", 1.0f, null, 1, null, new SqlValidatorException("Cannot apply 'BITXOR' to arguments of type", null)),
-            F.asList("XOR", 1, null, 1, null, 0),
-            F.asList("XOR", 1, null, 0, null, 1),
-            F.asList("XOR", 0, null, 1, null, 1),
-            F.asList("XOR", 1, null, 1, "BIGINT", 0L),
-            F.asList("XOR", 1, "TINYINT", 1, "INT", 0),
-            F.asList("XOR", 1, "TINYINT", 1, "SMALLINT", (short)0),
-            F.asList("XOR", 0, "TINYINT", 0, "TINYINT", (byte)0),
-            F.asList("XOR", 1, "TINYINT", 1, "SMALLINT", (short)0),
-            F.asList("XOR", 8, null, 7, null, 15),
-            F.asList("XOR", -1, null, 1, null, -2),
-            F.asList("XOR", (short)32767, null, 65535, null, 32768),
-            F.asList("XOR", (short)32767, null, 65536, null, 98303)
-        );
+    private Iterable<List<Object>> bitwiseParams(boolean dynamic) {
+        List<List<Object>> res = new ArrayList<>(100);
+
+        // BITAND
+        res.add(F.asList("AND", 1, null, 1.0, null, new SqlValidatorException("Cannot apply 'BITAND' to arguments of type", null)));
+        res.add(F.asList("AND", 1.0, null, 1, null, new SqlValidatorException("Cannot apply 'BITAND' to arguments of type", null)));
+        res.add(F.asList("AND", 1, null, 1.0f, null, new SqlValidatorException("Cannot apply 'BITAND' to arguments of type", null)));
+        res.add(F.asList("AND", 1.0f, null, 1, null, new SqlValidatorException("Cannot apply 'BITAND' to arguments of type", null)));
+        res.add(F.asList("AND", null, null, null, null, null));
+        res.add(F.asList("AND", 1, null, 1, null, 1));
+        res.add(F.asList("AND", 1, null, 0, null, 0));
+        res.add(F.asList("AND", 0, null, 1, null, 0));
+        res.add(F.asList("AND", 1, null, 1, "BIGINT", 1L));
+        res.add(F.asList("AND", 1, "TINYINT", 1, "INT", 1));
+        res.add(F.asList("AND", 1, "TINYINT", 1, "SMALLINT", (short)1));
+        res.add(F.asList("AND", 0, "TINYINT", 0, "TINYINT", (byte)0));
+        res.add(F.asList("AND", 1, "TINYINT", 1, "SMALLINT", (short)1));
+        res.add(F.asList("AND", 15, null, 7, null, 7));
+        res.add(F.asList("AND", -1, null, 1, null, 1));
+        res.add(F.asList("AND", (short)32767, null, 65535, null, 32767));
+        // BITOR
+        res.add(F.asList("OR", 1, null, 1.0, null, new SqlValidatorException("Cannot apply 'BITOR' to arguments of type", null)));
+        res.add(F.asList("OR", 1.0, null, 1, null, new SqlValidatorException("Cannot apply 'BITOR' to arguments of type", null)));
+        res.add(F.asList("OR", 1, null, 1.0f, null, new SqlValidatorException("Cannot apply 'BITOR' to arguments of type", null)));
+        res.add(F.asList("OR", 1.0f, null, 1, null, new SqlValidatorException("Cannot apply 'BITOR' to arguments of type", null)));
+        res.add(F.asList("OR", 1, null, 1, null, 1));
+        res.add(F.asList("OR", 1, null, 0, null, 1));
+        res.add(F.asList("OR", 0, null, 1, null, 1));
+        res.add(F.asList("OR", 1, null, 1, "BIGINT", 1L));
+        res.add(F.asList("OR", 1, "TINYINT", 1, "INT", 1));
+        res.add(F.asList("OR", 1, "TINYINT", 1, "SMALLINT", (short)1));
+        res.add(F.asList("OR", 0, "TINYINT", 0, "TINYINT", (byte)0));
+        res.add(F.asList("OR", 1, "TINYINT", 1, "SMALLINT", (short)1));
+        res.add(F.asList("OR", 8, null, 7, null, 15));
+        res.add(F.asList("OR", -1, null, 1, null, -1));
+        res.add(F.asList("OR", (short)32767, null, 65535, null, 65535));
+        res.add(F.asList("OR", (short)32767, null, 65536, null, 98303));
+        // BITXOR
+        res.add(F.asList("XOR", 1, null, 1.0, null, new SqlValidatorException("Cannot apply 'BITXOR' to arguments of type", null)));
+        res.add(F.asList("XOR", 1.0, null, 1, null, new SqlValidatorException("Cannot apply 'BITXOR' to arguments of type", null)));
+        res.add(F.asList("XOR", 1, null, 1.0f, null, new SqlValidatorException("Cannot apply 'BITXOR' to arguments of type", null)));
+        res.add(F.asList("XOR", 1.0f, null, 1, null, new SqlValidatorException("Cannot apply 'BITXOR' to arguments of type", null)));
+        res.add(F.asList("XOR", 1, null, 1, null, 0));
+        res.add(F.asList("XOR", 1, null, 0, null, 1));
+        res.add(F.asList("XOR", 0, null, 1, null, 1));
+        res.add(F.asList("XOR", 1, null, 1, "BIGINT", 0L));
+        res.add(F.asList("XOR", 1, "TINYINT", 1, "INT", 0));
+        res.add(F.asList("XOR", 1, "TINYINT", 1, "SMALLINT", (short)0));
+        res.add(F.asList("XOR", 0, "TINYINT", 0, "TINYINT", (byte)0));
+        res.add(F.asList("XOR", 1, "TINYINT", 1, "SMALLINT", (short)0));
+        res.add(F.asList("XOR", 8, null, 7, null, 15));
+        res.add(F.asList("XOR", -1, null, 1, null, -2));
+        res.add(F.asList("XOR", (short)32767, null, 65535, null, 32768));
+        res.add(F.asList("XOR", (short)32767, null, 65536, null, 98303));
+
+        // Calcite implicitly casts nullsof a dynamic parameters to family's default type: BIGINT. This makes the least
+        // restrictive type BIGINT. The NULL literal is correctly recognized and coerced to type of the other not-null value.
+        if (dynamic) {
+            res.add(F.asList("AND", null, null, 1, null, 1L));
+            res.add(F.asList("AND", 1, "INTEGER", null, null, 1L));
+            res.add(F.asList("OR", null, null, 1, null, 1L));
+            res.add(F.asList("OR", 1, null, null, null, 1L));
+            res.add(F.asList("XOR", null, null, 1, "SMALLINT", 1L));
+            res.add(F.asList("XOR", 1, "TINYINT", null, null, 1L));
+        }
+        else {
+            res.add(F.asList("AND", null, null, 1, null, 1));
+            res.add(F.asList("AND", 1, "SMALLINT", null, null, (short)1));
+            res.add(F.asList("OR", null, null, 1, null, 1));
+            res.add(F.asList("OR", 1, null, null, null, 1));
+            res.add(F.asList("XOR", null, null, 1, "TINYINT", (byte)1));
+            res.add(F.asList("XOR", 1, null, null, null, 1));
+        }
+
+        return res;
     }
 
     /** */
