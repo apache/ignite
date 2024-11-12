@@ -46,6 +46,33 @@ public class IgniteMath {
     /** */
     private static final Float LOWER_LONG_FLOAT = (float)Long.MIN_VALUE;
 
+    /** */
+    private static final double LONG_MAX_EXT = Long.MAX_VALUE + 1.d;
+
+    /** */
+    private static final double LONG_MIN_EXT = Long.MIN_VALUE - 1d;
+
+    /** */
+    private static final double INT_MAX_EXT = Integer.MAX_VALUE + 1.d;
+
+    /** */
+    private static final double INT_MIN_EXT = Integer.MIN_VALUE - 1d;
+
+    /** */
+    private static final double SHORT_MAX_EXT = Short.MAX_VALUE + 1.d;
+
+    /** */
+    private static final double SHORT_MIN_EXT = Short.MIN_VALUE - 1d;
+
+    /** */
+    private static final double BYTE_MAX_EXT = Byte.MAX_VALUE + 1.d;
+
+    /** */
+    private static final double BYTE_MIN_EXT = Byte.MIN_VALUE - 1d;
+
+    /** */
+    public static final RoundingMode NUMERIC_ROUNDING_MODE = RoundingMode.HALF_UP;
+
     /** Returns the sum of its arguments, throwing an exception if the result overflows an {@code long}. */
     public static long addExact(long x, long y) {
         long r = x + y;
@@ -237,6 +264,130 @@ public class IgniteMath {
         return (byte)(x / y);
     }
 
+    /** Cast value to {@code long}, throwing an exception if the result overflows an {@code long}. */
+    public static long convertToLongExact(Number x) {
+        x = round(x);
+
+        checkNumberLongBounds(BIGINT, x);
+
+        return x.longValue();
+    }
+
+    /** Cast value to {@code long}, throwing an exception if the result overflows an {@code long}. */
+    public static long convertToLongExact(double x) {
+        x = extendToRound(x);
+
+        if (x <= LONG_MIN_EXT || x >= LONG_MAX_EXT)
+            throw new ArithmeticException(INTEGER.getName() + " overflow");
+
+        return (long)x;
+    }
+
+    /** Cast value to {@code int}, throwing an exception if the result overflows an {@code int}. */
+    public static int convertToIntExact(long x) {
+        int res = (int)x;
+
+        if (res != x)
+            throw new ArithmeticException(INTEGER.getName() + " overflow");
+
+        return res;
+    }
+
+    /** Cast value to {@code int}, throwing an exception if the result overflows an {@code int}. */
+    public static int convertToIntExact(double x) {
+        x = extendToRound(x);
+
+        if (x <= INT_MIN_EXT || x >= INT_MAX_EXT)
+            throw new ArithmeticException(INTEGER.getName() + " overflow");
+
+        return (int)x;
+    }
+
+    /** Cast value to {@code int}, throwing an exception if the result overflows an {@code int}. */
+    public static int convertToIntExact(Number x) {
+        x = round(x);
+
+        checkNumberLongBounds(INTEGER, x);
+
+        return convertToIntExact(x.longValue());
+    }
+
+    /** Cast value to {@code short}, throwing an exception if the result overflows an {@code short}. */
+    public static short convertToShortExact(long x) {
+        short res = (short)x;
+
+        if (res != x)
+            throw new ArithmeticException(SMALLINT.getName() + " overflow");
+
+        return res;
+    }
+
+    /** Cast value to {@code short}, throwing an exception if the result overflows an {@code short}. */
+    public static short convertToShortExact(double x) {
+        x = extendToRound(x);
+
+        if (x <= SHORT_MIN_EXT || x >= SHORT_MAX_EXT)
+            throw new ArithmeticException(SMALLINT.getName() + " overflow");
+
+        return (short)x;
+    }
+
+    /** Cast value to {@code short}, throwing an exception if the result overflows an {@code short}. */
+    public static short convertToShortExact(Number x) {
+        x = round(x);
+
+        checkNumberLongBounds(SMALLINT, x);
+
+        return convertToShortExact(x.longValue());
+    }
+
+    /** Cast value to {@code byte}, throwing an exception if the result overflows an {@code byte}. */
+    public static byte convertToByteExact(long x) {
+        byte res = (byte)x;
+
+        if (res != x)
+            throw new ArithmeticException(TINYINT.getName() + " overflow");
+
+        return res;
+    }
+
+    /** Cast value to {@code byte}, throwing an exception if the result overflows an {@code byte}. */
+    public static byte convertToByteExact(double x) {
+        x = extendToRound(x);
+
+        if (x <= BYTE_MIN_EXT || x >= BYTE_MAX_EXT)
+            throw new ArithmeticException(TINYINT.getName() + " overflow");
+
+        return (byte)x;
+    }
+
+    /** Cast value to {@code byte}, throwing an exception if the result overflows an {@code byte}. */
+    public static byte convertToByteExact(Number x) {
+        x = round(x);
+
+        checkNumberLongBounds(TINYINT, x);
+
+        return convertToByteExact(x.longValue());
+    }
+
+    /** */
+    public static BigDecimal convertToBigDecimal(Number val) {
+        BigDecimal dec;
+
+        if (val instanceof Float)
+            dec = BigDecimal.valueOf(val.floatValue());
+        else if (val instanceof Double)
+            dec = BigDecimal.valueOf(val.doubleValue());
+        else if (val instanceof BigDecimal)
+            dec = (BigDecimal)val;
+        else if (val instanceof BigInteger)
+            dec = new BigDecimal((BigInteger)val);
+        else
+            dec = BigDecimal.valueOf(val.longValue());
+
+        return dec;
+    }
+
     /** */
     private static void checkNumberLongBounds(SqlTypeName type, Number x) {
         if (x instanceof BigDecimal) {
@@ -257,94 +408,14 @@ public class IgniteMath {
         throw new ArithmeticException(type.getName() + " overflow");
     }
 
-    /** Cast value to {@code long}, throwing an exception if the result overflows an {@code long}. */
-    public static long convertToLongExact(Number x) {
-        checkNumberLongBounds(BIGINT, x);
-
-        return x.longValue();
+    /** */
+    private static double extendToRound(double x) {
+        return x < 0.0d ? x - 0.5d : x + 0.5d;
     }
 
-    /** Cast value to {@code long}, throwing an exception if the result overflows an {@code long}. */
-    public static long convertToLongExact(double x) {
-        if (x > Long.MAX_VALUE || x < Long.MIN_VALUE)
-            throw new ArithmeticException(BIGINT.getName() + " overflow");
-
-        return (long)x;
-    }
-
-    /** Cast value to {@code int}, throwing an exception if the result overflows an {@code int}. */
-    public static int convertToIntExact(long x) {
-        int res = (int)x;
-
-        if (res != x)
-            throw new ArithmeticException(INTEGER.getName() + " overflow");
-
-        return res;
-    }
-
-    /** Cast value to {@code int}, throwing an exception if the result overflows an {@code int}. */
-    public static int convertToIntExact(double x) {
-        if (x > Integer.MAX_VALUE || x < Integer.MIN_VALUE)
-            throw new ArithmeticException(INTEGER.getName() + " overflow");
-
-        return (int)x;
-    }
-
-    /** Cast value to {@code int}, throwing an exception if the result overflows an {@code int}. */
-    public static int convertToIntExact(Number x) {
-        checkNumberLongBounds(INTEGER, x);
-
-        return convertToIntExact(x.longValue());
-    }
-
-    /** Cast value to {@code short}, throwing an exception if the result overflows an {@code short}. */
-    public static short convertToShortExact(long x) {
-        short res = (short)x;
-
-        if (res != x)
-            throw new ArithmeticException(SMALLINT.getName() + " overflow");
-
-        return res;
-    }
-
-    /** Cast value to {@code short}, throwing an exception if the result overflows an {@code short}. */
-    public static short convertToShortExact(double x) {
-        if (x > Short.MAX_VALUE || x < Short.MIN_VALUE)
-            throw new ArithmeticException(SMALLINT.getName() + " overflow");
-
-        return (short)x;
-    }
-
-    /** Cast value to {@code short}, throwing an exception if the result overflows an {@code short}. */
-    public static short convertToShortExact(Number x) {
-        checkNumberLongBounds(SMALLINT, x);
-
-        return convertToShortExact(x.longValue());
-    }
-
-    /** Cast value to {@code byte}, throwing an exception if the result overflows an {@code byte}. */
-    public static byte convertToByteExact(long x) {
-        byte res = (byte)x;
-
-        if (res != x)
-            throw new ArithmeticException(TINYINT.getName() + " overflow");
-
-        return res;
-    }
-
-    /** Cast value to {@code byte}, throwing an exception if the result overflows an {@code byte}. */
-    public static byte convertToByteExact(double x) {
-        if (x > Byte.MAX_VALUE || x < Byte.MIN_VALUE)
-            throw new ArithmeticException(TINYINT.getName() + " overflow");
-
-        return (byte)x;
-    }
-
-    /** Cast value to {@code byte}, throwing an exception if the result overflows an {@code byte}. */
-    public static byte convertToByteExact(Number x) {
-        checkNumberLongBounds(TINYINT, x);
-
-        return convertToByteExact(x.longValue());
+    /** */
+    private static BigDecimal round(Number x) {
+        return convertToBigDecimal(x).setScale(0, NUMERIC_ROUNDING_MODE);
     }
 
     /** */
