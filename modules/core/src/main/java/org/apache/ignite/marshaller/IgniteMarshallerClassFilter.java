@@ -43,13 +43,9 @@ public class IgniteMarshallerClassFilter implements IgnitePredicate<String> {
 
     /** {@inheritDoc} */
     @Override public boolean apply(String s) {
-        // Allows all primitive arrays and checks arrays' type.
-        if ((blackList != null || whiteList != null) && s.charAt(0) == '[') {
-            if (s.charAt(1) == 'L' && s.length() > 2)
-                s = s.substring(2, s.length() - 1);
-            else
-                return true;
-        }
+        // Allows all arrays.
+        if ((blackList != null || whiteList != null) && s.charAt(0) == '[')
+            return true;
 
         return (blackList == null || !blackList.contains(s)) && (whiteList == null || whiteList.contains(s));
     }
