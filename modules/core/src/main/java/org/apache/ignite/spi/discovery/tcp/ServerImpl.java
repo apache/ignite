@@ -787,7 +787,7 @@ class ServerImpl extends TcpDiscoveryImpl {
         for (InetSocketAddress addr : spi.getEffectiveNodeAddresses(node)) {
             try {
                 // ID returned by the node should be the same as ID of the parameter for ping to succeed.
-                IgniteBiTuple<UUID, Boolean> t = pingNode(addr, node.id(), clientNodeId, 0, false);
+                IgniteBiTuple<UUID, Boolean> t = pingNode(addr, node.id(), clientNodeId, 0, true);
 
                 if (t == null)
                     // Remote node left topology.
@@ -989,12 +989,10 @@ class ServerImpl extends TcpDiscoveryImpl {
 
     /** */
     private void logPingError(String msg, boolean logError) {
-        if (logError) {
-            if (log.isDebugEnabled())
-                log.debug(msg);
-        }
-        else
+        if (logError)
             log.warning(msg);
+        else if (log.isDebugEnabled())
+            log.debug(msg);
     }
 
     /**
@@ -2283,7 +2281,7 @@ class ServerImpl extends TcpDiscoveryImpl {
 
                         if (res == null) {
                             try {
-                                res = pingNode(addr, null, null, 0, true) != null;
+                                res = pingNode(addr, null, null, 0, false) != null;
                             }
                             catch (IgniteCheckedException e) {
                                 if (log.isDebugEnabled())
@@ -7312,7 +7310,7 @@ class ServerImpl extends TcpDiscoveryImpl {
                             try {
                                 if (liveAddrHolder.get() == null) {
                                     UUID id = pingNode(addr, node.id(), null, timeoutHelper.nextTimeoutChunk(perAddrTimeout),
-                                            false).get1();
+                                            true).get1();
 
                                     assert id == null || id.equals(node.id());
 
@@ -7550,7 +7548,7 @@ class ServerImpl extends TcpDiscoveryImpl {
             for (InetSocketAddress addr : spi.getEffectiveNodeAddresses(node)) {
                 try {
                     if (!(addr.getAddress().isLoopbackAddress() && locNode.socketAddresses().contains(addr))) {
-                        IgniteBiTuple<UUID, Boolean> t = pingNode(addr, node.id(), null, 0, false);
+                        IgniteBiTuple<UUID, Boolean> t = pingNode(addr, node.id(), null, 0, true);
 
                         if (t != null)
                             return true;
