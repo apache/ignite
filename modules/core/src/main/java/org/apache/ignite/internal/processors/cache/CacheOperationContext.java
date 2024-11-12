@@ -18,7 +18,6 @@
 package org.apache.ignite.internal.processors.cache;
 
 import java.io.Serializable;
-import java.util.Map;
 import javax.cache.expiry.ExpiryPolicy;
 import org.apache.ignite.cache.ReadRepairStrategy;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
@@ -238,21 +237,6 @@ public class CacheOperationContext implements Serializable {
             dataCenterId,
             recovery,
             readRepairStrategy);
-    }
-
-    /**
-     * @param appAttrs Application attributes.
-     * @return New instance of CacheOperationContext with application attributes.
-     */
-    public CacheOperationContext setApplicationAttributes(Map<String, String> appAttrs) {
-        return new CacheOperationContext(
-                skipStore,
-                keepBinary,
-                expiryPlc,
-                noRetries,
-                dataCenterId,
-                recovery,
-                readRepairStrategy);
     }
 
     /**
