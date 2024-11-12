@@ -102,7 +102,7 @@ public enum IgniteMethod {
     SKIP_FIRST_ARGUMENT(IgniteSqlFunctions.class, "skipFirstArgument", Object.class, Object.class),
 
     /** See {@link IgniteMath#bitwise(SqlKind, Number, Number)}. **/
-    BITWISE(IgniteSqlFunctions.class, "bitwise", SqlKind.class, Number.class, Number.class);
+    BITWISE(IgniteMath.class, "bitwise", SqlKind.class, Number.class, Number.class);
 
     /** */
     private final Method method;

@@ -18,6 +18,8 @@
 package org.apache.ignite.internal.processors.query.calcite.util;
 
 import java.math.BigDecimal;
+import java.math.BigInteger;
+import java.math.RoundingMode;
 import org.apache.calcite.sql.SqlKind;
 import org.apache.calcite.sql.type.SqlTypeName;
 
