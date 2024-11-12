@@ -148,7 +148,6 @@ import static org.apache.ignite.internal.util.nio.GridNioServer.DFLT_IO_BALANCE_
 import static org.apache.ignite.internal.util.tostring.GridToStringBuilder.DFLT_TO_STRING_COLLECTION_LIMIT;
 import static org.apache.ignite.internal.util.tostring.GridToStringBuilder.DFLT_TO_STRING_INCLUDE_SENSITIVE;
 import static org.apache.ignite.internal.util.tostring.GridToStringBuilder.DFLT_TO_STRING_MAX_LENGTH;
-import static org.apache.ignite.marshaller.MarshallerUtils.DEFAULT_BLACKLIST_CLS_NAMES_FILE;
 import static org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi.DFLT_DISCOVERY_CLIENT_RECONNECT_HISTORY_SIZE;
 import static org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi.DFLT_DISCOVERY_METRICS_QNT_WARN;
 import static org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi.DFLT_DISCO_FAILED_CLIENT_RECONNECT_DELAY;
@@ -914,7 +913,7 @@ public final class IgniteSystemProperties {
 
     /** Defines path to the file that contains list of classes disallowed to safe deserialization.*/
     @SystemProperty(value = "Path to the file that contains list of classes disallowed to safe deserialization",
-        type = String.class, defaults = DEFAULT_BLACKLIST_CLS_NAMES_FILE)
+        type = String.class)
     public static final String IGNITE_MARSHALLER_BLACKLIST = "IGNITE_MARSHALLER_BLACKLIST";
 
     /**

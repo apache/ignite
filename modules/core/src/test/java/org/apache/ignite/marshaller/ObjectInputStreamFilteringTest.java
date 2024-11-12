@@ -75,7 +75,8 @@ public class ObjectInputStreamFilteringTest extends GridCommonAbstractTest {
     }
 
     /** */
-    @Test public void testJavaDeserialization() throws Exception {
+    @Test
+    public void testJavaDeserialization() throws Exception {
         startGrid(0);
 
         try (IgniteClient client = Ignition.startClient(new ClientConfiguration().setAddresses("127.0.0.1:10800"))) {

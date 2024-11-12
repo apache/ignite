@@ -141,9 +141,8 @@ public class MarshallerUtils {
         synchronized (MUX) {
             ObjectInputFilter objFilter = ObjectInputFilter.Config.getSerialFilter();
 
-            if (objFilter == null) {
+            if (objFilter == null)
                 ObjectInputFilter.Config.setSerialFilter(new IgniteObjectInputFilter(clsFilter));
-            }
             else if (objFilter instanceof IgniteObjectInputFilter) {
                 IgniteObjectInputFilter igniteObjFilter = (IgniteObjectInputFilter)objFilter;
 
@@ -192,9 +191,12 @@ public class MarshallerUtils {
     private static ClassSet classBlackList(ClassLoader clsLdr) throws IgniteCheckedException {
         ClassSet clsSet = new ClassSet();
 
-        String blackListFileName = IgniteSystemProperties.getString(IGNITE_MARSHALLER_BLACKLIST, DEFAULT_BLACKLIST_CLS_NAMES_FILE);
+        addClassNames(DEFAULT_BLACKLIST_CLS_NAMES_FILE, clsSet, clsLdr);
 
-        addClassNames(blackListFileName, clsSet, clsLdr);
+        String blackListFileName = IgniteSystemProperties.getString(IGNITE_MARSHALLER_BLACKLIST);
+
+        if (blackListFileName != null)
+            addClassNames(blackListFileName, clsSet, clsLdr);
 
         return clsSet;
     }
