@@ -106,7 +106,7 @@ control.bat --system-view NODE_METRICS --node-id a1b77663-b37f-4ddf-87a6-1e2d684
 |AFFINITY_MAPPER | string |  String representation of affinity mapper
 |BACKUPS | int | backup count
 |CACHE_GROUP_ID | int | cache group id
-|CACHE_LOADER_FACTORY | string |  tring representation of cache loader factory
+|CACHE_LOADER_FACTORY | string | String representation of cache loader factory
 |CACHE_STORE_FACTORY | string |  String representation of cache store factory
 |CACHE_WRITER_FACTORY | string |  String representation of cache writer factory
 |DATA_REGION_NAME | string |  Data region name
