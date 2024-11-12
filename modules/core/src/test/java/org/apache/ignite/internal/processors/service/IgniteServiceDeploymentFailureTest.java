@@ -46,7 +46,13 @@ public class IgniteServiceDeploymentFailureTest extends GridCommonAbstractTest {
     private static final String NOOP_SERVICE_CLS_NAME = "org.apache.ignite.tests.p2p.NoopService";
 
     /** */
-    public static final String NODE_FILTER_CLS_NAME = "org.apache.ignite.tests.p2p.ExcludeNodeFilter";
+    private static final String NODE_FILTER_CLS_NAME = "org.apache.ignite.tests.p2p.ExcludeNodeFilter";
+
+    /** */
+    private static final String NOOP_SERVICE_NAME = "NoopService";
+
+    /** */
+    private static final String INIT_THROWING_SERVICE_NAME = "InitThrowingService";
 
     /** */
     private static final int SERVER_NODES_CNT = 5;
@@ -58,10 +64,10 @@ public class IgniteServiceDeploymentFailureTest extends GridCommonAbstractTest {
     private static final int TIMEOUT = 10_000;
 
     /** */
-    public static final String DEPLOYED_SERVICE_MUST_BE_PRESENTED_IN_CLUSTER = "Deployed service must be presented in cluster";
+    private static final String DEPLOYED_SERVICE_MUST_BE_PRESENTED_IN_CLUSTER = "Deployed service must be presented in cluster";
 
     /** */
-    public static final String FAILED_SERVICE_SHOULD_NOT_BE_PRESENT_IN_THE_CLUSTER = "Service descriptors whose deployment has failed should not be present in the cluster";
+    private static final String FAILED_SERVICE_SHOULD_NOT_BE_PRESENT_IN_THE_CLUSTER = "Service descriptors whose deployment has failed should not be present in the cluster";
 
     /** */
     private static ClassLoader extClsLdr;
@@ -99,15 +105,13 @@ public class IgniteServiceDeploymentFailureTest extends GridCommonAbstractTest {
      */
     @Test
     public void testFailWhenClassNotFound() throws Exception {
-        final String srvcName = "TestDeploymentService";
+        startGrid();
 
-        startGrid(getConfiguration("server"));
         IgniteEx cli = startClientGrid(1);
 
         ServiceConfiguration svcCfg = new ServiceConfiguration()
-            .setName(srvcName)
-            .setService(((Class<Service>)extClsLdr.loadClass(NOOP_SERVICE_CLS_NAME)).getDeclaredConstructor().
-                newInstance())
+            .setName(NOOP_SERVICE_NAME)
+            .setService(new NoopService())
             .setNodeFilter(((Class<IgnitePredicate<ClusterNode>>)extClsLdr.loadClass(NODE_FILTER_CLS_NAME))
                 .getConstructor(UUID.class)
                 .newInstance(cli.configuration().getNodeId()))
@@ -115,7 +119,7 @@ public class IgniteServiceDeploymentFailureTest extends GridCommonAbstractTest {
 
         assertThrowsWithCause(() -> cli.services().deploy(svcCfg), ServiceDeploymentException.class);
 
-        assertTrue(waitForCondition(() -> noDescriptorInClusterForService(srvcName), TIMEOUT));
+        assertTrue(waitForCondition(() -> noDescriptorInClusterForService(NOOP_SERVICE_NAME), TIMEOUT));
     }
 
     /**
@@ -136,7 +140,7 @@ public class IgniteServiceDeploymentFailureTest extends GridCommonAbstractTest {
             startClientGrid(SERVER_NODES_CNT + i);
 
         ServiceConfiguration noopSrvcCfg = new ServiceConfiguration()
-            .setName(NoopService.class.getSimpleName())
+            .setName(NOOP_SERVICE_NAME)
             .setService(new NoopService())
             .setTotalCount(SERVER_NODES_CNT * maxNoopSrvcMaxPerNodeCnt)
             .setMaxPerNodeCount(2);
@@ -145,12 +149,16 @@ public class IgniteServiceDeploymentFailureTest extends GridCommonAbstractTest {
         client.services().deploy(noopSrvcCfg);
 
         // Check that the expected number of instances has been deployed
-        assertEquals(2 * SERVER_NODES_CNT, totalInstancesCount(client, NoopService.class.getSimpleName()));
+        assertEquals(
+            DEPLOYED_SERVICE_MUST_BE_PRESENTED_IN_CLUSTER,
+            2 * SERVER_NODES_CNT,
+            totalInstancesCount(client, NOOP_SERVICE_NAME)
+        );
 
         // Deploy InitThrowingService that throws an exception in init - should not be deployed.
         assertThrowsWithCause(
             () -> client.services().deploy(new ServiceConfiguration()
-                .setName(InitThrowingService.class.getSimpleName())
+                .setName(INIT_THROWING_SERVICE_NAME)
                 .setService(new InitThrowingService())
                 .setTotalCount(10)
                 .setMaxPerNodeCount(2)),
@@ -165,10 +173,10 @@ public class IgniteServiceDeploymentFailureTest extends GridCommonAbstractTest {
         assertEquals(
             DEPLOYED_SERVICE_MUST_BE_PRESENTED_IN_CLUSTER,
             2 * SERVER_NODES_CNT,
-            totalInstancesCount(client, NoopService.class.getSimpleName())
+            totalInstancesCount(client, NOOP_SERVICE_NAME)
         );
 
-        client.services().cancel(NoopService.class.getSimpleName());
+        client.services().cancel(NOOP_SERVICE_NAME);
 
         // Deploy some additional NoopService instances.
         noopSrvcCfg.setMaxPerNodeCount(maxNoopSrvcMaxPerNodeCnt);
@@ -178,9 +186,9 @@ public class IgniteServiceDeploymentFailureTest extends GridCommonAbstractTest {
         assertEquals(
             DEPLOYED_SERVICE_MUST_BE_PRESENTED_IN_CLUSTER,
             SERVER_NODES_CNT * maxNoopSrvcMaxPerNodeCnt,
-            totalInstancesCount(client,NoopService.class.getSimpleName()));
+            totalInstancesCount(client, NOOP_SERVICE_NAME)
+        );
     }
-
 
     /**
      * Tests that service descriptors are clear after an attempt of deploying a service which throws an exception
@@ -193,12 +201,12 @@ public class IgniteServiceDeploymentFailureTest extends GridCommonAbstractTest {
         final int noopSrvcTotalCnt = 20;
 
         ServiceConfiguration noopCfg = new ServiceConfiguration()
-            .setName(NoopService.class.getSimpleName())
+            .setName(NOOP_SERVICE_CLS_NAME)
             .setService(new NoopService())
             .setTotalCount(noopSrvcTotalCnt);
 
         ServiceConfiguration initThrowingCfg = new ServiceConfiguration()
-            .setName(InitThrowingService.class.getSimpleName())
+            .setName(INIT_THROWING_SERVICE_NAME)
             .setService(new InitThrowingService())
             .setTotalCount(20);
 
@@ -217,7 +225,7 @@ public class IgniteServiceDeploymentFailureTest extends GridCommonAbstractTest {
         assertEquals(
             DEPLOYED_SERVICE_MUST_BE_PRESENTED_IN_CLUSTER,
             noopSrvcTotalCnt,
-            totalInstancesCount(ign, NoopService.class.getSimpleName())
+            totalInstancesCount(ign, NOOP_SERVICE_CLS_NAME)
         );
     }
 
@@ -257,13 +265,8 @@ public class IgniteServiceDeploymentFailureTest extends GridCommonAbstractTest {
      * Service that throws an exception in init.
      */
     private static class InitThrowingService implements Service {
-        /** */
-        public static final AtomicInteger initCounter = new AtomicInteger();
-
         /** {@inheritDoc} */
         @Override public void init() throws Exception {
-            initCounter.incrementAndGet();
-
             throw new Exception("Service init exception");
         }
     }
@@ -272,12 +275,9 @@ public class IgniteServiceDeploymentFailureTest extends GridCommonAbstractTest {
      * NoopService for testing.
      */
     private static class NoopService implements Service {
-        /** */
-        public static final AtomicInteger initCounter = new AtomicInteger();
-
         /** {@inheritDoc} */
         @Override public void init() throws Exception {
-            initCounter.incrementAndGet();
+            // No-op.
         }
     }
 }
