@@ -20,7 +20,6 @@ package org.apache.ignite.internal.processors.cache;
 import java.util.ArrayList;
 import java.util.List;
 import org.apache.ignite.Ignite;
-import org.apache.ignite.IgniteSession;
 import org.apache.ignite.cache.ApplicationContext;
 import org.apache.ignite.cache.ApplicationContextProvider;
 import org.apache.ignite.cache.CacheAtomicityMode;
@@ -89,7 +88,7 @@ public class ApplicationContextSqlFunctionTest extends GridCommonAbstractTest {
         if (clnNode)
             ign = startClientGrid(3);
 
-        ignQuery(ign.session(), "create table PUBLIC.MYTABLE(id int primary key, sessionId varchar);");
+        ignQuery(ign, "create table PUBLIC.MYTABLE(id int primary key, sessionId varchar);");
     }
 
     /** {@inheritDoc} */
@@ -103,11 +102,11 @@ public class ApplicationContextSqlFunctionTest extends GridCommonAbstractTest {
         for (int i = 0; i < 100; i++) {
             String sesId = i % 2 == 0 ? "1" : "2";
 
-            ignQuery(ign.session(), "insert into PUBLIC.MYTABLE(id, sessionId) values (?, ?);", i, sesId);
+            ignQuery(ign, "insert into PUBLIC.MYTABLE(id, sessionId) values (?, ?);", i, sesId);
         }
 
         for (String sesId: F.asList("1", "2")) {
-            IgniteSession ignSes = ign.session().withApplicationAttributes(F.asMap(SESSION_ID, sesId));
+            Ignite ignSes = ign.withApplicationAttributes(F.asMap(SESSION_ID, sesId));
 
             List<List<?>> rows = ignQuery(ignSes, "select * from PUBLIC.MYTABLE where sessionId = sessionId();");
 
@@ -127,16 +126,16 @@ public class ApplicationContextSqlFunctionTest extends GridCommonAbstractTest {
         for (int i = 0; i < 100; i++) {
             String sesId = i % 2 == 0 ? "1" : "2";
 
-            IgniteSession ignSes = ign.session().withApplicationAttributes(F.asMap(SESSION_ID, sesId));
+            Ignite ignSes = ign.withApplicationAttributes(F.asMap(SESSION_ID, sesId));
 
             ignQuery(ignSes, "insert into PUBLIC.MYTABLE(id, sessionId) values (" + i + ", sessionId());");
         }
 
-        List<List<?>> res = ignQuery(ign.session(), "select * from PUBLIC.MYTABLE where sessionId = 1");
+        List<List<?>> res = ignQuery(ign, "select * from PUBLIC.MYTABLE where sessionId = 1");
 
         assertEquals(50, res.size());
 
-        res = ignQuery(ign.session(), "select * from PUBLIC.MYTABLE where sessionId = 2");
+        res = ignQuery(ign, "select * from PUBLIC.MYTABLE where sessionId = 2");
 
         assertEquals(50, res.size());
     }
@@ -147,12 +146,12 @@ public class ApplicationContextSqlFunctionTest extends GridCommonAbstractTest {
         for (int i = 0; i < 100; i++) {
             String sesId = i % 2 == 0 ? "1" : "2";
 
-            ignQuery(ign.session(), "insert into PUBLIC.MYTABLE(id, sessionId) values (?, ?);", i, sesId);
+            ignQuery(ign, "insert into PUBLIC.MYTABLE(id, sessionId) values (?, ?);", i, sesId);
         }
 
         String sesId = "1";
 
-        IgniteSession ignSes = ign.session().withApplicationAttributes(F.asMap(SESSION_ID, sesId));
+        Ignite ignSes = ign.withApplicationAttributes(F.asMap(SESSION_ID, sesId));
 
         List<List<?>> rows = ignQuery(ignSes, "select * from PUBLIC.MYTABLE where sessionId = (select sessionId());");
 
@@ -170,8 +169,8 @@ public class ApplicationContextSqlFunctionTest extends GridCommonAbstractTest {
     }
 
     /** */
-    private List<List<?>> ignQuery(IgniteSession ses, String sql, Object... args) {
-        return ses.query(new SqlFieldsQuery(sql).setArgs(args)).getAll();
+    private List<List<?>> ignQuery(Ignite ign, String sql, Object... args) {
+        return ign.query(new SqlFieldsQuery(sql).setArgs(args)).getAll();
     }
 
     /** */

@@ -18,10 +18,10 @@
 package org.apache.ignite.cache;
 
 import java.util.Map;
-import org.apache.ignite.IgniteSession;
+import org.apache.ignite.Ignite;
 
 /**
- * Provides access to application attributes set with {@link IgniteSession#withApplicationAttributes}.
+ * Provides access to application attributes set with {@link Ignite#withApplicationAttributes}.
  */
 public interface ApplicationContext {
     /** @return Application attributes. */

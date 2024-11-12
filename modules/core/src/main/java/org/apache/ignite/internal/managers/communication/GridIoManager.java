@@ -86,7 +86,6 @@ import org.apache.ignite.internal.IgniteFeatures;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.IgniteKernal;
 import org.apache.ignite.internal.NodeStoppingException;
-import org.apache.ignite.internal.cache.context.ApplicationContextInternal;
 import org.apache.ignite.internal.cluster.ClusterTopologyCheckedException;
 import org.apache.ignite.internal.direct.DirectMessageReader;
 import org.apache.ignite.internal.direct.DirectMessageWriter;
@@ -1901,9 +1900,12 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
 
         try (
             OperationSecurityContext ignored = ctx.security().withContext(newSecSubjId);
-            ApplicationContextInternal ignored0 = ctx.applicationContext().withApplicationContext(appAttrs)
+            AutoCloseable ignored0 = ctx.applicationContext().withApplicationContext(appAttrs)
         ) {
             lsnr.onMessage(nodeId, msg, plc);
+        }
+        catch (Exception e) {
+            throw new IgniteException("Failed to close ApplicationContext", e);
         }
         finally {
             if (change)

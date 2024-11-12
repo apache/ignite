@@ -22,6 +22,7 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
@@ -54,13 +55,14 @@ import org.apache.ignite.IgniteQueue;
 import org.apache.ignite.IgniteScheduler;
 import org.apache.ignite.IgniteSemaphore;
 import org.apache.ignite.IgniteServices;
-import org.apache.ignite.IgniteSession;
 import org.apache.ignite.IgniteSet;
 import org.apache.ignite.IgniteSnapshot;
 import org.apache.ignite.IgniteTransactions;
 import org.apache.ignite.Ignition;
 import org.apache.ignite.MemoryMetrics;
 import org.apache.ignite.cache.affinity.Affinity;
+import org.apache.ignite.cache.query.FieldsQueryCursor;
+import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.cluster.ClusterGroup;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.AtomicConfiguration;
@@ -857,7 +859,11 @@ public class IgniteProcessProxy implements IgniteEx {
     }
 
     /** {@inheritDoc} */
-    @Override public IgniteSession session() {
+    @Override public FieldsQueryCursor<List<?>> query(SqlFieldsQuery qry) {
+        throw new UnsupportedOperationException("Operation isn't supported yet.");
+    }
+
+    @Override public Ignite withApplicationAttributes(Map<String, String> attrs) {
         throw new UnsupportedOperationException("Operation isn't supported yet.");
     }
 

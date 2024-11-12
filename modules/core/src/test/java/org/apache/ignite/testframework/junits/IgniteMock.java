@@ -18,6 +18,8 @@
 package org.apache.ignite.testframework.junits;
 
 import java.util.Collection;
+import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.ExecutorService;
 import javax.management.MBeanServer;
@@ -45,7 +47,6 @@ import org.apache.ignite.IgniteQueue;
 import org.apache.ignite.IgniteScheduler;
 import org.apache.ignite.IgniteSemaphore;
 import org.apache.ignite.IgniteServices;
-import org.apache.ignite.IgniteSession;
 import org.apache.ignite.IgniteSet;
 import org.apache.ignite.IgniteSnapshot;
 import org.apache.ignite.IgniteTransactions;
@@ -53,6 +54,8 @@ import org.apache.ignite.MemoryMetrics;
 import org.apache.ignite.binary.BinaryObjectBuilder;
 import org.apache.ignite.binary.BinaryObjectException;
 import org.apache.ignite.cache.affinity.Affinity;
+import org.apache.ignite.cache.query.FieldsQueryCursor;
+import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.cluster.ClusterGroup;
 import org.apache.ignite.configuration.AtomicConfiguration;
 import org.apache.ignite.configuration.CacheConfiguration;
@@ -496,7 +499,12 @@ public class IgniteMock implements Ignite {
     }
 
     /** {@inheritDoc} */
-    @Override public IgniteSession session() {
+    @Override public FieldsQueryCursor<List<?>> query(SqlFieldsQuery qry) {
+        return null;
+    }
+
+    /** {@inheritDoc} */
+    @Override public Ignite withApplicationAttributes(Map<String, String> attrs) {
         return null;
     }
 

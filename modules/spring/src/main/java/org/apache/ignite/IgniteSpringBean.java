@@ -22,8 +22,12 @@ import java.io.IOException;
 import java.io.ObjectInput;
 import java.io.ObjectOutput;
 import java.util.Collection;
+import java.util.List;
+import java.util.Map;
 import java.util.concurrent.ExecutorService;
 import org.apache.ignite.cache.affinity.Affinity;
+import org.apache.ignite.cache.query.FieldsQueryCursor;
+import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.cluster.ClusterGroup;
 import org.apache.ignite.cluster.ClusterState;
 import org.apache.ignite.configuration.AtomicConfiguration;
@@ -333,10 +337,17 @@ public class IgniteSpringBean implements Ignite, DisposableBean, SmartInitializi
     }
 
     /** {@inheritDoc} */
-    @Override public IgniteSession session() {
+    @Override public FieldsQueryCursor<List<?>> query(SqlFieldsQuery qry) {
         checkIgnite();
 
-        return g.session();
+        return g.query(qry);
+    }
+
+    /** {@inheritDoc} */
+    @Override public Ignite withApplicationAttributes(Map<String, String> attrs) {
+        checkIgnite();
+
+        return g.withApplicationAttributes(attrs);
     }
 
     /** {@inheritDoc} */

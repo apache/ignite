@@ -17,6 +17,8 @@
 
 package org.apache.ignite.internal.cache.context;
 
+import java.util.Collections;
+import java.util.HashMap;
 import java.util.Map;
 import org.apache.ignite.cache.ApplicationContext;
 import org.apache.ignite.internal.GridKernalContext;
@@ -38,15 +40,11 @@ public class ApplicationContextProcessor extends GridProcessorAdapter {
      *
      * @param appAttrs Application attributes to set.
      */
-    public ApplicationContextInternal withApplicationContext(@Nullable Map<String, String> appAttrs) {
+    public AutoCloseable withApplicationContext(@Nullable Map<String, String> appAttrs) {
         if (appAttrs == null)
             return null;
 
-        ApplicationContextInternal appCtx = new ApplicationContextInternal(appAttrs) {
-            @Override public void close() {
-                ctx.remove();
-            }
-        };
+        ApplicationContextCloseable appCtx = new ApplicationContextCloseable(appAttrs);
 
         ctx.set(appCtx);
 
@@ -56,5 +54,26 @@ public class ApplicationContextProcessor extends GridProcessorAdapter {
     /** @return Application context for current thread. */
     public @Nullable ApplicationContext applicationContext() {
         return ctx.get();
+    }
+
+    /** */
+    private class ApplicationContextCloseable implements ApplicationContext, AutoCloseable {
+        /** Application attributes. */
+        private final Map<String, String> attrs;
+
+        /** @param attrs Application attributes. */
+        public ApplicationContextCloseable(Map<String, String> attrs) {
+            this.attrs = new HashMap<>(attrs);
+        }
+
+        /** */
+        @Override public Map<String, String> getAttributes() {
+            return Collections.unmodifiableMap(attrs);
+        }
+
+        /** */
+        @Override public void close() {
+            ctx.remove();
+        }
     }
 }

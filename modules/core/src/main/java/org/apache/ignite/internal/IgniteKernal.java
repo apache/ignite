@@ -67,7 +67,6 @@ import org.apache.ignite.IgniteQueue;
 import org.apache.ignite.IgniteScheduler;
 import org.apache.ignite.IgniteSemaphore;
 import org.apache.ignite.IgniteServices;
-import org.apache.ignite.IgniteSession;
 import org.apache.ignite.IgniteSet;
 import org.apache.ignite.IgniteSnapshot;
 import org.apache.ignite.IgniteSystemProperties;
@@ -75,6 +74,8 @@ import org.apache.ignite.IgniteTransactions;
 import org.apache.ignite.Ignition;
 import org.apache.ignite.MemoryMetrics;
 import org.apache.ignite.cache.affinity.Affinity;
+import org.apache.ignite.cache.query.FieldsQueryCursor;
+import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.cluster.BaselineNode;
 import org.apache.ignite.cluster.ClusterGroup;
 import org.apache.ignite.cluster.ClusterNode;
@@ -91,7 +92,6 @@ import org.apache.ignite.events.EventType;
 import org.apache.ignite.internal.binary.BinaryEnumCache;
 import org.apache.ignite.internal.binary.BinaryMarshaller;
 import org.apache.ignite.internal.binary.BinaryUtils;
-import org.apache.ignite.internal.cache.IgniteSessionImpl;
 import org.apache.ignite.internal.cache.context.ApplicationContextProcessor;
 import org.apache.ignite.internal.cache.query.index.IndexProcessor;
 import org.apache.ignite.internal.cache.transform.CacheObjectTransformerProcessor;
@@ -2875,8 +2875,13 @@ public class IgniteKernal implements IgniteEx, Externalizable {
     }
 
     /** {@inheritDoc} */
-    @Override public IgniteSession session() {
-        return new IgniteSessionImpl(this, null, false);
+    @Override public FieldsQueryCursor<List<?>> query(SqlFieldsQuery qry) {
+        return ctx.query().querySqlFields(qry, false);
+    }
+
+    /** {@inheritDoc} */
+    @Override public Ignite withApplicationAttributes(Map<String, String> attrs) {
+        return new IgniteApplicationContextAware(this, attrs);
     }
 
     /** {@inheritDoc} */

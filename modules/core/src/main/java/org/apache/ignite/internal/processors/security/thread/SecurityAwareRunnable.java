@@ -18,8 +18,8 @@
 package org.apache.ignite.internal.processors.security.thread;
 
 import java.util.Map;
+import org.apache.ignite.IgniteException;
 import org.apache.ignite.cache.ApplicationContext;
-import org.apache.ignite.internal.cache.context.ApplicationContextInternal;
 import org.apache.ignite.internal.cache.context.ApplicationContextProcessor;
 import org.apache.ignite.internal.processors.security.IgniteSecurity;
 import org.apache.ignite.internal.processors.security.OperationSecurityContext;
@@ -69,9 +69,12 @@ class SecurityAwareRunnable implements Runnable {
     @Override public void run() {
         try (
             OperationSecurityContext ignored = security.withContext(secCtx);
-            ApplicationContextInternal ignored0 = appCtxProc == null ? null : appCtxProc.withApplicationContext(appAttrs)
+            AutoCloseable ignored0 = appCtxProc == null ? null : appCtxProc.withApplicationContext(appAttrs)
         ) {
             delegate.run();
+        }
+        catch (Exception e) {
+            throw new IgniteException("Failed to close ApplicationContext", e);
         }
     }
 
