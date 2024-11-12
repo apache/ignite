@@ -16,7 +16,6 @@
  */
 package org.apache.ignite.internal.processors.service;
 
-import java.util.Optional;
 import java.util.UUID;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Predicate;
@@ -113,15 +112,18 @@ public class IgniteServiceDeploymentFailureTest extends GridCommonAbstractTest {
     }
 
     /**
-     * Tests that service descriptors are clear after an attempt of deploying
-     * a service which throws an exception during initialization
+     * Tests that service descriptors are clear after an attempt of deploying a service which throws an exception
+     * during initialization. Dynamic configuration for services is used.
      *
      * @throws Exception If failed.
      */
     @Test
-    public void testServerDescriptorsOfFailedServices() throws Exception {
+    public void testFailedServiceDescriptorsDynamicConfiguration() throws Exception {
         final int noopSrvcTotalCnt = 20;
+
         final int noopSrvcMaxPerNodeCnt0 = 2;
+        final int noopSrvcTotalCnt0 = noopSrvcMaxPerNodeCnt0 * SERVER_NODES_CNT;
+
         final int noopSrvcMaxPerNodeCnt1 = 4;
 
         final int throwSrvcTotalCnt = 10;
@@ -144,7 +146,7 @@ public class IgniteServiceDeploymentFailureTest extends GridCommonAbstractTest {
         client.services().deploy(noopSrvcCfg);
 
         // Check that the expected number of instances has been deployed
-        assertEquals(noopSrvcMaxPerNodeCnt0 * SERVER_NODES_CNT,
+        assertEquals(noopSrvcTotalCnt0,
                 totalInstancesCount(client, NoopService.class.getSimpleName()));
 
         // Deploy InitThrowingService that throws an exception in init - should not be deployed.
@@ -158,6 +160,9 @@ public class IgniteServiceDeploymentFailureTest extends GridCommonAbstractTest {
         // Wait until the descriptors are updated on all nodes and check that there are no descriptors of an undeployed service.
         assertTrue(waitForCondition(() -> noDescriptorInClusterForService(InitThrowingService.class.getSimpleName()), TIMEOUT));
 
+        // Check that NoopService that is deployed successfully previously is presented in descriptors.
+        assertEquals(noopSrvcTotalCnt0, totalInstancesCount(client, NoopService.class.getSimpleName()));
+
         client.services().cancel(NoopService.class.getSimpleName());
 
         // Deploy some additional NoopService instances.
@@ -167,6 +172,37 @@ public class IgniteServiceDeploymentFailureTest extends GridCommonAbstractTest {
 
         // Check that the expected number of NoopService instances has been deployed.
         assertEquals(noopSrvcTotalCnt, totalInstancesCount(client, NoopService.class.getSimpleName()));
+    }
+
+
+    /**
+     * Tests that service descriptors are clear after an attempt of deploying a service which throws an exception
+     * during initialization. Static configuration for services is used.
+     *
+     * @throws Exception If failed.
+     */
+    @Test
+    public void testFailedServiceDescriptorsStaticConfiguration() throws Exception {
+        final int noopSrvcTotalCnt = 20;
+        final int initThrowingSrvcTotalCnt = 20;
+
+        ServiceConfiguration noopCfg = new ServiceConfiguration()
+                .setName(NoopService.class.getSimpleName())
+                .setService(new NoopService())
+                .setTotalCount(noopSrvcTotalCnt);
+
+        ServiceConfiguration initThrowingCfg = new ServiceConfiguration()
+                .setName(InitThrowingService.class.getSimpleName())
+                .setService(new InitThrowingService())
+                .setTotalCount(initThrowingSrvcTotalCnt);
+
+        startGrids(SERVER_NODES_CNT - 1);
+        IgniteEx ign = startGrid(getConfiguration().setServiceConfiguration(noopCfg, initThrowingCfg));
+
+        assertTrue(waitForCondition(() -> noDescriptorInClusterForService(InitThrowingService.class.getSimpleName()),
+                TIMEOUT));
+
+        assertEquals(noopSrvcTotalCnt, totalInstancesCount(ign, NoopService.class.getSimpleName()));
     }
 
     /**
