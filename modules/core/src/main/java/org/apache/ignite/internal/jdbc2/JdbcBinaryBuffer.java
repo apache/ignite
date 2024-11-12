@@ -359,10 +359,7 @@ public class JdbcBinaryBuffer {
                 if (pos >= limit)
                     return -1;
 
-                int availableBytes = limit - pos;
-
-                if (cnt > availableBytes)
-                    toRead = availableBytes;
+                toRead = Math.min(limit - pos, cnt);
             }
 
             int read = JdbcBinaryBuffer.this.read(pos, res, off, toRead);

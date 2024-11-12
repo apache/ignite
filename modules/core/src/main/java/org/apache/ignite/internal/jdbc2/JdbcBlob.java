@@ -83,7 +83,7 @@ public class JdbcBlob implements Blob {
 
         int idx = (int)(pos - 1);
 
-        int size = len > buf.length() - idx ? buf.length() - idx : len;
+        int size = Math.min(len, buf.length() - idx);
 
         byte[] res = new byte[size];
 
@@ -204,9 +204,7 @@ public class JdbcBlob implements Blob {
      * @return 1-based position at which the pattern appears, else -1.
      */
     private long position(InputStream ptrn, int ptrnLen, int idx) throws SQLException {
-        try {
-            InputStream blob = buf.inputStream(idx - 1, buf.length() - idx + 1);
-
+        try (InputStream blob = buf.inputStream(idx - 1, buf.length() - idx + 1)) {
             boolean patternStarted = false;
 
             int ptrnPos = 0;
