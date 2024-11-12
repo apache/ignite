@@ -15,18 +15,16 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.resources;
+package org.apache.ignite.cache;
 
-import java.lang.annotation.Documented;
-import java.lang.annotation.ElementType;
-import java.lang.annotation.Retention;
-import java.lang.annotation.RetentionPolicy;
-import java.lang.annotation.Target;
+import org.jetbrains.annotations.Nullable;
 
-/** */
-@Documented
-@Retention(RetentionPolicy.RUNTIME)
-@Target({ElementType.FIELD})
-public @interface ApplicationContextProviderResource {
-    // No-op.
+/**
+ * Provides access to session context in stored functions.
+ *
+ * @see SessionContext
+ */
+public interface SessionContextProvider {
+    /** @return Session context. */
+    public @Nullable SessionContext getSessionContext();
 }

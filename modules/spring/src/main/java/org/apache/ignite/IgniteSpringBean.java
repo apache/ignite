@@ -344,10 +344,10 @@ public class IgniteSpringBean implements Ignite, DisposableBean, SmartInitializi
     }
 
     /** {@inheritDoc} */
-    @Override public Ignite withApplicationAttributes(Map<String, String> attrs) {
+    @Override public Ignite withSessionAttributes(Map<String, String> attrs) {
         checkIgnite();
 
-        return g.withApplicationAttributes(attrs);
+        return g.withSessionAttributes(attrs);
     }
 
     /** {@inheritDoc} */

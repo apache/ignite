@@ -38,7 +38,7 @@ import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.failure.FailureType;
-import org.apache.ignite.internal.cache.context.ApplicationContextProcessor;
+import org.apache.ignite.internal.cache.context.SessionContextProcessor;
 import org.apache.ignite.internal.cache.query.index.IndexProcessor;
 import org.apache.ignite.internal.cache.transform.CacheObjectTransformerProcessor;
 import org.apache.ignite.internal.maintenance.MaintenanceProcessor;
@@ -178,7 +178,7 @@ public class GridKernalContextImpl implements GridKernalContext, Externalizable 
 
     /** */
     @GridToStringExclude
-    private ApplicationContextProcessor appCtxProc;
+    private SessionContextProcessor sesCtxProc;
 
     /** */
     @GridToStringExclude
@@ -594,8 +594,8 @@ public class GridKernalContextImpl implements GridKernalContext, Externalizable 
             perfStatProc = (PerformanceStatisticsProcessor)comp;
         else if (comp instanceof IndexProcessor)
             indexProc = (IndexProcessor)comp;
-        else if (comp instanceof ApplicationContextProcessor)
-            appCtxProc = (ApplicationContextProcessor)comp;
+        else if (comp instanceof SessionContextProcessor)
+            sesCtxProc = (SessionContextProcessor)comp;
         else if (!(comp instanceof DiscoveryNodeValidationProcessor
             || comp instanceof PlatformPluginProcessor
             || comp instanceof QueryEngine))
@@ -1111,7 +1111,7 @@ public class GridKernalContextImpl implements GridKernalContext, Externalizable 
     }
 
     /** {@inheritDoc} */
-    @Override public ApplicationContextProcessor applicationContext() {
-        return appCtxProc;
+    @Override public SessionContextProcessor sessionContext() {
+        return sesCtxProc;
     }
 }

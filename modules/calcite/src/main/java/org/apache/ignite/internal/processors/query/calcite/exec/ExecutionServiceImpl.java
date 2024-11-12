@@ -847,7 +847,7 @@ public class ExecutionServiceImpl<Row> extends AbstractService implements Execut
             );
 
             final BaseQueryContext qctx = createQueryContext(
-                Contexts.of(ctx.resource(), ctx.applicationContext().applicationContext()),
+                Contexts.of(ctx.resource(), ctx.sessionContext().context()),
                 msg.schema());
 
             QueryPlan qryPlan = queryPlanCache().queryPlan(

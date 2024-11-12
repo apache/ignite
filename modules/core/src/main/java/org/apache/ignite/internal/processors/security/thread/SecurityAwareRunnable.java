@@ -19,8 +19,8 @@ package org.apache.ignite.internal.processors.security.thread;
 
 import java.util.Map;
 import org.apache.ignite.IgniteException;
-import org.apache.ignite.cache.ApplicationContext;
-import org.apache.ignite.internal.cache.context.ApplicationContextProcessor;
+import org.apache.ignite.cache.SessionContext;
+import org.apache.ignite.internal.cache.context.SessionContextProcessor;
 import org.apache.ignite.internal.processors.security.IgniteSecurity;
 import org.apache.ignite.internal.processors.security.OperationSecurityContext;
 import org.apache.ignite.internal.processors.security.SecurityContext;
@@ -38,43 +38,43 @@ class SecurityAwareRunnable implements Runnable {
     private final IgniteSecurity security;
 
     /** */
-    private final @Nullable ApplicationContextProcessor appCtxProc;
+    private final @Nullable SessionContextProcessor sesCtxProc;
 
     /** */
     private final SecurityContext secCtx;
 
     /** */
-    private final Map<String, String> appAttrs;
+    private final Map<String, String> sesAttrs;
 
     /** */
-    private SecurityAwareRunnable(IgniteSecurity security, @Nullable ApplicationContextProcessor appCtxProc, Runnable delegate) {
+    private SecurityAwareRunnable(IgniteSecurity security, @Nullable SessionContextProcessor sesCtxProc, Runnable delegate) {
         assert delegate != null;
 
         this.delegate = delegate;
         this.security = security;
-        this.appCtxProc = appCtxProc;
+        this.sesCtxProc = sesCtxProc;
 
         secCtx = security.securityContext();
 
-        if (appCtxProc != null) {
-            ApplicationContext appCtx = appCtxProc.applicationContext();
+        if (sesCtxProc != null) {
+            SessionContext sesCtx = sesCtxProc.context();
 
-            appAttrs = appCtx == null ? null : appCtx.getAttributes();
+            sesAttrs = sesCtx == null ? null : sesCtx.getAttributes();
         }
         else
-            appAttrs = null;
+            sesAttrs = null;
     }
 
     /** {@inheritDoc} */
     @Override public void run() {
         try (
             OperationSecurityContext ignored = security.withContext(secCtx);
-            AutoCloseable ignored0 = appCtxProc == null ? null : appCtxProc.withApplicationContext(appAttrs)
+            AutoCloseable ignored0 = sesCtxProc == null ? null : sesCtxProc.withContext(sesAttrs)
         ) {
             delegate.run();
         }
         catch (Exception e) {
-            throw new IgniteException("Failed to close ApplicationContext", e);
+            throw new IgniteException("Failed to close SessionContext", e);
         }
     }
 
@@ -84,10 +84,10 @@ class SecurityAwareRunnable implements Runnable {
     }
 
     /** */
-    static Runnable of(IgniteSecurity security, ApplicationContextProcessor appCtxProc, Runnable delegate) {
-        if (delegate == null || (security.isDefaultContext() && appCtxProc != null && appCtxProc.applicationContext() == null))
+    static Runnable of(IgniteSecurity security, SessionContextProcessor sesCtxProc, Runnable delegate) {
+        if (delegate == null || (security.isDefaultContext() && sesCtxProc != null && sesCtxProc.context() == null))
             return delegate;
 
-        return new SecurityAwareRunnable(security, appCtxProc, delegate);
+        return new SecurityAwareRunnable(security, sesCtxProc, delegate);
     }
 }

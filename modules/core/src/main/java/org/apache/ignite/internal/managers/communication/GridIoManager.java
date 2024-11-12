@@ -71,7 +71,7 @@ import java.util.function.BooleanSupplier;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteMessaging;
-import org.apache.ignite.cache.ApplicationContext;
+import org.apache.ignite.cache.SessionContext;
 import org.apache.ignite.cluster.ClusterGroup;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.IgniteConfiguration;
@@ -1374,7 +1374,7 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
 
                     assert obj != null;
 
-                    invokeListener(msg.policy(), lsnr, nodeId, obj, secSubjId(msg), applicationAttributes(msg));
+                    invokeListener(msg.policy(), lsnr, nodeId, obj, secSubjId(msg), sessionAttributes(msg));
                 }
                 finally {
                     threadProcessingMessage(false, null);
@@ -1512,7 +1512,7 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
 
         assert obj != null;
 
-        invokeListener(msg.policy(), lsnr, nodeId, obj, secSubjId(msg), applicationAttributes(msg));
+        invokeListener(msg.policy(), lsnr, nodeId, obj, secSubjId(msg), sessionAttributes(msg));
     }
 
     /**
@@ -1877,7 +1877,7 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
      * @param nodeId Node ID.
      * @param msg Message.
      * @param secSubjId Security subject that will be used to open a security session.
-     * @param appAttrs Application attributes.
+     * @param sesAttrs Session attributes.
      */
     private void invokeListener(
         Byte plc,
@@ -1885,7 +1885,7 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
         UUID nodeId,
         Object msg,
         UUID secSubjId,
-        Map<String, String> appAttrs
+        Map<String, String> sesAttrs
     ) {
         MTC.span().addLog(() -> "Invoke listener");
 
@@ -1900,12 +1900,12 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
 
         try (
             OperationSecurityContext ignored = ctx.security().withContext(newSecSubjId);
-            AutoCloseable ignored0 = ctx.applicationContext().withApplicationContext(appAttrs)
+            AutoCloseable ignored0 = ctx.sessionContext().withContext(sesAttrs)
         ) {
             lsnr.onMessage(nodeId, msg, plc);
         }
         catch (Exception e) {
-            throw new IgniteException("Failed to close ApplicationContext", e);
+            throw new IgniteException("Failed to close SessionContext", e);
         }
         finally {
             if (change)
@@ -2138,19 +2138,19 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
         long timeout,
         boolean skipOnTimeout
     ) {
-        ApplicationContext appCtx = ctx.applicationContext().applicationContext();
+        SessionContext sesCtx = ctx.sessionContext().context();
 
         boolean secEnabled = ctx.security().enabled();
 
-        if (secEnabled || appCtx != null) {
+        if (secEnabled || sesCtx != null) {
             UUID secSubjId = null;
 
             if (secEnabled && !ctx.security().isDefaultContext())
                 secSubjId = ctx.security().securityContext().subject().id();
 
-            Map<String, String> appAttrs = appCtx == null ? null : appCtx.getAttributes();
+            Map<String, String> sesAttrs = sesCtx == null ? null : sesCtx.getAttributes();
 
-            return new GridIoSecurityAwareMessage(secSubjId, appAttrs, plc, topic, topicOrd, msg, ordered, timeout, skipOnTimeout);
+            return new GridIoSecurityAwareMessage(secSubjId, sesAttrs, plc, topic, topicOrd, msg, ordered, timeout, skipOnTimeout);
         }
 
         return new GridIoMessage(plc, topic, topicOrd, msg, ordered, timeout, skipOnTimeout);
@@ -3927,7 +3927,7 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
 
                         MTC.span().addTag(SpanTags.MESSAGE, () -> traceName(fmc.message));
 
-                        invokeListener(plc, lsnr, nodeId, mc.message.message(), secSubjId(mc.message), applicationAttributes(mc.message));
+                        invokeListener(plc, lsnr, nodeId, mc.message.message(), secSubjId(mc.message), sessionAttributes(mc.message));
                     }
                     finally {
                         if (mc.closure != null)
@@ -4370,11 +4370,11 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
     }
 
     /**
-     * @return Application attributes.
+     * @return Session attributes.
      */
-    private Map<String, String> applicationAttributes(GridIoMessage msg) {
+    private Map<String, String> sessionAttributes(GridIoMessage msg) {
         if (msg instanceof GridIoSecurityAwareMessage)
-            return ((GridIoSecurityAwareMessage)msg).appAttrs();
+            return ((GridIoSecurityAwareMessage)msg).sessionAttributes();
 
         return null;
     }

@@ -21,7 +21,7 @@ import java.lang.annotation.Annotation;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import org.apache.ignite.IgniteCheckedException;
-import org.apache.ignite.cache.ApplicationContextProvider;
+import org.apache.ignite.cache.SessionContextProvider;
 import org.apache.ignite.cache.store.CacheStoreSession;
 import org.apache.ignite.compute.ComputeJob;
 import org.apache.ignite.compute.ComputeJobContext;
@@ -234,11 +234,11 @@ public class GridResourceProcessor extends GridProcessorAdapter {
     /**
      * Inject resources to object contained a user defined function.
      *
-     * @param appCtxProv Application context provider.
+     * @param sesCtxProv Session context provider.
      * @throws IgniteCheckedException If failed to inject.
      */
-    public void injectToUserDefinedFunction(Object obj, ApplicationContextProvider appCtxProv) throws IgniteCheckedException {
-        inject(obj, GridResourceIoc.AnnotationSet.USER_DEFINED_FUNCTION, appCtxProv);
+    public void injectToUserDefinedFunction(Object obj, SessionContextProvider sesCtxProv) throws IgniteCheckedException {
+        inject(obj, GridResourceIoc.AnnotationSet.USER_DEFINED_FUNCTION, sesCtxProv);
     }
 
     /**
@@ -349,8 +349,8 @@ public class GridResourceProcessor extends GridProcessorAdapter {
                 res = new GridResourceJobContextInjector((ComputeJobContext)param);
                 break;
 
-            case APPLICATION_CONTEXT_PROVIDER:
-                res = new GridResourceApplicationContextProviderInjector((ApplicationContextProvider)param);
+            case SESSION_CONTEXT_PROVIDER:
+                res = new GridResourceSessionContextProviderInjector((SessionContextProvider)param);
                 break;
 
             default:

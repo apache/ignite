@@ -58,6 +58,7 @@ import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.CollectionConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.NearCacheConfiguration;
+import org.apache.ignite.internal.util.typedef.internal.A;
 import org.apache.ignite.lang.IgniteProductVersion;
 import org.apache.ignite.metric.IgniteMetrics;
 import org.apache.ignite.plugin.IgnitePlugin;
@@ -66,27 +67,32 @@ import org.apache.ignite.spi.tracing.TracingConfigurationManager;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
-/** */
-public class IgniteApplicationContextAware implements Ignite {
+/** Ignite instance aware of session attributes set with {@link Ignite#withSessionAttributes(Map)}. */
+public class IgniteSessionAttributesAware implements Ignite {
     /** */
     private final IgniteEx delegate;
 
-    /** */
+    /** Session attributes. */
     private final Map<String, String> attrs;
 
-    /** */
-    public IgniteApplicationContextAware(IgniteEx delegate, @Nullable Map<String, String> attrs) {
+    /**
+     * @param delegate Parent Ignite instance.
+     * @param attrs Session attributes.
+     */
+    public IgniteSessionAttributesAware(IgniteEx delegate, Map<String, String> attrs) {
+        A.notNull(attrs, "attrs");
+
         this.delegate = delegate;
-        this.attrs = attrs == null ? null : new HashMap<>(attrs);
+        this.attrs = new HashMap<>(attrs);
     }
 
     /** {@inheritDoc} */
     @Override public FieldsQueryCursor<List<?>> query(SqlFieldsQuery qry) {
-        try (AutoCloseable ignored = delegate.context().applicationContext().withApplicationContext(attrs)) {
+        try (AutoCloseable ignored = delegate.context().sessionContext().withContext(attrs)) {
             return delegate.query(qry);
         }
         catch (Exception e) {
-            throw new IgniteException("Failed to close ApplicationContext", e);
+            throw new IgniteException("Failed to close SessionContext", e);
         }
     }
 
@@ -418,7 +424,7 @@ public class IgniteApplicationContextAware implements Ignite {
     }
 
     /** */
-    @Override public Ignite withApplicationAttributes(Map<String, String> attrs) {
-        return delegate.withApplicationAttributes(attrs);
+    @Override public Ignite withSessionAttributes(Map<String, String> attrs) {
+        return delegate.withSessionAttributes(attrs);
     }
 }

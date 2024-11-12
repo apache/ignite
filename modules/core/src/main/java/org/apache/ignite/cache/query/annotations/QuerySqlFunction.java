@@ -24,8 +24,8 @@ import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 
 /**
- * Annotates public static methods in classes to be used in SQL queries as custom functions.
- * Annotated class must be registered in H2 indexing SPI using following method
+ * Annotates public methods in classes to be used in SQL queries as custom functions.
+ * Annotated class must be registered using following method
  * {@link org.apache.ignite.configuration.CacheConfiguration#setSqlFunctionClasses(Class[])}.
  * <p>
  * Example usage:
@@ -37,15 +37,28 @@ import java.lang.annotation.Target;
  *         }
  *     }
  *
- *     // Register.
- *     indexing.setSqlFunctionClasses(MyFunctions.class);
+ *     // Register in CacheConfiguration.
+ *     cacheCfg.setSqlFunctionClasses(MyFunctions.class);
  *
  *     // And use in queries.
- *     cache.queries().createSqlFieldsQuery("select sqr(2) where sqr(1) = 1");
+ *     ign.query(new SqlFieldsQuery("select sqr(2) where sqr(1) = 1"));
  * </pre>
  * <p>
- * For more information about H2 custom functions please refer to
- * <a href="http://www.h2database.com/html/features.html#user_defined_functions">H2 documentation</a>.
+ * SQL functions can use spefic session attributes:
+ * <pre name="code" class="java">
+ *     public class MyFunctions {
+ *         &#64;SessionContextProviderResource
+ *         public SessionContextProvider sesCtxProv;
+ *
+ *         &#64;QuerySqlFunction
+ *         public String sessionId() {
+ *             SessionContext sesCtx = sesCtxProv.getSessionContext();
+ *
+ *             return sesCtx.getAttributes().get("SESSION_ID");
+ *         }
+ *     }
+ * </pre> * Note, accessing to the attributes is available in the Calcite query engine only. In a such case a class must have public
+ * zero-args constructor.
  */
 @Documented
 @Retention(RetentionPolicy.RUNTIME)

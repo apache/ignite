@@ -20,9 +20,9 @@ package org.apache.ignite.internal.processors.cache;
 import java.util.ArrayList;
 import java.util.List;
 import org.apache.ignite.Ignite;
-import org.apache.ignite.cache.ApplicationContext;
-import org.apache.ignite.cache.ApplicationContextProvider;
 import org.apache.ignite.cache.CacheAtomicityMode;
+import org.apache.ignite.cache.SessionContext;
+import org.apache.ignite.cache.SessionContextProvider;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.cache.query.annotations.QuerySqlFunction;
 import org.apache.ignite.calcite.CalciteQueryEngineConfiguration;
@@ -30,7 +30,7 @@ import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.SqlConfiguration;
 import org.apache.ignite.internal.util.typedef.F;
-import org.apache.ignite.resources.ApplicationContextProviderResource;
+import org.apache.ignite.resources.SessionContextProviderResource;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -38,7 +38,7 @@ import org.junit.runners.Parameterized;
 
 /** */
 @RunWith(Parameterized.class)
-public class ApplicationContextSqlFunctionTest extends GridCommonAbstractTest {
+public class SessionContextSqlFunctionTest extends GridCommonAbstractTest {
     /** */
     private static final String SESSION_ID = "sessionId";
 
@@ -76,7 +76,7 @@ public class ApplicationContextSqlFunctionTest extends GridCommonAbstractTest {
         cfg.setCacheConfiguration(
             new CacheConfiguration<>(DEFAULT_CACHE_NAME)
                 .setSqlSchema("PUBLIC")
-                .setSqlFunctionClasses(ApplicationContextSqlFunctions.class));
+                .setSqlFunctionClasses(SessionContextSqlFunctions.class));
 
         return cfg;
     }
@@ -106,7 +106,7 @@ public class ApplicationContextSqlFunctionTest extends GridCommonAbstractTest {
         }
 
         for (String sesId: F.asList("1", "2")) {
-            Ignite ignSes = ign.withApplicationAttributes(F.asMap(SESSION_ID, sesId));
+            Ignite ignSes = ign.withSessionAttributes(F.asMap(SESSION_ID, sesId));
 
             List<List<?>> rows = ignQuery(ignSes, "select * from PUBLIC.MYTABLE where sessionId = sessionId();");
 
@@ -126,7 +126,7 @@ public class ApplicationContextSqlFunctionTest extends GridCommonAbstractTest {
         for (int i = 0; i < 100; i++) {
             String sesId = i % 2 == 0 ? "1" : "2";
 
-            Ignite ignSes = ign.withApplicationAttributes(F.asMap(SESSION_ID, sesId));
+            Ignite ignSes = ign.withSessionAttributes(F.asMap(SESSION_ID, sesId));
 
             ignQuery(ignSes, "insert into PUBLIC.MYTABLE(id, sessionId) values (" + i + ", sessionId());");
         }
@@ -151,7 +151,7 @@ public class ApplicationContextSqlFunctionTest extends GridCommonAbstractTest {
 
         String sesId = "1";
 
-        Ignite ignSes = ign.withApplicationAttributes(F.asMap(SESSION_ID, sesId));
+        Ignite ignSes = ign.withSessionAttributes(F.asMap(SESSION_ID, sesId));
 
         List<List<?>> rows = ignQuery(ignSes, "select * from PUBLIC.MYTABLE where sessionId = (select sessionId());");
 
@@ -174,17 +174,17 @@ public class ApplicationContextSqlFunctionTest extends GridCommonAbstractTest {
     }
 
     /** */
-    public static class ApplicationContextSqlFunctions {
+    public static class SessionContextSqlFunctions {
         /** */
-        @ApplicationContextProviderResource
-        public ApplicationContextProvider appCtxProv;
+        @SessionContextProviderResource
+        public SessionContextProvider sesCtxProv;
 
         /** */
         @QuerySqlFunction
         public String sessionId() {
-            ApplicationContext appCtx = appCtxProv.getApplicationContext();
+            SessionContext sesCtx = sesCtxProv.getSessionContext();
 
-            return appCtx == null ? null : appCtx.getAttributes().get(SESSION_ID);
+            return sesCtx == null ? null : sesCtx.getAttributes().get(SESSION_ID);
         }
     }
 }

@@ -41,8 +41,8 @@ public class GridIoSecurityAwareMessage extends GridIoMessage {
     /** Security subject id that will be used during message processing on an remote node. */
     private @Nullable UUID secSubjId;
 
-    /** Application attributes. */
-    private @Nullable Map<String, String> appAttrs;
+    /** Session attributes. */
+    private @Nullable Map<String, String> sesAttrs;
 
     /**
      * No-op constructor to support {@link Externalizable} interface.
@@ -54,7 +54,7 @@ public class GridIoSecurityAwareMessage extends GridIoMessage {
 
     /**
      * @param secSubjId Security subject id.
-     * @param appAttrs Application attributes.
+     * @param sesAttrs Session attributes.
      * @param plc Policy.
      * @param topic Communication topic.
      * @param topicOrd Topic ordinal value.
@@ -65,7 +65,7 @@ public class GridIoSecurityAwareMessage extends GridIoMessage {
      */
     public GridIoSecurityAwareMessage(
         @Nullable UUID secSubjId,
-        @Nullable Map<String, String> appAttrs,
+        @Nullable Map<String, String> sesAttrs,
         byte plc,
         Object topic,
         int topicOrd,
@@ -77,7 +77,7 @@ public class GridIoSecurityAwareMessage extends GridIoMessage {
         super(plc, topic, topicOrd, msg, ordered, timeout, skipOnTimeout);
 
         this.secSubjId = secSubjId;
-        this.appAttrs = appAttrs;
+        this.sesAttrs = sesAttrs;
     }
 
     /**
@@ -88,10 +88,10 @@ public class GridIoSecurityAwareMessage extends GridIoMessage {
     }
 
     /**
-     * @return Application attributes.
+     * @return Session attributes.
      */
-    @Nullable Map<String, String> appAttrs() {
-        return appAttrs == null ? null : Collections.unmodifiableMap(appAttrs);
+    @Nullable Map<String, String> sessionAttributes() {
+        return sesAttrs == null ? null : Collections.unmodifiableMap(sesAttrs);
     }
 
     /** {@inheritDoc} */
@@ -126,7 +126,7 @@ public class GridIoSecurityAwareMessage extends GridIoMessage {
                 writer.incrementState();
 
             case 9:
-                if (!writer.writeMap("appAttrs", appAttrs, MessageCollectionItemType.STRING, MessageCollectionItemType.STRING))
+                if (!writer.writeMap("sesAttrs", sesAttrs, MessageCollectionItemType.STRING, MessageCollectionItemType.STRING))
                     return false;
 
                 writer.incrementState();
@@ -155,7 +155,7 @@ public class GridIoSecurityAwareMessage extends GridIoMessage {
                 reader.incrementState();
 
             case 9:
-                appAttrs = reader.readMap("appAttrs", MessageCollectionItemType.STRING, MessageCollectionItemType.STRING, false);
+                sesAttrs = reader.readMap("sesAttrs", MessageCollectionItemType.STRING, MessageCollectionItemType.STRING, false);
 
                 if (!reader.isLastRead())
                     return false;

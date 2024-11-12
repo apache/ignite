@@ -15,21 +15,22 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.resource;
+package org.apache.ignite.cache;
 
-import org.apache.ignite.IgniteCheckedException;
-import org.apache.ignite.cache.ApplicationContextProvider;
-import org.apache.ignite.internal.managers.deployment.GridDeployment;
+import java.util.Map;
+import org.apache.ignite.Ignite;
+import org.apache.ignite.cache.query.annotations.QuerySqlFunction;
 
-/** {@link ApplicationContextProvider} injector. */
-public class GridResourceApplicationContextProviderInjector extends GridResourceBasicInjector<ApplicationContextProvider> {
-    /** */
-    public GridResourceApplicationContextProviderInjector(ApplicationContextProvider rsrc) {
-        super(rsrc);
-    }
-
-    /** {@inheritDoc} */
-    @Override public void inject(GridResourceField fld, Object target, Class<?> depCls, GridDeployment dep) throws IgniteCheckedException {
-        super.inject(fld, target, depCls, dep);
-    }
+/**
+ * Provides access to session context in stored functions:
+ * <ul>
+ *     <li>{@link QuerySqlFunction}</li>
+ * </ul>
+ */
+public interface SessionContext {
+    /**
+     * Provdes access to session attributes set with {@link Ignite#withSessionAttributes}
+     * @return Session attributes.
+     */
+    public Map<String, String> getAttributes();
 }

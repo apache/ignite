@@ -20,58 +20,58 @@ package org.apache.ignite.internal.cache.context;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
-import org.apache.ignite.cache.ApplicationContext;
+import org.apache.ignite.cache.SessionContext;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.processors.GridProcessorAdapter;
 import org.jetbrains.annotations.Nullable;
 
-/** Processor for handling application context set by user. */
-public class ApplicationContextProcessor extends GridProcessorAdapter {
-    /** Holds application context for current thread. */
-    private final ThreadLocal<ApplicationContext> ctx = new ThreadLocal<>();
+/** Processor for handling session context. */
+public class SessionContextProcessor extends GridProcessorAdapter {
+    /** Holds session context for current thread. */
+    private final ThreadLocal<SessionContext> ctx = new ThreadLocal<>();
 
     /** */
-    public ApplicationContextProcessor(GridKernalContext ctx) {
+    public SessionContextProcessor(GridKernalContext ctx) {
         super(ctx);
     }
 
     /**
      * Set context for current thread.
      *
-     * @param appAttrs Application attributes to set.
+     * @param sesAttrs Session attributes to set.
      */
-    public AutoCloseable withApplicationContext(@Nullable Map<String, String> appAttrs) {
-        if (appAttrs == null)
+    public AutoCloseable withContext(@Nullable Map<String, String> sesAttrs) {
+        if (sesAttrs == null)
             return null;
 
-        ApplicationContextCloseable appCtx = new ApplicationContextCloseable(appAttrs);
+        SessionContextCloseable sesCtx = new SessionContextCloseable(sesAttrs);
 
-        ctx.set(appCtx);
+        ctx.set(sesCtx);
 
-        return appCtx;
+        return sesCtx;
     }
 
-    /** @return Application context for current thread. */
-    public @Nullable ApplicationContext applicationContext() {
+    /** @return Session context for current thread. */
+    public @Nullable SessionContext context() {
         return ctx.get();
     }
 
     /** */
-    private class ApplicationContextCloseable implements ApplicationContext, AutoCloseable {
-        /** Application attributes. */
+    private class SessionContextCloseable implements SessionContext, AutoCloseable {
+        /** Session attributes. */
         private final Map<String, String> attrs;
 
-        /** @param attrs Application attributes. */
-        public ApplicationContextCloseable(Map<String, String> attrs) {
+        /** @param attrs Session attributes. */
+        public SessionContextCloseable(Map<String, String> attrs) {
             this.attrs = new HashMap<>(attrs);
         }
 
-        /** */
+        /** {@inheritDoc} */
         @Override public Map<String, String> getAttributes() {
             return Collections.unmodifiableMap(attrs);
         }
 
-        /** */
+        /** Clears thread local session context. */
         @Override public void close() {
             ctx.remove();
         }

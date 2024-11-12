@@ -30,8 +30,8 @@ import org.apache.calcite.linq4j.QueryProvider;
 import org.apache.calcite.schema.SchemaPlus;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
-import org.apache.ignite.cache.ApplicationContext;
-import org.apache.ignite.cache.ApplicationContextProvider;
+import org.apache.ignite.cache.SessionContext;
+import org.apache.ignite.cache.SessionContextProvider;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.query.calcite.exec.exp.ExpressionFactory;
 import org.apache.ignite.internal.processors.query.calcite.exec.exp.ExpressionFactoryImpl;
@@ -114,8 +114,8 @@ public class ExecutionContext<Row> extends AbstractQueryContext implements DataC
     /** Objects to call UDF with injected resources. */
     private final Map<String, Object> funcTargets = new ConcurrentHashMap<>();
 
-    /** Application context provider for UDF. */
-    private final ApplicationContextProvider appCtxProv = new ApplicationContextProviderImpl();
+    /** Session context provider for UDF. */
+    private final SessionContextProvider sesCtxProv = new SessionContextProviderImpl();
 
     /** */
     private Object[] correlations = new Object[16];
@@ -376,7 +376,7 @@ public class ExecutionContext<Row> extends AbstractQueryContext implements DataC
 
                 Object target = funcCls.getConstructor().newInstance();
 
-                unwrap(GridResourceProcessor.class).injectToUserDefinedFunction(target, appCtxProv);
+                unwrap(GridResourceProcessor.class).injectToUserDefinedFunction(target, sesCtxProv);
 
                 return target;
             }
@@ -405,9 +405,9 @@ public class ExecutionContext<Row> extends AbstractQueryContext implements DataC
     }
 
     /** */
-    private class ApplicationContextProviderImpl implements ApplicationContextProvider {
-        @Override public @Nullable ApplicationContext getApplicationContext() {
-            return unwrap(ApplicationContext.class);
+    private class SessionContextProviderImpl implements SessionContextProvider {
+        @Override public @Nullable SessionContext getSessionContext() {
+            return unwrap(SessionContext.class);
         }
     }
 }

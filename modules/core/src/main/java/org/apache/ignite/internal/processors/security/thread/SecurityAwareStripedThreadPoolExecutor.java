@@ -17,7 +17,7 @@
 
 package org.apache.ignite.internal.processors.security.thread;
 
-import org.apache.ignite.internal.cache.context.ApplicationContextProcessor;
+import org.apache.ignite.internal.cache.context.SessionContextProcessor;
 import org.apache.ignite.internal.processors.security.IgniteSecurity;
 import org.apache.ignite.thread.IgniteStripedThreadPoolExecutor;
 
@@ -30,12 +30,12 @@ public class SecurityAwareStripedThreadPoolExecutor extends IgniteStripedThreadP
     private final IgniteSecurity security;
 
     /** */
-    private final ApplicationContextProcessor appCtx;
+    private final SessionContextProcessor sesCtx;
 
     /** */
     public SecurityAwareStripedThreadPoolExecutor(
         IgniteSecurity security,
-        ApplicationContextProcessor appCtx,
+        SessionContextProcessor sesCtx,
         int concurrentLvl, 
         String igniteInstanceName, 
         String threadNamePrefix,
@@ -44,12 +44,12 @@ public class SecurityAwareStripedThreadPoolExecutor extends IgniteStripedThreadP
         long keepAliveTime
     ) {
         super(concurrentLvl, igniteInstanceName, threadNamePrefix, eHnd, allowCoreThreadTimeOut, keepAliveTime);
-        this.appCtx = appCtx;
+        this.sesCtx = sesCtx;
         this.security = security;
     }
 
     /** {@inheritDoc} */
     @Override public void execute(Runnable task, int idx) {
-        super.execute(SecurityAwareRunnable.of(security, appCtx, task), idx);
+        super.execute(SecurityAwareRunnable.of(security, sesCtx, task), idx);
     }
 }

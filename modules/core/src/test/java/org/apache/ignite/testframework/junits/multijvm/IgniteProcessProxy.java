@@ -863,7 +863,7 @@ public class IgniteProcessProxy implements IgniteEx {
         throw new UnsupportedOperationException("Operation isn't supported yet.");
     }
 
-    @Override public Ignite withApplicationAttributes(Map<String, String> attrs) {
+    @Override public Ignite withSessionAttributes(Map<String, String> attrs) {
         throw new UnsupportedOperationException("Operation isn't supported yet.");
     }
 

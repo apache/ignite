@@ -23,7 +23,7 @@ import java.util.UUID;
 import java.util.concurrent.Executor;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.configuration.IgniteConfiguration;
-import org.apache.ignite.internal.cache.context.ApplicationContextProcessor;
+import org.apache.ignite.internal.cache.context.SessionContextProcessor;
 import org.apache.ignite.internal.cache.query.index.IndexProcessor;
 import org.apache.ignite.internal.cache.transform.CacheObjectTransformerProcessor;
 import org.apache.ignite.internal.managers.checkpoint.GridCheckpointManager;
@@ -648,7 +648,7 @@ public interface GridKernalContext extends Iterable<GridComponent> {
     public Executor getAsyncContinuationExecutor();
 
     /**
-     * @return Application context processor.
+     * @return Session context processor.
      */
-    public ApplicationContextProcessor applicationContext();
+    public SessionContextProcessor sessionContext();
 }

@@ -1101,7 +1101,7 @@ public class PoolProcessor extends GridProcessorAdapter {
         return ctx.security().enabled()
             ? new SecurityAwareStripedThreadPoolExecutor(
                 ctx.security(),
-                ctx.applicationContext(),
+                ctx.sessionContext(),
                 concurrentLvl,
                 igniteInstanceName,
                 threadNamePrefix,
