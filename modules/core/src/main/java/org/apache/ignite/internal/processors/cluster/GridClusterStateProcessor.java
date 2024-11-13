@@ -182,7 +182,7 @@ public class GridClusterStateProcessor extends GridProcessorAdapter implements I
     private ReadWriteMetastorage metastorage;
 
     /** */
-    private final JdkMarshaller marsh = new JdkMarshaller();
+    private final JdkMarshaller marsh;
 
     /** Updater of baseline topology. */
     private BaselineTopologyUpdater baselineTopologyUpdater;
@@ -221,6 +221,8 @@ public class GridClusterStateProcessor extends GridProcessorAdapter implements I
         super(ctx);
 
         ctx.internalSubscriptionProcessor().registerMetastorageListener(this);
+
+        marsh = ctx.marshallerContext().jdkMarshaller();
 
         distributedBaselineConfiguration = new DistributedBaselineConfiguration(
             ctx.internalSubscriptionProcessor(),
