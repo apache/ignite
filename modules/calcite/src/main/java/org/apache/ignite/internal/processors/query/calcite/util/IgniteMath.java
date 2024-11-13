@@ -415,7 +415,7 @@ public class IgniteMath {
     }
 
     /** */
-    private static BigDecimal round(Number x) {
+    static BigDecimal round(Number x) {
         return convertToBigDecimal(x).setScale(0, NUMERIC_ROUNDING_MODE);
     }
 }

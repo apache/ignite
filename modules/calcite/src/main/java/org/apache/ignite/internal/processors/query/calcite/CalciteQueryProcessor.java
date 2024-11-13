@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.processors.query.calcite;
 
+import java.lang.reflect.Field;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -26,6 +27,7 @@ import java.util.UUID;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.BiFunction;
 import java.util.function.Function;
+import java.util.stream.Stream;
 import org.apache.calcite.DataContexts;
 import org.apache.calcite.config.Lex;
 import org.apache.calcite.config.NullCollation;
@@ -33,6 +35,7 @@ import org.apache.calcite.plan.Contexts;
 import org.apache.calcite.plan.ConventionTraitDef;
 import org.apache.calcite.plan.RelTraitDef;
 import org.apache.calcite.rel.RelCollationTraitDef;
+import org.apache.calcite.rel.type.RelDataType;
 import org.apache.calcite.schema.SchemaPlus;
 import org.apache.calcite.sql.SqlCall;
 import org.apache.calcite.sql.SqlDdl;
@@ -41,14 +44,20 @@ import org.apache.calcite.sql.SqlKind;
 import org.apache.calcite.sql.SqlLiteral;
 import org.apache.calcite.sql.SqlNode;
 import org.apache.calcite.sql.SqlNodeList;
+import org.apache.calcite.sql.fun.SqlStdOperatorTable;
 import org.apache.calcite.sql.parser.SqlParser;
 import org.apache.calcite.sql.parser.SqlParserPos;
+import org.apache.calcite.sql.type.ReturnTypes;
+import org.apache.calcite.sql.type.SqlReturnTypeInference;
+import org.apache.calcite.sql.type.SqlTypeFamily;
+import org.apache.calcite.sql.type.SqlTypeName;
 import org.apache.calcite.sql.util.SqlOperatorTables;
 import org.apache.calcite.sql.util.SqlShuttle;
 import org.apache.calcite.sql.validate.SqlValidator;
 import org.apache.calcite.sql2rel.SqlToRelConverter;
 import org.apache.calcite.tools.FrameworkConfig;
 import org.apache.calcite.tools.Frameworks;
+import org.apache.ignite.IgniteException;
 import org.apache.ignite.SystemProperty;
 import org.apache.ignite.cache.query.FieldsQueryCursor;
 import org.apache.ignite.cache.query.QueryCancelledException;
@@ -118,10 +127,18 @@ import org.apache.ignite.internal.processors.query.calcite.util.Commons;
 import org.apache.ignite.internal.processors.query.calcite.util.LifecycleAware;
 import org.apache.ignite.internal.processors.query.calcite.util.Service;
 import org.apache.ignite.internal.processors.security.SecurityUtils;
+import org.apache.ignite.internal.util.IgniteUtils;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.jetbrains.annotations.Nullable;
 
+import static org.apache.calcite.sql.type.OperandTypes.DATETIME_INTERVAL;
+import static org.apache.calcite.sql.type.OperandTypes.INTERVAL_DATETIME;
+import static org.apache.calcite.sql.type.OperandTypes.INTERVAL_SAME_SAME;
+import static org.apache.calcite.sql.type.OperandTypes.NUMERIC_NUMERIC;
+import static org.apache.calcite.sql.type.OperandTypes.family;
+import static org.apache.calcite.sql.type.ReturnTypes.DECIMAL_SUM_NULLABLE;
+import static org.apache.calcite.sql.type.ReturnTypes.LEAST_RESTRICTIVE;
 import static org.apache.ignite.IgniteSystemProperties.getLong;
 import static org.apache.ignite.events.EventType.EVT_SQL_QUERY_EXECUTION;
 
@@ -140,45 +157,86 @@ public class CalciteQueryProcessor extends GridProcessorAdapter implements Query
     public static final String IGNITE_CALCITE_PLANNER_TIMEOUT = "IGNITE_CALCITE_PLANNER_TIMEOUT";
 
     /** */
-    public static final FrameworkConfig FRAMEWORK_CONFIG = Frameworks.newConfigBuilder()
-        .executor(new RexExecutorImpl(DataContexts.EMPTY))
-        .sqlToRelConverterConfig(SqlToRelConverter.config()
-            .withRemoveSortInSubQuery(false)
-            .withTrimUnusedFields(true)
-            // currently SqlToRelConverter creates not optimal plan for both optimization and execution
-            // so it's better to disable such rewriting right now
-            // TODO: remove this after IGNITE-14277
-            .withInSubQueryThreshold(Integer.MAX_VALUE)
-            .withDecorrelationEnabled(true)
-            .withExpand(false)
-            .withHintStrategyTable(HintsConfig.buildHintTable())
-        )
-        .convertletTable(IgniteConvertletTable.INSTANCE)
-        .parserConfig(
-            SqlParser.config()
-                .withParserFactory(IgniteSqlParserImpl.FACTORY)
-                .withLex(Lex.ORACLE)
-                .withConformance(IgniteSqlConformance.INSTANCE))
-        .sqlValidatorConfig(SqlValidator.Config.DEFAULT
-            .withIdentifierExpansion(true)
-            .withDefaultNullCollation(NullCollation.LOW)
-            .withSqlConformance(IgniteSqlConformance.INSTANCE)
-            .withTypeCoercionFactory(IgniteTypeCoercion::new))
-        // Dialects support.
-        .operatorTable(SqlOperatorTables.chain(IgniteStdSqlOperatorTable.INSTANCE, IgniteOwnSqlOperatorTable.instance()))
-        // Context provides a way to store data within the planner session that can be accessed in planner rules.
-        .context(Contexts.empty())
-        // Custom cost factory to use during optimization
-        .costFactory(new IgniteCostFactory())
-        .typeSystem(IgniteTypeSystem.INSTANCE)
-        .traitDefs(new RelTraitDef<?>[] {
-            ConventionTraitDef.INSTANCE,
-            RelCollationTraitDef.INSTANCE,
-            DistributionTraitDef.INSTANCE,
-            RewindabilityTraitDef.INSTANCE,
-            CorrelationTraitDef.INSTANCE,
-        })
-        .build();
+    public static final SqlReturnTypeInference TIMESTAMP_PLUSMINUS_NUMERIC = opBinding -> {
+        RelDataType first = opBinding.getOperandType(0);
+        RelDataType second = opBinding.getOperandType(1);
+        if (first.getSqlTypeName() == SqlTypeName.TIMESTAMP &&
+            (second.getSqlTypeName() == SqlTypeName.DECIMAL || second.getSqlTypeName() == SqlTypeName.INTEGER)) {
+            return first;
+        }
+        return null;
+    };
+
+    /** */
+    public static final FrameworkConfig FRAMEWORK_CONFIG;
+    static {
+        FRAMEWORK_CONFIG = Frameworks.newConfigBuilder()
+            .executor(new RexExecutorImpl(DataContexts.EMPTY))
+            .sqlToRelConverterConfig(SqlToRelConverter.config()
+                .withRemoveSortInSubQuery(false)
+                .withTrimUnusedFields(true)
+                // currently SqlToRelConverter creates not optimal plan for both optimization and execution
+                // so it's better to disable such rewriting right now
+                // TODO: remove this after IGNITE-14277
+                .withInSubQueryThreshold(Integer.MAX_VALUE)
+                .withDecorrelationEnabled(true)
+                .withExpand(false)
+                .withHintStrategyTable(HintsConfig.buildHintTable())
+            )
+            .convertletTable(IgniteConvertletTable.INSTANCE)
+            .parserConfig(
+                SqlParser.config()
+                    .withParserFactory(IgniteSqlParserImpl.FACTORY)
+                    .withLex(Lex.ORACLE)
+                    .withConformance(IgniteSqlConformance.INSTANCE))
+            .sqlValidatorConfig(SqlValidator.Config.DEFAULT
+                .withIdentifierExpansion(true)
+                .withDefaultNullCollation(NullCollation.LOW)
+                .withSqlConformance(IgniteSqlConformance.INSTANCE)
+                .withTypeCoercionFactory(IgniteTypeCoercion::new))
+            // Dialects support.
+            .operatorTable(SqlOperatorTables.chain(IgniteStdSqlOperatorTable.INSTANCE, IgniteOwnSqlOperatorTable.instance()))
+            // Context provides a way to store data within the planner session that can be accessed in planner rules.
+            .context(Contexts.empty())
+            // Custom cost factory to use during optimization
+            .costFactory(new IgniteCostFactory())
+            .typeSystem(IgniteTypeSystem.INSTANCE)
+            .traitDefs(new RelTraitDef<?>[]{
+                ConventionTraitDef.INSTANCE,
+                RelCollationTraitDef.INSTANCE,
+                DistributionTraitDef.INSTANCE,
+                RewindabilityTraitDef.INSTANCE,
+                CorrelationTraitDef.INSTANCE,
+            })
+            .build();
+
+
+        Stream.of(SqlStdOperatorTable.PLUS, SqlStdOperatorTable.MINUS).forEach(op -> {
+            Class<?> opClass = op.getClass();
+
+            Field fld = IgniteUtils.findField(opClass, "operandTypeChecker");
+            try {
+                fld.set(op, NUMERIC_NUMERIC
+                    .or(INTERVAL_SAME_SAME)
+                    .or(family(SqlTypeFamily.DATETIME, SqlTypeFamily.NUMERIC))
+                    .or(family(SqlTypeFamily.DATETIME, SqlTypeFamily.DECIMAL))
+                    .or(DATETIME_INTERVAL)
+                    .or(INTERVAL_DATETIME));
+            }
+            catch (IllegalAccessException e) {
+                throw new IgniteException(e);
+            }
+
+            fld = IgniteUtils.findField(opClass, "returnTypeInference");
+            try {
+                fld.set(op, ReturnTypes.chain(DECIMAL_SUM_NULLABLE, TIMESTAMP_PLUSMINUS_NUMERIC, LEAST_RESTRICTIVE));
+            }
+            catch (IllegalAccessException e) {
+                throw new IgniteException(e);
+            }
+
+        });
+    }
 
     /** Query planner timeout. */
     private final long queryPlannerTimeout = getLong(IGNITE_CALCITE_PLANNER_TIMEOUT,
