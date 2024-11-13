@@ -195,12 +195,8 @@ public class JdbcQueryExecuteRequest extends JdbcRequest {
 
         args = new Object[argsNum];
 
-        for (int i = 0; i < argsNum; ++i) {
+        for (int i = 0; i < argsNum; ++i)
             args[i] = JdbcUtils.readObject(reader, protoCtx);
-
-            if (args[i] instanceof JdbcBinaryBuffer)
-                args[i] = ((JdbcBinaryBuffer)args[i]).bytes();
-        }
 
         if (protoCtx.isAutoCommitSupported())
             autoCommit = reader.readBoolean();

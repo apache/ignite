@@ -65,7 +65,9 @@ public class JdbcUtils {
                 List<Object> col = new ArrayList<>(colsSize);
 
                 for (int colCnt = 0; colCnt < colsSize; ++colCnt)
-                    col.add(readObject(reader, protoCtx));
+                    col.add(SqlListenerUtils.readObject(reader.readByte(), reader,
+                            protoCtx.isFeatureSupported(JdbcThinFeature.CUSTOM_OBJECT), protoCtx.keepBinary(),
+                            false));
 
                 items.add(col);
             }

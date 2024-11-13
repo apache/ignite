@@ -73,7 +73,21 @@ public abstract class SqlListenerUtils {
      * @throws BinaryObjectException On error.
      */
     @Nullable public static Object readObject(byte type, BinaryReaderExImpl reader, boolean binObjAllow,
-        boolean keepBinary) throws BinaryObjectException {
+                                              boolean keepBinary) throws BinaryObjectException {
+        return readObject(type, reader, binObjAllow, keepBinary, true);
+    }
+
+    /**
+     * @param type Object type.
+     * @param reader Reader.
+     * @param binObjAllow Allow to read non plaint objects.
+     * @param keepBinary Whether to deserialize objects or keep in binary format.
+     * @param createByteArrayCopy Whether to return byte array copy.
+     * @return Read object.
+     * @throws BinaryObjectException On error.
+     */
+    @Nullable public static Object readObject(byte type, BinaryReaderExImpl reader, boolean binObjAllow,
+        boolean keepBinary, boolean createByteArrayCopy) throws BinaryObjectException {
         switch (type) {
             case GridBinaryMarshaller.NULL:
                 return null;
@@ -124,7 +138,7 @@ public abstract class SqlListenerUtils {
                 return BinaryUtils.doReadBooleanArray(reader.in());
 
             case GridBinaryMarshaller.BYTE_ARR:
-                return readByteArray(reader);
+                return readByteArray(reader, createByteArrayCopy);
 
             case GridBinaryMarshaller.CHAR_ARR:
                 return BinaryUtils.doReadCharArray(reader.in());
@@ -187,8 +201,8 @@ public abstract class SqlListenerUtils {
      * @param reader Reader.
      * @return Either byte[] or {@link JdbcBinaryBuffer}.
      */
-    private static Object readByteArray(BinaryReaderExImpl reader) {
-        if (reader.in().hasArray()) {
+    private static Object readByteArray(BinaryReaderExImpl reader, boolean createByteArrayCopy) {
+        if (!createByteArrayCopy && reader.in().hasArray()) {
             int len = reader.in().readInt();
 
             int position = reader.in().position();
