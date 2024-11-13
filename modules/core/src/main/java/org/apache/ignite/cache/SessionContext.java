@@ -18,14 +18,10 @@
 package org.apache.ignite.cache;
 
 import org.apache.ignite.Ignite;
-import org.apache.ignite.cache.query.annotations.QuerySqlFunction;
 import org.jetbrains.annotations.Nullable;
 
 /**
- * Provides access to attributes set with {@link Ignite#withApplicationAttributes} in functions:
- * <ul>
- *     <li>{@link QuerySqlFunction}</li>
- * </ul>
+ * Provides access to attributes set with {@link Ignite#withApplicationAttributes}.
  */
 public interface SessionContext {
     /**

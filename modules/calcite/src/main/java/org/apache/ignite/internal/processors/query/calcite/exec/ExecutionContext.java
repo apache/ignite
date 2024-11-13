@@ -363,7 +363,7 @@ public class ExecutionContext<Row> extends AbstractQueryContext implements DataC
     }
 
     /**
-     * Instantiate an object contained a user defined function and inject resources into it.
+     * Return an object contained a user defined function. If not exist yet, then instantiate the object and inject resources into it.
      * Used by {@link ReflectiveCallNotNullImplementor} while it is preparing user function call.
      *
      * @param udfClsName Classname of the class contained UDF.
@@ -381,7 +381,7 @@ public class ExecutionContext<Row> extends AbstractQueryContext implements DataC
                 return target;
             }
             catch (Exception e) {
-                throw new IgniteException("Failed to construct object for UDF. " +
+                throw new IgniteException("Failed to instantiate an object for UDF. " +
                     "Class " + udfClsName + " must have public zero-args constructor.", e);
             }
         });

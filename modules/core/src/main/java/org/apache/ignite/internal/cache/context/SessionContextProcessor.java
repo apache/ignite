@@ -55,11 +55,12 @@ public class SessionContextProcessor extends GridProcessorAdapter {
         return ctx.get();
     }
 
-    /** */
+    /** Clears session context for current thread. */
     public void clear() {
         ctx.remove();
     }
 
+    /** @return Session attributes for current context. */
     public @Nullable Map<String, String> attributes() {
         SessionContextCloseable ses = (SessionContextCloseable)ctx.get();
 
