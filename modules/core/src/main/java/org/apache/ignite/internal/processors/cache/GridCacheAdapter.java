@@ -1060,9 +1060,10 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
 
     /** {@inheritDoc} */
     @Override public void clear() throws IgniteCheckedException {
-        if (ctx.transactional() && ctx.grid().transactions().tx() != null)
+        if (ctx.transactional() && ctx.grid().transactions().tx() != null) {
             throw new CacheException("Failed to invoke a non-transactional operation within a transaction: " +
                 "IgniteCache.clear().");
+        }
 
         clear((Set<? extends K>)null);
     }

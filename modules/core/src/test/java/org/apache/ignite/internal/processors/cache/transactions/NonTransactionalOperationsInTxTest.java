@@ -32,7 +32,7 @@ public class NonTransactionalOperationsInTxTest extends GridCommonAbstractTest {
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(gridName)
-                .setCacheConfiguration(defaultCacheConfiguration().setAtomicityMode(TRANSACTIONAL));
+            .setCacheConfiguration(defaultCacheConfiguration().setAtomicityMode(TRANSACTIONAL));
 
         return cfg;
     }
@@ -62,6 +62,7 @@ public class NonTransactionalOperationsInTxTest extends GridCommonAbstractTest {
 
     /**
      * It should throw exception.
+     *
      * @param ignite Ignite.
      */
     private void checkIgniteCacheClear(IgniteEx ignite) {
@@ -70,15 +71,15 @@ public class NonTransactionalOperationsInTxTest extends GridCommonAbstractTest {
         cache.put(1, 1);
 
         assertThrows(null,
-                () -> doInTransaction(ignite, () -> {
-                    cache.put(2, 2);
+            () -> doInTransaction(ignite, () -> {
+                cache.put(2, 2);
 
-                    cache.clear();
+                cache.clear();
 
-                    return null;
-                }),
-                CacheException.class,
-                "Failed to invoke a non-transactional operation within a transaction"
+                return null;
+            }),
+            CacheException.class,
+            "Failed to invoke a non-transactional operation within a transaction"
         );
 
         assertTrue(cache.containsKey(1));
