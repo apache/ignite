@@ -20,9 +20,7 @@ package org.apache.ignite.cache;
 import org.jetbrains.annotations.Nullable;
 
 /**
- * Provides access to session context in stored functions.
- *
- * @see SessionContext
+ * Provides access to session context.
  */
 public interface SessionContextProvider {
     /** @return Session context. */

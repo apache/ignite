@@ -796,14 +796,6 @@ public interface Ignite extends AutoCloseable {
     public @NotNull TracingConfigurationManager tracingConfiguration();
 
     /**
-     * Run {@link SqlFieldsQuery}.
-     *
-     * @param qry SqlFieldsQuery.
-     * @return Cursor.
-     */
-    public FieldsQueryCursor<List<?>> query(SqlFieldsQuery qry);
-
-    /**
      * Underlying operations of returned Ignite instance are aware of application attributes.
      * User defined functions can access the attributes with {@link SessionContextProvider} API.
      * List of supported types of user defined functions that have access the attributes:

@@ -60,7 +60,7 @@ public class ReflectiveCallNotNullImplementor implements NotNullImplementor {
             final Expression target = Expressions.convert_(
                 Expressions.call(
                     translator.getRoot(),
-                    Types.lookupMethod(ExecutionContext.class, "target", String.class),
+                    Types.lookupMethod(ExecutionContext.class, "udfObject", String.class),
                     Expressions.constant(method.getDeclaringClass().getName())),
                 method.getDeclaringClass());
 

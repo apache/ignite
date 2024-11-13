@@ -29,6 +29,7 @@ import org.apache.ignite.calcite.CalciteQueryEngineConfiguration;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.SqlConfiguration;
+import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.resources.SessionContextProviderResource;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
@@ -169,8 +170,49 @@ public class SessionContextSqlFunctionTest extends GridCommonAbstractTest {
     }
 
     /** */
+    @Test
+    public void testOverwriteApplicationAttributes() {
+        Ignite ignApp = ign;
+
+        for (int i = 0; i < 100; i++) {
+            String sesId = i % 2 == 0 ? "1" : "2";
+
+            ignApp = ignApp.withApplicationAttributes(F.asMap(SESSION_ID, sesId));
+
+            ignQuery(ignApp, "insert into PUBLIC.MYTABLE(id, sessionId) values (" + i + ", sessionId());");
+        }
+
+        List<List<?>> res = ignQuery(ign, "select * from PUBLIC.MYTABLE where sessionId = 1");
+
+        assertEquals(50, res.size());
+
+        res = ignQuery(ign, "select * from PUBLIC.MYTABLE where sessionId = 2");
+
+        assertEquals(50, res.size());
+    }
+
+    /** */
+    @Test
+    public void testMultithreadApplication() throws Exception {
+        String sesId = "1";
+
+        Ignite ignApp = ign.withApplicationAttributes(F.asMap(SESSION_ID, sesId));
+
+        IgniteInternalFuture<?> insertFut = multithreadedAsync(() -> {
+            for (int i = 0; i < 100; i++)
+                ignQuery(ignApp, "insert into PUBLIC.MYTABLE(id, sessionId) values (" + i + ", sessionId());");
+        }, 1, "insert");
+
+        insertFut.get(getTestTimeout());
+
+        List<List<?>> res = ignQuery(ign, "select * from PUBLIC.MYTABLE where sessionId = " + sesId);
+
+        assertEquals(100, res.size());
+    }
+
+    /** */
     private List<List<?>> ignQuery(Ignite ign, String sql, Object... args) {
-        return ign.query(new SqlFieldsQuery(sql).setArgs(args)).getAll();
+        return ign.cache(DEFAULT_CACHE_NAME).query(new SqlFieldsQuery(sql).setArgs(args)).getAll();
     }
 
     /** */

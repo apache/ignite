@@ -52,12 +52,11 @@ import java.lang.annotation.Target;
  *
  *         &#64;QuerySqlFunction
  *         public String sessionId() {
- *             SessionContext sesCtx = sesCtxProv.getSessionContext();
- *
- *             return sesCtx.getAttributes().get("SESSION_ID");
+ *             return sesCtxProv.getSessionContext().getAttribute("SESSION_ID");
  *         }
  *     }
- * </pre> * Note, accessing to the attributes is available in the Calcite query engine only. In a such case a class must have public
+ * </pre>
+ * Note, accessing to the attributes is available in the Calcite query engine only. In a such case a class must have public
  * zero-args constructor.
  */
 @Documented

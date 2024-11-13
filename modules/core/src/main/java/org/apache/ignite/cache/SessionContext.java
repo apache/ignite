@@ -22,15 +22,15 @@ import org.apache.ignite.cache.query.annotations.QuerySqlFunction;
 import org.jetbrains.annotations.Nullable;
 
 /**
- * Provides access to session context in stored functions:
+ * Provides access to attributes set with {@link Ignite#withApplicationAttributes} in functions:
  * <ul>
  *     <li>{@link QuerySqlFunction}</li>
  * </ul>
  */
 public interface SessionContext {
     /**
-     * Provdes access to session attributes set with {@link Ignite#withApplicationAttributes}
-     * @return Session attributes.
-     */
+     * @param name Attribute name.
+     * @return Attribute value, or {@code null} if not speicifed.
+    .*/
     public @Nullable String getAttribute(String name);
 }

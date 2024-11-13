@@ -18,6 +18,9 @@
 package org.apache.ignite.internal.processors.cache;
 
 import java.io.Serializable;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.Map;
 import javax.cache.expiry.ExpiryPolicy;
 import org.apache.ignite.cache.ReadRepairStrategy;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
@@ -54,6 +57,9 @@ public class CacheOperationContext implements Serializable {
     /** Data center Id. */
     private final Byte dataCenterId;
 
+    /** Application attributes. */
+    private final Map<String, String> appAttrs;
+
     /**
      * Constructor with default values.
      */
@@ -65,6 +71,7 @@ public class CacheOperationContext implements Serializable {
         recovery = false;
         readRepairStrategy = null;
         dataCenterId = null;
+        appAttrs = null;
     }
 
     /**
@@ -73,6 +80,7 @@ public class CacheOperationContext implements Serializable {
      * @param expiryPlc Expiry policy.
      * @param dataCenterId Data center id.
      * @param readRepairStrategy Read-repair strategy.
+     * @param appAttrs Application attributes.
      */
     public CacheOperationContext(
         boolean skipStore,
@@ -81,7 +89,8 @@ public class CacheOperationContext implements Serializable {
         boolean noRetries,
         @Nullable Byte dataCenterId,
         boolean recovery,
-        @Nullable ReadRepairStrategy readRepairStrategy
+        @Nullable ReadRepairStrategy readRepairStrategy,
+        @Nullable Map<String, String> appAttrs
     ) {
         this.skipStore = skipStore;
         this.keepBinary = keepBinary;
@@ -90,6 +99,7 @@ public class CacheOperationContext implements Serializable {
         this.dataCenterId = dataCenterId;
         this.recovery = recovery;
         this.readRepairStrategy = readRepairStrategy;
+        this.appAttrs = appAttrs == null ? null : new HashMap<>(appAttrs);
     }
 
     /**
@@ -119,7 +129,8 @@ public class CacheOperationContext implements Serializable {
             noRetries,
             dataCenterId,
             recovery,
-            readRepairStrategy);
+            readRepairStrategy,
+            appAttrs);
     }
 
     /**
@@ -152,7 +163,8 @@ public class CacheOperationContext implements Serializable {
             noRetries,
             dataCenterId,
             recovery,
-            readRepairStrategy);
+            readRepairStrategy,
+            appAttrs);
     }
 
     /**
@@ -176,7 +188,8 @@ public class CacheOperationContext implements Serializable {
             noRetries,
             dataCenterId,
             recovery,
-            readRepairStrategy);
+            readRepairStrategy,
+            appAttrs);
     }
 
     /**
@@ -191,7 +204,8 @@ public class CacheOperationContext implements Serializable {
             noRetries,
             dataCenterId,
             recovery,
-            readRepairStrategy);
+            readRepairStrategy,
+            appAttrs);
     }
 
     /**
@@ -206,7 +220,8 @@ public class CacheOperationContext implements Serializable {
             noRetries,
             dataCenterId,
             recovery,
-            readRepairStrategy);
+            readRepairStrategy,
+            appAttrs);
     }
 
     /**
@@ -221,7 +236,8 @@ public class CacheOperationContext implements Serializable {
             noRetries,
             dataCenterId,
             recovery,
-            readRepairStrategy);
+            readRepairStrategy,
+            appAttrs);
     }
 
     /**
@@ -236,7 +252,24 @@ public class CacheOperationContext implements Serializable {
             noRetries,
             dataCenterId,
             recovery,
-            readRepairStrategy);
+            readRepairStrategy,
+            appAttrs);
+    }
+
+    /**
+     * @param appAttrs Application attributes.
+     * @return New instance of CacheOperationContext with application attributes.
+     */
+    public CacheOperationContext setApplicationAttributes(Map<String, String> appAttrs) {
+        return new CacheOperationContext(
+            skipStore,
+            keepBinary,
+            expiryPlc,
+            noRetries,
+            dataCenterId,
+            recovery,
+            readRepairStrategy,
+            appAttrs);
     }
 
     /**
@@ -258,6 +291,13 @@ public class CacheOperationContext implements Serializable {
      */
     public boolean noRetries() {
         return noRetries;
+    }
+
+    /**
+     * @return Application attributes.
+     */
+    public Map<String, String> applicationAttributes() {
+        return appAttrs == null ? null : Collections.unmodifiableMap(appAttrs);
     }
 
     /** {@inheritDoc} */

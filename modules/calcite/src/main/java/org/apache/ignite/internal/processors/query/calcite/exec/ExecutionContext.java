@@ -111,10 +111,10 @@ public class ExecutionContext<Row> extends AbstractQueryContext implements DataC
     /** */
     private final long startTs;
 
-    /** Objects to call UDF with injected resources. */
-    private final Map<String, Object> funcTargets = new ConcurrentHashMap<>();
+    /** Map associates UDF name to instance of class that contains this UDF. */
+    private final Map<String, Object> udfObjs = new ConcurrentHashMap<>();
 
-    /** Session context provider for UDF. */
+    /** Session context provider injected into UDF targets. */
     private final SessionContextProvider sesCtxProv = new SessionContextProviderImpl();
 
     /** */
@@ -363,16 +363,16 @@ public class ExecutionContext<Row> extends AbstractQueryContext implements DataC
     }
 
     /**
-     * Create an object contained a user defined function and inject resources.
-     * Used by {@link ReflectiveCallNotNullImplementor} while prepare user function call.
+     * Instantiate an object contained a user defined function and inject resources into it.
+     * Used by {@link ReflectiveCallNotNullImplementor} while it is preparing user function call.
      *
-     * @param targetCls Classname of the object.
+     * @param udfClsName Classname of the class contained UDF.
      * @return Object with injected resources.
      */
-    public Object target(String targetCls) {
-        return funcTargets.computeIfAbsent(targetCls, ignore -> {
+    public Object udfObject(String udfClsName) {
+        return udfObjs.computeIfAbsent(udfClsName, ignore -> {
             try {
-                Class<?> funcCls = getClass().getClassLoader().loadClass(targetCls);
+                Class<?> funcCls = getClass().getClassLoader().loadClass(udfClsName);
 
                 Object target = funcCls.getConstructor().newInstance();
 
@@ -382,7 +382,7 @@ public class ExecutionContext<Row> extends AbstractQueryContext implements DataC
             }
             catch (Exception e) {
                 throw new IgniteException("Failed to construct object for UDF. " +
-                    "Class " + targetCls + " must have public zero-args constructor.", e);
+                    "Class " + udfClsName + " must have public zero-args constructor.", e);
             }
         });
     }

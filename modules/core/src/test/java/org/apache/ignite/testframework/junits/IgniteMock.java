@@ -18,7 +18,6 @@
 package org.apache.ignite.testframework.junits;
 
 import java.util.Collection;
-import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.ExecutorService;
@@ -54,8 +53,6 @@ import org.apache.ignite.MemoryMetrics;
 import org.apache.ignite.binary.BinaryObjectBuilder;
 import org.apache.ignite.binary.BinaryObjectException;
 import org.apache.ignite.cache.affinity.Affinity;
-import org.apache.ignite.cache.query.FieldsQueryCursor;
-import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.cluster.ClusterGroup;
 import org.apache.ignite.configuration.AtomicConfiguration;
 import org.apache.ignite.configuration.CacheConfiguration;
@@ -496,11 +493,6 @@ public class IgniteMock implements Ignite {
     /** {@inheritDoc} */
     @Override public @NotNull TracingConfigurationManager tracingConfiguration() {
         return NoopTracingConfigurationManager.INSTANCE;
-    }
-
-    /** {@inheritDoc} */
-    @Override public FieldsQueryCursor<List<?>> query(SqlFieldsQuery qry) {
-        return null;
     }
 
     /** {@inheritDoc} */

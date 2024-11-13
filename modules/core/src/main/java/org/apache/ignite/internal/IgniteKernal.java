@@ -74,8 +74,6 @@ import org.apache.ignite.IgniteTransactions;
 import org.apache.ignite.Ignition;
 import org.apache.ignite.MemoryMetrics;
 import org.apache.ignite.cache.affinity.Affinity;
-import org.apache.ignite.cache.query.FieldsQueryCursor;
-import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.cluster.BaselineNode;
 import org.apache.ignite.cluster.ClusterGroup;
 import org.apache.ignite.cluster.ClusterNode;
@@ -2872,11 +2870,6 @@ public class IgniteKernal implements IgniteEx, Externalizable {
         finally {
             unguard();
         }
-    }
-
-    /** {@inheritDoc} */
-    @Override public FieldsQueryCursor<List<?>> query(SqlFieldsQuery qry) {
-        return ctx.query().querySqlFields(qry, false);
     }
 
     /** {@inheritDoc} */

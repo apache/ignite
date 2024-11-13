@@ -19,9 +19,9 @@ package org.apache.ignite.internal;
 
 import java.util.Collection;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ExecutorService;
+import java.util.stream.Collectors;
 import javax.cache.CacheException;
 import org.apache.ignite.DataRegionMetrics;
 import org.apache.ignite.Ignite;
@@ -50,14 +50,13 @@ import org.apache.ignite.IgniteSnapshot;
 import org.apache.ignite.IgniteTransactions;
 import org.apache.ignite.MemoryMetrics;
 import org.apache.ignite.cache.affinity.Affinity;
-import org.apache.ignite.cache.query.FieldsQueryCursor;
-import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.cluster.ClusterGroup;
 import org.apache.ignite.configuration.AtomicConfiguration;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.CollectionConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.NearCacheConfiguration;
+import org.apache.ignite.internal.processors.cache.IgniteCacheProxy;
 import org.apache.ignite.internal.util.typedef.internal.A;
 import org.apache.ignite.lang.IgniteProductVersion;
 import org.apache.ignite.metric.IgniteMetrics;
@@ -80,20 +79,84 @@ public class IgniteApplicationAttributesAware implements Ignite {
      * @param attrs Application attributes.
      */
     public IgniteApplicationAttributesAware(IgniteEx delegate, Map<String, String> attrs) {
-        A.notNull(attrs, "attrs");
+        A.notNull(attrs, "application attributes");
 
         this.delegate = delegate;
         this.attrs = new HashMap<>(attrs);
     }
 
+    /** */
+    private <K, V> IgniteCache<K, V> withApplicationAttributes(IgniteCache<K, V> cache) {
+        return ((IgniteCacheProxy<K, V>)cache).withApplicationAttributes(attrs);
+    }
+
     /** {@inheritDoc} */
-    @Override public FieldsQueryCursor<List<?>> query(SqlFieldsQuery qry) {
-        try (AutoCloseable ignored = delegate.context().sessionContext().withContext(attrs)) {
-            return delegate.query(qry);
-        }
-        catch (Exception e) {
-            throw new IgniteException("Failed to close SessionContext", e);
-        }
+    @Override public <K, V> IgniteCache<K, V> createCache(CacheConfiguration<K, V> cacheCfg) throws CacheException {
+        return withApplicationAttributes(delegate.createCache(cacheCfg));
+    }
+
+    /** {@inheritDoc} */
+    @Override public Collection<IgniteCache> createCaches(Collection<CacheConfiguration> cacheCfgs) throws CacheException {
+        return delegate.createCaches(cacheCfgs)
+            .stream()
+            .map(c -> withApplicationAttributes(c))
+            .collect(Collectors.toList());
+    }
+
+    /** {@inheritDoc} */
+    @Override public <K, V> IgniteCache<K, V> createCache(String cacheName) throws CacheException {
+        return withApplicationAttributes(delegate.createCache(cacheName));
+    }
+
+    /** {@inheritDoc} */
+    @Override public <K, V> IgniteCache<K, V> getOrCreateCache(CacheConfiguration<K, V> cacheCfg) throws CacheException {
+        return withApplicationAttributes(delegate.getOrCreateCache(cacheCfg));
+    }
+
+    /** {@inheritDoc} */
+    @Override public <K, V> IgniteCache<K, V> getOrCreateCache(String cacheName) throws CacheException {
+        return withApplicationAttributes(delegate.getOrCreateCache(cacheName));
+    }
+
+    /** {@inheritDoc} */
+    @Override public Collection<IgniteCache> getOrCreateCaches(Collection<CacheConfiguration> cacheCfgs) throws CacheException {
+        return delegate.getOrCreateCaches(cacheCfgs)
+            .stream()
+            .map(c -> withApplicationAttributes(c))
+            .collect(Collectors.toList());
+    }
+
+    /** {@inheritDoc} */
+    @Override public <K, V> IgniteCache<K, V> createCache(
+        CacheConfiguration<K, V> cacheCfg, NearCacheConfiguration<K, V> nearCfg
+    ) throws CacheException {
+        return withApplicationAttributes(delegate.createCache(cacheCfg, nearCfg));
+    }
+
+    /** {@inheritDoc} */
+    @Override public <K, V> IgniteCache<K, V> getOrCreateCache(
+        CacheConfiguration<K, V> cacheCfg, NearCacheConfiguration<K, V> nearCfg
+    ) throws CacheException {
+        return withApplicationAttributes(delegate.getOrCreateCache(cacheCfg, nearCfg));
+    }
+
+    /** {@inheritDoc} */
+    @Override public <K, V> IgniteCache<K, V> createNearCache(
+        String cacheName, NearCacheConfiguration<K, V> nearCfg
+    ) throws CacheException {
+        return withApplicationAttributes(delegate.createNearCache(cacheName, nearCfg));
+    }
+
+    /** {@inheritDoc} */
+    @Override public <K, V> IgniteCache<K, V> getOrCreateNearCache(
+        String cacheName, NearCacheConfiguration<K, V> nearCfg
+    ) throws CacheException {
+        return withApplicationAttributes(delegate.getOrCreateNearCache(cacheName, nearCfg));
+    }
+
+    /** {@inheritDoc} */
+    @Override public <K, V> IgniteCache<K, V> cache(String name) throws CacheException {
+        return withApplicationAttributes(delegate.cache(name));
     }
 
     /** {@inheritDoc} */
@@ -182,66 +245,8 @@ public class IgniteApplicationAttributesAware implements Ignite {
     }
 
     /** {@inheritDoc} */
-    @Override public <K, V> IgniteCache<K, V> createCache(CacheConfiguration<K, V> cacheCfg) throws CacheException {
-        return delegate.createCache(cacheCfg);
-    }
-
-    /** {@inheritDoc} */
-    @Override public Collection<IgniteCache> createCaches(Collection<CacheConfiguration> cacheCfgs) throws CacheException {
-        return delegate.createCaches(cacheCfgs);
-    }
-
-    /** {@inheritDoc} */
-    @Override public <K, V> IgniteCache<K, V> createCache(String cacheName) throws CacheException {
-        return delegate.createCache(cacheName);
-    }
-
-    /** {@inheritDoc} */
-    @Override public <K, V> IgniteCache<K, V> getOrCreateCache(CacheConfiguration<K, V> cacheCfg) throws CacheException {
-        return delegate.getOrCreateCache(cacheCfg);
-    }
-
-    /** {@inheritDoc} */
-    @Override public <K, V> IgniteCache<K, V> getOrCreateCache(String cacheName) throws CacheException {
-        return delegate.getOrCreateCache(cacheName);
-    }
-
-    /** {@inheritDoc} */
-    @Override public Collection<IgniteCache> getOrCreateCaches(Collection<CacheConfiguration> cacheCfgs) throws CacheException {
-        return delegate.getOrCreateCaches(cacheCfgs);
-    }
-
-    /** {@inheritDoc} */
     @Override public <K, V> void addCacheConfiguration(CacheConfiguration<K, V> cacheCfg) throws CacheException {
         delegate.addCacheConfiguration(cacheCfg);
-    }
-
-    /** {@inheritDoc} */
-    @Override public <K, V> IgniteCache<K, V> createCache(
-        CacheConfiguration<K, V> cacheCfg, NearCacheConfiguration<K, V> nearCfg
-    ) throws CacheException {
-        return delegate.createCache(cacheCfg, nearCfg);
-    }
-
-    /** {@inheritDoc} */
-    @Override public <K, V> IgniteCache<K, V> getOrCreateCache(
-        CacheConfiguration<K, V> cacheCfg, NearCacheConfiguration<K, V> nearCfg
-    ) throws CacheException {
-        return delegate.getOrCreateCache(cacheCfg, nearCfg);
-    }
-
-    /** {@inheritDoc} */
-    @Override public <K, V> IgniteCache<K, V> createNearCache(
-        String cacheName, NearCacheConfiguration<K, V> nearCfg
-    ) throws CacheException {
-        return delegate.createNearCache(cacheName, nearCfg);
-    }
-
-    /** {@inheritDoc} */
-    @Override public <K, V> IgniteCache<K, V> getOrCreateNearCache(
-        String cacheName, NearCacheConfiguration<K, V> nearCfg
-    ) throws CacheException {
-        return delegate.getOrCreateNearCache(cacheName, nearCfg);
     }
 
     /** {@inheritDoc} */
@@ -252,11 +257,6 @@ public class IgniteApplicationAttributesAware implements Ignite {
     /** {@inheritDoc} */
     @Override public void destroyCaches(Collection<String> cacheNames) throws CacheException {
         delegate.destroyCaches(cacheNames);
-    }
-
-    /** {@inheritDoc} */
-    @Override public <K, V> IgniteCache<K, V> cache(String name) throws CacheException {
-        return delegate.cache(name);
     }
 
     /** {@inheritDoc} */
