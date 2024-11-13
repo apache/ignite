@@ -918,7 +918,7 @@ class ServerImpl extends TcpDiscoveryImpl {
 
                         if (nodeId != null && !nodeAlive(nodeId)) {
                             logPingError(errMsgPrefix + "Node has left or is leaving topology. " +
-                                    "Cause: " + e.getMessage(), logError);
+                                "Cause: " + e.getMessage(), logError);
 
                             fut.onDone((IgniteBiTuple<UUID, Boolean>)null);
 
@@ -934,7 +934,7 @@ class ServerImpl extends TcpDiscoveryImpl {
 
                         if (!openedSock && reconCnt == 2) {
                             logPingError(errMsgPrefix + "Was unable to open the socket at all. " +
-                                    "Cause: " + e.getMessage(), logError);
+                                "Cause: " + e.getMessage(), logError);
 
                             break;
                         }
@@ -942,21 +942,21 @@ class ServerImpl extends TcpDiscoveryImpl {
                         if (IgniteSpiOperationTimeoutHelper.checkFailureTimeoutReached(e)
                             && (spi.failureDetectionTimeoutEnabled() || timeout != 0)) {
                             logPingError(errMsgPrefix + "Reached the timeout " +
-                                    (timeout == 0 ? spi.failureDetectionTimeout() : timeout) +
-                                    "ms. Cause: " + e.getMessage(), logError);
+                                (timeout == 0 ? spi.failureDetectionTimeout() : timeout) +
+                                "ms. Cause: " + e.getMessage(), logError);
 
                             break;
                         }
                         else if (!spi.failureDetectionTimeoutEnabled() && reconCnt == spi.getReconnectCount()) {
                             logPingError(errMsgPrefix + "Reached the reconnection count spi.getReconnectCount(). " +
-                                    "Cause: " + e.getMessage(), logError);
+                                "Cause: " + e.getMessage(), logError);
 
                             break;
                         }
 
                         if (spi.isNodeStopping0()) {
                             logPingError(errMsgPrefix + "Current node is stopping. " +
-                                    "Cause: " + e.getMessage(), logError);
+                                "Cause: " + e.getMessage(), logError);
 
                             break;
                         }
@@ -7310,7 +7310,7 @@ class ServerImpl extends TcpDiscoveryImpl {
                             try {
                                 if (liveAddrHolder.get() == null) {
                                     UUID id = pingNode(addr, node.id(), null, timeoutHelper.nextTimeoutChunk(perAddrTimeout),
-                                            true).get1();
+                                        true).get1();
 
                                     assert id == null || id.equals(node.id());
 

@@ -2223,8 +2223,8 @@ public class TcpDiscoverySelfTest extends GridCommonAbstractTest {
         testLog = new ListeningTestLogger(log);
 
         LogListener lsnr = LogListener
-                .matches(Pattern.compile("Failed to ping node \\[.*\\]\\. Reached the timeout"))
-                .build();
+            .matches(Pattern.compile("Failed to ping node \\[.*\\]\\. Reached the timeout"))
+            .build();
 
         testLog.registerListener(lsnr);
 
