@@ -17,7 +17,6 @@
 
 package org.apache.ignite.internal.cache.context;
 
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 import org.apache.ignite.cache.SessionContext;
@@ -56,6 +55,12 @@ public class SessionContextProcessor extends GridProcessorAdapter {
         return ctx.get();
     }
 
+    public @Nullable Map<String, String> attributes() {
+        SessionContextCloseable ses = (SessionContextCloseable)ctx.get();
+
+        return ses == null ? null : ses.attrs;
+    }
+
     /** */
     private class SessionContextCloseable implements SessionContext, AutoCloseable {
         /** Session attributes. */
@@ -67,8 +72,8 @@ public class SessionContextProcessor extends GridProcessorAdapter {
         }
 
         /** {@inheritDoc} */
-        @Override public Map<String, String> getAttributes() {
-            return Collections.unmodifiableMap(attrs);
+        @Override public @Nullable String getAttribute(String name) {
+            return attrs.get(name);
         }
 
         /** Clears thread local session context. */

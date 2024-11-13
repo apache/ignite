@@ -504,7 +504,7 @@ public class IgniteMock implements Ignite {
     }
 
     /** {@inheritDoc} */
-    @Override public Ignite withSessionAttributes(Map<String, String> attrs) {
+    @Override public Ignite withApplicationAttributes(Map<String, String> attrs) {
         return null;
     }
 

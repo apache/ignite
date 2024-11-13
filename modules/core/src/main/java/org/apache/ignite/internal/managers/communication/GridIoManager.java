@@ -71,7 +71,6 @@ import java.util.function.BooleanSupplier;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteMessaging;
-import org.apache.ignite.cache.SessionContext;
 import org.apache.ignite.cluster.ClusterGroup;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.IgniteConfiguration;
@@ -2138,17 +2137,15 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
         long timeout,
         boolean skipOnTimeout
     ) {
-        SessionContext sesCtx = ctx.sessionContext().context();
+        Map<String, String> sesAttrs = ctx.sessionContext().attributes();
 
         boolean secEnabled = ctx.security().enabled();
 
-        if (secEnabled || sesCtx != null) {
+        if (secEnabled || sesAttrs != null) {
             UUID secSubjId = null;
 
             if (secEnabled && !ctx.security().isDefaultContext())
                 secSubjId = ctx.security().securityContext().subject().id();
-
-            Map<String, String> sesAttrs = sesCtx == null ? null : sesCtx.getAttributes();
 
             return new GridIoSecurityAwareMessage(secSubjId, sesAttrs, plc, topic, topicOrd, msg, ordered, timeout, skipOnTimeout);
         }

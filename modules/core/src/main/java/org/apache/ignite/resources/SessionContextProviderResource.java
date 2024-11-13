@@ -37,7 +37,7 @@ import org.apache.ignite.cache.SessionContext;
  *         public String sessionId() {
  *             SessionContext sesCtx = sesCtxProv.getSessionContext();
  *
- *             return sesCtx.getAttributes().get("SESSION_ID");
+ *             return sesCtx.getAttribute("SESSION_ID");
  *         }
  *     }
  * </pre>

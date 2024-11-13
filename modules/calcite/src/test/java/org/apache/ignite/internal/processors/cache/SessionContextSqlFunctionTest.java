@@ -106,9 +106,9 @@ public class SessionContextSqlFunctionTest extends GridCommonAbstractTest {
         }
 
         for (String sesId: F.asList("1", "2")) {
-            Ignite ignSes = ign.withSessionAttributes(F.asMap(SESSION_ID, sesId));
+            Ignite ignApp = ign.withApplicationAttributes(F.asMap(SESSION_ID, sesId));
 
-            List<List<?>> rows = ignQuery(ignSes, "select * from PUBLIC.MYTABLE where sessionId = sessionId();");
+            List<List<?>> rows = ignQuery(ignApp, "select * from PUBLIC.MYTABLE where sessionId = sessionId();");
 
             assertEquals(50, rows.size());
 
@@ -126,9 +126,9 @@ public class SessionContextSqlFunctionTest extends GridCommonAbstractTest {
         for (int i = 0; i < 100; i++) {
             String sesId = i % 2 == 0 ? "1" : "2";
 
-            Ignite ignSes = ign.withSessionAttributes(F.asMap(SESSION_ID, sesId));
+            Ignite ignApp = ign.withApplicationAttributes(F.asMap(SESSION_ID, sesId));
 
-            ignQuery(ignSes, "insert into PUBLIC.MYTABLE(id, sessionId) values (" + i + ", sessionId());");
+            ignQuery(ignApp, "insert into PUBLIC.MYTABLE(id, sessionId) values (" + i + ", sessionId());");
         }
 
         List<List<?>> res = ignQuery(ign, "select * from PUBLIC.MYTABLE where sessionId = 1");
@@ -151,9 +151,9 @@ public class SessionContextSqlFunctionTest extends GridCommonAbstractTest {
 
         String sesId = "1";
 
-        Ignite ignSes = ign.withSessionAttributes(F.asMap(SESSION_ID, sesId));
+        Ignite ignApp = ign.withApplicationAttributes(F.asMap(SESSION_ID, sesId));
 
-        List<List<?>> rows = ignQuery(ignSes, "select * from PUBLIC.MYTABLE where sessionId = (select sessionId());");
+        List<List<?>> rows = ignQuery(ignApp, "select * from PUBLIC.MYTABLE where sessionId = (select sessionId());");
 
         int size = 0;
 
@@ -184,7 +184,7 @@ public class SessionContextSqlFunctionTest extends GridCommonAbstractTest {
         public String sessionId() {
             SessionContext sesCtx = sesCtxProv.getSessionContext();
 
-            return sesCtx == null ? null : sesCtx.getAttributes().get(SESSION_ID);
+            return sesCtx == null ? null : sesCtx.getAttribute(SESSION_ID);
         }
     }
 }

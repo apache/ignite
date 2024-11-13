@@ -804,15 +804,15 @@ public interface Ignite extends AutoCloseable {
     public FieldsQueryCursor<List<?>> query(SqlFieldsQuery qry);
 
     /**
-     * Underlying operations of returned Ignite instance are aware of session attributes.
+     * Underlying operations of returned Ignite instance are aware of application attributes.
      * User defined functions can access the attributes with {@link SessionContextProvider} API.
      * List of supported types of user defined functions that have access the attributes:
      * <ul>
      *     <li>{@link QuerySqlFunction}</li>
      * </ul>
      *
-     * @return Ignite instance that is aware of session attributes.
+     * @return Ignite instance that is aware of application attributes.
      */
     @IgniteExperimental
-    public Ignite withSessionAttributes(Map<String, String> attrs);
+    public Ignite withApplicationAttributes(Map<String, String> attrs);
 }

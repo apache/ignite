@@ -2880,8 +2880,8 @@ public class IgniteKernal implements IgniteEx, Externalizable {
     }
 
     /** {@inheritDoc} */
-    @Override public Ignite withSessionAttributes(Map<String, String> attrs) {
-        return new IgniteSessionAttributesAware(this, attrs);
+    @Override public Ignite withApplicationAttributes(Map<String, String> attrs) {
+        return new IgniteApplicationAttributesAware(this, attrs);
     }
 
     /** {@inheritDoc} */

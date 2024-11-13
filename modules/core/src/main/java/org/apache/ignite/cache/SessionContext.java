@@ -17,9 +17,9 @@
 
 package org.apache.ignite.cache;
 
-import java.util.Map;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.cache.query.annotations.QuerySqlFunction;
+import org.jetbrains.annotations.Nullable;
 
 /**
  * Provides access to session context in stored functions:
@@ -29,8 +29,8 @@ import org.apache.ignite.cache.query.annotations.QuerySqlFunction;
  */
 public interface SessionContext {
     /**
-     * Provdes access to session attributes set with {@link Ignite#withSessionAttributes}
+     * Provdes access to session attributes set with {@link Ignite#withApplicationAttributes}
      * @return Session attributes.
      */
-    public Map<String, String> getAttributes();
+    public @Nullable String getAttribute(String name);
 }

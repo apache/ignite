@@ -67,19 +67,19 @@ import org.apache.ignite.spi.tracing.TracingConfigurationManager;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
-/** Ignite instance aware of session attributes set with {@link Ignite#withSessionAttributes(Map)}. */
-public class IgniteSessionAttributesAware implements Ignite {
+/** Ignite instance aware of application attributes set with {@link Ignite#withApplicationAttributes(Map)}. */
+public class IgniteApplicationAttributesAware implements Ignite {
     /** */
     private final IgniteEx delegate;
 
-    /** Session attributes. */
+    /** Application attributes. */
     private final Map<String, String> attrs;
 
     /**
      * @param delegate Parent Ignite instance.
-     * @param attrs Session attributes.
+     * @param attrs Application attributes.
      */
-    public IgniteSessionAttributesAware(IgniteEx delegate, Map<String, String> attrs) {
+    public IgniteApplicationAttributesAware(IgniteEx delegate, Map<String, String> attrs) {
         A.notNull(attrs, "attrs");
 
         this.delegate = delegate;
@@ -424,7 +424,7 @@ public class IgniteSessionAttributesAware implements Ignite {
     }
 
     /** */
-    @Override public Ignite withSessionAttributes(Map<String, String> attrs) {
-        return delegate.withSessionAttributes(attrs);
+    @Override public Ignite withApplicationAttributes(Map<String, String> attrs) {
+        return delegate.withApplicationAttributes(attrs);
     }
 }

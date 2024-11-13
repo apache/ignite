@@ -19,7 +19,6 @@ package org.apache.ignite.internal.processors.security.thread;
 
 import java.util.Map;
 import org.apache.ignite.IgniteException;
-import org.apache.ignite.cache.SessionContext;
 import org.apache.ignite.internal.cache.context.SessionContextProcessor;
 import org.apache.ignite.internal.processors.security.IgniteSecurity;
 import org.apache.ignite.internal.processors.security.OperationSecurityContext;
@@ -44,7 +43,7 @@ class SecurityAwareRunnable implements Runnable {
     private final SecurityContext secCtx;
 
     /** */
-    private final Map<String, String> sesAttrs;
+    private final @Nullable Map<String, String> sesAttrs;
 
     /** */
     private SecurityAwareRunnable(IgniteSecurity security, @Nullable SessionContextProcessor sesCtxProc, Runnable delegate) {
@@ -56,13 +55,7 @@ class SecurityAwareRunnable implements Runnable {
 
         secCtx = security.securityContext();
 
-        if (sesCtxProc != null) {
-            SessionContext sesCtx = sesCtxProc.context();
-
-            sesAttrs = sesCtx == null ? null : sesCtx.getAttributes();
-        }
-        else
-            sesAttrs = null;
+        sesAttrs = sesCtxProc == null ? null : sesCtxProc.attributes();
     }
 
     /** {@inheritDoc} */
