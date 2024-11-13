@@ -44,7 +44,6 @@ import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.IgniteInternalCache;
 import org.apache.ignite.internal.processors.cache.query.CacheQuery;
 import org.apache.ignite.internal.processors.cache.query.CacheQueryFuture;
-import org.apache.ignite.internal.processors.cache.query.GridCacheQueryAdapter;
 import org.apache.ignite.internal.util.lang.GridCloseableIterator;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.CU;
@@ -165,8 +164,8 @@ public class GridCacheSetImpl<T> extends AbstractCollection<T> implements Ignite
                 return cache.sizeAsync(new CachePeekMode[] {}).get() - 1;
             }
 
-            CacheQuery qry = new GridCacheQueryAdapter<>(ctx, SET, null, null,
-                new GridSetQueryPredicate<>(id, collocated), collocated ? hdrPart : null,
+            CacheQuery qry = new CacheQuery<>(ctx, SET,
+                new GridSetQueryPredicate<>(id, collocated), null, collocated ? hdrPart : null,
                 false, false, null);
 
             Collection<ClusterNode> nodes = dataNodes(ctx.affinity().affinityTopologyVersion());
@@ -440,9 +439,9 @@ public class GridCacheSetImpl<T> extends AbstractCollection<T> implements Ignite
      */
     @SuppressWarnings("unchecked")
     private WeakReferenceCloseableIterator<T> sharedCacheIterator(boolean keepBinary) throws IgniteCheckedException {
-        CacheQuery qry = new GridCacheQueryAdapter<>(ctx, SET, null, null,
-            new GridSetQueryPredicate<>(id, collocated), collocated ? hdrPart : null,
-            false, keepBinary, null);
+        CacheQuery qry = new CacheQuery<>(ctx, SET,
+            new GridSetQueryPredicate<>(id, collocated), null, collocated ? hdrPart : null,
+            keepBinary, false, null);
 
         Collection<ClusterNode> nodes = dataNodes(ctx.affinity().affinityTopologyVersion());
 

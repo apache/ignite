@@ -170,7 +170,7 @@ public class IgniteSqlQueryStartFinishListenerTest extends AbstractIndexingCommo
 
         {
             final long delay = 100;
-            final String qry = "select * from caches where ? = \"default\".delay(?) limit 1";
+            final String qry = "select * from caches where ? = \"default\".sleep(?) limit 1";
 
             execSql(SCHEMA_SYS, qry, delay, delay);
 
@@ -200,11 +200,9 @@ public class IgniteSqlQueryStartFinishListenerTest extends AbstractIndexingCommo
 
         {
             final String schema = "TEST1";
-            final String qry = "select \"default\".can_fail() from " + SCHEMA_SYS + ".caches where ? = ? limit 1";
+            final String qry = "select \"default\".can_fail(?) from " + SCHEMA_SYS + ".caches where ? = ? limit 1";
 
-            GridTestUtils.SqlTestFunctions.fail = true;
-
-            GridTestUtils.assertThrowsWithCause(() -> execSqlLocal(schema, qry, 1, 1), IgniteSQLException.class);
+            GridTestUtils.assertThrowsWithCause(() -> execSqlLocal(schema, qry, true, 1, 1), IgniteSQLException.class);
 
             assertWithTimeout(qryStarted::get, is(notNullValue()), 1_000);
 
