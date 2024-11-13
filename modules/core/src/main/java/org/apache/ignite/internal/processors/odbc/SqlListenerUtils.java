@@ -82,7 +82,7 @@ public abstract class SqlListenerUtils {
      * @param reader Reader.
      * @param binObjAllow Allow to read non plaint objects.
      * @param keepBinary Whether to deserialize objects or keep in binary format.
-     * @param createByteArrayCopy Whether to return byte array copy.
+     * @param createByteArrayCopy Whether to return new copy or copy-on-write buffer for byte array.
      * @return Read object.
      * @throws BinaryObjectException On error.
      */
@@ -195,10 +195,11 @@ public abstract class SqlListenerUtils {
      * Read byte array using the reader.
      *
      * <p>Returns either (eagerly) new instance of the byte array with all data materialized,
-     * or {@link JdbcBinaryBuffer} which (lazily) wraps part of the array enclosed in
-     * the reader's input stream.
+     * or {@link JdbcBinaryBuffer} which wraps part of the array enclosed in
+     * the reader's input stream in a copy-on-write manner.
      *
      * @param reader Reader.
+     * @param createByteArrayCopy Whether create new byte array copy or try to create copy-on-write buffer.
      * @return Either byte[] or {@link JdbcBinaryBuffer}.
      */
     private static Object readByteArray(BinaryReaderExImpl reader, boolean createByteArrayCopy) {
