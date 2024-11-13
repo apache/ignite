@@ -17,7 +17,6 @@
 package org.apache.ignite.internal.processors.service;
 
 import java.util.UUID;
-import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Predicate;
 
 import org.apache.ignite.Ignition;
@@ -43,9 +42,6 @@ import static org.apache.ignite.testframework.GridTestUtils.waitForCondition;
  */
 public class IgniteServiceDeploymentFailureTest extends GridCommonAbstractTest {
     /** */
-    private static final String NOOP_SERVICE_CLS_NAME = "org.apache.ignite.tests.p2p.NoopService";
-
-    /** */
     private static final String NODE_FILTER_CLS_NAME = "org.apache.ignite.tests.p2p.ExcludeNodeFilter";
 
     /** */
@@ -67,7 +63,8 @@ public class IgniteServiceDeploymentFailureTest extends GridCommonAbstractTest {
     private static final String DEPLOYED_SERVICE_MUST_BE_PRESENTED_IN_CLUSTER = "Deployed service must be presented in cluster";
 
     /** */
-    private static final String FAILED_SERVICE_SHOULD_NOT_BE_PRESENT_IN_THE_CLUSTER = "Service descriptors whose deployment has failed should not be present in the cluster";
+    private static final String FAILED_SERVICE_SHOULD_NOT_BE_PRESENT_IN_THE_CLUSTER =
+        "Service descriptors whose deployment has failed should not be present in the cluster";
 
     /** */
     private static ClassLoader extClsLdr;
@@ -148,7 +145,7 @@ public class IgniteServiceDeploymentFailureTest extends GridCommonAbstractTest {
         // Deploying NoopService - should be completed successfully.
         client.services().deploy(noopSrvcCfg);
 
-        // Check that the expected number of instances has been deployed
+        // Check that the expected number of instances has been deployed.
         assertEquals(
             DEPLOYED_SERVICE_MUST_BE_PRESENTED_IN_CLUSTER,
             2 * SERVER_NODES_CNT,
@@ -167,7 +164,7 @@ public class IgniteServiceDeploymentFailureTest extends GridCommonAbstractTest {
 
         assertTrue(
             FAILED_SERVICE_SHOULD_NOT_BE_PRESENT_IN_THE_CLUSTER,
-            waitForCondition(() -> noDescriptorInClusterForService(InitThrowingService.class.getSimpleName()), TIMEOUT)
+            waitForCondition(() -> noDescriptorInClusterForService(INIT_THROWING_SERVICE_NAME), TIMEOUT)
         );
 
         assertEquals(
@@ -200,32 +197,33 @@ public class IgniteServiceDeploymentFailureTest extends GridCommonAbstractTest {
     public void testFailedServiceDescriptorsStaticConfiguration() throws Exception {
         final int noopSrvcTotalCnt = 20;
 
-        ServiceConfiguration noopCfg = new ServiceConfiguration()
-            .setName(NOOP_SERVICE_CLS_NAME)
-            .setService(new NoopService())
-            .setTotalCount(noopSrvcTotalCnt);
-
-        ServiceConfiguration initThrowingCfg = new ServiceConfiguration()
-            .setName(INIT_THROWING_SERVICE_NAME)
-            .setService(new InitThrowingService())
-            .setTotalCount(20);
-
         startGrids(SERVER_NODES_CNT - 1);
 
         for (int i = 0; i < CLIENT_NODES_CNT; i++)
             startClientGrid(SERVER_NODES_CNT + i);
 
-        IgniteEx ign = startGrid(getConfiguration().setServiceConfiguration(noopCfg, initThrowingCfg));
+        IgniteEx ign = startGrid(
+            getConfiguration().setServiceConfiguration(
+                new ServiceConfiguration()
+                    .setName(NOOP_SERVICE_NAME)
+                    .setService(new NoopService())
+                    .setTotalCount(noopSrvcTotalCnt),
+                new ServiceConfiguration()
+                    .setName(INIT_THROWING_SERVICE_NAME)
+                    .setService(new InitThrowingService())
+                    .setTotalCount(20)
+            )
+        );
 
         assertTrue(
             FAILED_SERVICE_SHOULD_NOT_BE_PRESENT_IN_THE_CLUSTER,
-            waitForCondition(() -> noDescriptorInClusterForService(InitThrowingService.class.getSimpleName()), TIMEOUT)
+            waitForCondition(() -> noDescriptorInClusterForService(INIT_THROWING_SERVICE_NAME), TIMEOUT)
         );
 
         assertEquals(
             DEPLOYED_SERVICE_MUST_BE_PRESENTED_IN_CLUSTER,
             noopSrvcTotalCnt,
-            totalInstancesCount(ign, NOOP_SERVICE_CLS_NAME)
+            totalInstancesCount(ign, NOOP_SERVICE_NAME)
         );
     }
 
