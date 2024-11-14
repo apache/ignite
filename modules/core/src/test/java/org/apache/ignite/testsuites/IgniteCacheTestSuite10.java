@@ -44,6 +44,7 @@ import org.apache.ignite.internal.processors.cache.CacheDeferredDeleteQueueTest;
 import org.apache.ignite.internal.processors.cache.CacheDeferredDeleteSanitySelfTest;
 import org.apache.ignite.internal.processors.cache.CachePutEventListenerErrorSelfTest;
 import org.apache.ignite.internal.processors.cache.CacheTxFastFinishTest;
+import org.apache.ignite.internal.processors.cache.ConcurrentCheckpointAndUpdateTtlTest;
 import org.apache.ignite.internal.processors.cache.GridCacheAtomicUsersAffinityMapperSelfTest;
 import org.apache.ignite.internal.processors.cache.GridCacheClearLocallySelfTest;
 import org.apache.ignite.internal.processors.cache.GridCacheColocatedTxStoreExceptionSelfTest;
@@ -204,6 +205,7 @@ public class IgniteCacheTestSuite10 {
         GridTestUtils.addTestIfNeeded(suite, GridCacheReturnValueTransferSelfTest.class, ignoredTests);
         GridTestUtils.addTestIfNeeded(suite, GridCacheSlowTxWarnTest.class, ignoredTests);
         GridTestUtils.addTestIfNeeded(suite, GridCacheTtlManagerLoadTest.class, ignoredTests);
+        GridTestUtils.addTestIfNeeded(suite, ConcurrentCheckpointAndUpdateTtlTest.class, ignoredTests);
 
         GridTestUtils.addTestIfNeeded(suite, GridCacheAtomicUsersAffinityMapperSelfTest.class, ignoredTests);
         GridTestUtils.addTestIfNeeded(suite, GridCacheTxUsersAffinityMapperSelfTest.class, ignoredTests);

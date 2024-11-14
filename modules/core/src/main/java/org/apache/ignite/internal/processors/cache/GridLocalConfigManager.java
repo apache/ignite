@@ -65,7 +65,6 @@ import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.marshaller.Marshaller;
-import org.apache.ignite.marshaller.MarshallerUtils;
 import org.jetbrains.annotations.Nullable;
 
 import static java.nio.file.Files.newDirectoryStream;
@@ -124,7 +123,7 @@ public class GridLocalConfigManager {
         this.cacheProcessor = cacheProcessor;
         ctx = kernalCtx;
         log = ctx.log(getClass());
-        marshaller = MarshallerUtils.jdkMarshaller(ctx.igniteInstanceName());
+        marshaller = ctx.marshallerContext().jdkMarshaller();
 
         PdsFolderSettings<?> folderSettings = ctx.pdsFolderResolver().resolveFolders();
 

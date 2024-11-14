@@ -27,6 +27,7 @@ import org.apache.ignite.internal.processors.query.DmlBatchSizeDeadlockTest;
 import org.apache.ignite.internal.processors.query.IgniteSqlCreateTableTemplateTest;
 import org.apache.ignite.internal.processors.query.LocalQueryLazyTest;
 import org.apache.ignite.internal.processors.query.LongRunningQueryTest;
+import org.apache.ignite.internal.processors.query.SqlAffinityCacheTest;
 import org.apache.ignite.internal.processors.query.SqlLocalQueryConnectionAndStatementTest;
 import org.apache.ignite.internal.processors.query.SqlPartOfComplexPkLookupTest;
 import org.apache.ignite.internal.processors.query.SqlQueriesTopologyMappingTest;
@@ -93,8 +94,8 @@ import org.junit.runners.Suite;
 
     SqlQueriesTopologyMappingTest.class,
 
-    IgniteCacheQueryReservationOnUnstableTopologyTest.class
-
+    IgniteCacheQueryReservationOnUnstableTopologyTest.class,
+    SqlAffinityCacheTest.class,
 })
 public class IgniteBinaryCacheQueryTestSuite4 {
     /** Setup lazy mode default. */

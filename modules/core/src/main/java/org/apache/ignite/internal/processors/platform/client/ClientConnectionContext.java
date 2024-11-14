@@ -37,6 +37,7 @@ import org.apache.ignite.internal.processors.odbc.ClientListenerProtocolVersion;
 import org.apache.ignite.internal.processors.odbc.ClientListenerRequestHandler;
 import org.apache.ignite.internal.processors.platform.client.tx.ClientTxContext;
 import org.apache.ignite.internal.util.nio.GridNioSession;
+import org.apache.ignite.internal.util.typedef.internal.U;
 import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.internal.processors.odbc.ClientListenerNioListener.THIN_CLIENT;
@@ -195,7 +196,7 @@ public class ClientConnectionContext extends ClientListenerAbstractConnectionCon
 
             features = ClientBitmaskFeature.enumSet(cliFeatures);
 
-            if (!ctx.config().getTransactionConfiguration().isTxAwareQueriesEnabled())
+            if (!U.isTxAwareQueriesEnabled(ctx))
                 features.remove(ClientBitmaskFeature.TX_AWARE_QUERIES);
         }
 

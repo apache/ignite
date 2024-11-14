@@ -120,7 +120,6 @@ import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.lang.IgniteProductVersion;
 import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.marshaller.Marshaller;
-import org.apache.ignite.marshaller.MarshallerUtils;
 import org.apache.ignite.plugin.security.SecurityCredentials;
 import org.apache.ignite.plugin.segmentation.SegmentationPolicy;
 import org.apache.ignite.spi.IgniteSpiException;
@@ -548,7 +547,7 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
         spi.setListener(new DiscoverySpiListener() {
             private long gridStartTime;
 
-            private final Marshaller marshaller = MarshallerUtils.jdkMarshaller(ctx.igniteInstanceName());
+            private final Marshaller marshaller = ctx.marshallerContext().jdkMarshaller();
 
             /** {@inheritDoc} */
             @Override public void onLocalNodeInitialized(ClusterNode locNode) {

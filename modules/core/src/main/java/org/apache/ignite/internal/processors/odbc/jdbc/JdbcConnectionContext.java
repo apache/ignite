@@ -40,6 +40,7 @@ import org.apache.ignite.internal.processors.query.QueryEngineConfigurationEx;
 import org.apache.ignite.internal.util.GridSpinBusyLock;
 import org.apache.ignite.internal.util.nio.GridNioSession;
 import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.transactions.TransactionConcurrency;
 import org.apache.ignite.transactions.TransactionIsolation;
 import org.jetbrains.annotations.Nullable;
@@ -206,7 +207,7 @@ public class JdbcConnectionContext extends ClientListenerAbstractConnectionConte
 
             features = JdbcThinFeature.enumSet(cliFeatures);
 
-            if (!ctx.config().getTransactionConfiguration().isTxAwareQueriesEnabled())
+            if (!U.isTxAwareQueriesEnabled(ctx))
                 features.remove(JdbcThinFeature.TX_AWARE_QUERIES);
         }
 
