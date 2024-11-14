@@ -50,6 +50,11 @@ public class SessionContextProcessor extends GridProcessorAdapter {
         return sesCtx;
     }
 
+    /** */
+    public SessionContext context(@Nullable Map<String, String> sesAttrs) {
+        return new SessionContextImpl(sesAttrs);
+    }
+
     /** @return Session context for current thread. */
     public @Nullable SessionContext context() {
         return ctx.get();
@@ -82,9 +87,35 @@ public class SessionContextProcessor extends GridProcessorAdapter {
             return attrs.get(name);
         }
 
+        /** */
+        @Override public Map<String, String> getAttributes() {
+            return attrs;
+        }
+
         /** Clears thread local session context. */
         @Override public void close() {
             ctx.remove();
+        }
+    }
+
+    /** */
+    private class SessionContextImpl implements SessionContext {
+        /** Session attributes. */
+        private final Map<String, String> attrs;
+
+        /** @param attrs Session attributes. */
+        public SessionContextImpl(Map<String, String> attrs) {
+            this.attrs = new HashMap<>(attrs);
+        }
+
+        /** {@inheritDoc} */
+        @Override public @Nullable String getAttribute(String name) {
+            return attrs.get(name);
+        }
+
+        /** */
+        @Override public Map<String, String> getAttributes() {
+            return attrs;
         }
     }
 }

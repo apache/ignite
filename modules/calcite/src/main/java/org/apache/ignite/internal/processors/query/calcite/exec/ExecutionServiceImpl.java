@@ -33,6 +33,7 @@ import org.apache.calcite.sql.SqlInsert;
 import org.apache.calcite.sql.SqlKind;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
+import org.apache.ignite.cache.SessionContext;
 import org.apache.ignite.cache.query.FieldsQueryCursor;
 import org.apache.ignite.cache.query.QueryCancelledException;
 import org.apache.ignite.calcite.CalciteQueryEngineConfiguration;
@@ -649,6 +650,10 @@ public class ExecutionServiceImpl<Row> extends AbstractService implements Execut
                     qry.onResponse(nodeId, fragment.fragmentId(), ex);
                 else {
                     try {
+                        SessionContext sesCtx = qry.context().unwrap(SessionContext.class);
+
+                        Map<String, String> sesAttrs = sesCtx == null ? null : sesCtx.getAttributes();
+
                         QueryStartRequest req = new QueryStartRequest(
                             qry.id(),
                             qry.localQueryId(),
@@ -659,7 +664,8 @@ public class ExecutionServiceImpl<Row> extends AbstractService implements Execut
                             fragmentsPerNode.get(nodeId).intValue(),
                             qry.parameters(),
                             parametersMarshalled,
-                            timeout
+                            timeout,
+                            sesAttrs
                         );
 
                         messageService().send(nodeId, req);
@@ -847,7 +853,7 @@ public class ExecutionServiceImpl<Row> extends AbstractService implements Execut
             );
 
             final BaseQueryContext qctx = createQueryContext(
-                Contexts.of(ctx.resource(), ctx.sessionContext().context()),
+                Contexts.of(ctx.resource(), ctx.sessionContext().context(msg.appAttrs())),
                 msg.schema());
 
             QueryPlan qryPlan = queryPlanCache().queryPlan(

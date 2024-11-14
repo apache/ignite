@@ -19,11 +19,8 @@ package org.apache.ignite.internal.managers.communication;
 
 import java.io.Externalizable;
 import java.nio.ByteBuffer;
-import java.util.Collections;
-import java.util.Map;
 import java.util.UUID;
 import org.apache.ignite.plugin.extensions.communication.Message;
-import org.apache.ignite.plugin.extensions.communication.MessageCollectionItemType;
 import org.apache.ignite.plugin.extensions.communication.MessageReader;
 import org.apache.ignite.plugin.extensions.communication.MessageWriter;
 import org.jetbrains.annotations.Nullable;
@@ -39,10 +36,7 @@ public class GridIoSecurityAwareMessage extends GridIoMessage {
     public static final short TYPE_CODE = 174;
 
     /** Security subject id that will be used during message processing on an remote node. */
-    private @Nullable UUID secSubjId;
-
-    /** Session attributes. */
-    private @Nullable Map<String, String> sesAttrs;
+    private UUID secSubjId;
 
     /**
      * No-op constructor to support {@link Externalizable} interface.
@@ -54,7 +48,6 @@ public class GridIoSecurityAwareMessage extends GridIoMessage {
 
     /**
      * @param secSubjId Security subject id.
-     * @param sesAttrs Session attributes.
      * @param plc Policy.
      * @param topic Communication topic.
      * @param topicOrd Topic ordinal value.
@@ -64,8 +57,7 @@ public class GridIoSecurityAwareMessage extends GridIoMessage {
      * @param skipOnTimeout Whether message can be skipped on timeout.
      */
     public GridIoSecurityAwareMessage(
-        @Nullable UUID secSubjId,
-        @Nullable Map<String, String> sesAttrs,
+        UUID secSubjId,
         byte plc,
         Object topic,
         int topicOrd,
@@ -77,7 +69,6 @@ public class GridIoSecurityAwareMessage extends GridIoMessage {
         super(plc, topic, topicOrd, msg, ordered, timeout, skipOnTimeout);
 
         this.secSubjId = secSubjId;
-        this.sesAttrs = sesAttrs;
     }
 
     /**
@@ -85,13 +76,6 @@ public class GridIoSecurityAwareMessage extends GridIoMessage {
      */
     @Nullable UUID secSubjId() {
         return secSubjId;
-    }
-
-    /**
-     * @return Session attributes.
-     */
-    @Nullable Map<String, String> sessionAttributes() {
-        return sesAttrs == null ? null : Collections.unmodifiableMap(sesAttrs);
     }
 
     /** {@inheritDoc} */
@@ -125,11 +109,6 @@ public class GridIoSecurityAwareMessage extends GridIoMessage {
 
                 writer.incrementState();
 
-            case 9:
-                if (!writer.writeMap("sesAttrs", sesAttrs, MessageCollectionItemType.STRING, MessageCollectionItemType.STRING))
-                    return false;
-
-                writer.incrementState();
         }
 
         return true;
@@ -148,14 +127,6 @@ public class GridIoSecurityAwareMessage extends GridIoMessage {
         switch (reader.state()) {
             case 8:
                 secSubjId = reader.readUuid("secSubjId");
-
-                if (!reader.isLastRead())
-                    return false;
-
-                reader.incrementState();
-
-            case 9:
-                sesAttrs = reader.readMap("sesAttrs", MessageCollectionItemType.STRING, MessageCollectionItemType.STRING, false);
 
                 if (!reader.isLastRead())
                     return false;

@@ -17,6 +17,7 @@
 
 package org.apache.ignite.cache;
 
+import java.util.Map;
 import org.apache.ignite.Ignite;
 import org.jetbrains.annotations.Nullable;
 
@@ -29,4 +30,7 @@ public interface SessionContext {
      * @return Attribute value, or {@code null} if not speicifed.
     .*/
     public @Nullable String getAttribute(String name);
+
+    /** */
+    public Map<String, String> getAttributes();
 }
