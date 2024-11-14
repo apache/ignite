@@ -1877,13 +1877,7 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
      * @param msg Message.
      * @param secSubjId Security subject that will be used to open a security session.
      */
-    private void invokeListener(
-        Byte plc,
-        GridMessageListener lsnr,
-        UUID nodeId,
-        Object msg,
-        UUID secSubjId
-    ) {
+    private void invokeListener(Byte plc, GridMessageListener lsnr, UUID nodeId, Object msg, UUID secSubjId) {
         MTC.span().addLog(() -> "Invoke listener");
 
         Byte oldPlc = CUR_PLC.get();
@@ -1895,13 +1889,8 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
 
         UUID newSecSubjId = secSubjId != null ? secSubjId : nodeId;
 
-        try (
-            OperationSecurityContext ignored = ctx.security().withContext(newSecSubjId);
-        ) {
+        try (OperationSecurityContext ignored = ctx.security().withContext(newSecSubjId)) {
             lsnr.onMessage(nodeId, msg, plc);
-        }
-        catch (Exception e) {
-            throw new IgniteException("Failed to close SessionContext", e);
         }
         finally {
             if (change)
@@ -2134,12 +2123,10 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
         long timeout,
         boolean skipOnTimeout
     ) {
-        boolean secEnabled = ctx.security().enabled();
-
-        if (secEnabled) {
+        if (ctx.security().enabled()) {
             UUID secSubjId = null;
 
-            if (secEnabled && !ctx.security().isDefaultContext())
+            if (!ctx.security().isDefaultContext())
                 secSubjId = ctx.security().securityContext().subject().id();
 
             return new GridIoSecurityAwareMessage(secSubjId, plc, topic, topicOrd, msg, ordered, timeout, skipOnTimeout);

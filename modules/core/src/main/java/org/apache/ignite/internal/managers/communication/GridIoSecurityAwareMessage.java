@@ -23,7 +23,6 @@ import java.util.UUID;
 import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.plugin.extensions.communication.MessageReader;
 import org.apache.ignite.plugin.extensions.communication.MessageWriter;
-import org.jetbrains.annotations.Nullable;
 
 /**
  *
@@ -74,7 +73,7 @@ public class GridIoSecurityAwareMessage extends GridIoMessage {
     /**
      * @return Security subject id.
      */
-    @Nullable UUID secSubjId() {
+    UUID secSubjId() {
         return secSubjId;
     }
 
@@ -132,6 +131,7 @@ public class GridIoSecurityAwareMessage extends GridIoMessage {
                     return false;
 
                 reader.incrementState();
+
         }
 
         return reader.afterMessageRead(GridIoSecurityAwareMessage.class);
