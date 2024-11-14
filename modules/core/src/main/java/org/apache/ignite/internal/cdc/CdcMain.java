@@ -79,8 +79,6 @@ import org.apache.ignite.spi.metric.jmx.JmxMetricExporterSpi;
 import org.apache.ignite.spi.metric.noop.NoopMetricExporterSpi;
 import org.apache.ignite.startup.cmdline.CdcCommandLineStartup;
 
-import static java.util.concurrent.TimeUnit.MILLISECONDS;
-import static java.util.concurrent.TimeUnit.NANOSECONDS;
 import static org.apache.ignite.internal.IgniteKernal.NL;
 import static org.apache.ignite.internal.IgniteKernal.SITE;
 import static org.apache.ignite.internal.IgniteVersionUtils.ACK_VER_STR;
@@ -184,20 +182,8 @@ public class CdcMain implements Runnable {
     private static final IgniteBiPredicate<WALRecord.RecordType, WALPointer> ACTIVE_RECS =
         (type, ptr) -> type == DATA_RECORD_V2 || type == CDC_DATA_RECORD;
 
-    /** Histogram buckets for duration wal processing in nanoseconds. */
-    public static final long[] HISTOGRAM_BUCKETS = new long[] {
-        NANOSECONDS.convert(25, MILLISECONDS),
-        NANOSECONDS.convert(50, MILLISECONDS),
-        NANOSECONDS.convert(100, MILLISECONDS),
-        NANOSECONDS.convert(250, MILLISECONDS),
-        NANOSECONDS.convert(500, MILLISECONDS),
-        NANOSECONDS.convert(1000, MILLISECONDS),
-        NANOSECONDS.convert(2500, MILLISECONDS),
-        NANOSECONDS.convert(5000, MILLISECONDS),
-        NANOSECONDS.convert(10000, MILLISECONDS),
-        NANOSECONDS.convert(25000, MILLISECONDS),
-        NANOSECONDS.convert(50000, MILLISECONDS)
-    };
+    /** Histogram buckets for duration wal processing in milliseconds. */
+    public static final long[] HISTOGRAM_BUCKETS = new long[] {25, 50, 100, 250, 500, 1000, 2500, 5000, 10000, 25000, 50000};
 
     /** */
     public static final String EVENTS_CONSUMPTION_TIME = "EventsConsumptionTime";
@@ -631,7 +617,7 @@ public class CdcMain implements Runnable {
      * Consumes CDC events in {@link CdcMode#CDC_UTILITY_ACTIVE} mode.
      */
     private void consumeSegmentActively(IgniteWalIteratorFactory.IteratorParametersBuilder builder) {
-        long start = System.nanoTime();
+        long start = System.currentTimeMillis();
 
         try (DataEntryIterator iter = new DataEntryIterator(
             new IgniteWalIteratorFactory(log).iterator(builder.addFilter(ACTIVE_RECS)),
@@ -654,7 +640,7 @@ public class CdcMain implements Runnable {
             if (interrupted)
                 throw new IgniteException("Change Data Capture Application interrupted");
 
-            long duration = System.nanoTime() - start;
+            long duration = System.currentTimeMillis() - start;
 
             eventsConsumptionTime.value(duration);
             eventsConsumptionTimeTotal.add(duration);
