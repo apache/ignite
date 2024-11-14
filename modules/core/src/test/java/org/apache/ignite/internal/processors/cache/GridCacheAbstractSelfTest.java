@@ -150,8 +150,8 @@ public abstract class GridCacheAbstractSelfTest extends GridCommonAbstractTest {
                                     jcache(fi).removeAll();
 
                                     if (jcache(fi).size(CachePeekMode.ALL) > 0) {
-                                        for (Cache.Entry<String, ?> k : jcache(fi).localEntries())
-                                            jcache(fi).remove(k.getKey());
+                                        for (Cache.Entry<?, ?> k : ignite(fi).cache(DEFAULT_CACHE_NAME).localEntries())
+                                            ignite(fi).cache(DEFAULT_CACHE_NAME).remove(k.getKey());
                                     }
 
                                     return jcache(fi).localSize(CachePeekMode.ALL) == 0;
