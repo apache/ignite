@@ -703,7 +703,8 @@ final class ReliableChannel implements AutoCloseable {
                     curAddrs.putIfAbsent(addr, hld);
             }
 
-            reinitHolders.add(hld);
+            if (!reinitHolders.contains(hld))
+                reinitHolders.add(hld);
 
             if (hld == currDfltHolder)
                 dfltChannelIdx = reinitHolders.size() - 1;
@@ -817,7 +818,9 @@ final class ReliableChannel implements AutoCloseable {
         ClientOperation op,
         @Nullable List<ClientConnectionException> failures
     ) {
-        while (attemptsLimit > (failures == null ? 0 : failures.size())) {
+        int fixedAttemptsLimit = attemptsLimit;
+
+        while (fixedAttemptsLimit >= (failures == null ? 0 : failures.size())) {
             ClientChannelHolder hld = null;
             ClientChannel c = null;
 
