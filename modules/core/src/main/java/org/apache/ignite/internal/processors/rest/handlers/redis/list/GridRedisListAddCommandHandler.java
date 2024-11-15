@@ -28,6 +28,7 @@ import java.util.PriorityQueue;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.IgniteQueue;
 import org.apache.ignite.IgniteSet;
+import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.configuration.CollectionConfiguration;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteInternalFuture;
@@ -60,6 +61,9 @@ public class GridRedisListAddCommandHandler implements GridRedisCommandHandler {
 
     /** Kernel context. */
     protected final GridKernalContext ctx;
+    
+    protected CollectionConfiguration cfg = new CollectionConfiguration();
+    
 
     /**
      * Handler constructor.
@@ -71,14 +75,13 @@ public class GridRedisListAddCommandHandler implements GridRedisCommandHandler {
     public GridRedisListAddCommandHandler(IgniteLogger log, GridKernalContext ctx) {
         this.log = log;
         this.ctx = ctx;
+        cfg.setAtomicityMode(CacheAtomicityMode.TRANSACTIONAL);
     }
 
     /** {@inheritDoc} */
     @Override public Collection<GridRedisCommand> supportedCommands() {
         return SUPPORTED_COMMANDS;
-    }
-
-   
+    }   
 
 	@Override
 	public IgniteInternalFuture<GridRedisMessage> handleAsync(GridNioSession ses, GridRedisMessage msg) {
@@ -86,15 +89,12 @@ public class GridRedisListAddCommandHandler implements GridRedisCommandHandler {
 
         if (msg.messageSize() < 3) {            
         	msg.setResponse(GridRedisProtocolParser.toGenericError("Wrong number of arguments"));
-        	return new GridFinishedFuture<>(msg);
-        	// throw new GridRedisGenericException("Wrong number of arguments");
+        	return new GridFinishedFuture<>(msg);        	
         }
         
         GridRedisCommand cmd = msg.command();
             
-        String queueName = msg.cacheName()+"-"+msg.key();
-        CollectionConfiguration cfg = new CollectionConfiguration();
-        cfg.setBackups(1);
+        String queueName = msg.cacheName()+"-"+msg.key();        
         
         if(cmd == LPUSH || cmd == LPUSHX) {        	
         	IgniteQueue<String> list = ctx.grid().queue(queueName,0,cfg);

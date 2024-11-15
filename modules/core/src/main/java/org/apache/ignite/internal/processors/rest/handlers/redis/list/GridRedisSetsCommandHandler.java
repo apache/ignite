@@ -29,6 +29,8 @@ import java.util.List;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.IgniteQueue;
 import org.apache.ignite.IgniteSet;
+import org.apache.ignite.cache.CacheAtomicityMode;
+import org.apache.ignite.configuration.CollectionConfiguration;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.processors.rest.handlers.redis.GridRedisCommandHandler;
@@ -62,6 +64,8 @@ public class GridRedisSetsCommandHandler implements GridRedisCommandHandler {
 
     /** Kernel context. */
     protected final GridKernalContext ctx;
+    
+    protected CollectionConfiguration cfg = new CollectionConfiguration();
 
     /**
      * Handler constructor.
@@ -73,6 +77,7 @@ public class GridRedisSetsCommandHandler implements GridRedisCommandHandler {
     public GridRedisSetsCommandHandler(IgniteLogger log, GridKernalContext ctx) {
         this.log = log;
         this.ctx = ctx;
+        cfg.setAtomicityMode(CacheAtomicityMode.TRANSACTIONAL);
     }
 
     /** {@inheritDoc} */
@@ -85,17 +90,11 @@ public class GridRedisSetsCommandHandler implements GridRedisCommandHandler {
 	@Override
 	public IgniteInternalFuture<GridRedisMessage> handleAsync(GridNioSession ses, GridRedisMessage msg) {
 		assert msg != null;
-
-        if (msg.messageSize() < 3) {            
-        	msg.setResponse(GridRedisProtocolParser.toGenericError("Wrong number of arguments"));
-        	return new GridFinishedFuture<>(msg);
-        	// throw new GridRedisGenericException("Wrong number of arguments");
-        }
         
         GridRedisCommand cmd = msg.command();
             
         String queueName = msg.cacheName()+"-"+msg.key();        
-        IgniteSet<String> list = ctx.grid().set(queueName, null);
+        IgniteSet<String> list = ctx.grid().set(queueName, cfg);
         
         if(cmd == SISMEMBER) {
         	String query = msg.aux(2);
@@ -156,7 +155,7 @@ public class GridRedisSetsCommandHandler implements GridRedisCommandHandler {
         	HashSet<String> result = new HashSet<>(list);
         	for(String key2: othersKeys) {
         		String queueName2 = msg.cacheName()+"-"+key2;
-        		IgniteSet<String> list2 = ctx.grid().set(queueName2, null);
+        		IgniteSet<String> list2 = ctx.grid().set(queueName2, cfg);
         		if(list2!=null) {
         			result.removeAll(list2);
         		}
@@ -168,7 +167,7 @@ public class GridRedisSetsCommandHandler implements GridRedisCommandHandler {
         	HashSet<String> result = new HashSet<>(list);
         	for(String key2: othersKeys) {
         		String queueName2 = msg.cacheName()+"-"+key2;
-        		IgniteSet<String> list2 = ctx.grid().set(queueName2, null);
+        		IgniteSet<String> list2 = ctx.grid().set(queueName2, cfg);
         		if(list2!=null) {
         			result.retainAll(list2);
         		}
@@ -176,7 +175,7 @@ public class GridRedisSetsCommandHandler implements GridRedisCommandHandler {
         	msg.setResponse(GridRedisProtocolParser.toArray(result));
         }
         else if(cmd == SCARD) {
-        	msg.setResponse(GridRedisProtocolParser.toInteger(list.size()));
+        	msg.setResponse(GridRedisProtocolParser.toInteger(list.size()));     	
         }
         
         return new GridFinishedFuture<>(msg);

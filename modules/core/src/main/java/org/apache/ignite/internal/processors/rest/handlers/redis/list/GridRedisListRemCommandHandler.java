@@ -23,6 +23,8 @@ import java.util.List;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.IgniteQueue;
 import org.apache.ignite.IgniteSet;
+import org.apache.ignite.cache.CacheAtomicityMode;
+import org.apache.ignite.configuration.CollectionConfiguration;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.processors.rest.handlers.redis.GridRedisCommandHandler;
@@ -53,6 +55,8 @@ public class GridRedisListRemCommandHandler implements GridRedisCommandHandler {
 
     /** Kernel context. */
     protected final GridKernalContext ctx;
+    
+    protected CollectionConfiguration cfg = new CollectionConfiguration();
 
     /**
      * Handler constructor.
@@ -64,6 +68,7 @@ public class GridRedisListRemCommandHandler implements GridRedisCommandHandler {
     public GridRedisListRemCommandHandler(IgniteLogger log, GridKernalContext ctx) {
         this.log = log;
         this.ctx = ctx;
+        cfg.setAtomicityMode(CacheAtomicityMode.TRANSACTIONAL);
     }
 
     /** {@inheritDoc} */
@@ -77,8 +82,7 @@ public class GridRedisListRemCommandHandler implements GridRedisCommandHandler {
 
         if (msg.messageSize() < 3) {            
         	msg.setResponse(GridRedisProtocolParser.toGenericError("Wrong number of arguments"));
-        	return new GridFinishedFuture<>(msg);
-        	// throw new GridRedisGenericException("Wrong number of arguments");
+        	return new GridFinishedFuture<>(msg);        	
         }
         
         GridRedisCommand cmd = msg.command();
@@ -88,7 +92,7 @@ public class GridRedisListRemCommandHandler implements GridRedisCommandHandler {
         if(cmd == LSET) { 
         	int pos = Integer.parseInt(msg.aux(2));
         	String value = msg.aux(3);
-        	IgniteQueue<String> list = ctx.grid().queue(queueName,0,null);
+        	IgniteQueue<String> list = ctx.grid().queue(queueName,0,cfg);
         	if(pos<0) {
         		pos = list.size() + pos;
         	}    	
@@ -108,7 +112,7 @@ public class GridRedisListRemCommandHandler implements GridRedisCommandHandler {
         else if(cmd == LREM) { 
         	int count = Integer.parseInt(msg.aux(2));
         	String value = msg.aux(3);
-        	IgniteQueue<String> list = ctx.grid().queue(queueName,0,null);
+        	IgniteQueue<String> list = ctx.grid().queue(queueName,0,cfg);
         	Iterator<String> it = list.iterator();
         	int n = 0;
         	while(it.hasNext()) {
@@ -124,7 +128,7 @@ public class GridRedisListRemCommandHandler implements GridRedisCommandHandler {
         }        
         else if(cmd == SREM) {
         	List<String> keys = msg.aux();
-        	IgniteSet<String> list = ctx.grid().set(queueName, null);
+        	IgniteSet<String> list = ctx.grid().set(queueName, cfg);
         	Iterator<String> it = list.iterator();
         	int n = 0;
         	while(it.hasNext()) {
@@ -138,7 +142,7 @@ public class GridRedisListRemCommandHandler implements GridRedisCommandHandler {
         }
         else if(cmd == ZREM) {
         	List<String> keys = msg.aux();
-        	IgniteSet<ScoredItem<String>> list = ctx.grid().set(queueName,null);        	
+        	IgniteSet<ScoredItem<String>> list = ctx.grid().set(queueName,cfg);        	
         	Iterator<ScoredItem<String>> it = list.iterator();
         	int n = 0;
         	while(it.hasNext()) {

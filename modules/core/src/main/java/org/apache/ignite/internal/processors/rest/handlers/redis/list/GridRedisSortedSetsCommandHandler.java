@@ -29,6 +29,8 @@ import java.util.PriorityQueue;
 
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.IgniteSet;
+import org.apache.ignite.cache.CacheAtomicityMode;
+import org.apache.ignite.configuration.CollectionConfiguration;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.processors.rest.handlers.redis.GridRedisCommandHandler;
@@ -62,6 +64,8 @@ public class GridRedisSortedSetsCommandHandler implements GridRedisCommandHandle
 
     /** Kernel context. */
     protected final GridKernalContext ctx;
+    
+    protected CollectionConfiguration cfg = new CollectionConfiguration();
 
     /**
      * Handler constructor.
@@ -73,6 +77,7 @@ public class GridRedisSortedSetsCommandHandler implements GridRedisCommandHandle
     public GridRedisSortedSetsCommandHandler(IgniteLogger log, GridKernalContext ctx) {
         this.log = log;
         this.ctx = ctx;
+        cfg.setAtomicityMode(CacheAtomicityMode.TRANSACTIONAL);
     }
 
     /** {@inheritDoc} */
@@ -85,17 +90,12 @@ public class GridRedisSortedSetsCommandHandler implements GridRedisCommandHandle
 	@Override
 	public IgniteInternalFuture<GridRedisMessage> handleAsync(GridNioSession ses, GridRedisMessage msg) {
 		assert msg != null;
-
-        if (msg.messageSize() < 3) {            
-        	msg.setResponse(GridRedisProtocolParser.toGenericError("Wrong number of arguments"));
-        	return new GridFinishedFuture<>(msg);
-        	// throw new GridRedisGenericException("Wrong number of arguments");
-        }
         
         GridRedisCommand cmd = msg.command();
             
-        String queueName = msg.cacheName()+"-"+msg.key();
-        IgniteSet<ScoredItem<String>> list = ctx.grid().set(queueName,null);
+        String queueName = msg.cacheName()+"-"+msg.key(); 
+        
+        IgniteSet<ScoredItem<String>> list = ctx.grid().set(queueName,cfg);
         
         
         if(cmd==ZRANK || cmd==ZREVRANK) {
@@ -227,7 +227,12 @@ public class GridRedisSortedSetsCommandHandler implements GridRedisCommandHandle
         	msg.setResponse(GridRedisProtocolParser.toArray(List.of(n,result)));
         }
         else if(cmd == ZCARD) {
-        	msg.setResponse(GridRedisProtocolParser.toInteger(list.size()));
+        	if(list==null) {
+        		msg.setResponse(GridRedisProtocolParser.toInteger(0));
+        	}
+        	else {
+        		msg.setResponse(GridRedisProtocolParser.toInteger(list.size()));
+        	}
         }
         return new GridFinishedFuture<>(msg);
 	}

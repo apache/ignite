@@ -26,6 +26,8 @@ import java.util.List;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.IgniteQueue;
 import org.apache.ignite.IgniteSet;
+import org.apache.ignite.cache.CacheAtomicityMode;
+import org.apache.ignite.configuration.CollectionConfiguration;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.processors.rest.handlers.redis.GridRedisCommandHandler;
@@ -59,6 +61,8 @@ public class GridRedisListsCommandHandler implements GridRedisCommandHandler {
 
     /** Kernel context. */
     protected final GridKernalContext ctx;
+    
+    protected CollectionConfiguration cfg = new CollectionConfiguration();
 
     /**
      * Handler constructor.
@@ -70,6 +74,7 @@ public class GridRedisListsCommandHandler implements GridRedisCommandHandler {
     public GridRedisListsCommandHandler(IgniteLogger log, GridKernalContext ctx) {
         this.log = log;
         this.ctx = ctx;
+        cfg.setAtomicityMode(CacheAtomicityMode.TRANSACTIONAL);
     }
 
     /** {@inheritDoc} */
@@ -82,17 +87,12 @@ public class GridRedisListsCommandHandler implements GridRedisCommandHandler {
 	@Override
 	public IgniteInternalFuture<GridRedisMessage> handleAsync(GridNioSession ses, GridRedisMessage msg) {
 		assert msg != null;
-
-        if (msg.messageSize() < 3) {            
-        	msg.setResponse(GridRedisProtocolParser.toGenericError("Wrong number of arguments"));
-        	return new GridFinishedFuture<>(msg);
-        	// throw new GridRedisGenericException("Wrong number of arguments");
-        }
         
         GridRedisCommand cmd = msg.command();
             
         String queueName = msg.cacheName()+"-"+msg.key();        
-        IgniteQueue<String> list = ctx.grid().queue(queueName,0,null);
+        IgniteQueue<String> list = ctx.grid().queue(queueName,0,cfg);
+        
         if(cmd == LPOS) {         	
         	String value = msg.aux(2);
         	  	

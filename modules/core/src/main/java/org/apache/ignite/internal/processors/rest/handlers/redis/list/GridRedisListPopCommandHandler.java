@@ -21,6 +21,8 @@ import java.util.Collection;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.IgniteQueue;
 import org.apache.ignite.IgniteSet;
+import org.apache.ignite.cache.CacheAtomicityMode;
+import org.apache.ignite.configuration.CollectionConfiguration;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.processors.rest.handlers.redis.GridRedisCommandHandler;
@@ -55,6 +57,8 @@ public class GridRedisListPopCommandHandler implements GridRedisCommandHandler {
 
     /** Kernel context. */
     protected final GridKernalContext ctx;
+    
+    protected CollectionConfiguration cfg = new CollectionConfiguration();
 
     /**
      * Handler constructor.
@@ -66,6 +70,7 @@ public class GridRedisListPopCommandHandler implements GridRedisCommandHandler {
     public GridRedisListPopCommandHandler(IgniteLogger log, GridKernalContext ctx) {
         this.log = log;
         this.ctx = ctx;
+        cfg.setAtomicityMode(CacheAtomicityMode.TRANSACTIONAL);
     }
 
     /** {@inheritDoc} */
@@ -77,20 +82,14 @@ public class GridRedisListPopCommandHandler implements GridRedisCommandHandler {
 
 	@Override
 	public IgniteInternalFuture<GridRedisMessage> handleAsync(GridNioSession ses, GridRedisMessage msg) {
-		assert msg != null;
-
-        if (msg.messageSize() < 3) {            
-        	msg.setResponse(GridRedisProtocolParser.toGenericError("Wrong number of arguments"));
-        	return new GridFinishedFuture<>(msg);
-        	// throw new GridRedisGenericException("Wrong number of arguments");
-        }
+		assert msg != null;        
         
         GridRedisCommand cmd = msg.command();
             
         String queueName = msg.cacheName()+"-"+msg.key();        
         String value = null;
         if(cmd == LPOP || cmd == BLPOP) {        	
-        	IgniteQueue<String> list = ctx.grid().queue(queueName,0,null);
+        	IgniteQueue<String> list = ctx.grid().queue(queueName,0,cfg);
         	value = list.poll();
         	if(value==null && cmd == BLPOP) {
         		value = list.take();
@@ -101,13 +100,13 @@ public class GridRedisListPopCommandHandler implements GridRedisCommandHandler {
         	throw new UnsupportedOperationException("RPOP or BRPOP not supported for ignite queue!");        	
         }
         else if(cmd == SPOP) {
-        	IgniteSet<String> list = ctx.grid().set(queueName, null);
+        	IgniteSet<String> list = ctx.grid().set(queueName, cfg);
         	if(!list.isEmpty()) {
         		value = list.iterator().next();
         	}      	
         }
         else if(cmd == ZPOPMAX) {
-        	IgniteSet<ScoredItem<String>> list = ctx.grid().set(queueName,null);
+        	IgniteSet<ScoredItem<String>> list = ctx.grid().set(queueName,cfg);
         	
         	double max = Double.MIN_VALUE;        	
         	for(ScoredItem<String> item: list) {
@@ -120,7 +119,7 @@ public class GridRedisListPopCommandHandler implements GridRedisCommandHandler {
         	list.remove(new ScoredItem<String>(value,max));
         }
         else if(cmd == ZPOPMIN) {
-        	IgniteSet<ScoredItem<String>> list = ctx.grid().set(queueName,null);
+        	IgniteSet<ScoredItem<String>> list = ctx.grid().set(queueName,cfg);
         	
         	double min = Double.MAX_VALUE;        	
         	for(ScoredItem<String> item: list) {
