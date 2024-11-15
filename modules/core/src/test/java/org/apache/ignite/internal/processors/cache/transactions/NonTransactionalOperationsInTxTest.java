@@ -17,9 +17,12 @@
 
 package org.apache.ignite.internal.processors.cache.transactions;
 
+import java.util.Collections;
+import java.util.function.Consumer;
 import javax.cache.CacheException;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.configuration.NearCacheConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
@@ -47,7 +50,25 @@ public class NonTransactionalOperationsInTxTest extends GridCommonAbstractTest {
     public void testIgniteCacheClear() throws Exception {
         startGrid(0);
 
-        checkIgniteCacheClear(grid(0));
+        checkIgniteCacheClear(grid(0), false, cache -> cache.clear());
+
+        checkIgniteCacheClear(grid(0), false, cache -> cache.clear(2));
+
+        checkIgniteCacheClear(grid(0), false, cache -> cache.clearAll(Collections.singleton(2)));
+
+        checkIgniteCacheClear(grid(0), false, cache -> cache.clearAsync());
+
+        checkIgniteCacheClear(grid(0), false, cache -> cache.clearAsync(2));
+
+        checkIgniteCacheClear(grid(0), false, cache -> cache.clearAllAsync(Collections.singleton(2)));
+
+        checkIgniteCacheClear(grid(0), true, cache -> cache.localClear(2));
+
+        checkIgniteCacheClear(grid(0), true, cache -> cache.localClearAll(Collections.singleton(2)));
+
+        checkIgniteCacheClear(grid(0), false, cache -> cache.localClear(2));
+
+        checkIgniteCacheClear(grid(0), false, cache -> cache.localClearAll(Collections.singleton(2)));
     }
 
     /** */
@@ -57,7 +78,25 @@ public class NonTransactionalOperationsInTxTest extends GridCommonAbstractTest {
 
         startClientGrid(1);
 
-        checkIgniteCacheClear(grid(1));
+        checkIgniteCacheClear(grid(1), false, cache -> cache.clear());
+
+        checkIgniteCacheClear(grid(1), false, cache -> cache.clear(2));
+
+        checkIgniteCacheClear(grid(1), false, cache -> cache.clearAll(Collections.singleton(2)));
+
+        checkIgniteCacheClear(grid(1), false, cache -> cache.clearAsync());
+
+        checkIgniteCacheClear(grid(1), false, cache -> cache.clearAsync(2));
+
+        checkIgniteCacheClear(grid(1), false, cache -> cache.clearAllAsync(Collections.singleton(2)));
+
+        checkIgniteCacheClear(grid(1), true, cache -> cache.localClear(2));
+
+        checkIgniteCacheClear(grid(1), true, cache -> cache.localClearAll(Collections.singleton(2)));
+
+        checkIgniteCacheClear(grid(1), false, cache -> cache.localClear(2));
+
+        checkIgniteCacheClear(grid(1), false, cache -> cache.localClearAll(Collections.singleton(2)));
     }
 
     /**
@@ -65,8 +104,13 @@ public class NonTransactionalOperationsInTxTest extends GridCommonAbstractTest {
      *
      * @param ignite Ignite.
      */
-    private void checkIgniteCacheClear(IgniteEx ignite) {
-        IgniteCache<Object, Object> cache = ignite.cache(DEFAULT_CACHE_NAME);
+    private void checkIgniteCacheClear(IgniteEx ignite, boolean near, Consumer<IgniteCache<Object, Object>> op) {
+        IgniteCache<Object, Object> cache;
+
+        if (near)
+            cache = ignite.createNearCache(DEFAULT_CACHE_NAME, new NearCacheConfiguration<>());
+        else
+            cache = ignite.cache(DEFAULT_CACHE_NAME);
 
         cache.put(1, 1);
 
@@ -74,7 +118,7 @@ public class NonTransactionalOperationsInTxTest extends GridCommonAbstractTest {
             () -> doInTransaction(ignite, () -> {
                 cache.put(2, 2);
 
-                cache.clear();
+                op.accept(cache);
 
                 return null;
             }),

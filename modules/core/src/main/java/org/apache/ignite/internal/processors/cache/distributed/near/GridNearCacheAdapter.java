@@ -29,6 +29,7 @@ import java.util.NoSuchElementException;
 import java.util.Set;
 import java.util.UUID;
 import javax.cache.Cache;
+import javax.cache.CacheException;
 import javax.cache.expiry.ExpiryPolicy;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
@@ -350,6 +351,11 @@ public abstract class GridNearCacheAdapter<K, V> extends GridDistributedCacheAda
 
     /** {@inheritDoc} */
     @Override public boolean clearLocally(K key) {
+        if (ctx.transactional() && ctx.grid().transactions().tx() != null) {
+            throw new CacheException("Failed to invoke a non-transactional operation within a transaction: " +
+                "IgniteCache.localClear(K key).");
+        }
+
         return super.clearLocally(key) | dht().clearLocally(key);
     }
 
