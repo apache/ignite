@@ -18,9 +18,11 @@
 package org.apache.ignite.internal.processors.query.calcite.message;
 
 import java.nio.ByteBuffer;
+import java.util.Collection;
 import java.util.Map;
 import java.util.UUID;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.internal.GridDirectCollection;
 import org.apache.ignite.internal.GridDirectTransient;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
@@ -67,6 +69,10 @@ public class QueryStartRequest implements MarshalableMessage, ExecutionContextAw
     private long timeout;
 
     /** */
+    @GridDirectCollection(QueryTxEntry.class)
+    private @Nullable Collection<QueryTxEntry> qryTxEntries;
+
+    /** */
     private Map<String, String> appAttrs;
 
     /** */
@@ -82,6 +88,7 @@ public class QueryStartRequest implements MarshalableMessage, ExecutionContextAw
         Object[] params,
         @Nullable byte[] paramsBytes,
         long timeout,
+        Collection<QueryTxEntry> qryTxEntries,
         @Nullable Map<String, String> appAttrs
     ) {
         this.qryId = qryId;
@@ -94,6 +101,7 @@ public class QueryStartRequest implements MarshalableMessage, ExecutionContextAw
         this.params = params;
         this.paramsBytes = paramsBytes; // If we already have marshalled params, use it.
         this.timeout = timeout;
+        this.qryTxEntries = qryTxEntries;
         this.appAttrs = appAttrs;
     }
 
@@ -175,6 +183,13 @@ public class QueryStartRequest implements MarshalableMessage, ExecutionContextAw
         return timeout;
     }
 
+    /**
+     * @return Transaction entries to mixin on query processing.
+     */
+    public @Nullable Collection<QueryTxEntry> queryTransactionEntries() {
+        return qryTxEntries;
+    }
+
     /** */
     public Map<String, String> appAttrs() {
         return appAttrs;
@@ -186,14 +201,26 @@ public class QueryStartRequest implements MarshalableMessage, ExecutionContextAw
             paramsBytes = U.marshal(ctx, params);
 
         fragmentDesc.prepareMarshal(ctx);
+
+        if (qryTxEntries != null) {
+            for (QueryTxEntry e : qryTxEntries)
+                e.prepareMarshal(ctx);
+        }
     }
 
     /** {@inheritDoc} */
     @Override public void prepareUnmarshal(GridCacheSharedContext<?, ?> ctx) throws IgniteCheckedException {
+        ClassLoader ldr = U.resolveClassLoader(ctx.gridConfig());
+
         if (params == null && paramsBytes != null)
-            params = U.unmarshal(ctx, paramsBytes, U.resolveClassLoader(ctx.gridConfig()));
+            params = U.unmarshal(ctx, paramsBytes, ldr);
 
         fragmentDesc.prepareUnmarshal(ctx);
+
+        if (qryTxEntries != null) {
+            for (QueryTxEntry e : qryTxEntries)
+                e.prepareUnmarshal(ctx, ldr);
+        }
     }
 
     /** {@inheritDoc} */
@@ -257,12 +284,18 @@ public class QueryStartRequest implements MarshalableMessage, ExecutionContextAw
                 writer.incrementState();
 
             case 8:
-                if (!writer.writeAffinityTopologyVersion("ver", ver))
+                if (!writer.writeCollection("qryTxEntries", qryTxEntries, MessageCollectionItemType.MSG))
                     return false;
 
                 writer.incrementState();
 
             case 9:
+                if (!writer.writeAffinityTopologyVersion("ver", ver))
+                    return false;
+
+                writer.incrementState();
+
+            case 10:
                 if (!writer.writeMap("appAttrs", appAttrs, MessageCollectionItemType.STRING, MessageCollectionItemType.STRING))
                     return false;
 
@@ -345,7 +378,7 @@ public class QueryStartRequest implements MarshalableMessage, ExecutionContextAw
                 reader.incrementState();
 
             case 8:
-                ver = reader.readAffinityTopologyVersion("ver");
+                qryTxEntries = reader.readCollection("qryTxEntries", MessageCollectionItemType.MSG);
 
                 if (!reader.isLastRead())
                     return false;
@@ -353,6 +386,14 @@ public class QueryStartRequest implements MarshalableMessage, ExecutionContextAw
                 reader.incrementState();
 
             case 9:
+                ver = reader.readAffinityTopologyVersion("ver");
+
+                if (!reader.isLastRead())
+                    return false;
+
+                reader.incrementState();
+
+            case 10:
                 appAttrs = reader.readMap("appAttrs", MessageCollectionItemType.STRING, MessageCollectionItemType.STRING, false);
 
                 if (!reader.isLastRead())
@@ -372,6 +413,6 @@ public class QueryStartRequest implements MarshalableMessage, ExecutionContextAw
 
     /** {@inheritDoc} */
     @Override public byte fieldsCount() {
-        return 10;
+        return 11;
     }
 }

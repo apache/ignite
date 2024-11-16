@@ -201,9 +201,10 @@ import org.apache.ignite.lang.IgniteProductVersion;
 import org.apache.ignite.lifecycle.LifecycleAware;
 import org.apache.ignite.lifecycle.LifecycleBean;
 import org.apache.ignite.lifecycle.LifecycleEventType;
+import org.apache.ignite.marshaller.IgniteMarshallerClassFilter;
+import org.apache.ignite.marshaller.Marshaller;
 import org.apache.ignite.marshaller.MarshallerExclusions;
 import org.apache.ignite.marshaller.MarshallerUtils;
-import org.apache.ignite.marshaller.jdk.JdkMarshaller;
 import org.apache.ignite.metric.IgniteMetrics;
 import org.apache.ignite.metric.MetricRegistry;
 import org.apache.ignite.plugin.IgnitePlugin;
@@ -265,6 +266,7 @@ import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_RESTART_ENABL
 import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_REST_PORT_RANGE;
 import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_SHUTDOWN_POLICY;
 import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_SPI_CLASS;
+import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_TX_AWARE_QUERIES_ENABLED;
 import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_TX_SERIALIZABLE_ENABLED;
 import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_USER_NAME;
 import static org.apache.ignite.internal.IgniteVersionUtils.BUILD_TSTAMP_STR;
@@ -925,6 +927,10 @@ public class IgniteKernal implements IgniteEx, Externalizable {
 
         List<PluginProvider> plugins = U.allPluginProviders(cfg, true);
 
+        IgniteMarshallerClassFilter clsFilter = MarshallerUtils.classNameFilter(getClass().getClassLoader());
+
+        MarshallerUtils.autoconfigureObjectInputFilter(clsFilter);
+
         // Spin out SPIs & managers.
         try {
             ctx = new GridKernalContextImpl(log,
@@ -932,7 +938,7 @@ public class IgniteKernal implements IgniteEx, Externalizable {
                 cfg,
                 gw,
                 plugins,
-                MarshallerUtils.classNameFilter(this.getClass().getClassLoader()),
+                clsFilter,
                 workerRegistry,
                 hnd,
                 longJVMPauseDetector
@@ -942,7 +948,7 @@ public class IgniteKernal implements IgniteEx, Externalizable {
 
             mBeansMgr = new IgniteMBeansManager(this);
 
-            cfg.getMarshaller().setContext(ctx.marshallerContext());
+            initializeMarshaller();
 
             startProcessor(new GridInternalSubscriptionProcessor(ctx));
 
@@ -1443,7 +1449,6 @@ public class IgniteKernal implements IgniteEx, Externalizable {
             A.notNull(cfg.getMBeanServer(), "cfg.getMBeanServer()");
 
         A.notNull(cfg.getGridLogger(), "cfg.getGridLogger()");
-        A.notNull(cfg.getMarshaller(), "cfg.getMarshaller()");
         A.notNull(cfg.getUserAttributes(), "cfg.getUserAttributes()");
 
         // All SPIs should be non-null.
@@ -1517,6 +1522,28 @@ public class IgniteKernal implements IgniteEx, Externalizable {
                     (ram >> 20) + "MB]");
             }
         }
+    }
+
+    /** */
+    private void initializeMarshaller() {
+        Marshaller marsh = ctx.config().getMarshaller();
+
+        if (marsh == null) {
+            if (!BinaryMarshaller.available()) {
+                U.warn(log, "Standard BinaryMarshaller can't be used on this JVM. " +
+                    "Switch to HotSpot JVM or reach out Apache Ignite community for recommendations.");
+
+                marsh = ctx.marshallerContext().jdkMarshaller();
+            }
+            else
+                marsh = new BinaryMarshaller();
+
+            ctx.config().setMarshaller(marsh);
+        }
+
+        marsh.setContext(ctx.marshallerContext());
+
+        MarshallerUtils.setNodeName(marsh, ctx.igniteInstanceName());
     }
 
     /**
@@ -1705,6 +1732,7 @@ public class IgniteKernal implements IgniteEx, Externalizable {
 
         // Save transactions configuration.
         add(ATTR_TX_SERIALIZABLE_ENABLED, cfg.getTransactionConfiguration().isTxSerializableEnabled());
+        add(ATTR_TX_AWARE_QUERIES_ENABLED, cfg.getTransactionConfiguration().isTxAwareQueriesEnabled());
 
         // Supported features.
         add(ATTR_IGNITE_FEATURES, IgniteFeatures.allFeatures());
@@ -1748,7 +1776,7 @@ public class IgniteKernal implements IgniteEx, Externalizable {
         }
 
         // Save data storage configuration.
-        add(ATTR_DATA_STORAGE_CONFIG, new JdkMarshaller().marshal(cfg.getDataStorageConfiguration()));
+        add(ATTR_DATA_STORAGE_CONFIG, ctx.marshallerContext().jdkMarshaller().marshal(cfg.getDataStorageConfiguration()));
     }
 
     /**

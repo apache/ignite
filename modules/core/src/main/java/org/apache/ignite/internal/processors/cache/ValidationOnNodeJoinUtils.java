@@ -57,7 +57,6 @@ import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteProductVersion;
 import org.apache.ignite.marshaller.Marshaller;
-import org.apache.ignite.marshaller.jdk.JdkMarshaller;
 import org.apache.ignite.plugin.security.SecurityException;
 import org.apache.ignite.spi.IgniteNodeValidationResult;
 import org.apache.ignite.spi.discovery.DiscoveryDataBag;
@@ -73,6 +72,7 @@ import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_ASYNC;
 import static org.apache.ignite.configuration.DeploymentMode.ISOLATED;
 import static org.apache.ignite.configuration.DeploymentMode.PRIVATE;
 import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_CONSISTENCY_CHECK_SKIPPED;
+import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_TX_AWARE_QUERIES_ENABLED;
 import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_TX_SERIALIZABLE_ENABLED;
 import static org.apache.ignite.internal.processors.cache.GridCacheUtils.isDefaultDataRegionPersistent;
 import static org.apache.ignite.internal.processors.security.SecurityUtils.nodeSecurityContext;
@@ -575,6 +575,18 @@ public class ValidationOnNodeJoinUtils {
                     ", locTxSerializableEnabled=" + locTxCfg.isTxSerializableEnabled() +
                     ", rmtTxSerializableEnabled=" + rmtTxSer + ']');
         }
+
+        Boolean rmtTxAwareQryEnabled = rmt.attribute(ATTR_TX_AWARE_QUERIES_ENABLED);
+
+        if (rmtTxAwareQryEnabled != null) {
+            TransactionConfiguration locTxCfg = ctx.config().getTransactionConfiguration();
+
+            if (!rmtTxAwareQryEnabled.equals(locTxCfg.isTxAwareQueriesEnabled()))
+                throw new IgniteCheckedException("Transactions aware queries enabled mismatch " +
+                    "(fix txAwareQueriesEnabled property) [rmtNodeId=" + rmt.id() +
+                    ", locTxAwareQueriesEnabled=" + locTxCfg.isTxAwareQueriesEnabled() +
+                    ", rmtTxAwareQueriesEnabled=" + rmtTxAwareQryEnabled + ']');
+        }
     }
 
     /**
@@ -591,7 +603,7 @@ public class ValidationOnNodeJoinUtils {
         Object dsCfgBytes = rmt.attribute(IgniteNodeAttributes.ATTR_DATA_STORAGE_CONFIG);
 
         if (dsCfgBytes instanceof byte[])
-            dsCfg = new JdkMarshaller().unmarshal((byte[])dsCfgBytes, U.resolveClassLoader(ctx.config()));
+            dsCfg = ctx.marshallerContext().jdkMarshaller().unmarshal((byte[])dsCfgBytes, U.resolveClassLoader(ctx.config()));
 
         if (dsCfg == null) {
             // Try to use legacy memory configuration.

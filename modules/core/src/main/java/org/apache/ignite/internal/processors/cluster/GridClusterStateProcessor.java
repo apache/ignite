@@ -182,7 +182,7 @@ public class GridClusterStateProcessor extends GridProcessorAdapter implements I
     private ReadWriteMetastorage metastorage;
 
     /** */
-    private final JdkMarshaller marsh = new JdkMarshaller();
+    private final JdkMarshaller marsh;
 
     /** Updater of baseline topology. */
     private BaselineTopologyUpdater baselineTopologyUpdater;
@@ -221,6 +221,8 @@ public class GridClusterStateProcessor extends GridProcessorAdapter implements I
         super(ctx);
 
         ctx.internalSubscriptionProcessor().registerMetastorageListener(this);
+
+        marsh = ctx.marshallerContext().jdkMarshaller();
 
         distributedBaselineConfiguration = new DistributedBaselineConfiguration(
             ctx.internalSubscriptionProcessor(),
@@ -1109,7 +1111,12 @@ public class GridClusterStateProcessor extends GridProcessorAdapter implements I
         boolean forceChangeBaselineTopology,
         boolean isAutoAdjust
     ) {
-        ctx.security().authorize(SecurityPermission.ADMIN_CLUSTER_STATE);
+        try {
+            ctx.security().authorize(SecurityPermission.ADMIN_CLUSTER_STATE);
+        }
+        catch (org.apache.ignite.plugin.security.SecurityException secEx) {
+            return new GridFinishedFuture<>(secEx);
+        }
 
         if (ctx.maintenanceRegistry().isMaintenanceMode()) {
             return new GridFinishedFuture<>(

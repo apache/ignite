@@ -48,6 +48,7 @@ import org.apache.ignite.internal.processors.cache.CacheObjectUtils;
 import org.apache.ignite.internal.processors.cache.CacheObjectValueContext;
 import org.apache.ignite.internal.processors.cache.GridCachePartitionExchangeManager;
 import org.apache.ignite.internal.processors.cache.QueryCursorImpl;
+import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxLocal;
 import org.apache.ignite.internal.processors.cache.query.CacheQueryType;
 import org.apache.ignite.internal.processors.cache.query.GridCacheQueryType;
 import org.apache.ignite.internal.processors.cache.query.IgniteQueryErrorCode;
@@ -609,6 +610,8 @@ public class ExecutionServiceImpl<Row> extends AbstractService implements Execut
 
         MemoryTracker qryMemoryTracker = qry.createMemoryTracker(memoryTracker, cfg.getQueryMemoryQuota());
 
+        final GridNearTxLocal userTx = Commons.queryTransaction(qry.context(), ctx.cache().context());
+
         ExecutionContext<Row> ectx = new ExecutionContext<>(
             qry.context(),
             taskExecutor(),
@@ -621,7 +624,8 @@ public class ExecutionServiceImpl<Row> extends AbstractService implements Execut
             qryMemoryTracker,
             createIoTracker(locNodeId, qry.localQueryId()),
             timeout,
-            qryParams);
+            qryParams,
+            userTx == null ? null : ExecutionContext.transactionChanges(userTx.writeEntries()));
 
         Node<Row> node = new LogicalRelImplementor<>(ectx, partitionService(), mailboxRegistry(),
             exchangeService(), failureProcessor()).go(fragment.root());
@@ -663,6 +667,7 @@ public class ExecutionServiceImpl<Row> extends AbstractService implements Execut
                             qry.parameters(),
                             parametersMarshalled,
                             timeout,
+                            ectx.getQryTxEntries(),
                             sesCtx == null ? null : sesCtx.getAttributes()
                         );
 
@@ -873,7 +878,8 @@ public class ExecutionServiceImpl<Row> extends AbstractService implements Execut
                 qry.createMemoryTracker(memoryTracker, cfg.getQueryMemoryQuota()),
                 createIoTracker(nodeId, msg.originatingQryId()),
                 msg.timeout(),
-                Commons.parametersMap(msg.parameters())
+                Commons.parametersMap(msg.parameters()),
+                msg.queryTransactionEntries()
             );
 
             executeFragment(qry, (FragmentPlan)qryPlan, ectx);

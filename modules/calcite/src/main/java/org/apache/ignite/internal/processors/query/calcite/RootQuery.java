@@ -289,7 +289,7 @@ public class RootQuery<RowT> extends Query<RowT> implements TrackableQuery {
                 }
 
                 if (wrpEx != null)
-                    log.warning("An exception occures during the query cancel", wrpEx);
+                    log.warning("An exception occurs during the query cancel", wrpEx);
             }
             finally {
                 super.tryClose(failure == null && root != null ? root.failure() : failure);

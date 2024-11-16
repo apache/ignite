@@ -74,6 +74,11 @@ public class AbstractBasicIntegrationTest extends GridCommonAbstractTest {
         client = startClientGrid("client");
     }
 
+    /** */
+    protected boolean destroyCachesAfterTest() {
+        return true;
+    }
+
     /** {@inheritDoc} */
     @Override protected void afterTest() throws Exception {
         // Wait for pending queries before destroying caches. If some error occurs during query execution, client code
@@ -92,8 +97,10 @@ public class AbstractBasicIntegrationTest extends GridCommonAbstractTest {
         }, INBOX_INITIALIZATION_TIMEOUT * 2);
 
         for (Ignite ign : G.allGrids()) {
-            for (String cacheName : ign.cacheNames())
-                ign.destroyCache(cacheName);
+            if (destroyCachesAfterTest()) {
+                for (String cacheName : ign.cacheNames())
+                    ign.destroyCache(cacheName);
+            }
 
             CalciteQueryProcessor qryProc = queryProcessor(ign);
 
@@ -137,7 +144,7 @@ public class AbstractBasicIntegrationTest extends GridCommonAbstractTest {
     }
 
     /** */
-    protected QueryChecker assertQuery(Ignite ignite, String qry) {
+    protected QueryChecker assertQuery(IgniteEx ignite, String qry) {
         return new QueryChecker(qry) {
             @Override protected QueryEngine getEngine() {
                 return Commons.lookupComponent(((IgniteEx)ignite).context(), QueryEngine.class);
@@ -145,12 +152,22 @@ public class AbstractBasicIntegrationTest extends GridCommonAbstractTest {
         };
     }
 
-    /**
-     * @deprecated Use {@link #sql(String, Object...)} instead.
-     */
+    /** @deprecated Use {@link #sql(String, Object...)} instead. */
     @Deprecated
     protected List<List<?>> executeSql(String sql, Object... args) {
-        return sql(sql, args);
+        return executeSql(client, sql, args);
+    }
+
+    /** @deprecated Use {@link #sql(String, Object...)} instead. */
+    @Deprecated
+    protected List<List<?>> executeSql(IgniteEx ignite, String sql, Object... args) {
+        CalciteQueryProcessor qryProc = Commons.lookupComponent(ignite.context(), CalciteQueryProcessor.class);
+
+        List<FieldsQueryCursor<List<?>>> cur = qryProc.query(queryContext(), "PUBLIC", sql, args);
+
+        try (QueryCursor<List<?>> srvCursor = cur.get(0)) {
+            return srvCursor.getAll();
+        }
     }
 
     /** */
@@ -171,12 +188,12 @@ public class AbstractBasicIntegrationTest extends GridCommonAbstractTest {
 
     /** */
     protected IgniteCache<Integer, Employer> createAndPopulateTable() {
-        return createAndPopulateTable(2, CacheMode.PARTITIONED);
+        return createAndPopulateTable(client, 2, CacheMode.PARTITIONED);
     }
 
     /** */
-    protected IgniteCache<Integer, Employer> createAndPopulateTable(int backups, CacheMode cacheMode) {
-        IgniteCache<Integer, Employer> person = client.getOrCreateCache(new CacheConfiguration<Integer, Employer>()
+    protected IgniteCache<Integer, Employer> createAndPopulateTable(Ignite ignite, int backups, CacheMode cacheMode) {
+        IgniteCache<Integer, Employer> person = ignite.getOrCreateCache(this.<Integer, Employer>cacheConfiguration()
             .setName(TABLE_NAME)
             .setSqlSchema("PUBLIC")
             .setQueryEntities(F.asList(new QueryEntity(Integer.class, Employer.class)
@@ -190,13 +207,23 @@ public class AbstractBasicIntegrationTest extends GridCommonAbstractTest {
 
         int idx = 0;
 
-        person.put(idx++, new Employer("Igor", 10d));
-        person.put(idx++, new Employer(null, 15d));
-        person.put(idx++, new Employer("Ilya", 15d));
-        person.put(idx++, new Employer("Roma", 10d));
-        person.put(idx++, new Employer("Roma", 10d));
+        put(ignite, person, idx++, new Employer("Igor", 10d));
+        put(ignite, person, idx++, new Employer(null, 15d));
+        put(ignite, person, idx++, new Employer("Ilya", 15d));
+        put(ignite, person, idx++, new Employer("Roma", 10d));
+        put(ignite, person, idx, new Employer("Roma", 10d));
 
         return person;
+    }
+
+    /** */
+    protected <K, V> void put(Ignite ignite, IgniteCache<K, V> c, K key, V val) {
+        c.put(key, val);
+    }
+
+    /** */
+    protected <K, V> CacheConfiguration<K, V> cacheConfiguration() {
+        return new CacheConfiguration<>();
     }
 
     /** */

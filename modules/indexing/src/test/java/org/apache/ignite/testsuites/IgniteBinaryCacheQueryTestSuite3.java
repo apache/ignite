@@ -91,6 +91,7 @@ import org.apache.ignite.internal.processors.cache.index.H2ConnectionSettingsTes
 import org.apache.ignite.internal.processors.cache.index.H2RowCachePageEvictionTest;
 import org.apache.ignite.internal.processors.cache.index.H2RowCacheSelfTest;
 import org.apache.ignite.internal.processors.cache.index.H2RowExpireTimeIndexSelfTest;
+import org.apache.ignite.internal.processors.cache.index.H2TransactionAwareQueriesEnabledTest;
 import org.apache.ignite.internal.processors.cache.index.IgniteDecimalSelfTest;
 import org.apache.ignite.internal.processors.cache.index.IndexColumnTypeMismatchTest;
 import org.apache.ignite.internal.processors.cache.index.LongIndexNameTest;
@@ -375,7 +376,9 @@ import org.junit.runners.Suite;
     CacheEventsCdcTest.class,
     CdcIndexRebuildTest.class,
 
-    DumpCacheConfigTest.class
+    DumpCacheConfigTest.class,
+
+    H2TransactionAwareQueriesEnabledTest.class,
 })
 public class IgniteBinaryCacheQueryTestSuite3 {
     /** Setup lazy mode default. */
