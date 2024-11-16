@@ -176,6 +176,9 @@ public class GridDhtLocalPartition extends GridCacheConcurrentMapImpl implements
     /** */
     private volatile long clearVer;
 
+    /** Partition clearing future. */
+    private ThreadLocal<IgniteInternalFuture<?>> partClearFut = new ThreadLocal<>();
+
     /**
      * @param ctx Context.
      * @param grp Cache group.
@@ -699,20 +702,22 @@ public class GridDhtLocalPartition extends GridCacheConcurrentMapImpl implements
 
         GridDhtPartitionState partState = getPartState(state0);
 
+        partClearFut.remove();
+
         if (partState == EVICTED)
             return rent;
 
         if (partState == RENTING) {
             // If for some reason a partition has stuck in renting state try restart clearing.
             if (finishFutRef.get() == null)
-                clearAsync();
+                partClearFut.set(clearAsync());
 
             return rent;
         }
 
         if (tryInvalidateGroupReservations() && getReservations(state0) == 0 && casState(state0, RENTING)) {
             // Evict asynchronously, as the 'rent' method may be called from within write locks on local partition.
-            clearAsync();
+            partClearFut.set(clearAsync());
         }
         else
             delayedRenting = true;
@@ -1304,6 +1309,13 @@ public class GridDhtLocalPartition extends GridCacheConcurrentMapImpl implements
      */
     public void beforeApplyBatch(boolean last) {
         // No-op.
+    }
+
+    /**
+     * @return Partition clearing future.
+     */
+    public IgniteInternalFuture<?> partClearFut() {
+        return partClearFut.get();
     }
 
     /**

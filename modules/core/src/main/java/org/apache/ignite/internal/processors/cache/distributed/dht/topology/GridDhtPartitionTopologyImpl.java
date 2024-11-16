@@ -29,6 +29,7 @@ import java.util.NoSuchElementException;
 import java.util.Set;
 import java.util.TreeSet;
 import java.util.UUID;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.atomic.AtomicReferenceArray;
 import java.util.stream.Collectors;
 import org.apache.ignite.IgniteCheckedException;
@@ -37,6 +38,7 @@ import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.events.DiscoveryEvent;
 import org.apache.ignite.events.EventType;
+import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.managers.discovery.DiscoCache;
 import org.apache.ignite.internal.pagemem.wal.record.RollbackRecord;
@@ -465,6 +467,8 @@ public class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
             else {
                 // If preloader is disabled, then we simply clear out
                 // the partitions this node is not responsible for.
+                Map<IgniteInternalFuture<?>, Integer> futPartMap = new HashMap<>();
+
                 for (int p = 0; p < partitions; p++) {
                     GridDhtLocalPartition locPart = localPartition0(p, affVer, false, true);
 
@@ -476,6 +480,9 @@ public class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
 
                             if (state.active()) {
                                 locPart.rent();
+
+                                if (locPart.partClearFut() != null)
+                                    futPartMap.put(locPart.partClearFut(), locPart.id());
 
                                 updateSeq = updateLocal(p, locPart.state(), updateSeq, affVer);
 
@@ -500,6 +507,9 @@ public class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
                         updateLocal(p, locPart.state(), updateSeq, affVer);
                     }
                 }
+
+                if (!futPartMap.isEmpty())
+                    logEvictionResults(futPartMap,"rebalancing disabled, partitions did not belong to affinity");
             }
         }
 
@@ -805,6 +815,8 @@ public class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
 
                 // Skip partition updates in case of not real exchange.
                 if (!ctx.localNode().isClient() && exchFut.exchangeType() == ALL) {
+                    Map<IgniteInternalFuture<?>, Integer> futPartMap = new HashMap<>();
+
                     for (int p = 0; p < partitions; p++) {
                         GridDhtLocalPartition locPart = localPartition0(p, topVer, false, true);
 
@@ -838,6 +850,9 @@ public class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
                                 if (state == MOVING) {
                                     locPart.rent();
 
+                                    if (locPart.partClearFut() != null)
+                                        futPartMap.put(locPart.partClearFut(), locPart.id());
+
                                     updateSeq = updateLocal(p, locPart.state(), updateSeq, topVer);
 
                                     changed = true;
@@ -850,6 +865,9 @@ public class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
                             }
                         }
                     }
+
+                    if (!futPartMap.isEmpty())
+                        logEvictionResults(futPartMap,"moving partitions not belonging to affinity");
                 }
 
                 AffinityAssignment aff = grp.affinity().readyAffinity(topVer);
@@ -2541,6 +2559,8 @@ public class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
 
         UUID locId = ctx.localNodeId();
 
+        Map<IgniteInternalFuture<?>, Integer> futPartMap = new HashMap<>();
+
         for (int p = 0; p < locParts.length(); p++) {
             GridDhtLocalPartition part = locParts.get(p);
 
@@ -2561,6 +2581,9 @@ public class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
                 GridDhtPartitionState state0 = part.state();
 
                 part.rent();
+
+                if (part.partClearFut() != null)
+                    futPartMap.put(part.partClearFut(), part.id());
 
                 updateSeq = updateLocal(part.id(), part.state(), updateSeq, aff.topologyVersion());
 
@@ -2591,6 +2614,9 @@ public class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
 
                             part.rent();
 
+                            if (part.partClearFut() != null)
+                                futPartMap.put(part.partClearFut(), part.id());
+
                             updateSeq = updateLocal(part.id(), part.state(), updateSeq, aff.topologyVersion());
 
                             boolean stateChanged = state0 != part.state();
@@ -2609,6 +2635,9 @@ public class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
                 }
             }
         }
+
+        if (!futPartMap.isEmpty())
+            logEvictionResults(futPartMap,"partitions did not belong to affinity");
 
         return hasEvictedPartitions;
     }
@@ -3273,6 +3302,49 @@ public class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
         }
 
         return sb.toString();
+    }
+
+    /**
+     * Prints eviction results to the log.
+     *
+     * @param futPartMap Map containing partition clearing futures and partition ids.
+     * @param evictReason Reason for eviction.
+     */
+    private void logEvictionResults(Map<IgniteInternalFuture<?>, Integer> futPartMap, String evictReason) {
+        Set<Integer> evictedParts = new HashSet<>();
+        Set<Integer> notEvictedParts = new HashSet<>();
+
+        CompletableFuture.allOf(futPartMap.keySet().stream().map(fut -> CompletableFuture.supplyAsync(() -> {
+            try {
+                fut.get();
+
+                evictedParts.add(futPartMap.get(fut));
+
+                return null;
+            }
+            catch (Exception ex) {
+                notEvictedParts.add(futPartMap.get(fut));
+
+                return null;
+            }
+        })).toArray(CompletableFuture[]::new)).whenComplete((res, err) -> {
+            if (notEvictedParts.isEmpty()) {
+                log.info("Partitions have been successfullly evicted (reason for eviction: " + evictReason + ")"
+                    + " [grp=" + grp.cacheOrGroupName()
+                    + ", partitions=" + S.toStringSortedDistinct(evictedParts) + "]");
+            }
+            else if (evictedParts.isEmpty()) {
+                log.warning("None of partitions have been evicted (reason for eviction: " + evictReason + ")"
+                    + " [grp=" + grp.cacheOrGroupName()
+                    + ", partitions=" + S.toStringSortedDistinct(notEvictedParts) + "]");
+            }
+            else {
+                log.warning("Some of partitions have not been evicted (reason for eviction: " + evictReason + ")"
+                    + " [grp=" + grp.cacheOrGroupName()
+                    + ", partitionsEvicted=" + S.toStringSortedDistinct(evictedParts)
+                    + ", partitionsNotEvicted=" + S.toStringSortedDistinct(notEvictedParts) + "]");
+            }
+        });
     }
 
     /**
