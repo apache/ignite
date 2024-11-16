@@ -40,7 +40,6 @@ import org.apache.ignite.internal.IgniteKernal;
 import org.apache.ignite.internal.LongJVMPauseDetector;
 import org.apache.ignite.internal.MarshallerContextImpl;
 import org.apache.ignite.internal.binary.BinaryMarshaller;
-import org.apache.ignite.internal.cache.context.SessionContextProcessor;
 import org.apache.ignite.internal.cache.query.index.IndexProcessor;
 import org.apache.ignite.internal.cache.transform.CacheObjectTransformerProcessor;
 import org.apache.ignite.internal.managers.checkpoint.GridCheckpointManager;
@@ -732,11 +731,6 @@ public class StandaloneGridKernalContext implements GridKernalContext {
 
     /** {@inheritDoc} */
     @Override public Executor getAsyncContinuationExecutor() {
-        return null;
-    }
-
-    /** {@inheritDoc} */
-    @Override public SessionContextProcessor sessionContext() {
         return null;
     }
 

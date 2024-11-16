@@ -1889,7 +1889,7 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
 
         UUID newSecSubjId = secSubjId != null ? secSubjId : nodeId;
 
-        try (OperationSecurityContext ignored = ctx.security().withContext(newSecSubjId)) {
+        try (OperationSecurityContext s = ctx.security().withContext(newSecSubjId)) {
             lsnr.onMessage(nodeId, msg, plc);
         }
         finally {

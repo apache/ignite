@@ -17,13 +17,9 @@
 
 package org.apache.ignite.internal.processors.security.thread;
 
-import java.util.Map;
-import org.apache.ignite.IgniteException;
-import org.apache.ignite.internal.cache.context.SessionContextProcessor;
 import org.apache.ignite.internal.processors.security.IgniteSecurity;
 import org.apache.ignite.internal.processors.security.OperationSecurityContext;
 import org.apache.ignite.internal.processors.security.SecurityContext;
-import org.jetbrains.annotations.Nullable;
 
 /**
  * Represents a {@link Runnable} wrapper that executes the original {@link Runnable} with the security context
@@ -37,50 +33,30 @@ class SecurityAwareRunnable implements Runnable {
     private final IgniteSecurity security;
 
     /** */
-    private final @Nullable SessionContextProcessor sesCtxProc;
-
-    /** */
     private final SecurityContext secCtx;
 
     /** */
-    private final @Nullable Map<String, String> sesAttrs;
-
-    /** */
-    private SecurityAwareRunnable(IgniteSecurity security, @Nullable SessionContextProcessor sesCtxProc, Runnable delegate) {
+    private SecurityAwareRunnable(IgniteSecurity security, Runnable delegate) {
+        assert security.enabled();
         assert delegate != null;
 
         this.delegate = delegate;
         this.security = security;
-        this.sesCtxProc = sesCtxProc;
-
         secCtx = security.securityContext();
-
-        sesAttrs = sesCtxProc == null ? null : sesCtxProc.attributes();
     }
 
     /** {@inheritDoc} */
     @Override public void run() {
-        try (
-            OperationSecurityContext ignored = security.withContext(secCtx);
-            AutoCloseable ignored0 = sesCtxProc == null ? null : sesCtxProc.withContext(sesAttrs)
-        ) {
+        try (OperationSecurityContext ignored = security.withContext(secCtx)) {
             delegate.run();
-        }
-        catch (Exception e) {
-            throw new IgniteException("Failed to close SessionContext", e);
         }
     }
 
     /** */
     static Runnable of(IgniteSecurity security, Runnable delegate) {
-        return of(security, null, delegate);
-    }
-
-    /** */
-    static Runnable of(IgniteSecurity security, SessionContextProcessor sesCtxProc, Runnable delegate) {
-        if (delegate == null || (security.isDefaultContext() && sesCtxProc != null && sesCtxProc.context() == null))
+        if (delegate == null || security.isDefaultContext())
             return delegate;
 
-        return new SecurityAwareRunnable(security, sesCtxProc, delegate);
+        return new SecurityAwareRunnable(security, delegate);
     }
 }

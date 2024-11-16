@@ -15,18 +15,30 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.cache;
+package org.apache.ignite.internal.cache.context;
 
-import org.apache.ignite.Ignite;
+import java.util.HashMap;
+import java.util.Map;
+import org.apache.ignite.cache.SessionContext;
 import org.jetbrains.annotations.Nullable;
 
-/**
- * Provides access to attributes set with {@link Ignite#withApplicationAttributes}.
- */
-public interface SessionContext {
-    /**
-     * @param name Attribute name.
-     * @return Attribute value, or {@code null} if not speicifed.
-    .*/
-    public @Nullable String getAttribute(String name);
+/** */
+public final class SessionContextImpl implements SessionContext {
+    /** Session attributes. */
+    private final Map<String, String> attrs;
+
+    /** @param attrs Session attributes. */
+    public SessionContextImpl(Map<String, String> attrs) {
+        this.attrs = new HashMap<>(attrs);
+    }
+
+    /** {@inheritDoc} */
+    @Override public @Nullable String getAttribute(String name) {
+        return attrs.get(name);
+    }
+
+    /** @return Application attributes. */
+    public Map<String, String> getAttributes() {
+        return attrs;
+    }
 }

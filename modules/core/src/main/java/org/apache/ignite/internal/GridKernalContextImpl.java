@@ -38,7 +38,6 @@ import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.failure.FailureType;
-import org.apache.ignite.internal.cache.context.SessionContextProcessor;
 import org.apache.ignite.internal.cache.query.index.IndexProcessor;
 import org.apache.ignite.internal.cache.transform.CacheObjectTransformerProcessor;
 import org.apache.ignite.internal.maintenance.MaintenanceProcessor;
@@ -175,10 +174,6 @@ public class GridKernalContextImpl implements GridKernalContext, Externalizable 
     /** */
     @GridToStringExclude
     private IndexProcessor indexProc;
-
-    /** */
-    @GridToStringExclude
-    private SessionContextProcessor sesCtxProc;
 
     /** */
     @GridToStringExclude
@@ -594,8 +589,6 @@ public class GridKernalContextImpl implements GridKernalContext, Externalizable 
             perfStatProc = (PerformanceStatisticsProcessor)comp;
         else if (comp instanceof IndexProcessor)
             indexProc = (IndexProcessor)comp;
-        else if (comp instanceof SessionContextProcessor)
-            sesCtxProc = (SessionContextProcessor)comp;
         else if (!(comp instanceof DiscoveryNodeValidationProcessor
             || comp instanceof PlatformPluginProcessor
             || comp instanceof QueryEngine))
@@ -1108,10 +1101,5 @@ public class GridKernalContextImpl implements GridKernalContext, Externalizable 
         return config().getAsyncContinuationExecutor() == null
                 ? ForkJoinPool.commonPool()
                 : config().getAsyncContinuationExecutor();
-    }
-
-    /** {@inheritDoc} */
-    @Override public SessionContextProcessor sessionContext() {
-        return sesCtxProc;
     }
 }

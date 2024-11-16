@@ -90,7 +90,6 @@ import org.apache.ignite.events.EventType;
 import org.apache.ignite.internal.binary.BinaryEnumCache;
 import org.apache.ignite.internal.binary.BinaryMarshaller;
 import org.apache.ignite.internal.binary.BinaryUtils;
-import org.apache.ignite.internal.cache.context.SessionContextProcessor;
 import org.apache.ignite.internal.cache.query.index.IndexProcessor;
 import org.apache.ignite.internal.cache.transform.CacheObjectTransformerProcessor;
 import org.apache.ignite.internal.cluster.ClusterGroupAdapter;
@@ -1105,7 +1104,6 @@ public class IgniteKernal implements IgniteEx, Externalizable {
                 startProcessor(new DistributedMetaStorageImpl(ctx));
                 startProcessor(new DistributedConfigurationProcessor(ctx));
                 startProcessor(new DurableBackgroundTasksProcessor(ctx));
-                startProcessor(new SessionContextProcessor(ctx));
 
                 CacheObjectTransformerProcessor transProc = createComponent(CacheObjectTransformerProcessor.class, ctx);
 

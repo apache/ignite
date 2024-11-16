@@ -53,6 +53,7 @@ import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.cache.CacheWriteSynchronizationMode;
 import org.apache.ignite.cache.QueryEntity;
 import org.apache.ignite.cache.QueryIndex;
+import org.apache.ignite.cache.SessionContext;
 import org.apache.ignite.cache.query.FieldsQueryCursor;
 import org.apache.ignite.cache.query.QueryCursor;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
@@ -66,6 +67,7 @@ import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.NodeStoppingException;
 import org.apache.ignite.internal.binary.BinaryMetadata;
+import org.apache.ignite.internal.cache.context.SessionContextImpl;
 import org.apache.ignite.internal.cache.query.index.IndexProcessor;
 import org.apache.ignite.internal.cache.query.index.IndexQueryProcessor;
 import org.apache.ignite.internal.cache.query.index.IndexQueryResult;
@@ -75,6 +77,7 @@ import org.apache.ignite.internal.processors.GridProcessorAdapter;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.CacheObject;
 import org.apache.ignite.internal.processors.cache.CacheObjectContext;
+import org.apache.ignite.internal.processors.cache.CacheOperationContext;
 import org.apache.ignite.internal.processors.cache.DynamicCacheChangeBatch;
 import org.apache.ignite.internal.processors.cache.DynamicCacheChangeRequest;
 import org.apache.ignite.internal.processors.cache.DynamicCacheDescriptor;
@@ -3067,8 +3070,17 @@ public class GridQueryProcessor extends GridProcessorAdapter {
                                 );
                             }
                             else {
+                                SessionContext sesCtx = null;
+
+                                if (cctx != null) {
+                                    CacheOperationContext opCtx = cctx.operationContextPerCall();;
+
+                                    if (opCtx != null && opCtx.applicationAttributes() != null)
+                                        sesCtx = new SessionContextImpl(opCtx.applicationAttributes());
+                                }
+
                                 res = qryEngine.query(
-                                    QueryContext.of(qry, cliCtx, cancel, qryProps, ctx.resource(), ctx.sessionContext().context()),
+                                    QueryContext.of(qry, cliCtx, cancel, qryProps, ctx.resource(), sesCtx),
                                     schemaName,
                                     qry.getSql(),
                                     qry.getArgs() != null ? qry.getArgs() : X.EMPTY_OBJECT_ARRAY
