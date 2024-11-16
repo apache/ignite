@@ -65,7 +65,7 @@ public class JdbcUtils {
                 List<Object> col = new ArrayList<>(colsSize);
 
                 for (int colCnt = 0; colCnt < colsSize; ++colCnt)
-                    col.add(readObject(reader, protoCtx));
+                    col.add(readObject(reader, protoCtx, false));
 
                 items.add(col);
             }
@@ -136,6 +136,22 @@ public class JdbcUtils {
     /**
      * @param reader Reader.
      * @param protoCtx Protocol context.
+     * @param createByteArrayCopy Whether to create new copy or copy-on-write buffer for byte array.
+     * @return Read object.
+     * @throws BinaryObjectException On error.
+     */
+    @Nullable public static Object readObject(
+            BinaryReaderExImpl reader,
+            JdbcProtocolContext protoCtx,
+            boolean createByteArrayCopy
+    ) throws BinaryObjectException {
+        return SqlListenerUtils.readObject(reader.readByte(), reader,
+                protoCtx.isFeatureSupported(JdbcThinFeature.CUSTOM_OBJECT), protoCtx.keepBinary(), createByteArrayCopy);
+    }
+
+    /**
+     * @param reader Reader.
+     * @param protoCtx Protocol context.
      * @return Read object.
      * @throws BinaryObjectException On error.
      */
@@ -143,8 +159,7 @@ public class JdbcUtils {
         BinaryReaderExImpl reader,
         JdbcProtocolContext protoCtx
     ) throws BinaryObjectException {
-        return SqlListenerUtils.readObject(reader.readByte(), reader,
-            protoCtx.isFeatureSupported(JdbcThinFeature.CUSTOM_OBJECT), protoCtx.keepBinary());
+        return readObject(reader, protoCtx, true);
     }
 
     /**

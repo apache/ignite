@@ -83,7 +83,6 @@ import org.apache.ignite.lang.IgniteFuture;
 import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.marshaller.Marshaller;
-import org.apache.ignite.marshaller.jdk.JdkMarshaller;
 import org.apache.ignite.plugin.security.SecurityException;
 import org.apache.ignite.plugin.security.SecurityPermission;
 import org.apache.ignite.services.Service;
@@ -204,7 +203,7 @@ public class IgniteServiceProcessor extends GridProcessorAdapter implements Igni
         new OomExceptionHandler(ctx));
 
     /** Marshaller for serialization/deserialization of service's instance. */
-    private final Marshaller marsh = new JdkMarshaller();
+    private final Marshaller marsh;
 
     /** Services deployment manager. */
     private volatile ServiceDeploymentManager depMgr = new ServiceDeploymentManager(ctx);
@@ -240,6 +239,8 @@ public class IgniteServiceProcessor extends GridProcessorAdapter implements Igni
      */
     public IgniteServiceProcessor(GridKernalContext ctx) {
         super(ctx);
+
+        marsh = ctx.marshallerContext().jdkMarshaller();
 
         ctx.systemView().registerView(SVCS_VIEW, SVCS_VIEW_DESC,
             new ServiceViewWalker(),

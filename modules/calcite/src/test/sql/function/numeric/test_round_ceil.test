@@ -11,41 +11,41 @@ INSERT INTO numbers VALUES (NULL),(-42.8),(-42.2),(0), (42.2), (42.8)
 query I
 SELECT cast(CEIL(n::tinyint) as bigint) FROM numbers ORDER BY n NULLS LAST
 ----
--42
+-43
 -42
 0
 42
-42
+43
 NULL
 
 query I
 SELECT cast(CEIL(n::smallint) as bigint) FROM numbers ORDER BY n NULLS LAST
 ----
--42
+-43
 -42
 0
 42
-42
+43
 NULL
 
 query I
 SELECT cast(CEIL(n::integer) as bigint) FROM numbers ORDER BY n NULLS LAST
 ----
--42
+-43
 -42
 0
 42
-42
+43
 NULL
 
 query I
 SELECT cast(CEIL(n::bigint) as bigint) FROM numbers ORDER BY n NULLS LAST
 ----
--42
+-43
 -42
 0
 42
-42
+43
 NULL
 
 query I
@@ -81,41 +81,41 @@ NULL
 query I
 SELECT cast(FLOOR(n::tinyint) as bigint) FROM numbers ORDER BY n NULLS LAST
 ----
--42
+-43
 -42
 0
 42
-42
+43
 NULL
 
 query I
 SELECT cast(FLOOR(n::smallint) as bigint) FROM numbers ORDER BY n NULLS LAST
 ----
--42
+-43
 -42
 0
 42
-42
+43
 NULL
 
 query I
 SELECT cast(FLOOR(n::integer) as bigint) FROM numbers ORDER BY n NULLS LAST
 ----
--42
+-43
 -42
 0
 42
-42
+43
 NULL
 
 query I
 SELECT cast(FLOOR(n::bigint) as bigint) FROM numbers ORDER BY n NULLS LAST
 ----
--42
+-43
 -42
 0
 42
-42
+43
 NULL
 
 query I

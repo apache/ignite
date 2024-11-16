@@ -58,7 +58,6 @@ import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.A;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.U;
-import org.apache.ignite.marshaller.MarshallerUtils;
 import org.apache.ignite.marshaller.jdk.JdkMarshaller;
 import org.apache.ignite.spi.encryption.EncryptionSpi;
 import org.jetbrains.annotations.Nullable;
@@ -199,13 +198,13 @@ public class Dump implements AutoCloseable {
     }
 
     /** @return List of snapshot metadata saved in {@link #dumpDir}. */
-    public List<SnapshotMetadata> metadata() throws IOException, IgniteCheckedException {
+    public List<SnapshotMetadata> metadata() {
         return Collections.unmodifiableList(metadata);
     }
 
     /** @return List of snapshot metadata saved in {@link #dumpDir}. */
     private static List<SnapshotMetadata> metadata(File dumpDir, @Nullable String consistentId) {
-        JdkMarshaller marsh = MarshallerUtils.jdkMarshaller("fake-node");
+        JdkMarshaller marsh = new JdkMarshaller();
 
         ClassLoader clsLdr = U.resolveClassLoader(new IgniteConfiguration());
 
@@ -232,7 +231,7 @@ public class Dump implements AutoCloseable {
      * @return List of cache configs saved in dump for group.
      */
     public List<StoredCacheData> configs(String node, int grp) {
-        JdkMarshaller marsh = MarshallerUtils.jdkMarshaller(cctx.igniteInstanceName());
+        JdkMarshaller marsh = cctx.marshallerContext().jdkMarshaller();
 
         return Arrays.stream(FilePageStoreManager.cacheDataFiles(dumpGroupDirectory(node, grp))).map(f -> {
             try {

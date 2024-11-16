@@ -166,7 +166,7 @@ public class GridCacheQueryRequest extends GridCacheIdMessage implements GridCac
     public static GridCacheQueryRequest startQueryRequest(GridCacheContext<?, ?> cctx, long reqId,
         GridCacheDistributedQueryFuture<?, ?, ?> fut) {
         GridCacheQueryBean bean = fut.query();
-        GridCacheQueryAdapter<?> qry = bean.query();
+        CacheQuery<?> qry = bean.query();
 
         boolean deployFilterOrTransformer = (qry.scanFilter() != null || qry.transform() != null)
             && cctx.gridDeploy().enabled();
@@ -203,7 +203,7 @@ public class GridCacheQueryRequest extends GridCacheIdMessage implements GridCac
      * @param reqId Request (cache query) ID.
      */
     public static GridCacheQueryRequest pageRequest(GridCacheContext<?, ?> cctx, long reqId,
-        GridCacheQueryAdapter<?> qry, boolean fields) {
+        CacheQuery<?> qry, boolean fields) {
 
         return new GridCacheQueryRequest(
             cctx.cacheId(),
@@ -452,20 +452,22 @@ public class GridCacheQueryRequest extends GridCacheIdMessage implements GridCac
 
         Marshaller mrsh = ctx.marshaller();
 
+        ClassLoader clsLdr = U.resolveClassLoader(ldr, ctx.gridConfig());
+
         if (keyValFilterBytes != null && keyValFilter == null)
-            keyValFilter = U.unmarshal(mrsh, keyValFilterBytes, U.resolveClassLoader(ldr, ctx.gridConfig()));
+            keyValFilter = U.unmarshal(mrsh, keyValFilterBytes, clsLdr);
 
         if (rdcBytes != null && rdc == null)
             rdc = U.unmarshal(mrsh, rdcBytes, ldr);
 
         if (transBytes != null && trans == null)
-            trans = U.unmarshal(mrsh, transBytes, U.resolveClassLoader(ldr, ctx.gridConfig()));
+            trans = U.unmarshal(mrsh, transBytes, clsLdr);
 
         if (argsBytes != null && args == null)
-            args = U.unmarshal(mrsh, argsBytes, U.resolveClassLoader(ldr, ctx.gridConfig()));
+            args = U.unmarshal(mrsh, argsBytes, clsLdr);
 
         if (idxQryDescBytes != null && idxQryDesc == null)
-            idxQryDesc = U.unmarshal(mrsh, idxQryDescBytes, U.resolveClassLoader(ldr, ctx.gridConfig()));
+            idxQryDesc = U.unmarshal(mrsh, idxQryDescBytes, clsLdr);
     }
 
     /** {@inheritDoc} */
