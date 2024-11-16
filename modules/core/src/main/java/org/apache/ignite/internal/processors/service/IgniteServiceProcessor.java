@@ -1587,6 +1587,11 @@ public class IgniteServiceProcessor extends GridProcessorAdapter implements Igni
 
                     if (desc != null)
                         registeredServicesByName.remove(desc.name());
+
+                    desc = deployedServices.remove(e.getKey());
+
+                    if (desc != null)
+                        deployedServicesByName.remove(desc.name());
                 }
             }
         }
