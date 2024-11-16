@@ -1646,10 +1646,8 @@ public class IgniteCacheProxyImpl<K, V> extends AsyncSupportAdapter<IgniteCache<
 
     /** {@inheritDoc} */
     @Override public IgniteFuture<Void> clearAsync(K key) {
-        if (ctx.transactional() && ctx.grid().transactions().tx() != null) {
-            throw new CacheException("Failed to invoke a non-transactional operation within a transaction: " +
-                "IgniteCache.clearAsync(K key).");
-        }
+        if (ctx.transactional() && ctx.grid().transactions().tx() != null)
+            throw new CacheException(GridCacheAdapter.NON_TRANSACTIONAL_IGNITE_CACHE_CLEAR_IN_TX_ERROR_MESSAGE);
 
         IgniteInternalCache<K, V> delegate = getDelegateSafe();
 
@@ -1673,10 +1671,8 @@ public class IgniteCacheProxyImpl<K, V> extends AsyncSupportAdapter<IgniteCache<
 
     /** {@inheritDoc} */
     @Override public IgniteFuture<Void> clearAllAsync(Set<? extends K> keys) {
-        if (ctx.transactional() && ctx.grid().transactions().tx() != null) {
-            throw new CacheException("Failed to invoke a non-transactional operation within a transaction: " +
-                "IgniteCache.clearAllAsync(Set<? extends K> keys).");
-        }
+        if (ctx.transactional() && ctx.grid().transactions().tx() != null)
+            throw new CacheException(GridCacheAdapter.NON_TRANSACTIONAL_IGNITE_CACHE_CLEAR_IN_TX_ERROR_MESSAGE);
 
         IgniteInternalCache<K, V> delegate = getDelegateSafe();
 
@@ -1700,10 +1696,8 @@ public class IgniteCacheProxyImpl<K, V> extends AsyncSupportAdapter<IgniteCache<
 
     /** {@inheritDoc} */
     @Override public IgniteFuture<Void> clearAsync() {
-        if (ctx.transactional() && ctx.grid().transactions().tx() != null) {
-            throw new CacheException("Failed to invoke a non-transactional operation within a transaction: " +
-                "IgniteCache.clearAsync().");
-        }
+        if (ctx.transactional() && ctx.grid().transactions().tx() != null)
+            throw new CacheException(GridCacheAdapter.NON_TRANSACTIONAL_IGNITE_CACHE_CLEAR_IN_TX_ERROR_MESSAGE);
 
         IgniteInternalCache<K, V> delegate = getDelegateSafe();
 
@@ -1719,10 +1713,8 @@ public class IgniteCacheProxyImpl<K, V> extends AsyncSupportAdapter<IgniteCache<
 
     /** {@inheritDoc} */
     @Override public void localClearAll(Set<? extends K> keys) {
-        if (ctx.transactional() && ctx.grid().transactions().tx() != null) {
-            throw new CacheException("Failed to invoke a non-transactional operation within a transaction: " +
-                "IgniteCache.localClearAll(Set<? extends K> keys).");
-        }
+        if (ctx.transactional() && ctx.grid().transactions().tx() != null)
+            throw new CacheException(GridCacheAdapter.NON_TRANSACTIONAL_IGNITE_CACHE_CLEAR_IN_TX_ERROR_MESSAGE);
 
         IgniteInternalCache<K, V> delegate = getDelegateSafe();
 

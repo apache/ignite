@@ -200,6 +200,10 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
     /** Minimum version supporting partition preloading. */
     private static final IgniteProductVersion PRELOAD_PARTITION_SINCE = IgniteProductVersion.fromString("2.7.0");
 
+    /** Exception thrown when a non-transactional IgniteCache clear operation is invoked within a transaction. */
+    public static final String NON_TRANSACTIONAL_IGNITE_CACHE_CLEAR_IN_TX_ERROR_MESSAGE = "Failed to invoke a " +
+        "non-transactional IgniteCache clear operation within a transaction.";
+
     /** Deserialization stash. */
     private static final ThreadLocal<IgniteBiTuple<String, String>> stash = new ThreadLocal<IgniteBiTuple<String,
         String>>() {
@@ -1060,30 +1064,24 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
 
     /** {@inheritDoc} */
     @Override public void clear() throws IgniteCheckedException {
-        if (ctx.transactional() && ctx.grid().transactions().tx() != null) {
-            throw new CacheException("Failed to invoke a non-transactional operation within a transaction: " +
-                "IgniteCache.clear().");
-        }
+        if (ctx.transactional() && ctx.grid().transactions().tx() != null)
+            throw new CacheException(NON_TRANSACTIONAL_IGNITE_CACHE_CLEAR_IN_TX_ERROR_MESSAGE);
 
         clear((Set<? extends K>)null);
     }
 
     /** {@inheritDoc} */
     @Override public void clear(K key) throws IgniteCheckedException {
-        if (ctx.transactional() && ctx.grid().transactions().tx() != null) {
-            throw new CacheException("Failed to invoke a non-transactional operation within a transaction: " +
-                "IgniteCache.clear(K key).");
-        }
+        if (ctx.transactional() && ctx.grid().transactions().tx() != null)
+            throw new CacheException(NON_TRANSACTIONAL_IGNITE_CACHE_CLEAR_IN_TX_ERROR_MESSAGE);
 
         clear(Collections.singleton(key));
     }
 
     /** {@inheritDoc} */
     @Override public void clearAll(Set<? extends K> keys) throws IgniteCheckedException {
-        if (ctx.transactional() && ctx.grid().transactions().tx() != null) {
-            throw new CacheException("Failed to invoke a non-transactional operation within a transaction: " +
-                "IgniteCache.clearAll(Set<? extends K> keys).");
-        }
+        if (ctx.transactional() && ctx.grid().transactions().tx() != null)
+            throw new CacheException(NON_TRANSACTIONAL_IGNITE_CACHE_CLEAR_IN_TX_ERROR_MESSAGE);
 
         clear(keys);
     }
