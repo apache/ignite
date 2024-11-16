@@ -1216,11 +1216,10 @@ public class GridDhtPartitionDemander {
                                 }
 
                                 if (waitCnt.decrementAndGet() == 0) {
-                                    U.log(log, "Partitions successfully evicted in preparation for rebalancing"
-                                        + " [grp=" + grp.cacheOrGroupName() + ", mode=" + cfg.getRebalanceMode()
-                                        + ", supplier=" + node.id() + ", partitionsCount=" + parts.size()
-                                        + ", topVer=" + topologyVersion() + ", rebalanceId=" + rebalanceId
-                                        + ", partitions=[" + S.toStringSortedDistinct(d.partitions().fullSet()) + "]]");
+                                    U.log(log, "Following partitions have been successfully evicted"
+                                        + " in preparation for rebalancing: [grp=" + grp.cacheOrGroupName()
+                                        + ", supplierNode=" + node.id() + ", partitionsCount=" + parts.size()
+                                        + ", partitions=" + S.toStringSortedDistinct(d.partitions().fullSet()) + "]");
 
                                     ctx.kernalContext().closure().runLocalSafe((GridPlainRunnable)() -> requestPartitions0(node, parts, d));
                                 }
@@ -1800,7 +1799,7 @@ public class GridDhtPartitionDemander {
             long bytes = 0;
             long minStartTime = Long.MAX_VALUE;
 
-            List<GridTuple3<String, UUID, Set<Integer>>> clearedParts = new ArrayList<>();
+            Map<String, Map<UUID, Set<Integer>>> res = new HashMap<>();
 
             for (RebalanceFuture fut : futs) {
                 parts += fut.rebalancingParts.values().stream().mapToLong(Collection::size).sum();
@@ -1814,10 +1813,15 @@ public class GridDhtPartitionDemander {
                 minStartTime = Math.min(minStartTime, fut.startTime);
 
                 for (Map.Entry<UUID, Set<Integer>> e : fut.rebalancingParts.entrySet())
-                    clearedParts.add(new GridTuple3<>(fut.grp.cacheOrGroupName(), e.getKey(), e.getValue()));
+                    res.computeIfAbsent(fut.grp.cacheOrGroupName(), k -> new HashMap<>()).put(e.getKey(), e.getValue());
             }
 
-            logEvictionResults(clearedParts);
+            log.info("Following partitions have been successfully evicted as part of rebalance chain: "
+                + "topVer=" + topologyVersion() + ", rebalanceId=" + rebalanceId + ", cacheGroups=["
+                + res.entrySet().stream().map(entry -> "grp=" + entry.getKey() + " [" +
+                    entry.getValue().entrySet().stream().map(e -> "supplierNode=" + e.getKey() + ", partitions="
+                        + S.toStringSortedDistinct(e.getValue())).collect(Collectors.joining("; ")) + "]")
+                .collect(Collectors.joining("; ")) + "]");
 
             log.info("Completed rebalance chain: [rebalanceId=" + rebalanceId +
                 ", partitions=" + parts +
@@ -1875,27 +1879,6 @@ public class GridDhtPartitionDemander {
                     ", topVer=" + topologyVersion() +
                     ", progress=" + (routines - remainingRoutines) + "/" + routines + "]"), t);
             }
-        }
-
-        /**
-         * @param clearedParts Information about partitions that have been evicted during rebalance chain.
-         */
-        private void logEvictionResults(List<GridTuple3<String, UUID, Set<Integer>>> clearedParts) {
-            Map<String, List<IgniteBiTuple<UUID, Set<Integer>>>> res = new HashMap<>();
-
-            clearedParts.forEach(tuple -> res.computeIfAbsent(tuple.get1(), k -> new ArrayList<>())
-                .add(new IgniteBiTuple<>(tuple.get2(), tuple.get3())));
-
-            String msg = "Following partitions have been evicted as part of rebalance chain: "
-                + "topVer=" + topologyVersion() + ", rebalanceId=" + rebalanceId + ", cacheGroups=["
-                + res.entrySet().stream()
-                .map(entry -> "grp=" + entry.getKey() + " [" +
-                    entry.getValue().stream()
-                        .map(t -> "supplierNode=" + t.get1() + ", partitions=" + S.toStringSortedDistinct(t.get2()))
-                        .collect(Collectors.joining("; ")) + "]")
-                .collect(Collectors.joining("; ")) + "]";
-
-            log.info(msg);
         }
 
         /** {@inheritDoc} */
