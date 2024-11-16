@@ -505,6 +505,7 @@ public class ExecutionContext<Row> extends AbstractQueryContext implements DataC
 
     /** */
     private class SessionContextProviderImpl implements SessionContextProvider {
+        /** */
         @Override public @Nullable SessionContext getSessionContext() {
             return unwrap(SessionContext.class);
         }

@@ -18,16 +18,13 @@
 package org.apache.ignite;
 
 import java.util.Collection;
-import java.util.List;
 import java.util.Map;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutorService;
 import javax.cache.CacheException;
-import org.apache.ignite.cache.SessionContextProvider;
 import org.apache.ignite.cache.CacheMode;
+import org.apache.ignite.cache.SessionContextProvider;
 import org.apache.ignite.cache.affinity.Affinity;
-import org.apache.ignite.cache.query.FieldsQueryCursor;
-import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.cache.query.annotations.QuerySqlFunction;
 import org.apache.ignite.cluster.ClusterGroup;
 import org.apache.ignite.cluster.ClusterState;
@@ -803,6 +800,7 @@ public interface Ignite extends AutoCloseable {
      *     <li>{@link QuerySqlFunction}</li>
      * </ul>
      *
+     * @param attrs Application attributes.
      * @return Ignite instance that is aware of application attributes.
      */
     @IgniteExperimental

@@ -36,7 +36,6 @@ import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.U;
-import org.apache.ignite.resources.SessionContextProviderResource;
 import org.apache.ignite.resources.CacheNameResource;
 import org.apache.ignite.resources.CacheStoreSessionResource;
 import org.apache.ignite.resources.IgniteInstanceResource;
@@ -45,6 +44,7 @@ import org.apache.ignite.resources.LoadBalancerResource;
 import org.apache.ignite.resources.LoggerResource;
 import org.apache.ignite.resources.ServiceContextResource;
 import org.apache.ignite.resources.ServiceResource;
+import org.apache.ignite.resources.SessionContextProviderResource;
 import org.apache.ignite.resources.SpringApplicationContextResource;
 import org.apache.ignite.resources.SpringResource;
 import org.apache.ignite.resources.TaskContinuousMapperResource;
@@ -576,6 +576,7 @@ public class GridResourceIoc {
             ResourceAnnotation.SERVICE
         ),
 
+        /** */
         USER_DEFINED_FUNCTION(
             ResourceAnnotation.SESSION_CONTEXT_PROVIDER
         );
