@@ -19,8 +19,6 @@
 package org.apache.ignite.cache;
 
 import java.io.Serializable;
-import java.lang.management.ManagementFactory;
-import java.lang.management.OperatingSystemMXBean;
 import java.util.Arrays;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.DataRegionConfiguration;
@@ -34,7 +32,6 @@ import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 
 import static org.apache.ignite.testframework.GridTestUtils.assertThrowsAnyCause;
-import static org.junit.Assume.assumeTrue;
 
 /** */
 @RunWith(Parameterized.class)
@@ -43,20 +40,14 @@ public class CacheCreateOOMTest extends GridCommonAbstractTest {
     private static final String CUSTOM_CACHE_NAME = "custom_cache_name";
 
     /** */
-    private static final OperatingSystemMXBean os = ManagementFactory.getOperatingSystemMXBean();
-
-    /** */
-    @Parameterized.Parameters(name = "withDataRegionInit={0}")
+    @Parameterized.Parameters(name = "withPersistance={0}")
     public static Iterable<Object> data() {
         return Arrays.asList(true, false);
     }
 
     /** */
     @Parameterized.Parameter()
-    public boolean withDataRegionInit;
-
-    /** */
-    private long nodeRAM;
+    public boolean withPersistance;
 
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
@@ -65,13 +56,8 @@ public class CacheCreateOOMTest extends GridCommonAbstractTest {
         DataStorageConfiguration storageCfg = new DataStorageConfiguration()
             .setMemoryAllocator(new CustomMemoryAllocator());
 
-        if (withDataRegionInit)
-            storageCfg.setDefaultDataRegionConfiguration(
-                    new DataRegionConfiguration()
-                        .setPersistenceEnabled(true)
-                        .setInitialSize(2 * nodeRAM)
-                        .setMaxSize(2 * nodeRAM)
-                );
+        if (withPersistance)
+            storageCfg.setDefaultDataRegionConfiguration(new DataRegionConfiguration().setPersistenceEnabled(true));
 
         cfg.setDataStorageConfiguration(storageCfg);
 
@@ -98,10 +84,6 @@ public class CacheCreateOOMTest extends GridCommonAbstractTest {
     /** */
     @Test
     public void testCheckExceptionOnCacheFailure() {
-        assumeTrue(os instanceof com.sun.management.OperatingSystemMXBean);
-
-        nodeRAM = ((com.sun.management.OperatingSystemMXBean)os).getTotalPhysicalMemorySize();
-
         assertThrowsAnyCause(log, this::startGrid, IgniteOutOfMemoryException.class,
             "Adjust the heap settings or data storage configuration to allocate the memory");
     }
