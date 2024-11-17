@@ -1583,21 +1583,52 @@ public class IgniteServiceProcessor extends GridProcessorAdapter implements Igni
                 // Checking if there are successful deployments.
                 // If none, service not deployed and must be removed from descriptors.
                 if (e.getValue().entrySet().stream().allMatch(nodeTop -> nodeTop.getValue() == 0)) {
-                    ServiceInfo desc = registeredServices.remove(e.getKey());
-
-                    if (desc != null)
-                        registeredServicesByName.remove(desc.name());
-
-                    desc = deployedServices.remove(e.getKey());
-
-                    if (desc != null)
-                        deployedServicesByName.remove(desc.name());
+                    removeRegisteredServiceRecord(e.getKey());
+                    removeDeployedServiceRecord(e.getKey());
                 }
             }
         }
         finally {
             leaveBusy();
         }
+    }
+
+    /**
+     * Remove registered service record.
+     *
+     * @param srvcId Service id.
+     * */
+    private void removeRegisteredServiceRecord(IgniteUuid srvcId) {
+        removeServiceRecord(registeredServices, registeredServicesByName, srvcId);
+    }
+
+    /**
+     * Remove deployed service record.
+     *
+     * @param srvcId Service id.
+     * */
+    private void removeDeployedServiceRecord(IgniteUuid srvcId) {
+        removeServiceRecord(deployedServices, deployedServicesByName, srvcId);
+    }
+
+    /**
+     * Remove service record from service map and corresponding services by name map.
+     *
+     * @param servicesMap Services map.
+     * @param servicesByNameMap Services by name map.
+     * @param srvcId Service id.
+     * */
+    private void removeServiceRecord(
+        ConcurrentMap<IgniteUuid, ServiceInfo> servicesMap,
+        ConcurrentMap<String, ServiceInfo> servicesByNameMap,
+        IgniteUuid srvcId
+    ) {
+        ServiceInfo desc = servicesMap.remove(srvcId);
+
+        assert desc != null : "Concurrent map modification";
+
+        if (desc != null)
+            servicesByNameMap.remove(desc.name());
     }
 
     /**
