@@ -537,19 +537,20 @@ public class GridCacheNearOnlyMultiNodeFullApiSelfTest extends GridCachePartitio
             }
         }
 
+        IgniteCache<String, Integer> cache = jcache(nearIdx);
         if (async) {
             if (oldAsync) {
-                IgniteCache<String, Integer> asyncCache = jcache(nearIdx).withAsync();
+                IgniteCache<String, Integer> asyncCache = cache.withAsync();
 
                 asyncCache.clear();
 
                 asyncCache.future().get();
             }
             else
-                jcache(nearIdx).clearAsync().get();
+                cache.clearAsync().get();
         }
         else
-            jcache(nearIdx).clear();
+            cache.clear();
 
         for (int i = 0; i < gridCount(); i++) {
             assertEquals("Unexpected size [node=" + ignite(i).name() + ", nearIdx=" + nearIdx + ']',

@@ -98,7 +98,8 @@ public class IgniteCacheExpiryStoreLoadSelfTest extends GridCacheAbstractSelfTes
      * @throws Exception If failed.
      */
     private void checkLoad(boolean async) throws Exception {
-        IgniteCache<String, Integer> cache = jcache(0)
+        IgniteCache<String, Integer> jcache = jcache(0);
+        IgniteCache<String, Integer> cache = jcache
             .withExpiryPolicy(new CreatedExpiryPolicy(new Duration(MILLISECONDS, TIME_TO_LIVE)));
 
         List<Integer> keys = new ArrayList<>();
@@ -140,7 +141,8 @@ public class IgniteCacheExpiryStoreLoadSelfTest extends GridCacheAbstractSelfTes
      * @throws Exception If failed.
      */
     private void checkLocalLoad(boolean async) throws Exception {
-        final IgniteCache<String, Integer> cache = jcache(0)
+        IgniteCache<String, Integer> jcache = jcache(0);
+        final IgniteCache<String, Integer> cache = jcache
             .withExpiryPolicy(new CreatedExpiryPolicy(new Duration(MILLISECONDS, TIME_TO_LIVE)));
 
         List<Integer> keys = primaryKeys(cache, 3);

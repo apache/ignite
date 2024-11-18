@@ -349,8 +349,7 @@ public abstract class GridCacheAbstractSelfTest extends GridCommonAbstractTest {
     /**
      * @return Default cache instance.
      */
-    @SuppressWarnings({"unchecked"})
-    @Override protected IgniteCache<String, Integer> jcache() {
+    @Override protected <K, V> IgniteCache<K, V> jcache() {
         return jcache(0);
     }
 
@@ -372,8 +371,7 @@ public abstract class GridCacheAbstractSelfTest extends GridCommonAbstractTest {
      * @param idx Index of grid.
      * @return Default cache.
      */
-    @SuppressWarnings({"unchecked"})
-    @Override protected IgniteCache<String, Integer> jcache(int idx) {
+    @Override protected <K, V> IgniteCache<K, V> jcache(int idx) {
         return ignite(idx).cache(DEFAULT_CACHE_NAME);
     }
 

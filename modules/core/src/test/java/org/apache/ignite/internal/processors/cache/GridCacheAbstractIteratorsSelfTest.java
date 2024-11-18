@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.processors.cache;
 
 import javax.cache.Cache;
+import org.apache.ignite.IgniteCache;
 import org.apache.ignite.cache.CachePeekMode;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.util.typedef.CA;
@@ -50,7 +51,8 @@ public abstract class GridCacheAbstractIteratorsSelfTest extends GridCacheAbstra
     public void testCacheIterator() {
         int cnt = 0;
 
-        for (Cache.Entry<String, Integer> entry : jcache()) {
+        IgniteCache<String, Integer> cache = jcache();
+        for (Cache.Entry<String, Integer> entry : cache) {
             assert entry != null;
             assert entry.getKey() != null;
             assert entry.getKey().contains(KEY_PREFIX);
@@ -83,7 +85,8 @@ public abstract class GridCacheAbstractIteratorsSelfTest extends GridCacheAbstra
         GridTestUtils.runMultiThreaded(new CA() {
             @Override public void apply() {
                 while (!putFut.isDone()) {
-                    for (Cache.Entry<String, Integer> entry : jcache()) {
+                    IgniteCache<String, Integer> cache = jcache();
+                    for (Cache.Entry<String, Integer> entry : cache) {
                         assert entry != null;
                         assert entry.getKey() != null;
                         assert entry.getKey().contains(KEY_PREFIX);
@@ -100,7 +103,8 @@ public abstract class GridCacheAbstractIteratorsSelfTest extends GridCacheAbstra
 
         int cnt = 0;
 
-        for (Cache.Entry<String, Integer> entry : jcache()) {
+        IgniteCache<String, Integer> cache = jcache();
+        for (Cache.Entry<String, Integer> entry : cache) {
             assert entry != null;
             assert entry.getKey() != null;
             assert entry.getKey().contains(KEY_PREFIX);
@@ -133,7 +137,8 @@ public abstract class GridCacheAbstractIteratorsSelfTest extends GridCacheAbstra
         GridTestUtils.runMultiThreaded(new CA() {
             @Override public void apply() {
                 while (!putFut.isDone()) {
-                    for (Cache.Entry<String, Integer> entry : jcache()) {
+                    IgniteCache<String, Integer> cache = jcache();
+                    for (Cache.Entry<String, Integer> entry : cache) {
                         assert entry != null;
                         assert entry.getKey() != null;
                         assert entry.getKey().contains(KEY_PREFIX);

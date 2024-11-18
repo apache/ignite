@@ -23,6 +23,7 @@ import java.util.concurrent.Callable;
 import java.util.concurrent.TimeUnit;
 import javax.cache.CacheException;
 import com.google.common.collect.ImmutableSet;
+import org.apache.ignite.IgniteCache;
 import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.configuration.NearCacheConfiguration;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridCachePartitionedFullApiSelfTest;
@@ -78,8 +79,9 @@ public class GridCacheAtomicFullApiSelfTest extends GridCachePartitionedFullApiS
      */
     @Test
     @Override public void testGetAll() throws Exception {
-        jcache().put("key1", 1);
-        jcache().put("key2", 2);
+        IgniteCache<String, Integer> cache = jcache();
+        cache.put("key1", 1);
+        cache.put("key2", 2);
 
         GridTestUtils.assertThrows(log, new Callable<Void>() {
             @Override public Void call() throws Exception {
@@ -89,9 +91,9 @@ public class GridCacheAtomicFullApiSelfTest extends GridCachePartitionedFullApiS
             }
         }, NullPointerException.class, null);
 
-        assert jcache().getAll(Collections.<String>emptySet()).isEmpty();
+        assert cache.getAll(Collections.<String>emptySet()).isEmpty();
 
-        Map<String, Integer> map1 = jcache().getAll(ImmutableSet.of("key1", "key2", "key9999"));
+        Map<String, Integer> map1 = cache.getAll(ImmutableSet.of("key1", "key2", "key9999"));
 
         info("Retrieved map1: " + map1);
 
@@ -101,7 +103,7 @@ public class GridCacheAtomicFullApiSelfTest extends GridCachePartitionedFullApiS
         assertEquals(2, (int)map1.get("key2"));
         assertNull(map1.get("key9999"));
 
-        Map<String, Integer> map2 = jcache().getAll(ImmutableSet.of("key1", "key2", "key9999"));
+        Map<String, Integer> map2 = cache.getAll(ImmutableSet.of("key1", "key2", "key9999"));
 
         info("Retrieved map2: " + map2);
 

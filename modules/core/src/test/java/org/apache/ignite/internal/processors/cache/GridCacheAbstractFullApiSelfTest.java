@@ -1733,7 +1733,8 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
      */
     @Test
     public void testPutAsyncOld0() throws Exception {
-        IgniteCache<String, Integer> cacheAsync = jcache().withAsync();
+        IgniteCache<String, Integer> cache = jcache();
+        IgniteCache<String, Integer> cacheAsync = cache.withAsync();
 
         cacheAsync.getAndPut("key1", 0);
 
@@ -1931,10 +1932,11 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
     public void testPutAsyncOld() throws Exception {
         Transaction tx = txShouldBeUsed() ? transactions().txStart() : null;
 
-        IgniteCache<String, Integer> cacheAsync = jcache().withAsync();
+        IgniteCache<String, Integer> cache = jcache();
+        IgniteCache<String, Integer> cacheAsync = cache.withAsync();
 
         try {
-            jcache().put("key2", 1);
+            cache.put("key2", 1);
 
             cacheAsync.put("key1", 10);
 
@@ -1966,8 +1968,8 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
 
         checkSize(F.asSet("key1", "key2"));
 
-        assert jcache().get("key1") == 10;
-        assert jcache().get("key2") == 11;
+        assert cache.get("key1") == 10;
+        assert cache.get("key2") == 11;
     }
 
     /**
@@ -1977,12 +1979,13 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
     public void testPutAsync() throws Exception {
         Transaction tx = txShouldBeUsed() ? transactions().txStart() : null;
 
+        IgniteCache<String, Integer> cache = jcache();
         try {
-            jcache().put("key2", 1);
+            cache.put("key2", 1);
 
-            IgniteFuture<?> fut1 = jcache().putAsync("key1", 10);
+            IgniteFuture<?> fut1 = cache.putAsync("key1", 10);
 
-            IgniteFuture<?> fut2 = jcache().putAsync("key2", 11);
+            IgniteFuture<?> fut2 = cache.putAsync("key2", 11);
 
             IgniteFuture<Void> f = null;
 
@@ -2007,8 +2010,8 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
 
         checkSize(F.asSet("key1", "key2"));
 
-        assert jcache().get("key1") == 10;
-        assert jcache().get("key2") == 11;
+        assert cache.get("key1") == 10;
+        assert cache.get("key2") == 11;
     }
 
     /**
@@ -2722,7 +2725,8 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
      */
     @Test
     public void testPutIfAbsentAsyncConcurrentOld() throws Exception {
-        IgniteCache<String, Integer> cacheAsync = jcache().withAsync();
+        IgniteCache<String, Integer> cache = jcache();
+        IgniteCache<String, Integer> cacheAsync = cache.withAsync();
 
         cacheAsync.putIfAbsent("key1", 1);
 
@@ -3471,15 +3475,16 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
         cache.put("key2", 2);
         cache.put("key3", 3);
 
+        IgniteCache<String, Integer> cache1 = jcache(gridCount() > 1 ? 1 : 0);
         if (async) {
-            IgniteCache<String, Integer> asyncCache0 = jcache(gridCount() > 1 ? 1 : 0).withAsync();
+            IgniteCache<String, Integer> asyncCache0 = cache1.withAsync();
 
             asyncCache0.removeAll();
 
             asyncCache0.future().get();
         }
         else
-            jcache(gridCount() > 1 ? 1 : 0).removeAll();
+            cache1.removeAll();
 
         assertEquals(0, cache.localSize());
         long entryCnt = hugeRemoveAllEntryCount();
@@ -3961,19 +3966,20 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
                 jcache(i).put(key, 1);
         }
 
+        IgniteCache<String, Integer> cache = jcache();
         if (async) {
             if (oldAsync) {
-                IgniteCache<String, Integer> asyncCache = jcache().withAsync();
+                IgniteCache<String, Integer> asyncCache = cache.withAsync();
 
                 asyncCache.clear();
 
                 asyncCache.future().get();
             }
             else
-                jcache().clearAsync().get();
+                cache.clearAsync().get();
         }
         else
-            jcache().clear();
+            cache.clear();
 
         for (int i = 0; i < gridCount(); i++)
             assert jcache(i).localSize() == 0;
@@ -4769,9 +4775,10 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
     public void testPessimisticTxRepeatableRead() throws Exception {
         if (txShouldBeUsed()) {
             try (Transaction ignored = transactions().txStart(PESSIMISTIC, REPEATABLE_READ)) {
-                jcache().put("key", 1);
+                IgniteCache<String, Integer> cache = jcache();
+                cache.put("key", 1);
 
-                assert jcache().get("key") == 1;
+                assert cache.get("key") == 1;
             }
         }
     }
@@ -4783,9 +4790,10 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
     public void testPessimisticTxRepeatableReadOnUpdate() throws Exception {
         if (txShouldBeUsed()) {
             try (Transaction ignored = transactions().txStart(PESSIMISTIC, REPEATABLE_READ)) {
-                jcache().put("key", 1);
+                IgniteCache<String, Integer> cache = jcache();
+                cache.put("key", 1);
 
-                assert jcache().getAndPut("key", 2) == 1;
+                assert cache.getAndPut("key", 2) == 1;
             }
         }
     }
@@ -4803,7 +4811,8 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
         Map<String, Integer> map = new HashMap<>();
 
         for (int i = 0; i < gridCount(); i++) {
-            for (Cache.Entry<String, Integer> entry : jcache(i))
+            IgniteCache<String, Integer> jcache = jcache(i);
+            for (Cache.Entry<String, Integer> entry : jcache)
                 map.put(entry.getKey(), entry.getValue());
         }
 
@@ -5034,7 +5043,8 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
      * If hasNext() is called repeatedly, it should return the same result.
      */
     private void checkIteratorHasNext() {
-        Iterator<Cache.Entry<String, Integer>> iter = jcache(0).iterator();
+        IgniteCache<String, Integer> cache = jcache(0);
+        Iterator<Cache.Entry<String, Integer>> iter = cache.iterator();
 
         assertEquals(iter.hasNext(), iter.hasNext());
 
@@ -5062,7 +5072,8 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
         checkIteratorCache(entries);
 
         // Check that we cannot call Iterator.remove() without next().
-        final Iterator<Cache.Entry<String, Integer>> iter = jcache(0).iterator();
+        IgniteCache<String, Integer> cache1 = jcache(0);
+        final Iterator<Cache.Entry<String, Integer>> iter = cache1.iterator();
 
         assertTrue(iter.hasNext());
 
@@ -5378,9 +5389,10 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
             g.cache(DEFAULT_CACHE_NAME).put(key, "value" + i);
         }
 
+        IgniteCache<String, Integer> cache = jcache();
         if (async) {
             if (oldAsync) {
-                IgniteCache<String, Integer> asyncCache = jcache().withAsync();
+                IgniteCache<String, Integer> asyncCache = cache.withAsync();
 
                 if (keysToRmv.size() == 1)
                     asyncCache.clear(F.first(keysToRmv));
@@ -5391,16 +5403,16 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
             }
             else {
                 if (keysToRmv.size() == 1)
-                    jcache().clearAsync(F.first(keysToRmv)).get();
+                    cache.clearAsync(F.first(keysToRmv)).get();
                 else
-                    jcache().clearAllAsync(new HashSet<>(keysToRmv)).get();
+                    cache.clearAllAsync(new HashSet<>(keysToRmv)).get();
             }
         }
         else {
             if (keysToRmv.size() == 1)
-                jcache().clear(F.first(keysToRmv));
+                cache.clear(F.first(keysToRmv));
             else
-                jcache().clearAll(new HashSet<>(keysToRmv));
+                cache.clearAll(new HashSet<>(keysToRmv));
         }
 
         for (int i = 0; i < 500; ++i) {
