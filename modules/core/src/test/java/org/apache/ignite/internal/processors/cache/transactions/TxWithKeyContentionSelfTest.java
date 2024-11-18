@@ -52,7 +52,8 @@ import static org.apache.ignite.transactions.TransactionIsolation.REPEATABLE_REA
 /** Tests tx key contention detection functional. */
 public class TxWithKeyContentionSelfTest extends GridCommonAbstractTest {
     /** */
-    @Rule public TestName testName = new TestName();
+    @Rule
+    public TestName testName = new TestName();
 
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String name) throws Exception {
@@ -209,7 +210,7 @@ public class TxWithKeyContentionSelfTest extends GridCommonAbstractTest {
                 }
             },
             contCnt,
-            testName.getMethodName());
+            "txThread-" + testName.getMethodName());
 
         try {
             assertTrue(GridTestUtils.waitForCondition(
