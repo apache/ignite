@@ -1583,8 +1583,9 @@ public class IgniteServiceProcessor extends GridProcessorAdapter implements Igni
                 // Checking if there are successful deployments.
                 // If none, service not deployed and must be removed from descriptors.
                 if (e.getValue().entrySet().stream().allMatch(nodeTop -> nodeTop.getValue() == 0)) {
-                    removeRegisteredServiceRecord(e.getKey());
-                    removeDeployedServiceRecord(e.getKey());
+                    removeServiceRecord(registeredServices, registeredServicesByName, e.getKey());
+
+                    removeServiceRecord(deployedServices, deployedServicesByName, e.getKey());
                 }
             }
         }
@@ -1594,41 +1595,19 @@ public class IgniteServiceProcessor extends GridProcessorAdapter implements Igni
     }
 
     /**
-     * Remove registered service record.
-     *
-     * @param srvcId Service id.
-     * */
-    private void removeRegisteredServiceRecord(IgniteUuid srvcId) {
-        removeServiceRecord(registeredServices, registeredServicesByName, srvcId);
-    }
-
-    /**
-     * Remove deployed service record.
-     *
-     * @param srvcId Service id.
-     * */
-    private void removeDeployedServiceRecord(IgniteUuid srvcId) {
-        removeServiceRecord(deployedServices, deployedServicesByName, srvcId);
-    }
-
-    /**
      * Remove service record from service map and corresponding services by name map.
      *
-     * @param servicesMap Services map.
-     * @param servicesByNameMap Services by name map.
+     * @param srvcsMap Services map.
+     * @param srvcsByNameMap Services by name map.
      * @param srvcId Service id.
      * */
-    private void removeServiceRecord(
-        ConcurrentMap<IgniteUuid, ServiceInfo> servicesMap,
-        ConcurrentMap<String, ServiceInfo> servicesByNameMap,
-        IgniteUuid srvcId
-    ) {
-        ServiceInfo desc = servicesMap.remove(srvcId);
+    private void removeServiceRecord(Map<IgniteUuid, ServiceInfo> srvcsMap, Map<String, ServiceInfo> srvcsByNameMap, IgniteUuid srvcId) {
+        ServiceInfo desc = srvcsMap.remove(srvcId);
 
         assert desc != null : "Concurrent map modification";
 
         if (desc != null)
-            servicesByNameMap.remove(desc.name());
+            srvcsByNameMap.remove(desc.name());
     }
 
     /**

@@ -16,15 +16,22 @@
  */
 package org.apache.ignite.internal.processors.service;
 
+import java.util.Collection;
+import java.util.Map;
 import java.util.UUID;
+import java.util.concurrent.ConcurrentMap;
 import java.util.function.Predicate;
 
+import org.apache.ignite.Ignite;
 import org.apache.ignite.Ignition;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.failure.StopNodeFailureHandler;
+import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteEx;
+import org.apache.ignite.internal.IgniteServicesImpl;
 import org.apache.ignite.lang.IgnitePredicate;
+import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.services.Service;
 import org.apache.ignite.services.ServiceConfiguration;
 import org.apache.ignite.services.ServiceDeploymentException;
@@ -33,8 +40,7 @@ import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.jetbrains.annotations.NotNull;
 import org.junit.Test;
 
-import static org.apache.ignite.testframework.GridTestUtils.assertThrowsWithCause;
-import static org.apache.ignite.testframework.GridTestUtils.waitForCondition;
+import static org.apache.ignite.testframework.GridTestUtils.*;
 
 /**
  * Test class for verifying the behavior of Ignite service deployment when
@@ -65,6 +71,15 @@ public class IgniteServiceDeploymentFailureTest extends GridCommonAbstractTest {
     /** */
     private static final String FAILED_SERVICE_SHOULD_NOT_BE_PRESENT_IN_THE_CLUSTER =
         "Service descriptors whose deployment has failed should not be present in the cluster";
+
+    /** */
+    public static final String REGISTERED_SERVICES_BY_NAME = "registeredServicesByName";
+
+    /** */
+    public static final String DEPLOYED_SERVICES = "deployedServices";
+
+    /** */
+    public static final String DEPLOYED_SERVICES_BY_NAME = "deployedServicesByName";
 
     /** */
     private static ClassLoader extClsLdr;
@@ -232,7 +247,10 @@ public class IgniteServiceDeploymentFailureTest extends GridCommonAbstractTest {
      */
     private static boolean noDescriptorInClusterForService(String srvcName) {
         return Ignition.allGrids().stream().allMatch(
-            node -> node.services().serviceDescriptors().stream().noneMatch(filterByName(srvcName))
+            node -> node.services().serviceDescriptors().stream().noneMatch(filterByName(srvcName)) &&
+                    getServicesMap(node, REGISTERED_SERVICES_BY_NAME).values().stream().noneMatch(filterByName(srvcName)) &&
+                    getServicesMap(node, DEPLOYED_SERVICES).values().stream().noneMatch(filterByName(srvcName)) &&
+                    getServicesMap(node, DEPLOYED_SERVICES_BY_NAME).values().stream().noneMatch(filterByName(srvcName))
         );
     }
 
@@ -244,7 +262,23 @@ public class IgniteServiceDeploymentFailureTest extends GridCommonAbstractTest {
      * @return Total instances count of the service named {@code srvcName} from the given {@code igniteEx} instance.
      */
     private static int totalInstancesCount(IgniteEx igniteEx, String srvcName) {
+        int registeredCnt = totalInstancesCount(igniteEx.services().serviceDescriptors(), srvcName);
+
+        assertEquals(registeredCnt, totalInstancesCount(, srvcName));
+        
         return igniteEx.services().serviceDescriptors().stream()
+            .filter(filterByName(srvcName))
+            .flatMap(desc -> desc.topologySnapshot().values().stream())
+            .mapToInt(Integer::intValue).sum();
+    }
+
+    /**
+     * @param descs Descriptors.
+     * @param srvcName Service name.
+     * @return Total instances count of the service named {@code srvcName} from the given service descriptors {@code descs}.
+     */
+    private static <T> int totalInstancesCount(Collection<ServiceDescriptor> descs, String srvcName) {
+        return descs.stream()
             .filter(filterByName(srvcName))
             .flatMap(desc -> desc.topologySnapshot().values().stream())
             .mapToInt(Integer::intValue).sum();
@@ -257,6 +291,21 @@ public class IgniteServiceDeploymentFailureTest extends GridCommonAbstractTest {
      */
     private static @NotNull Predicate<ServiceDescriptor> filterByName(String srvcName) {
         return desc -> desc.name().equals(srvcName);
+    }
+
+    /**
+     * @param node Node.
+     * @param mapName Map name.
+     */
+    private static <T> Map<T, ServiceInfo> getServicesMap(Ignite node, String mapName) {
+        return getFieldValue(getIgniteServiceProcessor(node), IgniteServiceProcessor.class, mapName);
+    }
+
+    /**
+     * @param node Node.
+     */
+    private static IgniteServiceProcessor getIgniteServiceProcessor(Ignite node) {
+        return ((GridKernalContext)getFieldValue(node.services(), IgniteServicesImpl.class, "ctx")).service();
     }
 
     /**
