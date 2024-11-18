@@ -39,7 +39,9 @@ import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.transactions.Transaction;
 import org.apache.ignite.transactions.TransactionConcurrency;
 import org.apache.ignite.transactions.TransactionIsolation;
+import org.junit.Rule;
 import org.junit.Test;
+import org.junit.rules.TestName;
 
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_DUMP_TX_COLLISIONS_INTERVAL;
 import static org.apache.ignite.transactions.TransactionConcurrency.OPTIMISTIC;
@@ -49,6 +51,9 @@ import static org.apache.ignite.transactions.TransactionIsolation.REPEATABLE_REA
 
 /** Tests tx key contention detection functional. */
 public class TxWithKeyContentionSelfTest extends GridCommonAbstractTest {
+    /** */
+    @Rule public TestName testName = new TestName();
+
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String name) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(name);
@@ -65,7 +70,7 @@ public class TxWithKeyContentionSelfTest extends GridCommonAbstractTest {
     }
 
     /** */
-    protected CacheConfiguration<Integer, Integer> getCacheConfiguration(boolean nearCache) {
+    private CacheConfiguration<Integer, Integer> cacheConfiguration(boolean nearCache) {
         CacheConfiguration<Integer, Integer> ccfg = new CacheConfiguration<Integer, Integer>(DEFAULT_CACHE_NAME)
             .setAtomicityMode(CacheAtomicityMode.TRANSACTIONAL)
             .setWriteSynchronizationMode(CacheWriteSynchronizationMode.FULL_SYNC)
@@ -183,7 +188,7 @@ public class TxWithKeyContentionSelfTest extends GridCommonAbstractTest {
 
         Ignite cl = startClientGrid();
 
-        IgniteCache<Integer, Integer> clientCache = cl.createCache(getCacheConfiguration(nearCache));
+        IgniteCache<Integer, Integer> clientCache = cl.createCache(cacheConfiguration(nearCache));
 
         final Integer keyId = primaryKey(ig.cache(DEFAULT_CACHE_NAME));
 
@@ -204,7 +209,7 @@ public class TxWithKeyContentionSelfTest extends GridCommonAbstractTest {
                 }
             },
             contCnt,
-            "threadName");
+            testName.getMethodName());
 
         try {
             assertTrue(GridTestUtils.waitForCondition(
@@ -213,8 +218,7 @@ public class TxWithKeyContentionSelfTest extends GridCommonAbstractTest {
         }
         finally {
             doTest.set(false);
-
-            fut.get();
+            fut.get(getTestTimeout());
         }
     }
 
