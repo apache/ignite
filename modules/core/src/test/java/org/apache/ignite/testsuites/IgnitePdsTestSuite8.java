@@ -19,6 +19,7 @@ package org.apache.ignite.testsuites;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
+import org.apache.ignite.cache.CacheCreateOOMTest;
 import org.apache.ignite.cache.CircledRebalanceTest;
 import org.apache.ignite.internal.processors.cache.ConnectionEnabledPropertyTest;
 import org.apache.ignite.internal.processors.cache.distributed.rebalancing.CacheRebalanceWithRemovedWalSegment;
@@ -80,6 +81,7 @@ public class IgnitePdsTestSuite8 {
         GridTestUtils.addTestIfNeeded(suite, OffHeapLockLogTest.class, ignoredTests);
         GridTestUtils.addTestIfNeeded(suite, OffHeapLockStackTest.class, ignoredTests);
         GridTestUtils.addTestIfNeeded(suite, HistoricalReservationTest.class, ignoredTests);
+        GridTestUtils.addTestIfNeeded(suite, CacheCreateOOMTest.class, ignoredTests);
         GridTestUtils.addTestIfNeeded(suite, CircledRebalanceTest.class, ignoredTests);
         GridTestUtils.addTestIfNeeded(suite, NoUnnecessaryRebalanceTest.class, ignoredTests);
         GridTestUtils.addTestIfNeeded(suite, PageLockTrackerResourcesTest.class, ignoredTests);
