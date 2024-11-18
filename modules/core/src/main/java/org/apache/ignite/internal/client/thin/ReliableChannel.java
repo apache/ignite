@@ -820,7 +820,8 @@ final class ReliableChannel implements AutoCloseable {
     ) {
         int fixedAttemptsLimit = attemptsLimit;
 
-        while (fixedAttemptsLimit >= (failures == null ? 0 : failures.size())) {
+        // + 1 is only required if the failure list is empty/null
+        while (fixedAttemptsLimit + 1 > (failures == null ? 0 : failures.size())) {
             ClientChannelHolder hld = null;
             ClientChannel c = null;
 
