@@ -56,7 +56,7 @@ public class IgniteSqlCallRewriteTable {
     }
 
     /** Rewrites SQL call. */
-    public SqlCall rewrite(SqlValidator validator, SqlCall call) {
+    SqlCall rewrite(SqlValidator validator, SqlCall call) {
         BiFunction<SqlValidator, SqlCall, SqlCall> rewriter = map.get(call.getOperator());
 
         return rewriter == null ? call : rewriter.apply(validator, call);
