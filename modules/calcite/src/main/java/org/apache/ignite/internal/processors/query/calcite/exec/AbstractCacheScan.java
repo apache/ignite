@@ -84,6 +84,7 @@ public abstract class AbstractCacheScan<Row> implements Iterable<Row>, AutoClose
             return;
 
         GridDhtPartitionTopology top = cctx.topology();
+
         top.readLock();
 
         GridDhtTopologyFuture topFut = top.topologyVersionFuture();
@@ -101,7 +102,9 @@ public abstract class AbstractCacheScan<Row> implements Iterable<Row>, AutoClose
 
         if (cctx.isReplicated()) {
             int partsCnt = cctx.affinity().partitions();
+
             toReserve = new ArrayList<>(partsCnt);
+
             for (int i = 0; i < partsCnt; i++)
                 toReserve.add(top.localPartition(i));
         }
@@ -109,6 +112,7 @@ public abstract class AbstractCacheScan<Row> implements Iterable<Row>, AutoClose
             assert parts != null;
 
             toReserve = new ArrayList<>(parts.length);
+
             for (int i = 0; i < parts.length; i++)
                 toReserve.add(top.localPartition(parts[i]));
         }

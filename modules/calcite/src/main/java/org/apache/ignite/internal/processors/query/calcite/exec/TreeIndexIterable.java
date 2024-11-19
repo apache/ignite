@@ -113,9 +113,8 @@ public class TreeIndexIterable<Row> implements Iterable<Row> {
             if (next != null)
                 return;
 
-            while (next == null && cursor.next()) {
+            while (next == null && cursor.next())
                 next = cursor.get();
-            }
         }
     }
 }
