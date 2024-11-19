@@ -1642,6 +1642,7 @@ public class IgniteServiceProcessor extends GridProcessorAdapter implements Igni
 
             depActions.servicesToUndeploy().forEach((srvcId, desc) -> {
                 ServiceInfo rmv = removeFromServicesMap(deployedServices, deployedServicesByName, srvcId);
+
                 assert rmv == desc : "Concurrent map modification.";
             });
         }
