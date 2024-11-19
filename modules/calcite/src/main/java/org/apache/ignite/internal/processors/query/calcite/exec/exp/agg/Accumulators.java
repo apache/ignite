@@ -98,7 +98,7 @@ public class Accumulators {
             case "BIT_AND":
             case "BIT_OR":
             case "BIT_XOR":
-                return bitWiseAcc(call, hnd);
+                return bitWiseFactory(call, hnd);
             default:
                 throw new AssertionError(call.getAggregation().getName());
         }
@@ -149,13 +149,15 @@ public class Accumulators {
     }
 
     /** */
-    private static <Row> Supplier<Accumulator<Row>> bitWiseAcc(AggregateCall call, RowHandler<Row> hnd) {
+    private static <Row> Supplier<Accumulator<Row>> bitWiseFactory(AggregateCall call, RowHandler<Row> hnd) {
         switch (call.type.getSqlTypeName()) {
             case BIGINT:
             case INTEGER:
             case SMALLINT:
             case TINYINT:
-                return () -> new BitWiseAcc<>(call, hnd);
+            case NULL:
+                return () -> new BitWise<>(call, hnd);
+
             default:
                 throw new UnsupportedOperationException(call.getName() + " is not supported for type '" + call.type + "'.");
         }
@@ -418,7 +420,7 @@ public class Accumulators {
     }
 
     /** */
-    private static class BitWiseAcc<Row> extends AbstractAccumulator<Row> {
+    private static class BitWise<Row> extends AbstractAccumulator<Row> {
         /** */
         private long res;
 
@@ -429,7 +431,7 @@ public class Accumulators {
         private final SqlKind kind;
 
         /** */
-        private BitWiseAcc(AggregateCall aggCall, RowHandler<Row> hnd) {
+        private BitWise(AggregateCall aggCall, RowHandler<Row> hnd) {
             super(aggCall, hnd);
 
             kind = aggCall.getAggregation().kind;
@@ -471,7 +473,7 @@ public class Accumulators {
 
         /** {@inheritDoc} */
         @Override public void apply(Accumulator<Row> other) {
-            BitWiseAcc<Row> other0 = (BitWiseAcc<Row>)other;
+            BitWise<Row> other0 = (BitWise<Row>)other;
 
             if (other0.updated)
                 apply(other0.res);
