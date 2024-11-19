@@ -34,6 +34,7 @@ import org.apache.ignite.internal.IgnitionEx;
 import org.apache.ignite.internal.client.thin.TcpIgniteClient;
 import org.apache.ignite.internal.processors.cache.GridCacheProcessor;
 import org.apache.ignite.internal.util.lang.IgniteInClosureX;
+import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.mxbean.WarmUpMXBean;
 import org.apache.ignite.testframework.GridTestUtils;
@@ -44,6 +45,7 @@ import static java.util.Objects.requireNonNull;
 import static java.util.function.Function.identity;
 import static java.util.stream.Collectors.toMap;
 import static org.apache.ignite.client.Config.SERVER;
+import static org.apache.ignite.internal.processors.odbc.ClientListenerNioListener.RECOVERY_ATTR;
 import static org.apache.ignite.testframework.GridTestUtils.assertThrowsAnyCause;
 
 /**
@@ -330,6 +332,7 @@ public class WarmUpSelfTest extends GridCommonAbstractTest {
             @Override public void applyx(IgniteKernal kernal) {
                 try (TcpIgniteClient thinCli = (TcpIgniteClient)TcpIgniteClient.start(new ClientConfiguration()
                     .setAddresses(SERVER)
+                    .setUserAttributes(F.asMap(RECOVERY_ATTR, Boolean.TRUE.toString()))
                     .setClusterDiscoveryEnabled(false))
                 ) {
                     thinCli.stopWarmUp();

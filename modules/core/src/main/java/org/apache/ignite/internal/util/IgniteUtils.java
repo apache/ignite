@@ -11707,7 +11707,7 @@ public abstract class IgniteUtils {
      * @param err Error to add.
      * @return New root error.
      */
-    private static Throwable addSuppressed(Throwable root, Throwable err) {
+    public static <T extends Throwable> T addSuppressed(T root, T err) {
         assert err != null;
 
         if (root == null)

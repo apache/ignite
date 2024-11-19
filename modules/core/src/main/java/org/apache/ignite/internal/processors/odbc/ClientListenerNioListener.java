@@ -18,7 +18,6 @@
 package org.apache.ignite.internal.processors.odbc;
 
 import java.io.Closeable;
-import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.atomic.AtomicInteger;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
@@ -74,8 +73,11 @@ public class ClientListenerNioListener extends GridNioServerListenerAdapter<Clie
     /** Connection-related metadata key. */
     public static final int CONN_CTX_META_KEY = GridNioSessionMetaKey.nextUniqueKey();
 
-    /** Connection id for recovery mode. */
-    public static final long RECOVERY_CONN_ID = 1;
+    /** */
+    public static final String RECOVERY_ATTR = "ignite.internal.recoveryModeConnectionEnabled";
+
+    /** Connection shifted ID for recovery mode. */
+    public static final long RECOVERY_SHIFTED_ID = -1;
 
     /** Next connection id. */
     private static AtomicInteger nextConnId = new AtomicInteger(1);
@@ -101,9 +103,6 @@ public class ClientListenerNioListener extends GridNioServerListenerAdapter<Clie
     /** Metrics. */
     private final ClientListenerMetrics metrics;
 
-    /** */
-    private final CountDownLatch startLatch;
-
     /**
      * Constructor.
      *
@@ -116,8 +115,7 @@ public class ClientListenerNioListener extends GridNioServerListenerAdapter<Clie
         GridKernalContext ctx,
         GridSpinBusyLock busyLock,
         ClientConnectorConfiguration cliConnCfg,
-        ClientListenerMetrics metrics,
-        CountDownLatch startLatch
+        ClientListenerMetrics metrics
     ) {
         assert cliConnCfg != null;
 
@@ -132,7 +130,6 @@ public class ClientListenerNioListener extends GridNioServerListenerAdapter<Clie
             : new ThinClientConfiguration(cliConnCfg.getThinClientConfiguration());
 
         this.metrics = metrics;
-        this.startLatch = startLatch;
     }
 
     /** {@inheritDoc} */
@@ -215,16 +212,6 @@ public class ClientListenerNioListener extends GridNioServerListenerAdapter<Clie
             }
             else
                 startTime = 0;
-
-            if (!req.beforeStartupRequest() && startLatch.getCount() > 0) {
-                try {
-                    startLatch.await();
-                }
-                catch (InterruptedException e) {
-                    handleError(req, new IgniteCheckedException("Failed to handle request (protocol handler " +
-                        "was interrupted when awaiting node start).", e), ses, parser, hnd);
-                }
-            }
 
             ClientListenerResponse resp;
 
@@ -393,6 +380,9 @@ public class ClientListenerNioListener extends GridNioServerListenerAdapter<Clie
             if (connCtx.isVersionSupported(ver)) {
                 connCtx.initializeFromHandshake(ses, ver, reader);
 
+                if (this.ctx.recoveryMode() && !Boolean.parseBoolean(connCtx.attributes().get(RECOVERY_ATTR)))
+                    throw new ClientConnectionNodeRecoveryException("Node in recovery mode.");
+
                 ses.addMeta(CONN_CTX_META_KEY, connCtx);
             }
             else
@@ -454,8 +444,11 @@ public class ClientListenerNioListener extends GridNioServerListenerAdapter<Clie
 
             writer.doWriteString(e.getMessage());
 
-            if (ver.compareTo(ClientConnectionContext.VER_1_1_0) >= 0)
-                writer.writeInt(ClientStatus.FAILED);
+            if (ver.compareTo(ClientConnectionContext.VER_1_1_0) >= 0) {
+                writer.writeInt(e instanceof ClientConnectionNodeRecoveryException
+                    ? ClientStatus.NODE_IN_RECOVERY_MODE
+                    : ClientStatus.FAILED);
+            }
         }
 
         ses.send(new ClientMessage(writer.array()));
@@ -471,9 +464,7 @@ public class ClientListenerNioListener extends GridNioServerListenerAdapter<Clie
      */
     private ClientListenerConnectionContext prepareContext(byte clientType, GridNioSession ses)
         throws IgniteCheckedException {
-        long connId = ctx.recoveryMode() ? RECOVERY_CONN_ID : nextConnectionId();
-
-        assert connId != RECOVERY_CONN_ID || clientType == THIN_CLIENT;
+        long connId = nextConnectionId();
 
         switch (clientType) {
             case ODBC_CLIENT:
@@ -494,7 +485,9 @@ public class ClientListenerNioListener extends GridNioServerListenerAdapter<Clie
      * @return connection id.
      */
     private long nextConnectionId() {
-        return (ctx.discovery().localNode().order() << 32) + nextConnId.getAndIncrement();
+        long shiftedId = ctx.recoveryMode() ? RECOVERY_SHIFTED_ID : ctx.discovery().localNode().order();
+
+        return (shiftedId << 32) + nextConnId.getAndIncrement();
     }
 
     /**

@@ -25,7 +25,6 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.Function;
@@ -122,9 +121,6 @@ public class ClientListenerProcessor extends GridProcessorAdapter {
     /** Client connector configuration. */
     private ClientConnectorConfiguration cliConnCfg;
 
-    /** */
-    private final CountDownLatch startLatch = new CountDownLatch(1);
-
     /**
      * @param ctx Kernal context.
      */
@@ -186,7 +182,7 @@ public class ClientListenerProcessor extends GridProcessorAdapter {
                         srv = GridNioServer.<ClientMessage>builder()
                             .address(hostAddr)
                             .port(port)
-                            .listener(new ClientListenerNioListener(ctx, busyLock, cliConnCfg, metrics, startLatch))
+                            .listener(new ClientListenerNioListener(ctx, busyLock, cliConnCfg, metrics))
                             .logger(log)
                             .selectorCount(selectorCnt)
                             .igniteInstanceName(ctx.igniteInstanceName())
@@ -250,11 +246,6 @@ public class ClientListenerProcessor extends GridProcessorAdapter {
                 throw new IgniteCheckedException("Failed to start client connector processor.", e);
             }
         }
-    }
-
-    /** {@inheritDoc} */
-    @Override public void onKernalStart(boolean active) throws IgniteCheckedException {
-        startLatch.countDown();
     }
 
     /** */
@@ -486,6 +477,21 @@ public class ClientListenerProcessor extends GridProcessorAdapter {
                     + clientConnectionDescription(ses, connCtx));
             }
         }
+    }
+
+    /** */
+    public boolean hasConnection(int connId) {
+        for (GridNioSession ses : srv.sessions()) {
+            ClientListenerConnectionContext connCtx = ses.meta(CONN_CTX_META_KEY);
+
+            if (connCtx == null || ses.closeTime() != 0)
+                continue; // Skip non-initialized or closed session.
+
+            if (connCtx.connectionId() == connId)
+                return true;
+        }
+
+        return false;
     }
 
     /**
