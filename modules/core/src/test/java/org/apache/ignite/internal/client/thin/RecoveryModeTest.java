@@ -118,7 +118,7 @@ public class RecoveryModeTest extends AbstractThinClientTest {
         return Ignition.startClient(getClientConfiguration(igniteIdxs));
     }
 
-    /** {@inheritDoc} */
+    /** */
     private IgniteClient startClientRecoveryEnabled(int... igniteIdxs) {
         return Ignition.startClient(getClientConfiguration(igniteIdxs)
             .setUserAttributes(F.asMap(RECOVERY_ATTR, Boolean.TRUE.toString())));

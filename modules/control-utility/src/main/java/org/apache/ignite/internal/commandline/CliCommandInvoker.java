@@ -34,6 +34,8 @@ import org.apache.ignite.internal.management.api.CommandUtils;
 import org.apache.ignite.internal.util.typedef.F;
 import org.jetbrains.annotations.Nullable;
 
+import static org.apache.ignite.internal.processors.odbc.ClientListenerNioListener.RECOVERY_ATTR;
+
 /**
  * Adapter of new management API command for {@code control.sh} execution flow.
  */
@@ -49,7 +51,12 @@ public class CliCommandInvoker<A extends IgniteDataTransferObject> extends Abstr
     ) throws IgniteCheckedException {
         super(cmd, args, pwdReader);
 
-        client = Ignition.startClient(clientConfiguration(args));
+        ClientConfiguration cfg = clientConfiguration(args);
+
+        if (cmd instanceof BeforeNodeStartCommand)
+            cfg.setUserAttributes(F.asMap(RECOVERY_ATTR, Boolean.TRUE.toString()));
+
+        client = Ignition.startClient(cfg);
     }
 
     /** {@inheritDoc} */

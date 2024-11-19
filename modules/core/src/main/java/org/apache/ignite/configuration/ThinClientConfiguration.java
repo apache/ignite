@@ -29,7 +29,7 @@ public class ThinClientConfiguration {
     public static final int DFLT_MAX_ACTIVE_TX_PER_CONNECTION = 100;
 
     /** Default limit of active compute tasks per connection. */
-    public static final int DFLT_MAX_ACTIVE_COMPUTE_TASKS_PER_CONNECTION = 10;
+    public static final int DFLT_MAX_ACTIVE_COMPUTE_TASKS_PER_CONNECTION = 0;
 
     /** Active transactions count per connection limit. */
     private int maxActiveTxPerConn = DFLT_MAX_ACTIVE_TX_PER_CONNECTION;

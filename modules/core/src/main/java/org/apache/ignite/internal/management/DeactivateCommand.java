@@ -26,6 +26,7 @@ import org.apache.ignite.internal.client.GridClient;
 import org.apache.ignite.internal.client.GridClientClusterState;
 import org.apache.ignite.internal.client.GridClientException;
 import org.apache.ignite.internal.client.GridClientNode;
+import org.apache.ignite.internal.client.thin.ClientClusterImpl;
 import org.apache.ignite.internal.cluster.IgniteClusterEx;
 import org.apache.ignite.internal.management.api.CommandUtils;
 import org.apache.ignite.internal.management.api.LocalCommand;
@@ -70,7 +71,7 @@ public class DeactivateCommand implements LocalCommand<DeactivateCommandArg, NoA
             state.state(INACTIVE, arg.force());
         }
         else if (client != null)
-            client.cluster().state(INACTIVE, arg.force());
+            ((ClientClusterImpl)client.cluster()).state(INACTIVE, arg.force());
         else
             ((IgniteClusterEx)ignite.cluster()).state(INACTIVE, arg.force());
 
