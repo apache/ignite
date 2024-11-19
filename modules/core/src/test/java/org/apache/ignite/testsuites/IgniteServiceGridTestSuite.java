@@ -46,6 +46,7 @@ import org.apache.ignite.internal.processors.service.IgniteServiceDeployment2Cla
 import org.apache.ignite.internal.processors.service.IgniteServiceDeploymentClassLoadingDefaultMarshallerTest;
 import org.apache.ignite.internal.processors.service.IgniteServiceDeploymentClassLoadingJdkMarshallerTest;
 import org.apache.ignite.internal.processors.service.IgniteServiceDeploymentClassLoadingOptimizedMarshallerTest;
+import org.apache.ignite.internal.processors.service.IgniteServiceDeploymentFailureTest;
 import org.apache.ignite.internal.processors.service.IgniteServiceDynamicCachesSelfTest;
 import org.apache.ignite.internal.processors.service.IgniteServiceProxyTimeoutInitializedTest;
 import org.apache.ignite.internal.processors.service.IgniteServiceReassignmentTest;
@@ -106,6 +107,7 @@ import org.junit.runners.Suite;
     IgniteServiceDeployment2ClassLoadersDefaultMarshallerTest.class,
     IgniteServiceDeployment2ClassLoadersJdkMarshallerTest.class,
     IgniteServiceDeployment2ClassLoadersOptimizedMarshallerTest.class,
+    IgniteServiceDeploymentFailureTest.class,
 
     GridServiceDeploymentExceptionPropagationTest.class,
     ServiceDeploymentProcessingOnCoordinatorLeftTest.class,

@@ -77,10 +77,12 @@ import org.apache.ignite.lang.IgniteBiPredicate;
 import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.testframework.GridTestUtils;
+import org.apache.ignite.testframework.junits.WithSystemProperty;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 
+import static org.apache.ignite.IgniteSystemProperties.IGNITE_ENABLE_OBJECT_INPUT_FILTER_AUTOCONFIGURATION;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_MARSHALLER_BLACKLIST;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_USE_BINARY_ARRAYS;
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
@@ -108,6 +110,7 @@ import static org.apache.ignite.internal.processors.rest.GridRestResponse.STATUS
  */
 @SuppressWarnings("unchecked")
 @RunWith(Parameterized.class)
+@WithSystemProperty(key = IGNITE_ENABLE_OBJECT_INPUT_FILTER_AUTOCONFIGURATION, value = "false")
 public abstract class JettyRestProcessorAbstractSelfTest extends JettyRestProcessorCommonSelfTest {
     /** */
     private static boolean memoryMetricsEnabled;
