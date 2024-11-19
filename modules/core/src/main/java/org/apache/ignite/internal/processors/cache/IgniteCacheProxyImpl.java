@@ -1645,9 +1645,6 @@ public class IgniteCacheProxyImpl<K, V> extends AsyncSupportAdapter<IgniteCache<
 
     /** {@inheritDoc} */
     @Override public IgniteFuture<Void> clearAsync(K key) {
-        if (ctx.transactional() && ctx.grid().transactions().tx() != null)
-            throw new CacheException(GridCacheAdapter.NON_TRANSACTIONAL_IGNITE_CACHE_CLEAR_IN_TX_ERROR_MESSAGE);
-
         IgniteInternalCache<K, V> delegate = getDelegateSafe();
 
         return (IgniteFuture<Void>)createFuture(delegate.clearAsync(key));
@@ -1670,9 +1667,6 @@ public class IgniteCacheProxyImpl<K, V> extends AsyncSupportAdapter<IgniteCache<
 
     /** {@inheritDoc} */
     @Override public IgniteFuture<Void> clearAllAsync(Set<? extends K> keys) {
-        if (ctx.transactional() && ctx.grid().transactions().tx() != null)
-            throw new CacheException(GridCacheAdapter.NON_TRANSACTIONAL_IGNITE_CACHE_CLEAR_IN_TX_ERROR_MESSAGE);
-
         IgniteInternalCache<K, V> delegate = getDelegateSafe();
 
         return (IgniteFuture<Void>)createFuture(delegate.clearAllAsync(keys));
@@ -1695,9 +1689,6 @@ public class IgniteCacheProxyImpl<K, V> extends AsyncSupportAdapter<IgniteCache<
 
     /** {@inheritDoc} */
     @Override public IgniteFuture<Void> clearAsync() {
-        if (ctx.transactional() && ctx.grid().transactions().tx() != null)
-            throw new CacheException(GridCacheAdapter.NON_TRANSACTIONAL_IGNITE_CACHE_CLEAR_IN_TX_ERROR_MESSAGE);
-
         IgniteInternalCache<K, V> delegate = getDelegateSafe();
 
         return (IgniteFuture<Void>)createFuture(delegate.clearAsync());
@@ -1712,9 +1703,6 @@ public class IgniteCacheProxyImpl<K, V> extends AsyncSupportAdapter<IgniteCache<
 
     /** {@inheritDoc} */
     @Override public void localClearAll(Set<? extends K> keys) {
-        if (ctx.transactional() && ctx.grid().transactions().tx() != null)
-            throw new CacheException(GridCacheAdapter.NON_TRANSACTIONAL_IGNITE_CACHE_CLEAR_IN_TX_ERROR_MESSAGE);
-
         IgniteInternalCache<K, V> delegate = getDelegateSafe();
 
         for (K key : keys)
