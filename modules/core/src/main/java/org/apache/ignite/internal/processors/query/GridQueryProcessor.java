@@ -202,7 +202,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
     public static Class<? extends GridQueryIndexing> idxCls;
 
     /** JDK marshaller to serialize errors. */
-    private final JdkMarshaller marsh = new JdkMarshaller();
+    private final JdkMarshaller marsh;
 
     /** */
     private final GridSpinBusyLock busyLock = new GridSpinBusyLock();
@@ -350,6 +350,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
 
         idxBuildStatusStorage = new IndexBuildStatusStorage(ctx);
         txAwareQueriesEnabled = U.isTxAwareQueriesEnabled(ctx);
+        marsh = ctx.marshallerContext().jdkMarshaller();
     }
 
     /** {@inheritDoc} */
