@@ -92,12 +92,13 @@ public class ClusterApiTest extends AbstractThinClientTest {
                 .setName(DEFAULT_CACHE_NAME)
                 .setDataRegionName("non-persistent"));
 
-            assertThrows(log, () -> client.cluster().state(ClusterState.INACTIVE, false), IgniteException.class,
-                "Deactivation stopped. Deactivation clears in-memory caches (without persistence) including the system caches.");
+            assertThrows(log, () -> ((ClientClusterImpl)client.cluster()).state(ClusterState.INACTIVE, false),
+                IgniteException.class, "Deactivation stopped. " +
+                    "Deactivation clears in-memory caches (without persistence) including the system caches.");
 
             assertTrue(grid(0).cluster().state().active());
 
-            client.cluster().state(ClusterState.INACTIVE, true);
+            ((ClientClusterImpl)client.cluster()).state(ClusterState.INACTIVE, true);
 
             assertFalse(grid(0).cluster().state().active());
         }
