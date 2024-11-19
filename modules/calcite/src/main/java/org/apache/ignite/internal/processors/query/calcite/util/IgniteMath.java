@@ -422,11 +422,8 @@ public class IgniteMath {
 
     /** */
     public static Number bitwise(SqlKind kind, Number v1, Number v2) {
-        if (v1 == null)
-            return v2;
-
-        if (v2 == null)
-            return v1;
+        if (v1 == null || v2 == null)
+            return null;
 
         switch (kind) {
             case BIT_AND:

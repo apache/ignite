@@ -71,7 +71,6 @@ import org.apache.calcite.sql.validate.SqlUserDefinedTableMacro;
 import org.apache.calcite.util.BuiltInMethod;
 import org.apache.calcite.util.Util;
 import org.apache.ignite.calcite.CalciteQueryEngineConfiguration;
-import org.apache.ignite.internal.processors.query.calcite.util.IgniteMath;
 import org.apache.ignite.internal.processors.query.calcite.util.IgniteMethod;
 
 import static org.apache.calcite.adapter.enumerable.EnumUtils.generateCollatorExpression;
@@ -569,9 +568,9 @@ public class RexImpTable {
         // implementation required.
         defineMethod(IS_NOT_DISTINCT_FROM, IgniteMethod.IS_NOT_DISTINCT_FROM.method(), NullPolicy.NONE);
 
-        map.put(BITAND, new BitwiseImplementor(SqlKind.BIT_AND));
-        map.put(BITOR, new BitwiseImplementor(SqlKind.BIT_OR));
-        map.put(BITXOR, new BitwiseImplementor(SqlKind.BIT_XOR));
+        defineMethod(BITAND, BuiltInMethod.BIT_AND.method, NullPolicy.ANY);
+        defineMethod(BITOR, BuiltInMethod.BIT_OR.method, NullPolicy.ANY);
+        defineMethod(BITXOR, BuiltInMethod.BIT_XOR.method, NullPolicy.ANY);
     }
 
     /** */
@@ -1311,34 +1310,6 @@ public class RexImpTable {
             // Certain unary operators do not preserve type. For example, the "-"
             // operator applied to a "byte" expression returns an "int".
             return Expressions.convert_(e, argVal.type);
-        }
-    }
-
-    /** Implementor for {@link IgniteMath#bitwise(SqlKind, Number, Number)}. */
-    private static class BitwiseImplementor extends AbstractRexCallImplementor {
-        /** */
-        private final SqlKind kind;
-
-        /** */
-        private BitwiseImplementor(SqlKind kind) {
-            super("bitwise_" + kind.lowerName, NullPolicy.NONE, false);
-
-            assert kind == SqlKind.BIT_AND || kind == SqlKind.BIT_OR || kind == SqlKind.BIT_XOR;
-
-            this.kind = kind;
-        }
-
-        /** {@inheritDoc} */
-        @Override Expression implementSafe(RexToLixTranslator translator, RexCall call, List<Expression> argValList) {
-            assert call.getOperands().size() == 2 : "Unexpected size of a bitwise call operands: " + call.getOperands().size();
-            assert argValList.size() == 2 : "Unexpected size of a bitwise call argVals: " + argValList.size();
-
-            return Expressions.call(
-                IgniteMethod.BITWISE.method(),
-                Expressions.constant(kind),
-                Expressions.convert_(argValList.get(0), Number.class),
-                Expressions.convert_(argValList.get(1), Number.class)
-            );
         }
     }
 

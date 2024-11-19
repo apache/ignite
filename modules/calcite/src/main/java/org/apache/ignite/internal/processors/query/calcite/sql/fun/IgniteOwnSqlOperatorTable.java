@@ -19,6 +19,7 @@ package org.apache.ignite.internal.processors.query.calcite.sql.fun;
 import org.apache.calcite.sql.SqlFunction;
 import org.apache.calcite.sql.SqlFunctionCategory;
 import org.apache.calcite.sql.SqlKind;
+import org.apache.calcite.sql.type.InferTypes;
 import org.apache.calcite.sql.type.OperandTypes;
 import org.apache.calcite.sql.type.ReturnTypes;
 import org.apache.calcite.sql.type.SqlTypeFamily;
@@ -129,8 +130,8 @@ public class IgniteOwnSqlOperatorTable extends ReflectiveSqlOperatorTable {
         new SqlFunction(
             "BITAND",
             SqlKind.OTHER_FUNCTION,
-            ReturnTypes.LEAST_RESTRICTIVE.andThen(SqlTypeTransforms.TO_NULLABLE),
-            null,
+            ReturnTypes.LEAST_RESTRICTIVE,
+            InferTypes.RETURN_TYPE,
             OperandTypes.family(SqlTypeFamily.INTEGER, SqlTypeFamily.INTEGER),
             SqlFunctionCategory.NUMERIC);
 
@@ -139,8 +140,8 @@ public class IgniteOwnSqlOperatorTable extends ReflectiveSqlOperatorTable {
         new SqlFunction(
             "BITOR",
             SqlKind.OTHER_FUNCTION,
-            ReturnTypes.LEAST_RESTRICTIVE.andThen(SqlTypeTransforms.TO_NULLABLE),
-            null,
+            ReturnTypes.LEAST_RESTRICTIVE,
+            InferTypes.RETURN_TYPE,
             OperandTypes.family(SqlTypeFamily.INTEGER, SqlTypeFamily.INTEGER),
             SqlFunctionCategory.NUMERIC);
 
@@ -149,8 +150,8 @@ public class IgniteOwnSqlOperatorTable extends ReflectiveSqlOperatorTable {
         new SqlFunction(
             "BITXOR",
             SqlKind.OTHER_FUNCTION,
-            ReturnTypes.LEAST_RESTRICTIVE.andThen(SqlTypeTransforms.TO_NULLABLE),
-            null,
+            ReturnTypes.LEAST_RESTRICTIVE,
+            InferTypes.RETURN_TYPE,
             OperandTypes.family(SqlTypeFamily.INTEGER, SqlTypeFamily.INTEGER),
             SqlFunctionCategory.NUMERIC);
 
