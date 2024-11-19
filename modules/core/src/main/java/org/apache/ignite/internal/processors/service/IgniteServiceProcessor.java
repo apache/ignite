@@ -2030,7 +2030,11 @@ public class IgniteServiceProcessor extends GridProcessorAdapter implements Igni
      *
      * @return Removed service descriptor.
      * */
-    private ServiceInfo removeFromServicesMap(Map<IgniteUuid, ServiceInfo> srvcsMap, Map<String, ServiceInfo> srvcsByNameMap, IgniteUuid srvcId) {
+    private ServiceInfo removeFromServicesMap(
+        Map<IgniteUuid, ServiceInfo> srvcsMap,
+        Map<String, ServiceInfo> srvcsByNameMap,
+        IgniteUuid srvcId
+    ) {
         ServiceInfo desc = srvcsMap.remove(srvcId);
 
         assert desc != null : "Concurrent map modification.";
