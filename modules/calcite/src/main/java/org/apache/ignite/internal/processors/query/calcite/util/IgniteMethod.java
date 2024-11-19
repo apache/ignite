@@ -23,7 +23,6 @@ import java.util.Objects;
 import org.apache.calcite.avatica.util.ByteString;
 import org.apache.calcite.linq4j.tree.Types;
 import org.apache.calcite.sql.SqlIntervalQualifier;
-import org.apache.calcite.sql.SqlKind;
 import org.apache.calcite.sql.parser.SqlParserUtil;
 import org.apache.ignite.internal.processors.query.calcite.exec.ExecutionContext;
 import org.apache.ignite.internal.processors.query.calcite.exec.RowHandler;
@@ -99,10 +98,7 @@ public enum IgniteMethod {
     IS_NOT_DISTINCT_FROM(Objects.class, "equals", Object.class, Object.class),
 
     /** See {@link IgniteSqlFunctions#skipFirstArgument(Object, Object)}. **/
-    SKIP_FIRST_ARGUMENT(IgniteSqlFunctions.class, "skipFirstArgument", Object.class, Object.class),
-
-    /** See {@link IgniteMath#bitwise(SqlKind, Number, Number)}. **/
-    BITWISE(IgniteMath.class, "bitwise", SqlKind.class, Number.class, Number.class);
+    SKIP_FIRST_ARGUMENT(IgniteSqlFunctions.class, "skipFirstArgument", Object.class, Object.class);
 
     /** */
     private final Method method;
