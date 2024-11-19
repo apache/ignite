@@ -12536,4 +12536,9 @@ public abstract class IgniteUtils {
 
         return sb.toString();
     }
+
+    /** */
+    public static boolean isTxAwareQueriesEnabled(GridKernalContext kctx) {
+        return kctx.config().getTransactionConfiguration().isTxAwareQueriesEnabled();
+    }
 }

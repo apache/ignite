@@ -788,7 +788,7 @@ class ServerImpl extends TcpDiscoveryImpl {
         for (InetSocketAddress addr : spi.getEffectiveNodeAddresses(node)) {
             try {
                 // ID returned by the node should be the same as ID of the parameter for ping to succeed.
-                IgniteBiTuple<UUID, Boolean> t = pingNode(addr, node.id(), clientNodeId, 0);
+                IgniteBiTuple<UUID, Boolean> t = pingNode(addr, node.id(), clientNodeId, 0, true);
 
                 if (t == null)
                     // Remote node left topology.
@@ -820,6 +820,7 @@ class ServerImpl extends TcpDiscoveryImpl {
      * @param nodeId Node ID to ping. In case when client node ID is not null this node ID is an ID of the router node.
      * @param clientNodeId Client node ID.
      * @param timeout Timeout on operation in milliseconds. If 0, a value based on {@link TcpDiscoverySpi} is used.
+     * @param logError Boolean flag indicating whether information should be printed into the node log.
      * @return ID of the remote node and "client exists" flag if node alive or {@code null} if the remote node has
      *         left a topology during the ping process.
      * @throws IgniteCheckedException If an error occurs.
@@ -828,7 +829,8 @@ class ServerImpl extends TcpDiscoveryImpl {
         InetSocketAddress addr,
         @Nullable UUID nodeId,
         @Nullable UUID clientNodeId,
-        long timeout
+        long timeout,
+        boolean logError
     ) throws IgniteCheckedException {
         assert addr != null;
         assert timeout >= 0;
@@ -913,9 +915,11 @@ class ServerImpl extends TcpDiscoveryImpl {
                         return t;
                     }
                     catch (IOException | IgniteCheckedException e) {
+                        String errMsgPrefix = "Failed to ping node [nodeId=" + nodeId + ", address=" + addr + "]. ";
+
                         if (nodeId != null && !nodeAlive(nodeId)) {
-                            log.warning("Failed to ping node [nodeId=" + nodeId + "]. Node has left or is " +
-                                "leaving topology. Cause: " + e.getMessage());
+                            logPingError(errMsgPrefix + "Node has left or is leaving topology. " +
+                                "Cause: " + e.getMessage(), logError);
 
                             fut.onDone((IgniteBiTuple<UUID, Boolean>)null);
 
@@ -930,29 +934,30 @@ class ServerImpl extends TcpDiscoveryImpl {
                         reconCnt++;
 
                         if (!openedSock && reconCnt == 2) {
-                            log.warning("Failed to ping node [nodeId=" + nodeId + "]. Was unable to open the " +
-                                "socket at all. Cause: " + e.getMessage());
+                            logPingError(errMsgPrefix + "Was unable to open the socket at all. " +
+                                "Cause: " + e.getMessage(), logError);
 
                             break;
                         }
 
                         if (IgniteSpiOperationTimeoutHelper.checkFailureTimeoutReached(e)
                             && (spi.failureDetectionTimeoutEnabled() || timeout != 0)) {
-                            log.warning("Failed to ping node [nodeId=" + nodeId + "]. Reached the timeout " +
-                                (timeout == 0 ? spi.failureDetectionTimeout() : timeout) + "ms. Cause: " + e.getMessage());
+                            logPingError(errMsgPrefix + "Reached the timeout " +
+                                (timeout == 0 ? spi.failureDetectionTimeout() : timeout) +
+                                "ms. Cause: " + e.getMessage(), logError);
 
                             break;
                         }
                         else if (!spi.failureDetectionTimeoutEnabled() && reconCnt == spi.getReconnectCount()) {
-                            log.warning("Failed to ping node [nodeId=" + nodeId + "]. Reached the reconnection " +
-                                "count " + spi.getReconnectCount() + ". Cause: " + e.getMessage());
+                            logPingError(errMsgPrefix + "Reached the reconnection count spi.getReconnectCount(). " +
+                                "Cause: " + e.getMessage(), logError);
 
                             break;
                         }
 
                         if (spi.isNodeStopping0()) {
-                            log.warning("Failed to ping node [nodeId=" + nodeId + "]. Current node is " +
-                                "stopping. Cause: " + e.getMessage());
+                            logPingError(errMsgPrefix + "Current node is stopping. " +
+                                "Cause: " + e.getMessage(), logError);
 
                             break;
                         }
@@ -981,6 +986,14 @@ class ServerImpl extends TcpDiscoveryImpl {
 
             return fut.get();
         }
+    }
+
+    /** */
+    private void logPingError(String msg, boolean logError) {
+        if (logError)
+            log.warning(msg);
+        else if (log.isDebugEnabled())
+            log.debug(msg);
     }
 
     /**
@@ -2272,7 +2285,7 @@ class ServerImpl extends TcpDiscoveryImpl {
 
                         if (res == null) {
                             try {
-                                res = pingNode(addr, null, null, 0) != null;
+                                res = pingNode(addr, null, null, 0, false) != null;
                             }
                             catch (IgniteCheckedException e) {
                                 if (log.isDebugEnabled())
@@ -7294,7 +7307,7 @@ class ServerImpl extends TcpDiscoveryImpl {
          * @param node Node to ping.
          * @param timeout Overall operation timeout.
          * @return An address successfully connected to. {@code Null} if no alive address was detected within the timeout.
-         * @see #pingNode(InetSocketAddress, UUID, UUID, long)
+         * @see #pingNode(InetSocketAddress, UUID, UUID, long, boolean)
          */
         private InetSocketAddress checkConnection(TcpDiscoveryNode node, int timeout) {
             IgniteSpiOperationTimeoutHelper timeoutHelper = new IgniteSpiOperationTimeoutHelper(timeout);
@@ -7330,7 +7343,8 @@ class ServerImpl extends TcpDiscoveryImpl {
 
                             try {
                                 if (liveAddrHolder.get() == null) {
-                                    UUID id = pingNode(addr, node.id(), null, timeoutHelper.nextTimeoutChunk(perAddrTimeout)).get1();
+                                    UUID id = pingNode(addr, node.id(), null, timeoutHelper.nextTimeoutChunk(perAddrTimeout),
+                                        true).get1();
 
                                     assert id == null || id.equals(node.id());
 
@@ -7573,7 +7587,7 @@ class ServerImpl extends TcpDiscoveryImpl {
             for (InetSocketAddress addr : spi.getEffectiveNodeAddresses(node)) {
                 try {
                     if (!(addr.getAddress().isLoopbackAddress() && locNode.socketAddresses().contains(addr))) {
-                        IgniteBiTuple<UUID, Boolean> t = pingNode(addr, node.id(), null, 0);
+                        IgniteBiTuple<UUID, Boolean> t = pingNode(addr, node.id(), null, 0, true);
 
                         if (t != null)
                             return true;

@@ -20,7 +20,7 @@ package org.apache.ignite.spi.systemview.view;
 import java.util.UUID;
 import org.apache.ignite.internal.managers.systemview.walker.Order;
 import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtLocalPartition;
-import org.apache.ignite.internal.processors.cache.query.GridCacheQueryManager.ScanQueryIterator;
+import org.apache.ignite.internal.processors.cache.query.ScanQueryIterator;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiPredicate;
 import org.apache.ignite.lang.IgniteBiTuple;
