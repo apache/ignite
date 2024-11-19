@@ -295,14 +295,11 @@ public class IgniteServiceDeploymentFailureTest extends GridCommonAbstractTest {
      * @param mapName Map name.
      */
     private static <T> Map<T, ServiceInfo> getServicesMap(Ignite node, String mapName) {
-        return getFieldValue(getIgniteServiceProcessor(node), IgniteServiceProcessor.class, mapName);
-    }
-
-    /**
-     * @param node Node.
-     */
-    private static IgniteServiceProcessor getIgniteServiceProcessor(Ignite node) {
-        return ((GridKernalContext)getFieldValue(node.services(), IgniteServicesImpl.class, "ctx")).service();
+        return getFieldValue(
+            ((GridKernalContext)getFieldValue(node.services(), IgniteServicesImpl.class, "ctx")).service(),
+            IgniteServiceProcessor.class,
+            mapName
+        );
     }
 
     /**

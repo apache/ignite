@@ -1583,31 +1583,15 @@ public class IgniteServiceProcessor extends GridProcessorAdapter implements Igni
                 // Checking if there are successful deployments.
                 // If none, service not deployed and must be removed from descriptors.
                 if (e.getValue().entrySet().stream().allMatch(nodeTop -> nodeTop.getValue() == 0)) {
-                    removeServiceRecord(registeredServices, registeredServicesByName, e.getKey());
+                    removeFromServicesMap(registeredServices, registeredServicesByName, e.getKey());
 
-                    removeServiceRecord(deployedServices, deployedServicesByName, e.getKey());
+                    removeFromServicesMap(deployedServices, deployedServicesByName, e.getKey());
                 }
             }
         }
         finally {
             leaveBusy();
         }
-    }
-
-    /**
-     * Remove service record from service map and corresponding services by name map.
-     *
-     * @param srvcsMap Services map.
-     * @param srvcsByNameMap Services by name map.
-     * @param srvcId Service id.
-     * */
-    private void removeServiceRecord(Map<IgniteUuid, ServiceInfo> srvcsMap, Map<String, ServiceInfo> srvcsByNameMap, IgniteUuid srvcId) {
-        ServiceInfo desc = srvcsMap.remove(srvcId);
-
-        assert desc != null : "Concurrent map modification";
-
-        if (desc != null)
-            srvcsByNameMap.remove(desc.name());
     }
 
     /**
@@ -1657,11 +1641,8 @@ public class IgniteServiceProcessor extends GridProcessorAdapter implements Igni
             });
 
             depActions.servicesToUndeploy().forEach((srvcId, desc) -> {
-                ServiceInfo rmv = deployedServices.remove(srvcId);
-
-                assert rmv != null && rmv == desc : "Concurrent map modification.";
-
-                deployedServicesByName.remove(rmv.name());
+                ServiceInfo rmv = removeFromServicesMap(deployedServices, deployedServicesByName, srvcId);
+                assert rmv == desc : "Concurrent map modification.";
             });
         }
         finally {
@@ -1888,8 +1869,7 @@ public class IgniteServiceProcessor extends GridProcessorAdapter implements Igni
                 }
             }
             else if (req instanceof ServiceUndeploymentRequest) {
-                ServiceInfo rmv = registeredServices.remove(reqSrvcId);
-                registeredServicesByName.remove(oldDesc.name());
+                ServiceInfo rmv = removeFromServicesMap(registeredServices, registeredServicesByName, reqSrvcId);
 
                 assert oldDesc == rmv : "Concurrent map modification.";
 
@@ -2038,6 +2018,25 @@ public class IgniteServiceProcessor extends GridProcessorAdapter implements Igni
             if (desc != null)
                 desc.topologySnapshot(top);
         });
+    }
+
+    /**
+     * Remove service record from service map and corresponding services by name map.
+     *
+     * @param srvcsMap Services map.
+     * @param srvcsByNameMap Services by name map.
+     * @param srvcId Service id.
+     *
+     * @return Removed service descriptor.
+     * */
+    private ServiceInfo removeFromServicesMap(Map<IgniteUuid, ServiceInfo> srvcsMap, Map<String, ServiceInfo> srvcsByNameMap, IgniteUuid srvcId) {
+        ServiceInfo desc = srvcsMap.remove(srvcId);
+
+        assert desc != null : "Concurrent map modification.";
+
+        srvcsByNameMap.remove(desc.name());
+
+        return desc;
     }
 
     /**
