@@ -19,7 +19,6 @@ package org.apache.ignite.internal.processors.service;
 import java.util.Collection;
 import java.util.Map;
 import java.util.UUID;
-import java.util.concurrent.ConcurrentMap;
 import java.util.function.Predicate;
 
 import org.apache.ignite.Ignite;
@@ -31,7 +30,6 @@ import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteServicesImpl;
 import org.apache.ignite.lang.IgnitePredicate;
-import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.services.Service;
 import org.apache.ignite.services.ServiceConfiguration;
 import org.apache.ignite.services.ServiceDeploymentException;
@@ -264,12 +262,11 @@ public class IgniteServiceDeploymentFailureTest extends GridCommonAbstractTest {
     private static int totalInstancesCount(IgniteEx igniteEx, String srvcName) {
         int registeredCnt = totalInstancesCount(igniteEx.services().serviceDescriptors(), srvcName);
 
-        assertEquals(registeredCnt, totalInstancesCount(, srvcName));
+        assertEquals(registeredCnt, totalInstancesCount(getServicesMap(igniteEx, REGISTERED_SERVICES_BY_NAME).values(), srvcName));
+        assertEquals(registeredCnt, totalInstancesCount(getServicesMap(igniteEx, DEPLOYED_SERVICES).values(), srvcName));
+        assertEquals(registeredCnt, totalInstancesCount(getServicesMap(igniteEx, DEPLOYED_SERVICES_BY_NAME).values(), srvcName));
         
-        return igniteEx.services().serviceDescriptors().stream()
-            .filter(filterByName(srvcName))
-            .flatMap(desc -> desc.topologySnapshot().values().stream())
-            .mapToInt(Integer::intValue).sum();
+        return registeredCnt;
     }
 
     /**
@@ -277,7 +274,7 @@ public class IgniteServiceDeploymentFailureTest extends GridCommonAbstractTest {
      * @param srvcName Service name.
      * @return Total instances count of the service named {@code srvcName} from the given service descriptors {@code descs}.
      */
-    private static <T> int totalInstancesCount(Collection<ServiceDescriptor> descs, String srvcName) {
+    private static <T> int totalInstancesCount(Collection<? extends ServiceDescriptor> descs, String srvcName) {
         return descs.stream()
             .filter(filterByName(srvcName))
             .flatMap(desc -> desc.topologySnapshot().values().stream())
