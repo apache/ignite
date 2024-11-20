@@ -821,10 +821,8 @@ final class ReliableChannel implements AutoCloseable {
         ClientOperation op,
         @Nullable List<ClientConnectionException> failures
     ) {
-        /**
-         * +1 is required for the correct channel search if ReliableChannel#applyOnDefaultChannel#idx selects
-         * a closed channel, therefore an additional attempt may be required for a failed random pick.
-        */
+        // +1 is required for the correct channel search if ReliableChannel#applyOnDefaultChannel#idx selects
+        // a closed channel, therefore an additional attempt may be required for a failed random pick.
         int fixedAttemptsLimit = attemptsLimit + 1;
 
         while (fixedAttemptsLimit > (failures == null ? 0 : failures.size())) {
