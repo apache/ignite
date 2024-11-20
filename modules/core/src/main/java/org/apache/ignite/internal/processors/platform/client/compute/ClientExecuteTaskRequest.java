@@ -19,8 +19,8 @@ package org.apache.ignite.internal.processors.platform.client.compute;
 
 import java.util.Set;
 import java.util.UUID;
-
 import org.apache.ignite.binary.BinaryObject;
+import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.binary.BinaryRawReaderEx;
 import org.apache.ignite.internal.processors.platform.client.ClientConnectionContext;
 import org.apache.ignite.internal.processors.platform.client.ClientRequest;
@@ -72,9 +72,12 @@ public class ClientExecuteTaskRequest extends ClientRequest {
 
     /** {@inheritDoc} */
     @Override public ClientResponse process(ClientConnectionContext ctx) {
-        ClientComputeTask task = new ClientComputeTask(ctx);
+        boolean systemTask = systemTask(ctx.kernalContext(), taskName);
 
-        ctx.incrementActiveTasksCount();
+        ClientComputeTask task = new ClientComputeTask(ctx, systemTask);
+
+        if (!systemTask)
+            ctx.incrementActiveTasksCount();
 
         long taskId = ctx.resources().put(task);
 
@@ -95,5 +98,19 @@ public class ClientExecuteTaskRequest extends ClientRequest {
         }
 
         return new ClientExecuteTaskResponse(requestId(), task);
+    }
+
+    /** */
+    private boolean systemTask(GridKernalContext ctx, String taskName) {
+        Class<?> cls;
+
+        try {
+            cls = U.forName(taskName, U.gridClassLoader());
+        }
+        catch (ClassNotFoundException ignored) {
+            return false;
+        }
+
+        return ctx.security().isSystemType(cls);
     }
 }

@@ -446,7 +446,7 @@ public class ClientMessageParser implements ClientListenerMessageParser {
         ClientListenerRequest req = decode(reader);
 
         if (ctx.kernalContext().recoveryMode() && !req.beforeStartupRequest())
-            return new ClientRawRequest(req.requestId(), ClientStatus.FAILED, "Node in recovery mode " + req.toString());
+            return new ClientRawRequest(req.requestId(), ClientStatus.FAILED, "Node in recovery mode.");
 
         return req;
     }
