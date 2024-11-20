@@ -71,6 +71,7 @@ import org.apache.calcite.sql.validate.SqlUserDefinedTableMacro;
 import org.apache.calcite.util.BuiltInMethod;
 import org.apache.calcite.util.Util;
 import org.apache.ignite.calcite.CalciteQueryEngineConfiguration;
+import org.apache.ignite.internal.processors.query.calcite.util.DateUtils;
 import org.apache.ignite.internal.processors.query.calcite.util.IgniteMethod;
 
 import static org.apache.calcite.adapter.enumerable.EnumUtils.generateCollatorExpression;
@@ -1832,6 +1833,23 @@ public class RexImpTable {
                             return Expressions.call(method.method, trop0, trop1);
                     }
 
+                case INTEGER:
+                case FLOAT:
+                case DOUBLE:
+                case DECIMAL:
+                    if (typeName1 != SqlTypeName.DECIMAL)
+                        trop1 = Expressions.new_(BigDecimal.class, ConverterUtils.convert(trop1, String.class));
+
+                    trop1 = IgniteExpressions.convertChecked(
+                        Expressions.call(DateUtils.class, "oracleMillis", trop1),
+                        Primitive.of(long.class), Primitive.of(int.class)
+                    );
+                    switch (call.getKind()) {
+                        case MINUS:
+                            return normalize(typeName, IgniteExpressions.subtractExact(trop0, trop1));
+                        default:
+                            return normalize(typeName, IgniteExpressions.addExact(trop0, trop1));
+                    }
                 case INTERVAL_DAY:
                 case INTERVAL_DAY_HOUR:
                 case INTERVAL_DAY_MINUTE:

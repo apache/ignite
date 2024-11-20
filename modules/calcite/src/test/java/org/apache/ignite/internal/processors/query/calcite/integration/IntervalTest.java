@@ -53,6 +53,22 @@ public class IntervalTest extends AbstractBasicIntegrationTest {
         assertEquals(Duration.ofMillis(3723456), eval("INTERVAL '0 1:2:3.456' DAY TO SECOND"));
     }
 
+    /** */
+    @Test
+    public void oracleIntevalTest() {
+        assertEquals(Timestamp.valueOf("2021-01-04 00:00:00"),
+            eval("TIMESTAMP '2021-01-01 00:00:00' + 1 + 2"));
+
+        assertEquals(Timestamp.valueOf("2021-01-01 12:00:00"),
+            eval("TIMESTAMP '2021-01-01 00:00:00' + 0.5"));
+
+        assertEquals(Timestamp.valueOf("2020-12-31 12:00:00"),
+            eval("TIMESTAMP '2021-01-01 00:00:00' - 0.5"));
+
+        assertEquals(Timestamp.valueOf("2021-01-01 12:00:00"),
+            eval("TIMESTAMP '2021-01-01 00:00:00' + 1.0/2"));
+    }
+
     /**
      * Test cast interval types to integer and integer to interval.
      */

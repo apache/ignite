@@ -24,6 +24,7 @@ import java.util.EnumSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.stream.Collectors;
 import org.apache.calcite.plan.RelOptTable;
 import org.apache.calcite.prepare.CalciteCatalogReader;
 import org.apache.calcite.prepare.Prepare;
@@ -31,6 +32,8 @@ import org.apache.calcite.rel.type.RelDataType;
 import org.apache.calcite.rel.type.RelDataTypeField;
 import org.apache.calcite.sql.JoinConditionType;
 import org.apache.calcite.sql.SqlAggFunction;
+import org.apache.calcite.sql.SqlBasicCall;
+import org.apache.calcite.sql.SqlBinaryOperator;
 import org.apache.calcite.sql.SqlCall;
 import org.apache.calcite.sql.SqlCallBinding;
 import org.apache.calcite.sql.SqlDelete;
@@ -75,6 +78,8 @@ import org.apache.ignite.internal.util.typedef.F;
 import org.jetbrains.annotations.Nullable;
 
 import static org.apache.calcite.util.Static.RESOURCE;
+import static org.apache.ignite.internal.processors.query.calcite.sql.fun.IgniteStdSqlOperatorTable.DATETIME_MINUS;
+import static org.apache.ignite.internal.processors.query.calcite.sql.fun.IgniteStdSqlOperatorTable.DATETIME_PLUS;
 
 /** Validator. */
 public class IgniteSqlValidator extends SqlValidatorImpl {
@@ -332,7 +337,20 @@ public class IgniteSqlValidator extends SqlValidatorImpl {
             }
         }
 
-        return super.performUnconditionalRewrites(node, underFrom);
+        node = super.performUnconditionalRewrites(node, underFrom);
+
+        if (node instanceof SqlBasicCall) {
+            SqlBasicCall call = (SqlBasicCall)node;
+            if (call.getKind() == SqlKind.PLUS || call.getKind() == SqlKind.MINUS) {
+                SqlBinaryOperator newOp = call.getKind() == SqlKind.PLUS ? DATETIME_PLUS : DATETIME_MINUS;
+
+                List<SqlNode> newOperands = call.getOperandList().stream().map(op ->
+                    performUnconditionalRewrites(op, underFrom)).collect(Collectors.toList());
+
+                node = new SqlBasicCall(newOp, newOperands, call.getParserPosition());
+            }
+        }
+        return node;
     }
 
     /** Rewrites JOIN clause if required */

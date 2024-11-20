@@ -16,13 +16,31 @@
  */
 package org.apache.ignite.internal.processors.query.calcite.sql.fun;
 
+import org.apache.calcite.rel.type.RelDataType;
+import org.apache.calcite.sql.SqlBinaryOperator;
+import org.apache.calcite.sql.SqlKind;
 import org.apache.calcite.sql.fun.SqlInternalOperators;
 import org.apache.calcite.sql.fun.SqlLibraryOperators;
+import org.apache.calcite.sql.fun.SqlMonotonicBinaryOperator;
 import org.apache.calcite.sql.fun.SqlStdOperatorTable;
+import org.apache.calcite.sql.type.InferTypes;
+import org.apache.calcite.sql.type.ReturnTypes;
+import org.apache.calcite.sql.type.SqlReturnTypeInference;
+import org.apache.calcite.sql.type.SqlSingleOperandTypeChecker;
+import org.apache.calcite.sql.type.SqlTypeFamily;
+import org.apache.calcite.sql.type.SqlTypeName;
 import org.apache.calcite.sql.util.ReflectiveSqlOperatorTable;
 import org.apache.ignite.internal.processors.query.calcite.exec.exp.RexImpTable;
 import org.apache.ignite.internal.processors.query.calcite.exec.exp.agg.Accumulators;
 import org.apache.ignite.internal.processors.query.calcite.prepare.IgniteConvertletTable;
+
+import static org.apache.calcite.sql.type.OperandTypes.DATETIME_INTERVAL;
+import static org.apache.calcite.sql.type.OperandTypes.INTERVAL_DATETIME;
+import static org.apache.calcite.sql.type.OperandTypes.INTERVAL_SAME_SAME;
+import static org.apache.calcite.sql.type.OperandTypes.NUMERIC_NUMERIC;
+import static org.apache.calcite.sql.type.OperandTypes.family;
+import static org.apache.calcite.sql.type.ReturnTypes.DECIMAL_SUM_NULLABLE;
+import static org.apache.calcite.sql.type.ReturnTypes.LEAST_RESTRICTIVE;
 
 /**
  * Operator table that contains subset of Calcite's library operators supported by Ignite.
@@ -35,6 +53,56 @@ import org.apache.ignite.internal.processors.query.calcite.prepare.IgniteConvert
  * this class have infrastructure to register operators manualy and for fast operators lookup, so it's handy to use it.
  */
 public class IgniteStdSqlOperatorTable extends ReflectiveSqlOperatorTable {
+    /** */
+    private static final SqlSingleOperandTypeChecker DATE_MINUS_OPERATOR =
+        NUMERIC_NUMERIC
+            .or(INTERVAL_SAME_SAME)
+            .or(family(SqlTypeFamily.DATETIME, SqlTypeFamily.NUMERIC))
+            .or(family(SqlTypeFamily.DATETIME, SqlTypeFamily.DECIMAL))
+            .or(DATETIME_INTERVAL);
+
+    /** */
+    private static final SqlSingleOperandTypeChecker DATE_PLUS_OPERATOR =
+        NUMERIC_NUMERIC
+            .or(INTERVAL_SAME_SAME)
+            .or(family(SqlTypeFamily.DATETIME, SqlTypeFamily.NUMERIC))
+            .or(family(SqlTypeFamily.DATETIME, SqlTypeFamily.DECIMAL))
+            .or(DATETIME_INTERVAL)
+            .or(INTERVAL_DATETIME);
+
+    private static final SqlReturnTypeInference TIMESTAMP_PLUSMINUS_NUMERIC = opBinding -> {
+        RelDataType first = opBinding.getOperandType(0);
+        RelDataType second = opBinding.getOperandType(1);
+        if (first.getSqlTypeName() == SqlTypeName.TIMESTAMP &&
+            (second.getSqlTypeName() == SqlTypeName.DECIMAL || second.getSqlTypeName() == SqlTypeName.INTEGER)) {
+            return first;
+        }
+        return null;
+    };
+
+    /** */
+    public static final SqlBinaryOperator DATETIME_PLUS =
+        new SqlMonotonicBinaryOperator(
+            "+",
+            SqlKind.PLUS,
+            40,
+            true,
+            ReturnTypes.chain(DECIMAL_SUM_NULLABLE, TIMESTAMP_PLUSMINUS_NUMERIC, LEAST_RESTRICTIVE),
+            InferTypes.FIRST_KNOWN,
+            DATE_PLUS_OPERATOR);
+
+    /** */
+    public static final SqlBinaryOperator DATETIME_MINUS =
+        new SqlMonotonicBinaryOperator(
+            "-",
+            SqlKind.MINUS,
+            40,
+            true,
+            ReturnTypes.chain(DECIMAL_SUM_NULLABLE, TIMESTAMP_PLUSMINUS_NUMERIC, LEAST_RESTRICTIVE),
+            InferTypes.FIRST_KNOWN,
+            DATE_MINUS_OPERATOR);
+
+
     /** Singleton instance. */
     public static final IgniteStdSqlOperatorTable INSTANCE = new IgniteStdSqlOperatorTable();
 
@@ -66,8 +134,8 @@ public class IgniteStdSqlOperatorTable extends ReflectiveSqlOperatorTable {
         register(SqlStdOperatorTable.NOT_BETWEEN);
 
         // Arithmetic.
-        register(SqlStdOperatorTable.PLUS);
-        register(SqlStdOperatorTable.MINUS);
+        register(DATETIME_PLUS);
+        register(DATETIME_MINUS);
         register(SqlStdOperatorTable.MULTIPLY);
         register(SqlStdOperatorTable.DIVIDE);
         register(SqlStdOperatorTable.DIVIDE_INTEGER); // Used internally.
