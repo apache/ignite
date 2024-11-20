@@ -23,13 +23,9 @@ import org.apache.ignite.internal.client.thin.ServicesTest.TestNodeIdService;
 import org.apache.ignite.internal.client.thin.ServicesTest.TestNodeIdServiceInterface;
 import org.junit.Test;
 
-/**
- *
- */
+/** */
 public class ServicesFailoverTest extends AbstractThinClientTest {
-    /**
-     *
-     */
+    /** */
     @Test
     public void test() throws Exception {
         IgniteEx srv = startGrids(3);
