@@ -39,8 +39,7 @@ public class ClusterApiTest extends AbstractThinClientTest {
         return super.getConfiguration(igniteInstanceName)
             .setDataStorageConfiguration(new DataStorageConfiguration()
                 .setDefaultDataRegionConfiguration(new DataRegionConfiguration()
-                    .setPersistenceEnabled(true)))
-            .setDataStorageConfiguration(new DataStorageConfiguration()
+                    .setPersistenceEnabled(true))
                 .setDataRegionConfigurations(new DataRegionConfiguration()
                     .setName("non-persistent")))
             .setClusterStateOnStart(ClusterState.INACTIVE);
@@ -89,7 +88,7 @@ public class ClusterApiTest extends AbstractThinClientTest {
             client.cluster().state(ClusterState.ACTIVE);
 
             client.getOrCreateCache(new ClientCacheConfiguration()
-                .setName(DEFAULT_CACHE_NAME)
+                .setName("non-persistent-cache")
                 .setDataRegionName("non-persistent"));
 
             assertThrows(log, () -> ((ClientClusterImpl)client.cluster()).state(ClusterState.INACTIVE, false),
