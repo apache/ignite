@@ -17,9 +17,9 @@
 
 package org.apache.ignite.internal.processors.query.calcite.prepare;
 
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.BiFunction;
 import org.apache.calcite.sql.SqlCall;
 import org.apache.calcite.sql.SqlNode;
@@ -42,7 +42,7 @@ public class IgniteSqlCallRewriteTable {
     public static final IgniteSqlCallRewriteTable INSTANCE = new IgniteSqlCallRewriteTable();
 
     /** Registered rewriters map. */
-    private final Map<SqlOperator, BiFunction<SqlValidator, SqlCall, SqlCall>> map = new HashMap<>();
+    private final Map<SqlOperator, BiFunction<SqlValidator, SqlCall, SqlCall>> map = new ConcurrentHashMap<>();
 
     /** */
     private IgniteSqlCallRewriteTable() {
@@ -63,7 +63,7 @@ public class IgniteSqlCallRewriteTable {
     }
 
     /** Rewrites NVL call to CASE WHEN call. */
-    public static SqlCall nvlRewriter(SqlValidator validator, SqlCall call) {
+    private static SqlCall nvlRewriter(SqlValidator validator, SqlCall call) {
         validateQuantifier(validator, call); // check DISTINCT/ALL
 
         List<SqlNode> operands = call.getOperandList();
@@ -85,7 +85,7 @@ public class IgniteSqlCallRewriteTable {
     }
 
     /** Rewrites DECODE call to CASE WHEN call. */
-    public static SqlCall decodeRewriter(SqlValidator validator, SqlCall call) {
+    private static SqlCall decodeRewriter(SqlValidator validator, SqlCall call) {
         validateQuantifier(validator, call); // check DISTINCT/ALL
 
         List<SqlNode> operands = call.getOperandList();

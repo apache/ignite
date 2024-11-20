@@ -333,6 +333,7 @@ public class FunctionsTest extends AbstractBasicIntegrationTest {
         assertQuery("select decode(1, '1', 1, 2)").returns(1).check();
         assertQuery("select decode(2, '1', 1, '2', 2)").returns(2).check();
         assertQuery("select decode(2, '1', 1, '2', 2, '3')").returns("2").check();
+        assertQuery("select decode(2, '1', 1, '2', 2::DOUBLE)").returns(2.0).check();
         assertQuery("select decode(1.0, 1, 1, 2)").returns(1).check();
         assertQuery("select decode(1.1, 1, 1, 2)").returns(2).check();
         assertQuery("select decode(1, 1.0, 1, 2)").returns(1).check();
