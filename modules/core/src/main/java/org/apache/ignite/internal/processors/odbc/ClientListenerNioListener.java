@@ -380,7 +380,7 @@ public class ClientListenerNioListener extends GridNioServerListenerAdapter<Clie
             if (connCtx.isVersionSupported(ver)) {
                 connCtx.initializeFromHandshake(ses, ver, reader);
 
-                if (this.ctx.recoveryMode() && !Boolean.parseBoolean(connCtx.attributes().get(RECOVERY_ATTR)))
+                if (nodeInRecoveryMode() && !Boolean.parseBoolean(connCtx.attributes().get(RECOVERY_ATTR)))
                     throw new ClientConnectionNodeRecoveryException("Node in recovery mode.");
 
                 ses.addMeta(CONN_CTX_META_KEY, connCtx);
@@ -485,9 +485,18 @@ public class ClientListenerNioListener extends GridNioServerListenerAdapter<Clie
      * @return connection id.
      */
     private long nextConnectionId() {
-        long shiftedId = ctx.recoveryMode() ? RECOVERY_SHIFTED_ID : ctx.discovery().localNode().order();
+        long shiftedId = nodeInRecoveryMode() ? RECOVERY_SHIFTED_ID : ctx.discovery().localNode().order();
 
         return (shiftedId << 32) + nextConnId.getAndIncrement();
+    }
+
+    /**
+     * @return {@code True} if node in recovery mode and does not join topology yet.
+     * {@link GridKernalContext#recoveryMode()} returns {@code true} before join topology
+     * and some resources (local node etc.) are not available.
+     */
+    private boolean nodeInRecoveryMode() {
+        return !ctx.discovery().localJoinFuture().isDone();
     }
 
     /**
