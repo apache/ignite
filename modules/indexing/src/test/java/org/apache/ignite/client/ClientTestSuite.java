@@ -37,6 +37,7 @@ import org.apache.ignite.internal.client.thin.OptimizedMarshallerClassesCachedTe
 import org.apache.ignite.internal.client.thin.ReliableChannelTest;
 import org.apache.ignite.internal.client.thin.ServiceAwarenessTest;
 import org.apache.ignite.internal.client.thin.ServicesBinaryArraysTests;
+import org.apache.ignite.internal.client.thin.ServicesFailoverTest;
 import org.apache.ignite.internal.client.thin.ServicesTest;
 import org.apache.ignite.internal.client.thin.ThinClientEnpointsDiscoveryTest;
 import org.apache.ignite.internal.client.thin.ThinClientPartitionAwarenessBalancingTest;
@@ -74,6 +75,7 @@ import org.junit.runners.Suite;
     ClusterGroupTest.class,
     ServicesTest.class,
     ServicesBinaryArraysTests.class,
+    ServicesFailoverTest.class,
     ServiceAwarenessTest.class,
     CacheEntryListenersTest.class,
     ThinClientPartitionAwarenessStableTopologyTest.class,
