@@ -27,6 +27,7 @@ import java.util.concurrent.CompletableFuture;
 import java.util.function.Consumer;
 import java.util.function.Function;
 import javax.cache.Cache;
+import javax.cache.CacheException;
 import javax.cache.configuration.CacheEntryListenerConfiguration;
 import javax.cache.configuration.FactoryBuilder;
 import javax.cache.event.CacheEntryExpiredListener;
@@ -120,6 +121,10 @@ public class TcpClientCache<K, V> implements ClientCache<K, V> {
 
     /** JCache adapter. */
     private final Cache<K, V> jCacheAdapter;
+
+    /** Exception thrown when a non-transactional ClientCache clear operation is invoked within a transaction. */
+    public static final String NON_TRANSACTIONAL_CLIENT_CACHE_CLEAR_IN_TX_ERROR_MESSAGE = "Failed to invoke a " +
+        "non-transactional ClientCache clear operation within a transaction.";
 
     /** Constructor. */
     TcpClientCache(String name, ReliableChannel ch, ClientBinaryMarshaller marsh, TcpClientTransactions transactions,
@@ -713,16 +718,25 @@ public class TcpClientCache<K, V> implements ClientCache<K, V> {
 
     /** {@inheritDoc} */
     @Override public void clear() throws ClientException {
+        if (transactions.tx() != null)
+            throw new CacheException(NON_TRANSACTIONAL_CLIENT_CACHE_CLEAR_IN_TX_ERROR_MESSAGE);
+
         ch.request(ClientOperation.CACHE_CLEAR, this::writeCacheInfo);
     }
 
     /** {@inheritDoc} */
     @Override public IgniteClientFuture<Void> clearAsync() throws ClientException {
+        if (transactions.tx() != null)
+            throw new CacheException(NON_TRANSACTIONAL_CLIENT_CACHE_CLEAR_IN_TX_ERROR_MESSAGE);
+
         return ch.requestAsync(ClientOperation.CACHE_CLEAR, this::writeCacheInfo);
     }
 
     /** {@inheritDoc} */
     @Override public void clear(K key) throws ClientException {
+        if (transactions.tx() != null)
+            throw new CacheException(NON_TRANSACTIONAL_CLIENT_CACHE_CLEAR_IN_TX_ERROR_MESSAGE);
+
         if (key == null)
             throw new NullPointerException("key");
 
@@ -736,6 +750,9 @@ public class TcpClientCache<K, V> implements ClientCache<K, V> {
 
     /** {@inheritDoc} */
     @Override public IgniteClientFuture<Void> clearAsync(K key) throws ClientException {
+        if (transactions.tx() != null)
+            throw new CacheException(NON_TRANSACTIONAL_CLIENT_CACHE_CLEAR_IN_TX_ERROR_MESSAGE);
+
         if (key == null)
             throw new NullPointerException("key");
 
@@ -749,6 +766,9 @@ public class TcpClientCache<K, V> implements ClientCache<K, V> {
 
     /** {@inheritDoc} */
     @Override public void clearAll(Set<? extends K> keys) throws ClientException {
+        if (transactions.tx() != null)
+            throw new CacheException(NON_TRANSACTIONAL_CLIENT_CACHE_CLEAR_IN_TX_ERROR_MESSAGE);
+
         if (keys == null)
             throw new NullPointerException("keys");
 
@@ -766,6 +786,9 @@ public class TcpClientCache<K, V> implements ClientCache<K, V> {
 
     /** {@inheritDoc} */
     @Override public IgniteClientFuture<Void> clearAllAsync(Set<? extends K> keys) throws ClientException {
+        if (transactions.tx() != null)
+            throw new CacheException(NON_TRANSACTIONAL_CLIENT_CACHE_CLEAR_IN_TX_ERROR_MESSAGE);
+
         if (keys == null)
             throw new NullPointerException("keys");
 

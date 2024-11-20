@@ -29,7 +29,6 @@ import org.apache.ignite.client.ClientCacheConfiguration;
 import org.apache.ignite.client.ClientTransaction;
 import org.apache.ignite.client.IgniteClient;
 import org.apache.ignite.configuration.IgniteConfiguration;
-import org.apache.ignite.internal.processors.cache.GridCacheAdapter;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.transactions.TransactionConcurrency;
@@ -116,7 +115,7 @@ public class BlockingTxOpsTest extends AbstractThinClientTest {
                             () -> assertFalse(cache.containsKey(0))
                         ),
                         IgniteException.class,
-                        GridCacheAdapter.NON_TRANSACTIONAL_IGNITE_CACHE_CLEAR_IN_TX_ERROR_MESSAGE
+                        TcpClientCache.NON_TRANSACTIONAL_CLIENT_CACHE_CLEAR_IN_TX_ERROR_MESSAGE
                     );
 
                     // Clear keys operation.
@@ -128,7 +127,7 @@ public class BlockingTxOpsTest extends AbstractThinClientTest {
                             () -> assertFalse(cache.containsKeys(new TreeSet<>(F.asList(0, 1))))
                         ),
                         IgniteException.class,
-                        GridCacheAdapter.NON_TRANSACTIONAL_IGNITE_CACHE_CLEAR_IN_TX_ERROR_MESSAGE
+                        TcpClientCache.NON_TRANSACTIONAL_CLIENT_CACHE_CLEAR_IN_TX_ERROR_MESSAGE
                     );
 
                     // Contains operation.
