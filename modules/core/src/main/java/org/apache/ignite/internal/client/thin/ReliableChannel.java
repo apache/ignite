@@ -23,6 +23,7 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -681,6 +682,8 @@ final class ReliableChannel implements AutoCloseable {
         if (idx != -1)
             currDfltHolder = holders.get(idx);
 
+        Set<ClientChannelHolder> uniqueHolders = new HashSet<>();
+
         for (List<InetSocketAddress> addrs : newAddrs) {
             ClientChannelHolder hld = null;
 
@@ -703,7 +706,7 @@ final class ReliableChannel implements AutoCloseable {
                     curAddrs.putIfAbsent(addr, hld);
             }
 
-            if (!reinitHolders.contains(hld))
+            if (uniqueHolders.add(hld))
                 reinitHolders.add(hld);
 
             if (hld == currDfltHolder)
@@ -818,10 +821,13 @@ final class ReliableChannel implements AutoCloseable {
         ClientOperation op,
         @Nullable List<ClientConnectionException> failures
     ) {
-        int fixedAttemptsLimit = attemptsLimit;
+        /**
+         * +1 is required for the correct channel search if ReliableChannel#applyOnDefaultChannel#idx selects
+         * a closed channel, therefore an additional attempt may be required for a failed random pick.
+        */
+        int fixedAttemptsLimit = attemptsLimit + 1;
 
-        // + 1 is only required if the failure list is empty/null
-        while (fixedAttemptsLimit + 1 > (failures == null ? 0 : failures.size())) {
+        while (fixedAttemptsLimit > (failures == null ? 0 : failures.size())) {
             ClientChannelHolder hld = null;
             ClientChannel c = null;
 
