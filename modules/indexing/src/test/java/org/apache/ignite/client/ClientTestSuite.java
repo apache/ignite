@@ -34,6 +34,7 @@ import org.apache.ignite.internal.client.thin.InactiveClusterCacheRequestTest;
 import org.apache.ignite.internal.client.thin.InvokeTest;
 import org.apache.ignite.internal.client.thin.MetadataRegistrationTest;
 import org.apache.ignite.internal.client.thin.OptimizedMarshallerClassesCachedTest;
+import org.apache.ignite.internal.client.thin.RecoveryModeTest;
 import org.apache.ignite.internal.client.thin.ReliableChannelTest;
 import org.apache.ignite.internal.client.thin.ServiceAwarenessTest;
 import org.apache.ignite.internal.client.thin.ServicesBinaryArraysTests;
@@ -100,6 +101,7 @@ import org.junit.runners.Suite;
     BlockingTxOpsTest.class,
     InvokeTest.class,
     ExtraColumnInH2RowsTest.class,
+    RecoveryModeTest.class
 })
 public class ClientTestSuite {
     // No-op.
