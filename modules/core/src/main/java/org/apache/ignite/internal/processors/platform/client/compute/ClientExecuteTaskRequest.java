@@ -72,11 +72,11 @@ public class ClientExecuteTaskRequest extends ClientRequest {
 
     /** {@inheritDoc} */
     @Override public ClientResponse process(ClientConnectionContext ctx) {
-        boolean systemTask = systemTask(ctx.kernalContext(), taskName);
+        boolean sysTask = systemTask(ctx.kernalContext(), taskName);
 
-        ClientComputeTask task = new ClientComputeTask(ctx, systemTask);
+        ClientComputeTask task = new ClientComputeTask(ctx, sysTask);
 
-        if (!systemTask)
+        if (!sysTask)
             ctx.incrementActiveTasksCount();
 
         long taskId = ctx.resources().put(task);

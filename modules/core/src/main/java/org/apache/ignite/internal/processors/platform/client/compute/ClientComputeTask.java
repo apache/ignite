@@ -75,12 +75,13 @@ class ClientComputeTask implements ClientCloseableResource {
      * Ctor.
      *
      * @param ctx Connection context.
+     * @param sysTask {@code True} if task is system.
      */
-    ClientComputeTask(ClientConnectionContext ctx, boolean systemTask) {
+    ClientComputeTask(ClientConnectionContext ctx, boolean sysTask) {
         assert ctx != null;
 
         this.ctx = ctx;
-        this.systemTask = systemTask;
+        this.systemTask = sysTask;
 
         log = ctx.kernalContext().log(getClass());
     }
