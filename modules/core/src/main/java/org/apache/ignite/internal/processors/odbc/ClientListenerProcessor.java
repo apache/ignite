@@ -479,21 +479,6 @@ public class ClientListenerProcessor extends GridProcessorAdapter {
         }
     }
 
-    /** */
-    public boolean hasConnection(int connId) {
-        for (GridNioSession ses : srv.sessions()) {
-            ClientListenerConnectionContext connCtx = ses.meta(CONN_CTX_META_KEY);
-
-            if (connCtx == null || ses.closeTime() != 0)
-                continue; // Skip non-initialized or closed session.
-
-            if (connCtx.connectionId() == connId)
-                return true;
-        }
-
-        return false;
-    }
-
     /**
      * Compose connection description string.
      * @param ses Client's NIO session.
