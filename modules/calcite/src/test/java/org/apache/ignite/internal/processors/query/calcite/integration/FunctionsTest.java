@@ -451,4 +451,49 @@ public class FunctionsTest extends AbstractBasicIntegrationTest {
         assertQuery("SELECT CAST(CAST(? AS DECIMAL(2, 1)) AS BOOLEAN)")
             .withParams(NULL_RESULT).returns(NULL_RESULT).check();
     }
+
+    /** Tests NVL with different parameters data types. */
+    @Test
+    public void testNvl() {
+        // Result type is the least restrictive type for parameters.
+        assertQuery("select nvl('1', 2)").returns("1").check();
+        assertQuery("select nvl(1, '2')").returns("1").check();
+        assertQuery("select nvl(1, 2.0)").returns(new BigDecimal("1.0")).check();
+        assertQuery("select nvl(1, 2::DOUBLE)").returns(1d).check();
+        assertQuery("select nvl(1::TINYINT, 2::SMALLINT)").returns((short)1).check();
+        assertQuery("select nvl(1.0, '2')").returns("1.0").check();
+        assertQuery("select nvl(null, 2)").returns(2).check();
+        assertQuery("select nvl(null, '2')").returns("2").check();
+        assertQuery("select nvl(null, null)").returns(NULL_RESULT).check();
+        assertQuery("select nvl(?, ?)").withParams("1", 2).returns("1").check();
+        assertQuery("select nvl(?, ?)").withParams(1, "2").returns("1").check();
+        assertQuery("select nvl(?, ?)").withParams(1, 2d).returns(1d).check();
+        assertQuery("select nvl(?, ?)").withParams(null, 2).returns(2).check();
+        assertQuery("select nvl(?, ?)").withParams(null, "2").returns("2").check();
+        assertQuery("select nvl(?, ?)").withParams(null, null).returns(NULL_RESULT).check();
+    }
+
+    /** Tests DECODE with different parameters data types. */
+    @Test
+    public void testDecode() {
+        // Result type is the least restrictive type for then-else parameters.
+        // Type cast rules for comparison are identical to rules for WHERE clause.
+        assertQuery("select decode('1', 1, '1', '2')").returns("1").check();
+        assertQuery("select decode('2', 1, '1', 2, 2)").returns("2").check();
+        assertQuery("select decode(1, '1', 1, 2)").returns(1).check();
+        assertQuery("select decode(2, '1', 1, '2', 2)").returns(2).check();
+        assertQuery("select decode(2, '1', 1, '2', 2, '3')").returns("2").check();
+        assertQuery("select decode(2, '1', 1, '2', 2::DOUBLE)").returns(2.0).check();
+        assertQuery("select decode(1.0, 1, 1, 2)").returns(1).check();
+        assertQuery("select decode(1.1, 1, 1, 2)").returns(2).check();
+        assertQuery("select decode(1, 1.0, 1, 2)").returns(1).check();
+        assertQuery("select decode(1, 1.1, 1, 2)").returns(2).check();
+        assertQuery("select decode(1, 1::DOUBLE, 1, 2)").returns(1).check();
+        assertQuery("select decode('1', 1::DOUBLE, 1, 2)").returns(1).check();
+        assertQuery("select decode(1.0, '1', 1, 2)").returns(1).check();
+        assertQuery("select decode('1', 1.0, 1, 2)").returns(1).check();
+        assertQuery("select decode(null, null, 1, 2)").returns(1).check();
+        assertQuery("select decode(null, 1, 1, 2)").returns(2).check();
+        assertQuery("select decode(1, null, 1, 2)").returns(2).check();
+    }
 }
