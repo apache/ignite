@@ -19,9 +19,7 @@ package org.apache.ignite.internal.processors.query.calcite.exec;
 import java.util.Collections;
 import java.util.Iterator;
 import java.util.NoSuchElementException;
-import org.apache.calcite.rel.type.RelDataType;
 import org.apache.ignite.IgniteCheckedException;
-import org.apache.ignite.internal.cache.query.index.sorted.inline.IndexQueryContext;
 import org.apache.ignite.internal.processors.query.calcite.exec.exp.RangeCondition;
 import org.apache.ignite.internal.processors.query.calcite.exec.exp.RangeIterable;
 import org.apache.ignite.internal.util.lang.GridCursor;
@@ -31,34 +29,20 @@ import org.apache.ignite.lang.IgniteClosure;
 import org.jetbrains.annotations.NotNull;
 
 /**
- * Abstract index scan.
+ * Tree index iterable.
  */
-public abstract class AbstractIndexScan<Row, IdxRow> implements Iterable<Row>, AutoCloseable {
+public class TreeIndexIterable<Row> implements Iterable<Row> {
     /** */
-    private final TreeIndex<IdxRow> idx;
+    private final TreeIndex<Row> idx;
 
     /** Index scan bounds. */
     private final RangeIterable<Row> ranges;
 
-    /** */
-    protected final ExecutionContext<Row> ectx;
-
-    /** */
-    protected final RelDataType rowType;
-
     /**
-     * @param ectx Execution context.
-     * @param idx Physical index.
+     * @param idx Tree index.
      * @param ranges Index scan bounds.
      */
-    protected AbstractIndexScan(
-        ExecutionContext<Row> ectx,
-        RelDataType rowType,
-        TreeIndex<IdxRow> idx,
-        RangeIterable<Row> ranges
-    ) {
-        this.ectx = ectx;
-        this.rowType = rowType;
+    TreeIndexIterable(TreeIndex<Row> idx, RangeIterable<Row> ranges) {
         this.idx = idx;
         this.ranges = ranges;
     }
@@ -66,15 +50,10 @@ public abstract class AbstractIndexScan<Row, IdxRow> implements Iterable<Row>, A
     /** {@inheritDoc} */
     @Override public synchronized Iterator<Row> iterator() {
         if (ranges == null)
-            return new IteratorImpl(indexCursor(null, null, true, true));
+            return new CursorIteratorImpl(idx.find(null, null, true, true));
 
-        IgniteClosure<RangeCondition<Row>, IteratorImpl> clo = range -> {
-            IdxRow lower = range.lower() == null ? null : row2indexRow(range.lower());
-            IdxRow upper = range.upper() == null ? null : row2indexRow(range.upper());
-
-            return new IteratorImpl(
-                indexCursor(lower, upper, range.lowerInclude(), range.upperInclude()));
-        };
+        IgniteClosure<RangeCondition<Row>, CursorIteratorImpl> clo = range -> new CursorIteratorImpl(
+                idx.find(range.lower(), range.upper(), range.lowerInclude(), range.upperInclude()));
 
         if (!ranges.multiBounds()) {
             Iterator<RangeCondition<Row>> it = ranges.iterator();
@@ -89,34 +68,15 @@ public abstract class AbstractIndexScan<Row, IdxRow> implements Iterable<Row>, A
     }
 
     /** */
-    protected GridCursor<IdxRow> indexCursor(IdxRow lower, IdxRow upper, boolean lowerInclude, boolean upperInclude) {
-        return idx.find(lower, upper, lowerInclude, upperInclude, indexQueryContext());
-    }
-
-    /** */
-    protected abstract IdxRow row2indexRow(Row bound);
-
-    /** */
-    protected abstract Row indexRow2Row(IdxRow idxRow) throws IgniteCheckedException;
-
-    /** */
-    protected abstract IndexQueryContext indexQueryContext();
-
-    /** {@inheritDoc} */
-    @Override public void close() {
-        // No-op.
-    }
-
-    /** */
-    private class IteratorImpl extends GridIteratorAdapter<Row> {
+    private class CursorIteratorImpl extends GridIteratorAdapter<Row> {
         /** */
-        private final GridCursor<IdxRow> cursor;
+        private final GridCursor<Row> cursor;
 
         /** Next element. */
         private Row next;
 
         /** */
-        private IteratorImpl(@NotNull GridCursor<IdxRow> cursor) {
+        private CursorIteratorImpl(@NotNull GridCursor<Row> cursor) {
             this.cursor = cursor;
         }
 
@@ -153,11 +113,8 @@ public abstract class AbstractIndexScan<Row, IdxRow> implements Iterable<Row>, A
             if (next != null)
                 return;
 
-            while (next == null && cursor.next()) {
-                IdxRow idxRow = cursor.get();
-
-                next = indexRow2Row(idxRow);
-            }
+            while (next == null && cursor.next())
+                next = cursor.get();
         }
     }
 }
