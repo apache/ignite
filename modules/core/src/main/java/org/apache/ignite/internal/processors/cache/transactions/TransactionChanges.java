@@ -44,14 +44,24 @@ public class TransactionChanges<R> {
         this.newAndUpdatedEntries = newAndUpdatedEntries;
     }
 
-    /** @return All changed keys. */
-    public Set<KeyCacheObject> changedKeys() {
-        return changedKeys;
-    }
-
     /** @return New and changed entries. */
     public List<R> newAndUpdatedEntries() {
         return newAndUpdatedEntries;
+    }
+
+    /**
+     * @return {@code True} is changed keys empty, {@code false} otherwise.
+     */
+    public boolean changedKeysEmpty() {
+        return changedKeys.isEmpty();
+    }
+
+    /**
+     * @param key Key to remove.
+     * @return {@code True} if key removed, {@code false} otherwise.
+     */
+    public boolean remove(KeyCacheObject key) {
+        return changedKeys.remove(key);
     }
 
     /**

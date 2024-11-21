@@ -63,10 +63,7 @@ public class TableScan<Row> extends AbstractCacheColumnsScan<Row> {
         /** */
         private GridCursor<? extends CacheDataRow> cur;
 
-        /**
-         * First, set of keys changed (inserted, updated or removed) inside transaction: must be skiped during index scan.
-         * Second, list of rows inserted or updated inside transaction: must be mixed with the scan results.
-         */
+        /** Transactional changes. */
         private TransactionChanges<CacheDataRow> txChanges;
 
         /** */
@@ -136,8 +133,8 @@ public class TableScan<Row> extends AbstractCacheColumnsScan<Row> {
                     if (txChanges != null) {
                         // This call will change `txChanges.get1()` content.
                         // Removing found key from set more efficient so we break some rules here.
-                        if (!F.isEmpty(txChanges.changedKeys()))
-                            cur = new KeyFilteringCursor<>(cur, txChanges.changedKeys(), CacheSearchRow::key);
+                        if (!txChanges.changedKeysEmpty())
+                            cur = new KeyFilteringCursor<>(cur, txChanges, CacheSearchRow::key);
 
                         txIter = F.iterator0(txChanges.newAndUpdatedEntries(), true, e -> e.key().partition() == part.id());
                     }
