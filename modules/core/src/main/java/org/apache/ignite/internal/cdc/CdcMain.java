@@ -192,13 +192,6 @@ public class CdcMain implements Runnable {
     public static final String EVENTS_CONSUMPTION_TIME_DESC =
         "Time of WAL segment events processing by a CDC consumer, in milliseconds.";
 
-    /** */
-    public static final String EVENTS_CONSUMPTION_TIME_TOTAL = "EventsConsumptionTimeTotal";
-
-    /** */
-    public static final String EVENTS_CONSUMPTION_TIME_TOTAL_DESC =
-        "Total time of events processing by a CDC consumer, in milliseconds.";
-
     /** Ignite configuration. */
     private final IgniteConfiguration igniteCfg;
 
@@ -222,9 +215,6 @@ public class CdcMain implements Runnable {
 
     /** Time of WAL segment events processing by a CDC consumer, in milliseconds. */
     private HistogramMetricImpl eventsConsumptionTime;
-
-    /** Total time of events processing by a CDC consumer, in milliseconds. */
-    private AtomicLongMetric eventsConsumptionTimeTotal;
 
     /** Metadata update time. */
     private HistogramMetricImpl metaUpdate;
@@ -468,7 +458,6 @@ public class CdcMain implements Runnable {
         mreg.register(CDC_MODE, () -> cdcModeState.name(), String.class, "CDC mode");
 
         eventsConsumptionTime = mreg.histogram(EVENTS_CONSUMPTION_TIME, HISTOGRAM_BUCKETS, EVENTS_CONSUMPTION_TIME_DESC);
-        eventsConsumptionTimeTotal = mreg.longMetric(EVENTS_CONSUMPTION_TIME_TOTAL, EVENTS_CONSUMPTION_TIME_TOTAL_DESC);
     }
 
     /**
@@ -617,7 +606,7 @@ public class CdcMain implements Runnable {
      * Consumes CDC events in {@link CdcMode#CDC_UTILITY_ACTIVE} mode.
      */
     private void consumeSegmentActively(IgniteWalIteratorFactory.IteratorParametersBuilder builder) {
-        long start = System.currentTimeMillis();
+        long start = U.currentTimeMillis();
 
         try (DataEntryIterator iter = new DataEntryIterator(
             new IgniteWalIteratorFactory(log).iterator(builder.addFilter(ACTIVE_RECS)),
@@ -640,10 +629,9 @@ public class CdcMain implements Runnable {
             if (interrupted)
                 throw new IgniteException("Change Data Capture Application interrupted");
 
-            long duration = System.currentTimeMillis() - start;
+            long duration = U.currentTimeMillis() - start;
 
             eventsConsumptionTime.value(duration);
-            eventsConsumptionTimeTotal.add(duration);
         }
         catch (IgniteCheckedException | IOException e) {
             throw new IgniteException(e);

@@ -63,7 +63,6 @@ import static org.apache.ignite.internal.cdc.CdcMain.COMMITTED_SEG_IDX;
 import static org.apache.ignite.internal.cdc.CdcMain.COMMITTED_SEG_OFFSET;
 import static org.apache.ignite.internal.cdc.CdcMain.CUR_SEG_IDX;
 import static org.apache.ignite.internal.cdc.CdcMain.EVENTS_CONSUMPTION_TIME;
-import static org.apache.ignite.internal.cdc.CdcMain.EVENTS_CONSUMPTION_TIME_TOTAL;
 import static org.apache.ignite.internal.cdc.CdcMain.EVT_CAPTURE_TIME;
 import static org.apache.ignite.internal.cdc.CdcMain.LAST_SEG_CONSUMPTION_TIME;
 import static org.apache.ignite.internal.cdc.CdcMain.MARSHALLER_DIR;
@@ -227,7 +226,7 @@ public abstract class AbstractCdcTest extends GridCommonAbstractTest {
     protected void checkMetrics(CdcMain cdc, int expCnt) throws Exception {
         DynamicMBean jmxCdcReg = jmxRegistry(cdc);
 
-        checkMetrics(expCnt, jmxValue(jmxCdcReg), jmxValue(jmxCdcReg));
+        checkMetrics(expCnt, jmxValue(jmxCdcReg), jmxValue(jmxCdcReg), jmxValue(jmxCdcReg));
 
         MetricRegistry mreg = registry(cdc);
 
@@ -236,7 +235,8 @@ public abstract class AbstractCdcTest extends GridCommonAbstractTest {
         checkMetrics(
             expCnt,
             m -> mreg.<LongMetric>findMetric(m).value(),
-            m -> mreg.<ObjectMetric<String>>findMetric(m).value()
+            m -> mreg.<ObjectMetric<String>>findMetric(m).value(),
+            m -> mreg.<HistogramMetricImpl>findMetric(m).value()
         );
 
         HistogramMetric evtCaptureTime = mreg.findMetric(EVT_CAPTURE_TIME);
@@ -244,7 +244,12 @@ public abstract class AbstractCdcTest extends GridCommonAbstractTest {
     }
 
     /** */
-    private void checkMetrics(long expCnt, Function<String, Long> longMetric, Function<String, String> strMetric) {
+    private void checkMetrics(
+        long expCnt,
+        Function<String, Long> longMetric,
+        Function<String, String> strMetric,
+        Function<String, long[]> longArrMetric
+    ) {
         long committedSegIdx = longMetric.apply(COMMITTED_SEG_IDX);
         long curSegIdx = longMetric.apply(CUR_SEG_IDX);
 
@@ -259,33 +264,10 @@ public abstract class AbstractCdcTest extends GridCommonAbstractTest {
             assertTrue(new File(strMetric.apply(m)).exists());
 
         assertEquals(expCnt, (long)longMetric.apply(EVTS_CNT));
-    }
 
-    /**
-     * @param cdc - {@link CdcMain} instance.
-     */
-    protected void checkWalProcessingMetrics(CdcMain cdc) {
-        DynamicMBean jmxCdcReg = jmxRegistry(cdc);
+        assertFalse(F.isEmpty(longArrMetric.apply(EVENTS_CONSUMPTION_TIME)));
 
-        checkWalProcessingMetrics(jmxValue(jmxCdcReg), jmxValue(jmxCdcReg));
-
-        MetricRegistry mreg = registry(cdc);
-
-        checkWalProcessingMetrics(
-            m -> mreg.<LongMetric>findMetric(m).value(),
-            m -> mreg.<HistogramMetricImpl>findMetric(m).value()
-        );
-    }
-
-    /** Checks the metrics for WAL processing. */
-    private void checkWalProcessingMetrics(Function<String, Long> longMetric, Function<String, long[]> longMetricArray) {
-        assertNotNull(longMetric.apply(EVENTS_CONSUMPTION_TIME_TOTAL));
-
-        assertTrue(longMetric.apply(EVENTS_CONSUMPTION_TIME_TOTAL) > 0);
-
-        assertFalse(F.isEmpty(longMetricArray.apply(EVENTS_CONSUMPTION_TIME)));
-
-        assertTrue(Arrays.stream(longMetricArray.apply(EVENTS_CONSUMPTION_TIME)).sum() > 0);
+        assertTrue(Arrays.stream(longArrMetric.apply(EVENTS_CONSUMPTION_TIME)).sum() > 0);
     }
 
     /** @return MBean for CDC metrics */

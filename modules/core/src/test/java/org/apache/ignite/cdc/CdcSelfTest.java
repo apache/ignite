@@ -291,8 +291,6 @@ public class CdcSelfTest extends AbstractCdcTest {
 
         checkMetrics(cdcMain, offsetCommit ? KEYS_CNT : ((KEYS_CNT + 3) * 2 + KEYS_CNT));
 
-        checkWalProcessingMetrics(cdcMain);
-
         rmvFut.cancel();
 
         assertTrue(cnsmr.stopped());
