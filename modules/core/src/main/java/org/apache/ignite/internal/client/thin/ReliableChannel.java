@@ -23,7 +23,6 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -649,6 +648,8 @@ final class ReliableChannel implements AutoCloseable {
 
         Set<InetSocketAddress> newAddrsSet = newAddrs.stream().flatMap(Collection::stream).collect(Collectors.toSet());
 
+        List<ClientChannelHolder> reinitHolders = new ArrayList<>();
+
         // Close obsolete holders or map old but valid addresses to holders
         if (holders != null) {
             for (ClientChannelHolder h : holders) {
@@ -659,8 +660,10 @@ final class ReliableChannel implements AutoCloseable {
                     if (newAddrsSet.contains(addr)) {
                         ClientChannelHolder oldHld = curAddrs.putIfAbsent(addr, h);
 
-                        if (oldHld == null || oldHld == h) // If not duplicate.
+                        if (oldHld == null || oldHld == h) { // If not duplicate.
                             found = true;
+                            reinitHolders.add(curAddrs.get(addr));
+                        }
                     }
                 }
 
@@ -668,8 +671,6 @@ final class ReliableChannel implements AutoCloseable {
                     h.close();
             }
         }
-
-        List<ClientChannelHolder> reinitHolders = new ArrayList<>();
 
         // The variable holds a new index of default channel after topology change.
         // Suppose that reuse of the channel is better than open new connection.
@@ -681,8 +682,6 @@ final class ReliableChannel implements AutoCloseable {
 
         if (idx != -1)
             currDfltHolder = holders.get(idx);
-
-        Set<ClientChannelHolder> uniqueHolders = new HashSet<>();
 
         for (List<InetSocketAddress> addrs : newAddrs) {
             ClientChannelHolder hld = null;
@@ -704,10 +703,9 @@ final class ReliableChannel implements AutoCloseable {
 
                 for (InetSocketAddress addr : addrs)
                     curAddrs.putIfAbsent(addr, hld);
-            }
 
-            if (uniqueHolders.add(hld))
                 reinitHolders.add(hld);
+            }
 
             if (hld == currDfltHolder)
                 dfltChannelIdx = reinitHolders.size() - 1;
