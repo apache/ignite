@@ -39,7 +39,7 @@ class KeyFilteringCursor<R> implements GridCursor<R> {
 
     /**
      * @param cursor Sorted cursor.
-     * @param txChanges Transactional changes.
+     * @param txChanges Transaction changes.
      * @param toKey Mapper from row to {@link KeyCacheObject}.
      */
     KeyFilteringCursor(GridCursor<? extends R> cursor, TransactionChanges<?> txChanges, Function<R, KeyCacheObject> toKey) {

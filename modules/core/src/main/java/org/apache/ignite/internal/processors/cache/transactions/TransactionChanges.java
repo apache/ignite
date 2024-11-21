@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.processors.cache.transactions;
 
 import java.util.Collections;
+import java.util.Comparator;
 import java.util.List;
 import java.util.Set;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
@@ -25,7 +26,7 @@ import org.apache.ignite.internal.processors.cache.KeyCacheObject;
 /**
  * Changes of transaction in convenient for queries form.
  */
-public class TransactionChanges<R> {
+public class TransactionChanges<E> {
     /** Empty instance. */
     private static final TransactionChanges<?> EMPTY = new TransactionChanges<>(Collections.emptySet(), Collections.emptyList());
 
@@ -33,19 +34,19 @@ public class TransactionChanges<R> {
     private final Set<KeyCacheObject> changedKeys;
 
     /** Transaction entries in required format. */
-    private final List<R> newAndUpdatedEntries;
+    private final List<E> newAndUpdatedEntries;
 
     /**
      * @param changedKeys All changed keys.
      * @param newAndUpdatedEntries New and changed entries.
      */
-    public TransactionChanges(Set<KeyCacheObject> changedKeys, List<R> newAndUpdatedEntries) {
+    public TransactionChanges(Set<KeyCacheObject> changedKeys, List<E> newAndUpdatedEntries) {
         this.changedKeys = changedKeys;
         this.newAndUpdatedEntries = newAndUpdatedEntries;
     }
 
     /** @return New and changed entries. */
-    public List<R> newAndUpdatedEntries() {
+    public List<E> newAndUpdatedEntries() {
         return newAndUpdatedEntries;
     }
 
@@ -70,5 +71,13 @@ public class TransactionChanges<R> {
      */
     public static <R> TransactionChanges<R> empty() {
         return (TransactionChanges<R>)EMPTY;
+    }
+
+    /**
+     * Sort new and updated entries collection.
+     * @param comparator Entries comparator
+     */
+    public void sortNewAndUpdatedEntries(Comparator<E> comparator) {
+        newAndUpdatedEntries.sort(comparator);
     }
 }

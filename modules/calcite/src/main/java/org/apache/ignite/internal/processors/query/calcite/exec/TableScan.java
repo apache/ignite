@@ -63,7 +63,7 @@ public class TableScan<Row> extends AbstractCacheColumnsScan<Row> {
         /** */
         private GridCursor<? extends CacheDataRow> cur;
 
-        /** Transactional changes. */
+        /** Transaction changes. */
         private TransactionChanges<CacheDataRow> txChanges;
 
         /** */
@@ -131,7 +131,7 @@ public class TableScan<Row> extends AbstractCacheColumnsScan<Row> {
                     cur = part.dataStore().cursor(cctx.cacheId());
 
                     if (txChanges != null) {
-                        // This call will change `txChanges.get1()` content.
+                        // This call will change `txChanges` content.
                         // Removing found key from set more efficient so we break some rules here.
                         if (!txChanges.changedKeysEmpty())
                             cur = new KeyFilteringCursor<>(cur, txChanges, CacheSearchRow::key);

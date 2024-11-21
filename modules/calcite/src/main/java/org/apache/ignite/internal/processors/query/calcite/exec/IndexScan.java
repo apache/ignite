@@ -120,7 +120,7 @@ public class IndexScan<Row> extends AbstractCacheColumnsScan<Row> {
                 r -> new IndexRowImpl(rowHnd, r)
             );
 
-            txChanges.newAndUpdatedEntries().sort(this::compare);
+            txChanges.sortNewAndUpdatedEntries(this::compare);
         }
         else
             txChanges = null;
