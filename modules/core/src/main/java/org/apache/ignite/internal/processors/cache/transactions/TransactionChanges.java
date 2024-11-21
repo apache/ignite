@@ -26,6 +26,7 @@ import org.apache.ignite.internal.processors.cache.KeyCacheObject;
  * Changes of transaction in convenient for queries form.
  */
 public class TransactionChanges<R> {
+    /** Empty instance. */
     private static final TransactionChanges<?> EMPTY = new TransactionChanges<>(Collections.emptySet(), Collections.emptyList());
 
     /** All changed keys. */
