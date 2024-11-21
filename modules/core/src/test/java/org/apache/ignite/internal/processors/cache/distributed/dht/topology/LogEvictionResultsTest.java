@@ -64,9 +64,8 @@ public class LogEvictionResultsTest extends GridCommonAbstractTest {
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         CacheConfiguration<?, ?> cacheCfg = new CacheConfiguration<>(DEFAULT_CACHE_NAME)
-            .setGroupName(DEFAULT_CACHE_NAME)
             .setBackups(2)
-            .setAffinity(new RendezvousAffinityFunction(false, 64));
+            .setAffinity(new RendezvousAffinityFunction(false, 32));
 
         if (isRebalanceDisabled)
             cacheCfg.setRebalanceMode(NONE);
@@ -100,7 +99,7 @@ public class LogEvictionResultsTest extends GridCommonAbstractTest {
         CallbackExecutorLogListener rebalPrepLsnr = new CallbackExecutorLogListener(
             "Prepared rebalancing.*", rebalPrepMsgs::add);
 
-        CallbackExecutorLogListener rebalPrepEvictLsnr = new CallbackExecutorLogListener(
+        CallbackExecutorLogListener rebalEvictLsnr = new CallbackExecutorLogListener(
             "Following partitions have been successfully evicted in preparation for rebalancing.*",
             rebalEvictMsgs::add);
 
@@ -111,7 +110,7 @@ public class LogEvictionResultsTest extends GridCommonAbstractTest {
             "Following partitions have been successfully evicted as part of rebalance chain.*",
             chainEvictMsgs::add);
 
-        testLog.registerAllListeners(of(rebalPrepLsnr, chainComplLsnr, rebalPrepEvictLsnr, chainEvictLsnr)
+        testLog.registerAllListeners(of(rebalPrepLsnr, rebalEvictLsnr, chainComplLsnr, chainEvictLsnr)
             .toArray(LogListener[]::new));
 
         startTestGrids();
@@ -213,12 +212,8 @@ public class LogEvictionResultsTest extends GridCommonAbstractTest {
                             GridDhtPartitionTopologyImpl top = (GridDhtPartitionTopologyImpl)instance;
 
                             top.partitionFactory(new GridDhtPartitionTopologyImpl.PartitionFactory() {
-                                @Override public GridDhtLocalPartition create(
-                                    GridCacheSharedContext ctx,
-                                    CacheGroupContext grp,
-                                    int id,
-                                    boolean recovery
-                                ) {
+                                @Override public GridDhtLocalPartition create(GridCacheSharedContext ctx,
+                                    CacheGroupContext grp, int id, boolean recovery) {
                                     return evictedParts.contains(id) ?
                                         new GridDhtLocalPartitionSyncEviction(ctx, grp, id, recovery, 2, lock, unlock) :
                                         new GridDhtLocalPartition(ctx, grp, id, recovery);
