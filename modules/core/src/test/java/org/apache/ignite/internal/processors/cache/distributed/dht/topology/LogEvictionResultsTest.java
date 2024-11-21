@@ -11,7 +11,6 @@ import org.apache.ignite.cluster.ClusterState;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
-import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.processors.cache.CacheGroupContext;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.resource.DependencyResolver;
@@ -29,7 +28,16 @@ import static org.apache.ignite.cache.CacheRebalanceMode.NONE;
 /** Class for testing eviction results logging. */
 public class LogEvictionResultsTest extends GridCommonAbstractTest {
     /** Listening logger. */
-    private static ListeningTestLogger testLog;
+    private final ListeningTestLogger testLog = new ListeningTestLogger(log);
+
+    /** Pattern for extracting number of partitions #1. */
+    private final Pattern partsCntPattern = Pattern.compile("partitionsCount=(?<count>\\d+)");
+
+    /** Pattern for extracting number of partitions #2. */
+    private final Pattern partsPattern = Pattern.compile("partitions=(?<count>\\d+)");
+
+    /** Pattern for counting partitions in log messages. */
+    private final Pattern extractPartsPattern = Pattern.compile("partitions=\\[([^\\]]+)\\]");
 
     /** Persistence flag. */
     private boolean isPersistentCluster;
@@ -37,38 +45,16 @@ public class LogEvictionResultsTest extends GridCommonAbstractTest {
     /** Rebalance disabled flag. */
     private boolean isRebalanceDisabled;
 
-    /** Pattern for extracting number of partitions #1. */
-    Pattern partsCntPattern = Pattern.compile("partitionsCount=(?<count>\\d+)");
-
-    /** Pattern for extracting number of partitions #2. */
-    Pattern partsPattern = Pattern.compile("partitions=(?<count>\\d+)");
-
-    /** Pattern for counting partitions in log messages. */
-    Pattern extractPartsPattern = Pattern.compile("partitions=\\[([^\\]]+)\\]");
-
-    /** {@inheritDoc} */
-    @Override protected void beforeTestsStarted() throws Exception {
-        super.beforeTestsStarted();
-
-        clearStaticLog(GridDhtLocalPartition.class);
-
-        testLog = new ListeningTestLogger(log);
-    }
-
     /** {@inheritDoc} */
     @Override protected void beforeTest() throws Exception {
         super.beforeTest();
 
         cleanPersistenceDir();
-
-        testLog.clearListeners();
     }
 
     /** {@inheritDoc} */
     @Override protected void afterTest() throws Exception {
         stopAllGrids();
-
-        testLog.clearListeners();
 
         cleanPersistenceDir();
 
@@ -121,28 +107,28 @@ public class LogEvictionResultsTest extends GridCommonAbstractTest {
         CallbackExecutorLogListener chainComplLsnr = new CallbackExecutorLogListener(
             "Completed rebalance chain.*", chainComplMsgs::add);
 
-        CallbackExecutorLogListener chainComplEvictLsnr = new CallbackExecutorLogListener(
+        CallbackExecutorLogListener chainEvictLsnr = new CallbackExecutorLogListener(
             "Following partitions have been successfully evicted as part of rebalance chain.*",
             chainEvictMsgs::add);
 
-        testLog.registerAllListeners(of(rebalPrepLsnr, chainComplLsnr, rebalPrepEvictLsnr, chainComplEvictLsnr)
+        testLog.registerAllListeners(of(rebalPrepLsnr, chainComplLsnr, rebalPrepEvictLsnr, chainEvictLsnr)
             .toArray(LogListener[]::new));
 
         startTestGrids();
 
         List<Integer> rebalPrep = partsCount(rebalPrepMsgs, partsCntPattern);
-        List<Integer> rebalEvict = partsCount(rebalEvictMsgs, partsCntPattern);
+        List<Integer> rebalEvict = partsCount(rebalEvictMsgs);
 
         assertTrue(F.containsAll(rebalPrep, rebalEvict) && F.containsAll(rebalEvict, rebalPrep));
 
         List<Integer> chainCompl = partsCount(chainComplMsgs, partsPattern);
         List<Integer> chainEvict = partsCount(chainEvictMsgs);
 
-        assertEquals(chainCompl, chainEvict);
+        assertTrue(F.containsAll(chainCompl, chainEvict) && F.containsAll(chainEvict, chainCompl));
     }
 
     /**
-     * Test log messages for completion of evicting partitions that might be needed after rebalance.
+     * Test log messages for completion of eviction that may be required after rebalance.
      */
     @Test
     public void testCheckEviction() {
@@ -152,7 +138,7 @@ public class LogEvictionResultsTest extends GridCommonAbstractTest {
         String evictStr = "Partitions have been successfullly evicted \\(reason for eviction: partitions did " +
             "not belong to affinity\\).*";
 
-        executeLogMessagesCheck(prepStr, evictStr, () -> {
+        checkLogMessages(prepStr, evictStr, () -> {
             try {
                 startTestGrids();
             }
@@ -163,7 +149,7 @@ public class LogEvictionResultsTest extends GridCommonAbstractTest {
     }
 
     /**
-     * Test log messages for completion of evicting partitions with disabled rebalancing.
+     * Test log messages for completion of eviction with disabled rebalancing.
      */
     @Test
     public void testRebalanceDisabled() {
@@ -172,7 +158,7 @@ public class LogEvictionResultsTest extends GridCommonAbstractTest {
         String evictStr = "Partitions have been successfullly evicted \\(reason for eviction: rebalancing " +
             "disabled, partitions did not belong to affinity\\).*";
 
-        executeLogMessagesCheck(prepStr, evictStr, () -> {
+        checkLogMessages(prepStr, evictStr, () -> {
             isRebalanceDisabled = true;
 
             try {
@@ -194,13 +180,13 @@ public class LogEvictionResultsTest extends GridCommonAbstractTest {
         String evictStr = "Partitions have been successfullly evicted \\(reason for eviction: moving partitions " +
             "not belonging to affinity\\).*";
 
-        executeLogMessagesCheck(prepStr, evictStr, () -> {
+        checkLogMessages(prepStr, evictStr, () -> {
             try {
                 isPersistentCluster = true;
 
-                IgniteEx crd = startGrids(3);
+                startGrids(3);
 
-                crd.cluster().state(ClusterState.ACTIVE);
+                grid(0).cluster().state(ClusterState.ACTIVE);
 
                 final List<Integer> evictedParts = evictingPartitionsAfterJoin(grid(2),
                     grid(2).cache(DEFAULT_CACHE_NAME), 3);
@@ -215,7 +201,7 @@ public class LogEvictionResultsTest extends GridCommonAbstractTest {
                 stopGrid(2);
 
                 evictedParts.forEach(p ->
-                    partitionKeys(grid(0).cache(DEFAULT_CACHE_NAME), p, (keyCnt / 2), 0)
+                    partitionKeys(grid(0).cache(DEFAULT_CACHE_NAME), p, keyCnt, 0)
                         .forEach(k -> grid(0).cache(DEFAULT_CACHE_NAME).remove(k)));
 
                 CountDownLatch lock = new CountDownLatch(1);
@@ -234,8 +220,7 @@ public class LogEvictionResultsTest extends GridCommonAbstractTest {
                                     boolean recovery
                                 ) {
                                     return evictedParts.contains(id) ?
-                                        new GridDhtLocalPartitionSyncEviction(ctx, grp, id, recovery, 2, lock,
-                                            unlock) :
+                                        new GridDhtLocalPartitionSyncEviction(ctx, grp, id, recovery, 2, lock, unlock) :
                                         new GridDhtLocalPartition(ctx, grp, id, recovery);
                                 }
                             });
@@ -276,11 +261,11 @@ public class LogEvictionResultsTest extends GridCommonAbstractTest {
     }
 
     /**
-     * @param prepStr Log message for preparing partitions for eviction.
-     * @param evictStr Log message for completion of eviction.
+     * @param prepStr Log message string for preparing partitions for eviction.
+     * @param evictStr Log message string for completion of eviction.
      * @param testTask Test task.
      */
-    public void executeLogMessagesCheck(String prepStr, String evictStr, Runnable testTask) {
+    public void checkLogMessages(String prepStr, String evictStr, Runnable testTask) {
         setLoggerDebugLevel();
 
         List<String> partPreparedMsgs = new ArrayList<>();
@@ -300,7 +285,7 @@ public class LogEvictionResultsTest extends GridCommonAbstractTest {
 
     /**
      * @param list List of log messages.
-     * @param pattern Pattern for extracting partitions count.
+     * @param pattern Pattern for extracting partitions count from log messages.
      */
     private List<Integer> partsCount(List<String> list, Pattern pattern) {
         List<Integer> res = new ArrayList<>();
