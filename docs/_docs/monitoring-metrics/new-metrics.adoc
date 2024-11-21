@@ -117,8 +117,6 @@ Register name: `cache.{cache_name}.{near}`
 |TotalRebalancedBytes|long|Number of already rebalanced bytes.
 | PutAllConflictTime | histogram | PutAllConflict time for which this node is the initiator, in nanoseconds.
 | RemoveAllConflictTime | histogram | RemoveAllConflict time for which this node is the initiator, in nanoseconds.
-| PutAllConflictTimeTotal | long | The total time of cache putAllConflict operation for which this node is the initiator, in nanoseconds.
-| RemoveAllConflictTimeTotal | long | The total time of cache removeAllConflict operation for which this node is the initiator, in nanoseconds.
 |===
 
 == Cache Groups

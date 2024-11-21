@@ -246,12 +246,6 @@ public class CacheMetricsImpl implements CacheMetrics {
     /** RemoveAllConflict time. */
     private final HistogramMetricImpl rmvAllConflictTime;
 
-    /** Total PutAllConflict taken nanos. */
-    private final AtomicLongMetric putAllConflictTimeTotal;
-
-    /** Total RemoveAllConflict time taken nanos. */
-    private final AtomicLongMetric rmvAllConflictTimeTotal;
-
     /**
      * Creates cache metrics.
      *
@@ -442,12 +436,6 @@ public class CacheMetricsImpl implements CacheMetrics {
 
         rmvAllConflictTime = mreg.histogram("RemoveAllConflictTime", HISTOGRAM_BUCKETS,
             "RemoveAllConflict time for which this node is the initiator, in nanoseconds.");
-
-        putAllConflictTimeTotal = mreg.longMetric("PutAllConflictTimeTotal",
-            "The total time of cache putAllConflict operation for which this node is the initiator, in nanoseconds.");
-
-        rmvAllConflictTimeTotal = mreg.longMetric("RemoveAllConflictTimeTotal",
-            "The total time of cache removeAllConflict operation for which this node is the initiator, in nanoseconds.");
     }
 
     /**
@@ -780,9 +768,6 @@ public class CacheMetricsImpl implements CacheMetrics {
 
         putAllConflictTime.reset();
         rmvAllConflictTime.reset();
-
-        putAllConflictTimeTotal.reset();
-        rmvAllConflictTimeTotal.reset();
     }
 
     /** {@inheritDoc} */
@@ -1743,8 +1728,6 @@ public class CacheMetricsImpl implements CacheMetrics {
      * @param duration the time taken in nanoseconds.
      */
     public void addPutAllConflictTimeNanos(long duration) {
-        putAllConflictTimeTotal.add(duration);
-
         putAllConflictTime.value(duration);
 
         if (delegate != null)
@@ -1757,8 +1740,6 @@ public class CacheMetricsImpl implements CacheMetrics {
      * @param duration the time taken in nanoseconds.
      */
     public void addRemoveAllConflictTimeNanos(long duration) {
-        rmvAllConflictTimeTotal.add(duration);
-
         rmvAllConflictTime.value(duration);
 
         if (delegate != null)

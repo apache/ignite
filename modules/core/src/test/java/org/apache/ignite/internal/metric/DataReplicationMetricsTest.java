@@ -51,7 +51,6 @@ import org.junit.runners.Parameterized;
 
 import static java.util.Arrays.stream;
 import static org.apache.ignite.internal.processors.metric.impl.MetricUtils.cacheMetricsRegistryName;
-import static org.apache.ignite.testframework.GridTestUtils.waitForCondition;
 
 /**
  * Test metrics of DR operations.
@@ -182,9 +181,6 @@ public class DataReplicationMetricsTest extends GridCommonAbstractTest {
     /** */
     private void checkMetrics(IgniteEx ignFrom) throws IgniteInterruptedCheckedException {
         MetricRegistryImpl mreg = ignFrom.context().metric().registry(cacheMetricsRegistryName(DEFAULT_CACHE_NAME, false));
-
-        waitForCondition(() -> mreg.<LongMetric>findMetric("PutAllConflictTimeTotal").value() > 0, getTestTimeout());
-        waitForCondition(() -> mreg.<LongMetric>findMetric("RemoveAllConflictTimeTotal").value() > 0, getTestTimeout());
 
         assertTrue(stream(mreg.<HistogramMetricImpl>findMetric("PutAllConflictTime").value()).sum() > 0);
         assertTrue(stream(mreg.<HistogramMetricImpl>findMetric("RemoveAllConflictTime").value()).sum() > 0);
