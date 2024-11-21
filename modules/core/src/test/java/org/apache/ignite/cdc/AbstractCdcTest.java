@@ -228,9 +228,18 @@ public abstract class AbstractCdcTest extends GridCommonAbstractTest {
 
         DynamicMBean jmxCdcReg = metricRegistry(cdcInstanceName(cfg.getIgniteInstanceName()), null, "cdc");
 
-        checkMetrics(expCnt, jmxValue(jmxCdcReg), jmxValue(jmxCdcReg), jmxValue(jmxCdcReg));
+        Function<String, ?> jmxVal = m -> {
+            try {
+                return jmxCdcReg.getAttribute(m);
+            }
+            catch (Exception e) {
+                throw new IgniteException(e);
+            }
+        };
 
-        MetricRegistry mreg = registry(cdc);
+        checkMetrics(expCnt, (Function<String, Long>)jmxVal, (Function<String, String>)jmxVal, (Function<String, long[]>)jmxVal);
+
+        MetricRegistry mreg = getFieldValue(cdc, "mreg");
 
         assertNotNull(mreg);
 
@@ -270,23 +279,6 @@ public abstract class AbstractCdcTest extends GridCommonAbstractTest {
         assertFalse(F.isEmpty(longArrMetric.apply(EVENTS_CONSUMPTION_TIME)));
 
         assertTrue(Arrays.stream(longArrMetric.apply(EVENTS_CONSUMPTION_TIME)).sum() > 0);
-    }
-
-    /** @return {@link MetricRegistry} */
-    private MetricRegistry registry(CdcMain cdc) {
-        return getFieldValue(cdc, "mreg");
-    }
-
-    /** */
-    private <T> Function<String, T> jmxValue(DynamicMBean jmxCdcReg) {
-        return m -> {
-            try {
-                return (T)jmxCdcReg.getAttribute(m);
-            }
-            catch (Exception e) {
-                throw new IgniteException(e);
-            }
-        };
     }
 
     /** */
