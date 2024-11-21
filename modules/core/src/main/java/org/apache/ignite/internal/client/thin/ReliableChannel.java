@@ -660,9 +660,8 @@ final class ReliableChannel implements AutoCloseable {
                     if (newAddrsSet.contains(addr)) {
                         ClientChannelHolder oldHld = curAddrs.putIfAbsent(addr, h);
 
-                        if (oldHld == null || oldHld == h) { // If not duplicate.
+                        if (oldHld == null || oldHld == h) // If not duplicate.
                             found = true;
-                        }
                     }
                 }
 
@@ -820,8 +819,8 @@ final class ReliableChannel implements AutoCloseable {
         ClientOperation op,
         @Nullable List<ClientConnectionException> failures
     ) {
-        // +1 is required for the correct channel search if ReliableChannel#applyOnDefaultChannel#idx selects
-        // a closed channel, therefore an additional attempt may be required for a failed random pick.
+        // An additional attempt is needed because N+1 channels might be used for sending a message - first a random
+        // one, then each one from #channels in sequence.
         int fixedAttemptsLimit = attemptsLimit + 1;
 
         while (fixedAttemptsLimit > (failures == null ? 0 : failures.size())) {
