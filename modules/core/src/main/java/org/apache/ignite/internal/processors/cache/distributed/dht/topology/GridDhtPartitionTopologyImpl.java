@@ -3330,19 +3330,21 @@ public class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
         })).toArray(CompletableFuture[]::new)).whenComplete((res, err) -> {
             if (notEvictedParts.isEmpty()) {
                 log.info("Partitions have been successfullly evicted (reason for eviction: " + evictReason + ")"
-                    + " [grp=" + grp.cacheOrGroupName()
+                    + " [grp=" + grp.cacheOrGroupName() + ", partitionsCount=" + evictedParts.size()
                     + ", partitions=" + S.toStringSortedDistinct(evictedParts) + "]");
             }
             else if (evictedParts.isEmpty()) {
                 log.warning("None of partitions have been evicted (reason for eviction: " + evictReason + ")"
-                    + " [grp=" + grp.cacheOrGroupName()
+                    + " [grp=" + grp.cacheOrGroupName() + ", partitionsCount=" + notEvictedParts.size()
                     + ", partitions=" + S.toStringSortedDistinct(notEvictedParts) + "]");
             }
             else {
                 log.warning("Some of partitions have not been evicted (reason for eviction: " + evictReason + ")"
                     + " [grp=" + grp.cacheOrGroupName()
-                    + ", partitionsEvicted=" + S.toStringSortedDistinct(evictedParts)
-                    + ", partitionsNotEvicted=" + S.toStringSortedDistinct(notEvictedParts) + "]");
+                    + ", evictedPartitionsCount=" + evictedParts.size()
+                    + ", evictedPartitions=" + S.toStringSortedDistinct(evictedParts)
+                    + ", notEvictedPartitionsCount=" + notEvictedParts.size()
+                    + ", notEvictedPartitions=" + S.toStringSortedDistinct(notEvictedParts) + "]");
             }
         });
     }
