@@ -40,7 +40,7 @@ import static org.apache.ignite.transactions.TransactionIsolation.READ_COMMITTED
 public abstract class AbstractTransactionalQueryTest extends GridCommonAbstractTest {
     /** */
     @Parameterized.Parameter()
-    public TestTransactionMode sqlTxMode;
+    public TestTransactionMode txMode;
 
     /** @return Test parameters. */
     @Parameterized.Parameters(name = "sqlTxMode={0}")
@@ -66,10 +66,10 @@ public abstract class AbstractTransactionalQueryTest extends GridCommonAbstractT
 
     /** {@inheritDoc} */
     @Override protected void beforeTest() throws Exception {
-        if (currentMode != null && sqlTxMode == currentMode)
+        if (currentMode != null && txMode == currentMode)
             return;
 
-        currentMode = sqlTxMode;
+        currentMode = txMode;
 
         clearTransaction();
 
@@ -104,7 +104,7 @@ public abstract class AbstractTransactionalQueryTest extends GridCommonAbstractT
 
     /** */
     protected CacheAtomicityMode atomicity() {
-        return sqlTxMode == TestTransactionMode.NONE ? ATOMIC : TRANSACTIONAL;
+        return txMode == TestTransactionMode.NONE ? ATOMIC : TRANSACTIONAL;
     }
 
     /** */
@@ -114,10 +114,10 @@ public abstract class AbstractTransactionalQueryTest extends GridCommonAbstractT
 
     /** */
     protected void invokeAction(Ignite node, RunnableX action) {
-        if (tx == null && sqlTxMode != TestTransactionMode.NONE)
+        if (tx == null && txMode != TestTransactionMode.NONE)
             startTransaction(node);
 
-        switch (sqlTxMode) {
+        switch (txMode) {
             case ALL:
                 txAction(node, action);
 

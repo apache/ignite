@@ -48,7 +48,7 @@ public class ScanQueryTransactionsUnsupportedModesTest extends GridCommonAbstrac
     @Test
     public void testUnsupportedTransactionModes() throws Exception {
         try (IgniteEx srv = startGrid(0)) {
-            for (boolean client : new boolean[] {/*false,*/ true}) {
+            for (boolean client : new boolean[] {false, true}) {
                 IgniteEx executor = client ? startClientGrid() : srv;
 
                 IgniteCache<Object, Object> c = executor.getOrCreateCache(new CacheConfiguration<>(DEFAULT_CACHE_NAME)

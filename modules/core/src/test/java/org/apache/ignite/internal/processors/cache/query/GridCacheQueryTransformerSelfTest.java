@@ -78,7 +78,7 @@ public class GridCacheQueryTransformerSelfTest extends AbstractTransactionalQuer
         IgniteCache<Integer, V> cache = createTestCache(val, numEntries);
 
         try {
-            if (sqlTxMode == TestTransactionMode.NONE)
+            if (txMode == TestTransactionMode.NONE)
                 test.accept(cache);
             else
                 txAction(grid(), () -> test.accept(cache));
@@ -302,7 +302,7 @@ public class GridCacheQueryTransformerSelfTest extends AbstractTransactionalQuer
      */
     @Test
     public void testLocal() throws Exception {
-        assumeTrue(sqlTxMode == TestTransactionMode.NONE);
+        assumeTrue(txMode == TestTransactionMode.NONE);
 
         doTestWithCache(i -> new Value("str" + i, i * 100), cache -> {
             Collection<List<Integer>> lists = grid().compute().broadcast(new IgniteCallable<List<Integer>>() {
@@ -338,7 +338,7 @@ public class GridCacheQueryTransformerSelfTest extends AbstractTransactionalQuer
      */
     @Test
     public void testLocalFiltered() throws Exception {
-        assumeTrue(sqlTxMode == TestTransactionMode.NONE);
+        assumeTrue(txMode == TestTransactionMode.NONE);
 
         doTestWithCache(i -> new Value("str" + i, i * 100), cache -> {
             Collection<List<Integer>> lists = grid().compute().broadcast(new IgniteCallable<List<Integer>>() {
@@ -380,7 +380,7 @@ public class GridCacheQueryTransformerSelfTest extends AbstractTransactionalQuer
      */
     @Test
     public void testLocalKeepBinary() throws Exception {
-        assumeTrue(sqlTxMode == TestTransactionMode.NONE);
+        assumeTrue(txMode == TestTransactionMode.NONE);
 
         doTestWithCache(i -> new Value("str" + i, i * 100), cache -> {
             Collection<List<Integer>> lists = grid().compute().broadcast(new IgniteCallable<List<Integer>>() {
@@ -416,7 +416,7 @@ public class GridCacheQueryTransformerSelfTest extends AbstractTransactionalQuer
      */
     @Test
     public void testLocalKeepBinaryFiltered() throws Exception {
-        assumeTrue(sqlTxMode == TestTransactionMode.NONE);
+        assumeTrue(txMode == TestTransactionMode.NONE);
 
         IgniteCache<Integer, Value> cache = createTestCache(i -> new Value("str" + i, i * 100));
 
@@ -582,7 +582,7 @@ public class GridCacheQueryTransformerSelfTest extends AbstractTransactionalQuer
      */
     @Test
     public void testLocalInjection() throws Exception {
-        assumeTrue(sqlTxMode == TestTransactionMode.NONE);
+        assumeTrue(txMode == TestTransactionMode.NONE);
 
         IgniteCache<Integer, Value> cache = createTestCache(i -> new Value("str" + i, i * 100));
 

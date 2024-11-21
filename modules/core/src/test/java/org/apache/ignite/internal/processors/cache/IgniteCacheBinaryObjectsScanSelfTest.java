@@ -112,7 +112,7 @@ public class IgniteCacheBinaryObjectsScanSelfTest extends AbstractTransactionalQ
     public void testScanNoClasses() throws Exception {
         Ignite client = grid("client");
 
-        if (sqlTxMode == TestTransactionMode.NONE)
+        if (txMode == TestTransactionMode.NONE)
             doTestScanNoClasses(client);
         else
             txAction(client, () -> doTestScanNoClasses(client));

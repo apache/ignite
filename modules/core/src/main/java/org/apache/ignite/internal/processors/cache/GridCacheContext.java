@@ -27,7 +27,6 @@ import java.io.ObjectStreamException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
-import java.util.Collections;
 import java.util.HashSet;
 import java.util.LinkedList;
 import java.util.List;
@@ -90,6 +89,7 @@ import org.apache.ignite.internal.processors.cache.transactions.IgniteInternalTx
 import org.apache.ignite.internal.processors.cache.transactions.IgniteTxEntry;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteTxKey;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteTxManager;
+import org.apache.ignite.internal.processors.cache.transactions.TransactionChanges;
 import org.apache.ignite.internal.processors.cache.version.CacheVersionConflictResolver;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersionConflictContext;
@@ -2359,14 +2359,14 @@ public class GridCacheContext<K, V> implements Externalizable {
      * @return First, set of object changed in transaction, second, list of transaction data in required format.
      * @see ExecutionContext#transactionChanges(int, int[], Function)
      */
-    public IgniteBiTuple<Set<KeyCacheObject>, List<Object>> transactionChanges(Integer part) {
+    public TransactionChanges<Object> transactionChanges(Integer part) {
         if (!U.isTxAwareQueriesEnabled(ctx))
-            return F.t(Collections.emptySet(), Collections.emptyList());
+            return TransactionChanges.empty();
 
         IgniteInternalTx tx = tm().tx();
 
         if (tx == null)
-            return F.t(Collections.emptySet(), Collections.emptyList());
+            return TransactionChanges.empty();
 
         IgniteTxManager.ensureTransactionModeSupported(tx.isolation());
 
@@ -2398,7 +2398,7 @@ public class GridCacheContext<K, V> implements Externalizable {
                 newAndUpdatedRows.add(hasEntryProcessors ? F.t(e.key(), val) : e);
         }
 
-        return F.t(changedKeys, newAndUpdatedRows);
+        return new TransactionChanges<>(changedKeys, newAndUpdatedRows);
     }
 
     /** {@inheritDoc} */

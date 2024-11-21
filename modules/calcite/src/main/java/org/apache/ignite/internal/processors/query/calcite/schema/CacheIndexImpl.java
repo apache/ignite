@@ -48,6 +48,7 @@ import org.apache.ignite.internal.processors.cache.KeyCacheObject;
 import org.apache.ignite.internal.processors.cache.persistence.CacheDataRow;
 import org.apache.ignite.internal.processors.cache.persistence.tree.BPlusTree;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.BPlusIO;
+import org.apache.ignite.internal.processors.cache.transactions.TransactionChanges;
 import org.apache.ignite.internal.processors.query.calcite.exec.ExecutionContext;
 import org.apache.ignite.internal.processors.query.calcite.exec.IndexFirstLastScan;
 import org.apache.ignite.internal.processors.query.calcite.exec.IndexScan;
@@ -58,7 +59,6 @@ import org.apache.ignite.internal.processors.query.calcite.rel.logical.IgniteLog
 import org.apache.ignite.internal.processors.query.calcite.util.Commons;
 import org.apache.ignite.internal.processors.query.calcite.util.RexUtils;
 import org.apache.ignite.internal.util.typedef.F;
-import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.spi.indexing.IndexingQueryFilter;
 import org.apache.ignite.spi.indexing.IndexingQueryFilterImpl;
 import org.jetbrains.annotations.NotNull;
@@ -175,18 +175,18 @@ public class CacheIndexImpl implements IgniteIndex {
         long cnt = 0;
 
         if (!F.isEmpty(ectx.getQryTxEntries())) {
-            IgniteBiTuple<Set<KeyCacheObject>, List<CacheDataRow>> txChanges = ectx.transactionChanges(
+            TransactionChanges<CacheDataRow> txChanges = ectx.transactionChanges(
                 iidx.indexDefinition().cacheInfo().cacheId(),
                 locParts,
                 Function.identity()
             );
 
-            if (!txChanges.get1().isEmpty()) {
+            if (!txChanges.changedKeys().isEmpty()) {
                 // This call will change `txChanges.get1()` content.
                 // Removing found key from set more efficient so we break some rules here.
-                rowFilter = transactionAwareCountRowFilter(rowFilter, txChanges.get1());
+                rowFilter = transactionAwareCountRowFilter(rowFilter, txChanges.changedKeys());
 
-                cnt = countTransactionRows(notNull, iidx, txChanges.get2());
+                cnt = countTransactionRows(notNull, iidx, txChanges.newAndUpdatedEntries());
             }
         }
 

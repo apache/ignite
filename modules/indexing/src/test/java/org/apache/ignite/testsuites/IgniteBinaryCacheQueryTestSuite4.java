@@ -100,7 +100,7 @@ import org.junit.runners.Suite;
     SqlAffinityCacheTest.class,
 
     ScanQueryTransactionsUnsupportedModesTest.class,
-    ScanQueryTransactionIsolationTest.class
+    ScanQueryTransactionIsolationTest.class,
 })
 public class IgniteBinaryCacheQueryTestSuite4 {
     /** Setup lazy mode default. */

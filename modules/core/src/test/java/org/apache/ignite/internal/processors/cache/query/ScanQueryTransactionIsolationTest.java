@@ -139,9 +139,8 @@ public class ScanQueryTransactionIsolationTest extends AbstractQueryTransactionI
 
                     if (type == THIN_VIA_QUERY)
                         cursor = thinCli.<Integer, User>cache(users()).query(qry);
-                    else if (type == SERVER || type == CLIENT) {
+                    else if (type == SERVER || type == CLIENT)
                         cursor = node().<Integer, User>cache(users()).query(qry);
-                    }
                     else
                         fail("Unsupported executor type: " + type);
 
@@ -161,7 +160,6 @@ public class ScanQueryTransactionIsolationTest extends AbstractQueryTransactionI
 
                 return F.first(res);
             }
-
         }
 
         return super.select(id, api);
@@ -179,24 +177,5 @@ public class ScanQueryTransactionIsolationTest extends AbstractQueryTransactionI
         iter.forEachRemaining(res::add);
 
         return res;
-    }
-
-    /** */
-    private List<Cache.Entry<Integer, User>> unwrapBinary(List<?> all) {
-        return all.stream()
-            .map(e0 -> new CacheEntryImpl<>(
-                this.<Integer>unwrap(((Cache.Entry<?, ?>)e0).getKey()),
-                this.<User>unwrap(((Cache.Entry<?, ?>)e0).getValue()))
-            ).collect(Collectors.toList());
-    }
-
-    /** */
-    private <T> T unwrap(Object o) {
-        if (o instanceof KeyCacheObject)
-            return ((CacheObject)o).value(null, false);
-        else if (o instanceof BinaryObject) {
-            return ((BinaryObject)o).deserialize();
-        }
-        return (T)o;
     }
 }

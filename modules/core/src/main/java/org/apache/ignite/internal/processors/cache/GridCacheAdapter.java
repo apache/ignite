@@ -102,6 +102,7 @@ import org.apache.ignite.internal.processors.cache.transactions.IgniteInternalTx
 import org.apache.ignite.internal.processors.cache.transactions.IgniteTxKey;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteTxLocalAdapter;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteTxLocalEx;
+import org.apache.ignite.internal.processors.cache.transactions.TransactionChanges;
 import org.apache.ignite.internal.processors.cache.version.GridCacheRawVersionedEntry;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.processors.datastreamer.DataStreamerEntry;
@@ -3536,10 +3537,17 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
 
         final CacheOperationContext opCtx = ctx.operationContextPerCall();
 
-        final IgniteBiTuple<Set<KeyCacheObject>, List<Object>> txChanges = ctx.transactionChanges(null);
+        final TransactionChanges<Object> txChanges = ctx.transactionChanges(null);
 
-        final GridCloseableIterator<Map.Entry<K, V>> iter
-            = ctx0.queries().createScanQuery(p, null, null, keepBinary, false, null, txChanges.get1()).executeScanQuery(txChanges.get2());
+        final GridCloseableIterator<Map.Entry<K, V>> iter = ctx0.queries().createScanQuery(
+            p,
+            null,
+            null,
+            keepBinary,
+            false,
+            null,
+            txChanges.changedKeys()
+        ).executeScanQuery(txChanges.newAndUpdatedEntries());
 
         return ctx.itHolder().iterator(iter, new CacheIteratorConverter<Cache.Entry<K, V>, Map.Entry<K, V>>() {
             @Override protected Cache.Entry<K, V> convert(Map.Entry<K, V> e) {
