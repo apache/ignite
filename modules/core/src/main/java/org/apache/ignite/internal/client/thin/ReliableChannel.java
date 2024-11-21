@@ -662,13 +662,14 @@ final class ReliableChannel implements AutoCloseable {
 
                         if (oldHld == null || oldHld == h) { // If not duplicate.
                             found = true;
-                            reinitHolders.add(curAddrs.get(addr));
                         }
                     }
                 }
 
                 if (!found)
                     h.close();
+                else
+                    reinitHolders.add(h);
             }
         }
 
