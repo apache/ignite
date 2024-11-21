@@ -509,7 +509,7 @@ public class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
                 }
 
                 if (!futPartMap.isEmpty())
-                    logEvictionResults(futPartMap,"rebalancing disabled, partitions did not belong to affinity");
+                    logEvictionResults(futPartMap, "rebalancing disabled, partitions did not belong to affinity");
             }
         }
 
@@ -867,7 +867,7 @@ public class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
                     }
 
                     if (!futPartMap.isEmpty())
-                        logEvictionResults(futPartMap,"moving partitions not belonging to affinity");
+                        logEvictionResults(futPartMap, "moving partitions not belonging to affinity");
                 }
 
                 AffinityAssignment aff = grp.affinity().readyAffinity(topVer);
@@ -2637,7 +2637,7 @@ public class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
         }
 
         if (!futPartMap.isEmpty())
-            logEvictionResults(futPartMap,"partitions did not belong to affinity");
+            logEvictionResults(futPartMap, "partitions did not belong to affinity");
 
         return hasEvictedPartitions;
     }
