@@ -46,7 +46,10 @@ public class CacheIdleVerifyCommand
 
     /** */
     public CacheIdleVerifyCommand() {
-        super(new CacheIdleVerifyDumpCommand());
+        super(
+            new CacheIdleVerifyDumpCommand(),
+            new CacheIdleVerifyCancelCommand()
+        );
     }
 
     /** {@inheritDoc} */
