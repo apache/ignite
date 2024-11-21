@@ -224,7 +224,9 @@ public abstract class AbstractCdcTest extends GridCommonAbstractTest {
 
     /** */
     protected void checkMetrics(CdcMain cdc, int expCnt) throws Exception {
-        DynamicMBean jmxCdcReg = jmxRegistry(cdc);
+        IgniteConfiguration cfg = getFieldValue(cdc, "igniteCfg");
+
+        DynamicMBean jmxCdcReg = metricRegistry(cdcInstanceName(cfg.getIgniteInstanceName()), null, "cdc");
 
         checkMetrics(expCnt, jmxValue(jmxCdcReg), jmxValue(jmxCdcReg), jmxValue(jmxCdcReg));
 
@@ -268,13 +270,6 @@ public abstract class AbstractCdcTest extends GridCommonAbstractTest {
         assertFalse(F.isEmpty(longArrMetric.apply(EVENTS_CONSUMPTION_TIME)));
 
         assertTrue(Arrays.stream(longArrMetric.apply(EVENTS_CONSUMPTION_TIME)).sum() > 0);
-    }
-
-    /** @return MBean for CDC metrics */
-    private DynamicMBean jmxRegistry(CdcMain cdc) {
-        IgniteConfiguration cfg = getFieldValue(cdc, "igniteCfg");
-
-        return metricRegistry(cdcInstanceName(cfg.getIgniteInstanceName()), null, "cdc");
     }
 
     /** @return {@link MetricRegistry} */
