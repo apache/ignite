@@ -27,7 +27,7 @@ import org.junit.Test;
 public class TestServiceFailoverAfterNodeFailure extends AbstractThinClientTest {
     /** */
     @Test
-    public void test() throws Exception {
+    public void testServiceProxyFailover() throws Exception {
         IgniteEx srv = startGrids(3);
 
         try (IgniteClient client = startClient(0, 1, 2)) {
