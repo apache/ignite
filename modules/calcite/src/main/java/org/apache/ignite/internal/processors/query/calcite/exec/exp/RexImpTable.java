@@ -574,17 +574,22 @@ public class RexImpTable {
     }
 
     /** */
+    public void define(SqlOperator operator, RexCallImplementor implementor) {
+        map.put(operator, implementor);
+    }
+
+    /** */
     private void defineMethod(SqlOperator operator, String functionName, NullPolicy nullPolicy) {
         map.put(operator, new MethodNameImplementor(functionName, nullPolicy, false));
     }
 
     /** */
-    private void defineMethod(SqlOperator operator, Method method, NullPolicy nullPolicy) {
+    public void defineMethod(SqlOperator operator, Method method, NullPolicy nullPolicy) {
         map.put(operator, new MethodImplementor(method, nullPolicy, false));
     }
 
     /** */
-    private ReflectiveImplementor defineReflective(SqlOperator operator, Method... methods) {
+    public ReflectiveImplementor defineReflective(SqlOperator operator, Method... methods) {
         final ReflectiveImplementor implementor = new ReflectiveImplementor(ImmutableList.copyOf(methods));
         map.put(operator, implementor);
         return implementor;

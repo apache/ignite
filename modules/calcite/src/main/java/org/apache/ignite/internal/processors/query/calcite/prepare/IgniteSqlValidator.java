@@ -65,6 +65,7 @@ import org.apache.calcite.sql.validate.SqlValidatorTable;
 import org.apache.calcite.sql.validate.SqlValidatorUtil;
 import org.apache.calcite.util.Static;
 import org.apache.ignite.internal.processors.query.QueryUtils;
+import org.apache.ignite.internal.processors.query.calcite.exec.exp.agg.Accumulators;
 import org.apache.ignite.internal.processors.query.calcite.schema.CacheTableDescriptor;
 import org.apache.ignite.internal.processors.query.calcite.schema.IgniteCacheTable;
 import org.apache.ignite.internal.processors.query.calcite.schema.IgniteTable;
@@ -414,33 +415,11 @@ public class IgniteSqlValidator extends SqlValidatorImpl {
 
     /** */
     private void validateAggregateFunction(SqlCall call, SqlAggFunction aggFunction) {
-        if (!SqlKind.AGGREGATE.contains(aggFunction.kind))
+        if (aggFunction.kind == SqlKind.COUNT && call.operandCount() > 1)
+            throw newValidationError(call, RESOURCE.invalidArgCount(aggFunction.getName(), 1));
+        else if (!Accumulators.supported(aggFunction.getName())) {
             throw newValidationError(call,
                 IgniteResource.INSTANCE.unsupportedAggregationFunction(aggFunction.getName()));
-
-        switch (aggFunction.kind) {
-            case COUNT:
-                if (call.operandCount() > 1)
-                    throw newValidationError(call, RESOURCE.invalidArgCount(aggFunction.getName(), 1));
-
-                return;
-            case SUM:
-            case AVG:
-            case MIN:
-            case MAX:
-            case ANY_VALUE:
-            case ARRAY_AGG:
-            case ARRAY_CONCAT_AGG:
-            case GROUP_CONCAT:
-            case LISTAGG:
-            case STRING_AGG:
-            case BIT_AND:
-            case BIT_OR:
-            case BIT_XOR:
-                return;
-            default:
-                throw newValidationError(call,
-                    IgniteResource.INSTANCE.unsupportedAggregationFunction(aggFunction.getName()));
         }
     }
 

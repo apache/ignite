@@ -26,6 +26,7 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
+import java.util.function.BiFunction;
 import java.util.function.Function;
 import java.util.function.Supplier;
 import org.apache.calcite.avatica.util.ByteString;
@@ -52,7 +53,41 @@ import static org.apache.calcite.sql.type.SqlTypeName.VARCHAR;
 /**
  *
  */
+@SuppressWarnings({"rawtypes", "unchecked"})
 public class Accumulators {
+    /** */
+    private static final Map<String, BiFunction<AggregateCall, ExecutionContext, Supplier>> map = new HashMap<>();
+
+    static {
+        map.put("COUNT", (call, ctx) -> () -> new LongCount<>(call, ctx.rowHandler()));
+        map.put("AVG", (call, ctx) -> avgFactory(call, ctx.rowHandler()));
+        map.put("SUM", (call, ctx) -> sumFactory(call, ctx.rowHandler()));
+        map.put("$SUM0", (call, ctx) -> sumEmptyIsZeroFactory(call, ctx.rowHandler()));
+        map.put("MIN", (call, ctx) -> minFactory(call, ctx.rowHandler()));
+        map.put("EVERY", (call, ctx) -> minFactory(call, ctx.rowHandler()));
+        map.put("MAX", (call, ctx) -> maxFactory(call, ctx.rowHandler()));
+        map.put("SOME", (call, ctx) -> maxFactory(call, ctx.rowHandler()));
+        map.put("SINGLE_VALUE", (call, ctx) -> () -> new SingleVal<>(call, ctx.rowHandler()));
+        map.put("LITERAL_AGG", (call, ctx) -> () -> new LiteralVal<>(call, ctx.rowHandler()));
+        map.put("ANY_VALUE", (call, ctx) -> () -> new AnyVal<>(call, ctx.rowHandler()));
+        map.put("LISTAGG", Accumulators::listAggregateSupplier);
+        map.put("ARRAY_AGG", Accumulators::listAggregateSupplier);
+        map.put("ARRAY_CONCAT_AGG", Accumulators::listAggregateSupplier);
+        map.put("BIT_AND", (call, ctx) -> bitWiseFactory(call, ctx.rowHandler()));
+        map.put("BIT_OR", (call, ctx) -> bitWiseFactory(call, ctx.rowHandler()));
+        map.put("BIT_XOR", (call, ctx) -> bitWiseFactory(call, ctx.rowHandler()));
+    }
+
+    /** */
+    public static void register(String agg, BiFunction<AggregateCall, ExecutionContext, Supplier> factory) {
+        map.put(agg, factory);
+    }
+
+    /** */
+    public static boolean supported(String agg) {
+        return map.containsKey(agg);
+    }
+
     /** */
     public static <Row> Supplier<Accumulator<Row>> accumulatorFactory(AggregateCall call, ExecutionContext<Row> ctx) {
         Supplier<Accumulator<Row>> supplier = accumulatorFunctionFactory(call, ctx);
@@ -68,40 +103,12 @@ public class Accumulators {
         AggregateCall call,
         ExecutionContext<Row> ctx
     ) {
-        RowHandler<Row> hnd = ctx.rowHandler();
+        BiFunction<AggregateCall, ExecutionContext, Supplier> factory = map.get(call.getAggregation().getName());
 
-        switch (call.getAggregation().getName()) {
-            case "COUNT":
-                return () -> new LongCount<>(call, hnd);
-            case "AVG":
-                return avgFactory(call, hnd);
-            case "SUM":
-                return sumFactory(call, hnd);
-            case "$SUM0":
-                return sumEmptyIsZeroFactory(call, hnd);
-            case "MIN":
-            case "EVERY":
-                return minFactory(call, hnd);
-            case "MAX":
-            case "SOME":
-                return maxFactory(call, hnd);
-            case "SINGLE_VALUE":
-                return () -> new SingleVal<>(call, hnd);
-            case "LITERAL_AGG":
-                return () -> new LiteralVal<>(call, hnd);
-            case "ANY_VALUE":
-                return () -> new AnyVal<>(call, hnd);
-            case "LISTAGG":
-            case "ARRAY_AGG":
-            case "ARRAY_CONCAT_AGG":
-                return listAggregateSupplier(call, ctx);
-            case "BIT_AND":
-            case "BIT_OR":
-            case "BIT_XOR":
-                return bitWiseFactory(call, hnd);
-            default:
-                throw new AssertionError(call.getAggregation().getName());
-        }
+        if (factory == null)
+            throw new AssertionError(call.getAggregation().getName());
+
+        return (Supplier<Accumulator<Row>>)factory.apply(call, ctx);
     }
 
     /** */
