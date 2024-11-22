@@ -1097,9 +1097,6 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
      * @throws IgniteCheckedException In case of error.
      */
     private void clear(@Nullable Set<? extends K> keys) throws IgniteCheckedException {
-        if (ctx.transactional() && ctx.grid().transactions().tx() != null)
-            throw new CacheException(NON_TRANSACTIONAL_IGNITE_CACHE_CLEAR_IN_TX_ERROR_MESSAGE);
-
         ctx.shared().cache().checkReadOnlyState("clear", ctx.config());
 
         executeClearTask(keys, false).get();
@@ -1111,9 +1108,6 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
      * @return Future.
      */
     private IgniteInternalFuture<?> clearAsync(@Nullable final Set<? extends K> keys) {
-        if (ctx.transactional() && ctx.grid().transactions().tx() != null)
-            throw new CacheException(NON_TRANSACTIONAL_IGNITE_CACHE_CLEAR_IN_TX_ERROR_MESSAGE);
-
         ctx.shared().cache().checkReadOnlyState("clear", ctx.config());
 
         return executeClearTask(keys, false).chainCompose(fut -> executeClearTask(keys, true));
@@ -1125,6 +1119,9 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
      * @return Future.
      */
     private IgniteInternalFuture<?> executeClearTask(@Nullable Set<? extends K> keys, boolean near) {
+        if (ctx.transactional() && ctx.grid().transactions().tx() != null)
+            throw new CacheException(NON_TRANSACTIONAL_IGNITE_CACHE_CLEAR_IN_TX_ERROR_MESSAGE);
+
         Collection<ClusterNode> srvNodes = ctx.grid().cluster().forCacheNodes(name(), !near, near, false).nodes();
 
         if (!srvNodes.isEmpty()) {
