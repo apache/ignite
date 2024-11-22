@@ -140,6 +140,7 @@ public abstract class GridCacheAbstractSelfTest extends GridCommonAbstractTest {
                 try {
                     final int fi = i;
 
+                    jcache(fi).clear();
                     assertTrue(
                         "Cache is not empty: " + " localSize = " + jcache(fi).localSize(CachePeekMode.ALL)
                             + ", local entries " + entrySet(jcache(fi).localEntries()),
@@ -147,13 +148,6 @@ public abstract class GridCacheAbstractSelfTest extends GridCommonAbstractTest {
                             // Preloading may happen as nodes leave, so we need to wait.
                             new GridAbsPredicateX() {
                                 @Override public boolean applyx() throws IgniteCheckedException {
-                                    jcache(fi).removeAll();
-
-                                    if (jcache(fi).size(CachePeekMode.ALL) > 0) {
-                                        for (Cache.Entry<?, ?> k : ignite(fi).cache(DEFAULT_CACHE_NAME).localEntries())
-                                            ignite(fi).cache(DEFAULT_CACHE_NAME).remove(k.getKey());
-                                    }
-
                                     return jcache(fi).localSize(CachePeekMode.ALL) == 0;
                                 }
                             },
@@ -191,7 +185,6 @@ public abstract class GridCacheAbstractSelfTest extends GridCommonAbstractTest {
         }
 
         assert jcache().unwrap(Ignite.class).transactions().tx() == null;
-        assertEquals("Cache is not empty", 0, jcache().localSize(CachePeekMode.ALL));
 
         if (storeStgy != null)
             storeStgy.resetStore();
