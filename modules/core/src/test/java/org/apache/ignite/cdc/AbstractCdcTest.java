@@ -224,20 +224,9 @@ public abstract class AbstractCdcTest extends GridCommonAbstractTest {
 
     /** */
     protected void checkMetrics(CdcMain cdc, int expCnt) throws Exception {
-        IgniteConfiguration cfg = getFieldValue(cdc, "igniteCfg");
+        DynamicMBean jmxCdcReg = jmxRegistry(cdc);
 
-        DynamicMBean jmxCdcReg = metricRegistry(cdcInstanceName(cfg.getIgniteInstanceName()), null, "cdc");
-
-        Function<String, ?> jmxVal = m -> {
-            try {
-                return jmxCdcReg.getAttribute(m);
-            }
-            catch (Exception e) {
-                throw new IgniteException(e);
-            }
-        };
-
-        checkMetrics(expCnt, (Function<String, Long>)jmxVal, (Function<String, String>)jmxVal, (Function<String, long[]>)jmxVal);
+        checkMetrics(expCnt, jmxValue(jmxCdcReg), jmxValue(jmxCdcReg));
 
         MetricRegistry mreg = getFieldValue(cdc, "mreg");
 
@@ -246,8 +235,7 @@ public abstract class AbstractCdcTest extends GridCommonAbstractTest {
         checkMetrics(
             expCnt,
             m -> mreg.<LongMetric>findMetric(m).value(),
-            m -> mreg.<ObjectMetric<String>>findMetric(m).value(),
-            m -> mreg.<HistogramMetricImpl>findMetric(m).value()
+            m -> mreg.<ObjectMetric<String>>findMetric(m).value()
         );
 
         HistogramMetric evtCaptureTime = mreg.findMetric(EVT_CAPTURE_TIME);
@@ -255,12 +243,7 @@ public abstract class AbstractCdcTest extends GridCommonAbstractTest {
     }
 
     /** */
-    private void checkMetrics(
-        long expCnt,
-        Function<String, Long> longMetric,
-        Function<String, String> strMetric,
-        Function<String, long[]> longArrMetric
-    ) {
+    private void checkMetrics(long expCnt, Function<String, Long> longMetric, Function<String, String> strMetric) {
         long committedSegIdx = longMetric.apply(COMMITTED_SEG_IDX);
         long curSegIdx = longMetric.apply(CUR_SEG_IDX);
 
@@ -275,10 +258,43 @@ public abstract class AbstractCdcTest extends GridCommonAbstractTest {
             assertTrue(new File(strMetric.apply(m)).exists());
 
         assertEquals(expCnt, (long)longMetric.apply(EVTS_CNT));
+    }
 
-        assertFalse(F.isEmpty(longArrMetric.apply(EVENTS_CONSUMPTION_TIME)));
+    /**
+     * @param cdc - {@link CdcMain} instance.
+     */
+    protected void checkWalProcessingMetrics(CdcMain cdc) {
+        checkWalProcessingMetrics(jmxValue(jmxRegistry(cdc)));
 
-        assertTrue(Arrays.stream(longArrMetric.apply(EVENTS_CONSUMPTION_TIME)).sum() > 0);
+        MetricRegistry mreg = getFieldValue(cdc, "mreg");
+
+        checkWalProcessingMetrics(m -> mreg.<HistogramMetricImpl>findMetric(m).value());
+    }
+
+    /** Checks the metrics for WAL processing. */
+    private void checkWalProcessingMetrics(Function<String, long[]> longMetricArray) {
+        assertFalse(F.isEmpty(longMetricArray.apply(EVENTS_CONSUMPTION_TIME)));
+
+        assertTrue(Arrays.stream(longMetricArray.apply(EVENTS_CONSUMPTION_TIME)).sum() > 0);
+    }
+
+    /** @return MBean for CDC metrics */
+    private DynamicMBean jmxRegistry(CdcMain cdc) {
+        IgniteConfiguration cfg = getFieldValue(cdc, "igniteCfg");
+
+        return metricRegistry(cdcInstanceName(cfg.getIgniteInstanceName()), null, "cdc");
+    }
+
+    /** */
+    private <T> Function<String, T> jmxValue(DynamicMBean jmxCdcReg) {
+        return m -> {
+            try {
+                return (T)jmxCdcReg.getAttribute(m);
+            }
+            catch (Exception e) {
+                throw new IgniteException(e);
+            }
+        };
     }
 
     /** */
