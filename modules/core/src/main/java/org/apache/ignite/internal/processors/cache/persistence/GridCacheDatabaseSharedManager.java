@@ -881,6 +881,12 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
                 checkpointReadUnlock();
             }
         }
+        catch (OutOfMemoryError e) {
+            log.error("Failed to start data region [name=" + METASTORE_DATA_REGION_NAME
+                + "]. Adjust the heap settings or data storage configuration to allocate the memory.", e);
+
+            throw e;
+        }
         catch (StorageException e) {
             cctx.kernalContext().failure().process(new FailureContext(FailureType.CRITICAL_ERROR, e));
 
@@ -2098,7 +2104,17 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
                         if (region == null || !cctx.isLazyMemoryAllocation(region))
                             return;
 
-                        region.pageMemory().start();
+                        try {
+                            region.pageMemory().start();
+                        }
+                        catch (OutOfMemoryError e) {
+                            log.error("Failed to start data region [name=" + region.config().getName()
+                                + "] with initial size [initSize="
+                                + U.readableSize(region.config().getInitialSize(), true)
+                                + "]. Adjust the heap settings or data storage configuration to allocate the memory.", e);
+
+                            throw e;
+                        }
                     }
                     catch (IgniteCheckedException e) {
                         throw new IgniteException(e);

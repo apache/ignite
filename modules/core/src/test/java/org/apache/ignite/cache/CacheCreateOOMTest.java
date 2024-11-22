@@ -19,7 +19,10 @@
 package org.apache.ignite.cache;
 
 import java.io.Serializable;
-import java.util.Arrays;
+import java.lang.management.ManagementFactory;
+import java.lang.management.OperatingSystemMXBean;
+import java.util.List;
+import com.google.common.collect.ImmutableList;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
@@ -32,46 +35,90 @@ import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 
 import static org.apache.ignite.testframework.GridTestUtils.assertThrowsAnyCause;
+import static org.junit.Assume.assumeTrue;
 
 /** */
 @RunWith(Parameterized.class)
 public class CacheCreateOOMTest extends GridCommonAbstractTest {
-    /** */
-    private static final String CUSTOM_CACHE_NAME = "custom_cache_name";
+    private static final OperatingSystemMXBean os = ManagementFactory.getOperatingSystemMXBean();
 
     /** */
-    @Parameterized.Parameters(name = "withPersistance={0}")
-    public static Iterable<Object> data() {
-        return Arrays.asList(true, false);
+    private static final String DEFAULT_DATA_REGION_NAME = "default";
+
+    /** */
+    private static final String DEFAULT_CACHE_NAME = "default_cache";
+
+    /** */
+    private static final String CUSTOM_DATA_REGION_NAME = "custom";
+
+    /** */
+    private static final String CUSTOM_CACHE_NAME = "custom_cache";
+
+    /** */
+    @Parameterized.Parameters(name = "withPersistance={0}, withCustomDataRegion={1}")
+    public static List<Object[]> parameters() {
+        return ImmutableList.of(
+            new Object[]{true, true},
+            new Object[]{true, false},
+            new Object[]{false, false},
+            new Object[]{false, true}
+        );
     }
 
     /** */
     @Parameterized.Parameter()
     public boolean withPersistance;
 
+    /** */
+    @Parameterized.Parameter(1)
+    public boolean withCustomDataRegion;
+
+    /** */
+    public long nodeMaxRAM;
+
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(gridName);
 
-        DataStorageConfiguration storageCfg = new DataStorageConfiguration()
-            .setMemoryAllocator(new CustomMemoryAllocator());
+        DataStorageConfiguration storageCfg = new DataStorageConfiguration();
+//            .setMemoryAllocator(new CustomMemoryAllocator());
 
-        if (withPersistance)
-            storageCfg.setDefaultDataRegionConfiguration(new DataRegionConfiguration().setPersistenceEnabled(true));
+        if (withCustomDataRegion)
+            storageCfg.setDataRegionConfigurations(getMaxedDataRegionConfiguration(CUSTOM_DATA_REGION_NAME));
+        else
+            storageCfg.setDefaultDataRegionConfiguration(getMaxedDataRegionConfiguration(DEFAULT_DATA_REGION_NAME));
 
         cfg.setDataStorageConfiguration(storageCfg);
 
         cfg.setCacheConfiguration(
-            getCacheConfiguration(DEFAULT_CACHE_NAME),
-            getCacheConfiguration(CUSTOM_CACHE_NAME)
+            getCacheConfiguration(DEFAULT_CACHE_NAME, DEFAULT_DATA_REGION_NAME),
+            getCacheConfiguration(CUSTOM_CACHE_NAME, CUSTOM_DATA_REGION_NAME)
         );
 
         return cfg;
     }
 
     /** */
-    private CacheConfiguration<?, ?> getCacheConfiguration(String cacheName) {
-        return new CacheConfiguration<>(cacheName);
+    private CacheConfiguration<?, ?> getCacheConfiguration(String cacheName, String dataRegionName) {
+        return new CacheConfiguration<>(cacheName).setDataRegionName(dataRegionName);
+    }
+
+    private DataRegionConfiguration getMaxedDataRegionConfiguration(String dataRegionName) {
+        return new DataRegionConfiguration()
+            .setName(dataRegionName)
+            .setInitialSize(2 * nodeMaxRAM)
+            .setMaxSize(2 * nodeMaxRAM)
+            .setPersistenceEnabled(withPersistance);
+    }
+
+    @Override protected void beforeTest() throws Exception {
+        super.beforeTest();
+
+        cleanPersistenceDir();
+
+        assumeTrue(os instanceof com.sun.management.OperatingSystemMXBean);
+
+        nodeMaxRAM = ((com.sun.management.OperatingSystemMXBean)os).getTotalPhysicalMemorySize();
     }
 
     /** {@inheritDoc} */
@@ -79,6 +126,8 @@ public class CacheCreateOOMTest extends GridCommonAbstractTest {
         super.afterTest();
 
         stopAllGrids();
+
+        cleanPersistenceDir();
     }
 
     /** */
