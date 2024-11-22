@@ -183,10 +183,11 @@ NativeLibrary.SetDllImportResolver(
 Caused by Intel CET (Control-flow Enforcement Technology) being link:https://learn.microsoft.com/en-us/dotnet/core/compatibility/interop/9.0/cet-support[enabled by default for .NET 9 assemblies].
 Ignite starts a JVM in-process, which is incompatible with CET.
 
-More details
-- link:https://learn.microsoft.com/en-us/dotnet/core/compatibility/9.0[Breaking changes in .NET 9]
-- link:https://windows-internals.com/cet-on-windows/[CET Internals in Windows]
-- link:https://ptupitsyn.github.io/Ignite-on-NET-9/[Blog: Ignite on .NET 9]
+More details:
+
+* link:https://learn.microsoft.com/en-us/dotnet/core/compatibility/9.0[Breaking changes in .NET 9]
+* link:https://windows-internals.com/cet-on-windows/[CET Internals in Windows]
+* link:https://ptupitsyn.github.io/Ignite-on-NET-9/[Blog: Ignite on .NET 9]
 
 ==== Fix
 
