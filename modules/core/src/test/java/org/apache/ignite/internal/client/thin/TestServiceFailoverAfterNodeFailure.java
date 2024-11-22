@@ -24,7 +24,7 @@ import org.apache.ignite.internal.client.thin.ServicesTest.TestNodeIdServiceInte
 import org.junit.Test;
 
 /** */
-public class ServicesFailoverTest extends AbstractThinClientTest {
+public class TestServiceFailoverAfterNodeFailure extends AbstractThinClientTest {
     /** */
     @Test
     public void test() throws Exception {
