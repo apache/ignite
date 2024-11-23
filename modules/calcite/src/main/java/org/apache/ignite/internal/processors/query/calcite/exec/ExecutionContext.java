@@ -37,8 +37,6 @@ import org.apache.calcite.linq4j.QueryProvider;
 import org.apache.calcite.schema.SchemaPlus;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
-import org.apache.ignite.cache.SessionContext;
-import org.apache.ignite.cache.SessionContextProvider;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.CacheObject;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
@@ -67,6 +65,8 @@ import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiTuple;
+import org.apache.ignite.session.SessionContext;
+import org.apache.ignite.session.SessionContextProvider;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -81,6 +81,9 @@ public class ExecutionContext<Row> extends AbstractQueryContext implements DataC
 
     /** Placeholder for NULL values in search bounds. */
     private static final Object NULL_BOUND = new Object();
+
+    /** Emtpy session context. */
+    private static final SessionContext EMPTY_SESSION_CONTEXT = new EmptySessionContext();
 
     /** */
     private final UUID qryId;
@@ -475,7 +478,7 @@ public class ExecutionContext<Row> extends AbstractQueryContext implements DataC
 
                 Object target = funcCls.getConstructor().newInstance();
 
-                unwrap(GridResourceProcessor.class).injectToUserDefinedFunction(target, sesCtxProv);
+                unwrap(GridResourceProcessor.class).injectToUdf(target, sesCtxProv);
 
                 return target;
             }
@@ -507,7 +510,17 @@ public class ExecutionContext<Row> extends AbstractQueryContext implements DataC
     private class SessionContextProviderImpl implements SessionContextProvider {
         /** */
         @Override public @Nullable SessionContext getSessionContext() {
-            return unwrap(SessionContext.class);
+            SessionContext ctx = unwrap(SessionContext.class);
+
+            return ctx == null ? EMPTY_SESSION_CONTEXT : ctx;
+        }
+    }
+
+    /** */
+    private static final class EmptySessionContext implements SessionContext {
+        /** */
+        @Override public @Nullable String getAttribute(String name) {
+            return null;
         }
     }
 }

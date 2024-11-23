@@ -15,18 +15,12 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.cache;
-
-import org.apache.ignite.Ignite;
-import org.jetbrains.annotations.Nullable;
+package org.apache.ignite.session;
 
 /**
- * Provides access to attributes set with {@link Ignite#withApplicationAttributes}.
+ * Provides access to session context.
  */
-public interface SessionContext {
-    /**
-     * @param name Attribute name.
-     * @return Attribute value, or {@code null} if not speicifed.
-    .*/
-    public @Nullable String getAttribute(String name);
+public interface SessionContextProvider {
+    /** @return Session context, never {@code null}. */
+    public SessionContext getSessionContext();
 }

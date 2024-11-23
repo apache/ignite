@@ -18,8 +18,8 @@
 package org.apache.ignite.internal.processors.resource;
 
 import org.apache.ignite.IgniteCheckedException;
-import org.apache.ignite.cache.SessionContextProvider;
 import org.apache.ignite.internal.managers.deployment.GridDeployment;
+import org.apache.ignite.session.SessionContextProvider;
 
 /** {@link SessionContextProvider} injector. */
 public class GridResourceSessionContextProviderInjector extends GridResourceBasicInjector<SessionContextProvider> {

@@ -21,7 +21,6 @@ import java.lang.annotation.Annotation;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import org.apache.ignite.IgniteCheckedException;
-import org.apache.ignite.cache.SessionContextProvider;
 import org.apache.ignite.cache.store.CacheStoreSession;
 import org.apache.ignite.compute.ComputeJob;
 import org.apache.ignite.compute.ComputeJobContext;
@@ -41,6 +40,7 @@ import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.lifecycle.LifecycleBean;
 import org.apache.ignite.services.Service;
 import org.apache.ignite.services.ServiceContext;
+import org.apache.ignite.session.SessionContextProvider;
 import org.apache.ignite.spi.IgniteSpi;
 import org.jetbrains.annotations.Nullable;
 
@@ -237,7 +237,7 @@ public class GridResourceProcessor extends GridProcessorAdapter {
      * @param sesCtxProv Session context provider.
      * @throws IgniteCheckedException If failed to inject.
      */
-    public void injectToUserDefinedFunction(Object obj, SessionContextProvider sesCtxProv) throws IgniteCheckedException {
+    public void injectToUdf(Object obj, SessionContextProvider sesCtxProv) throws IgniteCheckedException {
         inject(obj, GridResourceIoc.AnnotationSet.USER_DEFINED_FUNCTION, sesCtxProv);
     }
 

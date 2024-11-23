@@ -34,7 +34,6 @@ import org.apache.calcite.util.CancelFlag;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
-import org.apache.ignite.cache.SessionContext;
 import org.apache.ignite.cache.query.QueryCancelledException;
 import org.apache.ignite.internal.cluster.ClusterTopologyCheckedException;
 import org.apache.ignite.internal.processors.cache.query.IgniteQueryErrorCode;
@@ -57,6 +56,7 @@ import org.apache.ignite.internal.processors.resource.GridResourceProcessor;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.session.SessionContext;
 import org.jetbrains.annotations.Nullable;
 
 /**

@@ -22,7 +22,8 @@ import java.lang.annotation.ElementType;
 import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
-import org.apache.ignite.cache.SessionContext;
+import org.apache.ignite.cache.query.annotations.QuerySqlFunction;
+import org.apache.ignite.session.SessionContext;
 
 /**
  * Annotates a field for injecting a {@link SessionContext} into a user defined functions.
@@ -41,6 +42,8 @@ import org.apache.ignite.cache.SessionContext;
  *         }
  *     }
  * </pre>
+ * <p>
+ * Note, only {@link QuerySqlFunction} in the Calcite engine is supported.
  *
  * @see SessionContext
  */
