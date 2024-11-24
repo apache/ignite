@@ -4,6 +4,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
+import java.util.function.Function;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
@@ -50,6 +51,33 @@ public class LogEvictionResultsTest extends GridCommonAbstractTest {
 
     /** Listening logger. */
     private final ListeningTestLogger testLog = new ListeningTestLogger(log);
+
+    /** Latch for locking partition clearing. */
+    private final CountDownLatch lock = new CountDownLatch(1);
+
+    /** Latch for unlocking partition clearing. */
+    private final CountDownLatch unlock = new CountDownLatch(1);
+
+    /** Function to obtain a dependency resolver for launching a grid, allowing delayed partition clearing. */
+    private final Function<List<Integer>, DependencyResolver> depResolverFunc = (evictedParts) ->
+        new DependencyResolver() {
+            @Override public <T> T resolve(T instance) {
+                if (instance instanceof GridDhtPartitionTopologyImpl) {
+                    GridDhtPartitionTopologyImpl top = (GridDhtPartitionTopologyImpl)instance;
+
+                    top.partitionFactory(new GridDhtPartitionTopologyImpl.PartitionFactory() {
+                        @Override public GridDhtLocalPartition create(GridCacheSharedContext ctx,
+                            CacheGroupContext grp, int id, boolean recovery) {
+                            return evictedParts.contains(id) ?
+                                new GridDhtLocalPartitionSyncEviction(ctx, grp, id, recovery, 2, lock, unlock) :
+                                new GridDhtLocalPartition(ctx, grp, id, recovery);
+                        }
+                    });
+                }
+
+                return instance;
+            }
+        };
 
     /** Persistence flag. */
     private boolean isPersistentCluster;
@@ -211,27 +239,7 @@ public class LogEvictionResultsTest extends GridCommonAbstractTest {
                     partitionKeys(grid(0).cache(DEFAULT_CACHE_NAME), p, KEY_CNT, 0)
                         .forEach(k -> grid(0).cache(DEFAULT_CACHE_NAME).remove(k)));
 
-                CountDownLatch lock = new CountDownLatch(1);
-                CountDownLatch unlock = new CountDownLatch(1);
-
-                startGrid(2, new DependencyResolver() {
-                    @Override public <T> T resolve(T instance) {
-                        if (instance instanceof GridDhtPartitionTopologyImpl) {
-                            GridDhtPartitionTopologyImpl top = (GridDhtPartitionTopologyImpl)instance;
-
-                            top.partitionFactory(new GridDhtPartitionTopologyImpl.PartitionFactory() {
-                                @Override public GridDhtLocalPartition create(GridCacheSharedContext ctx,
-                                    CacheGroupContext grp, int id, boolean recovery) {
-                                    return evictedParts.contains(id) ?
-                                        new GridDhtLocalPartitionSyncEviction(ctx, grp, id, recovery, 2, lock, unlock) :
-                                        new GridDhtLocalPartition(ctx, grp, id, recovery);
-                                }
-                            });
-                        }
-
-                        return instance;
-                    }
-                });
+                startGrid(2, depResolverFunc.apply(evictedParts));
 
                 assertTrue(U.await(lock, GridDhtLocalPartitionSyncEviction.TIMEOUT, TimeUnit.MILLISECONDS));
 
@@ -324,8 +332,8 @@ public class LogEvictionResultsTest extends GridCommonAbstractTest {
     private List<Integer> extractParts(List<String> logMsgs, Pattern ptrn) {
         List<Integer> res = new ArrayList<>();
 
-        for (String message : logMsgs) {
-            Matcher matcher = ptrn.matcher(message);
+        for (String msg : logMsgs) {
+            Matcher matcher = ptrn.matcher(msg);
 
             if (matcher.find()) {
                 String numbersStr = matcher.group(1);
