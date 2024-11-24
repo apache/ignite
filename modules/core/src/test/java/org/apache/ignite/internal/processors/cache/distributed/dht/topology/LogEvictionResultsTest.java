@@ -26,7 +26,7 @@ import org.junit.Test;
 import static java.util.stream.Stream.of;
 import static org.apache.ignite.cache.CacheRebalanceMode.NONE;
 
-/** Class for testing eviction results logging. */
+/** Class for testing the logging of eviction results. */
 public class LogEvictionResultsTest extends GridCommonAbstractTest {
     /** Number of keys to load into a partition. */
     private static final int KEY_CNT = 10;
@@ -34,22 +34,22 @@ public class LogEvictionResultsTest extends GridCommonAbstractTest {
     /** Number of partitions to move to the MOVING state. */
     private static final int PART_CNT = 3;
 
-    /** Default pattern for extracting number of partitions from log messages */
-    private static final Pattern DEF_PARTS_CNT_PTRN = Pattern.compile("partitionsCount=(?<count>\\d+)");
+    /** Default pattern for extracting partitions count from log messages */
+    private static final Pattern DEF_PARTS_CNT_PATTERN = Pattern.compile("partitionsCount=(?<count>\\d+)");
 
-    /** Additional pattern for extracting number of partitions from log messages */
-    private static final Pattern ADD_PARTS_CNT_PTRN = Pattern.compile("partitions=(?<count>\\d+)");
+    /** Additional pattern for extracting partitions count from log messages */
+    private static final Pattern ADD_PARTS_CNT_PATTERN = Pattern.compile("partitions=(?<count>\\d+)");
 
-    /** Pattern for extracting partition ids from log messages #1. */
-    private static final Pattern P_PTRN = Pattern.compile("p=(?<count>\\d+)");
+    /** Pattern for extracting partitions ids from log messages #1. */
+    private static final Pattern P_PATTERN = Pattern.compile("p=(?<count>\\d+)");
 
-    /** Pattern for extracting partition ids from log messages #2. */
-    private static final Pattern ID_PTRN = Pattern.compile("id=(?<count>\\d+)");
+    /** Pattern for extracting partitions ids from log messages #2. */
+    private static final Pattern ID_PATTERN = Pattern.compile("id=(?<count>\\d+)");
 
-    /** Pattern for extracting multiple partition ids from log messages. */
-    private static final Pattern EXTR_PARTS_PTRN = Pattern.compile("partitions=\\[([^\\]]+)\\]");
+    /** Pattern for extracting multiple partitions ids from log messages. */
+    private static final Pattern EXTR_PARTS_PATTERN = Pattern.compile("partitions=\\[([^\\]]+)\\]");
 
-    /** Listening logger. */
+    /** Listening test logger. */
     private final ListeningTestLogger testLog = new ListeningTestLogger(log);
 
     /** Latch for locking partition clearing. */
@@ -79,7 +79,7 @@ public class LogEvictionResultsTest extends GridCommonAbstractTest {
             }
         };
 
-    /** Persistence flag. */
+    /** Flag indicating whether the cluster is configured as persistent. */
     private boolean isPersistentCluster;
 
     /** Rebalance disabled flag. */
@@ -117,8 +117,12 @@ public class LogEvictionResultsTest extends GridCommonAbstractTest {
             .setCacheConfiguration(cacheCfg);
 
         if (isPersistentCluster) {
-            DataStorageConfiguration dsCfg = new DataStorageConfiguration().setWalSegmentSize(1024 * 1024);
-            dsCfg.getDefaultDataRegionConfiguration().setPersistenceEnabled(true).setMaxSize(50 * 1024 * 1024);
+            DataStorageConfiguration dsCfg = new DataStorageConfiguration()
+                .setWalSegmentSize(1024 * 1024);
+
+            dsCfg.getDefaultDataRegionConfiguration()
+                .setPersistenceEnabled(true)
+                .setMaxSize(50 * 1024 * 1024);
 
             cfg.setDataStorageConfiguration(dsCfg);
         }
@@ -127,7 +131,7 @@ public class LogEvictionResultsTest extends GridCommonAbstractTest {
     }
 
     /**
-     * Tests accuracy of log messages indicating the completion of partition clearing during rebalancing.
+     * Tests accuracy of log messages indicating completion of partition clearing during rebalancing.
      */
     @Test
     public void testClearingDuringRebalance() throws Exception {
@@ -160,22 +164,22 @@ public class LogEvictionResultsTest extends GridCommonAbstractTest {
             extractPartsCnt(rebalEvictMsgs));
 
         compareListsDisregardOrder(
-            extractPartsCnt(chainComplMsgs, ADD_PARTS_CNT_PTRN),
+            extractPartsCnt(chainComplMsgs, ADD_PARTS_CNT_PATTERN),
             extractPartsCnt(chainEvictMsgs));
     }
 
     /**
-     * Tests accuracy of log messages indicating the completion of eviction, which may be required after changes in topology.
+     * Tests accuracy of log messages indicating completion of eviction, which may be required after changes in topology.
      */
     @Test
     public void testCheckEviction() {
         String prepStr = "Partition has been scheduled for eviction \\((all affinity nodes are owners|this node " +
             "is oldest non-affinity node)\\).*";
 
-        String evictStr = "Partitions have been successfullly evicted \\(reason for eviction: partitions did " +
+        String evictStr = "Partitions have been successfullly evicted \\(eviction reason: partitions do " +
             "not belong to affinity\\).*";
 
-        checkLogMessages(prepStr, evictStr, P_PTRN, () -> {
+        checkLogMessages(prepStr, evictStr, P_PATTERN, () -> {
             try {
                 startTestGrids();
             }
@@ -186,16 +190,16 @@ public class LogEvictionResultsTest extends GridCommonAbstractTest {
     }
 
     /**
-     * Tests accuracy of log messages indicating the completion of eviction when rebalancing is disabled.
+     * Tests accuracy of log messages indicating completion of eviction when rebalancing is disabled.
      */
     @Test
     public void testRebalanceDisabled() {
         String prepStr = "Evicting partition with rebalancing disabled \\(it does not belong to affinity\\).*";
 
-        String evictStr = "Partitions have been successfullly evicted \\(reason for eviction: rebalancing " +
-            "disabled, partitions did not belong to affinity\\).*";
+        String evictStr = "Partitions have been successfullly evicted \\(eviction reason: rebalancing " +
+            "disabled, partitions do not belong to affinity\\).*";
 
-        checkLogMessages(prepStr, evictStr, ID_PTRN, () -> {
+        checkLogMessages(prepStr, evictStr, ID_PATTERN, () -> {
             isRebalanceDisabled = true;
 
             try {
@@ -208,16 +212,16 @@ public class LogEvictionResultsTest extends GridCommonAbstractTest {
     }
 
     /**
-     * Tests accuracy of log messages indicating the completion of evicting partitions that are in the MOVING state.
+     * Tests accuracy of log messages indicating completion of evicting partitions that are in the MOVING state.
      */
     @Test
     public void testEvictMovingPartitions() {
         String prepStr = "Evicting MOVING partition \\(it does not belong to affinity\\).*";
 
-        String evictStr = "Partitions have been successfullly evicted \\(reason for eviction: moving partitions " +
-            "not belonging to affinity\\).*";
+        String evictStr = "Partitions have been successfullly evicted \\(eviction reason: moving partitions, which " +
+            "do not belong to affinity\\).*";
 
-        checkLogMessages(prepStr, evictStr, P_PTRN, () -> {
+        checkLogMessages(prepStr, evictStr, P_PATTERN, () -> {
             try {
                 isPersistentCluster = true;
 
@@ -276,10 +280,10 @@ public class LogEvictionResultsTest extends GridCommonAbstractTest {
      *
      * @param prepStr Log message string indicating the preparation of partitions for eviction.
      * @param evictStr Log message string indicating the completion of partition eviction.
-     * @param ptrn Pattern used to extract partition information from debug log messages.
+     * @param pattern Pattern used to extract partition information from debug log messages.
      * @param testTask Test task to be executed during the logging process.
      */
-    private void checkLogMessages(String prepStr, String evictStr, Pattern ptrn, Runnable testTask) {
+    private void checkLogMessages(String prepStr, String evictStr, Pattern pattern, Runnable testTask) {
         setLoggerDebugLevel();
 
         List<String> partsPreparedMsgs = new ArrayList<>();
@@ -293,26 +297,26 @@ public class LogEvictionResultsTest extends GridCommonAbstractTest {
         testTask.run();
 
         compareListsDisregardOrder(
-            extractParts(partsPreparedMsgs, ptrn),
-            extractParts(partsEvictedMsgs, EXTR_PARTS_PTRN));
+            extractParts(partsPreparedMsgs, pattern),
+            extractParts(partsEvictedMsgs, EXTR_PARTS_PATTERN));
     }
 
     /**
      * @param logMsgs List of log messages.
      */
     private List<Integer> extractPartsCnt(List<String> logMsgs) {
-        return extractPartsCnt(logMsgs, DEF_PARTS_CNT_PTRN);
+        return extractPartsCnt(logMsgs, DEF_PARTS_CNT_PATTERN);
     }
 
     /**
      * @param logMsgs List of log messages.
-     * @param ptrn Pattern used to extract partitions count from log messages.
+     * @param pattern Pattern used to extract partitions count from log messages.
      */
-    private List<Integer> extractPartsCnt(List<String> logMsgs, Pattern ptrn) {
+    private List<Integer> extractPartsCnt(List<String> logMsgs, Pattern pattern) {
         List<Integer> res = new ArrayList<>();
 
         for (String msg : logMsgs) {
-            Matcher matcher = ptrn.matcher(msg);
+            Matcher matcher = pattern.matcher(msg);
 
             int sumForCurMsg = 0;
 
@@ -327,18 +331,16 @@ public class LogEvictionResultsTest extends GridCommonAbstractTest {
 
     /**
      * @param logMsgs List of log messages.
-     * @param ptrn Pattern used to extract partitions from debug log messages.
+     * @param pattern Pattern used to extract partitions from debug log messages.
      */
-    private List<Integer> extractParts(List<String> logMsgs, Pattern ptrn) {
+    private List<Integer> extractParts(List<String> logMsgs, Pattern pattern) {
         List<Integer> res = new ArrayList<>();
 
         for (String msg : logMsgs) {
-            Matcher matcher = ptrn.matcher(msg);
+            Matcher matcher = pattern.matcher(msg);
 
             if (matcher.find()) {
-                String numbersStr = matcher.group(1);
-
-                String[] parts = numbersStr.split(",");
+                String[] parts = matcher.group(1).split(",");
 
                 for (String part : parts)
                     res.add(Integer.parseInt(part.trim()));
@@ -349,7 +351,7 @@ public class LogEvictionResultsTest extends GridCommonAbstractTest {
     }
 
     /**
-     * Asserts that two lists contain the same elements, regardless of order.
+     * Asserts that two lists contain the same integer elements, regardless of order.
      *
      * @param list1 List one.
      * @param list2 List two.
