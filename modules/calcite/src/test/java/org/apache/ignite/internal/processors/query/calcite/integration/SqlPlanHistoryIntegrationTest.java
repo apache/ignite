@@ -49,6 +49,7 @@ import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.processors.query.IgniteSQLException;
 import org.apache.ignite.internal.processors.query.QueryEngineConfigurationEx;
 import org.apache.ignite.internal.processors.query.running.SqlPlan;
+import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.spi.systemview.view.SqlPlanHistoryView;
@@ -61,6 +62,7 @@ import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 
 import static org.apache.ignite.internal.processors.query.running.RunningQueryManager.SQL_PLAN_HIST_VIEW;
+import static org.apache.ignite.testframework.GridTestUtils.waitForCondition;
 import static org.junit.Assert.assertNotEquals;
 import static org.junit.Assume.assumeFalse;
 
@@ -123,9 +125,16 @@ public class SqlPlanHistoryIntegrationTest extends GridCommonAbstractTest {
     /** Failed cross-cache SqlFieldsQuery. */
     private final SqlFieldsQuery sqlFieldsQryCrossCacheFailed = new SqlFieldsQuery(SQL_CROSS_CACHE_FAILED);
 
-    /** SqlFieldsQuery with reduce phase. */
+    /** Succesful SqlFieldsQuery with reduce phase. */
     private final SqlFieldsQuery sqlFieldsQryWithReducePhase = new SqlFieldsQuery(SQL_WITH_REDUCE_PHASE)
         .setDistributedJoins(true);
+
+    /** Failed SqlFieldsQueries with reduce phase. */
+    private final SqlFieldsQuery[] sqlFieldsQryWithReducePhaseFailed = F.asArray(
+        new SqlFieldsQuery(SQL_WITH_REDUCE_PHASE.replace("o._key=101", "o._key=fail()"))
+            .setDistributedJoins(true),
+        new SqlFieldsQuery(SQL_WITH_REDUCE_PHASE.replace("o._key=102", "o._key=fail()"))
+            .setDistributedJoins(true));
 
     /** Successful SqlQuery. */
     private final SqlQuery sqlQry = new SqlQuery<>("String", "from String");
@@ -226,10 +235,7 @@ public class SqlPlanHistoryIntegrationTest extends GridCommonAbstractTest {
      * @throws Exception In case of failure.
      */
     protected void startTestGrid() throws Exception {
-        if (sqlEngine == IndexingQueryEngineConfiguration.ENGINE_NAME && !loc)
-            startGrids(3);
-        else
-            startGrid(0);
+        startGrid(0);
 
         if (isClient)
             startClientGrid(1);
@@ -311,13 +317,20 @@ public class SqlPlanHistoryIntegrationTest extends GridCommonAbstractTest {
         runFailedQuery(sqlFieldsQryCrossCacheFailed);
     }
 
-    /** Checks SqlFieldsQuery with reduce phase. */
+    /**
+     * Checks successful SqlFieldsQuery with reduce phase. There should be 3 entries in SQL plan history on the
+     * reduce node (2 SELECT subqueries and 1 UNION/MERGE subquery) and 2 entries on the map node (2 SELECT subqueries).
+     */
     @Test
-    public void testSqlFieldsQueryWithReducePhase() {
+    public void testSqlFieldsQueryWithReducePhase() throws Exception {
         assumeFalse("Map/reduce queries are only applicable to H2 engine",
             sqlEngine != IndexingQueryEngineConfiguration.ENGINE_NAME);
 
         assumeFalse("Only distributed queries have map and reduce phases", loc);
+
+        startGridsMultiThreaded(1, 2);
+
+        awaitPartitionMapExchange();
 
         cacheQuery(sqlFieldsQryWithReducePhase, "pers");
 
@@ -330,6 +343,32 @@ public class SqlPlanHistoryIntegrationTest extends GridCommonAbstractTest {
             assertNotNull(sqlPlansOnMapNode);
 
             checkMetrics(2, sqlPlansOnMapNode);
+        }
+    }
+
+    /**
+     * Checks failed SqlFieldsQuery with reduce phase. If the fisrt subquery fails, there will be only one entry in SQL
+     * plan history. If the fisrt subquery is successfully executed but the second one fails, the history will contain
+     * two entries.
+     */
+    @Test
+    public void testSqlFieldsQueryWithReducePhaseFailed() {
+        assumeFalse("Map/reduce queries are only applicable to H2 engine",
+            sqlEngine != IndexingQueryEngineConfiguration.ENGINE_NAME);
+
+        assumeFalse("Only distributed queries have map and reduce phases", loc);
+
+        for (int i = 0; i < sqlFieldsQryWithReducePhaseFailed.length; i++) {
+            try {
+                cacheQuery(sqlFieldsQryWithReducePhaseFailed[i], "pers");
+            }
+            catch (Exception ignore) {
+                // No-op.
+            }
+
+            checkSqlPlanHistory( i + 1);
+
+            queryNode().context().query().runningQueryManager().resetPlanHistoryMetrics();
         }
     }
 
@@ -394,7 +433,7 @@ public class SqlPlanHistoryIntegrationTest extends GridCommonAbstractTest {
             cacheQuery(qry.setLocal(loc), "A");
         }
 
-        assertTrue(GridTestUtils.waitForCondition(() -> getSqlPlanHistory().size() == PLAN_HISTORY_SIZE, 1000));
+        assertTrue(waitForCondition(() -> getSqlPlanHistory().size() == PLAN_HISTORY_SIZE, 1000));
 
         Set<String> qrys = getSqlPlanHistory().keySet().stream()
             .map(SqlPlan::query)
@@ -425,9 +464,13 @@ public class SqlPlanHistoryIntegrationTest extends GridCommonAbstractTest {
 
             checkSqlPlanHistory(1);
 
-            timeStamps[i] = getSqlPlanHistory().values().stream().findFirst().get();
+            timeStamps[i] = F.first(getSqlPlanHistory().values());
 
-            U.sleep(1000);
+            if (i == 0) {
+                long ts0 = U.currentTimeMillis();
+
+                assertTrue(waitForCondition(() -> (U.currentTimeMillis() != ts0), 1000));
+            }
         }
 
         assertTrue(timeStamps[1] > timeStamps[0]);
