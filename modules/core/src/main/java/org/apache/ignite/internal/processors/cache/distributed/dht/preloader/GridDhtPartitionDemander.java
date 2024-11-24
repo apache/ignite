@@ -1813,8 +1813,9 @@ public class GridDhtPartitionDemander {
             }
 
             log.info("Following partitions have been successfully evicted as part of rebalance chain: "
-                + "topVer=" + topologyVersion() + ", rebalanceId=" + rebalanceId + ", cacheGroups=["
-                + res.entrySet().stream().map(entry -> "grp=" + entry.getKey() + " ["
+                + "topVer=" + topologyVersion() + ", rebalanceId=" + rebalanceId + ", totalPartitionsCount="
+                + res.values().stream().flatMap(map -> map.values().stream()).mapToLong(Collection::size).sum()
+                + ", cacheGroups=["  + res.entrySet().stream().map(entry -> "grp=" + entry.getKey() + " ["
                     + entry.getValue().entrySet().stream().map(e -> "supplierNode=" + e.getKey()
                     + ", partitionsCount=" + e.getValue().size() + ", partitions="
                         + S.toStringSortedDistinct(e.getValue())).collect(Collectors.joining("; ")) + "]")
