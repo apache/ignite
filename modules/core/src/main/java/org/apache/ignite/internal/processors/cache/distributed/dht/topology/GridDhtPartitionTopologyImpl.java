@@ -509,7 +509,7 @@ public class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
                 }
 
                 if (!futPartMap.isEmpty())
-                    logEvictionResults(futPartMap, "rebalancing disabled, partitions did not belong to affinity");
+                    logEvictionResults(futPartMap, "rebalancing disabled, partitions do not belong to affinity");
             }
         }
 
@@ -867,7 +867,7 @@ public class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
                     }
 
                     if (!futPartMap.isEmpty())
-                        logEvictionResults(futPartMap, "moving partitions not belonging to affinity");
+                        logEvictionResults(futPartMap, "moving partitions, which do not belong to affinity");
                 }
 
                 AffinityAssignment aff = grp.affinity().readyAffinity(topVer);
@@ -2637,7 +2637,7 @@ public class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
         }
 
         if (!futPartMap.isEmpty())
-            logEvictionResults(futPartMap, "partitions did not belong to affinity");
+            logEvictionResults(futPartMap, "partitions do not belong to affinity");
 
         return hasEvictedPartitions;
     }
@@ -3308,7 +3308,7 @@ public class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
      * Prints eviction results to the log.
      *
      * @param futPartMap Map containing partition clearing futures and partition ids.
-     * @param evictReason Reason for eviction.
+     * @param evictReason Eviction reason.
      */
     private void logEvictionResults(Map<IgniteInternalFuture<?>, Integer> futPartMap, String evictReason) {
         Set<Integer> evictedParts = new HashSet<>();
@@ -3329,17 +3329,17 @@ public class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
             }
         })).toArray(CompletableFuture[]::new)).whenComplete((res, err) -> {
             if (notEvictedParts.isEmpty()) {
-                log.info("Partitions have been successfullly evicted (reason for eviction: " + evictReason + ")"
+                log.info("Partitions have been successfullly evicted (eviction reason: " + evictReason + ")"
                     + " [grp=" + grp.cacheOrGroupName() + ", partitionsCount=" + evictedParts.size()
                     + ", partitions=" + S.toStringSortedDistinct(evictedParts) + "]");
             }
             else if (evictedParts.isEmpty()) {
-                log.warning("None of partitions have been evicted (reason for eviction: " + evictReason + ")"
+                log.warning("None of partitions have been evicted (eviction reason: " + evictReason + ")"
                     + " [grp=" + grp.cacheOrGroupName() + ", partitionsCount=" + notEvictedParts.size()
                     + ", partitions=" + S.toStringSortedDistinct(notEvictedParts) + "]");
             }
             else {
-                log.warning("Some of partitions have not been evicted (reason for eviction: " + evictReason + ")"
+                log.warning("Some of partitions have not been evicted (eviction reason: " + evictReason + ")"
                     + " [grp=" + grp.cacheOrGroupName()
                     + ", evictedPartitionsCount=" + evictedParts.size()
                     + ", evictedPartitions=" + S.toStringSortedDistinct(evictedParts)
