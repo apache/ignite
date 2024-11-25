@@ -347,6 +347,7 @@ public class CacheQuery<T> {
      * @param incMeta Include metadata flag.
      * @param keepBinary Keep binary flag.
      * @param dataPageScanEnabled Flag to enable data page scan.
+     * @param skipKeys Set of keys that must be skiped during iteration.
      */
     public CacheQuery(
         GridCacheContext<?, ?> cctx,
@@ -400,6 +401,7 @@ public class CacheQuery<T> {
      * @param keepBinary Keep binary flag.
      * @param taskHash Task hash.
      * @param dataPageScanEnabled Flag to enable data page scan.
+     * @param skipKeys Set of keys that must be skiped during iteration.
      */
     public CacheQuery(
         GridCacheContext<?, ?> cctx,
