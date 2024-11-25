@@ -21,6 +21,7 @@ import java.lang.reflect.Type;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.Comparator;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
@@ -342,13 +343,15 @@ public class ExecutionContext<Row> extends AbstractQueryContext implements DataC
      * @param cacheId Cache id.
      * @param parts Partitions set.
      * @param mapper Mapper to specific data type.
+     * @param cmp Comparator to sort new and updated entries.
      * @return First, set of object changed in transaction, second, list of transaction data in required format.
      * @param <R> Required type.
      */
     public <R> TransactionChanges<R> transactionChanges(
         int cacheId,
         int[] parts,
-        Function<CacheDataRow, R> mapper
+        Function<CacheDataRow, R> mapper,
+        @Nullable Comparator<R> cmp
     ) {
         if (F.isEmpty(qryTxEntries))
             return TransactionChanges.empty();
@@ -384,6 +387,9 @@ public class ExecutionContext<Row> extends AbstractQueryContext implements DataC
                 )));
             }
         }
+
+        if (cmp != null)
+            newAndUpdatedRows.sort(cmp);
 
         return new TransactionChanges<>(changedKeys, newAndUpdatedRows);
     }

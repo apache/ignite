@@ -18,13 +18,13 @@
 package org.apache.ignite.internal.processors.cache.transactions;
 
 import java.util.Collections;
-import java.util.Comparator;
 import java.util.List;
 import java.util.Set;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
 
 /**
  * Changes of transaction in convenient for queries form.
+ * @param <E> Type of new and updated entries.
  */
 public class TransactionChanges<E> {
     /** Empty instance. */
@@ -71,13 +71,5 @@ public class TransactionChanges<E> {
      */
     public static <R> TransactionChanges<R> empty() {
         return (TransactionChanges<R>)EMPTY;
-    }
-
-    /**
-     * Sort new and updated entries collection.
-     * @param comparator Entries comparator
-     */
-    public void sortNewAndUpdatedEntries(Comparator<E> comparator) {
-        newAndUpdatedEntries.sort(comparator);
     }
 }

@@ -84,7 +84,8 @@ public class TableScan<Row> extends AbstractCacheColumnsScan<Row> {
                     // All partitions scaned for replication cache.
                     // See TableScan#reserve.
                     cctx.isReplicated() ? null : TableScan.this.parts,
-                    Function.identity()
+                    Function.identity(),
+                    null
                 );
             }
         }

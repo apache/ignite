@@ -176,7 +176,8 @@ public class CacheIndexImpl implements IgniteIndex {
             TransactionChanges<CacheDataRow> txChanges = ectx.transactionChanges(
                 iidx.indexDefinition().cacheInfo().cacheId(),
                 locParts,
-                Function.identity()
+                Function.identity(),
+                null
             );
 
             if (!txChanges.changedKeysEmpty()) {
