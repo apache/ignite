@@ -41,7 +41,6 @@ import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.cdc.CdcConsumerState;
 import org.apache.ignite.internal.cdc.CdcMain;
 import org.apache.ignite.internal.processors.cache.persistence.wal.WALPointer;
-import org.apache.ignite.internal.processors.metric.impl.HistogramMetricImpl;
 import org.apache.ignite.internal.util.lang.GridAbsPredicate;
 import org.apache.ignite.internal.util.typedef.CI3;
 import org.apache.ignite.internal.util.typedef.F;
@@ -62,7 +61,6 @@ import static org.apache.ignite.internal.cdc.CdcMain.CDC_DIR;
 import static org.apache.ignite.internal.cdc.CdcMain.COMMITTED_SEG_IDX;
 import static org.apache.ignite.internal.cdc.CdcMain.COMMITTED_SEG_OFFSET;
 import static org.apache.ignite.internal.cdc.CdcMain.CUR_SEG_IDX;
-import static org.apache.ignite.internal.cdc.CdcMain.EVENTS_CONSUMPTION_TIME;
 import static org.apache.ignite.internal.cdc.CdcMain.EVT_CAPTURE_TIME;
 import static org.apache.ignite.internal.cdc.CdcMain.LAST_SEG_CONSUMPTION_TIME;
 import static org.apache.ignite.internal.cdc.CdcMain.MARSHALLER_DIR;
@@ -224,9 +222,20 @@ public abstract class AbstractCdcTest extends GridCommonAbstractTest {
 
     /** */
     protected void checkMetrics(CdcMain cdc, int expCnt) throws Exception {
-        DynamicMBean jmxCdcReg = jmxRegistry(cdc);
+        IgniteConfiguration cfg = getFieldValue(cdc, "igniteCfg");
 
-        checkMetrics(expCnt, jmxValue(jmxCdcReg), jmxValue(jmxCdcReg));
+        DynamicMBean jmxCdcReg = metricRegistry(cdcInstanceName(cfg.getIgniteInstanceName()), null, "cdc");
+
+        Function<String, ?> jmxVal = m -> {
+            try {
+                return jmxCdcReg.getAttribute(m);
+            }
+            catch (Exception e) {
+                throw new IgniteException(e);
+            }
+        };
+
+        checkMetrics(expCnt, (Function<String, Long>)jmxVal, (Function<String, String>)jmxVal);
 
         MetricRegistry mreg = getFieldValue(cdc, "mreg");
 
@@ -258,43 +267,6 @@ public abstract class AbstractCdcTest extends GridCommonAbstractTest {
             assertTrue(new File(strMetric.apply(m)).exists());
 
         assertEquals(expCnt, (long)longMetric.apply(EVTS_CNT));
-    }
-
-    /**
-     * @param cdc - {@link CdcMain} instance.
-     */
-    protected void checkWalProcessingMetrics(CdcMain cdc) {
-        checkWalProcessingMetrics(jmxValue(jmxRegistry(cdc)));
-
-        MetricRegistry mreg = getFieldValue(cdc, "mreg");
-
-        checkWalProcessingMetrics(m -> mreg.<HistogramMetricImpl>findMetric(m).value());
-    }
-
-    /** Checks the metrics for WAL processing. */
-    private void checkWalProcessingMetrics(Function<String, long[]> longMetricArray) {
-        assertFalse(F.isEmpty(longMetricArray.apply(EVENTS_CONSUMPTION_TIME)));
-
-        assertTrue(Arrays.stream(longMetricArray.apply(EVENTS_CONSUMPTION_TIME)).sum() > 0);
-    }
-
-    /** @return MBean for CDC metrics */
-    private DynamicMBean jmxRegistry(CdcMain cdc) {
-        IgniteConfiguration cfg = getFieldValue(cdc, "igniteCfg");
-
-        return metricRegistry(cdcInstanceName(cfg.getIgniteInstanceName()), null, "cdc");
-    }
-
-    /** */
-    private <T> Function<String, T> jmxValue(DynamicMBean jmxCdcReg) {
-        return m -> {
-            try {
-                return (T)jmxCdcReg.getAttribute(m);
-            }
-            catch (Exception e) {
-                throw new IgniteException(e);
-            }
-        };
     }
 
     /** */
