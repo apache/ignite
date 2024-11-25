@@ -727,19 +727,18 @@ public class SqlPlanHistoryIntegrationTest extends GridCommonAbstractTest {
     public void checkReset(Runnable reset) throws Exception {
         startTestGrid();
 
+        IgniteCache<Integer, String> cache = queryNode().cache("A");
+
         String[] qryText = new String[2];
 
-        for (int i = 0; i < 2; i++) {
-            try {
-                cacheQuery(new SqlFieldsQuery(SQL + " where A.fail()=" + i).setLocal(loc), "A");
-            }
-            catch (Exception ignore) {
-                //No-Op
-            }
+        for (int i = 1; i <= 2; i++) {
+            cache.put(100 + i, "STR" + i);
 
-            qryText[i] = getSqlPlanHistory().keySet().stream().findFirst().map(SqlPlan::query).orElse("");
+            cacheQuery(new SqlFieldsQuery(SQL + " where _val='STR" + i + "'").setLocal(loc), "A");
 
-            if (i == 0)
+            qryText[i - 1] = getSqlPlanHistory().keySet().stream().findFirst().map(SqlPlan::query).orElse("");
+
+            if (i == 1)
                 reset.run();
         }
 
