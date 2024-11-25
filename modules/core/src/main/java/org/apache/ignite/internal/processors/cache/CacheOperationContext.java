@@ -99,7 +99,7 @@ public class CacheOperationContext implements Serializable {
         this.dataCenterId = dataCenterId;
         this.recovery = recovery;
         this.readRepairStrategy = readRepairStrategy;
-        this.appAttrs = appAttrs == null ? null : new HashMap<>(appAttrs);
+        this.appAttrs = appAttrs;
     }
 
     /**
@@ -269,7 +269,7 @@ public class CacheOperationContext implements Serializable {
             dataCenterId,
             recovery,
             readRepairStrategy,
-            appAttrs);
+            new HashMap<>(appAttrs));
     }
 
     /**

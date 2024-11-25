@@ -393,6 +393,10 @@
                                 <title>Development Utils</title>
                                 <packages>org.apache.ignite.development.utils*</packages>
                             </group>
+                            <group>
+                                <title>SessionContext API</title>
+                                <packages>org.apache.ignite.session</packages>
+                            </group>
                         </groups>
                     </configuration>
                 </plugin>
