@@ -83,7 +83,7 @@ public class ExecutionContext<Row> extends AbstractQueryContext implements DataC
     private static final Object NULL_BOUND = new Object();
 
     /** Emtpy session context. */
-    private static final SessionContext EMPTY_SESSION_CONTEXT = new EmptySessionContext();
+    private static final SessionContext EMPTY_SESSION_CONTEXT = (attrName) -> null;
 
     /** */
     private final UUID qryId;
@@ -508,19 +508,11 @@ public class ExecutionContext<Row> extends AbstractQueryContext implements DataC
 
     /** */
     private class SessionContextProviderImpl implements SessionContextProvider {
-        /** */
+        /** {@inheritDoc} */
         @Override public @Nullable SessionContext getSessionContext() {
             SessionContext ctx = unwrap(SessionContext.class);
 
             return ctx == null ? EMPTY_SESSION_CONTEXT : ctx;
-        }
-    }
-
-    /** */
-    private static final class EmptySessionContext implements SessionContext {
-        /** */
-        @Override public @Nullable String getAttribute(String name) {
-            return null;
         }
     }
 }
