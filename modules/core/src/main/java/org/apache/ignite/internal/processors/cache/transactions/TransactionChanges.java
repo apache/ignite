@@ -45,6 +45,13 @@ public class TransactionChanges<E> {
         this.newAndUpdatedEntries = newAndUpdatedEntries;
     }
 
+    /**
+     * @return Changed keys set.
+     */
+    public Set<KeyCacheObject> changedKeys() {
+        return changedKeys;
+    }
+
     /** @return New and changed entries. */
     public List<E> newAndUpdatedEntries() {
         return newAndUpdatedEntries;
