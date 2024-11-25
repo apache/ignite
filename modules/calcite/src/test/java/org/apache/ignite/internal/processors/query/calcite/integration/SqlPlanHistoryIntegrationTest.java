@@ -69,9 +69,6 @@ import static org.junit.Assume.assumeFalse;
 /** Tests for SQL plan history. */
 @RunWith(Parameterized.class)
 public class SqlPlanHistoryIntegrationTest extends GridCommonAbstractTest {
-    /** SQL plan history size. */
-    private static final int PLAN_HISTORY_SIZE = 10;
-
     /** SQL plan history size excess. */
     private static final int PLAN_HISTORY_EXCESS = 2;
 
@@ -148,6 +145,9 @@ public class SqlPlanHistoryIntegrationTest extends GridCommonAbstractTest {
     /** TextQuery. */
     private final TextQuery<Integer, String> textQry = new TextQuery<>("String", "2");
 
+    /** SQL plan history size. */
+    private int planHistorySize = 10;
+
     /** SQL engine. */
     @Parameterized.Parameter
     public String sqlEngine;
@@ -185,7 +185,7 @@ public class SqlPlanHistoryIntegrationTest extends GridCommonAbstractTest {
         QueryEngineConfigurationEx engCfg = configureSqlEngine();
 
         cfg.setSqlConfiguration(new SqlConfiguration()
-            .setSqlPlanHistorySize(PLAN_HISTORY_SIZE)
+            .setSqlPlanHistorySize(planHistorySize)
             .setQueryEnginesConfiguration(engCfg)
         );
 
@@ -419,7 +419,7 @@ public class SqlPlanHistoryIntegrationTest extends GridCommonAbstractTest {
 
         IgniteCache<Integer, String> cache = queryNode().cache("A");
 
-        for (int i = 1; i <= (PLAN_HISTORY_SIZE + PLAN_HISTORY_EXCESS); i++) {
+        for (int i = 1; i <= (planHistorySize + PLAN_HISTORY_EXCESS); i++) {
             cache.put(100 + i, "STR" + String.format("%02d", i));
 
             SqlFieldsQuery qry = new SqlFieldsQuery(SQL + " where _val='STR" + String.format("%02d", i) + "'");
@@ -427,7 +427,7 @@ public class SqlPlanHistoryIntegrationTest extends GridCommonAbstractTest {
             cacheQuery(qry.setLocal(loc), "A");
         }
 
-        assertTrue(waitForCondition(() -> getSqlPlanHistory().size() == PLAN_HISTORY_SIZE, 1000));
+        assertTrue(waitForCondition(() -> getSqlPlanHistory().size() == planHistorySize, 1000));
 
         Set<String> qrys = getSqlPlanHistory().keySet().stream().map(SqlPlan::query).collect(Collectors.toSet());
 
@@ -470,16 +470,17 @@ public class SqlPlanHistoryIntegrationTest extends GridCommonAbstractTest {
         assertTrue(timeStamps[1] > timeStamps[0]);
     }
 
-    /** Checks that SQL plan history remains empty if history size is set to zero. */
+    /** Checks that SQL plan history stays empty if the grid is started with a zero history size. */
     @Test
-    public void testEmptyPlanHistory() throws Exception {
-        startTestGrid();
+    public void testEmptyPlanHistoryInit() throws Exception {
+        checkEmptyHistory(() -> planHistorySize = 0, false);
+    }
 
-        queryNode().context().query().runningQueryManager().planHistoryTracker().setHistorySize(0);
-
-        cacheQuery(sqlFieldsQry.setLocal(loc), "A");
-
-        assertTrue(getSqlPlanHistory().isEmpty());
+    /** Checks that SQL plan history stays empty if history size is set to zero after the grid has been started. */
+    @Test
+    public void testEmptyPlanHistorySet() throws Exception {
+        checkEmptyHistory(() ->
+            queryNode().context().query().runningQueryManager().planHistoryTracker().setHistorySize(0), true);
     }
 
     /** Checks that new entries are present in the plan history after history size is reset. */
@@ -743,6 +744,24 @@ public class SqlPlanHistoryIntegrationTest extends GridCommonAbstractTest {
         }
 
         assertNotEquals(qryText[0], qryText[1]);
+    }
+
+    /**
+     * @param setup Setup test task.
+     * @param startGridFirst Flag indicating whether to start the grid before the setup.
+     */
+    public void checkEmptyHistory(Runnable setup, boolean startGridFirst) throws Exception {
+        if (startGridFirst)
+            startTestGrid();
+
+        setup.run();
+
+        if (!startGridFirst)
+            startTestGrid();
+
+        cacheQuery(sqlFieldsQry.setLocal(loc), "A");
+
+        assertTrue(getSqlPlanHistory().isEmpty());
     }
 
     /** */

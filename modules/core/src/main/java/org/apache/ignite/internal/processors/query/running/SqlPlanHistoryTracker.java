@@ -31,7 +31,7 @@ public class SqlPlanHistoryTracker {
      * @param histSize SQL plan history size.
      */
     public SqlPlanHistoryTracker(int histSize) {
-        sqlPlanHistory = (histSize > 0) ? new GridBoundedConcurrentLinkedHashMap<>(histSize) : null;
+        sqlPlanHistory = (histSize > 0) ? new GridBoundedConcurrentLinkedHashMap<>(histSize) : Collections.emptyMap();
     }
 
     /**
