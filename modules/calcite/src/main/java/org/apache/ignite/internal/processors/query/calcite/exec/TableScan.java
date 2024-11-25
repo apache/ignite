@@ -64,7 +64,7 @@ public class TableScan<Row> extends AbstractCacheColumnsScan<Row> {
         private GridCursor<? extends CacheDataRow> cur;
 
         /** Transaction changes. */
-        private TransactionChanges<CacheDataRow> txChanges;
+        private final TransactionChanges<CacheDataRow> txChanges;
 
         /** */
         private Iterator<CacheDataRow> txIter = Collections.emptyIterator();
@@ -78,8 +78,9 @@ public class TableScan<Row> extends AbstractCacheColumnsScan<Row> {
 
             parts = new ArrayDeque<>(reserved);
 
-            if (!F.isEmpty(ectx.getQryTxEntries())) {
-                txChanges = ectx.transactionChanges(
+            txChanges = F.isEmpty(ectx.getQryTxEntries())
+                ? TransactionChanges.empty()
+                : ectx.transactionChanges(
                     cctx.cacheId(),
                     // All partitions scaned for replication cache.
                     // See TableScan#reserve.
@@ -87,7 +88,6 @@ public class TableScan<Row> extends AbstractCacheColumnsScan<Row> {
                     Function.identity(),
                     null
                 );
-            }
         }
 
         /** {@inheritDoc} */
@@ -131,11 +131,10 @@ public class TableScan<Row> extends AbstractCacheColumnsScan<Row> {
 
                     cur = part.dataStore().cursor(cctx.cacheId());
 
-                    if (txChanges != null) {
+                    if (!txChanges.changedKeysEmpty()) {
                         // This call will change `txChanges` content.
                         // Removing found key from set more efficient so we break some rules here.
-                        if (!txChanges.changedKeysEmpty())
-                            cur = new KeyFilteringCursor<>(cur, txChanges, CacheSearchRow::key);
+                        cur = new KeyFilteringCursor<>(cur, txChanges, CacheSearchRow::key);
 
                         txIter = F.iterator0(txChanges.newAndUpdatedEntries(), true, e -> e.key().partition() == part.id());
                     }

@@ -122,7 +122,7 @@ public class IndexScan<Row> extends AbstractCacheColumnsScan<Row> {
             );
         }
         else
-            txChanges = null;
+            txChanges = TransactionChanges.empty();
     }
 
     /**
@@ -177,7 +177,7 @@ public class IndexScan<Row> extends AbstractCacheColumnsScan<Row> {
 
         TreeIndex<IndexRow> treeIdx = treeIndex();
 
-        if (txChanges != null)
+        if (txChanges.changedKeysEmpty())
             treeIdx = new TxAwareTreeIndexWrapper(treeIdx);
 
         return F.iterator(new TreeIndexIterable<>(treeIdx, ranges0), this::indexRow2Row, true);
@@ -251,8 +251,9 @@ public class IndexScan<Row> extends AbstractCacheColumnsScan<Row> {
 
         InlineIndexRowHandler rowHnd = idx.segment(0).rowHandler();
 
-        InlineIndexRowFactory rowFactory = (isInlineScan() && (txChanges == null || txChanges.changedKeysEmpty())) ?
-            new InlineIndexRowFactory(rowHnd.inlineIndexKeyTypes().toArray(new InlineIndexKeyType[0]), rowHnd) : null;
+        InlineIndexRowFactory rowFactory = (isInlineScan() && txChanges.changedKeysEmpty())
+            ? new InlineIndexRowFactory(rowHnd.inlineIndexKeyTypes().toArray(new InlineIndexKeyType[0]), rowHnd)
+            : null;
 
         BPlusTree.TreeRowClosure<IndexRow, IndexRow> rowFilter = isInlineScan() ? null : createNotExpiredRowFilter();
 
@@ -411,8 +412,6 @@ public class IndexScan<Row> extends AbstractCacheColumnsScan<Row> {
                 boolean upperInclude
         ) {
             GridCursor<IndexRow> idxCursor = delegate.find(lower, upper, lowerInclude, upperInclude);
-
-            assert txChanges != null;
 
             // `txChanges` returns single thread data structures e.g. `HashSet`, `ArrayList`.
             // It safe to use them in multiple `FilteredCursor` instances, because, multi range index scan will be
