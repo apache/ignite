@@ -75,10 +75,7 @@ public class IndexScan<Row> extends AbstractCacheColumnsScan<Row> {
     /** Types of key fields stored in index. */
     private final Type[] fieldsStoreTypes;
 
-    /**
-     * First, set of keys changed (inserted, updated or removed) inside transaction: must be skiped during index scan.
-     * Second, list of rows inserted or updated inside transaction: must be mixed with the scan results.
-     */
+    /** Transaction changes. */
     private final TransactionChanges<IndexRow> txChanges;
 
     /**
@@ -120,13 +117,12 @@ public class IndexScan<Row> extends AbstractCacheColumnsScan<Row> {
             txChanges = ectx.transactionChanges(
                 cctx.cacheId(),
                 parts,
-                r -> new IndexRowImpl(rowHnd, r)
+                r -> new IndexRowImpl(rowHnd, r),
+                this::compare
             );
-
-            txChanges.newAndUpdatedEntries().sort(this::compare);
         }
         else
-            txChanges = null;
+            txChanges = TransactionChanges.empty();
     }
 
     /**
@@ -181,7 +177,7 @@ public class IndexScan<Row> extends AbstractCacheColumnsScan<Row> {
 
         TreeIndex<IndexRow> treeIdx = treeIndex();
 
-        if (txChanges != null)
+        if (!txChanges.changedKeysEmpty())
             treeIdx = new TxAwareTreeIndexWrapper(treeIdx);
 
         return F.iterator(new TreeIndexIterable<>(treeIdx, ranges0), this::indexRow2Row, true);
@@ -255,8 +251,9 @@ public class IndexScan<Row> extends AbstractCacheColumnsScan<Row> {
 
         InlineIndexRowHandler rowHnd = idx.segment(0).rowHandler();
 
-        InlineIndexRowFactory rowFactory = (isInlineScan() && (txChanges == null || F.isEmpty(txChanges.changedKeys()))) ?
-            new InlineIndexRowFactory(rowHnd.inlineIndexKeyTypes().toArray(new InlineIndexKeyType[0]), rowHnd) : null;
+        InlineIndexRowFactory rowFactory = (isInlineScan() && txChanges.changedKeysEmpty())
+            ? new InlineIndexRowFactory(rowHnd.inlineIndexKeyTypes().toArray(new InlineIndexKeyType[0]), rowHnd)
+            : null;
 
         BPlusTree.TreeRowClosure<IndexRow, IndexRow> rowFilter = isInlineScan() ? null : createNotExpiredRowFilter();
 
@@ -416,8 +413,6 @@ public class IndexScan<Row> extends AbstractCacheColumnsScan<Row> {
         ) {
             GridCursor<IndexRow> idxCursor = delegate.find(lower, upper, lowerInclude, upperInclude);
 
-            assert txChanges != null;
-
             // `txChanges` returns single thread data structures e.g. `HashSet`, `ArrayList`.
             // It safe to use them in multiple `FilteredCursor` instances, because, multi range index scan will be
             // flat to the single cursor.
@@ -427,7 +422,7 @@ public class IndexScan<Row> extends AbstractCacheColumnsScan<Row> {
                     new GridCursor[]{
                         // This call will change `txChanges.get1()` content.
                         // Removing found key from set more efficient so we break some rules here.
-                        new KeyFilteringCursor<>(idxCursor, txChanges.changedKeys(), r -> r.cacheDataRow().key()),
+                        new KeyFilteringCursor<>(idxCursor, txChanges, r -> r.cacheDataRow().key()),
                         new SortedListRangeCursor<>(
                             IndexScan.this::compare, txChanges.newAndUpdatedEntries(), lower, upper, lowerInclude, upperInclude)
                     },

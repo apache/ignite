@@ -35,6 +35,7 @@ import org.apache.ignite.internal.processors.cache.KeyCacheObject;
 import org.apache.ignite.internal.processors.cache.KeyCacheObjectImpl;
 import org.apache.ignite.internal.processors.cache.persistence.CacheDataRow;
 import org.apache.ignite.internal.processors.cache.persistence.CacheDataRowAdapter;
+import org.apache.ignite.internal.processors.cache.transactions.TransactionChanges;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.util.lang.GridCursor;
 import org.apache.ignite.internal.util.typedef.internal.CU;
@@ -68,7 +69,11 @@ public class KeyFilteringCursorTest {
 
     /** */
     private List<Integer> all(GridCursor<IndexRow> rawCursor, Set<KeyCacheObject> skipKeys) throws IgniteCheckedException {
-        GridCursor<IndexRow> cursor = new KeyFilteringCursor<>(rawCursor, skipKeys, r -> r.cacheDataRow().key());
+        GridCursor<IndexRow> cursor = new KeyFilteringCursor<>(
+            rawCursor,
+            new TransactionChanges<>(skipKeys, Collections.emptyList()),
+            r -> r.cacheDataRow().key()
+        );
 
         List<Integer> res = new ArrayList<>();
 

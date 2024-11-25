@@ -63,11 +63,8 @@ public class TableScan<Row> extends AbstractCacheColumnsScan<Row> {
         /** */
         private GridCursor<? extends CacheDataRow> cur;
 
-        /**
-         * First, set of keys changed (inserted, updated or removed) inside transaction: must be skiped during index scan.
-         * Second, list of rows inserted or updated inside transaction: must be mixed with the scan results.
-         */
-        private TransactionChanges<CacheDataRow> txChanges;
+        /** Transaction changes. */
+        private final TransactionChanges<CacheDataRow> txChanges;
 
         /** */
         private Iterator<CacheDataRow> txIter = Collections.emptyIterator();
@@ -81,15 +78,16 @@ public class TableScan<Row> extends AbstractCacheColumnsScan<Row> {
 
             parts = new ArrayDeque<>(reserved);
 
-            if (!F.isEmpty(ectx.getQryTxEntries())) {
-                txChanges = ectx.transactionChanges(
+            txChanges = F.isEmpty(ectx.getQryTxEntries())
+                ? TransactionChanges.empty()
+                : ectx.transactionChanges(
                     cctx.cacheId(),
                     // All partitions scaned for replication cache.
                     // See TableScan#reserve.
                     cctx.isReplicated() ? null : TableScan.this.parts,
-                    Function.identity()
+                    Function.identity(),
+                    null
                 );
-            }
         }
 
         /** {@inheritDoc} */
@@ -133,11 +131,10 @@ public class TableScan<Row> extends AbstractCacheColumnsScan<Row> {
 
                     cur = part.dataStore().cursor(cctx.cacheId());
 
-                    if (txChanges != null) {
-                        // This call will change `txChanges.get1()` content.
+                    if (!txChanges.changedKeysEmpty()) {
+                        // This call will change `txChanges` content.
                         // Removing found key from set more efficient so we break some rules here.
-                        if (!F.isEmpty(txChanges.changedKeys()))
-                            cur = new KeyFilteringCursor<>(cur, txChanges.changedKeys(), CacheSearchRow::key);
+                        cur = new KeyFilteringCursor<>(cur, txChanges, CacheSearchRow::key);
 
                         txIter = F.iterator0(txChanges.newAndUpdatedEntries(), true, e -> e.key().partition() == part.id());
                     }

@@ -24,8 +24,9 @@ import org.apache.ignite.internal.processors.cache.KeyCacheObject;
 
 /**
  * Changes of transaction in convenient for queries form.
+ * @param <E> Type of new and updated entries.
  */
-public class TransactionChanges<R> {
+public class TransactionChanges<E> {
     /** Empty instance. */
     private static final TransactionChanges<?> EMPTY = new TransactionChanges<>(Collections.emptySet(), Collections.emptyList());
 
@@ -33,25 +34,35 @@ public class TransactionChanges<R> {
     private final Set<KeyCacheObject> changedKeys;
 
     /** Transaction entries in required format. */
-    private final List<R> newAndUpdatedEntries;
+    private final List<E> newAndUpdatedEntries;
 
     /**
      * @param changedKeys All changed keys.
      * @param newAndUpdatedEntries New and changed entries.
      */
-    public TransactionChanges(Set<KeyCacheObject> changedKeys, List<R> newAndUpdatedEntries) {
+    public TransactionChanges(Set<KeyCacheObject> changedKeys, List<E> newAndUpdatedEntries) {
         this.changedKeys = changedKeys;
         this.newAndUpdatedEntries = newAndUpdatedEntries;
     }
 
-    /** @return All changed keys. */
-    public Set<KeyCacheObject> changedKeys() {
-        return changedKeys;
+    /** @return New and changed entries. */
+    public List<E> newAndUpdatedEntries() {
+        return newAndUpdatedEntries;
     }
 
-    /** @return New and changed entries. */
-    public List<R> newAndUpdatedEntries() {
-        return newAndUpdatedEntries;
+    /**
+     * @return {@code True} is changed keys empty, {@code false} otherwise.
+     */
+    public boolean changedKeysEmpty() {
+        return changedKeys.isEmpty();
+    }
+
+    /**
+     * @param key Key to remove.
+     * @return {@code True} if key removed, {@code false} otherwise.
+     */
+    public boolean remove(KeyCacheObject key) {
+        return changedKeys.remove(key);
     }
 
     /**
