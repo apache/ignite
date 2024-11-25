@@ -318,29 +318,29 @@ public class SqlPlanHistoryIntegrationTest extends GridCommonAbstractTest {
      */
     @Test
     public void testSqlFieldsQueryWithReducePhase() throws Exception {
-        assumeFalse("Map/reduce queries are only applicable to H2 engine",
-            sqlEngine != IndexingQueryEngineConfiguration.ENGINE_NAME);
+        runQueryWithReducePhase(() -> {
+            try {
+                startGridsMultiThreaded(1, 2);
 
-        assumeFalse("Only distributed queries have map and reduce phases", loc);
+                awaitPartitionMapExchange();
+            }
+            catch (Exception e) {
+                throw new RuntimeException(e);
+            }
 
-        startTestGrid();
+            cacheQuery(sqlFieldsQryWithReducePhase, "pers");
 
-        startGridsMultiThreaded(1, 2);
+            checkSqlPlanHistory(3);
 
-        awaitPartitionMapExchange();
+            for (int i = 1; i <= 2; i++) {
+                Map<SqlPlan, Long> sqlPlansOnMapNode = grid(i).context().query().runningQueryManager().planHistoryTracker()
+                    .sqlPlanHistory();
 
-        cacheQuery(sqlFieldsQryWithReducePhase, "pers");
+                assertNotNull(sqlPlansOnMapNode);
 
-        checkSqlPlanHistory(3);
-
-        for (int i = 1; i <= 2; i++) {
-            Map<SqlPlan, Long> sqlPlansOnMapNode = grid(i).context().query().runningQueryManager().planHistoryTracker()
-                .sqlPlanHistory();
-
-            assertNotNull(sqlPlansOnMapNode);
-
-            checkMetrics(2, sqlPlansOnMapNode);
-        }
+                checkMetrics(2, sqlPlansOnMapNode);
+            }
+        });
     }
 
     /**
@@ -350,25 +350,20 @@ public class SqlPlanHistoryIntegrationTest extends GridCommonAbstractTest {
      */
     @Test
     public void testSqlFieldsQueryWithReducePhaseFailed() throws Exception {
-        assumeFalse("Map/reduce queries are only applicable to H2 engine",
-            sqlEngine != IndexingQueryEngineConfiguration.ENGINE_NAME);
+        runQueryWithReducePhase(() -> {
+            for (int i = 0; i < sqlFieldsQryWithReducePhaseFailed.length; i++) {
+                try {
+                    cacheQuery(sqlFieldsQryWithReducePhaseFailed[i], "pers");
+                }
+                catch (Exception ignore) {
+                    // No-op.
+                }
 
-        assumeFalse("Only distributed queries have map and reduce phases", loc);
+                checkSqlPlanHistory( i + 1);
 
-        startTestGrid();
-
-        for (int i = 0; i < sqlFieldsQryWithReducePhaseFailed.length; i++) {
-            try {
-                cacheQuery(sqlFieldsQryWithReducePhaseFailed[i], "pers");
+                queryNode().context().query().runningQueryManager().resetPlanHistoryMetrics();
             }
-            catch (Exception ignore) {
-                // No-op.
-            }
-
-            checkSqlPlanHistory( i + 1);
-
-            queryNode().context().query().runningQueryManager().resetPlanHistoryMetrics();
-        }
+        });
     }
 
     /** Checks successful SqlQuery. */
@@ -541,6 +536,20 @@ public class SqlPlanHistoryIntegrationTest extends GridCommonAbstractTest {
         cacheQuery(qry.setLocal(loc), "A");
 
         checkSqlPlanHistory(0);
+    }
+
+    /**
+     * @param task Test task to execute.
+     */
+    public void runQueryWithReducePhase(Runnable task) throws Exception {
+        assumeFalse("Map/reduce queries are only applicable to H2 engine",
+            sqlEngine != IndexingQueryEngineConfiguration.ENGINE_NAME);
+
+        assumeFalse("Only distributed queries have map and reduce phases", loc);
+
+        startTestGrid();
+
+        task.run();
     }
 
     /**
