@@ -177,7 +177,7 @@ public class IndexScan<Row> extends AbstractCacheColumnsScan<Row> {
 
         TreeIndex<IndexRow> treeIdx = treeIndex();
 
-        if (txChanges.changedKeysEmpty())
+        if (!txChanges.changedKeysEmpty())
             treeIdx = new TxAwareTreeIndexWrapper(treeIdx);
 
         return F.iterator(new TreeIndexIterable<>(treeIdx, ranges0), this::indexRow2Row, true);
