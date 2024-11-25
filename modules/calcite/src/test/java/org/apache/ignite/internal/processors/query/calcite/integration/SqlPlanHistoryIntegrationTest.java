@@ -206,7 +206,7 @@ public class SqlPlanHistoryIntegrationTest extends GridCommonAbstractTest {
     }
 
     /**
-     * @param name Name.
+     * @param name Cache name.
      * @param idxTypes Index types.
      * @return Cache configuration.
      */
@@ -235,8 +235,6 @@ public class SqlPlanHistoryIntegrationTest extends GridCommonAbstractTest {
      * @throws Exception In case of failure.
      */
     protected void startTestGrid() throws Exception {
-        assumeFalse("Local queries can't be executed on client nodes", isClient && loc);
-
         startGrid(0);
 
         if (isClient)
@@ -333,8 +331,8 @@ public class SqlPlanHistoryIntegrationTest extends GridCommonAbstractTest {
             checkSqlPlanHistory(3);
 
             for (int i = 1; i <= 2; i++) {
-                Map<SqlPlan, Long> sqlPlansOnMapNode = grid(i).context().query().runningQueryManager().planHistoryTracker()
-                    .sqlPlanHistory();
+                Map<SqlPlan, Long> sqlPlansOnMapNode = grid(i).context().query().runningQueryManager()
+                    .planHistoryTracker().sqlPlanHistory();
 
                 assertNotNull(sqlPlansOnMapNode);
 
@@ -344,9 +342,9 @@ public class SqlPlanHistoryIntegrationTest extends GridCommonAbstractTest {
     }
 
     /**
-     * Checks failed SqlFieldsQuery with reduce phase. If the fisrt subquery fails, there will be only one entry in SQL
-     * plan history. If the fisrt subquery is successfully executed but the second one fails, the history will contain
-     * two entries.
+     * Checks failed SqlFieldsQuery with reduce phase. If the fisrt subquery fails, there should be only one entry in
+     * SQL plan history. If the fisrt subquery is successfully executed but the second one fails, the history should
+     * contain two entries.
      */
     @Test
     public void testSqlFieldsQueryWithReducePhaseFailed() throws Exception {
@@ -431,9 +429,7 @@ public class SqlPlanHistoryIntegrationTest extends GridCommonAbstractTest {
 
         assertTrue(waitForCondition(() -> getSqlPlanHistory().size() == PLAN_HISTORY_SIZE, 1000));
 
-        Set<String> qrys = getSqlPlanHistory().keySet().stream()
-            .map(SqlPlan::query)
-            .collect(Collectors.toSet());
+        Set<String> qrys = getSqlPlanHistory().keySet().stream().map(SqlPlan::query).collect(Collectors.toSet());
 
         for (int i = 1; i <= PLAN_HISTORY_EXCESS; i++) {
             int finI = i;
