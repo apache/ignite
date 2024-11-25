@@ -38,6 +38,7 @@ import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.CacheObject;
+import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
 import org.apache.ignite.internal.processors.cache.persistence.CacheDataRow;
 import org.apache.ignite.internal.processors.cache.persistence.CacheDataRowAdapter;
@@ -346,6 +347,7 @@ public class ExecutionContext<Row> extends AbstractQueryContext implements DataC
      * @param cmp Comparator to sort new and updated entries.
      * @return First, set of object changed in transaction, second, list of transaction data in required format.
      * @param <R> Required type.
+     * @see GridCacheContext#transactionChanges(Integer)
      */
     public <R> TransactionChanges<R> transactionChanges(
         int cacheId,
