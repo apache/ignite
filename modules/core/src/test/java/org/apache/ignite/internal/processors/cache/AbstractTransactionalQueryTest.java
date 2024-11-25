@@ -43,7 +43,7 @@ public abstract class AbstractTransactionalQueryTest extends GridCommonAbstractT
     public TestTransactionMode txMode;
 
     /** @return Test parameters. */
-    @Parameterized.Parameters(name = "sqlTxMode={0}")
+    @Parameterized.Parameters(name = "txMode={0}")
     public static Collection<?> parameters() {
         return Arrays.asList(TestTransactionMode.values());
     }
@@ -113,7 +113,7 @@ public abstract class AbstractTransactionalQueryTest extends GridCommonAbstractT
     }
 
     /** */
-    protected void invokeAction(Ignite node, RunnableX action) {
+    private void invokeAction(Ignite node, RunnableX action) {
         if (tx == null && txMode != TestTransactionMode.NONE)
             startTransaction(node);
 

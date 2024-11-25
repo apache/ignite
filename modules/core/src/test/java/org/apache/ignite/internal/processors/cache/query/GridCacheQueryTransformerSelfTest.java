@@ -22,6 +22,8 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.Callable;
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 import java.util.function.IntFunction;
 import javax.cache.Cache;
@@ -37,7 +39,9 @@ import org.apache.ignite.cache.query.SqlQuery;
 import org.apache.ignite.cache.query.TextQuery;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.processors.cache.AbstractTransactionalQueryTest;
+import org.apache.ignite.internal.util.lang.RunnableX;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.lang.IgniteBiPredicate;
 import org.apache.ignite.lang.IgniteCallable;
@@ -172,28 +176,19 @@ public class GridCacheQueryTransformerSelfTest extends AbstractTransactionalQuer
      * @throws Exception If failed.
      */
     @Test
-    public void testGetObjectFieldPartitioned() throws Exception {
+    public void testGetObjectFieldPartitioned() {
         IgniteCache<Integer, Value> cache = createTestCache();
 
-        Affinity<Integer> aff = affinity(cache);
+        Consumer<Integer> putToCache = i -> put(grid(), cache, i, new Value("str" + i, i * 100));
 
-        try {
-            int[] keys = new int[50];
+        List<Integer> keys = partitionKeys(cache, 0, 50, 0);
 
-            for (int i = 0, j = 0; i < keys.length; j++) {
-                if (aff.partition(j) == 0)
-                    keys[i++] = j;
-            }
+        keys.forEach(putToCache);
+        partitionKeys(cache, 1, 5, 0).forEach(putToCache);
+        partitionKeys(cache, 2, 5, 0).forEach(putToCache);
 
-            for (int i : keys)
-                cache.put(i, new Value("str" + i, i * 100));
-
-            IgniteClosure<Cache.Entry<Integer, Value>, Integer> transformer =
-                new IgniteClosure<Cache.Entry<Integer, Value>, Integer>() {
-                    @Override public Integer apply(Cache.Entry<Integer, Value> e) {
-                        return e.getValue().idx;
-                    }
-                };
+        RunnableX check = () -> {
+            IgniteClosure<Cache.Entry<Integer, Value>, Integer> transformer = e -> e.getValue().idx;
 
             List<Integer> res = cache.query(new ScanQuery<Integer, Value>().setPartition(0), transformer).getAll();
 
@@ -201,10 +196,19 @@ public class GridCacheQueryTransformerSelfTest extends AbstractTransactionalQuer
 
             Collections.sort(res);
 
-            for (int i = 0; i < keys.length; i++)
-                assertEquals(keys[i] * 100, res.get(i).intValue());
+            for (int i = 0; i < keys.size(); i++)
+                assertEquals(keys.get(i) * 100, res.get(i).intValue());
+        };
+
+        try {
+            if (txMode == TestTransactionMode.NONE)
+                check.run();
+            else
+                txAction(grid(), check);
         }
         finally {
+            clearTransaction();
+
             cache.destroy();
         }
     }
@@ -297,11 +301,60 @@ public class GridCacheQueryTransformerSelfTest extends AbstractTransactionalQuer
         });
     }
 
+    /** @throws Exception If failed. */
+    @Test
+    public void testLocal() {
+        IgniteCache<Integer, Value> cache = createTestCache();
+
+        Affinity aff = affinity(cache);
+
+        BiConsumer<IgniteEx, Integer> putToCache = (grid, i) -> put(grid, cache, i, new Value("str" + i, i * 100));
+
+        AtomicInteger k = new AtomicInteger();
+
+        List<Integer> keys0 = new ArrayList<>(50);
+        List<Integer> keys1 = new ArrayList<>(50);
+
+        for (int i = 0; i < 50; i++) {
+            keys0.add(keyForNode(aff, k, grid(0).localNode()));
+            keys1.add(keyForNode(aff, k, grid(1).localNode()));
+        }
+
+        keys0.forEach(i -> putToCache.accept(grid(0), i));
+        keys1.forEach(i -> putToCache.accept(grid(1), i));
+
+        BiConsumer<IgniteEx, List<Integer>> check = (grid, keys) -> {
+            List<Integer> res = grid.cache("test-cache").query(
+                new ScanQuery<Integer, Value>().setLocal(true),
+                Cache.Entry::getKey
+            ).getAll();
+
+            assertEquals(50, res.size());
+            assertTrue(res.containsAll(keys));
+        };
+
+        try {
+            if (txMode == TestTransactionMode.NONE) {
+                check.accept(grid(0), keys0);
+                check.accept(grid(1), keys1);
+            }
+            else {
+                txAction(grid(0), () -> check.accept(grid(0), keys0));
+                txAction(grid(1), () -> check.accept(grid(1), keys1));
+            }
+        }
+        finally {
+            clearTransaction();
+
+            cache.destroy();
+        }
+    }
+
     /**
      * @throws Exception If failed.
      */
     @Test
-    public void testLocal() throws Exception {
+    public void testLocalCompute() throws Exception {
         assumeTrue(txMode == TestTransactionMode.NONE);
 
         doTestWithCache(i -> new Value("str" + i, i * 100), cache -> {

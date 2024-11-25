@@ -23,6 +23,7 @@ import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.query.ScanQuery;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.internal.util.lang.RunnableX;
 import org.apache.ignite.lang.IgniteBiPredicate;
 import org.junit.Test;
 
@@ -98,11 +99,16 @@ public class IgniteCacheScanPredicateDeploymentSelfTest extends AbstractTransact
 
             IgniteBiPredicate<Object, Object> pred = (IgniteBiPredicate<Object, Object>)predCls.newInstance();
 
-            invokeAction(grid(3), () -> {
+            RunnableX check = () -> {
                 List<Cache.Entry<Object, Object>> all = cache.query(new ScanQuery<>(pred)).getAll();
 
                 assertEquals(1, all.size());
-            });
+            };
+
+            if (txMode == TestTransactionMode.NONE)
+                check.run();
+            else
+                txAction(grid(3), check);
         }
         finally {
             clearTransaction();
