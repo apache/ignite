@@ -161,14 +161,6 @@ public abstract class GridCacheAbstractMetricsSelfTest extends GridCacheAbstract
         for (int i = 0; i < gridCount(); i++) {
             Ignite g = grid(i);
 
-            g.cache(DEFAULT_CACHE_NAME).removeAll();
-
-            assert g.cache(DEFAULT_CACHE_NAME).localSize() == 0;
-        }
-
-        for (int i = 0; i < gridCount(); i++) {
-            Ignite g = grid(i);
-
             g.transactions().resetMetrics();
         }
 
