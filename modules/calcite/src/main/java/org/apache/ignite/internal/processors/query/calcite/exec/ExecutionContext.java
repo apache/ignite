@@ -21,7 +21,7 @@ import java.lang.reflect.Type;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
-import java.util.Collections;
+import java.util.Comparator;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
@@ -42,6 +42,7 @@ import org.apache.ignite.internal.processors.cache.KeyCacheObject;
 import org.apache.ignite.internal.processors.cache.persistence.CacheDataRow;
 import org.apache.ignite.internal.processors.cache.persistence.CacheDataRowAdapter;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteTxEntry;
+import org.apache.ignite.internal.processors.cache.transactions.TransactionChanges;
 import org.apache.ignite.internal.processors.query.calcite.exec.exp.ExpressionFactory;
 import org.apache.ignite.internal.processors.query.calcite.exec.exp.ExpressionFactoryImpl;
 import org.apache.ignite.internal.processors.query.calcite.exec.tracker.ExecutionNodeMemoryTracker;
@@ -61,7 +62,6 @@ import org.apache.ignite.internal.util.lang.RunnableX;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.U;
-import org.apache.ignite.lang.IgniteBiTuple;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -343,16 +343,18 @@ public class ExecutionContext<Row> extends AbstractQueryContext implements DataC
      * @param cacheId Cache id.
      * @param parts Partitions set.
      * @param mapper Mapper to specific data type.
+     * @param cmp Comparator to sort new and updated entries.
      * @return First, set of object changed in transaction, second, list of transaction data in required format.
      * @param <R> Required type.
      */
-    public <R> IgniteBiTuple<Set<KeyCacheObject>, List<R>> transactionChanges(
+    public <R> TransactionChanges<R> transactionChanges(
         int cacheId,
         int[] parts,
-        Function<CacheDataRow, R> mapper
+        Function<CacheDataRow, R> mapper,
+        @Nullable Comparator<R> cmp
     ) {
         if (F.isEmpty(qryTxEntries))
-            return F.t(Collections.emptySet(), Collections.emptyList());
+            return TransactionChanges.empty();
 
         // Expecting parts are sorted or almost sorted and amount of transaction entries are relatively small.
         if (parts != null && !F.isSorted(parts))
@@ -386,7 +388,10 @@ public class ExecutionContext<Row> extends AbstractQueryContext implements DataC
             }
         }
 
-        return F.t(changedKeys, newAndUpdatedRows);
+        if (cmp != null)
+            newAndUpdatedRows.sort(cmp);
+
+        return new TransactionChanges<>(changedKeys, newAndUpdatedRows);
     }
 
     /**
