@@ -213,9 +213,6 @@ public class CdcMain implements Runnable {
     /** Time of last segment consumption. */
     private AtomicLongMetric lastSegmentConsumptionTs;
 
-    /** Time of WAL segment events processing by a CDC consumer, in milliseconds. */
-    private HistogramMetricImpl eventsConsumptionTime;
-
     /** Metadata update time. */
     private HistogramMetricImpl metaUpdate;
 
@@ -224,6 +221,10 @@ public class CdcMain implements Runnable {
      * by {@link CdcConsumer}.
      */
     private HistogramMetricImpl evtCaptureTime;
+
+    /** Metric represents time between creating {@link WALIterator}, an iterator of {@link DataRecord}, containing the
+     * data change events, and processing it by a CDC consumer, in milliseconds. */
+    private HistogramMetricImpl evtConsumptionTime;
 
     /** Change Data Capture configuration. */
     protected final CdcConfiguration cdcCfg;
@@ -457,7 +458,7 @@ public class CdcMain implements Runnable {
             "Time between creating an event on Ignite node and capturing it by CdcConsumer");
         mreg.register(CDC_MODE, () -> cdcModeState.name(), String.class, "CDC mode");
 
-        eventsConsumptionTime = mreg.histogram(EVENTS_CONSUMPTION_TIME, HISTOGRAM_BUCKETS, EVENTS_CONSUMPTION_TIME_DESC);
+        evtConsumptionTime = mreg.histogram(EVENTS_CONSUMPTION_TIME, HISTOGRAM_BUCKETS, EVENTS_CONSUMPTION_TIME_DESC);
     }
 
     /**
@@ -629,7 +630,7 @@ public class CdcMain implements Runnable {
             if (interrupted)
                 throw new IgniteException("Change Data Capture Application interrupted");
 
-            eventsConsumptionTime.value(U.currentTimeMillis() - start);
+            evtConsumptionTime.value(U.currentTimeMillis() - start);
         }
         catch (IgniteCheckedException | IOException e) {
             throw new IgniteException(e);
