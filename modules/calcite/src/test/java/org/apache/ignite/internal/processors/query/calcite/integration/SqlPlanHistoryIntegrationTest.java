@@ -32,6 +32,7 @@ import java.util.Set;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
 import org.apache.ignite.IgniteCache;
+import org.apache.ignite.Ignition;
 import org.apache.ignite.cache.query.Query;
 import org.apache.ignite.cache.query.ScanQuery;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
@@ -45,7 +46,6 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.SqlConfiguration;
 import org.apache.ignite.indexing.IndexingQueryEngineConfiguration;
 import org.apache.ignite.internal.IgniteEx;
-import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.processors.query.IgniteSQLException;
 import org.apache.ignite.internal.processors.query.QueryEngineConfigurationEx;
 import org.apache.ignite.internal.processors.query.running.SqlPlan;
@@ -230,22 +230,17 @@ public class SqlPlanHistoryIntegrationTest extends GridCommonAbstractTest {
     }
 
     /**
-     * Starts Ignite instance.
+     * Starts and initiates Ignite instance.
      *
      * @throws Exception In case of failure.
      */
     protected void startTestGrid() throws Exception {
+        assumeFalse("Local queries can't be executed on client nodes", isClient && loc);
+
         startGrid(0);
 
         if (isClient)
             startClientGrid(1);
-    }
-
-    /** {@inheritDoc} */
-    @Override protected void beforeTest() throws Exception {
-        assumeFalse("Local queries can't be executed on client nodes", isClient && loc);
-
-        startTestGrid();
 
         IgniteCache<Integer, String> cacheA = queryNode().cache("A");
         IgniteCache<Integer, String> cacheB = queryNode().cache("B");
@@ -295,25 +290,25 @@ public class SqlPlanHistoryIntegrationTest extends GridCommonAbstractTest {
 
     /** Checks successful SqlFieldsQuery. */
     @Test
-    public void testSqlFieldsQuery() {
+    public void testSqlFieldsQuery() throws Exception {
         runSuccessfulQuery(sqlFieldsQry);
     }
 
     /** Checks failed SqlFieldsQuery. */
     @Test
-    public void testSqlFieldsQueryFailed() {
+    public void testSqlFieldsQueryFailed() throws Exception {
         runFailedQuery(sqlFieldsQryFailed);
     }
 
     /** Checks successful cross-cache SqlFieldsQuery. */
     @Test
-    public void testSqlFieldsCrossCacheQuery() {
+    public void testSqlFieldsCrossCacheQuery() throws Exception {
         runSuccessfulQuery(sqlFieldsQryCrossCache);
     }
 
     /** Checks failed cross-cache SqlFieldsQuery. */
     @Test
-    public void testSqlFieldsCrossCacheQueryFailed() {
+    public void testSqlFieldsCrossCacheQueryFailed() throws Exception {
         runFailedQuery(sqlFieldsQryCrossCacheFailed);
     }
 
@@ -327,6 +322,8 @@ public class SqlPlanHistoryIntegrationTest extends GridCommonAbstractTest {
             sqlEngine != IndexingQueryEngineConfiguration.ENGINE_NAME);
 
         assumeFalse("Only distributed queries have map and reduce phases", loc);
+
+        startTestGrid();
 
         startGridsMultiThreaded(1, 2);
 
@@ -352,11 +349,13 @@ public class SqlPlanHistoryIntegrationTest extends GridCommonAbstractTest {
      * two entries.
      */
     @Test
-    public void testSqlFieldsQueryWithReducePhaseFailed() {
+    public void testSqlFieldsQueryWithReducePhaseFailed() throws Exception {
         assumeFalse("Map/reduce queries are only applicable to H2 engine",
             sqlEngine != IndexingQueryEngineConfiguration.ENGINE_NAME);
 
         assumeFalse("Only distributed queries have map and reduce phases", loc);
+
+        startTestGrid();
 
         for (int i = 0; i < sqlFieldsQryWithReducePhaseFailed.length; i++) {
             try {
@@ -374,55 +373,57 @@ public class SqlPlanHistoryIntegrationTest extends GridCommonAbstractTest {
 
     /** Checks successful SqlQuery. */
     @Test
-    public void testSqlQuery() {
+    public void testSqlQuery() throws Exception {
         runSuccessfulQuery(sqlQry);
     }
 
     /** Checks failed SqlQuery. */
     @Test
-    public void testSqlQueryFailed() {
+    public void testSqlQueryFailed() throws Exception {
         runFailedQuery(sqlQryFailed);
     }
 
     /** Checks ScanQuery. */
     @Test
-    public void testScanQuery() {
+    public void testScanQuery() throws Exception {
         runQueryWithoutPlan(scanQry);
     }
 
     /** Checks TextQuery. */
     @Test
-    public void testTextQuery() {
+    public void testTextQuery() throws Exception {
         runQueryWithoutPlan(textQry);
     }
 
     /** Checks DML commands executed via JDBC. */
     @Test
-    public void testJdbcDml() {
+    public void testJdbcDml() throws Exception {
         runJdbcDml(dmlCmds);
     }
 
     /** Checks DML commands with joins executed via JDBC. */
     @Test
-    public void testJdbcDmlWithJoins() {
+    public void testJdbcDmlWithJoins() throws Exception {
         runJdbcDml(dmlCmdsWithJoins);
     }
 
     /** Checks DML commands executed via SqlFieldsQuery. */
     @Test
-    public void testSqlFieldsDml() {
+    public void testSqlFieldsDml() throws Exception {
         runSqlFieldsDml(dmlCmds);
     }
 
     /** Checks DML commands with joins executed via SqlFieldsQuery. */
     @Test
-    public void testSqlFieldsDmlWithJoins() {
+    public void testSqlFieldsDmlWithJoins() throws Exception {
         runSqlFieldsDml(dmlCmdsWithJoins);
     }
 
     /** Checks that older plan entries are evicted when maximum history size is reached. */
     @Test
     public void testPlanHistoryEviction() throws Exception {
+        startTestGrid();
+
         IgniteCache<Integer, String> cache = queryNode().cache("A");
 
         for (int i = 1; i <= (PLAN_HISTORY_SIZE + PLAN_HISTORY_EXCESS); i++) {
@@ -453,9 +454,11 @@ public class SqlPlanHistoryIntegrationTest extends GridCommonAbstractTest {
      * the beginning time).
      */
     @Test
-    public void testEntryReplacement() throws IgniteInterruptedCheckedException {
+    public void testEntryReplacement() throws Exception {
         assumeFalse("With the H2 engine, scan counts can be added to SQL plans for local queries ",
             loc && sqlEngine == IndexingQueryEngineConfiguration.ENGINE_NAME);
+
+        startTestGrid();
 
         long[] timeStamps = new long[2];
 
@@ -478,7 +481,9 @@ public class SqlPlanHistoryIntegrationTest extends GridCommonAbstractTest {
 
     /** Checks that SQL plan history remains empty if history size is set to zero. */
     @Test
-    public void testEmptyPlanHistory() {
+    public void testEmptyPlanHistory() throws Exception {
+        startTestGrid();
+
         queryNode().context().query().runningQueryManager().planHistoryTracker().setHistorySize(0);
 
         cacheQuery(sqlFieldsQry.setLocal(loc), "A");
@@ -488,20 +493,22 @@ public class SqlPlanHistoryIntegrationTest extends GridCommonAbstractTest {
 
     /** Checks that new entries are present in the plan history after history size is reset. */
     @Test
-    public void testResetPlanHistorySize() {
+    public void testResetPlanHistorySize() throws Exception {
         checkReset(() -> queryNode().context().query().runningQueryManager().planHistoryTracker().setHistorySize(5));
     }
 
     /** Checks that new entries are present in the plan history after PlanHistoryTracker is reset. */
     @Test
-    public void testResetPlanHistoryMetrics() {
+    public void testResetPlanHistoryMetrics() throws Exception {
         checkReset(() -> queryNode().context().query().runningQueryManager().resetPlanHistoryMetrics());
     }
 
     /**
      * @param qry Query.
      */
-    public void runSuccessfulQuery(Query qry) {
+    public void runSuccessfulQuery(Query qry) throws Exception {
+        startTestGrid();
+
         for (int i = 0; i < 2; i++) {
             cacheQuery(qry.setLocal(loc), "A");
 
@@ -512,7 +519,9 @@ public class SqlPlanHistoryIntegrationTest extends GridCommonAbstractTest {
     /**
      * @param qry Query.
      */
-    public void runFailedQuery(Query qry) {
+    public void runFailedQuery(Query qry) throws Exception {
+        startTestGrid();
+
         try {
             cacheQuery(qry.setLocal(loc), "A");
         }
@@ -526,7 +535,9 @@ public class SqlPlanHistoryIntegrationTest extends GridCommonAbstractTest {
     /**
      * @param qry Query.
      */
-    public void runQueryWithoutPlan(Query qry) {
+    public void runQueryWithoutPlan(Query qry) throws Exception {
+        startTestGrid();
+
         cacheQuery(qry.setLocal(loc), "A");
 
         checkSqlPlanHistory(0);
@@ -537,6 +548,9 @@ public class SqlPlanHistoryIntegrationTest extends GridCommonAbstractTest {
      */
     private void jdbcQuery(String qry) throws Exception {
         assumeFalse("There is no 'local query' parameter for JDBC queries", loc);
+
+        if (Ignition.allGrids().isEmpty())
+            startTestGrid();
 
         try (
             Connection conn = GridTestUtils.connect(queryNode(), null);
@@ -570,7 +584,7 @@ public class SqlPlanHistoryIntegrationTest extends GridCommonAbstractTest {
     /**
      * @param qrysInfo DML commands info (queries, simple query flag).
      */
-    public void runJdbcDml(IgniteBiTuple<List<String>, Boolean> qrysInfo) {
+    public void runJdbcDml(IgniteBiTuple<List<String>, Boolean> qrysInfo) throws Exception {
         assumeFalse("There is no 'local query' parameter for JDBC queries", loc);
 
         executeDml(qrysInfo, (cmds) -> {
@@ -590,7 +604,7 @@ public class SqlPlanHistoryIntegrationTest extends GridCommonAbstractTest {
     /**
      * @param qrysInfo DML commands info (queries, simple query flag).
      */
-    public void runSqlFieldsDml(IgniteBiTuple<List<String>, Boolean> qrysInfo) {
+    public void runSqlFieldsDml(IgniteBiTuple<List<String>, Boolean> qrysInfo) throws Exception {
         executeDml(qrysInfo, (cmds) -> {
             IgniteCache<Integer, String> cache = queryNode().getOrCreateCache("A");
 
@@ -602,8 +616,10 @@ public class SqlPlanHistoryIntegrationTest extends GridCommonAbstractTest {
      * @param qrysInfo DML commands info (queries, simple query flag).
      * @param task Task to be executed.
      */
-    public void executeDml(IgniteBiTuple<List<String>, Boolean> qrysInfo, Consumer<List<String>> task) {
+    public void executeDml(IgniteBiTuple<List<String>, Boolean> qrysInfo, Consumer<List<String>> task) throws Exception {
         assumeFalse("There is no lazy mode for DML operations", !isFullyFetched);
+
+        startTestGrid();
 
         List<String> cmds = qrysInfo.get1();
 
@@ -703,7 +719,9 @@ public class SqlPlanHistoryIntegrationTest extends GridCommonAbstractTest {
      *
      * @param reset Reset event.
      */
-    public void checkReset(Runnable reset) {
+    public void checkReset(Runnable reset) throws Exception {
+        startTestGrid();
+
         String[] qryText = new String[2];
 
         for (int i = 0; i < 2; i++) {
