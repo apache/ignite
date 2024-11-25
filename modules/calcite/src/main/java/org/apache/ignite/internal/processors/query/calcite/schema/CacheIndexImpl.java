@@ -181,8 +181,6 @@ public class CacheIndexImpl implements IgniteIndex {
             );
 
             if (!txChanges.changedKeysEmpty()) {
-                // This call will change `txChanges` content.
-                // Removing found key from set more efficient so we break some rules here.
                 rowFilter = transactionAwareCountRowFilter(rowFilter, txChanges);
 
                 cnt = countTransactionRows(notNull, iidx, txChanges.newAndUpdatedEntries());
@@ -271,6 +269,9 @@ public class CacheIndexImpl implements IgniteIndex {
                 if (row == null)
                     row = tree.getRow(io, pageAddr, idx);
 
+                // Intentionally use of `remove` here.
+                // We want to perform as few `key` as possible.
+                // So we break some rules here to optimize work with the data provided by the tree.
                 return !txChanges.remove(row.cacheDataRow().key());
             }
         };

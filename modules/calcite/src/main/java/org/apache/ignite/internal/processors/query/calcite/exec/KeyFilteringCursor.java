@@ -59,7 +59,7 @@ class KeyFilteringCursor<R> implements GridCursor<R> {
             cur = cursor.get();
 
             // Intentionally use of `remove` here.
-            // We want perform as few `toKey` as possible.
+            // We want to perform as few `toKey` as possible.
             // So we break some rules here to optimize work with the data provided by the underlying cursor.
         } while (!txChanges.changedKeysEmpty() && txChanges.remove(toKey.apply(cur)));
 
