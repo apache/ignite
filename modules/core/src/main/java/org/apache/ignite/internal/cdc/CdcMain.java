@@ -162,6 +162,9 @@ public class CdcMain implements Runnable {
     /** Event capture time. */
     public static final String EVT_CAPTURE_TIME = "EventCaptureTime";
 
+    /** Wal segment iterator processing time. */
+    public static final String WAL_PROCESSING_TIME = "WalProcessingTime";
+
     /** Binary metadata metric name. */
     public static final String BINARY_META_DIR = "BinaryMetaDir";
 
@@ -181,16 +184,6 @@ public class CdcMain implements Runnable {
     /** Filter for consumption in {@link CdcMode#CDC_UTILITY_ACTIVE} mode. */
     private static final IgniteBiPredicate<WALRecord.RecordType, WALPointer> ACTIVE_RECS =
         (type, ptr) -> type == DATA_RECORD_V2 || type == CDC_DATA_RECORD;
-
-    /** Histogram buckets for duration wal processing in milliseconds. */
-    public static final long[] HISTOGRAM_BUCKETS = new long[] {25, 50, 100, 250, 500, 1000, 2500, 5000, 10000, 25000, 50000};
-
-    /** */
-    public static final String EVENTS_CONSUMPTION_TIME = "EventsConsumptionTime";
-
-    /** */
-    public static final String EVENTS_CONSUMPTION_TIME_DESC =
-        "Time of WAL segment events processing by a CDC consumer, in milliseconds.";
 
     /** Ignite configuration. */
     private final IgniteConfiguration igniteCfg;
@@ -222,9 +215,8 @@ public class CdcMain implements Runnable {
      */
     private HistogramMetricImpl evtCaptureTime;
 
-    /** Metric represents time between creating {@link WALIterator}, an iterator of {@link DataRecord}, containing the
-     * data change events, and processing it by a CDC consumer, in milliseconds. */
-    private HistogramMetricImpl evtConsumptionTime;
+    /** Metric represents time between creating {@link WALIterator} and processing it, in milliseconds. */
+    private HistogramMetricImpl walProcessingTime;
 
     /** Change Data Capture configuration. */
     protected final CdcConfiguration cdcCfg;
@@ -456,9 +448,11 @@ public class CdcMain implements Runnable {
             EVT_CAPTURE_TIME,
             new long[] {5_000, 10_000, 15_000, 30_000, 60_000},
             "Time between creating an event on Ignite node and capturing it by CdcConsumer");
+        walProcessingTime = mreg.histogram(
+            WAL_PROCESSING_TIME,
+            new long[] {25, 50, 100, 250, 500, 1000, 2500, 5000, 10000, 25000, 50000},
+            "Time of WAL segment processing, in milliseconds.");
         mreg.register(CDC_MODE, () -> cdcModeState.name(), String.class, "CDC mode");
-
-        evtConsumptionTime = mreg.histogram(EVENTS_CONSUMPTION_TIME, HISTOGRAM_BUCKETS, EVENTS_CONSUMPTION_TIME_DESC);
     }
 
     /**
@@ -591,12 +585,19 @@ public class CdcMain implements Runnable {
 
         curSegmentIdx.value(segmentIdx);
 
+        long start = U.currentTimeMillis();
+
         if (cdcModeState == CdcMode.IGNITE_NODE_ACTIVE) {
-            if (consumeSegmentPassively(builder))
+            if (consumeSegmentPassively(builder)) {
+                walProcessingTime.value(U.currentTimeMillis() - start);
+
                 return true;
+            }
         }
         else
             consumeSegmentActively(builder);
+
+        walProcessingTime.value(U.currentTimeMillis() - start);
 
         processedSegments.add(segment);
 
@@ -607,8 +608,6 @@ public class CdcMain implements Runnable {
      * Consumes CDC events in {@link CdcMode#CDC_UTILITY_ACTIVE} mode.
      */
     private void consumeSegmentActively(IgniteWalIteratorFactory.IteratorParametersBuilder builder) {
-        long start = U.currentTimeMillis();
-
         try (DataEntryIterator iter = new DataEntryIterator(
             new IgniteWalIteratorFactory(log).iterator(builder.addFilter(ACTIVE_RECS)),
             evtCaptureTime)
@@ -629,8 +628,6 @@ public class CdcMain implements Runnable {
 
             if (interrupted)
                 throw new IgniteException("Change Data Capture Application interrupted");
-
-            evtConsumptionTime.value(U.currentTimeMillis() - start);
         }
         catch (IgniteCheckedException | IOException e) {
             throw new IgniteException(e);

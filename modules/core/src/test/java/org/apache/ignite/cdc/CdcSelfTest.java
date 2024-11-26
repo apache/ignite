@@ -81,7 +81,7 @@ import static org.apache.ignite.cluster.ClusterState.ACTIVE;
 import static org.apache.ignite.configuration.DataStorageConfiguration.DFLT_CDC_WAL_DIRECTORY_MAX_SIZE;
 import static org.apache.ignite.configuration.DataStorageConfiguration.DFLT_PAGE_SIZE;
 import static org.apache.ignite.configuration.DataStorageConfiguration.DFLT_WAL_ARCHIVE_PATH;
-import static org.apache.ignite.internal.cdc.CdcMain.EVENTS_CONSUMPTION_TIME;
+import static org.apache.ignite.internal.cdc.CdcMain.WAL_PROCESSING_TIME;
 import static org.apache.ignite.internal.processors.cache.GridCacheUtils.cacheId;
 import static org.apache.ignite.testframework.GridTestUtils.assertThrows;
 import static org.apache.ignite.testframework.GridTestUtils.getFieldValue;
@@ -296,7 +296,7 @@ public class CdcSelfTest extends AbstractCdcTest {
 
         // Metric check awaits the CDC consumer to finish.
         long[] evtCaptureTime = ((MetricRegistry)getFieldValue(cdcMain, "mreg"))
-            .<HistogramMetric>findMetric(EVENTS_CONSUMPTION_TIME).value();
+            .<HistogramMetric>findMetric(WAL_PROCESSING_TIME).value();
 
         assertFalse(F.isEmpty(evtCaptureTime));
         assertTrue(Arrays.stream(evtCaptureTime).sum() > 0);
