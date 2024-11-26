@@ -674,11 +674,15 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
 
     /** {@inheritDoc} */
     @Override public IgniteInternalFuture<?> putAllConflictAsync(Map<KeyCacheObject, GridCacheDrInfo> conflictMap) {
+        final boolean statsEnabled = ctx.statisticsEnabled();
+
+        long start = statsEnabled ? System.nanoTime() : 0L;
+
         ctx.dr().onReceiveCacheEntriesReceived(conflictMap.size());
 
         warnIfUnordered(conflictMap, BulkOperation.PUT);
 
-        return updateAll0(
+        IgniteInternalFuture<?> fut = updateAll0(
             null,
             null,
             null,
@@ -687,6 +691,11 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
             false,
             UPDATE,
             true);
+
+        if (statsEnabled)
+            fut.listen(new UpdatePutAllConflictTimeStatClosure<>(metrics0(), start));
+
+        return fut;
     }
 
     /** {@inheritDoc} */
@@ -729,9 +738,18 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
 
     /** {@inheritDoc} */
     @Override public IgniteInternalFuture<?> removeAllConflictAsync(Map<KeyCacheObject, GridCacheVersion> conflictMap) {
+        final boolean statsEnabled = ctx.statisticsEnabled();
+
+        final long start = statsEnabled ? System.nanoTime() : 0L;
+
         ctx.dr().onReceiveCacheEntriesReceived(conflictMap.size());
 
-        return removeAllAsync0(null, conflictMap, false, true);
+        IgniteInternalFuture<?> fut = removeAllAsync0(null, conflictMap, false, true);
+
+        if (statsEnabled)
+            fut.listen(new UpdateRemoveAllConflictTimeStatClosure<>(metrics0(), start));
+
+        return fut;
     }
 
     /**
