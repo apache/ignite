@@ -734,9 +734,6 @@ public class TcpClientCache<K, V> implements ClientCache<K, V> {
 
     /** {@inheritDoc} */
     @Override public void clear(K key) throws ClientException {
-        if (transactions.tx() != null)
-            throw new CacheException(NON_TRANSACTIONAL_CLIENT_CACHE_CLEAR_IN_TX_ERROR_MESSAGE);
-
         if (key == null)
             throw new NullPointerException("key");
 
@@ -750,9 +747,6 @@ public class TcpClientCache<K, V> implements ClientCache<K, V> {
 
     /** {@inheritDoc} */
     @Override public IgniteClientFuture<Void> clearAsync(K key) throws ClientException {
-        if (transactions.tx() != null)
-            throw new CacheException(NON_TRANSACTIONAL_CLIENT_CACHE_CLEAR_IN_TX_ERROR_MESSAGE);
-
         if (key == null)
             throw new NullPointerException("key");
 
@@ -766,9 +760,6 @@ public class TcpClientCache<K, V> implements ClientCache<K, V> {
 
     /** {@inheritDoc} */
     @Override public void clearAll(Set<? extends K> keys) throws ClientException {
-        if (transactions.tx() != null)
-            throw new CacheException(NON_TRANSACTIONAL_CLIENT_CACHE_CLEAR_IN_TX_ERROR_MESSAGE);
-
         if (keys == null)
             throw new NullPointerException("keys");
 
@@ -786,9 +777,6 @@ public class TcpClientCache<K, V> implements ClientCache<K, V> {
 
     /** {@inheritDoc} */
     @Override public IgniteClientFuture<Void> clearAllAsync(Set<? extends K> keys) throws ClientException {
-        if (transactions.tx() != null)
-            throw new CacheException(NON_TRANSACTIONAL_CLIENT_CACHE_CLEAR_IN_TX_ERROR_MESSAGE);
-
         if (keys == null)
             throw new NullPointerException("keys");
 
@@ -1317,6 +1305,8 @@ public class TcpClientCache<K, V> implements ClientCache<K, V> {
         // Transactional operation cannot be executed on affinity node, it should be executed on node started
         // the transaction.
         if (tx != null) {
+            checkTxClearOperation(op);
+
             try {
                 return tx.clientChannel().service(op, payloadWriter, payloadReader);
             }
@@ -1344,6 +1334,8 @@ public class TcpClientCache<K, V> implements ClientCache<K, V> {
         // Transactional operation cannot be executed on affinity node, it should be executed on node started
         // the transaction.
         if (tx != null) {
+            checkTxClearOperation(op);
+
             CompletableFuture<T> fut = new CompletableFuture<>();
 
             tx.clientChannel().serviceAsync(op, payloadWriter, payloadReader).whenComplete((res, err) -> {
@@ -1364,6 +1356,12 @@ public class TcpClientCache<K, V> implements ClientCache<K, V> {
             return ch.affinityServiceAsync(cacheId, affKey, op, payloadWriter, payloadReader);
         else
             return ch.serviceAsync(op, payloadWriter, payloadReader);
+    }
+
+    /** */
+    private void checkTxClearOperation(ClientOperation op) {
+        if (op == ClientOperation.CACHE_CLEAR_KEY || op == ClientOperation.CACHE_CLEAR_KEYS)
+            throw new CacheException(NON_TRANSACTIONAL_CLIENT_CACHE_CLEAR_IN_TX_ERROR_MESSAGE);
     }
 
     /**
