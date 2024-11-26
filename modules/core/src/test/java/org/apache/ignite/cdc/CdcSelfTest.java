@@ -295,11 +295,11 @@ public class CdcSelfTest extends AbstractCdcTest {
         checkMetrics(cdcMain, offsetCommit ? KEYS_CNT : ((KEYS_CNT + 3) * 2 + KEYS_CNT));
 
         // Metric check awaits the CDC consumer to finish.
-        long[] evtCaptureTime = ((MetricRegistry)getFieldValue(cdcMain, "mreg"))
+        long[] walProcessingTime = ((MetricRegistry)getFieldValue(cdcMain, "mreg"))
             .<HistogramMetric>findMetric(WAL_PROCESSING_TIME).value();
 
-        assertFalse(F.isEmpty(evtCaptureTime));
-        assertTrue(Arrays.stream(evtCaptureTime).sum() > 0);
+        assertFalse(F.isEmpty(walProcessingTime));
+        assertTrue(Arrays.stream(walProcessingTime).sum() > 0);
 
         rmvFut.cancel();
 

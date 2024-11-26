@@ -125,7 +125,7 @@ The following metrics are provided by the application (additional metrics can be
 | BinaryMetaDir | Binary meta-directory the application reads data from.
 | MarshallerDir | Marshaller directory the application reads data from.
 | CdcDir | The CDC directory the application reads data from.
-| EventsConsumptionTime | Time of WAL segment events processing by a CDC consumer, in milliseconds.
+| WalProcessingTime | Time of WAL segment processing, in milliseconds.
 |===
 
 == Logging
