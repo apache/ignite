@@ -33,6 +33,7 @@ import org.apache.ignite.internal.processors.query.QueryContext;
 import org.apache.ignite.internal.processors.query.QueryEngine;
 import org.apache.ignite.internal.processors.query.calcite.QueryChecker;
 import org.apache.ignite.internal.processors.query.calcite.util.Commons;
+import org.apache.ignite.testframework.SupplierX;
 import org.apache.ignite.transactions.Transaction;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
@@ -210,22 +211,6 @@ public abstract class AbstractBasicIntegrationTransactionalTest extends Abstract
     /** */
     public String atomicity() {
         return "atomicity=" + (sqlTxMode == SqlTransactionMode.NONE ? CacheAtomicityMode.ATOMIC : CacheAtomicityMode.TRANSACTIONAL);
-    }
-
-    /** */
-    public interface SupplierX<T> {
-        /** */
-        T getx() throws Exception;
-
-        /** */
-        default T get() {
-            try {
-                return getx();
-            }
-            catch (Exception e) {
-                throw new RuntimeException(e);
-            }
-        }
     }
 
     /** */

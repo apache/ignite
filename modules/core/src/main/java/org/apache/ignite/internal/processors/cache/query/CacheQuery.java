@@ -22,12 +22,14 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.Deque;
 import java.util.HashSet;
+import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.NoSuchElementException;
 import java.util.Queue;
 import java.util.Set;
+import javax.cache.Cache;
 import javax.cache.CacheException;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
@@ -46,14 +48,18 @@ import org.apache.ignite.internal.cluster.ClusterGroupEmptyCheckedException;
 import org.apache.ignite.internal.cluster.ClusterTopologyCheckedException;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.CacheInvalidStateException;
+import org.apache.ignite.internal.processors.cache.CacheObject;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
+import org.apache.ignite.internal.processors.cache.KeyCacheObject;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtCacheAdapter;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtUnreservedPartitionException;
 import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionTopology;
+import org.apache.ignite.internal.processors.cache.transactions.IgniteTxEntry;
 import org.apache.ignite.internal.processors.query.QueryUtils;
 import org.apache.ignite.internal.util.GridCloseableIteratorAdapter;
 import org.apache.ignite.internal.util.GridEmptyCloseableIterator;
 import org.apache.ignite.internal.util.lang.GridCloseableIterator;
+import org.apache.ignite.internal.util.lang.GridIterator;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.P1;
@@ -63,9 +69,11 @@ import org.apache.ignite.internal.util.typedef.internal.A;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.lang.IgniteBiPredicate;
+import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.lang.IgniteClosure;
 import org.apache.ignite.lang.IgniteReducer;
 import org.apache.ignite.plugin.security.SecurityPermission;
+import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.internal.processors.cache.query.GridCacheQueryType.INDEX;
@@ -261,7 +269,7 @@ public class CacheQuery<T> {
     private IgniteClosure<?, ?> transform;
 
     /** Partition. */
-    private Integer part;
+    private final Integer part;
 
     /** */
     private final boolean incMeta;
@@ -291,7 +299,10 @@ public class CacheQuery<T> {
     private int taskHash;
 
     /** */
-    private Boolean dataPageScanEnabled;
+    private final Boolean dataPageScanEnabled;
+
+    /** */
+    private final Collection<KeyCacheObject> skipKeys;
 
     /**
      * Cache query adapter for SCAN query.
@@ -303,6 +314,7 @@ public class CacheQuery<T> {
      * @param keepBinary Keep binary flag.
      * @param forceLocal Flag to force local query.
      * @param dataPageScanEnabled Flag to enable data page scan.
+     * @param skipKeys Set of keys that must be skiped during iteration.
      */
     public CacheQuery(
         GridCacheContext<?, ?> cctx,
@@ -312,9 +324,12 @@ public class CacheQuery<T> {
         @Nullable Integer part,
         boolean keepBinary,
         boolean forceLocal,
-        Boolean dataPageScanEnabled
+        Boolean dataPageScanEnabled,
+        @Nullable Set<KeyCacheObject> skipKeys
     ) {
-        this(cctx, type, null, null, filter, part, false, keepBinary, dataPageScanEnabled, null);
+        this(cctx, type, null, null, filter, part, false, keepBinary, dataPageScanEnabled, null, skipKeys);
+
+        assert F.isEmpty(skipKeys) || type == SCAN;
 
         this.transform = transform;
         this.forceLocal = forceLocal;
@@ -332,6 +347,7 @@ public class CacheQuery<T> {
      * @param incMeta Include metadata flag.
      * @param keepBinary Keep binary flag.
      * @param dataPageScanEnabled Flag to enable data page scan.
+     * @param skipKeys Set of keys that must be skiped during iteration.
      */
     public CacheQuery(
         GridCacheContext<?, ?> cctx,
@@ -343,7 +359,8 @@ public class CacheQuery<T> {
         boolean incMeta,
         boolean keepBinary,
         Boolean dataPageScanEnabled,
-        IndexQueryDesc idxQryDesc
+        IndexQueryDesc idxQryDesc,
+        @Nullable Collection<KeyCacheObject> skipKeys
     ) {
         assert cctx != null;
         assert type != null;
@@ -359,6 +376,7 @@ public class CacheQuery<T> {
         this.keepBinary = keepBinary;
         this.dataPageScanEnabled = dataPageScanEnabled;
         this.idxQryDesc = idxQryDesc;
+        this.skipKeys = skipKeys;
 
         log = cctx.logger(getClass());
     }
@@ -383,6 +401,7 @@ public class CacheQuery<T> {
      * @param keepBinary Keep binary flag.
      * @param taskHash Task hash.
      * @param dataPageScanEnabled Flag to enable data page scan.
+     * @param skipKeys Set of keys that must be skiped during iteration.
      */
     public CacheQuery(
         GridCacheContext<?, ?> cctx,
@@ -402,7 +421,8 @@ public class CacheQuery<T> {
         boolean incMeta,
         boolean keepBinary,
         int taskHash,
-        Boolean dataPageScanEnabled
+        Boolean dataPageScanEnabled,
+        @Nullable Collection<KeyCacheObject> skipKeys
     ) {
         this.cctx = cctx;
         this.type = type;
@@ -422,6 +442,7 @@ public class CacheQuery<T> {
         this.keepBinary = keepBinary;
         this.taskHash = taskHash;
         this.dataPageScanEnabled = dataPageScanEnabled;
+        this.skipKeys = skipKeys;
     }
 
     /**
@@ -442,12 +463,17 @@ public class CacheQuery<T> {
         @Nullable String clsName,
         @Nullable IgniteBiPredicate<Object, Object> filter
     ) {
-        this(cctx, type, clsName, null, filter, part, false, false, null, idxQryDesc);
+        this(cctx, type, clsName, null, filter, part, false, false, null, idxQryDesc, null);
     }
 
     /** @return Flag to enable data page scan. */
     public Boolean isDataPageScanEnabled() {
         return dataPageScanEnabled;
+    }
+
+    /** @return Set of keys that must be skiped during iteration. */
+    public Collection<KeyCacheObject> skipKeys() {
+        return skipKeys;
     }
 
     /** @return Type. */
@@ -714,8 +740,11 @@ public class CacheQuery<T> {
             return (CacheQueryFuture<R>)(loc ? qryMgr.queryLocal(bean) : qryMgr.queryDistributed(bean, nodes));
     }
 
-    /** @return Scan query iterator. */
-    public GridCloseableIterator executeScanQuery() throws IgniteCheckedException {
+    /**
+     * @param newAndUpdatedEntries Collection of entries created or updated in transaction.
+     * @return Scan query iterator.
+     */
+    public GridCloseableIterator executeScanQuery(List<Object> newAndUpdatedEntries) throws IgniteCheckedException {
         assert type == SCAN : "Wrong processing of query: " + type;
 
         GridDhtCacheAdapter<?, ?> cacheAdapter = cctx.isNear() ? cctx.near().dht() : cctx.dht();
@@ -756,14 +785,15 @@ public class CacheQuery<T> {
 
         final GridCacheQueryManager qryMgr = cctx.queries();
 
-        boolean loc = nodes.size() == 1 && F.first(nodes).id().equals(cctx.localNodeId());
+        final GridCloseableIterator<T> iter = (nodes.size() == 1 && F.first(nodes).id().equals(cctx.localNodeId()))
+            ? qryMgr.scanQueryLocal(this, true)
+            : part != null
+                ? new ScanQueryFallbackClosableIterator(part, this, qryMgr, cctx)
+                : qryMgr.scanQueryDistributed(this, nodes);
 
-        if (loc)
-            return qryMgr.scanQueryLocal(this, true);
-        else if (part != null)
-            return new ScanQueryFallbackClosableIterator(part, this, qryMgr, cctx);
-        else
-            return qryMgr.scanQueryDistributed(this, nodes);
+        return F.isEmpty(newAndUpdatedEntries)
+            ? iter
+            : iteratorWithTxData(iter, newAndUpdatedEntries);
     }
 
     /** @return Nodes to execute on. */
@@ -840,6 +870,64 @@ public class CacheQuery<T> {
                     (part == null || owners.contains(n));
             }
         });
+    }
+
+    /** */
+    private @NotNull GridCloseableIterator<T> iteratorWithTxData(
+        final GridCloseableIterator<T> iter,
+        List<Object> newAndUpdatedEntries
+    ) throws IgniteCheckedException {
+        IgniteClosure<Cache.Entry<Object, Object>, T> t0 = (IgniteClosure<Cache.Entry<Object, Object>, T>)transform;
+
+        final GridIterator<T> txIter = new AbstractScanQueryIterator<>((GridCacheContext<Object, Object>)cctx, this, t0, true) {
+            private final Iterator<Object> txData = newAndUpdatedEntries.iterator();
+
+            /** {@inheritDoc} */
+            @Override protected T advance() {
+                long start = System.nanoTime();
+
+                while (txData.hasNext()) {
+                    final Object e = txData.next();
+                    final KeyCacheObject key;
+                    final CacheObject val;
+
+                    if (e instanceof IgniteTxEntry) {
+                        key = ((IgniteTxEntry)e).key();
+                        val = ((IgniteTxEntry)e).value();
+                    }
+                    else {
+                        key = ((IgniteBiTuple<KeyCacheObject, CacheObject>)e).get1();
+                        val = ((IgniteBiTuple<KeyCacheObject, CacheObject>)e).get2();
+                    }
+
+                    T next = filterAndTransform(key, val, start);
+
+                    if (next != null)
+                        return next;
+                }
+
+                return null;
+            }
+        };
+
+        return new GridCloseableIteratorAdapter<>() {
+            /** {@inheritDoc} */
+            @Override protected T onNext() {
+                return iter.hasNext() ? iter.next() : txIter.next();
+            }
+
+            /** {@inheritDoc} */
+            @Override protected boolean onHasNext() {
+                return iter.hasNext() || txIter.hasNext();
+            }
+
+            /** {@inheritDoc} */
+            @Override protected void onClose() throws IgniteCheckedException {
+                iter.close();
+
+                super.onClose();
+            }
+        };
     }
 
     /** {@inheritDoc} */
