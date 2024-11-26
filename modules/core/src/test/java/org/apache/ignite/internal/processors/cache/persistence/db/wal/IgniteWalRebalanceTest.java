@@ -137,8 +137,9 @@ public class IgniteWalRebalanceTest extends GridCommonAbstractTest {
         cfg.setConsistentId(gridName);
 
         CacheConfiguration<Object, Object> ccfg = new CacheConfiguration<>(CACHE_NAME)
-            .setAtomicityMode(CacheAtomicityMode.ATOMIC)
-            .setRebalanceMode(CacheRebalanceMode.ASYNC)
+            .setAtomicityMode(CacheAtomicityMode.TRANSACTIONAL)
+//            .setWriteSynchronizationMode(CacheWriteSynchronizationMode.FULL_SYNC)
+            .setRebalanceMode(CacheRebalanceMode.SYNC)
             .setCacheMode(CacheMode.PARTITIONED)
             .setBackups(backups)
             .setAffinity(new RendezvousAffinityFunction(false, PARTS_CNT));
@@ -351,12 +352,37 @@ public class IgniteWalRebalanceTest extends GridCommonAbstractTest {
                 cache.remove(k);
         }
 
+        awaitPartitionMapExchange();
+
         forceCheckpoint();
+
+        awaitPartitionMapExchange();
+
+        System.out.println("============1============");
+
+        for (int k = 0; k < 11; k++) {
+            IgniteCache<Object, Object> cache1 = G.allGrids().get(0).cache(CACHE_NAME);
+
+            System.out.println("cache1.get(" + k + ") = " + cache1.get(k));
+        }
+
+        System.out.println("========================");
+
 
         // Stop grids which have actual WAL history.
         stopGrid(0);
 
         stopGrid(1);
+
+        System.out.println("============1.1============");
+
+        for (int k = 0; k < 11; k++) {
+            IgniteCache<Object, Object> cache1 = G.allGrids().get(0).cache(CACHE_NAME);
+
+            System.out.println("cache1.get(" + k + ") = " + cache1.get(k));
+        }
+
+        System.out.println("========================");
 
         // Start new node which should rebalance all data from node(2) without using WAL,
         // because node(2) doesn't have full history for rebalance.
@@ -368,6 +394,48 @@ public class IgniteWalRebalanceTest extends GridCommonAbstractTest {
             .walRebalanceVersions(grpId);
 
         Assert.assertFalse(topVers.contains(ignite.cluster().topologyVersion()));
+
+        System.out.println("===========2=============");
+
+        for (int k = 0; k < 11; k++) {
+            IgniteCache<Object, Object> cache1 = G.allGrids().get(0).cache(CACHE_NAME);
+
+            System.out.println("cache1.get(" + k + ") = " + cache1.get(k));
+        }
+
+        System.out.println("========================");
+                /*
+Expected :IndexedObject [iVal=2]
+Actual   :IndexedObject [iVal=1]
+
+success
+cache1.get(0) = IndexedObject [iVal=1]
+cache1.get(1) = null
+cache1.get(2) = IndexedObject [iVal=2]
+cache1.get(3) = IndexedObject [iVal=4]
+cache1.get(4) = null
+cache1.get(5) = IndexedObject [iVal=5]
+cache1.get(6) = IndexedObject [iVal=7]
+...
+cache1.get(317) = IndexedObject [iVal=317]
+cache1.get(318) = IndexedObject [iVal=319]
+cache1.get(319) = null
+
+failed
+cache1.get(0) = IndexedObject [iVal=1]
+cache1.get(1) = null
+cache1.get(2) = IndexedObject [iVal=1] // вот тут и дальше хуйня
+cache1.get(3) = IndexedObject [iVal=4]
+cache1.get(4) = null
+cache1.get(5) = IndexedObject [iVal=4]
+cache1.get(6) = IndexedObject [iVal=7]
+...
+cache1.get(317) = IndexedObject [iVal=316]
+cache1.get(318) = IndexedObject [iVal=319]
+cache1.get(319) = null
+
+
+                 */
 
         // Check data consistency.
         for (Ignite ig : G.allGrids()) {
