@@ -17,7 +17,6 @@
 
 package org.apache.ignite.internal.cache.context;
 
-import java.util.Collections;
 import java.util.Map;
 import org.apache.ignite.session.SessionContext;
 import org.jetbrains.annotations.Nullable;
@@ -29,7 +28,7 @@ public final class SessionContextImpl implements SessionContext {
 
     /** @param attrs Session attributes. */
     public SessionContextImpl(Map<String, String> attrs) {
-        this.attrs = Collections.unmodifiableMap(attrs);
+        this.attrs = attrs;
     }
 
     /** {@inheritDoc} */
@@ -38,7 +37,7 @@ public final class SessionContextImpl implements SessionContext {
     }
 
     /** @return Application attributes. */
-    public Map<String, String> getAttributes() {
+    public Map<String, String> attributes() {
         return attrs;
     }
 }

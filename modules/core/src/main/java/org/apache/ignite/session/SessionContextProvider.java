@@ -17,8 +17,12 @@
 
 package org.apache.ignite.session;
 
+import org.apache.ignite.resources.SessionContextProviderResource;
+
 /**
  * Provides access to session context.
+ *
+ * @see SessionContextProviderResource
  */
 public interface SessionContextProvider {
     /** @return Session context, never {@code null}. */

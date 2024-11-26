@@ -20,6 +20,7 @@ package org.apache.ignite.internal;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutorService;
 import java.util.stream.Collectors;
 import javax.cache.CacheException;
@@ -74,6 +75,9 @@ public class IgniteApplicationAttributesAware implements Ignite {
     /** Application attributes. */
     private final Map<String, String> attrs;
 
+    /** Stores caches configured with the application attributes. */
+    private final Map<String, IgniteCache<?, ?>> appAttrCaches = new ConcurrentHashMap<>();
+
     /**
      * @param delegate Parent Ignite instance.
      * @param attrs Application attributes.
@@ -88,11 +92,15 @@ public class IgniteApplicationAttributesAware implements Ignite {
     /**
      * Set application attributes to all returned caches.
      *
-     * @param cache Cache.
+     * @param cache Cache, or {@code null}.
      * @return Cache with application attributes.
      */
-    private <K, V> IgniteCache<K, V> withApplicationAttributes(IgniteCache<K, V> cache) {
-        return ((IgniteCacheProxy<K, V>)cache).withApplicationAttributes(attrs);
+    private <K, V> IgniteCache<K, V> withApplicationAttributes(@Nullable IgniteCache<K, V> cache) {
+        if (cache == null)
+            return null;
+
+        return (IgniteCache<K, V>)appAttrCaches
+            .computeIfAbsent(cache.getName(), c -> ((IgniteCacheProxy<K, V>)cache).withApplicationAttributes(attrs));
     }
 
     /** {@inheritDoc} */
@@ -115,11 +123,21 @@ public class IgniteApplicationAttributesAware implements Ignite {
 
     /** {@inheritDoc} */
     @Override public <K, V> IgniteCache<K, V> getOrCreateCache(CacheConfiguration<K, V> cacheCfg) throws CacheException {
+        IgniteCache<K, V> cache = (IgniteCache<K, V>)appAttrCaches.get(cacheCfg.getName());
+
+        if (cache != null)
+            return cache;
+
         return withApplicationAttributes(delegate.getOrCreateCache(cacheCfg));
     }
 
     /** {@inheritDoc} */
     @Override public <K, V> IgniteCache<K, V> getOrCreateCache(String cacheName) throws CacheException {
+        IgniteCache<K, V> cache = (IgniteCache<K, V>)appAttrCaches.get(cacheName);
+
+        if (cache != null)
+            return cache;
+
         return withApplicationAttributes(delegate.getOrCreateCache(cacheName));
     }
 
@@ -161,6 +179,11 @@ public class IgniteApplicationAttributesAware implements Ignite {
 
     /** {@inheritDoc} */
     @Override public <K, V> IgniteCache<K, V> cache(String name) throws CacheException {
+        IgniteCache<K, V> cache = (IgniteCache<K, V>)appAttrCaches.get(name);
+
+        if (cache != null)
+            return cache;
+
         return withApplicationAttributes(delegate.cache(name));
     }
 
@@ -257,11 +280,16 @@ public class IgniteApplicationAttributesAware implements Ignite {
     /** {@inheritDoc} */
     @Override public void destroyCache(String cacheName) throws CacheException {
         delegate.destroyCache(cacheName);
+
+        appAttrCaches.remove(cacheName);
     }
 
     /** {@inheritDoc} */
     @Override public void destroyCaches(Collection<String> cacheNames) throws CacheException {
         delegate.destroyCaches(cacheNames);
+
+        for (String c: cacheNames)
+            appAttrCaches.remove(c);
     }
 
     /** {@inheritDoc} */
@@ -430,6 +458,9 @@ public class IgniteApplicationAttributesAware implements Ignite {
 
     /** */
     @Override public Ignite withApplicationAttributes(Map<String, String> attrs) {
+        if (this.attrs.equals(attrs))
+            return this;
+
         return delegate.withApplicationAttributes(attrs);
     }
 }

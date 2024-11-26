@@ -668,7 +668,7 @@ public class ExecutionServiceImpl<Row> extends AbstractService implements Execut
                             parametersMarshalled,
                             timeout,
                             ectx.getQryTxEntries(),
-                            sesCtx == null ? null : sesCtx.getAttributes()
+                            sesCtx == null ? null : sesCtx.attributes()
                         );
 
                         messageService().send(nodeId, req);
