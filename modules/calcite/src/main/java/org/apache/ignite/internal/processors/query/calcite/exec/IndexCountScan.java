@@ -85,8 +85,6 @@ public class IndexCountScan<Row> extends AbstractCacheScan<Row> {
             );
 
             if (!txChanges.changedKeysEmpty()) {
-                // This call will change `txChanges.get1()` content.
-                // Removing found key from set more efficient so we break some rules here.
                 rowFilter = transactionAwareCountRowFilter(rowFilter, txChanges);
 
                 cnt = countTransactionRows(notNull, idx, txChanges.newAndUpdatedEntries());
