@@ -297,7 +297,7 @@ public class CacheOperationContext implements Serializable {
      * @return Application attributes.
      */
     public Map<String, String> applicationAttributes() {
-        return appAttrs == null ? null : Collections.unmodifiableMap(appAttrs);
+        return appAttrs;
     }
 
     /** {@inheritDoc} */

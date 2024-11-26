@@ -18,10 +18,13 @@
 package org.apache.ignite.session;
 
 import org.apache.ignite.Ignite;
+import org.apache.ignite.resources.SessionContextProviderResource;
 import org.jetbrains.annotations.Nullable;
 
 /**
  * Provides access to attributes set with {@link Ignite#withApplicationAttributes}.
+ *
+ * @see SessionContextProviderResource
  */
 public interface SessionContext {
     /**

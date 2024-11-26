@@ -22,6 +22,7 @@ import java.lang.annotation.ElementType;
 import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
+import org.apache.ignite.resources.SessionContextProviderResource;
 
 /**
  * Annotates public methods in classes to be used in SQL queries as custom functions.
@@ -44,7 +45,7 @@ import java.lang.annotation.Target;
  *     ign.query(new SqlFieldsQuery("select sqr(2) where sqr(1) = 1"));
  * </pre>
  * <p>
- * SQL functions can use spefic session attributes:
+ * SQL functions can use attributes set on client side:
  * <pre name="code" class="java">
  *     public class MyFunctions {
  *         &#64;SessionContextProviderResource
@@ -58,6 +59,8 @@ import java.lang.annotation.Target;
  * </pre>
  * Note, accessing to the attributes is available in the Calcite query engine only. In a such case a class must have public
  * zero-args constructor.
+ *
+ * @see SessionContextProviderResource
  */
 @Documented
 @Retention(RetentionPolicy.RUNTIME)

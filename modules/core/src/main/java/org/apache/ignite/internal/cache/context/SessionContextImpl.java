@@ -23,10 +23,10 @@ import org.jetbrains.annotations.Nullable;
 
 /** */
 public final class SessionContextImpl implements SessionContext {
-    /** Session attributes. */
+    /** Application attributes. */
     private final Map<String, String> attrs;
 
-    /** @param attrs Session attributes. */
+    /** @param attrs Application attributes. */
     public SessionContextImpl(Map<String, String> attrs) {
         this.attrs = attrs;
     }

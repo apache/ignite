@@ -180,10 +180,6 @@ public class GatewayProtectedCacheProxy<K, V> extends AsyncSupportAdapter<Ignite
         CacheOperationGate opGate = onEnter();
 
         try {
-            // Ignite use the same attributes reference for underlying caches.
-            if (appAttrs == opCtx.applicationAttributes())
-                return this;
-
             return new GatewayProtectedCacheProxy<>(delegate, opCtx.setApplicationAttributes(appAttrs), lock);
         }
         finally {
