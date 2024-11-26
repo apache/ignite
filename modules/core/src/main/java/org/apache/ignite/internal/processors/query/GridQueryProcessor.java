@@ -3075,7 +3075,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
                             SessionContext sesCtx = null;
 
                             if (cctx != null) {
-                                CacheOperationContext opCtx = cctx.operationContextPerCall();;
+                                CacheOperationContext opCtx = cctx.operationContextPerCall();
 
                                 if (opCtx != null && opCtx.applicationAttributes() != null)
                                     sesCtx = new SessionContextImpl(opCtx.applicationAttributes());

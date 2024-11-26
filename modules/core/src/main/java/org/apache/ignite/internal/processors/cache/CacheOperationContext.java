@@ -18,7 +18,6 @@
 package org.apache.ignite.internal.processors.cache;
 
 import java.io.Serializable;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 import javax.cache.expiry.ExpiryPolicy;
