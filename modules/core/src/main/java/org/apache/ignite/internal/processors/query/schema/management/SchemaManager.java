@@ -509,8 +509,8 @@ public class SchemaManager {
                 if (ann != null) {
                     int modifiers = m.getModifiers();
 
-                    if (!Modifier.isStatic(modifiers) || !Modifier.isPublic(modifiers))
-                        throw new IgniteCheckedException("Method " + m.getName() + " must be public static.");
+                    if (!Modifier.isPublic(modifiers))
+                        throw new IgniteCheckedException("Method " + m.getName() + " must be public.");
 
                     String alias = ann.alias().isEmpty() ? m.getName() : ann.alias();
 

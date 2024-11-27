@@ -18,12 +18,14 @@
 package org.apache.ignite.testframework.junits;
 
 import java.util.Collection;
+import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.ExecutorService;
 import javax.cache.CacheException;
 import javax.management.MBeanServer;
 import org.apache.ignite.DataRegionMetrics;
 import org.apache.ignite.DataRegionMetricsAdapter;
+import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteAtomicLong;
 import org.apache.ignite.IgniteAtomicReference;
 import org.apache.ignite.IgniteAtomicSequence;
@@ -600,6 +602,11 @@ public class IgniteMock implements IgniteEx {
     /** {@inheritDoc} */
     @Override public @NotNull TracingConfigurationManager tracingConfiguration() {
         return NoopTracingConfigurationManager.INSTANCE;
+    }
+
+    /** {@inheritDoc} */
+    @Override public Ignite withApplicationAttributes(Map<String, String> attrs) {
+        return null;
     }
 
     /** {@inheritDoc} */

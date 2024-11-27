@@ -17,7 +17,6 @@
 package org.apache.ignite.internal.processors.query.calcite.exec.exp;
 
 import java.lang.reflect.Method;
-import java.lang.reflect.Modifier;
 import org.apache.calcite.adapter.enumerable.NullPolicy;
 import org.apache.calcite.rel.type.RelDataType;
 import org.apache.calcite.rel.type.RelDataTypeFactory;
@@ -47,8 +46,6 @@ public class IgniteScalarFunction extends ReflectiveFunctionBase implements Scal
      * @return Created {@link ScalarFunction}.
      */
     public static ScalarFunction create(Method method) {
-        assert Modifier.isStatic(method.getModifiers());
-
         CallImplementor implementor = RexImpTable.createImplementor(
             new ReflectiveCallNotNullImplementor(method), NullPolicy.NONE, false);
 
