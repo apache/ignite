@@ -22,6 +22,7 @@ import java.sql.Timestamp;
 import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.TimeZone;
+import org.apache.calcite.sql.validate.SqlValidatorException;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.cache.QueryEntity;
@@ -228,6 +229,11 @@ public class DateTimeTest extends AbstractBasicIntegrationTransactionalTest {
 
         assertThrows("SELECT CAST('2021-01-02' AS DATE FORMAT 'DD-MM-YY')", IgniteSQLException.class,
             "Operator 'CAST' supports only the parameters: value and target type.");
+
+        assertThrows("SELECT CAST(timestamp '1992-09-26 02:30:00' AS BIGINT)", SqlValidatorException.class,
+            "Cast function cannot convert value ");
+        assertThrows("SELECT CAST(timestamp '1992-09-26 02:30:00' AS TINYINT)", SqlValidatorException.class,
+            "Cast function cannot convert value ");
     }
 
     /** */

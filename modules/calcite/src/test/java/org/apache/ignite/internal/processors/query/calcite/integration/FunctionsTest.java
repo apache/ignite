@@ -17,7 +17,6 @@
 
 package org.apache.ignite.internal.processors.query.calcite.integration;
 
-import java.math.BigDecimal;
 import java.sql.Date;
 import java.sql.Time;
 import java.sql.Timestamp;
@@ -430,26 +429,29 @@ public class FunctionsTest extends AbstractBasicIntegrationTest {
     /** */
     @Test
     public void testCastToBoolean() {
-        assertQuery("SELECT CAST(CAST(null AS DOUBLE) AS BOOLEAN)").returns(NULL_RESULT).check();
-        assertQuery("SELECT CAST(CAST('1' AS DOUBLE) AS BOOLEAN)").returns(true).check();
-        assertQuery("SELECT CAST(1.0 AS BOOLEAN)").returns(true).check();
-        assertQuery("SELECT CAST(0.1 AS BOOLEAN)").returns(true).check();
-        assertQuery("SELECT CAST(1 AS BOOLEAN)").returns(true).check();
-        assertQuery("SELECT CAST(CAST('0' AS DOUBLE) AS BOOLEAN)").returns(false).check();
-        assertQuery("SELECT CAST(0.0 AS BOOLEAN)").returns(false).check();
-        assertQuery("SELECT CAST(0 AS BOOLEAN)").returns(false).check();
-        assertQuery("SELECT CAST(CAST(? AS INT) AS BOOLEAN)").withParams(0).returns(false).check();
-        assertQuery("SELECT CAST(CAST(? AS INT) AS BOOLEAN)").withParams(1).returns(true).check();
-        assertQuery("SELECT CAST(CAST(? AS INT) AS BOOLEAN)").withParams(NULL_RESULT).returns(NULL_RESULT).check();
-        assertQuery("SELECT CAST(CAST(? AS DOUBLE) AS BOOLEAN)").withParams(0.0d).returns(false).check();
-        assertQuery("SELECT CAST(CAST(? AS DOUBLE) AS BOOLEAN)").withParams(1.0d).returns(true).check();
-        assertQuery("SELECT CAST(CAST(? AS DOUBLE) AS BOOLEAN)").withParams(NULL_RESULT).returns(NULL_RESULT).check();
-        assertQuery("SELECT CAST(CAST(? AS DECIMAL(2, 1)) AS BOOLEAN)")
-            .withParams(BigDecimal.valueOf(0, 1)).returns(false).check();
-        assertQuery("SELECT CAST(CAST(? AS DECIMAL(2, 1)) AS BOOLEAN)")
-            .withParams(BigDecimal.valueOf(10, 1)).returns(true).check();
-        assertQuery("SELECT CAST(CAST(? AS DECIMAL(2, 1)) AS BOOLEAN)")
-            .withParams(NULL_RESULT).returns(NULL_RESULT).check();
+        assertQuery("SELECT 'TruE'::BOOLEAN").returns(true).check();
+        assertQuery("SELECT 'false'::BOOLEAN").returns(false).check();
+        assertQuery("SELECT 'FalsE'::BOOLEAN").returns(false).check();
+        assertQuery("SELECT NULL::CHAR::BOOLEAN").returns(NULL_RESULT).check();
+        assertQuery("SELECT ?::CHAR::BOOLEAN").withParams(NULL_RESULT).returns(NULL_RESULT).check();
+
+        String errStr = "Cast function cannot convert value";
+
+        assertThrows("SELECT 1.0::BOOLEAN", SqlValidatorException.class, errStr);
+        assertThrows("SELECT 1::DECIMAL::BOOLEAN", SqlValidatorException.class, errStr);
+        assertThrows("SELECT 1::DECIMAL(1)::BOOLEAN", SqlValidatorException.class, errStr);
+        assertThrows("SELECT 1::DECIMAL(2,1)::BOOLEAN", SqlValidatorException.class, errStr);
+
+        assertQuery("SELECT 1::BOOLEAN").returns(true).check();
+        assertQuery("SELECT 1::TINYINT::BOOLEAN").returns(true).check();
+        assertQuery("SELECT 1::SMALLINT::BOOLEAN").returns(true).check();
+        assertQuery("SELECT 0::BOOLEAN").returns(false).check();
+        // TODO: fix dynamics
+        //assertThrows("SELECT ?::BOOLEAN", SqlValidatorException.class, errStr, 1);
+        assertThrows("SELECT 1.0::BOOLEAN", SqlValidatorException.class, errStr);
+        // TODO: fix dynamics
+        //assertThrows("SELECT ?::BOOLEAN", SqlValidatorException.class, errStr, 1.0);
+        //assertThrows("SELECT ?::BOOLEAN", SqlValidatorException.class, errStr, "1");
     }
 
     /** Tests NVL with different parameters data types. */

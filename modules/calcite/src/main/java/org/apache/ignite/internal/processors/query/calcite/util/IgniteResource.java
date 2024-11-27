@@ -80,4 +80,12 @@ public interface IgniteResource {
     /** */
     @Resources.BaseMessage("Operator ''CAST'' supports only the parameters: value and target type.")
     Resources.ExInst<SqlValidatorException> invalidCastParameters();
+
+    /** */
+    @Resources.BaseMessage("{0} datatype is not supported'")
+    Resources.ExInst<SqlValidatorException> dataTypeIsNotSupported(String a0);
+
+    /** */
+    @Resources.BaseMessage("Length for type {0} must be at least 1")
+    Resources.ExInst<SqlValidatorException> invalidStringLength(String typeName);
 }

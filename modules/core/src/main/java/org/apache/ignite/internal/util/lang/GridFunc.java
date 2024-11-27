@@ -2872,6 +2872,12 @@ public class GridFunc {
      * @return Returns {@code true} if the specified arguments are equal, or both {@code null}.
      */
     public static boolean eq(@Nullable Object o1, @Nullable Object o2) {
+        if (o1 instanceof Collection && o2 instanceof Collection)
+            return eqNotOrdered((Collection<?>)o1, (Collection<?>)o2);
+
+        if (o1 != null && o2 != null && o1.getClass().isArray() && o2.getClass().isArray())
+            return arrayEq(o1, o2);
+
         return o1 == null ? o2 == null : o2 != null && (o1 == o2 || o1.equals(o2));
     }
 
