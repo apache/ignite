@@ -937,11 +937,10 @@ public class JdbcThinConnection implements Connection {
     @Override public Properties getClientInfo() throws SQLException {
         ensureNotClosed();
 
-        if (clientInfo == null)
-            return null;
-
         Properties ret = new Properties();
-        ret.putAll(clientInfo);
+
+        if (clientInfo != null)
+            ret.putAll(clientInfo);
 
         return ret;
     }
