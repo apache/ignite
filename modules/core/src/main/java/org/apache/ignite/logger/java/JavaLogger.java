@@ -214,6 +214,7 @@ public class JavaLogger implements IgniteLoggerEx {
      */
     private JavaLogger(Logger impl, String cfg) {
         this(impl, true);
+
         if (cfg != null)
             this.cfg = cfg;
     }

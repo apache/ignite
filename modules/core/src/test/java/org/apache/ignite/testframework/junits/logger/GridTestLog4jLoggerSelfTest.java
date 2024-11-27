@@ -19,7 +19,6 @@ package org.apache.ignite.testframework.junits.logger;
 
 import java.io.File;
 import java.net.URL;
-import java.util.UUID;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.internal.logger.IgniteLoggerEx;
 import org.apache.ignite.internal.util.lang.RunnableX;
@@ -59,8 +58,6 @@ public class GridTestLog4jLoggerSelfTest {
     /** */
     @Before
     public void beforeTest() {
-        System.clearProperty("appId");
-        LogManager.shutdown();
         GridTestUtils.setFieldValue(GridTestLog4jLogger.class, GridTestLog4jLogger.class, "inited", false);
         Configurator.setRootLevel(Level.WARN);
     }
@@ -69,6 +66,7 @@ public class GridTestLog4jLoggerSelfTest {
     @After
     public void afterTest() {
         Configurator.setRootLevel(defaultRootLevel);
+
         assertEquals(defaultRootLevel, LoggerContext.getContext(false).getConfiguration().getRootLogger().getLevel());
     }
 
@@ -83,8 +81,6 @@ public class GridTestLog4jLoggerSelfTest {
 
         assertTrue(log.toString().contains("GridTestLog4jLogger"));
         assertTrue(log.toString().contains(xml.getPath()));
-
-        log.setApplicationAndNode(null, UUID.randomUUID());
 
         checkLog(log);
     }
@@ -102,8 +98,6 @@ public class GridTestLog4jLoggerSelfTest {
         assertTrue(log.toString().contains("GridTestLog4jLogger"));
         assertTrue(log.toString().contains(url.getPath()));
 
-        log.setApplicationAndNode(null, UUID.randomUUID());
-
         checkLog(log);
     }
 
@@ -114,8 +108,6 @@ public class GridTestLog4jLoggerSelfTest {
 
         assertTrue(log.toString().contains("GridTestLog4jLogger"));
         assertTrue(log.toString().contains(LOG_PATH_TEST));
-
-        log.setApplicationAndNode(null, UUID.randomUUID());
 
         checkLog(log);
     }

@@ -88,6 +88,7 @@ public class JavaLoggerTest extends GridCommonAbstractTest {
     public void testDefaultConstructorWithProperty() throws Exception {
         String cfgPathProp = "java.util.logging.config.file";
         String oldPropVal = System.getProperty(cfgPathProp);
+
         try {
             File file = new File(U.getIgniteHome(), LOG_CONFIG_DEBUG);
             System.setProperty(cfgPathProp, file.getPath());
@@ -102,7 +103,7 @@ public class JavaLoggerTest extends GridCommonAbstractTest {
             IgniteLogger log2 = log1.getLogger(getClass());
             assertTrue(log2.toString().contains("JavaLogger"));
             assertTrue(log2.toString().contains(LOG_CONFIG_DEBUG));
-            assertTrue(log1.isDebugEnabled());
+            assertTrue(log2.isDebugEnabled());
         }
         finally {
             if (oldPropVal == null)
@@ -120,11 +121,13 @@ public class JavaLoggerTest extends GridCommonAbstractTest {
         LogListener lsn = LogListener.matches("JavaLogger [quiet=true,")
             .andMatches(DFLT_CONFIG_PATH)
             .build();
+
         ListeningTestLogger log = new ListeningTestLogger(new JavaLogger(), lsn);
 
         IgniteConfiguration cfg = getConfiguration(getTestIgniteInstanceName());
         cfg.setGridLogger(log);
-        try (Ignite ign = startGrid(cfg)) {
+
+        try (Ignite ignore = startGrid(cfg)) {
             assertTrue(lsn.check());
         }
     }
