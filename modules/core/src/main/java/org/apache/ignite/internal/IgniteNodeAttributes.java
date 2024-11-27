@@ -85,6 +85,9 @@ public final class IgniteNodeAttributes {
     public static final String ATTR_TX_SERIALIZABLE_ENABLED = ATTR_PREFIX + ".tx.serializable.enabled";
 
     /** Internal attribute name constant. */
+    public static final String ATTR_TX_AWARE_QUERIES_ENABLED = ATTR_PREFIX + ".tx.aware.queries.enabled";
+
+    /** Internal attribute name constant. */
     public static final String ATTR_JMX_PORT = ATTR_PREFIX + ".jmx.port";
 
     /** Internal attribute name constant. */

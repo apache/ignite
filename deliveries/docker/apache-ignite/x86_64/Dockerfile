@@ -15,8 +15,8 @@
 # limitations under the License.
 #
 
-# Start from Java 8 based on Alpine Linux image
-ARG JDK_VERSION=8
+# Start from Java 11 based on Alpine Linux image
+ARG JDK_VERSION=11
 FROM eclipse-temurin:${JDK_VERSION}-jre-alpine
 
 # Settings

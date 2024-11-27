@@ -78,6 +78,7 @@ public class GridRedisSetsCommandHandler implements GridRedisCommandHandler {
         this.log = log;
         this.ctx = ctx;
         cfg.setAtomicityMode(CacheAtomicityMode.TRANSACTIONAL);
+        cfg.setBackups(1);
     }
 
     /** {@inheritDoc} */
@@ -94,7 +95,11 @@ public class GridRedisSetsCommandHandler implements GridRedisCommandHandler {
         GridRedisCommand cmd = msg.command();
             
         String queueName = msg.cacheName()+"-"+msg.key();        
-        IgniteSet<String> list = ctx.grid().set(queueName, cfg);
+        IgniteSet<String> list = ctx.grid().set(queueName, null);
+        if(list==null && cmd != SCARD) {
+    		msg.setResponse(GridRedisProtocolParser.nil());
+    		return new GridFinishedFuture<>(msg);
+    	}
         
         if(cmd == SISMEMBER) {
         	String query = msg.aux(2);
@@ -175,7 +180,7 @@ public class GridRedisSetsCommandHandler implements GridRedisCommandHandler {
         	msg.setResponse(GridRedisProtocolParser.toArray(result));
         }
         else if(cmd == SCARD) {
-        	msg.setResponse(GridRedisProtocolParser.toInteger(list.size()));     	
+        	msg.setResponse(GridRedisProtocolParser.toInteger(list!=null?list.size():0));     	
         }
         
         return new GridFinishedFuture<>(msg);

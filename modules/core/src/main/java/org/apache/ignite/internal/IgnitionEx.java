@@ -71,7 +71,6 @@ import org.apache.ignite.configuration.TransactionConfiguration;
 import org.apache.ignite.failure.FailureContext;
 import org.apache.ignite.failure.FailureType;
 import org.apache.ignite.internal.binary.BinaryArray;
-import org.apache.ignite.internal.binary.BinaryMarshaller;
 import org.apache.ignite.internal.managers.discovery.GridDiscoveryManager;
 import org.apache.ignite.internal.processors.cache.CacheGroupContext;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionFullMap;
@@ -102,9 +101,6 @@ import org.apache.ignite.internal.util.worker.GridWorker;
 import org.apache.ignite.internal.worker.WorkersRegistry;
 import org.apache.ignite.lang.IgniteBiInClosure;
 import org.apache.ignite.lang.IgniteBiTuple;
-import org.apache.ignite.marshaller.Marshaller;
-import org.apache.ignite.marshaller.MarshallerUtils;
-import org.apache.ignite.marshaller.jdk.JdkMarshaller;
 import org.apache.ignite.mxbean.IgnitionMXBean;
 import org.apache.ignite.plugin.segmentation.SegmentationPolicy;
 import org.apache.ignite.resources.SpringApplicationContextResource;
@@ -1911,26 +1907,9 @@ public class IgnitionEx {
             }
 
             if (myCfg.getUserAttributes() == null)
-                myCfg.setUserAttributes(Collections.<String, Object>emptyMap());
+                myCfg.setUserAttributes(Collections.emptyMap());
 
             initializeDefaultMBeanServer(myCfg);
-
-            Marshaller marsh = myCfg.getMarshaller();
-
-            if (marsh == null) {
-                if (!BinaryMarshaller.available()) {
-                    U.warn(log, "Standard BinaryMarshaller can't be used on this JVM. " +
-                        "Switch to HotSpot JVM or reach out Apache Ignite community for recommendations.");
-
-                    marsh = new JdkMarshaller();
-                }
-                else
-                    marsh = new BinaryMarshaller();
-            }
-
-            MarshallerUtils.setNodeName(marsh, cfg.getIgniteInstanceName());
-
-            myCfg.setMarshaller(marsh);
 
             if (myCfg.getPeerClassLoadingLocalClassPathExclude() == null)
                 myCfg.setPeerClassLoadingLocalClassPathExclude(EMPTY_STRS);

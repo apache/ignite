@@ -23,7 +23,7 @@ import org.apache.ignite.testframework.GridTestUtils;
 import org.junit.Test;
 
 /** */
-public class JoinRehashIntegrationTest extends AbstractBasicIntegrationTest {
+public class JoinRehashIntegrationTest extends AbstractBasicIntegrationTransactionalTest {
     /** {@inheritDoc} */
     @Override protected int nodeCount() {
         return 3;
@@ -81,13 +81,13 @@ public class JoinRehashIntegrationTest extends AbstractBasicIntegrationTest {
             "    price decimal,\n" +
             "    amount int,\n" +
             "    PRIMARY KEY (id))\n" +
-            "    WITH \"cache_name=order_items,backups=1\"");
+            "    WITH \"cache_name=order_items,backups=1," + atomicity() + "\"");
 
         sql("CREATE TABLE orders (\n" +
             "    id int,\n" +
             "    region varchar,\n" +
             "    PRIMARY KEY (id))\n" +
-            "    WITH \"cache_name=orders,backups=1\"");
+            "    WITH \"cache_name=orders,backups=1," + atomicity() + "\"");
 
         sql("CREATE INDEX order_items_orderId ON order_items (orderId ASC)");
         sql("CREATE INDEX orders_region ON orders (region ASC)");

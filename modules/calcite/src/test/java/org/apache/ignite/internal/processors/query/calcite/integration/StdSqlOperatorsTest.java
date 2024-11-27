@@ -192,19 +192,23 @@ public class StdSqlOperatorsTest extends AbstractBasicIntegrationTest {
         assertExpression("EXP(2)").returns(Math.exp(2)).check();
         assertExpression("POWER(2, 2)").returns(Math.pow(2, 2)).check();
         assertExpression("LN(2)").returns(Math.log(2)).check();
-        assertExpression("LOG10(2) ").returns(Math.log10(2)).check();
+        assertExpression("LOG10(2)").returns(Math.log(2) / Math.log(10)).check();
         assertExpression("ABS(-1)").returns(Math.abs(-1)).check();
         assertExpression("RAND()").check();
         assertExpression("RAND_INTEGER(10)").check();
         assertExpression("ACOS(1)").returns(Math.acos(1)).check();
+        assertExpression("ACOSH(1)").returns(0d).check();
         assertExpression("ASIN(1)").returns(Math.asin(1)).check();
+        assertExpression("ASINH(0)").returns(0d).check();
         assertExpression("ATAN(1)").returns(Math.atan(1)).check();
+        assertExpression("ATANH(0)").returns(0d).check();
         assertExpression("ATAN2(1, 1)").returns(Math.atan2(1, 1)).check();
         assertExpression("SQRT(4)").returns(Math.sqrt(4)).check();
         assertExpression("CBRT(8)").returns(Math.cbrt(8)).check();
         assertExpression("COS(1)").returns(Math.cos(1)).check();
         assertExpression("COSH(1)").returns(Math.cosh(1)).check();
         assertExpression("COT(1)").returns(1.0d / Math.tan(1)).check();
+        assertExpression("COTH(1)").returns(1.0d / Math.tanh(1)).check();
         assertExpression("DEGREES(1)").returns(Math.toDegrees(1)).check();
         assertExpression("RADIANS(1)").returns(Math.toRadians(1)).check();
         assertExpression("ROUND(1.7)").returns(BigDecimal.valueOf(2)).check();
@@ -213,6 +217,10 @@ public class StdSqlOperatorsTest extends AbstractBasicIntegrationTest {
         assertExpression("SINH(1)").returns(Math.sinh(1)).check();
         assertExpression("TAN(1)").returns(Math.tan(1)).check();
         assertExpression("TANH(1)").returns(Math.tanh(1)).check();
+        assertExpression("SEC(1)").returns(1d / Math.cos(1)).check();
+        assertExpression("SECH(1)").returns(1d / Math.cosh(1)).check();
+        assertExpression("CSC(1)").returns(1d / Math.sin(1)).check();
+        assertExpression("CSCH(1)").returns(1d / Math.sinh(1)).check();
         assertExpression("TRUNCATE(1.7)").returns(BigDecimal.valueOf(1)).check();
         assertExpression("PI").returns(Math.PI).check();
     }

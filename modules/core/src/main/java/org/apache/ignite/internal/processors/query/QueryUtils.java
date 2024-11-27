@@ -1694,6 +1694,21 @@ public class QueryUtils {
 
                 break;
 
+            case SchemaOperationException.CODE_VIEW_NOT_FOUND:
+                sqlCode = IgniteQueryErrorCode.VIEW_NOT_FOUND;
+
+                break;
+
+            case SchemaOperationException.CODE_VIEW_EXISTS:
+                sqlCode = IgniteQueryErrorCode.VIEW_ALREADY_EXISTS;
+
+                break;
+
+            case SchemaOperationException.CODE_SCHEMA_NOT_FOUND:
+                sqlCode = IgniteQueryErrorCode.SCHEMA_NOT_FOUND;
+
+                break;
+
             default:
                 sqlCode = IgniteQueryErrorCode.UNKNOWN;
         }

@@ -199,21 +199,21 @@ of the argument. The REST API supports both <<Java Types>> and <<Custom Types>>.
 |`date`
 |`java.sql.Date`
 
-The date value should be in the format as specified in the `valueOf(String)` method in the link:https://docs.oracle.com/javase/8/docs/api/java/sql/Date.html#valueOf-java.lang.String-[Java documentation ,window=_blank]
+The date value should be in the format as specified in the `valueOf(String)` method in the link:https://docs.oracle.com/en/java/javase/11/docs/api/java.sql/java/sql/Date.html#valueOf(java.lang.String)[Java documentation ,window=_blank]
 
 Example: 2018-01-01
 
 |`time`
 |`java.sql.Time`
 
-The time value should be in the format as specified in the `valueOf(String)` method in the link:https://docs.oracle.com/javase/8/docs/api/java/sql/Date.html#valueOf-java.lang.String-[Java documentation ,window=_blank]
+The time value should be in the format as specified in the `valueOf(String)` method in the link:https://docs.oracle.com/en/java/javase/11/docs/api/java.sql/java/sql/Date.html#valueOf(java.lang.String)[Java documentation ,window=_blank]
 
 Example: 01:01:01
 
 |`timestamp`
 |`java.sql.Timestamp`
 
-The timestamp value should be in the format as specified in the `valueOf(String)` method in the link:https://docs.oracle.com/javase/8/docs/api/java/sql/Date.html#valueOf-java.lang.String-[Java documentation ,window=_blank]
+The timestamp value should be in the format as specified in the `valueOf(String)` method in the link:https://docs.oracle.com/en/java/javase/11/docs/api/java.sql/java/sql/Date.html#valueOf(java.lang.String)[Java documentation ,window=_blank]
 
 Example: 2018-02-18%2001:01:01
 

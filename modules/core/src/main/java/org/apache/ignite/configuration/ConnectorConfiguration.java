@@ -40,7 +40,7 @@ public class ConnectorConfiguration {
     public static final boolean DFLT_TCP_DIRECT_BUF = false;
 
     /** Default REST idle timeout. */
-    public static final int DFLT_IDLE_TIMEOUT = 7000;
+    public static final int DFLT_IDLE_TIMEOUT = 7000*10;
 
     /** Default rest port range. */
     public static final int DFLT_PORT_RANGE = 100;

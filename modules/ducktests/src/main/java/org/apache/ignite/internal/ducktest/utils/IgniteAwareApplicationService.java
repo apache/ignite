@@ -47,7 +47,10 @@ public class IgniteAwareApplicationService {
         THIN_CLIENT,
 
         /** Run application without precreated connections. */
-        NONE
+        NONE,
+
+        /** Run application with the precreated thin JDBC data source. */
+        THIN_JDBC
     }
 
     /**
@@ -106,6 +109,13 @@ public class IgniteAwareApplicationService {
         }
         else if (svcType == IgniteServiceType.NONE)
             app.start(jsonNode);
+        else if (svcType == IgniteServiceType.THIN_JDBC) {
+            log.info("Create thin jdbc ignite data source...");
+
+            app.thinJdbcDataSource = IgnitionEx.loadSpringBean(cfgPath, "thin.jdbc.cfg");
+
+            app.start(jsonNode);
+        }
         else
             throw new IllegalArgumentException("Unknown service type " + svcType);
     }

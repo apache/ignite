@@ -20,6 +20,7 @@ package org.apache.ignite.internal.processors.rest.handlers.redis.list;
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
 import java.util.PriorityQueue;
@@ -53,7 +54,7 @@ public class GridRedisListAddCommandHandler implements GridRedisCommandHandler {
 
 	/** Supported commands. */
     private static final Collection<GridRedisCommand> SUPPORTED_COMMANDS = U.sealList(
-        LPUSH,LPUSHX,SADD,ZADD
+        LPUSH,LPUSHX,RPUSH,RPUSHX,SADD,ZADD
     );
     
     /** Logger. */
@@ -76,6 +77,7 @@ public class GridRedisListAddCommandHandler implements GridRedisCommandHandler {
         this.log = log;
         this.ctx = ctx;
         cfg.setAtomicityMode(CacheAtomicityMode.TRANSACTIONAL);
+        cfg.setBackups(1);        
     }
 
     /** {@inheritDoc} */
@@ -100,7 +102,16 @@ public class GridRedisListAddCommandHandler implements GridRedisCommandHandler {
         	IgniteQueue<String> list = ctx.grid().queue(queueName,0,cfg);
         	
         	List<String> params = msg.aux();
+        	Collections.reverse(params);
             list.addAll(params);      
+            msg.setResponse(GridRedisProtocolParser.toInteger(list.size()));
+            return new GridFinishedFuture<>(msg);
+        }
+        else if(cmd == RPUSH || cmd == RPUSHX) {        	
+        	IgniteQueue<String> list = ctx.grid().queue(queueName,0,cfg);
+        	
+        	List<String> params = msg.aux();
+            list.addAll(params);   
             msg.setResponse(GridRedisProtocolParser.toInteger(list.size()));
             return new GridFinishedFuture<>(msg);
         }

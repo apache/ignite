@@ -38,7 +38,6 @@ import org.apache.ignite.internal.cluster.ClusterTopologyCheckedException;
 import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteFuture;
-import org.apache.ignite.marshaller.MarshallerUtils;
 import org.apache.ignite.plugin.AbstractTestPluginProvider;
 import org.apache.ignite.plugin.ExtensionRegistry;
 import org.apache.ignite.plugin.PluginConfiguration;
@@ -160,7 +159,7 @@ public class IgniteClusterSnapshotHandlerTest extends IgniteClusterSnapshotResto
             try (OutputStream out = new BufferedOutputStream(new FileOutputStream(smf))) {
                 GridTestUtils.setFieldValue(metadata, "rqId", newReqId);
 
-                U.marshal(MarshallerUtils.jdkMarshaller(grid.name()), metadata, out);
+                U.marshal(((IgniteEx)grid).context().marshallerContext().jdkMarshaller(), metadata, out);
             }
         }
     }

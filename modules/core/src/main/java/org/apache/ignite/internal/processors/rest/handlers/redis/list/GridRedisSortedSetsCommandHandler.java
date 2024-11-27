@@ -63,9 +63,8 @@ public class GridRedisSortedSetsCommandHandler implements GridRedisCommandHandle
     protected final IgniteLogger log;
 
     /** Kernel context. */
-    protected final GridKernalContext ctx;
+    protected final GridKernalContext ctx;    
     
-    protected CollectionConfiguration cfg = new CollectionConfiguration();
 
     /**
      * Handler constructor.
@@ -77,7 +76,6 @@ public class GridRedisSortedSetsCommandHandler implements GridRedisCommandHandle
     public GridRedisSortedSetsCommandHandler(IgniteLogger log, GridKernalContext ctx) {
         this.log = log;
         this.ctx = ctx;
-        cfg.setAtomicityMode(CacheAtomicityMode.TRANSACTIONAL);
     }
 
     /** {@inheritDoc} */
@@ -95,8 +93,11 @@ public class GridRedisSortedSetsCommandHandler implements GridRedisCommandHandle
             
         String queueName = msg.cacheName()+"-"+msg.key(); 
         
-        IgniteSet<ScoredItem<String>> list = ctx.grid().set(queueName,cfg);
-        
+        IgniteSet<ScoredItem<String>> list = ctx.grid().set(queueName,null);
+        if(list==null && cmd != ZCARD) {
+    		msg.setResponse(GridRedisProtocolParser.nil());
+    		return new GridFinishedFuture<>(msg);
+    	}  
         
         if(cmd==ZRANK || cmd==ZREVRANK) {
         	
@@ -227,12 +228,7 @@ public class GridRedisSortedSetsCommandHandler implements GridRedisCommandHandle
         	msg.setResponse(GridRedisProtocolParser.toArray(List.of(n,result)));
         }
         else if(cmd == ZCARD) {
-        	if(list==null) {
-        		msg.setResponse(GridRedisProtocolParser.toInteger(0));
-        	}
-        	else {
-        		msg.setResponse(GridRedisProtocolParser.toInteger(list.size()));
-        	}
+        	msg.setResponse(GridRedisProtocolParser.toInteger(list!=null?list.size():0));
         }
         return new GridFinishedFuture<>(msg);
 	}

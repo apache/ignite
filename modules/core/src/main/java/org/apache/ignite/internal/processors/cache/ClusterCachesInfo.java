@@ -82,7 +82,6 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteInClosure;
 import org.apache.ignite.lang.IgniteProductVersion;
 import org.apache.ignite.lang.IgniteUuid;
-import org.apache.ignite.marshaller.jdk.JdkMarshaller;
 import org.apache.ignite.plugin.CachePluginContext;
 import org.apache.ignite.plugin.CachePluginProvider;
 import org.apache.ignite.plugin.PluginProvider;
@@ -2540,7 +2539,7 @@ public class ClusterCachesInfo {
 
                     if (dsCfgBytes instanceof byte[]) {
                         try {
-                            DataStorageConfiguration crdDsCfg = new JdkMarshaller().unmarshal(
+                            DataStorageConfiguration crdDsCfg = ctx.marshallerContext().jdkMarshaller().unmarshal(
                                 (byte[])dsCfgBytes, U.resolveClassLoader(ctx.config()));
 
                             return CU.isPersistentCache(startedCacheCfg, crdDsCfg);

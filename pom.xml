@@ -81,12 +81,6 @@
         </profile>
 
         <profile>
-            <id>all-other</id> <!-- used to update project versions and check all modules compilation -->
-            <modules> <!-- sorted alphabetically -->
-            </modules>
-        </profile>
-
-        <profile>
             <id>ducktests</id>
             <modules>
                 <module>modules/ducktests</module>
@@ -147,6 +141,7 @@
                                 </goals>
                                 <phase>validate</phase>
                                 <configuration>
+                                    <failOnWarnings>true</failOnWarnings>
                                     <!--
                                     For some reason maven-javadoc-plugin 3.0+ doesn't include taglet artifact from
                                     parent configuration to -tagletpath javadoc parameter.

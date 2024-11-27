@@ -827,7 +827,7 @@ public interface ClientCache<K, V> {
      * (which will be stored in binary format), you should acquire following projection
      * to avoid deserialization:
      * <pre>
-     * CacheClient<Integer, BinaryObject> prj = cache.withKeepBinary();
+     * CacheClient&lt;Integer, BinaryObject&gt; prj = cache.withKeepBinary();
      *
      * // Value is not deserialized and returned in binary format.
      * BinaryObject po = prj.get(1);

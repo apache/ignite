@@ -138,10 +138,12 @@ public enum GridRedisCommand {
     
     LSET,
     LREM,  // LREM key count element
-    LPUSH,
+    LPUSH, // 将一个或多个值 value 插入到列表 key 的表头
     LPUSHX,
-    LPOP,
-    RPOP,
+    RPUSH, // 将一个或多个值 value 插入到列表 key 的表尾
+    RPUSHX,
+    LPOP,  // 移除并返回列表 key 的头元素。
+    RPOP,  // 移除并返回列表 key 的尾元素。
     BLPOP, // 是 LPOP 的阻塞版本
     BRPOP, // 是 RPOP 的阻塞版本
     LPOS,

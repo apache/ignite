@@ -2776,7 +2776,7 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
      * @param rctx Receiver context to use.
      * @param ex Exception to close receiver with.
      */
-    private void interruptReceiver(ReceiverContext rctx, Exception ex) {
+    private void interruptReceiver(@Nullable ReceiverContext rctx, Exception ex) {
         if (rctx == null)
             return;
 

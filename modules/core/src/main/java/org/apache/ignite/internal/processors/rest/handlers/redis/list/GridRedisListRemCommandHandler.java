@@ -69,6 +69,7 @@ public class GridRedisListRemCommandHandler implements GridRedisCommandHandler {
         this.log = log;
         this.ctx = ctx;
         cfg.setAtomicityMode(CacheAtomicityMode.TRANSACTIONAL);
+        cfg.setBackups(1);
     }
 
     /** {@inheritDoc} */

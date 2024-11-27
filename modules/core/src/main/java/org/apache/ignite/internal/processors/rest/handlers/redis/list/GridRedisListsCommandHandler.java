@@ -60,9 +60,8 @@ public class GridRedisListsCommandHandler implements GridRedisCommandHandler {
     protected final IgniteLogger log;
 
     /** Kernel context. */
-    protected final GridKernalContext ctx;
-    
-    protected CollectionConfiguration cfg = new CollectionConfiguration();
+    protected final GridKernalContext ctx;    
+   
 
     /**
      * Handler constructor.
@@ -73,8 +72,7 @@ public class GridRedisListsCommandHandler implements GridRedisCommandHandler {
      */
     public GridRedisListsCommandHandler(IgniteLogger log, GridKernalContext ctx) {
         this.log = log;
-        this.ctx = ctx;
-        cfg.setAtomicityMode(CacheAtomicityMode.TRANSACTIONAL);
+        this.ctx = ctx;        
     }
 
     /** {@inheritDoc} */
@@ -91,11 +89,13 @@ public class GridRedisListsCommandHandler implements GridRedisCommandHandler {
         GridRedisCommand cmd = msg.command();
             
         String queueName = msg.cacheName()+"-"+msg.key();        
-        IgniteQueue<String> list = ctx.grid().queue(queueName,0,cfg);
-        
-        if(cmd == LPOS) {         	
-        	String value = msg.aux(2);
-        	  	
+        IgniteQueue<String> list = ctx.grid().queue(queueName,0,null);
+    	if(list==null && cmd != LLEN) {
+    		msg.setResponse(GridRedisProtocolParser.nil());
+    		return new GridFinishedFuture<>(msg);
+    	}   
+    	if(cmd == LPOS) {         	
+        	String value = msg.aux(2);        	 	
         	Iterator<String> it = list.iterator();
         	int n = 0;
         	while(it.hasNext()) {
@@ -108,8 +108,7 @@ public class GridRedisListsCommandHandler implements GridRedisCommandHandler {
         	msg.setResponse(GridRedisProtocolParser.toInteger(n));
         	
         }        
-        else if(cmd == LRANGE) {        	
-        	
+        else if(cmd == LRANGE) {
         	Iterator<String> it = list.iterator();
         	int start = Integer.parseInt(msg.aux(2));
         	int end = Integer.parseInt(msg.aux(3));
@@ -131,13 +130,12 @@ public class GridRedisListsCommandHandler implements GridRedisCommandHandler {
         	
         }
         else if(cmd == LINDEX) {        	
-        	
-        	Iterator<String> it = list.iterator();
-        	int start = Integer.parseInt(msg.aux(2));        	
+        	int start = Integer.parseInt(msg.aux(2));    	
         	if(start<0) start = list.size()+start;
         	
         	int n = 0;
         	String result = null;
+        	Iterator<String> it = list.iterator();        	
         	while(it.hasNext()) {        		
         		if(n>=start) {
         			result = it.next();
@@ -148,11 +146,16 @@ public class GridRedisListsCommandHandler implements GridRedisCommandHandler {
         	if(result==null)
         		msg.setResponse(GridRedisProtocolParser.nil());
         	else
-        		msg.setResponse(GridRedisProtocolParser.toSimpleString(result));
+        		msg.setResponse(GridRedisProtocolParser.toSimpleString(result));  	
         	
         }
-        else if(cmd == LLEN) {
-        	msg.setResponse(GridRedisProtocolParser.toInteger(list.size()));
+        else if(cmd == LLEN) {        	
+        	if(list==null) {
+        		msg.setResponse(GridRedisProtocolParser.toInteger(0));
+        	}
+        	else {
+        		msg.setResponse(GridRedisProtocolParser.toInteger(list.size()));
+        	}
         }
         return new GridFinishedFuture<>(msg);
 	}	

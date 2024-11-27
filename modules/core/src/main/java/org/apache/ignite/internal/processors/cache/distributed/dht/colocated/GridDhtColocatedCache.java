@@ -30,7 +30,6 @@ import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.cluster.ClusterTopologyCheckedException;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
-import org.apache.ignite.internal.processors.cache.CacheEntryPredicate;
 import org.apache.ignite.internal.processors.cache.CacheObject;
 import org.apache.ignite.internal.processors.cache.CacheOperationContext;
 import org.apache.ignite.internal.processors.cache.EntryGetResult;
@@ -659,7 +658,6 @@ public class GridDhtColocatedCache<K, V> extends GridDhtTransactionalCacheAdapte
             timeout,
             createTtl,
             accessTtl,
-            CU.empty0(),
             opCtx != null && opCtx.skipStore(),
             opCtx != null && opCtx.isKeepBinary(),
             opCtx != null && opCtx.recovery());
@@ -903,7 +901,6 @@ public class GridDhtColocatedCache<K, V> extends GridDhtTransactionalCacheAdapte
      * @param timeout Lock timeout.
      * @param createTtl TTL for create operation.
      * @param accessTtl TTL for read operation.
-     * @param filter filter Optional filter.
      * @param skipStore Skip store flag.
      * @return Lock future.
      */
@@ -919,7 +916,6 @@ public class GridDhtColocatedCache<K, V> extends GridDhtTransactionalCacheAdapte
         final long timeout,
         final long createTtl,
         final long accessTtl,
-        @Nullable final CacheEntryPredicate[] filter,
         final boolean skipStore,
         final boolean keepBinary
     ) {
@@ -944,7 +940,6 @@ public class GridDhtColocatedCache<K, V> extends GridDhtTransactionalCacheAdapte
                 timeout,
                 createTtl,
                 accessTtl,
-                filter,
                 skipStore,
                 keepBinary);
         }
@@ -966,7 +961,6 @@ public class GridDhtColocatedCache<K, V> extends GridDhtTransactionalCacheAdapte
                             timeout,
                             createTtl,
                             accessTtl,
-                            filter,
                             skipStore,
                             keepBinary);
                     }
@@ -987,7 +981,6 @@ public class GridDhtColocatedCache<K, V> extends GridDhtTransactionalCacheAdapte
      * @param timeout Lock timeout.
      * @param createTtl TTL for create operation.
      * @param accessTtl TTL for read operation.
-     * @param filter filter Optional filter.
      * @param skipStore Skip store flag.
      * @return Lock future.
      */
@@ -1003,7 +996,6 @@ public class GridDhtColocatedCache<K, V> extends GridDhtTransactionalCacheAdapte
         final long timeout,
         final long createTtl,
         final long accessTtl,
-        @Nullable final CacheEntryPredicate[] filter,
         boolean skipStore,
         boolean keepBinary) {
         int cnt = keys.size();

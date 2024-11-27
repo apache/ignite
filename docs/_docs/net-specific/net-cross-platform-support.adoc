@@ -24,7 +24,7 @@ applications for Linux and macOS, as well as Windows.
 *Requirements:*
 
 * https://www.microsoft.com/net/download/[.NET Core SDK 2.0+, window=_blank]
-* http://www.oracle.com/technetwork/java/javase/downloads/index.html[Java 8+, window=_blank] (macOS requires JDK, otherwise JRE works)
+* http://www.oracle.com/technetwork/java/javase/downloads/index.html[Java 11+, window=_blank] (macOS requires JDK, otherwise JRE works)
 
 *Running Examples*
 https://ignite.apache.org/download.cgi#binaries[Binary distribution, window=_blank] includes .NET Core examples:
@@ -47,10 +47,6 @@ If you changed the default location of Java, then specify the actual path using 
 * or set the `JAVA_HOME` environment variable
 
 == Known Issues
-
-*No Java runtime present, requesting install*
-
-Java `8u151` has a known bug on macOS: https://bugs.openjdk.java.net/browse/JDK-7131356[JDK-7131356, window=_blank]. Make sure to install `8u152` or later.
 
 *Serializing delegates is not supported on this platform*
 

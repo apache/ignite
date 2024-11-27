@@ -275,7 +275,7 @@ public class IgniteLogInfoProviderImpl implements IgniteLogInfoProvider {
             sb.a("auth: ").a(onOff(Boolean.getBoolean("com.sun.management.jmxremote.authenticate"))).a(", ");
 
             // By default, SSL is enabled, that's why additional check for null is needed.
-            // See http://docs.oracle.com/javase/6/docs/technotes/guides/management/agent.html
+            // See https://docs.oracle.com/en/java/javase/11/management/monitoring-and-management-using-jmx-technology.html
             sb.a("ssl: ").a(onOff(Boolean.getBoolean("com.sun.management.jmxremote.ssl") ||
                 System.getProperty("com.sun.management.jmxremote.ssl") == null));
         }

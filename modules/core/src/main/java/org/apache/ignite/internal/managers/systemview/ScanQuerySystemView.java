@@ -28,7 +28,7 @@ import org.apache.ignite.IgniteException;
 import org.apache.ignite.internal.managers.systemview.walker.ScanQueryViewWalker;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.query.GridCacheQueryManager;
-import org.apache.ignite.internal.processors.cache.query.GridCacheQueryManager.ScanQueryIterator;
+import org.apache.ignite.internal.processors.cache.query.ScanQueryIterator;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.spi.IgniteSpiCloseableIterator;
@@ -83,7 +83,7 @@ public class ScanQuerySystemView<K, V> extends AbstractSystemView<ScanQueryView>
         return new QueryDataIterator();
     }
 
-    /** Class to iterate through all {@link GridCacheQueryManager.ScanQueryIterator}. */
+    /** Class to iterate through all {@link ScanQueryIterator}. */
     private class QueryDataIterator implements Iterator<ScanQueryView> {
         /** Cache contexts iterator. */
         private final Iterator<GridCacheContext<K, V>> cctxsIter;
@@ -95,7 +95,7 @@ public class ScanQuerySystemView<K, V> extends AbstractSystemView<ScanQueryView>
         private Iterator<Map.Entry<UUID, GridCacheQueryManager<K, V>.RequestFutureMap>> nodeQryIter;
 
         /** Local query iterator. */
-        private Iterator<GridCacheQueryManager.ScanQueryIterator> localQryIter;
+        private Iterator<ScanQueryIterator> localQryIter;
 
         /** Current node id. */
         private UUID nodeId;
@@ -173,7 +173,7 @@ public class ScanQuerySystemView<K, V> extends AbstractSystemView<ScanQueryView>
         }
 
         /**
-         * @return {@code True} if next {@link GridCacheQueryManager.ScanQueryIterator} found.
+         * @return {@code True} if next {@link ScanQueryIterator} found.
          */
         private boolean nextScanIter() {
             try {

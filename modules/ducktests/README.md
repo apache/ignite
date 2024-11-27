@@ -3,7 +3,7 @@ The `ignitetest` framework provides basic functionality and services
 to write integration tests for Apache Ignite. This framework bases on 
 the `ducktape` test framework, for information about it check the links:
 - https://github.com/confluentinc/ducktape - source code of the `ducktape`.
-- http://ducktape-docs.readthedocs.io - documentation to the `ducktape`.
+- https://ducktape.readthedocs.io/en/latest/index.html - documentation to the `ducktape`.
 
 Structure of the `tests` directory is:
 - `./ignitetest/services` contains basic services functionality.
@@ -77,11 +77,11 @@ You may set versions (products) using `@ignite_versions` decorator at code
 ```
 or passing versions set via globals during the execution
 ```
---globals-json, eg: {"ignite_versions":["2.8.1", "dev"]}
+--global-json, eg: {"ignite_versions":["2.8.1", "dev"]}
 ```
 You may also specify product prefix by `project` param at globals, for example:
 ```
---globals-json, eg: {"project": "fork" ,"ignite_versions": ["ignite-2.8.1", "2.8.1", "dev"]}
+--global-json, eg: {"project": "fork" ,"ignite_versions": ["ignite-2.8.1", "2.8.1", "dev"]}
 ```
 will execute tests on `ignite-2.8.1, fork-2.8.1, fork-dev`
 
@@ -89,12 +89,94 @@ will execute tests on `ignite-2.8.1, fork-2.8.1, fork-dev`
 TBD
 
 # Special runs
+## Run with FlightRecorder (JFR)
+To run ignite with flight recorder you should enable `jfr_enabled` through globals, for example:
+```
+--global-json, eg: {"jfr_enabled":true}
+```
+## Run with safepoints logging
+Safepoint logging is disabled by default, to enable it, you need to pass `true` for `safepoint_log_enabled` for example:
+```
+--global-json, eg: {"safepoint_log_enabled":true}
+```
 ## Run with enabled security
 ### Run with SSL enabled
-TBD
+To enable ssl it is only required to pass `enabled` for `ssl` in globals:
+```
+--global-json, eg: {"ssl":{"enabled":true}}
+```
+In this case, all ssl params will be set to default values, and will be written to ignite config.
+These values correspond to the keystores that are generated (and you shouldn't worry about it).
+Default keystores for these services are generated automatically on creating environment.
+
+If you want, you could override these values through globals, for example:
+```
+    {"ssl": {
+        "enabled": true,
+        "params": {
+          "server": {
+            "key_store_jks": "server.jks",
+            "key_store_password": "123456",
+            "trust_store_jks": "truststore.jks",
+            "trust_store_password": "123456"
+          },
+          "client": {
+            "key_store_jks": "client.jks",
+            "key_store_password": "123456",
+            "trust_store_jks": "truststore.jks",
+            "trust_store_password": "123456"
+          },
+          "admin": {
+            "key_store_jks": "admin.jks",
+            "key_store_password": "123456",
+            "trust_store_jks": "truststore.jks",
+            "trust_store_password": "123456"
+          }
+        }
+      }
+    }
+```
+Where:
+
+Server, client and admin are three possible interactions with a cluster in a ducktape, each of them has its own alias,
+which corresponds to keystore:
+* Ignite(clientMode = False) - server
+* Ignite(clientMode = True) - client
+* ControlUtility - admin
+
+And options `key_store_jks` and `trust_store_jks` are paths to keys.
+If you start it with `/` it will be used as an absolute path. 
+Otherwise, it will be a relative path that starts from `/mnt/service/shared/`.
+
+And if you need to specify values only for one configuration, you can skip other configurations, for example:
+
+```
+    {"ssl": {
+        "enabled": true,
+        "params": {
+          "server": {
+            "key_store_jks": "server.jks",
+            "key_store_password": "123456",
+            "trust_store_jks": "truststore.jks",
+            "trust_store_password": "123456"
+          }
+        }
+      }
+    }
+```
+
+For more information about ssl in ignite you can check this link: [SSL in ignite](https://ignite.apache.org/docs/latest/security/ssl-tls)
 
 ### Run with build-in authentication enabled
-TBD
+Via this option you could overwrite default login and password options in tests with authentication.
+```
+    {"authentication":{
+        "enabled": true,
+        "username": "username",
+        "password": "password"
+      }
+    }
+```
 
 ## Run with metrics export enabled
 

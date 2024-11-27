@@ -909,6 +909,21 @@ public final class IgniteSystemProperties {
     public static final String IGNITE_MARSHALLER_BLACKLIST = "IGNITE_MARSHALLER_BLACKLIST";
 
     /**
+     * If this parameter is set to true, Ignite will automatically configure an ObjectInputFilter instance for the
+     * current JVM it is running in.
+     * Default value is {@code true}.
+     */
+    @SystemProperty(
+        value = "If this parameter is set to true, Ignite will automatically configure an ObjectInputFilter" +
+            " instance for the current JVM it is running in. Filtering is based on class lists defined by the" +
+            " `IGNITE_MARSHALLER_WHITELIST` and `IGNITE_MARSHALLER_BLACKLIST` system properties or their default values." +
+            " Disabling it is not recommended because the Ignite host may be vulnerable to RCE attacks based on Java" +
+            " serialization mechanisms",
+        defaults = "true"
+    )
+    public static final String IGNITE_ENABLE_OBJECT_INPUT_FILTER_AUTOCONFIGURATION = "IGNITE_ENABLE_OBJECT_INPUT_FILTER_AUTOCONFIGURATION";
+
+    /**
      * If set to {@code true}, then default selected keys set is used inside
      * {@code GridNioServer} which lead to some extra garbage generation when
      * processing selected keys.
@@ -1690,7 +1705,7 @@ public final class IgniteSystemProperties {
     /**
      * Flag to disable memory optimization:
      *  BitSets instead of HashSets to store partitions.
-     *  When number of backups per partion is > IGNITE_AFFINITY_BACKUPS_THRESHOLD we use HashMap to improve contains()
+     *  When number of backups per partion is &gt; IGNITE_AFFINITY_BACKUPS_THRESHOLD we use HashMap to improve contains()
      * which leads to extra memory consumption, otherwise we use view on the
      * list of cluster nodes to reduce memory consumption on redundant data structures.
      */

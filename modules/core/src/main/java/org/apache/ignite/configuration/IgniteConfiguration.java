@@ -593,6 +593,9 @@ public class IgniteConfiguration {
     /** Shutdown policy for cluster. */
     public ShutdownPolicy shutdown = DFLT_SHUTDOWN_POLICY;
 
+    /** Default values for distributed properties. */
+    private Map<String, String> distrProps;
+
     /**
      * Creates valid grid configuration with all default values.
      */
@@ -722,6 +725,7 @@ public class IgniteConfiguration {
         sqlCfg = cfg.getSqlConfiguration();
         shutdown = cfg.getShutdownPolicy();
         asyncContinuationExecutor = cfg.getAsyncContinuationExecutor();
+        distrProps = cfg.getDistributedPropertiesDefaultValues();
     }
 
     /**
@@ -3496,6 +3500,27 @@ public class IgniteConfiguration {
      */
     public IgniteConfiguration setAsyncContinuationExecutor(Executor asyncContinuationExecutor) {
         this.asyncContinuationExecutor = asyncContinuationExecutor;
+
+        return this;
+    }
+
+    /**
+     * Gets default values for distributed properties.
+     *
+     * @return Default values for distributed properties.
+     */
+    public Map<String, String> getDistributedPropertiesDefaultValues() {
+        return distrProps;
+    }
+
+    /**
+     * Sets default values for distributed properties.
+     *
+     * @param distrProps Default values for distributed properties.
+     * @return {@code this} for chaining.
+     */
+    public IgniteConfiguration setDistributedPropertiesDefaultValues(Map<String, String> distrProps) {
+        this.distrProps = distrProps;
 
         return this;
     }

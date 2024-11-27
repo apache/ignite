@@ -71,6 +71,7 @@ public class GridRedisListPopCommandHandler implements GridRedisCommandHandler {
         this.log = log;
         this.ctx = ctx;
         cfg.setAtomicityMode(CacheAtomicityMode.TRANSACTIONAL);
+        cfg.setBackups(1);
     }
 
     /** {@inheritDoc} */
@@ -93,11 +94,15 @@ public class GridRedisListPopCommandHandler implements GridRedisCommandHandler {
         	value = list.poll();
         	if(value==null && cmd == BLPOP) {
         		value = list.take();
-        	}
-        	
+        	}        	
         }
         else if(cmd == RPOP || cmd == BRPOP) {        	
-        	throw new UnsupportedOperationException("RPOP or BRPOP not supported for ignite queue!");        	
+        	// throw new UnsupportedOperationException("RPOP or BRPOP not supported for ignite queue!");
+        	IgniteQueue<String> list = ctx.grid().queue(queueName,0,cfg);
+        	value = list.poll();
+        	if(value==null && cmd == BRPOP) {
+        		value = list.take();
+        	}
         }
         else if(cmd == SPOP) {
         	IgniteSet<String> list = ctx.grid().set(queueName, cfg);

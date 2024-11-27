@@ -986,7 +986,6 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
         boolean oldValPresent,
         @Nullable CacheObject oldVal,
         AffinityTopologyVersion topVer,
-        CacheEntryPredicate[] filter,
         GridDrType drType,
         long drExpireTime,
         @Nullable GridCacheVersion explicitVer,
@@ -997,10 +996,6 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
         CacheObject old;
 
         final boolean valid = valid(tx != null ? tx.topologyVersion() : topVer);
-
-        // Lock should be held by now.
-        if (!cctx.isAll(this, filter))
-            return new GridCacheUpdateTxResult(false);
 
         final GridCacheVersion newVer;
 
@@ -1206,7 +1201,6 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
         boolean oldValPresent,
         @Nullable CacheObject oldVal,
         AffinityTopologyVersion topVer,
-        CacheEntryPredicate[] filter,
         GridDrType drType,
         @Nullable GridCacheVersion explicitVer,
         String taskName,
@@ -1220,10 +1214,6 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
         GridCacheVersion newVer;
 
         final boolean valid = valid(tx != null ? tx.topologyVersion() : topVer);
-
-        // Lock should be held by now.
-        if (!cctx.isAll(this, filter))
-            return new GridCacheUpdateTxResult(false);
 
         GridCacheVersion obsoleteVer = null;
 
