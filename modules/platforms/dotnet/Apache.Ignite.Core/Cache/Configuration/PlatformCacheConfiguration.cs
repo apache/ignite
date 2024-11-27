@@ -19,6 +19,7 @@ namespace Apache.Ignite.Core.Cache.Configuration
 {
     using Apache.Ignite.Core.Binary;
     using Apache.Ignite.Core.Cache.Query;
+    using Apache.Ignite.Core.Cluster;
 
     /// <summary>
     /// Native .NET cache configuration.
@@ -62,6 +63,13 @@ namespace Apache.Ignite.Core.Cache.Configuration
             KeyTypeName = reader.ReadString();
             ValueTypeName = reader.ReadString();
             KeepBinary = reader.ReadBoolean();
+
+            if (reader.ReadBoolean())
+            {
+                var nodeFilter = reader.ReadObject<IClusterNodeFilter>();
+
+                NodeFilter = nodeFilter ?? new JavaNodeFilter();
+            }
         }
 
         /// <summary>
@@ -80,7 +88,13 @@ namespace Apache.Ignite.Core.Cache.Configuration
         /// Gets or sets a value indicating whether platform cache should store keys and values in binary form.
         /// </summary>
         public bool KeepBinary { get; set; }
-
+        
+        /// <summary>
+        /// Gets and sets node filter. Platform cache will be started only on nodes satisfying this cluster node filter.
+        /// In case of empty filter platform cache starts on all server nodes.
+        /// </summary>
+        public IClusterNodeFilter NodeFilter { get; set; }
+        
         /// <summary>
         /// Writes to the specified writer.
         /// </summary>
@@ -89,6 +103,18 @@ namespace Apache.Ignite.Core.Cache.Configuration
             writer.WriteString(KeyTypeName);
             writer.WriteString(ValueTypeName);
             writer.WriteBoolean(KeepBinary);
+
+            if (NodeFilter != null)
+            {
+                writer.WriteBoolean(true);
+
+                if (NodeFilter is JavaNodeFilter)
+                    writer.WriteObject<object>(null);
+                else 
+                    writer.WriteObject(NodeFilter);
+            }
+            else
+                writer.WriteBoolean(false);
         }
     }
 }
