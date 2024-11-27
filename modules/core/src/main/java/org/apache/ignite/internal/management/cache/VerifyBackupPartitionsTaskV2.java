@@ -212,6 +212,11 @@ public class VerifyBackupPartitionsTaskV2 extends ComputeTaskAdapter<CacheIdleVe
 
             Set<Integer> grpIds = getGroupIds();
 
+            if (log.isInfoEnabled()) {
+                log.info("Idle verify procedure has started [skipZeros=" + arg.skipZeros() + ", checkCrc=" +
+                    arg.checkCrc() + ", grpIds=" + grpIds + "]");
+            }
+
             completionCntr.set(0);
 
             List<Future<Map<PartitionKeyV2, PartitionHashRecordV2>>> partHashCalcFuts =
@@ -259,6 +264,9 @@ public class VerifyBackupPartitionsTaskV2 extends ComputeTaskAdapter<CacheIdleVe
                     }
                 }
             }
+
+            if (log.isInfoEnabled())
+                log.info("Idle verify procedure has finished.");
 
             if (!F.isEmpty(exceptions))
                 throw new IdleVerifyException(exceptions);
