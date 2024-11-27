@@ -278,7 +278,7 @@ public class JdbcThinConnection implements Connection {
     private final JdbcMarshallerContext marshCtx;
 
     /** Client info. */
-    private @Nullable ClientInfoProperties clientInfo;
+    private @Nullable Map<String, String> clientInfo;
 
     /**
      * Creates new connection.
@@ -910,9 +910,9 @@ public class JdbcThinConnection implements Connection {
             throw new SQLClientInfoException("Connection is closed.", null);
 
         if (clientInfo == null)
-            clientInfo = new ClientInfoProperties();
+            clientInfo = new HashMap<>();
 
-        clientInfo.setProperty(name, val);
+        clientInfo.put(name, val);
     }
 
     /** {@inheritDoc} */
@@ -920,24 +920,30 @@ public class JdbcThinConnection implements Connection {
         if (closed)
             throw new SQLClientInfoException("Connection is closed.", null);
 
-        clientInfo = new ClientInfoProperties();
+        clientInfo = new HashMap<>();
 
-        clientInfo.setProperties(props);
+        for (String propName : props.stringPropertyNames())
+            clientInfo.put(propName, props.getProperty(propName));
     }
 
     /** {@inheritDoc} */
     @Override public String getClientInfo(String name) throws SQLException {
         ensureNotClosed();
 
-        return clientInfo.getProperty(name);
+        return clientInfo.get(name);
     }
 
     /** {@inheritDoc} */
     @Override public Properties getClientInfo() throws SQLException {
         ensureNotClosed();
 
-        // TODO: new ClientInfoProperties?
-        return clientInfo;
+        if (clientInfo == null)
+            return null;
+
+        Properties ret = new Properties();
+        ret.putAll(clientInfo);
+
+        return ret;
     }
 
     /** {@inheritDoc} */

@@ -2984,6 +2984,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
             keepBinary,
             failOnMultipleStmts,
             GridCacheQueryType.SQL_FIELDS,
+            null,
             null
         );
     }
@@ -2997,64 +2998,9 @@ public class GridQueryProcessor extends GridProcessorAdapter {
      * @param keepBinary Keep binary flag.
      * @param failOnMultipleStmts If {@code true} the method must throws exception when query contains
      *      more then one SQL statement.
-     * @param cancel Hook for query cancellation.
-     * @return Cursor.
-     */
-    public List<FieldsQueryCursor<List<?>>> querySqlFields(
-        @Nullable final GridCacheContext<?, ?> cctx,
-        final SqlFieldsQuery qry,
-        final SqlClientContext cliCtx,
-        final boolean keepBinary,
-        final boolean failOnMultipleStmts,
-        @Nullable final GridQueryCancel cancel
-    ) {
-        return querySqlFields(
-            cctx,
-            qry,
-            cliCtx,
-            keepBinary,
-            failOnMultipleStmts,
-            GridCacheQueryType.SQL_FIELDS,
-            cancel
-        );
-    }
-
-    /**
-     * Query SQL fields.
-     *
-     * @param cctx Cache context.
-     * @param qry Query.
-     * @param cliCtx Client context.
-     * @param keepBinary Keep binary flag.
-     * @param failOnMultipleStmts If {@code true} the method must throws exception when query contains
-     *      more then one SQL statement.
      * @param qryType Real query type.
      * @param cancel Hook for query cancellation.
-     * @return Cursor.
-     */
-    public List<FieldsQueryCursor<List<?>>> querySqlFields(
-        @Nullable final GridCacheContext<?, ?> cctx,
-        final SqlFieldsQuery qry,
-        final SqlClientContext cliCtx,
-        final boolean keepBinary,
-        final boolean failOnMultipleStmts,
-        GridCacheQueryType qryType,
-        @Nullable final GridQueryCancel cancel
-    ) {
-        return querySqlFields(cctx, qry, cliCtx, keepBinary, failOnMultipleStmts, qryType, cancel, null);
-    }
-
-    /**
-     * Query SQL fields.
-     *
-     * @param cctx Cache context.
-     * @param qry Query.
-     * @param cliCtx Client context.
-     * @param keepBinary Keep binary flag.
-     * @param failOnMultipleStmts If {@code true} the method must throws exception when query contains
-     *      more then one SQL statement.
-     * @param qryType Real query type.
-     * @param cancel Hook for query cancellation.
+     * @param appAttrs Application attributes.
      * @return Cursor.
      */
     public List<FieldsQueryCursor<List<?>>> querySqlFields(
@@ -3408,6 +3354,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
             keepBinary,
             true,
             GridCacheQueryType.SQL,
+            null,
             null
         ).get(0);
 

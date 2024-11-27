@@ -40,7 +40,7 @@ public class JdbcSetClientInfoTest extends GridCommonAbstractTest {
         cfg.setCacheConfiguration(new CacheConfiguration<>()
             .setName(DEFAULT_CACHE_NAME)
             .setSqlSchema("PUBLIC")
-            .setSqlFunctionClasses(UserAttributeFunctions.class));
+            .setSqlFunctionClasses(SessionContextFunctions.class));
 
         return cfg;
     }
@@ -100,8 +100,6 @@ public class JdbcSetClientInfoTest extends GridCommonAbstractTest {
 
         try (Connection conn = DriverManager.getConnection(URL)) {
             for (String sesId: F.asList("1", "2")) {
-
-                System.out.println("ACTION " + sesId);
 
                 setClientInfo(conn, sesId);
 
@@ -261,7 +259,7 @@ public class JdbcSetClientInfoTest extends GridCommonAbstractTest {
     }
 
     /** */
-    public static class UserAttributeFunctions {
+    public static class SessionContextFunctions {
         /** */
         @SessionContextProviderResource
         public SessionContextProvider sesCtxProv;

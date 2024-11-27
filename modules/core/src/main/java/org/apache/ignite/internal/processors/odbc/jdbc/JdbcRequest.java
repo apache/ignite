@@ -17,9 +17,7 @@
 
 package org.apache.ignite.internal.processors.odbc.jdbc;
 
-import java.util.HashMap;
 import java.util.Map;
-import java.util.Properties;
 import java.util.concurrent.atomic.AtomicLong;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.binary.BinaryObjectException;
@@ -126,14 +124,8 @@ public class JdbcRequest extends ClientListenerRequestNoId implements JdbcRawBin
     }
 
     /** @param clientInfo Client info. */
-    public void clientInfo(@Nullable Properties clientInfo) {
-        if (clientInfo == null)
-            return;
-
-        this.clientInfo = new HashMap<>(clientInfo.size());
-
-        for (Map.Entry<Object, Object> prop: clientInfo.entrySet())
-            this.clientInfo.put((String)prop.getKey(), (String)prop.getValue());
+    public void clientInfo(@Nullable Map<String, String> clientInfo) {
+        this.clientInfo = clientInfo;
     }
 
     /** {@inheritDoc} */
