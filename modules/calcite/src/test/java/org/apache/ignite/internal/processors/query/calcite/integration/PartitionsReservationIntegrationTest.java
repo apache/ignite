@@ -51,6 +51,7 @@ public class PartitionsReservationIntegrationTest extends AbstractBasicIntegrati
     /** {@inheritDoc} */
     @Override protected void beforeTest() throws Exception {
         startGrids(2);
+
         client = startClientGrid();
 
         awaitPartitionMapExchange();

@@ -38,7 +38,6 @@ import org.apache.ignite.internal.processors.cache.transactions.TransactionChang
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.spi.indexing.IndexingQueryFilter;
 import org.apache.ignite.spi.indexing.IndexingQueryFilterImpl;
-import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 /** */
@@ -150,7 +149,7 @@ public class IndexCountScan<Row> extends AbstractCacheScan<Row> {
     }
 
     /** */
-    private static @NotNull BPlusTree.TreeRowClosure<IndexRow, IndexRow> transactionAwareCountRowFilter(
+    private static BPlusTree.TreeRowClosure<IndexRow, IndexRow> transactionAwareCountRowFilter(
         BPlusTree.TreeRowClosure<IndexRow, IndexRow> rowFilter,
         TransactionChanges<CacheDataRow> txChanges
     ) {
