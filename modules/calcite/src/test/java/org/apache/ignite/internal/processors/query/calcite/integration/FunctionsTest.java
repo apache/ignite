@@ -21,6 +21,7 @@ import java.math.BigDecimal;
 import java.sql.Date;
 import java.sql.Time;
 import java.sql.Timestamp;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.function.LongFunction;
 import org.apache.calcite.sql.validate.SqlValidatorException;
@@ -28,6 +29,7 @@ import org.apache.ignite.IgniteCache;
 import org.apache.ignite.calcite.CalciteQueryEngineConfiguration;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.internal.processors.query.IgniteSQLException;
+import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.junit.Test;
 
@@ -56,6 +58,154 @@ public class FunctionsTest extends AbstractBasicIntegrationTest {
     @Test
     public void testQueryEngine() {
         assertQuery("SELECT QUERY_ENGINE()").returns(CalciteQueryEngineConfiguration.ENGINE_NAME).check();
+    }
+
+    /** */
+    @Test
+    public void testBitwiseOperationsWithTable() {
+        try {
+            sql("CREATE TABLE TBL(i INT PRIMARY KEY, s SMALLINT, l BIGINT)");
+
+            for (int i = 0; i < 100; ++i)
+                sql("INSERT INTO TBL values (?, ?, ?)", i, i, i);
+
+            sql("INSERT INTO TBL values (?, ?, ?)", Short.MAX_VALUE + 1, Short.MAX_VALUE, Short.MAX_VALUE);
+
+            assertQuery("SELECT BITAND(i + 1, i + 1) FROM TBL WHERE i=0").returns(1).check();
+            assertQuery("SELECT BITAND(s, s) FROM TBL WHERE i=1").returns((short)1).check();
+            assertQuery("SELECT BITAND((SELECT l FROM TBL WHERE i=3), (SELECT l FROM TBL WHERE i=1))").returns(1L).check();
+            assertQuery("SELECT BITOR((SELECT s FROM TBL WHERE i=?), (SELECT i FROM TBL WHERE i=?))").withParams(14, 1)
+                .returns(15).check();
+
+            assertQuery("SELECT BITAND((SELECT s FROM TBL WHERE s=3), (SELECT l FROM TBL WHERE i=1))").returns(1L).check();
+
+            assertQuery("SELECT BITXOR(1000::BIGINT, i) FROM TBL WHERE i=93").returns(949L).check();
+            assertQuery("SELECT BITAND(?, i) FROM TBL WHERE i=73").withParams(NULL_RESULT).returns(NULL_RESULT).check();
+            assertQuery("SELECT BITAND(l, ?) FROM TBL WHERE l=45").withParams(NULL_RESULT).returns(NULL_RESULT).check();
+            assertQuery("SELECT BITAND(?, s) FROM TBL WHERE s=40").withParams(NULL_RESULT).returns(NULL_RESULT).check();
+
+            assertQuery("SELECT BITAND(i, s) FROM TBL WHERE l=?").withParams(Short.MAX_VALUE).returns(0).check();
+            assertQuery("SELECT BITOR(i, s) FROM TBL WHERE l=?").withParams(Short.MAX_VALUE).returns(65535).check();
+            assertQuery("SELECT BITXOR(i, s) FROM TBL WHERE l=?").withParams(Short.MAX_VALUE).returns(65535).check();
+        }
+        finally {
+            sql("DROP TABLE if EXISTS TBL");
+        }
+    }
+
+    /** */
+    @Test
+    public void testBitwiseOperations() {
+        doTestBitwiseOperations(false);
+
+        doTestBitwiseOperations(true);
+    }
+
+    /** */
+    private void doTestBitwiseOperations(boolean dynamic) {
+        for (List<Object> paramSet : bitwiseParams(dynamic)) {
+            assert paramSet.size() == 6;
+
+            int idx = 0;
+
+            String op = paramSet.get(idx++).toString();
+            Object p1 = paramSet.get(idx++);
+            String cast1 = (String)paramSet.get(idx++);
+            Object p2 = paramSet.get(idx++);
+            String cast2 = (String)paramSet.get(idx++);
+            Object res = paramSet.get(idx);
+
+            cast1 = cast1 == null ? "" : "::" + cast1;
+            cast2 = cast2 == null ? "" : "::" + cast2;
+
+            log.info("Op: " + op + ", dynamic=" + dynamic + ", p1=" + p1 + ", p2=" + p2 + ", expected=" + res);
+
+            if (dynamic) {
+                String sql = "SELECT BIT" + op + "(?" + cast1 + ", ?" + cast2 + ')';
+
+                if (res instanceof Exception)
+                    assertThrows(sql, (Class<? extends Exception>)res.getClass(), ((Throwable)res).getMessage(), p1, p2);
+                else
+                    assertQuery(sql).withParams(p1, p2).returns(res).check();
+            }
+            else {
+                String sql = "SELECT BIT" + op + '(' + p1 + cast1 + ", " + p2 + cast2 + ')';
+
+                if (res instanceof Exception)
+                    assertThrows(sql, (Class<? extends Exception>)res.getClass(), ((Throwable)res).getMessage());
+                else
+                    assertQuery(sql).returns(res).check();
+            }
+        }
+    }
+
+    /** Bitwise operation params: operation, param1, cast1, param2, cast2, result. */
+    private Iterable<List<Object>> bitwiseParams(boolean dynamic) {
+        List<List<Object>> res = new ArrayList<>(100);
+
+        SqlValidatorException andErr = new SqlValidatorException("Cannot apply 'BITAND' to arguments of type", null);
+        SqlValidatorException orErr = new SqlValidatorException("Cannot apply 'BITOR' to arguments of type", null);
+        SqlValidatorException xorErr = new SqlValidatorException("Cannot apply 'BITXOR' to arguments of type", null);
+
+        // BITAND
+        res.add(F.asList("AND", 1, null, 1.0, null, andErr));
+        res.add(F.asList("AND", 1.0, null, 1, null, andErr));
+        res.add(F.asList("AND", 1, null, 1.0f, null, andErr));
+        res.add(F.asList("AND", 1.0f, null, 1, null, andErr));
+        res.add(F.asList("AND", null, null, null, null, null));
+        res.add(F.asList("AND", 1, null, 1, null, 1));
+        res.add(F.asList("AND", 1, null, 0, null, 0));
+        res.add(F.asList("AND", 0, null, 1, null, 0));
+        res.add(F.asList("AND", 1, null, 1, "BIGINT", 1L));
+        res.add(F.asList("AND", 1, "TINYINT", 1, "INT", 1));
+        res.add(F.asList("AND", 1, "TINYINT", 1, "SMALLINT", (short)1));
+        res.add(F.asList("AND", 0, "TINYINT", 0, "TINYINT", (byte)0));
+        res.add(F.asList("AND", 1, "TINYINT", 1, "SMALLINT", (short)1));
+        res.add(F.asList("AND", 15, null, 7, null, 7));
+        res.add(F.asList("AND", -1, null, 1, null, 1));
+        res.add(F.asList("AND", (short)32767, null, 65535, null, 32767));
+        res.add(F.asList("AND", null, null, 1, null, null));
+        res.add(F.asList("AND", 1, "SMALLINT", null, null, null));
+        // BITOR
+        res.add(F.asList("OR", 1, null, 1.0, null, orErr));
+        res.add(F.asList("OR", 1.0, null, 1, null, orErr));
+        res.add(F.asList("OR", 1, null, 1.0f, null, orErr));
+        res.add(F.asList("OR", 1.0f, null, 1, null, orErr));
+        res.add(F.asList("OR", 1, null, 1, null, 1));
+        res.add(F.asList("OR", 1, null, 0, null, 1));
+        res.add(F.asList("OR", 0, null, 1, null, 1));
+        res.add(F.asList("OR", 1, null, 1, "BIGINT", 1L));
+        res.add(F.asList("OR", 1, "TINYINT", 1, "INT", 1));
+        res.add(F.asList("OR", 1, "TINYINT", 1, "SMALLINT", (short)1));
+        res.add(F.asList("OR", 0, "TINYINT", 0, "TINYINT", (byte)0));
+        res.add(F.asList("OR", 1, "TINYINT", 1, "SMALLINT", (short)1));
+        res.add(F.asList("OR", 8, null, 7, null, 15));
+        res.add(F.asList("OR", -1, null, 1, null, -1));
+        res.add(F.asList("OR", (short)32767, null, 65535, null, 65535));
+        res.add(F.asList("OR", (short)32767, null, 65536, null, 98303));
+        res.add(F.asList("OR", null, null, 1, null, null));
+        res.add(F.asList("OR", 1, null, null, null, null));
+        // BITXOR
+        res.add(F.asList("XOR", 1, null, 1.0, null, xorErr));
+        res.add(F.asList("XOR", 1.0, null, 1, null, xorErr));
+        res.add(F.asList("XOR", 1, null, 1.0f, null, xorErr));
+        res.add(F.asList("XOR", 1.0f, null, 1, null, xorErr));
+        res.add(F.asList("XOR", 1, null, 1, null, 0));
+        res.add(F.asList("XOR", 1, null, 0, null, 1));
+        res.add(F.asList("XOR", 0, null, 1, null, 1));
+        res.add(F.asList("XOR", 1, null, 1, "BIGINT", 0L));
+        res.add(F.asList("XOR", 1, "TINYINT", 1, "INT", 0));
+        res.add(F.asList("XOR", 1, "TINYINT", 1, "SMALLINT", (short)0));
+        res.add(F.asList("XOR", 0, "TINYINT", 0, "TINYINT", (byte)0));
+        res.add(F.asList("XOR", 1, "TINYINT", 1, "SMALLINT", (short)0));
+        res.add(F.asList("XOR", 8, null, 7, null, 15));
+        res.add(F.asList("XOR", -1, null, 1, null, -2));
+        res.add(F.asList("XOR", (short)32767, null, 65535, null, 32768));
+        res.add(F.asList("XOR", (short)32767, null, 65536, null, 98303));
+        res.add(F.asList("XOR", null, null, 1, "TINYINT", null));
+        res.add(F.asList("XOR", 1, null, null, null, null));
+
+        return res;
     }
 
     /** */
@@ -300,5 +450,50 @@ public class FunctionsTest extends AbstractBasicIntegrationTest {
             .withParams(BigDecimal.valueOf(10, 1)).returns(true).check();
         assertQuery("SELECT CAST(CAST(? AS DECIMAL(2, 1)) AS BOOLEAN)")
             .withParams(NULL_RESULT).returns(NULL_RESULT).check();
+    }
+
+    /** Tests NVL with different parameters data types. */
+    @Test
+    public void testNvl() {
+        // Result type is the least restrictive type for parameters.
+        assertQuery("select nvl('1', 2)").returns("1").check();
+        assertQuery("select nvl(1, '2')").returns("1").check();
+        assertQuery("select nvl(1, 2.0)").returns(new BigDecimal("1.0")).check();
+        assertQuery("select nvl(1, 2::DOUBLE)").returns(1d).check();
+        assertQuery("select nvl(1::TINYINT, 2::SMALLINT)").returns((short)1).check();
+        assertQuery("select nvl(1.0, '2')").returns("1.0").check();
+        assertQuery("select nvl(null, 2)").returns(2).check();
+        assertQuery("select nvl(null, '2')").returns("2").check();
+        assertQuery("select nvl(null, null)").returns(NULL_RESULT).check();
+        assertQuery("select nvl(?, ?)").withParams("1", 2).returns("1").check();
+        assertQuery("select nvl(?, ?)").withParams(1, "2").returns("1").check();
+        assertQuery("select nvl(?, ?)").withParams(1, 2d).returns(1d).check();
+        assertQuery("select nvl(?, ?)").withParams(null, 2).returns(2).check();
+        assertQuery("select nvl(?, ?)").withParams(null, "2").returns("2").check();
+        assertQuery("select nvl(?, ?)").withParams(null, null).returns(NULL_RESULT).check();
+    }
+
+    /** Tests DECODE with different parameters data types. */
+    @Test
+    public void testDecode() {
+        // Result type is the least restrictive type for then-else parameters.
+        // Type cast rules for comparison are identical to rules for WHERE clause.
+        assertQuery("select decode('1', 1, '1', '2')").returns("1").check();
+        assertQuery("select decode('2', 1, '1', 2, 2)").returns("2").check();
+        assertQuery("select decode(1, '1', 1, 2)").returns(1).check();
+        assertQuery("select decode(2, '1', 1, '2', 2)").returns(2).check();
+        assertQuery("select decode(2, '1', 1, '2', 2, '3')").returns("2").check();
+        assertQuery("select decode(2, '1', 1, '2', 2::DOUBLE)").returns(2.0).check();
+        assertQuery("select decode(1.0, 1, 1, 2)").returns(1).check();
+        assertQuery("select decode(1.1, 1, 1, 2)").returns(2).check();
+        assertQuery("select decode(1, 1.0, 1, 2)").returns(1).check();
+        assertQuery("select decode(1, 1.1, 1, 2)").returns(2).check();
+        assertQuery("select decode(1, 1::DOUBLE, 1, 2)").returns(1).check();
+        assertQuery("select decode('1', 1::DOUBLE, 1, 2)").returns(1).check();
+        assertQuery("select decode(1.0, '1', 1, 2)").returns(1).check();
+        assertQuery("select decode('1', 1.0, 1, 2)").returns(1).check();
+        assertQuery("select decode(null, null, 1, 2)").returns(1).check();
+        assertQuery("select decode(null, 1, 1, 2)").returns(2).check();
+        assertQuery("select decode(1, null, 1, 2)").returns(2).check();
     }
 }

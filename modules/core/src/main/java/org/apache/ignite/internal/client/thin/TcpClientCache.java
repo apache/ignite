@@ -1137,7 +1137,12 @@ public class TcpClientCache<K, V> implements ClientCache<K, V> {
     /** Handle scan query. */
     private QueryCursor<Cache.Entry<K, V>> scanQuery(ScanQuery<K, V> qry) {
         Consumer<PayloadOutputChannel> qryWriter = payloadCh -> {
-            writeCacheInfo(payloadCh);
+            writeCacheInfo(
+                payloadCh,
+                payloadCh.clientChannel().protocolCtx().isFeatureSupported(ProtocolBitmaskFeature.TX_AWARE_QUERIES)
+                    ? transactions.tx()
+                    : null
+            );
 
             BinaryOutputStream out = payloadCh.out();
 
@@ -1155,7 +1160,7 @@ public class TcpClientCache<K, V> implements ClientCache<K, V> {
 
         return new ClientQueryCursor<>(new ClientQueryPager<>(
             ch,
-            null,
+            transactions.tx(),
             ClientOperation.QUERY_SCAN,
             ClientOperation.QUERY_SCAN_CURSOR_GET_PAGE,
             qryWriter,

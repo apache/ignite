@@ -14,24 +14,22 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.ignite.internal.processors.query.calcite.exec;
 
-import org.apache.ignite.internal.util.lang.GridCursor;
+package org.apache.ignite.testframework;
 
-/**
- * Tree index interface.
- *
- * @param <R> Indexing row type.
- */
-public interface TreeIndex<R> {
-    /**
-     * Index lookup method.
-     *
-     * @param lower Lower bound.
-     * @param upper Upper bound.
-     * @param lowerInclude Inclusive lower bound.
-     * @param upperInclude Inclusive upper bound.
-     * @return Cursor over the rows within bounds.
-     */
-    public GridCursor<R> find(R lower, R upper, boolean lowerInclude, boolean upperInclude);
+/** */
+@FunctionalInterface
+public interface SupplierX<T> {
+    /** */
+    T getx() throws Exception;
+
+    /** */
+    default T get() {
+        try {
+            return getx();
+        }
+        catch (Exception e) {
+            throw new RuntimeException(e);
+        }
+    }
 }
