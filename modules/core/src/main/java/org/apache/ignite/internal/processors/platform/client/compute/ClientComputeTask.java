@@ -114,7 +114,7 @@ class ClientComputeTask implements ClientCloseableResource {
 
         // Fail fast.
         if (taskFut.isDone() && taskFut.error() != null)
-            throw new IgniteClientException(ClientStatus.FAILED, taskFut.error().getMessage());
+            throw new IgniteClientException(ClientStatus.FAILED, taskFut.error().getMessage(), taskFut.error());
     }
 
     /**
