@@ -753,6 +753,25 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
     }
 
     /**
+     *
+     */
+    @Test
+    public void testIdleVerifyCancelCommand() throws Exception {
+        IgniteEx srv = startGrids(4);
+
+        srv.cluster().state(ACTIVE);
+
+        IgniteCache<Integer, Integer> cache =  srv.createCache(DEFAULT_CACHE_NAME);
+
+        for (int i = 0; i < 100000; i++)
+            cache.put(i, i);
+
+        new Thread(() -> execute("--cache", "idle_verify") ).start();
+
+        assertEquals(EXIT_CODE_OK, execute("--cache", "idle_verify", "--cancel"));
+    }
+
+    /**
      * Test deactivation works via control.sh
      *
      * @throws Exception If failed.

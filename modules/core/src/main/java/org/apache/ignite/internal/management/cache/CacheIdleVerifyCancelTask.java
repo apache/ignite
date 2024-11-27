@@ -36,7 +36,7 @@ public class CacheIdleVerifyCancelTask extends VisorOneNodeTask<NoArg, Void> {
     private static final long serialVersionUID = 0L;
 
     /** */
-    public static final String IDLE_VERIFY = "idle_verify";
+    public static final String IDLE_VERIFY = "org.apache.ignite.internal.management.cache.IdleVerifyTaskV2";
 
     /** {@inheritDoc} */
     @Override protected VisorJob<NoArg, Void> job(NoArg arg) {
@@ -54,6 +54,7 @@ public class CacheIdleVerifyCancelTask extends VisorOneNodeTask<NoArg, Void> {
         ComputeTaskView foundView = null;
 
         for (ComputeTaskView view : views) {
+            System.out.println("VLADOS TASK NAME: " + view.taskName());
             if (view.taskName().equals(IDLE_VERIFY)) {
                 idleVerifyCnt++;
 
