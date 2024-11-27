@@ -24,24 +24,7 @@ getJavaSpecificOpts() {
   current_value=$2
   value=""
 
-  if [ $version -eq 8 ] ; then
-      value="\
-          -XX:+AggressiveOpts \
-           ${current_value}"
-
-  elif [ $version -gt 8 ] && [ $version -lt 11 ]; then
-      value="\
-          -XX:+AggressiveOpts \
-          --add-exports=java.base/jdk.internal.misc=ALL-UNNAMED \
-          --add-exports=java.base/sun.nio.ch=ALL-UNNAMED \
-          --add-exports=java.management/com.sun.jmx.mbeanserver=ALL-UNNAMED \
-          --add-exports=jdk.internal.jvmstat/sun.jvmstat.monitor=ALL-UNNAMED \
-          --add-exports=java.base/sun.reflect.generics.reflectiveObjects=ALL-UNNAMED \
-          --illegal-access=permit \
-          --add-modules=java.xml.bind \
-          ${current_value}"
-
-  elif [ "${version}" -ge 11 ] && [ "${version}" -lt 14 ]; then
+  if [ "${version}" -ge 11 ] && [ "${version}" -lt 14 ]; then
       value="\
           --add-exports=java.base/jdk.internal.misc=ALL-UNNAMED \
           --add-exports=java.base/sun.nio.ch=ALL-UNNAMED \

@@ -332,9 +332,7 @@ public class JdbcThinConnectionSSLTest extends JdbcThinAbstractSelfTest {
      * @throws Exception If failed.
      *
      * Note: Disabled cipher suite can be enabled via Java Security property "jdk.tls.disabledAlgorithms" or in
-     * &lt;JRE_8_HOME&gt;/lib/security/java.security file.
-     *
-     * Note: java.security file location may be changed for Java 9+ version
+     * &lt;JAVA_HOME&gt;/conf/security/java.security file.
      */
     @Test
     public void testDisabledCustomCipher() throws Exception {
@@ -373,9 +371,7 @@ public class JdbcThinConnectionSSLTest extends JdbcThinAbstractSelfTest {
      * @throws Exception If failed.
      *
      * Note: Disabled cipher suite can be enabled via Java Security property "jdk.tls.disabledAlgorithms" or in
-     * &lt;JRE_8_HOME&gt;/lib/security/java.security file.
-     *
-     * Note: java.security file location may be changed for Java 9+ version
+     * &lt;JAVA_HOME&gt;/conf/security/java.security file.
      */
     @Test
     public void testUnsupportedCustomCipher() throws Exception {

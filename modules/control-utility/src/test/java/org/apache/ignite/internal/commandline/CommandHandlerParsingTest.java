@@ -419,7 +419,7 @@ public class CommandHandlerParsingTest {
     }
 
     /**
-     * Tets checks a parser of shutdown policy command.
+     * Tests checks a parser of shutdown policy command.
      */
     @Test
     public void testParseShutdownPolicyParameters() {

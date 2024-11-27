@@ -20,11 +20,11 @@ package org.apache.ignite.internal.processors.query.calcite.schema;
 import java.util.Collections;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
-
 import com.google.common.collect.HashMultimap;
 import com.google.common.collect.Multimap;
 import com.google.common.collect.Multimaps;
 import org.apache.calcite.schema.Function;
+import org.apache.calcite.schema.SchemaPlus;
 import org.apache.calcite.schema.Table;
 import org.apache.calcite.schema.impl.AbstractSchema;
 
@@ -40,6 +40,9 @@ public class IgniteSchema extends AbstractSchema {
 
     /** */
     private final Multimap<String, Function> funcMap = Multimaps.synchronizedMultimap(HashMultimap.create());
+
+    /** */
+    private final Map<String, String> viewMap = new ConcurrentHashMap<>();
 
     /**
      * Creates a Schema.
@@ -87,5 +90,34 @@ public class IgniteSchema extends AbstractSchema {
      */
     public void addFunction(String name, Function func) {
         funcMap.put(name, func);
+    }
+
+    /**
+     * @param name View name.
+     * @param sql View sql.
+     */
+    public void addView(String name, String sql) {
+        viewMap.put(name, sql);
+    }
+
+    /**
+     * @param name View name.
+     */
+    public void removeView(String name) {
+        viewMap.remove(name);
+    }
+
+    /**
+     * Registers current {@code IgniteSchema} in parent {@code SchemaPlus}.
+     *
+     * @param parent Parent schema.
+     * @return Registered schema.
+     */
+    public SchemaPlus register(SchemaPlus parent) {
+        SchemaPlus newSchema = parent.add(schemaName, this);
+
+        viewMap.forEach((name, sql) -> newSchema.add(name, new ViewTableMacroImpl(sql, newSchema)));
+
+        return newSchema;
     }
 }

@@ -305,7 +305,10 @@ public abstract class WALRecord {
         CDC_MANAGER_STOP_RECORD(80, CUSTOM),
 
         /** Physical WAL record that represents a fragment of an entry update. (Placeholder) */
-        DATA_PAGE_FRAGMENTED_UPDATE_RECORD(81, PHYSICAL);
+        DATA_PAGE_FRAGMENTED_UPDATE_RECORD(81, PHYSICAL),
+
+        /** Reserved for further improvements. */
+        RESERVED_IDX2(82);
 
         /** Index for serialization. Should be consistent throughout all versions. */
         private final int idx;

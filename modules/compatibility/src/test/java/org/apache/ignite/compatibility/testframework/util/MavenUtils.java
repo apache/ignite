@@ -23,7 +23,6 @@ import java.io.InputStreamReader;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.concurrent.Callable;
@@ -43,8 +42,6 @@ import org.apache.maven.model.io.xpp3.MavenXpp3Reader;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
-import static org.apache.ignite.internal.util.lang.GridFunc.isEmpty;
-
 /**
  * Provides some useful methods to work with Maven.
  */
@@ -54,12 +51,6 @@ public class MavenUtils {
 
     /** */
     private static final String MAVEN_DEPENDENCY_PLUGIN = "org.apache.maven.plugins:maven-dependency-plugin:3.2.0";
-
-    /** */
-    private static final String GG_MVN_REPO = "http://www.gridgainsystems.com/nexus/content/repositories/external";
-
-    /** Set this flag to true if running PDS compatibility tests locally. */
-    private static boolean useGgRepo;
 
     /**
      * Gets a path to an artifact with given version and groupId=org.apache.ignite and artifactId={@code artifactId}.
@@ -187,29 +178,12 @@ public class MavenUtils {
     private static void downloadArtifact(String artifact) throws Exception {
         X.println("Downloading artifact... Identifier: " + artifact);
 
-        // Default platform independ path for maven settings file.
-        Path locProxyMavenSettings = Paths.get(System.getProperty("user.home"), ".m2", "local-proxy.xml");
-
-        String locProxyMavenSettingsFromEnv = System.getenv("LOCAL_PROXY_MAVEN_SETTINGS");
-
         GridStringBuilder mavenCmdArgs = new SB(" ").a(MAVEN_DEPENDENCY_PLUGIN).a(":get -Dartifact=" + artifact);
 
-        if (!isEmpty(locProxyMavenSettingsFromEnv))
-            locProxyMavenSettings = Paths.get(locProxyMavenSettingsFromEnv);
+        Collection<String> repos = mavenProjectRepositories();
 
-        if (Files.exists(locProxyMavenSettings))
-            mavenCmdArgs.a(" -s " + locProxyMavenSettings.toString());
-        else {
-            Collection<String> repos = new ArrayList<>();
-
-            if (useGgRepo)
-                repos.add(GG_MVN_REPO);
-
-            repos.addAll(mavenProjectRepositories());
-
-            if (!repos.isEmpty())
-                mavenCmdArgs.a(" -DremoteRepositories=").a(String.join(",", repos));
-        }
+        if (!repos.isEmpty())
+            mavenCmdArgs.a(" -DremoteRepositories=").a(String.join(",", repos));
 
         exec(buildMvnCommand() + mavenCmdArgs.toString());
 
@@ -268,14 +242,46 @@ public class MavenUtils {
      * @return Maven executable command.
      */
     private static String buildMvnCommand() {
+        String mvnCmd = resolveMavenApplicationPath();
+
+        Path mvnSettingsFilePath = resolveMavenSettingsFilePath();
+
+        if (Files.exists(mvnSettingsFilePath))
+            mvnCmd += " -s " + mvnSettingsFilePath;
+
+        return mvnCmd;
+    }
+
+    /** */
+    private static Path resolveMavenSettingsFilePath() {
+        String settingsPathEnv = System.getenv("LOCAL_PROXY_MAVEN_SETTINGS");
+
+        return F.isEmpty(settingsPathEnv)
+            ? Paths.get(System.getProperty("user.home"), ".m2", "local-proxy.xml")
+            : Paths.get(settingsPathEnv);
+    }
+
+    /** */
+    private static String resolveMavenApplicationPath() {
         String m2Home = System.getenv("M2_HOME");
 
         if (m2Home == null)
             m2Home = System.getProperty("M2_HOME");
 
-        if (m2Home == null)
-            return "mvn";
+        if (m2Home != null)
+            return m2Home + "/bin/mvn";
 
-        return m2Home + "/bin/mvn";
+        File curDir = new File(System.getProperty("user.dir"));
+
+        while (curDir != null) {
+            Path mvnwPath = Paths.get(curDir.getAbsolutePath(), "mvnw");
+
+            if (Files.exists(mvnwPath) && Files.isExecutable(mvnwPath))
+                return mvnwPath.toString();
+
+            curDir = curDir.getParentFile();
+        }
+
+        return "mvn";
     }
 }

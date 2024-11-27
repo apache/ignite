@@ -23,8 +23,9 @@ import java.util.concurrent.ConcurrentSkipListMap;
 import java.util.function.BiConsumer;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.processors.cache.persistence.metastorage.ReadWriteMetastorage;
-import org.apache.ignite.marshaller.jdk.JdkMarshaller;
 import org.jetbrains.annotations.NotNull;
+
+import static org.apache.ignite.testframework.junits.common.GridCommonAbstractTest.TEST_JDK_MARSHALLER;
 
 /** */
 public class ReadWriteMetaStorageMock implements ReadWriteMetastorage {
@@ -35,7 +36,7 @@ public class ReadWriteMetaStorageMock implements ReadWriteMetastorage {
     @Override public void write(@NotNull String key, @NotNull Serializable val) throws IgniteCheckedException {
         assertLockIsHeldByWorkerThread();
 
-        cache.put(key, JdkMarshaller.DEFAULT.marshal(val));
+        cache.put(key, TEST_JDK_MARSHALLER.marshal(val));
     }
 
     /** {@inheritDoc} */
@@ -58,7 +59,7 @@ public class ReadWriteMetaStorageMock implements ReadWriteMetastorage {
 
         byte[] bytes = readRaw(key);
 
-        return bytes == null ? null : JdkMarshaller.DEFAULT.unmarshal(bytes, getClass().getClassLoader());
+        return bytes == null ? null : TEST_JDK_MARSHALLER.unmarshal(bytes, getClass().getClassLoader());
     }
 
     /** {@inheritDoc} */

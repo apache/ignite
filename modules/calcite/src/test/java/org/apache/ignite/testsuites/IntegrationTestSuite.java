@@ -37,6 +37,7 @@ import org.apache.ignite.internal.processors.query.calcite.integration.HashSpool
 import org.apache.ignite.internal.processors.query.calcite.integration.IndexDdlIntegrationTest;
 import org.apache.ignite.internal.processors.query.calcite.integration.IndexMultiRangeScanIntegrationTest;
 import org.apache.ignite.internal.processors.query.calcite.integration.IndexRebuildIntegrationTest;
+import org.apache.ignite.internal.processors.query.calcite.integration.IndexScanMultiNodeIntegrationTest;
 import org.apache.ignite.internal.processors.query.calcite.integration.IndexScanlIntegrationTest;
 import org.apache.ignite.internal.processors.query.calcite.integration.IndexSpoolIntegrationTest;
 import org.apache.ignite.internal.processors.query.calcite.integration.IntervalTest;
@@ -67,6 +68,8 @@ import org.apache.ignite.internal.processors.query.calcite.integration.TableDmlI
 import org.apache.ignite.internal.processors.query.calcite.integration.TimeoutIntegrationTest;
 import org.apache.ignite.internal.processors.query.calcite.integration.UserDdlIntegrationTest;
 import org.apache.ignite.internal.processors.query.calcite.integration.UserDefinedFunctionsIntegrationTest;
+import org.apache.ignite.internal.processors.query.calcite.integration.UserDefinedFunctionsIntegrationTransactionalTest;
+import org.apache.ignite.internal.processors.query.calcite.integration.ViewsIntegrationTest;
 import org.apache.ignite.internal.processors.query.calcite.jdbc.JdbcCrossEngineTest;
 import org.apache.ignite.internal.processors.query.calcite.jdbc.JdbcQueryTest;
 import org.apache.ignite.internal.processors.query.calcite.rules.JoinCommuteRulesTest;
@@ -110,6 +113,7 @@ import org.junit.runners.Suite;
     IndexSpoolIntegrationTest.class,
     HashSpoolIntegrationTest.class,
     IndexScanlIntegrationTest.class,
+    IndexScanMultiNodeIntegrationTest.class,
     SetOpIntegrationTest.class,
     UnstableTopologyTest.class,
     JoinCommuteRulesTest.class,
@@ -117,6 +121,7 @@ import org.junit.runners.Suite;
     JoinIntegrationTest.class,
     IntervalTest.class,
     UserDefinedFunctionsIntegrationTest.class,
+    UserDefinedFunctionsIntegrationTransactionalTest.class,
     CorrelatesIntegrationTest.class,
     SystemViewsIntegrationTest.class,
     IndexRebuildIntegrationTest.class,
@@ -137,6 +142,7 @@ import org.junit.runners.Suite;
     AuthorizationIntegrationTest.class,
     DdlTransactionCalciteSelfTest.class,
     MultiLineQueryTest.class,
+    ViewsIntegrationTest.class,
 })
 public class IntegrationTestSuite {
 }

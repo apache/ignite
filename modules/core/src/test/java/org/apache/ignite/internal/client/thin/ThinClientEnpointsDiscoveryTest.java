@@ -17,9 +17,23 @@
 
 package org.apache.ignite.internal.client.thin;
 
+import java.net.InetSocketAddress;
+import java.net.ServerSocket;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Map;
+
+import org.apache.ignite.Ignition;
 import org.apache.ignite.client.ClientConnectionException;
+import org.apache.ignite.client.IgniteClient;
+import org.apache.ignite.cluster.ClusterNode;
+import org.apache.ignite.configuration.ClientConfiguration;
+import org.apache.ignite.internal.IgniteEx;
+import org.apache.ignite.internal.processors.odbc.ClientListenerProcessor;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.junit.Test;
+
+import static org.apache.ignite.configuration.ClientConnectorConfiguration.DFLT_PORT;
 
 /**
  * Test endpoints discovery by thin client.
@@ -121,5 +135,36 @@ public class ThinClientEnpointsDiscoveryTest extends ThinClientAbstractPartition
         detectTopologyChange();
 
         awaitChannelsInit(0);
+    }
+
+    /** */
+    @Test
+    public void testUnreachableAddressDiscoveredDoesNotPreventClientInit() throws Exception {
+        try (ServerSocket sock = new ServerSocket()) {
+            sock.bind(new InetSocketAddress("127.0.0.1", 0));
+
+            ArrayList<String> addrs = new ArrayList<>();
+            addrs.add("127.0.0.1:" + sock.getLocalPort());
+
+            IgniteEx server = startGrid(0);
+            ClusterNode serverNode = server.cluster().localNode();
+
+            // Override node attributes - set local port of the "fake server" socket which does not work.
+            Map<String, Object> attrsFiltered = serverNode.attributes();
+            Map<String, Object> attrsSealed = GridTestUtils.getFieldValue(attrsFiltered, "map");
+            Map<String, Object> attrs = GridTestUtils.getFieldValue(attrsSealed, "m");
+            attrs.put(ClientListenerProcessor.CLIENT_LISTENER_PORT, sock.getLocalPort());
+
+            // Config has good server address, client discovery returns unreachable address.
+            // We expect the client to connect to the good address and ignore the unreachable one.
+            ClientConfiguration ccfg = new ClientConfiguration()
+                    .setTimeout(2000)
+                    .setAddresses("127.0.0.1:" + DFLT_PORT);
+
+            IgniteClient client = Ignition.startClient(ccfg);
+
+            Collection<String> cacheNames = client.cacheNames();
+            assertFalse(cacheNames.isEmpty());
+        }
     }
 }

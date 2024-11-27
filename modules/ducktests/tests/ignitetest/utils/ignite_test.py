@@ -27,6 +27,7 @@ from ignitetest.services.utils.ducktests_service import DucktestsService
 # globals:
 JFR_ENABLED = "jfr_enabled"
 IGNITE_TEST_CONTEXT_CLASS_KEY_NAME = "IgniteTestContext"
+SAFEPOINT_LOGS_ENABLED = "safepoint_log_enabled"
 
 
 class IgniteTestContext(TestContext):

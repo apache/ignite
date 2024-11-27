@@ -19,8 +19,10 @@ package org.apache.ignite.jdbc.suite;
 
 import java.security.Security;
 import org.apache.ignite.common.RunningQueryInfoCheckInitiatorTest;
+import org.apache.ignite.internal.jdbc2.JdbcBinaryBufferTest;
 import org.apache.ignite.internal.jdbc2.JdbcBlobTest;
 import org.apache.ignite.internal.jdbc2.JdbcBulkLoadSelfTest;
+import org.apache.ignite.internal.jdbc2.JdbcClobTest;
 import org.apache.ignite.internal.jdbc2.JdbcConnectionReopenTest;
 import org.apache.ignite.internal.jdbc2.JdbcDistributedJoinsQueryTest;
 import org.apache.ignite.internal.jdbc2.JdbcSchemaCaseSelfTest;
@@ -125,6 +127,8 @@ import org.junit.runners.Suite;
     JdbcBulkLoadSelfTest.class,
     JdbcSchemaCaseSelfTest.class,
 
+    JdbcClobTest.class,
+    JdbcBinaryBufferTest.class,
     JdbcBlobTest.class,
     org.apache.ignite.internal.jdbc2.JdbcStreamingSelfTest.class,
     JdbcThinStreamingNotOrderedSelfTest.class,

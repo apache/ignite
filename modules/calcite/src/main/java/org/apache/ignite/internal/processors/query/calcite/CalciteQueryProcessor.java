@@ -59,6 +59,8 @@ import org.apache.ignite.events.SqlQueryExecutionEvent;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.processors.GridProcessorAdapter;
 import org.apache.ignite.internal.processors.cache.query.IgniteQueryErrorCode;
+import org.apache.ignite.internal.processors.cache.transactions.IgniteTxManager;
+import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.processors.failure.FailureProcessor;
 import org.apache.ignite.internal.processors.query.GridQueryFieldMetadata;
 import org.apache.ignite.internal.processors.query.IgniteSQLException;
@@ -117,6 +119,7 @@ import org.apache.ignite.internal.processors.query.calcite.util.LifecycleAware;
 import org.apache.ignite.internal.processors.query.calcite.util.Service;
 import org.apache.ignite.internal.processors.security.SecurityUtils;
 import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.internal.util.typedef.internal.U;
 import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.IgniteSystemProperties.getLong;
@@ -486,6 +489,8 @@ public class CalciteQueryProcessor extends GridProcessorAdapter implements Query
         String sql,
         Object... params
     ) throws IgniteSQLException {
+        ensureTransactionModeSupported(qryCtx);
+
         SchemaPlus schema = schemaHolder.schema(schemaName);
 
         assert schema != null : "Schema not found: " + schemaName;
@@ -588,7 +593,27 @@ public class CalciteQueryProcessor extends GridProcessorAdapter implements Query
 
         SqlFieldsQuery sqlFieldsQry = qryCtx.unwrap(SqlFieldsQuery.class);
 
-        return sqlFieldsQry != null ? F.asList(sqlFieldsQry.isLocal(), sqlFieldsQry.isEnforceJoinOrder()) : null;
+        return sqlFieldsQry != null
+            ? F.asList(sqlFieldsQry.isLocal(), sqlFieldsQry.isEnforceJoinOrder(), queryTransactionVersion(qryCtx) == null)
+            : null;
+    }
+
+    /** */
+    private static GridCacheVersion queryTransactionVersion(@Nullable QueryContext qryCtx) {
+        return qryCtx == null ? null : qryCtx.unwrap(GridCacheVersion.class);
+    }
+
+    /** */
+    private void ensureTransactionModeSupported(@Nullable QueryContext qryCtx) {
+        if (!U.isTxAwareQueriesEnabled(ctx))
+            return;
+
+        GridCacheVersion ver = queryTransactionVersion(qryCtx);
+
+        if (ver == null)
+            return;
+
+        IgniteTxManager.ensureTransactionModeSupported(ctx.cache().context().tm().tx(ver).isolation());
     }
 
     /** */

@@ -358,7 +358,7 @@ public class LongDestroyDurableBackgroundTaskTest extends GridCommonAbstractTest
      *
      * @param ignite Ignite instance.
      */
-    private void validateIndexes(Ignite ignite) {
+    private void validateIndexes(Ignite ignite) throws Exception {
         Set<UUID> nodeIds = new HashSet<>();
 
         nodeIds.add(grid(RESTARTED_NODE_NUM).cluster().localNode().id());
@@ -376,7 +376,7 @@ public class LongDestroyDurableBackgroundTaskTest extends GridCommonAbstractTest
         taskArg.checkSizes(true);
 
         ValidateIndexesTaskResult taskRes =
-            ignite.compute().execute(ValidateIndexesTask.class.getName(), new VisorTaskArgument<>(nodeIds, taskArg, false));
+            ignite.compute().execute(ValidateIndexesTask.class, new VisorTaskArgument<>(nodeIds, taskArg, false)).result();
 
         if (!taskRes.exceptions().isEmpty()) {
             for (Map.Entry<ValidateIndexesTaskResult.NodeInfo, Exception> e : taskRes.exceptions().entrySet())

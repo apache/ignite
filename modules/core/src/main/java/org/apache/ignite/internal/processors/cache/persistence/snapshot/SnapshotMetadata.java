@@ -99,6 +99,9 @@ public class SnapshotMetadata implements Serializable {
     @GridToStringInclude
     @Nullable private List<String> warnings;
 
+    /** Creation timestamp in milliseconds since Unix epoch. */
+    private long snapshotTime;
+
     /** */
     private transient Set<Integer> comprGrpIds;
 
@@ -125,6 +128,7 @@ public class SnapshotMetadata implements Serializable {
      * @param bltNodes The set of affected by snapshot baseline nodes.
      * @param snpRecPtr WAL pointer to {@link ClusterSnapshotRecord} if exists.
      * @param masterKeyDigest Master key digest for encrypted caches.
+     * @param snapshotTime of the snapshot creation.
      * @param onlyPrimary If {@code true} snapshot only primary copies of partitions.
      * @param dump If {@code true} cache group dump stored.
      * @param encKey Encryption key. For dumps, only.
@@ -137,6 +141,7 @@ public class SnapshotMetadata implements Serializable {
         boolean comprParts,
         int pageSize,
         List<Integer> grpIds,
+        long snapshotTime,
         Collection<Integer> compGrpIds,
         Set<String> bltNodes,
         Set<GroupPartitionId> pairs,
@@ -153,6 +158,7 @@ public class SnapshotMetadata implements Serializable {
         this.comprParts = comprParts;
         this.pageSize = pageSize;
         this.grpIds = grpIds;
+        this.snapshotTime = snapshotTime;
         this.bltNodes = bltNodes;
         this.snpRecPtr = snpRecPtr;
         this.masterKeyDigest = masterKeyDigest;
@@ -260,6 +266,11 @@ public class SnapshotMetadata implements Serializable {
     /** @return If {@code true} then metadata describes cache dump. */
     public boolean dump() {
         return dump;
+    }
+
+    /** @return Creation timestamp in milliseconds since Unix epoch. */
+    public long snapshotTime() {
+        return snapshotTime;
     }
 
     /** Save the state of this <tt>HashMap</tt> partitions and cache groups to a stream. */

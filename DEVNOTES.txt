@@ -14,12 +14,12 @@ Apache Ignite Maven Build Instructions
 ======================================
 1) Compile and install:
 
-        ./mvnw clean install -Pall-java,all-scala,licenses -DskipTests
+        ./mvnw clean install -Pall-java,licenses -DskipTests
 
    or if you have to build .NET part as well, use the following command:
    (Note that 'doxygen', `docfx`, '.NET Core SDK 3.1', 'PowerShell' should be installed before running this command.)
 
-        ./mvnw clean install -Pall-java,all-scala,licenses,platforms -DskipTests -DclientDocs
+        ./mvnw clean install -Pall-java,licenses,platforms -DskipTests -DclientDocs
 
 2) Javadoc generation (optional):
 
@@ -42,12 +42,12 @@ Apache Ignite with LGPL Maven Build Instructions
 ================================================
 1) Compile and install:
 
-        ./mvnw clean install -Pall-java,all-scala,licenses -DskipTests
+        ./mvnw clean install -Pall-java,licenses -DskipTests
 
    or if you have to build .NET part as well, use the following command:
    (Note that 'doxygen', `docfx`, '.NET Core SDK 3.1', 'PowerShell' should be installed before running this command.)
 
-        ./mvnw clean install -Pall-java,all-scala,licenses,platforms -DskipTests -DclientDocs
+        ./mvnw clean install -Pall-java,licenses,platforms -DskipTests -DclientDocs
 
 2) Javadoc generation with LGPL (optional):
 
@@ -165,7 +165,7 @@ Ignite Release Instructions
 
    3.1) Deploy Ignite to maven repository, prepares sources and binaries.
 
-                ./mvnw deploy -Papache-release,gpg,all-java,all-scala,licenses,deploy-ignite-site -Dignite.edition=apache-ignite -DskipTests
+                ./mvnw deploy -Papache-release,gpg,all-java,licenses,deploy-ignite-site -Dignite.edition=apache-ignite -DskipTests
 
    3.2) Javadoc generation:
 

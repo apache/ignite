@@ -18,12 +18,16 @@
 package org.apache.ignite.internal.processors.query.calcite.message;
 
 import java.nio.ByteBuffer;
+import java.util.Collection;
 import java.util.UUID;
-import org.apache.ignite.ClientContext;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.internal.GridDirectCollection;
 import org.apache.ignite.internal.GridDirectTransient;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
+import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.query.calcite.metadata.FragmentDescription;
+import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.plugin.extensions.communication.MessageCollectionItemType;
 import org.apache.ignite.plugin.extensions.communication.MessageReader;
 import org.apache.ignite.plugin.extensions.communication.MessageWriter;
 import org.jetbrains.annotations.Nullable;
@@ -61,14 +65,11 @@ public class QueryStartRequest implements MarshalableMessage, ExecutionContextAw
     private byte[] paramsBytes;
 
     /** */
-    @GridDirectTransient
-    private ClientContext clnCtx;
-
-    /** */
-    private byte[] clnCtxBytes;
-
-    /** */
     private long timeout;
+
+    /** */
+    @GridDirectCollection(QueryTxEntry.class)
+    private @Nullable Collection<QueryTxEntry> qryTxEntries;
 
     /** */
     @SuppressWarnings("AssignmentOrReturnOfFieldWithMutableType")
@@ -83,7 +84,7 @@ public class QueryStartRequest implements MarshalableMessage, ExecutionContextAw
         Object[] params,
         @Nullable byte[] paramsBytes,
         long timeout,
-        @Nullable ClientContext clnCtx
+        Collection<QueryTxEntry> qryTxEntries
     ) {
         this.qryId = qryId;
         this.originatingQryId = originatingQryId;
@@ -95,7 +96,7 @@ public class QueryStartRequest implements MarshalableMessage, ExecutionContextAw
         this.params = params;
         this.paramsBytes = paramsBytes; // If we already have marshalled params, use it.
         this.timeout = timeout;
-        this.clnCtx = clnCtx;
+        this.qryTxEntries = qryTxEntries;
     }
 
     /** */
@@ -169,11 +170,6 @@ public class QueryStartRequest implements MarshalableMessage, ExecutionContextAw
         return paramsBytes;
     }
 
-    /** */
-    @Override public @Nullable ClientContext clientContext() {
-        return clnCtx;
-    }
-
     /**
      * @return Query timeout.
      */
@@ -181,29 +177,39 @@ public class QueryStartRequest implements MarshalableMessage, ExecutionContextAw
         return timeout;
     }
 
-    /** {@inheritDoc} */
-    @Override public void prepareMarshal(MarshallingContext ctx) throws IgniteCheckedException {
-        if (paramsBytes == null && params != null)
-            paramsBytes = ctx.marshal(params);
-
-        fragmentDesc.prepareMarshal(ctx);
-
-        if (clnCtxBytes == null && clnCtx != null)
-            clnCtxBytes = ctx.marshal(clnCtx.getAttributes());
+    /**
+     * @return Transaction entries to mixin on query processing.
+     */
+    public @Nullable Collection<QueryTxEntry> queryTransactionEntries() {
+        return qryTxEntries;
     }
 
     /** {@inheritDoc} */
-    @Override public void prepareUnmarshal(MarshallingContext ctx) throws IgniteCheckedException {
+    @Override public void prepareMarshal(GridCacheSharedContext<?, ?> ctx) throws IgniteCheckedException {
+        if (paramsBytes == null && params != null)
+            paramsBytes = U.marshal(ctx, params);
+
+        fragmentDesc.prepareMarshal(ctx);
+
+        if (qryTxEntries != null) {
+            for (QueryTxEntry e : qryTxEntries)
+                e.prepareMarshal(ctx);
+        }
+    }
+
+    /** {@inheritDoc} */
+    @Override public void prepareUnmarshal(GridCacheSharedContext<?, ?> ctx) throws IgniteCheckedException {
+        ClassLoader ldr = U.resolveClassLoader(ctx.gridConfig());
+
         if (params == null && paramsBytes != null)
-            params = ctx.unmarshal(paramsBytes);
+            params = U.unmarshal(ctx, paramsBytes, ldr);
 
         fragmentDesc.prepareUnmarshal(ctx);
 
-        if (clnCtx == null && clnCtxBytes != null)
-            clnCtx = new ClientContext(ctx.unmarshal(clnCtxBytes));
-
-        if (clnCtx == null)
-            System.out.println();
+        if (qryTxEntries != null) {
+            for (QueryTxEntry e : qryTxEntries)
+                e.prepareUnmarshal(ctx, ldr);
+        }
     }
 
     /** {@inheritDoc} */
@@ -267,16 +273,17 @@ public class QueryStartRequest implements MarshalableMessage, ExecutionContextAw
                 writer.incrementState();
 
             case 8:
-                if (!writer.writeAffinityTopologyVersion("ver", ver))
+                if (!writer.writeCollection("qryTxEntries", qryTxEntries, MessageCollectionItemType.MSG))
                     return false;
 
                 writer.incrementState();
 
             case 9:
-                if (!writer.writeByteArray("clnCtxBytes", clnCtxBytes))
+                if (!writer.writeAffinityTopologyVersion("ver", ver))
                     return false;
 
                 writer.incrementState();
+
         }
 
         return true;
@@ -355,7 +362,7 @@ public class QueryStartRequest implements MarshalableMessage, ExecutionContextAw
                 reader.incrementState();
 
             case 8:
-                ver = reader.readAffinityTopologyVersion("ver");
+                qryTxEntries = reader.readCollection("qryTxEntries", MessageCollectionItemType.MSG);
 
                 if (!reader.isLastRead())
                     return false;
@@ -363,12 +370,13 @@ public class QueryStartRequest implements MarshalableMessage, ExecutionContextAw
                 reader.incrementState();
 
             case 9:
-                clnCtxBytes = reader.readByteArray("clnCtxBytes");
+                ver = reader.readAffinityTopologyVersion("ver");
 
                 if (!reader.isLastRead())
                     return false;
 
                 reader.incrementState();
+
         }
 
         return reader.afterMessageRead(QueryStartRequest.class);

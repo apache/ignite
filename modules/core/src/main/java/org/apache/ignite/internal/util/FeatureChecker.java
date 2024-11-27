@@ -21,8 +21,8 @@ package org.apache.ignite.internal.util;
  * initialization effects.
  */
 public class FeatureChecker {
-    /** Required Options to Run on Java 9, 10, 11. */
-    public static final String JAVA_9_10_11_OPTIONS = "--add-exports=java.base/jdk.internal.misc=ALL-UNNAMED\n" +
+    /** Required Options to Run on Java 11. */
+    public static final String JAVA_11_OPTIONS = "--add-exports=java.base/jdk.internal.misc=ALL-UNNAMED\n" +
         "--add-exports=java.base/sun.nio.ch=ALL-UNNAMED\n" +
         "--add-exports=java.management/com.sun.jmx.mbeanserver=ALL-UNNAMED\n" +
         "--add-exports=jdk.internal.jvmstat/sun.jvmstat.monitor=ALL-UNNAMED\n" +
@@ -57,7 +57,7 @@ public class FeatureChecker {
     /** Java version specific warning to be added in case access failed */
     public static final String JAVA_VER_SPECIFIC_WARN =
         "\nPlease add the following parameters to JVM startup settings and restart the application: {parameters: " +
-            JAVA_9_10_11_OPTIONS +
+            JAVA_11_OPTIONS +
             "\n}" +
-            "\nSee https://apacheignite.readme.io/docs/getting-started#section-running-ignite-with-java-9-10-11 for more information.";
+            "\nSee https://ignite.apache.org/docs/latest/quick-start/java#running-ignite-with-java-11-or-later for more information.";
 }

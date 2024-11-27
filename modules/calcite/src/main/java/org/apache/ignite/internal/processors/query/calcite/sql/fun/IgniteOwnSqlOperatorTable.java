@@ -19,8 +19,10 @@ package org.apache.ignite.internal.processors.query.calcite.sql.fun;
 import org.apache.calcite.sql.SqlFunction;
 import org.apache.calcite.sql.SqlFunctionCategory;
 import org.apache.calcite.sql.SqlKind;
+import org.apache.calcite.sql.type.InferTypes;
 import org.apache.calcite.sql.type.OperandTypes;
 import org.apache.calcite.sql.type.ReturnTypes;
+import org.apache.calcite.sql.type.SqlTypeFamily;
 import org.apache.calcite.sql.type.SqlTypeName;
 import org.apache.calcite.sql.type.SqlTypeTransforms;
 import org.apache.calcite.sql.util.ReflectiveSqlOperatorTable;
@@ -122,6 +124,36 @@ public class IgniteOwnSqlOperatorTable extends ReflectiveSqlOperatorTable {
             null,
             OperandTypes.SAME_SAME,
             SqlFunctionCategory.SYSTEM);
+
+    /** Bitwise '&' of two values. */
+    public static final SqlFunction BITAND =
+        new SqlFunction(
+            "BITAND",
+            SqlKind.OTHER_FUNCTION,
+            ReturnTypes.LEAST_RESTRICTIVE,
+            InferTypes.RETURN_TYPE,
+            OperandTypes.family(SqlTypeFamily.INTEGER, SqlTypeFamily.INTEGER),
+            SqlFunctionCategory.NUMERIC);
+
+    /** Bitwise '|' of two values. */
+    public static final SqlFunction BITOR =
+        new SqlFunction(
+            "BITOR",
+            SqlKind.OTHER_FUNCTION,
+            ReturnTypes.LEAST_RESTRICTIVE,
+            InferTypes.RETURN_TYPE,
+            OperandTypes.family(SqlTypeFamily.INTEGER, SqlTypeFamily.INTEGER),
+            SqlFunctionCategory.NUMERIC);
+
+    /** Bitwise '^' of two values. */
+    public static final SqlFunction BITXOR =
+        new SqlFunction(
+            "BITXOR",
+            SqlKind.OTHER_FUNCTION,
+            ReturnTypes.LEAST_RESTRICTIVE,
+            InferTypes.RETURN_TYPE,
+            OperandTypes.family(SqlTypeFamily.INTEGER, SqlTypeFamily.INTEGER),
+            SqlFunctionCategory.NUMERIC);
 
     /**
      * Returns the Ignite operator table, creating it if necessary.

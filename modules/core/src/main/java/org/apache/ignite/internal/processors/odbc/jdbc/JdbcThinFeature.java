@@ -36,8 +36,11 @@ public enum JdbcThinFeature implements ThinProtocolFeature {
     /** Add ability to set explicit query timeout on the cluster node by the JDBC client. */
     QUERY_TIMEOUT(3),
 
+    /** Transaction aware queries. */
+    TX_AWARE_QUERIES(4),
+
     /** Send {@link Connection#setClientInfo(String, String)} with messages. */
-    CLIENT_INFO(4);
+    CLIENT_INFO(5);
 
     /** */
     private static final EnumSet<JdbcThinFeature> ALL_FEATURES_AS_ENUM_SET = EnumSet.allOf(JdbcThinFeature.class);

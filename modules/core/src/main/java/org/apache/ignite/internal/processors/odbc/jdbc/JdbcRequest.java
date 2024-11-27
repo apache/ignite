@@ -94,6 +94,12 @@ public class JdbcRequest extends ClientListenerRequestNoId implements JdbcRawBin
     /** Update binary type name request. */
     public static final byte BINARY_TYPE_NAME_PUT = 20;
 
+    /** Sets transaction parameters request. */
+    public static final byte TX_SET_PARAMS = 21;
+
+    /** Finish transaction request. */
+    public static final byte TX_END = 22;
+
     /** Request Id generator. */
     private static final AtomicLong REQ_ID_GENERATOR = new AtomicLong();
 
@@ -277,6 +283,16 @@ public class JdbcRequest extends ClientListenerRequestNoId implements JdbcRawBin
 
             case BINARY_TYPE_GET:
                 req = new JdbcBinaryTypeGetRequest();
+
+                break;
+
+            case TX_SET_PARAMS:
+                req = new JdbcSetTxParametersRequest();
+
+                break;
+
+            case TX_END:
+                req = new JdbcTxEndRequest();
 
                 break;
 

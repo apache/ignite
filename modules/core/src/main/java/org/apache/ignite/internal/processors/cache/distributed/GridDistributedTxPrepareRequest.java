@@ -402,10 +402,10 @@ public class GridDistributedTxPrepareRequest extends GridDistributedBaseMessage 
         super.finishUnmarshal(ctx, ldr);
 
         if (writes != null)
-            unmarshalTx(writes, false, ctx, ldr);
+            unmarshalTx(writes, ctx, ldr);
 
         if (reads != null)
-            unmarshalTx(reads, false, ctx, ldr);
+            unmarshalTx(reads, ctx, ldr);
 
         if (dhtVerKeys != null && dhtVers == null) {
             assert dhtVerVals != null;

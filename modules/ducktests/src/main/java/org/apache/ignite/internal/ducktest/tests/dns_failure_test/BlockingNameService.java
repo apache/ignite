@@ -26,10 +26,8 @@ import java.net.UnknownHostException;
 import java.text.SimpleDateFormat;
 import java.util.Arrays;
 import java.util.Date;
-import java.util.List;
 import java.util.Scanner;
 
-import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.startup.cmdline.CommandLineStartup;
 
@@ -71,27 +69,11 @@ public class BlockingNameService implements NameServiceHandler {
         System.out.println("Installed DnsBlocker as main NameService to JVM");
     }
 
-    /** Installs {@code BlockingNameService} as main {@code NameService} to JVM8. */
-    private static void installJdk8() throws Exception {
-        Field nameSrvcFld = InetAddress.class.getDeclaredField("nameServices");
-        nameSrvcFld.setAccessible(true);
-
-        nameSrvcCls = Class.forName("sun.net.spi.nameservice.NameService");
-
-        BlockingNameService blkNameSrvc = new BlockingNameService(((List)nameSrvcFld.get(InetAddress.class)).get(0));
-
-        nameSrvcFld.set(InetAddress.class, F.asList(
-            Proxy.newProxyInstance(InetAddress.class.getClassLoader(), new Class<?>[] { nameSrvcCls }, blkNameSrvc)
-        ));
-    }
-
     /** */
     public static void main(String[] args) throws Exception {
         String jdkVer = U.jdkVersion();
 
-        if ("1.8".equals(jdkVer))
-            installJdk8();
-        else if ("11".equals(jdkVer) || "17".equals(jdkVer))
+        if ("11".equals(jdkVer) || "17".equals(jdkVer))
             installJdk11();
         else
             throw new IllegalArgumentException("Unsupported JDK version: " + jdkVer);

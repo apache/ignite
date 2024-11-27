@@ -435,7 +435,6 @@ public abstract class GridCacheMessage implements Message {
      * @throws IgniteCheckedException If failed.
      */
     protected final void unmarshalTx(Iterable<IgniteTxEntry> txEntries,
-        boolean near,
         GridCacheSharedContext ctx,
         ClassLoader ldr) throws IgniteCheckedException {
         assert ldr != null;
@@ -443,9 +442,9 @@ public abstract class GridCacheMessage implements Message {
 
         if (txEntries != null) {
             for (IgniteTxEntry e : txEntries) {
-                e.prepareUnmarshal(ctx, topologyVersion(), near);
+                e.prepareUnmarshal(ctx, topologyVersion(), false);
 
-                e.unmarshal(ctx, near, ldr);
+                e.unmarshal(ctx, false, ldr);
             }
         }
     }

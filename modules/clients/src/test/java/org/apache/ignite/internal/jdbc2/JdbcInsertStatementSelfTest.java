@@ -18,6 +18,8 @@
 package org.apache.ignite.internal.jdbc2;
 
 import java.sql.BatchUpdateException;
+import java.sql.Blob;
+import java.sql.Clob;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
@@ -36,14 +38,14 @@ import org.junit.Test;
  */
 public class JdbcInsertStatementSelfTest extends JdbcAbstractDmlStatementSelfTest {
     /** SQL query. */
-    private static final String SQL = "insert into Person(_key, id, firstName, lastName, age, data) values " +
-        "('p1', 1, 'John', 'White', 25, RAWTOHEX('White')), " +
-        "('p2', 2, 'Joe', 'Black', 35, RAWTOHEX('Black')), " +
-        "('p3', 3, 'Mike', 'Green', 40, RAWTOHEX('Green'))";
+    private static final String SQL = "insert into Person(_key, id, firstName, lastName, age, data, text) values " +
+        "('p1', 1, 'John', 'White', 25, RAWTOHEX('White'), 'John White'), " +
+        "('p2', 2, 'Joe', 'Black', 35, RAWTOHEX('Black'), 'Joe Black'), " +
+        "('p3', 3, 'Mike', 'Green', 40, RAWTOHEX('Green'), 'Mike Green')";
 
     /** SQL query. */
-    private static final String SQL_PREPARED = "insert into Person(_key, id, firstName, lastName, age, data) values " +
-        "(?, ?, ?, ?, ?, ?), (?, ?, ?, ?, ?, ?)";
+    private static final String SQL_PREPARED = "insert into Person(_key, id, firstName, lastName, age, data, text) " +
+        "values (?, ?, ?, ?, ?, ?, ?), (?, ?, ?, ?, ?, ?, ?)";
 
     /** Statement. */
     private Statement stmt;
@@ -83,6 +85,7 @@ public class JdbcInsertStatementSelfTest extends JdbcAbstractDmlStatementSelfTes
                         assertEquals("White", rs.getString("lastName"));
                         assertEquals(25, rs.getInt("age"));
                         assertEquals("White", str(getBytes(rs.getBlob("data"))));
+                        assertEquals("John White", str(rs.getClob("text")));
                         break;
 
                     case 2:
@@ -91,6 +94,7 @@ public class JdbcInsertStatementSelfTest extends JdbcAbstractDmlStatementSelfTes
                         assertEquals("Black", rs.getString("lastName"));
                         assertEquals(35, rs.getInt("age"));
                         assertEquals("Black", str(getBytes(rs.getBlob("data"))));
+                        assertEquals("Joe Black", str(rs.getClob("text")));
                         break;
 
                     case 3:
@@ -99,6 +103,7 @@ public class JdbcInsertStatementSelfTest extends JdbcAbstractDmlStatementSelfTes
                         assertEquals("Green", rs.getString("lastName"));
                         assertEquals(40, rs.getInt("age"));
                         assertEquals("Green", str(getBytes(rs.getBlob("data"))));
+                        assertEquals("Mike Green", str(rs.getClob("text")));
                         break;
 
                     case 4:
@@ -107,6 +112,7 @@ public class JdbcInsertStatementSelfTest extends JdbcAbstractDmlStatementSelfTes
                         assertEquals("Grey", rs.getString("lastName"));
                         assertEquals(22, rs.getInt("age"));
                         assertEquals("Grey", str(getBytes(rs.getBlob("data"))));
+                        assertEquals("Leah Grey", str(rs.getClob("text")));
                         break;
 
                     default:
@@ -302,6 +308,9 @@ public class JdbcInsertStatementSelfTest extends JdbcAbstractDmlStatementSelfTes
     private void formBatch(int id1, int id2) throws SQLException {
         int[] ids = new int[] { id1, id2 };
 
+        Clob clob;
+        Blob blob;
+
         int arg = 0;
         for (int id: ids) {
             String key = "p" + id;
@@ -313,7 +322,14 @@ public class JdbcInsertStatementSelfTest extends JdbcAbstractDmlStatementSelfTes
                     prepStmt.setString(arg + 3, "John");
                     prepStmt.setString(arg + 4, "White");
                     prepStmt.setInt(arg + 5, 25);
-                    prepStmt.setBytes(arg + 6, getBytes("White"));
+
+                    blob = conn.createBlob();
+                    blob.setBytes(1, getBytes("White"));
+                    prepStmt.setBlob(arg + 6, blob);
+
+                    clob = conn.createClob();
+                    clob.setString(1, "John White");
+                    prepStmt.setClob(arg + 7, clob);
 
                     break;
 
@@ -323,7 +339,14 @@ public class JdbcInsertStatementSelfTest extends JdbcAbstractDmlStatementSelfTes
                     prepStmt.setString(arg + 3, "Joe");
                     prepStmt.setString(arg + 4, "Black");
                     prepStmt.setInt(arg + 5, 35);
-                    prepStmt.setBytes(arg + 6, getBytes("Black"));
+
+                    blob = conn.createBlob();
+                    blob.setBytes(1, getBytes("Black"));
+                    prepStmt.setBlob(arg + 6, blob);
+
+                    clob = conn.createClob();
+                    clob.setString(1, "Joe Black");
+                    prepStmt.setClob(arg + 7, clob);
 
                     break;
 
@@ -333,7 +356,14 @@ public class JdbcInsertStatementSelfTest extends JdbcAbstractDmlStatementSelfTes
                     prepStmt.setString(arg + 3, "Mike");
                     prepStmt.setString(arg + 4, "Green");
                     prepStmt.setInt(arg + 5, 40);
-                    prepStmt.setBytes(arg + 6, getBytes("Green"));
+
+                    blob = conn.createBlob();
+                    blob.setBytes(1, getBytes("Green"));
+                    prepStmt.setBlob(arg + 6, blob);
+
+                    clob = conn.createClob();
+                    clob.setString(1, "Mike Green");
+                    prepStmt.setClob(arg + 7, clob);
 
                     break;
 
@@ -343,7 +373,14 @@ public class JdbcInsertStatementSelfTest extends JdbcAbstractDmlStatementSelfTes
                     prepStmt.setString(arg + 3, "Leah");
                     prepStmt.setString(arg + 4, "Grey");
                     prepStmt.setInt(arg + 5, 22);
-                    prepStmt.setBytes(arg + 6, getBytes("Grey"));
+
+                    blob = conn.createBlob();
+                    blob.setBytes(1, getBytes("Grey"));
+                    prepStmt.setBlob(arg + 6, blob);
+
+                    clob = conn.createClob();
+                    clob.setString(1, "Leah Grey");
+                    prepStmt.setClob(arg + 7, clob);
 
                     break;
 
@@ -351,7 +388,7 @@ public class JdbcInsertStatementSelfTest extends JdbcAbstractDmlStatementSelfTes
                     assert false;
             }
 
-            arg += 6;
+            arg += 7;
         }
 
         prepStmt.addBatch();

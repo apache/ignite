@@ -42,9 +42,6 @@ public class JvmConfigurationSuggestions {
     /** */
     private static final String SERVER = "-server";
 
-    /** */
-    private static final String USE_G1_GC = "-XX:+UseG1GC";
-
     /**
      * Checks JVM configurations and produces tuning suggestions.
      *
@@ -57,12 +54,6 @@ public class JvmConfigurationSuggestions {
 
         if (!U.jvmName().toLowerCase().contains("server"))
             suggestions.add("Enable server mode for JVM (add '" + SERVER + "' to JVM options)");
-
-        if (!"11".equals(U.jdkVersion()))
-            suggestions.add("Switch to the most recent 11 JVM version");
-
-        if (U.jdkVersion().equals("1.8") && !args.contains(USE_G1_GC))
-            suggestions.add("Enable G1 Garbage Collector (add '" + USE_G1_GC + "' to JVM options)");
 
         if (!anyStartWith(args, XMX) && !anyStartWith(args, MX))
             suggestions.add("Specify JVM heap max size (add '" + XMX + "<size>[g|G|m|M|k|K]' to JVM options)");
