@@ -19,6 +19,7 @@ package org.apache.ignite.internal.processors.query.calcite.message;
 
 import java.nio.ByteBuffer;
 import java.util.Collection;
+import java.util.Map;
 import java.util.UUID;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.GridDirectCollection;
@@ -72,6 +73,9 @@ public class QueryStartRequest implements MarshalableMessage, ExecutionContextAw
     private @Nullable Collection<QueryTxEntry> qryTxEntries;
 
     /** */
+    private Map<String, String> appAttrs;
+
+    /** */
     @SuppressWarnings("AssignmentOrReturnOfFieldWithMutableType")
     public QueryStartRequest(
         UUID qryId,
@@ -84,7 +88,8 @@ public class QueryStartRequest implements MarshalableMessage, ExecutionContextAw
         Object[] params,
         @Nullable byte[] paramsBytes,
         long timeout,
-        Collection<QueryTxEntry> qryTxEntries
+        Collection<QueryTxEntry> qryTxEntries,
+        @Nullable Map<String, String> appAttrs
     ) {
         this.qryId = qryId;
         this.originatingQryId = originatingQryId;
@@ -97,6 +102,7 @@ public class QueryStartRequest implements MarshalableMessage, ExecutionContextAw
         this.paramsBytes = paramsBytes; // If we already have marshalled params, use it.
         this.timeout = timeout;
         this.qryTxEntries = qryTxEntries;
+        this.appAttrs = appAttrs;
     }
 
     /** */
@@ -182,6 +188,11 @@ public class QueryStartRequest implements MarshalableMessage, ExecutionContextAw
      */
     public @Nullable Collection<QueryTxEntry> queryTransactionEntries() {
         return qryTxEntries;
+    }
+
+    /** */
+    public Map<String, String> appAttrs() {
+        return appAttrs;
     }
 
     /** {@inheritDoc} */
@@ -284,6 +295,11 @@ public class QueryStartRequest implements MarshalableMessage, ExecutionContextAw
 
                 writer.incrementState();
 
+            case 10:
+                if (!writer.writeMap("appAttrs", appAttrs, MessageCollectionItemType.STRING, MessageCollectionItemType.STRING))
+                    return false;
+
+                writer.incrementState();
         }
 
         return true;
@@ -377,6 +393,14 @@ public class QueryStartRequest implements MarshalableMessage, ExecutionContextAw
 
                 reader.incrementState();
 
+            case 10:
+                appAttrs = reader.readMap("appAttrs", MessageCollectionItemType.STRING, MessageCollectionItemType.STRING, false);
+
+                if (!reader.isLastRead())
+                    return false;
+
+                reader.incrementState();
+
         }
 
         return reader.afterMessageRead(QueryStartRequest.class);
@@ -389,6 +413,6 @@ public class QueryStartRequest implements MarshalableMessage, ExecutionContextAw
 
     /** {@inheritDoc} */
     @Override public byte fieldsCount() {
-        return 10;
+        return 11;
     }
 }

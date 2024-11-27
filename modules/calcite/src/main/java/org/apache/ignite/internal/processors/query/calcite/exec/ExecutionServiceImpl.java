@@ -40,6 +40,7 @@ import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.events.CacheQueryReadEvent;
 import org.apache.ignite.events.EventType;
 import org.apache.ignite.internal.GridKernalContext;
+import org.apache.ignite.internal.cache.context.SessionContextImpl;
 import org.apache.ignite.internal.managers.eventstorage.DiscoveryEventListener;
 import org.apache.ignite.internal.managers.eventstorage.GridEventStorageManager;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
@@ -653,6 +654,8 @@ public class ExecutionServiceImpl<Row> extends AbstractService implements Execut
                     qry.onResponse(nodeId, fragment.fragmentId(), ex);
                 else {
                     try {
+                        SessionContextImpl sesCtx = qry.context().unwrap(SessionContextImpl.class);
+
                         QueryStartRequest req = new QueryStartRequest(
                             qry.id(),
                             qry.localQueryId(),
@@ -664,7 +667,8 @@ public class ExecutionServiceImpl<Row> extends AbstractService implements Execut
                             qry.parameters(),
                             parametersMarshalled,
                             timeout,
-                            ectx.getQryTxEntries()
+                            ectx.getQryTxEntries(),
+                            sesCtx == null ? null : sesCtx.attributes()
                         );
 
                         messageService().send(nodeId, req);
@@ -851,7 +855,9 @@ public class ExecutionServiceImpl<Row> extends AbstractService implements Execut
                 )
             );
 
-            final BaseQueryContext qctx = createQueryContext(Contexts.empty(), msg.schema());
+            final BaseQueryContext qctx = createQueryContext(
+                Contexts.of(ctx.resource(), msg.appAttrs() == null ? null : new SessionContextImpl(msg.appAttrs())),
+                msg.schema());
 
             QueryPlan qryPlan = queryPlanCache().queryPlan(
                 new CacheKey(msg.schema(), msg.root()),
