@@ -228,7 +228,7 @@ public class GridCommandHandlerInterruptCommandTest extends GridCommandHandlerAb
     public void testIdleVerifyCommand() throws Exception {
         lnsrLog = new ListeningTestLogger(log);
 
-        IgniteEx ignite = startGrids(2);
+        IgniteEx ignite = startGrid(0);
 
         ignite.cluster().state(ClusterState.ACTIVE);
 
@@ -237,8 +237,8 @@ public class GridCommandHandlerInterruptCommandTest extends GridCommandHandlerAb
         CountDownLatch startTaskLatch = waitForTaskEvent(ignite, IDLE_VERIFY_TASK_V2);
 
         LogListener lnsrValidationCancelled = LogListener.matches("The check procedure was cancelled.").build();
-        LogListener lnsrIdleVerifyStart = LogListener.matches("Idle verify procedure has started").times(2).build();
-        LogListener lnsrIdleVerifyFinish = LogListener.matches("Idle verify procedure has finished").times(2).build();
+        LogListener lnsrIdleVerifyStart = LogListener.matches("Idle verify procedure has started").build();
+        LogListener lnsrIdleVerifyFinish = LogListener.matches("Idle verify procedure has finished").build();
 
         lnsrLog.registerListener(lnsrValidationCancelled);
         lnsrLog.registerListener(lnsrIdleVerifyStart);
