@@ -45,7 +45,6 @@ import org.apache.calcite.sql.SqlOperatorTable;
 import org.apache.calcite.sql.util.SqlOperatorTables;
 import org.apache.calcite.tools.FrameworkConfig;
 import org.apache.calcite.tools.Frameworks;
-import org.apache.ignite.ClientContext;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.internal.processors.query.GridQueryCancel;
 import org.apache.ignite.internal.processors.query.calcite.exec.exp.IgniteRexBuilder;
@@ -169,9 +168,6 @@ public final class BaseQueryContext extends AbstractQueryContext {
     /** */
     private final int[] parts;
 
-    /** */
-    private final ClientContext clnCtx;
-
     /**
      * Private constructor, used by a builder.
      */
@@ -181,8 +177,7 @@ public final class BaseQueryContext extends AbstractQueryContext {
         IgniteLogger log,
         boolean isLocal,
         boolean forcedJoinOrder,
-        int[] parts,
-        ClientContext clnCtx
+        int[] parts
     ) {
         super(Contexts.chain(parentCtx, cfg.getContext()));
 
@@ -196,8 +191,6 @@ public final class BaseQueryContext extends AbstractQueryContext {
         this.forcedJoinOrder = forcedJoinOrder;
 
         this.parts = parts;
-
-        this.clnCtx = clnCtx;
 
         qryCancel = unwrap(GridQueryCancel.class);
 
@@ -244,11 +237,6 @@ public final class BaseQueryContext extends AbstractQueryContext {
     /** */
     public RexBuilder rexBuilder() {
         return rexBuilder;
-    }
-
-    /** */
-    public ClientContext clientContext() {
-        return clnCtx;
     }
 
     /**
@@ -345,9 +333,6 @@ public final class BaseQueryContext extends AbstractQueryContext {
         /** */
         private int[] parts = null;
 
-        /** */
-        private ClientContext clnCtx;
-
         /**
          * @param frameworkCfg Framework config.
          * @return Builder for chaining.
@@ -428,22 +413,12 @@ public final class BaseQueryContext extends AbstractQueryContext {
         }
 
         /**
-         * @param clnCtx Client context.
-         * @return Builder for chaining.
-         */
-        public Builder clientContext(ClientContext clnCtx) {
-            this.clnCtx = clnCtx;
-
-            return this;
-        }
-
-        /**
          * Builds planner context.
          *
          * @return Planner context.
          */
         public BaseQueryContext build() {
-            return new BaseQueryContext(frameworkCfg, parentCtx, log, isLocal, forcedJoinOrder, parts, clnCtx);
+            return new BaseQueryContext(frameworkCfg, parentCtx, log, isLocal, forcedJoinOrder, parts);
         }
     }
 }

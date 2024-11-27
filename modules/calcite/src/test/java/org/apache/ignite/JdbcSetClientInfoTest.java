@@ -5,7 +5,6 @@ import java.sql.DriverManager;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Properties;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
@@ -16,11 +15,12 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.SqlConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.resources.SessionContextProviderResource;
+import org.apache.ignite.session.SessionContext;
+import org.apache.ignite.session.SessionContextProvider;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.jetbrains.annotations.Nullable;
 import org.junit.Test;
-
-import static org.apache.ignite.internal.jdbc.thin.ClientInfoProperties.CLIENT_CONTEXT;
 
 /** */
 public class JdbcSetClientInfoTest extends GridCommonAbstractTest {
@@ -100,6 +100,9 @@ public class JdbcSetClientInfoTest extends GridCommonAbstractTest {
 
         try (Connection conn = DriverManager.getConnection(URL)) {
             for (String sesId: F.asList("1", "2")) {
+
+                System.out.println("ACTION " + sesId);
+
                 setClientInfo(conn, sesId);
 
                 ResultSet set = jdbcQuery(conn, "select * from PUBLIC.MYTABLE where sessionId = sessionId();");
@@ -232,13 +235,10 @@ public class JdbcSetClientInfoTest extends GridCommonAbstractTest {
 
     /** */
     private void setClientInfo(Connection conn, @Nullable String sesId) throws Exception {
-        HashMap<String, String> clnCtx = new HashMap<>();
+        Properties props = new Properties();
 
         if (sesId != null)
-            clnCtx.put(SESSION_ID, sesId);
-
-        Properties props = new Properties();
-        props.put(CLIENT_CONTEXT, clnCtx);
+            props.put(SESSION_ID, sesId);
 
         conn.setClientInfo(props);
     }
@@ -263,11 +263,15 @@ public class JdbcSetClientInfoTest extends GridCommonAbstractTest {
     /** */
     public static class UserAttributeFunctions {
         /** */
-        @QuerySqlFunction
-        public static String sessionId() {
-            ClientContext clnCtx = ClientContext.getClientContext();
+        @SessionContextProviderResource
+        public SessionContextProvider sesCtxProv;
 
-            return clnCtx == null ? null : clnCtx.getAttributes().get(SESSION_ID);
+        /** */
+        @QuerySqlFunction
+        public String sessionId() {
+            SessionContext sesCtx = sesCtxProv.getSessionContext();
+
+            return sesCtx == null ? null : sesCtx.getAttribute(SESSION_ID);
         }
     }
 }

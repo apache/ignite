@@ -307,7 +307,7 @@ public class ExchangeServiceImpl extends AbstractService implements ExchangeServ
 
                     // Inbox is not unregistered and still not initialized.
                     if (timeoutInbox != null && timeoutInbox.context().topologyVersion() == null)
-                        taskExecutor().execute(msg.queryId(), msg.fragmentId(), timeoutInbox::close, null);
+                        taskExecutor().execute(msg.queryId(), msg.fragmentId(), timeoutInbox::close);
                 }, INBOX_INITIALIZATION_TIMEOUT);
             }
         }

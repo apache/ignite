@@ -56,6 +56,7 @@ import org.apache.ignite.internal.processors.cache.DynamicCacheDescriptor;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.QueryCursorImpl;
 import org.apache.ignite.internal.processors.cache.binary.CacheObjectBinaryProcessorImpl;
+import org.apache.ignite.internal.processors.cache.query.GridCacheQueryType;
 import org.apache.ignite.internal.processors.cache.query.IgniteQueryErrorCode;
 import org.apache.ignite.internal.processors.cache.query.QueryCursorEx;
 import org.apache.ignite.internal.processors.cache.query.SqlFieldsQueryEx;
@@ -86,7 +87,6 @@ import org.apache.ignite.transactions.TransactionConcurrency;
 import org.apache.ignite.transactions.TransactionIsolation;
 import org.jetbrains.annotations.Nullable;
 
-import static org.apache.ignite.internal.jdbc.thin.ClientInfoProperties.CLIENT_CONTEXT;
 import static org.apache.ignite.internal.processors.odbc.ClientListenerAbstractConnectionContext.NONE_TX;
 import static org.apache.ignite.internal.processors.odbc.jdbc.JdbcBulkLoadBatchRequest.CMD_CONTINUE;
 import static org.apache.ignite.internal.processors.odbc.jdbc.JdbcBulkLoadBatchRequest.CMD_FINISHED_EOF;
@@ -658,8 +658,8 @@ public class JdbcRequestHandler implements ClientListenerRequestHandler, ClientT
             int txId = txId(req.txId());
 
             List<FieldsQueryCursor<List<?>>> results = txEnabledForConnection()
-                ? invokeInTransaction(txId, req.autoCommit(), qry, cancel, extractClientContext(req))
-                : querySqlFields(qry, cancel, extractClientContext(req));
+                ? invokeInTransaction(txId, req.autoCommit(), qry, cancel, req.clientInfo())
+                : querySqlFields(qry, cancel, req.clientInfo());
 
             FieldsQueryCursor<List<?>> fieldsCur = results.get(0);
 
@@ -802,7 +802,8 @@ public class JdbcRequestHandler implements ClientListenerRequestHandler, ClientT
         int txId,
         boolean autoCommit,
         SqlFieldsQueryEx qry,
-        GridQueryCancel cancel
+        GridQueryCancel cancel,
+        Map<String, String> appAttrs
     ) throws IgniteCheckedException {
         ClientTxContext txCtx = connCtx.txContext(txId);
 
@@ -814,7 +815,7 @@ public class JdbcRequestHandler implements ClientListenerRequestHandler, ClientT
         try {
             txCtx.acquire(true);
 
-            return querySqlFields(qry, cancel);
+            return querySqlFields(qry, cancel, appAttrs);
         }
         catch (Exception e) {
             err = true;
@@ -865,9 +866,9 @@ public class JdbcRequestHandler implements ClientListenerRequestHandler, ClientT
     }
 
     /** */
-    private List<FieldsQueryCursor<List<?>>> querySqlFields(SqlFieldsQueryEx qry, GridQueryCancel cancel, @Nullable ClientContext clnCtx) {
+    private List<FieldsQueryCursor<List<?>>> querySqlFields(SqlFieldsQueryEx qry, GridQueryCancel cancel, @Nullable Map<String, String> appAttrs) {
         return connCtx.kernalContext().query().querySqlFields(null, qry,
-            cliCtx, true, protocolVer.compareTo(VER_2_3_0) < 0, cancel, clnCtx);
+            cliCtx, true, protocolVer.compareTo(VER_2_3_0) < 0, GridCacheQueryType.SQL_FIELDS, cancel, appAttrs);
     }
 
     /**
@@ -1056,7 +1057,7 @@ public class JdbcRequestHandler implements ClientListenerRequestHandler, ClientT
             for (JdbcQuery q : req.queries()) {
                 if (q.sql() != null) { // If we have a new query string in the batch,
                     if (qry != null) // then execute the previous sub-batch and create a new SqlFieldsQueryEx.
-                        executeBatchedQuery(qry, updCntsAcc, firstErr, cancel, extractClientContext(req));
+                        executeBatchedQuery(qry, updCntsAcc, firstErr, cancel, req.clientInfo());
 
                     qry = new SqlFieldsQueryEx(q.sql(), false);
 
@@ -1071,7 +1072,7 @@ public class JdbcRequestHandler implements ClientListenerRequestHandler, ClientT
             }
 
             if (qry != null)
-                executeBatchedQuery(qry, updCntsAcc, firstErr, cancel, extractClientContext(req));
+                executeBatchedQuery(qry, updCntsAcc, firstErr, cancel, req.clientInfo());
 
             if (req.isLastStreamBatch())
                 cliCtx.disableStreaming();
@@ -1138,7 +1139,7 @@ public class JdbcRequestHandler implements ClientListenerRequestHandler, ClientT
         List<Integer> updCntsAcc,
         IgniteBiTuple<Integer, String> firstErr,
         GridQueryCancel cancel,
-        @Nullable ClientContext clnCtx
+        @Nullable Map<String, String> appAttrs
     ) throws QueryCancelledException {
         try {
             if (cliCtx.isStream()) {
@@ -1157,7 +1158,7 @@ public class JdbcRequestHandler implements ClientListenerRequestHandler, ClientT
             }
 
             List<FieldsQueryCursor<List<?>>> qryRes = connCtx.kernalContext().query().querySqlFields(
-                null, qry, cliCtx, true, true, cancel, clnCtx);
+                null, qry, cliCtx, true, true, GridCacheQueryType.SQL_FIELDS, cancel, appAttrs);
 
             for (FieldsQueryCursor<List<?>> cur : qryRes) {
                 if (cur instanceof BulkLoadContextCursor)
@@ -1754,16 +1755,6 @@ public class JdbcRequestHandler implements ClientListenerRequestHandler, ClientT
      */
     private JdbcResponse resultToResonse(JdbcResult res) {
         return new JdbcResponse(res, connCtx.getAffinityTopologyVersionIfChanged());
-    }
-
-    /** */
-    private @Nullable ClientContext extractClientContext(JdbcRequest req) {
-        if (req.clientInfo() == null)
-            return null;
-
-        Map<String, String> clnCtx = (Map<String, String>)req.clientInfo().get(CLIENT_CONTEXT);
-
-        return new ClientContext(clnCtx);
     }
 
     /**

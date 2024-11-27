@@ -35,7 +35,6 @@ import java.util.function.Function;
 import org.apache.calcite.DataContext;
 import org.apache.calcite.linq4j.QueryProvider;
 import org.apache.calcite.schema.SchemaPlus;
-import org.apache.ignite.ClientContext;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
@@ -430,7 +429,7 @@ public class ExecutionContext<Row> extends AbstractQueryContext implements DataC
 
                 throw new IgniteException("Unexpected exception", e);
             }
-        }, unwrap(ClientContext.class));
+        });
     }
 
     /**

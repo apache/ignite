@@ -17,55 +17,22 @@
 
 package org.apache.ignite.internal.jdbc.thin;
 
-import java.util.HashSet;
 import java.util.Properties;
-import java.util.Set;
-import java.util.logging.Logger;
 
 /** */
 public final class ClientInfoProperties extends Properties {
-    /** Logger. */
-    private static final Logger LOG = Logger.getLogger(ClientInfoProperties.class.getName());
-
-    /** */
-    public static final String CLIENT_CONTEXT = "ClientContext";
-
-    /** */
-    private static final Set<String> AVAILABLE_PROPERTIES = new HashSet<String>() {{
-        add(CLIENT_CONTEXT);
-    }};
-
     /** */
     public void setProperties(Properties props) {
-        for (String p: AVAILABLE_PROPERTIES) {
+        for (String p: props.stringPropertyNames()) {
             Object v = props.get(p);
 
             if (v != null)
                 put(p, v);
         }
-
-        for (String p: props.stringPropertyNames())
-            checkProperty(p);
     }
 
     /** {@inheritDoc} */
     @Override public synchronized Object setProperty(String key, String val) {
-        if (checkProperty(key))
-            return put(key, val);
-
-        return null;
+        return put(key, val);
     }
-
-    /** */
-    private boolean checkProperty(String name) {
-        if (!AVAILABLE_PROPERTIES.contains(name)) {
-            LOG.warning("Property '" + name + "' is not supported by the driver.");
-
-            return false;
-        }
-
-        return true;
-    }
-
-    // TODO: list property names with SESSION_ID -> null
 }

@@ -17,7 +17,6 @@
 
 package org.apache.ignite.internal.processors.odbc.jdbc;
 
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Properties;
@@ -104,13 +103,13 @@ public class JdbcRequest extends ClientListenerRequestNoId implements JdbcRawBin
     private static final AtomicLong REQ_ID_GENERATOR = new AtomicLong();
 
     /** Request type. */
-    private final byte type;
+    private byte type;
 
     /** Request id. */
     private long reqId;
 
     /** Client info set with {@link JdbcThinConnection#setClientInfo} methods. */
-    private @Nullable Map<String, Object> clientInfo;
+    private @Nullable Map<String, String> clientInfo;
 
     /**
      * @param type Command type.
@@ -122,8 +121,8 @@ public class JdbcRequest extends ClientListenerRequestNoId implements JdbcRawBin
     }
 
     /** @return Client info. */
-    public @Nullable Map<String, Object> clientInfo() {
-        return clientInfo == null ? null : Collections.unmodifiableMap(clientInfo);
+    public @Nullable Map<String, String> clientInfo() {
+        return clientInfo;
     }
 
     /** @param clientInfo Client info. */
@@ -134,7 +133,7 @@ public class JdbcRequest extends ClientListenerRequestNoId implements JdbcRawBin
         this.clientInfo = new HashMap<>(clientInfo.size());
 
         for (Map.Entry<Object, Object> prop: clientInfo.entrySet())
-            this.clientInfo.put((String)prop.getKey(), prop.getValue());
+            this.clientInfo.put((String)prop.getKey(), (String)prop.getValue());
     }
 
     /** {@inheritDoc} */
