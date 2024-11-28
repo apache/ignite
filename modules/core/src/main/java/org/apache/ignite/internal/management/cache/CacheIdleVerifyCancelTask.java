@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.management.cache;
 
+import java.util.Optional;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.internal.ComputeMXBeanImpl;
 import org.apache.ignite.internal.management.api.NoArg;
@@ -24,7 +25,6 @@ import org.apache.ignite.internal.visor.VisorJob;
 import org.apache.ignite.internal.visor.VisorOneNodeTask;
 import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.spi.systemview.view.ComputeTaskView;
-import org.apache.ignite.spi.systemview.view.SystemView;
 
 import static org.apache.ignite.internal.processors.task.GridTaskProcessor.TASKS_VIEW;
 
@@ -35,42 +35,9 @@ public class CacheIdleVerifyCancelTask extends VisorOneNodeTask<NoArg, Void> {
     /** */
     private static final long serialVersionUID = 0L;
 
-    /** */
-    public static final String IDLE_VERIFY = "org.apache.ignite.internal.management.cache.IdleVerifyTaskV2";
-
     /** {@inheritDoc} */
     @Override protected VisorJob<NoArg, Void> job(NoArg arg) {
-        return new CacheIdleVerifyCancelJob(idleVerifyId(), debug);
-    }
-
-    /**
-     * @return Retrieves idle_verify command session id.
-     */
-    private IgniteUuid idleVerifyId() {
-        SystemView<ComputeTaskView> views = ignite.context().systemView().view(TASKS_VIEW);
-
-        int idleVerifyCnt = 0;
-
-        ComputeTaskView foundView = null;
-
-        for (ComputeTaskView view : views) {
-            System.out.println("VLADOS TASK NAME: " + view.taskName());
-            if (view.taskName().equals(IDLE_VERIFY)) {
-                idleVerifyCnt++;
-
-                foundView = view;
-            }
-        }
-
-        if (idleVerifyCnt == 0)
-            throw new IgniteException("Failed to find idle verify task to cancel.");
-
-        if (idleVerifyCnt > 1)
-            throw new IgniteException("Idle verify tasks can only be executed once.");
-
-        assert foundView != null : "Failed to find idle verify task to cancel.";
-
-        return foundView.id();
+        return new CacheIdleVerifyCancelJob(debug);
     }
 
     /**
@@ -80,23 +47,45 @@ public class CacheIdleVerifyCancelTask extends VisorOneNodeTask<NoArg, Void> {
         /** */
         private static final long serialVersionUID = 0L;
 
-        /** */
-        private final IgniteUuid idleVerifyId;
-
         /**
-         * @param idleVerifyId Session id of idle_verify command.
          * @param debug Debug flag.
          */
-        public CacheIdleVerifyCancelJob(IgniteUuid idleVerifyId, boolean debug) {
+        public CacheIdleVerifyCancelJob(boolean debug) {
             super(new NoArg(), debug);
-            this.idleVerifyId = idleVerifyId;
         }
 
         /** {@inheritDoc} */
         @Override protected Void run(NoArg arg) {
-            new ComputeMXBeanImpl(ignite.context()).cancel(idleVerifyId);
+            if (idleVerifyId().isPresent())
+                new ComputeMXBeanImpl(ignite.context()).cancel(idleVerifyId().get());
 
             return null;
+        }
+
+        /**
+         * @return Retrieves idle_verify command session id if present.
+         */
+        private Optional<IgniteUuid> idleVerifyId() {
+            int idleVerifyCnt = 0;
+
+            ComputeTaskView foundView = null;
+
+            for (ComputeTaskView view : ignite.context().systemView().<ComputeTaskView>view(TASKS_VIEW)) {
+                if (view.taskName().equals(IdleVerifyTaskV2.class.getName())) {
+                    idleVerifyCnt++;
+
+                    foundView = view;
+                }
+            }
+
+            switch (idleVerifyCnt) {
+                case 0:
+                    return Optional.empty();
+                case 1:
+                    return Optional.of(foundView.id());
+                default:
+                    throw new IgniteException("Invalid running idle verify command count: " + idleVerifyCnt);
+            }
         }
     }
 }

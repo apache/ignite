@@ -84,6 +84,7 @@ import org.apache.ignite.internal.client.impl.GridClientImpl;
 import org.apache.ignite.internal.client.util.GridConcurrentHashSet;
 import org.apache.ignite.internal.management.cache.FindAndDeleteGarbageInPersistenceTaskResult;
 import org.apache.ignite.internal.management.cache.IdleVerifyDumpTask;
+import org.apache.ignite.internal.management.cache.IdleVerifyTaskV2;
 import org.apache.ignite.internal.management.cache.VerifyBackupPartitionsTaskV2;
 import org.apache.ignite.internal.management.tx.TxInfo;
 import org.apache.ignite.internal.management.tx.TxTaskResult;
@@ -135,6 +136,7 @@ import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi;
 import org.apache.ignite.spi.metric.LongMetric;
 import org.apache.ignite.spi.metric.Metric;
+import org.apache.ignite.spi.systemview.view.ComputeTaskView;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.LogListener;
 import org.apache.ignite.testframework.junits.WithSystemProperty;
@@ -173,6 +175,7 @@ import static org.apache.ignite.internal.processors.cache.persistence.snapshot.I
 import static org.apache.ignite.internal.processors.cache.persistence.snapshot.SnapshotRestoreProcess.SNAPSHOT_RESTORE_METRICS;
 import static org.apache.ignite.internal.processors.cache.verify.IdleVerifyUtility.GRID_NOT_IDLE_MSG;
 import static org.apache.ignite.internal.processors.diagnostic.DiagnosticProcessor.DEFAULT_TARGET_FOLDER;
+import static org.apache.ignite.internal.processors.task.GridTaskProcessor.TASKS_VIEW;
 import static org.apache.ignite.testframework.GridTestUtils.assertContains;
 import static org.apache.ignite.testframework.GridTestUtils.assertNotContains;
 import static org.apache.ignite.testframework.GridTestUtils.assertThrows;
@@ -769,6 +772,15 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
         new Thread(() -> execute("--cache", "idle_verify") ).start();
 
         assertEquals(EXIT_CODE_OK, execute("--cache", "idle_verify", "--cancel"));
+
+        int idleVerifyCnt = 0;
+
+        for (ComputeTaskView view : srv.context().systemView().<ComputeTaskView>view(TASKS_VIEW)) {
+            if (view.taskName().equals(IdleVerifyTaskV2.class.getName()))
+                idleVerifyCnt++;
+        }
+
+        assertEquals(0, idleVerifyCnt);
     }
 
     /**
