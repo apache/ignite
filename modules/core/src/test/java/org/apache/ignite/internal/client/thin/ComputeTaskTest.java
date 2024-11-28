@@ -55,6 +55,10 @@ import org.apache.ignite.testframework.GridTestUtils;
 import org.jetbrains.annotations.Nullable;
 import org.junit.Test;
 
+import static org.hamcrest.CoreMatchers.containsString;
+import static org.hamcrest.CoreMatchers.not;
+import static org.junit.Assert.assertThat;
+
 /**
  * Checks compute grid functionality of thin client.
  */
@@ -75,8 +79,9 @@ public class ComputeTaskTest extends AbstractThinClientTest {
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         return super.getConfiguration(igniteInstanceName).setClientConnectorConfiguration(
             new ClientConnectorConfiguration().setThinClientConfiguration(
-                new ThinClientConfiguration().setMaxActiveComputeTasksPerConnection(
-                    getTestIgniteInstanceIndex(igniteInstanceName) <= 1 ? ACTIVE_TASKS_LIMIT : 0)))
+                new ThinClientConfiguration()
+                    .setMaxActiveComputeTasksPerConnection(getTestIgniteInstanceIndex(igniteInstanceName) <= 1 ? ACTIVE_TASKS_LIMIT : 0)
+                    .setServerToClientExceptionStackTraceSending(getTestIgniteInstanceIndex(igniteInstanceName) == 1)))
             .setClientMode(getTestIgniteInstanceIndex(igniteInstanceName) == 3);
     }
 
@@ -230,6 +235,32 @@ public class ComputeTaskTest extends AbstractThinClientTest {
 
             String errMsg = fut.handle((f, t) -> t.getMessage()).toCompletableFuture().get(2, TimeUnit.SECONDS);
             assertTrue(errMsg.contains("cause=Foo"));
+        }
+    }
+
+    /**
+     * Tests asynchronous task execution with an exception.
+     */
+    @Test
+    public void testExecuteTaskAsync2WithExceptionInTaskAndNoStacktrace() throws Exception {
+        try (IgniteClient client = startClient(0)) {
+            IgniteClientFuture<Object> fut = client.compute().executeAsync2(TestExceptionalTask.class.getName(), null);
+
+            Throwable err = fut.handle((f, t) -> t).toCompletableFuture().get(2, TimeUnit.SECONDS);
+            assertThat(err.getMessage(), not(containsString("Caused by: java.lang.ArithmeticException: Foo")));
+        }
+    }
+
+    /**
+     * Tests asynchronous task execution with an exception.
+     */
+    @Test
+    public void testExecuteTaskAsync2WithExceptionInTaskAndStacktrace() throws Exception {
+        try (IgniteClient client = startClient(1)) {
+            IgniteClientFuture<Object> fut = client.compute().executeAsync2(TestExceptionalTask.class.getName(), null);
+
+            Throwable err = fut.handle((f, t) -> t).toCompletableFuture().get(2, TimeUnit.SECONDS);
+            assertThat(err.getMessage(), containsString("Caused by: java.lang.ArithmeticException: Foo"));
         }
     }
 
