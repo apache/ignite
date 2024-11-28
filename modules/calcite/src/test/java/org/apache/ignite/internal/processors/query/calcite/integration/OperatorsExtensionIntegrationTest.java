@@ -33,50 +33,27 @@ import org.apache.calcite.sql.parser.SqlParserPos;
 import org.apache.calcite.sql.type.OperandTypes;
 import org.apache.calcite.sql.type.ReturnTypes;
 import org.apache.calcite.sql.type.SqlTypeName;
+import org.apache.calcite.sql.util.ReflectiveSqlOperatorTable;
+import org.apache.calcite.sql.util.SqlOperatorTables;
 import org.apache.calcite.sql.validate.SqlValidator;
 import org.apache.calcite.sql2rel.SqlRexContext;
 import org.apache.calcite.sql2rel.SqlRexConvertlet;
+import org.apache.calcite.tools.FrameworkConfig;
+import org.apache.calcite.tools.Frameworks;
 import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.internal.processors.query.calcite.CalciteQueryProcessor;
 import org.apache.ignite.internal.processors.query.calcite.exec.exp.RexImpTable;
 import org.apache.ignite.internal.processors.query.calcite.prepare.IgniteConvertletTable;
 import org.apache.ignite.internal.processors.query.calcite.prepare.IgniteSqlCallRewriteTable;
-import org.apache.ignite.internal.processors.query.calcite.sql.fun.IgniteOwnSqlOperatorTable;
 import org.apache.ignite.plugin.AbstractTestPluginProvider;
 import org.apache.ignite.plugin.PluginContext;
+import org.jetbrains.annotations.Nullable;
 import org.junit.Test;
 
-/** */
+/**
+ * Tests SQL engine extension with plugin.
+ */
 public class OperatorsExtensionIntegrationTest extends AbstractBasicIntegrationTest {
-    /** */
-    private static final SqlFunction SUBSTR =
-        new SqlFunction(
-            "SUBSTR",
-            SqlKind.OTHER_FUNCTION,
-            ReturnTypes.ARG0_NULLABLE_VARYING,
-            null,
-            OperandTypes.STRING_INTEGER_INTEGER,
-            SqlFunctionCategory.STRING);
-
-    /** */
-    private static final SqlFunction TRUNC =
-        new SqlFunction(
-            "TRUNC",
-            SqlKind.OTHER_FUNCTION,
-            ReturnTypes.ARG0_OR_EXACT_NO_SCALE,
-            null,
-            OperandTypes.TIMESTAMP,
-            SqlFunctionCategory.TIMEDATE);
-
-    /** */
-    private static final SqlFunction TO_NUMBER =
-        new SqlFunction(
-            "TO_NUMBER",
-            SqlKind.OTHER_FUNCTION,
-            opBinding -> opBinding.getTypeFactory().createSqlType(SqlTypeName.DECIMAL),
-            null,
-            OperandTypes.STRING,
-            SqlFunctionCategory.NUMERIC);
-
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         return super.getConfiguration(igniteInstanceName)
@@ -85,15 +62,25 @@ public class OperatorsExtensionIntegrationTest extends AbstractBasicIntegrationT
                     return "Test operators extension plugin";
                 }
 
-                @Override public void start(PluginContext ctx) {
-                    IgniteOwnSqlOperatorTable.instance().register(SUBSTR);
-                    IgniteOwnSqlOperatorTable.instance().register(TRUNC);
-                    IgniteOwnSqlOperatorTable.instance().register(TO_NUMBER);
+                @Override public <T> @Nullable T createComponent(PluginContext ctx, Class<T> cls) {
+                    if (FrameworkConfig.class.equals(cls)) {
+                        FrameworkConfig cfg = Frameworks.newConfigBuilder(CalciteQueryProcessor.FRAMEWORK_CONFIG)
+                            .convertletTable(new ConvertletTable())
+                            .operatorTable(SqlOperatorTables.chain(
+                                new OperatorTable().init(), CalciteQueryProcessor.FRAMEWORK_CONFIG.getOperatorTable()))
+                            .build();
 
+                        return (T)cfg;
+                    }
+
+                    return super.createComponent(ctx, cls);
+                }
+
+                @Override public void start(PluginContext ctx) {
                     // Tests operator extension via implementor.
                     try {
                         RexImpTable.INSTANCE.defineMethod(
-                            TO_NUMBER,
+                            OperatorTable.TO_NUMBER,
                             OperatorsExtensionIntegrationTest.class.getMethod("toNumber", String.class),
                             NullPolicy.STRICT
                         );
@@ -101,19 +88,15 @@ public class OperatorsExtensionIntegrationTest extends AbstractBasicIntegrationT
                     catch (NoSuchMethodException e) {
                         throw new RuntimeException(e);
                     }
-                    // Tests operator extension as an alias.
-                    IgniteConvertletTable.INSTANCE.addAlias(SUBSTR, SqlStdOperatorTable.SUBSTRING);
-                    // Tests operator extension via covnertlet.
-                    IgniteConvertletTable.INSTANCE.registerOp(TRUNC, new TruncConvertlet());
+
                     // Tests operator extension via SQL rewrite.
-                    IgniteSqlCallRewriteTable.INSTANCE.register("LTRIM", OperatorsExtensionIntegrationTest::rewriteLtrim);
+                    IgniteSqlCallRewriteTable.INSTANCE.register("LTRIM",
+                        OperatorsExtensionIntegrationTest::rewriteLtrim);
                 }
             });
     }
 
-    /**
-     * Tests ...
-     */
+    /** Tests extended functions. */
     @Test
     public void test() throws Exception {
         assertQuery("SELECT substr('12345', 3, 2)").returns("34").check();
@@ -123,9 +106,7 @@ public class OperatorsExtensionIntegrationTest extends AbstractBasicIntegrationT
             .returns(Timestamp.valueOf("2021-01-01 00:00:00")).check();
     }
 
-    /**
-     *
-     */
+    /** Rewrites LTRIM with 2 parameters. */
     public static SqlCall rewriteLtrim(SqlValidator validator, SqlCall call) {
         if (call.operandCount() != 2)
             return call;
@@ -138,23 +119,65 @@ public class OperatorsExtensionIntegrationTest extends AbstractBasicIntegrationT
         );
     }
 
-    /**
-     * Implementor for {@code TO_NUMBER} function.
-     */
+    /** Implementor for {@code TO_NUMBER} function. */
     public static BigDecimal toNumber(String s) {
         return new BigDecimal(s);
     }
 
-    /**
-     * Convertlet that handles the {@code TRUNC} function and convert it to FLOOR function.
-     */
-    private static class TruncConvertlet implements SqlRexConvertlet {
-        /** {@inheritDoc} */
-        @Override public RexNode convertCall(SqlRexContext cx, SqlCall call) {
-            final RexBuilder rexBuilder = cx.getRexBuilder();
-            RexNode day = rexBuilder.makeLiteral(TimeUnitRange.DAY, cx.getTypeFactory().createSqlType(SqlTypeName.SYMBOL));
-            return rexBuilder.makeCall(SqlStdOperatorTable.FLOOR,
-                ImmutableList.of(cx.convertExpression(call.operand(0)), day));
+    /** Extended operator table. */
+    public static class OperatorTable extends ReflectiveSqlOperatorTable {
+        /** */
+        public static final SqlFunction SUBSTR =
+            new SqlFunction(
+                "SUBSTR",
+                SqlKind.OTHER_FUNCTION,
+                ReturnTypes.ARG0_NULLABLE_VARYING,
+                null,
+                OperandTypes.STRING_INTEGER_INTEGER,
+                SqlFunctionCategory.STRING);
+
+        /** */
+        public static final SqlFunction TRUNC =
+            new SqlFunction(
+                "TRUNC",
+                SqlKind.OTHER_FUNCTION,
+                ReturnTypes.ARG0_OR_EXACT_NO_SCALE,
+                null,
+                OperandTypes.TIMESTAMP,
+                SqlFunctionCategory.TIMEDATE);
+
+        /** */
+        public static final SqlFunction TO_NUMBER =
+            new SqlFunction(
+                "TO_NUMBER",
+                SqlKind.OTHER_FUNCTION,
+                opBinding -> opBinding.getTypeFactory().createSqlType(SqlTypeName.DECIMAL),
+                null,
+                OperandTypes.STRING,
+                SqlFunctionCategory.NUMERIC);
+    }
+
+    /** Extended convertlet table. */
+    private static class ConvertletTable extends IgniteConvertletTable {
+        /** */
+        public ConvertletTable() {
+            // Tests operator extension as an alias.
+            addAlias(OperatorTable.SUBSTR, SqlStdOperatorTable.SUBSTRING);
+            // Tests operator extension via covnertlet.
+            registerOp(OperatorTable.TRUNC, new TruncConvertlet());
+        }
+
+        /**
+         * Convertlet that handles the {@code TRUNC} function and convert it to FLOOR function.
+         */
+        private static class TruncConvertlet implements SqlRexConvertlet {
+            /** {@inheritDoc} */
+            @Override public RexNode convertCall(SqlRexContext cx, SqlCall call) {
+                final RexBuilder rexBuilder = cx.getRexBuilder();
+                RexNode day = rexBuilder.makeLiteral(TimeUnitRange.DAY, cx.getTypeFactory().createSqlType(SqlTypeName.SYMBOL));
+                return rexBuilder.makeCall(SqlStdOperatorTable.FLOOR,
+                    ImmutableList.of(cx.convertExpression(call.operand(0)), day));
+            }
         }
     }
 }

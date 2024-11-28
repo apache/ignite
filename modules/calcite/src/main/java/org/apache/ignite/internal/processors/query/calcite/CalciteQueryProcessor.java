@@ -180,6 +180,9 @@ public class CalciteQueryProcessor extends GridProcessorAdapter implements Query
         })
         .build();
 
+    /** */
+    private final FrameworkConfig frameworkCfg;
+
     /** Query planner timeout. */
     private final long queryPlannerTimeout = getLong(IGNITE_CALCITE_PLANNER_TIMEOUT,
         DFLT_IGNITE_CALCITE_PLANNER_TIMEOUT);
@@ -255,6 +258,9 @@ public class CalciteQueryProcessor extends GridProcessorAdapter implements Query
         prepareSvc = new PrepareServiceImpl(ctx);
         timeoutSvc = new TimeoutServiceImpl(ctx);
         qryReg = new QueryRegistryImpl(ctx);
+
+        FrameworkConfig customFrameworkCfg = ctx.createComponent(FrameworkConfig.class);
+        frameworkCfg = customFrameworkCfg != null ? customFrameworkCfg : FRAMEWORK_CONFIG;
 
         QueryEngineConfiguration[] qryEnginesCfg = ctx.config().getSqlConfiguration().getQueryEnginesConfiguration();
 
@@ -425,7 +431,7 @@ public class CalciteQueryProcessor extends GridProcessorAdapter implements Query
 
         assert schema != null : "Schema not found: " + schemaName;
 
-        SqlNodeList qryNodeList = Commons.parse(sql, FRAMEWORK_CONFIG.getParserConfig());
+        SqlNodeList qryNodeList = Commons.parse(sql, frameworkCfg.getParserConfig());
 
         if (qryNodeList.size() != 1) {
             throw new IgniteSQLException("Multiline statements are not supported in batched query",
@@ -509,7 +515,7 @@ public class CalciteQueryProcessor extends GridProcessorAdapter implements Query
 
         QueryProperties qryProps = qryCtx != null ? qryCtx.unwrap(QueryProperties.class) : null;
 
-        SqlNodeList qryList = Commons.parse(sql, FRAMEWORK_CONFIG.getParserConfig());
+        SqlNodeList qryList = Commons.parse(sql, frameworkCfg.getParserConfig());
 
         if (qryList.size() > 1 && qryProps != null && qryProps.isFailOnMultipleStmts()) {
             throw new IgniteSQLException("Multiple statements queries are not supported.",
@@ -631,6 +637,9 @@ public class CalciteQueryProcessor extends GridProcessorAdapter implements Query
 
         if (timeout <= 0)
             timeout = distrCfg.defaultQueryTimeout();
+
+        if (frameworkCfg != FRAMEWORK_CONFIG)
+            qryCtx = QueryContext.of(frameworkCfg, qryCtx);
 
         RootQuery<Object[]> qry = new RootQuery<>(
             sql,
@@ -756,5 +765,10 @@ public class CalciteQueryProcessor extends GridProcessorAdapter implements Query
     /** */
     public DistributedCalciteConfiguration distributedConfiguration() {
         return distrCfg;
+    }
+
+    /** */
+    public FrameworkConfig frameworkConfig() {
+        return frameworkCfg;
     }
 }

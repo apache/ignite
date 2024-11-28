@@ -27,7 +27,6 @@ import org.apache.calcite.rex.RexCall;
 import org.apache.calcite.rex.RexNode;
 import org.apache.calcite.sql.SqlCall;
 import org.apache.calcite.sql.SqlIntervalQualifier;
-import org.apache.calcite.sql.SqlOperator;
 import org.apache.calcite.sql.fun.SqlStdOperatorTable;
 import org.apache.calcite.sql.parser.SqlParserPos;
 import org.apache.calcite.sql.type.SqlTypeName;
@@ -47,21 +46,11 @@ public class IgniteConvertletTable extends ReflectiveConvertletTable {
     public static final IgniteConvertletTable INSTANCE = new IgniteConvertletTable();
 
     /** */
-    private IgniteConvertletTable() {
+    protected IgniteConvertletTable() {
         // Replace Calcite's convertlet with our own.
         registerOp(SqlStdOperatorTable.TIMESTAMP_DIFF, new TimestampDiffConvertlet());
 
         addAlias(IgniteOwnSqlOperatorTable.LENGTH, SqlStdOperatorTable.CHAR_LENGTH);
-    }
-
-    /** {@inheritDoc} */
-    @Override public void registerOp(SqlOperator op, SqlRexConvertlet convertlet) {
-        super.registerOp(op, convertlet);
-    }
-
-    /** {@inheritDoc} */
-    @Override public void addAlias(SqlOperator alias, SqlOperator target) {
-        super.addAlias(alias, target);
     }
 
     /** {@inheritDoc} */
