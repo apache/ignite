@@ -242,7 +242,7 @@ public class ComputeTaskTest extends AbstractThinClientTest {
      * Tests asynchronous task execution with an exception and no stacktrace in error message (by default).
      */
     @Test
-    public void testExecuteTaskAsync2WithExceptionInTaskAndNoStacktrace() throws Exception {
+    public void testSendNoStackTraceOnTaskMapFail() throws Exception {
         try (IgniteClient client = startClient(0)) {
             IgniteClientFuture<Object> fut = client.compute().executeAsync2(TestExceptionalTask.class.getName(), null);
 
@@ -255,7 +255,7 @@ public class ComputeTaskTest extends AbstractThinClientTest {
      * Tests asynchronous task execution with an exception and stacktrace in error message.
      */
     @Test
-    public void testExecuteTaskAsync2WithExceptionInTaskAndStacktrace() throws Exception {
+    public void testSendStackTraceOnTaskMapFail() throws Exception {
         try (IgniteClient client = startClient(1)) {
             IgniteClientFuture<Object> fut = client.compute().executeAsync2(TestExceptionalTask.class.getName(), null);
 
