@@ -162,7 +162,7 @@ public class CalciteQueryProcessor extends GridProcessorAdapter implements Query
         .sqlValidatorConfig(SqlValidator.Config.DEFAULT
             .withIdentifierExpansion(true)
             .withDefaultNullCollation(NullCollation.LOW)
-            .withSqlConformance(IgniteSqlConformance.INSTANCE)
+            .withConformance(IgniteSqlConformance.INSTANCE)
             .withTypeCoercionFactory(IgniteTypeCoercion::new))
         // Dialects support.
         .operatorTable(SqlOperatorTables.chain(IgniteStdSqlOperatorTable.INSTANCE, IgniteOwnSqlOperatorTable.instance()))
@@ -259,7 +259,7 @@ public class CalciteQueryProcessor extends GridProcessorAdapter implements Query
         timeoutSvc = new TimeoutServiceImpl(ctx);
         qryReg = new QueryRegistryImpl(ctx);
 
-        FrameworkConfig customFrameworkCfg = ctx.createComponent(FrameworkConfig.class);
+        FrameworkConfig customFrameworkCfg = ctx.plugins().createComponent(FrameworkConfig.class);
         frameworkCfg = customFrameworkCfg != null ? customFrameworkCfg : FRAMEWORK_CONFIG;
 
         QueryEngineConfiguration[] qryEnginesCfg = ctx.config().getSqlConfiguration().getQueryEnginesConfiguration();
