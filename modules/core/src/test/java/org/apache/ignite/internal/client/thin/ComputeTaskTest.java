@@ -55,9 +55,8 @@ import org.apache.ignite.testframework.GridTestUtils;
 import org.jetbrains.annotations.Nullable;
 import org.junit.Test;
 
-import static org.hamcrest.CoreMatchers.containsString;
-import static org.hamcrest.CoreMatchers.not;
-import static org.junit.Assert.assertThat;
+import static org.apache.ignite.testframework.GridTestUtils.assertContains;
+import static org.apache.ignite.testframework.GridTestUtils.assertNotContains;
 
 /**
  * Checks compute grid functionality of thin client.
@@ -244,10 +243,12 @@ public class ComputeTaskTest extends AbstractThinClientTest {
     @Test
     public void testSendNoStackTraceOnTaskMapFail() throws Exception {
         try (IgniteClient client = startClient(0)) {
-            IgniteClientFuture<Object> fut = client.compute().executeAsync2(TestExceptionalTask.class.getName(), null);
+            client.compute().execute(TestExceptionalTask.class.getName(), null);
 
-            Throwable err = fut.handle((f, t) -> t).toCompletableFuture().get(2, TimeUnit.SECONDS);
-            assertThat(err.getMessage(), not(containsString("Caused by: java.lang.ArithmeticException: Foo")));
+            fail();
+        }
+        catch (Exception e) {
+            assertNotContains(log, e.getMessage(), "Caused by: java.lang.ArithmeticException: Foo");
         }
     }
 
@@ -257,10 +258,12 @@ public class ComputeTaskTest extends AbstractThinClientTest {
     @Test
     public void testSendStackTraceOnTaskMapFail() throws Exception {
         try (IgniteClient client = startClient(1)) {
-            IgniteClientFuture<Object> fut = client.compute().executeAsync2(TestExceptionalTask.class.getName(), null);
+            client.compute().execute(TestExceptionalTask.class.getName(), null);
 
-            Throwable err = fut.handle((f, t) -> t).toCompletableFuture().get(2, TimeUnit.SECONDS);
-            assertThat(err.getMessage(), containsString("Caused by: java.lang.ArithmeticException: Foo"));
+            fail();
+        }
+        catch (Exception e) {
+            assertContains(log, e.getMessage(), "Caused by: java.lang.ArithmeticException: Foo");
         }
     }
 
