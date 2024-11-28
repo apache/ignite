@@ -27,11 +27,13 @@ import java.util.UUID;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
+import org.apache.ignite.internal.client.thin.ServicesTest;
 import org.apache.ignite.internal.processors.security.impl.TestSecurityData;
 import org.apache.ignite.internal.processors.security.impl.TestSecurityPluginProvider;
 import org.apache.ignite.plugin.security.SecurityPermission;
 import org.apache.ignite.plugin.security.SecurityPermissionSet;
 import org.apache.ignite.plugin.security.SecurityPermissionSetBuilder;
+import org.apache.ignite.services.ServiceConfiguration;
 import org.apache.ignite.util.GridCommandHandlerAbstractTest;
 import org.junit.Test;
 import org.junit.runners.Parameterized;
@@ -131,6 +133,25 @@ public class SecurityCommandHandlerPermissionsTest extends GridCommandHandlerAbs
             asList("--cache", "create", "--springxmlconfig", ccfgPath),
             systemPermissions(CACHE_CREATE)
         );
+    }
+
+    /** */
+    @Test
+    public void testServiceCancellation() throws Exception {
+        Collection<String> cmdArgs = asList("--kill", "service", "--name");
+
+        Ignite ignite = startGrid(0, userData(TEST_NO_PERMISSIONS_LOGIN, NO_PERMISSIONS));
+
+        ServiceConfiguration serviceCfg = new ServiceConfiguration();
+
+        serviceCfg.setName("testService");
+        serviceCfg.setMaxPerNodeCount(1);
+        serviceCfg.setTotalCount(1);
+        serviceCfg.setService(new ServicesTest.TestService());
+
+        ignite.services().deploy(serviceCfg);
+
+        assertEquals(EXIT_CODE_OK, execute(enrichWithConnectionArguments(cmdArgs, TEST_NO_PERMISSIONS_LOGIN)));
     }
 
     /** */
