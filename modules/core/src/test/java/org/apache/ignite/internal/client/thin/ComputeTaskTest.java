@@ -239,7 +239,7 @@ public class ComputeTaskTest extends AbstractThinClientTest {
     }
 
     /**
-     * Tests asynchronous task execution with an exception.
+     * Tests asynchronous task execution with an exception and no stacktrace in error message (by default).
      */
     @Test
     public void testExecuteTaskAsync2WithExceptionInTaskAndNoStacktrace() throws Exception {
@@ -252,7 +252,7 @@ public class ComputeTaskTest extends AbstractThinClientTest {
     }
 
     /**
-     * Tests asynchronous task execution with an exception.
+     * Tests asynchronous task execution with an exception and stacktrace in error message.
      */
     @Test
     public void testExecuteTaskAsync2WithExceptionInTaskAndStacktrace() throws Exception {
