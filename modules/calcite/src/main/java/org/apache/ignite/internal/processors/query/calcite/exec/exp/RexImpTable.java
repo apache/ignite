@@ -1913,7 +1913,7 @@ public class RexImpTable {
      * </code>
      * </blockquote>
      */
-    public abstract static class AbstractRexCallImplementor
+    abstract static class AbstractRexCallImplementor
         implements RexCallImplementor {
         /** */
         final NullPolicy nullPolicy;
@@ -1925,7 +1925,7 @@ public class RexImpTable {
         private final boolean harmonize;
 
         /** */
-        protected AbstractRexCallImplementor(String variableName, NullPolicy nullPolicy, boolean harmonize) {
+        AbstractRexCallImplementor(String variableName, NullPolicy nullPolicy, boolean harmonize) {
             this.variableName = variableName;
             this.nullPolicy = nullPolicy;
             this.harmonize = harmonize;
@@ -2109,7 +2109,7 @@ public class RexImpTable {
         }
 
         /** */
-        protected abstract Expression implementSafe(RexToLixTranslator translator,
+        abstract Expression implementSafe(RexToLixTranslator translator,
             RexCall call, List<Expression> argValueList);
     }
 
@@ -2512,7 +2512,7 @@ public class RexImpTable {
     }
 
     /** */
-    private static RexCallImplementor createRexCallImplementor(
+    public static RexCallImplementor createRexCallImplementor(
         final NotNullImplementor implementor,
         final NullPolicy nullPolicy,
         final boolean harmonize) {

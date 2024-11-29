@@ -21,6 +21,7 @@ import java.sql.Timestamp;
 import com.google.common.collect.ImmutableList;
 import org.apache.calcite.adapter.enumerable.NullPolicy;
 import org.apache.calcite.avatica.util.TimeUnitRange;
+import org.apache.calcite.linq4j.tree.Expressions;
 import org.apache.calcite.rex.RexBuilder;
 import org.apache.calcite.rex.RexNode;
 import org.apache.calcite.sql.SqlCall;
@@ -40,6 +41,7 @@ import org.apache.calcite.sql2rel.SqlRexContext;
 import org.apache.calcite.sql2rel.SqlRexConvertlet;
 import org.apache.calcite.tools.FrameworkConfig;
 import org.apache.calcite.tools.Frameworks;
+import org.apache.calcite.util.BuiltInMethod;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.processors.query.calcite.CalciteQueryProcessor;
 import org.apache.ignite.internal.processors.query.calcite.exec.exp.RexImpTable;
@@ -77,7 +79,7 @@ public class OperatorsExtensionIntegrationTest extends AbstractBasicIntegrationT
                 }
 
                 @Override public void start(PluginContext ctx) {
-                    // Tests operator extension via implementor.
+                    // Tests operator extension via method implementor.
                     try {
                         RexImpTable.INSTANCE.defineMethod(
                             OperatorTable.TO_NUMBER,
@@ -88,6 +90,18 @@ public class OperatorsExtensionIntegrationTest extends AbstractBasicIntegrationT
                     catch (NoSuchMethodException e) {
                         throw new RuntimeException(e);
                     }
+
+                    // Tests operator extension via custom implementor.
+                    RexImpTable.INSTANCE.define(OperatorTable.RTRIM, RexImpTable.createRexCallImplementor(
+                        (translator, call, translatedOperands) -> Expressions.call(
+                            BuiltInMethod.TRIM.method,
+                            RexImpTable.FALSE_EXPR,
+                            RexImpTable.TRUE_EXPR,
+                            translatedOperands.get(1),
+                            translatedOperands.get(0),
+                            RexImpTable.FALSE_EXPR
+                        ), NullPolicy.ARG0, false
+                    ));
 
                     // Tests operator extension via SQL rewrite.
                     IgniteSqlCallRewriteTable.INSTANCE.register("LTRIM",
@@ -102,6 +116,7 @@ public class OperatorsExtensionIntegrationTest extends AbstractBasicIntegrationT
         assertQuery("SELECT substr('12345', 3, 2)").returns("34").check();
         assertQuery("SELECT to_number('12.34')").returns(new BigDecimal("12.34")).check();
         assertQuery("SELECT ltrim('aabcda', 'a')").returns("bcda").check();
+        assertQuery("SELECT rtrim('aabcda', 'ad')").returns("aabc").check();
         assertQuery("SELECT trunc(TIMESTAMP '2021-01-01 01:02:03')")
             .returns(Timestamp.valueOf("2021-01-01 00:00:00")).check();
     }
@@ -155,6 +170,16 @@ public class OperatorsExtensionIntegrationTest extends AbstractBasicIntegrationT
                 null,
                 OperandTypes.STRING,
                 SqlFunctionCategory.NUMERIC);
+
+        /** */
+        public static final SqlFunction RTRIM = new SqlFunction(
+            "RTRIM",
+            SqlKind.RTRIM,
+            ReturnTypes.ARG0_NULLABLE_VARYING,
+            null,
+            OperandTypes.STRING_STRING,
+            SqlFunctionCategory.STRING
+        );
     }
 
     /** Extended convertlet table. */
