@@ -17,7 +17,6 @@
 
 package org.apache.ignite.platform;
 
-import java.util.Objects;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.IgniteNodeAttributes;
 import org.apache.ignite.lang.IgnitePredicate;
@@ -30,6 +29,6 @@ public class JavaNodeFilterForPlatformCache implements IgnitePredicate<ClusterNo
     @Override public boolean apply(ClusterNode node) {
         Object attr = node.attribute(IgniteNodeAttributes.ATTR_IGNITE_INSTANCE_NAME);
 
-        return Objects.equals("node_2", attr) || Objects.equals("node_3", attr);
+        return "node_2".equals(attr) || "node_3".equals(attr);
     }
 }
