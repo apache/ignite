@@ -1913,7 +1913,7 @@ public class RexImpTable {
      * </code>
      * </blockquote>
      */
-    abstract static class AbstractRexCallImplementor
+    private abstract static class AbstractRexCallImplementor
         implements RexCallImplementor {
         /** */
         final NullPolicy nullPolicy;
