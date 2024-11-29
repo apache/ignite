@@ -23,6 +23,9 @@ import org.apache.ignite.IgniteCheckedException;
  * Indicates that node is unavailable due to recovery mode.
  */
 public class ClientConnectionNodeRecoveryException extends IgniteCheckedException {
+    /** */
+    private static final long serialVersionUID = 0L;
+
     /** {@inheritDoc} */
     public ClientConnectionNodeRecoveryException(String msg) {
         super(msg);
