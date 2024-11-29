@@ -1913,7 +1913,7 @@ public class RexImpTable {
      * </code>
      * </blockquote>
      */
-    private abstract static class AbstractRexCallImplementor
+    public abstract static class AbstractRexCallImplementor
         implements RexCallImplementor {
         /** */
         final NullPolicy nullPolicy;
@@ -1925,7 +1925,7 @@ public class RexImpTable {
         private final boolean harmonize;
 
         /** */
-        AbstractRexCallImplementor(String variableName, NullPolicy nullPolicy, boolean harmonize) {
+        protected AbstractRexCallImplementor(String variableName, NullPolicy nullPolicy, boolean harmonize) {
             this.variableName = variableName;
             this.nullPolicy = nullPolicy;
             this.harmonize = harmonize;
