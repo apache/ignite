@@ -2109,7 +2109,7 @@ public class RexImpTable {
         }
 
         /** */
-        abstract Expression implementSafe(RexToLixTranslator translator,
+        protected abstract Expression implementSafe(RexToLixTranslator translator,
             RexCall call, List<Expression> argValueList);
     }
 
