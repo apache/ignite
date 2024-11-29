@@ -35,10 +35,8 @@ import static org.apache.ignite.testframework.GridTestUtils.assertThrows;
 public class NonTransactionalOperationsInTxTest extends GridCommonAbstractTest {
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
-        IgniteConfiguration cfg = super.getConfiguration(gridName)
-            .setCacheConfiguration(defaultCacheConfiguration().setAtomicityMode(TRANSACTIONAL));
-
-        return cfg;
+        return super.getConfiguration(gridName).setCacheConfiguration(defaultCacheConfiguration()
+            .setAtomicityMode(TRANSACTIONAL));
     }
 
     /** {@inheritDoc} */

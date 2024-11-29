@@ -18,16 +18,17 @@
 package org.apache.ignite.internal.client.thin;
 
 import java.util.Collections;
+import java.util.concurrent.Callable;
 import java.util.function.Consumer;
 import javax.cache.CacheException;
 import org.apache.ignite.Ignition;
 import org.apache.ignite.client.ClientCache;
-import org.apache.ignite.client.ClientCacheConfiguration;
 import org.apache.ignite.client.ClientTransaction;
 import org.apache.ignite.client.Config;
 import org.apache.ignite.client.IgniteClient;
 import org.apache.ignite.configuration.ClientConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
 
@@ -40,10 +41,8 @@ import static org.apache.ignite.transactions.TransactionIsolation.READ_COMMITTED
 public class ThinClientNonTransactionalOperationsInTxTest extends GridCommonAbstractTest {
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
-        IgniteConfiguration cfg = super.getConfiguration(gridName)
-            .setCacheConfiguration(defaultCacheConfiguration().setAtomicityMode(TRANSACTIONAL));
-
-        return cfg;
+        return super.getConfiguration(gridName).setCacheConfiguration(defaultCacheConfiguration()
+            .setAtomicityMode(TRANSACTIONAL));
     }
 
     /** {@inheritDoc} */
@@ -79,23 +78,19 @@ public class ThinClientNonTransactionalOperationsInTxTest extends GridCommonAbst
      * @param client IgniteClient.
      */
     private void checkThinClientCacheOperation(IgniteClient client, Consumer<ClientCache<Object, Object>> op) {
-        ClientCache<Object, Object> cache = client.getOrCreateCache(new ClientCacheConfiguration()
-            .setName(DEFAULT_CACHE_NAME)
-            .setAtomicityMode(TRANSACTIONAL)
-        );
+        ClientCache<Object, Object> cache = client.cache(DEFAULT_CACHE_NAME);
 
         cache.put(1, 1);
 
-        CacheException err = null;
+        GridTestUtils.assertThrows(log, (Callable<Void>)() -> {
+            try (ClientTransaction tx = client.transactions().txStart(PESSIMISTIC, READ_COMMITTED)) {
+                cache.put(2, 2);
 
-        try (ClientTransaction tx = client.transactions().txStart(PESSIMISTIC, READ_COMMITTED)) {
-            op.accept(cache);
-        }
-        catch (CacheException e) {
-            err = e;
-        }
+                op.accept(cache);
+            }
 
-        assertTrue(err != null && err.getMessage().startsWith(NON_TRANSACTIONAL_CLIENT_CACHE_CLEAR_IN_TX_ERROR_MESSAGE));
+            return null;
+        }, CacheException.class, NON_TRANSACTIONAL_CLIENT_CACHE_CLEAR_IN_TX_ERROR_MESSAGE);
 
         assertTrue(cache.containsKey(1));
         assertFalse(cache.containsKey(2));
