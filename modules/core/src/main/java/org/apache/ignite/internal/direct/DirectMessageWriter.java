@@ -44,21 +44,9 @@ public class DirectMessageWriter implements MessageWriter {
     @GridToStringInclude
     private final DirectMessageState<StateItem> state;
 
-    /** Protocol version. */
-    @GridToStringInclude
-    private final byte protoVer;
-
-    /**
-     * @param protoVer Protocol version.
-     */
-    public DirectMessageWriter(final byte protoVer) {
-        state = new DirectMessageState<>(StateItem.class, new IgniteOutClosure<StateItem>() {
-            @Override public StateItem apply() {
-                return new StateItem(protoVer);
-            }
-        });
-
-        this.protoVer = protoVer;
+    /** */
+    public DirectMessageWriter() {
+        state = new DirectMessageState<>(StateItem.class, (IgniteOutClosure<StateItem>)StateItem::new);
     }
 
     /** {@inheritDoc} */
@@ -280,15 +268,11 @@ public class DirectMessageWriter implements MessageWriter {
 
     /** {@inheritDoc} */
     @Override public boolean writeAffinityTopologyVersion(String name, AffinityTopologyVersion val) {
-        if (protoVer >= 3) {
-            DirectByteBufferStream stream = state.item().stream;
+        DirectByteBufferStream stream = state.item().stream;
 
-            stream.writeAffinityTopologyVersion(val);
+        stream.writeAffinityTopologyVersion(val);
 
-            return stream.lastFinished();
-        }
-
-        return writeMessage(name, val);
+        return stream.lastFinished();
     }
 
     /** {@inheritDoc} */
@@ -380,10 +364,8 @@ public class DirectMessageWriter implements MessageWriter {
         /** */
         private boolean hdrWritten;
 
-        /**
-         * @param protoVer Protocol version.
-         */
-        public StateItem(byte protoVer) {
+        /** */
+        public StateItem() {
             stream = new DirectByteBufferStreamImpl(null);
         }
 

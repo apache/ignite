@@ -45,25 +45,18 @@ public class DirectMessageReader implements MessageReader {
     @GridToStringInclude
     private final DirectMessageState<StateItem> state;
 
-    /** Protocol version. */
-    @GridToStringInclude
-    private final byte protoVer;
-
     /** Whether last field was fully read. */
     private boolean lastRead;
 
     /**
      * @param msgFactory Message factory.
-     * @param protoVer Protocol version.
      */
-    public DirectMessageReader(final MessageFactory msgFactory, final byte protoVer) {
+    public DirectMessageReader(final MessageFactory msgFactory) {
         state = new DirectMessageState<>(StateItem.class, new IgniteOutClosure<StateItem>() {
             @Override public StateItem apply() {
-                return new StateItem(msgFactory, protoVer);
+                return new StateItem(msgFactory);
             }
         });
-
-        this.protoVer = protoVer;
     }
 
     /** {@inheritDoc} */
@@ -314,17 +307,13 @@ public class DirectMessageReader implements MessageReader {
 
     /** {@inheritDoc} */
     @Override public AffinityTopologyVersion readAffinityTopologyVersion(String name) {
-        if (protoVer >= 3) {
-            DirectByteBufferStream stream = state.item().stream;
+        DirectByteBufferStream stream = state.item().stream;
 
-            AffinityTopologyVersion val = stream.readAffinityTopologyVersion();
+        AffinityTopologyVersion val = stream.readAffinityTopologyVersion();
 
-            lastRead = stream.lastFinished();
+        lastRead = stream.lastFinished();
 
-            return val;
-        }
-
-        return readMessage(name);
+        return val;
     }
 
     /** {@inheritDoc} */
@@ -418,9 +407,8 @@ public class DirectMessageReader implements MessageReader {
 
         /**
          * @param msgFactory Message factory.
-         * @param protoVer Protocol version.
          */
-        public StateItem(MessageFactory msgFactory, byte protoVer) {
+        public StateItem(MessageFactory msgFactory) {
             stream = new DirectByteBufferStreamImpl(msgFactory);
         }
 
