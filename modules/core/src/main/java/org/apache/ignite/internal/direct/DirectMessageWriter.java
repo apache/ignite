@@ -25,10 +25,7 @@ import java.util.UUID;
 import org.apache.ignite.internal.direct.state.DirectMessageState;
 import org.apache.ignite.internal.direct.state.DirectMessageStateItem;
 import org.apache.ignite.internal.direct.stream.DirectByteBufferStream;
-import org.apache.ignite.internal.direct.stream.v1.DirectByteBufferStreamImplV1;
-import org.apache.ignite.internal.direct.stream.v2.DirectByteBufferStreamImplV2;
-import org.apache.ignite.internal.direct.stream.v3.DirectByteBufferStreamImplV3;
-import org.apache.ignite.internal.direct.stream.v4.DirectByteBufferStreamImplV4;
+import org.apache.ignite.internal.direct.stream.DirectByteBufferStreamImpl;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
@@ -387,30 +384,7 @@ public class DirectMessageWriter implements MessageWriter {
          * @param protoVer Protocol version.
          */
         public StateItem(byte protoVer) {
-            switch (protoVer) {
-                case 1:
-                    stream = new DirectByteBufferStreamImplV1(null);
-
-                    break;
-
-                case 2:
-                    stream = new DirectByteBufferStreamImplV2(null);
-
-                    break;
-
-                case 3:
-                    stream = new DirectByteBufferStreamImplV3(null);
-
-                    break;
-
-                case 4:
-                    stream = new DirectByteBufferStreamImplV4(null);
-
-                    break;
-
-                default:
-                    throw new IllegalStateException("Invalid protocol version: " + protoVer);
-            }
+            stream = new DirectByteBufferStreamImpl(null);
         }
 
         /** {@inheritDoc} */
