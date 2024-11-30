@@ -25,7 +25,6 @@ import java.util.UUID;
 import org.apache.ignite.internal.direct.state.DirectMessageState;
 import org.apache.ignite.internal.direct.state.DirectMessageStateItem;
 import org.apache.ignite.internal.direct.stream.DirectByteBufferStream;
-import org.apache.ignite.internal.direct.stream.DirectByteBufferStreamImpl;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
@@ -409,7 +408,7 @@ public class DirectMessageReader implements MessageReader {
          * @param msgFactory Message factory.
          */
         public StateItem(MessageFactory msgFactory) {
-            stream = new DirectByteBufferStreamImpl(msgFactory);
+            stream = new DirectByteBufferStream(msgFactory);
         }
 
         /** {@inheritDoc} */

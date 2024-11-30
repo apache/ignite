@@ -44,7 +44,7 @@ import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 
 /**
- * {@link DirectByteBufferStreamImpl} byte order sanity tests.
+ * {@link DirectByteBufferStream} byte order sanity tests.
  */
 public class DirectByteBufferStreamImplByteOrderSelfTest {
     /** Array length. */
@@ -81,8 +81,8 @@ public class DirectByteBufferStreamImplByteOrderSelfTest {
      * @param buff Buffer.
      * @return Stream.
      */
-    private static DirectByteBufferStreamImpl createStream(ByteBuffer buff) {
-        DirectByteBufferStreamImpl stream = new DirectByteBufferStreamImpl(new MessageFactory() {
+    private static DirectByteBufferStream createStream(ByteBuffer buff) {
+        DirectByteBufferStream stream = new DirectByteBufferStream(new MessageFactory() {
             @Nullable @Override public Message create(short type) {
                 return null;
             }
@@ -372,7 +372,7 @@ public class DirectByteBufferStreamImplByteOrderSelfTest {
 
         buff.rewind();
 
-        DirectByteBufferStreamImpl stream = createStream(buff);
+        DirectByteBufferStream stream = createStream(buff);
 
         long d1 = System.currentTimeMillis();
         while (!stream.lastFinished()) {
@@ -393,8 +393,8 @@ public class DirectByteBufferStreamImplByteOrderSelfTest {
      * @param <T> Array type.
      */
     private <T> void testWriteArrayInternal(T srcArr, boolean writeBigEndian, boolean readBigEndian, int lenShift) {
-        DirectByteBufferStreamImpl writeStream = createStream(buff);
-        DirectByteBufferStreamImpl readStream = createStream(buff);
+        DirectByteBufferStream writeStream = createStream(buff);
+        DirectByteBufferStream readStream = createStream(buff);
 
         int outBytes = (ARR_LEN << lenShift) + LEN_BYTES;
         int typeSize = 1 << lenShift;
@@ -414,7 +414,7 @@ public class DirectByteBufferStreamImplByteOrderSelfTest {
 
         buff.rewind();
 
-        DirectByteBufferStreamImpl.ArrayCreator<T> arrCreator = arrayCreator(srcArr);
+        DirectByteBufferStream.ArrayCreator<T> arrCreator = arrayCreator(srcArr);
 
         T resArr;
 
@@ -439,8 +439,8 @@ public class DirectByteBufferStreamImplByteOrderSelfTest {
      * @param <T> Array type.
      */
     private <T> void testWriteArrayInternalOverflow(T srcArr, boolean writeBigEndian, boolean readBigEndian, int lenShift) {
-        DirectByteBufferStreamImpl writeStream = createStream(buff);
-        DirectByteBufferStreamImpl readStream = createStream(buff);
+        DirectByteBufferStream writeStream = createStream(buff);
+        DirectByteBufferStream readStream = createStream(buff);
 
         int outBytes = (ARR_LEN << lenShift) + LEN_BYTES;
         int typeSize = 1 << lenShift;
@@ -462,7 +462,7 @@ public class DirectByteBufferStreamImplByteOrderSelfTest {
         buff.limit(buff.position());
         buff.rewind();
 
-        DirectByteBufferStreamImpl.ArrayCreator<T> arrCreator = arrayCreator(srcArr);
+        DirectByteBufferStream.ArrayCreator<T> arrCreator = arrayCreator(srcArr);
 
         T resArr;
 
@@ -548,8 +548,8 @@ public class DirectByteBufferStreamImplByteOrderSelfTest {
      * @param <T> Array type.
      * @return {@code ArrayCreator} for a required type.
      */
-    private <T> DirectByteBufferStreamImpl.ArrayCreator<T> arrayCreator(final T arr) {
-        return new DirectByteBufferStreamImpl.ArrayCreator<T>() {
+    private <T> DirectByteBufferStream.ArrayCreator<T> arrayCreator(final T arr) {
+        return new DirectByteBufferStream.ArrayCreator<T>() {
             @Override public T create(int len) {
                 if (len < 0)
                     throw new IgniteException("Invalid array length: " + len);
