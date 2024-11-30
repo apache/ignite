@@ -35,9 +35,6 @@ import static org.apache.ignite.internal.util.distributed.DistributedProcess.Dis
  * Messages marshalling test.
  */
 public class DirectMarshallingMessagesTest extends GridCommonAbstractTest {
-    /** Protocol version. */
-    private static final byte PROTO_VER = 2;
-
     /** Message factory. */
     private final IgniteMessageFactory msgFactory =
         new IgniteMessageFactoryImpl(new MessageFactory[] {new GridIoMessageFactory()});
