@@ -139,17 +139,18 @@ public class SecurityCommandHandlerPermissionsTest extends GridCommandHandlerAbs
     /** */
     @Test
     public void testServiceCancel() throws Exception {
-        Collection<String> cmdArgs = asList("--kill", "service", "--name");
+        String serviceName = "testService";
+        Collection<String> cmdArgs = asList("--kill", "service", serviceName);
 
         Ignite ignite = startGrid(
             0,
             userData(TEST_NO_PERMISSIONS_LOGIN, NO_PERMISSIONS),
-            userData(TEST_LOGIN, servicePermission(SERVICE_CANCEL))
+            userData(TEST_LOGIN, servicePermission(serviceName, SERVICE_CANCEL))
         );
 
         ServiceConfiguration serviceCfg = new ServiceConfiguration();
 
-        serviceCfg.setName("testService");
+        serviceCfg.setName(serviceName);
         serviceCfg.setMaxPerNodeCount(1);
         serviceCfg.setTotalCount(1);
         serviceCfg.setService(new ServicesTest.TestService());
@@ -215,10 +216,10 @@ public class SecurityCommandHandlerPermissionsTest extends GridCommandHandlerAbs
     }
 
     /** */
-    private SecurityPermissionSet servicePermission(SecurityPermission... perms) {
+    private SecurityPermissionSet servicePermission(String name, SecurityPermission... perms) {
         return SecurityPermissionSetBuilder.create()
             .defaultAllowAll(false)
-            .appendServicePermissions(SERVICE_CANCEL.name(), perms)
+            .appendServicePermissions(name, perms)
             .build();
     }
 
