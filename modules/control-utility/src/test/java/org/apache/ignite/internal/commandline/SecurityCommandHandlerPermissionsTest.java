@@ -157,8 +157,6 @@ public class SecurityCommandHandlerPermissionsTest extends GridCommandHandlerAbs
 
         ignite.services().deploy(serviceCfg);
 
-        System.out.println("LOOK HERE ---> " + SERVICE_CANCEL.name() + "   "+ SERVICE_CANCEL);
-
         assertEquals(EXIT_CODE_UNEXPECTED_ERROR, execute(enrichWithConnectionArguments(cmdArgs, TEST_NO_PERMISSIONS_LOGIN)));
         assertEquals(EXIT_CODE_OK, execute(enrichWithConnectionArguments(cmdArgs, TEST_LOGIN)));
     }
