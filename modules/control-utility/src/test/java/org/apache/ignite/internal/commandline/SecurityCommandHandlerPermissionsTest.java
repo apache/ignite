@@ -48,6 +48,7 @@ import static org.apache.ignite.plugin.security.SecurityPermission.CACHE_CREATE;
 import static org.apache.ignite.plugin.security.SecurityPermission.CACHE_DESTROY;
 import static org.apache.ignite.plugin.security.SecurityPermission.CACHE_READ;
 import static org.apache.ignite.plugin.security.SecurityPermission.CACHE_REMOVE;
+import static org.apache.ignite.plugin.security.SecurityPermission.SERVICE_CANCEL;
 import static org.apache.ignite.plugin.security.SecurityPermissionSetBuilder.ALL_PERMISSIONS;
 import static org.apache.ignite.plugin.security.SecurityPermissionSetBuilder.NO_PERMISSIONS;
 import static org.apache.ignite.plugin.security.SecurityPermissionSetBuilder.systemPermissions;
@@ -140,7 +141,11 @@ public class SecurityCommandHandlerPermissionsTest extends GridCommandHandlerAbs
     public void testServiceCancel() throws Exception {
         Collection<String> cmdArgs = asList("--kill", "service", "--name");
 
-        Ignite ignite = startGrid(0, userData(TEST_NO_PERMISSIONS_LOGIN, NO_PERMISSIONS));
+        Ignite ignite = startGrid(
+            0,
+            userData(TEST_NO_PERMISSIONS_LOGIN, NO_PERMISSIONS),
+            userData(TEST_LOGIN, servicePermission(SERVICE_CANCEL))
+        );
 
         ServiceConfiguration serviceCfg = new ServiceConfiguration();
 
@@ -151,7 +156,10 @@ public class SecurityCommandHandlerPermissionsTest extends GridCommandHandlerAbs
 
         ignite.services().deploy(serviceCfg);
 
-        assertEquals(EXIT_CODE_OK, execute(enrichWithConnectionArguments(cmdArgs, TEST_NO_PERMISSIONS_LOGIN)));
+        System.out.println("LOOK HERE ---> " + SERVICE_CANCEL.name() + "   "+ SERVICE_CANCEL);
+
+        assertEquals(EXIT_CODE_UNEXPECTED_ERROR, execute(enrichWithConnectionArguments(cmdArgs, TEST_NO_PERMISSIONS_LOGIN)));
+        assertEquals(EXIT_CODE_OK, execute(enrichWithConnectionArguments(cmdArgs, TEST_LOGIN)));
     }
 
     /** */
@@ -203,6 +211,14 @@ public class SecurityCommandHandlerPermissionsTest extends GridCommandHandlerAbs
         return SecurityPermissionSetBuilder.create()
             .defaultAllowAll(false)
             .appendCachePermissions(DEFAULT_CACHE_NAME, perms)
+            .build();
+    }
+
+    /** */
+    private SecurityPermissionSet servicePermission(SecurityPermission... perms) {
+        return SecurityPermissionSetBuilder.create()
+            .defaultAllowAll(false)
+            .appendServicePermissions(SERVICE_CANCEL.name(), perms)
             .build();
     }
 
