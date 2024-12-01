@@ -148,14 +148,14 @@ public class SecurityCommandHandlerPermissionsTest extends GridCommandHandlerAbs
             userData(TEST_LOGIN, servicePermission(srvcName, SERVICE_CANCEL))
         );
 
-        ServiceConfiguration serviceCfg = new ServiceConfiguration();
+        ServiceConfiguration srvcCfg = new ServiceConfiguration();
 
-        serviceCfg.setName(srvcName);
-        serviceCfg.setMaxPerNodeCount(1);
-        serviceCfg.setTotalCount(1);
-        serviceCfg.setService(new ServicesTest.TestService());
+        srvcCfg.setName(srvcName);
+        srvcCfg.setMaxPerNodeCount(1);
+        srvcCfg.setTotalCount(1);
+        srvcCfg.setService(new ServicesTest.TestService());
 
-        ignite.services().deploy(serviceCfg);
+        ignite.services().deploy(srvcCfg);
 
         assertEquals(EXIT_CODE_UNEXPECTED_ERROR, execute(enrichWithConnectionArguments(cmdArgs, TEST_NO_PERMISSIONS_LOGIN)));
         assertEquals(EXIT_CODE_OK, execute(enrichWithConnectionArguments(cmdArgs, TEST_LOGIN)));
