@@ -135,6 +135,9 @@ import static org.apache.calcite.sql.fun.SqlLibraryOperators.TIMESTAMP_MICROS;
 import static org.apache.calcite.sql.fun.SqlLibraryOperators.TIMESTAMP_MILLIS;
 import static org.apache.calcite.sql.fun.SqlLibraryOperators.TIMESTAMP_SECONDS;
 import static org.apache.calcite.sql.fun.SqlLibraryOperators.TO_BASE64;
+import static org.apache.calcite.sql.fun.SqlLibraryOperators.TO_CHAR;
+import static org.apache.calcite.sql.fun.SqlLibraryOperators.TO_DATE;
+import static org.apache.calcite.sql.fun.SqlLibraryOperators.TO_TIMESTAMP;
 import static org.apache.calcite.sql.fun.SqlLibraryOperators.TRANSLATE3;
 import static org.apache.calcite.sql.fun.SqlLibraryOperators.UNIX_DATE;
 import static org.apache.calcite.sql.fun.SqlLibraryOperators.UNIX_MICROS;
@@ -409,6 +412,9 @@ public class RexImpTable {
         defineMethod(DATE, "date", NullPolicy.STRICT);
         defineMethod(DATETIME, "datetime", NullPolicy.STRICT);
         defineMethod(TIME, "time", NullPolicy.STRICT);
+        defineReflective(TO_CHAR, BuiltInMethod.TO_CHAR.method);
+        defineReflective(TO_DATE, BuiltInMethod.TO_DATE.method);
+        defineReflective(TO_TIMESTAMP, BuiltInMethod.TO_TIMESTAMP.method);
 
         map.put(IS_NULL, new IsNullImplementor());
         map.put(IS_NOT_NULL, new IsNotNullImplementor());
