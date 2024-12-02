@@ -273,7 +273,6 @@ public class GridTestLog4jLogger implements IgniteLoggerEx {
 
     /**
      * Creates new logger with given implementation.
-     *
      */
     private GridTestLog4jLogger(final Logger impl, String cfg) {
         assert impl != null;
@@ -514,7 +513,7 @@ public class GridTestLog4jLogger implements IgniteLoggerEx {
         if (!impl.isTraceEnabled())
             warning("Logging at TRACE level without checking if TRACE level is enabled: " + msg);
 
-            assert impl.isTraceEnabled() : "Logging at TRACE level without checking if TRACE level is enabled: " + msg;
+        assert impl.isTraceEnabled() : "Logging at TRACE level without checking if TRACE level is enabled: " + msg;
 
         impl.trace(msg);
     }

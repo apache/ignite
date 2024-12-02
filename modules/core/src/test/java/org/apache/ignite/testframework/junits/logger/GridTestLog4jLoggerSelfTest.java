@@ -28,8 +28,8 @@ import org.apache.logging.log4j.Level;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.core.LoggerContext;
 import org.apache.logging.log4j.core.config.Configurator;
-import org.junit.AfterClass;
-import org.junit.BeforeClass;
+import org.junit.After;
+import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.JUnit4;
@@ -57,16 +57,18 @@ public class GridTestLog4jLoggerSelfTest {
     private static final Level defaultRootLevel = LogManager.getRootLogger().getLevel();
 
     /** */
-    @BeforeClass
-    public static void beforeTests() {
+    @Before
+    public void beforeTest() {
+        System.clearProperty("appId");
+        LogManager.shutdown();
+        GridTestUtils.setFieldValue(GridTestLog4jLogger.class, GridTestLog4jLogger.class, "inited", false);
         Configurator.setRootLevel(Level.WARN);
     }
 
     /** */
-    @AfterClass
-    public static void afterTests() {
+    @After
+    public void afterTest() {
         Configurator.setRootLevel(defaultRootLevel);
-
         assertEquals(defaultRootLevel, LoggerContext.getContext(false).getConfiguration().getRootLogger().getLevel());
     }
 
@@ -76,16 +78,13 @@ public class GridTestLog4jLoggerSelfTest {
         File xml = GridTestUtils.resolveIgnitePath(LOG_PATH_TEST);
 
         assert xml != null;
-        assert xml.exists();
 
-        IgniteLogger log = new GridTestLog4jLogger(xml).getLogger(getClass());
-
-        System.out.println(log.toString());
+        IgniteLoggerEx log = new GridTestLog4jLogger(xml).getLogger(getClass());
 
         assertTrue(log.toString().contains("GridTestLog4jLogger"));
         assertTrue(log.toString().contains(xml.getPath()));
 
-        ((IgniteLoggerEx)log).setApplicationAndNode(null, UUID.randomUUID());
+        log.setApplicationAndNode(null, UUID.randomUUID());
 
         checkLog(log);
     }
@@ -96,17 +95,14 @@ public class GridTestLog4jLoggerSelfTest {
         File xml = GridTestUtils.resolveIgnitePath(LOG_PATH_TEST);
 
         assert xml != null;
-        assert xml.exists();
 
         URL url = xml.toURI().toURL();
-        IgniteLogger log = new GridTestLog4jLogger(url).getLogger(getClass());
-
-        System.out.println(log.toString());
+        IgniteLoggerEx log = new GridTestLog4jLogger(url).getLogger(getClass());
 
         assertTrue(log.toString().contains("GridTestLog4jLogger"));
         assertTrue(log.toString().contains(url.getPath()));
 
-        ((IgniteLoggerEx)log).setApplicationAndNode(null, UUID.randomUUID());
+        log.setApplicationAndNode(null, UUID.randomUUID());
 
         checkLog(log);
     }
@@ -114,14 +110,12 @@ public class GridTestLog4jLoggerSelfTest {
     /** */
     @Test
     public void testPathConstructor() throws Exception {
-        IgniteLogger log = new GridTestLog4jLogger(LOG_PATH_TEST).getLogger(getClass());
-
-        System.out.println(log.toString());
+        IgniteLoggerEx log = new GridTestLog4jLogger(LOG_PATH_TEST).getLogger(getClass());
 
         assertTrue(log.toString().contains("GridTestLog4jLogger"));
         assertTrue(log.toString().contains(LOG_PATH_TEST));
 
-        ((IgniteLoggerEx)log).setApplicationAndNode(null, UUID.randomUUID());
+        log.setApplicationAndNode(null, UUID.randomUUID());
 
         checkLog(log);
     }

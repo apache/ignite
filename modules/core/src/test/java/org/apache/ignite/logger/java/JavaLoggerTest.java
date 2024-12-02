@@ -20,6 +20,8 @@ package org.apache.ignite.logger.java;
 import java.io.File;
 import java.util.UUID;
 import java.util.logging.LogManager;
+import java.util.logging.Logger;
+import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.logger.IgniteLoggerEx;
@@ -50,7 +52,6 @@ public class JavaLoggerTest extends GridCommonAbstractTest {
         GridTestUtils.setFieldValue(JavaLogger.class, JavaLogger.class, "inited", false);
     }
 
-
     /**
      * Check JavaLogger default constructor.
      */
@@ -67,26 +68,48 @@ public class JavaLoggerTest extends GridCommonAbstractTest {
     }
 
     /**
+     * Check non-configured constructor of JavaLogger.
+     */
+    @Test
+    public void testNotInitializedLogger() {
+        IgniteLogger log1 = new JavaLogger(Logger.getAnonymousLogger(), false);
+        assertTrue(log1.toString().contains("JavaLogger"));
+        assertTrue(log1.toString().contains("null"));
+
+        IgniteLogger log2 = log1.getLogger(getClass());
+        assertTrue(log2.toString().contains("JavaLogger"));
+        assertTrue(log2.toString().contains(DFLT_CONFIG_PATH));
+    }
+
+    /**
      * Check JavaLogger constructor from java.util.logging.config.file property.
      */
     @Test
     public void testDefaultConstructorWithProperty() throws Exception {
-        File file = new File(U.getIgniteHome(), LOG_CONFIG_DEBUG);
-        System.setProperty("java.util.logging.config.file", file.getPath());
-        // Call readConfiguration explicitly because Logger.getLogger was already called during IgniteUtils initialization
-        LogManager.getLogManager().readConfiguration();
+        String cfgPathProp = "java.util.logging.config.file";
+        String oldPropVal = System.getProperty(cfgPathProp);
+        try {
+            File file = new File(U.getIgniteHome(), LOG_CONFIG_DEBUG);
+            System.setProperty(cfgPathProp, file.getPath());
+            // Call readConfiguration explicitly because Logger.getLogger was already called during IgniteUtils initialization.
+            LogManager.getLogManager().readConfiguration();
 
-        IgniteLogger log1 = new JavaLogger();
-        assertTrue(log1.toString().contains("JavaLogger"));
-        assertTrue(log1.toString().contains(LOG_CONFIG_DEBUG));
-        assertTrue(log1.isDebugEnabled());
+            IgniteLogger log1 = new JavaLogger();
+            assertTrue(log1.toString().contains("JavaLogger"));
+            assertTrue(log1.toString().contains(LOG_CONFIG_DEBUG));
+            assertTrue(log1.isDebugEnabled());
 
-        IgniteLogger log2 = log1.getLogger(getClass());
-        assertTrue(log2.toString().contains("JavaLogger"));
-        assertTrue(log2.toString().contains(LOG_CONFIG_DEBUG));
-        assertTrue(log1.isDebugEnabled());
-
-        System.clearProperty("java.util.logging.config.file");
+            IgniteLogger log2 = log1.getLogger(getClass());
+            assertTrue(log2.toString().contains("JavaLogger"));
+            assertTrue(log2.toString().contains(LOG_CONFIG_DEBUG));
+            assertTrue(log1.isDebugEnabled());
+        }
+        finally {
+            if (oldPropVal == null)
+                System.clearProperty(cfgPathProp);
+            else
+                System.setProperty(cfgPathProp, oldPropVal);
+        }
     }
 
     /**
@@ -101,10 +124,9 @@ public class JavaLoggerTest extends GridCommonAbstractTest {
 
         IgniteConfiguration cfg = getConfiguration(getTestIgniteInstanceName());
         cfg.setGridLogger(log);
-        startGrid(cfg);
-
-        assertTrue(GridTestUtils.waitForCondition(lsn::check, 2_000));
-        stopAllGrids();
+        try (Ignite ign = startGrid(cfg)) {
+            assertTrue(lsn.check());
+        }
     }
 
     /**
@@ -116,8 +138,6 @@ public class JavaLoggerTest extends GridCommonAbstractTest {
 
         ((JavaLogger)log).setWorkDirectory(U.defaultWorkDirectory());
         ((IgniteLoggerEx)log).setApplicationAndNode(null, UUID.fromString("00000000-1111-2222-3333-444444444444"));
-
-        System.out.println(log.toString());
 
         assertTrue(log.toString().contains("JavaLogger"));
         assertTrue(log.toString().contains(DFLT_CONFIG_PATH));
