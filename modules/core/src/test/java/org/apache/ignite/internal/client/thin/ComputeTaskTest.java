@@ -249,6 +249,8 @@ public class ComputeTaskTest extends AbstractThinClientTest {
         }
         catch (Exception e) {
             assertNotContains(log, e.getMessage(), "Caused by: java.lang.ArithmeticException: Foo");
+            assertContains(log, e.getMessage(), "Failed to map task jobs to nodes due to undeclared user exception");
+            assertContains(log, e.getMessage(), "cause=Foo");
         }
     }
 
