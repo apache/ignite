@@ -17,6 +17,11 @@
 
 package org.apache.ignite.testframework.junits.logger;
 
+import java.io.File;
+import java.net.URL;
+import java.util.UUID;
+import org.apache.ignite.IgniteLogger;
+import org.apache.ignite.internal.logger.IgniteLoggerEx;
 import org.apache.ignite.internal.util.lang.RunnableX;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.logging.log4j.Level;
@@ -32,20 +37,21 @@ import org.junit.runners.JUnit4;
 import static java.lang.String.format;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertTrue;
 
 /**
  * Checks that assertion error will be thrown, if logging for the level disabled and log message on this level was invoked.
  */
 @RunWith(JUnit4.class)
 public class GridTestLog4jLoggerSelfTest {
+    /** Path to test configuration. */
+    private static final String LOG_PATH_TEST = "modules/log4j2/src/test/config/log4j2-test.xml";
+
     /** Logger message. */
     private static final String LOG_MESSAGE = "TEST MESSAGE";
 
     /** Assertion message formatter. */
     private static final String ASSERTION_FORMAT_MSG = "Logging at %s level without checking if %s level is enabled: " + LOG_MESSAGE;
-
-    /** Logger. */
-    private static final GridTestLog4jLogger LOGGER = new GridTestLog4jLogger();
 
     /** Default root level. */
     private static final Level defaultRootLevel = LogManager.getRootLogger().getLevel();
@@ -66,26 +72,85 @@ public class GridTestLog4jLoggerSelfTest {
 
     /** */
     @Test
-    public void testDebug() {
-        assertFalse(LOGGER.isDebugEnabled());
+    public void testFileConstructor() throws Exception {
+        File xml = GridTestUtils.resolveIgnitePath(LOG_PATH_TEST);
 
-        tryLog(() -> LOGGER.debug(LOG_MESSAGE), Level.DEBUG);
+        assert xml != null;
+        assert xml.exists();
+
+        IgniteLogger log = new GridTestLog4jLogger(xml).getLogger(getClass());
+
+        System.out.println(log.toString());
+
+        assertTrue(log.toString().contains("GridTestLog4jLogger"));
+        assertTrue(log.toString().contains(xml.getPath()));
+
+        ((IgniteLoggerEx)log).setApplicationAndNode(null, UUID.randomUUID());
+
+        checkLog(log);
+    }
+
+    /** */
+    @Test
+    public void testUrlConstructor() throws Exception {
+        File xml = GridTestUtils.resolveIgnitePath(LOG_PATH_TEST);
+
+        assert xml != null;
+        assert xml.exists();
+
+        URL url = xml.toURI().toURL();
+        IgniteLogger log = new GridTestLog4jLogger(url).getLogger(getClass());
+
+        System.out.println(log.toString());
+
+        assertTrue(log.toString().contains("GridTestLog4jLogger"));
+        assertTrue(log.toString().contains(url.getPath()));
+
+        ((IgniteLoggerEx)log).setApplicationAndNode(null, UUID.randomUUID());
+
+        checkLog(log);
+    }
+
+    /** */
+    @Test
+    public void testPathConstructor() throws Exception {
+        IgniteLogger log = new GridTestLog4jLogger(LOG_PATH_TEST).getLogger(getClass());
+
+        System.out.println(log.toString());
+
+        assertTrue(log.toString().contains("GridTestLog4jLogger"));
+        assertTrue(log.toString().contains(LOG_PATH_TEST));
+
+        ((IgniteLoggerEx)log).setApplicationAndNode(null, UUID.randomUUID());
+
+        checkLog(log);
+    }
+
+    /** */
+    @Test
+    public void testDebug() {
+        GridTestLog4jLogger log = new GridTestLog4jLogger();
+        assertFalse(log.isDebugEnabled());
+
+        tryLog(() -> log.debug(LOG_MESSAGE), Level.DEBUG);
     }
 
     /** */
     @Test
     public void testInfo() {
-        assertFalse(LOGGER.isInfoEnabled());
+        GridTestLog4jLogger log = new GridTestLog4jLogger();
+        assertFalse(log.isInfoEnabled());
 
-        tryLog(() -> LOGGER.info(LOG_MESSAGE), Level.INFO);
+        tryLog(() -> log.info(LOG_MESSAGE), Level.INFO);
     }
 
     /** */
     @Test
     public void testTrace() {
-        assertFalse(LOGGER.isTraceEnabled());
+        GridTestLog4jLogger log = new GridTestLog4jLogger();
+        assertFalse(log.isTraceEnabled());
 
-        tryLog(() -> LOGGER.trace(LOG_MESSAGE), Level.TRACE);
+        tryLog(() -> log.trace(LOG_MESSAGE), Level.TRACE);
     }
 
     /** */
@@ -93,5 +158,19 @@ public class GridTestLog4jLoggerSelfTest {
         String assertionMsg = format(ASSERTION_FORMAT_MSG, level.toString(), level.toString());
 
         GridTestUtils.assertThrows(null, clo, AssertionError.class, assertionMsg);
+    }
+
+    /**
+     * Tests logging SPI.
+     */
+    private void checkLog(IgniteLogger log) {
+        assert !log.isDebugEnabled();
+        assert log.isInfoEnabled();
+
+        log.info("This is 'info' message.");
+        log.warning("This is 'warning' message.");
+        log.warning("This is 'warning' message.", new Exception("It's a test warning exception"));
+        log.error("This is 'error' message.");
+        log.error("This is 'error' message.", new Exception("It's a test error exception"));
     }
 }
