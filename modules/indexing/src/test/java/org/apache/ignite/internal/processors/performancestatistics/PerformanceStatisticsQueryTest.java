@@ -26,10 +26,13 @@ import java.util.List;
 import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicLong;
+import java.util.concurrent.atomic.AtomicReference;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.Ignition;
 import org.apache.ignite.cache.QueryEntity;
 import org.apache.ignite.cache.query.FieldsQueryCursor;
+import org.apache.ignite.cache.query.IndexQuery;
 import org.apache.ignite.cache.query.Query;
 import org.apache.ignite.cache.query.ScanQuery;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
@@ -42,19 +45,24 @@ import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.processors.cache.query.GridCacheQueryType;
+import org.apache.ignite.internal.processors.cache.query.IndexQueryDesc;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.junit.Assume;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 
+import static org.apache.ignite.cache.query.IndexQueryCriteriaBuilder.gt;
 import static org.apache.ignite.cluster.ClusterState.ACTIVE;
 import static org.apache.ignite.cluster.ClusterState.INACTIVE;
+import static org.apache.ignite.internal.processors.cache.query.GridCacheQueryType.INDEX;
 import static org.apache.ignite.internal.processors.cache.query.GridCacheQueryType.SCAN;
 import static org.apache.ignite.internal.processors.cache.query.GridCacheQueryType.SQL_FIELDS;
 import static org.apache.ignite.internal.processors.performancestatistics.AbstractPerformanceStatisticsTest.ClientType.CLIENT;
 import static org.apache.ignite.internal.processors.performancestatistics.AbstractPerformanceStatisticsTest.ClientType.SERVER;
 import static org.apache.ignite.internal.processors.performancestatistics.AbstractPerformanceStatisticsTest.ClientType.THIN_CLIENT;
+import static org.apache.ignite.internal.processors.performancestatistics.PerformanceStatisticsProcessor.indexQueryText;
 import static org.apache.ignite.internal.processors.query.QueryUtils.DFLT_SCHEMA;
 import static org.junit.Assume.assumeFalse;
 
@@ -148,7 +156,7 @@ public class PerformanceStatisticsQueryTest extends AbstractPerformanceStatistic
 
         for (int i = 0; i < ENTRY_COUNT; i++) {
             cache.put(i, i);
-            cache2.put(i, i * 2);
+            cache2.put((long)i, (long)i * 2);
         }
     }
 
@@ -174,7 +182,21 @@ public class PerformanceStatisticsQueryTest extends AbstractPerformanceStatistic
     public void testScanQuery() throws Exception {
         ScanQuery<Object, Object> qry = new ScanQuery<>().setPageSize(pageSize);
 
-        checkQuery(SCAN, qry, DEFAULT_CACHE_NAME);
+        checkQuery(SCAN, qry, DEFAULT_CACHE_NAME, false);
+    }
+
+    /** @throws Exception If failed. */
+    @Test
+    public void testIndexQuery() throws Exception {
+        IndexQuery<Integer, Integer> qry = new IndexQuery<>(Integer.class);
+
+        qry.setPageSize(pageSize);
+        qry.setCriteria(gt("_KEY", 0));
+
+        String expText = indexQueryText(DEFAULT_CACHE_NAME,
+            new IndexQueryDesc(qry.getCriteria(), qry.getIndexName(), qry.getValueType()));
+
+        checkQuery(INDEX, qry, expText, false);
     }
 
     /** @throws Exception If failed. */
@@ -184,7 +206,7 @@ public class PerformanceStatisticsQueryTest extends AbstractPerformanceStatistic
 
         SqlFieldsQuery qry = new SqlFieldsQuery(sql).setPageSize(pageSize);
 
-        checkQuery(SQL_FIELDS, qry, sql);
+        checkQuery(SQL_FIELDS, qry, sql, false);
     }
 
     /** @throws Exception If failed. */
@@ -194,17 +216,61 @@ public class PerformanceStatisticsQueryTest extends AbstractPerformanceStatistic
 
         SqlFieldsQuery qry = new SqlFieldsQuery(sql).setPageSize(pageSize);
 
-        checkQuery(SQL_FIELDS, qry, sql);
+        checkQuery(SQL_FIELDS, qry, sql, false);
+    }
+
+    /** @throws Exception If failed. */
+    @Test
+    public void testSqlFieldsQueryWithReducer() throws Exception {
+        String sql = "select sum(_key) from " + DEFAULT_CACHE_NAME;
+
+        SqlFieldsQuery qry = new SqlFieldsQuery(sql).setPageSize(pageSize);
+
+        checkQuery(SQL_FIELDS, qry, sql, true);
+    }
+
+    /** @throws Exception If failed. */
+    @Test
+    public void testSqlFieldsLocalQuery() throws Exception {
+        Assume.assumeTrue(clientType == SERVER);
+
+        String sql = "select * from " + DEFAULT_CACHE_NAME;
+
+        SqlFieldsQuery qry = new SqlFieldsQuery(sql).setPageSize(pageSize).setLocal(true);
+
+        cleanPerformanceStatisticsDir();
+
+        startCollectStatistics();
+
+        srv.cache(DEFAULT_CACHE_NAME).query(qry).getAll();
+
+        AtomicReference<String> flags = new AtomicReference<>();
+
+        stopCollectStatisticsAndRead(new TestHandler() {
+            @Override public void queryProperty(
+                UUID nodeId,
+                GridCacheQueryType type,
+                UUID qryNodeId,
+                long id,
+                String name,
+                String val
+            ) {
+                if ("Flags".equals(name))
+                    assertTrue(flags.compareAndSet(null, val));
+            }
+        });
+
+        assertEquals("local", flags.get());
     }
 
     /** Check query. */
-    private void checkQuery(GridCacheQueryType type, Query<?> qry, String text) throws Exception {
+    private void checkQuery(GridCacheQueryType type, Query<?> qry, String text, boolean hasReducer) throws Exception {
         client.cluster().state(INACTIVE);
         client.cluster().state(ACTIVE);
 
-        runQueryAndCheck(type, qry, text, true, true);
+        runQueryAndCheck(type, qry, text, true, true, hasReducer);
 
-        runQueryAndCheck(type, qry, text, true, false);
+        runQueryAndCheck(type, qry, text, true, false, hasReducer);
     }
 
     /** @throws Exception If failed. */
@@ -212,21 +278,26 @@ public class PerformanceStatisticsQueryTest extends AbstractPerformanceStatistic
     public void testDdlAndDmlQueries() throws Exception {
         String sql = "create table " + SQL_TABLE + " (id int, val varchar, primary key (id))";
 
-        runQueryAndCheck(SQL_FIELDS, new SqlFieldsQuery(sql), sql, false, false);
+        runQueryAndCheck(SQL_FIELDS, new SqlFieldsQuery(sql), sql, false, false, false);
 
         sql = "insert into " + SQL_TABLE + " (id) values (1)";
 
-        runQueryAndCheck(SQL_FIELDS, new SqlFieldsQuery(sql), sql, false, false);
+        runQueryAndCheck(SQL_FIELDS, new SqlFieldsQuery(sql), sql, false, false, false);
 
         sql = "update " + SQL_TABLE + " set val = 'abc'";
 
-        runQueryAndCheck(SQL_FIELDS, new SqlFieldsQuery(sql), sql, true, false);
+        runQueryAndCheck(SQL_FIELDS, new SqlFieldsQuery(sql), sql, true, false, false);
     }
 
     /** Runs query and checks statistics. */
-    private void runQueryAndCheck(GridCacheQueryType expType, Query<?> qry, String expText, boolean hasLogicalReads,
-        boolean hasPhysicalReads)
-        throws Exception {
+    private void runQueryAndCheck(
+        GridCacheQueryType expType,
+        Query<?> qry,
+        String expText,
+        boolean hasLogicalReads,
+        boolean hasPhysicalReads,
+        boolean hasReducer
+    ) throws Exception {
         long startTime = U.currentTimeMillis();
 
         cleanPerformanceStatisticsDir();
@@ -256,14 +327,19 @@ public class PerformanceStatisticsQueryTest extends AbstractPerformanceStatistic
         if (hasLogicalReads)
             srv.cluster().forServers().nodes().forEach(node -> readsNodes.add(node.id()));
 
-        AtomicInteger queryCnt = new AtomicInteger();
+        Set<UUID> dataNodes = new HashSet<>(readsNodes);
+        AtomicInteger qryCnt = new AtomicInteger();
         AtomicInteger readsCnt = new AtomicInteger();
         HashSet<Long> qryIds = new HashSet<>();
+        AtomicLong mapRowCnt = new AtomicLong();
+        AtomicLong rdcRowCnt = new AtomicLong();
+        AtomicInteger planMapCnt = new AtomicInteger();
+        AtomicInteger planRdcCnt = new AtomicInteger();
 
         stopCollectStatisticsAndRead(new TestHandler() {
             @Override public void query(UUID nodeId, GridCacheQueryType type, String text, long id, long queryStartTime,
                 long duration, boolean success) {
-                queryCnt.incrementAndGet();
+                qryCnt.incrementAndGet();
                 qryIds.add(id);
 
                 assertTrue(expNodeIds.contains(nodeId));
@@ -285,11 +361,67 @@ public class PerformanceStatisticsQueryTest extends AbstractPerformanceStatistic
                 assertTrue(logicalReads > 0);
                 assertTrue(hasPhysicalReads ? physicalReads > 0 : physicalReads == 0);
             }
+
+            @Override public void queryRows(
+                UUID nodeId,
+                GridCacheQueryType type,
+                UUID qryNodeId,
+                long id,
+                String action,
+                long rows
+            ) {
+                assertEquals(expType, SQL_FIELDS);
+                assertTrue(expNodeIds.contains(qryNodeId));
+
+                if ("Fetched on mapper".equals(action)) {
+                    assertTrue(dataNodes.contains(nodeId));
+                    mapRowCnt.addAndGet(rows);
+                }
+                else if ("Fetched on reducer".equals(action)) {
+                    assertTrue(expNodeIds.contains(nodeId));
+                    rdcRowCnt.addAndGet(rows);
+                }
+            }
+
+            @Override public void queryProperty(
+                UUID nodeId,
+                GridCacheQueryType type,
+                UUID qryNodeId,
+                long id,
+                String name,
+                String val
+            ) {
+                assertEquals(expType, SQL_FIELDS);
+                assertTrue(expNodeIds.contains(qryNodeId));
+
+                if ("Map phase plan".equals(name)) {
+                    assertTrue(dataNodes.contains(nodeId));
+                    planMapCnt.incrementAndGet();
+                }
+                else if ("Reduce phase plan".equals(name)) {
+                    assertTrue(expNodeIds.contains(nodeId));
+                    planRdcCnt.incrementAndGet();
+                }
+            }
         });
 
-        assertEquals(1, queryCnt.get());
+        assertEquals(1, qryCnt.get());
         assertTrue("Query reads expected on nodes: " + readsNodes, readsNodes.isEmpty());
         assertEquals(1, qryIds.size());
+
+        // If query has logical reads, plan and rows info also expected.
+        if (hasLogicalReads && expType == SQL_FIELDS) {
+            assertEquals(dataNodes.size(), planMapCnt.get());
+            assertTrue(mapRowCnt.get() > 0);
+            if (hasReducer) {
+                assertTrue(rdcRowCnt.get() > 0);
+                assertEquals(1, planRdcCnt.get());
+            }
+            else {
+                assertEquals(0, rdcRowCnt.get());
+                assertEquals(0, planRdcCnt.get());
+            }
+        }
     }
 
     /** @throws Exception If failed. */

@@ -18,7 +18,6 @@
 package org.apache.ignite.internal.cache.query.index.sorted.inline;
 
 import org.apache.ignite.internal.cache.query.index.sorted.IndexRow;
-import org.apache.ignite.internal.processors.cache.mvcc.MvccSnapshot;
 import org.apache.ignite.internal.processors.cache.persistence.tree.BPlusTree;
 import org.apache.ignite.spi.indexing.IndexingQueryFilter;
 
@@ -34,35 +33,22 @@ public class IndexQueryContext {
     private final BPlusTree.TreeRowFactory<IndexRow, IndexRow> rowFactory;
 
     /** */
-    private final MvccSnapshot mvccSnapshot;
-
-    /** */
     public IndexQueryContext(
         IndexingQueryFilter cacheFilter,
-        BPlusTree.TreeRowClosure<IndexRow, IndexRow> rowFilter,
-        MvccSnapshot mvccSnapshot
+        BPlusTree.TreeRowClosure<IndexRow, IndexRow> rowFilter
     ) {
-        this(cacheFilter, rowFilter, null, mvccSnapshot);
+        this(cacheFilter, rowFilter, null);
     }
 
     /** */
     public IndexQueryContext(
         IndexingQueryFilter cacheFilter,
         BPlusTree.TreeRowClosure<IndexRow, IndexRow> rowFilter,
-        BPlusTree.TreeRowFactory<IndexRow, IndexRow> rowFactory,
-        MvccSnapshot mvccSnapshot
+        BPlusTree.TreeRowFactory<IndexRow, IndexRow> rowFactory
     ) {
         this.cacheFilter = cacheFilter;
         this.rowFilter = rowFilter;
         this.rowFactory = rowFactory;
-        this.mvccSnapshot = mvccSnapshot;
-    }
-
-    /**
-     * @return Mvcc snapshot.
-     */
-    public MvccSnapshot mvccSnapshot() {
-        return mvccSnapshot;
     }
 
     /**

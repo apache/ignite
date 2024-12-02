@@ -115,6 +115,7 @@ import org.apache.ignite.ssl.SslContextFactory;
 import org.apache.ignite.transactions.TransactionConcurrency;
 import org.apache.ignite.transactions.TransactionIsolation;
 import org.apache.ignite.util.AttributeNodeFilter;
+
 import static java.util.Optional.ofNullable;
 
 /**
@@ -756,10 +757,6 @@ public class PlatformConfigurationUtils {
         if (in.readBoolean())
             cfg.setAuthenticationEnabled(in.readBoolean());
         if (in.readBoolean())
-            cfg.setMvccVacuumFrequency(in.readLong());
-        if (in.readBoolean())
-            cfg.setMvccVacuumThreadCount(in.readInt());
-        if (in.readBoolean())
             cfg.setSystemWorkerBlockedTimeout(in.readLong());
         if (in.readBoolean())
             cfg.setSqlQueryHistorySize(in.readInt());
@@ -885,7 +882,6 @@ public class PlatformConfigurationUtils {
             tx.setDefaultTxTimeout(in.readLong());
             tx.setPessimisticTxLogLinger(in.readInt());
             tx.setTxTimeoutOnPartitionMapExchange(in.readLong());
-            tx.setDeadlockTimeout(in.readLong());
 
             cfg.setTransactionConfiguration(tx);
         }
@@ -1285,8 +1281,8 @@ public class PlatformConfigurationUtils {
         if (indexes != null) {
             writer.writeInt(indexes.size());
 
-            for (QueryIndex index : indexes)
-                writeQueryIndex(writer, index);
+            for (QueryIndex idx : indexes)
+                writeQueryIndex(writer, idx);
         }
         else
             writer.writeInt(0);
@@ -1359,10 +1355,6 @@ public class PlatformConfigurationUtils {
         w.writeBoolean(cfg.isActiveOnStart());
         w.writeBoolean(true);
         w.writeBoolean(cfg.isAuthenticationEnabled());
-        w.writeBoolean(true);
-        w.writeLong(cfg.getMvccVacuumFrequency());
-        w.writeBoolean(true);
-        w.writeInt(cfg.getMvccVacuumThreadCount());
         if (cfg.getSystemWorkerBlockedTimeout() != null) {
             w.writeBoolean(true);
             w.writeLong(cfg.getSystemWorkerBlockedTimeout());
@@ -1503,7 +1495,6 @@ public class PlatformConfigurationUtils {
             w.writeLong(tx.getDefaultTxTimeout());
             w.writeInt(tx.getPessimisticTxLogLinger());
             w.writeLong(tx.getTxTimeoutOnPartitionMapExchange());
-            w.writeLong(tx.getDeadlockTimeout());
         }
         else
             w.writeBoolean(false);

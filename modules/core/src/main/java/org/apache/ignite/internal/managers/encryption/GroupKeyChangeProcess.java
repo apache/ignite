@@ -128,15 +128,15 @@ class GroupKeyChangeProcess {
 
         int n = 0;
 
-        for (String cacheOrGroupName : cacheOrGrpNames) {
-            CacheGroupDescriptor grpDesc = ctx.cache().cacheGroupDescriptor(CU.cacheId(cacheOrGroupName));
+        for (String cacheOrGrpName : cacheOrGrpNames) {
+            CacheGroupDescriptor grpDesc = ctx.cache().cacheGroupDescriptor(CU.cacheId(cacheOrGrpName));
 
             if (grpDesc == null) {
-                DynamicCacheDescriptor cacheDesc = ctx.cache().cacheDescriptor(cacheOrGroupName);
+                DynamicCacheDescriptor cacheDesc = ctx.cache().cacheDescriptor(cacheOrGrpName);
 
                 if (cacheDesc == null) {
                     throw new IgniteException("Cache group key change was rejected. " +
-                        "Cache or group \"" + cacheOrGroupName + "\" doesn't exists");
+                        "Cache or group \"" + cacheOrGrpName + "\" doesn't exists");
                 }
 
                 int grpId = cacheDesc.groupId();
@@ -145,19 +145,19 @@ class GroupKeyChangeProcess {
 
                 if (grpDesc.sharedGroup()) {
                     throw new IgniteException("Cache group key change was rejected. " +
-                        "Cache or group \"" + cacheOrGroupName + "\" is a part of group \"" +
+                        "Cache or group \"" + cacheOrGrpName + "\" is a part of group \"" +
                         grpDesc.groupName() + "\". Provide group name instead of cache name for shared groups.");
                 }
             }
 
             if (!grpDesc.config().isEncryptionEnabled()) {
                 throw new IgniteException("Cache group key change was rejected. " +
-                    "Cache or group \"" + cacheOrGroupName + "\" is not encrypted.");
+                    "Cache or group \"" + cacheOrGrpName + "\" is not encrypted.");
             }
 
             if (ctx.encryption().reencryptionInProgress(grpDesc.groupId())) {
                 throw new IgniteException("Cache group key change was rejected. " +
-                    "Cache group reencryption is in progress [grp=" + cacheOrGroupName + "]");
+                    "Cache group reencryption is in progress [grp=" + cacheOrGrpName + "]");
             }
 
             grpIds[n] = grpDesc.groupId();
@@ -273,7 +273,7 @@ class GroupKeyChangeProcess {
      * @param res Results.
      * @param err Errors.
      */
-    private void finishPrepare(UUID id, Map<UUID, EmptyResult> res, Map<UUID, Exception> err) {
+    private void finishPrepare(UUID id, Map<UUID, EmptyResult> res, Map<UUID, Throwable> err) {
         if (!err.isEmpty()) {
             if (req != null && req.requestId().equals(id))
                 req = null;
@@ -318,7 +318,7 @@ class GroupKeyChangeProcess {
      * @param res Results.
      * @param err Errors.
      */
-    private void finishPerform(UUID id, Map<UUID, EmptyResult> res, Map<UUID, Exception> err) {
+    private void finishPerform(UUID id, Map<UUID, EmptyResult> res, Map<UUID, Throwable> err) {
         completeFuture(id, err, fut);
     }
 
@@ -328,7 +328,7 @@ class GroupKeyChangeProcess {
      * @param fut Key change future.
      * @return {@code True} if future was completed by this call.
      */
-    private boolean completeFuture(UUID reqId, Map<UUID, Exception> err, GroupKeyChangeFuture fut) {
+    private boolean completeFuture(UUID reqId, Map<UUID, Throwable> err, GroupKeyChangeFuture fut) {
         boolean isInitiator = fut != null && fut.id().equals(reqId);
 
         if (!isInitiator || fut.isDone())

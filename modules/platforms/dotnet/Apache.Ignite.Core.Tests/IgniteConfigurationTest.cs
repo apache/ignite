@@ -262,8 +262,6 @@ namespace Apache.Ignite.Core.Tests
 
                 AssertExtensions.ReflectionEqual(cfg.DataStorageConfiguration, resCfg.DataStorageConfiguration);
 
-                Assert.AreEqual(cfg.MvccVacuumFrequency, resCfg.MvccVacuumFrequency);
-                Assert.AreEqual(cfg.MvccVacuumThreadCount, resCfg.MvccVacuumThreadCount);
                 Assert.AreEqual(cfg.SqlQueryHistorySize, resCfg.SqlQueryHistorySize);
 
                 Assert.IsNotNull(resCfg.SqlSchemas);
@@ -553,8 +551,6 @@ namespace Apache.Ignite.Core.Tests
                 cfg.ClientConnectorConfigurationEnabled);
             Assert.AreEqual(IgniteConfiguration.DefaultRedirectJavaConsoleOutput, cfg.RedirectJavaConsoleOutput);
             Assert.AreEqual(IgniteConfiguration.DefaultAuthenticationEnabled, cfg.AuthenticationEnabled);
-            Assert.AreEqual(IgniteConfiguration.DefaultMvccVacuumFrequency, cfg.MvccVacuumFrequency);
-            Assert.AreEqual(IgniteConfiguration.DefaultMvccVacuumThreadCount, cfg.MvccVacuumThreadCount);
             Assert.AreEqual(AsyncContinuationExecutor.ThreadPool, cfg.AsyncContinuationExecutor);
 
             // Thread pools.
@@ -935,8 +931,6 @@ namespace Apache.Ignite.Core.Tests
                     }
                 },
                 AuthenticationEnabled = false,
-                MvccVacuumFrequency = 20000,
-                MvccVacuumThreadCount = 8,
                 SqlQueryHistorySize = 99,
                 JavaPeerClassLoadingEnabled = false,
                 SqlSchemas = new List<string> { "SCHEMA_3", "schema_4" },

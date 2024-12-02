@@ -109,683 +109,712 @@ public interface IgniteSqlParserImplConstants {
   int CONSTRAINTS = 103;
   int CONSTRUCTOR = 104;
   int CONTAINS = 105;
-  int CONTINUE = 106;
-  int CONVERT = 107;
-  int CORR = 108;
-  int CORRESPONDING = 109;
-  int COUNT = 110;
-  int COVAR_POP = 111;
-  int COVAR_SAMP = 112;
-  int CREATE = 113;
-  int CROSS = 114;
-  int CUBE = 115;
-  int CUME_DIST = 116;
-  int CURRENT = 117;
-  int CURRENT_CATALOG = 118;
-  int CURRENT_DATE = 119;
-  int CURRENT_DEFAULT_TRANSFORM_GROUP = 120;
-  int CURRENT_PATH = 121;
-  int CURRENT_ROLE = 122;
-  int CURRENT_ROW = 123;
-  int CURRENT_SCHEMA = 124;
-  int CURRENT_TIME = 125;
-  int CURRENT_TIMESTAMP = 126;
-  int CURRENT_TRANSFORM_GROUP_FOR_TYPE = 127;
-  int CURRENT_USER = 128;
-  int CURSOR = 129;
-  int CURSOR_NAME = 130;
-  int CYCLE = 131;
-  int DATA = 132;
-  int DATABASE = 133;
-  int DATE = 134;
-  int DATETIME_INTERVAL_CODE = 135;
-  int DATETIME_INTERVAL_PRECISION = 136;
-  int DAY = 137;
-  int DAYS = 138;
-  int DEALLOCATE = 139;
-  int DEC = 140;
-  int DECADE = 141;
-  int DECIMAL = 142;
-  int DECLARE = 143;
-  int DEFAULT_ = 144;
-  int DEFAULTS = 145;
-  int DEFERRABLE = 146;
-  int DEFERRED = 147;
-  int DEFINE = 148;
-  int DEFINED = 149;
-  int DEFINER = 150;
-  int DEGREE = 151;
-  int DELETE = 152;
-  int DENSE_RANK = 153;
-  int DEPTH = 154;
-  int DEREF = 155;
-  int DERIVED = 156;
-  int DESC = 157;
-  int DESCRIBE = 158;
-  int DESCRIPTION = 159;
-  int DESCRIPTOR = 160;
-  int DETERMINISTIC = 161;
-  int DIAGNOSTICS = 162;
-  int DISALLOW = 163;
-  int DISCONNECT = 164;
-  int DISPATCH = 165;
-  int DISTINCT = 166;
-  int DOMAIN = 167;
-  int DOT_FORMAT = 168;
-  int DOUBLE = 169;
-  int DOW = 170;
-  int DOY = 171;
-  int DROP = 172;
-  int DYNAMIC = 173;
-  int DYNAMIC_FUNCTION = 174;
-  int DYNAMIC_FUNCTION_CODE = 175;
-  int EACH = 176;
-  int ELEMENT = 177;
-  int ELSE = 178;
-  int EMPTY = 179;
-  int ENCODING = 180;
-  int END = 181;
-  int END_EXEC = 182;
-  int END_FRAME = 183;
-  int END_PARTITION = 184;
-  int EPOCH = 185;
-  int EQUALS = 186;
-  int ERROR = 187;
-  int ESCAPE = 188;
-  int EVERY = 189;
-  int EXCEPT = 190;
-  int EXCEPTION = 191;
-  int EXCLUDE = 192;
-  int EXCLUDING = 193;
-  int EXEC = 194;
-  int EXECUTE = 195;
-  int EXISTS = 196;
-  int EXP = 197;
-  int EXPLAIN = 198;
-  int EXTEND = 199;
-  int EXTERNAL = 200;
-  int EXTRACT = 201;
-  int FALSE = 202;
-  int FETCH = 203;
-  int FILTER = 204;
-  int FINAL = 205;
-  int FIRST = 206;
-  int FIRST_VALUE = 207;
-  int FLOAT = 208;
-  int FLOOR = 209;
-  int FOLLOWING = 210;
-  int FOR = 211;
-  int FORMAT = 212;
-  int FOREIGN = 213;
-  int FORTRAN = 214;
-  int FOUND = 215;
-  int FRAC_SECOND = 216;
-  int FRAME_ROW = 217;
-  int FREE = 218;
-  int FROM = 219;
-  int FULL = 220;
-  int FUNCTION = 221;
-  int FUSION = 222;
-  int G = 223;
-  int GENERAL = 224;
-  int GENERATED = 225;
-  int GEOMETRY = 226;
-  int GET = 227;
-  int GLOBAL = 228;
-  int GO = 229;
-  int GOTO = 230;
-  int GRANT = 231;
-  int GRANTED = 232;
-  int GROUP = 233;
-  int GROUP_CONCAT = 234;
-  int GROUPING = 235;
-  int GROUPS = 236;
-  int HAVING = 237;
-  int HIERARCHY = 238;
-  int HOLD = 239;
-  int HOP = 240;
-  int HOUR = 241;
-  int HOURS = 242;
-  int IDENTITY = 243;
-  int IGNORE = 244;
-  int ILIKE = 245;
-  int IMMEDIATE = 246;
-  int IMMEDIATELY = 247;
-  int IMPLEMENTATION = 248;
-  int IMPORT = 249;
-  int IN = 250;
-  int INCLUDE = 251;
-  int INCLUDING = 252;
-  int INCREMENT = 253;
-  int INDICATOR = 254;
-  int INITIAL = 255;
-  int INITIALLY = 256;
-  int INNER = 257;
-  int INOUT = 258;
-  int INPUT = 259;
-  int INSENSITIVE = 260;
-  int INSERT = 261;
-  int INSTANCE = 262;
-  int INSTANTIABLE = 263;
-  int INT = 264;
-  int INTEGER = 265;
-  int INTERSECT = 266;
-  int INTERSECTION = 267;
-  int INTERVAL = 268;
-  int INTO = 269;
-  int INVOKER = 270;
-  int IS = 271;
-  int ISODOW = 272;
-  int ISOYEAR = 273;
-  int ISOLATION = 274;
-  int JAVA = 275;
-  int JOIN = 276;
-  int JSON = 277;
-  int JSON_ARRAY = 278;
-  int JSON_ARRAYAGG = 279;
-  int JSON_EXISTS = 280;
-  int JSON_OBJECT = 281;
-  int JSON_OBJECTAGG = 282;
-  int JSON_QUERY = 283;
-  int JSON_VALUE = 284;
-  int K = 285;
-  int KEY = 286;
-  int KEY_MEMBER = 287;
-  int KEY_TYPE = 288;
-  int LABEL = 289;
-  int LAG = 290;
-  int LANGUAGE = 291;
-  int LARGE = 292;
-  int LAST = 293;
-  int LAST_VALUE = 294;
-  int LATERAL = 295;
-  int LEAD = 296;
-  int LEADING = 297;
-  int LEFT = 298;
-  int LENGTH = 299;
-  int LEVEL = 300;
-  int LIBRARY = 301;
-  int LIKE = 302;
-  int LIKE_REGEX = 303;
-  int LIMIT = 304;
-  int LN = 305;
-  int LOCAL = 306;
-  int LOCALTIME = 307;
-  int LOCALTIMESTAMP = 308;
-  int LOCATOR = 309;
-  int LOWER = 310;
-  int M = 311;
-  int MAP = 312;
-  int MATCH = 313;
-  int MATCHED = 314;
-  int MATCHES = 315;
-  int MATCH_NUMBER = 316;
-  int MATCH_RECOGNIZE = 317;
-  int MAX = 318;
-  int MAXVALUE = 319;
-  int MEASURES = 320;
-  int MEMBER = 321;
-  int MERGE = 322;
-  int MESSAGE_LENGTH = 323;
-  int MESSAGE_OCTET_LENGTH = 324;
-  int MESSAGE_TEXT = 325;
-  int METHOD = 326;
-  int MICROSECOND = 327;
-  int MILLISECOND = 328;
-  int MILLENNIUM = 329;
-  int MIN = 330;
-  int MINUTE = 331;
-  int MINUTES = 332;
-  int MINVALUE = 333;
-  int MOD = 334;
-  int MODIFIES = 335;
-  int MODULE = 336;
-  int MONTH = 337;
-  int MONTHS = 338;
-  int MORE_ = 339;
-  int MULTISET = 340;
-  int MUMPS = 341;
-  int NAME = 342;
-  int NAMES = 343;
-  int NANOSECOND = 344;
-  int NATIONAL = 345;
-  int NATURAL = 346;
-  int NCHAR = 347;
-  int NCLOB = 348;
-  int NESTING = 349;
-  int NEW = 350;
-  int NEXT = 351;
-  int NO = 352;
-  int NONE = 353;
-  int NORMALIZE = 354;
-  int NORMALIZED = 355;
-  int NOT = 356;
-  int NTH_VALUE = 357;
-  int NTILE = 358;
-  int NULL = 359;
-  int NULLABLE = 360;
-  int NULLIF = 361;
-  int NULLS = 362;
-  int NUMBER = 363;
-  int NUMERIC = 364;
-  int OBJECT = 365;
-  int OCCURRENCES_REGEX = 366;
-  int OCTET_LENGTH = 367;
-  int OCTETS = 368;
-  int OF = 369;
-  int OFFSET = 370;
-  int OLD = 371;
-  int OMIT = 372;
-  int ON = 373;
-  int ONE = 374;
-  int ONLY = 375;
-  int OPEN = 376;
-  int OPTION = 377;
-  int OPTIONS = 378;
-  int OR = 379;
-  int ORDER = 380;
-  int ORDERING = 381;
-  int ORDINALITY = 382;
-  int OTHERS = 383;
-  int OUT = 384;
-  int OUTER = 385;
-  int OUTPUT = 386;
-  int OVER = 387;
-  int OVERLAPS = 388;
-  int OVERLAY = 389;
-  int OVERRIDING = 390;
-  int PAD = 391;
-  int PARAMETER = 392;
-  int PARAMETER_MODE = 393;
-  int PARAMETER_NAME = 394;
-  int PARAMETER_ORDINAL_POSITION = 395;
-  int PARAMETER_SPECIFIC_CATALOG = 396;
-  int PARAMETER_SPECIFIC_NAME = 397;
-  int PARAMETER_SPECIFIC_SCHEMA = 398;
-  int PARTIAL = 399;
-  int PARTITION = 400;
-  int PASCAL = 401;
-  int PASSING = 402;
-  int PASSTHROUGH = 403;
-  int PAST = 404;
-  int PATH = 405;
-  int PATTERN = 406;
-  int PER = 407;
-  int PERCENT = 408;
-  int PERCENTILE_CONT = 409;
-  int PERCENTILE_DISC = 410;
-  int PERCENT_RANK = 411;
-  int PERIOD = 412;
-  int PERMUTE = 413;
-  int PIVOT = 414;
-  int PLACING = 415;
-  int PLAN = 416;
-  int PLI = 417;
-  int PORTION = 418;
-  int POSITION = 419;
-  int POSITION_REGEX = 420;
-  int POWER = 421;
-  int PRECEDES = 422;
-  int PRECEDING = 423;
-  int PRECISION = 424;
-  int PREPARE = 425;
-  int PRESERVE = 426;
-  int PREV = 427;
-  int PRIMARY = 428;
-  int PRIOR = 429;
-  int PRIVILEGES = 430;
-  int PROCEDURE = 431;
-  int PUBLIC = 432;
-  int QUARTER = 433;
-  int RANGE = 434;
-  int RANK = 435;
-  int READ = 436;
-  int READS = 437;
-  int REAL = 438;
-  int RECURSIVE = 439;
-  int REF = 440;
-  int REFERENCES = 441;
-  int REFERENCING = 442;
-  int REGR_AVGX = 443;
-  int REGR_AVGY = 444;
-  int REGR_COUNT = 445;
-  int REGR_INTERCEPT = 446;
-  int REGR_R2 = 447;
-  int REGR_SLOPE = 448;
-  int REGR_SXX = 449;
-  int REGR_SXY = 450;
-  int REGR_SYY = 451;
-  int RELATIVE = 452;
-  int RELEASE = 453;
-  int REPEATABLE = 454;
-  int REPLACE = 455;
-  int RESET = 456;
-  int RESPECT = 457;
-  int RESTART = 458;
-  int RESTRICT = 459;
-  int RESULT = 460;
-  int RETURN = 461;
-  int RETURNED_CARDINALITY = 462;
-  int RETURNED_LENGTH = 463;
-  int RETURNED_OCTET_LENGTH = 464;
-  int RETURNED_SQLSTATE = 465;
-  int RETURNING = 466;
-  int RETURNS = 467;
-  int REVOKE = 468;
-  int RIGHT = 469;
-  int RLIKE = 470;
-  int ROLE = 471;
-  int ROLLBACK = 472;
-  int ROLLUP = 473;
-  int ROUTINE = 474;
-  int ROUTINE_CATALOG = 475;
-  int ROUTINE_NAME = 476;
-  int ROUTINE_SCHEMA = 477;
-  int ROW = 478;
-  int ROW_COUNT = 479;
-  int ROW_NUMBER = 480;
-  int ROWS = 481;
-  int RUNNING = 482;
-  int SAVEPOINT = 483;
-  int SCALAR = 484;
-  int SCALE = 485;
-  int SCHEMA = 486;
-  int SCHEMA_NAME = 487;
-  int SCOPE = 488;
-  int SCOPE_CATALOGS = 489;
-  int SCOPE_NAME = 490;
-  int SCOPE_SCHEMA = 491;
-  int SCROLL = 492;
-  int SEARCH = 493;
-  int SECOND = 494;
-  int SECONDS = 495;
-  int SECTION = 496;
-  int SECURITY = 497;
-  int SEEK = 498;
-  int SELECT = 499;
-  int SELF = 500;
-  int SENSITIVE = 501;
-  int SEPARATOR = 502;
-  int SEQUENCE = 503;
-  int SERIALIZABLE = 504;
-  int SERVER = 505;
-  int SERVER_NAME = 506;
-  int SESSION = 507;
-  int SESSION_USER = 508;
-  int SET = 509;
-  int SETS = 510;
-  int SET_MINUS = 511;
-  int SHOW = 512;
-  int SIMILAR = 513;
-  int SIMPLE = 514;
-  int SIZE = 515;
-  int SKIP_ = 516;
-  int SMALLINT = 517;
-  int SOME = 518;
-  int SOURCE = 519;
-  int SPACE = 520;
-  int SPECIFIC = 521;
-  int SPECIFIC_NAME = 522;
-  int SPECIFICTYPE = 523;
-  int SQL = 524;
-  int SQLEXCEPTION = 525;
-  int SQLSTATE = 526;
-  int SQLWARNING = 527;
-  int SQL_BIGINT = 528;
-  int SQL_BINARY = 529;
-  int SQL_BIT = 530;
-  int SQL_BLOB = 531;
-  int SQL_BOOLEAN = 532;
-  int SQL_CHAR = 533;
-  int SQL_CLOB = 534;
-  int SQL_DATE = 535;
-  int SQL_DECIMAL = 536;
-  int SQL_DOUBLE = 537;
-  int SQL_FLOAT = 538;
-  int SQL_INTEGER = 539;
-  int SQL_INTERVAL_DAY = 540;
-  int SQL_INTERVAL_DAY_TO_HOUR = 541;
-  int SQL_INTERVAL_DAY_TO_MINUTE = 542;
-  int SQL_INTERVAL_DAY_TO_SECOND = 543;
-  int SQL_INTERVAL_HOUR = 544;
-  int SQL_INTERVAL_HOUR_TO_MINUTE = 545;
-  int SQL_INTERVAL_HOUR_TO_SECOND = 546;
-  int SQL_INTERVAL_MINUTE = 547;
-  int SQL_INTERVAL_MINUTE_TO_SECOND = 548;
-  int SQL_INTERVAL_MONTH = 549;
-  int SQL_INTERVAL_SECOND = 550;
-  int SQL_INTERVAL_YEAR = 551;
-  int SQL_INTERVAL_YEAR_TO_MONTH = 552;
-  int SQL_LONGVARBINARY = 553;
-  int SQL_LONGVARCHAR = 554;
-  int SQL_LONGVARNCHAR = 555;
-  int SQL_NCHAR = 556;
-  int SQL_NCLOB = 557;
-  int SQL_NUMERIC = 558;
-  int SQL_NVARCHAR = 559;
-  int SQL_REAL = 560;
-  int SQL_SMALLINT = 561;
-  int SQL_TIME = 562;
-  int SQL_TIMESTAMP = 563;
-  int SQL_TINYINT = 564;
-  int SQL_TSI_DAY = 565;
-  int SQL_TSI_FRAC_SECOND = 566;
-  int SQL_TSI_HOUR = 567;
-  int SQL_TSI_MICROSECOND = 568;
-  int SQL_TSI_MINUTE = 569;
-  int SQL_TSI_MONTH = 570;
-  int SQL_TSI_QUARTER = 571;
-  int SQL_TSI_SECOND = 572;
-  int SQL_TSI_WEEK = 573;
-  int SQL_TSI_YEAR = 574;
-  int SQL_VARBINARY = 575;
-  int SQL_VARCHAR = 576;
-  int SQRT = 577;
-  int START = 578;
-  int STATE = 579;
-  int STATEMENT = 580;
-  int STATIC = 581;
-  int STDDEV_POP = 582;
-  int STDDEV_SAMP = 583;
-  int STREAM = 584;
-  int STRING_AGG = 585;
-  int STRUCTURE = 586;
-  int STYLE = 587;
-  int SUBCLASS_ORIGIN = 588;
-  int SUBMULTISET = 589;
-  int SUBSET = 590;
-  int SUBSTITUTE = 591;
-  int SUBSTRING = 592;
-  int SUBSTRING_REGEX = 593;
-  int SUCCEEDS = 594;
-  int SUM = 595;
-  int SYMMETRIC = 596;
-  int SYSTEM = 597;
-  int SYSTEM_TIME = 598;
-  int SYSTEM_USER = 599;
-  int TABLE = 600;
-  int TABLE_NAME = 601;
-  int TABLESAMPLE = 602;
-  int TEMPORARY = 603;
-  int THEN = 604;
-  int TIES = 605;
-  int TIME = 606;
-  int TIMESTAMP = 607;
-  int TIMESTAMPADD = 608;
-  int TIMESTAMPDIFF = 609;
-  int TIMEZONE_HOUR = 610;
-  int TIMEZONE_MINUTE = 611;
-  int TINYINT = 612;
-  int TO = 613;
-  int TOP_LEVEL_COUNT = 614;
-  int TRAILING = 615;
-  int TRANSACTION = 616;
-  int TRANSACTIONS_ACTIVE = 617;
-  int TRANSACTIONS_COMMITTED = 618;
-  int TRANSACTIONS_ROLLED_BACK = 619;
-  int TRANSFORM = 620;
-  int TRANSFORMS = 621;
-  int TRANSLATE = 622;
-  int TRANSLATE_REGEX = 623;
-  int TRANSLATION = 624;
-  int TREAT = 625;
-  int TRIGGER = 626;
-  int TRIGGER_CATALOG = 627;
-  int TRIGGER_NAME = 628;
-  int TRIGGER_SCHEMA = 629;
-  int TRIM = 630;
-  int TRIM_ARRAY = 631;
-  int TRUE = 632;
-  int TRUNCATE = 633;
-  int TUMBLE = 634;
-  int TYPE = 635;
-  int UESCAPE = 636;
-  int UNBOUNDED = 637;
-  int UNCOMMITTED = 638;
-  int UNCONDITIONAL = 639;
-  int UNDER = 640;
-  int UNION = 641;
-  int UNIQUE = 642;
-  int UNKNOWN = 643;
-  int UNPIVOT = 644;
-  int UNNAMED = 645;
-  int UNNEST = 646;
-  int UPDATE = 647;
-  int UPPER = 648;
-  int UPSERT = 649;
-  int USAGE = 650;
-  int USER = 651;
-  int USER_DEFINED_TYPE_CATALOG = 652;
-  int USER_DEFINED_TYPE_CODE = 653;
-  int USER_DEFINED_TYPE_NAME = 654;
-  int USER_DEFINED_TYPE_SCHEMA = 655;
-  int USING = 656;
-  int UTF8 = 657;
-  int UTF16 = 658;
-  int UTF32 = 659;
-  int VALUE = 660;
-  int VALUES = 661;
-  int VALUE_OF = 662;
-  int VAR_POP = 663;
-  int VAR_SAMP = 664;
-  int VARBINARY = 665;
-  int VARCHAR = 666;
-  int VARYING = 667;
-  int VERSION = 668;
-  int VERSIONING = 669;
-  int VIEW = 670;
-  int WEEK = 671;
-  int WHEN = 672;
-  int WHENEVER = 673;
-  int WHERE = 674;
-  int WIDTH_BUCKET = 675;
-  int WINDOW = 676;
-  int WITH = 677;
-  int WITHIN = 678;
-  int WITHOUT = 679;
-  int WORK = 680;
-  int WRAPPER = 681;
-  int WRITE = 682;
-  int XML = 683;
-  int YEAR = 684;
-  int YEARS = 685;
-  int ZONE = 686;
-  int SEMI = 687;
-  int IF = 688;
-  int TEMPLATE = 689;
-  int BACKUPS = 690;
-  int AFFINITY_KEY = 691;
-  int ATOMICITY = 692;
-  int WRITE_SYNCHRONIZATION_MODE = 693;
-  int CACHE_GROUP = 694;
-  int CACHE_NAME = 695;
-  int DATA_REGION = 696;
-  int VALUE_TYPE = 697;
-  int ENCRYPTED = 698;
-  int INDEX = 699;
-  int PARALLEL = 700;
-  int INLINE_SIZE = 701;
-  int LOGGING = 702;
-  int NOLOGGING = 703;
-  int PASSWORD = 704;
-  int KILL = 705;
-  int SCAN = 706;
-  int CONTINUOUS = 707;
-  int SERVICE = 708;
-  int COMPUTE = 709;
-  int ASYNC = 710;
-  int QUERY = 711;
-  int STATISTICS = 712;
-  int REFRESH = 713;
-  int ANALYZE = 714;
-  int MAX_CHANGED_PARTITION_ROWS_PERCENT = 715;
-  int TOTAL = 716;
-  int UNSIGNED_INTEGER_LITERAL = 717;
-  int APPROX_NUMERIC_LITERAL = 718;
-  int DECIMAL_NUMERIC_LITERAL = 719;
-  int EXPONENT = 720;
-  int HEXDIGIT = 721;
-  int WHITESPACE = 722;
-  int BINARY_STRING_LITERAL = 723;
-  int QUOTED_STRING = 724;
-  int PREFIXED_STRING_LITERAL = 725;
-  int UNICODE_STRING_LITERAL = 726;
-  int CHARSETNAME = 727;
-  int BIG_QUERY_DOUBLE_QUOTED_STRING = 728;
-  int BIG_QUERY_QUOTED_STRING = 729;
-  int UNICODE_QUOTED_ESCAPE_CHAR = 730;
-  int LPAREN = 731;
-  int RPAREN = 732;
-  int LBRACE_D = 733;
-  int LBRACE_T = 734;
-  int LBRACE_TS = 735;
-  int LBRACE_FN = 736;
-  int LBRACE = 737;
-  int RBRACE = 738;
-  int LBRACKET = 739;
-  int RBRACKET = 740;
-  int SEMICOLON = 741;
-  int DOT = 742;
-  int COMMA = 743;
-  int EQ = 744;
-  int GT = 745;
-  int LT = 746;
-  int HOOK = 747;
-  int COLON = 748;
-  int LE = 749;
-  int GE = 750;
-  int NE = 751;
-  int NE2 = 752;
-  int PLUS = 753;
-  int MINUS = 754;
-  int STAR = 755;
-  int SLASH = 756;
-  int PERCENT_REMAINDER = 757;
-  int CONCAT = 758;
-  int NAMED_ARGUMENT_ASSIGNMENT = 759;
-  int DOUBLE_PERIOD = 760;
-  int QUOTE = 761;
-  int DOUBLE_QUOTE = 762;
-  int VERTICAL_BAR = 763;
-  int CARET = 764;
-  int DOLLAR = 765;
-  int INFIX_CAST = 766;
-  int HINT_BEG = 772;
-  int COMMENT_END = 773;
-  int SINGLE_LINE_COMMENT = 776;
-  int FORMAL_COMMENT = 777;
-  int MULTI_LINE_COMMENT = 778;
-  int BRACKET_QUOTED_IDENTIFIER = 780;
-  int QUOTED_IDENTIFIER = 781;
-  int BACK_QUOTED_IDENTIFIER = 782;
-  int BIG_QUERY_BACK_QUOTED_IDENTIFIER = 783;
-  int HYPHENATED_IDENTIFIER = 784;
-  int IDENTIFIER = 785;
-  int COLLATION_ID = 786;
-  int UNICODE_QUOTED_IDENTIFIER = 787;
-  int LETTER = 788;
-  int DIGIT = 789;
-  int BEL = 790;
+  int CONTAINS_SUBSTR = 106;
+  int CONTINUE = 107;
+  int CONVERT = 108;
+  int CORR = 109;
+  int CORRESPONDING = 110;
+  int COUNT = 111;
+  int COVAR_POP = 112;
+  int COVAR_SAMP = 113;
+  int CREATE = 114;
+  int CROSS = 115;
+  int CUBE = 116;
+  int CUME_DIST = 117;
+  int CURRENT = 118;
+  int CURRENT_CATALOG = 119;
+  int CURRENT_DATE = 120;
+  int CURRENT_DEFAULT_TRANSFORM_GROUP = 121;
+  int CURRENT_PATH = 122;
+  int CURRENT_ROLE = 123;
+  int CURRENT_ROW = 124;
+  int CURRENT_SCHEMA = 125;
+  int CURRENT_TIME = 126;
+  int CURRENT_TIMESTAMP = 127;
+  int CURRENT_TRANSFORM_GROUP_FOR_TYPE = 128;
+  int CURRENT_USER = 129;
+  int CURSOR = 130;
+  int CURSOR_NAME = 131;
+  int CYCLE = 132;
+  int DATA = 133;
+  int DATABASE = 134;
+  int DATE = 135;
+  int DATE_DIFF = 136;
+  int DATE_TRUNC = 137;
+  int DATETIME = 138;
+  int DATETIME_DIFF = 139;
+  int DATETIME_INTERVAL_CODE = 140;
+  int DATETIME_INTERVAL_PRECISION = 141;
+  int DATETIME_TRUNC = 142;
+  int DAY = 143;
+  int DAYOFWEEK = 144;
+  int DAYOFYEAR = 145;
+  int DAYS = 146;
+  int DEALLOCATE = 147;
+  int DEC = 148;
+  int DECADE = 149;
+  int DECIMAL = 150;
+  int DECLARE = 151;
+  int DEFAULT_ = 152;
+  int DEFAULTS = 153;
+  int DEFERRABLE = 154;
+  int DEFERRED = 155;
+  int DEFINE = 156;
+  int DEFINED = 157;
+  int DEFINER = 158;
+  int DEGREE = 159;
+  int DELETE = 160;
+  int DENSE_RANK = 161;
+  int DEPTH = 162;
+  int DEREF = 163;
+  int DERIVED = 164;
+  int DESC = 165;
+  int DESCRIBE = 166;
+  int DESCRIPTION = 167;
+  int DESCRIPTOR = 168;
+  int DETERMINISTIC = 169;
+  int DIAGNOSTICS = 170;
+  int DISALLOW = 171;
+  int DISCONNECT = 172;
+  int DISPATCH = 173;
+  int DISTINCT = 174;
+  int DOMAIN = 175;
+  int DOT_FORMAT = 176;
+  int DOUBLE = 177;
+  int DOW = 178;
+  int DOY = 179;
+  int DROP = 180;
+  int DYNAMIC = 181;
+  int DYNAMIC_FUNCTION = 182;
+  int DYNAMIC_FUNCTION_CODE = 183;
+  int EACH = 184;
+  int ELEMENT = 185;
+  int ELSE = 186;
+  int EMPTY = 187;
+  int ENCODING = 188;
+  int END = 189;
+  int END_EXEC = 190;
+  int END_FRAME = 191;
+  int END_PARTITION = 192;
+  int EPOCH = 193;
+  int EQUALS = 194;
+  int ERROR = 195;
+  int ESCAPE = 196;
+  int EVERY = 197;
+  int EXCEPT = 198;
+  int EXCEPTION = 199;
+  int EXCLUDE = 200;
+  int EXCLUDING = 201;
+  int EXEC = 202;
+  int EXECUTE = 203;
+  int EXISTS = 204;
+  int EXP = 205;
+  int EXPLAIN = 206;
+  int EXTEND = 207;
+  int EXTERNAL = 208;
+  int EXTRACT = 209;
+  int FALSE = 210;
+  int FETCH = 211;
+  int FILTER = 212;
+  int FINAL = 213;
+  int FIRST = 214;
+  int FIRST_VALUE = 215;
+  int FLOAT = 216;
+  int FLOOR = 217;
+  int FOLLOWING = 218;
+  int FOR = 219;
+  int FORMAT = 220;
+  int FOREIGN = 221;
+  int FORTRAN = 222;
+  int FOUND = 223;
+  int FRAC_SECOND = 224;
+  int FRAME_ROW = 225;
+  int FREE = 226;
+  int FRIDAY = 227;
+  int FROM = 228;
+  int FULL = 229;
+  int FUNCTION = 230;
+  int FUSION = 231;
+  int G = 232;
+  int GENERAL = 233;
+  int GENERATED = 234;
+  int GEOMETRY = 235;
+  int GET = 236;
+  int GLOBAL = 237;
+  int GO = 238;
+  int GOTO = 239;
+  int GRANT = 240;
+  int GRANTED = 241;
+  int GROUP = 242;
+  int GROUP_CONCAT = 243;
+  int GROUPING = 244;
+  int GROUPS = 245;
+  int HAVING = 246;
+  int HIERARCHY = 247;
+  int HOLD = 248;
+  int HOP = 249;
+  int HOUR = 250;
+  int HOURS = 251;
+  int IDENTITY = 252;
+  int IGNORE = 253;
+  int ILIKE = 254;
+  int IMMEDIATE = 255;
+  int IMMEDIATELY = 256;
+  int IMPLEMENTATION = 257;
+  int IMPORT = 258;
+  int IN = 259;
+  int INCLUDE = 260;
+  int INCLUDING = 261;
+  int INCREMENT = 262;
+  int INDICATOR = 263;
+  int INITIAL = 264;
+  int INITIALLY = 265;
+  int INNER = 266;
+  int INOUT = 267;
+  int INPUT = 268;
+  int INSENSITIVE = 269;
+  int INSERT = 270;
+  int INSTANCE = 271;
+  int INSTANTIABLE = 272;
+  int INT = 273;
+  int INTEGER = 274;
+  int INTERSECT = 275;
+  int INTERSECTION = 276;
+  int INTERVAL = 277;
+  int INTO = 278;
+  int INVOKER = 279;
+  int IS = 280;
+  int ISODOW = 281;
+  int ISOYEAR = 282;
+  int ISOLATION = 283;
+  int JAVA = 284;
+  int JOIN = 285;
+  int JSON = 286;
+  int JSON_ARRAY = 287;
+  int JSON_ARRAYAGG = 288;
+  int JSON_EXISTS = 289;
+  int JSON_OBJECT = 290;
+  int JSON_OBJECTAGG = 291;
+  int JSON_QUERY = 292;
+  int JSON_SCOPE = 293;
+  int JSON_VALUE = 294;
+  int K = 295;
+  int KEY = 296;
+  int KEY_MEMBER = 297;
+  int KEY_TYPE = 298;
+  int LABEL = 299;
+  int LAG = 300;
+  int LANGUAGE = 301;
+  int LARGE = 302;
+  int LAST = 303;
+  int LAST_VALUE = 304;
+  int LATERAL = 305;
+  int LEAD = 306;
+  int LEADING = 307;
+  int LEFT = 308;
+  int LENGTH = 309;
+  int LEVEL = 310;
+  int LIBRARY = 311;
+  int LIKE = 312;
+  int LIKE_REGEX = 313;
+  int LIMIT = 314;
+  int LN = 315;
+  int LOCAL = 316;
+  int LOCALTIME = 317;
+  int LOCALTIMESTAMP = 318;
+  int LOCATOR = 319;
+  int LOWER = 320;
+  int M = 321;
+  int MAP = 322;
+  int MATCH = 323;
+  int MATCHED = 324;
+  int MATCHES = 325;
+  int MATCH_NUMBER = 326;
+  int MATCH_RECOGNIZE = 327;
+  int MAX = 328;
+  int MAXVALUE = 329;
+  int MEASURES = 330;
+  int MEMBER = 331;
+  int MERGE = 332;
+  int MESSAGE_LENGTH = 333;
+  int MESSAGE_OCTET_LENGTH = 334;
+  int MESSAGE_TEXT = 335;
+  int METHOD = 336;
+  int MICROSECOND = 337;
+  int MILLISECOND = 338;
+  int MILLENNIUM = 339;
+  int MIN = 340;
+  int MINUTE = 341;
+  int MINUTES = 342;
+  int MINVALUE = 343;
+  int MOD = 344;
+  int MODIFIES = 345;
+  int MODULE = 346;
+  int MONDAY = 347;
+  int MONTH = 348;
+  int MONTHS = 349;
+  int MORE_ = 350;
+  int MULTISET = 351;
+  int MUMPS = 352;
+  int NAME = 353;
+  int NAMES = 354;
+  int NANOSECOND = 355;
+  int NATIONAL = 356;
+  int NATURAL = 357;
+  int NCHAR = 358;
+  int NCLOB = 359;
+  int NESTING = 360;
+  int NEW = 361;
+  int NEXT = 362;
+  int NO = 363;
+  int NONE = 364;
+  int NORMALIZE = 365;
+  int NORMALIZED = 366;
+  int NOT = 367;
+  int NTH_VALUE = 368;
+  int NTILE = 369;
+  int NULL = 370;
+  int NULLABLE = 371;
+  int NULLIF = 372;
+  int NULLS = 373;
+  int NUMBER = 374;
+  int NUMERIC = 375;
+  int OBJECT = 376;
+  int OCCURRENCES_REGEX = 377;
+  int OCTET_LENGTH = 378;
+  int OCTETS = 379;
+  int OF = 380;
+  int OFFSET = 381;
+  int OLD = 382;
+  int OMIT = 383;
+  int ON = 384;
+  int ONE = 385;
+  int ONLY = 386;
+  int OPEN = 387;
+  int OPTION = 388;
+  int OPTIONS = 389;
+  int OR = 390;
+  int ORDER = 391;
+  int ORDERING = 392;
+  int ORDINAL = 393;
+  int ORDINALITY = 394;
+  int OTHERS = 395;
+  int OUT = 396;
+  int OUTER = 397;
+  int OUTPUT = 398;
+  int OVER = 399;
+  int OVERLAPS = 400;
+  int OVERLAY = 401;
+  int OVERRIDING = 402;
+  int PAD = 403;
+  int PARAMETER = 404;
+  int PARAMETER_MODE = 405;
+  int PARAMETER_NAME = 406;
+  int PARAMETER_ORDINAL_POSITION = 407;
+  int PARAMETER_SPECIFIC_CATALOG = 408;
+  int PARAMETER_SPECIFIC_NAME = 409;
+  int PARAMETER_SPECIFIC_SCHEMA = 410;
+  int PARTIAL = 411;
+  int PARTITION = 412;
+  int PASCAL = 413;
+  int PASSING = 414;
+  int PASSTHROUGH = 415;
+  int PAST = 416;
+  int PATH = 417;
+  int PATTERN = 418;
+  int PER = 419;
+  int PERCENT = 420;
+  int PERCENTILE_CONT = 421;
+  int PERCENTILE_DISC = 422;
+  int PERCENT_RANK = 423;
+  int PERIOD = 424;
+  int PERMUTE = 425;
+  int PIVOT = 426;
+  int PLACING = 427;
+  int PLAN = 428;
+  int PLI = 429;
+  int PORTION = 430;
+  int POSITION = 431;
+  int POSITION_REGEX = 432;
+  int POWER = 433;
+  int PRECEDES = 434;
+  int PRECEDING = 435;
+  int PRECISION = 436;
+  int PREPARE = 437;
+  int PRESERVE = 438;
+  int PREV = 439;
+  int PRIMARY = 440;
+  int PRIOR = 441;
+  int PRIVILEGES = 442;
+  int PROCEDURE = 443;
+  int PUBLIC = 444;
+  int QUALIFY = 445;
+  int QUARTER = 446;
+  int QUARTERS = 447;
+  int RANGE = 448;
+  int RANK = 449;
+  int READ = 450;
+  int READS = 451;
+  int REAL = 452;
+  int RECURSIVE = 453;
+  int REF = 454;
+  int REFERENCES = 455;
+  int REFERENCING = 456;
+  int REGR_AVGX = 457;
+  int REGR_AVGY = 458;
+  int REGR_COUNT = 459;
+  int REGR_INTERCEPT = 460;
+  int REGR_R2 = 461;
+  int REGR_SLOPE = 462;
+  int REGR_SXX = 463;
+  int REGR_SXY = 464;
+  int REGR_SYY = 465;
+  int RELATIVE = 466;
+  int RELEASE = 467;
+  int REPEATABLE = 468;
+  int REPLACE = 469;
+  int RESET = 470;
+  int RESPECT = 471;
+  int RESTART = 472;
+  int RESTRICT = 473;
+  int RESULT = 474;
+  int RETURN = 475;
+  int RETURNED_CARDINALITY = 476;
+  int RETURNED_LENGTH = 477;
+  int RETURNED_OCTET_LENGTH = 478;
+  int RETURNED_SQLSTATE = 479;
+  int RETURNING = 480;
+  int RETURNS = 481;
+  int REVOKE = 482;
+  int RIGHT = 483;
+  int RLIKE = 484;
+  int ROLE = 485;
+  int ROLLBACK = 486;
+  int ROLLUP = 487;
+  int ROUTINE = 488;
+  int ROUTINE_CATALOG = 489;
+  int ROUTINE_NAME = 490;
+  int ROUTINE_SCHEMA = 491;
+  int ROW = 492;
+  int ROW_COUNT = 493;
+  int ROW_NUMBER = 494;
+  int ROWS = 495;
+  int RUNNING = 496;
+  int SAFE_CAST = 497;
+  int SAFE_OFFSET = 498;
+  int SAFE_ORDINAL = 499;
+  int SATURDAY = 500;
+  int SAVEPOINT = 501;
+  int SCALAR = 502;
+  int SCALE = 503;
+  int SCHEMA = 504;
+  int SCHEMA_NAME = 505;
+  int SCOPE = 506;
+  int SCOPE_CATALOGS = 507;
+  int SCOPE_NAME = 508;
+  int SCOPE_SCHEMA = 509;
+  int SCROLL = 510;
+  int SEARCH = 511;
+  int SECOND = 512;
+  int SECONDS = 513;
+  int SECTION = 514;
+  int SECURITY = 515;
+  int SEEK = 516;
+  int SELECT = 517;
+  int SELF = 518;
+  int SENSITIVE = 519;
+  int SEPARATOR = 520;
+  int SEQUENCE = 521;
+  int SERIALIZABLE = 522;
+  int SERVER = 523;
+  int SERVER_NAME = 524;
+  int SESSION = 525;
+  int SESSION_USER = 526;
+  int SET = 527;
+  int SETS = 528;
+  int SET_MINUS = 529;
+  int SHOW = 530;
+  int SIMILAR = 531;
+  int SIMPLE = 532;
+  int SIZE = 533;
+  int SKIP_ = 534;
+  int SMALLINT = 535;
+  int SOME = 536;
+  int SOURCE = 537;
+  int SPACE = 538;
+  int SPECIFIC = 539;
+  int SPECIFIC_NAME = 540;
+  int SPECIFICTYPE = 541;
+  int SQL = 542;
+  int SQLEXCEPTION = 543;
+  int SQLSTATE = 544;
+  int SQLWARNING = 545;
+  int SQL_BIGINT = 546;
+  int SQL_BINARY = 547;
+  int SQL_BIT = 548;
+  int SQL_BLOB = 549;
+  int SQL_BOOLEAN = 550;
+  int SQL_CHAR = 551;
+  int SQL_CLOB = 552;
+  int SQL_DATE = 553;
+  int SQL_DECIMAL = 554;
+  int SQL_DOUBLE = 555;
+  int SQL_FLOAT = 556;
+  int SQL_INTEGER = 557;
+  int SQL_INTERVAL_DAY = 558;
+  int SQL_INTERVAL_DAY_TO_HOUR = 559;
+  int SQL_INTERVAL_DAY_TO_MINUTE = 560;
+  int SQL_INTERVAL_DAY_TO_SECOND = 561;
+  int SQL_INTERVAL_HOUR = 562;
+  int SQL_INTERVAL_HOUR_TO_MINUTE = 563;
+  int SQL_INTERVAL_HOUR_TO_SECOND = 564;
+  int SQL_INTERVAL_MINUTE = 565;
+  int SQL_INTERVAL_MINUTE_TO_SECOND = 566;
+  int SQL_INTERVAL_MONTH = 567;
+  int SQL_INTERVAL_SECOND = 568;
+  int SQL_INTERVAL_YEAR = 569;
+  int SQL_INTERVAL_YEAR_TO_MONTH = 570;
+  int SQL_LONGVARBINARY = 571;
+  int SQL_LONGVARCHAR = 572;
+  int SQL_LONGVARNCHAR = 573;
+  int SQL_NCHAR = 574;
+  int SQL_NCLOB = 575;
+  int SQL_NUMERIC = 576;
+  int SQL_NVARCHAR = 577;
+  int SQL_REAL = 578;
+  int SQL_SMALLINT = 579;
+  int SQL_TIME = 580;
+  int SQL_TIMESTAMP = 581;
+  int SQL_TINYINT = 582;
+  int SQL_TSI_DAY = 583;
+  int SQL_TSI_FRAC_SECOND = 584;
+  int SQL_TSI_HOUR = 585;
+  int SQL_TSI_MICROSECOND = 586;
+  int SQL_TSI_MINUTE = 587;
+  int SQL_TSI_MONTH = 588;
+  int SQL_TSI_QUARTER = 589;
+  int SQL_TSI_SECOND = 590;
+  int SQL_TSI_WEEK = 591;
+  int SQL_TSI_YEAR = 592;
+  int SQL_VARBINARY = 593;
+  int SQL_VARCHAR = 594;
+  int SQRT = 595;
+  int START = 596;
+  int STATE = 597;
+  int STATEMENT = 598;
+  int STATIC = 599;
+  int STDDEV_POP = 600;
+  int STDDEV_SAMP = 601;
+  int STREAM = 602;
+  int STRING_AGG = 603;
+  int STRUCTURE = 604;
+  int STYLE = 605;
+  int SUBCLASS_ORIGIN = 606;
+  int SUBMULTISET = 607;
+  int SUBSET = 608;
+  int SUBSTITUTE = 609;
+  int SUBSTRING = 610;
+  int SUBSTRING_REGEX = 611;
+  int SUCCEEDS = 612;
+  int SUM = 613;
+  int SUNDAY = 614;
+  int SYMMETRIC = 615;
+  int SYSTEM = 616;
+  int SYSTEM_TIME = 617;
+  int SYSTEM_USER = 618;
+  int TABLE = 619;
+  int TABLE_NAME = 620;
+  int TABLESAMPLE = 621;
+  int TEMPORARY = 622;
+  int THEN = 623;
+  int THURSDAY = 624;
+  int TIES = 625;
+  int TIME = 626;
+  int TIME_DIFF = 627;
+  int TIME_TRUNC = 628;
+  int TIMESTAMP = 629;
+  int TIMESTAMPADD = 630;
+  int TIMESTAMPDIFF = 631;
+  int TIMESTAMP_DIFF = 632;
+  int TIMESTAMP_TRUNC = 633;
+  int TIMEZONE_HOUR = 634;
+  int TIMEZONE_MINUTE = 635;
+  int TINYINT = 636;
+  int TO = 637;
+  int TOP_LEVEL_COUNT = 638;
+  int TRAILING = 639;
+  int TRANSACTION = 640;
+  int TRANSACTIONS_ACTIVE = 641;
+  int TRANSACTIONS_COMMITTED = 642;
+  int TRANSACTIONS_ROLLED_BACK = 643;
+  int TRANSFORM = 644;
+  int TRANSFORMS = 645;
+  int TRANSLATE = 646;
+  int TRANSLATE_REGEX = 647;
+  int TRANSLATION = 648;
+  int TREAT = 649;
+  int TRIGGER = 650;
+  int TRIGGER_CATALOG = 651;
+  int TRIGGER_NAME = 652;
+  int TRIGGER_SCHEMA = 653;
+  int TRIM = 654;
+  int TRIM_ARRAY = 655;
+  int TRUE = 656;
+  int TRUNCATE = 657;
+  int TRY_CAST = 658;
+  int TUESDAY = 659;
+  int TUMBLE = 660;
+  int TYPE = 661;
+  int UESCAPE = 662;
+  int UNBOUNDED = 663;
+  int UNCOMMITTED = 664;
+  int UNCONDITIONAL = 665;
+  int UNDER = 666;
+  int UNION = 667;
+  int UNIQUE = 668;
+  int UNKNOWN = 669;
+  int UNPIVOT = 670;
+  int UNNAMED = 671;
+  int UNNEST = 672;
+  int UPDATE = 673;
+  int UPPER = 674;
+  int UPSERT = 675;
+  int USAGE = 676;
+  int USER = 677;
+  int USER_DEFINED_TYPE_CATALOG = 678;
+  int USER_DEFINED_TYPE_CODE = 679;
+  int USER_DEFINED_TYPE_NAME = 680;
+  int USER_DEFINED_TYPE_SCHEMA = 681;
+  int USING = 682;
+  int UTF8 = 683;
+  int UTF16 = 684;
+  int UTF32 = 685;
+  int VALUE = 686;
+  int VALUES = 687;
+  int VALUE_OF = 688;
+  int VAR_POP = 689;
+  int VAR_SAMP = 690;
+  int VARBINARY = 691;
+  int VARCHAR = 692;
+  int VARYING = 693;
+  int VERSION = 694;
+  int VERSIONING = 695;
+  int VIEW = 696;
+  int WEDNESDAY = 697;
+  int WEEK = 698;
+  int WEEKS = 699;
+  int WHEN = 700;
+  int WHENEVER = 701;
+  int WHERE = 702;
+  int WIDTH_BUCKET = 703;
+  int WINDOW = 704;
+  int WITH = 705;
+  int WITHIN = 706;
+  int WITHOUT = 707;
+  int WORK = 708;
+  int WRAPPER = 709;
+  int WRITE = 710;
+  int XML = 711;
+  int YEAR = 712;
+  int YEARS = 713;
+  int ZONE = 714;
+  int IF = 715;
+  int TEMPLATE = 716;
+  int BACKUPS = 717;
+  int AFFINITY_KEY = 718;
+  int ATOMICITY = 719;
+  int WRITE_SYNCHRONIZATION_MODE = 720;
+  int CACHE_GROUP = 721;
+  int CACHE_NAME = 722;
+  int DATA_REGION = 723;
+  int VALUE_TYPE = 724;
+  int ENCRYPTED = 725;
+  int INDEX = 726;
+  int PARALLEL = 727;
+  int INLINE_SIZE = 728;
+  int LOGGING = 729;
+  int NOLOGGING = 730;
+  int PASSWORD = 731;
+  int KILL = 732;
+  int SCAN = 733;
+  int CONTINUOUS = 734;
+  int SERVICE = 735;
+  int COMPUTE = 736;
+  int ASYNC = 737;
+  int QUERY = 738;
+  int STATISTICS = 739;
+  int REFRESH = 740;
+  int ANALYZE = 741;
+  int MAX_CHANGED_PARTITION_ROWS_PERCENT = 742;
+  int TOTAL = 743;
+  int UNSIGNED_INTEGER_LITERAL = 744;
+  int APPROX_NUMERIC_LITERAL = 745;
+  int DECIMAL_NUMERIC_LITERAL = 746;
+  int EXPONENT = 747;
+  int HEXDIGIT = 748;
+  int WHITESPACE = 749;
+  int BINARY_STRING_LITERAL = 750;
+  int QUOTED_STRING = 751;
+  int PREFIXED_STRING_LITERAL = 752;
+  int UNICODE_STRING_LITERAL = 753;
+  int C_STYLE_ESCAPED_STRING_LITERAL = 754;
+  int CHARSETNAME = 755;
+  int BIG_QUERY_DOUBLE_QUOTED_STRING = 756;
+  int BIG_QUERY_QUOTED_STRING = 757;
+  int UNICODE_QUOTED_ESCAPE_CHAR = 758;
+  int LPAREN = 759;
+  int RPAREN = 760;
+  int LBRACE_D = 761;
+  int LBRACE_T = 762;
+  int LBRACE_TS = 763;
+  int LBRACE_FN = 764;
+  int LBRACE = 765;
+  int RBRACE = 766;
+  int LBRACKET = 767;
+  int RBRACKET = 768;
+  int SEMICOLON = 769;
+  int DOT = 770;
+  int COMMA = 771;
+  int EQ = 772;
+  int GT = 773;
+  int LT = 774;
+  int HOOK = 775;
+  int COLON = 776;
+  int LE = 777;
+  int GE = 778;
+  int NE = 779;
+  int NE2 = 780;
+  int PLUS = 781;
+  int MINUS = 782;
+  int LAMBDA = 783;
+  int STAR = 784;
+  int SLASH = 785;
+  int PERCENT_REMAINDER = 786;
+  int CONCAT = 787;
+  int NAMED_ARGUMENT_ASSIGNMENT = 788;
+  int DOUBLE_PERIOD = 789;
+  int QUOTE = 790;
+  int DOUBLE_QUOTE = 791;
+  int VERTICAL_BAR = 792;
+  int CARET = 793;
+  int DOLLAR = 794;
+  int INFIX_CAST = 795;
+  int HINT_BEG = 801;
+  int COMMENT_END = 802;
+  int SINGLE_LINE_COMMENT = 805;
+  int FORMAL_COMMENT = 806;
+  int MULTI_LINE_COMMENT = 807;
+  int BRACKET_QUOTED_IDENTIFIER = 809;
+  int QUOTED_IDENTIFIER = 810;
+  int BACK_QUOTED_IDENTIFIER = 811;
+  int BIG_QUERY_BACK_QUOTED_IDENTIFIER = 812;
+  int HYPHENATED_IDENTIFIER = 813;
+  int IDENTIFIER = 814;
+  int COLLATION_ID = 815;
+  int UNICODE_QUOTED_IDENTIFIER = 816;
+  int LETTER = 817;
+  int DIGIT = 818;
+  int BEL = 819;
 
   int DEFAULT = 0;
   int DQID = 1;
@@ -902,6 +931,7 @@ public interface IgniteSqlParserImplConstants {
     "\"CONSTRAINTS\"",
     "\"CONSTRUCTOR\"",
     "\"CONTAINS\"",
+    "\"CONTAINS_SUBSTR\"",
     "\"CONTINUE\"",
     "\"CONVERT\"",
     "\"CORR\"",
@@ -931,9 +961,16 @@ public interface IgniteSqlParserImplConstants {
     "\"DATA\"",
     "\"DATABASE\"",
     "\"DATE\"",
+    "\"DATE_DIFF\"",
+    "\"DATE_TRUNC\"",
+    "\"DATETIME\"",
+    "\"DATETIME_DIFF\"",
     "\"DATETIME_INTERVAL_CODE\"",
     "\"DATETIME_INTERVAL_PRECISION\"",
+    "\"DATETIME_TRUNC\"",
     "\"DAY\"",
+    "\"DAYOFWEEK\"",
+    "\"DAYOFYEAR\"",
     "\"DAYS\"",
     "\"DEALLOCATE\"",
     "\"DEC\"",
@@ -1015,6 +1052,7 @@ public interface IgniteSqlParserImplConstants {
     "\"FRAC_SECOND\"",
     "\"FRAME_ROW\"",
     "\"FREE\"",
+    "\"FRIDAY\"",
     "\"FROM\"",
     "\"FULL\"",
     "\"FUNCTION\"",
@@ -1080,6 +1118,7 @@ public interface IgniteSqlParserImplConstants {
     "\"JSON_OBJECT\"",
     "\"JSON_OBJECTAGG\"",
     "\"JSON_QUERY\"",
+    "\"JSON_SCOPE\"",
     "\"JSON_VALUE\"",
     "\"K\"",
     "\"KEY\"",
@@ -1133,6 +1172,7 @@ public interface IgniteSqlParserImplConstants {
     "\"MOD\"",
     "\"MODIFIES\"",
     "\"MODULE\"",
+    "\"MONDAY\"",
     "\"MONTH\"",
     "\"MONTHS\"",
     "\"MORE\"",
@@ -1178,6 +1218,7 @@ public interface IgniteSqlParserImplConstants {
     "\"OR\"",
     "\"ORDER\"",
     "\"ORDERING\"",
+    "\"ORDINAL\"",
     "\"ORDINALITY\"",
     "\"OTHERS\"",
     "\"OUT\"",
@@ -1229,7 +1270,9 @@ public interface IgniteSqlParserImplConstants {
     "\"PRIVILEGES\"",
     "\"PROCEDURE\"",
     "\"PUBLIC\"",
+    "\"QUALIFY\"",
     "\"QUARTER\"",
+    "\"QUARTERS\"",
     "\"RANGE\"",
     "\"RANK\"",
     "\"READ\"",
@@ -1279,6 +1322,10 @@ public interface IgniteSqlParserImplConstants {
     "\"ROW_NUMBER\"",
     "\"ROWS\"",
     "\"RUNNING\"",
+    "\"SAFE_CAST\"",
+    "\"SAFE_OFFSET\"",
+    "\"SAFE_ORDINAL\"",
+    "\"SATURDAY\"",
     "\"SAVEPOINT\"",
     "\"SCALAR\"",
     "\"SCALE\"",
@@ -1392,6 +1439,7 @@ public interface IgniteSqlParserImplConstants {
     "\"SUBSTRING_REGEX\"",
     "\"SUCCEEDS\"",
     "\"SUM\"",
+    "\"SUNDAY\"",
     "\"SYMMETRIC\"",
     "\"SYSTEM\"",
     "\"SYSTEM_TIME\"",
@@ -1401,11 +1449,16 @@ public interface IgniteSqlParserImplConstants {
     "\"TABLESAMPLE\"",
     "\"TEMPORARY\"",
     "\"THEN\"",
+    "\"THURSDAY\"",
     "\"TIES\"",
     "\"TIME\"",
+    "\"TIME_DIFF\"",
+    "\"TIME_TRUNC\"",
     "\"TIMESTAMP\"",
     "\"TIMESTAMPADD\"",
     "\"TIMESTAMPDIFF\"",
+    "\"TIMESTAMP_DIFF\"",
+    "\"TIMESTAMP_TRUNC\"",
     "\"TIMEZONE_HOUR\"",
     "\"TIMEZONE_MINUTE\"",
     "\"TINYINT\"",
@@ -1430,6 +1483,8 @@ public interface IgniteSqlParserImplConstants {
     "\"TRIM_ARRAY\"",
     "\"TRUE\"",
     "\"TRUNCATE\"",
+    "\"TRY_CAST\"",
+    "\"TUESDAY\"",
     "\"TUMBLE\"",
     "\"TYPE\"",
     "\"UESCAPE\"",
@@ -1467,7 +1522,9 @@ public interface IgniteSqlParserImplConstants {
     "\"VERSION\"",
     "\"VERSIONING\"",
     "\"VIEW\"",
+    "\"WEDNESDAY\"",
     "\"WEEK\"",
+    "\"WEEKS\"",
     "\"WHEN\"",
     "\"WHENEVER\"",
     "\"WHERE\"",
@@ -1483,7 +1540,6 @@ public interface IgniteSqlParserImplConstants {
     "\"YEAR\"",
     "\"YEARS\"",
     "\"ZONE\"",
-    "\"SEMI\"",
     "\"IF\"",
     "\"TEMPLATE\"",
     "\"BACKUPS\"",
@@ -1523,6 +1579,7 @@ public interface IgniteSqlParserImplConstants {
     "<QUOTED_STRING>",
     "<PREFIXED_STRING_LITERAL>",
     "<UNICODE_STRING_LITERAL>",
+    "<C_STYLE_ESCAPED_STRING_LITERAL>",
     "<CHARSETNAME>",
     "<BIG_QUERY_DOUBLE_QUOTED_STRING>",
     "<BIG_QUERY_QUOTED_STRING>",
@@ -1551,6 +1608,7 @@ public interface IgniteSqlParserImplConstants {
     "\"!=\"",
     "\"+\"",
     "\"-\"",
+    "\"->\"",
     "\"*\"",
     "\"/\"",
     "\"%\"",
@@ -1570,12 +1628,12 @@ public interface IgniteSqlParserImplConstants {
     "\"\\f\"",
     "\"/*+\"",
     "\"*/\"",
-    "<token of kind 774>",
+    "<token of kind 803>",
     "\"/*\"",
     "<SINGLE_LINE_COMMENT>",
     "<FORMAL_COMMENT>",
     "<MULTI_LINE_COMMENT>",
-    "<token of kind 779>",
+    "<token of kind 808>",
     "<BRACKET_QUOTED_IDENTIFIER>",
     "<QUOTED_IDENTIFIER>",
     "<BACK_QUOTED_IDENTIFIER>",

@@ -62,10 +62,9 @@ import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.pagemem.wal.WALIterator;
 import org.apache.ignite.internal.pagemem.wal.record.DataEntry;
 import org.apache.ignite.internal.pagemem.wal.record.DataRecord;
-import org.apache.ignite.internal.pagemem.wal.record.MarshalledDataEntry;
+import org.apache.ignite.internal.pagemem.wal.record.LazyDataEntry;
 import org.apache.ignite.internal.pagemem.wal.record.TxRecord;
 import org.apache.ignite.internal.pagemem.wal.record.UnwrapDataEntry;
-import org.apache.ignite.internal.pagemem.wal.record.UnwrappedDataEntry;
 import org.apache.ignite.internal.pagemem.wal.record.WALRecord;
 import org.apache.ignite.internal.processors.cache.CacheObject;
 import org.apache.ignite.internal.processors.cache.GridCacheOperation;
@@ -81,7 +80,6 @@ import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.lang.IgniteInClosure;
 import org.apache.ignite.logger.NullLogger;
 import org.apache.ignite.testframework.GridTestUtils;
-import org.apache.ignite.testframework.MvccFeatureChecker;
 import org.apache.ignite.testframework.junits.WithSystemProperty;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.testframework.wal.record.RecordUtils;
@@ -89,7 +87,6 @@ import org.apache.ignite.transactions.Transaction;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import org.junit.Assert;
-import org.junit.Assume;
 import org.junit.Test;
 
 import static java.util.Arrays.fill;
@@ -97,7 +94,6 @@ import static org.apache.ignite.cluster.ClusterState.ACTIVE;
 import static org.apache.ignite.events.EventType.EVT_WAL_SEGMENT_ARCHIVED;
 import static org.apache.ignite.events.EventType.EVT_WAL_SEGMENT_COMPACTED;
 import static org.apache.ignite.internal.pagemem.wal.record.WALRecord.RecordType.DATA_RECORD_V2;
-import static org.apache.ignite.internal.pagemem.wal.record.WALRecord.RecordType.MVCC_DATA_RECORD;
 import static org.apache.ignite.internal.processors.cache.GridCacheOperation.CREATE;
 import static org.apache.ignite.internal.processors.cache.GridCacheOperation.DELETE;
 import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.DFLT_STORE_DIR;
@@ -281,7 +277,7 @@ public class IgniteWalReaderTest extends GridCommonAbstractTest {
 
                 WALRecord walRecord = tup.get2();
 
-                if (walRecord.type() == DATA_RECORD_V2 || walRecord.type() == MVCC_DATA_RECORD) {
+                if (walRecord.type() == DATA_RECORD_V2) {
                     DataRecord record = (DataRecord)walRecord;
 
                     for (int i = 0; i < record.entryCount(); i++) {
@@ -977,10 +973,9 @@ public class IgniteWalReaderTest extends GridCommonAbstractTest {
 
         final CacheConfiguration<Integer, Organization> cfg = new CacheConfiguration<>("Org" + "11");
         cfg.setAtomicityMode(mode);
-        final IgniteCache<Integer, Organization> cache = ig.getOrCreateCache(cfg).withKeepBinary()
-            .withAllowAtomicOpsInTx();
+        final IgniteCache<Integer, Organization> cache = ig.getOrCreateCache(cfg).withKeepBinary();
 
-        try (Transaction tx = ig.transactions().txStart()) {
+        Runnable r = () -> {
             for (int i = 0; i < 10; i++) {
 
                 cache.put(i, new Organization(i, "Organization-" + i));
@@ -991,8 +986,16 @@ public class IgniteWalReaderTest extends GridCommonAbstractTest {
                 if (i % 5 == 0)
                     cache.remove(i);
             }
-            tx.commit();
-        }
+        };
+
+        if (mode == CacheAtomicityMode.TRANSACTIONAL)
+            try (Transaction tx = ig.transactions().txStart()) {
+                r.run();
+
+                tx.commit();
+            }
+        else
+            r.run();
 
     }
 
@@ -1013,8 +1016,6 @@ public class IgniteWalReaderTest extends GridCommonAbstractTest {
      */
     @Test
     public void testRemoveOperationPresentedForDataEntryForAtomic() throws Exception {
-        Assume.assumeFalse(MvccFeatureChecker.forcedMvcc());
-
         runRemoveOperationTest(CacheAtomicityMode.ATOMIC);
     }
 
@@ -1634,9 +1635,7 @@ public class IgniteWalReaderTest extends GridCommonAbstractTest {
 
                 //noinspection EnumSwitchStatementWhichMissesCases
                 switch (type) {
-                    case DATA_RECORD_V2:
-                        // Fallthrough.
-                    case MVCC_DATA_RECORD: {
+                    case DATA_RECORD_V2: {
                         assert walRecord instanceof DataRecord;
 
                         DataRecord dataRecord = (DataRecord)walRecord;
@@ -1657,12 +1656,12 @@ public class IgniteWalReaderTest extends GridCommonAbstractTest {
                             Object unwrappedKeyObj;
                             Object unwrappedValObj;
 
-                            if (entry instanceof UnwrappedDataEntry) {
-                                UnwrappedDataEntry unwrapDataEntry = (UnwrappedDataEntry)entry;
+                            if (entry instanceof UnwrapDataEntry) {
+                                UnwrapDataEntry unwrapDataEntry = (UnwrapDataEntry)entry;
                                 unwrappedKeyObj = unwrapDataEntry.unwrappedKey();
                                 unwrappedValObj = unwrapDataEntry.unwrappedValue();
                             }
-                            else if (entry instanceof MarshalledDataEntry) {
+                            else if (entry instanceof LazyDataEntry) {
                                 unwrappedKeyObj = null;
                                 unwrappedValObj = null;
                                 //can't check value
@@ -1695,9 +1694,7 @@ public class IgniteWalReaderTest extends GridCommonAbstractTest {
 
                         break;
 
-                    case TX_RECORD:
-                        // Fallthrough
-                    case MVCC_TX_RECORD: {
+                    case TX_RECORD: {
                         assert walRecord instanceof TxRecord;
 
                         TxRecord txRecord = (TxRecord)walRecord;

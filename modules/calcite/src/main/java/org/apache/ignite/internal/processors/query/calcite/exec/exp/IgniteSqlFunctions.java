@@ -18,7 +18,6 @@ package org.apache.ignite.internal.processors.query.calcite.exec.exp;
 
 import java.math.BigDecimal;
 import java.math.BigInteger;
-import java.math.RoundingMode;
 import org.apache.calcite.DataContext;
 import org.apache.calcite.avatica.util.ByteString;
 import org.apache.calcite.config.CalciteConnectionConfig;
@@ -38,10 +37,19 @@ import org.apache.ignite.internal.processors.query.calcite.type.IgniteTypeSystem
 import org.apache.ignite.internal.processors.query.calcite.util.Commons;
 import org.checkerframework.checker.nullness.qual.Nullable;
 
+import static org.apache.ignite.internal.processors.query.calcite.util.IgniteMath.NUMERIC_ROUNDING_MODE;
+import static org.apache.ignite.internal.processors.query.calcite.util.IgniteMath.convertToBigDecimal;
+
 /**
  * Ignite SQL functions.
  */
 public class IgniteSqlFunctions {
+    /** */
+    public static final String NUMERIC_OVERFLOW_ERROR = "Numeric field overflow.";
+
+    /** */
+    private static final int DFLT_NUM_PRECISION = IgniteTypeSystem.INSTANCE.getDefaultPrecision(SqlTypeName.DECIMAL);
+
     /**
      * Default constructor.
      */
@@ -64,46 +72,44 @@ public class IgniteSqlFunctions {
         return x == null ? null : x.toPlainString();
     }
 
-    /** */
-    private static BigDecimal setScale(int precision, int scale, BigDecimal decimal) {
-        return precision == IgniteTypeSystem.INSTANCE.getDefaultPrecision(SqlTypeName.DECIMAL)
-            ? decimal : decimal.setScale(scale, RoundingMode.HALF_UP);
-    }
-
     /** CAST(DOUBLE AS DECIMAL). */
     public static BigDecimal toBigDecimal(double val, int precision, int scale) {
-        BigDecimal decimal = BigDecimal.valueOf(val);
-        return setScale(precision, scale, decimal);
+        return removeDefaultScale(precision, scale, toBigDecimal(BigDecimal.valueOf(val), precision, scale));
     }
 
     /** CAST(FLOAT AS DECIMAL). */
     public static BigDecimal toBigDecimal(float val, int precision, int scale) {
-        BigDecimal decimal = new BigDecimal(String.valueOf(val));
-        return setScale(precision, scale, decimal);
+        return removeDefaultScale(precision, scale, toBigDecimal(BigDecimal.valueOf(val), precision, scale));
+    }
+
+    /** Removes redundant scale in case of default DECIMAL (without passed precision and scale). */
+    private static BigDecimal removeDefaultScale(int precision, int scale, BigDecimal val) {
+        BigDecimal unscaled;
+
+        if (precision == DFLT_NUM_PRECISION && scale == 0 && val.compareTo(unscaled = val.setScale(0, NUMERIC_ROUNDING_MODE)) == 0)
+            return unscaled;
+
+        return val;
     }
 
     /** CAST(java long AS DECIMAL). */
     public static BigDecimal toBigDecimal(long val, int precision, int scale) {
-        BigDecimal decimal = BigDecimal.valueOf(val);
-        return setScale(precision, scale, decimal);
+        return toBigDecimal(BigDecimal.valueOf(val), precision, scale);
     }
 
     /** CAST(INT AS DECIMAL). */
     public static BigDecimal toBigDecimal(int val, int precision, int scale) {
-        BigDecimal decimal = new BigDecimal(val);
-        return setScale(precision, scale, decimal);
+        return toBigDecimal(BigDecimal.valueOf(val), precision, scale);
     }
 
     /** CAST(java short AS DECIMAL). */
     public static BigDecimal toBigDecimal(short val, int precision, int scale) {
-        BigDecimal decimal = new BigDecimal(String.valueOf(val));
-        return setScale(precision, scale, decimal);
+        return toBigDecimal(BigDecimal.valueOf(val), precision, scale);
     }
 
     /** CAST(java byte AS DECIMAL). */
     public static BigDecimal toBigDecimal(byte val, int precision, int scale) {
-        BigDecimal decimal = new BigDecimal(String.valueOf(val));
-        return setScale(precision, scale, decimal);
+        return toBigDecimal(BigDecimal.valueOf(val), precision, scale);
     }
 
     /** CAST(BOOL AS DECIMAL). */
@@ -115,21 +121,27 @@ public class IgniteSqlFunctions {
     public static BigDecimal toBigDecimal(String s, int precision, int scale) {
         if (s == null)
             return null;
-        BigDecimal decimal = new BigDecimal(s.trim());
-        return setScale(precision, scale, decimal);
+
+        return toBigDecimal(new BigDecimal(s.trim()), precision, scale);
     }
 
-    /** CAST(REAL AS DECIMAL). */
-    public static BigDecimal toBigDecimal(Number num, int precision, int scale) {
-        if (num == null)
+    /** Converts {@code val} to a {@link BigDecimal} with the given {@code precision} and {@code scale}. */
+    public static BigDecimal toBigDecimal(Number val, int precision, int scale) {
+        assert precision > 0 : "Invalid precision: " + precision;
+        assert scale >= 0 : "Invalid scale: " + scale;
+
+        if (val == null)
             return null;
-        // There are some values of "long" that cannot be represented as "double".
-        // Not so "int". If it isn't a long, go straight to double.
-        BigDecimal decimal = num instanceof BigDecimal ? ((BigDecimal)num)
-            : num instanceof BigInteger ? new BigDecimal((BigInteger)num)
-            : num instanceof Long ? new BigDecimal(num.longValue())
-            : BigDecimal.valueOf(num.doubleValue());
-        return setScale(precision, scale, decimal);
+
+        if (precision == DFLT_NUM_PRECISION)
+            return convertToBigDecimal(val);
+
+        BigDecimal dec = convertToBigDecimal(val);
+
+        if (scale > precision || (dec.precision() - dec.scale() > precision - scale && !dec.unscaledValue().equals(BigInteger.ZERO)))
+            throw new IllegalArgumentException(NUMERIC_OVERFLOW_ERROR);
+
+        return dec.setScale(scale, NUMERIC_ROUNDING_MODE);
     }
 
     /** Cast object depending on type to DECIMAL. */
@@ -157,6 +169,11 @@ public class IgniteSqlFunctions {
     /** LEAST2. */
     public static Object least2(Object arg0, Object arg1) {
         return leastOrGreatest(true, arg0, arg1);
+    }
+
+    /** @return The second argument and ignores the first. */
+    public static Object skipFirstArgument(Object v1, Object v2) {
+        return v2;
     }
 
     /** GREATEST2. */

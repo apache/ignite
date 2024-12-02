@@ -19,16 +19,24 @@ package org.apache.ignite.internal.jdbc2;
 
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.OutputStream;
+import java.sql.Blob;
 import java.sql.SQLException;
 import java.util.Arrays;
 import org.junit.Test;
 
+import static org.apache.ignite.internal.binary.streams.BinaryAbstractOutputStream.MAX_ARRAY_SIZE;
+import static org.apache.ignite.testframework.GridTestUtils.assertThrows;
+import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
 /** */
 public class JdbcBlobTest {
+    /** */
+    static final String ERROR_BLOB_FREE = "Blob instance can't be used after free() has been called.";
+
     /**
      * @throws Exception If failed.
      */
@@ -113,6 +121,9 @@ public class JdbcBlobTest {
         res = blob.getBytes(1, 0);
         assertEquals(0, res.length);
 
+        blob = new JdbcBlob(new byte[0]);
+        assertEquals(0, blob.getBytes(1, 0).length);
+
         blob.free();
 
         try {
@@ -150,6 +161,21 @@ public class JdbcBlobTest {
         catch (SQLException e) {
             // No-op.
         }
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    @Test
+    public void testGetBinaryStreamReadMoreThenBlobSize() throws Exception {
+        byte[] arr = new byte[] {1, 2, 3, 4, 5};
+
+        JdbcBlob blob = new JdbcBlob(arr);
+
+        InputStream is = blob.getBinaryStream();
+        byte[] res = new byte[7];
+        assertEquals(5, is.read(res, 0, 7));
+        assertArrayEquals(new byte[] {1, 2, 3, 4, 5, 0, 0}, res);
     }
 
     /**
@@ -229,12 +255,151 @@ public class JdbcBlobTest {
      * @throws Exception If failed.
      */
     @Test
+    public void testGetBinaryStreamWithParamsReadMoreThenStreamLimit() throws Exception {
+        byte[] arr = new byte[] {1, 2, 3, 4, 5};
+
+        JdbcBlob blob = new JdbcBlob(arr);
+
+        InputStream is = blob.getBinaryStream(2, 3);
+        byte[] res = new byte[6];
+        assertEquals(3, is.read(res, 1, 5));
+        assertArrayEquals(new byte[] {0, 2, 3, 4, 0, 0}, res);
+        assertEquals(-1, is.read(res, 0, 1));
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    @Test
+    public void testGetBinaryStreamReadFromTruncated() throws Exception {
+        byte[] arr = new byte[]{0, 1, 2, 3, 4, 5, 6, 7};
+
+        JdbcBlob blob = new JdbcBlob(JdbcBinaryBuffer.createReadOnly(arr, 0, arr.length));
+
+        InputStream is = blob.getBinaryStream(2, 4);
+
+        assertEquals(1, is.read());
+
+        blob.truncate(6);
+
+        assertEquals(2, is.read());
+
+        blob.truncate(2);
+
+        assertEquals(-1, is.read());
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    @Test
+    public void testGetBinaryStreamMarkSkipReset() throws Exception {
+        byte[] arr = new byte[]{0, 1, 2, 3, 4, 5, 6, 7, 8};
+
+        JdbcBlob blob = new JdbcBlob(JdbcBinaryBuffer.createReadWrite(arr));
+
+        InputStream is = blob.getBinaryStream(2, arr.length - 2);
+
+        assertEquals(1, is.read());
+        is.reset();
+        assertEquals(1, is.read());
+
+        assertEquals(2, is.read());
+        is.mark(1);
+        assertEquals(3, is.read());
+        assertEquals(4, is.read());
+        is.reset();
+        assertEquals(3, is.read());
+
+        assertEquals(0, is.skip(-1));
+        assertEquals(0, is.skip(0));
+        assertEquals(1, is.skip(1));
+        assertEquals(2, is.skip(2));
+        assertEquals(7, is.read());
+
+        is.reset();
+        assertEquals(3, is.read());
+
+        assertEquals(4, is.skip(100));
+        assertEquals(-1, is.read());
+
+        is.reset();
+        assertEquals(5, is.skip(Long.MAX_VALUE));
+        assertEquals(-1, is.read());
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    @Test
+    public void testGetBinaryStreamSeeChangesDoneAfterCreate() throws Exception {
+        byte[] arr = new byte[]{0, 1, 2, 3, 4, 5, 6, 7, 8};
+
+        JdbcBlob blob = new JdbcBlob(JdbcBinaryBuffer.createReadWrite(arr));
+
+        InputStream is = blob.getBinaryStream();
+
+        assertEquals(0, is.read());
+        assertEquals(1, is.read());
+
+        OutputStream os = blob.setBinaryStream(3);
+        os.write(11);
+
+        assertEquals(11, is.read());
+
+        blob.setBytes(4, new byte[] {12});
+
+        assertEquals(12, is.read());
+
+        byte[] res = is.readAllBytes();
+        assertArrayEquals(new byte[] {4, 5, 6, 7, 8}, res);
+
+        blob.setBytes(blob.length() + 1, new byte[] {13, 14, 15});
+        assertEquals(13, is.read());
+        assertEquals(14, is.read());
+        assertEquals(15, is.read());
+        assertEquals(-1, is.read());
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    @Test
+    public void testGetBinaryStreamWithParamsSeeChangesDoneAfterCreate() throws Exception {
+        byte[] arr = new byte[]{0, 1, 2, 3, 4, 5, 6, 7, 8};
+
+        JdbcBlob blob = new JdbcBlob(JdbcBinaryBuffer.createReadOnly(arr, 0, arr.length));
+
+        InputStream is = blob.getBinaryStream(2, arr.length - 2);
+
+        assertEquals(1, is.read());
+
+        OutputStream os = blob.setBinaryStream(3);
+        os.write(11);
+
+        assertEquals(11, is.read());
+
+        blob.setBytes(4, new byte[] {12});
+
+        assertEquals(12, is.read());
+
+        byte[] res = is.readNBytes(4);
+        assertArrayEquals(new byte[] {4, 5, 6, 7}, res);
+
+        blob.setBytes(blob.length() + 1, new byte[] {13});
+        assertEquals(-1, is.read());
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    @Test
     public void testPositionBytePattern() throws Exception {
         byte[] arr = new byte[] {0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15};
 
         JdbcBlob blob = new JdbcBlob(arr);
 
-        assertEquals(-1, blob.position(new byte[] {1, 2, 3}, 0));
+        assertThrows(null, () -> blob.position(new byte[] {1, 2, 3}, 0), SQLException.class, null);
         assertEquals(-1, blob.position(new byte[] {1, 2, 3}, arr.length + 1));
         assertEquals(-1, blob.position(new byte[0], 1));
         assertEquals(-1, blob.position(new byte[17], 1));
@@ -247,6 +412,9 @@ public class JdbcBlobTest {
         assertEquals(-1, blob.position(new byte[] {0, 1, 3}, 1));
         assertEquals(-1, blob.position(new byte[] {0, 2, 3}, 1));
         assertEquals(-1, blob.position(new byte[] {1, 2, 4}, 1));
+
+        blob.setBytes(17, new byte[] {16, 16, 16, 33, 46});
+        assertEquals(18, blob.position(new byte[] {16, 16, 33}, 1));
 
         blob.free();
 
@@ -269,7 +437,7 @@ public class JdbcBlobTest {
 
         JdbcBlob blob = new JdbcBlob(arr);
 
-        assertEquals(-1, blob.position(new JdbcBlob(new byte[] {1, 2, 3}), 0));
+        assertThrows(null, () -> blob.position(new JdbcBlob(new byte[] {1, 2, 3}), 0), SQLException.class, null);
         assertEquals(-1, blob.position(new JdbcBlob(new byte[] {1, 2, 3}), arr.length + 1));
         assertEquals(-1, blob.position(new JdbcBlob(new byte[0]), 1));
         assertEquals(-1, blob.position(new JdbcBlob(new byte[17]), 1));
@@ -282,6 +450,9 @@ public class JdbcBlobTest {
         assertEquals(-1, blob.position(new JdbcBlob(new byte[] {0, 1, 3}), 1));
         assertEquals(-1, blob.position(new JdbcBlob(new byte[] {0, 2, 3}), 1));
         assertEquals(-1, blob.position(new JdbcBlob(new byte[] {1, 2, 4}), 1));
+
+        blob.setBytes(17, new byte[] {16, 16, 16, 33, 46});
+        assertEquals(18, blob.position(new JdbcBlob(new byte[] {16, 16, 33}), 1));
 
         blob.free();
 
@@ -318,7 +489,7 @@ public class JdbcBlobTest {
 
             fail();
         }
-        catch (ArrayIndexOutOfBoundsException e) {
+        catch (SQLException e) {
             // No-op.
         }
 
@@ -351,6 +522,52 @@ public class JdbcBlobTest {
      * @throws Exception If failed.
      */
     @Test
+    public void testSetBytesRO() throws Exception {
+        byte[] roArr = new byte[]{0, 1, 2, 3, 4, 5, 6, 7};
+
+        Blob blob = new JdbcBlob(JdbcBinaryBuffer.createReadOnly(roArr, 2, 4));
+
+        blob.setBytes(2, new byte[] {11, 22});
+
+        assertArrayEquals(new byte[] {2, 11, 22, 5}, blob.getBytes(1, (int)blob.length()));
+
+        assertArrayEquals(new byte[] {0, 1, 2, 3, 4, 5, 6, 7}, roArr);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    @Test
+    public void testSetBytesRealloc() throws Exception {
+        byte[] roArr = new byte[]{0, 1, 2, 3, 4, 5, 6, 7};
+
+        Blob blob = new JdbcBlob(JdbcBinaryBuffer.createReadOnly(roArr, 2, 4));
+
+        blob.setBytes(5, new byte[JdbcBinaryBuffer.MIN_CAP]);
+
+        assertEquals(JdbcBinaryBuffer.MIN_CAP + 4, blob.length());
+
+        assertArrayEquals(new byte[] {0, 1, 2, 3, 4, 5, 6, 7}, roArr);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    @Test
+    public void testSetBytesTooMuchData() throws Exception {
+        Blob blob = new JdbcBlob();
+
+        blob.setBytes(1, new byte[1]);
+
+        // Use fake one byte array.
+        assertThrows(null, () -> blob.setBytes(2, new byte[1], 0, MAX_ARRAY_SIZE),
+                SQLException.class, "Too much data. Can't write more then 2147483639 bytes.");
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    @Test
     public void testSetBytesWithOffsetAndLength() throws Exception {
         byte[] arr = new byte[] {0, 1, 2, 3, 4, 5, 6, 7};
 
@@ -370,7 +587,7 @@ public class JdbcBlobTest {
 
             fail();
         }
-        catch (ArrayIndexOutOfBoundsException e) {
+        catch (SQLException e) {
             // No-op.
         }
 
@@ -379,7 +596,7 @@ public class JdbcBlobTest {
 
             fail();
         }
-        catch (ArrayIndexOutOfBoundsException e) {
+        catch (IndexOutOfBoundsException e) {
             // No-op.
         }
 
@@ -388,7 +605,7 @@ public class JdbcBlobTest {
 
             fail();
         }
-        catch (ArrayIndexOutOfBoundsException e) {
+        catch (IndexOutOfBoundsException e) {
             // No-op.
         }
 
@@ -468,8 +685,138 @@ public class JdbcBlobTest {
         }
         catch (SQLException e) {
             // No-op.
-            System.out.println();
         }
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    @Test
+    public void testTruncateRO() throws Exception {
+        byte[] roArr = new byte[]{0, 1, 2, 3, 4, 5, 6, 7};
+
+        Blob blob = new JdbcBlob(JdbcBinaryBuffer.createReadOnly(roArr, 2, 4));
+        assertArrayEquals(new byte[] {2, 3, 4, 5}, blob.getBytes(1, (int)blob.length()));
+
+        blob.truncate(2);
+        assertArrayEquals(new byte[] {2, 3}, blob.getBytes(1, (int)blob.length()));
+
+        assertArrayEquals(new byte[] {0, 1, 2, 3, 4, 5, 6, 7}, roArr);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    @Test
+    public void testFree() throws Exception {
+        Blob blob = new JdbcBlob(new byte[] {0, 1, 2, 3, 4, 5, 6, 7});
+
+        assertEquals(8, blob.length());
+
+        blob.free();
+
+        blob.free();
+
+        assertThrows(null, blob::length, SQLException.class, ERROR_BLOB_FREE);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    @Test
+    public void testSetBinaryStream() throws Exception {
+        Blob blob = new JdbcBlob();
+
+        assertThrows(null, () -> blob.setBinaryStream(0), SQLException.class, null);
+        assertThrows(null, () -> blob.setBinaryStream(2), SQLException.class, null);
+
+        OutputStream os = blob.setBinaryStream(1);
+
+        os.write(0);
+        os.write(new byte[] {1, 2, 3, 4, 5, 6, 7});
+        os.close();
+        assertArrayEquals(new byte[]{0, 1, 2, 3, 4, 5, 6, 7}, blob.getBytes(1, (int)blob.length()));
+
+        os = blob.setBinaryStream(3);
+        os.write(new byte[] {20, 21, 22});
+        os.write(23);
+        os.close();
+        assertArrayEquals(new byte[]{0, 1, 20, 21, 22, 23, 6, 7}, blob.getBytes(1, (int)blob.length()));
+
+        os = blob.setBinaryStream(7);
+        os.write(new byte[] {30, 31, 32});
+        os.write(33);
+        os.close();
+        assertArrayEquals(new byte[]{0, 1, 20, 21, 22, 23, 30, 31, 32, 33}, blob.getBytes(1, (int)blob.length()));
+
+        blob.free();
+        assertThrows(null, () -> blob.setBinaryStream(2L), SQLException.class, ERROR_BLOB_FREE);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    @Test
+    public void testSetBinaryStreamTooMuchData() throws Exception {
+        Blob blob = new JdbcBlob();
+
+        OutputStream os = blob.setBinaryStream(1);
+        os.write(1);
+
+        assertThrows(null, () -> {
+            // Use fake one byte array.
+            os.write(new byte[1], 0, MAX_ARRAY_SIZE);
+
+            return null;
+        }, IOException.class, "Too much data. Can't write more then 2147483639 bytes.");
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    @Test
+    public void testSetBinaryStreamRO() throws Exception {
+        byte[] roArr = new byte[]{0, 1, 2, 3, 4, 5, 6, 7};
+
+        Blob blob = new JdbcBlob(JdbcBinaryBuffer.createReadOnly(roArr, 2, 4));
+        assertArrayEquals(new byte[] {2, 3, 4, 5}, blob.getBytes(1, (int)blob.length()));
+
+        OutputStream os = blob.setBinaryStream(5);
+        os.write(new byte[] {11, 22});
+        os.close();
+        assertArrayEquals(new byte[] {2, 3, 4, 5, 11, 22}, blob.getBytes(1, (int)blob.length()));
+
+        assertArrayEquals(new byte[] {0, 1, 2, 3, 4, 5, 6, 7}, roArr);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    @Test
+    public void testSetBinaryStreamWriteToTruncated() throws Exception {
+        Blob blob = new JdbcBlob();
+
+        OutputStream os = blob.setBinaryStream(1);
+
+        os.write(1);
+
+        blob.truncate(0);
+
+        assertThrows(null, () -> {
+            os.write(2);
+
+            return null;
+        }, IOException.class, "Writting beyond end of Blob, it probably was truncated after OutputStream " +
+                "was created [pos=1, blobLength=0]");
+
+        assertThrows(null, () -> {
+            os.write(new byte[] {2});
+
+            return null;
+        }, IOException.class, "Writting beyond end of Blob, it probably was truncated after OutputStream " +
+                "was created [pos=1, blobLength=0]");
+
+        os.close();
     }
 
     /**

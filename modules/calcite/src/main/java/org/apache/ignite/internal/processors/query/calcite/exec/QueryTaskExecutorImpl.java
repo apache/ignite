@@ -17,20 +17,26 @@
 
 package org.apache.ignite.internal.processors.query.calcite.exec;
 
-import java.util.Objects;
 import java.util.UUID;
 import org.apache.ignite.internal.GridKernalContext;
-import org.apache.ignite.internal.processors.query.calcite.CalciteQueryProcessor;
 import org.apache.ignite.internal.processors.query.calcite.util.AbstractService;
-import org.apache.ignite.internal.processors.query.calcite.util.Commons;
-import org.apache.ignite.internal.util.StripedExecutor;
+import org.apache.ignite.internal.processors.security.SecurityContext;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.thread.IgniteStripedThreadPoolExecutor;
 
+import static org.apache.ignite.internal.processors.metric.impl.MetricUtils.metricName;
+import static org.apache.ignite.internal.processors.pool.PoolProcessor.THREAD_POOLS;
+
 /**
- * TODO use {@link StripedExecutor}, registered in core pols.
+ * Query task executor.
  */
 public class QueryTaskExecutorImpl extends AbstractService implements QueryTaskExecutor, Thread.UncaughtExceptionHandler {
+    /** */
+    public static final String THREAD_POOL_NAME = "CalciteQueryExecutor";
+
+    /** */
+    private final GridKernalContext ctx;
+
     /** */
     private IgniteStripedThreadPoolExecutor stripedThreadPoolExecutor;
 
@@ -40,6 +46,7 @@ public class QueryTaskExecutorImpl extends AbstractService implements QueryTaskE
     /** */
     public QueryTaskExecutorImpl(GridKernalContext ctx) {
         super(ctx);
+        this.ctx = ctx;
     }
 
     /**
@@ -58,9 +65,11 @@ public class QueryTaskExecutorImpl extends AbstractService implements QueryTaskE
 
     /** {@inheritDoc} */
     @Override public void execute(UUID qryId, long fragmentId, Runnable qryTask) {
+        SecurityContext secCtx = ctx.security().securityContext();
+
         stripedThreadPoolExecutor.execute(
             () -> {
-                try {
+                try (AutoCloseable ignored = ctx.security().withContext(secCtx)) {
                     qryTask.run();
                 }
                 catch (Throwable e) {
@@ -82,16 +91,18 @@ public class QueryTaskExecutorImpl extends AbstractService implements QueryTaskE
     @Override public void onStart(GridKernalContext ctx) {
         exceptionHandler(ctx.uncaughtExceptionHandler());
 
-        CalciteQueryProcessor proc = Objects.requireNonNull(Commons.lookupComponent(ctx, CalciteQueryProcessor.class));
-
-        stripedThreadPoolExecutor(new IgniteStripedThreadPoolExecutor(
+        IgniteStripedThreadPoolExecutor executor = new IgniteStripedThreadPoolExecutor(
             ctx.config().getQueryThreadPoolSize(),
             ctx.igniteInstanceName(),
             "calciteQry",
             this,
             false,
             0
-        ));
+        );
+
+        stripedThreadPoolExecutor(executor);
+
+        executor.registerMetrics(ctx.metric().registry(metricName(THREAD_POOLS, THREAD_POOL_NAME)));
     }
 
     /** {@inheritDoc} */

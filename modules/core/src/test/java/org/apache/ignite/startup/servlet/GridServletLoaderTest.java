@@ -92,9 +92,9 @@ public class GridServletLoaderTest extends GridCommonAbstractTest {
 
             assert jmx != null;
 
-            String query = "*:*";
+            String qry = "*:*";
 
-            ObjectName queryName = new ObjectName(query);
+            ObjectName qryName = new ObjectName(qry);
 
             boolean found = false;
 
@@ -105,16 +105,16 @@ public class GridServletLoaderTest extends GridCommonAbstractTest {
             while (!found) {
                 info("Attempt to find GridKernal MBean [num=" + i + ']');
 
-                Set<ObjectName> names = jmx.getMBeanServerConnection().queryNames(queryName, null);
+                Set<ObjectName> names = jmx.getMBeanServerConnection().queryNames(qryName, null);
 
                 if (!names.isEmpty()) {
-                    for (ObjectName objectName : names) {
-                        info("Found MBean for node: " + objectName);
+                    for (ObjectName objName : names) {
+                        info("Found MBean for node: " + objName);
 
-                        String kernalName = objectName.getKeyProperty("name");
+                        String kernalName = objName.getKeyProperty("name");
 
                         if ("GridKernal".equals(kernalName)) {
-                            kernal = objectName;
+                            kernal = objName;
 
                             found = true;
                         }
@@ -160,15 +160,15 @@ public class GridServletLoaderTest extends GridCommonAbstractTest {
         assert host != null;
         assert port > 0;
 
-        JMXServiceURL serviceURL = new JMXServiceURL("service:jmx:rmi:///jndi/rmi://" + host + ':' + port + "/jmxrmi");
+        JMXServiceURL srvcURL = new JMXServiceURL("service:jmx:rmi:///jndi/rmi://" + host + ':' + port + "/jmxrmi");
 
         Map<String, Object> props = new HashMap<>();
 
         props.put(JMXConnectorFactory.PROTOCOL_PROVIDER_PACKAGES, "com.sun.jmx.remote.protocol");
 
-        System.out.println("Try to connect to JMX server [props=" + props + ", url=" + serviceURL + ']');
+        System.out.println("Try to connect to JMX server [props=" + props + ", url=" + srvcURL + ']');
 
-        return JMXConnectorFactory.connect(serviceURL, props);
+        return JMXConnectorFactory.connect(srvcURL, props);
     }
 
     /** {@inheritDoc} */

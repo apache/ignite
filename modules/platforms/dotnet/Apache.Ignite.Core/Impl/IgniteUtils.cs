@@ -128,26 +128,6 @@ namespace Apache.Ignite.Core.Impl
         }
 
         /// <summary>
-        /// Convert unmanaged char array to string.
-        /// </summary>
-        /// <param name="chars">Char array.</param>
-        /// <param name="charsLen">Char array length.</param>
-        /// <returns></returns>
-        public static unsafe string Utf8UnmanagedToString(sbyte* chars, int charsLen)
-        {
-            IntPtr ptr = new IntPtr(chars);
-
-            if (ptr == IntPtr.Zero)
-                return null;
-
-            byte[] arr = new byte[charsLen];
-
-            Marshal.Copy(ptr, arr, 0, arr.Length);
-
-            return Encoding.UTF8.GetString(arr);
-        }
-
-        /// <summary>
         /// Convert string to unmanaged byte array.
         /// </summary>
         /// <param name="str">String.</param>
@@ -230,6 +210,13 @@ namespace Apache.Ignite.Core.Impl
             hasPlatformCache = (res & platformCache) == platformCache || (res & all) == all;
             
             return res & ~platformCache;
+        }
+
+        /// <param name="obj">Compute executable.</param>
+        /// <returns>FQN of the specified compute executable.</returns> 
+        public static string GetComputeExecutableName(object obj)
+        {
+            return obj.GetType().FullName;
         }
     }
 }

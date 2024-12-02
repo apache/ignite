@@ -227,8 +227,8 @@ public class RunningQueryInfoCheckInitiatorTest extends JdbcThinAbstractSelfTest
             final UUID grid0NodeId = grid(0).cluster().localNode().id();
 
             GridTestUtils.runAsync(() -> {
-                    try (Connection conn = DriverManager.getConnection(
-                        CFG_URL_PREFIX + "nodeId=" + grid0NodeId + "@modules/clients/src/test/config/jdbc-security-config.xml")) {
+                    try (Connection conn = DriverManager.getConnection(CFG_URL_PREFIX + "lazy=false:nodeId="
+                        + grid0NodeId + "@modules/clients/src/test/config/jdbc-security-config.xml")) {
                         try (Statement stmt = conn.createStatement()) {
                             stmt.execute(sql);
                         }
@@ -364,7 +364,7 @@ public class RunningQueryInfoCheckInitiatorTest extends JdbcThinAbstractSelfTest
 
     /** */
     private static int clientPort(IgniteEx ign) {
-        return ign.context().sqlListener().port();
+        return ign.context().clientListener().port();
     }
 
     /**

@@ -54,7 +54,6 @@ import org.apache.ignite.internal.processors.cache.persistence.wal.FileWriteAhea
 import org.apache.ignite.internal.processors.cache.persistence.wal.WALPointer;
 import org.apache.ignite.internal.util.future.GridFinishedFuture;
 import org.apache.ignite.internal.util.typedef.internal.U;
-import org.apache.ignite.testframework.MvccFeatureChecker;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
 
@@ -80,10 +79,7 @@ public class IgnitePdsRecoveryAfterFileCorruptionTest extends GridCommonAbstract
         CacheConfiguration ccfg = new CacheConfiguration(cacheName);
         ccfg.setAffinity(new RendezvousAffinityFunction(true, 1));
 
-        if (MvccFeatureChecker.forcedMvcc())
-            ccfg.setRebalanceDelay(Long.MAX_VALUE);
-        else
-            ccfg.setRebalanceMode(CacheRebalanceMode.NONE);
+        ccfg.setRebalanceMode(CacheRebalanceMode.NONE);
 
         ccfg.setAtomicityMode(CacheAtomicityMode.TRANSACTIONAL);
 
@@ -363,10 +359,10 @@ public class IgnitePdsRecoveryAfterFileCorruptionTest extends GridCommonAbstract
             AtomicLong write = new AtomicLong();
 
             PageStoreWriter pageStoreWriter = (fullPageId, buf, tag) -> {
-                int groupId = fullPageId.groupId();
+                int grpId = fullPageId.groupId();
                 long pageId = fullPageId.pageId();
 
-                for (int j = PageIO.COMMON_HEADER_END; j < mem.realPageSize(groupId); j += 4)
+                for (int j = PageIO.COMMON_HEADER_END; j < mem.realPageSize(grpId); j += 4)
                     assertEquals(j + (int)pageId, buf.getInt(j));
 
                 buf.rewind();

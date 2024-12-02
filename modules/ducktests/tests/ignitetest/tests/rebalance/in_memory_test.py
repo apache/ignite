@@ -21,14 +21,13 @@ from ducktape.mark import defaults
 from ignitetest.services.ignite import IgniteService
 from ignitetest.services.utils.ignite_configuration.discovery import from_ignite_cluster
 from ignitetest.tests.rebalance.util import start_ignite, get_result, TriggerEvent, NUM_NODES, \
-    await_rebalance_start, RebalanceParams
-from ignitetest.tests.util import preload_data, DataGenerationParams
+    await_rebalance_start, BaseRebalanceTest
+from ignitetest.tests.util import preload_data
 from ignitetest.utils import cluster, ignite_versions
-from ignitetest.utils.ignite_test import IgniteTest
 from ignitetest.utils.version import DEV_BRANCH, LATEST
 
 
-class RebalanceInMemoryTest(IgniteTest):
+class RebalanceInMemoryTest(BaseRebalanceTest):
     """
     Tests rebalance scenarios in in-memory mode.
     """
@@ -81,12 +80,12 @@ class RebalanceInMemoryTest(IgniteTest):
         :param throttle: rebalanceThrottle config property.
         :return: Rebalance and data preload stats.
         """
-        reb_params = RebalanceParams(trigger_event=trigger_event, thread_pool_size=thread_pool_size,
-                                     batch_size=batch_size, batches_prefetch_count=batches_prefetch_count,
-                                     throttle=throttle)
+        reb_params = self.get_reb_params(trigger_event=trigger_event, thread_pool_size=thread_pool_size,
+                                         batch_size=batch_size, batches_prefetch_count=batches_prefetch_count,
+                                         throttle=throttle)
 
-        data_gen_params = DataGenerationParams(backups=backups, cache_count=cache_count, entry_count=entry_count,
-                                               entry_size=entry_size, preloaders=preloaders)
+        data_gen_params = self.get_data_gen_params(backups=backups, cache_count=cache_count, entry_count=entry_count,
+                                                   entry_size=entry_size, preloaders=preloaders)
 
         ignites = start_ignite(self.test_context, ignite_version, reb_params, data_gen_params)
 
@@ -100,7 +99,8 @@ class RebalanceInMemoryTest(IgniteTest):
             rebalance_nodes = ignites.nodes[:-1]
         else:
             ignite = IgniteService(self.test_context,
-                                   ignites.config._replace(discovery_spi=from_ignite_cluster(ignites)), num_nodes=1)
+                                   ignites.config._replace(discovery_spi=from_ignite_cluster(ignites)), num_nodes=1,
+                                   modules=reb_params.modules)
             ignite.start()
             rebalance_nodes = ignite.nodes
 

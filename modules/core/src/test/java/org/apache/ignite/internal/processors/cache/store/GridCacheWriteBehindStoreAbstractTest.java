@@ -34,11 +34,9 @@ import org.apache.ignite.internal.processors.cache.GridCacheTestStore;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
-import org.apache.ignite.testframework.MvccFeatureChecker;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.transactions.Transaction;
 import org.jetbrains.annotations.Nullable;
-import org.junit.Before;
 import org.junit.Test;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
@@ -62,12 +60,6 @@ public abstract class GridCacheWriteBehindStoreAbstractTest extends GridCommonAb
         super(true /*start grid. */);
     }
 
-    /** */
-    @Before
-    public void beforeGridCacheWriteBehindStoreAbstractTest() {
-        MvccFeatureChecker.skipIfNotSupported(MvccFeatureChecker.Feature.CACHE_STORE);
-    }
-
     /** {@inheritDoc} */
     @Override protected void beforeTest() throws Exception {
         store.resetTimestamp();
@@ -89,8 +81,6 @@ public abstract class GridCacheWriteBehindStoreAbstractTest extends GridCommonAb
     /** {@inheritDoc} */
     @SuppressWarnings("unchecked")
     @Override protected IgniteConfiguration getConfiguration() throws Exception {
-        MvccFeatureChecker.skipIfNotSupported(MvccFeatureChecker.Feature.CACHE_STORE);
-
         IgniteConfiguration c = super.getConfiguration();
 
         TcpDiscoverySpi disco = new TcpDiscoverySpi();

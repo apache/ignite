@@ -240,8 +240,7 @@ public class MemoryQuotasIntegrationTest extends AbstractBasicIntegrationTest {
         for (int i = 0; i < 800; i++)
             sql("INSERT INTO tbl2 VALUES (?, ?)", i, new byte[1000]);
 
-        assertQuery("SELECT /*+ DISABLE_RULE('CorrelatedNestedLoopJoin', 'MergeJoinConverter') */ " +
-            "tbl.id, tbl.b, tbl2.id, tbl2.b FROM tbl JOIN tbl2 USING (id)")
+        assertQuery("SELECT /*+ NL_JOIN */ tbl.id, tbl.b, tbl2.id, tbl2.b FROM tbl JOIN tbl2 USING (id)")
             .matches(QueryChecker.containsSubPlan("IgniteNestedLoopJoin"))
             .resultSize(800)
             .check();
@@ -249,8 +248,7 @@ public class MemoryQuotasIntegrationTest extends AbstractBasicIntegrationTest {
         for (int i = 800; i < 1000; i++)
             sql("INSERT INTO tbl2 VALUES (?, ?)", i, new byte[1000]);
 
-        assertThrows("SELECT /*+ DISABLE_RULE('CorrelatedNestedLoopJoin', 'MergeJoinConverter') */" +
-                "tbl.id, tbl.b, tbl2.id, tbl2.b FROM tbl JOIN tbl2 USING (id)",
+        assertThrows("SELECT /*+ NL_JOIN */ tbl.id, tbl.b, tbl2.id, tbl2.b FROM tbl JOIN tbl2 USING (id)",
             IgniteException.class, "Query quota exceeded");
     }
 
@@ -401,5 +399,45 @@ public class MemoryQuotasIntegrationTest extends AbstractBasicIntegrationTest {
                     curs[i].close();
             }
         }
+    }
+
+    /** */
+    @Test
+    public void testGetAll() {
+        // getAll for 800 rows.
+        assertQuery("SELECT id, b FROM tbl WHERE id < 800")
+            .withRowsIterator(false)
+            .resultSize(800)
+            .check();
+
+        // getAll + collect for 1000 rows.
+        assertThrows("SELECT id, b FROM tbl",
+            IgniteException.class, "Query quota exceeded");
+
+        // Collect for 800 rows.
+        assertQuery("SELECT ARRAY(SELECT b FROM tbl WHERE id < 800)")
+            .resultSize(1)
+            .check();
+
+        // getAll + collect for 400 rows.
+        assertQuery("SELECT ARRAY(SELECT b FROM tbl WHERE id < 400)")
+            .withRowsIterator(false)
+            .resultSize(1)
+            .check();
+
+        // getAll + collect for 800 rows.
+        assertThrows("SELECT ARRAY(SELECT b FROM tbl WHERE id < 800)",
+            IgniteException.class, "Query quota exceeded");
+
+        // getAll + sort for 800 rows (sort node release memory after passing rows to iterator).
+        assertQuery("SELECT id, b FROM tbl WHERE id < 800 ORDER BY id")
+            .withRowsIterator(false)
+            .resultSize(800)
+            .check();
+    }
+
+    /** {@inheritDoc} */
+    @Override protected QueryChecker assertQuery(String qry) {
+        return super.assertQuery(qry).withRowsIterator(true);
     }
 }

@@ -19,8 +19,11 @@ package org.apache.ignite.cache.store.jdbc;
 
 import java.io.ByteArrayInputStream;
 import java.lang.reflect.Field;
+import java.sql.Blob;
+import java.sql.Clob;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
+import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
 import java.sql.Timestamp;
@@ -31,12 +34,15 @@ import java.util.Collection;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import javax.cache.integration.CacheWriterException;
+import org.apache.commons.lang3.RandomStringUtils;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.binary.BinaryObject;
 import org.apache.ignite.binary.BinaryObjectBuilder;
 import org.apache.ignite.cache.store.jdbc.dialect.H2Dialect;
 import org.apache.ignite.cache.store.jdbc.model.BinaryTest;
 import org.apache.ignite.cache.store.jdbc.model.BinaryTestKey;
+import org.apache.ignite.cache.store.jdbc.model.Logo;
+import org.apache.ignite.cache.store.jdbc.model.LogoKey;
 import org.apache.ignite.cache.store.jdbc.model.Organization;
 import org.apache.ignite.cache.store.jdbc.model.OrganizationKey;
 import org.apache.ignite.cache.store.jdbc.model.Person;
@@ -82,7 +88,7 @@ public class CacheJdbcPojoStoreTest extends GridAbstractCacheStoreSelfTest<Cache
     @Override protected CacheJdbcPojoStore<Object, Object> store() {
         CacheJdbcPojoStoreFactory<Object, Object> storeFactory = new CacheJdbcPojoStoreFactory<>();
 
-        JdbcType[] storeTypes = new JdbcType[7];
+        JdbcType[] storeTypes = new JdbcType[8];
 
         storeTypes[0] = new JdbcType();
         storeTypes[0].setDatabaseSchema("PUBLIC");
@@ -160,6 +166,18 @@ public class CacheJdbcPojoStoreTest extends GridAbstractCacheStoreSelfTest<Cache
         storeTypes[6].setValueType("org.apache.ignite.cache.store.jdbc.model.BinaryTest");
         storeTypes[6].setValueFields(new JdbcTypeField(Types.BINARY, "VAL", byte[].class, "bytes"));
 
+        storeTypes[7] = new JdbcType();
+        storeTypes[7].setDatabaseSchema("PUBLIC");
+        storeTypes[7].setDatabaseTable("LOGO");
+        storeTypes[7].setKeyType("org.apache.ignite.cache.store.jdbc.model.LogoKey");
+        storeTypes[7].setKeyFields(new JdbcTypeField(Types.INTEGER, "ID", Integer.class, "id"));
+
+        storeTypes[7].setValueType("org.apache.ignite.cache.store.jdbc.model.Logo");
+        storeTypes[7].setValueFields(
+            new JdbcTypeField(Types.INTEGER, "ID", Integer.class, "id"),
+            new JdbcTypeField(Types.BLOB, "PICTURE", byte[].class, "picture"),
+            new JdbcTypeField(Types.CLOB, "DESCRIPTION", String.class, "description"));
+
         storeFactory.setTypes(storeTypes);
 
         storeFactory.setDialect(new H2Dialect());
@@ -230,6 +248,13 @@ public class CacheJdbcPojoStoreTest extends GridAbstractCacheStoreSelfTest<Cache
             // No-op.
         }
 
+        try {
+            stmt.executeUpdate("delete from Logo");
+        }
+        catch (SQLException ignore) {
+            // No-op.
+        }
+
         stmt.executeUpdate("CREATE TABLE IF NOT EXISTS " +
             "String_Entries (key varchar(100) not null, val varchar(100), PRIMARY KEY(key))");
 
@@ -251,6 +276,9 @@ public class CacheJdbcPojoStoreTest extends GridAbstractCacheStoreSelfTest<Cache
         stmt.executeUpdate("CREATE TABLE IF NOT EXISTS " +
             "Person_Complex (id integer not null, org_id integer not null, city_id integer not null, " +
             "name varchar(50), salary integer, PRIMARY KEY(id, org_id, city_id))");
+
+        stmt.executeUpdate("CREATE TABLE IF NOT EXISTS " +
+            "Logo (id integer not null, picture blob not null, description clob not null, PRIMARY KEY(id))");
 
         conn.commit();
 
@@ -578,6 +606,114 @@ public class CacheJdbcPojoStoreTest extends GridAbstractCacheStoreSelfTest<Cache
         store.delete(k);
 
         assertNull(store.load(k));
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    @Test
+    public void testLoadCacheLobFields() throws Exception {
+        String longDescription = RandomStringUtils.randomAlphabetic(10000);
+        byte[] picture = new byte[64];
+
+        for (byte i = 0; i < 64; i++)
+            picture[i] = i;
+
+        Connection conn = null;
+        PreparedStatement logoStmt = null;
+
+        try {
+            conn = store.openConnection(false);
+
+            logoStmt = conn.prepareStatement("INSERT INTO Logo(id, picture, description) VALUES (?, ?, ?)");
+
+            logoStmt.setInt(1, 1);
+
+            Blob blob = logoStmt.getConnection().createBlob();
+            blob.setBytes(1, picture);
+            logoStmt.setBlob(2, blob);
+
+            Clob clob = logoStmt.getConnection().createClob();
+            clob.setString(1, longDescription);
+            logoStmt.setClob(3, clob);
+
+            logoStmt.executeUpdate();
+
+            conn.commit();
+        }
+        finally {
+            U.closeQuiet(logoStmt);
+            U.closeQuiet(conn);
+        }
+
+        IgniteBiInClosure<Object, Object> c = new CI2<Object, Object>() {
+            @Override public void apply(Object k, Object v) {
+                if (binaryEnable) {
+                    assertTrue(k instanceof BinaryObject);
+                    assertTrue(v instanceof BinaryObject);
+
+                    BinaryObject val = (BinaryObject)v;
+
+                    assertTrue(Arrays.equals(picture, val.field("picture")));
+                    assertEquals(longDescription, val.field("description"));
+                }
+                else {
+                    assertTrue(k instanceof LogoKey);
+                    assertTrue(v instanceof Logo);
+
+                    Logo val = (Logo)v;
+
+                    assertTrue(Arrays.equals(picture, val.getPicture()));
+                    assertEquals(longDescription, val.getDescription());
+                }
+            }
+        };
+
+        store.loadCache(c);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    @Test
+    public void testLobWrite() throws Exception {
+        Integer id = 1;
+        LogoKey key = new LogoKey(id);
+
+        String longDescription = RandomStringUtils.randomAlphabetic(10000);
+        byte[] picture = new byte[64];
+
+        for (byte i = 0; i < 64; i++)
+            picture[i] = i;
+
+        Logo val = new Logo();
+
+        val.setId(id);
+        val.setPicture(picture);
+        val.setDescription(longDescription);
+
+        ses.newSession(null);
+
+        store.write(new CacheEntryImpl<>(wrap(key), wrap(val)));
+
+        Statement stmt = null;
+        Connection conn = null;
+
+        try {
+            conn = store.openConnection(false);
+            stmt = conn.createStatement();
+
+            ResultSet rs = stmt.executeQuery("SELECT picture, description FROM Logo");
+
+            assertTrue(rs.next());
+            assertTrue(Arrays.equals(picture, rs.getBytes(1)));
+            assertEquals(longDescription, rs.getString(2));
+            assertFalse(rs.next());
+        }
+        finally {
+            U.closeQuiet(stmt);
+            U.closeQuiet(conn);
+        }
     }
 
     /**

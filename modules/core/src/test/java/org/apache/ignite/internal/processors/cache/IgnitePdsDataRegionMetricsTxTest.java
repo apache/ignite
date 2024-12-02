@@ -19,7 +19,6 @@ package org.apache.ignite.internal.processors.cache;
 
 import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.configuration.CacheConfiguration;
-import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.processors.cache.persistence.db.IgnitePdsDataRegionMetricsTest;
 import org.junit.Ignore;
 import org.junit.Test;
@@ -28,12 +27,6 @@ import org.junit.Test;
  *
  */
 public class IgnitePdsDataRegionMetricsTxTest extends IgnitePdsDataRegionMetricsTest {
-    /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
-        return super.getConfiguration(igniteInstanceName)
-            .setMvccVacuumFrequency(Long.MAX_VALUE);
-    }
-
     /** {@inheritDoc} */
     @Override protected CacheConfiguration<Object, Object> cacheConfiguration() {
         return super.cacheConfiguration().setAtomicityMode(CacheAtomicityMode.TRANSACTIONAL);

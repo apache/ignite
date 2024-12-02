@@ -27,11 +27,13 @@ public class MultiStepDmlPlan extends AbstractMultiStepPlan {
      * @param fieldsMeta Fields metadata.
      */
     public MultiStepDmlPlan(
+        String qry,
+        String textPlan,
         QueryTemplate queryTemplate,
         FieldsMetadata fieldsMeta,
         @Nullable FieldsMetadata paramsMetadata
     ) {
-        super(queryTemplate, fieldsMeta, paramsMetadata);
+        super(qry, textPlan, queryTemplate, fieldsMeta, paramsMetadata);
     }
 
     /** {@inheritDoc} */
@@ -41,6 +43,6 @@ public class MultiStepDmlPlan extends AbstractMultiStepPlan {
 
     /** {@inheritDoc} */
     @Override public QueryPlan copy() {
-        return new MultiStepDmlPlan(queryTemplate, fieldsMetadata, paramsMetadata);
+        return new MultiStepDmlPlan(query(), textPlan(), queryTemplate, fieldsMetadata, paramsMetadata);
     }
 }

@@ -251,9 +251,9 @@ public class PlatformEvents extends PlatformAbstractTarget {
 
         IgnitePredicate filter = filterHnd != null ? localFilter(filterHnd) : null;
 
-        int[] eventTypes = readEventTypes(reader);
+        int[] evtTypes = readEventTypes(reader);
 
-        return (EventAdapter)events.waitForLocal(filter, eventTypes);
+        return (EventAdapter)events.waitForLocal(filter, evtTypes);
     }
 
     /**
@@ -268,9 +268,9 @@ public class PlatformEvents extends PlatformAbstractTarget {
 
         IgnitePredicate filter = filterHnd != null ? localFilter(filterHnd) : null;
 
-        int[] eventTypes = readEventTypes(reader);
+        int[] evtTypes = readEventTypes(reader);
 
-        return events.waitForLocalAsync(filter, eventTypes);
+        return events.waitForLocalAsync(filter, evtTypes);
     }
 
     /**

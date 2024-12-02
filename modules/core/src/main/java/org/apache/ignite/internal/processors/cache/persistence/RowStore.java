@@ -27,7 +27,6 @@ import org.apache.ignite.internal.processors.cache.CacheGroupContext;
 import org.apache.ignite.internal.processors.cache.CacheObjectContext;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.persistence.freelist.FreeList;
-import org.apache.ignite.internal.processors.cache.persistence.tree.util.PageHandler;
 import org.apache.ignite.internal.processors.query.GridQueryRowCacheCleaner;
 import org.apache.ignite.internal.util.typedef.internal.U;
 
@@ -155,30 +154,6 @@ public class RowStore {
             rowCacheCleaner0.remove(link);
 
         return freeList.updateDataRow(link, row, statHolder);
-    }
-
-    /**
-     * Run page handler operation over the row.
-     *
-     * @param link Row link.
-     * @param pageHnd Page handler.
-     * @param arg Page handler argument.
-     * @throws IgniteCheckedException If failed.
-     */
-    public <S, R> void updateDataRow(long link, PageHandler<S, R> pageHnd, S arg,
-        IoStatisticsHolder statHolder) throws IgniteCheckedException {
-        if (!persistenceEnabled)
-            freeList.updateDataRow(link, pageHnd, arg, statHolder);
-        else {
-            ctx.database().checkpointReadLock();
-
-            try {
-                freeList.updateDataRow(link, pageHnd, arg, statHolder);
-            }
-            finally {
-                ctx.database().checkpointReadUnlock();
-            }
-        }
     }
 
     /**

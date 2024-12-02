@@ -23,19 +23,16 @@ import java.util.List;
 import java.util.UUID;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.atomic.AtomicInteger;
-import java.util.function.Function;
-import java.util.function.Predicate;
 import org.apache.calcite.plan.RelOptUtil;
-import org.apache.calcite.plan.RelTraitSet;
 import org.apache.calcite.rel.RelNode;
-import org.apache.calcite.rel.RelRoot;
 import org.apache.calcite.rel.RelVisitor;
+import org.apache.calcite.rel.core.JoinRelType;
 import org.apache.calcite.rel.type.RelDataTypeFactory;
 import org.apache.calcite.schema.SchemaPlus;
-import org.apache.calcite.sql.SqlNode;
 import org.apache.calcite.util.ImmutableBitSet;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
+import org.apache.ignite.internal.processors.cache.GridCacheProcessor;
 import org.apache.ignite.internal.processors.query.calcite.QueryRegistryImpl;
 import org.apache.ignite.internal.processors.query.calcite.exec.ArrayRowHandler;
 import org.apache.ignite.internal.processors.query.calcite.exec.ExchangeServiceImpl;
@@ -46,42 +43,41 @@ import org.apache.ignite.internal.processors.query.calcite.exec.QueryTaskExecuto
 import org.apache.ignite.internal.processors.query.calcite.exec.rel.Node;
 import org.apache.ignite.internal.processors.query.calcite.exec.rel.Outbox;
 import org.apache.ignite.internal.processors.query.calcite.exec.rel.RootNode;
+import org.apache.ignite.internal.processors.query.calcite.exec.tracker.NoOpIoTracker;
 import org.apache.ignite.internal.processors.query.calcite.exec.tracker.NoOpMemoryTracker;
 import org.apache.ignite.internal.processors.query.calcite.message.MessageServiceImpl;
 import org.apache.ignite.internal.processors.query.calcite.message.TestIoManager;
 import org.apache.ignite.internal.processors.query.calcite.metadata.ColocationGroup;
 import org.apache.ignite.internal.processors.query.calcite.metadata.FragmentDescription;
-import org.apache.ignite.internal.processors.query.calcite.metadata.cost.IgniteCostFactory;
 import org.apache.ignite.internal.processors.query.calcite.prepare.BaseQueryContext;
+import org.apache.ignite.internal.processors.query.calcite.prepare.ExecutionPlan;
 import org.apache.ignite.internal.processors.query.calcite.prepare.Fragment;
-import org.apache.ignite.internal.processors.query.calcite.prepare.IgnitePlanner;
 import org.apache.ignite.internal.processors.query.calcite.prepare.MappingQueryContext;
 import org.apache.ignite.internal.processors.query.calcite.prepare.MultiStepPlan;
 import org.apache.ignite.internal.processors.query.calcite.prepare.MultiStepQueryPlan;
-import org.apache.ignite.internal.processors.query.calcite.prepare.PlannerPhase;
 import org.apache.ignite.internal.processors.query.calcite.prepare.PlanningContext;
 import org.apache.ignite.internal.processors.query.calcite.prepare.QueryTemplate;
 import org.apache.ignite.internal.processors.query.calcite.prepare.Splitter;
-import org.apache.ignite.internal.processors.query.calcite.rel.IgniteConvention;
+import org.apache.ignite.internal.processors.query.calcite.rel.IgniteCorrelatedNestedLoopJoin;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteFilter;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteRel;
 import org.apache.ignite.internal.processors.query.calcite.schema.IgniteSchema;
-import org.apache.ignite.internal.processors.query.calcite.trait.CorrelationTrait;
 import org.apache.ignite.internal.processors.query.calcite.trait.IgniteDistribution;
 import org.apache.ignite.internal.processors.query.calcite.trait.IgniteDistributions;
 import org.apache.ignite.internal.processors.query.calcite.type.IgniteTypeFactory;
 import org.apache.ignite.internal.processors.query.calcite.type.IgniteTypeSystem;
 import org.apache.ignite.internal.processors.query.calcite.util.Commons;
+import org.apache.ignite.internal.processors.security.NoOpIgniteSecurityProcessor;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.testframework.junits.GridTestKernalContext;
 import org.apache.ignite.thread.IgniteStripedThreadPoolExecutor;
 import org.junit.Assert;
 import org.junit.Test;
 
+import static org.apache.calcite.sql.type.SqlTypeName.INTEGER;
+import static org.apache.calcite.sql.type.SqlTypeName.VARCHAR;
 import static org.apache.calcite.tools.Frameworks.createRootSchema;
-import static org.apache.calcite.tools.Frameworks.newConfigBuilder;
 import static org.apache.ignite.configuration.IgniteConfiguration.DFLT_THREAD_KEEP_ALIVE_TIME;
-import static org.apache.ignite.internal.processors.query.calcite.CalciteQueryProcessor.FRAMEWORK_CONFIG;
 
 /**
  *
@@ -170,9 +166,7 @@ public class PlannerTest extends AbstractPlannerTest {
                 .build()) {
             @Override public <Row> Iterable<Row> scan(
                 ExecutionContext<Row> execCtx,
-                ColocationGroup group,
-                Predicate<Row> filter,
-                Function<Row, Row> transformer,
+                ColocationGroup grp,
                 ImmutableBitSet requiredColumns
             ) {
                 return Arrays.asList(
@@ -198,9 +192,7 @@ public class PlannerTest extends AbstractPlannerTest {
                 .build()) {
             @Override public <Row> Iterable<Row> scan(
                 ExecutionContext<Row> execCtx,
-                ColocationGroup group,
-                Predicate<Row> filter,
-                Function<Row, Row> transformer,
+                ColocationGroup grp,
                 ImmutableBitSet requiredColumns
             ) {
                 return Arrays.asList(
@@ -256,27 +248,22 @@ public class PlannerTest extends AbstractPlannerTest {
                 .build()) {
             @Override public <Row> Iterable<Row> scan(
                 ExecutionContext<Row> execCtx,
-                ColocationGroup group,
-                Predicate<Row> filter,
-                Function<Row, Row> rowTransformer,
+                ColocationGroup grp,
                 ImmutableBitSet requiredColumns
             ) {
+                List<Row> res = new ArrayList<>();
                 List<Row> checkRes0 = new ArrayList<>();
 
                 for (int i = 0; i < 10; ++i) {
                     int col = ThreadLocalRandom.current().nextInt(1_000);
 
-                    Row r = row(execCtx, requiredColumns, col, col);
-
-                    if (rowTransformer != null)
-                        r = rowTransformer.apply(r);
-
-                    checkRes0.add(r);
+                    res.add(row(execCtx, requiredColumns, col, col));
+                    checkRes0.add(row(execCtx, null, col + col));
                 }
 
                 checkRes.set(checkRes0);
 
-                return checkRes0;
+                return res;
             }
 
             @Override public ColocationGroup colocationGroup(MappingQueryContext ctx) {
@@ -311,9 +298,7 @@ public class PlannerTest extends AbstractPlannerTest {
 
         BaseQueryContext qctx = BaseQueryContext.builder()
             .logger(log)
-            .frameworkConfig(newConfigBuilder(FRAMEWORK_CONFIG)
-                .defaultSchema(schema)
-                .build())
+            .defaultSchema(schema)
             .build();
 
         PlanningContext ctx = PlanningContext.builder()
@@ -324,7 +309,7 @@ public class PlannerTest extends AbstractPlannerTest {
 
         IgniteRel phys = physicalPlan(ctx);
 
-        MultiStepPlan plan = splitPlan(phys);
+        ExecutionPlan plan = splitPlan(phys);
 
         List<Fragment> fragments = plan.fragments();
         assertEquals(2, fragments.size());
@@ -369,16 +354,14 @@ public class PlannerTest extends AbstractPlannerTest {
     }
 
     /** */
-    private MultiStepPlan splitPlan(IgniteRel phys) {
+    private ExecutionPlan splitPlan(IgniteRel phys) {
         assertNotNull(phys);
 
-        MultiStepPlan plan = new MultiStepQueryPlan(new QueryTemplate(new Splitter().go(phys)), null, null);
+        MultiStepPlan plan = new MultiStepQueryPlan(null, null, new QueryTemplate(new Splitter().go(phys)), null, null);
 
         assertNotNull(plan);
 
-        plan.init(this::intermediateMapping, Commons.mapContext(F.first(nodes), AffinityTopologyVersion.NONE));
-
-        return plan;
+        return plan.init(this::intermediateMapping, null, Commons.mapContext(F.first(nodes), AffinityTopologyVersion.NONE));
     }
 
     /**
@@ -388,12 +371,14 @@ public class PlannerTest extends AbstractPlannerTest {
         BaseQueryContext qctx,
         PlanningContext ctx,
         TestIoManager mgr,
-        MultiStepPlan plan,
+        ExecutionPlan plan,
         Fragment fragment,
         UUID qryId,
         UUID nodeId
     ) throws IgniteCheckedException {
         GridTestKernalContext kernal = newContext();
+        kernal.add(new NoOpIgniteSecurityProcessor(kernal));
+        kernal.add(new GridCacheProcessor(kernal));
 
         QueryTaskExecutorImpl taskExecutor = new QueryTaskExecutorImpl(kernal);
         taskExecutor.stripedThreadPoolExecutor(new IgniteStripedThreadPoolExecutor(
@@ -438,7 +423,10 @@ public class PlannerTest extends AbstractPlannerTest {
                 plan.remotes(fragment)),
             ArrayRowHandler.INSTANCE,
             NoOpMemoryTracker.INSTANCE,
-            Commons.parametersMap(ctx.parameters()));
+            NoOpIoTracker.INSTANCE,
+            0,
+            Commons.parametersMap(ctx.parameters()),
+            null);
 
         return new LogicalRelImplementor<>(ectx, c -> r -> 0, mailboxRegistry, exchangeSvc,
             new TestFailureProcessor(kernal)).go(fragment.root());
@@ -787,105 +775,29 @@ public class PlannerTest extends AbstractPlannerTest {
      */
     @Test
     public void testJoinPushExpressionRule() throws Exception {
-        IgniteTypeFactory f = new IgniteTypeFactory(IgniteTypeSystem.INSTANCE);
+        IgniteSchema publicSchema = createSchema(
+            createTable("EMP", 100, IgniteDistributions.broadcast(),
+                "ID", INTEGER, "NAME", VARCHAR, "DEPTNO", INTEGER),
+            createTable("DEPT", 10, IgniteDistributions.broadcast(),
+                "DEPTNO", INTEGER, "NAME", VARCHAR)
+        );
 
-        TestTable emp = new TestTable(
-            new RelDataTypeFactory.Builder(f)
-                .add("ID", f.createJavaType(Integer.class))
-                .add("NAME", f.createJavaType(String.class))
-                .add("DEPTNO", f.createJavaType(Integer.class))
-                .build()) {
-
-            @Override public IgniteDistribution distribution() {
-                return IgniteDistributions.broadcast();
-            }
-        };
-
-        TestTable dept = new TestTable(
-            new RelDataTypeFactory.Builder(f)
-                .add("DEPTNO", f.createJavaType(Integer.class))
-                .add("NAME", f.createJavaType(String.class))
-                .build()) {
-
-            @Override public IgniteDistribution distribution() {
-                return IgniteDistributions.broadcast();
-            }
-        };
-
-        IgniteSchema publicSchema = new IgniteSchema("PUBLIC");
-
-        publicSchema.addTable("EMP", emp);
-        publicSchema.addTable("DEPT", dept);
-
-        SchemaPlus schema = createRootSchema(false)
-            .add("PUBLIC", publicSchema);
-
-        String sql = "select d.deptno, e.deptno " +
+        String sql = "select /*+ CNL_JOIN */ d.deptno, e.deptno " +
             "from dept d, emp e " +
             "where d.deptno + e.deptno = 2";
 
-        PlanningContext ctx = PlanningContext.builder()
-            .parentContext(BaseQueryContext.builder()
-                .frameworkConfig(newConfigBuilder(FRAMEWORK_CONFIG)
-                    .defaultSchema(schema)
-                    .costFactory(new IgniteCostFactory(1, 100, 1, 1))
-                    .build())
-                .logger(log)
-                .build()
-            )
-            .query(sql)
-            .build();
-
-        RelRoot relRoot;
-
-        try (IgnitePlanner planner = ctx.planner()) {
-            assertNotNull(planner);
-
-            String qry = ctx.query();
-
-            assertNotNull(qry);
-
-            // Parse
-            SqlNode sqlNode = planner.parse(qry);
-
-            // Validate
-            sqlNode = planner.validate(sqlNode);
-
-            // Convert to Relational operators graph
-            relRoot = planner.rel(sqlNode);
-
-            RelNode rel = relRoot.rel;
-
-            assertNotNull(rel);
-            assertEquals("" +
-                    "LogicalProject(DEPTNO=[$0], DEPTNO0=[$4])\n" +
-                    "  LogicalFilter(condition=[=(CAST(+($0, $4)):INTEGER, 2)])\n" +
-                    "    LogicalJoin(condition=[true], joinType=[inner])\n" +
-                    "      IgniteLogicalTableScan(table=[[PUBLIC, DEPT]])\n" +
-                    "      IgniteLogicalTableScan(table=[[PUBLIC, EMP]])\n",
-                RelOptUtil.toString(rel));
-
-            // Transformation chain
-            RelTraitSet desired = rel.getCluster().traitSet()
-                .replace(IgniteConvention.INSTANCE)
-                .replace(IgniteDistributions.single())
-                .replace(CorrelationTrait.UNCORRELATED)
-                .simplify();
-
-            IgniteRel phys = planner.transform(PlannerPhase.OPTIMIZATION, desired, rel);
-
-            assertNotNull(phys);
-            assertEquals(
-                "Invalid plan:\n" + RelOptUtil.toString(phys),
-                "IgniteProject(DEPTNO=[$3], DEPTNO0=[$2])\n" +
-                    "  IgniteCorrelatedNestedLoopJoin(condition=[=(CAST(+($3, $2)):INTEGER, 2)], joinType=[inner], " +
-                    "variablesSet=[[$cor2]], correlationVariables=[[$cor2]])\n" +
-                    "    IgniteTableScan(table=[[PUBLIC, EMP]])\n" +
-                    "    IgniteTableScan(table=[[PUBLIC, DEPT]], filters=[=(CAST(+($t0, $cor2.DEPTNO)):INTEGER, 2)])\n",
-                RelOptUtil.toString(phys));
-
-            checkSplitAndSerialization(phys, publicSchema);
-        }
+        assertPlan(sql, publicSchema, isInstanceOf(IgniteCorrelatedNestedLoopJoin.class)
+            .and(cnlj -> "=(+($0, $1), 2)".equals(cnlj.getCondition().toString()))
+            .and(cnlj -> cnlj.getJoinType() == JoinRelType.INNER)
+            .and(cnlj -> cnlj.getVariablesSet().size() == 1)
+            .and(input(0, isTableScan("DEPT")
+                .and(t -> t.requiredColumns().equals(ImmutableBitSet.of(0)))
+            ))
+            .and(input(1, isTableScan("EMP")
+                .and(t -> t.requiredColumns().equals(ImmutableBitSet.of(2)))
+                .and(t -> "=(+($cor1.DEPTNO, $t0), 2)".equals(t.condition().toString()))
+            ))
+        );
     }
 
     /** */
@@ -938,64 +850,5 @@ public class PlannerTest extends AbstractPlannerTest {
                 "      IgniteTableScan(table=[[PUBLIC, EMP]])\n" +
                 "      IgniteTableScan(table=[[PUBLIC, DEPT]])\n",
             RelOptUtil.toString(phys));
-    }
-
-    /** */
-    @Test
-    public void testNotStandardFunctions() throws Exception {
-        IgniteSchema publicSchema = new IgniteSchema("PUBLIC");
-        IgniteTypeFactory f = new IgniteTypeFactory(IgniteTypeSystem.INSTANCE);
-
-        publicSchema.addTable(
-            "TEST",
-            new TestTable(
-                new RelDataTypeFactory.Builder(f)
-                    .add("ID", f.createJavaType(Integer.class))
-                    .add("VAL", f.createJavaType(String.class))
-                    .build()) {
-
-                @Override public IgniteDistribution distribution() {
-                    return IgniteDistributions.affinity(0, "TEST", "hash");
-                }
-            }
-        );
-
-        String queries[] = {
-            "select REVERSE(val) from TEST", // MYSQL
-            "select DECODE(id, 0, val, '') from TEST" // ORACLE
-        };
-
-        for (String sql : queries) {
-            IgniteRel phys = physicalPlan(
-                sql,
-                publicSchema
-            );
-
-            checkSplitAndSerialization(phys, publicSchema);
-        }
-    }
-
-    /** */
-    @Test
-    public void testMinusDateSerialization() throws Exception {
-        IgniteSchema publicSchema = new IgniteSchema("PUBLIC");
-
-        IgniteRel phys = physicalPlan("SELECT (DATE '2021-03-01' - DATE '2021-01-01') MONTHS", publicSchema);
-
-        checkSplitAndSerialization(phys, publicSchema);
-    }
-
-    /** */
-    @Test
-    public void testFloatSerialization() throws Exception {
-        IgniteSchema publicSchema = new IgniteSchema("PUBLIC");
-
-        IgniteRel phys = physicalPlan("SELECT " + Integer.MAX_VALUE + "::FLOAT, " +
-            Long.MAX_VALUE + "::FLOAT" +
-            "-17014118346046923173168730371588410572::FLOAT" +
-            "-17014118346046923173.168730371588410572::FLOAT",
-            publicSchema);
-
-        checkSplitAndSerialization(phys, publicSchema);
     }
 }

@@ -51,13 +51,11 @@ import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.cluster.ClusterGroup;
 import org.apache.ignite.internal.AsyncSupportAdapter;
 import org.apache.ignite.internal.GridKernalState;
-import org.apache.ignite.internal.processors.cache.mvcc.MvccUtils;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.typedef.internal.A;
 import org.apache.ignite.lang.IgniteBiPredicate;
 import org.apache.ignite.lang.IgniteClosure;
 import org.apache.ignite.lang.IgniteFuture;
-import org.apache.ignite.mxbean.CacheMetricsMXBean;
 import org.apache.ignite.transactions.TransactionException;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -146,8 +144,6 @@ public class GatewayProtectedCacheProxy<K, V> extends AsyncSupportAdapter<Ignite
         CacheOperationGate opGate = onEnter();
 
         try {
-            MvccUtils.verifyMvccOperationSupport(delegate.context(), "withExpiryPolicy");
-
             return new GatewayProtectedCacheProxy<>(delegate, opCtx.withExpiryPolicy(plc), lock);
         }
         finally {
@@ -171,28 +167,6 @@ public class GatewayProtectedCacheProxy<K, V> extends AsyncSupportAdapter<Ignite
                 return this;
 
             return new GatewayProtectedCacheProxy<>(delegate, opCtx.setSkipStore(true), lock);
-        }
-        finally {
-            onLeave(opGate);
-        }
-    }
-
-    /** {@inheritDoc} */
-    @Override public IgniteCache<K, V> withAllowAtomicOpsInTx() {
-        if (context().atomic() && !opCtx.allowedAtomicOpsInTx() && context().tm().tx() != null) {
-            throw new IllegalStateException("Enabling atomic operations during active transaction is not allowed. " +
-                "Enable atomic operations before transaction start.");
-        }
-
-        CacheOperationGate opGate = onEnter();
-
-        try {
-            boolean allowed = opCtx.allowedAtomicOpsInTx();
-
-            if (allowed)
-                return this;
-
-            return new GatewayProtectedCacheProxy<>(delegate, opCtx.setAllowAtomicOpsInTx(), lock);
         }
         finally {
             onLeave(opGate);
@@ -240,11 +214,6 @@ public class GatewayProtectedCacheProxy<K, V> extends AsyncSupportAdapter<Ignite
         CacheOperationGate opGate = onEnter();
 
         try {
-            if (context().mvccEnabled()) {
-                throw new UnsupportedOperationException(
-                    "The TRANSACTIONAL_SNAPSHOT mode is incompatible with the read-repair feature.");
-            }
-
             if (context().isNear())
                 throw new UnsupportedOperationException("Read-repair is incompatible with near caches.");
 
@@ -1411,17 +1380,17 @@ public class GatewayProtectedCacheProxy<K, V> extends AsyncSupportAdapter<Ignite
         if (!onEnterIfNoStop(gate))
             return;
 
-        IgniteFuture<?> destroyFuture;
+        IgniteFuture<?> destroyFut;
 
         try {
-            destroyFuture = delegate.destroyAsync();
+            destroyFut = delegate.destroyAsync();
         }
         finally {
             onLeave(gate);
         }
 
-        if (destroyFuture != null)
-            destroyFuture.get();
+        if (destroyFut != null)
+            destroyFut.get();
     }
 
     /** {@inheritDoc} */
@@ -1436,17 +1405,17 @@ public class GatewayProtectedCacheProxy<K, V> extends AsyncSupportAdapter<Ignite
         if (!onEnterIfNoStop(gate))
             return;
 
-        IgniteFuture<?> closeFuture;
+        IgniteFuture<?> closeFut;
 
         try {
-            closeFuture = closeAsync();
+            closeFut = closeAsync();
         }
         finally {
             onLeave(gate);
         }
 
-        if (closeFuture != null)
-            closeFuture.get();
+        if (closeFut != null)
+            closeFut.get();
     }
 
     /** {@inheritDoc} */
@@ -1499,30 +1468,6 @@ public class GatewayProtectedCacheProxy<K, V> extends AsyncSupportAdapter<Ignite
 
         try {
             return delegate.localMetrics();
-        }
-        finally {
-            onLeave(opGate);
-        }
-    }
-
-    /** {@inheritDoc} */
-    @Override public CacheMetricsMXBean mxBean() {
-        CacheOperationGate opGate = onEnter();
-
-        try {
-            return delegate.mxBean();
-        }
-        finally {
-            onLeave(opGate);
-        }
-    }
-
-    /** {@inheritDoc} */
-    @Override public CacheMetricsMXBean localMxBean() {
-        CacheOperationGate opGate = onEnter();
-
-        try {
-            return delegate.localMxBean();
         }
         finally {
             onLeave(opGate);
@@ -1607,8 +1552,8 @@ public class GatewayProtectedCacheProxy<K, V> extends AsyncSupportAdapter<Ignite
      * @return Cache Gateway.
      */
     @Nullable private GridCacheGateway<K, V> gate() {
-        GridCacheContext<K, V> cacheContext = delegate.context();
-        return cacheContext != null ? cacheContext.gate() : null;
+        GridCacheContext<K, V> cacheCtx = delegate.context();
+        return cacheCtx != null ? cacheCtx.gate() : null;
     }
 
     /**

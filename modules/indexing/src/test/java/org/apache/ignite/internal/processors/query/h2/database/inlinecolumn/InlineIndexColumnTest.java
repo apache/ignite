@@ -918,7 +918,7 @@ public class InlineIndexColumnTest extends AbstractIndexingCommonTest {
      * @return Random string.
      */
     private String randomString(int cnt) {
-        final char[] buffer = new char[cnt];
+        final char[] buf = new char[cnt];
 
         ThreadLocalRandom rnd = ThreadLocalRandom.current();
 
@@ -935,9 +935,9 @@ public class InlineIndexColumnTest extends AbstractIndexingCommonTest {
                     cnt++;
                 else {
                     // low surrogate, insert high surrogate after putting it in
-                    buffer[cnt] = ch;
+                    buf[cnt] = ch;
                     cnt--;
-                    buffer[cnt] = (char)(55296 + rnd.nextInt(128));
+                    buf[cnt] = (char)(55296 + rnd.nextInt(128));
                 }
             }
             else if (ch >= 55296 && ch <= 56191) {
@@ -945,19 +945,19 @@ public class InlineIndexColumnTest extends AbstractIndexingCommonTest {
                     cnt++;
                 else {
                     // high surrogate, insert low surrogate before putting it in
-                    buffer[cnt] = (char)(56320 + rnd.nextInt(128));
+                    buf[cnt] = (char)(56320 + rnd.nextInt(128));
                     cnt--;
-                    buffer[cnt] = ch;
+                    buf[cnt] = ch;
                 }
             }
             else if (ch >= 56192 && ch <= 56319)
                 // private high surrogate, no effing clue, so skip it
                 cnt++;
             else
-                buffer[cnt] = ch;
+                buf[cnt] = ch;
         }
 
-        return new String(buffer);
+        return new String(buf);
     }
 
     /** Test class to verify java object inlining */

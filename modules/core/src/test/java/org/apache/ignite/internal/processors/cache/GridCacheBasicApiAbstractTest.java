@@ -39,7 +39,6 @@ import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.GridTestThread;
-import org.apache.ignite.testframework.MvccFeatureChecker;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.jetbrains.annotations.Nullable;
 import org.junit.Test;
@@ -95,8 +94,6 @@ public abstract class GridCacheBasicApiAbstractTest extends GridCommonAbstractTe
      */
     @Test
     public void testBasicLock() throws Exception {
-        MvccFeatureChecker.skipIfNotSupported(MvccFeatureChecker.Feature.ENTRY_LOCK);
-
         IgniteCache<Integer, String> cache = ignite.cache(DEFAULT_CACHE_NAME);
 
         Lock lock = cache.lock(1);
@@ -115,8 +112,6 @@ public abstract class GridCacheBasicApiAbstractTest extends GridCommonAbstractTe
      */
     @Test
     public void testSingleLockReentry() throws IgniteCheckedException {
-        MvccFeatureChecker.skipIfNotSupported(MvccFeatureChecker.Feature.ENTRY_LOCK);
-
         IgniteCache<Integer, String> cache = ignite.cache(DEFAULT_CACHE_NAME);
 
         Lock lock = cache.lock(1);
@@ -146,8 +141,6 @@ public abstract class GridCacheBasicApiAbstractTest extends GridCommonAbstractTe
      */
     @Test
     public void testReentry() throws Exception {
-        MvccFeatureChecker.skipIfNotSupported(MvccFeatureChecker.Feature.ENTRY_LOCK);
-
         IgniteCache<Integer, String> cache = ignite.cache(DEFAULT_CACHE_NAME);
 
         Lock lock = cache.lock(1);
@@ -188,8 +181,6 @@ public abstract class GridCacheBasicApiAbstractTest extends GridCommonAbstractTe
      */
     @Test
     public void testInterruptLock() throws InterruptedException {
-        MvccFeatureChecker.skipIfNotSupported(MvccFeatureChecker.Feature.ENTRY_LOCK);
-
         final IgniteCache<Integer, String> cache = ignite.cache(DEFAULT_CACHE_NAME);
 
         final Lock lock = cache.lock(1);
@@ -235,8 +226,6 @@ public abstract class GridCacheBasicApiAbstractTest extends GridCommonAbstractTe
      */
     @Test
     public void testInterruptLockWithTimeout() throws Exception {
-        MvccFeatureChecker.skipIfNotSupported(MvccFeatureChecker.Feature.ENTRY_LOCK);
-
         final IgniteCache<Integer, String> cache = ignite.cache(DEFAULT_CACHE_NAME);
 
         startGrid(1);
@@ -297,8 +286,6 @@ public abstract class GridCacheBasicApiAbstractTest extends GridCommonAbstractTe
      */
     @Test
     public void testManyLockReentries() throws IgniteCheckedException {
-        MvccFeatureChecker.skipIfNotSupported(MvccFeatureChecker.Feature.ENTRY_LOCK);
-
         IgniteCache<Integer, String> cache = ignite.cache(DEFAULT_CACHE_NAME);
 
         Integer key = 1;
@@ -343,8 +330,6 @@ public abstract class GridCacheBasicApiAbstractTest extends GridCommonAbstractTe
      */
     @Test
     public void testLockMultithreaded() throws Exception {
-        MvccFeatureChecker.skipIfNotSupported(MvccFeatureChecker.Feature.ENTRY_LOCK);
-
         final IgniteCache<Integer, String> cache = ignite.cache(DEFAULT_CACHE_NAME);
 
         final CountDownLatch l1 = new CountDownLatch(1);
@@ -464,9 +449,6 @@ public abstract class GridCacheBasicApiAbstractTest extends GridCommonAbstractTe
      */
     @Test
     public void testBasicOps() throws Exception {
-        MvccFeatureChecker.skipIfNotSupported(MvccFeatureChecker.Feature.ENTRY_LOCK);
-        MvccFeatureChecker.skipIfNotSupported(MvccFeatureChecker.Feature.CACHE_EVENTS);
-
         IgniteCache<Integer, String> cache = ignite.cache(DEFAULT_CACHE_NAME);
 
         CountDownLatch latch = new CountDownLatch(1);
@@ -529,9 +511,6 @@ public abstract class GridCacheBasicApiAbstractTest extends GridCommonAbstractTe
      */
     @Test
     public void testBasicOpsWithReentry() throws Exception {
-        MvccFeatureChecker.skipIfNotSupported(MvccFeatureChecker.Feature.ENTRY_LOCK);
-        MvccFeatureChecker.skipIfNotSupported(MvccFeatureChecker.Feature.CACHE_EVENTS);
-
         IgniteCache<Integer, String> cache = ignite.cache(DEFAULT_CACHE_NAME);
 
         int key = (int)System.currentTimeMillis();
@@ -605,8 +584,6 @@ public abstract class GridCacheBasicApiAbstractTest extends GridCommonAbstractTe
      */
     @Test
     public void testMultiLocks() throws Exception {
-        MvccFeatureChecker.skipIfNotSupported(MvccFeatureChecker.Feature.ENTRY_LOCK);
-
         IgniteCache<Integer, String> cache = ignite.cache(DEFAULT_CACHE_NAME);
 
         Collection<Integer> keys = Arrays.asList(1, 2, 3);
@@ -664,10 +641,6 @@ public abstract class GridCacheBasicApiAbstractTest extends GridCommonAbstractTe
      */
     @Test
     public void testPutWithExpiration() throws Exception {
-        MvccFeatureChecker.skipIfNotSupported(MvccFeatureChecker.Feature.ENTRY_LOCK);
-        MvccFeatureChecker.skipIfNotSupported(MvccFeatureChecker.Feature.EXPIRATION);
-        MvccFeatureChecker.skipIfNotSupported(MvccFeatureChecker.Feature.CACHE_EVENTS);
-
         IgniteCache<Integer, String> cache = ignite.cache(DEFAULT_CACHE_NAME);
 
         CacheEventListener lsnr = new CacheEventListener(new CountDownLatch(1));

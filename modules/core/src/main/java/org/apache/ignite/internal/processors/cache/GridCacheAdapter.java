@@ -37,7 +37,6 @@ import java.util.Set;
 import java.util.SortedMap;
 import java.util.SortedSet;
 import java.util.UUID;
-import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Semaphore;
@@ -52,7 +51,6 @@ import javax.cache.processor.EntryProcessorException;
 import javax.cache.processor.EntryProcessorResult;
 import javax.cache.processor.MutableEntry;
 import org.apache.ignite.Ignite;
-import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
@@ -74,9 +72,7 @@ import org.apache.ignite.compute.ComputeJobResult;
 import org.apache.ignite.compute.ComputeJobResultPolicy;
 import org.apache.ignite.compute.ComputeTaskAdapter;
 import org.apache.ignite.configuration.CacheConfiguration;
-import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.TransactionConfiguration;
-import org.apache.ignite.internal.ComputeTaskInternalFuture;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteFeatures;
 import org.apache.ignite.internal.IgniteInternalFuture;
@@ -93,7 +89,6 @@ import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.affinity.GridCacheAffinityImpl;
 import org.apache.ignite.internal.processors.cache.distributed.IgniteExternalizableExpiryPolicy;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtCacheAdapter;
-import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtTopologyFuture;
 import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtInvalidPartitionException;
 import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtLocalPartition;
 import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionTopology;
@@ -102,13 +97,12 @@ import org.apache.ignite.internal.processors.cache.distributed.near.consistency.
 import org.apache.ignite.internal.processors.cache.distributed.near.consistency.IgniteAtomicConsistencyViolationException;
 import org.apache.ignite.internal.processors.cache.distributed.near.consistency.IgniteConsistencyViolationException;
 import org.apache.ignite.internal.processors.cache.dr.GridCacheDrInfo;
-import org.apache.ignite.internal.processors.cache.mvcc.MvccSnapshot;
-import org.apache.ignite.internal.processors.cache.mvcc.MvccUtils;
 import org.apache.ignite.internal.processors.cache.persistence.CacheDataRow;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteInternalTx;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteTxKey;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteTxLocalAdapter;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteTxLocalEx;
+import org.apache.ignite.internal.processors.cache.transactions.TransactionChanges;
 import org.apache.ignite.internal.processors.cache.version.GridCacheRawVersionedEntry;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.processors.datastreamer.DataStreamerEntry;
@@ -126,12 +120,10 @@ import org.apache.ignite.internal.util.future.GridEmbeddedFuture;
 import org.apache.ignite.internal.util.future.GridFinishedFuture;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.lang.GridCloseableIterator;
-import org.apache.ignite.internal.util.lang.GridClosureException;
 import org.apache.ignite.internal.util.lang.GridPlainCallable;
 import org.apache.ignite.internal.util.lang.GridPlainRunnable;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.typedef.C1;
-import org.apache.ignite.internal.util.typedef.C2;
 import org.apache.ignite.internal.util.typedef.CI1;
 import org.apache.ignite.internal.util.typedef.CI2;
 import org.apache.ignite.internal.util.typedef.CIX2;
@@ -142,7 +134,6 @@ import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.A;
 import org.apache.ignite.internal.util.typedef.internal.CU;
-import org.apache.ignite.internal.util.typedef.internal.GPC;
 import org.apache.ignite.internal.util.typedef.internal.LT;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -155,7 +146,6 @@ import org.apache.ignite.lang.IgniteOutClosure;
 import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.lang.IgniteProductVersion;
 import org.apache.ignite.lang.IgniteRunnable;
-import org.apache.ignite.mxbean.CacheMetricsMXBean;
 import org.apache.ignite.plugin.security.SecurityPermission;
 import org.apache.ignite.resources.IgniteInstanceResource;
 import org.apache.ignite.resources.JobContextResource;
@@ -169,17 +159,14 @@ import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_CACHE_RETRIES_COUNT;
 import static org.apache.ignite.internal.GridClosureCallMode.BROADCAST;
-import static org.apache.ignite.internal.processors.cache.CacheOperationContext.allowAtomicOpsInTx;
 import static org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionState.OWNING;
 import static org.apache.ignite.internal.processors.dr.GridDrType.DR_LOAD;
 import static org.apache.ignite.internal.processors.dr.GridDrType.DR_NONE;
 import static org.apache.ignite.internal.processors.metric.impl.MetricUtils.cacheMetricsRegistryName;
-import static org.apache.ignite.internal.processors.task.GridTaskThreadContextKey.TC_NO_FAILOVER;
-import static org.apache.ignite.internal.processors.task.GridTaskThreadContextKey.TC_SUBGRID;
+import static org.apache.ignite.internal.processors.task.TaskExecutionOptions.options;
 import static org.apache.ignite.transactions.TransactionConcurrency.OPTIMISTIC;
 import static org.apache.ignite.transactions.TransactionConcurrency.PESSIMISTIC;
 import static org.apache.ignite.transactions.TransactionIsolation.READ_COMMITTED;
-import static org.apache.ignite.transactions.TransactionIsolation.REPEATABLE_READ;
 import static org.apache.ignite.transactions.TransactionIsolation.SERIALIZABLE;
 
 /**
@@ -284,18 +271,8 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
     @GridToStringExclude
     protected CacheConfiguration cacheCfg;
 
-    /** Grid configuration. */
-    @GridToStringExclude
-    private IgniteConfiguration gridCfg;
-
     /** Cache metrics. */
     protected CacheMetricsImpl metrics;
-
-    /** Cache localMxBean. */
-    private CacheMetricsMXBean locMxBean;
-
-    /** Cache mxBean. */
-    private CacheMetricsMXBean clusterMxBean;
 
     /** Logger. */
     protected IgniteLogger log;
@@ -344,7 +321,6 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
 
         this.ctx = ctx;
 
-        gridCfg = ctx.gridConfig();
         cacheCfg = ctx.config();
 
         locNodeId = ctx.gridConfig().getNodeId();
@@ -355,9 +331,6 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
         txLockMsgLog = ctx.shared().txLockMessageLogger();
 
         metrics = new CacheMetricsImpl(ctx, isNear());
-
-        locMxBean = new CacheLocalMetricsMXBeanImpl(this);
-        clusterMxBean = new CacheClusterMetricsMXBeanImpl(this);
 
         if (ctx.config().getMaxConcurrentAsyncOperations() > 0)
             asyncOpsSem = new Semaphore(ctx.config().getMaxConcurrentAsyncOperations());
@@ -499,8 +472,7 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
             false,
             null,
             false,
-            null,
-            allowAtomicOpsInTx());
+            null);
 
         return new GridCacheProxyImpl<>(ctx, this, opCtx);
     }
@@ -514,8 +486,7 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
             false,
             null,
             false,
-            null,
-            allowAtomicOpsInTx());
+            null);
 
         return new GridCacheProxyImpl<>((GridCacheContext<K1, V1>)ctx, (GridCacheAdapter<K1, V1>)this, opCtx);
     }
@@ -536,8 +507,7 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
             false,
             null,
             false,
-            null,
-            allowAtomicOpsInTx());
+            null);
 
         return new GridCacheProxyImpl<>(ctx, this, opCtx);
     }
@@ -551,23 +521,7 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
             true,
             null,
             false,
-            null,
-            allowAtomicOpsInTx());
-
-        return new GridCacheProxyImpl<>(ctx, this, opCtx);
-    }
-
-    /** {@inheritDoc} */
-    @Override public final IgniteInternalCache<K, V> withAllowAtomicOpsInTx() {
-        CacheOperationContext opCtx = new CacheOperationContext(
-            false,
-            false,
-            null,
-            false,
-            null,
-            false,
-            null,
-            allowAtomicOpsInTx());
+            null);
 
         return new GridCacheProxyImpl<>(ctx, this, opCtx);
     }
@@ -658,7 +612,7 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
      *
      * @throws IgniteCheckedException If callback failed.
      */
-    protected void onKernalStart() throws IgniteCheckedException {
+    public void onKernalStart() throws IgniteCheckedException {
         // No-op.
     }
 
@@ -779,16 +733,10 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
 
                 IgniteCacheOffheapManager offheapMgr = ctx.isNear() ? ctx.near().dht().context().offheap() : ctx.offheap();
 
-                MvccSnapshot mvccSnapshot = ctx.mvccEnabled() ? MvccUtils.MVCC_MAX_SNAPSHOT : null;
-
-                its.add(offheapMgr.cacheEntriesIterator(ctx, modes.primary, modes.backup, topVer, ctx.keepBinary(),
-                        mvccSnapshot, null));
+                its.add(offheapMgr.cacheEntriesIterator(ctx, modes.primary, modes.backup, topVer, ctx.keepBinary(), null));
             }
         }
         else if (modes.heap) {
-            if (ctx.mvccEnabled())
-                return F.emptyIterator();
-
             if (modes.near && ctx.isNear())
                 its.add(ctx.near().nearEntries().iterator());
 
@@ -888,9 +836,7 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
                 ctx.shared().database().checkpointReadLock();
 
                 try {
-                    cacheVal = ctx.mvccEnabled()
-                        ? e.mvccPeek(modes.heap && !modes.offheap)
-                        : e.peek(modes.heap, modes.offheap, topVer, null);
+                    cacheVal = e.peek(modes.heap, modes.offheap, topVer, null);
                 }
                 catch (GridCacheEntryRemovedException ignore) {
                     if (log.isDebugEnabled())
@@ -1077,9 +1023,6 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
     @Override public void clearLocally(boolean srv, boolean near, boolean readers) {
         ctx.checkSecurity(SecurityPermission.CACHE_REMOVE);
 
-        //TODO IGNITE-7952
-        MvccUtils.verifyMvccOperationSupport(ctx, "Clear");
-
         List<GridCacheClearAllRunnable<K, V>> jobs = splitClearLocally(srv, near, readers);
 
         if (!F.isEmpty(jobs)) {
@@ -1150,9 +1093,6 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
      * @throws IgniteCheckedException In case of error.
      */
     private void clear(@Nullable Set<? extends K> keys) throws IgniteCheckedException {
-        //TODO IGNITE-7952
-        MvccUtils.verifyMvccOperationSupport(ctx, "Clear");
-
         ctx.shared().cache().checkReadOnlyState("clear", ctx.config());
 
         executeClearTask(keys, false).get();
@@ -1164,9 +1104,6 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
      * @return Future.
      */
     private IgniteInternalFuture<?> clearAsync(@Nullable final Set<? extends K> keys) {
-        //TODO IGNITE-7952
-        MvccUtils.verifyMvccOperationSupport(ctx, "Clear");
-
         ctx.shared().cache().checkReadOnlyState("clear", ctx.config());
 
         return executeClearTask(keys, false).chainCompose(fut -> executeClearTask(keys, true));
@@ -1181,10 +1118,11 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
         Collection<ClusterNode> srvNodes = ctx.grid().cluster().forCacheNodes(name(), !near, near, false).nodes();
 
         if (!srvNodes.isEmpty()) {
-            ctx.kernalContext().task().setThreadContext(TC_SUBGRID, srvNodes);
-
             return ctx.kernalContext().task().execute(
-                new ClearTask(ctx.name(), ctx.affinity().affinityTopologyVersion(), keys, near), null);
+                new ClearTask(ctx.name(), ctx.affinity().affinityTopologyVersion(), keys, near),
+                null,
+                options(srvNodes)
+            );
         }
         else
             return new GridFinishedFuture<>();
@@ -1211,8 +1149,12 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
             return new GridFinishedFuture<>();
         }
 
-        return ctx.closures().affinityRun(Collections.singleton(name()), part,
-            new PartitionPreloadJob(ctx.name(), part), grp.nodes(), null);
+        return ctx.closures().affinityRun(
+            Collections.singleton(name()),
+            part,
+            new PartitionPreloadJob(ctx.name(), part),
+            options(grp.nodes())
+        );
     }
 
     /**
@@ -1222,9 +1164,6 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
     public void clearLocally(Collection<KeyCacheObject> keys, boolean readers) {
         if (F.isEmpty(keys))
             return;
-
-        //TODO IGNITE-7952
-        MvccUtils.verifyMvccOperationSupport(ctx, "Clear");
 
         GridCacheVersion obsoleteVer = nextVersion();
 
@@ -1358,7 +1297,7 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
             fut.listen(new UpdateGetAllTimeStatClosure<>(metrics0(), start));
 
         if (performanceStatsEnabled)
-            fut.listen(f -> writeStatistics(OperationType.CACHE_GET_ALL, start));
+            fut.listen(() -> writeStatistics(OperationType.CACHE_GET_ALL, start));
 
         return fut;
     }
@@ -1468,7 +1407,7 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
             fut.listen(new UpdateGetTimeStatClosure<V>(metrics0(), start));
 
         if (performanceStatsEnabled)
-            fut.listen(f -> writeStatistics(OperationType.CACHE_GET, start));
+            fut.listen(() -> writeStatistics(OperationType.CACHE_GET, start));
 
         return fut;
     }
@@ -1525,7 +1464,7 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
             fut.listen(new UpdateGetTimeStatClosure<EntryGetResult>(metrics0(), start));
 
         if (performanceStatsEnabled)
-            fut.listen(f -> writeStatistics(OperationType.CACHE_GET, start));
+            fut.listen(() -> writeStatistics(OperationType.CACHE_GET, start));
 
         return fr;
     }
@@ -1631,7 +1570,7 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
             fut.listen(new UpdateGetAllTimeStatClosure<Map<K, V>>(metrics0(), start));
 
         if (performanceStatsEnabled)
-            fut.listen(f -> writeStatistics(OperationType.CACHE_GET_ALL, start));
+            fut.listen(() -> writeStatistics(OperationType.CACHE_GET_ALL, start));
 
         return fut;
     }
@@ -1686,7 +1625,7 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
             fut.listen(new UpdateGetAllTimeStatClosure<Map<K, EntryGetResult>>(metrics0(), start));
 
         if (performanceStatsEnabled)
-            fut.listen(f -> writeStatistics(OperationType.CACHE_GET_ALL, start));
+            fut.listen(() -> writeStatistics(OperationType.CACHE_GET_ALL, start));
 
         return rf;
     }
@@ -1833,7 +1772,7 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
      * @return Future for the get operation.
      * @see GridCacheAdapter#getAllAsync(Collection)
      */
-    protected IgniteInternalFuture<Map<K, V>> getAllAsync(
+    protected abstract IgniteInternalFuture<Map<K, V>> getAllAsync(
         @Nullable Collection<? extends K> keys,
         boolean forcePrimary,
         boolean skipTx,
@@ -1843,514 +1782,7 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
         ReadRepairStrategy readRepairStrategy,
         boolean skipVals,
         final boolean needVer
-    ) {
-        CacheOperationContext opCtx = ctx.operationContextPerCall();
-
-        return getAllAsync(keys,
-            null,
-            opCtx == null || !opCtx.skipStore(),
-            !skipTx,
-            taskName,
-            deserializeBinary,
-            opCtx != null && opCtx.recovery(),
-            readRepairStrategy,
-            forcePrimary,
-            skipVals ? null : expiryPolicy(opCtx != null ? opCtx.expiry() : null),
-            skipVals,
-            needVer);
-    }
-
-    /**
-     * @param keys Keys.
-     * @param readerArgs Near cache reader will be added if not null.
-     * @param readThrough Read through.
-     * @param checkTx Check tx.
-     * @param taskName Task name.
-     * @param deserializeBinary Deserialize binary.
-     * @param recovery Recovery flag.
-     * @param forcePrimary Froce primary.
-     * @param expiry Expiry policy.
-     * @param skipVals Skip values.
-     * @param needVer Need version.
-     * @return Future for the get operation.
-     * @see GridCacheAdapter#getAllAsync(Collection)
-     */
-    public final IgniteInternalFuture<Map<K, V>> getAllAsync(@Nullable final Collection<? extends K> keys,
-        @Nullable final ReaderArguments readerArgs,
-        boolean readThrough,
-        boolean checkTx,
-        final String taskName,
-        final boolean deserializeBinary,
-        final boolean recovery,
-        final ReadRepairStrategy readRepairStrategy,
-        final boolean forcePrimary,
-        @Nullable IgniteCacheExpiryPolicy expiry,
-        final boolean skipVals,
-        final boolean needVer
-    ) {
-        ctx.checkSecurity(SecurityPermission.CACHE_READ);
-
-        warnIfUnordered(keys, BulkOperation.GET);
-
-        return getAllAsync0(ctx.cacheKeysView(keys),
-            readerArgs,
-            readThrough,
-            checkTx,
-            taskName,
-            deserializeBinary,
-            expiry,
-            skipVals,
-            /*keep cache objects*/false,
-            recovery,
-            readRepairStrategy,
-            needVer,
-            null,
-            null); // TODO IGNITE-7371
-    }
-
-    /**
-     * @param keys Keys.
-     * @param readerArgs Near cache reader will be added if not null.
-     * @param readThrough Read-through flag.
-     * @param checkTx Check local transaction flag.
-     * @param taskName Task name/
-     * @param deserializeBinary Deserialize binary flag.
-     * @param expiry Expiry policy.
-     * @param skipVals Skip values flag.
-     * @param keepCacheObjects Keep cache objects.
-     * @param needVer If {@code true} returns values as tuples containing value and version.
-     * @param txLbl Transaction label.
-     * @param mvccSnapshot MVCC snapshot.
-     * @return Future.
-     */
-    protected final <K1, V1> IgniteInternalFuture<Map<K1, V1>> getAllAsync0(
-        @Nullable final Collection<KeyCacheObject> keys,
-        @Nullable final ReaderArguments readerArgs,
-        final boolean readThrough,
-        boolean checkTx,
-        final String taskName,
-        final boolean deserializeBinary,
-        @Nullable final IgniteCacheExpiryPolicy expiry,
-        final boolean skipVals,
-        final boolean keepCacheObjects,
-        final boolean recovery,
-        final ReadRepairStrategy readRepairStrategy,
-        final boolean needVer,
-        @Nullable String txLbl,
-        MvccSnapshot mvccSnapshot
-    ) {
-        if (F.isEmpty(keys))
-            return new GridFinishedFuture<>(Collections.<K1, V1>emptyMap());
-
-        GridNearTxLocal tx = null;
-
-        if (checkTx) {
-            try {
-                checkJta();
-            }
-            catch (IgniteCheckedException e) {
-                return new GridFinishedFuture<>(e);
-            }
-
-            tx = checkCurrentTx();
-        }
-
-        if (ctx.mvccEnabled() || tx == null || tx.implicit()) {
-            assert (mvccSnapshot == null) == !ctx.mvccEnabled();
-
-            Map<KeyCacheObject, EntryGetResult> misses = null;
-
-            Set<GridCacheEntryEx> newLocalEntries = null;
-
-            final AffinityTopologyVersion topVer = tx == null ? ctx.affinity().affinityTopologyVersion() :
-                tx.topologyVersion();
-
-            ctx.shared().database().checkpointReadLock();
-
-            try {
-                int keysSize = keys.size();
-
-                GridDhtTopologyFuture topFut = ctx.shared().exchange().lastFinishedFuture();
-
-                Throwable ex = topFut != null ? topFut.validateCache(ctx, recovery, /*read*/true, null, keys) : null;
-
-                if (ex != null)
-                    return new GridFinishedFuture<>(ex);
-
-                final Map<K1, V1> map = keysSize == 1 ?
-                    (Map<K1, V1>)new IgniteBiTuple<>() :
-                    U.<K1, V1>newHashMap(keysSize);
-
-                final boolean storeEnabled = !skipVals && readThrough && ctx.readThrough();
-
-                boolean readNoEntry = ctx.readNoEntry(expiry, readerArgs != null);
-
-                for (KeyCacheObject key : keys) {
-                    while (true) {
-                        try {
-                            EntryGetResult res = null;
-
-                            boolean evt = !skipVals;
-                            boolean updateMetrics = !skipVals;
-
-                            GridCacheEntryEx entry = null;
-
-                            boolean skipEntry = readNoEntry;
-
-                            if (readNoEntry) {
-                                CacheDataRow row = mvccSnapshot != null ?
-                                    ctx.offheap().mvccRead(ctx, key, mvccSnapshot) :
-                                    ctx.offheap().read(ctx, key);
-
-                                if (row != null) {
-                                    long expireTime = row.expireTime();
-
-                                    if (expireTime != 0) {
-                                        if (expireTime > U.currentTimeMillis()) {
-                                            res = new EntryGetWithTtlResult(row.value(),
-                                                row.version(),
-                                                false,
-                                                expireTime,
-                                                0);
-                                        }
-                                        else
-                                            skipEntry = false;
-                                    }
-                                    else
-                                        res = new EntryGetResult(row.value(), row.version(), false);
-                                }
-
-                                if (res != null) {
-                                    if (evt) {
-                                        ctx.events().readEvent(key,
-                                            null,
-                                            txLbl,
-                                            row.value(),
-                                            taskName,
-                                            !deserializeBinary);
-                                    }
-
-                                    if (updateMetrics && ctx.statisticsEnabled())
-                                        ctx.cache().metrics0().onRead(true);
-                                }
-                                else if (storeEnabled)
-                                    skipEntry = false;
-                            }
-
-                            if (!skipEntry) {
-                                boolean isNewLocalEntry = this.map.getEntry(ctx, key) == null;
-
-                                entry = entryEx(key);
-
-                                if (entry == null) {
-                                    if (!skipVals && ctx.statisticsEnabled())
-                                        ctx.cache().metrics0().onRead(false);
-
-                                    break;
-                                }
-
-                                if (isNewLocalEntry) {
-                                    if (newLocalEntries == null)
-                                        newLocalEntries = new HashSet<>();
-
-                                    newLocalEntries.add(entry);
-                                }
-
-                                if (storeEnabled) {
-                                    res = entry.innerGetAndReserveForLoad(updateMetrics,
-                                        evt,
-                                        taskName,
-                                        expiry,
-                                        !deserializeBinary,
-                                        readerArgs);
-
-                                    assert res != null;
-
-                                    if (res.value() == null) {
-                                        if (misses == null)
-                                            misses = new HashMap<>();
-
-                                        misses.put(key, res);
-
-                                        res = null;
-                                    }
-                                }
-                                else {
-                                    res = entry.innerGetVersioned(
-                                        null,
-                                        null,
-                                        updateMetrics,
-                                        evt,
-                                        null,
-                                        taskName,
-                                        expiry,
-                                        !deserializeBinary,
-                                        readerArgs);
-
-                                    if (res == null)
-                                        entry.touch();
-                                }
-                            }
-
-                            if (res != null) {
-                                ctx.addResult(map,
-                                    key,
-                                    res,
-                                    skipVals,
-                                    keepCacheObjects,
-                                    deserializeBinary,
-                                    true,
-                                    needVer);
-
-                                if (entry != null && (tx == null || (!tx.implicit() && tx.isolation() == READ_COMMITTED)))
-                                    entry.touch();
-
-                                if (keysSize == 1)
-                                    // Safe to return because no locks are required in READ_COMMITTED mode.
-                                    return new GridFinishedFuture<>(map);
-                            }
-
-                            break;
-                        }
-                        catch (GridCacheEntryRemovedException ignored) {
-                            if (log.isDebugEnabled())
-                                log.debug("Got removed entry in getAllAsync(..) method (will retry): " + key);
-                        }
-                    }
-                }
-
-                if (storeEnabled && misses != null) {
-                    final Map<KeyCacheObject, EntryGetResult> loadKeys = misses;
-
-                    final IgniteTxLocalAdapter tx0 = tx;
-
-                    final Collection<KeyCacheObject> loaded = new HashSet<>();
-
-                    return new GridEmbeddedFuture(
-                        ctx.closures().callLocalSafe(ctx.projectSafe(new GPC<Map<K1, V1>>() {
-                            @Override public Map<K1, V1> call() throws Exception {
-                                ctx.store().loadAll(null/*tx*/, loadKeys.keySet(), new CI2<KeyCacheObject, Object>() {
-                                    @Override public void apply(KeyCacheObject key, Object val) {
-                                        EntryGetResult res = loadKeys.get(key);
-
-                                        if (res == null || val == null)
-                                            return;
-
-                                        loaded.add(key);
-
-                                        CacheObject cacheVal = ctx.toCacheObject(val);
-
-                                        while (true) {
-                                            GridCacheEntryEx entry = null;
-
-                                            try {
-                                                ctx.shared().database().ensureFreeSpace(ctx.dataRegion());
-                                            }
-                                            catch (IgniteCheckedException e) {
-                                                // Wrap errors (will be unwrapped).
-                                                throw new GridClosureException(e);
-                                            }
-
-                                            ctx.shared().database().checkpointReadLock();
-
-                                            try {
-                                                entry = entryEx(key);
-
-                                                entry.unswap();
-
-                                                GridCacheVersion newVer = nextVersion();
-
-                                                EntryGetResult verVal = entry.versionedValue(
-                                                    cacheVal,
-                                                    res.version(),
-                                                    newVer,
-                                                    expiry,
-                                                    readerArgs);
-
-                                                if (log.isDebugEnabled())
-                                                    log.debug("Set value loaded from store into entry [" +
-                                                        "oldVer=" + res.version() +
-                                                        ", newVer=" + verVal.version() + ", " +
-                                                        "entry=" + entry + ']');
-
-                                                // Don't put key-value pair into result map if value is null.
-                                                if (verVal.value() != null) {
-                                                    ctx.addResult(map,
-                                                        key,
-                                                        verVal,
-                                                        skipVals,
-                                                        keepCacheObjects,
-                                                        deserializeBinary,
-                                                        true,
-                                                        needVer);
-                                                }
-                                                else {
-                                                    ctx.addResult(
-                                                        map,
-                                                        key,
-                                                        new EntryGetResult(cacheVal, res.version()),
-                                                        skipVals,
-                                                        keepCacheObjects,
-                                                        deserializeBinary,
-                                                        false,
-                                                        needVer
-                                                    );
-                                                }
-
-                                                if (tx0 == null || (!tx0.implicit() &&
-                                                    tx0.isolation() == READ_COMMITTED))
-                                                    entry.touch();
-
-                                                break;
-                                            }
-                                            catch (GridCacheEntryRemovedException ignore) {
-                                                if (log.isDebugEnabled())
-                                                    log.debug("Got removed entry during getAllAsync (will retry): " +
-                                                        entry);
-                                            }
-                                            catch (IgniteCheckedException e) {
-                                                // Wrap errors (will be unwrapped).
-                                                throw new GridClosureException(e);
-                                            }
-                                            finally {
-                                                ctx.shared().database().checkpointReadUnlock();
-                                            }
-                                        }
-                                    }
-                                });
-
-                                clearReservationsIfNeeded(topVer, loadKeys, loaded, tx0);
-
-                                return map;
-                            }
-                        }), true),
-                        new C2<Map<K, V>, Exception, IgniteInternalFuture<Map<K, V>>>() {
-                            @Override public IgniteInternalFuture<Map<K, V>> apply(Map<K, V> map, Exception e) {
-                                if (e != null) {
-                                    clearReservationsIfNeeded(topVer, loadKeys, loaded, tx0);
-
-                                    return new GridFinishedFuture<>(e);
-                                }
-
-                                if (tx0 == null || (!tx0.implicit() && tx0.isolation() == READ_COMMITTED)) {
-                                    Collection<KeyCacheObject> notFound = new HashSet<>(loadKeys.keySet());
-
-                                    notFound.removeAll(loaded);
-
-                                    // Touch entries that were not found in store.
-                                    for (KeyCacheObject key : notFound) {
-                                        GridCacheEntryEx entry = peekEx(key);
-
-                                        if (entry != null)
-                                            entry.touch();
-                                    }
-                                }
-
-                                // There were no misses.
-                                return new GridFinishedFuture<>(Collections.<K,
-                                    V>emptyMap());
-                            }
-                        },
-                        new C2<Map<K1, V1>, Exception, Map<K1, V1>>() {
-                            @Override public Map<K1, V1> apply(Map<K1, V1> loaded, Exception e) {
-                                if (e == null)
-                                    map.putAll(loaded);
-
-                                return map;
-                            }
-                        }
-                    );
-                }
-                else
-                    // Misses can be non-zero only if store is enabled.
-                    assert misses == null;
-
-                return new GridFinishedFuture<>(map);
-            }
-            catch (RuntimeException | AssertionError e) {
-                if (misses != null) {
-                    for (KeyCacheObject key0 : misses.keySet()) {
-                        GridCacheEntryEx entry = peekEx(key0);
-                        if (entry != null)
-                            entry.touch();
-                    }
-                }
-
-                if (newLocalEntries != null) {
-                    for (GridCacheEntryEx entry : newLocalEntries)
-                        removeEntry(entry);
-                }
-
-                return new GridFinishedFuture<>(e);
-            }
-            catch (IgniteCheckedException e) {
-                return new GridFinishedFuture<>(e);
-            }
-            finally {
-                ctx.shared().database().checkpointReadUnlock();
-            }
-        }
-        else {
-            return asyncOp(tx, new AsyncOp<Map<K1, V1>>(keys) {
-                @Override public IgniteInternalFuture<Map<K1, V1>> op(GridNearTxLocal tx,
-                    AffinityTopologyVersion readyTopVer) {
-                    return tx.getAllAsync(ctx,
-                        readyTopVer,
-                        keys,
-                        deserializeBinary,
-                        skipVals,
-                        false,
-                        !readThrough,
-                        recovery,
-                        readRepairStrategy,
-                        needVer);
-                }
-            }, ctx.operationContextPerCall(), /*retry*/false);
-        }
-    }
-
-    /** */
-    protected GridNearTxLocal checkCurrentTx() {
-        if (!ctx.mvccEnabled())
-            return ctx.tm().threadLocalTx(ctx);
-
-        return MvccUtils.tx(ctx.kernalContext(), null);
-    }
-
-    /**
-     * @param topVer Affinity topology version for which load was performed.
-     * @param loadKeys Keys to load.
-     * @param loaded Actually loaded keys.
-     * @param tx0 Transaction within which the load was run, if any.
-     */
-    private void clearReservationsIfNeeded(
-        AffinityTopologyVersion topVer,
-        Map<KeyCacheObject, EntryGetResult> loadKeys,
-        Collection<KeyCacheObject> loaded,
-        IgniteTxLocalAdapter tx0
-    ) {
-        if (loaded.size() != loadKeys.size()) {
-            boolean needTouch =
-                tx0 == null || (!tx0.implicit() && tx0.isolation() == READ_COMMITTED);
-
-            for (Map.Entry<KeyCacheObject, EntryGetResult> e : loadKeys.entrySet()) {
-                if (loaded.contains(e.getKey()))
-                    continue;
-
-                if (needTouch || e.getValue().reserved()) {
-                    GridCacheEntryEx entry = peekEx(e.getKey());
-
-                    if (entry != null) {
-                        if (e.getValue().reserved())
-                            entry.clearReserveForLoad(e.getValue().version());
-
-                        if (needTouch)
-                            entry.touch();
-                    }
-                }
-            }
-        }
-    }
+    );
 
     /** {@inheritDoc} */
     @Override public final V getAndPut(K key, V val) throws IgniteCheckedException {
@@ -2432,7 +1864,7 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
             fut.listen(new UpdatePutAndGetTimeStatClosure<V>(metrics0(), start));
 
         if (performanceStatsEnabled)
-            fut.listen(f -> writeStatistics(OperationType.CACHE_GET_AND_PUT, start));
+            fut.listen(() -> writeStatistics(OperationType.CACHE_GET_AND_PUT, start));
 
         return fut;
     }
@@ -2448,8 +1880,7 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
         @Nullable final CacheEntryPredicate filter) {
         return asyncOp(new AsyncOp<V>() {
             @Override public IgniteInternalFuture<V> op(GridNearTxLocal tx, AffinityTopologyVersion readyTopVer) {
-                return tx.putAsync(ctx, readyTopVer, key, val, true, filter)
-                    .chain((IgniteClosure<IgniteInternalFuture<GridCacheReturn>, V>)RET2VAL);
+                return tx.putAsync(ctx, readyTopVer, key, val, true, filter).chain(RET2VAL);
             }
 
             @Override public String toString() {
@@ -2530,6 +1961,10 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
         if (F.isEmpty(drMap))
             return;
 
+        final boolean statsEnabled = ctx.statisticsEnabled();
+
+        long start = statsEnabled ? System.nanoTime() : 0L;
+
         ctx.dr().onReceiveCacheEntriesReceived(drMap.size());
 
         syncOp(new SyncInOp(drMap.size() == 1) {
@@ -2541,6 +1976,9 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
                 return "putAllConflict [drMap=" + drMap + ']';
             }
         });
+
+        if (statsEnabled)
+            metrics0().addPutAllConflictTimeNanos(System.nanoTime() - start);
     }
 
     /** {@inheritDoc} */
@@ -2549,9 +1987,13 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
         if (F.isEmpty(drMap))
             return new GridFinishedFuture<Object>();
 
+        final boolean statsEnabled = ctx.statisticsEnabled();
+
+        long start = statsEnabled ? System.nanoTime() : 0L;
+
         ctx.dr().onReceiveCacheEntriesReceived(drMap.size());
 
-        return asyncOp(new AsyncOp(drMap.keySet()) {
+        IgniteInternalFuture<?> fut = asyncOp(new AsyncOp(drMap.keySet()) {
             @Override public IgniteInternalFuture op(GridNearTxLocal tx, AffinityTopologyVersion readyTopVer) {
                 return tx.putAllDrAsync(ctx, drMap);
             }
@@ -2560,6 +2002,11 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
                 return "putAllConflictAsync [drMap=" + drMap + ']';
             }
         });
+
+        if (statsEnabled)
+            fut.listen(new UpdatePutAllConflictTimeStatClosure<>(metrics0(), start));
+
+        return fut;
     }
 
     /** {@inheritDoc} */
@@ -2848,7 +2295,7 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
                 IgniteInternalFuture<GridCacheReturn> fut =
                     tx.invokeAsync(ctx, null, (Map<? extends K, ? extends EntryProcessor<K, V, Object>>)map, args);
 
-                Map<K, EntryProcessorResult<T>> value = fut.get().value();
+                Map<K, EntryProcessorResult<T>> val = fut.get().value();
 
                 if (statsEnabled)
                     metrics0().addInvokeTimeNanos(System.nanoTime() - start);
@@ -2856,7 +2303,7 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
                 if (performanceStatsEnabled)
                     writeStatistics(OperationType.CACHE_INVOKE_ALL, start);
 
-                return value;
+                return val;
             }
         });
     }
@@ -2886,7 +2333,7 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
             fut.listen(new UpdatePutTimeStatClosure<Boolean>(metrics0(), start));
 
         if (performanceStatsEnabled)
-            fut.listen(f -> writeStatistics(OperationType.CACHE_PUT, start));
+            fut.listen(() -> writeStatistics(OperationType.CACHE_PUT, start));
 
         return fut;
     }
@@ -2906,8 +2353,7 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
                     key,
                     val,
                     false,
-                    filter).chain(
-                    (IgniteClosure<IgniteInternalFuture<GridCacheReturn>, Boolean>)RET2FLAG);
+                    filter).chain(RET2FLAG);
             }
 
             @Override public String toString() {
@@ -3031,7 +2477,7 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
             fut.listen(new UpdatePutAllTimeStatClosure<>(metrics0(), start));
 
         if (performanceStatsEnabled)
-            fut.listen(f -> writeStatistics(OperationType.CACHE_PUT_ALL, start));
+            fut.listen(() -> writeStatistics(OperationType.CACHE_PUT_ALL, start));
 
         return fut;
     }
@@ -3128,7 +2574,7 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
             fut.listen(new UpdateGetAndRemoveTimeStatClosure<V>(metrics0(), start));
 
         if (performanceStatsEnabled)
-            fut.listen(f -> writeStatistics(OperationType.CACHE_GET_AND_REMOVE, start));
+            fut.listen(() -> writeStatistics(OperationType.CACHE_GET_AND_REMOVE, start));
 
         return fut;
     }
@@ -3146,7 +2592,7 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
                     Collections.singletonList(key),
                     /*retval*/true,
                     null,
-                    /*singleRmv*/false).chain((IgniteClosure<IgniteInternalFuture<GridCacheReturn>, V>)RET2VAL);
+                    /*singleRmv*/false).chain(RET2VAL);
             }
 
             @Override public String toString() {
@@ -3164,7 +2610,7 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
 
         do {
             Iterator<CacheDataRow> it = ctx.offheap().cacheIterator(ctx.cacheId(),
-                true, true, null, null, null);
+                true, true, null, null);
 
             while (it.hasNext() && keys.size() < REMOVE_ALL_KEYS_BATCH)
                 keys.add((K)it.next().key());
@@ -3239,7 +2685,7 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
             fut.listen(new UpdateRemoveAllTimeStatClosure<>(metrics0(), start));
 
         if (performanceStatsEnabled)
-            fut.listen(f -> writeStatistics(OperationType.CACHE_REMOVE_ALL, start));
+            fut.listen(() -> writeStatistics(OperationType.CACHE_REMOVE_ALL, start));
 
         return fut;
     }
@@ -3350,7 +2796,7 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
             fut.listen(new UpdateRemoveTimeStatClosure(metrics0(), start));
 
         if (performanceStatsEnabled)
-            fut.listen(f -> writeStatistics(OperationType.CACHE_REMOVE, start));
+            fut.listen(() -> writeStatistics(OperationType.CACHE_REMOVE, start));
 
         return fut;
     }
@@ -3368,8 +2814,7 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
                     Collections.singletonList(key),
                     /*retval*/false,
                     filter,
-                    /*singleRmv*/true).chain(
-                    (IgniteClosure<IgniteInternalFuture<GridCacheReturn>, Boolean>)RET2FLAG);
+                    /*singleRmv*/filter == null).chain(RET2FLAG);
             }
 
             @Override public String toString() {
@@ -3386,6 +2831,10 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
         if (F.isEmpty(drMap))
             return;
 
+        boolean statsEnabled = ctx.statisticsEnabled();
+
+        long start = statsEnabled ? System.nanoTime() : 0L;
+
         ctx.dr().onReceiveCacheEntriesReceived(drMap.size());
 
         syncOp(new SyncInOp(false) {
@@ -3397,6 +2846,9 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
                 return "removeAllConflict [drMap=" + drMap + ']';
             }
         });
+
+        if (statsEnabled)
+            metrics0().addRemoveAllConflictTimeNanos(System.nanoTime() - start);
     }
 
     /** {@inheritDoc} */
@@ -3405,9 +2857,13 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
         if (F.isEmpty(drMap))
             return new GridFinishedFuture<Object>();
 
+        final boolean statsEnabled = ctx.statisticsEnabled();
+
+        final long start = statsEnabled ? System.nanoTime() : 0L;
+
         ctx.dr().onReceiveCacheEntriesReceived(drMap.size());
 
-        return asyncOp(new AsyncOp(drMap.keySet()) {
+        IgniteInternalFuture<?> fut = asyncOp(new AsyncOp(drMap.keySet()) {
             @Override public IgniteInternalFuture<?> op(GridNearTxLocal tx, AffinityTopologyVersion readyTopVer) {
                 return tx.removeAllDrAsync(ctx, drMap);
             }
@@ -3416,6 +2872,11 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
                 return "removeAllDrASync [drMap=" + drMap + ']';
             }
         });
+
+        if (statsEnabled)
+            fut.listen(new UpdateRemoveAllConflictTimeStatClosure<>(metrics0(), start));
+
+        return fut;
     }
 
     /** {@inheritDoc} */
@@ -3471,16 +2932,6 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
         return IgniteFeatures.allNodesSupports(nodes, IgniteFeatures.CACHE_METRICS_V2);
     }
 
-    /** {@inheritDoc} */
-    @Override public CacheMetricsMXBean localMxBean() {
-        return locMxBean;
-    }
-
-    /** {@inheritDoc} */
-    @Override public CacheMetricsMXBean clusterMxBean() {
-        return clusterMxBean;
-    }
-
     /**
      * @return Metrics.
      */
@@ -3505,9 +2956,6 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
         throws IgniteCheckedException {
         if (F.isEmpty(keys))
             return true;
-
-        //TODO: IGNITE-9324: add explicit locks support.
-        MvccUtils.verifyMvccOperationSupport(ctx, "Lock");
 
         IgniteInternalFuture<Boolean> fut = lockAllAsync(keys, timeout);
 
@@ -3549,9 +2997,6 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
     /** {@inheritDoc} */
     @Override public IgniteInternalFuture<Boolean> lockAsync(K key, long timeout) {
         A.notNull(key, "key");
-
-        //TODO: IGNITE-9324: add explicit locks support.
-        MvccUtils.verifyMvccOperationSupport(ctx, "Lock");
 
         return lockAllAsync(Collections.singletonList(key), timeout);
     }
@@ -3653,9 +3098,6 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
     /** {@inheritDoc} */
     @Override public void localLoadCache(final IgniteBiPredicate<K, V> p, Object[] args)
         throws IgniteCheckedException {
-        //TODO IGNITE-7954
-        MvccUtils.verifyMvccOperationSupport(ctx, "Load");
-
         final boolean replicate = ctx.isDrEnabled();
         final AffinityTopologyVersion topVer = ctx.affinity().affinityTopologyVersion();
 
@@ -3791,9 +3233,6 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
         for (Object key : keys)
             A.notNull(key, "key");
 
-        //TODO IGNITE-7954
-        MvccUtils.verifyMvccOperationSupport(ctx, "Load");
-
         CacheOperationContext opCtx = ctx.operationContextPerCall();
 
         ExpiryPolicy plc = opCtx != null ? opCtx.expiry() : null;
@@ -3818,12 +3257,13 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
         if (nodes.isEmpty())
             return new GridFinishedFuture<>();
 
-        return ctx.closures().callAsyncNoFailover(BROADCAST,
+        return ctx.closures().callAsync(
+            BROADCAST,
             new LoadKeysCallable<>(ctx.name(), keys, update, plc, keepBinary),
-            nodes,
-            true,
-            0,
-            false);
+            options(nodes)
+                .withFailoverDisabled()
+                .asSystemTask()
+        );
     }
 
     /**
@@ -3864,9 +3304,6 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
      */
     public void localLoad(Collection<? extends K> keys, @Nullable ExpiryPolicy plc, final boolean keepBinary)
         throws IgniteCheckedException {
-        //TODO IGNITE-7954
-        MvccUtils.verifyMvccOperationSupport(ctx, "Load");
-
         final boolean replicate = ctx.isDrEnabled();
         final AffinityTopologyVersion topVer = ctx.affinity().affinityTopologyVersion();
 
@@ -3929,8 +3366,6 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
     IgniteInternalFuture<?> globalLoadCacheAsync(@Nullable IgniteBiPredicate<K, V> p, @Nullable Object... args)
         throws IgniteCheckedException {
 
-        ctx.kernalContext().task().setThreadContext(TC_NO_FAILOVER, true);
-
         CacheOperationContext opCtx = ctx.operationContextPerCall();
 
         ExpiryPolicy plc = opCtx != null ? opCtx.expiry() : null;
@@ -3939,15 +3374,12 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
 
         assert !F.isEmpty(nodes) : "There are not datanodes fo cache: " + ctx.name();
 
-        //TODO IGNITE-7954
-        MvccUtils.verifyMvccOperationSupport(ctx, "Load");
-
         final boolean keepBinary = opCtx != null && opCtx.isKeepBinary();
 
-        ComputeTaskInternalFuture fut = ctx.kernalContext().closure().callAsync(BROADCAST,
-            Collections.singletonList(
-                new LoadCacheJobV2<>(ctx.name(), ctx.affinity().affinityTopologyVersion(), p, args, plc, keepBinary)),
-            nodes);
+        IgniteInternalFuture<?> fut = ctx.kernalContext().closure().callAsync(
+            BROADCAST,
+            Collections.singletonList(new LoadCacheJobV2<>(ctx.name(), ctx.affinity().affinityTopologyVersion(), p, args, plc, keepBinary)),
+            options(nodes));
 
         return fut;
     }
@@ -3982,10 +3414,11 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
         if (nodes.isEmpty())
             return new GridFinishedFuture<>(0);
 
-        ctx.kernalContext().task().setThreadContext(TC_SUBGRID, nodes);
-
         return ctx.kernalContext().task().execute(
-            new SizeTask(ctx.name(), ctx.affinity().affinityTopologyVersion(), peekModes), null);
+            new SizeTask(ctx.name(), ctx.affinity().affinityTopologyVersion(), peekModes),
+            null,
+            options(nodes)
+        );
     }
 
     /** {@inheritDoc} */
@@ -4003,10 +3436,11 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
         if (nodes.isEmpty())
             return new GridFinishedFuture<>(0L);
 
-        ctx.kernalContext().task().setThreadContext(TC_SUBGRID, nodes);
-
         return ctx.kernalContext().task().execute(
-            new SizeLongTask(ctx.name(), ctx.affinity().affinityTopologyVersion(), peekModes), null);
+            new SizeLongTask(ctx.name(), ctx.affinity().affinityTopologyVersion(), peekModes),
+            null,
+            options(nodes)
+        );
     }
 
     /** {@inheritDoc} */
@@ -4032,10 +3466,11 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
         if (nodes.isEmpty())
             return new GridFinishedFuture<>(0L);
 
-        ctx.kernalContext().task().setThreadContext(TC_SUBGRID, nodes);
-
         return ctx.kernalContext().task().execute(
-            new PartitionSizeLongTask(ctx.name(), ctx.affinity().affinityTopologyVersion(), peekModes, part), null);
+            new PartitionSizeLongTask(ctx.name(), ctx.affinity().affinityTopologyVersion(), peekModes, part),
+            null,
+            options(nodes)
+        );
     }
 
     /** {@inheritDoc} */
@@ -4134,8 +3569,17 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
 
         final CacheOperationContext opCtx = ctx.operationContextPerCall();
 
-        final GridCloseableIterator<Map.Entry<K, V>> iter = ctx0.queries().createScanQuery(p, null, keepBinary, null)
-            .executeScanQuery();
+        final TransactionChanges<Object> txChanges = ctx.transactionChanges(null);
+
+        final GridCloseableIterator<Map.Entry<K, V>> iter = ctx0.queries().createScanQuery(
+            p,
+            null,
+            null,
+            keepBinary,
+            false,
+            null,
+            txChanges.changedKeys()
+        ).executeScanQuery(txChanges.newAndUpdatedEntries());
 
         return ctx.itHolder().iterator(iter, new CacheIteratorConverter<Cache.Entry<K, V>, Map.Entry<K, V>>() {
             @Override protected Cache.Entry<K, V> convert(Map.Entry<K, V> e) {
@@ -4178,63 +3622,12 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
     }
 
     /**
-     * Asynchronously commits transaction after all previous asynchronous operations are completed.
-     *
-     * @param tx Transaction to commit.
-     * @return Transaction commit future.
+     * Last async operation future for implicit transactions. For explicit transactions future is
+     * bound to the transaction and stored inside the transaction.
+     * These futures are required to linearize async operations made by the same thread.
      */
-    @SuppressWarnings("unchecked")
-    IgniteInternalFuture<IgniteInternalTx> commitTxAsync(final GridNearTxLocal tx) {
-        FutureHolder holder = lastFut.get();
-
-        holder.lock();
-
-        try {
-            IgniteInternalFuture fut = holder.future();
-
-            if (fut != null && !fut.isDone()) {
-                IgniteInternalFuture<IgniteInternalTx> f = new GridEmbeddedFuture<>(fut,
-                    new C2<Object, Exception, IgniteInternalFuture<IgniteInternalTx>>() {
-                        @Override public IgniteInternalFuture<IgniteInternalTx> apply(Object o, Exception e) {
-                            return tx.commitNearTxLocalAsync();
-                        }
-                    });
-
-                saveFuture(holder, f, /*asyncOp*/false, /*retry*/false);
-
-                return f;
-            }
-
-            IgniteInternalFuture<IgniteInternalTx> f = tx.commitNearTxLocalAsync();
-
-            saveFuture(holder, f, /*asyncOp*/false, /*retry*/false);
-
-            ctx.tm().resetContext();
-
-            return f;
-        }
-        finally {
-            holder.unlock();
-        }
-    }
-
-    /**
-     * Awaits for previous async operation to be completed.
-     */
-    public void awaitLastFut() {
-        FutureHolder holder = lastFut.get();
-
-        IgniteInternalFuture fut = holder.future();
-
-        if (fut != null && !fut.isDone()) {
-            try {
-                // Ignore any exception from previous async operation as it should be handled by user.
-                fut.get();
-            }
-            catch (IgniteCheckedException ignored) {
-                // No-op.
-            }
-        }
+    public FutureHolder lastAsyncFuture() {
+        return lastFut.get();
     }
 
     /**
@@ -4247,11 +3640,11 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
     @Nullable private <T> T syncOp(SyncOp<T> op) throws IgniteCheckedException {
         checkJta();
 
-        awaitLastFut();
-
-        GridNearTxLocal tx = checkCurrentTx();
+        GridNearTxLocal tx = ctx.tm().threadLocalTx(ctx);
 
         if (tx == null || tx.implicit()) {
+            lastAsyncFuture().await();
+
             TransactionConfiguration tCfg = CU.transactionConfiguration(ctx, ctx.kernalContext().config());
 
             CacheOperationContext opCtx = ctx.operationContextPerCall();
@@ -4263,14 +3656,12 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
                     true,
                     op.single(),
                     ctx.systemTx() ? ctx : null,
-                    ctx.mvccEnabled() ? PESSIMISTIC : OPTIMISTIC,
-                    ctx.mvccEnabled() ? REPEATABLE_READ : READ_COMMITTED,
+                    OPTIMISTIC,
+                    READ_COMMITTED,
                     tCfg.getDefaultTxTimeout(),
                     !ctx.skipStore(),
-                    ctx.mvccEnabled(),
                     0,
-                    null,
-                    false
+                    null
                 );
 
                 assert tx != null;
@@ -4346,8 +3737,11 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
             // Should not happen.
             throw new IgniteCheckedException("Failed to perform cache operation (maximum number of retries exceeded).");
         }
-        else
+        else {
+            tx.txState().awaitLastFuture();
+
             return op.op(tx);
+        }
     }
 
     /**
@@ -4366,7 +3760,7 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
         if (log.isDebugEnabled())
             log.debug("Performing async op: " + op);
 
-        GridNearTxLocal tx = checkCurrentTx();
+        GridNearTxLocal tx = ctx.tm().threadLocalTx(ctx);
 
         CacheOperationContext opCtx = ctx.operationContextPerCall();
 
@@ -4382,14 +3776,12 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
                     true,
                     op.single(),
                     ctx.systemTx() ? ctx : null,
-                    ctx.mvccEnabled() ? PESSIMISTIC : OPTIMISTIC,
-                    ctx.mvccEnabled() ? REPEATABLE_READ : READ_COMMITTED,
+                    OPTIMISTIC,
+                    READ_COMMITTED,
                     txCfg.getDefaultTxTimeout(),
                     !skipStore,
-                    ctx.mvccEnabled(),
                     0,
-                    null,
-                    false);
+                    null);
 
                 return asyncOp(tx, op, opCtx, /*retry*/false);
             }
@@ -4424,12 +3816,12 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
         if (fail != null)
             return fail;
 
-        FutureHolder holder = lastFut.get();
+        FutureHolder holder = tx.implicit() ? lastAsyncFuture() : tx.txState().lastAsyncFuture();
 
         holder.lock();
 
         try {
-            IgniteInternalFuture fut = holder.future();
+            IgniteInternalFuture<?> fut = holder.future();
 
             final GridNearTxLocal tx0 = tx;
 
@@ -4488,9 +3880,9 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
                                 }
                             }
 
-                            fut0.listen((IgniteInClosure<IgniteInternalFuture>)fut01 -> {
+                            fut0.listen(() -> {
                                 try {
-                                    resFut.onDone(fut01.get());
+                                    resFut.onDone(fut0.get());
                                 }
                                 catch (Throwable ex) {
                                     resFut.onDone(ex);
@@ -4501,7 +3893,9 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
                         return resFut;
                     });
 
-                saveFuture(holder, f, /*asyncOp*/true, retry);
+                holder.saveFuture(f);
+
+                f.listen(f0 -> asyncOpRelease(retry));
 
                 return f;
             }
@@ -4511,7 +3905,7 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
              * See {@link GridDhtTxLocalAdapter#updateLockFuture(IgniteInternalFuture, IgniteInternalFuture)}
              */
             if (!tx0.txState().implicitSingle())
-                tx0.txState().awaitLastFuture(ctx.shared());
+                tx0.txState().awaitLastFuture();
 
             IgniteInternalFuture<T> f;
 
@@ -4523,7 +3917,9 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
                 ctx.shared().txContextReset();
             }
 
-            saveFuture(holder, f, /*asyncOp*/true, retry);
+            holder.saveFuture(f);
+
+            f.listen(f0 -> asyncOpRelease(retry));
 
             if (tx.implicit())
                 ctx.tm().resetContext();
@@ -4532,49 +3928,6 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
         }
         finally {
             holder.unlock();
-        }
-    }
-
-    /**
-     * Saves future in thread local holder and adds listener
-     * that will clear holder when future is finished.
-     *
-     * @param holder Future holder.
-     * @param fut Future to save.
-     * @param asyncOp Whether operation is instance of AsyncOp.
-     * @param retry {@code true} for retry operations.
-     */
-    protected void saveFuture(final FutureHolder holder, IgniteInternalFuture<?> fut, final boolean asyncOp, final boolean retry) {
-        assert holder != null;
-        assert fut != null;
-        assert holder.holdsLock();
-
-        holder.future(fut);
-
-        if (fut.isDone()) {
-            holder.future(null);
-
-            if (asyncOp)
-                asyncOpRelease(retry);
-        }
-        else {
-            fut.listen(new CI1<IgniteInternalFuture<?>>() {
-                @Override public void apply(IgniteInternalFuture<?> f) {
-                    if (asyncOp)
-                        asyncOpRelease(retry);
-
-                    if (!holder.tryLock())
-                        return;
-
-                    try {
-                        if (holder.future() == f)
-                            holder.future(null);
-                    }
-                    finally {
-                        holder.unlock();
-                    }
-                }
-            });
         }
     }
 
@@ -4655,9 +4008,6 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
     private boolean clearLocally0(K key, boolean readers) {
         ctx.shared().cache().checkReadOnlyState("clear", ctx.config());
 
-        //TODO IGNITE-7952
-        MvccUtils.verifyMvccOperationSupport(ctx, "Clear");
-
         ctx.checkSecurity(SecurityPermission.CACHE_REMOVE);
 
         GridCacheVersion obsoleteVer = nextVersion();
@@ -4689,9 +4039,6 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
     @Override public boolean evict(K key) {
         A.notNull(key, "key");
 
-        //TODO IGNITE-7956
-        MvccUtils.verifyMvccOperationSupport(ctx, "Evict");
-
         return evictx(key, nextVersion(), CU.empty0());
     }
 
@@ -4701,9 +4048,6 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
 
         if (F.isEmpty(keys))
             return;
-
-        //TODO IGNITE-7956
-        MvccUtils.verifyMvccOperationSupport(ctx, "Evict");
 
         GridCacheVersion obsoleteVer = nextVersion();
 
@@ -4934,14 +4278,14 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
         IgniteInternalFuture<R> orig,
         Function<IgniteConsistencyViolationException, IgniteInternalFuture<Void>> repair,
         Supplier<IgniteInternalFuture<R>> retry) {
-        final GridNearTxLocal tx = checkCurrentTx();
+        final GridNearTxLocal tx = ctx.tm().threadLocalTx(ctx);
         final CacheOperationContext opCtx = ctx.operationContextPerCall();
 
         GridFutureAdapter<R> fut = new GridFutureAdapter<>();
 
-        orig.listen((f) -> {
+        orig.listen(() -> {
             try {
-                fut.onDone(f.get());
+                fut.onDone(orig.get());
             }
             catch (IgniteConsistencyViolationException e1) {
                 repair.apply(e1).listen((repFut) -> {
@@ -5013,7 +4357,7 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
         boolean skipVals) {
         assert ctx.transactional();
 
-        final GridNearTxLocal orig = checkCurrentTx();
+        final GridNearTxLocal orig = ctx.tm().threadLocalTx(ctx);
 
         assert orig == null || orig.optimistic() || orig.readCommitted() || /*contains*/ skipVals :
             "Pessimistic non-read-committed 'get' should be fixed inside its own tx, the only exception is 'contains' " +
@@ -5029,7 +4373,7 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
                 try (Transaction tx = ctx.grid().transactions().txStart(PESSIMISTIC, SERIALIZABLE)) {
                     get((K)key, null, !ctx.keepBinary(), false); // Repair.
 
-                    final GridNearTxLocal tx0 = checkCurrentTx();
+                    final GridNearTxLocal tx0 = ctx.tm().threadLocalTx(ctx);
 
                     final IgniteTxKey txKey = ctx.txKey(ctx.toCacheKeyObject(key));
 
@@ -5412,14 +4756,12 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
                 true,
                 op.single(),
                 ctx.systemTx() ? ctx : null,
-                ctx.mvccEnabled() ? PESSIMISTIC : OPTIMISTIC,
-                ctx.mvccEnabled() ? REPEATABLE_READ : READ_COMMITTED,
+                OPTIMISTIC,
+                READ_COMMITTED,
                 CU.transactionConfiguration(ctx, ctx.kernalContext().config()).getDefaultTxTimeout(),
                 opCtx == null || !opCtx.skipStore(),
-                ctx.mvccEnabled(),
                 0,
-                null,
-                false);
+                null);
 
             IgniteInternalFuture<T> fut = asyncOp(tx, op, opCtx, retry);
 
@@ -6142,12 +5484,12 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
     /**
      * Holder for last async operation future.
      */
-    protected static class FutureHolder {
+    public static class FutureHolder {
         /** Lock. */
         private final ReentrantLock lock = new ReentrantLock();
 
         /** Future. */
-        private IgniteInternalFuture fut;
+        private IgniteInternalFuture<?> fut;
 
         /**
          * Tries to acquire lock.
@@ -6185,7 +5527,7 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
          *
          * @return Future.
          */
-        public IgniteInternalFuture future() {
+        public IgniteInternalFuture<?> future() {
             return fut;
         }
 
@@ -6194,8 +5536,54 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
          *
          * @param fut Future.
          */
-        public void future(@Nullable IgniteInternalFuture fut) {
+        public void future(@Nullable IgniteInternalFuture<?> fut) {
             this.fut = fut;
+        }
+
+        /**
+         * Awaits for previous async operation to be completed.
+         */
+        public void await() {
+            IgniteInternalFuture<?> fut = this.fut;
+
+            if (fut != null && !fut.isDone()) {
+                try {
+                    // Ignore any exception from previous async operation as it should be handled by user.
+                    fut.get();
+                }
+                catch (IgniteCheckedException ignored) {
+                    // No-op.
+                }
+            }
+        }
+
+        /**
+         * Saves future in the holder and adds listener that will clear holder when future is finished.
+         *
+         * @param fut Future to save.
+         */
+        public void saveFuture(IgniteInternalFuture<?> fut) {
+            assert fut != null;
+            assert holdsLock();
+
+            if (fut.isDone())
+                future(null);
+            else {
+                future(fut);
+
+                fut.listen(f -> {
+                    if (!tryLock())
+                        return;
+
+                    try {
+                        if (future() == f)
+                            future(null);
+                    }
+                    finally {
+                        unlock();
+                    }
+                });
+            }
         }
     }
 
@@ -6493,97 +5881,6 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
     /**
      *
      */
-    private static class LoadCacheClosure<K, V> implements Callable<Void>, Externalizable {
-        /** */
-        private static final long serialVersionUID = 0L;
-
-        /** */
-        private String cacheName;
-
-        /** */
-        private IgniteBiPredicate<K, V> p;
-
-        /** */
-        private Object[] args;
-
-        /** */
-        @IgniteInstanceResource
-        private Ignite ignite;
-
-        /** */
-        private ExpiryPolicy plc;
-
-        /**
-         * Required by {@link Externalizable}.
-         */
-        public LoadCacheClosure() {
-            // No-op.
-        }
-
-        /**
-         * @param cacheName Cache name.
-         * @param p Predicate.
-         * @param args Arguments.
-         * @param plc Explicitly specified expiry policy.
-         */
-        private LoadCacheClosure(String cacheName,
-            IgniteBiPredicate<K, V> p,
-            Object[] args,
-            @Nullable ExpiryPolicy plc) {
-            this.cacheName = cacheName;
-            this.p = p;
-            this.args = args;
-            this.plc = plc;
-        }
-
-        /** {@inheritDoc} */
-        @Override public Void call() throws Exception {
-            IgniteCache<K, V> cache = ignite.cache(cacheName);
-
-            assert cache != null : cacheName;
-
-            if (plc != null)
-                cache = cache.withExpiryPolicy(plc);
-
-            cache.localLoadCache(p, args);
-
-            return null;
-        }
-
-        /** {@inheritDoc} */
-        @Override public void writeExternal(ObjectOutput out) throws IOException {
-            out.writeObject(p);
-
-            out.writeObject(args);
-
-            U.writeString(out, cacheName);
-
-            if (plc != null)
-                out.writeObject(new IgniteExternalizableExpiryPolicy(plc));
-            else
-                out.writeObject(null);
-        }
-
-        /** {@inheritDoc} */
-        @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
-            p = (IgniteBiPredicate<K, V>)in.readObject();
-
-            args = (Object[])in.readObject();
-
-            cacheName = U.readString(in);
-
-            plc = (ExpiryPolicy)in.readObject();
-        }
-
-        /** {@inheritDoc} */
-        @Override public String toString() {
-            return S.toString(LoadCacheClosure.class, this);
-        }
-    }
-
-    /**
-     *
-     */
     protected abstract static class UpdateTimeStatClosure<T> implements CI1<IgniteInternalFuture<T>> {
         /** */
         protected final CacheMetricsImpl metrics;
@@ -6731,6 +6028,27 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
     /**
      *
      */
+    protected static class UpdateRemoveAllConflictTimeStatClosure<T> extends UpdateTimeStatClosure<T> {
+        /** */
+        private static final long serialVersionUID = 0L;
+
+        /**
+         * @param metrics Metrics.
+         * @param start Start time.
+         */
+        public UpdateRemoveAllConflictTimeStatClosure(CacheMetricsImpl metrics, long start) {
+            super(metrics, start);
+        }
+
+        /** {@inheritDoc} */
+        @Override protected void updateTimeStat(T res) {
+            metrics.addRemoveAllConflictTimeNanos(System.nanoTime() - start);
+        }
+    }
+
+    /**
+     *
+     */
     protected static class UpdatePutTimeStatClosure<T> extends UpdateTimeStatClosure<T> {
         /** */
         private static final long serialVersionUID = 0L;
@@ -6767,6 +6085,27 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
         /** {@inheritDoc} */
         @Override protected void updateTimeStat(T res) {
             metrics.addPutAllTimeNanos(System.nanoTime() - start);
+        }
+    }
+
+    /**
+     *
+     */
+    protected static class UpdatePutAllConflictTimeStatClosure<T> extends UpdateTimeStatClosure<T> {
+        /** */
+        private static final long serialVersionUID = 0L;
+
+        /**
+         * @param metrics Metrics.
+         * @param start Start time.
+         */
+        public UpdatePutAllConflictTimeStatClosure(CacheMetricsImpl metrics, long start) {
+            super(metrics, start);
+        }
+
+        /** {@inheritDoc} */
+        @Override protected void updateTimeStat(T res) {
+            metrics.addPutAllConflictTimeNanos(System.nanoTime() - start);
         }
     }
 

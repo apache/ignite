@@ -23,7 +23,7 @@
 
     <bean class="io.prometheus.client.exporter.HTTPServer">
         <constructor-arg type="java.lang.String" value="{{ config.local_host }}"/>
-        <constructor-arg type="int" value="{{ metrics.port }}"/>
+        <constructor-arg type="int" value="${opencensus.metrics.port}"/>
         <constructor-arg type="boolean" value="true"/>
     </bean>
 

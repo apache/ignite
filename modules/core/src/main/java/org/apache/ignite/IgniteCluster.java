@@ -126,7 +126,7 @@ public interface IgniteCluster extends ClusterGroup, IgniteAsyncSupport {
      * Returned result is collection of tuples. Each tuple corresponds to one node start attempt and
      * contains hostname, success flag and error message if attempt was not successful. Note that
      * successful attempt doesn't mean that node was actually started and joined topology. For large
-     * topologies (> 100s nodes) it can take over 10 minutes for all nodes to start. See individual
+     * topologies (&gt; 100s nodes) it can take over 10 minutes for all nodes to start. See individual
      * node logs for details.
      * <p>
      * Supports asynchronous execution (see {@link IgniteAsyncSupport}).
@@ -157,7 +157,7 @@ public interface IgniteCluster extends ClusterGroup, IgniteAsyncSupport {
      * Completed future contains collection of tuples. Each tuple corresponds to one node start attempt and
      * contains hostname, success flag and error message if attempt was not successful. Note that
      * successful attempt doesn't mean that node was actually started and joined topology. For large
-     * topologies (> 100s nodes) it can take over 10 minutes for all nodes to start. See individual
+     * topologies (&gt; 100s nodes) it can take over 10 minutes for all nodes to start. See individual
      * node logs for details.
      *
      * @param file Configuration file.
@@ -254,7 +254,7 @@ public interface IgniteCluster extends ClusterGroup, IgniteAsyncSupport {
      * Returned result is collection of tuples. Each tuple corresponds to one node start attempt and
      * contains hostname, success flag and error message if attempt was not successful. Note that
      * successful attempt doesn't mean that node was actually started and joined topology. For large
-     * topologies (> 100s nodes) it can take over 10 minutes for all nodes to start. See individual
+     * topologies (&gt; 100s nodes) it can take over 10 minutes for all nodes to start. See individual
      * node logs for details.
      * <p>
      * Supports asynchronous execution (see {@link IgniteAsyncSupport}).
@@ -356,7 +356,7 @@ public interface IgniteCluster extends ClusterGroup, IgniteAsyncSupport {
      * Completed future contains collection of tuples. Each tuple corresponds to one node start attempt and
      * contains hostname, success flag and error message if attempt was not successful. Note that
      * successful attempt doesn't mean that node was actually started and joined topology. For large
-     * topologies (> 100s nodes) it can take over 10 minutes for all nodes to start. See individual
+     * topologies (&gt; 100s nodes) it can take over 10 minutes for all nodes to start. See individual
      * node logs for details.
      *
      * @param hosts Startup parameters.
@@ -627,14 +627,14 @@ public interface IgniteCluster extends ClusterGroup, IgniteAsyncSupport {
     public void baselineAutoAdjustEnabled(boolean baselineAutoAdjustEnabled) throws IgniteException;
 
     /**
-     * @return Value of time which we would wait before the actual topology change since last server topology change
+     * @return Number of milliseconds to wait before the actual topology change since last server topology change
      * (node join/left/fail).
      * @throws IgniteException If operation failed.
      */
     public long baselineAutoAdjustTimeout();
 
     /**
-     * @param baselineAutoAdjustTimeout Value of time which we would wait before the actual topology change since last
+     * @param baselineAutoAdjustTimeout Number of milliseconds to wait before the actual topology change since last
      * server topology change (node join/left/fail).
      * @throws IgniteException If failed.
      */

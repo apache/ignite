@@ -16,7 +16,7 @@
  */
 package org.apache.ignite.spi.discovery.zk.internal;
 
-import org.apache.ignite.internal.processors.metric.MetricRegistry;
+import org.apache.ignite.internal.processors.metric.MetricRegistryImpl;
 import org.apache.ignite.internal.processors.metric.impl.AtomicLongMetric;
 import org.apache.ignite.internal.processors.metric.impl.LongAdderMetric;
 import org.apache.ignite.internal.util.typedef.internal.S;
@@ -51,7 +51,7 @@ public class ZookeeperDiscoveryStatistics {
     /**
      * @param discoReg Discovery metric registry.
      */
-    public void registerMetrics(MetricRegistry discoReg) {
+    public void registerMetrics(MetricRegistryImpl discoReg) {
         discoReg.register(joinedNodesCnt);
         discoReg.register(failedNodesCnt);
         discoReg.register(leftNodesCnt);

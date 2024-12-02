@@ -59,11 +59,10 @@ import org.apache.ignite.failure.FailureContext;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteFeatures;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
-import org.apache.ignite.internal.IgniteKernal;
 import org.apache.ignite.internal.managers.discovery.IgniteDiscoverySpi;
 import org.apache.ignite.internal.managers.discovery.IgniteDiscoverySpiInternalListener;
 import org.apache.ignite.internal.processors.failure.FailureProcessor;
-import org.apache.ignite.internal.processors.metric.MetricRegistry;
+import org.apache.ignite.internal.processors.metric.MetricRegistryImpl;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.X;
@@ -77,7 +76,6 @@ import org.apache.ignite.lang.IgniteProductVersion;
 import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.marshaller.Marshaller;
 import org.apache.ignite.marshaller.MarshallerUtils;
-import org.apache.ignite.marshaller.jdk.JdkMarshaller;
 import org.apache.ignite.resources.IgniteInstanceResource;
 import org.apache.ignite.resources.LoggerResource;
 import org.apache.ignite.spi.IgniteSpiAdapter;
@@ -634,10 +632,7 @@ public class TcpDiscoverySpi extends IgniteSpiAdapter implements IgniteDiscovery
             setLocalAddress(ignite.configuration().getLocalHost());
             setAddressResolver(ignite.configuration().getAddressResolver());
 
-            if (ignite instanceof IgniteKernal) // IgniteMock instance can be injected from tests.
-                marsh = ((IgniteKernal)ignite).context().marshallerContext().jdkMarshaller();
-            else
-                marsh = new JdkMarshaller();
+            marsh = ((IgniteEx)ignite).context().marshallerContext().jdkMarshaller();
         }
     }
 
@@ -1262,8 +1257,9 @@ public class TcpDiscoverySpi extends IgniteSpiAdapter implements IgniteDiscovery
      * @param node Node.
      * @return {@link LinkedHashSet} of internal and external addresses of provided node.
      *      Internal addresses placed before external addresses.
+     * @see #getEffectiveNodeAddresses(TcpDiscoveryNode)
      */
-    LinkedHashSet<InetSocketAddress> getNodeAddresses(TcpDiscoveryNode node) {
+    LinkedHashSet<InetSocketAddress> getAllNodeAddresses(TcpDiscoveryNode node) {
         LinkedHashSet<InetSocketAddress> res = new LinkedHashSet<>(node.socketAddresses());
 
         Collection<InetSocketAddress> extAddrs = node.attribute(createSpiAttributeName(ATTR_EXT_ADDRS));
@@ -1276,15 +1272,35 @@ public class TcpDiscoverySpi extends IgniteSpiAdapter implements IgniteDiscovery
 
     /**
      * @param node Node.
-     * @param sameHost Same host flag.
-     * @return {@link LinkedHashSet} of internal and external addresses of provided node.
+     * @return {@link LinkedHashSet} of internal and external addresses of provided node except loopback addresses if
+     * current node has the same ones.
      *      Internal addresses placed before external addresses.
      *      Internal addresses will be sorted with {@code inetAddressesComparator(sameHost)}.
+     * @see #getAllNodeAddresses(TcpDiscoveryNode)
      */
-    LinkedHashSet<InetSocketAddress> getNodeAddresses(TcpDiscoveryNode node, boolean sameHost) {
+    LinkedHashSet<InetSocketAddress> getEffectiveNodeAddresses(TcpDiscoveryNode node) {
+        return getEffectiveNodeAddresses(node, U.sameMacs(locNode, node));
+    }
+
+    /**
+     * Gives node addresses with a preferable order.
+     *
+     * @param node Node.
+     * @param sameHost If {@code True}, loopback addresses go first. Otherwise, last.
+     * @return {@link LinkedHashSet} of internal and external addresses of provided node except loopback addresses if
+     * current node has the same ones.
+     *      Internal addresses placed before external addresses.
+     *      Internal addresses will be sorted with {@code inetAddressesComparator(sameHost)}.
+     * @see #getAllNodeAddresses(TcpDiscoveryNode)
+     */
+    LinkedHashSet<InetSocketAddress> getEffectiveNodeAddresses(TcpDiscoveryNode node, boolean sameHost) {
         List<InetSocketAddress> addrs = U.arrayList(node.socketAddresses());
 
-        Collections.sort(addrs, U.inetAddressesComparator(sameHost));
+        // Do not give own loopback to avoid requesting current node.
+        if (!node.equals(locNode))
+            addrs.removeIf(addr -> addr.getAddress().isLoopbackAddress() && locNode.socketAddresses().contains(addr));
+
+        addrs.sort(U.inetAddressesComparator(sameHost));
 
         LinkedHashSet<InetSocketAddress> res = new LinkedHashSet<>();
 
@@ -1496,7 +1512,7 @@ public class TcpDiscoverySpi extends IgniteSpiAdapter implements IgniteDiscovery
 
         impl.onContextInitialized0(spiCtx);
 
-        MetricRegistry discoReg = (MetricRegistry)getSpiContext().getOrCreateMetricRegistry(DISCO_METRICS);
+        MetricRegistryImpl discoReg = (MetricRegistryImpl)getSpiContext().getOrCreateMetricRegistry(DISCO_METRICS);
 
         stats.registerMetrics(discoReg);
 
@@ -1639,6 +1655,39 @@ public class TcpDiscoverySpi extends IgniteSpiAdapter implements IgniteDiscovery
     }
 
     /**
+     * Writing to a socket might fail due to a broken connection. It might happen due to a recipient has closed the connection
+     * before, on SSL handshake, and doesn't accept new messages. In a such case it's possible to check the original error
+     * by reading the socket input stream.
+     *
+     * @param sock Socket to check.
+     * @param writeErr Error on writing a message to the socket.
+     * @return {@code SSLException} in case of SSL error, or {@code null} otherwise.
+     */
+    private @Nullable SSLException checkSslException(Socket sock, Exception writeErr) {
+        if (!sslEnable)
+            return null;
+
+        SSLException sslEx = X.cause(writeErr, SSLException.class);
+
+        if (sslEx != null)
+            return sslEx;
+
+        try {
+            // Set timeout to 1ms, in this case of closed socket it should return fast.
+            if (X.hasCause(writeErr, SocketException.class))
+                readReceipt(sock, 1);
+        }
+        catch (SSLException sslErr) {
+            return sslErr;
+        }
+        catch (Exception err) {
+            // Skip.
+        }
+
+        return null;
+    }
+
+    /**
      * Creates socket binding it to a local host address. This operation is not blocking.
      *
      * @return Created socket.
@@ -1695,7 +1744,9 @@ public class TcpDiscoverySpi extends IgniteSpiAdapter implements IgniteDiscovery
             out.flush();
         }
         catch (IOException e) {
-            err = e;
+            SSLException sslEx = checkSslException(sock, e);
+
+            err = sslEx == null ? e : sslEx;
         }
         finally {
             boolean cancelled = obj.cancel();
@@ -1803,7 +1854,9 @@ public class TcpDiscoverySpi extends IgniteSpiAdapter implements IgniteDiscovery
             U.marshal(marshaller(), msg, out);
         }
         catch (IgniteCheckedException e) {
-            err = e;
+            SSLException sslEx = checkSslException(sock, e);
+
+            err = sslEx == null ? e : new IgniteCheckedException(sslEx);
         }
         finally {
             boolean cancelled = obj.cancel();
@@ -1848,7 +1901,9 @@ public class TcpDiscoverySpi extends IgniteSpiAdapter implements IgniteDiscovery
             out.flush();
         }
         catch (IOException e) {
-            err = e;
+            SSLException sslEx = checkSslException(sock, e);
+
+            err = sslEx == null ? e : sslEx;
         }
         finally {
             boolean cancelled = obj.cancel();
@@ -2209,11 +2264,11 @@ public class TcpDiscoverySpi extends IgniteSpiAdapter implements IgniteDiscovery
     /**
      *
      */
-    private void initializeImpl() {
+    protected void initializeImpl() {
         if (impl != null)
             return;
 
-        sslEnable = ignite().configuration().getSslContextFactory() != null;
+        sslEnable = ignite.configuration().getSslContextFactory() != null;
 
         initFailureDetectionTimeout();
 
@@ -2235,7 +2290,7 @@ public class TcpDiscoverySpi extends IgniteSpiAdapter implements IgniteDiscovery
             if (sockTimeout == 0)
                 sockTimeout = DFLT_SOCK_TIMEOUT;
 
-            impl = new ServerImpl(this);
+            impl = new ServerImpl(this, 4);
         }
 
         metricsUpdateFreq = ignite.configuration().getMetricsUpdateFrequency();
@@ -2261,7 +2316,7 @@ public class TcpDiscoverySpi extends IgniteSpiAdapter implements IgniteDiscovery
 
         if (isSslEnabled()) {
             try {
-                SSLContext sslCtx = ignite().configuration().getSslContextFactory().create();
+                SSLContext sslCtx = ignite.configuration().getSslContextFactory().create();
 
                 sslSockFactory = sslCtx.getSocketFactory();
                 sslSrvSockFactory = sslCtx.getServerSocketFactory();

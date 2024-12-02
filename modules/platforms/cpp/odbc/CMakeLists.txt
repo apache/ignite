@@ -62,7 +62,6 @@ set(SOURCES src/app/application_data_buffer.cpp
         src/protocol_version.cpp
         src/result_page.cpp
         src/row.cpp
-        src/nested_tx_mode.cpp
         src/engine_mode.cpp
         src/message.cpp
         src/column.cpp

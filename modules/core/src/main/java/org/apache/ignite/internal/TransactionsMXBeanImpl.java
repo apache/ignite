@@ -19,22 +19,18 @@ package org.apache.ignite.internal;
 
 import java.io.PrintWriter;
 import java.io.StringWriter;
-import java.util.Arrays;
-import java.util.List;
 import java.util.Map;
-import java.util.stream.Collectors;
-import org.apache.ignite.IgniteCompute;
+import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.cluster.ClusterNode;
+import org.apache.ignite.internal.management.tx.TxCommandArg;
+import org.apache.ignite.internal.management.tx.TxInfo;
+import org.apache.ignite.internal.management.tx.TxSortOrder;
+import org.apache.ignite.internal.management.tx.TxTask;
+import org.apache.ignite.internal.management.tx.TxTaskResult;
 import org.apache.ignite.internal.util.typedef.internal.A;
 import org.apache.ignite.internal.util.typedef.internal.S;
+import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.internal.visor.VisorTaskArgument;
-import org.apache.ignite.internal.visor.tx.VisorTxInfo;
-import org.apache.ignite.internal.visor.tx.VisorTxOperation;
-import org.apache.ignite.internal.visor.tx.VisorTxProjection;
-import org.apache.ignite.internal.visor.tx.VisorTxSortOrder;
-import org.apache.ignite.internal.visor.tx.VisorTxTask;
-import org.apache.ignite.internal.visor.tx.VisorTxTaskArg;
-import org.apache.ignite.internal.visor.tx.VisorTxTaskResult;
 import org.apache.ignite.mxbean.TransactionsMXBean;
 
 /**
@@ -55,39 +51,48 @@ public class TransactionsMXBeanImpl implements TransactionsMXBean {
     @Override public String getActiveTransactions(Long minDuration, Integer minSize, String prj, String consistentIds,
         String xid, String lbRegex, Integer limit, String order, boolean detailed, boolean kill) {
         try {
-            IgniteCompute compute = ctx.cluster().get().compute();
+            String[] consIds = null;
 
-            VisorTxProjection proj = null;
+            if (consistentIds != null)
+                consIds = consistentIds.split(",");
+
+            TxSortOrder sortOrder = null;
+
+            if (order != null)
+                sortOrder = TxSortOrder.valueOf(order.toUpperCase());
+
+            TxCommandArg arg = new TxCommandArg();
+
+            if (kill)
+                arg.kill(true);
+
+            arg.limit(limit);
+            arg.minDuration(minDuration);
+            arg.minSize(minSize);
 
             if (prj != null) {
                 if ("clients".equals(prj))
-                    proj = VisorTxProjection.CLIENT;
+                    arg.clients(true);
                 else if ("servers".equals(prj))
-                    proj = VisorTxProjection.SERVER;
+                    arg.servers(true);
             }
 
-            List<String> consIds = null;
+            arg.nodes(consIds);
+            arg.xid(xid);
+            arg.label(lbRegex);
+            arg.order(sortOrder);
 
-            if (consistentIds != null)
-                consIds = Arrays.stream(consistentIds.split(",")).collect(Collectors.toList());
-
-            VisorTxSortOrder sortOrder = null;
-
-            if (order != null)
-                sortOrder = VisorTxSortOrder.valueOf(order.toUpperCase());
-
-            VisorTxTaskArg arg = new VisorTxTaskArg(kill ? VisorTxOperation.KILL : VisorTxOperation.LIST,
-                limit, minDuration == null ? null : minDuration * 1000, minSize, null, proj, consIds, xid, lbRegex, sortOrder, null);
-
-            Map<ClusterNode, VisorTxTaskResult> res = compute.execute(new VisorTxTask(),
-                new VisorTaskArgument<>(ctx.cluster().get().localNode().id(), arg, false));
+            Map<ClusterNode, TxTaskResult> res = ctx.task().execute(
+                new TxTask(),
+                new VisorTaskArgument<>(ctx.cluster().get().localNode().id(), arg, false)
+            ).get().result();
 
             if (detailed) {
                 StringWriter sw = new StringWriter();
 
                 PrintWriter w = new PrintWriter(sw);
 
-                for (Map.Entry<ClusterNode, VisorTxTaskResult> entry : res.entrySet()) {
+                for (Map.Entry<ClusterNode, TxTaskResult> entry : res.entrySet()) {
                     if (entry.getValue().getInfos().isEmpty())
                         continue;
 
@@ -95,7 +100,7 @@ public class TransactionsMXBeanImpl implements TransactionsMXBean {
 
                     w.println(key.toString());
 
-                    for (VisorTxInfo info : entry.getValue().getInfos())
+                    for (TxInfo info : entry.getValue().getInfos())
                         w.println(info.toUserString());
                 }
 
@@ -106,7 +111,7 @@ public class TransactionsMXBeanImpl implements TransactionsMXBean {
             else {
                 int cnt = 0;
 
-                for (VisorTxTaskResult result : res.values())
+                for (TxTaskResult result : res.values())
                     cnt += result.getInfos().size();
 
                 return Integer.toString(cnt);
@@ -121,11 +126,21 @@ public class TransactionsMXBeanImpl implements TransactionsMXBean {
     @Override public void cancel(String xid) {
         A.notNull(xid, "xid");
 
-        IgniteCompute compute = ctx.cluster().get().compute();
+        try {
+            TxCommandArg arg = new TxCommandArg();
 
-        compute.execute(new VisorTxTask(),
-            new VisorTaskArgument<>(ctx.localNodeId(), new VisorTxTaskArg(VisorTxOperation.KILL,
-                1, null, null, null, null, null, xid, null, null, null), false));
+            arg.kill(true);
+            arg.limit(1);
+            arg.xid(xid);
+
+            ctx.task().execute(
+                new TxTask(),
+                new VisorTaskArgument<>(ctx.localNodeId(), arg, false)
+            ).get();
+        }
+        catch (IgniteCheckedException e) {
+            throw U.convertException(e);
+        }
     }
 
     /** {@inheritDoc} */

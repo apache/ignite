@@ -21,6 +21,7 @@ import os
 import re
 
 from ignitetest.services.utils.decorators import memoize
+from ignitetest.services.utils.jvm_utils import java_version, java_major_version
 
 
 def ignite_jmx_mixin(node, service):
@@ -29,7 +30,7 @@ def ignite_jmx_mixin(node, service):
     :param node: Ignite service node.
     :param service: Ignite service.
     """
-    setattr(node, 'pids', service.pids(node))
+    setattr(node, 'pids', service.pids(node, service.main_java_class))
     setattr(node, 'install_root', service.install_root)
     base_cls = node.__class__
     base_cls_name = node.__class__.__name__
@@ -60,13 +61,16 @@ class JmxClient:
         self.node = node
         self.install_root = node.install_root
         self.pid = node.pids[0]
+        self.java_major = java_major_version(java_version(self.node))
 
     @property
     def jmx_util_cmd(self):
         """
         :return: jmxterm prepared command line invocation.
         """
-        return os.path.join(f"java -jar {self.install_root}/jmxterm.jar -v silent -n")
+        extra_flag = "--add-exports jdk.jconsole/sun.tools.jconsole=ALL-UNNAMED" if self.java_major >= 15 else ""
+
+        return os.path.join(f"java {extra_flag} -jar {self.install_root}/jmxterm.jar -v silent -n")
 
     @memoize
     def find_mbean(self, pattern, negative_pattern=None, domain='org.apache'):

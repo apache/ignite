@@ -286,4 +286,10 @@ public class PartitionUpdateCounterDebugWrapper implements PartitionUpdateCounte
     @Override public String toString() {
         return delegate.toString();
     }
+
+    /** {@inheritDoc} */
+    @Override public boolean equals(Object o) {
+        return o instanceof PartitionUpdateCounterDebugWrapper
+                && delegate.equals(((PartitionUpdateCounterDebugWrapper)o).delegate);
+    }
 }

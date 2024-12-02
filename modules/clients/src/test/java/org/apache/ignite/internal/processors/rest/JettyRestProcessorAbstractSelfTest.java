@@ -40,6 +40,10 @@ import java.util.Objects;
 import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
+import javax.cache.Cache;
+import javax.cache.configuration.FactoryBuilder;
+import javax.cache.integration.CacheLoaderException;
+import javax.cache.integration.CacheWriterException;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.databind.JsonNode;
@@ -53,6 +57,7 @@ import org.apache.ignite.cache.QueryIndex;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.cache.query.SqlQuery;
 import org.apache.ignite.cache.query.annotations.QuerySqlField;
+import org.apache.ignite.cache.store.CacheStoreAdapter;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.cluster.ClusterState;
 import org.apache.ignite.configuration.CacheConfiguration;
@@ -72,10 +77,12 @@ import org.apache.ignite.lang.IgniteBiPredicate;
 import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.testframework.GridTestUtils;
+import org.apache.ignite.testframework.junits.WithSystemProperty;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 
+import static org.apache.ignite.IgniteSystemProperties.IGNITE_ENABLE_OBJECT_INPUT_FILTER_AUTOCONFIGURATION;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_MARSHALLER_BLACKLIST;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_USE_BINARY_ARRAYS;
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
@@ -103,9 +110,16 @@ import static org.apache.ignite.internal.processors.rest.GridRestResponse.STATUS
  */
 @SuppressWarnings("unchecked")
 @RunWith(Parameterized.class)
+@WithSystemProperty(key = IGNITE_ENABLE_OBJECT_INPUT_FILTER_AUTOCONFIGURATION, value = "false")
 public abstract class JettyRestProcessorAbstractSelfTest extends JettyRestProcessorCommonSelfTest {
     /** */
     private static boolean memoryMetricsEnabled;
+
+    /** */
+    protected static final String CASHE_STORE_ENABLED_CACHE_NAME = "cache-store-enabled-cache";
+
+    /** */
+    protected static volatile Map<String, String> thirdPartyStore;
 
     /** */
     @Parameterized.Parameter
@@ -123,6 +137,8 @@ public abstract class JettyRestProcessorAbstractSelfTest extends JettyRestProces
         System.setProperty(IGNITE_MARSHALLER_BLACKLIST, path);
         System.setProperty(IGNITE_USE_BINARY_ARRAYS, Boolean.toString(useBinaryArrays));
 
+        thirdPartyStore = new ConcurrentHashMap<>();
+
         super.beforeTestsStarted();
 
         initCache();
@@ -134,6 +150,8 @@ public abstract class JettyRestProcessorAbstractSelfTest extends JettyRestProces
         System.clearProperty(IGNITE_USE_BINARY_ARRAYS);
 
         super.afterTestsStopped();
+
+        thirdPartyStore = null;
     }
 
     /** {@inheritDoc} */
@@ -143,6 +161,7 @@ public abstract class JettyRestProcessorAbstractSelfTest extends JettyRestProces
         grid(0).cluster().state(ACTIVE);
 
         grid(0).cache(DEFAULT_CACHE_NAME).removeAll();
+        grid(0).cache(CASHE_STORE_ENABLED_CACHE_NAME).removeAll();
 
         if (memoryMetricsEnabled) {
             memoryMetricsEnabled = false;
@@ -270,10 +289,17 @@ public abstract class JettyRestProcessorAbstractSelfTest extends JettyRestProces
         else
             assertTrue("Unexpected error: " + errNode.asText(), errNode.isNull());
 
-        assertEquals(STATUS_SUCCESS, node.get("successStatus").asInt());
+        if (errorExpected)
+            assertEquals(STATUS_FAILED, node.get("successStatus").asInt());
+        else
+            assertEquals(STATUS_SUCCESS, node.get("successStatus").asInt());
 
-        if (!canBeUnauthenticated)
-            assertNotSame(securityEnabled(), node.get("sessionToken").isNull());
+        if (!canBeUnauthenticated) {
+            if (errorExpected)
+                assertTrue(node.get("sessionToken").isNull());
+            else
+                assertNotSame(securityEnabled(), node.get("sessionToken").isNull());
+        }
 
         return node.get(errorExpected ? "error" : "response");
     }
@@ -317,6 +343,43 @@ public abstract class JettyRestProcessorAbstractSelfTest extends JettyRestProces
         info("Get command result: " + ret);
 
         assertCacheOperation(ret, "getVal");
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    @Test
+    public void testGetSkipStoreStore() throws Exception {
+        String key = "skipStoreTestKey";
+        String val = "skipStoreTestValue";
+
+        assertNull(
+                "The value should be empty before the test.",
+                grid(0).cache(CASHE_STORE_ENABLED_CACHE_NAME).get(key));
+
+        thirdPartyStore.put(key, val);
+
+        String skipStoreRet = content(
+                CASHE_STORE_ENABLED_CACHE_NAME,
+                GridRestCommand.CACHE_GET,
+                "key",
+                key,
+                "cacheFlags",
+                "1");
+
+        info("Get command result: " + skipStoreRet);
+
+        assertCacheOperation(skipStoreRet, null);
+
+        String ret = content(
+                CASHE_STORE_ENABLED_CACHE_NAME,
+                GridRestCommand.CACHE_GET,
+                "key",
+                key);
+
+        info("Get command result: " + ret);
+
+        assertCacheOperation(ret, val);
     }
 
     /**
@@ -1297,6 +1360,46 @@ public abstract class JettyRestProcessorAbstractSelfTest extends JettyRestProces
         assertEquals("putVal", jcache().localPeek("putKey"));
 
         assertCacheOperation(ret, true);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    @Test
+    public void testPutSkipStore() throws Exception {
+        String key = "testPutSkipStoreKey";
+        String val1 = "testPutSkipStoreValue1";
+        String val2 = "testPutSkipStoreValue2";
+
+        String skipStoreRet = content(
+                CASHE_STORE_ENABLED_CACHE_NAME,
+                GridRestCommand.CACHE_PUT,
+                "key",
+                key,
+                "val",
+                val1,
+                "cacheFlags",
+                "1");
+
+        info("Put command result: " + skipStoreRet);
+
+        assertCacheOperation(skipStoreRet, true);
+
+        assertNull("Third party cache store should be skipped.", thirdPartyStore.get(key));
+
+        String ret = content(
+                CASHE_STORE_ENABLED_CACHE_NAME,
+                GridRestCommand.CACHE_PUT,
+                "key",
+                key,
+                "val",
+                val2);
+
+        info("Put command result: " + ret);
+
+        assertCacheOperation(ret, true);
+
+        assertEquals("Third party cache store should not be skipped.", val2, thirdPartyStore.get(key));
     }
 
     /**
@@ -2707,7 +2810,7 @@ public abstract class JettyRestProcessorAbstractSelfTest extends JettyRestProces
     public void testCacheCommandsWithoutCacheName() throws Exception {
         final String ERROR_MSG = "Failed to find mandatory parameter in request: cacheName";
 
-        EnumSet<GridRestCommand> cacheCommands = EnumSet.of(GridRestCommand.DESTROY_CACHE,
+        EnumSet<GridRestCommand> cacheCmds = EnumSet.of(GridRestCommand.DESTROY_CACHE,
             GridRestCommand.GET_OR_CREATE_CACHE,
             GridRestCommand.CACHE_CONTAINS_KEYS,
             GridRestCommand.CACHE_CONTAINS_KEY,
@@ -2733,10 +2836,10 @@ public abstract class JettyRestProcessorAbstractSelfTest extends JettyRestProces
             GridRestCommand.CACHE_SIZE,
             GridRestCommand.CACHE_METADATA);
 
-        for (GridRestCommand command : cacheCommands) {
-            String ret = content(null, command);
+        for (GridRestCommand cmd : cacheCmds) {
+            String ret = content(null, cmd);
 
-            if (command == GridRestCommand.CACHE_METADATA)
+            if (cmd == GridRestCommand.CACHE_METADATA)
                 validateJsonResponse(ret);
             else {
                 JsonNode json = JSON_MAPPER.readTree(ret);
@@ -2761,23 +2864,23 @@ public abstract class JettyRestProcessorAbstractSelfTest extends JettyRestProces
     public void testQueryCommandsWithoutCacheName() throws Exception {
         final String ERROR_MSG = "Failed to find mandatory parameter in request: cacheName";
 
-        EnumSet<GridRestCommand> qryCommands = EnumSet.of(GridRestCommand.EXECUTE_SQL_QUERY,
+        EnumSet<GridRestCommand> qryCmds = EnumSet.of(GridRestCommand.EXECUTE_SQL_QUERY,
             GridRestCommand.EXECUTE_SQL_FIELDS_QUERY,
             GridRestCommand.EXECUTE_SCAN_QUERY,
             GridRestCommand.FETCH_SQL_QUERY,
             GridRestCommand.CLOSE_SQL_QUERY);
 
-        for (GridRestCommand command : qryCommands) {
-            String ret = content(null, command,
+        for (GridRestCommand cmd : qryCmds) {
+            String ret = content(null, cmd,
                 "pageSize", "1",
                 "qry", "SELECT * FROM table");
 
             JsonNode json = JSON_MAPPER.readTree(ret);
             assertFalse(json.isNull());
 
-            if (command == GridRestCommand.EXECUTE_SQL_QUERY ||
-                command == GridRestCommand.EXECUTE_SCAN_QUERY ||
-                command == GridRestCommand.EXECUTE_SQL_FIELDS_QUERY)
+            if (cmd == GridRestCommand.EXECUTE_SQL_QUERY ||
+                cmd == GridRestCommand.EXECUTE_SCAN_QUERY ||
+                cmd == GridRestCommand.EXECUTE_SQL_FIELDS_QUERY)
                 assertTrue(json.get("error").asText().contains(ERROR_MSG));
             else
                 assertFalse(json.get("error").asText().contains(ERROR_MSG));
@@ -3531,6 +3634,21 @@ public abstract class JettyRestProcessorAbstractSelfTest extends JettyRestProces
 
         cfg.setDataStorageConfiguration(dsCfg);
 
+        int sz = cfg.getCacheConfiguration().length;
+
+        CacheConfiguration[] cacheCfgs = Arrays.copyOf(cfg.getCacheConfiguration(), sz + 1);
+
+        CacheConfiguration<String, String> cacheCfg = new CacheConfiguration<>(CASHE_STORE_ENABLED_CACHE_NAME);
+        cacheCfg.setCopyOnRead(false)
+                .setCacheMode(CacheMode.REPLICATED)
+                .setReadThrough(true)
+                .setWriteThrough(true)
+                .setCacheStoreFactory(FactoryBuilder.factoryOf(JettyRestProcessorUnsignedSelfTest.TestStore.class));
+
+        cacheCfgs[sz] = cacheCfg;
+
+        cfg.setCacheConfiguration(cacheCfgs);
+
         return cfg;
     }
 
@@ -3620,5 +3738,23 @@ public abstract class JettyRestProcessorAbstractSelfTest extends JettyRestProces
             assertTrue(res.asText().contains(DATA_LOST_ON_DEACTIVATION_WARNING));
 
         checkState(success ? newState : curState);
+    }
+
+    /** Test 3rd party cache store. */
+    public static class TestStore extends CacheStoreAdapter<String, String> {
+        /** {@inheritDoc} */
+        @Override public String load(String key) throws CacheLoaderException {
+            return thirdPartyStore.get(key);
+        }
+
+        /** {@inheritDoc} */
+        @Override public void write(Cache.Entry<? extends String, ? extends String> entry) throws CacheWriterException {
+            thirdPartyStore.put(entry.getKey(), entry.getValue());
+        }
+
+        /** {@inheritDoc} */
+        @Override public void delete(Object key) throws CacheWriterException {
+            thirdPartyStore.remove(key);
+        }
     }
 }

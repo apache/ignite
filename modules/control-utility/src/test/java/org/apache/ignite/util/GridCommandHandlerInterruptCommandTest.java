@@ -36,13 +36,17 @@ import org.apache.ignite.events.DeploymentEvent;
 import org.apache.ignite.events.EventType;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInternalFuture;
+import org.apache.ignite.internal.management.cache.IdleVerifyTaskV2;
+import org.apache.ignite.internal.management.cache.ValidateIndexesClosure;
+import org.apache.ignite.internal.management.cache.ValidateIndexesTask;
 import org.apache.ignite.internal.util.typedef.internal.S;
-import org.apache.ignite.internal.visor.verify.ValidateIndexesClosure;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.ListeningTestLogger;
 import org.apache.ignite.testframework.LogListener;
+import org.junit.Assume;
 import org.junit.Test;
 
+import static org.apache.ignite.internal.commandline.CommandHandler.EXIT_CODE_OK;
 import static org.apache.ignite.internal.commandline.CommandHandler.EXIT_CODE_UNEXPECTED_ERROR;
 
 /**
@@ -53,16 +57,18 @@ public class GridCommandHandlerInterruptCommandTest extends GridCommandHandlerAb
     private static final int LOAD_LOOP = 500_000;
 
     /** Idle verify task name. */
-    private static final String IDLE_VERIFY_TASK_V2 = "org.apache.ignite.internal.visor.verify.VisorIdleVerifyTaskV2";
+    private static final String IDLE_VERIFY_TASK_V2 = IdleVerifyTaskV2.class.getName();
 
     /** Validate index task name. */
-    private static final String VALIDATE_INDEX_TASK = "org.apache.ignite.internal.visor.verify.VisorValidateIndexesTask";
+    private static final String VALIDATE_INDEX_TASK = ValidateIndexesTask.class.getName();
 
     /** Log listener. */
     private ListeningTestLogger lnsrLog;
 
     /** {@inheritDoc} */
     @Override protected void beforeTest() throws Exception {
+        Assume.assumeTrue(commandHandler.equals(CLI_CMD_HND));
+
         super.beforeTest();
 
         cleanPersistenceDir();
@@ -231,8 +237,20 @@ public class GridCommandHandlerInterruptCommandTest extends GridCommandHandlerAb
         CountDownLatch startTaskLatch = waitForTaskEvent(ignite, IDLE_VERIFY_TASK_V2);
 
         LogListener lnsrValidationCancelled = LogListener.matches("The check procedure was cancelled.").build();
+        LogListener lnsrIdleVerifyStart = LogListener.matches("Idle verify procedure has started").build();
+        LogListener lnsrIdleVerifyFinish = LogListener.matches("Idle verify procedure has finished").build();
 
         lnsrLog.registerListener(lnsrValidationCancelled);
+        lnsrLog.registerListener(lnsrIdleVerifyStart);
+        lnsrLog.registerListener(lnsrIdleVerifyFinish);
+
+        assertEquals(EXIT_CODE_OK, execute("--cache", "idle_verify", "--dump"));
+
+        assertTrue(lnsrIdleVerifyStart.check());
+        assertTrue(lnsrIdleVerifyFinish.check());
+
+        lnsrIdleVerifyStart.reset();
+        lnsrIdleVerifyFinish.reset();
 
         IgniteInternalFuture fut = GridTestUtils.runAsync(() ->
             assertSame(EXIT_CODE_UNEXPECTED_ERROR, execute("--cache", "idle_verify")));
@@ -246,6 +264,8 @@ public class GridCommandHandlerInterruptCommandTest extends GridCommandHandlerAb
         assertTrue(GridTestUtils.waitForCondition(() ->
             ignite.compute().activeTaskFutures().isEmpty(), 30_000));
 
+        assertTrue(lnsrIdleVerifyStart.check());
+        assertTrue(lnsrIdleVerifyFinish.check());
         assertFalse(lnsrValidationCancelled.check());
     }
 
@@ -304,14 +324,14 @@ public class GridCommandHandlerInterruptCommandTest extends GridCommandHandlerAb
         ValidateIndexesClosure clo = new ValidateIndexesClosure(cancelled::get, Collections.singleton(DEFAULT_CACHE_NAME),
             0, 0, false, true);
 
-        ListeningTestLogger listeningLogger = new ListeningTestLogger(log);
+        ListeningTestLogger listeningLog = new ListeningTestLogger(log);
 
         GridTestUtils.setFieldValue(clo, "ignite", ignite0);
-        GridTestUtils.setFieldValue(clo, "log", listeningLogger);
+        GridTestUtils.setFieldValue(clo, "log", listeningLog);
 
         LogListener lnsrValidationStarted = LogListener.matches("Current progress of ValidateIndexesClosure").build();
 
-        listeningLogger.registerListener(lnsrValidationStarted);
+        listeningLog.registerListener(lnsrValidationStarted);
 
         IgniteInternalFuture fut = GridTestUtils.runAsync(() ->
             GridTestUtils.assertThrows(log, clo::call, IgniteException.class, ValidateIndexesClosure.CANCELLED_MSG));

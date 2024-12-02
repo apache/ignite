@@ -97,4 +97,18 @@ public interface MailboxRegistry extends Service {
      * @return Registered outboxes.
      */
     Collection<Outbox<?>> outboxes(@Nullable UUID qryId, long fragmentId, long exchangeId);
+
+    /**
+     * Returns all registered inboxes.
+
+     * @return Registered inboxes.
+     */
+    Collection<Inbox<?>> inboxes();
+
+    /**
+     * Returns all registered outboxes.
+     *
+     * @return Registered outboxes.
+     */
+    Collection<Outbox<?>> outboxes();
 }

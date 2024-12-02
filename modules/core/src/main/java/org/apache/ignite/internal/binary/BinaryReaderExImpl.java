@@ -1338,7 +1338,7 @@ public class BinaryReaderExImpl implements BinaryReader, BinaryRawReaderEx, Bina
 
     /** {@inheritDoc} */
     @Nullable @Override public Object readObjectDetached(boolean deserialize) throws BinaryObjectException {
-        return BinaryUtils.unmarshal(in, ctx, ldr, this, true, deserialize);
+        return BinaryUtils.unmarshal(in, ctx, ldr, new BinaryReaderHandlesHolderImpl(), true, deserialize);
     }
 
     /** {@inheritDoc} */
@@ -2367,6 +2367,11 @@ public class BinaryReaderExImpl implements BinaryReader, BinaryRawReaderEx, Bina
     /** {@inheritDoc} */
     @Override public int available() throws IOException {
         return in.remaining();
+    }
+
+    /** {@inheritDoc} */
+    @Override public boolean isEmpty() {
+        return hnds == null || hnds.isEmpty();
     }
 
     /** {@inheritDoc} */

@@ -21,7 +21,6 @@ import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
-
 import org.apache.calcite.adapter.enumerable.RexImpTable;
 import org.apache.calcite.linq4j.tree.ConstantExpression;
 import org.apache.calcite.linq4j.tree.ConstantUntypedNull;
@@ -35,8 +34,10 @@ import org.apache.calcite.rel.type.RelDataType;
 import org.apache.calcite.rex.RexNode;
 import org.apache.calcite.runtime.SqlFunctions;
 import org.apache.calcite.sql.type.SqlTypeName;
+import org.apache.calcite.sql.type.SqlTypeUtil;
 import org.apache.calcite.util.BuiltInMethod;
 import org.apache.calcite.util.Util;
+import org.apache.ignite.internal.processors.query.calcite.util.Commons;
 
 /** */
 public class ConverterUtils {
@@ -168,6 +169,21 @@ public class ConverterUtils {
     }
 
     /**
+     * Convert {@code operand} to {@code targetType}.
+     *
+     * @param operand The expression to convert
+     * @param targetType Target type
+     * @return A new expression with java type corresponding to {@code targetType}
+     * or original expression if there is no need to convert.
+     */
+    public static Expression convert(Expression operand, RelDataType targetType) {
+        if (SqlTypeUtil.isDecimal(targetType))
+            return convertToDecimal(operand, targetType);
+        else
+            return convert(operand, Commons.typeFactory().getJavaClass(targetType));
+    }
+
+    /**
      * Convert {@code operand} to target type {@code toType}.
      *
      * @param operand The expression to convert
@@ -221,14 +237,14 @@ public class ConverterUtils {
         final Primitive fromBox = Primitive.ofBox(fromType);
         final Primitive fromPrimitive = Primitive.of(fromType);
         final boolean fromNumber = fromType instanceof Class
-            && Number.class.isAssignableFrom((Class)fromType);
+            && Number.class.isAssignableFrom((Class<?>)fromType);
         if (fromType == String.class) {
             if (toPrimitive != null) {
+                if (toPrimitive.isFixedNumeric())
+                    return IgniteExpressions.parseStringChecked(operand, toPrimitive);
+
                 switch (toPrimitive) {
                     case CHAR:
-                    case SHORT:
-                    case INT:
-                    case LONG:
                     case FLOAT:
                     case DOUBLE:
                         // Generate "SqlFunctions.toShort(x)".
@@ -245,6 +261,9 @@ public class ConverterUtils {
                 }
             }
             if (toBox != null) {
+                if (toBox.isFixedNumeric())
+                    operand = IgniteExpressions.parseStringChecked(operand, toBox);
+
                 switch (toBox) {
                     case CHAR:
                         // Generate "SqlFunctions.toCharBoxed(x)".
@@ -277,12 +296,11 @@ public class ConverterUtils {
 
             if (fromPrimitive != null) {
                 // E.g. from "float" to "double"
-                return Expressions.convert_(
-                    operand, toPrimitive.primitiveClass);
+                return IgniteExpressions.convertChecked(operand, fromPrimitive, toPrimitive);
             }
-            if (fromNumber || fromBox == Primitive.CHAR) {
+            if (fromNumber) {
                 // Generate "x.shortValue()".
-                return Expressions.unbox(operand, toPrimitive);
+                return IgniteExpressions.unboxChecked(operand, fromBox, toPrimitive);
             }
             else {
                 // E.g. from "Object" to "short".
@@ -300,7 +318,7 @@ public class ConverterUtils {
                 Expressions.equal(operand, RexImpTable.NULL_EXPR),
                 RexImpTable.NULL_EXPR,
                 Expressions.box(
-                    Expressions.unbox(operand, toBox),
+                    IgniteExpressions.unboxChecked(operand, fromBox, toBox),
                     toBox));
         }
         else if (fromPrimitive != null && toBox != null) {
@@ -322,7 +340,7 @@ public class ConverterUtils {
             // Convert it first and generate "Byte.valueOf((byte)x)"
             // Because there is no method "Byte.valueOf(int)" in Byte
             return Expressions.box(
-                Expressions.convert_(operand, toBox.primitiveClass),
+                IgniteExpressions.convertChecked(operand, fromPrimitive, toBox),
                 toBox);
         }
         // Convert datetime types to internal storage type:
@@ -436,19 +454,19 @@ public class ConverterUtils {
      * Integer directly).
      *
      * @param targetTypes Formal operand types declared for the function arguments
-     * @param arguments Input expressions to the function
+     * @param args Input expressions to the function
      * @return Input expressions with probable type conversion
      */
     static List<Expression> convertAssignableTypes(Class<?>[] targetTypes,
-        List<Expression> arguments) {
+        List<Expression> args) {
         final List<Expression> list = new ArrayList<>();
-        if (targetTypes.length == arguments.size()) {
-            for (int i = 0; i < arguments.size(); i++)
-                list.add(convertAssignableType(arguments.get(i), targetTypes[i]));
+        if (targetTypes.length == args.size()) {
+            for (int i = 0; i < args.size(); i++)
+                list.add(convertAssignableType(args.get(i), targetTypes[i]));
         }
         else {
             int j = 0;
-            for (Expression argument: arguments) {
+            for (Expression arg: args) {
                 Class<?> type;
                 if (!targetTypes[j].isArray()) {
                     type = targetTypes[j];
@@ -457,7 +475,7 @@ public class ConverterUtils {
                 else
                     type = targetTypes[j].getComponentType();
 
-                list.add(convertAssignableType(argument, type));
+                list.add(convertAssignableType(arg, type));
             }
         }
         return list;

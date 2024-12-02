@@ -25,13 +25,12 @@ import org.apache.ignite.cache.query.FieldsQueryCursor;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.cache.query.SqlQuery;
 import org.apache.ignite.internal.GridKernalContext;
-import org.apache.ignite.internal.managers.IgniteMBeansManager;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.GridCacheContextInfo;
-import org.apache.ignite.internal.processors.cache.mvcc.MvccSnapshot;
 import org.apache.ignite.internal.processors.cache.persistence.CacheDataRow;
 import org.apache.ignite.internal.processors.odbc.jdbc.JdbcParameterMeta;
+import org.apache.ignite.internal.processors.query.running.RunningQueryManager;
 import org.apache.ignite.internal.util.GridSpinBusyLock;
 import org.apache.ignite.internal.util.lang.GridCloseableIterator;
 import org.apache.ignite.lang.IgniteBiTuple;
@@ -154,38 +153,6 @@ public interface GridQueryIndexing {
     public void unregisterCache(GridCacheContextInfo<?, ?> cacheInfo);
 
     /**
-     *
-     * @param cctx Cache context.
-     * @param ids Involved cache ids.
-     * @param parts Partitions.
-     * @param schema Schema name.
-     * @param qry Query string.
-     * @param params Query parameters.
-     * @param flags Flags.
-     * @param pageSize Fetch page size.
-     * @param timeout Timeout.
-     * @param topVer Topology version.
-     * @param mvccSnapshot MVCC snapshot.
-     * @param cancel Query cancel object.
-     * @return Cursor over entries which are going to be changed.
-     * @throws IgniteCheckedException If failed.
-     */
-    public UpdateSourceIterator<?> executeUpdateOnDataNodeTransactional(
-        GridCacheContext<?, ?> cctx,
-        int[] ids,
-        int[] parts,
-        String schema,
-        String qry,
-        Object[] params,
-        int flags,
-        int pageSize,
-        int timeout,
-        AffinityTopologyVersion topVer,
-        MvccSnapshot mvccSnapshot,
-        GridQueryCancel cancel
-    ) throws IgniteCheckedException;
-
-    /**
      * Jdbc parameters metadata of the specified query.
      *
      * @param schemaName the default schema name for query.
@@ -267,12 +234,4 @@ public interface GridQueryIndexing {
      * @param sql sql statement.
      */
     public boolean isStreamableInsertStatement(String schemaName, SqlFieldsQuery sql) throws SQLException;
-
-    /**
-     * Register SQL JMX beans.
-     *
-     * @param mbMgr Ignite MXBean manager.
-     * @throws IgniteCheckedException On bean registration error.
-     */
-    public void registerMxBeans(IgniteMBeansManager mbMgr) throws IgniteCheckedException;
 }

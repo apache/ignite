@@ -43,7 +43,6 @@ import org.junit.Test;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.ATOMIC;
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
-import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL_SNAPSHOT;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
 
 /**
@@ -390,39 +389,6 @@ public class IgniteDynamicCacheStartNoExchangeTimeoutTest extends GridCommonAbst
 
             ccfg.setName("cache-6");
             ccfg.setAtomicityMode(TRANSACTIONAL);
-            ccfg.setBackups(1);
-            ccfg.setWriteSynchronizationMode(FULL_SYNC);
-
-            res.add(ccfg);
-        }
-
-        {
-            CacheConfiguration ccfg = new CacheConfiguration(DEFAULT_CACHE_NAME);
-
-            ccfg.setName("cache-7");
-            ccfg.setAtomicityMode(TRANSACTIONAL_SNAPSHOT);
-            ccfg.setBackups(0);
-            ccfg.setWriteSynchronizationMode(FULL_SYNC);
-
-            res.add(ccfg);
-        }
-
-        {
-            CacheConfiguration ccfg = new CacheConfiguration(DEFAULT_CACHE_NAME);
-
-            ccfg.setName("cache-8");
-            ccfg.setAtomicityMode(TRANSACTIONAL_SNAPSHOT);
-            ccfg.setBackups(1);
-            ccfg.setWriteSynchronizationMode(FULL_SYNC);
-
-            res.add(ccfg);
-        }
-
-        {
-            CacheConfiguration ccfg = new CacheConfiguration(DEFAULT_CACHE_NAME);
-
-            ccfg.setName("cache-9");
-            ccfg.setAtomicityMode(TRANSACTIONAL_SNAPSHOT);
             ccfg.setBackups(1);
             ccfg.setWriteSynchronizationMode(FULL_SYNC);
 

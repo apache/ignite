@@ -79,11 +79,6 @@ public class SimpleDataRow implements Storable {
         return 2 /** Fragment size */ + 2 /** Row size */ + value().length;
     }
 
-    /** {@inheritDoc} */
-    @Override public int headerSize() {
-        return 0;
-    }
-
     /**
      * @return Value.
      */

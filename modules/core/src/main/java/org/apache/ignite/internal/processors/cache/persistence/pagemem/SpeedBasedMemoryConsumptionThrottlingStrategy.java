@@ -253,12 +253,12 @@ class SpeedBasedMemoryConsumptionThrottlingStrategy {
 
         final long targetSpeedToMarkAll = calcSpeedToMarkAllSpaceTillEndOfCp(dirtyPagesRatio, donePages,
             avgCpWriteSpeed, cpTotalPages);
-        final double targetCurrentDirtyRatio = targetCurrentDirtyRatio(donePages, cpTotalPages);
+        final double targetCurDirtyRatio = targetCurrentDirtyRatio(donePages, cpTotalPages);
 
-        publishSpeedAndRatioForMetrics(targetSpeedToMarkAll, targetCurrentDirtyRatio);
+        publishSpeedAndRatioForMetrics(targetSpeedToMarkAll, targetCurDirtyRatio);
 
         return delayIfMarkingFasterThanTargetSpeedAllows(instantaneousMarkDirtySpeed,
-            dirtyPagesRatio, nThreads, targetSpeedToMarkAll, targetCurrentDirtyRatio);
+            dirtyPagesRatio, nThreads, targetSpeedToMarkAll, targetCurDirtyRatio);
     }
 
     /***/
@@ -339,16 +339,16 @@ class SpeedBasedMemoryConsumptionThrottlingStrategy {
 
     /** Returns total number of pages storable in page memory. */
     private long pageMemTotalPages() {
-        long currentTotalPages = pageMemTotalPages;
+        long curTotalPages = pageMemTotalPages;
 
-        if (currentTotalPages == 0) {
-            currentTotalPages = pageMemory.totalPages();
-            pageMemTotalPages = currentTotalPages;
+        if (curTotalPages == 0) {
+            curTotalPages = pageMemory.totalPages();
+            pageMemTotalPages = curTotalPages;
         }
 
-        assert currentTotalPages > 0 : "PageMemory.totalPages() is still 0";
+        assert curTotalPages > 0 : "PageMemory.totalPages() is still 0";
 
-        return currentTotalPages;
+        return curTotalPages;
     }
 
     /**

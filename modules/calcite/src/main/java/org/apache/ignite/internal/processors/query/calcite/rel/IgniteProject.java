@@ -143,11 +143,11 @@ public class IgniteProject extends Project implements TraitsAwareIgniteRel {
 
         List<RelFieldCollation> inFieldCollations = new ArrayList<>();
         for (RelFieldCollation inFieldCollation : fieldCollations) {
-            Integer newIndex = targets.get(inFieldCollation.getFieldIndex());
-            if (newIndex == null)
+            Integer newIdx = targets.get(inFieldCollation.getFieldIndex());
+            if (newIdx == null)
                 break;
             else
-                inFieldCollations.add(inFieldCollation.withFieldIndex(newIndex));
+                inFieldCollations.add(inFieldCollation.withFieldIndex(newIdx));
         }
 
         if (inFieldCollations.size() == fieldCollations.size())
@@ -210,9 +210,9 @@ public class IgniteProject extends Project implements TraitsAwareIgniteRel {
 
     /** {@inheritDoc} */
     @Override public RelOptCost computeSelfCost(RelOptPlanner planner, RelMetadataQuery mq) {
-        double rowCount = mq.getRowCount(getInput());
+        double rowCnt = mq.getRowCount(getInput());
 
-        return planner.getCostFactory().makeCost(rowCount, rowCount * IgniteCost.ROW_PASS_THROUGH_COST, 0);
+        return planner.getCostFactory().makeCost(rowCnt, rowCnt * IgniteCost.ROW_PASS_THROUGH_COST, 0);
     }
 
     /** {@inheritDoc} */

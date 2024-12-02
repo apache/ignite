@@ -30,18 +30,6 @@ def get_home_dir(install_root, product):
     return os.path.join(install_root, product)
 
 
-def get_module_path(project_dir, module_name, is_dev):
-    """
-    Get absolute path to the specified module.
-    """
-    if is_dev:
-        module_path = os.path.join("modules", module_name, "target")
-    else:
-        module_path = os.path.join("libs", "optional", "ignite-%s" % module_name)
-
-    return os.path.join(project_dir, module_path)
-
-
 def get_shared_root_path(test_globals):
     """
     Get path to shared root directory.
@@ -185,6 +173,8 @@ class IgnitePathAware(PathAware, metaclass=ABCMeta):
 
     IGNITE_THIN_CLIENT_CONFIG_NAME = "ignite-thin-config.xml"
 
+    IGNITE_THIN_JDBC_CONFIG_NAME = "ignite-thin-jdbc-config.xml"
+
     IGNITE_LOG_CONFIG_NAME = "ignite-ducktape-log4j2.xml"
 
     @property
@@ -202,6 +192,13 @@ class IgnitePathAware(PathAware, metaclass=ABCMeta):
         return os.path.join(self.config_dir, IgnitePathAware.IGNITE_THIN_CLIENT_CONFIG_NAME)
 
     @property
+    def thin_jdbc_config_file(self):
+        """
+        :return: path to thin JDBC driver config file
+        """
+        return os.path.join(self.config_dir, IgnitePathAware.IGNITE_THIN_JDBC_CONFIG_NAME)
+
+    @property
     def log_config_file(self):
         """
         :return: path to log config file
@@ -214,6 +211,20 @@ class IgnitePathAware(PathAware, metaclass=ABCMeta):
         :return: path to database directory
         """
         return os.path.join(self.work_dir, "db")
+
+    @property
+    def perf_stat_dir(self):
+        """
+        :return: path to performance statistics directory
+        """
+        return os.path.join(self.work_dir, "perf_stat")
+
+    @property
+    def wal_dir(self):
+        """
+        :return: path to wal directory
+        """
+        return os.path.join(self.database_dir, "wal")
 
     @property
     def snapshots_dir(self):
@@ -235,3 +246,27 @@ class IgnitePathAware(PathAware, metaclass=ABCMeta):
         :return: absolute path to the specified script
         """
         return os.path.join(self.home_dir, "bin", script_name)
+
+    @staticmethod
+    def consistent_dir(consistent_id):
+        """
+        :param consistent_id: consistent ID
+        :return: correct file name for consistent ID directory
+        """
+        return "".join([c if c.isdigit() or c.isalpha() else '_' for c in consistent_id])
+
+    def cache_dir(self, consistent_dir, cache_name):
+        """
+        :param consistent_dir: consistent ID directory.
+        :param cache_name: cache name.
+        :return: absolute path to the cache directory.
+        """
+        return os.path.join(self.database_dir, consistent_dir, f'cache-{cache_name}')
+
+    def index_file(self, consistent_dir, cache_name):
+        """
+        :param consistent_dir: consistent ID directory.
+        :param cache_name: cache name.
+        :return: absolute path to the index file of cache.
+        """
+        return os.path.join(self.cache_dir(consistent_dir, cache_name), 'index.bin')

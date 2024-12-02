@@ -36,6 +36,7 @@ import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.managers.communication.GridMessageListener;
+import org.apache.ignite.internal.pagemem.PageIdUtils;
 import org.apache.ignite.internal.pagemem.store.IgnitePageStoreManager;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionsExchangeFuture;
@@ -65,6 +66,7 @@ import static org.apache.ignite.IgniteSystemProperties.IGNITE_DISABLE_WAL_DURING
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_PENDING_TX_TRACKER_ENABLED;
 import static org.apache.ignite.internal.GridTopic.TOPIC_WAL;
 import static org.apache.ignite.internal.managers.communication.GridIoPolicy.SYSTEM_POOL;
+import static org.apache.ignite.internal.pagemem.PageIdAllocator.INDEX_PARTITION;
 import static org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionState.MOVING;
 import static org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionState.RENTING;
 import static org.apache.ignite.internal.processors.cache.persistence.CheckpointState.FINISHED;
@@ -429,9 +431,9 @@ public class WalStateManager extends GridCacheSharedManagerAdapter {
             || !IgniteSystemProperties.getBoolean(IGNITE_DISABLE_WAL_DURING_REBALANCING, DFLT_DISABLE_WAL_DURING_REBALANCING))
             return;
 
-        Collection<CacheGroupContext> grpContexts = cctx.cache().cacheGroups();
+        Collection<CacheGroupContext> grpCtxs = cctx.cache().cacheGroups();
 
-        for (CacheGroupContext grp : grpContexts) {
+        for (CacheGroupContext grp : grpCtxs) {
             if (!grp.affinityNode() || !(grp.persistenceEnabled() || grp.cdcEnabled())
                 || !grp.localWalEnabled() || !grp.rebalanceEnabled() || !grp.shared().isRebalanceEnabled())
                 continue;
@@ -1013,12 +1015,14 @@ public class WalStateManager extends GridCacheSharedManagerAdapter {
      * Checks WAL disabled for cache group.
      *
      * @param grpId Group id.
+     * @param pageId Page id.
      * @return {@code True} if WAL disable for group. {@code False} If not.
      */
-    public boolean isDisabled(int grpId) {
+    public boolean isDisabled(int grpId, long pageId) {
         CacheGroupContext ctx = cctx.cache().cacheGroup(grpId);
 
-        return ctx != null && !ctx.walEnabled();
+        return ctx != null && (!ctx.walEnabled()
+            || (!ctx.indexWalEnabled() && PageIdUtils.partId(pageId) == INDEX_PARTITION));
     }
 
     /**

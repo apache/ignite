@@ -25,7 +25,6 @@ import org.apache.ignite.configuration.DataPageEvictionMode;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.processors.cache.persistence.DataRegionMetricsImpl;
-import org.junit.Ignore;
 import org.junit.Test;
 
 /**
@@ -48,15 +47,6 @@ public class PageEvictionMetricTest extends PageEvictionAbstractTest {
     @Test
     public void testPageEvictionMetric() throws Exception {
         checkPageEvictionMetric(CacheAtomicityMode.ATOMIC);
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
-    @Ignore("https://issues.apache.org/jira/browse/IGNITE-10738")
-    @Test
-    public void testPageEvictionMetricMvcc() throws Exception {
-        checkPageEvictionMetric(CacheAtomicityMode.TRANSACTIONAL_SNAPSHOT);
     }
 
     /**

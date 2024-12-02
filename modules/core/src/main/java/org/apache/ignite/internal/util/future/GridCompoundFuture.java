@@ -33,7 +33,6 @@ import org.apache.ignite.internal.cluster.ClusterTopologyCheckedException;
 import org.apache.ignite.internal.processors.cache.distributed.near.consistency.IgniteConsistencyViolationException;
 import org.apache.ignite.internal.transactions.IgniteTxOptimisticCheckedException;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
-import org.apache.ignite.internal.util.typedef.C1;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -75,7 +74,7 @@ public class GridCompoundFuture<T, R> extends GridFutureAdapter<R> implements Ig
     private volatile int lsnrCalls;
 
     /** The lock responds for a consistency of compounds. */
-    private ReentrantReadWriteLock compoundsLock = new ReentrantReadWriteLock();
+    private final ReentrantReadWriteLock compoundsLock = new ReentrantReadWriteLock();
 
     /** Count of compounds in the future. */
     private volatile int size;
@@ -386,7 +385,7 @@ public class GridCompoundFuture<T, R> extends GridFutureAdapter<R> implements Ig
     /**
      * Returns future at the specified position in this list.
      *
-     * @param idx - index index of the element to return
+     * @param idx - index of the element to return
      * @return Future.
      */
     @SuppressWarnings("unchecked")
@@ -423,11 +422,7 @@ public class GridCompoundFuture<T, R> extends GridFutureAdapter<R> implements Ig
             "cancelled", isCancelled(),
             "err", error(),
             "futs",
-            F.viewReadOnly(futures(), new C1<IgniteInternalFuture<T>, String>() {
-                @Override public String apply(IgniteInternalFuture<T> f) {
-                    return Boolean.toString(f.isDone());
-                }
-            })
+            F.viewReadOnly(futures(), (IgniteInternalFuture<T> f) -> Boolean.toString(f.isDone()))
         );
     }
 }

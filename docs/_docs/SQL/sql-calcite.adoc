@@ -123,19 +123,6 @@ QUERY_ENGINE=CALCITE
 ----
 --
 
-=== QUERY_ENGINE Hint
-
-To select a particular engine to run individual queries, use the `QUERY_ENGINE` hint:
-
-[tabs]
---
-tab:Query with QUERY_ENGINE hint[]
-[source,sql]
-----
-SELECT /*+ QUERY_ENGINE('calcite') */ fld FROM table;
-----
---
-
 == SQL Reference
 
 === DDL
@@ -157,16 +144,16 @@ The Calcite-based SQL engine currently supports:
 |Group | Functions list
 
 |Aggregate functions
-|`COUNT`, `SUM`, `AVG`, `MIN`, `MAX`, `ANY_VALUE`, `LISTAGG`, `GROUP_CONCAT`, `STRING_AGG`, `ARRAY_AGG`, `ARRAY_CONCAT_AGG`, `EVERY`, `SOME`
+|`COUNT`, `SUM`, `AVG`, `MIN`, `MAX`, `ANY_VALUE`, `LISTAGG`, `GROUP_CONCAT`, `STRING_AGG`, `ARRAY_AGG`, `ARRAY_CONCAT_AGG`, `EVERY`, `SOME`, `BIT_AND`, `BIT_OR`, `BIT_XOR`
 
 |String functions
 |`UPPER`, `LOWER`, `INITCAP`, `TO_BASE64`, `FROM_BASE64`, `MD5`, `SHA1`, `SUBSTRING`, `LEFT`, `RIGHT`, `REPLACE`, `TRANSLATE`, `CHR`, `CHAR_LENGTH`, `CHARACTER_LENGTH`, `LENGTH`, `CONCAT`, `OVERLAY`, `POSITION`, `ASCII`, `REPEAT`, `SPACE`, `STRCMP`, `SOUNDEX`, `DIFFERENCE`, `REVERSE`, `TRIM`, `LTRIM`, `RTRIM`, `REGEXP_REPLACE`
 
 |Math functions
-|`MOD`, `EXP`, `POWER`, `LN`, `LOG10`, `ABS`, `RAND`, `RAND_INTEGER`, `ACOS`, `ASIN`, `ATAN`, `ATAN2`, `SQRT`, `CBRT`, `COS`, `COSH`, `COT`, `DEGREES`, `RADIANS`, `ROUND`, `SIGN`, `SIN`, `SINH`, `TAN`, `TANH`, `TRUNCATE`, `PI`
+|`MOD`, `EXP`, `POWER`, `LN`, `LOG10`, `ABS`, `RAND`, `RAND_INTEGER`, `ACOS`, `ACOSH`, `ASIN`, `ASINH`, `ATAN`, `ATANH`, `ATAN2`, `SQRT`, `CBRT`, `COS`, `COSH`, `COT`, `COTH`, `DEGREES`, `RADIANS`, `ROUND`, `SIGN`, `SIN`, `SINH`, `TAN`, `TANH`, `SEC`, `SECH`, `CSC`, `CSCH`, `TRUNCATE`, `PI`, `BITAND`, `BITOR`, `BITXOR`
 
 |Date and time functions
-|`EXTRACT`, `FLOOR`, `CEIL`, `TIMESTAMPADD`, `TIMESTAMPDIFF`, `LAST_DATE`, `DAYNAME`, `MONTHNAME`, `DAYOFMONTH`, `DAYOFWEEK`, `DAYOFYEAR`, `YEAR`, `QUARTER`, `MONTH`, `WEEK`, `HOUR`, `MINUTE`, `SECOND`, `TIMESTAMP_SECONDS`, `TIMESTAMP_MILLIS`, `TIMESTAMP_MICROS`, `UNIX_SECONDS`, `UNIX_MILLIS`, `UNIX_MICROS`, `UNIX_DATE`, `DATE_FROM_UNIX_DATE`, `DATE`, `CURRENT_TIME`, `CURRENT_TIMESTAMP`, `CURRENT_DATE`, `LOCALTIME`, `LOCALTIMESTAMP`
+|`EXTRACT`, `FLOOR`, `CEIL`, `TIMESTAMPADD`, `TIMESTAMPDIFF`, `LAST_DATE`, `DAYNAME`, `MONTHNAME`, `DAYOFMONTH`, `DAYOFWEEK`, `DAYOFYEAR`, `YEAR`, `QUARTER`, `MONTH`, `WEEK`, `HOUR`, `MINUTE`, `SECOND`, `TIMESTAMP_SECONDS`, `TIMESTAMP_MILLIS`, `TIMESTAMP_MICROS`, `UNIX_SECONDS`, `UNIX_MILLIS`, `UNIX_MICROS`, `UNIX_DATE`, `DATE_FROM_UNIX_DATE`, `DATE`, `TIME`, `DATETIME`, `CURRENT_TIME`, `CURRENT_TIMESTAMP`, `CURRENT_DATE`, `LOCALTIME`, `LOCALTIMESTAMP`, `TO_CHAR`, `TO_DATE`, `TO_TIMESTAMP`
 
 |XML functions
 |`EXTRACTVALUE`, `XMLTRANSFORM`, `EXTRACT`, `EXISTSNODE`
@@ -241,3 +228,200 @@ Below are the data types supported by the Calcite-based SQL engine:
 |`java.lang.Object`
 
 |===
+
+== Optimizer hints [[hints]]
+
+The query optimizer does its best to build the fastest excution plan. However, this is a far way to create an optimizer
+which is the most effective for each case. You can better know about the data design, application design or data
+distribution in the cluster. SQL hints can help the optimizer to make optimizations more rationally or build
+execution plan faster.
+
+[NOTE]
+====
+SQL hints are optional to apply and might be skipped in some cases.
+====
+
+=== Hints format
+SQL hints are defined by a special comment +++/*+ HINT */+++ reffered as _hint block_. Spaces before and after the
+hint name are required. The hint block is placed right after _SELECT_ or after a table name. Several hint blocks for
+one _SELECT_ or one table *are not allowed*. Several hints in one hint block are separated with comma.
+
+Example:
+[source, SQL]
+----
+SELECT /*+ FORCE_INDEX(IDX_TBL1_V2), EXPAND_DISTINCT_AGG */ V2, AVG(DISTINCT V3) FROM TBL1 WHERE V1=? and V2=? GROUP BY V2
+
+SELECT * FROM TBL1 /*+ FORCE_INDEX(IDX_TBL1_V2) */ where V1=? and V2=?
+----
+
+It is allowed to define several hints for the same relation operator. To use several hints, separate them by comma
+(spaces are optional).
+
+Example:
+[source, SQL]
+----
+SELECT /*+ NO_INDEX, EXPAND_DISTINCT_AGG */ SUM(DISTINCT V1), AVG(DISTINCT V2) FROM TBL1 WHERE V3=? GROUP BY V3
+----
+
+==== Hint parameters
+Hint parameters, if required, are placed in brackets after the hint name and separated by commas.
+
+The hint parameter can be quoted. Quoted parameter is case-sensitive. The quoted and unquoted parameters cannot be
+defined for the same hint.
+
+Example:
+[source, SQL]
+----
+SELECT /*+ FORCE_INDEX(TBL1_IDX2,TBL2_IDX1) */ T1.V1, T2.V1 FROM TBL1 T1, TBL2 T2 WHERE T1.V1 = T2.V1 AND T1.V2 > ? AND T2.V2 > ?;
+
+SELECT /*+ FORCE_INDEX('TBL2_idx1') */ T1.V1, T2.V1 FROM TBL1 T1, TBL2 T2 WHERE T1.V1 = T2.V1 AND T1.V2 > ? AND T2.V2 > ?;
+----
+
+=== Hint scope
+Hints of a _SELECT_ are "visible" for this operation and the following relation operators, queries and subqueries.
+Hints in a subquery have effective scope only for this subquery and its subqueries. Hint, defined for a table, is
+effective only for this table.
+
+Example:
+[source, SQL]
+----
+SELECT /*+ NO_INDEX(TBL1_IDX2), FORCE_INDEX(TBL2_IDX2) */ T1.V1 FROM TBL1 T1 WHERE T1.V2 IN (SELECT T2.V2 FROM TBL2 T2 WHERE T2.V1=? AND T2.V2=?);
+
+SELECT T1.V1 FROM TBL1 T1 WHERE T1.V2 IN (SELECT /*+ FORCE_INDEX(TBL2_IDX2) */ T2.V2 FROM TBL2 T2 WHERE T2.V1=? AND T2.V2=?);
+
+SELECT T1.V1 FROM TBL1 T1 JOIN TBL2 /*+ MERGE_JOIN */ T2 ON T1.V2=T2.V2 and T1.V3=T2.V3 and T2.V3=?;
+----
+Note that only the first query has a hint in such a case as:
+[source, SQL]
+----
+SELECT /*+ FORCE_INDEX */ V1 FROM TBL1 WHERE V1=? AND V2=?
+UNION ALL
+SELECT V1 FROM TBL1 WHERE V3>?
+----
+But *there are exceptions*: hints of engine or optimizer level, such as link:#hint_disable_rule[_DISABLE_RULE_] or
+link:#hint_query_engine[_QUERY_ENGINE_]. Such hints should be defined at the beginning of the query and are related to
+the whole query.
+
+=== Hints priority
+Hints, defined in subqueries or in the following _SELECTs_, have priority over the preceding ones. In the following example,
+an index for _TBL2_ is actually applied.
+[source, SQL]
+----
+SELECT /*+ NO_INDEX */ * FROM TBL1 T1 WHERE T1.V1 = (SELECT /*+ FORCE_INDEX */ T2.V1 FROM TBL2 T2 where T2.V2=? and T2.V3=?)
+----
+Table hints usually have a bigger priority. In the following example, an index for _TBL1_ is actually applied.
+[source, SQL]
+----
+SELECT /*+ NO_INDEX */ * FROM TBL /*+ FORCE_INDEX(IDX_TBL1_V2) */ where V1=? and V2=? and V3=?;
+----
+
+=== Hints errors
+The optimizer tries to apply every hint and its parameters, if possible. But it skips the hint or hint parameter if:
+
+* There is no such supported hint.
+* Required hint parameters are not passed.
+* The hint parameters have been passed, but the hint does not support any parameter.
+* The hint parameter is incorrect or refers to a nonexistent object, such as a nonexistent index or table.
+* The current hints or current parameters are incompatible with the previous ones, such as forcing the use and disabling of the same index.
+
+=== Hint limitations
+Currently, SQL hints do not recognize the aliases. You can't refer to an alias like this:
+[source, SQL]
+----
+SELECT /*+ MERGE_JOIN(T2) */ T2.V1 FROM TBL1 T1 JOIN TBL2 T2 ON T1.V3=T2.V1 WHERE T1.V2=? AND T2.V2=?
+----
+Instead, a table name have to be used:
+[source, SQL]
+----
+SELECT /*+ MERGE_JOIN(TBL2) */ T2.V1 FROM TBL1 T1 JOIN TBL2 T2 ON T1.V3=T2.V1 WHERE T1.V2=? AND T2.V2=?
+----
+
+=== Supportted hints
+
+==== FORCE_INDEX / NO_INDEX
+Forces or disables index scan.
+
+===== Parameters:
+* Empty. To force an index scan for every undelying table. Optimizer will choose any available index. Or to disable all indexes.
+* Single index name to use or skip exactly this index.
+* Several index names. They can relate to different tables. The optimizer will choose indexes for scanning or skip them all.
+
+===== Example:
+[source, SQL]
+----
+SELECT /*+ FORCE_INDEX */ T1.* FROM TBL1 T1 WHERE T1.V1 = T2.V1 AND T1.V2 > ?;
+
+SELECT /*+ FORCE_INDEX(TBL1_IDX2, TBL2_IDX1) */ T1.V1, T2.V1 FROM TBL1 T1, TBL2 T2 WHERE T1.V1 = T2.V1 AND T1.V2 > ? AND T2.V2 > ?;
+
+SELECT /*+ NO_INDEX */ T1.* FROM TBL1 T1 WHERE T1.V1 = T2.V1 AND T1.V2 > ?;
+
+SELECT /*+ NO_INDEX(TBL1_IDX2, TBL2_IDX1) */ T1.V1, T2.V1 FROM TBL1 T1, TBL2 T2 WHERE T1.V1 = T2.V1 AND T1.V2 > ? AND T2.V2 > ?;
+
+SELECT T1.V1, T2.V2 FROM TBL1 t1 JOIN TBL2 /*+ FORCE_INDEX(IDX2_2) */ T2 on T1.V3=T2.V3 and T1.V1=T2.V2 and T2.V1=?";
+----
+
+==== ENFORCE_JOIN_ORDER
+Forces join order as appears in a query. Fastens building of joins plan.
+
+===== Example:
+[source, SQL]
+----
+SELECT /*+ ENFORCE_JOIN_ORDER */ T1.V1, T2.V1, T2.V2, T3.V1, T3.V2, T3.V3 FROM TBL1 T1 JOIN TBL2 T2 ON T1.V3=T2.V1 JOIN TBL3 T3 ON T2.V3=T3.V1 AND T2.V2=T3.V2
+
+SELECT t1.v1, t3.v2 FROM TBL1 t1 JOIN TBL3 t3 on t1.v3=t3.v3 WHERE t1.v2 in (SELECT /*+ ENFORCE_JOIN_ORDER */ t2.v2 FROM TBL2 t2 JOIN TBL3 t3 ON t2.v1=t3.v1)
+----
+
+==== MERGE_JOIN, NL_JOIN, CNL_JOIN
+Forces certain join type: Merge, Nested Loop and Correlated Nested Loop respectively.
+
+Every of those has the negation like 'NO_INDEX': CNL_JOIN, NO_CNL_JOIN. The negation hint disables certain join type.
+
+===== Parameters:
+* Empty. To force or disable certain join type for every join.
+* Single or several tables names force or disable certain join type only for joining of these tables.
+
+===== Example:
+[source, SQL]
+----
+SELECT /*+ MERGE_JOIN */ t1.v1, t2.v2 FROM TBL1 t1, TBL2 t2 WHERE t1.v3=t2.v3
+
+SELECT /*+ NL_JOIN(TBL3,TBL1) */ t4.v1, t2.v2 FROM TBL1 t4 JOIN TBL2 t2 on t1.v3=t2.v3 WHERE t2.v1 in (SELECT t3.v3 FROM TBL3 t3 JOIN TBL1 t4 on t3.v2=t4.v2)
+
+SELECT t1.v1, t2.v2 FROM TBL2 t1 JOIN TBL1 t2 on t1.v3=t2.v3 WHERE t2.v3 in (SELECT /*+ NO_CNL_JOIN(TBL4) */ t3.v3 FROM TBL3 t3 JOIN TBL4 t4 on t3.v1=t4.v1)
+
+SELECT t4.v1, t2.v2 FROM TBL1 t4 JOIN TBL2 t2 on t1.v3=t2.v3 WHERE t2.v1 in (SELECT t3.v3 FROM TBL3 t3 JOIN TBL1 /*+ NL_JOIN */ t4 on t3.v2=t4.v2)
+----
+
+==== EXPAND_DISTINCT_AGG
+If the optimizer wraps aggregation operations with a join, forces expanding of only distinct aggregates to the join.
+Removes duplicates before the joining and speeds up it.
+
+===== Example:
+[source, SQL]
+----
+SELECT /*+ EXPAND_DISTINCT_AGG */ SUM(DISTINCT V1), AVG(DISTINCT V2) FROM TBL1 GROUP BY V3
+----
+
+==== QUERY_ENGINE [[hint_query_engine]]
+Selects a particular engine to run individual queries. This is an engine level hint.
+
+===== Parameters:
+Single parameter required: the engine name.
+
+===== Example:
+[source, SQL]
+----
+SELECT /*+ QUERY_ENGINE('calcite') */ V1 FROM TBL1
+----
+
+==== DISABLE_RULE [[hint_disable_rule]]
+Disables certain optimizer rules. This is an optimizer level hint.
+
+===== Parameters:
+* One or more optimizer rules for skipping.
+
+===== Example:
+[source, SQL]
+----
+SELECT /*+ DISABLE_RULE('MergeJoinConverter') */ T1.* FROM TBL1 T1 JOIN TBL2 T2 ON T1.V1=T2.V1 WHERE T2.V2=?
+----

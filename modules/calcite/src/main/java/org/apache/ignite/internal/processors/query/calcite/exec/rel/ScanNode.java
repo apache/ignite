@@ -19,9 +19,12 @@ package org.apache.ignite.internal.processors.query.calcite.exec.rel;
 
 import java.util.Iterator;
 import java.util.List;
+import java.util.function.Function;
+import java.util.function.Predicate;
 import org.apache.calcite.rel.type.RelDataType;
 import org.apache.ignite.internal.processors.query.calcite.exec.ExecutionContext;
 import org.apache.ignite.internal.processors.query.calcite.util.Commons;
+import org.jetbrains.annotations.Nullable;
 
 /**
  * Scan node.
@@ -29,6 +32,12 @@ import org.apache.ignite.internal.processors.query.calcite.util.Commons;
 public class ScanNode<Row> extends AbstractNode<Row> implements SingleNode<Row> {
     /** */
     private final Iterable<Row> src;
+
+    /** */
+    @Nullable private final Predicate<Row> filter;
+
+    /** */
+    @Nullable private final Function<Row, Row> rowTransformer;
 
     /** */
     private Iterator<Row> it;
@@ -44,12 +53,32 @@ public class ScanNode<Row> extends AbstractNode<Row> implements SingleNode<Row> 
 
     /**
      * @param ctx Execution context.
+     * @param rowType Row type.
      * @param src Source.
      */
     public ScanNode(ExecutionContext<Row> ctx, RelDataType rowType, Iterable<Row> src) {
+        this(ctx, rowType, src, null, null);
+    }
+
+    /**
+     * @param ctx Execution context.
+     * @param rowType Row type.
+     * @param src Source.
+     * @param filter Row filter.
+     * @param rowTransformer Row transformer (projection).
+     */
+    public ScanNode(
+        ExecutionContext<Row> ctx,
+        RelDataType rowType,
+        Iterable<Row> src,
+        @Nullable Predicate<Row> filter,
+        @Nullable Function<Row, Row> rowTransformer
+    ) {
         super(ctx, rowType);
 
         this.src = src;
+        this.filter = filter;
+        this.rowTransformer = rowTransformer;
     }
 
     /** {@inheritDoc} */
@@ -113,23 +142,38 @@ public class ScanNode<Row> extends AbstractNode<Row> implements SingleNode<Row> 
             if (it == null)
                 it = src.iterator();
 
-            int processed = 0;
-            while (requested > 0 && it.hasNext()) {
-                checkState();
-
-                requested--;
-                downstream().push(it.next());
-
-                if (++processed == IN_BUFFER_SIZE && requested > 0) {
-                    // allow others to do their job
-                    context().execute(this::push, this::onError);
-
-                    return;
-                }
-            }
+            processNextBatch();
         }
         finally {
             inLoop = false;
+        }
+    }
+
+    /**
+     * @return Count of processed rows.
+     */
+    protected int processNextBatch() throws Exception {
+        int processed = 0;
+        while (requested > 0 && it.hasNext()) {
+            checkState();
+
+            Row r = it.next();
+
+            if (filter == null || filter.test(r)) {
+                requested--;
+
+                if (rowTransformer != null)
+                    r = rowTransformer.apply(r);
+
+                downstream().push(r);
+            }
+
+            if (++processed == IN_BUFFER_SIZE && requested > 0) {
+                // Allow others to do their job.
+                context().execute(this::push, this::onError);
+
+                return processed;
+            }
         }
 
         if (requested > 0 && !it.hasNext()) {
@@ -140,5 +184,17 @@ public class ScanNode<Row> extends AbstractNode<Row> implements SingleNode<Row> 
 
             downstream().end();
         }
+
+        return processed;
+    }
+
+    /** */
+    @Nullable public Predicate<Row> filter() {
+        return filter;
+    }
+
+    /** */
+    @Nullable public Function<Row, Row> rowTransformer() {
+        return rowTransformer;
     }
 }

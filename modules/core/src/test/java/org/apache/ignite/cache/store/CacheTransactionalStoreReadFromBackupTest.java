@@ -18,7 +18,6 @@
 package org.apache.ignite.cache.store;
 
 import org.apache.ignite.cache.CacheAtomicityMode;
-import org.apache.ignite.testframework.MvccFeatureChecker;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
 
@@ -26,13 +25,6 @@ import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
  *
  */
 public class CacheTransactionalStoreReadFromBackupTest extends CacheStoreReadFromBackupTest {
-    /** {@inheritDoc} */
-    @Override protected void beforeTestsStarted() throws Exception {
-        MvccFeatureChecker.skipIfNotSupported(MvccFeatureChecker.Feature.CACHE_STORE);
-
-        super.beforeTestsStarted();
-    }
-
     /** {@inheritDoc} */
     @Override protected CacheAtomicityMode atomicityMode() {
         return TRANSACTIONAL;

@@ -17,40 +17,32 @@
 package org.apache.ignite.internal.processors.query.calcite.exec;
 
 import java.lang.reflect.Type;
-import java.util.ArrayList;
-import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
-import java.util.function.Function;
-import java.util.function.Predicate;
 import org.apache.calcite.rel.type.RelDataType;
 import org.apache.calcite.util.ImmutableBitSet;
 import org.apache.calcite.util.ImmutableIntList;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
-import org.apache.ignite.cluster.ClusterTopologyException;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.cache.query.index.sorted.IndexKeyType;
 import org.apache.ignite.internal.cache.query.index.sorted.IndexPlainRowImpl;
 import org.apache.ignite.internal.cache.query.index.sorted.IndexRow;
+import org.apache.ignite.internal.cache.query.index.sorted.IndexRowImpl;
 import org.apache.ignite.internal.cache.query.index.sorted.InlineIndexRowHandler;
 import org.apache.ignite.internal.cache.query.index.sorted.inline.IndexQueryContext;
 import org.apache.ignite.internal.cache.query.index.sorted.inline.InlineIndex;
 import org.apache.ignite.internal.cache.query.index.sorted.inline.InlineIndexKeyType;
+import org.apache.ignite.internal.cache.query.index.sorted.inline.InlineIndexTree;
+import org.apache.ignite.internal.cache.query.index.sorted.inline.SortedSegmentedIndexCursor;
 import org.apache.ignite.internal.cache.query.index.sorted.inline.io.InlineIO;
 import org.apache.ignite.internal.cache.query.index.sorted.keys.IndexKey;
 import org.apache.ignite.internal.cache.query.index.sorted.keys.IndexKeyFactory;
-import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
-import org.apache.ignite.internal.processors.cache.GridCacheContext;
-import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtTopologyFuture;
-import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtLocalPartition;
-import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionState;
-import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionTopology;
-import org.apache.ignite.internal.processors.cache.mvcc.MvccSnapshot;
 import org.apache.ignite.internal.processors.cache.persistence.tree.BPlusTree;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.BPlusIO;
-import org.apache.ignite.internal.processors.query.calcite.exec.RowHandler.RowFactory;
+import org.apache.ignite.internal.processors.cache.transactions.TransactionChanges;
 import org.apache.ignite.internal.processors.query.calcite.exec.exp.RangeIterable;
+import org.apache.ignite.internal.processors.query.calcite.exec.exp.TransformRangeIterable;
 import org.apache.ignite.internal.processors.query.calcite.schema.CacheTableDescriptor;
 import org.apache.ignite.internal.processors.query.calcite.type.IgniteTypeFactory;
 import org.apache.ignite.internal.processors.query.calcite.util.TypeUtils;
@@ -64,33 +56,12 @@ import org.jetbrains.annotations.Nullable;
 /**
  * Scan on index.
  */
-public class IndexScan<Row> extends AbstractIndexScan<Row, IndexRow> {
+public class IndexScan<Row> extends AbstractCacheColumnsScan<Row> {
     /** */
     private final GridKernalContext kctx;
 
-    /** */
-    private final GridCacheContext<?, ?> cctx;
-
-    /** */
-    private final CacheTableDescriptor desc;
-
-    /** */
-    private final RowFactory<Row> factory;
-
-    /** */
-    private final AffinityTopologyVersion topVer;
-
-    /** */
-    private final int[] parts;
-
-    /** */
-    private final MvccSnapshot mvccSnapshot;
-
-    /** */
-    private volatile List<GridDhtLocalPartition> reserved;
-
-    /** */
-    private final ImmutableBitSet requiredColumns;
+    /** Index scan bounds. */
+    private final RangeIterable<Row> ranges;
 
     /** */
     protected final InlineIndex idx;
@@ -104,12 +75,14 @@ public class IndexScan<Row> extends AbstractIndexScan<Row, IndexRow> {
     /** Types of key fields stored in index. */
     private final Type[] fieldsStoreTypes;
 
+    /** Transaction changes. */
+    private final TransactionChanges<IndexRow> txChanges;
+
     /**
      * @param ectx Execution context.
      * @param desc Table descriptor.
      * @param idxFieldMapping Mapping from index keys to row fields.
      * @param idx Physical index.
-     * @param filters Additional filters.
      * @param ranges Index scan bounds.
      */
     public IndexScan(
@@ -118,53 +91,15 @@ public class IndexScan<Row> extends AbstractIndexScan<Row, IndexRow> {
         InlineIndex idx,
         ImmutableIntList idxFieldMapping,
         int[] parts,
-        Predicate<Row> filters,
         RangeIterable<Row> ranges,
-        Function<Row, Row> rowTransformer,
         @Nullable ImmutableBitSet requiredColumns
     ) {
-        this(ectx, desc, new TreeIndexWrapper(idx), idxFieldMapping, parts, filters, ranges, rowTransformer,
-            requiredColumns);
-    }
+        super(ectx, desc, parts, requiredColumns);
+        this.ranges = ranges;
 
-    /**
-     * @param ectx Execution context.
-     * @param desc Table descriptor.
-     * @param idxFieldMapping Mapping from index keys to row fields.
-     * @param treeIdx Physical index wrapper.
-     * @param filters Additional filters.
-     * @param ranges Index scan bounds.
-     */
-    protected IndexScan(
-        ExecutionContext<Row> ectx,
-        CacheTableDescriptor desc,
-        TreeIndexWrapper treeIdx,
-        ImmutableIntList idxFieldMapping,
-        int[] parts,
-        Predicate<Row> filters,
-        RangeIterable<Row> ranges,
-        Function<Row, Row> rowTransformer,
-        @Nullable ImmutableBitSet requiredColumns
-    ) {
-        super(
-            ectx,
-            desc.rowType(ectx.getTypeFactory(), requiredColumns),
-            treeIdx,
-            filters,
-            ranges,
-            rowTransformer
-        );
-
-        this.desc = desc;
-        this.idx = treeIdx.idx;
-        cctx = desc.cacheContext();
+        this.idx = idx;
         kctx = cctx.kernalContext();
 
-        factory = ectx.rowHandler().factory(ectx.getTypeFactory(), rowType);
-        topVer = ectx.topologyVersion();
-        this.parts = parts;
-        mvccSnapshot = ectx.mvccSnapshot();
-        this.requiredColumns = requiredColumns;
         this.idxFieldMapping = idxFieldMapping;
 
         RelDataType srcRowType = desc.rowType(ectx.getTypeFactory(), null);
@@ -175,6 +110,19 @@ public class IndexScan<Row> extends AbstractIndexScan<Row, IndexRow> {
             fieldsStoreTypes[i] = typeFactory.getResultClass(srcRowType.getFieldList().get(i).getType());
 
         fieldIdxMapping = fieldToInlinedKeysMapping(srcRowType.getFieldCount());
+
+        if (!F.isEmpty(ectx.getQryTxEntries())) {
+            InlineIndexRowHandler rowHnd = idx.segment(0).rowHandler();
+
+            txChanges = ectx.transactionChanges(
+                cctx.cacheId(),
+                parts,
+                r -> new IndexRowImpl(rowHnd, r),
+                this::compare
+            );
+        }
+        else
+            txChanges = TransactionChanges.empty();
     }
 
     /**
@@ -224,21 +172,24 @@ public class IndexScan<Row> extends AbstractIndexScan<Row, IndexRow> {
     }
 
     /** {@inheritDoc} */
-    @Override public synchronized Iterator<Row> iterator() {
-        reserve();
+    @Override protected Iterator<Row> createIterator() {
+        RangeIterable<IndexRow> ranges0 = ranges == null ? null : new TransformRangeIterable<>(ranges, this::row2indexRow);
 
-        try {
-            return super.iterator();
-        }
-        catch (Exception e) {
-            release();
+        TreeIndex<IndexRow> treeIdx = treeIndex();
 
-            throw e;
-        }
+        if (!txChanges.changedKeysEmpty())
+            treeIdx = new TxAwareTreeIndexWrapper(treeIdx);
+
+        return F.iterator(new TreeIndexIterable<>(treeIdx, ranges0), this::indexRow2Row, true);
     }
 
-    /** {@inheritDoc} */
-    @Override protected IndexRow row2indexRow(Row bound) {
+    /** */
+    protected TreeIndex<IndexRow> treeIndex() {
+        return new TreeIndexWrapper(idx, indexQueryContext());
+    }
+
+    /** From Row to IndexRow convertor. */
+    protected IndexRow row2indexRow(Row bound) {
         if (bound == null)
             return null;
 
@@ -269,12 +220,17 @@ public class IndexScan<Row> extends AbstractIndexScan<Row, IndexRow> {
         return nullSearchRow ? null : new IndexPlainRowImpl(keys, idxRowHnd);
     }
 
-    /** {@inheritDoc} */
-    @Override protected Row indexRow2Row(IndexRow row) throws IgniteCheckedException {
-        if (row.indexPlainRow())
-            return inlineIndexRow2Row(row);
-        else
-            return desc.toRow(ectx, row.cacheDataRow(), factory, requiredColumns);
+    /** From IndexRow to Row convertor. */
+    protected Row indexRow2Row(IndexRow row) {
+        try {
+            if (row.indexPlainRow())
+                return inlineIndexRow2Row(row);
+            else
+                return desc.toRow(ectx, row.cacheDataRow(), factory, requiredColumns);
+        }
+        catch (IgniteCheckedException e) {
+            throw new IgniteException(e);
+        }
     }
 
     /** */
@@ -289,101 +245,19 @@ public class IndexScan<Row> extends AbstractIndexScan<Row, IndexRow> {
         return res;
     }
 
-    /** */
-    @Override public void close() {
-        release();
-    }
-
-    /** */
-    private synchronized void reserve() {
-        if (reserved != null)
-            return;
-
-        GridDhtPartitionTopology top = cctx.topology();
-        top.readLock();
-
-        GridDhtTopologyFuture topFut = top.topologyVersionFuture();
-
-        boolean done = topFut.isDone();
-
-        if (!done || !(topFut.topologyVersion().compareTo(topVer) >= 0
-            && cctx.shared().exchange().lastAffinityChangedTopologyVersion(topFut.initialVersion()).compareTo(topVer) <= 0)) {
-            top.readUnlock();
-
-            throw new ClusterTopologyException("Topology was changed. Please retry on stable topology.");
-        }
-
-        List<GridDhtLocalPartition> toReserve;
-
-        if (cctx.isReplicated()) {
-            int partsCnt = cctx.affinity().partitions();
-            toReserve = new ArrayList<>(partsCnt);
-            for (int i = 0; i < partsCnt; i++)
-                toReserve.add(top.localPartition(i));
-        }
-        else if (cctx.isPartitioned()) {
-            assert parts != null;
-
-            toReserve = new ArrayList<>(parts.length);
-            for (int i = 0; i < parts.length; i++)
-                toReserve.add(top.localPartition(parts[i]));
-        }
-        else
-            toReserve = Collections.emptyList();
-
-        reserved = new ArrayList<>(toReserve.size());
-
-        try {
-            for (GridDhtLocalPartition part : toReserve) {
-                if (part == null || !part.reserve()) {
-                    throw new ClusterTopologyException(
-                        "Failed to reserve partition for query execution. Retry on stable topology."
-                    );
-                }
-                else if (part.state() != GridDhtPartitionState.OWNING) {
-                    part.release();
-
-                    throw new ClusterTopologyException(
-                        "Failed to reserve partition for query execution. Retry on stable topology."
-                    );
-                }
-
-                reserved.add(part);
-            }
-        }
-        catch (Exception e) {
-            release();
-
-            throw e;
-        }
-        finally {
-            top.readUnlock();
-        }
-    }
-
-    /** */
-    private synchronized void release() {
-        if (reserved == null)
-            return;
-
-        for (GridDhtLocalPartition part : reserved)
-            part.release();
-
-        reserved = null;
-    }
-
-    /** {@inheritDoc} */
-    @Override protected IndexQueryContext indexQueryContext() {
+    /** Query context. */
+    protected IndexQueryContext indexQueryContext() {
         IndexingQueryFilter filter = new IndexingQueryFilterImpl(kctx, topVer, parts);
 
         InlineIndexRowHandler rowHnd = idx.segment(0).rowHandler();
 
-        InlineIndexRowFactory rowFactory = isInlineScan() ?
-            new InlineIndexRowFactory(rowHnd.inlineIndexKeyTypes().toArray(new InlineIndexKeyType[0]), rowHnd) : null;
+        InlineIndexRowFactory rowFactory = (isInlineScan() && txChanges.changedKeysEmpty())
+            ? new InlineIndexRowFactory(rowHnd.inlineIndexKeyTypes().toArray(new InlineIndexKeyType[0]), rowHnd)
+            : null;
 
         BPlusTree.TreeRowClosure<IndexRow, IndexRow> rowFilter = isInlineScan() ? null : createNotExpiredRowFilter();
 
-        return new IndexQueryContext(filter, rowFilter, rowFactory, mvccSnapshot);
+        return new IndexQueryContext(filter, rowFilter, rowFactory);
     }
 
     /** */
@@ -459,7 +333,9 @@ public class IndexScan<Row> extends AbstractIndexScan<Row, IndexRow> {
 
         InlineIndexKeyType keyType = F.isEmpty(inlineKeyTypes) ? null : inlineKeyTypes.get(0);
 
-        return new BPlusTree.TreeRowClosure<IndexRow, IndexRow>() {
+        return new BPlusTree.TreeRowClosure<>() {
+            private IndexRow idxRow;
+
             /** {@inheritDoc} */
             @Override public boolean apply(
                 BPlusTree<IndexRow, IndexRow> tree,
@@ -470,11 +346,14 @@ public class IndexScan<Row> extends AbstractIndexScan<Row, IndexRow> {
                 if (!checkExpired && keyType != null && io instanceof InlineIO) {
                     Boolean keyIsNull = keyType.isNull(pageAddr, io.offset(idx), ((InlineIO)io).inlineSize());
 
-                    if (keyIsNull == Boolean.TRUE)
+                    if (keyIsNull == Boolean.TRUE) {
+                        idxRow = null;
+
                         return false;
+                    }
                 }
 
-                IndexRow idxRow = io.getLookupRow(tree, pageAddr, idx);
+                idxRow = io.getLookupRow(tree, pageAddr, idx);
 
                 if (checkExpired &&
                     idxRow.cacheDataRow().expireTime() > 0 &&
@@ -483,18 +362,77 @@ public class IndexScan<Row> extends AbstractIndexScan<Row, IndexRow> {
 
                 return idxRow.key(0).type() != IndexKeyType.NULL;
             }
+
+            /** {@inheritDoc} */
+            @Override public IndexRow lastRow() {
+                return idxRow;
+            }
         };
     }
 
     /** */
     public static BPlusTree.TreeRowClosure<IndexRow, IndexRow> createNotExpiredRowFilter() {
-        return (tree, io, pageAddr, idx) -> {
-            IndexRow idxRow = io.getLookupRow(tree, pageAddr, idx);
+        return new BPlusTree.TreeRowClosure<>() {
+            private IndexRow idxRow;
 
-            // Skip expired.
-            return !(idxRow.cacheDataRow().expireTime() > 0 &&
-                idxRow.cacheDataRow().expireTime() <= U.currentTimeMillis());
+            @Override public boolean apply(
+                BPlusTree<IndexRow, IndexRow> tree,
+                BPlusIO<IndexRow> io,
+                long pageAddr,
+                int idx
+            ) throws IgniteCheckedException {
+                idxRow = io.getLookupRow(tree, pageAddr, idx);
+
+                // Skip expired.
+                return !(idxRow.cacheDataRow().expireTime() > 0 &&
+                    idxRow.cacheDataRow().expireTime() <= U.currentTimeMillis());
+            }
+
+            @Override public IndexRow lastRow() {
+                return idxRow;
+            }
         };
+    }
+
+    /** */
+    protected class TxAwareTreeIndexWrapper implements TreeIndex<IndexRow> {
+        /** */
+        private final TreeIndex<IndexRow> delegate;
+
+        /** */
+        protected TxAwareTreeIndexWrapper(TreeIndex<IndexRow> delegate) {
+            this.delegate = delegate;
+        }
+
+        /** {@inheritDoc} */
+        @Override public GridCursor<IndexRow> find(
+                IndexRow lower,
+                IndexRow upper,
+                boolean lowerInclude,
+                boolean upperInclude
+        ) {
+            GridCursor<IndexRow> idxCursor = delegate.find(lower, upper, lowerInclude, upperInclude);
+
+            // `txChanges` returns single thread data structures e.g. `HashSet`, `ArrayList`.
+            // It safe to use them in multiple `FilteredCursor` instances, because, multi range index scan will be
+            // flat to the single cursor.
+            // See AbstractIndexScan#iterator.
+            try {
+                return new SortedSegmentedIndexCursor(
+                    new GridCursor[]{
+                        // This call will change `txChanges.get1()` content.
+                        // Removing found key from set more efficient so we break some rules here.
+                        new KeyFilteringCursor<>(idxCursor, txChanges, r -> r.cacheDataRow().key()),
+                        new SortedListRangeCursor<>(
+                            IndexScan.this::compare, txChanges.newAndUpdatedEntries(), lower, upper, lowerInclude, upperInclude)
+                    },
+                    idx.indexDefinition()
+                );
+            }
+            catch (IgniteCheckedException e) {
+                throw new IgniteException(e);
+            }
+        }
     }
 
     /** */
@@ -502,9 +440,13 @@ public class IndexScan<Row> extends AbstractIndexScan<Row, IndexRow> {
         /** Underlying index. */
         protected final InlineIndex idx;
 
+        /** Query context. */
+        protected final IndexQueryContext qctx;
+
         /** */
-        protected TreeIndexWrapper(InlineIndex idx) {
+        protected TreeIndexWrapper(InlineIndex idx, IndexQueryContext qctx) {
             this.idx = idx;
+            this.qctx = qctx;
         }
 
         /** {@inheritDoc} */
@@ -512,8 +454,7 @@ public class IndexScan<Row> extends AbstractIndexScan<Row, IndexRow> {
             IndexRow lower,
             IndexRow upper,
             boolean lowerInclude,
-            boolean upperInclude,
-            IndexQueryContext qctx
+            boolean upperInclude
         ) {
             try {
                 return idx.find(lower, upper, lowerInclude, upperInclude, qctx);
@@ -521,6 +462,16 @@ public class IndexScan<Row> extends AbstractIndexScan<Row, IndexRow> {
             catch (IgniteCheckedException e) {
                 throw new IgniteException("Failed to find index rows", e);
             }
+        }
+    }
+
+    /** */
+    private int compare(IndexRow o1, IndexRow o2) {
+        try {
+            return InlineIndexTree.compareFullRows(o1, o2, 0, idx.segment(0).rowHandler(), idx.indexDefinition().rowComparator());
+        }
+        catch (IgniteCheckedException e) {
+            throw new IgniteException(e);
         }
     }
 }

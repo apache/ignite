@@ -21,16 +21,12 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
-import java.util.function.Predicate;
 import java.util.function.Supplier;
-
 import org.apache.calcite.util.ImmutableBitSet;
 import org.apache.ignite.internal.processors.query.calcite.exec.exp.agg.GroupKey;
-import org.apache.ignite.internal.util.lang.GridFilteredIterator;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.X;
 import org.jetbrains.annotations.NotNull;
-import org.jetbrains.annotations.Nullable;
 
 /**
  * Runtime hash index based on on-heap hash map.
@@ -89,8 +85,8 @@ public class RuntimeHashIndex<Row> implements RuntimeIndex<Row> {
     }
 
     /** */
-    public Iterable<Row> scan(Supplier<Row> searchRow, @Nullable Predicate<Row> filter) {
-        return new IndexScan(searchRow, filter);
+    public Iterable<Row> scan(Supplier<Row> searchRow) {
+        return new IndexScan(searchRow);
     }
 
     /** */
@@ -112,25 +108,15 @@ public class RuntimeHashIndex<Row> implements RuntimeIndex<Row> {
     /**
      *
      */
-    private class IndexScan implements Iterable<Row>, AutoCloseable {
+    private class IndexScan implements Iterable<Row> {
         /** Search row. */
         private final Supplier<Row> searchRow;
 
-        /** Row filter. */
-        private final Predicate<Row> filter;
-
         /**
          * @param searchRow Search row.
-         * @param filter Scan condition.
          */
-        IndexScan(Supplier<Row> searchRow, @Nullable Predicate<Row> filter) {
+        IndexScan(Supplier<Row> searchRow) {
             this.searchRow = searchRow;
-            this.filter = filter;
-        }
-
-        /** {@inheritDoc} */
-        @Override public void close() {
-            // No-op.
         }
 
         /** {@inheritDoc} */
@@ -142,14 +128,7 @@ public class RuntimeHashIndex<Row> implements RuntimeIndex<Row> {
 
             List<Row> eqRows = rows.get(key);
 
-            if (eqRows == null)
-                return Collections.emptyIterator();
-
-            return filter == null ? eqRows.iterator() : new GridFilteredIterator<Row>(eqRows.iterator()) {
-                @Override protected boolean accept(Row row) {
-                    return filter.test(row);
-                }
-            };
+            return eqRows == null ? Collections.emptyIterator() : eqRows.iterator();
         }
     }
 }

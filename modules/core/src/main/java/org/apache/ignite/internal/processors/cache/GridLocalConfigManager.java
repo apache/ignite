@@ -20,10 +20,9 @@ package org.apache.ignite.internal.processors.cache;
 import java.io.BufferedInputStream;
 import java.io.BufferedOutputStream;
 import java.io.File;
-import java.io.FileInputStream;
-import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.ObjectInputStream;
 import java.io.OutputStream;
 import java.nio.file.DirectoryStream;
 import java.nio.file.Files;
@@ -39,14 +38,19 @@ import java.util.HashSet;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 import java.util.function.BiConsumer;
 import java.util.function.Function;
+import java.util.stream.Collectors;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.IgniteSystemProperties;
+import org.apache.ignite.cache.QueryEntity;
+import org.apache.ignite.cache.QueryIndex;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
@@ -61,14 +65,16 @@ import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.marshaller.Marshaller;
-import org.apache.ignite.marshaller.MarshallerUtils;
+import org.jetbrains.annotations.Nullable;
 
 import static java.nio.file.Files.newDirectoryStream;
-import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL_SNAPSHOT;
+import static org.apache.ignite.internal.processors.cache.GridCacheUtils.UTILITY_CACHE_NAME;
 import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.CACHE_DATA_FILENAME;
 import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.CACHE_DIR_PREFIX;
 import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.CACHE_GRP_DIR_PREFIX;
 import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.TMP_SUFFIX;
+import static org.apache.ignite.internal.processors.query.QueryUtils.normalizeObjectName;
+import static org.apache.ignite.internal.processors.query.QueryUtils.normalizeSchemaName;
 
 /**
  * Responsible for restoring local cache configurations (both from static configuration and persistence).
@@ -117,7 +123,7 @@ public class GridLocalConfigManager {
         this.cacheProcessor = cacheProcessor;
         ctx = kernalCtx;
         log = ctx.log(getClass());
-        marshaller = MarshallerUtils.jdkMarshaller(ctx.igniteInstanceName());
+        marshaller = ctx.marshallerContext().jdkMarshaller();
 
         PdsFolderSettings<?> folderSettings = ctx.pdsFolderResolver().resolveFolders();
 
@@ -197,21 +203,61 @@ public class GridLocalConfigManager {
 
     /**
      * @param conf File with stored cache data.
+     * @param marshaller Marshaller.
+     * @param cfg Ignite configuration.
      * @return Cache data.
      * @throws IgniteCheckedException If failed.
      */
     public static StoredCacheData readCacheData(
         File conf,
-        Marshaller marshaller,
-        IgniteConfiguration cfg
+        @Nullable Marshaller marshaller,
+        @Nullable IgniteConfiguration cfg
     ) throws IgniteCheckedException {
-        try (InputStream stream = new BufferedInputStream(new FileInputStream(conf))) {
+        try (InputStream stream = new BufferedInputStream(Files.newInputStream(conf.toPath()))) {
+            if (marshaller == null || cfg == null) {
+                try (ObjectInputStream ostream = new ObjectInputStream(stream)) {
+                    return (StoredCacheData)ostream.readObject();
+                }
+            }
+
             return marshaller.unmarshal(stream, U.resolveClassLoader(cfg));
         }
-        catch (IgniteCheckedException | IOException e) {
+        catch (IgniteCheckedException | IOException | ClassNotFoundException e) {
             throw new IgniteCheckedException("An error occurred during cache configuration loading from file [file=" +
                 conf.getAbsolutePath() + "]", e);
         }
+    }
+
+    /**
+     * @param dbDir Root directory for all cache datas.
+     * @param marshaller Marshaller.
+     * @param cfg Ignite configuration.
+     * @return Collection of cache data files and actual cache data.
+     */
+    public static Map<File, StoredCacheData> readCachesData(
+        File dbDir,
+        @Nullable Marshaller marshaller,
+        @Nullable IgniteConfiguration cfg
+    ) {
+        File[] caches = dbDir.listFiles();
+
+        if (caches == null)
+            return Collections.emptyMap();
+
+        return Arrays.stream(caches)
+            .filter(f -> f.isDirectory() &&
+                (f.getName().startsWith(CACHE_DIR_PREFIX) || f.getName().startsWith(CACHE_GRP_DIR_PREFIX)) &&
+                !f.getName().equals(CACHE_DIR_PREFIX + UTILITY_CACHE_NAME))
+            .filter(File::exists)
+            .flatMap(cacheDir -> Arrays.stream(FilePageStoreManager.cacheDataFiles(cacheDir)))
+            .collect(Collectors.toMap(f -> f, f -> {
+                try {
+                    return readCacheData(f, marshaller, cfg);
+                }
+                catch (IgniteCheckedException e) {
+                    throw new IgniteException(e);
+                }
+            }));
     }
 
     /**
@@ -221,7 +267,7 @@ public class GridLocalConfigManager {
      */
     public void writeCacheData(StoredCacheData cacheData, File conf) throws IgniteCheckedException {
         // Pre-existing file will be truncated upon stream open.
-        try (OutputStream stream = new BufferedOutputStream(new FileOutputStream(conf))) {
+        try (OutputStream stream = new BufferedOutputStream(Files.newOutputStream(conf.toPath()))) {
             marshaller.marshal(cacheData, stream);
         }
         catch (IOException e) {
@@ -352,9 +398,18 @@ public class GridLocalConfigManager {
      * @param lsnr Instance of listener to add.
      */
     public void addConfigurationChangeListener(BiConsumer<String, File> lsnr) {
-        assert chgLock.isWriteLockedByCurrentThread();
+        if (chgLock.isWriteLockedByCurrentThread())
+            lsnrs.add(lsnr);
+        else {
+            chgLock.writeLock().lock();
 
-        lsnrs.add(lsnr);
+            try {
+                lsnrs.add(lsnr);
+            }
+            finally {
+                chgLock.writeLock().unlock();
+            }
+        }
     }
 
     /**
@@ -481,11 +536,15 @@ public class GridLocalConfigManager {
      * @param ccfg Cache configuration.
      * @return Cache configuration file with respect to {@link CacheConfiguration#getGroupName} value.
      */
-    private File cacheConfigurationFile(CacheConfiguration<?, ?> ccfg) {
+    public File cacheConfigurationFile(CacheConfiguration<?, ?> ccfg) {
         File cacheWorkDir = cacheWorkDir(ccfg);
 
-        return ccfg.getGroupName() == null ? new File(cacheWorkDir, CACHE_DATA_FILENAME) :
-            new File(cacheWorkDir, ccfg.getName() + CACHE_DATA_FILENAME);
+        return new File(cacheWorkDir, cacheDataFilename(ccfg));
+    }
+
+    /** @return Name of cache data filename. */
+    public static String cacheDataFilename(CacheConfiguration<?, ?> ccfg) {
+        return ccfg.getGroupName() == null ? CACHE_DATA_FILENAME : (ccfg.getName() + CACHE_DATA_FILENAME);
     }
 
     /**
@@ -632,6 +691,16 @@ public class GridLocalConfigManager {
 
         CU.validateCacheName(cacheName);
 
+        Collection<CacheConfiguration<?, ?>> ccfgs = new ArrayList<>(caches.size());
+
+        for (CacheJoinNodeDiscoveryData.CacheInfo cacheInfo : caches.values())
+            ccfgs.add(cacheInfo.cacheData().config());
+
+        String err = validateIncomingConfiguration(ccfgs, cfg);
+
+        if (err != null)
+            throw new IgniteException(err);
+
         cacheProcessor.cloneCheckSerializable(cfg);
 
         CacheObjectContext cacheObjCtx = ctx.cacheObjects().contextForCache(cfg);
@@ -668,6 +737,63 @@ public class GridLocalConfigManager {
     }
 
     /**
+     * Validates already processed cache configuration instead a newly defined.
+     *
+     * @param cacheConfigs Already processed caches.
+     * @param cfg Currently processed cache config.
+     * @return Error message, if supplied configuration is incorrect.
+     * @throws IgniteException If misconfigured.
+     */
+    @Nullable public static String validateIncomingConfiguration(
+        Collection<CacheConfiguration<?, ?>> cacheConfigs,
+        CacheConfiguration<?, ?> cfg
+    ) {
+        Map<String, String> idxNamesPerCache = new HashMap<>();
+
+        String schemaName = normalizeSchemaName(cfg.getName(), cfg.getSqlSchema());
+
+        for (CacheConfiguration<?, ?> conf0 : cacheConfigs) {
+            Collection<QueryEntity> entrs = conf0.getQueryEntities();
+            String cacheName = conf0.getName();
+            String cacheSchemaName = normalizeSchemaName(conf0.getName(), conf0.getSqlSchema());
+
+            if (!Objects.equals(cacheSchemaName, schemaName) || CU.isSystemCache(cacheName) ||
+                (Objects.equals(cacheSchemaName, schemaName) && Objects.equals(cfg.getName(), cacheName)))
+                continue;
+
+            for (QueryEntity ent : entrs) {
+                Collection<QueryIndex> idxs = ent.getIndexes();
+
+                for (QueryIndex idx : idxs)
+                    idxNamesPerCache.put(idx.getName(), cacheName);
+            }
+        }
+
+        if (idxNamesPerCache.isEmpty())
+            return null;
+
+        Collection<QueryEntity> entrs = cfg.getQueryEntities();
+
+        for (QueryEntity ent : entrs) {
+            Collection<QueryIndex> idxs = ent.getIndexes();
+
+            for (QueryIndex idx : idxs) {
+                String normalizedIdxName = normalizeObjectName(idx.getName(), false);
+
+                String cacheName = idxNamesPerCache.get(normalizedIdxName);
+
+                if (cacheName != null) {
+                    return "Duplicate index name for [cache=" + cfg.getName() +
+                        ", idxName=" + idx.getName() + "], an equal index name is already configured for [cache=" +
+                        cacheName + ']';
+                }
+            }
+        }
+
+        return null;
+    }
+
+    /**
      * Validates cache configuration against stored cache configuration when persistence is enabled.
      *
      * @param cfg Configured cache configuration.
@@ -678,17 +804,7 @@ public class GridLocalConfigManager {
         throws IgniteCheckedException {
         assert cfg != null && cfgFromStore != null;
 
-        if ((cfg.getAtomicityMode() == TRANSACTIONAL_SNAPSHOT ||
-            cfgFromStore.getAtomicityMode() == TRANSACTIONAL_SNAPSHOT)
-            && cfg.getAtomicityMode() != cfgFromStore.getAtomicityMode()) {
-            throw new IgniteCheckedException("Cannot start cache. Statically configured atomicity mode differs from " +
-                "previously stored configuration. Please check your configuration: [cacheName=" + cfg.getName() +
-                ", configuredAtomicityMode=" + cfg.getAtomicityMode() +
-                ", storedAtomicityMode=" + cfgFromStore.getAtomicityMode() + "]");
-        }
-
         boolean staticCfgVal = cfg.isEncryptionEnabled();
-
         boolean storedVal = cfgFromStore.isEncryptionEnabled();
 
         if (storedVal != staticCfgVal) {

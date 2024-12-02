@@ -17,7 +17,6 @@
 
 package org.apache.ignite.internal.processors.security;
 
-import org.apache.ignite.plugin.security.SecurityPermission;
 import org.apache.ignite.plugin.security.SecuritySubject;
 
 /**
@@ -28,39 +27,4 @@ public interface SecurityContext {
      * @return Security subject.
      */
     public SecuritySubject subject();
-
-    /**
-     * Checks whether task operation is allowed.
-     *
-     * @param taskClsName Task class name.
-     * @param perm Permission to check.
-     * @return {@code True} if task operation is allowed.
-     */
-    public boolean taskOperationAllowed(String taskClsName, SecurityPermission perm);
-
-    /**
-     * Checks whether cache operation is allowed.
-     *
-     * @param cacheName Cache name.
-     * @param perm Permission to check.
-     * @return {@code True} if cache operation is allowed.
-     */
-    public boolean cacheOperationAllowed(String cacheName, SecurityPermission perm);
-
-    /**
-     * Checks whether service operation is allowed.
-     *
-     * @param srvcName Service name.
-     * @param perm Permission to check.
-     * @return {@code True} if task operation is allowed.
-     */
-    public boolean serviceOperationAllowed(String srvcName, SecurityPermission perm);
-
-    /**
-     * Checks whether system-wide permission is allowed (excluding Visor task operations).
-     *
-     * @param perm Permission to check.
-     * @return {@code True} if system operation is allowed.
-     */
-    public boolean systemOperationAllowed(SecurityPermission perm);
 }

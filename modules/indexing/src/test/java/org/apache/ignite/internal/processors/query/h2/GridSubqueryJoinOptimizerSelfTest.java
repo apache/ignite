@@ -954,6 +954,22 @@ public class GridSubqueryJoinOptimizerSelfTest extends GridCommonAbstractTest {
     }
 
     /**
+     * Case when select subquery from another subquery, which is select from another subquery.
+     */
+    @Test
+    public void testSeveralNestedSubqueries() {
+        String innerSql = "SELECT id as id0, name as name0 FROM dep";
+        String outerSqlTemplate = "SELECT id%d as id%d, name%d as name%d FROM %s WHERE id%d > %d";
+
+        String curSql = innerSql;
+
+        for (int i = 0; i < 5; i++) {
+            curSql = String.format(outerSqlTemplate, i, i + 1, i, i + 1, '(' + curSql + ')', i, i);
+            check(curSql, 1);
+        }
+    }
+
+    /**
      * @param sql Sql.
      * @param expSelectClauses Expected select clauses.
      */

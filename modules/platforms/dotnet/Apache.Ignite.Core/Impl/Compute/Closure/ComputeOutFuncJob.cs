@@ -21,6 +21,7 @@ namespace Apache.Ignite.Core.Impl.Compute.Closure
     using Apache.Ignite.Core.Binary;
     using Apache.Ignite.Core.Impl.Binary;
     using Apache.Ignite.Core.Impl.Resource;
+    using static IgniteUtils;
 
     /// <summary>
     /// System job which wraps over <c>Func</c>.
@@ -72,5 +73,11 @@ namespace Apache.Ignite.Core.Impl.Compute.Closure
         {
             _clo = reader.ReadObject<IComputeOutFunc>();
         }
+
+        /** <inheritDoc /> */ 
+        public string GetName()
+        {
+            return _clo.GetName();
+        } 
     }
 }

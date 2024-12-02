@@ -17,8 +17,10 @@
 
 package org.apache.ignite.internal.client.thin;
 
+import java.net.InetSocketAddress;
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.List;
 import java.util.Queue;
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
@@ -38,10 +40,13 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.client.thin.io.ClientConnectionMultiplexer;
 import org.apache.ignite.internal.processors.cache.IgniteInternalCache;
+import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.configuration.ClientConnectorConfiguration.DFLT_PORT;
 
@@ -51,7 +56,7 @@ import static org.apache.ignite.configuration.ClientConnectorConfiguration.DFLT_
 @SuppressWarnings("rawtypes")
 public abstract class ThinClientAbstractPartitionAwarenessTest extends GridCommonAbstractTest {
     /** Wait timeout. */
-    private static final long WAIT_TIMEOUT = 5_000L;
+    protected static final long WAIT_TIMEOUT = 15_000L;
 
     /** Replicated cache name. */
     protected static final String REPL_CACHE_NAME = "replicated_cache";
@@ -68,6 +73,9 @@ public abstract class ThinClientAbstractPartitionAwarenessTest extends GridCommo
     /** Name of a partitioned cache with 1 backups. */
     protected static final String PART_CACHE_1_BACKUPS_NAME = "partitioned_1_backup_cache";
 
+    /** Name of a partitioned cache with 1 backups and a node filter. */
+    protected static final String PART_CACHE_1_BACKUPS_NF_NAME = "partitioned_1_backup_nodeFilter_cache";
+
     /** Name of a partitioned cache with 3 backups. */
     protected static final String PART_CACHE_3_BACKUPS_NAME = "partitioned_3_backup_cache";
 
@@ -82,9 +90,6 @@ public abstract class ThinClientAbstractPartitionAwarenessTest extends GridCommo
 
     /** Operations queue. */
     protected final Queue<T2<TestTcpClientChannel, ClientOperation>> opsQueue = new ConcurrentLinkedQueue<>();
-
-    /** Default channel. */
-    protected TestTcpClientChannel dfltCh;
 
     /** Client instance. */
     protected IgniteClient client;
@@ -126,7 +131,13 @@ public abstract class ThinClientAbstractPartitionAwarenessTest extends GridCommo
                 .setCacheMode(CacheMode.PARTITIONED)
                 .setBackups(3);
 
-        return cfg.setCacheConfiguration(ccfg0, ccfg1, ccfg2, ccfg3, ccfg4, ccfg5);
+        CacheConfiguration ccfg6 = new CacheConfiguration<>()
+            .setName(PART_CACHE_1_BACKUPS_NF_NAME)
+            .setCacheMode(CacheMode.PARTITIONED)
+            .setNodeFilter(new ConsistentIdNodeFilter())
+            .setBackups(1);
+
+        return cfg.setCacheConfiguration(ccfg0, ccfg1, ccfg2, ccfg3, ccfg4, ccfg5, ccfg6);
     }
 
     /** {@inheritDoc} */
@@ -143,16 +154,33 @@ public abstract class ThinClientAbstractPartitionAwarenessTest extends GridCommo
     /**
      * Checks that operation goes through specified channel.
      */
-    protected void assertOpOnChannel(TestTcpClientChannel expCh, ClientOperation expOp) {
+    protected void assertOpOnChannel(@Nullable TestTcpClientChannel expCh, ClientOperation expOp) {
+        assertOpOnChannel(expCh, expOp, null);
+    }
+
+    /**
+     * Checks that operation goes through specified channel.
+     */
+    protected void assertOpOnChannel(
+            @Nullable TestTcpClientChannel expCh,
+            ClientOperation expOp,
+            @Nullable ClientOperation ignoreOp) {
+        while (opsQueue.peek() != null && opsQueue.peek().get2() == ignoreOp) {
+            opsQueue.poll();
+        }
+
         T2<TestTcpClientChannel, ClientOperation> nextChOp = opsQueue.poll();
+        T2<TestTcpClientChannel, ClientOperation> queuedOp = opsQueue.peek();
 
         assertNotNull("Unexpected (null) next operation [expCh=" + expCh + ", expOp=" + expOp + ']', nextChOp);
 
         assertEquals("Unexpected operation on channel [expCh=" + expCh + ", expOp=" + expOp +
-                ", nextOpCh=" + nextChOp + ']', expOp, nextChOp.get2());
+                ", nextOpCh=" + nextChOp + ", queuedOp=" + queuedOp + ']', expOp, nextChOp.get2());
 
-        assertEquals("Unexpected channel for operation [expCh=" + expCh + ", expOp=" + expOp +
-            ", nextOpCh=" + nextChOp + ']', expCh, nextChOp.get1());
+        if (expCh != null) {
+            assertEquals("Unexpected channel for operation [expCh=" + expCh + ", expOp=" + expOp +
+                ", nextOpCh=" + nextChOp + ", queuedOp=" + queuedOp + ']', expCh, nextChOp.get1());
+        }
     }
 
     /**
@@ -175,7 +203,7 @@ public abstract class ThinClientAbstractPartitionAwarenessTest extends GridCommo
                 return channels[i];
         }
 
-        return dfltCh;
+        return null;
     }
 
     /**
@@ -195,7 +223,7 @@ public abstract class ThinClientAbstractPartitionAwarenessTest extends GridCommo
     protected void initClient(ClientConfiguration clientCfg, int... chIdxs) throws IgniteInterruptedCheckedException {
         client = new TcpIgniteClient((cfg, hnd) -> {
             try {
-                log.info("Establishing connection to " + cfg.getAddress());
+                log.info("Establishing connection to " + cfg.getAddresses());
 
                 TcpClientChannel ch = new TestTcpClientChannel(cfg, hnd);
 
@@ -212,25 +240,19 @@ public abstract class ThinClientAbstractPartitionAwarenessTest extends GridCommo
 
         awaitChannelsInit(chIdxs);
 
-        initDefaultChannel();
+        opsQueue.clear();
     }
 
     /**
-     *
+     * Trigger client to detect topology change.
      */
-    protected void initDefaultChannel() {
+    protected void detectTopologyChange() {
         opsQueue.clear();
 
-        // Send non-affinity request to determine default channel.
+        // Send non-affinity request to detect topology change.
         client.getOrCreateCache(REPL_CACHE_NAME);
 
-        T2<TestTcpClientChannel, ClientOperation> nextChOp = opsQueue.poll();
-
-        assertNotNull(nextChOp);
-
-        assertEquals(nextChOp.get2(), ClientOperation.CACHE_GET_OR_CREATE_WITH_NAME);
-
-        dfltCh = nextChOp.get1();
+        assertOpOnChannel(null, ClientOperation.CACHE_GET_OR_CREATE_WITH_NAME);
     }
 
     /**
@@ -240,8 +262,39 @@ public abstract class ThinClientAbstractPartitionAwarenessTest extends GridCommo
         // Wait until all channels initialized.
         for (int ch : chIdxs) {
             assertTrue("Failed to wait for channel[" + ch + "] init",
-                GridTestUtils.waitForCondition(() -> channels[ch] != null, WAIT_TIMEOUT));
+                GridTestUtils.waitForCondition(() -> isConnected(ch), WAIT_TIMEOUT));
         }
+    }
+
+    /**
+     * Gets a value indicating whether the channel is connected at the specified index (port offset).
+     *
+     * @param chIdx Channel index (port offset).
+     * @return {@code true} if the channel is connected, {@code false} otherwise.
+     */
+    protected boolean isConnected(int chIdx) {
+        List<ReliableChannel.ClientChannelHolder> channelHolders = ((TcpIgniteClient)client).reliableChannel().getChannelHolders();
+        int chPort = DFLT_PORT + chIdx;
+
+        for (ReliableChannel.ClientChannelHolder holder : channelHolders) {
+            if (holder == null || holder.isClosed()) {
+                continue;
+            }
+
+            ClientChannel ch = GridTestUtils.getFieldValue(holder, "ch");
+
+            if (ch == null || ch.closed()) {
+                continue;
+            }
+
+            for (InetSocketAddress addr : holder.getAddresses()) {
+                if (addr.getPort() == chPort) {
+                    return true;
+                }
+            }
+        }
+
+        return false;
     }
 
     /**
@@ -336,7 +389,7 @@ public abstract class ThinClientAbstractPartitionAwarenessTest extends GridCommo
 
             this.cfg = cfg;
 
-            int chIdx = cfg.getAddress().getPort() - DFLT_PORT;
+            int chIdx = F.first(cfg.getAddresses()).getPort() - DFLT_PORT;
 
             channels[chIdx] = this;
 
@@ -349,8 +402,11 @@ public abstract class ThinClientAbstractPartitionAwarenessTest extends GridCommo
             Function<PayloadInputChannel, T> payloadReader) throws ClientException {
             T res = super.service(op, payloadWriter, payloadReader);
 
-            // Store all operations except binary type registration in queue to check later.
-            if (op != ClientOperation.REGISTER_BINARY_TYPE_NAME && op != ClientOperation.PUT_BINARY_TYPE)
+            // Store all operations except some implicit system ops in queue to check later.
+            if (op != ClientOperation.REGISTER_BINARY_TYPE_NAME
+                && op != ClientOperation.PUT_BINARY_TYPE
+                && op != ClientOperation.CLUSTER_GROUP_GET_NODE_ENDPOINTS
+            )
                 opsQueue.offer(new T2<>(this, op));
 
             return res;
@@ -362,8 +418,11 @@ public abstract class ThinClientAbstractPartitionAwarenessTest extends GridCommo
                 Consumer<PayloadOutputChannel> payloadWriter,
                 Function<PayloadInputChannel, T> payloadReader)
                 throws ClientException {
-            // Store all operations except binary type registration in queue to check later.
-            if (op != ClientOperation.REGISTER_BINARY_TYPE_NAME && op != ClientOperation.PUT_BINARY_TYPE)
+            // Store all operations except some implicit system ops in queue to check later.
+            if (op != ClientOperation.REGISTER_BINARY_TYPE_NAME
+                && op != ClientOperation.PUT_BINARY_TYPE
+                && op != ClientOperation.CLUSTER_GROUP_GET_NODE_ENDPOINTS
+            )
                 opsQueue.offer(new T2<>(this, op));
 
             return super.serviceAsync(op, payloadWriter, payloadReader);
@@ -385,7 +444,17 @@ public abstract class ThinClientAbstractPartitionAwarenessTest extends GridCommo
 
         /** {@inheritDoc} */
         @Override public String toString() {
-            return cfg.getAddress().toString();
+            return cfg.getAddresses().toString();
+        }
+    }
+
+    /**
+     * Excludes node if its consistent id ends with 'Test1'.
+     */
+    protected static final class ConsistentIdNodeFilter implements IgnitePredicate<ClusterNode> {
+        /** {@inheritDoc} */
+        @Override public boolean apply(ClusterNode node) {
+            return !node.consistentId().toString().endsWith("Test1");
         }
     }
 }

@@ -85,7 +85,13 @@ public enum OperationType {
     CHECKPOINT(18),
 
     /** Pages write throttle. */
-    PAGES_WRITE_THROTTLE(19);
+    PAGES_WRITE_THROTTLE(19),
+
+    /** Count of processed by query rows. */
+    QUERY_ROWS(20),
+
+    /** Custom query property. */
+    QUERY_PROPERTY(21);
 
     /** Cache operations. */
     public static final EnumSet<OperationType> CACHE_OPS = EnumSet.of(CACHE_GET, CACHE_PUT, CACHE_REMOVE,
@@ -173,6 +179,26 @@ public enum OperationType {
     /** @return Query reads record size. */
     public static int queryReadsRecordSize() {
         return 1 + 16 + 8 + 8 + 8;
+    }
+
+    /**
+     * @param actionLen Rows action length.
+     * @param cached {@code True} if action is cached.
+     * @return Query rows record size.
+     */
+    public static int queryRowsRecordSize(int actionLen, boolean cached) {
+        return 1 + (cached ? 4 : 4 + actionLen) + 1 + 16 + 8 + 8;
+    }
+
+    /**
+     * @param nameLen Propery name length.
+     * @param nameCached {@code True} if property name is cached.
+     * @param valLen Propery value length.
+     * @param valCached {@code True} if property value is cached.
+     * @return Query property record size.
+     */
+    public static int queryPropertyRecordSize(int nameLen, boolean nameCached, int valLen, boolean valCached) {
+        return 1 + (nameCached ? 4 : 4 + nameLen) + 1 + (valCached ? 4 : 4 + valLen) + 1 + 16 + 8;
     }
 
     /**

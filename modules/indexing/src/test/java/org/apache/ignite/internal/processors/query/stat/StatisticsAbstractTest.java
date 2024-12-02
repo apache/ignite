@@ -261,12 +261,23 @@ public abstract class StatisticsAbstractTest extends GridCommonAbstractTest {
     }
 
     /**
-     * Create SQL table with the given index.
+     * Creates SQL table with the given index and fills with small amount of data.
      *
      * @param suffix Table idx, if {@code null} - name "SMALL" without index will be used.
      * @return Table name.
      */
     protected String createSmallTable(String suffix) {
+        return createSmallTable(SMALL_SIZE, suffix);
+    }
+
+    /**
+     * Creates SQL table with the given index and fills with data of the passed amount.
+     *
+     * @param preloadCnt Records cnt to load after creation.
+     * @param suffix Table idx, if {@code null} - name "SMALL" without index will be used.
+     * @return Table name.
+     */
+    protected String createSmallTable(int preloadCnt, String suffix) {
         String tblName = "small" + ((suffix != null) ? suffix : "");
 
         sql("DROP TABLE IF EXISTS " + tblName);
@@ -279,7 +290,7 @@ public abstract class StatisticsAbstractTest extends GridCommonAbstractTest {
 
         sql(String.format("CREATE INDEX %s_c ON %s(c)", tblName, tblName));
 
-        for (int i = 0; i < SMALL_SIZE; i++)
+        for (int i = 0; i < preloadCnt; i++)
             sql(String.format("INSERT INTO %s(a, b, c) VALUES(%d, %d, %d)", tblName, i, i, i % 10));
 
         return tblName;
@@ -555,14 +566,14 @@ public abstract class StatisticsAbstractTest extends GridCommonAbstractTest {
             try {
                 checkStatisticTasksEmpty(ign);
 
-                for (Map.Entry<StatisticsTarget, Long> targetVersionEntry : expectedVersions.entrySet()) {
-                    StatisticsTarget target = targetVersionEntry.getKey();
+                for (Map.Entry<StatisticsTarget, Long> targetVerEntry : expectedVersions.entrySet()) {
+                    StatisticsTarget target = targetVerEntry.getKey();
 
                     // Statistics configuration manager could not get fresh enough configuration version till now so we
                     // need to request global statistics again to force it's collection
                     // TODO: remove me statisticsMgr(ign).getGlobalStatistics(target.key());
 
-                    Long ver = targetVersionEntry.getValue();
+                    Long ver = targetVerEntry.getValue();
 
                     ObjectStatisticsImpl s;
 

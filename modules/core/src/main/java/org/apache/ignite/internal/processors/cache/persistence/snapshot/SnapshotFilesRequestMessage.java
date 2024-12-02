@@ -46,7 +46,7 @@ public class SnapshotFilesRequestMessage extends AbstractSnapshotMessage {
     private static final long serialVersionUID = 0L;
 
     /** Snapshot operation request ID. */
-    private UUID requestId;
+    private UUID reqId;
 
     /** Snapshot name to request. */
     private String snpName;
@@ -66,24 +66,24 @@ public class SnapshotFilesRequestMessage extends AbstractSnapshotMessage {
     }
 
     /**
-     * @param reqId Unique message id.
-     * @param requestId Snapshot operation request ID.
+     * @param msgId Unique message id.
+     * @param reqId Snapshot operation request ID.
      * @param snpName Snapshot name to request.
      * @param snpPath Snapshot directory path.
      * @param parts Map of cache group ids and corresponding set of its partition ids to be snapshot.
      */
     public SnapshotFilesRequestMessage(
-        String reqId,
-        UUID requestId,
+        String msgId,
+        UUID reqId,
         String snpName,
         @Nullable String snpPath,
         Map<Integer, Set<Integer>> parts
     ) {
-        super(reqId);
+        super(msgId);
 
         assert parts != null && !parts.isEmpty();
 
-        this.requestId = requestId;
+        this.reqId = reqId;
         this.snpName = snpName;
         this.snpPath = snpPath;
         this.parts = new HashMap<>();
@@ -122,7 +122,7 @@ public class SnapshotFilesRequestMessage extends AbstractSnapshotMessage {
      * @return Snapshot operation request ID.
      */
     public UUID requestId() {
-        return requestId;
+        return reqId;
     }
 
     /** {@inheritDoc} */
@@ -139,32 +139,31 @@ public class SnapshotFilesRequestMessage extends AbstractSnapshotMessage {
             writer.onHeaderWritten();
         }
 
-        if (writer.state() == 1) {
-            if (!writer.writeString("snpName", snpName))
-                return false;
+        switch (writer.state()) {
+            case 1:
+                if (!writer.writeMap("parts", parts, MessageCollectionItemType.INT, MessageCollectionItemType.INT_ARR))
+                    return false;
 
-            writer.incrementState();
-        }
+                writer.incrementState();
 
-        if (writer.state() == 2) {
-            if (!writer.writeMap("parts", parts, MessageCollectionItemType.INT, MessageCollectionItemType.INT_ARR))
-                return false;
+            case 2:
+                if (!writer.writeUuid("requestId", reqId))
+                    return false;
 
-            writer.incrementState();
-        }
+                writer.incrementState();
 
-        if (writer.state() == 3) {
-            if (!writer.writeString("snpPath", snpPath))
-                return false;
+            case 3:
+                if (!writer.writeString("snpName", snpName))
+                    return false;
 
-            writer.incrementState();
-        }
+                writer.incrementState();
 
-        if (writer.state() == 4) {
-            if (!writer.writeUuid("reqId", requestId))
-                return false;
+            case 4:
+                if (!writer.writeString("snpPath", snpPath))
+                    return false;
 
-            writer.incrementState();
+                writer.incrementState();
+
         }
 
         return true;
@@ -180,40 +179,39 @@ public class SnapshotFilesRequestMessage extends AbstractSnapshotMessage {
         if (!super.readFrom(buf, reader))
             return false;
 
-        if (reader.state() == 1) {
-            snpName = reader.readString("snpName");
+        switch (reader.state()) {
+            case 1:
+                parts = reader.readMap("parts", MessageCollectionItemType.INT, MessageCollectionItemType.INT_ARR, false);
 
-            if (!reader.isLastRead())
-                return false;
+                if (!reader.isLastRead())
+                    return false;
 
-            reader.incrementState();
-        }
+                reader.incrementState();
 
-        if (reader.state() == 2) {
-            parts = reader.readMap("parts", MessageCollectionItemType.INT, MessageCollectionItemType.INT_ARR, false);
+            case 2:
+                reqId = reader.readUuid("requestId");
 
-            if (!reader.isLastRead())
-                return false;
+                if (!reader.isLastRead())
+                    return false;
 
-            reader.incrementState();
-        }
+                reader.incrementState();
 
-        if (reader.state() == 3) {
-            snpPath = reader.readString("snpPath");
+            case 3:
+                snpName = reader.readString("snpName");
 
-            if (!reader.isLastRead())
-                return false;
+                if (!reader.isLastRead())
+                    return false;
 
-            reader.incrementState();
-        }
+                reader.incrementState();
 
-        if (reader.state() == 4) {
-            requestId = reader.readUuid("reqId");
+            case 4:
+                snpPath = reader.readString("snpPath");
 
-            if (!reader.isLastRead())
-                return false;
+                if (!reader.isLastRead())
+                    return false;
 
-            reader.incrementState();
+                reader.incrementState();
+
         }
 
         return reader.afterMessageRead(SnapshotFilesRequestMessage.class);
@@ -221,7 +219,7 @@ public class SnapshotFilesRequestMessage extends AbstractSnapshotMessage {
 
     /** {@inheritDoc} */
     @Override public byte fieldsCount() {
-        return 2;
+        return 5;
     }
 
     /** {@inheritDoc} */

@@ -4,7 +4,7 @@ User: <!any!>
 Time: <!any!>
 Control utility script is used to execute admin commands on cluster or get common cluster info. The command has the following syntax:
 
-  control.(sh|bat) [--host HOST_OR_IP] [--port PORT] [--user USER] [--password PASSWORD] [--ping-interval PING_INTERVAL] [--ping-timeout PING_TIMEOUT] [--verbose] [--ssl-protocol SSL_PROTOCOL[, SSL_PROTOCOL_2, ..., SSL_PROTOCOL_N]] [--ssl-cipher-suites SSL_CIPHER_1[, SSL_CIPHER_2, ..., SSL_CIPHER_N]] [--ssl-key-algorithm SSL_KEY_ALGORITHM] [--keystore-type KEYSTORE_TYPE] [--keystore KEYSTORE_PATH] [--keystore-password KEYSTORE_PASSWORD] [--truststore-type TRUSTSTORE_TYPE] [--truststore TRUSTSTORE_PATH] [--truststore-password TRUSTSTORE_PASSWORD] [--enable-experimental] [command] <command_parameters>
+  control.(sh|bat) [--host HOST_OR_IP] [--port PORT] [--user USER] [--password PASSWORD] [--ping-interval PING_INTERVAL] [--ping-timeout PING_TIMEOUT] [--verbose] [--ssl-protocol SSL_PROTOCOL[, SSL_PROTOCOL_2, ..., SSL_PROTOCOL_N]] [--ssl-cipher-suites SSL_CIPHER_1[, SSL_CIPHER_2, ..., SSL_CIPHER_N]] [--ssl-key-algorithm SSL_KEY_ALGORITHM] [--ssl-factory SSL_FACTORY_PATH] [--keystore-type KEYSTORE_TYPE] [--keystore KEYSTORE_PATH] [--keystore-password KEYSTORE_PASSWORD] [--truststore-type TRUSTSTORE_TYPE] [--truststore TRUSTSTORE_PATH] [--truststore-password TRUSTSTORE_PASSWORD] [--enable-experimental] [command] <command_parameters>
 
 
 This utility can do the following commands:
@@ -25,30 +25,54 @@ This utility can do the following commands:
       ACTIVE            - Activate cluster. Cache updates are allowed.
       INACTIVE          - Deactivate cluster.
       ACTIVE_READ_ONLY  - Activate cluster. Cache updates are denied.
+      --force           - If true, cluster deactivation will be forced.
 
   Print cluster baseline topology:
     control.(sh|bat) --baseline [--verbose]
 
     Parameters:
-      verbose  - Show the full list of node ips.
+      --verbose  - Show the full list of node ips.
 
   Add nodes into baseline topology:
-    control.(sh|bat) --baseline add consistentId1[,consistentId2,....,consistentIdN] [--yes]
+    control.(sh|bat) --baseline add consistentId1[,consistentId2,....,consistentIdN] [--verbose] [--yes]
+
+    Parameters:
+      --verbose  - Show the full list of node ips.
 
   Remove nodes from baseline topology:
-    control.(sh|bat) --baseline remove consistentId1[,consistentId2,....,consistentIdN] [--yes]
+    control.(sh|bat) --baseline remove consistentId1[,consistentId2,....,consistentIdN] [--verbose] [--yes]
+
+    Parameters:
+      --verbose  - Show the full list of node ips.
 
   Set baseline topology:
-    control.(sh|bat) --baseline set consistentId1[,consistentId2,....,consistentIdN] [--yes]
+    control.(sh|bat) --baseline set consistentId1[,consistentId2,....,consistentIdN] [--verbose] [--yes]
+
+    Parameters:
+      --verbose  - Show the full list of node ips.
 
   Set baseline topology based on version:
-    control.(sh|bat) --baseline version topologyVersion [--yes]
+    control.(sh|bat) --baseline version topologyVersion [--verbose] [--yes]
+
+    Parameters:
+      --verbose  - Show the full list of node ips.
 
   Set baseline autoadjustment settings:
-    control.(sh|bat) --baseline auto_adjust [disable|enable] [timeout <timeoutMillis>] [--yes]
+    control.(sh|bat) --baseline auto_adjust [--verbose] [DISABLE|ENABLE] [timeout <timeoutMillis>] [--yes]
+
+    Parameters:
+      --verbose  - Show the full list of node ips.
+      ENABLE     - Enable baseline auto adjust.
+      DISABLE    - Disable baseline auto adjust.
 
   List or kill transactions:
-    control.(sh|bat) --tx [--xid XID] [--min-duration SECONDS] [--min-size SIZE] [--label PATTERN_REGEX] [--servers|--clients] [--nodes consistentId1[,consistentId2,....,consistentIdN]] [--limit NUMBER] [--order DURATION|SIZE|START_TIME] [--kill] [--info] [--yes]
+    control.(sh|bat) --tx [--xid XID] [--min-duration SECONDS] [--min-size SIZE] [--label PATTERN_REGEX] [--limit NUMBER] [--order DURATION|SIZE|START_TIME] [--kill] [--servers|--clients|--nodes consistentId1[,consistentId2,....,consistentIdN]] [--yes]
+
+    Parameters:
+      --order DURATION|SIZE|START_TIME  - Output order.
+        DURATION                        - Sort by duration.
+        SIZE                            - Sort by size.
+        START_TIME                      - Sort by start time.
 
   Print detailed information (topology and key lock ownership) about specific transaction:
     control.(sh|bat) --tx --info <TX identifier as GridCacheVersion [topVer=..., order=..., nodeOrder=...] (can be found in logs)>|<TX identifier as UUID (can be retrieved via --tx command)>
@@ -64,8 +88,23 @@ This utility can do the following commands:
   Delete unused archived wal segments on each node:
     control.(sh|bat) --wal delete [consistentId1,consistentId2,....,consistentIdN] [--yes]
 
-  View diagnostic information in a cluster. For more details type:
+  Print diagnostic command help:
     control.(sh|bat) --diagnostic
+
+  Print diagnostic command help:
+    control.(sh|bat) --diagnostic help
+
+  View pages locks state information on the node or nodes:
+    control.(sh|bat) --diagnostic pagelocks [DUMP|DUMP_LOG] [--path path]  [--all|--nodes node_id1[,node_id2....node_idN]|consistend_id1[,consistent_id2,....,consistent_idN]]
+
+    Parameters:
+      DUMP                                                                                         - Save page locks dump to file generated in IGNITE_HOME/work/diagnostic directory.
+      DUMP_LOG                                                                                     - Print page locks dump to console.
+      --all                                                                                        - Run for all nodes.
+      --nodes node_id1[,node_id2....node_idN]|consistend_id1[,consistent_id2,....,consistent_idN]  - Comma separated list of node ids or consistent ids.
+
+  View connectvity state of all nodes in cluster:
+    control.(sh|bat) --diagnostic connectivity
 
   Print the current master key name:
     control.(sh|bat) --encryption get_master_key_name
@@ -95,99 +134,97 @@ This utility can do the following commands:
       new_limit  - Decimal value to change re-encryption rate limit (MB/s).
 
   Kill compute task by session id:
-    control.(sh|bat) --kill COMPUTE session_id
+    control.(sh|bat) --kill compute session_id
 
     Parameters:
       session_id  - Session identifier.
 
   Kill service by name:
-    control.(sh|bat) --kill SERVICE name
+    control.(sh|bat) --kill service name
 
     Parameters:
       name  - Service name.
 
   Kill transaction by xid:
-    control.(sh|bat) --kill TRANSACTION xid
+    control.(sh|bat) --kill transaction xid
 
     Parameters:
       xid  - Transaction identifier.
 
   Kill sql query by query id:
-    control.(sh|bat) --kill SQL query_id
+    control.(sh|bat) --kill sql query_id
 
     Parameters:
       query_id  - Query identifier.
 
   Kill scan query by node id, cache name and query id:
-    control.(sh|bat) --kill SCAN origin_node_id cache_name query_id
+    control.(sh|bat) --kill scan origin_node_id cache_name query_id
 
     Parameters:
+      origin_node_id  - Originating node id.
       cache_name      - Cache name.
       query_id        - Query identifier.
-      origin_node_id  - Originating node id.
 
   Kill continuous query by routine id:
-    control.(sh|bat) --kill CONTINUOUS origin_node_id routine_id
+    control.(sh|bat) --kill continuous origin_node_id routine_id
 
     Parameters:
-      routine_id      - Routine identifier.
       origin_node_id  - Originating node id.
+      routine_id      - Routine identifier.
 
   Kill client connection by id:
-    control.(sh|bat) --kill CLIENT connection_id [--node-id node_id]
+    control.(sh|bat) --kill client connection_id [--node-id node_id]
 
     Parameters:
       connection_id      - Connection identifier or ALL.
       --node-id node_id  - Node id to drop connection from.
 
   Kill running snapshot by snapshot name:
-    control.(sh|bat) --kill SNAPSHOT snapshot_name
+    control.(sh|bat) --kill snapshot request_id
 
     Parameters:
-      snapshot_name  - Snapshot name.
+      request_id  - Request id.
+
+  Kill consistency task:
+    control.(sh|bat) --kill consistency
 
   Create cluster snapshot:
-    control.(sh|bat) --snapshot create snapshot_name [--dest path] [--sync]
+    control.(sh|bat) --snapshot create snapshot_name [--dest path] [--sync] [--incremental]
 
     Parameters:
-      snapshot_name  - Snapshot name.
+      snapshot_name  - Snapshot name. In the case of incremental snapshot (--incremental) full snapshot name must be provided.
       --dest path    - Path to the directory where the snapshot will be saved. If not specified, the default configured snapshot directory will be used.
       --sync         - Run the operation synchronously, the command will wait for the entire operation to complete. Otherwise, it will be performed in the background, and the command will immediately return control.
+      --incremental  - Create an incremental snapshot for previously created full snapshot. Full snapshot must be accessible via --dest and snapshot_name.
 
   Cancel running snapshot operation:
-    control.(sh|bat) --snapshot cancel --id id|--name name
+    control.(sh|bat) --snapshot cancel [--id id]|[--name name]
 
     Parameters:
       --id id      - Snapshot operation request ID.
       --name name  - Snapshot name (deprecated).
 
   Check snapshot:
-    control.(sh|bat) --snapshot check snapshot_name [--src path]
+    control.(sh|bat) --snapshot check snapshot_name [--src path] [--increment incrementIndex]
 
     Parameters:
-      snapshot_name  - Snapshot name.
-      --src path     - Path to the directory where the snapshot files are located. If not specified, the default configured snapshot directory will be used.
+      snapshot_name               - Snapshot name. In case incremental snapshot (--incremental) full snapshot name must be provided.
+      --src path                  - Path to the directory where the snapshot files are located. If not specified, the default configured snapshot directory will be used.
+      --increment incrementIndex  - Incremental snapshot index. The command will check incremental snapshots sequentially from 1 to the specified index.
 
   Restore snapshot:
-    control.(sh|bat) --snapshot restore snapshot_name [--groups group1,...groupN] [--src path] [--sync]
+    control.(sh|bat) --snapshot restore snapshot_name [--increment incrementIndex] [--groups group1,...groupN] [--src path] [--sync] [--check] [--status|--cancel|--start]
 
     Parameters:
-      snapshot_name              - Snapshot name.
-      --groups group1,...groupN  - Cache group names.
-      --src path                 - Path to the directory where the snapshot files are located. If not specified, the default configured snapshot directory will be used.
-      --sync                     - Run the operation synchronously, the command will wait for the entire operation to complete. Otherwise, it will be performed in the background, and the command will immediately return control.
-
-  Snapshot restore operation status (Command deprecated. Use '--snapshot status' instead):
-    control.(sh|bat) --snapshot restore snapshot_name --status
-
-    Parameters:
-      snapshot_name  - Snapshot name.
-
-  Cancel snapshot restore operation (Command deprecated. Use '--snapshot cancel' instead):
-    control.(sh|bat) --snapshot restore snapshot_name --cancel
-
-    Parameters:
-      snapshot_name  - Snapshot name.
+      snapshot_name               - Snapshot name. In the case of incremental snapshot (--incremental) full snapshot name must be provided.
+      --increment incrementIndex  - Incremental snapshot index. The command will restore snapshot and after that all its increments sequentially from 1 to the specified index.
+      --groups group1,...groupN   - Cache group names.
+      --src path                  - Path to the directory where the snapshot files are located. If not specified, the default configured snapshot directory will be used.
+      --sync                      - Run the operation synchronously, the command will wait for the entire operation to complete. Otherwise, it will be performed in the background, and the command will immediately return control.
+      --check                     - Check snapshot data integrity before restore (slow!). Similar to the "check" command.
+      --status                    - Snapshot restore operation status (Command deprecated. Use '--snapshot status' instead).
+      --cancel                    - Cancel snapshot restore operation (Command deprecated. Use '--snapshot cancel' instead).
+      --start                     - Start snapshot restore operation (Default action).
 
   Get the status of the current snapshot operation:
     control.(sh|bat) --snapshot status
@@ -205,43 +242,95 @@ This utility can do the following commands:
 
   [EXPERIMENTAL]
   Print detailed info about specified binary type (the type must be specified by type name or by type identifier):
-    control.(sh|bat) --meta details [--typeId <typeId>] [--typeName <typeName>]
+    control.(sh|bat) --meta details [--typeId <typeId>]|[--typeName <typeName>]
 
   [EXPERIMENTAL]
   Remove the metadata of the specified type (the type must be specified by type name or by type identifier) from cluster and saves the removed metadata to the specified file.
-If the file name isn't specified the output file name is: '<typeId>.bin'
-    control.(sh|bat) --meta remove [--typeId <typeId>] [--typeName <typeName>] [--out <fileName>]
+If the file name isn't specified the output file name is: '<typeId>.bin':
+    control.(sh|bat) --meta remove [--out <fileName>] [--typeId <typeId>]|[--typeName <typeName>]
 
   [EXPERIMENTAL]
-  Update cluster metadata from specified file (file name is required)
+  Update cluster metadata from specified file (file name is required):
     control.(sh|bat) --meta update --in <fileName>
 
   Set or display shutdown policy:
     control.(sh|bat) --shutdown-policy [IMMEDIATE|GRACEFUL]
 
+    Parameters:
+      IMMEDIATE        - Stop immediately as soon as all components are ready.
+      GRACEFUL         - Node will stop if and only if it does not store any unique partitions, that don't have another copies in the cluster.
+
   [EXPERIMENTAL]
   Print tracing configuration:
-    control.(sh|bat) --tracing-configuration
+    control.(sh|bat) --tracing-configuration [--scope DISCOVERY|EXCHANGE|COMMUNICATION|TX|SQL]
+
+    Parameters:
+      --scope DISCOVERY|EXCHANGE|COMMUNICATION|TX|SQL  - Tracing span scope.
+        DISCOVERY                                      - Discovery scope.
+        EXCHANGE                                       - Exchange scope.
+        COMMUNICATION                                  - Communication scope.
+        TX                                             - Transactional scope.
+        SQL                                            - SQL scope.
 
   [EXPERIMENTAL]
   Print tracing configuration:
     control.(sh|bat) --tracing-configuration get_all [--scope DISCOVERY|EXCHANGE|COMMUNICATION|TX|SQL]
 
+    Parameters:
+      --scope DISCOVERY|EXCHANGE|COMMUNICATION|TX|SQL  - Tracing span scope.
+        DISCOVERY                                      - Discovery scope.
+        EXCHANGE                                       - Exchange scope.
+        COMMUNICATION                                  - Communication scope.
+        TX                                             - Transactional scope.
+        SQL                                            - SQL scope.
+
   [EXPERIMENTAL]
   Print specific tracing configuration based on specified --scope and --label:
-    control.(sh|bat) --tracing-configuration get (--scope DISCOVERY|EXCHANGE|COMMUNICATION|TX|SQL) [--label]
+    control.(sh|bat) --tracing-configuration get --scope DISCOVERY|EXCHANGE|COMMUNICATION|TX|SQL [--label label]
+
+    Parameters:
+      --scope DISCOVERY|EXCHANGE|COMMUNICATION|TX|SQL  - Tracing span scope.
+        DISCOVERY                                      - Discovery scope.
+        EXCHANGE                                       - Exchange scope.
+        COMMUNICATION                                  - Communication scope.
+        TX                                             - Transactional scope.
+        SQL                                            - SQL scope.
 
   [EXPERIMENTAL]
-  Reset all specific tracing configuration the to default. If --scope is specified, then remove all label specific configuration for the given scope and reset given scope specific configuration to the default, if --scope is skipped then reset all tracing configurations to the default. Print tracing configuration.
+  Reset all specific tracing configuration the to default. If --scope is specified, then remove all label specific configuration for the given scope and reset given scope specific configuration to the default, if --scope is skipped then reset all tracing configurations to the default. Print tracing configuration:
     control.(sh|bat) --tracing-configuration reset_all [--scope DISCOVERY|EXCHANGE|COMMUNICATION|TX|SQL]
 
-  [EXPERIMENTAL]
-  Reset specific tracing configuration to the default. If both --scope and --label are specified then remove given configuration, if only --scope is specified then reset given configuration to the default. Print reseted configuration.
-    control.(sh|bat) --tracing-configuration reset (--scope DISCOVERY|EXCHANGE|COMMUNICATION|TX|SQL) [--label]
+    Parameters:
+      --scope DISCOVERY|EXCHANGE|COMMUNICATION|TX|SQL  - Tracing span scope.
+        DISCOVERY                                      - Discovery scope.
+        EXCHANGE                                       - Exchange scope.
+        COMMUNICATION                                  - Communication scope.
+        TX                                             - Transactional scope.
+        SQL                                            - SQL scope.
 
   [EXPERIMENTAL]
-  Set new tracing configuration. If both --scope and --label are specified then add or override label specific configuration, if only --scope is specified, then override scope specific configuration. Print applied configuration.
-    control.(sh|bat) --tracing-configuration set (--scope DISCOVERY|EXCHANGE|COMMUNICATION|TX|SQL [--label] [--sampling-rate Decimal value between 0 and 1, where 0 means never and 1 means always. More or less reflects the probability of sampling specific trace.] [--included-scopes Set of scopes with comma as separator  DISCOVERY|EXCHANGE|COMMUNICATION|TX|SQL])
+  Reset specific tracing configuration to the default. If both --scope and --label are specified then remove given configuration, if only --scope is specified then reset given configuration to the default. Print reseted configuration:
+    control.(sh|bat) --tracing-configuration reset --scope DISCOVERY|EXCHANGE|COMMUNICATION|TX|SQL [--label label]
+
+    Parameters:
+      --scope DISCOVERY|EXCHANGE|COMMUNICATION|TX|SQL  - Tracing span scope.
+        DISCOVERY                                      - Discovery scope.
+        EXCHANGE                                       - Exchange scope.
+        COMMUNICATION                                  - Communication scope.
+        TX                                             - Transactional scope.
+        SQL                                            - SQL scope.
+
+  [EXPERIMENTAL]
+  Set new tracing configuration. If both --scope and --label are specified then add or override label specific configuration, if only --scope is specified, then override scope specific configuration. Print applied configuration:
+    control.(sh|bat) --tracing-configuration set --scope DISCOVERY|EXCHANGE|COMMUNICATION|TX|SQL [--label label] [--sampling-rate Decimal value between 0 and 1, where 0 means never and 1 means always. More or less reflects the probability of sampling specific trace.] [--included-scopes Set of scopes with comma as separator  DISCOVERY|EXCHANGE|COMMUNICATION|TX|SQL]
+
+    Parameters:
+      --scope DISCOVERY|EXCHANGE|COMMUNICATION|TX|SQL  - Tracing span scope.
+        DISCOVERY                                      - Discovery scope.
+        EXCHANGE                                       - Exchange scope.
+        COMMUNICATION                                  - Communication scope.
+        TX                                             - Transactional scope.
+        SQL                                            - SQL scope.
 
   Stop warm-up:
     control.(sh|bat) --warm-up --stop
@@ -250,7 +339,10 @@ If the file name isn't specified the output file name is: '<typeId>.bin'
     control.(sh|bat) --property help
 
   Print list of available properties:
-    control.(sh|bat) --property list
+      control.(sh|bat) --property list [--info]
+
+      Parameters:
+        --info  - Print detailed information: name, value, description.
 
   Get the property value:
     control.(sh|bat) --property get --name <property_name>
@@ -259,7 +351,7 @@ If the file name isn't specified the output file name is: '<typeId>.bin'
     control.(sh|bat) --property set --name <property_name> --val <property_value>
 
   Print system view content:
-    control.(sh|bat) --system-view system_view_name [--node-id node_id]|[--node-ids nodeId1,nodeId2,..]|[--all-nodes]
+    control.(sh|bat) --system-view system_view_name [--node-id node_id|--node-ids nodeId1,nodeId2,..|--all-nodes]
 
     Parameters:
       system_view_name               - Name of the system view which content should be printed. Both "SQL" and "Java" styles of system view name are supported (e.g. SQL_TABLES and sql.tables will be handled similarly).
@@ -268,11 +360,27 @@ If the file name isn't specified the output file name is: '<typeId>.bin'
       --all-nodes                    - Get the system view from all nodes. If not set, random node will be chosen.
 
   Print metric value:
-    control.(sh|bat) --metric [--node-id node_id] name
+    control.(sh|bat) --metric name [--node-id node_id]
 
     Parameters:
-      name     - Name of the metric which value should be printed. If name of the metric registry is specified, value of all its metrics will be printed.
-      node_id  - ID of the node to get the metric values from. If not set, random node will be chosen.
+      name               - Name of the metric.
+      --node-id node_id  - Node id.
+
+  Configure histogram metric:
+    control.(sh|bat) --metric --configure-histogram name newBounds [--node-id node_id]
+
+    Parameters:
+      name               - Name of the metric.
+      newBounds          - Comma-separated list of longs to configure histogram.
+      --node-id node_id  - Node id.
+
+  Configure hitrate metric:
+    control.(sh|bat) --metric --configure-hitrate name newRateTimeInterval [--node-id node_id]
+
+    Parameters:
+      name                 - Name of the metric.
+      newRateTimeInterval  - Rate time interval of hitrate.
+      --node-id node_id    - Node id.
 
   Print information about potentially corrupted caches on local node:
     control.(sh|bat) --persistence
@@ -298,11 +406,11 @@ If the file name isn't specified the output file name is: '<typeId>.bin'
   Backup data files of only given caches:
     control.(sh|bat) --persistence backup caches cache1,cache2,cache3
 
-  Schedule PDS defragmentation on given nodes for all caches:
-    control.(sh|bat) --defragmentation schedule --nodes consistentId0,consistentId1
+  Schedule PDS defragmentation:
+    control.(sh|bat) --defragmentation schedule --nodes consistentId0,consistentId1 [--caches cache1,cache2,cache3]
 
-  Schedule PDS defragmentation on given nodes but only for given caches:
-    control.(sh|bat) --defragmentation schedule --nodes consistentId0,consistentId1 --caches cache1,cache2,cache3
+  Prints status of running defragmentation operation:
+    control.(sh|bat) --defragmentation status
 
   Cancel scheduled or active PDS defragmentation on underlying node:
     control.(sh|bat) --defragmentation cancel
@@ -321,11 +429,18 @@ If the file name isn't specified the output file name is: '<typeId>.bin'
 
   [EXPERIMENTAL]
   Check/Repair cache consistency using Read Repair approach:
-    control.(sh|bat) --consistency repair cache-name partition
+    control.(sh|bat) --consistency repair --cache cache --partitions partition --strategy LWW|PRIMARY|RELATIVE_MAJORITY|REMOVE|CHECK_ONLY [--parallel]
 
     Parameters:
-      cache-name  - Cache to be checked/repaired.
-      partition   - Cache's partition to be checked/repaired.
+      --cache cache                                               - Cache to be checked/repaired.
+      --partitions partition                                      - Cache's partition to be checked/repaired.
+      --strategy LWW|PRIMARY|RELATIVE_MAJORITY|REMOVE|CHECK_ONLY  - Repair strategy.
+        LWW                                                       - Last write (the newest entry) wins.
+        PRIMARY                                                   - Value from the primary node wins.
+        RELATIVE_MAJORITY                                         - The relative majority, any value found more times than any other wins.
+        REMOVE                                                    - Inconsistent entries will be removed.
+        CHECK_ONLY                                                - Only check will be performed.
+      --parallel                                                  - Run concurrently on each node.
 
   [EXPERIMENTAL]
   Cache consistency check/repair operations status:
@@ -334,6 +449,20 @@ If the file name isn't specified the output file name is: '<typeId>.bin'
   [EXPERIMENTAL]
   Finalize partitions update counters:
     control.(sh|bat) --consistency finalize
+
+  [EXPERIMENTAL]
+  Delete lost segment CDC links:
+    control.(sh|bat) --cdc delete_lost_segment_links [--node-id node_id] [--yes]
+
+    Parameters:
+      --node-id node_id  - ID of the node to delete lost segment links from. If not set, the command will affect all server nodes.
+
+  [EXPERIMENTAL]
+  Forcefully resend all cache data to CDC. Iterates over caches and writes primary copies of data entries to the WAL to get captured by CDC:
+    control.(sh|bat) --cdc resend --caches cache1,...,cacheN
+
+    Parameters:
+      --caches cache1,...,cacheN  - specifies a comma-separated list of cache names.
 
 By default commands affecting the cluster require interactive confirmation.
 Use --yes option to disable it.

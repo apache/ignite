@@ -57,7 +57,10 @@ public enum MessageType {
     COLOCATION_GROUP(351, ColocationGroup::new),
 
     /** */
-    FRAGMENT_DESCRIPTION(352, FragmentDescription::new);
+    FRAGMENT_DESCRIPTION(352, FragmentDescription::new),
+
+    /** */
+    QUERY_TX_ENTRY(353, QueryTxEntry::new);
 
     /** */
     private final int directType;

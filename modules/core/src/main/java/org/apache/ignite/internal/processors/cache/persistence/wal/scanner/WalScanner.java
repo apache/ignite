@@ -98,17 +98,17 @@ public class WalScanner {
     ) {
         requireNonNull(groupAndPageIds);
 
-        HashSet<T2<Integer, Long>> groupAndPageIds0 = new HashSet<>(groupAndPageIds);
+        HashSet<T2<Integer, Long>> grpAndPageIds0 = new HashSet<>(groupAndPageIds);
 
         // Collect all (group, partition) partition pairs.
-        Set<T2<Integer, Integer>> groupAndParts = groupAndPageIds0.stream()
+        Set<T2<Integer, Integer>> grpAndParts = grpAndPageIds0.stream()
             .map((tup) -> new T2<>(tup.get1(), PageIdUtils.partId(tup.get2())))
             .collect(Collectors.toSet());
 
         // Build WAL filter. (Checkoint, Page, Partition meta)
         Predicate<IgniteBiTuple<WALPointer, WALRecord>> filter = checkpoint()
-            .or(pageOwner(groupAndPageIds0))
-            .or(partitionMetaStateUpdate(groupAndParts));
+            .or(pageOwner(grpAndPageIds0))
+            .or(partitionMetaStateUpdate(grpAndParts));
 
         return new ScanTerminateStep(() -> new FilteredWalIterator(walIteratorSupplier.get(), filter));
     }

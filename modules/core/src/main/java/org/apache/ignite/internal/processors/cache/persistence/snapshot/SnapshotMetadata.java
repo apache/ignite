@@ -30,7 +30,9 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import java.util.UUID;
+import org.apache.ignite.internal.pagemem.wal.record.delta.ClusterSnapshotRecord;
 import org.apache.ignite.internal.processors.cache.persistence.partstate.GroupPartitionId;
+import org.apache.ignite.internal.processors.cache.persistence.wal.WALPointer;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.S;
@@ -48,9 +50,11 @@ public class SnapshotMetadata implements Serializable {
     private final UUID rqId;
 
     /** Snapshot name. */
+    @GridToStringInclude
     private final String snpName;
 
     /** Consistent id of a node to which this metadata relates. */
+    @GridToStringInclude
     private final String consId;
 
     /**
@@ -58,6 +62,13 @@ public class SnapshotMetadata implements Serializable {
      * For some of the cases, consId doesn't equal the directory name.
      */
     private final String folderName;
+
+    /**
+     * If {@code true} then compress partition files.
+     * This shouldn't be confused with {@link SnapshotMetadata#comprGrpIds} which represents how Ignite keeps data in memory pages
+     * while {@link SnapshotMetadata#comprParts} represents how dump files are stored on disk.
+     */
+    private final boolean comprParts;
 
     /** Page size of stored snapshot data. */
     private final int pageSize;
@@ -69,6 +80,9 @@ public class SnapshotMetadata implements Serializable {
     /** The set of affected by snapshot baseline nodes. */
     @GridToStringInclude
     private final Set<String> bltNodes;
+
+    /** WAL pointer to {@link ClusterSnapshotRecord} if exists. */
+    private final @Nullable WALPointer snpRecPtr;
 
     /**
      * Map of cache group partitions from which snapshot has been taken on the local node. This map can be empty
@@ -85,41 +99,72 @@ public class SnapshotMetadata implements Serializable {
     @GridToStringInclude
     @Nullable private List<String> warnings;
 
+    /** Creation timestamp in milliseconds since Unix epoch. */
+    private long snapshotTime;
+
     /** */
     private transient Set<Integer> comprGrpIds;
 
     /** */
     private boolean hasComprGrps;
 
+    /** If {@code true} snapshot only primary copies of partitions. */
+    private boolean onlyPrimary;
+
+    /** If {@code true} cache group dump stored. */
+    private boolean dump;
+
+    /** Encryption key. */
+    private @Nullable byte[] encKey;
+
     /**
-     * F@param snpName Snapshot name.
+     * @param rqId Unique request id.
+     * @param snpName Snapshot name.
      * @param consId Consistent id of a node to which this metadata relates.
      * @param folderName Directory name which stores the data files.
+     * @param comprParts If {@code true} then compress partition files.
      * @param pageSize Page size of stored snapshot data.
      * @param grpIds The list of cache groups ids which were included into snapshot.
      * @param bltNodes The set of affected by snapshot baseline nodes.
+     * @param snpRecPtr WAL pointer to {@link ClusterSnapshotRecord} if exists.
      * @param masterKeyDigest Master key digest for encrypted caches.
+     * @param snapshotTime of the snapshot creation.
+     * @param onlyPrimary If {@code true} snapshot only primary copies of partitions.
+     * @param dump If {@code true} cache group dump stored.
+     * @param encKey Encryption key. For dumps, only.
      */
     public SnapshotMetadata(
         UUID rqId,
         String snpName,
         String consId,
         String folderName,
+        boolean comprParts,
         int pageSize,
         List<Integer> grpIds,
+        long snapshotTime,
         Collection<Integer> compGrpIds,
         Set<String> bltNodes,
         Set<GroupPartitionId> pairs,
-        @Nullable byte[] masterKeyDigest
+        @Nullable WALPointer snpRecPtr,
+        @Nullable byte[] masterKeyDigest,
+        boolean onlyPrimary,
+        boolean dump,
+        @Nullable byte[] encKey
     ) {
         this.rqId = rqId;
         this.snpName = snpName;
         this.consId = consId;
         this.folderName = folderName;
+        this.comprParts = comprParts;
         this.pageSize = pageSize;
         this.grpIds = grpIds;
+        this.snapshotTime = snapshotTime;
         this.bltNodes = bltNodes;
+        this.snpRecPtr = snpRecPtr;
         this.masterKeyDigest = masterKeyDigest;
+        this.onlyPrimary = onlyPrimary;
+        this.dump = dump;
+        this.encKey = encKey;
 
         if (!F.isEmpty(compGrpIds)) {
             hasComprGrps = true;
@@ -161,6 +206,13 @@ public class SnapshotMetadata implements Serializable {
     }
 
     /**
+     * @return {@code true} if compress partition files.
+     */
+    public boolean compressPartitions() {
+        return comprParts;
+    }
+
+    /**
      * @return Page size of stored snapshot data.
      */
     public int pageSize() {
@@ -190,13 +242,35 @@ public class SnapshotMetadata implements Serializable {
     }
 
     /** */
-    public boolean isGroupWithCompresion(int grpId) {
+    public boolean isGroupWithCompression(int grpId) {
         return hasComprGrps && comprGrpIds.contains(grpId);
     }
 
     /** */
     public boolean hasCompressedGroups() {
         return hasComprGrps;
+    }
+
+    /**
+     * @return WAL pointer to {@link ClusterSnapshotRecord} if exists.
+     */
+    public @Nullable WALPointer snapshotRecordPointer() {
+        return snpRecPtr;
+    }
+
+    /** @return If {@code true} snapshot only primary copies of partitions. */
+    public boolean onlyPrimary() {
+        return onlyPrimary;
+    }
+
+    /** @return If {@code true} then metadata describes cache dump. */
+    public boolean dump() {
+        return dump;
+    }
+
+    /** @return Creation timestamp in milliseconds since Unix epoch. */
+    public long snapshotTime() {
+        return snapshotTime;
     }
 
     /** Save the state of this <tt>HashMap</tt> partitions and cache groups to a stream. */
@@ -264,7 +338,8 @@ public class SnapshotMetadata implements Serializable {
             pageSize() == compare.pageSize() &&
             Objects.equals(cacheGroupIds(), compare.cacheGroupIds()) &&
             Arrays.equals(masterKeyDigest, compare.masterKeyDigest) &&
-            Objects.equals(baselineNodes(), compare.baselineNodes());
+            Objects.equals(baselineNodes(), compare.baselineNodes()) &&
+            onlyPrimary == compare.onlyPrimary;
     }
 
     /**
@@ -272,6 +347,11 @@ public class SnapshotMetadata implements Serializable {
      */
     public byte[] masterKeyDigest() {
         return masterKeyDigest;
+    }
+
+    /** @return Encryption key. */
+    public byte[] encryptionKey() {
+        return encKey;
     }
 
     /**
@@ -306,14 +386,16 @@ public class SnapshotMetadata implements Serializable {
             Objects.equals(grpIds, meta.grpIds) &&
             Objects.equals(bltNodes, meta.bltNodes) &&
             Arrays.equals(masterKeyDigest, meta.masterKeyDigest) &&
+            Arrays.equals(encKey, meta.encKey) &&
             Objects.equals(warnings, meta.warnings) &&
-            Objects.equals(hasComprGrps, hasComprGrps) &&
-            Objects.equals(comprGrpIds, comprGrpIds);
+            Objects.equals(hasComprGrps, meta.hasComprGrps) &&
+            Objects.equals(comprGrpIds, meta.comprGrpIds) &&
+            onlyPrimary == meta.onlyPrimary;
     }
 
     /** {@inheritDoc} */
     @Override public int hashCode() {
-        return Objects.hash(rqId, snpName, consId, grpIds, bltNodes);
+        return Objects.hash(rqId, snpName, consId, grpIds, bltNodes, onlyPrimary);
     }
 
     /** {@inheritDoc} */

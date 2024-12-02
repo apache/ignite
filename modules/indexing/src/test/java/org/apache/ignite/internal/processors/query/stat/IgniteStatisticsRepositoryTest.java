@@ -92,13 +92,13 @@ public class IgniteStatisticsRepositoryTest extends StatisticsAbstractTest {
         // With persistence
         MetastorageLifecycleListener lsnr[] = new MetastorageLifecycleListener[1];
 
-        GridInternalSubscriptionProcessor subscriptionProcessor = Mockito.mock(GridInternalSubscriptionProcessor.class);
+        GridInternalSubscriptionProcessor subscriptionProc = Mockito.mock(GridInternalSubscriptionProcessor.class);
         Mockito.doAnswer(invocation -> lsnr[0] = invocation.getArgument(0))
-            .when(subscriptionProcessor).registerMetastorageListener(Mockito.any(MetastorageLifecycleListener.class));
+            .when(subscriptionProc).registerMetastorageListener(Mockito.any(MetastorageLifecycleListener.class));
         IgniteCacheDatabaseSharedManager db = Mockito.mock(IgniteCacheDatabaseSharedManager.class);
 
         IgniteStatisticsRepository statsRepos[] = new IgniteStatisticsRepository[1];
-        IgniteStatisticsStore storePersistent = new IgniteStatisticsPersistenceStoreImpl(subscriptionProcessor, db,
+        IgniteStatisticsStore storePersistent = new IgniteStatisticsPersistenceStoreImpl(subscriptionProc, db,
             IgniteStatisticsRepositoryTest::getLogger);
         IgniteStatisticsHelper helper = Mockito.mock(IgniteStatisticsHelper.class);
         statsRepos[0] = new IgniteStatisticsRepository(storePersistent, sysViewMgr, helper,

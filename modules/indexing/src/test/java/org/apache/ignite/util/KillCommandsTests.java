@@ -423,9 +423,14 @@ class KillCommandsTests {
      * @param cli Client node.
      * @param srvs Server nodes.
      * @param qryCanceler Query cancel closure.
+     * @param scanCanceler Scan query cancel closure.
      */
-    public static void doTestCancelContinuousQuery(IgniteEx cli, List<IgniteEx> srvs,
-        BiConsumer<UUID, UUID> qryCanceler) throws Exception {
+    public static void doTestCancelContinuousQuery(
+        IgniteEx cli,
+        List<IgniteEx> srvs,
+        BiConsumer<UUID, UUID> qryCanceler,
+        Consumer<T3<UUID, String, Long>> scanCanceler
+    ) throws Exception {
         IgniteCache<Object, Object> cache = cli.cache(DEFAULT_CACHE_NAME);
 
         ContinuousQuery<Integer, Integer> cq = new ContinuousQuery<>();
@@ -477,6 +482,10 @@ class KillCommandsTests {
 
             assertTrue(srv.configuration().getIgniteInstanceName(), res);
         }
+
+        T3<UUID, String, Long> qryInfo = scanQuery(srvs.get(0));
+
+        scanCanceler.accept(qryInfo);
     }
 
     /**
@@ -487,14 +496,14 @@ class KillCommandsTests {
      */
     public static void doTestCancelClientConnection(List<IgniteEx> srvs, BiConsumer<UUID, Long> cliCanceler) {
         ClientConfiguration cfg = new ClientConfiguration()
-            .setAddresses("127.0.0.1:" + srvs.get(0).localNode().attribute(CLIENT_LISTENER_PORT))
+            .setAddressesFinder(() -> new String[] {"127.0.0.1:" + srvs.get(0).localNode().attribute(CLIENT_LISTENER_PORT)})
             .setPartitionAwarenessEnabled(false);
 
         IgniteClient cli0 = Ignition.startClient(cfg);
         IgniteClient cli1 = Ignition.startClient(cfg);
         IgniteClient cli2 = Ignition.startClient(cfg);
         IgniteClient cli3 = Ignition.startClient(new ClientConfiguration()
-            .setAddresses("127.0.0.1:" + srvs.get(1).localNode().attribute(CLIENT_LISTENER_PORT))
+            .setAddressesFinder(() -> new String[] {"127.0.0.1:" + srvs.get(1).localNode().attribute(CLIENT_LISTENER_PORT)})
             .setPartitionAwarenessEnabled(false));
 
         assertEquals(ClusterState.ACTIVE, cli0.cluster().state());

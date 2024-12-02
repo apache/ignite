@@ -99,12 +99,12 @@ public class IgniteDecimalSelfTest extends AbstractSchemaSelfTest {
     @NotNull private CacheConfiguration<Integer, Salary> cacheCfg(String tabName, String cacheName) {
         CacheConfiguration<Integer, Salary> ccfg = new CacheConfiguration<>(cacheName);
 
-        QueryEntity queryEntity = new QueryEntity(Integer.class.getName(), Salary.class.getName());
+        QueryEntity qryEntity = new QueryEntity(Integer.class.getName(), Salary.class.getName());
 
-        queryEntity.setTableName(tabName);
+        qryEntity.setTableName(tabName);
 
-        queryEntity.addQueryField("id", Integer.class.getName(), null);
-        queryEntity.addQueryField("amount", BigDecimal.class.getName(), null);
+        qryEntity.addQueryField("id", Integer.class.getName(), null);
+        qryEntity.addQueryField("amount", BigDecimal.class.getName(), null);
 
         Map<String, Integer> precision = new HashMap<>();
         Map<String, Integer> scale = new HashMap<>();
@@ -112,10 +112,10 @@ public class IgniteDecimalSelfTest extends AbstractSchemaSelfTest {
         precision.put("amount", PRECISION);
         scale.put("amount", SCALE);
 
-        queryEntity.setFieldsPrecision(precision);
-        queryEntity.setFieldsScale(scale);
+        qryEntity.setFieldsPrecision(precision);
+        qryEntity.setFieldsScale(scale);
 
-        ccfg.setQueryEntities(Collections.singletonList(queryEntity));
+        ccfg.setQueryEntities(Collections.singletonList(qryEntity));
 
         return ccfg;
     }
@@ -184,17 +184,17 @@ public class IgniteDecimalSelfTest extends AbstractSchemaSelfTest {
 
     /** */
     private void checkPrecisionAndScale(String tabName, String colName, Integer precision, Integer scale) {
-        QueryEntity queryEntity = findTableInfo(tabName);
+        QueryEntity qryEntity = findTableInfo(tabName);
 
-        assertNotNull(queryEntity);
+        assertNotNull(qryEntity);
 
-        Map<String, Integer> fieldsPrecision = queryEntity.getFieldsPrecision();
+        Map<String, Integer> fieldsPrecision = qryEntity.getFieldsPrecision();
 
         assertNotNull(precision);
 
         assertEquals(fieldsPrecision.get(colName), precision);
 
-        Map<String, Integer> fieldsScale = queryEntity.getFieldsScale();
+        Map<String, Integer> fieldsScale = qryEntity.getFieldsScale();
 
         assertEquals(fieldsScale.get(colName), scale);
 

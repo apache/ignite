@@ -71,7 +71,6 @@ Here is how it can be imported into your POM file:
 All optional modules can be imported just like the core module, but with different artifact IDs.
 
 The following modules are available:
-- ignite-cassandra (for Apache Cassandra integration)
 - ignite-indexing (for SQL querying and indexing)
 - ignite-jcl (for Apache Commons logging)
 - ignite-jta (for XA integration)
@@ -80,7 +79,6 @@ The following modules are available:
 - ignite-schedule (for Cron-based task scheduling)
 - ignite-sl4j (for SL4J logging)
 - ignite-spring (for Spring-based configuration support)
-- ignite-ssh (for starting grid nodes on remote machines)
 - ignite-urideploy (for URI-based deployment)
 - ignite-web (for Web Sessions Clustering)
 - ignite-zookeeper (for cluster discovery based on Apache Zookeeper)

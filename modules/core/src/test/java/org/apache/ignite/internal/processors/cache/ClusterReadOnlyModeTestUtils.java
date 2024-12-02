@@ -37,7 +37,6 @@ import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.ATOMIC;
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
-import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL_SNAPSHOT;
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
 import static org.apache.ignite.cache.CacheMode.REPLICATED;
 import static org.junit.Assert.fail;
@@ -52,23 +51,17 @@ public class ClusterReadOnlyModeTestUtils {
     /** Replicated transactional cache. */
     private static final String REPL_TX_CACHE = "repl_tx_cache";
 
-    /** Replicated transactional cache. */
-    private static final String REPL_MVCC_CACHE = "repl_mvcc_cache";
-
     /** Partitioned atomic cache. */
     public static final String PART_ATOMIC_CACHE = "part_atomic_cache";
 
     /** Partitioned transactional cache. */
     private static final String PART_TX_CACHE = "part_tx_cache";
 
-    /** Partitioned mvcc transactional cache. */
-    private static final String PART_MVCC_CACHE = "part_mvcc_cache";
-
     /**
      * @return Configured cache names.
      */
     public static Collection<String> cacheNames() {
-        return F.asList(REPL_ATOMIC_CACHE, REPL_TX_CACHE, REPL_MVCC_CACHE, PART_ATOMIC_CACHE, PART_TX_CACHE, PART_MVCC_CACHE);
+        return F.asList(REPL_ATOMIC_CACHE, REPL_TX_CACHE, PART_ATOMIC_CACHE, PART_TX_CACHE);
     }
 
     /**
@@ -78,10 +71,8 @@ public class ClusterReadOnlyModeTestUtils {
         return F.asArray(
             cacheConfiguration(REPL_ATOMIC_CACHE, REPLICATED, ATOMIC, null),
             cacheConfiguration(REPL_TX_CACHE, REPLICATED, TRANSACTIONAL, null),
-            cacheConfiguration(REPL_MVCC_CACHE, REPLICATED, TRANSACTIONAL_SNAPSHOT, "mvcc_repl_grp"),
-            cacheConfiguration(PART_ATOMIC_CACHE, PARTITIONED, ATOMIC, "part_grp"),
-            cacheConfiguration(PART_TX_CACHE, PARTITIONED, TRANSACTIONAL, "part_grp"),
-            cacheConfiguration(PART_MVCC_CACHE, PARTITIONED, TRANSACTIONAL_SNAPSHOT, "mvcc_part_grp")
+            cacheConfiguration(PART_ATOMIC_CACHE, PARTITIONED, ATOMIC, "part_grp_atomic"),
+            cacheConfiguration(PART_TX_CACHE, PARTITIONED, TRANSACTIONAL, "part_grp_tx")
         );
     }
 

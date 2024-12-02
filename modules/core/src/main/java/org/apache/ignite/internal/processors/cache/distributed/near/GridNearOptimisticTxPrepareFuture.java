@@ -577,7 +577,7 @@ public class GridNearOptimisticTxPrepareFuture extends GridNearOptimisticTxPrepa
                 }
                 else {
                     try {
-                        cctx.io().send(n, req, tx.ioPolicy());
+                        cctx.tm().sendTransactionMessage(n, req, tx, tx.ioPolicy());
 
                         if (msgLog.isDebugEnabled()) {
                             msgLog.debug("Near optimistic prepare fut, sent request [txId=" + tx.nearXidVersion() +

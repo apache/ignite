@@ -40,7 +40,6 @@ import org.apache.ignite.internal.processors.cache.persistence.file.FileIOFactor
 import org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager;
 import org.apache.ignite.internal.processors.cache.persistence.pagemem.PageMemoryEx;
 import org.apache.ignite.internal.processors.cache.persistence.pagemem.PageMemoryImpl;
-import org.apache.ignite.internal.processors.cache.persistence.snapshot.IgniteCacheSnapshotManager;
 import org.apache.ignite.internal.processors.cache.persistence.wal.WALPointer;
 import org.apache.ignite.internal.processors.failure.FailureProcessor;
 import org.apache.ignite.internal.util.StripedExecutor;
@@ -48,6 +47,7 @@ import org.apache.ignite.internal.util.lang.IgniteThrowableBiPredicate;
 import org.apache.ignite.internal.util.lang.IgniteThrowableFunction;
 import org.apache.ignite.internal.worker.WorkersRegistry;
 import org.apache.ignite.lang.IgniteInClosure;
+import org.apache.ignite.marshaller.jdk.JdkMarshaller;
 import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_CHECKPOINT_READ_LOCK_TIMEOUT;
@@ -101,13 +101,13 @@ public class CheckpointManager {
      * @param cacheGroupContexts Cache group contexts.
      * @param pageMemoryGroupResolver Page memory resolver.
      * @param throttlingPolicy Throttling policy.
-     * @param snapshotMgr Snapshot manager.
      * @param persStoreMetrics Persistence metrics.
      * @param longJvmPauseDetector Long JVM pause detector.
      * @param failureProcessor Failure processor.
      * @param cacheProcessor Cache processor.
      * @param cpFreqDeviation Distributed checkpoint frequency deviation.
      * @param checkpointMapSnapshotExecutor Checkpoint map snapshot executor.
+     * @param marsh JDK marshaller.
      * @throws IgniteCheckedException if fail.
      */
     public CheckpointManager(
@@ -123,13 +123,13 @@ public class CheckpointManager {
         Supplier<Collection<CacheGroupContext>> cacheGroupContexts,
         IgniteThrowableFunction<Integer, PageMemoryEx> pageMemoryGroupResolver,
         PageMemoryImpl.ThrottlingPolicy throttlingPolicy,
-        IgniteCacheSnapshotManager snapshotMgr,
         DataStorageMetricsImpl persStoreMetrics,
         LongJVMPauseDetector longJvmPauseDetector,
         FailureProcessor failureProcessor,
         GridCacheProcessor cacheProcessor,
         Supplier<Integer> cpFreqDeviation,
-        Executor checkpointMapSnapshotExecutor
+        Executor checkpointMapSnapshotExecutor,
+        JdkMarshaller marsh
     ) throws IgniteCheckedException {
         CheckpointHistory cpHistory = new CheckpointHistory(
             persistenceCfg,
@@ -149,13 +149,13 @@ public class CheckpointManager {
             ioFactory,
             pageStoreManager.workDir().getAbsolutePath(),
             lock,
-            checkpointMapSnapshotExecutor
+            checkpointMapSnapshotExecutor,
+            marsh
         );
 
         checkpointWorkflow = new CheckpointWorkflow(
             logger,
             wal,
-            snapshotMgr,
             checkpointMarkersStorage,
             lock,
             persistenceCfg.getCheckpointWriteOrder(),
@@ -177,7 +177,7 @@ public class CheckpointManager {
         };
 
         checkpointPagesWriterFactory = new CheckpointPagesWriterFactory(
-            logger, snapshotMgr,
+            logger,
             (pageMemEx, fullPage, buf, tag) -> pageStoreManager.write(fullPage.groupId(), fullPage.pageId(), buf, tag, true),
             persStoreMetrics,
             throttlingPolicy, threadBuf,
@@ -191,7 +191,6 @@ public class CheckpointManager {
             logger,
             longJvmPauseDetector,
             failureProcessor,
-            snapshotMgr,
             persStoreMetrics,
             cacheProcessor,
             checkpointWorkflow,

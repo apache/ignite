@@ -31,18 +31,21 @@ import org.apache.ignite.cdc.TypeMapping;
 import org.apache.ignite.internal.pagemem.wal.WALIterator;
 import org.apache.ignite.internal.pagemem.wal.record.DataEntry;
 import org.apache.ignite.internal.pagemem.wal.record.DataRecord;
-import org.apache.ignite.internal.pagemem.wal.record.UnwrappedDataEntry;
+import org.apache.ignite.internal.pagemem.wal.record.TimeStampRecord;
+import org.apache.ignite.internal.pagemem.wal.record.UnwrapDataEntry;
 import org.apache.ignite.internal.pagemem.wal.record.WALRecord;
 import org.apache.ignite.internal.processors.cache.GridCacheOperation;
 import org.apache.ignite.internal.processors.cache.persistence.wal.WALPointer;
-import org.apache.ignite.internal.processors.metric.MetricRegistry;
+import org.apache.ignite.internal.processors.metric.MetricRegistryImpl;
 import org.apache.ignite.internal.processors.metric.impl.AtomicLongMetric;
+import org.apache.ignite.internal.processors.metric.impl.HistogramMetricImpl;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.lang.IgniteClosure;
 import org.apache.ignite.lang.IgnitePredicate;
+import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.internal.processors.cache.GridCacheOperation.CREATE;
 import static org.apache.ignite.internal.processors.cache.GridCacheOperation.DELETE;
@@ -79,9 +82,6 @@ public class WalRecordsConsumer<K, V> {
 
     /** Operations filter. */
     private static final IgnitePredicate<? super DataEntry> OPERATIONS_FILTER = e -> {
-        if (!(e instanceof UnwrappedDataEntry))
-            throw new IllegalStateException("Unexpected data entry [type=" + e.getClass().getName() + ']');
-
         if ((e.flags() & DataEntry.PRELOAD_FLAG) != 0 ||
             (e.flags() & DataEntry.FROM_STORE_FLAG) != 0)
             return false;
@@ -90,8 +90,8 @@ public class WalRecordsConsumer<K, V> {
     };
 
     /** Event transformer. */
-    private static final IgniteClosure<DataEntry, CdcEvent> CDC_EVENT_TRANSFORMER = e -> {
-        UnwrappedDataEntry ue = (UnwrappedDataEntry)e;
+    static final IgniteClosure<DataEntry, CdcEvent> CDC_EVENT_TRANSFORMER = e -> {
+        UnwrapDataEntry ue = (UnwrapDataEntry)e;
 
         return new CdcEventImpl(
             ue.unwrappedKey(),
@@ -99,7 +99,8 @@ public class WalRecordsConsumer<K, V> {
             (e.flags() & DataEntry.PRIMARY_FLAG) != 0,
             e.partitionId(),
             e.writeVersion(),
-            e.cacheId()
+            e.cacheId(),
+            e.expireTime()
         );
     };
 
@@ -118,9 +119,15 @@ public class WalRecordsConsumer<K, V> {
      * {@link DataRecord} will be stored and WAL iteration will be started from it on CDC application fail/restart.
      *
      * @param entries Data entries iterator.
+     * @param transform Event transformer.
+     * @param filter Optional event filter.
      * @return {@code True} if current offset in WAL should be commited.
      */
-    public boolean onRecords(Iterator<DataEntry> entries) {
+    public boolean onRecords(
+        Iterator<DataEntry> entries,
+        IgniteClosure<DataEntry, CdcEvent> transform,
+        @Nullable IgnitePredicate<? super DataEntry> filter
+    ) {
         Iterator<CdcEvent> evts = F.iterator(new Iterator<DataEntry>() {
             @Override public boolean hasNext() {
                 return entries.hasNext();
@@ -135,7 +142,7 @@ public class WalRecordsConsumer<K, V> {
 
                 return next;
             }
-        }, CDC_EVENT_TRANSFORMER, true, OPERATIONS_FILTER);
+        }, transform, true, OPERATIONS_FILTER, filter);
 
         return consumer.onEvents(evts);
     }
@@ -181,7 +188,7 @@ public class WalRecordsConsumer<K, V> {
      * @param cdcConsumerReg CDC consumer metric registry.
      * @throws IgniteCheckedException If failed.
      */
-    public void start(MetricRegistry cdcReg, MetricRegistry cdcConsumerReg) throws IgniteCheckedException {
+    public void start(MetricRegistryImpl cdcReg, MetricRegistryImpl cdcConsumerReg) throws IgniteCheckedException {
         consumer.start(cdcConsumerReg);
 
         evtsCnt = cdcReg.longMetric(EVTS_CNT, "Count of events processed by the consumer");
@@ -193,7 +200,7 @@ public class WalRecordsConsumer<K, V> {
 
     /**
      * Stops the consumer.
-     * This methods can be invoked only after {@link #start(MetricRegistry, MetricRegistry)}.
+     * This methods can be invoked only after {@link #start(MetricRegistryImpl, MetricRegistryImpl)}.
      */
     public void stop() {
         consumer.stop();
@@ -227,6 +234,9 @@ public class WalRecordsConsumer<K, V> {
         /** WAL iterator. */
         private final WALIterator walIter;
 
+        /** Events capture time metric. */
+        private final HistogramMetricImpl evtCaptureTime;
+
         /** Current preloaded WAL record. */
         private IgniteBiTuple<WALPointer, WALRecord> curRec;
 
@@ -236,18 +246,24 @@ public class WalRecordsConsumer<K, V> {
         /** Index of {@link #next} inside WAL record. */
         private int entryIdx;
 
-        /** @param walIter WAL iterator. */
-        DataEntryIterator(WALIterator walIter) {
+        /**
+         * @param walIter WAL iterator.
+         * @param evtCaptureTime Event capture time metric.
+         */
+        public DataEntryIterator(WALIterator walIter, HistogramMetricImpl evtCaptureTime) {
             this.walIter = walIter;
+            this.evtCaptureTime = evtCaptureTime;
 
             advance();
         }
 
         /** @return Current state. */
-        T2<WALPointer, Integer> state() {
+        public T2<WALPointer, Integer> state() {
             return hasNext() ?
                 new T2<>(curRec.get1(), entryIdx) :
-                new T2<>(curRec.get1().next(), 0);
+                curRec != null
+                    ? new T2<>(curRec.get1().next(), 0)
+                    : walIter.lastRead().map(ptr -> new T2<>(ptr.next(), 0)).orElse(null);
         }
 
         /** Initialize state. */
@@ -273,6 +289,8 @@ public class WalRecordsConsumer<K, V> {
             DataEntry e = next;
 
             next = null;
+
+            evtCaptureTime.value(System.currentTimeMillis() - ((TimeStampRecord)curRec.get2()).timestamp());
 
             advance();
 

@@ -27,6 +27,7 @@ import java.io.ObjectStreamException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.HashSet;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
@@ -36,6 +37,7 @@ import java.util.concurrent.Callable;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.function.Function;
 import javax.cache.Cache;
 import javax.cache.configuration.Factory;
 import javax.cache.expiry.EternalExpiryPolicy;
@@ -79,6 +81,7 @@ import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTran
 import org.apache.ignite.internal.processors.cache.dr.GridCacheDrManager;
 import org.apache.ignite.internal.processors.cache.jta.CacheJtaManagerAdapter;
 import org.apache.ignite.internal.processors.cache.persistence.DataRegion;
+import org.apache.ignite.internal.processors.cache.persistence.snapshot.dump.DumpEntryChangeListener;
 import org.apache.ignite.internal.processors.cache.query.GridCacheQueryManager;
 import org.apache.ignite.internal.processors.cache.query.continuous.CacheContinuousQueryManager;
 import org.apache.ignite.internal.processors.cache.store.CacheStoreManager;
@@ -86,6 +89,7 @@ import org.apache.ignite.internal.processors.cache.transactions.IgniteInternalTx
 import org.apache.ignite.internal.processors.cache.transactions.IgniteTxEntry;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteTxKey;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteTxManager;
+import org.apache.ignite.internal.processors.cache.transactions.TransactionChanges;
 import org.apache.ignite.internal.processors.cache.version.CacheVersionConflictResolver;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersionConflictContext;
@@ -114,11 +118,11 @@ import org.apache.ignite.marshaller.Marshaller;
 import org.apache.ignite.plugin.security.SecurityException;
 import org.apache.ignite.plugin.security.SecurityPermission;
 import org.jetbrains.annotations.Nullable;
+
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_DISABLE_TRIGGERING_CACHE_INTERCEPTOR_ON_CONFLICT;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_READ_LOAD_BALANCING;
 import static org.apache.ignite.cache.CacheAtomicityMode.ATOMIC;
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
-import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL_SNAPSHOT;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.PRIMARY_SYNC;
 import static org.apache.ignite.events.EventType.EVT_CACHE_REBALANCE_STARTED;
@@ -282,6 +286,9 @@ public class GridCacheContext<K, V> implements Externalizable {
 
     /** Recovery mode flag. */
     private volatile boolean recoveryMode;
+
+    /** Dump callback. */
+    private volatile DumpEntryChangeListener dumpLsnr;
 
     /** */
     private final boolean disableTriggeringCacheInterceptorOnConflict =
@@ -484,6 +491,9 @@ public class GridCacheContext<K, V> implements Externalizable {
      */
     void initConflictResolver() {
         conflictRslvr = rslvrMgr.conflictResolver();
+
+        if (conflictRslvr != null)
+            cache().metrics0().registerResolverMetrics();
     }
 
     /**
@@ -850,14 +860,7 @@ public class GridCacheContext<K, V> implements Externalizable {
     public boolean transactional() {
         CacheConfiguration cfg = config();
 
-        return cfg.getAtomicityMode() == TRANSACTIONAL || cfg.getAtomicityMode() == TRANSACTIONAL_SNAPSHOT;
-    }
-
-    /**
-     * @return {@code True} if transactional snapshot.
-     */
-    public boolean transactionalSnapshot() {
-        return config().getAtomicityMode() == TRANSACTIONAL_SNAPSHOT;
+        return cfg.getAtomicityMode() == TRANSACTIONAL;
     }
 
     /**
@@ -1645,6 +1648,13 @@ public class GridCacheContext<K, V> implements Externalizable {
         GridCacheVersionConflictContext<K, V> ctx = conflictRslvr.resolve(cacheObjCtx, oldEntry, newEntry,
             atomicVerComp);
 
+        if (ctx.isUseNew())
+            cache().metrics0().incrementResolverAcceptedCount();
+        else if (ctx.isUseOld())
+            cache().metrics0().incrementResolverRejectedCount();
+        else
+            cache().metrics0().incrementResolverMergedCount();
+
         if (ctx.isManualResolve())
             drMgr.onReceiveCacheConflictResolved(ctx.isUseNew(), ctx.isUseOld(), ctx.isMerge());
 
@@ -2115,15 +2125,7 @@ public class GridCacheContext<K, V> implements Externalizable {
      * @return {@code True} if it is possible to directly read offheap instead of using {@link GridCacheEntryEx#innerGet}.
      */
     public boolean readNoEntry(@Nullable IgniteCacheExpiryPolicy expiryPlc, boolean readers) {
-        return mvccEnabled()
-                || (!config().isOnheapCacheEnabled() && !readers && expiryPlc == null && config().getPlatformCacheConfiguration() == null);
-    }
-
-    /**
-     * @return {@code True} if mvcc is enabled for cache.
-     */
-    public boolean mvccEnabled() {
-        return grp.mvccEnabled();
+        return !config().isOnheapCacheEnabled() && !readers && expiryPlc == null && config().getPlatformCacheConfiguration() == null;
     }
 
     /**
@@ -2300,15 +2302,6 @@ public class GridCacheContext<K, V> implements Externalizable {
     }
 
     /**
-     * @param tx Transaction.
-     * @return {@code True} if it is need to notify continuous query listeners.
-     */
-    public boolean hasContinuousQueryListeners(@Nullable IgniteInternalTx tx) {
-        return grp.sharedGroup() ? grp.hasContinuousQueryCaches() :
-            contQryMgr.notifyContinuousQueries(tx) && !F.isEmpty(contQryMgr.updateListeners(false, false));
-    }
-
-    /**
      * Apply changes from {@link SchemaAddQueryEntityOperation}.
      *
      * @param op Add query entity schema operation.
@@ -2346,6 +2339,66 @@ public class GridCacheContext<K, V> implements Externalizable {
      */
     public AtomicReference<IgniteInternalFuture<Boolean>> lastRemoveAllJobFut() {
         return lastRmvAllJobFut;
+    }
+
+    /** */
+    public DumpEntryChangeListener dumpListener() {
+        return dumpLsnr;
+    }
+
+    /** */
+    public void dumpListener(DumpEntryChangeListener dumpEntryChangeLsnr) {
+        assert this.dumpLsnr == null || dumpEntryChangeLsnr == null;
+        assert cacheType == CacheType.USER;
+
+        this.dumpLsnr = dumpEntryChangeLsnr;
+    }
+
+    /**
+     * @param part Partition.
+     * @return First, set of object changed in transaction, second, list of transaction data in required format.
+     * @see ExecutionContext#transactionChanges(int, int[], Function)
+     */
+    public TransactionChanges<Object> transactionChanges(Integer part) {
+        if (!U.isTxAwareQueriesEnabled(ctx))
+            return TransactionChanges.empty();
+
+        IgniteInternalTx tx = tm().tx();
+
+        if (tx == null)
+            return TransactionChanges.empty();
+
+        IgniteTxManager.ensureTransactionModeSupported(tx.isolation());
+
+        Set<KeyCacheObject> changedKeys = new HashSet<>();
+        List<Object> newAndUpdatedRows = new ArrayList<>();
+
+        for (IgniteTxEntry e : tx.writeEntries()) {
+            if (e.cacheId() != cacheId)
+                continue;
+
+            int epart = e.key().partition();
+
+            assert epart != -1;
+
+            if (part != null && epart != part)
+                continue;
+
+            changedKeys.add(e.key());
+
+            CacheObject val = e.value();
+
+            boolean hasEntryProcessors = !F.isEmpty(e.entryProcessors());
+
+            if (hasEntryProcessors)
+                val = e.applyEntryProcessors(val);
+
+            // Mix only updated or inserted entries. In case val == null entry removed.
+            if (val != null)
+                newAndUpdatedRows.add(hasEntryProcessors ? F.t(e.key(), val) : e);
+        }
+
+        return new TransactionChanges<>(changedKeys, newAndUpdatedRows);
     }
 
     /** {@inheritDoc} */

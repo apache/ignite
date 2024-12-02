@@ -22,15 +22,16 @@ package org.apache.ignite.internal.processors.configuration.distributed;
  */
 public class DistributedDoubleProperty extends DistributedComparableProperty<Double> {
     /** {@inheritDoc} */
-    DistributedDoubleProperty(String name) {
-        super(name, Double::parseDouble);
+    DistributedDoubleProperty(String name, String desc) {
+        super(name, Double::parseDouble, desc);
     }
 
     /**
      * @param name Name of property.
+     * @param desc Description of property.
      * @return Property detached from processor.(Distributed updating are not accessable).
      */
-    public static DistributedDoubleProperty detachedDoubleProperty(String name) {
-        return new DistributedDoubleProperty(name);
+    public static DistributedDoubleProperty detachedDoubleProperty(String name, String desc) {
+        return new DistributedDoubleProperty(name, desc);
     }
 }

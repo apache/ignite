@@ -51,6 +51,8 @@
         url: installation/kubernetes/gke-deployment
   - title: VMWare
     url: installation/vmware-installation
+  - title: Version Upgrade
+    url: installation/upgrades
 - title: Setting Up
   items:
     - title: Understanding Configuration
@@ -217,8 +219,6 @@
           url: SQL/ODBC/data-types
         - title: Error Codes
           url: SQL/ODBC/error-codes
-    - title: Multiversion Concurrency Control
-      url: transactions/mvcc
     - title: SQL Statistics
       url: SQL/sql-statistics
     - title: Calcite-based SQL Engine
@@ -248,6 +248,8 @@
       url: sql-reference/system-functions
     - title: Data Types
       url: sql-reference/data-types
+    - title: Optimizer Hints
+      url: sql-reference/hints
 - title: Distributed Computing
   items:
     - title: Distributed Computing API
@@ -430,18 +432,16 @@
       url: monitoring-metrics/cluster-id
     - title: Cluster States
       url: monitoring-metrics/cluster-states
-    - title: Metrics
-      items: 
-        - title: Configuring Metrics
-          url: monitoring-metrics/configuring-metrics
-        - title: JMX Metrics
-          url: monitoring-metrics/metrics
-    - title: New Metrics System 
+    - title: Metrics System 
       items:
         - title: Introduction 
           url: monitoring-metrics/new-metrics-system
+        - title: Configuring Metrics
+          url: monitoring-metrics/configuring-metrics
         - title: Metrics
           url: monitoring-metrics/new-metrics
+        - title: Custom Metrics
+          url: monitoring-metrics/custom-metrics
     - title: System Views
       url: monitoring-metrics/system-views
     - title: Performance Statistics
@@ -458,8 +458,6 @@
   items:
     - title: Control Script
       url: tools/control-script
-    - title: Visor CMD
-      url: tools/visor-cmd
     - title: GridGain Control Center
       url: tools/gg-control-center
     - title: SQLLine
@@ -470,9 +468,13 @@
       url: tools/informatica
     - title: Pentaho
       url: tools/pentaho
+    - title: Index Reader
+      url: tools/index-reader
 - title: Security
   url: security
-  items: 
+  items:
+    - title: Security Model
+      url: security/security-model
     - title: Authentication
       url: security/authentication
     - title: SSL/TLS 

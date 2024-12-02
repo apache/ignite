@@ -27,6 +27,7 @@ namespace Apache.Ignite.Core.Tests
     using System.IO;
     using System.Linq;
     using System.Reflection;
+    using System.Text;
     using System.Threading;
     using Apache.Ignite.Core.Binary;
     using Apache.Ignite.Core.Cache.Affinity;
@@ -67,6 +68,9 @@ namespace Apache.Ignite.Core.Tests
         /** System cache name. */
         public const string UtilityCacheName = "ignite-sys-cache";
 
+        /** */
+        public const string JavaServiceName = "TestJavaService";
+        
         /** Work dir. */
         private static readonly string WorkDir =
             // ReSharper disable once AssignNullToNotNullAttribute
@@ -669,20 +673,16 @@ namespace Apache.Ignite.Core.Tests
         }
 
         /// <summary>
-        /// Deploys the Java service.
+        /// Deploys the Java service on all or specified nodes.
         /// </summary>
-        public static string DeployJavaService(IIgnite ignite)
+        public static void DeployJavaService(IIgnite ignite, IEnumerable<object> nodes = null)
         {
-            const string serviceName = "javaService";
-
             ignite.GetCompute()
-                .ExecuteJavaTask<object>("org.apache.ignite.platform.PlatformDeployServiceTask", serviceName);
+                .ExecuteJavaTask<object>("org.apache.ignite.platform.PlatformDeployServiceTask", nodes?.ToArray());
 
             var services = ignite.GetServices();
 
-            WaitForCondition(() => services.GetServiceDescriptors().Any(x => x.Name == serviceName), 1000);
-
-            return serviceName;
+            WaitForCondition(() => services.GetServiceDescriptors().Any(x => x.Name == TestUtils.JavaServiceName), 1000);
         }
 
         /// <summary>
@@ -712,11 +712,36 @@ namespace Apache.Ignite.Core.Tests
                     return;
                 }
 
-                var text = args != null
-                    ? string.Format(formatProvider ?? CultureInfo.InvariantCulture, message, args)
-                    : message;
+                var sb = new StringBuilder();
 
-                _listener.TestOutput(new TestOutput(text + Environment.NewLine, "Progress", _ctx.CurrentTest?.Id, _ctx.CurrentTest?.FullName));
+                if (args != null)
+                {
+                    sb.AppendFormat(formatProvider ?? CultureInfo.InvariantCulture, message, args);
+                }
+                else
+                {
+                    sb.Append(message);
+                }
+
+                if (nativeErrorInfo != null)
+                {
+                    sb.Append(Environment.NewLine).Append(nativeErrorInfo);
+                }
+
+                if (ex != null)
+                {
+                    sb.Append(Environment.NewLine).Append(ex);
+                }
+
+                sb.Append(Environment.NewLine);
+
+                var output = new TestOutput(
+                    text: sb.ToString(),
+                    stream: "Progress",
+                    testId: _ctx.CurrentTest?.Id,
+                    testName: _ctx.CurrentTest?.FullName);
+
+                _listener.TestOutput(output);
             }
 
             /** <inheritdoc /> */

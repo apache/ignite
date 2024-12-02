@@ -77,7 +77,6 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteFuture;
 import org.apache.ignite.lang.IgniteRunnable;
 import org.apache.ignite.lang.IgniteUuid;
-import org.apache.ignite.marshaller.MarshallerUtils;
 import org.apache.ignite.marshaller.jdk.JdkMarshaller;
 import org.apache.ignite.plugin.security.SecurityCredentials;
 import org.apache.ignite.spi.IgniteNodeValidationResult;
@@ -162,7 +161,7 @@ public class ZookeeperDiscoveryImpl {
     private final int sesTimeout;
 
     /** */
-    private final JdkMarshaller marsh = new JdkMarshaller();
+    private final JdkMarshaller marsh;
 
     /** */
     private final ZkIgnitePaths zkPaths;
@@ -231,6 +230,7 @@ public class ZookeeperDiscoveryImpl {
      * @param exchange Discovery data exchange.
      * @param internalLsnr Internal listener (used for testing only).
      * @param stats Zookeeper DiscoverySpi statistics collector.
+     * @param marsh Marshaller.
      */
     public ZookeeperDiscoveryImpl(
         ZookeeperDiscoverySpi spi,
@@ -241,10 +241,10 @@ public class ZookeeperDiscoveryImpl {
         DiscoverySpiListener lsnr,
         DiscoverySpiDataExchange exchange,
         IgniteDiscoverySpiInternalListener internalLsnr,
-        ZookeeperDiscoveryStatistics stats) {
+        ZookeeperDiscoveryStatistics stats,
+        JdkMarshaller marsh
+    ) {
         assert locNode.id() != null && locNode.isLocal() : locNode;
-
-        MarshallerUtils.setNodeName(marsh, igniteInstanceName);
 
         zkPaths = new ZkIgnitePaths(zkRootPath);
 
@@ -257,6 +257,7 @@ public class ZookeeperDiscoveryImpl {
         this.lsnr = lsnr;
         this.exchange = exchange;
         this.clientReconnectEnabled = locNode.isClient() && !spi.isClientReconnectDisabled();
+        this.marsh = marsh;
 
         int evtsAckThreshold = IgniteSystemProperties.getInteger(IGNITE_ZOOKEEPER_DISCOVERY_SPI_ACK_THRESHOLD,
             DFLT_ZOOKEEPER_DISCOVERY_SPI_ACK_THRESHOLD);
@@ -513,7 +514,7 @@ public class ZookeeperDiscoveryImpl {
                     rtState.evtsData.topVer,
                     locNode,
                     rtState.top.topologySnapshot(),
-                    Collections.emptyMap(),
+                    Collections.emptyNavigableMap(),
                     null,
                     null
                 )
@@ -586,7 +587,7 @@ public class ZookeeperDiscoveryImpl {
                 rtState.evtsData != null ? rtState.evtsData.topVer : 1L,
                 locNode,
                 nodes,
-                Collections.emptyMap(),
+                Collections.emptyNavigableMap(),
                 null,
                 null
             )
@@ -2367,7 +2368,7 @@ public class ZookeeperDiscoveryImpl {
                     1L,
                     locNode,
                     topSnapshot,
-                    Collections.emptyMap(),
+                    Collections.emptyNavigableMap(),
                     null,
                     null
                 )
@@ -2588,7 +2589,7 @@ public class ZookeeperDiscoveryImpl {
         if (log.isDebugEnabled())
             log.debug("Generated CUSTOM event [evt=" + evtData + ", msg=" + msg + ']');
 
-        boolean fastStopProcess = false;
+        boolean fastStopProc = false;
 
         if (msg instanceof ZkInternalMessage)
             processInternalMessage(evtData, (ZkInternalMessage)msg);
@@ -2599,7 +2600,7 @@ public class ZookeeperDiscoveryImpl {
                 if (log.isDebugEnabled())
                     log.debug("Fast stop process custom event [evt=" + evtData + ", msg=" + msg + ']');
 
-                fastStopProcess = true;
+                fastStopProc = true;
 
                 // No need to process this event on others nodes, skip this event.
                 evtsData.evts.remove(evtData.eventId());
@@ -2628,7 +2629,7 @@ public class ZookeeperDiscoveryImpl {
 
             saveAndProcessNewEvents();
 
-            if (fastStopProcess)
+            if (fastStopProc)
                 deleteCustomEventDataAsync(zkClient, evtPath);
 
             if (failedNode != null) {
@@ -3075,7 +3076,7 @@ public class ZookeeperDiscoveryImpl {
                     joinedEvtData.topVer,
                     locNode,
                     topSnapshot,
-                    Collections.emptyMap(),
+                    Collections.emptyNavigableMap(),
                     null,
                     null
                 )
@@ -3088,7 +3089,7 @@ public class ZookeeperDiscoveryImpl {
                         joinedEvtData.topVer,
                         locNode,
                         topSnapshot,
-                        Collections.emptyMap(),
+                        Collections.emptyNavigableMap(),
                         null,
                         null
                     )
@@ -3356,9 +3357,9 @@ public class ZookeeperDiscoveryImpl {
 
         String futPath = zkPaths.distributedFutureBasePath(futId);
 
-        List<ClusterNode> initialNodes = rtState.commErrProcNodes;
+        List<ClusterNode> initNodes = rtState.commErrProcNodes;
 
-        assert initialNodes != null;
+        assert initNodes != null;
 
         rtState.commErrProcNodes = null;
 
@@ -3396,7 +3397,7 @@ public class ZookeeperDiscoveryImpl {
             boolean fullyConnected = true;
 
             for (Map.Entry<UUID, BitSet> e : nodesRes.entrySet()) {
-                if (!checkFullyConnected(e.getValue(), initialNodes, rtState.top)) {
+                if (!checkFullyConnected(e.getValue(), initNodes, rtState.top)) {
                     fullyConnected = false;
 
                     break;
@@ -3421,7 +3422,7 @@ public class ZookeeperDiscoveryImpl {
                     ZkCommunicationFailureContext ctx = new ZkCommunicationFailureContext(
                         ((IgniteKernal)spi.ignite()).context().cache().context(),
                         topSnapshot,
-                        initialNodes,
+                        initNodes,
                         nodesRes);
 
                     try {
@@ -3547,7 +3548,7 @@ public class ZookeeperDiscoveryImpl {
                 evtData.topologyVersion(),
                 sndNode,
                 topSnapshot,
-                Collections.emptyMap(),
+                Collections.emptyNavigableMap(),
                 msg,
                 null
             )
@@ -3577,7 +3578,7 @@ public class ZookeeperDiscoveryImpl {
                 joinedEvtData.topVer,
                 joinedNode,
                 topSnapshot,
-                Collections.emptyMap(),
+                Collections.emptyNavigableMap(),
                 null,
                 null
             )
@@ -3627,7 +3628,7 @@ public class ZookeeperDiscoveryImpl {
                 topVer,
                 leftNode,
                 topSnapshot,
-                Collections.emptyMap(),
+                Collections.emptyNavigableMap(),
                 null,
                 null
             )

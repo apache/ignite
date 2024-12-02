@@ -32,7 +32,6 @@ import java.util.UUID;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
-import javax.cache.CacheException;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.cache.CacheAtomicityMode;
@@ -56,7 +55,6 @@ import org.apache.ignite.internal.processors.query.GridQueryCancel;
 import org.apache.ignite.internal.processors.query.GridQueryProcessor;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiPredicate;
-import org.apache.ignite.testframework.MvccFeatureChecker;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.transactions.Transaction;
 import org.jetbrains.annotations.Nullable;
@@ -169,18 +167,9 @@ public class QueryDataPageScanTest extends GridCommonAbstractTest {
      */
     @Test
     @Ignore("https://issues.apache.org/jira/browse/IGNITE-11998")
-    public void testConcurrentUpdatesWithMvcc() throws Exception {
-        doTestConcurrentUpdates(true);
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
-    @Test
-    @Ignore("https://issues.apache.org/jira/browse/IGNITE-11998")
-    public void testConcurrentUpdatesNoMvcc() throws Exception {
+    public void testConcurrentUpdates() throws Exception {
         try {
-            doTestConcurrentUpdates(false);
+            doTestConcurrentUpdates();
 
             throw new IllegalStateException("Expected to detect data inconsistency.");
         }
@@ -190,7 +179,7 @@ public class QueryDataPageScanTest extends GridCommonAbstractTest {
     }
 
     /** */
-    private void doTestConcurrentUpdates(boolean enableMvcc) throws Exception {
+    private void doTestConcurrentUpdates() throws Exception {
         final String cacheName = "test_updates";
 
         IgniteEx server = startGrid(0);
@@ -198,19 +187,17 @@ public class QueryDataPageScanTest extends GridCommonAbstractTest {
 
         CacheConfiguration<Long, Long> ccfg = new CacheConfiguration<>(cacheName);
         ccfg.setIndexedTypes(Long.class, Long.class);
-        ccfg.setAtomicityMode(enableMvcc ?
-            CacheAtomicityMode.TRANSACTIONAL_SNAPSHOT :
-            CacheAtomicityMode.TRANSACTIONAL);
+        ccfg.setAtomicityMode(CacheAtomicityMode.TRANSACTIONAL);
 
         IgniteCache<Long, Long> cache = server.createCache(ccfg);
 
         long accounts = 100;
-        long initialBalance = 100;
+        long initBalance = 100;
 
         for (long i = 0; i < accounts; i++)
-            cache.put(i, initialBalance);
+            cache.put(i, initBalance);
 
-        assertEquals(accounts * initialBalance, ((Number)
+        assertEquals(accounts * initBalance, ((Number)
             cache.query(new SqlFieldsQuery("select sum(_val) from Long use index()")
                 ).getAll().get(0).get(0)).longValue());
         assertTrue(CacheDataTree.isLastFindWithDataPageScan());
@@ -227,7 +214,6 @@ public class QueryDataPageScanTest extends GridCommonAbstractTest {
                 if (accountId1 == accountId2)
                     continue;
 
-                // Sort to avoid MVCC deadlock.
                 if (accountId1 > accountId2) {
                     long tmp = accountId1;
                     accountId1 = accountId2;
@@ -267,29 +253,20 @@ public class QueryDataPageScanTest extends GridCommonAbstractTest {
 
                     tx.commit();
                 }
-                catch (CacheException e) {
-                    MvccFeatureChecker.assertMvccWriteConflict(e);
-
-                    if (!e.getMessage().contains(
-                        "Cannot serialize transaction due to write conflict (transaction is marked for rollback)"))
-                        throw new IllegalStateException(e);
-//                    else
-//                        U.warn(log, "Failed to commit TX, will ignore!");
-                }
             }
         }, 16, "updater");
 
         IgniteInternalFuture<?> qryFut = multithreadedAsync(() -> {
             while (!cancel.get() && !Thread.interrupted()) {
-                assertEquals("wrong sum!", accounts * initialBalance, ((Number)
+                assertEquals("wrong sum!", accounts * initBalance, ((Number)
                     cache.query(new SqlFieldsQuery("select sum(_val) from Long use index()")
                         ).getAll().get(0).get(0)).longValue());
 //                info("query ok!");
             }
         }, 2, "query");
 
-        qryFut.listen((f) -> cancel.set(true));
-        updFut.listen((f) -> cancel.set(true));
+        qryFut.listen(() -> cancel.set(true));
+        updFut.listen(() -> cancel.set(true));
 
         long start = U.currentTimeMillis();
 

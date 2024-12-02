@@ -21,13 +21,14 @@ import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.internal.management.cache.PartitionKeyV2;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.verify.PartitionHashRecordV2;
-import org.apache.ignite.internal.processors.cache.verify.PartitionKeyV2;
-import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.S;
+import org.apache.ignite.internal.util.typedef.internal.U;
 
 /**
  * Quick partitions verifier. Warns if partiton counters or size are different among the nodes what can be caused by
@@ -70,22 +71,28 @@ public class SnapshotPartitionsQuickVerifyHandler extends SnapshotPartitionsVeri
         String name,
         Collection<SnapshotHandlerResult<Map<PartitionKeyV2, PartitionHashRecordV2>>> results
     ) throws IgniteCheckedException {
-        if (results.stream().anyMatch(r -> r.data() == null))
+        Exception err = results.stream().map(SnapshotHandlerResult::error).filter(Objects::nonNull).findAny().orElse(null);
+
+        if (err != null)
+            throw U.cast(err);
+
+        // Null means that the streamer was already detected (See #invoke).
+        if (results.stream().anyMatch(res -> res.data() == null))
             return;
 
         Set<Integer> wrnGrps = new HashSet<>();
-
         Map<PartitionKeyV2, PartitionHashRecordV2> total = new HashMap<>();
 
-        F.viewReadOnly(results, SnapshotHandlerResult::data).forEach(m -> m.forEach((part, val) -> {
-            PartitionHashRecordV2 other = total.putIfAbsent(part, val);
+        for (SnapshotHandlerResult<Map<PartitionKeyV2, PartitionHashRecordV2>> result : results) {
+            result.data().forEach((part, val) -> {
+                PartitionHashRecordV2 other = total.putIfAbsent(part, val);
 
-            if (other == null)
-                return;
-
-            if (val.size() != other.size() || !val.updateCounter().equals(other.updateCounter()))
-                wrnGrps.add(part.groupId());
-        }));
+                if ((other != null && !wrnGrps.contains(part.groupId()))
+                    && ((!val.hasExpiringEntries() && !other.hasExpiringEntries() && val.size() != other.size())
+                        || !Objects.equals(val.updateCounter(), other.updateCounter())))
+                    wrnGrps.add(part.groupId());
+            });
+        }
 
         if (!wrnGrps.isEmpty()) {
             throw new SnapshotWarningException("Cache partitions differ for cache groups " +

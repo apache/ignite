@@ -56,7 +56,6 @@ import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.metastorage.DistributedMetaStorage;
 import org.apache.ignite.internal.processors.metastorage.DistributedMetastorageLifecycleListener;
 import org.apache.ignite.internal.processors.metastorage.ReadableDistributedMetaStorage;
-import org.apache.ignite.internal.processors.metric.MetricRegistry;
 import org.apache.ignite.internal.processors.subscription.GridInternalSubscriptionProcessor;
 import org.apache.ignite.internal.processors.timeout.GridTimeoutObject;
 import org.apache.ignite.internal.util.GridTimerTask;
@@ -74,6 +73,7 @@ import org.apache.ignite.lang.IgniteClosure;
 import org.apache.ignite.lang.IgniteFuture;
 import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.marshaller.jdk.JdkMarshaller;
+import org.apache.ignite.metric.MetricRegistry;
 import org.apache.ignite.mxbean.IgniteClusterMXBean;
 import org.apache.ignite.spi.discovery.DiscoveryDataBag;
 import org.apache.ignite.spi.discovery.DiscoveryDataBag.GridDiscoveryData;
@@ -157,7 +157,7 @@ public class ClusterProcessor extends GridProcessorAdapter implements Distribute
     private final Map<UUID, byte[]> allNodesMetrics = new ConcurrentHashMap<>();
 
     /** */
-    private final JdkMarshaller marsh = new JdkMarshaller();
+    private final JdkMarshaller marsh;
 
     /** */
     private DiscoveryMetricsProvider metricsProvider;
@@ -186,8 +186,8 @@ public class ClusterProcessor extends GridProcessorAdapter implements Distribute
         notifyEnabled.set(IgniteSystemProperties.getBoolean(IGNITE_UPDATE_NOTIFIER, DFLT_UPDATE_NOTIFIER));
 
         cluster = new IgniteClusterImpl(ctx);
-
         sndMetrics = !(ctx.config().getDiscoverySpi() instanceof TcpDiscoverySpi);
+        marsh = ctx.marshallerContext().jdkMarshaller();
     }
 
     /**
@@ -305,10 +305,10 @@ public class ClusterProcessor extends GridProcessorAdapter implements Distribute
                 "Please try again later.");
 
         if (!metastorage.compareAndSet(CLUSTER_ID_TAG_KEY, oldTag, new ClusterIdAndTag(oldTag.id(), newTag))) {
-            ClusterIdAndTag concurrentValue = metastorage.read(CLUSTER_ID_TAG_KEY);
+            ClusterIdAndTag concurrentVal = metastorage.read(CLUSTER_ID_TAG_KEY);
 
             throw new IgniteCheckedException("Cluster tag has been concurrently updated to different value: " +
-                concurrentValue.tag());
+                concurrentVal.tag());
         }
         else
             cluster.setTag(newTag);

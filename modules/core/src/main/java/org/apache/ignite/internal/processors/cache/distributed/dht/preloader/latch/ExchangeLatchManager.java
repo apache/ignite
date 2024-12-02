@@ -595,7 +595,7 @@ public class ExchangeLatchManager {
             permits = new AtomicInteger(participants.size());
 
             // Send final acks when latch is completed.
-            complete.listen(f -> {
+            complete.listen(() -> {
                 for (ClusterNode node : participants)
                     sendAck(node.id(), latchId(), true);
             });

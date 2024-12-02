@@ -170,9 +170,9 @@ public class KubernetesServiceAddressResolver {
     private Collection<InetAddress> parseAddresses(List<Address> addresses) {
         Collection<InetAddress> addrs = new ArrayList<>();
         if (addresses != null && !addresses.isEmpty()) {
-            for (Address address : addresses) {
+            for (Address addr : addresses) {
                 try {
-                    addrs.add(InetAddress.getByName(address.ip));
+                    addrs.add(InetAddress.getByName(addr.ip));
                 }
                 catch (UnknownHostException ignore) {
                     throw new IgniteException("Kubernetes Address is not valid IP address");

@@ -50,6 +50,7 @@ import org.apache.ignite.internal.processors.cache.query.SqlFieldsQueryEx;
 import org.apache.ignite.internal.processors.query.h2.IgniteH2Indexing;
 import org.apache.ignite.internal.processors.query.h2.twostep.GridMapQueryExecutor;
 import org.apache.ignite.internal.processors.query.h2.twostep.GridReduceQueryExecutor;
+import org.apache.ignite.internal.processors.query.running.GridRunningQueryInfo;
 import org.apache.ignite.internal.util.lang.GridAbsPredicate;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.lang.IgnitePredicate;
@@ -386,8 +387,8 @@ public class IgniteSqlSkipReducerOnUpdateDmlSelfTest extends AbstractIndexingCom
                 if (qCol.isEmpty())
                     return false;
 
-                for (GridRunningQueryInfo queryInfo : qCol)
-                    queryInfo.cancel();
+                for (GridRunningQueryInfo qryInfo : qCol)
+                    qryInfo.cancel();
 
                 return true;
             }

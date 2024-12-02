@@ -41,7 +41,6 @@ import org.junit.Test;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.ATOMIC;
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
-import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL_SNAPSHOT;
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
 import static org.apache.ignite.cache.CacheMode.REPLICATED;
 import static org.apache.ignite.transactions.TransactionConcurrency.OPTIMISTIC;
@@ -117,48 +116,6 @@ public class GridCacheStopSelfTest extends GridCommonAbstractTest {
     @Test
     public void testStopImplicitTransactionsReplicated() throws Exception {
         atomicityMode = TRANSACTIONAL;
-        replicated = true;
-
-        testStop(false);
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
-    @Test
-    public void testStopExplicitMvccTransactions() throws Exception {
-        atomicityMode = TRANSACTIONAL_SNAPSHOT;
-
-        testStop(true);
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
-    @Test
-    public void testStopImplicitMvccTransactions() throws Exception {
-        atomicityMode = TRANSACTIONAL_SNAPSHOT;
-
-        testStop(false);
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
-    @Test
-    public void testStopExplicitMvccTransactionsReplicated() throws Exception {
-        atomicityMode = TRANSACTIONAL_SNAPSHOT;
-        replicated = true;
-
-        testStop(true);
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
-    @Test
-    public void testStopImplicitMvccTransactionsReplicated() throws Exception {
-        atomicityMode = TRANSACTIONAL_SNAPSHOT;
         replicated = true;
 
         testStop(false);
@@ -269,12 +226,10 @@ public class GridCacheStopSelfTest extends GridCommonAbstractTest {
 
         cache.get(key);
 
-        if (cache.getConfiguration(CacheConfiguration.class).getAtomicityMode() != TRANSACTIONAL_SNAPSHOT) {
-            try (Transaction tx = node.transactions().txStart(OPTIMISTIC, REPEATABLE_READ)) {
-                cache.put(key, key);
+        try (Transaction tx = node.transactions().txStart(OPTIMISTIC, REPEATABLE_READ)) {
+            cache.put(key, key);
 
-                tx.commit();
-            }
+            tx.commit();
         }
 
         try (Transaction tx = node.transactions().txStart(PESSIMISTIC, REPEATABLE_READ)) {
@@ -316,8 +271,7 @@ public class GridCacheStopSelfTest extends GridCommonAbstractTest {
                     @Override public Void call() throws Exception {
                         try {
                             if (startTx) {
-                                TransactionConcurrency concurrency =
-                                    atomicityMode != TRANSACTIONAL_SNAPSHOT && (key % 2 == 0) ? OPTIMISTIC : PESSIMISTIC;
+                                TransactionConcurrency concurrency = (key % 2 == 0) ? OPTIMISTIC : PESSIMISTIC;
 
                                 try (Transaction tx = grid(0).transactions().txStart(concurrency, REPEATABLE_READ)) {
                                     cache.put(key, key);

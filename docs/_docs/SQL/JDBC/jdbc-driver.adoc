@@ -102,12 +102,6 @@ See the link:security/authentication[Authentication] and link:sql-reference/ddl#
    on each node participating in the query.
 |`false`
 
-|`replicatedOnly`
-
-|Whether the query contains only replicated tables. This is a hint for potentially more effective execution.
-
-|`false`
-
 |`autoCloseServerCursor`
 |Whether to close server-side cursors automatically when the last piece of a result set is retrieved. When this property is enabled, calling `ResultSet.close()` does not require a network call, which could improve performance. However, if the server-side cursor is already closed, you may get an exception when trying to call `ResultSet.getMetadata()`. This is why it defaults to `false`.
 |`false`
@@ -136,12 +130,6 @@ See the link:security/authentication[Authentication] and link:sql-reference/ddl#
 | Whether to use `TCP_NODELAY` option.
 |`true`
 
-|`lazy`
-|Lazy query execution.
-By default, Ignite attempts to get and load the whole query result set into memory and then send it to the client. For small and medium result sets, this provides optimal performance and minimizes the duration of internal database locks, thus increasing concurrency.
-However, if the result set is too big to fit in the available memory, then it can lead to excessive GC pauses and even 'OutOfMemoryError's. Use this flag to tell Ignite to fetch the result set lazily, thus minimizing memory consumption at the cost of a moderate performance hit.
-|`false`
-
 |`skipReducerOnUpdate`
 |Enables server side updates.
 When Ignite executes a DML operation, it fetches all the affected intermediate rows and sends them to the query initiator (also known as reducer) for analysis. Then it prepares batches of updated values to be sent to remote nodes.
@@ -149,6 +137,14 @@ This approach might impact performance and it can saturate the network if a DML 
 Use this flag to tell Ignite to perform all intermediate row analysis and updates "in-place" on corresponding remote data nodes.
 Defaults to `false`, meaning that the intermediate results are fetched to the query initiator first.
 |`false`
+
+|`queryTimeout`
+|Sets the number of seconds the driver will wait for a Statement object to execute. Zero means there is no limits.
+|`0`
+
+|`connectionTimeout`
+|Sets the number of milliseconds JDBC client will waits for server to response. Zero means there is no limits.
+|'0'
 
 
 |=======================================================================
@@ -622,7 +618,7 @@ The table below lists all the link:https://en.wikipedia.org/wiki/SQLSTATE[ANSI S
 
 |0A000|Requested operation is not supported.
 
-|40001|Concurrent update conflict. See link:transactions/mvcc#concurrent-updates[Concurrent Updates].
+|40001|Concurrent update conflict.
 
 |42000|Query parsing exception.
 

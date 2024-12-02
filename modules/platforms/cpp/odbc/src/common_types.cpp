@@ -157,12 +157,6 @@ namespace ignite
                 case ResponseStatus::COLUMN_ALREADY_EXISTS:
                     return SqlState::S42S21_COLUMN_ALREADY_EXISTS;
 
-                case ResponseStatus::TRANSACTION_COMPLETED:
-                    return SqlState::S25000_INVALID_TRANSACTION_STATE;
-
-                case ResponseStatus::TRANSACTION_SERIALIZATION_ERROR:
-                    return SqlState::S40001_SERIALIZATION_FAILURE;
-
                 case ResponseStatus::CACHE_NOT_FOUND:
                 case ResponseStatus::NULL_TABLE_DESCRIPTOR:
                 case ResponseStatus::CONVERSION_FAILED:

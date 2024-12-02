@@ -21,6 +21,7 @@ import java.util.BitSet;
 import java.util.UUID;
 import org.apache.ignite.internal.direct.stream.v2.DirectByteBufferStreamImplV2;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
+import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.plugin.extensions.communication.MessageCollectionItemType;
@@ -294,5 +295,10 @@ public class DirectByteBufferStreamImplV3 extends DirectByteBufferStreamImplV2 {
             default:
                 throw new IllegalArgumentException("Unknown type: " + type);
         }
+    }
+
+    /** {@inheritDoc} */
+    @Override public String toString() {
+        return S.toString(DirectByteBufferStreamImplV3.class, this);
     }
 }

@@ -21,7 +21,6 @@ import org.apache.ignite.jdbc.thin.JdbcThinAbstractSelfTest;
 import org.apache.ignite.jdbc.thin.JdbcThinConnectionSelfTest;
 import org.apache.ignite.jdbc.thin.JdbcThinPartitionAwarenessReconnectionAndFailoverSelfTest;
 import org.apache.ignite.jdbc.thin.JdbcThinPartitionAwarenessSelfTest;
-import org.apache.ignite.jdbc.thin.JdbcThinPartitionAwarenessTransactionsSelfTest;
 import org.apache.ignite.jdbc.thin.JdbcThinStatementSelfTest;
 import org.apache.ignite.jdbc.thin.JdbcThinTcpIoTest;
 import org.apache.ignite.testframework.GridTestUtils;
@@ -38,7 +37,6 @@ import org.junit.runners.Suite;
     JdbcThinTcpIoTest.class,
     JdbcThinStatementSelfTest.class,
     JdbcThinPartitionAwarenessSelfTest.class,
-    JdbcThinPartitionAwarenessTransactionsSelfTest.class,
     JdbcThinPartitionAwarenessReconnectionAndFailoverSelfTest.class,
 })
 public class IgniteJdbcThinDriverPartitionAwarenessTestSuite {

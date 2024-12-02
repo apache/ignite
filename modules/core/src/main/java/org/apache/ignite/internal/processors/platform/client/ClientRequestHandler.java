@@ -20,8 +20,11 @@ package org.apache.ignite.internal.processors.platform.client;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteIllegalStateException;
 import org.apache.ignite.IgniteLogger;
+import org.apache.ignite.internal.IgniteFutureTimeoutCheckedException;
+import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.binary.BinaryWriterExImpl;
 import org.apache.ignite.internal.processors.cache.query.IgniteQueryErrorCode;
+import org.apache.ignite.internal.processors.odbc.ClientAsyncResponse;
 import org.apache.ignite.internal.processors.odbc.ClientListenerProtocolVersion;
 import org.apache.ignite.internal.processors.odbc.ClientListenerRequest;
 import org.apache.ignite.internal.processors.odbc.ClientListenerRequestHandler;
@@ -43,11 +46,14 @@ import static org.apache.ignite.internal.processors.platform.client.ClientProtoc
  * Thin client request handler.
  */
 public class ClientRequestHandler implements ClientListenerRequestHandler {
+    /** Timeout to wait for async requests completion, to handle them as regular sync requests. */
+    private static final long ASYNC_REQUEST_WAIT_TIMEOUT_MILLIS = 10L;
+
     /** Client context. */
     private final ClientConnectionContext ctx;
 
     /** Protocol context. */
-    private ClientProtocolContext protocolCtx;
+    private final ClientProtocolContext protocolCtx;
 
     /** Logger. */
     private final IgniteLogger log;
@@ -81,7 +87,7 @@ public class ClientRequestHandler implements ClientListenerRequestHandler {
                         try {
                             txCtx.acquire(true);
 
-                            return ((ClientRequest)req).process(ctx);
+                            return handle0(req);
                         }
                         catch (IgniteCheckedException e) {
                             throw new IgniteClientException(ClientStatus.FAILED, e.getMessage(), e);
@@ -98,7 +104,7 @@ public class ClientRequestHandler implements ClientListenerRequestHandler {
                 }
             }
 
-            return ((ClientRequest)req).process(ctx);
+            return handle0(req);
         }
         catch (SecurityException ex) {
             throw new IgniteClientException(
@@ -107,6 +113,29 @@ public class ClientRequestHandler implements ClientListenerRequestHandler {
                 ex
             );
         }
+    }
+
+    /** */
+    private ClientListenerResponse handle0(ClientListenerRequest req) {
+        ClientRequest req0 = (ClientRequest)req;
+
+        if (req0.isAsync(ctx)) {
+            IgniteInternalFuture<ClientResponse> fut = req0.processAsync(ctx);
+
+            try {
+                // Give request a chance to be executed and response processed by the current thread,
+                // so we can avoid any performance drops caused by async requests execution.
+                return fut.get(ASYNC_REQUEST_WAIT_TIMEOUT_MILLIS);
+            }
+            catch (IgniteFutureTimeoutCheckedException ignored) {
+                return new ClientAsyncResponse(req0.requestId(), fut);
+            }
+            catch (IgniteCheckedException e) {
+                throw new IgniteClientException(ClientStatus.FAILED, e.getMessage(), e);
+            }
+        }
+        else
+            return req0.process(ctx);
     }
 
     /** {@inheritDoc} */
@@ -125,7 +154,7 @@ public class ClientRequestHandler implements ClientListenerRequestHandler {
             msg = sqlState + ": " + msg;
         }
 
-        if (ctx.kernalContext().sqlListener().sendServerExceptionStackTraceToClient())
+        if (ctx.kernalContext().clientListener().sendServerExceptionStackTraceToClient())
             msg = msg + U.nl() + X.getFullStackTrace(e);
 
         return new ClientResponse(req.requestId(), status, msg);

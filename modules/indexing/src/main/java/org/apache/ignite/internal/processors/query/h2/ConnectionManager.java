@@ -17,11 +17,14 @@
 
 package org.apache.ignite.internal.processors.query.h2;
 
+import java.lang.reflect.Field;
+import java.lang.reflect.Modifier;
 import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.Collections;
+import java.util.HashSet;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import org.apache.ignite.IgniteCheckedException;
@@ -35,6 +38,7 @@ import org.apache.ignite.internal.processors.timeout.GridTimeoutProcessor;
 import org.apache.ignite.internal.util.GridBusyLock;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.h2.api.JavaObjectSerializer;
+import org.h2.engine.ConnectionInfo;
 import org.h2.engine.Database;
 import org.h2.jdbc.JdbcConnection;
 import org.h2.store.DataHandler;
@@ -76,6 +80,9 @@ public class ConnectionManager {
         // H2 DbSettings.
         System.setProperty("h2.optimizeTwoEquals", "false"); // Makes splitter fail on subqueries in WHERE.
         System.setProperty("h2.dropRestrict", "false"); // Drop schema with cascade semantics.
+
+        // Forbid vulnerable settings.
+        forbidH2DbSettings("INIT");
     }
 
     /** The period of clean up the statement cache. */
@@ -350,5 +357,35 @@ public class ConnectionManager {
     void setH2Serializer(JavaObjectSerializer serializer) {
         if (dataNhd != null && dataNhd instanceof Database)
             DB_JOBJ_SERIALIZER.set((Database)dataNhd, serializer);
+    }
+
+    /**
+     * Forbids specified settings from KNOWN_SETTINGS for security reasons.
+     *
+     * @param settings Settings to forbid.
+     */
+    private static void forbidH2DbSettings(String... settings) {
+        try {
+            Field knownSettingsField = ConnectionInfo.class.getDeclaredField("KNOWN_SETTINGS");
+            Field modifiers = Field.class.getDeclaredField("modifiers");
+
+            modifiers.setAccessible(true);
+            modifiers.setInt(knownSettingsField, knownSettingsField.getModifiers() & ~Modifier.FINAL);
+
+            knownSettingsField.setAccessible(true);
+
+            HashSet<String> knownSettings = (HashSet<String>)knownSettingsField.get(null);
+
+            for (String s: settings)
+                knownSettings.remove(s);
+
+            modifiers.setInt(knownSettingsField, knownSettingsField.getModifiers() & Modifier.FINAL);
+            modifiers.setAccessible(false);
+
+            knownSettingsField.setAccessible(false);
+        }
+        catch (Exception e) {
+            // No-op.
+        }
     }
 }

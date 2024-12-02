@@ -19,26 +19,20 @@ package org.apache.ignite.internal.processors.query.h2.dml;
 
 import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.binary.BinaryObject;
 import org.apache.ignite.binary.BinaryObjectBuilder;
-import org.apache.ignite.cache.query.QueryCursor;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.query.IgniteQueryErrorCode;
-import org.apache.ignite.internal.processors.query.EnlistOperation;
 import org.apache.ignite.internal.processors.query.GridQueryProperty;
 import org.apache.ignite.internal.processors.query.GridQueryRowDescriptor;
 import org.apache.ignite.internal.processors.query.GridQueryTypeDescriptor;
 import org.apache.ignite.internal.processors.query.IgniteSQLException;
 import org.apache.ignite.internal.processors.query.QueryUtils;
-import org.apache.ignite.internal.processors.query.UpdateSourceIterator;
-import org.apache.ignite.internal.processors.query.h2.ConnectionManager;
 import org.apache.ignite.internal.processors.query.h2.UpdateResult;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2Table;
-import org.apache.ignite.internal.util.GridCloseableIteratorAdapterEx;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.T3;
 import org.apache.ignite.lang.IgniteBiTuple;
@@ -376,13 +370,6 @@ public final class UpdatePlan {
     }
 
     /**
-     * @return {@code True} if DML can be fast processed.
-     */
-    public boolean fastResult() {
-        return fastUpdate != null;
-    }
-
-    /**
      * Process fast DML operation if possible.
      *
      * @param args QUery arguments.
@@ -497,48 +484,6 @@ public final class UpdatePlan {
     }
 
     /**
-     * Create iterator for transaction.
-     *
-     * @param connMgr Connection manager.
-     * @param cur Cursor.
-     * @return Iterator.
-     */
-    public UpdateSourceIterator<?> iteratorForTransaction(ConnectionManager connMgr, QueryCursor<List<?>> cur) {
-        switch (mode) {
-            case MERGE:
-                return new InsertIterator(cur, this, EnlistOperation.UPSERT);
-            case INSERT:
-                return new InsertIterator(cur, this, EnlistOperation.INSERT);
-            case UPDATE:
-                return new UpdateIterator(cur, this, EnlistOperation.UPDATE);
-            case DELETE:
-                return new DeleteIterator( cur, this, EnlistOperation.DELETE);
-
-            default:
-                throw new IllegalArgumentException(String.valueOf(mode));
-        }
-    }
-
-    /**
-     * @param updMode Update plan mode.
-     * @return Operation.
-     */
-    public static EnlistOperation enlistOperation(UpdateMode updMode) {
-        switch (updMode) {
-            case INSERT:
-                return EnlistOperation.INSERT;
-            case MERGE:
-                return EnlistOperation.UPSERT;
-            case UPDATE:
-                return EnlistOperation.UPDATE;
-            case DELETE:
-                return EnlistOperation.DELETE;
-            default:
-                throw new IllegalArgumentException(String.valueOf(updMode));
-        }
-    }
-
-    /**
      * @return Update mode.
      */
     public UpdateMode mode() {
@@ -581,165 +526,9 @@ public final class UpdatePlan {
     }
 
     /**
-     * @param args Query parameters.
-     * @return Iterator.
-     * @throws IgniteCheckedException If failed.
-     */
-    public IgniteBiTuple getFastRow(Object[] args) throws IgniteCheckedException {
-        if (fastUpdate != null)
-            return fastUpdate.getRow(args);
-
-        return null;
-    }
-
-    /**
-     * @param row Row.
-     * @return Resulting entry.
-     * @throws IgniteCheckedException If failed.
-     */
-    public Object processRowForTx(List<?> row) throws IgniteCheckedException {
-        switch (mode()) {
-            case INSERT:
-            case MERGE:
-                return processRow(row);
-
-            case UPDATE: {
-                T3<Object, Object, Object> row0 = processRowForUpdate(row);
-
-                return new IgniteBiTuple<>(row0.get1(), row0.get3());
-            }
-            case DELETE:
-                return row.get(0);
-
-            default:
-                throw new UnsupportedOperationException(String.valueOf(mode()));
-        }
-    }
-
-    /**
      * @return {@code true} is the SELECT query may be executed in lazy mode.
      */
     public boolean canSelectBeLazy() {
         return canSelectBeLazy;
-    }
-
-    /**
-     * Abstract iterator.
-     */
-    private abstract static class AbstractIterator extends GridCloseableIteratorAdapterEx<Object>
-        implements UpdateSourceIterator<Object> {
-        /** */
-        private final QueryCursor<List<?>> cur;
-
-        /** */
-        protected final UpdatePlan plan;
-
-        /** */
-        private final Iterator<List<?>> it;
-
-        /** */
-        private final EnlistOperation op;
-
-        /**
-         * @param cur Query cursor.
-         * @param plan Update plan.
-         * @param op Operation.
-         */
-        private AbstractIterator(QueryCursor<List<?>> cur, UpdatePlan plan,
-            EnlistOperation op) {
-            this.cur = cur;
-            this.plan = plan;
-            this.op = op;
-
-            it = cur.iterator();
-        }
-
-        /** {@inheritDoc} */
-        @Override public EnlistOperation operation() {
-            return op;
-        }
-
-        /** {@inheritDoc} */
-        @Override protected void onClose() {
-            cur.close();
-        }
-
-        /** {@inheritDoc} */
-        @Override protected Object onNext() throws IgniteCheckedException {
-            return process(it.next());
-        }
-
-        /** {@inheritDoc} */
-        @Override protected boolean onHasNext() throws IgniteCheckedException {
-            return it.hasNext();
-        }
-
-        /** */
-        protected abstract Object process(List<?> row) throws IgniteCheckedException;
-    }
-
-    /** */
-    private static final class UpdateIterator extends AbstractIterator {
-        /** */
-        private static final long serialVersionUID = -4949035950470324961L;
-
-        /**
-         * @param cur Query cursor.
-         * @param plan Update plan.
-         * @param op Operation.
-         */
-        private UpdateIterator(QueryCursor<List<?>> cur, UpdatePlan plan,
-            EnlistOperation op) {
-            super(cur, plan, op);
-        }
-
-        /** {@inheritDoc} */
-        @Override protected Object process(List<?> row) throws IgniteCheckedException {
-            T3<Object, Object, Object> row0 = plan.processRowForUpdate(row);
-
-            return new IgniteBiTuple<>(row0.get1(), row0.get3());
-        }
-    }
-
-    /** */
-    private static final class DeleteIterator extends AbstractIterator {
-        /** */
-        private static final long serialVersionUID = -4949035950470324961L;
-
-        /**
-         * @param cur Query cursor.
-         * @param plan Update plan.
-         * @param op Operation.
-         */
-        private DeleteIterator(QueryCursor<List<?>> cur, UpdatePlan plan,
-            EnlistOperation op) {
-            super(cur, plan, op);
-        }
-
-        /** {@inheritDoc} */
-        @Override protected Object process(List<?> row) throws IgniteCheckedException {
-            return row.get(0);
-        }
-    }
-
-    /** */
-    private static final class InsertIterator extends AbstractIterator {
-        /** */
-        private static final long serialVersionUID = -4949035950470324961L;
-
-        /**
-         * @param cur Query cursor.
-         * @param plan Update plan.
-         * @param op Operation.
-         */
-        private InsertIterator(QueryCursor<List<?>> cur, UpdatePlan plan,
-            EnlistOperation op) {
-            super(cur, plan, op);
-        }
-
-        /** {@inheritDoc} */
-        @Override protected Object process(List<?> row) throws IgniteCheckedException {
-            return plan.processRow(row);
-        }
     }
 }

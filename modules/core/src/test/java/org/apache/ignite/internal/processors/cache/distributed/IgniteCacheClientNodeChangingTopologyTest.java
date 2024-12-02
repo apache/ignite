@@ -84,7 +84,6 @@ import org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.internal.TcpDiscoveryNode;
 import org.apache.ignite.testframework.GridTestUtils;
-import org.apache.ignite.testframework.MvccFeatureChecker;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.transactions.Transaction;
 import org.apache.ignite.transactions.TransactionConcurrency;
@@ -128,11 +127,6 @@ public class IgniteCacheClientNodeChangingTopologyTest extends GridCommonAbstrac
         cfg.setCacheConfiguration(ccfg);
 
         return cfg;
-    }
-
-    /** {@inheritDoc} */
-    @Override public void beforeTest() throws Exception {
-        MvccFeatureChecker.skipIfNotSupported(MvccFeatureChecker.Feature.ENTRY_LOCK);
     }
 
     /** {@inheritDoc} */

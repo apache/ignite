@@ -26,7 +26,6 @@ import java.util.Map;
 import java.util.concurrent.locks.ReadWriteLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 import javax.net.ssl.SSLContext;
-
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
@@ -65,6 +64,9 @@ public class GridNioClientConnectionMultiplexer implements ClientConnectionMulti
     /** */
     private final ReadWriteLock rwLock = new ReentrantReadWriteLock();
 
+    /** */
+    private final int connTimeout;
+
     /**
      * Constructor.
      *
@@ -86,6 +88,8 @@ public class GridNioClientConnectionMultiplexer implements ClientConnectionMulti
         }
         else
             filters = new GridNioFilter[] {codecFilter};
+
+        connTimeout = cfg.getTimeout();
 
         try {
             srv = GridNioServer.<ByteBuffer>builder()
@@ -142,8 +146,31 @@ public class GridNioClientConnectionMultiplexer implements ClientConnectionMulti
         rwLock.readLock().lock();
 
         try {
-            SocketChannel ch = SocketChannel.open();
-            ch.socket().connect(new InetSocketAddress(addr.getHostName(), addr.getPort()), Integer.MAX_VALUE);
+            SocketChannel ch = null;
+            try {
+                ch = SocketChannel.open();
+                ch.socket().connect(new InetSocketAddress(addr.getHostName(), addr.getPort()), connTimeout);
+            }
+            catch (Exception e) {
+                if (ch != null) {
+                    if (ch.socket() != null) {
+                        try {
+                            ch.socket().close();
+                        }
+                        catch (Exception ignored) {
+                            // ignore close exception
+                        }
+                    }
+
+                    try {
+                        ch.close();
+                    }
+                    catch (Exception ignored) {
+                        // ignore close exception
+                    }
+                }
+                throw new ClientConnectionException(e.getMessage(), e);
+            }
 
             Map<Integer, Object> meta = new HashMap<>();
             GridNioFuture<?> sslHandshakeFut = null;
@@ -156,6 +183,9 @@ public class GridNioClientConnectionMultiplexer implements ClientConnectionMulti
 
             GridNioFuture<GridNioSession> sesFut = srv.createSession(ch, meta, false, null);
 
+            if (sesFut.error() != null)
+                sesFut.get();
+
             if (sslHandshakeFut != null)
                 sslHandshakeFut.get();
 
@@ -164,7 +194,7 @@ public class GridNioClientConnectionMultiplexer implements ClientConnectionMulti
             return new GridNioClientConnection(ses, msgHnd, stateHnd);
         }
         catch (Exception e) {
-            throw new ClientConnectionException(e.getMessage(), e);
+            throw new ClientConnectionException(e.getMessage() + " [remoteAddress=" + addr + ']', e);
         }
         finally {
             rwLock.readLock().unlock();

@@ -34,16 +34,14 @@ import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInternalFuture;
-import org.apache.ignite.internal.processors.cache.verify.IdleVerifyResultV2;
+import org.apache.ignite.internal.management.cache.IdleVerifyResultV2;
+import org.apache.ignite.internal.management.cache.PartitionKeyV2;
 import org.apache.ignite.internal.processors.cache.verify.PartitionHashRecordV2;
-import org.apache.ignite.internal.processors.cache.verify.PartitionKeyV2;
 import org.apache.ignite.internal.util.typedef.internal.SB;
-import org.apache.ignite.testframework.MvccFeatureChecker;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.transactions.Transaction;
 import org.apache.ignite.transactions.TransactionConcurrency;
 import org.apache.ignite.transactions.TransactionIsolation;
-import org.junit.Assume;
 import org.junit.Test;
 
 import static org.apache.ignite.testframework.GridTestUtils.runAsync;
@@ -108,9 +106,6 @@ public class TxWithSmallTimeoutAndContentionOneKeyTest extends GridCommonAbstrac
      * @return Random transaction type.
      */
     protected TransactionConcurrency transactionConcurrency() {
-        if (MvccFeatureChecker.forcedMvcc())
-            return PESSIMISTIC;
-
         ThreadLocalRandom random = ThreadLocalRandom.current();
 
         return random.nextBoolean() ? OPTIMISTIC : PESSIMISTIC;
@@ -120,9 +115,6 @@ public class TxWithSmallTimeoutAndContentionOneKeyTest extends GridCommonAbstrac
      * @return Random transaction isolation level.
      */
     protected TransactionIsolation transactionIsolation() {
-        if (MvccFeatureChecker.forcedMvcc())
-            return REPEATABLE_READ;
-
         ThreadLocalRandom random = ThreadLocalRandom.current();
 
         switch (random.nextInt(3)) {
@@ -153,8 +145,6 @@ public class TxWithSmallTimeoutAndContentionOneKeyTest extends GridCommonAbstrac
      */
     @Test
     public void test() throws Exception {
-        Assume.assumeFalse("https://issues.apache.org/jira/browse/IGNITE-10455", MvccFeatureChecker.forcedMvcc());
-
         startGrids(4);
 
         IgniteEx igClient = startClientGrid(getConfiguration("client").setConsistentId("Client"));

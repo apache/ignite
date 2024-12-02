@@ -24,11 +24,15 @@ import java.net.URLConnection;
 import java.security.Permissions;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
+import java.util.Map;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import org.apache.ignite.cluster.ClusterState;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.processors.rest.GridRestCommand;
+import org.apache.ignite.internal.processors.rest.GridRestResponse;
 import org.apache.ignite.internal.processors.security.GridSecurityProcessor;
 import org.apache.ignite.internal.processors.security.SecurityContext;
 import org.apache.ignite.internal.processors.security.client.CommonSecurityCheckTest;
@@ -42,8 +46,14 @@ import org.apache.ignite.plugin.security.SecurityException;
 import org.apache.ignite.plugin.security.SecurityPermission;
 import org.junit.Test;
 
+import static org.apache.ignite.cluster.ClusterState.ACTIVE;
 import static org.apache.ignite.internal.processors.cache.CacheGetRemoveSkipStoreTest.TEST_CACHE;
-import static org.apache.ignite.plugin.security.SecurityPermissionSetBuilder.ALLOW_ALL;
+import static org.apache.ignite.internal.processors.rest.GridRestCommand.CLUSTER_ACTIVATE;
+import static org.apache.ignite.internal.processors.rest.GridRestCommand.CLUSTER_SET_STATE;
+import static org.apache.ignite.internal.processors.rest.GridRestCommand.DESTROY_CACHE;
+import static org.apache.ignite.internal.processors.rest.GridRestCommand.GET_OR_CREATE_CACHE;
+import static org.apache.ignite.plugin.security.SecurityPermissionSetBuilder.ALL_PERMISSIONS;
+import static org.apache.ignite.plugin.security.SecurityPermissionSetBuilder.NO_PERMISSIONS;
 
 /**
  * Tests REST processor authorization commands GET_OR_CREATE_CACHE / DESTROY_CACHE.
@@ -51,6 +61,9 @@ import static org.apache.ignite.plugin.security.SecurityPermissionSetBuilder.ALL
 public class RestProcessorAuthorizationTest extends CommonSecurityCheckTest {
     /** */
     private static final String LOGIN = "login";
+
+    /** */
+    private static final String LOGIN_NO_PERMISSIONS = "login_no_permissions";
 
     /** */
     private static final String PWD = "pwd";
@@ -63,7 +76,7 @@ public class RestProcessorAuthorizationTest extends CommonSecurityCheckTest {
         return new TestSecurityPluginProvider(
             name,
             null,
-            ALLOW_ALL,
+            ALL_PERMISSIONS,
             globalAuth,
             clientData()
         ) {
@@ -81,7 +94,8 @@ public class RestProcessorAuthorizationTest extends CommonSecurityCheckTest {
                         SecurityPermission perm,
                         SecurityContext securityCtx
                     ) throws SecurityException {
-                        authorizationCtxList.add(F.t(name, perm, securityCtx));
+                        if (perm.name().startsWith("CACHE_"))
+                            authorizationCtxList.add(F.t(name, perm, securityCtx));
 
                         super.authorize(name, perm, securityCtx);
                     }
@@ -95,11 +109,11 @@ public class RestProcessorAuthorizationTest extends CommonSecurityCheckTest {
     public void testCacheCreateDestroyPermission() throws Exception {
         IgniteEx ignite = startGrid(0);
 
-        ignite.cluster().state(ClusterState.ACTIVE);
+        ignite.cluster().state(ACTIVE);
 
         assertNull(ignite.cache(TEST_CACHE));
 
-        executeCommand(GridRestCommand.GET_OR_CREATE_CACHE, LOGIN, PWD);
+        executeCommand(LOGIN, GET_OR_CREATE_CACHE, F.asMap("cacheName", TEST_CACHE));
 
         GridTuple3<String, SecurityPermission, SecurityContext> ctx = authorizationCtxList.get(0);
 
@@ -111,7 +125,7 @@ public class RestProcessorAuthorizationTest extends CommonSecurityCheckTest {
 
         authorizationCtxList.clear();
 
-        executeCommand(GridRestCommand.DESTROY_CACHE, LOGIN, PWD);
+        executeCommand(LOGIN, DESTROY_CACHE, F.asMap("cacheName", TEST_CACHE));
 
         ctx = authorizationCtxList.get(0);
 
@@ -122,18 +136,73 @@ public class RestProcessorAuthorizationTest extends CommonSecurityCheckTest {
         assertNull(ignite.cache(TEST_CACHE));
     }
 
-    /** */
-    private void executeCommand(GridRestCommand cmd, String login, String pwd) throws IOException {
-        String addr = "http://localhost:8080/ignite?cmd=" + cmd.key()
-            + "&cacheName=" + TEST_CACHE
-            + "&ignite.login=" + login + "&ignite.password=" + pwd;
+    /** @throws Exception if failed. */
+    @Test
+    public void testClusterStateChange() throws Exception {
+        IgniteEx ignite = startGrid(0);
 
-        URL url = new URL(addr);
+        assertEquals(ClusterState.INACTIVE, ignite.cluster().state());
+
+        GridRestResponse res = executeCommand(LOGIN_NO_PERMISSIONS, CLUSTER_SET_STATE, F.asMap("state", ACTIVE.name()));
+
+        assertEquals(GridRestResponse.STATUS_SECURITY_CHECK_FAILED, res.getSuccessStatus());
+
+        assertEquals(ClusterState.INACTIVE, ignite.cluster().state());
+
+        res = executeCommand(LOGIN, CLUSTER_SET_STATE, F.asMap("state", ACTIVE.name()));
+
+        assertEquals(GridRestResponse.STATUS_SUCCESS, res.getSuccessStatus());
+
+        assertEquals(ACTIVE, ignite.cluster().state());
+    }
+
+    /** @throws Exception if failed. */
+    @Test
+    public void testOldClusterStateChange() throws Exception {
+        IgniteEx ignite = startGrid(0);
+
+        assertEquals(ClusterState.INACTIVE, ignite.cluster().state());
+
+        GridRestResponse res = executeCommand(LOGIN_NO_PERMISSIONS, CLUSTER_ACTIVATE, Collections.emptyMap());
+
+        assertEquals(GridRestResponse.STATUS_SECURITY_CHECK_FAILED, res.getSuccessStatus());
+
+        assertEquals(ClusterState.INACTIVE, ignite.cluster().state());
+
+        res = executeCommand(LOGIN, CLUSTER_ACTIVATE, Collections.emptyMap());
+
+        assertEquals(GridRestResponse.STATUS_SUCCESS, res.getSuccessStatus());
+
+        assertEquals(ACTIVE, ignite.cluster().state());
+    }
+
+    /** */
+    private GridRestResponse executeCommand(
+        String login,
+        GridRestCommand cmd,
+        Map<String, String> params
+    ) throws IOException {
+        StringBuilder addr = new StringBuilder("http://localhost:8080/ignite?cmd=").append(cmd.key())
+            .append("&ignite.login=").append(login)
+            .append("&ignite.password=").append(PWD);
+
+        for (Map.Entry<String, String> e : params.entrySet())
+            addr.append("&").append(e.getKey()).append("=").append(e.getValue());
+
+        URL url = new URL(addr.toString());
 
         URLConnection conn = url.openConnection();
 
         conn.connect();
 
         assertEquals(200, ((HttpURLConnection)conn).getResponseCode());
+
+        return new ObjectMapper().readValue(conn.getInputStream(), GridRestResponse.class);
+    }
+
+    /** {@inheritDoc} */
+    @Override protected TestSecurityData[] clientData() {
+        return new TestSecurityData[] {new TestSecurityData(LOGIN, PWD, ALL_PERMISSIONS, new Permissions()),
+            new TestSecurityData(LOGIN_NO_PERMISSIONS, PWD, NO_PERMISSIONS, new Permissions())};
     }
 }

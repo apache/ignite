@@ -160,9 +160,9 @@ public class IgnitePersistentStoreCacheGroupsTest extends GridCommonAbstractTest
         // Several caches with the same indexed type (and index names).
         ccfgs1[0] = cacheConfiguration(GROUP1, "c1", PARTITIONED, ATOMIC, 1).
             setIndexedTypes(Integer.class, Person.class);
-        ccfgs1[1] = cacheConfiguration(GROUP1, "c2", PARTITIONED, TRANSACTIONAL, 1).
+        ccfgs1[1] = cacheConfiguration(GROUP2, "c2", PARTITIONED, TRANSACTIONAL, 1).
             setIndexedTypes(Integer.class, Person.class);
-        ccfgs1[2] = cacheConfiguration(GROUP2, "c3", PARTITIONED, ATOMIC, 1).
+        ccfgs1[2] = cacheConfiguration(GROUP1, "c3", PARTITIONED, ATOMIC, 1).
             setIndexedTypes(Integer.class, Person.class);
         ccfgs1[3] = cacheConfiguration(GROUP2, "c4", PARTITIONED, TRANSACTIONAL, 1).
             setIndexedTypes(Integer.class, Person.class);
@@ -224,8 +224,8 @@ public class IgnitePersistentStoreCacheGroupsTest extends GridCommonAbstractTest
         CacheConfiguration[] ccfgs1 = new CacheConfiguration[5];
 
         ccfgs1[0] = cacheConfiguration(GROUP1, "c1", PARTITIONED, ATOMIC, 1);
-        ccfgs1[1] = cacheConfiguration(GROUP1, "c2", PARTITIONED, TRANSACTIONAL, 1);
-        ccfgs1[2] = cacheConfiguration(GROUP2, "c3", PARTITIONED, ATOMIC, 1);
+        ccfgs1[1] = cacheConfiguration(GROUP2, "c2", PARTITIONED, TRANSACTIONAL, 1);
+        ccfgs1[2] = cacheConfiguration(GROUP1, "c3", PARTITIONED, ATOMIC, 1);
         ccfgs1[3] = cacheConfiguration(GROUP2, "c4", PARTITIONED, TRANSACTIONAL, 1);
         ccfgs1[4] = cacheConfiguration(null, "c5", PARTITIONED, ATOMIC, 1);
 
@@ -411,8 +411,8 @@ public class IgnitePersistentStoreCacheGroupsTest extends GridCommonAbstractTest
         CacheConfiguration[] ccfgs = new CacheConfiguration[5];
 
         ccfgs[0] = cacheConfiguration(GROUP1, "c1", PARTITIONED, ATOMIC, 1);
-        ccfgs[1] = cacheConfiguration(GROUP1, "c2", PARTITIONED, TRANSACTIONAL, 1);
-        ccfgs[2] = cacheConfiguration(GROUP2, "c3", PARTITIONED, ATOMIC, 1);
+        ccfgs[1] = cacheConfiguration(GROUP2, "c2", PARTITIONED, TRANSACTIONAL, 1);
+        ccfgs[2] = cacheConfiguration(GROUP1, "c3", PARTITIONED, ATOMIC, 1);
         ccfgs[3] = cacheConfiguration(GROUP2, "c4", PARTITIONED, TRANSACTIONAL, 1);
         ccfgs[4] = cacheConfiguration(null, "c5", PARTITIONED, ATOMIC, 1);
 

@@ -88,7 +88,8 @@ namespace Apache.Ignite.Core.Tests.Client
             _enableSsl = enableSsl;
             _enablePartitionAwareness = enablePartitionAwareness;
             _enableServerListLogging = enableServerListLogging;
-            _serverListLoggerLevels = serverListLoggerLevels ?? new[] { LogLevel.Debug, LogLevel.Warn, LogLevel.Error };
+            _serverListLoggerLevels =
+                serverListLoggerLevels ?? new[] { LogLevel.Trace, LogLevel.Debug, LogLevel.Warn, LogLevel.Error };
             UseBinaryArray = useBinaryArray;
         }
 
@@ -152,6 +153,7 @@ namespace Apache.Ignite.Core.Tests.Client
             {
                 return Ignition.GetAll().First(i => i.Name == null);
             }
+
             return Ignition.GetIgnite(idx.ToString());
         }
 

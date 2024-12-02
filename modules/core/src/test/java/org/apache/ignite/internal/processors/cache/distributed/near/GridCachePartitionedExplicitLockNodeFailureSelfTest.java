@@ -30,7 +30,6 @@ import org.apache.ignite.events.Event;
 import org.apache.ignite.internal.util.typedef.P1;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteFuture;
-import org.apache.ignite.testframework.MvccFeatureChecker;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
 
@@ -45,11 +44,6 @@ import static org.apache.ignite.events.EventType.EVT_NODE_LEFT;
 public class GridCachePartitionedExplicitLockNodeFailureSelfTest extends GridCommonAbstractTest {
     /** */
     public static final int GRID_CNT = 4;
-
-    /** {@inheritDoc} */
-    @Override public void beforeTest() throws Exception {
-        MvccFeatureChecker.skipIfNotSupported(MvccFeatureChecker.Feature.ENTRY_LOCK);
-    }
 
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {

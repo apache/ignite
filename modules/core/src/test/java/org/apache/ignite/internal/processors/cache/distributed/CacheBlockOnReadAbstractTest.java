@@ -1274,7 +1274,7 @@ public abstract class CacheBlockOnReadAbstractTest extends GridCommonAbstractTes
 
         /** {@inheritDoc} */
         @Override protected void execute() {
-            Set<String> loggedMessages = new HashSet<>();
+            Set<String> loggedMsgs = new HashSet<>();
 
             while (!Thread.currentThread().isInterrupted()) {
                 long prevTs = System.currentTimeMillis();
@@ -1298,7 +1298,7 @@ public abstract class CacheBlockOnReadAbstractTest extends GridCommonAbstractTes
                     else {
                         readOperationsFailed.incrementAndGet();
 
-                        if (loggedMessages.add(e.getMessage()))
+                        if (loggedMsgs.add(e.getMessage()))
                             log.error("Error during read operation execution", e);
 
                         continue;

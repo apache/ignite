@@ -20,7 +20,7 @@ package org.apache.ignite.internal.cache.query.index.sorted.inline.io;
 /**
  * Represents common API for inline IOs.
  */
-public interface InlineIO extends MvccIO {
+public interface InlineIO {
     /**
      * @param pageAddr Page address.
      * @param idx Index.

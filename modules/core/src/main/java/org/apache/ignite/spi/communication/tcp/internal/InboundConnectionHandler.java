@@ -66,7 +66,6 @@ import static org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi.CONSIS
 import static org.apache.ignite.spi.communication.tcp.internal.CommunicationTcpUtils.NOOP;
 import static org.apache.ignite.spi.communication.tcp.internal.CommunicationTcpUtils.usePairedConnections;
 import static org.apache.ignite.spi.communication.tcp.internal.GridNioServerWrapper.CHANNEL_FUT_META;
-import static org.apache.ignite.spi.communication.tcp.internal.GridNioServerWrapper.MAX_CONN_PER_NODE;
 import static org.apache.ignite.spi.communication.tcp.internal.TcpCommunicationConnectionCheckFuture.SES_FUT_META;
 import static org.apache.ignite.spi.communication.tcp.messages.RecoveryLastReceivedMessage.ALREADY_CONNECTED;
 import static org.apache.ignite.spi.communication.tcp.messages.RecoveryLastReceivedMessage.NEED_WAIT;
@@ -290,7 +289,7 @@ public class InboundConnectionHandler extends GridNioServerListenerAdapter<Messa
             }
         }
         else {
-            if (isChannelConnIdx(connKey.connectionIndex())) {
+            if (GridNioServerWrapper.isChannelConnIdx(connKey.connectionIndex())) {
                 if (ses.meta(CHANNEL_FUT_META) == null)
                     nioSrvWrapper.onChannelCreate((GridSelectorNioSessionImpl)ses, connKey, msg);
                 else {
@@ -396,10 +395,10 @@ public class InboundConnectionHandler extends GridNioServerListenerAdapter<Messa
 
     /** {@inheritDoc} */
     @Override public void onFailure(FailureType failureType, Throwable failure) {
-        FailureProcessor failureProcessor = failureProcessorSupplier.get();
+        FailureProcessor failureProc = failureProcessorSupplier.get();
 
-        if (failureProcessor != null)
-            failureProcessor.process(new FailureContext(failureType, failure));
+        if (failureProc != null)
+            failureProc.process(new FailureContext(failureType, failure));
     }
 
     /** {@inheritDoc} */
@@ -544,7 +543,7 @@ public class InboundConnectionHandler extends GridNioServerListenerAdapter<Messa
                 ", msg=" + msg0 + ']');
         }
 
-        if (isChannelConnIdx(msg0.connectionIndex()))
+        if (GridNioServerWrapper.isChannelConnIdx(msg0.connectionIndex()))
             ses.send(new RecoveryLastReceivedMessage(0));
         else if (cfg.usePairedConnections() && usePairedConnections(rmtNode, attributeNames.pairedConnection())) {
             final GridNioRecoveryDescriptor recoveryDesc = nioSrvWrapper.inRecoveryDescriptor(rmtNode, connKey);
@@ -747,14 +746,6 @@ public class InboundConnectionHandler extends GridNioServerListenerAdapter<Messa
         catch (IgniteCheckedException e) {
             U.error(log, "Failed to send message: " + e, e);
         }
-    }
-
-    /**
-     * @param connIdx Connection index to check.
-     * @return {@code true} if connection index is related to the channel create request\response.
-     */
-    private boolean isChannelConnIdx(int connIdx) {
-        return connIdx > MAX_CONN_PER_NODE;
     }
 
     /**

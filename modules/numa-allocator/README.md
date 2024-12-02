@@ -17,11 +17,11 @@ $ sudo apt install numactl
 1. `RHEL` or `Cent OS`
 ```bash
 $ sudo yum groupinstall 'Development Tools'
-$ sudo yum install java-1.8.0-openjdk numactl-devel libstdc++-static
+$ sudo yum install java-11-openjdk numactl-devel libstdc++-static
 ```
 2. `Ubuntu` or `Debian`
 ```bash
-$ sudo apt install build-essential libnuma-dev openjdk-8-jdk
+$ sudo apt install build-essential libnuma-dev openjdk-11-jdk
 ```
 ## Usage
 ### Simple allocation strategy

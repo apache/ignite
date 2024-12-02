@@ -31,7 +31,6 @@ import java.net.Socket;
 import java.net.SocketTimeoutException;
 import java.nio.channels.Channel;
 import java.nio.channels.FileChannel;
-import java.nio.channels.ReadableByteChannel;
 import java.nio.channels.SocketChannel;
 import java.nio.channels.WritableByteChannel;
 import java.time.Instant;
@@ -94,12 +93,10 @@ import org.apache.ignite.internal.managers.deployment.GridDeployment;
 import org.apache.ignite.internal.managers.discovery.CustomEventListener;
 import org.apache.ignite.internal.managers.eventstorage.GridEventStorageManager;
 import org.apache.ignite.internal.managers.eventstorage.GridLocalEventListener;
-import org.apache.ignite.internal.processors.cache.mvcc.msg.MvccMessage;
 import org.apache.ignite.internal.processors.cache.persistence.file.FileIO;
 import org.apache.ignite.internal.processors.cache.persistence.file.FileIOFactory;
 import org.apache.ignite.internal.processors.cache.persistence.file.RandomAccessFileIO;
 import org.apache.ignite.internal.processors.cache.persistence.file.RandomAccessFileIOFactory;
-import org.apache.ignite.internal.processors.metric.MetricRegistry;
 import org.apache.ignite.internal.processors.platform.message.PlatformMessageFilter;
 import org.apache.ignite.internal.processors.pool.PoolProcessor;
 import org.apache.ignite.internal.processors.security.OperationSecurityContext;
@@ -128,6 +125,7 @@ import org.apache.ignite.lang.IgniteInClosure;
 import org.apache.ignite.lang.IgniteRunnable;
 import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.marshaller.Marshaller;
+import org.apache.ignite.metric.MetricRegistry;
 import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.plugin.extensions.communication.MessageFactory;
 import org.apache.ignite.plugin.extensions.communication.MessageFormatter;
@@ -148,7 +146,6 @@ import org.jetbrains.annotations.Nullable;
 import static org.apache.ignite.events.EventType.EVT_NODE_FAILED;
 import static org.apache.ignite.events.EventType.EVT_NODE_JOINED;
 import static org.apache.ignite.events.EventType.EVT_NODE_LEFT;
-import static org.apache.ignite.internal.GridTopic.TOPIC_CACHE_COORDINATOR;
 import static org.apache.ignite.internal.GridTopic.TOPIC_COMM_SYSTEM;
 import static org.apache.ignite.internal.GridTopic.TOPIC_COMM_USER;
 import static org.apache.ignite.internal.GridTopic.TOPIC_IO_TEST;
@@ -269,7 +266,7 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
     public static final String DIRECT_PROTO_VER_ATTR = "comm.direct.proto.ver";
 
     /** Direct protocol version. */
-    public static final byte DIRECT_PROTO_VER = 3;
+    public static final byte DIRECT_PROTO_VER = 4;
 
     /** Current IO policy. */
     private static final ThreadLocal<Byte> CUR_PLC = new ThreadLocal<>();
@@ -1441,17 +1438,6 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
                 c.run();
             else
                 ctx.pools().getStripedExecutorService().execute(-1, c);
-
-            return;
-        }
-        if (msg.topicOrdinal() == TOPIC_CACHE_COORDINATOR.ordinal()) {
-            MvccMessage msg0 = (MvccMessage)msg.message();
-
-            // see IGNITE-8609
-            /*if (msg0.processedFromNioThread())
-                c.run();
-            else*/
-            ctx.pools().getStripedExecutorService().execute(-1, c);
 
             return;
         }
@@ -2789,7 +2775,7 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
      * @param rctx Receiver context to use.
      * @param ex Exception to close receiver with.
      */
-    private void interruptReceiver(ReceiverContext rctx, Exception ex) {
+    private void interruptReceiver(@Nullable ReceiverContext rctx, Exception ex) {
         if (rctx == null)
             return;
 
@@ -2917,7 +2903,7 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
         ReceiverContext rcvCtx,
         ObjectInputStream in,
         ObjectOutputStream out,
-        ReadableByteChannel ch
+        SocketChannel ch
     ) throws NodeStoppingException, InterruptedException {
         try {
             while (true) {
@@ -2964,9 +2950,11 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
                     rcvCtx.rcv.close();
 
                     U.log(log, "File has been received " +
-                        "[name=" + rcvCtx.rcv.state().name() + ", transferred=" + rcvCtx.rcv.transferred() +
+                        "[name=" + rcvCtx.rcv.state().name() +
+                        ", transferred=" + rcvCtx.rcv.transferred() +
                         ", time=" + (double)((U.currentTimeMillis() - startTime) / 1000) + " sec" +
-                        ", rmtId=" + rcvCtx.rmtNodeId + ']');
+                        ", rmtId=" + rcvCtx.rmtNodeId +
+                        ", rmtAddr=" + ch.getRemoteAddress() + ']');
 
                     rcvCtx.rcv = null;
                 }
@@ -3218,7 +3206,7 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
         private T2<UUID, IgniteUuid> sesKey;
 
         /** Instance of opened writable channel to work with. */
-        private WritableByteChannel channel;
+        private SocketChannel channel;
 
         /** Decorated with data operations socket of output channel. */
         private ObjectOutput out;
@@ -3252,7 +3240,7 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
 
             configureChannel(channel, netTimeoutMs);
 
-            this.channel = (WritableByteChannel)channel;
+            this.channel = channel;
             out = new ObjectOutputStream(channel.socket().getOutputStream());
             in = new ObjectInputStream(channel.socket().getInputStream());
 
@@ -3381,8 +3369,8 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
 
                 U.log(log, "File has been sent to remote node [name=" + file.getName() +
                     ", uploadTime=" + (double)((U.currentTimeMillis() - startTime) / 1000) + " sec, retries=" + retries +
-                    ", transferred=" + snd.transferred() + ", rmtId=" + rmtId + ']');
-
+                    ", transferred=" + snd.transferred() + ", rmtId=" + rmtId +
+                    ", rmtAddr=" + channel.getRemoteAddress() + ']');
             }
             catch (InterruptedException e) {
                 closeChannelQuiet();

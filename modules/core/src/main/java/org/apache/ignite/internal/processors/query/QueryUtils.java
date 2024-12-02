@@ -71,9 +71,6 @@ import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.A;
 import org.apache.ignite.internal.util.typedef.internal.U;
-import org.apache.ignite.transactions.TransactionAlreadyCompletedException;
-import org.apache.ignite.transactions.TransactionDuplicateKeyException;
-import org.apache.ignite.transactions.TransactionSerializationException;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -619,6 +616,10 @@ public class QueryUtils {
 
             desc.primaryKeyInlineSize(qe.getPrimaryKeyInlineSize() != null ? qe.getPrimaryKeyInlineSize() : -1);
             desc.affinityFieldInlineSize(qe.getAffinityKeyInlineSize() != null ? qe.getAffinityKeyInlineSize() : -1);
+        }
+        else {
+            desc.primaryKeyInlineSize(-1);
+            desc.affinityFieldInlineSize(-1);
         }
 
         return new QueryTypeCandidate(typeId, altTypeId, desc);
@@ -1588,21 +1589,6 @@ public class QueryUtils {
 
             code = ((IgniteSQLException)e).statusCode();
         }
-        else if (e instanceof TransactionDuplicateKeyException) {
-            code = IgniteQueryErrorCode.DUPLICATE_KEY;
-
-            sqlState = IgniteQueryErrorCode.codeToSqlState(code);
-        }
-        else if (e instanceof TransactionSerializationException) {
-            code = IgniteQueryErrorCode.TRANSACTION_SERIALIZATION_ERROR;
-
-            sqlState = IgniteQueryErrorCode.codeToSqlState(code);
-        }
-        else if (e instanceof TransactionAlreadyCompletedException) {
-            code = IgniteQueryErrorCode.TRANSACTION_COMPLETED;
-
-            sqlState = IgniteQueryErrorCode.codeToSqlState(code);
-        }
         else {
             sqlState = SqlStateCode.INTERNAL_ERROR;
 
@@ -1699,6 +1685,21 @@ public class QueryUtils {
 
             case SchemaOperationException.CODE_INDEX_EXISTS:
                 sqlCode = IgniteQueryErrorCode.INDEX_ALREADY_EXISTS;
+
+                break;
+
+            case SchemaOperationException.CODE_VIEW_NOT_FOUND:
+                sqlCode = IgniteQueryErrorCode.VIEW_NOT_FOUND;
+
+                break;
+
+            case SchemaOperationException.CODE_VIEW_EXISTS:
+                sqlCode = IgniteQueryErrorCode.VIEW_ALREADY_EXISTS;
+
+                break;
+
+            case SchemaOperationException.CODE_SCHEMA_NOT_FOUND:
+                sqlCode = IgniteQueryErrorCode.SCHEMA_NOT_FOUND;
 
                 break;
 

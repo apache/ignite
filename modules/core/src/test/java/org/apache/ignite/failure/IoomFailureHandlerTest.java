@@ -47,9 +47,6 @@ public class IoomFailureHandlerTest extends AbstractFailureHandlerTest {
     /** PDS enabled. */
     private boolean pds;
 
-    /** MVCC enabled. */
-    private boolean mvcc;
-
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
@@ -79,7 +76,7 @@ public class IoomFailureHandlerTest extends AbstractFailureHandlerTest {
             .setName(DEFAULT_CACHE_NAME)
             .setCacheMode(CacheMode.PARTITIONED)
             .setBackups(0)
-            .setAtomicityMode(mvcc ? CacheAtomicityMode.TRANSACTIONAL_SNAPSHOT : CacheAtomicityMode.TRANSACTIONAL);
+            .setAtomicityMode(CacheAtomicityMode.TRANSACTIONAL);
 
         cfg.setCacheConfiguration(ccfg);
 
@@ -105,7 +102,7 @@ public class IoomFailureHandlerTest extends AbstractFailureHandlerTest {
      */
     @Test
     public void testIoomErrorNoStoreHandling() throws Exception {
-        testIoomErrorHandling(false, false);
+        testIoomErrorHandling(false);
     }
 
     /**
@@ -113,31 +110,14 @@ public class IoomFailureHandlerTest extends AbstractFailureHandlerTest {
      */
     @Test
     public void testIoomErrorPdsHandling() throws Exception {
-        testIoomErrorHandling(true, false);
-    }
-
-    /**
-     * Test IgniteOutOfMemoryException handling with no store.
-     */
-    @Test
-    public void testIoomErrorMvccNoStoreHandling() throws Exception {
-        testIoomErrorHandling(false, true);
-    }
-
-    /**
-     * Test IgniteOutOfMemoryException handling with PDS.
-     */
-    @Test
-    public void testIoomErrorMvccPdsHandling() throws Exception {
-        testIoomErrorHandling(true, true);
+        testIoomErrorHandling(true);
     }
 
     /**
      * Test IOOME handling.
      */
-    private void testIoomErrorHandling(boolean pds, boolean mvcc) throws Exception {
+    private void testIoomErrorHandling(boolean pds) throws Exception {
         this.pds = pds;
-        this.mvcc = mvcc;
 
         IgniteEx ignite0 = startGrid(0);
         IgniteEx ignite1 = startGrid(1);
@@ -163,12 +143,8 @@ public class IoomFailureHandlerTest extends AbstractFailureHandlerTest {
 
             assertFalse(dummyFailureHandler(ignite0).failure());
 
-            if (mvcc && pds)
-                assertFalse(dummyFailureHandler(ignite1).failure());
-            else {
-                assertTrue(dummyFailureHandler(ignite1).failure());
-                assertTrue(X.hasCause(dummyFailureHandler(ignite1).failureContext().error(), IgniteOutOfMemoryException.class));
-            }
+            assertTrue(dummyFailureHandler(ignite1).failure());
+            assertTrue(X.hasCause(dummyFailureHandler(ignite1).failureContext().error(), IgniteOutOfMemoryException.class));
         }
         finally {
             stopGrid(1);

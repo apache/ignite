@@ -18,9 +18,6 @@
 package org.apache.ignite.internal.processors.cache.integration;
 
 import org.apache.ignite.cache.CacheAtomicityMode;
-import org.apache.ignite.configuration.CacheConfiguration;
-import org.apache.ignite.testframework.MvccFeatureChecker;
-import org.junit.Before;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
 
@@ -28,19 +25,6 @@ import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
  *
  */
 public class IgniteCacheTxStoreSessionWriteBehindTest extends IgniteCacheStoreSessionWriteBehindAbstractTest {
-    /** */
-    @Before
-    public void beforeIgniteCacheTxStoreSessionWriteBehindTest() {
-        MvccFeatureChecker.skipIfNotSupported(MvccFeatureChecker.Feature.CACHE_STORE);
-    }
-
-    /** {@inheritDoc} */
-    @Override protected CacheConfiguration cacheConfiguration(String igniteInstanceName) throws Exception {
-        MvccFeatureChecker.skipIfNotSupported(MvccFeatureChecker.Feature.CACHE_STORE);
-
-        return super.cacheConfiguration(igniteInstanceName);
-    }
-
     /** {@inheritDoc} */
     @Override protected CacheAtomicityMode atomicityMode() {
         return TRANSACTIONAL;

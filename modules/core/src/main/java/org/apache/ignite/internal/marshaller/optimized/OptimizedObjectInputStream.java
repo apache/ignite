@@ -521,16 +521,25 @@ class OptimizedObjectInputStream extends ObjectInputStream {
                         break;
 
                     case OTHER:
-                        Object resObject = readObject();
+                        Object resObj = readObject();
 
                         if (t.field() != null)
-                            setObject(obj, t.offset(), resObject);
+                            setObject(obj, t.offset(), resObj);
                 }
             }
             catch (IOException e) {
                 throw new IOException("Failed to deserialize field [name=" + t.name() + ']', e);
             }
         }
+    }
+
+    /** {@inheritDoc} */
+    @Override protected Class<?> resolveClass(ObjectStreamClass desc) throws ClassNotFoundException {
+        // NOTE: DO NOT CHANGE TO 'clsLoader.loadClass()'
+        // Must have 'Class.forName()' instead of clsLoader.loadClass()
+        // due to weird ClassNotFoundExceptions for arrays of classes
+        // in certain cases.
+        return U.forName(desc.getName(), clsLdr, ctx.classNameFilter());
     }
 
     /**

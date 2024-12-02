@@ -35,4 +35,14 @@ public class IgniteSqlConformance extends SqlAbstractConformance {
     @Override public boolean isBangEqualAllowed() {
         return true;
     }
+
+    /** {@inheritDoc} */
+    @Override public boolean isGroupByAlias() {
+        return true;
+    }
+
+    /** {@inheritDoc} */
+    @Override public boolean isGroupByOrdinal() {
+        return true;
+    }
 }

@@ -61,41 +61,28 @@ class ClientCachePartitionAwarenessGroup {
      * @param cpctx Protocol context.
      */
     public void write(CacheObjectBinaryProcessorImpl proc, BinaryRawWriter writer, ClientProtocolContext cpctx) {
-        writer.writeBoolean(mapping != null);
+        boolean isPartitionAwarenessApplicable = mapping != null;
+
+        writer.writeBoolean(isPartitionAwarenessApplicable);
 
         writer.writeInt(cacheCfgs.size());
 
-        for (Map.Entry<Integer, CacheConfiguration<?, ?>> entry: cacheCfgs.entrySet()) {
-            writer.writeInt(entry.getKey());
+        if (isPartitionAwarenessApplicable) {
+            for (Map.Entry<Integer, CacheConfiguration<?, ?>> entry: cacheCfgs.entrySet()) {
+                writer.writeInt(entry.getKey());
 
-            if (mapping == null)
-                continue;
-
-            CacheConfiguration<?, ?> ccfg = entry.getValue();
-            CacheKeyConfiguration[] keyCfgs = ccfg.getKeyConfiguration();
-
-            if (keyCfgs == null) {
-                writer.writeInt(0);
-
-                continue;
+                writeCacheKeyConfiguration(writer, proc, entry.getValue().getKeyConfiguration());
             }
 
-            writer.writeInt(keyCfgs.length);
-
-            for (CacheKeyConfiguration keyCfg : keyCfgs) {
-                int keyTypeId = proc.typeId(keyCfg.getTypeName());
-                int affinityKeyFieldId = proc.binaryContext().fieldId(keyTypeId, keyCfg.getAffinityKeyFieldName());
-
-                writer.writeInt(keyTypeId);
-                writer.writeInt(affinityKeyFieldId);
-            }
-        }
-
-        if (mapping != null)
             mapping.write(writer);
 
-        if (cpctx.isFeatureSupported(ClientBitmaskFeature.ALL_AFFINITY_MAPPINGS))
-            writer.writeBoolean(dfltAffinity);
+            if (cpctx.isFeatureSupported(ClientBitmaskFeature.ALL_AFFINITY_MAPPINGS))
+                writer.writeBoolean(dfltAffinity);
+        }
+        else {
+            for (int cacheId : cacheCfgs.keySet())
+                writer.writeInt(cacheId);
+        }
     }
 
     /**
@@ -107,6 +94,29 @@ class ClientCachePartitionAwarenessGroup {
             cacheCfgs.putIfAbsent(desc.cacheId(), desc.cacheConfiguration());
     }
 
+    /** */
+    private static void writeCacheKeyConfiguration(
+        BinaryRawWriter writer,
+        CacheObjectBinaryProcessorImpl binProc,
+        CacheKeyConfiguration[] keyCfgs
+    ) {
+        if (keyCfgs == null) {
+            writer.writeInt(0);
+
+            return;
+        }
+
+        writer.writeInt(keyCfgs.length);
+
+        for (CacheKeyConfiguration keyCfg : keyCfgs) {
+            int keyTypeId = binProc.typeId(keyCfg.getTypeName());
+            int affKeyFieldId = binProc.binaryContext().fieldId(keyTypeId, keyCfg.getAffinityKeyFieldName());
+
+            writer.writeInt(keyTypeId);
+            writer.writeInt(affKeyFieldId);
+        }
+    }
+
     /** {@inheritDoc} */
     @Override public boolean equals(Object o) {
         if (this == o)
@@ -115,9 +125,9 @@ class ClientCachePartitionAwarenessGroup {
         if (o == null || getClass() != o.getClass())
             return false;
 
-        ClientCachePartitionAwarenessGroup group = (ClientCachePartitionAwarenessGroup)o;
+        ClientCachePartitionAwarenessGroup grp = (ClientCachePartitionAwarenessGroup)o;
 
-        return dfltAffinity == group.dfltAffinity && Objects.equals(mapping, group.mapping);
+        return dfltAffinity == grp.dfltAffinity && Objects.equals(mapping, grp.mapping);
     }
 
     /** {@inheritDoc} */

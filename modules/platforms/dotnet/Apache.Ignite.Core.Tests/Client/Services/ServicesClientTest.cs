@@ -332,12 +332,12 @@ namespace Apache.Ignite.Core.Tests.Client.Services
         [Test]
         public void TestJavaServiceCall()
         {
-            var serviceName = TestUtils.DeployJavaService(Ignition.GetIgnite());
-            var svc = Client.GetServices().GetServiceProxy<IJavaService>(serviceName);
+            TestUtils.DeployJavaService(Ignition.GetIgnite());
+            var svc = Client.GetServices().GetServiceProxy<IJavaService>(TestUtils.JavaServiceName);
             var binSvc = Client.GetServices()
                 .WithKeepBinary()
                 .WithServerKeepBinary()
-                .GetServiceProxy<IJavaService>(serviceName);
+                .GetServiceProxy<IJavaService>(TestUtils.JavaServiceName);
 
             Assert.IsTrue(svc.isInitialized());
             Assert.IsTrue(svc.isExecuted());
@@ -519,10 +519,9 @@ namespace Apache.Ignite.Core.Tests.Client.Services
         [Ignore("IGNITE-13360")]
         public void TestJavaServiceTimeout()
         {
-            var svcName = TestUtils.DeployJavaService(Ignition.GetIgnite());
+            TestUtils.DeployJavaService(Ignition.GetIgnite());
 
-            var svc = Client.GetServices()
-                .GetServiceProxy<IJavaService>(svcName);
+            var svc = Client.GetServices().GetServiceProxy<IJavaService>(TestUtils.JavaServiceName);
 
             var ex = Assert.Throws<IgniteClientException>(() => svc.sleep(2000));
 

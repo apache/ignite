@@ -62,7 +62,6 @@ import org.apache.ignite.transactions.Transaction;
 import org.junit.Test;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
-import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL_SNAPSHOT;
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
 import static org.apache.ignite.internal.processors.cache.ExchangeContext.IGNITE_EXCHANGE_COMPATIBILITY_VER_1;
 import static org.apache.ignite.transactions.TransactionConcurrency.OPTIMISTIC;
@@ -123,8 +122,6 @@ public abstract class IgniteCachePrimaryNodeFailureRecoveryAbstractTest extends 
      */
     @Test
     public void testOptimisticPrimaryNodeFailureRecovery1() throws Exception {
-        if (atomicityMode() == TRANSACTIONAL_SNAPSHOT) return;
-
         primaryNodeFailure(false, false, true);
     }
 
@@ -133,8 +130,6 @@ public abstract class IgniteCachePrimaryNodeFailureRecoveryAbstractTest extends 
      */
     @Test
     public void testOptimisticPrimaryNodeFailureRecovery2() throws Exception {
-        if (atomicityMode() == TRANSACTIONAL_SNAPSHOT) return;
-
         primaryNodeFailure(true, false, true);
     }
 
@@ -143,8 +138,6 @@ public abstract class IgniteCachePrimaryNodeFailureRecoveryAbstractTest extends 
      */
     @Test
     public void testOptimisticPrimaryNodeFailureRollback1() throws Exception {
-        if (atomicityMode() == TRANSACTIONAL_SNAPSHOT) return;
-
         primaryNodeFailure(false, true, true);
     }
 
@@ -153,8 +146,6 @@ public abstract class IgniteCachePrimaryNodeFailureRecoveryAbstractTest extends 
      */
     @Test
     public void testOptimisticPrimaryNodeFailureRollback2() throws Exception {
-        if (atomicityMode() == TRANSACTIONAL_SNAPSHOT) return;
-
         primaryNodeFailure(true, true, true);
     }
 
@@ -292,8 +283,6 @@ public abstract class IgniteCachePrimaryNodeFailureRecoveryAbstractTest extends 
      */
     @Test
     public void testOptimisticPrimaryAndOriginatingNodeFailureRecovery1() throws Exception {
-        if (atomicityMode() == TRANSACTIONAL_SNAPSHOT) return;
-
         primaryAndOriginatingNodeFailure(false, false, true);
     }
 
@@ -302,8 +291,6 @@ public abstract class IgniteCachePrimaryNodeFailureRecoveryAbstractTest extends 
      */
     @Test
     public void testOptimisticPrimaryAndOriginatingNodeFailureRecovery2() throws Exception {
-        if (atomicityMode() == TRANSACTIONAL_SNAPSHOT) return;
-
         primaryAndOriginatingNodeFailure(true, false, true);
     }
 
@@ -312,8 +299,6 @@ public abstract class IgniteCachePrimaryNodeFailureRecoveryAbstractTest extends 
      */
     @Test
     public void testOptimisticPrimaryAndOriginatingNodeFailureRollback1() throws Exception {
-        if (atomicityMode() == TRANSACTIONAL_SNAPSHOT) return;
-
         primaryAndOriginatingNodeFailure(false, true, true);
     }
 
@@ -322,8 +307,6 @@ public abstract class IgniteCachePrimaryNodeFailureRecoveryAbstractTest extends 
      */
     @Test
     public void testOptimisticPrimaryAndOriginatingNodeFailureRollback2() throws Exception {
-        if (atomicityMode() == TRANSACTIONAL_SNAPSHOT) return;
-
         primaryAndOriginatingNodeFailure(true, true, true);
     }
 
@@ -469,12 +452,10 @@ public abstract class IgniteCachePrimaryNodeFailureRecoveryAbstractTest extends 
     /** */
     private void checkKey(Integer key, boolean rollback, Collection<ClusterNode> keyNodes, long initUpdCntr) {
         if (rollback) {
-            if (atomicityMode() != TRANSACTIONAL_SNAPSHOT) {
-                for (Ignite ignite : G.allGrids()) {
-                    IgniteCache<Integer, Integer> cache = ignite.cache(DEFAULT_CACHE_NAME);
+            for (Ignite ignite : G.allGrids()) {
+                IgniteCache<Integer, Integer> cache = ignite.cache(DEFAULT_CACHE_NAME);
 
-                    assertNull("Unexpected value for: " + ignite.name(), cache.localPeek(key));
-                }
+                assertNull("Unexpected value for: " + ignite.name(), cache.localPeek(key));
             }
 
             for (Ignite ignite : G.allGrids()) {

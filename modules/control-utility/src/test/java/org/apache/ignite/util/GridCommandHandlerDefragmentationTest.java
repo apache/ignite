@@ -35,7 +35,6 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.IgniteNodeAttributes;
-import org.apache.ignite.internal.commandline.CommandHandler;
 import org.apache.ignite.internal.processors.cache.persistence.GridCacheDatabaseSharedManager;
 import org.apache.ignite.internal.processors.cache.persistence.defragmentation.maintenance.DefragmentationParameters;
 import org.apache.ignite.internal.processors.cache.persistence.file.FileIOFactory;
@@ -92,7 +91,7 @@ public class GridCommandHandlerDefragmentationTest extends GridCommandHandlerClu
 
         ListeningTestLogger testLog = new ListeningTestLogger();
 
-        CommandHandler cmd = createCommandHandler(testLog);
+        TestCommandHandler cmd = createCommandHandler(testLog);
 
         LogListener logLsnr = LogListener.matches("Scheduling completed successfully.").build();
 
@@ -172,7 +171,7 @@ public class GridCommandHandlerDefragmentationTest extends GridCommandHandlerClu
 
         ListeningTestLogger testLog = new ListeningTestLogger();
 
-        CommandHandler cmd = createCommandHandler(testLog);
+        TestCommandHandler cmd = createCommandHandler(testLog);
 
         assertEquals(EXIT_CODE_OK, execute(
             cmd,
@@ -233,7 +232,7 @@ public class GridCommandHandlerDefragmentationTest extends GridCommandHandlerClu
 
         ListeningTestLogger testLog = new ListeningTestLogger();
 
-        CommandHandler cmd = createCommandHandler(testLog);
+        TestCommandHandler cmd = createCommandHandler(testLog);
 
         assertEquals(EXIT_CODE_OK, execute(
             cmd,
@@ -345,7 +344,7 @@ public class GridCommandHandlerDefragmentationTest extends GridCommandHandlerClu
 
         ListeningTestLogger testLog = new ListeningTestLogger();
 
-        CommandHandler cmd = createCommandHandler(testLog);
+        TestCommandHandler cmd = createCommandHandler(testLog);
 
         assertEquals(EXIT_CODE_OK, execute(
             cmd,
@@ -452,7 +451,7 @@ public class GridCommandHandlerDefragmentationTest extends GridCommandHandlerClu
     }
 
     /** */
-    private CommandHandler createCommandHandler(ListeningTestLogger testLog) {
+    private TestCommandHandler createCommandHandler(ListeningTestLogger testLog) {
         Logger log = GridCommandHandlerAbstractTest.initLogger(null);
 
         log.addHandler(new StreamHandler(System.out, new Formatter() {
@@ -466,6 +465,6 @@ public class GridCommandHandlerDefragmentationTest extends GridCommandHandlerClu
             }
         }));
 
-        return new CommandHandler(new JavaLogger(log, false));
+        return newCommandHandler(new JavaLogger(log, false));
     }
 }

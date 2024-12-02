@@ -20,7 +20,6 @@ import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.Collections;
 import java.util.Deque;
 import java.util.HashSet;
 import java.util.LinkedList;
@@ -62,6 +61,11 @@ import org.apache.ignite.internal.cache.query.index.sorted.InlineIndexRowHandler
 import org.apache.ignite.internal.cache.query.index.sorted.SortedIndexDefinition;
 import org.apache.ignite.internal.cache.query.index.sorted.inline.InlineIndexTree;
 import org.apache.ignite.internal.cache.query.index.sorted.inline.InlineRecommender;
+import org.apache.ignite.internal.management.cache.CacheValidateIndexesCommandArg;
+import org.apache.ignite.internal.management.cache.ValidateIndexesJobResult;
+import org.apache.ignite.internal.management.cache.ValidateIndexesPartitionResult;
+import org.apache.ignite.internal.management.cache.ValidateIndexesTask;
+import org.apache.ignite.internal.management.cache.ValidateIndexesTaskResult;
 import org.apache.ignite.internal.metric.IoStatisticsHolder;
 import org.apache.ignite.internal.pagemem.PageMemory;
 import org.apache.ignite.internal.processors.cache.CacheGroupContext;
@@ -79,11 +83,6 @@ import org.apache.ignite.internal.processors.cache.persistence.tree.reuse.ReuseL
 import org.apache.ignite.internal.util.lang.GridTuple3;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.visor.VisorTaskArgument;
-import org.apache.ignite.internal.visor.verify.ValidateIndexesPartitionResult;
-import org.apache.ignite.internal.visor.verify.VisorValidateIndexesJobResult;
-import org.apache.ignite.internal.visor.verify.VisorValidateIndexesTask;
-import org.apache.ignite.internal.visor.verify.VisorValidateIndexesTaskArg;
-import org.apache.ignite.internal.visor.verify.VisorValidateIndexesTaskResult;
 import org.apache.ignite.lang.IgniteInClosure;
 import org.apache.ignite.testframework.CallbackExecutorLogListener;
 import org.apache.ignite.testframework.ListeningTestLogger;
@@ -101,6 +100,7 @@ import static org.apache.ignite.cluster.ClusterState.ACTIVE;
 import static org.apache.ignite.cluster.ClusterState.INACTIVE;
 import static org.apache.ignite.internal.cache.query.index.sorted.DurableBackgroundCleanupIndexTreeTaskV2.idxTreeFactory;
 import static org.apache.ignite.internal.processors.query.QueryUtils.DFLT_SCHEMA;
+import static org.apache.ignite.internal.util.IgniteUtils.EMPTY_UUIDS;
 import static org.apache.ignite.testframework.GridTestUtils.getFieldValue;
 
 /**
@@ -358,7 +358,7 @@ public class LongDestroyDurableBackgroundTaskTest extends GridCommonAbstractTest
      *
      * @param ignite Ignite instance.
      */
-    private void validateIndexes(Ignite ignite) {
+    private void validateIndexes(Ignite ignite) throws Exception {
         Set<UUID> nodeIds = new HashSet<>();
 
         nodeIds.add(grid(RESTARTED_NODE_NUM).cluster().localNode().id());
@@ -366,34 +366,40 @@ public class LongDestroyDurableBackgroundTaskTest extends GridCommonAbstractTest
 
         log.info("Doing indexes validation.");
 
-        VisorValidateIndexesTaskArg taskArg =
-            new VisorValidateIndexesTaskArg(Collections.singleton("SQL_PUBLIC_T"), nodeIds, 0, 1, true, true);
+        CacheValidateIndexesCommandArg taskArg =
+            new CacheValidateIndexesCommandArg();
 
-        VisorValidateIndexesTaskResult taskRes =
-            ignite.compute().execute(VisorValidateIndexesTask.class.getName(), new VisorTaskArgument<>(nodeIds, taskArg, false));
+        taskArg.caches(new String[]{"SQL_PUBLIC_T"});
+        taskArg.nodeIds(nodeIds.toArray(EMPTY_UUIDS));
+        taskArg.checkThrough(1);
+        taskArg.checkCrc(true);
+        taskArg.checkSizes(true);
+
+        ValidateIndexesTaskResult taskRes =
+            ignite.compute().execute(ValidateIndexesTask.class, new VisorTaskArgument<>(nodeIds, taskArg, false)).result();
 
         if (!taskRes.exceptions().isEmpty()) {
-            for (Map.Entry<UUID, Exception> e : taskRes.exceptions().entrySet())
-                log.error("Exception while validation indexes on node id=" + e.getKey().toString(), e.getValue());
+            for (Map.Entry<ValidateIndexesTaskResult.NodeInfo, Exception> e : taskRes.exceptions().entrySet())
+                log.error("Exception while validation indexes on node id=" + e.getKey().id().toString(), e.getValue());
         }
 
-        for (Map.Entry<UUID, VisorValidateIndexesJobResult> nodeEntry : taskRes.results().entrySet()) {
-            if (nodeEntry.getValue().hasIssues()) {
-                log.error("Validate indexes issues had been found on node id=" + nodeEntry.getKey().toString());
+        taskRes.results().forEach((nodeInfo, res) -> {
+            if (res.hasIssues()) {
+                log.error("Validate indexes issues had been found on node id=" + nodeInfo.id().toString());
 
-                log.error("Integrity check failures: " + nodeEntry.getValue().integrityCheckFailures().size());
+                log.error("Integrity check failures: " + res.integrityCheckFailures().size());
 
-                nodeEntry.getValue().integrityCheckFailures().forEach(f -> log.error(f.toString()));
+                res.integrityCheckFailures().forEach(f -> log.error(f.toString()));
 
-                logIssuesFromMap("Partition results", nodeEntry.getValue().partitionResult());
+                logIssuesFromMap("Partition results", res.partitionResult());
 
-                logIssuesFromMap("Index validation issues", nodeEntry.getValue().indexResult());
+                logIssuesFromMap("Index validation issues", res.indexResult());
             }
-        }
+        });
 
         assertTrue(taskRes.exceptions().isEmpty());
 
-        for (VisorValidateIndexesJobResult res : taskRes.results().values())
+        for (ValidateIndexesJobResult res : taskRes.results().values())
             assertFalse(res.hasIssues());
     }
 

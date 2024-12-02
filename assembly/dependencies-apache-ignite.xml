@@ -121,14 +121,13 @@
                 <exclude>${project.groupId}:ignite-extdata-p2p</exclude>
                 <exclude>${project.groupId}:ignite-extdata-uri</exclude>
                 <exclude>${project.groupId}:ignite-extdata-uri-dep</exclude>
-                <exclude>${project.groupId}:ignite-extdata-logo</exclude>
+                <exclude>${project.groupId}:ignite-extdata-pluggable</exclude>
                 <exclude>${project.groupId}:ignite-examples</exclude>
                 <exclude>${project.groupId}:ignite-indexing</exclude>
                 <exclude>${project.groupId}:ignite-codegen</exclude>
                 <exclude>${project.groupId}:ignite-schedule</exclude>
                 <exclude>${project.groupId}:ignite-appserver-test</exclude>
                 <exclude>${project.groupId}:ignite-websphere-test</exclude>
-                <exclude>${project.groupId}:ignite-cassandra</exclude>
                 <exclude>${project.groupId}:ignite-yardstick</exclude>
                 <exclude>${project.groupId}:ignite-benchmarks</exclude>
                 <exclude>${project.groupId}:ignite-dev-utils</exclude>

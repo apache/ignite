@@ -1370,13 +1370,6 @@
                                 </xs:documentation>
                             </xs:annotation>
                         </xs:attribute>
-                        <xs:attribute name="deadlockTimeout" type="xs:string">
-                            <xs:annotation>
-                                <xs:documentation>
-                                    Timeout before starting deadlock detection. TimeSpan.Zero for disabling deadlock detection.
-                                </xs:documentation>
-                            </xs:annotation>
-                        </xs:attribute>
                     </xs:complexType>
                 </xs:element>
                 <xs:element name="logger" minOccurs="0">
@@ -2506,16 +2499,6 @@
             <xs:attribute name="authenticationEnabled" type="xs:boolean">
                 <xs:annotation>
                     <xs:documentation>Whether user authentication is enabled for the cluster.</xs:documentation>
-                </xs:annotation>
-            </xs:attribute>
-            <xs:attribute name="mvccVacuumFrequency" type="xs:long">
-                <xs:annotation>
-                    <xs:documentation>Time interval between MVCC vacuum runs in milliseconds.</xs:documentation>
-                </xs:annotation>
-            </xs:attribute>
-            <xs:attribute name="mvccVacuumThreadCount" type="xs:int">
-                <xs:annotation>
-                    <xs:documentation>Number of MVCC vacuum threads.</xs:documentation>
                 </xs:annotation>
             </xs:attribute>
             <xs:attribute name="sqlQueryHistorySize" type="xs:int">

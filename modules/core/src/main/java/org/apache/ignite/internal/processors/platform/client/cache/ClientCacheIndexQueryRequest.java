@@ -29,7 +29,9 @@ import org.apache.ignite.cache.query.QueryCursor;
 import org.apache.ignite.internal.binary.BinaryRawReaderEx;
 import org.apache.ignite.internal.cache.query.InIndexQueryCriterion;
 import org.apache.ignite.internal.cache.query.RangeIndexQueryCriterion;
+import org.apache.ignite.internal.processors.platform.client.ClientBitmaskFeature;
 import org.apache.ignite.internal.processors.platform.client.ClientConnectionContext;
+import org.apache.ignite.internal.processors.platform.client.ClientProtocolContext;
 import org.apache.ignite.internal.processors.platform.client.ClientResponse;
 
 import static org.apache.ignite.internal.binary.GridBinaryMarshaller.ARR_LIST;
@@ -38,7 +40,7 @@ import static org.apache.ignite.internal.binary.GridBinaryMarshaller.ARR_LIST;
  * IndexQuery request.
  */
 @SuppressWarnings({"rawtypes", "unchecked"})
-public class ClientCacheIndexQueryRequest extends ClientCacheRequest {
+public class ClientCacheIndexQueryRequest extends ClientCacheQueryRequest {
     /** IndexQuery. */
     private final IndexQuery qry;
 
@@ -47,8 +49,12 @@ public class ClientCacheIndexQueryRequest extends ClientCacheRequest {
 
     /**
      * @param reader Reader.
+     * @param protocolCtx
      */
-    public ClientCacheIndexQueryRequest(BinaryRawReaderEx reader) {
+    public ClientCacheIndexQueryRequest(
+        BinaryRawReaderEx reader,
+        ClientProtocolContext protocolCtx
+    ) {
         super(reader);
 
         pageSize = reader.readInt();
@@ -56,6 +62,10 @@ public class ClientCacheIndexQueryRequest extends ClientCacheRequest {
         boolean loc = reader.readBoolean();
 
         int part = reader.readInt();
+
+        int limit = 0;
+        if (protocolCtx.isFeatureSupported(ClientBitmaskFeature.INDEX_QUERY_LIMIT))
+            limit = reader.readInt();
 
         String valType = reader.readString();
 
@@ -89,6 +99,9 @@ public class ClientCacheIndexQueryRequest extends ClientCacheRequest {
 
         if (filterObj != null)
             qry.setFilter(((BinaryObject)filterObj).deserialize());
+
+        if (limit > 0)
+            qry.setLimit(limit);
     }
 
     /** */
@@ -142,7 +155,11 @@ public class ClientCacheIndexQueryRequest extends ClientCacheRequest {
      * {@inheritDoc}
      */
     @Override public ClientResponse process(ClientConnectionContext ctx) {
-        IgniteCache cache = !isKeepBinary() ? rawCache(ctx) : cache(ctx);
+        IgniteCache<Object, Object> cache = qry.getFilter() != null && !isKeepBinary() ?
+            rawCache(ctx) : cache(ctx);
+
+        if (qry.getPartition() != null)
+            updateAffinityMetrics(ctx, qry.getPartition());
 
         ctx.incrementCursors();
 

@@ -774,8 +774,7 @@ public class H2DynamicTableSelfTest extends AbstractSchemaSelfTest {
     @Test
     public void testInvalidAtomicity() {
         assertCreateTableWithParamsThrows("atomicity=InvalidValue",
-            "Invalid value of \"ATOMICITY\" parameter (should be either TRANSACTIONAL, ATOMIC, " +
-            "TRANSACTIONAL_SNAPSHOT): InvalidValue");
+            "Invalid value of \"ATOMICITY\" parameter (should be either TRANSACTIONAL, ATOMIC): InvalidValue");
     }
 
     /**
@@ -1982,9 +1981,9 @@ public class H2DynamicTableSelfTest extends AbstractSchemaSelfTest {
             if (o == null || getClass() != o.getClass())
                 return false;
 
-            TestValue testValue = (TestValue)o;
+            TestValue testVal = (TestValue)o;
 
-            return notUniqueId == testValue.notUniqueId;
+            return notUniqueId == testVal.notUniqueId;
         }
 
         /** {@inheritDoc} */

@@ -285,8 +285,10 @@ public class IndexRebuildIntegrationTest extends AbstractBasicIntegrationTest {
 
             executeSql(ddl);
 
+            executeSql("CREATE INDEX idx_val ON tbl3(val)");
+
             for (int i = 0; i < records; i++)
-                executeSql("INSERT INTO tbl3 VALUES (?, ?, ?)", i, "val" + i, "val" + i);
+                executeSql("INSERT INTO tbl3 VALUES (?, ?, ?)", i, i % 2 == 0 ? null : "val" + i, "val" + i);
 
             IgniteCacheTable tbl3 = (IgniteCacheTable)srvEngine.schemaHolder().schema("PUBLIC").getTable("TBL3");
 
@@ -300,8 +302,10 @@ public class IndexRebuildIntegrationTest extends AbstractBasicIntegrationTest {
             });
 
             try {
-                for (int i = 0; i < iterations; ++i)
+                for (int i = 0; i < iterations; ++i) {
                     assertQuery("select COUNT(*) from tbl3").returns((long)records).check();
+                    assertQuery("select COUNT(val) from tbl3").returns((long)records / 2L).check();
+                }
             }
             finally {
                 stop.set(true);
@@ -321,7 +325,7 @@ public class IndexRebuildIntegrationTest extends AbstractBasicIntegrationTest {
         IgniteEx initNode = grid(0);
 
         // Correlated join with correlation in filter, without project.
-        String sql = "SELECT /*+ DISABLE_RULE('MergeJoinConverter', 'NestedLoopJoinConverter') */ tbl2.id, tbl.val " +
+        String sql = "SELECT /*+ CNL_JOIN */ tbl2.id, tbl.val " +
             "FROM tbl2 LEFT JOIN tbl ON tbl.id = tbl2.id AND tbl.val = tbl2.val AND tbl.id % 2 = 0 " +
             "WHERE tbl2.id BETWEEN 10 AND 19";
 
@@ -334,7 +338,7 @@ public class IndexRebuildIntegrationTest extends AbstractBasicIntegrationTest {
         checkRebuildIndexQuery(grid(1), checker, checker);
 
         // Correlated join with correlation in filter, with project.
-        sql = "SELECT /*+ DISABLE_RULE('MergeJoinConverter', 'NestedLoopJoinConverter') */ tbl2.id, tbl.val1 " +
+        sql = "SELECT /*+ CNL_JOIN */ tbl2.id, tbl.val1 " +
             "FROM tbl2 JOIN (SELECT tbl.val || '-' AS val1, val, id FROM tbl) AS tbl " +
             "ON tbl.id = tbl2.id AND tbl.val = tbl2.val " +
             "WHERE tbl2.id BETWEEN 10 AND 12";
@@ -353,7 +357,7 @@ public class IndexRebuildIntegrationTest extends AbstractBasicIntegrationTest {
         IgniteEx initNode = grid(0);
 
         // Correlated join with correlation in filter, with project as a subset of collation.
-        String sql = "SELECT /*+ DISABLE_RULE('MergeJoinConverter', 'NestedLoopJoinConverter') */ tbl2.id, tbl.id1 " +
+        String sql = "SELECT /*+ CNL_JOIN */ tbl2.id, tbl.id1 " +
             "FROM tbl2 JOIN (SELECT tbl.id + 1 AS id1, id FROM tbl WHERE val >= 'val') AS tbl " +
             "ON tbl.id = tbl2.id " +
             "WHERE tbl2.val BETWEEN 'val10' AND 'val12'";
@@ -366,7 +370,7 @@ public class IndexRebuildIntegrationTest extends AbstractBasicIntegrationTest {
         checkRebuildIndexQuery(grid(1), checker, checker);
 
         // Correlated join with correlation in filter, with a project as a subset of collation with DESC ordering.
-        sql = "SELECT /*+ DISABLE_RULE('MergeJoinConverter', 'NestedLoopJoinConverter') */ tbl2.id, tbl.id1 " +
+        sql = "SELECT /*+ CNL_JOIN */ tbl2.id, tbl.id1 " +
             "FROM tbl2 JOIN (SELECT tbl.id + 1 AS id1, id FROM tbl WHERE val2 >= 'val') AS tbl " +
             "ON tbl.id = tbl2.id " +
             "WHERE tbl2.val BETWEEN 'val10' AND 'val12'";

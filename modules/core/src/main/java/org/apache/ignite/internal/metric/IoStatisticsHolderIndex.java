@@ -20,7 +20,7 @@ package org.apache.ignite.internal.metric;
 
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.PageIO;
 import org.apache.ignite.internal.processors.metric.GridMetricManager;
-import org.apache.ignite.internal.processors.metric.MetricRegistry;
+import org.apache.ignite.internal.processors.metric.MetricRegistryImpl;
 import org.apache.ignite.internal.processors.metric.impl.LongAdderMetric;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -84,7 +84,7 @@ public class IoStatisticsHolderIndex implements IoStatisticsHolder {
         this.grpName = grpName;
         this.idxName = idxName;
 
-        MetricRegistry mreg = mmgr.registry(metricRegistryName());
+        MetricRegistryImpl mreg = mmgr.registry(metricRegistryName());
 
         mreg.longMetric("startTime", null).value(U.currentTimeMillis());
         mreg.objectMetric("name", String.class, null).value(grpName);

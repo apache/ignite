@@ -37,13 +37,15 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.events.CacheEvent;
 import org.apache.ignite.events.CacheQueryExecutedEvent;
 import org.apache.ignite.events.CacheQueryReadEvent;
+import org.apache.ignite.events.ClusterStateChangeStartedEvent;
 import org.apache.ignite.events.Event;
 import org.apache.ignite.events.JobEvent;
 import org.apache.ignite.events.TaskEvent;
 import org.apache.ignite.internal.IgniteEx;
+import org.apache.ignite.internal.jackson.IgniteObjectMapper;
 import org.apache.ignite.internal.processors.rest.GridRestCommand;
-import org.apache.ignite.internal.processors.rest.protocols.http.jetty.GridJettyObjectMapper;
 import org.apache.ignite.internal.processors.security.AbstractSecurityTest;
+import org.apache.ignite.internal.processors.security.impl.TestSecurityData;
 import org.apache.ignite.internal.processors.security.impl.TestSecurityPluginProvider;
 import org.apache.ignite.internal.util.lang.RunnableX;
 import org.apache.ignite.internal.util.typedef.G;
@@ -53,6 +55,7 @@ import org.apache.ignite.resources.IgniteInstanceResource;
 
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static java.util.Collections.singletonMap;
+import static org.apache.ignite.plugin.security.SecurityPermissionSetBuilder.ALL_PERMISSIONS;
 import static org.apache.ignite.testframework.GridTestUtils.waitForCondition;
 
 /** Represents utility class for testing security information contained in various events. */
@@ -61,10 +64,19 @@ public abstract class AbstractEventSecurityContextTest extends AbstractSecurityT
     protected static final Map<ClusterNode, Collection<Event>> LISTENED_EVTS = new ConcurrentHashMap<>();
 
     /** Custom object mapper for HTTP REST API.  */
-    private static final ObjectMapper OBJECT_MAPPER = new GridJettyObjectMapper();
+    private static final ObjectMapper OBJECT_MAPPER = new IgniteObjectMapper();
 
     /** Port for REST client connection. */
     private static final String DFLT_REST_PORT = "11080";
+
+    /** */
+    public static final String GRID_CLIENT_LOGIN = "grid_client";
+
+    /** */
+    public static final String REST_CLIENT_LOGIN = "rest_client";
+
+    /** */
+    public static final String THIN_CLIENT_LOGIN = "thin_client";
 
     /** {@inheritDoc} */
     @Override protected IgniteEx startGrid(
@@ -75,7 +87,17 @@ public abstract class AbstractEventSecurityContextTest extends AbstractSecurityT
     ) throws Exception {
         IgniteConfiguration cfg = getConfiguration(
             login,
-            new TestSecurityPluginProvider(login, "", prmSet, sandboxPerms, globalAuth));
+            new TestSecurityPluginProvider(
+                login,
+                "",
+                prmSet,
+                sandboxPerms,
+                globalAuth,
+                new TestSecurityData(GRID_CLIENT_LOGIN, ALL_PERMISSIONS),
+                new TestSecurityData(REST_CLIENT_LOGIN, ALL_PERMISSIONS),
+                new TestSecurityData(THIN_CLIENT_LOGIN, ALL_PERMISSIONS)
+            )
+        );
 
         cfg.setClientMode(isClient);
         cfg.setLocalHost("127.0.0.1");
@@ -111,7 +133,7 @@ public abstract class AbstractEventSecurityContextTest extends AbstractSecurityT
     }
 
     /** */
-    protected static JsonNode sendRestRequest(GridRestCommand cmd, Collection<String> params, String login) throws IOException {
+    public static JsonNode sendRestRequest(GridRestCommand cmd, Collection<String> params, String login) throws IOException {
         String url = "http://127.0.0.1:" + DFLT_REST_PORT + "/ignite" +
             "?ignite.login=" + login +
             "&ignite.password=" +
@@ -163,6 +185,8 @@ public abstract class AbstractEventSecurityContextTest extends AbstractSecurityT
                     return ((TaskEvent)evt).subjectId();
                 else if (evt instanceof JobEvent)
                     return ((JobEvent)evt).taskSubjectId();
+                else if (evt instanceof ClusterStateChangeStartedEvent)
+                    return ((ClusterStateChangeStartedEvent)evt).subjectId();
                 else
                     throw new IgniteException();
             })

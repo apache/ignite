@@ -91,9 +91,11 @@ import org.apache.ignite.internal.binary.BinaryEnumCache;
 import org.apache.ignite.internal.binary.BinaryMarshaller;
 import org.apache.ignite.internal.binary.BinaryUtils;
 import org.apache.ignite.internal.cache.query.index.IndexProcessor;
+import org.apache.ignite.internal.cache.transform.CacheObjectTransformerProcessor;
 import org.apache.ignite.internal.cluster.ClusterGroupAdapter;
 import org.apache.ignite.internal.cluster.IgniteClusterEx;
 import org.apache.ignite.internal.maintenance.MaintenanceProcessor;
+import org.apache.ignite.internal.management.IgniteCommandRegistry;
 import org.apache.ignite.internal.managers.GridManager;
 import org.apache.ignite.internal.managers.IgniteMBeansManager;
 import org.apache.ignite.internal.managers.checkpoint.GridCheckpointManager;
@@ -108,6 +110,8 @@ import org.apache.ignite.internal.managers.failover.GridFailoverManager;
 import org.apache.ignite.internal.managers.indexing.GridIndexingManager;
 import org.apache.ignite.internal.managers.loadbalancer.GridLoadBalancerManager;
 import org.apache.ignite.internal.managers.systemview.GridSystemViewManager;
+import org.apache.ignite.internal.managers.systemview.IgniteConfigurationIterable;
+import org.apache.ignite.internal.managers.systemview.walker.ConfigurationViewWalker;
 import org.apache.ignite.internal.managers.tracing.GridTracingManager;
 import org.apache.ignite.internal.marshaller.optimized.OptimizedMarshaller;
 import org.apache.ignite.internal.plugin.IgniteLogInfoProvider;
@@ -124,7 +128,6 @@ import org.apache.ignite.internal.processors.cache.GridCacheUtilityKey;
 import org.apache.ignite.internal.processors.cache.IgniteCacheProxy;
 import org.apache.ignite.internal.processors.cache.IgniteInternalCache;
 import org.apache.ignite.internal.processors.cache.binary.CacheObjectBinaryProcessorImpl;
-import org.apache.ignite.internal.processors.cache.mvcc.MvccProcessorImpl;
 import org.apache.ignite.internal.processors.cache.persistence.filename.PdsConsistentIdProcessor;
 import org.apache.ignite.internal.processors.cacheobject.IgniteCacheObjectProcessor;
 import org.apache.ignite.internal.processors.closure.GridClosureProcessor;
@@ -144,7 +147,6 @@ import org.apache.ignite.internal.processors.localtask.DurableBackgroundTasksPro
 import org.apache.ignite.internal.processors.marshaller.GridMarshallerMappingProcessor;
 import org.apache.ignite.internal.processors.metastorage.persistence.DistributedMetaStorageImpl;
 import org.apache.ignite.internal.processors.metric.GridMetricManager;
-import org.apache.ignite.internal.processors.metric.MetricRegistry;
 import org.apache.ignite.internal.processors.nodevalidation.DiscoveryNodeValidationProcessor;
 import org.apache.ignite.internal.processors.nodevalidation.OsDiscoveryNodeValidationProcessor;
 import org.apache.ignite.internal.processors.odbc.ClientListenerProcessor;
@@ -199,9 +201,12 @@ import org.apache.ignite.lang.IgniteProductVersion;
 import org.apache.ignite.lifecycle.LifecycleAware;
 import org.apache.ignite.lifecycle.LifecycleBean;
 import org.apache.ignite.lifecycle.LifecycleEventType;
+import org.apache.ignite.marshaller.IgniteMarshallerClassFilter;
+import org.apache.ignite.marshaller.Marshaller;
 import org.apache.ignite.marshaller.MarshallerExclusions;
 import org.apache.ignite.marshaller.MarshallerUtils;
-import org.apache.ignite.marshaller.jdk.JdkMarshaller;
+import org.apache.ignite.metric.IgniteMetrics;
+import org.apache.ignite.metric.MetricRegistry;
 import org.apache.ignite.plugin.IgnitePlugin;
 import org.apache.ignite.plugin.PluginNotFoundException;
 import org.apache.ignite.plugin.PluginProvider;
@@ -213,6 +218,7 @@ import org.apache.ignite.spi.tracing.TracingConfigurationManager;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
+import static java.util.Collections.singleton;
 import static java.util.Optional.ofNullable;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_BINARY_MARSHALLER_USE_STRING_SERIALIZATION_VER_2;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_OPTIMIZED_MARSHALLER_USE_DEFAULT_SUID;
@@ -260,7 +266,8 @@ import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_RESTART_ENABL
 import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_REST_PORT_RANGE;
 import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_SHUTDOWN_POLICY;
 import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_SPI_CLASS;
-import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_TX_CONFIG;
+import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_TX_AWARE_QUERIES_ENABLED;
+import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_TX_SERIALIZABLE_ENABLED;
 import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_USER_NAME;
 import static org.apache.ignite.internal.IgniteVersionUtils.BUILD_TSTAMP_STR;
 import static org.apache.ignite.internal.IgniteVersionUtils.COPYRIGHT;
@@ -350,6 +357,12 @@ public class IgniteKernal implements IgniteEx, Externalizable {
     /** System line separator. */
     public static final String NL = U.nl();
 
+    /** Name of the configuration system view. */
+    public static final String CFG_VIEW = "configuration";
+
+    /** Description of the configuration system view. */
+    public static final String CFG_VIEW_DESC = "Node configuration";
+
     /**
      * Default interval of checking thread pool state for the starvation. Will be used only if the
      * {@link IgniteSystemProperties#IGNITE_STARVATION_CHECK_INTERVAL} system property is not set.
@@ -388,6 +401,10 @@ public class IgniteKernal implements IgniteEx, Externalizable {
     /** Helper which registers and unregisters MBeans. */
     @GridToStringExclude
     private IgniteMBeansManager mBeansMgr;
+
+    /** Registry with all management commands known by node. */
+    @GridToStringExclude
+    private final IgniteCommandRegistry cmdReg = new IgniteCommandRegistry();
 
     /** Ignite configuration instance. */
     private IgniteConfiguration cfg;
@@ -465,6 +482,11 @@ public class IgniteKernal implements IgniteEx, Externalizable {
     /** {@inheritDoc} */
     @Override public IgniteCompute compute() {
         return ((ClusterGroupAdapter)ctx.cluster().get().forServers()).compute();
+    }
+
+    /** {@inheritDoc} */
+    @Override public IgniteMetrics metrics() {
+        return ctx.metric().custom();
     }
 
     /** {@inheritDoc} */
@@ -903,8 +925,11 @@ public class IgniteKernal implements IgniteEx, Externalizable {
                 throw new IgniteCheckedException("User attribute has illegal name: '" + name + "'. Note that all names " +
                     "starting with '" + ATTR_PREFIX + "' are reserved for internal use.");
 
-        List<PluginProvider> plugins = cfg.getPluginProviders() != null && cfg.getPluginProviders().length > 0 ?
-            Arrays.asList(cfg.getPluginProviders()) : U.allPluginProviders();
+        List<PluginProvider> plugins = U.allPluginProviders(cfg, true);
+
+        IgniteMarshallerClassFilter clsFilter = MarshallerUtils.classNameFilter(getClass().getClassLoader());
+
+        MarshallerUtils.autoconfigureObjectInputFilter(clsFilter);
 
         // Spin out SPIs & managers.
         try {
@@ -913,7 +938,7 @@ public class IgniteKernal implements IgniteEx, Externalizable {
                 cfg,
                 gw,
                 plugins,
-                MarshallerUtils.classNameFilter(this.getClass().getClassLoader()),
+                clsFilter,
                 workerRegistry,
                 hnd,
                 longJVMPauseDetector
@@ -923,7 +948,7 @@ public class IgniteKernal implements IgniteEx, Externalizable {
 
             mBeansMgr = new IgniteMBeansManager(this);
 
-            cfg.getMarshaller().setContext(ctx.marshallerContext());
+            initializeMarshaller();
 
             startProcessor(new GridInternalSubscriptionProcessor(ctx));
 
@@ -1013,11 +1038,11 @@ public class IgniteKernal implements IgniteEx, Externalizable {
 
             startProcessor(new PdsConsistentIdProcessor(ctx));
 
-            MaintenanceProcessor mntcProcessor = new MaintenanceProcessor(ctx);
+            MaintenanceProcessor mntcProc = new MaintenanceProcessor(ctx);
 
-            startProcessor(mntcProcessor);
+            startProcessor(mntcProc);
 
-            if (mntcProcessor.isMaintenanceMode()) {
+            if (mntcProc.isMaintenanceMode()) {
                 if (log.isInfoEnabled()) {
                     log.info(
                         "Node is being started in maintenance mode. " +
@@ -1045,7 +1070,6 @@ public class IgniteKernal implements IgniteEx, Externalizable {
             try {
                 startProcessor(COMPRESSION.createOptional(ctx));
                 startProcessor(new GridMarshallerMappingProcessor(ctx));
-                startProcessor(new MvccProcessorImpl(ctx));
                 startProcessor(createComponent(DiscoveryNodeValidationProcessor.class, ctx));
                 startProcessor(new GridAffinityProcessor(ctx));
                 startProcessor(createComponent(GridSegmentationProcessor.class, ctx));
@@ -1086,6 +1110,11 @@ public class IgniteKernal implements IgniteEx, Externalizable {
                 startProcessor(new DistributedMetaStorageImpl(ctx));
                 startProcessor(new DistributedConfigurationProcessor(ctx));
                 startProcessor(new DurableBackgroundTasksProcessor(ctx));
+
+                CacheObjectTransformerProcessor transProc = createComponent(CacheObjectTransformerProcessor.class, ctx);
+
+                if (transProc != null)
+                    startProcessor(transProc);
 
                 startTimer.finishGlobalStage("Start processors");
 
@@ -1131,7 +1160,7 @@ public class IgniteKernal implements IgniteEx, Externalizable {
             }
 
             // All components exept Discovery are started, time to check if maintenance is still needed.
-            mntcProcessor.prepareAndExecuteMaintenance();
+            mntcProc.prepareAndExecuteMaintenance();
 
             gw.writeLock();
 
@@ -1192,6 +1221,8 @@ public class IgniteKernal implements IgniteEx, Externalizable {
             ctx.pools().registerMetrics();
 
             registerMetrics();
+
+            registerConfigurationSystemView();
 
             ctx.cluster().registerMetrics();
 
@@ -1418,7 +1449,6 @@ public class IgniteKernal implements IgniteEx, Externalizable {
             A.notNull(cfg.getMBeanServer(), "cfg.getMBeanServer()");
 
         A.notNull(cfg.getGridLogger(), "cfg.getGridLogger()");
-        A.notNull(cfg.getMarshaller(), "cfg.getMarshaller()");
         A.notNull(cfg.getUserAttributes(), "cfg.getUserAttributes()");
 
         // All SPIs should be non-null.
@@ -1492,6 +1522,28 @@ public class IgniteKernal implements IgniteEx, Externalizable {
                     (ram >> 20) + "MB]");
             }
         }
+    }
+
+    /** */
+    private void initializeMarshaller() {
+        Marshaller marsh = ctx.config().getMarshaller();
+
+        if (marsh == null) {
+            if (!BinaryMarshaller.available()) {
+                U.warn(log, "Standard BinaryMarshaller can't be used on this JVM. " +
+                    "Switch to HotSpot JVM or reach out Apache Ignite community for recommendations.");
+
+                marsh = ctx.marshallerContext().jdkMarshaller();
+            }
+            else
+                marsh = new BinaryMarshaller();
+
+            ctx.config().setMarshaller(marsh);
+        }
+
+        marsh.setContext(ctx.marshallerContext());
+
+        MarshallerUtils.setNodeName(marsh, ctx.igniteInstanceName());
     }
 
     /**
@@ -1679,7 +1731,8 @@ public class IgniteKernal implements IgniteEx, Externalizable {
         addDataStorageConfigurationAttributes();
 
         // Save transactions configuration.
-        add(ATTR_TX_CONFIG, cfg.getTransactionConfiguration());
+        add(ATTR_TX_SERIALIZABLE_ENABLED, cfg.getTransactionConfiguration().isTxSerializableEnabled());
+        add(ATTR_TX_AWARE_QUERIES_ENABLED, cfg.getTransactionConfiguration().isTxAwareQueriesEnabled());
 
         // Supported features.
         add(ATTR_IGNITE_FEATURES, IgniteFeatures.allFeatures());
@@ -1723,7 +1776,7 @@ public class IgniteKernal implements IgniteEx, Externalizable {
         }
 
         // Save data storage configuration.
-        add(ATTR_DATA_STORAGE_CONFIG, new JdkMarshaller().marshal(cfg.getDataStorageConfiguration()));
+        add(ATTR_DATA_STORAGE_CONFIG, ctx.marshallerContext().jdkMarshaller().marshal(cfg.getDataStorageConfiguration()));
     }
 
     /**
@@ -2027,7 +2080,7 @@ public class IgniteKernal implements IgniteEx, Externalizable {
 
         if (cfg.getConnectorConfiguration() != null) {
             objs.add(cfg.getConnectorConfiguration().getMessageInterceptor());
-            objs.add(cfg.getConnectorConfiguration().getSslContextFactory());
+            objs.add(cfg.getConnectorConfiguration().getSslFactory());
         }
 
         objs.add(cfg.getMarshaller());
@@ -3082,6 +3135,11 @@ public class IgniteKernal implements IgniteEx, Externalizable {
         }
     }
 
+    /** {@inheritDoc} */
+    @Override public IgniteCommandRegistry commandsRegistry() {
+        return cmdReg;
+    }
+
     /**
      * The {@code ctx.gateway().readLock()} is used underneath.
      */
@@ -3300,6 +3358,9 @@ public class IgniteKernal implements IgniteEx, Externalizable {
         if (cls.equals(IgniteRestProcessor.class))
             return (T)new GridRestProcessor(ctx);
 
+        if (cls.equals(CacheObjectTransformerProcessor.class))
+            return null;
+
         Class<T> implCls = null;
 
         try {
@@ -3438,6 +3499,18 @@ public class IgniteKernal implements IgniteEx, Externalizable {
      */
     public IgniteInternalFuture sendIoTest(List<ClusterNode> nodes, byte[] payload, boolean procFromNioThread) {
         return ctx.io().sendIoTest(nodes, payload, procFromNioThread);
+    }
+
+    /** Registers configuration system view. */
+    private void registerConfigurationSystemView() {
+        ctx.systemView().registerInnerCollectionView(
+            CFG_VIEW,
+            CFG_VIEW_DESC,
+            new ConfigurationViewWalker(),
+            singleton(ctx.config()),
+            IgniteConfigurationIterable::new,
+            (cfg, view) -> view
+        );
     }
 
     /**

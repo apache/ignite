@@ -44,9 +44,12 @@ class ClientCacheFieldsQueryCursor extends ClientCacheQueryCursor<List> {
 
     /** {@inheritDoc} */
     @Override void writeEntry(BinaryRawWriterEx writer, List e) {
-        assert e.size() == columnCount;
+        assert e.size() >= columnCount : "Column count less then requested: " + e.size() + " < " + columnCount;
 
-        for (Object o : e)
-            writer.writeObjectDetached(o);
+        // H2 engine can add extra columns at the end of result set.
+        // See, GridH2ValueMessageFactory#toMessages
+        // See ResultInterface#currentRow, ResultInterface#getVisibleColumnCount
+        for (int i = 0; i < columnCount; i++)
+            writer.writeObjectDetached(e.get(i));
     }
 }

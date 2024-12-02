@@ -22,10 +22,9 @@ import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.function.Function;
-import java.util.function.Predicate;
 import org.apache.calcite.plan.RelOptCluster;
 import org.apache.calcite.plan.RelOptTable;
+import org.apache.calcite.rel.hint.RelHint;
 import org.apache.calcite.rel.type.RelDataType;
 import org.apache.calcite.rel.type.RelDataTypeFactory;
 import org.apache.calcite.rex.RexNode;
@@ -44,6 +43,7 @@ import org.apache.ignite.internal.processors.query.calcite.type.IgniteTypeFactor
 import org.apache.ignite.internal.processors.query.stat.ObjectStatisticsImpl;
 import org.apache.ignite.internal.processors.query.stat.StatisticsKey;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.plugin.security.SecurityPermission;
 import org.jetbrains.annotations.Nullable;
 
 /**
@@ -101,22 +101,22 @@ public class CacheTableImpl extends AbstractTable implements IgniteCacheTable {
         RelOptTable relOptTbl,
         @Nullable List<RexNode> proj,
         @Nullable RexNode cond,
-        @Nullable ImmutableBitSet requiredColumns
+        @Nullable ImmutableBitSet requiredColumns,
+        @Nullable List<RelHint> hints
     ) {
-        return IgniteLogicalTableScan.create(cluster, cluster.traitSet(), relOptTbl, proj, cond, requiredColumns);
+        return IgniteLogicalTableScan.create(cluster, cluster.traitSet(), relOptTbl, hints, proj, cond, requiredColumns);
     }
 
     /** {@inheritDoc} */
     @Override public <Row> Iterable<Row> scan(
         ExecutionContext<Row> execCtx,
-        ColocationGroup group,
-        Predicate<Row> filter,
-        Function<Row, Row> rowTransformer,
-        @Nullable ImmutableBitSet usedColumns) {
-        UUID localNodeId = execCtx.localNodeId();
+        ColocationGroup grp,
+        @Nullable ImmutableBitSet usedColumns
+    ) {
+        UUID locNodeId = execCtx.localNodeId();
 
-        if (group.nodeIds().contains(localNodeId))
-            return new TableScan<>(execCtx, desc, group.partitions(localNodeId), filter, rowTransformer, usedColumns);
+        if (grp.nodeIds().contains(locNodeId))
+            return new TableScan<>(execCtx, desc, grp.partitions(locNodeId), usedColumns);
 
         return Collections.emptyList();
     }
@@ -159,6 +159,32 @@ public class CacheTableImpl extends AbstractTable implements IgniteCacheTable {
     /** {@inheritDoc} */
     @Override public boolean isIndexRebuildInProgress() {
         return idxRebuildInProgress;
+    }
+
+    /** {@inheritDoc} */
+    @Override public String name() {
+        return desc.typeDescription().tableName();
+    }
+
+    /** {@inheritDoc} */
+    @Override public void authorize(Operation op) {
+        SecurityPermission perm;
+
+        switch (op) {
+            case READ:
+                perm = SecurityPermission.CACHE_READ;
+                break;
+            case PUT:
+                perm = SecurityPermission.CACHE_PUT;
+                break;
+            case REMOVE:
+                perm = SecurityPermission.CACHE_REMOVE;
+                break;
+            default:
+                throw new AssertionError("Unexpected operation type: " + op);
+        }
+
+        ctx.security().authorize(desc.cacheInfo().name(), perm);
     }
 
     /** {@inheritDoc} */

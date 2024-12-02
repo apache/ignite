@@ -42,6 +42,7 @@ import org.apache.calcite.sql.SqlNumericLiteral;
 import org.apache.calcite.sql.ddl.SqlColumnDeclaration;
 import org.apache.calcite.sql.ddl.SqlDropTable;
 import org.apache.calcite.sql.ddl.SqlKeyConstraint;
+import org.apache.calcite.sql.type.SqlTypeName;
 import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.CacheWriteSynchronizationMode;
 import org.apache.ignite.internal.processors.cache.query.IgniteQueryErrorCode;
@@ -219,17 +220,18 @@ public class DdlSqlToCommandConverter {
 
                 String name = col.name.getSimple();
                 RelDataType type = planner.convert(col.dataType);
-
                 Object dflt = null;
-                if (col.expression != null) {
-                    assert col.expression instanceof SqlLiteral;
+
+                assert col.expression == null || col.expression instanceof SqlLiteral;
+
+                if (col.expression != null
+                    && (((SqlLiteral)col.expression).getTypeName() != SqlTypeName.NULL || type instanceof OtherType)) {
+                    if (type instanceof OtherType)
+                        throw new IgniteSQLException("Type '" + type + "' doesn't support default value.");
 
                     Type storageType = ctx.typeFactory().getResultClass(type);
 
                     DataContext dataCtx = new BaseDataContext(ctx.typeFactory());
-
-                    if (type instanceof OtherType)
-                        throw new IgniteSQLException("Type '" + type + "' doesn't support default value.");
 
                     dflt = TypeUtils.fromLiteral(dataCtx, storageType, (SqlLiteral)col.expression);
                 }
@@ -314,6 +316,52 @@ public class DdlSqlToCommandConverter {
         if (createTblCmd.columns() == null) {
             throw new IgniteSQLException("Column list or query should be specified for CREATE TABLE command",
                 IgniteQueryErrorCode.PARSING);
+        }
+
+        // Validate affinity key.
+        if (createTblCmd.affinityKey() != null) {
+            String affColName = null;
+            String val = createTblCmd.affinityKey();
+
+            if (val.startsWith("'")) {
+                if (val.length() == 1 || !val.endsWith("'")) {
+                    throw new IgniteSQLException("Affinity key column name does not have trailing quote: " + val,
+                        IgniteQueryErrorCode.PARSING);
+                }
+
+                val = val.substring(1, val.length() - 1);
+
+                if (F.isEmpty(val))
+                    throw new IgniteSQLException("Affinity key cannot be empty", IgniteQueryErrorCode.PARSING);
+
+                affColName = val;
+            }
+            else {
+                for (ColumnDefinition col : createTblCmd.columns()) {
+                    if (col.name().equalsIgnoreCase(val)) {
+                        if (affColName != null) {
+                            throw new IgniteSQLException("Ambiguous affinity column name, use single quotes " +
+                                "for case sensitivity: " + val, IgniteQueryErrorCode.PARSING);
+                        }
+
+                        affColName = col.name();
+                    }
+                }
+            }
+
+            String affColFinal = affColName;
+
+            if (affColName == null || createTblCmd.columns().stream().noneMatch(col -> affColFinal.equals(col.name()))) {
+                throw new IgniteSQLException("Affinity key column with given name not found: " + val,
+                    IgniteQueryErrorCode.PARSING);
+            }
+
+            if (!createTblCmd.primaryKeyColumns().contains(affColName)) {
+                throw new IgniteSQLException("Affinity key column must be one of key columns: " + affColName,
+                    IgniteQueryErrorCode.PARSING);
+            }
+
+            createTblCmd.affinityKey(affColName);
         }
 
         return createTblCmd;

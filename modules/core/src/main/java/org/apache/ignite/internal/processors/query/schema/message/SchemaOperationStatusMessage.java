@@ -45,6 +45,9 @@ public class SchemaOperationStatusMessage implements Message {
     @GridDirectTransient
     private UUID sndNodeId;
 
+    /** No-op flag. */
+    private boolean nop;
+
     /**
      * Default constructor.
      */
@@ -57,10 +60,12 @@ public class SchemaOperationStatusMessage implements Message {
      *
      * @param opId Operation ID.
      * @param errBytes Error bytes.
+     * @param nop No-op flag.
      */
-    public SchemaOperationStatusMessage(UUID opId, byte[] errBytes) {
+    public SchemaOperationStatusMessage(UUID opId, byte[] errBytes, boolean nop) {
         this.opId = opId;
         this.errBytes = errBytes;
+        this.nop = nop;
     }
 
     /**
@@ -114,6 +119,12 @@ public class SchemaOperationStatusMessage implements Message {
                     return false;
 
                 writer.incrementState();
+
+            case 2:
+                if (!writer.writeBoolean("nop", nop))
+                    return false;
+
+                writer.incrementState();
         }
 
         return true;
@@ -142,9 +153,24 @@ public class SchemaOperationStatusMessage implements Message {
                     return false;
 
                 reader.incrementState();
+
+            case 2:
+                nop = reader.readBoolean("nop");
+
+                if (!reader.isLastRead())
+                    return false;
+
+                reader.incrementState();
         }
 
         return reader.afterMessageRead(SchemaOperationStatusMessage.class);
+    }
+
+    /**
+     * @return <code>True</code> if message is no-op.
+     */
+    public boolean nop() {
+        return nop;
     }
 
     /** {@inheritDoc} */
@@ -154,7 +180,7 @@ public class SchemaOperationStatusMessage implements Message {
 
     /** {@inheritDoc} */
     @Override public byte fieldsCount() {
-        return 2;
+        return 3;
     }
 
     /** {@inheritDoc} */

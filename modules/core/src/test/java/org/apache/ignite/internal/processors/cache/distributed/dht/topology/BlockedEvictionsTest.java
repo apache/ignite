@@ -271,13 +271,13 @@ public class BlockedEvictionsTest extends GridCommonAbstractTest {
         PartitionsEvictManager mgr = grid(0).context().cache().context().evict();
 
         // Group eviction context should remain in map.
-        Map evictionGroupsMap = U.field(mgr, "evictionGroupsMap");
+        Map evictionGrpsMap = U.field(mgr, "evictionGroupsMap");
 
-        assertEquals("Group context must be cleaned up", 0, evictionGroupsMap.size());
+        assertEquals("Group context must be cleaned up", 0, evictionGrpsMap.size());
 
         grid(0).getOrCreateCache(cacheConfiguration());
 
-        assertEquals(0, evictionGroupsMap.size());
+        assertEquals(0, evictionGrpsMap.size());
 
         assertPartitionsSame(idleVerify(grid(0), DEFAULT_CACHE_NAME));
     }

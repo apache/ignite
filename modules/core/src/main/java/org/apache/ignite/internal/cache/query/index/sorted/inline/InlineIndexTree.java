@@ -29,6 +29,7 @@ import org.apache.ignite.internal.cache.query.index.sorted.IndexKeyDefinition;
 import org.apache.ignite.internal.cache.query.index.sorted.IndexKeyTypeSettings;
 import org.apache.ignite.internal.cache.query.index.sorted.IndexRow;
 import org.apache.ignite.internal.cache.query.index.sorted.IndexRowCache;
+import org.apache.ignite.internal.cache.query.index.sorted.IndexRowComparator;
 import org.apache.ignite.internal.cache.query.index.sorted.IndexRowImpl;
 import org.apache.ignite.internal.cache.query.index.sorted.InlineIndexRowHandler;
 import org.apache.ignite.internal.cache.query.index.sorted.InlineIndexRowHandlerFactory;
@@ -37,14 +38,12 @@ import org.apache.ignite.internal.cache.query.index.sorted.SortedIndexDefinition
 import org.apache.ignite.internal.cache.query.index.sorted.ThreadLocalRowHandlerHolder;
 import org.apache.ignite.internal.cache.query.index.sorted.inline.io.AbstractInlineInnerIO;
 import org.apache.ignite.internal.cache.query.index.sorted.inline.io.AbstractInlineLeafIO;
-import org.apache.ignite.internal.cache.query.index.sorted.inline.io.MvccIO;
 import org.apache.ignite.internal.metric.IoStatisticsHolder;
 import org.apache.ignite.internal.pagemem.PageIdAllocator;
-import org.apache.ignite.internal.pagemem.PageIdUtils;
 import org.apache.ignite.internal.pagemem.PageMemory;
 import org.apache.ignite.internal.processors.cache.CacheGroupContext;
+import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.IgniteCacheOffheapManager;
-import org.apache.ignite.internal.processors.cache.mvcc.MvccUtils;
 import org.apache.ignite.internal.processors.cache.persistence.CacheDataRowAdapter;
 import org.apache.ignite.internal.processors.cache.persistence.tree.BPlusTree;
 import org.apache.ignite.internal.processors.cache.persistence.tree.CorruptedTreeException;
@@ -53,7 +52,10 @@ import org.apache.ignite.internal.processors.cache.persistence.tree.io.BPlusMeta
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.PageIO;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.PageIoResolver;
 import org.apache.ignite.internal.processors.cache.persistence.tree.reuse.ReuseList;
-import org.apache.ignite.internal.processors.cache.tree.mvcc.data.MvccDataRow;
+import org.apache.ignite.internal.processors.cache.persistence.tree.util.PageHandler;
+import org.apache.ignite.internal.processors.cache.persistence.tree.util.PageHandlerWrapper;
+import org.apache.ignite.internal.processors.metric.MetricRegistryImpl;
+import org.apache.ignite.internal.processors.metric.impl.LongAdderMetric;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.S;
@@ -61,10 +63,13 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.maintenance.MaintenanceTask;
 import org.jetbrains.annotations.Nullable;
 
+import static org.apache.ignite.IgniteSystemProperties.IGNITE_BPLUS_TREE_DISABLE_METRICS;
+import static org.apache.ignite.internal.cache.query.index.sorted.inline.InlineIndexImpl.INDEX_METRIC_PREFIX;
 import static org.apache.ignite.internal.cache.query.index.sorted.inline.types.NullableInlineIndexKeyType.CANT_BE_COMPARE;
 import static org.apache.ignite.internal.cache.query.index.sorted.inline.types.NullableInlineIndexKeyType.COMPARE_UNSUPPORTED;
 import static org.apache.ignite.internal.cache.query.index.sorted.maintenance.MaintenanceRebuildIndexUtils.mergeTasks;
 import static org.apache.ignite.internal.cache.query.index.sorted.maintenance.MaintenanceRebuildIndexUtils.toMaintenanceTask;
+import static org.apache.ignite.internal.processors.metric.impl.MetricUtils.metricName;
 
 /**
  * BPlusTree where nodes stores inlined index keys.
@@ -103,9 +108,6 @@ public class InlineIndexTree extends BPlusTree<IndexRow, IndexRow> {
     /** Row cache. */
     private final @Nullable IndexRowCache idxRowCache;
 
-    /** Whether MVCC is enabled. */
-    private final boolean mvccEnabled;
-
     /**
      * Constructor.
      */
@@ -139,7 +141,8 @@ public class InlineIndexTree extends BPlusTree<IndexRow, IndexRow> {
             PageIdAllocator.FLAG_IDX,
             grpCtx.shared().kernalContext().failure(),
             grpCtx.shared().diagnostic().pageLockTracker(),
-            pageIoResolver
+            pageIoResolver,
+            wrapper(def)
         );
 
         this.grpCtx = grpCtx;
@@ -154,15 +157,13 @@ public class InlineIndexTree extends BPlusTree<IndexRow, IndexRow> {
 
         this.idxRowCache = idxRowCache;
 
-        mvccEnabled = grpCtx.mvccEnabled();
-
         if (!initNew) {
             // Init from metastore.
             // Page is ready - read meta information.
             MetaPageInfo metaInfo = metaInfo();
 
             inlineSize = metaInfo.inlineSize();
-            setIos(inlineSize, mvccEnabled);
+            setIos(inlineSize);
 
             boolean inlineObjSupported = inlineObjectSupported(def, metaInfo, rowHndFactory);
 
@@ -187,7 +188,7 @@ public class InlineIndexTree extends BPlusTree<IndexRow, IndexRow> {
                 log
             );
 
-            setIos(inlineSize, mvccEnabled);
+            setIos(inlineSize);
         }
 
         initTree(initNew, inlineSize);
@@ -196,10 +197,10 @@ public class InlineIndexTree extends BPlusTree<IndexRow, IndexRow> {
     }
 
     /** */
-    private void setIos(int inlineSize, boolean mvccEnabled) {
+    private void setIos(int inlineSize) {
         setIos(
-            AbstractInlineInnerIO.versions(inlineSize, mvccEnabled),
-            AbstractInlineLeafIO.versions(inlineSize, mvccEnabled)
+            AbstractInlineInnerIO.versions(inlineSize),
+            AbstractInlineLeafIO.versions(inlineSize)
         );
     }
 
@@ -256,9 +257,7 @@ public class InlineIndexTree extends BPlusTree<IndexRow, IndexRow> {
         if (inlineSize == 0) {
             IndexRow currRow = getRow(io, pageAddr, idx);
 
-            int cmp = compareFullRows(currRow, row, 0);
-
-            return cmp == 0 ? mvccCompare(currRow, row) : cmp;
+            return compareFullRows(currRow, row, 0, rowHandler(), def.rowComparator());
         }
 
         int fieldOff = 0;
@@ -308,30 +307,35 @@ public class InlineIndexTree extends BPlusTree<IndexRow, IndexRow> {
             if (currRow == null)
                 currRow = getRow(io, pageAddr, idx);
 
-            int ret = compareFullRows(currRow, row, keyIdx);
-
-            if (ret != 0)
-                return ret;
+            return compareFullRows(currRow, row, keyIdx, rowHandler(), def.rowComparator());
         }
 
-        return mvccCompare((MvccIO)io, pageAddr, idx, row);
+        return 0;
     }
 
     /** */
-    private int compareFullRows(IndexRow currRow, IndexRow row, int from) throws IgniteCheckedException {
+    public static int compareFullRows(
+        IndexRow currRow,
+        IndexRow row,
+        int from,
+        InlineIndexRowHandler rowHnd,
+        IndexRowComparator rowCmp
+    ) throws IgniteCheckedException {
         if (currRow == row)
             return 0;
 
-        for (int i = from; i < rowHandler().indexKeyDefinitions().size(); i++) {
+        List<IndexKeyDefinition> idxKeyDefs = rowHnd.indexKeyDefinitions();
+
+        for (int i = from; i < idxKeyDefs.size(); i++) {
             // If a search key is null then skip other keys (consider that null shows that we should get all
             // possible keys for that comparison).
             if (row.key(i) == null)
                 return 0;
 
-            int c = def.rowComparator().compareRow(currRow, row, i);
+            int c = rowCmp.compareRow(currRow, row, i);
 
             if (c != 0)
-                return applySortOrder(Integer.signum(c), rowHnd.indexKeyDefinitions().get(i).order().sortOrder());
+                return applySortOrder(Integer.signum(c), idxKeyDefs.get(i).order().sortOrder());
         }
 
         return 0;
@@ -352,41 +356,14 @@ public class InlineIndexTree extends BPlusTree<IndexRow, IndexRow> {
     public IndexRowImpl createIndexRow(long link) throws IgniteCheckedException {
         IndexRowImpl cachedRow = idxRowCache == null ? null : idxRowCache.get(link);
 
-        if (cachedRow != null)
-            return cachedRow;
+        if (cachedRow != null) {
+            return cachedRow.rowHandler() == rowHandler() ? cachedRow :
+                new IndexRowImpl(rowHandler(), cachedRow.cacheDataRow());
+        }
 
         CacheDataRowAdapter row = new CacheDataRowAdapter(link);
 
         row.initFromLink(cacheGroupContext(), CacheDataRowAdapter.RowData.FULL, true);
-
-        IndexRowImpl r = new IndexRowImpl(rowHandler(), row);
-
-        if (idxRowCache != null)
-            idxRowCache.put(r);
-
-        return r;
-    }
-
-    /** Creates an mvcc index row for this tree. */
-    public IndexRowImpl createMvccIndexRow(long link, long mvccCrdVer, long mvccCntr, int mvccOpCntr) throws IgniteCheckedException {
-        IndexRowImpl cachedRow = idxRowCache == null ? null : idxRowCache.get(link);
-
-        if (cachedRow != null)
-            return cachedRow;
-
-        int partId = PageIdUtils.partId(PageIdUtils.pageId(link));
-
-        MvccDataRow row = new MvccDataRow(
-            cacheGroupContext(),
-            0,
-            link,
-            partId,
-            null,
-            mvccCrdVer,
-            mvccCntr,
-            mvccOpCntr,
-            true
-        );
 
         IndexRowImpl r = new IndexRowImpl(rowHandler(), row);
 
@@ -554,12 +531,12 @@ public class InlineIndexTree extends BPlusTree<IndexRow, IndexRow> {
     @Override protected CorruptedTreeException corruptedTreeException(String msg, Throwable cause, int grpId, long... pageIds) {
         IndexName idx = def.idxName();
 
-        String indexName = idx.idxName();
+        String idxName = idx.idxName();
         String cacheName = idx.cacheName();
         String tableName = idx.tableName();
 
         CorruptedTreeException e = new CorruptedTreeException(msg, cause, grpName, cacheName,
-            indexName, grpId, pageIds);
+            idxName, grpId, pageIds);
 
         String errorMsg = "Index " + idx + " of the table " + tableName + " (cache " + cacheName + ") is " +
             "corrupted, to fix this issue a rebuild is required. On the next restart, node will enter the " +
@@ -570,7 +547,7 @@ public class InlineIndexTree extends BPlusTree<IndexRow, IndexRow> {
         int cacheId = CU.cacheId(cacheName);
 
         try {
-            MaintenanceTask task = toMaintenanceTask(cacheId, indexName);
+            MaintenanceTask task = toMaintenanceTask(cacheId, idxName);
 
             grpCtx.shared().kernalContext().maintenanceRegistry().registerMaintenanceTask(
                 task,
@@ -617,46 +594,6 @@ public class InlineIndexTree extends BPlusTree<IndexRow, IndexRow> {
         return rowHnd != null ? rowHnd : ThreadLocalRowHandlerHolder.rowHandler();
     }
 
-    /**
-     * @param io IO.
-     * @param pageAddr Page address.
-     * @param idx Item index.
-     * @param row Search row.
-     * @return Comparison result.
-     */
-    private int mvccCompare(MvccIO io, long pageAddr, int idx, IndexRow row) {
-        if (!mvccEnabled || row.indexPlainRow())
-            return 0;
-
-        long crd = io.mvccCoordinatorVersion(pageAddr, idx);
-        long cntr = io.mvccCounter(pageAddr, idx);
-        int opCntr = io.mvccOperationCounter(pageAddr, idx);
-
-        assert MvccUtils.mvccVersionIsValid(crd, cntr, opCntr);
-
-        return -MvccUtils.compare(crd, cntr, opCntr, row);  // descending order
-    }
-
-    /**
-     * @param r1 First row.
-     * @param r2 Second row.
-     * @return Comparison result.
-     */
-    private int mvccCompare(IndexRow r1, IndexRow r2) {
-        if (!mvccEnabled || r2.indexPlainRow() || r1 == r2)
-            return 0;
-
-        long crdVer1 = r1.mvccCoordinatorVersion();
-        long crdVer2 = r2.mvccCoordinatorVersion();
-
-        int c = -Long.compare(crdVer1, crdVer2);
-
-        if (c != 0)
-            return c;
-
-        return -Long.compare(r1.mvccCounter(), r2.mvccCounter());
-    }
-
     /** {@inheritDoc} */
     @Override protected String lockRetryErrorMessage(String op) {
         IndexName idxName = def.idxName();
@@ -664,5 +601,70 @@ public class InlineIndexTree extends BPlusTree<IndexRow, IndexRow> {
         return super.lockRetryErrorMessage(op) + " Problem with the index [cacheName=" + idxName.cacheName() +
             ", schemaName=" + idxName.schemaName() + ", tblName=" + idxName.tableName() + ", idxName=" +
             idxName.idxName() + ']';
+    }
+
+    /** */
+    private static PageHandlerWrapper<Result> wrapper(SortedIndexDefinition def) {
+        if (def == null || def.cacheInfo().cacheContext() == null)
+            return null;
+
+        if (IgniteSystemProperties.getBoolean(IGNITE_BPLUS_TREE_DISABLE_METRICS))
+            return null;
+
+        return new PageHandlerWrapper<Result>() {
+            @Override public PageHandler<?, Result> wrap(BPlusTree<?, ?> tree, PageHandler<?, Result> hnd) {
+                GridCacheContext<?, ?> cctx = def.cacheInfo().cacheContext();
+
+                MetricRegistryImpl mreg = cctx.shared().kernalContext().metric().registry(
+                    metricName(INDEX_METRIC_PREFIX, def.idxName().fullName()));
+
+                LongAdderMetric cnt = mreg.longAdderMetric(hnd.getClass().getSimpleName() + "Count",
+                    "Count of " + hnd.getClass().getSimpleName() + " operations");
+                LongAdderMetric time = mreg.longAdderMetric(hnd.getClass().getSimpleName() + "Time",
+                    "Total time of " + hnd.getClass().getSimpleName() + " operations (nanoseconds)");
+
+                return new PageHandler<Object, Result>() {
+                    @Override public Result run(
+                        int cacheId,
+                        long pageId,
+                        long page,
+                        long pageAddr,
+                        PageIO io,
+                        Boolean walPlc,
+                        Object arg,
+                        int intArg,
+                        IoStatisticsHolder statHolder
+                    ) throws IgniteCheckedException {
+                        if (!cctx.statisticsEnabled()) {
+                            return ((PageHandler<Object, Result>)hnd).run(cacheId, pageId, page, pageAddr, io, walPlc,
+                                arg, intArg, statHolder);
+                        }
+
+                        long ts = System.nanoTime();
+
+                        try {
+                            return ((PageHandler<Object, Result>)hnd).run(cacheId, pageId, page, pageAddr, io, walPlc,
+                                arg, intArg, statHolder);
+                        }
+                        finally {
+                            cnt.increment();
+                            time.add(System.nanoTime() - ts);
+                        }
+                    }
+
+                    @Override public boolean releaseAfterWrite(
+                        int cacheId,
+                        long pageId,
+                        long page,
+                        long pageAddr,
+                        Object arg,
+                        int intArg
+                    ) {
+                        return ((PageHandler<Object, Result>)hnd).releaseAfterWrite(cacheId, pageId, page, pageAddr,
+                            arg, intArg);
+                    }
+                };
+            }
+        };
     }
 }

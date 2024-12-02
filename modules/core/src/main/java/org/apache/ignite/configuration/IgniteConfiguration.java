@@ -53,7 +53,6 @@ import org.apache.ignite.internal.util.typedef.internal.A;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteAsyncCallback;
-import org.apache.ignite.lang.IgniteExperimental;
 import org.apache.ignite.lang.IgniteInClosure;
 import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.lifecycle.LifecycleBean;
@@ -84,6 +83,7 @@ import org.apache.ignite.spi.indexing.IndexingSpi;
 import org.apache.ignite.spi.loadbalancing.LoadBalancingSpi;
 import org.apache.ignite.spi.loadbalancing.roundrobin.RoundRobinLoadBalancingSpi;
 import org.apache.ignite.spi.metric.MetricExporterSpi;
+import org.apache.ignite.spi.metric.jmx.JmxMetricExporterSpi;
 import org.apache.ignite.spi.systemview.SystemViewExporterSpi;
 import org.apache.ignite.spi.tracing.TracingSpi;
 import org.apache.ignite.ssl.SslContextFactory;
@@ -263,12 +263,6 @@ public class IgniteConfiguration {
      */
     @Deprecated
     public static final long DFLT_LONG_QRY_WARN_TIMEOUT = SqlConfiguration.DFLT_LONG_QRY_WARN_TIMEOUT;
-
-    /** Default number of MVCC vacuum threads.. */
-    public static final int DFLT_MVCC_VACUUM_THREAD_CNT = 2;
-
-    /** Default time interval between MVCC vacuum runs in milliseconds. */
-    public static final long DFLT_MVCC_VACUUM_FREQUENCY = 5000;
 
     /**
      * Default SQL query history size.
@@ -590,12 +584,6 @@ public class IgniteConfiguration {
     /** Client connector configuration. */
     private ClientConnectorConfiguration cliConnCfg = ClientListenerProcessor.DFLT_CLI_CFG;
 
-    /** Size of MVCC vacuum thread pool. */
-    private int mvccVacuumThreadCnt = DFLT_MVCC_VACUUM_THREAD_CNT;
-
-    /** Time interval between vacuum runs (ms). */
-    private long mvccVacuumFreq = DFLT_MVCC_VACUUM_FREQUENCY;
-
     /** User authentication enabled. */
     private boolean authEnabled;
 
@@ -616,6 +604,9 @@ public class IgniteConfiguration {
 
     /** Shutdown policy for cluster. */
     public ShutdownPolicy shutdown = DFLT_SHUTDOWN_POLICY;
+
+    /** Default values for distributed properties. */
+    private Map<String, String> distrProps;
 
     /**
      * Creates valid grid configuration with all default values.
@@ -699,8 +690,6 @@ public class IgniteConfiguration {
         metricsLogFreq = cfg.getMetricsLogFrequency();
         metricsUpdateFreq = cfg.getMetricsUpdateFrequency();
         mgmtPoolSize = cfg.getManagementThreadPoolSize();
-        mvccVacuumThreadCnt = cfg.getMvccVacuumThreadCount();
-        mvccVacuumFreq = cfg.getMvccVacuumFrequency();
         netTimeout = cfg.getNetworkTimeout();
         nodeId = cfg.getNodeId();
         odbcCfg = cfg.getOdbcConfiguration();
@@ -746,6 +735,7 @@ public class IgniteConfiguration {
         sqlCfg = cfg.getSqlConfiguration();
         shutdown = cfg.getShutdownPolicy();
         asyncContinuationExecutor = cfg.getAsyncContinuationExecutor();
+        distrProps = cfg.getDistributedPropertiesDefaultValues();
     }
 
     /**
@@ -2437,11 +2427,12 @@ public class IgniteConfiguration {
     }
 
     /**
-     * Sets fully configured instances of {@link MetricExporterSpi}.
+     * Sets fully configured instances of {@link MetricExporterSpi}. {@link JmxMetricExporterSpi} is used by default.
      *
      * @param metricExporterSpi Fully configured instances of {@link MetricExporterSpi}.
      * @return {@code this} for chaining.
      * @see IgniteConfiguration#getMetricExporterSpi()
+     * @see JmxMetricExporterSpi
      */
     public IgniteConfiguration setMetricExporterSpi(MetricExporterSpi... metricExporterSpi) {
         this.metricExporterSpi = metricExporterSpi;
@@ -2463,9 +2454,10 @@ public class IgniteConfiguration {
     }
 
     /**
-     * Gets fully configured metric SPI implementations.
+     * Gets fully configured metric SPI implementations. {@link JmxMetricExporterSpi} is used by default.
      *
      * @return Metric exporter SPI implementations.
+     * @see JmxMetricExporterSpi
      */
     public MetricExporterSpi[] getMetricExporterSpi() {
         return metricExporterSpi;
@@ -3481,60 +3473,6 @@ public class IgniteConfiguration {
     }
 
     /**
-     * <b>This is an experimental feature. Transactional SQL is currently in a beta status.</b>
-     * <p>
-     * Returns number of MVCC vacuum threads.
-     *
-     * @return Number of MVCC vacuum threads.
-     */
-    @IgniteExperimental
-    public int getMvccVacuumThreadCount() {
-        return mvccVacuumThreadCnt;
-    }
-
-    /**
-     * <b>This is an experimental feature. Transactional SQL is currently in a beta status.</b>
-     * <p>
-     * Sets number of MVCC vacuum threads.
-     *
-     * @param mvccVacuumThreadCnt Number of MVCC vacuum threads.
-     * @return {@code this} for chaining.
-     */
-    @IgniteExperimental
-    public IgniteConfiguration setMvccVacuumThreadCount(int mvccVacuumThreadCnt) {
-        this.mvccVacuumThreadCnt = mvccVacuumThreadCnt;
-
-        return this;
-    }
-
-    /**
-     * <b>This is an experimental feature. Transactional SQL is currently in a beta status.</b>
-     * <p>
-     * Returns time interval between MVCC vacuum runs in milliseconds.
-     *
-     * @return Time interval between MVCC vacuum runs in milliseconds.
-     */
-    @IgniteExperimental
-    public long getMvccVacuumFrequency() {
-        return mvccVacuumFreq;
-    }
-
-    /**
-     * <b>This is an experimental feature. Transactional SQL is currently in a beta status.</b>
-     * <p>
-     * Sets time interval between MVCC vacuum runs in milliseconds.
-     *
-     * @param mvccVacuumFreq Time interval between MVCC vacuum runs in milliseconds.
-     * @return {@code this} for chaining.
-     */
-    @IgniteExperimental
-    public IgniteConfiguration setMvccVacuumFrequency(long mvccVacuumFreq) {
-        this.mvccVacuumFreq = mvccVacuumFreq;
-
-        return this;
-    }
-
-    /**
      * Returns {@code true} if user authentication is enabled for cluster. Otherwise returns {@code false}.
      * Default value is false; authentication is disabled.
      *
@@ -3661,6 +3599,27 @@ public class IgniteConfiguration {
      */
     public IgniteConfiguration setAsyncContinuationExecutor(Executor asyncContinuationExecutor) {
         this.asyncContinuationExecutor = asyncContinuationExecutor;
+
+        return this;
+    }
+
+    /**
+     * Gets default values for distributed properties.
+     *
+     * @return Default values for distributed properties.
+     */
+    public Map<String, String> getDistributedPropertiesDefaultValues() {
+        return distrProps;
+    }
+
+    /**
+     * Sets default values for distributed properties.
+     *
+     * @param distrProps Default values for distributed properties.
+     * @return {@code this} for chaining.
+     */
+    public IgniteConfiguration setDistributedPropertiesDefaultValues(Map<String, String> distrProps) {
+        this.distrProps = distrProps;
 
         return this;
     }

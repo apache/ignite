@@ -43,11 +43,10 @@ import org.apache.ignite.resources.IgniteInstanceResource;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.transactions.TransactionConcurrency;
 import org.apache.ignite.transactions.TransactionIsolation;
-import org.junit.Ignore;
 import org.junit.Test;
+
 import static org.apache.ignite.cache.CacheAtomicityMode.ATOMIC;
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
-import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL_SNAPSHOT;
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
 import static org.apache.ignite.cache.CacheMode.REPLICATED;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
@@ -324,18 +323,6 @@ public class GridCacheTransformEventSelfTest extends GridCommonAbstractTest {
     }
 
     /**
-     * Test TRANSACTIONAL_SNAPSHOT PARTITIONED cache with PESSIMISTIC/REPEATABLE_READ transaction.
-     *
-     * @throws Exception If failed.
-     */
-    @Ignore("https://issues.apache.org/jira/browse/IGNITE-9321")
-    @Test
-    public void testMvccTxPartitionedPessimisticRepeatableRead() throws Exception {
-        checkMvccTx(PARTITIONED, PESSIMISTIC, REPEATABLE_READ);
-    }
-
-
-    /**
      * Test TRANSACTIONAL REPLICATED cache with OPTIMISTIC/REPEATABLE_READ transaction.
      *
      * @throws Exception If failed.
@@ -396,17 +383,6 @@ public class GridCacheTransformEventSelfTest extends GridCommonAbstractTest {
     }
 
     /**
-     * Test TRANSACTIONAL_SNAPSHOT REPLICATED cache with PESSIMISTIC/REPEATABLE_READ transaction.
-     *
-     * @throws Exception If failed.
-     */
-    @Ignore("https://issues.apache.org/jira/browse/IGNITE-9321")
-    @Test
-    public void testMvccTxReplicatedPessimisticRepeatableRead() throws Exception {
-        checkMvccTx(REPLICATED, PESSIMISTIC, REPEATABLE_READ);
-    }
-
-    /**
      * Test ATOMIC PARTITIONED cache.
      *
      * @throws Exception If failed.
@@ -456,21 +432,6 @@ public class GridCacheTransformEventSelfTest extends GridCommonAbstractTest {
         caches[0].invokeAll(keys, new TransformerWithInjection());
 
         checkEventNodeIdsStrict(TransformerWithInjection.class.getName(), primaryIdsForKeys(key1, key2));
-    }
-
-    /**
-     * Check TRANSACTIONAL_SNAPSHOT cache.
-     *
-     * @param cacheMode Cache mode.
-     * @param txConcurrency TX concurrency.
-     * @param txIsolation TX isolation.
-     * @throws Exception If failed.
-     */
-    private void checkMvccTx(CacheMode cacheMode, TransactionConcurrency txConcurrency,
-        TransactionIsolation txIsolation) throws Exception {
-        initialize(cacheMode, TRANSACTIONAL_SNAPSHOT, txConcurrency, txIsolation);
-
-        checkTx0();
     }
 
     /**

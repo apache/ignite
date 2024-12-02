@@ -31,10 +31,8 @@ import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.lifecycle.LifecycleAware;
 import org.apache.ignite.resources.IgniteInstanceResource;
-import org.apache.ignite.testframework.MvccFeatureChecker;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.transactions.Transaction;
-import org.junit.Before;
 import org.junit.Test;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
@@ -45,12 +43,6 @@ import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
 public class CacheStoreSessionListenerLifecycleSelfTest extends GridCommonAbstractTest {
     /** */
     private static final Queue<String> evts = new ConcurrentLinkedDeque<>();
-
-    /** */
-    @Before
-    public void beforeCacheStoreSessionListenerLifecycleSelfTest() {
-        MvccFeatureChecker.skipIfNotSupported(MvccFeatureChecker.Feature.CACHE_STORE);
-    }
 
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {

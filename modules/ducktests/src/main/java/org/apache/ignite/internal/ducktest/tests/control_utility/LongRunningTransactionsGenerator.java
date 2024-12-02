@@ -53,38 +53,38 @@ public class LongRunningTransactionsGenerator extends IgniteAwareApplication {
     @Override protected void run(JsonNode jsonNode) throws Exception {
         IgniteCache<String, String> cache = ignite.cache(jsonNode.get("cache_name").asText());
 
-        int txCount = jsonNode.get("tx_count") != null ? jsonNode.get("tx_count").asInt() : 1;
+        int txCnt = jsonNode.get("tx_count") != null ? jsonNode.get("tx_count").asInt() : 1;
 
         int txSize = jsonNode.get("tx_size") != null ? jsonNode.get("tx_size").asInt() : 1;
 
         String keyPrefix = jsonNode.get("key_prefix") != null ? jsonNode.get("key_prefix").asText() : LOCKED_KEY_PREFIX;
 
-        String label = jsonNode.get("label") != null ? jsonNode.get("label").asText() : null;
+        String lbl = jsonNode.get("label") != null ? jsonNode.get("label").asText() : null;
 
-        long expectedTopologyVersion = jsonNode.get("wait_for_topology_version") != null ?
+        long expectedTopVer = jsonNode.get("wait_for_topology_version") != null ?
             jsonNode.get("wait_for_topology_version").asLong() : -1L;
 
-        CountDownLatch lockLatch = new CountDownLatch(txCount);
+        CountDownLatch lockLatch = new CountDownLatch(txCnt);
 
-        pool = Executors.newFixedThreadPool(2 * txCount);
+        pool = Executors.newFixedThreadPool(2 * txCnt);
 
         markInitialized();
 
-        if (expectedTopologyVersion > 0) {
-            log.info("Start waiting for topology version: " + expectedTopologyVersion + ", " +
+        if (expectedTopVer > 0) {
+            log.info("Start waiting for topology version: " + expectedTopVer + ", " +
                 "current version is: " + ignite.cluster().topologyVersion());
 
             long start = System.nanoTime();
 
-            while (ignite.cluster().topologyVersion() < expectedTopologyVersion
+            while (ignite.cluster().topologyVersion() < expectedTopVer
                 && Duration.ofNanos(start - System.nanoTime()).compareTo(TOPOLOGY_WAIT_TIMEOUT) < 0)
                 Thread.sleep(100L);
 
-            log.info("Finished waiting for topology version: " + expectedTopologyVersion + ", " +
+            log.info("Finished waiting for topology version: " + expectedTopVer + ", " +
                 "current version is: " + ignite.cluster().topologyVersion());
         }
 
-        for (int i = 0; i < txCount; i++) {
+        for (int i = 0; i < txCnt; i++) {
             String key = keyPrefix + i;
 
             pool.execute(() -> {
@@ -113,9 +113,9 @@ public class LongRunningTransactionsGenerator extends IgniteAwareApplication {
 
         log.info(KEYS_LOCKED_MESSAGE);
 
-        CountDownLatch txLatch = new CountDownLatch(txCount);
+        CountDownLatch txLatch = new CountDownLatch(txCnt);
 
-        for (int i = 0; i < txCount; i++) {
+        for (int i = 0; i < txCnt; i++) {
             Map<String, String> data = new TreeMap<>();
 
             for (int j = 0; j < txSize; j++) {
@@ -124,7 +124,7 @@ public class LongRunningTransactionsGenerator extends IgniteAwareApplication {
                 data.put(key, key);
             }
 
-            IgniteTransactions igniteTransactions = label != null ? ignite.transactions().withLabel(label) :
+            IgniteTransactions igniteTransactions = lbl != null ? ignite.transactions().withLabel(lbl) :
                 ignite.transactions();
 
             pool.execute(() -> {

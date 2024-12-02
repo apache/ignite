@@ -41,10 +41,10 @@ import io.opencensus.tags.TagValue;
 import io.opencensus.tags.Tags;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.processors.metric.GridMetricManager;
-import org.apache.ignite.internal.processors.metric.MetricRegistry;
 import org.apache.ignite.internal.processors.metric.PushMetricsExporterAdapter;
 import org.apache.ignite.internal.processors.metric.impl.MetricUtils;
 import org.apache.ignite.internal.util.typedef.T2;
+import org.apache.ignite.metric.MetricRegistry;
 import org.apache.ignite.spi.IgniteSpiContext;
 import org.apache.ignite.spi.IgniteSpiException;
 import org.apache.ignite.spi.metric.BooleanMetric;
@@ -292,8 +292,10 @@ public class OpenCensusMetricExporterSpi extends PushMetricsExporterAdapter {
     @Override protected void onContextInitialized0(IgniteSpiContext spiCtx) throws IgniteSpiException {
         super.onContextInitialized0(spiCtx);
 
-        consistenIdValue = TagValue.create(
-            ((IgniteEx)ignite()).context().discovery().localNode().consistentId().toString());
+        if (sendConsistentId) {
+            consistenIdValue = TagValue.create(
+                ((IgniteEx)ignite()).context().discovery().localNode().consistentId().toString());
+        }
     }
 
     /**

@@ -52,7 +52,7 @@ Parameters:
 
 ** `TEMPLATE=<cache's template name>` - case-sensitive​ name of a link:configuring-caches/configuration-overview#cache-templates[cache template]. A template is an instance of the `CacheConfiguration` class registered by calling `Ignite.addCacheConfiguration()`. Use predefined `TEMPLATE=PARTITIONED` or `TEMPLATE=REPLICATED` templates to create the cache with the corresponding replication mode. The rest of the parameters will be those that are defined in the `CacheConfiguration` object. By default, `TEMPLATE=PARTITIONED` is used if the template is not specified explicitly.
 ** `BACKUPS=<number of backups>` - sets the number of link:configuring-caches/configuring-backups[partition backups]. If neither this nor the `TEMPLATE` parameter is set, then the cache is created with `0` backup copies.
-** `ATOMICITY=<ATOMIC | TRANSACTIONAL | TRANSACTIONAL_SNAPSHOT>` - sets link:key-value-api/transactions[atomicity mode] for the underlying cache. If neither this nor the `TEMPLATE` parameter is set, then the cache is created with the `ATOMIC` mode enabled. If `TRANSACTIONAL_SNAPSHOT` is specified, the table will link:transactions/mvcc[support transactions].
+** `ATOMICITY=<ATOMIC | TRANSACTIONAL>` - sets link:key-value-api/transactions[atomicity mode] for the underlying cache. If neither this nor the `TEMPLATE` parameter is set, then the cache is created with the `ATOMIC` mode enabled.
 ** `WRITE_SYNCHRONIZATION_MODE=<PRIMARY_SYNC | FULL_SYNC | FULL_ASYNC>` -
 sets the write synchronization mode for the underlying cache. If neither this nor the `TEMPLATE` parameter is set, then the cache is created with `FULL_SYNC` mode enabled.
 ** `CACHE_GROUP=<group name>` - specifies the link:configuring-caches/cache-groups[group name] the underlying cache belongs to.
@@ -61,9 +61,10 @@ sets the write synchronization mode for the underlying cache. If neither this no
 or the `SQL_{SCHEMA_NAME}_{TABLE}` format will be used if the parameter not specified.
 ** `DATA_REGION=<existing data region name>` - name of the link:memory-configuration/data-regions[data region] where table entries should be stored. By default, Ignite stores all the data in a default region.
 ** `PARALLELISM=<number of SQL execution threads>` - SQL queries are executed by a single thread on each node by default, but certain scenarios can benefit from multi-threaded execution, see link:perf-and-troubleshooting/sql-tuning#query-parallelism[Query Parallelism] for details.
-** `KEY_TYPE=<custom name of the key type>` - sets the name of the custom key type that is used from the key-value APIs in Ignite. The name should correspond to a Java, .NET, or C++ class, or it can be a random one if link:data-modeling/data-modeling#binary-object-format[BinaryObjects] is used instead of a custom class. The number of fields and their types in the custom key type has to correspond to the `PRIMARY KEY`. Refer to the <<Description>> section below for more details.
+** `KEY_TYPE=<custom name of the key type>` - sets the name of the custom key type that is used from the key-value APIs in Ignite. The name should correspond to a Java, .NET, or C++ class, or it can be a random one if link:data-modeling/data-modeling#binary-object-format[BinaryObjects] is used instead of a custom class. The number of fields and their types in the custom key type has to correspond to the `PRIMARY KEY`. Refer to the <<Use non-SQL API>> section below for more details.
 ** `VALUE_TYPE=<custom name of the value type of the new cache>` - sets the name of a custom value type that is used from the key-value and other non-SQL APIs in Ignite. The name should correspond to a Java, .NET, or C++ class, or it can be a random one if
-link:data-modeling/data-modeling#binary-object-format[BinaryObjects] is used instead of a custom class. The value type should include all the columns defined in the CREATE TABLE command except for those listed in the `PRIMARY KEY` constraint. Refer to the <<Description>> section below for more details.
+link:data-modeling/data-modeling#binary-object-format[BinaryObjects] is used instead of a custom class. The value type should include all the columns defined in the CREATE TABLE command except for those listed in the `PRIMARY KEY` constraint. Refer to the <<Use non-SQL API>> section below for more details.
+Also, the same `VALUE_TYPE` is required to use SQL queries over data replicated with link:extensions-and-integrations/change-data-capture-extensions[CDC].
 ** `WRAP_KEY=<true | false>` - this flag controls whether a _single column_ `PRIMARY KEY` should be wrapped in the link:data-modeling/data-modeling#binary-object-format[BinaryObjects] format or not. By default, this flag is set to false. This flag does not have any effect on the `PRIMARY KEY` with multiple columns; it always gets wrapped regardless of the value of the parameter.
 ** `WRAP_VALUE=<true | false>` - this flag controls whether a single column value of a primitive type should be wrapped in the link:data-modeling/data-modeling#binary-object-format[BinaryObjects] format or not. By default, this flag is set to true. This flag does not have any effect on the value with multiple columns; it always gets wrapped regardless of the value of the parameter. Set this parameter to false if you have a single column value and do not plan to add additional columns to the table. Note that once the parameter is set to false, you can't use the `ALTER TABLE ADD COLUMN` command for this specific table.
 
@@ -342,11 +343,11 @@ index_option := {INLINE_SIZE size | PARALLEL parallelism_level}
 
 Parameters:
 
-* `indexName` - the name of the index to be created.
+* `indexName` - the name of the index to be created. The index name must be unique per schema.
 * `ASC` - specifies ascending sort order (default).
 * `DESC` - specifies descending sort order.
 * `SPATIAL` - create the spatial index. Presently, only geometry types are supported.
-* `IF NOT EXISTS` - do not throw an error if an index with the same name already exists. The database checks indexes' names only, and does not consider columns types or count.
+* `IF NOT EXISTS` - do not throw an error if an index with the same name already exists. The database checks indexes' names only, and does not consider columns types or count. The index creation will be skipped if an index with the same name exist in the schema.
 * `index_option` - additional options for index creation:
 ** `INLINE_SIZE` - specifies index inline size in bytes. Depending on the size, Ignite will place the whole indexed value or a part of it directly into index pages, thus omitting extra calls to data pages and increasing queries' performance. Index inlining is enabled by default and the size is pre-calculated automatically based on the table structure. To disable inlining, set the size to 0 (not recommended). Refer to the link:SQL/sql-tuning#increasing-index-inline-size[Increasing Index Inline Size] section for more details.
 ** `PARALLEL` - specifies the number of threads to be used in parallel for index creation. The greater number is set, the faster the index is created and built. If the value exceeds the number of CPUs, then it will be decreased to the number of cores. If the parameter is not specified, then the number of threads is calculated as 25% of the CPU cores available.
@@ -468,6 +469,66 @@ Drop an index:
 [source,sql]
 ----
 DROP INDEX idx_person_name;
+----
+
+
+== CREATE VIEW
+
+Creates an user definded SQL view.
+
+
+[source,sql]
+----
+CREATE [OR REPLACE] VIEW [schemaName.]viewName AS query
+----
+
+Parameters:
+
+* `schemaName` - the name of the schema, where to create view.
+* `viewName` - the name of the view to create.
+* `OR REPLACE` - replace view if a view with the specified name already exists.
+* `query` - valid SQL query.
+
+Schema changes applied by this command are persisted on disk if link:persistence/native-persistence[Ignite persistence] is enabled. Thus, the changes can survive full cluster restarts.
+
+[discrete]
+=== Examples
+Create a view:
+
+
+[source,sql]
+----
+CREATE VIEW adult AS SELECT * FROM person WHERE age >= 18;
+----
+
+
+== DROP VIEW
+
+Deletes an existing user defined SQL view.
+
+
+[source,sql]
+----
+DROP VIEW [IF EXISTS] [schemaName.]viewName
+----
+
+Parameters:
+
+* `schemaName` - the schema of the view to drop.
+* `viewName` - the name of the view to drop.
+* `IF EXISTS` - do not throw an error if a view with the specified name does not exist.
+
+Schema changes applied by this command are persisted on disk if link:persistence/native-persistence[Ignite persistence] is enabled. Thus, the changes can survive full cluster restarts.
+
+
+[discrete]
+=== Examples
+Drop a view:
+
+
+[source,sql]
+----
+DROP VIEW adult;
 ----
 
 
@@ -612,13 +673,13 @@ Possible parameters:
 * SIZE - Average size of column values (in bytes).
 * DISTINCT - Number of distinct non-null values in column.
 
-== REFRESH
+== REFRESH STATISTICS
 
 The command refreshes link:SQL/sql-statistics[statistics,window=_blank].
 
 [source,sql]
 ----
-REFRESH 'schemaName'.'tableName'(column1, column2);
+REFRESH STATISTICS 'schemaName'.'tableName'(column1, column2);
 ----
 
 Parameters:
@@ -633,7 +694,7 @@ Example:
 
 [source,sql]
 ----
-REFRESH PRODUCTS, SALE(productId, discount)
+REFRESH STATISTICS PRODUCTS, SALE(productId, discount)
 ----
 
 == DROP STATISTICS

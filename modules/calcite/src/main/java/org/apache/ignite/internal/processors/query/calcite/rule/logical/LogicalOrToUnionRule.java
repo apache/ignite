@@ -164,6 +164,7 @@ public class LogicalOrToUnionRule extends RelRule<LogicalOrToUnionRule.Config> {
             scan.getCluster(),
             trait,
             scan.getTable(),
+            scan.getHints(),
             scan.projects(),
             condition,
             scan.requiredColumns()

@@ -14,7 +14,7 @@
 # limitations under the License.
 exclude: [guidelines.md,  "Gemfile", "Gemfile.lock", README.adoc, "_docs/code-snippets", "_docs/includes", '*.sh']
 attrs: &asciidoc_attributes
-  version: 2.15.0
+  version: 2.17.0-SNAPSHOT
   base_url: /docs
   stylesdir: /docs/assets/css
   imagesdir: /docs
@@ -25,7 +25,7 @@ attrs: &asciidoc_attributes
   csharpCodeDir: code-snippets/dotnet
   githubUrl: https://github.com/apache/ignite/tree/master
   githubVersionUrl: https://github.com/apache/ignite/tree/ignite-{version}
-  docSourceUrl: https://github.com/apache/ignite/tree/IGNITE-7595/docs
+  docSourceUrl: https://github.com/apache/ignite/tree/master/docs
 collections:
   docs:
     permalink: /docs/:path:output_ext

@@ -137,8 +137,8 @@ class RelJson {
         Class<?> clazz = null;
 
         if (!typeName.contains(".")) {
-            for (String package_ : PACKAGES) {
-                if ((clazz = classForName(package_ + typeName, true)) != null)
+            for (String pkg_ : PACKAGES) {
+                if ((clazz = classForName(pkg_ + typeName, true)) != null)
                     break;
             }
         }
@@ -250,9 +250,9 @@ class RelJson {
             return class_.getSimpleName();
 
         String canonicalName = class_.getName();
-        for (String package_ : PACKAGES) {
-            if (canonicalName.startsWith(package_)) {
-                String remaining = canonicalName.substring(package_.length());
+        for (String pkg_ : PACKAGES) {
+            if (canonicalName.startsWith(pkg_)) {
+                String remaining = canonicalName.substring(pkg_.length());
                 if (remaining.indexOf('.') < 0 && remaining.indexOf('$') < 0)
                     return remaining;
             }
@@ -576,9 +576,9 @@ class RelJson {
         for (SqlOperator operator : operators)
             if (operator.kind == sqlKind)
                 return operator;
-        String class_ = (String)map.get("class");
-        if (class_ != null)
-            return AvaticaUtils.instantiatePlugin(SqlOperator.class, class_);
+        String cls_ = (String)map.get("class");
+        if (cls_ != null)
+            return AvaticaUtils.instantiatePlugin(SqlOperator.class, cls_);
         return null;
     }
 
@@ -601,9 +601,9 @@ class RelJson {
     <T extends Enum<T>> T toEnum(Object o) {
         if (o instanceof Map) {
             Map<String, Object> map = (Map<String, Object>)o;
-            String class_ = (String)map.get("class");
+            String cls_ = (String)map.get("class");
             String name = map.get("name").toString();
-            return Util.enumVal((Class<T>)classForName(class_, false), name);
+            return Util.enumVal((Class<T>)classForName(cls_, false), name);
         }
 
         assert o instanceof String && ENUM_BY_NAME.containsKey(o);
@@ -740,6 +740,7 @@ class RelJson {
         map.put("filter", node.filterArg);
         map.put("name", node.getName());
         map.put("coll", toJson(node.getCollation()));
+        map.put("rexList", toJson(node.rexList));
         return map;
     }
 
@@ -821,9 +822,9 @@ class RelJson {
                 return map;
             case LITERAL:
                 RexLiteral literal = (RexLiteral)node;
-                Object value = literal.getValue3();
+                Object val = literal.getValue3();
                 map = map();
-                map.put("literal", toJson(value));
+                map.put("literal", toJson(val));
                 map.put("type", toJson(node.getType()));
 
                 return map;

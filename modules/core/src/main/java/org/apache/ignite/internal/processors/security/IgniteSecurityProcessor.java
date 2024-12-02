@@ -20,7 +20,6 @@ package org.apache.ignite.internal.processors.security;
 import java.security.Security;
 import java.util.Collection;
 import java.util.Map;
-import java.util.Optional;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -29,14 +28,12 @@ import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteInternalFuture;
-import org.apache.ignite.internal.processors.GridProcessor;
 import org.apache.ignite.internal.processors.security.sandbox.AccessControllerSandbox;
 import org.apache.ignite.internal.processors.security.sandbox.IgniteSandbox;
 import org.apache.ignite.internal.processors.security.sandbox.NoOpSandbox;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteFuture;
-import org.apache.ignite.marshaller.MarshallerUtils;
 import org.apache.ignite.marshaller.jdk.JdkMarshaller;
 import org.apache.ignite.plugin.security.AuthenticationContext;
 import org.apache.ignite.plugin.security.SecurityCredentials;
@@ -47,12 +44,15 @@ import org.apache.ignite.spi.IgniteNodeValidationResult;
 import org.apache.ignite.spi.discovery.DiscoveryDataBag;
 import org.jetbrains.annotations.Nullable;
 
+import static java.util.Optional.ofNullable;
 import static org.apache.ignite.events.EventType.EVT_NODE_FAILED;
 import static org.apache.ignite.events.EventType.EVT_NODE_LEFT;
 import static org.apache.ignite.internal.processors.security.SecurityUtils.IGNITE_INTERNAL_PACKAGE;
 import static org.apache.ignite.internal.processors.security.SecurityUtils.MSG_SEC_PROC_CLS_IS_INVALID;
 import static org.apache.ignite.internal.processors.security.SecurityUtils.hasSecurityManager;
 import static org.apache.ignite.internal.processors.security.SecurityUtils.nodeSecurityContext;
+import static org.apache.ignite.plugin.security.SecurityPermission.ADMIN_USER_ACCESS;
+import static org.apache.ignite.plugin.security.SecurityPermission.JOIN_AS_SERVER;
 
 /**
  * Default {@code IgniteSecurity} implementation.
@@ -67,7 +67,7 @@ import static org.apache.ignite.internal.processors.security.SecurityUtils.nodeS
  *     <li>Managing sandbox and proving point of entry to the internal sandbox API.</li>
  * </ul>
  */
-public class IgniteSecurityProcessor implements IgniteSecurity, GridProcessor {
+public class IgniteSecurityProcessor extends IgniteSecurityAdapter {
     /**  */
     private static final String FAILED_OBTAIN_SEC_CTX_MSG = "Failed to obtain a security context.";
 
@@ -86,9 +86,6 @@ public class IgniteSecurityProcessor implements IgniteSecurity, GridProcessor {
 
     /** Current security context if differs from {@link #dfltSecCtx}. */
     private final ThreadLocal<SecurityContext> curSecCtx = new ThreadLocal<>();
-
-    /** Grid kernal context. */
-    private final GridKernalContext ctx;
 
     /** Security processor. */
     private final GridSecurityProcessor secPrc;
@@ -120,13 +117,13 @@ public class IgniteSecurityProcessor implements IgniteSecurity, GridProcessor {
      * @param secPrc Security processor.
      */
     public IgniteSecurityProcessor(GridKernalContext ctx, GridSecurityProcessor secPrc) {
-        assert ctx != null;
+        super(ctx);
+
         assert secPrc != null;
 
-        this.ctx = ctx;
         this.secPrc = secPrc;
 
-        marsh = MarshallerUtils.jdkMarshaller(ctx.igniteInstanceName());
+        marsh = ctx.marshallerContext().jdkMarshaller();
         log = ctx.log(getClass());
     }
 
@@ -151,21 +148,13 @@ public class IgniteSecurityProcessor implements IgniteSecurity, GridProcessor {
     /** {@inheritDoc} */
     @Override public OperationSecurityContext withContext(UUID subjId) {
         try {
-            ClusterNode node = Optional.ofNullable(ctx.discovery().node(subjId))
-                .orElseGet(() -> ctx.discovery().historicalNode(subjId));
-
-            SecurityContext res;
-
-            if (node == null)
-                res = secPrc.securityContext(subjId);
-            else if (dfltSecCtx.subject().id().equals(subjId))
-                res = dfltSecCtx;
-            else
-                res = secCtxs.computeIfAbsent(subjId, uuid -> nodeSecurityContext(marsh, U.resolveClassLoader(ctx.config()), node));
+            SecurityContext res = secPrc.securityContext(subjId);
 
             if (res == null) {
-                throw new IllegalStateException("Failed to find security context " +
-                    "for subject with given ID : " + subjId);
+                res = findNodeSecurityContext(subjId);
+
+                if (res == null)
+                    throw new IllegalStateException("Failed to find security context for subject with given ID : " + subjId);
             }
 
             return withContext(res);
@@ -175,6 +164,26 @@ public class IgniteSecurityProcessor implements IgniteSecurity, GridProcessor {
 
             throw e;
         }
+    }
+
+    /**
+     * Looks for a node which ID is equal to the given Subject ID. If such a node exists, returns the Security Context
+     * that belongs to it. Otherwise {@code null}.
+     */
+    @Nullable private SecurityContext findNodeSecurityContext(UUID subjId) {
+        SecurityContext locNodeSecCtx = dfltSecCtx;
+
+        if (locNodeSecCtx.subject().id().equals(subjId))
+            return locNodeSecCtx;
+
+        ClusterNode node = ofNullable(ctx.discovery().node(subjId)).orElseGet(() -> ctx.discovery().historicalNode(subjId));
+
+        return node == null
+            ? null
+            : secCtxs.computeIfAbsent(
+                node.id(),
+                uuid -> nodeSecurityContext(marsh, U.resolveClassLoader(ctx.config()), node)
+            );
     }
 
     /** Restores local node context for the current thread. */
@@ -246,6 +255,8 @@ public class IgniteSecurityProcessor implements IgniteSecurity, GridProcessor {
 
     /** {@inheritDoc} */
     @Override public void start() throws IgniteCheckedException {
+        super.start();
+
         ctx.addNodeAttribute(ATTR_GRID_SEC_PROC_CLASS, secPrc.getClass().getName());
 
         secPrc.start();
@@ -352,7 +363,14 @@ public class IgniteSecurityProcessor implements IgniteSecurity, GridProcessor {
     @Override public @Nullable IgniteNodeValidationResult validateNode(ClusterNode node) {
         IgniteNodeValidationResult res = validateSecProcClass(node);
 
-        return res != null ? res : secPrc.validateNode(node);
+        if (res == null) {
+            res = validateNodeJoinPermission(node);
+
+            if (res == null)
+                res = secPrc.validateNode(node);
+        }
+
+        return res;
     }
 
     /** {@inheritDoc} */
@@ -381,16 +399,22 @@ public class IgniteSecurityProcessor implements IgniteSecurity, GridProcessor {
 
     /** {@inheritDoc} */
     @Override public void createUser(String login, char[] pwd) throws IgniteCheckedException {
+        authorize(ADMIN_USER_ACCESS);
+
         secPrc.createUser(login, pwd);
     }
 
     /** {@inheritDoc} */
     @Override public void alterUser(String login, char[] pwd) throws IgniteCheckedException {
+        authorize(ADMIN_USER_ACCESS);
+
         secPrc.alterUser(login, pwd);
     }
 
     /** {@inheritDoc} */
     @Override public void dropUser(String login) throws IgniteCheckedException {
+        authorize(ADMIN_USER_ACCESS);
+
         secPrc.dropUser(login);
     }
 
@@ -400,6 +424,11 @@ public class IgniteSecurityProcessor implements IgniteSecurity, GridProcessor {
             marsh,
             U.resolveClassLoader(ctx.config()),
             ctx.discovery().localNode());
+    }
+
+    /** {@inheritDoc} */
+    @Override public boolean isSystemType(Class<?> cls) {
+        return super.isSystemType(cls) || secPrc.isSystemType(cls);
     }
 
     /**
@@ -419,6 +448,30 @@ public class IgniteSecurityProcessor implements IgniteSecurity, GridProcessor {
         }
 
         return null;
+    }
+
+    /** */
+    private IgniteNodeValidationResult validateNodeJoinPermission(ClusterNode node) {
+        if (node.isClient())
+            return null;
+
+        SecurityContext secCtx = nodeSecurityContext(
+            marsh,
+            U.resolveClassLoader(ctx.config()),
+            node
+        );
+
+        try {
+            secPrc.authorize(null, JOIN_AS_SERVER, secCtx);
+
+            return null;
+        }
+        catch (SecurityException e) {
+            String msg = "Node is not authorized to join as a server node [joiningNodeId=" + node.id() +
+                ", addrs=" + U.addressesAsString(node) + ']';
+
+            return new IgniteNodeValidationResult(node.id(), msg, msg);
+        }
     }
 
     /** @return Security processor implementation to which current security facade delegates operations. */

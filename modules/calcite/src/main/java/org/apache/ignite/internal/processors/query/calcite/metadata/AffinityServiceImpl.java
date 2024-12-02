@@ -56,8 +56,8 @@ public class AffinityServiceImpl extends AbstractService implements AffinityServ
         if (cacheId == CU.UNDEFINED_CACHE_ID)
             return k -> k == null ? 0 : U.safeAbs(k.hashCode());
 
-        AffinityFunction affinity = cacheSharedContext.cacheContext(cacheId).group().affinityFunction();
+        AffinityFunction aff = cacheSharedContext.cacheContext(cacheId).group().affinityFunction();
 
-        return affinity::partition;
+        return aff::partition;
     }
 }

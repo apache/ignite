@@ -22,6 +22,7 @@ import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.nio.channels.SocketChannel;
 import java.util.UUID;
+import javax.net.ssl.SSLException;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.internal.util.nio.ssl.BlockingSslHandler;
@@ -67,194 +68,39 @@ public class TcpHandshakeExecutor {
      * @param ch Socket channel which using for handshake.
      * @param rmtNodeId Expected remote node.
      * @param sslMeta Required data for ssl.
-     * @param msg Handshake message which should be send during handshake.
+     * @param msg Handshake message which should be sent during handshake.
      * @return Handshake response from predefined variants from {@link RecoveryLastReceivedMessage}.
-     * @throws IgniteCheckedException If not related to IO exception happened.
-     * @throws IOException If reading or writing to socket is failed.
+     * @throws IgniteCheckedException If handshake failed.
      */
     public long tcpHandshake(
         SocketChannel ch,
         UUID rmtNodeId,
         GridSslMeta sslMeta,
         HandshakeMessage msg
-    ) throws IgniteCheckedException, IOException {
-        long rcvCnt;
+    ) throws IgniteCheckedException {
+        BlockingTransport transport = stateProvider.isSslEnabled() ?
+            new SslTransport(sslMeta, ch, directBuffer, log) : new TcpTransport(ch);
 
-        BlockingSslHandler sslHnd = null;
+        ByteBuffer buf = transport.recieveNodeId();
 
-        ByteBuffer buf;
-
-        // Step 1. Get remote node response with the remote nodeId value.
-        if (stateProvider.isSslEnabled()) {
-            assert sslMeta != null;
-
-            sslHnd = new BlockingSslHandler(sslMeta.sslEngine(), ch, directBuffer, ByteOrder.LITTLE_ENDIAN, log);
-
-            if (!sslHnd.handshake())
-                throw new HandshakeException("SSL handshake is not completed.");
-
-            ByteBuffer handBuff = sslHnd.applicationBuffer();
-
-            if (handBuff.remaining() >= DIRECT_TYPE_SIZE) {
-                short msgType = makeMessageType(handBuff.get(0), handBuff.get(1));
-
-                if (msgType == HANDSHAKE_WAIT_MSG_TYPE)
-                    return NEED_WAIT;
-            }
-
-            if (handBuff.remaining() < NodeIdMessage.MESSAGE_FULL_SIZE) {
-                ByteBuffer readBuf = ByteBuffer.allocate(1000);
-
-                while (handBuff.remaining() < NodeIdMessage.MESSAGE_FULL_SIZE) {
-                    int read = ch.read(readBuf);
-
-                    if (read == -1)
-                        throw new HandshakeException("Failed to read remote node ID (connection closed).");
-
-                    readBuf.flip();
-
-                    sslHnd.decode(readBuf);
-
-                    if (handBuff.remaining() >= DIRECT_TYPE_SIZE) {
-                        break;
-                    }
-
-                    readBuf.flip();
-                }
-
-                buf = handBuff;
-
-                if (handBuff.remaining() >= DIRECT_TYPE_SIZE) {
-                    short msgType = makeMessageType(handBuff.get(0), handBuff.get(1));
-
-                    if (msgType == HANDSHAKE_WAIT_MSG_TYPE)
-                        return NEED_WAIT;
-                }
-            }
-            else
-                buf = handBuff;
-        }
-        else {
-            buf = ByteBuffer.allocate(NodeIdMessage.MESSAGE_FULL_SIZE);
-
-            for (int i = 0; i < NodeIdMessage.MESSAGE_FULL_SIZE; ) {
-                int read = ch.read(buf);
-
-                if (read == -1)
-                    throw new HandshakeException("Failed to read remote node ID (connection closed).");
-
-                if (read >= DIRECT_TYPE_SIZE) {
-                    short msgType = makeMessageType(buf.get(0), buf.get(1));
-
-                    if (msgType == HANDSHAKE_WAIT_MSG_TYPE)
-                        return NEED_WAIT;
-                }
-
-                i += read;
-            }
-        }
+        if (buf == null)
+            return NEED_WAIT;
 
         UUID rmtNodeId0 = U.bytesToUuid(buf.array(), DIRECT_TYPE_SIZE);
 
         if (!rmtNodeId.equals(rmtNodeId0))
-            throw new HandshakeException("Remote node ID is not as expected [expected=" + rmtNodeId +
-                ", rcvd=" + rmtNodeId0 + ']');
+            throw new HandshakeException("Remote node ID is not as expected [expected=" + rmtNodeId + ", rcvd=" + rmtNodeId0 + ']');
         else if (log.isDebugEnabled())
             log.debug("Received remote node ID: " + rmtNodeId0);
 
-        if (stateProvider.isSslEnabled()) {
-            assert sslHnd != null;
-
-            U.writeFully(ch, sslHnd.encrypt(ByteBuffer.wrap(U.IGNITE_HEADER)));
-        }
-        else
-            U.writeFully(ch, ByteBuffer.wrap(U.IGNITE_HEADER));
-
-        // Step 2. Prepare Handshake message to send to the remote node.
         if (log.isDebugEnabled())
             log.debug("Writing handshake message [rmtNode=" + rmtNodeId + ", msg=" + msg + ']');
 
-        buf = ByteBuffer.allocate(msg.getMessageSize());
+        transport.sendHandshake(msg);
 
-        buf.order(ByteOrder.LITTLE_ENDIAN);
+        buf = transport.recieveAcknowledge();
 
-        boolean written = msg.writeTo(buf, null);
-
-        assert written;
-
-        buf.flip();
-
-        if (stateProvider.isSslEnabled()) {
-            assert sslHnd != null;
-
-            U.writeFully(ch, sslHnd.encrypt(buf));
-        }
-        else
-            U.writeFully(ch, buf);
-
-        if (log.isDebugEnabled())
-            log.debug("Waiting for handshake [rmtNode=" + rmtNodeId + ']');
-
-        // Step 3. Waiting for response from the remote node with their receive count message.
-        if (stateProvider.isSslEnabled()) {
-            assert sslHnd != null;
-
-            buf = ByteBuffer.allocate(1000);
-            buf.order(ByteOrder.LITTLE_ENDIAN);
-
-            ByteBuffer decode = ByteBuffer.allocate(2 * buf.capacity());
-            decode.order(ByteOrder.LITTLE_ENDIAN);
-
-            for (int i = 0; i < RecoveryLastReceivedMessage.MESSAGE_FULL_SIZE; ) {
-                int read = ch.read(buf);
-
-                if (read == -1)
-                    throw new HandshakeException("Failed to read remote node recovery handshake " +
-                        "(connection closed).");
-
-                buf.flip();
-
-                ByteBuffer decode0 = sslHnd.decode(buf);
-
-                i += decode0.remaining();
-
-                decode = appendAndResizeIfNeeded(decode, decode0);
-
-                buf.clear();
-            }
-
-            decode.flip();
-
-            rcvCnt = decode.getLong(DIRECT_TYPE_SIZE);
-
-            if (decode.limit() > RecoveryLastReceivedMessage.MESSAGE_FULL_SIZE) {
-                decode.position(RecoveryLastReceivedMessage.MESSAGE_FULL_SIZE);
-
-                sslMeta.decodedBuffer(decode);
-            }
-
-            ByteBuffer inBuf = sslHnd.inputBuffer();
-
-            if (inBuf.position() > 0)
-                sslMeta.encodedBuffer(inBuf);
-        }
-        else {
-            buf = ByteBuffer.allocate(RecoveryLastReceivedMessage.MESSAGE_FULL_SIZE);
-
-            buf.order(ByteOrder.LITTLE_ENDIAN);
-
-            for (int i = 0; i < RecoveryLastReceivedMessage.MESSAGE_FULL_SIZE; ) {
-                int read = ch.read(buf);
-
-                if (read == -1)
-                    throw new HandshakeException("Failed to read remote node recovery handshake " +
-                        "(connection closed).");
-
-                i += read;
-            }
-
-            rcvCnt = buf.getLong(DIRECT_TYPE_SIZE);
-        }
+        long rcvCnt = buf.getLong(DIRECT_TYPE_SIZE);
 
         if (log.isDebugEnabled())
             log.debug("Received handshake message [rmtNode=" + rmtNodeId + ", rcvCnt=" + rcvCnt + ']');
@@ -264,31 +110,254 @@ public class TcpHandshakeExecutor {
                 log.debug("Connection rejected, will retry client creation [rmtNode=" + rmtNodeId + ']');
         }
 
+        transport.onHandshakeFinished(sslMeta);
+
         return rcvCnt;
     }
 
     /**
-     * @param target Target buffer to append to.
-     * @param src Source buffer to get data.
-     * @return Original or expanded buffer.
+     * Encapsulates handshake logic.
      */
-    private ByteBuffer appendAndResizeIfNeeded(ByteBuffer target, ByteBuffer src) {
-        if (target.remaining() < src.remaining()) {
-            int newSize = Math.max(target.capacity() * 2, target.capacity() + src.remaining());
+    private abstract static class BlockingTransport {
+        /**
+         * Receive {@link NodeIdMessage}.
+         *
+         * @return Buffer with {@link NodeIdMessage}.
+         * @throws IgniteCheckedException If failed.
+         */
+        ByteBuffer recieveNodeId() throws IgniteCheckedException {
+            ByteBuffer buf = ByteBuffer.allocate(NodeIdMessage.MESSAGE_FULL_SIZE)
+                    .order(ByteOrder.LITTLE_ENDIAN);
 
-            ByteBuffer tmp = ByteBuffer.allocate(newSize);
+            for (int totalBytes = 0; totalBytes < NodeIdMessage.MESSAGE_FULL_SIZE; ) {
+                int readBytes = read(buf);
 
-            tmp.order(target.order());
+                if (readBytes == -1)
+                    throw new HandshakeException("Failed to read remote node ID (connection closed).");
 
-            target.flip();
+                if (readBytes >= DIRECT_TYPE_SIZE) {
+                    short msgType = makeMessageType(buf.get(0), buf.get(1));
 
-            tmp.put(target);
+                    if (msgType == HANDSHAKE_WAIT_MSG_TYPE)
+                        return null;
+                }
 
-            target = tmp;
+                totalBytes += readBytes;
+            }
+
+            return buf;
         }
 
-        target.put(src);
+        /**
+         * Send {@link HandshakeMessage} to remote node.
+         *
+         * @param msg Handshake message.
+         * @throws IgniteCheckedException If failed.
+         */
+        void sendHandshake(HandshakeMessage msg) throws IgniteCheckedException {
+            ByteBuffer buf = ByteBuffer.allocate(msg.getMessageSize() + U.IGNITE_HEADER.length)
+                    .order(ByteOrder.LITTLE_ENDIAN)
+                    .put(U.IGNITE_HEADER);
 
-        return target;
+            msg.writeTo(buf, null);
+            buf.flip();
+
+            write(buf);
+        }
+
+        /**
+         * Receive {@link RecoveryLastReceivedMessage} acknowledge message.
+         *
+         * @return Buffer with message.
+         * @throws IgniteCheckedException If failed.
+         */
+        ByteBuffer recieveAcknowledge() throws IgniteCheckedException {
+            ByteBuffer buf = ByteBuffer.allocate(RecoveryLastReceivedMessage.MESSAGE_FULL_SIZE)
+                    .order(ByteOrder.LITTLE_ENDIAN);
+
+            for (int totalBytes = 0; totalBytes < RecoveryLastReceivedMessage.MESSAGE_FULL_SIZE; ) {
+                int readBytes = read(buf);
+
+                if (readBytes == -1)
+                    throw new HandshakeException("Failed to read remote node recovery handshake " +
+                            "(connection closed).");
+
+                totalBytes += readBytes;
+            }
+
+            return buf;
+        }
+
+        /**
+         * Read data from media.
+         *
+         * @param buf Buffer to read into.
+         * @return Bytes read.
+         * @throws IgniteCheckedException If failed.
+         */
+        abstract int read(ByteBuffer buf) throws IgniteCheckedException;
+
+        /**
+         * Write data fully.
+         * @param buf Buffer to write.
+         * @throws IgniteCheckedException If failed.
+         */
+        abstract void write(ByteBuffer buf) throws IgniteCheckedException;
+
+        /**
+         * Do some post-handshake job if needed.
+         *
+         * @param sslMeta Ssl meta.
+         */
+        void onHandshakeFinished(GridSslMeta sslMeta) {
+            // No-op.
+        }
+    }
+
+    /**
+     * Tcp plaintext transport.
+     */
+    private static class TcpTransport extends BlockingTransport {
+        /** */
+        private final SocketChannel ch;
+
+        /** */
+        TcpTransport(SocketChannel ch) {
+            this.ch = ch;
+        }
+
+        /** {@inheritDoc} */
+        @Override int read(ByteBuffer buf) throws IgniteCheckedException {
+            try {
+                return ch.read(buf);
+            }
+            catch (IOException e) {
+                throw new IgniteCheckedException("Failed to read from channel", e);
+            }
+        }
+
+        /** {@inheritDoc} */
+        @Override void write(ByteBuffer buf) throws IgniteCheckedException {
+            try {
+                U.writeFully(ch, buf);
+            }
+            catch (IOException e) {
+                throw new IgniteCheckedException("Failed to write to channel", e);
+            }
+        }
+    }
+
+    /** Ssl transport */
+    private static class SslTransport extends BlockingTransport {
+        /** */
+        private static final int READ_BUFFER_CAPACITY = 1024;
+
+        /** */
+        private final BlockingSslHandler handler;
+
+        /** */
+        private final SocketChannel ch;
+
+        /** */
+        private final ByteBuffer readBuf;
+
+        /** */
+        SslTransport(GridSslMeta meta, SocketChannel ch, boolean directBuf, IgniteLogger log) throws IgniteCheckedException {
+            try {
+                this.ch = ch;
+                handler = new BlockingSslHandler(meta.sslEngine(), ch, directBuf, ByteOrder.LITTLE_ENDIAN, log);
+
+                if (!handler.handshake())
+                    throw new HandshakeException("SSL handshake is not completed.");
+
+                readBuf = directBuf ? ByteBuffer.allocateDirect(READ_BUFFER_CAPACITY) : ByteBuffer.allocate(READ_BUFFER_CAPACITY);
+
+                readBuf.order(ByteOrder.LITTLE_ENDIAN);
+            }
+            catch (SSLException e) {
+                throw new IgniteCheckedException("SSL handhshake failed", e);
+            }
+        }
+
+        /** {@inheritDoc} */
+        @Override int read(ByteBuffer buf) throws IgniteCheckedException {
+            ByteBuffer appBuff = handler.applicationBuffer();
+
+            int read = copy(appBuff, buf);
+
+            if (read > 0)
+                return read;
+
+            try {
+                while (read == 0) {
+                    readBuf.clear();
+
+                    if (ch.read(readBuf) < 0)
+                        return -1;
+
+                    readBuf.flip();
+
+                    handler.decode(readBuf);
+
+                    read = copy(appBuff, buf);
+                }
+            }
+            catch (SSLException e) {
+                throw new IgniteCheckedException("Failed to decrypt data", e);
+            }
+            catch (IOException e) {
+                throw new IgniteCheckedException("Failed to read from channel", e);
+            }
+
+            return read;
+        }
+
+        /** {@inheritDoc} */
+        @Override void write(ByteBuffer buf) throws IgniteCheckedException {
+            try {
+                U.writeFully(ch, handler.encrypt(buf));
+            }
+            catch (SSLException e) {
+                throw new IgniteCheckedException("Failed to encrypt data", e);
+            }
+            catch (IOException e) {
+                throw new IgniteCheckedException("Failed to write to channel", e);
+            }
+        }
+
+        /** {@inheritDoc} */
+        @Override void onHandshakeFinished(GridSslMeta sslMeta) {
+            ByteBuffer appBuff = handler.applicationBuffer();
+            if (appBuff.hasRemaining())
+                sslMeta.decodedBuffer(appBuff);
+
+            ByteBuffer inBuf = handler.inputBuffer();
+
+            if (inBuf.position() > 0)
+                sslMeta.encodedBuffer(inBuf);
+        }
+
+        /**
+         * @param src Source buffer.
+         * @param dst Destination buffer.
+         * @return Bytes copied.
+         */
+        private int copy(ByteBuffer src, ByteBuffer dst) {
+            int remaining = Math.min(src.remaining(), dst.remaining());
+
+            if (remaining > 0) {
+                int oldLimit = src.limit();
+
+                src.limit(src.position() + remaining);
+
+                dst.put(src);
+
+                src.limit(oldLimit);
+            }
+
+            src.compact();
+
+            return remaining;
+        }
     }
 }

@@ -280,8 +280,8 @@ public class ClientCacheConfigurationSerializer {
         if (indexes != null) {
             writer.writeInt(indexes.size());
 
-            for (QueryIndex index : indexes)
-                PlatformConfigurationUtils.writeQueryIndex(writer, index);
+            for (QueryIndex idx : indexes)
+                PlatformConfigurationUtils.writeQueryIndex(writer, idx);
         }
         else
             writer.writeInt(0);

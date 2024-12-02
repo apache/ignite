@@ -75,7 +75,7 @@ import org.apache.ignite.internal.processors.cache.distributed.dht.GridReservabl
 import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtLocalPartition;
 import org.apache.ignite.internal.processors.configuration.distributed.DistributedLongProperty;
 import org.apache.ignite.internal.processors.jobmetrics.GridJobMetricsSnapshot;
-import org.apache.ignite.internal.processors.metric.MetricRegistry;
+import org.apache.ignite.internal.processors.metric.MetricRegistryImpl;
 import org.apache.ignite.internal.processors.metric.impl.AtomicLongMetric;
 import org.apache.ignite.internal.util.GridAtomicLong;
 import org.apache.ignite.internal.util.GridBoundedConcurrentLinkedHashMap;
@@ -322,7 +322,8 @@ public class GridJobProcessor extends GridProcessorAdapter {
 
     /** Timeout interrupt {@link GridJobWorker workers} after {@link GridJobWorker#cancel cancel} im mills. */
     private final DistributedLongProperty computeJobWorkerInterruptTimeout =
-        detachedLongProperty(COMPUTE_JOB_WORKER_INTERRUPT_TIMEOUT);
+        detachedLongProperty(COMPUTE_JOB_WORKER_INTERRUPT_TIMEOUT,
+            "The timeout in milliseconds for interrupting the a job worker after a cancel operation is called.");
 
     /**
      * @param ctx Kernal context.
@@ -348,7 +349,7 @@ public class GridJobProcessor extends GridProcessorAdapter {
 
         cpuLoadMetric = ctx.metric().registry(SYS_METRICS).findMetric(CPU_LOAD);
 
-        MetricRegistry mreg = ctx.metric().registry(JOBS_METRICS);
+        MetricRegistryImpl mreg = ctx.metric().registry(JOBS_METRICS);
 
         startedJobsMetric = mreg.longMetric(STARTED, "Number of started jobs.");
 
@@ -1283,10 +1284,10 @@ public class GridJobProcessor extends GridProcessorAdapter {
                                     U.resolveClassLoader(dep.classLoader(), ctx.config()));
                         }
 
-                        IgnitePredicate<ClusterNode> topologyPred = req.getTopologyPredicate();
+                        IgnitePredicate<ClusterNode> topPred = req.getTopologyPredicate();
 
-                        if (topologyPred == null && req.getTopologyPredicateBytes() != null) {
-                            topologyPred = U.unmarshal(marsh, req.getTopologyPredicateBytes(),
+                        if (topPred == null && req.getTopologyPredicateBytes() != null) {
+                            topPred = U.unmarshal(marsh, req.getTopologyPredicateBytes(),
                                 U.resolveClassLoader(dep.classLoader(), ctx.config()));
                         }
 
@@ -1298,7 +1299,7 @@ public class GridJobProcessor extends GridProcessorAdapter {
                             dep,
                             req.getTaskClassName(),
                             req.topology(),
-                            topologyPred,
+                            topPred,
                             req.getStartTaskTime(),
                             endTime,
                             siblings,
@@ -1306,7 +1307,7 @@ public class GridJobProcessor extends GridProcessorAdapter {
                             req.isSessionFullSupport(),
                             req.isInternal(),
                             req.executorName(),
-                            ctx.security().enabled() ? ctx.security().securityContext().subject().login() : null
+                            ctx.security().securityContext()
                         );
 
                         taskSes.setCheckpointSpi(req.getCheckpointSpi());
@@ -1483,12 +1484,12 @@ public class GridJobProcessor extends GridProcessorAdapter {
      * @return Deployment.
      */
     public GridDeployment currentDeployment() {
-        GridJobSessionImpl session = currSess.get();
+        GridJobSessionImpl ses = currSess.get();
 
-        if (session == null || session.deployment() == null)
+        if (ses == null || ses.deployment() == null)
             return null;
 
-        return session.deployment();
+        return ses.deployment();
     }
 
     /**

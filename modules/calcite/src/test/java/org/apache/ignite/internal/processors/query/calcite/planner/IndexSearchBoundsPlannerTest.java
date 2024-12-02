@@ -33,7 +33,6 @@ import org.apache.ignite.internal.processors.query.calcite.prepare.bounds.MultiB
 import org.apache.ignite.internal.processors.query.calcite.prepare.bounds.RangeBounds;
 import org.apache.ignite.internal.processors.query.calcite.prepare.bounds.SearchBounds;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteIndexScan;
-import org.apache.ignite.internal.processors.query.calcite.rel.IgniteUnionAll;
 import org.apache.ignite.internal.processors.query.calcite.schema.IgniteSchema;
 import org.apache.ignite.internal.processors.query.calcite.trait.IgniteDistributions;
 import org.apache.ignite.internal.processors.query.calcite.trait.TraitUtils;
@@ -346,10 +345,8 @@ public class IndexSearchBoundsPlannerTest extends AbstractPlannerTest {
     /** Tests bounds with dynamic parameters. */
     @Test
     public void testBoundsDynamicParams() throws Exception {
-        // Cannot optimize dynamic parameters to SEARCH/SARG, query is splitted by or-to-union rule.
-        assertPlan("SELECT * FROM TEST WHERE C1 IN (?, ?)", publicSchema, isInstanceOf(IgniteUnionAll.class)
-            .and(input(0, isIndexScan("TEST", "C1C2C3")))
-            .and(input(1, isIndexScan("TEST", "C1C2C3")))
+        assertBounds("SELECT * FROM TEST WHERE C1 IN (?, ?)",
+            multi(exact("?0"), exact("?1"))
         );
 
         assertBounds("SELECT * FROM TEST WHERE C1 = ? AND C2 IN ('a', 'b')",
@@ -437,6 +434,31 @@ public class IndexSearchBoundsPlannerTest extends AbstractPlannerTest {
 
         assertPlan("SELECT (SELECT C1 FROM TEST t2 WHERE t2.C1 < t1.C1 + t2.C1) FROM TEST t1", publicSchema,
             nodeOrAnyChild(isIndexScan("TEST", "C1C2C3")).negate());
+
+        // Here we have two OR sets in CNF, second set can't be used, since it contains condition on C1 and C2 columns,
+        // so use only first OR set as bounds.
+        assertBounds("SELECT * FROM TEST WHERE C1 in (?, 1, 2) or (C1 = ? and C2 > 'asd')",
+            multi(exact("?0"), exact(1), exact(2), exact("?1"))
+        );
+
+        assertBounds("SELECT * FROM TEST WHERE C1 in (?, ? + 1, ? * 2)",
+            multi(exact("?0"), exact("+(?1, 1)"), exact("*(?2, 2)"))
+        );
+
+        // Don't support expanding OR with correlate to bounds.
+        assertPlan("SELECT (SELECT C1 FROM TEST t2 WHERE C1 in (t1.C1, 1, ?)) FROM TEST t1", publicSchema,
+            nodeOrAnyChild(isIndexScan("TEST", "C1C2C3")).negate());
+
+        // Here "BETWEEN" generates AND condition, and we have two OR sets in CNF, so we can't correctly use range
+        // with both upper and lower bounds. So, we use only first OR set as bounds.
+        assertBounds("SELECT * FROM TEST WHERE C1 in (?, 1, 2) or C1 between ? and ?",
+            multi(exact("?0"), exact(1), exact(2), range("?1", null, true, true))
+        );
+
+        // Check equality condition priority over SEARCH/SARG.
+        assertBounds("SELECT * FROM TEST WHERE (C1 BETWEEN 1 AND 10 OR C1 IN (20, 30)) AND C1 = ?",
+            exact("?0")
+        );
     }
 
     /** */

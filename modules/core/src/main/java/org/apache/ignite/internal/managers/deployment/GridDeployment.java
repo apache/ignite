@@ -38,7 +38,6 @@ import org.apache.ignite.IgniteException;
 import org.apache.ignite.compute.ComputeTask;
 import org.apache.ignite.configuration.DeploymentMode;
 import org.apache.ignite.internal.processors.task.GridInternal;
-import org.apache.ignite.internal.processors.task.GridVisorManagementTask;
 import org.apache.ignite.internal.util.GridLeanSet;
 import org.apache.ignite.internal.util.lang.GridMetadataAwareAdapter;
 import org.apache.ignite.internal.util.lang.GridPeerDeployAware;
@@ -48,6 +47,7 @@ import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.internal.visor.VisorMultiNodeTask;
 import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.lang.IgniteUuid;
 import org.jetbrains.annotations.NotNull;
@@ -387,16 +387,15 @@ public class GridDeployment extends GridMetadataAwareAdapter implements GridDepl
     }
 
     /**
-     * Checks whether task class is annotated with {@link GridVisorManagementTask}.
+     * Checks whether task class is a management task.
      *
      * @param task Task.
      * @param taskCls Task class.
      * @return {@code True} if task is internal.
      */
-    public boolean visorManagementTask(@Nullable ComputeTask task, @NotNull Class<?> taskCls) {
-        return annotation(task instanceof GridPeerDeployAware ?
-                ((GridPeerDeployAware)task).deployClass() : taskCls,
-            GridVisorManagementTask.class) != null;
+    public boolean visorManagementTask(@Nullable ComputeTask<?, ?> task, @NotNull Class<?> taskCls) {
+        return VisorMultiNodeTask.class.isAssignableFrom(task instanceof GridPeerDeployAware ?
+                ((GridPeerDeployAware)task).deployClass() : taskCls);
     }
 
     /**

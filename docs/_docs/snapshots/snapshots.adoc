@@ -16,7 +16,7 @@
 
 == Overview
 
-Ignite provides an ability to create full cluster snapshots for deployments using
+Ignite provides an ability to create full and incremental cluster snapshots for deployments using
 link:persistence/native-persistence[Ignite Persistence]. An Ignite snapshot includes a consistent cluster-wide copy of
 all data records persisted on disk and some other files needed for a restore procedure.
 
@@ -28,15 +28,15 @@ with several exceptions. Let's take this snapshot as an example to review the st
 work
 └── snapshots
     └── backup23012020
+        ├── increments
+        │        └── 0000000000000001
         └── db
             ├── binary_meta
             │         ├── node1
             │         ├── node2
             │         └── node3
             ├── marshaller
-            │         ├── node1
-            │         ├── node2
-            │         └── node3
+            │         └── classname0
             ├── node1
             │    └── my-sample-cache
             │        ├── cache_data.dat
@@ -62,8 +62,10 @@ the nodes are named as `node1`, `node2`, and `node3`, while in practice, the nam
 link:https://cwiki.apache.org/confluence/display/IGNITE/Ignite+Persistent+Store+-+under+the+hood#IgnitePersistentStoreunderthehood-SubfoldersGeneration[consistent IDs].
 * The snapshot keeps a copy of the `my-sample-cache` cache.
 * The `db` folder keeps a copy of data records in `part-N.bin` and `cache_data.dat` files. Write-ahead and checkpointing
-are not added into the snapshot as long as those are not required for the current restore procedure.
+are not added into the snapshot as long as those are not required for the full snapshot restore procedure.
 * The `binary_meta` and `marshaller` directories store metadata and marshaller-specific information.
+* The `increments` directory stores incremental snapshots based on the full snapshot `backup23012020`, in this example
+there is a single increment `0000000000000001`. It contains `wal` directory that stores the compressed WAL segments, `binary_meta` and `marshaller` directories.
 
 [NOTE]
 ====
@@ -75,6 +77,31 @@ snapshot is located in a single place. While in practice, all the nodes will be 
 snapshot data spread across the cluster. Each node keeps a segment of the snapshot with the data belonging to this particular node.
 The link:snapshots/snapshots#restoring-from-snapshot[restore procedure] explains how to tether together all the segments during recovery.
 ====
+
+== Incremental snapshots
+
+The low RPO (Recovery Point Object), e.g. a few minutes, can hardly be achieved using full snapshots. They require additional resources
+to create and store all partitions data. Instead, you can use incremental snapshots:
+
+1. to store the data changes happened since previous full or incremental snapshot was created
+2. to provide a lightweight creation process and can be run concurrently with runtime load.
+
+[NOTE]
+====
+
+Incremental snapshots consist of compressed WAL segments, which are collected in the background without pressure on cluster resources.
+====
+
+There are some prerequisites for using incremental snapshots:
+
+* Incremental snapshots are based on existing full snapshot.
+* link:persistence/native-persistence#wal-archive-compaction[WAL archive compaction] has to be enabled.
+* Incremental snapshots has to be created on the same media drive where WAL archives are stored.
+
+During incremental snapshot restore procedure the full snapshot is restored first and after that all increments are restored sequentially.
+
+Please refer to the sections link:snapshots/snapshots#consistency-guarantees[Consistency Guarantees] and
+link:snapshots/snapshots#current-limitations[Current Limitations] below for more details about incremental snapshots.
 
 == Configuration
 
@@ -133,7 +160,10 @@ control.(sh|bat) --snapshot create snapshot_09062021
 control.(sh|bat) --snapshot create snapshot_09062021 --sync
 
 # Create a cluster snapshot named "snapshot_09062021" in the "/tmp/ignite/snapshots" folder (the full path to the snapshot files will be /tmp/ignite/snapshots/snapshot_09062021):
-control.(sh|bat) --snapshot create snapshot_09062021 -dest /tmp/ignite/snapshots
+control.(sh|bat) --snapshot create snapshot_09062021 --dest /tmp/ignite/snapshots
+
+# Create an incremental snapshot based on full snapshot "snapshot_09062021":
+control.(sh|bat) --snapshot create snapshot_09062021 --incremental
 ----
 
 === Using JMX
@@ -143,7 +173,8 @@ Use the `SnapshotMXBean` interface to perform the snapshot-specific procedures v
 [cols="1,1",opts="header"]
 |===
 |Method | Description
-|createSnapshot(String snpName) | Create a snapshot.
+|createSnapshot(String snpName, String snpPath) | Create a snapshot.
+|createIncrementalSnapshot(String snpName, String snpPath) | Create an incremental snapshot.
 |===
 
 === Using Java API
@@ -181,22 +212,22 @@ Both procedures are described below, however, it is preferable to use the restor
 
 === Manual Snapshot Restore Procedure
 
-The snapshot structure is similar to the layout of the Ignite Native Persistence, so for the manual snapshot restore you must
-do a snapshot restore only on the same cluster with the same node `consistentId` and on the same topology on which a snapshot
-was taken. If you need to restore a snapshot on a different cluster or on a different cluster topology use the
-link:snapshots/snapshots#automatic-snapshot-restore-procedure[Automatic Snapshot Restore Procedure].
+The snapshot structure is similar to the layout of the Ignite Native Persistence. Therefore, to restore the manual snapshot, you must
+restore a snapshot only on the same cluster with the same node `consistentId` and on the same topology on which a snapshot
+was taken. Only the full snapshot can be restored. If you need to restore a snapshot on a different cluster, or on a different
+cluster topology, or restore incremental snapshots use the link:snapshots/snapshots#automatic-snapshot-restore-procedure[Automatic Snapshot Restore Procedure].
 
-In general, stop the cluster, then replace persistence data and other files with the data from the snapshot, and restart the nodes.
+In general, stop the cluster, then replace the persistence data and other files using the data from the snapshot, and restart the nodes.
 
 The detailed procedure looks as follows:
 
 . Stop the cluster you intend to restore
 . Remove all files from the checkpoint `$IGNITE_HOME/work/cp` directory
 . Do the following on each node:
-    - Remove the files related to the `{nodeId}` from the `$IGNITE_HOME/work/db/binary_meta` directory.
-    - Remove the files related to the `{nodeId}` from the `$IGNITE_HOME/work/db/marshaller` directory.
-    - Remove the files and sub-directories related to the `{nodeId}` under your `$IGNITE_HOME/work/db` directory. Clean the link:persistence/native-persistence#configuring-persistent-storage-directory[`db/{node_id}`] directory separately if it's not located under the Ignite `work` dir.
-    - Copy the files belonging to a node with the `{node_id}` from the snapshot into the `$IGNITE_HOME/work/` directory. If the `db/{node_id}` directory is not located under the Ignite `work` dir then you need to copy data files there.
+    - Remove the files related to the `{consistentId}` from the `$IGNITE_HOME/work/db/binary_meta` directory.
+    - Remove the files related to the `{consistentId}` from the `$IGNITE_HOME/work/db/marshaller` directory.
+    - Remove the files and sub-directories related to the `{consistentId}` under your `$IGNITE_HOME/work/db` directory. Clean the link:persistence/native-persistence#configuring-persistent-storage-directory[`db/{consistentId}`] directory separately if it's not located under the Ignite `work` dir.
+    - Copy the files belonging to a node with the `{consistentId}` from the snapshot into the `$IGNITE_HOME/work/` directory. If the `db/{consistentId}` directory is not located under the Ignite `work` dir then you need to copy data files there.
 . Restart the cluster
 
 === Automatic Snapshot Restore Procedure
@@ -228,6 +259,10 @@ tab:CLI[]
 ----
 # Restore cache group "snapshot-cache" from the snapshot "snapshot_02092020".
 control.(sh|bat) --snapshot restore snapshot_02092020 --groups snapshot-cache
+
+# Restore cache group "snapshot-cache" from the snapshot "snapshot_02092020" and its increment with index 1.
+control.(sh|bat) --snapshot restore snapshot_02092020 --groups snapshot-cache --increment 1
+
 ----
 --
 
@@ -247,6 +282,9 @@ control.(sh|bat) --snapshot restore snapshot_09062021 --src /tmp/ignite/snapshot
 
 # Start restoring only "cache-group1" and "cache-group2" from the snapshot "snapshot_09062021" in the background.
 control.(sh|bat) --snapshot restore snapshot_09062021 --groups cache-group1,cache-group2
+
+# Start restoring all user-created cache groups from the snapshot "snapshot_09062021" and its increment with index 1.
+control.(sh|bat) --snapshot restore snapshot_09062021 --increment 1
 ----
 
 == Getting Snapshot Operation Status
@@ -332,6 +370,14 @@ The consistency between the Ignite Persistence files and their snapshot copies i
 files to the destination snapshot directory with tracking all concurrent ongoing changes. The tracking of the changes
 might require extra space on the Ignite Persistence storage media (up to the 1x size of the storage media).
 
+=== Incremental snapshot consistency guarantees
+
+Incremental snapshots uses different non-blocking approach for achieving transactional consistency based on the Consistent Cut algorithm.
+This allows you to start incremental snapshots concurrently with the runtime load without affecting performance. But it doesn't guarantee consistency
+for atomic caches. It's highly recommended to verify these caches after restoring with the `idle_verify`
+command. If necessary, it's possible to repair inconsistent partitions with the `consistency` command. Please, check the
+link:tools/control-script[Control Script] section for more information about these commands.
+
 == Current Limitations
 
 The snapshot procedure has some limitations that you should be aware of before using the feature in your production environment:
@@ -347,3 +393,15 @@ The snapshot procedure has some limitations that you should be aware of before u
 
 If any of these limitations prevent you from using Apache Ignite, then select alternate snapshotting implementations for
 Ignite provided by enterprise vendors.
+
+=== Incremental snapshot limitations
+
+Incremental snapshots can't be created in the following cases:
+
+* Encrypted caches are presented in a cluster.
+* Caches are created, changed or destroyed after full snapshot was created.
+* After link:data-rebalancing[data has been rebalanced] in the cluster.
+
+Ignite automatically monitors these events and prevents the incremental snapshot creation. It's required to create a new
+full snapshot and after that creation of incremental snapshots becomes available again.
+

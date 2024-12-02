@@ -78,19 +78,19 @@ public class IgniteNestedLoopJoin extends AbstractIgniteJoin {
     @Override public RelOptCost computeSelfCost(RelOptPlanner planner, RelMetadataQuery mq) {
         IgniteCostFactory costFactory = (IgniteCostFactory)planner.getCostFactory();
 
-        double leftCount = mq.getRowCount(getLeft());
+        double leftCnt = mq.getRowCount(getLeft());
 
-        if (Double.isInfinite(leftCount))
+        if (Double.isInfinite(leftCnt))
             return costFactory.makeInfiniteCost();
 
-        double rightCount = mq.getRowCount(getRight());
+        double rightCnt = mq.getRowCount(getRight());
 
-        if (Double.isInfinite(rightCount))
+        if (Double.isInfinite(rightCnt))
             return costFactory.makeInfiniteCost();
 
-        double rows = leftCount * rightCount;
+        double rows = leftCnt * rightCnt;
 
-        double rightSize = rightCount * getRight().getRowType().getFieldCount() * IgniteCost.AVERAGE_FIELD_SIZE;
+        double rightSize = rightCnt * getRight().getRowType().getFieldCount() * IgniteCost.AVERAGE_FIELD_SIZE;
 
         return costFactory.makeCost(rows,
             rows * (IgniteCost.ROW_COMPARISON_COST + IgniteCost.ROW_PASS_THROUGH_COST), 0, rightSize, 0);

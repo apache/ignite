@@ -43,5 +43,8 @@ public enum CacheQueryType {
     CONTINUOUS,
 
     /** SPI query. */
-    SPI
+    SPI,
+
+    /** Index query. */
+    INDEX
 }

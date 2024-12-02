@@ -48,11 +48,7 @@ public class DynamicEnableIndexingBasicSelfTest extends DynamicEnableIndexingAbs
 
         CacheMode[] cacheModes = new CacheMode[] {CacheMode.PARTITIONED, CacheMode.REPLICATED};
 
-        CacheAtomicityMode[] atomicityModes = new CacheAtomicityMode[] {
-            CacheAtomicityMode.ATOMIC,
-            CacheAtomicityMode.TRANSACTIONAL,
-            CacheAtomicityMode.TRANSACTIONAL_SNAPSHOT
-        };
+        CacheAtomicityMode[] atomicityModes = CacheAtomicityMode.values();
 
         List<Object[]> res = new ArrayList<>();
 
@@ -60,11 +56,7 @@ public class DynamicEnableIndexingBasicSelfTest extends DynamicEnableIndexingAbs
             for (CacheMode cacheMode : cacheModes) {
                 for (CacheAtomicityMode atomicityMode : atomicityModes) {
                     res.add(new Object[] {true, node, cacheMode, atomicityMode});
-
-                    // For TRANSACTIONAL_SNAPSHOT near caches is forbidden.
-                    if (atomicityMode != CacheAtomicityMode.TRANSACTIONAL_SNAPSHOT)
-                        res.add(new Object[] {false, node, cacheMode, atomicityMode});
-
+                    res.add(new Object[] {false, node, cacheMode, atomicityMode});
                 }
             }
         }
@@ -104,15 +96,14 @@ public class DynamicEnableIndexingBasicSelfTest extends DynamicEnableIndexingAbs
 
         CacheConfiguration<?, ?> ccfg = testCacheConfiguration(POI_CACHE_NAME, cacheMode, atomicityMode);
 
-        if (hasNear && atomicityMode != CacheAtomicityMode.TRANSACTIONAL_SNAPSHOT)
+        if (hasNear)
             ccfg.setNearConfiguration(new NearCacheConfiguration<>());
 
         node().getOrCreateCache(ccfg);
 
         awaitCacheOnClient(grid(IDX_CLI_NEAR_ONLY), POI_CACHE_NAME);
 
-        if (atomicityMode != CacheAtomicityMode.TRANSACTIONAL_SNAPSHOT)
-            grid(IDX_CLI_NEAR_ONLY).getOrCreateNearCache(POI_CACHE_NAME, new NearCacheConfiguration<>());
+        grid(IDX_CLI_NEAR_ONLY).getOrCreateNearCache(POI_CACHE_NAME, new NearCacheConfiguration<>());
     }
 
     /** {@inheritDoc} */

@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.processors.query.calcite.prepare.bounds;
 
+import java.util.function.Function;
 import org.apache.calcite.rex.RexNode;
 import org.jetbrains.annotations.Nullable;
 
@@ -41,6 +42,11 @@ public abstract class SearchBounds {
 
     /** */
     public abstract Type type();
+
+    /**
+     * Create a transformed copy of search bounds.
+     */
+    public abstract SearchBounds transform(Function<RexNode, RexNode> tranformFunction);
 
     /** */
     public enum Type {

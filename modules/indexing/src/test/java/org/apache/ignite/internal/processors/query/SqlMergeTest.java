@@ -97,9 +97,9 @@ public class SqlMergeTest extends AbstractIndexingCommonTest {
             .matches("The search row by explicit KEY isn't supported. The primary key is always used to search row")
             .build();
 
-        ListeningTestLogger listeningTestLogger = testLog();
+        ListeningTestLogger listeningTestLog = testLog();
 
-        listeningTestLogger.registerListener(logLsnr);
+        listeningTestLog.registerListener(logLsnr);
 
         sql("CREATE TABLE test2 (id INT, id2 INT, name VARCHAR, PRIMARY KEY (id, id2))");
 

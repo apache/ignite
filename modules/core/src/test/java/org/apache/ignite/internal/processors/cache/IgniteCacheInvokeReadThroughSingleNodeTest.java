@@ -17,12 +17,10 @@
 
 package org.apache.ignite.internal.processors.cache;
 
-import org.apache.ignite.testframework.MvccFeatureChecker;
-import org.junit.Ignore;
 import org.junit.Test;
+
 import static org.apache.ignite.cache.CacheAtomicityMode.ATOMIC;
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
-import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL_SNAPSHOT;
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
 import static org.apache.ignite.cache.CacheMode.REPLICATED;
 
@@ -30,13 +28,6 @@ import static org.apache.ignite.cache.CacheMode.REPLICATED;
  *
  */
 public class IgniteCacheInvokeReadThroughSingleNodeTest extends IgniteCacheInvokeReadThroughAbstractTest {
-    /** {@inheritDoc} */
-    @Override protected void beforeTest() throws Exception {
-        MvccFeatureChecker.skipIfNotSupported(MvccFeatureChecker.Feature.CACHE_STORE);
-
-        super.beforeTest();
-    }
-
     /** {@inheritDoc} */
     @Override protected void startNodes() throws Exception {
         startGrid(0);
@@ -88,32 +79,5 @@ public class IgniteCacheInvokeReadThroughSingleNodeTest extends IgniteCacheInvok
     @Test
     public void testInvokeReadThroughTxReplicated() throws Exception {
         invokeReadThrough(cacheConfiguration(REPLICATED, TRANSACTIONAL, 0, false));
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
-    @Ignore("https://issues.apache.org/jira/browse/IGNITE-8582")
-    @Test
-    public void testInvokeReadThroughMvccTx() throws Exception {
-        invokeReadThrough(cacheConfiguration(PARTITIONED, TRANSACTIONAL_SNAPSHOT, 1, false));
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
-    @Ignore("https://issues.apache.org/jira/browse/IGNITE-8582")
-    @Test
-    public void testInvokeReadThroughMvccTxNearCache() throws Exception {
-        invokeReadThrough(cacheConfiguration(PARTITIONED, TRANSACTIONAL_SNAPSHOT, 1, true));
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
-    @Ignore("https://issues.apache.org/jira/browse/IGNITE-8582")
-    @Test
-    public void testInvokeReadThroughMvccTxReplicated() throws Exception {
-        invokeReadThrough(cacheConfiguration(REPLICATED, TRANSACTIONAL_SNAPSHOT, 0, false));
     }
 }

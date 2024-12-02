@@ -83,6 +83,7 @@
     <None Update="Config\Compute\compute-standalone.xml" CopyToOutputDirectory="PreserveNewest" />
     <None Update="Config\Compute\compute-grid2.xml" CopyToOutputDirectory="PreserveNewest" />
     <None Update="Config\Compute\compute-grid3.xml" CopyToOutputDirectory="PreserveNewest" />
+    <None Update="Config\Compute\compute-security.xml" CopyToOutputDirectory="PreserveNewest" />
     <None Update="Config\Dynamic\dynamic-data-no-cfg.xml" CopyToOutputDirectory="PreserveNewest" />
     <None Update="Config\Dynamic\dynamic-client.xml" CopyToOutputDirectory="PreserveNewest" />
     <None Update="Config\Dynamic\dynamic-data.xml" CopyToOutputDirectory="PreserveNewest" />

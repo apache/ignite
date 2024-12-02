@@ -38,6 +38,14 @@ public class P2PClassLoadingIssues {
         throw error;
     }
 
+    /** Wraps specific exception.
+     *
+     * @param e Exception to be wrapped.
+     */
+    public static P2PClassNotFoundException wrapWithP2PFailure(NoClassDefFoundError e) {
+        return new P2PClassNotFoundException("P2P class loading failed", e);
+    }
+
     /**
      * Returns @{code true} if the given Throwable is an error caused by a P2P class-loading failure.
      *

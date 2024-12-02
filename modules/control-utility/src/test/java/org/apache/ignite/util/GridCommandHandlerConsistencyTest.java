@@ -17,7 +17,9 @@
 
 package org.apache.ignite.util;
 
+import java.security.Permissions;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.ThreadLocalRandom;
@@ -31,7 +33,7 @@ import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
-import org.apache.ignite.internal.commandline.consistency.ConsistencyCommand;
+import org.apache.ignite.internal.management.consistency.ConsistencyStatusTask;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.CacheObjectImpl;
 import org.apache.ignite.internal.processors.cache.GridCacheAdapter;
@@ -39,21 +41,31 @@ import org.apache.ignite.internal.processors.cache.GridCacheEntryEx;
 import org.apache.ignite.internal.processors.cache.IgniteInternalCache;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersionManager;
 import org.apache.ignite.internal.processors.dr.GridDrType;
+import org.apache.ignite.internal.processors.security.impl.TestSecurityData;
+import org.apache.ignite.internal.processors.security.impl.TestSecurityPluginProvider;
 import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
-import org.apache.ignite.internal.visor.consistency.VisorConsistencyStatusTask;
 import org.apache.ignite.testframework.ListeningTestLogger;
 import org.apache.ignite.testframework.LogListener;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 
+import static java.util.Arrays.asList;
 import static org.apache.ignite.cache.CacheAtomicityMode.ATOMIC;
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
 import static org.apache.ignite.internal.commandline.CommandHandler.EXIT_CODE_OK;
 import static org.apache.ignite.internal.commandline.CommandHandler.EXIT_CODE_UNEXPECTED_ERROR;
-import static org.apache.ignite.internal.visor.consistency.VisorConsistencyRepairTask.CONSISTENCY_VIOLATIONS_FOUND;
+import static org.apache.ignite.internal.commandline.SecurityCommandHandlerPermissionsTest.DEFAULT_PWD;
+import static org.apache.ignite.internal.commandline.SecurityCommandHandlerPermissionsTest.TEST_LOGIN;
+import static org.apache.ignite.internal.commandline.SecurityCommandHandlerPermissionsTest.TEST_NO_PERMISSIONS_LOGIN;
+import static org.apache.ignite.internal.commandline.SecurityCommandHandlerPermissionsTest.enrichWithConnectionArguments;
+import static org.apache.ignite.internal.management.consistency.ConsistencyRepairTask.CONSISTENCY_VIOLATIONS_FOUND;
+import static org.apache.ignite.plugin.security.SecurityPermission.ADMIN_OPS;
+import static org.apache.ignite.plugin.security.SecurityPermissionSetBuilder.ALL_PERMISSIONS;
+import static org.apache.ignite.plugin.security.SecurityPermissionSetBuilder.NO_PERMISSIONS;
+import static org.apache.ignite.plugin.security.SecurityPermissionSetBuilder.systemPermissions;
 import static org.apache.ignite.testframework.GridTestUtils.assertContains;
 import static org.apache.ignite.testframework.LogListener.matches;
 
@@ -74,6 +86,15 @@ public class GridCommandHandlerConsistencyTest extends GridCommandHandlerCluster
     /** Group postfix. */
     private static final String GRP_POSTFIX = "_grp";
 
+    /** */
+    public static final String CACHE = "--cache";
+
+    /** */
+    public static final String STRATEGY = "--strategy";
+
+    /** */
+    public static final String PARTITIONS_ARG = "--partitions";
+
     /** Partitions. */
     private static final int PARTITIONS = 32;
 
@@ -84,16 +105,22 @@ public class GridCommandHandlerConsistencyTest extends GridCommandHandlerCluster
     protected final ListeningTestLogger listeningLog = new ListeningTestLogger(log);
 
     /** */
-    @Parameterized.Parameters(name = "strategy={0}, explicitGrp={1}, callByGrp={2}")
+    @Parameterized.Parameters(name = "cmdHnd={0}, strategy={1}, explicitGrp={2}, callByGrp={3}, withSecurityEnabled={4}")
     public static Iterable<Object[]> data() {
         List<Object[]> res = new ArrayList<>();
 
-        for (ReadRepairStrategy strategy : ReadRepairStrategy.values()) {
-            for (boolean explicitGrp : new boolean[] {false, true}) {
-                if (explicitGrp)
-                    res.add(new Object[] {strategy, explicitGrp, true});
+        for (String invoker : commandHandlers()) {
+            for (ReadRepairStrategy strategy : ReadRepairStrategy.values()) {
+                for (boolean explicitGrp : new boolean[] {false, true}) {
+                    for (boolean callByGrp : new boolean[] {false, true}) {
+                        for (boolean withSecurityEnabled : new boolean[] {false, true}) {
+                            if (!explicitGrp && callByGrp || invoker.equals(JMX_CMD_HND) && withSecurityEnabled)
+                                continue;
 
-                res.add(new Object[] {strategy, explicitGrp, false});
+                            res.add(new Object[] {invoker, strategy, explicitGrp, callByGrp, withSecurityEnabled});
+                        }
+                    }
+                }
             }
         }
 
@@ -103,20 +130,26 @@ public class GridCommandHandlerConsistencyTest extends GridCommandHandlerCluster
     /**
      *
      */
-    @Parameterized.Parameter
+    @Parameterized.Parameter(1)
     public ReadRepairStrategy strategy;
 
     /**
      * True when cache defined via group.
      */
-    @Parameterized.Parameter(1)
+    @Parameterized.Parameter(2)
     public boolean explicitGrp;
 
     /**
      * True when cache consistency repair called by group name.
      */
-    @Parameterized.Parameter(2)
+    @Parameterized.Parameter(3)
     public boolean callByGrp;
+
+    /**
+     * True if security checks enabled.
+     */
+    @Parameterized.Parameter(4)
+    public boolean withSecurityEnabled;
 
     /**
      *
@@ -142,6 +175,18 @@ public class GridCommandHandlerConsistencyTest extends GridCommandHandlerCluster
         cfg.setDataStorageConfiguration(null);
 
         cfg.setGridLogger(listeningLog);
+
+        if (withSecurityEnabled) {
+            cfg.setPluginProviders(
+                new TestSecurityPluginProvider(
+                    igniteInstanceName,
+                    DEFAULT_PWD,
+                    ALL_PERMISSIONS,
+                    false,
+                    new TestSecurityData(TEST_NO_PERMISSIONS_LOGIN, DEFAULT_PWD, NO_PERMISSIONS, new Permissions()),
+                    new TestSecurityData(TEST_LOGIN, DEFAULT_PWD, systemPermissions(ADMIN_OPS), new Permissions()))
+            );
+        }
 
         return cfg;
     }
@@ -210,7 +255,8 @@ public class GridCommandHandlerConsistencyTest extends GridCommandHandlerCluster
             }
         }
 
-        assertEquals(EXIT_CODE_OK, execute("--cache", "idle_verify"));
+        checkCommandExecution(EXIT_CODE_OK, asList("--cache", "idle_verify"));
+
         assertContains(log, testOut.toString(),
             "conflict partitions has been found: [counterConflicts=0, hashConflicts=" + brokenParts.get());
 
@@ -274,7 +320,8 @@ public class GridCommandHandlerConsistencyTest extends GridCommandHandlerCluster
 
         AtomicInteger brokenParts = new AtomicInteger(PARTITIONS);
 
-        assertEquals(EXIT_CODE_OK, execute("--cache", "idle_verify"));
+        checkCommandExecution(EXIT_CODE_OK, asList("--cache", "idle_verify"));
+
         assertContains(log, testOut.toString(),
             "conflict partitions has been found: [counterConflicts=0, hashConflicts=" + brokenParts.get());
 
@@ -295,13 +342,15 @@ public class GridCommandHandlerConsistencyTest extends GridCommandHandlerCluster
         injectTestSystemOut();
 
         for (int i = 0; i < PARTITIONS; i++) {
-            assertEquals(EXIT_CODE_UNEXPECTED_ERROR,
-                execute("--consistency", "repair",
-                    ConsistencyCommand.CACHE, "non-existent",
-                    ConsistencyCommand.PARTITIONS, String.valueOf(i),
-                    ConsistencyCommand.STRATEGY, strategy.toString()));
+            checkCommandExecution(
+                EXIT_CODE_UNEXPECTED_ERROR,
+                asList("--consistency", "repair",
+                    CACHE, "non-existent",
+                    PARTITIONS_ARG, String.valueOf(i),
+                    STRATEGY, strategy.toString())
+            );
 
-            assertTrue(VisorConsistencyStatusTask.MAP.isEmpty());
+            assertTrue(ConsistencyStatusTask.MAP.isEmpty());
 
             assertContains(log, testOut.toString(), "Cache (or cache group) not found");
         }
@@ -318,18 +367,20 @@ public class GridCommandHandlerConsistencyTest extends GridCommandHandlerCluster
 
             i = Math.min(i + ThreadLocalRandom.current().nextInt(1, 10), PARTITIONS);
 
-            assertEquals(EXIT_CODE_OK, execute("--consistency", "repair",
-                ConsistencyCommand.CACHE, callByGrp ? cacheName + GRP_POSTFIX : cacheName,
-                ConsistencyCommand.PARTITIONS,
-                    IntStream.range(from, i).mapToObj(Integer::toString).collect(Collectors.joining(",")),
-                ConsistencyCommand.STRATEGY, strategy.toString()));
+            checkCommandExecution(
+                EXIT_CODE_OK,
+                asList("--consistency", "repair",
+                    CACHE, callByGrp ? cacheName + GRP_POSTFIX : cacheName,
+                    PARTITIONS_ARG, IntStream.range(from, i).mapToObj(Integer::toString).collect(Collectors.joining(",")),
+                    STRATEGY, strategy.toString())
+            );
 
-            assertTrue(VisorConsistencyStatusTask.MAP.isEmpty());
+            assertTrue(ConsistencyStatusTask.MAP.isEmpty());
 
             assertContains(log, testOut.toString(), CONSISTENCY_VIOLATIONS_FOUND);
             assertContains(log, testOut.toString(), "[found=1, repaired=" + repairsPerEntry.toString());
 
-            assertEquals(EXIT_CODE_OK, execute("--cache", "idle_verify"));
+            checkCommandExecution(EXIT_CODE_OK, asList("--cache", "idle_verify"));
 
             if (repairsPerEntry > 0) {
                 brokenParts.addAndGet(-(i - from));
@@ -432,5 +483,21 @@ public class GridCommandHandlerConsistencyTest extends GridCommandHandlerCluster
      */
     protected boolean binaryCache() {
         return false;
+    }
+
+    /**
+     * Wrapper for security check with {@link #assertEquals(int, int)}. The method checks 2 user logins
+     * for auth success/error.
+     * @param expExitCode Exp exit code.
+     * @param cmdArgs cmdArgs command arguments
+     */
+    private void checkCommandExecution(int expExitCode, Collection<String> cmdArgs) {
+        if (!withSecurityEnabled)
+            assertEquals(expExitCode, execute(new ArrayList<>(cmdArgs)));
+        else {
+            assertEquals(EXIT_CODE_UNEXPECTED_ERROR, execute(enrichWithConnectionArguments(cmdArgs, TEST_NO_PERMISSIONS_LOGIN)));
+
+            assertEquals(expExitCode, execute(enrichWithConnectionArguments(cmdArgs, TEST_LOGIN)));
+        }
     }
 }

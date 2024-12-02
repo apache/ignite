@@ -311,6 +311,8 @@ public class GridEncryptionManager extends GridManagerAdapter<EncryptionSpi> imp
             }
         });
 
+        ctx.internalSubscriptionProcessor().registerGlobalStateListener(this);
+
         prepareMKChangeProc = new DistributedProcess<>(ctx, MASTER_KEY_CHANGE_PREPARE, this::prepareMasterKeyChange,
             this::finishPrepareMasterKeyChange);
 
@@ -697,7 +699,7 @@ public class GridEncryptionManager extends GridManagerAdapter<EncryptionSpi> imp
                 "Unable to get the master key digest.", e));
         }
 
-        MasterKeyChangeRequest request = new MasterKeyChangeRequest(UUID.randomUUID(), encryptKeyName(masterKeyName),
+        MasterKeyChangeRequest req = new MasterKeyChangeRequest(UUID.randomUUID(), encryptKeyName(masterKeyName),
             digest);
 
         synchronized (opsMux) {
@@ -717,9 +719,9 @@ public class GridEncryptionManager extends GridManagerAdapter<EncryptionSpi> imp
                     "The previous change was not completed."));
             }
 
-            masterKeyChangeFut = new KeyChangeFuture(request.requestId());
+            masterKeyChangeFut = new KeyChangeFuture(req.requestId());
 
-            prepareMKChangeProc.start(request.requestId(), request);
+            prepareMKChangeProc.start(req.requestId(), req);
 
             return new IgniteFutureImpl<>(masterKeyChangeFut);
         }
@@ -1252,10 +1254,10 @@ public class GridEncryptionManager extends GridManagerAdapter<EncryptionSpi> imp
         for (int grpId : grpIds) {
             IgniteInternalFuture<?> fut = pageScanner.schedule(grpId);
 
-            fut.listen(f -> {
-                if (f.isCancelled() || f.error() != null) {
+            fut.listen(() -> {
+                if (fut.isCancelled() || fut.error() != null) {
                     log.warning("Reencryption " +
-                        (f.isCancelled() ? "cancelled" : "failed") + " [grp=" + grpId + "]", f.error());
+                        (fut.isCancelled() ? "cancelled" : "failed") + " [grp=" + grpId + "]", fut.error());
 
                     return;
                 }
@@ -1568,7 +1570,7 @@ public class GridEncryptionManager extends GridManagerAdapter<EncryptionSpi> imp
      * @param res Results.
      * @param err Errors.
      */
-    private void finishPrepareMasterKeyChange(UUID id, Map<UUID, EmptyResult> res, Map<UUID, Exception> err) {
+    private void finishPrepareMasterKeyChange(UUID id, Map<UUID, EmptyResult> res, Map<UUID, Throwable> err) {
         if (!err.isEmpty()) {
             if (masterKeyChangeRequest != null && masterKeyChangeRequest.requestId().equals(id))
                 masterKeyChangeRequest = null;
@@ -1613,7 +1615,7 @@ public class GridEncryptionManager extends GridManagerAdapter<EncryptionSpi> imp
      * @param res Results.
      * @param err Errors.
      */
-    private void finishPerformMasterKeyChange(UUID id, Map<UUID, EmptyResult> res, Map<UUID, Exception> err) {
+    private void finishPerformMasterKeyChange(UUID id, Map<UUID, EmptyResult> res, Map<UUID, Throwable> err) {
         completeMasterKeyChangeFuture(id, err);
     }
 
@@ -1621,7 +1623,7 @@ public class GridEncryptionManager extends GridManagerAdapter<EncryptionSpi> imp
      * @param reqId Request id.
      * @param err Exception.
      */
-    private void completeMasterKeyChangeFuture(UUID reqId, Map<UUID, Exception> err) {
+    private void completeMasterKeyChangeFuture(UUID reqId, Map<UUID, Throwable> err) {
         synchronized (opsMux) {
             boolean isInitiator = masterKeyChangeFut != null && masterKeyChangeFut.id().equals(reqId);
 
@@ -1629,7 +1631,7 @@ public class GridEncryptionManager extends GridManagerAdapter<EncryptionSpi> imp
                 return;
 
             if (!F.isEmpty(err)) {
-                Exception e = err.values().stream().findFirst().get();
+                Throwable e = err.values().stream().findFirst().get();
 
                 masterKeyChangeFut.onDone(e);
             }

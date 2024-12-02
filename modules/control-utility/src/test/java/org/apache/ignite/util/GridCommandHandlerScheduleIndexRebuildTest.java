@@ -19,6 +19,7 @@ package org.apache.ignite.util;
 
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -26,17 +27,21 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
+import java.util.stream.IntStream;
+import org.apache.ignite.Ignite;
 import org.apache.ignite.cluster.ClusterState;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.cache.query.index.Index;
 import org.apache.ignite.internal.cache.query.index.sorted.maintenance.MaintenanceRebuildIndexTarget;
+import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.maintenance.MaintenanceTask;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.ListeningTestLogger;
+import org.jetbrains.annotations.Nullable;
 import org.junit.Test;
 
 import static java.util.Collections.singletonMap;
@@ -45,9 +50,16 @@ import static java.util.stream.Collectors.mapping;
 import static java.util.stream.Collectors.toSet;
 import static org.apache.ignite.internal.cache.query.index.sorted.maintenance.MaintenanceRebuildIndexUtils.parseMaintenanceTaskParameters;
 import static org.apache.ignite.internal.commandline.CommandHandler.EXIT_CODE_OK;
-import static org.apache.ignite.internal.commandline.CommandLogger.INDENT;
+import static org.apache.ignite.internal.management.api.CommandUtils.INDENT;
+import static org.apache.ignite.internal.management.cache.CacheIndexesForceRebuildCommand.PREF_CACHES_NOT_FOUND;
+import static org.apache.ignite.internal.management.cache.CacheIndexesForceRebuildCommand.PREF_GROUPS_NOT_FOUND;
+import static org.apache.ignite.internal.management.cache.CacheIndexesForceRebuildCommand.PREF_SCHEDULED;
+import static org.apache.ignite.internal.management.cache.CacheScheduleIndexesRebuildCommand.PREF_INDEXES_NOT_FOUND;
+import static org.apache.ignite.internal.management.cache.CacheScheduleIndexesRebuildCommand.PREF_REBUILD_NOT_SCHEDULED;
+import static org.apache.ignite.internal.management.cache.CacheScheduleIndexesRebuildCommand.PREF_REBUILD_NOT_SCHEDULED_MULTI;
 import static org.apache.ignite.internal.util.IgniteUtils.max;
 import static org.apache.ignite.testframework.GridTestUtils.assertContains;
+import static org.apache.ignite.util.GridCommandHandlerIndexForceRebuildTest.validateMultiNodeOutput;
 import static org.apache.ignite.util.GridCommandHandlerIndexingUtils.breakSqlIndex;
 import static org.apache.ignite.util.GridCommandHandlerIndexingUtils.complexIndexEntity;
 import static org.apache.ignite.util.GridCommandHandlerIndexingUtils.createAndFillCache;
@@ -153,57 +165,102 @@ public class GridCommandHandlerScheduleIndexRebuildTest extends GridCommandHandl
     }
 
     /**
-     * Checks error messages when trying to rebuild indexes for non-existent cache, when trying
-     * to rebuild non-existent indexes or when not specifying any indexes inside the square brackets.
+     * Checks error messages on single node.
      */
     @Test
     public void testErrors() {
+        doTestErrors(false);
+    }
+
+    /**
+     * Checks error messages on all nodes.
+     */
+    @Test
+    public void testErrorsAllNodes() {
+        doTestErrors(true);
+    }
+
+    /**
+     * Checks error messages when trying to rebuild indexes for non-existent cache, when trying
+     * to rebuild non-existent indexes or when not specifying any indexes inside the square brackets.
+     *
+     * @param allNodes If {@code True}, runs on all nodes using '--all-nodes'.
+     */
+    private void doTestErrors(boolean allNodes) {
         injectTestSystemOut();
 
-        IgniteEx lastNode = grid(LAST_NODE_NUM);
-
         // Tests non-existing cache name.
-        assertEquals(EXIT_CODE_OK, execute("--cache", "schedule_indexes_rebuild",
-            "--node-id", lastNode.localNode().id().toString(),
-            "--cache-names", CACHE_NAME_NON_EXISTING));
+        if (allNodes) {
+            assertEquals(EXIT_CODE_OK, execute("--cache", "schedule_indexes_rebuild",
+                "--all-nodes", "--cache-names", CACHE_NAME_NON_EXISTING));
+        }
+        else {
+            assertEquals(EXIT_CODE_OK, execute("--cache", "schedule_indexes_rebuild",
+                "--node-id", grid(LAST_NODE_NUM).localNode().id().toString(), "--cache-names", CACHE_NAME_NON_EXISTING));
+        }
 
         String notExistingCacheOutputStr = testOut.toString();
 
-        assertTrue(notExistingCacheOutputStr.contains("WARNING: Indexes rebuild was not scheduled for any cache. Check command input."));
+        assertTrue(notExistingCacheOutputStr.contains(allNodes ? PREF_REBUILD_NOT_SCHEDULED_MULTI : PREF_REBUILD_NOT_SCHEDULED));
         assertTrue(notExistingCacheOutputStr.contains(
-            "WARNING: These caches were not found:" + System.lineSeparator()
-            + INDENT + CACHE_NAME_NON_EXISTING
+            PREF_CACHES_NOT_FOUND + System.lineSeparator()
+                + INDENT + CACHE_NAME_NON_EXISTING
         ));
 
         // Test non-existing cache group name.
-        assertEquals(EXIT_CODE_OK, execute("--cache", "schedule_indexes_rebuild",
-            "--node-id", lastNode.localNode().id().toString(),
-            "--group-names", GROUP_NAME_NON_EXISTING));
+        if (allNodes) {
+            assertEquals(EXIT_CODE_OK, execute("--cache", "schedule_indexes_rebuild",
+                "--all-nodes", "--group-names", GROUP_NAME_NON_EXISTING));
+        }
+        else {
+            assertEquals(EXIT_CODE_OK, execute("--cache", "schedule_indexes_rebuild",
+                "--node-id", grid(LAST_NODE_NUM).localNode().id().toString(),
+                "--group-names", GROUP_NAME_NON_EXISTING));
+        }
 
-        String notExistingGroupOutputStr = testOut.toString();
+        String notExistingGrpOutputStr = testOut.toString();
 
-        assertTrue(notExistingGroupOutputStr.contains("WARNING: Indexes rebuild was not scheduled for any cache. Check command input."));
-        assertTrue(notExistingGroupOutputStr.contains(
-            "WARNING: These cache groups were not found:" + System.lineSeparator()
-            + INDENT + GROUP_NAME_NON_EXISTING
+        assertTrue(notExistingGrpOutputStr.contains(allNodes ? PREF_REBUILD_NOT_SCHEDULED_MULTI : PREF_REBUILD_NOT_SCHEDULED));
+        assertTrue(notExistingGrpOutputStr.contains(
+            PREF_GROUPS_NOT_FOUND + System.lineSeparator()
+                + INDENT + GROUP_NAME_NON_EXISTING
         ));
 
         testOut.reset();
 
         // Tests non-existing index name.
-        assertEquals(EXIT_CODE_OK, execute("--cache", "schedule_indexes_rebuild",
-            "--node-id", grid(LAST_NODE_NUM).localNode().id().toString(),
-            "--cache-names", CACHE_NAME_1_1 + "[non-existing-index]"));
+        if (allNodes) {
+            assertEquals(EXIT_CODE_OK, execute("--cache", "schedule_indexes_rebuild",
+                "--all-nodes", "--cache-names", CACHE_NAME_1_1 + "[non-existing-index]"));
+        }
+        else {
+            assertEquals(EXIT_CODE_OK, execute("--cache", "schedule_indexes_rebuild",
+                "--node-id", grid(LAST_NODE_NUM).localNode().id().toString(),
+                "--cache-names", CACHE_NAME_1_1 + "[non-existing-index]"));
+        }
 
-        String notExistingIndexOutputStr = testOut.toString();
+        String notExistingIdxOutputStr = testOut.toString();
 
-        assertTrue(notExistingIndexOutputStr.contains("WARNING: Indexes rebuild was not scheduled for any cache. Check command input."));
+        if (allNodes) {
+            for (Ignite ig : G.allGrids()) {
+                validateMultiNodeOutput(notExistingIdxOutputStr, PREF_REBUILD_NOT_SCHEDULED_MULTI,
+                    ig.cluster().localNode().id().toString());
 
-        assertTrue(notExistingIndexOutputStr.contains(
-            "WARNING: These indexes were not found:" + System.lineSeparator()
-            + INDENT + CACHE_NAME_1_1 + ":" + System.lineSeparator()
-            + INDENT + INDENT + "non-existing-index")
-        );
+                validateMultiNodeOutput(notExistingIdxOutputStr, PREF_INDEXES_NOT_FOUND,
+                    ig.cluster().localNode().id().toString());
+            }
+
+            validateMultiNodeOutput(notExistingIdxOutputStr, PREF_INDEXES_NOT_FOUND, "non-existing-index");
+        }
+        else {
+            assertTrue(notExistingIdxOutputStr.contains(PREF_REBUILD_NOT_SCHEDULED));
+
+            assertTrue(notExistingIdxOutputStr.contains(
+                PREF_INDEXES_NOT_FOUND + System.lineSeparator()
+                    + INDENT + CACHE_NAME_1_1 + ":" + System.lineSeparator()
+                    + INDENT + INDENT + "non-existing-index")
+            );
+        }
     }
 
     /**
@@ -211,29 +268,75 @@ public class GridCommandHandlerScheduleIndexRebuildTest extends GridCommandHandl
      */
     @Test
     public void testRebuild() throws Exception {
-        IgniteEx node = grid(LAST_NODE_NUM);
+        doTestRebuildOnSpecifiedNodes(Collections.singletonList(LAST_NODE_NUM));
+    }
 
-        assertEquals(EXIT_CODE_OK, execute("--cache", "schedule_indexes_rebuild",
-            "--node-id", node.localNode().id().toString(),
-            "--cache-names", CACHE_NAME_NO_GRP));
+    /**
+     * Checks that index is rebuilt correctly using --node-ids.
+     */
+    @Test
+    public void testRebuildOnSpecifiedNodes() throws Exception {
+        doTestRebuildOnSpecifiedNodes(Arrays.asList(0, 1, LAST_NODE_NUM));
+    }
 
-        checkIndexesRebuildScheduled(node, singletonMap(CU.cacheId(CACHE_NAME_NO_GRP), indexes(node, CACHE_NAME_NO_GRP)));
+    /**
+     * Checks that index is rebuilt correctly using --all-nodes.
+     */
+    @Test
+    public void testRebuildOnAllNodes() throws Exception {
+        doTestRebuildOnSpecifiedNodes(Collections.emptyList());
+    }
 
-        node.close();
+    /** */
+    private void doTestRebuildOnSpecifiedNodes(Collection<Integer> gridIdxs) throws Exception {
+        Collection<IgniteEx> grids = gridIdxs.stream().map(this::grid).collect(Collectors.toList());
 
-        node = startGrid(LAST_NODE_NUM);
+        if (gridIdxs.isEmpty()) {
+            injectTestSystemOut();
 
-        assertTrue(node.context().maintenanceRegistry().isMaintenanceMode());
+            assertEquals(EXIT_CODE_OK, execute("--cache", "schedule_indexes_rebuild", "--all-nodes",
+                "--cache-names", CACHE_NAME_NO_GRP));
 
-        assertTrue(waitForIndexesRebuild(grid(LAST_NODE_NUM)));
+            String notExistingCacheOutputStr = testOut.toString();
 
-        node.close();
+            assertTrue(notExistingCacheOutputStr.contains(PREF_SCHEDULED));
+            assertTrue(notExistingCacheOutputStr.contains("of cache '" + CACHE_NAME_NO_GRP + "'"));
 
-        node = startGrid(LAST_NODE_NUM);
+            for (Ignite ig : grids)
+                assertTrue(notExistingCacheOutputStr.contains(ig.cluster().localNode().id().toString()));
 
-        assertFalse(node.context().maintenanceRegistry().isMaintenanceMode());
+            gridIdxs = IntStream.range(0, GRIDS_NUM).boxed().collect(Collectors.toList());
+        }
+        else {
+            String nids = grids.size() == 1
+                ? grids.iterator().next().localNode().id().toString()
+                : grids.stream().map(g -> g.localNode().id().toString()).collect(Collectors.joining(","));
 
-        checkIndexes(CACHE_NAME_NO_GRP);
+            assertEquals(EXIT_CODE_OK, execute("--cache", "schedule_indexes_rebuild",
+                grids.size() == 1 ? "--node-id" : "--node-ids", nids, "--cache-names", CACHE_NAME_NO_GRP));
+        }
+
+        for (Integer gridIdx : gridIdxs) {
+            IgniteEx node = grid(gridIdx);
+
+            checkIndexesRebuildScheduled(node, singletonMap(CU.cacheId(CACHE_NAME_NO_GRP), indexes(node, CACHE_NAME_NO_GRP)));
+
+            node.close();
+
+            node = startGrid(gridIdx);
+
+            assertTrue(node.context().maintenanceRegistry().isMaintenanceMode());
+
+            assertTrue(waitForIndexesRebuild(node));
+
+            node.close();
+
+            node = startGrid(gridIdx);
+
+            assertFalse(node.context().maintenanceRegistry().isMaintenanceMode());
+
+            checkIndexes(CACHE_NAME_NO_GRP);
+        }
     }
 
     /**
@@ -275,14 +378,25 @@ public class GridCommandHandlerScheduleIndexRebuildTest extends GridCommandHandl
      * @param specifyNodeId If {@code true} then execute rebuild only on one node.
      */
     private void testCorruptedIndexRebuild(boolean withCacheGroup, boolean specifyNodeId) throws Exception {
-        IgniteEx firstNode = grid(0);
+        testCorruptedIndexRebuild(withCacheGroup, specifyNodeId ? Collections.singletonList(0) : null);
+    }
+
+    /**
+     * Checks that corrupted index is successfully rebuilt by the command.
+     *
+     * @param withCacheGroup If {@code true} creates a cache with a cache group.
+     * @param nodeIdxs Nodes indexes of the nodes to launch on. If {@code Null}, no node ids is passed. If empty,
+     *                 '--all-nodes' passed. Otherwise, '--node-id' or '--node-ids' is used.
+     */
+    private void testCorruptedIndexRebuild(boolean withCacheGroup, @Nullable List<Integer> nodeIdxs) throws Exception {
+        IgniteEx ig = grid(0);
 
         String cacheName = "tmpCache";
 
         try {
-            createAndFillCache(firstNode, cacheName, withCacheGroup ? "tmpGrp" : null);
+            createAndFillCache(ig, cacheName, withCacheGroup ? "tmpGrp" : null);
 
-            breakSqlIndex(firstNode.cachex(cacheName), 1, null);
+            breakSqlIndex(ig.cachex(cacheName), 1, null);
 
             injectTestSystemOut();
 
@@ -295,18 +409,28 @@ public class GridCommandHandlerScheduleIndexRebuildTest extends GridCommandHandl
             List<String> args = new ArrayList<>();
             args.add("--cache");
             args.add("schedule_indexes_rebuild");
-            if (specifyNodeId) {
-                args.add("--node-id");
-                args.add(firstNode.localNode().id().toString());
+
+            if (F.isEmpty(nodeIdxs)) {
+                if (nodeIdxs != null)
+                    args.add("--all-nodes");
+
+                nodeIdxs = IntStream.range(0, GRIDS_NUM).boxed().collect(Collectors.toList());
             }
+            else if (nodeIdxs.size() == 1) {
+                args.add("--node-id");
+                args.add(grid(nodeIdxs.get(0)).localNode().id().toString());
+            }
+            else {
+                args.add("--node-ids");
+                args.add(nodeIdxs.stream().map(idx -> grid(idx).localNode().id().toString()).collect(Collectors.joining(",")));
+            }
+
             args.add("--cache-names");
             args.add(cacheName);
 
             assertEquals(EXIT_CODE_OK, execute(args.toArray(new String[0])));
 
-            int nodeCount = specifyNodeId ? 1 : GRIDS_NUM;
-
-            for (int i = 0; i < nodeCount; i++) {
+            for (int i : nodeIdxs) {
                 IgniteEx grid = grid(i);
 
                 checkIndexesRebuildScheduled(grid, singletonMap(CU.cacheId(cacheName), indexes(grid, cacheName)));

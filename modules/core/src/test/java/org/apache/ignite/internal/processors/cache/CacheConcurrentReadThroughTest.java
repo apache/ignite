@@ -32,9 +32,7 @@ import org.apache.ignite.lang.IgniteFuture;
 import org.apache.ignite.lang.IgniteRunnable;
 import org.apache.ignite.resources.IgniteInstanceResource;
 import org.apache.ignite.testframework.GridTestUtils;
-import org.apache.ignite.testframework.MvccFeatureChecker;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
-import org.junit.Before;
 import org.junit.Test;
 
 /**
@@ -43,12 +41,6 @@ import org.junit.Test;
 public class CacheConcurrentReadThroughTest extends GridCommonAbstractTest {
     /** */
     private static final int SYS_THREADS = 16;
-
-    /** */
-    @Before
-    public void beforeCacheConcurrentReadThroughTest() {
-        MvccFeatureChecker.skipIfNotSupported(MvccFeatureChecker.Feature.CACHE_STORE);
-    }
 
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {

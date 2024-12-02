@@ -17,13 +17,11 @@
 
 package org.apache.ignite.internal.processors.cache.distributed.dht.preloader;
 
-import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
-import java.util.List;
 import java.util.Map;
 import java.util.NavigableSet;
 import java.util.Set;
@@ -57,17 +55,14 @@ import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.GridCacheEntryEx;
 import org.apache.ignite.internal.processors.cache.GridCacheEntryInfo;
 import org.apache.ignite.internal.processors.cache.GridCacheEntryRemovedException;
-import org.apache.ignite.internal.processors.cache.GridCacheMvccEntryInfo;
 import org.apache.ignite.internal.processors.cache.GridCachePartitionExchangeManager;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.WalStateManager;
 import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtInvalidPartitionException;
 import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtLocalPartition;
 import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionTopology;
-import org.apache.ignite.internal.processors.cache.mvcc.txlog.TxState;
 import org.apache.ignite.internal.processors.cache.persistence.CacheDataRow;
 import org.apache.ignite.internal.processors.cache.persistence.checkpoint.CheckpointProgress;
-import org.apache.ignite.internal.processors.metric.MetricRegistry;
 import org.apache.ignite.internal.processors.timeout.GridTimeoutObject;
 import org.apache.ignite.internal.processors.timeout.GridTimeoutObjectAdapter;
 import org.apache.ignite.internal.util.GridMutableLong;
@@ -83,11 +78,11 @@ import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.CI1;
 import org.apache.ignite.internal.util.typedef.F;
-import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.LT;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteInClosure;
+import org.apache.ignite.metric.MetricRegistry;
 import org.apache.ignite.spi.IgniteSpiException;
 import org.jetbrains.annotations.Nullable;
 
@@ -101,7 +96,6 @@ import static org.apache.ignite.events.EventType.EVT_CACHE_REBALANCE_STARTED;
 import static org.apache.ignite.events.EventType.EVT_CACHE_REBALANCE_STOPPED;
 import static org.apache.ignite.internal.processors.cache.CacheGroupMetricsImpl.CACHE_GROUP_METRICS_PREFIX;
 import static org.apache.ignite.internal.processors.cache.GridCacheUtils.TTL_ETERNAL;
-import static org.apache.ignite.internal.processors.cache.IgniteCacheOffheapManagerImpl.PRELOAD_SIZE_UNDER_CHECKPOINT_LOCK;
 import static org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionState.MOVING;
 import static org.apache.ignite.internal.processors.cache.persistence.CheckpointState.FINISHED;
 import static org.apache.ignite.internal.processors.cache.persistence.CheckpointState.PAGE_SNAPSHOT_TAKEN;
@@ -161,9 +155,9 @@ public class GridDhtPartitionDemander {
             syncFut.onDone();
         }
 
-        String metricGroupName = metricName(CACHE_GROUP_METRICS_PREFIX, grp.cacheOrGroupName());
+        String metricGrpName = metricName(CACHE_GROUP_METRICS_PREFIX, grp.cacheOrGroupName());
 
-        MetricRegistry mreg = grp.shared().kernalContext().metric().registry(metricGroupName);
+        MetricRegistry mreg = grp.shared().kernalContext().metric().registry(metricGrpName);
 
         mreg.register("RebalancingPartitionsLeft", () -> rebalanceFut.partitionsLeft.get(),
             "The number of cache group partitions left to be rebalanced.");
@@ -398,7 +392,7 @@ public class GridDhtPartitionDemander {
             final RebalanceFuture fut = new RebalanceFuture(grp, lastExchangeFut, assignments, log, rebalanceId, next, lastCancelledTime);
 
             if (oldFut.isInitial())
-                fut.listen(f -> oldFut.onDone(f.result()));
+                fut.listen(() -> oldFut.onDone(fut.result()));
 
             if (forcedRebFut != null)
                 forcedRebFut.add(fut);
@@ -567,26 +561,15 @@ public class GridDhtPartitionDemander {
 
             fut.receivedBytes.addAndGet(supplyMsg.messageSize());
 
-            if (grp.sharedGroup()) {
-                for (GridCacheContext cctx : grp.caches()) {
-                    if (cctx.statisticsEnabled()) {
-                        long keysCnt = supplyMsg.keysForCache(cctx.cacheId());
-
-                        if (keysCnt != -1)
-                            cctx.cache().metrics0().onRebalancingKeysCountEstimateReceived(keysCnt);
-
-                        // Can not be calculated per cache.
-                        cctx.cache().metrics0().onRebalanceBatchReceived(supplyMsg.messageSize());
-                    }
-                }
-            }
-            else {
-                GridCacheContext cctx = grp.singleCacheContext();
-
+            for (GridCacheContext cctx : grp.caches()) {
                 if (cctx.statisticsEnabled()) {
-                    if (supplyMsg.estimatedKeysCount() != -1)
-                        cctx.cache().metrics0().onRebalancingKeysCountEstimateReceived(supplyMsg.estimatedKeysCount());
+                    long keysCnt = grp.sharedGroup() ? supplyMsg.keysForCache(cctx.cacheId()) :
+                        supplyMsg.estimatedKeysCount();
 
+                    if (keysCnt != -1)
+                        cctx.cache().metrics0().onRebalancingKeysCountEstimateReceived(keysCnt);
+
+                    // Can not be calculated per cache.
                     cctx.cache().metrics0().onRebalanceBatchReceived(supplyMsg.messageSize());
                 }
             }
@@ -648,13 +631,9 @@ public class GridDhtPartitionDemander {
                                 );
 
                                 try {
-                                    if (grp.mvccEnabled())
-                                        mvccPreloadEntries(topVer, node, p, infosWrap);
-                                    else {
-                                        preloadEntries(topVer, part, infosWrap);
+                                    preloadEntries(topVer, part, infosWrap);
 
-                                        rebalanceFut.onReceivedKeys(p, e.getValue().infos().size(), node);
-                                    }
+                                    rebalanceFut.onReceivedKeys(p, e.getValue().infos().size(), node);
                                 }
                                 catch (GridDhtInvalidPartitionException ignored) {
                                     if (log.isDebugEnabled())
@@ -785,92 +764,6 @@ public class GridDhtPartitionDemander {
     }
 
     /**
-     * Adds mvcc entries with theirs history to partition p.
-     *
-     * @param topVer Topology version.
-     * @param node Node which sent entry.
-     * @param p Partition id.
-     * @param infos Entries info for preload.
-     * @throws IgniteCheckedException If failed.
-     */
-    private void mvccPreloadEntries(
-        AffinityTopologyVersion topVer,
-        ClusterNode node,
-        int p,
-        Iterator<GridCacheEntryInfo> infos
-    ) throws IgniteCheckedException {
-        if (!infos.hasNext())
-            return;
-
-        // Received keys by caches, for statistics.
-        IntHashMap<GridMutableLong> receivedKeys = new IntHashMap<>();
-
-        List<GridCacheMvccEntryInfo> entryHist = new ArrayList<>();
-
-        GridCacheContext<?, ?> cctx = grp.sharedGroup() ? null : grp.singleCacheContext();
-
-        // Loop through all received entries and try to preload them.
-        while (infos.hasNext() || !entryHist.isEmpty()) {
-            ctx.database().checkpointReadLock();
-
-            try {
-                for (int i = 0; i < PRELOAD_SIZE_UNDER_CHECKPOINT_LOCK; i++) {
-                    boolean hasMore = infos.hasNext();
-
-                    assert hasMore || !entryHist.isEmpty();
-
-                    GridCacheMvccEntryInfo entry = null;
-
-                    boolean flushHistory;
-
-                    if (hasMore) {
-                        entry = (GridCacheMvccEntryInfo)infos.next();
-
-                        GridCacheMvccEntryInfo prev = entryHist.isEmpty() ? null : entryHist.get(0);
-
-                        flushHistory = prev != null && ((grp.sharedGroup() && prev.cacheId() != entry.cacheId())
-                            || !prev.key().equals(entry.key()));
-                    }
-                    else
-                        flushHistory = true;
-
-                    if (flushHistory) {
-                        assert !entryHist.isEmpty();
-
-                        int cacheId = entryHist.get(0).cacheId();
-
-                        if (grp.sharedGroup() && (cctx == null || cacheId != cctx.cacheId())) {
-                            assert cacheId != CU.UNDEFINED_CACHE_ID;
-
-                            cctx = grp.shared().cacheContext(cacheId);
-                        }
-
-                        if (cctx != null) {
-                            mvccPreloadEntry(cctx, node, entryHist, topVer, p);
-
-                            rebalanceFut.onReceivedKeys(p, 1, node);
-
-                            receivedKeys.computeIfAbsent(cacheId, cid -> new GridMutableLong()).incrementAndGet();
-                        }
-
-                        entryHist.clear();
-
-                        if (!hasMore)
-                            break;
-                    }
-
-                    entryHist.add(entry);
-                }
-            }
-            finally {
-                ctx.database().checkpointReadUnlock();
-            }
-        }
-
-        updateKeyReceivedMetrics(grp, receivedKeys);
-    }
-
-    /**
      * Adds entries to partition p.
      *
      * @param topVer Topology version.
@@ -907,7 +800,6 @@ public class GridDhtPartitionDemander {
      * @throws IgniteInterruptedCheckedException If interrupted.
      */
     private boolean preloadEntry(CacheDataRow row, AffinityTopologyVersion topVer) throws IgniteCheckedException {
-        assert !grp.mvccEnabled();
         assert ctx.database().checkpointLockIsHeldByThread();
 
         GridCacheContext<?, ?> cctx = grp.sharedGroup() ? ctx.cacheContext(row.cacheId()) : grp.singleCacheContext();
@@ -930,10 +822,6 @@ public class GridDhtPartitionDemander {
             if (cached.initialValue(
                 row.value(),
                 row.version(),
-                null,
-                null,
-                TxState.NA,
-                TxState.NA,
                 TTL_ETERNAL,
                 row.expireTime(),
                 true,
@@ -971,83 +859,6 @@ public class GridDhtPartitionDemander {
         catch (IgniteCheckedException e) {
             throw new IgniteCheckedException("Failed to cache rebalanced entry (will stop rebalancing) [" +
                 "key=" + row.key() + ", part=" + row.partition() + ']', e);
-        }
-
-        return false;
-    }
-
-    /**
-     * Adds mvcc {@code entry} with it's history to partition {@code p}.
-     *
-     * @param cctx Cache context.
-     * @param from Node which sent entry.
-     * @param history Mvcc entry history.
-     * @param topVer Topology version.
-     * @param p Partition id.
-     * @return {@code True} if the initial value was set for the specified cache entry.
-     * @throws IgniteInterruptedCheckedException If interrupted.
-     */
-    private boolean mvccPreloadEntry(
-        GridCacheContext cctx,
-        ClusterNode from,
-        List<GridCacheMvccEntryInfo> history,
-        AffinityTopologyVersion topVer,
-        int p
-    ) throws IgniteCheckedException {
-        assert ctx.database().checkpointLockIsHeldByThread();
-        assert !history.isEmpty();
-
-        GridCacheMvccEntryInfo info = history.get(0);
-
-        assert info.key() != null;
-
-        try {
-            GridCacheEntryEx cached = null;
-
-            while (true) {
-                try {
-                    cached = cctx.cache().entryEx(info.key(), topVer);
-
-                    if (log.isTraceEnabled())
-                        log.trace("Rebalancing key [key=" + info.key() + ", part=" + p + ", node=" + from.id() + ']');
-
-                    if (cached.mvccPreloadEntry(history)) {
-                        cached.touch(); // Start tracking.
-
-                        if (cctx.events().isRecordable(EVT_CACHE_REBALANCE_OBJECT_LOADED) && !cached.isInternal())
-                            cctx.events().addEvent(cached.partition(), cached.key(), cctx.localNodeId(), null,
-                                null, null, EVT_CACHE_REBALANCE_OBJECT_LOADED, null, true, null,
-                                false, null, null, true);
-                    }
-                    else {
-                        cached.touch(); // Start tracking.
-
-                        if (log.isTraceEnabled())
-                            log.trace("Rebalancing entry is already in cache (will ignore) [key=" + cached.key() +
-                                ", part=" + p + ']');
-                    }
-
-                    break;
-                }
-                catch (GridCacheEntryRemovedException ignored) {
-                    if (log.isTraceEnabled())
-                        log.trace("Entry has been concurrently removed while rebalancing (will ignore) [key=" +
-                            cached.key() + ", part=" + p + ']');
-                }
-                catch (GridDhtInvalidPartitionException ignored) {
-                    if (log.isDebugEnabled())
-                        log.debug("Partition became invalid during rebalancing (will ignore): " + p);
-
-                    return false;
-                }
-            }
-        }
-        catch (IgniteInterruptedCheckedException | ClusterTopologyCheckedException e) {
-            throw e;
-        }
-        catch (IgniteCheckedException e) {
-            throw new IgniteCheckedException("Failed to cache rebalanced entry (will stop rebalancing) [local=" +
-                ctx.localNode() + ", node=" + from.id() + ", key=" + info.key() + ", part=" + p + ']', e);
         }
 
         return false;
@@ -1871,9 +1682,9 @@ public class GridDhtPartitionDemander {
             for (Set<Integer> partitions : rebalancingParts.values())
                 p0.addAll(partitions);
 
-            for (GridDhtPartitionDemandMessage message : newAssignments.values()) {
-                p1.addAll(message.partitions().fullSet());
-                p1.addAll(message.partitions().historicalSet());
+            for (GridDhtPartitionDemandMessage msg : newAssignments.values()) {
+                p1.addAll(msg.partitions().fullSet());
+                p1.addAll(msg.partitions().historicalSet());
             }
 
             // Not compatible if not a subset.

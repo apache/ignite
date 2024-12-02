@@ -21,7 +21,7 @@ import org.apache.ignite.DataRegionMetrics;
 import org.apache.ignite.internal.pagemem.wal.IgniteWriteAheadLogManager;
 import org.apache.ignite.internal.pagemem.wal.record.CheckpointRecord;
 import org.apache.ignite.internal.processors.metric.GridMetricManager;
-import org.apache.ignite.internal.processors.metric.MetricRegistry;
+import org.apache.ignite.internal.processors.metric.MetricRegistryImpl;
 import org.apache.ignite.internal.processors.metric.impl.AtomicLongMetric;
 import org.apache.ignite.internal.processors.metric.impl.HistogramMetricImpl;
 import org.apache.ignite.internal.processors.metric.impl.HitRateMetric;
@@ -178,7 +178,7 @@ public class DataStorageMetricsImpl {
     ) {
         this.metricsEnabled = metricsEnabled;
 
-        MetricRegistry mreg = mmgr.registry(DATASTORAGE_METRIC_PREFIX);
+        MetricRegistryImpl mreg = mmgr.registry(DATASTORAGE_METRIC_PREFIX);
 
         walLoggingRate = mreg.hitRateMetric("WalLoggingRate",
             "Average number of WAL records per second written during the last time interval.",
@@ -555,12 +555,12 @@ public class DataStorageMetricsImpl {
         if (F.isEmpty(regionMetrics0))
             return 0;
 
-        long usedCheckpointBufferPages = 0L;
+        long usedCheckpointBufPages = 0L;
 
         for (DataRegionMetrics rm : regionMetrics0)
-            usedCheckpointBufferPages += rm.getUsedCheckpointBufferPages();
+            usedCheckpointBufPages += rm.getUsedCheckpointBufferPages();
 
-        return usedCheckpointBufferPages;
+        return usedCheckpointBufPages;
     }
 
     /**
@@ -577,12 +577,12 @@ public class DataStorageMetricsImpl {
         if (F.isEmpty(regionMetrics0))
             return 0;
 
-        long usedCheckpointBufferSize = 0L;
+        long usedCheckpointBufSize = 0L;
 
         for (DataRegionMetrics rm : regionMetrics0)
-            usedCheckpointBufferSize += rm.getUsedCheckpointBufferSize();
+            usedCheckpointBufSize += rm.getUsedCheckpointBufferSize();
 
-        return usedCheckpointBufferSize;
+        return usedCheckpointBufSize;
     }
 
     /**
@@ -599,12 +599,12 @@ public class DataStorageMetricsImpl {
         if (F.isEmpty(regionMetrics0))
             return 0;
 
-        long checkpointBufferSize = 0L;
+        long checkpointBufSize = 0L;
 
         for (DataRegionMetrics rm : regionMetrics0)
-            checkpointBufferSize += rm.getCheckpointBufferSize();
+            checkpointBufSize += rm.getCheckpointBufferSize();
 
-        return checkpointBufferSize;
+        return checkpointBufSize;
     }
 
     /**
@@ -733,14 +733,6 @@ public class DataStorageMetricsImpl {
         walLoggingRate.increment();
 
         walWrittenBytes.add(size);
-    }
-
-    /**
-     * @param size Size written.
-     */
-    public void onWalBytesWritten(int size) {
-        if (!metricsEnabled)
-            return;
 
         walWritingRate.add(size);
     }

@@ -31,12 +31,10 @@ import org.apache.ignite.internal.processors.cache.distributed.near.GridNearSing
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearSingleGetResponse;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.transactions.Transaction;
-import org.junit.Ignore;
 import org.junit.Test;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.ATOMIC;
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
-import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL_SNAPSHOT;
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
 import static org.apache.ignite.cache.CacheMode.REPLICATED;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
@@ -76,15 +74,6 @@ public class IgniteCacheSingleGetMessageTest extends GridCommonAbstractTest {
     @Test
     public void testSingleGetMessage() throws Exception {
         checkSingleGetMessage(cacheConfigurations());
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
-    @Ignore("https://issues.apache.org/jira/browse/IGNITE-7371")
-    @Test
-    public void testMvccSingleGetMessage() throws Exception {
-        checkSingleGetMessage(mvccCacheConfigurations());
     }
 
     /**
@@ -278,19 +267,6 @@ public class IgniteCacheSingleGetMessageTest extends GridCommonAbstractTest {
         ccfgs.add(cacheConfiguration(PARTITIONED, ATOMIC, FULL_SYNC, 0));
         ccfgs.add(cacheConfiguration(PARTITIONED, ATOMIC, FULL_SYNC, 1));
         ccfgs.add(cacheConfiguration(REPLICATED, ATOMIC, FULL_SYNC, 0));
-
-        return ccfgs;
-    }
-
-    /**
-     * @return Mvcc cache configurations to test.
-     */
-    private List<CacheConfiguration<Integer, Integer>> mvccCacheConfigurations() {
-        List<CacheConfiguration<Integer, Integer>> ccfgs = new ArrayList<>();
-
-        ccfgs.add(cacheConfiguration(PARTITIONED, TRANSACTIONAL_SNAPSHOT, FULL_SYNC, 0));
-        ccfgs.add(cacheConfiguration(PARTITIONED, TRANSACTIONAL_SNAPSHOT, FULL_SYNC, 1));
-        ccfgs.add(cacheConfiguration(REPLICATED, TRANSACTIONAL_SNAPSHOT, FULL_SYNC, 0));
 
         return ccfgs;
     }

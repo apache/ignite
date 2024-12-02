@@ -46,7 +46,6 @@ import org.apache.ignite.internal.processors.cache.CacheInvokeDirectResult;
 import org.apache.ignite.internal.processors.cache.CacheObjectByteArrayImpl;
 import org.apache.ignite.internal.processors.cache.CacheObjectImpl;
 import org.apache.ignite.internal.processors.cache.GridCacheEntryInfo;
-import org.apache.ignite.internal.processors.cache.GridCacheMvccEntryInfo;
 import org.apache.ignite.internal.processors.cache.GridCacheReturn;
 import org.apache.ignite.internal.processors.cache.GridChangeGlobalStateMessageResponse;
 import org.apache.ignite.internal.processors.cache.KeyCacheObjectImpl;
@@ -72,11 +71,7 @@ import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtTxFini
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtTxOnePhaseCommitAckRequest;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtTxPrepareRequest;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtTxPrepareResponse;
-import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtTxQueryEnlistRequest;
-import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtTxQueryEnlistResponse;
-import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtTxQueryFirstEnlistRequest;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtUnlockRequest;
-import org.apache.ignite.internal.processors.cache.distributed.dht.GridInvokeValue;
 import org.apache.ignite.internal.processors.cache.distributed.dht.PartitionUpdateCountersMessage;
 import org.apache.ignite.internal.processors.cache.distributed.dht.atomic.GridDhtAtomicDeferredUpdateResponse;
 import org.apache.ignite.internal.processors.cache.distributed.dht.atomic.GridDhtAtomicNearResponse;
@@ -110,32 +105,12 @@ import org.apache.ignite.internal.processors.cache.distributed.near.GridNearLock
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearLockResponse;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearSingleGetRequest;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearSingleGetResponse;
-import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxEnlistRequest;
-import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxEnlistResponse;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxFinishRequest;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxFinishResponse;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxPrepareRequest;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxPrepareResponse;
-import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxQueryEnlistRequest;
-import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxQueryEnlistResponse;
-import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxQueryResultsEnlistRequest;
-import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxQueryResultsEnlistResponse;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearUnlockRequest;
-import org.apache.ignite.internal.processors.cache.mvcc.DeadlockProbe;
-import org.apache.ignite.internal.processors.cache.mvcc.MvccSnapshotWithoutTxs;
-import org.apache.ignite.internal.processors.cache.mvcc.MvccVersionImpl;
-import org.apache.ignite.internal.processors.cache.mvcc.ProbedTx;
-import org.apache.ignite.internal.processors.cache.mvcc.msg.MvccAckRequestQueryCntr;
-import org.apache.ignite.internal.processors.cache.mvcc.msg.MvccAckRequestQueryId;
-import org.apache.ignite.internal.processors.cache.mvcc.msg.MvccAckRequestTx;
-import org.apache.ignite.internal.processors.cache.mvcc.msg.MvccAckRequestTxAndQueryCntr;
-import org.apache.ignite.internal.processors.cache.mvcc.msg.MvccAckRequestTxAndQueryId;
-import org.apache.ignite.internal.processors.cache.mvcc.msg.MvccActiveQueriesMessage;
-import org.apache.ignite.internal.processors.cache.mvcc.msg.MvccFutureResponse;
-import org.apache.ignite.internal.processors.cache.mvcc.msg.MvccQuerySnapshotRequest;
-import org.apache.ignite.internal.processors.cache.mvcc.msg.MvccRecoveryFinishedMessage;
-import org.apache.ignite.internal.processors.cache.mvcc.msg.MvccSnapshotResponse;
-import org.apache.ignite.internal.processors.cache.mvcc.msg.MvccTxSnapshotRequest;
+import org.apache.ignite.internal.processors.cache.persistence.snapshot.IncrementalSnapshotAwareMessage;
 import org.apache.ignite.internal.processors.cache.persistence.snapshot.SnapshotFilesFailureMessage;
 import org.apache.ignite.internal.processors.cache.persistence.snapshot.SnapshotFilesRequestMessage;
 import org.apache.ignite.internal.processors.cache.query.GridCacheQueryRequest;
@@ -340,39 +315,13 @@ public class GridIoMessageFactory implements MessageFactoryProvider {
         factory.register((short)133, ClusterMetricsUpdateMessage::new);
         factory.register((short)134, ContinuousRoutineStartResultMessage::new);
         factory.register((short)135, LatchAckMessage::new);
-        factory.register((short)136, MvccTxSnapshotRequest::new);
-        factory.register((short)137, MvccAckRequestTx::new);
-        factory.register((short)138, MvccFutureResponse::new);
-        factory.register((short)139, MvccQuerySnapshotRequest::new);
-        factory.register((short)140, MvccAckRequestQueryCntr::new);
-        factory.register((short)141, MvccSnapshotResponse::new);
-        factory.register((short)143, GridCacheMvccEntryInfo::new);
-        factory.register((short)144, GridDhtTxQueryEnlistResponse::new);
-        factory.register((short)145, MvccAckRequestQueryId::new);
-        factory.register((short)146, MvccAckRequestTxAndQueryCntr::new);
-        factory.register((short)147, MvccAckRequestTxAndQueryId::new);
-        factory.register((short)148, MvccVersionImpl::new);
-        factory.register((short)149, MvccActiveQueriesMessage::new);
-        factory.register((short)150, MvccSnapshotWithoutTxs::new);
-        factory.register((short)151, GridNearTxQueryEnlistRequest::new);
-        factory.register((short)152, GridNearTxQueryEnlistResponse::new);
-        factory.register((short)153, GridNearTxQueryResultsEnlistRequest::new);
-        factory.register((short)154, GridNearTxQueryResultsEnlistResponse::new);
-        factory.register((short)155, GridDhtTxQueryEnlistRequest::new);
-        factory.register((short)156, GridDhtTxQueryFirstEnlistRequest::new);
         factory.register((short)157, PartitionUpdateCountersMessage::new);
         factory.register((short)158, GridDhtPartitionSupplyMessageV2::new);
-        factory.register((short)159, GridNearTxEnlistRequest::new);
-        factory.register((short)160, GridNearTxEnlistResponse::new);
-        factory.register((short)161, GridInvokeValue::new);
         factory.register((short)162, GenerateEncryptionKeyRequest::new);
         factory.register((short)163, GenerateEncryptionKeyResponse::new);
-        factory.register((short)164, MvccRecoveryFinishedMessage::new);
         factory.register((short)167, ServiceDeploymentProcessId::new);
         factory.register((short)168, ServiceSingleNodeDeploymentResultBatch::new);
         factory.register((short)169, ServiceSingleNodeDeploymentResult::new);
-        factory.register((short)170, DeadlockProbe::new);
-        factory.register((short)171, ProbedTx::new);
         factory.register(GridQueryKillRequest.TYPE_CODE, GridQueryKillRequest::new);
         factory.register(GridQueryKillResponse.TYPE_CODE, GridQueryKillResponse::new);
         factory.register(GridIoSecurityAwareMessage.TYPE_CODE, GridIoSecurityAwareMessage::new);
@@ -382,6 +331,9 @@ public class GridIoMessageFactory implements MessageFactoryProvider {
         factory.register(SnapshotFilesRequestMessage.TYPE_CODE, SnapshotFilesRequestMessage::new);
         factory.register(SnapshotFilesFailureMessage.TYPE_CODE, SnapshotFilesFailureMessage::new);
 
+        // Incremental snapshot.
+        factory.register(IncrementalSnapshotAwareMessage.TYPE_CODE, IncrementalSnapshotAwareMessage::new);
+
         // Index statistics.
         factory.register(StatisticsKeyMessage.TYPE_CODE, StatisticsKeyMessage::new);
         factory.register(StatisticsDecimalMessage.TYPE_CODE, StatisticsDecimalMessage::new);
@@ -390,8 +342,11 @@ public class GridIoMessageFactory implements MessageFactoryProvider {
         factory.register(StatisticsRequest.TYPE_CODE, StatisticsRequest::new);
         factory.register(StatisticsResponse.TYPE_CODE, StatisticsResponse::new);
 
-        // [-3..119] [124..129] [-23..-28] [-36..-55] - this
+        // [-3..119] [124..129] [-23..-28] [-36..-55] [183..188] - this
         // [120..123] - DR
+        // [-44, 0..2, 42, 200..204, 210, 302] - Use in tests.
+        // [300..307, 350..352] - CalciteMessageFactory.
+        // [400] - Incremental snapshot.
         // [-4..-22, -30..-35, -54..-57] - SQL
         // [2048..2053] - Snapshots
         // [-42..-37] - former hadoop.

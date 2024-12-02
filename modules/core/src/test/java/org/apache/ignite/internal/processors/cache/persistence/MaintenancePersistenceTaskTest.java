@@ -26,17 +26,14 @@ import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
+import org.apache.ignite.internal.management.persistence.PersistenceCleanCachesTaskArg;
+import org.apache.ignite.internal.management.persistence.PersistenceCommand;
+import org.apache.ignite.internal.management.persistence.PersistenceTask;
+import org.apache.ignite.internal.management.persistence.PersistenceTaskResult;
 import org.apache.ignite.internal.visor.VisorTaskArgument;
-import org.apache.ignite.internal.visor.persistence.PersistenceCleanAndBackupSettings;
-import org.apache.ignite.internal.visor.persistence.PersistenceCleanAndBackupType;
-import org.apache.ignite.internal.visor.persistence.PersistenceOperation;
-import org.apache.ignite.internal.visor.persistence.PersistenceTask;
-import org.apache.ignite.internal.visor.persistence.PersistenceTaskArg;
-import org.apache.ignite.internal.visor.persistence.PersistenceTaskResult;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
 
-import static java.util.Collections.singletonList;
 import static org.apache.ignite.testframework.GridTestUtils.deleteLastCheckpointEndMarker;
 
 /**
@@ -149,14 +146,14 @@ public class MaintenancePersistenceTaskTest extends GridCommonAbstractTest {
      * @param node Ignite node.
      * @return Execution's result.
      */
-    private PersistenceTaskResult executeInfo(IgniteEx node) {
-        VisorTaskArgument<PersistenceTaskArg> infoArgument = new VisorTaskArgument<>(
+    private PersistenceTaskResult executeInfo(IgniteEx node) throws Exception {
+        VisorTaskArgument<PersistenceCommand.PersistenceTaskArg> infoArg = new VisorTaskArgument<>(
             node.localNode().id(),
-            new PersistenceTaskArg(PersistenceOperation.INFO, null),
+            new PersistenceCommand.PersistenceInfoTaskArg(),
             false
         );
 
-        return node.compute().execute(new PersistenceTask(), infoArgument);
+        return node.compute().execute(new PersistenceTask(), infoArg).result();
     }
 
     /**
@@ -165,18 +162,17 @@ public class MaintenancePersistenceTaskTest extends GridCommonAbstractTest {
      * @param node Ignite node.
      * @return Execution's result.
      */
-    private PersistenceTaskResult executeClean(IgniteEx node) {
-        PersistenceCleanAndBackupSettings settings = new PersistenceCleanAndBackupSettings(
-            PersistenceCleanAndBackupType.CORRUPTED,
-            singletonList(CACHE_NAME)
-        );
+    private PersistenceTaskResult executeClean(IgniteEx node) throws Exception {
+        PersistenceCleanCachesTaskArg arg = new PersistenceCleanCachesTaskArg();
 
-        VisorTaskArgument<PersistenceTaskArg> cleanArgument = new VisorTaskArgument<>(
+        arg.caches(new String[]{CACHE_NAME});
+
+        VisorTaskArgument<PersistenceCommand.PersistenceTaskArg> cleanArg = new VisorTaskArgument<>(
             node.localNode().id(),
-            new PersistenceTaskArg(PersistenceOperation.CLEAN, settings),
+            arg,
             false
         );
 
-        return node.compute().execute(new PersistenceTask(), cleanArgument);
+        return node.compute().execute(new PersistenceTask(), cleanArg).result();
     }
 }

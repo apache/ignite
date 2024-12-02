@@ -36,8 +36,8 @@ import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.cluster.ClusterState;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
-import org.apache.ignite.internal.processors.metric.MetricRegistry;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.metric.MetricRegistry;
 import org.apache.ignite.spi.metric.LongMetric;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.junit.Test;
@@ -157,8 +157,8 @@ public class CacheGroupMetricsWithIndexTest extends CacheGroupMetricsTest {
 
         Collection<File> idxBinFiles = FileUtils.listFiles(dir, filter, TrueFileFilter.TRUE);
 
-        for (File indexBin : idxBinFiles)
-            U.delete(indexBin);
+        for (File idxBin : idxBinFiles)
+            U.delete(idxBin);
 
         ignite.cluster().state(ClusterState.ACTIVE);
 
@@ -269,9 +269,9 @@ public class CacheGroupMetricsWithIndexTest extends CacheGroupMetricsTest {
 
         Collection<File> idxBinFiles = FileUtils.listFiles(dir, filter, TrueFileFilter.TRUE);
 
-        for (File indexBin : idxBinFiles)
-            if (indexBin.getAbsolutePath().contains(consistentId))
-                U.delete(indexBin);
+        for (File idxBin : idxBinFiles)
+            if (idxBin.getAbsolutePath().contains(consistentId))
+                U.delete(idxBin);
 
         startGrid(0);
 

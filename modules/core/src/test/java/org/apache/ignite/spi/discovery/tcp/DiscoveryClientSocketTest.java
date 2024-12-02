@@ -53,8 +53,8 @@ public class DiscoveryClientSocketTest extends GridCommonAbstractTest {
 
     /** {@inheritDoc} */
     @Override protected void beforeTest() throws Exception {
-        SslContextFactory socketFactory = (SslContextFactory)GridTestUtils.sslTrustedFactory("node01", "trustone");
-        SSLContext sslCtx = socketFactory.create();
+        SslContextFactory sockFactory = (SslContextFactory)GridTestUtils.sslTrustedFactory("node01", "trustone");
+        SSLContext sslCtx = sockFactory.create();
 
         sslSrvSockFactory = sslCtx.getServerSocketFactory();
         sslSockFactory = sslCtx.getSocketFactory();
@@ -129,18 +129,18 @@ public class DiscoveryClientSocketTest extends GridCommonAbstractTest {
      */
     public void startSslClient() {
         try {
-            Socket clientSocket = sslSockFactory.createSocket(HOST, PORT_TO_LNSR);
+            Socket clientSock = sslSockFactory.createSocket(HOST, PORT_TO_LNSR);
 
             info("Client started.");
 
-            fakeTcpDiscoverySpi.configureSocketOptions(clientSocket);
+            fakeTcpDiscoverySpi.configureSocketOptions(clientSock);
 
             long handshakeStartTime = System.currentTimeMillis();
 
             //need to send message in order to ssl handshake passed.
-            clientSocket.getOutputStream().write(U.IGNITE_HEADER);
+            clientSock.getOutputStream().write(U.IGNITE_HEADER);
 
-            readHandshake(clientSocket);
+            readHandshake(clientSock);
 
             long handshakeInterval = System.currentTimeMillis() - handshakeStartTime;
 
@@ -154,7 +154,7 @@ public class DiscoveryClientSocketTest extends GridCommonAbstractTest {
 
                     IgniteInternalFuture writeFut = GridTestUtils.runAsync(() -> {
                         try {
-                            clientSocket.getOutputStream().write(new byte[4 * 1024]);
+                            clientSock.getOutputStream().write(new byte[4 * 1024]);
                         }
                         catch (IOException e) {
                             assertEquals("Socket closed", e.getMessage());
@@ -174,7 +174,7 @@ public class DiscoveryClientSocketTest extends GridCommonAbstractTest {
             long startClose = System.currentTimeMillis();
             // Do not use try-catch-resource here, because JVM has a bug on TLS implementation and requires to close
             // socket streams explicitly.
-            U.closeQuiet(clientSocket);
+            U.closeQuiet(clientSock);
 
             info("Socket closed [time=" + (System.currentTimeMillis() - startClose) + ']');
         }

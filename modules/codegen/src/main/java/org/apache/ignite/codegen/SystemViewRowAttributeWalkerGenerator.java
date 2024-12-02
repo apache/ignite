@@ -47,10 +47,12 @@ import org.apache.ignite.spi.systemview.view.CacheGroupIoView;
 import org.apache.ignite.spi.systemview.view.CacheGroupView;
 import org.apache.ignite.spi.systemview.view.CachePagesListView;
 import org.apache.ignite.spi.systemview.view.CacheView;
+import org.apache.ignite.spi.systemview.view.ClientConnectionAttributeView;
 import org.apache.ignite.spi.systemview.view.ClientConnectionView;
 import org.apache.ignite.spi.systemview.view.ClusterNodeView;
 import org.apache.ignite.spi.systemview.view.ComputeJobView;
 import org.apache.ignite.spi.systemview.view.ComputeTaskView;
+import org.apache.ignite.spi.systemview.view.ConfigurationView;
 import org.apache.ignite.spi.systemview.view.ContinuousQueryView;
 import org.apache.ignite.spi.systemview.view.MetastorageView;
 import org.apache.ignite.spi.systemview.view.MetricsView;
@@ -117,6 +119,7 @@ public class SystemViewRowAttributeWalkerGenerator {
         gen.generateAndWrite(ComputeTaskView.class, DFLT_SRC_DIR);
         gen.generateAndWrite(ComputeJobView.class, DFLT_SRC_DIR);
         gen.generateAndWrite(ClientConnectionView.class, DFLT_SRC_DIR);
+        gen.generateAndWrite(ClientConnectionAttributeView.class, DFLT_SRC_DIR);
         gen.generateAndWrite(TransactionView.class, DFLT_SRC_DIR);
         gen.generateAndWrite(ContinuousQueryView.class, DFLT_SRC_DIR);
         gen.generateAndWrite(ClusterNodeView.class, DFLT_SRC_DIR);
@@ -146,6 +149,7 @@ public class SystemViewRowAttributeWalkerGenerator {
         gen.generateAndWrite(SnapshotView.class, DFLT_SRC_DIR);
         gen.generateAndWrite(MetricsView.class, DFLT_SRC_DIR);
         gen.generateAndWrite(PagesTimestampHistogramView.class, DFLT_SRC_DIR);
+        gen.generateAndWrite(ConfigurationView.class, DFLT_SRC_DIR);
 
         gen.generateAndWrite(SqlSchemaView.class, DFLT_SRC_DIR);
         gen.generateAndWrite(SqlTableView.class, DFLT_SRC_DIR);
@@ -169,14 +173,14 @@ public class SystemViewRowAttributeWalkerGenerator {
      * @throws IOException If generation failed.
      */
     private <T> void generateAndWrite(Class<T> clazz, String srcRoot) throws IOException {
-        File walkerClass = new File(srcRoot + '/' + WALKER_PACKAGE.replaceAll("\\.", "/") + '/' +
+        File walkerCls = new File(srcRoot + '/' + WALKER_PACKAGE.replaceAll("\\.", "/") + '/' +
             clazz.getSimpleName() + "Walker.java");
 
         Collection<String> code = generate(clazz);
 
-        walkerClass.createNewFile();
+        walkerCls.createNewFile();
 
-        try (FileWriter writer = new FileWriter(walkerClass)) {
+        try (FileWriter writer = new FileWriter(walkerCls)) {
             for (String line : code) {
                 writer.write(line);
                 writer.write('\n');

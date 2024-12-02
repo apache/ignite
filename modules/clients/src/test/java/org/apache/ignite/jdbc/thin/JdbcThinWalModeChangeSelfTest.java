@@ -135,7 +135,7 @@ public class JdbcThinWalModeChangeSelfTest extends WalModeChangeAbstractSelfTest
     private static Connection connect(Ignite node) throws Exception {
         IgniteKernal node0 = (IgniteKernal)node;
 
-        int port = node0.context().sqlListener().port();
+        int port = node0.context().clientListener().port();
 
         return DriverManager.getConnection("jdbc:ignite:thin://127.0.0.1:" + port);
     }

@@ -63,7 +63,6 @@ set(SOURCES
         src/errors_test.cpp
         src/odbc_test_suite.cpp
         src/types_test.cpp
-        src/transaction_test.cpp
         src/authentication_test.cpp
         src/sql_parsing_test.cpp
         src/streaming_test.cpp
@@ -91,7 +90,6 @@ set(SOURCES
         ../odbc/src/common_types.cpp
         ../odbc/src/utility.cpp
         ../odbc/src/result_page.cpp
-        ../odbc/src/nested_tx_mode.cpp
         ../odbc/src/engine_mode.cpp)
 
 add_executable(${TARGET} ${SOURCES})

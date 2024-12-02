@@ -21,6 +21,7 @@ import java.util.Arrays;
 import java.util.concurrent.Callable;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.F;
+import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 /**
@@ -36,13 +37,10 @@ public class GridMetadataAwareAdapter {
         CACHE_STORE_MANAGER_KEY(0),
 
         /** Predefined key. */
-        CACHE_EVICTABLE_ENTRY_KEY(1),
-
-        /** Predefined key. */
-        CACHE_EVICTION_MANAGER_KEY(2);
+        CACHE_EVICTABLE_ENTRY_KEY(1);
 
         /** key. */
-        private int key;
+        private final int key;
 
         /**
          * @param key key
@@ -63,7 +61,7 @@ public class GridMetadataAwareAdapter {
 
     /** Attributes. */
     @GridToStringInclude(sensitive = true)
-    private Object[] data = null;
+    private Object[] data;
 
     /**
      * Copies all metadata from another instance.
@@ -107,10 +105,10 @@ public class GridMetadataAwareAdapter {
         assert val != null;
 
         synchronized (this) {
-            if (this.data == null)
-                this.data = new Object[key + 1];
-            else if (this.data.length <= key)
-                this.data = Arrays.copyOf(this.data, key + 1);
+            if (data == null)
+                data = new Object[key + 1];
+            else if (data.length <= key)
+                data = Arrays.copyOf(data, key + 1);
 
             V old = (V)data[key];
 
@@ -239,7 +237,7 @@ public class GridMetadataAwareAdapter {
         assert val != null;
 
         synchronized (this) {
-            V v = (V)meta(key);
+            V v = meta(key);
 
             if (v == null)
                 return addMeta(key, val);
@@ -261,7 +259,7 @@ public class GridMetadataAwareAdapter {
         assert val != null;
 
         synchronized (this) {
-            V v = (V)meta(key);
+            V v = meta(key);
 
             if (v == null)
                 addMeta(key, v = val);
@@ -281,13 +279,11 @@ public class GridMetadataAwareAdapter {
      * @param <V> Type of the value.
      * @return The value of the metadata after execution of this method.
      */
-    @Nullable public <V> V addMetaIfAbsent(int key, @Nullable Callable<V> c) {
-        assert c != null;
-
+    @Nullable public <V> V addMetaIfAbsent(int key, @NotNull Callable<V> c) {
         synchronized (this) {
-            V v = (V)meta(key);
+            V v = meta(key);
 
-            if (v == null && c != null)
+            if (v == null)
                 try {
                     addMeta(key, v = c.call());
                 }

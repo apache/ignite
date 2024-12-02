@@ -42,10 +42,7 @@ import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxPr
 import org.apache.ignite.internal.processors.cache.transactions.IgniteInternalTx;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteTxEntry;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteTxLocalAdapter;
-import org.apache.ignite.internal.processors.cache.transactions.TxCounters;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
-import org.apache.ignite.internal.processors.tracing.NoopSpan;
-import org.apache.ignite.internal.processors.tracing.Span;
 import org.apache.ignite.internal.util.F0;
 import org.apache.ignite.internal.util.GridLeanMap;
 import org.apache.ignite.internal.util.GridLeanSet;
@@ -85,10 +82,10 @@ public abstract class GridDhtTxLocalAdapter extends IgniteTxLocalAdapter {
         AtomicReferenceFieldUpdater.newUpdater(GridDhtTxLocalAdapter.class, IgniteInternalFuture.class, "lockFut");
 
     /** Near mappings. */
-    protected Map<UUID, GridDistributedTxMapping> nearMap = new ConcurrentHashMap<>();
+    protected final Map<UUID, GridDistributedTxMapping> nearMap = new ConcurrentHashMap<>();
 
     /** DHT mappings. */
-    protected Map<UUID, GridDistributedTxMapping> dhtMap = new ConcurrentHashMap<>();
+    protected final Map<UUID, GridDistributedTxMapping> dhtMap = new ConcurrentHashMap<>();
 
     /** Mapped flag. */
     protected volatile boolean mapped;
@@ -108,9 +105,6 @@ public abstract class GridDhtTxLocalAdapter extends IgniteTxLocalAdapter {
     /** Enlist or lock future what is currently in progress. */
     @GridToStringExclude
     protected volatile IgniteInternalFuture<?> lockFut;
-
-    /** Tracing span. */
-    private Span span = NoopSpan.INSTANCE;
 
     /**
      * @param xidVer Transaction version.
@@ -256,7 +250,7 @@ public abstract class GridDhtTxLocalAdapter extends IgniteTxLocalAdapter {
      * @return Versions for all pending locks that were in queue before tx locks were released.
      */
     Collection<GridCacheVersion> pendingVersions() {
-        return pendingVers == null ? Collections.<GridCacheVersion>emptyList() : pendingVers;
+        return pendingVers == null ? Collections.emptyList() : pendingVers;
     }
 
     /**
@@ -284,7 +278,7 @@ public abstract class GridDhtTxLocalAdapter extends IgniteTxLocalAdapter {
             for (IgniteTxEntry e : allEntries()) {
                 assert e.cached() != null;
 
-                GridCacheContext cacheCtx = e.cached().context();
+                GridCacheContext<?, ?> cacheCtx = e.cached().context();
 
                 if (cacheCtx.isNear())
                     continue;
@@ -475,9 +469,9 @@ public abstract class GridDhtTxLocalAdapter extends IgniteTxLocalAdapter {
 
         checkInternal(e.txKey());
 
-        GridCacheContext cacheCtx = e.context();
+        GridCacheContext<?, ?> cacheCtx = e.context();
 
-        GridDhtCacheAdapter dhtCache = cacheCtx.isNear() ? cacheCtx.near().dht() : cacheCtx.dht();
+        GridDhtCacheAdapter<?, ?> dhtCache = cacheCtx.isNear() ? cacheCtx.near().dht() : cacheCtx.dht();
 
         try {
             IgniteTxEntry existing = entry(e.txKey());
@@ -580,7 +574,7 @@ public abstract class GridDhtTxLocalAdapter extends IgniteTxLocalAdapter {
             try {
                 AffinityTopologyVersion topVer = topologyVersion();
 
-                GridDhtCacheAdapter dhtCache = cacheCtx.isNear() ? cacheCtx.near().dht() : cacheCtx.dht();
+                GridDhtCacheAdapter<?, ?> dhtCache = cacheCtx.isNear() ? cacheCtx.near().dht() : cacheCtx.dht();
 
                 // Enlist locks into transaction.
                 for (int i = 0; i < entries.size(); i++) {
@@ -706,8 +700,10 @@ public abstract class GridDhtTxLocalAdapter extends IgniteTxLocalAdapter {
 
         long timeout = remainingTime();
 
-        if (timeout == -1)
-            return new GridFinishedFuture<>(timeoutException());
+        if (timeout == -1) {
+            return new GridFinishedFuture<>(timeoutException("The transaction has already finished with timeout " +
+                "before attempting to acquire a data lock"));
+        }
 
         if (isRollbackOnly())
             return new GridFinishedFuture<>(rollbackException());
@@ -721,7 +717,6 @@ public abstract class GridDhtTxLocalAdapter extends IgniteTxLocalAdapter {
             isolation,
             createTtl,
             accessTtl,
-            CU.empty0(),
             skipStore,
             keepBinary);
 
@@ -847,13 +842,6 @@ public abstract class GridDhtTxLocalAdapter extends IgniteTxLocalAdapter {
     }
 
     /**
-     * @return Lock future.
-     */
-    public IgniteInternalFuture<?> lockFuture() {
-        return lockFut;
-    }
-
-    /**
      * Atomically updates lock future.
      *
      * @param oldFut Old future.
@@ -914,7 +902,7 @@ public abstract class GridDhtTxLocalAdapter extends IgniteTxLocalAdapter {
 
     /**
      * @param prepFut Prepare future.
-     * @return If transaction if finished on prepare step returns future which is completed after transaction finish.
+     * @return If transaction is finished on prepare step returns future which is completed after transaction finish.
      */
     protected final IgniteInternalFuture<GridNearTxPrepareResponse> chainOnePhasePrepare(
         final GridDhtTxPrepareFuture prepFut) {
@@ -930,39 +918,9 @@ public abstract class GridDhtTxLocalAdapter extends IgniteTxLocalAdapter {
         return prepFut;
     }
 
-    /**
-     * @return Tracing span.
-     */
-    public Span span() {
-        return span;
-    }
-
-    /**
-     * @param span New tracing span.
-     */
-    public void span(Span span) {
-        this.span = span;
-    }
-
     /** {@inheritDoc} */
     @Override public String toString() {
         return GridToStringBuilder.toString(GridDhtTxLocalAdapter.class, this, "nearNodes", nearMap.keySet(),
             "dhtNodes", dhtMap.keySet(), "explicitLock", explicitLock, "super", super.toString());
-    }
-
-    /**
-     * Increments lock counter.
-     */
-    public void incrementLockCounter() {
-        txCounters(true).incrementLockCounter();
-    }
-
-    /**
-     * @return Current value of lock counter.
-     */
-    public int lockCounter() {
-        TxCounters txCntrs = txCounters(false);
-
-        return txCntrs != null ? txCntrs.lockCounter() : 0;
     }
 }

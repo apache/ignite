@@ -96,6 +96,7 @@ namespace Apache.Ignite.Core.Impl.Client
         ServiceInvoke = 7000,
         ServiceGetDescriptors = 7001,
         ServiceGetDescriptor = 7002,
+        ServiceGetTopology = 7003,
 
         // Data Streamer.
         DataStreamerStart = 8000,

@@ -446,7 +446,7 @@ public class H2RowCacheSelfTest extends AbstractIndexingCommonTest {
      */
     private static class Value {
         /** Long value. */
-        @QuerySqlField
+        @QuerySqlField(index = true)
         private long lVal;
 
         /** String value. */

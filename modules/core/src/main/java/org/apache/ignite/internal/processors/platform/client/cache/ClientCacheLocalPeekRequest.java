@@ -38,10 +38,14 @@ public class ClientCacheLocalPeekRequest extends ClientCacheKeyRequest {
     }
 
     /** {@inheritDoc} */
-    @SuppressWarnings("unchecked")
-    @Override public ClientResponse process(ClientConnectionContext ctx) {
+    @Override public ClientResponse process0(ClientConnectionContext ctx) {
         Object val = cache(ctx).localPeek(key(), CachePeekMode.ALL);
 
         return new ClientObjectResponse(requestId(), val);
+    }
+
+    /** {@inheritDoc} */
+    @Override public boolean isAsync(ClientConnectionContext ctx) {
+        return false;
     }
 }

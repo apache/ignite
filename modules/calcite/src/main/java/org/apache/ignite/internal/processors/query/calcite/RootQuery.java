@@ -25,11 +25,11 @@ import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.atomic.AtomicInteger;
-import java.util.function.Consumer;
+import java.util.function.BiConsumer;
 import java.util.stream.Collectors;
 import org.apache.calcite.plan.Context;
 import org.apache.calcite.schema.SchemaPlus;
-import org.apache.calcite.tools.Frameworks;
+import org.apache.calcite.tools.FrameworkConfig;
 import org.apache.calcite.util.CancelFlag;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
@@ -40,27 +40,29 @@ import org.apache.ignite.internal.processors.cache.query.IgniteQueryErrorCode;
 import org.apache.ignite.internal.processors.query.GridQueryCancel;
 import org.apache.ignite.internal.processors.query.IgniteSQLException;
 import org.apache.ignite.internal.processors.query.QueryContext;
-import org.apache.ignite.internal.processors.query.QueryState;
+import org.apache.ignite.internal.processors.query.QueryUtils;
 import org.apache.ignite.internal.processors.query.calcite.exec.ExchangeService;
 import org.apache.ignite.internal.processors.query.calcite.exec.ExecutionContext;
 import org.apache.ignite.internal.processors.query.calcite.exec.rel.Node;
 import org.apache.ignite.internal.processors.query.calcite.exec.rel.RootNode;
 import org.apache.ignite.internal.processors.query.calcite.prepare.BaseQueryContext;
+import org.apache.ignite.internal.processors.query.calcite.prepare.ExecutionPlan;
+import org.apache.ignite.internal.processors.query.calcite.prepare.FieldsMetadata;
 import org.apache.ignite.internal.processors.query.calcite.prepare.Fragment;
-import org.apache.ignite.internal.processors.query.calcite.prepare.MultiStepPlan;
 import org.apache.ignite.internal.processors.query.calcite.prepare.PlanningContext;
 import org.apache.ignite.internal.processors.query.calcite.util.Commons;
+import org.apache.ignite.internal.processors.query.running.TrackableQuery;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.S;
-
-import static org.apache.ignite.internal.processors.query.calcite.CalciteQueryProcessor.FRAMEWORK_CONFIG;
+import org.apache.ignite.internal.util.typedef.internal.U;
+import org.jetbrains.annotations.Nullable;
 
 /**
  * The RootQuery is created on the query initiator (originator) node as the first step of a query run;
  * It contains the information about query state, contexts, remote fragments;
  * It provides 'cancel' functionality for running query like a base query class.
  */
-public class RootQuery<RowT> extends Query<RowT> {
+public class RootQuery<RowT> extends Query<RowT> implements TrackableQuery {
     /** SQL query. */
     private final String sql;
 
@@ -86,7 +88,16 @@ public class RootQuery<RowT> extends Query<RowT> {
     private final long plannerTimeout;
 
     /** */
+    private final long totalTimeout;
+
+    /** */
     private volatile long locQryId;
+
+    /** Query start timestamp (millis). */
+    private final long startTs;
+
+    /** Planning time (millys). */
+    private long planningTime;
 
     /** */
     public RootQuery(
@@ -94,14 +105,18 @@ public class RootQuery<RowT> extends Query<RowT> {
         SchemaPlus schema,
         Object[] params,
         QueryContext qryCtx,
+        boolean isLocal,
+        boolean forcedJoinOrder,
+        int[] parts,
         ExchangeService exch,
-        Consumer<Query<RowT>> unregister,
+        BiConsumer<Query<RowT>, Throwable> unregister,
         IgniteLogger log,
-        long plannerTimeout
+        long plannerTimeout,
+        long totalTimeout
     ) {
         super(
             UUID.randomUUID(),
-            null,
+            exch.localNodeId(),
             qryCtx != null ? qryCtx.unwrap(GridQueryCancel.class) : null,
             exch,
             unregister,
@@ -112,20 +127,25 @@ public class RootQuery<RowT> extends Query<RowT> {
         this.sql = sql;
         this.params = params;
 
+        startTs = U.currentTimeMillis();
+
         remoteFragments = new HashMap<>();
         waiting = new HashSet<>();
 
-        this.plannerTimeout = plannerTimeout;
+        this.plannerTimeout = totalTimeout > 0 ? Math.min(plannerTimeout, totalTimeout) : plannerTimeout;
+        this.totalTimeout = totalTimeout;
 
         Context parent = Commons.convert(qryCtx);
 
+        FrameworkConfig frameworkCfg = qryCtx != null ? qryCtx.unwrap(FrameworkConfig.class) : null;
+
         ctx = BaseQueryContext.builder()
             .parentContext(parent)
-            .frameworkConfig(
-                Frameworks.newConfigBuilder(FRAMEWORK_CONFIG)
-                    .defaultSchema(schema)
-                    .build()
-            )
+            .frameworkConfig(frameworkCfg)
+            .defaultSchema(schema)
+            .local(isLocal)
+            .forcedJoinOrder(forcedJoinOrder)
+            .partitions(parts)
             .logger(log)
             .build();
     }
@@ -139,7 +159,8 @@ public class RootQuery<RowT> extends Query<RowT> {
      * @param schema new schema.
      */
     public RootQuery<RowT> childQuery(SchemaPlus schema) {
-        return new RootQuery<>(sql, schema, params, QueryContext.of(cancel), exch, unregister, log, plannerTimeout);
+        return new RootQuery<>(sql, schema, params, QueryContext.of(cancel), ctx.isLocal(), ctx.isForcedJoinOrder(),
+            ctx.partitions(), exch, unregister, log, plannerTimeout, totalTimeout);
     }
 
     /** */
@@ -162,12 +183,8 @@ public class RootQuery<RowT> extends Query<RowT> {
      */
     public void mapping() {
         synchronized (mux) {
-            if (state == QueryState.CLOSED) {
-                throw new IgniteSQLException(
-                    "The query was cancelled while executing.",
-                    IgniteQueryErrorCode.QUERY_CANCELED
-                );
-            }
+            if (state == QueryState.CLOSED)
+                throw queryCanceledException();
 
             state = QueryState.MAPPING;
         }
@@ -176,16 +193,14 @@ public class RootQuery<RowT> extends Query<RowT> {
     /**
      * Starts execution phase for the query and setup remote fragments.
      */
-    public void run(ExecutionContext<RowT> ctx, MultiStepPlan plan, Node<RowT> root) {
+    public void run(ExecutionContext<RowT> ctx, ExecutionPlan plan, FieldsMetadata metadata, Node<RowT> root) {
         synchronized (mux) {
-            if (state == QueryState.CLOSED) {
-                throw new IgniteSQLException(
-                    "The query was cancelled while executing.",
-                    IgniteQueryErrorCode.QUERY_CANCELED
-                );
-            }
+            if (state == QueryState.CLOSED)
+                throw queryCanceledException();
 
-            RootNode<RowT> rootNode = new RootNode<>(ctx, plan.fieldsMetadata().rowType(), this::tryClose);
+            planningTime = U.currentTimeMillis() - startTs;
+
+            RootNode<RowT> rootNode = new RootNode<>(ctx, metadata.rowType(), this::tryClose);
             rootNode.register(root);
 
             addFragment(new RunningFragment<>(F.first(plan.fragments()).root(), rootNode, ctx));
@@ -218,7 +233,7 @@ public class RootQuery<RowT> extends Query<RowT> {
      * Can be called multiple times after receive each error
      * at {@link #onResponse(RemoteFragmentKey, Throwable)}.
      */
-    @Override protected void tryClose() {
+    @Override protected void tryClose(@Nullable Throwable failure) {
         QueryState state0 = null;
 
         synchronized (mux) {
@@ -261,10 +276,10 @@ public class RootQuery<RowT> extends Query<RowT> {
                 }
 
                 if (wrpEx != null)
-                    log.warning("An exception occures during the query cancel", wrpEx);
+                    log.warning("An exception occurs during the query cancel", wrpEx);
             }
             finally {
-                super.tryClose();
+                super.tryClose(failure == null && root != null ? root.failure() : failure);
             }
         }
     }
@@ -273,18 +288,15 @@ public class RootQuery<RowT> extends Query<RowT> {
     @Override public void cancel() {
         cancel.cancel();
 
-        tryClose();
+        U.closeQuiet(root);
+        tryClose(queryCanceledException());
     }
 
     /** */
     public PlanningContext planningContext() {
         synchronized (mux) {
-            if (state == QueryState.CLOSED || state == QueryState.CLOSING) {
-                throw new IgniteSQLException(
-                    "The query was cancelled while executing.",
-                    IgniteQueryErrorCode.QUERY_CANCELED
-                );
-            }
+            if (state == QueryState.CLOSED || state == QueryState.CLOSING)
+                throw queryCanceledException();
 
             if (state == QueryState.EXECUTING || state == QueryState.MAPPING) {
                 throw new IgniteSQLException(
@@ -364,14 +376,14 @@ public class RootQuery<RowT> extends Query<RowT> {
         if (error != null)
             onError(error);
         else if (state == QueryState.CLOSING)
-            tryClose();
+            tryClose(null);
     }
 
     /** */
-    public void onError(Throwable error) {
+    @Override public void onError(Throwable error) {
         root.onError(error);
 
-        tryClose();
+        tryClose(error);
     }
 
     /** {@inheritDoc} */
@@ -396,6 +408,52 @@ public class RootQuery<RowT> extends Query<RowT> {
     /** {@inheritDoc} */
     @Override public void onOutboundExchangeFinished(long exchangeId) {
         // No-op.
+    }
+
+    /** {@inheritDoc} */
+    @Override public int hashCode() {
+        return id().hashCode();
+    }
+
+    /** {@inheritDoc} */
+    @Override public String queryInfo(@Nullable String additionalInfo) {
+        StringBuilder msgSb = new StringBuilder();
+
+        msgSb.append(" [queryId=").append(id());
+        msgSb.append(", globalQueryId=").append(QueryUtils.globalQueryId(initiatorNodeId(), localQueryId()));
+
+        if (additionalInfo != null)
+            msgSb.append(", ").append(additionalInfo);
+
+        msgSb.append(", planningTime=").append(root == null ? U.currentTimeMillis() - startTs : planningTime).append("ms")
+            .append(", execTime=").append(root == null ? 0 : root.execTime()).append("ms")
+            .append(", idleTime=").append(root == null ? 0 : root.idleTime()).append("ms")
+            .append(", timeout=").append(totalTimeout).append("ms")
+            .append(", type=CALCITE")
+            .append(", state=").append(state)
+            .append(", schema=").append(ctx.schemaName())
+            .append(", sql='").append(sql);
+
+        msgSb.append(']');
+
+        return msgSb.toString();
+    }
+
+    /** {@inheritDoc} */
+    @Override public long time() {
+        return root == null ? U.currentTimeMillis() - startTs : planningTime + root.execTime();
+    }
+
+    /**
+     * @return Time left to execute the query, {@code -1} if timeout is not set, {@code 0} if timeout reached.
+     */
+    public long remainingTime() {
+        if (totalTimeout <= 0)
+            return -1;
+
+        long curTimeout = totalTimeout - (U.currentTimeMillis() - startTs);
+
+        return curTimeout <= 0 ? 0 : curTimeout;
     }
 
     /** */

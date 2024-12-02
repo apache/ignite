@@ -43,11 +43,9 @@ import org.apache.ignite.internal.processors.bulkload.BulkLoadParser;
 import org.apache.ignite.internal.processors.bulkload.BulkLoadProcessor;
 import org.apache.ignite.internal.processors.bulkload.BulkLoadStreamerWriter;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
-import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxLocal;
 import org.apache.ignite.internal.processors.cache.query.IgniteQueryErrorCode;
 import org.apache.ignite.internal.processors.query.GridQueryTypeDescriptor;
 import org.apache.ignite.internal.processors.query.IgniteSQLException;
-import org.apache.ignite.internal.processors.query.NestedTxMode;
 import org.apache.ignite.internal.processors.query.QueryEntityEx;
 import org.apache.ignite.internal.processors.query.QueryField;
 import org.apache.ignite.internal.processors.query.QueryUtils;
@@ -66,14 +64,11 @@ import org.apache.ignite.internal.processors.query.h2.sql.GridSqlDropTable;
 import org.apache.ignite.internal.processors.query.h2.sql.GridSqlStatement;
 import org.apache.ignite.internal.processors.query.schema.SchemaOperationException;
 import org.apache.ignite.internal.sql.SqlCommandProcessor;
-import org.apache.ignite.internal.sql.command.SqlBeginTransactionCommand;
 import org.apache.ignite.internal.sql.command.SqlBulkLoadCommand;
 import org.apache.ignite.internal.sql.command.SqlCommand;
-import org.apache.ignite.internal.sql.command.SqlCommitTransactionCommand;
 import org.apache.ignite.internal.sql.command.SqlCreateIndexCommand;
 import org.apache.ignite.internal.sql.command.SqlDropIndexCommand;
 import org.apache.ignite.internal.sql.command.SqlIndexColumn;
-import org.apache.ignite.internal.sql.command.SqlRollbackTransactionCommand;
 import org.apache.ignite.internal.sql.command.SqlSetStreamingCommand;
 import org.apache.ignite.internal.util.lang.IgniteClosureX;
 import org.apache.ignite.internal.util.typedef.F;
@@ -90,12 +85,8 @@ import org.h2.command.dml.NoOperation;
 import org.h2.table.Column;
 import org.h2.value.DataType;
 import org.h2.value.Value;
-import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
-import static org.apache.ignite.internal.processors.cache.mvcc.MvccUtils.mvccEnabled;
-import static org.apache.ignite.internal.processors.cache.mvcc.MvccUtils.tx;
-import static org.apache.ignite.internal.processors.cache.mvcc.MvccUtils.txStart;
 import static org.apache.ignite.internal.processors.query.QueryUtils.convert;
 import static org.apache.ignite.internal.processors.query.QueryUtils.isDdlOnSchemaSupported;
 import static org.apache.ignite.internal.processors.query.h2.sql.GridSqlQueryParser.PARAM_WRAP_VALUE;
@@ -193,8 +184,6 @@ public class CommandProcessor extends SqlCommandProcessor {
             return processBulkLoadCommand((SqlBulkLoadCommand)cmdNative, qryId);
         else if (cmdNative instanceof SqlSetStreamingCommand)
             processSetStreamingCommand((SqlSetStreamingCommand)cmdNative, cliCtx);
-        else
-            processTxCommand(cmdNative, params);
 
         return null;
     }
@@ -202,9 +191,6 @@ public class CommandProcessor extends SqlCommandProcessor {
     /** {@inheritDoc} */
     @Override public boolean isCommandSupported(SqlCommand cmd) {
         return super.isCommandSupported(cmd)
-            || cmd instanceof SqlBeginTransactionCommand
-            || cmd instanceof SqlCommitTransactionCommand
-            || cmd instanceof SqlRollbackTransactionCommand
             || cmd instanceof SqlBulkLoadCommand
             || cmd instanceof SqlSetStreamingCommand;
     }
@@ -254,8 +240,6 @@ public class CommandProcessor extends SqlCommandProcessor {
         IgniteInternalFuture fut = null;
 
         try {
-            finishActiveTxIfNecessary();
-
             if (cmdH2 instanceof GridSqlCreateTable) {
                 GridSqlCreateTable cmd = (GridSqlCreateTable)cmdH2;
 
@@ -403,10 +387,6 @@ public class CommandProcessor extends SqlCommandProcessor {
                     GridCacheContext cctx = tbl.cacheContext();
 
                     assert cctx != null;
-
-                    if (cctx.mvccEnabled())
-                        throw new IgniteSQLException("Cannot drop column(s) with enabled MVCC. " +
-                            "Operation is unsupported at the moment.", IgniteQueryErrorCode.UNSUPPORTED_OPERATION);
 
                     if (QueryUtils.isSqlType(tbl.rowDescriptor().type().valueClass()))
                         throw new SchemaOperationException("Cannot drop column(s) because table was created " +
@@ -620,108 +600,6 @@ public class CommandProcessor extends SqlCommandProcessor {
     }
 
     /**
-     * Process transactional command.
-     * @param cmd Command.
-     * @param params Parameters.
-     * @throws IgniteCheckedException if failed.
-     */
-    private void processTxCommand(SqlCommand cmd, QueryParameters params)
-        throws IgniteCheckedException {
-        NestedTxMode nestedTxMode = params.nestedTxMode();
-
-        GridNearTxLocal tx = tx(ctx);
-
-        if (cmd instanceof SqlBeginTransactionCommand) {
-            if (!mvccEnabled(ctx))
-                throw new IgniteSQLException("MVCC must be enabled in order to start transaction.",
-                    IgniteQueryErrorCode.MVCC_DISABLED);
-
-            if (tx != null) {
-                if (nestedTxMode == null)
-                    nestedTxMode = NestedTxMode.DEFAULT;
-
-                switch (nestedTxMode) {
-                    case COMMIT:
-                        doCommit(tx);
-
-                        txStart(ctx, params.timeout());
-
-                        break;
-
-                    case IGNORE:
-                        log.warning("Transaction has already been started, ignoring BEGIN command.");
-
-                        break;
-
-                    case ERROR:
-                        throw new IgniteSQLException("Transaction has already been started.",
-                            IgniteQueryErrorCode.TRANSACTION_EXISTS);
-
-                    default:
-                        throw new IgniteSQLException("Unexpected nested transaction handling mode: " +
-                            nestedTxMode.name());
-                }
-            }
-            else
-                txStart(ctx, params.timeout());
-        }
-        else if (cmd instanceof SqlCommitTransactionCommand) {
-            // Do nothing if there's no transaction.
-            if (tx != null)
-                doCommit(tx);
-        }
-        else {
-            assert cmd instanceof SqlRollbackTransactionCommand;
-
-            // Do nothing if there's no transaction.
-            if (tx != null)
-                doRollback(tx);
-        }
-    }
-
-    /**
-     * Commit and properly close transaction.
-     * @param tx Transaction.
-     * @throws IgniteCheckedException if failed.
-     */
-    private void doCommit(@NotNull GridNearTxLocal tx) throws IgniteCheckedException {
-        try {
-            tx.commit();
-        }
-        finally {
-            closeTx(tx);
-        }
-    }
-
-    /**
-     * Rollback and properly close transaction.
-     * @param tx Transaction.
-     * @throws IgniteCheckedException if failed.
-     */
-    public void doRollback(@NotNull GridNearTxLocal tx) throws IgniteCheckedException {
-        try {
-            tx.rollback();
-        }
-        finally {
-            closeTx(tx);
-        }
-    }
-
-    /**
-     * Properly close transaction.
-     * @param tx Transaction.
-     * @throws IgniteCheckedException if failed.
-     */
-    private void closeTx(@NotNull GridNearTxLocal tx) throws IgniteCheckedException {
-        try {
-            tx.close();
-        }
-        finally {
-            ctx.cache().context().tm().resetContext();
-        }
-    }
-
-    /**
      * Process SET STREAMING command.
      *
      * @param cmd Command.
@@ -776,11 +654,11 @@ public class CommandProcessor extends SqlCommandProcessor {
 
         BulkLoadParser inputParser = BulkLoadParser.createParser(cmd.inputFormat());
 
-        BulkLoadProcessor processor = new BulkLoadProcessor(inputParser, dataConverter, outputWriter,
+        BulkLoadProcessor proc = new BulkLoadProcessor(inputParser, dataConverter, outputWriter,
             idx.runningQueryManager(), qryId, ctx.tracing());
 
         BulkLoadAckClientParameters params = new BulkLoadAckClientParameters(cmd.localFileName(), cmd.packetSize());
 
-        return new BulkLoadContextCursor(processor, params);
+        return new BulkLoadContextCursor(proc, params);
     }
 }

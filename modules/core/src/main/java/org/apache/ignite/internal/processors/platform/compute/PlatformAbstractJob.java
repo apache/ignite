@@ -23,6 +23,7 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.binary.BinaryRawWriterEx;
 import org.apache.ignite.internal.processors.platform.PlatformContext;
 import org.apache.ignite.internal.processors.platform.PlatformProcessor;
+import org.apache.ignite.internal.processors.platform.PlatformTargetProxy;
 import org.apache.ignite.internal.processors.platform.memory.PlatformMemory;
 import org.apache.ignite.internal.processors.platform.memory.PlatformOutputStream;
 import org.apache.ignite.internal.processors.platform.utils.PlatformUtils;
@@ -50,6 +51,9 @@ public abstract class PlatformAbstractJob implements PlatformJob, Externalizable
     /** Job. */
     protected Object job;
 
+    /** Job name. */
+    protected String jobName;
+
     /**
      * {@link java.io.Externalizable} support.
      */
@@ -63,11 +67,13 @@ public abstract class PlatformAbstractJob implements PlatformJob, Externalizable
      * @param task Parent task.
      * @param ptr Pointer.
      * @param job Job.
+     * @param jobName Job name.
      */
-    protected PlatformAbstractJob(PlatformAbstractTask task, long ptr, Object job) {
+    protected PlatformAbstractJob(PlatformAbstractTask task, long ptr, Object job, String jobName) {
         this.task = task;
         this.ptr = ptr;
         this.job = job;
+        this.jobName = jobName;
     }
 
     /** {@inheritDoc} */
@@ -125,13 +131,14 @@ public abstract class PlatformAbstractJob implements PlatformJob, Externalizable
      *
      * @param ctx Context.
      * @param cancel Cancel flag.
+     * @param ses Platform compute task session proxy.
      * @return Result.
      */
-    protected Object runLocal(PlatformContext ctx, boolean cancel) {
+    protected Object runLocal(PlatformContext ctx, boolean cancel, PlatformTargetProxy ses) {
         // Local job, must execute it with respect to possible concurrent task completion.
         if (task.onJobLock()) {
             try {
-                ctx.gateway().computeJobExecuteLocal(ptr, cancel ? 1 : 0);
+                ctx.gateway().computeJobExecuteLocal(ptr, cancel ? 1 : 0, ses);
 
                 return LOC_JOB_RES;
             }
@@ -152,5 +159,10 @@ public abstract class PlatformAbstractJob implements PlatformJob, Externalizable
     /** {@inheritDoc} */
     @Override public Object job() {
         return job;
+    }
+
+    /** {@inheritDoc} */
+    @Override public String name() {
+        return jobName;
     }
 }

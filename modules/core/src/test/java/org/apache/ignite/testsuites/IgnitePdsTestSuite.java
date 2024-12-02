@@ -26,6 +26,7 @@ import org.apache.ignite.internal.processors.cache.ClusterStateOnStartPropertyTe
 import org.apache.ignite.internal.processors.cache.IgniteClusterActivateDeactivateTestWithPersistence;
 import org.apache.ignite.internal.processors.cache.IgnitePdsDataRegionMetricsTxTest;
 import org.apache.ignite.internal.processors.cache.persistence.IgnitePdsCacheConfigurationFileConsistencyCheckTest;
+import org.apache.ignite.internal.processors.cache.persistence.IgnitePdsCheckpointAfterDeactivateTest;
 import org.apache.ignite.internal.processors.cache.persistence.IgnitePdsClientNearCachePutGetTest;
 import org.apache.ignite.internal.processors.cache.persistence.IgnitePdsDestroyCacheTest;
 import org.apache.ignite.internal.processors.cache.persistence.IgnitePdsDestroyCacheWithoutCheckpointsTest;
@@ -35,6 +36,7 @@ import org.apache.ignite.internal.processors.cache.persistence.IgnitePdsSingleNo
 import org.apache.ignite.internal.processors.cache.persistence.IgnitePdsSporadicDataRecordsOnBackupTest;
 import org.apache.ignite.internal.processors.cache.persistence.db.IgnitePdsCacheRestoreTest;
 import org.apache.ignite.internal.processors.cache.persistence.db.IgnitePdsDataRegionMetricsTest;
+import org.apache.ignite.internal.processors.cache.persistence.db.IgnitePdsWithTtlExpirationOnDeactivateTest;
 import org.apache.ignite.internal.processors.cache.persistence.db.IgnitePdsWithTtlTest;
 import org.apache.ignite.internal.processors.cache.persistence.db.IgnitePdsWithTtlTest2;
 import org.apache.ignite.internal.processors.cache.persistence.db.file.DefaultPageSizeBackwardsCompatibilityTest;
@@ -42,6 +44,7 @@ import org.apache.ignite.internal.processors.cache.persistence.db.file.IgnitePds
 import org.apache.ignite.internal.processors.cache.persistence.db.file.IgnitePdsCheckpointSimulationWithRealCpDisabledTest;
 import org.apache.ignite.internal.processors.cache.persistence.db.file.IgnitePdsPageReplacementTest;
 import org.apache.ignite.internal.processors.cache.persistence.metastorage.IgniteMetaStorageBasicTest;
+import org.apache.ignite.internal.processors.configuration.distributed.DistributedConfigurationDefaultValuesTest;
 import org.apache.ignite.internal.processors.configuration.distributed.DistributedConfigurationPersistentTest;
 import org.apache.ignite.internal.processors.database.IgniteDbDynamicCacheSelfTest;
 import org.apache.ignite.internal.processors.database.IgniteDbMultiNodePutGetTest;
@@ -116,6 +119,7 @@ public class IgnitePdsTestSuite {
         GridTestUtils.addTestIfNeeded(suite, IgniteDbPutGetWithCacheStoreTest.class, ignoredTests);
         GridTestUtils.addTestIfNeeded(suite, IgnitePdsWithTtlTest.class, ignoredTests);
         GridTestUtils.addTestIfNeeded(suite, IgnitePdsWithTtlTest2.class, ignoredTests);
+        GridTestUtils.addTestIfNeeded(suite, IgnitePdsWithTtlExpirationOnDeactivateTest.class, ignoredTests);
         GridTestUtils.addTestIfNeeded(suite, IgnitePdsSporadicDataRecordsOnBackupTest.class, ignoredTests);
 
         GridTestUtils.addTestIfNeeded(suite, IgniteClusterActivateDeactivateTestWithPersistence.class, ignoredTests);
@@ -128,6 +132,7 @@ public class IgnitePdsTestSuite {
         GridTestUtils.addTestIfNeeded(suite, IgnitePdsRemoveDuringRebalancingTest.class, ignoredTests);
         GridTestUtils.addTestIfNeeded(suite, IgnitePdsDestroyCacheWithoutCheckpointsTest.class, ignoredTests);
         GridTestUtils.addTestIfNeeded(suite, IgnitePdsCacheConfigurationFileConsistencyCheckTest.class, ignoredTests);
+        GridTestUtils.addTestIfNeeded(suite, IgnitePdsCheckpointAfterDeactivateTest.class, ignoredTests);
 
         GridTestUtils.addTestIfNeeded(suite, DefaultPageSizeBackwardsCompatibilityTest.class, ignoredTests);
 
@@ -135,6 +140,7 @@ public class IgnitePdsTestSuite {
         GridTestUtils.addTestIfNeeded(suite, IgniteMetaStorageBasicTest.class, ignoredTests);
         GridTestUtils.addTestIfNeeded(suite, DistributedMetaStoragePersistentTest.class, ignoredTests);
         GridTestUtils.addTestIfNeeded(suite, DistributedConfigurationPersistentTest.class, ignoredTests);
+        GridTestUtils.addTestIfNeeded(suite, DistributedConfigurationDefaultValuesTest.class, ignoredTests);
 
         //Diagnostic
         GridTestUtils.addTestIfNeeded(suite, DiagnosticProcessorTest.class, ignoredTests);

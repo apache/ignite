@@ -129,8 +129,8 @@ public class GridMessageListenHandler implements GridContinuousHandler {
 
     /** {@inheritDoc} */
     @Override public RegisterStatus register(UUID nodeId, UUID routineId, final GridKernalContext ctx) {
-        p2pUnmarshalFut.listen((fut) -> {
-            if (fut.error() == null)
+        p2pUnmarshalFut.listen(() -> {
+            if (p2pUnmarshalFut.error() == null)
                 ctx.io().addUserMessageListener(topic, pred, nodeId);
         });
 

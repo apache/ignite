@@ -23,7 +23,12 @@ import org.apache.ignite.internal.cluster.DistributedBaselineConfiguration;
  * This interface defines JMX view on {@link DistributedBaselineConfiguration}.
  */
 public interface BaselineAutoAdjustMXBean {
-    /** @return Whether baseline autoadjustment is enabled ot not. */
+    /**
+     * @return Whether baseline autoadjustment is enabled ot not.
+     * @see org.apache.ignite.internal.management.api.CommandMBean
+     * @deprecated Use managements API beans, instead.
+     */
+    @Deprecated
     @MXBeanDescription("Whether baseline autoadjustment is enabled ot not.")
     boolean isAutoAdjustmentEnabled();
 
@@ -31,7 +36,11 @@ public interface BaselineAutoAdjustMXBean {
     @MXBeanDescription("Baseline autoadjustment timeout value.")
     long getAutoAdjustmentTimeout();
 
-    /** @return Time until baseline will be adjusted automatically. */
+    /**
+     * @return Time until baseline will be adjusted automatically.
+     * @see org.apache.ignite.internal.management.api.CommandMBean
+     * @deprecated Use managements API beans, instead.
+     */
     @MXBeanDescription("Time until baseline will be adjusted automatically.")
     long getTimeUntilAutoAdjust();
 
@@ -39,13 +48,23 @@ public interface BaselineAutoAdjustMXBean {
     @MXBeanDescription("State of task of auto-adjust(IN_PROGRESS, SCHEDULED, NOT_SCHEDULED).")
     String getTaskState();
 
-    /** @param enabled Enable/disable baseline autoadjustment flag. */
+    /**
+     * @param enabled Enable/disable baseline autoadjustment flag.
+     * @see org.apache.ignite.internal.management.api.CommandMBean
+     * @deprecated Use managements API beans, instead.
+     */
+    @Deprecated
     @MXBeanDescription("Enable/disable baseline autoadjustment feature.")
     public void setAutoAdjustmentEnabled(
         @MXBeanParameter(name = "enabled", description = "Enable/disable flag.") boolean enabled
     );
 
-    /** @param timeout Timeout value. */
+    /**
+     * @param timeout Timeout value.
+     * @see org.apache.ignite.internal.management.api.CommandMBean
+     * @deprecated Use managements API beans, instead.
+     */
+    @Deprecated
     @MXBeanDescription("Set baseline autoadjustment timeout value.")
     public void setAutoAdjustmentTimeout(
         @MXBeanParameter(name = "timeout", description = "Timeout value.") long timeout

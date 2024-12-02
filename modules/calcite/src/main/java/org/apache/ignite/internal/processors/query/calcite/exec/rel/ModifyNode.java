@@ -30,10 +30,13 @@ import org.apache.calcite.rel.core.TableModify;
 import org.apache.calcite.rel.type.RelDataType;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
+import org.apache.ignite.internal.processors.cache.GridCacheProxyImpl;
+import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxLocal;
 import org.apache.ignite.internal.processors.query.IgniteSQLException;
 import org.apache.ignite.internal.processors.query.calcite.exec.ExecutionContext;
 import org.apache.ignite.internal.processors.query.calcite.schema.CacheTableDescriptor;
 import org.apache.ignite.internal.processors.query.calcite.schema.ModifyTuple;
+import org.apache.ignite.internal.processors.query.calcite.util.Commons;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.U;
 
@@ -195,8 +198,27 @@ public class ModifyNode<Row> extends AbstractNode<Row> implements SingleNode<Row
         this.tuples = new ArrayList<>(MODIFY_BATCH_SIZE);
 
         GridCacheContext<Object, Object> cctx = desc.cacheContext();
+        GridCacheProxyImpl<Object, Object> cache = cctx.cache().keepBinary();
+        GridNearTxLocal tx = Commons.queryTransaction(context(), cctx.shared());
+
+        if (tx == null)
+            invokeOutsideTransaction(tuples, cache);
+        else
+            invokeInsideTransaction(tuples, cache, tx);
+    }
+
+    /**
+     * Perform data modification without explicit transaction.
+     * @param tuples Modified data.
+     * @param cache Cache.
+     * @throws IgniteCheckedException If failed.
+     */
+    private void invokeOutsideTransaction(
+        List<ModifyTuple> tuples,
+        GridCacheProxyImpl<Object, Object> cache
+    ) throws IgniteCheckedException {
         Map<Object, EntryProcessor<Object, Object, Long>> map = invokeMap(tuples);
-        Map<Object, EntryProcessorResult<Long>> res = cctx.cache().keepBinary().invokeAll(map);
+        Map<Object, EntryProcessorResult<Long>> res = cache.invokeAll(map);
 
         long updated = res.values().stream().mapToLong(EntryProcessorResult::get).sum();
 
@@ -212,15 +234,37 @@ public class ModifyNode<Row> extends AbstractNode<Row> implements SingleNode<Row
         updatedRows += updated;
     }
 
+    /**
+     * Performs data modification within user transaction.
+     * @param tuples Modified data.
+     * @param cache Cache.
+     * @param userTx Transaction.
+     * @throws IgniteCheckedException If failed.
+     */
+    private void invokeInsideTransaction(
+        List<ModifyTuple> tuples,
+        GridCacheProxyImpl<Object, Object> cache,
+        GridNearTxLocal userTx
+    ) throws IgniteCheckedException {
+        userTx.resume();
+
+        try {
+            invokeOutsideTransaction(tuples, cache);
+        }
+        finally {
+            userTx.suspend();
+        }
+    }
+
     /** */
     private IgniteSQLException conflictKeysException(List<Object> conflictKeys) {
         if (op == TableModify.Operation.INSERT) {
             return new IgniteSQLException("Failed to INSERT some keys because they are already in cache. " +
-                "[keys=" + conflictKeys + ']', DUPLICATE_KEY);
+                "[cache=" + desc.cacheContext().name() + ", keys=" + conflictKeys + ']', DUPLICATE_KEY);
         }
         else {
             return new IgniteSQLException("Failed to MERGE some keys due to keys conflict or concurrent updates. " +
-                "[keys=" + conflictKeys + ']', CONCURRENT_UPDATE);
+                "[cache=" + desc.cacheContext().name() + ", keys=" + conflictKeys + ']', CONCURRENT_UPDATE);
         }
     }
 

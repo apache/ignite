@@ -28,11 +28,8 @@ import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.pagemem.wal.record.DataEntry;
 import org.apache.ignite.internal.pagemem.wal.record.DataRecord;
 import org.apache.ignite.internal.pagemem.wal.record.FilteredRecord;
-import org.apache.ignite.internal.pagemem.wal.record.MarshalledDataEntry;
-import org.apache.ignite.internal.pagemem.wal.record.MvccDataEntry;
-import org.apache.ignite.internal.pagemem.wal.record.MvccDataRecord;
+import org.apache.ignite.internal.pagemem.wal.record.LazyDataEntry;
 import org.apache.ignite.internal.pagemem.wal.record.UnwrapDataEntry;
-import org.apache.ignite.internal.pagemem.wal.record.UnwrapMvccDataEntry;
 import org.apache.ignite.internal.pagemem.wal.record.WALRecord;
 import org.apache.ignite.internal.pagemem.wal.record.WALRecord.RecordType;
 import org.apache.ignite.internal.processors.cache.CacheObject;
@@ -96,8 +93,8 @@ class StandaloneWalRecordsIterator extends AbstractWalRecordsIterator {
     /** Replay from bound include. */
     private final WALPointer lowBound;
 
-    /** Replay to bound include */
-    private final WALPointer highBound;
+    /** Singleton instance of {@link FilteredRecord}  */
+    private final WALRecord filteredRecord = new FilteredRecord();
 
     /**
      * Creates iterator in file-by-file iteration mode. Directory
@@ -128,6 +125,7 @@ class StandaloneWalRecordsIterator extends AbstractWalRecordsIterator {
             new RecordSerializerFactoryImpl(sharedCtx, readTypeFilter),
             ioFactory,
             initialReadBufferSize,
+            highBound,
             FILE_INPUT_FACTORY
         );
 
@@ -135,7 +133,6 @@ class StandaloneWalRecordsIterator extends AbstractWalRecordsIterator {
             strictCheck(walFiles, lowBound, highBound);
 
         this.lowBound = lowBound;
-        this.highBound = highBound;
 
         this.keepBinary = keepBinary;
 
@@ -288,17 +285,8 @@ class StandaloneWalRecordsIterator extends AbstractWalRecordsIterator {
         if (tup == null)
             return tup;
 
-        if (!checkBounds(tup.get1())) {
-            if (curRec != null) {
-                WALPointer prevRecPtr = curRec.get1();
-
-                // Fast stop condition, after high bound reached.
-                if (prevRecPtr != null && prevRecPtr.compareTo(highBound) > 0)
-                    return null;
-            }
-
-            return new T2<>(tup.get1(), FilteredRecord.INSTANCE); // FilteredRecord for mark as filtered.
-        }
+        if (!checkBounds(tup.get1()))
+            return new T2<>(tup.get1(), filteredRecord); // FilteredRecord for mark as filtered.
 
         return tup;
     }
@@ -327,12 +315,12 @@ class StandaloneWalRecordsIterator extends AbstractWalRecordsIterator {
 
         AbstractFileDescriptor fd = desc;
         SegmentIO fileIO = null;
-        SegmentHeader segmentHeader;
+        SegmentHeader segmentHdr;
         while (true) {
             try {
                 fileIO = fd.toReadOnlyIO(ioFactory);
 
-                segmentHeader = readSegmentHeader(fileIO, FILE_INPUT_FACTORY);
+                segmentHdr = readSegmentHeader(fileIO, FILE_INPUT_FACTORY);
 
                 break;
             }
@@ -350,19 +338,19 @@ class StandaloneWalRecordsIterator extends AbstractWalRecordsIterator {
             }
         }
 
-        return initReadHandle(fd, start, fileIO, segmentHeader);
+        return initReadHandle(fd, start, fileIO, segmentHdr);
     }
 
     /** {@inheritDoc} */
     @Override protected @NotNull WALRecord postProcessRecord(@NotNull final WALRecord rec) {
         GridKernalContext kernalCtx = sharedCtx.kernalContext();
-        IgniteCacheObjectProcessor processor = kernalCtx.cacheObjects();
+        IgniteCacheObjectProcessor proc = kernalCtx.cacheObjects();
 
-        if (processor != null && (rec.type() == RecordType.DATA_RECORD
+        if (proc != null && (rec.type() == RecordType.DATA_RECORD
             || rec.type() == RecordType.DATA_RECORD_V2
-            || rec.type() == RecordType.MVCC_DATA_RECORD)) {
+            || rec.type() == RecordType.CDC_DATA_RECORD)) {
             try {
-                return postProcessDataRecord((DataRecord)rec, kernalCtx, processor);
+                return postProcessDataRecord((DataRecord)rec, kernalCtx, proc);
             }
             catch (Exception e) {
                 log.error("Failed to perform post processing for data record ", e);
@@ -415,9 +403,7 @@ class StandaloneWalRecordsIterator extends AbstractWalRecordsIterator {
             postProcessedEntries.add(postProcessedEntry);
         }
 
-        DataRecord res = dataRec instanceof MvccDataRecord ?
-            new MvccDataRecord(postProcessedEntries, dataRec.timestamp()) :
-            new DataRecord(postProcessedEntries, dataRec.timestamp());
+        DataRecord res = new DataRecord(postProcessedEntries, dataRec.timestamp());
 
         res.size(dataRec.size());
         res.position(dataRec.position());
@@ -445,8 +431,8 @@ class StandaloneWalRecordsIterator extends AbstractWalRecordsIterator {
         final CacheObject val;
         boolean keepBinary = this.keepBinary || !fakeCacheObjCtx.kernalContext().marshallerContext().initialized();
 
-        if (dataEntry instanceof MarshalledDataEntry) {
-            final MarshalledDataEntry lazyDataEntry = (MarshalledDataEntry)dataEntry;
+        if (dataEntry instanceof LazyDataEntry) {
+            final LazyDataEntry lazyDataEntry = (LazyDataEntry)dataEntry;
 
             key = processor.toKeyCacheObject(fakeCacheObjCtx,
                 lazyDataEntry.getKeyType(),
@@ -478,34 +464,19 @@ class StandaloneWalRecordsIterator extends AbstractWalRecordsIterator {
      */
     private DataEntry unwrapDataEntry(CacheObjectContext coCtx, DataEntry dataEntry,
         KeyCacheObject key, CacheObject val, boolean keepBinary) {
-        if (dataEntry instanceof MvccDataEntry)
-            return new UnwrapMvccDataEntry(
-                dataEntry.cacheId(),
-                key,
-                val,
-                dataEntry.op(),
-                dataEntry.nearXidVersion(),
-                dataEntry.writeVersion(),
-                dataEntry.expireTime(),
-                dataEntry.partitionId(),
-                dataEntry.partitionCounter(),
-                ((MvccDataEntry)dataEntry).mvccVer(),
-                coCtx,
-                keepBinary);
-        else
-            return new UnwrapDataEntry(
-                dataEntry.cacheId(),
-                key,
-                val,
-                dataEntry.op(),
-                dataEntry.nearXidVersion(),
-                dataEntry.writeVersion(),
-                dataEntry.expireTime(),
-                dataEntry.partitionId(),
-                dataEntry.partitionCounter(),
-                coCtx,
-                keepBinary,
-                dataEntry.flags());
+        return new UnwrapDataEntry(
+            dataEntry.cacheId(),
+            key,
+            val,
+            dataEntry.op(),
+            dataEntry.nearXidVersion(),
+            dataEntry.writeVersion(),
+            dataEntry.expireTime(),
+            dataEntry.partitionId(),
+            dataEntry.partitionCounter(),
+            coCtx,
+            keepBinary,
+            dataEntry.flags());
     }
 
     /** {@inheritDoc} */

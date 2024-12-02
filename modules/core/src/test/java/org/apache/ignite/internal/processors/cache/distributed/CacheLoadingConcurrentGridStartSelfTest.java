@@ -49,7 +49,6 @@ import org.apache.ignite.lang.IgniteFuture;
 import org.apache.ignite.lang.IgniteInClosure;
 import org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi;
 import org.apache.ignite.testframework.GridTestUtils;
-import org.apache.ignite.testframework.MvccFeatureChecker;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.jetbrains.annotations.Nullable;
 import org.junit.Ignore;
@@ -81,11 +80,6 @@ public class CacheLoadingConcurrentGridStartSelfTest extends GridCommonAbstractT
 
     /** Restarts. */
     protected volatile boolean restarts;
-
-    /** {@inheritDoc} */
-    @Override protected void beforeTest() throws Exception {
-        MvccFeatureChecker.skipIfNotSupported(MvccFeatureChecker.Feature.CACHE_STORE);
-    }
 
     /** {@inheritDoc} */
     @SuppressWarnings("unchecked")

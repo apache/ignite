@@ -43,4 +43,7 @@ public interface BinaryReaderHandlesHolder {
      * @return Handles.
      */
     public BinaryReaderHandles handles();
+
+    /** */
+    public boolean isEmpty();
 }

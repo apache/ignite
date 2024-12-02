@@ -76,7 +76,7 @@ abstract class GridTcpCommunicationSpiAbstractTest extends GridAbstractCommunica
 
         // Test idle clients remove.
         for (CommunicationSpi<Message> spi : spis.values()) {
-            ConcurrentMap<UUID, GridCommunicationClient> clients = GridTestUtils.getFieldValue(spi, "clientPool", "clients");
+            ConcurrentMap<UUID, GridCommunicationClient[]> clients = GridTestUtils.getFieldValue(spi, "clientPool", "clients");
 
             assertEquals(getSpiCount() - 1, clients.size());
 

@@ -39,6 +39,7 @@ set(SOURCES
         src/concurrent_test.cpp
         src/compute_test.cpp
         src/compute_java_test.cpp
+        src/compute_security_test.cpp
         src/ignition_test.cpp
         src/interop_memory_test.cpp
         src/interop_test.cpp

@@ -39,18 +39,18 @@ class JavaVersionCommand {
      * @throws IOException If something goes wrong.
      */
     int majorVersion(String javaHome) throws IOException, InterruptedException {
-        Process process = new ProcessBuilder(GridJavaProcess.resolveJavaBin(javaHome), "-version").start();
-        assertTrue(process.waitFor(10, TimeUnit.SECONDS));
+        Process proc = new ProcessBuilder(GridJavaProcess.resolveJavaBin(javaHome), "-version").start();
+        assertTrue(proc.waitFor(10, TimeUnit.SECONDS));
 
-        if (process.exitValue() != 0) {
+        if (proc.exitValue() != 0) {
             throw new IllegalStateException("'java -version' failed, stdin '" +
-                readStream(process.getInputStream()) + "', stdout '" +
-                readStream(process.getErrorStream()) + "'");
+                readStream(proc.getInputStream()) + "', stdout '" +
+                readStream(proc.getErrorStream()) + "'");
         }
 
-        String versionOutput = readStream(process.getErrorStream());
+        String verOutput = readStream(proc.getErrorStream());
 
-        return JavaVersionCommandParser.extractMajorVersion(versionOutput);
+        return JavaVersionCommandParser.extractMajorVersion(verOutput);
     }
 
     /**

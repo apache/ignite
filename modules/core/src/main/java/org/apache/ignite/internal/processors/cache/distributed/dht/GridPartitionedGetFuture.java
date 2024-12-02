@@ -42,17 +42,14 @@ import org.apache.ignite.internal.processors.cache.KeyCacheObject;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionsExchangeFuture;
 import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtInvalidPartitionException;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearGetRequest;
-import org.apache.ignite.internal.processors.cache.mvcc.MvccSnapshot;
 import org.apache.ignite.internal.processors.cache.persistence.CacheDataRow;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.util.GridLeanMap;
 import org.apache.ignite.internal.util.future.GridFinishedFuture;
-import org.apache.ignite.internal.util.lang.GridPlainRunnable;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
-import org.apache.ignite.lang.IgniteInClosure;
 import org.apache.ignite.lang.IgniteUuid;
 import org.jetbrains.annotations.Nullable;
 
@@ -61,13 +58,10 @@ import org.jetbrains.annotations.Nullable;
  */
 public class GridPartitionedGetFuture<K, V> extends CacheDistributedGetFutureAdapter<K, V> {
     /** Transaction label. */
-    protected final String txLbl;
-
-    /** */
-    protected final MvccSnapshot mvccSnapshot;
+    private final String txLbl;
 
     /** Explicit predefined single mapping (backup or primary). */
-    protected final ClusterNode affNode;
+    private final ClusterNode affNode;
 
     /**
      * @param cctx Context.
@@ -83,7 +77,6 @@ public class GridPartitionedGetFuture<K, V> extends CacheDistributedGetFutureAda
      * @param needVer If {@code true} returns values as tuples containing value and version.
      * @param keepCacheObjects Keep cache objects flag.
      * @param txLbl Transaction label.
-     * @param mvccSnapshot Mvcc snapshot.
      */
     public GridPartitionedGetFuture(
         GridCacheContext<K, V> cctx,
@@ -98,7 +91,6 @@ public class GridPartitionedGetFuture<K, V> extends CacheDistributedGetFutureAda
         boolean needVer,
         boolean keepCacheObjects,
         @Nullable String txLbl,
-        @Nullable MvccSnapshot mvccSnapshot,
         ClusterNode affNode
     ) {
         super(
@@ -114,21 +106,10 @@ public class GridPartitionedGetFuture<K, V> extends CacheDistributedGetFutureAda
             keepCacheObjects,
             recovery
         );
-
-        assert (mvccSnapshot == null) == !cctx.mvccEnabled();
-
-        this.mvccSnapshot = mvccSnapshot;
         this.txLbl = txLbl;
         this.affNode = affNode;
 
         initLogger(GridPartitionedGetFuture.class);
-    }
-
-    /**
-     * @return Mvcc snapshot if mvcc is enabled for cache.
-     */
-    @Nullable private MvccSnapshot mvccSnapshot() {
-        return mvccSnapshot;
     }
 
     /**
@@ -194,18 +175,11 @@ public class GridPartitionedGetFuture<K, V> extends CacheDistributedGetFutureAda
             if (fut.initialVersion().after(topVer) || (fut.exchangeActions() != null && fut.exchangeActions().hasStop()))
                 fut = cctx.shared().exchange().lastFinishedFuture();
             else {
-                fut.listen(new IgniteInClosure<IgniteInternalFuture<AffinityTopologyVersion>>() {
-                    @Override public void apply(IgniteInternalFuture<AffinityTopologyVersion> fut) {
-                        if (fut.error() != null)
-                            onDone(fut.error());
-                        else {
-                            cctx.closures().runLocalSafe(new GridPlainRunnable() {
-                                @Override public void run() {
-                                    map(keys, mapped, topVer);
-                                }
-                            }, true);
-                        }
-                    }
+                fut.listen(fut0 -> {
+                    if (fut0.error() != null)
+                        onDone(fut0.error());
+                    else
+                        cctx.closures().runLocalSafe(() -> map(keys, mapped, topVer), true);
                 });
 
                 return;
@@ -270,9 +244,7 @@ public class GridPartitionedGetFuture<K, V> extends CacheDistributedGetFutureAda
                         expiryPlc,
                         skipVals,
                         recovery,
-                        txLbl,
-                        mvccSnapshot()
-                    );
+                        txLbl);
 
                 Collection<Integer> invalidParts = fut0.invalidPartitions();
 
@@ -296,9 +268,9 @@ public class GridPartitionedGetFuture<K, V> extends CacheDistributedGetFutureAda
                 }
 
                 // Add new future.
-                add(fut0.chain(f -> {
+                add(fut0.chain(() -> {
                     try {
-                        return createResultMap(f.get());
+                        return createResultMap(fut0.get());
                     }
                     catch (Exception e) {
                         U.error(log, "Failed to get values from dht cache [fut=" + fut0 + "]", e);
@@ -322,7 +294,7 @@ public class GridPartitionedGetFuture<K, V> extends CacheDistributedGetFutureAda
                 catch (IgniteCheckedException e) {
                     // Fail the whole thing.
                     if (e instanceof ClusterTopologyCheckedException)
-                        miniFut.onNodeLeft((ClusterTopologyCheckedException)e);
+                        miniFut.onNodeLeft();
                     else
                         miniFut.onResult(e);
                 }
@@ -409,10 +381,8 @@ public class GridPartitionedGetFuture<K, V> extends CacheDistributedGetFutureAda
         ClusterNode node,
         Map<ClusterNode, LinkedHashMap<KeyCacheObject, Boolean>> mappings
     ) {
-        LinkedHashMap<KeyCacheObject, Boolean> old = mappings.get(node);
-
-        if (old == null)
-            mappings.put(node, old = new LinkedHashMap<>(3, 1f));
+        LinkedHashMap<KeyCacheObject, Boolean> old =
+            mappings.computeIfAbsent(node, k -> new LinkedHashMap<>(3, 1f));
 
         old.put(key, false);
     }
@@ -432,10 +402,7 @@ public class GridPartitionedGetFuture<K, V> extends CacheDistributedGetFutureAda
         List<ClusterNode> affNodes,
         Map<K, V> locVals
     ) {
-        // Local get cannot be used with MVCC as local node can contain some visible version which is not latest.
-        boolean fastLocGet = !cctx.mvccEnabled() &&
-            (!forcePrimary || affNodes.get(0).isLocal()) &&
-            cctx.reserveForFastLocalGet(part, topVer);
+        boolean fastLocGet = (!forcePrimary || affNodes.get(0).isLocal()) && cctx.reserveForFastLocalGet(part, topVer);
 
         if (fastLocGet) {
             try {
@@ -478,9 +445,7 @@ public class GridPartitionedGetFuture<K, V> extends CacheDistributedGetFutureAda
                 if (readNoEntry) {
                     KeyCacheObject key0 = (KeyCacheObject)cctx.cacheObjects().prepareForCache(key, cctx);
 
-                    CacheDataRow row = cctx.mvccEnabled() ?
-                        cctx.offheap().mvccRead(cctx, key0, mvccSnapshot()) :
-                        cctx.offheap().read(cctx, key0);
+                    CacheDataRow row = cctx.offheap().read(cctx, key0);
 
                     if (row != null) {
                         long expireTime = row.expireTime();
@@ -699,8 +664,7 @@ public class GridPartitionedGetFuture<K, V> extends CacheDistributedGetFutureAda
                 skipVals,
                 cctx.deploymentEnabled(),
                 recovery,
-                txLbl,
-                mvccSnapshot()
+                txLbl
             );
         }
 

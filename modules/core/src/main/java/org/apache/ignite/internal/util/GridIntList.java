@@ -17,21 +17,17 @@
 
 package org.apache.ignite.internal.util;
 
-import java.io.DataInput;
-import java.io.DataOutput;
 import java.io.Externalizable;
 import java.io.IOException;
 import java.io.ObjectInput;
 import java.io.ObjectOutput;
 import java.nio.ByteBuffer;
 import java.util.Arrays;
-import java.util.NoSuchElementException;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.SB;
 import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.plugin.extensions.communication.MessageReader;
 import org.apache.ignite.plugin.extensions.communication.MessageWriter;
-import org.jetbrains.annotations.Nullable;
 
 /**
  * Minimal list API to work with primitive ints. This list exists
@@ -91,16 +87,6 @@ public class GridIntList implements Message, Externalizable {
         idx = size;
     }
 
-    /**
-     * @return Copy of this list.
-     */
-    public GridIntList copy() {
-        if (idx == 0)
-            return new GridIntList();
-
-        return new GridIntList(Arrays.copyOf(arr, idx));
-    }
-
     /** {@inheritDoc} */
     @Override public boolean equals(Object o) {
         if (this == o)
@@ -138,30 +124,6 @@ public class GridIntList implements Message, Externalizable {
     }
 
     /**
-     * @param l List to add all elements of.
-     */
-    public void addAll(GridIntList l) {
-        assert l != null;
-
-        if (l.isEmpty())
-            return;
-
-        if (arr == null)
-            arr = new int[4];
-
-        int len = arr.length;
-
-        while (len < idx + l.size())
-            len <<= 1;
-
-        arr = Arrays.copyOf(arr, len);
-
-        System.arraycopy(l.arr, 0, arr, idx, l.size());
-
-        idx += l.size();
-    }
-
-    /**
      * Add element to this array.
      * @param x Value.
      */
@@ -172,35 +134,6 @@ public class GridIntList implements Message, Externalizable {
             arr = Arrays.copyOf(arr, arr.length << 1);
 
         arr[idx++] = x;
-    }
-
-    /**
-     * Clears the list.
-     */
-    public void clear() {
-        idx = 0;
-    }
-
-    /**
-     * Gets the last element.
-     *
-     * @return The last element.
-     */
-    public int last() {
-        return arr[idx - 1];
-    }
-
-    /**
-     * Removes and returns the last element of the list. Complementary method to {@link #add(int)} for stack like usage.
-     *
-     * @return Removed element.
-     * @throws NoSuchElementException If the list is empty.
-     */
-    public int remove() throws NoSuchElementException {
-        if (idx == 0)
-            throw new NoSuchElementException();
-
-        return arr[--idx];
     }
 
     /**
@@ -279,33 +212,6 @@ public class GridIntList implements Message, Externalizable {
     }
 
     /**
-     * @param l List to check.
-     * @return {@code True} if this list contains all the elements of passed in list.
-     */
-    public boolean containsAll(GridIntList l) {
-        for (int i = 0; i < l.size(); i++) {
-            if (!contains(l.get(i)))
-                return false;
-        }
-
-        return true;
-    }
-
-    /**
-     * @return {@code True} if there are no duplicates.
-     */
-    public boolean distinct() {
-        for (int i = 0; i < idx; i++) {
-            for (int j = i + 1; j < idx; j++) {
-                if (arr[i] == arr[j])
-                    return false;
-            }
-        }
-
-        return true;
-    }
-
-    /**
      * @param size New size.
      * @param last If {@code true} the last elements will be removed, otherwise the first.
      */
@@ -315,7 +221,7 @@ public class GridIntList implements Message, Externalizable {
         if (size == idx)
             return;
 
-        if (!last && idx != 0 && size != 0)
+        if (!last && size != 0)
             System.arraycopy(arr, idx - size, arr, 0, size);
 
         idx = size;
@@ -365,26 +271,6 @@ public class GridIntList implements Message, Externalizable {
     }
 
     /**
-     * Removes value from this list.
-     *
-     * @param startIdx Index to begin search with.
-     * @param oldVal Old value.
-     * @param newVal New value.
-     * @return Index of replaced value if the value was found and replaced or {@code -1} otherwise.
-     */
-    public int replaceValue(int startIdx, int oldVal, int newVal) {
-        for (int i = startIdx; i < idx; i++) {
-            if (arr[i] == oldVal) {
-                arr[i] = newVal;
-
-                return i;
-            }
-        }
-
-        return -1;
-    }
-
-    /**
      * @return Array copy.
      */
     public int[] array() {
@@ -404,7 +290,7 @@ public class GridIntList implements Message, Externalizable {
     }
 
     /** {@inheritDoc} */
-    @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
+    @Override public void readExternal(ObjectInput in) throws IOException {
         idx = in.readInt();
 
         arr = new int[idx];
@@ -430,59 +316,6 @@ public class GridIntList implements Message, Externalizable {
     }
 
     /**
-     * @param in Input to read list from.
-     * @return Grid int list.
-     * @throws IOException If failed.
-     */
-    @Nullable public static GridIntList readFrom(DataInput in) throws IOException {
-        int idx = in.readInt();
-
-        if (idx == -1)
-            return null;
-
-        int[] arr = new int[idx];
-
-        for (int i = 0; i < idx; i++)
-            arr[i] = in.readInt();
-
-        return new GridIntList(arr);
-    }
-
-    /**
-     * @param out Output to write to.
-     * @param list List.
-     * @throws IOException If failed.
-     */
-    public static void writeTo(DataOutput out, @Nullable GridIntList list) throws IOException {
-        out.writeInt(list != null ? list.idx : -1);
-
-        if (list != null) {
-            for (int i = 0; i < list.idx; i++)
-                out.writeInt(list.arr[i]);
-        }
-    }
-
-    /**
-     * @param to To list.
-     * @param from From list.
-     * @return To list (passed in or created).
-     */
-    public static GridIntList addAll(@Nullable GridIntList to, GridIntList from) {
-        if (to == null) {
-            GridIntList res = new GridIntList(from.size());
-
-            res.addAll(from);
-
-            return res;
-        }
-        else {
-            to.addAll(from);
-
-            return to;
-        }
-    }
-
-    /**
      * Sorts this list.
      * Use {@code copy().sort()} if you need a defensive copy.
      *
@@ -493,21 +326,6 @@ public class GridIntList implements Message, Externalizable {
             Arrays.sort(arr, 0, idx);
 
         return this;
-    }
-
-    /**
-     * Removes given number of elements from the end. If the given number of elements is higher than
-     * list size, then list will be cleared.
-     *
-     * @param cnt Count to pop from the end.
-     */
-    public void pop(int cnt) {
-        assert cnt >= 0 : cnt;
-
-        if (idx < cnt)
-            idx = 0;
-        else
-            idx -= cnt;
     }
 
     /** {@inheritDoc} */
@@ -588,7 +406,7 @@ public class GridIntList implements Message, Externalizable {
      */
     public GridIntIterator iterator() {
         return new GridIntIterator() {
-            int c = 0;
+            int c;
 
             @Override public boolean hasNext() {
                 return c < idx;

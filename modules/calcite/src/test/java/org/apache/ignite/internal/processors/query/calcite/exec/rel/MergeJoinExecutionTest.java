@@ -27,7 +27,6 @@ import org.apache.calcite.rel.type.RelDataType;
 import org.apache.ignite.internal.processors.query.calcite.exec.ExecutionContext;
 import org.apache.ignite.internal.processors.query.calcite.util.TypeUtils;
 import org.apache.ignite.internal.util.typedef.F;
-import org.apache.ignite.testframework.junits.WithSystemProperty;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
@@ -42,7 +41,6 @@ import static org.hamcrest.core.IsEqual.equalTo;
 
 /** */
 @SuppressWarnings("TypeMayBeWeakened")
-@WithSystemProperty(key = "calcite.debug", value = "true")
 public class MergeJoinExecutionTest extends AbstractExecutionTest {
     /** */
     public static final Object[][] EMPTY = new Object[0][];
@@ -385,6 +383,20 @@ public class MergeJoinExecutionTest extends AbstractExecutionTest {
      * @param expRes Expected result.
      */
     private void verifyJoin(Object[][] left, Object[][] right, JoinRelType joinType, Object[][] expRes) {
+        verifyJoin(left, right, joinType, expRes, false);
+        verifyJoin(left, right, joinType, expRes, true);
+    }
+
+    /**
+     * Creates execution tree and executes it. Then compares the result of the execution with the given one.
+     *
+     * @param left Data for left table.
+     * @param right Data for right table.
+     * @param joinType Join type.
+     * @param expRes Expected result.
+     * @param distr Distributed.
+     */
+    private void verifyJoin(Object[][] left, Object[][] right, JoinRelType joinType, Object[][] expRes, boolean distr) {
         ExecutionContext<Object[]> ctx = executionContext(F.first(nodes()), UUID.randomUUID(), 0);
 
         RelDataType leftType = TypeUtils.createRowType(ctx.getTypeFactory(), int.class, String.class, Integer.class);
@@ -413,7 +425,7 @@ public class MergeJoinExecutionTest extends AbstractExecutionTest {
             }
 
             return Integer.compare((Integer)o1, (Integer)o2);
-        });
+        }, distr);
 
         join.register(F.asList(leftNode, rightNode));
 

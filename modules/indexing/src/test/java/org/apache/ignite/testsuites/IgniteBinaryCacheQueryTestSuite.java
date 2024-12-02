@@ -17,11 +17,12 @@
 
 package org.apache.ignite.testsuites;
 
+import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.internal.processors.cache.AffinityAliasKeyTest;
 import org.apache.ignite.internal.processors.cache.AffinityKeyNameAndValueFieldNameConflictTest;
 import org.apache.ignite.internal.processors.cache.CacheOffheapBatchIndexingMultiTypeTest;
 import org.apache.ignite.internal.processors.cache.CacheQueryBuildValueTest;
-import org.apache.ignite.internal.processors.cache.DdlTransactionSelfTest;
+import org.apache.ignite.internal.processors.cache.DdlTransactionIndexingSelfTest;
 import org.apache.ignite.internal.processors.cache.GridCacheCrossCacheQuerySelfTest;
 import org.apache.ignite.internal.processors.cache.GridCacheLazyQueryPartitionsReleaseTest;
 import org.apache.ignite.internal.processors.cache.GridCacheQueryIndexDisabledSelfTest;
@@ -71,6 +72,7 @@ import org.apache.ignite.internal.processors.cache.distributed.replicated.Ignite
 import org.apache.ignite.internal.processors.cache.distributed.replicated.IgniteCacheReplicatedQueryP2PDisabledSelfTest;
 import org.apache.ignite.internal.processors.cache.distributed.replicated.IgniteCacheReplicatedQuerySelfTest;
 import org.apache.ignite.internal.processors.cache.index.ArrayIndexTest;
+import org.apache.ignite.internal.processors.cache.index.BPlusTreeMetricsTest;
 import org.apache.ignite.internal.processors.cache.index.BasicIndexMultinodeTest;
 import org.apache.ignite.internal.processors.cache.index.BasicIndexTest;
 import org.apache.ignite.internal.processors.cache.index.ComplexPrimaryKeyUnwrapSelfTest;
@@ -81,6 +83,7 @@ import org.apache.ignite.internal.processors.cache.index.DynamicIndexServerBasic
 import org.apache.ignite.internal.processors.cache.index.DynamicIndexServerCoordinatorBasicSelfTest;
 import org.apache.ignite.internal.processors.cache.index.DynamicIndexServerNodeFIlterBasicSelfTest;
 import org.apache.ignite.internal.processors.cache.index.DynamicIndexServerNodeFilterCoordinatorBasicSelfTest;
+import org.apache.ignite.internal.processors.cache.index.ErroneousQueryEntityConfigurationTest;
 import org.apache.ignite.internal.processors.cache.index.H2DynamicColumnsClientBasicSelfTest;
 import org.apache.ignite.internal.processors.cache.index.H2DynamicColumnsServerBasicSelfTest;
 import org.apache.ignite.internal.processors.cache.index.H2DynamicColumnsServerCoordinatorBasicSelfTest;
@@ -149,11 +152,13 @@ import org.apache.ignite.internal.sql.SqlParserDropIndexSelfTest;
 import org.apache.ignite.internal.sql.SqlParserKillQuerySelfTest;
 import org.apache.ignite.internal.sql.SqlParserMultiStatementSelfTest;
 import org.apache.ignite.internal.sql.SqlParserSetStreamingSelfTest;
-import org.apache.ignite.internal.sql.SqlParserTransactionalKeywordsSelfTest;
+import org.apache.ignite.internal.sql.SqlParserViewSelfTest;
 import org.apache.ignite.sqltests.CheckWarnJoinPartitionedTables;
 import org.apache.ignite.sqltests.PartitionedSqlTest;
 import org.apache.ignite.sqltests.ReplicatedSqlCustomPartitionsTest;
 import org.apache.ignite.sqltests.ReplicatedSqlTest;
+import org.apache.ignite.testframework.GridTestUtils;
+import org.junit.BeforeClass;
 import org.junit.runner.RunWith;
 import org.junit.runners.Suite;
 
@@ -179,11 +184,11 @@ import org.junit.runners.Suite;
 
     SqlParserCreateIndexSelfTest.class,
     SqlParserDropIndexSelfTest.class,
-    SqlParserTransactionalKeywordsSelfTest.class,
     SqlParserBulkLoadSelfTest.class,
     SqlParserSetStreamingSelfTest.class,
     SqlParserKillQuerySelfTest.class,
     SqlParserMultiStatementSelfTest.class,
+    SqlParserViewSelfTest.class,
 
     SqlConnectorConfigurationValidationSelfTest.class,
     ClientConnectorConfigurationValidationSelfTest.class,
@@ -195,9 +200,11 @@ import org.junit.runners.Suite;
     SqlResultSetMetaSelfTest.class,
 
     BasicIndexTest.class,
+    ErroneousQueryEntityConfigurationTest.class,
     ArrayIndexTest.class,
     BasicIndexMultinodeTest.class,
     IndexMetricsTest.class,
+    BPlusTreeMetricsTest.class,
 
     // Misc tests.
     QueryEntityValidationSelfTest.class,
@@ -334,8 +341,13 @@ import org.junit.runners.Suite;
     H2DynamicIndexingComplexServerTransactionalPartitionedNoBackupsTest.class,
     H2DynamicIndexingComplexServerTransactionalReplicatedTest.class,
 
-    DdlTransactionSelfTest.class,
+    DdlTransactionIndexingSelfTest.class,
 
 })
 public class IgniteBinaryCacheQueryTestSuite {
+    /** Setup lazy mode default. */
+    @BeforeClass
+    public static void setupLazy() {
+        GridTestUtils.setFieldValue(SqlFieldsQuery.class, "DFLT_LAZY", false);
+    }
 }

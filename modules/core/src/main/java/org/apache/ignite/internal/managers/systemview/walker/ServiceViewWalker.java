@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.managers.systemview.walker;
 
+import java.util.Map;
 import java.util.UUID;
 import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.spi.systemview.view.ServiceView;
@@ -41,6 +42,7 @@ public class ServiceViewWalker implements SystemViewRowAttributeWalker<ServiceVi
         v.accept(7, "affinityKey", String.class);
         v.accept(8, "nodeFilter", Class.class);
         v.accept(9, "staticallyConfigured", boolean.class);
+        v.accept(10, "topologySnapshot", Map.class);
     }
 
     /** {@inheritDoc} */
@@ -55,10 +57,11 @@ public class ServiceViewWalker implements SystemViewRowAttributeWalker<ServiceVi
         v.accept(7, "affinityKey", String.class, row.affinityKey());
         v.accept(8, "nodeFilter", Class.class, row.nodeFilter());
         v.acceptBoolean(9, "staticallyConfigured", row.staticallyConfigured());
+        v.accept(10, "topologySnapshot", Map.class, row.topologySnapshot());
     }
 
     /** {@inheritDoc} */
     @Override public int count() {
-        return 10;
+        return 11;
     }
 }

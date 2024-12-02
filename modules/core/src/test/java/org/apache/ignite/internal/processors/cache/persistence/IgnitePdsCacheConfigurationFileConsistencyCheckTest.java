@@ -248,9 +248,9 @@ public class IgnitePdsCacheConfigurationFileConsistencyCheckTest extends GridCom
 
             data.config().setGroupName(ODD_GROUP_NAME);
 
-            File config = new File(pageStore.cacheWorkDir(true, ODD_GROUP_NAME), data.config().getName() + CACHE_DATA_FILENAME);
+            File cfg = new File(pageStore.cacheWorkDir(true, ODD_GROUP_NAME), data.config().getName() + CACHE_DATA_FILENAME);
 
-            try (DataOutputStream os = new DataOutputStream(new FileOutputStream(config))) {
+            try (DataOutputStream os = new DataOutputStream(new FileOutputStream(cfg))) {
                 os.writeLong(-1L);
             }
 

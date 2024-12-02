@@ -36,6 +36,7 @@ namespace Apache.Ignite.Core.Impl.Compute
     using Apache.Ignite.Core.Impl.Common;
     using Apache.Ignite.Core.Impl.Compute.Closure;
     using Apache.Ignite.Core.Impl.Deployment;
+    using static IgniteUtils;
 
     /// <summary>
     /// Compute implementation.
@@ -231,10 +232,12 @@ namespace Apache.Ignite.Core.Impl.Compute
 
             long ptr = Marshaller.Ignite.HandleRegistry.Allocate(holder);
 
-            var futTarget = DoOutOpObject(OpExecNative, (IBinaryStream s) =>
+            var futTarget = DoOutOpObject(OpExecNative, s =>
             {
                 s.WriteLong(ptr);
                 s.WriteLong(_prj.TopologyVersion);
+                s.WriteString(GetComputeExecutableName(task));
+                s.WriteBoolean(holder.TaskSessionFullSupport);
             });
 
             var future = holder.Future;
@@ -562,6 +565,7 @@ namespace Apache.Ignite.Core.Impl.Compute
 
                     w.WriteWithPeerDeployment(func);
                     w.WriteLong(handle);
+                    w.WriteString(GetComputeExecutableName(func));
                 });
 
                 fut.Task.ContWith(_ => handleRegistry.Release(handle), TaskContinuationOptions.ExecuteSynchronously);
@@ -704,6 +708,8 @@ namespace Apache.Ignite.Core.Impl.Compute
 
                 throw;
             }
+            
+            writer.WriteString(job.GetName());
 
             return jobHandle;
         }

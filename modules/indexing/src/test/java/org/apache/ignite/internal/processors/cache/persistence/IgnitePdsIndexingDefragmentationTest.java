@@ -34,6 +34,8 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.cache.query.index.IndexProcessor;
+import org.apache.ignite.internal.management.cache.ValidateIndexesClosure;
+import org.apache.ignite.internal.management.cache.ValidateIndexesJobResult;
 import org.apache.ignite.internal.managers.indexing.IndexesRebuildTask;
 import org.apache.ignite.internal.processors.cache.CacheGroupContext;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
@@ -43,23 +45,16 @@ import org.apache.ignite.internal.processors.cache.persistence.file.FilePageStor
 import org.apache.ignite.internal.processors.query.schema.IndexRebuildCancelToken;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.U;
-import org.apache.ignite.internal.visor.verify.ValidateIndexesClosure;
-import org.apache.ignite.internal.visor.verify.VisorValidateIndexesJobResult;
-import org.apache.ignite.testframework.junits.WithSystemProperty;
 import org.jetbrains.annotations.Nullable;
 import org.junit.Test;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
-import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL_SNAPSHOT;
 import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.DFLT_STORE_DIR;
 
 /**
  * Defragmentation tests with enabled ignite-indexing.
  */
 public class IgnitePdsIndexingDefragmentationTest extends IgnitePdsDefragmentationTest {
-    /** Use MVCC in tests. */
-    private static final String USE_MVCC = "USE_MVCC";
-
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
@@ -96,12 +91,7 @@ public class IgnitePdsIndexingDefragmentationTest extends IgnitePdsDefragmentati
             )
             .setAffinity(new RendezvousAffinityFunction(false, PARTS));
 
-        if (Boolean.TRUE.toString().equals(System.getProperty(USE_MVCC))) {
-            cache1Cfg.setAtomicityMode(TRANSACTIONAL_SNAPSHOT);
-            cache2Cfg.setAtomicityMode(TRANSACTIONAL_SNAPSHOT);
-        }
-        else
-            cache2Cfg.setExpiryPolicyFactory(new PolicyFactory());
+        cache2Cfg.setExpiryPolicyFactory(new PolicyFactory());
 
         cfg.setCacheConfiguration(cache1Cfg, cache2Cfg);
 
@@ -196,7 +186,7 @@ public class IgnitePdsIndexingDefragmentationTest extends IgnitePdsDefragmentati
 
         node.context().resource().injectGeneric(clo);
 
-        VisorValidateIndexesJobResult call = clo.call();
+        ValidateIndexesJobResult call = clo.call();
 
         assertFalse(call.hasIssues());
     }
@@ -218,28 +208,6 @@ public class IgnitePdsIndexingDefragmentationTest extends IgnitePdsDefragmentati
      */
     @Test
     public void testIndexingWithComplexKey() throws Exception {
-        test(integer -> new IgniteCacheUpdateSqlQuerySelfTest.AllTypes((long)integer));
-    }
-
-    /**
-     * Test using integer keys.
-     *
-     * @throws Exception If failed.
-     */
-    @Test
-    @WithSystemProperty(key = USE_MVCC, value = "true")
-    public void testIndexingWithIntegerKeyAndMVCC() throws Exception {
-        test(Function.identity());
-    }
-
-    /**
-     * Test using complex keys (integer and string).
-     *
-     * @throws Exception If failed.
-     */
-    @Test
-    @WithSystemProperty(key = USE_MVCC, value = "true")
-    public void testIndexingWithComplexKeyAndMVCC() throws Exception {
         test(integer -> new IgniteCacheUpdateSqlQuerySelfTest.AllTypes((long)integer));
     }
 
@@ -412,10 +380,10 @@ public class IgnitePdsIndexingDefragmentationTest extends IgnitePdsDefragmentati
             boolean force,
             IndexRebuildCancelToken cancelTok
         ) {
-            IgniteInternalFuture<?> future = super.rebuild(cctx, force, cancelTok);
-            rebuiltIndexes = future != null;
+            IgniteInternalFuture<?> fut = super.rebuild(cctx, force, cancelTok);
+            rebuiltIndexes = fut != null;
 
-            return future;
+            return fut;
         }
 
         /**

@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.processors.query.calcite.prepare;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -25,12 +26,19 @@ import java.util.Objects;
 import java.util.concurrent.atomic.AtomicReference;
 
 import com.google.common.collect.ImmutableList;
+import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.rel.metadata.RelMetadataQuery;
 import org.apache.ignite.internal.processors.query.IgniteSQLException;
+import org.apache.ignite.internal.processors.query.calcite.exec.PartitionExtractor;
+import org.apache.ignite.internal.processors.query.calcite.exec.partition.PartitionNode;
 import org.apache.ignite.internal.processors.query.calcite.metadata.FragmentMappingException;
 import org.apache.ignite.internal.processors.query.calcite.metadata.MappingService;
+import org.apache.ignite.internal.processors.query.calcite.rel.IgniteExchange;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteReceiver;
+import org.apache.ignite.internal.processors.query.calcite.rel.IgniteRel;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteSender;
+import org.apache.ignite.internal.processors.query.calcite.rel.IgniteTableModify;
+import org.apache.ignite.internal.processors.query.calcite.trait.IgniteDistributions;
 import org.apache.ignite.internal.processors.query.calcite.util.Commons;
 import org.apache.ignite.internal.util.typedef.F;
 import org.jetbrains.annotations.NotNull;
@@ -66,7 +74,11 @@ public class QueryTemplate {
 
         for (int i = 0; i < 3; i++) {
             try {
-                ExecutionPlan executionPlan0 = new ExecutionPlan(ctx.topologyVersion(), map(mappingService, fragments, ctx, mq));
+                fragments = map(mappingService, fragments, ctx, mq);
+
+                List<PartitionNode> partNodes = Commons.transform(fragments, f -> new PartitionExtractor(ctx.typeFactory()).go(f));
+
+                ExecutionPlan executionPlan0 = new ExecutionPlan(ctx.topologyVersion(), fragments, partNodes);
 
                 if (executionPlan == null || executionPlan.topologyVersion().before(executionPlan0.topologyVersion()))
                     this.executionPlan.compareAndSet(executionPlan, executionPlan0);
@@ -79,7 +91,27 @@ public class QueryTemplate {
                 else
                     ex.addSuppressed(e);
 
-                fragments = replace(fragments, e.fragment(), new FragmentSplitter(e.node()).go(e.fragment()));
+                RelNode cutPoint = e.node();
+
+                if (Commons.queryTransactionVersion(ctx) != null && cutPoint instanceof IgniteTableModify) {
+                    IgniteRel input = (IgniteRel)cutPoint.getInput(0);
+
+                    // Table modify under transaction should always be executed on initiator node.
+                    if (!input.distribution().equals(IgniteDistributions.single())) {
+                        cutPoint = ((IgniteRel)cutPoint).clone(cutPoint.getCluster(), Collections.singletonList(
+                            new IgniteExchange(
+                                input.getCluster(),
+                                input.getTraitSet().replace(IgniteDistributions.single()),
+                                input,
+                                IgniteDistributions.single())));
+
+                        fragments = replace(fragments, e.fragment(), new Splitter().go((IgniteRel)cutPoint));
+
+                        continue;
+                    }
+                }
+
+                fragments = replace(fragments, e.fragment(), new FragmentSplitter(cutPoint).go(e.fragment()));
             }
         }
 
@@ -118,14 +150,14 @@ public class QueryTemplate {
             if (fragment0 == fragment)
                 fragment0 = F.first(replacement);
             else if (!fragment0.rootFragment()) {
-                IgniteSender sender = (IgniteSender)fragment0.root();
-                Long newTargetId = newTargets.get(sender.exchangeId());
+                IgniteSender snd = (IgniteSender)fragment0.root();
+                Long newTargetId = newTargets.get(snd.exchangeId());
 
                 if (newTargetId != null) {
-                    sender = new IgniteSender(sender.getCluster(), sender.getTraitSet(),
-                        sender.getInput(), sender.exchangeId(), newTargetId, sender.distribution());
+                    snd = new IgniteSender(snd.getCluster(), snd.getTraitSet(),
+                        snd.getInput(), snd.exchangeId(), newTargetId, snd.distribution());
 
-                    fragment0 = new Fragment(fragment0.fragmentId(), sender, fragment0.remotes());
+                    fragment0 = new Fragment(fragment0.fragmentId(), snd, fragment0.remotes());
                 }
             }
 

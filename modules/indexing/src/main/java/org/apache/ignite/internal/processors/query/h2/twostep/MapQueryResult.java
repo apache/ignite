@@ -28,16 +28,18 @@ import org.apache.ignite.events.CacheQueryReadEvent;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.query.CacheQueryType;
+import org.apache.ignite.internal.processors.cache.query.GridCacheQueryType;
 import org.apache.ignite.internal.processors.cache.query.GridCacheSqlQuery;
 import org.apache.ignite.internal.processors.cache.tree.CacheDataTree;
+import org.apache.ignite.internal.processors.performancestatistics.PerformanceStatisticsProcessor;
 import org.apache.ignite.internal.processors.query.h2.H2PooledConnection;
-import org.apache.ignite.internal.processors.query.h2.H2QueryFetchSizeInterceptor;
 import org.apache.ignite.internal.processors.query.h2.H2Utils;
 import org.apache.ignite.internal.processors.query.h2.IgniteH2Indexing;
 import org.apache.ignite.internal.processors.query.h2.MapH2QueryInfo;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2Table;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2ValueCacheObject;
 import org.apache.ignite.internal.processors.query.h2.opt.QueryContext;
+import org.apache.ignite.internal.processors.query.running.HeavyQueriesTracker;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.h2.engine.Session;
@@ -248,7 +250,7 @@ class MapQueryResult {
 
                 rows.add(res.res.currentRow());
 
-                res.fetchSizeInterceptor.checkOnFetchNext();
+                res.resultSetChecker.checkOnFetchNext();
             }
 
             return !res.res.hasNext();
@@ -323,6 +325,11 @@ class MapQueryResult {
     }
 
     /** */
+    public MapH2QueryInfo qryInfo() {
+        return res.qryInfo;
+    }
+
+    /** */
     private class Result {
         /** */
         private final ResultInterface res;
@@ -337,7 +344,10 @@ class MapQueryResult {
         private final int rowCnt;
 
         /** */
-        private final H2QueryFetchSizeInterceptor fetchSizeInterceptor;
+        private final HeavyQueriesTracker.ResultSetChecker resultSetChecker;
+
+        /** */
+        private final MapH2QueryInfo qryInfo;
 
         /**
          * Constructor.
@@ -346,6 +356,7 @@ class MapQueryResult {
          */
         Result(@NotNull ResultSet rs, MapH2QueryInfo qryInfo) {
             this.rs = rs;
+            this.qryInfo = qryInfo;
 
             try {
                 res = (ResultInterface)RESULT_FIELD.get(rs);
@@ -357,12 +368,24 @@ class MapQueryResult {
             rowCnt = (res instanceof LazyResult) ? -1 : res.getRowCount();
             cols = res.getVisibleColumnCount();
 
-            fetchSizeInterceptor = new H2QueryFetchSizeInterceptor(h2, qryInfo, log);
+            resultSetChecker = h2.heavyQueriesTracker().resultSetChecker(qryInfo);
         }
 
         /** */
         void close() {
-            fetchSizeInterceptor.checkOnClose();
+            resultSetChecker.checkOnClose();
+
+            PerformanceStatisticsProcessor perfStat = cctx.kernalContext().performanceStatistics();
+
+            if (perfStat.enabled() && resultSetChecker.fetchedSize() > 0) {
+                perfStat.queryRowsProcessed(
+                    GridCacheQueryType.SQL_FIELDS,
+                    qryInfo.nodeId(),
+                    qryInfo.queryId(),
+                    "Fetched on mapper",
+                    resultSetChecker.fetchedSize()
+                );
+            }
 
             U.close(rs, log);
         }

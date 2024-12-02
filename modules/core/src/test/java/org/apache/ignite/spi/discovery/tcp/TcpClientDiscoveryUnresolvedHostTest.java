@@ -78,11 +78,11 @@ public class TcpClientDiscoveryUnresolvedHostTest extends GridCommonAbstractTest
 
         /** {@inheritDoc} */
         @Override Socket createSocket() throws IOException {
-            Socket socket = super.createSocket();
+            Socket sock = super.createSocket();
 
-            sockets.add(socket);
+            sockets.add(sock);
 
-            return socket;
+            return sock;
         }
 
         /** {@inheritDoc} */

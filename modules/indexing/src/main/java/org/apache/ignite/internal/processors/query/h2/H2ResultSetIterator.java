@@ -27,9 +27,13 @@ import java.util.NoSuchElementException;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.cache.query.QueryCancelledException;
+import org.apache.ignite.internal.GridKernalContext;
+import org.apache.ignite.internal.processors.cache.query.GridCacheQueryType;
+import org.apache.ignite.internal.processors.performancestatistics.PerformanceStatisticsProcessor;
 import org.apache.ignite.internal.processors.query.IgniteSQLException;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2Table;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2ValueCacheObject;
+import org.apache.ignite.internal.processors.query.running.HeavyQueriesTracker;
 import org.apache.ignite.internal.processors.tracing.MTC;
 import org.apache.ignite.internal.processors.tracing.MTC.TraceSurroundings;
 import org.apache.ignite.internal.processors.tracing.Tracing;
@@ -104,11 +108,20 @@ public abstract class H2ResultSetIterator<T> extends GridIteratorAdapter<T> impl
     /** Canceled. */
     private boolean canceled;
 
-    /** Fetch size interceptor. */
-    final H2QueryFetchSizeInterceptor fetchSizeInterceptor;
+    /** Fetch size checker. */
+    final HeavyQueriesTracker.ResultSetChecker resultSetChecker;
 
     /** Tracing processor. */
     protected final Tracing tracing;
+
+    /** */
+    private final GridKernalContext ctx;
+
+    /** */
+    private final H2QueryInfo qryInfo;
+
+    /** */
+    final IgniteH2Indexing h2;
 
     /**
      * @param data Data array.
@@ -125,11 +138,13 @@ public abstract class H2ResultSetIterator<T> extends GridIteratorAdapter<T> impl
         IgniteH2Indexing h2,
         H2QueryInfo qryInfo,
         Tracing tracing
-    )
-        throws IgniteCheckedException {
+    ) throws IgniteCheckedException {
+        ctx = h2.ctx;
         this.pageSize = pageSize;
         this.data = data;
         this.tracing = tracing;
+        this.qryInfo = qryInfo;
+        this.h2 = h2;
 
         try {
             res = (ResultInterface)RESULT_FIELD.get(data);
@@ -161,7 +176,7 @@ public abstract class H2ResultSetIterator<T> extends GridIteratorAdapter<T> impl
         assert h2 != null;
         assert qryInfo != null;
 
-        fetchSizeInterceptor = new H2QueryFetchSizeInterceptor(h2, qryInfo, log);
+        resultSetChecker = h2.heavyQueriesTracker().resultSetChecker(qryInfo);
     }
 
     /**
@@ -277,7 +292,7 @@ public abstract class H2ResultSetIterator<T> extends GridIteratorAdapter<T> impl
         if (rowIter != null && rowIter.hasNext()) {
             row = rowIter.next();
 
-            fetchSizeInterceptor.checkOnFetchNext();
+            resultSetChecker.checkOnFetchNext();
 
             return true;
         }
@@ -291,7 +306,7 @@ public abstract class H2ResultSetIterator<T> extends GridIteratorAdapter<T> impl
         if (rowIter != null && rowIter.hasNext()) {
             row = rowIter.next();
 
-            fetchSizeInterceptor.checkOnFetchNext();
+            resultSetChecker.checkOnFetchNext();
 
             return true;
         }
@@ -314,8 +329,23 @@ public abstract class H2ResultSetIterator<T> extends GridIteratorAdapter<T> impl
 
         lockTables();
 
+        if (qryInfo != null)
+            h2.heavyQueriesTracker().stopTracking(qryInfo, null);
+
         try {
-            fetchSizeInterceptor.checkOnClose();
+            resultSetChecker.checkOnClose();
+
+            PerformanceStatisticsProcessor perfStat = ctx.performanceStatistics();
+
+            if (perfStat.enabled() && resultSetChecker.fetchedSize() > 0) {
+                perfStat.queryRowsProcessed(
+                    GridCacheQueryType.SQL_FIELDS,
+                    qryInfo.nodeId(),
+                    qryInfo.queryId(),
+                    "Fetched on reducer",
+                    resultSetChecker.fetchedSize()
+                );
+            }
 
             data.close();
         }
@@ -368,7 +398,7 @@ public abstract class H2ResultSetIterator<T> extends GridIteratorAdapter<T> impl
         if (closed)
             return false;
 
-        return hasRow || (hasRow = fetchNext());
+        return hasRow || (hasRow = h2.executeWithResumableTimeTracking(this::fetchNext, qryInfo));
     }
 
     /** {@inheritDoc} */

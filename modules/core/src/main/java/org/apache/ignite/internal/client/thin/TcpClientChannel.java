@@ -23,6 +23,7 @@ import java.nio.ByteBuffer;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.EnumSet;
+import java.util.List;
 import java.util.Map;
 import java.util.Queue;
 import java.util.Timer;
@@ -48,6 +49,7 @@ import org.apache.ignite.client.ClientConnectionException;
 import org.apache.ignite.client.ClientException;
 import org.apache.ignite.client.ClientFeatureNotSupportedByServerException;
 import org.apache.ignite.client.ClientReconnectedException;
+import org.apache.ignite.client.events.ConnectionDescription;
 import org.apache.ignite.configuration.ClientConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.binary.BinaryCachingMetadataHandler;
@@ -58,6 +60,7 @@ import org.apache.ignite.internal.binary.streams.BinaryByteBufferInputStream;
 import org.apache.ignite.internal.binary.streams.BinaryHeapOutputStream;
 import org.apache.ignite.internal.binary.streams.BinaryInputStream;
 import org.apache.ignite.internal.binary.streams.BinaryOutputStream;
+import org.apache.ignite.internal.client.monitoring.EventListenerDemultiplexer;
 import org.apache.ignite.internal.client.thin.io.ClientConnection;
 import org.apache.ignite.internal.client.thin.io.ClientConnectionMultiplexer;
 import org.apache.ignite.internal.client.thin.io.ClientConnectionStateHandler;
@@ -70,6 +73,7 @@ import org.apache.ignite.internal.processors.platform.client.ClientStatus;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.T2;
+import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.logger.NullLogger;
 import org.jetbrains.annotations.Nullable;
@@ -132,6 +136,9 @@ class TcpClientChannel implements ClientChannel, ClientMessageHandler, ClientCon
     /** Pending requests. */
     private final Map<Long, ClientRequestFuture> pendingReqs = new ConcurrentHashMap<>();
 
+    /** Lock to safely close pending requests. */
+    private final ReadWriteLock pendingReqsLock = new ReentrantReadWriteLock();
+
     /** Topology change listeners. */
     private final Collection<Consumer<ClientChannel>> topChangeLsnrs = new CopyOnWriteArrayList<>();
 
@@ -162,6 +169,12 @@ class TcpClientChannel implements ClientChannel, ClientMessageHandler, ClientCon
     /** Log. */
     private final IgniteLogger log;
 
+    /** */
+    private final EventListenerDemultiplexer eventListener;
+
+    /** */
+    private final ConnectionDescription connDesc;
+
     /** Last send operation timestamp. */
     private volatile long lastSendMillis;
 
@@ -171,6 +184,8 @@ class TcpClientChannel implements ClientChannel, ClientMessageHandler, ClientCon
         validateConfiguration(cfg);
 
         log = NullLogger.whenNull(cfg.getLogger());
+
+        eventListener = cfg.eventListener();
 
         for (ClientNotificationType type : ClientNotificationType.values()) {
             if (type.keepNotificationsWithoutListener())
@@ -182,12 +197,45 @@ class TcpClientChannel implements ClientChannel, ClientMessageHandler, ClientCon
 
         timeout = cfg.getTimeout();
 
-        sock = connMgr.open(cfg.getAddress(), this, this);
+        List<InetSocketAddress> addrs = cfg.getAddresses();
 
-        if (log.isDebugEnabled())
-            log.debug("Connection establised: " + cfg.getAddress());
+        ClientConnection sock = null;
+        ClientConnectionException connectionEx = null;
+
+        assert !addrs.isEmpty();
+
+        for (InetSocketAddress addr : addrs) {
+            try {
+                sock = connMgr.open(addr, this, this);
+
+                if (log.isDebugEnabled())
+                    log.debug("Connection established: " + addr);
+
+                break;
+            }
+            catch (ClientConnectionException e) {
+                log.info("Can't establish connection with " + addr);
+
+                if (connectionEx != null)
+                    connectionEx.addSuppressed(e);
+                else
+                    connectionEx = e;
+            }
+        }
+
+        if (sock == null) {
+            assert connectionEx != null;
+
+            throw connectionEx;
+        }
+
+        this.sock = sock;
 
         handshake(DEFAULT_VERSION, cfg.getUserName(), cfg.getUserPassword(), cfg.getUserAttributes());
+
+        assert protocolCtx != null : "Protocol context after handshake is null";
+
+        connDesc = new ConnectionDescription(sock.localAddress(), sock.remoteAddress(), protocolCtx.toString(), srvNodeId);
 
         heartbeatTimer = protocolCtx.isFeatureSupported(HEARTBEAT) && cfg.getHeartbeatEnabled()
                 ? initHeartbeat(cfg.getHeartbeatInterval())
@@ -219,13 +267,26 @@ class TcpClientChannel implements ClientChannel, ClientMessageHandler, ClientCon
      */
     private void close(Exception cause) {
         if (closed.compareAndSet(false, true)) {
+            // Skip notification if handshake is not successful or completed.
+            ConnectionDescription connDesc0 = connDesc;
+            if (connDesc0 != null)
+                eventListener.onConnectionClosed(connDesc0, cause);
+
             if (heartbeatTimer != null)
                 heartbeatTimer.cancel();
 
             U.closeQuiet(sock);
 
-            for (ClientRequestFuture pendingReq : pendingReqs.values())
-                pendingReq.onDone(new ClientConnectionException("Channel is closed", cause));
+            pendingReqsLock.writeLock().lock();
+
+            try {
+                for (ClientRequestFuture pendingReq : pendingReqs.values())
+                    pendingReq.onDone(new ClientConnectionException("Channel is closed [remoteAddress="
+                        + sock.remoteAddress() + ']', cause));
+            }
+            finally {
+                pendingReqsLock.writeLock().unlock();
+            }
 
             notificationLsnrsGuard.readLock().lock();
 
@@ -279,16 +340,34 @@ class TcpClientChannel implements ClientChannel, ClientMessageHandler, ClientCon
     private ClientRequestFuture send(ClientOperation op, Consumer<PayloadOutputChannel> payloadWriter)
         throws ClientException {
         long id = reqId.getAndIncrement();
+        long startTimeNanos = System.nanoTime();
 
         PayloadOutputChannel payloadCh = new PayloadOutputChannel(this);
 
         try {
-            if (closed())
-                throw new ClientConnectionException("Channel is closed");
+            ClientRequestFuture fut;
 
-            ClientRequestFuture fut = new ClientRequestFuture();
+            pendingReqsLock.readLock().lock();
 
-            pendingReqs.put(id, fut);
+            try {
+                if (closed()) {
+                    ClientConnectionException err = new ClientConnectionException("Channel is closed [remoteAddress="
+                        + sock.remoteAddress() + ']');
+
+                    eventListener.onRequestFail(connDesc, id, op.code(), op.name(), System.nanoTime() - startTimeNanos, err);
+
+                    throw err;
+                }
+
+                fut = new ClientRequestFuture(id, op, startTimeNanos);
+
+                pendingReqs.put(id, fut);
+            }
+            finally {
+                pendingReqsLock.readLock().unlock();
+            }
+
+            eventListener.onRequestStart(connDesc, id, op.code(), op.name());
 
             BinaryOutputStream req = payloadCh.out();
 
@@ -311,6 +390,8 @@ class TcpClientChannel implements ClientChannel, ClientMessageHandler, ClientCon
             // Potential double-close is handled in PayloadOutputChannel.
             payloadCh.close();
 
+            eventListener.onRequestFail(connDesc, id, op.code(), op.name(), System.nanoTime() - startTimeNanos, t);
+
             throw t;
         }
     }
@@ -322,18 +403,29 @@ class TcpClientChannel implements ClientChannel, ClientMessageHandler, ClientCon
      */
     private <T> T receive(ClientRequestFuture pendingReq, Function<PayloadInputChannel, T> payloadReader)
         throws ClientException {
+        long reqId = pendingReq.requestId;
+        ClientOperation op = pendingReq.operation;
+        long startTimeNanos = pendingReq.startTimeNanos;
+
         try {
             ByteBuffer payload = timeout > 0 ? pendingReq.get(timeout) : pendingReq.get();
 
-            if (payload == null || payloadReader == null)
-                return null;
+            T res = null;
+            if (payload != null && payloadReader != null)
+                res = payloadReader.apply(new PayloadInputChannel(this, payload));
 
-            return payloadReader.apply(new PayloadInputChannel(this, payload));
+            eventListener.onRequestSuccess(connDesc, reqId, op.code(), op.name(), System.nanoTime() - startTimeNanos);
+
+            return res;
         }
         catch (IgniteCheckedException e) {
             log.warning("Failed to process response: " + e.getMessage(), e);
 
-            throw convertException(e);
+            RuntimeException err = convertException(e);
+
+            eventListener.onRequestFail(connDesc, reqId, op.code(), op.name(), System.nanoTime() - startTimeNanos, err);
+
+            throw err;
         }
     }
 
@@ -346,22 +438,30 @@ class TcpClientChannel implements ClientChannel, ClientMessageHandler, ClientCon
      */
     private <T> CompletableFuture<T> receiveAsync(ClientRequestFuture pendingReq, Function<PayloadInputChannel, T> payloadReader) {
         CompletableFuture<T> fut = new CompletableFuture<>();
+        long reqId = pendingReq.requestId;
+        ClientOperation op = pendingReq.operation;
+        long startTimeNanos = pendingReq.startTimeNanos;
 
-        pendingReq.listen(payloadFut -> asyncContinuationExecutor.execute(() -> {
+        pendingReq.listen(() -> asyncContinuationExecutor.execute(() -> {
             try {
-                ByteBuffer payload = payloadFut.get();
+                ByteBuffer payload = pendingReq.get();
 
-                if (payload == null || payloadReader == null)
-                    fut.complete(null);
-                else {
-                    T res = payloadReader.apply(new PayloadInputChannel(this, payload));
-                    fut.complete(res);
-                }
+                T res = null;
+                if (payload != null && payloadReader != null)
+                    res = payloadReader.apply(new PayloadInputChannel(this, payload));
+
+                eventListener.onRequestSuccess(connDesc, reqId, op.code(), op.name(), System.nanoTime() - startTimeNanos);
+
+                fut.complete(res);
             }
             catch (Throwable t) {
                 log.warning("Failed to process response: " + t.getMessage(), t);
 
-                fut.completeExceptionally(convertException(t));
+                RuntimeException err = convertException(t);
+
+                eventListener.onRequestFail(connDesc, reqId, op.code(), op.name(), System.nanoTime() - startTimeNanos, err);
+
+                fut.completeExceptionally(err);
             }
         }));
 
@@ -534,7 +634,7 @@ class TcpClientChannel implements ClientChannel, ClientMessageHandler, ClientCon
 
         try {
             if (closed())
-                throw new ClientConnectionException("Channel is closed");
+                throw new ClientConnectionException("Channel is closed [remoteAddress=" + sock.remoteAddress() + ']');
 
             Map<Long, NotificationListener> lsnrs = notificationLsnrs[type.ordinal()];
 
@@ -585,13 +685,12 @@ class TcpClientChannel implements ClientChannel, ClientMessageHandler, ClientCon
     private static void validateConfiguration(ClientChannelConfiguration cfg) {
         String error = null;
 
-        InetSocketAddress addr = cfg.getAddress();
+        List<InetSocketAddress> addrs = cfg.getAddresses();
 
-        if (addr == null)
+        if (F.isEmpty(addrs))
             error = "At least one Ignite server node must be specified in the Ignite client configuration";
-        else if (addr.getPort() < 1024 || addr.getPort() > 49151)
-            error = String.format("Ignite client port %s is out of valid ports range 1024...49151", addr.getPort());
-        else if (cfg.getHeartbeatInterval() <= 0)
+
+        if (error == null && cfg.getHeartbeatInterval() <= 0)
             error = "heartbeatInterval cannot be zero or less.";
 
         if (error != null)
@@ -601,17 +700,126 @@ class TcpClientChannel implements ClientChannel, ClientMessageHandler, ClientCon
     /** Client handshake. */
     private void handshake(ProtocolVersion ver, String user, String pwd, Map<String, String> userAttrs)
         throws ClientConnectionException, ClientAuthenticationException, ClientProtocolError {
-        ClientRequestFuture fut = new ClientRequestFuture();
-        pendingReqs.put(-1L, fut);
+        long reqId = -1L;
+        long startTime = System.nanoTime();
 
-        handshakeReq(ver, user, pwd, userAttrs);
+        eventListener.onHandshakeStart(new ConnectionDescription(sock.localAddress(), sock.remoteAddress(),
+            new ProtocolContext(ver).toString(), null));
 
-        try {
-            ByteBuffer res = timeout > 0 ? fut.get(timeout) : fut.get();
-            handshakeRes(res, ver, user, pwd, userAttrs);
-        }
-        catch (IgniteCheckedException e) {
-            throw new ClientConnectionException(e.getMessage(), e);
+        while (true) {
+            ClientRequestFuture fut;
+
+            pendingReqsLock.readLock().lock();
+
+            try {
+                if (closed())
+                    throw new ClientConnectionException("Channel is closed [remoteAddress=" + sock.remoteAddress() + ']');
+
+                fut = new ClientRequestFuture(reqId, ClientOperation.HANDSHAKE);
+
+                pendingReqs.put(reqId, fut);
+            }
+            finally {
+                pendingReqsLock.readLock().unlock();
+            }
+
+            handshakeReq(ver, user, pwd, userAttrs);
+
+            try {
+                ByteBuffer buf = timeout > 0 ? fut.get(timeout) : fut.get();
+
+                BinaryInputStream res = BinaryByteBufferInputStream.create(buf);
+
+                try (BinaryReaderExImpl reader = ClientUtils.createBinaryReader(null, res)) {
+                    boolean success = res.readBoolean();
+
+                    if (success) {
+                        byte[] features = EMPTY_BYTES;
+
+                        if (ProtocolContext.isFeatureSupported(ver, BITMAP_FEATURES))
+                            features = reader.readByteArray();
+
+                        protocolCtx = new ProtocolContext(ver, ProtocolBitmaskFeature.enumSet(features));
+
+                        if (protocolCtx.isFeatureSupported(PARTITION_AWARENESS)) {
+                            // Reading server UUID
+                            srvNodeId = reader.readUuid();
+                        }
+
+                        if (log.isDebugEnabled())
+                            log.debug("Handshake succeeded [protocolVersion=" + protocolCtx.version() + ", srvNodeId=" + srvNodeId + ']');
+
+                        eventListener.onHandshakeSuccess(
+                            new ConnectionDescription(sock.localAddress(), sock.remoteAddress(), protocolCtx.toString(), srvNodeId),
+                            System.nanoTime() - startTime
+                        );
+
+                        break;
+                    }
+                    else {
+                        ProtocolVersion srvVer = new ProtocolVersion(res.readShort(), res.readShort(), res.readShort());
+
+                        String err = reader.readString();
+                        int errCode = ClientStatus.FAILED;
+
+                        if (res.remaining() > 0)
+                            errCode = reader.readInt();
+
+                        if (log.isDebugEnabled())
+                            log.debug("Handshake failed [protocolVersion=" + srvVer + ", err=" + err + ", errCode=" + errCode + ']');
+
+                        RuntimeException resultErr = null;
+                        if (errCode == ClientStatus.AUTH_FAILED)
+                            resultErr = new ClientAuthenticationException(err);
+                        else if (ver.equals(srvVer))
+                            resultErr = new ClientProtocolError(err);
+                        else if (!supportedVers.contains(srvVer) ||
+                            (!ProtocolContext.isFeatureSupported(srvVer, AUTHORIZATION) && !F.isEmpty(user))) {
+                            // Server version is not supported by this client OR server version is less than 1.1.0 supporting
+                            // authentication and authentication is required.
+                            resultErr = new ClientProtocolError(String.format(
+                                "Protocol version mismatch: client %s / server %s. Server details: %s",
+                                ver,
+                                srvVer,
+                                err
+                            ));
+                        }
+
+                        if (resultErr != null) {
+                            ConnectionDescription connDesc = new ConnectionDescription(sock.localAddress(), sock.remoteAddress(),
+                                new ProtocolContext(ver).toString(), null);
+
+                            long elapsedNanos = System.nanoTime() - startTime;
+
+                            eventListener.onHandshakeFail(connDesc, elapsedNanos, resultErr);
+
+                            throw resultErr;
+                        }
+                        else {
+                            // Retry with server version.
+                            if (log.isDebugEnabled())
+                                log.debug("Retrying handshake with server version [protocolVersion=" + srvVer + ']');
+
+                            ver = srvVer;
+                        }
+                    }
+                }
+            }
+            catch (IOException | IgniteCheckedException e) {
+                ClientException err;
+                if (e instanceof IOException)
+                    err = handleIOError((IOException)e);
+                else
+                    err = new ClientConnectionException(e.getMessage() + " [remoteAddress=" + sock.remoteAddress() + ']', e);
+
+                eventListener.onHandshakeFail(
+                    new ConnectionDescription(sock.localAddress(), sock.remoteAddress(), new ProtocolContext(ver).toString(), null),
+                    System.nanoTime() - startTime,
+                    err
+                );
+
+                throw err;
+            }
         }
     }
 
@@ -665,70 +873,6 @@ class TcpClientChannel implements ClientChannel, ClientMessageHandler, ClientCon
         return new ProtocolContext(ver, features);
     }
 
-    /** Receive and handle handshake response. */
-    private void handshakeRes(ByteBuffer buf, ProtocolVersion proposedVer, String user, String pwd, Map<String, String> userAttrs)
-        throws ClientConnectionException, ClientAuthenticationException, ClientProtocolError {
-        BinaryInputStream res = BinaryByteBufferInputStream.create(buf);
-
-        try (BinaryReaderExImpl reader = ClientUtils.createBinaryReader(null, res)) {
-            boolean success = res.readBoolean();
-
-            if (success) {
-                byte[] features = EMPTY_BYTES;
-
-                if (ProtocolContext.isFeatureSupported(proposedVer, BITMAP_FEATURES))
-                    features = reader.readByteArray();
-
-                protocolCtx = new ProtocolContext(proposedVer, ProtocolBitmaskFeature.enumSet(features));
-
-                if (protocolCtx.isFeatureSupported(PARTITION_AWARENESS)) {
-                    // Reading server UUID
-                    srvNodeId = reader.readUuid();
-                }
-
-                if (log.isDebugEnabled())
-                    log.debug("Handshake succeeded [protocolVersion=" + protocolCtx.version() + ", srvNodeId=" + srvNodeId + ']');
-            }
-            else {
-                ProtocolVersion srvVer = new ProtocolVersion(res.readShort(), res.readShort(), res.readShort());
-
-                String err = reader.readString();
-                int errCode = ClientStatus.FAILED;
-
-                if (res.remaining() > 0)
-                    errCode = reader.readInt();
-
-                if (log.isDebugEnabled())
-                    log.debug("Handshake failed [protocolVersion=" + srvVer + ", err=" + err + ", errCode=" + errCode + ']');
-
-                if (errCode == ClientStatus.AUTH_FAILED)
-                    throw new ClientAuthenticationException(err);
-                else if (proposedVer.equals(srvVer))
-                    throw new ClientProtocolError(err);
-                else if (!supportedVers.contains(srvVer) ||
-                    (!ProtocolContext.isFeatureSupported(srvVer, AUTHORIZATION) && !F.isEmpty(user)))
-                    // Server version is not supported by this client OR server version is less than 1.1.0 supporting
-                    // authentication and authentication is required.
-                    throw new ClientProtocolError(String.format(
-                        "Protocol version mismatch: client %s / server %s. Server details: %s",
-                        proposedVer,
-                        srvVer,
-                        err
-                    ));
-                else {
-                    // Retry with server version.
-                    if (log.isDebugEnabled())
-                        log.debug("Retrying handshake with server version [protocolVersion=" + srvVer + ']');
-
-                    handshake(srvVer, user, pwd, userAttrs);
-                }
-            }
-        }
-        catch (IOException e) {
-            throw handleIOError(e);
-        }
-    }
-
     /** Write bytes to the output stream. */
     private void write(byte[] bytes, int len, @Nullable Runnable onDone) throws ClientConnectionException {
         ByteBuffer buf = ByteBuffer.wrap(bytes, 0, len);
@@ -738,7 +882,7 @@ class TcpClientChannel implements ClientChannel, ClientMessageHandler, ClientCon
             lastSendMillis = System.currentTimeMillis();
         }
         catch (IgniteCheckedException e) {
-            throw new ClientConnectionException(e.getMessage(), e);
+            throw new ClientConnectionException(e.getMessage() + " [remoteAddress=" + sock.remoteAddress() + ']', e);
         }
     }
 
@@ -746,7 +890,7 @@ class TcpClientChannel implements ClientChannel, ClientMessageHandler, ClientCon
      * @param ex IO exception (cause).
      */
     private ClientException handleIOError(@Nullable IOException ex) {
-        return handleIOError("sock=" + sock, ex);
+        return handleIOError(S.toString(ConnectionDescription.class, connDesc), ex);
     }
 
     /**
@@ -804,10 +948,33 @@ class TcpClientChannel implements ClientChannel, ClientMessageHandler, ClientCon
         return res;
     }
 
-    /**
-     *
-     */
+    /** {@inheritDoc} */
+    @Override public String toString() {
+        return "TcpClientChannel [srvNodeId=" + srvNodeId + ", addr=" + sock.remoteAddress() + ']';
+    }
+
+    /** */
     private static class ClientRequestFuture extends GridFutureAdapter<ByteBuffer> {
+        /** */
+        final long startTimeNanos;
+
+        /** */
+        final long requestId;
+
+        /** */
+        final ClientOperation operation;
+
+        /** */
+        ClientRequestFuture(long requestId, ClientOperation op) {
+            this(requestId, op, System.nanoTime());
+        }
+
+        /** */
+        ClientRequestFuture(long requestId, ClientOperation op, long startTimeNanos) {
+            this.requestId = requestId;
+            operation = op;
+            this.startTimeNanos = startTimeNanos;
+        }
     }
 
     /**

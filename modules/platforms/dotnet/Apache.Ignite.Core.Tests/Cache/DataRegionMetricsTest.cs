@@ -73,7 +73,6 @@ namespace Apache.Ignite.Core.Tests.Cache
                     RegionWithMetrics,
                     RegionWithMetricsAndPersistence,
                     "sysMemPlc",
-                    "TxLog",
                     "volatileDsMemPlc"
                 },
                 names,
@@ -102,7 +101,7 @@ namespace Apache.Ignite.Core.Tests.Cache
             Assert.AreEqual("sysMemPlc", sysMetrics.Name);
             AssertMetricsAreEmpty(sysMetrics);
 
-            var volatileMetrics = metrics[6];
+            var volatileMetrics = metrics[5];
             Assert.AreEqual("volatileDsMemPlc", volatileMetrics.Name);
             AssertMetricsAreEmpty(volatileMetrics);
 

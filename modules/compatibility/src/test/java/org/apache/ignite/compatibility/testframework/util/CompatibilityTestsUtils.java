@@ -19,8 +19,10 @@ package org.apache.ignite.compatibility.testframework.util;
 
 import java.io.File;
 import java.lang.reflect.Field;
+import java.lang.reflect.InvocationTargetException;
 import java.net.URL;
 import java.net.URLClassLoader;
+import org.apache.ignite.internal.util.typedef.internal.U;
 import org.jetbrains.annotations.Nullable;
 
 /**
@@ -60,9 +62,11 @@ public class CompatibilityTestsUtils {
             return ((URLClassLoader)clsLdr).getURLs();
         else if (bltClsLdrCls != null && urlClsLdrField != null && bltClsLdrCls.isAssignableFrom(clsLdr.getClass())) {
             try {
-                return ((URLClassLoader)urlClsLdrField.get(clsLdr)).getURLs();
+                Object ucp = urlClsLdrField.get(clsLdr);
+
+                return (URL[])ucp.getClass().getDeclaredMethod("getURLs").invoke(ucp);
             }
-            catch (IllegalAccessException e) {
+            catch (IllegalAccessException | NoSuchMethodException | InvocationTargetException e) {
                 return EMPTY_URL_ARR;
             }
         }
@@ -82,14 +86,12 @@ public class CompatibilityTestsUtils {
 
     /** */
     @Nullable private static Field urlClassLoaderField() {
-        try {
-            Class cls = defaultClassLoaderClass();
+        Class cls = defaultClassLoaderClass();
 
-            return cls == null ? null : cls.getDeclaredField("ucp");
-        }
-        catch (NoSuchFieldException e) {
+        if (cls == null)
             return null;
-        }
+
+        return U.findField(cls, "ucp");
     }
 
     /**

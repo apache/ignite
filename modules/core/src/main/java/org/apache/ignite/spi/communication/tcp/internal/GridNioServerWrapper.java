@@ -135,7 +135,7 @@ public class GridNioServerWrapper {
     static final int CHANNEL_FUT_META = GridNioSessionMetaKey.nextUniqueKey();
 
     /** Maximum {@link GridNioSession} connections per node. */
-    public static final int MAX_CONN_PER_NODE = 1024;
+    static final int MAX_CONN_PER_NODE = 1024;
 
     /** Logger. */
     private final IgniteLogger log;
@@ -1125,6 +1125,14 @@ public class GridNioServerWrapper {
     }
 
     /**
+     * @param connIdx Connection index to check.
+     * @return {@code true} if connection index is related to the channel create request\response.
+     */
+    static boolean isChannelConnIdx(int connIdx) {
+        return connIdx > MAX_CONN_PER_NODE;
+    }
+
+    /**
      * @param key The connection key to cleanup descriptors on local node.
      */
     private void cleanupLocalNodeRecoveryDescriptor(ConnectionKey key) {
@@ -1171,21 +1179,15 @@ public class GridNioServerWrapper {
         GridSslMeta sslMeta,
         HandshakeMessage msg
     ) throws IgniteCheckedException {
-        HandshakeTimeoutObject timeoutObject = new HandshakeTimeoutObject(ch);
+        HandshakeTimeoutObject timeoutObj = new HandshakeTimeoutObject(ch);
 
-        handshakeTimeoutExecutorService.schedule(timeoutObject, timeout, TimeUnit.MILLISECONDS);
+        handshakeTimeoutExecutorService.schedule(timeoutObj, timeout, TimeUnit.MILLISECONDS);
 
         try {
             return tcpHandshakeExecutor.tcpHandshake(ch, rmtNodeId, sslMeta, msg);
         }
-        catch (IOException e) {
-            if (log.isDebugEnabled())
-                log.debug("Failed to read from channel: " + e);
-
-            throw new IgniteCheckedException("Failed to read from channel.", e);
-        }
         finally {
-            if (!timeoutObject.cancel())
+            if (!timeoutObj.cancel())
                 throw handshakeTimeoutException();
         }
     }

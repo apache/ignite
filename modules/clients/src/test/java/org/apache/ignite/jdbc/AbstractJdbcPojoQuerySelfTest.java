@@ -59,14 +59,14 @@ public abstract class AbstractJdbcPojoQuerySelfTest extends GridCommonAbstractTe
 
         cfg.setConnectorConfiguration(new ConnectorConfiguration());
 
-        QueryEntity queryEntity = new QueryEntity();
-        queryEntity.setKeyType("java.lang.String");
-        queryEntity.setValueType("org.apache.ignite.internal.JdbcTestObject");
-        queryEntity.addQueryField("id", "java.lang.Integer", null);
-        queryEntity.addQueryField("testObject", "org.apache.ignite.internal.JdbcTestObject2", null);
-        queryEntity.setIndexes(Collections.singletonList(new QueryIndex("id")));
+        QueryEntity qryEntity = new QueryEntity();
+        qryEntity.setKeyType("java.lang.String");
+        qryEntity.setValueType("org.apache.ignite.internal.JdbcTestObject");
+        qryEntity.addQueryField("id", "java.lang.Integer", null);
+        qryEntity.addQueryField("testObject", "org.apache.ignite.internal.JdbcTestObject2", null);
+        qryEntity.setIndexes(Collections.singletonList(new QueryIndex("id")));
 
-        cache.setQueryEntities(Collections.singletonList(queryEntity));
+        cache.setQueryEntities(Collections.singletonList(qryEntity));
 
         cfg.setCacheConfiguration(cache);
 
@@ -83,10 +83,10 @@ public abstract class AbstractJdbcPojoQuerySelfTest extends GridCommonAbstractTe
         builder2.setField("id", 1);
         builder2.setField("boolVal", true);
 
-        BinaryObject testObject = builder2.build();
+        BinaryObject testObj = builder2.build();
 
         builder.setField("id", 1);
-        builder.setField("testObject", testObject);
+        builder.setField("testObject", testObj);
 
         BinaryObject binObj = builder.build();
 

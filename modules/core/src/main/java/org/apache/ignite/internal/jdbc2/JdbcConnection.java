@@ -55,6 +55,7 @@ import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.cluster.ClusterGroup;
 import org.apache.ignite.compute.ComputeTaskTimeoutException;
 import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteKernal;
 import org.apache.ignite.internal.IgnitionEx;
 import org.apache.ignite.internal.processors.cache.DynamicCacheDescriptor;
@@ -93,8 +94,11 @@ import static org.apache.ignite.IgniteJdbcDriver.PROP_STREAMING_FLUSH_FREQ;
 import static org.apache.ignite.IgniteJdbcDriver.PROP_STREAMING_PER_NODE_BUF_SIZE;
 import static org.apache.ignite.IgniteJdbcDriver.PROP_STREAMING_PER_NODE_PAR_OPS;
 import static org.apache.ignite.IgniteJdbcDriver.PROP_TX_ALLOWED;
+import static org.apache.ignite.cache.query.SqlFieldsQuery.DFLT_LAZY;
+import static org.apache.ignite.internal.GridClosureCallMode.BALANCE;
 import static org.apache.ignite.internal.jdbc2.JdbcUtils.convertToSqlException;
 import static org.apache.ignite.internal.processors.cache.query.IgniteQueryErrorCode.createJdbcSqlException;
+import static org.apache.ignite.internal.processors.task.TaskExecutionOptions.options;
 
 /**
  * JDBC connection implementation.
@@ -223,7 +227,7 @@ public class JdbcConnection implements Connection {
         collocatedQry = Boolean.parseBoolean(props.getProperty(PROP_COLLOCATED));
         distributedJoins = Boolean.parseBoolean(props.getProperty(PROP_DISTRIBUTED_JOINS));
         enforceJoinOrder = Boolean.parseBoolean(props.getProperty(PROP_ENFORCE_JOIN_ORDER));
-        lazy = Boolean.parseBoolean(props.getProperty(PROP_LAZY));
+        lazy = Boolean.parseBoolean(props.getProperty(PROP_LAZY, String.valueOf(DFLT_LAZY)));
         txAllowed = Boolean.parseBoolean(props.getProperty(PROP_TX_ALLOWED));
 
         stream = Boolean.parseBoolean(props.getProperty(PROP_STREAMING));
@@ -698,7 +702,7 @@ public class JdbcConnection implements Connection {
     @Override public Clob createClob() throws SQLException {
         ensureNotClosed();
 
-        throw new SQLFeatureNotSupportedException("SQL-specific types are not supported.");
+        return new JdbcClob("");
     }
 
     /** {@inheritDoc} */
@@ -742,7 +746,11 @@ public class JdbcConnection implements Connection {
 
                 assert grp.nodes().size() == 1;
 
-                return ignite.compute(grp).callAsync(task).get(timeout, SECONDS);
+                return ((IgniteEx)ignite).context().closure().callAsync(
+                    BALANCE,
+                    task,
+                    options(grp.nodes())
+                ).get(timeout, SECONDS);
             }
             else
                 return task.call();
@@ -750,7 +758,7 @@ public class JdbcConnection implements Connection {
         catch (IgniteClientDisconnectedException | ComputeTaskTimeoutException e) {
             throw new SQLException("Failed to establish connection.", SqlStateCode.CONNECTION_FAILURE, e);
         }
-        catch (IgniteException ignored) {
+        catch (IgniteCheckedException | IgniteException ignored) {
             return false;
         }
     }

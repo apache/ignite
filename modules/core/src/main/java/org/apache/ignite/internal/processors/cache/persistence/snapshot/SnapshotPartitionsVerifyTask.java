@@ -18,27 +18,22 @@
 package org.apache.ignite.internal.processors.cache.persistence.snapshot;
 
 import java.io.File;
+import java.io.IOException;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
-import org.apache.ignite.IgniteLogger;
-import org.apache.ignite.compute.ComputeJob;
-import org.apache.ignite.compute.ComputeJobAdapter;
 import org.apache.ignite.compute.ComputeJobResult;
-import org.apache.ignite.internal.IgniteEx;
+import org.apache.ignite.internal.management.cache.PartitionKeyV2;
+import org.apache.ignite.internal.management.cache.VerifyBackupPartitionsTaskV2;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.verify.PartitionHashRecordV2;
-import org.apache.ignite.internal.processors.cache.verify.PartitionKeyV2;
-import org.apache.ignite.internal.processors.cache.verify.VerifyBackupPartitionsTaskV2;
 import org.apache.ignite.internal.processors.task.GridInternal;
-import org.apache.ignite.resources.IgniteInstanceResource;
-import org.apache.ignite.resources.LoggerResource;
 import org.jetbrains.annotations.Nullable;
 
-import static org.apache.ignite.internal.processors.cache.verify.VerifyBackupPartitionsTaskV2.reduce0;
+import static org.apache.ignite.internal.management.cache.VerifyBackupPartitionsTaskV2.reduce0;
 
 /**
  * Task for checking snapshot partitions consistency the same way as {@link VerifyBackupPartitionsTaskV2} does.
@@ -51,8 +46,8 @@ public class SnapshotPartitionsVerifyTask extends AbstractSnapshotVerificationTa
     private static final long serialVersionUID = 0L;
 
     /** {@inheritDoc} */
-    @Override protected ComputeJob createJob(String name, String path, String constId, Collection<String> groups) {
-        return new VisorVerifySnapshotPartitionsJob(name, path, constId, groups);
+    @Override protected VerifySnapshotPartitionsJob createJob(String name, String consId, SnapshotPartitionsVerifyTaskArg args) {
+        return new VerifySnapshotPartitionsJob(name, args.snapshotPath(), consId, args.cacheGroupNames(), args.check());
     }
 
     /** {@inheritDoc} */
@@ -61,46 +56,25 @@ public class SnapshotPartitionsVerifyTask extends AbstractSnapshotVerificationTa
     }
 
     /** Job that collects update counters of snapshot partitions on the node it executes. */
-    private static class VisorVerifySnapshotPartitionsJob extends ComputeJobAdapter {
+    private static class VerifySnapshotPartitionsJob extends AbstractSnapshotVerificationJob {
         /** Serial version uid. */
         private static final long serialVersionUID = 0L;
 
-        /** Ignite instance. */
-        @IgniteInstanceResource
-        private IgniteEx ignite;
-
-        /** Injected logger. */
-        @LoggerResource
-        private IgniteLogger log;
-
-        /** Snapshot name to validate. */
-        private final String snpName;
-
-        /** Snapshot directory path. */
-        private final String snpPath;
-
-        /** Consistent snapshot metadata file name. */
-        private final String consId;
-
-        /** Set of cache groups to be checked in the snapshot or {@code empty} to check everything. */
-        private final Collection<String> rqGrps;
-
         /**
          * @param snpName Snapshot name to validate.
-         * @param consId Consistent snapshot metadata file name.
+         * @param consId Consistent id of the related node.
          * @param rqGrps Set of cache groups to be checked in the snapshot or {@code empty} to check everything.
          * @param snpPath Snapshot directory path.
+         * @param check If {@code true} check snapshot before restore.
          */
-        public VisorVerifySnapshotPartitionsJob(
+        public VerifySnapshotPartitionsJob(
             String snpName,
             @Nullable String snpPath,
             String consId,
-            Collection<String> rqGrps
+            Collection<String> rqGrps,
+            boolean check
         ) {
-            this.snpName = snpName;
-            this.consId = consId;
-            this.rqGrps = rqGrps;
-            this.snpPath = snpPath;
+            super(snpName, snpPath, consId, rqGrps, check);
         }
 
         /** {@inheritDoc} */
@@ -117,10 +91,16 @@ public class SnapshotPartitionsVerifyTask extends AbstractSnapshotVerificationTa
                 SnapshotMetadata meta = cctx.snapshotMgr().readSnapshotMetadata(snpDir, consId);
 
                 return new SnapshotPartitionsVerifyHandler(cctx)
-                    .invoke(new SnapshotHandlerContext(meta, rqGrps, ignite.localNode(), snpDir, false));
+                    .invoke(new SnapshotHandlerContext(meta, rqGrps, ignite.localNode(), snpDir, false, check));
             }
-            catch (IgniteCheckedException e) {
+            catch (IgniteCheckedException | IOException e) {
                 throw new IgniteException(e);
+            }
+            finally {
+                if (log.isInfoEnabled()) {
+                    log.info("Verify snapshot partitions procedure has been finished " +
+                        "[snpName=" + snpName + ", consId=" + consId + ']');
+                }
             }
         }
 
@@ -132,15 +112,16 @@ public class SnapshotPartitionsVerifyTask extends AbstractSnapshotVerificationTa
             if (o == null || getClass() != o.getClass())
                 return false;
 
-            VisorVerifySnapshotPartitionsJob job = (VisorVerifySnapshotPartitionsJob)o;
+            VerifySnapshotPartitionsJob job = (VerifySnapshotPartitionsJob)o;
 
             return snpName.equals(job.snpName) && consId.equals(job.consId) &&
-                Objects.equals(rqGrps, job.rqGrps) && Objects.equals(snpPath, job.snpPath);
+                Objects.equals(rqGrps, job.rqGrps) && Objects.equals(snpPath, job.snpPath) &&
+                Objects.equals(check, job.check);
         }
 
         /** {@inheritDoc} */
         @Override public int hashCode() {
-            return Objects.hash(snpName, consId, rqGrps, snpPath);
+            return Objects.hash(snpName, consId, rqGrps, snpPath, check);
         }
     }
 }

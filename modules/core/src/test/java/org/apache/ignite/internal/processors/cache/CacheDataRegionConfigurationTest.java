@@ -299,25 +299,25 @@ public class CacheDataRegionConfigurationTest extends GridCommonAbstractTest {
 
         ccfg = manyPartitionsCache;
 
-        ListeningTestLogger srv0Logger = new ListeningTestLogger(null);
+        ListeningTestLogger srv0Log = new ListeningTestLogger(null);
         LogListener cacheGrpLsnr0 = matches("Cache group 'default' brings high overhead").build();
         LogListener dataRegLsnr0 = matches("metainformation in data region 'smallRegion'").build();
         LogListener partsInfoLsnr0 = matches(numOfPartitions + " partitions, " +
             DFLT_PAGE_SIZE +
             " bytes per partition, " + partitionsMetaMemoryChunk + " MBs total").build();
-        srv0Logger.registerAllListeners(cacheGrpLsnr0, dataRegLsnr0, partsInfoLsnr0);
-        logger = srv0Logger;
+        srv0Log.registerAllListeners(cacheGrpLsnr0, dataRegLsnr0, partsInfoLsnr0);
+        logger = srv0Log;
 
         IgniteEx ignite0 = startGrid("srv0");
 
-        ListeningTestLogger srv1Logger = new ListeningTestLogger(null);
+        ListeningTestLogger srv1Log = new ListeningTestLogger(null);
         LogListener cacheGrpLsnr1 = matches("Cache group 'default' brings high overhead").build();
         LogListener dataRegLsnr1 = matches("metainformation in data region 'smallRegion'").build();
         LogListener partsInfoLsnr1 = matches(numOfPartitions + " partitions, " +
             DFLT_PAGE_SIZE +
             " bytes per partition, " + partitionsMetaMemoryChunk + " MBs total").build();
-        srv1Logger.registerAllListeners(cacheGrpLsnr1, dataRegLsnr1, partsInfoLsnr1);
-        logger = srv1Logger;
+        srv1Log.registerAllListeners(cacheGrpLsnr1, dataRegLsnr1, partsInfoLsnr1);
+        logger = srv1Log;
 
         startGrid("srv1");
 
@@ -353,44 +353,44 @@ public class CacheDataRegionConfigurationTest extends GridCommonAbstractTest {
         smallRegionCfg.setPersistenceEnabled(true);
 
         //explicit default data region configuration to test possible NPE case
-        DataRegionConfiguration defaultRegionCfg = new DataRegionConfiguration();
-        defaultRegionCfg.setName("defaultRegion");
-        defaultRegionCfg.setInitialSize(DFLT_MEM_PLC_SIZE);
-        defaultRegionCfg.setMaxSize(DFLT_MEM_PLC_SIZE);
-        defaultRegionCfg.setPersistenceEnabled(true);
+        DataRegionConfiguration dfltRegionCfg = new DataRegionConfiguration();
+        dfltRegionCfg.setName("defaultRegion");
+        dfltRegionCfg.setInitialSize(DFLT_MEM_PLC_SIZE);
+        dfltRegionCfg.setMaxSize(DFLT_MEM_PLC_SIZE);
+        dfltRegionCfg.setPersistenceEnabled(true);
 
         memCfg = new DataStorageConfiguration();
-        memCfg.setDefaultDataRegionConfiguration(defaultRegionCfg);
+        memCfg.setDefaultDataRegionConfiguration(dfltRegionCfg);
         memCfg.setDataRegionConfigurations(smallRegionCfg);
         //one hour to guarantee that checkpoint will be triggered by 'dirty pages amount' trigger
         memCfg.setCheckpointFrequency(60 * 60 * 1000);
 
-        ListeningTestLogger srv0Logger = new ListeningTestLogger(null);
+        ListeningTestLogger srv0Log = new ListeningTestLogger(null);
         LogListener cacheGrpLsnr0 = matches("Cache group 'default' brings high overhead").build();
         LogListener dataRegLsnr0 = matches("metainformation in data region 'defaultRegion'").build();
         LogListener partsInfoLsnr0 = matches(numOfPartitions + " partitions, " +
             DFLT_PAGE_SIZE +
             " bytes per partition, " + partitionsMetaMemoryChunk + " MBs total").build();
-        srv0Logger.registerAllListeners(cacheGrpLsnr0, dataRegLsnr0, partsInfoLsnr0);
-        logger = srv0Logger;
+        srv0Log.registerAllListeners(cacheGrpLsnr0, dataRegLsnr0, partsInfoLsnr0);
+        logger = srv0Log;
 
         IgniteEx ignite0 = startGrid("srv0");
 
-        ListeningTestLogger srv1Logger = new ListeningTestLogger(null);
+        ListeningTestLogger srv1Log = new ListeningTestLogger(null);
         LogListener cacheGrpLsnr1 = matches("Cache group 'default' brings high overhead").build();
         LogListener dataRegLsnr1 = matches("metainformation in data region 'defaultRegion'").build();
         LogListener partsInfoLsnr1 = matches(numOfPartitions + " partitions, " +
             DFLT_PAGE_SIZE +
             " bytes per partition, " + partitionsMetaMemoryChunk + " MBs total").build();
-        srv1Logger.registerAllListeners(cacheGrpLsnr1, dataRegLsnr1, partsInfoLsnr1);
-        logger = srv1Logger;
+        srv1Log.registerAllListeners(cacheGrpLsnr1, dataRegLsnr1, partsInfoLsnr1);
+        logger = srv1Log;
 
         startGrid("srv1");
 
-        ListeningTestLogger srv2Logger = new ListeningTestLogger(null);
+        ListeningTestLogger srv2Log = new ListeningTestLogger(null);
         LogListener cacheGrpLsnr2 = matches("Cache group 'default' brings high overhead").build();
-        srv2Logger.registerListener(cacheGrpLsnr2);
-        logger = srv2Logger;
+        srv2Log.registerListener(cacheGrpLsnr2);
+        logger = srv2Log;
 
         startGrid("srv2");
 
@@ -427,27 +427,27 @@ public class CacheDataRegionConfigurationTest extends GridCommonAbstractTest {
      */
     @Test
     public void testWarningOnBaselineTopologyChange() throws Exception {
-        DataRegionConfiguration defaultRegionCfg = new DataRegionConfiguration();
-        defaultRegionCfg.setInitialSize(DFLT_MEM_PLC_SIZE);
-        defaultRegionCfg.setMaxSize(DFLT_MEM_PLC_SIZE);
-        defaultRegionCfg.setPersistenceEnabled(true);
+        DataRegionConfiguration dfltRegionCfg = new DataRegionConfiguration();
+        dfltRegionCfg.setInitialSize(DFLT_MEM_PLC_SIZE);
+        dfltRegionCfg.setMaxSize(DFLT_MEM_PLC_SIZE);
+        dfltRegionCfg.setPersistenceEnabled(true);
 
         memCfg = new DataStorageConfiguration();
-        memCfg.setDefaultDataRegionConfiguration(defaultRegionCfg);
+        memCfg.setDefaultDataRegionConfiguration(dfltRegionCfg);
         //one hour to guarantee that checkpoint will be triggered by 'dirty pages amount' trigger
         memCfg.setCheckpointFrequency(60 * 60 * 1000);
 
-        ListeningTestLogger srv0Logger = new ListeningTestLogger(null);
+        ListeningTestLogger srv0Log = new ListeningTestLogger(null);
         LogListener cacheGrpLsnr0 = matches("Cache group 'default' brings high overhead").build();
-        srv0Logger.registerListener(cacheGrpLsnr0);
-        logger = srv0Logger;
+        srv0Log.registerListener(cacheGrpLsnr0);
+        logger = srv0Log;
 
         IgniteEx ignite0 = startGrid("srv0");
 
-        ListeningTestLogger srv1Logger = new ListeningTestLogger(null);
+        ListeningTestLogger srv1Log = new ListeningTestLogger(null);
         LogListener cacheGrpLsnr1 = matches("Cache group 'default' brings high overhead").build();
-        srv1Logger.registerListener(cacheGrpLsnr1);
-        logger = srv1Logger;
+        srv1Log.registerListener(cacheGrpLsnr1);
+        logger = srv1Log;
 
         startGrid("srv1");
 
@@ -455,7 +455,7 @@ public class CacheDataRegionConfigurationTest extends GridCommonAbstractTest {
 
         ignite0.createCache(
             new CacheConfiguration<>(DEFAULT_CACHE_NAME)
-                .setDataRegionName(defaultRegionCfg.getName())
+                .setDataRegionName(dfltRegionCfg.getName())
                 .setCacheMode(CacheMode.PARTITIONED)
                 .setAffinity(new RendezvousAffinityFunction(false, 512))
         );
@@ -485,13 +485,13 @@ public class CacheDataRegionConfigurationTest extends GridCommonAbstractTest {
      */
     @Test
     public void testNoWarningIfCacheConfigurationDoesntBreakThreshold() throws Exception {
-        DataRegionConfiguration defaultRegionCfg = new DataRegionConfiguration();
-        defaultRegionCfg.setInitialSize(DFLT_MEM_PLC_SIZE);
-        defaultRegionCfg.setMaxSize(DFLT_MEM_PLC_SIZE);
-        defaultRegionCfg.setPersistenceEnabled(true);
+        DataRegionConfiguration dfltRegionCfg = new DataRegionConfiguration();
+        dfltRegionCfg.setInitialSize(DFLT_MEM_PLC_SIZE);
+        dfltRegionCfg.setMaxSize(DFLT_MEM_PLC_SIZE);
+        dfltRegionCfg.setPersistenceEnabled(true);
 
         memCfg = new DataStorageConfiguration();
-        memCfg.setDefaultDataRegionConfiguration(defaultRegionCfg);
+        memCfg.setDefaultDataRegionConfiguration(dfltRegionCfg);
         //one hour to guarantee that checkpoint will be triggered by 'dirty pages amount' trigger
         memCfg.setCheckpointFrequency(60 * 60 * 1000);
 
@@ -503,12 +503,12 @@ public class CacheDataRegionConfigurationTest extends GridCommonAbstractTest {
 
         ccfg = fewPartitionsCache;
 
-        ListeningTestLogger srv0Logger = new ListeningTestLogger(null);
+        ListeningTestLogger srv0Log = new ListeningTestLogger(null);
         LogListener cacheGrpLsnr0 = matches("Cache group 'default' brings high overhead").build();
         LogListener dynamicGrpLsnr = matches("Cache group 'dynamicCache' brings high overhead").build();
-        srv0Logger.registerListener(cacheGrpLsnr0);
-        srv0Logger.registerListener(dynamicGrpLsnr);
-        logger = srv0Logger;
+        srv0Log.registerListener(cacheGrpLsnr0);
+        srv0Log.registerListener(dynamicGrpLsnr);
+        logger = srv0Log;
 
         IgniteEx ignite0 = startGrid("srv0");
 
@@ -654,7 +654,7 @@ public class CacheDataRegionConfigurationTest extends GridCommonAbstractTest {
      */
     @Test
     public void testInvalidSubIntervalCount() {
-        final int NEG_SUB_INTERVAL_COUNT = -1000;
+        final int NEG_SUB_INTERVAL_CNT = -1000;
         DataRegionConfiguration invCfg = new DataRegionConfiguration();
 
         invCfg.setName("invCfg");
@@ -662,7 +662,7 @@ public class CacheDataRegionConfigurationTest extends GridCommonAbstractTest {
         invCfg.setMaxSize(DFLT_MEM_PLC_SIZE);
         invCfg.setPageEvictionMode(DataPageEvictionMode.RANDOM_LRU);
         // Setting the metrics sub interval count as negative
-        invCfg.setMetricsSubIntervalCount(NEG_SUB_INTERVAL_COUNT);
+        invCfg.setMetricsSubIntervalCount(NEG_SUB_INTERVAL_CNT);
 
         memCfg = new DataStorageConfiguration();
         memCfg.setDataRegionConfigurations(invCfg);

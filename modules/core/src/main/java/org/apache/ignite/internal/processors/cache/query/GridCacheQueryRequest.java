@@ -19,14 +19,17 @@ package org.apache.ignite.internal.processors.cache.query;
 
 import java.io.Externalizable;
 import java.nio.ByteBuffer;
+import java.util.Collection;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.internal.GridDirectCollection;
 import org.apache.ignite.internal.GridDirectTransient;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
+import org.apache.ignite.internal.processors.cache.CacheObjectContext;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.GridCacheDeployable;
 import org.apache.ignite.internal.processors.cache.GridCacheIdMessage;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
-import org.apache.ignite.internal.processors.cache.mvcc.MvccSnapshot;
+import org.apache.ignite.internal.processors.cache.KeyCacheObject;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.CU;
@@ -36,6 +39,7 @@ import org.apache.ignite.lang.IgniteBiPredicate;
 import org.apache.ignite.lang.IgniteClosure;
 import org.apache.ignite.lang.IgniteReducer;
 import org.apache.ignite.marshaller.Marshaller;
+import org.apache.ignite.plugin.extensions.communication.MessageCollectionItemType;
 import org.apache.ignite.plugin.extensions.communication.MessageReader;
 import org.apache.ignite.plugin.extensions.communication.MessageWriter;
 import org.jetbrains.annotations.Nullable;
@@ -148,8 +152,9 @@ public class GridCacheQueryRequest extends GridCacheIdMessage implements GridCac
     /** */
     private AffinityTopologyVersion topVer;
 
-    /** */
-    private MvccSnapshot mvccSnapshot;
+    /** Set of keys that must be skiped during iteration. */
+    @GridDirectCollection(KeyCacheObject.class)
+    private Collection<KeyCacheObject> skipKeys;
 
     /** */
     private byte flags;
@@ -170,7 +175,7 @@ public class GridCacheQueryRequest extends GridCacheIdMessage implements GridCac
     public static GridCacheQueryRequest startQueryRequest(GridCacheContext<?, ?> cctx, long reqId,
         GridCacheDistributedQueryFuture<?, ?, ?> fut) {
         GridCacheQueryBean bean = fut.query();
-        GridCacheQueryAdapter<?> qry = bean.query();
+        CacheQuery<?> qry = bean.query();
 
         boolean deployFilterOrTransformer = (qry.scanFilter() != null || qry.transform() != null)
             && cctx.gridDeploy().enabled();
@@ -195,11 +200,11 @@ public class GridCacheQueryRequest extends GridCacheIdMessage implements GridCac
             qry.includeMetadata(),
             qry.keepBinary(),
             qry.taskHash(),
-            cctx.startTopologyVersion(),
-            qry.mvccSnapshot(),
+            cctx.affinity().affinityTopologyVersion(),
             // Force deployment anyway if scan query is used.
             cctx.deploymentEnabled() || deployFilterOrTransformer,
-            qry.isDataPageScanEnabled());
+            qry.isDataPageScanEnabled(),
+            qry.skipKeys());
     }
 
     /**
@@ -208,7 +213,7 @@ public class GridCacheQueryRequest extends GridCacheIdMessage implements GridCac
      * @param reqId Request (cache query) ID.
      */
     public static GridCacheQueryRequest pageRequest(GridCacheContext<?, ?> cctx, long reqId,
-        GridCacheQueryAdapter<?> qry, boolean fields) {
+        CacheQuery<?> qry, boolean fields) {
 
         return new GridCacheQueryRequest(
             cctx.cacheId(),
@@ -220,7 +225,7 @@ public class GridCacheQueryRequest extends GridCacheIdMessage implements GridCac
             false,
             qry.keepBinary(),
             qry.taskHash(),
-            cctx.startTopologyVersion(),
+            cctx.affinity().affinityTopologyVersion(),
             // Force deployment anyway if scan query is used.
             cctx.deploymentEnabled() || (qry.scanFilter() != null && cctx.gridDeploy().enabled()),
             qry.isDataPageScanEnabled());
@@ -236,7 +241,7 @@ public class GridCacheQueryRequest extends GridCacheIdMessage implements GridCac
         return new GridCacheQueryRequest(cctx.cacheId(),
             reqId,
             fieldsQry,
-            cctx.startTopologyVersion(),
+            cctx.affinity().affinityTopologyVersion(),
             cctx.deploymentEnabled());
     }
 
@@ -332,8 +337,8 @@ public class GridCacheQueryRequest extends GridCacheIdMessage implements GridCac
      * @param keepBinary Keep binary flag.
      * @param taskHash Task name hash code.
      * @param topVer Topology version.
-     * @param mvccSnapshot Mvcc snapshot.
      * @param addDepInfo Deployment info flag.
+     * @param skipKeys Set of keys that must be skiped during iteration.
      */
     private GridCacheQueryRequest(
         int cacheId,
@@ -356,9 +361,9 @@ public class GridCacheQueryRequest extends GridCacheIdMessage implements GridCac
         boolean keepBinary,
         int taskHash,
         AffinityTopologyVersion topVer,
-        MvccSnapshot mvccSnapshot,
         boolean addDepInfo,
-        Boolean dataPageScanEnabled
+        Boolean dataPageScanEnabled,
+        @Nullable Collection<KeyCacheObject> skipKeys
     ) {
         assert type != null || fields;
         assert clause != null || (type == SCAN || type == SET || type == SPI || type == INDEX);
@@ -384,8 +389,8 @@ public class GridCacheQueryRequest extends GridCacheIdMessage implements GridCac
         this.keepBinary = keepBinary;
         this.taskHash = taskHash;
         this.topVer = topVer;
-        this.mvccSnapshot = mvccSnapshot;
         this.addDepInfo = addDepInfo;
+        this.skipKeys = skipKeys;
 
         flags = setDataPageScanEnabled(flags, dataPageScanEnabled);
     }
@@ -403,13 +408,6 @@ public class GridCacheQueryRequest extends GridCacheIdMessage implements GridCac
         flags |= x; // Set new bits.
 
         return (byte)flags;
-    }
-
-    /**
-     * @return Mvcc version.
-     */
-    @Nullable MvccSnapshot mvccSnapshot() {
-        return mvccSnapshot;
     }
 
     /** {@inheritDoc} */
@@ -459,6 +457,11 @@ public class GridCacheQueryRequest extends GridCacheIdMessage implements GridCac
 
             idxQryDescBytes = CU.marshal(cctx, idxQryDesc);
         }
+
+        if (!F.isEmpty(skipKeys)) {
+            for (KeyCacheObject k : skipKeys)
+                k.prepareMarshal(cctx.cacheObjectContext());
+        }
     }
 
     /** {@inheritDoc} */
@@ -467,20 +470,29 @@ public class GridCacheQueryRequest extends GridCacheIdMessage implements GridCac
 
         Marshaller mrsh = ctx.marshaller();
 
+        ClassLoader clsLdr = U.resolveClassLoader(ldr, ctx.gridConfig());
+
         if (keyValFilterBytes != null && keyValFilter == null)
-            keyValFilter = U.unmarshal(mrsh, keyValFilterBytes, U.resolveClassLoader(ldr, ctx.gridConfig()));
+            keyValFilter = U.unmarshal(mrsh, keyValFilterBytes, clsLdr);
 
         if (rdcBytes != null && rdc == null)
             rdc = U.unmarshal(mrsh, rdcBytes, ldr);
 
         if (transBytes != null && trans == null)
-            trans = U.unmarshal(mrsh, transBytes, U.resolveClassLoader(ldr, ctx.gridConfig()));
+            trans = U.unmarshal(mrsh, transBytes, clsLdr);
 
         if (argsBytes != null && args == null)
-            args = U.unmarshal(mrsh, argsBytes, U.resolveClassLoader(ldr, ctx.gridConfig()));
+            args = U.unmarshal(mrsh, argsBytes, clsLdr);
 
         if (idxQryDescBytes != null && idxQryDesc == null)
-            idxQryDesc = U.unmarshal(mrsh, idxQryDescBytes, U.resolveClassLoader(ldr, ctx.gridConfig()));
+            idxQryDesc = U.unmarshal(mrsh, idxQryDescBytes, clsLdr);
+
+        if (!F.isEmpty(skipKeys)) {
+            CacheObjectContext objCtx = ctx.cacheObjectContext(cacheId);
+
+            for (KeyCacheObject k : skipKeys)
+                k.finishUnmarshal(objCtx, ldr);
+        }
     }
 
     /** {@inheritDoc} */
@@ -651,6 +663,11 @@ public class GridCacheQueryRequest extends GridCacheIdMessage implements GridCac
         return null;
     }
 
+    /** @return Set of keys that must be skiped during iteration. */
+    public Collection<KeyCacheObject> skipKeys() {
+        return skipKeys;
+    }
+
     /**
      * @return partition.
      */
@@ -752,61 +769,61 @@ public class GridCacheQueryRequest extends GridCacheIdMessage implements GridCac
                 writer.incrementState();
 
             case 17:
-                if (!writer.writeMessage("mvccSnapshot", mvccSnapshot))
-                    return false;
-
-                writer.incrementState();
-
-            case 18:
                 if (!writer.writeInt("pageSize", pageSize))
                     return false;
 
                 writer.incrementState();
 
-            case 19:
+            case 18:
                 if (!writer.writeInt("part", part))
                     return false;
 
                 writer.incrementState();
 
-            case 20:
+            case 19:
                 if (!writer.writeByteArray("rdcBytes", rdcBytes))
                     return false;
 
                 writer.incrementState();
 
-            case 21:
+            case 20:
                 if (!writer.writeInt("limit", limit))
                     return false;
 
                 writer.incrementState();
 
-            case 22:
+            case 21:
                 if (!writer.writeInt("taskHash", taskHash))
                     return false;
 
                 writer.incrementState();
 
-            case 23:
+            case 22:
                 if (!writer.writeAffinityTopologyVersion("topVer", topVer))
                     return false;
 
                 writer.incrementState();
 
-            case 24:
+            case 23:
                 if (!writer.writeByteArray("transBytes", transBytes))
                     return false;
 
                 writer.incrementState();
 
-            case 25:
+            case 24:
                 if (!writer.writeByte("type", type != null ? (byte)type.ordinal() : -1))
                     return false;
 
                 writer.incrementState();
 
-            case 27:
+            case 25:
                 if (!writer.writeByteArray("idxQryDescBytes", idxQryDescBytes))
+                    return false;
+
+                writer.incrementState();
+
+            case 26:
+                if (!writer.writeCollection("skipKeys", skipKeys, MessageCollectionItemType.MSG))
                     return false;
 
                 writer.incrementState();
@@ -931,14 +948,6 @@ public class GridCacheQueryRequest extends GridCacheIdMessage implements GridCac
                 reader.incrementState();
 
             case 17:
-                mvccSnapshot = reader.readMessage("mvccSnapshot");
-
-                if (!reader.isLastRead())
-                    return false;
-
-                reader.incrementState();
-
-            case 18:
                 pageSize = reader.readInt("pageSize");
 
                 if (!reader.isLastRead())
@@ -946,7 +955,7 @@ public class GridCacheQueryRequest extends GridCacheIdMessage implements GridCac
 
                 reader.incrementState();
 
-            case 19:
+            case 18:
                 part = reader.readInt("part");
 
                 if (!reader.isLastRead())
@@ -954,7 +963,7 @@ public class GridCacheQueryRequest extends GridCacheIdMessage implements GridCac
 
                 reader.incrementState();
 
-            case 20:
+            case 19:
                 rdcBytes = reader.readByteArray("rdcBytes");
 
                 if (!reader.isLastRead())
@@ -962,7 +971,7 @@ public class GridCacheQueryRequest extends GridCacheIdMessage implements GridCac
 
                 reader.incrementState();
 
-            case 21:
+            case 20:
                 limit = reader.readInt("limit");
 
                 if (!reader.isLastRead())
@@ -970,7 +979,7 @@ public class GridCacheQueryRequest extends GridCacheIdMessage implements GridCac
 
                 reader.incrementState();
 
-            case 22:
+            case 21:
                 taskHash = reader.readInt("taskHash");
 
                 if (!reader.isLastRead())
@@ -978,7 +987,7 @@ public class GridCacheQueryRequest extends GridCacheIdMessage implements GridCac
 
                 reader.incrementState();
 
-            case 23:
+            case 22:
                 topVer = reader.readAffinityTopologyVersion("topVer");
 
                 if (!reader.isLastRead())
@@ -986,7 +995,7 @@ public class GridCacheQueryRequest extends GridCacheIdMessage implements GridCac
 
                 reader.incrementState();
 
-            case 24:
+            case 23:
                 transBytes = reader.readByteArray("transBytes");
 
                 if (!reader.isLastRead())
@@ -994,7 +1003,7 @@ public class GridCacheQueryRequest extends GridCacheIdMessage implements GridCac
 
                 reader.incrementState();
 
-            case 25:
+            case 24:
                 byte typeOrd;
 
                 typeOrd = reader.readByte("type");
@@ -1006,8 +1015,16 @@ public class GridCacheQueryRequest extends GridCacheIdMessage implements GridCac
 
                 reader.incrementState();
 
-            case 27:
+            case 25:
                 idxQryDescBytes = reader.readByteArray("idxQryDescBytes");
+
+                if (!reader.isLastRead())
+                    return false;
+
+                reader.incrementState();
+
+            case 26:
+                skipKeys = reader.readCollection("skipKeys", MessageCollectionItemType.MSG);
 
                 if (!reader.isLastRead())
                     return false;
@@ -1025,7 +1042,7 @@ public class GridCacheQueryRequest extends GridCacheIdMessage implements GridCac
 
     /** {@inheritDoc} */
     @Override public byte fieldsCount() {
-        return 26;
+        return 27;
     }
 
     /** {@inheritDoc} */

@@ -279,6 +279,8 @@ public class DistributedMetaStorageImpl extends GridProcessorAdapter
             DistributedMetaStorageUpdateAckMessage.class,
             this::onAckMessage
         );
+
+        ctx.internalSubscriptionProcessor().registerGlobalStateListener(this);
     }
 
     /**
@@ -334,7 +336,9 @@ public class DistributedMetaStorageImpl extends GridProcessorAdapter
                 try {
                     List<MetastorageView> data = new ArrayList<>();
 
-                    iterate("", (key, val) -> data.add(new MetastorageView(key, IgniteUtils.toStringSafe(val))));
+                    iterate("", (key, val) -> data.add(new MetastorageView(key, val == null || !val.getClass().isArray()
+                        ? IgniteUtils.toStringSafe(val)
+                        : S.arrayToString(val))));
 
                     return data;
                 }
@@ -366,6 +370,7 @@ public class DistributedMetaStorageImpl extends GridProcessorAdapter
 
     /** {@inheritDoc} */
     @Override public void onActivate(GridKernalContext kctx) {
+        // No-op.
     }
 
     /**

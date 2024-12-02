@@ -98,6 +98,8 @@ public class IgniteStatisticsManagerImpl implements IgniteStatisticsManager {
     /** Cluster wide statistics usage state. */
     private final DistributedEnumProperty<StatisticsUsageState> usageState = new DistributedEnumProperty<>(
         "statistics.usage.state",
+        "Statistics usage state. OFF - No statistics used, NO_UPDATE - Statistics used 'as is' without updates, " +
+            "ON - Statistics used and updated after each changes (a default value).",
         StatisticsUsageState::fromOrdinal,
         StatisticsUsageState::index,
         StatisticsUsageState.class);
@@ -109,7 +111,7 @@ public class IgniteStatisticsManagerImpl implements IgniteStatisticsManager {
     private volatile boolean started;
 
     /** Schedule to process obsolescence statistics. */
-    private GridTimeoutProcessor.CancelableTask obsolescenceSchedule;
+    private volatile GridTimeoutProcessor.CancelableTask obsolescenceSchedule;
 
     /** Exchange listener. */
     private final PartitionsExchangeAware exchAwareLsnr = new PartitionsExchangeAware() {
@@ -214,8 +216,10 @@ public class IgniteStatisticsManagerImpl implements IgniteStatisticsManager {
 
         ctx.internalSubscriptionProcessor().registerDistributedConfigurationListener(dispatcher -> {
             usageState.addListener((name, oldVal, newVal) -> {
-                if (log.isInfoEnabled())
-                    log.info(String.format("Statistics usage state was changed from %s to %s", oldVal, newVal));
+                if (log.isInfoEnabled() && newVal != null) {
+                    log.info(String.format("Statistics usage state was changed from %s to %s",
+                        oldVal == null ? DEFAULT_STATISTICS_USAGE_STATE : oldVal, newVal));
+                }
 
                 lastUsageState = newVal;
 
@@ -234,14 +238,21 @@ public class IgniteStatisticsManagerImpl implements IgniteStatisticsManager {
 
         tryStart();
 
-        if (serverNode) {
-            // Use mgmt pool to work with statistics repository in busy lock to schedule some tasks.
-            obsolescenceSchedule = ctx.timeout().schedule(() -> {
-                obsolescenceBusyExecutor.execute(() -> processObsolescence());
-            }, OBSOLESCENCE_INTERVAL * 1000, OBSOLESCENCE_INTERVAL * 1000);
-        }
+        if (serverNode)
+            scheduleObsolescence(OBSOLESCENCE_INTERVAL);
 
         ctx.cache().context().exchange().registerExchangeAwareComponent(exchAwareLsnr);
+    }
+
+    /** */
+    void scheduleObsolescence(int seconds) {
+        assert seconds >= 1;
+
+        if (obsolescenceSchedule != null)
+            obsolescenceSchedule.close();
+
+        obsolescenceSchedule = ctx.timeout().schedule(() -> obsolescenceBusyExecutor.execute(this::processObsolescence),
+            seconds * 1000, seconds * 1000);
     }
 
     /**
@@ -362,7 +373,7 @@ public class IgniteStatisticsManagerImpl implements IgniteStatisticsManager {
     }
 
     /** {@inheritDoc} */
-    @Override public void refreshStatistics(StatisticsTarget... targets) throws IgniteCheckedException {
+    @Override public void refreshStatistics(StatisticsTarget... targets) {
         ensureActive("refresh statistics");
 
         if (usageState() == OFF)
@@ -372,7 +383,7 @@ public class IgniteStatisticsManagerImpl implements IgniteStatisticsManager {
     }
 
     /** {@inheritDoc} */
-    @Override public void dropAll() throws IgniteCheckedException {
+    @Override public void dropAll() {
         ensureActive("drop all statistics");
 
         statCfgMgr.dropAll();
@@ -410,7 +421,7 @@ public class IgniteStatisticsManagerImpl implements IgniteStatisticsManager {
     }
 
     /** {@inheritDoc} */
-    @Override public void usageState(StatisticsUsageState state) throws IgniteCheckedException {
+    @Override public void usageState(StatisticsUsageState state) {
         ensureActive("change usage state of statistics");
 
         try {
@@ -475,8 +486,8 @@ public class IgniteStatisticsManagerImpl implements IgniteStatisticsManager {
             try {
                 cfg = statCfgMgr.config(key);
             }
-            catch (IgniteCheckedException e) {
-                // No-op/
+            catch (IgniteCheckedException ignored) {
+                // No-op.
             }
 
             Set<Integer> tasksParts = calculateObsolescencedPartitions(cfg, statsRepos.getObsolescence(key));
