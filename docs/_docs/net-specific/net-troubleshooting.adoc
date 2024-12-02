@@ -192,7 +192,7 @@ More details:
 
 ==== Workaround
 
-Disable CET for the application by adding the following to the main project file (csproj, vsproj, etc):
+Disable CET for the application by adding the following to the main project file (csproj, vsproj, fsproj):
 
 [tabs]
 --
