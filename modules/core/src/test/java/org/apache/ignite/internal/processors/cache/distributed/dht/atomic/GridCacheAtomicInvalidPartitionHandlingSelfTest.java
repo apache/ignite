@@ -47,7 +47,6 @@ import org.apache.ignite.internal.util.lang.GridAbsPredicate;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.plugin.extensions.communication.Message;
-import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
@@ -73,8 +72,6 @@ public class GridCacheAtomicInvalidPartitionHandlingSelfTest extends GridCommonA
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
-        ((TcpDiscoverySpi)cfg.getDiscoverySpi()).setForceServerMode(true);
-
         CacheConfiguration ccfg = cacheConfiguration();
 
         cfg.setCacheConfiguration(ccfg);
@@ -85,8 +82,7 @@ public class GridCacheAtomicInvalidPartitionHandlingSelfTest extends GridCommonA
 
         cfg.setCommunicationSpi(spi);
 
-        if (testClientNode() && getTestIgniteInstanceName(0).equals(igniteInstanceName))
-            cfg.setClientMode(true);
+        cfg.setClientMode(testClientNode() && getTestIgniteInstanceName(0).equals(igniteInstanceName));
 
         return cfg;
     }
