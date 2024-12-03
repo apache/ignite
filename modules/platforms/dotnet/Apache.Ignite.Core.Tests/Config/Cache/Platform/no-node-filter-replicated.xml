@@ -31,7 +31,7 @@
                     <property name="platformCacheConfiguration">
                         <bean class="org.apache.ignite.configuration.PlatformCacheConfiguration"/>
                     </property>
-                    <property name="enableStatistics" value="true"/>
+                    <property name="statisticsEnabled" value="true"/>
                 </bean>
             </list>
         </property>
