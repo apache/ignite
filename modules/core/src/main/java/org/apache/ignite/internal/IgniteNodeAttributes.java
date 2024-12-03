@@ -194,6 +194,7 @@ public final class IgniteNodeAttributes {
     public static final String ATTR_REBALANCE_POOL_SIZE = ATTR_PREFIX + ".rebalance.pool.size";
 
     /** Internal attribute name constant. */
+    @Deprecated
     public static final String ATTR_DYNAMIC_CACHE_START_ROLLBACK_SUPPORTED = ATTR_PREFIX + ".dynamic.cache.start.rollback.supported";
 
     /** Supported features. */

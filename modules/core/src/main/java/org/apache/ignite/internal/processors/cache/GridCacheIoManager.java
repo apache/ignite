@@ -1440,7 +1440,7 @@ public class GridCacheIoManager extends GridCacheSharedManagerAdapter {
             ListenerKey key = new ListenerKey(hndId, type);
             RegularClassHandler regHnd = new RegularClassHandler(startTopVer, (IgniteBiInClosure<UUID, GridCacheMessage>)c);
 
-            if (msgHandlers.clsHandlers.putIfAbsent(key, regHnd) != null) {
+            if (msgHandlers.clsHandlers.putIfAbsent(key, regHnd) != null && !key.msgCls.equals(GridDhtAffinityAssignmentResponse.class)) {
                 assert false : "Handler for class already registered [hndId=" + hndId + ", cls=" + type +
                     ", old=" + msgHandlers.clsHandlers.get(key) + ", new=" + c + ']';
             }

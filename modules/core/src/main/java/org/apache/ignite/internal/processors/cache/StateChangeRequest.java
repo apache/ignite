@@ -43,6 +43,9 @@ public class StateChangeRequest {
     /** */
     private final AffinityTopologyVersion topVer;
 
+    /** */
+    private final boolean isBaselineChangeRequest;
+
     /**
      * @param msg Message.
      * @param bltHistItem Baseline history item.
@@ -53,12 +56,14 @@ public class StateChangeRequest {
         ChangeGlobalStateMessage msg,
         BaselineTopologyHistoryItem bltHistItem,
         ClusterState prevState,
-        AffinityTopologyVersion topVer
+        AffinityTopologyVersion topVer,
+        boolean isBaselineChangeRequest
     ) {
         this.msg = msg;
         prevBltHistItem = bltHistItem;
         this.prevState = prevState;
         this.topVer = topVer;
+        this.isBaselineChangeRequest = isBaselineChangeRequest;
     }
 
     /**
@@ -96,6 +101,11 @@ public class StateChangeRequest {
      */
     public ClusterState state() {
         return msg.state();
+    }
+
+    /** */
+    public boolean isBaselineChangeRequest() {
+        return isBaselineChangeRequest;
     }
 
     /**
