@@ -205,21 +205,21 @@ public class TcpDiscoveryVmIpFinderSelfTest
      */
     @Test
     public void testUnregistration() throws Exception {
-        Ignition.start(config("server1", false, false));
+        Ignition.start(config("server1", false));
 
         int srvSize = sharedStaticIpFinder.getRegisteredAddresses().size();
 
-        Ignition.start(config("server2", false, false));
-        Ignition.start(config("client1", true, false));
+        Ignition.start(config("server2", false));
+        Ignition.start(config("client1", true));
 
         assertEquals(2 * srvSize, sharedStaticIpFinder.getRegisteredAddresses().size());
 
-        Ignition.start(config("client2", true, false));
-        Ignition.start(config("client3", true, false));
+        Ignition.start(config("client2", true));
+        Ignition.start(config("client3", true));
 
         assertEquals(2 * srvSize, sharedStaticIpFinder.getRegisteredAddresses().size());
 
-        Ignition.start(config("client4", true, true));
+        Ignition.start(config("client4", false));
 
         assertEquals(3 * srvSize, sharedStaticIpFinder.getRegisteredAddresses().size());
 
@@ -255,7 +255,7 @@ public class TcpDiscoveryVmIpFinderSelfTest
      * @param name Name.
      * @param client Client.
      */
-    private static IgniteConfiguration config(String name, boolean client, boolean forceServerMode) {
+    private static IgniteConfiguration config(String name, boolean client) {
         IgniteConfiguration cfg = new IgniteConfiguration();
 
         cfg.setIgniteInstanceName(name);
@@ -263,7 +263,6 @@ public class TcpDiscoveryVmIpFinderSelfTest
 
         TcpDiscoverySpi disco = new TcpDiscoverySpi();
 
-        disco.setForceServerMode(forceServerMode);
         disco.setIpFinder(sharedStaticIpFinder);
 
         cfg.setDiscoverySpi(disco);
