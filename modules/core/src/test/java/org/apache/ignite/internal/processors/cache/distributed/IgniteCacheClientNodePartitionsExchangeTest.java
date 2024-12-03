@@ -19,7 +19,6 @@ package org.apache.ignite.internal.processors.cache.distributed;
 
 import java.util.Iterator;
 import java.util.List;
-import java.util.concurrent.Callable;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -27,7 +26,6 @@ import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.Ignition;
-import org.apache.ignite.cache.CacheServerNotFoundException;
 import org.apache.ignite.cache.affinity.Affinity;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.CacheConfiguration;
@@ -52,7 +50,6 @@ import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.resources.LoggerResource;
 import org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi;
-import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
@@ -66,8 +63,6 @@ public class IgniteCacheClientNodePartitionsExchangeTest extends GridCommonAbstr
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
-
-        ((TcpDiscoverySpi)cfg.getDiscoverySpi()).setForceServerMode(true);
 
         CacheConfiguration ccfg = new CacheConfiguration(DEFAULT_CACHE_NAME);
 
@@ -85,54 +80,6 @@ public class IgniteCacheClientNodePartitionsExchangeTest extends GridCommonAbstr
         super.afterTest();
 
         stopAllGrids();
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
-    @Test
-    public void testServerNodeLeave() throws Exception {
-        Ignite ignite0 = startGrid(0);
-
-        final Ignite ignite1 = startClientGrid(1);
-
-        waitForTopologyUpdate(2, 2);
-
-        final Ignite ignite2 = startClientGrid(2);
-
-        waitForTopologyUpdate(3, 3);
-
-        ignite0.close();
-
-        waitForTopologyUpdate(2, 4);
-
-        GridTestUtils.assertThrows(log, new Callable<Void>() {
-            @Override public Void call() throws Exception {
-                ignite1.cache(DEFAULT_CACHE_NAME).get(1);
-
-                return null;
-            }
-        }, CacheServerNotFoundException.class, null);
-
-        GridTestUtils.assertThrows(log, new Callable<Void>() {
-            @Override public Void call() throws Exception {
-                ignite2.cache(DEFAULT_CACHE_NAME).get(1);
-
-                return null;
-            }
-        }, CacheServerNotFoundException.class, null);
-
-        ignite1.close();
-
-        waitForTopologyUpdate(1, 5);
-
-        GridTestUtils.assertThrows(log, new Callable<Void>() {
-            @Override public Void call() throws Exception {
-                ignite2.cache(DEFAULT_CACHE_NAME).get(1);
-
-                return null;
-            }
-        }, CacheServerNotFoundException.class, null);
     }
 
     /**

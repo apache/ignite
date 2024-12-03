@@ -42,8 +42,6 @@ public class GridCacheRendezvousAffinityClientSelfTest extends GridCommonAbstrac
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
-        ((TcpDiscoverySpi)cfg.getDiscoverySpi()).setForceServerMode(true);
-
         CacheConfiguration ccfg = defaultCacheConfiguration();
 
         ccfg.setCacheMode(CacheMode.PARTITIONED);
@@ -60,11 +58,11 @@ public class GridCacheRendezvousAffinityClientSelfTest extends GridCommonAbstrac
     @Test
     public void testClientNode() throws Exception {
         try {
-            startClientGrid(0);
-
             startGrid(1);
             startGrid(2);
             startGrid(3);
+
+            startClientGrid(0);
 
             awaitPartitionMapExchange();
 

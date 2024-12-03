@@ -62,9 +62,7 @@ public class CacheAffinityCallSelfTest extends GridCommonAbstractTest {
         cfg.setFailoverSpi(failSpi);
 
         // Do not configure cache on client.
-        if (igniteInstanceName.equals(getTestIgniteInstanceName(SRVS)))
-            ((TcpDiscoverySpi)cfg.getDiscoverySpi()).setForceServerMode(true);
-        else {
+        if (!igniteInstanceName.equals(getTestIgniteInstanceName(SRVS))) {
             CacheConfiguration<?, ?> ccfg = defaultCacheConfiguration();
             ccfg.setName(CACHE_NAME);
             ccfg.setCacheMode(PARTITIONED);

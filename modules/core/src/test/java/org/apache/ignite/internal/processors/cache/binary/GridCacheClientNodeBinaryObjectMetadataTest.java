@@ -31,7 +31,6 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.NearCacheConfiguration;
 import org.apache.ignite.internal.binary.BinaryMarshaller;
 import org.apache.ignite.internal.processors.cache.GridCacheAbstractSelfTest;
-import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.junit.Test;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.ATOMIC;
@@ -87,8 +86,6 @@ public class GridCacheClientNodeBinaryObjectMetadataTest extends GridCacheAbstra
 
         cfg.setMarshaller(marsh);
 
-        ((TcpDiscoverySpi)cfg.getDiscoverySpi()).setForceServerMode(true);
-
         return cfg;
     }
 
@@ -97,13 +94,14 @@ public class GridCacheClientNodeBinaryObjectMetadataTest extends GridCacheAbstra
      */
     @Test
     public void testBinaryMetadataOnClient() throws Exception {
+        Ignite ignite1 = ignite(0);
+
+        assertFalse(ignite1.configuration().isClientMode());
+
         Ignite ignite0 = ignite(gridCount() - 1);
 
         assertTrue(ignite0.configuration().isClientMode());
 
-        Ignite ignite1 = ignite(0);
-
-        assertFalse(ignite1.configuration().isClientMode());
 
         Affinity<Object> aff0 = ignite0.affinity(DEFAULT_CACHE_NAME);
         Affinity<Object> aff1 = ignite1.affinity(DEFAULT_CACHE_NAME);
