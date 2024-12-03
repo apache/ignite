@@ -126,8 +126,9 @@ import org.apache.ignite.lang.IgniteRunnable;
 import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.marshaller.Marshaller;
 import org.apache.ignite.metric.MetricRegistry;
+import org.apache.ignite.plugin.extensions.communication.IgniteMessageFactory;
 import org.apache.ignite.plugin.extensions.communication.Message;
-import org.apache.ignite.plugin.extensions.communication.MessageFactory;
+import org.apache.ignite.plugin.extensions.communication.MessageFactoryProvider;
 import org.apache.ignite.plugin.extensions.communication.MessageFormatter;
 import org.apache.ignite.plugin.extensions.communication.MessageReader;
 import org.apache.ignite.plugin.extensions.communication.MessageWriter;
@@ -257,7 +258,7 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
     public static final String RCVD_BYTES_CNT = "ReceivedBytesCount";
 
     /** Empty array of message factories. */
-    public static final MessageFactory[] EMPTY = {};
+    public static final MessageFactoryProvider[] EMPTY = {};
 
     /** Max closed topics to store. */
     public static final int MAX_CLOSED_TOPICS = 10240;
@@ -354,7 +355,7 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
             PER_SEGMENT_Q_OPTIMIZED_RMV);
 
     /** */
-    private MessageFactory msgFactory;
+    private MessageFactoryProvider msgFactory;
 
     /** */
     private MessageFormatter formatter;
@@ -400,7 +401,7 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
     /**
      * @return Message factory.
      */
-    public MessageFactory messageFactory() {
+    public MessageFactoryProvider messageFactory() {
         assert msgFactory != null;
 
         return msgFactory;
@@ -441,30 +442,30 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
                     return new DirectMessageWriter();
                 }
 
-                @Override public MessageReader reader(UUID rmtNodeId, MessageFactory msgFactory) {
+                @Override public MessageReader reader(UUID rmtNodeId, IgniteMessageFactory msgFactory) {
                     return new DirectMessageReader(msgFactory);
                 }
             };
         }
 
-        MessageFactory[] msgs = ctx.plugins().extensions(MessageFactory.class);
+        MessageFactoryProvider[] msgs = ctx.plugins().extensions(MessageFactoryProvider.class);
 
         if (msgs == null)
             msgs = EMPTY;
 
-        List<MessageFactory> compMsgs = new ArrayList<>();
+        List<MessageFactoryProvider> compMsgs = new ArrayList<>();
 
         compMsgs.add(new GridIoMessageFactory());
 
         for (IgniteComponentType compType : IgniteComponentType.values()) {
-            MessageFactory f = compType.messageFactory();
+            MessageFactoryProvider f = compType.messageFactory();
 
             if (f != null)
                 compMsgs.add(f);
         }
 
         if (!compMsgs.isEmpty())
-            msgs = F.concat(msgs, compMsgs.toArray(new MessageFactory[compMsgs.size()]));
+            msgs = F.concat(msgs, compMsgs.toArray(new MessageFactoryProvider[compMsgs.size()]));
 
         msgFactory = new IgniteMessageFactoryImpl(msgs);
 
@@ -3192,7 +3193,7 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
         private final Object topic;
 
         /** Current unique session identifier to transfer files to remote node. */
-        private T2<UUID, IgniteUuid> sesKey;
+        private final T2<UUID, IgniteUuid> sesKey;
 
         /** Instance of opened writable channel to work with. */
         private SocketChannel channel;
@@ -3733,7 +3734,7 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
         private final boolean skipOnTimeout;
 
         /** */
-        private long lastTs;
+        private final long lastTs;
 
         /**
          * @param plc Communication policy.
@@ -4266,25 +4267,25 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
         private long totalLatency;
 
         /** */
-        private Collection<IgnitePair<Long>> maxLatency = new ArrayList<>();
+        private final Collection<IgnitePair<Long>> maxLatency = new ArrayList<>();
 
         /** */
-        private Collection<IgnitePair<Long>> maxReqSendQueueTime = new ArrayList<>();
+        private final Collection<IgnitePair<Long>> maxReqSendQueueTime = new ArrayList<>();
 
         /** */
-        private Collection<IgnitePair<Long>> maxReqRcvQueueTime = new ArrayList<>();
+        private final Collection<IgnitePair<Long>> maxReqRcvQueueTime = new ArrayList<>();
 
         /** */
-        private Collection<IgnitePair<Long>> maxResSendQueueTime = new ArrayList<>();
+        private final Collection<IgnitePair<Long>> maxResSendQueueTime = new ArrayList<>();
 
         /** */
-        private Collection<IgnitePair<Long>> maxResRcvQueueTime = new ArrayList<>();
+        private final Collection<IgnitePair<Long>> maxResRcvQueueTime = new ArrayList<>();
 
         /** */
-        private Collection<IgnitePair<Long>> maxReqWireTimeMillis = new ArrayList<>();
+        private final Collection<IgnitePair<Long>> maxReqWireTimeMillis = new ArrayList<>();
 
         /** */
-        private Collection<IgnitePair<Long>> maxResWireTimeMillis = new ArrayList<>();
+        private final Collection<IgnitePair<Long>> maxResWireTimeMillis = new ArrayList<>();
 
         /**
          * @param res Node results to add.
@@ -4361,14 +4362,14 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
         /**
          * Executor service to send special communication message.
          */
-        private ExecutorService responseSendService = Executors
+        private final ExecutorService responseSendService = Executors
             .newCachedThreadPool(new IgniteThreadFactory(ctx.igniteInstanceName(), "io-send-service"));
 
         /**
          * Discovery event listener (works only on client nodes for now) notified when
          * inverse connection request arrives.
          */
-        private CustomEventListener<TcpConnectionRequestDiscoveryMessage> discoConnReqLsnr = (topVer, snd, msg) -> {
+        private final CustomEventListener<TcpConnectionRequestDiscoveryMessage> discoConnReqLsnr = (topVer, snd, msg) -> {
             if (!locNodeId.equals(msg.receiverNodeId()))
                 return;
 

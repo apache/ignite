@@ -20,7 +20,7 @@ package org.apache.ignite.internal.util.nio;
 import java.nio.ByteBuffer;
 import java.util.UUID;
 import org.apache.ignite.plugin.extensions.communication.Message;
-import org.apache.ignite.plugin.extensions.communication.MessageFactory;
+import org.apache.ignite.plugin.extensions.communication.MessageFactoryProvider;
 import org.jetbrains.annotations.Nullable;
 
 /**
@@ -38,5 +38,5 @@ public interface GridNioMessageReader {
     /**
      * @return Optional message factory.
      */
-    @Nullable public MessageFactory messageFactory();
+    @Nullable public MessageFactoryProvider messageFactory();
 }

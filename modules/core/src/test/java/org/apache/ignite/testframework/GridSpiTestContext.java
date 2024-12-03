@@ -54,7 +54,8 @@ import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.lang.IgniteBiPredicate;
 import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.logger.NullLogger;
-import org.apache.ignite.plugin.extensions.communication.MessageFactory;
+import org.apache.ignite.plugin.extensions.communication.IgniteMessageFactory;
+import org.apache.ignite.plugin.extensions.communication.MessageFactoryProvider;
 import org.apache.ignite.plugin.extensions.communication.MessageFormatter;
 import org.apache.ignite.plugin.extensions.communication.MessageReader;
 import org.apache.ignite.plugin.extensions.communication.MessageWriter;
@@ -100,7 +101,7 @@ public class GridSpiTestContext implements IgniteSpiContext {
     private MessageFormatter formatter;
 
     /** */
-    private MessageFactory factory;
+    private MessageFactoryProvider factory;
 
     /** */
     private GridTimeoutProcessor timeoutProcessor;
@@ -546,7 +547,7 @@ public class GridSpiTestContext implements IgniteSpiContext {
                     return new DirectMessageWriter();
                 }
 
-                @Override public MessageReader reader(UUID rmtNodeId, MessageFactory msgFactory) {
+                @Override public MessageReader reader(UUID rmtNodeId, IgniteMessageFactory msgFactory) {
                     return new DirectMessageReader(msgFactory);
                 }
             };
@@ -556,9 +557,9 @@ public class GridSpiTestContext implements IgniteSpiContext {
     }
 
     /** {@inheritDoc} */
-    @Override public MessageFactory messageFactory() {
+    @Override public MessageFactoryProvider messageFactory() {
         if (factory == null)
-            factory = new IgniteMessageFactoryImpl(new MessageFactory[]{new GridIoMessageFactory()});
+            factory = new IgniteMessageFactoryImpl(new MessageFactoryProvider[]{new GridIoMessageFactory()});
 
         return factory;
     }
@@ -568,7 +569,7 @@ public class GridSpiTestContext implements IgniteSpiContext {
      *
      * @param factory Message factory.
      */
-    public void messageFactory(MessageFactory factory) {
+    public void messageFactory(MessageFactoryProvider factory) {
         this.factory = factory;
     }
 

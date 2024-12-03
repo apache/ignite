@@ -18,15 +18,12 @@
 package org.apache.ignite.internal.managers.communication;
 
 import java.nio.ByteBuffer;
-
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.plugin.extensions.communication.IgniteMessageFactory;
 import org.apache.ignite.plugin.extensions.communication.Message;
-import org.apache.ignite.plugin.extensions.communication.MessageFactory;
 import org.apache.ignite.plugin.extensions.communication.MessageFactoryProvider;
 import org.apache.ignite.plugin.extensions.communication.MessageReader;
 import org.apache.ignite.plugin.extensions.communication.MessageWriter;
-import org.jetbrains.annotations.Nullable;
 import org.junit.Test;
 
 import static org.junit.Assert.assertArrayEquals;
@@ -53,7 +50,7 @@ public class IgniteMessageFactoryImplTest {
      */
     @Test(expected = IllegalStateException.class)
     public void testReadOnly() {
-        MessageFactory[] factories = {new TestMessageFactoryPovider(), new TestMessageFactory()};
+        MessageFactoryProvider[] factories = {new TestMessageFactoryPovider(), new TestMessageFactory()};
 
         IgniteMessageFactory msgFactory = new IgniteMessageFactoryImpl(factories);
 
@@ -65,7 +62,7 @@ public class IgniteMessageFactoryImplTest {
      */
     @Test
     public void testCreate() {
-        MessageFactory[] factories = {new TestMessageFactoryPovider(), new TestMessageFactory()};
+        MessageFactoryProvider[] factories = {new TestMessageFactoryPovider(), new TestMessageFactory()};
 
         IgniteMessageFactoryImpl msgFactory = new IgniteMessageFactoryImpl(factories);
 
@@ -90,7 +87,7 @@ public class IgniteMessageFactoryImplTest {
      */
     @Test(expected = IgniteException.class)
     public void testCreate_UnknownMessageType() {
-        MessageFactory[] factories = {new TestMessageFactoryPovider(), new TestMessageFactory()};
+        MessageFactoryProvider[] factories = {new TestMessageFactoryPovider(), new TestMessageFactory()};
 
         IgniteMessageFactory msgFactory = new IgniteMessageFactoryImpl(factories);
 
@@ -103,7 +100,7 @@ public class IgniteMessageFactoryImplTest {
     @Test(expected = IgniteException.class)
     @SuppressWarnings("ResultOfObjectAllocationIgnored")
     public void testRegisterTheSameType() {
-        MessageFactory[] factories = {
+        MessageFactoryProvider[] factories = {
             new TestMessageFactoryPovider(),
             new TestMessageFactory(),
             new TestMessageFactoryPoviderWithTheSameDirectType()
@@ -134,18 +131,12 @@ public class IgniteMessageFactoryImplTest {
     }
 
     /**
-     * {@link MessageFactory} implementation whish still uses creation with switch-case.
+     * {@link MessageFactoryProvider} implementation whish still uses creation with switch-case.
      */
-    private static class TestMessageFactory implements MessageFactory {
+    private static class TestMessageFactory implements MessageFactoryProvider {
         /** {@inheritDoc} */
-        @Override public @Nullable Message create(short type) {
-            switch (type) {
-                case TEST_MSG_2_TYPE:
-                    return new TestMessage2();
-
-                default:
-                    return null;
-            }
+        @Override public void registerAll(IgniteMessageFactory factory) {
+            factory.register(TEST_MSG_2_TYPE, TestMessage2::new);
         }
     }
 

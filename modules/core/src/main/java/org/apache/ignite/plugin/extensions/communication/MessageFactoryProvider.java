@@ -17,7 +17,7 @@
 
 package org.apache.ignite.plugin.extensions.communication;
 
-import org.jetbrains.annotations.Nullable;
+import org.apache.ignite.plugin.Extension;
 
 /**
  * Provider of communication message factories.
@@ -27,20 +27,11 @@ import org.jetbrains.annotations.Nullable;
  * <p>
  * {@link #registerAll} method's call is responsibility of {@link IgniteMessageFactory} implementation.
  */
-public interface MessageFactoryProvider extends MessageFactory {
+public interface MessageFactoryProvider extends Extension {
     /**
      * Registers all messages factories. See {@link IgniteMessageFactory#register}.
      *
      * @param factory {@link IgniteMessageFactory} implementation.
      */
     public void registerAll(IgniteMessageFactory factory);
-
-    /**
-     * Always throws {@link UnsupportedOperationException}.
-     * @param type Message direct type.
-     * @throws UnsupportedOperationException On any invocation.
-     */
-    @Override @Nullable public default Message create(short type) {
-        throw new UnsupportedOperationException();
-    }
 }

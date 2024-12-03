@@ -22,11 +22,12 @@ import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Random;
+import java.util.function.Supplier;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.internal.util.GridUnsafe;
+import org.apache.ignite.plugin.extensions.communication.IgniteMessageFactory;
 import org.apache.ignite.plugin.extensions.communication.Message;
-import org.apache.ignite.plugin.extensions.communication.MessageFactory;
 import org.jetbrains.annotations.Nullable;
 import org.junit.Before;
 import org.junit.Test;
@@ -82,9 +83,17 @@ public class DirectByteBufferStreamImplByteOrderSelfTest {
      * @return Stream.
      */
     private static DirectByteBufferStream createStream(ByteBuffer buff) {
-        DirectByteBufferStream stream = new DirectByteBufferStream(new MessageFactory() {
+        DirectByteBufferStream stream = new DirectByteBufferStream(new IgniteMessageFactory() {
+            @Override public void registerAll(IgniteMessageFactory factory) {
+                throw new UnsupportedOperationException();
+            }
+
+            @Override public void register(short directType, Supplier<Message> supplier) throws IgniteException {
+                throw new UnsupportedOperationException();
+            }
+
             @Nullable @Override public Message create(short type) {
-                return null;
+                throw new UnsupportedOperationException();
             }
         });
 

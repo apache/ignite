@@ -50,6 +50,7 @@ import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.IgniteTooManyOpenFilesException;
 import org.apache.ignite.internal.cluster.ClusterTopologyCheckedException;
 import org.apache.ignite.internal.managers.GridManager;
+import org.apache.ignite.internal.managers.communication.IgniteMessageFactoryImpl;
 import org.apache.ignite.internal.managers.tracing.GridTracingManager;
 import org.apache.ignite.internal.processors.metric.GridMetricManager;
 import org.apache.ignite.internal.processors.tracing.Tracing;
@@ -80,8 +81,9 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.internal.worker.WorkersRegistry;
 import org.apache.ignite.lang.IgniteBiInClosure;
 import org.apache.ignite.lang.IgnitePredicate;
+import org.apache.ignite.plugin.extensions.communication.IgniteMessageFactory;
 import org.apache.ignite.plugin.extensions.communication.Message;
-import org.apache.ignite.plugin.extensions.communication.MessageFactory;
+import org.apache.ignite.plugin.extensions.communication.MessageFactoryProvider;
 import org.apache.ignite.plugin.extensions.communication.MessageFormatter;
 import org.apache.ignite.plugin.extensions.communication.MessageReader;
 import org.apache.ignite.plugin.extensions.communication.MessageWriter;
@@ -801,25 +803,16 @@ public class GridNioServerWrapper {
 
         for (int port = cfg.localPort(); port <= lastPort; port++) {
             try {
-                MessageFactory msgFactory = new MessageFactory() {
-                    private MessageFactory impl;
-
-                    @Nullable @Override public Message create(short type) {
-                        if (impl == null)
-                            impl = stateProvider.getSpiContext().messageFactory();
-
-                        assert impl != null;
-
-                        return impl.create(type);
-                    }
-                };
+                IgniteMessageFactory msgFactory = new IgniteMessageFactoryImpl(new MessageFactoryProvider[]{
+                    stateProvider.getSpiContext().messageFactory()
+                });
 
                 GridNioMessageReaderFactory readerFactory = new GridNioMessageReaderFactory() {
                     private IgniteSpiContext context;
 
                     private MessageFormatter formatter;
 
-                    @Override public MessageReader reader(GridNioSession ses, MessageFactory msgFactory)
+                    @Override public MessageReader reader(GridNioSession ses, IgniteMessageFactory msgFactory)
                         throws IgniteCheckedException {
                         final IgniteSpiContext ctx = stateProvider.getSpiContextWithoutInitialLatch();
 

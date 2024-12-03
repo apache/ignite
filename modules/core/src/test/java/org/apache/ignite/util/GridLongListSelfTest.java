@@ -22,7 +22,6 @@ import org.apache.ignite.internal.direct.DirectMessageWriter;
 import org.apache.ignite.internal.util.GridLongList;
 import org.apache.ignite.plugin.extensions.communication.MessageWriter;
 import org.junit.Assert;
-import org.junit.Ignore;
 import org.junit.Test;
 
 import static org.apache.ignite.internal.util.GridLongList.asList;
@@ -342,7 +341,6 @@ public class GridLongListSelfTest {
     }
 
     /** */
-    @Ignore("https://issues.apache.org/jira/browse/IGNITE-12678")
     @Test
     public void testSerializationConstructorWithZeroSize() {
         MessageWriter writer = new DirectMessageWriter();
