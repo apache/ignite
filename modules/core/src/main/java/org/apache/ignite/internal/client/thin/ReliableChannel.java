@@ -821,7 +821,9 @@ final class ReliableChannel implements AutoCloseable {
     ) {
         // An additional attempt is needed because N+1 channels might be used for sending a message - first a random
         // one, then each one from #channels in sequence.
-        int fixedAttemptsLimit = attemptsLimit + 1;
+        int fixedAttemptsLimit = attemptsLimit;
+        if (partitionAwarenessEnabled && channelsCnt.get() > 1)
+            fixedAttemptsLimit++;
 
         while (fixedAttemptsLimit > (failures == null ? 0 : failures.size())) {
             ClientChannelHolder hld = null;
