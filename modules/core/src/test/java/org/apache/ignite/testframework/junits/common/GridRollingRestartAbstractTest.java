@@ -22,6 +22,7 @@ import java.io.StringWriter;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.testframework.assertions.AlwaysAssertion;
@@ -35,6 +36,9 @@ import org.apache.ignite.testframework.junits.multijvm.IgniteProcessProxy;
 public abstract class GridRollingRestartAbstractTest extends GridCommonAbstractTest {
     /** Thread that shuts down and restarts Grid nodes for this test. */
     protected static volatile RollingRestartThread rollingRestartThread;
+
+    /** */
+    private boolean multiJvm;
 
     /** Default predicate used to determine if a Grid node should be restarted. */
     protected final IgnitePredicate<Ignite> dfltRestartCheck = new IgnitePredicate<Ignite>() {
@@ -84,13 +88,7 @@ public abstract class GridRollingRestartAbstractTest extends GridCommonAbstractT
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
-        if (isFirstGrid(igniteInstanceName)) {
-            cfg.setClientMode(true);
-
-            assert cfg.getDiscoverySpi() instanceof TcpDiscoverySpi;
-
-            ((TcpDiscoverySpi)cfg.getDiscoverySpi()).setForceServerMode(true);
-        }
+        ((TcpDiscoverySpi)cfg.getDiscoverySpi()).setIpFinder(LOCAL_IP_FINDER);
 
         cfg.setCacheConfiguration(getCacheConfiguration());
 
@@ -104,17 +102,22 @@ public abstract class GridRollingRestartAbstractTest extends GridCommonAbstractT
 
     /** {@inheritDoc} */
     @Override protected boolean isMultiJvm() {
-        return true;
+        return multiJvm;
     }
 
     /** {@inheritDoc} */
     @Override protected void beforeTestsStarted() throws Exception {
         super.beforeTestsStarted();
 
-        // the +1 includes this JVM (the client)
-        startGrids(serverCount() + 1);
+        multiJvm = true;
 
-        rollingRestartThread = new RollingRestartThread();
+        startGrids(serverCount());
+
+        multiJvm = false;
+
+        IgniteEx cli = startClientGrid(serverCount());
+
+        rollingRestartThread = new RollingRestartThread(cli);
 
         rollingRestartThread.start();
     }
@@ -135,7 +138,10 @@ public abstract class GridRollingRestartAbstractTest extends GridCommonAbstractT
         private volatile int restartTotal;
 
         /** Index of Ignite grid that was most recently restarted. */
-        private int currRestartGridId;
+        private int currRestartGridId = serverCount();
+
+        /** */
+        private final Ignite ignite;
 
         /**
          * Create a new {@link RollingRestartThread} that will stop and start Ignite Grid
@@ -144,13 +150,15 @@ public abstract class GridRollingRestartAbstractTest extends GridCommonAbstractT
          * when it returns true, will start and then stop a Java process
          * via the test class.
          */
-        public RollingRestartThread() {
+        public RollingRestartThread(Ignite ignite) {
             if (getRestartInterval() < 0)
                 throw new IllegalArgumentException("invalid restart interval: " + getRestartInterval());
 
             setDaemon(true);
 
             setName(RollingRestartThread.class.getSimpleName());
+
+            this.ignite = ignite;
         }
 
         /**
@@ -183,9 +191,9 @@ public abstract class GridRollingRestartAbstractTest extends GridCommonAbstractT
 
         /** {@inheritDoc} */
         @Override public void run() {
-            Ignite ignite = grid(0);
-
             ignite.log().info(getName() + ": started.");
+
+            assertTrue(ignite.configuration().isClientMode());
 
             IgnitePredicate<Ignite> restartCheck = getRestartCheck();
 
@@ -203,11 +211,15 @@ public abstract class GridRollingRestartAbstractTest extends GridCommonAbstractT
 
                         int restartGrid = nextGridToRestart();
 
-                        stopGrid(restartGrid);
+                        multiJvm = true;
+
+                        stopGrid(ignite, restartGrid);
 
                         ignite.log().info(getName() + ": stopped a process.");
 
                         startGrid(restartGrid);
+
+                        multiJvm = false;
 
                         ignite.log().info(getName() + ": started a process.");
 
@@ -266,11 +278,11 @@ public abstract class GridRollingRestartAbstractTest extends GridCommonAbstractT
          */
         protected int nextGridToRestart() {
             if (currRestartGridId == serverCount())
-                currRestartGridId = 0;
+                currRestartGridId = 1;
 
-            // Skip grid 0 because this is the "client" - the JVM that
+            // Skip grid `serverCount()` because this is the "client" - the JVM that
             // is executing the test.
-            return ++currRestartGridId;
+            return currRestartGridId++;
         }
 
         /**
@@ -294,21 +306,21 @@ public abstract class GridRollingRestartAbstractTest extends GridCommonAbstractT
          * @param idx Index of Grid to stop.
          * @see GridRollingRestartAbstractTest#grid(int)
          */
-        protected void stopGrid(int idx) {
+        protected void stopGrid(Ignite cli, int idx) {
             Ignite remote = grid(idx);
 
-            assert remote instanceof IgniteProcessProxy : remote;
+            assert remote instanceof IgniteProcessProxy : idx + "" + remote;
 
             IgniteProcessProxy proc = (IgniteProcessProxy)remote;
 
             int pid = proc.getProcess().getPid();
 
             try {
-                grid(0).log().info(String.format("Killing grid id %d with PID %d", idx, pid));
+                cli.log().info(String.format("Killing grid id %d with PID %d", idx, pid));
 
                 IgniteProcessProxy.kill(proc.name());
 
-                grid(0).log().info(String.format("Grid id %d with PID %d stopped", idx, pid));
+                cli.log().info(String.format("Grid id %d with PID %d stopped", idx, pid));
             }
             catch (Exception e) {
                 throw new RuntimeException(e);

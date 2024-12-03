@@ -42,8 +42,6 @@ public class IgniteCacheNoClassQuerySelfTest extends GridCommonAbstractTest {
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         IgniteConfiguration c = super.getConfiguration(igniteInstanceName);
 
-        ((TcpDiscoverySpi)c.getDiscoverySpi()).setForceServerMode(true);
-
         CacheConfiguration cc = defaultCacheConfiguration();
 
         c.setMarshaller(new JdkMarshaller());

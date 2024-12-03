@@ -93,8 +93,6 @@ public class CacheScanPartitionQueryFallbackSelfTest extends GridCommonAbstractT
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
-        ((TcpDiscoverySpi)cfg.getDiscoverySpi()).setForceServerMode(true);
-
         cfg.setCommunicationSpi(commSpiFactory.create());
 
         CacheConfiguration ccfg = defaultCacheConfiguration();

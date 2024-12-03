@@ -47,8 +47,6 @@ public class GridReleaseTypeSelfTest extends GridCommonAbstractTest {
             }
         };
 
-        discoSpi.setIpFinder(sharedStaticIpFinder).setForceServerMode(true);
-
         cfg.setDiscoverySpi(discoSpi);
 
         return cfg;

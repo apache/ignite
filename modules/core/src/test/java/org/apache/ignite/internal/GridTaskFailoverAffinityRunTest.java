@@ -28,7 +28,6 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.lang.IgniteCallable;
 import org.apache.ignite.lang.IgniteFuture;
 import org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi;
-import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.GridTestUtils.SF;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
@@ -51,13 +50,7 @@ public class GridTaskFailoverAffinityRunTest extends GridCommonAbstractTest {
 
         ((TcpCommunicationSpi)cfg.getCommunicationSpi()).setSharedMemoryPort(-1);
 
-        boolean client = clientMode && igniteInstanceName.equals(getTestIgniteInstanceName(0));
-
-        if (client) {
-            cfg.setClientMode(true);
-
-            ((TcpDiscoverySpi)cfg.getDiscoverySpi()).setForceServerMode(true);
-        }
+        cfg.setClientMode(clientMode && igniteInstanceName.equals(getTestIgniteInstanceName(3)));
 
         CacheConfiguration ccfg = new CacheConfiguration(DEFAULT_CACHE_NAME);
 
@@ -104,7 +97,7 @@ public class GridTaskFailoverAffinityRunTest extends GridCommonAbstractTest {
     private void nodeRestart() throws Exception {
         startGridsMultiThreaded(4);
 
-        assertEquals((Boolean)clientMode, grid(0).configuration().isClientMode());
+        assertEquals((Boolean)clientMode, grid(3).configuration().isClientMode());
 
         final AtomicBoolean stop = new AtomicBoolean();
 
@@ -131,7 +124,7 @@ public class GridTaskFailoverAffinityRunTest extends GridCommonAbstractTest {
                 Collection<IgniteFuture<?>> futs = new ArrayList<>(1000);
 
                 for (int i = 0; i < 1000; i++) {
-                    IgniteFuture<?> fut0 = grid(0).compute().affinityCallAsync(DEFAULT_CACHE_NAME, i, new TestJob());
+                    IgniteFuture<?> fut0 = grid(3).compute().affinityCallAsync(DEFAULT_CACHE_NAME, i, new TestJob());
 
                     assertNotNull(fut0);
 
