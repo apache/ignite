@@ -66,9 +66,11 @@ namespace Apache.Ignite.Core.Cache.Configuration
 
             if (reader.ReadBoolean())
             {
-                var nodeFilter = reader.ReadObject<IClusterNodeFilter>();
-
-                NodeFilter = nodeFilter ?? new JavaNodeFilter();
+                if (reader.ReadBoolean())
+                    // AttributeNodeFilter has its own deserialization.
+                    NodeFilter = new AttributeNodeFilter(reader);
+                else
+                    NodeFilter = reader.ReadObject<IClusterNodeFilter>() ?? new JavaNodeFilter();
             }
         }
 
@@ -108,9 +110,18 @@ namespace Apache.Ignite.Core.Cache.Configuration
             {
                 writer.WriteBoolean(true);
 
-                if (NodeFilter is JavaNodeFilter)
+                var isAttrFilter = NodeFilter is AttributeNodeFilter;
+
+                writer.WriteBoolean(isAttrFilter);
+
+                if (isAttrFilter)
+                {
+                    // AttributeNodeFilter has its own serialization.
+                    ((AttributeNodeFilter)NodeFilter).Write(writer);
+                }
+                else if (NodeFilter is JavaNodeFilter)
                     writer.WriteObject<object>(null);
-                else 
+                else
                     writer.WriteObject(NodeFilter);
             }
             else

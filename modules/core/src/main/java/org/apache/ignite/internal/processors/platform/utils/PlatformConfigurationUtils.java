@@ -360,12 +360,20 @@ public class PlatformConfigurationUtils {
             .setKeepBinary(in.readBoolean());
 
         if (in.readBoolean()) {
-            // Node filter implemented in .NET. Will be null in case of filter from Java.
-            Object dotnetFilter = in.readObjectDetached();
+            // AttributeNodeFilter has its own deserialization.
+            AttributeNodeFilter attrFilter = readAttributeNodeFilter(in);
 
-            if (dotnetFilter != null) {
-                // Platform context will be set during resource injection.
-                platformCfg.setNodeFilter(new PlatformClusterNodeFilterImpl(dotnetFilter, null));
+            if (attrFilter != null) {
+                platformCfg.setNodeFilter(attrFilter);
+            }
+            else {
+                // Node filter implemented in .NET. Will be null in case of custom filter from Java.
+                Object dotnetFilter = in.readObjectDetached();
+
+                if (dotnetFilter != null) {
+                    // Platform context will be set during resource injection.
+                    platformCfg.setNodeFilter(new PlatformClusterNodeFilterImpl(dotnetFilter, null));
+                }
             }
         }
 
@@ -395,11 +403,14 @@ public class PlatformConfigurationUtils {
      * Writes the node filter.
      * @param out Stream.
      * @param nodeFilter IgnitePredicate.
+     *
+     * @return <code>true</code> if attribute node filter was succesfully written.
      */
-    private static void writeAttributeNodeFilter(BinaryRawWriter out, IgnitePredicate nodeFilter) {
+    private static boolean writeAttributeNodeFilter(BinaryRawWriter out, IgnitePredicate nodeFilter) {
         if (!(nodeFilter instanceof AttributeNodeFilter)) {
             out.writeBoolean(false);
-            return;
+
+            return false;
         }
 
         out.writeBoolean(true);
@@ -412,6 +423,8 @@ public class PlatformConfigurationUtils {
             out.writeString(entry.getKey());
             out.writeObject(entry.getValue());
         }
+
+        return true;
     }
 
     /**
@@ -1218,12 +1231,17 @@ public class PlatformConfigurationUtils {
             writer.writeBoolean(hasFilter);
 
             if (hasFilter) {
-                // Node filter implemented in .NET. Will be null in case of filter from Java.
-                Object dotnetFilter = filter instanceof PlatformClusterNodeFilterImpl ?
-                    ((PlatformClusterNodeFilterImpl)filter).getInternalPredicate() :
-                    null;
+                // AttributeNodeFilter has its own deserialization.
+                boolean filterWritten = writeAttributeNodeFilter(writer, filter);
 
-                writer.writeObjectDetached(dotnetFilter);
+                if (!filterWritten) {
+                    // Node filter implemented in .NET. Will be null in case of custom filter from Java.
+                    Object dotnetFilter = filter instanceof PlatformClusterNodeFilterImpl ?
+                            ((PlatformClusterNodeFilterImpl)filter).getInternalPredicate() :
+                            null;
+
+                    writer.writeObjectDetached(dotnetFilter);
+                }
             }
         }
         else {

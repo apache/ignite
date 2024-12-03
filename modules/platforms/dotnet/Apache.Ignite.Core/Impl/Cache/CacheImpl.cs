@@ -121,7 +121,7 @@ namespace Apache.Ignite.Core.Impl.Cache
             if (nodeFilter == null)
                 return true;
             
-            return nodeFilter is JavaNodeFilter ? 
+            return nodeFilter is JavaNodeFilter || nodeFilter is AttributeNodeFilter ?
                 DoOutOp(CacheOp.CacheNodeFilterApply, writer => writer.WriteGuid(locNode.Id)) :
                 nodeFilter.Invoke(locNode);
         }

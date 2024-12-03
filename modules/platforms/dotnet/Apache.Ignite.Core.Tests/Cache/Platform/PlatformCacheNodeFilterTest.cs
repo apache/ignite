@@ -18,6 +18,7 @@
 namespace Apache.Ignite.Core.Tests.Cache.Platform
 {
     using System;
+    using System.Collections.Generic;
     using System.IO;
     using System.Linq;
     using Apache.Ignite.Core.Cache.Configuration;
@@ -42,11 +43,31 @@ namespace Apache.Ignite.Core.Tests.Cache.Platform
         private const int ClientIdx = NodesCnt - 1;
 
         /** */
-        private const string WithFilterPref = "with-node-filter-";
+        private const string WithFilterPref = "with-node-filter";
         
         /** */
-        private const string NoFilterPref = "no-node-filter-";
-        
+        private const string NoFilterPref = "no-node-filter";
+
+        /** */
+        private const string AttrFilterPref = "attr-node-filter";
+
+        /** */
+        private const string TestAttr = "test_attribute";
+
+        /** */
+        private const string FilteredVal = "filtered";
+
+        /** */
+        private const string NonFilteredVal = "non_filtered";
+
+        private readonly AttributeNodeFilter _attributeNodeFilter = new AttributeNodeFilter
+        {
+            Attributes = new Dictionary<string, object>
+            {
+                { TestAttr, FilteredVal }
+            }
+        };
+
         /// <summary>
         /// Test tear down.
         /// </summary>
@@ -72,119 +93,144 @@ namespace Apache.Ignite.Core.Tests.Cache.Platform
             DoTestDynamic(nodes, ClientIdx, "StartFromNonFilteredCln", cacheMode, 0, 2);
         }
 
-        private void DoTestDynamic(IIgnite[] nodes, int startCacheIdx, string cacheName, CacheMode cacheMode, 
+        private static void DoTestDynamic(IIgnite[] nodes, int startCacheIdx, string cacheName, CacheMode cacheMode,
             params int[] filteredNodeIdxs)
         {
             nodes[startCacheIdx].CreateCache<int, int>(GetCacheConfiguration(cacheName, cacheMode, filteredNodeIdxs));
 
-            for (var i = 0; i < NodesCnt; i++)
-            {
-                bool hasPlatformCache = nodes[i].GetCache<int, int>(cacheName).HasPlatformCache;
-
-                Assert.IsTrue(hasPlatformCache == filteredNodeIdxs.Contains(i));
-            }
+            CheckPlatformCache(nodes, filteredNodeIdxs, cacheName);
         }
 
         /// <summary>
-        /// Tests that platform cache starts only on the specific nodes.
-        /// Native cache is static, i.e. specified in configuration.
+        /// Tests that platform cache with custom .NET filter starts only on the specific nodes.
+        /// Native cache is static, i.e. specified in .NET configuration.
         /// </summary>
         [TestCase(CacheMode.Partitioned)]
         [TestCase(CacheMode.Replicated)]
         public void TestDotnetFilter(CacheMode cacheMode)
         {
             DoTestStatic(
-                DotnetConfig(cacheMode, 0, 3), 
-                0, 3);
+                i => GetConfiguration(i, GetCacheConfiguration(CacheName, cacheMode, 0, 3)),
+                0, ClientIdx);
         }
 
-
         /// <summary>
-        /// Tests that platform cache starts only on the specific nodes.
-        /// Native cache is static, i.e. specified in configuration.
+        /// Tests that platform cache with custom Java filter starts only on the specific nodes.
+        /// Native cache is static, i.e. specified in XML configuration.
         /// </summary>
         [TestCase(CacheMode.Partitioned)]
         [TestCase(CacheMode.Replicated)]
         public void TestJavaFilter(CacheMode cacheMode)
         {
             DoTestStatic(
-                XmlConfig(WithFilterPref, cacheMode), 
-                2, 3);
+                i => XmlConfiguration(i, WithFilterPref, cacheMode),
+                2, ClientIdx);
         }
 
         /// <summary>
-        /// Tests that platform cache starts on all nodes, when node filter is not configured.
+        /// Tests that platform cache starts on all nodes, when node filter is not configured in .NET configuration.
         /// </summary>
         [TestCase(CacheMode.Partitioned)]
         [TestCase(CacheMode.Replicated)]
         public void TestNoFilterDotnetConfig(CacheMode cacheMode)
         {
             DoTestStatic(
-                DotnetConfig(cacheMode), 
+                i => GetConfiguration(i, GetCacheConfiguration(CacheName, cacheMode)),
                 0, 1, 2, 3);
         }
 
         /// <summary>
-        /// Tests that platform cache starts on all nodes, when node filter is not configured.
+        /// Tests that platform cache starts on all nodes, when node filter is not configured in XML configuration.
         /// </summary>
         [TestCase(CacheMode.Partitioned)]
         [TestCase(CacheMode.Replicated)]
         public void TestNoFilterJavaConfig(CacheMode cacheMode)
         {
             DoTestStatic(
-                XmlConfig(NoFilterPref, cacheMode), 
+                i => XmlConfiguration(i, NoFilterPref, cacheMode),
                 0, 1, 2, 3);
         }
+        
+        /// <summary>
+        /// Tests that platform cache with already implemented AttributeNodeFilter starts only on the specific
+        /// nodes.
+        /// Native cache is static, i.e. specified in .NET configuration.
+        ///
+        /// <see cref="AttributeNodeFilter"/>
+        /// </summary>
+        [TestCase(CacheMode.Partitioned)]
+        [TestCase(CacheMode.Replicated)]
+        public void TestAttributesNodeFilterDotnetConfig(CacheMode cacheMode)
+        {
+            var cacheCfg = CacheConfiguration(cacheMode, nodeFilter: _attributeNodeFilter);
 
-        private void DoTestStatic(Func<int, IgniteConfiguration> cfgFunc, params int[] expIdxs)
+            DoTestStatic(
+                i => AddAttributes(GetConfiguration(i, cacheCfg), 2, ClientIdx),
+                2, ClientIdx);
+        }
+
+        /// <summary>
+        /// Tests that platform cache with already implemented AttributeNodeFilter starts only on the specific
+        /// nodes.
+        /// Native cache is static, i.e. specified in XML configuration.
+        ///
+        /// <see cref="AttributeNodeFilter"/>
+        /// </summary>
+        [TestCase(CacheMode.Partitioned)]
+        [TestCase(CacheMode.Replicated)]
+        public void TestAttributesNodeFilterXmlConfig(CacheMode cacheMode)
+        {
+            DoTestStatic(
+                i => AddAttributes(XmlConfiguration(i, AttrFilterPref, cacheMode), 0, ClientIdx),
+                0, ClientIdx);
+        }
+
+        private static void DoTestStatic(Func<int, IgniteConfiguration> cfgFunc, params int[] expIdxs)
         {
             var nodes = RunNodes(cfgFunc);
 
-            for (var i = 0; i < NodesCnt; i++)
-            {
-                var hasCache = nodes[i].GetCache<int, int>(CacheName).HasPlatformCache;
-                
-                Assert.IsTrue(hasCache == expIdxs.Contains(i), $"Unexpected state: [nodeIdx={i}, hasCache={hasCache}]");
-            }
+            CheckPlatformCache(nodes, expIdxs);
         }
-
-        private Func<int, IgniteConfiguration> DotnetConfig(CacheMode cacheMode, params int[] filteredNodeIdxs)
-        {
-            return i => GetConfiguration(i, GetCacheConfiguration(CacheName, cacheMode, filteredNodeIdxs));
-        }
-
-        private Func<int, IgniteConfiguration> XmlConfig(string cfgUrlPref, CacheMode cacheMode)
-        {
-            return i => new IgniteConfiguration(TestUtils.GetTestConfiguration())
-            {
-                IgniteInstanceName = NamePref + i,
-                SpringConfigUrl = ConfigUrl(cfgUrlPref, cacheMode),
-                ClientMode = i == ClientIdx
-            };
-        }
-
-        private IIgnite[] RunNodes(Func<int, IgniteConfiguration> cfgFunc)
+        
+        private static IIgnite[] RunNodes(Func<int, IgniteConfiguration> cfgFunc)
         {
             return Enumerable.Range(0, NodesCnt)
                 .Select(i => Ignition.Start(cfgFunc.Invoke(i)))
                 .ToArray();
         }
 
-        private IgniteConfiguration GetConfiguration(int idx, params CacheConfiguration[] cacheCfg)
+        private static void CheckPlatformCache(IIgnite[] nodes, int[] expIdxs, string cacheName = CacheName)
         {
-            var name = NamePref + idx;
-
-            var igniteConfig = new IgniteConfiguration(TestUtils.GetTestConfiguration())
+            for (var i = 0; i < NodesCnt; i++)
             {
-                IgniteInstanceName = name,
+                var hasPlatformCache = nodes[i].GetCache<int, int>(cacheName).HasPlatformCache;
+
+                Assert.AreEqual(expIdxs.Contains(i), hasPlatformCache,
+                    $"Unexpected state: [nodeIdx={i}, hasPlatformCache={hasPlatformCache}]");
+            }
+        }
+
+        private static IgniteConfiguration GetConfiguration(int idx, params CacheConfiguration[] cacheCfg)
+        {
+            return new IgniteConfiguration(TestUtils.GetTestConfiguration())
+            {
+                IgniteInstanceName = NamePref + idx,
                 ClientMode = idx == ClientIdx,
                 CacheConfiguration = cacheCfg
             };
-
-            return igniteConfig;
         }
 
-        private CacheConfiguration GetCacheConfiguration(string cacheName, CacheMode cacheMode, params int[] filteredNodeIdxs)
+        private static CacheConfiguration GetCacheConfiguration(string cacheName, CacheMode cacheMode,
+            params int[] filteredNodeIdxs)
+        {
+            return CacheConfiguration(
+                cacheMode,
+                cacheName,
+                filteredNodeIdxs.Length == 0 ? null : new NodeNameFilter(filteredNodeIdxs));
+        }
+
+        private static CacheConfiguration CacheConfiguration(CacheMode cacheMode, string cacheName = CacheName,
+            IClusterNodeFilter nodeFilter = null)
         {
             return new CacheConfiguration(cacheName)
             {
@@ -192,23 +238,46 @@ namespace Apache.Ignite.Core.Tests.Cache.Platform
                 Backups = 1,
                 PlatformCacheConfiguration = new PlatformCacheConfiguration
                 {
-                    NodeFilter = filteredNodeIdxs.Length == 0 ? null : new NodeNameFilter(filteredNodeIdxs)
+                    NodeFilter =  nodeFilter
                 }
             };
         }
 
-        private string ConfigUrl(string filePref, CacheMode cacheMode)
+        private static IgniteConfiguration XmlConfiguration(int idx, string cfgUrlPref, CacheMode cacheMode)
         {
-            var suf = (cacheMode == CacheMode.Replicated ? "replicated" : "partitioned") + ".xml";
+            var suf = (cacheMode == CacheMode.Replicated ? "-replicated" : "-partitioned") + ".xml";
 
-            return Path.Combine("Config", "Cache", "Platform", filePref + suf);
+            var cfgUrl = Path.Combine("Config", "Cache", "Platform", cfgUrlPref + suf);
+
+            return new IgniteConfiguration(TestUtils.GetTestConfiguration())
+            {
+                IgniteInstanceName = NamePref + idx,
+                SpringConfigUrl = cfgUrl,
+                ClientMode = idx == ClientIdx
+            };
+        }
+
+        private static IgniteConfiguration AddAttributes(IgniteConfiguration cfg, params int[] filteredIdxs)
+        {
+            var filteredNames = filteredIdxs
+                .Select(i => NamePref + i);
+
+            return new IgniteConfiguration(cfg)
+            {
+                UserAttributes = new Dictionary<string, object>
+                {
+                    {
+                        TestAttr,
+                        filteredNames.Contains(cfg.IgniteInstanceName) ? FilteredVal : NonFilteredVal
+                    }
+                }
+            };
         }
     }
 
     /// <summary>
     /// .NET test node filter.
     /// </summary>
-    [Serializable]
     public class NodeNameFilter : IClusterNodeFilter
     {
         private readonly string[] _names;
