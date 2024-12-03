@@ -58,6 +58,7 @@ import org.apache.ignite.configuration.CollectionConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.NearCacheConfiguration;
 import org.apache.ignite.internal.processors.cache.IgniteCacheProxy;
+import org.apache.ignite.internal.processors.cache.transactions.IgniteTransactionsImpl;
 import org.apache.ignite.internal.util.typedef.internal.A;
 import org.apache.ignite.lang.IgniteProductVersion;
 import org.apache.ignite.metric.IgniteMetrics;
@@ -70,7 +71,7 @@ import org.jetbrains.annotations.Nullable;
 /** Ignite instance aware of application attributes set with {@link Ignite#withApplicationAttributes(Map)}. */
 public class IgniteApplicationAttributesAware implements Ignite {
     /** */
-    private final Ignite delegate;
+    private final IgniteEx delegate;
 
     /** Application attributes. */
     private final Map<String, String> attrs;
@@ -82,7 +83,7 @@ public class IgniteApplicationAttributesAware implements Ignite {
      * @param delegate Parent Ignite instance.
      * @param attrs Application attributes.
      */
-    public IgniteApplicationAttributesAware(Ignite delegate, Map<String, String> attrs) {
+    public IgniteApplicationAttributesAware(IgniteEx delegate, Map<String, String> attrs) {
         A.notNull(attrs, "application attributes");
 
         this.delegate = delegate;
@@ -299,7 +300,9 @@ public class IgniteApplicationAttributesAware implements Ignite {
 
     /** {@inheritDoc} */
     @Override public IgniteTransactions transactions() {
-        return delegate.transactions();
+        IgniteTransactionsImpl<?, ?> txs = (IgniteTransactionsImpl<?, ?>)delegate.transactions();
+
+        return txs.withApplicationAttributes(attrs);
     }
 
     /** {@inheritDoc} */

@@ -99,7 +99,9 @@ public class GridDhtTxRemote extends GridDistributedTxRemoteAdapter {
         int taskNameHash,
         boolean single,
         boolean storeWriteThrough,
-        @Nullable String txLbl) {
+        @Nullable String txLbl,
+        @Nullable Map<String, String> appAttrs
+    ) {
         super(
             ctx,
             nodeId,
@@ -114,7 +116,8 @@ public class GridDhtTxRemote extends GridDistributedTxRemoteAdapter {
             txSize,
             subjId,
             taskNameHash,
-            txLbl
+            txLbl,
+            appAttrs
         );
 
         assert nearNodeId != null;
@@ -171,7 +174,9 @@ public class GridDhtTxRemote extends GridDistributedTxRemoteAdapter {
         @Nullable UUID subjId,
         int taskNameHash,
         boolean storeWriteThrough,
-        @Nullable String txLbl) {
+        @Nullable String txLbl,
+        @Nullable Map<String, String> appAttrs
+    ) {
         super(
             ctx,
             nodeId,
@@ -186,7 +191,8 @@ public class GridDhtTxRemote extends GridDistributedTxRemoteAdapter {
             txSize,
             subjId,
             taskNameHash,
-            txLbl
+            txLbl,
+            appAttrs
         );
 
         assert nearNodeId != null;

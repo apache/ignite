@@ -20,6 +20,7 @@ package org.apache.ignite.internal.processors.cache.distributed;
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
@@ -99,6 +100,9 @@ public class GridDistributedLockRequest extends GridDistributedBaseMessage {
     /** Additional flags. */
     private byte flags;
 
+    /** Application attributes. */
+    private Map<String, String> appAttrs;
+
     /**
      * Empty constructor.
      */
@@ -139,7 +143,8 @@ public class GridDistributedLockRequest extends GridDistributedBaseMessage {
         int txSize,
         boolean skipStore,
         boolean keepBinary,
-        boolean addDepInfo
+        boolean addDepInfo,
+        Map<String, String> appAttrs
     ) {
         super(lockVer, keyCnt, addDepInfo);
 
@@ -158,6 +163,7 @@ public class GridDistributedLockRequest extends GridDistributedBaseMessage {
         this.isInvalidate = isInvalidate;
         this.timeout = timeout;
         this.txSize = txSize;
+        this.appAttrs = appAttrs;
 
         retVals = new boolean[keyCnt];
 
@@ -321,6 +327,13 @@ public class GridDistributedLockRequest extends GridDistributedBaseMessage {
         return timeout;
     }
 
+    /**
+     * @return Application attributes.
+     */
+    @Nullable public Map<String, String> applicationAttributes() {
+        return appAttrs;
+    }
+
     /** {@inheritDoc} */
     @Override public IgniteLogger messageLogger(GridCacheSharedContext<?, ?> ctx) {
         return ctx.txLockMessageLogger();
@@ -438,6 +451,11 @@ public class GridDistributedLockRequest extends GridDistributedBaseMessage {
 
                 writer.incrementState();
 
+            case 21:
+                if (!writer.writeMap("appAttrs", appAttrs, MessageCollectionItemType.STRING, MessageCollectionItemType.STRING))
+                    return false;
+
+                writer.incrementState();
         }
 
         return true;
@@ -562,6 +580,13 @@ public class GridDistributedLockRequest extends GridDistributedBaseMessage {
 
                 reader.incrementState();
 
+            case 21:
+                appAttrs = reader.readMap("appAttrs", MessageCollectionItemType.STRING, MessageCollectionItemType.STRING, false);
+
+                if (!reader.isLastRead())
+                    return false;
+
+                reader.incrementState();
         }
 
         return reader.afterMessageRead(GridDistributedLockRequest.class);
@@ -574,7 +599,7 @@ public class GridDistributedLockRequest extends GridDistributedBaseMessage {
 
     /** {@inheritDoc} */
     @Override public byte fieldsCount() {
-        return 21;
+        return 22;
     }
 
     /** {@inheritDoc} */

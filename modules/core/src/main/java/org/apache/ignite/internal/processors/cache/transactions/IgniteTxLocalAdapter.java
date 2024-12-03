@@ -156,6 +156,7 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter implements Ig
      * @param isolation Isolation.
      * @param timeout Timeout.
      * @param txSize Expected transaction size.
+     * @param appAttrs Application attributes.
      */
     protected IgniteTxLocalAdapter(
         GridCacheSharedContext cctx,
@@ -172,7 +173,8 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter implements Ig
         boolean onePhaseCommit,
         int txSize,
         @Nullable UUID subjId,
-        int taskNameHash
+        int taskNameHash,
+        @Nullable Map<String, String> appAttrs
     ) {
         super(
             cctx,
@@ -189,7 +191,8 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter implements Ig
             onePhaseCommit,
             txSize,
             subjId,
-            taskNameHash
+            taskNameHash,
+            appAttrs
         );
 
         minVer = xidVer;

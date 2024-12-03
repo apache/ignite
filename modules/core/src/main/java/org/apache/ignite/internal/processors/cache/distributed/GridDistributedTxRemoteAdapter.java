@@ -139,6 +139,7 @@ public abstract class GridDistributedTxRemoteAdapter extends IgniteTxAdapter imp
      * @param subjId Subject ID.
      * @param taskNameHash Task name hash code.
      * @param txLbl Transaction label.
+     * @param appAttrs Application attributes.
      */
     protected GridDistributedTxRemoteAdapter(
         GridCacheSharedContext<?, ?> ctx,
@@ -154,7 +155,8 @@ public abstract class GridDistributedTxRemoteAdapter extends IgniteTxAdapter imp
         int txSize,
         @Nullable UUID subjId,
         int taskNameHash,
-        @Nullable String txLbl
+        @Nullable String txLbl,
+        @Nullable Map<String, String> appAttrs
     ) {
         super(
             ctx,
@@ -168,7 +170,8 @@ public abstract class GridDistributedTxRemoteAdapter extends IgniteTxAdapter imp
             timeout,
             txSize,
             subjId,
-            taskNameHash);
+            taskNameHash,
+            appAttrs);
 
         this.invalidate = invalidate;
         this.txLbl = txLbl;
@@ -490,6 +493,8 @@ public abstract class GridDistributedTxRemoteAdapter extends IgniteTxAdapter imp
                     Set<GridDhtLocalPartition> reservedParts = new HashSet<>();
 
                     try {
+                        cctx.tm().txContext(this);
+
                         Collection<IgniteTxEntry> entries = near() ? allEntries() : writeEntries();
 
                         // Data entry to write to WAL.
@@ -805,6 +810,8 @@ public abstract class GridDistributedTxRemoteAdapter extends IgniteTxAdapter imp
                             locPart.release();
 
                         cctx.database().checkpointReadUnlock();
+
+                        cctx.tm().resetContext();
 
                         if (wrapper != null)
                             wrapper.initialize(ret);

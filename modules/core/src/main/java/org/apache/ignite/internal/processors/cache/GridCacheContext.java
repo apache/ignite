@@ -44,6 +44,7 @@ import javax.cache.expiry.EternalExpiryPolicy;
 import javax.cache.expiry.ExpiryPolicy;
 import javax.cache.processor.EntryProcessorResult;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.binary.BinaryField;
@@ -62,6 +63,7 @@ import org.apache.ignite.internal.IgniteKernal;
 import org.apache.ignite.internal.IgnitionEx;
 import org.apache.ignite.internal.binary.BinaryMarshaller;
 import org.apache.ignite.internal.binary.builder.BinaryObjectBuilderImpl;
+import org.apache.ignite.internal.cache.context.SessionContextImpl;
 import org.apache.ignite.internal.managers.communication.GridIoManager;
 import org.apache.ignite.internal.managers.deployment.GridDeploymentManager;
 import org.apache.ignite.internal.managers.discovery.GridDiscoveryManager;
@@ -109,7 +111,6 @@ import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.GPC;
-import org.apache.ignite.internal.util.typedef.internal.GPR;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.lang.IgnitePredicate;
@@ -117,6 +118,8 @@ import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.marshaller.Marshaller;
 import org.apache.ignite.plugin.security.SecurityException;
 import org.apache.ignite.plugin.security.SecurityPermission;
+import org.apache.ignite.session.SessionContext;
+import org.apache.ignite.session.SessionContextProvider;
 import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_DISABLE_TRIGGERING_CACHE_INTERCEPTOR_ON_CONFLICT;
@@ -434,6 +437,14 @@ public class GridCacheContext<K, V> implements Externalizable {
             locMacs = localNode().attribute(ATTR_MACS);
 
             assert locMacs != null;
+        }
+
+        try {
+            if (cacheCfg.getInterceptor() != null)
+                ctx.resource().injectToUdf(cacheCfg.getInterceptor(), new SessionContextProviderImpl(this));
+        }
+        catch (IgniteCheckedException e) {
+            throw new IgniteException("Failed to inject resources to CacheInterceptor", e);
         }
     }
 
@@ -1371,41 +1382,6 @@ public class GridCacheContext<K, V> implements Externalizable {
      */
     private boolean nearContext() {
         return isDht() || (isDhtAtomic() && dht().near() != null);
-    }
-
-    /**
-     * Creates Runnable that can be executed safely in a different thread inheriting
-     * the same thread local projection as for the current thread. If no projection is
-     * set for current thread then there's no need to create new object and method simply
-     * returns given Runnable.
-     *
-     * @param r Runnable.
-     * @return Runnable that can be executed in a different thread with the same
-     *      projection as for current thread.
-     */
-    public Runnable projectSafe(final Runnable r) {
-        assert r != null;
-
-        // Have to get operation context per call used by calling thread to use it in a new thread.
-        final CacheOperationContext opCtx = operationContextPerCall();
-
-        if (opCtx == null)
-            return r;
-
-        return new GPR() {
-            @Override public void run() {
-                CacheOperationContext old = operationContextPerCall();
-
-                operationContextPerCall(opCtx);
-
-                try {
-                    r.run();
-                }
-                finally {
-                    operationContextPerCall(old);
-                }
-            }
-        };
     }
 
     /**
@@ -2439,6 +2415,43 @@ public class GridCacheContext<K, V> implements Externalizable {
         }
         finally {
             stash.remove();
+        }
+    }
+
+    /** SessionContext provider to UDF. */
+    private static final class SessionContextProviderImpl implements SessionContextProvider {
+        /** Emtpy session context. */
+        private static final SessionContext EMPTY = (attrName) -> null;
+
+        /** Cache context. */
+        private final GridCacheContext<?, ?> ctx;
+
+        /** */
+        SessionContextProviderImpl(GridCacheContext<?, ?> ctx) {
+            this.ctx = ctx;
+        }
+
+        /** {@inheritDoc} */
+        @Override public SessionContext getSessionContext() {
+            if (ctx.transactional()) {
+                IgniteInternalTx tx = ctx.cache().context().tm().tx();
+
+                if (tx != null) {
+                    if (tx.applicationAttributes() == null)
+                        return EMPTY;
+
+                    return new SessionContextImpl(tx.applicationAttributes());
+                }
+            }
+
+            // It works for transactional caches also. For example, CacheInterceptor#onGet invoked out of the scope of
+            // a transaction context.
+            CacheOperationContext opCtx = ctx.operationContextPerCall();
+
+            if (opCtx == null || opCtx.applicationAttributes() == null)
+                return EMPTY;
+
+            return new SessionContextImpl(opCtx.applicationAttributes());
         }
     }
 

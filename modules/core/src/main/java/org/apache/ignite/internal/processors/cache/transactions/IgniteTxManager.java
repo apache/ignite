@@ -691,6 +691,7 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
      * @param timeout transaction timeout.
      * @param txSize Expected transaction size.
      * @param lb Label.
+     * @param appAttrs Application attributes.
      * @return New transaction.
      */
     public GridNearTxLocal newTx(
@@ -702,7 +703,8 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
         long timeout,
         boolean storeEnabled,
         int txSize,
-        @Nullable String lb
+        @Nullable String lb,
+        @Nullable Map<String, String> appAttrs
     ) {
         assert sysCacheCtx == null || sysCacheCtx.systemTx();
 
@@ -722,7 +724,8 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
             securitySubjectId(cctx),
             taskNameHash,
             lb,
-            txDumpsThrottling
+            txDumpsThrottling,
+            appAttrs
         );
 
         if (tx.system()) {

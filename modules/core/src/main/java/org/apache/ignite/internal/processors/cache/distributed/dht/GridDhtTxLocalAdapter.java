@@ -133,7 +133,8 @@ public abstract class GridDhtTxLocalAdapter extends IgniteTxLocalAdapter {
         boolean onePhaseCommit,
         int txSize,
         @Nullable UUID subjId,
-        int taskNameHash
+        int taskNameHash,
+        @Nullable Map<String, String> appAttrs
     ) {
         super(
             cctx,
@@ -150,7 +151,8 @@ public abstract class GridDhtTxLocalAdapter extends IgniteTxLocalAdapter {
             onePhaseCommit,
             txSize,
             subjId,
-            taskNameHash
+            taskNameHash,
+            appAttrs
         );
 
         assert cctx != null;

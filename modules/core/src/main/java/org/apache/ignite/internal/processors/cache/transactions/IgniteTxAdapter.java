@@ -274,6 +274,9 @@ public abstract class IgniteTxAdapter extends GridMetadataAwareAdapter implement
     /** Transaction from which this transaction was copied by(if it was). */
     private GridNearTxLocal parentTx;
 
+    /** Application attributes. */
+    private @Nullable Map<String, String> appAttrs;
+
     /**
      * @param cctx Cache registry.
      * @param xidVer Transaction ID.
@@ -301,11 +304,13 @@ public abstract class IgniteTxAdapter extends GridMetadataAwareAdapter implement
         boolean onePhaseCommit,
         int txSize,
         @Nullable UUID subjId,
-        int taskNameHash
+        int taskNameHash,
+        @Nullable Map<String, String> appAttrs
     ) {
         assert xidVer != null;
         assert cctx != null;
 
+        this.appAttrs = appAttrs;
         this.cctx = cctx;
         this.xidVer = xidVer;
         this.implicit = implicit;
@@ -365,8 +370,10 @@ public abstract class IgniteTxAdapter extends GridMetadataAwareAdapter implement
         long timeout,
         int txSize,
         @Nullable UUID subjId,
-        int taskNameHash
+        int taskNameHash,
+        @Nullable Map<String, String> appAttrs
     ) {
+        this.appAttrs = appAttrs;
         this.cctx = cctx;
         this.nodeId = nodeId;
         this.threadId = threadId;
@@ -406,6 +413,11 @@ public abstract class IgniteTxAdapter extends GridMetadataAwareAdapter implement
     /** {@inheritDoc} */
     @Override public void incrementalSnapshotId(UUID id) {
         incSnpId = id;
+    }
+
+    /** {@inheritDoc} */
+    @Override public @Nullable Map<String, String> applicationAttributes() {
+        return appAttrs;
     }
 
     /**

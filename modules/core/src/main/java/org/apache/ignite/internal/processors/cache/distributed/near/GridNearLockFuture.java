@@ -1068,7 +1068,8 @@ public final class GridNearLockFuture extends GridCacheCompoundIdentityFuture<Bo
                                                 clientFirst,
                                                 true,
                                                 cctx.deploymentEnabled(),
-                                                inTx() ? tx.label() : null);
+                                                inTx() ? tx.label() : null,
+                                                inTx() ? tx.applicationAttributes() : null);
 
                                             mapping.request(req);
                                         }

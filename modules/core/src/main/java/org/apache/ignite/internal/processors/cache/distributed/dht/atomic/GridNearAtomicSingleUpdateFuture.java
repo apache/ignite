@@ -97,7 +97,8 @@ public class GridNearAtomicSingleUpdateFuture extends GridNearAtomicAbstractUpda
         boolean skipStore,
         boolean keepBinary,
         boolean recovery,
-        int remapCnt
+        int remapCnt,
+        @Nullable Map<String, String> appAttrs
     ) {
         super(cctx,
             cache,
@@ -111,7 +112,8 @@ public class GridNearAtomicSingleUpdateFuture extends GridNearAtomicAbstractUpda
             skipStore,
             keepBinary,
             recovery,
-            remapCnt);
+            remapCnt,
+            appAttrs);
         this.key = key;
         this.val = val;
     }
@@ -574,7 +576,8 @@ public class GridNearAtomicSingleUpdateFuture extends GridNearAtomicAbstractUpda
                         op,
                         taskNameHash,
                         flags,
-                        cctx.deploymentEnabled());
+                        cctx.deploymentEnabled(),
+                        appAttrs);
                 }
                 else {
                     req = new GridNearAtomicSingleUpdateFilterRequest(
@@ -587,7 +590,8 @@ public class GridNearAtomicSingleUpdateFuture extends GridNearAtomicAbstractUpda
                         filter,
                         taskNameHash,
                         flags,
-                        cctx.deploymentEnabled());
+                        cctx.deploymentEnabled(),
+                        appAttrs);
                 }
             }
         }
@@ -605,7 +609,8 @@ public class GridNearAtomicSingleUpdateFuture extends GridNearAtomicAbstractUpda
                 taskNameHash,
                 flags,
                 cctx.deploymentEnabled(),
-                1);
+                1,
+                appAttrs);
         }
 
         req.addUpdateEntry(cacheKey,

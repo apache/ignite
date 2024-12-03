@@ -557,7 +557,8 @@ public class IgniteTxHandler {
                     securitySubjectId(ctx),
                     req.taskNameHash(),
                     req.txLabel(),
-                    originTx
+                    originTx,
+                    req.applicationAttributes()
                 );
 
                 tx = ctx.tm().onCreated(null, tx);
@@ -1678,7 +1679,8 @@ public class IgniteTxHandler {
                     req.taskNameHash(),
                     single,
                     req.storeWriteThrough(),
-                    req.txLabel());
+                    req.txLabel(),
+                    req.applicationAttributes());
 
                 tx.onePhaseCommit(req.onePhaseCommit());
                 tx.writeVersion(req.writeVersion());
@@ -1905,7 +1907,8 @@ public class IgniteTxHandler {
                     req.txSize(),
                     securitySubjectId(ctx),
                     req.taskNameHash(),
-                    req.txLabel()
+                    req.txLabel(),
+                    req.applicationAttributes()
                 );
 
                 tx.writeVersion(req.writeVersion());

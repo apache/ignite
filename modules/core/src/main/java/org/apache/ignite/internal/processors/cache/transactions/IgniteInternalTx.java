@@ -665,6 +665,11 @@ public interface IgniteInternalTx {
     public void incrementalSnapshotId(@Nullable UUID id);
 
     /**
+     * @return Application attributes.
+     */
+    public @Nullable Map<String, String> applicationAttributes();
+
+    /**
      * @return Transaction counters.
      * @param createIfAbsent {@code True} if non-null instance is needed.
      */

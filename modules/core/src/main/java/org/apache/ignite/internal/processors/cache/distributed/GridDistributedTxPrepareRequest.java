@@ -149,6 +149,10 @@ public class GridDistributedTxPrepareRequest extends GridDistributedBaseMessage 
     @GridToStringExclude
     private byte flags;
 
+    /** Application attributes. */
+    @GridToStringExclude
+    @Nullable private Map<String, String> appAttrs;
+
     /**
      * Required by {@link Externalizable}.
      */
@@ -186,6 +190,7 @@ public class GridDistributedTxPrepareRequest extends GridDistributedBaseMessage 
         isolation = tx.isolation();
         txSize = tx.size();
         plc = tx.ioPolicy();
+        appAttrs = tx.applicationAttributes();
 
         this.timeout = timeout;
         this.reads = reads;
@@ -360,6 +365,13 @@ public class GridDistributedTxPrepareRequest extends GridDistributedBaseMessage 
      */
     public boolean last() {
         return isFlag(LAST_REQ_FLAG_MASK);
+    }
+
+    /**
+     * @return Application attributes.
+     */
+    @Nullable public Map<String, String> applicationAttributes() {
+        return appAttrs;
     }
 
     /** {@inheritDoc} */
@@ -552,6 +564,11 @@ public class GridDistributedTxPrepareRequest extends GridDistributedBaseMessage 
 
                 writer.incrementState();
 
+            case 21:
+                if (!writer.writeMap("appAttrs", appAttrs, MessageCollectionItemType.STRING, MessageCollectionItemType.STRING))
+                    return false;
+
+                writer.incrementState();
         }
 
         return true;
@@ -680,6 +697,13 @@ public class GridDistributedTxPrepareRequest extends GridDistributedBaseMessage 
 
                 reader.incrementState();
 
+            case 21:
+                appAttrs = reader.readMap("appAttrs", MessageCollectionItemType.STRING, MessageCollectionItemType.STRING, false);
+
+                if (!reader.isLastRead())
+                    return false;
+
+                reader.incrementState();
         }
 
         return reader.afterMessageRead(GridDistributedTxPrepareRequest.class);
@@ -692,7 +716,7 @@ public class GridDistributedTxPrepareRequest extends GridDistributedBaseMessage 
 
     /** {@inheritDoc} */
     @Override public byte fieldsCount() {
-        return 21;
+        return 22;
     }
 
     /** {@inheritDoc} */

@@ -1401,9 +1401,18 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
         if (ctx.config().getInterceptor() != null)
             fut = fut.chain(new CX1<IgniteInternalFuture<V>, V>() {
                 @Override public V applyx(IgniteInternalFuture<V> f) throws IgniteCheckedException {
-                    K key = keepBinary ? (K)ctx.unwrapBinaryIfNeeded(key0, true, false, null) : key0;
+                    CacheOperationContext prevOpCtx = ctx.operationContextPerCall();
 
-                    return (V)ctx.config().getInterceptor().onGet(key, f.get());
+                    ctx.operationContextPerCall(opCtx);
+
+                    try {
+                        K key = keepBinary ? (K)ctx.unwrapBinaryIfNeeded(key0, true, false, null) : key0;
+
+                        return (V)ctx.config().getInterceptor().onGet(key, f.get());
+                    }
+                    finally {
+                        ctx.operationContextPerCall(prevOpCtx);
+                    }
                 }
             });
 
@@ -1444,23 +1453,32 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
             new CX1<IgniteInternalFuture<EntryGetResult>, CacheEntry<K, V>>() {
                 @Override public CacheEntry<K, V> applyx(IgniteInternalFuture<EntryGetResult> f)
                     throws IgniteCheckedException {
-                    EntryGetResult t = f.get();
+                    CacheOperationContext prevOpCtx = ctx.operationContextPerCall();
 
-                    K key = keepBinary ? (K)ctx.unwrapBinaryIfNeeded(key0, true, false, null) : key0;
+                    ctx.operationContextPerCall(opCtx);
 
-                    CacheEntry val = t != null ? new CacheEntryImplEx<>(
-                        key,
-                        t.value(),
-                        t.version())
-                        : null;
+                    try {
+                        EntryGetResult t = f.get();
 
-                    if (intercept) {
-                        V val0 = (V)ctx.config().getInterceptor().onGet(key, t != null ? val.getValue() : null);
+                        K key = keepBinary ? (K)ctx.unwrapBinaryIfNeeded(key0, true, false, null) : key0;
 
-                        return val0 != null ? new CacheEntryImplEx(key, val0, t != null ? t.version() : null) : null;
+                        CacheEntry val = t != null ? new CacheEntryImplEx<>(
+                            key,
+                            t.value(),
+                            t.version())
+                            : null;
+
+                        if (intercept) {
+                            V val0 = (V)ctx.config().getInterceptor().onGet(key, t != null ? val.getValue() : null);
+
+                            return val0 != null ? new CacheEntryImplEx(key, val0, t != null ? t.version() : null) : null;
+                        }
+                        else
+                            return val;
                     }
-                    else
-                        return val;
+                    finally {
+                        ctx.operationContextPerCall(prevOpCtx);
+                    }
                 }
             });
 
@@ -1566,7 +1584,16 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
         if (ctx.config().getInterceptor() != null)
             return fut.chain(new CX1<IgniteInternalFuture<Map<K, V>>, Map<K, V>>() {
                 @Override public Map<K, V> applyx(IgniteInternalFuture<Map<K, V>> f) throws IgniteCheckedException {
-                    return interceptGet(keys, f.get());
+                    CacheOperationContext prevOpCtx = ctx.operationContextPerCall();
+
+                    ctx.operationContextPerCall(opCtx);
+
+                    try {
+                        return interceptGet(keys, f.get());
+                    }
+                    finally {
+                        ctx.operationContextPerCall(prevOpCtx);
+                    }
                 }
             });
 
@@ -1611,16 +1638,25 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
             fut.chain(new CX1<IgniteInternalFuture<Map<K, EntryGetResult>>, Collection<CacheEntry<K, V>>>() {
                 @Override public Collection<CacheEntry<K, V>> applyx(
                     IgniteInternalFuture<Map<K, EntryGetResult>> f) throws IgniteCheckedException {
-                    if (intercept)
-                        return interceptGetEntries(keys, f.get());
-                    else {
-                        Map<K, CacheEntry<K, V>> res = U.newHashMap(f.get().size());
+                    CacheOperationContext prevOpCtx = ctx.operationContextPerCall();
 
-                        for (Map.Entry<K, EntryGetResult> e : f.get().entrySet())
-                            res.put(e.getKey(),
-                                new CacheEntryImplEx<>(e.getKey(), (V)e.getValue().value(), e.getValue().version()));
+                    ctx.operationContextPerCall(opCtx);
 
-                        return res.values();
+                    try {
+                        if (intercept)
+                            return interceptGetEntries(keys, f.get());
+                        else {
+                            Map<K, CacheEntry<K, V>> res = U.newHashMap(f.get().size());
+
+                            for (Map.Entry<K, EntryGetResult> e : f.get().entrySet())
+                                res.put(e.getKey(),
+                                    new CacheEntryImplEx<>(e.getKey(), (V)e.getValue().value(), e.getValue().version()));
+
+                            return res.values();
+                        }
+                    }
+                    finally {
+                        ctx.operationContextPerCall(prevOpCtx);
                     }
                 }
             });
@@ -3665,7 +3701,8 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
                     tCfg.getDefaultTxTimeout(),
                     !ctx.skipStore(),
                     0,
-                    null
+                    null,
+                    opCtx == null ? null : opCtx.applicationAttributes()
                 );
 
                 assert tx != null;
@@ -3785,7 +3822,8 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
                     txCfg.getDefaultTxTimeout(),
                     !skipStore,
                     0,
-                    null);
+                    null,
+                    opCtx == null ? null : opCtx.applicationAttributes());
 
                 return asyncOp(tx, op, opCtx, /*retry*/false);
             }
@@ -4765,7 +4803,8 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
                 CU.transactionConfiguration(ctx, ctx.kernalContext().config()).getDefaultTxTimeout(),
                 opCtx == null || !opCtx.skipStore(),
                 0,
-                null);
+                null,
+                opCtx == null ? null : opCtx.applicationAttributes());
 
             IgniteInternalFuture<T> fut = asyncOp(tx, op, opCtx, retry);
 

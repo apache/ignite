@@ -19,6 +19,7 @@ package org.apache.ignite.internal.processors.cache.distributed.dht.atomic;
 
 import java.nio.ByteBuffer;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 import javax.cache.expiry.ExpiryPolicy;
 import javax.cache.processor.EntryProcessor;
@@ -36,6 +37,7 @@ import org.apache.ignite.internal.processors.cache.KeyCacheObject;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
+import org.apache.ignite.plugin.extensions.communication.MessageCollectionItemType;
 import org.apache.ignite.plugin.extensions.communication.MessageReader;
 import org.apache.ignite.plugin.extensions.communication.MessageWriter;
 import org.jetbrains.annotations.NotNull;
@@ -91,6 +93,9 @@ public abstract class GridNearAtomicAbstractUpdateRequest extends GridCacheIdMes
     /** Task name hash. */
     protected int taskNameHash;
 
+    /** Application attributes. */
+    protected Map<String, String> appAttrs;
+
     /** Compressed boolean flags. Make sure 'toString' is updated when add new flag. */
     @GridToStringExclude
     protected byte flags;
@@ -128,7 +133,8 @@ public abstract class GridNearAtomicAbstractUpdateRequest extends GridCacheIdMes
         GridCacheOperation op,
         int taskNameHash,
         byte flags,
-        boolean addDepInfo
+        boolean addDepInfo,
+        @Nullable Map<String, String> appAttrs
     ) {
         this.cacheId = cacheId;
         this.nodeId = nodeId;
@@ -139,6 +145,7 @@ public abstract class GridNearAtomicAbstractUpdateRequest extends GridCacheIdMes
         this.taskNameHash = taskNameHash;
         this.flags = flags;
         this.addDepInfo = addDepInfo;
+        this.appAttrs = appAttrs;
     }
 
     /**
@@ -397,6 +404,13 @@ public abstract class GridNearAtomicAbstractUpdateRequest extends GridCacheIdMes
     }
 
     /**
+     * @return Application attributes.
+     */
+    public Map<String, String> applicationAttributes() {
+        return appAttrs;
+    }
+
+    /**
      * Sets flag mask.
      *
      * @param flag Set or clear.
@@ -515,7 +529,7 @@ public abstract class GridNearAtomicAbstractUpdateRequest extends GridCacheIdMes
 
     /** {@inheritDoc} */
     @Override public byte fieldsCount() {
-        return 10;
+        return 11;
     }
 
     /** {@inheritDoc} */
@@ -569,6 +583,11 @@ public abstract class GridNearAtomicAbstractUpdateRequest extends GridCacheIdMes
 
                 writer.incrementState();
 
+            case 10:
+                if (!writer.writeMap("appAttrs", appAttrs, MessageCollectionItemType.STRING, MessageCollectionItemType.STRING))
+                    return false;
+
+                writer.incrementState();
         }
 
         return true;
@@ -635,6 +654,14 @@ public abstract class GridNearAtomicAbstractUpdateRequest extends GridCacheIdMes
 
             case 9:
                 topVer = reader.readAffinityTopologyVersion("topVer");
+
+                if (!reader.isLastRead())
+                    return false;
+
+                reader.incrementState();
+
+            case 10:
+                appAttrs = reader.readMap("appAttrs", MessageCollectionItemType.STRING, MessageCollectionItemType.STRING, false);
 
                 if (!reader.isLastRead())
                     return false;
