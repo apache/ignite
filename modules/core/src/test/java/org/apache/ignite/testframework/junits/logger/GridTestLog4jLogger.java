@@ -272,6 +272,22 @@ public class GridTestLog4jLogger implements IgniteLoggerEx {
     }
 
     /**
+     * Creates new logger with given implementation.
+     */
+    private GridTestLog4jLogger(final Logger impl, String cfg) {
+        assert impl != null;
+
+        addConsoleAppenderIfNeeded(null, new C1<Boolean, Logger>() {
+            @Override public Logger apply(Boolean init) {
+                return impl;
+            }
+        });
+
+        quiet = quiet0;
+        this.cfg = cfg;
+    }
+
+    /**
      * Checks if Log4j is already configured within this VM or not.
      *
      * @return {@code True} if log4j was already configured, {@code false} otherwise.
@@ -489,7 +505,7 @@ public class GridTestLog4jLogger implements IgniteLoggerEx {
             ? LogManager.getRootLogger()
             : ctgr instanceof Class
                 ? LogManager.getLogger(((Class<?>)ctgr).getName())
-                : LogManager.getLogger(ctgr.toString()));
+                : LogManager.getLogger(ctgr.toString()), cfg);
     }
 
     /** {@inheritDoc} */
@@ -497,7 +513,7 @@ public class GridTestLog4jLogger implements IgniteLoggerEx {
         if (!impl.isTraceEnabled())
             warning("Logging at TRACE level without checking if TRACE level is enabled: " + msg);
 
-            assert impl.isTraceEnabled() : "Logging at TRACE level without checking if TRACE level is enabled: " + msg;
+        assert impl.isTraceEnabled() : "Logging at TRACE level without checking if TRACE level is enabled: " + msg;
 
         impl.trace(msg);
     }
