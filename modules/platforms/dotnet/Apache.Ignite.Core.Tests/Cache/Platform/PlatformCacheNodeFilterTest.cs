@@ -98,7 +98,25 @@ namespace Apache.Ignite.Core.Tests.Cache.Platform
         {
             nodes[startCacheIdx].CreateCache<int, int>(GetCacheConfiguration(cacheName, cacheMode, filteredNodeIdxs));
 
-            CheckPlatformCache(nodes, filteredNodeIdxs, cacheName);
+            CheckHasPlatformCache(nodes, filteredNodeIdxs, cacheName);
+
+            var entries = nodes[..(ClientIdx - 1)]
+                .Select(ignite => TestUtils.GetKey(ignite, cacheName, null,true))
+                .ToDictionary(i => i);
+
+            nodes[0].GetCache<int, int>(cacheName).PutAll(entries);
+
+            foreach (var ignite in nodes)
+                ignite.GetCache<int, int>(cacheName).GetAll(entries.Keys);
+
+            for (var i = 0; i < NodesCnt; i++)
+            {
+                var cacheMetrics = nodes[i].GetCache<int, int>(cacheName).GetMetrics();
+
+                var expCnt = filteredNodeIdxs.Contains(i) ? 3 : 9;
+
+                Assert.AreEqual(expCnt, cacheMetrics.CacheGets, "Unexpected cache get count: nodeIdx=" + i);
+            }
         }
 
         /// <summary>
@@ -162,7 +180,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Platform
         [TestCase(CacheMode.Replicated)]
         public void TestAttributesNodeFilterDotnetConfig(CacheMode cacheMode)
         {
-            var cacheCfg = CacheConfiguration(cacheMode, nodeFilter: _attributeNodeFilter);
+            var cacheCfg = GetCacheConfiguration(cacheMode, nodeFilter: _attributeNodeFilter);
 
             DoTestStatic(
                 i => AddAttributes(GetConfiguration(i, cacheCfg), 2, ClientIdx),
@@ -189,7 +207,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Platform
         {
             var nodes = RunNodes(cfgFunc);
 
-            CheckPlatformCache(nodes, expIdxs);
+            CheckHasPlatformCache(nodes, expIdxs);
         }
         
         private static IIgnite[] RunNodes(Func<int, IgniteConfiguration> cfgFunc)
@@ -199,7 +217,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Platform
                 .ToArray();
         }
 
-        private static void CheckPlatformCache(IIgnite[] nodes, int[] expIdxs, string cacheName = CacheName)
+        private static void CheckHasPlatformCache(IIgnite[] nodes, int[] expIdxs, string cacheName = CacheName)
         {
             for (var i = 0; i < NodesCnt; i++)
             {
@@ -223,13 +241,13 @@ namespace Apache.Ignite.Core.Tests.Cache.Platform
         private static CacheConfiguration GetCacheConfiguration(string cacheName, CacheMode cacheMode,
             params int[] filteredNodeIdxs)
         {
-            return CacheConfiguration(
+            return GetCacheConfiguration(
                 cacheMode,
                 cacheName,
                 filteredNodeIdxs.Length == 0 ? null : new NodeNameFilter(filteredNodeIdxs));
         }
 
-        private static CacheConfiguration CacheConfiguration(CacheMode cacheMode, string cacheName = CacheName,
+        private static CacheConfiguration GetCacheConfiguration(CacheMode cacheMode, string cacheName = CacheName,
             IClusterNodeFilter nodeFilter = null)
         {
             return new CacheConfiguration(cacheName)
@@ -239,7 +257,8 @@ namespace Apache.Ignite.Core.Tests.Cache.Platform
                 PlatformCacheConfiguration = new PlatformCacheConfiguration
                 {
                     NodeFilter =  nodeFilter
-                }
+                },
+                EnableStatistics = true
             };
         }
 

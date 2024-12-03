@@ -36,6 +36,7 @@
                             </property>
                         </bean>
                     </property>
+                    <property name="enableStatistics" value="true"/>
                 </bean>
             </list>
         </property>
