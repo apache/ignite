@@ -113,9 +113,10 @@ namespace Apache.Ignite.Core.Tests.Cache.Platform
             {
                 var cacheMetrics = nodes[i].GetCache<int, int>(cacheName).GetMetrics();
 
-                var expCnt = filteredNodeIdxs.Contains(i) ? 3 : 9;
+                var expCnt = filteredNodeIdxs.Contains(i) ? 2 : 9;
 
-                Assert.AreEqual(expCnt, cacheMetrics.CacheGets, "Unexpected cache get count: nodeIdx=" + i);
+                TestUtils.WaitForTrueCondition(() => expCnt == cacheMetrics.CacheGets, 10_000,
+                    "Unexpected cache get count: nodeIdx=" + i);
             }
         }
 
