@@ -437,6 +437,7 @@ public class GridDistributedLockRequest extends GridDistributedBaseMessage {
                     return false;
 
                 writer.incrementState();
+
         }
 
         return true;
@@ -560,6 +561,7 @@ public class GridDistributedLockRequest extends GridDistributedBaseMessage {
                     return false;
 
                 reader.incrementState();
+
         }
 
         return reader.afterMessageRead(GridDistributedLockRequest.class);

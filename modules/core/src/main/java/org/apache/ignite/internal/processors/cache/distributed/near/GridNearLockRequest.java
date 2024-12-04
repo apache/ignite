@@ -437,6 +437,7 @@ public class GridNearLockRequest extends GridDistributedLockRequest {
                     return false;
 
                 reader.incrementState();
+
         }
 
         return reader.afterMessageRead(GridNearLockRequest.class);

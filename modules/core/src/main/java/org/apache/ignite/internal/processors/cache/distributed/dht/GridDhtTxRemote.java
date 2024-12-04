@@ -99,8 +99,7 @@ public class GridDhtTxRemote extends GridDistributedTxRemoteAdapter {
         int taskNameHash,
         boolean single,
         boolean storeWriteThrough,
-        @Nullable String txLbl
-    ) {
+        @Nullable String txLbl) {
         super(
             ctx,
             nodeId,
@@ -172,8 +171,7 @@ public class GridDhtTxRemote extends GridDistributedTxRemoteAdapter {
         @Nullable UUID subjId,
         int taskNameHash,
         boolean storeWriteThrough,
-        @Nullable String txLbl
-    ) {
+        @Nullable String txLbl) {
         super(
             ctx,
             nodeId,

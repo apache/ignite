@@ -22,7 +22,6 @@ import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
-import java.util.Map;
 import java.util.UUID;
 import javax.cache.expiry.ExpiryPolicy;
 import javax.cache.processor.EntryProcessor;
@@ -133,7 +132,6 @@ public class GridNearAtomicFullUpdateRequest extends GridNearAtomicAbstractUpdat
      * @param flags Flags.
      * @param addDepInfo Deployment info flag.
      * @param maxEntryCnt Maximum entries count.
-     * @param appAttrs Application attributes.
      */
     GridNearAtomicFullUpdateRequest(
         int cacheId,
@@ -148,8 +146,7 @@ public class GridNearAtomicFullUpdateRequest extends GridNearAtomicAbstractUpdat
         int taskNameHash,
         byte flags,
         boolean addDepInfo,
-        int maxEntryCnt,
-        @Nullable Map<String, String> appAttrs
+        int maxEntryCnt
     ) {
         super(cacheId,
             nodeId,
@@ -159,8 +156,7 @@ public class GridNearAtomicFullUpdateRequest extends GridNearAtomicAbstractUpdat
             op,
             taskNameHash,
             flags,
-            addDepInfo,
-            appAttrs);
+            addDepInfo);
 
         this.expiryPlc = expiryPlc;
         this.invokeArgs = invokeArgs;

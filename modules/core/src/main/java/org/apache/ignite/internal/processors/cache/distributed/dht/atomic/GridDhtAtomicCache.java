@@ -281,6 +281,32 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
         ctx.io().addCacheHandler(
             ctx.cacheId(),
             ctx.startTopologyVersion(),
+            GridNearAtomicUpdateApplicationAttributesAwareRequest.class,
+            new CI2<UUID, GridNearAtomicUpdateApplicationAttributesAwareRequest>() {
+                @Override public void apply(
+                    UUID nodeId,
+                    GridNearAtomicUpdateApplicationAttributesAwareRequest req
+                ) {
+                    if (req.applicationAttributes() != null)
+                        ctx.operationContextPerCall(new CacheOperationContext().setApplicationAttributes(req.applicationAttributes()));
+
+                    try {
+                        processNearAtomicUpdateRequest(nodeId, req.payload());
+                    }
+                    finally {
+                        ctx.operationContextPerCall(null);
+                    }
+                }
+
+                @Override public String toString() {
+                    return "GridNearAtomicUpdateApplicationAttributesAwareRequest handler " +
+                        "[msgIdx=" + GridNearAtomicAbstractUpdateRequest.CACHE_MSG_IDX + ']';
+                }
+            });
+
+        ctx.io().addCacheHandler(
+            ctx.cacheId(),
+            ctx.startTopologyVersion(),
             GridNearAtomicUpdateResponse.class,
             new CI2<UUID, GridNearAtomicUpdateResponse>() {
                 @Override public void apply(
@@ -3131,6 +3157,8 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
             drPutVals = null;
         }
 
+        CacheOperationContext opCtx = ctx.operationContextPerCall();
+
         GridNearAtomicUpdateFuture updateFut = new GridNearAtomicUpdateFuture(
             ctx,
             this,
@@ -3149,7 +3177,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
             req.keepBinary(),
             req.recovery(),
             MAX_RETRIES,
-            req.applicationAttributes());
+            opCtx == null ? null : opCtx.applicationAttributes());
 
         updateFut.map();
     }
@@ -3190,15 +3218,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
             return;
         }
 
-        if (req.applicationAttributes() != null)
-            ctx.operationContextPerCall(new CacheOperationContext().setApplicationAttributes(req.applicationAttributes()));
-
-        try {
-            updateAllAsyncInternal(node, req, updateReplyClos);
-        }
-        finally {
-            ctx.operationContextPerCall(null);
-        }
+        updateAllAsyncInternal(node, req, updateReplyClos);
     }
 
     /**

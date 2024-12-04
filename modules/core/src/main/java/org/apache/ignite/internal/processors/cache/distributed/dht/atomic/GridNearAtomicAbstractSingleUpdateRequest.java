@@ -18,7 +18,6 @@
 package org.apache.ignite.internal.processors.cache.distributed.dht.atomic;
 
 import java.io.Externalizable;
-import java.util.Map;
 import java.util.UUID;
 import javax.cache.expiry.ExpiryPolicy;
 import org.apache.ignite.cache.CacheWriteSynchronizationMode;
@@ -57,7 +56,6 @@ public abstract class GridNearAtomicAbstractSingleUpdateRequest extends GridNear
      * @param taskNameHash Task name hash code.
      * @param flags Flags.
      * @param addDepInfo Deployment info flag.
-     * @param appAttrs Application attributes.
      */
     protected GridNearAtomicAbstractSingleUpdateRequest(
         int cacheId,
@@ -68,8 +66,7 @@ public abstract class GridNearAtomicAbstractSingleUpdateRequest extends GridNear
         GridCacheOperation op,
         int taskNameHash,
         byte flags,
-        boolean addDepInfo,
-        @Nullable Map<String, String> appAttrs
+        boolean addDepInfo
     ) {
         super(cacheId,
             nodeId,
@@ -79,8 +76,7 @@ public abstract class GridNearAtomicAbstractSingleUpdateRequest extends GridNear
             op,
             taskNameHash,
             flags,
-            addDepInfo,
-            appAttrs);
+            addDepInfo);
     }
 
     /**

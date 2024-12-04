@@ -576,8 +576,7 @@ public class GridNearAtomicSingleUpdateFuture extends GridNearAtomicAbstractUpda
                         op,
                         taskNameHash,
                         flags,
-                        cctx.deploymentEnabled(),
-                        appAttrs);
+                        cctx.deploymentEnabled());
                 }
                 else {
                     req = new GridNearAtomicSingleUpdateFilterRequest(
@@ -590,8 +589,7 @@ public class GridNearAtomicSingleUpdateFuture extends GridNearAtomicAbstractUpda
                         filter,
                         taskNameHash,
                         flags,
-                        cctx.deploymentEnabled(),
-                        appAttrs);
+                        cctx.deploymentEnabled());
                 }
             }
         }
@@ -609,8 +607,7 @@ public class GridNearAtomicSingleUpdateFuture extends GridNearAtomicAbstractUpda
                 taskNameHash,
                 flags,
                 cctx.deploymentEnabled(),
-                1,
-                appAttrs);
+                1);
         }
 
         req.addUpdateEntry(cacheKey,

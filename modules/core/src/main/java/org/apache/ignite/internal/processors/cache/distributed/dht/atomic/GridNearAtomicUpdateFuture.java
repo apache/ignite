@@ -27,7 +27,6 @@ import java.util.UUID;
 import javax.cache.expiry.ExpiryPolicy;
 import javax.cache.processor.EntryProcessor;
 import org.apache.ignite.IgniteCacheRestartingException;
-import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.cache.CacheWriteSynchronizationMode;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.IgniteInternalFuture;
@@ -110,6 +109,7 @@ public class GridNearAtomicUpdateFuture extends GridNearAtomicAbstractUpdateFutu
      * @param skipStore Skip store flag.
      * @param keepBinary Keep binary flag.
      * @param remapCnt Maximum number of retries.
+     * @param appAttrs Application attributes.
      */
     public GridNearAtomicUpdateFuture(
         GridCacheContext cctx,
@@ -655,26 +655,10 @@ public class GridNearAtomicUpdateFuture extends GridNearAtomicAbstractUpdateFutu
         for (PrimaryRequestState reqState : mappings.values()) {
             GridNearAtomicAbstractUpdateRequest req = reqState.req;
 
-            try {
-                if (req.initMappingLocally() && reqState.mappedNodes.isEmpty())
-                    reqState.resetLocalMapping();
+            if (req.initMappingLocally() && reqState.mappedNodes.isEmpty())
+                reqState.resetLocalMapping();
 
-                cctx.io().send(req.nodeId(), req, cctx.ioPolicy());
-
-                if (msgLog.isDebugEnabled()) {
-                    msgLog.debug("Near update fut, sent request [futId=" + req.futureId() +
-                        ", node=" + req.nodeId() + ']');
-                }
-            }
-            catch (IgniteCheckedException e) {
-                if (msgLog.isDebugEnabled()) {
-                    msgLog.debug("Near update fut, failed to send request [futId=" + req.futureId() +
-                        ", node=" + req.nodeId() +
-                        ", err=" + e + ']');
-                }
-
-                onSendError(req, e);
-            }
+            sendSingleRequest(req.nodeId, req);
         }
 
         if (syncMode == FULL_ASYNC)
@@ -989,8 +973,7 @@ public class GridNearAtomicUpdateFuture extends GridNearAtomicAbstractUpdateFutu
                     taskNameHash,
                     flags,
                     cctx.deploymentEnabled(),
-                    keys.size(),
-                    appAttrs);
+                    keys.size());
 
                 mapped = new PrimaryRequestState(req, nodes, false);
 
@@ -1103,8 +1086,7 @@ public class GridNearAtomicUpdateFuture extends GridNearAtomicAbstractUpdateFutu
             taskNameHash,
             flags,
             cctx.deploymentEnabled(),
-            1,
-            appAttrs);
+            1);
 
         req.addUpdateEntry(cacheKey,
             val,

@@ -20,7 +20,6 @@ package org.apache.ignite.internal.processors.cache.distributed.dht.atomic;
 import java.io.Externalizable;
 import java.nio.ByteBuffer;
 import java.util.Arrays;
-import java.util.Map;
 import java.util.UUID;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.cache.CacheWriteSynchronizationMode;
@@ -66,7 +65,6 @@ public class GridNearAtomicSingleUpdateFilterRequest extends GridNearAtomicSingl
      * @param taskNameHash Task name hash code.
      * @param flags Flags.
      * @param addDepInfo Deployment info flag.
-     * @param appAttrs Application attributes.
      */
     GridNearAtomicSingleUpdateFilterRequest(
         int cacheId,
@@ -78,8 +76,7 @@ public class GridNearAtomicSingleUpdateFilterRequest extends GridNearAtomicSingl
         @Nullable CacheEntryPredicate[] filter,
         int taskNameHash,
         byte flags,
-        boolean addDepInfo,
-        @Nullable Map<String, String> appAttrs
+        boolean addDepInfo
     ) {
         super(
             cacheId,
@@ -90,8 +87,7 @@ public class GridNearAtomicSingleUpdateFilterRequest extends GridNearAtomicSingl
             op,
             taskNameHash,
             flags,
-            addDepInfo,
-            appAttrs
+            addDepInfo
         );
 
         assert filter != null && filter.length > 0;
@@ -155,7 +151,7 @@ public class GridNearAtomicSingleUpdateFilterRequest extends GridNearAtomicSingl
         }
 
         switch (writer.state()) {
-            case 13:
+            case 12:
                 if (!writer.writeObjectArray("filter", filter, MessageCollectionItemType.MSG))
                     return false;
 
@@ -177,7 +173,7 @@ public class GridNearAtomicSingleUpdateFilterRequest extends GridNearAtomicSingl
             return false;
 
         switch (reader.state()) {
-            case 13:
+            case 12:
                 filter = reader.readObjectArray("filter", MessageCollectionItemType.MSG, CacheEntryPredicate.class);
 
                 if (!reader.isLastRead())
@@ -197,7 +193,7 @@ public class GridNearAtomicSingleUpdateFilterRequest extends GridNearAtomicSingl
 
     /** {@inheritDoc} */
     @Override public byte fieldsCount() {
-        return 14;
+        return 13;
     }
 
     /** {@inheritDoc} */

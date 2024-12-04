@@ -41,6 +41,7 @@ import org.apache.ignite.internal.processors.cache.CachePartialUpdateCheckedExce
 import org.apache.ignite.internal.processors.cache.GridCacheAtomicFuture;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.GridCacheFutureAdapter;
+import org.apache.ignite.internal.processors.cache.GridCacheMessage;
 import org.apache.ignite.internal.processors.cache.GridCacheMvccManager;
 import org.apache.ignite.internal.processors.cache.GridCacheOperation;
 import org.apache.ignite.internal.processors.cache.GridCacheReturn;
@@ -297,7 +298,12 @@ public abstract class GridNearAtomicAbstractUpdateFuture extends GridCacheFuture
      */
     final void sendSingleRequest(UUID nodeId, GridNearAtomicAbstractUpdateRequest req) {
         try {
-            cctx.io().send(req.nodeId(), req, cctx.ioPolicy());
+            GridCacheMessage msg = req;
+
+            if (appAttrs != null)
+                msg = new GridNearAtomicUpdateApplicationAttributesAwareRequest(req, appAttrs);
+
+            cctx.io().send(req.nodeId(), msg, cctx.ioPolicy());
 
             if (msgLog.isDebugEnabled()) {
                 msgLog.debug("Near update fut, sent request [futId=" + req.futureId() +

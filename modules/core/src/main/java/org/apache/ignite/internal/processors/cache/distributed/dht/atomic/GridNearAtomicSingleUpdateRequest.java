@@ -21,7 +21,6 @@ import java.io.Externalizable;
 import java.nio.ByteBuffer;
 import java.util.Collections;
 import java.util.List;
-import java.util.Map;
 import java.util.UUID;
 import javax.cache.processor.EntryProcessor;
 import org.apache.ignite.IgniteCheckedException;
@@ -87,8 +86,7 @@ public class GridNearAtomicSingleUpdateRequest extends GridNearAtomicAbstractSin
         GridCacheOperation op,
         int taskNameHash,
         byte flags,
-        boolean addDepInfo,
-        @Nullable Map<String, String> appAttrs
+        boolean addDepInfo
     ) {
         super(cacheId,
             nodeId,
@@ -98,8 +96,7 @@ public class GridNearAtomicSingleUpdateRequest extends GridNearAtomicAbstractSin
             op,
             taskNameHash,
             flags,
-            addDepInfo,
-            appAttrs
+            addDepInfo
         );
     }
 
@@ -247,13 +244,13 @@ public class GridNearAtomicSingleUpdateRequest extends GridNearAtomicAbstractSin
         }
 
         switch (writer.state()) {
-            case 11:
+            case 10:
                 if (!writer.writeMessage("key", key))
                     return false;
 
                 writer.incrementState();
 
-            case 12:
+            case 11:
                 if (!writer.writeMessage("val", val))
                     return false;
 
@@ -275,7 +272,7 @@ public class GridNearAtomicSingleUpdateRequest extends GridNearAtomicAbstractSin
             return false;
 
         switch (reader.state()) {
-            case 11:
+            case 10:
                 key = reader.readMessage("key");
 
                 if (!reader.isLastRead())
@@ -283,7 +280,7 @@ public class GridNearAtomicSingleUpdateRequest extends GridNearAtomicAbstractSin
 
                 reader.incrementState();
 
-            case 12:
+            case 11:
                 val = reader.readMessage("val");
 
                 if (!reader.isLastRead())
@@ -311,7 +308,7 @@ public class GridNearAtomicSingleUpdateRequest extends GridNearAtomicAbstractSin
 
     /** {@inheritDoc} */
     @Override public byte fieldsCount() {
-        return 13;
+        return 12;
     }
 
     /** {@inheritDoc} */
