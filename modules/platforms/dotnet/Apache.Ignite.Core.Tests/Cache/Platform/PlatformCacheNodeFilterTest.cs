@@ -21,6 +21,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Platform
     using System.Collections.Generic;
     using System.IO;
     using System.Linq;
+    using System.Threading;
     using Apache.Ignite.Core.Cache.Configuration;
     using Apache.Ignite.Core.Cluster;
     using NUnit.Framework;
@@ -100,24 +101,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Platform
 
             CheckHasPlatformCache(nodes, filteredNodeIdxs, cacheName);
 
-            var entries = nodes[..(ClientIdx - 1)]
-                .Select(ignite => TestUtils.GetKey(ignite, cacheName, null,true))
-                .ToDictionary(i => i);
-
-            nodes[0].GetCache<int, int>(cacheName).PutAll(entries);
-
-            foreach (var ignite in nodes)
-                ignite.GetCache<int, int>(cacheName).GetAll(entries.Keys);
-
-            for (var i = 0; i < NodesCnt; i++)
-            {
-                var cacheMetrics = nodes[i].GetCache<int, int>(cacheName).GetMetrics();
-
-                var expCnt = filteredNodeIdxs.Contains(i) ? 2 : 9;
-
-                TestUtils.WaitForTrueCondition(() => expCnt == cacheMetrics.CacheGets, 10_000,
-                    "Unexpected cache get count: nodeIdx=" + i);
-            }
+            CheckMetrics(nodes, cacheName, filteredNodeIdxs);
         }
 
         /// <summary>
@@ -209,6 +193,8 @@ namespace Apache.Ignite.Core.Tests.Cache.Platform
             var nodes = RunNodes(cfgFunc);
 
             CheckHasPlatformCache(nodes, expIdxs);
+            
+            CheckMetrics(nodes, CacheName, expIdxs);
         }
         
         private static IIgnite[] RunNodes(Func<int, IgniteConfiguration> cfgFunc)
@@ -225,8 +211,71 @@ namespace Apache.Ignite.Core.Tests.Cache.Platform
                 var hasPlatformCache = nodes[i].GetCache<int, int>(cacheName).HasPlatformCache;
 
                 Assert.AreEqual(expIdxs.Contains(i), hasPlatformCache,
-                    $"Unexpected state: [nodeIdx={i}, hasPlatformCache={hasPlatformCache}]");
+                    $"Unexpected state: [cacheName={cacheName}, nodeIdx={i}, hasPlatformCache={hasPlatformCache}]");
             }
+        }
+        
+        private static void CheckMetrics(IIgnite[] nodes, string cacheName, int[] filteredNodeIdxs)
+        {
+            // var entries = nodes[..ClientIdx]
+            //     .Select(ignite => TestUtils.GetKey(ignite, cacheName, null,true))
+            //     .ToDictionary(i => i);
+                        
+            CheckCacheGets(nodes, cacheName, 0);
+
+            var batchSz = 3;
+            
+            // Ensure puts from all nodes. Platform cache should be updated.
+            for (var i = 0; i < NodesCnt; i++)
+            {
+                var cache = nodes[i].GetCache<int, int>(cacheName);
+                
+                for (int j = 0; j < batchSz; j++)
+                {
+                    var kv = j + i * batchSz;
+
+                    cache.Put(kv, kv);
+                }
+            }
+
+            CheckCacheGets(nodes, cacheName, 0);
+
+            var entriesCnt = batchSz * NodesCnt;
+            
+            for (int i = 0; i < entriesCnt; i++)
+            {
+                for (int j = 0; j < NodesCnt; j++) nodes[j].GetCache<int, int>(cacheName).Get(i);
+                
+                var expCnt = i * (NodesCnt - filteredNodeIdxs.Length);
+                
+                CheckCacheGets(nodes, cacheName, expCnt);
+            }
+        }
+
+        private static void CheckCacheGets(IIgnite[] nodes, string cacheName, int expCnt)
+        {
+            Thread.Sleep(300);
+            
+            Func<string> msgFunc = () =>
+            {
+                var cacheGets = CacheGets(nodes, cacheName);
+                
+                return $"Unexpected cache gets count: [cacheName={cacheName}, cacheGets=[{string.Join(", ", cacheGets)}], " +
+                       $"expCnt={expCnt}, cacheGetsSum={cacheGets.Sum()}]";
+            };
+
+            TestUtils.WaitForTrueCondition(
+                () => expCnt == CacheGets(nodes, cacheName).Sum(),
+                msgFunc);
+        }
+
+        private static long[] CacheGets(IIgnite[] nodes, string cacheName)
+        {
+            return nodes.Select(ignite =>
+                    ignite.GetCache<int, int>(cacheName)
+                        .GetMetrics()
+                        .CacheGets)
+                .ToArray();
         }
 
         private static IgniteConfiguration GetConfiguration(int idx, params CacheConfiguration[] cacheCfg)
@@ -235,7 +284,8 @@ namespace Apache.Ignite.Core.Tests.Cache.Platform
             {
                 IgniteInstanceName = NamePref + idx,
                 ClientMode = idx == ClientIdx,
-                CacheConfiguration = cacheCfg
+                CacheConfiguration = cacheCfg/*,
+                MetricsUpdateFrequency = TimeSpan.FromMilliseconds(100)*/
             };
         }
 
@@ -259,7 +309,8 @@ namespace Apache.Ignite.Core.Tests.Cache.Platform
                 {
                     NodeFilter =  nodeFilter
                 },
-                EnableStatistics = true
+                EnableStatistics = true,
+                ReadFromBackup = false
             };
         }
 
@@ -272,8 +323,9 @@ namespace Apache.Ignite.Core.Tests.Cache.Platform
             return new IgniteConfiguration(TestUtils.GetTestConfiguration())
             {
                 IgniteInstanceName = NamePref + idx,
-                SpringConfigUrl = cfgUrl,
-                ClientMode = idx == ClientIdx
+                ClientMode = idx == ClientIdx,
+                SpringConfigUrl = cfgUrl/*,
+                MetricsUpdateFrequency = TimeSpan.FromMilliseconds(100)*/
             };
         }
 
