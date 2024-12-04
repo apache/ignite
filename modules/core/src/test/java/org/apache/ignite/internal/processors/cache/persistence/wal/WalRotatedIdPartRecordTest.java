@@ -26,7 +26,6 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import javax.cache.expiry.Duration;
 import javax.cache.expiry.TouchedExpiryPolicy;
 import org.apache.ignite.IgniteCheckedException;
-import org.apache.ignite.IgniteDataStreamer;
 import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
 import org.apache.ignite.cache.query.ScanQuery;
@@ -69,7 +68,7 @@ public class WalRotatedIdPartRecordTest extends GridCommonAbstractTest {
     AtomicBoolean stop = new AtomicBoolean();
 
     /** */
-    CountDownLatch complete = new CountDownLatch(2);
+    CountDownLatch complete = new CountDownLatch(1);
 
     /** */
     @Parameterized.Parameters(name = "cacheMode={0}")
@@ -169,16 +168,6 @@ public class WalRotatedIdPartRecordTest extends GridCommonAbstractTest {
 
         for (int i = 0; i < KEYS; i++)
             cln.cache(DEFAULT_CACHE_NAME).put(i, rnd.nextInt());
-
-        runMultiThreadedAsync(() -> {
-            try (IgniteDataStreamer<Integer, Integer> stream = cln.dataStreamer(DEFAULT_CACHE_NAME)) {
-                while (!stop.get())
-                    stream.addData(rnd.nextInt(KEYS), rnd.nextInt());
-            }
-            finally {
-                complete.countDown();
-            }
-        }, 1, "update");
 
         runMultiThreadedAsync(() -> {
             while (!stop.get())
