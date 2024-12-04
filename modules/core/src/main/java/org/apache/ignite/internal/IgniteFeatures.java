@@ -61,9 +61,6 @@ public enum IgniteFeatures {
     /** Partition Map Exchange-free switch on baseline node left at fully rebalanced cluster.  */
     PME_FREE_SWITCH(19),
 
-    /** ContinuousQuery with security subject id support. */
-    CONT_QRY_SECURITY_AWARE(21),
-
     /**
      * Preventing loss of in-memory data when deactivating the cluster.
      *
