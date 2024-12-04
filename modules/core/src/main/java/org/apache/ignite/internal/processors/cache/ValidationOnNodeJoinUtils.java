@@ -43,7 +43,6 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.MemoryConfiguration;
 import org.apache.ignite.configuration.TransactionConfiguration;
 import org.apache.ignite.internal.GridKernalContext;
-import org.apache.ignite.internal.IgniteFeatures;
 import org.apache.ignite.internal.IgniteNodeAttributes;
 import org.apache.ignite.internal.binary.BinaryMarshaller;
 import org.apache.ignite.internal.cluster.DetachedClusterNode;
@@ -430,15 +429,9 @@ public class ValidationOnNodeJoinUtils {
     static void checkConsistency(GridKernalContext ctx, IgniteLogger log) throws IgniteCheckedException {
         Collection<ClusterNode> rmtNodes = ctx.discovery().remoteNodes();
 
-        boolean changeablePoolSize =
-            IgniteFeatures.allNodesSupports(rmtNodes, IgniteFeatures.DIFFERENT_REBALANCE_POOL_SIZE);
-
         for (ClusterNode n : rmtNodes) {
             if (Boolean.TRUE.equals(n.attribute(ATTR_CONSISTENCY_CHECK_SKIPPED)))
                 continue;
-
-            if (!changeablePoolSize)
-                checkRebalanceConfiguration(n, ctx);
 
             checkTransactionConfiguration(n, ctx, log);
 
@@ -526,30 +519,6 @@ public class ValidationOnNodeJoinUtils {
             return ctx.discovery().cacheAffinityNode(ctx.discovery().localNode(), cc.getName());
         else
             return false;
-    }
-
-    /**
-     * @param rmt Remote node to check.
-     * @param ctx Context.
-     * @throws IgniteCheckedException If check failed.
-     */
-    private static void checkRebalanceConfiguration(
-        ClusterNode rmt,
-        GridKernalContext ctx
-    ) throws IgniteCheckedException {
-        if (ctx.config().isClientMode() || rmt.isClient())
-            return;
-
-        Integer rebalanceThreadPoolSize = rmt.attribute(IgniteNodeAttributes.ATTR_REBALANCE_POOL_SIZE);
-
-        if (rebalanceThreadPoolSize != null && rebalanceThreadPoolSize != ctx.config().getRebalanceThreadPoolSize()) {
-            throw new IgniteCheckedException("Rebalance configuration mismatch (fix configuration or set -D" +
-                IGNITE_SKIP_CONFIGURATION_CONSISTENCY_CHECK + "=true system property)." +
-                " Different values of such parameter may lead to rebalance process instability and hanging. " +
-                " [rmtNodeId=" + rmt.id() +
-                ", locRebalanceThreadPoolSize = " + ctx.config().getRebalanceThreadPoolSize() +
-                ", rmtRebalanceThreadPoolSize = " + rebalanceThreadPoolSize + "]");
-        }
     }
 
     /**

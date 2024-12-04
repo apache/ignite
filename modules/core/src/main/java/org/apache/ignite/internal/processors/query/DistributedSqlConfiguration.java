@@ -24,7 +24,6 @@ import org.apache.ignite.internal.processors.configuration.distributed.Distribut
 import org.apache.ignite.internal.processors.configuration.distributed.DistributedConfigurationLifecycleListener;
 import org.apache.ignite.internal.processors.configuration.distributed.DistributedPropertyDispatcher;
 import org.apache.ignite.internal.processors.configuration.distributed.SimpleDistributedProperty;
-import org.apache.ignite.internal.processors.metastorage.ReadableDistributedMetaStorage;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.typedef.internal.A;
 
@@ -80,19 +79,10 @@ public abstract class DistributedSqlConfiguration {
 
                 @SuppressWarnings("deprecation")
                 @Override public void onReadyToWrite() {
-                    if (ReadableDistributedMetaStorage.isSupported(ctx)) {
-                        setDefaultValue(
-                            dfltQryTimeout,
-                            (int)ctx.config().getSqlConfiguration().getDefaultQueryTimeout(),
-                            log);
-                    }
-                    else {
-                        log.warning("Distributed metastorage is not supported. " +
-                            "All distributed SQL configuration parameters are unavailable.");
-
-                        // Set properties to default.
-                        dfltQryTimeout.localUpdate((int)ctx.config().getSqlConfiguration().getDefaultQueryTimeout());
-                    }
+                    setDefaultValue(
+                        dfltQryTimeout,
+                        (int)ctx.config().getSqlConfiguration().getDefaultQueryTimeout(),
+                        log);
                 }
             }
         );

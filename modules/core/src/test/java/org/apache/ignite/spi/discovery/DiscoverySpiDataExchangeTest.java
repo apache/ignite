@@ -29,7 +29,6 @@ import org.apache.ignite.IgniteException;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
-import org.apache.ignite.internal.IgniteFeatures;
 import org.apache.ignite.internal.managers.discovery.IgniteDiscoverySpi;
 import org.apache.ignite.internal.managers.discovery.IgniteDiscoverySpiInternalListener;
 import org.apache.ignite.internal.util.typedef.T2;
@@ -211,11 +210,6 @@ public class DiscoverySpiDataExchangeTest extends GridCommonAbstractTest {
         /** {@inheritDoc} */
         @Override public void clientReconnect() {
             delegate.clientReconnect();
-        }
-
-        /** {@inheritDoc} */
-        @Override public boolean allNodesSupport(IgniteFeatures feature) {
-            return delegate.allNodesSupport(feature);
         }
 
         /** {@inheritDoc} */
