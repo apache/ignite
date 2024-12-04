@@ -20,6 +20,8 @@ package org.apache.ignite.internal.client.thin;
 import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.CountDownLatch;
+import java.util.stream.Collectors;
+import java.util.stream.StreamSupport;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.Ignition;
 import org.apache.ignite.client.ClientConnectionException;
@@ -31,13 +33,17 @@ import org.apache.ignite.internal.IgniteKernal;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.plugin.AbstractTestPluginProvider;
 import org.apache.ignite.plugin.PluginContext;
+import org.apache.ignite.spi.systemview.view.ClientConnectionView;
+import org.apache.ignite.spi.systemview.view.SystemView;
 import org.apache.ignite.testframework.GridTestNode;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.junit.Test;
 
 import static org.apache.ignite.internal.GridKernalState.STARTED;
 import static org.apache.ignite.internal.IgnitionEx.gridx;
-import static org.apache.ignite.internal.processors.odbc.ClientListenerNioListener.RECOVERY_ATTR;
+import static org.apache.ignite.internal.processors.odbc.ClientListenerNioListener.MANAGEMENT_CLIENT_ATTR;
+import static org.apache.ignite.internal.processors.odbc.ClientListenerNioListener.MANAGEMENT_CONNECTION_SHIFTED_ID;
+import static org.apache.ignite.internal.processors.odbc.ClientListenerProcessor.CLI_CONN_VIEW;
 import static org.apache.ignite.testframework.GridTestUtils.assertThrowsWithCause;
 import static org.apache.ignite.testframework.GridTestUtils.stopThreads;
 import static org.apache.ignite.testframework.GridTestUtils.waitForCondition;
@@ -74,9 +80,29 @@ public class RecoveryModeTest extends AbstractThinClientTest {
         try (IgniteClient client = startClient(0, 1)) {
             assertEquals(1, client.cluster().nodes().size());
 
+            assertEquals(0, clientConnections(0).size());
+
+            List<Long> conns1 = clientConnections(1);
+
+            assertEquals(1, conns1.size());
+            assertFalse(managementClientConnection(conns1.iterator().next()));
+
             recoveryLatch.countDown();
 
             assertTrue(waitForCondition(() -> 2 == client.cluster().nodes().size(), getTestTimeout()));
+
+            assertTrue(waitForCondition(() -> {
+                List<Long> conn0 = clientConnections(0);
+
+                return conn0.size() == 1 && conn0.stream().allMatch(id -> id != -1); // Connection completed.
+            }, getTestTimeout()));
+
+            List<Long> conn0 = clientConnections(0);
+
+            assertEquals(1, conn0.size());
+            assertFalse(managementClientConnection(conn0.iterator().next()));
+
+            assertEquals(conns1, clientConnections(1));
         }
     }
 
@@ -87,11 +113,26 @@ public class RecoveryModeTest extends AbstractThinClientTest {
 
         try (IgniteClient ignored1 = startClientRecoveryEnabled(0)) {
             try (IgniteClient ignored2 = startClientRecoveryEnabled(0)) {
-                List<String> conns = gridx(getTestIgniteInstanceName(0)).context().clientListener().mxBean().getConnections();
+                List<Long> conns = clientConnections(0);
 
-                assertEquals(2, conns.size());
+                assertEquals(2, conns.stream().distinct().count());
+                assertTrue(conns.stream().allMatch(this::managementClientConnection));
             }
         }
+    }
+
+    /** */
+    private List<Long> clientConnections(int nodeIdx) {
+        SystemView<ClientConnectionView> conns = gridx(getTestIgniteInstanceName(nodeIdx)).context()
+            .systemView().view(CLI_CONN_VIEW);
+
+        return StreamSupport.stream(conns.spliterator(), false)
+            .map(ClientConnectionView::connectionId).collect(Collectors.toList());
+    }
+
+    /** */
+    private boolean managementClientConnection(long connIdx) {
+        return connIdx >> 32 == MANAGEMENT_CONNECTION_SHIFTED_ID;
     }
 
     /** */
@@ -110,7 +151,8 @@ public class RecoveryModeTest extends AbstractThinClientTest {
             return node;
         }).toArray(ClusterNode[]::new);
 
-        return getClientConfiguration(nodes);
+        return getClientConfiguration(nodes)
+            .setAutoBinaryConfigurationEnabled(false);
     }
 
     /** {@inheritDoc} */
@@ -121,7 +163,7 @@ public class RecoveryModeTest extends AbstractThinClientTest {
     /** */
     private IgniteClient startClientRecoveryEnabled(int... igniteIdxs) {
         return Ignition.startClient(getClientConfiguration(igniteIdxs)
-            .setUserAttributes(F.asMap(RECOVERY_ATTR, Boolean.TRUE.toString())));
+            .setUserAttributes(F.asMap(MANAGEMENT_CLIENT_ATTR, Boolean.TRUE.toString())));
     }
 
     /** Starts grid in recovery mode. */
