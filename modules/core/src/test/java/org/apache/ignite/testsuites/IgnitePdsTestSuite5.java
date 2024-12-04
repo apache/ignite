@@ -51,6 +51,7 @@ import org.apache.ignite.internal.processors.cache.persistence.wal.WalArchiveCon
 import org.apache.ignite.internal.processors.cache.persistence.wal.WalEnableDisableWithNodeShutdownTest;
 import org.apache.ignite.internal.processors.cache.persistence.wal.WalEnableDisableWithRestartsTest;
 import org.apache.ignite.internal.processors.cache.persistence.wal.WalPageRecordCompactionTest;
+import org.apache.ignite.internal.processors.cache.persistence.wal.WalRotatedIdPartRecordTest;
 import org.apache.ignite.internal.processors.cache.persistence.wal.aware.SegmentAwareTest;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.DynamicSuite;
@@ -125,6 +126,8 @@ public class IgnitePdsTestSuite5 {
 
         GridTestUtils.addTestIfNeeded(suite, WalCompactionNotificationsTest.class, ignoredTests);
         GridTestUtils.addTestIfNeeded(suite, WalPageRecordCompactionTest.class, ignoredTests);
+
+        GridTestUtils.addTestIfNeeded(suite, WalRotatedIdPartRecordTest.class, ignoredTests);
 
         return suite;
     }
