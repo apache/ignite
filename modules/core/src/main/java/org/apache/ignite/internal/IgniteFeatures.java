@@ -47,9 +47,6 @@ public enum IgniteFeatures {
      */
     SAFE_CLUSTER_DEACTIVATION(22),
 
-    /** Tracing. */
-    TRACING(26),
-
     /** Support policy of shutdown. */
     SHUTDOWN_POLICY(40),
 
