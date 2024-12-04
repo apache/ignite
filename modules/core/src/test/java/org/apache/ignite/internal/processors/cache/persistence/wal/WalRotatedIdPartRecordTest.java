@@ -93,7 +93,7 @@ public class WalRotatedIdPartRecordTest extends GridCommonAbstractTest {
                     .setAtomicityMode(mode)
                     .setBackups(1)
                     .setAffinity(new RendezvousAffinityFunction().setPartitions(1))
-                    .setExpiryPolicyFactory(TouchedExpiryPolicy.factoryOf(new Duration(TimeUnit.SECONDS, 1))));
+                    .setExpiryPolicyFactory(TouchedExpiryPolicy.factoryOf(new Duration(TimeUnit.SECONDS, 60))));
 
             // Plugin that creates a testing WAL manager.
             cfg.setPluginProviders(new AbstractTestPluginProvider() {
@@ -154,7 +154,7 @@ public class WalRotatedIdPartRecordTest extends GridCommonAbstractTest {
 
     /** */
     @Test
-    public void concurrentUpdateTouchCheckpointKey() throws Exception {
+    public void walRotatedIdPartRecord() throws Exception {
         IgniteEx ignite0 = startGrid(0);
         IgniteEx ignite1 = startGrid(1);
 
