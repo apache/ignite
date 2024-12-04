@@ -41,9 +41,6 @@ public enum IgniteFeatures {
     /** Cache metrics v2 support. */
     CACHE_METRICS_V2(1),
 
-    /** Data paket compression. */
-    DATA_PACKET_COMPRESSION(3),
-
     /** Support of splitted cache configurations to avoid broken deserialization on non-affinity nodes. */
     SPLITTED_CACHE_CONFIGURATIONS(5),
 
@@ -52,9 +49,6 @@ public enum IgniteFeatures {
 
     /** The node can communicate with others via socket channel. */
     CHANNEL_COMMUNICATION(12),
-
-    /** Replacing TcpDiscoveryNode field with nodeId field in discovery messages. */
-    TCP_DISCOVERY_MESSAGE_NODE_COMPACT_REPRESENTATION(14),
 
     /** Partition Map Exchange-free switch on baseline node left at fully rebalanced cluster.  */
     PME_FREE_SWITCH(19),
