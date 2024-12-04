@@ -702,7 +702,8 @@ public class ReliabilityTest extends AbstractThinClientTest {
             Ignition.allGrids().get(0).close();
             Ignition.allGrids().get(1).close();
 
-            ServicesTest.TestNodeIdServiceInterface svc = client.services().serviceProxy(SERVICE_NAME, ServicesTest.TestNodeIdServiceInterface.class);
+            ServicesTest.TestNodeIdServiceInterface svc = client.services().serviceProxy(SERVICE_NAME,
+                ServicesTest.TestNodeIdServiceInterface.class);
 
             svc.nodeId();
         }
