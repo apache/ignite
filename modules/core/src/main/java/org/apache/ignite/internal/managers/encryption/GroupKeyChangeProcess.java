@@ -110,9 +110,6 @@ class GroupKeyChangeProcess {
         if (ctx.clientNode())
             throw new UnsupportedOperationException("Client nodes can not perform this operation.");
 
-        if (!IgniteFeatures.allNodesSupports(ctx.grid().cluster().nodes(), CACHE_GROUP_KEY_CHANGE))
-            throw new IllegalStateException("Not all nodes in the cluster support this operation.");
-
         if (!ctx.state().clusterState().state().active())
             throw new IgniteException("Operation was rejected. The cluster is inactive.");
 
