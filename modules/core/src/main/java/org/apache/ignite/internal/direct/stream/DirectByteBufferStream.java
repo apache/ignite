@@ -50,7 +50,7 @@ import static org.apache.ignite.internal.util.GridUnsafe.LONG_ARR_OFF;
 import static org.apache.ignite.internal.util.GridUnsafe.SHORT_ARR_OFF;
 
 /**
- * Direct marshalling I/O stream (version 2).
+ * Direct marshalling I/O stream.
  */
 public class DirectByteBufferStream {
     /** */
