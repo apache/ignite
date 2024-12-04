@@ -69,9 +69,6 @@ public enum IgniteFeatures {
     /** Tracing. */
     TRACING(26),
 
-    /** Remove metadata from cluster for specified type. */
-    REMOVE_METADATA(39),
-
     /** Support policy of shutdown. */
     SHUTDOWN_POLICY(40),
 
