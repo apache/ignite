@@ -24,6 +24,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Platform
     using System.Threading;
     using Apache.Ignite.Core.Cache.Configuration;
     using Apache.Ignite.Core.Cluster;
+    using Apache.Ignite.Core.Log;
     using NUnit.Framework;
 
     /// <summary>
@@ -230,11 +231,16 @@ namespace Apache.Ignite.Core.Tests.Cache.Platform
             {
                 var cache = nodes[i].GetCache<int, int>(cacheName);
                 
-                for (int j = 0; j < batchSz; j++)
+                for (var j = 0; j < batchSz; j++)
                 {
                     var kv = j + i * batchSz;
-
+                
+                    nodes[i].Logger.Warn($">>>>>> Before put: [node#={i}, kv={kv}]");
+                    
+                    // TODO: Fix stack smashing
                     cache.Put(kv, kv);
+                    
+                    nodes[i].Logger.Warn($">>>>>> After put: [node#={i}, kv={kv}]");
                 }
             }
 
@@ -244,7 +250,8 @@ namespace Apache.Ignite.Core.Tests.Cache.Platform
             
             for (int i = 0; i < entriesCnt; i++)
             {
-                for (int j = 0; j < NodesCnt; j++) nodes[j].GetCache<int, int>(cacheName).Get(i);
+                for (int j = 0; j < NodesCnt; j++)
+                    nodes[j].GetCache<int, int>(cacheName).Get(i);
                 
                 var expCnt = i * (NodesCnt - filteredNodeIdxs.Length);
                 
