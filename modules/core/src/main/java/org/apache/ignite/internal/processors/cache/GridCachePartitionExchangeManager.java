@@ -781,7 +781,6 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
         }
 
         GridKernalContext ctx = cctx.kernalContext();
-        DiscoveryDataClusterState state = ctx.state().clusterState();
 
         if (baselineChanging) {
             ctx.pools().getStripedExecutorService().execute(new Runnable() {
