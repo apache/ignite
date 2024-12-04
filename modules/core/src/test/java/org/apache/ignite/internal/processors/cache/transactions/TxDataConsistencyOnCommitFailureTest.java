@@ -17,7 +17,6 @@
 
 package org.apache.ignite.internal.processors.cache.transactions;
 
-import java.util.Map;
 import java.util.UUID;
 import java.util.function.Supplier;
 import org.apache.ignite.Ignite;
@@ -178,7 +177,7 @@ public class TxDataConsistencyOnCommitFailureTest extends GridCommonAbstractTest
 
         MockGridNearTxLocal locTx = new MockGridNearTxLocal(ctx, false, false, false, GridIoPolicy.SYSTEM_POOL,
             TransactionConcurrency.PESSIMISTIC, TransactionIsolation.REPEATABLE_READ, 0, true, 1, null, 0, null,
-            null, null);
+            null);
 
         Mockito.doAnswer(new Answer<GridNearTxLocal>() {
             @Override public GridNearTxLocal answer(InvocationOnMock invocation) throws Throwable {
@@ -218,14 +217,13 @@ public class TxDataConsistencyOnCommitFailureTest extends GridCommonAbstractTest
          * @param taskNameHash Task name hash.
          * @param lb Label.
          * @param txDumpsThrottling Log throttling information.
-         * @param appAttrs Application attributes.
          */
         public MockGridNearTxLocal(GridCacheSharedContext ctx, boolean implicit, boolean implicitSingle, boolean sys,
             byte plc, TransactionConcurrency concurrency, TransactionIsolation isolation, long timeout,
             boolean storeEnabled, int txSize, @Nullable UUID subjId, int taskNameHash, @Nullable String lb,
-            IgniteTxManager.TxDumpsThrottling txDumpsThrottling, Map<String, String> appAttrs) {
+            IgniteTxManager.TxDumpsThrottling txDumpsThrottling) {
             super(ctx, implicit, implicitSingle, sys, plc, concurrency, isolation, timeout, storeEnabled,
-                txSize, subjId, taskNameHash, lb, txDumpsThrottling, appAttrs);
+                txSize, subjId, taskNameHash, lb, txDumpsThrottling);
         }
 
         /** {@inheritDoc} */

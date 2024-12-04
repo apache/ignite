@@ -670,6 +670,11 @@ public interface IgniteInternalTx {
     public @Nullable Map<String, String> applicationAttributes();
 
     /**
+     * @param appAttrs Application attributes.
+     */
+    public void applicationAttributes(Map<String, String> appAttrs);
+
+    /**
      * @return Transaction counters.
      * @param createIfAbsent {@code True} if non-null instance is needed.
      */

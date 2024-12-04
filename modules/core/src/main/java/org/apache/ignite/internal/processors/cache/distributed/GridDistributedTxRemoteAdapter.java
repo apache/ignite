@@ -139,7 +139,6 @@ public abstract class GridDistributedTxRemoteAdapter extends IgniteTxAdapter imp
      * @param subjId Subject ID.
      * @param taskNameHash Task name hash code.
      * @param txLbl Transaction label.
-     * @param appAttrs Application attributes.
      */
     protected GridDistributedTxRemoteAdapter(
         GridCacheSharedContext<?, ?> ctx,
@@ -155,8 +154,7 @@ public abstract class GridDistributedTxRemoteAdapter extends IgniteTxAdapter imp
         int txSize,
         @Nullable UUID subjId,
         int taskNameHash,
-        @Nullable String txLbl,
-        @Nullable Map<String, String> appAttrs
+        @Nullable String txLbl
     ) {
         super(
             ctx,
@@ -170,8 +168,7 @@ public abstract class GridDistributedTxRemoteAdapter extends IgniteTxAdapter imp
             timeout,
             txSize,
             subjId,
-            taskNameHash,
-            appAttrs);
+            taskNameHash);
 
         this.invalidate = invalidate;
         this.txLbl = txLbl;

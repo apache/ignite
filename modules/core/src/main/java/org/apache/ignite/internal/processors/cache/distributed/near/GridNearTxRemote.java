@@ -77,7 +77,6 @@ public class GridNearTxRemote extends GridDistributedTxRemoteAdapter {
      * @param subjId Subject ID.
      * @param taskNameHash Task name hash code.
      * @param txLbl Transaction label.
-     * @param appAttrs Application attributes.
      * @throws IgniteCheckedException If unmarshalling failed.
      */
     public GridNearTxRemote(
@@ -98,8 +97,7 @@ public class GridNearTxRemote extends GridDistributedTxRemoteAdapter {
         int txSize,
         @Nullable UUID subjId,
         int taskNameHash,
-        @Nullable String txLbl,
-        @Nullable Map<String, String> appAttrs
+        @Nullable String txLbl
     ) throws IgniteCheckedException {
         super(
             ctx,
@@ -115,8 +113,7 @@ public class GridNearTxRemote extends GridDistributedTxRemoteAdapter {
             txSize,
             subjId,
             taskNameHash,
-            txLbl,
-            appAttrs
+            txLbl
         );
 
         assert nearNodeId != null;

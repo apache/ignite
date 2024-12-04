@@ -724,8 +724,7 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
             securitySubjectId(cctx),
             taskNameHash,
             lb,
-            txDumpsThrottling,
-            appAttrs
+            txDumpsThrottling
         );
 
         if (tx.system()) {
@@ -735,6 +734,8 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
             if (topVer != null)
                 tx.topologyVersion(topVer);
         }
+
+        tx.applicationAttributes(appAttrs);
 
         return onCreated(sysCacheCtx, tx);
     }

@@ -136,8 +136,7 @@ public class GridDhtTxLocal extends GridDhtTxLocalAdapter implements GridCacheMa
         UUID subjId,
         int taskNameHash,
         @Nullable String lb,
-        GridNearTxLocal parentTx,
-        @Nullable Map<String, String> appAttrs
+        GridNearTxLocal parentTx
     ) {
         super(
             cctx,
@@ -155,8 +154,7 @@ public class GridDhtTxLocal extends GridDhtTxLocalAdapter implements GridCacheMa
             onePhaseCommit,
             txSize,
             subjId,
-            taskNameHash,
-            appAttrs);
+            taskNameHash);
 
         this.lb = lb;
 

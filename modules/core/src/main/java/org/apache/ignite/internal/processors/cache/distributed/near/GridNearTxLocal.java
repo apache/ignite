@@ -244,8 +244,7 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
         @Nullable UUID subjId,
         int taskNameHash,
         @Nullable String lb,
-        IgniteTxManager.TxDumpsThrottling txDumpsThrottling,
-        @Nullable Map<String, String> appAttrs
+        IgniteTxManager.TxDumpsThrottling txDumpsThrottling
     ) {
         super(
             ctx,
@@ -263,8 +262,7 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
             false,
             txSize,
             subjId,
-            taskNameHash,
-            appAttrs);
+            taskNameHash);
         this.lb = lb;
 
         mappings = implicitSingle ? new IgniteTxMappingsSingleImpl() : new IgniteTxMappingsImpl();

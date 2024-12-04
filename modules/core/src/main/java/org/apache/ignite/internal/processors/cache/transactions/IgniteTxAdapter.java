@@ -304,13 +304,11 @@ public abstract class IgniteTxAdapter extends GridMetadataAwareAdapter implement
         boolean onePhaseCommit,
         int txSize,
         @Nullable UUID subjId,
-        int taskNameHash,
-        @Nullable Map<String, String> appAttrs
+        int taskNameHash
     ) {
         assert xidVer != null;
         assert cctx != null;
 
-        this.appAttrs = appAttrs;
         this.cctx = cctx;
         this.xidVer = xidVer;
         this.implicit = implicit;
@@ -370,10 +368,8 @@ public abstract class IgniteTxAdapter extends GridMetadataAwareAdapter implement
         long timeout,
         int txSize,
         @Nullable UUID subjId,
-        int taskNameHash,
-        @Nullable Map<String, String> appAttrs
+        int taskNameHash
     ) {
-        this.appAttrs = appAttrs;
         this.cctx = cctx;
         this.nodeId = nodeId;
         this.threadId = threadId;
@@ -418,6 +414,11 @@ public abstract class IgniteTxAdapter extends GridMetadataAwareAdapter implement
     /** {@inheritDoc} */
     @Override public @Nullable Map<String, String> applicationAttributes() {
         return appAttrs;
+    }
+
+    /** {@inheritDoc} */
+    @Override public void applicationAttributes(Map<String, String> appAttrs) {
+        this.appAttrs = appAttrs;
     }
 
     /**

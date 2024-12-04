@@ -557,8 +557,7 @@ public class IgniteTxHandler {
                     securitySubjectId(ctx),
                     req.taskNameHash(),
                     req.txLabel(),
-                    originTx,
-                    req.applicationAttributes()
+                    originTx
                 );
 
                 tx = ctx.tm().onCreated(null, tx);
@@ -597,6 +596,9 @@ public class IgniteTxHandler {
 
             if (req.needReturnValue())
                 tx.needReturnValue(true);
+
+            if (req.applicationAttributes() != null)
+                tx.applicationAttributes(req.applicationAttributes());
 
             IgniteInternalFuture<GridNearTxPrepareResponse> fut = tx.prepareAsync(req);
 
@@ -1679,11 +1681,11 @@ public class IgniteTxHandler {
                     req.taskNameHash(),
                     single,
                     req.storeWriteThrough(),
-                    req.txLabel(),
-                    req.applicationAttributes());
+                    req.txLabel());
 
                 tx.onePhaseCommit(req.onePhaseCommit());
                 tx.writeVersion(req.writeVersion());
+                tx.applicationAttributes(req.applicationAttributes());
 
                 tx = ctx.tm().onCreated(null, tx);
 
@@ -1907,11 +1909,11 @@ public class IgniteTxHandler {
                     req.txSize(),
                     securitySubjectId(ctx),
                     req.taskNameHash(),
-                    req.txLabel(),
-                    req.applicationAttributes()
+                    req.txLabel()
                 );
 
                 tx.writeVersion(req.writeVersion());
+                tx.applicationAttributes(req.applicationAttributes());
 
                 if (!tx.empty()) {
                     tx = ctx.tm().onCreated(null, tx);
