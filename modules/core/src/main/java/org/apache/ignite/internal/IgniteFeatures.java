@@ -99,10 +99,7 @@ public enum IgniteFeatures {
     SPLITTED_CACHE_CONFIGURATIONS_V2(46),
 
     /** Cache encryption key change. See {@link IgniteEncryption#changeCacheGroupKey(Collection)}. */
-    CACHE_GROUP_KEY_CHANGE(47),
-
-    /** Collecting performance statistics. */
-    PERFORMANCE_STATISTICS(48);
+    CACHE_GROUP_KEY_CHANGE(47);
 
     /**
      * Unique feature identifier.

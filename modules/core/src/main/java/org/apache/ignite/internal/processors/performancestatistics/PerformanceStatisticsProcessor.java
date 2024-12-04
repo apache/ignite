@@ -295,9 +295,6 @@ public class PerformanceStatisticsProcessor extends GridProcessorAdapter {
     public void startCollectStatistics() throws IgniteCheckedException {
         A.notNull(metastorage, "Metastorage not ready. Node not started?");
 
-        if (!allNodesSupports(ctx.discovery().allNodes(), IgniteFeatures.PERFORMANCE_STATISTICS))
-            throw new IllegalStateException("Not all nodes in the cluster support collecting performance statistics.");
-
         if (ctx.isStopping())
             throw new NodeStoppingException("Operation has been cancelled (node is stopping)");
 
