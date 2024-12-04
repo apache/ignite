@@ -34,10 +34,7 @@ public enum IgniteFeatures {
     CACHE_METRICS_V2(1),
 
     /** Partition Map Exchange-free switch on baseline node left at fully rebalanced cluster.  */
-    PME_FREE_SWITCH(19),
-
-    /** Support policy of shutdown. */
-    SHUTDOWN_POLICY(40);
+    PME_FREE_SWITCH(19);
 
     /**
      * Unique feature identifier.
