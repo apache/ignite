@@ -34,7 +34,6 @@ import org.apache.ignite.cache.CacheMetrics;
 import org.apache.ignite.cluster.ClusterMetrics;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.IgniteEx;
-import org.apache.ignite.internal.IgniteFeatures;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.processors.tracing.NoopTracing;
 import org.apache.ignite.internal.processors.tracing.Tracing;
@@ -249,12 +248,6 @@ abstract class TcpDiscoveryImpl {
      * @return Collection of remote nodes.
      */
     public abstract Collection<ClusterNode> getRemoteNodes();
-
-    /**
-     * @param feature Feature to check.
-     * @return {@code true} if all nodes support the given feature, {@code false} otherwise.
-     */
-    public abstract boolean allNodesSupport(IgniteFeatures feature);
 
     /**
      * @param nodeId Node id.
