@@ -33,17 +33,11 @@ public enum IgniteFeatures {
     /** Cache metrics v2 support. */
     CACHE_METRICS_V2(1),
 
-    /** Support of splitted cache configurations to avoid broken deserialization on non-affinity nodes. */
-    SPLITTED_CACHE_CONFIGURATIONS(5),
-
     /** Partition Map Exchange-free switch on baseline node left at fully rebalanced cluster.  */
     PME_FREE_SWITCH(19),
 
     /** Support policy of shutdown. */
-    SHUTDOWN_POLICY(40),
-
-    /** Compatibility support for new fields which are configured split. */
-    SPLITTED_CACHE_CONFIGURATIONS_V2(46);
+    SHUTDOWN_POLICY(40);
 
     /**
      * Unique feature identifier.
