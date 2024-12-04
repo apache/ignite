@@ -443,9 +443,6 @@ public class TcpDiscoverySpi extends IgniteSpiAdapter implements IgniteDiscovery
     protected TcpDiscoveryImpl impl;
 
     /** */
-    private boolean forceSrvMode;
-
-    /** */
     private boolean clientReconnectDisabled;
 
     /** */
@@ -560,24 +557,6 @@ public class TcpDiscoverySpi extends IgniteSpiAdapter implements IgniteDiscovery
             throw new IllegalStateException("TcpDiscoverySpi has not started.");
 
         return impl instanceof ClientImpl;
-    }
-
-    /**
-     * Sets force server mode flag.
-     * <p>
-     * If {@code true} TcpDiscoverySpi is started in server mode regardless
-     * of {@link IgniteConfiguration#isClientMode()}.
-     *
-     * @param forceSrvMode forceServerMode flag.
-     * @return {@code this} for chaining.
-     * @deprecated Will be removed at 3.0.
-     */
-    @IgniteSpiConfiguration(optional = true)
-    @Deprecated
-    public TcpDiscoverySpi setForceServerMode(boolean forceSrvMode) {
-        this.forceSrvMode = forceSrvMode;
-
-        return this;
     }
 
     /**
@@ -2257,7 +2236,7 @@ public class TcpDiscoverySpi extends IgniteSpiAdapter implements IgniteDiscovery
 
         initFailureDetectionTimeout();
 
-        if (!forceSrvMode && (Boolean.TRUE.equals(ignite.configuration().isClientMode()))) {
+        if (Boolean.TRUE.equals(ignite.configuration().isClientMode())) {
             if (ackTimeout == 0)
                 ackTimeout = DFLT_ACK_TIMEOUT_CLIENT;
 

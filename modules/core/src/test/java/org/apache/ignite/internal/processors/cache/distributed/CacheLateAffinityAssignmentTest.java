@@ -115,9 +115,6 @@ import static org.apache.ignite.testframework.GridTestUtils.waitForCondition;
  */
 public class CacheLateAffinityAssignmentTest extends GridCommonAbstractTest {
     /** */
-    private boolean forceSrvMode;
-
-    /** */
     private static final String CACHE_NAME1 = "testCache1";
 
     /** */
@@ -158,7 +155,6 @@ public class CacheLateAffinityAssignmentTest extends GridCommonAbstractTest {
 
         TcpDiscoverySpi discoSpi = (TcpDiscoverySpi)cfg.getDiscoverySpi();
 
-        discoSpi.setForceServerMode(forceSrvMode);
         discoSpi.setNetworkTimeout(60_000);
 
         cfg.setClientFailureDetectionTimeout(100000);
@@ -1303,7 +1299,9 @@ public class CacheLateAffinityAssignmentTest extends GridCommonAbstractTest {
         boolean lastClient,
         int... blockedIds
     ) throws Exception {
-        int ord = 1;
+        int ord = 2;
+
+        startGrid(0);
 
         for (int i = 0; i < cnt; i++) {
             if (i == cnt - 1 && lastClient)
@@ -1970,9 +1968,9 @@ public class CacheLateAffinityAssignmentTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     private void clientStartFirst(int clients) throws Exception {
-        forceSrvMode = true;
+        startGrid(0);
 
-        int topVer = 0;
+        int topVer = 1;
 
         for (int i = 0; i < clients; i++)
             startClient(topVer, ++topVer);
@@ -2003,8 +2001,6 @@ public class CacheLateAffinityAssignmentTest extends GridCommonAbstractTest {
      */
     @Test
     public void testRandomOperations() throws Exception {
-        forceSrvMode = true;
-
         final int MAX_SRVS = 10;
         final int MAX_CLIENTS = 10;
         final int MAX_CACHES = 15;
@@ -2012,7 +2008,9 @@ public class CacheLateAffinityAssignmentTest extends GridCommonAbstractTest {
         List<String> srvs = new ArrayList<>();
         List<String> clients = new ArrayList<>();
 
-        int srvIdx = 0;
+        startGrid(0);
+
+        int srvIdx = 1;
         int clientIdx = 0;
         int cacheIdx = 0;
 
