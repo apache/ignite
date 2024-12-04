@@ -712,8 +712,7 @@ public class GridClusterStateProcessor extends GridProcessorAdapter implements I
             }
         }
         else if (isApplicable(msg, state)) {
-            if (msg.state() == INACTIVE && !msg.forceDeactivation() &&
-                allNodesSupports(ctx.discovery().serverNodes(topVer), SAFE_CLUSTER_DEACTIVATION)) {
+            if (msg.state() == INACTIVE && !msg.forceDeactivation()) {
                 List<String> inMemCaches = listInMemoryUserCaches();
 
                 if (!inMemCaches.isEmpty()) {

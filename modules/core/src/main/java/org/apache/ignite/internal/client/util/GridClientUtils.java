@@ -179,40 +179,4 @@ public abstract class GridClientUtils {
 
         return i < 0 ? 0 : i;
     }
-
-    /**
-     * Checks that all cluster nodes support specified feature.
-     *
-     * @param client Client.
-     * @param feature Feature.
-     * @param validateClientNodes Whether client nodes should be checked as well.
-     * @param failIfUnsupportedFound If {@code true}, fails when found a node unsupporting {@code feature}.
-     * unsupporting {@code feature}.
-     * @return Id of node unsupporting {@code feature}. {@code Null} if all nodes support {@code feature}.
-     */
-    public static UUID checkFeatureSupportedByCluster(
-        GridClient client,
-        IgniteFeatures feature,
-        boolean validateClientNodes,
-        boolean failIfUnsupportedFound
-    ) throws GridClientException {
-        Collection<GridClientNode> nodes = validateClientNodes ?
-            client.compute().nodes() :
-            client.compute().nodes(GridClientNode::connectable);
-
-        for (GridClientNode node : nodes) {
-            byte[] featuresAttrBytes = node.attribute(IgniteNodeAttributes.ATTR_IGNITE_FEATURES);
-
-            if (!IgniteFeatures.nodeSupports(featuresAttrBytes, feature)) {
-                if (failIfUnsupportedFound) {
-                    throw new GridClientException("Failed to execute command: cluster contains node that " +
-                        "doesn't support feature [nodeId=" + node.nodeId() + ", feature=" + feature + ']');
-                }
-                else
-                    return node.nodeId();
-            }
-        }
-
-        return null;
-    }
 }
