@@ -54,7 +54,6 @@ import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.cache.CacheRebalanceMode;
 import org.apache.ignite.cache.affinity.AffinityFunction;
 import org.apache.ignite.cluster.BaselineNode;
-import org.apache.ignite.cluster.ClusterGroup;
 import org.apache.ignite.cluster.ClusterGroupEmptyException;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.cluster.ClusterState;
@@ -2340,8 +2339,6 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
             long txOwnerThreadId = tx.threadId();
 
             IgniteEx ignite = cctx.kernalContext().grid();
-
-            ClusterGroup nearNode = ignite.cluster().forNodeId(nearNodeId);
 
             String txReqInfo = String.format(
                 "[xidVer=%s, nodeId=%s]",
