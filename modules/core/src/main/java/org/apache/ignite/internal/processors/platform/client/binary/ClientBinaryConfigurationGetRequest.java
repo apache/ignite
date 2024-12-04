@@ -73,9 +73,4 @@ public class ClientBinaryConfigurationGetRequest extends ClientRequest {
 
         return basicNameMapper.isSimpleName() ? NAME_MAPPER_BASIC_SIMPLE : NAME_MAPPER_BASIC_FULL;
     }
-
-    /** {@inheritDoc} */
-    @Override public boolean beforeStartupRequest() {
-        return true;
-    }
 }
