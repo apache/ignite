@@ -53,6 +53,15 @@ public class IntervalTest extends AbstractBasicIntegrationTest {
         assertEquals(Duration.ofMillis(3723456), eval("INTERVAL '0 1:2:3.456' DAY TO SECOND"));
     }
 
+    /** */
+    @Test
+    public void testIntervalFloatingPointCast() {
+        assertEquals(Duration.ofHours(36), eval("CAST(f AS INTERVAL DAYS) FROM (VALUES(1.5)) AS t(f)"));
+        assertEquals(Duration.ofHours(36), eval("CAST(1.5::DECIMAL AS INTERVAL DAYS)"));
+        assertEquals(Duration.ofHours(36), eval("CAST(1.5 AS INTERVAL DAYS)"));
+        assertEquals(Duration.ofDays(1), eval("CAST(1::INT AS INTERVAL DAYS)"));
+    }
+
     /**
      * Test cast interval types to integer and integer to interval.
      */
@@ -388,7 +397,7 @@ public class IntervalTest extends AbstractBasicIntegrationTest {
     }
 
     /** */
-    public Object eval(String exp) {
-        return executeSql("SELECT " + exp).get(0).get(0);
+    public Object eval(String exp, Object... params) {
+        return executeSql("SELECT " + exp, params).get(0).get(0);
     }
 }

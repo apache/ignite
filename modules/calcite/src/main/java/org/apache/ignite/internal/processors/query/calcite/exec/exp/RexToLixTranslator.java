@@ -543,6 +543,21 @@ public class RexToLixTranslator implements RexVisitor<RexToLixTranslator.Result>
                                 Expressions.field(null, SqlParserPos.class, "ZERO")
                             )
                         );
+                        break;
+                    case NUMERIC:
+                        BigDecimal multiplier = targetType.getSqlTypeName().getEndUnit().multiplier;
+
+                        if (SqlTypeUtil.hasScale(sourceType)) {
+                            convert = Expressions.call(
+                                ConverterUtils.convert(operand, BigDecimal.class),
+                                IgniteMethod.BIG_DECIMAL_MULTIPLY.method(),
+                                Expressions.constant(multiplier));
+                        }
+                        else
+                            convert = IgniteExpressions.multiplyExact(operand, Expressions.constant(multiplier.longValue()));
+
+                        convert = ConverterUtils.convert(convert, targetType);
+                        break;
                 }
                 break;
             case BINARY:
@@ -612,25 +627,6 @@ public class RexToLixTranslator implements RexVisitor<RexToLixTranslator.Result>
                                 (long)Math.pow(10, 3 - targetScale)));
                 }
                 break;
-            case INTERVAL_YEAR:
-            case INTERVAL_YEAR_MONTH:
-            case INTERVAL_MONTH:
-            case INTERVAL_DAY:
-            case INTERVAL_DAY_HOUR:
-            case INTERVAL_DAY_MINUTE:
-            case INTERVAL_DAY_SECOND:
-            case INTERVAL_HOUR:
-            case INTERVAL_HOUR_MINUTE:
-            case INTERVAL_HOUR_SECOND:
-            case INTERVAL_MINUTE:
-            case INTERVAL_MINUTE_SECOND:
-            case INTERVAL_SECOND:
-                switch (sourceType.getSqlTypeName().getFamily()) {
-                    case NUMERIC:
-                        final BigDecimal multiplier = targetType.getSqlTypeName().getEndUnit().multiplier;
-                        final BigDecimal divider = BigDecimal.ONE;
-                        convert = RexImpTable.multiplyDivide(convert, multiplier, divider);
-                }
         }
         return scaleIntervalToNumber(sourceType, targetType, convert);
     }

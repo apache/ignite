@@ -24,6 +24,7 @@ import org.apache.calcite.rel.type.RelDataTypeFactory;
 import org.apache.calcite.rex.RexBuilder;
 import org.apache.calcite.rex.RexLiteral;
 import org.apache.calcite.sql.type.SqlTypeName;
+import org.apache.calcite.sql.type.SqlTypeUtil;
 import org.apache.ignite.internal.processors.query.IgniteSQLException;
 import org.apache.ignite.internal.processors.query.calcite.util.TypeUtils;
 import org.checkerframework.checker.nullness.qual.Nullable;
@@ -49,7 +50,7 @@ public class IgniteRexBuilder extends RexBuilder {
                 }
             }
 
-            if (TypeUtils.hasScale(type))
+            if (TypeUtils.hasScale(type) && SqlTypeUtil.isNumeric(type))
                 return super.makeLiteral(bd.setScale(type.getScale(), RoundingMode.HALF_UP), type, typeName);
         }
 
