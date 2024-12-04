@@ -648,8 +648,6 @@ final class ReliableChannel implements AutoCloseable {
 
         Set<InetSocketAddress> newAddrsSet = newAddrs.stream().flatMap(Collection::stream).collect(Collectors.toSet());
 
-        List<ClientChannelHolder> reinitHolders = new ArrayList<>();
-
         // Close obsolete holders or map old but valid addresses to holders
         if (holders != null) {
             for (ClientChannelHolder h : holders) {
@@ -667,10 +665,10 @@ final class ReliableChannel implements AutoCloseable {
 
                 if (!found)
                     h.close();
-                else
-                    reinitHolders.add(h);
             }
         }
+
+        List<ClientChannelHolder> reinitHolders = new ArrayList<>();
 
         // The variable holds a new index of default channel after topology change.
         // Suppose that reuse of the channel is better than open new connection.
@@ -703,12 +701,12 @@ final class ReliableChannel implements AutoCloseable {
 
                 for (InetSocketAddress addr : addrs)
                     curAddrs.putIfAbsent(addr, hld);
-
-                reinitHolders.add(hld);
             }
 
             if (hld == currDfltHolder)
                 dfltChannelIdx = reinitHolders.size() - 1;
+
+            reinitHolders.add(hld);
         }
 
         if (dfltChannelIdx == -1) {
