@@ -149,8 +149,6 @@ import static org.apache.ignite.events.EventType.EVT_NODE_LEFT;
 import static org.apache.ignite.internal.GridTopic.TOPIC_COMM_SYSTEM;
 import static org.apache.ignite.internal.GridTopic.TOPIC_COMM_USER;
 import static org.apache.ignite.internal.GridTopic.TOPIC_IO_TEST;
-import static org.apache.ignite.internal.IgniteFeatures.CHANNEL_COMMUNICATION;
-import static org.apache.ignite.internal.IgniteFeatures.nodeSupports;
 import static org.apache.ignite.internal.managers.communication.GridIoPolicy.AFFINITY_POOL;
 import static org.apache.ignite.internal.managers.communication.GridIoPolicy.CALLER_THREAD;
 import static org.apache.ignite.internal.managers.communication.GridIoPolicy.DATA_STREAMER_POOL;
@@ -212,8 +210,7 @@ import static org.jsr166.ConcurrentLinkedHashMap.QueuePolicy.PER_SEGMENT_Q_OPTIM
  * Sending or receiving binary data (represented by a <em>File</em>) over a <em>SocketChannel</em> is only
  * possible when the build-in {@link TcpCommunicationSpi} implementation of Communication SPI is used and
  * both local and remote nodes are {@link IgniteFeatures#CHANNEL_COMMUNICATION CHANNEL_COMMUNICATION} feature
- * support. To ensue that the remote node satisfies all conditions the {@link #fileTransmissionSupported(ClusterNode)}
- * method must be called prior to data sending.
+ * support.
  * <p>
  * It is possible to receive a set of files on a particular topic (any of {@link GridTopic}) on the remote node.
  * A transmission handler for desired topic must be registered prior to opening transmission sender to it.
@@ -1956,19 +1953,6 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
         interruptReceiver(rcvCtx0,
             new IgniteCheckedException("Receiver has been closed due to removing corresponding transmission handler " +
                 "on local node [nodeId=" + ctx.localNodeId() + ']'));
-    }
-
-    /**
-     * This method must be used prior to opening a {@link TransmissionSender} by calling
-     * {@link #openTransmissionSender(UUID, Object)} to ensure that remote and local nodes
-     * are fully support direct {@link SocketChannel} connection to transfer data.
-     *
-     * @param node Remote node to check.
-     * @return {@code true} if a file can be sent over socket channel directly.
-     */
-    public boolean fileTransmissionSupported(ClusterNode node) {
-        return ((CommunicationSpi)getSpi() instanceof TcpCommunicationSpi) &&
-            nodeSupports(node, CHANNEL_COMMUNICATION);
     }
 
     /**
