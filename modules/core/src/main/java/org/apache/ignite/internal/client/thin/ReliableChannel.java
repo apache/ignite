@@ -703,10 +703,10 @@ final class ReliableChannel implements AutoCloseable {
                     curAddrs.putIfAbsent(addr, hld);
             }
 
+            reinitHolders.add(hld);
+
             if (hld == currDfltHolder)
                 dfltChannelIdx = reinitHolders.size() - 1;
-
-            reinitHolders.add(hld);
         }
 
         if (dfltChannelIdx == -1) {
