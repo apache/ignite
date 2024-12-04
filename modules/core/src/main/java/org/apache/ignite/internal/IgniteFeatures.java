@@ -37,9 +37,6 @@ public enum IgniteFeatures {
     /** Support of splitted cache configurations to avoid broken deserialization on non-affinity nodes. */
     SPLITTED_CACHE_CONFIGURATIONS(5),
 
-    /** Distributed metastorage. */
-    DISTRIBUTED_METASTORAGE(11),
-
     /** Partition Map Exchange-free switch on baseline node left at fully rebalanced cluster.  */
     PME_FREE_SWITCH(19),
 
