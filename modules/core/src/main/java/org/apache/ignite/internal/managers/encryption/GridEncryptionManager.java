@@ -88,7 +88,6 @@ import static org.apache.ignite.failure.FailureType.CRITICAL_ERROR;
 import static org.apache.ignite.internal.GridComponent.DiscoveryDataExchangeType.ENCRYPTION_MGR;
 import static org.apache.ignite.internal.GridTopic.TOPIC_GEN_ENC_KEY;
 import static org.apache.ignite.internal.IgniteFeatures.CACHE_GROUP_KEY_CHANGE;
-import static org.apache.ignite.internal.IgniteFeatures.MASTER_KEY_CHANGE;
 import static org.apache.ignite.internal.managers.communication.GridIoPolicy.SYSTEM_POOL;
 import static org.apache.ignite.internal.util.distributed.DistributedProcess.DistributedProcessType.MASTER_KEY_CHANGE_FINISH;
 import static org.apache.ignite.internal.util.distributed.DistributedProcess.DistributedProcessType.MASTER_KEY_CHANGE_PREPARE;
@@ -670,11 +669,6 @@ public class GridEncryptionManager extends GridManagerAdapter<EncryptionSpi> imp
         if (ctx.clientNode()) {
             return new IgniteFinishedFutureImpl<>(new UnsupportedOperationException("Client nodes can not " +
                 "perform this operation."));
-        }
-
-        if (!IgniteFeatures.allNodesSupports(ctx.grid().cluster().nodes(), MASTER_KEY_CHANGE)) {
-            return new IgniteFinishedFutureImpl<>(new IllegalStateException("Not all nodes in the cluster support " +
-                "the master key change process."));
         }
 
         // WAL is unavailable for write on the inactive cluster. Master key change will not be logged and group keys
