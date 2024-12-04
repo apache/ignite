@@ -69,29 +69,11 @@ public enum IgniteFeatures {
     /** Tracing. */
     TRACING(26),
 
-    /** Distributed change timeout for dump long operations. */
-    DISTRIBUTED_CHANGE_LONG_OPERATIONS_DUMP_TIMEOUT(30),
-
-    /** New region for volatile data. */
-    VOLATILE_DATA_STRUCTURES_REGION(33),
-
-    /** Check secondary indexes inline size on join/by control utility request. */
-    CHECK_INDEX_INLINE_SIZES(36),
-
-    /** Distributed propagation of tx collisions dump interval. */
-    DISTRIBUTED_TX_COLLISIONS_DUMP(37),
-
     /** Remove metadata from cluster for specified type. */
     REMOVE_METADATA(39),
 
     /** Support policy of shutdown. */
     SHUTDOWN_POLICY(40),
-
-    /** Force rebuild, list or request indexes rebuild status from control script. */
-    INDEXES_MANIPULATIONS_FROM_CONTROL_SCRIPT(42),
-
-    /** Pk index keys are applied in correct order. */
-    SPECIFIED_SEQ_PK_KEYS(45),
 
     /** Compatibility support for new fields which are configured split. */
     SPLITTED_CACHE_CONFIGURATIONS_V2(46);
