@@ -64,6 +64,7 @@ import org.apache.calcite.sql.SqlIntervalQualifier;
 import org.apache.calcite.sql.SqlOperator;
 import org.apache.calcite.sql.fun.SqlStdOperatorTable;
 import org.apache.calcite.sql.parser.SqlParserPos;
+import org.apache.calcite.sql.type.SqlTypeName;
 import org.apache.calcite.sql.type.SqlTypeUtil;
 import org.apache.calcite.sql.validate.SqlConformance;
 import org.apache.calcite.util.BuiltInMethod;
@@ -547,9 +548,13 @@ public class RexToLixTranslator implements RexVisitor<RexToLixTranslator.Result>
                     case NUMERIC:
                         BigDecimal multiplier = targetType.getSqlTypeName().getEndUnit().multiplier;
 
-                        if (SqlTypeUtil.hasScale(sourceType)) {
+                        if (SqlTypeName.FRACTIONAL_TYPES.contains(sourceType.getSqlTypeName())) {
+                            convert = sourceType.getSqlTypeName() == SqlTypeName.DECIMAL
+                                ? operand
+                                : ConverterUtils.convertToDecimal(operand, typeFactory.createSqlType(SqlTypeName.DECIMAL));
+
                             convert = Expressions.call(
-                                ConverterUtils.convert(operand, BigDecimal.class),
+                                convert,
                                 IgniteMethod.BIG_DECIMAL_MULTIPLY.method(),
                                 Expressions.constant(multiplier));
                         }
