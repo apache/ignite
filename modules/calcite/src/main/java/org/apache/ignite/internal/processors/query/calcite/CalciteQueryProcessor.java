@@ -43,6 +43,7 @@ import org.apache.calcite.sql.SqlNode;
 import org.apache.calcite.sql.SqlNodeList;
 import org.apache.calcite.sql.parser.SqlParser;
 import org.apache.calcite.sql.parser.SqlParserPos;
+import org.apache.calcite.sql.type.SqlTypeName;
 import org.apache.calcite.sql.util.SqlOperatorTables;
 import org.apache.calcite.sql.util.SqlShuttle;
 import org.apache.calcite.sql.validate.SqlValidator;
@@ -550,7 +551,15 @@ public class CalciteQueryProcessor extends GridProcessorAdapter implements Query
                 return qry.accept(
                     new SqlShuttle() {
                         @Override public SqlNode visit(SqlLiteral literal) {
-                            return new SqlDynamicParam(-1, literal.getParserPosition());
+                            // Process only certain data types, where it's justified to hide information.
+                            // Don't touch enums and boolean literals, since they can be used as internal field values
+                            // for some SQL nodes.
+                            if (SqlTypeName.STRING_TYPES.contains(literal.getTypeName())
+                                || SqlTypeName.NUMERIC_TYPES.contains(literal.getTypeName())
+                                || SqlTypeName.DATETIME_TYPES.contains(literal.getTypeName()))
+                                return new SqlDynamicParam(-1, literal.getParserPosition());
+
+                            return literal;
                         }
 
                         @Override public SqlNode visit(SqlCall call) {

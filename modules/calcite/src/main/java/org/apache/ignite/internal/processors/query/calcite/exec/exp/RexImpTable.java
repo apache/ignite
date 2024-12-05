@@ -135,6 +135,9 @@ import static org.apache.calcite.sql.fun.SqlLibraryOperators.TIMESTAMP_MICROS;
 import static org.apache.calcite.sql.fun.SqlLibraryOperators.TIMESTAMP_MILLIS;
 import static org.apache.calcite.sql.fun.SqlLibraryOperators.TIMESTAMP_SECONDS;
 import static org.apache.calcite.sql.fun.SqlLibraryOperators.TO_BASE64;
+import static org.apache.calcite.sql.fun.SqlLibraryOperators.TO_CHAR;
+import static org.apache.calcite.sql.fun.SqlLibraryOperators.TO_DATE;
+import static org.apache.calcite.sql.fun.SqlLibraryOperators.TO_TIMESTAMP;
 import static org.apache.calcite.sql.fun.SqlLibraryOperators.TRANSLATE3;
 import static org.apache.calcite.sql.fun.SqlLibraryOperators.UNIX_DATE;
 import static org.apache.calcite.sql.fun.SqlLibraryOperators.UNIX_MICROS;
@@ -242,6 +245,9 @@ import static org.apache.calcite.sql.fun.SqlStdOperatorTable.UNARY_MINUS;
 import static org.apache.calcite.sql.fun.SqlStdOperatorTable.UNARY_PLUS;
 import static org.apache.calcite.sql.fun.SqlStdOperatorTable.UPPER;
 import static org.apache.calcite.util.ReflectUtil.isStatic;
+import static org.apache.ignite.internal.processors.query.calcite.sql.fun.IgniteOwnSqlOperatorTable.BITAND;
+import static org.apache.ignite.internal.processors.query.calcite.sql.fun.IgniteOwnSqlOperatorTable.BITOR;
+import static org.apache.ignite.internal.processors.query.calcite.sql.fun.IgniteOwnSqlOperatorTable.BITXOR;
 import static org.apache.ignite.internal.processors.query.calcite.sql.fun.IgniteOwnSqlOperatorTable.GREATEST2;
 import static org.apache.ignite.internal.processors.query.calcite.sql.fun.IgniteOwnSqlOperatorTable.LEAST2;
 import static org.apache.ignite.internal.processors.query.calcite.sql.fun.IgniteOwnSqlOperatorTable.NULL_BOUND;
@@ -406,6 +412,9 @@ public class RexImpTable {
         defineMethod(DATE, "date", NullPolicy.STRICT);
         defineMethod(DATETIME, "datetime", NullPolicy.STRICT);
         defineMethod(TIME, "time", NullPolicy.STRICT);
+        defineReflective(TO_CHAR, BuiltInMethod.TO_CHAR.method);
+        defineReflective(TO_DATE, BuiltInMethod.TO_DATE.method);
+        defineReflective(TO_TIMESTAMP, BuiltInMethod.TO_TIMESTAMP.method);
 
         map.put(IS_NULL, new IsNullImplementor());
         map.put(IS_NOT_NULL, new IsNotNullImplementor());
@@ -564,6 +573,10 @@ public class RexImpTable {
         // Operator IS_NOT_DISTINCT_FROM is removed by RexSimplify, but still possible in join conditions, so
         // implementation required.
         defineMethod(IS_NOT_DISTINCT_FROM, IgniteMethod.IS_NOT_DISTINCT_FROM.method(), NullPolicy.NONE);
+
+        defineMethod(BITAND, BuiltInMethod.BIT_AND.method, NullPolicy.ANY);
+        defineMethod(BITOR, BuiltInMethod.BIT_OR.method, NullPolicy.ANY);
+        defineMethod(BITXOR, BuiltInMethod.BIT_XOR.method, NullPolicy.ANY);
     }
 
     /** */

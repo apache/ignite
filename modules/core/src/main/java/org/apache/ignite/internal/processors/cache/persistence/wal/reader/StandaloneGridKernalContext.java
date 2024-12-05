@@ -103,6 +103,7 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.internal.worker.WorkersRegistry;
 import org.apache.ignite.maintenance.MaintenanceRegistry;
 import org.apache.ignite.marshaller.Marshaller;
+import org.apache.ignite.marshaller.MarshallerUtils;
 import org.apache.ignite.plugin.PluginNotFoundException;
 import org.apache.ignite.plugin.PluginProvider;
 import org.apache.ignite.spi.metric.noop.NoopMetricExporterSpi;
@@ -191,7 +192,7 @@ public class StandaloneGridKernalContext implements GridKernalContext {
     ) throws IgniteCheckedException {
         this.log = log;
 
-        marshallerCtx = new MarshallerContextImpl(null, null);
+        marshallerCtx = new MarshallerContextImpl(null, MarshallerUtils.classNameFilter(getClass().getClassLoader()));
         cfg = prepareIgniteConfiguration();
 
         try {
