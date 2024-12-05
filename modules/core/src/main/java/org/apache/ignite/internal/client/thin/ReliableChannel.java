@@ -817,10 +817,10 @@ final class ReliableChannel implements AutoCloseable {
         ClientOperation op,
         @Nullable List<ClientConnectionException> failures
     ) {
+        int fixedAttemptsLimit = attemptsLimit;
+
         // An additional attempt is needed because N+1 channels might be used for sending a message - first a random
         // one, then each one from #channels in sequence.
-        int fixedAttemptsLimit = attemptsLimit;
-        
         if (partitionAwarenessEnabled && channelsCnt.get() > 1)
             fixedAttemptsLimit++;
 
