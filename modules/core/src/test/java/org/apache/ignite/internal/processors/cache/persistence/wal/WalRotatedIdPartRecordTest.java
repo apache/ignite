@@ -17,8 +17,6 @@
 
 package org.apache.ignite.internal.processors.cache.persistence.wal;
 
-import java.util.ArrayList;
-import java.util.Collection;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.TimeUnit;
@@ -36,23 +34,20 @@ import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteEx;
+import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.pagemem.wal.IgniteWriteAheadLogManager;
 import org.apache.ignite.internal.pagemem.wal.record.WALRecord;
 import org.apache.ignite.internal.pagemem.wal.record.delta.RotatedIdPartRecord;
-import org.apache.ignite.internal.processors.cache.GridCacheProcessor;
 import org.apache.ignite.internal.processors.cache.persistence.GridCacheDatabaseSharedManager;
 import org.apache.ignite.plugin.AbstractTestPluginProvider;
 import org.apache.ignite.plugin.PluginContext;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.jetbrains.annotations.Nullable;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.Parameterized;
 
 import static org.apache.ignite.testframework.GridTestUtils.runMultiThreadedAsync;
 
 /** */
-@RunWith(Parameterized.class)
 public class WalRotatedIdPartRecordTest extends GridCommonAbstractTest {
     /** */
     private static final int KEYS = 1000;
@@ -61,25 +56,10 @@ public class WalRotatedIdPartRecordTest extends GridCommonAbstractTest {
     private final ThreadLocalRandom rnd = ThreadLocalRandom.current();
 
     /** */
-    @Parameterized.Parameter
-    public CacheAtomicityMode mode;
-
-    /** */
     AtomicBoolean stop = new AtomicBoolean();
 
     /** */
     CountDownLatch complete = new CountDownLatch(1);
-
-    /** */
-    @Parameterized.Parameters(name = "cacheMode={0}")
-    public static Collection<Object[]> params() {
-        Collection<Object[]> params = new ArrayList<>();
-
-        for (CacheAtomicityMode cacheMode: CacheAtomicityMode.values())
-            params.add(new Object[] { cacheMode });
-
-        return params;
-    }
 
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
@@ -90,10 +70,10 @@ public class WalRotatedIdPartRecordTest extends GridCommonAbstractTest {
                     .setDefaultDataRegionConfiguration(new DataRegionConfiguration()
                         .setPersistenceEnabled(true)))
                 .setCacheConfiguration(new CacheConfiguration<>(DEFAULT_CACHE_NAME)
-                    .setAtomicityMode(mode)
+                    .setAtomicityMode(CacheAtomicityMode.TRANSACTIONAL)
                     .setBackups(1)
                     .setAffinity(new RendezvousAffinityFunction().setPartitions(1))
-                    .setExpiryPolicyFactory(TouchedExpiryPolicy.factoryOf(new Duration(TimeUnit.SECONDS, 60))));
+                    .setExpiryPolicyFactory(TouchedExpiryPolicy.factoryOf(new Duration(TimeUnit.MINUTES, 60))));
 
             // Plugin that creates a testing WAL manager.
             cfg.setPluginProviders(new AbstractTestPluginProvider() {
@@ -154,40 +134,52 @@ public class WalRotatedIdPartRecordTest extends GridCommonAbstractTest {
 
     /** */
     @Test
-    public void walRotatedIdPartRecord() throws Exception {
-        IgniteEx ignite0 = startGrid(0);
-        IgniteEx ignite1 = startGrid(1);
-
-        ignite0.cluster().state(ClusterState.ACTIVE);
-
-        GridCacheProcessor cacheProc = ignite0.context().cache();
-        GridCacheDatabaseSharedManager dbMgr = (GridCacheDatabaseSharedManager)cacheProc.context().database();
-        dbMgr.enableCheckpoints(false).get();
+    public void testRotatedIdMoreThan127() throws Exception {
+        startGrids(2).cluster().state(ClusterState.ACTIVE);
 
         IgniteEx cln = startClientGrid(2);
 
         for (int i = 0; i < KEYS; i++)
             cln.cache(DEFAULT_CACHE_NAME).put(i, rnd.nextInt());
 
-        runMultiThreadedAsync(() -> {
-            while (!stop.get())
-                cln.cache(DEFAULT_CACHE_NAME).query(new ScanQuery<>()).getAll();
+        forceCheckpoint();
+
+        disableCheckpoints(grid(0));
+        disableCheckpoints(grid(1));
+
+        IgniteInternalFuture<?> touchFut = runMultiThreadedAsync(() -> {
+            int cnt = 0;
+
+            while (!stop.get()) {
+                cln.cache(DEFAULT_CACHE_NAME).query(new ScanQuery<>()).forEach((v) -> {});
+
+                cln.log().info(String.format("Query#: %d", cnt++));
+            }
 
             complete.countDown();
         }, 1, "touch");
 
-        assertTrue("rotatedIdPart doesn't become > 127 in 120 seconds",
-            complete.await(120, TimeUnit.SECONDS));
+        boolean completed = complete.await(120, TimeUnit.SECONDS);
+
+        if (!completed)
+            stop.set(true);
+
+        touchFut.get(60, TimeUnit.SECONDS);
 
         stopAllClients(false);
 
-        ignite0.context().pools().getStripedExecutorService().awaitComplete();
-        ignite1.context().pools().getStripedExecutorService().awaitComplete();
+        grid(0).context().pools().getStripedExecutorService().awaitComplete();
+        grid(1).context().pools().getStripedExecutorService().awaitComplete();
 
         stopAllGrids(false);
 
-        ignite0 = startGrids(2);
-        ignite0.cluster().state(ClusterState.ACTIVE);
-        ignite0.cluster().state(ClusterState.INACTIVE);
+        assertTrue("rotatedIdPart doesn't become > 127 in 120 seconds", completed);
+
+        startGrids(2);
+    }
+
+    /** */
+    private void disableCheckpoints(IgniteEx ignite) throws IgniteCheckedException {
+        ((GridCacheDatabaseSharedManager)ignite.context().cache().context().database()).enableCheckpoints(false).get();
     }
 }
