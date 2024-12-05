@@ -171,7 +171,7 @@ public class WalRotatedIdPartRecordTest extends GridCommonAbstractTest {
 //        grid(0).context().pools().getStripedExecutorService().awaitComplete();
 //        grid(1).context().pools().getStripedExecutorService().awaitComplete();
 
-        stopAllGrids(false);
+        stopAllGrids();
 
         assertTrue("rotatedIdPart doesn't become > 127 in 120 seconds", completed);
 
