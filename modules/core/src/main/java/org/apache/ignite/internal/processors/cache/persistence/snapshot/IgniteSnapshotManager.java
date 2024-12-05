@@ -92,7 +92,6 @@ import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.GridTopic;
 import org.apache.ignite.internal.IgniteClientDisconnectedCheckedException;
 import org.apache.ignite.internal.IgniteEx;
-import org.apache.ignite.internal.IgniteFeatures;
 import org.apache.ignite.internal.IgniteFutureCancelledCheckedException;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
@@ -203,8 +202,6 @@ import static org.apache.ignite.events.EventType.EVT_NODE_FAILED;
 import static org.apache.ignite.events.EventType.EVT_NODE_LEFT;
 import static org.apache.ignite.internal.GridClosureCallMode.BALANCE;
 import static org.apache.ignite.internal.GridClosureCallMode.BROADCAST;
-import static org.apache.ignite.internal.IgniteFeatures.PERSISTENCE_CACHE_SNAPSHOT;
-import static org.apache.ignite.internal.IgniteFeatures.nodeSupports;
 import static org.apache.ignite.internal.MarshallerContextImpl.mappingFileStoreWorkDir;
 import static org.apache.ignite.internal.MarshallerContextImpl.resolveMappingFileStoreWorkDir;
 import static org.apache.ignite.internal.MarshallerContextImpl.saveMappings;
@@ -2175,9 +2172,6 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
         try {
             cctx.kernalContext().security().authorize(ADMIN_SNAPSHOT);
 
-            if (!IgniteFeatures.allNodesSupports(cctx.discovery().aliveServerNodes(), PERSISTENCE_CACHE_SNAPSHOT))
-                throw new IgniteException("Not all nodes in the cluster support a snapshot operation.");
-
             if (!cctx.kernalContext().state().clusterState().state().active())
                 throw new IgniteException("Snapshot operation has been rejected. The cluster is inactive.");
 
@@ -2533,9 +2527,6 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
             throw new ClusterTopologyCheckedException("Snapshot remote request cannot be performed. " +
                 "Remote node left the grid [rmtNodeId=" + rmtNodeId + ']');
         }
-
-        if (!nodeSupports(rmtNode, PERSISTENCE_CACHE_SNAPSHOT))
-            throw new IgniteCheckedException("Snapshot on remote node is not supported: " + rmtNode.id());
 
         RemoteSnapshotFilesRecevier fut =
             new RemoteSnapshotFilesRecevier(this, rmtNodeId, reqId, snpName, rmtSnpPath, parts, stopChecker, partHnd);

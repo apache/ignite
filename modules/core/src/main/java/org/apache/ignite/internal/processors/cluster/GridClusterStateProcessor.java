@@ -113,7 +113,6 @@ import static org.apache.ignite.events.EventType.EVT_NODE_JOINED;
 import static org.apache.ignite.events.EventType.EVT_NODE_LEFT;
 import static org.apache.ignite.internal.GridClosureCallMode.BALANCE;
 import static org.apache.ignite.internal.GridComponent.DiscoveryDataExchangeType.STATE_PROC;
-import static org.apache.ignite.internal.IgniteFeatures.CLUSTER_READ_ONLY_MODE;
 import static org.apache.ignite.internal.IgniteFeatures.SAFE_CLUSTER_DEACTIVATION;
 import static org.apache.ignite.internal.IgniteFeatures.allNodesSupports;
 import static org.apache.ignite.internal.managers.communication.GridIoPolicy.SYSTEM_POOL;
@@ -1249,13 +1248,6 @@ public class GridClusterStateProcessor extends GridProcessorAdapter implements I
     ) {
         if (node.isClient())
             return null;
-
-        if (globalState.state() == ACTIVE_READ_ONLY && !IgniteFeatures.nodeSupports(node, CLUSTER_READ_ONLY_MODE)) {
-            String msg = "Node not supporting cluster read-only mode is not allowed to join the cluster with enabled" +
-                " read-only mode";
-
-            return new IgniteNodeValidationResult(node.id(), msg, msg);
-        }
 
         if (discoData.joiningNodeData() == null) {
             if (globalState.baselineTopology() != null) {
