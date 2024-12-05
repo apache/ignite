@@ -33,6 +33,7 @@ import org.apache.calcite.rel.core.AggregateCall;
 import org.apache.calcite.rel.type.RelDataType;
 import org.apache.calcite.rex.RexLiteral;
 import org.apache.calcite.rex.RexNode;
+import org.apache.calcite.sql.SqlKind;
 import org.apache.ignite.internal.processors.query.calcite.exec.ExecutionContext;
 import org.apache.ignite.internal.processors.query.calcite.exec.RowHandler;
 import org.apache.ignite.internal.processors.query.calcite.type.IgniteTypeFactory;
@@ -94,6 +95,10 @@ public class Accumulators {
             case "ARRAY_AGG":
             case "ARRAY_CONCAT_AGG":
                 return listAggregateSupplier(call, ctx);
+            case "BIT_AND":
+            case "BIT_OR":
+            case "BIT_XOR":
+                return bitWiseFactory(call, hnd);
             default:
                 throw new AssertionError(call.getAggregation().getName());
         }
@@ -140,6 +145,21 @@ public class Accumulators {
             case INTEGER:
             default:
                 return () -> new DoubleAvg<>(call, hnd);
+        }
+    }
+
+    /** */
+    private static <Row> Supplier<Accumulator<Row>> bitWiseFactory(AggregateCall call, RowHandler<Row> hnd) {
+        switch (call.type.getSqlTypeName()) {
+            case BIGINT:
+            case INTEGER:
+            case SMALLINT:
+            case TINYINT:
+            case NULL:
+                return () -> new BitWise<>(call, hnd);
+
+            default:
+                throw new UnsupportedOperationException(call.getName() + " is not supported for type '" + call.type + "'.");
         }
     }
 
@@ -396,6 +416,82 @@ public class Accumulators {
         /** {@inheritDoc}  */
         @Override public RelDataType returnType(IgniteTypeFactory typeFactory) {
             return typeFactory.createSqlType(ANY);
+        }
+    }
+
+    /** */
+    private static class BitWise<Row> extends AbstractAccumulator<Row> {
+        /** */
+        private long res;
+
+        /** */
+        private boolean updated;
+
+        /** */
+        private final SqlKind kind;
+
+        /** */
+        private BitWise(AggregateCall aggCall, RowHandler<Row> hnd) {
+            super(aggCall, hnd);
+
+            kind = aggCall.getAggregation().kind;
+
+            assert kind == SqlKind.BIT_AND || kind == SqlKind.BIT_OR || kind == SqlKind.BIT_XOR;
+        }
+
+        /** {@inheritDoc} */
+        @Override public void add(Row row) {
+            Number in = get(0, row);
+
+            if (in == null)
+                return;
+
+            apply(in.longValue());
+        }
+
+        /** */
+        private void apply(long val) {
+            if (updated) {
+                switch (kind) {
+                    case BIT_AND:
+                        res &= val;
+                        break;
+                    case BIT_OR:
+                        res |= val;
+                        break;
+                    case BIT_XOR:
+                        res ^= val;
+                        break;
+                }
+            }
+            else {
+                res = val;
+
+                updated = true;
+            }
+        }
+
+        /** {@inheritDoc} */
+        @Override public void apply(Accumulator<Row> other) {
+            BitWise<Row> other0 = (BitWise<Row>)other;
+
+            if (other0.updated)
+                apply(other0.res);
+        }
+
+        /** {@inheritDoc} */
+        @Override public Object end() {
+            return updated ? res : null;
+        }
+
+        /** {@inheritDoc} */
+        @Override public List<RelDataType> argumentTypes(IgniteTypeFactory typeFactory) {
+            return F.asList(typeFactory.createTypeWithNullability(typeFactory.createSqlType(BIGINT), true));
+        }
+
+        /** {@inheritDoc} */
+        @Override public RelDataType returnType(IgniteTypeFactory typeFactory) {
+            return typeFactory.createTypeWithNullability(typeFactory.createSqlType(BIGINT), true);
         }
     }
 
