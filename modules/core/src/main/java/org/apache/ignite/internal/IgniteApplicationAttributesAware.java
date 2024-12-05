@@ -71,7 +71,7 @@ import org.jetbrains.annotations.Nullable;
 /** Ignite instance aware of application attributes set with {@link Ignite#withApplicationAttributes(Map)}. */
 public class IgniteApplicationAttributesAware implements Ignite {
     /** */
-    private final IgniteEx delegate;
+    private final Ignite delegate;
 
     /** Application attributes. */
     private final Map<String, String> attrs;
@@ -83,7 +83,7 @@ public class IgniteApplicationAttributesAware implements Ignite {
      * @param delegate Parent Ignite instance.
      * @param attrs Application attributes.
      */
-    public IgniteApplicationAttributesAware(IgniteEx delegate, Map<String, String> attrs) {
+    public IgniteApplicationAttributesAware(Ignite delegate, Map<String, String> attrs) {
         A.notNull(attrs, "application attributes");
 
         this.delegate = delegate;

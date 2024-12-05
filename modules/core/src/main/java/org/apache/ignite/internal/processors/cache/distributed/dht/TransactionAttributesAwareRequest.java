@@ -22,6 +22,7 @@ import java.util.Map;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.processors.cache.GridCacheMessage;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
+import org.apache.ignite.internal.processors.cache.distributed.GridDistributedTxPrepareRequest;
 import org.apache.ignite.plugin.extensions.communication.MessageCollectionItemType;
 import org.apache.ignite.plugin.extensions.communication.MessageReader;
 import org.apache.ignite.plugin.extensions.communication.MessageWriter;
@@ -31,8 +32,8 @@ public class TransactionAttributesAwareRequest extends GridCacheMessage {
     /** */
     public static final short TYPE_CODE = 181;
 
-    /** Original transaction message. */
-    private GridCacheMessage payload;
+    /** Original transaction prepare message. */
+    private GridDistributedTxPrepareRequest payload;
 
     /** Application attributes. */
     private Map<String, String> appAttrs;
@@ -43,7 +44,7 @@ public class TransactionAttributesAwareRequest extends GridCacheMessage {
 
     /** */
     public TransactionAttributesAwareRequest(
-        GridCacheMessage payload,
+        GridDistributedTxPrepareRequest payload,
         Map<String, String> appAttrs
     ) {
         this.payload = payload;
@@ -51,7 +52,7 @@ public class TransactionAttributesAwareRequest extends GridCacheMessage {
     }
 
     /** @return Original update message. */
-    public GridCacheMessage payload() {
+    public GridDistributedTxPrepareRequest payload() {
         return payload;
     }
 

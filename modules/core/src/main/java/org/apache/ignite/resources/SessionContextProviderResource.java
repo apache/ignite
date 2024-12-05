@@ -22,6 +22,7 @@ import java.lang.annotation.ElementType;
 import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
+import org.apache.ignite.cache.CacheInterceptor;
 import org.apache.ignite.cache.query.annotations.QuerySqlFunction;
 import org.apache.ignite.session.SessionContext;
 
@@ -43,7 +44,7 @@ import org.apache.ignite.session.SessionContext;
  *     }
  * </pre>
  * <p>
- * Note, only {@link QuerySqlFunction} in the Calcite engine is supported.
+ * Note, {@link CacheInterceptor}, {@link QuerySqlFunction} in the Calcite engine are supported.
  *
  * @see SessionContext
  */

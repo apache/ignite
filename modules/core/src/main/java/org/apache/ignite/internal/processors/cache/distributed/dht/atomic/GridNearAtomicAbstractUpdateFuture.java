@@ -301,7 +301,7 @@ public abstract class GridNearAtomicAbstractUpdateFuture extends GridCacheFuture
             GridCacheMessage msg = req;
 
             if (appAttrs != null)
-                msg = new GridNearAtomicUpdateApplicationAttributesAwareRequest(req, appAttrs);
+                msg = new AtomicApplicationAttributesAwareRequest(req, appAttrs);
 
             cctx.io().send(req.nodeId(), msg, cctx.ioPolicy());
 

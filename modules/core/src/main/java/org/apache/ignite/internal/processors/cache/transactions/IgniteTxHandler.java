@@ -47,6 +47,7 @@ import org.apache.ignite.internal.processors.cache.KeyCacheObject;
 import org.apache.ignite.internal.processors.cache.distributed.GridCacheTxRecoveryFuture;
 import org.apache.ignite.internal.processors.cache.distributed.GridCacheTxRecoveryRequest;
 import org.apache.ignite.internal.processors.cache.distributed.GridCacheTxRecoveryResponse;
+import org.apache.ignite.internal.processors.cache.distributed.GridDistributedTxPrepareRequest;
 import org.apache.ignite.internal.processors.cache.distributed.GridDistributedTxRemoteAdapter;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtTopologyFuture;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtTxFinishFuture;
@@ -239,10 +240,9 @@ public class IgniteTxHandler {
 
     /** */
     private void processAttributesAwareMessage(UUID nodeId, TransactionAttributesAwareRequest msg) {
-        GridCacheMessage txMsg = msg.payload();
+        GridDistributedTxPrepareRequest txMsg = msg.payload();
 
-        if (txMsg instanceof TransactionApplicationAttributesAware)
-            ((TransactionApplicationAttributesAware)txMsg).applicationAttributes(msg.applicationAttributes());
+        txMsg.applicationAttributes(msg.applicationAttributes());
 
         ctx.io()
             .cacheHandler(COMMON_MESSAGE_HANDLER_ID, txMsg.getClass())

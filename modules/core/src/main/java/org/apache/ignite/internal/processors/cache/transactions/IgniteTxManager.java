@@ -79,6 +79,7 @@ import org.apache.ignite.internal.processors.cache.distributed.GridCacheMappedVe
 import org.apache.ignite.internal.processors.cache.distributed.GridCacheTxRecoveryFuture;
 import org.apache.ignite.internal.processors.cache.distributed.GridDistributedCacheEntry;
 import org.apache.ignite.internal.processors.cache.distributed.GridDistributedLockCancelledException;
+import org.apache.ignite.internal.processors.cache.distributed.GridDistributedTxPrepareRequest;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtTxLocal;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtTxOnePhaseCommitAckRequest;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtTxRemote;
@@ -2980,8 +2981,8 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
      * @param plc IO policy.
      */
     public void sendTransactionMessage(UUID nodeId, GridCacheMessage msg, IgniteInternalTx tx, byte plc) throws IgniteCheckedException {
-        if (msg instanceof TransactionApplicationAttributesAware && tx != null && tx.applicationAttributes() != null)
-            msg = new TransactionAttributesAwareRequest(msg, tx.applicationAttributes());
+        if (msg instanceof GridDistributedTxPrepareRequest && tx != null && tx.applicationAttributes() != null)
+            msg = new TransactionAttributesAwareRequest((GridDistributedTxPrepareRequest)msg, tx.applicationAttributes());
 
         BiFunction<GridCacheMessage, IgniteInternalTx, GridCacheMessage> transform = txMsgTransform;
 

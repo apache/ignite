@@ -37,7 +37,6 @@ import org.apache.ignite.internal.processors.cache.transactions.IgniteTxEntry;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteTxKey;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteTxState;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteTxStateAware;
-import org.apache.ignite.internal.processors.cache.transactions.TransactionApplicationAttributesAware;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.util.UUIDCollectionMessage;
 import org.apache.ignite.internal.util.tostring.GridToStringBuilder;
@@ -57,8 +56,7 @@ import org.jetbrains.annotations.Nullable;
  * Transaction prepare request for optimistic and eventually consistent
  * transactions.
  */
-public class GridDistributedTxPrepareRequest extends GridDistributedBaseMessage
-    implements IgniteTxStateAware, TransactionApplicationAttributesAware {
+public class GridDistributedTxPrepareRequest extends GridDistributedBaseMessage implements IgniteTxStateAware {
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -204,16 +202,6 @@ public class GridDistributedTxPrepareRequest extends GridDistributedBaseMessage
         setFlag(tx.isInvalidate(), INVALIDATE_FLAG_MASK);
         setFlag(onePhaseCommit, ONE_PHASE_COMMIT_FLAG_MASK);
         setFlag(last, LAST_REQ_FLAG_MASK);
-    }
-
-    /** {@inheritDoc} */
-    @Override public Map<String, String> applicationAttributes() {
-        return appAttrs;
-    }
-
-    /** {@inheritDoc} */
-    @Override public void applicationAttributes(Map<String, String> appAttrs) {
-        this.appAttrs = appAttrs;
     }
 
     /**
@@ -377,6 +365,20 @@ public class GridDistributedTxPrepareRequest extends GridDistributedBaseMessage
      */
     public boolean last() {
         return isFlag(LAST_REQ_FLAG_MASK);
+    }
+
+    /**
+     * @return Application attributes, or {@code null} if not set.
+     */
+    public Map<String, String> applicationAttributes() {
+        return appAttrs;
+    }
+
+    /**
+     * @param appAttrs Application attributes.
+     */
+    public void applicationAttributes(Map<String, String> appAttrs) {
+        this.appAttrs = appAttrs;
     }
 
     /** {@inheritDoc} */

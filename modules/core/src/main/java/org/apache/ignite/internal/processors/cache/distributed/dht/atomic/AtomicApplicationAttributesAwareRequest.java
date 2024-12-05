@@ -27,7 +27,7 @@ import org.apache.ignite.plugin.extensions.communication.MessageReader;
 import org.apache.ignite.plugin.extensions.communication.MessageWriter;
 
 /** Wraps atomic updates with application attributes. */
-public class GridNearAtomicUpdateApplicationAttributesAwareRequest extends GridCacheIdMessage {
+public class AtomicApplicationAttributesAwareRequest extends GridCacheIdMessage {
     /** */
     public static final short TYPE_CODE = 180;
 
@@ -38,11 +38,11 @@ public class GridNearAtomicUpdateApplicationAttributesAwareRequest extends GridC
     private Map<String, String> appAttrs;
 
     /** */
-    public GridNearAtomicUpdateApplicationAttributesAwareRequest() {
+    public AtomicApplicationAttributesAwareRequest() {
     }
 
     /** */
-    public GridNearAtomicUpdateApplicationAttributesAwareRequest(
+    public AtomicApplicationAttributesAwareRequest(
         GridNearAtomicAbstractUpdateRequest payload,
         Map<String, String> appAttrs
     ) {

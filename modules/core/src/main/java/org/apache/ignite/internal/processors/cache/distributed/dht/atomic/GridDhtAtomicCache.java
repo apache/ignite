@@ -281,11 +281,11 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
         ctx.io().addCacheHandler(
             ctx.cacheId(),
             ctx.startTopologyVersion(),
-            GridNearAtomicUpdateApplicationAttributesAwareRequest.class,
-            new CI2<UUID, GridNearAtomicUpdateApplicationAttributesAwareRequest>() {
+            AtomicApplicationAttributesAwareRequest.class,
+            new CI2<UUID, AtomicApplicationAttributesAwareRequest>() {
                 @Override public void apply(
                     UUID nodeId,
-                    GridNearAtomicUpdateApplicationAttributesAwareRequest req
+                    AtomicApplicationAttributesAwareRequest req
                 ) {
                     if (req.applicationAttributes() != null)
                         ctx.operationContextPerCall(new CacheOperationContext().setApplicationAttributes(req.applicationAttributes()));
