@@ -93,7 +93,7 @@ public class DirectByteBufferStreamImplByteOrderSelfTest {
             }
 
             @Nullable @Override public Message create(short type) {
-                throw new UnsupportedOperationException();
+                return null;
             }
         });
 
