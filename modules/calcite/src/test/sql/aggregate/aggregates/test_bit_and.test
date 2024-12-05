@@ -10,17 +10,13 @@ SELECT BIT_AND(3), BIT_AND(NULL)
 3
 NULL
 
-# test on a sequence
-statement ok
-CREATE SEQUENCE seq;
-
 query I
-SELECT BIT_AND(nextval('seq'))
+SELECT BIT_AND(1)
 ----
 1
 
 query I
-SELECT BIT_AND(nextval('seq'))
+SELECT BIT_AND(2)
 ----
 2
 

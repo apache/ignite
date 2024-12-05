@@ -31,8 +31,6 @@ import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.lang.IgnitePredicate;
-import org.apache.ignite.marshaller.MarshallerUtils;
-import org.apache.ignite.marshaller.jdk.JdkMarshaller;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.After;
 import org.junit.Assert;
@@ -58,9 +56,6 @@ public class CacheConfigurationSerializationAbstractTest extends GridCommonAbstr
     /** Persistence enabled. */
     @Parameterized.Parameter
     public boolean persistenceEnabled;
-
-    /** Jdk marshaller */
-    private final JdkMarshaller marsh = MarshallerUtils.jdkMarshaller(null);
 
     /**
      *
@@ -190,7 +185,7 @@ public class CacheConfigurationSerializationAbstractTest extends GridCommonAbstr
                 byte[] data = enrichment.getFieldSerializedValue("storeFactory");
 
                 Assert.assertNotNull("storeFactory is null for cache: " + cacheDesc.cacheName(),
-                        marsh.unmarshal(data, getClass().getClassLoader()));
+                    node.context().marshallerContext().jdkMarshaller().unmarshal(data, getClass().getClassLoader()));
             }
         }
     }
