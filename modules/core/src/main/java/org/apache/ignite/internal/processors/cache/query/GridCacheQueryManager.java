@@ -772,7 +772,8 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
             qry.partition(),
             false,
             true,
-            qry.isDataPageScanEnabled());
+            qry.isDataPageScanEnabled(),
+            null);
 
         return scanQueryLocal(qry0, false);
     }
@@ -809,7 +810,7 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
 
             final GridDhtLocalPartition locPart;
 
-            final GridIterator<CacheDataRow> it;
+            GridIterator<CacheDataRow> it;
 
             if (part != null) {
                 final GridDhtCacheAdapter dht = cctx.isNear() ? cctx.near().dht() : cctx.dht();
@@ -843,6 +844,15 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
 
                 it = cctx.offheap().cacheIterator(cctx.cacheId(), true, backups, topVer,
                     qry.isDataPageScanEnabled());
+            }
+
+            final Set<KeyCacheObject> skipKeys = qry.skipKeys() == null ? Collections.emptySet() : new HashSet<>(qry.skipKeys());
+
+            if (!F.isEmpty(skipKeys)) {
+                // Intentionally use of `Set#remove` here.
+                // We want to perform as few `toKey` as possible.
+                // So we break some rules here to optimize work with the data provided by the underlying cursor.
+                it = F.iterator0(it, true, e -> skipKeys.isEmpty() || !skipKeys.remove(e.key()));
             }
 
             ScanQueryIterator iter = new ScanQueryIterator(it, qry, topVer, locPart,
@@ -2844,21 +2854,8 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
             null,
             keepBinary,
             false,
+            null,
             null);
-    }
-
-    /**
-     * Creates user's predicate based scan query.
-     *
-     * @param filter Scan filter.
-     * @param part Partition.
-     * @param keepBinary Keep binary flag.
-     * @param dataPageScanEnabled Flag to enable data page scan.
-     * @return Created query.
-     */
-    public <R> CacheQuery<R> createScanQuery(@Nullable IgniteBiPredicate<K, V> filter,
-        @Nullable Integer part, boolean keepBinary, Boolean dataPageScanEnabled) {
-        return createScanQuery(filter, null, part, keepBinary, false, dataPageScanEnabled);
     }
 
     /**
@@ -2870,6 +2867,7 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
      * @param keepBinary Keep binary flag.
      * @param forceLocal Flag to force local scan.
      * @param dataPageScanEnabled Flag to enable data page scan.
+     * @param skipKeys Set of keys that must be skiped during iteration.
      * @return Created query.
      */
     @SuppressWarnings("unchecked")
@@ -2879,7 +2877,8 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
         @Nullable Integer part,
         boolean keepBinary,
         boolean forceLocal,
-        Boolean dataPageScanEnabled
+        Boolean dataPageScanEnabled,
+        Set<KeyCacheObject> skipKeys
     ) {
         return new CacheQuery(cctx,
             SCAN,
@@ -2888,7 +2887,8 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
             part,
             keepBinary,
             forceLocal,
-            dataPageScanEnabled);
+            dataPageScanEnabled,
+            skipKeys);
     }
 
     /**
@@ -2915,6 +2915,7 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
             null,
             false,
             keepBinary,
+            null,
             null,
             null)
             .limit(limit)
@@ -2999,5 +3000,4 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
             return canceled != null && canceled.contains(key);
         }
     }
-
 }

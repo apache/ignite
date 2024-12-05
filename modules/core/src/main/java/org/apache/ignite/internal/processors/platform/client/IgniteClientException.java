@@ -47,7 +47,7 @@ public class IgniteClientException extends IgniteException {
      * @param msg Message.
      * @param cause Cause.
      */
-    public IgniteClientException(int statusCode, String msg, Exception cause) {
+    public IgniteClientException(int statusCode, String msg, Throwable cause) {
         super(msg, cause);
 
         this.statusCode = statusCode;

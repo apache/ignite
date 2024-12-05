@@ -68,6 +68,21 @@ A logical OR operation is performed on each pair of corresponding bits of two bi
 
 In each pair, the result is 1 if the first bit is 1 OR the second bit is 1 OR both bits are 1, and otherwise the result is 0.
 
+
+== BIT_XOR
+
+
+[source,sql]
+----
+BIT_XOR (expression)
+----
+
+The bitwise XOR of all non-null values. If no rows are selected, the result is NULL. Aggregates are only allowed in select statements.
+
+A logical XOR operation is performed on each pair of corresponding bits of two binary expressions of equal length.
+
+In each pair, the result is 1 if only one of the bits is 1. Otherwise the result is 0.
+
 ////
 == BOOL_AND
 

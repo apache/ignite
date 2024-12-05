@@ -19,7 +19,6 @@ package org.apache.ignite.internal.processors.query.calcite.schema;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
-import java.util.Set;
 import java.util.UUID;
 import java.util.function.Function;
 import org.apache.calcite.plan.RelOptCluster;
@@ -44,10 +43,10 @@ import org.apache.ignite.internal.cache.query.index.sorted.inline.InlineIndexImp
 import org.apache.ignite.internal.cache.query.index.sorted.inline.InlineIndexKeyType;
 import org.apache.ignite.internal.cache.query.index.sorted.inline.InlineIndexKeyTypeRegistry;
 import org.apache.ignite.internal.cache.query.index.sorted.keys.NullIndexKey;
-import org.apache.ignite.internal.processors.cache.KeyCacheObject;
 import org.apache.ignite.internal.processors.cache.persistence.CacheDataRow;
 import org.apache.ignite.internal.processors.cache.persistence.tree.BPlusTree;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.BPlusIO;
+import org.apache.ignite.internal.processors.cache.transactions.TransactionChanges;
 import org.apache.ignite.internal.processors.query.calcite.exec.ExecutionContext;
 import org.apache.ignite.internal.processors.query.calcite.exec.IndexFirstLastScan;
 import org.apache.ignite.internal.processors.query.calcite.exec.IndexScan;
@@ -58,7 +57,6 @@ import org.apache.ignite.internal.processors.query.calcite.rel.logical.IgniteLog
 import org.apache.ignite.internal.processors.query.calcite.util.Commons;
 import org.apache.ignite.internal.processors.query.calcite.util.RexUtils;
 import org.apache.ignite.internal.util.typedef.F;
-import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.spi.indexing.IndexingQueryFilter;
 import org.apache.ignite.spi.indexing.IndexingQueryFilterImpl;
 import org.jetbrains.annotations.NotNull;
@@ -175,18 +173,17 @@ public class CacheIndexImpl implements IgniteIndex {
         long cnt = 0;
 
         if (!F.isEmpty(ectx.getQryTxEntries())) {
-            IgniteBiTuple<Set<KeyCacheObject>, List<CacheDataRow>> txChanges = ectx.transactionChanges(
+            TransactionChanges<CacheDataRow> txChanges = ectx.transactionChanges(
                 iidx.indexDefinition().cacheInfo().cacheId(),
                 locParts,
-                Function.identity()
+                Function.identity(),
+                null
             );
 
-            if (!txChanges.get1().isEmpty()) {
-                // This call will change `txChanges.get1()` content.
-                // Removing found key from set more efficient so we break some rules here.
-                rowFilter = transactionAwareCountRowFilter(rowFilter, txChanges.get1());
+            if (!txChanges.changedKeysEmpty()) {
+                rowFilter = transactionAwareCountRowFilter(rowFilter, txChanges);
 
-                cnt = countTransactionRows(notNull, iidx, txChanges.get2());
+                cnt = countTransactionRows(notNull, iidx, txChanges.newAndUpdatedEntries());
             }
         }
 
@@ -252,7 +249,7 @@ public class CacheIndexImpl implements IgniteIndex {
     /** */
     private static @NotNull BPlusTree.TreeRowClosure<IndexRow, IndexRow> transactionAwareCountRowFilter(
         BPlusTree.TreeRowClosure<IndexRow, IndexRow> rowFilter,
-        Set<KeyCacheObject> skipKeys
+        TransactionChanges<CacheDataRow> txChanges
     ) {
         return new BPlusTree.TreeRowClosure<>() {
             @Override public boolean apply(
@@ -264,7 +261,7 @@ public class CacheIndexImpl implements IgniteIndex {
                 if (rowFilter != null && !rowFilter.apply(tree, io, pageAddr, idx))
                     return false;
 
-                if (skipKeys.isEmpty())
+                if (txChanges.changedKeysEmpty())
                     return true;
 
                 IndexRow row = rowFilter == null ? null : rowFilter.lastRow();
@@ -272,7 +269,10 @@ public class CacheIndexImpl implements IgniteIndex {
                 if (row == null)
                     row = tree.getRow(io, pageAddr, idx);
 
-                return !skipKeys.remove(row.cacheDataRow().key());
+                // Intentionally use of `remove` here.
+                // We want to perform as few `key` as possible.
+                // So we break some rules here to optimize work with the data provided by the tree.
+                return !txChanges.remove(row.cacheDataRow().key());
             }
         };
     }
