@@ -19,6 +19,7 @@ package org.apache.ignite.internal.managers.communication;
 
 import java.lang.reflect.Array;
 import java.util.function.Supplier;
+
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.plugin.extensions.communication.IgniteMessageFactory;
 import org.apache.ignite.plugin.extensions.communication.Message;
@@ -87,11 +88,6 @@ public class IgniteMessageFactoryImpl implements IgniteMessageFactory {
         }
         else
             throw new IgniteException("Message factory is already registered for direct type: " + directType);
-    }
-
-    /** {@inheritDoc} */
-    @Override public void registerAll(IgniteMessageFactory factory) {
-        factory.registerAll(this);
     }
 
     /**

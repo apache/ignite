@@ -50,7 +50,6 @@ import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.IgniteTooManyOpenFilesException;
 import org.apache.ignite.internal.cluster.ClusterTopologyCheckedException;
 import org.apache.ignite.internal.managers.GridManager;
-import org.apache.ignite.internal.managers.communication.IgniteMessageFactoryImpl;
 import org.apache.ignite.internal.managers.tracing.GridTracingManager;
 import org.apache.ignite.internal.processors.metric.GridMetricManager;
 import org.apache.ignite.internal.processors.tracing.Tracing;
@@ -83,7 +82,6 @@ import org.apache.ignite.lang.IgniteBiInClosure;
 import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.plugin.extensions.communication.IgniteMessageFactory;
 import org.apache.ignite.plugin.extensions.communication.Message;
-import org.apache.ignite.plugin.extensions.communication.MessageFactoryProvider;
 import org.apache.ignite.plugin.extensions.communication.MessageFormatter;
 import org.apache.ignite.plugin.extensions.communication.MessageReader;
 import org.apache.ignite.plugin.extensions.communication.MessageWriter;
@@ -803,10 +801,6 @@ public class GridNioServerWrapper {
 
         for (int port = cfg.localPort(); port <= lastPort; port++) {
             try {
-                IgniteMessageFactory msgFactory = new IgniteMessageFactoryImpl(new MessageFactoryProvider[]{
-                    stateProvider.getSpiContext().messageFactory()
-                });
-
                 GridNioMessageReaderFactory readerFactory = new GridNioMessageReaderFactory() {
                     private IgniteSpiContext context;
 
@@ -853,7 +847,7 @@ public class GridNioServerWrapper {
                 };
 
                 GridDirectParser parser = new GridDirectParser(log.getLogger(GridDirectParser.class),
-                    msgFactory,
+                    stateProvider.getSpiContext().messageFactory(),
                     readerFactory);
 
                 IgnitePredicate<Message> skipRecoveryPred = msg -> msg instanceof RecoveryLastReceivedMessage;

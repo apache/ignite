@@ -38,7 +38,9 @@ import org.apache.ignite.events.Event;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteKernal;
 import org.apache.ignite.internal.IgniteNodeAttributes;
+import org.apache.ignite.internal.managers.communication.GridIoManager;
 import org.apache.ignite.internal.managers.communication.GridMessageListener;
+import org.apache.ignite.internal.managers.communication.IgniteMessageFactoryImpl;
 import org.apache.ignite.internal.managers.eventstorage.GridLocalEventListener;
 import org.apache.ignite.internal.processors.timeout.GridSpiTimeoutObject;
 import org.apache.ignite.internal.util.IgniteExceptionRegistry;
@@ -47,7 +49,7 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiPredicate;
 import org.apache.ignite.lang.IgniteFuture;
 import org.apache.ignite.plugin.extensions.communication.IgniteMessageFactory;
-import org.apache.ignite.plugin.extensions.communication.MessageFactoryProvider;
+import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.plugin.extensions.communication.MessageFormatter;
 import org.apache.ignite.plugin.extensions.communication.MessageReader;
 import org.apache.ignite.plugin.extensions.communication.MessageWriter;
@@ -733,7 +735,7 @@ public abstract class IgniteSpiAdapter implements IgniteSpi {
         private final boolean stopping;
 
         /** */
-        private final MessageFactoryProvider msgFactory;
+        private final IgniteMessageFactory msgFactory;
 
         /** */
         private final MessageFormatter msgFormatter;
@@ -749,13 +751,13 @@ public abstract class IgniteSpiAdapter implements IgniteSpi {
             this.locNode = locNode;
             this.stopping = stopping;
 
-            MessageFactoryProvider msgFactory0 = spiCtx != null ? spiCtx.messageFactory() : null;
+            IgniteMessageFactory msgFactory0 = spiCtx != null ? spiCtx.messageFactory() : null;
             MessageFormatter msgFormatter0 = spiCtx != null ? spiCtx.messageFormatter() : null;
 
             if (msgFactory0 == null) {
-                msgFactory0 = new MessageFactoryProvider() {
-                    @Override public void registerAll(IgniteMessageFactory factory) {
-                        // No-op.
+                msgFactory0 = new IgniteMessageFactoryImpl(GridIoManager.EMPTY) {
+                    @Nullable @Override public Message create(short type) {
+                        throw new IgniteException("Failed to read message, node is not started.");
                     }
                 };
             }
@@ -917,7 +919,7 @@ public abstract class IgniteSpiAdapter implements IgniteSpi {
         }
 
         /** {@inheritDoc} */
-        @Override public MessageFactoryProvider messageFactory() {
+        @Override public IgniteMessageFactory messageFactory() {
             return msgFactory;
         }
 

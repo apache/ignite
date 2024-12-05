@@ -355,7 +355,7 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
             PER_SEGMENT_Q_OPTIMIZED_RMV);
 
     /** */
-    private MessageFactoryProvider msgFactory;
+    private IgniteMessageFactory msgFactory;
 
     /** */
     private MessageFormatter formatter;
@@ -401,7 +401,7 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
     /**
      * @return Message factory.
      */
-    public MessageFactoryProvider messageFactory() {
+    public IgniteMessageFactory messageFactory() {
         assert msgFactory != null;
 
         return msgFactory;
@@ -3193,7 +3193,7 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
         private final Object topic;
 
         /** Current unique session identifier to transfer files to remote node. */
-        private final T2<UUID, IgniteUuid> sesKey;
+        private T2<UUID, IgniteUuid> sesKey;
 
         /** Instance of opened writable channel to work with. */
         private SocketChannel channel;
@@ -3734,7 +3734,7 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
         private final boolean skipOnTimeout;
 
         /** */
-        private final long lastTs;
+        private long lastTs;
 
         /**
          * @param plc Communication policy.
@@ -4267,25 +4267,25 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
         private long totalLatency;
 
         /** */
-        private final Collection<IgnitePair<Long>> maxLatency = new ArrayList<>();
+        private Collection<IgnitePair<Long>> maxLatency = new ArrayList<>();
 
         /** */
-        private final Collection<IgnitePair<Long>> maxReqSendQueueTime = new ArrayList<>();
+        private Collection<IgnitePair<Long>> maxReqSendQueueTime = new ArrayList<>();
 
         /** */
-        private final Collection<IgnitePair<Long>> maxReqRcvQueueTime = new ArrayList<>();
+        private Collection<IgnitePair<Long>> maxReqRcvQueueTime = new ArrayList<>();
 
         /** */
-        private final Collection<IgnitePair<Long>> maxResSendQueueTime = new ArrayList<>();
+        private Collection<IgnitePair<Long>> maxResSendQueueTime = new ArrayList<>();
 
         /** */
-        private final Collection<IgnitePair<Long>> maxResRcvQueueTime = new ArrayList<>();
+        private Collection<IgnitePair<Long>> maxResRcvQueueTime = new ArrayList<>();
 
         /** */
-        private final Collection<IgnitePair<Long>> maxReqWireTimeMillis = new ArrayList<>();
+        private Collection<IgnitePair<Long>> maxReqWireTimeMillis = new ArrayList<>();
 
         /** */
-        private final Collection<IgnitePair<Long>> maxResWireTimeMillis = new ArrayList<>();
+        private Collection<IgnitePair<Long>> maxResWireTimeMillis = new ArrayList<>();
 
         /**
          * @param res Node results to add.
@@ -4362,14 +4362,14 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
         /**
          * Executor service to send special communication message.
          */
-        private final ExecutorService responseSendService = Executors
+        private ExecutorService responseSendService = Executors
             .newCachedThreadPool(new IgniteThreadFactory(ctx.igniteInstanceName(), "io-send-service"));
 
         /**
          * Discovery event listener (works only on client nodes for now) notified when
          * inverse connection request arrives.
          */
-        private final CustomEventListener<TcpConnectionRequestDiscoveryMessage> discoConnReqLsnr = (topVer, snd, msg) -> {
+        private CustomEventListener<TcpConnectionRequestDiscoveryMessage> discoConnReqLsnr = (topVer, snd, msg) -> {
             if (!locNodeId.equals(msg.receiverNodeId()))
                 return;
 

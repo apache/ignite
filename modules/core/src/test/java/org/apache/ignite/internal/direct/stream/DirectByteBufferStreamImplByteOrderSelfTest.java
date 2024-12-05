@@ -84,10 +84,6 @@ public class DirectByteBufferStreamImplByteOrderSelfTest {
      */
     private static DirectByteBufferStream createStream(ByteBuffer buff) {
         DirectByteBufferStream stream = new DirectByteBufferStream(new IgniteMessageFactory() {
-            @Override public void registerAll(IgniteMessageFactory factory) {
-                throw new UnsupportedOperationException();
-            }
-
             @Override public void register(short directType, Supplier<Message> supplier) throws IgniteException {
                 throw new UnsupportedOperationException();
             }

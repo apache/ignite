@@ -101,7 +101,7 @@ public class GridSpiTestContext implements IgniteSpiContext {
     private MessageFormatter formatter;
 
     /** */
-    private MessageFactoryProvider factory;
+    private IgniteMessageFactory factory;
 
     /** */
     private GridTimeoutProcessor timeoutProcessor;
@@ -557,7 +557,7 @@ public class GridSpiTestContext implements IgniteSpiContext {
     }
 
     /** {@inheritDoc} */
-    @Override public MessageFactoryProvider messageFactory() {
+    @Override public IgniteMessageFactory messageFactory() {
         if (factory == null)
             factory = new IgniteMessageFactoryImpl(new MessageFactoryProvider[]{new GridIoMessageFactory()});
 
@@ -569,7 +569,7 @@ public class GridSpiTestContext implements IgniteSpiContext {
      *
      * @param factory Message factory.
      */
-    public void messageFactory(MessageFactoryProvider factory) {
+    public void messageFactory(IgniteMessageFactory factory) {
         this.factory = factory;
     }
 

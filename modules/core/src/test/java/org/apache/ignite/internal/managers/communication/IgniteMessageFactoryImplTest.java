@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.managers.communication;
 
 import java.nio.ByteBuffer;
+
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.plugin.extensions.communication.IgniteMessageFactory;
 import org.apache.ignite.plugin.extensions.communication.Message;
