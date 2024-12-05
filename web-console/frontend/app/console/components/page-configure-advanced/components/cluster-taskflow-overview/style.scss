@@ -1,0 +1,37 @@
+
+
+cluster-task-flow-overview {
+    display: block;
+   
+    $max-row-width: 500px;
+    $row-height: 28px;    
+
+    .pcb-row-no-margin {
+        [class*='grid-col'] {
+            margin-top: 0 !important;
+        }
+    }
+
+    .pcb-inner-padding {
+        padding-left: 10px;
+        padding-right: 10px;
+    }
+
+    .pcb-section-notification {
+        font-size: 14px;
+        color: #757575;
+        margin-bottom: 1em;
+    }
+
+    .pcb-section-header {
+        margin-top: 0;
+        margin-bottom: 7px;
+        font-size: 16px;
+        line-height: 19px;
+    }
+
+    .pco-relative-root {
+        position: relative !important;        
+    }
+   
+}

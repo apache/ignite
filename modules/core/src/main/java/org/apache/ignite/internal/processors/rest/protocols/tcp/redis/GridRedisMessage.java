@@ -130,8 +130,25 @@ public class GridRedisMessage implements GridClientMessage {
      * @return {@link GridRedisCommand}.
      */
     public GridRedisCommand command() {
-        return GridRedisCommand.valueOf(msgParts.get(CMD_POS).toUpperCase());
+    	String cmd = msgParts.get(CMD_POS).toUpperCase();
+    	try {
+    		return GridRedisCommand.valueOf(cmd);
+    	}
+    	catch(Exception e) {
+    		return null;
+    	}
     }
+	
+	
+	public String standardizeParams(String cmd) {
+    	//add@byron hashset:
+    	if(cmd.charAt(0)=='h' || cmd.charAt(0)=='H') {
+    		return CACHE_NAME_PREFIX+'-'+msgParts.remove(KEY_POS);
+    	}
+    	return null;
+    	//end@
+    }
+
 
     /**
      * @return Key for the command.

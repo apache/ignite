@@ -145,8 +145,8 @@ public interface PageMemoryEx extends PageMemory {
         CheckpointMetricsTracker tracker
     ) throws IgniteCheckedException;
 
-    /** */
-    public PageReadWriteManager pageManager();
+     /** */
+     public PageReadWriteManager pageManager();
 
     /**
      * Marks partition as invalid / outdated.

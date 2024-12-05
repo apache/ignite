@@ -1,0 +1,69 @@
+
+
+include /app/helpers/jade/mixins
+
+button.btn-ignite.btn-ignite--success(
+    data-ng-if='$ctrl.isDemo'
+    translate='clusterSelectorComponent.clusterIsInDemoMode'
+)
+
+button.btn-ignite.btn-ignite--primary(
+    data-ng-if='!$ctrl.isDemo && $ctrl.clusters.length == 0'
+    translate='clusterSelectorComponent.noClusters'
+)
+
+button.btn-ignite.btn-ignite--primary(
+    data-ng-if='!$ctrl.isDemo && $ctrl.clusters.length == 1'
+)
+    cluster-security-icon(secured='$ctrl.cluster.secured')
+    | {{ $ctrl.cluster.name }}
+
+span(data-ng-if='!$ctrl.isDemo && $ctrl.clusters.length > 1')
+    div.btn-ignite.btn-ignite--primary(
+        bs-dropdown=''
+        data-trigger='click'
+        data-container='body'
+
+        tabindex='0'
+        aria-haspopup='true'
+        aria-expanded='false'
+    )
+        span(ng-if='!$ctrl.cluster' translate='clusterSelectorComponent.noClusters')
+
+        span(ng-if='$ctrl.cluster')
+            cluster-security-icon(secured='$ctrl.cluster.secured')
+            | {{ $ctrl.cluster.name }}
+            span.icon-right.fa.fa-caret-down
+
+    ul.bs-select-menu.dropdown-menu(role='menu')
+        li(ng-repeat='item in $ctrl.clusters')
+            button.btn-ignite.bssm-item-button(ng-click='$ctrl.change(item)',ng-class='{{ $ctrl.clusterId==item.id ? "active":"" }}')
+                span.icon-left
+                    svg(ignite-icon='{{ item.secured ? "lockClosed" : "lockOpened" }}')
+                | {{ item.name }}
+
+svg(
+    ng-if='!$ctrl.isDemo'
+    ignite-icon='info'
+    bs-tooltip='::{title: ("clusterSelectorComponent.tooltip"|translate)}'
+    data-placement='bottom'
+)
+
+.cluster-selector--state(
+    ng-if='$ctrl.isChangeStateAvailable()'
+    translate='clusterSelectorComponent.activationState'
+    translate-values='{active: $ctrl.cluster.active}'
+)
+
++switcher()(
+    ng-if='$ctrl.isChangeStateAvailable()'
+    ng-click='$ctrl.toggle($event)'
+    ng-checked='$ctrl.cluster.active'
+    ng-disabled='$ctrl.inProgress'
+
+    tip='Toggle cluster active state'
+    is-in-progress='{{ $ctrl.inProgress }}'
+)
+
+div(ng-if='$ctrl.inProgress && $ctrl.isChangeStateAvailable()')
+    | {{ !$ctrl.cluster.active ? 'Activating...' : 'Deactivating...' }}

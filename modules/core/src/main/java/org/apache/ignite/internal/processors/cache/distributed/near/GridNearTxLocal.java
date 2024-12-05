@@ -4121,9 +4121,9 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
 
         final boolean needReadVer = (serializable() && optimistic()) || needVer;
 
-        return new GridEmbeddedFuture<>((Void v, Exception e) -> {
+        return new GridEmbeddedFuture<>((v, e) -> {
             if (e != null)
-                throw new GridClosureException(e);
+                throw new GridClosureException((Throwable)e);
 
             if (isRollbackOnly()) {
                 if (timedOut())

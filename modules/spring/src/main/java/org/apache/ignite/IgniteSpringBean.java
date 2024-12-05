@@ -332,15 +332,6 @@ public class IgniteSpringBean implements Ignite, DisposableBean, SmartInitializi
         return g.tracingConfiguration();
     }
 
-    /** {@inheritDoc} */
-    @Override public Collection<MemoryMetrics> memoryMetrics() {
-        return DataRegionMetricsAdapter.collectionOf(dataRegionMetrics());
-    }
-
-    /** {@inheritDoc} */
-    @Nullable @Override public MemoryMetrics memoryMetrics(String memPlcName) {
-        return DataRegionMetricsAdapter.valueOf(dataRegionMetrics(memPlcName));
-    }
 
     /** {@inheritDoc} */
     @Override public <K, V> IgniteCache<K, V> cache(@Nullable String name) {
@@ -462,6 +453,22 @@ public class IgniteSpringBean implements Ignite, DisposableBean, SmartInitializi
 
         return g.dataStreamer(cacheName);
     }
+    
+
+    /** {@inheritDoc} */
+    @Override public IgniteFileSystem fileSystem(String name) {
+        checkIgnite();
+
+        return g.fileSystem(name);
+    }
+
+    /** {@inheritDoc} */
+    @Override public Collection<IgniteFileSystem> fileSystems() {
+        checkIgnite();
+
+        return g.fileSystems();
+    }
+
 
     /** {@inheritDoc} */
     @Override public <T extends IgnitePlugin> T plugin(String name) throws PluginNotFoundException {

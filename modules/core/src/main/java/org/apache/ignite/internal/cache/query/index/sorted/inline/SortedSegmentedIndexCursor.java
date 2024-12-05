@@ -42,7 +42,7 @@ public class SortedSegmentedIndexCursor implements GridCursor<IndexRow> {
 
     /** */
     public SortedSegmentedIndexCursor(GridCursor<IndexRow>[] cursors, SortedIndexDefinition idxDef) throws IgniteCheckedException {
-        cursorComp = new Comparator<>() {
+        cursorComp = new Comparator<GridCursor<IndexRow>>() {
             private final IndexRowComparator rowComparator = idxDef.rowComparator();
 
             private final IndexKeyDefinition[] keyDefs =

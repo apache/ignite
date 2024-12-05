@@ -1,0 +1,34 @@
+
+
+include /app/helpers/jade/mixins
+
+.modal.modal--ignite.theme--ignite.center.modal-preview-project-structure(tabindex='-1' role='dialog')
+    .modal-dialog
+        .modal-content
+            .modal-header
+                h4.modal-title
+                    svg(ignite-icon="structure")
+                    span See Project Structure
+                button.close(type='button' aria-label='Close' ng-click='$ctrl.onHide()')
+                     svg(ignite-icon="cross")
+
+            .modal-body(
+                ignite-loading='projectStructurePreview'
+                ignite-loading-text='Generating project structure preview…'
+            )
+                .pane-left
+                    treecontrol(
+                        tree-model='$ctrl.data'
+                        on-selection='$ctrl.showPreview(node)'
+                        selected-node='$ctrl.selectedNode'
+                        expanded-nodes='$ctrl.expandedNodes'
+                        options='$ctrl.treeOptions'
+                        order-by='["file.dir", "-path"]'
+                    )
+                        i.fa.fa-file-text-o(ng-if='::!node.file.dir')
+                        | {{ ::node.path }}
+                .pane-right
+                    div.file-preview(ignite-ace='{mode: $ctrl.fileExt, readonly: true}' ng-model='$ctrl.fileText')
+            .modal-footer
+                div
+                    button.btn-ignite.btn-ignite--success(ng-click='$ctrl.onHide()') Close

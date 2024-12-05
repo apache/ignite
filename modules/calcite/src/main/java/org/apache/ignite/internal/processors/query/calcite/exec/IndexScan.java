@@ -333,7 +333,7 @@ public class IndexScan<Row> extends AbstractCacheColumnsScan<Row> {
 
         InlineIndexKeyType keyType = F.isEmpty(inlineKeyTypes) ? null : inlineKeyTypes.get(0);
 
-        return new BPlusTree.TreeRowClosure<>() {
+        return new BPlusTree.TreeRowClosure<IndexRow, IndexRow>() {
             private IndexRow idxRow;
 
             /** {@inheritDoc} */
@@ -372,7 +372,7 @@ public class IndexScan<Row> extends AbstractCacheColumnsScan<Row> {
 
     /** */
     public static BPlusTree.TreeRowClosure<IndexRow, IndexRow> createNotExpiredRowFilter() {
-        return new BPlusTree.TreeRowClosure<>() {
+        return new BPlusTree.TreeRowClosure<IndexRow, IndexRow>() {
             private IndexRow idxRow;
 
             @Override public boolean apply(

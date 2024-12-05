@@ -83,7 +83,7 @@ public class ZookeeperDiscoverySpi extends IgniteSpiAdapter implements IgniteDis
 
     /** */
     @GridToStringInclude
-    private String zkRootPath = DFLT_ROOT_PATH;
+    private String zkRootPath = null;
 
     /** */
     @GridToStringInclude
@@ -286,7 +286,7 @@ public class ZookeeperDiscoverySpi extends IgniteSpiAdapter implements IgniteDis
                             TcpCommunicationSpi.class.getSimpleName() + "." + TcpCommunicationSpi.ATTR_PORT);
                     }
                     else {
-                        CommunicationSpi commSpi = ignite.configuration().getCommunicationSpi();
+                        CommunicationSpi<?> commSpi = ignite.configuration().getCommunicationSpi();
 
                         if (commSpi instanceof TcpCommunicationSpi) {
                             commPort = ((TcpCommunicationSpi)commSpi).boundPort();
@@ -442,8 +442,12 @@ public class ZookeeperDiscoverySpi extends IgniteSpiAdapter implements IgniteDis
         startStopwatch();
 
         if (sesTimeout == 0)
-            sesTimeout = ignite.configuration().getFailureDetectionTimeout().intValue();
-
+            sesTimeout = 1000 * ignite.configuration().getFailureDetectionTimeout().intValue();
+        // add@byron support ignite cluster split by igniteInstanceName
+        if(zkRootPath==null || zkRootPath.isBlank()) {
+        	zkRootPath = DFLT_ROOT_PATH +'/'+ igniteInstanceName;        	
+        }       
+        //end@byron
         assertParameter(sesTimeout > 0, "sessionTimeout > 0");
 
         A.notNullOrEmpty(zkConnectionString, "zkConnectionString can not be empty");

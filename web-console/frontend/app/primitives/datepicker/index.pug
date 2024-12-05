@@ -1,0 +1,51 @@
+
+
+mixin form-field__datepicker({ label, model, name, mindate, maxdate, minview = 1, format = 'MMM yyyy', disabled, required, placeholder, tip })
+    mixin __form-field__datepicker()
+        input(
+            id=`{{ ${name} }}Input`
+            name=`{{ ${name} }}`
+
+            placeholder=placeholder
+            
+            ng-model=model
+
+            ng-required=required && `${required}`
+            ng-disabled=disabled && `${disabled}`
+
+            bs-datepicker
+
+            data-min-date=mindate ? `{{ ${mindate} }}` : false
+            data-max-date=maxdate ? `{{ ${maxdate} }}` : `today`
+
+            data-min-view=minview
+            data-date-format=format
+            data-start-view=minview
+
+            data-placement='bottom'
+            data-container='.ignite-form-field'
+
+            tabindex='0'
+
+            onkeydown='return false',
+            ng-ref='$input'
+            ng-ref-read='ngModel'
+        )&attributes(attributes.attributes)
+
+    .form-field.form-field__datepicker.ignite-form-field(id=`{{ ${name} }}Field`)
+        +form-field__label({ label, name, required, disabled })
+            +form-field__tooltip({ title: tip, options: tipOpts })
+
+        .form-field__control
+            - attributes.type='button'
+            +__form-field__datepicker(attributes=attributes)
+
+        .form-field__errors(
+            ng-messages=`$input.$error`
+            ng-show=`($input.$dirty || $input.$touched || $input.$submitted) && $input.$invalid`
+        )
+            if required
+                +form-field__error({ error: 'required', message: `${errLbl} could not be empty!` })
+
+            if block
+                block

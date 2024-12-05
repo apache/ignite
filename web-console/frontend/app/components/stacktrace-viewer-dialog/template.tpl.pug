@@ -1,0 +1,16 @@
+
+
+.modal.modal--ignite.theme--ignite.center(tabindex='-1' role='dialog')
+    .modal-dialog.modal-stacktrace
+        .modal-content
+            .modal-header
+                button.close(ng-click='$hide()' aria-hidden='true')
+                    svg(ignite-icon="cross")
+                h4.modal-title
+                    svg(ignite-icon="attention")
+                    | {{$ctrl.title}}
+            .stacktrace-viewer-body
+                stacktrace-tree(data-items="$ctrl.stacktrace")
+            .modal-footer
+                div
+                    button.btn-ignite.btn-ignite--success(ng-click='$hide()') {{ "queries.notebook.stackTraceDialog.closeButtonLabel"|translate }}

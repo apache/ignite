@@ -1,0 +1,14 @@
+
+
+button.btn-ignite.btn-ignite--success(
+    ng-click='$ctrl.actions[0].click()'
+    type='button'
+)
+    svg(ignite-icon='{{ ::$ctrl.actions[0].icon }}').icon-left
+    | {{ ::$ctrl.actions[0].text }}
+button.btn-ignite.btn-ignite--success(
+    bs-dropdown='$ctrl.actions'
+    data-placement='top-right'
+    type='button'
+)
+    span.icon.fa.fa-caret-down
