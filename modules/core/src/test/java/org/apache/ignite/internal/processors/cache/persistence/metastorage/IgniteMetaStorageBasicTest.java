@@ -38,7 +38,6 @@ import org.apache.ignite.configuration.WALMode;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.processors.cache.persistence.IgniteCacheDatabaseSharedManager;
 import org.apache.ignite.lang.IgniteBiTuple;
-import org.apache.ignite.marshaller.jdk.JdkMarshaller;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Assert;
@@ -507,15 +506,15 @@ public class IgniteMetaStorageBasicTest extends GridCommonAbstractTest {
 
             GridTestUtils.setFieldValue(storage, "readOnly", true);
 
-            storage.applyUpdate("pref-0", JdkMarshaller.DEFAULT.marshal(0));
+            storage.applyUpdate("pref-0", TEST_JDK_MARSHALLER.marshal(0));
 
-            storage.applyUpdate("pref-1", JdkMarshaller.DEFAULT.marshal(10));
+            storage.applyUpdate("pref-1", TEST_JDK_MARSHALLER.marshal(10));
 
-            storage.applyUpdate("pref-4", JdkMarshaller.DEFAULT.marshal(4));
+            storage.applyUpdate("pref-4", TEST_JDK_MARSHALLER.marshal(4));
 
             storage.applyUpdate("pref-5", null);
 
-            storage.applyUpdate("pref-8", JdkMarshaller.DEFAULT.marshal(8));
+            storage.applyUpdate("pref-8", TEST_JDK_MARSHALLER.marshal(8));
 
             List<String> keys = new ArrayList<>();
 

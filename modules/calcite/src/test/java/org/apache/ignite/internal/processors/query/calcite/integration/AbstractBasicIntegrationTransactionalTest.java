@@ -33,6 +33,7 @@ import org.apache.ignite.internal.processors.query.QueryContext;
 import org.apache.ignite.internal.processors.query.QueryEngine;
 import org.apache.ignite.internal.processors.query.calcite.QueryChecker;
 import org.apache.ignite.internal.processors.query.calcite.util.Commons;
+import org.apache.ignite.testframework.SupplierX;
 import org.apache.ignite.transactions.Transaction;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
@@ -112,10 +113,10 @@ public abstract class AbstractBasicIntegrationTransactionalTest extends Abstract
     }
 
     /** {@inheritDoc} */
-    @Override protected QueryChecker assertQuery(IgniteEx ignite, String qry) {
+    @Override protected QueryChecker assertQuery(Ignite ignite, String qry) {
         return new QueryChecker(qry, tx, sqlTxMode) {
             @Override protected QueryEngine getEngine() {
-                return Commons.lookupComponent(ignite.context(), QueryEngine.class);
+                return Commons.lookupComponent(((IgniteEx)ignite).context(), QueryEngine.class);
             }
         };
     }
@@ -210,22 +211,6 @@ public abstract class AbstractBasicIntegrationTransactionalTest extends Abstract
     /** */
     public String atomicity() {
         return "atomicity=" + (sqlTxMode == SqlTransactionMode.NONE ? CacheAtomicityMode.ATOMIC : CacheAtomicityMode.TRANSACTIONAL);
-    }
-
-    /** */
-    public interface SupplierX<T> {
-        /** */
-        T getx() throws Exception;
-
-        /** */
-        default T get() {
-            try {
-                return getx();
-            }
-            catch (Exception e) {
-                throw new RuntimeException(e);
-            }
-        }
     }
 
     /** */

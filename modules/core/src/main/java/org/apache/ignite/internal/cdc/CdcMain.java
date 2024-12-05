@@ -73,7 +73,6 @@ import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiPredicate;
 import org.apache.ignite.lang.IgniteBiTuple;
-import org.apache.ignite.marshaller.MarshallerUtils;
 import org.apache.ignite.platform.PlatformType;
 import org.apache.ignite.spi.IgniteSpi;
 import org.apache.ignite.spi.metric.jmx.JmxMetricExporterSpi;
@@ -762,7 +761,7 @@ public class CdcMain implements Runnable {
             Iterator<CdcCacheEvent> cacheEvts = GridLocalConfigManager
                 .readCachesData(
                     dbDir,
-                    MarshallerUtils.jdkMarshaller(kctx.igniteInstanceName()),
+                    kctx.marshallerContext().jdkMarshaller(),
                     igniteCfg)
                 .entrySet().stream()
                 .map(data -> {

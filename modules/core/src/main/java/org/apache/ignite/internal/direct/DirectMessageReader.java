@@ -25,10 +25,6 @@ import java.util.UUID;
 import org.apache.ignite.internal.direct.state.DirectMessageState;
 import org.apache.ignite.internal.direct.state.DirectMessageStateItem;
 import org.apache.ignite.internal.direct.stream.DirectByteBufferStream;
-import org.apache.ignite.internal.direct.stream.v1.DirectByteBufferStreamImplV1;
-import org.apache.ignite.internal.direct.stream.v2.DirectByteBufferStreamImplV2;
-import org.apache.ignite.internal.direct.stream.v3.DirectByteBufferStreamImplV3;
-import org.apache.ignite.internal.direct.stream.v4.DirectByteBufferStreamImplV4;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
@@ -48,25 +44,18 @@ public class DirectMessageReader implements MessageReader {
     @GridToStringInclude
     private final DirectMessageState<StateItem> state;
 
-    /** Protocol version. */
-    @GridToStringInclude
-    private final byte protoVer;
-
     /** Whether last field was fully read. */
     private boolean lastRead;
 
     /**
      * @param msgFactory Message factory.
-     * @param protoVer Protocol version.
      */
-    public DirectMessageReader(final MessageFactory msgFactory, final byte protoVer) {
+    public DirectMessageReader(final MessageFactory msgFactory) {
         state = new DirectMessageState<>(StateItem.class, new IgniteOutClosure<StateItem>() {
             @Override public StateItem apply() {
-                return new StateItem(msgFactory, protoVer);
+                return new StateItem(msgFactory);
             }
         });
-
-        this.protoVer = protoVer;
     }
 
     /** {@inheritDoc} */
@@ -317,17 +306,13 @@ public class DirectMessageReader implements MessageReader {
 
     /** {@inheritDoc} */
     @Override public AffinityTopologyVersion readAffinityTopologyVersion(String name) {
-        if (protoVer >= 3) {
-            DirectByteBufferStream stream = state.item().stream;
+        DirectByteBufferStream stream = state.item().stream;
 
-            AffinityTopologyVersion val = stream.readAffinityTopologyVersion();
+        AffinityTopologyVersion val = stream.readAffinityTopologyVersion();
 
-            lastRead = stream.lastFinished();
+        lastRead = stream.lastFinished();
 
-            return val;
-        }
-
-        return readMessage(name);
+        return val;
     }
 
     /** {@inheritDoc} */
@@ -421,33 +406,9 @@ public class DirectMessageReader implements MessageReader {
 
         /**
          * @param msgFactory Message factory.
-         * @param protoVer Protocol version.
          */
-        public StateItem(MessageFactory msgFactory, byte protoVer) {
-            switch (protoVer) {
-                case 1:
-                    stream = new DirectByteBufferStreamImplV1(msgFactory);
-
-                    break;
-
-                case 2:
-                    stream = new DirectByteBufferStreamImplV2(msgFactory);
-
-                    break;
-
-                case 3:
-                    stream = new DirectByteBufferStreamImplV3(msgFactory);
-
-                    break;
-
-                case 4:
-                    stream = new DirectByteBufferStreamImplV4(msgFactory);
-
-                    break;
-
-                default:
-                    throw new IllegalStateException("Invalid protocol version: " + protoVer);
-            }
+        public StateItem(MessageFactory msgFactory) {
+            stream = new DirectByteBufferStream(msgFactory);
         }
 
         /** {@inheritDoc} */
