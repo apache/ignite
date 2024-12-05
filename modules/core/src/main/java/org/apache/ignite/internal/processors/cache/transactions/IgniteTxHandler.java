@@ -58,6 +58,7 @@ import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtTxPrep
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtTxPrepareRequest;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtTxPrepareResponse;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtTxRemote;
+import org.apache.ignite.internal.processors.cache.distributed.dht.TransactionAttributesAwareRequest;
 import org.apache.ignite.internal.processors.cache.distributed.dht.PartitionUpdateCountersMessage;
 import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtInvalidPartitionException;
 import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtLocalPartition;
@@ -232,6 +233,20 @@ public class IgniteTxHandler {
         ctx.io().addCacheHandler(GridCacheTxRecoveryResponse.class, this::processCheckPreparedTxResponse);
 
         ctx.io().addCacheHandler(IncrementalSnapshotAwareMessage.class, this::processIncrementalSnapshotAwareMessage);
+
+        ctx.io().addCacheHandler(TransactionAttributesAwareRequest.class, this::processAttributesAwareMessage);
+    }
+
+    /** */
+    private void processAttributesAwareMessage(UUID nodeId, TransactionAttributesAwareRequest msg) {
+        GridCacheMessage txMsg = msg.payload();
+
+        if (txMsg instanceof TransactionApplicationAttributesAware)
+            ((TransactionApplicationAttributesAware)txMsg).applicationAttributes(msg.applicationAttributes());
+
+        ctx.io()
+            .cacheHandler(COMMON_MESSAGE_HANDLER_ID, txMsg.getClass())
+            .apply(nodeId, txMsg);
     }
 
     /** */
@@ -584,6 +599,7 @@ public class IgniteTxHandler {
                 tx.explicitLock(true);
 
             tx.transactionNodes(req.transactionNodes());
+            tx.applicationAttributes(req.applicationAttributes());
 
             if (req.near())
                 tx.nearOnOriginatingNode(true);
@@ -596,9 +612,6 @@ public class IgniteTxHandler {
 
             if (req.needReturnValue())
                 tx.needReturnValue(true);
-
-            if (req.applicationAttributes() != null)
-                tx.applicationAttributes(req.applicationAttributes());
 
             IgniteInternalFuture<GridNearTxPrepareResponse> fut = tx.prepareAsync(req);
 

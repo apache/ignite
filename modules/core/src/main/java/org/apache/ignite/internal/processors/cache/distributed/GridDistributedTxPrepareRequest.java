@@ -37,6 +37,7 @@ import org.apache.ignite.internal.processors.cache.transactions.IgniteTxEntry;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteTxKey;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteTxState;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteTxStateAware;
+import org.apache.ignite.internal.processors.cache.transactions.TransactionApplicationAttributesAware;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.util.UUIDCollectionMessage;
 import org.apache.ignite.internal.util.tostring.GridToStringBuilder;
@@ -56,7 +57,8 @@ import org.jetbrains.annotations.Nullable;
  * Transaction prepare request for optimistic and eventually consistent
  * transactions.
  */
-public class GridDistributedTxPrepareRequest extends GridDistributedBaseMessage implements IgniteTxStateAware {
+public class GridDistributedTxPrepareRequest extends GridDistributedBaseMessage
+    implements IgniteTxStateAware, TransactionApplicationAttributesAware {
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -150,8 +152,9 @@ public class GridDistributedTxPrepareRequest extends GridDistributedBaseMessage 
     private byte flags;
 
     /** Application attributes. */
+    @GridDirectTransient
     @GridToStringExclude
-    @Nullable private Map<String, String> appAttrs;
+    private @Nullable Map<String, String> appAttrs;
 
     /**
      * Required by {@link Externalizable}.
@@ -190,7 +193,6 @@ public class GridDistributedTxPrepareRequest extends GridDistributedBaseMessage 
         isolation = tx.isolation();
         txSize = tx.size();
         plc = tx.ioPolicy();
-        appAttrs = tx.applicationAttributes();
 
         this.timeout = timeout;
         this.reads = reads;
@@ -202,6 +204,16 @@ public class GridDistributedTxPrepareRequest extends GridDistributedBaseMessage 
         setFlag(tx.isInvalidate(), INVALIDATE_FLAG_MASK);
         setFlag(onePhaseCommit, ONE_PHASE_COMMIT_FLAG_MASK);
         setFlag(last, LAST_REQ_FLAG_MASK);
+    }
+
+    /** {@inheritDoc} */
+    @Override public Map<String, String> applicationAttributes() {
+        return appAttrs;
+    }
+
+    /** {@inheritDoc} */
+    @Override public void applicationAttributes(Map<String, String> appAttrs) {
+        this.appAttrs = appAttrs;
     }
 
     /**
@@ -365,13 +377,6 @@ public class GridDistributedTxPrepareRequest extends GridDistributedBaseMessage 
      */
     public boolean last() {
         return isFlag(LAST_REQ_FLAG_MASK);
-    }
-
-    /**
-     * @return Application attributes.
-     */
-    @Nullable public Map<String, String> applicationAttributes() {
-        return appAttrs;
     }
 
     /** {@inheritDoc} */
@@ -564,11 +569,6 @@ public class GridDistributedTxPrepareRequest extends GridDistributedBaseMessage 
 
                 writer.incrementState();
 
-            case 21:
-                if (!writer.writeMap("appAttrs", appAttrs, MessageCollectionItemType.STRING, MessageCollectionItemType.STRING))
-                    return false;
-
-                writer.incrementState();
         }
 
         return true;
@@ -697,13 +697,6 @@ public class GridDistributedTxPrepareRequest extends GridDistributedBaseMessage 
 
                 reader.incrementState();
 
-            case 21:
-                appAttrs = reader.readMap("appAttrs", MessageCollectionItemType.STRING, MessageCollectionItemType.STRING, false);
-
-                if (!reader.isLastRead())
-                    return false;
-
-                reader.incrementState();
         }
 
         return reader.afterMessageRead(GridDistributedTxPrepareRequest.class);
@@ -716,7 +709,7 @@ public class GridDistributedTxPrepareRequest extends GridDistributedBaseMessage 
 
     /** {@inheritDoc} */
     @Override public byte fieldsCount() {
-        return 22;
+        return 21;
     }
 
     /** {@inheritDoc} */

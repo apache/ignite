@@ -301,13 +301,15 @@ public class SessionContextCacheInterceptorTest extends GridCommonAbstractTest {
 
     /** */
     @Test
-    public void testMultiCacheTransaction() {
+    public void testMultiCacheTransaction() throws Exception {
         assumeTrue(mode == CacheAtomicityMode.TRANSACTIONAL);
 
         ign.getOrCreateCache(new CacheConfiguration<Integer, String>()
             .setName("new-cache")
             .setAtomicityMode(CacheAtomicityMode.TRANSACTIONAL)
             .setInterceptor(new SessionContextCacheInterceptor()));
+
+        awaitPartitionMapExchange();
 
         Ignite ignApp = ign
             .withApplicationAttributes(F.asMap("onBeforePut", "sessionOnPut"));
