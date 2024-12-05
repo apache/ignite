@@ -459,7 +459,7 @@ public class CommandHandler {
      * to secured cluster.
      */
     private boolean isConnectionClosedSilentlyException(Throwable e) {
-        if (e instanceof ClientConnectionException && "Channel is closed".equals(e.getMessage()))
+        if (e instanceof ClientConnectionException && e.getMessage().startsWith("Channel is closed"))
             return true;
 
         if (!(e instanceof GridClientDisconnectedException))
