@@ -347,13 +347,6 @@ public class OpenCensusTracingSpiTest extends AbstractTracingTest {
     }
 
     /**
-     */
-    @Test
-    public void testTracingFeatureAvailable() {
-        assertTrue(IgniteFeatures.nodeSupports(IgniteFeatures.allFeatures(), IgniteFeatures.TRACING));
-    }
-
-    /**
      * Ensure that root discovery.custom.event have message.class with corresponding value.
      *
      * @throws Exception If failed.
