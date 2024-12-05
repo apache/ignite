@@ -18,6 +18,8 @@
 package org.apache.ignite.internal.processors.cache;
 
 import java.util.Collection;
+import java.util.Map;
+import java.util.UUID;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.managers.discovery.DiscoCache;
@@ -34,49 +36,48 @@ import org.jetbrains.annotations.Nullable;
 /**
  * This class represents discovery message that is used to provide information about dynamic cache start failure.
  */
-public class DynamicCacheChangeFailureMessage implements DiscoveryCustomMessage {
+public class ExchangeFailureMessage implements DiscoveryCustomMessage {
     /** */
     private static final long serialVersionUID = 0L;
 
     /** Cache names. */
     @GridToStringInclude
-    private Collection<String> cacheNames;
+    private final Collection<String> cacheNames;
 
     /** Custom message ID. */
-    private IgniteUuid id;
+    private final IgniteUuid id;
 
     /** */
-    private GridDhtPartitionExchangeId exchId;
+    private final GridDhtPartitionExchangeId exchId;
 
     /** */
     @GridToStringInclude
-    private IgniteCheckedException cause;
+    private final Map<UUID, Exception> exchangeErrors;
 
-    /** Cache updates to be executed on exchange. */
-    private transient ExchangeActions exchangeActions;
+    /** Actions to be done to rollback changes done before the exchange failure. */
+    private transient ExchangeActions exchangeRollbackActions;
 
     /**
      * Creates new DynamicCacheChangeFailureMessage instance.
      *
      * @param locNode Local node.
      * @param exchId Exchange Id.
-     * @param cause Cache start error.
-     * @param cacheNames Cache names.
+     * @param exchangeErrors Errors that caused PME to fail.
      */
-    public DynamicCacheChangeFailureMessage(
+    public ExchangeFailureMessage(
         ClusterNode locNode,
         GridDhtPartitionExchangeId exchId,
-        IgniteCheckedException cause,
+        Map<UUID, Exception> exchangeErrors,
         Collection<String> cacheNames
     ) {
         assert exchId != null;
-        assert cause != null;
+        assert !F.isEmpty(exchangeErrors);
         assert !F.isEmpty(cacheNames) : cacheNames;
 
         this.id = IgniteUuid.fromUuid(locNode.id());
         this.exchId = exchId;
-        this.cause = cause;
         this.cacheNames = cacheNames;
+        this.exchangeErrors = exchangeErrors;
     }
 
     /** {@inheritDoc} */
@@ -91,27 +92,42 @@ public class DynamicCacheChangeFailureMessage implements DiscoveryCustomMessage 
         return cacheNames;
     }
 
-    /**
-     * @return Cache start error.
-     */
-    public IgniteCheckedException error() {
-        return cause;
+    /** */
+    public Map<UUID, Exception> exchangeErrors() {
+        return exchangeErrors;
     }
 
     /**
      * @return Cache updates to be executed on exchange.
      */
-    public ExchangeActions exchangeActions() {
-        return exchangeActions;
+    public ExchangeActions exchangeRollbackActions() {
+        return exchangeRollbackActions;
     }
 
     /**
-     * @param exchangeActions Cache updates to be executed on exchange.
+     * @param exchangeRollbackActions Cache updates to be executed on exchange.
      */
-    public void exchangeActions(ExchangeActions exchangeActions) {
-        assert exchangeActions != null && !exchangeActions.empty() : exchangeActions;
+    public void exchangeRollbackActions(ExchangeActions exchangeRollbackActions) {
+        assert exchangeRollbackActions != null && !exchangeRollbackActions.empty() : exchangeRollbackActions;
 
-        this.exchangeActions = exchangeActions;
+        this.exchangeRollbackActions = exchangeRollbackActions;
+    }
+
+    /**
+     * Creates an IgniteCheckedException that is used as root cause of the exchange initialization failure. This method
+     * aggregates all the exceptions provided from all participating nodes.
+     *
+     * @return Exception that represents a cause of the exchange initialization failure.
+     */
+    public IgniteCheckedException createFailureCompoundException() {
+        IgniteCheckedException ex = new IgniteCheckedException("Failed to complete exchange process.");
+
+        for (Map.Entry<UUID, Exception> entry : exchangeErrors.entrySet()) {
+            if (ex != entry.getValue())
+                ex.addSuppressed(entry.getValue());
+        }
+
+        return ex;
     }
 
     /**
@@ -141,6 +157,6 @@ public class DynamicCacheChangeFailureMessage implements DiscoveryCustomMessage 
 
     /** {@inheritDoc} */
     @Override public String toString() {
-        return S.toString(DynamicCacheChangeFailureMessage.class, this);
+        return S.toString(ExchangeFailureMessage.class, this);
     }
 }
