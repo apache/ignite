@@ -19,7 +19,6 @@ package org.apache.ignite.util;
 
 import java.nio.ByteBuffer;
 import org.apache.ignite.internal.direct.DirectMessageWriter;
-import org.apache.ignite.internal.managers.communication.GridIoManager;
 import org.apache.ignite.internal.util.GridLongList;
 import org.apache.ignite.plugin.extensions.communication.MessageWriter;
 import org.junit.Assert;
@@ -194,7 +193,7 @@ public class GridLongListSelfTest {
     /** */
     @Test
     public void testSerializationDefaultConstructor() {
-        MessageWriter writer = new DirectMessageWriter(GridIoManager.DIRECT_PROTO_VER);
+        MessageWriter writer = new DirectMessageWriter();
 
         ByteBuffer buf = ByteBuffer.allocate(4096);
 
@@ -269,7 +268,7 @@ public class GridLongListSelfTest {
     /** */
     @Test
     public void testSerializationConstructorWithSize() {
-        MessageWriter writer = new DirectMessageWriter(GridIoManager.DIRECT_PROTO_VER);
+        MessageWriter writer = new DirectMessageWriter();
 
         ByteBuffer buf = ByteBuffer.allocate(4096);
 
@@ -344,7 +343,7 @@ public class GridLongListSelfTest {
     /** */
     @Test
     public void testSerializationConstructorWithZeroSize() {
-        MessageWriter writer = new DirectMessageWriter(GridIoManager.DIRECT_PROTO_VER);
+        MessageWriter writer = new DirectMessageWriter();
 
         ByteBuffer buf = ByteBuffer.allocate(4096);
 
@@ -419,7 +418,7 @@ public class GridLongListSelfTest {
     /** */
     @Test
     public void testSerializationCopyConstructor() {
-        MessageWriter writer = new DirectMessageWriter(GridIoManager.DIRECT_PROTO_VER);
+        MessageWriter writer = new DirectMessageWriter();
 
         ByteBuffer buf = ByteBuffer.allocate(4096);
 
@@ -481,7 +480,7 @@ public class GridLongListSelfTest {
     /** */
     @Test
     public void testSerializationInsufficientBuffer() {
-        MessageWriter writer = new DirectMessageWriter(GridIoManager.DIRECT_PROTO_VER);
+        MessageWriter writer = new DirectMessageWriter();
 
         ByteBuffer buf = ByteBuffer.allocate(10);
 
