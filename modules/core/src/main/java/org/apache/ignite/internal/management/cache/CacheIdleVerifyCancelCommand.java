@@ -17,17 +17,13 @@
 
 package org.apache.ignite.internal.management.cache;
 
-import java.io.Serializable;
 import org.apache.ignite.internal.management.api.ComputeCommand;
 import org.apache.ignite.internal.management.api.NoArg;
 
 /**
  * Cancels idle_verify command.
  */
-public class CacheIdleVerifyCancelCommand implements ComputeCommand<NoArg, Void>, Serializable {
-    /** */
-    private static final long serialVersionUID = 0L;
-
+public class CacheIdleVerifyCancelCommand implements ComputeCommand<NoArg, Void> {
     /** {@inheritDoc} */
     @Override public Class<CacheIdleVerifyCancelTask> taskClass() {
         return CacheIdleVerifyCancelTask.class;
@@ -35,7 +31,7 @@ public class CacheIdleVerifyCancelCommand implements ComputeCommand<NoArg, Void>
 
     /** {@inheritDoc} */
     @Override public String description() {
-        return "Cancels idle_verify command.";
+        return "Cancels idle_verify command";
     }
 
     /** {@inheritDoc} */
