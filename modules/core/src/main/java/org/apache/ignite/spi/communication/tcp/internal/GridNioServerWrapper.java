@@ -42,6 +42,7 @@ import java.util.function.Supplier;
 import javax.net.ssl.SSLEngine;
 import javax.net.ssl.SSLException;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.cluster.ClusterNode;
@@ -801,6 +802,28 @@ public class GridNioServerWrapper {
 
         for (int port = cfg.localPort(); port <= lastPort; port++) {
             try {
+                IgniteMessageFactory msgFactory = new IgniteMessageFactory() {
+                    private IgniteMessageFactory impl;
+
+                    @Override public void register(short directType, Supplier<Message> supplier) throws IgniteException {
+                        get().register(directType, supplier);
+                    }
+
+                    @Nullable @Override public Message create(short type) {
+                        return get().create(type);
+                    }
+
+                    private IgniteMessageFactory get() {
+                        if (impl == null) {
+                            impl = stateProvider.getSpiContext().messageFactory();
+
+                            assert impl != null;
+                        }
+
+                        return impl;
+                    }
+                };
+
                 GridNioMessageReaderFactory readerFactory = new GridNioMessageReaderFactory() {
                     private IgniteSpiContext context;
 
@@ -847,7 +870,7 @@ public class GridNioServerWrapper {
                 };
 
                 GridDirectParser parser = new GridDirectParser(log.getLogger(GridDirectParser.class),
-                    stateProvider.getSpiContext().messageFactory(),
+                    msgFactory,
                     readerFactory);
 
                 IgnitePredicate<Message> skipRecoveryPred = msg -> msg instanceof RecoveryLastReceivedMessage;
