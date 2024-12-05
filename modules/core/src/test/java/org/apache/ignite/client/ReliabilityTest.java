@@ -685,11 +685,6 @@ public class ReliabilityTest extends AbstractThinClientTest {
     public void testServiceProxyFailover() throws Exception {
         Assume.assumeTrue(partitionAware);
 
-        Ignition.stopAll(true);
-
-        for (Ignite ignite : Ignition.allGrids())
-            ignite.services().cancelAll();
-
         final int CLUSTER_SIZE = 3;
 
         try (LocalIgniteCluster cluster = LocalIgniteCluster.start(CLUSTER_SIZE);
