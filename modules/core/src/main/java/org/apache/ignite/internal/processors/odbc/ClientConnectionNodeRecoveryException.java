@@ -17,20 +17,17 @@
 
 package org.apache.ignite.internal.processors.odbc;
 
+import org.apache.ignite.IgniteCheckedException;
+
 /**
- * Client listener command request.
+ * Indicates that node is unavailable due to recovery mode.
  */
-public interface ClientListenerRequest {
-    /** Handshake request. */
-    public static final int HANDSHAKE = 1;
+public class ClientConnectionNodeRecoveryException extends IgniteCheckedException {
+    /** */
+    private static final long serialVersionUID = 0L;
 
-    /**
-     * @return Request ID.
-     */
-    public long requestId();
-
-    /** @return {@code True} if request can be handled before node join topology. */
-    default boolean beforeStartupRequest() {
-        return false;
+    /** {@inheritDoc} */
+    public ClientConnectionNodeRecoveryException(String msg) {
+        super(msg);
     }
 }

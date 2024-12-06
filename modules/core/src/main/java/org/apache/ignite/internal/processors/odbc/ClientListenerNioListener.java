@@ -73,6 +73,12 @@ public class ClientListenerNioListener extends GridNioServerListenerAdapter<Clie
     /** Connection-related metadata key. */
     public static final int CONN_CTX_META_KEY = GridNioSessionMetaKey.nextUniqueKey();
 
+    /** {@code True} if a management client. Internal operations will be available. */
+    public static final String MANAGEMENT_CLIENT_ATTR = "ignite.internal.management-client";
+
+    /** Connection shifted ID for management clients. */
+    public static final long MANAGEMENT_CONNECTION_SHIFTED_ID = -1;
+
     /** Next connection id. */
     private static AtomicInteger nextConnId = new AtomicInteger(1);
 
@@ -374,6 +380,9 @@ public class ClientListenerNioListener extends GridNioServerListenerAdapter<Clie
             if (connCtx.isVersionSupported(ver)) {
                 connCtx.initializeFromHandshake(ses, ver, reader);
 
+                if (nodeInRecoveryMode() && !Boolean.parseBoolean(connCtx.attributes().get(MANAGEMENT_CLIENT_ATTR)))
+                    throw new ClientConnectionNodeRecoveryException("Node in recovery mode.");
+
                 ses.addMeta(CONN_CTX_META_KEY, connCtx);
             }
             else
@@ -435,8 +444,11 @@ public class ClientListenerNioListener extends GridNioServerListenerAdapter<Clie
 
             writer.doWriteString(e.getMessage());
 
-            if (ver.compareTo(ClientConnectionContext.VER_1_1_0) >= 0)
-                writer.writeInt(ClientStatus.FAILED);
+            if (ver.compareTo(ClientConnectionContext.VER_1_1_0) >= 0) {
+                writer.writeInt(e instanceof ClientConnectionNodeRecoveryException
+                    ? ClientStatus.NODE_IN_RECOVERY_MODE
+                    : ClientStatus.FAILED);
+            }
         }
 
         ses.send(new ClientMessage(writer.array()));
@@ -473,7 +485,18 @@ public class ClientListenerNioListener extends GridNioServerListenerAdapter<Clie
      * @return connection id.
      */
     private long nextConnectionId() {
-        return (ctx.discovery().localNode().order() << 32) + nextConnId.getAndIncrement();
+        long shiftedId = nodeInRecoveryMode() ? MANAGEMENT_CONNECTION_SHIFTED_ID : ctx.discovery().localNode().order();
+
+        return (shiftedId << 32) + nextConnId.getAndIncrement();
+    }
+
+    /**
+     * @return {@code True} if node in recovery mode and does not join topology yet.
+     * {@link GridKernalContext#recoveryMode()} returns {@code true} before join topology
+     * and some resources (local node etc.) are not available.
+     */
+    private boolean nodeInRecoveryMode() {
+        return !ctx.discovery().localJoinFuture().isDone();
     }
 
     /**
