@@ -262,12 +262,6 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
     /** Max closed topics to store. */
     public static final int MAX_CLOSED_TOPICS = 10240;
 
-    /** Direct protocol version attribute name. */
-    public static final String DIRECT_PROTO_VER_ATTR = "comm.direct.proto.ver";
-
-    /** Direct protocol version. */
-    public static final byte DIRECT_PROTO_VER = 4;
-
     /** Current IO policy. */
     private static final ThreadLocal<Byte> CUR_PLC = new ThreadLocal<>();
 
@@ -430,8 +424,6 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
 
     /** {@inheritDoc} */
     @Override public void start() throws IgniteCheckedException {
-        ctx.addNodeAttribute(DIRECT_PROTO_VER_ATTR, DIRECT_PROTO_VER);
-
         MessageFormatter[] formatterExt = ctx.plugins().extensions(MessageFormatter.class);
 
         if (formatterExt != null && formatterExt.length > 0) {
@@ -443,17 +435,14 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
         }
         else {
             formatter = new MessageFormatter() {
-                @Override public MessageWriter writer(UUID rmtNodeId) throws IgniteCheckedException {
+                @Override public MessageWriter writer(UUID rmtNodeId) {
                     assert rmtNodeId != null;
 
-                    return new DirectMessageWriter(U.directProtocolVersion(ctx, rmtNodeId));
+                    return new DirectMessageWriter();
                 }
 
-                @Override public MessageReader reader(UUID rmtNodeId, MessageFactory msgFactory)
-                    throws IgniteCheckedException {
-
-                    return new DirectMessageReader(msgFactory,
-                        rmtNodeId != null ? U.directProtocolVersion(ctx, rmtNodeId) : DIRECT_PROTO_VER);
+                @Override public MessageReader reader(UUID rmtNodeId, MessageFactory msgFactory) {
+                    return new DirectMessageReader(msgFactory);
                 }
             };
         }
