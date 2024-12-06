@@ -30,9 +30,9 @@ import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.lang.IgniteOutClosure;
 import org.apache.ignite.lang.IgniteUuid;
+import org.apache.ignite.plugin.extensions.communication.IgniteMessageFactory;
 import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.plugin.extensions.communication.MessageCollectionItemType;
-import org.apache.ignite.plugin.extensions.communication.MessageFactory;
 import org.apache.ignite.plugin.extensions.communication.MessageReader;
 import org.jetbrains.annotations.Nullable;
 
@@ -50,7 +50,7 @@ public class DirectMessageReader implements MessageReader {
     /**
      * @param msgFactory Message factory.
      */
-    public DirectMessageReader(final MessageFactory msgFactory) {
+    public DirectMessageReader(final IgniteMessageFactory msgFactory) {
         state = new DirectMessageState<>(StateItem.class, new IgniteOutClosure<StateItem>() {
             @Override public StateItem apply() {
                 return new StateItem(msgFactory);
@@ -407,7 +407,7 @@ public class DirectMessageReader implements MessageReader {
         /**
          * @param msgFactory Message factory.
          */
-        public StateItem(MessageFactory msgFactory) {
+        public StateItem(IgniteMessageFactory msgFactory) {
             stream = new DirectByteBufferStream(msgFactory);
         }
 

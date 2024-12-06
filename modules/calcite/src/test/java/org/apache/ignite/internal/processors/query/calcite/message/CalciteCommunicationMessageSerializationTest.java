@@ -18,12 +18,12 @@
 package org.apache.ignite.internal.processors.query.calcite.message;
 
 import org.apache.ignite.internal.managers.communication.AbstractCommunicationMessageSerializationTest;
-import org.apache.ignite.plugin.extensions.communication.MessageFactory;
+import org.apache.ignite.plugin.extensions.communication.MessageFactoryProvider;
 
 /** */
 public class CalciteCommunicationMessageSerializationTest extends AbstractCommunicationMessageSerializationTest {
     /** {@inheritDoc} */
-    @Override protected MessageFactory messageFactory() {
+    @Override protected MessageFactoryProvider messageFactory() {
         return new CalciteMessageFactory();
     }
 }

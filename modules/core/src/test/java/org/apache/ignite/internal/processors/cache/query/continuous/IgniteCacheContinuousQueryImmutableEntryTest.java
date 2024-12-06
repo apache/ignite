@@ -37,7 +37,7 @@ import org.apache.ignite.internal.managers.communication.IgniteMessageFactoryImp
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.CacheObjectImpl;
 import org.apache.ignite.internal.processors.cache.KeyCacheObjectImpl;
-import org.apache.ignite.plugin.extensions.communication.MessageFactory;
+import org.apache.ignite.plugin.extensions.communication.MessageFactoryProvider;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
 
@@ -156,7 +156,7 @@ public class IgniteCacheContinuousQueryImmutableEntryTest extends GridCommonAbst
 
         CacheContinuousQueryEntry e1 = new CacheContinuousQueryEntry();
         IgniteMessageFactoryImpl msgFactory =
-                new IgniteMessageFactoryImpl(new MessageFactory[]{new GridIoMessageFactory()});
+                new IgniteMessageFactoryImpl(new MessageFactoryProvider[]{new GridIoMessageFactory()});
         e1.readFrom(ByteBuffer.wrap(buf.array()), new DirectMessageReader(msgFactory));
 
         assertEquals(e0.cacheId(), e1.cacheId());

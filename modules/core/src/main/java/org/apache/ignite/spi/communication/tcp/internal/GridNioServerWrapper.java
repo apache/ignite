@@ -42,6 +42,7 @@ import java.util.function.Supplier;
 import javax.net.ssl.SSLEngine;
 import javax.net.ssl.SSLException;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.cluster.ClusterNode;
@@ -80,8 +81,8 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.internal.worker.WorkersRegistry;
 import org.apache.ignite.lang.IgniteBiInClosure;
 import org.apache.ignite.lang.IgnitePredicate;
+import org.apache.ignite.plugin.extensions.communication.IgniteMessageFactory;
 import org.apache.ignite.plugin.extensions.communication.Message;
-import org.apache.ignite.plugin.extensions.communication.MessageFactory;
 import org.apache.ignite.plugin.extensions.communication.MessageFormatter;
 import org.apache.ignite.plugin.extensions.communication.MessageReader;
 import org.apache.ignite.plugin.extensions.communication.MessageWriter;
@@ -801,16 +802,25 @@ public class GridNioServerWrapper {
 
         for (int port = cfg.localPort(); port <= lastPort; port++) {
             try {
-                MessageFactory msgFactory = new MessageFactory() {
-                    private MessageFactory impl;
+                IgniteMessageFactory msgFactory = new IgniteMessageFactory() {
+                    private IgniteMessageFactory impl;
+
+                    @Override public void register(short directType, Supplier<Message> supplier) throws IgniteException {
+                        get().register(directType, supplier);
+                    }
 
                     @Nullable @Override public Message create(short type) {
-                        if (impl == null)
+                        return get().create(type);
+                    }
+
+                    private IgniteMessageFactory get() {
+                        if (impl == null) {
                             impl = stateProvider.getSpiContext().messageFactory();
 
-                        assert impl != null;
+                            assert impl != null;
+                        }
 
-                        return impl.create(type);
+                        return impl;
                     }
                 };
 
@@ -819,7 +829,7 @@ public class GridNioServerWrapper {
 
                     private MessageFormatter formatter;
 
-                    @Override public MessageReader reader(GridNioSession ses, MessageFactory msgFactory)
+                    @Override public MessageReader reader(GridNioSession ses, IgniteMessageFactory msgFactory)
                         throws IgniteCheckedException {
                         final IgniteSpiContext ctx = stateProvider.getSpiContextWithoutInitialLatch();
 

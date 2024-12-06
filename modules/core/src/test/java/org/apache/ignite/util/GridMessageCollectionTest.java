@@ -25,7 +25,7 @@ import org.apache.ignite.internal.managers.communication.IgniteMessageFactoryImp
 import org.apache.ignite.internal.util.UUIDCollectionMessage;
 import org.apache.ignite.plugin.extensions.communication.IgniteMessageFactory;
 import org.apache.ignite.plugin.extensions.communication.Message;
-import org.apache.ignite.plugin.extensions.communication.MessageFactory;
+import org.apache.ignite.plugin.extensions.communication.MessageFactoryProvider;
 import org.apache.ignite.plugin.extensions.communication.MessageReader;
 import org.apache.ignite.plugin.extensions.communication.MessageWriter;
 import org.junit.Test;
@@ -50,7 +50,7 @@ public class GridMessageCollectionTest {
      * @param msgFactory Message factory.
      * @return Writer.
      */
-    protected MessageReader reader(MessageFactory msgFactory) {
+    protected MessageReader reader(IgniteMessageFactory msgFactory) {
         return new DirectMessageReader(msgFactory);
     }
 
@@ -116,7 +116,7 @@ public class GridMessageCollectionTest {
         assertEquals(m.directType(), type);
 
         IgniteMessageFactory msgFactory =
-                new IgniteMessageFactoryImpl(new MessageFactory[]{new GridIoMessageFactory()});
+                new IgniteMessageFactoryImpl(new MessageFactoryProvider[]{new GridIoMessageFactory()});
 
         Message mx = msgFactory.create(type);
 

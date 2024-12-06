@@ -124,7 +124,7 @@ public class TcpCommunicationMetricsListener {
 
         mreg = (MetricRegistryImpl)spiCtx.getOrCreateMetricRegistry(COMMUNICATION_METRICS_GROUP_NAME);
 
-        msgCntrsByType = createMessageCounters((IgniteMessageFactory)spiCtx.messageFactory());
+        msgCntrsByType = createMessageCounters(spiCtx.messageFactory());
 
         sentMsgsCntByConsistentIdMetricFactory = consistentId -> {
             String name = metricName(COMMUNICATION_METRICS_GROUP_NAME, consistentId.toString());
