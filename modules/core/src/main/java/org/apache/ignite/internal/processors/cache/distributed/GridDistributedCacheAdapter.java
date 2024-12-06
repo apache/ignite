@@ -23,6 +23,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicReference;
+import javax.cache.CacheException;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.cache.CachePeekMode;
@@ -68,6 +69,10 @@ import static org.apache.ignite.internal.processors.task.TaskExecutionOptions.op
  * Distributed cache implementation.
  */
 public abstract class GridDistributedCacheAdapter<K, V> extends GridCacheAdapter<K, V> {
+    /** Exception thrown when a non-transactional IgniteCache removeAll operation is invoked within a transaction. */
+    public static final String NON_TRANSACTIONAL_IGNITE_CACHE_REMOVEALL_IN_TX_ERROR_MESSAGE = "Failed to invoke a " +
+        "non-transactional IgniteCache removeAll operation within a transaction.";
+
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -164,6 +169,9 @@ public abstract class GridDistributedCacheAdapter<K, V> extends GridCacheAdapter
 
     /** {@inheritDoc} */
     @Override public void removeAll() throws IgniteCheckedException {
+        if (ctx.transactional() && ctx.grid().transactions().tx() != null)
+            throw new CacheException(NON_TRANSACTIONAL_IGNITE_CACHE_REMOVEALL_IN_TX_ERROR_MESSAGE);
+
         try {
             AffinityTopologyVersion topVer;
 
@@ -201,6 +209,9 @@ public abstract class GridDistributedCacheAdapter<K, V> extends GridCacheAdapter
 
     /** {@inheritDoc} */
     @Override public IgniteInternalFuture<?> removeAllAsync() {
+        if (ctx.transactional() && ctx.grid().transactions().tx() != null)
+            throw new CacheException(NON_TRANSACTIONAL_IGNITE_CACHE_REMOVEALL_IN_TX_ERROR_MESSAGE);
+
         GridFutureAdapter<Void> opFut = new GridFutureAdapter<>();
 
         AffinityTopologyVersion topVer = ctx.affinity().affinityTopologyVersion();

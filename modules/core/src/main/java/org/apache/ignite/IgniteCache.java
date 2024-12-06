@@ -1193,6 +1193,8 @@ public interface IgniteCache<K, V> extends javax.cache.Cache<K, V>, IgniteAsyncS
      * </ul>
      * If the cache is empty, the {@link CacheWriter} is not called.
      * <p>
+     * This operation is not transactional. It calls broadcast closure that deletes all primary keys from remote nodes.
+     * <p>
      * This is potentially an expensive operation as listeners are invoked.
      * Use {@link #clearAsync()} to avoid this.
      *
