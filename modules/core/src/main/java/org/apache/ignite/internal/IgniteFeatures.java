@@ -53,9 +53,6 @@ public enum IgniteFeatures {
      */
     TRANSACTION_OWNER_THREAD_DUMP_PROVIDING(6),
 
-    /** Support of cluster read-only mode. */
-    CLUSTER_READ_ONLY_MODE(9),
-
     /** Support of suspend/resume operations for pessimistic transactions. */
     SUSPEND_RESUME_PESSIMISTIC_TX(10),
 
