@@ -91,11 +91,7 @@ public class RecoveryModeTest extends AbstractThinClientTest {
 
             assertTrue(waitForCondition(() -> 2 == client.cluster().nodes().size(), getTestTimeout()));
 
-            assertTrue(waitForCondition(() -> {
-                List<Long> conn0 = clientConnections(0);
-
-                return conn0.size() == 1 && conn0.stream().allMatch(id -> id != -1); // Connection completed.
-            }, getTestTimeout()));
+            assertTrue(waitForCondition(() -> clientConnections(0).size() == 1, getTestTimeout()));
 
             List<Long> conn0 = clientConnections(0);
 
@@ -127,7 +123,9 @@ public class RecoveryModeTest extends AbstractThinClientTest {
             .systemView().view(CLI_CONN_VIEW);
 
         return StreamSupport.stream(conns.spliterator(), false)
-            .map(ClientConnectionView::connectionId).collect(Collectors.toList());
+            .map(ClientConnectionView::connectionId)
+            .filter(id -> id != -1) // Connection completed.
+            .collect(Collectors.toList());
     }
 
     /** */
