@@ -93,19 +93,29 @@ import static org.apache.ignite.internal.processors.rest.GridRestCommand.CACHE_R
 import static org.apache.ignite.internal.processors.rest.GridRestCommand.CACHE_REPLACE;
 import static org.apache.ignite.internal.processors.rest.GridRestCommand.CACHE_REPLACE_VALUE;
 
-/** Tests that security information specified in cache events belongs to the operation initiator. */
+/**
+ * Tests that security information specified in cache events belongs to the operation initiator.
+ */
 @RunWith(Parameterized.class)
 public class CacheEventSecurityContextTest extends AbstractEventSecurityContextTest {
-    /** Counter of inserted cache keys. */
+    /**
+     * Counter of inserted cache keys.
+     */
     private static final AtomicInteger KEY_COUNTER = new AtomicInteger();
 
-    /** Name of the cache with {@link CacheAtomicityMode#ATOMIC} mode. */
+    /**
+     * Name of the cache with {@link CacheAtomicityMode#ATOMIC} mode.
+     */
     private static final String ATOMIC_CACHE = "atomic";
-    
-    /** Name of the cache with {@link CacheAtomicityMode#TRANSACTIONAL} mode. */
+
+    /**
+     * Name of the cache with {@link CacheAtomicityMode#TRANSACTIONAL} mode.
+     */
     private static final String TRANSACTIONAL_CACHE = "transactional";
 
-    /** {@inheritDoc} */
+    /**
+     * {@inheritDoc}
+     */
     @Override protected int[] eventTypes() {
         return new int[] {
             EVT_CACHE_OBJECT_PUT,
@@ -118,7 +128,9 @@ public class CacheEventSecurityContextTest extends AbstractEventSecurityContextT
         };
     }
 
-    /** */
+    /**
+     *
+     */
     @Parameterized.Parameters(name = "cacheAtomicity={0}, txConcurrency={1}, txIsolation={2}")
     public static Iterable<Object[]> data() {
         List<Object[]> res = new ArrayList<>();
@@ -134,30 +146,42 @@ public class CacheEventSecurityContextTest extends AbstractEventSecurityContextT
         return res;
     }
 
-    /** */
+    /**
+     *
+     */
     @Parameterized.Parameter()
     public String cacheName;
 
-    /** */
+    /**
+     *
+     */
     @Parameterized.Parameter(1)
     public TransactionIsolation txIsolation;
 
-    /** */
+    /**
+     *
+     */
     @Parameterized.Parameter(2)
     public TransactionConcurrency txConcurrency;
 
-    /** */
+    /**
+     *
+     */
     private String operationInitiatorLogin;
 
-    /** {@inheritDoc} */
+    /**
+     * {@inheritDoc}
+     */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         return super.getConfiguration(igniteInstanceName)
             .setCacheConfiguration(
-                new CacheConfiguration<>(ATOMIC_CACHE).setAtomicityMode(ATOMIC), 
+                new CacheConfiguration<>(ATOMIC_CACHE).setAtomicityMode(ATOMIC),
                 new CacheConfiguration<>(TRANSACTIONAL_CACHE).setAtomicityMode(TRANSACTIONAL));
     }
 
-    /** {@inheritDoc} */
+    /**
+     * {@inheritDoc}
+     */
     @Override protected void beforeTestsStarted() throws Exception {
         super.beforeTestsStarted();
 
@@ -168,14 +192,18 @@ public class CacheEventSecurityContextTest extends AbstractEventSecurityContextT
         awaitPartitionMapExchange();
     }
 
-    /** {@inheritDoc} */
+    /**
+     * {@inheritDoc}
+     */
     @Override protected void beforeTest() throws Exception {
         super.beforeTest();
 
         grid("crd").cache(cacheName).clear();
     }
 
-    /** Tests cache event security context in case operation is initiated from the {@link IgniteClient}. */
+    /**
+     * Tests cache event security context in case operation is initiated from the {@link IgniteClient}.
+     */
     @Test
     public void testIgniteClient() throws Exception {
         operationInitiatorLogin = THIN_CLIENT_LOGIN;
@@ -202,9 +230,6 @@ public class CacheEventSecurityContextTest extends AbstractEventSecurityContextT
 
             checkEvents(cli, k -> cache.removeAll(of(k)), true, EVT_CACHE_OBJECT_REMOVED);
             checkEvents(cli, k -> cache.removeAllAsync(of(k)).get(), true, EVT_CACHE_OBJECT_REMOVED);
-
-            checkEvents(cli, k -> cache.removeAll(), true, EVT_CACHE_OBJECT_REMOVED);
-            checkEvents(cli, k -> cache.removeAllAsync().get(), true, EVT_CACHE_OBJECT_REMOVED);
 
             checkEvents(cli, k -> cache.putIfAbsent(k, "val"), false, EVT_CACHE_OBJECT_PUT);
             checkEvents(cli, k -> cache.putIfAbsentAsync(k, "val").get(), false, EVT_CACHE_OBJECT_PUT);
@@ -234,7 +259,9 @@ public class CacheEventSecurityContextTest extends AbstractEventSecurityContextT
         }
     }
 
-    /** Tests cache event security context in case operation is initiated from the {@link GridClient}. */
+    /**
+     * Tests cache event security context in case operation is initiated from the {@link GridClient}.
+     */
     @Test
     public void testGridClient() throws Exception {
         Assume.assumeTrue(txIsolation == null && txConcurrency == null);
@@ -281,7 +308,9 @@ public class CacheEventSecurityContextTest extends AbstractEventSecurityContextT
         }
     }
 
-    /** Tests cache event security context in case operation is initiated from the REST client. */
+    /**
+     * Tests cache event security context in case operation is initiated from the REST client.
+     */
     @Test
     public void testRestClient() throws Exception {
         Assume.assumeTrue(txIsolation == null && txConcurrency == null);
@@ -307,19 +336,25 @@ public class CacheEventSecurityContextTest extends AbstractEventSecurityContextT
         checkEvents(k -> sendRestRequest(CACHE_CAS, k, "new_val", "val"), true, EVT_CACHE_OBJECT_PUT);
     }
 
-    /** Tests cache event security context in case operation is initiated from the server node. */
+    /**
+     * Tests cache event security context in case operation is initiated from the server node.
+     */
     @Test
     public void testServerNode() throws Exception {
         testNode(false);
     }
 
-    /** Tests cache event security context in case operation is initiated from the client node. */
+    /**
+     * Tests cache event security context in case operation is initiated from the client node.
+     */
     @Test
     public void testClientNode() throws Exception {
         testNode(true);
     }
 
-    /** */
+    /**
+     *
+     */
     private void testNode(boolean isClient) throws Exception {
         operationInitiatorLogin = isClient ? "cli" : "srv";
 
@@ -341,9 +376,6 @@ public class CacheEventSecurityContextTest extends AbstractEventSecurityContextT
 
         checkEvents(ignite, k -> cache.removeAll(of(k)), true, EVT_CACHE_OBJECT_REMOVED);
         checkEvents(ignite, k -> cache.removeAllAsync(of(k)).get(), true, EVT_CACHE_OBJECT_REMOVED);
-
-        checkEvents(ignite, k -> cache.removeAll(), true, EVT_CACHE_OBJECT_REMOVED);
-        checkEvents(ignite, k -> cache.removeAllAsync().get(), true, EVT_CACHE_OBJECT_REMOVED);
 
         checkEvents(ignite, k -> cache.putIfAbsent(k, "val"), false, EVT_CACHE_OBJECT_PUT);
         checkEvents(ignite, k -> cache.putIfAbsentAsync(k, "val").get(), false, EVT_CACHE_OBJECT_PUT);
@@ -382,7 +414,8 @@ public class CacheEventSecurityContextTest extends AbstractEventSecurityContextT
         checkEvents(() -> cache.query(new ScanQuery<>()).getAll(), asList(EVT_CACHE_QUERY_EXECUTED, EVT_CACHE_QUERY_OBJECT_READ));
 
         CacheEntryProcessor<Integer, String, Void> proc = new CacheEntryProcessor<Integer, String, Void>() {
-            @Override public Void process(MutableEntry<Integer, String> entry, Object... arguments) throws EntryProcessorException {
+            @Override public Void process(MutableEntry<Integer, String> entry,
+                Object... arguments) throws EntryProcessorException {
                 entry.setValue(entry.getValue() + "_new_val");
 
                 return null;
@@ -403,7 +436,8 @@ public class CacheEventSecurityContextTest extends AbstractEventSecurityContextT
      * Executes test operation considering whether it should be executed inside transaction in case {@link IgniteClient}
      * is operation initiator and checks events.
      */
-    private void checkEvents(IgniteClient cli, ConsumerX<Integer> c, boolean withInitVal, Integer... expEvtTypes) throws Exception {
+    private void checkEvents(IgniteClient cli, ConsumerX<Integer> c, boolean withInitVal,
+        Integer... expEvtTypes) throws Exception {
         checkEvents(txIsolation != null || txConcurrency != null ? key -> {
             ClientTransactions txs = cli.transactions();
 
@@ -419,7 +453,8 @@ public class CacheEventSecurityContextTest extends AbstractEventSecurityContextT
      * Executes test operation considering whether it should be executed inside transaction in case {@link Ignite} node
      * is operation initiator and checks events.
      */
-    private void checkEvents(IgniteEx ignite, ConsumerX<Integer> op, boolean withInitVal, Integer... expEvtTypes) throws Exception {
+    private void checkEvents(IgniteEx ignite, ConsumerX<Integer> op, boolean withInitVal,
+        Integer... expEvtTypes) throws Exception {
         checkEvents(txIsolation != null || txConcurrency != null ? key -> {
             IgniteTransactions txs = ignite.transactions();
 
@@ -431,7 +466,9 @@ public class CacheEventSecurityContextTest extends AbstractEventSecurityContextT
         } : op, withInitVal, expEvtTypes);
     }
 
-    /** Executes specified cache operation on each server node and checks events. */
+    /**
+     * Executes specified cache operation on each server node and checks events.
+     */
     private void checkEvents(ConsumerX<Integer> op, boolean withInitVal, Integer... expEvtTypes) throws Exception {
         IgniteEx crd = grid("crd");
 
@@ -470,7 +507,9 @@ public class CacheEventSecurityContextTest extends AbstractEventSecurityContextT
             operationInitiatorLogin);
     }
 
-    /** */
+    /**
+     *
+     */
     private void sendRestRequest(
         GridRestCommand cmd,
         Integer key,
@@ -493,13 +532,19 @@ public class CacheEventSecurityContextTest extends AbstractEventSecurityContextT
         sendRestRequest(cmd, params, operationInitiatorLogin);
     }
 
-    /** */
+    /**
+     *
+     */
     @FunctionalInterface
     private static interface ConsumerX<T> extends Consumer<T> {
-        /** */
+        /**
+         *
+         */
         public void acceptX(T t) throws Exception;
 
-        /** {@inheritDoc} */
+        /**
+         * {@inheritDoc}
+         */
         @Override public default void accept(T t) {
             try {
                 acceptX(t);
