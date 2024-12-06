@@ -44,9 +44,6 @@ public enum IgniteFeatures {
     /** Data paket compression. */
     DATA_PACKET_COMPRESSION(3),
 
-    /** Support of different rebalance size for nodes.  */
-    DIFFERENT_REBALANCE_POOL_SIZE(4),
-
     /** Support of splitted cache configurations to avoid broken deserialization on non-affinity nodes. */
     SPLITTED_CACHE_CONFIGURATIONS(5),
 
