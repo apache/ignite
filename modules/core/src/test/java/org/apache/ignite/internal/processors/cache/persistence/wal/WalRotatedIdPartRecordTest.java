@@ -17,8 +17,6 @@
 
 package org.apache.ignite.internal.processors.cache.persistence.wal;
 
-import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import javax.cache.expiry.Duration;
@@ -48,7 +46,7 @@ import org.apache.logging.log4j.core.config.Configurator;
 import org.jetbrains.annotations.Nullable;
 import org.junit.Test;
 
-import static org.apache.ignite.testframework.GridTestUtils.runMultiThreadedAsync;
+import static org.apache.ignite.testframework.GridTestUtils.runAsync;
 
 /** */
 public class WalRotatedIdPartRecordTest extends GridCommonAbstractTest {
@@ -56,13 +54,7 @@ public class WalRotatedIdPartRecordTest extends GridCommonAbstractTest {
     private static final int KEYS = 1000;
 
     /** */
-    private final ThreadLocalRandom rnd = ThreadLocalRandom.current();
-
-    /** */
     AtomicBoolean stop = new AtomicBoolean();
-
-    /** */
-    CountDownLatch complete = new CountDownLatch(1);
 
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
@@ -100,7 +92,7 @@ public class WalRotatedIdPartRecordTest extends GridCommonAbstractTest {
         return cfg;
     }
 
-    /** WAL manager that signals once meet the RotatedIdPartRecord with rotatedIdPart less than 0. */
+    /** WAL manager that signals once meet the RotatedIdPartRecord with rotatedIdPart more than 127. */
     private static class TestFileWriteAheadLogManager extends FileWriteAheadLogManager {
         /** */
         private final AtomicBoolean stop;
@@ -151,42 +143,36 @@ public class WalRotatedIdPartRecordTest extends GridCommonAbstractTest {
         IgniteEx cln = startClientGrid(2);
 
         for (int i = 0; i < KEYS; i++)
-            cln.cache(DEFAULT_CACHE_NAME).put(i, rnd.nextInt());
+            cln.cache(DEFAULT_CACHE_NAME).put(i, i);
 
         forceCheckpoint();
 
         disableCheckpoints(grid(0));
         disableCheckpoints(grid(1));
 
-        IgniteInternalFuture<?> touchFut = runMultiThreadedAsync(() -> {
-            int cnt = 0;
-
-            while (!stop.get()) {
+        IgniteInternalFuture<?> touchFut = runAsync(() -> {
+            while (!stop.get())
                 cln.cache(DEFAULT_CACHE_NAME).query(new ScanQuery<>()).forEach((v) -> {});
+        }, "touch");
 
-                cln.log().info(String.format("ScanQuery#: %d", cnt++));
-            }
+        try {
+            touchFut.get(120, TimeUnit.SECONDS);
+        }
+        catch (Exception ignored) {
+            touchFut.cancel();
 
-            complete.countDown();
-        }, 1, "touch");
-
-        boolean completed = complete.await(120, TimeUnit.SECONDS);
-
-        if (!completed)
-            stop.set(true);
-
-        touchFut.get(60, TimeUnit.SECONDS);
-
-        // Turn off excessive logging of the "Failed to update TTL: class o.a.i.i.NodeStoppingException"
-        // during nodes stop. Errors are expected since not all GridCacheTtlUpdateRequest messages are processed yet.
-        Configurator.setLevel(GridCacheMapEntry.class.getName(), Level.OFF);
+            fail("rotatedIdPart doesn't become > 127 in 120 seconds");
+        }
+        finally {
+            // Turn off excessive logging of the "Failed to update TTL: class o.a.i.i.NodeStoppingException"
+            // during nodes stop. Errors are expected since not all GridCacheTtlUpdateRequest messages are processed yet.
+            Configurator.setLevel(GridCacheMapEntry.class.getName(), Level.OFF);
+        }
 
         stopAllGrids();
 
         // Restore logging.
         Configurator.setLevel(GridCacheMapEntry.class.getName(), Level.ERROR);
-
-        assertTrue("rotatedIdPart doesn't become > 127 in 120 seconds", completed);
 
         startGrids(2).cluster().state(ClusterState.ACTIVE);
     }
