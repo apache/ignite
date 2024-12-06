@@ -41,7 +41,11 @@ import static org.apache.ignite.internal.commandline.ArgumentParser.CMD_PASSWORD
 import static org.apache.ignite.internal.commandline.ArgumentParser.CMD_USER;
 import static org.apache.ignite.internal.commandline.CommandHandler.EXIT_CODE_OK;
 import static org.apache.ignite.internal.commandline.CommandHandler.EXIT_CODE_UNEXPECTED_ERROR;
+import static org.apache.ignite.internal.processors.metric.GridMetricManager.PME_DURATION_HISTOGRAM;
+import static org.apache.ignite.internal.processors.metric.GridMetricManager.PME_METRICS;
+import static org.apache.ignite.internal.processors.metric.impl.MetricUtils.metricName;
 import static org.apache.ignite.internal.util.IgniteUtils.resolveIgnitePath;
+import static org.apache.ignite.plugin.security.SecurityPermission.ADMIN_OPS;
 import static org.apache.ignite.plugin.security.SecurityPermission.CACHE_CREATE;
 import static org.apache.ignite.plugin.security.SecurityPermission.CACHE_DESTROY;
 import static org.apache.ignite.plugin.security.SecurityPermission.CACHE_READ;
@@ -134,6 +138,25 @@ public class SecurityCommandHandlerPermissionsTest extends GridCommandHandlerAbs
     }
 
     /** */
+    @Test
+    public void testSystemView() throws Exception {
+        checkCommandPermissions(asList("--system-view", "NODES"), NO_PERMISSIONS);
+    }
+
+    /** */
+    @Test
+    public void testMetric() throws Exception {
+        checkCommandPermissions(asList("--metric", "sys"), NO_PERMISSIONS);
+    }
+
+    /** */
+    @Test
+    public void testConfigureMetric() throws Exception {
+        checkCommandPermissions(asList("--metric", "--configure-histogram",
+            metricName(PME_METRICS, PME_DURATION_HISTOGRAM), "100,1000"), systemPermissions(ADMIN_OPS));
+    }
+
+    /** */
     protected IgniteEx startGrid(int idx, TestSecurityData... userData) throws Exception {
         String login = getTestIgniteInstanceName(idx);
 
@@ -154,11 +177,13 @@ public class SecurityCommandHandlerPermissionsTest extends GridCommandHandlerAbs
 
         ignite.createCache(DEFAULT_CACHE_NAME);
 
-        assertEquals(EXIT_CODE_UNEXPECTED_ERROR, execute(enrichWithConnectionArguments(cmdArgs, TEST_NO_PERMISSIONS_LOGIN)));
+        if (reqPerms != NO_PERMISSIONS) {
+            assertEquals(EXIT_CODE_UNEXPECTED_ERROR, execute(enrichWithConnectionArguments(cmdArgs, TEST_NO_PERMISSIONS_LOGIN)));
 
-        // We are losing command failure cause for --cache clear commnad. See IGNITE-21023 for more details.
-        if (!cmdArgs.containsAll(Arrays.asList("--cache", "clear")))
-            assertTrue(testOut.toString().contains("Authorization failed"));
+            // We are losing command failure cause for --cache clear commnad. See IGNITE-21023 for more details.
+            if (!cmdArgs.containsAll(Arrays.asList("--cache", "clear")))
+                assertTrue(testOut.toString().contains("Authorization failed"));
+        }
 
         assertEquals(EXIT_CODE_OK, execute(enrichWithConnectionArguments(cmdArgs, TEST_LOGIN)));
     }
