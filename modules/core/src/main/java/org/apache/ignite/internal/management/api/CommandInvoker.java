@@ -19,6 +19,7 @@ package org.apache.ignite.internal.management.api;
 
 import java.util.Collection;
 import java.util.function.Consumer;
+import org.apache.ignite.client.IgniteClient;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.client.GridClient;
 import org.apache.ignite.internal.client.GridClientException;
@@ -57,11 +58,11 @@ public class CommandInvoker<A extends IgniteDataTransferObject> {
      * @return {@code True} of command successfully prepared and can be invoked, {@code false} otherwise.
      * @throws GridClientException If failed.
      */
-    public boolean prepare(Consumer<String> printer) throws GridClientException {
+    public boolean prepare(Consumer<String> printer) throws Exception {
         if (!(cmd instanceof PreparableCommand))
             return true;
 
-        return ((PreparableCommand<A, ?>)cmd).prepare(client(), ignite, arg, printer);
+        return ((PreparableCommand<A, ?>)cmd).prepare(gridClient(), client(), ignite, arg, printer);
     }
 
     /**
@@ -76,18 +77,23 @@ public class CommandInvoker<A extends IgniteDataTransferObject> {
         R res;
 
         if (cmd instanceof LocalCommand)
-            res = ((LocalCommand<A, R>)cmd).execute(client(), ignite, arg, printer);
+            res = ((LocalCommand<A, R>)cmd).execute(gridClient(), client(), ignite, arg, printer);
         else if (cmd instanceof ComputeCommand) {
             ComputeCommand<A, R> cmd = (ComputeCommand<A, R>)this.cmd;
 
-            Collection<GridClientNode> cmdNodes = cmd.nodes(CommandUtils.nodes(client(), ignite), arg);
+            Collection<GridClientNode> cmdNodes = cmd.nodes(CommandUtils.nodes(gridClient(), client(), ignite), arg);
 
             if (cmdNodes == null)
                 cmdNodes = singletonList(defaultNode());
 
-            res = CommandUtils.execute(client(), ignite, cmd.taskClass(), arg, cmdNodes);
+            try {
+                res = CommandUtils.execute(gridClient(), client(), ignite, cmd.taskClass(), arg, cmdNodes);
 
-            cmd.printResult(arg, res, printer);
+                cmd.printResult(arg, res, printer);
+            }
+            catch (Exception e) {
+                res = cmd.handleException(e);
+            }
         }
         else
             throw new IllegalArgumentException("Unknown command type: " + cmd);
@@ -100,11 +106,13 @@ public class CommandInvoker<A extends IgniteDataTransferObject> {
         return CommandUtils.clusterToClientNode(ignite.localNode());
     }
 
-    /**
-     * @return Grid thin client instance which is already connected to cluster.
-     * @throws GridClientException If failed.
-     */
-    protected @Nullable GridClient client() throws GridClientException {
+    /** @return Grid thin client instance which is already connected to cluster. */
+    protected @Nullable GridClient gridClient() {
+        return null;
+    }
+
+    /** @return Ignite client instance. */
+    protected @Nullable IgniteClient client() {
         return null;
     }
 }

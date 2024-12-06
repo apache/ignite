@@ -15,22 +15,19 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.management.api;
+package org.apache.ignite.internal.processors.odbc;
 
-import java.util.function.Consumer;
-import org.apache.ignite.internal.client.GridClientBeforeNodeStart;
-import org.apache.ignite.internal.client.GridClientNodeStateBeforeStart;
-import org.apache.ignite.internal.dto.IgniteDataTransferObject;
+import org.apache.ignite.IgniteCheckedException;
 
 /**
- * Command that must be executed directly using {@link GridClientBeforeNodeStart} instance.
+ * Indicates that node is unavailable due to recovery mode.
  */
-public interface BeforeNodeStartCommand<A extends IgniteDataTransferObject, R> extends Command<A, R> {
-    /**
-     * @param beforeStart {@link GridClientBeforeNodeStart} client instance.
-     * @param arg Command argument.
-     * @param printer Results printer.
-     * @return Command result.
-     */
-    public R execute(GridClientNodeStateBeforeStart beforeStart, A arg, Consumer<String> printer) throws Exception;
+public class ClientConnectionNodeRecoveryException extends IgniteCheckedException {
+    /** */
+    private static final long serialVersionUID = 0L;
+
+    /** {@inheritDoc} */
+    public ClientConnectionNodeRecoveryException(String msg) {
+        super(msg);
+    }
 }

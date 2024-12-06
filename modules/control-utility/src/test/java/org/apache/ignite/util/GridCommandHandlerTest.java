@@ -77,7 +77,6 @@ import org.apache.ignite.internal.GridJobExecuteResponse;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
-import org.apache.ignite.internal.IgniteNodeAttributes;
 import org.apache.ignite.internal.TestRecordingCommunicationSpi;
 import org.apache.ignite.internal.client.GridClientFactory;
 import org.apache.ignite.internal.client.impl.GridClientImpl;
@@ -271,7 +270,7 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
 
         assertEquals(ACTIVE, ignite.cluster().state());
 
-        if (commandHandler.equals(CLI_CMD_HND))
+        if (cliCommandHandler())
             assertContains(log, testOut.toString(), "Command deprecated. Use --set-state instead.");
     }
 
@@ -282,7 +281,7 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
      */
     @Test
     public void testClientsLeakage() throws Exception {
-        Assume.assumeTrue(commandHandler.equalsIgnoreCase(CLI_CMD_HND));
+        Assume.assumeTrue(cliCommandHandler());
 
         startGrids(1);
 
@@ -400,7 +399,7 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
 
         IgniteEx ig1 = startGrid(1);
 
-        String port = ig1.localNode().attribute(IgniteNodeAttributes.ATTR_REST_TCP_PORT).toString();
+        String port = connectorPort(ig1);
 
         assertEquals(EXIT_CODE_INVALID_ARGUMENTS, execute(
             "--host", "localhost", "--port", port,
@@ -466,7 +465,7 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
 
         IgniteEx ig1 = startGrid(1);
 
-        String port = ig1.localNode().attribute(IgniteNodeAttributes.ATTR_REST_TCP_PORT).toString();
+        String port = connectorPort(ig1);
 
         assertEquals(EXIT_CODE_OK, execute("--host", "localhost", "--port", port, "--persistence"));
         assertEquals(EXIT_CODE_OK, execute("--host", "localhost", "--port", port, "--persistence", "info"));
@@ -510,9 +509,8 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
 
         IgniteEx ig1 = startGrid(1);
 
-        String port = ig1.localNode().attribute(IgniteNodeAttributes.ATTR_REST_TCP_PORT).toString();
-
-        assertEquals(EXIT_CODE_OK, execute("--host", "localhost", "--port", port, "--persistence", "clean", "all"));
+        assertEquals(EXIT_CODE_OK, execute("--host", "localhost", "--port", connectorPort(ig1),
+            "--persistence", "clean", "all"));
 
         boolean allEmpty = Arrays.stream(mntcNodeWorkDir.listFiles())
             .filter(File::isDirectory)
@@ -548,9 +546,8 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
 
         IgniteEx ig1 = startGrid(1);
 
-        String port = ig1.localNode().attribute(IgniteNodeAttributes.ATTR_REST_TCP_PORT).toString();
-
-        assertEquals(EXIT_CODE_OK, execute("--host", "localhost", "--port", port, "--persistence", "backup", "all"));
+        assertEquals(EXIT_CODE_OK, execute("--host", "localhost", "--port", connectorPort(ig1),
+            "--persistence", "backup", "all"));
 
         Set<String> backedUpCacheDirs = Arrays.stream(mntcNodeWorkDir.listFiles())
             .filter(File::isDirectory)
@@ -589,9 +586,7 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
 
         IgniteEx ig1 = startGrid(1);
 
-        String port = ig1.localNode().attribute(IgniteNodeAttributes.ATTR_REST_TCP_PORT).toString();
-
-        assertEquals(EXIT_CODE_OK, execute("--host", "localhost", "--port", port,
+        assertEquals(EXIT_CODE_OK, execute("--host", "localhost", "--port", connectorPort(ig1),
             "--persistence", "backup", "corrupted"));
 
         long backedUpCachesCnt = Arrays.stream(mntcNodeWorkDir.listFiles())
@@ -629,7 +624,7 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
 
         IgniteEx ig1 = startGrid(1);
 
-        String port = ig1.localNode().attribute(IgniteNodeAttributes.ATTR_REST_TCP_PORT).toString();
+        String port = connectorPort(ig1);;
 
         assertEquals(EXIT_CODE_INVALID_ARGUMENTS, execute("--host", "localhost", "--port", port,
             "--persistence", "backup", "caches",
@@ -776,7 +771,7 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
         assertFalse(ignite.cluster().state().active());
         assertEquals(INACTIVE, ignite.cluster().state());
 
-        if (commandHandler.equals(CLI_CMD_HND))
+        if (cliCommandHandler())
             assertContains(log, testOut.toString(), "Command deprecated. Use --set-state instead.");
     }
 
@@ -904,7 +899,7 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
         assertEquals(EXIT_CODE_OK, execute("--deactivate"));
         assertFalse(igniteEx.cluster().state().active());
 
-        if (commandHandler.equals(CLI_CMD_HND)) {
+        if (cliCommandHandler()) {
             assertContains(
                 log,
                 testOut.toString(),
@@ -1149,7 +1144,7 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
 
         injectTestSystemOut();
 
-        assertEquals(EXIT_CODE_OK, execute("--port", "11212", "--baseline"));
+        assertEquals(EXIT_CODE_OK, execute("--port", connectorPort(grid(0)), "--baseline"));
 
         String crdStr = findCrdInfo();
 
@@ -1158,7 +1153,7 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
 
         stopGrid(0);
 
-        assertEquals(EXIT_CODE_OK, execute("--port", "11212", "--baseline"));
+        assertEquals(EXIT_CODE_OK, execute("--port", connectorPort(grid(1)), "--baseline"));
 
         crdStr = findCrdInfo();
 
@@ -1167,7 +1162,7 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
 
         startGrid(0);
 
-        assertEquals(EXIT_CODE_OK, execute("--port", "11212", "--baseline"));
+        assertEquals(EXIT_CODE_OK, execute("--port", connectorPort(grid(1)), "--baseline"));
 
         crdStr = findCrdInfo();
 
@@ -1176,7 +1171,7 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
 
         stopGrid(1);
 
-        assertEquals(EXIT_CODE_OK, execute("--port", "11211", "--baseline"));
+        assertEquals(EXIT_CODE_OK, execute("--port", connectorPort(grid(0)), "--baseline"));
 
         crdStr = findCrdInfo();
 
@@ -2086,7 +2081,7 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
 
         assertTrue(testOutStr, testOutStr.contains("Node not found for consistent ID:"));
 
-        if (commandHandler.equals(CLI_CMD_HND))
+        if (cliCommandHandler())
             assertFalse(testOutStr, isInstance1Found);
     }
 
@@ -2147,7 +2142,7 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
      */
     @Test
     public void testCacheIdleVerifyDumpWhenNodeFailing() throws Exception {
-        Assume.assumeTrue("CHECKME", CLI_CMD_HND.equalsIgnoreCase(commandHandler));
+        Assume.assumeTrue("CHECKME", cliCommandHandler());
 
         Ignite ignite = startGrids(3);
 
@@ -2529,7 +2524,7 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
 
         ignite.cluster().state(ACTIVE);
 
-        if (commandHandler.equals(CLI_CMD_HND)) {
+        if (cliCommandHandler()) {
             assertEquals(
                 EXIT_CODE_OK,
                 execute("--diagnostic")
@@ -3163,11 +3158,13 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
     public void testClusterCreateSnapshotWarning() throws Exception {
         IgniteConfiguration cfg = getConfiguration(getTestIgniteInstanceName(0));
         cfg.getConnectorConfiguration().setHost("localhost");
+        cfg.getClientConnectorConfiguration().setHost("localhost");
 
         IgniteEx ig = startGrid(cfg);
 
         cfg = getConfiguration(getTestIgniteInstanceName(1));
         cfg.getConnectorConfiguration().setHost("localhost");
+        cfg.getClientConnectorConfiguration().setHost("localhost");
 
         startGrid(cfg);
 
@@ -3389,7 +3386,7 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
 
         // Cache exists.
         assertEquals(EXIT_CODE_UNEXPECTED_ERROR, execute("--snapshot", "restore", snpName, "--start", "--sync"));
-        if (commandHandler.equals(CLI_CMD_HND)) {
+        if (cliCommandHandler()) {
             assertContains(log, testOut.toString(), "Command option '--start' is redundant and must be avoided.");
             assertContains(log, testOut.toString(), "Unable to restore cache group - directory is not empty. " +
                 "Cache group should be destroyed manually before perform restore operation [group=" + cacheName);
@@ -3399,7 +3396,7 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
         awaitPartitionMapExchange();
 
         assertEquals(EXIT_CODE_OK, execute("--snapshot", "restore", snpName, "--sync"));
-        if (commandHandler.equals(CLI_CMD_HND)) {
+        if (cliCommandHandler()) {
             assertNotContains(log, testOut.toString(), "Command option '--start' is redundant and must be avoided.");
             assertContains(log, testOut.toString(), "Snapshot cache group restore operation completed successfully");
         }
@@ -3519,7 +3516,7 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
             else
                 assertEquals(EXIT_CODE_OK, execute(h, "--snapshot", "restore", snpName));
 
-            if (commandHandler.equals(CLI_CMD_HND)) {
+            if (cliCommandHandler()) {
                 String out = testOut.toString();
                 assertContains(log, out, "Warning: command will restore ALL USER-CREATED CACHE GROUPS from the snapshot");
                 assertContains(log, out, "Snapshot cache group restore operation started [name=" + snpName);
@@ -3930,7 +3927,7 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
      */
     @Test
     public void testSuccessStopWarmUp() throws Exception {
-        Assume.assumeTrue(CLI_CMD_HND.equalsIgnoreCase(commandHandler));
+        Assume.assumeTrue(cliCommandHandler());
 
         WarmUpTestPluginProvider provider = new WarmUpTestPluginProvider();
 
@@ -3938,6 +3935,7 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
         cfg.getDataStorageConfiguration().setDefaultWarmUpConfiguration(new BlockedWarmUpConfiguration());
 
         cfg.getConnectorConfiguration().setHost("localhost");
+        cfg.getClientConnectorConfiguration().setHost("localhost");
 
         IgniteInternalFuture<IgniteEx> fut = runAsync(() -> startGrid(cfg));
 
@@ -3970,7 +3968,7 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
      */
     @Test
     public void testFailStopWarmUp() throws Exception {
-        Assume.assumeTrue(commandHandler.equalsIgnoreCase(CLI_CMD_HND));
+        Assume.assumeTrue(cliCommandHandler());
 
         startGrid(0);
 
@@ -4028,8 +4026,8 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
     ) {
         TestCommandHandler hnd = newCommandHandler();
 
-        List<String> args = new ArrayList<>(Arrays.asList("--yes", "--port", "11212", "--cache", "find_garbage",
-            ignite.localNode().id().toString()));
+        List<String> args = new ArrayList<>(Arrays.asList("--yes", "--port", connectorPort(ignite),
+            "--cache", "find_garbage", ignite.localNode().id().toString()));
 
         if (delFoundGarbage)
             args.add("--delete");
