@@ -104,10 +104,26 @@ namespace Apache.Ignite.Core.Impl.Cache
 
             _persistenceEnabled = target.InLongOutLong((int)CacheOp.PersistenceEnabled, 0) == True;
 
-            if (configuration.PlatformCacheConfiguration != null)
+            var platformCacheCfg = configuration.PlatformCacheConfiguration;
+            var locNode = _ignite.GetIgnite().GetCluster().GetLocalNode();
+            
+            if (platformCacheCfg != null && CheckNodeFilter(platformCacheCfg.NodeFilter, locNode))
             {
                 _platformCache = _ignite.PlatformCacheManager.GetOrCreatePlatformCache(configuration);
             }
+        }
+
+        /// <summary>
+        /// Invokes .NET or Java node filter, if any.
+        /// </summary>
+        private bool CheckNodeFilter(IClusterNodeFilter nodeFilter, IClusterNode locNode)
+        {
+            if (nodeFilter == null)
+                return true;
+            
+            return nodeFilter is JavaNodeFilter || nodeFilter is AttributeNodeFilter ?
+                DoOutOp(CacheOp.CacheNodeFilterApply, writer => writer.WriteGuid(locNode.Id)) :
+                nodeFilter.Invoke(locNode);
         }
 
         /** <inheritDoc /> */
@@ -116,10 +132,8 @@ namespace Apache.Ignite.Core.Impl.Cache
             get { return _ignite.GetIgnite(); }
         }
 
-        /// <summary>
-        /// Returns a value indicating whether this instance has platform cache.
-        /// </summary>
-        private bool HasPlatformCache
+        /** <inheritDoc /> */
+        public bool HasPlatformCache
         {
             get { return _platformCache != null && !_platformCache.IsStopped; }
         }
