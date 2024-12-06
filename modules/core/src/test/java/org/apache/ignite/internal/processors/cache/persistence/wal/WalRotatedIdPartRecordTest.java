@@ -38,10 +38,13 @@ import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.pagemem.wal.IgniteWriteAheadLogManager;
 import org.apache.ignite.internal.pagemem.wal.record.WALRecord;
 import org.apache.ignite.internal.pagemem.wal.record.delta.RotatedIdPartRecord;
+import org.apache.ignite.internal.processors.cache.GridCacheMapEntry;
 import org.apache.ignite.internal.processors.cache.persistence.GridCacheDatabaseSharedManager;
 import org.apache.ignite.plugin.AbstractTestPluginProvider;
 import org.apache.ignite.plugin.PluginContext;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.apache.logging.log4j.Level;
+import org.apache.logging.log4j.core.config.Configurator;
 import org.jetbrains.annotations.Nullable;
 import org.junit.Test;
 
@@ -72,7 +75,7 @@ public class WalRotatedIdPartRecordTest extends GridCommonAbstractTest {
                 .setCacheConfiguration(new CacheConfiguration<>(DEFAULT_CACHE_NAME)
                     .setAtomicityMode(CacheAtomicityMode.TRANSACTIONAL)
                     .setBackups(1)
-                    .setAffinity(new RendezvousAffinityFunction().setPartitions(1))
+                    .setAffinity(new RendezvousAffinityFunction().setPartitions(2))
                     .setExpiryPolicyFactory(TouchedExpiryPolicy.factoryOf(new Duration(TimeUnit.MINUTES, 60))));
 
             // Plugin that creates a testing WAL manager.
@@ -90,6 +93,8 @@ public class WalRotatedIdPartRecordTest extends GridCommonAbstractTest {
                     return null;
                 }
             });
+
+            cfg.setMetricsLogFrequency(1000);
         }
 
         return cfg;
@@ -109,10 +114,16 @@ public class WalRotatedIdPartRecordTest extends GridCommonAbstractTest {
 
         /** {@inheritDoc} */
         @Override public WALPointer log(WALRecord rec) throws IgniteCheckedException {
-            if (rec instanceof RotatedIdPartRecord && ((RotatedIdPartRecord)rec).rotatedIdPart() < 0)
-                stop.set(true);
+            WALPointer res = super.log(rec);
 
-            return super.log(rec);
+            if (rec instanceof RotatedIdPartRecord) {
+                byte rotatedIdPart = ((RotatedIdPartRecord)rec).rotatedIdPart();
+
+                if (((int)rotatedIdPart & 0xFF) > 127)
+                    stop.set(true);
+            }
+
+            return res;
         }
     }
 
@@ -153,7 +164,7 @@ public class WalRotatedIdPartRecordTest extends GridCommonAbstractTest {
             while (!stop.get()) {
                 cln.cache(DEFAULT_CACHE_NAME).query(new ScanQuery<>()).forEach((v) -> {});
 
-                cln.log().info(String.format("Query#: %d", cnt++));
+                cln.log().info(String.format("ScanQuery#: %d", cnt++));
             }
 
             complete.countDown();
@@ -166,16 +177,18 @@ public class WalRotatedIdPartRecordTest extends GridCommonAbstractTest {
 
         touchFut.get(60, TimeUnit.SECONDS);
 
-        stopAllClients(false);
-
-//        grid(0).context().pools().getStripedExecutorService().awaitComplete();
-//        grid(1).context().pools().getStripedExecutorService().awaitComplete();
+        // Turn off excessive logging of the "Failed to update TTL: class o.a.i.i.NodeStoppingException"
+        // during nodes stop. Errors are expected since not all GridCacheTtlUpdateRequest messages are processed yet.
+        Configurator.setLevel(GridCacheMapEntry.class.getName(), Level.OFF);
 
         stopAllGrids();
 
+        // Restore logging.
+        Configurator.setLevel(GridCacheMapEntry.class.getName(), Level.ERROR);
+
         assertTrue("rotatedIdPart doesn't become > 127 in 120 seconds", completed);
 
-        startGrids(2);
+        startGrids(2).cluster().state(ClusterState.ACTIVE);
     }
 
     /** */
