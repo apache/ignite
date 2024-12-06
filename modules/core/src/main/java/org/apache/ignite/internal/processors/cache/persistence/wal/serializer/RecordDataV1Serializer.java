@@ -1177,8 +1177,7 @@ public class RecordDataV1Serializer implements RecordDataSerializer {
 
                 byte rotatedIdPart = in.readByte();
 
-//                res = new RotatedIdPartRecord(cacheId, pageId, rotatedIdPart);
-                res = new RotatedIdPartRecord(cacheId, pageId, ((int)rotatedIdPart) & 0xFF);
+                res = new RotatedIdPartRecord(cacheId, pageId, rotatedIdPart);
 
                 break;
 
