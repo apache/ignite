@@ -42,7 +42,6 @@ import org.apache.ignite.lang.IgniteInClosure;
 import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.spi.IgniteSpiException;
 import org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi;
-import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
@@ -94,8 +93,6 @@ public class CacheStopAndDestroySelfTest extends GridCommonAbstractTest {
 
             iCfg.setDataStorageConfiguration(memCfg);
         }
-
-        ((TcpDiscoverySpi)iCfg.getDiscoverySpi()).setForceServerMode(true);
 
         iCfg.setCacheConfiguration();
 

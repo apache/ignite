@@ -26,7 +26,6 @@ import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.NearCacheConfiguration;
 import org.apache.ignite.internal.cluster.ClusterTopologyCheckedException;
-import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.transactions.Transaction;
@@ -60,8 +59,6 @@ public class GridCacheNearOnlyTopologySelfTest extends GridCommonAbstractTest {
 
             cfg.setCacheConfiguration(cacheCfg);
         }
-
-        ((TcpDiscoverySpi)cfg.getDiscoverySpi()).setForceServerMode(true);
 
         return cfg;
     }
@@ -102,14 +99,10 @@ public class GridCacheNearOnlyTopologySelfTest extends GridCommonAbstractTest {
         try {
             cache = true;
 
-            for (int i = 0; i < 4; i++) {
-                boolean client = i == 0;
+            for (int i = 1; i < 4; i++)
+                startGrid(i);
 
-                Ignite ignite = client ? startClientGrid(i) : startGrid(i);
-
-                if (client)
-                    ignite.createNearCache(DEFAULT_CACHE_NAME, new NearCacheConfiguration());
-            }
+            startClientGrid(0).createNearCache(DEFAULT_CACHE_NAME, new NearCacheConfiguration());
 
             for (int i = 0; i < 100; i++)
                 assertFalse("For key: " + i, grid(0).affinity(DEFAULT_CACHE_NAME).isPrimaryOrBackup(grid(0).localNode(), i));
@@ -125,14 +118,10 @@ public class GridCacheNearOnlyTopologySelfTest extends GridCommonAbstractTest {
         try {
             cache = true;
 
-            for (int i = 0; i < 4; i++) {
-                boolean client = i == 0;
+            for (int i = 1; i < 4; i++)
+                startGrid(i);
 
-                Ignite ignite = client ? startClientGrid(i) : startGrid(i);
-
-                if (client)
-                    ignite.createNearCache(DEFAULT_CACHE_NAME, new NearCacheConfiguration());
-            }
+            startClientGrid(0).createNearCache(DEFAULT_CACHE_NAME, new NearCacheConfiguration());
 
             cache = false;
 
@@ -156,14 +145,10 @@ public class GridCacheNearOnlyTopologySelfTest extends GridCommonAbstractTest {
         try {
             cache = true;
 
-            for (int i = 0; i < 2; i++) {
-                boolean client = i == 0;
+            for (int i = 0; i < 2; i++)
+                startGrid(i);
 
-                Ignite ignite = client ? startClientGrid(i) : startGrid(i);
-
-                if (client)
-                    ignite.createNearCache(DEFAULT_CACHE_NAME, new NearCacheConfiguration<>());
-            }
+            grid(0).createNearCache(DEFAULT_CACHE_NAME, new NearCacheConfiguration<>());
 
             awaitPartitionMapExchange();
 
@@ -232,13 +217,13 @@ public class GridCacheNearOnlyTopologySelfTest extends GridCommonAbstractTest {
             cache = true;
 
             for (int i = 0; i < totalNodeCnt; i++) {
-                boolean client = nearNodeIdx == i;
+                if (nearNodeIdx == i)
+                    continue;
 
-                Ignite ignite = client ? startClientGrid(i) : startGrid(i);
-
-                if (client)
-                    ignite.createNearCache(DEFAULT_CACHE_NAME, new NearCacheConfiguration());
+                startGrid(i);
             }
+
+            startClientGrid(nearNodeIdx).createNearCache(DEFAULT_CACHE_NAME, new NearCacheConfiguration());
         }
         finally {
             stopAllGrids();

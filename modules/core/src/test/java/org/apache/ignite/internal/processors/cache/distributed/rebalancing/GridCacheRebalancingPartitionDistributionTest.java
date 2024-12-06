@@ -112,7 +112,7 @@ public class GridCacheRebalancingPartitionDistributionTest extends GridRollingRe
     private class FairDistributionAssertion extends CacheNodeSafeAssertion {
         /** Construct a new FairDistributionAssertion. */
         public FairDistributionAssertion() {
-            super(grid(0), CACHE_NAME);
+            super(grid(serverCount()), CACHE_NAME);
         }
 
         /** {@inheritDoc} */

@@ -84,8 +84,6 @@ public abstract class IgniteCacheAbstractTest extends GridCommonAbstractTest {
 
         TcpDiscoverySpi disco = (TcpDiscoverySpi)cfg.getDiscoverySpi();
 
-        disco.setForceServerMode(true);
-
         if (isDebug())
             disco.setAckTimeout(Integer.MAX_VALUE);
 

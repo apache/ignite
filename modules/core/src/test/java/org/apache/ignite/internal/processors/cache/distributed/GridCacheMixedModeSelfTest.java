@@ -21,32 +21,26 @@ import org.apache.ignite.IgniteCache;
 import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
-import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
 
 /**
  * Tests cache puts in mixed mode.
- *
- * TODO IGNITE-10345: Remove test in ignite 3.0.
  */
 public class GridCacheMixedModeSelfTest extends GridCommonAbstractTest {
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
-        ((TcpDiscoverySpi)cfg.getDiscoverySpi()).setForceServerMode(true);
-
-        cfg.setCacheConfiguration(cacheConfiguration(igniteInstanceName));
+        cfg.setCacheConfiguration(cacheConfiguration());
 
         return cfg;
     }
 
     /**
-     * @param igniteInstanceName Ignite instance name.
      * @return Cache configuration.
      */
-    private CacheConfiguration cacheConfiguration(String igniteInstanceName) {
+    private CacheConfiguration cacheConfiguration() {
         CacheConfiguration cfg = new CacheConfiguration(DEFAULT_CACHE_NAME);
 
         cfg.setCacheMode(CacheMode.PARTITIONED);

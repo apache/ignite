@@ -30,7 +30,6 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.events.Event;
 import org.apache.ignite.events.EventType;
 import org.apache.ignite.lang.IgnitePredicate;
-import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
@@ -56,8 +55,6 @@ public class IgniteCacheConfigurationTemplateTest extends GridCommonAbstractTest
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
-
-        ((TcpDiscoverySpi)cfg.getDiscoverySpi()).setForceServerMode(true);
 
         if (addTemplate) {
             CacheConfiguration dfltCfg = new CacheConfiguration("*");
@@ -226,6 +223,10 @@ public class IgniteCacheConfigurationTemplateTest extends GridCommonAbstractTest
      */
     @Test
     public void testStartClientNodeFirst() throws Exception {
+        addTemplate = false;
+
+        Ignite ignite1 = startGrid(1);
+
         addTemplate = true;
 
         Ignite ignite0 = startClientGrid(0);
@@ -233,8 +234,6 @@ public class IgniteCacheConfigurationTemplateTest extends GridCommonAbstractTest
         checkNoTemplateCaches(0);
 
         addTemplate = false;
-
-        Ignite ignite1 = startGrid(1);
 
         checkGetOrCreate(ignite1, "org.apache.ignite.test.cache1", 4);
         checkGetOrCreate(ignite1, "org.apache.ignite.test.cache1", 4);

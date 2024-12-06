@@ -231,12 +231,12 @@ public class GridCachePutAllFailoverSelfTest extends GridCommonAbstractTest {
 
         Collection<Integer> testKeys = generateTestKeys();
 
-        final Ignite master = startClientGrid(MASTER);
-
         List<Ignite> workers = new ArrayList<>(workerCnt);
 
         for (int i = 1; i <= workerCnt; i++)
             workers.add(startGrid("worker" + i));
+
+        final Ignite master = startClientGrid(MASTER);
 
         info("Master: " + master.cluster().localNode().id());
 
@@ -430,12 +430,12 @@ public class GridCachePutAllFailoverSelfTest extends GridCommonAbstractTest {
 
         Collection<Integer> testKeys = generateTestKeys();
 
-        final Ignite master = startClientGrid(MASTER);
-
         List<Ignite> workers = new ArrayList<>(workerCnt);
 
         for (int i = 1; i <= workerCnt; i++)
             workers.add(startGrid("worker" + i));
+
+        final Ignite master = startClientGrid(MASTER);
 
         info("Master: " + master.cluster().localNode().id());
 
@@ -667,7 +667,6 @@ public class GridCachePutAllFailoverSelfTest extends GridCommonAbstractTest {
         TcpDiscoverySpi discoverySpi = (TcpDiscoverySpi)cfg.getDiscoverySpi();
 
         discoverySpi.setAckTimeout(60000);
-        discoverySpi.setForceServerMode(true);
 
         cfg.setDiscoverySpi(discoverySpi);
 

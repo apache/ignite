@@ -35,7 +35,6 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteCallable;
 import org.apache.ignite.lang.IgniteRunnable;
 import org.apache.ignite.resources.IgniteInstanceResource;
-import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.failover.always.AlwaysFailoverSpi;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
@@ -62,9 +61,7 @@ public class CacheAffinityCallSelfTest extends GridCommonAbstractTest {
         cfg.setFailoverSpi(failSpi);
 
         // Do not configure cache on client.
-        if (igniteInstanceName.equals(getTestIgniteInstanceName(SRVS)))
-            ((TcpDiscoverySpi)cfg.getDiscoverySpi()).setForceServerMode(true);
-        else {
+        if (!igniteInstanceName.equals(getTestIgniteInstanceName(SRVS))) {
             CacheConfiguration<?, ?> ccfg = defaultCacheConfiguration();
             ccfg.setName(CACHE_NAME);
             ccfg.setCacheMode(PARTITIONED);
