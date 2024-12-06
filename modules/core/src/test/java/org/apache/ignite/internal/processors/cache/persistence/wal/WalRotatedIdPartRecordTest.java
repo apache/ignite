@@ -111,7 +111,7 @@ public class WalRotatedIdPartRecordTest extends GridCommonAbstractTest {
             if (rec instanceof RotatedIdPartRecord) {
                 byte rotatedIdPart = ((RotatedIdPartRecord)rec).rotatedIdPart();
 
-                if (((int)rotatedIdPart & 0xFF) > 127)
+                if (Byte.toUnsignedInt(rotatedIdPart) > 127)
                     stop.set(true);
             }
 
