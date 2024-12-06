@@ -34,6 +34,7 @@ import org.junit.Test;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
 import static org.apache.ignite.internal.client.thin.TcpClientCache.NON_TRANSACTIONAL_CLIENT_CACHE_CLEAR_IN_TX_ERROR_MESSAGE;
+import static org.apache.ignite.internal.client.thin.TcpClientCache.NON_TRANSACTIONAL_CLIENT_CACHE_REMOVEALL_IN_TX_ERROR_MESSAGE;
 import static org.apache.ignite.transactions.TransactionConcurrency.PESSIMISTIC;
 import static org.apache.ignite.transactions.TransactionIsolation.READ_COMMITTED;
 
@@ -52,24 +53,28 @@ public class ThinClientNonTransactionalOperationsInTxTest extends GridCommonAbst
 
     /** */
     @Test
-    public void testThinClientCacheClear() throws Exception {
+    public void testThinClientCacheNonTxOperation() throws Exception {
         startGrid(0);
 
         IgniteClient client = Ignition.startClient(new ClientConfiguration().setAddresses(Config.SERVER));
 
-        checkThinClientCacheOperation(client, cache -> cache.clear());
+        checkThinClientCacheOperation(client, true, cache -> cache.clear());
 
-        checkThinClientCacheOperation(client, cache -> cache.clear(2));
+        checkThinClientCacheOperation(client, true, cache -> cache.clear(2));
 
-        checkThinClientCacheOperation(client, cache -> cache.clear(Collections.singleton(2)));
+        checkThinClientCacheOperation(client, true, cache -> cache.clear(Collections.singleton(2)));
 
-        checkThinClientCacheOperation(client, cache -> cache.clearAll(Collections.singleton(2)));
+        checkThinClientCacheOperation(client, true, cache -> cache.clearAll(Collections.singleton(2)));
 
-        checkThinClientCacheOperation(client, cache -> cache.clearAsync());
+        checkThinClientCacheOperation(client, true, cache -> cache.clearAsync());
 
-        checkThinClientCacheOperation(client, cache -> cache.clearAsync(2));
+        checkThinClientCacheOperation(client, true, cache -> cache.clearAsync(2));
 
-        checkThinClientCacheOperation(client, cache -> cache.clearAllAsync(Collections.singleton(2)));
+        checkThinClientCacheOperation(client, true, cache -> cache.clearAllAsync(Collections.singleton(2)));
+
+        checkThinClientCacheOperation(client, false, cache -> cache.removeAll());
+
+        checkThinClientCacheOperation(client, false, cache -> cache.removeAllAsync());
     }
 
     /**
@@ -77,7 +82,7 @@ public class ThinClientNonTransactionalOperationsInTxTest extends GridCommonAbst
      *
      * @param client IgniteClient.
      */
-    private void checkThinClientCacheOperation(IgniteClient client, Consumer<ClientCache<Object, Object>> op) {
+    private void checkThinClientCacheOperation(IgniteClient client, boolean clearOp, Consumer<ClientCache<Object, Object>> op) {
         ClientCache<Object, Object> cache = client.cache(DEFAULT_CACHE_NAME);
 
         cache.put(1, 1);
@@ -90,9 +95,15 @@ public class ThinClientNonTransactionalOperationsInTxTest extends GridCommonAbst
             }
 
             return null;
-        }, CacheException.class, NON_TRANSACTIONAL_CLIENT_CACHE_CLEAR_IN_TX_ERROR_MESSAGE);
+        }, CacheException.class, validateOperation(clearOp));
 
         assertTrue(cache.containsKey(1));
         assertFalse(cache.containsKey(2));
+    }
+
+    /** */
+    private String validateOperation(boolean clearOp) {
+        return clearOp ? NON_TRANSACTIONAL_CLIENT_CACHE_CLEAR_IN_TX_ERROR_MESSAGE :
+            NON_TRANSACTIONAL_CLIENT_CACHE_REMOVEALL_IN_TX_ERROR_MESSAGE;
     }
 }
