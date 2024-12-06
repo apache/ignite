@@ -21,6 +21,7 @@ import java.io.File;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.util.Collection;
+import java.util.List;
 import java.util.UUID;
 import java.util.concurrent.Executor;
 import java.util.function.Function;
@@ -36,6 +37,7 @@ import org.apache.ignite.internal.processors.cache.CacheGroupContext;
 import org.apache.ignite.internal.processors.cache.GridCacheProcessor;
 import org.apache.ignite.internal.processors.cache.persistence.DataRegion;
 import org.apache.ignite.internal.processors.cache.persistence.DataStorageMetricsImpl;
+import org.apache.ignite.internal.processors.cache.persistence.StorageException;
 import org.apache.ignite.internal.processors.cache.persistence.file.FileIOFactory;
 import org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager;
 import org.apache.ignite.internal.processors.cache.persistence.pagemem.PageMemoryEx;
@@ -78,6 +80,9 @@ public class CheckpointManager {
 
     /** Checkpoint markers storage which mark the start and end of each checkpoint. */
     private final CheckpointMarkersStorage checkpointMarkersStorage;
+
+    /** Storage for checkpoint recovery files. */
+    private final CheckpointRecoveryFileStorage checkpointRecoveryFileStorage;
 
     /** Timeout checkpoint lock which should be used while write to memory happened. */
     final CheckpointTimeoutLock checkpointTimeoutLock;
@@ -177,12 +182,16 @@ public class CheckpointManager {
         };
 
         checkpointPagesWriterFactory = new CheckpointPagesWriterFactory(
+            cacheProcessor.context().kernalContext(),
             logger,
             (pageMemEx, fullPage, buf, tag) -> pageStoreManager.write(fullPage.groupId(), fullPage.pageId(), buf, tag, true),
             persStoreMetrics,
             throttlingPolicy, threadBuf,
             pageMemoryGroupResolver
         );
+
+        checkpointRecoveryFileStorage = new CheckpointRecoveryFileStorage(cacheProcessor.context().kernalContext(),
+            checkpointDirectory(), ioFactory);
 
         checkpointerProvider = () -> new Checkpointer(
             igniteInstanceName,
@@ -195,6 +204,7 @@ public class CheckpointManager {
             cacheProcessor,
             checkpointWorkflow,
             checkpointPagesWriterFactory,
+            checkpointRecoveryFileStorage,
             persistenceCfg.getCheckpointFrequency(),
             persistenceCfg.getCheckpointThreads(),
             cpFreqDeviation
@@ -305,6 +315,13 @@ public class CheckpointManager {
      */
     public CheckpointHistory checkpointHistory() {
         return checkpointMarkersStorage.history();
+    }
+
+    /**
+     * @return List of checkpoint recovery files.
+     */
+    public List<CheckpointRecoveryFile> checkpointRecoveryFiles(@Nullable UUID cpId) throws StorageException {
+        return checkpointRecoveryFileStorage.list(cpId == null ? null : cpId::equals);
     }
 
     /**
