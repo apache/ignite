@@ -21,6 +21,7 @@ import java.util.Map;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Stream;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.configuration.ClientConfiguration;
 import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
@@ -30,6 +31,7 @@ import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.IgniteKernal;
 import org.apache.ignite.internal.IgnitionEx;
+import org.apache.ignite.internal.client.thin.TcpIgniteClient;
 import org.apache.ignite.internal.processors.cache.GridCacheProcessor;
 import org.apache.ignite.internal.util.lang.IgniteInClosureX;
 import org.apache.ignite.internal.util.typedef.internal.CU;
@@ -41,6 +43,7 @@ import org.junit.Test;
 import static java.util.Objects.requireNonNull;
 import static java.util.function.Function.identity;
 import static java.util.stream.Collectors.toMap;
+import static org.apache.ignite.client.Config.SERVER;
 import static org.apache.ignite.testframework.GridTestUtils.assertThrowsAnyCause;
 
 /**
@@ -306,6 +309,34 @@ public class WarmUpSelfTest extends GridCommonAbstractTest {
                 );
 
                 warmUpMXBean.stopWarmUp();
+            }
+        });
+    }
+
+    /**
+     * Test checks to stop warming up by thin client.
+     * <p>
+     * Steps:
+     * 1)Running a node in a separate thread with {@link BlockedWarmUpConfiguration} for one region;
+     * 2)Stop warm-up by thin client;
+     * 3)Make sure that warm-up is stopped and node has started successfully.
+     *
+     * @throws Exception If failed.
+     */
+    @Test
+    public void testStopWarmUpByThinClient() throws Exception {
+        checkStopWarmUp(new IgniteInClosureX<IgniteKernal>() {
+            /** {@inheritDoc} */
+            @Override public void applyx(IgniteKernal kernal) {
+                try (TcpIgniteClient thinCli = (TcpIgniteClient)TcpIgniteClient.start(new ClientConfiguration()
+                    .setAddresses(SERVER)
+                    .setClusterDiscoveryEnabled(false))
+                ) {
+                    thinCli.stopWarmUp();
+                }
+                catch (Exception e) {
+                    throw new RuntimeException(e);
+                }
             }
         });
     }
