@@ -20,6 +20,8 @@ package org.apache.ignite.internal.processors.performancestatistics;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.Map;
+import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Consumer;
@@ -33,9 +35,12 @@ import org.apache.ignite.configuration.ClientConnectorConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.ThinClientConfiguration;
 import org.apache.ignite.internal.IgniteEx;
+import org.apache.ignite.internal.client.thin.TcpClientCache;
 import org.apache.ignite.internal.client.thin.TestTask;
+import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.util.GridIntList;
 import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.internal.util.typedef.T3;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteUuid;
@@ -47,8 +52,10 @@ import static org.apache.ignite.internal.processors.performancestatistics.Operat
 import static org.apache.ignite.internal.processors.performancestatistics.OperationType.CACHE_GET_AND_REMOVE;
 import static org.apache.ignite.internal.processors.performancestatistics.OperationType.CACHE_PUT;
 import static org.apache.ignite.internal.processors.performancestatistics.OperationType.CACHE_PUT_ALL;
+import static org.apache.ignite.internal.processors.performancestatistics.OperationType.CACHE_PUT_ALL_CONFLICT;
 import static org.apache.ignite.internal.processors.performancestatistics.OperationType.CACHE_REMOVE;
 import static org.apache.ignite.internal.processors.performancestatistics.OperationType.CACHE_REMOVE_ALL;
+import static org.apache.ignite.internal.processors.performancestatistics.OperationType.CACHE_REMOVE_ALL_CONFLICT;
 
 /**
  * Tests thin client performance statistics.
@@ -169,6 +176,10 @@ public class PerformanceStatisticsThinClientTest extends AbstractPerformanceStat
         checkCacheOperation(CACHE_REMOVE_ALL, cache -> cache.removeAll(Collections.singleton(3)));
 
         checkCacheOperation(CACHE_GET_AND_REMOVE, cache -> cache.getAndRemove(5));
+
+        checkCacheOperation(CACHE_PUT_ALL_CONFLICT, cache -> putAllConflict(Collections.singletonMap(6, 1)));
+
+        checkCacheOperation(CACHE_REMOVE_ALL_CONFLICT, cache -> removeAllConflict(Collections.singleton(6)));
     }
 
     /** Checks cache operation. */
@@ -197,6 +208,37 @@ public class PerformanceStatisticsThinClientTest extends AbstractPerformanceStat
         });
 
         assertEquals(1, ops.get());
+    }
+
+
+    /**
+     * Cache {@link TcpClientCache#putAllConflict} operation perfomed
+     * @param map {@link Map} with entries for cache put all.
+     * @return cache {@link Consumer<ClientCache>}.
+     */
+    private Consumer<ClientCache<Object, Object>> putAllConflict(Map<Integer, Object> map) {
+        Map<Integer, T3<Object, GridCacheVersion, Long>> drMap = new HashMap<>();
+
+        GridCacheVersion confl = new GridCacheVersion(1, 0, 1, (byte)2);
+
+        map.forEach((key, value) -> drMap.put(key, new T3<>(value, confl, null)));
+
+        return cache -> ((TcpClientCache<Object, Object>)cache).putAllConflict(drMap);
+    }
+
+    /**
+     * Cache {@link TcpClientCache#putAllConflict} operation perfomed
+     * @param keys {@link Set} with keys for cache remove all.
+     * @return cache {@link Consumer<ClientCache>}.
+     */
+    private Consumer<ClientCache<Object, Object>> removeAllConflict(Set<Integer> keys) {
+        Map<Integer, GridCacheVersion> drMap = new HashMap<>();
+
+        GridCacheVersion confl = new GridCacheVersion(1, 0, 1, (byte)2);
+
+        keys.forEach(key -> drMap.put(key, confl));
+
+        return cache -> ((TcpClientCache<Object, Object>)cache).removeAllConflict(drMap);
     }
 
     /** @throws Exception If failed. */
