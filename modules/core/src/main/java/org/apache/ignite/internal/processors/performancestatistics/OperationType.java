@@ -21,6 +21,7 @@ import java.util.Collections;
 import java.util.EnumSet;
 import java.util.HashMap;
 import java.util.Map;
+import org.apache.ignite.internal.util.typedef.CA;
 import org.jetbrains.annotations.Nullable;
 
 /**
@@ -93,13 +94,19 @@ public enum OperationType {
     /** Custom query property. */
     QUERY_PROPERTY(21),
 
+    /** Cache put all conflict. */
+    CACHE_PUT_ALL_CONFLICT(22),
+
+    /** Cache put all conflict. */
+    CACHE_REMOVE_ALL_CONFLICT(23),
+
     /** Version. */
     VERSION(255);
 
     /** Cache operations. */
     public static final EnumSet<OperationType> CACHE_OPS = EnumSet.of(CACHE_GET, CACHE_PUT, CACHE_REMOVE,
         CACHE_GET_AND_PUT, CACHE_GET_AND_REMOVE, CACHE_INVOKE, CACHE_LOCK, CACHE_GET_ALL, CACHE_PUT_ALL,
-        CACHE_REMOVE_ALL, CACHE_INVOKE_ALL);
+        CACHE_REMOVE_ALL, CACHE_INVOKE_ALL, CACHE_PUT_ALL_CONFLICT, CACHE_REMOVE_ALL_CONFLICT);
 
     /** Transaction operations. */
     public static final EnumSet<OperationType> TX_OPS = EnumSet.of(TX_COMMIT, TX_ROLLBACK);
