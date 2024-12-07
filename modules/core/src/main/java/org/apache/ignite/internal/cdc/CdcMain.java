@@ -162,8 +162,8 @@ public class CdcMain implements Runnable {
     /** Event capture time. */
     public static final String EVT_CAPTURE_TIME = "EventCaptureTime";
 
-    /** Wal segment iterator processing time. */
-    public static final String WAL_PROCESSING_TIME = "WalProcessingTime";
+    /** Wal segment iterator consuming time. */
+    public static final String SEGMENT_CONSUMING_TIME = "SegmentConsumingTime";
 
     /** Binary metadata metric name. */
     public static final String BINARY_META_DIR = "BinaryMetaDir";
@@ -216,7 +216,7 @@ public class CdcMain implements Runnable {
     private HistogramMetricImpl evtCaptureTime;
 
     /** Metric represents time between creating {@link WALIterator} and processing it, in milliseconds. */
-    private HistogramMetricImpl walProcessingTime;
+    private HistogramMetricImpl segmentConsumingTime;
 
     /** Change Data Capture configuration. */
     protected final CdcConfiguration cdcCfg;
@@ -448,8 +448,8 @@ public class CdcMain implements Runnable {
             EVT_CAPTURE_TIME,
             new long[] {5_000, 10_000, 15_000, 30_000, 60_000},
             "Time between creating an event on Ignite node and capturing it by CdcConsumer");
-        walProcessingTime = mreg.histogram(
-            WAL_PROCESSING_TIME,
+        segmentConsumingTime = mreg.histogram(
+            SEGMENT_CONSUMING_TIME,
             new long[] {25, 50, 100, 250, 500, 1000, 2500, 5000, 10000, 25000, 50000},
             "Time of WAL segment processing, in milliseconds.");
         mreg.register(CDC_MODE, () -> cdcModeState.name(), String.class, "CDC mode");
@@ -588,16 +588,13 @@ public class CdcMain implements Runnable {
         long start = U.currentTimeMillis();
 
         if (cdcModeState == CdcMode.IGNITE_NODE_ACTIVE) {
-            if (consumeSegmentPassively(builder)) {
-                walProcessingTime.value(U.currentTimeMillis() - start);
-
+            if (consumeSegmentPassively(builder))
                 return true;
-            }
         }
         else
             consumeSegmentActively(builder);
 
-        walProcessingTime.value(U.currentTimeMillis() - start);
+        segmentConsumingTime.value(U.currentTimeMillis() - start);
 
         processedSegments.add(segment);
 
