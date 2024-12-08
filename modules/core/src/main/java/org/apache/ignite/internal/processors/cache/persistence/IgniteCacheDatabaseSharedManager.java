@@ -288,18 +288,8 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
      */
     private void startDataRegions() {
         for (DataRegion region : dataRegionMap.values()) {
-            if (!cctx.isLazyMemoryAllocation(region)) {
-                try {
-                    region.pageMemory().start();
-                }
-                catch (OutOfMemoryError e) {
-                    log.error("Failed to start data region [name=" + region.config().getName()
-                        + "] with initial size [initSize=" + U.readableSize(region.config().getInitialSize(), true)
-                        + "]. Adjust the heap settings or data storage configuration to allocate the memory.", e);
-
-                    throw e;
-                }
-            }
+            if (!cctx.isLazyMemoryAllocation(region))
+                region.pageMemory().start();
 
             region.evictionTracker().start();
         }

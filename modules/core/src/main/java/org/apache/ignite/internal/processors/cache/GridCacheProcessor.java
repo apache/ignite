@@ -2459,18 +2459,8 @@ public class GridCacheProcessor extends GridProcessorAdapter {
                 || (sharedCtx.isLazyMemoryAllocation(dataRegion)
                     && !cacheObjCtx.kernalContext().clientNode()));
 
-        if (needToStart) {
-            try {
-                dataRegion.pageMemory().start();
-            }
-            catch (OutOfMemoryError e) {
-                log.error("Failed to start data region [name=" + dataRegion.config().getName()
-                    + "] with initial size [initSize=" + U.readableSize(dataRegion.config().getInitialSize(), true)
-                    + "]. Adjust the heap settings or data storage configuration to allocate the memory.", e);
-
-                throw e;
-            }
-        }
+        if (needToStart)
+            dataRegion.pageMemory().start();
 
         FreeList freeList = sharedCtx.database().freeList(memPlcName);
         ReuseList reuseList = sharedCtx.database().reuseList(memPlcName);
