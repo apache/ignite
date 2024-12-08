@@ -41,9 +41,6 @@ public enum IgniteFeatures {
      */
     TCP_COMMUNICATION_SPI_HANDSHAKE_WAIT_MESSAGE(0),
 
-    /** Cache metrics v2 support. */
-    CACHE_METRICS_V2(1),
-
     /** Data paket compression. */
     DATA_PACKET_COMPRESSION(3),
 
@@ -58,9 +55,6 @@ public enum IgniteFeatures {
 
     /** Replacing TcpDiscoveryNode field with nodeId field in discovery messages. */
     TCP_DISCOVERY_MESSAGE_NODE_COMPACT_REPRESENTATION(14),
-
-    /** LRT system and user time dump settings.  */
-    LRT_SYSTEM_USER_TIME_DUMP_SETTINGS(18),
 
     /** Partition Map Exchange-free switch on baseline node left at fully rebalanced cluster.  */
     PME_FREE_SWITCH(19),
@@ -81,32 +75,11 @@ public enum IgniteFeatures {
     /** Persistence caches can be snapshot.  */
     PERSISTENCE_CACHE_SNAPSHOT(23),
 
-    /** Tracing. */
-    TRACING(26),
-
-    /** Distributed change timeout for dump long operations. */
-    DISTRIBUTED_CHANGE_LONG_OPERATIONS_DUMP_TIMEOUT(30),
-
-    /** New region for volatile data. */
-    VOLATILE_DATA_STRUCTURES_REGION(33),
-
-    /** Check secondary indexes inline size on join/by control utility request. */
-    CHECK_INDEX_INLINE_SIZES(36),
-
-    /** Distributed propagation of tx collisions dump interval. */
-    DISTRIBUTED_TX_COLLISIONS_DUMP(37),
-
     /** Remove metadata from cluster for specified type. */
     REMOVE_METADATA(39),
 
     /** Support policy of shutdown. */
     SHUTDOWN_POLICY(40),
-
-    /** Force rebuild, list or request indexes rebuild status from control script. */
-    INDEXES_MANIPULATIONS_FROM_CONTROL_SCRIPT(42),
-
-    /** Pk index keys are applied in correct order. */
-    SPECIFIED_SEQ_PK_KEYS(45),
 
     /** Compatibility support for new fields which are configured split. */
     SPLITTED_CACHE_CONFIGURATIONS_V2(46),

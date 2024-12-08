@@ -104,20 +104,6 @@ public class BlockingTxOpsTest extends AbstractThinClientTest {
                         .setAtomicityMode(TRANSACTIONAL)
                     );
 
-                    // Clear operation.
-                    checkOpMultithreaded(client,
-                        () -> cache.put(0, 0),
-                        () -> cache.clear(0),
-                        () -> assertFalse(cache.containsKey(0))
-                    );
-
-                    // Clear keys operation.
-                    checkOpMultithreaded(client,
-                        () -> cache.putAll(F.asMap(0, 0, 1, 1)),
-                        () -> cache.clearAll(new TreeSet<>(F.asList(0, 1))),
-                        () -> assertFalse(cache.containsKeys(new TreeSet<>(F.asList(0, 1))))
-                    );
-
                     // Contains operation.
                     checkOpMultithreaded(client,
                         () -> cache.put(0, 0),
