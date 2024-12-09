@@ -47,15 +47,6 @@ public enum IgniteFeatures {
     /** Support of splitted cache configurations to avoid broken deserialization on non-affinity nodes. */
     SPLITTED_CACHE_CONFIGURATIONS(5),
 
-    /**
-     * Support of providing thread dump of thread that started transaction. Used for dumping
-     * long running transactions.
-     */
-    TRANSACTION_OWNER_THREAD_DUMP_PROVIDING(6),
-
-    /** Support of suspend/resume operations for pessimistic transactions. */
-    SUSPEND_RESUME_PESSIMISTIC_TX(10),
-
     /** Distributed metastorage. */
     DISTRIBUTED_METASTORAGE(11),
 
