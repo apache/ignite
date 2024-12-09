@@ -18,8 +18,6 @@
 package org.apache.ignite.internal;
 
 import java.util.BitSet;
-import java.util.Collection;
-import org.apache.ignite.IgniteEncryption;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.cluster.ClusterState;
 import org.apache.ignite.internal.managers.discovery.IgniteDiscoverySpi;
@@ -79,9 +77,6 @@ public enum IgniteFeatures {
 
     /** Compatibility support for new fields which are configured split. */
     SPLITTED_CACHE_CONFIGURATIONS_V2(46),
-
-    /** Cache encryption key change. See {@link IgniteEncryption#changeCacheGroupKey(Collection)}. */
-    CACHE_GROUP_KEY_CHANGE(47),
 
     /** Collecting performance statistics. */
     PERFORMANCE_STATISTICS(48),
