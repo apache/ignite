@@ -81,7 +81,7 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.internal.worker.WorkersRegistry;
 import org.apache.ignite.lang.IgniteBiInClosure;
 import org.apache.ignite.lang.IgnitePredicate;
-import org.apache.ignite.plugin.extensions.communication.IgniteMessageFactory;
+import org.apache.ignite.plugin.extensions.communication.MessageFactory;
 import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.plugin.extensions.communication.MessageFormatter;
 import org.apache.ignite.plugin.extensions.communication.MessageReader;
@@ -802,8 +802,8 @@ public class GridNioServerWrapper {
 
         for (int port = cfg.localPort(); port <= lastPort; port++) {
             try {
-                IgniteMessageFactory msgFactory = new IgniteMessageFactory() {
-                    private IgniteMessageFactory impl;
+                MessageFactory msgFactory = new MessageFactory() {
+                    private MessageFactory impl;
 
                     @Override public void register(short directType, Supplier<Message> supplier) throws IgniteException {
                         get().register(directType, supplier);
@@ -813,7 +813,7 @@ public class GridNioServerWrapper {
                         return get().create(type);
                     }
 
-                    private IgniteMessageFactory get() {
+                    private MessageFactory get() {
                         if (impl == null) {
                             impl = stateProvider.getSpiContext().messageFactory();
 
@@ -829,7 +829,7 @@ public class GridNioServerWrapper {
 
                     private MessageFormatter formatter;
 
-                    @Override public MessageReader reader(GridNioSession ses, IgniteMessageFactory msgFactory)
+                    @Override public MessageReader reader(GridNioSession ses, MessageFactory msgFactory)
                         throws IgniteCheckedException {
                         final IgniteSpiContext ctx = stateProvider.getSpiContextWithoutInitialLatch();
 

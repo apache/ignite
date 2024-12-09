@@ -47,7 +47,7 @@ import org.apache.ignite.internal.util.typedef.internal.SB;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiPredicate;
 import org.apache.ignite.lang.IgniteFuture;
-import org.apache.ignite.plugin.extensions.communication.IgniteMessageFactory;
+import org.apache.ignite.plugin.extensions.communication.MessageFactory;
 import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.plugin.extensions.communication.MessageFormatter;
 import org.apache.ignite.plugin.extensions.communication.MessageReader;
@@ -734,7 +734,7 @@ public abstract class IgniteSpiAdapter implements IgniteSpi {
         private final boolean stopping;
 
         /** */
-        private final IgniteMessageFactory msgFactory;
+        private final MessageFactory msgFactory;
 
         /** */
         private final MessageFormatter msgFormatter;
@@ -750,11 +750,11 @@ public abstract class IgniteSpiAdapter implements IgniteSpi {
             this.locNode = locNode;
             this.stopping = stopping;
 
-            IgniteMessageFactory msgFactory0 = spiCtx != null ? spiCtx.messageFactory() : null;
+            MessageFactory msgFactory0 = spiCtx != null ? spiCtx.messageFactory() : null;
             MessageFormatter msgFormatter0 = spiCtx != null ? spiCtx.messageFormatter() : null;
 
             if (msgFactory0 == null) {
-                msgFactory0 = new IgniteMessageFactory() {
+                msgFactory0 = new MessageFactory() {
                     @Override public void register(short directType, Supplier<Message> supplier) throws IgniteException {
                         throw new IgniteException("Failed to register message, node is not started.");
                     }
@@ -771,7 +771,7 @@ public abstract class IgniteSpiAdapter implements IgniteSpi {
                         throw new IgniteException("Failed to write message, node is not started.");
                     }
 
-                    @Override public MessageReader reader(UUID rmtNodeId, IgniteMessageFactory msgFactory) {
+                    @Override public MessageReader reader(UUID rmtNodeId, MessageFactory msgFactory) {
                         throw new IgniteException("Failed to read message, node is not started.");
                     }
                 };
@@ -922,7 +922,7 @@ public abstract class IgniteSpiAdapter implements IgniteSpi {
         }
 
         /** {@inheritDoc} */
-        @Override public IgniteMessageFactory messageFactory() {
+        @Override public MessageFactory messageFactory() {
             return msgFactory;
         }
 

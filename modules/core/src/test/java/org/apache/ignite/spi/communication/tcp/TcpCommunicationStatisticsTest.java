@@ -37,7 +37,7 @@ import org.apache.ignite.metric.MetricRegistry;
 import org.apache.ignite.plugin.AbstractTestPluginProvider;
 import org.apache.ignite.plugin.ExtensionRegistry;
 import org.apache.ignite.plugin.PluginContext;
-import org.apache.ignite.plugin.extensions.communication.IgniteMessageFactory;
+import org.apache.ignite.plugin.extensions.communication.MessageFactory;
 import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.plugin.extensions.communication.MessageFactoryProvider;
 import org.apache.ignite.spi.IgniteSpiException;
@@ -223,7 +223,7 @@ public class TcpCommunicationStatisticsTest extends GridCommonAbstractTest {
         /** {@inheritDoc} */
         @Override public void initExtensions(PluginContext ctx, ExtensionRegistry registry) {
             registry.registerExtension(MessageFactoryProvider.class, new MessageFactoryProvider() {
-                @Override public void registerAll(IgniteMessageFactory factory) {
+                @Override public void registerAll(MessageFactory factory) {
                     factory.register(GridTestMessage.DIRECT_TYPE, GridTestMessage::new);
                 }
             });

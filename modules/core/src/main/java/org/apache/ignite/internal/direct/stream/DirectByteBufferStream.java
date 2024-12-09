@@ -34,7 +34,7 @@ import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteUuid;
-import org.apache.ignite.plugin.extensions.communication.IgniteMessageFactory;
+import org.apache.ignite.plugin.extensions.communication.MessageFactory;
 import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.plugin.extensions.communication.MessageCollectionItemType;
 import org.apache.ignite.plugin.extensions.communication.MessageReader;
@@ -210,7 +210,7 @@ public class DirectByteBufferStream {
 
     /** */
     @GridToStringExclude
-    private final IgniteMessageFactory msgFactory;
+    private final MessageFactory msgFactory;
 
     /** */
     @GridToStringExclude
@@ -315,7 +315,7 @@ public class DirectByteBufferStream {
     /**
      * @param msgFactory Message factory.
      */
-    public DirectByteBufferStream(IgniteMessageFactory msgFactory) {
+    public DirectByteBufferStream(MessageFactory msgFactory) {
         this.msgFactory = msgFactory;
     }
 

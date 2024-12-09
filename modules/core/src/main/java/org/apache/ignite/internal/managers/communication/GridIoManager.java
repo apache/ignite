@@ -126,7 +126,7 @@ import org.apache.ignite.lang.IgniteRunnable;
 import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.marshaller.Marshaller;
 import org.apache.ignite.metric.MetricRegistry;
-import org.apache.ignite.plugin.extensions.communication.IgniteMessageFactory;
+import org.apache.ignite.plugin.extensions.communication.MessageFactory;
 import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.plugin.extensions.communication.MessageFactoryProvider;
 import org.apache.ignite.plugin.extensions.communication.MessageFormatter;
@@ -355,7 +355,7 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
             PER_SEGMENT_Q_OPTIMIZED_RMV);
 
     /** */
-    private IgniteMessageFactory msgFactory;
+    private MessageFactory msgFactory;
 
     /** */
     private MessageFormatter formatter;
@@ -401,7 +401,7 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
     /**
      * @return Message factory.
      */
-    public IgniteMessageFactory messageFactory() {
+    public MessageFactory messageFactory() {
         assert msgFactory != null;
 
         return msgFactory;
@@ -442,7 +442,7 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
                     return new DirectMessageWriter();
                 }
 
-                @Override public MessageReader reader(UUID rmtNodeId, IgniteMessageFactory msgFactory) {
+                @Override public MessageReader reader(UUID rmtNodeId, MessageFactory msgFactory) {
                     return new DirectMessageReader(msgFactory);
                 }
             };

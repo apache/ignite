@@ -49,5 +49,5 @@ public interface MessageFormatter extends Extension {
      * @return Message reader.
      * @throws IgniteCheckedException In case of error.
      */
-    public MessageReader reader(UUID rmtNodeId, IgniteMessageFactory msgFactory) throws IgniteCheckedException;
+    public MessageReader reader(UUID rmtNodeId, MessageFactory msgFactory) throws IgniteCheckedException;
 }

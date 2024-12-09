@@ -54,7 +54,7 @@ import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.lang.IgniteBiPredicate;
 import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.logger.NullLogger;
-import org.apache.ignite.plugin.extensions.communication.IgniteMessageFactory;
+import org.apache.ignite.plugin.extensions.communication.MessageFactory;
 import org.apache.ignite.plugin.extensions.communication.MessageFactoryProvider;
 import org.apache.ignite.plugin.extensions.communication.MessageFormatter;
 import org.apache.ignite.plugin.extensions.communication.MessageReader;
@@ -101,7 +101,7 @@ public class GridSpiTestContext implements IgniteSpiContext {
     private MessageFormatter formatter;
 
     /** */
-    private IgniteMessageFactory factory;
+    private MessageFactory factory;
 
     /** */
     private GridTimeoutProcessor timeoutProcessor;
@@ -547,7 +547,7 @@ public class GridSpiTestContext implements IgniteSpiContext {
                     return new DirectMessageWriter();
                 }
 
-                @Override public MessageReader reader(UUID rmtNodeId, IgniteMessageFactory msgFactory) {
+                @Override public MessageReader reader(UUID rmtNodeId, MessageFactory msgFactory) {
                     return new DirectMessageReader(msgFactory);
                 }
             };
@@ -557,7 +557,7 @@ public class GridSpiTestContext implements IgniteSpiContext {
     }
 
     /** {@inheritDoc} */
-    @Override public IgniteMessageFactory messageFactory() {
+    @Override public MessageFactory messageFactory() {
         if (factory == null)
             factory = new IgniteMessageFactoryImpl(new MessageFactoryProvider[]{new GridIoMessageFactory()});
 
@@ -569,7 +569,7 @@ public class GridSpiTestContext implements IgniteSpiContext {
      *
      * @param factory Message factory.
      */
-    public void messageFactory(IgniteMessageFactory factory) {
+    public void messageFactory(MessageFactory factory) {
         this.factory = factory;
     }
 

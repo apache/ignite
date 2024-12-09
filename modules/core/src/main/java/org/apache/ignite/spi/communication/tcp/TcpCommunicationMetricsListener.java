@@ -34,7 +34,7 @@ import org.apache.ignite.internal.util.collection.IntHashMap;
 import org.apache.ignite.internal.util.collection.IntMap;
 import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.metric.MetricRegistry;
-import org.apache.ignite.plugin.extensions.communication.IgniteMessageFactory;
+import org.apache.ignite.plugin.extensions.communication.MessageFactory;
 import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.spi.IgniteSpiContext;
 import org.apache.ignite.spi.metric.LongMetric;
@@ -169,7 +169,7 @@ public class TcpCommunicationMetricsListener {
      * @param factory Message factory.
      * @return Counters of sent and received messages grouped by direct type.
      */
-    private IntMap<IgniteBiTuple<LongAdderMetric, LongAdderMetric>> createMessageCounters(IgniteMessageFactory factory) {
+    private IntMap<IgniteBiTuple<LongAdderMetric, LongAdderMetric>> createMessageCounters(MessageFactory factory) {
         IgniteMessageFactoryImpl msgFactory = (IgniteMessageFactoryImpl)factory;
 
         short[] directTypes = msgFactory.registeredDirectTypes();

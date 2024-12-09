@@ -21,7 +21,7 @@ import java.lang.reflect.Array;
 import java.util.function.Supplier;
 
 import org.apache.ignite.IgniteException;
-import org.apache.ignite.plugin.extensions.communication.IgniteMessageFactory;
+import org.apache.ignite.plugin.extensions.communication.MessageFactory;
 import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.plugin.extensions.communication.MessageFactoryProvider;
 import org.jetbrains.annotations.Nullable;
@@ -29,7 +29,7 @@ import org.jetbrains.annotations.Nullable;
 /**
  * Message factory implementation which is responsible for instantiation of all communication messages.
  */
-public class IgniteMessageFactoryImpl implements IgniteMessageFactory {
+public class IgniteMessageFactoryImpl implements MessageFactory {
     /** Offset. */
     private static final int OFF = -Short.MIN_VALUE;
 

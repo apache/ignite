@@ -23,7 +23,7 @@ import org.apache.ignite.IgniteException;
 /**
  * Message factory for all communication messages registered using {@link #register(short, Supplier)} method call.
  */
-public interface IgniteMessageFactory {
+public interface MessageFactory {
     /**
      * Register message factory with given direct type. All messages must be registered during construction
      * of class which implements this interface. Any invocation of this method after initialization is done must

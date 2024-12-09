@@ -20,7 +20,7 @@ package org.apache.ignite.internal.managers.communication;
 import java.nio.ByteBuffer;
 
 import org.apache.ignite.IgniteException;
-import org.apache.ignite.plugin.extensions.communication.IgniteMessageFactory;
+import org.apache.ignite.plugin.extensions.communication.MessageFactory;
 import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.plugin.extensions.communication.MessageFactoryProvider;
 import org.apache.ignite.plugin.extensions.communication.MessageReader;
@@ -31,7 +31,7 @@ import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertTrue;
 
 /**
- * Tests for default implementation of {@link IgniteMessageFactory} interface.
+ * Tests for default implementation of {@link MessageFactory} interface.
  */
 public class IgniteMessageFactoryImplTest {
     /** Test message 1 type. */
@@ -53,7 +53,7 @@ public class IgniteMessageFactoryImplTest {
     public void testReadOnly() {
         MessageFactoryProvider[] factories = {new TestMessageFactoryPovider(), new TestMessageFactory()};
 
-        IgniteMessageFactory msgFactory = new IgniteMessageFactoryImpl(factories);
+        MessageFactory msgFactory = new IgniteMessageFactoryImpl(factories);
 
         msgFactory.register((short)0, () -> null);
     }
@@ -90,7 +90,7 @@ public class IgniteMessageFactoryImplTest {
     public void testCreate_UnknownMessageType() {
         MessageFactoryProvider[] factories = {new TestMessageFactoryPovider(), new TestMessageFactory()};
 
-        IgniteMessageFactory msgFactory = new IgniteMessageFactoryImpl(factories);
+        MessageFactory msgFactory = new IgniteMessageFactoryImpl(factories);
 
         msgFactory.create(UNKNOWN_MSG_TYPE);
     }
@@ -115,7 +115,7 @@ public class IgniteMessageFactoryImplTest {
      */
     private static class TestMessageFactoryPovider implements MessageFactoryProvider {
         /** {@inheritDoc} */
-        @Override public void registerAll(IgniteMessageFactory factory) {
+        @Override public void registerAll(MessageFactory factory) {
             factory.register(TEST_MSG_1_TYPE, TestMessage1::new);
             factory.register(TEST_MSG_42_TYPE, TestMessage42::new);
         }
@@ -126,7 +126,7 @@ public class IgniteMessageFactoryImplTest {
      */
     private static class TestMessageFactoryPoviderWithTheSameDirectType implements MessageFactoryProvider {
         /** {@inheritDoc} */
-        @Override public void registerAll(IgniteMessageFactory factory) {
+        @Override public void registerAll(MessageFactory factory) {
             factory.register(TEST_MSG_1_TYPE, TestMessage1::new);
         }
     }
@@ -136,7 +136,7 @@ public class IgniteMessageFactoryImplTest {
      */
     private static class TestMessageFactory implements MessageFactoryProvider {
         /** {@inheritDoc} */
-        @Override public void registerAll(IgniteMessageFactory factory) {
+        @Override public void registerAll(MessageFactory factory) {
             factory.register(TEST_MSG_2_TYPE, TestMessage2::new);
         }
     }

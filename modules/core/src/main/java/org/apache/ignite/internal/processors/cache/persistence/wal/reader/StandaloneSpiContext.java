@@ -28,7 +28,7 @@ import org.apache.ignite.events.Event;
 import org.apache.ignite.internal.managers.communication.GridMessageListener;
 import org.apache.ignite.internal.managers.eventstorage.GridLocalEventListener;
 import org.apache.ignite.lang.IgniteBiPredicate;
-import org.apache.ignite.plugin.extensions.communication.IgniteMessageFactory;
+import org.apache.ignite.plugin.extensions.communication.MessageFactory;
 import org.apache.ignite.plugin.extensions.communication.MessageFormatter;
 import org.apache.ignite.plugin.security.SecuritySubject;
 import org.apache.ignite.spi.IgniteNodeValidationResult;
@@ -184,7 +184,7 @@ public class StandaloneSpiContext implements IgniteSpiContext {
     }
 
     /** {@inheritDoc} */
-    @Override public IgniteMessageFactory messageFactory() {
+    @Override public MessageFactory messageFactory() {
         return null;
     }
 

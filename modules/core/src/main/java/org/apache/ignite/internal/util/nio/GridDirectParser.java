@@ -23,7 +23,7 @@ import java.nio.ByteBuffer;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.internal.util.typedef.internal.U;
-import org.apache.ignite.plugin.extensions.communication.IgniteMessageFactory;
+import org.apache.ignite.plugin.extensions.communication.MessageFactory;
 import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.plugin.extensions.communication.MessageReader;
 import org.jetbrains.annotations.Nullable;
@@ -44,7 +44,7 @@ public class GridDirectParser implements GridNioParser {
     private final IgniteLogger log;
 
     /** */
-    private final IgniteMessageFactory msgFactory;
+    private final MessageFactory msgFactory;
 
     /** */
     private final GridNioMessageReaderFactory readerFactory;
@@ -54,7 +54,7 @@ public class GridDirectParser implements GridNioParser {
      * @param msgFactory Message factory.
      * @param readerFactory Message reader factory.
      */
-    public GridDirectParser(IgniteLogger log, IgniteMessageFactory msgFactory, GridNioMessageReaderFactory readerFactory) {
+    public GridDirectParser(IgniteLogger log, MessageFactory msgFactory, GridNioMessageReaderFactory readerFactory) {
         assert msgFactory != null;
         assert readerFactory != null;
 
