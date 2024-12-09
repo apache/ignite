@@ -20,29 +20,21 @@ package org.apache.ignite.internal.processors.cache;
 import java.util.HashSet;
 import java.util.Set;
 import org.apache.ignite.IgniteLogger;
-import org.apache.ignite.SystemProperty;
-import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionsExchangeFuture;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionsFullMessage;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.jetbrains.annotations.Nullable;
 
-import static org.apache.ignite.IgniteSystemProperties.getBoolean;
 import static org.apache.ignite.internal.IgniteFeatures.PME_FREE_SWITCH;
 import static org.apache.ignite.internal.IgniteFeatures.allNodesSupports;
 import static org.apache.ignite.internal.events.DiscoveryCustomEvent.EVT_DISCOVERY_CUSTOM_EVT;
-import static org.apache.ignite.internal.processors.cache.GridCachePartitionExchangeManager.exchangeProtocolVersion;
 import static org.apache.ignite.internal.processors.cache.persistence.snapshot.IgniteSnapshotManager.isSnapshotOperation;
 
 /**
  *
  */
 public class ExchangeContext {
-    /** Enables exchange compatibility with protocol version 1. */
-    @SystemProperty(value = "Enables the compatibility mode for the exchange protocol of version 1")
-    public static final String IGNITE_EXCHANGE_COMPATIBILITY_VER_1 = "IGNITE_EXCHANGE_COMPATIBILITY_VER_1";
-
     /** Logger. */
     private final IgniteLogger log;
 
@@ -72,9 +64,6 @@ public class ExchangeContext {
     /** */
     private final ExchangeDiscoveryEvents evts;
 
-    /** */
-    private final boolean compatibilityNode = getBoolean(IGNITE_EXCHANGE_COMPATIBILITY_VER_1, false);
-
     /**
      * @param cctx Context.
      * @param crd Coordinator flag.
@@ -82,8 +71,6 @@ public class ExchangeContext {
      */
     public ExchangeContext(GridCacheSharedContext<?, ?> cctx, boolean crd, GridDhtPartitionsExchangeFuture fut) {
         log = cctx.logger(getClass());
-
-        int protocolVer = exchangeProtocolVersion(fut.firstEventCache().minimumNodeVersion());
 
         boolean allNodesSupportsPmeFreeSwitch = allNodesSupports(fut.firstEventCache().allNodes(), PME_FREE_SWITCH);
 
@@ -93,13 +80,12 @@ public class ExchangeContext {
 
         boolean pmeFreeAvailable = (fut.wasRebalanced() && fut.isBaselineNodeFailed()) || isSnapshotOperation(fut.firstEvent());
 
-        if (!compatibilityNode &&
-            pmeFreeAvailable &&
+        if (pmeFreeAvailable &&
             allNodesSupportsPmeFreeSwitch) {
             exchangeFreeSwitch = true;
             merge = false;
         }
-        else if (compatibilityNode || (crd && fut.localJoinExchange())) {
+        else if (crd && fut.localJoinExchange()) {
             fetchAffOnJoin = true;
             merge = false;
         }
@@ -107,24 +93,15 @@ public class ExchangeContext {
             boolean startCaches = fut.exchangeId().isJoined() &&
                 fut.sharedContext().cache().hasCachesReceivedFromJoin(fut.exchangeId().eventNode());
 
-            fetchAffOnJoin = protocolVer == 1;
+            fetchAffOnJoin = false;
 
             merge = !startCaches &&
-                protocolVer > 1 &&
                 fut.firstEvent().type() != EVT_DISCOVERY_CUSTOM_EVT;
         }
 
         evts = new ExchangeDiscoveryEvents(fut);
 
         remapStaleCacheReq = isSnapshotOperation(fut.firstEvent());
-    }
-
-    /**
-     * @param node Node.
-     * @return {@code True} if node supports exchange merge protocol.
-     */
-    boolean supportsMergeExchanges(ClusterNode node) {
-        return !compatibilityNode && exchangeProtocolVersion(node.version()) > 1;
     }
 
     /**
