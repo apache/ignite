@@ -26,13 +26,12 @@ import org.apache.ignite.cache.query.ScanQuery;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.testframework.GridTestUtils;
-import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
 
 /**
  *
  */
-public class IgniteCacheBinaryObjectsScanSelfTest extends GridCommonAbstractTest {
+public class IgniteCacheBinaryObjectsScanSelfTest extends AbstractTransactionalQueryTest {
     /** */
     private static final String PERSON_CLS_NAME = "org.apache.ignite.tests.p2p.cache.Person";
 
@@ -43,7 +42,7 @@ public class IgniteCacheBinaryObjectsScanSelfTest extends GridCommonAbstractTest
     private static ClassLoader ldr;
 
     /** {@inheritDoc} */
-    @Override protected void beforeTestsStarted() throws Exception {
+    @Override protected void init() throws Exception {
         ldr = getExternalClassLoader();
 
         startGrids(3);
@@ -56,6 +55,8 @@ public class IgniteCacheBinaryObjectsScanSelfTest extends GridCommonAbstractTest
     /** {@inheritDoc} */
     @Override protected void afterTestsStopped() throws Exception {
         ldr = null;
+
+        super.afterTestsStopped();
     }
 
     /** {@inheritDoc} */
@@ -90,7 +91,8 @@ public class IgniteCacheBinaryObjectsScanSelfTest extends GridCommonAbstractTest
 
         Ignite client = grid("client");
 
-        CacheConfiguration<Object, Object> cfg = new CacheConfiguration<>("testCache");
+        CacheConfiguration<Object, Object> cfg = new CacheConfiguration<>("testCache")
+            .setAtomicityMode(atomicity());
 
         IgniteCache<Object, Object> cache = client.getOrCreateCache(cfg);
 
@@ -99,7 +101,7 @@ public class IgniteCacheBinaryObjectsScanSelfTest extends GridCommonAbstractTest
 
             GridTestUtils.setFieldValue(key, "id", i);
 
-            cache.put(key, cls.newInstance());
+            put(client, cache, key, cls.newInstance());
         }
     }
 
@@ -110,6 +112,14 @@ public class IgniteCacheBinaryObjectsScanSelfTest extends GridCommonAbstractTest
     public void testScanNoClasses() throws Exception {
         Ignite client = grid("client");
 
+        if (txMode == TestTransactionMode.NONE)
+            doTestScanNoClasses(client);
+        else
+            txAction(client, () -> doTestScanNoClasses(client));
+    }
+
+    /** */
+    private static void doTestScanNoClasses(Ignite client) {
         IgniteCache<Object, Object> cache = client.cache("testCache");
 
         List<Cache.Entry<Object, Object>> entries = cache.query(new ScanQuery<>()).getAll();

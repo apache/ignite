@@ -26,7 +26,7 @@ import org.apache.ignite.internal.binary.BinaryRawWriterEx;
 /**
  * Implementation of {@link ClientCluster}.
  */
-class ClientClusterImpl extends ClientClusterGroupImpl implements ClientCluster {
+public class ClientClusterImpl extends ClientClusterGroupImpl implements ClientCluster {
     /** Default cluster group. */
     private final ClientClusterGroupImpl dfltClusterGrp;
 
@@ -54,6 +54,20 @@ class ClientClusterImpl extends ClientClusterGroupImpl implements ClientCluster 
 
     /** {@inheritDoc} */
     @Override public void state(ClusterState newState) throws ClientException {
+        state(newState, true);
+    }
+
+    /**
+     * Changes current cluster state to given {@code newState} cluster state.
+     * <p>
+     * <b>NOTE:</b>
+     * Deactivation clears in-memory caches (without persistence) including the system caches.
+     *
+     * @param newState New cluster state.
+     * @param forceDeactivation If {@code true}, cluster deactivation will be forced.
+     * @throws ClientException If change state operation failed.
+     */
+    public void state(ClusterState newState, boolean forceDeactivation) throws ClientException {
         try {
             ch.service(ClientOperation.CLUSTER_CHANGE_STATE,
                 req -> {
@@ -67,6 +81,14 @@ class ClientClusterImpl extends ClientClusterGroupImpl implements ClientCluster 
                     }
 
                     req.out().writeByte((byte)newState.ordinal());
+
+                    if (protocolCtx.isFeatureSupported(ProtocolBitmaskFeature.FORCE_DEACTIVATION_FLAG))
+                        req.out().writeBoolean(forceDeactivation);
+                    else if (!forceDeactivation) {
+                        throw new ClientFeatureNotSupportedByServerException(
+                            "Force deactivation flag is not supported by the server"
+                        );
+                    }
                 },
                 null
             );

@@ -315,6 +315,9 @@ public class CacheDistributionTaskResult extends VisorDataTransferObject {
             out.a(grpId);
             out.a(',');
 
+            out.a(partId);
+            out.a(',');
+
             out.a(U.id8(getNodeId()));
             out.a(',');
 

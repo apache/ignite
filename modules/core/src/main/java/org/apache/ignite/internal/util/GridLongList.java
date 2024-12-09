@@ -163,7 +163,7 @@ public class GridLongList implements Message, Externalizable {
         if (arr == null)
             arr = new long[4];
         else if (arr.length == idx)
-            arr = Arrays.copyOf(arr, arr.length << 1);
+            arr = Arrays.copyOf(arr, Math.max(1, arr.length) << 1);
 
         arr[idx++] = x;
     }

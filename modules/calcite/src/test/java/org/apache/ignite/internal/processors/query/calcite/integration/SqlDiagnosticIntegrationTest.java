@@ -676,6 +676,10 @@ public class SqlDiagnosticIntegrationTest extends AbstractBasicIntegrationTest {
             sql(grid(0), "CREATE USER test WITH PASSWORD 'sensitive'");
             sql(grid(0), "ALTER USER test WITH PASSWORD 'sensitive'");
 
+            // Test JOIN.
+            sql(grid(0),
+                "SELECT * FROM test_sens t1 JOIN test_sens t2 ON t1.id = t2.id WHERE t1.val like 'sensitive%'");
+
             AtomicInteger qryCnt = new AtomicInteger();
             AtomicInteger planCnt = new AtomicInteger();
 
@@ -708,8 +712,8 @@ public class SqlDiagnosticIntegrationTest extends AbstractBasicIntegrationTest {
                 }
             });
 
-            assertEquals(12, qryCnt.get()); // CREATE AS SELECT counts as two queries.
-            assertEquals(7, planCnt.get()); // DDL queries don't produce plans, except CREATE AS SELECT.
+            assertEquals(13, qryCnt.get()); // CREATE AS SELECT counts as two queries.
+            assertEquals(8, planCnt.get()); // DDL queries don't produce plans, except CREATE AS SELECT.
         }
         finally {
             QueryUtils.INCLUDE_SENSITIVE = true;

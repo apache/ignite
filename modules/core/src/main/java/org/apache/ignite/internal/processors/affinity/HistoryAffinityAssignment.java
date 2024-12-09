@@ -25,7 +25,7 @@ public interface HistoryAffinityAssignment extends AffinityAssignment {
      *
      * @return <code>true</code> if adding this instance to history should trigger size check and possible cleanup.
      */
-    public boolean requiresHistoryCleanup();
+    public boolean isFullSizeInstance();
 
     /**
      * In case this instance is lightweight wrapper of another instance, this method should return reference

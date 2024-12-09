@@ -176,6 +176,172 @@ public class AggregatesIntegrationTest extends AbstractBasicIntegrationTransacti
 
     /** */
     @Test
+    public void testBitwiseTypesBounds() {
+        sql("CREATE TABLE tbl (t TINYINT, s SMALLINT, i INT, b BIGINT) WITH " + atomicity());
+
+        sql("INSERT INTO tbl values (?, ?, ?, ?)", Byte.MAX_VALUE, 0, 1000, 0);
+        sql("INSERT INTO tbl values (?, ?, ?, ?)", Byte.MIN_VALUE, 0, 1001, 0);
+        sql("INSERT INTO tbl values (?, ?, ?, ?)", 0, Short.MAX_VALUE, 1002, 0);
+        sql("INSERT INTO tbl values (?, ?, ?, ?)", 0, Short.MIN_VALUE, 1003, 0);
+        sql("INSERT INTO tbl values (?, ?, ?, ?)", 0, 0, Integer.MIN_VALUE, 0);
+        sql("INSERT INTO tbl values (?, ?, ?, ?)", 0, 0, Integer.MAX_VALUE, 0);
+        sql("INSERT INTO tbl values (?, ?, ?, ?)", 0, 0, 1006, Long.MAX_VALUE);
+        sql("INSERT INTO tbl values (?, ?, ?, ?)", 0, 0, 1007, Long.MIN_VALUE);
+
+        assertQuery("SELECT BIT_AND(t) FROM tbl WHERE i=? or i=?").withParams(1000, 1001).returns((byte)0).check();
+        assertQuery("SELECT BIT_OR(t) FROM tbl WHERE i=? or i=?").withParams(1000, 1001).returns((byte)-1).check();
+        assertQuery("SELECT BIT_XOR(t) FROM tbl WHERE i=? or i=?").withParams(1000, 1001).returns((byte)-1).check();
+
+        assertQuery("SELECT BIT_AND(s) FROM tbl WHERE i=? or i=?").withParams(1002, 1003).returns((short)0).check();
+        assertQuery("SELECT BIT_OR(s) FROM tbl WHERE i=? or i=?").withParams(1002, 1003).returns((short)-1).check();
+        assertQuery("SELECT BIT_XOR(s) FROM tbl WHERE i=? or i=?").withParams(1002, 1003).returns((short)-1).check();
+
+        assertQuery("SELECT BIT_AND(i) FROM tbl WHERE i=? or i=?").withParams(Integer.MAX_VALUE, Integer.MIN_VALUE)
+            .returns(0).check();
+        assertQuery("SELECT BIT_OR(i) FROM tbl WHERE i=? or i=?").withParams(Integer.MAX_VALUE, Integer.MIN_VALUE)
+            .returns(-1).check();
+        assertQuery("SELECT BIT_XOR(i) FROM tbl WHERE i=? or i=?").withParams(Integer.MAX_VALUE, Integer.MIN_VALUE)
+            .returns(-1).check();
+
+        assertQuery("SELECT BIT_AND(b) FROM tbl WHERE i=? or i=?").withParams(1006, 1007).returns(0L).check();
+        assertQuery("SELECT BIT_OR(b) FROM tbl WHERE i=? or i=?").withParams(1006, 1007).returns(-1L).check();
+        assertQuery("SELECT BIT_XOR(b) FROM tbl WHERE i=? or i=?").withParams(1006, 1007).returns(-1L).check();
+    }
+
+    /** */
+    @Test
+    public void testBitwiseBasics() {
+        sql("CREATE TABLE tbl (t TINYINT, s SMALLINT, i INT, b BIGINT) WITH " + atomicity());
+
+        for (int i = 0; i < 10; ++i)
+            sql("INSERT INTO tbl values (?, ?, ?, ?)", i, i, i, i);
+
+        sql("INSERT INTO tbl values (null, null, null, null)");
+
+        for (String op : F.asList("AND", "OR", "XOR")) {
+            // Check dynamic parameter.
+            assertQuery("SELECT BIT_" + op + "(?)").withParams((byte)1).returns((byte)1).check();
+            assertQuery("SELECT BIT_" + op + "(?)").withParams((short)1).returns((short)1).check();
+            assertQuery("SELECT BIT_" + op + "(?)").withParams(1).returns(1).check();
+            assertQuery("SELECT BIT_" + op + "(?)").withParams(1L).returns(1L).check();
+
+            // Check 1 value.
+            assertQuery("SELECT BIT_" + op + "(t) FROM tbl WHERE i=1").returns((byte)1).check();
+            assertQuery("SELECT BIT_" + op + "(s) FROM tbl WHERE i=1").returns((short)1).check();
+            assertQuery("SELECT BIT_" + op + "(i) FROM tbl WHERE i=1").returns(1).check();
+            assertQuery("SELECT BIT_" + op + "(b) FROM tbl WHERE i=1").returns(1L).check();
+
+            // Check nulls.
+            assertQuery("SELECT BIT_" + op + "(t) FROM tbl WHERE t is null").returns(NULL_RESULT).check();
+            assertQuery("SELECT BIT_" + op + "(s) FROM tbl WHERE s is null").returns(NULL_RESULT).check();
+            assertQuery("SELECT BIT_" + op + "(i) FROM tbl WHERE i is null").returns(NULL_RESULT).check();
+            assertQuery("SELECT BIT_" + op + "(b) FROM tbl WHERE b is null").returns(NULL_RESULT).check();
+
+            // Check 1 value and null.
+            assertQuery("SELECT BIT_" + op + "(t) FROM tbl WHERE i=1 or i is null").returns((byte)1).check();
+            assertQuery("SELECT BIT_" + op + "(s) FROM tbl WHERE i=1 or i is null").returns((short)1).check();
+            assertQuery("SELECT BIT_" + op + "(i) FROM tbl WHERE i=1 or i is null").returns(1).check();
+            assertQuery("SELECT BIT_" + op + "(b) FROM tbl WHERE i=1 or i is null").returns(1L).check();
+
+            // Check not existing.
+            for (String col : F.asList("t", "s", "i", "b", "t + s", "s + i", "i + b"))
+                assertQuery("SELECT BIT_" + op + "(" + col + ") FROM tbl WHERE i=200").returns(NULL_RESULT).check();
+        }
+    }
+
+    /** */
+    @Test
+    public void testBitwiseLeastRestrictive() {
+        sql("CREATE TABLE tbl (t TINYINT, s SMALLINT, i INT, b BIGINT) WITH " + atomicity());
+
+        for (int i = 0; i < 10; ++i)
+            sql("INSERT INTO tbl values (?, ?, ?, ?)", i, i, i, i);
+
+        // Check least restrictive.
+        assertQuery("SELECT BIT_AND(t + s) FROM tbl WHERE i=1 or i=7 or i=200").returns((short)2).check();
+        assertQuery("SELECT BIT_AND(s + i) FROM tbl WHERE i=1 or i=7 or i=200").returns(2).check();
+        assertQuery("SELECT BIT_AND(i + b) FROM tbl WHERE i=1 or i=7 or i=200").returns(2L).check();
+
+        assertQuery("SELECT BIT_OR(t + s) FROM tbl WHERE i=2 or i=4 or i=200").returns((short)12).check();
+        assertQuery("SELECT BIT_OR(s + i) FROM tbl WHERE i=2 or i=4 or i=200").returns(12).check();
+        assertQuery("SELECT BIT_OR(i + b) FROM tbl WHERE i=2 or i=4 or i=200").returns(12L).check();
+
+        assertQuery("SELECT BIT_XOR(t + s) FROM tbl WHERE i=6 or i=2 or i=200").returns((short)8).check();
+        assertQuery("SELECT BIT_XOR(s + i) FROM tbl WHERE i=6 or i=2 or i=200").returns(8).check();
+        assertQuery("SELECT BIT_XOR(i + b) FROM tbl WHERE i=6 or i=2 or i=200").returns(8L).check();
+    }
+
+    /** */
+    @Test
+    public void testBitwiseGrouping() {
+        sql("CREATE TABLE tbl (g INT, i INT) WITH " + atomicity());
+
+        for (int i = 0; i < 3; ++i) {
+            sql("INSERT INTO tbl values (?, ?)", i, null);
+
+            for (int j = 0; j < 9; ++j)
+                sql("INSERT INTO tbl values (?, ?)", i, j);
+        }
+
+        assertQuery("SELECT g + 1, BIT_AND(i) from tbl where i in (3,7) group by g")
+            .returns(1, 3)
+            .returns(2, 3)
+            .returns(3, 3)
+            .check();
+
+        assertQuery("SELECT g + 1, BIT_OR(i) from tbl group by g")
+            .returns(1, 15)
+            .returns(2, 15)
+            .returns(3, 15)
+            .check();
+
+        assertQuery("SELECT g + 1, BIT_XOR(i) from tbl where i in (1,2,4,8) group by g")
+            .returns(1, 15)
+            .returns(2, 15)
+            .returns(3, 15)
+            .check();
+    }
+
+    /** */
+    @Test
+    public void testBitwiseResults() {
+        sql("CREATE TABLE tbl (t TINYINT, s SMALLINT, i INT, b BIGINT) WITH " + atomicity());
+
+        for (int i = 0; i < 10; ++i)
+            sql("INSERT INTO tbl values (?, ?, ?, ?)", i, i, i, i);
+
+        assertQuery("SELECT BIT_AND(t) FROM tbl WHERE i BETWEEN 2 and 3 or i=200").returns((byte)2).check();
+        assertQuery("SELECT BIT_AND(s) FROM tbl WHERE i BETWEEN 2 and 3 or i=200").returns((short)2).check();
+        assertQuery("SELECT BIT_AND(i) FROM tbl WHERE i BETWEEN 2 and 3 or i=200").returns(2).check();
+        assertQuery("SELECT BIT_AND(b) FROM tbl WHERE i BETWEEN 2 and 3 or i=200").returns(2L).check();
+
+        assertQuery("SELECT BIT_XOR(t) FROM tbl WHERE i=8 or i=9 or i=200").returns((byte)1).check();
+        assertQuery("SELECT BIT_XOR(s) FROM tbl WHERE i=8 or i=9 or i=200").returns((short)1).check();
+        assertQuery("SELECT BIT_XOR(i) FROM tbl WHERE i=8 or i=9 or i=200").returns(1).check();
+        assertQuery("SELECT BIT_XOR(b) FROM tbl WHERE i=8 or i=9 or i=200").returns(1L).check();
+
+        assertQuery("SELECT BIT_OR(t) FROM tbl WHERE i=8 or i=1 or i=200").returns((byte)9).check();
+        assertQuery("SELECT BIT_OR(s) FROM tbl WHERE i=8 or i=1 or i=200").returns((short)9).check();
+        assertQuery("SELECT BIT_OR(i) FROM tbl WHERE i=8 or i=1 or i=200").returns(9).check();
+        assertQuery("SELECT BIT_OR(b) FROM tbl WHERE i=8 or i=1 or i=200").returns(9L).check();
+
+        for (String op : F.asList("AND", "XOR")) {
+            String where = "AND".equals(op) ? "i<100" : "i=7 or i=4 or i=2 or i=1";
+
+            assertQuery("SELECT BIT_" + op + "(t) FROM tbl WHERE " + where).returns((byte)0).check();
+            assertQuery("SELECT BIT_" + op + "(s) FROM tbl WHERE " + where).returns((short)0).check();
+            assertQuery("SELECT BIT_" + op + "(i) FROM tbl WHERE " + where).returns(0).check();
+            assertQuery("SELECT BIT_" + op + "(b) FROM tbl WHERE " + where).returns(0L).check();
+        }
+
+        sql("INSERT INTO tbl values (1, 1, 1, 1)");
+
+        assertQuery("SELECT BIT_XOR(i) from tbl where i=1").returns(0).check();
+        assertQuery("SELECT BIT_XOR(DISTINCT i) from tbl where i=1").returns(1).check();
+    }
+
+    /** */
+    @Test
     public void testCountOfNonNumericField() {
         createAndPopulateTable();
 

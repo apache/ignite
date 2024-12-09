@@ -21,7 +21,6 @@ import java.util.Comparator;
 import java.util.Objects;
 import org.apache.calcite.rel.RelCollation;
 import org.apache.calcite.rel.type.RelDataType;
-import org.apache.ignite.internal.cache.query.index.sorted.inline.IndexQueryContext;
 import org.apache.ignite.internal.processors.query.calcite.exec.exp.RangeIterable;
 import org.apache.ignite.internal.util.lang.GridCursor;
 import org.apache.ignite.internal.util.typedef.F;
@@ -75,11 +74,8 @@ public class RuntimeSortedIndex<Row> implements RuntimeIndex<Row>, TreeIndex<Row
         Row lower,
         Row upper,
         boolean lowerInclude,
-        boolean upperInclude,
-        IndexQueryContext qctx
+        boolean upperInclude
     ) {
-        assert qctx == null;
-
         int firstCol = F.first(collation.getKeys());
 
         Object lowerBound = (lower == null) ? null : ectx.rowHandler().get(firstCol, lower);
@@ -99,39 +95,6 @@ public class RuntimeSortedIndex<Row> implements RuntimeIndex<Row>, TreeIndex<Row
         RelDataType rowType,
         RangeIterable<Row> ranges
     ) {
-        return new IndexScan(rowType, this, ranges);
-    }
-
-    /**
-     *
-     */
-    private class IndexScan extends AbstractIndexScan<Row, Row> {
-        /**
-         * @param rowType Row type.
-         * @param idx Physical index.
-         * @param ranges Index scan bounds.
-         */
-        IndexScan(
-            RelDataType rowType,
-            TreeIndex<Row> idx,
-            RangeIterable<Row> ranges
-        ) {
-            super(RuntimeSortedIndex.this.ectx, rowType, idx, ranges);
-        }
-
-        /** {@inheritDoc} */
-        @Override protected Row row2indexRow(Row bound) {
-            return bound;
-        }
-
-        /** {@inheritDoc} */
-        @Override protected Row indexRow2Row(Row row) {
-            return row;
-        }
-
-        /** */
-        @Override protected IndexQueryContext indexQueryContext() {
-            return null;
-        }
+        return new TreeIndexIterable<>(this, ranges);
     }
 }

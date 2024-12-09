@@ -146,6 +146,7 @@ NULL
 1
 1
 
+#Ignore https://issues.apache.org/jira/browse/IGNITE-23555
 query T
 SELECT i=ALL(SELECT i FROM integers WHERE i=i1.i OR i IS NULL) FROM integers i1 ORDER BY i;
 ----
@@ -155,17 +156,20 @@ NULL
 NULL
 
 # correlated ANY/ALL with aggregations
+#Ignore https://issues.apache.org/jira/browse/IGNITE-23555
 query T
 SELECT MIN(i)>ANY(SELECT i FROM integers WHERE i>MIN(i1.i)) FROM integers i1;
 ----
 0
 
+# Ignore: 'Aggregate expression is illegal in WHERE clause'
 query T
 SELECT SUM(i)>ANY(SELECT i FROM integers WHERE i>MIN(i1.i)) FROM integers i1;
 ----
 1
 
 # correlated subquery with correlated any
+# Ignore: 'Aggregate expression is illegal in WHERE clause'
 query T
 SELECT (SELECT SUM(i)+SUM(i1.i) FROM integers)>ANY(SELECT i FROM integers WHERE i>MIN(i1.i)) FROM integers i1;
 ----

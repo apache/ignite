@@ -18,7 +18,6 @@ package org.apache.ignite.internal.processors.query.calcite.exec.exp;
 
 import java.math.BigDecimal;
 import java.math.BigInteger;
-import java.math.RoundingMode;
 import org.apache.calcite.DataContext;
 import org.apache.calcite.avatica.util.ByteString;
 import org.apache.calcite.config.CalciteConnectionConfig;
@@ -38,6 +37,9 @@ import org.apache.ignite.internal.processors.query.calcite.type.IgniteTypeSystem
 import org.apache.ignite.internal.processors.query.calcite.util.Commons;
 import org.checkerframework.checker.nullness.qual.Nullable;
 
+import static org.apache.ignite.internal.processors.query.calcite.util.IgniteMath.NUMERIC_ROUNDING_MODE;
+import static org.apache.ignite.internal.processors.query.calcite.util.IgniteMath.convertToBigDecimal;
+
 /**
  * Ignite SQL functions.
  */
@@ -47,9 +49,6 @@ public class IgniteSqlFunctions {
 
     /** */
     private static final int DFLT_NUM_PRECISION = IgniteTypeSystem.INSTANCE.getDefaultPrecision(SqlTypeName.DECIMAL);
-
-    /** */
-    private static final RoundingMode NUMERIC_ROUNDING_MODE = RoundingMode.HALF_UP;
 
     /**
      * Default constructor.
@@ -145,24 +144,6 @@ public class IgniteSqlFunctions {
         return dec.setScale(scale, NUMERIC_ROUNDING_MODE);
     }
 
-    /** */
-    private static BigDecimal convertToBigDecimal(Number value) {
-        BigDecimal dec;
-
-        if (value instanceof Float)
-            dec = BigDecimal.valueOf(value.floatValue());
-        else if (value instanceof Double)
-            dec = BigDecimal.valueOf(value.doubleValue());
-        else if (value instanceof BigDecimal)
-            dec = (BigDecimal)value;
-        else if (value instanceof BigInteger)
-            dec = new BigDecimal((BigInteger)value);
-        else
-            dec = new BigDecimal(value.longValue());
-
-        return dec;
-    }
-
     /** Cast object depending on type to DECIMAL. */
     public static BigDecimal toBigDecimal(Object o, int precision, int scale) {
         if (o == null)
@@ -188,6 +169,11 @@ public class IgniteSqlFunctions {
     /** LEAST2. */
     public static Object least2(Object arg0, Object arg1) {
         return leastOrGreatest(true, arg0, arg1);
+    }
+
+    /** @return The second argument and ignores the first. */
+    public static Object skipFirstArgument(Object v1, Object v2) {
+        return v2;
     }
 
     /** GREATEST2. */

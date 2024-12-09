@@ -17,6 +17,7 @@
 
 package org.apache.ignite.client;
 
+import org.apache.ignite.client.thin.ExtraColumnInH2RowsTest;
 import org.apache.ignite.internal.client.thin.AffinityMetricsTest;
 import org.apache.ignite.internal.client.thin.AtomicLongTest;
 import org.apache.ignite.internal.client.thin.BlockingTxOpsTest;
@@ -33,11 +34,13 @@ import org.apache.ignite.internal.client.thin.InactiveClusterCacheRequestTest;
 import org.apache.ignite.internal.client.thin.InvokeTest;
 import org.apache.ignite.internal.client.thin.MetadataRegistrationTest;
 import org.apache.ignite.internal.client.thin.OptimizedMarshallerClassesCachedTest;
+import org.apache.ignite.internal.client.thin.RecoveryModeTest;
 import org.apache.ignite.internal.client.thin.ReliableChannelTest;
 import org.apache.ignite.internal.client.thin.ServiceAwarenessTest;
 import org.apache.ignite.internal.client.thin.ServicesBinaryArraysTests;
 import org.apache.ignite.internal.client.thin.ServicesTest;
 import org.apache.ignite.internal.client.thin.ThinClientEnpointsDiscoveryTest;
+import org.apache.ignite.internal.client.thin.ThinClientNonTransactionalOperationsInTxTest;
 import org.apache.ignite.internal.client.thin.ThinClientPartitionAwarenessBalancingTest;
 import org.apache.ignite.internal.client.thin.ThinClientPartitionAwarenessDiscoveryTest;
 import org.apache.ignite.internal.client.thin.ThinClientPartitionAwarenessResourceReleaseTest;
@@ -80,6 +83,7 @@ import org.junit.runners.Suite;
     ThinClientPartitionAwarenessResourceReleaseTest.class,
     ThinClientPartitionAwarenessDiscoveryTest.class,
     ThinClientPartitionAwarenessBalancingTest.class,
+    ThinClientNonTransactionalOperationsInTxTest.class,
     ReliableChannelTest.class,
     CacheAsyncTest.class,
     TimeoutTest.class,
@@ -98,6 +102,8 @@ import org.junit.runners.Suite;
     ClusterGroupClusterRestartTest.class,
     BlockingTxOpsTest.class,
     InvokeTest.class,
+    ExtraColumnInH2RowsTest.class,
+    RecoveryModeTest.class
 })
 public class ClientTestSuite {
     // No-op.

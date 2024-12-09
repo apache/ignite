@@ -108,7 +108,7 @@ public class RuntimeHashIndex<Row> implements RuntimeIndex<Row> {
     /**
      *
      */
-    private class IndexScan implements Iterable<Row>, AutoCloseable {
+    private class IndexScan implements Iterable<Row> {
         /** Search row. */
         private final Supplier<Row> searchRow;
 
@@ -117,11 +117,6 @@ public class RuntimeHashIndex<Row> implements RuntimeIndex<Row> {
          */
         IndexScan(Supplier<Row> searchRow) {
             this.searchRow = searchRow;
-        }
-
-        /** {@inheritDoc} */
-        @Override public void close() {
-            // No-op.
         }
 
         /** {@inheritDoc} */

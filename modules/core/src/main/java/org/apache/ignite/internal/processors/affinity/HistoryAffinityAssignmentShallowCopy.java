@@ -46,7 +46,7 @@ public class HistoryAffinityAssignmentShallowCopy implements HistoryAffinityAssi
     }
 
     /** {@inheritDoc} */
-    @Override public boolean requiresHistoryCleanup() {
+    @Override public boolean isFullSizeInstance() {
         return false;
     }
 

@@ -170,6 +170,13 @@ public class ReduceResultPage {
     }
 
     /**
+     * @return Column count.
+     */
+    public int columnCount() {
+        return res != null ? res.columns() : 0;
+    }
+
+    /**
      * @return Result source node ID.
      */
     public UUID source() {

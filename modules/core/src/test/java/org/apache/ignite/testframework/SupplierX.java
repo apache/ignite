@@ -15,14 +15,21 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.cache.datastructures;
+package org.apache.ignite.testframework;
 
-/**
- *
- */
-public class IgniteClientDiscoveryDataStructuresTest extends IgniteClientDataStructuresAbstractTest {
-    /** {@inheritDoc} */
-    @Override protected boolean clientDiscovery() {
-        return true;
+/** */
+@FunctionalInterface
+public interface SupplierX<T> {
+    /** */
+    T getx() throws Exception;
+
+    /** */
+    default T get() {
+        try {
+            return getx();
+        }
+        catch (Exception e) {
+            throw new RuntimeException(e);
+        }
     }
 }

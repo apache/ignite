@@ -117,6 +117,7 @@ public class JavaLogger implements IgniteLoggerEx {
 
     /** Path to configuration file. */
     @GridToStringExclude
+    @SuppressWarnings("FieldAccessedSynchronizedAndUnsynchronized")
     private String cfg;
 
     /** Quiet flag. */
@@ -134,7 +135,7 @@ public class JavaLogger implements IgniteLoggerEx {
      * Creates new logger.
      */
     public JavaLogger() {
-        this(!isConfigured());
+        this(true);
     }
 
     /**
@@ -192,15 +193,6 @@ public class JavaLogger implements IgniteLoggerEx {
      * Creates new logger with given implementation.
      *
      * @param impl Java Logging implementation to use.
-     */
-    public JavaLogger(final Logger impl) {
-        this(impl, true);
-    }
-
-    /**
-     * Creates new logger with given implementation.
-     *
-     * @param impl Java Logging implementation to use.
      * @param configure Configure logger.
      */
     public JavaLogger(final Logger impl, boolean configure) {
@@ -214,13 +206,26 @@ public class JavaLogger implements IgniteLoggerEx {
         quiet = quiet0;
     }
 
+    /**
+     * Creates new logger with given parameters.
+     *
+     * @param impl Java Logging implementation to use.
+     * @param cfg Path to configuration.
+     */
+    private JavaLogger(Logger impl, String cfg) {
+        this(impl, true);
+
+        if (cfg != null)
+            this.cfg = cfg;
+    }
+
     /** {@inheritDoc} */
     @Override public IgniteLogger getLogger(Object ctgr) {
         return new JavaLogger(ctgr == null
             ? Logger.getLogger("")
             : Logger.getLogger(ctgr instanceof Class
                 ? ((Class<?>)ctgr).getName()
-                : String.valueOf(ctgr)));
+                : String.valueOf(ctgr)), cfg);
     }
 
     /**

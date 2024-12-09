@@ -74,6 +74,11 @@ public class AbstractBasicIntegrationTest extends GridCommonAbstractTest {
         client = startClientGrid("client");
     }
 
+    /** */
+    protected boolean destroyCachesAfterTest() {
+        return true;
+    }
+
     /** {@inheritDoc} */
     @Override protected void afterTest() throws Exception {
         // Wait for pending queries before destroying caches. If some error occurs during query execution, client code
@@ -92,8 +97,10 @@ public class AbstractBasicIntegrationTest extends GridCommonAbstractTest {
         }, INBOX_INITIALIZATION_TIMEOUT * 2);
 
         for (Ignite ign : G.allGrids()) {
-            for (String cacheName : ign.cacheNames())
-                ign.destroyCache(cacheName);
+            if (destroyCachesAfterTest()) {
+                for (String cacheName : ign.cacheNames())
+                    ign.destroyCache(cacheName);
+            }
 
             CalciteQueryProcessor qryProc = queryProcessor(ign);
 
@@ -137,7 +144,7 @@ public class AbstractBasicIntegrationTest extends GridCommonAbstractTest {
     }
 
     /** */
-    protected QueryChecker assertQuery(IgniteEx ignite, String qry) {
+    protected QueryChecker assertQuery(Ignite ignite, String qry) {
         return new QueryChecker(qry) {
             @Override protected QueryEngine getEngine() {
                 return Commons.lookupComponent(((IgniteEx)ignite).context(), QueryEngine.class);
@@ -294,7 +301,7 @@ public class AbstractBasicIntegrationTest extends GridCommonAbstractTest {
         }
 
         /** {@inheritDoc} */
-        @Override public long count(ExecutionContext<?> ectx, ColocationGroup grp, boolean notNull) {
+        @Override public <Row> Iterable<Row> count(ExecutionContext<Row> ectx, ColocationGroup grp, boolean notNull) {
             return delegate.count(ectx, grp, notNull);
         }
 

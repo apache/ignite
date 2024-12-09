@@ -17,11 +17,16 @@
 
 package org.apache.ignite.internal.processors.platform.client.cluster;
 
+import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.binary.BinaryRawReader;
 import org.apache.ignite.cluster.ClusterState;
 import org.apache.ignite.internal.processors.platform.client.ClientConnectionContext;
+import org.apache.ignite.internal.processors.platform.client.ClientProtocolContext;
 import org.apache.ignite.internal.processors.platform.client.ClientRequest;
 import org.apache.ignite.internal.processors.platform.client.ClientResponse;
+import org.apache.ignite.internal.util.typedef.internal.U;
+
+import static org.apache.ignite.internal.processors.platform.client.ClientBitmaskFeature.FORCE_DEACTIVATION_FLAG;
 
 /**
  * Cluster status request.
@@ -30,21 +35,35 @@ public class ClientClusterChangeStateRequest extends ClientRequest {
     /** Next state. */
     private final ClusterState state;
 
+    /** If {@code true}, cluster deactivation will be forced. */
+    private final boolean forceDeactivation;
+
     /**
      * Constructor.
      *
      * @param reader Reader.
      */
-    public ClientClusterChangeStateRequest(BinaryRawReader reader) {
+    public ClientClusterChangeStateRequest(BinaryRawReader reader, ClientProtocolContext protocolCtx) {
         super(reader);
 
         state = ClusterState.fromOrdinal(reader.readByte());
+        forceDeactivation = !protocolCtx.isFeatureSupported(FORCE_DEACTIVATION_FLAG) || reader.readBoolean();
     }
 
     /** {@inheritDoc} */
     @Override public ClientResponse process(ClientConnectionContext ctx) {
-        ctx.kernalContext().grid().cluster().state(state);
+        try {
+            ctx.kernalContext().state().changeGlobalState(
+                state,
+                forceDeactivation,
+                ctx.kernalContext().cluster().get().forServers().nodes(),
+                false
+            ).get();
 
-        return new ClientResponse(requestId());
+            return new ClientResponse(requestId());
+        }
+        catch (IgniteCheckedException e) {
+            throw U.convertException(e);
+        }
     }
 }

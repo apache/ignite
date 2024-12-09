@@ -17,10 +17,10 @@
 
 package org.apache.ignite.internal.processors.query.calcite.exec;
 
-import java.util.Set;
 import java.util.function.Function;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
+import org.apache.ignite.internal.processors.cache.transactions.TransactionChanges;
 import org.apache.ignite.internal.util.lang.GridCursor;
 
 /**
@@ -31,20 +31,20 @@ class KeyFilteringCursor<R> implements GridCursor<R> {
     /** Underlying cursor. */
     private final GridCursor<? extends R> cursor;
 
-    /** Rows that must be skiped on {@link #cursor} iteration. */
-    private final Set<KeyCacheObject> skipKeys;
+    /** Transaction changes. */
+    private final TransactionChanges<?> txChanges;
 
     /** Mapper from row to {@link KeyCacheObject}. */
     private final Function<R, KeyCacheObject> toKey;
 
     /**
      * @param cursor Sorted cursor.
-     * @param skipKeys Keys to skip. <b>Content will be changed during iteration.</b>
+     * @param txChanges Transaction changes.
      * @param toKey Mapper from row to {@link KeyCacheObject}.
      */
-    KeyFilteringCursor(GridCursor<? extends R> cursor, Set<KeyCacheObject> skipKeys, Function<R, KeyCacheObject> toKey) {
+    KeyFilteringCursor(GridCursor<? extends R> cursor, TransactionChanges<?> txChanges, Function<R, KeyCacheObject> toKey) {
         this.cursor = cursor;
-        this.skipKeys = skipKeys;
+        this.txChanges = txChanges;
         this.toKey = toKey;
     }
 
@@ -58,10 +58,10 @@ class KeyFilteringCursor<R> implements GridCursor<R> {
 
             cur = cursor.get();
 
-            // Intentionally use of `Set#remove` here.
-            // We want perform as few `toKey` as possible.
+            // Intentionally use of `remove` here.
+            // We want to perform as few `toKey` as possible.
             // So we break some rules here to optimize work with the data provided by the underlying cursor.
-        } while (!skipKeys.isEmpty() && skipKeys.remove(toKey.apply(cur)));
+        } while (!txChanges.changedKeysEmpty() && txChanges.remove(toKey.apply(cur)));
 
         return true;
     }

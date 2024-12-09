@@ -37,7 +37,7 @@ class GridCacheQueryInfo {
     private IgniteReducer<Object, Object> rdc;
 
     /** */
-    private GridCacheQueryAdapter<?> qry;
+    private CacheQuery<?> qry;
 
     /** */
     private GridCacheLocalQueryFuture<?, ?, ?> locFut;
@@ -73,7 +73,7 @@ class GridCacheQueryInfo {
         boolean loc,
         IgniteClosure<?, ?> trans,
         IgniteReducer<Object, Object> rdc,
-        GridCacheQueryAdapter<?> qry,
+        CacheQuery<?> qry,
         GridCacheLocalQueryFuture<?, ?, ?> locFut,
         UUID sndId,
         long reqId,
@@ -110,7 +110,7 @@ class GridCacheQueryInfo {
     /**
      * @return Query.
      */
-    GridCacheQueryAdapter<?> query() {
+    CacheQuery<?> query() {
         return qry;
     }
 

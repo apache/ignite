@@ -1499,6 +1499,8 @@ public abstract class GridDhtCacheAdapter<K, V> extends GridDistributedCacheAdap
                 GridCacheEntryEx entry = null;
 
                 try {
+                    ctx.shared().database().checkpointReadLock();
+
                     while (true) {
                         try {
                             entry = cache.entryEx(keys.get(i));
@@ -1524,6 +1526,8 @@ public abstract class GridDhtCacheAdapter<K, V> extends GridDistributedCacheAdap
                 finally {
                     if (entry != null)
                         entry.touch();
+
+                    ctx.shared().database().checkpointReadUnlock();
                 }
             }
             catch (IgniteCheckedException e) {

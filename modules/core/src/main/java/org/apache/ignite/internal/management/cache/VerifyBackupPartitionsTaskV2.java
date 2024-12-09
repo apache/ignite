@@ -63,6 +63,7 @@ import org.apache.ignite.resources.IgniteInstanceResource;
 import org.apache.ignite.resources.LoggerResource;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
+
 import static java.util.Collections.emptyMap;
 import static org.apache.ignite.internal.pagemem.PageIdAllocator.FLAG_DATA;
 import static org.apache.ignite.internal.processors.cache.verify.IdleVerifyUtility.GRID_NOT_IDLE_MSG;
@@ -211,6 +212,11 @@ public class VerifyBackupPartitionsTaskV2 extends ComputeTaskAdapter<CacheIdleVe
 
             Set<Integer> grpIds = getGroupIds();
 
+            if (log.isInfoEnabled()) {
+                log.info("Idle verify procedure has started [skipZeros=" + arg.skipZeros() + ", checkCrc=" +
+                    arg.checkCrc() + ", grpIds=" + grpIds + "]");
+            }
+
             completionCntr.set(0);
 
             List<Future<Map<PartitionKeyV2, PartitionHashRecordV2>>> partHashCalcFuts =
@@ -258,6 +264,9 @@ public class VerifyBackupPartitionsTaskV2 extends ComputeTaskAdapter<CacheIdleVe
                     }
                 }
             }
+
+            if (log.isInfoEnabled())
+                log.info("Idle verify procedure has finished.");
 
             if (!F.isEmpty(exceptions))
                 throw new IdleVerifyException(exceptions);

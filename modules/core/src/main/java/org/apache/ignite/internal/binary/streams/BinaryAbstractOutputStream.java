@@ -36,7 +36,7 @@ public abstract class BinaryAbstractOutputStream extends BinaryAbstractStream
      * OutOfMemoryError: Requested array size exceeds VM limit
      * @see java.util.ArrayList#MAX_ARRAY_SIZE
      */
-    protected static final int MAX_ARRAY_SIZE = Integer.MAX_VALUE - 8;
+    public static final int MAX_ARRAY_SIZE = Integer.MAX_VALUE - 8;
 
     /** {@inheritDoc} */
     @Override public void writeByte(byte val) {

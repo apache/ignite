@@ -22,6 +22,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import javax.cache.expiry.Duration;
 import javax.cache.expiry.TouchedExpiryPolicy;
 import org.apache.ignite.IgniteCache;
+import org.apache.ignite.cluster.ClusterState;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.IgniteKernal;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -42,6 +43,9 @@ public class GridCacheTtlManagerLoadTest extends GridCacheTtlManagerSelfTest {
         cacheMode = REPLICATED;
 
         final IgniteKernal g = (IgniteKernal)startGrid(0);
+
+        if (pds)
+            g.cluster().state(ClusterState.ACTIVE);
 
         try {
             final AtomicBoolean stop = new AtomicBoolean();

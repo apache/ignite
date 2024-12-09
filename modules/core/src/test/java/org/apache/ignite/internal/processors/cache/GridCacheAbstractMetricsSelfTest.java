@@ -23,6 +23,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.TreeSet;
 import java.util.concurrent.TimeUnit;
+import java.util.function.IntFunction;
 import javax.cache.expiry.Duration;
 import javax.cache.expiry.ExpiryPolicy;
 import javax.cache.expiry.TouchedExpiryPolicy;
@@ -42,6 +43,8 @@ import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteKernal;
+import org.apache.ignite.internal.processors.cache.dr.GridCacheDrInfo;
+import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.processors.metric.impl.HistogramMetricImpl;
 import org.apache.ignite.internal.util.lang.GridAbsPredicateX;
 import org.apache.ignite.internal.util.typedef.F;
@@ -157,14 +160,6 @@ public abstract class GridCacheAbstractMetricsSelfTest extends GridCacheAbstract
     /** {@inheritDoc} */
     @Override protected void afterTest() throws Exception {
         super.afterTest();
-
-        for (int i = 0; i < gridCount(); i++) {
-            Ignite g = grid(i);
-
-            g.cache(DEFAULT_CACHE_NAME).removeAll();
-
-            assert g.cache(DEFAULT_CACHE_NAME).localSize() == 0;
-        }
 
         for (int i = 0; i < gridCount(); i++) {
             Ignite g = grid(i);
@@ -1584,6 +1579,32 @@ public abstract class GridCacheAbstractMetricsSelfTest extends GridCacheAbstract
 
         assertTrue(waitForCondition(() -> getTimeTotal.value() > 0, getTestTimeout()));
         assertTrue(waitForCondition(() -> removeTimeTotal.value() > 0, getTestTimeout()));
+    }
+
+    /** */
+    @Test
+    public void testPutAndRemoveAllConflict() throws Exception {
+        IgniteInternalCache<Integer, Integer> cachex = grid(0).cachex(DEFAULT_CACHE_NAME);
+
+        HistogramMetricImpl putAllConflictTime = metric("PutAllConflictTime");
+        HistogramMetricImpl removeAllConflictTime = metric("RemoveAllConflictTime");
+
+        assertTrue(stream(putAllConflictTime.value()).allMatch(v -> v == 0));
+        assertTrue(stream(removeAllConflictTime.value()).allMatch(v -> v == 0));
+
+        GridCacheVersion confl = new GridCacheVersion(1, 0, 1, (byte)2);
+        GridCacheDrInfo val = new GridCacheDrInfo(new CacheObjectImpl(1, null), confl);
+
+        IntFunction<KeyCacheObject> keyGen = i -> new KeyCacheObjectImpl(i, null, cachex.affinity().partition(0));
+
+        cachex.putAllConflict(F.asMap(keyGen.apply(1), val));
+        cachex.removeAllConflict(F.asMap(keyGen.apply(1), confl));
+
+        cachex.putAllConflictAsync(F.asMap(keyGen.apply(2), val)).get();
+        cachex.removeAllConflictAsync(F.asMap(keyGen.apply(2), confl)).get();
+
+        assertTrue(waitForCondition(() -> stream(putAllConflictTime.value()).sum() == 2, getTestTimeout()));
+        assertTrue(waitForCondition(() -> stream(removeAllConflictTime.value()).sum() == 2, getTestTimeout()));
     }
 
     /**

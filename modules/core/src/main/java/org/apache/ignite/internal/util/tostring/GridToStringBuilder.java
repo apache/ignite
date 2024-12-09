@@ -122,7 +122,7 @@ public class GridToStringBuilder {
     public static final int DFLT_TO_STRING_COLLECTION_LIMIT = 100;
 
     /** */
-    private static final int COLLECTION_LIMIT =
+    public static final int COLLECTION_LIMIT =
         IgniteSystemProperties.getInteger(IGNITE_TO_STRING_COLLECTION_LIMIT, DFLT_TO_STRING_COLLECTION_LIMIT);
 
     /** Every thread has its own string builder. */

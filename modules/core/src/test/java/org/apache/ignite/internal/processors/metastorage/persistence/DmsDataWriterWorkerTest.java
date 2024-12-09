@@ -23,7 +23,6 @@ import java.util.concurrent.RunnableFuture;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 import org.apache.ignite.IgniteCheckedException;
-import org.apache.ignite.marshaller.jdk.JdkMarshaller;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.thread.IgniteThread;
@@ -348,7 +347,7 @@ public class DmsDataWriterWorkerTest extends GridCommonAbstractTest {
 
     /** */
     private DistributedMetaStorageHistoryItem histItem(String key, String val) throws IgniteCheckedException {
-        return new DistributedMetaStorageHistoryItem(key, JdkMarshaller.DEFAULT.marshal(val));
+        return new DistributedMetaStorageHistoryItem(key, TEST_JDK_MARSHALLER.marshal(val));
     }
 
     /** */

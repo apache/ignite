@@ -22,6 +22,10 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.Callable;
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.function.BiConsumer;
+import java.util.function.Consumer;
+import java.util.function.IntFunction;
 import javax.cache.Cache;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
@@ -33,20 +37,25 @@ import org.apache.ignite.cache.query.SpiQuery;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.cache.query.SqlQuery;
 import org.apache.ignite.cache.query.TextQuery;
+import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.internal.IgniteEx;
+import org.apache.ignite.internal.processors.cache.AbstractTransactionalQueryTest;
+import org.apache.ignite.internal.util.lang.RunnableX;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.lang.IgniteBiPredicate;
 import org.apache.ignite.lang.IgniteCallable;
 import org.apache.ignite.lang.IgniteClosure;
 import org.apache.ignite.resources.IgniteInstanceResource;
 import org.apache.ignite.testframework.GridTestUtils;
-import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
+
+import static org.junit.Assume.assumeTrue;
 
 /**
  * Test for scan query with transformer.
  */
-public class GridCacheQueryTransformerSelfTest extends GridCommonAbstractTest {
+public class GridCacheQueryTransformerSelfTest extends AbstractTransactionalQueryTest {
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
@@ -57,9 +66,32 @@ public class GridCacheQueryTransformerSelfTest extends GridCommonAbstractTest {
     }
 
     /** {@inheritDoc} */
-    @Override protected void beforeTestsStarted() throws Exception {
+    @Override protected void init() throws Exception {
+        stopAllGrids();
         startGridsMultiThreaded(3);
         startClientGrid();
+    }
+
+    /** */
+    public <V> void doTestWithCache(IntFunction<V> val, Consumer<IgniteCache<Integer, V>> test) {
+        doTestWithCache(val, 50, test);
+    }
+
+    /** */
+    public <V> void doTestWithCache(IntFunction<V> val, int numEntries, Consumer<IgniteCache<Integer, V>> test) {
+        IgniteCache<Integer, V> cache = createTestCache(val, numEntries);
+
+        try {
+            if (txMode == TestTransactionMode.NONE)
+                test.accept(cache);
+            else
+                txAction(grid(), () -> test.accept(cache));
+        }
+        finally {
+            clearTransaction();
+
+            cache.destroy();
+        }
     }
 
     /**
@@ -67,12 +99,7 @@ public class GridCacheQueryTransformerSelfTest extends GridCommonAbstractTest {
      */
     @Test
     public void testGetKeys() throws Exception {
-        IgniteCache<Integer, String> cache = grid().createCache("test-cache");
-
-        try {
-            for (int i = 0; i < 50; i++)
-                cache.put(i, "val" + i);
-
+        doTestWithCache(i -> "val" + i, cache -> {
             IgniteClosure<Cache.Entry<Integer, String>, Integer> transformer =
                 new IgniteClosure<Cache.Entry<Integer, String>, Integer>() {
                     @Override public Integer apply(Cache.Entry<Integer, String> e) {
@@ -88,10 +115,7 @@ public class GridCacheQueryTransformerSelfTest extends GridCommonAbstractTest {
 
             for (int i = 0; i < 50; i++)
                 assertEquals(i, keys.get(i).intValue());
-        }
-        finally {
-            cache.destroy();
-        }
+        });
     }
 
     /**
@@ -99,12 +123,7 @@ public class GridCacheQueryTransformerSelfTest extends GridCommonAbstractTest {
      */
     @Test
     public void testGetKeysFiltered() throws Exception {
-        IgniteCache<Integer, String> cache = grid().createCache("test-cache");
-
-        try {
-            for (int i = 0; i < 50; i++)
-                cache.put(i, "val" + i);
-
+        doTestWithCache(i -> "val" + i, cache -> {
             IgniteBiPredicate<Integer, String> filter = new IgniteBiPredicate<Integer, String>() {
                 @Override public boolean apply(Integer k, String v) {
                     return k % 10 == 0;
@@ -126,10 +145,7 @@ public class GridCacheQueryTransformerSelfTest extends GridCommonAbstractTest {
 
             for (int i = 0; i < 5; i++)
                 assertEquals(i * 10, keys.get(i).intValue());
-        }
-        finally {
-            cache.destroy();
-        }
+        });
     }
 
     /**
@@ -137,12 +153,7 @@ public class GridCacheQueryTransformerSelfTest extends GridCommonAbstractTest {
      */
     @Test
     public void testGetObjectField() throws Exception {
-        IgniteCache<Integer, Value> cache = grid().createCache("test-cache");
-
-        try {
-            for (int i = 0; i < 50; i++)
-                cache.put(i, new Value("str" + i, i * 100));
-
+        doTestWithCache(i -> new Value("str" + i, i * 100), cache -> {
             IgniteClosure<Cache.Entry<Integer, Value>, Integer> transformer =
                 new IgniteClosure<Cache.Entry<Integer, Value>, Integer>() {
                     @Override public Integer apply(Cache.Entry<Integer, Value> e) {
@@ -158,38 +169,26 @@ public class GridCacheQueryTransformerSelfTest extends GridCommonAbstractTest {
 
             for (int i = 0; i < 50; i++)
                 assertEquals(i * 100, res.get(i).intValue());
-        }
-        finally {
-            cache.destroy();
-        }
+        });
     }
 
     /**
      * @throws Exception If failed.
      */
     @Test
-    public void testGetObjectFieldPartitioned() throws Exception {
-        IgniteCache<Integer, Value> cache = grid().createCache("test-cache");
+    public void testGetObjectFieldPartitioned() {
+        IgniteCache<Integer, Value> cache = createTestCache();
 
-        Affinity<Integer> aff = affinity(cache);
+        Consumer<Integer> putToCache = i -> put(grid(), cache, i, new Value("str" + i, i * 100));
 
-        try {
-            int[] keys = new int[50];
+        List<Integer> keys = partitionKeys(cache, 0, 50, 0);
 
-            for (int i = 0, j = 0; i < keys.length; j++) {
-                if (aff.partition(j) == 0)
-                    keys[i++] = j;
-            }
+        keys.forEach(putToCache);
+        partitionKeys(cache, 1, 5, 0).forEach(putToCache);
+        partitionKeys(cache, 2, 5, 0).forEach(putToCache);
 
-            for (int i : keys)
-                cache.put(i, new Value("str" + i, i * 100));
-
-            IgniteClosure<Cache.Entry<Integer, Value>, Integer> transformer =
-                new IgniteClosure<Cache.Entry<Integer, Value>, Integer>() {
-                    @Override public Integer apply(Cache.Entry<Integer, Value> e) {
-                        return e.getValue().idx;
-                    }
-                };
+        RunnableX check = () -> {
+            IgniteClosure<Cache.Entry<Integer, Value>, Integer> transformer = e -> e.getValue().idx;
 
             List<Integer> res = cache.query(new ScanQuery<Integer, Value>().setPartition(0), transformer).getAll();
 
@@ -197,10 +196,19 @@ public class GridCacheQueryTransformerSelfTest extends GridCommonAbstractTest {
 
             Collections.sort(res);
 
-            for (int i = 0; i < keys.length; i++)
-                assertEquals(keys[i] * 100, res.get(i).intValue());
+            for (int i = 0; i < keys.size(); i++)
+                assertEquals(keys.get(i) * 100, res.get(i).intValue());
+        };
+
+        try {
+            if (txMode == TestTransactionMode.NONE)
+                check.run();
+            else
+                txAction(grid(), check);
         }
         finally {
+            clearTransaction();
+
             cache.destroy();
         }
     }
@@ -210,12 +218,7 @@ public class GridCacheQueryTransformerSelfTest extends GridCommonAbstractTest {
      */
     @Test
     public void testGetObjectFieldFiltered() throws Exception {
-        IgniteCache<Integer, Value> cache = grid().createCache("test-cache");
-
-        try {
-            for (int i = 0; i < 50; i++)
-                cache.put(i, new Value("str" + i, i * 100));
-
+        doTestWithCache(i -> new Value("str" + i, i * 100), cache -> {
             IgniteBiPredicate<Integer, Value> filter = new IgniteBiPredicate<Integer, Value>() {
                 @Override public boolean apply(Integer k, Value v) {
                     return v.idx % 1000 == 0;
@@ -237,10 +240,7 @@ public class GridCacheQueryTransformerSelfTest extends GridCommonAbstractTest {
 
             for (int i = 0; i < 5; i++)
                 assertEquals(i * 1000, res.get(i).intValue());
-        }
-        finally {
-            cache.destroy();
-        }
+        });
     }
 
     /**
@@ -248,12 +248,7 @@ public class GridCacheQueryTransformerSelfTest extends GridCommonAbstractTest {
      */
     @Test
     public void testKeepBinary() throws Exception {
-        IgniteCache<Integer, Value> cache = grid().createCache("test-cache");
-
-        try {
-            for (int i = 0; i < 50; i++)
-                cache.put(i, new Value("str" + i, i * 100));
-
+        doTestWithCache(i -> new Value("str" + i, i * 100), cache -> {
             IgniteCache<Integer, BinaryObject> binaryCache = cache.withKeepBinary();
 
             IgniteClosure<Cache.Entry<Integer, BinaryObject>, Integer> transformer =
@@ -271,10 +266,7 @@ public class GridCacheQueryTransformerSelfTest extends GridCommonAbstractTest {
 
             for (int i = 0; i < 50; i++)
                 assertEquals(i * 100, res.get(i).intValue());
-        }
-        finally {
-            cache.destroy();
-        }
+        });
     }
 
     /**
@@ -282,12 +274,7 @@ public class GridCacheQueryTransformerSelfTest extends GridCommonAbstractTest {
      */
     @Test
     public void testKeepBinaryFiltered() throws Exception {
-        IgniteCache<Integer, Value> cache = grid().createCache("test-cache");
-
-        try {
-            for (int i = 0; i < 50; i++)
-                cache.put(i, new Value("str" + i, i * 100));
-
+        doTestWithCache(i -> new Value("str" + i, i * 100), cache -> {
             IgniteCache<Integer, BinaryObject> binaryCache = cache.withKeepBinary();
 
             IgniteBiPredicate<Integer, BinaryObject> filter = new IgniteBiPredicate<Integer, BinaryObject>() {
@@ -311,8 +298,54 @@ public class GridCacheQueryTransformerSelfTest extends GridCommonAbstractTest {
 
             for (int i = 0; i < 5; i++)
                 assertEquals(i * 1000, res.get(i).intValue());
+        });
+    }
+
+    /** @throws Exception If failed. */
+    @Test
+    public void testLocal() {
+        IgniteCache<Integer, Value> cache = createTestCache();
+
+        Affinity aff = affinity(cache);
+
+        BiConsumer<IgniteEx, Integer> putToCache = (grid, i) -> put(grid, cache, i, new Value("str" + i, i * 100));
+
+        AtomicInteger k = new AtomicInteger();
+
+        List<Integer> keys0 = new ArrayList<>(50);
+        List<Integer> keys1 = new ArrayList<>(50);
+
+        for (int i = 0; i < 50; i++) {
+            keys0.add(keyForNode(aff, k, grid(0).localNode()));
+            keys1.add(keyForNode(aff, k, grid(1).localNode()));
+        }
+
+        keys0.forEach(i -> putToCache.accept(grid(0), i));
+        keys1.forEach(i -> putToCache.accept(grid(1), i));
+
+        BiConsumer<IgniteEx, List<Integer>> check = (grid, keys) -> {
+            List<Integer> res = grid.cache("test-cache").query(
+                new ScanQuery<Integer, Value>().setLocal(true),
+                Cache.Entry::getKey
+            ).getAll();
+
+            assertEquals(50, res.size());
+            assertTrue(res.containsAll(keys));
+        };
+
+        try {
+            if (txMode == TestTransactionMode.NONE) {
+                check.accept(grid(0), keys0);
+                check.accept(grid(1), keys1);
+            }
+            else {
+                txAction(grid(0), () -> check.accept(grid(0), keys0));
+                txAction(grid(1), () -> check.accept(grid(1), keys1));
+            }
         }
         finally {
+            clearTransaction();
+
             cache.destroy();
         }
     }
@@ -321,13 +354,10 @@ public class GridCacheQueryTransformerSelfTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     @Test
-    public void testLocal() throws Exception {
-        IgniteCache<Integer, Value> cache = grid().createCache("test-cache");
+    public void testLocalCompute() throws Exception {
+        assumeTrue(txMode == TestTransactionMode.NONE);
 
-        try {
-            for (int i = 0; i < 50; i++)
-                cache.put(i, new Value("str" + i, i * 100));
-
+        doTestWithCache(i -> new Value("str" + i, i * 100), cache -> {
             Collection<List<Integer>> lists = grid().compute().broadcast(new IgniteCallable<List<Integer>>() {
                 @IgniteInstanceResource
                 private Ignite ignite;
@@ -353,10 +383,7 @@ public class GridCacheQueryTransformerSelfTest extends GridCommonAbstractTest {
 
             for (int i = 0; i < 50; i++)
                 assertEquals(i * 100, res.get(i).intValue());
-        }
-        finally {
-            cache.destroy();
-        }
+        });
     }
 
     /**
@@ -364,12 +391,9 @@ public class GridCacheQueryTransformerSelfTest extends GridCommonAbstractTest {
      */
     @Test
     public void testLocalFiltered() throws Exception {
-        IgniteCache<Integer, Value> cache = grid().createCache("test-cache");
+        assumeTrue(txMode == TestTransactionMode.NONE);
 
-        try {
-            for (int i = 0; i < 50; i++)
-                cache.put(i, new Value("str" + i, i * 100));
-
+        doTestWithCache(i -> new Value("str" + i, i * 100), cache -> {
             Collection<List<Integer>> lists = grid().compute().broadcast(new IgniteCallable<List<Integer>>() {
                 @IgniteInstanceResource
                 private Ignite ignite;
@@ -401,10 +425,7 @@ public class GridCacheQueryTransformerSelfTest extends GridCommonAbstractTest {
 
             for (int i = 0; i < 5; i++)
                 assertEquals(i * 1000, res.get(i).intValue());
-        }
-        finally {
-            cache.destroy();
-        }
+        });
     }
 
     /**
@@ -412,12 +433,9 @@ public class GridCacheQueryTransformerSelfTest extends GridCommonAbstractTest {
      */
     @Test
     public void testLocalKeepBinary() throws Exception {
-        IgniteCache<Integer, Value> cache = grid().createCache("test-cache");
+        assumeTrue(txMode == TestTransactionMode.NONE);
 
-        try {
-            for (int i = 0; i < 50; i++)
-                cache.put(i, new Value("str" + i, i * 100));
-
+        doTestWithCache(i -> new Value("str" + i, i * 100), cache -> {
             Collection<List<Integer>> lists = grid().compute().broadcast(new IgniteCallable<List<Integer>>() {
                 @IgniteInstanceResource
                 private Ignite ignite;
@@ -443,10 +461,7 @@ public class GridCacheQueryTransformerSelfTest extends GridCommonAbstractTest {
 
             for (int i = 0; i < 50; i++)
                 assertEquals(i * 100, res.get(i).intValue());
-        }
-        finally {
-            cache.destroy();
-        }
+        });
     }
 
     /**
@@ -454,12 +469,11 @@ public class GridCacheQueryTransformerSelfTest extends GridCommonAbstractTest {
      */
     @Test
     public void testLocalKeepBinaryFiltered() throws Exception {
-        IgniteCache<Integer, Value> cache = grid().createCache("test-cache");
+        assumeTrue(txMode == TestTransactionMode.NONE);
+
+        IgniteCache<Integer, Value> cache = createTestCache(i -> new Value("str" + i, i * 100));
 
         try {
-            for (int i = 0; i < 50; i++)
-                cache.put(i, new Value("str" + i, i * 100));
-
             Collection<List<Integer>> lists = grid().compute().broadcast(new IgniteCallable<List<Integer>>() {
                 @IgniteInstanceResource
                 private Ignite ignite;
@@ -502,7 +516,7 @@ public class GridCacheQueryTransformerSelfTest extends GridCommonAbstractTest {
      */
     @Test
     public void testUnsupported() throws Exception {
-        final IgniteCache<Integer, Integer> cache = grid().createCache("test-cache");
+        final IgniteCache<Integer, Integer> cache = createTestCache();
 
         final IgniteClosure<Cache.Entry<Integer, Integer>, Integer> transformer =
             new IgniteClosure<Cache.Entry<Integer, Integer>, Integer>() {
@@ -591,15 +605,10 @@ public class GridCacheQueryTransformerSelfTest extends GridCommonAbstractTest {
      */
     @Test
     public void testPageSize() throws Exception {
-        IgniteCache<Integer, Value> cache = grid().createCache("test-cache");
-
         int numEntries = 10_000;
         int pageSize = 3;
 
-        try {
-            for (int i = 0; i < numEntries; i++)
-                cache.put(i, new Value("str" + i, i));
-
+        doTestWithCache(i -> new Value("str" + i, i), numEntries, cache -> {
             IgniteClosure<Cache.Entry<Integer, Value>, Integer> transformer =
                 new IgniteClosure<Cache.Entry<Integer, Value>, Integer>() {
                     @Override public Integer apply(Cache.Entry<Integer, Value> e) {
@@ -618,10 +627,7 @@ public class GridCacheQueryTransformerSelfTest extends GridCommonAbstractTest {
 
             for (int i = 0; i < numEntries; i++)
                 assertEquals(i, res.get(i).intValue());
-        }
-        finally {
-            cache.destroy();
-        }
+        });
     }
 
     /**
@@ -629,12 +635,11 @@ public class GridCacheQueryTransformerSelfTest extends GridCommonAbstractTest {
      */
     @Test
     public void testLocalInjection() throws Exception {
-        IgniteCache<Integer, Value> cache = grid().createCache("test-cache");
+        assumeTrue(txMode == TestTransactionMode.NONE);
+
+        IgniteCache<Integer, Value> cache = createTestCache(i -> new Value("str" + i, i * 100));
 
         try {
-            for (int i = 0; i < 50; i++)
-                cache.put(i, new Value("str" + i, i * 100));
-
             Collection<List<Boolean>> lists = grid().compute().broadcast(new IgniteCallable<List<Boolean>>() {
                 @IgniteInstanceResource
                 private Ignite ignite;
@@ -665,6 +670,28 @@ public class GridCacheQueryTransformerSelfTest extends GridCommonAbstractTest {
         finally {
             cache.destroy();
         }
+    }
+
+    /** */
+    private <V> IgniteCache<Integer, V> createTestCache(IntFunction<V> val) {
+        return createTestCache(val, 50);
+    }
+
+    /** */
+    private <V> IgniteCache<Integer, V> createTestCache(IntFunction<V> val, int numEntries) {
+        IgniteCache<Integer, V> cache = createTestCache();
+
+        for (int i = 0; i < numEntries; i++)
+            put(grid(), cache, i, val.apply(i));
+
+        return cache;
+
+    }
+
+    /** */
+    private <V> IgniteCache<Integer, V> createTestCache() {
+        return grid().createCache(new CacheConfiguration<Integer, V>("test-cache")
+            .setAtomicityMode(atomicity()));
     }
 
     /**

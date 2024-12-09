@@ -988,7 +988,7 @@ public class GridMapQueryExecutor {
             GridQueryNextPageResponse msg = new GridQueryNextPageResponse(qr.queryRequestId(), segmentId, qry, page,
                 page == 0 ? res.rowCount() : -1,
                 res.columnCount(),
-                loc ? null : toMessages(rows, new ArrayList<>(res.columnCount()), res.columnCount()),
+                loc ? null : toMessages(rows, res.columnCount()),
                 loc ? rows : null,
                 last);
 

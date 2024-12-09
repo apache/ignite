@@ -16,6 +16,7 @@
  */
 package org.apache.ignite.internal.processors.query.calcite.schema;
 
+import java.util.Collections;
 import java.util.List;
 import org.apache.calcite.plan.RelOptCluster;
 import org.apache.calcite.plan.RelOptTable;
@@ -93,10 +94,10 @@ public class SystemViewIndexImpl implements IgniteIndex {
     }
 
     /** {@inheritDoc} */
-    @Override public long count(ExecutionContext<?> ectx, ColocationGroup grp, boolean notNull) {
+    @Override public <Row> Iterable<Row> count(ExecutionContext<Row> ectx, ColocationGroup grp, boolean notNull) {
         assert !notNull; // Collation is empty, cannot come here with "notNull" flag.
 
-        return tbl.descriptor().systemView().size();
+        return Collections.singletonList(ectx.rowHandler().factory(long.class).create(tbl.descriptor().systemView().size()));
     }
 
     /** {@inheritDoc} */

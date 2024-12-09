@@ -77,9 +77,9 @@ public class TcpDiscoveryMulticastIpFinderSelfTest
             ipFinder3.setMulticastGroup(ipFinder1.getMulticastGroup());
             ipFinder3.setMulticastPort(ipFinder1.getMulticastPort());
 
-            injectLogger(ipFinder1);
-            injectLogger(ipFinder2);
-            injectLogger(ipFinder3);
+            resources.inject(ipFinder1);
+            resources.inject(ipFinder2);
+            resources.inject(ipFinder3);
 
             ipFinder1.setLocalAddress(locAddr);
             ipFinder2.setLocalAddress(locAddr);

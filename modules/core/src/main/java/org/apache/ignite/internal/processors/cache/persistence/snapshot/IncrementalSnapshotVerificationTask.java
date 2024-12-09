@@ -52,7 +52,6 @@ import org.apache.ignite.internal.processors.cluster.BaselineTopology;
 import org.apache.ignite.internal.processors.task.GridInternal;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.CU;
-import org.apache.ignite.marshaller.MarshallerUtils;
 import org.apache.ignite.transactions.TransactionState;
 import org.jetbrains.annotations.Nullable;
 
@@ -382,7 +381,7 @@ public class IncrementalSnapshotVerificationTask extends AbstractSnapshotVerific
 
             return GridLocalConfigManager.readCachesData(
                     new File(snpDir, databaseRelativePath(folderName)),
-                    MarshallerUtils.jdkMarshaller(ignite.name()),
+                    ignite.context().marshallerContext().jdkMarshaller(),
                     ignite.configuration())
                 .values().stream()
                 .filter(data -> data.config().getAtomicityMode() == CacheAtomicityMode.TRANSACTIONAL)

@@ -19,7 +19,9 @@ package org.apache.ignite.internal;
 
 import org.junit.Test;
 
+import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNotEquals;
 import static org.junit.Assert.assertTrue;
 
 /**
@@ -73,5 +75,25 @@ public class ClassSetTest {
         assertTrue(clsSet.contains("org.apache.ignite.Ignite"));
         assertTrue(clsSet.contains("org.apache.ignite.Ignition"));
         assertTrue(clsSet.contains("org.apache.ignite.NotIgnite"));
+    }
+
+    /** */
+    @Test
+    public void testEquals() {
+        ClassSet firstSet = new ClassSet();
+
+        firstSet.add("org.apache.ignite.Ignite");
+        firstSet.add("org.apache.ignite.Ignition");
+
+        ClassSet secondSet = new ClassSet();
+
+        secondSet.add("org.apache.ignite.Ignite");
+        secondSet.add("org.apache.ignite.Ignition");
+
+        assertEquals(firstSet, secondSet);
+
+        secondSet.add("org.apache.ignite.*");
+
+        assertNotEquals(firstSet, secondSet);
     }
 }

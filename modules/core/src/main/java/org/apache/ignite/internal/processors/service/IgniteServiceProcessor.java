@@ -83,7 +83,6 @@ import org.apache.ignite.lang.IgniteFuture;
 import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.marshaller.Marshaller;
-import org.apache.ignite.marshaller.jdk.JdkMarshaller;
 import org.apache.ignite.plugin.security.SecurityException;
 import org.apache.ignite.plugin.security.SecurityPermission;
 import org.apache.ignite.services.Service;
@@ -204,7 +203,7 @@ public class IgniteServiceProcessor extends GridProcessorAdapter implements Igni
         new OomExceptionHandler(ctx));
 
     /** Marshaller for serialization/deserialization of service's instance. */
-    private final Marshaller marsh = new JdkMarshaller();
+    private final Marshaller marsh;
 
     /** Services deployment manager. */
     private volatile ServiceDeploymentManager depMgr = new ServiceDeploymentManager(ctx);
@@ -240,6 +239,8 @@ public class IgniteServiceProcessor extends GridProcessorAdapter implements Igni
      */
     public IgniteServiceProcessor(GridKernalContext ctx) {
         super(ctx);
+
+        marsh = ctx.marshallerContext().jdkMarshaller();
 
         ctx.systemView().registerView(SVCS_VIEW, SVCS_VIEW_DESC,
             new ServiceViewWalker(),
@@ -1578,6 +1579,16 @@ public class IgniteServiceProcessor extends GridProcessorAdapter implements Igni
 
         try {
             updateServicesMap(deployedServices, fullTops);
+
+            for (Map.Entry<IgniteUuid, Map<UUID, Integer>> e : fullTops.entrySet()) {
+                // Checking if there are successful deployments.
+                // If none, service not deployed and must be removed from descriptors.
+                if (e.getValue().entrySet().stream().allMatch(nodeTop -> nodeTop.getValue() == 0)) {
+                    removeFromServicesMap(registeredServices, registeredServicesByName, e.getKey());
+
+                    removeFromServicesMap(deployedServices, deployedServicesByName, e.getKey());
+                }
+            }
         }
         finally {
             leaveBusy();
@@ -1631,11 +1642,9 @@ public class IgniteServiceProcessor extends GridProcessorAdapter implements Igni
             });
 
             depActions.servicesToUndeploy().forEach((srvcId, desc) -> {
-                ServiceInfo rmv = deployedServices.remove(srvcId);
+                ServiceInfo rmv = removeFromServicesMap(deployedServices, deployedServicesByName, srvcId);
 
-                assert rmv != null && rmv == desc : "Concurrent map modification.";
-
-                deployedServicesByName.remove(rmv.name());
+                assert rmv == desc : "Concurrent map modification.";
             });
         }
         finally {
@@ -1862,8 +1871,7 @@ public class IgniteServiceProcessor extends GridProcessorAdapter implements Igni
                 }
             }
             else if (req instanceof ServiceUndeploymentRequest) {
-                ServiceInfo rmv = registeredServices.remove(reqSrvcId);
-                registeredServicesByName.remove(oldDesc.name());
+                ServiceInfo rmv = removeFromServicesMap(registeredServices, registeredServicesByName, reqSrvcId);
 
                 assert oldDesc == rmv : "Concurrent map modification.";
 
@@ -2012,6 +2020,29 @@ public class IgniteServiceProcessor extends GridProcessorAdapter implements Igni
             if (desc != null)
                 desc.topologySnapshot(top);
         });
+    }
+
+    /**
+     * Remove service record from service map and corresponding services by name map.
+     *
+     * @param srvcsMap Services map.
+     * @param srvcsByNameMap Services by name map.
+     * @param srvcId Service id.
+     *
+     * @return Removed service descriptor.
+     * */
+    private ServiceInfo removeFromServicesMap(
+        Map<IgniteUuid, ServiceInfo> srvcsMap,
+        Map<String, ServiceInfo> srvcsByNameMap,
+        IgniteUuid srvcId
+    ) {
+        ServiceInfo desc = srvcsMap.remove(srvcId);
+
+        assert desc != null : "Concurrent map modification.";
+
+        srvcsByNameMap.remove(desc.name());
+
+        return desc;
     }
 
     /**

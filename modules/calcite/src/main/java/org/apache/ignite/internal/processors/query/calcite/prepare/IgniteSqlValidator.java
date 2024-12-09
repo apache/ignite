@@ -55,7 +55,6 @@ import org.apache.calcite.sql.type.SqlOperandTypeChecker;
 import org.apache.calcite.sql.type.SqlOperandTypeInference;
 import org.apache.calcite.sql.type.SqlTypeFamily;
 import org.apache.calcite.sql.type.SqlTypeName;
-import org.apache.calcite.sql.type.SqlTypeUtil;
 import org.apache.calcite.sql.validate.SelectScope;
 import org.apache.calcite.sql.validate.SqlQualified;
 import org.apache.calcite.sql.validate.SqlValidator;
@@ -333,7 +332,12 @@ public class IgniteSqlValidator extends SqlValidatorImpl {
             }
         }
 
-        return super.performUnconditionalRewrites(node, underFrom);
+        node = super.performUnconditionalRewrites(node, underFrom);
+
+        if (config().callRewrite() && node instanceof SqlCall)
+            node = IgniteSqlCallRewriteTable.INSTANCE.rewrite(this, (SqlCall)node);
+
+        return node;
     }
 
     /** Rewrites JOIN clause if required */
@@ -430,6 +434,9 @@ public class IgniteSqlValidator extends SqlValidatorImpl {
             case GROUP_CONCAT:
             case LISTAGG:
             case STRING_AGG:
+            case BIT_AND:
+            case BIT_OR:
+            case BIT_XOR:
                 return;
             default:
                 throw newValidationError(call,
@@ -600,23 +607,12 @@ public class IgniteSqlValidator extends SqlValidatorImpl {
 
         RelDataType valType = typeFactory().toSql(typeFactory().createType(val.getClass()));
 
-        if (SqlTypeUtil.equalSansNullability(valType, inferredType))
-            return false;
-
         assert !unknownType.equals(valType);
 
-        if (valType.getFamily().equals(inferredType.getFamily())) {
-            RelDataType leastRestrictive = typeFactory().leastRestrictive(F.asList(inferredType, valType));
-
-            assert leastRestrictive != null;
-
-            if (inferredType == leastRestrictive)
-                return false;
-        }
-        else if (!unknownType.equals(inferredType) && SqlTypeUtil.canCastFrom(valType, inferredType, true))
-            return false;
-
-        setValidatedNodeType(node, valType);
+        if (unknownType.equals(inferredType) || valType.getFamily().equals(inferredType.getFamily()))
+            setValidatedNodeType(node, valType);
+        else
+            setValidatedNodeType(node, inferredType);
 
         return true;
     }

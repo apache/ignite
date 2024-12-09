@@ -18,6 +18,7 @@
 package org.apache.ignite.testframework;
 
 import java.util.Collection;
+import java.util.Objects;
 import java.util.concurrent.CopyOnWriteArraySet;
 import java.util.function.Consumer;
 import org.apache.ignite.IgniteLogger;
@@ -207,6 +208,13 @@ public class ListeningTestLogger implements IgniteLogger {
     /** {@inheritDoc} */
     @Override public String fileName() {
         return null;
+    }
+
+    /**
+     * @return String representation of original logger.
+     */
+    @Override public String toString() {
+        return Objects.toString(echo);
     }
 
     /**

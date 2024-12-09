@@ -53,7 +53,7 @@ public class UnsortedReducer extends UnsortedBaseReducer {
             }
 
             @Override public Row next() {
-                return H2PlainRowFactory.create(iter.next());
+                return H2PlainRowFactory.create(colCnt, iter.next());
             }
 
             @Override public void remove() {

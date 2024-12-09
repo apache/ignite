@@ -17,8 +17,11 @@
 
 package org.apache.ignite.internal.processors.query.h2.opt;
 
+import java.util.Collection;
+import org.apache.ignite.internal.processors.query.h2.twostep.msg.GridH2ValueMessageFactory;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
+import org.h2.result.ResultInterface;
 import org.h2.value.Value;
 
 /**
@@ -26,27 +29,36 @@ import org.h2.value.Value;
  */
 public class H2PlainRow extends H2Row {
     /** */
+    private final int colCnt;
+
+    /** */
     @GridToStringInclude
-    private Value[] vals;
+    private final Value[] vals;
 
     /**
+     * @param colCnt Column count. H2 engine can add extra columns at the end of result set.
      * @param vals Values.
+     * @see ResultInterface#getVisibleColumnCount()
+     * @see GridH2ValueMessageFactory#toMessages(Collection, int)
+     * @see ResultInterface#currentRow()
      */
     @SuppressWarnings("AssignmentOrReturnOfFieldWithMutableType")
-    public H2PlainRow(Value[] vals) {
+    public H2PlainRow(int colCnt, Value[] vals) {
+        this.colCnt = colCnt;
         this.vals = vals;
     }
 
     /**
-     * @param len Length.
+     * @param colCnt Length.
      */
-    public H2PlainRow(int len) {
-        vals = new Value[len];
+    public H2PlainRow(int colCnt) {
+        this.colCnt = colCnt;
+        vals = new Value[colCnt];
     }
 
     /** {@inheritDoc} */
     @Override public int getColumnCount() {
-        return vals.length;
+        return colCnt;
     }
 
     /** {@inheritDoc} */

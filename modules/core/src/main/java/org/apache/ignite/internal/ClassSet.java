@@ -20,6 +20,7 @@ package org.apache.ignite.internal;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Objects;
 
 /**
  * Set of classes represented as prefix tree.
@@ -99,9 +100,45 @@ public class ClassSet {
         return false;
     }
 
+    /** {@inheritDoc} */
+    @Override public boolean equals(Object o) {
+        if (this == o)
+            return true;
+
+        if (!(o instanceof ClassSet))
+            return false;
+
+        ClassSet other = (ClassSet)o;
+
+        return Objects.equals(root, other.root);
+    }
+
+    /** {@inheritDoc} */
+    @Override public int hashCode() {
+        return Objects.hashCode(root);
+    }
+
     /** */
     private static class Node {
         /** Children. */
         private Map<String, Node> children;
+
+        /** {@inheritDoc} */
+        @Override public boolean equals(Object o) {
+            if (this == o)
+                return true;
+
+            if (!(o instanceof Node))
+                return false;
+
+            Node other = (Node)o;
+
+            return Objects.equals(children, other.children);
+        }
+
+        /** {@inheritDoc} */
+        @Override public int hashCode() {
+            return Objects.hashCode(children);
+        }
     }
 }
