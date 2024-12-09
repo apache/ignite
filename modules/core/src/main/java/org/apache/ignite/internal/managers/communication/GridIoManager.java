@@ -128,6 +128,7 @@ import org.apache.ignite.marshaller.Marshaller;
 import org.apache.ignite.metric.MetricRegistry;
 import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.plugin.extensions.communication.MessageFactory;
+import org.apache.ignite.plugin.extensions.communication.MessageFactoryProvider;
 import org.apache.ignite.plugin.extensions.communication.MessageFormatter;
 import org.apache.ignite.plugin.extensions.communication.MessageReader;
 import org.apache.ignite.plugin.extensions.communication.MessageWriter;
@@ -257,7 +258,7 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
     public static final String RCVD_BYTES_CNT = "ReceivedBytesCount";
 
     /** Empty array of message factories. */
-    public static final MessageFactory[] EMPTY = {};
+    public static final MessageFactoryProvider[] EMPTY = {};
 
     /** Max closed topics to store. */
     public static final int MAX_CLOSED_TOPICS = 10240;
@@ -447,24 +448,24 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
             };
         }
 
-        MessageFactory[] msgs = ctx.plugins().extensions(MessageFactory.class);
+        MessageFactoryProvider[] msgs = ctx.plugins().extensions(MessageFactoryProvider.class);
 
         if (msgs == null)
             msgs = EMPTY;
 
-        List<MessageFactory> compMsgs = new ArrayList<>();
+        List<MessageFactoryProvider> compMsgs = new ArrayList<>();
 
         compMsgs.add(new GridIoMessageFactory());
 
         for (IgniteComponentType compType : IgniteComponentType.values()) {
-            MessageFactory f = compType.messageFactory();
+            MessageFactoryProvider f = compType.messageFactory();
 
             if (f != null)
                 compMsgs.add(f);
         }
 
         if (!compMsgs.isEmpty())
-            msgs = F.concat(msgs, compMsgs.toArray(new MessageFactory[compMsgs.size()]));
+            msgs = F.concat(msgs, compMsgs.toArray(new MessageFactoryProvider[compMsgs.size()]));
 
         msgFactory = new IgniteMessageFactoryImpl(msgs);
 

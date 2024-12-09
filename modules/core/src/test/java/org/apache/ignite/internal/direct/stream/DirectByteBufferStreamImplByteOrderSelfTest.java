@@ -22,6 +22,7 @@ import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Random;
+import java.util.function.Supplier;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.internal.util.GridUnsafe;
@@ -83,6 +84,10 @@ public class DirectByteBufferStreamImplByteOrderSelfTest {
      */
     private static DirectByteBufferStream createStream(ByteBuffer buff) {
         DirectByteBufferStream stream = new DirectByteBufferStream(new MessageFactory() {
+            @Override public void register(short directType, Supplier<Message> supplier) throws IgniteException {
+                throw new UnsupportedOperationException();
+            }
+
             @Nullable @Override public Message create(short type) {
                 return null;
             }
