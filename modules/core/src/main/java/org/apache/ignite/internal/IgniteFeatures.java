@@ -47,9 +47,6 @@ public enum IgniteFeatures {
     /** Support of splitted cache configurations to avoid broken deserialization on non-affinity nodes. */
     SPLITTED_CACHE_CONFIGURATIONS(5),
 
-    /** Support of suspend/resume operations for pessimistic transactions. */
-    SUSPEND_RESUME_PESSIMISTIC_TX(10),
-
     /** Distributed metastorage. */
     DISTRIBUTED_METASTORAGE(11),
 
