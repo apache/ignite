@@ -369,16 +369,9 @@ public class DmlUtils {
             if (row.size() != 2)
                 continue;
 
-            Object key = row.get(0);
-
-            ClusterNode node = snd.primaryNodeByKey(key);
-
-            IgniteInClosure<MutableEntry<Object, Object>> rmvC =
-                DmlStatementsProcessor.getRemoveClosure(node, key);
-
             snd.add(
-                key,
-                new DmlStatementsProcessor.ModifyingEntryProcessor(row.get(1), rmvC),
+                row.get(0),
+                new DmlStatementsProcessor.ModifyingEntryProcessor(row.get(1), DmlStatementsProcessor.RMV),
                 0
             );
         }
