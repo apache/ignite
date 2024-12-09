@@ -118,6 +118,7 @@ public class LogicalRelImplementorTest extends GridCommonAbstractTest {
             qctx,
             null,
             null,
+            null,
             nodeId,
             nodeId,
             null,

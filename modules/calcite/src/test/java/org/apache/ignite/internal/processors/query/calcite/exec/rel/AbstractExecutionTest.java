@@ -298,6 +298,7 @@ public class AbstractExecutionTest extends GridCommonAbstractTest {
                 .logger(log)
                 .build(),
             taskExecutor(nodeId),
+            null,
             qryId,
             nodeId,
             nodeId,

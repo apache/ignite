@@ -348,6 +348,7 @@ public class ExchangeServiceImpl extends AbstractService implements ExchangeServ
                 .logger(log)
                 .build(),
             taskExecutor(),
+            null,
             qryId,
             locaNodeId,
             nodeId,

@@ -115,6 +115,7 @@ public class RuntimeSortedIndexTest extends GridCommonAbstractTest {
                 null,
                 null,
                 null,
+                null,
                 ArrayRowHandler.INSTANCE,
                 NoOpMemoryTracker.INSTANCE,
                 NoOpIoTracker.INSTANCE,

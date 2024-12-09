@@ -74,6 +74,7 @@ import org.apache.ignite.internal.processors.query.calcite.exec.ExchangeService;
 import org.apache.ignite.internal.processors.query.calcite.exec.ExchangeServiceImpl;
 import org.apache.ignite.internal.processors.query.calcite.exec.ExecutionService;
 import org.apache.ignite.internal.processors.query.calcite.exec.ExecutionServiceImpl;
+import org.apache.ignite.internal.processors.query.calcite.exec.InjectResourcesService;
 import org.apache.ignite.internal.processors.query.calcite.exec.MailboxRegistry;
 import org.apache.ignite.internal.processors.query.calcite.exec.MailboxRegistryImpl;
 import org.apache.ignite.internal.processors.query.calcite.exec.QueryTaskExecutor;
@@ -233,6 +234,9 @@ public class CalciteQueryProcessor extends GridProcessorAdapter implements Query
     private final DistributedCalciteConfiguration distrCfg;
 
     /** */
+    private final InjectResourcesService injectSvc;
+
+    /** */
     private volatile boolean started;
 
     /**
@@ -255,6 +259,7 @@ public class CalciteQueryProcessor extends GridProcessorAdapter implements Query
         prepareSvc = new PrepareServiceImpl(ctx);
         timeoutSvc = new TimeoutServiceImpl(ctx);
         qryReg = new QueryRegistryImpl(ctx);
+        injectSvc = new InjectResourcesService(ctx);
 
         QueryEngineConfiguration[] qryEnginesCfg = ctx.config().getSqlConfiguration().getQueryEnginesConfiguration();
 
@@ -756,5 +761,10 @@ public class CalciteQueryProcessor extends GridProcessorAdapter implements Query
     /** */
     public DistributedCalciteConfiguration distributedConfiguration() {
         return distrCfg;
+    }
+
+    /** */
+    public InjectResourcesService injectService() {
+        return injectSvc;
     }
 }

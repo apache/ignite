@@ -98,7 +98,10 @@ public enum IgniteMethod {
     IS_NOT_DISTINCT_FROM(Objects.class, "equals", Object.class, Object.class),
 
     /** See {@link IgniteSqlFunctions#skipFirstArgument(Object, Object)}. **/
-    SKIP_FIRST_ARGUMENT(IgniteSqlFunctions.class, "skipFirstArgument", Object.class, Object.class);
+    SKIP_FIRST_ARGUMENT(IgniteSqlFunctions.class, "skipFirstArgument", Object.class, Object.class),
+
+    /** See {@link ExecutionContext#udfInstance(String)}. */
+    UDF_INSTANCE(ExecutionContext.class, "udfInstance", String.class);
 
     /** */
     private final Method method;
