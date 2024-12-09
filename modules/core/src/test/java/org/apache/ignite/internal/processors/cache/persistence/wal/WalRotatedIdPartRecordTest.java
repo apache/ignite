@@ -85,38 +85,9 @@ public class WalRotatedIdPartRecordTest extends GridCommonAbstractTest {
                     return null;
                 }
             });
-
-            cfg.setMetricsLogFrequency(1000);
         }
 
         return cfg;
-    }
-
-    /** WAL manager that signals once meet the RotatedIdPartRecord with rotatedIdPart more than 127. */
-    private static class TestFileWriteAheadLogManager extends FileWriteAheadLogManager {
-        /** */
-        private final AtomicBoolean stop;
-
-        /** Constructor. */
-        public TestFileWriteAheadLogManager(GridKernalContext ctx, AtomicBoolean stop) {
-            super(ctx);
-
-            this.stop = stop;
-        }
-
-        /** {@inheritDoc} */
-        @Override public WALPointer log(WALRecord rec) throws IgniteCheckedException {
-            WALPointer res = super.log(rec);
-
-            if (rec instanceof RotatedIdPartRecord) {
-                byte rotatedIdPart = ((RotatedIdPartRecord)rec).rotatedIdPart();
-
-                if (Byte.toUnsignedInt(rotatedIdPart) > 127)
-                    stop.set(true);
-            }
-
-            return res;
-        }
     }
 
     /** {@inheritDoc} */
@@ -156,12 +127,12 @@ public class WalRotatedIdPartRecordTest extends GridCommonAbstractTest {
         }, "touch");
 
         try {
-            touchFut.get(120, TimeUnit.SECONDS);
+            touchFut.get(getTestTimeout(), TimeUnit.MILLISECONDS);
         }
         catch (Exception ignored) {
             touchFut.cancel();
 
-            fail("rotatedIdPart doesn't become > 127 in 120 seconds");
+            fail(String.format("rotatedIdPart doesn't become > 127 in %d millisecs", getTestTimeout()));
         }
         finally {
             // Turn off excessive logging of the "Failed to update TTL: class o.a.i.i.NodeStoppingException"
@@ -180,5 +151,32 @@ public class WalRotatedIdPartRecordTest extends GridCommonAbstractTest {
     /** */
     private void disableCheckpoints(IgniteEx ignite) throws IgniteCheckedException {
         ((GridCacheDatabaseSharedManager)ignite.context().cache().context().database()).enableCheckpoints(false).get();
+    }
+
+    /** WAL manager that signals once meet the RotatedIdPartRecord with rotatedIdPart more than 127. */
+    private static class TestFileWriteAheadLogManager extends FileWriteAheadLogManager {
+        /** */
+        private final AtomicBoolean stop;
+
+        /** Constructor. */
+        public TestFileWriteAheadLogManager(GridKernalContext ctx, AtomicBoolean stop) {
+            super(ctx);
+
+            this.stop = stop;
+        }
+
+        /** {@inheritDoc} */
+        @Override public WALPointer log(WALRecord rec) throws IgniteCheckedException {
+            WALPointer res = super.log(rec);
+
+            if (rec instanceof RotatedIdPartRecord) {
+                byte rotatedIdPart = ((RotatedIdPartRecord)rec).rotatedIdPart();
+
+                if (Byte.toUnsignedInt(rotatedIdPart) > 127)
+                    stop.set(true);
+            }
+
+            return res;
+        }
     }
 }
