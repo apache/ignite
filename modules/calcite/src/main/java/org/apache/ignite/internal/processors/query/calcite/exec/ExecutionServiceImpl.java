@@ -196,6 +196,9 @@ public class ExecutionServiceImpl<Row> extends AbstractService implements Execut
     /** */
     private MemoryTracker memoryTracker;
 
+    /** */
+    private InjectResourcesService injectSvc;
+
     /**
      * @param ctx Kernal.
      */
@@ -419,6 +422,11 @@ public class ExecutionServiceImpl<Row> extends AbstractService implements Execut
         return memoryTracker;
     }
 
+    /** */
+    public void injectService(InjectResourcesService injectSvc) {
+        this.injectSvc = injectSvc;
+    }
+
     /** {@inheritDoc} */
     @Override public void onStart(GridKernalContext ctx) {
         this.ctx = ctx;
@@ -443,6 +451,7 @@ public class ExecutionServiceImpl<Row> extends AbstractService implements Execut
         exchangeService(proc.exchangeService());
         queryRegistry(proc.queryRegistry());
         prepareService(proc.prepareService());
+        injectService(proc.injectService());
 
         ddlCmdHnd = new DdlCommandHandler(ctx.query(), ctx.cache(), ctx.security(), () -> schemaHolder().schema(null));
 
@@ -615,6 +624,7 @@ public class ExecutionServiceImpl<Row> extends AbstractService implements Execut
         ExecutionContext<Row> ectx = new ExecutionContext<>(
             qry.context(),
             taskExecutor(),
+            injectSvc,
             qry.id(),
             locNodeId,
             locNodeId,
@@ -856,7 +866,7 @@ public class ExecutionServiceImpl<Row> extends AbstractService implements Execut
             );
 
             final BaseQueryContext qctx = createQueryContext(
-                Contexts.of(ctx.resource(), msg.appAttrs() == null ? null : new SessionContextImpl(msg.appAttrs())),
+                msg.appAttrs() == null ? Contexts.empty() : Contexts.of(new SessionContextImpl(msg.appAttrs())),
                 msg.schema());
 
             QueryPlan qryPlan = queryPlanCache().queryPlan(
@@ -869,6 +879,7 @@ public class ExecutionServiceImpl<Row> extends AbstractService implements Execut
             ExecutionContext<Row> ectx = new ExecutionContext<>(
                 qctx,
                 taskExecutor(),
+                injectSvc,
                 msg.queryId(),
                 locNodeId,
                 nodeId,

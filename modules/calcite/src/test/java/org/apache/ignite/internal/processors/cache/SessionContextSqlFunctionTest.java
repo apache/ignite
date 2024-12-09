@@ -52,10 +52,10 @@ public class SessionContextSqlFunctionTest extends GridCommonAbstractTest {
 
     /** */
     @Parameterized.Parameter(1)
-    public boolean clnNode;
+    public boolean isClnNode;
 
     /** */
-    @Parameterized.Parameters(name = "mode={0}, clnNode={1}")
+    @Parameterized.Parameters(name = "mode={0}, isClnNode={1}")
     public static List<Object[]> parameters() {
         List<Object[]> params = new ArrayList<>();
 
@@ -86,10 +86,10 @@ public class SessionContextSqlFunctionTest extends GridCommonAbstractTest {
     @Override protected void beforeTest() throws Exception {
         ign = startGrids(3);
 
-        if (clnNode)
+        if (isClnNode)
             ign = startClientGrid(3);
 
-        ignQuery(ign, "create table PUBLIC.MYTABLE(id int primary key, sessionId varchar);");
+        query(ign, "create table PUBLIC.MYTABLE(id int primary key, sessionId varchar);");
     }
 
     /** {@inheritDoc} */
@@ -103,13 +103,13 @@ public class SessionContextSqlFunctionTest extends GridCommonAbstractTest {
         for (int i = 0; i < 100; i++) {
             String sesId = i % 2 == 0 ? "1" : "2";
 
-            ignQuery(ign, "insert into PUBLIC.MYTABLE(id, sessionId) values (?, ?);", i, sesId);
+            query(ign, "insert into PUBLIC.MYTABLE(id, sessionId) values (?, ?);", i, sesId);
         }
 
         for (String sesId: F.asList("1", "2")) {
             Ignite ignApp = ign.withApplicationAttributes(F.asMap(SESSION_ID, sesId));
 
-            List<List<?>> rows = ignQuery(ignApp, "select * from PUBLIC.MYTABLE where sessionId = sessionId();");
+            List<List<?>> rows = query(ignApp, "select * from PUBLIC.MYTABLE where sessionId = sessionId();");
 
             assertEquals(50, rows.size());
 
@@ -129,14 +129,14 @@ public class SessionContextSqlFunctionTest extends GridCommonAbstractTest {
 
             Ignite ignApp = ign.withApplicationAttributes(F.asMap(SESSION_ID, sesId));
 
-            ignQuery(ignApp, "insert into PUBLIC.MYTABLE(id, sessionId) values (" + i + ", sessionId());");
+            query(ignApp, "insert into PUBLIC.MYTABLE(id, sessionId) values (" + i + ", sessionId());");
         }
 
-        List<List<?>> res = ignQuery(ign, "select * from PUBLIC.MYTABLE where sessionId = 1");
+        List<List<?>> res = query(ign, "select * from PUBLIC.MYTABLE where sessionId = 1");
 
         assertEquals(50, res.size());
 
-        res = ignQuery(ign, "select * from PUBLIC.MYTABLE where sessionId = 2");
+        res = query(ign, "select * from PUBLIC.MYTABLE where sessionId = 2");
 
         assertEquals(50, res.size());
     }
@@ -147,14 +147,14 @@ public class SessionContextSqlFunctionTest extends GridCommonAbstractTest {
         for (int i = 0; i < 100; i++) {
             String sesId = i % 2 == 0 ? "1" : "2";
 
-            ignQuery(ign, "insert into PUBLIC.MYTABLE(id, sessionId) values (?, ?);", i, sesId);
+            query(ign, "insert into PUBLIC.MYTABLE(id, sessionId) values (?, ?);", i, sesId);
         }
 
         String sesId = "1";
 
         Ignite ignApp = ign.withApplicationAttributes(F.asMap(SESSION_ID, sesId));
 
-        List<List<?>> rows = ignQuery(ignApp, "select * from PUBLIC.MYTABLE where sessionId = (select sessionId());");
+        List<List<?>> rows = query(ignApp, "select * from PUBLIC.MYTABLE where sessionId = (select sessionId());");
 
         int size = 0;
 
@@ -179,14 +179,14 @@ public class SessionContextSqlFunctionTest extends GridCommonAbstractTest {
 
             ignApp = ignApp.withApplicationAttributes(F.asMap(SESSION_ID, sesId));
 
-            ignQuery(ignApp, "insert into PUBLIC.MYTABLE(id, sessionId) values (" + i + ", sessionId());");
+            query(ignApp, "insert into PUBLIC.MYTABLE(id, sessionId) values (" + i + ", sessionId());");
         }
 
-        List<List<?>> res = ignQuery(ign, "select * from PUBLIC.MYTABLE where sessionId = 1");
+        List<List<?>> res = query(ign, "select * from PUBLIC.MYTABLE where sessionId = 1");
 
         assertEquals(50, res.size());
 
-        res = ignQuery(ign, "select * from PUBLIC.MYTABLE where sessionId = 2");
+        res = query(ign, "select * from PUBLIC.MYTABLE where sessionId = 2");
 
         assertEquals(50, res.size());
     }
@@ -200,18 +200,18 @@ public class SessionContextSqlFunctionTest extends GridCommonAbstractTest {
 
         IgniteInternalFuture<?> insertFut = multithreadedAsync(() -> {
             for (int i = 0; i < 100; i++)
-                ignQuery(ignApp, "insert into PUBLIC.MYTABLE(id, sessionId) values (" + i + ", sessionId());");
+                query(ignApp, "insert into PUBLIC.MYTABLE(id, sessionId) values (" + i + ", sessionId());");
         }, 1, "insert");
 
         insertFut.get(getTestTimeout());
 
-        List<List<?>> res = ignQuery(ign, "select * from PUBLIC.MYTABLE where sessionId = " + sesId);
+        List<List<?>> res = query(ign, "select * from PUBLIC.MYTABLE where sessionId = " + sesId);
 
         assertEquals(100, res.size());
     }
 
     /** */
-    private List<List<?>> ignQuery(Ignite ign, String sql, Object... args) {
+    private List<List<?>> query(Ignite ign, String sql, Object... args) {
         return ign.cache(DEFAULT_CACHE_NAME).query(new SqlFieldsQuery(sql).setArgs(args)).getAll();
     }
 
