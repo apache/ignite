@@ -44,29 +44,8 @@ public enum IgniteFeatures {
     /** Data paket compression. */
     DATA_PACKET_COMPRESSION(3),
 
-    /** Support of different rebalance size for nodes.  */
-    DIFFERENT_REBALANCE_POOL_SIZE(4),
-
     /** Support of splitted cache configurations to avoid broken deserialization on non-affinity nodes. */
     SPLITTED_CACHE_CONFIGURATIONS(5),
-
-    /**
-     * Support of providing thread dump of thread that started transaction. Used for dumping
-     * long running transactions.
-     */
-    TRANSACTION_OWNER_THREAD_DUMP_PROVIDING(6),
-
-    /** Displaying versbose transaction information: --info option of --tx control script command. */
-    TX_INFO_COMMAND(7),
-
-    /** Command which allow to detect and cleanup garbage which could left after destroying caches in shared groups */
-    FIND_AND_DELETE_GARBAGE_COMMAND(8),
-
-    /** Support of cluster read-only mode. */
-    CLUSTER_READ_ONLY_MODE(9),
-
-    /** Support of suspend/resume operations for pessimistic transactions. */
-    SUSPEND_RESUME_PESSIMISTIC_TX(10),
 
     /** Distributed metastorage. */
     DISTRIBUTED_METASTORAGE(11),
@@ -76,9 +55,6 @@ public enum IgniteFeatures {
 
     /** Replacing TcpDiscoveryNode field with nodeId field in discovery messages. */
     TCP_DISCOVERY_MESSAGE_NODE_COMPACT_REPRESENTATION(14),
-
-    /** LRT system and user time dump settings.  */
-    LRT_SYSTEM_USER_TIME_DUMP_SETTINGS(18),
 
     /** Partition Map Exchange-free switch on baseline node left at fully rebalanced cluster.  */
     PME_FREE_SWITCH(19),
@@ -99,32 +75,11 @@ public enum IgniteFeatures {
     /** Persistence caches can be snapshot.  */
     PERSISTENCE_CACHE_SNAPSHOT(23),
 
-    /** Tracing. */
-    TRACING(26),
-
-    /** Distributed change timeout for dump long operations. */
-    DISTRIBUTED_CHANGE_LONG_OPERATIONS_DUMP_TIMEOUT(30),
-
-    /** New region for volatile data. */
-    VOLATILE_DATA_STRUCTURES_REGION(33),
-
-    /** Check secondary indexes inline size on join/by control utility request. */
-    CHECK_INDEX_INLINE_SIZES(36),
-
-    /** Distributed propagation of tx collisions dump interval. */
-    DISTRIBUTED_TX_COLLISIONS_DUMP(37),
-
     /** Remove metadata from cluster for specified type. */
     REMOVE_METADATA(39),
 
     /** Support policy of shutdown. */
     SHUTDOWN_POLICY(40),
-
-    /** Force rebuild, list or request indexes rebuild status from control script. */
-    INDEXES_MANIPULATIONS_FROM_CONTROL_SCRIPT(42),
-
-    /** Pk index keys are applied in correct order. */
-    SPECIFIED_SEQ_PK_KEYS(45),
 
     /** Compatibility support for new fields which are configured split. */
     SPLITTED_CACHE_CONFIGURATIONS_V2(46),
