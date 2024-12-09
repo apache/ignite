@@ -200,8 +200,6 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
 
         ((TcpCommunicationSpi)cfg.getCommunicationSpi()).setSharedMemoryPort(-1);
 
-        ((TcpDiscoverySpi)cfg.getDiscoverySpi()).setForceServerMode(true);
-
         cfg.setIncludeEventTypes(
             EVT_CACHE_OBJECT_READ,
             EVT_CACHE_OBJECT_LOCKED,

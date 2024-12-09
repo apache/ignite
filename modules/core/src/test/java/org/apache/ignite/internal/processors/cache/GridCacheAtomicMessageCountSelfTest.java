@@ -34,7 +34,6 @@ import org.apache.ignite.lang.IgniteInClosure;
 import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.spi.IgniteSpiException;
 import org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi;
-import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
 
@@ -55,16 +54,13 @@ public class GridCacheAtomicMessageCountSelfTest extends GridCommonAbstractTest 
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
-        ((TcpDiscoverySpi)cfg.getDiscoverySpi()).setForceServerMode(true);
-
         CacheConfiguration cCfg = new CacheConfiguration(DEFAULT_CACHE_NAME);
 
         cCfg.setCacheMode(PARTITIONED);
         cCfg.setBackups(1);
         cCfg.setWriteSynchronizationMode(FULL_SYNC);
 
-        if (idx == 0 && client)
-            cfg.setClientMode(true);
+        cfg.setClientMode(idx == 1 && client);
 
         idx++;
 
@@ -100,12 +96,12 @@ public class GridCacheAtomicMessageCountSelfTest extends GridCommonAbstractTest 
 
         startGrids(4);
 
-        ignite(0).cache(DEFAULT_CACHE_NAME);
+        ignite(1).cache(DEFAULT_CACHE_NAME);
 
         try {
             awaitPartitionMapExchange();
 
-            TestCommunicationSpi commSpi = (TestCommunicationSpi)grid(0).configuration().getCommunicationSpi();
+            TestCommunicationSpi commSpi = (TestCommunicationSpi)grid(1).configuration().getCommunicationSpi();
 
             commSpi.registerMessage(GridNearAtomicSingleUpdateRequest.class);
             commSpi.registerMessage(GridNearAtomicFullUpdateRequest.class);
@@ -119,23 +115,26 @@ public class GridCacheAtomicMessageCountSelfTest extends GridCommonAbstractTest 
             int expDhtCnt = 0;
 
             for (int i = 0; i < putCnt; i++) {
-                ClusterNode locNode = grid(0).localNode();
+                ClusterNode locNode = grid(1).localNode();
 
-                Affinity<Object> aff = ignite(0).affinity(DEFAULT_CACHE_NAME);
+                Affinity<Object> aff = ignite(1).affinity(DEFAULT_CACHE_NAME);
 
                 if (aff.isPrimary(locNode, i))
                     expDhtCnt++;
                 else
                     expNearSingleCnt++;
 
-                jcache(0).put(i, i);
+                jcache(1).put(i, i);
             }
 
             assertEquals(expNearCnt, commSpi.messageCount(GridNearAtomicFullUpdateRequest.class));
             assertEquals(expNearSingleCnt, commSpi.messageCount(GridNearAtomicSingleUpdateRequest.class));
             assertEquals(expDhtCnt, commSpi.messageCount(GridDhtAtomicSingleUpdateRequest.class));
 
-            for (int i = 1; i < 4; i++) {
+            for (int i = 0; i < 4; i++) {
+                if (i == 1)
+                    continue;
+
                 commSpi = (TestCommunicationSpi)grid(i).configuration().getCommunicationSpi();
 
                 assertEquals(0, commSpi.messageCount(GridNearAtomicSingleUpdateRequest.class));

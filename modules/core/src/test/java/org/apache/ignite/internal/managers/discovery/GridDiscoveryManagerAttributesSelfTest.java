@@ -25,7 +25,6 @@ import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.binary.BinaryMarshaller;
 import org.apache.ignite.internal.marshaller.optimized.OptimizedMarshaller;
 import org.apache.ignite.spi.discovery.TestReconnectSecurityPluginProvider;
-import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
 
@@ -406,11 +405,7 @@ public abstract class GridDiscoveryManagerAttributesSelfTest extends GridCommonA
     public static class RegularDiscovery extends GridDiscoveryManagerAttributesSelfTest {
         /** {@inheritDoc} */
         @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
-            IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
-
-            ((TcpDiscoverySpi)cfg.getDiscoverySpi()).setForceServerMode(true);
-
-            return cfg;
+            return super.getConfiguration(igniteInstanceName).setClientMode(false);
         }
     }
 
