@@ -19,11 +19,13 @@ package org.apache.ignite.internal.management.cache;
 
 import java.util.Optional;
 import org.apache.ignite.IgniteException;
+import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.internal.ComputeMXBeanImpl;
 import org.apache.ignite.internal.management.api.NoArg;
 import org.apache.ignite.internal.visor.VisorJob;
 import org.apache.ignite.internal.visor.VisorOneNodeTask;
 import org.apache.ignite.lang.IgniteUuid;
+import org.apache.ignite.resources.LoggerResource;
 import org.apache.ignite.spi.systemview.view.ComputeTaskView;
 
 import static org.apache.ignite.internal.processors.task.GridTaskProcessor.TASKS_VIEW;
@@ -47,6 +49,10 @@ public class CacheIdleVerifyCancelTask extends VisorOneNodeTask<NoArg, Void> {
         /** */
         private static final long serialVersionUID = 0L;
 
+        /** Injected logger. */
+        @LoggerResource
+        private IgniteLogger log;
+
         /**
          * @param debug Debug flag.
          */
@@ -56,8 +62,11 @@ public class CacheIdleVerifyCancelTask extends VisorOneNodeTask<NoArg, Void> {
 
         /** {@inheritDoc} */
         @Override protected Void run(NoArg arg) {
-            if (idleVerifyId().isPresent())
-                new ComputeMXBeanImpl(ignite.context()).cancel(idleVerifyId().get());
+            idleVerifyId().ifPresent(igniteUuid -> {
+                new ComputeMXBeanImpl(ignite.context()).cancel(igniteUuid);
+
+                log.info("idle_verify command has been canceled succesfully");
+            });
 
             return null;
         }

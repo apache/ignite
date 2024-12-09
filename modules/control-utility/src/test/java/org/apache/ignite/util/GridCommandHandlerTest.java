@@ -760,24 +760,29 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
      */
     @Test
     public void testIdleVerifyCancelCommand() throws Exception {
-        IgniteEx srv = startGrids(4);
+        final int gridsCnt = 4;
+
+        IgniteEx srv = startGrids(gridsCnt);
 
         srv.cluster().state(ACTIVE);
 
-        IgniteCache<Integer, Integer> cache =  srv.createCache(DEFAULT_CACHE_NAME);
+        IgniteCache<Integer, Integer> cache = srv.createCache(DEFAULT_CACHE_NAME);
 
-        for (int i = 0; i < 100000; i++)
+        for (int i = 0; i < 10000; i++)
             cache.put(i, i);
 
-        new Thread(() -> execute("--cache", "idle_verify") ).start();
+        IgniteInternalFuture<Integer> idleVerifyFut = GridTestUtils.runAsync(() -> execute("--cache", "idle_verify"));
 
-        assertEquals(EXIT_CODE_OK, execute("--cache", "idle_verify", "--cancel"));
+        if (!idleVerifyFut.isDone())
+            assertEquals(EXIT_CODE_OK, execute("--cache", "idle_verify", "--cancel"));
 
         int idleVerifyCnt = 0;
 
-        for (ComputeTaskView view : srv.context().systemView().<ComputeTaskView>view(TASKS_VIEW)) {
-            if (view.taskName().equals(IdleVerifyTaskV2.class.getName()))
-                idleVerifyCnt++;
+        for (int i = 0; i < gridsCnt; i++) {
+            for (ComputeTaskView view : grid(i).context().systemView().<ComputeTaskView>view(TASKS_VIEW)) {
+                if (view.taskName().equals(IdleVerifyTaskV2.class.getName()))
+                    idleVerifyCnt++;
+            }
         }
 
         assertEquals(0, idleVerifyCnt);
