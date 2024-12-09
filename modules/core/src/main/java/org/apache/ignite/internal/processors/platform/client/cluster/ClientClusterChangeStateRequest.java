@@ -18,13 +18,13 @@
 package org.apache.ignite.internal.processors.platform.client.cluster;
 
 import org.apache.ignite.IgniteCheckedException;
-import org.apache.ignite.IgniteException;
 import org.apache.ignite.binary.BinaryRawReader;
 import org.apache.ignite.cluster.ClusterState;
 import org.apache.ignite.internal.processors.platform.client.ClientConnectionContext;
 import org.apache.ignite.internal.processors.platform.client.ClientProtocolContext;
 import org.apache.ignite.internal.processors.platform.client.ClientRequest;
 import org.apache.ignite.internal.processors.platform.client.ClientResponse;
+import org.apache.ignite.internal.util.typedef.internal.U;
 
 import static org.apache.ignite.internal.processors.platform.client.ClientBitmaskFeature.FORCE_DEACTIVATION_FLAG;
 
@@ -63,7 +63,7 @@ public class ClientClusterChangeStateRequest extends ClientRequest {
             return new ClientResponse(requestId());
         }
         catch (IgniteCheckedException e) {
-            throw new IgniteException(e);
+            throw U.convertException(e);
         }
     }
 }

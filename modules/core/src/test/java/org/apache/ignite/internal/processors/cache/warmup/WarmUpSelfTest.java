@@ -333,7 +333,8 @@ public class WarmUpSelfTest extends GridCommonAbstractTest {
                 try (TcpIgniteClient thinCli = (TcpIgniteClient)TcpIgniteClient.start(new ClientConfiguration()
                     .setAddresses(SERVER)
                     .setUserAttributes(F.asMap(MANAGEMENT_CLIENT_ATTR, Boolean.TRUE.toString()))
-                    .setClusterDiscoveryEnabled(false))
+                    .setClusterDiscoveryEnabled(false)
+                    .setAutoBinaryConfigurationEnabled(false))
                 ) {
                     thinCli.stopWarmUp();
                 }
