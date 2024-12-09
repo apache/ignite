@@ -76,12 +76,12 @@ import org.apache.ignite.internal.processors.cache.CacheGroupContext;
 import org.apache.ignite.internal.processors.cache.CacheGroupDescriptor;
 import org.apache.ignite.internal.processors.cache.CachePartitionExchangeWorkerTask;
 import org.apache.ignite.internal.processors.cache.DynamicCacheChangeBatch;
-import org.apache.ignite.internal.processors.cache.DynamicCacheChangeFailureMessage;
 import org.apache.ignite.internal.processors.cache.DynamicCacheChangeRequest;
 import org.apache.ignite.internal.processors.cache.DynamicCacheDescriptor;
 import org.apache.ignite.internal.processors.cache.ExchangeActions;
 import org.apache.ignite.internal.processors.cache.ExchangeContext;
 import org.apache.ignite.internal.processors.cache.ExchangeDiscoveryEvents;
+import org.apache.ignite.internal.processors.cache.ExchangeFailureMessage;
 import org.apache.ignite.internal.processors.cache.GridCacheAdapter;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.GridCacheMvccCandidate;
@@ -138,10 +138,10 @@ import static org.apache.ignite.IgniteSystemProperties.IGNITE_PARTITION_RELEASE_
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_THREAD_DUMP_ON_EXCHANGE_TIMEOUT;
 import static org.apache.ignite.IgniteSystemProperties.getBoolean;
 import static org.apache.ignite.IgniteSystemProperties.getLong;
+import static org.apache.ignite.cluster.ClusterState.INACTIVE;
 import static org.apache.ignite.events.EventType.EVT_NODE_FAILED;
 import static org.apache.ignite.events.EventType.EVT_NODE_JOINED;
 import static org.apache.ignite.events.EventType.EVT_NODE_LEFT;
-import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_DYNAMIC_CACHE_START_ROLLBACK_SUPPORTED;
 import static org.apache.ignite.internal.events.DiscoveryCustomEvent.EVT_DISCOVERY_CUSTOM_EVT;
 import static org.apache.ignite.internal.managers.communication.GridIoPolicy.SYSTEM_POOL;
 import static org.apache.ignite.internal.processors.cache.ExchangeDiscoveryEvents.serverJoinEvent;
@@ -313,8 +313,8 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
     /** Exchange exceptions from all participating nodes. */
     private final Map<UUID, Exception> exchangeGlobalExceptions = new ConcurrentHashMap<>();
 
-    /** Used to track the fact that {@link DynamicCacheChangeFailureMessage} was sent. */
-    private volatile boolean cacheChangeFailureMsgSent;
+    /** Used to track the fact that {@link ExchangeFailureMessage} was sent. */
+    private volatile boolean isExchangeFailureMsgSent;
 
     /** */
     private final ConcurrentMap<UUID, GridDhtPartitionsSingleMessage> msgs = new ConcurrentHashMap<>();
@@ -1462,7 +1462,7 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
             registerCachesFuture = cctx.affinity().onCacheChangeRequest(this, crd, exchActions);
         }
         catch (Exception e) {
-            if (reconnectOnError(e) || !isRollbackSupported())
+            if (reconnectOnError(e))
                 // This exception will be handled by init() method.
                 throw e;
 
@@ -2534,8 +2534,8 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
             if (exchActions != null && err0 == null)
                 exchActions.completeRequestFutures(cctx, null);
 
-            if (stateChangeExchange() && err0 == null)
-                cctx.kernalContext().state().onStateChangeExchangeDone(exchActions.stateChangeRequest());
+            if (stateChangeExchange() && err0 == null && !finishState.isFailed())
+                cctx.kernalContext().state().onStateChangeExchangeDone(exchActions);
         });
 
         if (super.onDone(res, err)) {
@@ -3105,9 +3105,9 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
                 if (cctx.kernalContext().isStopping())
                     return;
 
-                // DynamicCacheChangeFailureMessage was sent.
+                // ExchangeFailureMessage was sent.
                 // Thus, there is no need to create and send GridDhtPartitionsFullMessage.
-                if (cacheChangeFailureMsgSent)
+                if (isExchangeFailureMsgSent)
                     return;
 
                 FinishState finishState0;
@@ -3244,7 +3244,7 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
         if (finishState0 != null) {
             // DynamicCacheChangeFailureMessage was sent.
             // Thus, there is no need to create and send GridDhtPartitionsFullMessage.
-            if (!cacheChangeFailureMsgSent)
+            if (!isExchangeFailureMsgSent)
                 sendAllPartitionsToNode(finishState0, msg, nodeId);
 
             return;
@@ -3671,42 +3671,26 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
     }
 
     /**
-     * @return {@code true} if the given {@code discoEvt} supports the rollback procedure.
-     */
-    private boolean isRollbackSupported() {
-        if (!firstEvtDiscoCache.checkAttribute(ATTR_DYNAMIC_CACHE_START_ROLLBACK_SUPPORTED, Boolean.TRUE))
-            return false;
-
-        // Currently the rollback process is supported for dynamically started caches only.
-        return firstDiscoEvt.type() == EVT_DISCOVERY_CUSTOM_EVT && dynamicCacheStartExchange();
-    }
-
-    /**
-     * Sends {@link DynamicCacheChangeFailureMessage} to all participated nodes that represents a cause of exchange
+     * Sends {@link ExchangeFailureMessage} to all participated nodes that represents a cause of exchange
      * failure.
      */
     private void sendExchangeFailureMessage() {
         assert crd != null && crd.isLocal();
 
         try {
-            IgniteCheckedException err = createExchangeException(exchangeGlobalExceptions);
-
             List<String> cacheNames = new ArrayList<>(exchActions.cacheStartRequests().size());
 
             for (ExchangeActions.CacheActionData actionData : exchActions.cacheStartRequests())
                 cacheNames.add(actionData.request().cacheName());
 
-            DynamicCacheChangeFailureMessage msg = new DynamicCacheChangeFailureMessage(
-                cctx.localNode(), exchId, err, cacheNames);
+            ExchangeFailureMessage msg = new ExchangeFailureMessage(cctx.localNode(), exchId, exchangeGlobalExceptions, cacheNames);
 
             if (log.isDebugEnabled())
-                log.debug("Dynamic cache change failed (send message to all participating nodes): " + msg);
+                log.debug("Exchange process failed (send message to all participating nodes): " + msg);
 
-            cacheChangeFailureMsgSent = true;
+            isExchangeFailureMsgSent = true;
 
             cctx.discovery().sendCustomEvent(msg);
-
-            return;
         }
         catch (IgniteCheckedException e) {
             if (reconnectOnError(e))
@@ -3783,7 +3767,7 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
             return;
 
         try {
-            if (!F.isEmpty(exchangeGlobalExceptions) && dynamicCacheStartExchange() && isRollbackSupported()) {
+            if (!F.isEmpty(exchangeGlobalExceptions) && dynamicCacheStartExchange()) {
                 sendExchangeFailureMessage();
 
                 return;
@@ -4041,7 +4025,7 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
                 }
 
                 if (!cctx.kernalContext().state().clusterState().localBaselineAutoAdjustment()) {
-                    ClusterState state = stateChangeErr ? ClusterState.INACTIVE : req.state();
+                    ClusterState state = stateChangeErr ? INACTIVE : req.state();
 
                     ChangeGlobalStateFinishMessage stateFinishMsg = new ChangeGlobalStateFinishMessage(
                         req.requestId(),
@@ -4834,7 +4818,7 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
      * @param node Message sender node.
      * @param msg Failure message.
      */
-    public void onDynamicCacheChangeFail(final ClusterNode node, final DynamicCacheChangeFailureMessage msg) {
+    public void onExchangeFailureMessage(final ClusterNode node, final ExchangeFailureMessage msg) {
         assert exchId.equals(msg.exchangeId()) : msg;
         assert firstDiscoEvt.type() == EVT_DISCOVERY_CUSTOM_EVT && dynamicCacheStartExchange();
 
@@ -4850,14 +4834,23 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
                             return;
 
                         try {
-                            assert msg.error() != null : msg;
+                            assert !F.isEmpty(msg.exchangeErrors()) : msg;
 
                             // Try to revert all the changes that were done during initialization phase
                             cctx.affinity().forceCloseCaches(
                                 GridDhtPartitionsExchangeFuture.this,
                                 crd.isLocal(),
-                                msg.exchangeActions()
+                                msg.exchangeRollbackActions()
                             );
+
+                            if (stateChangeExchange()) {
+                                cctx.kernalContext().state().onStateChangeError(msg.exchangeErrors(), actions.stateChangeRequest());
+                                cctx.kernalContext().state().onStateFinishMessage(new ChangeGlobalStateFinishMessage(
+                                    actions.stateChangeRequest().requestId(),
+                                    INACTIVE,
+                                    false
+                                ));
+                            }
 
                             synchronized (mux) {
                                 finishState = new FinishState(crd.id(), initialVersion(), null);
@@ -4866,7 +4859,7 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
                             }
 
                             if (actions != null)
-                                actions.completeRequestFutures(cctx, msg.error());
+                                actions.completeRequestFutures(cctx, msg.createFailureCompoundException());
 
                             onDone(exchId.topologyVersion());
                         }
@@ -5707,6 +5700,12 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
             this.crdId = crdId;
             this.resTopVer = resTopVer;
             this.msg = msg;
+
+        }
+
+        /** */
+        public boolean isFailed() {
+            return msg == null;
         }
 
         /**

@@ -42,7 +42,10 @@ import org.apache.ignite.cluster.ClusterState;
 import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.events.BaselineChangedEvent;
 import org.apache.ignite.events.BaselineConfigurationChangedEvent;
+import org.apache.ignite.events.ClusterActivationEvent;
+import org.apache.ignite.events.ClusterStateChangeEvent;
 import org.apache.ignite.events.ClusterStateChangeStartedEvent;
 import org.apache.ignite.events.DiscoveryEvent;
 import org.apache.ignite.events.Event;
@@ -56,6 +59,7 @@ import org.apache.ignite.internal.cluster.DistributedBaselineConfiguration;
 import org.apache.ignite.internal.cluster.IgniteClusterImpl;
 import org.apache.ignite.internal.managers.discovery.DiscoCache;
 import org.apache.ignite.internal.managers.discovery.IgniteDiscoverySpi;
+import org.apache.ignite.internal.managers.eventstorage.GridEventStorageManager;
 import org.apache.ignite.internal.managers.eventstorage.GridLocalEventListener;
 import org.apache.ignite.internal.managers.systemview.walker.BaselineNodeAttributeViewWalker;
 import org.apache.ignite.internal.managers.systemview.walker.BaselineNodeViewWalker;
@@ -108,6 +112,9 @@ import static org.apache.ignite.cluster.ClusterState.INACTIVE;
 import static org.apache.ignite.configuration.IgniteConfiguration.DFLT_STATE_ON_START;
 import static org.apache.ignite.events.EventType.EVT_BASELINE_AUTO_ADJUST_AWAITING_TIME_CHANGED;
 import static org.apache.ignite.events.EventType.EVT_BASELINE_AUTO_ADJUST_ENABLED_CHANGED;
+import static org.apache.ignite.events.EventType.EVT_CLUSTER_ACTIVATED;
+import static org.apache.ignite.events.EventType.EVT_CLUSTER_DEACTIVATED;
+import static org.apache.ignite.events.EventType.EVT_CLUSTER_STATE_CHANGED;
 import static org.apache.ignite.events.EventType.EVT_NODE_FAILED;
 import static org.apache.ignite.events.EventType.EVT_NODE_JOINED;
 import static org.apache.ignite.events.EventType.EVT_NODE_LEFT;
@@ -778,11 +785,14 @@ public class GridClusterStateProcessor extends GridProcessorAdapter implements I
 
             AffinityTopologyVersion stateChangeTopVer = topVer.nextMinorVersion();
 
+            ClusterState prevState = state.state();
+
             StateChangeRequest req = new StateChangeRequest(
                 msg,
                 bltHistItem,
-                state.state(),
-                stateChangeTopVer
+                prevState,
+                stateChangeTopVer,
+                isBaselineChangeRequest(msg, prevState)
             );
 
             exchangeActions.stateChangeRequest(req);
@@ -814,6 +824,24 @@ public class GridClusterStateProcessor extends GridProcessorAdapter implements I
         }
 
         return false;
+    }
+
+    /** */
+    private boolean isBaselineChangeRequest(ChangeGlobalStateMessage msg, ClusterState curClusterState) {
+        if (msg.forceChangeBaselineTopology())
+            return true;
+
+        DiscoveryDataClusterState clusterState = ctx.state().clusterState();
+
+        assert clusterState.transition() : clusterState;
+
+        if (curClusterState.active() == msg.state().active())
+            return true;
+
+        // Or it is the first activation.
+        return clusterState.state() != ClusterState.INACTIVE
+            && !clusterState.previouslyActive()
+            && clusterState.previousBaselineTopology() == null;
     }
 
     /**
@@ -1454,7 +1482,11 @@ public class GridClusterStateProcessor extends GridProcessorAdapter implements I
     }
 
     /** {@inheritDoc} */
-    @Override public void onStateChangeExchangeDone(StateChangeRequest req) {
+    @Override public void onStateChangeExchangeDone(ExchangeActions actions) {
+        StateChangeRequest req = actions.stateChangeRequest();
+
+        assert req != null;
+
         try {
             if (req.activeChanged()) {
                 if (req.state().active())
@@ -1473,6 +1505,8 @@ public class GridClusterStateProcessor extends GridProcessorAdapter implements I
 
             sendChangeGlobalStateResponse(req.requestId(), req.initiatorNodeId(), e);
         }
+
+        onClusterStateChangeFinish(actions, req.isBaselineChangeRequest());
     }
 
     /** {@inheritDoc} */
@@ -1666,7 +1700,8 @@ public class GridClusterStateProcessor extends GridProcessorAdapter implements I
                 msg,
                 BaselineTopologyHistoryItem.fromBaseline(blt),
                 msg.state(),
-                null
+                null,
+                true
             );
 
             if (exchActs == null)
@@ -2010,6 +2045,71 @@ public class GridClusterStateProcessor extends GridProcessorAdapter implements I
             })
             .map(DynamicCacheDescriptor::cacheName)
             .collect(Collectors.toList());
+    }
+
+    /** */
+    private void onClusterStateChangeFinish(ExchangeActions exchActions, boolean baselineChanging) {
+        A.notNull(exchActions, "exchActions");
+
+        GridEventStorageManager evtMngr = ctx.event();
+
+        if (exchActions.activate() && evtMngr.isRecordable(EVT_CLUSTER_ACTIVATED) ||
+            exchActions.deactivate() && evtMngr.isRecordable(EVT_CLUSTER_DEACTIVATED) ||
+            exchActions.changedClusterState() && evtMngr.isRecordable(EVT_CLUSTER_STATE_CHANGED)
+        ) {
+            List<Event> evts = new ArrayList<>(2);
+
+            ClusterNode locNode = ctx.discovery().localNode();
+
+            Collection<BaselineNode> bltNodes = ctx.cluster().get().currentBaselineTopology();
+
+            boolean collectionUsed = false;
+
+            if (exchActions.activate() && evtMngr.isRecordable(EVT_CLUSTER_ACTIVATED)) {
+                assert !exchActions.deactivate() : exchActions;
+
+                collectionUsed = true;
+
+                evts.add(new ClusterActivationEvent(locNode, "Cluster activated.", EVT_CLUSTER_ACTIVATED, bltNodes));
+            }
+
+            if (exchActions.deactivate() && evtMngr.isRecordable(EVT_CLUSTER_DEACTIVATED)) {
+                assert !exchActions.activate() : exchActions;
+
+                collectionUsed = true;
+
+                evts.add(new ClusterActivationEvent(locNode, "Cluster deactivated.", EVT_CLUSTER_DEACTIVATED, bltNodes));
+            }
+
+            if (exchActions.changedClusterState() && evtMngr.isRecordable(EVT_CLUSTER_STATE_CHANGED)) {
+                StateChangeRequest req = exchActions.stateChangeRequest();
+
+                if (collectionUsed && bltNodes != null)
+                    bltNodes = new ArrayList<>(bltNodes);
+
+                evts.add(new ClusterStateChangeEvent(req.prevState(), req.state(), bltNodes, locNode, "Cluster state changed."));
+            }
+
+            A.notEmpty(evts, "events " + exchActions);
+
+            ctx.pools().getSystemExecutorService()
+                .submit(() -> evts.forEach(e -> ctx.event().record(e)));
+        }
+
+        if (baselineChanging) {
+            ctx.pools().getStripedExecutorService().execute(new Runnable() {
+                @Override public void run() {
+                    if (ctx.event().isRecordable(EventType.EVT_BASELINE_CHANGED)) {
+                        ctx.event().record(new BaselineChangedEvent(
+                            ctx.discovery().localNode(),
+                            "Baseline changed.",
+                            EventType.EVT_BASELINE_CHANGED,
+                            ctx.cluster().get().currentBaselineTopology()
+                        ));
+                    }
+                }
+            });
+        }
     }
 
     /**
