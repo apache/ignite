@@ -30,7 +30,6 @@ import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.util.typedef.F;
-import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
 
@@ -41,8 +40,6 @@ public class GridCacheRendezvousAffinityClientSelfTest extends GridCommonAbstrac
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
-
-        ((TcpDiscoverySpi)cfg.getDiscoverySpi()).setForceServerMode(true);
 
         CacheConfiguration ccfg = defaultCacheConfiguration();
 
@@ -60,11 +57,11 @@ public class GridCacheRendezvousAffinityClientSelfTest extends GridCommonAbstrac
     @Test
     public void testClientNode() throws Exception {
         try {
-            startClientGrid(0);
-
             startGrid(1);
             startGrid(2);
             startGrid(3);
+
+            startClientGrid(0);
 
             awaitPartitionMapExchange();
 

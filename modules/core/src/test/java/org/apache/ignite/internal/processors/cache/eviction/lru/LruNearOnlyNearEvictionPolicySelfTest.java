@@ -25,7 +25,6 @@ import org.apache.ignite.cache.eviction.lru.LruEvictionPolicy;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.NearCacheConfiguration;
-import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
 
@@ -67,8 +66,6 @@ public class LruNearOnlyNearEvictionPolicySelfTest extends GridCommonAbstractTes
 
             c.setCacheConfiguration(cc);
         }
-
-        ((TcpDiscoverySpi)c.getDiscoverySpi()).setForceServerMode(true);
 
         return c;
     }
@@ -121,8 +118,8 @@ public class LruNearOnlyNearEvictionPolicySelfTest extends GridCommonAbstractTes
      * @throws Exception If failed.
      */
     private void checkNearEvictionMaxSize() throws Exception {
-        startClientGrid(0);
         startGridsMultiThreaded(1, GRID_COUNT - 1);
+        startClientGrid(0);
 
         try {
             NearCacheConfiguration nearCfg = new NearCacheConfiguration();
