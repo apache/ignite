@@ -652,6 +652,8 @@ namespace Apache.Ignite.Core.Tests.Cache
         {
             return _cache.LocalPreloadPartition(partition);
         }
+
+        public bool HasPlatformCache => _cache.HasPlatformCache;
     }
 
     /// <summary>
