@@ -62,7 +62,7 @@ import static java.util.Collections.singleton;
 /**
  * Task for background cleaning of index trees.
  */
-public class DurableBackgroundCleanupIndexTreeTaskV2 extends IgniteDataTransferObject implements
+public class DurableBackgroundCleanupIndexTreeTask extends IgniteDataTransferObject implements
     DurableBackgroundTask<Long> {
     /** Serial version uid. */
     private static final long serialVersionUID = 0L;
@@ -120,7 +120,7 @@ public class DurableBackgroundCleanupIndexTreeTaskV2 extends IgniteDataTransferO
      * @param segments Number of segments.
      * @param trees Index trees.
      */
-    public DurableBackgroundCleanupIndexTreeTaskV2(
+    public DurableBackgroundCleanupIndexTreeTask(
         @Nullable String grpName,
         String cacheName,
         String idxName,
@@ -150,7 +150,7 @@ public class DurableBackgroundCleanupIndexTreeTaskV2 extends IgniteDataTransferO
     /**
      * Default constructor for {@link Externalizable}.
      */
-    public DurableBackgroundCleanupIndexTreeTaskV2() {
+    public DurableBackgroundCleanupIndexTreeTask() {
         // No-op.
     }
 
@@ -201,7 +201,7 @@ public class DurableBackgroundCleanupIndexTreeTaskV2 extends IgniteDataTransferO
     @Override public IgniteInternalFuture<DurableBackgroundTaskResult<Long>> executeAsync(GridKernalContext ctx) {
         assert worker == null;
 
-        log = ctx.log(DurableBackgroundCleanupIndexTreeTaskV2.class);
+        log = ctx.log(DurableBackgroundCleanupIndexTreeTask.class);
 
         IgniteInternalFuture<DurableBackgroundTaskResult<Long>> outFut;
 
@@ -525,6 +525,6 @@ public class DurableBackgroundCleanupIndexTreeTaskV2 extends IgniteDataTransferO
 
     /** {@inheritDoc} */
     @Override public String toString() {
-        return S.toString(DurableBackgroundCleanupIndexTreeTaskV2.class, this);
+        return S.toString(DurableBackgroundCleanupIndexTreeTask.class, this);
     }
 }

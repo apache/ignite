@@ -30,8 +30,8 @@ import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.failure.StopNodeFailureHandler;
 import org.apache.ignite.internal.IgniteEx;
-import org.apache.ignite.internal.cache.query.index.sorted.DurableBackgroundCleanupIndexTreeTaskV2;
-import org.apache.ignite.internal.cache.query.index.sorted.DurableBackgroundCleanupIndexTreeTaskV2.InlineIndexTreeFactory;
+import org.apache.ignite.internal.cache.query.index.sorted.DurableBackgroundCleanupIndexTreeTask;
+import org.apache.ignite.internal.cache.query.index.sorted.DurableBackgroundCleanupIndexTreeTask.InlineIndexTreeFactory;
 import org.apache.ignite.internal.cache.query.index.sorted.IndexKeyTypeSettings;
 import org.apache.ignite.internal.cache.query.index.sorted.IndexRow;
 import org.apache.ignite.internal.cache.query.index.sorted.IndexRowCache;
@@ -54,7 +54,7 @@ import org.junit.Test;
 
 import static java.util.Arrays.asList;
 import static org.apache.ignite.cluster.ClusterState.ACTIVE;
-import static org.apache.ignite.internal.cache.query.index.sorted.DurableBackgroundCleanupIndexTreeTaskV2.idxTreeFactory;
+import static org.apache.ignite.internal.cache.query.index.sorted.DurableBackgroundCleanupIndexTreeTask.idxTreeFactory;
 import static org.apache.ignite.internal.processors.query.QueryUtils.DFLT_SCHEMA;
 
 /**
@@ -82,7 +82,7 @@ public class MultipleParallelCacheDeleteDeadlockTest extends GridCommonAbstractT
     /** */
     private static final String CACHE_GRP_2 = "cache_grp_2";
 
-    /** Original {@link DurableBackgroundCleanupIndexTreeTaskV2#idxTreeFactory}. */
+    /** Original {@link DurableBackgroundCleanupIndexTreeTask#idxTreeFactory}. */
     private InlineIndexTreeFactory originalFactory;
 
     /** {@inheritDoc} */
@@ -306,7 +306,7 @@ public class MultipleParallelCacheDeleteDeadlockTest extends GridCommonAbstractT
                 new IndexKeyTypeSettings(),
                 null,
                 null,
-                new DurableBackgroundCleanupIndexTreeTaskV2.NoopRowHandlerFactory(),
+                new DurableBackgroundCleanupIndexTreeTask.NoopRowHandlerFactory(),
                 null
             );
         }

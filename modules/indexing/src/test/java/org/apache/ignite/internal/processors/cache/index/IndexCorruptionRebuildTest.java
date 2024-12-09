@@ -34,7 +34,7 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.cache.query.index.IndexProcessor;
-import org.apache.ignite.internal.cache.query.index.sorted.DurableBackgroundCleanupIndexTreeTaskV2;
+import org.apache.ignite.internal.cache.query.index.sorted.DurableBackgroundCleanupIndexTreeTask;
 import org.apache.ignite.internal.cache.query.index.sorted.IndexRowImpl;
 import org.apache.ignite.internal.cache.query.index.sorted.inline.InlineIndexImpl;
 import org.apache.ignite.internal.cache.query.index.sorted.inline.InlineIndexTree;
@@ -209,8 +209,8 @@ public class IndexCorruptionRebuildTest extends GridCommonAbstractTest {
         Collection<DurableBackgroundTaskState<?>> durableTasks = tasks(srv.context().durableBackgroundTask()).values();
 
         Map<Integer, Set<String>> idxTasksByCache = durableTasks.stream().collect(Collectors.groupingBy(
-            state -> CU.cacheId(((DurableBackgroundCleanupIndexTreeTaskV2)state.task()).cacheName()),
-            Collectors.mapping(state -> ((DurableBackgroundCleanupIndexTreeTaskV2)state.task()).idxName(), toSet())
+            state -> CU.cacheId(((DurableBackgroundCleanupIndexTreeTask)state.task()).cacheName()),
+            Collectors.mapping(state -> ((DurableBackgroundCleanupIndexTreeTask)state.task()).idxName(), toSet())
         ));
 
         checkCacheToCorruptedIndexMap(idxTasksByCache);

@@ -29,8 +29,8 @@ import org.apache.ignite.client.Person;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.cache.query.index.Index;
-import org.apache.ignite.internal.cache.query.index.sorted.DurableBackgroundCleanupIndexTreeTaskV2;
-import org.apache.ignite.internal.cache.query.index.sorted.DurableBackgroundCleanupIndexTreeTaskV2.InlineIndexTreeFactory;
+import org.apache.ignite.internal.cache.query.index.sorted.DurableBackgroundCleanupIndexTreeTask;
+import org.apache.ignite.internal.cache.query.index.sorted.DurableBackgroundCleanupIndexTreeTask.InlineIndexTreeFactory;
 import org.apache.ignite.internal.cache.query.index.sorted.SortedIndexDefinition;
 import org.apache.ignite.internal.cache.query.index.sorted.inline.InlineIndexTree;
 import org.apache.ignite.internal.pagemem.FullPageId;
@@ -50,10 +50,10 @@ import static java.util.stream.Collectors.joining;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_MAX_INDEX_PAYLOAD_SIZE;
 import static org.apache.ignite.cluster.ClusterState.ACTIVE;
 import static org.apache.ignite.cluster.ClusterState.INACTIVE;
-import static org.apache.ignite.internal.cache.query.index.sorted.DurableBackgroundCleanupIndexTreeTaskV2.destroyIndexTrees;
-import static org.apache.ignite.internal.cache.query.index.sorted.DurableBackgroundCleanupIndexTreeTaskV2.findIndexRootPages;
-import static org.apache.ignite.internal.cache.query.index.sorted.DurableBackgroundCleanupIndexTreeTaskV2.idxTreeFactory;
-import static org.apache.ignite.internal.cache.query.index.sorted.DurableBackgroundCleanupIndexTreeTaskV2.toRootPages;
+import static org.apache.ignite.internal.cache.query.index.sorted.DurableBackgroundCleanupIndexTreeTask.destroyIndexTrees;
+import static org.apache.ignite.internal.cache.query.index.sorted.DurableBackgroundCleanupIndexTreeTask.findIndexRootPages;
+import static org.apache.ignite.internal.cache.query.index.sorted.DurableBackgroundCleanupIndexTreeTask.idxTreeFactory;
+import static org.apache.ignite.internal.cache.query.index.sorted.DurableBackgroundCleanupIndexTreeTask.toRootPages;
 import static org.apache.ignite.testframework.GridTestUtils.cacheContext;
 import static org.apache.ignite.testframework.GridTestUtils.getFieldValue;
 import static org.apache.ignite.testframework.GridTestUtils.runAsync;
@@ -63,7 +63,7 @@ import static org.apache.ignite.testframework.GridTestUtils.runAsync;
  */
 @WithSystemProperty(key = IGNITE_MAX_INDEX_PAYLOAD_SIZE, value = "1000000")
 public class DropIndexTest extends AbstractRebuildIndexTest {
-    /** Original {@link DurableBackgroundCleanupIndexTreeTaskV2#idxTreeFactory}. */
+    /** Original {@link DurableBackgroundCleanupIndexTreeTask#idxTreeFactory}. */
     private InlineIndexTreeFactory originalTaskIdxTreeFactory;
 
     /** {@inheritDoc} */
@@ -89,7 +89,7 @@ public class DropIndexTest extends AbstractRebuildIndexTest {
     }
 
     /**
-     * Checking {@link DurableBackgroundCleanupIndexTreeTaskV2#destroyIndexTrees}.
+     * Checking {@link DurableBackgroundCleanupIndexTreeTask#destroyIndexTrees}.
      *
      * @throws Exception If failed.
      */
@@ -99,7 +99,7 @@ public class DropIndexTest extends AbstractRebuildIndexTest {
     }
 
     /**
-     * Check that the {@link DurableBackgroundCleanupIndexTreeTaskV2} will not
+     * Check that the {@link DurableBackgroundCleanupIndexTreeTask} will not
      * be executed if the cache group and root pages are not found.
      *
      * @throws Exception If failed.
@@ -112,12 +112,12 @@ public class DropIndexTest extends AbstractRebuildIndexTest {
 
         GridCacheContext<Integer, Person> cctx = cacheContext(n.cache(DEFAULT_CACHE_NAME));
 
-        List<DurableBackgroundCleanupIndexTreeTaskV2> tasks = F.asList(
-            new DurableBackgroundCleanupIndexTreeTaskV2(fake, fake, fake, fake, fake, 10, null),
-            new DurableBackgroundCleanupIndexTreeTaskV2(cctx.group().name(), cctx.name(), fake, fake, fake, 10, null)
+        List<DurableBackgroundCleanupIndexTreeTask> tasks = F.asList(
+            new DurableBackgroundCleanupIndexTreeTask(fake, fake, fake, fake, fake, 10, null),
+            new DurableBackgroundCleanupIndexTreeTask(cctx.group().name(), cctx.name(), fake, fake, fake, 10, null)
         );
 
-        for (DurableBackgroundCleanupIndexTreeTaskV2 task : tasks) {
+        for (DurableBackgroundCleanupIndexTreeTask task : tasks) {
             DurableBackgroundTaskResult<Long> res = task.executeAsync(n.context()).get(0);
 
             assertTrue(res.completed());
@@ -127,7 +127,7 @@ public class DropIndexTest extends AbstractRebuildIndexTest {
     }
 
     /**
-     * Checking that the {@link DurableBackgroundCleanupIndexTreeTaskV2} will work correctly.
+     * Checking that the {@link DurableBackgroundCleanupIndexTreeTask} will work correctly.
      *
      * @throws Exception If failed.
      */
@@ -164,7 +164,7 @@ public class DropIndexTest extends AbstractRebuildIndexTest {
         assertFalse(findIndexRootPages(cctx.group(), cctx.name(), oldTreeName, segments).isEmpty());
         assertTrue(findIndexRootPages(cctx.group(), cctx.name(), newTreeName, segments).isEmpty());
 
-        DurableBackgroundCleanupIndexTreeTaskV2 task = new DurableBackgroundCleanupIndexTreeTaskV2(
+        DurableBackgroundCleanupIndexTreeTask task = new DurableBackgroundCleanupIndexTreeTask(
             cctx.group().name(),
             cctx.name(),
             idxName,
@@ -204,7 +204,7 @@ public class DropIndexTest extends AbstractRebuildIndexTest {
     }
 
     /**
-     * Checking that the {@link DurableBackgroundCleanupIndexTreeTaskV2} will
+     * Checking that the {@link DurableBackgroundCleanupIndexTreeTask} will
      * run when the index drop is called.
      *
      * @throws Exception If failed.
@@ -216,7 +216,7 @@ public class DropIndexTest extends AbstractRebuildIndexTest {
 
     /**
      * Checking that when the node is restarted, the
-     * {@link DurableBackgroundCleanupIndexTreeTaskV2} will finish correctly.
+     * {@link DurableBackgroundCleanupIndexTreeTask} will finish correctly.
      *
      * @throws Exception If failed.
      */
@@ -237,7 +237,7 @@ public class DropIndexTest extends AbstractRebuildIndexTest {
 
     /**
      * Checking that when the node is re-activated, the
-     * {@link DurableBackgroundCleanupIndexTreeTaskV2} will finish correctly.
+     * {@link DurableBackgroundCleanupIndexTreeTask} will finish correctly.
      *
      * @throws Exception If failed.
      */
@@ -251,7 +251,7 @@ public class DropIndexTest extends AbstractRebuildIndexTest {
     }
 
     /**
-     * Checking that the {@link DurableBackgroundCleanupIndexTreeTaskV2} will
+     * Checking that the {@link DurableBackgroundCleanupIndexTreeTask} will
      * work correctly for in-memory cache.
      *
      * @throws Exception If failed.
@@ -263,7 +263,7 @@ public class DropIndexTest extends AbstractRebuildIndexTest {
 
     /**
      * Checking that when the node is re-activated, the
-     * {@link DurableBackgroundCleanupIndexTreeTaskV2} will finish correctly for in-memory cache.
+     * {@link DurableBackgroundCleanupIndexTreeTask} will finish correctly for in-memory cache.
      *
      * @throws Exception If failed.
      */
@@ -277,7 +277,7 @@ public class DropIndexTest extends AbstractRebuildIndexTest {
     }
 
     /**
-     * Checking {@link DurableBackgroundCleanupIndexTreeTaskV2#destroyIndexTrees} for in-memory cache.
+     * Checking {@link DurableBackgroundCleanupIndexTreeTask#destroyIndexTrees} for in-memory cache.
      *
      * @throws Exception If failed.
      */
@@ -287,7 +287,7 @@ public class DropIndexTest extends AbstractRebuildIndexTest {
     }
 
     /**
-     * Checks that {@link DurableBackgroundCleanupIndexTreeTaskV2} will not be
+     * Checks that {@link DurableBackgroundCleanupIndexTreeTask} will not be
      * added when the cluster is deactivated for in-memory caches.
      *
      * @throws Exception If failed.
@@ -344,7 +344,7 @@ public class DropIndexTest extends AbstractRebuildIndexTest {
     }
 
     /**
-     * Getting {@link DurableBackgroundCleanupIndexTreeTaskV2} name prefix.
+     * Getting {@link DurableBackgroundCleanupIndexTreeTask} name prefix.
      *
      * @param cacheName Cache name.
      * @param idxName Index name.
@@ -394,7 +394,7 @@ public class DropIndexTest extends AbstractRebuildIndexTest {
     }
 
     /**
-     * Check that the {@link DurableBackgroundCleanupIndexTreeTaskV2} will be completed successfully.
+     * Check that the {@link DurableBackgroundCleanupIndexTreeTask} will be completed successfully.
      *
      * @param persistent Persistent default data region.
      * @param expRes Expected result should not be less than which.
@@ -438,7 +438,7 @@ public class DropIndexTest extends AbstractRebuildIndexTest {
 
     /**
      * Check that after restart / reactivation of the node,
-     * the {@link DurableBackgroundCleanupIndexTreeTaskV2} will be completed successfully.
+     * the {@link DurableBackgroundCleanupIndexTreeTask} will be completed successfully.
      *
      * @param persistent Persistent default data region.
      * @param expRes Expected result should not be less than which, or {@code null} if there should be no result.
@@ -492,7 +492,7 @@ public class DropIndexTest extends AbstractRebuildIndexTest {
     }
 
     /**
-     * Checking {@link DurableBackgroundCleanupIndexTreeTaskV2#destroyIndexTrees}.
+     * Checking {@link DurableBackgroundCleanupIndexTreeTask#destroyIndexTrees}.
      *
      * @param persistent Persistent default data region.
      * @param expRes Expected result should not be less than which.
