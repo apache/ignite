@@ -467,6 +467,11 @@ final class ReliableChannel implements AutoCloseable {
                         }
                     }
 
+                    for (UUID nodeId : lastTop.nodes()) {
+                        // Roll current channel even if a topology changes. To help find working channel faster.
+                        rollCurrentChannel(nodeChannels.get(nodeId));
+                    }
+
                     log.warning("Failed to update cache partitions mapping [cacheId=" + cacheId + ']',
                         composeException(failures));
 
@@ -500,7 +505,7 @@ final class ReliableChannel implements AutoCloseable {
 
             ClientChannelHolder dfltHld = holders.get(idx);
 
-            if (dfltHld == hld) {
+            if (dfltHld.ch == hld.ch) {
                 idx += 1;
 
                 if (idx >= holders.size())
@@ -703,7 +708,8 @@ final class ReliableChannel implements AutoCloseable {
                     curAddrs.putIfAbsent(addr, hld);
             }
 
-            reinitHolders.add(hld);
+            if (!reinitHolders.contains(hld))
+                reinitHolders.add(hld);
 
             if (hld == currDfltHolder)
                 dfltChannelIdx = reinitHolders.size() - 1;
