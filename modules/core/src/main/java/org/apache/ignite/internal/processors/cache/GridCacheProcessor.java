@@ -5751,9 +5751,6 @@ public class GridCacheProcessor extends GridProcessorAdapter {
      * @throws IgniteCheckedException If there is an error when stopping warm-up.
      */
     public boolean stopWarmUp() throws IgniteCheckedException {
-        if (!ctx.recoveryMode())
-            throw new IgniteException("Node has already started.");
-
         if (recovery.stopWarmUp.compareAndSet(false, true)) {
             WarmUpStrategy strat = recovery.curWarmUpStrat;
 
