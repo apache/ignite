@@ -18,12 +18,9 @@
 package org.apache.ignite.internal;
 
 import java.util.BitSet;
-import java.util.Collection;
-import org.apache.ignite.IgniteEncryption;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.cluster.ClusterState;
 import org.apache.ignite.internal.managers.discovery.IgniteDiscoverySpi;
-import org.apache.ignite.internal.managers.encryption.GridEncryptionManager;
 import org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi;
 import org.apache.ignite.spi.communication.tcp.messages.HandshakeWaitMessage;
 import org.apache.ignite.spi.discovery.DiscoverySpi;
@@ -59,9 +56,6 @@ public enum IgniteFeatures {
     /** Partition Map Exchange-free switch on baseline node left at fully rebalanced cluster.  */
     PME_FREE_SWITCH(19),
 
-    /** Master key change. See {@link GridEncryptionManager#changeMasterKey(String)}. */
-    MASTER_KEY_CHANGE(20),
-
     /** ContinuousQuery with security subject id support. */
     CONT_QRY_SECURITY_AWARE(21),
 
@@ -83,9 +77,6 @@ public enum IgniteFeatures {
 
     /** Compatibility support for new fields which are configured split. */
     SPLITTED_CACHE_CONFIGURATIONS_V2(46),
-
-    /** Cache encryption key change. See {@link IgniteEncryption#changeCacheGroupKey(Collection)}. */
-    CACHE_GROUP_KEY_CHANGE(47),
 
     /** Collecting performance statistics. */
     PERFORMANCE_STATISTICS(48),
