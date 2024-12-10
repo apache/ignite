@@ -29,6 +29,7 @@ import org.junit.Test;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
 import static org.apache.ignite.internal.processors.cache.GridCacheAdapter.NON_TRANSACTIONAL_IGNITE_CACHE_CLEAR_IN_TX_ERROR_MESSAGE;
+import static org.apache.ignite.internal.processors.cache.distributed.GridDistributedCacheAdapter.NON_TRANSACTIONAL_IGNITE_CACHE_REMOVEALL_IN_TX_ERROR_MESSAGE;
 import static org.apache.ignite.testframework.GridTestUtils.assertThrows;
 
 /** Checks that non-transactional cache operations fail within a transaction. */
@@ -68,35 +69,37 @@ public class NonTransactionalOperationsInTxTest extends GridCommonAbstractTest {
      * @param ignite Ignite.
      */
     private void checkClearOperation(IgniteEx ignite) {
-        checkIgniteCacheOperation(ignite, false, cache -> cache.clear());
+        checkIgniteCacheClearOperation(ignite, false, cache -> cache.clear());
 
-        checkIgniteCacheOperation(ignite, false, cache -> cache.clear(2));
+        checkIgniteCacheClearOperation(ignite, false, cache -> cache.clear(2));
 
-        checkIgniteCacheOperation(ignite, false, cache -> cache.clear(Collections.singleton(2)));
+        checkIgniteCacheClearOperation(ignite, false, cache -> cache.clear(Collections.singleton(2)));
 
-        checkIgniteCacheOperation(ignite, false, cache -> cache.clearAll(Collections.singleton(2)));
+        checkIgniteCacheClearOperation(ignite, false, cache -> cache.clearAll(Collections.singleton(2)));
 
-        checkIgniteCacheOperation(ignite, false, cache -> cache.clearAsync());
+        checkIgniteCacheClearOperation(ignite, false, cache -> cache.clearAsync());
 
-        checkIgniteCacheOperation(ignite, false, cache -> cache.clearAsync(2));
+        checkIgniteCacheClearOperation(ignite, false, cache -> cache.clearAsync(2));
 
-        checkIgniteCacheOperation(ignite, false, cache -> cache.clearAllAsync(Collections.singleton(2)));
+        checkIgniteCacheClearOperation(ignite, false, cache -> cache.clearAllAsync(Collections.singleton(2)));
 
-        checkIgniteCacheOperation(ignite, true, cache -> cache.localClear(2));
+        checkIgniteCacheClearOperation(ignite, true, cache -> cache.localClear(2));
 
-        checkIgniteCacheOperation(ignite, true, cache -> cache.localClearAll(Collections.singleton(2)));
+        checkIgniteCacheClearOperation(ignite, true, cache -> cache.localClearAll(Collections.singleton(2)));
 
-        checkIgniteCacheOperation(ignite, false, cache -> cache.localClear(2));
+        checkIgniteCacheClearOperation(ignite, false, cache -> cache.localClear(2));
 
-        checkIgniteCacheOperation(ignite, false, cache -> cache.localClearAll(Collections.singleton(2)));
+        checkIgniteCacheClearOperation(ignite, false, cache -> cache.localClearAll(Collections.singleton(2)));
     }
 
     /**
      * It should throw exception.
      *
      * @param ignite Ignite.
+     * @param near Near flag.
+     * @param op Operation.
      */
-    private void checkIgniteCacheOperation(IgniteEx ignite, boolean near, Consumer<IgniteCache<Object, Object>> op) {
+    private void checkIgniteCacheClearOperation(IgniteEx ignite, boolean near, Consumer<IgniteCache<Object, Object>> op) {
         IgniteCache<Object, Object> cache;
 
         if (near)
@@ -116,6 +119,69 @@ public class NonTransactionalOperationsInTxTest extends GridCommonAbstractTest {
             }),
             CacheException.class,
             NON_TRANSACTIONAL_IGNITE_CACHE_CLEAR_IN_TX_ERROR_MESSAGE
+        );
+
+        assertTrue(cache.containsKey(1));
+
+        assertFalse(cache.containsKey(2));
+    }
+
+    /** */
+    @Test
+    public void testIgniteCacheRemove() throws Exception {
+        startGrid(0);
+
+        checkRemoveOperation(grid(0));
+    }
+
+    /** */
+    @Test
+    public void testIgniteCacheRemoveOnClientNode() throws Exception {
+        startGrid(0);
+
+        startClientGrid(1);
+
+        checkRemoveOperation(grid(1));
+    }
+
+    /**
+     * It should throw exception.
+     *
+     * @param ignite Ignite.
+     */
+    private void checkRemoveOperation(IgniteEx ignite) {
+        checkIgniteCacheRemoveOperation(ignite, false, cache -> cache.removeAll());
+
+        checkIgniteCacheRemoveOperation(ignite, false, cache -> cache.removeAllAsync());
+    }
+
+    /**
+     * It should throw exception.
+     *
+     * @param ignite Ignite.
+     * @param near Near flag.
+     * @param op Operation.
+     */
+    private void checkIgniteCacheRemoveOperation(IgniteEx ignite, boolean near, Consumer<IgniteCache<Object, Object>> op) {
+        IgniteCache<Object, Object> cache;
+
+        if (near)
+            cache = ignite.createNearCache(DEFAULT_CACHE_NAME, new NearCacheConfiguration<>());
+        else
+            cache = ignite.cache(DEFAULT_CACHE_NAME);
+
+        cache.put(1, 1);
+
+        assertThrows(null,
+            () -> doInTransaction(ignite, () -> {
+                cache.put(2, 2);
+
+                op.accept(cache);
+
+                return null;
+            }),
+            CacheException.class,
+            NON_TRANSACTIONAL_IGNITE_CACHE_REMOVEALL_IN_TX_ERROR_MESSAGE
         );
 
         assertTrue(cache.containsKey(1));

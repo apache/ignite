@@ -127,6 +127,10 @@ public class TcpClientCache<K, V> implements ClientCache<K, V> {
     public static final String NON_TRANSACTIONAL_CLIENT_CACHE_CLEAR_IN_TX_ERROR_MESSAGE = "Failed to invoke a " +
         "non-transactional ClientCache clear operation within a transaction.";
 
+    /** Exception thrown when a non-transactional ClientCache clear operation is invoked within a transaction. */
+    public static final String NON_TRANSACTIONAL_CLIENT_CACHE_REMOVEALL_IN_TX_ERROR_MESSAGE = "Failed to invoke a " +
+        "non-transactional ClientCache removeAll operation within a transaction.";
+
     /** Constructor. */
     TcpClientCache(String name, ReliableChannel ch, ClientBinaryMarshaller marsh, TcpClientTransactions transactions,
         ClientCacheEntryListenersRegistry lsnrsRegistry) {
@@ -555,11 +559,17 @@ public class TcpClientCache<K, V> implements ClientCache<K, V> {
 
     /** {@inheritDoc} */
     @Override public void removeAll() throws ClientException {
+        if (transactions.tx() != null)
+            throw new CacheException(NON_TRANSACTIONAL_CLIENT_CACHE_REMOVEALL_IN_TX_ERROR_MESSAGE);
+
         ch.request(ClientOperation.CACHE_REMOVE_ALL, this::writeCacheInfo);
     }
 
     /** {@inheritDoc} */
     @Override public IgniteClientFuture<Void> removeAllAsync() throws ClientException {
+        if (transactions.tx() != null)
+            throw new CacheException(NON_TRANSACTIONAL_CLIENT_CACHE_REMOVEALL_IN_TX_ERROR_MESSAGE);
+
         return ch.requestAsync(ClientOperation.CACHE_REMOVE_ALL, this::writeCacheInfo);
     }
 
