@@ -38,9 +38,6 @@ public enum IgniteFeatures {
      */
     TCP_COMMUNICATION_SPI_HANDSHAKE_WAIT_MESSAGE(0),
 
-    /** Data paket compression. */
-    DATA_PACKET_COMPRESSION(3),
-
     /** Support of splitted cache configurations to avoid broken deserialization on non-affinity nodes. */
     SPLITTED_CACHE_CONFIGURATIONS(5),
 
@@ -62,9 +59,6 @@ public enum IgniteFeatures {
      * @see ClusterState#INACTIVE
      */
     SAFE_CLUSTER_DEACTIVATION(22),
-
-    /** Remove metadata from cluster for specified type. */
-    REMOVE_METADATA(39),
 
     /** Support policy of shutdown. */
     SHUTDOWN_POLICY(40),
