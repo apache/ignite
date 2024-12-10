@@ -2899,6 +2899,11 @@ public class IgniteKernal implements IgniteEx, Externalizable {
     }
 
     /** {@inheritDoc} */
+    @Override public Ignite withApplicationAttributes(Map<String, String> attrs) {
+        return new IgniteApplicationAttributesAware(this, attrs);
+    }
+
+    /** {@inheritDoc} */
     @Override public IgniteEncryption encryption() {
         return ctx.encryption();
     }

@@ -412,6 +412,7 @@ public class PlannerTest extends AbstractPlannerTest {
         ExecutionContext<Object[]> ectx = new ExecutionContext<>(
             qctx,
             taskExecutor,
+            null,
             qryId,
             nodeId,
             F.first(nodes),

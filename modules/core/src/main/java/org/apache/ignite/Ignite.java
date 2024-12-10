@@ -18,11 +18,13 @@
 package org.apache.ignite;
 
 import java.util.Collection;
+import java.util.Map;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutorService;
 import javax.cache.CacheException;
 import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.cache.affinity.Affinity;
+import org.apache.ignite.cache.query.annotations.QuerySqlFunction;
 import org.apache.ignite.cluster.ClusterGroup;
 import org.apache.ignite.cluster.ClusterState;
 import org.apache.ignite.configuration.AtomicConfiguration;
@@ -38,6 +40,7 @@ import org.apache.ignite.lang.IgniteProductVersion;
 import org.apache.ignite.metric.IgniteMetrics;
 import org.apache.ignite.plugin.IgnitePlugin;
 import org.apache.ignite.plugin.PluginNotFoundException;
+import org.apache.ignite.session.SessionContextProvider;
 import org.apache.ignite.spi.metric.ReadOnlyMetricRegistry;
 import org.apache.ignite.spi.tracing.TracingConfigurationManager;
 import org.jetbrains.annotations.NotNull;
@@ -788,4 +791,18 @@ public interface Ignite extends AutoCloseable {
      */
     @IgniteExperimental
     public @NotNull TracingConfigurationManager tracingConfiguration();
+
+    /**
+     * Underlying operations of returned Ignite instance are aware of application attributes.
+     * User defined functions can access the attributes with {@link SessionContextProvider} API.
+     * List of supported types of user defined functions that have access the attributes:
+     * <ul>
+     *     <li>{@link QuerySqlFunction}</li>
+     * </ul>
+     *
+     * @param attrs Application attributes.
+     * @return Ignite instance that is aware of application attributes.
+     */
+    @IgniteExperimental
+    public Ignite withApplicationAttributes(Map<String, String> attrs);
 }
