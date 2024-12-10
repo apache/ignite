@@ -150,25 +150,19 @@ public class NonTransactionalOperationsInTxTest extends GridCommonAbstractTest {
      * @param ignite Ignite.
      */
     private void checkRemoveOperation(IgniteEx ignite) {
-        checkIgniteCacheRemoveOperation(ignite, false, cache -> cache.removeAll());
+        checkIgniteCacheRemoveOperation(ignite, cache -> cache.removeAll());
 
-        checkIgniteCacheRemoveOperation(ignite, false, cache -> cache.removeAllAsync());
+        checkIgniteCacheRemoveOperation(ignite, cache -> cache.removeAllAsync());
     }
 
     /**
      * It should throw exception.
      *
      * @param ignite Ignite.
-     * @param near Near flag.
      * @param op Operation.
      */
-    private void checkIgniteCacheRemoveOperation(IgniteEx ignite, boolean near, Consumer<IgniteCache<Object, Object>> op) {
-        IgniteCache<Object, Object> cache;
-
-        if (near)
-            cache = ignite.createNearCache(DEFAULT_CACHE_NAME, new NearCacheConfiguration<>());
-        else
-            cache = ignite.cache(DEFAULT_CACHE_NAME);
+    private void checkIgniteCacheRemoveOperation(IgniteEx ignite, Consumer<IgniteCache<Object, Object>> op) {
+        IgniteCache<Object, Object> cache = ignite.cache(DEFAULT_CACHE_NAME);
 
         cache.put(1, 1);
 
