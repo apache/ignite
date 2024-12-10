@@ -34,6 +34,7 @@ import org.apache.ignite.plugin.security.SecurityPermission;
 import org.apache.ignite.plugin.security.SecurityPermissionSet;
 import org.apache.ignite.plugin.security.SecurityPermissionSetBuilder;
 import org.apache.ignite.services.ServiceConfiguration;
+import org.apache.ignite.services.ServiceDescriptor;
 import org.apache.ignite.util.GridCommandHandlerAbstractTest;
 import org.junit.Test;
 import org.junit.runners.Parameterized;
@@ -157,8 +158,15 @@ public class SecurityCommandHandlerPermissionsTest extends GridCommandHandlerAbs
 
         ignite.services().deploy(srvcCfg);
 
+        Collection<ServiceDescriptor> svcs = ignite.services().serviceDescriptors();
+
         assertEquals(EXIT_CODE_UNEXPECTED_ERROR, execute(enrichWithConnectionArguments(cmdArgs, TEST_NO_PERMISSIONS_LOGIN)));
+        assertEquals(1, svcs.size());
+
         assertEquals(EXIT_CODE_OK, execute(enrichWithConnectionArguments(cmdArgs, TEST_LOGIN)));
+
+        svcs = ignite.services().serviceDescriptors();
+        assertEquals(0, svcs.size());
     }
 
     /** */
