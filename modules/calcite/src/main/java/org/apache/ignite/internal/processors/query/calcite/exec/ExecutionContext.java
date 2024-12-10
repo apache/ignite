@@ -61,7 +61,6 @@ import org.apache.ignite.internal.processors.query.calcite.prepare.BaseQueryCont
 import org.apache.ignite.internal.processors.query.calcite.type.IgniteTypeFactory;
 import org.apache.ignite.internal.processors.query.calcite.util.Commons;
 import org.apache.ignite.internal.processors.query.calcite.util.TypeUtils;
-import org.apache.ignite.internal.processors.resource.GridResourceProcessor;
 import org.apache.ignite.internal.util.lang.RunnableX;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.CU;
@@ -134,8 +133,11 @@ public class ExecutionContext<Row> extends AbstractQueryContext implements DataC
     /** */
     private final long startTs;
 
+    /** */
+    private final InjectResourcesService injectSvc;
+
     /** Map associates UDF name to instance of class that contains this UDF. */
-    private final Map<String, Object> udfObjs = new ConcurrentHashMap<>();
+    private final Map<String, Object> udfInstances = new ConcurrentHashMap<>();
 
     /** Session context provider injected into UDF targets. */
     private final SessionContextProvider sesCtxProv = new SessionContextProviderImpl();
@@ -153,6 +155,7 @@ public class ExecutionContext<Row> extends AbstractQueryContext implements DataC
     public ExecutionContext(
         BaseQueryContext qctx,
         QueryTaskExecutor executor,
+        InjectResourcesService injectSvc,
         UUID qryId,
         UUID locNodeId,
         UUID originatingNodeId,
@@ -168,6 +171,7 @@ public class ExecutionContext<Row> extends AbstractQueryContext implements DataC
         super(qctx);
 
         this.executor = executor;
+        this.injectSvc = injectSvc;
         this.qryId = qryId;
         this.locNodeId = locNodeId;
         this.originatingNodeId = originatingNodeId;
@@ -472,20 +476,20 @@ public class ExecutionContext<Row> extends AbstractQueryContext implements DataC
     }
 
     /**
-     * Return an object contained a user defined function. If not exist yet, then instantiate the object and inject resources into it.
-     * Used by {@link ReflectiveCallNotNullImplementor} while it is preparing user function call.
+     * Return an instance of class that contained a user defined function. If not exist yet, then instantiate the object
+     * and inject resources into it. Used by {@link ReflectiveCallNotNullImplementor} while it is preparing user function call.
      *
      * @param udfClsName Classname of the class contained UDF.
      * @return Object with injected resources.
      */
-    public Object udfObject(String udfClsName) {
-        return udfObjs.computeIfAbsent(udfClsName, ignore -> {
+    public Object udfInstance(String udfClsName) {
+        return udfInstances.computeIfAbsent(udfClsName, ignore -> {
             try {
                 Class<?> funcCls = getClass().getClassLoader().loadClass(udfClsName);
 
                 Object target = funcCls.getConstructor().newInstance();
 
-                unwrap(GridResourceProcessor.class).injectToUdf(target, sesCtxProv);
+                injectSvc.injectToUdf(target, sesCtxProv);
 
                 return target;
             }

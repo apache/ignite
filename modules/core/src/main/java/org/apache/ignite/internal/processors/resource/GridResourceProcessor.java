@@ -234,6 +234,7 @@ public class GridResourceProcessor extends GridProcessorAdapter {
     /**
      * Inject resources to object contained a user defined function.
      *
+     * @param obj Object to inject resources.
      * @param sesCtxProv Session context provider.
      * @throws IgniteCheckedException If failed to inject.
      */
@@ -342,15 +343,12 @@ public class GridResourceProcessor extends GridProcessorAdapter {
             case TASK_CONTINUOUS_MAPPER:
             case CACHE_STORE_SESSION:
             case SERVICE_CONTEXT:
+            case SESSION_CONTEXT_PROVIDER:
                 res = new GridResourceBasicInjector<>(param);
                 break;
 
             case JOB_CONTEXT:
                 res = new GridResourceJobContextInjector((ComputeJobContext)param);
-                break;
-
-            case SESSION_CONTEXT_PROVIDER:
-                res = new GridResourceSessionContextProviderInjector((SessionContextProvider)param);
                 break;
 
             default:

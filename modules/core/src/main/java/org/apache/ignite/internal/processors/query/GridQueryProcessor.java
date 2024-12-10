@@ -3061,7 +3061,6 @@ public class GridQueryProcessor extends GridProcessorAdapter {
                                 cancel,
                                 qryProps,
                                 userTx == null ? null : userTx.xidVersion(),
-                                ctx.resource(),
                                 sesCtx
                             );
 

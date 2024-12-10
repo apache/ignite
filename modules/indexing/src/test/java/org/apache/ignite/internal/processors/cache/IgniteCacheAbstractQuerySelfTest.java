@@ -91,7 +91,6 @@ import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiPredicate;
 import org.apache.ignite.lang.IgnitePredicate;
-import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.WithSystemProperty;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
@@ -152,8 +151,6 @@ public abstract class IgniteCacheAbstractQuerySelfTest extends GridCommonAbstrac
     @SuppressWarnings("unchecked")
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         IgniteConfiguration c = super.getConfiguration(igniteInstanceName);
-
-        ((TcpDiscoverySpi)c.getDiscoverySpi()).setForceServerMode(true);
 
         if (igniteInstanceName.startsWith("client"))
             c.setDataStorageConfiguration(new DataStorageConfiguration());
