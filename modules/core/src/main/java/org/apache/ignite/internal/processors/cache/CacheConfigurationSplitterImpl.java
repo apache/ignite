@@ -22,10 +22,8 @@ import java.util.HashMap;
 import java.util.Map;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.configuration.CacheConfiguration;
-import org.apache.ignite.configuration.NearCacheConfiguration;
 import org.apache.ignite.configuration.SerializeSeparately;
 import org.apache.ignite.internal.GridKernalContext;
-import org.apache.ignite.internal.IgniteFeatures;
 import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.marshaller.Marshaller;
@@ -38,12 +36,6 @@ import org.apache.ignite.marshaller.Marshaller;
 public class CacheConfigurationSplitterImpl implements CacheConfigurationSplitter {
     /** Cache configuration to hold default field values. */
     private static final CacheConfiguration<?, ?> DEFAULT_CACHE_CONFIG = new CacheConfiguration<>();
-
-    /** Near cache configuration to hold default field values. */
-    private static final NearCacheConfiguration<?, ?> DEFAULT_NEAR_CACHE_CONFIG = new NearCacheConfiguration<>();
-
-    /** Fields set for V1 splitter protocol. */
-    private static final String[] FIELDS_V1 = {"evictPlcFactory", "evictFilter", "storeFactory", "storeSesLsnrs"};
 
     /** Marshaller. */
     private final Marshaller marshaller;
@@ -123,18 +115,7 @@ public class CacheConfigurationSplitterImpl implements CacheConfigurationSplitte
      * @return True if splitter serialization is supported, false otherwise.
      */
     private boolean supports(Field field) {
-        if (field.getDeclaredAnnotation(SerializeSeparately.class) == null)
-            return false;
-
-        if (IgniteFeatures.allNodesSupport(ctx.config().getDiscoverySpi(), IgniteFeatures.SPLITTED_CACHE_CONFIGURATIONS_V2))
-            return true;
-
-        for (String filedName : FIELDS_V1) {
-            if (filedName.equals(field.getName()))
-                return true;
-        }
-
-        return false;
+        return field.getDeclaredAnnotation(SerializeSeparately.class) != null;
     }
 
     /**

@@ -373,10 +373,6 @@ public final class IgniteSystemProperties {
         type = Long.class, defaults = "" + DFLT_EXCHANGE_MERGE_DELAY)
     public static final String IGNITE_EXCHANGE_MERGE_DELAY = "IGNITE_EXCHANGE_MERGE_DELAY";
 
-    /** PME-free switch explicitly disabled. */
-    @SystemProperty("Disables PME-free switch")
-    public static final String IGNITE_PME_FREE_SWITCH_DISABLED = "IGNITE_PME_FREE_SWITCH_DISABLED";
-
     /**
      * Name of the system property defining name of command line program.
      */

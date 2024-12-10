@@ -29,7 +29,6 @@ import org.apache.ignite.internal.processors.configuration.distributed.Distribut
 import org.apache.ignite.internal.processors.configuration.distributed.DistributedConfigurationLifecycleListener;
 import org.apache.ignite.internal.processors.configuration.distributed.DistributedPropertyDispatcher;
 import org.apache.ignite.internal.processors.configuration.distributed.SimpleDistributedProperty;
-import org.apache.ignite.internal.processors.metastorage.ReadableDistributedMetaStorage;
 import org.apache.ignite.internal.processors.query.DistributedSqlConfiguration;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
 
@@ -89,25 +88,15 @@ public class DistributedIndexingConfiguration extends DistributedSqlConfiguratio
                 }
 
                 @Override public void onReadyToWrite() {
-                    if (ReadableDistributedMetaStorage.isSupported(ctx)) {
-                        setDefaultValue(
-                            disabledSqlFuncs,
-                            DFLT_DISABLED_FUNCS,
-                            log);
+                    setDefaultValue(
+                        disabledSqlFuncs,
+                        DFLT_DISABLED_FUNCS,
+                        log);
 
-                        setDefaultValue(
-                            disableCreateLuceneIndexForStringValueType,
-                            false,
-                            log);
-                    }
-                    else {
-                        log.warning("Distributed metastorage is not supported. " +
-                            "All distributed SQL configuration parameters are unavailable.");
-
-                        // Set properties to default.
-                        disabledSqlFuncs.localUpdate(null);
-                        disableCreateLuceneIndexForStringValueType.localUpdate(false);
-                    }
+                    setDefaultValue(
+                        disableCreateLuceneIndexForStringValueType,
+                        false,
+                        log);
                 }
             }
         );
