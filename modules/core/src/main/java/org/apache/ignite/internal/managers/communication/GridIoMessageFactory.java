@@ -160,8 +160,7 @@ import org.apache.ignite.internal.util.GridLongList;
 import org.apache.ignite.internal.util.GridMessageCollection;
 import org.apache.ignite.internal.util.UUIDCollectionMessage;
 import org.apache.ignite.internal.util.distributed.SingleNodeMessage;
-import org.apache.ignite.plugin.extensions.communication.IgniteMessageFactory;
-import org.apache.ignite.plugin.extensions.communication.Message;
+import org.apache.ignite.plugin.extensions.communication.MessageFactory;
 import org.apache.ignite.plugin.extensions.communication.MessageFactoryProvider;
 import org.apache.ignite.spi.collision.jobstealing.JobStealingRequest;
 import org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi;
@@ -177,7 +176,7 @@ import org.apache.ignite.spi.communication.tcp.messages.RecoveryLastReceivedMess
  */
 public class GridIoMessageFactory implements MessageFactoryProvider {
     /** {@inheritDoc} */
-    @Override public void registerAll(IgniteMessageFactory factory) {
+    @Override public void registerAll(MessageFactory factory) {
         // -54 is reserved for SQL.
         // -46 ... -51 - snapshot messages.
         factory.register((short)-61, IgniteDiagnosticMessage::new);
@@ -351,10 +350,5 @@ public class GridIoMessageFactory implements MessageFactoryProvider {
         // [2048..2053] - Snapshots
         // [-42..-37] - former hadoop.
         // [64..71] - former IGFS.
-    }
-
-    /** {@inheritDoc} */
-    @Override public Message create(short type) {
-        throw new UnsupportedOperationException();
     }
 }

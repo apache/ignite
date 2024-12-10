@@ -43,6 +43,7 @@ import org.apache.calcite.sql.SqlNode;
 import org.apache.calcite.sql.SqlNodeList;
 import org.apache.calcite.sql.parser.SqlParser;
 import org.apache.calcite.sql.parser.SqlParserPos;
+import org.apache.calcite.sql.type.SqlTypeName;
 import org.apache.calcite.sql.util.SqlOperatorTables;
 import org.apache.calcite.sql.util.SqlShuttle;
 import org.apache.calcite.sql.validate.SqlValidator;
@@ -163,7 +164,7 @@ public class CalciteQueryProcessor extends GridProcessorAdapter implements Query
         .sqlValidatorConfig(SqlValidator.Config.DEFAULT
             .withIdentifierExpansion(true)
             .withDefaultNullCollation(NullCollation.LOW)
-            .withSqlConformance(IgniteSqlConformance.INSTANCE)
+            .withConformance(IgniteSqlConformance.INSTANCE)
             .withTypeCoercionFactory(IgniteTypeCoercion::new))
         // Dialects support.
         .operatorTable(SqlOperatorTables.chain(IgniteStdSqlOperatorTable.INSTANCE, IgniteOwnSqlOperatorTable.instance()))
@@ -180,6 +181,9 @@ public class CalciteQueryProcessor extends GridProcessorAdapter implements Query
             CorrelationTraitDef.INSTANCE,
         })
         .build();
+
+    /** */
+    private final FrameworkConfig frameworkCfg;
 
     /** Query planner timeout. */
     private final long queryPlannerTimeout = getLong(IGNITE_CALCITE_PLANNER_TIMEOUT,
@@ -260,6 +264,9 @@ public class CalciteQueryProcessor extends GridProcessorAdapter implements Query
         timeoutSvc = new TimeoutServiceImpl(ctx);
         qryReg = new QueryRegistryImpl(ctx);
         injectSvc = new InjectResourcesService(ctx);
+
+        FrameworkConfig customFrameworkCfg = ctx.plugins().createComponent(FrameworkConfig.class);
+        frameworkCfg = customFrameworkCfg != null ? customFrameworkCfg : FRAMEWORK_CONFIG;
 
         QueryEngineConfiguration[] qryEnginesCfg = ctx.config().getSqlConfiguration().getQueryEnginesConfiguration();
 
@@ -430,7 +437,7 @@ public class CalciteQueryProcessor extends GridProcessorAdapter implements Query
 
         assert schema != null : "Schema not found: " + schemaName;
 
-        SqlNodeList qryNodeList = Commons.parse(sql, FRAMEWORK_CONFIG.getParserConfig());
+        SqlNodeList qryNodeList = Commons.parse(sql, frameworkCfg.getParserConfig());
 
         if (qryNodeList.size() != 1) {
             throw new IgniteSQLException("Multiline statements are not supported in batched query",
@@ -514,7 +521,7 @@ public class CalciteQueryProcessor extends GridProcessorAdapter implements Query
 
         QueryProperties qryProps = qryCtx != null ? qryCtx.unwrap(QueryProperties.class) : null;
 
-        SqlNodeList qryList = Commons.parse(sql, FRAMEWORK_CONFIG.getParserConfig());
+        SqlNodeList qryList = Commons.parse(sql, frameworkCfg.getParserConfig());
 
         if (qryList.size() > 1 && qryProps != null && qryProps.isFailOnMultipleStmts()) {
             throw new IgniteSQLException("Multiple statements queries are not supported.",
@@ -555,7 +562,15 @@ public class CalciteQueryProcessor extends GridProcessorAdapter implements Query
                 return qry.accept(
                     new SqlShuttle() {
                         @Override public SqlNode visit(SqlLiteral literal) {
-                            return new SqlDynamicParam(-1, literal.getParserPosition());
+                            // Process only certain data types, where it's justified to hide information.
+                            // Don't touch enums and boolean literals, since they can be used as internal field values
+                            // for some SQL nodes.
+                            if (SqlTypeName.STRING_TYPES.contains(literal.getTypeName())
+                                || SqlTypeName.NUMERIC_TYPES.contains(literal.getTypeName())
+                                || SqlTypeName.DATETIME_TYPES.contains(literal.getTypeName()))
+                                return new SqlDynamicParam(-1, literal.getParserPosition());
+
+                            return literal;
                         }
 
                         @Override public SqlNode visit(SqlCall call) {
@@ -636,6 +651,9 @@ public class CalciteQueryProcessor extends GridProcessorAdapter implements Query
 
         if (timeout <= 0)
             timeout = distrCfg.defaultQueryTimeout();
+
+        if (frameworkCfg != FRAMEWORK_CONFIG)
+            qryCtx = QueryContext.of(frameworkCfg, qryCtx);
 
         RootQuery<Object[]> qry = new RootQuery<>(
             sql,
@@ -761,6 +779,11 @@ public class CalciteQueryProcessor extends GridProcessorAdapter implements Query
     /** */
     public DistributedCalciteConfiguration distributedConfiguration() {
         return distrCfg;
+    }
+
+    /** */
+    public FrameworkConfig frameworkConfig() {
+        return frameworkCfg;
     }
 
     /** */

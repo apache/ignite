@@ -217,6 +217,9 @@ public class IgniteStdSqlOperatorTable extends ReflectiveSqlOperatorTable {
         register(SqlLibraryOperators.DATE); // String to date.
         register(SqlLibraryOperators.DATETIME); // String to datetime.
         register(SqlLibraryOperators.TIME); // String to time.
+        register(SqlLibraryOperators.TO_CHAR); // Format date.
+        register(SqlLibraryOperators.TO_DATE); // Parse date.
+        register(SqlLibraryOperators.TO_TIMESTAMP); // Parse timestamp.
 
         // POSIX REGEX.
         register(SqlStdOperatorTable.POSIX_REGEX_CASE_INSENSITIVE);
