@@ -62,6 +62,7 @@ import org.apache.ignite.internal.processors.cache.persistence.pagemem.PagePoolT
 import org.apache.ignite.internal.processors.cache.persistence.pagemem.ProgressSpeedCalculationTest;
 import org.apache.ignite.internal.processors.cache.persistence.pagemem.SegmentedLruPageListTest;
 import org.apache.ignite.internal.processors.cache.transactions.AtomicOperationsInTxTest;
+import org.apache.ignite.internal.processors.cache.transactions.NonTransactionalOperationsInTxTest;
 import org.apache.ignite.internal.processors.cache.transactions.TransactionIntegrityWithSystemWorkerDeathTest;
 import org.apache.ignite.internal.processors.cluster.BaselineAutoAdjustMXBeanTest;
 import org.apache.ignite.internal.processors.configuration.distributed.DistributedConfigurationInMemoryTest;
@@ -166,6 +167,7 @@ import org.junit.runners.Suite;
     ExchangeWorkerWaitingForTaskTest.class,
 
     AtomicOperationsInTxTest.class,
+    NonTransactionalOperationsInTxTest.class,
 
     RebalanceWithDifferentThreadPoolSizeTest.class,
 

@@ -43,7 +43,6 @@ import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.WALMode;
 import org.apache.ignite.failure.FailureContext;
 import org.apache.ignite.internal.GridKernalContext;
-import org.apache.ignite.internal.IgniteFeatures;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.managers.GridManagerAdapter;
 import org.apache.ignite.internal.managers.communication.GridMessageListener;
@@ -87,7 +86,6 @@ import static org.apache.ignite.events.EventType.EVT_NODE_LEFT;
 import static org.apache.ignite.failure.FailureType.CRITICAL_ERROR;
 import static org.apache.ignite.internal.GridComponent.DiscoveryDataExchangeType.ENCRYPTION_MGR;
 import static org.apache.ignite.internal.GridTopic.TOPIC_GEN_ENC_KEY;
-import static org.apache.ignite.internal.IgniteFeatures.CACHE_GROUP_KEY_CHANGE;
 import static org.apache.ignite.internal.managers.communication.GridIoPolicy.SYSTEM_POOL;
 import static org.apache.ignite.internal.util.distributed.DistributedProcess.DistributedProcessType.MASTER_KEY_CHANGE_FINISH;
 import static org.apache.ignite.internal.util.distributed.DistributedProcess.DistributedProcessType.MASTER_KEY_CHANGE_PREPARE;
@@ -450,12 +448,6 @@ public class GridEncryptionManager extends GridManagerAdapter<EncryptionSpi> imp
             return new IgniteNodeValidationResult(ctx.localNodeId(),
                 "Master key digest differs! Node join is rejected. [node=" + node.id() + "]",
                 "Master key digest differs! Node join is rejected.");
-        }
-
-        if (!IgniteFeatures.nodeSupports(node, CACHE_GROUP_KEY_CHANGE)) {
-            return new IgniteNodeValidationResult(ctx.localNodeId(),
-                "Joining node doesn't support multiple encryption keys for single group [node=" + node.id() + "]",
-                "Joining node doesn't support multiple encryption keys for single group.");
         }
 
         if (F.isEmpty(nodeEncKeys.knownKeys)) {
