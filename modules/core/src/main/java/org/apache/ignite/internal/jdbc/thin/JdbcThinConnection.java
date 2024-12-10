@@ -1140,6 +1140,8 @@ public class JdbcThinConnection implements Connection {
                     if (req instanceof JdbcQueryExecuteRequest)
                         qryReq = (JdbcQueryExecuteRequest)req;
 
+                    isTxAwareQueriesSupported
+
                     req.clientInfo(clientInfo);
 
                     JdbcResponse res = cliIo.sendRequest(req, stmt);

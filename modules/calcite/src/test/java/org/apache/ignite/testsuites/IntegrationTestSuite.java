@@ -17,6 +17,7 @@
 
 package org.apache.ignite.testsuites;
 
+import org.apache.ignite.JdbcSetClientInfoTest;
 import org.apache.ignite.internal.processors.cache.DdlTransactionCalciteSelfTest;
 import org.apache.ignite.internal.processors.cache.SessionContextSqlFunctionTest;
 import org.apache.ignite.internal.processors.query.calcite.CalciteQueryProcessorTest;
@@ -149,6 +150,7 @@ import org.junit.runners.Suite;
     ViewsIntegrationTest.class,
     OperatorsExtensionIntegrationTest.class,
     SessionContextSqlFunctionTest.class,
+    JdbcSetClientInfoTest.class,
 })
 public class IntegrationTestSuite {
 }
