@@ -51,9 +51,6 @@ public class IgniteCacheManyClientsTest extends GridCommonAbstractTest {
     /** */
     private static final int SRVS = 4;
 
-    /** */
-    private boolean clientDiscovery;
-
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
@@ -74,9 +71,6 @@ public class IgniteCacheManyClientsTest extends GridCommonAbstractTest {
 
         ((TcpDiscoverySpi)cfg.getDiscoverySpi()).setIpFinderCleanFrequency(10 * 60_000);
         ((TcpDiscoverySpi)cfg.getDiscoverySpi()).setJoinTimeout(2 * 60_000);
-
-        if (!clientDiscovery)
-            ((TcpDiscoverySpi)cfg.getDiscoverySpi()).setForceServerMode(true);
 
         CacheConfiguration ccfg = new CacheConfiguration(DEFAULT_CACHE_NAME);
 
@@ -105,8 +99,6 @@ public class IgniteCacheManyClientsTest extends GridCommonAbstractTest {
      */
     @Test
     public void testManyClientsClientDiscovery() throws Throwable {
-        clientDiscovery = true;
-
         manyClientsPutGet();
     }
 
@@ -115,17 +107,7 @@ public class IgniteCacheManyClientsTest extends GridCommonAbstractTest {
      */
     @Test
     public void testManyClientsSequentiallyClientDiscovery() throws Exception {
-        clientDiscovery = true;
-
         manyClientsSequentially();
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
-    @Test
-    public void testManyClientsForceServerMode() throws Throwable {
-        manyClientsPutGet();
     }
 
     /**

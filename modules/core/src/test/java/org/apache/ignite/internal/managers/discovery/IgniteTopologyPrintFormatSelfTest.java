@@ -25,7 +25,6 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteKernal;
 import org.apache.ignite.internal.managers.GridManagerAdapter;
 import org.apache.ignite.internal.util.typedef.internal.U;
-import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.ListeningTestLogger;
 import org.apache.ignite.testframework.LogListener;
@@ -62,9 +61,6 @@ public class IgniteTopologyPrintFormatSelfTest extends GridCommonAbstractTest {
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName)
             .setGridLogger(testLog);
-
-        if (igniteInstanceName.endsWith("client_force_server"))
-            ((TcpDiscoverySpi)cfg.getDiscoverySpi()).setForceServerMode(true);
 
         return cfg;
     }
@@ -291,9 +287,9 @@ public class IgniteTopologyPrintFormatSelfTest extends GridCommonAbstractTest {
             Ignite srv1 = startGrid("server1");
             Ignite client1 = startClientGrid("first client");
             Ignite client2 = startClientGrid("second client");
-            Ignite forceServClnt3 = startClientGrid("third client_force_server");
+            Ignite client3 = startClientGrid("third client");
 
-            waitForDiscovery(srv, srv1, client1, client2, forceServClnt3);
+            waitForDiscovery(srv, srv1, client1, client2, client3);
         }
         finally {
             stopAllGrids();

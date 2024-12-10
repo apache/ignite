@@ -27,11 +27,13 @@ import java.util.concurrent.CompletableFuture;
 import java.util.function.Consumer;
 import java.util.function.Function;
 import javax.cache.Cache;
+import javax.cache.CacheException;
 import javax.cache.configuration.CacheEntryListenerConfiguration;
 import javax.cache.configuration.FactoryBuilder;
 import javax.cache.event.CacheEntryExpiredListener;
 import javax.cache.event.CacheEntryListener;
 import javax.cache.expiry.ExpiryPolicy;
+import javax.cache.integration.CacheWriter;
 import javax.cache.processor.EntryProcessor;
 import javax.cache.processor.EntryProcessorException;
 import javax.cache.processor.EntryProcessorResult;
@@ -120,6 +122,10 @@ public class TcpClientCache<K, V> implements ClientCache<K, V> {
 
     /** JCache adapter. */
     private final Cache<K, V> jCacheAdapter;
+
+    /** Exception thrown when a non-transactional ClientCache clear operation is invoked within a transaction. */
+    public static final String NON_TRANSACTIONAL_CLIENT_CACHE_CLEAR_IN_TX_ERROR_MESSAGE = "Failed to invoke a " +
+        "non-transactional ClientCache clear operation within a transaction.";
 
     /** Constructor. */
     TcpClientCache(String name, ReliableChannel ch, ClientBinaryMarshaller marsh, TcpClientTransactions transactions,
@@ -711,17 +717,49 @@ public class TcpClientCache<K, V> implements ClientCache<K, V> {
         );
     }
 
-    /** {@inheritDoc} */
+    /**
+     * Clears the contents of the cache. In contrast to {@link #removeAll()}, this method does not notify event listeners
+     * and {@link CacheWriter}s.
+     * Specified by {@link ClientCache#clear()}.
+     * This operation is not transactional. It calls broadcast closure that deletes all primary keys from remote nodes.
+     *
+     * @throws ClientException if operation is failed.
+     * @throws CacheException  if there is a problem during the clear.
+     */
     @Override public void clear() throws ClientException {
+        if (transactions.tx() != null)
+            throw new CacheException(NON_TRANSACTIONAL_CLIENT_CACHE_CLEAR_IN_TX_ERROR_MESSAGE);
+
         ch.request(ClientOperation.CACHE_CLEAR, this::writeCacheInfo);
     }
 
-    /** {@inheritDoc} */
+    /**
+     * Clears the contents of the cache asynchronously. In contrast to {@link #removeAll()}, this method does not notify
+     * event listeners and {@link CacheWriter}s.
+     * Specified by {@link ClientCache#clearAsync()}.
+     * This operation is not transactional. It calls broadcast closure that deletes all primary keys from remote nodes.
+     *
+     * @return a Future representing pending completion of the operation.
+     * @throws ClientException if operation is failed.
+     * @throws CacheException  if there is a problem during the clear.
+     */
     @Override public IgniteClientFuture<Void> clearAsync() throws ClientException {
+        if (transactions.tx() != null)
+            throw new CacheException(NON_TRANSACTIONAL_CLIENT_CACHE_CLEAR_IN_TX_ERROR_MESSAGE);
+
         return ch.requestAsync(ClientOperation.CACHE_CLEAR, this::writeCacheInfo);
     }
 
-    /** {@inheritDoc} */
+    /**
+     * Clears entry with specified key from the cache. In contrast to {@link #remove(Object)}, this method does not
+     * notify event listeners and {@link CacheWriter}s.
+     * Specified by {@link ClientCache#clear(Object)}.
+     * This operation is not transactional. It calls broadcast closure that deletes all primary keys from remote nodes.
+     *
+     * @param key Cache entry key to clear.
+     * @throws ClientException if operation is failed.
+     * @throws CacheException  if there is a problem during the clear.
+     */
     @Override public void clear(K key) throws ClientException {
         if (key == null)
             throw new NullPointerException("key");
@@ -734,7 +772,17 @@ public class TcpClientCache<K, V> implements ClientCache<K, V> {
         );
     }
 
-    /** {@inheritDoc} */
+    /**
+     * Clears entry with specified key from the cache asynchronously. In contrast to {@link #removeAsync(Object)},
+     * this method does not notify event listeners and {@link CacheWriter}s.
+     * Specified by {@link ClientCache#clearAsync(Object)}.
+     * This operation is not transactional. It calls broadcast closure that deletes all primary keys from remote nodes.
+     *
+     * @param key Cache entry key to clear.
+     * @return a Future representing pending completion of the operation.
+     * @throws ClientException if operation is failed.
+     * @throws CacheException  if there is a problem during the clear.
+     */
     @Override public IgniteClientFuture<Void> clearAsync(K key) throws ClientException {
         if (key == null)
             throw new NullPointerException("key");
@@ -747,7 +795,16 @@ public class TcpClientCache<K, V> implements ClientCache<K, V> {
         );
     }
 
-    /** {@inheritDoc} */
+    /**
+     * Clears entries with specified keys from the cache. In contrast to {@link #removeAll(Set)},
+     * this method does not notify event listeners and {@link CacheWriter}s.
+     * Specified by {@link ClientCache#clearAll(Set)}.
+     * This operation is not transactional. It calls broadcast closure that deletes all primary keys from remote nodes.
+     *
+     * @param keys Cache entry keys to clear.
+     * @throws ClientException if operation is failed.
+     * @throws CacheException  if there is a problem during the clear.
+     */
     @Override public void clearAll(Set<? extends K> keys) throws ClientException {
         if (keys == null)
             throw new NullPointerException("keys");
@@ -764,7 +821,17 @@ public class TcpClientCache<K, V> implements ClientCache<K, V> {
         );
     }
 
-    /** {@inheritDoc} */
+    /**
+     * Clears entries with specified keys from the cache asynchronously. In contrast to {@link #removeAllAsync(Set)},
+     * this method does not notify event listeners and {@link CacheWriter}s.
+     * Specified by {@link ClientCache#clearAllAsync(Set)}.
+     * This operation is not transactional. It calls broadcast closure that deletes all primary keys from remote nodes.\
+     *
+     * @param keys Cache entry keys to clear.
+     * @return Future representing pending completion of the operation.
+     * @throws ClientException if operation is failed.
+     * @throws CacheException  if there is a problem during the clear.
+     */
     @Override public IgniteClientFuture<Void> clearAllAsync(Set<? extends K> keys) throws ClientException {
         if (keys == null)
             throw new NullPointerException("keys");
@@ -1299,6 +1366,8 @@ public class TcpClientCache<K, V> implements ClientCache<K, V> {
         // Transactional operation cannot be executed on affinity node, it should be executed on node started
         // the transaction.
         if (tx != null) {
+            checkTxClearOperation(op);
+
             try {
                 return tx.clientChannel().service(op, payloadWriter, payloadReader);
             }
@@ -1326,6 +1395,8 @@ public class TcpClientCache<K, V> implements ClientCache<K, V> {
         // Transactional operation cannot be executed on affinity node, it should be executed on node started
         // the transaction.
         if (tx != null) {
+            checkTxClearOperation(op);
+
             CompletableFuture<T> fut = new CompletableFuture<>();
 
             tx.clientChannel().serviceAsync(op, payloadWriter, payloadReader).whenComplete((res, err) -> {
@@ -1346,6 +1417,12 @@ public class TcpClientCache<K, V> implements ClientCache<K, V> {
             return ch.affinityServiceAsync(cacheId, affKey, op, payloadWriter, payloadReader);
         else
             return ch.serviceAsync(op, payloadWriter, payloadReader);
+    }
+
+    /** */
+    private void checkTxClearOperation(ClientOperation op) {
+        if (op == ClientOperation.CACHE_CLEAR_KEY || op == ClientOperation.CACHE_CLEAR_KEYS)
+            throw new CacheException(NON_TRANSACTIONAL_CLIENT_CACHE_CLEAR_IN_TX_ERROR_MESSAGE);
     }
 
     /**

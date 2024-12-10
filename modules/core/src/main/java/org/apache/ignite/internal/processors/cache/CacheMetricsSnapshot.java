@@ -30,9 +30,7 @@ import org.apache.ignite.internal.util.typedef.internal.U;
  * Metrics snapshot.
  */
 public class CacheMetricsSnapshot extends IgniteDataTransferObject implements CacheMetrics {
-    /**
-     *
-     */
+    /** */
     private static final long serialVersionUID = 0L;
 
     /** Number of reads. */

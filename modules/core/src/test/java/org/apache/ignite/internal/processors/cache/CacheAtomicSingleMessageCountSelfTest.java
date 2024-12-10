@@ -37,7 +37,6 @@ import org.apache.ignite.lang.IgniteInClosure;
 import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.spi.IgniteSpiException;
 import org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi;
-import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
 
@@ -51,8 +50,6 @@ public class CacheAtomicSingleMessageCountSelfTest extends GridCommonAbstractTes
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
-
-        ((TcpDiscoverySpi)cfg.getDiscoverySpi()).setForceServerMode(true);
 
         CacheConfiguration cCfg = new CacheConfiguration(DEFAULT_CACHE_NAME);
 
@@ -75,8 +72,8 @@ public class CacheAtomicSingleMessageCountSelfTest extends GridCommonAbstractTes
      */
     @Test
     public void testSingleMessage() throws Exception {
-        startClientGrid(0);
         startGrid(1);
+        startClientGrid(0);
 
         awaitPartitionMapExchange();
 
@@ -104,8 +101,8 @@ public class CacheAtomicSingleMessageCountSelfTest extends GridCommonAbstractTes
      */
     @Test
     public void testSingleTransformMessage() throws Exception {
-        startClientGrid(0);
         startGrid(1);
+        startClientGrid(0);
 
         int cacheId = ((IgniteKernal)grid(0)).internalCache(DEFAULT_CACHE_NAME).context().cacheId();
 
@@ -143,8 +140,8 @@ public class CacheAtomicSingleMessageCountSelfTest extends GridCommonAbstractTes
      */
     @Test
     public void testSingleFilterMessage() throws Exception {
-        startClientGrid(0);
         startGrid(1);
+        startClientGrid(0);
 
         awaitPartitionMapExchange();
 
