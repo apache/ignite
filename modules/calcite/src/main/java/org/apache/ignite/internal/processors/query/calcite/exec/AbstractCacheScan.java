@@ -119,7 +119,7 @@ public abstract class AbstractCacheScan<Row> implements Iterable<Row>, AutoClose
         else
             toReserve = Collections.emptyList();
 
-        reserved = new ArrayList<>(toReserve.size());
+        List<GridDhtLocalPartition> reserved = new ArrayList<>(toReserve.size());
 
         try {
             for (GridDhtLocalPartition part : toReserve) {
@@ -140,6 +140,8 @@ public abstract class AbstractCacheScan<Row> implements Iterable<Row>, AutoClose
             throw e;
         }
         finally {
+            this.reserved = reserved;
+
             top.readUnlock();
         }
     }
