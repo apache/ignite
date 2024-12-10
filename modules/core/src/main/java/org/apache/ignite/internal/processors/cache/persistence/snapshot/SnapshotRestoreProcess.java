@@ -56,7 +56,6 @@ import org.apache.ignite.cluster.ClusterState;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.events.EventType;
 import org.apache.ignite.internal.GridKernalContext;
-import org.apache.ignite.internal.IgniteFeatures;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.NodeStoppingException;
@@ -99,7 +98,6 @@ import org.apache.ignite.metric.MetricRegistry;
 import org.jetbrains.annotations.Nullable;
 
 import static java.util.Optional.ofNullable;
-import static org.apache.ignite.internal.IgniteFeatures.SNAPSHOT_RESTORE_CACHE_GROUP;
 import static org.apache.ignite.internal.MarshallerContextImpl.mappingFileStoreWorkDir;
 import static org.apache.ignite.internal.pagemem.PageIdAllocator.INDEX_PARTITION;
 import static org.apache.ignite.internal.processors.cache.binary.CacheObjectBinaryProcessorImpl.binaryWorkDir;
@@ -282,9 +280,6 @@ public class SnapshotRestoreProcess {
 
             if (!clusterState.hasBaselineTopology())
                 throw new IgniteException(OP_REJECT_MSG + "The baseline topology is not configured for cluster.");
-
-            if (!IgniteFeatures.allNodesSupports(ctx.grid().cluster().nodes(), SNAPSHOT_RESTORE_CACHE_GROUP))
-                throw new IgniteException(OP_REJECT_MSG + "Not all nodes in the cluster support restore operation.");
 
             if (snpMgr.isSnapshotCreating())
                 throw new IgniteException(OP_REJECT_MSG + "A cluster snapshot operation is in progress.");

@@ -56,18 +56,12 @@ public enum IgniteFeatures {
     /** Partition Map Exchange-free switch on baseline node left at fully rebalanced cluster.  */
     PME_FREE_SWITCH(19),
 
-    /** ContinuousQuery with security subject id support. */
-    CONT_QRY_SECURITY_AWARE(21),
-
     /**
      * Preventing loss of in-memory data when deactivating the cluster.
      *
      * @see ClusterState#INACTIVE
      */
     SAFE_CLUSTER_DEACTIVATION(22),
-
-    /** Persistence caches can be snapshot.  */
-    PERSISTENCE_CACHE_SNAPSHOT(23),
 
     /** Remove metadata from cluster for specified type. */
     REMOVE_METADATA(39),
@@ -76,13 +70,7 @@ public enum IgniteFeatures {
     SHUTDOWN_POLICY(40),
 
     /** Compatibility support for new fields which are configured split. */
-    SPLITTED_CACHE_CONFIGURATIONS_V2(46),
-
-    /** Collecting performance statistics. */
-    PERFORMANCE_STATISTICS(48),
-
-    /** Restore cache group from the snapshot. */
-    SNAPSHOT_RESTORE_CACHE_GROUP(49);
+    SPLITTED_CACHE_CONFIGURATIONS_V2(46);
 
     /**
      * Unique feature identifier.
