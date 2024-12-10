@@ -37,6 +37,9 @@ import org.apache.ignite.internal.util.typedef.internal.U;
  * Test client application that either insert or select the BLOB via the Thin JDBC driver.
  */
 public class JdbcThinBlobTestApplication extends IgniteAwareApplication {
+    /** */
+    private static final int BUFFER_SIZE = 1024 * 1024;
+
     /** {@inheritDoc} */
     @Override public void run(JsonNode jsonNode) throws ClassNotFoundException, SQLException, IOException {
         int blobSize = Optional.ofNullable(jsonNode.get("blob_size")).map(JsonNode::asInt).orElse(1);
@@ -68,7 +71,6 @@ public class JdbcThinBlobTestApplication extends IgniteAwareApplication {
             }
             else if ("select".equals(action)) {
                 try (PreparedStatement selectStmt = conn.prepareStatement("SELECT * FROM query WHERE id = ?")) {
-
                     selectStmt.setInt(1, 1);
 
                     try (ResultSet resultSet = selectStmt.executeQuery()) {
@@ -108,17 +110,24 @@ public class JdbcThinBlobTestApplication extends IgniteAwareApplication {
     }
 
     /** */
-    private int copyStream(InputStream in, OutputStream out, long limit) throws IOException {
-        int readLen, writtenLen = 0;
+    private int copyStream(InputStream in, OutputStream out, int limit) throws IOException {
+        byte[] buf = new byte[Math.min(limit, BUFFER_SIZE)];
 
-        byte[] buf = new byte[1024 * 1024];
+        int written = 0;
 
-        while (-1 != (readLen = in.read(buf, 0, (int)Math.min(buf.length, limit - writtenLen))) && writtenLen < limit) {
-            out.write(buf, 0, readLen);
+        while (written < limit) {
+            int read;
 
-            writtenLen += readLen;
+            read = in.read(buf, 0, Math.min(buf.length, limit - written));
+
+            if (read == -1)
+                break;
+
+            out.write(buf, 0, read);
+
+            written += read;
         }
 
-        return writtenLen;
+        return written;
     }
 }
