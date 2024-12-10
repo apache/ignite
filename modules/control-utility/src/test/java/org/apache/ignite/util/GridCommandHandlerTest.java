@@ -138,6 +138,7 @@ import org.apache.ignite.spi.metric.LongMetric;
 import org.apache.ignite.spi.metric.Metric;
 import org.apache.ignite.spi.systemview.view.ComputeTaskView;
 import org.apache.ignite.testframework.GridTestUtils;
+import org.apache.ignite.testframework.ListeningTestLogger;
 import org.apache.ignite.testframework.LogListener;
 import org.apache.ignite.testframework.junits.WithSystemProperty;
 import org.apache.ignite.transactions.Transaction;
@@ -771,10 +772,19 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
         for (int i = 0; i < 10000; i++)
             cache.put(i, i);
 
+        ListeningTestLogger listeningLog = new ListeningTestLogger(log);
+
+        LogListener cancelMsgListener = LogListener.matches("idle_verify command has been canceled succesfully").times(1).build();
+
+        listeningLog.registerListener(cancelMsgListener);
+
         IgniteInternalFuture<Integer> idleVerifyFut = GridTestUtils.runAsync(() -> execute("--cache", "idle_verify"));
 
-        if (!idleVerifyFut.isDone())
-            assertEquals(EXIT_CODE_OK, execute("--cache", "idle_verify", "--cancel"));
+        assertFalse(idleVerifyFut.isDone());
+
+        assertEquals(EXIT_CODE_OK, execute("--cache", "idle_verify", "--cancel"));
+
+        waitForCondition(() -> idleVerifyFut.isDone() && cancelMsgListener.check(), 1000);
 
         int idleVerifyCnt = 0;
 
