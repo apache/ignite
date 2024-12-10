@@ -34,14 +34,14 @@ import org.apache.ignite.internal.ducktest.utils.IgniteAwareApplication;
 import org.apache.ignite.internal.util.typedef.internal.U;
 
 /**
- * Simple application that used in smoke tests
+ * Test client application that either insert or select the BLOB via the Thin JDBC driver.
  */
 public class JdbcThinBlobTestApplication extends IgniteAwareApplication {
     /** {@inheritDoc} */
     @Override public void run(JsonNode jsonNode) throws ClassNotFoundException, SQLException, IOException {
         int blobSize = Optional.ofNullable(jsonNode.get("blob_size")).map(JsonNode::asInt).orElse(1);
         String action = Optional.ofNullable(jsonNode.get("action")).map(JsonNode::asText).orElse("insert");
-        String mode = Optional.ofNullable(jsonNode.get("mode")).map(JsonNode::asText).orElse("stream");
+        String mode = Optional.ofNullable(jsonNode.get("mode")).map(JsonNode::asText).orElse("blob");
 
         try (Connection conn = thinJdbcDataSource.getConnection()) {
             markInitialized();
@@ -59,7 +59,8 @@ public class JdbcThinBlobTestApplication extends IgniteAwareApplication {
                         insStmt.setBlob(2, blob);
 
                         copyStream(getRandomStream(), blob.setBinaryStream(1), blobSize);
-                    } else if ("stream".equals(mode))
+                    }
+                    else
                         insStmt.setBlob(2, getRandomStream(), blobSize);
 
                     insStmt.execute();
