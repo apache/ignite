@@ -414,7 +414,7 @@ public class SessionContextCacheInterceptorTest extends GridCommonAbstractTest {
 
         /** */
         @Override public void onAfterPut(Cache.Entry<Integer, String> entry) {
-            // TODO: test
+
         }
 
         /** */
@@ -426,7 +426,7 @@ public class SessionContextCacheInterceptorTest extends GridCommonAbstractTest {
 
         /** */
         @Override public void onAfterRemove(Cache.Entry<Integer, String> entry) {
-            // TODO: test
+
         }
     }
 
