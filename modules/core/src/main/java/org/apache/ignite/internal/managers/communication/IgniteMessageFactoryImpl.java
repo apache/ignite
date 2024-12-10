@@ -18,12 +18,9 @@
 package org.apache.ignite.internal.managers.communication;
 
 import java.lang.reflect.Array;
-import java.util.ArrayList;
-import java.util.List;
 import java.util.function.Supplier;
 
 import org.apache.ignite.IgniteException;
-import org.apache.ignite.plugin.extensions.communication.IgniteMessageFactory;
 import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.plugin.extensions.communication.MessageFactory;
 import org.apache.ignite.plugin.extensions.communication.MessageFactoryProvider;
@@ -32,7 +29,7 @@ import org.jetbrains.annotations.Nullable;
 /**
  * Message factory implementation which is responsible for instantiation of all communication messages.
  */
-public class IgniteMessageFactoryImpl implements IgniteMessageFactory {
+public class IgniteMessageFactoryImpl implements MessageFactory {
     /** Offset. */
     private static final int OFF = -Short.MIN_VALUE;
 
@@ -59,38 +56,12 @@ public class IgniteMessageFactoryImpl implements IgniteMessageFactory {
      *
      * @param factories Concrete message factories or message factory providers. Cfn't be empty or {@code null}.
      */
-    public IgniteMessageFactoryImpl(MessageFactory[] factories) {
+    public IgniteMessageFactoryImpl(MessageFactoryProvider[] factories) {
         if (factories == null || factories.length == 0)
             throw new IllegalArgumentException("Message factory couldn't be initialized. Factories aren't provided.");
 
-        List<MessageFactory> old = new ArrayList<>(factories.length);
-
-        for (MessageFactory factory : factories) {
-            if (factory instanceof MessageFactoryProvider) {
-                MessageFactoryProvider p = (MessageFactoryProvider)factory;
-
-                p.registerAll(this);
-            }
-            else
-                old.add(factory);
-        }
-
-        if (!old.isEmpty()) {
-            for (int i = 0; i < ARR_SIZE; i++) {
-                Supplier<Message> curr = msgSuppliers[i];
-
-                if (curr == null) {
-                    short directType = indexToDirectType(i);
-
-                    for (MessageFactory factory : old) {
-                        Message msg = factory.create(directType);
-
-                        if (msg != null)
-                            register(directType, () -> factory.create(directType));
-                    }
-                }
-            }
-        }
+        for (MessageFactoryProvider factory : factories)
+            factory.registerAll(this);
 
         initialized = true;
     }

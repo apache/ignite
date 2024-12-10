@@ -24,7 +24,6 @@ import java.util.Map;
 import java.util.UUID;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.internal.GridKernalContext;
-import org.apache.ignite.internal.IgniteFeatures;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.managers.encryption.GridEncryptionManager.EmptyResult;
 import org.apache.ignite.internal.managers.encryption.GridEncryptionManager.KeyChangeFuture;

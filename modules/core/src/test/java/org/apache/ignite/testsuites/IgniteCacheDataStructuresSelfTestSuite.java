@@ -26,7 +26,6 @@ import org.apache.ignite.internal.processors.cache.datastructures.IgniteAtomicRe
 import org.apache.ignite.internal.processors.cache.datastructures.IgniteAtomicSequenceClusterReadOnlyTest;
 import org.apache.ignite.internal.processors.cache.datastructures.IgniteAtomicStampedClusterReadOnlyTest;
 import org.apache.ignite.internal.processors.cache.datastructures.IgniteClientDataStructuresTest;
-import org.apache.ignite.internal.processors.cache.datastructures.IgniteClientDiscoveryDataStructuresTest;
 import org.apache.ignite.internal.processors.cache.datastructures.IgniteCountDownLatchClusterReadOnlyTest;
 import org.apache.ignite.internal.processors.cache.datastructures.IgniteDataStructureUniqueNameTest;
 import org.apache.ignite.internal.processors.cache.datastructures.IgniteDataStructureWithJobTest;
@@ -172,7 +171,6 @@ import org.junit.runners.Suite;
     IgniteDataStructuresNoClassOnServerTest.class,
 
     IgniteClientDataStructuresTest.class,
-    IgniteClientDiscoveryDataStructuresTest.class,
 
     IgnitePartitionedQueueNoBackupsTest.class,
 
