@@ -866,7 +866,11 @@ public class JdbcRequestHandler implements ClientListenerRequestHandler, ClientT
     }
 
     /** */
-    private List<FieldsQueryCursor<List<?>>> querySqlFields(SqlFieldsQueryEx qry, GridQueryCancel cancel, @Nullable Map<String, String> appAttrs) {
+    private List<FieldsQueryCursor<List<?>>> querySqlFields(
+        SqlFieldsQueryEx qry,
+        GridQueryCancel cancel,
+        @Nullable Map<String, String> appAttrs
+    ) {
         return connCtx.kernalContext().query().querySqlFields(null, qry,
             cliCtx, true, protocolVer.compareTo(VER_2_3_0) < 0, GridCacheQueryType.SQL_FIELDS, cancel, appAttrs);
     }
