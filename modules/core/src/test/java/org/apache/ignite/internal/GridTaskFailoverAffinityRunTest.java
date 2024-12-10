@@ -98,6 +98,7 @@ public class GridTaskFailoverAffinityRunTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     private void nodeRestart() throws Exception {
+        // +1 for extra client node.
         startGridsMultiThreaded(GRID_CNT + 1);
 
         assertEquals((Boolean)clientMode, client().configuration().isClientMode());
@@ -110,7 +111,11 @@ public class GridTaskFailoverAffinityRunTest extends GridCommonAbstractTest {
 
         IgniteInternalFuture<?> fut = GridTestUtils.runMultiThreadedAsync(new Callable<Object>() {
             @Override public Object call() throws Exception {
-                int grid = gridIdx.getAndIncrement() % GRID_CNT;
+                int grid = gridIdx.getAndIncrement();
+
+                // Don't stop client node.
+                if (grid == GRID_CNT)
+                    grid = gridIdx.getAndIncrement();
 
                 while (!stop.get() && System.currentTimeMillis() < stopTime) {
                     stopGrid(grid);
