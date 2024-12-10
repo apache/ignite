@@ -42,7 +42,7 @@ import org.apache.ignite.resources.SessionContextProviderResource;
  *     cacheCfg.setSqlFunctionClasses(MyFunctions.class);
  *
  *     // And use in queries.
- *     ign.query(new SqlFieldsQuery("select sqr(2) where sqr(1) = 1"));
+ *     cache.query(new SqlFieldsQuery("select sqr(2) where sqr(1) = 1"));
  * </pre>
  * <p>
  * SQL functions can use attributes set on client side:

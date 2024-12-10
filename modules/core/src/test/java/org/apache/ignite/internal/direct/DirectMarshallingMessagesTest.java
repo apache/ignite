@@ -23,9 +23,9 @@ import java.util.function.Function;
 import org.apache.ignite.internal.managers.communication.GridIoMessageFactory;
 import org.apache.ignite.internal.managers.communication.IgniteMessageFactoryImpl;
 import org.apache.ignite.internal.util.distributed.SingleNodeMessage;
-import org.apache.ignite.plugin.extensions.communication.IgniteMessageFactory;
 import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.plugin.extensions.communication.MessageFactory;
+import org.apache.ignite.plugin.extensions.communication.MessageFactoryProvider;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
 
@@ -35,12 +35,9 @@ import static org.apache.ignite.internal.util.distributed.DistributedProcess.Dis
  * Messages marshalling test.
  */
 public class DirectMarshallingMessagesTest extends GridCommonAbstractTest {
-    /** Protocol version. */
-    private static final byte PROTO_VER = 2;
-
     /** Message factory. */
-    private final IgniteMessageFactory msgFactory =
-        new IgniteMessageFactoryImpl(new MessageFactory[] {new GridIoMessageFactory()});
+    private final MessageFactory msgFactory =
+        new IgniteMessageFactoryImpl(new MessageFactoryProvider[] {new GridIoMessageFactory()});
 
     /** */
     @Test
@@ -65,7 +62,7 @@ public class DirectMarshallingMessagesTest extends GridCommonAbstractTest {
     private <T extends Message> T doMarshalUnmarshal(T srcMsg) {
         ByteBuffer buf = ByteBuffer.allocate(8 * 1024);
 
-        boolean fullyWritten = loopBuffer(buf, 0, buf0 -> srcMsg.writeTo(buf0, new DirectMessageWriter(PROTO_VER)));
+        boolean fullyWritten = loopBuffer(buf, 0, buf0 -> srcMsg.writeTo(buf0, new DirectMessageWriter()));
         assertTrue("The message was not written completely.", fullyWritten);
 
         buf.flip();
@@ -80,7 +77,7 @@ public class DirectMarshallingMessagesTest extends GridCommonAbstractTest {
         T resMsg = (T)msgFactory.create(type);
 
         boolean fullyRead = loopBuffer(buf, buf.position(),
-            buf0 -> resMsg.readFrom(buf0, new DirectMessageReader(msgFactory, PROTO_VER)));
+            buf0 -> resMsg.readFrom(buf0, new DirectMessageReader(msgFactory)));
         assertTrue("The message was not read completely.", fullyRead);
 
         return resMsg;

@@ -29,7 +29,7 @@ import org.jetbrains.annotations.Nullable;
 public interface SessionContext {
     /**
      * @param name Attribute name.
-     * @return Attribute value, or {@code null} if not speicifed.
-    .*/
+     * @return Attribute value, or {@code null} if not specified.
+     */
     public @Nullable String getAttribute(String name);
 }

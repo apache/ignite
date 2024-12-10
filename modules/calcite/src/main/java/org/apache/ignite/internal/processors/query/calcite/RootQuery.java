@@ -52,7 +52,6 @@ import org.apache.ignite.internal.processors.query.calcite.prepare.Fragment;
 import org.apache.ignite.internal.processors.query.calcite.prepare.PlanningContext;
 import org.apache.ignite.internal.processors.query.calcite.util.Commons;
 import org.apache.ignite.internal.processors.query.running.TrackableQuery;
-import org.apache.ignite.internal.processors.resource.GridResourceProcessor;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -165,7 +164,7 @@ public class RootQuery<RowT> extends Query<RowT> implements TrackableQuery {
             sql,
             schema,
             params,
-            QueryContext.of(cancel, ctx.unwrap(GridResourceProcessor.class), ctx.unwrap(SessionContext.class)),
+            QueryContext.of(cancel, ctx.unwrap(SessionContext.class)),
             ctx.isLocal(),
             ctx.isForcedJoinOrder(),
             ctx.partitions(),

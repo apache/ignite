@@ -23,6 +23,7 @@ import java.util.Map;
 import java.util.UUID;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.GridDirectCollection;
+import org.apache.ignite.internal.GridDirectMap;
 import org.apache.ignite.internal.GridDirectTransient;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
@@ -73,6 +74,7 @@ public class QueryStartRequest implements MarshalableMessage, ExecutionContextAw
     private @Nullable Collection<QueryTxEntry> qryTxEntries;
 
     /** */
+    @GridDirectMap(keyType = String.class, valueType = String.class)
     private Map<String, String> appAttrs;
 
     /** */

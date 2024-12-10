@@ -22,9 +22,9 @@ import java.util.List;
 
 import org.apache.calcite.linq4j.tree.Expression;
 import org.apache.calcite.linq4j.tree.Expressions;
-import org.apache.calcite.linq4j.tree.Types;
 import org.apache.calcite.rex.RexCall;
-import org.apache.ignite.internal.processors.query.calcite.exec.ExecutionContext;
+
+import static org.apache.ignite.internal.processors.query.calcite.util.IgniteMethod.UDF_INSTANCE;
 
 /**
  * Implementation of {@link NotNullImplementor} that calls a given {@link Method}.
@@ -60,7 +60,7 @@ public class ReflectiveCallNotNullImplementor implements NotNullImplementor {
             final Expression target = Expressions.convert_(
                 Expressions.call(
                     translator.getRoot(),
-                    Types.lookupMethod(ExecutionContext.class, "udfObject", String.class),
+                    UDF_INSTANCE.method(),
                     Expressions.constant(method.getDeclaringClass().getName())),
                 method.getDeclaringClass());
 
