@@ -19,10 +19,7 @@ package org.apache.ignite.internal;
 
 import java.util.BitSet;
 import org.apache.ignite.cluster.ClusterNode;
-import org.apache.ignite.cluster.ClusterState;
 import org.apache.ignite.internal.managers.discovery.IgniteDiscoverySpi;
-import org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi;
-import org.apache.ignite.spi.communication.tcp.messages.HandshakeWaitMessage;
 import org.apache.ignite.spi.discovery.DiscoverySpi;
 
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_PME_FREE_SWITCH_DISABLED;
@@ -33,38 +30,11 @@ import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_IGNITE_FEATUR
  * Defines supported features and check its on other nodes.
  */
 public enum IgniteFeatures {
-    /**
-     * Support of {@link HandshakeWaitMessage} by {@link TcpCommunicationSpi}.
-     */
-    TCP_COMMUNICATION_SPI_HANDSHAKE_WAIT_MESSAGE(0),
-
-    /** Data paket compression. */
-    DATA_PACKET_COMPRESSION(3),
-
     /** Support of splitted cache configurations to avoid broken deserialization on non-affinity nodes. */
     SPLITTED_CACHE_CONFIGURATIONS(5),
 
-    /** Distributed metastorage. */
-    DISTRIBUTED_METASTORAGE(11),
-
-    /** The node can communicate with others via socket channel. */
-    CHANNEL_COMMUNICATION(12),
-
-    /** Replacing TcpDiscoveryNode field with nodeId field in discovery messages. */
-    TCP_DISCOVERY_MESSAGE_NODE_COMPACT_REPRESENTATION(14),
-
     /** Partition Map Exchange-free switch on baseline node left at fully rebalanced cluster.  */
     PME_FREE_SWITCH(19),
-
-    /**
-     * Preventing loss of in-memory data when deactivating the cluster.
-     *
-     * @see ClusterState#INACTIVE
-     */
-    SAFE_CLUSTER_DEACTIVATION(22),
-
-    /** Remove metadata from cluster for specified type. */
-    REMOVE_METADATA(39),
 
     /** Support policy of shutdown. */
     SHUTDOWN_POLICY(40),

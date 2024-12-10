@@ -58,20 +58,6 @@ public class TcpDiscoveryStatusCheckMessage extends TcpDiscoveryAbstractMessage 
     /**
      * Constructor.
      *
-     * @param creatorNode Creator node.
-     * @param failedNodeId Failed node id.
-     */
-    public TcpDiscoveryStatusCheckMessage(TcpDiscoveryNode creatorNode, UUID failedNodeId) {
-        super(creatorNode.id());
-
-        this.creatorNode = creatorNode;
-        this.failedNodeId = failedNodeId;
-        this.creatorNodeAddrs = null;
-    }
-
-    /**
-     * Constructor.
-     *
      * @param creatorNodeAddrs Addresses of creator node, used to be able not to serialize node in message.
      * @param creatorNodeId Creator node ID.
      * @param failedNodeId Failed node id.
