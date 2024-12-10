@@ -64,7 +64,7 @@ import org.junit.runners.Suite;
     GridSessionLoadSelfTest.class,
     GridSessionCollisionSpiSelfTest.class,
     GridSessionCheckpointSelfTest.class,
-    IgniteWithApplicationAttributesAwareTest.class
+    IgniteWithApplicationAttributesAwareTest.class,
 })
 public class IgniteTaskSessionSelfTestSuite {
 }
