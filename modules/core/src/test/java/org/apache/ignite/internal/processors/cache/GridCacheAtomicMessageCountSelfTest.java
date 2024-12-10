@@ -150,6 +150,7 @@ public class GridCacheAtomicMessageCountSelfTest extends GridCommonAbstractTest 
         }
     }
 
+    /** */
     private IgniteEx client() {
         return ignite(GRID_CNT);
     }
