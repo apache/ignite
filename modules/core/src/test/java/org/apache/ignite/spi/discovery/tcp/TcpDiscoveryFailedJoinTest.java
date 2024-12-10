@@ -72,7 +72,6 @@ public class TcpDiscoveryFailedJoinTest extends GridCommonAbstractTest {
 
         discoSpi.setIpFinder(finder);
         discoSpi.setNetworkTimeout(2_000);
-        discoSpi.setForceServerMode(gridName.contains("client") && gridName.contains("server"));
 
         cfg.setDiscoverySpi(discoSpi);
 
@@ -130,9 +129,6 @@ public class TcpDiscoveryFailedJoinTest extends GridCommonAbstractTest {
 
         assertStartFailed("server-47503");
 
-        // Client in server mode.
-        assertStartFailed("client_server-47503");
-
         // Regular client starts normally.
         startClientGrid("client-47503");
     }
@@ -149,9 +145,6 @@ public class TcpDiscoveryFailedJoinTest extends GridCommonAbstractTest {
         startGrid("server-47502");
 
         assertStartFailed("server-47503");
-
-        // Client in server mode.
-        assertStartFailed("client_server-47503");
 
         // Regular client starts normally.
         startClientGrid("client-47503");
