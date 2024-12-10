@@ -66,6 +66,7 @@ import org.apache.ignite.internal.client.thin.io.ClientConnectionMultiplexer;
 import org.apache.ignite.internal.client.thin.io.ClientConnectionStateHandler;
 import org.apache.ignite.internal.client.thin.io.ClientMessageHandler;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
+import org.apache.ignite.internal.processors.odbc.ClientConnectionNodeRecoveryException;
 import org.apache.ignite.internal.processors.odbc.ClientListenerNioListener;
 import org.apache.ignite.internal.processors.odbc.ClientListenerRequest;
 import org.apache.ignite.internal.processors.platform.client.ClientFlag;
@@ -73,6 +74,7 @@ import org.apache.ignite.internal.processors.platform.client.ClientStatus;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.T2;
+import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.logger.NullLogger;
@@ -128,7 +130,7 @@ class TcpClientChannel implements ClientChannel, ClientMessageHandler, ClientCon
     private volatile AffinityTopologyVersion srvTopVer;
 
     /** Channel. */
-    private final ClientConnection sock;
+    private volatile ClientConnection sock;
 
     /** Request id. */
     private final AtomicLong reqId = new AtomicLong(1);
@@ -199,7 +201,6 @@ class TcpClientChannel implements ClientChannel, ClientMessageHandler, ClientCon
 
         List<InetSocketAddress> addrs = cfg.getAddresses();
 
-        ClientConnection sock = null;
         ClientConnectionException connectionEx = null;
 
         assert !addrs.isEmpty();
@@ -210,17 +211,33 @@ class TcpClientChannel implements ClientChannel, ClientMessageHandler, ClientCon
 
                 if (log.isDebugEnabled())
                     log.debug("Connection established: " + addr);
-
-                break;
             }
             catch (ClientConnectionException e) {
                 log.info("Can't establish connection with " + addr);
 
-                if (connectionEx != null)
-                    connectionEx.addSuppressed(e);
-                else
-                    connectionEx = e;
+                connectionEx = U.addSuppressed(connectionEx, e);
+
+                continue;
             }
+
+            try {
+                handshake(DEFAULT_VERSION, cfg.getUserName(), cfg.getUserPassword(), cfg.getUserAttributes());
+            }
+            catch (ClientConnectionException e) {
+                if (!X.hasCause(e, ClientConnectionNodeRecoveryException.class))
+                    throw e;
+
+                log.info("Can't establish connection with " + addr + ". Node in recovery mode.");
+
+                connectionEx = U.addSuppressed(connectionEx, e);
+
+                U.closeQuiet(sock);
+                sock = null;
+
+                continue;
+            }
+
+            break;
         }
 
         if (sock == null) {
@@ -228,10 +245,6 @@ class TcpClientChannel implements ClientChannel, ClientMessageHandler, ClientCon
 
             throw connectionEx;
         }
-
-        this.sock = sock;
-
-        handshake(DEFAULT_VERSION, cfg.getUserName(), cfg.getUserPassword(), cfg.getUserAttributes());
 
         assert protocolCtx != null : "Protocol context after handshake is null";
 
@@ -771,6 +784,8 @@ class TcpClientChannel implements ClientChannel, ClientMessageHandler, ClientCon
                         RuntimeException resultErr = null;
                         if (errCode == ClientStatus.AUTH_FAILED)
                             resultErr = new ClientAuthenticationException(err);
+                        else if (errCode == ClientStatus.NODE_IN_RECOVERY_MODE)
+                            throw new ClientConnectionNodeRecoveryException(err);
                         else if (ver.equals(srvVer))
                             resultErr = new ClientProtocolError(err);
                         else if (!supportedVers.contains(srvVer) ||

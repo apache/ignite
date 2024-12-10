@@ -54,10 +54,10 @@ public class IntervalTest extends AbstractBasicIntegrationTest {
     }
 
     /**
-     * Test cast interval types to integer and integer to interval.
+     * Test cast interval types to numeric and numeric to interval.
      */
     @Test
-    public void testIntervalIntCast() {
+    public void testIntervalNumCast() {
         assertNull(eval("CAST(NULL::INTERVAL SECONDS AS INT)"));
         assertNull(eval("CAST(NULL::INTERVAL MONTHS AS INT)"));
         assertEquals(1, eval("CAST(INTERVAL 1 SECONDS AS INT)"));
@@ -77,6 +77,14 @@ public class IntervalTest extends AbstractBasicIntegrationTest {
         assertEquals(Duration.ofDays(4), eval("CAST(4 AS INTERVAL DAYS)"));
         assertEquals(Period.ofMonths(5), eval("CAST(5 AS INTERVAL MONTHS)"));
         assertEquals(Period.ofYears(6), eval("CAST(6 AS INTERVAL YEARS)"));
+        assertEquals(Duration.ofDays(1), eval("CAST(1::INT AS INTERVAL DAYS)"));
+        assertEquals(Period.ofMonths(1), eval("CAST(1::INT AS INTERVAL MONTHS)"));
+        assertEquals(Duration.ofHours(36), eval("CAST(1.5 AS INTERVAL DAYS)"));
+        assertEquals(Period.of(1, 6, 0), eval("CAST(1.5 AS INTERVAL YEARS)"));
+        assertEquals(Duration.ofHours(36), eval("CAST(f AS INTERVAL DAYS) FROM (VALUES(1.5)) AS t(f)"));
+        assertEquals(Period.of(1, 6, 0), eval("CAST(f AS INTERVAL YEARS) FROM (VALUES(1.5)) AS t(f)"));
+        assertEquals(Duration.ofHours(36), eval("CAST(1.5::DECIMAL AS INTERVAL DAYS)"));
+        assertEquals(Period.of(1, 6, 0), eval("CAST(1.5::DECIMAL AS INTERVAL YEARS)"));
 
         // Compound interval types cannot be cast.
         assertThrows("SELECT CAST(INTERVAL '1-2' YEAR TO MONTH AS INT)", IgniteSQLException.class, "cannot convert");
@@ -388,7 +396,7 @@ public class IntervalTest extends AbstractBasicIntegrationTest {
     }
 
     /** */
-    public Object eval(String exp) {
-        return executeSql("SELECT " + exp).get(0).get(0);
+    public Object eval(String exp, Object... params) {
+        return executeSql("SELECT " + exp, params).get(0).get(0);
     }
 }
