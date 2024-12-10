@@ -68,6 +68,9 @@ Register name: `cache.{cache_name}.{near}`
 |CacheSize|long|Local cache size.
 |CommitTime  |histogram  | Commit time in nanoseconds.
 |CommitTimeTotal |long| The total time of commit, in nanoseconds.
+|ConflictResolverAcceptedCount|long|Conflict resolver accepted entries count.
+|ConflictResolverRejectedCount|long|Conflict resolver rejected entries count.
+|ConflictResolverMergedCount|long|Conflict resolver merged entries count.
 |EntryProcessorHits | long|The total number of invocations on keys, which exist in cache.
 |EntryProcessorInvokeTimeNanos | long | The total time of cache invocations for which this node is the initiator, in nanoseconds.
 |EntryProcessorMaxInvocationTime |long | So far, the maximum time to execute cache invokes for which this node is the initiator.
@@ -92,6 +95,7 @@ Register name: `cache.{cache_name}.{near}`
 |OffHeapPrimaryEntriesCount|long|Offheap primary entries count.
 |OffHeapPuts |long|The total number of put requests to the off-heap memory.
 |OffHeapRemovals |long|The total number of removals from the off-heap memory.
+|PutAllConflictTime | histogram | PutAllConflict time for which this node is the initiator, in nanoseconds.
 |PutAllTime | histogram | PutAll time for which this node is the initiator, in nanoseconds.
 |PutTime | histogram | Put time for which this node is the initiator, in nanoseconds.
 |PutTimeTotal | long | The total time of cache puts for which this node is the initiator, in nanoseconds.
@@ -106,6 +110,7 @@ Register name: `cache.{cache_name}.{near}`
 |RebalancedKeys |long| Number of already rebalanced keys.
 |RebalancingBytesRate|long|Estimated rebalancing speed in bytes.
 |RebalancingKeysRate |long|Estimated rebalancing speed in keys.
+|RemoveAllConflictTime | histogram | RemoveAllConflict time for which this node is the initiator, in nanoseconds.
 |RemoveAllTime | histogram | RemoveAll time for which this node is the initiator, in nanoseconds.
 |RemoveTime | histogram | Remove time for which this node is the initiator. in nanoseconds.
 |RemoveTimeTotal | long | The total time of cache removal, in nanoseconds.

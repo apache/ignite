@@ -47,6 +47,7 @@ import org.apache.calcite.schema.SchemaPlus;
 import org.apache.calcite.sql.SqlExplainLevel;
 import org.apache.calcite.sql.SqlFunction;
 import org.apache.calcite.sql.SqlNode;
+import org.apache.calcite.sql.type.SqlTypeName;
 import org.apache.calcite.sql2rel.InitializerContext;
 import org.apache.calcite.util.ImmutableBitSet;
 import org.apache.calcite.util.Util;
@@ -101,8 +102,6 @@ import org.junit.Before;
 import org.mockito.Mockito;
 
 import static org.apache.calcite.tools.Frameworks.createRootSchema;
-import static org.apache.calcite.tools.Frameworks.newConfigBuilder;
-import static org.apache.ignite.internal.processors.query.calcite.CalciteQueryProcessor.FRAMEWORK_CONFIG;
 import static org.apache.ignite.internal.processors.query.calcite.externalize.RelJsonWriter.toJson;
 
 /**
@@ -645,8 +644,15 @@ public abstract class AbstractPlannerTest extends GridCommonAbstractTest {
 
         RelDataTypeFactory.Builder b = new RelDataTypeFactory.Builder(TYPE_FACTORY);
 
-        for (int i = 0; i < fields.length; i += 2)
-            b.add((String)fields[i], TYPE_FACTORY.createJavaType((Class<?>)fields[i + 1]));
+        for (int i = 0; i < fields.length; i += 2) {
+            if (!(fields[i + 1] instanceof Class) && !(fields[i + 1] instanceof SqlTypeName))
+                throw new IllegalArgumentException("'fields[" + i + "]' should be a class or a SqlTypeName");
+
+            RelDataType type = fields[i + 1] instanceof Class ? TYPE_FACTORY.createJavaType((Class<?>)fields[i + 1]) :
+                TYPE_FACTORY.createSqlType((SqlTypeName)fields[i + 1]);
+
+            b.add((String)fields[i], type);
+        }
 
         return new TestTable(name, b.build(), size) {
             @Override public IgniteDistribution distribution() {
@@ -676,18 +682,14 @@ public abstract class AbstractPlannerTest extends GridCommonAbstractTest {
         SchemaPlus dfltSchema = null;
 
         for (IgniteSchema igniteSchema : schemas) {
-            SchemaPlus schema = rootSchema.add(igniteSchema.getName(), igniteSchema);
+            SchemaPlus schema = igniteSchema.register(rootSchema);
 
             if (dfltSchema == null || DEFAULT_SCHEMA.equals(schema.getName()))
                 dfltSchema = schema;
         }
 
         return BaseQueryContext.builder()
-            .frameworkConfig(
-                newConfigBuilder(FRAMEWORK_CONFIG)
-                    .defaultSchema(dfltSchema)
-                    .build()
-            )
+            .defaultSchema(dfltSchema)
             .logger(lsnrLog)
             .build();
     }

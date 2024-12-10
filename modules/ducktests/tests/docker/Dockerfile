@@ -13,7 +13,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-ARG jdk_version=openjdk:8
+ARG jdk_version=openjdk:11
 FROM $jdk_version
 
 MAINTAINER Apache Ignite dev@ignite.apache.org
@@ -35,7 +35,7 @@ LABEL ducker.creator=$ducker_creator
 # Update Linux and install necessary utilities.
 RUN cat /etc/apt/sources.list | sed 's/http:\/\/deb.debian.org/https:\/\/deb.debian.org/g' > /etc/apt/sources.list.2 && mv /etc/apt/sources.list.2 /etc/apt/sources.list
 RUN apt update && apt install -y sudo netcat iptables rsync unzip wget curl jq coreutils openssh-server net-tools vim python3-pip python3-dev libffi-dev libssl-dev cmake pkg-config libfuse-dev iperf traceroute mc && apt-get -y clean
-RUN python3 -m pip install -U pip==20.2.2;
+RUN python3 -m pip install -U pip==24.3.1;
 COPY ./requirements.txt /root/requirements.txt
 RUN pip3 install -r /root/requirements.txt
 

@@ -6695,7 +6695,7 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
     /**
      *
      */
-    private static class RemoveAndReturnNullEntryProcessor implements
+    public static class RemoveAndReturnNullEntryProcessor implements
         EntryProcessor<String, Integer, Integer>, Serializable {
 
         /** {@inheritDoc} */

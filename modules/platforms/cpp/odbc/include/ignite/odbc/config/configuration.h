@@ -27,7 +27,6 @@
 #include "ignite/odbc/ssl_mode.h"
 #include "ignite/odbc/end_point.h"
 #include "ignite/odbc/engine_mode.h"
-#include "ignite/odbc/nested_tx_mode.h"
 
 namespace ignite
 {
@@ -106,9 +105,6 @@ namespace ignite
 
                     /** Default value for password attribute. */
                     static const std::string password;
-
-                    /** Default value for nestedTxMode attribute. */
-                    static const NestedTxMode::Type nestedTxMode;
 
                     /** Default value for SQL engine attribute. */
                     static const EngineMode::Type engineMode;
@@ -545,27 +541,6 @@ namespace ignite
                 bool IsPasswordSet() const;
 
                 /**
-                 * Get nested transaction mode.
-                 *
-                 * @return Nested transaction mode.
-                 */
-                NestedTxMode::Type GetNestedTxMode() const;
-
-                /**
-                 * Set nested transaction mode.
-                 *
-                 * @param mode Nested transaction mode.
-                 */
-                void SetNestedTxMode(NestedTxMode::Type mode);
-
-                /**
-                 * Check if the value set.
-                 *
-                 * @return @true if the value set.
-                 */
-                bool IsNestedTxModeSet() const;
-
-                /**
                  * Get SQL engine mode.
                  *
                  * @return SQL engine mode.
@@ -664,9 +639,6 @@ namespace ignite
                 /** Password. */
                 SettableValue<std::string> password;
 
-                /** Nested transaction mode. */
-                SettableValue<NestedTxMode::Type> nestedTxMode;
-
                 /** SQL engine mode. */
                 SettableValue<EngineMode::Type> engineMode;
             };
@@ -698,10 +670,6 @@ namespace ignite
             template<>
             void Configuration::AddToMap<ssl::SslMode::Type>(ArgumentMap& map, const std::string& key,
                 const SettableValue<ssl::SslMode::Type>& value);
-
-            template<>
-            void Configuration::AddToMap<NestedTxMode::Type>(ArgumentMap& map, const std::string& key,
-                const SettableValue<NestedTxMode::Type>& value);
 
             template<>
             void Configuration::AddToMap(ArgumentMap& map, const std::string& key,

@@ -99,7 +99,7 @@ public class IgniteStatisticsManagerImpl implements IgniteStatisticsManager {
     private final DistributedEnumProperty<StatisticsUsageState> usageState = new DistributedEnumProperty<>(
         "statistics.usage.state",
         "Statistics usage state. OFF - No statistics used, NO_UPDATE - Statistics used 'as is' without updates, " +
-            "ON - Statistics used and updated after each changes.",
+            "ON - Statistics used and updated after each changes (a default value).",
         StatisticsUsageState::fromOrdinal,
         StatisticsUsageState::index,
         StatisticsUsageState.class);
@@ -216,8 +216,10 @@ public class IgniteStatisticsManagerImpl implements IgniteStatisticsManager {
 
         ctx.internalSubscriptionProcessor().registerDistributedConfigurationListener(dispatcher -> {
             usageState.addListener((name, oldVal, newVal) -> {
-                if (log.isInfoEnabled())
-                    log.info(String.format("Statistics usage state was changed from %s to %s", oldVal, newVal));
+                if (log.isInfoEnabled() && newVal != null) {
+                    log.info(String.format("Statistics usage state was changed from %s to %s",
+                        oldVal == null ? DEFAULT_STATISTICS_USAGE_STATE : oldVal, newVal));
+                }
 
                 lastUsageState = newVal;
 
@@ -371,7 +373,7 @@ public class IgniteStatisticsManagerImpl implements IgniteStatisticsManager {
     }
 
     /** {@inheritDoc} */
-    @Override public void refreshStatistics(StatisticsTarget... targets) throws IgniteCheckedException {
+    @Override public void refreshStatistics(StatisticsTarget... targets) {
         ensureActive("refresh statistics");
 
         if (usageState() == OFF)
@@ -381,7 +383,7 @@ public class IgniteStatisticsManagerImpl implements IgniteStatisticsManager {
     }
 
     /** {@inheritDoc} */
-    @Override public void dropAll() throws IgniteCheckedException {
+    @Override public void dropAll() {
         ensureActive("drop all statistics");
 
         statCfgMgr.dropAll();
@@ -419,7 +421,7 @@ public class IgniteStatisticsManagerImpl implements IgniteStatisticsManager {
     }
 
     /** {@inheritDoc} */
-    @Override public void usageState(StatisticsUsageState state) throws IgniteCheckedException {
+    @Override public void usageState(StatisticsUsageState state) {
         ensureActive("change usage state of statistics");
 
         try {
@@ -484,8 +486,8 @@ public class IgniteStatisticsManagerImpl implements IgniteStatisticsManager {
             try {
                 cfg = statCfgMgr.config(key);
             }
-            catch (IgniteCheckedException e) {
-                // No-op/
+            catch (IgniteCheckedException ignored) {
+                // No-op.
             }
 
             Set<Integer> tasksParts = calculateObsolescencedPartitions(cfg, statsRepos.getObsolescence(key));

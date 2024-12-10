@@ -24,7 +24,7 @@ SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 IGNITE_NUM_CONTAINERS=${IGNITE_NUM_CONTAINERS:-13}
 
 # Image name to run nodes
-JDK_VERSION="${JDK_VERSION:-8}"
+JDK_VERSION="${JDK_VERSION:-11}"
 IMAGE_PREFIX="ducker-ignite-openjdk"
 
 ###
@@ -79,7 +79,7 @@ The options are as follows:
     Subnet to assign nodes IP addresses, like --subnet 172.20.0.0/16
 
 --jdk
-    Set jdk version to build, default is 8
+    Set jdk version to build, default is 11
 
 --image
     Set custom docker image to run tests on.

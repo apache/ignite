@@ -62,6 +62,7 @@ import org.apache.ignite.internal.processors.cache.persistence.pagemem.PagePoolT
 import org.apache.ignite.internal.processors.cache.persistence.pagemem.ProgressSpeedCalculationTest;
 import org.apache.ignite.internal.processors.cache.persistence.pagemem.SegmentedLruPageListTest;
 import org.apache.ignite.internal.processors.cache.transactions.AtomicOperationsInTxTest;
+import org.apache.ignite.internal.processors.cache.transactions.NonTransactionalOperationsInTxTest;
 import org.apache.ignite.internal.processors.cache.transactions.TransactionIntegrityWithSystemWorkerDeathTest;
 import org.apache.ignite.internal.processors.cluster.BaselineAutoAdjustMXBeanTest;
 import org.apache.ignite.internal.processors.configuration.distributed.DistributedConfigurationInMemoryTest;
@@ -80,8 +81,6 @@ import org.apache.ignite.internal.processors.metastorage.DistributedMetaStorageT
 import org.apache.ignite.internal.processors.metastorage.persistence.DistributedMetaStorageHistoryCacheTest;
 import org.apache.ignite.internal.processors.metastorage.persistence.DmsDataWriterWorkerTest;
 import org.apache.ignite.internal.processors.metastorage.persistence.InMemoryCachedDistributedMetaStorageBridgeTest;
-import org.apache.ignite.internal.suggestions.JvmConfigurationSuggestionsTest;
-import org.apache.ignite.internal.util.GridCleanerTest;
 import org.apache.ignite.internal.util.collection.BitSetIntSetTest;
 import org.apache.ignite.internal.util.collection.ImmutableIntSetTest;
 import org.apache.ignite.internal.util.collection.IntHashMapTest;
@@ -155,8 +154,6 @@ import org.junit.runners.Suite;
 
     IgniteRejectConnectOnNodeStopTest.class,
 
-    GridCleanerTest.class,
-
     ClassSetTest.class,
 
     // Basic failure handlers.
@@ -170,6 +167,7 @@ import org.junit.runners.Suite;
     ExchangeWorkerWaitingForTaskTest.class,
 
     AtomicOperationsInTxTest.class,
+    NonTransactionalOperationsInTxTest.class,
 
     RebalanceWithDifferentThreadPoolSizeTest.class,
 
@@ -225,7 +223,6 @@ import org.junit.runners.Suite;
     RemoveAllDeadlockTest.class,
 
     NoopCheckpointSpiLoggingTest.class,
-    JvmConfigurationSuggestionsTest.class,
     ExponentialBackoffTest.class,
     ProgressSpeedCalculationTest.class,
 

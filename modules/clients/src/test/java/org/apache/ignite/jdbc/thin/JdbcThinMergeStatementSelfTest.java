@@ -28,14 +28,14 @@ import org.junit.Test;
  */
 public class JdbcThinMergeStatementSelfTest extends JdbcThinAbstractDmlStatementSelfTest {
     /** SQL query. */
-    private static final String SQL = "merge into Person(_key, id, firstName, lastName, age) values " +
-        "('p1', 1, 'John', 'White', 25), " +
-        "('p2', 2, 'Joe', 'Black', 35), " +
-        "('p3', 3, 'Mike', 'Green', 40)";
+    private static final String SQL = "merge into Person(_key, id, firstName, lastName, age, data, text) values " +
+        "('p1', 1, 'John', 'White', 25, RAWTOHEX('White'), 'John White'), " +
+        "('p2', 2, 'Joe', 'Black', 35, RAWTOHEX('Black'), 'Joe Black'), " +
+        "('p3', 3, 'Mike', 'Green', 40, RAWTOHEX('Green'), 'Mike Green')";
 
     /** SQL query. */
-    protected static final String SQL_PREPARED = "merge into Person(_key, id, firstName, lastName, age) values " +
-        "(?, ?, ?, ?, ?), (?, ?, ?, ?, ?)";
+    protected static final String SQL_PREPARED = "merge into Person(_key, id, firstName, lastName, age, data, text) values " +
+        "(?, ?, ?, ?, ?, ?, ?), (?, ?, ?, ?, ?, ?, ?)";
 
     /** Statement. */
     protected Statement stmt;
@@ -74,6 +74,8 @@ public class JdbcThinMergeStatementSelfTest extends JdbcThinAbstractDmlStatement
                         assertEquals("John", rs.getString("firstName"));
                         assertEquals("White", rs.getString("lastName"));
                         assertEquals(25, rs.getInt("age"));
+                        assertEquals("White", str(getBytes(rs.getBlob("data"))));
+                        assertEquals("John White", str(rs.getClob("text")));
                         break;
 
                     case 2:
@@ -81,6 +83,8 @@ public class JdbcThinMergeStatementSelfTest extends JdbcThinAbstractDmlStatement
                         assertEquals("Joe", rs.getString("firstName"));
                         assertEquals("Black", rs.getString("lastName"));
                         assertEquals(35, rs.getInt("age"));
+                        assertEquals("Black", str(getBytes(rs.getBlob("data"))));
+                        assertEquals("Joe Black", str(rs.getClob("text")));
                         break;
 
                     case 3:
@@ -88,13 +92,8 @@ public class JdbcThinMergeStatementSelfTest extends JdbcThinAbstractDmlStatement
                         assertEquals("Mike", rs.getString("firstName"));
                         assertEquals("Green", rs.getString("lastName"));
                         assertEquals(40, rs.getInt("age"));
-                        break;
-
-                    case 4:
-                        assertEquals("p4", rs.getString("_key"));
-                        assertEquals("Leah", rs.getString("firstName"));
-                        assertEquals("Grey", rs.getString("lastName"));
-                        assertEquals(22, rs.getInt("age"));
+                        assertEquals("Green", str(getBytes(rs.getBlob("data"))));
+                        assertEquals("Mike Green", str(rs.getClob("text")));
                         break;
 
                     default:

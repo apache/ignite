@@ -191,7 +191,7 @@ public class GridH2ProxyIndex extends H2IndexCostedBase {
         copyAliasColumnData(data, QueryUtils.KEY_COL, desc.getAlternativeColumnId(QueryUtils.KEY_COL));
         copyAliasColumnData(data, QueryUtils.VAL_COL, desc.getAlternativeColumnId(QueryUtils.VAL_COL));
 
-        return H2PlainRowFactory.create(data);
+        return H2PlainRowFactory.create(data.length, data);
     }
 
     /**

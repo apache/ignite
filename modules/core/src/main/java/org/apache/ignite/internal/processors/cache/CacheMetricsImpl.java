@@ -193,11 +193,17 @@ public class CacheMetricsImpl implements CacheMetrics {
     /** PutAll time. */
     private final HistogramMetricImpl putAllTime;
 
+    /** PutAllConflict time. */
+    private final HistogramMetricImpl putAllConflictTime;
+
     /** Remove time. */
     private final HistogramMetricImpl rmvTime;
 
     /** RemoveAll time. */
     private final HistogramMetricImpl rmvAllTime;
+
+    /** RemoveAllConflict time. */
+    private final HistogramMetricImpl rmvAllConflictTime;
 
     /** Commit time. */
     private final HistogramMetricImpl commitTime;
@@ -228,6 +234,18 @@ public class CacheMetricsImpl implements CacheMetrics {
     /** The number of local node partitions that remain to be processed to complete indexing. */
     private final IntMetricImpl idxBuildPartitionsLeftCnt;
 
+    /** Cache metric registry. */
+    private final MetricRegistryImpl mreg;
+
+    /** Conflict resolver accepted entries count. */
+    private LongAdderMetric rslvrAcceptedCnt;
+
+    /** Conflict resolver rejected entries count. */
+    private LongAdderMetric rslvrRejectedCnt;
+
+    /** Conflict resolver merged entries count. */
+    private LongAdderMetric rslvrMergedCnt;
+
     /**
      * Creates cache metrics.
      *
@@ -256,7 +274,7 @@ public class CacheMetricsImpl implements CacheMetrics {
 
         delegate = null;
 
-        MetricRegistryImpl mreg = cctx.kernalContext().metric().registry(cacheMetricsRegistryName(cctx.name(), isNear));
+        mreg = cctx.kernalContext().metric().registry(cacheMetricsRegistryName(cctx.name(), isNear));
 
         reads = mreg.longMetric("CacheGets",
             "The total number of gets to the cache.");
@@ -383,11 +401,17 @@ public class CacheMetricsImpl implements CacheMetrics {
         putAllTime = mreg.histogram("PutAllTime", HISTOGRAM_BUCKETS,
             "PutAll time for which this node is the initiator, in nanoseconds.");
 
+        putAllConflictTime = mreg.histogram("PutAllConflictTime", HISTOGRAM_BUCKETS,
+            "PutAllConflict time for which this node is the initiator, in nanoseconds.");
+
         rmvTime = mreg.histogram("RemoveTime", HISTOGRAM_BUCKETS,
             "Remove time for which this node is the initiator, in nanoseconds.");
 
         rmvAllTime = mreg.histogram("RemoveAllTime", HISTOGRAM_BUCKETS,
             "RemoveAll time for which this node is the initiator, in nanoseconds.");
+
+        rmvAllConflictTime = mreg.histogram("RemoveAllConflictTime", HISTOGRAM_BUCKETS,
+            "RemoveAllConflict time for which this node is the initiator, in nanoseconds.");
 
         commitTime = mreg.histogram("CommitTime", HISTOGRAM_BUCKETS, "Commit time in nanoseconds.");
 
@@ -719,8 +743,10 @@ public class CacheMetricsImpl implements CacheMetrics {
         getAllTime.reset();
         putTime.reset();
         putAllTime.reset();
+        putAllConflictTime.reset();
         rmvTime.reset();
         rmvAllTime.reset();
+        rmvAllConflictTime.reset();
         commitTime.reset();
         rollbackTime.reset();
 
@@ -732,6 +758,15 @@ public class CacheMetricsImpl implements CacheMetrics {
         txKeyCollisionInfo = null;
 
         idxRebuildKeyProcessed.reset();
+
+        if (rslvrAcceptedCnt != null)
+            rslvrAcceptedCnt.reset();
+
+        if (rslvrRejectedCnt != null)
+            rslvrRejectedCnt.reset();
+
+        if (rslvrMergedCnt != null)
+            rslvrMergedCnt.reset();
     }
 
     /** {@inheritDoc} */
@@ -1181,6 +1216,18 @@ public class CacheMetricsImpl implements CacheMetrics {
     }
 
     /**
+     * Increments the putAllConflict time accumulator.
+     *
+     * @param duration the time taken in nanoseconds.
+     */
+    public void addPutAllConflictTimeNanos(long duration) {
+        putAllConflictTime.value(duration);
+
+        if (delegate != null)
+            delegate.addPutAllConflictTimeNanos(duration);
+    }
+
+    /**
      * Increments the remove time accumulator.
      *
      * @param duration the time taken in nanoseconds.
@@ -1206,6 +1253,18 @@ public class CacheMetricsImpl implements CacheMetrics {
 
         if (delegate != null)
             delegate.addRemoveAllTimeNanos(duration);
+    }
+
+    /**
+     * Increments the removeAllConflict time accumulator.
+     *
+     * @param duration the time taken in nanoseconds.
+     */
+    public void addRemoveAllConflictTimeNanos(long duration) {
+        rmvAllConflictTime.value(duration);
+
+        if (delegate != null)
+            delegate.addRemoveAllConflictTimeNanos(duration);
     }
 
     /**
@@ -1657,6 +1716,33 @@ public class CacheMetricsImpl implements CacheMetrics {
     /** {@inheritDoc} */
     @Override public int getIndexBuildPartitionsLeftCount() {
         return idxBuildPartitionsLeftCnt.value();
+    }
+
+    /** */
+    public void incrementResolverAcceptedCount() {
+        rslvrAcceptedCnt.increment();
+    }
+
+    /** */
+    public void incrementResolverRejectedCount() {
+        rslvrRejectedCnt.increment();
+    }
+
+    /** */
+    public void incrementResolverMergedCount() {
+        rslvrMergedCnt.increment();
+    }
+
+    /** Registers metrics for conflict resolver. */
+    public void registerResolverMetrics() {
+        rslvrAcceptedCnt = mreg.longAdderMetric("ConflictResolverAcceptedCount",
+            "Conflict resolver accepted entries count");
+
+        rslvrRejectedCnt = mreg.longAdderMetric("ConflictResolverRejectedCount",
+            "Conflict resolver rejected entries count");
+
+        rslvrMergedCnt = mreg.longAdderMetric("ConflictResolverMergedCount",
+            "Conflict resolver merged entries count");
     }
 
     /** {@inheritDoc} */

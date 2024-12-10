@@ -17,20 +17,26 @@
 
 package org.apache.ignite.plugin.extensions.communication;
 
-import org.apache.ignite.plugin.Extension;
-import org.jetbrains.annotations.Nullable;
+import java.util.function.Supplier;
+import org.apache.ignite.IgniteException;
 
 /**
- * Factory for communication messages.
- * <p>
- * A plugin can provide his own message factory as an extension
- * if it uses any custom messages (all message must extend
- * {@link Message} class).
- *
- * @deprecated Use {@link MessageFactoryProvider} instead.
+ * Message factory for all communication messages registered using {@link #register(short, Supplier)} method call.
  */
-@Deprecated
-public interface MessageFactory extends Extension {
+public interface MessageFactory {
+    /**
+     * Register message factory with given direct type. All messages must be registered during construction
+     * of class which implements this interface. Any invocation of this method after initialization is done must
+     * throw {@link IllegalStateException} exception.
+     *
+     * @param directType Direct type.
+     * @param supplier Message factory.
+     * @throws IgniteException In case of attempt to register message with direct type which is already registered.
+     * @throws IllegalStateException On any invocation of this method when class which implements this interface
+     * is alredy constructed.
+     */
+    public void register(short directType, Supplier<Message> supplier) throws IgniteException;
+
     /**
      * Creates new message instance of provided type.
      * <p>
@@ -40,5 +46,5 @@ public interface MessageFactory extends Extension {
      * @param type Message type.
      * @return Message instance.
      */
-    @Nullable public Message create(short type);
+    public Message create(short type);
 }

@@ -215,7 +215,6 @@ import org.apache.ignite.internal.compute.ComputeTaskCancelledCheckedException;
 import org.apache.ignite.internal.compute.ComputeTaskTimeoutCheckedException;
 import org.apache.ignite.internal.events.DiscoveryCustomEvent;
 import org.apache.ignite.internal.logger.IgniteLoggerEx;
-import org.apache.ignite.internal.managers.communication.GridIoManager;
 import org.apache.ignite.internal.managers.communication.GridIoPolicy;
 import org.apache.ignite.internal.managers.deployment.GridDeployment;
 import org.apache.ignite.internal.managers.deployment.GridDeploymentInfo;
@@ -4362,7 +4361,7 @@ public abstract class IgniteUtils {
      * @param log Logger to log possible checked exception with (optional).
      */
     public static void close(@Nullable Socket sock, @Nullable IgniteLogger log) {
-        if (sock == null)
+        if (sock == null || sock.isClosed())
             return;
 
         try {
@@ -10088,9 +10087,13 @@ public abstract class IgniteUtils {
      *      {@code null} if passed in name is not related to lambda.
      */
     @Nullable public static String lambdaEnclosingClassName(String clsName) {
-        int idx = clsName.indexOf("$$Lambda$");
+        int idx0 = clsName.indexOf("$$Lambda$"); // Java 8+
+        int idx1 = clsName.indexOf("$$Lambda/"); // Java 21+
 
-        return idx != -1 ? clsName.substring(0, idx) : null;
+        if (idx0 == idx1)
+            return null;
+
+        return clsName.substring(0, idx0 >= 0 ? idx0 : idx1);
     }
 
     /**
@@ -10621,36 +10624,6 @@ public abstract class IgniteUtils {
 
             throw new IgniteInterruptedCheckedException(e);
         }
-    }
-
-    /**
-     * Defines which protocol version to use for
-     * communication with the provided node.
-     *
-     * @param ctx Context.
-     * @param nodeId Node ID.
-     * @return Protocol version.
-     * @throws IgniteCheckedException If node doesn't exist.
-     */
-    public static byte directProtocolVersion(GridKernalContext ctx, UUID nodeId) throws IgniteCheckedException {
-        assert nodeId != null;
-
-        ClusterNode node = ctx.discovery().node(nodeId);
-
-        if (node == null)
-            throw new IgniteCheckedException("Failed to define communication protocol version " +
-                "(has node left topology?): " + nodeId);
-
-        assert !node.isLocal();
-
-        Byte attr = node.attribute(GridIoManager.DIRECT_PROTO_VER_ATTR);
-
-        byte rmtProtoVer = attr != null ? attr : 1;
-
-        if (rmtProtoVer < GridIoManager.DIRECT_PROTO_VER)
-            return rmtProtoVer;
-        else
-            return GridIoManager.DIRECT_PROTO_VER;
     }
 
     /**
@@ -11703,7 +11676,7 @@ public abstract class IgniteUtils {
      * @param err Error to add.
      * @return New root error.
      */
-    private static Throwable addSuppressed(Throwable root, Throwable err) {
+    public static <T extends Throwable> T addSuppressed(T root, T err) {
         assert err != null;
 
         if (root == null)
@@ -12531,5 +12504,10 @@ public abstract class IgniteUtils {
             sb.a(" ");
 
         return sb.toString();
+    }
+
+    /** */
+    public static boolean isTxAwareQueriesEnabled(GridKernalContext kctx) {
+        return kctx.config().getTransactionConfiguration().isTxAwareQueriesEnabled();
     }
 }

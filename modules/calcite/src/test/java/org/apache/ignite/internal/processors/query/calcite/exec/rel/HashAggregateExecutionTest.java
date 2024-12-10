@@ -166,6 +166,7 @@ public class HashAggregateExecutionTest extends BaseAggregateTest {
             false,
             false,
             false,
+            ImmutableList.of(),
             ImmutableIntList.of(),
             -1,
             null,

@@ -72,4 +72,12 @@ public interface IgniteResource {
     /** */
     @Resources.BaseMessage("Modify operation is not supported for table ''{0}''")
     Resources.ExInst<SqlValidatorException> modifyTableNotSupported(String table);
+
+    /** */
+    @Resources.BaseMessage("Unsupported clause ''{0}''")
+    Resources.ExInst<SqlValidatorException> unsupportedClause(String value);
+
+    /** */
+    @Resources.BaseMessage("Operator ''CAST'' supports only the parameters: value and target type.")
+    Resources.ExInst<SqlValidatorException> invalidCastParameters();
 }

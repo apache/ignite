@@ -131,7 +131,7 @@ public class GridNearGetResponse extends GridCacheIdMessage implements GridCache
      * @return Entries.
      */
     public Collection<GridCacheEntryInfo> entries() {
-        return entries != null ? entries : Collections.<GridCacheEntryInfo>emptyList();
+        return entries != null ? entries : Collections.emptyList();
     }
 
     /**
@@ -178,10 +178,10 @@ public class GridNearGetResponse extends GridCacheIdMessage implements GridCache
 
     /** {@inheritDoc}
      * @param ctx*/
-    @Override public void prepareMarshal(GridCacheSharedContext ctx) throws IgniteCheckedException {
+    @Override public void prepareMarshal(GridCacheSharedContext<?, ?> ctx) throws IgniteCheckedException {
         super.prepareMarshal(ctx);
 
-        GridCacheContext cctx = ctx.cacheContext(cacheId);
+        GridCacheContext<?, ?> cctx = ctx.cacheContext(cacheId);
 
         if (entries != null) {
             for (GridCacheEntryInfo info : entries)
@@ -193,10 +193,10 @@ public class GridNearGetResponse extends GridCacheIdMessage implements GridCache
     }
 
     /** {@inheritDoc} */
-    @Override public void finishUnmarshal(GridCacheSharedContext ctx, ClassLoader ldr) throws IgniteCheckedException {
+    @Override public void finishUnmarshal(GridCacheSharedContext<?, ?> ctx, ClassLoader ldr) throws IgniteCheckedException {
         super.finishUnmarshal(ctx, ldr);
 
-        GridCacheContext cctx = ctx.cacheContext(cacheId());
+        GridCacheContext<?, ?> cctx = ctx.cacheContext(cacheId());
 
         if (entries != null) {
             for (GridCacheEntryInfo info : entries)

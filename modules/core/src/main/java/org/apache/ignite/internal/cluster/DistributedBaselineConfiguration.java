@@ -20,6 +20,7 @@ package org.apache.ignite.internal.cluster;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.internal.GridKernalContext;
+import org.apache.ignite.internal.processors.cluster.IgniteChangeGlobalStateSupport;
 import org.apache.ignite.internal.processors.configuration.distributed.DistributePropertyListener;
 import org.apache.ignite.internal.processors.configuration.distributed.DistributedChangeableProperty;
 import org.apache.ignite.internal.processors.configuration.distributed.DistributedConfigurationLifecycleListener;
@@ -37,7 +38,7 @@ import static org.apache.ignite.internal.processors.configuration.distributed.Di
 /**
  * Distributed baseline configuration.
  */
-public class DistributedBaselineConfiguration {
+public class DistributedBaselineConfiguration implements IgniteChangeGlobalStateSupport {
     /** Default auto-adjust timeout for persistence grid. */
     private static final int DEFAULT_PERSISTENCE_TIMEOUT = 5 * 60_000;
 
@@ -104,6 +105,8 @@ public class DistributedBaselineConfiguration {
                 }
             }
         );
+
+        isp.registerGlobalStateListener(this);
     }
 
     /** */
@@ -116,15 +119,18 @@ public class DistributedBaselineConfiguration {
         baselineAutoAdjustTimeout.addListener(lsnr);
     }
 
-    /**
-     * Called when cluster performing activation.
-     */
-    public void onActivate() throws IgniteCheckedException {
+    /** {@inheritDoc} */
+    @Override public void onActivate(GridKernalContext kctx) throws IgniteCheckedException {
         if (log.isInfoEnabled())
             log.info(format(AUTO_ADJUST_CONFIGURED_MESSAGE,
                 (isBaselineAutoAdjustEnabled() ? "enabled" : "disabled"),
                 getBaselineAutoAdjustTimeout()
             ));
+    }
+
+    /** {@inheritDoc} */
+    @Override public void onDeActivate(GridKernalContext kctx) {
+        // No-op.
     }
 
     /**

@@ -33,6 +33,9 @@ public class SchemaDescriptor {
     private final ConcurrentMap<String, TableDescriptor> tbls = new ConcurrentHashMap<>();
 
     /** */
+    private final ConcurrentMap<String, ViewDescriptor> views = new ConcurrentHashMap<>();
+
+    /** */
     private final ConcurrentMap<QueryTypeNameKey, TableDescriptor> typeToTbl = new ConcurrentHashMap<>();
 
     /** Whether schema is predefined and cannot be dorpped. */
@@ -119,6 +122,37 @@ public class SchemaDescriptor {
         tbls.remove(tbl.type().tableName());
 
         typeToTbl.remove(new QueryTypeNameKey(tbl.cacheInfo().name(), tbl.type().name()));
+    }
+
+    /**
+     * @return View descriptors.
+     */
+    public Collection<ViewDescriptor> views() {
+        return views.values();
+    }
+
+    /**
+     * @param viewName View name.
+     * @return View descriptor.
+     */
+    public ViewDescriptor viewByName(String viewName) {
+        return views.get(viewName);
+    }
+
+    /**
+     * @param view View descriptor.
+     */
+    public void add(ViewDescriptor view) {
+        views.put(view.name(), view);
+    }
+
+    /**
+     * Drop view.
+     *
+     * @param view View to be removed.
+     */
+    public void drop(ViewDescriptor view) {
+        views.remove(view.name());
     }
 
     /**

@@ -275,7 +275,7 @@ public class IgniteLogInfoProviderImpl implements IgniteLogInfoProvider {
             sb.a("auth: ").a(onOff(Boolean.getBoolean("com.sun.management.jmxremote.authenticate"))).a(", ");
 
             // By default, SSL is enabled, that's why additional check for null is needed.
-            // See http://docs.oracle.com/javase/6/docs/technotes/guides/management/agent.html
+            // See https://docs.oracle.com/en/java/javase/11/management/monitoring-and-management-using-jmx-technology.html
             sb.a("ssl: ").a(onOff(Boolean.getBoolean("com.sun.management.jmxremote.ssl") ||
                 System.getProperty("com.sun.management.jmxremote.ssl") == null));
         }
@@ -680,6 +680,7 @@ public class IgniteLogInfoProviderImpl implements IgniteLogInfoProvider {
 
         ExecutorService execSvc = ctx.pools().getExecutorService();
         ExecutorService sysExecSvc = ctx.pools().getSystemExecutorService();
+        ExecutorService qryExecSvc = ctx.pools().getQueryExecutorService();
         ExecutorService stripedExecSvc = ctx.pools().getStripedExecutorService();
         Map<String, ? extends ExecutorService> customExecSvcs = ctx.pools().customExecutors();
 
@@ -753,6 +754,7 @@ public class IgniteLogInfoProviderImpl implements IgniteLogInfoProvider {
             .a("    ^-- Outbound messages queue [size=").a(m.getOutboundMessagesQueueSize()).a("]").nl()
             .a("    ^-- ").a(createExecutorDescription("Public thread pool", execSvc)).nl()
             .a("    ^-- ").a(createExecutorDescription("System thread pool", sysExecSvc)).nl()
+            .a("    ^-- ").a(createExecutorDescription("Query thread pool", qryExecSvc)).nl()
             .a("    ^-- ").a(createExecutorDescription("Striped thread pool", stripedExecSvc));
 
         if (customExecSvcs != null) {

@@ -122,6 +122,7 @@ import org.apache.ignite.internal.util.lang.IgniteSingletonIterator;
 import org.apache.ignite.internal.util.lang.IgniteThrowableSupplier;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.X;
+import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiClosure;
 import org.apache.ignite.lang.IgniteBiTuple;
@@ -1043,12 +1044,24 @@ public class IgniteH2Indexing implements GridQueryIndexing {
 
         Exception failReason = null;
 
+        H2DmlInfo dmlInfo = null;
+
         try (TraceSurroundings ignored = MTC.support(ctx.tracing().create(SQL_DML_QRY_EXECUTE, MTC.span()))) {
             if (!updateInTxAllowed && ctx.cache().context().tm().inUserTx()) {
                 throw new IgniteSQLException("DML statements are not allowed inside a transaction over " +
                     "cache(s) with TRANSACTIONAL atomicity mode (disable this error message with system property " +
                     "\"-DIGNITE_ALLOW_DML_INSIDE_TRANSACTION=true\")");
             }
+
+            dmlInfo = new H2DmlInfo(
+                U.currentTimeMillis(),
+                qryId,
+                ctx.localNodeId(),
+                qryDesc.schemaName(),
+                qryDesc.sql()
+            );
+
+            heavyQueriesTracker().startTracking(dmlInfo);
 
             if (!qryDesc.local()) {
                 return executeUpdateDistributed(
@@ -1090,16 +1103,19 @@ public class IgniteH2Indexing implements GridQueryIndexing {
             if (roEx != null) {
                 throw new IgniteSQLException(
                     "Failed to execute DML statement. Cluster in read-only mode [stmt=" + qryDesc.sql() +
-                    ", params=" + Arrays.deepToString(qryParams.arguments()) + "]",
+                    ", params=" + S.toString(QueryParameters.class, qryParams) + "]",
                     IgniteQueryErrorCode.CLUSTER_READ_ONLY_MODE_ENABLED,
                     e
                 );
             }
 
             throw new IgniteSQLException("Failed to execute DML statement [stmt=" + qryDesc.sql() +
-                ", params=" + Arrays.deepToString(qryParams.arguments()) + "]", e);
+                    ", params=" + S.toString(QueryParameters.class, qryParams) + "]", e);
         }
         finally {
+            if (dmlInfo != null)
+                heavyQueriesTracker().stopTracking(dmlInfo, failReason);
+
             runningQueryManager().unregister(qryId, failReason);
         }
     }

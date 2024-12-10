@@ -60,14 +60,18 @@ public class GridQueryNextPageResponse implements Message {
     @GridDirectCollection(Message.class)
     private Collection<Message> vals;
 
-    /** */
+    /**
+     * Note, columns count in plain row can differ from {@link #cols}.
+     * See {@code org.apache.ignite.internal.processors.query.h2.twostep.msg.GridH2ValueMessageFactory#toMessages}.
+     * See javadoc for {@code org.h2.result.ResultInterface#getVisibleColumnCount()} and {@code org.h2.result.ResultInterface#currentRow()}.
+     */
     @GridDirectTransient
     private transient Collection<?> plainRows;
 
     /** */
     private AffinityTopologyVersion retry;
 
-    /** Retry cause description*/
+    /** Retry cause description. */
     private String retryCause;
 
     /** Last page flag. */

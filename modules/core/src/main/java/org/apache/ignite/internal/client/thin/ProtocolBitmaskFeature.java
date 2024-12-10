@@ -21,6 +21,7 @@ import java.util.BitSet;
 import java.util.Collection;
 import java.util.EnumSet;
 import org.apache.ignite.client.ClientServices;
+import org.apache.ignite.cluster.ClusterState;
 
 /**
  * Defines supported bitmask features for thin client.
@@ -80,7 +81,13 @@ public enum ProtocolBitmaskFeature {
     SERVICE_TOPOLOGY(16),
 
     /** Cache invoke/invokeAll operations. */
-    CACHE_INVOKE(17);
+    CACHE_INVOKE(17),
+
+    /** Transaction aware queries. */
+    TX_AWARE_QUERIES(18),
+
+    /** Force deactivation flag. See {@link org.apache.ignite.client.ClientCluster#state(ClusterState, boolean)}. */
+    FORCE_DEACTIVATION_FLAG(19);
 
     /** */
     private static final EnumSet<ProtocolBitmaskFeature> ALL_FEATURES_AS_ENUM_SET =

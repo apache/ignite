@@ -124,10 +124,7 @@ public abstract class GridUnsafe {
     private static final boolean HAS_JAVA_NIO_ACCESS_MEMORY_SEGMENT_PARAM = majorJavaVersion(jdkVersion()) >= 19;
 
     /** Cleaner code for direct {@code java.nio.ByteBuffer}. */
-    private static final DirectBufferCleaner DIRECT_BUF_CLEANER =
-        majorJavaVersion(jdkVersion()) < 9
-            ? new ReflectiveDirectBufferCleaner()
-            : new UnsafeDirectBufferCleaner();
+    private static final DirectBufferCleaner DIRECT_BUF_CLEANER = new UnsafeDirectBufferCleaner();
 
     /** JavaNioAccess object. If {@code null} then {@link #NEW_DIRECT_BUF_CONSTRUCTOR} should be available. */
     @Nullable private static final Object JAVA_NIO_ACCESS_OBJ;
@@ -1683,9 +1680,6 @@ public abstract class GridUnsafe {
     /** */
     @NotNull private static String getSharedSecretsPackage() {
         int javaVer = majorJavaVersion(jdkVersion());
-
-        if (javaVer < 9)
-            return "sun.misc";
 
         if (javaVer < 12)
             return "jdk.internal.misc";

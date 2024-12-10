@@ -108,7 +108,7 @@ public class PersistenceBasicCompatibilityTest extends IgnitePersistenceCompatib
             Assume.assumeTrue("Skipped on jdk " + U.jdkVersion(),
                 VER_2_12_0.compareTo(IgniteReleasedVersion.fromString(version)) < 0);
         }
-        else if (majorJavaVer > 8) {
+        else if (majorJavaVer == 11) {
             Assume.assumeTrue("Skipped on jdk " + U.jdkVersion(),
                 VER_2_3_0.compareTo(IgniteReleasedVersion.fromString(version)) < 0);
         }

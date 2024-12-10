@@ -75,6 +75,7 @@ import org.apache.ignite.internal.processors.cluster.baseline.autoadjust.Baselin
 import org.apache.ignite.internal.processors.cluster.baseline.autoadjust.BaselineTopologyUpdater;
 import org.apache.ignite.internal.processors.configuration.distributed.DistributePropertyListener;
 import org.apache.ignite.internal.processors.security.SecurityUtils;
+import org.apache.ignite.internal.processors.subscription.GridInternalSubscriptionProcessor;
 import org.apache.ignite.internal.util.future.GridFinishedFuture;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.future.IgniteFinishedFutureImpl;
@@ -112,7 +113,6 @@ import static org.apache.ignite.events.EventType.EVT_NODE_JOINED;
 import static org.apache.ignite.events.EventType.EVT_NODE_LEFT;
 import static org.apache.ignite.internal.GridClosureCallMode.BALANCE;
 import static org.apache.ignite.internal.GridComponent.DiscoveryDataExchangeType.STATE_PROC;
-import static org.apache.ignite.internal.IgniteFeatures.CLUSTER_READ_ONLY_MODE;
 import static org.apache.ignite.internal.IgniteFeatures.SAFE_CLUSTER_DEACTIVATION;
 import static org.apache.ignite.internal.IgniteFeatures.allNodesSupports;
 import static org.apache.ignite.internal.managers.communication.GridIoPolicy.SYSTEM_POOL;
@@ -181,7 +181,7 @@ public class GridClusterStateProcessor extends GridProcessorAdapter implements I
     private ReadWriteMetastorage metastorage;
 
     /** */
-    private final JdkMarshaller marsh = new JdkMarshaller();
+    private final JdkMarshaller marsh;
 
     /** Updater of baseline topology. */
     private BaselineTopologyUpdater baselineTopologyUpdater;
@@ -220,6 +220,8 @@ public class GridClusterStateProcessor extends GridProcessorAdapter implements I
         super(ctx);
 
         ctx.internalSubscriptionProcessor().registerMetastorageListener(this);
+
+        marsh = ctx.marshallerContext().jdkMarshaller();
 
         distributedBaselineConfiguration = new DistributedBaselineConfiguration(
             ctx.internalSubscriptionProcessor(),
@@ -1108,7 +1110,12 @@ public class GridClusterStateProcessor extends GridProcessorAdapter implements I
         boolean forceChangeBaselineTopology,
         boolean isAutoAdjust
     ) {
-        ctx.security().authorize(SecurityPermission.ADMIN_CLUSTER_STATE);
+        try {
+            ctx.security().authorize(SecurityPermission.ADMIN_CLUSTER_STATE);
+        }
+        catch (org.apache.ignite.plugin.security.SecurityException secEx) {
+            return new GridFinishedFuture<>(secEx);
+        }
 
         if (ctx.maintenanceRegistry().isMaintenanceMode()) {
             return new GridFinishedFuture<>(
@@ -1241,13 +1248,6 @@ public class GridClusterStateProcessor extends GridProcessorAdapter implements I
     ) {
         if (node.isClient())
             return null;
-
-        if (globalState.state() == ACTIVE_READ_ONLY && !IgniteFeatures.nodeSupports(node, CLUSTER_READ_ONLY_MODE)) {
-            String msg = "Node not supporting cluster read-only mode is not allowed to join the cluster with enabled" +
-                " read-only mode";
-
-            return new IgniteNodeValidationResult(node.id(), msg, msg);
-        }
 
         if (discoData.joiningNodeData() == null) {
             if (globalState.baselineTopology() != null) {
@@ -1437,13 +1437,10 @@ public class GridClusterStateProcessor extends GridProcessorAdapter implements I
                 boolean client = ctx.clientNode();
 
                 try {
-                    ctx.dataStructures().onActivate(ctx);
+                    GridInternalSubscriptionProcessor isp = ctx.internalSubscriptionProcessor();
 
-                    ctx.task().onActivate(ctx);
-
-                    ctx.encryption().onActivate(ctx);
-
-                    distributedBaselineConfiguration.onActivate();
+                    for (IgniteChangeGlobalStateSupport lsnr : isp.getGlobalStateListeners())
+                        lsnr.onActivate(ctx);
 
                     if (log.isInfoEnabled())
                         log.info("Successfully performed final activation steps [nodeId="

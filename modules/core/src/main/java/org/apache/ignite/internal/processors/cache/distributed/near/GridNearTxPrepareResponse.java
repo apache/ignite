@@ -228,9 +228,7 @@ public class GridNearTxPrepareResponse extends GridDistributedTxPrepareResponse 
      * @return Owned values map.
      */
     public Map<IgniteTxKey, CacheVersionedValue> ownedValues() {
-        return ownedVals == null ?
-            Collections.<IgniteTxKey, CacheVersionedValue>emptyMap() :
-            Collections.unmodifiableMap(ownedVals);
+        return ownedVals == null ? Collections.emptyMap() : Collections.unmodifiableMap(ownedVals);
     }
 
     /**
@@ -251,7 +249,7 @@ public class GridNearTxPrepareResponse extends GridDistributedTxPrepareResponse 
      * @return Collection of keys that did not pass the filter.
      */
     public Collection<IgniteTxKey> filterFailedKeys() {
-        return filterFailedKeys == null ? Collections.<IgniteTxKey>emptyList() : filterFailedKeys;
+        return filterFailedKeys == null ? Collections.emptyList() : filterFailedKeys;
     }
 
     /**
@@ -264,7 +262,7 @@ public class GridNearTxPrepareResponse extends GridDistributedTxPrepareResponse 
 
     /** {@inheritDoc}
      * @param ctx*/
-    @Override public void prepareMarshal(GridCacheSharedContext ctx) throws IgniteCheckedException {
+    @Override public void prepareMarshal(GridCacheSharedContext<?, ?> ctx) throws IgniteCheckedException {
         super.prepareMarshal(ctx);
 
         if (ownedVals != null && ownedValKeys == null) {
@@ -273,7 +271,7 @@ public class GridNearTxPrepareResponse extends GridDistributedTxPrepareResponse 
             ownedValVals = ownedVals.values();
 
             for (Map.Entry<IgniteTxKey, CacheVersionedValue> entry : ownedVals.entrySet()) {
-                GridCacheContext cacheCtx = ctx.cacheContext(entry.getKey().cacheId());
+                GridCacheContext<?, ?> cacheCtx = ctx.cacheContext(entry.getKey().cacheId());
 
                 entry.getKey().prepareMarshal(cacheCtx);
 
@@ -282,7 +280,7 @@ public class GridNearTxPrepareResponse extends GridDistributedTxPrepareResponse 
         }
 
         if (retVal != null && retVal.cacheId() != 0) {
-            GridCacheContext cctx = ctx.cacheContext(retVal.cacheId());
+            GridCacheContext<?, ?> cctx = ctx.cacheContext(retVal.cacheId());
 
             assert cctx != null : retVal.cacheId();
 
@@ -291,7 +289,7 @@ public class GridNearTxPrepareResponse extends GridDistributedTxPrepareResponse 
 
         if (filterFailedKeys != null) {
             for (IgniteTxKey key : filterFailedKeys) {
-                GridCacheContext cctx = ctx.cacheContext(key.cacheId());
+                GridCacheContext<?, ?> cctx = ctx.cacheContext(key.cacheId());
 
                 key.prepareMarshal(cctx);
             }
@@ -299,7 +297,7 @@ public class GridNearTxPrepareResponse extends GridDistributedTxPrepareResponse 
     }
 
     /** {@inheritDoc} */
-    @Override public void finishUnmarshal(GridCacheSharedContext ctx, ClassLoader ldr) throws IgniteCheckedException {
+    @Override public void finishUnmarshal(GridCacheSharedContext<?, ?> ctx, ClassLoader ldr) throws IgniteCheckedException {
         super.finishUnmarshal(ctx, ldr);
 
         if (ownedValKeys != null && ownedVals == null) {
@@ -314,7 +312,7 @@ public class GridNearTxPrepareResponse extends GridDistributedTxPrepareResponse 
             while (keyIter.hasNext()) {
                 IgniteTxKey key = keyIter.next();
 
-                GridCacheContext cctx = ctx.cacheContext(key.cacheId());
+                GridCacheContext<?, ?> cctx = ctx.cacheContext(key.cacheId());
 
                 CacheVersionedValue val = valIter.next();
 
@@ -327,7 +325,7 @@ public class GridNearTxPrepareResponse extends GridDistributedTxPrepareResponse 
         }
 
         if (retVal != null && retVal.cacheId() != 0) {
-            GridCacheContext cctx = ctx.cacheContext(retVal.cacheId());
+            GridCacheContext<?, ?> cctx = ctx.cacheContext(retVal.cacheId());
 
             assert cctx != null : retVal.cacheId();
 
@@ -336,7 +334,7 @@ public class GridNearTxPrepareResponse extends GridDistributedTxPrepareResponse 
 
         if (filterFailedKeys != null) {
             for (IgniteTxKey key :filterFailedKeys) {
-                GridCacheContext cctx = ctx.cacheContext(key.cacheId());
+                GridCacheContext<?, ?> cctx = ctx.cacheContext(key.cacheId());
 
                 key.finishUnmarshal(cctx, ldr);
             }

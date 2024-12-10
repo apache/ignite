@@ -23,7 +23,7 @@ import org.apache.ignite.testframework.GridTestUtils;
 import org.junit.Test;
 
 /** */
-public class JoinRehashIntegrationTest extends AbstractBasicIntegrationTest {
+public class JoinRehashIntegrationTest extends AbstractBasicIntegrationTransactionalTest {
     /** {@inheritDoc} */
     @Override protected int nodeCount() {
         return 3;
@@ -32,28 +32,7 @@ public class JoinRehashIntegrationTest extends AbstractBasicIntegrationTest {
     /** Test that resources (in particular inboxes) are cleaned up after executing join with rehashing. */
     @Test
     public void testResourceCleanup() throws Exception {
-        sql("CREATE TABLE order_items (\n" +
-            "    id varchar,\n" +
-            "    orderId int,\n" +
-            "    price decimal,\n" +
-            "    amount int,\n" +
-            "    PRIMARY KEY (id))\n" +
-            "    WITH \"cache_name=order_items,backups=1\"");
-
-        sql("CREATE TABLE orders (\n" +
-            "    id int,\n" +
-            "    region varchar,\n" +
-            "    PRIMARY KEY (id))\n" +
-            "    WITH \"cache_name=orders,backups=1\"");
-
-        sql("CREATE INDEX order_items_orderId ON order_items (orderId ASC)");
-        sql("CREATE INDEX orders_region ON orders (region ASC)");
-
-        for (int i = 0; i < 30; i++) {
-            sql("INSERT INTO orders VALUES(?, ?)", i, "region" + i % 10);
-            for (int j = 0; j < 20; j++)
-                sql("INSERT INTO order_items VALUES(?, ?, ?, ?)", i + "_" + j, i, i / 10.0, j % 10);
-        }
+        prepareTables();
 
         String sql = "SELECT sum(i.price * i.amount)" +
             " FROM order_items i JOIN orders o ON o.id=i.orderId" +
@@ -62,6 +41,7 @@ public class JoinRehashIntegrationTest extends AbstractBasicIntegrationTest {
         assertQuery(sql)
             .withParams("region0")
             .matches(QueryChecker.containsSubPlan("IgniteMergeJoin"))
+            .matches(QueryChecker.containsSubPlan("IgniteExchange(distribution=[affinity"))
             .returns(BigDecimal.valueOf(270))
             .check();
 
@@ -71,5 +51,51 @@ public class JoinRehashIntegrationTest extends AbstractBasicIntegrationTest {
             for (int i = 0; i < 100; i++)
                 sql(sql, i % 10);
         }, 10, "query_starter");
+    }
+
+    /** Tests that null values are filtered out on rehashing. */
+    @Test
+    public void testNullAffinityKeys() {
+        prepareTables();
+
+        // Add null values.
+        for (int i = 0; i < 10; i++)
+            sql("INSERT INTO order_items VALUES(?, null, null, null)", "null_key_" + i);
+
+        String sql = "SELECT sum(i.price * i.amount)" +
+            " FROM order_items i JOIN orders o ON o.id=i.orderId" +
+            " WHERE o.region = ?";
+
+        assertQuery(sql)
+            .withParams("region0")
+            .matches(QueryChecker.containsSubPlan("IgniteExchange(distribution=[affinity"))
+            .returns(BigDecimal.valueOf(270))
+            .check();
+    }
+
+    /** Prepare tables orders and order_items with data. */
+    private void prepareTables() {
+        sql("CREATE TABLE order_items (\n" +
+            "    id varchar,\n" +
+            "    orderId int,\n" +
+            "    price decimal,\n" +
+            "    amount int,\n" +
+            "    PRIMARY KEY (id))\n" +
+            "    WITH \"cache_name=order_items,backups=1," + atomicity() + "\"");
+
+        sql("CREATE TABLE orders (\n" +
+            "    id int,\n" +
+            "    region varchar,\n" +
+            "    PRIMARY KEY (id))\n" +
+            "    WITH \"cache_name=orders,backups=1," + atomicity() + "\"");
+
+        sql("CREATE INDEX order_items_orderId ON order_items (orderId ASC)");
+        sql("CREATE INDEX orders_region ON orders (region ASC)");
+
+        for (int i = 0; i < 30; i++) {
+            sql("INSERT INTO orders VALUES(?, ?)", i, "region" + i % 10);
+            for (int j = 0; j < 20; j++)
+                sql("INSERT INTO order_items VALUES(?, ?, ?, ?)", i + "_" + j, i, i / 10.0, j % 10);
+        }
     }
 }

@@ -631,6 +631,19 @@ final class ReliableChannel implements AutoCloseable {
             return;
         }
 
+        // Add connected channels to the list to avoid unnecessary reconnects, unless address finder is used.
+        if (holders != null && clientCfg.getAddressesFinder() == null) {
+            // Do not modify the original list.
+            newAddrs = new ArrayList<>(newAddrs);
+
+            for (ClientChannelHolder h : holders) {
+                ClientChannel ch = h.ch;
+
+                if (ch != null && !ch.closed())
+                    newAddrs.add(h.getAddresses());
+            }
+        }
+
         Map<InetSocketAddress, ClientChannelHolder> curAddrs = new HashMap<>();
 
         Set<InetSocketAddress> newAddrsSet = newAddrs.stream().flatMap(Collection::stream).collect(Collectors.toSet());
@@ -744,13 +757,16 @@ final class ReliableChannel implements AutoCloseable {
         initChannelHolders();
 
         if (failures == null || failures.size() < attemptsLimit) {
+            // Establish default channel connection.
+            applyOnDefaultChannel(channel -> null, null, failures);
+
             if (channelsCnt.get() == 0) {
                 // Establish default channel connection and retrive nodes endpoints if applicable.
-                if (applyOnDefaultChannel(discoveryCtx::refresh, null, failures))
+                boolean discoveryUpdated = applyOnDefaultChannel(discoveryCtx::refresh, null, failures);
+
+                if (discoveryUpdated)
                     initChannelHolders();
             }
-            else // Apply no-op function. Establish default channel connection.
-                applyOnDefaultChannel(channel -> null, null, failures);
         }
 
         if (partitionAwarenessEnabled)
@@ -801,7 +817,14 @@ final class ReliableChannel implements AutoCloseable {
         ClientOperation op,
         @Nullable List<ClientConnectionException> failures
     ) {
-        while (attemptsLimit > (failures == null ? 0 : failures.size())) {
+        int fixedAttemptsLimit = attemptsLimit;
+
+        // An additional attempt is needed because N+1 channels might be used for sending a message - first a random
+        // one, then each one from #channels in sequence.
+        if (partitionAwarenessEnabled && channelsCnt.get() > 1)
+            fixedAttemptsLimit++;
+
+        while (fixedAttemptsLimit > (failures == null ? 0 : failures.size())) {
             ClientChannelHolder hld = null;
             ClientChannel c = null;
 
@@ -1039,18 +1062,19 @@ final class ReliableChannel implements AutoCloseable {
         private ClientChannel getOrCreateChannel(boolean ignoreThrottling)
             throws ClientConnectionException, ClientAuthenticationException, ClientProtocolError {
             if (close)
-                throw new ClientConnectionException("Channel is closed");
+                throw new ClientConnectionException("Channel is closed [addresses=" + getAddresses() + ']');
 
             if (ch == null) {
                 synchronized (this) {
                     if (close)
-                        throw new ClientConnectionException("Channel is closed");
+                        throw new ClientConnectionException("Channel is closed [addresses=" + getAddresses() + ']');
 
                     if (ch != null)
                         return ch;
 
                     if (!ignoreThrottling && applyReconnectionThrottling())
-                        throw new ClientConnectionException("Reconnect is not allowed due to applied throttling");
+                        throw new ClientConnectionException("Reconnect is not allowed due to applied throttling" +
+                            " [addresses=" + getAddresses() + ']');
 
                     ClientChannel channel = chFactory.apply(chCfg, connMgr);
 

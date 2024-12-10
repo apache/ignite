@@ -93,6 +93,33 @@ tab:XML[]
   </property>
 </bean>
 ----
+
+tab:Java[]
+[source,java]
+----
+IgniteConfiguration cfg = new IgniteConfiguration();
+cfg.setBinaryConfiguration(new BinaryConfiguration()
+    .setNameMapper(globalNameMapper)
+    .setIdMapper(globalIdMapper)
+    .setTypeConfigurations(Arrays.asList(
+        new BinaryTypeConfiguration()
+            .setTypeName("org.apache.ignite.examples.*")
+            .setSerializer(exampleSerializer))));
+----
+
+tab:C#/.NET[]
+[source,csharp]
+----
+IgniteConfiguration cfg = new IgniteConfiguration();
+cfg.BinaryConfiguration = new BinaryConfiguration()
+    .WithNameMapper(globalNameMapper)
+    .WithIdMapper(globalIdMapper)
+    .WithTypeConfigurations(new List<BinaryTypeConfiguration>
+    {
+        new BinaryTypeConfiguration()
+            .WithTypeName("org.apache.ignite.examples.*")
+            .WithSerializer(exampleSerializer)
+    });
 --
 
 == BinaryObject API
@@ -124,6 +151,26 @@ ignite.cache("myCache").put(personId, person);
 
 // Get an instance of binary-enabled cache.
 IgniteCache<Integer, BinaryObject> binaryCache = ignite.cache("myCache").withKeepBinary();
+
+// Get the above person object in the BinaryObject format.
+BinaryObject binaryPerson = binaryCache.get(personId);
+----
+--
+
+The following code sample illustrates how to enable binary object processing with the java thin client.
+[tabs]
+--
+tab:Java[]
+[source,java]
+----
+IgniteClient client = Ignition.startClient(new ClientConfiguration().setAddresses("node_address:10800"));
+
+// Create a regular Person object and put it to the cache.
+Person person = buildPerson(personId);
+client.cache("myCache").put(personId, person);
+
+// Get an instance of binary-enabled cache.
+ClientCache<Integer, BinaryObject> binaryCache = client.cache("myCache").withKeepBinary();
 
 // Get the above person object in the BinaryObject format.
 BinaryObject binaryPerson = binaryCache.get(personId);

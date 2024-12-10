@@ -30,7 +30,6 @@ import java.util.stream.Collectors;
 import org.apache.calcite.plan.Context;
 import org.apache.calcite.schema.SchemaPlus;
 import org.apache.calcite.tools.FrameworkConfig;
-import org.apache.calcite.tools.Frameworks;
 import org.apache.calcite.util.CancelFlag;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
@@ -57,8 +56,6 @@ import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.jetbrains.annotations.Nullable;
-
-import static org.apache.ignite.internal.processors.query.calcite.CalciteQueryProcessor.FRAMEWORK_CONFIG;
 
 /**
  * The RootQuery is created on the query initiator (originator) node as the first step of a query run;
@@ -142,16 +139,10 @@ public class RootQuery<RowT> extends Query<RowT> implements TrackableQuery {
 
         FrameworkConfig frameworkCfg = qryCtx != null ? qryCtx.unwrap(FrameworkConfig.class) : null;
 
-        if (frameworkCfg == null)
-            frameworkCfg = FRAMEWORK_CONFIG;
-
         ctx = BaseQueryContext.builder()
             .parentContext(parent)
-            .frameworkConfig(
-                Frameworks.newConfigBuilder(frameworkCfg)
-                    .defaultSchema(schema)
-                    .build()
-            )
+            .frameworkConfig(frameworkCfg)
+            .defaultSchema(schema)
             .local(isLocal)
             .forcedJoinOrder(forcedJoinOrder)
             .partitions(parts)
@@ -285,7 +276,7 @@ public class RootQuery<RowT> extends Query<RowT> implements TrackableQuery {
                 }
 
                 if (wrpEx != null)
-                    log.warning("An exception occures during the query cancel", wrpEx);
+                    log.warning("An exception occurs during the query cancel", wrpEx);
             }
             finally {
                 super.tryClose(failure == null && root != null ? root.failure() : failure);

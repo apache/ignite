@@ -36,8 +36,8 @@ public class IntervalTest extends AbstractBasicIntegrationTest {
     public void testIntervalResult() {
         assertEquals(Duration.ofSeconds(1), eval("INTERVAL 1 SECONDS"));
         assertEquals(Duration.ofSeconds(-1), eval("INTERVAL -1 SECONDS"));
-        assertThrows("SELECT INTERVAL '123' SECONDS", IgniteSQLException.class, "exceeds precision");
         assertEquals(Duration.ofSeconds(123), eval("INTERVAL 123 SECONDS"));
+        assertEquals(Duration.ofSeconds(123), eval("INTERVAL '123' SECONDS"));
         assertEquals(Duration.ofSeconds(123), eval("INTERVAL '123' SECONDS(3)"));
         assertEquals(Duration.ofMinutes(2), eval("INTERVAL 2 MINUTES"));
         assertEquals(Duration.ofHours(3), eval("INTERVAL 3 HOURS"));
@@ -54,10 +54,10 @@ public class IntervalTest extends AbstractBasicIntegrationTest {
     }
 
     /**
-     * Test cast interval types to integer and integer to interval.
+     * Test cast interval types to numeric and numeric to interval.
      */
     @Test
-    public void testIntervalIntCast() {
+    public void testIntervalNumCast() {
         assertNull(eval("CAST(NULL::INTERVAL SECONDS AS INT)"));
         assertNull(eval("CAST(NULL::INTERVAL MONTHS AS INT)"));
         assertEquals(1, eval("CAST(INTERVAL 1 SECONDS AS INT)"));
@@ -77,6 +77,14 @@ public class IntervalTest extends AbstractBasicIntegrationTest {
         assertEquals(Duration.ofDays(4), eval("CAST(4 AS INTERVAL DAYS)"));
         assertEquals(Period.ofMonths(5), eval("CAST(5 AS INTERVAL MONTHS)"));
         assertEquals(Period.ofYears(6), eval("CAST(6 AS INTERVAL YEARS)"));
+        assertEquals(Duration.ofDays(1), eval("CAST(1::INT AS INTERVAL DAYS)"));
+        assertEquals(Period.ofMonths(1), eval("CAST(1::INT AS INTERVAL MONTHS)"));
+        assertEquals(Duration.ofHours(36), eval("CAST(1.5 AS INTERVAL DAYS)"));
+        assertEquals(Period.of(1, 6, 0), eval("CAST(1.5 AS INTERVAL YEARS)"));
+        assertEquals(Duration.ofHours(36), eval("CAST(f AS INTERVAL DAYS) FROM (VALUES(1.5)) AS t(f)"));
+        assertEquals(Period.of(1, 6, 0), eval("CAST(f AS INTERVAL YEARS) FROM (VALUES(1.5)) AS t(f)"));
+        assertEquals(Duration.ofHours(36), eval("CAST(1.5::DECIMAL AS INTERVAL DAYS)"));
+        assertEquals(Period.of(1, 6, 0), eval("CAST(1.5::DECIMAL AS INTERVAL YEARS)"));
 
         // Compound interval types cannot be cast.
         assertThrows("SELECT CAST(INTERVAL '1-2' YEAR TO MONTH AS INT)", IgniteSQLException.class, "cannot convert");
@@ -363,6 +371,7 @@ public class IntervalTest extends AbstractBasicIntegrationTest {
      */
     @Test
     public void testExtract() {
+        assertEquals(0L, eval("EXTRACT(DAY FROM INTERVAL 1 MONTH)"));
         assertEquals(2L, eval("EXTRACT(MONTH FROM INTERVAL 14 MONTHS)"));
         assertEquals(0L, eval("EXTRACT(MONTH FROM INTERVAL 1 YEAR)"));
         assertEquals(2L, eval("EXTRACT(MONTH FROM INTERVAL '1-2' YEAR TO MONTH)"));
@@ -382,12 +391,12 @@ public class IntervalTest extends AbstractBasicIntegrationTest {
         assertEquals(-4L, eval("EXTRACT(SECOND FROM INTERVAL '-1 2:3:4.567' DAY TO SECOND)"));
         assertEquals(-4567L, eval("EXTRACT(MILLISECOND FROM INTERVAL '-1 2:3:4.567' DAY TO SECOND)"));
 
-        assertThrows("SELECT EXTRACT(DAY FROM INTERVAL 1 MONTH)", IgniteSQLException.class, "Cannot apply");
+        assertThrows("SELECT EXTRACT(DOW FROM INTERVAL 1 MONTH)", IgniteSQLException.class, "Cannot apply");
         assertThrows("SELECT EXTRACT(MONTH FROM INTERVAL 1 DAY)", IgniteSQLException.class, "Cannot apply");
     }
 
     /** */
-    public Object eval(String exp) {
-        return executeSql("SELECT " + exp).get(0).get(0);
+    public Object eval(String exp, Object... params) {
+        return executeSql("SELECT " + exp, params).get(0).get(0);
     }
 }

@@ -55,6 +55,9 @@ import org.apache.ignite.testframework.GridTestUtils;
 import org.jetbrains.annotations.Nullable;
 import org.junit.Test;
 
+import static org.apache.ignite.testframework.GridTestUtils.assertContains;
+import static org.apache.ignite.testframework.GridTestUtils.assertNotContains;
+
 /**
  * Checks compute grid functionality of thin client.
  */
@@ -75,8 +78,9 @@ public class ComputeTaskTest extends AbstractThinClientTest {
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         return super.getConfiguration(igniteInstanceName).setClientConnectorConfiguration(
             new ClientConnectorConfiguration().setThinClientConfiguration(
-                new ThinClientConfiguration().setMaxActiveComputeTasksPerConnection(
-                    getTestIgniteInstanceIndex(igniteInstanceName) <= 1 ? ACTIVE_TASKS_LIMIT : 0)))
+                new ThinClientConfiguration()
+                    .setMaxActiveComputeTasksPerConnection(getTestIgniteInstanceIndex(igniteInstanceName) <= 1 ? ACTIVE_TASKS_LIMIT : 0)
+                    .setServerToClientExceptionStackTraceSending(getTestIgniteInstanceIndex(igniteInstanceName) == 1)))
             .setClientMode(getTestIgniteInstanceIndex(igniteInstanceName) == 3);
     }
 
@@ -230,6 +234,38 @@ public class ComputeTaskTest extends AbstractThinClientTest {
 
             String errMsg = fut.handle((f, t) -> t.getMessage()).toCompletableFuture().get(2, TimeUnit.SECONDS);
             assertTrue(errMsg.contains("cause=Foo"));
+        }
+    }
+
+    /**
+     * Tests task execution with an exception and no stacktrace in error message (by default).
+     */
+    @Test
+    public void testSendNoStackTraceOnTaskMapFail() throws Exception {
+        try (IgniteClient client = startClient(0)) {
+            client.compute().execute(TestExceptionalTask.class.getName(), null);
+
+            fail();
+        }
+        catch (Exception e) {
+            assertNotContains(log, e.getMessage(), "Caused by: java.lang.ArithmeticException: Foo");
+            assertContains(log, e.getMessage(), "Failed to map task jobs to nodes due to undeclared user exception");
+            assertContains(log, e.getMessage(), "cause=Foo");
+        }
+    }
+
+    /**
+     * Tests task execution with an exception and full stacktrace in error message.
+     */
+    @Test
+    public void testSendStackTraceOnTaskMapFail() throws Exception {
+        try (IgniteClient client = startClient(1)) {
+            client.compute().execute(TestExceptionalTask.class.getName(), null);
+
+            fail();
+        }
+        catch (Exception e) {
+            assertContains(log, e.getMessage(), "Caused by: java.lang.ArithmeticException: Foo");
         }
     }
 
@@ -420,13 +456,13 @@ public class ComputeTaskTest extends AbstractThinClientTest {
             Future<Object> fut1 = compute.executeAsync(TestLatchTask.class.getName(), null);
 
             // Wait for the task to start, then drop connections.
-            TestLatchTask.startLatch.await();
+            assertTrue(TestLatchTask.startLatch.await(TIMEOUT, TimeUnit.MILLISECONDS));
             dropAllThinClientConnections();
 
             TestLatchTask.startLatch = new CountDownLatch(1);
             Future<Object> fut2 = compute.executeAsync(TestLatchTask.class.getName(), null);
 
-            TestLatchTask.startLatch.await();
+            assertTrue(TestLatchTask.startLatch.await(TIMEOUT, TimeUnit.MILLISECONDS));
             dropAllThinClientConnections();
 
             TestLatchTask.latch = new CountDownLatch(1);

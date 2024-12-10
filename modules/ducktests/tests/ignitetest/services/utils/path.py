@@ -173,6 +173,8 @@ class IgnitePathAware(PathAware, metaclass=ABCMeta):
 
     IGNITE_THIN_CLIENT_CONFIG_NAME = "ignite-thin-config.xml"
 
+    IGNITE_THIN_JDBC_CONFIG_NAME = "ignite-thin-jdbc-config.xml"
+
     IGNITE_LOG_CONFIG_NAME = "ignite-ducktape-log4j2.xml"
 
     @property
@@ -188,6 +190,13 @@ class IgnitePathAware(PathAware, metaclass=ABCMeta):
         :return: path to thin client config file
         """
         return os.path.join(self.config_dir, IgnitePathAware.IGNITE_THIN_CLIENT_CONFIG_NAME)
+
+    @property
+    def thin_jdbc_config_file(self):
+        """
+        :return: path to thin JDBC driver config file
+        """
+        return os.path.join(self.config_dir, IgnitePathAware.IGNITE_THIN_JDBC_CONFIG_NAME)
 
     @property
     def log_config_file(self):
