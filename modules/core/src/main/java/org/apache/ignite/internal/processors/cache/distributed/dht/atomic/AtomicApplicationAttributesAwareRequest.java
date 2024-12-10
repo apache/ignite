@@ -20,6 +20,7 @@ package org.apache.ignite.internal.processors.cache.distributed.dht.atomic;
 import java.nio.ByteBuffer;
 import java.util.Map;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.internal.GridDirectMap;
 import org.apache.ignite.internal.processors.cache.GridCacheIdMessage;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.plugin.extensions.communication.MessageCollectionItemType;
@@ -29,12 +30,16 @@ import org.apache.ignite.plugin.extensions.communication.MessageWriter;
 /** Wraps atomic updates with application attributes. */
 public class AtomicApplicationAttributesAwareRequest extends GridCacheIdMessage {
     /** */
+    private static final long serialVersionUID = 0L;
+
+    /** */
     public static final short TYPE_CODE = 180;
 
     /** Original update message. */
     private GridNearAtomicAbstractUpdateRequest payload;
 
     /** Application attributes. */
+    @GridDirectMap(keyType = String.class, valueType = String.class)
     private Map<String, String> appAttrs;
 
     /** */
