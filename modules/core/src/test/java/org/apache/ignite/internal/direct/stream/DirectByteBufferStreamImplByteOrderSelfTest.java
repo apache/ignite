@@ -15,16 +15,16 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.direct.stream.v2;
+package org.apache.ignite.internal.direct.stream;
 
 import java.lang.reflect.Array;
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Random;
+import java.util.function.Supplier;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.ignite.IgniteException;
-import org.apache.ignite.internal.direct.stream.DirectByteBufferStream;
 import org.apache.ignite.internal.util.GridUnsafe;
 import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.plugin.extensions.communication.MessageFactory;
@@ -45,9 +45,9 @@ import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 
 /**
- * {@link DirectByteBufferStreamImplV2} byte order sanity tests.
+ * {@link DirectByteBufferStream} byte order sanity tests.
  */
-public class DirectByteBufferStreamImplV2ByteOrderSelfTest {
+public class DirectByteBufferStreamImplByteOrderSelfTest {
     /** Array length. */
     private static final int ARR_LEN = 16;
 
@@ -82,8 +82,12 @@ public class DirectByteBufferStreamImplV2ByteOrderSelfTest {
      * @param buff Buffer.
      * @return Stream.
      */
-    private static DirectByteBufferStreamImplV2 createStream(ByteBuffer buff) {
-        DirectByteBufferStreamImplV2 stream = new DirectByteBufferStreamImplV2(new MessageFactory() {
+    private static DirectByteBufferStream createStream(ByteBuffer buff) {
+        DirectByteBufferStream stream = new DirectByteBufferStream(new MessageFactory() {
+            @Override public void register(short directType, Supplier<Message> supplier) throws IgniteException {
+                throw new UnsupportedOperationException();
+            }
+
             @Nullable @Override public Message create(short type) {
                 return null;
             }
@@ -373,7 +377,7 @@ public class DirectByteBufferStreamImplV2ByteOrderSelfTest {
 
         buff.rewind();
 
-        DirectByteBufferStreamImplV2 stream = createStream(buff);
+        DirectByteBufferStream stream = createStream(buff);
 
         long d1 = System.currentTimeMillis();
         while (!stream.lastFinished()) {
@@ -394,8 +398,8 @@ public class DirectByteBufferStreamImplV2ByteOrderSelfTest {
      * @param <T> Array type.
      */
     private <T> void testWriteArrayInternal(T srcArr, boolean writeBigEndian, boolean readBigEndian, int lenShift) {
-        DirectByteBufferStreamImplV2 writeStream = createStream(buff);
-        DirectByteBufferStreamImplV2 readStream = createStream(buff);
+        DirectByteBufferStream writeStream = createStream(buff);
+        DirectByteBufferStream readStream = createStream(buff);
 
         int outBytes = (ARR_LEN << lenShift) + LEN_BYTES;
         int typeSize = 1 << lenShift;
@@ -415,7 +419,7 @@ public class DirectByteBufferStreamImplV2ByteOrderSelfTest {
 
         buff.rewind();
 
-        DirectByteBufferStreamImplV2.ArrayCreator<T> arrCreator = arrayCreator(srcArr);
+        DirectByteBufferStream.ArrayCreator<T> arrCreator = arrayCreator(srcArr);
 
         T resArr;
 
@@ -440,8 +444,8 @@ public class DirectByteBufferStreamImplV2ByteOrderSelfTest {
      * @param <T> Array type.
      */
     private <T> void testWriteArrayInternalOverflow(T srcArr, boolean writeBigEndian, boolean readBigEndian, int lenShift) {
-        DirectByteBufferStreamImplV2 writeStream = createStream(buff);
-        DirectByteBufferStreamImplV2 readStream = createStream(buff);
+        DirectByteBufferStream writeStream = createStream(buff);
+        DirectByteBufferStream readStream = createStream(buff);
 
         int outBytes = (ARR_LEN << lenShift) + LEN_BYTES;
         int typeSize = 1 << lenShift;
@@ -463,7 +467,7 @@ public class DirectByteBufferStreamImplV2ByteOrderSelfTest {
         buff.limit(buff.position());
         buff.rewind();
 
-        DirectByteBufferStreamImplV2.ArrayCreator<T> arrCreator = arrayCreator(srcArr);
+        DirectByteBufferStream.ArrayCreator<T> arrCreator = arrayCreator(srcArr);
 
         T resArr;
 
@@ -549,8 +553,8 @@ public class DirectByteBufferStreamImplV2ByteOrderSelfTest {
      * @param <T> Array type.
      * @return {@code ArrayCreator} for a required type.
      */
-    private <T> DirectByteBufferStreamImplV2.ArrayCreator<T> arrayCreator(final T arr) {
-        return new DirectByteBufferStreamImplV2.ArrayCreator<T>() {
+    private <T> DirectByteBufferStream.ArrayCreator<T> arrayCreator(final T arr) {
+        return new DirectByteBufferStream.ArrayCreator<T>() {
             @Override public T create(int len) {
                 if (len < 0)
                     throw new IgniteException("Invalid array length: " + len);

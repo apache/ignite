@@ -24,7 +24,6 @@ import java.util.function.BiFunction;
 import org.apache.calcite.sql.SqlCall;
 import org.apache.calcite.sql.SqlNode;
 import org.apache.calcite.sql.SqlNodeList;
-import org.apache.calcite.sql.SqlOperator;
 import org.apache.calcite.sql.fun.SqlCase;
 import org.apache.calcite.sql.fun.SqlLibraryOperators;
 import org.apache.calcite.sql.fun.SqlStdOperatorTable;
@@ -41,23 +40,29 @@ public class IgniteSqlCallRewriteTable {
     /** Instance. */
     public static final IgniteSqlCallRewriteTable INSTANCE = new IgniteSqlCallRewriteTable();
 
-    /** Registered rewriters map. */
-    private final Map<SqlOperator, BiFunction<SqlValidator, SqlCall, SqlCall>> map = new ConcurrentHashMap<>();
+    /**
+     * Registered rewriters map.
+     * If there are function overloads exists, validator can't resolve SqlOperator only by name, before unconditinal
+     * rewrite. SqlCall contains SqlUnresolvedFunction as an operator. We can find a rewriter for such a call only by
+     * operator name (string). Rewriter should ensure that it's a correct operator to rewrite (for example,
+     * additionally checking operands count) and skip operators with the unknown signature.
+     */
+    private final Map<String, BiFunction<SqlValidator, SqlCall, SqlCall>> map = new ConcurrentHashMap<>();
 
     /** */
     private IgniteSqlCallRewriteTable() {
-        register(SqlLibraryOperators.NVL, IgniteSqlCallRewriteTable::nvlRewriter);
-        register(SqlLibraryOperators.DECODE, IgniteSqlCallRewriteTable::decodeRewriter);
+        register(SqlLibraryOperators.NVL.getName(), IgniteSqlCallRewriteTable::nvlRewriter);
+        register(SqlLibraryOperators.DECODE.getName(), IgniteSqlCallRewriteTable::decodeRewriter);
     }
 
     /** Registers rewriter for SQL operator. */
-    public void register(SqlOperator operator, BiFunction<SqlValidator, SqlCall, SqlCall> rewriter) {
-        map.put(operator, rewriter);
+    public void register(String operatorName, BiFunction<SqlValidator, SqlCall, SqlCall> rewriter) {
+        map.put(operatorName, rewriter);
     }
 
     /** Rewrites SQL call. */
     SqlCall rewrite(SqlValidator validator, SqlCall call) {
-        BiFunction<SqlValidator, SqlCall, SqlCall> rewriter = map.get(call.getOperator());
+        BiFunction<SqlValidator, SqlCall, SqlCall> rewriter = map.get(call.getOperator().getName());
 
         return rewriter == null ? call : rewriter.apply(validator, call);
     }

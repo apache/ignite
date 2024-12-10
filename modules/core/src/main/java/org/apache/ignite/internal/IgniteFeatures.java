@@ -38,9 +38,6 @@ public enum IgniteFeatures {
      */
     TCP_COMMUNICATION_SPI_HANDSHAKE_WAIT_MESSAGE(0),
 
-    /** Cache metrics v2 support. */
-    CACHE_METRICS_V2(1),
-
     /** Data paket compression. */
     DATA_PACKET_COMPRESSION(3),
 
@@ -66,8 +63,8 @@ public enum IgniteFeatures {
      */
     SAFE_CLUSTER_DEACTIVATION(22),
 
-    /** Tracing. */
-    TRACING(26),
+    /** Remove metadata from cluster for specified type. */
+    REMOVE_METADATA(39),
 
     /** Support policy of shutdown. */
     SHUTDOWN_POLICY(40),
