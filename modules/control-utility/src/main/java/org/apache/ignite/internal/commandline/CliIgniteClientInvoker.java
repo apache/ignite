@@ -38,28 +38,35 @@ import static org.apache.ignite.internal.processors.odbc.ClientListenerNioListen
  * Adapter of new management API command for {@code control.sh} execution flow.
  */
 public class CliIgniteClientInvoker<A extends IgniteDataTransferObject> extends CommandInvoker<A> implements CloseableCliCommandInvoker {
+    /** Client configuration. */
+    private final ClientConfiguration cfg;
+
     /** Client. */
-    private final IgniteClient client;
+    private IgniteClient client;
 
     /** @param cmd Command to execute. */
     public CliIgniteClientInvoker(Command<A, ?> cmd, A arg, ClientConfiguration cfg) {
         super(cmd, arg, null);
 
-        if (cmd instanceof BeforeNodeStartCommand) {
-            cfg.setUserAttributes(F.asMap(MANAGEMENT_CLIENT_ATTR, Boolean.TRUE.toString()));
-            cfg.setAutoBinaryConfigurationEnabled(false);
-        }
-
-        client = Ignition.startClient(cfg);
+        this.cfg = cfg;
     }
 
     /** {@inheritDoc} */
     @Override protected GridClientNode defaultNode() {
-        return CommandUtils.clusterToClientNode(client.cluster().forOldest().node());
+        return CommandUtils.clusterToClientNode(igniteClient().cluster().forOldest().node());
     }
 
     /** {@inheritDoc} */
     @Override protected @Nullable IgniteClient igniteClient() {
+        if (client == null) {
+            if (cmd instanceof BeforeNodeStartCommand) {
+                cfg.setUserAttributes(F.asMap(MANAGEMENT_CLIENT_ATTR, Boolean.TRUE.toString()));
+                cfg.setAutoBinaryConfigurationEnabled(false);
+            }
+
+            client = Ignition.startClient(cfg);
+        }
+
         return client;
     }
 
@@ -72,13 +79,14 @@ public class CliIgniteClientInvoker<A extends IgniteDataTransferObject> extends 
     @Override public <R> R invokeBeforeNodeStart(Consumer<String> printer) throws Exception {
         return ((BeforeNodeStartCommand<A, R>)cmd).execute(new GridClientNodeStateBeforeStart() {
             @Override public void stopWarmUp() {
-                ((TcpIgniteClient)client).stopWarmUp();
+                ((TcpIgniteClient)igniteClient()).stopWarmUp();
             }
         }, arg, printer);
     }
 
     /** {@inheritDoc} */
     @Override public void close() {
-        client.close();
+        if (client != null)
+            client.close();
     }
 }
