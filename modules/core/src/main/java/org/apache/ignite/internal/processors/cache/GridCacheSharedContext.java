@@ -936,7 +936,7 @@ public class GridCacheSharedContext<K, V> {
      */
     @SuppressWarnings({"unchecked"})
     public IgniteInternalFuture<?> partitionReleaseFuture(AffinityTopologyVersion topVer) {
-        GridCompoundFuture f = new CacheObjectsReleaseFuture("Partition", topVer);
+        GridCompoundFuture f = new CacheObjectsReleaseFuture(kernalCtx, "Partition", topVer);
 
         f.add(mvcc().finishExplicitLocks(topVer));
         f.add(mvcc().finishAtomicUpdates(topVer));
@@ -1082,8 +1082,11 @@ public class GridCacheSharedContext<K, V> {
                 if (tx.optimistic())
                     holder.await();
                 else {
-                    IgniteInternalFuture<IgniteInternalTx> f = new GridEmbeddedFuture<>(fut,
-                        (o, e) -> tx.commitNearTxLocalAsync());
+                    IgniteInternalFuture<IgniteInternalTx> f = new GridEmbeddedFuture<>(
+                        kernalCtx,
+                        fut,
+                        (o, e) -> tx.commitNearTxLocalAsync()
+                    );
 
                     holder.saveFuture(f);
 

@@ -75,6 +75,8 @@ final class ClientRequestFuture extends GridFutureAdapter<MappingExchangeResult>
             MarshallerMappingItem item,
             Map<MarshallerMappingItem, ClientRequestFuture> syncMap
     ) {
+        super(ctx);
+
         ioMgr = ctx.io();
         discoMgr = ctx.discovery();
         aliveSrvNodes = new LinkedList<>(discoMgr.aliveServerNodes());

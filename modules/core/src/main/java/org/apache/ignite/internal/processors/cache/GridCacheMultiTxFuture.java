@@ -48,6 +48,8 @@ public final class GridCacheMultiTxFuture<K, V> extends GridFutureAdapter<Boolea
      * @param cctx Cache context.
      */
     public GridCacheMultiTxFuture(GridCacheContext<K, V> cctx) {
+        super(cctx.kernalContext());
+
         if (log == null)
             log = U.logger(cctx.kernalContext(), logRef, GridCacheMultiTxFuture.class);
     }

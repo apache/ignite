@@ -187,7 +187,7 @@ public class GridTaskCommandHandler extends GridRestCommandHandlerAdapter {
 
         GridRestTaskRequest req0 = (GridRestTaskRequest)req;
 
-        final GridFutureAdapter<GridRestResponse> fut = new GridFutureAdapter<>();
+        final GridFutureAdapter<GridRestResponse> fut = new GridFutureAdapter<>(ctx);
 
         final GridRestResponse res = new GridRestResponse();
 

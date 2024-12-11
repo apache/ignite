@@ -29,6 +29,7 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.configuration.DataStorageConfiguration;
+import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.LongJVMPauseDetector;
 import org.apache.ignite.internal.pagemem.wal.IgniteWriteAheadLogManager;
@@ -89,6 +90,7 @@ public class CheckpointManager {
     private final Supplier<Checkpointer> checkpointerProvider;
 
     /**
+     * @param ctx Kernal context.
      * @param logger Logger producer.
      * @param igniteInstanceName Ignite instance name.
      * @param checkpointThreadName Name of main checkpoint thread.
@@ -111,6 +113,7 @@ public class CheckpointManager {
      * @throws IgniteCheckedException if fail.
      */
     public CheckpointManager(
+        GridKernalContext ctx,
         Function<Class<?>, IgniteLogger> logger,
         String igniteInstanceName,
         String checkpointThreadName,
@@ -154,6 +157,7 @@ public class CheckpointManager {
         );
 
         checkpointWorkflow = new CheckpointWorkflow(
+            ctx,
             logger,
             wal,
             checkpointMarkersStorage,
@@ -185,6 +189,7 @@ public class CheckpointManager {
         );
 
         checkpointerProvider = () -> new Checkpointer(
+            ctx,
             igniteInstanceName,
             checkpointThreadName,
             workersRegistry,

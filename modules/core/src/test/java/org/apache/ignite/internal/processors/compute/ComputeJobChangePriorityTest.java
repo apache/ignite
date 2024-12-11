@@ -203,10 +203,10 @@ public class ComputeJobChangePriorityTest extends GridCommonAbstractTest {
         volatile boolean handleCollision;
 
         /** */
-        final GridFutureAdapter<CollisionJobContext> waitJobFut = new GridFutureAdapter<>();
+        final GridFutureAdapter<CollisionJobContext> waitJobFut = new GridFutureAdapter<>(null);
 
         /** */
-        final GridFutureAdapter<Void> onChangeTaskAttrsFut = new GridFutureAdapter<>();
+        final GridFutureAdapter<Void> onChangeTaskAttrsFut = new GridFutureAdapter<>(null);
 
         /** {@inheritDoc} */
         @Override public void onCollision(CollisionContext ctx) {
@@ -267,7 +267,7 @@ public class ComputeJobChangePriorityTest extends GridCommonAbstractTest {
     /** */
     private static class WaitJob extends ComputeJobAdapter {
         /** */
-        static final GridFutureAdapter<Void> waitFut = new GridFutureAdapter<>();
+        static final GridFutureAdapter<Void> waitFut = new GridFutureAdapter<>(null);
 
         /** {@inheritDoc} */
         @Override public Object execute() throws IgniteException {

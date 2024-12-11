@@ -470,7 +470,7 @@ public class IgniteDiagnosticMessagesTest extends GridCommonAbstractTest {
 
             final AtomicReference<Integer> key = new AtomicReference<>();
 
-            GridCompoundFuture<Void, Void> fut = new GridCompoundFuture<>();
+            GridCompoundFuture<Void, Void> fut = new GridCompoundFuture<>(null);
 
             fut.add(GridTestUtils.runAsync(new Callable<Void>() {
                 @Override public Void call() throws Exception {
@@ -645,7 +645,7 @@ public class IgniteDiagnosticMessagesTest extends GridCommonAbstractTest {
                 if (i != j) {
                     ClusterNode dstNode = ignite(j).cluster().localNode();
 
-                    final GridFutureAdapter<String> fut = new GridFutureAdapter<>();
+                    final GridFutureAdapter<String> fut = new GridFutureAdapter<>(null);
 
                     IgniteDiagnosticPrepareContext ctx = new IgniteDiagnosticPrepareContext(node.localNodeId());
 

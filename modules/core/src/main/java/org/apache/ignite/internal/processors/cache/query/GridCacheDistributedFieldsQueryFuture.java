@@ -46,7 +46,7 @@ public class GridCacheDistributedFieldsQueryFuture
         Collection<ClusterNode> nodes) {
         super((GridCacheContext<Object, Object>)ctx, reqId, qry, nodes);
 
-        metaFut = new GridFutureAdapter<>();
+        metaFut = new GridFutureAdapter<>(ctx.kernalContext());
 
         if (!qry.query().includeMetadata())
             metaFut.onDone();

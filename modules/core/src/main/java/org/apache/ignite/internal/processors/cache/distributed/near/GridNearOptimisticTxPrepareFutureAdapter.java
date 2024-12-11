@@ -19,6 +19,7 @@ package org.apache.ignite.internal.processors.cache.distributed.near;
 
 import java.util.Collection;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
@@ -67,7 +68,7 @@ public abstract class GridNearOptimisticTxPrepareFutureAdapter extends GridNearT
             // Init keyLockFut to make sure it is created when {@link #onNearTxLocalTimeout} is called.
             for (IgniteTxEntry e : tx.writeEntries()) {
                 if (e.context().isNear()) {
-                    keyLockFut = new KeyLockFuture();
+                    keyLockFut = new KeyLockFuture(cctx.kernalContext());
                     break;
                 }
             }
@@ -75,7 +76,7 @@ public abstract class GridNearOptimisticTxPrepareFutureAdapter extends GridNearT
             if (tx.serializable() && keyLockFut == null) {
                 for (IgniteTxEntry e : tx.readEntries()) {
                     if (e.context().isNear()) {
-                        keyLockFut = new KeyLockFuture();
+                        keyLockFut = new KeyLockFuture(cctx.kernalContext());
                         break;
                     }
                 }
@@ -265,6 +266,11 @@ public abstract class GridNearOptimisticTxPrepareFutureAdapter extends GridNearT
 
         /** */
         protected volatile boolean allKeysAdded;
+
+        /** */
+        public KeyLockFuture(GridKernalContext ctx) {
+            super(ctx);
+        }
 
         /**
          * @param key Key to track for locking.

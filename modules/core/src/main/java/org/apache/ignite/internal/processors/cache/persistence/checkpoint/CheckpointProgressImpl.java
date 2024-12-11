@@ -22,6 +22,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
+import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.processors.cache.persistence.CheckpointState;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.typedef.internal.A;
@@ -65,10 +66,16 @@ public class CheckpointProgressImpl implements CheckpointProgress {
     /** Number of pages in current checkpoint at the beginning of checkpoint. */
     private volatile int currCheckpointPagesCnt;
 
+    /** */
+    private final GridKernalContext ctx;
+
     /**
+     * @param ctx Kernal context.
      * @param cpFreq Timeout until next checkpoint.
      */
-    CheckpointProgressImpl(long cpFreq) {
+    CheckpointProgressImpl(GridKernalContext ctx, long cpFreq) {
+        this.ctx = ctx;
+
         // Avoid overflow on nextCpNanos.
         cpFreq = Math.min(TimeUnit.DAYS.toMillis(365), cpFreq);
 
@@ -95,7 +102,7 @@ public class CheckpointProgressImpl implements CheckpointProgress {
      * @return Existed or new future which corresponds to the given state.
      */
     @Override public GridFutureAdapter futureFor(CheckpointState state) {
-        GridFutureAdapter stateFut = stateFutures.computeIfAbsent(state, (k) -> new GridFutureAdapter());
+        GridFutureAdapter stateFut = stateFutures.computeIfAbsent(state, (k) -> new GridFutureAdapter(ctx));
 
         if (greaterOrEqualTo(state) && !stateFut.isDone())
             stateFut.onDone(failCause);

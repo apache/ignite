@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.processors.query.running;
 
 import java.util.UUID;
+import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.processors.cache.query.GridCacheQueryType;
 import org.apache.ignite.internal.processors.query.GridQueryCancel;
 import org.apache.ignite.internal.processors.query.QueryUtils;
@@ -59,7 +60,7 @@ public class GridRunningQueryInfo {
 
     /** */
     @GridToStringExclude
-    private final QueryRunningFuture fut = new QueryRunningFuture();
+    private final QueryRunningFuture fut;
 
     /** Span of the running query. */
     private final Span span;
@@ -82,6 +83,7 @@ public class GridRunningQueryInfo {
     /**
      * Constructor.
      *
+     * @param ctx Kernal context.
      * @param id Query ID.
      * @param nodeId Originating node ID.
      * @param qry Query text.
@@ -98,6 +100,7 @@ public class GridRunningQueryInfo {
      * @param subjId Subject ID.
      */
     public GridRunningQueryInfo(
+        GridKernalContext ctx,
         long id,
         UUID nodeId,
         String qry,
@@ -128,6 +131,8 @@ public class GridRunningQueryInfo {
         this.lazy = lazy;
         this.distributedJoins = distributedJoins;
         this.subjId = subjId;
+
+        fut = new QueryRunningFuture(ctx);
     }
 
     /**

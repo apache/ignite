@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.processors.query.schema;
 
 import java.util.UUID;
+import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.typedef.internal.S;
 
@@ -31,9 +32,12 @@ public class SchemaOperationClientFuture extends GridFutureAdapter<Object> {
     /**
      * Constructor.
      *
+     * @param ctx Kernal context.
      * @param opId Operation ID.
      */
-    public SchemaOperationClientFuture(UUID opId) {
+    public SchemaOperationClientFuture(GridKernalContext ctx, UUID opId) {
+        super(ctx);
+
         this.opId = opId;
     }
 

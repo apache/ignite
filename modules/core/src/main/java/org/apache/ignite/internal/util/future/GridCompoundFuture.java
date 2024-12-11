@@ -26,6 +26,7 @@ import java.util.concurrent.locks.ReentrantReadWriteLock;
 import java.util.function.Supplier;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
+import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteFutureCancelledCheckedException;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.NodeStoppingException;
@@ -82,14 +83,17 @@ public class GridCompoundFuture<T, R> extends GridFutureAdapter<R> implements Ig
     /**
      * Default constructor.
      */
-    public GridCompoundFuture() {
-        this(null);
+    public GridCompoundFuture(GridKernalContext ctx) {
+        this(ctx, null);
     }
 
     /**
+     * @param ctx Kernal context.
      * @param rdc Reducer.
      */
-    public GridCompoundFuture(@Nullable IgniteReducer<T, R> rdc) {
+    public GridCompoundFuture(GridKernalContext ctx, @Nullable IgniteReducer<T, R> rdc) {
+        super(ctx);
+
         this.rdc = rdc;
     }
 

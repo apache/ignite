@@ -277,7 +277,7 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
     private long segChkFreq;
 
     /** Local node join to topology event. */
-    private GridFutureAdapter<DiscoveryLocalJoinData> locJoin = new GridFutureAdapter<>();
+    private GridFutureAdapter<DiscoveryLocalJoinData> locJoin;
 
     /** Custom event listener. */
     private ConcurrentMap<Class<?>, List<CustomEventListener<DiscoveryCustomMessage>>> customEvtLsnrs =
@@ -310,6 +310,8 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
     /** @param ctx Context. */
     public GridDiscoveryManager(GridKernalContext ctx) {
         super(ctx, ctx.config().getDiscoverySpi());
+
+        locJoin = new GridFutureAdapter<>(ctx);
 
         if (ctx.systemView().view(NODES_SYS_VIEW) == null) {
             ctx.systemView().registerView(
@@ -564,7 +566,7 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
 
             /** {@inheritDoc} */
             @Override public IgniteFuture<?> onDiscovery(DiscoveryNotification notification) {
-                GridFutureAdapter<?> notificationFut = new GridFutureAdapter<>();
+                GridFutureAdapter<?> notificationFut = new GridFutureAdapter<>(ctx);
 
                 discoNtfWrk.submit(notificationFut, ctx.security().enabled()
                     ? new SecurityAwareNotificationTask(notification)
@@ -831,7 +833,7 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
                     if (!locJoin.isDone())
                         locJoin.onDone(new IgniteCheckedException("Node disconnected"));
 
-                    locJoin = new GridFutureAdapter<>();
+                    locJoin = new GridFutureAdapter<>(ctx);
 
                     registeredCaches.clear();
                     registeredCacheGrps.clear();
@@ -3043,7 +3045,7 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
             assert notificationEvt.node != null : notificationEvt.data;
 
             if (notificationEvt.type == EVT_CLIENT_NODE_DISCONNECTED)
-                discoWrk.disconnectEvtFut = new GridFutureAdapter();
+                discoWrk.disconnectEvtFut = new GridFutureAdapter(ctx);
 
             evts.add(notificationEvt);
         }
@@ -3279,9 +3281,6 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
 
     /** Discovery topology future. */
     private static class DiscoTopologyFuture extends GridFutureAdapter<Long> implements GridLocalEventListener {
-        /** */
-        private GridKernalContext ctx;
-
         /** Topology await version. */
         private long awaitVer;
 
@@ -3290,16 +3289,17 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
          * @param awaitVer Await version.
          */
         private DiscoTopologyFuture(GridKernalContext ctx, long awaitVer) {
-            this.ctx = ctx;
+            super(ctx);
+
             this.awaitVer = awaitVer;
         }
 
         /** Initializes future. */
         private void init() {
-            ctx.event().addLocalEventListener(this, EVT_NODE_JOINED, EVT_NODE_LEFT, EVT_NODE_FAILED);
+            kCtx.event().addLocalEventListener(this, EVT_NODE_JOINED, EVT_NODE_LEFT, EVT_NODE_FAILED);
 
             // Close potential window.
-            long topVer = ctx.discovery().topologyVersion();
+            long topVer = kCtx.discovery().topologyVersion();
 
             if (topVer >= awaitVer)
                 onDone(topVer);
@@ -3308,7 +3308,7 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
         /** {@inheritDoc} */
         @Override public boolean onDone(@Nullable Long res, @Nullable Throwable err) {
             if (super.onDone(res, err)) {
-                ctx.event().removeLocalEventListener(this, EVT_NODE_JOINED, EVT_NODE_LEFT, EVT_NODE_FAILED);
+                kCtx.event().removeLocalEventListener(this, EVT_NODE_JOINED, EVT_NODE_LEFT, EVT_NODE_FAILED);
 
                 return true;
             }

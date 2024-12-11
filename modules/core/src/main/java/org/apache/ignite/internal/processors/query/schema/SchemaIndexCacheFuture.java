@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.processors.query.schema;
 
+import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
 
 /**
@@ -29,9 +30,12 @@ public class SchemaIndexCacheFuture extends GridFutureAdapter<Void> {
     /**
      * Constructor.
      *
+     * @param ctx Kernal context.
      * @param cancelTok Token for canceling index rebuilding.
      */
-    public SchemaIndexCacheFuture(IndexRebuildCancelToken cancelTok) {
+    public SchemaIndexCacheFuture(GridKernalContext ctx, IndexRebuildCancelToken cancelTok) {
+        super(ctx);
+
         this.cancelTok = cancelTok;
     }
 

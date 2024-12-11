@@ -443,7 +443,7 @@ public class TxOnCachesStopTest extends GridCommonAbstractTest {
         final List<Ignite> clients,
         TransactionConcurrency concurrency,
         TransactionIsolation isolation) {
-        final GridCompoundFuture fut = new GridCompoundFuture();
+        final GridCompoundFuture fut = new GridCompoundFuture(null);
 
         for (Ignite c : clients) {
             for (int i = 0; i < CACHE_CNT; ++i)

@@ -78,7 +78,7 @@ public class PendingExchangeTest extends GridCommonAbstractTest {
     @WithSystemProperty(key = IGNITE_AFFINITY_HISTORY_SIZE, value = "2")
     public void testWithShortAfinityHistory() throws Exception {
         createClusterWithPendingExchnageDuringRebalance((ignite, exchangeManager) -> {
-            GridCompoundFuture compFut = new GridCompoundFuture();
+            GridCompoundFuture compFut = new GridCompoundFuture(null);
 
             for (int i = 0; i < 20; i++) {
                 int finalNum = i;
@@ -102,7 +102,7 @@ public class PendingExchangeTest extends GridCommonAbstractTest {
     @Test
     public void testStartSeveralClients() throws Exception {
         createClusterWithPendingExchnageDuringRebalance((ignite, exchangeManager) -> {
-            GridCompoundFuture compFut = new GridCompoundFuture();
+            GridCompoundFuture compFut = new GridCompoundFuture(null);
 
             for (int i = 0; i < 5; i++) {
                 int finalNum = i;
@@ -142,7 +142,7 @@ public class PendingExchangeTest extends GridCommonAbstractTest {
     @Test
     public void testStopStartCachePending() throws Exception {
         createClusterWithPendingExchnageDuringRebalance((ignite, exchangeManager) -> {
-            GridCompoundFuture compFut = new GridCompoundFuture();
+            GridCompoundFuture compFut = new GridCompoundFuture(null);
 
             compFut.add(GridTestUtils.runAsync(() -> ignite.createCache(DEFAULT_CACHE_NAME + "_new")));
             compFut.add(GridTestUtils.runAsync(() -> ignite.destroyCache(DEFAULT_CACHE_NAME + "_new")));
@@ -163,7 +163,7 @@ public class PendingExchangeTest extends GridCommonAbstractTest {
     @Test
     public void testStopStartSeveralCachePending() throws Exception {
         createClusterWithPendingExchnageDuringRebalance((ignite, exchangeManager) -> {
-            GridCompoundFuture compFut = new GridCompoundFuture();
+            GridCompoundFuture compFut = new GridCompoundFuture(null);
 
             for (int i = 0; i < 5; i++) {
                 int finalNum = i;
@@ -190,7 +190,7 @@ public class PendingExchangeTest extends GridCommonAbstractTest {
     @Test
     public void testStartServerAndCache() throws Exception {
         createClusterWithPendingExchnageDuringRebalance((ignite, exchangeManager) -> {
-            GridCompoundFuture compFut = new GridCompoundFuture();
+            GridCompoundFuture compFut = new GridCompoundFuture(null);
 
             compFut.add(GridTestUtils.runAsync(() -> startGrid("new_srv")));
             compFut.add(GridTestUtils.runAsync(() -> ignite.createCache(DEFAULT_CACHE_NAME + "_new")));
@@ -211,7 +211,7 @@ public class PendingExchangeTest extends GridCommonAbstractTest {
     @Test
     public void testStartServalServersWithClisntAndCache() throws Exception {
         createClusterWithPendingExchnageDuringRebalance((ignite, exchangeManager) -> {
-            GridCompoundFuture compFut = new GridCompoundFuture();
+            GridCompoundFuture compFut = new GridCompoundFuture(null);
 
             for (int i = 0; i < 3; i++) {
                 int finalSrvNum = i;
@@ -237,7 +237,7 @@ public class PendingExchangeTest extends GridCommonAbstractTest {
     @Test
     public void testStartStopServalServersWithClisnt() throws Exception {
         createClusterWithPendingExchnageDuringRebalance((ignite, exchangeManager) -> {
-            GridCompoundFuture compFut = new GridCompoundFuture();
+            GridCompoundFuture compFut = new GridCompoundFuture(null);
 
             for (int i = 0; i < 2; i++) {
                 int finalSrvNum = i;

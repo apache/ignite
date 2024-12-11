@@ -49,6 +49,7 @@ import org.apache.ignite.configuration.TransactionConfiguration;
 import org.apache.ignite.events.DiscoveryEvent;
 import org.apache.ignite.failure.FailureContext;
 import org.apache.ignite.failure.FailureType;
+import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.cluster.ClusterTopologyCheckedException;
 import org.apache.ignite.internal.cluster.DistributedTransactionConfiguration;
@@ -412,7 +413,7 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
      * @param cacheToStop Cache to stop.
      */
     public void rollbackTransactionsForStoppingCache(int cacheToStop) {
-        GridCompoundFuture<IgniteInternalTx, IgniteInternalTx> compFut = new GridCompoundFuture<>();
+        GridCompoundFuture<IgniteInternalTx, IgniteInternalTx> compFut = new GridCompoundFuture<>(cctx.kernalContext());
 
         Collection<IgniteInternalTx> active = activeTransactions();
 
@@ -798,6 +799,7 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
     public IgniteInternalFuture<Boolean> finishLocalTxs(AffinityTopologyVersion topVer) {
         GridCompoundFuture<IgniteInternalTx, Boolean> res =
             new CacheObjectsReleaseFuture<>(
+                cctx.kernalContext(),
                 "LocalTx",
                 topVer,
                 new IgniteReducer<IgniteInternalTx, Boolean>() {
@@ -830,6 +832,7 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
     public IgniteInternalFuture<Boolean> recoverLocalTxs(AffinityTopologyVersion topVer, ClusterNode node) {
         GridCompoundFuture<IgniteInternalTx, Boolean> res =
             new CacheObjectsReleaseFuture<>(
+                cctx.kernalContext(),
                 "TxRecovery",
                 topVer,
                 new IgniteReducer<IgniteInternalTx, Boolean>() {
@@ -870,7 +873,7 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
      * @return Future that will be completed when all ongoing transactions are finished.
      */
     public IgniteInternalFuture<?> finishAllTxs(IgniteInternalFuture<?> finishLocTxsFut, AffinityTopologyVersion topVer) {
-        final GridCompoundFuture finishAllTxsFut = new CacheObjectsReleaseFuture("AllTx", topVer);
+        final GridCompoundFuture finishAllTxsFut = new CacheObjectsReleaseFuture(cctx.kernalContext(), "AllTx", topVer);
 
         // After finishing all local updates, wait for finishing all tx updates on backups.
         finishLocTxsFut.listen(() -> {
@@ -2105,7 +2108,7 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
      * @return Future for flag indicating if transactions was committed.
      */
     public IgniteInternalFuture<Boolean> txCommitted(GridCacheVersion xidVer) {
-        final GridFutureAdapter<Boolean> resFut = new GridFutureAdapter<>();
+        final GridFutureAdapter<Boolean> resFut = new GridFutureAdapter<>(cctx.kernalContext());
 
         final IgniteInternalTx tx = cctx.tm().tx(xidVer);
 
@@ -2156,7 +2159,7 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
      */
     @SuppressWarnings("unchecked")
     public IgniteInternalFuture<?> remoteTxFinishFuture(GridCacheVersion nearVer) {
-        GridCompoundFuture<Void, Void> fut = new GridCompoundFuture<>();
+        GridCompoundFuture<Void, Void> fut = new GridCompoundFuture<>(cctx.kernalContext());
 
         for (final IgniteInternalTx tx : activeTransactions()) {
             if (!tx.local() && nearVer.equals(tx.nearXidVersion()))
@@ -2188,7 +2191,7 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
                     if (log.isDebugEnabled())
                         log.debug("Transaction is preparing (will wait): " + tx);
 
-                    final GridFutureAdapter<Boolean> fut0 = fut != null ? fut : new GridFutureAdapter<>();
+                    final GridFutureAdapter<Boolean> fut0 = fut != null ? fut : new GridFutureAdapter<>(cctx.kernalContext());
 
                     final int txNum0 = txNum;
 
@@ -2230,7 +2233,7 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
                             log.debug("Transaction was not prepared (rolled back): " + tx);
 
                         if (fut == null)
-                            fut = new GridFutureAdapter<>();
+                            fut = new GridFutureAdapter<>(cctx.kernalContext());
 
                         fut.onDone(false);
 
@@ -2250,7 +2253,7 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
                                 log.debug("Transaction is not prepared: " + tx);
 
                             if (fut == null)
-                                fut = new GridFutureAdapter<>();
+                                fut = new GridFutureAdapter<>(cctx.kernalContext());
 
                             fut.onDone(false);
 
@@ -2292,7 +2295,7 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
         }
 
         if (fut == null)
-            fut = new GridFutureAdapter<>();
+            fut = new GridFutureAdapter<>(cctx.kernalContext());
 
         fut.onDone(false);
 
@@ -3085,12 +3088,13 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
         private final AtomicLong preparedTxCnt = new AtomicLong();
 
         /** Recovery finished future. */
-        private final GridCompoundFuture<Boolean, ?> doneFut = new GridCompoundFuture<>();
+        private final GridCompoundFuture<Boolean, ?> doneFut;
 
         /**
          * @param node Failed node.
          */
-        private TxRecoveryInitRunnable(ClusterNode node) {
+        private TxRecoveryInitRunnable(GridKernalContext ctx, ClusterNode node) {
+            doneFut = new GridCompoundFuture<>(ctx);
             this.node = node;
         }
 
@@ -3513,6 +3517,8 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
          * @param id Future ID.
          */
         private TxTimeoutOnPartitionMapExchangeChangeFuture(UUID id) {
+            super(cctx.kernalContext());
+
             this.id = id;
         }
 
@@ -3535,7 +3541,7 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
         /** {@inheritDoc} */
         @Override public void onEvent(DiscoveryEvent evt, DiscoCache discoCache) {
             IgniteInternalFuture<?> recInitFut = cctx.kernalContext().closure().runLocalSafe(
-                new TxRecoveryInitRunnable(evt.eventNode()));
+                new TxRecoveryInitRunnable(cctx.kernalContext(), evt.eventNode()));
 
             recInitFut.listen(() -> {
                 if (recInitFut.error() != null)

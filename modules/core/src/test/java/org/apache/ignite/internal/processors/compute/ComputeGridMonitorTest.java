@@ -403,7 +403,7 @@ public class ComputeGridMonitorTest extends GridCommonAbstractTest {
     @ComputeTaskSessionFullSupport
     private static class ComputeFullWithWaitTask extends ComputeTaskAdapter<Void, Void> {
         /** */
-        final GridFutureAdapter<Void> doneOnMapFut = new GridFutureAdapter<>();
+        final GridFutureAdapter<Void> doneOnMapFut = new GridFutureAdapter<>(null);
 
         /** */
         final long timeout;

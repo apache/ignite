@@ -17,6 +17,7 @@
 
 package org.apache.ignite.spi.communication.tcp.internal;
 
+import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.nio.GridCommunicationClient;
 
@@ -25,4 +26,8 @@ import org.apache.ignite.internal.util.nio.GridCommunicationClient;
  * connection.
  */
 public class ConnectionRequestFuture extends GridFutureAdapter<GridCommunicationClient> {
+    /** */
+    public ConnectionRequestFuture(GridKernalContext ctx) {
+        super(ctx);
+    }
 }

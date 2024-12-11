@@ -174,6 +174,8 @@ public abstract class GridNearAtomicAbstractUpdateFuture extends GridCacheFuture
         boolean recovery,
         int remapCnt
     ) {
+        super(cctx.kernalContext());
+
         if (log == null) {
             msgLog = cctx.shared().atomicMessageLogger();
             log = U.logger(cctx.kernalContext(), logRef, GridFutureAdapter.class);

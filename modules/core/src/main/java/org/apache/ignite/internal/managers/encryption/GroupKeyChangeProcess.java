@@ -170,7 +170,7 @@ class GroupKeyChangeProcess {
             keysAndDigest.get2()
         );
 
-        fut = new GroupKeyChangeFuture(req);
+        fut = new GroupKeyChangeFuture(ctx, req);
 
         prepareGKChangeProc.start(req.requestId(), req);
 
@@ -338,10 +338,11 @@ class GroupKeyChangeProcess {
         private final ChangeCacheEncryptionRequest req;
 
         /**
+         * @param ctx Kernal context.
          * @param req Request.
          */
-        GroupKeyChangeFuture(ChangeCacheEncryptionRequest req) {
-            super(req.requestId());
+        GroupKeyChangeFuture(GridKernalContext ctx, ChangeCacheEncryptionRequest req) {
+            super(ctx, req.requestId());
 
             this.req = req;
         }

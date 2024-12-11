@@ -581,7 +581,7 @@ public class GridCacheCommandHandler extends GridRestCommandHandlerAdapter {
                 case CACHE_CLEAR: {
                     Set<Object> cacheNames = getKeys(req0);
 
-                    GridCompoundFuture compFut = new GridCompoundFuture();
+                    GridCompoundFuture compFut = new GridCompoundFuture(ctx);
 
                     for (Object cName : cacheNames)
                         compFut.add(executeCommand(req.destinationId(), (String)cName, cacheFlags, key,

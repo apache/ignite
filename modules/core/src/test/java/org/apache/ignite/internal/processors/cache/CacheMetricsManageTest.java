@@ -586,7 +586,7 @@ public class CacheMetricsManageTest extends GridCommonAbstractTest {
 
         blockOnce.await();
 
-        GridCompoundFuture<?, ?> finishFut = new GridCompoundFuture<>();
+        GridCompoundFuture<?, ?> finishFut = new GridCompoundFuture<>(null);
 
         for (int i = 0; i < contCnt; ++i) {
             IgniteInternalFuture f0 = GridTestUtils.runAsync(() -> {
@@ -716,7 +716,7 @@ public class CacheMetricsManageTest extends GridCommonAbstractTest {
 
         blockOnce.await();
 
-        GridCompoundFuture<?, ?> finishFut = new GridCompoundFuture<>();
+        GridCompoundFuture<?, ?> finishFut = new GridCompoundFuture<>(null);
 
         for (int i = 0; i < contCnt; ++i) {
             IgniteInternalFuture f0 = GridTestUtils.runAsync(() -> {

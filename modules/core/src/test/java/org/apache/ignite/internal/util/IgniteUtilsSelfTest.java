@@ -1203,7 +1203,7 @@ public class IgniteUtilsSelfTest extends GridCommonAbstractTest {
         // Here we try to pass a number of tasks more that executor size,
         // but there is a case when all task will be completed after last submit return control and
         // current thread can not steal task because all task will be already finished.
-        GridFutureAdapter fut = new GridFutureAdapter();
+        GridFutureAdapter fut = new GridFutureAdapter(null);
 
         try {
             res = U.doInParallel(10,

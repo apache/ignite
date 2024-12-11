@@ -1014,7 +1014,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
                 return;
             }
 
-            wrapMsgsFut = new GridFutureAdapter<>();
+            wrapMsgsFut = new GridFutureAdapter<>(cctx.kernalContext());
 
             cctx.tm().txMessageTransformer((msg, tx) -> new IncrementalSnapshotAwareMessage(
                 msg, id, tx == null ? null : tx.incrementalSnapshotId(), topVer));
@@ -1266,7 +1266,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
         if (snpReq != null && F.eq(id, snpReq.requestId()) && snpReq.incremental()) {
             cctx.tm().txMessageTransformer(null);
 
-            GridCompoundIdentityFuture<IgniteInternalTx> activeTxsFut = new GridCompoundIdentityFuture<>();
+            GridCompoundIdentityFuture<IgniteInternalTx> activeTxsFut = new GridCompoundIdentityFuture<>(cctx.kernalContext());
 
             for (IgniteInternalTx tx: cctx.tm().activeTransactions())
                 activeTxsFut.add(tx.finishFuture());
@@ -1384,7 +1384,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
             return new GridFinishedFuture<>();
 
         try {
-            GridFutureAdapter<Void> resultFut = new GridFutureAdapter<>();
+            GridFutureAdapter<Void> resultFut = new GridFutureAdapter<>(cctx.kernalContext());
 
             handlers().execSvc.submit(() -> {
                 try {
@@ -1891,7 +1891,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
         A.ensure(grps == null || grps.stream().filter(Objects::isNull).collect(Collectors.toSet()).isEmpty(),
             "Collection of cache groups names cannot contain null elements.");
 
-        GridFutureAdapter<SnapshotPartitionsVerifyTaskResult> res = new GridFutureAdapter<>();
+        GridFutureAdapter<SnapshotPartitionsVerifyTaskResult> res = new GridFutureAdapter<>(cctx.kernalContext());
 
         if (log.isInfoEnabled()) {
             log.info("The check snapshot procedure started [snpName=" + name + ", snpPath=" + snpPath +
@@ -2245,7 +2245,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
                     );
                 }
 
-                snpFut0 = new ClusterSnapshotFuture(UUID.randomUUID(), name, incIdx);
+                snpFut0 = new ClusterSnapshotFuture(cctx.kernalContext(), UUID.randomUUID(), name, incIdx);
 
                 clusterSnpFut = snpFut0;
 
@@ -3606,6 +3606,8 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
             BooleanSupplier stopChecker,
             BiConsumer<@Nullable File, @Nullable Throwable> partHnd
         ) {
+            super(snpMgr.cctx.kernalContext());
+
             dir = Paths.get(snpMgr.tmpWorkDir.getAbsolutePath(), this.reqId);
             initMsg = new SnapshotFilesRequestMessage(this.reqId, reqId, snpName, rmtSnpPath, parts);
 
@@ -4533,6 +4535,8 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
          * Default constructor.
          */
         public ClusterSnapshotFuture() {
+            super(null);
+
             onDone();
 
             rqId = null;
@@ -4547,6 +4551,8 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
          * @param err Error starting snapshot operation.
          */
         public ClusterSnapshotFuture(String name, Exception err) {
+            super(null);
+
             onDone(err);
 
             this.name = name;
@@ -4560,7 +4566,9 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
          * @param rqId Unique snapshot request id.
          * @param name Snapshot name.
          */
-        public ClusterSnapshotFuture(UUID rqId, String name, @Nullable Integer incIdx) {
+        public ClusterSnapshotFuture(GridKernalContext ctx, UUID rqId, String name, @Nullable Integer incIdx) {
+            super(ctx);
+
             this.rqId = rqId;
             this.name = name;
             this.incIdx = incIdx;

@@ -100,7 +100,7 @@ public class CachingProvider implements javax.cache.spi.CachingProvider {
             if (fut == null) {
                 needStartMgr = true;
 
-                fut = new GridFutureAdapter<>();
+                fut = new GridFutureAdapter<>(null);
 
                 uriMap.put(uri, fut);
             }

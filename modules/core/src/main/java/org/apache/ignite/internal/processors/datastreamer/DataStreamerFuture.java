@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.processors.datastreamer;
 
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
@@ -31,9 +32,12 @@ class DataStreamerFuture extends GridFutureAdapter<Object> {
     private DataStreamerImpl dataLdr;
 
     /**
+     * @param ctx Kernal context.
      * @param dataLdr Data streamer.
      */
-    DataStreamerFuture(DataStreamerImpl dataLdr) {
+    DataStreamerFuture(GridKernalContext ctx, DataStreamerImpl dataLdr) {
+        super(ctx);
+
         assert dataLdr != null;
 
         this.dataLdr = dataLdr;

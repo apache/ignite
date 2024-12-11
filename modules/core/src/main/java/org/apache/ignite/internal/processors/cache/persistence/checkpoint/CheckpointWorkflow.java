@@ -46,6 +46,7 @@ import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.configuration.CheckpointWriteOrder;
 import org.apache.ignite.configuration.DataStorageConfiguration;
+import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.pagemem.FullPageId;
@@ -157,7 +158,11 @@ public class CheckpointWorkflow {
     /** Pointer to a memory recovery record that should be included into the next checkpoint record. */
     private volatile WALPointer memoryRecoveryRecordPtr;
 
+    /** */
+    private final GridKernalContext ctx;
+
     /**
+     * @param ctx Kernal context.
      * @param logger Logger.
      * @param wal WAL manager.
      * @param checkpointMarkersStorage Checkpoint mark storage.
@@ -169,6 +174,7 @@ public class CheckpointWorkflow {
      * @param igniteInstanceName Ignite instance name.
      */
     CheckpointWorkflow(
+        GridKernalContext ctx,
         Function<Class<?>, IgniteLogger> logger,
         IgniteWriteAheadLogManager wal,
         CheckpointMarkersStorage checkpointMarkersStorage,
@@ -179,6 +185,7 @@ public class CheckpointWorkflow {
         int checkpointCollectInfoThreads,
         String igniteInstanceName
     ) {
+        this.ctx = ctx;
         this.wal = wal;
         this.checkpointReadWriteLock = checkpointReadWriteLock;
         this.dataRegions = dataRegions;
@@ -241,7 +248,11 @@ public class CheckpointWorkflow {
         WALPointer cpPtr = null;
 
         CheckpointContextImpl ctx0 = new CheckpointContextImpl(
-            curr, new PartitionAllocationMap(), checkpointCollectPagesInfoPool, workProgressDispatcher
+            ctx,
+            curr,
+            new PartitionAllocationMap(),
+            checkpointCollectPagesInfoPool,
+            workProgressDispatcher
         );
 
         checkpointReadWriteLock.readLock();
@@ -353,7 +364,7 @@ public class CheckpointWorkflow {
      * @throws IgniteCheckedException if fail.
      */
     private void fillCacheGroupState(CheckpointRecord cpRec) throws IgniteCheckedException {
-        GridCompoundFuture grpHandleFut = checkpointCollectPagesInfoPool == null ? null : new GridCompoundFuture();
+        GridCompoundFuture grpHandleFut = checkpointCollectPagesInfoPool == null ? null : new GridCompoundFuture(ctx);
 
         for (CacheGroupContext grp : cacheGroupsContexts.get()) {
             if (!grp.walEnabled())
@@ -390,7 +401,7 @@ public class CheckpointWorkflow {
                 r.run();
             else
                 try {
-                    GridFutureAdapter<?> res = new GridFutureAdapter<>();
+                    GridFutureAdapter<?> res = new GridFutureAdapter<>(ctx);
 
                     checkpointCollectPagesInfoPool.execute(U.wrapIgniteFuture(r, res));
 
@@ -568,7 +579,7 @@ public class CheckpointWorkflow {
         if (checkpointMarkersStorage != null)
             checkpointMarkersStorage.onCheckpointFinished(chp);
 
-        CheckpointContextImpl emptyCtx = new CheckpointContextImpl(chp.progress, null, null, null);
+        CheckpointContextImpl emptyCtx = new CheckpointContextImpl(ctx, chp.progress, null, null, null);
 
         Collection<DataRegion> checkpointedRegions = dataRegions.get();
 

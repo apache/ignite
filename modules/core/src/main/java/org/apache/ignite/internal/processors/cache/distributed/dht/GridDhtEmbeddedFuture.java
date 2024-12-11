@@ -19,6 +19,7 @@ package org.apache.ignite.internal.processors.cache.distributed.dht;
 
 import java.util.Collection;
 import java.util.Collections;
+import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.util.future.GridEmbeddedFuture;
 import org.apache.ignite.internal.util.typedef.internal.S;
@@ -33,10 +34,11 @@ public class GridDhtEmbeddedFuture<A, B> extends GridEmbeddedFuture<A, B> implem
      * @param embedded Embedded.
      */
     public GridDhtEmbeddedFuture(
+        GridKernalContext ctx,
         IgniteBiClosure<B, Exception, A> c,
         IgniteInternalFuture<B> embedded
     ) {
-        super(c, embedded);
+        super(ctx, c, embedded);
     }
 
     /**
@@ -44,10 +46,11 @@ public class GridDhtEmbeddedFuture<A, B> extends GridEmbeddedFuture<A, B> implem
      * @param c Embedding closure.
      */
     public GridDhtEmbeddedFuture(
+        GridKernalContext ctx,
         IgniteInternalFuture<B> embedded,
         IgniteBiClosure<B, Exception, IgniteInternalFuture<A>> c
     ) {
-        super(embedded, c);
+        super(ctx, embedded, c);
     }
 
     /** {@inheritDoc} */

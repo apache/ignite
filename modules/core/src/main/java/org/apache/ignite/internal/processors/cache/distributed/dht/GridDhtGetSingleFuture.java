@@ -135,6 +135,8 @@ public final class GridDhtGetSingleFuture<K, V> extends GridFutureAdapter<GridCa
         boolean recovery,
         @Nullable String txLbl
     ) {
+        super(cctx.kernalContext());
+
         assert reader != null;
         assert key != null;
 

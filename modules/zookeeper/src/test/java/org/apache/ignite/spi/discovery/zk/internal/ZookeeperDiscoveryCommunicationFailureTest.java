@@ -793,7 +793,7 @@ public class ZookeeperDiscoveryCommunicationFailureTest extends ZookeeperDiscove
 
         final CyclicBarrier b = new CyclicBarrier(4);
 
-        GridCompoundFuture<?, ?> fut = new GridCompoundFuture<>();
+        GridCompoundFuture<?, ?> fut = new GridCompoundFuture<>(null);
 
         final AtomicBoolean stop = new AtomicBoolean();
 

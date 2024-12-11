@@ -21,6 +21,7 @@ import java.util.HashMap;
 import java.util.Map;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
+import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.processors.rest.GridRestCommand;
 import org.apache.ignite.internal.processors.rest.GridRestProtocolHandler;
@@ -72,14 +73,19 @@ public class GridTcpMemcachedNioListener extends GridNioServerListenerAdapter<Gr
     /** Handler. */
     private final GridRestProtocolHandler hnd;
 
+    /** */
+    private final GridKernalContext ctx;
+
     /**
      * Creates listener which will convert incoming tcp packets to rest requests and forward them to
      * a given rest handler.
      *
+     * @param ctx Kernal context.
      * @param log Logger to use.
      * @param hnd Rest handler.
      */
-    public GridTcpMemcachedNioListener(IgniteLogger log, GridRestProtocolHandler hnd) {
+    public GridTcpMemcachedNioListener(GridKernalContext ctx, IgniteLogger log, GridRestProtocolHandler hnd) {
+        this.ctx = ctx;
         this.log = log;
         this.hnd = hnd;
     }
@@ -147,8 +153,9 @@ public class GridTcpMemcachedNioListener extends GridNioServerListenerAdapter<Gr
             f = handleRequest0(ses, req, cmd);
         else {
             f = new GridEmbeddedFuture<>(
+                ctx,
                 lastFut,
-                new C2<GridRestResponse, Exception, IgniteInternalFuture<GridRestResponse>>() {
+                new C2<>() {
                     @Override public IgniteInternalFuture<GridRestResponse> apply(GridRestResponse res, Exception e) {
                         return handleRequest0(ses, req, cmd);
                     }
@@ -181,78 +188,80 @@ public class GridTcpMemcachedNioListener extends GridNioServerListenerAdapter<Gr
             return null;
         }
 
-        return new GridEmbeddedFuture<>(new IgniteClosure2X<GridRestResponse, Exception, GridRestResponse>() {
-            @Override public GridRestResponse applyx(GridRestResponse restRes,
-                Exception ex) throws IgniteCheckedException {
-                if (ex != null)
-                    throw U.cast(ex);
+        return new GridEmbeddedFuture<>(
+            ctx,
+            new IgniteClosure2X<>() {
+                @Override public GridRestResponse applyx(GridRestResponse restRes,
+                    Exception ex) throws IgniteCheckedException {
+                    if (ex != null)
+                        throw U.cast(ex);
 
-                // Handle 'Stat' command (special case because several packets are included in response).
-                if (cmd.get1() == CACHE_METRICS) {
-                    assert restRes.getResponse() instanceof GridCacheRestMetrics;
+                    // Handle 'Stat' command (special case because several packets are included in response).
+                    if (cmd.get1() == CACHE_METRICS) {
+                        assert restRes.getResponse() instanceof GridCacheRestMetrics;
 
-                    Map<String, Long> metrics = ((GridCacheRestMetrics)restRes.getResponse()).map();
+                        Map<String, Long> metrics = ((GridCacheRestMetrics)restRes.getResponse()).map();
 
-                    for (Map.Entry<String, Long> e : metrics.entrySet()) {
+                        for (Map.Entry<String, Long> e : metrics.entrySet()) {
+                            GridMemcachedMessage res = new GridMemcachedMessage(req);
+
+                            res.key(e.getKey());
+
+                            res.value(String.valueOf(e.getValue()));
+
+                            sendResponse(ses, res);
+                        }
+
+                        sendResponse(ses, new GridMemcachedMessage(req));
+                    }
+                    else {
                         GridMemcachedMessage res = new GridMemcachedMessage(req);
 
-                        res.key(e.getKey());
+                        if (restRes.getSuccessStatus() == GridRestResponse.STATUS_SUCCESS) {
+                            switch (cmd.get1()) {
+                                case CACHE_GET: {
+                                    res.status(restRes.getResponse() == null ? KEY_NOT_FOUND : SUCCESS);
 
-                        res.value(String.valueOf(e.getValue()));
+                                    break;
+                                }
+
+                                case CACHE_PUT:
+                                case CACHE_ADD:
+                                case CACHE_REMOVE:
+                                case CACHE_REPLACE:
+                                case CACHE_CAS:
+                                case CACHE_APPEND:
+                                case CACHE_PREPEND: {
+                                    boolean res0 = restRes.getResponse().equals(Boolean.TRUE);
+
+                                    res.status(res0 ? SUCCESS : FAILURE);
+
+                                    break;
+                                }
+
+                                default: {
+                                    res.status(SUCCESS);
+
+                                    break;
+                                }
+                            }
+                        }
+                        else
+                            res.status(FAILURE);
+
+                        if (cmd.get3() == Boolean.TRUE)
+                            res.key(req.key());
+
+                        if (restRes.getSuccessStatus() == GridRestResponse.STATUS_SUCCESS && res.addData() &&
+                            restRes.getResponse() != null)
+                            res.value(restRes.getResponse());
 
                         sendResponse(ses, res);
                     }
 
-                    sendResponse(ses, new GridMemcachedMessage(req));
+                    return restRes;
                 }
-                else {
-                    GridMemcachedMessage res = new GridMemcachedMessage(req);
-
-                    if (restRes.getSuccessStatus() == GridRestResponse.STATUS_SUCCESS) {
-                        switch (cmd.get1()) {
-                            case CACHE_GET: {
-                                res.status(restRes.getResponse() == null ? KEY_NOT_FOUND : SUCCESS);
-
-                                break;
-                            }
-
-                            case CACHE_PUT:
-                            case CACHE_ADD:
-                            case CACHE_REMOVE:
-                            case CACHE_REPLACE:
-                            case CACHE_CAS:
-                            case CACHE_APPEND:
-                            case CACHE_PREPEND: {
-                                boolean res0 = restRes.getResponse().equals(Boolean.TRUE);
-
-                                res.status(res0 ? SUCCESS : FAILURE);
-
-                                break;
-                            }
-
-                            default: {
-                                res.status(SUCCESS);
-
-                                break;
-                            }
-                        }
-                    }
-                    else
-                        res.status(FAILURE);
-
-                    if (cmd.get3() == Boolean.TRUE)
-                        res.key(req.key());
-
-                    if (restRes.getSuccessStatus() == GridRestResponse.STATUS_SUCCESS && res.addData() &&
-                        restRes.getResponse() != null)
-                        res.value(restRes.getResponse());
-
-                    sendResponse(ses, res);
-                }
-
-                return restRes;
-            }
-        }, hnd.handleAsync(createRestRequest(req, cmd.get1())));
+            }, hnd.handleAsync(createRestRequest(req, cmd.get1())));
     }
 
     /**

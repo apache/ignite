@@ -87,6 +87,8 @@ public class InitNewCoordinatorFuture extends GridCompoundFuture implements Igni
      * @param cctx Context.
      */
     InitNewCoordinatorFuture(GridCacheSharedContext cctx) {
+        super(cctx.kernalContext());
+
         this.log = cctx.logger(getClass());
         this.locNode = cctx.localNode();
     }
@@ -155,7 +157,7 @@ public class InitNewCoordinatorFuture extends GridCompoundFuture implements Igni
                     joinedNodes = Collections.emptyMap();
 
                 if (!awaited.isEmpty()) {
-                    restoreStateFut = new GridFutureAdapter();
+                    restoreStateFut = new GridFutureAdapter<>(kCtx);
 
                     add(restoreStateFut);
                 }

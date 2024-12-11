@@ -293,7 +293,7 @@ public class GridCommandHandlerIndexForceRebuildTest extends GridCommandHandlerA
      */
     @Test
     public void testCacheNamesArg() throws Exception {
-        blockRebuildIdx.put(CACHE_NAME_2_1, new GridFutureAdapter<>());
+        blockRebuildIdx.put(CACHE_NAME_2_1, new GridFutureAdapter<>(null));
 
         injectTestSystemOut();
 
@@ -351,7 +351,7 @@ public class GridCommandHandlerIndexForceRebuildTest extends GridCommandHandlerA
      */
     @Test
     public void testIndexRebuildOutputTwoNodes() throws Exception {
-        blockRebuildIdx.put(CACHE_NAME_2_1, new GridFutureAdapter<>());
+        blockRebuildIdx.put(CACHE_NAME_2_1, new GridFutureAdapter<>(null));
 
         injectTestSystemOut();
 
@@ -430,7 +430,7 @@ public class GridCommandHandlerIndexForceRebuildTest extends GridCommandHandlerA
      */
     @Test
     public void testGroupNamesArg() throws Exception {
-        blockRebuildIdx.put(CACHE_NAME_1_2, new GridFutureAdapter<>());
+        blockRebuildIdx.put(CACHE_NAME_1_2, new GridFutureAdapter<>(null));
 
         injectTestSystemOut();
 
@@ -521,8 +521,8 @@ public class GridCommandHandlerIndexForceRebuildTest extends GridCommandHandlerA
      */
     @Test
     public void testAsyncIndexesRebuild() throws IgniteInterruptedCheckedException {
-        blockRebuildIdx.put(CACHE_NAME_1_1, new GridFutureAdapter<>());
-        blockRebuildIdx.put(CACHE_NAME_1_2, new GridFutureAdapter<>());
+        blockRebuildIdx.put(CACHE_NAME_1_1, new GridFutureAdapter<>(null));
+        blockRebuildIdx.put(CACHE_NAME_1_2, new GridFutureAdapter<>(null));
 
         assertEquals(EXIT_CODE_OK, execute("--cache", "indexes_force_rebuild",
             "--node-id", grid(0).localNode().id().toString(),
@@ -566,7 +566,7 @@ public class GridCommandHandlerIndexForceRebuildTest extends GridCommandHandlerA
             int cacheSize = n.cache(cacheName1).size();
 
             for (String c : caches)
-                blockRebuildIdx.put(c, new GridFutureAdapter<>());
+                blockRebuildIdx.put(c, new GridFutureAdapter<>(null));
 
             assertEquals(EXIT_CODE_OK, execute("--cache", "indexes_force_rebuild",
                 "--node-id", n.localNode().id().toString(),
@@ -916,6 +916,8 @@ public class GridCommandHandlerIndexForceRebuildTest extends GridCommandHandlerA
 
         /** */
         BlockingRebuildIdxFuture(GridFutureAdapter<Void> original, GridCacheContext cctx) {
+            super(cctx.kernalContext());
+
             this.original = original;
             this.cctx = cctx;
         }

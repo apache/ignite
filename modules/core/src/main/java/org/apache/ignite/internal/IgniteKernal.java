@@ -3252,9 +3252,9 @@ public class IgniteKernal implements IgniteEx, Externalizable {
         try {
             ctx.disconnected(false);
 
-            GridCompoundFuture curReconnectFut = reconnectState.curReconnectFut = new GridCompoundFuture<>();
+            GridCompoundFuture curReconnectFut = reconnectState.curReconnectFut = new GridCompoundFuture<>(ctx);
 
-            reconnectState.reconnectDone = new GridFutureAdapter<>();
+            reconnectState.reconnectDone = new GridFutureAdapter<>(ctx);
 
             for (GridComponent comp : ctx.components()) {
                 IgniteInternalFuture<?> fut = comp.onReconnected(clusterRestarted);
@@ -3608,7 +3608,7 @@ public class IgniteKernal implements IgniteEx, Externalizable {
      */
     private class ReconnectState {
         /** Future will be completed when the client node connected the first time. */
-        private final GridFutureAdapter firstReconnectFut = new GridFutureAdapter();
+        private final GridFutureAdapter firstReconnectFut = new GridFutureAdapter(null);
 
         /**
          * Composed future of all {@link GridComponent#onReconnected(boolean)} callbacks.

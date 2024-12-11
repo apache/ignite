@@ -109,7 +109,7 @@ public class IgniteAuthenticationProcessor extends GridProcessorAdapter implemen
     private final ConcurrentMap<IgniteUuid, AuthenticateFuture> authFuts = new ConcurrentHashMap<>();
 
     /** Whan the future is done the node is ready for authentication. */
-    private final GridFutureAdapter<Void> readyForAuthFut = new GridFutureAdapter<>();
+    private final GridFutureAdapter<Void> readyForAuthFut;
 
     /** Operation mutex. */
     private final Object mux = new Object();
@@ -149,13 +149,16 @@ public class IgniteAuthenticationProcessor extends GridProcessorAdapter implemen
     private DiscoveryEventListener discoLsnr;
 
     /** Node activate future. */
-    private final GridFutureAdapter<Void> activateFut = new GridFutureAdapter<>();
+    private final GridFutureAdapter<Void> activateFut;
 
     /**
      * @param ctx Kernal context.
      */
     public IgniteAuthenticationProcessor(GridKernalContext ctx) {
         super(ctx);
+
+        readyForAuthFut = new GridFutureAdapter<>(ctx);
+        activateFut = new GridFutureAdapter<>(ctx);
     }
 
     /** Starts processor. */
@@ -297,7 +300,7 @@ public class IgniteAuthenticationProcessor extends GridProcessorAdapter implemen
                 synchronized (mux) {
                     ClusterNode rndNode = U.randomServerNode(ctx);
 
-                    fut = new AuthenticateFuture(rndNode.id());
+                    fut = new AuthenticateFuture(ctx, rndNode.id());
 
                     UserAuthenticateRequestMessage msg = new UserAuthenticateRequestMessage(login, passwd);
 
@@ -1088,6 +1091,8 @@ public class IgniteAuthenticationProcessor extends GridProcessorAdapter implemen
          * @param opId User management operation ID.
          */
         UserOperationFinishFuture(IgniteUuid opId) {
+            super(ctx);
+
             this.opId = opId;
 
             if (!ctx.clientNode()) {
@@ -1205,9 +1210,12 @@ public class IgniteAuthenticationProcessor extends GridProcessorAdapter implemen
         private boolean retry;
 
         /**
+         * @param ctx Kernal context.
          * @param nodeId ID of the node that processes authentication request.
          */
-        AuthenticateFuture(UUID nodeId) {
+        AuthenticateFuture(GridKernalContext ctx, UUID nodeId) {
+            super(ctx);
+
             this.nodeId = nodeId;
         }
 

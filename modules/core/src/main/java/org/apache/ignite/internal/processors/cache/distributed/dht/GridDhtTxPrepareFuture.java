@@ -246,7 +246,7 @@ public final class GridDhtTxPrepareFuture extends GridCacheCompoundFuture<Ignite
         boolean last,
         boolean retVal
     ) {
-        super(REDUCER);
+        super(cctx.kernalContext(), REDUCER);
 
         this.cctx = cctx;
         this.tx = tx;
@@ -1175,7 +1175,7 @@ public final class GridDhtTxPrepareFuture extends GridCacheCompoundFuture<Ignite
 
         for (Map.Entry<Integer, Collection<KeyCacheObject>> entry : keysMap.entrySet()) {
             if (lastForceFut != null && compFut == null) {
-                compFut = new GridCompoundFuture();
+                compFut = new GridCompoundFuture(cctx.kernalContext());
 
                 compFut.add(lastForceFut);
             }
@@ -1837,6 +1837,8 @@ public final class GridDhtTxPrepareFuture extends GridCacheCompoundFuture<Ignite
             GridDistributedTxMapping dhtMapping,
             GridDistributedTxMapping nearMapping
         ) {
+            super(cctx.kernalContext());
+
             assert dhtMapping == null || nearMapping == null || dhtMapping.primary().equals(nearMapping.primary());
 
             this.nodeId = nodeId;

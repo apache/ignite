@@ -92,7 +92,7 @@ public class TxOptimisticPrepareOnUnstableTopologyTest extends GridCommonAbstrac
      */
     private void doPrepareOnUnstableTopology(int keys, boolean testClient, TransactionIsolation isolation,
         long timeout) throws Exception {
-        GridCompoundFuture<Void, Object> compFut = new GridCompoundFuture<>();
+        GridCompoundFuture<Void, Object> compFut = new GridCompoundFuture<>(null);
 
         AtomicBoolean stopFlag = new AtomicBoolean();
 

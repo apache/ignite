@@ -53,13 +53,13 @@ public class StopRebuildIndexTest extends AbstractRebuildIndexTest {
      */
     @Test
     public void testSchemaIndexCacheCompoundFeature() {
-        SchemaIndexCacheCompoundFuture compoundFut = new SchemaIndexCacheCompoundFuture();
+        SchemaIndexCacheCompoundFuture compoundFut = new SchemaIndexCacheCompoundFuture(null);
         assertFalse(compoundFut.isDone());
 
-        GridFutureAdapter<SchemaIndexCacheStat> fut0 = new GridFutureAdapter<>();
-        GridFutureAdapter<SchemaIndexCacheStat> fut1 = new GridFutureAdapter<>();
-        GridFutureAdapter<SchemaIndexCacheStat> fut2 = new GridFutureAdapter<>();
-        GridFutureAdapter<SchemaIndexCacheStat> fut3 = new GridFutureAdapter<>();
+        GridFutureAdapter<SchemaIndexCacheStat> fut0 = new GridFutureAdapter<>(null);
+        GridFutureAdapter<SchemaIndexCacheStat> fut1 = new GridFutureAdapter<>(null);
+        GridFutureAdapter<SchemaIndexCacheStat> fut2 = new GridFutureAdapter<>(null);
+        GridFutureAdapter<SchemaIndexCacheStat> fut3 = new GridFutureAdapter<>(null);
 
         compoundFut.add(fut0).add(fut1).add(fut2).add(fut3);
         assertFalse(compoundFut.isDone());
@@ -80,11 +80,11 @@ public class StopRebuildIndexTest extends AbstractRebuildIndexTest {
         assertTrue(compoundFut.isDone());
         assertNull(compoundFut.error());
 
-        compoundFut = new SchemaIndexCacheCompoundFuture();
-        fut0 = new GridFutureAdapter<>();
-        fut1 = new GridFutureAdapter<>();
-        fut2 = new GridFutureAdapter<>();
-        fut3 = new GridFutureAdapter<>();
+        compoundFut = new SchemaIndexCacheCompoundFuture(null);
+        fut0 = new GridFutureAdapter<>(null);
+        fut1 = new GridFutureAdapter<>(null);
+        fut2 = new GridFutureAdapter<>(null);
+        fut3 = new GridFutureAdapter<>(null);
 
         compoundFut.add(fut0).add(fut1).add(fut2).add(fut3).markInitialized();
         assertFalse(compoundFut.isDone());

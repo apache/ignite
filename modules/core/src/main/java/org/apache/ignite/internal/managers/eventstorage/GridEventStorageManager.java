@@ -854,7 +854,7 @@ public class GridEventStorageManager extends GridManagerAdapter<EventStorageSpi>
      */
     public <T extends Event> IgniteInternalFuture<T> waitForEvent(@Nullable final IgnitePredicate<T> p,
         @Nullable int... types) {
-        final GridFutureAdapter<T> fut = new GridFutureAdapter<>();
+        final GridFutureAdapter<T> fut = new GridFutureAdapter<>(ctx);
 
         addLocalEventListener(new GridLocalEventListener() {
             @Override public void onEvent(Event evt) {
@@ -948,7 +948,7 @@ public class GridEventStorageManager extends GridManagerAdapter<EventStorageSpi>
         assert p != null;
         assert nodes != null;
 
-        final GridFutureAdapter<List<T>> fut = new GridFutureAdapter<>();
+        final GridFutureAdapter<List<T>> fut = new GridFutureAdapter<>(ctx);
 
         ctx.closure().runLocalSafe(new GPR() {
             @Override public void run() {

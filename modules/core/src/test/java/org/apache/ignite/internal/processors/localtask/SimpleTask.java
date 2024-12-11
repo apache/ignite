@@ -39,13 +39,13 @@ class SimpleTask extends IgniteDataTransferObject implements DurableBackgroundTa
     private String name;
 
     /** Future that will be completed at the beginning of the {@link #executeAsync}. */
-    final GridFutureAdapter<Void> onExecFut = new GridFutureAdapter<>();
+    final GridFutureAdapter<Void> onExecFut = new GridFutureAdapter<>(null);
 
     /** Future that will be returned from the {@link #executeAsync}. */
-    final GridFutureAdapter<DurableBackgroundTaskResult<Void>> taskFut = new GridFutureAdapter<>();
+    final GridFutureAdapter<DurableBackgroundTaskResult<Void>> taskFut = new GridFutureAdapter<>(null);
 
     /** Future that will be completed at the beginning of the {@link #cancel}. */
-    final GridFutureAdapter<Void> onCancelFut = new GridFutureAdapter<>();
+    final GridFutureAdapter<Void> onCancelFut = new GridFutureAdapter<>(null);
 
     /**
      * Default constructor.

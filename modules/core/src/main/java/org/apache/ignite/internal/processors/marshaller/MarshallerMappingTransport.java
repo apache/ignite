@@ -74,7 +74,7 @@ public final class MarshallerMappingTransport {
             MarshallerMappingItem item, ConcurrentMap<Integer,
             MappedName> cache
     ) {
-        GridFutureAdapter<MappingExchangeResult> fut = new MappingExchangeResultFuture(item);
+        GridFutureAdapter<MappingExchangeResult> fut = new MappingExchangeResultFuture(ctx, item);
 
         GridFutureAdapter<MappingExchangeResult> oldFut = mappingExchSyncMap.putIfAbsent(item, fut);
 
@@ -100,7 +100,7 @@ public final class MarshallerMappingTransport {
         MarshallerMappingItem item,
         ConcurrentMap<Integer, MappedName> cache
     ) throws IgniteCheckedException {
-        GridFutureAdapter<MappingExchangeResult> fut = new MappingExchangeResultFuture(item);
+        GridFutureAdapter<MappingExchangeResult> fut = new MappingExchangeResultFuture(ctx, item);
 
         GridFutureAdapter<MappingExchangeResult> oldFut = mappingExchSyncMap.putIfAbsent(item, fut);
 
@@ -192,9 +192,12 @@ public final class MarshallerMappingTransport {
         private final MarshallerMappingItem mappingItem;
 
         /**
+         * @param ctx Kernal context.
          * @param mappingItem Mapping item.
          */
-        private MappingExchangeResultFuture(MarshallerMappingItem mappingItem) {
+        private MappingExchangeResultFuture(GridKernalContext ctx, MarshallerMappingItem mappingItem) {
+            super(ctx);
+
             this.mappingItem = mappingItem;
         }
 

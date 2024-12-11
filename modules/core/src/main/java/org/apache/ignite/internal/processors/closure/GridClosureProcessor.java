@@ -640,7 +640,7 @@ public class GridClosureProcessor extends GridProcessorAdapter {
 
             final ClassLoader ldr = Thread.currentThread().getContextClassLoader();
 
-            final GridWorkerFuture fut = new GridWorkerFuture();
+            final GridWorkerFuture fut = new GridWorkerFuture(ctx);
 
             GridWorker w = new GridWorker(ctx.igniteInstanceName(), "closure-proc-worker", log) {
                 @Override protected void body() {
@@ -780,7 +780,7 @@ public class GridClosureProcessor extends GridProcessorAdapter {
 
             final ClassLoader ldr = Thread.currentThread().getContextClassLoader();
 
-            final GridWorkerFuture<R> fut = new GridWorkerFuture<>();
+            final GridWorkerFuture<R> fut = new GridWorkerFuture<>(ctx);
 
             GridWorker w = new GridWorker(ctx.igniteInstanceName(), "closure-proc-worker", log) {
                 @Override protected void body() {

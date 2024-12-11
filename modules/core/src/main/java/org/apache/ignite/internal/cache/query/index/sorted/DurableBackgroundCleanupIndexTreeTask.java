@@ -119,7 +119,7 @@ public class DurableBackgroundCleanupIndexTreeTask implements DurableBackgroundT
 
         assert worker == null;
 
-        GridFutureAdapter<DurableBackgroundTaskResult> fut = new GridFutureAdapter<>();
+        GridFutureAdapter<DurableBackgroundTaskResult> fut = new GridFutureAdapter<>(ctx);
 
         worker = new GridWorker(
             ctx.igniteInstanceName(),

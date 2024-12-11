@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.processors.cache.persistence.checkpoint;
 
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
 
 /**
@@ -67,7 +68,7 @@ public class PartitionDestroyRequest {
      *
      * @return {@code True} if destroy request should be executed, {@code false} otherwise.
      */
-    public synchronized boolean beginDestroy() {
+    public synchronized boolean beginDestroy(GridKernalContext ctx) {
         if (cancelled) {
             assert destroyFut == null;
 
@@ -77,7 +78,7 @@ public class PartitionDestroyRequest {
         if (destroyFut != null)
             return false;
 
-        destroyFut = new GridFutureAdapter<>();
+        destroyFut = new GridFutureAdapter<>(ctx);
 
         return true;
     }

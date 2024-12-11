@@ -17,6 +17,7 @@
 
 package org.apache.ignite.spi.discovery.tcp.internal;
 
+import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.typedef.internal.U;
 
@@ -24,6 +25,11 @@ import org.apache.ignite.internal.util.typedef.internal.U;
  *
  */
 public abstract class FutureTask<T> extends GridFutureAdapter<T> implements Runnable {
+    /** */
+    public FutureTask(GridKernalContext ctx) {
+        super(ctx);
+    }
+
     /**
      *
      */

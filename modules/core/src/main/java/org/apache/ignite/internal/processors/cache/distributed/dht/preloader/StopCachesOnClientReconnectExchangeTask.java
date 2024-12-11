@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.processors.cache.distributed.dht.preloader;
 
 import java.util.Collection;
+import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.processors.cache.CachePartitionExchangeWorkerTask;
 import org.apache.ignite.internal.processors.cache.GridCacheAdapter;
 import org.apache.ignite.internal.processors.security.SecurityContext;
@@ -25,6 +26,8 @@ import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.jetbrains.annotations.Nullable;
+
+import static org.apache.ignite.internal.processors.security.SecurityUtils.remoteSecurityContext;
 
 /**
  *
@@ -39,11 +42,13 @@ public class StopCachesOnClientReconnectExchangeTask extends GridFutureAdapter<V
     @Nullable private final SecurityContext secCtx;
 
     /**
-     * @param secCtx Security context.
+     * @param ctx Kernal context.
      * @param stoppedCaches Collection of stopped caches.
      */
-    public StopCachesOnClientReconnectExchangeTask(@Nullable SecurityContext secCtx, Collection<GridCacheAdapter> stoppedCaches) {
-        this.secCtx = secCtx;
+    public StopCachesOnClientReconnectExchangeTask(GridKernalContext ctx, Collection<GridCacheAdapter> stoppedCaches) {
+        super(ctx);
+
+        this.secCtx = remoteSecurityContext(ctx);
         this.stoppedCaches = stoppedCaches;
     }
 

@@ -20,32 +20,18 @@ package org.apache.ignite.internal.processors.security.thread;
 import java.util.Collection;
 import java.util.concurrent.Callable;
 import java.util.stream.Collectors;
+import org.apache.ignite.internal.processors.security.AbstractSecurityAwareWrapper;
 import org.apache.ignite.internal.processors.security.IgniteSecurity;
 import org.apache.ignite.internal.processors.security.OperationSecurityContext;
-import org.apache.ignite.internal.processors.security.SecurityContext;
 
 /**
  * Represents a {@link Callable} wrapper that executes the original {@link Callable} with the security context
  * current at the time the wrapper was created.
  */
-class SecurityAwareCallable<T> implements Callable<T> {
-    /** Original callable. */
-    private final Callable<T> delegate;
-
-    /** */
-    private final IgniteSecurity security;
-
-    /** */
-    private final SecurityContext secCtx;
-
+class SecurityAwareCallable<T> extends AbstractSecurityAwareWrapper<Callable<T>> implements Callable<T> {
     /** */
     private SecurityAwareCallable(IgniteSecurity security, Callable<T> delegate) {
-        assert security.enabled();
-        assert delegate != null;
-
-        this.delegate = delegate;
-        this.security = security;
-        secCtx = security.securityContext();
+        super(security, delegate);
     }
 
     /** {@inheritDoc} */

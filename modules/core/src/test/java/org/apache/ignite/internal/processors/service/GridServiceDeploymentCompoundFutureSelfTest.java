@@ -38,7 +38,7 @@ public class GridServiceDeploymentCompoundFutureSelfTest extends GridCommonAbstr
      */
     @Test
     public void testWaitForCompletionOnFailingFuture() throws Exception {
-        GridServiceDeploymentCompoundFuture<IgniteUuid> compFut = new GridServiceDeploymentCompoundFuture<>();
+        GridServiceDeploymentCompoundFuture<IgniteUuid> compFut = new GridServiceDeploymentCompoundFuture<>(null);
 
         int failingFutsNum = 2;
 
@@ -49,7 +49,11 @@ public class GridServiceDeploymentCompoundFutureSelfTest extends GridCommonAbstr
         for (int i = 0; i < failingFutsNum; i++) {
             ServiceConfiguration failingCfg = config("Failed-" + i);
 
-            GridServiceDeploymentFuture<IgniteUuid> failingFut = new GridServiceDeploymentFuture<>(failingCfg, IgniteUuid.randomUuid());
+            GridServiceDeploymentFuture<IgniteUuid> failingFut = new GridServiceDeploymentFuture<>(
+                null,
+                failingCfg,
+                IgniteUuid.randomUuid()
+            );
 
             failingFuts.add(failingFut);
 
@@ -60,7 +64,7 @@ public class GridServiceDeploymentCompoundFutureSelfTest extends GridCommonAbstr
 
         for (int i = 0; i < completingFutsNum; i++) {
             GridServiceDeploymentFuture<IgniteUuid> fut =
-                new GridServiceDeploymentFuture<>(config(String.valueOf(i)), IgniteUuid.randomUuid());
+                new GridServiceDeploymentFuture<>(null, config(String.valueOf(i)), IgniteUuid.randomUuid());
 
             futs.add(fut);
 

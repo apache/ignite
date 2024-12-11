@@ -358,7 +358,7 @@ public class TxPartitionCounterStateOnePrimaryTwoBackupsTest extends TxPartition
 
         int delayBackupIdx = 0;
 
-        GridFutureAdapter<T2<Ignite, GridFutureAdapter>> fut = new GridFutureAdapter<>();
+        GridFutureAdapter<T2<Ignite, GridFutureAdapter>> fut = new GridFutureAdapter<>(null);
 
         GridTestUtils.runAsync(new Runnable() {
             @Override public void run() {

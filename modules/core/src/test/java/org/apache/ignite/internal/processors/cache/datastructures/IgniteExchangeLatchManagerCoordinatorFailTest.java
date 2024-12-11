@@ -264,7 +264,7 @@ public class IgniteExchangeLatchManagerCoordinatorFailTest extends GridCommonAbs
         // Latch to synchronize node states.
         CountDownLatch syncLatch = new CountDownLatch(5);
 
-        GridCompoundFuture finishAllLatches = new GridCompoundFuture();
+        GridCompoundFuture finishAllLatches = new GridCompoundFuture(null);
 
         AtomicBoolean hasErrors = new AtomicBoolean();
 

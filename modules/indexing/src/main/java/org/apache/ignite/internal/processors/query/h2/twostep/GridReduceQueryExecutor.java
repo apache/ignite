@@ -934,7 +934,7 @@ public class GridReduceQueryExecutor {
 
         final long reqId = qryReqIdGen.incrementAndGet();
 
-        final DmlDistributedUpdateRun r = new DmlDistributedUpdateRun(nodes.size());
+        final DmlDistributedUpdateRun r = new DmlDistributedUpdateRun(ctx, nodes.size());
 
         int flags = enforceJoinOrder ? GridH2QueryRequest.FLAG_ENFORCE_JOIN_ORDER : 0;
 

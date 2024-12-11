@@ -59,7 +59,7 @@ public class IgniteRoundRobinErrorAfterClientReconnectTest extends GridCommonAbs
     public void testClientReconnect() throws Exception {
         final Ignite cli = grid(CLI_IDX);
 
-        final GridFutureAdapter<Boolean> fut = new GridFutureAdapter<>();
+        final GridFutureAdapter<Boolean> fut = new GridFutureAdapter<>(null);
 
         cli.events().localListen(new IgnitePredicate<Event>() {
             @Override public boolean apply(Event event) {

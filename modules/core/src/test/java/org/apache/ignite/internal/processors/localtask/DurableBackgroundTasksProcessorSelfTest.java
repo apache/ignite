@@ -234,8 +234,8 @@ public class DurableBackgroundTasksProcessorSelfTest extends GridCommonAbstractT
 
         simpleTask.onExecFut.get(getTestTimeout());
 
-        GridFutureAdapter<Void> startStopFut = new GridFutureAdapter<>();
-        GridFutureAdapter<Void> finishStopFut = new GridFutureAdapter<>();
+        GridFutureAdapter<Void> startStopFut = new GridFutureAdapter<>(null);
+        GridFutureAdapter<Void> finishStopFut = new GridFutureAdapter<>(null);
 
         observingCpLsnr.repeatOnMarkCheckpointBeginConsumer = true;
         observingCpLsnr.onMarkCheckpointBeginConsumer = ctx -> {

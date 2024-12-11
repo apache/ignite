@@ -382,7 +382,7 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
 
     /** Future for wait all exchange listeners comepleted. */
     @GridToStringExclude
-    private final GridFutureAdapter<?> afterLsnrCompleteFut = new GridFutureAdapter<>();
+    private final GridFutureAdapter<?> afterLsnrCompleteFut;
 
     /** Time bag to measure and store exchange stages times. */
     @GridToStringExclude
@@ -423,6 +423,7 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
         ExchangeActions exchActions,
         CacheAffinityChangeMessage affChangeMsg
     ) {
+        super(cctx.kernalContext());
         assert busyLock != null;
         assert exchId != null;
         assert exchId.topologyVersion() != null;
@@ -437,6 +438,8 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
         if (exchActions != null && exchActions.deactivate())
             this.clusterIsActive = false;
 
+        afterLsnrCompleteFut = new GridFutureAdapter<>(cctx.kernalContext());
+
         log = cctx.logger(getClass());
         exchLog = cctx.logger(EXCHANGE_LOG);
 
@@ -444,7 +447,7 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
 
         timeBag = new TimeBag(log.isInfoEnabled());
 
-        initFut = new GridFutureAdapter<Boolean>() {
+        initFut = new GridFutureAdapter<Boolean>(cctx.kernalContext()) {
             @Override public IgniteLogger logger() {
                 return log;
             }

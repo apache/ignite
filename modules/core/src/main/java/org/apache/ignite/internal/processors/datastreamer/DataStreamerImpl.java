@@ -120,6 +120,7 @@ import org.apache.ignite.plugin.security.SecurityPermission;
 import org.apache.ignite.stream.StreamReceiver;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
+
 import static org.apache.ignite.events.EventType.EVT_NODE_FAILED;
 import static org.apache.ignite.events.EventType.EVT_NODE_LEFT;
 import static org.apache.ignite.internal.GridTopic.TOPIC_DATASTREAM;
@@ -375,7 +376,7 @@ public class DataStreamerImpl<K, V> implements IgniteDataStreamer<K, V>, Delayed
         if (log.isDebugEnabled())
             log.debug("Added response listener within topic: " + topic);
 
-        fut = new DataStreamerFuture(this);
+        fut = new DataStreamerFuture(ctx, this);
 
         publicFut = new IgniteCacheFutureImpl<>(fut, ctx.getAsyncContinuationExecutor());
 
@@ -713,7 +714,7 @@ public class DataStreamerImpl<K, V> implements IgniteDataStreamer<K, V>, Delayed
      * @return Data load future.
      */
     @NotNull protected IgniteCacheFutureImpl createDataLoadFuture() {
-        GridFutureAdapter internalFut0 = new GridFutureAdapter();
+        GridFutureAdapter internalFut0 = new GridFutureAdapter(ctx);
 
         IgniteCacheFutureImpl fut = new IgniteCacheFutureImpl(internalFut0, ctx.getAsyncContinuationExecutor());
 
@@ -1046,7 +1047,7 @@ public class DataStreamerImpl<K, V> implements IgniteDataStreamer<K, V>, Delayed
                         }
                     };
 
-                    GridCompoundFuture opFut = new SilentCompoundFuture();
+                    GridCompoundFuture opFut = new SilentCompoundFuture(ctx);
 
                     opFut.listen(lsnr);
 
@@ -1751,14 +1752,14 @@ public class DataStreamerImpl<K, V> implements IgniteDataStreamer<K, V>, Delayed
 
             for (IgniteInternalFuture<Object> f : locFuts) {
                 if (res == null)
-                    res = new GridCompoundFuture<>();
+                    res = new GridCompoundFuture<>(ctx);
 
                 res.add(f);
             }
 
             for (IgniteInternalFuture<Object> f : reqs.values()) {
                 if (res == null)
-                    res = new GridCompoundFuture<>();
+                    res = new GridCompoundFuture<>(ctx);
 
                 res.add(f);
             }
@@ -2465,7 +2466,7 @@ public class DataStreamerImpl<K, V> implements IgniteDataStreamer<K, V>, Delayed
          */
         synchronized void renewBatch(boolean remap) {
             entries = newEntries();
-            curFut = new GridFutureAdapter<>();
+            curFut = new GridFutureAdapter<>(ctx);
 
             batchTopVer = null;
 
@@ -2488,7 +2489,12 @@ public class DataStreamerImpl<K, V> implements IgniteDataStreamer<K, V>, Delayed
 
     /** */
     private static final class SilentCompoundFuture<T, R> extends GridCompoundFuture<T, R> {
-       /** {@inheritDoc} */
+        /** */
+        public SilentCompoundFuture(GridKernalContext ctx) {
+            super(ctx);
+        }
+
+        /** {@inheritDoc} */
         @Override protected void logError(IgniteLogger log, String msg, Throwable e) {
             // no-op
         }

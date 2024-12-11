@@ -1050,6 +1050,8 @@ public class GridAffinityAssignmentCache {
          * @param reqTopVer Required topology version.
          */
         private AffinityReadyFuture(AffinityTopologyVersion reqTopVer) {
+            super(ctx);
+
             this.reqTopVer = reqTopVer;
         }
 

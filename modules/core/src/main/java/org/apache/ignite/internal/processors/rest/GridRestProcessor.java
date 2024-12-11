@@ -182,7 +182,7 @@ public class GridRestProcessor extends GridProcessorAdapter implements IgniteRes
                 new IgniteCheckedException("Failed to handle request (received request while stopping grid)."));
 
         try {
-            final GridWorkerFuture<GridRestResponse> fut = new GridWorkerFuture<>();
+            final GridWorkerFuture<GridRestResponse> fut = new GridWorkerFuture<>(ctx);
 
             workersCnt.increment();
 

@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.processors.cache;
 
+import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.util.future.GridCompoundFuture;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteReducer;
@@ -33,10 +34,11 @@ public abstract class GridCacheCompoundFuture<T, R> extends GridCompoundFuture<T
     private volatile long endTime;
 
     /**
+     * @param ctx Kernal context.
      * @param rdc Reducer.
      */
-    protected GridCacheCompoundFuture(@Nullable IgniteReducer<T, R> rdc) {
-        super(rdc);
+    protected GridCacheCompoundFuture(GridKernalContext ctx, @Nullable IgniteReducer<T, R> rdc) {
+        super(ctx, rdc);
     }
 
     /** {@inheritDoc} */

@@ -78,10 +78,10 @@ class IndexingTestUtils {
      */
     static class StopBuildIndexConsumer implements IgniteThrowableConsumer<CacheDataRow> {
         /** Future to indicate that the building indexes has begun. */
-        final GridFutureAdapter<Void> startBuildIdxFut = new GridFutureAdapter<>();
+        final GridFutureAdapter<Void> startBuildIdxFut = new GridFutureAdapter<>(null);
 
         /** Future to wait to continue building indexes. */
-        final GridFutureAdapter<Void> finishBuildIdxFut = new GridFutureAdapter<>();
+        final GridFutureAdapter<Void> finishBuildIdxFut = new GridFutureAdapter<>(null);
 
         /** Counter of visits. */
         final AtomicLong visitCnt = new AtomicLong();

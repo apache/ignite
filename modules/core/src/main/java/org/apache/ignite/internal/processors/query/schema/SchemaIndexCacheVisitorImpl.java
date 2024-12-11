@@ -113,10 +113,10 @@ public class SchemaIndexCacheVisitorImpl implements SchemaIndexCacheVisitor {
 
         // To avoid a race between clearing pageMemory (on a cache stop ex. deactivation)
         // and rebuilding indexes, which can lead to a fail of the node.
-        SchemaIndexCacheCompoundFuture buildIdxCompoundFut = new SchemaIndexCacheCompoundFuture();
+        SchemaIndexCacheCompoundFuture buildIdxCompoundFut = new SchemaIndexCacheCompoundFuture(cctx.kernalContext());
 
         for (GridDhtLocalPartition locPart : locParts) {
-            GridWorkerFuture<SchemaIndexCacheStat> workerFut = new GridWorkerFuture<>();
+            GridWorkerFuture<SchemaIndexCacheStat> workerFut = new GridWorkerFuture<>(cctx.kernalContext());
 
             GridWorker worker =
                 new SchemaIndexCachePartitionWorker(cctx, locPart, stop, cancelTok, clo, workerFut, partsCnt);

@@ -201,7 +201,7 @@ public abstract class GridDistributedCacheAdapter<K, V> extends GridCacheAdapter
 
     /** {@inheritDoc} */
     @Override public IgniteInternalFuture<?> removeAllAsync() {
-        GridFutureAdapter<Void> opFut = new GridFutureAdapter<>();
+        GridFutureAdapter<Void> opFut = new GridFutureAdapter<>(ctx.kernalContext());
 
         AffinityTopologyVersion topVer = ctx.affinity().affinityTopologyVersion();
 
@@ -428,7 +428,7 @@ public abstract class GridDistributedCacheAdapter<K, V> extends GridCacheAdapter
         /** {@inheritDoc} */
         @Nullable @Override public Object localExecute(@Nullable IgniteInternalCache cache0) {
             if (locFut == null)
-                locFut = new GridFutureAdapter<>();
+                locFut = new GridFutureAdapter<>(cache0.context().kernalContext());
 
             if (locFut.isDone()) {
                 if (locFut.isFailed())

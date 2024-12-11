@@ -47,6 +47,7 @@ import org.apache.ignite.internal.processors.continuous.GridContinuousHandler;
 import org.apache.ignite.internal.processors.platform.PlatformEventFilterListener;
 import org.apache.ignite.internal.util.future.GridFinishedFuture;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
+import org.apache.ignite.internal.util.future.SecurityAwareIgniteRunnable;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.P2;
 import org.apache.ignite.internal.util.typedef.T2;
@@ -275,7 +276,7 @@ class GridEventConsumeHandler implements GridContinuousHandler {
         if (F.isEmpty(types))
             types = EVTS_ALL;
 
-        p2pUnmarshalFut.listen(() -> {
+        p2pUnmarshalFut.listen(SecurityAwareIgniteRunnable.of(ctx.security(), () -> {
             if (p2pUnmarshalFut.error() == null) {
                 try {
                     initFilter(filter, ctx);
@@ -286,7 +287,7 @@ class GridEventConsumeHandler implements GridContinuousHandler {
 
                 ctx.event().addLocalEventListener(lsnr, types);
             }
-        });
+        }));
 
         return RegisterStatus.REGISTERED;
     }
@@ -506,7 +507,7 @@ class GridEventConsumeHandler implements GridContinuousHandler {
         boolean b = in.readBoolean();
 
         if (b) {
-            p2pUnmarshalFut = new GridFutureAdapter<>();
+            p2pUnmarshalFut = new GridFutureAdapter<>(null);
             filterBytes = U.readByteArray(in);
             clsName = U.readString(in);
             depInfo = (GridDeploymentInfo)in.readObject();

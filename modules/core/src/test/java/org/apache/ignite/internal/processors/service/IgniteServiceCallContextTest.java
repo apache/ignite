@@ -168,7 +168,7 @@ public class IgniteServiceCallContextTest extends GridCommonAbstractTest {
 
         int threadsPerProxy = 2;
         CyclicBarrier barrier = new CyclicBarrier(proxies.size() * threadsPerProxy);
-        GridCompoundFuture<Long, Long> compFut = new GridCompoundFuture<>();
+        GridCompoundFuture<Long, Long> compFut = new GridCompoundFuture<>(null);
 
         for (Map.Entry<TestService, T2<String, byte[]>> e : proxies.entrySet()) {
             IgniteInternalFuture<Long> fut = GridTestUtils.runMultiThreadedAsync(() -> {

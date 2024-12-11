@@ -986,6 +986,8 @@ class TcpClientChannel implements ClientChannel, ClientMessageHandler, ClientCon
 
         /** */
         ClientRequestFuture(long requestId, ClientOperation op, long startTimeNanos) {
+            super(null);
+
             this.requestId = requestId;
             operation = op;
             this.startTimeNanos = startTimeNanos;

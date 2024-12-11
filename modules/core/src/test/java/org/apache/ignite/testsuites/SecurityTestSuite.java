@@ -20,6 +20,7 @@ package org.apache.ignite.testsuites;
 import org.apache.ignite.internal.processors.security.IgniteSecurityProcessorTest;
 import org.apache.ignite.internal.processors.security.InvalidServerTest;
 import org.apache.ignite.internal.processors.security.NodeSecurityContextPropagationTest;
+import org.apache.ignite.internal.processors.security.SecurityContextInternalFuturePropagationTest;
 import org.apache.ignite.internal.processors.security.cache.CacheOperationPermissionCheckTest;
 import org.apache.ignite.internal.processors.security.cache.CacheOperationPermissionCreateDestroyCheckTest;
 import org.apache.ignite.internal.processors.security.cache.ContinuousQueryPermissionCheckTest;
@@ -143,6 +144,7 @@ import org.junit.runners.Suite;
     NodeSecurityContextPropagationTest.class,
     NodeJoinPermissionsTest.class,
     ActivationOnJoinWithoutPermissionsWithPersistenceTest.class,
+    SecurityContextInternalFuturePropagationTest.class
 })
 public class SecurityTestSuite {
     /** */

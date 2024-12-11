@@ -405,7 +405,7 @@ class ClientComputeImpl implements ClientCompute {
             this.ch = ch;
             this.taskId = taskId;
 
-            fut = new GridFutureAdapter<R>() {
+            fut = new GridFutureAdapter<R>(null) {
                 @Override public boolean cancel() {
                     if (onCancelled()) {
                         try {

@@ -53,6 +53,7 @@ import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteInClosure;
 import org.jetbrains.annotations.Nullable;
+
 import static org.apache.ignite.events.EventType.EVT_NODE_FAILED;
 import static org.apache.ignite.events.EventType.EVT_NODE_LEFT;
 import static org.apache.ignite.internal.binary.BinaryUtils.mergeMetadata;
@@ -216,7 +217,7 @@ final class BinaryMetadataTransport {
                 return awaitMetadataUpdate(typeId, metaHolder.pendingVersion());
             }
 
-            resFut = new MetadataUpdateResultFuture(typeId);
+            resFut = new MetadataUpdateResultFuture(ctx, typeId);
         }
         while (!putAndWaitPendingUpdate(typeId, resFut));
 
@@ -300,7 +301,7 @@ final class BinaryMetadataTransport {
      */
     GridFutureAdapter<MetadataUpdateResult> awaitMetadataUpdate(int typeId, int ver) {
         SyncKey key = new SyncKey(typeId, ver);
-        MetadataUpdateResultFuture resFut = new MetadataUpdateResultFuture(key);
+        MetadataUpdateResultFuture resFut = new MetadataUpdateResultFuture(ctx, key);
 
         MetadataUpdateResultFuture oldFut = syncMap.putIfAbsent(key, resFut);
 
@@ -323,7 +324,7 @@ final class BinaryMetadataTransport {
      */
     GridFutureAdapter<MetadataUpdateResult> awaitMetadataRemove(int typeId) {
         SyncKey key = new SyncKey(typeId, REMOVED_VERSION);
-        MetadataUpdateResultFuture resFut = new MetadataUpdateResultFuture(key);
+        MetadataUpdateResultFuture resFut = new MetadataUpdateResultFuture(ctx, key);
 
         MetadataUpdateResultFuture oldFut = syncMap.putIfAbsent(key, resFut);
 
@@ -344,7 +345,7 @@ final class BinaryMetadataTransport {
      * @return Future which will be completed when schema is received.
      */
     GridFutureAdapter<?> awaitSchemaUpdate(int typeId, int schemaId) {
-        GridFutureAdapter<Object> fut = new GridFutureAdapter<>();
+        GridFutureAdapter<Object> fut = new GridFutureAdapter<>(ctx);
 
         // Use version for schemaId.
         GridFutureAdapter<?> oldFut = schemaWaitFuts.putIfAbsent(new SyncKey(typeId, schemaId), fut);
@@ -412,7 +413,7 @@ final class BinaryMetadataTransport {
         MetadataUpdateResultFuture resFut;
 
         do {
-            resFut = new MetadataUpdateResultFuture(typeId);
+            resFut = new MetadataUpdateResultFuture(ctx, typeId);
         }
         while (!putAndWaitPendingUpdate(typeId, resFut));
 
@@ -772,14 +773,18 @@ final class BinaryMetadataTransport {
         private SyncKey key;
 
         /** */
-        MetadataUpdateResultFuture(int typeId) {
+        MetadataUpdateResultFuture(GridKernalContext ctx, int typeId) {
+            super(ctx);
+
             this.key = new SyncKey(typeId, 0);
         }
 
         /**
          * @param key key in syncMap this future was added under.
          */
-        MetadataUpdateResultFuture(SyncKey key) {
+        MetadataUpdateResultFuture(GridKernalContext ctx, SyncKey key) {
+            super(ctx);
+
             this.key = key;
         }
 

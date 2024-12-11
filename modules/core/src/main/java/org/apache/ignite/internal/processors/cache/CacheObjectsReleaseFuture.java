@@ -20,6 +20,7 @@ package org.apache.ignite.internal.processors.cache;
 import java.util.ArrayList;
 import java.util.Collection;
 import org.apache.ignite.IgniteSystemProperties;
+import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.util.future.GridCompoundFuture;
@@ -47,21 +48,30 @@ public class CacheObjectsReleaseFuture<T, R> extends GridCompoundFuture<T, R> {
     private String type;
 
     /**
+     * @param ctx Kernal context.
      * @param type Wait object type.
      * @param topVer Topology version to wait for.
      */
-    public CacheObjectsReleaseFuture(String type, AffinityTopologyVersion topVer) {
+    public CacheObjectsReleaseFuture(GridKernalContext ctx, String type, AffinityTopologyVersion topVer) {
+        super(ctx);
+
         this.type = type;
         this.topVer = topVer;
     }
 
     /**
+     * @param ctx Kernal context.
      * @param type Wait object type.
      * @param topVer Topology version to wait for.
      * @param rdc Reducer object.
      */
-    public CacheObjectsReleaseFuture(String type, AffinityTopologyVersion topVer, @Nullable IgniteReducer<T, R> rdc) {
-        super(rdc);
+    public CacheObjectsReleaseFuture(
+        GridKernalContext ctx,
+        String type,
+        AffinityTopologyVersion topVer,
+        @Nullable IgniteReducer<T, R> rdc
+    ) {
+        super(ctx, rdc);
 
         this.topVer = topVer;
         this.type = type;

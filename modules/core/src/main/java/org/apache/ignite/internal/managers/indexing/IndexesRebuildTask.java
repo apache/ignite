@@ -99,13 +99,13 @@ public class IndexesRebuildTask {
             }
         }
 
-        GridFutureAdapter<Void> rebuildCacheIdxFut = new GridFutureAdapter<>();
+        GridFutureAdapter<Void> rebuildCacheIdxFut = new GridFutureAdapter<>(cctx.kernalContext());
 
         // To avoid possible data race.
-        GridFutureAdapter<Void> outRebuildCacheIdxFut = new GridFutureAdapter<>();
+        GridFutureAdapter<Void> outRebuildCacheIdxFut = new GridFutureAdapter<>(cctx.kernalContext());
 
         // An internal future for the ability to cancel index rebuilding.
-        SchemaIndexCacheFuture intRebFut = new SchemaIndexCacheFuture(cancelTok);
+        SchemaIndexCacheFuture intRebFut = new SchemaIndexCacheFuture(cctx.kernalContext(), cancelTok);
 
         SchemaIndexCacheFuture prevIntRebFut = idxRebuildFuts.put(cctx.cacheId(), intRebFut);
 

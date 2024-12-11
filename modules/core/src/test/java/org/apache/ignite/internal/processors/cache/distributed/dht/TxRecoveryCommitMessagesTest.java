@@ -89,7 +89,7 @@ public class TxRecoveryCommitMessagesTest extends GridCommonAbstractTest {
 
         TestRecordingCommunicationSpi.spi(cln).waitForBlocked(nodes * primTxsPerNode);
 
-        GridCompoundFuture<IgniteInternalTx, ?> txFinFuts = new GridCompoundFuture<>();
+        GridCompoundFuture<IgniteInternalTx, ?> txFinFuts = new GridCompoundFuture<>(null);
 
         for (int n = 0; n < nodes; n++) {
             TestRecordingCommunicationSpi.spi(grid(n)).record((node, msg) -> true);

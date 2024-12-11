@@ -1451,7 +1451,7 @@ public class PageMemoryImpl implements PageMemoryEx {
         LoadedPagesMap.KeyPredicate pred,
         boolean cleanDirty
     ) {
-        CountDownFuture completeFut = new CountDownFuture(segments.length);
+        CountDownFuture completeFut = new CountDownFuture(ctx.kernalContext(), segments.length);
 
         for (Segment seg : segments) {
             Runnable clear = new ClearSegmentRunnable(seg, dataRegionMetrics, pred, cleanDirty, completeFut, pageSize());

@@ -75,6 +75,8 @@ final class ClientMetadataRequestFuture extends GridFutureAdapter<MetadataUpdate
             int typeId,
             Map<Integer, ClientMetadataRequestFuture> syncMap
     ) {
+        super(ctx);
+
         ioMgr = ctx.io();
         discoMgr = ctx.discovery();
         aliveSrvNodes = new LinkedList<>(discoMgr.aliveServerNodes());

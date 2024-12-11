@@ -80,7 +80,7 @@ public class ObservingCheckpointListener implements CheckpointListener {
      * @return Future that complete when the consumer complete.
      */
     GridFutureAdapter<Void> onMarkCheckpointBeginAsync(IgniteThrowableConsumer<Context> consumer) {
-        GridFutureAdapter<Void> fut = new GridFutureAdapter<>();
+        GridFutureAdapter<Void> fut = new GridFutureAdapter<>(null);
 
         onMarkCheckpointBeginConsumer = asyncConsumer(consumer, fut);
 
@@ -94,7 +94,7 @@ public class ObservingCheckpointListener implements CheckpointListener {
      * @return Future that complete when the consumer complete.
      */
     GridFutureAdapter<Void> afterCheckpointEndAsync(IgniteThrowableConsumer<Context> consumer) {
-        GridFutureAdapter<Void> fut = new GridFutureAdapter<>();
+        GridFutureAdapter<Void> fut = new GridFutureAdapter<>(null);
 
         afterCheckpointEndConsumer = asyncConsumer(consumer, fut);
 

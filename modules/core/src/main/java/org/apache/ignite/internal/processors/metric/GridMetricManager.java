@@ -388,7 +388,7 @@ public class GridMetricManager extends GridManagerAdapter<MetricExporterSpi> imp
      * @param removeCfg {@code True} if remove metric configurations.
      */
     public void remove(String regName, boolean removeCfg) {
-        GridCompoundFuture opsFut = new GridCompoundFuture<>();
+        GridCompoundFuture opsFut = new GridCompoundFuture<>(ctx);
 
         registries.computeIfPresent(regName, (key, mreg) -> {
             notifyListeners(mreg, metricRegRemoveLsnrs, log);

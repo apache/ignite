@@ -157,7 +157,7 @@ public class ExchangeLatchManager {
     private Latch createServerLatch(CompletableLatchUid latchUid, Collection<ClusterNode> participants) {
         assert !serverLatches.containsKey(latchUid);
 
-        ServerLatch latch = new ServerLatch(latchUid, participants);
+        ServerLatch latch = new ServerLatch(ctx, latchUid, participants);
 
         serverLatches.put(latchUid, latch);
 
@@ -191,7 +191,7 @@ public class ExchangeLatchManager {
         assert !serverLatches.containsKey(latchUid);
         assert !clientLatches.containsKey(latchUid);
 
-        ClientLatch latch = new ClientLatch(latchUid, coordinator, participants);
+        ClientLatch latch = new ClientLatch(ctx, latchUid, coordinator, participants);
 
         if (log.isDebugEnabled())
             log.debug("Client latch is created [latch=" + latchUid
@@ -589,8 +589,8 @@ public class ExchangeLatchManager {
          * @param latchUid Latch uid.
          * @param participants Participant nodes.
          */
-        ServerLatch(CompletableLatchUid latchUid, Collection<ClusterNode> participants) {
-            super(latchUid, participants);
+        ServerLatch(GridKernalContext ctx, CompletableLatchUid latchUid, Collection<ClusterNode> participants) {
+            super(ctx, latchUid, participants);
 
             permits = new AtomicInteger(participants.size());
 
@@ -681,8 +681,8 @@ public class ExchangeLatchManager {
          * @param coordinator Coordinator node.
          * @param participants Participant nodes.
          */
-        ClientLatch(CompletableLatchUid latchUid, ClusterNode coordinator, Collection<ClusterNode> participants) {
-            super(latchUid, participants);
+        ClientLatch(GridKernalContext ctx, CompletableLatchUid latchUid, ClusterNode coordinator, Collection<ClusterNode> participants) {
+            super(ctx, latchUid, participants);
 
             this.coordinator = coordinator;
         }
@@ -758,7 +758,7 @@ public class ExchangeLatchManager {
 
         /** Future indicates that latch is completed. */
         @GridToStringExclude
-        protected final GridFutureAdapter<?> complete = new GridFutureAdapter<>();
+        protected final GridFutureAdapter<?> complete;
 
         /**
          * Constructor.
@@ -766,8 +766,9 @@ public class ExchangeLatchManager {
          * @param latchUid Latch uid.
          * @param participants Participant nodes.
          */
-        CompletableLatch(CompletableLatchUid latchUid, Collection<ClusterNode> participants) {
+        CompletableLatch(GridKernalContext ctx, CompletableLatchUid latchUid, Collection<ClusterNode> participants) {
             id = latchUid;
+            complete = new GridFutureAdapter<>(ctx);
 
             this.participants = participants.stream().map(ClusterNode::id).collect(Collectors.toSet());
         }

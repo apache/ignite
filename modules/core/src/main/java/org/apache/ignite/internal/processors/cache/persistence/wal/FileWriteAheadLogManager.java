@@ -2774,7 +2774,7 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
 
             segmentsQueue.put(idx);
 
-            GridFutureAdapter<Void> res = new GridFutureAdapter<>();
+            GridFutureAdapter<Void> res = new GridFutureAdapter<>(cctx.kernalContext());
 
             decompressionFutures.put(idx, res);
 

@@ -196,7 +196,7 @@ public final class GridNearLockFuture extends GridCacheCompoundIdentityFuture<Bo
         boolean keepBinary,
         boolean recovery
     ) {
-        super(CU.boolReducer());
+        super(cctx.kernalContext(), CU.boolReducer());
 
         assert keys != null;
         assert tx == null || timeout >= 0;
@@ -1183,7 +1183,8 @@ public final class GridNearLockFuture extends GridCacheCompoundIdentityFuture<Bo
 
             // Add new future.
             add(new GridEmbeddedFuture<>(
-                new C2<GridNearLockResponse, Exception, Boolean>() {
+                cctx.kernalContext(),
+                new C2<>() {
                     @Override public Boolean apply(GridNearLockResponse res, Exception e) {
                         if (CU.isLockTimeoutOrCancelled(e) ||
                             (res != null && CU.isLockTimeoutOrCancelled(res.error())))
@@ -1492,6 +1493,8 @@ public final class GridNearLockFuture extends GridCacheCompoundIdentityFuture<Bo
             Collection<KeyCacheObject> keys,
             int futId
         ) {
+            super(cctx.kernalContext());
+
             this.node = node;
             this.keys = keys;
             this.futId = futId;

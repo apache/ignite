@@ -148,7 +148,7 @@ class PlatformTestPluginTarget implements PlatformTarget {
                 // Async upper case.
                 final String val = reader.readString();
 
-                final GridFutureAdapter<String> fa = new GridFutureAdapter<String>() {
+                final GridFutureAdapter<String> fa = new GridFutureAdapter<String>(null) {
                     @Override public boolean cancel() throws IgniteCheckedException {
                         return onCancelled();
                     }
@@ -183,7 +183,7 @@ class PlatformTestPluginTarget implements PlatformTarget {
             }
             case 3: {
                 // Async exception.
-                final GridFutureAdapter<String> fa = new GridFutureAdapter<>();
+                final GridFutureAdapter<String> fa = new GridFutureAdapter<>(null);
 
                 new Thread(new Runnable() {
                     @Override public void run() {

@@ -34,6 +34,7 @@ import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.failure.FailureContext;
 import org.apache.ignite.failure.FailureType;
+import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.LongJVMPauseDetector;
@@ -179,7 +180,11 @@ public class Checkpointer extends GridWorker {
     /** For testing only. */
     private volatile boolean checkpointsEnabled = true;
 
+    /** */
+    private final GridKernalContext ctx;
+
     /**
+     * @param ctx Kernal context.
      * @param gridName Grid name.
      * @param name Thread name.
      * @param workersRegistry Worker registry.
@@ -195,6 +200,7 @@ public class Checkpointer extends GridWorker {
      * @param cpFreqDeviation Deviation of checkpoint frequency.
      */
     Checkpointer(
+        GridKernalContext ctx,
         @Nullable String gridName,
         String name,
         WorkersRegistry workersRegistry,
@@ -210,6 +216,8 @@ public class Checkpointer extends GridWorker {
         Supplier<Integer> cpFreqDeviation
     ) {
         super(gridName, name, logger.apply(Checkpointer.class), workersRegistry);
+
+        this.ctx = ctx;
         this.pauseDetector = detector;
         this.checkpointFreq = checkpointFrequency;
         this.failureProcessor = failureProcessor;
@@ -222,7 +230,7 @@ public class Checkpointer extends GridWorker {
         this.cpFreqDeviation = cpFreqDeviation;
         this.psproc = cacheProcessor.context().kernalContext().performanceStatistics();
 
-        scheduledCp = new CheckpointProgressImpl(nextCheckpointInterval());
+        scheduledCp = new CheckpointProgressImpl(ctx, nextCheckpointInterval());
     }
 
     /**
@@ -496,7 +504,7 @@ public class Checkpointer extends GridWorker {
         // Identity stores set.
         ConcurrentLinkedHashMap<PageStore, LongAdder> updStores = new ConcurrentLinkedHashMap<>();
 
-        CountDownFuture doneWriteFut = new CountDownFuture(checkpointWritePageThreads);
+        CountDownFuture doneWriteFut = new CountDownFuture(ctx, checkpointWritePageThreads);
 
         tracker.onPagesWriteStart();
 
@@ -652,7 +660,7 @@ public class Checkpointer extends GridWorker {
         List<PartitionDestroyRequest> reqs = null;
 
         for (final PartitionDestroyRequest req : destroyQueue.pendingReqs().values()) {
-            if (!req.beginDestroy())
+            if (!req.beginDestroy(ctx))
                 continue;
 
             final int grpId = req.groupId();
@@ -845,7 +853,7 @@ public class Checkpointer extends GridWorker {
                 curr.reason("timeout");
 
             // It is important that we assign a new progress object before checkpoint mark in page memory.
-            scheduledCp = new CheckpointProgressImpl(nextCheckpointInterval());
+            scheduledCp = new CheckpointProgressImpl(ctx, nextCheckpointInterval());
 
             curCpProgress = curr;
         }
@@ -870,7 +878,7 @@ public class Checkpointer extends GridWorker {
      * @deprecated Should be rewritten to public API.
      */
     public IgniteInternalFuture<Void> enableCheckpoints(boolean enable) {
-        GridFutureAdapter<Void> fut = new GridFutureAdapter<>();
+        GridFutureAdapter<Void> fut = new GridFutureAdapter<>(ctx);
 
         enableChangeApplied = fut;
 

@@ -337,7 +337,7 @@ public class TxRollbackAsyncTest extends GridCommonAbstractTest {
      */
     private void testSynchronousRollback0(Ignite holdLockNode, final Ignite tryLockNode,
         final boolean useTimeout) throws Exception {
-        final GridFutureAdapter<Void> keyLocked = new GridFutureAdapter<>();
+        final GridFutureAdapter<Void> keyLocked = new GridFutureAdapter<>(null);
 
         CountDownLatch waitCommit = new CountDownLatch(1);
 
@@ -354,7 +354,7 @@ public class TxRollbackAsyncTest extends GridCommonAbstractTest {
 
         final GridCacheContext<Object, Object> cctx = ctx.cacheContext(CU.cacheId(CACHE_NAME));
 
-        GridFutureAdapter<Transaction> txReadyFut = new GridFutureAdapter<>();
+        GridFutureAdapter<Transaction> txReadyFut = new GridFutureAdapter<>(null);
 
         long seed = System.currentTimeMillis();
 
@@ -808,7 +808,7 @@ public class TxRollbackAsyncTest extends GridCommonAbstractTest {
      */
     @Test
     public void testRollbackProxy() throws Exception {
-        final GridFutureAdapter<Void> keyLocked = new GridFutureAdapter<>();
+        final GridFutureAdapter<Void> keyLocked = new GridFutureAdapter<>(null);
 
         CountDownLatch waitCommit = new CountDownLatch(1);
 

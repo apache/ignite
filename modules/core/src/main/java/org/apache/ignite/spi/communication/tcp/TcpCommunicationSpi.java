@@ -626,7 +626,7 @@ public class TcpCommunicationSpi extends TcpCommunicationConfigInitializer {
     @Override public void spiStart(String igniteInstanceName) throws IgniteSpiException {
         final Function<UUID, ClusterNode> nodeGetter = (nodeId) -> getSpiContext().node(nodeId);
         final Supplier<ClusterNode> locNodeSupplier = () -> getSpiContext().localNode();
-        final Supplier<Ignite> igniteExSupplier = this::ignite;
+        final Supplier<IgniteEx> igniteExSupplier = () -> (IgniteEx)ignite;
         final Function<UUID, Boolean> pingNode = (nodeId) -> getSpiContext().pingNode(nodeId);
         final Supplier<FailureProcessor> failureProcSupplier =
             () -> ignite instanceof IgniteEx ? ((IgniteEx)ignite).context().failure() : null;
@@ -1021,6 +1021,7 @@ public class TcpCommunicationSpi extends TcpCommunicationConfigInitializer {
      */
     public IgniteFuture<BitSet> checkConnection(List<ClusterNode> nodes) {
         TcpCommunicationConnectionCheckFuture fut = new TcpCommunicationConnectionCheckFuture(
+            ((IgniteEx)ignite).context(),
             this,
             log.getLogger(TcpCommunicationConnectionCheckFuture.class),
             nioSrvWrapper.nio(),

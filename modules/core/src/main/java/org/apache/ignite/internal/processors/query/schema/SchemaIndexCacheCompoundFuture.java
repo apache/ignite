@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.processors.query.schema;
 
 import java.util.concurrent.atomic.AtomicReference;
+import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.util.future.GridCompoundFuture;
 
 /**
@@ -28,6 +29,11 @@ import org.apache.ignite.internal.util.future.GridCompoundFuture;
 public class SchemaIndexCacheCompoundFuture extends GridCompoundFuture<SchemaIndexCacheStat, SchemaIndexCacheStat> {
     /** Container for the first index rebuild error. */
     private final AtomicReference<Throwable> errRef = new AtomicReference<>();
+
+    /** */
+    public SchemaIndexCacheCompoundFuture(GridKernalContext ctx) {
+        super(ctx);
+    }
 
     /** {@inheritDoc} */
     @Override protected boolean ignoreFailure(Throwable err) {

@@ -90,6 +90,8 @@ public class GridDhtAssignmentFetchFuture extends GridFutureAdapter<GridDhtAffin
         AffinityTopologyVersion topVer,
         DiscoCache discoCache
     ) {
+        super(ctx.kernalContext());
+
         this.topVer = topVer;
         this.grpId = grpId;
         this.ctx = ctx;

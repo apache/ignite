@@ -62,6 +62,7 @@ import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.thread.IgniteThread;
 import org.apache.ignite.thread.OomExceptionHandler;
 import org.jetbrains.annotations.Nullable;
+
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_DISABLE_WAL_DURING_REBALANCING;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_PENDING_TX_TRACKER_ENABLED;
 import static org.apache.ignite.internal.GridTopic.TOPIC_WAL;
@@ -387,7 +388,7 @@ public class WalStateManager extends GridCacheSharedManagerAdapter {
             // Send request.
             final UUID opId = UUID.randomUUID();
 
-            GridFutureAdapter<Boolean> fut = new GridFutureAdapter<>();
+            GridFutureAdapter<Boolean> fut = new GridFutureAdapter<>(cctx.kernalContext());
 
             fut.listen(new IgniteInClosure<IgniteInternalFuture<Boolean>>() {
                 @Override public void apply(IgniteInternalFuture<Boolean> fut) {

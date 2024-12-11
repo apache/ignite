@@ -33,6 +33,7 @@ import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.IgniteClientDisconnectedCheckedException;
+import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteFutureTimeoutCheckedException;
 import org.apache.ignite.internal.IgniteTooManyOpenFilesException;
 import org.apache.ignite.internal.cluster.ClusterTopologyCheckedException;
@@ -214,7 +215,7 @@ public class ConnectionClientPool {
                     throw new IgniteSpiException("Node is stopping.");
 
                 // Do not allow concurrent connects.
-                GridFutureAdapter<GridCommunicationClient> fut = new ConnectFuture();
+                GridFutureAdapter<GridCommunicationClient> fut = new ConnectFuture(((IgniteEx)tcpCommSpi.ignite()).context());
 
                 ConnectionKey connKey = new ConnectionKey(nodeId, connIdx, -1);
 
@@ -362,7 +363,7 @@ public class ConnectionClientPool {
 
             final ConnectionKey key = new ConnectionKey(node.id(), connIdx, -1);
 
-            ConnectionRequestFuture triggerFut = new ConnectionRequestFuture();
+            ConnectionRequestFuture triggerFut = new ConnectionRequestFuture(((IgniteEx)tcpCommSpi.ignite()).context());
 
             triggerFut.listen(() -> {
                 try {

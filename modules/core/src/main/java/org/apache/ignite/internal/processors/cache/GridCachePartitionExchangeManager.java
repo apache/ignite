@@ -282,7 +282,7 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
     private final List<PendingDiscoveryEvent> pendingEvts = new ArrayList<>();
 
     /** */
-    private final GridFutureAdapter<?> crdInitFut = new GridFutureAdapter();
+    private final GridFutureAdapter<?> crdInitFut = new GridFutureAdapter(null);
 
     /** For tests only. */
     private volatile AffinityTopologyVersion exchMergeTestWaitVer;
@@ -845,7 +845,7 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
         GridDhtPartitionsExchangeFuture fut = null;
 
         if (reconnect)
-            reconnectExchangeFut = new GridFutureAdapter<>();
+            reconnectExchangeFut = new GridFutureAdapter<>(cctx.kernalContext());
 
         if (active) {
             DiscoveryEvent discoEvt = locJoin.event();
@@ -1144,7 +1144,7 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
         }
 
         GridFutureAdapter<AffinityTopologyVersion> fut = F.addIfAbsent(readyFuts, ver,
-            new AffinityReadyFuture(ver));
+            new AffinityReadyFuture(cctx.kernalContext(), ver));
 
         if (log.isDebugEnabled())
             log.debug("Created topology ready future [ver=" + ver + ", fut=" + fut + ']');
@@ -2971,7 +2971,7 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
          * @return Rebalance future.
          */
         IgniteInternalFuture<Boolean> forceRebalance(GridDhtPartitionExchangeId exchId) {
-            GridCompoundFuture<Boolean, Boolean> fut = new GridCompoundFuture<>(CU.boolReducer());
+            GridCompoundFuture<Boolean, Boolean> fut = new GridCompoundFuture<>(cctx.kernalContext(), CU.boolReducer());
 
             futQ.add(new ForceRebalanceExchangeTask(remoteSecurityContext(cctx.kernalContext()), exchId, fut));
 
@@ -2983,7 +2983,7 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
          */
         IgniteInternalFuture<Void> deferStopCachesOnClientReconnect(Collection<GridCacheAdapter> caches) {
             StopCachesOnClientReconnectExchangeTask task =
-                new StopCachesOnClientReconnectExchangeTask(remoteSecurityContext(cctx.kernalContext()), caches);
+                new StopCachesOnClientReconnectExchangeTask(cctx.kernalContext(), caches);
 
             futQ.add(task);
 
@@ -3425,7 +3425,7 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
 
                             RebalanceFuture next = null;
 
-                            GridCompoundFuture<Boolean, Boolean> rebFut = new GridCompoundFuture<>();
+                            GridCompoundFuture<Boolean, Boolean> rebFut = new GridCompoundFuture<>(cctx.kernalContext());
 
                             GridCompoundFuture<Boolean, Boolean> forcedRebFut = null;
 
@@ -3749,9 +3749,12 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
         private AffinityTopologyVersion topVer;
 
         /**
+         * @param ctx Kernal context.
          * @param topVer Topology version.
          */
-        private AffinityReadyFuture(AffinityTopologyVersion topVer) {
+        private AffinityReadyFuture(GridKernalContext ctx, AffinityTopologyVersion topVer) {
+            super(ctx);
+
             this.topVer = topVer;
         }
 

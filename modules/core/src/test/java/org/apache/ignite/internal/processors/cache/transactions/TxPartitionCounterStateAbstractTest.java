@@ -516,7 +516,7 @@ public abstract class TxPartitionCounterStateAbstractTest extends GridCommonAbst
      * @param msg Message.
      */
     private GridFutureAdapter<?> createSendFuture(TestRecordingCommunicationSpi wrapperSpi, Message msg) {
-        GridFutureAdapter<?> fut = new GridFutureAdapter<>();
+        GridFutureAdapter<?> fut = new GridFutureAdapter<>(null);
 
         fut.listen(() -> wrapperSpi.stopBlock(true, blockedMsg ->
             blockedMsg.ioMessage().message() == msg, false, true));
@@ -924,7 +924,7 @@ public abstract class TxPartitionCounterStateAbstractTest extends GridCommonAbst
             runAsync(() -> {
                 futures.put(new T3<>(primary, TxState.ASSIGN, nearXidVer), proceedFut);
 
-                futures.put(new T3<>(primary, TxState.PREPARE, nearXidVer), new GridCompoundFuture() {
+                futures.put(new T3<>(primary, TxState.PREPARE, nearXidVer), new GridCompoundFuture(null) {
                     @Override public boolean onDone(@Nullable Object res, @Nullable Throwable err) {
                         Collection<IgniteInternalFuture<?>> futures = futures();
 

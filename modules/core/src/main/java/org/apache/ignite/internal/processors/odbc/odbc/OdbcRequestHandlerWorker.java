@@ -121,7 +121,7 @@ class OdbcRequestHandlerWorker extends GridWorker {
      * @return Future to track request processing.
      */
     GridFutureAdapter<ClientListenerResponse> process(OdbcRequest req) {
-        GridFutureAdapter<ClientListenerResponse> fut = new GridFutureAdapter<>();
+        GridFutureAdapter<ClientListenerResponse> fut = new GridFutureAdapter<>(ctx);
 
         queue.add(new T2<>(req, fut));
 

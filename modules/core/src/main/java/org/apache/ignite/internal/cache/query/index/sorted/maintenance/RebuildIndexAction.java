@@ -164,7 +164,7 @@ public class RebuildIndexAction implements MaintenanceAction<Boolean> {
         IndexBuildStatusStorage storage,
         SchemaManager schemaMgr
     ) {
-        GridFutureAdapter<Void> createIdxFut = new GridFutureAdapter<>();
+        GridFutureAdapter<Void> createIdxFut = new GridFutureAdapter<>(ctx);
 
         IndexRebuildCancelToken token = new IndexRebuildCancelToken();
 

@@ -71,6 +71,7 @@ import org.apache.ignite.internal.processors.continuous.GridContinuousQueryBatch
 import org.apache.ignite.internal.processors.platform.cache.query.PlatformContinuousQueryFilter;
 import org.apache.ignite.internal.util.future.GridFinishedFuture;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
+import org.apache.ignite.internal.util.future.SecurityAwareOutClosure;
 import org.apache.ignite.internal.util.lang.GridPlainRunnable;
 import org.apache.ignite.internal.util.typedef.CI1;
 import org.apache.ignite.internal.util.typedef.F;
@@ -383,7 +384,7 @@ public class CacheContinuousQueryHandler<K, V> implements GridContinuousHandler 
         initLocalListener(locLsnr, ctx);
 
         if (initFut == null) {
-            initFut = p2pUnmarshalFut.chain(() -> {
+            initFut = p2pUnmarshalFut.chain(SecurityAwareOutClosure.of(ctx.security(), () -> {
                 try {
                     p2pUnmarshalFut.get();
 
@@ -399,7 +400,7 @@ public class CacheContinuousQueryHandler<K, V> implements GridContinuousHandler 
                 }
 
                 return null;
-            });
+            }));
         }
 
         if (initFut.error() != null)
@@ -1448,7 +1449,7 @@ public class CacheContinuousQueryHandler<K, V> implements GridContinuousHandler 
         if (b) {
             rmtFilterDep = (CacheContinuousQueryDeployableObject)in.readObject();
 
-            p2pUnmarshalFut = new GridFutureAdapter<>();
+            p2pUnmarshalFut = new GridFutureAdapter<>(null);
         }
         else
             rmtFilter = (CacheEntryEventSerializableFilter<K, V>)in.readObject();

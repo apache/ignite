@@ -23,6 +23,7 @@ import java.util.List;
 import java.util.UUID;
 import javax.cache.CacheException;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.processors.query.h2.UpdateResult;
 import org.apache.ignite.internal.processors.query.h2.twostep.msg.GridH2DmlResponse;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
@@ -45,16 +46,17 @@ public class DmlDistributedUpdateRun {
     private HashSet<Object> errorKeys;
 
     /** Result future. */
-    private final GridFutureAdapter<UpdateResult> fut = new GridFutureAdapter<>();
+    private final GridFutureAdapter<UpdateResult> fut;
 
     /**
      * Constructor.
      *
      * @param nodeCount Number of nodes to await results from.
      */
-    public DmlDistributedUpdateRun(int nodeCount) {
+    public DmlDistributedUpdateRun(GridKernalContext ctx, int nodeCount) {
         this.nodeCount = nodeCount;
 
+        fut = new GridFutureAdapter<>(ctx);
         rspNodes = new HashSet<>(nodeCount);
     }
 

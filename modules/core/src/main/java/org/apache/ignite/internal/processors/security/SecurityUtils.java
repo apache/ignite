@@ -404,4 +404,13 @@ public class SecurityUtils {
 
         permissions.forEach((name, permsPerName) -> permsPerName.forEach(perm -> security.authorize(name, perm)));
     }
+
+    /** */
+    public static boolean isSecurityWrapperRequired(GridKernalContext ctx, Object obj) {
+        return ctx != null
+            && obj != null
+            && ctx.security().enabled()
+            && !ctx.security().isDefaultContext()
+            && !(obj instanceof AbstractSecurityAwareWrapper);
+    }
 }

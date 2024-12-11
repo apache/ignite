@@ -20,6 +20,7 @@ package org.apache.ignite.internal.util.future;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.internal.GridKernalContext;
 import org.jetbrains.annotations.Nullable;
 
 /**
@@ -33,9 +34,12 @@ public class CountDownFuture extends GridFutureAdapter<Void> {
     private AtomicReference<Exception> errCollector;
 
     /**
+     * @param ctx Kernal context.
      * @param cnt Number of completing parties.
      */
-    public CountDownFuture(int cnt) {
+    public CountDownFuture(GridKernalContext ctx, int cnt) {
+        super(ctx);
+
         remaining = new AtomicInteger(cnt);
         errCollector = new AtomicReference<>();
     }

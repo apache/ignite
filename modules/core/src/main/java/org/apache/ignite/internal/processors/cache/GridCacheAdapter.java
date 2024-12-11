@@ -3850,24 +3850,29 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
             };
 
             if (fut != null && !fut.isDone()) {
-                IgniteInternalFuture<T> f = new GridEmbeddedFuture(fut,
-                    (IgniteOutClosure<IgniteInternalFuture>)() -> {
-                        GridFutureAdapter resFut = new GridFutureAdapter();
+                IgniteInternalFuture<T> f = new GridEmbeddedFuture<>(
+                    ctx.kernalContext(),
+                    fut,
+                    (IgniteOutClosure<IgniteInternalFuture<T>>)() -> {
+                        GridFutureAdapter resFut = new GridFutureAdapter(ctx.kernalContext());
 
                         ctx.kernalContext().closure().runLocalSafe((GridPlainRunnable)() -> {
-                            IgniteInternalFuture fut0;
+                            IgniteInternalFuture opFut;
 
                             if (ctx.kernalContext().isStopping())
-                                fut0 = new GridFinishedFuture<>(
+                                opFut = new GridFinishedFuture<>(
                                     new IgniteCheckedException("Operation has been cancelled (node or cache is stopping)."));
                             else if (ctx.gate().isStopped())
-                                fut0 = new GridFinishedFuture<>(new CacheStoppedException(ctx.name()));
+                                opFut = new GridFinishedFuture<>(new CacheStoppedException(ctx.name()));
                             else {
                                 ctx.operationContextPerCall(opCtx);
                                 ctx.shared().txContextReset();
 
                                 try {
-                                    fut0 = op.op(tx0).chain(clo);
+                                    opFut = op.op(tx0).chain(clo);
+                                }
+                                catch (Throwable e) {
+                                    opFut = new GridFinishedFuture<>(e);
                                 }
                                 finally {
                                     // It is necessary to clear tx context in this thread as well.
@@ -3876,9 +3881,9 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
                                 }
                             }
 
-                            fut0.listen(() -> {
+                            opFut.listen((IgniteInClosure<IgniteInternalFuture<?>>)lsnrFut -> {
                                 try {
-                                    resFut.onDone(fut0.get());
+                                    resFut.onDone(lsnrFut.get());
                                 }
                                 catch (Throwable ex) {
                                     resFut.onDone(ex);
@@ -4280,7 +4285,7 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
         final GridNearTxLocal tx = ctx.tm().threadLocalTx(ctx);
         final CacheOperationContext opCtx = ctx.operationContextPerCall();
 
-        GridFutureAdapter<R> fut = new GridFutureAdapter<>();
+        GridFutureAdapter<R> fut = new GridFutureAdapter<>(ctx.kernalContext());
 
         orig.listen(() -> {
             try {
@@ -4329,7 +4334,7 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
         IgniteConsistencyViolationException ex,
         final CacheOperationContext opCtx,
         boolean skipVals) {
-        GridCompoundReadRepairFuture fut = new GridCompoundReadRepairFuture();
+        GridCompoundReadRepairFuture fut = new GridCompoundReadRepairFuture(ctx.kernalContext());
 
         for (KeyCacheObject key : ex.keys()) {
             fut.add(ctx.transactional() ?
@@ -4738,6 +4743,8 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
             int retries,
             CacheOperationContext opCtx
         ) {
+            super(ctx.kernalContext());
+
             assert retries > 1 : retries;
 
             tx = null;
@@ -5058,7 +5065,7 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
             final AffinityTopologyVersion topVer,
             final GridNearTxLocal tx,
             final CacheOperationContext opCtx) {
-            final GridFutureAdapter fut0 = new GridFutureAdapter();
+            final GridFutureAdapter fut0 = new GridFutureAdapter(ctx.kernalContext());
 
             topFut.listen(new CI1<IgniteInternalFuture<?>>() {
                 @Override public void apply(IgniteInternalFuture<?> topFut) {

@@ -77,6 +77,8 @@ class IncrementalSnapshotMarkWalFuture extends GridFutureAdapter<WALPointer> {
 
     /** */
     IncrementalSnapshotMarkWalFuture(GridCacheSharedContext<?, ?> cctx, UUID id, long topVer) {
+        super(cctx.kernalContext());
+
         this.cctx = cctx;
         this.id = id;
         this.topVer = topVer;
@@ -91,7 +93,7 @@ class IncrementalSnapshotMarkWalFuture extends GridFutureAdapter<WALPointer> {
         try {
             cctx.wal().log(new IncrementalSnapshotStartRecord(id));
 
-            GridCompoundFuture<Boolean, Boolean> checkFut = new GridCompoundFuture<>(CU.boolReducer());
+            GridCompoundFuture<Boolean, Boolean> checkFut = new GridCompoundFuture<>(cctx.kernalContext(), CU.boolReducer());
 
             Iterator<IgniteInternalFuture<IgniteInternalTx>> finFutIt = cctx.tm().activeTransactions().stream()
                 .filter(tx -> tx.state() != ACTIVE)

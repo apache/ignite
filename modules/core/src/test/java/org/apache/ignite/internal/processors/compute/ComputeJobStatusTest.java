@@ -322,7 +322,7 @@ public class ComputeJobStatusTest extends GridCommonAbstractTest {
         @Nullable volatile Class<? extends ComputeJob> waitJobCls;
 
         /** */
-        final GridFutureAdapter<CollisionJobContext> waitJobFut = new GridFutureAdapter<>();
+        final GridFutureAdapter<CollisionJobContext> waitJobFut = new GridFutureAdapter<>(null);
 
         /** {@inheritDoc} */
         @Override public void onCollision(CollisionContext ctx) {
@@ -420,8 +420,8 @@ public class ComputeJobStatusTest extends GridCommonAbstractTest {
 
         /** */
         public WaitJob() {
-            onStartFut = new GridFutureAdapter<>();
-            waitFut = new GridFutureAdapter<>();
+            onStartFut = new GridFutureAdapter<>(null);
+            waitFut = new GridFutureAdapter<>(null);
         }
 
         /** */

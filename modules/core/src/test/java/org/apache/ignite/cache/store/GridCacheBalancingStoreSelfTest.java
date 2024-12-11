@@ -60,7 +60,7 @@ public class GridCacheBalancingStoreSelfTest extends GridCommonAbstractTest {
         final AtomicReference<Exception> err = new AtomicReference<>();
 
         final CacheStoreBalancingWrapper<Integer, Integer> w =
-            new CacheStoreBalancingWrapper<>(new VerifyStore(range));
+            new CacheStoreBalancingWrapper<>(null, new VerifyStore(range));
 
         final AtomicBoolean finish = new AtomicBoolean();
 
@@ -160,7 +160,7 @@ public class GridCacheBalancingStoreSelfTest extends GridCommonAbstractTest {
 
         ConcurrentVerifyStore store = new ConcurrentVerifyStore(keys);
 
-        final CacheStoreBalancingWrapper<Integer, Integer> wrapper = new CacheStoreBalancingWrapper<>(store, threshold);
+        final CacheStoreBalancingWrapper<Integer, Integer> wrapper = new CacheStoreBalancingWrapper<>(null, store, threshold);
 
         GridTestUtils.runMultiThreaded(new Runnable() {
             @Override public void run() {
@@ -214,7 +214,7 @@ public class GridCacheBalancingStoreSelfTest extends GridCommonAbstractTest {
 
         ConcurrentVerifyStore store = new ConcurrentVerifyStore(keysCnt);
 
-        final CacheStoreBalancingWrapper<Integer, Integer> wrapper = new CacheStoreBalancingWrapper<>(store, threshold);
+        final CacheStoreBalancingWrapper<Integer, Integer> wrapper = new CacheStoreBalancingWrapper<>(null, store, threshold);
 
         GridTestUtils.runMultiThreaded(new Runnable() {
             @Override public void run() {

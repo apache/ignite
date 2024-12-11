@@ -1062,7 +1062,7 @@ public final class GridTestUtils {
 
         IgniteInternalFuture<Long> runFut = runAsync(() -> runMultiThreaded(calls, threadFactory));
 
-        GridFutureAdapter<Long> resFut = new GridFutureAdapter<Long>() {
+        GridFutureAdapter<Long> resFut = new GridFutureAdapter<Long>(null) {
             @Override public boolean cancel() throws IgniteCheckedException {
                 super.cancel();
 
@@ -1225,7 +1225,7 @@ public final class GridTestUtils {
         try {
             final GridTestSafeThreadFactory thrFactory = new GridTestSafeThreadFactory(threadName);
 
-            final GridFutureAdapter<T> fut = new GridFutureAdapter<T>() {
+            final GridFutureAdapter<T> fut = new GridFutureAdapter<T>(null) {
                 @Override public boolean cancel() throws IgniteCheckedException {
                     super.cancel();
 

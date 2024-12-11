@@ -291,7 +291,7 @@ public class IgnitePdsDataRegionMetricsTest extends GridCommonAbstractTest {
 
         GridCacheDatabaseSharedManager psMgr = (GridCacheDatabaseSharedManager)ig.context().cache().context().database();
 
-        GridFutureAdapter<T2<Long, Long>> metricsResult = new GridFutureAdapter<>();
+        GridFutureAdapter<T2<Long, Long>> metricsResult = new GridFutureAdapter<>(null);
 
         IgniteInternalFuture chpBeginFut = psMgr.wakeupForCheckpoint(null);
 

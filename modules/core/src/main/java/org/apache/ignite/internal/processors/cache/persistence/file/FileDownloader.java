@@ -61,7 +61,7 @@ public class FileDownloader {
     private SocketChannel readChan;
 
     /** */
-    private final GridFutureAdapter<Void> finishFut = new GridFutureAdapter<>();
+    private final GridFutureAdapter<Void> finishFut = new GridFutureAdapter<>(null);
 
     /**
      *
