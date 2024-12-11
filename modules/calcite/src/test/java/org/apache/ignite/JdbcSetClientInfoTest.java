@@ -42,7 +42,7 @@ import org.junit.Test;
 /** */
 public class JdbcSetClientInfoTest extends GridCommonAbstractTest {
     /** */
-    private static final String SESSION_ID = "SESSION_ID";
+    private static final String SESSION_ID = "sessionId";
 
     /** */
     private static final String URL = "jdbc:ignite:thin://127.0.0.1?queryEngine=calcite";
@@ -66,7 +66,7 @@ public class JdbcSetClientInfoTest extends GridCommonAbstractTest {
     @Override protected void beforeTest() throws Exception {
         IgniteEx ign = startGrids(3);
 
-        ignQuery(ign, "create table PUBLIC.MYTABLE(id int primary key, sessionId varchar);");
+        query(ign, "create table PUBLIC.MYTABLE(id int primary key, sessionId varchar);");
     }
 
     /** {@inheritDoc} */
@@ -112,7 +112,7 @@ public class JdbcSetClientInfoTest extends GridCommonAbstractTest {
         for (int i = 0; i < 100; i++) {
             String sesId = i % 2 == 0 ? "1" : "2";
 
-            ignQuery(grid(0), "insert into PUBLIC.MYTABLE(id, sessionId) values (?, ?);", i, sesId);
+            query(grid(0), "insert into PUBLIC.MYTABLE(id, sessionId) values (?, ?);", i, sesId);
         }
 
         try (Connection conn = DriverManager.getConnection(URL)) {
@@ -150,11 +150,11 @@ public class JdbcSetClientInfoTest extends GridCommonAbstractTest {
             }
         }
 
-        List<List<?>> res = ignQuery(grid(0), "select * from PUBLIC.MYTABLE where sessionId = 1");
+        List<List<?>> res = query(grid(0), "select * from PUBLIC.MYTABLE where sessionId = 1");
 
         assertEquals(50, res.size());
 
-        res = ignQuery(grid(0), "select * from PUBLIC.MYTABLE where sessionId = 2");
+        res = query(grid(0), "select * from PUBLIC.MYTABLE where sessionId = 2");
 
         assertEquals(50, res.size());
     }
@@ -165,7 +165,7 @@ public class JdbcSetClientInfoTest extends GridCommonAbstractTest {
         for (int i = 0; i < 100; i++) {
             String sesId = i % 2 == 0 ? "1" : "2";
 
-            ignQuery(grid(0), "insert into PUBLIC.MYTABLE(id, sessionId) values (?, ?);", i, sesId);
+            query(grid(0), "insert into PUBLIC.MYTABLE(id, sessionId) values (?, ?);", i, sesId);
         }
 
         try (Connection conn = DriverManager.getConnection(URL)) {
@@ -203,7 +203,7 @@ public class JdbcSetClientInfoTest extends GridCommonAbstractTest {
                     "insert into PUBLIC.MYTABLE(id, sessionId) values (4, sessionId())");
         }
 
-        List<List<?>> res = ignQuery(grid(0), "select * from PUBLIC.MYTABLE where sessionId = 1");
+        List<List<?>> res = query(grid(0), "select * from PUBLIC.MYTABLE where sessionId = 1");
 
         assertEquals(5, res.size());
     }
@@ -224,7 +224,7 @@ public class JdbcSetClientInfoTest extends GridCommonAbstractTest {
                 "insert into PUBLIC.MYTABLE(id, sessionId) values (4, sessionId())");
         }
 
-        List<List<?>> res = ignQuery(grid(0), "select * from PUBLIC.MYTABLE where sessionId = 1");
+        List<List<?>> res = query(grid(0), "select * from PUBLIC.MYTABLE where sessionId = 1");
 
         assertEquals(5, res.size());
     }
@@ -243,7 +243,7 @@ public class JdbcSetClientInfoTest extends GridCommonAbstractTest {
             statement.executeBatch();
         }
 
-        List<List<?>> res = ignQuery(grid(0), "select * from PUBLIC.MYTABLE where sessionId = 1");
+        List<List<?>> res = query(grid(0), "select * from PUBLIC.MYTABLE where sessionId = 1");
 
         assertEquals(5, res.size());
     }
@@ -259,7 +259,7 @@ public class JdbcSetClientInfoTest extends GridCommonAbstractTest {
     }
 
     /** */
-    private List<List<?>> ignQuery(IgniteEx ign, String sql, Object... args) {
+    private List<List<?>> query(IgniteEx ign, String sql, Object... args) {
         return ign.context().query().querySqlFields(new SqlFieldsQuery(sql).setArgs(args), false).getAll();
     }
 
