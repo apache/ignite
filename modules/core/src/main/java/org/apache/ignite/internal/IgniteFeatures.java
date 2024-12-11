@@ -44,9 +44,6 @@ public enum IgniteFeatures {
     /** Distributed metastorage. */
     DISTRIBUTED_METASTORAGE(11),
 
-    /** The node can communicate with others via socket channel. */
-    CHANNEL_COMMUNICATION(12),
-
     /** Partition Map Exchange-free switch on baseline node left at fully rebalanced cluster.  */
     PME_FREE_SWITCH(19),
 
