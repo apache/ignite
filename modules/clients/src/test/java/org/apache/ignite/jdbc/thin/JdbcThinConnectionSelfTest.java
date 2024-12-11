@@ -1893,7 +1893,7 @@ public class JdbcThinConnectionSelfTest extends JdbcThinAbstractSelfTest {
 
             assertNotNull(propsResult);
 
-            assertTrue(propsResult.isEmpty());
+            assertFalse(propsResult.isEmpty());
 
             conn.close();
 
