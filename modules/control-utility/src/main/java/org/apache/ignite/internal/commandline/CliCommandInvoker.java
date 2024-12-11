@@ -44,6 +44,8 @@ import static org.apache.ignite.internal.commandline.CommandHandler.DFLT_HOST;
 
 /**
  * Adapter of new management API command for legacy {@code control.sh} execution flow.
+ *
+ * @deprecated Use {@link CliIgniteClientInvoker} instead. Will be removed in the next releases.
  */
 @Deprecated
 public class CliCommandInvoker<A extends IgniteDataTransferObject> extends CommandInvoker<A> implements CloseableCliCommandInvoker {

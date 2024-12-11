@@ -526,9 +526,7 @@ public class CommandHandler {
      * @return Thin client configuration to connect to cluster.
      * @throws IgniteCheckedException If error occur.
      */
-    private ClientConfiguration clientConfiguration(
-        ConnectionAndSslParameters args
-    ) throws IgniteCheckedException {
+    private ClientConfiguration clientConfiguration(ConnectionAndSslParameters args) throws IgniteCheckedException {
         ClientConfiguration clientCfg = new ClientConfiguration();
 
         clientCfg.setAddresses(args.host() + ":" + args.port());
