@@ -1501,11 +1501,6 @@ class ServerImpl extends TcpDiscoveryImpl {
                 if (msg instanceof TcpDiscoveryJoinRequestMessage) {
                     boolean ignore = false;
 
-                    // During marshalling, SPI didn't know whether all nodes support compression as we didn't join yet.
-                    // The only way to know is passing flag directly with handshake response.
-                    if (!res.isDiscoveryDataPacketCompression())
-                        ((TcpDiscoveryJoinRequestMessage)msg).gridDiscoveryData().unzipData(log);
-
                     synchronized (mux) {
                         for (TcpDiscoveryNode failedNode : failedNodes.keySet()) {
                             if (failedNode.id().equals(res.creatorNodeId())) {
@@ -6793,8 +6788,6 @@ class ServerImpl extends TcpDiscoveryImpl {
 
                     TcpDiscoveryHandshakeResponse res =
                         new TcpDiscoveryHandshakeResponse(locNodeId, locNode.internalOrder());
-
-                    res.setDiscoveryDataPacketCompression(allNodesSupport(IgniteFeatures.DATA_PACKET_COMPRESSION));
 
                     if (req.client())
                         res.clientAck(true);
