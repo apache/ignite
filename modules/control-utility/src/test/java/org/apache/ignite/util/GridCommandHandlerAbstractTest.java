@@ -536,7 +536,8 @@ public abstract class GridCommandHandlerAbstractTest extends GridCommandHandlerF
 
     /** */
     protected String connectorPort(IgniteEx srv) {
-        return srv.localNode().attribute(commandHandler.equals(CLI_GRID_CLIENT_CMD_HND) ? ATTR_REST_TCP_PORT
+        return srv.localNode().attribute(commandHandler.equals(CLI_GRID_CLIENT_CMD_HND)
+            ? ATTR_REST_TCP_PORT
             : CLIENT_LISTENER_PORT).toString();
     }
 }

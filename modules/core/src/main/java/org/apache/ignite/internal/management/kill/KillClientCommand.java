@@ -50,8 +50,8 @@ public class KillClientCommand implements ComputeCommand<KillClientCommandArg, V
     /** {@inheritDoc} */
     @Override public Void handleException(Exception e, Consumer<String> printer) throws Exception {
         if (X.hasCause(e, ClientConnectionException.class)) {
-            printer.accept("WARNING: The command throws the expected 'ClientConnectionException' exception if its " +
-                "own client connection is killed.");
+            printer.accept("WARNING: The command throws the expected 'ClientConnectionException'. " +
+                "Mostly probable reason of exception - own client connection was killed. ");
         }
 
         throw e;
