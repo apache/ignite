@@ -451,7 +451,7 @@ public class CdcMain implements Runnable {
         segmentConsumingTime = mreg.histogram(
             SEGMENT_CONSUMING_TIME,
             new long[] {25, 50, 100, 250, 500, 1000, 2500, 5000, 10000, 25000, 50000},
-            "Time of WAL segment processing, in milliseconds.");
+            "Time of WAL segment consumption by consumer, in milliseconds.");
         mreg.register(CDC_MODE, () -> cdcModeState.name(), String.class, "CDC mode");
     }
 
