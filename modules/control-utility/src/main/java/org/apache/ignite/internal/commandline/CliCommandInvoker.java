@@ -17,98 +17,207 @@
 
 package org.apache.ignite.internal.commandline;
 
+import java.io.IOException;
+import java.net.InetAddress;
+import java.util.Collection;
+import java.util.List;
 import java.util.function.Consumer;
-import java.util.function.Function;
-import org.apache.ignite.IgniteCheckedException;
-import org.apache.ignite.Ignition;
-import org.apache.ignite.client.IgniteClient;
-import org.apache.ignite.client.SslMode;
-import org.apache.ignite.configuration.ClientConfiguration;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
+import org.apache.ignite.internal.client.GridClient;
+import org.apache.ignite.internal.client.GridClientBeforeNodeStart;
+import org.apache.ignite.internal.client.GridClientCompute;
+import org.apache.ignite.internal.client.GridClientConfiguration;
+import org.apache.ignite.internal.client.GridClientDisconnectedException;
+import org.apache.ignite.internal.client.GridClientException;
+import org.apache.ignite.internal.client.GridClientFactory;
 import org.apache.ignite.internal.client.GridClientNode;
-import org.apache.ignite.internal.client.GridClientNodeStateBeforeStart;
-import org.apache.ignite.internal.client.thin.TcpIgniteClient;
 import org.apache.ignite.internal.dto.IgniteDataTransferObject;
 import org.apache.ignite.internal.management.api.BeforeNodeStartCommand;
 import org.apache.ignite.internal.management.api.Command;
-import org.apache.ignite.internal.management.api.CommandUtils;
+import org.apache.ignite.internal.management.api.CommandInvoker;
+import org.apache.ignite.internal.util.IgniteUtils;
 import org.apache.ignite.internal.util.typedef.F;
-import org.jetbrains.annotations.Nullable;
+import org.apache.ignite.lang.IgniteBiTuple;
 
-import static org.apache.ignite.internal.processors.odbc.ClientListenerNioListener.MANAGEMENT_CLIENT_ATTR;
+import static org.apache.ignite.internal.commandline.CommandHandler.DFLT_HOST;
 
 /**
- * Adapter of new management API command for {@code control.sh} execution flow.
+ * Adapter of new management API command for legacy {@code control.sh} execution flow.
  */
-public class CliCommandInvoker<A extends IgniteDataTransferObject> extends AbstractCliCommandInvoker<A> {
+@Deprecated
+public class CliCommandInvoker<A extends IgniteDataTransferObject> extends CommandInvoker<A> implements CloseableCliCommandInvoker {
+    /** Client configuration. */
+    private final GridClientConfiguration clientCfg;
+
     /** Client. */
-    private final IgniteClient client;
+    private GridClient client;
 
     /** @param cmd Command to execute. */
-    public CliCommandInvoker(
-        Command<A, ?> cmd,
-        ConnectionAndSslParameters<A> args,
-        Function<String, char[]> pwdReader
-    ) throws IgniteCheckedException {
-        super(cmd, args, pwdReader);
-
-        ClientConfiguration cfg = clientConfiguration(args);
-
-        if (cmd instanceof BeforeNodeStartCommand) {
-            cfg.setUserAttributes(F.asMap(MANAGEMENT_CLIENT_ATTR, Boolean.TRUE.toString()));
-            cfg.setAutoBinaryConfigurationEnabled(false);
-        }
-
-        client = Ignition.startClient(cfg);
+    public CliCommandInvoker(Command<A, ?> cmd, A arg, GridClientConfiguration clientCfg) {
+        super(cmd, arg, null);
+        this.clientCfg = clientCfg;
     }
 
     /** {@inheritDoc} */
-    @Override protected GridClientNode defaultNode() {
-        return CommandUtils.clusterToClientNode(client.cluster().forOldest().node());
-    }
-
-    /** {@inheritDoc} */
-    @Override protected @Nullable IgniteClient client() {
-        return client;
+    @Override public String confirmationPrompt() {
+        return cmd.confirmationPrompt(arg);
     }
 
     /** {@inheritDoc} */
     @Override public <R> R invokeBeforeNodeStart(Consumer<String> printer) throws Exception {
-        return ((BeforeNodeStartCommand<A, R>)cmd).execute(new GridClientNodeStateBeforeStart() {
-            @Override public void stopWarmUp() {
-                ((TcpIgniteClient)client).stopWarmUp();
+        try (GridClientBeforeNodeStart client = startClientBeforeNodeStart(clientCfg)) {
+            return ((BeforeNodeStartCommand<A, R>)cmd).execute(client.beforeStartState(), arg, printer);
+        }
+        catch (GridClientDisconnectedException e) {
+            throw new GridClientException(e.getCause());
+        }
+    }
+
+    /** {@inheritDoc} */
+    @Override protected GridClientNode defaultNode() throws GridClientException {
+        GridClientNode node;
+
+        // Prefer node from connect string.
+        final String cfgAddr = clientCfg.getServers().iterator().next();
+
+        String[] parts = cfgAddr.split(":");
+
+        if (DFLT_HOST.equals(parts[0])) {
+            InetAddress addr;
+
+            try {
+                addr = IgniteUtils.getLocalHost();
             }
-        }, arg, printer);
+            catch (IOException e) {
+                throw new GridClientException("Can't get localhost name.", e);
+            }
+
+            if (addr.isLoopbackAddress())
+                throw new GridClientException("Can't find localhost name.");
+
+            String origAddr = addr.getHostName() + ":" + parts[1];
+
+            node = listHosts(client()).filter(tuple -> origAddr.equals(tuple.get2())).findFirst().map(IgniteBiTuple::get1).orElse(null);
+
+            if (node == null)
+                node = listHostsByClientNode(client()).filter(tuple -> tuple.get2().size() == 1 && cfgAddr.equals(tuple.get2().get(0))).
+                    findFirst().map(IgniteBiTuple::get1).orElse(null);
+        }
+        else
+            node = listHosts(client()).filter(tuple -> cfgAddr.equals(tuple.get2())).findFirst().map(IgniteBiTuple::get1).orElse(null);
+
+        // Otherwise choose random node.
+        if (node == null)
+            node = balancedNode(client().compute());
+
+        return node;
+    }
+
+    /** {@inheritDoc} */
+    @Override protected GridClient client() throws GridClientException {
+        if (client != null && client.connected())
+            return client;
+
+        client = GridClientFactory.start(clientCfg);
+
+        // If connection is unsuccessful, fail before doing any operations:
+        if (!client.connected()) {
+            GridClientException lastErr = client.checkLastError();
+
+            try {
+                client.close();
+            }
+            catch (Throwable e) {
+                lastErr.addSuppressed(e);
+            }
+
+            throw lastErr;
+        }
+
+        return client;
     }
 
     /** {@inheritDoc} */
     @Override public void close() {
-        client.close();
+        if (client != null)
+            client.close();
     }
 
     /**
-     * @param args Common arguments.
-     * @return Thin client configuration to connect to cluster.
-     * @throws IgniteCheckedException If error occur.
+     * Method to create thin client for communication with node before it starts.
+     * If node has already started, there will be an error.
+     *
+     * @param clientCfg Thin client configuration.
+     * @return Grid thin client instance which is already connected to node before it starts.
+     * @throws Exception If error occur.
      */
-    private ClientConfiguration clientConfiguration(
-        ConnectionAndSslParameters args
-    ) throws IgniteCheckedException {
-        ClientConfiguration clientCfg = new ClientConfiguration();
+    private static GridClientBeforeNodeStart startClientBeforeNodeStart(
+        GridClientConfiguration clientCfg
+    ) throws Exception {
+        GridClientBeforeNodeStart client = GridClientFactory.startBeforeNodeStart(clientCfg);
 
-        clientCfg.setAddresses(args.host() + ":" + args.port());
+        // If connection is unsuccessful, fail before doing any operations:
+        if (!client.connected()) {
+            GridClientException lastErr = client.checkLastError();
 
-        if (!F.isEmpty(args.userName())) {
-            clientCfg.setUserName(args.userName());
-            clientCfg.setUserPassword(args.password());
+            try {
+                client.close();
+            }
+            catch (Throwable e) {
+                lastErr.addSuppressed(e);
+            }
+
+            throw lastErr;
         }
 
-        if (!F.isEmpty(args.sslKeyStorePath()) || !F.isEmpty(args.sslFactoryConfigPath())) {
-            clientCfg.setSslContextFactory(createSslSupportFactory(args));
-            clientCfg.setSslMode(SslMode.REQUIRED);
-        }
+        return client;
+    }
 
-        clientCfg.setClusterDiscoveryEnabled(false);
+    /**
+     * @param client Client.
+     * @return List of hosts.
+     */
+    private static Stream<IgniteBiTuple<GridClientNode, String>> listHosts(GridClient client) throws GridClientException {
+        return client.compute()
+            .nodes(GridClientNode::connectable)
+            .stream()
+            .flatMap(node -> Stream.concat(
+                node.tcpAddresses() == null ? Stream.empty() : node.tcpAddresses().stream(),
+                node.tcpHostNames() == null ? Stream.empty() : node.tcpHostNames().stream()
+            ).map(addr -> new IgniteBiTuple<>(node, addr + ":" + node.tcpPort())));
+    }
 
-        return clientCfg;
+    /**
+     * @param client Client.
+     * @return List of hosts.
+     */
+    private static Stream<IgniteBiTuple<GridClientNode, List<String>>> listHostsByClientNode(
+        GridClient client
+    ) throws GridClientException {
+        return client.compute().nodes(GridClientNode::connectable).stream()
+            .map(
+                node -> new IgniteBiTuple<>(
+                    node,
+                    Stream.concat(
+                            node.tcpAddresses() == null ? Stream.empty() : node.tcpAddresses().stream(),
+                            node.tcpHostNames() == null ? Stream.empty() : node.tcpHostNames().stream()
+                        )
+                        .map(addr -> addr + ":" + node.tcpPort()).collect(Collectors.toList())
+                )
+            );
+    }
+
+    /**
+     * @param compute instance
+     * @return balanced node
+     */
+    private static GridClientNode balancedNode(GridClientCompute compute) throws GridClientException {
+        Collection<GridClientNode> nodes = compute.nodes(GridClientNode::connectable);
+
+        if (F.isEmpty(nodes))
+            throw new GridClientDisconnectedException("Connectable node not found", null);
+
+        return compute.balancer().balancedNode(nodes);
     }
 }

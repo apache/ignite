@@ -62,7 +62,7 @@ public class CommandInvoker<A extends IgniteDataTransferObject> {
         if (!(cmd instanceof PreparableCommand))
             return true;
 
-        return ((PreparableCommand<A, ?>)cmd).prepare(gridClient(), client(), ignite, arg, printer);
+        return ((PreparableCommand<A, ?>)cmd).prepare(client(), igniteClient(), ignite, arg, printer);
     }
 
     /**
@@ -77,17 +77,17 @@ public class CommandInvoker<A extends IgniteDataTransferObject> {
         R res;
 
         if (cmd instanceof LocalCommand)
-            res = ((LocalCommand<A, R>)cmd).execute(gridClient(), client(), ignite, arg, printer);
+            res = ((LocalCommand<A, R>)cmd).execute(client(), igniteClient(), ignite, arg, printer);
         else if (cmd instanceof ComputeCommand) {
             ComputeCommand<A, R> cmd = (ComputeCommand<A, R>)this.cmd;
 
-            Collection<GridClientNode> cmdNodes = cmd.nodes(CommandUtils.nodes(gridClient(), client(), ignite), arg);
+            Collection<GridClientNode> cmdNodes = cmd.nodes(CommandUtils.nodes(client(), igniteClient(), ignite), arg);
 
             if (cmdNodes == null)
                 cmdNodes = singletonList(defaultNode());
 
             try {
-                res = CommandUtils.execute(gridClient(), client(), ignite, cmd.taskClass(), arg, cmdNodes);
+                res = CommandUtils.execute(client(), igniteClient(), ignite, cmd.taskClass(), arg, cmdNodes);
             }
             catch (Exception e) {
                 res = cmd.handleException(e, printer);
@@ -106,13 +106,16 @@ public class CommandInvoker<A extends IgniteDataTransferObject> {
         return CommandUtils.clusterToClientNode(ignite.localNode());
     }
 
-    /** @return Grid thin client instance which is already connected to cluster. */
-    protected @Nullable GridClient gridClient() {
+    /**
+     * @return Grid thin client instance which is already connected to cluster.
+     * @throws GridClientException If failed.
+     */
+    protected @Nullable GridClient client() throws GridClientException {
         return null;
     }
 
     /** @return Ignite client instance. */
-    protected @Nullable IgniteClient client() {
+    protected @Nullable IgniteClient igniteClient() {
         return null;
     }
 }

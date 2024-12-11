@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.commandline;
 
 import java.lang.reflect.Field;
+import java.net.URL;
 import java.time.Duration;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
@@ -30,15 +31,20 @@ import java.util.Scanner;
 import java.util.UUID;
 import java.util.function.BiConsumer;
 import java.util.function.Consumer;
+import javax.cache.configuration.Factory;
+import javax.net.ssl.SSLContext;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.client.ClientAuthenticationException;
 import org.apache.ignite.client.ClientConnectionException;
+import org.apache.ignite.client.SslMode;
+import org.apache.ignite.configuration.ClientConfiguration;
 import org.apache.ignite.configuration.ClientConnectorConfiguration;
 import org.apache.ignite.configuration.ConnectorConfiguration;
 import org.apache.ignite.internal.client.GridClientAuthenticationException;
 import org.apache.ignite.internal.client.GridClientClosedException;
+import org.apache.ignite.internal.client.GridClientConfiguration;
 import org.apache.ignite.internal.client.GridClientDisconnectedException;
 import org.apache.ignite.internal.client.GridClientHandshakeException;
 import org.apache.ignite.internal.client.GridServerUnreachableException;
@@ -57,12 +63,19 @@ import org.apache.ignite.internal.management.api.EnumDescription;
 import org.apache.ignite.internal.management.api.HelpCommand;
 import org.apache.ignite.internal.management.api.Positional;
 import org.apache.ignite.internal.management.cache.CacheCommand;
+import org.apache.ignite.internal.util.IgniteUtils;
+import org.apache.ignite.internal.util.spring.IgniteSpringHelperImpl;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.SB;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteExperimental;
+import org.apache.ignite.plugin.security.SecurityCredentials;
+import org.apache.ignite.plugin.security.SecurityCredentialsBasicProvider;
+import org.apache.ignite.plugin.security.SecurityCredentialsProvider;
 import org.apache.ignite.ssl.SslContextFactory;
+import org.jetbrains.annotations.NotNull;
+import org.springframework.context.ApplicationContext;
 
 import static java.lang.System.lineSeparator;
 import static java.util.Objects.nonNull;
@@ -261,9 +274,10 @@ public class CommandHandler {
             boolean credentialsRequested = false;
 
             while (true) {
-                try (AbstractCliCommandInvoker<A> invoker = useConnectorConnection() ?
-                    new CliGridClientCommandInvoker<>(args.command(), args, this::requestPasswordFromConsole) :
-                    new CliCommandInvoker<>(args.command(), args, this::requestPasswordFromConsole)
+                try (
+                    CloseableCliCommandInvoker invoker = useConnectorConnection()
+                        ? new CliCommandInvoker<>(args.command(), args.commandArg(), getClientConfiguration(args))
+                        : new CliIgniteClientInvoker<>(args.command(), args.commandArg(), clientConfiguration(args))
                 ) {
                     if (!invoker.prepare(logger::info))
                         return EXIT_CODE_OK;
@@ -505,6 +519,157 @@ public class CommandHandler {
         }
 
         return sb.toString();
+    }
+
+    /**
+     * @param args Common arguments.
+     * @return Thin client configuration to connect to cluster.
+     * @throws IgniteCheckedException If error occur.
+     */
+    private ClientConfiguration clientConfiguration(
+        ConnectionAndSslParameters args
+    ) throws IgniteCheckedException {
+        ClientConfiguration clientCfg = new ClientConfiguration();
+
+        clientCfg.setAddresses(args.host() + ":" + args.port());
+
+        if (!F.isEmpty(args.userName())) {
+            clientCfg.setUserName(args.userName());
+            clientCfg.setUserPassword(args.password());
+        }
+
+        if (!F.isEmpty(args.sslKeyStorePath()) || !F.isEmpty(args.sslFactoryConfigPath())) {
+            clientCfg.setSslContextFactory(createSslSupportFactory(args));
+            clientCfg.setSslMode(SslMode.REQUIRED);
+        }
+
+        clientCfg.setClusterDiscoveryEnabled(false);
+
+        return clientCfg;
+    }
+
+    /**
+     * @param args Common arguments.
+     * @return Thin client configuration to connect to cluster.
+     * @throws IgniteCheckedException If error occur.
+     */
+    @NotNull private GridClientConfiguration getClientConfiguration(
+        ConnectionAndSslParameters args
+    ) throws IgniteCheckedException {
+        return getClientConfiguration(args.userName(), args.password(), args);
+    }
+
+    /**
+     * @param userName User name for authorization.
+     * @param password Password for authorization.
+     * @param args Common arguments.
+     * @return Thin client configuration to connect to cluster.
+     * @throws IgniteCheckedException If error occur.
+     */
+    @NotNull private GridClientConfiguration getClientConfiguration(
+        String userName,
+        String password,
+        ConnectionAndSslParameters args
+    ) throws IgniteCheckedException {
+        GridClientConfiguration clientCfg = new GridClientConfiguration();
+
+        clientCfg.setPingInterval(args.pingInterval());
+
+        clientCfg.setPingTimeout(args.pingTimeout());
+
+        clientCfg.setServers(Collections.singletonList(args.host() + ":" + args.port()));
+
+        if (!F.isEmpty(userName))
+            clientCfg.setSecurityCredentialsProvider(getSecurityCredentialsProvider(userName, password, clientCfg));
+
+        if (!F.isEmpty(args.sslKeyStorePath()) || !F.isEmpty(args.sslFactoryConfigPath())) {
+            if (!F.isEmpty(args.sslKeyStorePath()) && !F.isEmpty(args.sslFactoryConfigPath()))
+                throw new IgniteCheckedException("Incorrect SSL configuration. " +
+                    "SSL factory config path should not be specified simultaneously with other SSL options like keystore path.");
+
+            clientCfg.setSslContextFactory(createSslSupportFactory(args));
+        }
+
+        return clientCfg;
+    }
+
+    /**
+     * @param userName User name for authorization.
+     * @param password Password for authorization.
+     * @param clientCfg Thin client configuration to connect to cluster.
+     * @return Security credentials provider with usage of given user name and password.
+     * @throws IgniteCheckedException If error occur.
+     */
+    @NotNull private SecurityCredentialsProvider getSecurityCredentialsProvider(
+        String userName,
+        String password,
+        GridClientConfiguration clientCfg
+    ) throws IgniteCheckedException {
+        SecurityCredentialsProvider securityCredential = clientCfg.getSecurityCredentialsProvider();
+
+        if (securityCredential == null)
+            return new SecurityCredentialsBasicProvider(new SecurityCredentials(userName, password));
+
+        final SecurityCredentials credential = securityCredential.credentials();
+        credential.setLogin(userName);
+        credential.setPassword(password);
+
+        return securityCredential;
+    }
+
+    /**
+     * @param args Commond args.
+     * @return Ssl support factory.
+     */
+    @NotNull private Factory<SSLContext> createSslSupportFactory(ConnectionAndSslParameters args) throws IgniteCheckedException {
+        if (!F.isEmpty(args.sslFactoryConfigPath())) {
+            URL springCfg = IgniteUtils.resolveSpringUrl(args.sslFactoryConfigPath());
+
+            ApplicationContext ctx = IgniteSpringHelperImpl.applicationContext(springCfg);
+
+            return (Factory<SSLContext>)ctx.getBean(Factory.class);
+        }
+
+        SslContextFactory factory = new SslContextFactory();
+
+        if (args.sslProtocol().length > 1)
+            factory.setProtocols(args.sslProtocol());
+        else
+            factory.setProtocol(args.sslProtocol()[0]);
+
+        factory.setKeyAlgorithm(args.sslKeyAlgorithm());
+        factory.setCipherSuites(args.getSslCipherSuites());
+        factory.setKeyStoreFilePath(args.sslKeyStorePath());
+
+        if (args.sslKeyStorePassword() != null)
+            factory.setKeyStorePassword(args.sslKeyStorePassword());
+        else {
+            char[] keyStorePwd = requestPasswordFromConsole("SSL keystore password: ");
+
+            args.sslKeyStorePassword(keyStorePwd);
+            factory.setKeyStorePassword(keyStorePwd);
+        }
+
+        factory.setKeyStoreType(args.sslKeyStoreType());
+
+        if (F.isEmpty(args.sslTrustStorePath()))
+            factory.setTrustManagers(SslContextFactory.getDisabledTrustManager());
+        else {
+            factory.setTrustStoreFilePath(args.sslTrustStorePath());
+
+            if (args.sslTrustStorePassword() != null)
+                factory.setTrustStorePassword(args.sslTrustStorePassword());
+            else {
+                char[] trustStorePwd = requestPasswordFromConsole("SSL truststore password: ");
+
+                args.sslTrustStorePassword(trustStorePwd);
+                factory.setTrustStorePassword(trustStorePwd);
+            }
+
+            factory.setTrustStoreType(args.sslTrustStoreType());
+        }
+
+        return factory;
     }
 
     /**
