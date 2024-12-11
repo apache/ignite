@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.management.kill;
 
 import java.util.Collection;
+import java.util.function.Consumer;
 import org.apache.ignite.client.ClientConnectionException;
 import org.apache.ignite.internal.client.GridClientNode;
 import org.apache.ignite.internal.management.api.CommandUtils;
@@ -47,9 +48,11 @@ public class KillClientCommand implements ComputeCommand<KillClientCommandArg, V
     }
 
     /** {@inheritDoc} */
-    @Override public Void handleException(Exception e) throws Exception {
-        if (X.hasCause(e, ClientConnectionException.class))
-            return null;
+    @Override public Void handleException(Exception e, Consumer<String> printer) throws Exception {
+        if (X.hasCause(e, ClientConnectionException.class)) {
+            printer.accept("WARNING: The command throws the expected 'ClientConnectionException' exception if its " +
+                "own client connection is killed.");
+        }
 
         throw e;
     }

@@ -52,9 +52,10 @@ public interface ComputeCommand<A extends IgniteDataTransferObject, R> extends C
 
     /**
      * @param e Task execution exception to handle.
+     * @param printer Implementation specific printer.
      * @return Result if the exception is suppressed.
      */
-    default R handleException(Exception e) throws Exception {
+    default R handleException(Exception e, Consumer<String> printer) throws Exception {
         throw e;
     }
 }

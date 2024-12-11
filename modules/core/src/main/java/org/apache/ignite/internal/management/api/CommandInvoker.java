@@ -88,12 +88,12 @@ public class CommandInvoker<A extends IgniteDataTransferObject> {
 
             try {
                 res = CommandUtils.execute(gridClient(), client(), ignite, cmd.taskClass(), arg, cmdNodes);
-
-                cmd.printResult(arg, res, printer);
             }
             catch (Exception e) {
-                res = cmd.handleException(e);
+                res = cmd.handleException(e, printer);
             }
+
+            cmd.printResult(arg, res, printer);
         }
         else
             throw new IllegalArgumentException("Unknown command type: " + cmd);
