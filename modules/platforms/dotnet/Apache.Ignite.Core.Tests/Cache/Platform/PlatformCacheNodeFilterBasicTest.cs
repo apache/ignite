@@ -24,13 +24,16 @@ namespace Apache.Ignite.Core.Tests.Cache.Platform
     using System.Threading;
     using Apache.Ignite.Core.Cache.Configuration;
     using Apache.Ignite.Core.Cluster;
+    using Apache.Ignite.Core.Impl;
+    using Apache.Ignite.Core.Impl.Binary;
+    using Apache.Ignite.Core.Impl.Cache.Platform;
     using Apache.Ignite.Core.Log;
     using NUnit.Framework;
 
     /// <summary>
-    /// Tests node filter of platform cache.
+    /// Tests creation of platform cache with node filter.
     /// </summary>
-    public sealed class PlatformCacheNodeFilterTest
+    public sealed class PlatformCacheNodeFilterBasicTest
     {
         /** */
         public const string NamePref = "node_";
@@ -209,7 +212,14 @@ namespace Apache.Ignite.Core.Tests.Cache.Platform
         {
             for (var i = 0; i < NodesCnt; i++)
             {
-                var hasPlatformCache = nodes[i].GetCache<int, int>(cacheName).HasPlatformCache;
+                var platformCache = ((IIgniteInternal)nodes[i]).PlatformCacheManager
+                    .TryGetPlatformCache(BinaryUtils.GetCacheId(cacheName));
+                
+                Thread.Sleep(5000);
+                
+                Assert.NotNull(platformCache);
+                
+                var hasPlatformCache = !(platformCache is NoOpPlatformCache);
 
                 Assert.AreEqual(expIdxs.Contains(i), hasPlatformCache,
                     $"Unexpected state: [cacheName={cacheName}, nodeIdx={i}, hasPlatformCache={hasPlatformCache}]");
@@ -363,7 +373,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Platform
 
         public NodeNameFilter(int[] idxs)
         {
-            _names = idxs.Select(i => PlatformCacheNodeFilterTest.NamePref + i)
+            _names = idxs.Select(i => PlatformCacheNodeFilterBasicTest.NamePref + i)
                 .ToArray();
         }
 

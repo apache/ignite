@@ -1064,10 +1064,5 @@ namespace Apache.Ignite.Core.Cache
         /// <param name="partition">Partition number.</param>
         /// <returns><code>True</code>if partition was preloaded, <code>False</code> if it doesn't belong to local node.</returns>
         bool LocalPreloadPartition(int partition);
-        
-        /// <summary>
-        /// Returns a value indicating whether this instance has platform cache.
-        /// </summary>
-        bool HasPlatformCache { get; }
     }
 }

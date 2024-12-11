@@ -105,21 +105,27 @@ namespace Apache.Ignite.Core.Impl.Cache
             _persistenceEnabled = target.InLongOutLong((int)CacheOp.PersistenceEnabled, 0) == True;
 
             var platformCacheCfg = configuration.PlatformCacheConfiguration;
-            var locNode = _ignite.GetIgnite().GetCluster().GetLocalNode();
             
-            if (platformCacheCfg != null && CheckNodeFilter(platformCacheCfg.NodeFilter, locNode))
+            if (platformCacheCfg != null)
             {
-                _platformCache = _ignite.PlatformCacheManager.GetOrCreatePlatformCache(configuration);
+                HasPlatformCache = UsePlatformCache(platformCacheCfg);
+                
+                _platformCache = _ignite.PlatformCacheManager.GetOrCreatePlatformCache(configuration, 
+                    HasPlatformCache);
             }
         }
 
         /// <summary>
         /// Invokes .NET or Java node filter, if any.
         /// </summary>
-        private bool CheckNodeFilter(IClusterNodeFilter nodeFilter, IClusterNode locNode)
+        private bool UsePlatformCache(PlatformCacheConfiguration platformCacheCfg)
         {
-            if (nodeFilter == null)
+            var nodeFilter = platformCacheCfg.NodeFilter;
+
+            if (nodeFilter is null)
                 return true;
+            
+            var locNode = Ignite.GetCluster().GetLocalNode();
             
             return nodeFilter is JavaNodeFilter || nodeFilter is AttributeNodeFilter ?
                 DoOutOp(CacheOp.CacheNodeFilterApply, writer => writer.WriteGuid(locNode.Id)) :
@@ -131,11 +137,13 @@ namespace Apache.Ignite.Core.Impl.Cache
         {
             get { return _ignite.GetIgnite(); }
         }
-
-        /** <inheritDoc /> */
-        public bool HasPlatformCache
+        
+        /// <summary>
+        /// Returns a value indicating whether this instance has platform cache.
+        /// </summary>
+        private bool HasPlatformCache
         {
-            get { return _platformCache != null && !_platformCache.IsStopped; }
+            get;
         }
 
         /// <summary>
@@ -147,7 +155,7 @@ namespace Apache.Ignite.Core.Impl.Cache
             {
                 // Platform caching within transaction is not supported for now.
                 // Commit/rollback logic requires additional implementation.
-                return HasPlatformCache && (_txManager == null || !_txManager.IsInTx());
+                return HasPlatformCache && !_platformCache.IsStopped && (_txManager == null || !_txManager.IsInTx());
             }
         }
 

@@ -72,13 +72,13 @@ namespace Apache.Ignite.Core.Impl.Cache.Platform
         /// <summary>
         /// Gets or creates the platform cache.
         /// </summary>
-        public IPlatformCache GetOrCreatePlatformCache(CacheConfiguration cacheConfiguration)
+        public IPlatformCache GetOrCreatePlatformCache(CacheConfiguration cacheConfiguration, bool usePlatformCache)
         {
             Debug.Assert(cacheConfiguration != null);
 
             var cacheId = BinaryUtils.GetCacheId(cacheConfiguration.Name);
 
-            return _caches.GetOrAdd(cacheId, _ => CreatePlatformCache(cacheConfiguration));
+            return _caches.GetOrAdd(cacheId, _ => CreatePlatformCache(cacheConfiguration, usePlatformCache));
         }
 
         /// <summary>
@@ -148,10 +148,13 @@ namespace Apache.Ignite.Core.Impl.Cache.Platform
         /// <summary>
         /// Creates platform cache.
         /// </summary>
-        private IPlatformCache CreatePlatformCache(CacheConfiguration cacheConfiguration)
+        private IPlatformCache CreatePlatformCache(CacheConfiguration cacheConfiguration, bool usePlatformCache = true)
         {
             var platformCfg = cacheConfiguration.PlatformCacheConfiguration;
             Debug.Assert(platformCfg != null);
+
+            if (!usePlatformCache)
+                return new NoOpPlatformCache();
 
             Func<object> affinityTopologyVersionFunc = () => _affinityTopologyVersion;
             var affinity = _ignite.GetAffinityManager(cacheConfiguration.Name);
