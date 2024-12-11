@@ -38,14 +38,17 @@ public enum IgniteFeatures {
      */
     TCP_COMMUNICATION_SPI_HANDSHAKE_WAIT_MESSAGE(0),
 
-    /** Cache metrics v2 support. */
-    CACHE_METRICS_V2(1),
-
     /** Support of splitted cache configurations to avoid broken deserialization on non-affinity nodes. */
     SPLITTED_CACHE_CONFIGURATIONS(5),
 
     /** Distributed metastorage. */
     DISTRIBUTED_METASTORAGE(11),
+
+    /** The node can communicate with others via socket channel. */
+    CHANNEL_COMMUNICATION(12),
+
+    /** Replacing TcpDiscoveryNode field with nodeId field in discovery messages. */
+    TCP_DISCOVERY_MESSAGE_NODE_COMPACT_REPRESENTATION(14),
 
     /** Partition Map Exchange-free switch on baseline node left at fully rebalanced cluster.  */
     PME_FREE_SWITCH(19),
@@ -56,9 +59,6 @@ public enum IgniteFeatures {
      * @see ClusterState#INACTIVE
      */
     SAFE_CLUSTER_DEACTIVATION(22),
-
-    /** Tracing. */
-    TRACING(26),
 
     /** Support policy of shutdown. */
     SHUTDOWN_POLICY(40),

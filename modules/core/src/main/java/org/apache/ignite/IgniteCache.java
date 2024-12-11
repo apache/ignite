@@ -1204,13 +1204,21 @@ public interface IgniteCache<K, V> extends javax.cache.Cache<K, V>, IgniteAsyncS
      */
     public IgniteFuture<Void> removeAllAsync();
 
-    /** {@inheritDoc} */
+    /**
+     * Clears the contents of the cache, without notifying listeners or {@link CacheWriter}s.
+     * Entries are cleared only if they are not currently locked, and are not participating in a transaction.
+     * This operation is not transactional. It calls broadcast closure that deletes all primary keys from remote nodes.
+     *
+     * @throws IllegalStateException if the cache is {@link #isClosed()}.
+     * @throws CacheException        if there is a problem during the clear.
+     */
     @IgniteAsyncSupported
     @Override public void clear();
 
     /**
      * Asynchronously clears the contents of the cache, without notifying listeners or
      * {@link CacheWriter}s.
+     * This operation is not transactional. It calls broadcast closure that deletes all primary keys from remote nodes.
      *
      * @return a Future representing pending completion of the operation.
      */
@@ -1220,6 +1228,7 @@ public interface IgniteCache<K, V> extends javax.cache.Cache<K, V>, IgniteAsyncS
      * Clears entry from the cache and swap storage, without notifying listeners or
      * {@link CacheWriter}s. Entry is cleared only if it is not currently locked,
      * and is not participating in a transaction.
+     * This operation is not transactional. It calls broadcast closure that deletes all primary keys from remote nodes.
      *
      * @param key Key to clear.
      * @throws IllegalStateException if the cache is {@link #isClosed()}
@@ -1232,6 +1241,7 @@ public interface IgniteCache<K, V> extends javax.cache.Cache<K, V>, IgniteAsyncS
      * Asynchronously clears entry from the cache and swap storage, without notifying listeners or
      * {@link CacheWriter}s. Entry is cleared only if it is not currently locked,
      * and is not participating in a transaction.
+     * This operation is not transactional. It calls broadcast closure that deletes all primary keys from remote nodes.
      *
      * @param key Key to clear.
      * @return a Future representing pending completion of the operation.
@@ -1244,6 +1254,7 @@ public interface IgniteCache<K, V> extends javax.cache.Cache<K, V>, IgniteAsyncS
      * Clears entries from the cache and swap storage, without notifying listeners or
      * {@link CacheWriter}s. Entry is cleared only if it is not currently locked,
      * and is not participating in a transaction.
+     * This operation is not transactional. It calls broadcast closure that deletes all primary keys from remote nodes.
      *
      * @param keys Keys to clear.
      * @throws IllegalStateException if the cache is {@link #isClosed()}
@@ -1256,6 +1267,7 @@ public interface IgniteCache<K, V> extends javax.cache.Cache<K, V>, IgniteAsyncS
      * Asynchronously clears entries from the cache and swap storage, without notifying listeners or
      * {@link CacheWriter}s. Entry is cleared only if it is not currently locked,
      * and is not participating in a transaction.
+     * This operation is not transactional. It calls broadcast closure that deletes all primary keys from remote nodes.
      *
      * @param keys Keys to clear.
      * @return a Future representing pending completion of the operation.
@@ -1268,6 +1280,7 @@ public interface IgniteCache<K, V> extends javax.cache.Cache<K, V>, IgniteAsyncS
      * Clears entry from the cache and swap storage, without notifying listeners or
      * {@link CacheWriter}s. Entry is cleared only if it is not currently locked,
      * and is not participating in a transaction.
+     * This operation is not transactional. It calls broadcast closure that deletes all primary keys from remote nodes.
      * <p/>
      * Note that this operation is local as it merely clears
      * an entry from local cache, it does not remove entries from
@@ -1281,6 +1294,7 @@ public interface IgniteCache<K, V> extends javax.cache.Cache<K, V>, IgniteAsyncS
      * Clears entries from the cache and swap storage, without notifying listeners or
      * {@link CacheWriter}s. Entry is cleared only if it is not currently locked,
      * and is not participating in a transaction.
+     * This operation is not transactional. It calls broadcast closure that deletes all primary keys from remote nodes.
      * <p/>
      * Note that this operation is local as it merely clears
      * an entry from local cache, it does not remove entries from
