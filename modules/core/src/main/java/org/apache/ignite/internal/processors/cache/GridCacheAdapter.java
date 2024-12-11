@@ -200,9 +200,9 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
     /** Minimum version supporting partition preloading. */
     private static final IgniteProductVersion PRELOAD_PARTITION_SINCE = IgniteProductVersion.fromString("2.7.0");
 
-    /** Exception thrown when a non-transactional IgniteCache clear operation is invoked within a transaction. */
-    public static final String NON_TRANSACTIONAL_IGNITE_CACHE_CLEAR_IN_TX_ERROR_MESSAGE = "Failed to invoke a " +
-        "non-transactional IgniteCache clear operation within a transaction.";
+    /** Exception thrown when a non-transactional IgniteCache operation is invoked within a transaction. */
+    public static final String NON_TRANSACTIONAL_IGNITE_CACHE_IN_TX_ERROR_MESSAGE = "Failed to invoke a " +
+        "non-transactional IgniteCache %s operation within a transaction.";
 
     /** Deserialization stash. */
     private static final ThreadLocal<IgniteBiTuple<String, String>> stash = new ThreadLocal<IgniteBiTuple<String,
@@ -1120,7 +1120,7 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
      */
     private IgniteInternalFuture<?> executeClearTask(@Nullable Set<? extends K> keys, boolean near) {
         if (ctx.transactional() && ctx.grid().transactions().tx() != null)
-            throw new CacheException(NON_TRANSACTIONAL_IGNITE_CACHE_CLEAR_IN_TX_ERROR_MESSAGE);
+            throw new CacheException(NON_TRANSACTIONAL_IGNITE_CACHE_IN_TX_ERROR_MESSAGE + "clear");
 
         Collection<ClusterNode> srvNodes = ctx.grid().cluster().forCacheNodes(name(), !near, near, false).nodes();
 
@@ -4003,7 +4003,7 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
      */
     private boolean clearLocally0(K key, boolean readers) {
         if (ctx.transactional() && ctx.grid().transactions().tx() != null)
-            throw new CacheException(NON_TRANSACTIONAL_IGNITE_CACHE_CLEAR_IN_TX_ERROR_MESSAGE);
+            throw new CacheException(NON_TRANSACTIONAL_IGNITE_CACHE_IN_TX_ERROR_MESSAGE + "clear");
 
         ctx.shared().cache().checkReadOnlyState("clear", ctx.config());
 

@@ -28,8 +28,7 @@ import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
-import static org.apache.ignite.internal.processors.cache.GridCacheAdapter.NON_TRANSACTIONAL_IGNITE_CACHE_CLEAR_IN_TX_ERROR_MESSAGE;
-import static org.apache.ignite.internal.processors.cache.distributed.GridDistributedCacheAdapter.NON_TRANSACTIONAL_IGNITE_CACHE_REMOVEALL_IN_TX_ERROR_MESSAGE;
+import static org.apache.ignite.internal.processors.cache.GridCacheAdapter.NON_TRANSACTIONAL_IGNITE_CACHE_IN_TX_ERROR_MESSAGE;
 import static org.apache.ignite.testframework.GridTestUtils.assertThrows;
 
 /** Checks that non-transactional cache operations fail within a transaction. */
@@ -118,7 +117,7 @@ public class NonTransactionalOperationsInTxTest extends GridCommonAbstractTest {
                 return null;
             }),
             CacheException.class,
-            NON_TRANSACTIONAL_IGNITE_CACHE_CLEAR_IN_TX_ERROR_MESSAGE
+            NON_TRANSACTIONAL_IGNITE_CACHE_IN_TX_ERROR_MESSAGE + "clear"
         );
 
         assertTrue(cache.containsKey(1));
@@ -175,7 +174,7 @@ public class NonTransactionalOperationsInTxTest extends GridCommonAbstractTest {
                 return null;
             }),
             CacheException.class,
-            NON_TRANSACTIONAL_IGNITE_CACHE_REMOVEALL_IN_TX_ERROR_MESSAGE
+            NON_TRANSACTIONAL_IGNITE_CACHE_IN_TX_ERROR_MESSAGE + "removeAll"
         );
 
         assertTrue(cache.containsKey(1));

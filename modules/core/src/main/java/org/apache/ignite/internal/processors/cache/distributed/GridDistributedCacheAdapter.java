@@ -69,10 +69,6 @@ import static org.apache.ignite.internal.processors.task.TaskExecutionOptions.op
  * Distributed cache implementation.
  */
 public abstract class GridDistributedCacheAdapter<K, V> extends GridCacheAdapter<K, V> {
-    /** Exception thrown when a non-transactional IgniteCache removeAll operation is invoked within a transaction. */
-    public static final String NON_TRANSACTIONAL_IGNITE_CACHE_REMOVEALL_IN_TX_ERROR_MESSAGE = "Failed to invoke a " +
-        "non-transactional IgniteCache removeAll operation within a transaction.";
-
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -170,7 +166,7 @@ public abstract class GridDistributedCacheAdapter<K, V> extends GridCacheAdapter
     /** {@inheritDoc} */
     @Override public void removeAll() throws IgniteCheckedException {
         if (ctx.transactional() && ctx.grid().transactions().tx() != null)
-            throw new CacheException(NON_TRANSACTIONAL_IGNITE_CACHE_REMOVEALL_IN_TX_ERROR_MESSAGE);
+            throw new CacheException(NON_TRANSACTIONAL_IGNITE_CACHE_IN_TX_ERROR_MESSAGE + "removeAll");
 
         try {
             AffinityTopologyVersion topVer;
@@ -210,7 +206,7 @@ public abstract class GridDistributedCacheAdapter<K, V> extends GridCacheAdapter
     /** {@inheritDoc} */
     @Override public IgniteInternalFuture<?> removeAllAsync() {
         if (ctx.transactional() && ctx.grid().transactions().tx() != null)
-            throw new CacheException(NON_TRANSACTIONAL_IGNITE_CACHE_REMOVEALL_IN_TX_ERROR_MESSAGE);
+            throw new CacheException(NON_TRANSACTIONAL_IGNITE_CACHE_IN_TX_ERROR_MESSAGE + "removeAll");
 
         GridFutureAdapter<Void> opFut = new GridFutureAdapter<>();
 
