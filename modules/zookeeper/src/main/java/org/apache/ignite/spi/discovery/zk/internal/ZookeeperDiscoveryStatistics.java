@@ -101,7 +101,7 @@ public class ZookeeperDiscoveryStatistics {
 
     /** */
     public void onTopologyChanged(long topVer) {
-        this.topVer.value(topVer);
+        this.topVer.set(topVer);
     }
 
     /** {@inheritDoc} */
