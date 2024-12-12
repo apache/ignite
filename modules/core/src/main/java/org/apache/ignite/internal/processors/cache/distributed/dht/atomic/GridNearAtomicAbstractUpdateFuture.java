@@ -41,6 +41,7 @@ import org.apache.ignite.internal.processors.cache.CachePartialUpdateCheckedExce
 import org.apache.ignite.internal.processors.cache.GridCacheAtomicFuture;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.GridCacheFutureAdapter;
+import org.apache.ignite.internal.processors.cache.GridCacheMessage;
 import org.apache.ignite.internal.processors.cache.GridCacheMvccManager;
 import org.apache.ignite.internal.processors.cache.GridCacheOperation;
 import org.apache.ignite.internal.processors.cache.GridCacheReturn;
@@ -109,6 +110,9 @@ public abstract class GridNearAtomicAbstractUpdateFuture extends GridCacheFuture
     /** Recovery flag. */
     protected final boolean recovery;
 
+    /** Application attributes. */
+    protected final @Nullable Map<String, String> appAttrs;
+
     /** Near cache flag. */
     protected final boolean nearEnabled;
 
@@ -158,6 +162,7 @@ public abstract class GridNearAtomicAbstractUpdateFuture extends GridCacheFuture
      * @param keepBinary Keep binary flag.
      * @param recovery {@code True} if cache operation is called in recovery mode.
      * @param remapCnt Remap count.
+     * @param appAttrs Application attributes.
      */
     protected GridNearAtomicAbstractUpdateFuture(
         GridCacheContext cctx,
@@ -172,7 +177,8 @@ public abstract class GridNearAtomicAbstractUpdateFuture extends GridCacheFuture
         boolean skipStore,
         boolean keepBinary,
         boolean recovery,
-        int remapCnt
+        int remapCnt,
+        @Nullable Map<String, String> appAttrs
     ) {
         if (log == null) {
             msgLog = cctx.shared().atomicMessageLogger();
@@ -196,6 +202,7 @@ public abstract class GridNearAtomicAbstractUpdateFuture extends GridCacheFuture
         nearEnabled = CU.isNearEnabled(cctx);
 
         this.remapCnt = remapCnt;
+        this.appAttrs = appAttrs;
     }
 
     /**
@@ -290,33 +297,27 @@ public abstract class GridNearAtomicAbstractUpdateFuture extends GridCacheFuture
      * @param req Request.
      */
     final void sendSingleRequest(UUID nodeId, GridNearAtomicAbstractUpdateRequest req) {
-        if (cctx.localNodeId().equals(nodeId)) {
-            cache.updateAllAsyncInternal(cctx.localNode(), req,
-                (ignored, res) -> {
-                    if (syncMode != FULL_ASYNC)
-                        onPrimaryResponse(res.nodeId(), res, false);
-                    else if (res.remapTopologyVersion() != null)
-                        ((GridDhtAtomicCache<?, ?>)cctx.cache()).remapToNewPrimary(req);
-                });
+        try {
+            GridCacheMessage msg = req;
+
+            if (appAttrs != null)
+                msg = new AtomicApplicationAttributesAwareRequest(req, appAttrs);
+
+            cctx.io().send(req.nodeId(), msg, cctx.ioPolicy());
+
+            if (msgLog.isDebugEnabled()) {
+                msgLog.debug("Near update fut, sent request [futId=" + req.futureId() +
+                    ", node=" + req.nodeId() + ']');
+            }
         }
-        else {
-            try {
-                cctx.io().send(req.nodeId(), req, cctx.ioPolicy());
-
-                if (msgLog.isDebugEnabled()) {
-                    msgLog.debug("Near update fut, sent request [futId=" + req.futureId() +
-                        ", node=" + req.nodeId() + ']');
-                }
+        catch (IgniteCheckedException e) {
+            if (msgLog.isDebugEnabled()) {
+                msgLog.debug("Near update fut, failed to send request [futId=" + req.futureId() +
+                    ", node=" + req.nodeId() +
+                    ", err=" + e + ']');
             }
-            catch (IgniteCheckedException e) {
-                if (msgLog.isDebugEnabled()) {
-                    msgLog.debug("Near update fut, failed to send request [futId=" + req.futureId() +
-                        ", node=" + req.nodeId() +
-                        ", err=" + e + ']');
-                }
 
-                onSendError(req, e);
-            }
+            onSendError(req, e);
         }
     }
 

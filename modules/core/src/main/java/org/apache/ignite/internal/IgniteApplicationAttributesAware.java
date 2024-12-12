@@ -58,6 +58,7 @@ import org.apache.ignite.configuration.CollectionConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.NearCacheConfiguration;
 import org.apache.ignite.internal.processors.cache.IgniteCacheProxy;
+import org.apache.ignite.internal.processors.cache.transactions.IgniteTransactionsImpl;
 import org.apache.ignite.internal.util.typedef.internal.A;
 import org.apache.ignite.lang.IgniteProductVersion;
 import org.apache.ignite.metric.IgniteMetrics;
@@ -299,7 +300,9 @@ public class IgniteApplicationAttributesAware implements Ignite {
 
     /** {@inheritDoc} */
     @Override public IgniteTransactions transactions() {
-        return delegate.transactions();
+        IgniteTransactionsImpl<?, ?> txs = (IgniteTransactionsImpl<?, ?>)delegate.transactions();
+
+        return txs.withApplicationAttributes(attrs);
     }
 
     /** {@inheritDoc} */

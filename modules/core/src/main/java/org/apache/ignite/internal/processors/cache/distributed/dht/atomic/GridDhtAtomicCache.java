@@ -281,6 +281,32 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
         ctx.io().addCacheHandler(
             ctx.cacheId(),
             ctx.startTopologyVersion(),
+            AtomicApplicationAttributesAwareRequest.class,
+            new CI2<UUID, AtomicApplicationAttributesAwareRequest>() {
+                @Override public void apply(
+                    UUID nodeId,
+                    AtomicApplicationAttributesAwareRequest req
+                ) {
+                    if (req.applicationAttributes() != null)
+                        ctx.operationContextPerCall(new CacheOperationContext().setApplicationAttributes(req.applicationAttributes()));
+
+                    try {
+                        processNearAtomicUpdateRequest(nodeId, req.payload());
+                    }
+                    finally {
+                        ctx.operationContextPerCall(null);
+                    }
+                }
+
+                @Override public String toString() {
+                    return "GridNearAtomicUpdateApplicationAttributesAwareRequest handler " +
+                        "[msgIdx=" + GridNearAtomicAbstractUpdateRequest.CACHE_MSG_IDX + ']';
+                }
+            });
+
+        ctx.io().addCacheHandler(
+            ctx.cacheId(),
+            ctx.startTopologyVersion(),
             GridNearAtomicUpdateResponse.class,
             new CI2<UUID, GridNearAtomicUpdateResponse>() {
                 @Override public void apply(
@@ -1089,7 +1115,8 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
             opCtx != null && opCtx.skipStore(),
             opCtx != null && opCtx.isKeepBinary(),
             opCtx != null && opCtx.recovery(),
-            opCtx != null && opCtx.noRetries() ? 1 : MAX_RETRIES);
+            opCtx != null && opCtx.noRetries() ? 1 : MAX_RETRIES,
+            opCtx != null ? opCtx.applicationAttributes() : null);
 
         if (async) {
             return asyncOp(new CO<IgniteInternalFuture<Object>>() {
@@ -1275,7 +1302,8 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
                 opCtx != null && opCtx.skipStore(),
                 opCtx != null && opCtx.isKeepBinary(),
                 opCtx != null && opCtx.recovery(),
-                opCtx != null && opCtx.noRetries() ? 1 : MAX_RETRIES
+                opCtx != null && opCtx.noRetries() ? 1 : MAX_RETRIES,
+                opCtx != null ? opCtx.applicationAttributes() : null
             );
         }
         else {
@@ -1296,7 +1324,8 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
                 opCtx != null && opCtx.skipStore(),
                 opCtx != null && opCtx.isKeepBinary(),
                 opCtx != null && opCtx.recovery(),
-                opCtx != null && opCtx.noRetries() ? 1 : MAX_RETRIES);
+                opCtx != null && opCtx.noRetries() ? 1 : MAX_RETRIES,
+                opCtx != null ? opCtx.applicationAttributes() : null);
         }
     }
 
@@ -1353,7 +1382,8 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
             opCtx != null && opCtx.skipStore(),
             opCtx != null && opCtx.isKeepBinary(),
             opCtx != null && opCtx.recovery(),
-            opCtx != null && opCtx.noRetries() ? 1 : MAX_RETRIES);
+            opCtx != null && opCtx.noRetries() ? 1 : MAX_RETRIES,
+            opCtx != null ? opCtx.applicationAttributes() : null);
 
         if (async) {
             return asyncOp(new CO<IgniteInternalFuture<Object>>() {
@@ -3127,6 +3157,8 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
             drPutVals = null;
         }
 
+        CacheOperationContext opCtx = ctx.operationContextPerCall();
+
         GridNearAtomicUpdateFuture updateFut = new GridNearAtomicUpdateFuture(
             ctx,
             this,
@@ -3144,7 +3176,8 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
             req.skipStore(),
             req.keepBinary(),
             req.recovery(),
-            MAX_RETRIES);
+            MAX_RETRIES,
+            opCtx == null ? null : opCtx.applicationAttributes());
 
         updateFut.map();
     }

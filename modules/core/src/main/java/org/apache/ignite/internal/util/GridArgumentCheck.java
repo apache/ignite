@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.util;
 
 import java.util.Collection;
+import java.util.Map;
 
 import org.jetbrains.annotations.Nullable;
 
@@ -120,6 +121,19 @@ public class GridArgumentCheck {
         notNull(c, name);
 
         if (c.isEmpty())
+            throw new IllegalArgumentException(INVALID_ARG_MSG_PREFIX + name + NOT_EMPTY_SUFFIX);
+    }
+
+    /**
+     * Checks that given map is not empty.
+     *
+     * @param map Map.
+     * @param name Argument name.
+     */
+    public static void notEmpty(Map<?, ?> map, String name) {
+        notNull(map, name);
+
+        if (map.isEmpty())
             throw new IllegalArgumentException(INVALID_ARG_MSG_PREFIX + name + NOT_EMPTY_SUFFIX);
     }
 
