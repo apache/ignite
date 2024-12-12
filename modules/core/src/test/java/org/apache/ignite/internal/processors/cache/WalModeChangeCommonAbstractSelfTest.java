@@ -57,8 +57,11 @@ public abstract class WalModeChangeCommonAbstractSelfTest extends GridCommonAbst
     /** Cache name 2. */
     protected static final String CACHE_NAME_2 = "cache_2";
 
-    /** Cache name 2. */
+    /** Cache name 3. */
     protected static final String CACHE_NAME_3 = "cache_3";
+
+    /** Cache group. */
+    protected static final String CACHE_GROUP = "GROUP";
 
     /** Volatile data region. */
     protected static final String REGION_VOLATILE = "volatile";
@@ -325,7 +328,7 @@ public abstract class WalModeChangeCommonAbstractSelfTest extends GridCommonAbst
      * @return Cache configuration.
      */
     protected CacheConfiguration cacheConfig(CacheMode mode) {
-        return cacheConfig(CACHE_NAME, mode, TRANSACTIONAL);
+        return cacheConfig(CACHE_NAME, null, mode, TRANSACTIONAL);
     }
 
     /**
@@ -337,11 +340,25 @@ public abstract class WalModeChangeCommonAbstractSelfTest extends GridCommonAbst
      * @return Cache configuration.
      */
     protected CacheConfiguration cacheConfig(String name, CacheMode mode, CacheAtomicityMode atomicityMode) {
+        return cacheConfig(name, null, mode, atomicityMode);
+    }
+
+    /**
+     * Create cache configuration.
+     *
+     * @param name Name.
+     * @param grpName Group name.
+     * @param mode Mode.
+     * @param atomicityMode Atomicity mode.
+     * @return Cache configuration.
+     */
+    protected CacheConfiguration cacheConfig(String name, String grpName, CacheMode mode, CacheAtomicityMode atomicityMode) {
         CacheConfiguration ccfg = new CacheConfiguration();
 
         ccfg.setName(name);
         ccfg.setCacheMode(mode);
         ccfg.setAtomicityMode(atomicityMode);
+        ccfg.setGroupName(grpName);
 
         ccfg.setNodeFilter(FILTER);
 
