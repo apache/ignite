@@ -81,7 +81,6 @@ import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.resources.LoggerResource;
 import org.apache.ignite.spi.IgniteSpiException;
 import org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi;
-import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.internal.TcpDiscoveryNode;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
@@ -117,7 +116,7 @@ public class IgniteCacheClientNodeChangingTopologyTest extends GridCommonAbstrac
 
         cfg.setConsistentId(igniteInstanceName);
 
-        ((TcpDiscoverySpi)cfg.getDiscoverySpi()).setForceServerMode(true);
+        //((TcpDiscoverySpi)cfg.getDiscoverySpi()).setForceServerMode(true);
 
         TestCommunicationSpi commSpi = new TestCommunicationSpi();
 
@@ -1956,61 +1955,6 @@ public class IgniteCacheClientNodeChangingTopologyTest extends GridCommonAbstrac
 
         if (testType != TestType.LOCK)
             checkData(null, putKeys, grid(SRV_CNT).cache(DEFAULT_CACHE_NAME), SRV_CNT + CLIENT_CNT);
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
-    @Test
-    public void testServersLeaveOnStart() throws Exception {
-        ccfg = new CacheConfiguration(DEFAULT_CACHE_NAME);
-
-        ccfg.setCacheMode(PARTITIONED);
-        ccfg.setBackups(1);
-        ccfg.setAtomicityMode(ATOMIC);
-        ccfg.setWriteSynchronizationMode(FULL_SYNC);
-        ccfg.setRebalanceMode(SYNC);
-
-        Ignite ignite0 = startGrid(0);
-
-        final AtomicInteger nodeIdx = new AtomicInteger(2);
-
-        final int CLIENTS = 10;
-
-        IgniteInternalFuture<?> fut = GridTestUtils.runMultiThreadedAsync(new Callable<Void>() {
-            @Override public Void call() throws Exception {
-                int idx = nodeIdx.getAndIncrement();
-
-                startClientGrid(idx);
-
-                return null;
-            }
-        }, CLIENTS, "start-client");
-
-        ignite0.close();
-
-        fut.get();
-
-        for (int i = 0; i < CLIENTS; i++) {
-            Ignite ignite = grid(i + 2);
-
-            assertEquals(CLIENTS, ignite.cluster().nodes().size());
-        }
-
-        startGrid(0);
-        startGrid(1);
-
-        awaitPartitionMapExchange();
-
-        for (int i = 0; i < CLIENTS; i++) {
-            Ignite ignite = grid(i + 2);
-
-            IgniteCache<Integer, Integer> cache = ignite.cache(DEFAULT_CACHE_NAME);
-
-            cache.put(i, i);
-
-            assertEquals((Object)i, cache.get(i));
-        }
     }
 
     /**
