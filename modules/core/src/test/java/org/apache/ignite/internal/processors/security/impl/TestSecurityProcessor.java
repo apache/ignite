@@ -226,6 +226,11 @@ public class TestSecurityProcessor extends GridProcessorAdapter implements GridS
     }
 
     /** */
+    public static void clearExternalSystemTypes() {
+        EXT_SYS_CLASSES.clear();
+    }
+
+    /** */
     public static boolean contains(SecurityPermissionSet userPerms, String name, SecurityPermission perm) {
         boolean dfltAllowAll = userPerms.defaultAllowAll();
 

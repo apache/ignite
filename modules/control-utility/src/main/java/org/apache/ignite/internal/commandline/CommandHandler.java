@@ -36,7 +36,12 @@ import javax.net.ssl.SSLContext;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
-import org.apache.ignite.IgniteSystemProperties;
+import org.apache.ignite.client.ClientAuthenticationException;
+import org.apache.ignite.client.ClientConnectionException;
+import org.apache.ignite.client.SslMode;
+import org.apache.ignite.configuration.ClientConfiguration;
+import org.apache.ignite.configuration.ClientConnectorConfiguration;
+import org.apache.ignite.configuration.ConnectorConfiguration;
 import org.apache.ignite.internal.client.GridClientAuthenticationException;
 import org.apache.ignite.internal.client.GridClientClosedException;
 import org.apache.ignite.internal.client.GridClientConfiguration;
@@ -75,6 +80,7 @@ import org.springframework.context.ApplicationContext;
 import static java.lang.System.lineSeparator;
 import static java.util.Objects.nonNull;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_ENABLE_EXPERIMENTAL_COMMAND;
+import static org.apache.ignite.IgniteSystemProperties.getBoolean;
 import static org.apache.ignite.internal.IgniteVersionUtils.ACK_VER_STR;
 import static org.apache.ignite.internal.IgniteVersionUtils.COPYRIGHT;
 import static org.apache.ignite.internal.commandline.ArgumentParser.CMD_AUTO_CONFIRMATION;
@@ -131,7 +137,13 @@ public class CommandHandler {
     public static final String DFLT_HOST = "127.0.0.1";
 
     /** */
-    public static final int DFLT_PORT = 11211;
+    public static final int DFLT_PORT = 10800;
+
+    /**
+     * System property for backward compatibility. Will be removed in future releases.
+     * Enables connection to {@link ConnectorConfiguration REST connector} and forcefully sets default port to 11211.
+     */
+    public static final String IGNITE_CONTROL_UTILITY_USE_CONNECTOR_CONNECTION = "IGNITE_CONTROL_UTILITY_USE_CONNECTOR_CONNECTION";
 
     /** */
     private final Scanner in = new Scanner(System.in);
@@ -249,6 +261,13 @@ public class CommandHandler {
                 return EXIT_CODE_OK;
             }
 
+            if (useConnectorConnection()) {
+                logger.warning("WARNING: Deprecated protocol (ConnectorConfiguration) used to connect to cluster. " +
+                    "It will be removed in the next releases. Please update the control utility connection arguments " +
+                    "to use a thin client protocol: set up a port and/or SSL configuration " +
+                    "releated to the ClientConnectorConfiguration on nodes.");
+            }
+
             verbose = F.exist(rawArgs, CMD_VERBOSE::equalsIgnoreCase);
 
             ConnectionAndSslParameters<A> args = new ArgumentParser(logger, registry).parseAndValidate(rawArgs);
@@ -263,8 +282,9 @@ public class CommandHandler {
 
             while (true) {
                 try (
-                    CliCommandInvoker<A> invoker =
-                        new CliCommandInvoker<>(args.command(), args.commandArg(), getClientConfiguration(args))
+                    CloseableCliCommandInvoker invoker = useConnectorConnection()
+                        ? new CliCommandInvoker<>(args.command(), args.commandArg(), getClientConfiguration(args))
+                        : new CliIgniteClientInvoker<>(args.command(), args.commandArg(), clientConfiguration(args))
                 ) {
                     if (!invoker.prepare(logger::info))
                         return EXIT_CODE_OK;
@@ -348,8 +368,18 @@ public class CommandHandler {
                     if (isSSLMisconfigurationError(cause))
                         e = cause;
 
-                    logger.error("Connection to cluster failed. " + errorMessage(e));
+                    String errMsg = errorMessage(e);
 
+                    logger.error("Connection to cluster failed. " + errMsg);
+
+                    if (errMsg.contains("Channel is closed") || isSSLMisconfigurationError(cause)) {
+                        logger.error("Make sure you are connecting to the client connector (configured on a node via '" +
+                            ClientConnectorConfiguration.class.getName() + "'). Connection to the REST connector was " +
+                            "deprecated and will be removed for the control utility in future releases. Set up the '" +
+                            IGNITE_CONTROL_UTILITY_USE_CONNECTOR_CONNECTION + "' system property to the 'true' to " +
+                            "forcefully connect to the REST connector (configured on a node via '" +
+                            ConnectorConfiguration.class.getName() + "'). ");
+                    }
                 }
 
                 logger.info("Command [" + cmdName + "] finished with code: " + EXIT_CODE_CONNECTION_FAILED);
@@ -446,6 +476,9 @@ public class CommandHandler {
      * to secured cluster.
      */
     private boolean isConnectionClosedSilentlyException(Throwable e) {
+        if (e instanceof ClientConnectionException && e.getMessage().startsWith("Channel is closed"))
+            return true;
+
         if (!(e instanceof GridClientDisconnectedException))
             return false;
 
@@ -493,6 +526,31 @@ public class CommandHandler {
         }
 
         return sb.toString();
+    }
+
+    /**
+     * @param args Common arguments.
+     * @return Thin client configuration to connect to cluster.
+     * @throws IgniteCheckedException If error occur.
+     */
+    private ClientConfiguration clientConfiguration(ConnectionAndSslParameters args) throws IgniteCheckedException {
+        ClientConfiguration clientCfg = new ClientConfiguration();
+
+        clientCfg.setAddresses(args.host() + ":" + args.port());
+
+        if (!F.isEmpty(args.userName())) {
+            clientCfg.setUserName(args.userName());
+            clientCfg.setUserPassword(args.password());
+        }
+
+        if (!F.isEmpty(args.sslKeyStorePath()) || !F.isEmpty(args.sslFactoryConfigPath())) {
+            clientCfg.setSslContextFactory(createSslSupportFactory(args));
+            clientCfg.setSslMode(SslMode.REQUIRED);
+        }
+
+        clientCfg.setClusterDiscoveryEnabled(false);
+
+        return clientCfg;
     }
 
     /**
@@ -656,10 +714,11 @@ public class CommandHandler {
 
     /**
      * @param e Exception to check.
-     * @return {@code true} if specified exception is {@link GridClientAuthenticationException}.
+     * @return {@code true} if specified exception is an authentication exception.
      */
     public static boolean isAuthError(Throwable e) {
-        return X.hasCause(e, GridClientAuthenticationException.class);
+        return X.hasCause(e, GridClientAuthenticationException.class)
+            || X.hasCause(e, ClientAuthenticationException.class);
     }
 
     /**
@@ -671,7 +730,8 @@ public class CommandHandler {
             e instanceof GridClientConnectionResetException ||
             e instanceof GridClientDisconnectedException ||
             e instanceof GridClientHandshakeException ||
-            e instanceof GridServerUnreachableException;
+            e instanceof GridServerUnreachableException ||
+            X.hasCause(e, ClientConnectionException.class);
     }
 
     /**
@@ -708,7 +768,7 @@ public class CommandHandler {
     /** @param rawArgs Arguments. */
     private void printHelp(List<String> rawArgs) {
         boolean experimentalEnabled = rawArgs.stream().anyMatch(CMD_ENABLE_EXPERIMENTAL::equalsIgnoreCase) ||
-            IgniteSystemProperties.getBoolean(IGNITE_ENABLE_EXPERIMENTAL_COMMAND);
+            getBoolean(IGNITE_ENABLE_EXPERIMENTAL_COMMAND);
 
         logger.info("Control utility script is used to execute admin commands on cluster or get common cluster info. " +
             "The command has the following syntax:");
@@ -947,6 +1007,11 @@ public class CommandHandler {
                     length = Math.max(length, name.length());
             }
         }
+    }
+
+    /** */
+    public static boolean useConnectorConnection() {
+        return getBoolean(IGNITE_CONTROL_UTILITY_USE_CONNECTOR_CONNECTION);
     }
 
     /** */

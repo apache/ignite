@@ -49,4 +49,13 @@ public interface ComputeCommand<A extends IgniteDataTransferObject, R> extends C
     public default @Nullable Collection<GridClientNode> nodes(Collection<GridClientNode> nodes, A arg) {
         return null;
     }
+
+    /**
+     * @param e Task execution exception to handle.
+     * @param printer Implementation specific printer.
+     * @return Result if the exception is suppressed.
+     */
+    default R handleException(Exception e, Consumer<String> printer) throws Exception {
+        throw e;
+    }
 }

@@ -77,6 +77,7 @@ public class MetaRemoveCommand implements ComputeCommand<MetaRemoveCommandArg, M
     /** {@inheritDoc} */
     @Override public String confirmationPrompt(MetaRemoveCommandArg arg) {
         return "Warning: the command will remove the binary metadata for a type \""
-            + (arg.typeId() != 0 ? arg.typeId() : arg.typeName()) + "\" from cluster.";
+            + (arg.typeId() != 0 ? arg.typeId() : arg.typeName()) + "\" from cluster. " +
+            "Please drop client connections after the operation to clear their local metadata cache if needed.";
     }
 }

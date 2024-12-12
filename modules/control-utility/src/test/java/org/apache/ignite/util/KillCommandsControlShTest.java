@@ -45,6 +45,7 @@ import org.junit.Assume;
 import org.junit.Test;
 
 import static java.util.Arrays.asList;
+import static org.apache.ignite.internal.commandline.CommandHandler.EXIT_CODE_CONNECTION_FAILED;
 import static org.apache.ignite.internal.commandline.CommandHandler.EXIT_CODE_INVALID_ARGUMENTS;
 import static org.apache.ignite.internal.commandline.CommandHandler.EXIT_CODE_OK;
 import static org.apache.ignite.internal.commandline.CommandHandler.EXIT_CODE_UNEXPECTED_ERROR;
@@ -184,7 +185,14 @@ public class KillCommandsControlShTest extends GridCommandHandlerClusterByClassA
             if (nodeId != null)
                 params.addAll(asList("--node-id", nodeId.toString()));
 
-            assertEquals(EXIT_CODE_OK, execute(params));
+            if (connId == null && commandHandler.equals(CLI_CMD_HND)) {
+                injectTestSystemOut();
+
+                assertEquals(EXIT_CODE_CONNECTION_FAILED, execute(params));
+                assertContains(log, testOut.toString(), "The command throws the expected 'ClientConnectionException'");
+            }
+            else
+                assertEquals(EXIT_CODE_OK, execute(params));
         });
     }
 
@@ -287,7 +295,7 @@ public class KillCommandsControlShTest extends GridCommandHandlerClusterByClassA
      *
      */
     private void testCancelConsistencyTask(boolean parallel) throws InterruptedException {
-        Assume.assumeTrue(commandHandler.equals(CLI_CMD_HND));
+        Assume.assumeTrue(cliCommandHandler());
 
         String consistencyCacheName = "consistencyCache";
 

@@ -44,8 +44,11 @@ import static org.apache.ignite.internal.commandline.CommandHandler.DFLT_HOST;
 
 /**
  * Adapter of new management API command for legacy {@code control.sh} execution flow.
+ *
+ * @deprecated Use {@link CliIgniteClientInvoker} instead. Will be removed in the next releases.
  */
-public class CliCommandInvoker<A extends IgniteDataTransferObject> extends CommandInvoker<A> implements AutoCloseable {
+@Deprecated
+public class CliCommandInvoker<A extends IgniteDataTransferObject> extends CommandInvoker<A> implements CloseableCliCommandInvoker {
     /** Client configuration. */
     private final GridClientConfiguration clientCfg;
 
@@ -58,17 +61,15 @@ public class CliCommandInvoker<A extends IgniteDataTransferObject> extends Comma
         this.clientCfg = clientCfg;
     }
 
-    /**
-     * @return Message text to show user for. {@code null} means that confirmantion is not required.
-     */
-    public String confirmationPrompt() {
+    /** {@inheritDoc} */
+    @Override public String confirmationPrompt() {
         return cmd.confirmationPrompt(arg);
     }
 
-    /** */
-    public <R> R invokeBeforeNodeStart(Consumer<String> printer) throws Exception {
+    /** {@inheritDoc} */
+    @Override public <R> R invokeBeforeNodeStart(Consumer<String> printer) throws Exception {
         try (GridClientBeforeNodeStart client = startClientBeforeNodeStart(clientCfg)) {
-            return ((BeforeNodeStartCommand<A, R>)cmd).execute(client, arg, printer);
+            return ((BeforeNodeStartCommand<A, R>)cmd).execute(client.beforeStartState(), arg, printer);
         }
         catch (GridClientDisconnectedException e) {
             throw new GridClientException(e.getCause());
