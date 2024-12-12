@@ -166,7 +166,7 @@ public abstract class GridDistributedCacheAdapter<K, V> extends GridCacheAdapter
     /** {@inheritDoc} */
     @Override public void removeAll() throws IgniteCheckedException {
         if (ctx.transactional() && ctx.grid().transactions().tx() != null)
-            throw new CacheException(NON_TRANSACTIONAL_IGNITE_CACHE_IN_TX_ERROR_MESSAGE + "removeAll");
+            throw new CacheException(String.format(NON_TRANSACTIONAL_IGNITE_CACHE_IN_TX_ERROR_MESSAGE, "removeAll"));
 
         try {
             AffinityTopologyVersion topVer;
@@ -206,7 +206,7 @@ public abstract class GridDistributedCacheAdapter<K, V> extends GridCacheAdapter
     /** {@inheritDoc} */
     @Override public IgniteInternalFuture<?> removeAllAsync() {
         if (ctx.transactional() && ctx.grid().transactions().tx() != null)
-            throw new CacheException(NON_TRANSACTIONAL_IGNITE_CACHE_IN_TX_ERROR_MESSAGE + "removeAll");
+            throw new CacheException(String.format(NON_TRANSACTIONAL_IGNITE_CACHE_IN_TX_ERROR_MESSAGE, "removeAll"));
 
         GridFutureAdapter<Void> opFut = new GridFutureAdapter<>();
 

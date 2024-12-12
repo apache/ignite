@@ -92,7 +92,7 @@ public class ThinClientNonTransactionalOperationsInTxTest extends GridCommonAbst
             }
 
             return null;
-        }, CacheException.class, NON_TRANSACTIONAL_CLIENT_CACHE_IN_TX_ERROR_MESSAGE + "clear");
+        }, CacheException.class, String.format(NON_TRANSACTIONAL_CLIENT_CACHE_IN_TX_ERROR_MESSAGE, "clear"));
 
         assertTrue(cache.containsKey(1));
         assertFalse(cache.containsKey(2));
@@ -130,7 +130,7 @@ public class ThinClientNonTransactionalOperationsInTxTest extends GridCommonAbst
             }
 
             return null;
-        }, CacheException.class, NON_TRANSACTIONAL_CLIENT_CACHE_IN_TX_ERROR_MESSAGE + "removeAll");
+        }, CacheException.class, String.format(NON_TRANSACTIONAL_CLIENT_CACHE_IN_TX_ERROR_MESSAGE, "removeAll"));
 
         assertTrue(cache.containsKey(1));
         assertFalse(cache.containsKey(2));

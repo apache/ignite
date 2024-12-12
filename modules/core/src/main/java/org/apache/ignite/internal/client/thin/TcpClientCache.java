@@ -556,7 +556,7 @@ public class TcpClientCache<K, V> implements ClientCache<K, V> {
     /** {@inheritDoc} */
     @Override public void removeAll() throws ClientException {
         if (transactions.tx() != null)
-            throw new CacheException(NON_TRANSACTIONAL_CLIENT_CACHE_IN_TX_ERROR_MESSAGE + "removeAll");
+            throw new CacheException(String.format(NON_TRANSACTIONAL_CLIENT_CACHE_IN_TX_ERROR_MESSAGE, "removeAll"));
 
         ch.request(ClientOperation.CACHE_REMOVE_ALL, this::writeCacheInfo);
     }
@@ -564,7 +564,7 @@ public class TcpClientCache<K, V> implements ClientCache<K, V> {
     /** {@inheritDoc} */
     @Override public IgniteClientFuture<Void> removeAllAsync() throws ClientException {
         if (transactions.tx() != null)
-            throw new CacheException(NON_TRANSACTIONAL_CLIENT_CACHE_IN_TX_ERROR_MESSAGE + "removeAll");
+            throw new CacheException(String.format(NON_TRANSACTIONAL_CLIENT_CACHE_IN_TX_ERROR_MESSAGE, "removeAll"));
 
         return ch.requestAsync(ClientOperation.CACHE_REMOVE_ALL, this::writeCacheInfo);
     }
@@ -734,7 +734,7 @@ public class TcpClientCache<K, V> implements ClientCache<K, V> {
      */
     @Override public void clear() throws ClientException {
         if (transactions.tx() != null)
-            throw new CacheException(NON_TRANSACTIONAL_CLIENT_CACHE_IN_TX_ERROR_MESSAGE + "clear");
+            throw new CacheException(String.format(NON_TRANSACTIONAL_CLIENT_CACHE_IN_TX_ERROR_MESSAGE, "clear"));
 
         ch.request(ClientOperation.CACHE_CLEAR, this::writeCacheInfo);
     }
@@ -751,7 +751,7 @@ public class TcpClientCache<K, V> implements ClientCache<K, V> {
      */
     @Override public IgniteClientFuture<Void> clearAsync() throws ClientException {
         if (transactions.tx() != null)
-            throw new CacheException(NON_TRANSACTIONAL_CLIENT_CACHE_IN_TX_ERROR_MESSAGE + "clear");
+            throw new CacheException(String.format(NON_TRANSACTIONAL_CLIENT_CACHE_IN_TX_ERROR_MESSAGE, "clear"));
 
         return ch.requestAsync(ClientOperation.CACHE_CLEAR, this::writeCacheInfo);
     }
@@ -1428,7 +1428,7 @@ public class TcpClientCache<K, V> implements ClientCache<K, V> {
     /** */
     private void checkTxClearOperation(ClientOperation op) {
         if (op == ClientOperation.CACHE_CLEAR_KEY || op == ClientOperation.CACHE_CLEAR_KEYS)
-            throw new CacheException(NON_TRANSACTIONAL_CLIENT_CACHE_IN_TX_ERROR_MESSAGE + "clear");
+            throw new CacheException(String.format(NON_TRANSACTIONAL_CLIENT_CACHE_IN_TX_ERROR_MESSAGE, "clear"));
     }
 
     /**

@@ -117,7 +117,7 @@ public class NonTransactionalOperationsInTxTest extends GridCommonAbstractTest {
                 return null;
             }),
             CacheException.class,
-            NON_TRANSACTIONAL_IGNITE_CACHE_IN_TX_ERROR_MESSAGE + "clear"
+            String.format(NON_TRANSACTIONAL_IGNITE_CACHE_IN_TX_ERROR_MESSAGE, "clear")
         );
 
         assertTrue(cache.containsKey(1));
@@ -174,7 +174,7 @@ public class NonTransactionalOperationsInTxTest extends GridCommonAbstractTest {
                 return null;
             }),
             CacheException.class,
-            NON_TRANSACTIONAL_IGNITE_CACHE_IN_TX_ERROR_MESSAGE + "removeAll"
+            String.format(NON_TRANSACTIONAL_IGNITE_CACHE_IN_TX_ERROR_MESSAGE, "removeAll")
         );
 
         assertTrue(cache.containsKey(1));
