@@ -110,24 +110,47 @@ public class SessionContextCacheInterceptorTest extends GridCommonAbstractTest {
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
-        if (!dynamicCache)
-            cfg.setCacheConfiguration(cacheConfig());
+        Collection<Object[]> params = params();
+
+        List<CacheConfiguration<?, ?>> ccfgs = new ArrayList<>();
+
+        for (Object[] param : params) {
+            boolean cln = (boolean)param[2];
+            boolean dyn = (boolean)param[3];
+
+            if (!dyn && !cln) {
+                ccfgs.add(
+                    cacheConfig((CacheAtomicityMode)param[0], (CacheWriteSynchronizationMode)param[1], (int)param[4], false, false)
+                );
+            }
+        }
+
+        cfg.setCacheConfiguration(ccfgs.toArray(new CacheConfiguration<?, ?>[0]));
 
         return cfg;
     }
 
-    /** {@inheritDoc} */
-    @Override protected void beforeTest() throws Exception {
-        ign = startGrids(3);
+    /** */
+    @Override protected void beforeTestsStarted() throws Exception {
+        super.beforeTestsStarted();
 
-        if (clnNode)
-            ign = startClientGrid(3);
+        startGrids(3);
 
-        cache = ign.getOrCreateCache(cacheConfig());
+        startClientGrid(3);
     }
 
     /** {@inheritDoc} */
-    @Override protected void afterTest() throws Exception {
+    @Override protected void beforeTest() throws Exception {
+        ign = grid(0);
+
+        if (clnNode)
+            ign = grid(3);
+
+        cache = ign.getOrCreateCache(cacheConfig(mode, syncMode, backups, dynamicCache, clnNode));
+    }
+
+    /** {@inheritDoc} */
+    @Override protected void afterTestsStopped() throws Exception {
         stopAllGrids();
     }
 
@@ -142,7 +165,7 @@ public class SessionContextCacheInterceptorTest extends GridCommonAbstractTest {
 
         IgniteCache<Integer, String> cacheApp = ign
             .withApplicationAttributes(F.asMap("onGet", "sessionOnGet"))
-            .cache(DEFAULT_CACHE_NAME);
+            .cache(cacheName());
 
         for (int i = 0; i < KEYS; i++) {
             final int j = i;
@@ -181,7 +204,7 @@ public class SessionContextCacheInterceptorTest extends GridCommonAbstractTest {
     public void testGetAndPut() {
         IgniteCache<Integer, String> cacheApp = ign
             .withApplicationAttributes(F.asMap("onBeforePut", "sessionOnPut"))
-            .cache(DEFAULT_CACHE_NAME);
+            .cache(cacheName());
 
         for (int i = 0; i < KEYS; i++) {
             cacheApp.getAndPut(i, String.valueOf(i));
@@ -206,7 +229,7 @@ public class SessionContextCacheInterceptorTest extends GridCommonAbstractTest {
 
         IgniteCache<Integer, String> cacheApp = ign
             .withApplicationAttributes(F.asMap("onBeforePut", "sessionOnPut"))
-            .cache(DEFAULT_CACHE_NAME);
+            .cache(cacheName());
 
         for (int i = 0; i < KEYS; i++) {
             final int j = i;
@@ -233,7 +256,7 @@ public class SessionContextCacheInterceptorTest extends GridCommonAbstractTest {
     public void testPutOperations() {
         IgniteCache<Integer, String> cacheApp = ign
             .withApplicationAttributes(F.asMap("onBeforePut", "sessionOnPut"))
-            .cache(DEFAULT_CACHE_NAME);
+            .cache(cacheName());
 
         for (int i = 0; i < KEYS; i++) {
             cacheApp.put(i, String.valueOf(i));
@@ -269,7 +292,7 @@ public class SessionContextCacheInterceptorTest extends GridCommonAbstractTest {
 
         IgniteCache<Integer, String> cacheApp = ign
             .withApplicationAttributes(F.asMap("onBeforeRemove", "sessionOnRemove"))
-            .cache(DEFAULT_CACHE_NAME);
+            .cache(cacheName());
 
         for (int i = 0; i < KEYS; i++) {
             final int j = i;
@@ -304,8 +327,8 @@ public class SessionContextCacheInterceptorTest extends GridCommonAbstractTest {
     public void testMultiCacheTransaction() throws Exception {
         assumeTrue(mode == CacheAtomicityMode.TRANSACTIONAL);
 
-        ign.getOrCreateCache(new CacheConfiguration<Integer, String>()
-            .setName("new-cache")
+        ign.createCache(new CacheConfiguration<Integer, String>()
+            .setName(cacheName("new-cache"))
             .setAtomicityMode(CacheAtomicityMode.TRANSACTIONAL)
             .setInterceptor(new SessionContextCacheInterceptor()));
 
@@ -321,8 +344,8 @@ public class SessionContextCacheInterceptorTest extends GridCommonAbstractTest {
                 for (boolean async: new boolean[] {false, true}) {
                     try (Transaction tx = ignApp.transactions().txStart(txConc, txIsol)) {
                         for (int i = mult * KEYS; i < (mult + 1) * KEYS; i++) {
-                            ignApp.cache(DEFAULT_CACHE_NAME).put(i, String.valueOf(i));
-                            ignApp.cache("new-cache").put(i, String.valueOf(i));
+                            ignApp.cache(cacheName()).put(i, String.valueOf(i));
+                            ignApp.cache(cacheName("new-cache")).put(i, String.valueOf(i));
                         }
 
                         if (async)
@@ -340,7 +363,7 @@ public class SessionContextCacheInterceptorTest extends GridCommonAbstractTest {
             final int j = i;
 
             assertEquals("sessionOnPut" + j, () -> cache.get(j));
-            assertEquals("sessionOnPut" + j, () -> ign.cache("new-cache").get(j));
+            assertEquals("sessionOnPut" + j, () -> ign.cache(cacheName("new-cache")).get(j));
         }
     }
 
@@ -358,7 +381,7 @@ public class SessionContextCacheInterceptorTest extends GridCommonAbstractTest {
             for (TransactionIsolation txIsol: TransactionIsolation.values()) {
                 for (boolean async: new boolean[] {false, true}) {
                     try (Transaction tx = ignApp.transactions().txStart(txConc, txIsol)) {
-                        ignApp.cache(DEFAULT_CACHE_NAME).put(key, String.valueOf(key));
+                        ignApp.cache(cacheName()).put(key, String.valueOf(key));
 
                         if (async)
                             tx.commitAsync().get(getTestTimeout());
@@ -431,9 +454,37 @@ public class SessionContextCacheInterceptorTest extends GridCommonAbstractTest {
     }
 
     /** */
-    private CacheConfiguration<Integer, String> cacheConfig() {
+    private String cacheName() {
+        return cacheName(DEFAULT_CACHE_NAME);
+    }
+
+    /** */
+    private String cacheName(String baseName) {
+        return cacheName(baseName, mode, syncMode, backups, dynamicCache, clnNode);
+    }
+
+    /** */
+    private String cacheName(
+        String baseName,
+        CacheAtomicityMode mode,
+        CacheWriteSynchronizationMode syncMode,
+        int backups,
+        boolean dynamicCache,
+        boolean clnNode
+    ) {
+        return baseName + "_" + mode + "_" + syncMode + "_" + backups + "_" + dynamicCache + "_" + clnNode;
+    }
+
+    /** */
+    private CacheConfiguration<Integer, String> cacheConfig(
+        CacheAtomicityMode mode,
+        CacheWriteSynchronizationMode syncMode,
+        int backups,
+        boolean dynamicCache,
+        boolean clnNode
+    ) {
         return new CacheConfiguration<Integer, String>()
-            .setName(DEFAULT_CACHE_NAME)
+            .setName(cacheName(DEFAULT_CACHE_NAME, mode, syncMode, backups, dynamicCache, clnNode))
             .setAtomicityMode(mode)
             .setWriteSynchronizationMode(syncMode)
             .setBackups(backups)

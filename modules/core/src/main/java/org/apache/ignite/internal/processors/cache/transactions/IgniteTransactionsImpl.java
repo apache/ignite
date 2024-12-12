@@ -263,7 +263,7 @@ public class IgniteTransactionsImpl<K, V> implements IgniteTransactionsEx {
      * @return Application attributes aware instance.
      */
     public IgniteTransactions withApplicationAttributes(Map<String, String> appAttrs) {
-        A.notNull(appAttrs, "appAttrs should not be empty.");
+        A.notEmpty(appAttrs, "application attributes");
 
         return new IgniteTransactionsImpl<>(cctx, lb, tracingEnabled, appAttrs);
     }
