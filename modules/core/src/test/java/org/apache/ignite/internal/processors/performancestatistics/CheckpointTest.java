@@ -125,6 +125,7 @@ public class CheckpointTest extends AbstractPerformanceStatisticsTest {
                 long walCpRecordFsyncDuration,
                 long writeCpEntryDuration,
                 long splitAndSortCpPagesDuration,
+                long recoveryDataWriteDuration,
                 long totalDuration,
                 long cpStartTime,
                 int pagesSize,
@@ -150,6 +151,8 @@ public class CheckpointTest extends AbstractPerformanceStatisticsTest {
                     writeCpEntryDuration);
                 assertEquals(mreg.<LongMetric>findMetric("LastCheckpointSplitAndSortPagesDuration").value(),
                     splitAndSortCpPagesDuration);
+                assertEquals(mreg.<LongMetric>findMetric("LastCheckpointRecoveryDataWriteDuration").value(),
+                    recoveryDataWriteDuration);
                 assertEquals(mreg.<LongMetric>findMetric("LastCheckpointDuration").value(), totalDuration);
                 assertEquals(lastStart.value(), cpStartTime);
                 assertEquals(mreg.<LongMetric>findMetric("LastCheckpointTotalPagesNumber").value(), pagesSize);

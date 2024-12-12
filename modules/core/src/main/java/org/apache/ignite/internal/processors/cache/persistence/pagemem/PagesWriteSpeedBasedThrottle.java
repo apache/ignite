@@ -20,7 +20,6 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.locks.LockSupport;
-
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.internal.processors.cache.persistence.CheckpointLockStateChecker;
 import org.apache.ignite.internal.processors.cache.persistence.checkpoint.CheckpointProgress;
@@ -38,18 +37,12 @@ import org.jetbrains.annotations.TestOnly;
  *
  * @see <a href="https://github.com/apache/ignite/tree/master/modules/core/src/main/java/org/apache/ignite/internal/processors/cache/persistence/pagemem#speed-based-throttling">Speed-based throttling description</a>
  */
-public class PagesWriteSpeedBasedThrottle implements PagesWriteThrottlePolicy {
+public class PagesWriteSpeedBasedThrottle extends AbstractPagesWriteThrottle {
     /**
      * Throttling 'duration' used to signal that no throttling is needed, and no certain side-effects are allowed
      * (like stats collection).
      */
     static final long NO_THROTTLING_MARKER = Long.MIN_VALUE;
-
-    /** Page memory. */
-    private final PageMemoryImpl pageMemory;
-
-    /** Checkpoint progress provider. */
-    private final IgniteOutClosure<CheckpointProgress> cpProgress;
 
     /** Threads set. Contains threads which are currently parked because of throttling. */
     private final GridConcurrentHashSet<Thread> parkedThreads = new GridConcurrentHashSet<>();
@@ -62,12 +55,6 @@ public class PagesWriteSpeedBasedThrottle implements PagesWriteThrottlePolicy {
      * */
     private final IntervalBasedMeasurement markSpeedAndAvgParkTime = new IntervalBasedMeasurement(250, 3);
 
-    /** Checkpoint lock state provider. */
-    private final CheckpointLockStateChecker cpLockStateChecker;
-
-    /** Logger. */
-    private final IgniteLogger log;
-
     /** Previous warning time, nanos. */
     private final AtomicLong prevWarnTime = new AtomicLong();
 
@@ -77,36 +64,28 @@ public class PagesWriteSpeedBasedThrottle implements PagesWriteThrottlePolicy {
     /** Warning threshold: minimal level of pressure that causes warning messages to log. */
     static final double WARN_THRESHOLD = 0.2;
 
-    /** Checkpoint buffer protection logic. */
-    private final ExponentialBackoffThrottlingStrategy cpBufferProtector
-        = new ExponentialBackoffThrottlingStrategy();
-
     /** Clean pages protection logic. */
     private final SpeedBasedMemoryConsumptionThrottlingStrategy cleanPagesProtector;
-
-    /** Checkpoint Buffer-related logic used to keep it safe. */
-    private final CheckpointBufferOverflowWatchdog cpBufferWatchdog;
 
     /**
      * @param pageMemory Page memory.
      * @param cpProgress Database manager.
-     * @param stateChecker Checkpoint lock state provider.
+     * @param cpLockStateChecker Checkpoint lock state provider.
+     * @param fillRateBasedCpBufProtection If true, fill rate based throttling will be used to protect from
+     *        checkpoint buffer overflow.
      * @param log Logger.
      */
     public PagesWriteSpeedBasedThrottle(
             PageMemoryImpl pageMemory,
             IgniteOutClosure<CheckpointProgress> cpProgress,
-            CheckpointLockStateChecker stateChecker,
+            CheckpointLockStateChecker cpLockStateChecker,
+            boolean fillRateBasedCpBufProtection,
             IgniteLogger log
     ) {
-        this.pageMemory = pageMemory;
-        this.cpProgress = cpProgress;
-        cpLockStateChecker = stateChecker;
-        this.log = log;
+        super(pageMemory, cpProgress, cpLockStateChecker, fillRateBasedCpBufProtection, log);
 
         cleanPagesProtector = new SpeedBasedMemoryConsumptionThrottlingStrategy(pageMemory, cpProgress,
             markSpeedAndAvgParkTime);
-        cpBufferWatchdog = new CheckpointBufferOverflowWatchdog(pageMemory);
     }
 
     /** {@inheritDoc} */
@@ -129,13 +108,13 @@ public class PagesWriteSpeedBasedThrottle implements PagesWriteThrottlePolicy {
 
     /***/
     private long computeThrottlingParkTime(boolean isPageInCheckpoint, long curNanoTime) {
-        if (isPageInCheckpoint && isCpBufferOverflowThresholdExceeded())
-            return cpBufferProtector.protectionParkTime();
+        if (isPageInCheckpoint && cpBufWatchdog.isInThrottlingZone())
+            return cpBufProtector.protectionParkTime();
         else {
             if (isPageInCheckpoint) {
                 // The fact that we are here means that we checked whether CP Buffer is in danger zone and found that
                 // it is ok, so its protector may relax, hence we reset it.
-                cpBufferProtector.resetBackoff();
+                cpBufProtector.reset();
             }
             return cleanPagesProtector.protectionParkTime(curNanoTime);
         }
@@ -230,7 +209,7 @@ public class PagesWriteSpeedBasedThrottle implements PagesWriteThrottlePolicy {
 
     /** {@inheritDoc} */
     @Override public void onFinishCheckpoint() {
-        cpBufferProtector.resetBackoff();
+        cpBufProtector.reset();
 
         cleanPagesProtector.finish();
         markSpeedAndAvgParkTime.finishInterval();
@@ -305,15 +284,10 @@ public class PagesWriteSpeedBasedThrottle implements PagesWriteThrottlePolicy {
 
     /** {@inheritDoc} */
     @Override public void wakeupThrottledThreads() {
-        if (!isCpBufferOverflowThresholdExceeded()) {
-            cpBufferProtector.resetBackoff();
+        if (!cpBufWatchdog.isInThrottlingZone()) {
+            cpBufProtector.reset();
 
             unparkParkedThreads();
         }
-    }
-
-    /** {@inheritDoc} */
-    @Override public boolean isCpBufferOverflowThresholdExceeded() {
-        return cpBufferWatchdog.isInDangerZone();
     }
 }

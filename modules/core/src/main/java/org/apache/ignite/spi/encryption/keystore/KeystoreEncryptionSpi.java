@@ -218,28 +218,13 @@ public class KeystoreEncryptionSpi extends IgniteSpiAdapter implements Encryptio
     }
 
     /** {@inheritDoc} */
+    @Override public void decrypt(ByteBuffer data, Serializable key, ByteBuffer res) {
+        doDecryption(data, aesWithPadding.get(), key, res);
+    }
+
+    /** {@inheritDoc} */
     @Override public void decryptNoPadding(ByteBuffer data, Serializable key, ByteBuffer res) {
-        assert key instanceof KeystoreEncryptionKey;
-
-        ensureStarted();
-
-        try {
-            SecretKeySpec keySpec = new SecretKeySpec(((KeystoreEncryptionKey)key).key().getEncoded(), CIPHER_ALGO);
-
-            Cipher cipher = aesWithoutPadding.get();
-
-            byte[] iv = new byte[cipher.getBlockSize()];
-
-            data.get(iv);
-
-            cipher.init(DECRYPT_MODE, keySpec, new IvParameterSpec(iv));
-
-            cipher.doFinal(data, res);
-        }
-        catch (InvalidAlgorithmParameterException | InvalidKeyException | IllegalBlockSizeException |
-            ShortBufferException | BadPaddingException e) {
-            throw new IgniteSpiException(e);
-        }
+        doDecryption(data, aesWithoutPadding.get(), key, res);
     }
 
     /**
@@ -265,6 +250,34 @@ public class KeystoreEncryptionSpi extends IgniteSpiAdapter implements Encryptio
         }
         catch (ShortBufferException | InvalidAlgorithmParameterException | InvalidKeyException |
             IllegalBlockSizeException | BadPaddingException e) {
+            throw new IgniteSpiException(e);
+        }
+    }
+
+    /**
+     * @param data Data to decrypt.
+     * @param cipher Cipher.
+     * @param key Encryption key.
+     * @param res Destination of the decrypted data.
+     */
+    private void doDecryption(ByteBuffer data, Cipher cipher, Serializable key, ByteBuffer res) {
+        assert key instanceof KeystoreEncryptionKey;
+
+        ensureStarted();
+
+        try {
+            SecretKeySpec keySpec = new SecretKeySpec(((KeystoreEncryptionKey)key).key().getEncoded(), CIPHER_ALGO);
+
+            byte[] iv = new byte[cipher.getBlockSize()];
+
+            data.get(iv);
+
+            cipher.init(DECRYPT_MODE, keySpec, new IvParameterSpec(iv));
+
+            cipher.doFinal(data, res);
+        }
+        catch (InvalidAlgorithmParameterException | InvalidKeyException | IllegalBlockSizeException |
+               ShortBufferException | BadPaddingException e) {
             throw new IgniteSpiException(e);
         }
     }
@@ -346,10 +359,17 @@ public class KeystoreEncryptionSpi extends IgniteSpiAdapter implements Encryptio
 
         switch (algo) {
             case AES_WITH_PADDING:
+                // One extra block is added to the start of the message to store initial vector.
+                // If original data is not aligned to block size we pad bytes to align to block size.
+                // If original data is aligned to block size we pad 1 additional block.
+                // In general, we pad `blockSize - (dataSize % blockSize)` bytes.
+                // See RFC2315 for more information about padding.
                 cntBlocks = 2;
                 break;
 
             case AES_WITHOUT_PADDING:
+                // We use AES_WITHOUT_PADDING only for data aligned to block size. In this case only one extra block
+                // is added to store initial vector.
                 cntBlocks = 1;
                 break;
 
