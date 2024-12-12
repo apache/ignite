@@ -21,8 +21,6 @@ import java.util.BitSet;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.cluster.ClusterState;
 import org.apache.ignite.internal.managers.discovery.IgniteDiscoverySpi;
-import org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi;
-import org.apache.ignite.spi.communication.tcp.messages.HandshakeWaitMessage;
 import org.apache.ignite.spi.discovery.DiscoverySpi;
 
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_PME_FREE_SWITCH_DISABLED;
@@ -33,11 +31,6 @@ import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_IGNITE_FEATUR
  * Defines supported features and check its on other nodes.
  */
 public enum IgniteFeatures {
-    /**
-     * Support of {@link HandshakeWaitMessage} by {@link TcpCommunicationSpi}.
-     */
-    TCP_COMMUNICATION_SPI_HANDSHAKE_WAIT_MESSAGE(0),
-
     /** Support of splitted cache configurations to avoid broken deserialization on non-affinity nodes. */
     SPLITTED_CACHE_CONFIGURATIONS(5),
 

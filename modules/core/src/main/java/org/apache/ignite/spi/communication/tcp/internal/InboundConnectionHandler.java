@@ -228,7 +228,7 @@ public class InboundConnectionHandler extends GridNioServerListenerAdapter<Messa
             }
 
             try {
-                if (client || ctxInitLatch.getCount() == 0 || !stateProvider.isHandshakeWaitSupported()) {
+                if (client || ctxInitLatch.getCount() == 0) {
                     if (log.isDebugEnabled())
                         log.debug("Sending local node ID to newly accepted session: " + ses);
 
