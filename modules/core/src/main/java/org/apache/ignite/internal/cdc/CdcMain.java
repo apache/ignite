@@ -215,7 +215,7 @@ public class CdcMain implements Runnable {
      */
     private HistogramMetricImpl evtCaptureTime;
 
-    /** Metric represents time between creating {@link WALIterator} and processing it, in milliseconds. */
+    /** Metric represents time between creating {@link WALIterator} and finish consuming it, in milliseconds. */
     private HistogramMetricImpl segmentConsumingTime;
 
     /** Change Data Capture configuration. */
