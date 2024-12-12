@@ -261,6 +261,13 @@ public class CommandHandler {
                 return EXIT_CODE_OK;
             }
 
+            if (useConnectorConnection()) {
+                logger.warning("WARNING: Deprecated connection via a connector is used (configured on " +
+                    "a node via '" + ConnectorConfiguration.class.getName() + "'). It will be removed in the " +
+                    "next releases. Please update the control utility connection settings to use a client connector " +
+                    "connection (configured on a node via '" + ClientConnectorConfiguration.class.getName() + "').");
+            }
+
             verbose = F.exist(rawArgs, CMD_VERBOSE::equalsIgnoreCase);
 
             ConnectionAndSslParameters<A> args = new ArgumentParser(logger, registry).parseAndValidate(rawArgs);
