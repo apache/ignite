@@ -26,6 +26,7 @@ import org.apache.ignite.internal.processors.platform.client.ClientConnectionCon
 import org.apache.ignite.internal.processors.platform.client.ClientRequest;
 import org.apache.ignite.internal.processors.platform.client.ClientResponse;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.internal.visor.VisorMultiNodeTask;
 
 /**
  * Request to execute compute task.
@@ -111,6 +112,9 @@ public class ClientExecuteTaskRequest extends ClientRequest {
             return false;
         }
 
-        return ctx.security().isSystemType(cls);
+        if (ctx.security().enabled())
+            return ctx.security().isSystemType(cls);
+        else
+            return VisorMultiNodeTask.class.isAssignableFrom(cls);
     }
 }

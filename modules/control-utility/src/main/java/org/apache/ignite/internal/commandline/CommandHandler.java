@@ -262,10 +262,10 @@ public class CommandHandler {
             }
 
             if (useConnectorConnection()) {
-                logger.warning("WARNING: Deprecated connection via a connector is used (configured on " +
-                    "a node via '" + ConnectorConfiguration.class.getName() + "'). It will be removed in the " +
-                    "next releases. Please update the control utility connection settings to use a client connector " +
-                    "connection (configured on a node via '" + ClientConnectorConfiguration.class.getName() + "').");
+                logger.warning("WARNING: Deprecated protocol (ConnectorConfiguration) used to connect to cluster. " +
+                    "It will be removed in the next releases. Please update the control utility connection arguments " +
+                    "to use a thin client protocol: set up a port and/or SSL configuration " +
+                    "releated to the ClientConnectorConfiguration on nodes.");
             }
 
             verbose = F.exist(rawArgs, CMD_VERBOSE::equalsIgnoreCase);
