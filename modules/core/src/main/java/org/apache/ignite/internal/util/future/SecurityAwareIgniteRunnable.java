@@ -40,8 +40,8 @@ public class SecurityAwareIgniteRunnable extends AbstractSecurityAwareWrapper<Ig
     }
 
     /** */
-    public static IgniteRunnable of(IgniteSecurity security, IgniteRunnable delegate) {
-        if (delegate == null || security.isDefaultContext())
+    public static IgniteRunnable wrap(IgniteSecurity security, IgniteRunnable delegate) {
+        if (delegate == null || security.isDefaultContext() || delegate instanceof AbstractSecurityAwareWrapper)
             return delegate;
 
         return new SecurityAwareIgniteRunnable(security, delegate);

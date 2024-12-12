@@ -39,8 +39,8 @@ class SecurityAwareRunnable extends AbstractSecurityAwareWrapper<Runnable> imple
     }
 
     /** */
-    static Runnable of(IgniteSecurity security, Runnable delegate) {
-        if (delegate == null || security.isDefaultContext())
+    static Runnable wrap(IgniteSecurity security, Runnable delegate) {
+        if (delegate == null || security.isDefaultContext() || delegate instanceof AbstractSecurityAwareWrapper)
             return delegate;
 
         return new SecurityAwareRunnable(security, delegate);

@@ -40,8 +40,8 @@ class SecurityAwareInClosure<T> extends AbstractSecurityAwareWrapper<IgniteInClo
     }
 
     /** */
-    static <T> IgniteInClosure<T> of(IgniteSecurity security, IgniteInClosure<T> delegate) {
-        if (delegate == null || security.isDefaultContext())
+    static <T> IgniteInClosure<T> wrap(IgniteSecurity security, IgniteInClosure<T> delegate) {
+        if (delegate == null || security.isDefaultContext() || delegate instanceof AbstractSecurityAwareWrapper)
             return delegate;
 
         return new SecurityAwareInClosure<>(security, delegate);

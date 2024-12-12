@@ -130,7 +130,7 @@ public class GridMessageListenHandler implements GridContinuousHandler {
 
     /** {@inheritDoc} */
     @Override public RegisterStatus register(UUID nodeId, UUID routineId, final GridKernalContext ctx) {
-        p2pUnmarshalFut.listen(SecurityAwareIgniteRunnable.of(ctx.security(), () -> {
+        p2pUnmarshalFut.listen(SecurityAwareIgniteRunnable.wrap(ctx.security(), () -> {
             if (p2pUnmarshalFut.error() == null)
                 ctx.io().addUserMessageListener(topic, pred, nodeId);
         }));

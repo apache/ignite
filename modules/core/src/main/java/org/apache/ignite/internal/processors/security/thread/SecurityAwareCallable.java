@@ -42,15 +42,15 @@ class SecurityAwareCallable<T> extends AbstractSecurityAwareWrapper<Callable<T>>
     }
 
     /** */
-    static <A> Callable<A> of(IgniteSecurity sec, Callable<A> delegate) {
-        if (delegate == null || sec.isDefaultContext())
+    static <A> Callable<A> wrap(IgniteSecurity sec, Callable<A> delegate) {
+        if (delegate == null || sec.isDefaultContext() || delegate instanceof AbstractSecurityAwareWrapper)
             return delegate;
 
         return new SecurityAwareCallable<>(sec, delegate);
     }
 
     /** */
-    static <A> Collection<? extends Callable<A>> of(
+    static <A> Collection<? extends Callable<A>> wrap(
         IgniteSecurity sec,
         Collection<? extends Callable<A>> tasks
     ) {

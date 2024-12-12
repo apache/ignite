@@ -40,8 +40,8 @@ public class SecurityAwareOutClosure<T> extends AbstractSecurityAwareWrapper<Ign
     }
 
     /** */
-    public static <T> IgniteOutClosure<T> of(IgniteSecurity security, IgniteOutClosure<T> delegate) {
-        if (delegate == null || security.isDefaultContext())
+    public static <T> IgniteOutClosure<T> wrap(IgniteSecurity security, IgniteOutClosure<T> delegate) {
+        if (delegate == null || security.isDefaultContext() || delegate instanceof AbstractSecurityAwareWrapper)
             return delegate;
 
         return new SecurityAwareOutClosure<>(security, delegate);

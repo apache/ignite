@@ -384,7 +384,7 @@ public class CacheContinuousQueryHandler<K, V> implements GridContinuousHandler 
         initLocalListener(locLsnr, ctx);
 
         if (initFut == null) {
-            initFut = p2pUnmarshalFut.chain(SecurityAwareOutClosure.of(ctx.security(), () -> {
+            initFut = p2pUnmarshalFut.chain(SecurityAwareOutClosure.wrap(ctx.security(), () -> {
                 try {
                     p2pUnmarshalFut.get();
 

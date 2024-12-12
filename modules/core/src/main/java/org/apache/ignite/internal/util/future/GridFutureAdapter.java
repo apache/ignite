@@ -29,7 +29,6 @@ import org.apache.ignite.internal.IgniteFutureCancelledCheckedException;
 import org.apache.ignite.internal.IgniteFutureTimeoutCheckedException;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
-import org.apache.ignite.internal.processors.security.SecurityUtils;
 import org.apache.ignite.internal.util.lang.GridClosureException;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.typedef.internal.A;
@@ -363,8 +362,8 @@ public class GridFutureAdapter<R> implements IgniteInternalFuture<R> {
     /** {@inheritDoc} */
     @Async.Schedule
     @Override public void listen(IgniteInClosure<? super IgniteInternalFuture<R>> lsnr) {
-        if (SecurityUtils.isSecurityWrapperRequired(kCtx, lsnr))
-            lsnr = SecurityAwareInClosure.of(kCtx.security(), lsnr);
+        if (kCtx != null)
+            lsnr = SecurityAwareInClosure.wrap(kCtx.security(), lsnr);
 
         if (!registerWaiter(lsnr))
             notifyListener(lsnr);

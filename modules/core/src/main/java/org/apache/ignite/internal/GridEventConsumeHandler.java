@@ -276,7 +276,7 @@ class GridEventConsumeHandler implements GridContinuousHandler {
         if (F.isEmpty(types))
             types = EVTS_ALL;
 
-        p2pUnmarshalFut.listen(SecurityAwareIgniteRunnable.of(ctx.security(), () -> {
+        p2pUnmarshalFut.listen(SecurityAwareIgniteRunnable.wrap(ctx.security(), () -> {
             if (p2pUnmarshalFut.error() == null) {
                 try {
                     initFilter(filter, ctx);
