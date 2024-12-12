@@ -116,8 +116,6 @@ public class IgniteCacheClientNodeChangingTopologyTest extends GridCommonAbstrac
 
         cfg.setConsistentId(igniteInstanceName);
 
-        //((TcpDiscoverySpi)cfg.getDiscoverySpi()).setForceServerMode(true);
-
         TestCommunicationSpi commSpi = new TestCommunicationSpi();
 
         commSpi.setSharedMemoryPort(-1);
