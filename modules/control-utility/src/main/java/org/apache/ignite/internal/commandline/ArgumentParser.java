@@ -21,10 +21,13 @@ package org.apache.ignite.internal.commandline;
 import java.lang.reflect.Field;
 import java.util.ArrayDeque;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.Deque;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Optional;
+import java.util.Scanner;
 import java.util.Set;
 import java.util.function.BiConsumer;
 import java.util.function.BiFunction;
@@ -158,6 +161,9 @@ public class ArgumentParser {
     /** */
     private final List<CLIArgument<?>> common = new ArrayList<>();
 
+    /** Console instance */
+    protected final GridConsole console;
+
     static {
         SENSITIVE_ARGUMENTS.add(CMD_PASSWORD);
         SENSITIVE_ARGUMENTS.add(CMD_KEYSTORE_PASSWORD);
@@ -177,8 +183,18 @@ public class ArgumentParser {
      * @param registry Supported commands.
      */
     public ArgumentParser(IgniteLogger log, IgniteCommandRegistry registry) {
+        this(log, registry, null);
+    }
+
+    /**
+     * @param log Logger.
+     * @param registry Supported commands.
+     * @param console Supported commands.
+     */
+    public ArgumentParser(IgniteLogger log, IgniteCommandRegistry registry, GridConsole console) {
         this.log = log;
         this.registry = registry;
+        this.console = console;
 
         BiConsumer<String, ?> securityWarn = (name, val) -> log.info(String.format("Warning: %s is insecure. " +
                 "Whenever possible, use interactive prompt for password (just discard %s option).", name, name));
@@ -252,6 +268,12 @@ public class ArgumentParser {
         findCommand(args.iterator());
 
         CLIArgumentParser parser = createArgumentParser();
+
+        if (!args.isEmpty() && console != null) {
+            List<String> reqArgs = new ArrayList<>(requestArgsFromConsole(args, parser));
+
+            args.addAll(reqArgs);
+        }
 
         parser.parse(args.iterator());
 
@@ -377,5 +399,106 @@ public class ArgumentParser {
         namedArgs.addAll(common);
 
         return new CLIArgumentParser(positionalArgs, namedArgs);
+    }
+
+    /**
+     * Find arguments and request values from console.
+     *
+     * @param args list of arguments.
+     * @param parser instance of parser for command line arguments.
+     * @return List of requested arguments with value
+     * @throws IllegalArgumentException In case arguments specified more than once.
+     */
+    private List<String> requestArgsFromConsole(List<String> args, CLIArgumentParser parser) {
+        List<String> reqArgs = new ArrayList<>();
+        List<String> removalArgs = new ArrayList<>();
+        String curr = null;
+
+        for (String nextArg : args) {
+            if (curr == null || !curr.startsWith(NAME_PREFIX) || parser.argType(curr.toLowerCase()).isEmpty()) {
+                curr = nextArg;
+                continue;
+            }
+
+            if (Collections.frequency(args, curr) > 1)
+                throw new IllegalArgumentException("The " + curr + " argument specified more than once");
+
+            if (nextArg.startsWith(NAME_PREFIX) && !parser.argType(curr.toLowerCase()).get().equals(boolean.class))
+                readValue(reqArgs, removalArgs, curr, parser);
+
+            curr = nextArg;
+        }
+
+        if (curr.startsWith(NAME_PREFIX) && !parser.argType(curr.toLowerCase()).get().equals(boolean.class))
+            readValue(reqArgs, removalArgs, curr, parser);
+
+        args.removeAll(removalArgs);
+
+        return reqArgs;
+    }
+
+    /**
+     * Request argument value from console.
+     *
+     * @param reqArgs list of requested arguments with value.
+     * @param removalArgs list of arguments for remove from args.
+     * @param curr current requested argument.
+     * @param parser instance of parser for command line arguments.
+     * @throws IllegalArgumentException In case arguments type is empty or unsupported.
+     */
+    private void readValue(List<String> reqArgs, List<String> removalArgs, String curr, CLIArgumentParser parser) {
+        Optional<?> argType = parser.argType(curr.toLowerCase());
+
+        if (argType.isEmpty())
+            throw new IllegalArgumentException("Empty type argument: " + curr);
+
+        if (curr.equals(CMD_PASSWORD) || char[].class.equals(argType.get())) {
+            removalArgs.add(curr);
+            reqArgs.add(curr);
+            reqArgs.add(new String(requestPasswordFromConsole(curr.substring(NAME_PREFIX.length()) + ": ")));
+        }
+        else if (String.class.equals(argType.get())
+                || String[].class.equals(argType.get())
+                || char[].class.equals(argType.get())
+                || Integer.class.equals(argType.get())
+                || Long.class.equals(argType.get())) {
+            removalArgs.add(curr);
+            reqArgs.add(curr);
+            reqArgs.add(requestDataFromConsole(curr.substring(NAME_PREFIX.length()) + ": "));
+        }
+        else
+            throw new IllegalArgumentException("Unsupported type for " + curr + " argument: " + argType.get());
+    }
+
+    /**
+     * Requests password from console with message.
+     *
+     * @param msg Message.
+     * @return Password.
+     * @throws UnsupportedOperationException In case the console is unavailable.
+     */
+    private char[] requestPasswordFromConsole(String msg) {
+        if (console == null)
+            throw new UnsupportedOperationException("Failed to securely read password (console is unavailable): " + msg);
+        else
+            return console.readPassword(msg);
+    }
+
+    /**
+     * Requests data from console with message.
+     *
+     * @param msg Message.
+     * @return Input data.
+     */
+    private String requestDataFromConsole(String msg) {
+        if (console != null)
+            return console.readLine(msg);
+        else {
+            Scanner scanner = new Scanner(System.in);
+
+            log.info(msg);
+
+            return scanner.nextLine();
+        }
     }
 }
