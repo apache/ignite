@@ -76,6 +76,7 @@ import org.apache.ignite.cluster.ClusterGroup;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.internal.AsyncSupportAdapter;
+import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
@@ -2285,7 +2286,7 @@ public class IgniteCacheProxyImpl<K, V> extends AsyncSupportAdapter<IgniteCache<
             RestartFuture curFut = this.restartFut.get();
 
             if (curFut == null) {
-                RestartFuture restartFut = new RestartFuture(cacheName);
+                RestartFuture restartFut = new RestartFuture(ctx.kernalContext(), cacheName);
 
                 if (this.restartFut.compareAndSet(null, restartFut)) {
                     synchronized (this) {
@@ -2322,7 +2323,7 @@ public class IgniteCacheProxyImpl<K, V> extends AsyncSupportAdapter<IgniteCache<
      * @param cache To use for restart proxy.
      */
     public void opportunisticRestart(IgniteInternalCache<K, V> cache) {
-        RestartFuture restartFut = new RestartFuture(cacheName);
+        RestartFuture restartFut = new RestartFuture(ctx.kernalContext(), cacheName);
 
         while (true) {
             if (this.restartFut.compareAndSet(null, restartFut)) {
@@ -2389,7 +2390,9 @@ public class IgniteCacheProxyImpl<K, V> extends AsyncSupportAdapter<IgniteCache<
         private volatile GridFutureAdapter<?> restartFinishFut;
 
         /** */
-        private RestartFuture(String name) {
+        private RestartFuture(GridKernalContext ctx, String name) {
+            super(ctx);
+
             this.name = name;
         }
 

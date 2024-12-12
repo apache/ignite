@@ -56,6 +56,7 @@ import org.apache.ignite.configuration.CommunicationFailureResolver;
 import org.apache.ignite.events.EventType;
 import org.apache.ignite.events.NodeValidationFailedEvent;
 import org.apache.ignite.internal.IgniteClientDisconnectedCheckedException;
+import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteFeatures;
 import org.apache.ignite.internal.IgniteFutureTimeoutCheckedException;
 import org.apache.ignite.internal.IgniteInternalFuture;
@@ -185,7 +186,7 @@ public class ZookeeperDiscoveryImpl {
     private final boolean clientReconnectEnabled;
 
     /** */
-    private final GridFutureAdapter<Void> joinFut = new GridFutureAdapter<>();
+    private final GridFutureAdapter<Void> joinFut;
 
     /** */
     private final int evtsAckThreshold;
@@ -249,6 +250,7 @@ public class ZookeeperDiscoveryImpl {
         zkPaths = new ZkIgnitePaths(zkRootPath);
 
         this.spi = spi;
+        this.joinFut = new GridFutureAdapter<>(((IgniteEx)spi.ignite()).context());
         this.igniteInstanceName = igniteInstanceName;
         this.connectString = spi.getZkConnectionString();
         this.sesTimeout = (int)spi.getSessionTimeout();
@@ -4549,6 +4551,8 @@ public class ZookeeperDiscoveryImpl {
          * @param node Node.
          */
         PingFuture(ZkRuntimeState rtState, ZookeeperClusterNode node) {
+            super(null);
+
             this.rtState = rtState;
             this.node = node;
 

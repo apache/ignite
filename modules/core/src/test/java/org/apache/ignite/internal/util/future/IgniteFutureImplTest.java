@@ -75,7 +75,7 @@ public class IgniteFutureImplTest extends GridCommonAbstractTest {
      */
     @Test
     public void testFutureGet() throws Exception {
-        GridFutureAdapter<String> fut0 = new GridFutureAdapter<>();
+        GridFutureAdapter<String> fut0 = new GridFutureAdapter<>(null);
 
         IgniteFutureImpl<String> fut = createFuture(fut0);
 
@@ -95,7 +95,7 @@ public class IgniteFutureImplTest extends GridCommonAbstractTest {
      */
     @Test
     public void testFutureException() throws Exception {
-        GridFutureAdapter<String> fut0 = new GridFutureAdapter<>();
+        GridFutureAdapter<String> fut0 = new GridFutureAdapter<>(null);
 
         final IgniteFutureImpl<String> fut = createFuture(fut0);
 
@@ -135,7 +135,7 @@ public class IgniteFutureImplTest extends GridCommonAbstractTest {
      */
     @Test
     public void testFutureIgniteException() throws Exception {
-        GridFutureAdapter<String> fut0 = new GridFutureAdapter<>();
+        GridFutureAdapter<String> fut0 = new GridFutureAdapter<>(null);
 
         final IgniteFutureImpl<String> fut = createFuture(fut0);
 
@@ -159,7 +159,7 @@ public class IgniteFutureImplTest extends GridCommonAbstractTest {
      */
     @Test
     public void testListeners() throws Exception {
-        GridFutureAdapter<String> fut0 = new GridFutureAdapter<>();
+        GridFutureAdapter<String> fut0 = new GridFutureAdapter<>(null);
 
         IgniteFutureImpl<String> fut = createFuture(fut0);
 
@@ -205,7 +205,7 @@ public class IgniteFutureImplTest extends GridCommonAbstractTest {
     @Test
     public void testListenersOnError() throws Exception {
         {
-            GridFutureAdapter<String> fut0 = new GridFutureAdapter<>();
+            GridFutureAdapter<String> fut0 = new GridFutureAdapter<>(null);
 
             IgniteFutureImpl<String> fut = createFuture(fut0);
 
@@ -236,7 +236,7 @@ public class IgniteFutureImplTest extends GridCommonAbstractTest {
         }
 
         {
-            GridFutureAdapter<String> fut0 = new GridFutureAdapter<>();
+            GridFutureAdapter<String> fut0 = new GridFutureAdapter<>(null);
 
             IgniteFutureImpl<String> fut = createFuture(fut0);
 
@@ -272,7 +272,7 @@ public class IgniteFutureImplTest extends GridCommonAbstractTest {
      */
     @Test
     public void testAsyncListeners() throws Exception {
-        GridFutureAdapter<String> fut0 = new GridFutureAdapter<>();
+        GridFutureAdapter<String> fut0 = new GridFutureAdapter<>(null);
 
         IgniteFutureImpl<String> fut = createFuture(fut0);
 
@@ -322,7 +322,7 @@ public class IgniteFutureImplTest extends GridCommonAbstractTest {
      * @param err0 Test exception.
      */
     private void checkAsyncListenerOnError(Exception err0) throws InterruptedException {
-        GridFutureAdapter<String> fut0 = new GridFutureAdapter<>();
+        GridFutureAdapter<String> fut0 = new GridFutureAdapter<>(null);
 
         IgniteFutureImpl<String> fut = createFuture(fut0);
 
@@ -394,7 +394,7 @@ public class IgniteFutureImplTest extends GridCommonAbstractTest {
      */
     @Test
     public void testChain() throws Exception {
-        GridFutureAdapter<String> fut0 = new GridFutureAdapter<>();
+        GridFutureAdapter<String> fut0 = new GridFutureAdapter<>(null);
 
         IgniteFutureImpl<String> fut = createFuture(fut0);
 
@@ -437,7 +437,7 @@ public class IgniteFutureImplTest extends GridCommonAbstractTest {
     @Test
     public void testChainError() throws Exception {
         {
-            GridFutureAdapter<String> fut0 = new GridFutureAdapter<>();
+            GridFutureAdapter<String> fut0 = new GridFutureAdapter<>(null);
 
             IgniteFutureImpl<String> fut = createFuture(fut0);
 
@@ -509,7 +509,7 @@ public class IgniteFutureImplTest extends GridCommonAbstractTest {
         }
 
         {
-            GridFutureAdapter<String> fut0 = new GridFutureAdapter<>();
+            GridFutureAdapter<String> fut0 = new GridFutureAdapter<>(null);
 
             IgniteFutureImpl<String> fut = createFuture(fut0);
 
@@ -586,7 +586,7 @@ public class IgniteFutureImplTest extends GridCommonAbstractTest {
      */
     @Test
     public void testChainAsync() throws Exception {
-        GridFutureAdapter<String> fut0 = new GridFutureAdapter<>();
+        GridFutureAdapter<String> fut0 = new GridFutureAdapter<>(null);
 
         IgniteFuture<String> fut = createFuture(fut0);
 
@@ -673,7 +673,7 @@ public class IgniteFutureImplTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     private void checkChainedOnError(final Exception err) throws Exception {
-        GridFutureAdapter<String> fut0 = new GridFutureAdapter<>();
+        GridFutureAdapter<String> fut0 = new GridFutureAdapter<>(null);
 
         IgniteFutureImpl<String> fut = createFuture(fut0);
 

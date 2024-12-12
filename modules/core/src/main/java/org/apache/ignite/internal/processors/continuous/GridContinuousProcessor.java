@@ -898,7 +898,7 @@ public class GridContinuousProcessor extends GridProcessorAdapter {
             return new GridFinishedFuture<>(new NodeStoppingException("Failed to start continuous query (node is stopping)"));
 
         try {
-            StartFuture fut = new StartFuture(routineId);
+            StartFuture fut = new StartFuture(ctx, routineId);
 
             startFuts.put(routineId, fut);
 
@@ -1189,7 +1189,7 @@ public class GridContinuousProcessor extends GridProcessorAdapter {
             assert info.interval == 0 || !sync;
 
             if (sync) {
-                SyncMessageAckFuture fut = new SyncMessageAckFuture(nodeId);
+                SyncMessageAckFuture fut = new SyncMessageAckFuture(ctx, nodeId);
 
                 IgniteUuid futId = IgniteUuid.randomUuid();
 
@@ -2555,7 +2555,9 @@ public class GridContinuousProcessor extends GridProcessorAdapter {
         /**
          * @param routineId Consume ID.
          */
-        StartFuture(UUID routineId) {
+        StartFuture(GridKernalContext ctx, UUID routineId) {
+            super(ctx);
+
             this.routineId = routineId;
 
             resCollect = new DiscoveryMessageResultsCollector<ContinuousRoutineStartResultMessage, RoutineRegisterResults>(ctx) {
@@ -2754,14 +2756,11 @@ public class GridContinuousProcessor extends GridProcessorAdapter {
         /** Timeout object. */
         private volatile GridTimeoutObject timeoutObj;
 
-        /** */
-        private GridKernalContext ctx;
-
         /**
          * @param ctx Kernal context.
          */
         StopFuture(GridKernalContext ctx) {
-            this.ctx = ctx;
+            super(ctx);
         }
 
         /**
@@ -2772,13 +2771,13 @@ public class GridContinuousProcessor extends GridProcessorAdapter {
 
             this.timeoutObj = timeoutObj;
 
-            ctx.timeout().addTimeoutObject(timeoutObj);
+            kCtx.timeout().addTimeoutObject(timeoutObj);
         }
 
         /** {@inheritDoc} */
         @Override public boolean onDone(@Nullable Object res, @Nullable Throwable err) {
             if (timeoutObj != null)
-                ctx.timeout().removeTimeoutObject(timeoutObj);
+                kCtx.timeout().removeTimeoutObject(timeoutObj);
 
             return super.onDone(res, err);
         }
@@ -2797,9 +2796,12 @@ public class GridContinuousProcessor extends GridProcessorAdapter {
         private UUID nodeId;
 
         /**
+         * @param ctx Kernal context.
          * @param nodeId Master node ID.
          */
-        SyncMessageAckFuture(UUID nodeId) {
+        SyncMessageAckFuture(GridKernalContext ctx, UUID nodeId) {
+            super(ctx);
+
             this.nodeId = nodeId;
         }
 

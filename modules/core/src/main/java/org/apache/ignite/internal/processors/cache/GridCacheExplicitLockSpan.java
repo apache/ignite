@@ -23,6 +23,7 @@ import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.Map;
 import java.util.concurrent.locks.ReentrantLock;
+import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteTxKey;
@@ -55,13 +56,14 @@ public class GridCacheExplicitLockSpan extends ReentrantLock {
     private final GridFutureAdapter<Object> releaseFut;
 
     /**
+     * @param ctx Kernal context
      * @param topVer Topology version.
      * @param cand Candidate.
      */
-    public GridCacheExplicitLockSpan(final AffinityTopologyVersion topVer, final GridCacheMvccCandidate cand) {
+    public GridCacheExplicitLockSpan(GridKernalContext ctx, final AffinityTopologyVersion topVer, final GridCacheMvccCandidate cand) {
         this.topVer = topVer;
 
-        releaseFut = new GridFutureAdapter<Object>() {
+        releaseFut = new GridFutureAdapter<Object>(ctx) {
             @Override public String toString() {
                 return "ExplicitLockSpan [topVer=" + topVer + ", firstCand=" + cand + "]";
             }

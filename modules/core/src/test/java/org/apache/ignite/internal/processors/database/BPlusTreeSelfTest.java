@@ -1792,7 +1792,7 @@ public class BPlusTreeSelfTest extends GridCommonAbstractTest {
             }
         }, 1, "printLocks");
 
-        asyncRunFut = new GridCompoundFuture<>();
+        asyncRunFut = new GridCompoundFuture<>(null);
 
         asyncRunFut.add((IgniteInternalFuture)putRmvFut);
         asyncRunFut.add((IgniteInternalFuture)lockPrintingFut);
@@ -1972,7 +1972,7 @@ public class BPlusTreeSelfTest extends GridCommonAbstractTest {
             }
         }, 1, "printLocks");
 
-        asyncRunFut = new GridCompoundFuture<>();
+        asyncRunFut = new GridCompoundFuture<>(null);
 
         asyncRunFut.add((IgniteInternalFuture)putRmvFut);
         asyncRunFut.add((IgniteInternalFuture)sizeFut);
@@ -2116,7 +2116,7 @@ public class BPlusTreeSelfTest extends GridCommonAbstractTest {
             }
         }, sizeThreadCnt, "size");
 
-        asyncRunFut = new GridCompoundFuture<>();
+        asyncRunFut = new GridCompoundFuture<>(null);
 
         asyncRunFut.add((IgniteInternalFuture)putRmvFut);
         asyncRunFut.add((IgniteInternalFuture)sizeFut);
@@ -2233,7 +2233,7 @@ public class BPlusTreeSelfTest extends GridCommonAbstractTest {
             }
         }, 1, "printTree");
 
-        asyncRunFut = new GridCompoundFuture<>();
+        asyncRunFut = new GridCompoundFuture<>(null);
 
         asyncRunFut.add((IgniteInternalFuture)sizeFut);
         asyncRunFut.add((IgniteInternalFuture)rmvFut);
@@ -2377,7 +2377,7 @@ public class BPlusTreeSelfTest extends GridCommonAbstractTest {
             }
         }, 1, "printLocks");
 
-        asyncRunFut = new GridCompoundFuture<>();
+        asyncRunFut = new GridCompoundFuture<>(null);
 
         asyncRunFut.add((IgniteInternalFuture)sizeFut);
         asyncRunFut.add((IgniteInternalFuture)rmvFut);
@@ -2986,7 +2986,7 @@ public class BPlusTreeSelfTest extends GridCommonAbstractTest {
             }
         }, 4, "find");
 
-        asyncRunFut = new GridCompoundFuture<>();
+        asyncRunFut = new GridCompoundFuture<>(null);
 
         asyncRunFut.add((IgniteInternalFuture)fut);
         asyncRunFut.add((IgniteInternalFuture)fut2);

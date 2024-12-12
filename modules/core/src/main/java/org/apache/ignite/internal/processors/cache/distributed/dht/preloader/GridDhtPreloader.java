@@ -92,7 +92,7 @@ public class GridDhtPreloader extends GridCachePreloaderAdapter {
 
         top = grp.topology();
 
-        startFut = new GridFutureAdapter<>();
+        startFut = new GridFutureAdapter<>(grp.shared().kernalContext());
     }
 
     /** {@inheritDoc} */
@@ -301,7 +301,7 @@ public class GridDhtPreloader extends GridCachePreloaderAdapter {
 
     /** {@inheritDoc} */
     @Override public void onReconnected() {
-        startFut = new GridFutureAdapter<>();
+        startFut = new GridFutureAdapter<>(ctx.kernalContext());
     }
 
     /**
@@ -510,7 +510,7 @@ public class GridDhtPreloader extends GridCachePreloaderAdapter {
                     }
                 });
             else {
-                GridCompoundFuture<Object, Object> compound = new GridCompoundFuture<>();
+                GridCompoundFuture<Object, Object> compound = new GridCompoundFuture<>(ctx.kernalContext());
 
                 compound.add((IgniteInternalFuture<Object>)startFut);
                 compound.add((IgniteInternalFuture<Object>)topReadyFut);

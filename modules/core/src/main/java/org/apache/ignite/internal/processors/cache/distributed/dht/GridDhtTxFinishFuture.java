@@ -108,7 +108,7 @@ public final class GridDhtTxFinishFuture<K, V> extends GridCacheCompoundIdentity
      * @param commit Commit flag.
      */
     public GridDhtTxFinishFuture(GridCacheSharedContext<K, V> cctx, GridDhtTxLocalAdapter tx, boolean commit) {
-        super(F.identityReducer(tx));
+        super(cctx.kernalContext(), F.identityReducer(tx));
 
         this.cctx = cctx;
         this.tx = tx;
@@ -654,6 +654,8 @@ public final class GridDhtTxFinishFuture<K, V> extends GridCacheCompoundIdentity
          * @param node Node.
          */
         private MiniFuture(int futId, ClusterNode node) {
+            super(cctx.kernalContext());
+
             this.futId = futId;
             this.node = node;
         }
@@ -664,6 +666,8 @@ public final class GridDhtTxFinishFuture<K, V> extends GridCacheCompoundIdentity
          * @param nearMapping nearMapping.
          */
         MiniFuture(int futId, GridDistributedTxMapping dhtMapping, GridDistributedTxMapping nearMapping) {
+            super(cctx.kernalContext());
+
             assert dhtMapping == null || nearMapping == null || dhtMapping.primary().equals(nearMapping.primary());
 
             this.futId = futId;

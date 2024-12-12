@@ -156,7 +156,7 @@ public class GridFinishedFuture<T> implements IgniteInternalFuture<T> {
     @Override public <T1> IgniteInternalFuture<T1> chain(final IgniteClosure<? super IgniteInternalFuture<T>, T1> doneCb, Executor exec) {
         assert doneCb != null;
 
-        final GridFutureAdapter<T1> fut = new GridFutureAdapter<>();
+        final GridFutureAdapter<T1> fut = new GridFutureAdapter<>(null);
 
         exec.execute(() -> {
             try {
@@ -200,7 +200,7 @@ public class GridFinishedFuture<T> implements IgniteInternalFuture<T> {
         IgniteClosure<? super IgniteInternalFuture<T>, IgniteInternalFuture<R>> doneCb,
         @Nullable Executor exec
     ) {
-        final GridFutureAdapter<R> res = new GridFutureAdapter<>();
+        final GridFutureAdapter<R> res = new GridFutureAdapter<>(null);
 
         exec.execute(() -> {
             IgniteInternalFuture<R> doneCbFut;

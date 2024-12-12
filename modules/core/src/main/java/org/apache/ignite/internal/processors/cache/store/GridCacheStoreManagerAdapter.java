@@ -131,8 +131,13 @@ public abstract class GridCacheStoreManagerAdapter extends GridCacheManagerAdapt
 
         store = cacheStoreWrapper(ctx, cfgStore, cfg);
 
-        singleThreadGate = store == null ? null : new CacheStoreBalancingWrapper<>(store,
-            cfg.getStoreConcurrentLoadAllThreshold());
+        singleThreadGate = store == null
+            ? null
+            : new CacheStoreBalancingWrapper<>(
+                ctx,
+                store,
+                cfg.getStoreConcurrentLoadAllThreshold()
+        );
 
         ThreadLocal<SessionData> sesHolder0 = null;
 

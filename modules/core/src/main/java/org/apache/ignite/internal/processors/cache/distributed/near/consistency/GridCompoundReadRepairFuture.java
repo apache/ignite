@@ -20,6 +20,7 @@ package org.apache.ignite.internal.processors.cache.distributed.near.consistency
 import java.util.Collection;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
+import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.lang.IgniteInClosure;
@@ -43,6 +44,11 @@ public class GridCompoundReadRepairFuture extends GridFutureAdapter<Void> implem
 
     /** Irreparable Keys. */
     private volatile Collection<Object> irreparableKeys;
+
+    /** */
+    public GridCompoundReadRepairFuture(GridKernalContext ctx) {
+        super(ctx);
+    }
 
     /**
      * @param fut Future.

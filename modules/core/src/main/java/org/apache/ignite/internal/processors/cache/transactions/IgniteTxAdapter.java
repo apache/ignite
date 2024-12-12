@@ -40,6 +40,7 @@ import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.cache.store.CacheStore;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.events.TransactionStateChangedEvent;
+import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.managers.discovery.ConsistentIdMapper;
 import org.apache.ignite.internal.managers.eventstorage.GridEventStorageManager;
@@ -1063,7 +1064,7 @@ public abstract class IgniteTxAdapter extends GridMetadataAwareAdapter implement
                 fut = finFut;
 
                 if (fut == null) {
-                    fut = new TxFinishFuture(this);
+                    fut = new TxFinishFuture(cctx.kernalContext(), this);
 
                     finFut = fut;
                 }
@@ -1987,9 +1988,12 @@ public abstract class IgniteTxAdapter extends GridMetadataAwareAdapter implement
         private volatile long completionTime;
 
         /**
+         * @param ctx Kernal context.
          * @param tx Transaction being awaited.
          */
-        private TxFinishFuture(IgniteTxAdapter tx) {
+        private TxFinishFuture(GridKernalContext ctx, IgniteTxAdapter tx) {
+            super(ctx);
+
             this.tx = tx;
         }
 

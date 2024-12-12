@@ -72,6 +72,9 @@ public class SchemaOperationWorker extends GridWorker {
     /** Workers registry. */
     private final WorkersRegistry workersRegistry;
 
+    /** */
+    private final GridKernalContext ctx;
+
     /**
      * Constructor.
      *
@@ -96,8 +99,9 @@ public class SchemaOperationWorker extends GridWorker {
         this.cacheRegistered = cacheRegistered;
         this.type = type;
         this.workersRegistry = ctx.workersRegistry();
+        this.ctx = ctx;
 
-        fut = new GridFutureAdapter();
+        fut = new GridFutureAdapter(ctx);
 
         if (err != null)
             fut.onDone(err);
@@ -142,7 +146,7 @@ public class SchemaOperationWorker extends GridWorker {
      */
     @SuppressWarnings("unchecked")
     private GridFutureAdapter<?> publicFuture(GridFutureAdapter fut) {
-        final GridFutureAdapter<?> chainedFut = new GridFutureAdapter<>();
+        final GridFutureAdapter<?> chainedFut = new GridFutureAdapter<>(ctx);
 
         fut.listen(new IgniteInClosure<IgniteInternalFuture>() {
             @Override public void apply(IgniteInternalFuture fut) {

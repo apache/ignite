@@ -279,7 +279,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
     private final Set<Long> missedCacheTypes = ConcurrentHashMap.newKeySet();
 
     /** Index rebuild futures. */
-    private final IndexRebuildFutureStorage idxRebuildFutStorage = new IndexRebuildFutureStorage();
+    private final IndexRebuildFutureStorage idxRebuildFutStorage;
 
     /** Index build statuses. */
     private final IndexBuildStatusStorage idxBuildStatusStorage;
@@ -315,6 +315,8 @@ public class GridQueryProcessor extends GridProcessorAdapter {
      */
     public GridQueryProcessor(GridKernalContext ctx) throws IgniteCheckedException {
         super(ctx);
+
+        idxRebuildFutStorage = new IndexRebuildFutureStorage(ctx);
 
         if (idxCls != null) {
             idx = U.newInstance(idxCls);
@@ -2111,7 +2113,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
                             buildIdxPoolSize + "]");
                     }
 
-                    GridFutureAdapter<Void> createIdxFut = new GridFutureAdapter<>();
+                    GridFutureAdapter<Void> createIdxFut = new GridFutureAdapter<>(ctx);
 
                     GridCacheContext<?, ?> cacheCtx = cacheInfo.cacheContext();
 
@@ -3526,7 +3528,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
      * @return Future.
      */
     private IgniteInternalFuture<?> startIndexOperationDistributed(SchemaAbstractOperation op) {
-        SchemaOperationClientFuture fut = new SchemaOperationClientFuture(op.id());
+        SchemaOperationClientFuture fut = new SchemaOperationClientFuture(ctx, op.id());
 
         SchemaOperationClientFuture oldFut = schemaCliFuts.put(op.id(), fut);
 

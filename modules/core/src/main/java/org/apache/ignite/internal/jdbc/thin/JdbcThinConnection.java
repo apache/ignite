@@ -1549,7 +1549,7 @@ public class JdbcThinConnection implements Connection {
         private long lastRespOrder = -1;
 
         /** Last response future. */
-        private final GridFutureAdapter<Void> lastRespFut = new GridFutureAdapter<>();
+        private final GridFutureAdapter<Void> lastRespFut = new GridFutureAdapter<>(null);
 
         /** Response semaphore sem. */
         private Semaphore respSem = new Semaphore(MAX_REQUESTS_BEFORE_RESPONSE);

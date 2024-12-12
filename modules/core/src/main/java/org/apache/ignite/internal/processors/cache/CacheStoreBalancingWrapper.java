@@ -30,6 +30,7 @@ import javax.cache.integration.CacheWriterException;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.cache.store.CacheStore;
 import org.apache.ignite.configuration.CacheConfiguration;
+import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.S;
@@ -52,20 +53,27 @@ public class CacheStoreBalancingWrapper<K, V> implements CacheStore<K, V> {
     /** Load all threshold. */
     private int loadAllThreshold = DFLT_LOAD_ALL_THRESHOLD;
 
+    /** */
+    private final GridKernalContext ctx;
+
     /**
+     * @param ctx Kernal context.
      * @param delegate Delegate store.
      */
-    public CacheStoreBalancingWrapper(CacheStore<K, V> delegate) {
+    public CacheStoreBalancingWrapper(GridKernalContext ctx, CacheStore<K, V> delegate) {
         this.delegate = delegate;
+        this.ctx = ctx;
     }
 
     /**
+     * @param ctx Kernal context.
      * @param delegate Delegate store.
      * @param loadAllThreshold Load all threshold.
      */
-    public CacheStoreBalancingWrapper(CacheStore<K, V> delegate, int loadAllThreshold) {
+    public CacheStoreBalancingWrapper(GridKernalContext ctx, CacheStore<K, V> delegate, int loadAllThreshold) {
         this.delegate = delegate;
         this.loadAllThreshold = loadAllThreshold;
+        this.ctx = ctx;
     }
 
     /**
@@ -83,7 +91,7 @@ public class CacheStoreBalancingWrapper<K, V> implements CacheStore<K, V> {
             if (fut != null)
                 return fut.get(key);
 
-            fut = new LoadFuture();
+            fut = new LoadFuture(ctx);
 
             LoadFuture old = pendingLoads.putIfAbsent(key, fut);
 
@@ -146,7 +154,7 @@ public class CacheStoreBalancingWrapper<K, V> implements CacheStore<K, V> {
             else {
                 // Try to concurrently add pending future.
                 if (span == null)
-                    span = new LoadFuture();
+                    span = new LoadFuture(ctx);
 
                 LoadFuture old = pendingLoads.putIfAbsent(key, span);
 
@@ -240,11 +248,9 @@ public class CacheStoreBalancingWrapper<K, V> implements CacheStore<K, V> {
         /** Collection of keys for pending cleanup. */
         private volatile Collection<K> keys;
 
-        /**
-         *
-         */
-        public LoadFuture() {
-            // No-op.
+        /** */
+        public LoadFuture(GridKernalContext ctx) {
+            super(ctx);
         }
 
         /** {@inheritDoc} */

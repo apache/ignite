@@ -360,7 +360,7 @@ public class ResumeCreateIndexTest extends AbstractRebuildIndexTest {
      * @return Future for waiting for the {@link CheckpointListener#beforeCheckpointBegin}.
      */
     private IgniteInternalFuture<Void> awaitBeforeCheckpointBeginAsync(IgniteEx n, String reason) {
-        GridFutureAdapter<Void> fut = new GridFutureAdapter<>();
+        GridFutureAdapter<Void> fut = new GridFutureAdapter<>(null);
 
         dbMgr(n).addCheckpointListener(new CheckpointListener() {
             /** {@inheritDoc} */

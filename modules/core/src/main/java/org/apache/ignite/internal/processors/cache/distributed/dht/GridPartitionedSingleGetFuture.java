@@ -184,6 +184,8 @@ public class GridPartitionedSingleGetFuture extends GridCacheFutureAdapter<Objec
         boolean recovery,
         String txLbl
     ) {
+        super(cctx.kernalContext());
+
         assert key != null;
 
         AffinityTopologyVersion lockedTopVer = cctx.shared().lockedTopologyVersion(null);

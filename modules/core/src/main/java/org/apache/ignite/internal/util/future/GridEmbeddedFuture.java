@@ -19,6 +19,7 @@ package org.apache.ignite.internal.util.future;
 
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteIllegalStateException;
+import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.util.lang.GridClosureException;
 import org.apache.ignite.internal.util.typedef.internal.S;
@@ -33,16 +34,20 @@ import org.apache.ignite.lang.IgniteOutClosure;
  */
 public class GridEmbeddedFuture<A, B> extends GridFutureAdapter<A> {
     /** Embedded future to wait for. */
-    private IgniteInternalFuture<B> embedded;
+    private final IgniteInternalFuture<B> embedded;
 
     /**
+     * @param ctx Kernal context.
      * @param c Closure to execute upon completion of embedded future.
      * @param embedded Embedded future.
      */
     public GridEmbeddedFuture(
+        GridKernalContext ctx,
         final IgniteBiClosure<B, Exception, A> c,
         IgniteInternalFuture<B> embedded
     ) {
+        super(ctx);
+
         assert embedded != null;
         assert c != null;
 
@@ -68,13 +73,17 @@ public class GridEmbeddedFuture<A, B> extends GridFutureAdapter<A> {
     /**
      * Embeds futures. Specific change order of arguments to avoid conflicts.
      *
+     * @param ctx Kernal context.
      * @param embedded Embedded future.
      * @param c Closure which runs upon completion of embedded closure and which returns another future.
      */
     public GridEmbeddedFuture(
+        GridKernalContext ctx,
         IgniteInternalFuture<B> embedded,
         final IgniteBiClosure<B, Exception, IgniteInternalFuture<A>> c
     ) {
+        super(ctx);
+
         assert embedded != null;
         assert c != null;
 
@@ -132,15 +141,19 @@ public class GridEmbeddedFuture<A, B> extends GridFutureAdapter<A> {
     /**
      * Embeds futures.
      *
+     * @param ctx Kernal context.
      * @param embedded Future.
      * @param c1 Closure which runs upon completion of embedded future and which returns another future.
      * @param c2 Closure will runs upon completion of future returned by {@code c1} closure.
      */
     public GridEmbeddedFuture(
+        GridKernalContext ctx,
         IgniteInternalFuture<B> embedded,
         final IgniteBiClosure<B, Exception, IgniteInternalFuture<A>> c1,
         final IgniteBiClosure<A, Exception, A> c2
     ) {
+        super(ctx);
+
         assert embedded != null;
         assert c1 != null;
         assert c2 != null;
@@ -201,13 +214,17 @@ public class GridEmbeddedFuture<A, B> extends GridFutureAdapter<A> {
     }
 
     /**
+     * @param ctx Kernal context.
      * @param embedded Embedded future.
      * @param c Closure to create next future.
      */
     public GridEmbeddedFuture(
+        GridKernalContext ctx,
         IgniteInternalFuture<B> embedded,
         final IgniteOutClosure<IgniteInternalFuture<A>> c
     ) {
+        super(ctx);
+
         assert embedded != null;
         assert c != null;
 

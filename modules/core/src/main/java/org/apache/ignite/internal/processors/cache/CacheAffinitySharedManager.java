@@ -2021,7 +2021,7 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
 
                         fetchFut.init(false);
 
-                        final GridFutureAdapter<AffinityTopologyVersion> affFut = new GridFutureAdapter<>();
+                        final GridFutureAdapter<AffinityTopologyVersion> affFut = new GridFutureAdapter<>(cctx.kernalContext());
 
                         final GridDhtPartitionsExchangeFuture futToFetchAffinity0 = futToFetchAff;
 
@@ -2070,7 +2070,7 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
         });
 
         if (!futs.isEmpty()) {
-            GridCompoundFuture<AffinityTopologyVersion, ?> affFut = new GridCompoundFuture<>();
+            GridCompoundFuture<AffinityTopologyVersion, ?> affFut = new GridCompoundFuture<>(cctx.kernalContext());
 
             for (IgniteInternalFuture<AffinityTopologyVersion> f : futs)
                 affFut.add(f);
@@ -2353,7 +2353,7 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
         IgniteInternalFuture<?> initFut = initCoordinatorCaches(fut, false);
 
         if (initFut != null && !initFut.isDone()) {
-            final GridFutureAdapter<Map<Integer, Map<Integer, List<UUID>>>> resFut = new GridFutureAdapter<>();
+            final GridFutureAdapter<Map<Integer, Map<Integer, List<UUID>>>> resFut = new GridFutureAdapter<>(cctx.kernalContext());
 
             initFut.listen(new IgniteInClosure<IgniteInternalFuture<?>>() {
                 @Override public void apply(IgniteInternalFuture<?> initFut) {

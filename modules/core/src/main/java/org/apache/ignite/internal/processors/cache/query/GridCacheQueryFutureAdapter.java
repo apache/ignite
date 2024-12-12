@@ -24,6 +24,7 @@ import java.util.UUID;
 import java.util.concurrent.atomic.AtomicReference;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
+import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteFutureTimeoutCheckedException;
 import org.apache.ignite.internal.cache.query.index.IndexQueryResultMeta;
 import org.apache.ignite.internal.processors.cache.CacheObjectUtils;
@@ -86,7 +87,9 @@ public abstract class GridCacheQueryFutureAdapter<K, V, R> extends GridFutureAda
     protected CacheQueryReducer<R> reducer;
 
     /** */
-    protected GridCacheQueryFutureAdapter() {
+    protected GridCacheQueryFutureAdapter(GridKernalContext ctx) {
+        super(ctx);
+
         qry = null;
     }
 
@@ -96,6 +99,8 @@ public abstract class GridCacheQueryFutureAdapter<K, V, R> extends GridFutureAda
      * @param loc Local query or not.
      */
     protected GridCacheQueryFutureAdapter(GridCacheContext<K, V> cctx, GridCacheQueryBean qry, boolean loc) {
+        super(cctx.kernalContext());
+
         this.cctx = cctx;
         this.qry = qry;
         this.loc = loc;

@@ -118,7 +118,7 @@ public class GridDhtPartitionDemander {
 
     /** Future for preload mode {@link CacheRebalanceMode#SYNC}. */
     @GridToStringInclude
-    private final GridFutureAdapter syncFut = new GridFutureAdapter();
+    private final GridFutureAdapter syncFut;
 
     /** Rebalance future. */
     @GridToStringInclude
@@ -144,6 +144,8 @@ public class GridDhtPartitionDemander {
         ctx = grp.shared();
 
         log = ctx.logger(getClass());
+
+        syncFut = new GridFutureAdapter(ctx.kernalContext());
 
         boolean enabled = grp.rebalanceEnabled() && !ctx.kernalContext().clientNode();
 
@@ -266,7 +268,7 @@ public class GridDhtPartitionDemander {
             if (log.isDebugEnabled())
                 log.debug("Forcing rebalance event for future: " + exchFut);
 
-            final GridFutureAdapter<Boolean> fut = new GridFutureAdapter<>();
+            final GridFutureAdapter<Boolean> fut = new GridFutureAdapter<>(ctx.kernalContext());
 
             exchFut.listen(new CI1<IgniteInternalFuture<AffinityTopologyVersion>>() {
                 @Override public void apply(IgniteInternalFuture<AffinityTopologyVersion> t) {
@@ -1045,6 +1047,8 @@ public class GridDhtPartitionDemander {
             RebalanceFuture next,
             AtomicLong lastCancelledTime
         ) {
+            super(grp.shared().kernalContext());
+
             assert assignments != null : "Asiignments must not be null.";
 
             rebalancingParts = U.newHashMap(assignments.size());
@@ -1100,6 +1104,8 @@ public class GridDhtPartitionDemander {
          * Dummy future. Will be done by real one.
          */
         RebalanceFuture() {
+            super(null);
+
             this.rebalancingParts = null;
             this.partitionsTotal = 0;
             this.assignments = null;

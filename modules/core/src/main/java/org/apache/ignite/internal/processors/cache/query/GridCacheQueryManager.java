@@ -545,7 +545,7 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
                 "CacheConfiguration.getMaxQueryIteratorsCount() configuration property).");
         }
 
-        QueryResult<K, V> res = new QueryResult<>(qry.type(), rcpt);
+        QueryResult<K, V> res = new QueryResult<>(cctx.kernalContext(), qry.type(), rcpt);
 
         GridCloseableIterator<IgniteBiTuple<K, V>> iter;
 
@@ -696,7 +696,7 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
             if (res != null && res.addRecipient(rcpt))
                 return res; // Cached result found.
 
-            res = new FieldsResult(rcpt);
+            res = new FieldsResult(cctx.kernalContext(), rcpt);
 
             if (qryResCache.putIfAbsent(resKey, res) != null)
                 resKey = null; // Failed to cache result.
@@ -720,7 +720,7 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
                     taskName));
             }
 
-            res = new FieldsResult(rcpt);
+            res = new FieldsResult(cctx.kernalContext(), rcpt);
         }
 
         try {
@@ -1543,7 +1543,7 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
             fut = futs.get(qryInfo.requestId());
 
             if (fut == null) {
-                futs.put(qryInfo.requestId(), fut = new GridFutureAdapter<>());
+                futs.put(qryInfo.requestId(), fut = new GridFutureAdapter<>(cctx.kernalContext()));
 
                 exec = true;
             }
@@ -1671,7 +1671,7 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
             fut = resMap.get(qryInfo.requestId());
 
             if (fut == null) {
-                resMap.put(qryInfo.requestId(), fut = new GridFutureAdapter<>());
+                resMap.put(qryInfo.requestId(), fut = new GridFutureAdapter<>(cctx.kernalContext()));
 
                 exec = true;
             }
@@ -2444,11 +2444,12 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
         private volatile boolean sentFirst;
 
         /**
+         * @param ctx Kernal context.
          * @param type Query type.
          * @param rcpt ID of the recipient.
          */
-        private QueryResult(GridCacheQueryType type, Object rcpt) {
-            super(rcpt);
+        private QueryResult(GridKernalContext ctx, GridCacheQueryType type, Object rcpt) {
+            super(ctx, rcpt);
 
             this.type = type;
 
@@ -2502,10 +2503,11 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
         private List<GridQueryFieldMetadata> meta;
 
         /**
+         * @param ctx Kernal context.
          * @param rcpt ID of the recipient.
          */
-        FieldsResult(Object rcpt) {
-            super(rcpt);
+        FieldsResult(GridKernalContext ctx, Object rcpt ) {
+            super(ctx, rcpt);
         }
 
         /**
@@ -2540,9 +2542,12 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
         private int pruned;
 
         /**
+         * @param ctx Kernal context.
          * @param rcpt ID of the recipient.
          */
-        protected CachedResult(Object rcpt) {
+        protected CachedResult(GridKernalContext ctx, Object rcpt) {
+            super(ctx);
+
             boolean res = addRecipient(rcpt);
 
             assert res;

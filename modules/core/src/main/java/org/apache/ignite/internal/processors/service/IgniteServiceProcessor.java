@@ -721,7 +721,7 @@ public class IgniteServiceProcessor extends GridProcessorAdapter implements Igni
                 if (failedFuts == null)
                     failedFuts = new ArrayList<>();
 
-                GridServiceDeploymentFuture<IgniteUuid> fut = new GridServiceDeploymentFuture<>(cfg, null);
+                GridServiceDeploymentFuture<IgniteUuid> fut = new GridServiceDeploymentFuture<>(ctx, cfg, null);
 
                 fut.onDone(err);
 
@@ -798,7 +798,7 @@ public class IgniteServiceProcessor extends GridProcessorAdapter implements Igni
 
             List<GridServiceDeploymentFuture<IgniteUuid>> failedFuts = srvcCfg.failedFuts;
 
-            GridServiceDeploymentCompoundFuture<IgniteUuid> res = new GridServiceDeploymentCompoundFuture<>();
+            GridServiceDeploymentCompoundFuture<IgniteUuid> res = new GridServiceDeploymentCompoundFuture<>(ctx);
 
             if (!cfgsCp.isEmpty()) {
                 try {
@@ -807,7 +807,7 @@ public class IgniteServiceProcessor extends GridProcessorAdapter implements Igni
                     for (LazyServiceConfiguration cfg : cfgsCp) {
                         IgniteUuid srvcId = IgniteUuid.randomUuid();
 
-                        GridServiceDeploymentFuture<IgniteUuid> fut = new GridServiceDeploymentFuture<>(cfg, srvcId);
+                        GridServiceDeploymentFuture<IgniteUuid> fut = new GridServiceDeploymentFuture<>(ctx, cfg, srvcId);
 
                         res.add(fut, true);
 
@@ -886,7 +886,7 @@ public class IgniteServiceProcessor extends GridProcessorAdapter implements Igni
             if (servicesNames.isEmpty())
                 return new GridFinishedFuture<>();
 
-            GridCompoundFuture res = new GridCompoundFuture<>();
+            GridCompoundFuture res = new GridCompoundFuture<>(ctx);
 
             Set<IgniteUuid> toRollback = new HashSet<>();
 
@@ -907,7 +907,7 @@ public class IgniteServiceProcessor extends GridProcessorAdapter implements Igni
                         continue;
                     }
 
-                    GridFutureAdapter<?> fut = new GridFutureAdapter<>();
+                    GridFutureAdapter<?> fut = new GridFutureAdapter<>(ctx);
 
                     GridFutureAdapter<?> old = undepFuts.putIfAbsent(srvcId, fut);
 

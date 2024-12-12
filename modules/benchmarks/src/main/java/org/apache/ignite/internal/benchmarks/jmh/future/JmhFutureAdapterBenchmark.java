@@ -88,7 +88,7 @@ public class JmhFutureAdapterBenchmark extends JmhAbstractBenchmark {
      */
     @Benchmark
     public void testSimpleGet() throws Exception {
-        GridFutureAdapter<Long> fut = new GridFutureAdapter<>();
+        GridFutureAdapter<Long> fut = new GridFutureAdapter<>(null);
         fut.onDone(RES);
         fut.get();
     }
@@ -98,7 +98,7 @@ public class JmhFutureAdapterBenchmark extends JmhAbstractBenchmark {
      */
     @Benchmark
     public void testSimpleGetWithListener() throws Exception {
-        GridFutureAdapter<Long> fut = new GridFutureAdapter<>();
+        GridFutureAdapter<Long> fut = new GridFutureAdapter<>(null);
         fut.listen(LSNR);
         fut.onDone(RES);
         fut.get();
@@ -111,7 +111,7 @@ public class JmhFutureAdapterBenchmark extends JmhAbstractBenchmark {
     @Benchmark
     @Threads(4)
     public void completeFutureGet(CompleteState state) throws Exception {
-        GridFutureAdapter<Long> fut = new GridFutureAdapter<>();
+        GridFutureAdapter<Long> fut = new GridFutureAdapter<>(null);
         state.queue.put(fut);
         fut.get();
     }

@@ -572,7 +572,7 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
     public IgniteInternalFuture sendIoTest(List<ClusterNode> nodes, byte[] payload, boolean procFromNioThread) {
         long id = ioTestId.getAndIncrement();
 
-        IoTestFuture fut = new IoTestFuture(id, nodes.size());
+        IoTestFuture fut = new IoTestFuture(ctx, id, nodes.size());
 
         IgniteIoTestMessage msg = new IgniteIoTestMessage(id, true, payload);
 
@@ -609,7 +609,7 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
     ) {
         long id = ioTestId.getAndIncrement();
 
-        IoTestFuture fut = new IoTestFuture(id, 1);
+        IoTestFuture fut = new IoTestFuture(null, id, 1);
 
         IgniteIoTestMessage msg = new IgniteIoTestMessage(id, true, payload);
 
@@ -4055,10 +4055,13 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
         private final List<IgniteIoTestMessage> ress;
 
         /**
+         * @param ctx Kernal context.
          * @param id ID.
          * @param cntr Counter.
          */
-        IoTestFuture(long id, int cntr) {
+        IoTestFuture(GridKernalContext ctx, long id, int cntr) {
+            super(ctx);
+
             assert cntr > 0 : cntr;
 
             this.id = id;

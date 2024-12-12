@@ -17,32 +17,18 @@
 
 package org.apache.ignite.internal.processors.security.thread;
 
+import org.apache.ignite.internal.processors.security.AbstractSecurityAwareWrapper;
 import org.apache.ignite.internal.processors.security.IgniteSecurity;
 import org.apache.ignite.internal.processors.security.OperationSecurityContext;
-import org.apache.ignite.internal.processors.security.SecurityContext;
 
 /**
  * Represents a {@link Runnable} wrapper that executes the original {@link Runnable} with the security context
  * current at the time the wrapper was created.
  */
-class SecurityAwareRunnable implements Runnable {
-    /** */
-    private final Runnable delegate;
-
-    /** */
-    private final IgniteSecurity security;
-
-    /** */
-    private final SecurityContext secCtx;
-
+class SecurityAwareRunnable extends AbstractSecurityAwareWrapper<Runnable> implements Runnable {
     /** */
     private SecurityAwareRunnable(IgniteSecurity security, Runnable delegate) {
-        assert security.enabled();
-        assert delegate != null;
-
-        this.delegate = delegate;
-        this.security = security;
-        secCtx = security.securityContext();
+        super(security, delegate);
     }
 
     /** {@inheritDoc} */
@@ -53,8 +39,8 @@ class SecurityAwareRunnable implements Runnable {
     }
 
     /** */
-    static Runnable of(IgniteSecurity security, Runnable delegate) {
-        if (delegate == null || security.isDefaultContext())
+    static Runnable wrap(IgniteSecurity security, Runnable delegate) {
+        if (delegate == null || security.isDefaultContext() || delegate instanceof AbstractSecurityAwareWrapper)
             return delegate;
 
         return new SecurityAwareRunnable(security, delegate);

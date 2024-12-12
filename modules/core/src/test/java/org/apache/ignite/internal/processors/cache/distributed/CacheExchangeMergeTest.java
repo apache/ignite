@@ -1635,7 +1635,7 @@ public class CacheExchangeMergeTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     private IgniteInternalFuture startGridsAsync(Ignite node, int startIdx, int cnt) throws Exception {
-        GridCompoundFuture fut = new GridCompoundFuture();
+        GridCompoundFuture fut = new GridCompoundFuture(null);
 
         for (int i = 0; i < cnt; i++) {
             final CountDownLatch latch = new CountDownLatch(1);

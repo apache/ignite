@@ -74,6 +74,7 @@ import org.apache.ignite.cluster.ClusterMetrics;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.events.NodeValidationFailedEvent;
 import org.apache.ignite.failure.FailureContext;
+import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteFeatures;
 import org.apache.ignite.internal.IgniteFutureTimeoutCheckedException;
@@ -832,7 +833,7 @@ class ServerImpl extends TcpDiscoveryImpl {
             return F.t(getLocalNodeId(), clientPingRes);
         }
 
-        GridPingFutureAdapter<IgniteBiTuple<UUID, Boolean>> fut = new GridPingFutureAdapter<>(nodeId);
+        GridPingFutureAdapter<IgniteBiTuple<UUID, Boolean>> fut = new GridPingFutureAdapter<>(((IgniteEx)spi.ignite()).context(), nodeId);
 
         InetSocketAddress addrKey = addr;
 
@@ -1111,7 +1112,7 @@ class ServerImpl extends TcpDiscoveryImpl {
                     localAuthentication(locCred);
 
                 // TODO IGNITE-11272
-                FutureTask<Void> fut = msgWorker.addTask(new FutureTask<Void>() {
+                FutureTask<Void> fut = msgWorker.addTask(new FutureTask<Void>(((IgniteEx)spi.ignite()).context()) {
                     @Override protected Void body() {
                         pendingCustomMsgs.clear();
                         msgWorker.pendingMsgs.reset(null, null, null);
@@ -7798,7 +7799,7 @@ class ServerImpl extends TcpDiscoveryImpl {
                 if (fut != null)
                     break;
 
-                fut = new GridFutureAdapter<>();
+                fut = new GridFutureAdapter<>(((IgniteEx)spi.ignite()).context());
 
                 if (pingFut.compareAndSet(null, fut)) {
                     TcpDiscoveryPingRequest pingReq = new TcpDiscoveryPingRequest(getLocalNodeId(), clientNodeId);
@@ -8033,9 +8034,12 @@ class ServerImpl extends TcpDiscoveryImpl {
         private volatile Socket sock;
 
         /**
+         * @param ctx Kernal context.
          * @param nodeId ID of node ping request is sent to.
          */
-        GridPingFutureAdapter(@Nullable UUID nodeId) {
+        GridPingFutureAdapter(GridKernalContext ctx, @Nullable UUID nodeId) {
+            super(ctx);
+
             this.nodeId = nodeId;
         }
 

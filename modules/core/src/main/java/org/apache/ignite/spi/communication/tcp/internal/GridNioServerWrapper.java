@@ -1080,7 +1080,7 @@ public class GridNioServerWrapper {
 
         ConnectionKey key = new ConnectionKey(remote.id(), chConnPlc.connectionIndex());
 
-        GridFutureAdapter<Channel> chFut = new GridFutureAdapter<>();
+        GridFutureAdapter<Channel> chFut = new GridFutureAdapter<>(null);
 
         connectGate.enter();
 

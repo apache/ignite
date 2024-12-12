@@ -877,7 +877,7 @@ public class ClusterProcessor extends GridProcessorAdapter implements Distribute
     public IgniteInternalFuture<String> requestDiagnosticInfo(final UUID nodeId,
         IgniteClosure<GridKernalContext, IgniteDiagnosticInfo> c,
         final String baseMsg) {
-        final GridFutureAdapter<String> infoFut = new GridFutureAdapter<>();
+        final GridFutureAdapter<String> infoFut = new GridFutureAdapter<>(ctx);
 
         final IgniteInternalFuture<IgniteDiagnosticInfo> rmtFut = sendDiagnosticMessage(nodeId, c);
 
@@ -1037,6 +1037,8 @@ public class ClusterProcessor extends GridProcessorAdapter implements Distribute
          * @param id Future ID.
          */
         InternalDiagnosticFuture(UUID nodeId, long id) {
+            super(ctx);
+
             this.nodeId = nodeId;
             this.id = id;
         }

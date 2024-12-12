@@ -23,6 +23,7 @@ import java.util.Map;
 import org.apache.ignite.cache.PartitionLossPolicy;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.TopologyValidator;
+import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.CacheGroupContext;
 import org.apache.ignite.internal.processors.cache.CacheInvalidStateException;
@@ -49,6 +50,11 @@ public abstract class GridDhtTopologyFutureAdapter extends GridFutureAdapter<Aff
 
     /** Whether or not cluster is active. */
     protected volatile boolean clusterIsActive = true;
+
+    /** */
+    protected GridDhtTopologyFutureAdapter(GridKernalContext ctx) {
+        super(ctx);
+    }
 
     /**
      * @param grp Cache group.

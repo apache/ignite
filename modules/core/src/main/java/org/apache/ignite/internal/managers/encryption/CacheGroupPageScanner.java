@@ -392,6 +392,8 @@ public class CacheGroupPageScanner implements CheckpointListener {
          * @param grp Cache group.
          */
         public GroupScanTask(CacheGroupContext grp) {
+            super(grp.shared().kernalContext());
+
             this.grp = grp;
 
             pageMem = (PageMemoryEx)grp.dataRegion().pageMemory();

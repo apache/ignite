@@ -88,7 +88,7 @@ public class IgniteSnapshotRemoteRequestTest extends IgniteClusterSnapshotRestor
         awaitPartitionMapExchange();
 
         CountDownLatch latch = new CountDownLatch(parts.values().stream().mapToInt(Set::size).sum() * rqCnt);
-        GridCompoundFuture<Void, Void> compFut = new GridCompoundFuture<>();
+        GridCompoundFuture<Void, Void> compFut = new GridCompoundFuture<>(null);
 
         IgniteInternalFuture<?> runFut = GridTestUtils.runMultiThreadedAsync(() -> {
             try {
@@ -352,7 +352,7 @@ public class IgniteSnapshotRemoteRequestTest extends IgniteClusterSnapshotRestor
         Collection<IgniteEx> rcvrs = F.viewReadOnly(G.allGrids(), srv -> (IgniteEx)srv,
             srv -> !F.eq(sndr.localNode(), srv.cluster().localNode()));
 
-        GridCompoundFuture<Void, Void> futs = new GridCompoundFuture<>();
+        GridCompoundFuture<Void, Void> futs = new GridCompoundFuture<>(null);
 
         for (IgniteEx rcv : rcvrs) {
             Map<Integer, Set<Integer>> expParts = owningParts(rcv, CU.cacheId(DEFAULT_CACHE_NAME), sndNode);

@@ -37,6 +37,7 @@ import org.apache.ignite.cache.ReadRepairStrategy;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.events.DiscoveryEvent;
 import org.apache.ignite.events.Event;
+import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.NodeStoppingException;
 import org.apache.ignite.internal.cluster.ClusterTopologyCheckedException;
@@ -869,10 +870,11 @@ public abstract class GridDhtCacheAdapter<K, V> extends GridDistributedCacheAdap
 
                 final Collection<KeyCacheObject> loaded = new HashSet<>();
 
-                return new GridEmbeddedFuture(
+                return new GridEmbeddedFuture<>(
+                    ctx.kernalContext(),
                     ctx.closures().callLocalSafe(ctx.projectSafe(new GPC<Map<K1, V1>>() {
                         @Override public Map<K1, V1> call() throws Exception {
-                            ctx.store().loadAll(null/*tx*/, loadKeys.keySet(), new CI2<KeyCacheObject, Object>() {
+                            ctx.store().loadAll(null/*tx*/, loadKeys.keySet(), new CI2<>() {
                                 @Override public void apply(KeyCacheObject key, Object val) {
                                     EntryGetResult res = loadKeys.get(key);
 
@@ -965,8 +967,8 @@ public abstract class GridDhtCacheAdapter<K, V> extends GridDistributedCacheAdap
                             return map;
                         }
                     }), true),
-                    new C2<Map<K, V>, Exception, IgniteInternalFuture<Map<K, V>>>() {
-                        @Override public IgniteInternalFuture<Map<K, V>> apply(Map<K, V> map, Exception e) {
+                    new C2<>() {
+                        @Override public IgniteInternalFuture<Map<K1, V1>> apply(Map<K1, V1> map, Exception e) {
                             if (e != null) {
                                 clearReservationsIfNeeded(loadKeys, loaded);
 
@@ -989,7 +991,7 @@ public abstract class GridDhtCacheAdapter<K, V> extends GridDistributedCacheAdap
                             return new GridFinishedFuture<>(Collections.emptyMap());
                         }
                     },
-                    new C2<Map<K1, V1>, Exception, Map<K1, V1>>() {
+                    new C2<>() {
                         @Override public Map<K1, V1> apply(Map<K1, V1> loaded, Exception e) {
                             if (e == null)
                                 map.putAll(loaded);
@@ -1686,9 +1688,12 @@ public abstract class GridDhtCacheAdapter<K, V> extends GridDistributedCacheAdap
         private AffinityTopologyVersion topVer;
 
         /**
+         * @param ctx Kernal context.
          * @param topVer Topology version.
          */
-        private MultiUpdateFuture(@NotNull AffinityTopologyVersion topVer) {
+        private MultiUpdateFuture(GridKernalContext ctx, @NotNull AffinityTopologyVersion topVer) {
+            super(ctx);
+
             this.topVer = topVer;
         }
 

@@ -19,6 +19,7 @@ package org.apache.ignite.internal.util;
 
 import java.util.stream.Collector;
 import java.util.stream.Collectors;
+import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.util.future.GridCompoundFuture;
 
@@ -40,8 +41,8 @@ public class IgniteCollectors {
      *         and initialized with {@link GridCompoundFuture#markInitialized()}.
      */
     public static <T, R> Collector<? super IgniteInternalFuture,
-        ? super GridCompoundFuture<T, R>, GridCompoundFuture<T, R>> toCompoundFuture() {
-        final GridCompoundFuture<T, R> res = new GridCompoundFuture<>();
+        ? super GridCompoundFuture<T, R>, GridCompoundFuture<T, R>> toCompoundFuture(GridKernalContext ctx) {
+        final GridCompoundFuture<T, R> res = new GridCompoundFuture<>(ctx);
 
         return Collectors.collectingAndThen(
             Collectors.reducing(

@@ -705,7 +705,7 @@ public class GridEncryptionManager extends GridManagerAdapter<EncryptionSpi> imp
                     "The previous change was not completed."));
             }
 
-            masterKeyChangeFut = new KeyChangeFuture(req.requestId());
+            masterKeyChangeFut = new KeyChangeFuture(ctx, req.requestId());
 
             prepareMKChangeProc.start(req.requestId(), req);
 
@@ -1177,7 +1177,7 @@ public class GridEncryptionManager extends GridManagerAdapter<EncryptionSpi> imp
             }
 
             try {
-                GenerateEncryptionKeyFuture genEncKeyFut = new GenerateEncryptionKeyFuture(keyCnt);
+                GenerateEncryptionKeyFuture genEncKeyFut = new GenerateEncryptionKeyFuture(ctx, keyCnt);
 
                 sendGenerateEncryptionKeyRequest(genEncKeyFut);
 
@@ -1897,9 +1897,12 @@ public class GridEncryptionManager extends GridManagerAdapter<EncryptionSpi> imp
         private UUID nodeId;
 
         /**
+         * @param ctx Kernal context.
          * @param keyCnt Count of keys to generate.
          */
-        private GenerateEncryptionKeyFuture(int keyCnt) {
+        private GenerateEncryptionKeyFuture(GridKernalContext ctx, int keyCnt) {
+            super(ctx);
+
             this.keyCnt = keyCnt;
         }
 
@@ -1947,8 +1950,13 @@ public class GridEncryptionManager extends GridManagerAdapter<EncryptionSpi> imp
         /** Request ID. */
         private final UUID id;
 
-        /** @param id Request ID. */
-        KeyChangeFuture(UUID id) {
+        /**
+         * @param ctx Kernal context.
+         * @param id Request ID.
+         */
+        KeyChangeFuture(GridKernalContext ctx, UUID id) {
+            super(ctx);
+
             this.id = id;
         }
 

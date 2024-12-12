@@ -27,6 +27,7 @@ import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.cluster.ClusterTopologyException;
+import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.cluster.ClusterTopologyCheckedException;
 import org.apache.ignite.internal.cluster.ClusterTopologyServerNotFoundException;
@@ -58,6 +59,7 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiInClosure;
 import org.apache.ignite.lang.IgniteReducer;
 import org.jetbrains.annotations.Nullable;
+
 import static org.apache.ignite.internal.processors.cache.GridCacheOperation.TRANSFORM;
 import static org.apache.ignite.internal.processors.tracing.MTC.TraceSurroundings;
 import static org.apache.ignite.transactions.TransactionState.PREPARED;
@@ -622,7 +624,7 @@ public class GridNearOptimisticSerializableTxPrepareFuture extends GridNearOptim
         if (!remap && cacheCtx.isNear()) {
             if (entry.explicitVersion() == null) {
                 if (keyLockFut == null) {
-                    keyLockFut = new KeyLockFuture();
+                    keyLockFut = new KeyLockFuture(cctx.kernalContext());
 
                     add((IgniteInternalFuture)keyLockFut);
                 }
@@ -709,8 +711,8 @@ public class GridNearOptimisticSerializableTxPrepareFuture extends GridNearOptim
         /**
          * Constructor.
          */
-        ClientRemapFuture() {
-            super(new ClientRemapFutureReducer());
+        ClientRemapFuture(GridKernalContext ctx) {
+            super(ctx, new ClientRemapFutureReducer());
         }
     }
 
@@ -767,6 +769,8 @@ public class GridNearOptimisticSerializableTxPrepareFuture extends GridNearOptim
          * @param futId Mini future ID.
          */
         MiniFuture(GridNearOptimisticSerializableTxPrepareFuture parent, GridDistributedTxMapping m, int futId) {
+            super(parent.kCtx);
+
             this.parent = parent;
             this.m = m;
             this.futId = futId;
@@ -855,7 +859,7 @@ public class GridNearOptimisticSerializableTxPrepareFuture extends GridNearOptim
 
                         synchronized (parent) {
                             if (parent.remapFut == null) {
-                                parent.remapFut = new ClientRemapFuture();
+                                parent.remapFut = new ClientRemapFuture(parent.cctx.kernalContext());
 
                                 remapFut0 = parent.remapFut;
                             }

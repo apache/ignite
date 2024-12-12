@@ -64,13 +64,13 @@ import static org.apache.ignite.internal.managers.communication.GridIoPolicy.SER
  */
 class ServiceDeploymentTask {
     /** Task's completion future. */
-    private final GridFutureAdapter<?> completeStateFut = new GridFutureAdapter<>();
+    private final GridFutureAdapter<?> completeStateFut;
 
     /** Task's completion of initialization future. */
-    private final GridFutureAdapter<?> initTaskFut = new GridFutureAdapter<>();
+    private final GridFutureAdapter<?> initTaskFut;
 
     /** Task's completion of remaining nodes ids initialization future. */
-    private final GridFutureAdapter<?> initCrdFut = new GridFutureAdapter<>();
+    private final GridFutureAdapter<?> initCrdFut;
 
     /** Coordinator initialization actions mutex. */
     private final Object initCrdMux = new Object();
@@ -128,6 +128,10 @@ class ServiceDeploymentTask {
      */
     protected ServiceDeploymentTask(GridKernalContext ctx, ServiceDeploymentProcessId depId) {
         assert ctx.service() instanceof IgniteServiceProcessor;
+
+        completeStateFut = new GridFutureAdapter<>(ctx);
+        initTaskFut = new GridFutureAdapter<>(ctx);
+        initCrdFut = new GridFutureAdapter<>(ctx);
 
         this.depId = depId;
         this.ctx = ctx;

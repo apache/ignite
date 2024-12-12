@@ -45,7 +45,7 @@ public class GridCacheLocalFieldsQueryFuture
     public GridCacheLocalFieldsQueryFuture(GridCacheContext<?, ?> ctx, GridCacheQueryBean qry) {
         super((GridCacheContext<Object, Object>)ctx, qry);
 
-        metaFut = new GridFutureAdapter<>();
+        metaFut = new GridFutureAdapter<>(ctx.kernalContext());
 
         if (!qry.query().includeMetadata())
             metaFut.onDone();

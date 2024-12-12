@@ -74,7 +74,7 @@ public class GridFutureListenPerformanceTest {
 
                     while (!done) {
                         for (int j = 0; j < rnd.nextInt(10); j++) {
-                            GridFutureAdapter<Object> fut = new GridFutureAdapter<>();
+                            GridFutureAdapter<Object> fut = new GridFutureAdapter<>(null);
 
                             futs.add(fut);
 

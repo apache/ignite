@@ -37,6 +37,7 @@ import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.events.DiscoveryEvent;
 import org.apache.ignite.events.Event;
+import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteClientDisconnectedCheckedException;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.NodeStoppingException;
@@ -328,7 +329,7 @@ public class GridCacheMvccManager extends GridCacheSharedManagerAdapter {
      * @return Compound future of all {@link GridDhtTxFinishFuture} futures.
      */
     public IgniteInternalFuture<?> finishRemoteTxs(AffinityTopologyVersion topVer) {
-        GridCompoundFuture<?, ?> res = new CacheObjectsReleaseFuture<>("RemoteTx", topVer);
+        GridCompoundFuture<?, ?> res = new CacheObjectsReleaseFuture<>(cctx.kernalContext(), "RemoteTx", topVer);
 
         for (GridCacheFuture<?> fut : futs.values()) {
             if (fut instanceof GridDhtTxFinishFuture) {
@@ -351,7 +352,7 @@ public class GridCacheMvccManager extends GridCacheSharedManagerAdapter {
      * @return Future wrapper which ignore any underlying future errors.
      */
     private IgniteInternalFuture ignoreErrors(IgniteInternalFuture<?> f) {
-        GridFutureAdapter<?> wrapper = new GridFutureAdapter();
+        GridFutureAdapter<?> wrapper = new GridFutureAdapter(cctx.kernalContext());
         f.listen(() -> wrapper.onDone());
         return wrapper;
     }
@@ -914,7 +915,7 @@ public class GridCacheMvccManager extends GridCacheSharedManagerAdapter {
             GridCacheExplicitLockSpan span = pendingExplicit.get(threadId);
 
             if (span == null) {
-                span = new GridCacheExplicitLockSpan(topVer, cand);
+                span = new GridCacheExplicitLockSpan(cctx.kernalContext(), topVer, cand);
 
                 GridCacheExplicitLockSpan old = pendingExplicit.putIfAbsent(threadId, span);
 
@@ -1109,7 +1110,7 @@ public class GridCacheMvccManager extends GridCacheSharedManagerAdapter {
      * @return Explicit locks release future.
      */
     public IgniteInternalFuture<?> finishExplicitLocks(AffinityTopologyVersion topVer) {
-        GridCompoundFuture<Object, Object> res = new CacheObjectsReleaseFuture<>("ExplicitLock", topVer);
+        GridCompoundFuture<Object, Object> res = new CacheObjectsReleaseFuture<>(cctx.kernalContext(), "ExplicitLock", topVer);
 
         for (GridCacheExplicitLockSpan span : pendingExplicit.values()) {
             AffinityTopologyVersion snapshot = span.topologyVersion();
@@ -1130,7 +1131,7 @@ public class GridCacheMvccManager extends GridCacheSharedManagerAdapter {
      */
     @SuppressWarnings("unchecked")
     public IgniteInternalFuture<?> finishAtomicUpdates(AffinityTopologyVersion topVer) {
-        GridCompoundFuture<Object, Object> res = new FinishAtomicUpdateFuture("AtomicUpdate", topVer);
+        GridCompoundFuture<Object, Object> res = new FinishAtomicUpdateFuture(cctx.kernalContext(), "AtomicUpdate", topVer);
 
         for (GridCacheAtomicFuture<?> fut : atomicFuts.values()) {
             IgniteInternalFuture<Void> complete = fut.completeFuture(topVer);
@@ -1149,7 +1150,7 @@ public class GridCacheMvccManager extends GridCacheSharedManagerAdapter {
      * @return Finish update future.
      */
     public IgniteInternalFuture<?> finishDataStreamerUpdates(AffinityTopologyVersion topVer) {
-        GridCompoundFuture<Void, Object> res = new CacheObjectsReleaseFuture<>("DataStreamer", topVer);
+        GridCompoundFuture<Void, Object> res = new CacheObjectsReleaseFuture<>(cctx.kernalContext(), "DataStreamer", topVer);
 
         for (DataStreamerFuture fut : dataStreamerFuts) {
             if (fut.topVer.compareTo(topVer) < 0)
@@ -1260,6 +1261,8 @@ public class GridCacheMvccManager extends GridCacheSharedManagerAdapter {
          * @param entries Entries.
          */
         FinishLockFuture(Iterable<GridDistributedCacheEntry> entries, AffinityTopologyVersion topVer) {
+            super(cctx.kernalContext());
+
             assert topVer.compareTo(AffinityTopologyVersion.ZERO) > 0;
 
             this.topVer = topVer;
@@ -1398,11 +1401,12 @@ public class GridCacheMvccManager extends GridCacheSharedManagerAdapter {
         private static final long serialVersionUID = 0L;
 
         /**
+         * @param ctx Kernal context.
          * @param type Type.
          * @param topVer Topology version.
          */
-        private FinishAtomicUpdateFuture(String type, AffinityTopologyVersion topVer) {
-            super(type, topVer);
+        private FinishAtomicUpdateFuture(GridKernalContext ctx, String type, AffinityTopologyVersion topVer) {
+            super(ctx, type, topVer);
         }
 
         /** {@inheritDoc} */
@@ -1426,6 +1430,8 @@ public class GridCacheMvccManager extends GridCacheSharedManagerAdapter {
          * @param topVer Topology version.
          */
         DataStreamerFuture(AffinityTopologyVersion topVer) {
+            super(cctx.kernalContext());
+
             this.topVer = topVer;
         }
 

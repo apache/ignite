@@ -24,6 +24,7 @@ import java.util.concurrent.locks.LockSupport;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
+import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteFutureCancelledCheckedException;
 import org.apache.ignite.internal.IgniteFutureTimeoutCheckedException;
 import org.apache.ignite.internal.IgniteInternalFuture;
@@ -63,6 +64,14 @@ public class GridFutureAdapter<R> implements IgniteInternalFuture<R> {
     static {
         @SuppressWarnings("unused")
         Class<?> ensureLoaded = LockSupport.class;
+    }
+
+    /** */
+    protected final GridKernalContext kCtx;
+
+    /** */
+    public GridFutureAdapter(GridKernalContext kCtx) {
+        this.kCtx = kCtx;
     }
 
     /**
@@ -353,6 +362,9 @@ public class GridFutureAdapter<R> implements IgniteInternalFuture<R> {
     /** {@inheritDoc} */
     @Async.Schedule
     @Override public void listen(IgniteInClosure<? super IgniteInternalFuture<R>> lsnr) {
+        if (kCtx != null)
+            lsnr = SecurityAwareInClosure.wrap(kCtx.security(), lsnr);
+
         if (!registerWaiter(lsnr))
             notifyListener(lsnr);
     }
@@ -378,7 +390,7 @@ public class GridFutureAdapter<R> implements IgniteInternalFuture<R> {
         IgniteClosure<? super IgniteInternalFuture<R>, T> doneCb,
         Executor exec
     ) {
-        ChainFuture<R, T> fut = new ChainFuture<>(this, doneCb, exec);
+        ChainFuture<R, T> fut = new ChainFuture<>(kCtx, this, doneCb, exec);
 
         if (ignoreInterrupts)
             fut.ignoreInterrupts();
@@ -403,7 +415,7 @@ public class GridFutureAdapter<R> implements IgniteInternalFuture<R> {
         IgniteClosure<? super IgniteInternalFuture<R>, IgniteInternalFuture<T>> doneCb,
         @Nullable Executor exec
     ) {
-        GridFutureAdapter<T> res = new GridFutureAdapter<>();
+        GridFutureAdapter<T> res = new GridFutureAdapter<>(kCtx);
 
         if (ignoreInterrupts)
             res.ignoreInterrupts();
@@ -647,15 +659,19 @@ public class GridFutureAdapter<R> implements IgniteInternalFuture<R> {
         private final IgniteClosure<? super IgniteInternalFuture<R>, T> doneCb;
 
         /**
+         * @param ctx Kernal context.
          * @param fut Future.
          * @param doneCb Closure.
          * @param cbExec Optional executor to run callback.
          */
         ChainFuture(
+            GridKernalContext ctx,
             GridFutureAdapter<R> fut,
             IgniteClosure<? super IgniteInternalFuture<R>, T> doneCb,
             @Nullable Executor cbExec
         ) {
+            super(ctx);
+
             this.fut = fut;
             this.doneCb = doneCb;
 

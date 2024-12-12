@@ -51,19 +51,19 @@ public class GridFutureAdapterSelfTest extends GridCommonAbstractTest {
      */
     @Test
     public void testOnDone() throws Exception {
-        GridFutureAdapter<String> fut = new GridFutureAdapter<>();
+        GridFutureAdapter<String> fut = new GridFutureAdapter<>(null);
 
         fut.onDone();
 
         assertNull(fut.get());
 
-        fut = new GridFutureAdapter<>();
+        fut = new GridFutureAdapter<>(null);
 
         fut.onDone("test");
 
         assertEquals("test", fut.get());
 
-        fut = new GridFutureAdapter<>();
+        fut = new GridFutureAdapter<>(null);
 
         fut.onDone(new IgniteCheckedException("TestMessage"));
 
@@ -75,7 +75,7 @@ public class GridFutureAdapterSelfTest extends GridCommonAbstractTest {
             }
         }, IgniteCheckedException.class, "TestMessage");
 
-        fut = new GridFutureAdapter<>();
+        fut = new GridFutureAdapter<>(null);
 
         fut.onDone("test", new IgniteCheckedException("TestMessage"));
 
@@ -87,7 +87,7 @@ public class GridFutureAdapterSelfTest extends GridCommonAbstractTest {
             }
         }, IgniteCheckedException.class, "TestMessage");
 
-        fut = new GridFutureAdapter<>();
+        fut = new GridFutureAdapter<>(null);
 
         fut.onDone("test");
 
@@ -103,7 +103,7 @@ public class GridFutureAdapterSelfTest extends GridCommonAbstractTest {
     public void testOnCancelled() throws Exception {
         assertThrows(log, new Callable<Object>() {
             @Override public Object call() throws Exception {
-                GridFutureAdapter<String> fut = new GridFutureAdapter<>();
+                GridFutureAdapter<String> fut = new GridFutureAdapter<>(null);
 
                 fut.onCancelled();
 
@@ -113,7 +113,7 @@ public class GridFutureAdapterSelfTest extends GridCommonAbstractTest {
 
         assertThrows(log, new Callable<Object>() {
             @Override public Object call() throws Exception {
-                GridFutureAdapter<String> fut = new GridFutureAdapter<>();
+                GridFutureAdapter<String> fut = new GridFutureAdapter<>(null);
 
                 fut.onCancelled();
 
@@ -129,7 +129,7 @@ public class GridFutureAdapterSelfTest extends GridCommonAbstractTest {
      */
     @Test
     public void testListenSyncNotify() throws Exception {
-        GridFutureAdapter<String> fut = new GridFutureAdapter<>();
+        GridFutureAdapter<String> fut = new GridFutureAdapter<>(null);
 
         int lsnrCnt = 10;
 
@@ -204,7 +204,7 @@ public class GridFutureAdapterSelfTest extends GridCommonAbstractTest {
         ctx.start();
 
         try {
-            GridFutureAdapter<String> fut = new GridFutureAdapter<>();
+            GridFutureAdapter<String> fut = new GridFutureAdapter<>(null);
 
             int lsnrCnt = 10;
 
@@ -286,7 +286,7 @@ public class GridFutureAdapterSelfTest extends GridCommonAbstractTest {
             }
         };
 
-        GridFutureAdapter<Object> fut = new GridFutureAdapter<>();
+        GridFutureAdapter<Object> fut = new GridFutureAdapter<>(null);
         IgniteInternalFuture<Object> chain = exec != null ? fut.chain(passThrough, exec) : fut.chain(passThrough);
 
         assertFalse(fut.isDone());
@@ -307,7 +307,7 @@ public class GridFutureAdapterSelfTest extends GridCommonAbstractTest {
 
         // Test exception re-thrown.
 
-        fut = new GridFutureAdapter<>();
+        fut = new GridFutureAdapter<>(null);
         chain = exec != null ? fut.chain(passThrough, exec) : fut.chain(passThrough);
 
         fut.onDone(new ClusterGroupEmptyCheckedException("test exception"));
@@ -323,7 +323,7 @@ public class GridFutureAdapterSelfTest extends GridCommonAbstractTest {
 
         // Test error re-thrown.
 
-        fut = new GridFutureAdapter<>();
+        fut = new GridFutureAdapter<>(null);
         chain = exec != null ? fut.chain(passThrough, exec) : fut.chain(passThrough);
 
         try {
@@ -383,8 +383,8 @@ public class GridFutureAdapterSelfTest extends GridCommonAbstractTest {
         boolean cbException,
         Executor exec
     ) throws IgniteCheckedException {
-        GridFutureAdapter<Object> fut0 = new GridFutureAdapter<>();
-        GridFutureAdapter<Object> cbFut = new GridFutureAdapter<>();
+        GridFutureAdapter<Object> fut0 = new GridFutureAdapter<>(null);
+        GridFutureAdapter<Object> cbFut = new GridFutureAdapter<>(null);
 
         IgniteInternalFuture<Object> chainedFut = fut0.chainCompose(
             f -> {
@@ -463,8 +463,8 @@ public class GridFutureAdapterSelfTest extends GridCommonAbstractTest {
      * Check the behavior of compose future when inner future is cancelled.
      */
     private void checkComposeCancel() {
-        GridFutureAdapter<Object> fut0 = new GridFutureAdapter<>();
-        GridFutureAdapter<Object> fut1 = new GridFutureAdapter<>();
+        GridFutureAdapter<Object> fut0 = new GridFutureAdapter<>(null);
+        GridFutureAdapter<Object> fut1 = new GridFutureAdapter<>(null);
 
         IgniteInternalFuture<Object> fut2 = fut0.chainCompose(f -> fut1);
 
@@ -485,9 +485,9 @@ public class GridFutureAdapterSelfTest extends GridCommonAbstractTest {
      */
     @Test
     public void testGet() throws Exception {
-        GridFutureAdapter<Object> unfinished = new GridFutureAdapter<>();
-        GridFutureAdapter<Object> finished = new GridFutureAdapter<>();
-        GridFutureAdapter<Object> cancelled = new GridFutureAdapter<>();
+        GridFutureAdapter<Object> unfinished = new GridFutureAdapter<>(null);
+        GridFutureAdapter<Object> finished = new GridFutureAdapter<>(null);
+        GridFutureAdapter<Object> cancelled = new GridFutureAdapter<>(null);
 
         finished.onDone("Finished");
 

@@ -120,7 +120,7 @@ public class DurableBackgroundTasksProcessor extends GridProcessorAdapter implem
                                 "Duplicate task names [original=" + task.name() +
                                     ", converted=" + convertedTask.name() + ']';
 
-                            GridFutureAdapter<?> outFut = new GridFutureAdapter<>();
+                            GridFutureAdapter<?> outFut = new GridFutureAdapter<>(ctx);
                             outFut.onDone();
 
                             DurableBackgroundTaskState<?> state =
@@ -136,7 +136,7 @@ public class DurableBackgroundTasksProcessor extends GridProcessorAdapter implem
 
                         tasks.put(
                             task.name(),
-                            new DurableBackgroundTaskState<>(task, new GridFutureAdapter<>(), true, converted)
+                            new DurableBackgroundTaskState<>(task, new GridFutureAdapter<>(ctx), true, converted)
                         );
                     },
                     true
@@ -280,7 +280,7 @@ public class DurableBackgroundTasksProcessor extends GridProcessorAdapter implem
                             taskName);
                     }
 
-                    return new DurableBackgroundTaskState<>(task, new GridFutureAdapter<>(), save, false);
+                    return new DurableBackgroundTaskState<>(task, new GridFutureAdapter<>(ctx), save, false);
                 });
 
             if (save) {

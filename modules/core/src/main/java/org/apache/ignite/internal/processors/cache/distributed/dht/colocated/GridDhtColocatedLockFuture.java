@@ -209,7 +209,7 @@ public final class GridDhtColocatedLockFuture extends GridCacheCompoundIdentityF
         boolean keepBinary,
         boolean recovery
     ) {
-        super(CU.boolReducer());
+        super(cctx.kernalContext(), CU.boolReducer());
 
         assert keys != null;
 
@@ -1257,6 +1257,7 @@ public final class GridDhtColocatedLockFuture extends GridCacheCompoundIdentityF
 
         // Add new future.
         add(new GridEmbeddedFuture<>(
+            cctx.kernalContext(),
             (Exception resEx, Exception e) -> {
                 if (CU.isLockTimeoutOrCancelled(e) || (CU.isLockTimeoutOrCancelled(resEx)))
                     return false;
@@ -1559,6 +1560,7 @@ public final class GridDhtColocatedLockFuture extends GridCacheCompoundIdentityF
             Collection<KeyCacheObject> keys,
             int futId
         ) {
+            super(cctx.kernalContext());
             this.node = node;
             this.keys = keys;
             this.futId = futId;

@@ -666,7 +666,7 @@ public class GridNearOptimisticTxPrepareFuture extends GridNearOptimisticTxPrepa
         if (cacheCtx.isNear()) {
             if (entry.explicitVersion() == null && !remap) {
                 if (keyLockFut == null) {
-                    keyLockFut = new KeyLockFuture();
+                    keyLockFut = new KeyLockFuture(cctx.kernalContext());
 
                     add((IgniteInternalFuture)keyLockFut);
                 }
@@ -750,26 +750,28 @@ public class GridNearOptimisticTxPrepareFuture extends GridNearOptimisticTxPrepa
                     }
                 }
 
-                add(new GridEmbeddedFuture<>(new IgniteBiClosure<TxDeadlock, Exception, Object>() {
-                    @Override public GridNearTxPrepareResponse apply(TxDeadlock deadlock, Exception e) {
-                        if (e != null)
-                            U.warn(log, "Failed to detect deadlock.", e);
-                        else {
-                            e = new IgniteTxTimeoutCheckedException("Failed to acquire lock within provided timeout for " +
-                                "transaction [timeout=" + tx.timeout() + ", tx=" + CU.txString(tx) + ']',
-                                deadlock != null ? new TransactionDeadlockException(deadlock.toString(cctx)) : null);
+                add(new GridEmbeddedFuture<>(
+                    cctx.kernalContext(),
+                    new IgniteBiClosure<>() {
+                        @Override public GridNearTxPrepareResponse apply(TxDeadlock deadlock, Exception e) {
+                            if (e != null)
+                                U.warn(log, "Failed to detect deadlock.", e);
+                            else {
+                                e = new IgniteTxTimeoutCheckedException("Failed to acquire lock within provided timeout for " +
+                                    "transaction [timeout=" + tx.timeout() + ", tx=" + CU.txString(tx) + ']',
+                                    deadlock != null ? new TransactionDeadlockException(deadlock.toString(cctx)) : null);
 
-                            if (!ERR_UPD.compareAndSet(GridNearOptimisticTxPrepareFuture.this, null, e)
-                                && err instanceof IgniteTxTimeoutCheckedException) {
-                                err = e;
+                                if (!ERR_UPD.compareAndSet(GridNearOptimisticTxPrepareFuture.this, null, e)
+                                    && err instanceof IgniteTxTimeoutCheckedException) {
+                                    err = e;
+                                }
                             }
+
+                            onDone(null, e);
+
+                            return null;
                         }
-
-                        onDone(null, e);
-
-                        return null;
-                    }
-                }, cctx.tm().detectDeadlock(tx, keys)));
+                    }, cctx.tm().detectDeadlock(tx, keys)));
             }
             else {
                 ERR_UPD.compareAndSet(this, null, new IgniteTxTimeoutCheckedException("Failed to acquire lock " +
@@ -889,10 +891,14 @@ public class GridNearOptimisticTxPrepareFuture extends GridNearOptimisticTxPrepa
          * @param futId Mini future ID.
          * @param mappings Queue of mappings to proceed with.
          */
-        MiniFuture(GridNearOptimisticTxPrepareFuture parent,
+        MiniFuture(
+            GridNearOptimisticTxPrepareFuture parent,
             GridDistributedTxMapping m,
             int futId,
-            Queue<GridDistributedTxMapping> mappings) {
+            Queue<GridDistributedTxMapping> mappings
+        ) {
+            super(parent.cctx.kernalContext());
+
             this.parent = parent;
             this.m = m;
             this.futId = futId;

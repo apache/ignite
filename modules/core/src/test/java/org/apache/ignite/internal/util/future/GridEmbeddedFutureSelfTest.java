@@ -50,13 +50,15 @@ public class GridEmbeddedFutureSelfTest extends GridCommonAbstractTest {
      */
     @Test
     public void testFutureChain() throws Exception {
-        GridFutureAdapter<Integer> fut = new GridFutureAdapter<>();
+        GridFutureAdapter<Integer> fut = new GridFutureAdapter<>(null);
 
         IgniteInternalFuture<Integer> cur = fut;
 
         for (int i = 0; i < DFLT_MAX_CONCURRENT_ASYNC_OPS; i++) {
-            cur = new GridEmbeddedFuture<>(cur,
-                new IgniteBiClosure<Integer, Exception, IgniteInternalFuture<Integer>>() {
+            cur = new GridEmbeddedFuture<>(
+                null,
+                cur,
+                new IgniteBiClosure<>() {
                     @Override public IgniteInternalFuture<Integer> apply(Integer o, Exception e) {
                         return new GridFinishedFuture<>(o);
                     }
@@ -86,11 +88,12 @@ public class GridEmbeddedFutureSelfTest extends GridCommonAbstractTest {
 
         for (final Throwable x : list) {
             // Original future.
-            final GridFutureAdapter<Integer> origFut = new GridFutureAdapter<>();
+            final GridFutureAdapter<Integer> origFut = new GridFutureAdapter<>(null);
 
             // Embedded future to test.
-            GridEmbeddedFuture<Double, Integer> embFut = new GridEmbeddedFuture<>(
-                new C2<Integer, Exception, Double>() {
+            IgniteInternalFuture<Double> embFut = new GridEmbeddedFuture<>(
+                ctx,
+                new C2<>() {
                     @Override public Double apply(Integer val, Exception e) {
                         if (x instanceof Error)
                             throw (Error)x;

@@ -212,7 +212,7 @@ public class GridDhtLocalPartition extends GridCacheConcurrentMapImpl implements
             cacheMaps = null;
         }
 
-        rent = new GridFutureAdapter<Object>() {
+        rent = new GridFutureAdapter<Object>(ctx.kernalContext()) {
             @Override public String toString() {
                 return "PartitionRentFuture [part=" + GridDhtLocalPartition.this + ']';
             }
@@ -744,7 +744,7 @@ public class GridDhtLocalPartition extends GridCacheConcurrentMapImpl implements
         if (!evictionRequested && !clearingRequested)
             return new GridFinishedFuture<>();
 
-        GridFutureAdapter<?> finishFut = new GridFutureAdapter<>();
+        GridFutureAdapter<?> finishFut = new GridFutureAdapter<>(ctx.kernalContext());
 
         do {
             GridFutureAdapter<?> curFut = finishFutRef.get();

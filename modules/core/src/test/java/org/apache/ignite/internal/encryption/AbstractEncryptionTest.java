@@ -488,7 +488,7 @@ public abstract class AbstractEncryptionTest extends GridCommonAbstractTest {
      * @throws IgniteCheckedException If failed.
      */
     protected void awaitEncryption(List<Ignite> grids, int grpId, long timeout) throws IgniteCheckedException {
-        GridCompoundFuture<Void, ?> fut = new GridCompoundFuture<>();
+        GridCompoundFuture<Void, ?> fut = new GridCompoundFuture<>(null);
 
         for (Ignite node : grids) {
             IgniteEx grid = (IgniteEx)node;

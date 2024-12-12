@@ -18,10 +18,15 @@
 
 package org.apache.ignite.internal.processors.query.running;
 
+import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
 
 /**
  * Query running future.
  */
 public class QueryRunningFuture extends GridFutureAdapter<String> {
+    /** */
+    public QueryRunningFuture(GridKernalContext ctx) {
+        super(ctx);
+    }
 }

@@ -822,7 +822,7 @@ public class GridNioServer<T> {
      * @return Future.
      */
     public IgniteInternalFuture<String> dumpStats(final String msg, IgnitePredicate<GridNioSession> p) {
-        GridCompoundFuture<String, String> fut = new GridCompoundFuture<>(new IgniteReducer<String, String>() {
+        GridCompoundFuture<String, String> fut = new GridCompoundFuture<>(null, new IgniteReducer<String, String>() {
             private final StringBuilder sb = new StringBuilder(msg);
 
             @Override public boolean collect(@Nullable String msg) {
@@ -867,7 +867,7 @@ public class GridNioServer<T> {
      */
     @SuppressWarnings("ForLoopReplaceableByForEach")
     public IgniteInternalFuture<String> dumpNodeStats(final String msg, IgnitePredicate<GridNioSession> p) {
-        GridCompoundFuture<String, String> fut = new GridCompoundFuture<>(new IgniteReducer<String, String>() {
+        GridCompoundFuture<String, String> fut = new GridCompoundFuture<>(null, new IgniteReducer<String, String>() {
             private final StringBuilder sb = new StringBuilder(msg);
 
             @Override public boolean collect(@Nullable String msg) {

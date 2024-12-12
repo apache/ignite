@@ -1026,6 +1026,11 @@ public class JdbcConnection implements Connection {
         /** Reference count. */
         private final AtomicInteger refCnt = new AtomicInteger(1);
 
+        /** */
+        public IgniteNodeFuture() {
+            super(null);
+        }
+
         /**
          *
          */

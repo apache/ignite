@@ -73,6 +73,8 @@ abstract class AbstractSnapshotFutureTask<T> extends GridFutureAdapter<T> {
         SnapshotSender snpSndr,
         Map<Integer, Set<Integer>> parts
     ) {
+        super(cctx.kernalContext());
+
         assert snpName != null : "Snapshot name cannot be empty or null.";
         assert snpSndr != null : "Snapshot sender which handles execution tasks must be not null.";
         assert snpSndr.executor() != null : "Executor service must be not null.";

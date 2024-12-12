@@ -26,6 +26,7 @@ import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.cluster.ClusterNode;
+import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.util.future.GridFinishedFuture;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
@@ -96,6 +97,8 @@ class ZkCommunicationErrorProcessFuture extends GridFutureAdapter<Void> implemen
      * @param timeout Wait timeout before initiating communication errors resolve.
      */
     private ZkCommunicationErrorProcessFuture(ZookeeperDiscoveryImpl impl, State state, long timeout) {
+        super(((IgniteEx)impl.spi.ignite()).context());
+
         assert state != State.DONE;
 
         this.impl = impl;
@@ -298,7 +301,7 @@ class ZkCommunicationErrorProcessFuture extends GridFutureAdapter<Void> implemen
             fut = nodeFuts.get(node.order());
 
             if (fut == null)
-                nodeFuts.put(node.order(), fut = new GridFutureAdapter<>());
+                nodeFuts.put(node.order(), fut = new GridFutureAdapter<>(kCtx));
         }
 
         if (impl.node(node.order()) == null)

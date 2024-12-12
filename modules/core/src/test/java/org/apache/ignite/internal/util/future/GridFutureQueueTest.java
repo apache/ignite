@@ -63,6 +63,8 @@ public class GridFutureQueueTest {
          * @param msg Message.
          */
         Future(Message msg) {
+            super(null);
+
             this.msg = msg;
         }
     }

@@ -676,7 +676,7 @@ public final class GridCacheSemaphoreImpl extends AtomicDataStructureProxy<GridC
 
         Future<T> passedInCallableFut = ctx.kernalContext().pools().getExecutorService().submit(callable);
 
-        final GridFutureAdapter<T> fut = new GridFutureAdapter<T>() {
+        final GridFutureAdapter<T> fut = new GridFutureAdapter<T>(ctx.kernalContext()) {
             @Override public T get() {
                 try {
                     return passedInCallableFut.get();

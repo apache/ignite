@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.util.worker;
 
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
 
 /**
@@ -26,6 +27,11 @@ import org.apache.ignite.internal.util.future.GridFutureAdapter;
 public class GridWorkerFuture<T> extends GridFutureAdapter<T> {
     /** */
     private GridWorker w;
+
+    /** */
+    public GridWorkerFuture(GridKernalContext ctx) {
+        super(ctx);
+    }
 
     /** {@inheritDoc} */
     @Override public boolean cancel() throws IgniteCheckedException {

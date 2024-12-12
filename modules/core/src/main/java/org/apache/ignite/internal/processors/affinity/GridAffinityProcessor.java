@@ -549,6 +549,8 @@ public class GridAffinityProcessor extends GridProcessorAdapter {
          * @param cacheNodes Cache nodes.
          */
         AffinityFuture(String cacheName, AffinityTopologyVersion topVer, List<ClusterNode> cacheNodes) {
+            super(ctx);
+
             this.cacheName = cacheName;
             this.topVer = topVer;
             this.cacheNodes = cacheNodes;

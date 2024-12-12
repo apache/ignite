@@ -60,7 +60,7 @@ public class ClusterStateProvider {
     private final IgniteLogger log;
 
     /** Ignite ex supplier. */
-    private final Supplier<Ignite> igniteExSupplier;
+    private final Supplier<IgniteEx> igniteExSupplier;
 
     /**
      * @param ignite Ignite.
@@ -78,7 +78,7 @@ public class ClusterStateProvider {
         Supplier<Boolean> stoppedSupplier,
         Supplier<IgniteSpiContext> spiCtxWithoutLatchSupplier,
         IgniteLogger log,
-        Supplier<Ignite> igniteExSupplier
+        Supplier<IgniteEx> igniteExSupplier
     ) {
         this.ignite = ignite;
         this.locNodeSupplier = locNodeSupplier;

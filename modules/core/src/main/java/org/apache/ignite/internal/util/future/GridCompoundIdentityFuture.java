@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.util.future;
 
+import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.lang.IgniteReducer;
 import org.jetbrains.annotations.Nullable;
@@ -28,18 +29,17 @@ public class GridCompoundIdentityFuture<T> extends GridCompoundFuture<T, T> {
     /** */
     private static final long serialVersionUID = 0L;
 
-    /**
-     *
-     */
-    public GridCompoundIdentityFuture() {
-        // No-op.
+    /** */
+    public GridCompoundIdentityFuture(GridKernalContext ctx) {
+        super(ctx);
     }
 
     /**
+     * @param ctx Kernal context.
      * @param rdc Reducer.
      */
-    public GridCompoundIdentityFuture(@Nullable IgniteReducer<T, T> rdc) {
-        super(rdc);
+    public GridCompoundIdentityFuture(GridKernalContext ctx, @Nullable IgniteReducer<T, T> rdc) {
+        super(ctx, rdc);
     }
 
     /** {@inheritDoc} */

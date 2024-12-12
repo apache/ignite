@@ -177,8 +177,8 @@ public class DropIndexTest extends AbstractRebuildIndexTest {
         assertTrue(task.name().startsWith(taskNamePrefix(cctx.name(), idxName)));
         assertTrue(getFieldValue(task, "needToRen"));
 
-        GridFutureAdapter<Void> startFut = new GridFutureAdapter<>();
-        GridFutureAdapter<Void> endFut = new GridFutureAdapter<>();
+        GridFutureAdapter<Void> startFut = new GridFutureAdapter<>(null);
+        GridFutureAdapter<Void> endFut = new GridFutureAdapter<>(null);
 
         idxTreeFactory = taskIndexTreeFactoryEx(startFut, endFut);
 
@@ -417,8 +417,8 @@ public class DropIndexTest extends AbstractRebuildIndexTest {
         String idxName = "IDX0";
         createIdx(cache, idxName);
 
-        GridFutureAdapter<Void> startFut = new GridFutureAdapter<>();
-        GridFutureAdapter<Void> endFut = new GridFutureAdapter<>();
+        GridFutureAdapter<Void> startFut = new GridFutureAdapter<>(null);
+        GridFutureAdapter<Void> endFut = new GridFutureAdapter<>(null);
 
         idxTreeFactory = taskIndexTreeFactoryEx(startFut, endFut);
 
@@ -463,8 +463,8 @@ public class DropIndexTest extends AbstractRebuildIndexTest {
         String idxName = "IDX0";
         createIdx(cache, idxName);
 
-        GridFutureAdapter<Void> startFut = new GridFutureAdapter<>();
-        GridFutureAdapter<Void> endFut = new GridFutureAdapter<>();
+        GridFutureAdapter<Void> startFut = new GridFutureAdapter<>(null);
+        GridFutureAdapter<Void> endFut = new GridFutureAdapter<>(null);
 
         idxTreeFactory = taskIndexTreeFactoryEx(startFut, endFut);
 

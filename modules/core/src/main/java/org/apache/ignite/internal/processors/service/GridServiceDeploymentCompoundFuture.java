@@ -22,6 +22,7 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.util.future.GridCompoundFuture;
 import org.apache.ignite.services.ServiceConfiguration;
@@ -40,6 +41,11 @@ public class GridServiceDeploymentCompoundFuture<T extends Serializable> extends
 
     /** */
     private volatile ServiceDeploymentException err;
+
+    /** */
+    public GridServiceDeploymentCompoundFuture(GridKernalContext ctx) {
+        super(ctx);
+    }
 
     /** {@inheritDoc} */
     @Override protected boolean processFailure(Throwable err, IgniteInternalFuture<Object> fut) {

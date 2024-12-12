@@ -215,7 +215,7 @@ public final class GridDhtLockFuture extends GridCacheCompoundIdentityFuture<Boo
         long accessTtl,
         boolean skipStore,
         boolean keepBinary) {
-        super(CU.boolReducer());
+        super(cctx.kernalContext(), CU.boolReducer());
 
         assert nearNodeId != null;
         assert nearLockVer != null;
@@ -1245,6 +1245,8 @@ public final class GridDhtLockFuture extends GridCacheCompoundIdentityFuture<Boo
          * @param dhtMapping Mapping.
          */
         MiniFuture(ClusterNode node, List<GridDhtCacheEntry> dhtMapping) {
+            super((cctx.kernalContext()));
+
             assert node != null;
 
             this.node = node;

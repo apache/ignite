@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.processors.cache;
 
+import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.jetbrains.annotations.Nullable;
@@ -34,8 +35,8 @@ public abstract class GridCacheFutureAdapter<R> extends GridFutureAdapter<R> imp
     /**
      * Default constructor.
      */
-    protected GridCacheFutureAdapter() {
-        // No-op.
+    protected GridCacheFutureAdapter(GridKernalContext ctx) {
+        super(ctx);
     }
 
     /** {@inheritDoc} */

@@ -590,7 +590,7 @@ public abstract class GridCacheAbstractNodeRestartSelfTest extends GridCommonAbs
 
         startGrids();
 
-        GridCompoundFuture<Long, Long> fut = new GridCompoundFuture<>();
+        GridCompoundFuture<Long, Long> fut = new GridCompoundFuture<>(null);
 
         try {
             final AtomicInteger putCntr = new AtomicInteger();
@@ -700,7 +700,7 @@ public abstract class GridCacheAbstractNodeRestartSelfTest extends GridCommonAbs
 
         startGrids();
 
-        GridCompoundFuture<Long, Long> fut = new GridCompoundFuture<>();
+        GridCompoundFuture<Long, Long> fut = new GridCompoundFuture<>(null);
 
         try {
             final AtomicInteger txCntr = new AtomicInteger();
@@ -843,7 +843,7 @@ public abstract class GridCacheAbstractNodeRestartSelfTest extends GridCommonAbs
 
         startGrids();
 
-        GridCompoundFuture<Long, Long> fut = new GridCompoundFuture<>();
+        GridCompoundFuture<Long, Long> fut = new GridCompoundFuture<>(null);
 
         try {
             final AtomicInteger txCntr = new AtomicInteger();

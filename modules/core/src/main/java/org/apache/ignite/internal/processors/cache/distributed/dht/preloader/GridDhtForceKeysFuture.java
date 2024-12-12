@@ -114,6 +114,8 @@ public final class GridDhtForceKeysFuture<K, V> extends GridCompoundFuture<Objec
         AffinityTopologyVersion topVer,
         Collection<KeyCacheObject> keys
     ) {
+        super(cctx.kernalContext());
+
         assert topVer.topologyVersion() != 0 : topVer;
         assert !F.isEmpty(keys) : keys;
         assert !cctx.isNear();
@@ -429,6 +431,8 @@ public final class GridDhtForceKeysFuture<K, V> extends GridCompoundFuture<Objec
          * @param exc Exclude node list.
          */
         MiniFuture(ClusterNode node, Collection<KeyCacheObject> keys, int curTopVer, Collection<ClusterNode> exc) {
+            super(cctx.kernalContext());
+
             assert node != null;
             assert curTopVer > 0;
             assert exc != null;

@@ -145,7 +145,10 @@ public abstract class GridNearReadRepairAbstractFuture extends GridFutureAdapter
         boolean recovery,
         IgniteCacheExpiryPolicy expiryPlc,
         IgniteInternalTx tx,
-        GridNearReadRepairAbstractFuture remappedFut) {
+        GridNearReadRepairAbstractFuture remappedFut
+    ) {
+        super(ctx.kernalContext());
+
         this.ctx = ctx;
         this.keys = Collections.unmodifiableCollection(keys);
         this.readThrough = readThrough;

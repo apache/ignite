@@ -100,6 +100,8 @@ public abstract class GridDhtAtomicAbstractUpdateFuture extends GridCacheFutureA
         GridCacheVersion writeVer,
         GridNearAtomicAbstractUpdateRequest updateReq
     ) {
+        super(cctx.kernalContext());
+
         this.cctx = cctx;
 
         this.updateReq = updateReq;

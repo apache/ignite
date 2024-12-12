@@ -228,6 +228,8 @@ public class TxDeadlockDetection {
             GridCacheVersion txId,
             AffinityTopologyVersion topVer,
             Set<IgniteTxKey> keys) {
+            super(cctx.kernalContext());
+
             this.cctx = cctx;
             this.txId = txId;
             this.topVer = topVer;

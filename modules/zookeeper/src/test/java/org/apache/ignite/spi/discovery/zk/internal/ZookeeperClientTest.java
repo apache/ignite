@@ -595,6 +595,11 @@ public class ZookeeperClientTest extends GridCommonAbstractTest {
      *
      */
     private static class CallbackFuture extends GridFutureAdapter<Void> implements IgniteRunnable {
+        /** */
+        public CallbackFuture() {
+            super(null);
+        }
+
         /** {@inheritDoc} */
         @Override public void run() {
             onDone();

@@ -36,7 +36,7 @@ public class GridCompoundFutureSelfTest extends GridCommonAbstractTest {
      */
     @Test
     public void testMarkInitialized() throws Exception {
-        GridCompoundFuture<Boolean, Boolean> fut = new GridCompoundFuture<>();
+        GridCompoundFuture<Boolean, Boolean> fut = new GridCompoundFuture<>(null);
 
         for (int i = 0; i < 5; i++) {
             IgniteInternalFuture<Boolean> part = new GridFinishedFuture<>(true);
@@ -57,12 +57,12 @@ public class GridCompoundFutureSelfTest extends GridCommonAbstractTest {
      */
     @Test
     public void testCompleteOnReducer() throws Exception {
-        GridCompoundFuture<Boolean, Boolean> fut = new GridCompoundFuture<>(CU.boolReducer());
+        GridCompoundFuture<Boolean, Boolean> fut = new GridCompoundFuture<>(null, CU.boolReducer());
 
         List<GridFutureAdapter<Boolean>> futs = new ArrayList<>(5);
 
         for (int i = 0; i < 5; i++) {
-            GridFutureAdapter<Boolean> part = new GridFutureAdapter<>();
+            GridFutureAdapter<Boolean> part = new GridFutureAdapter<>(null);
 
             fut.add(part);
 
@@ -90,12 +90,12 @@ public class GridCompoundFutureSelfTest extends GridCommonAbstractTest {
      */
     @Test
     public void testCompleteOnException() throws Exception {
-        GridCompoundFuture<Boolean, Boolean> fut = new GridCompoundFuture<>(CU.boolReducer());
+        GridCompoundFuture<Boolean, Boolean> fut = new GridCompoundFuture<>(null, CU.boolReducer());
 
         List<GridFutureAdapter<Boolean>> futs = new ArrayList<>(5);
 
         for (int i = 0; i < 5; i++) {
-            GridFutureAdapter<Boolean> part = new GridFutureAdapter<>();
+            GridFutureAdapter<Boolean> part = new GridFutureAdapter<>(null);
 
             fut.add(part);
 
@@ -123,12 +123,12 @@ public class GridCompoundFutureSelfTest extends GridCommonAbstractTest {
      */
     @Test
     public void testConcurrentCompletion() throws Exception {
-        GridCompoundFuture<Boolean, Boolean> fut = new GridCompoundFuture<>(CU.boolReducer());
+        GridCompoundFuture<Boolean, Boolean> fut = new GridCompoundFuture<>(null, CU.boolReducer());
 
         final ConcurrentLinkedDeque<GridFutureAdapter<Boolean>> futs = new ConcurrentLinkedDeque<>();
 
         for (int i = 0; i < 1000; i++) {
-            GridFutureAdapter<Boolean> part = new GridFutureAdapter<>();
+            GridFutureAdapter<Boolean> part = new GridFutureAdapter<>(null);
 
             fut.add(part);
 
@@ -156,12 +156,12 @@ public class GridCompoundFutureSelfTest extends GridCommonAbstractTest {
      */
     @Test
     public void testConcurrentRandomCompletion() throws Exception {
-        GridCompoundFuture<Boolean, Boolean> fut = new GridCompoundFuture<>(CU.boolReducer());
+        GridCompoundFuture<Boolean, Boolean> fut = new GridCompoundFuture<>(null, CU.boolReducer());
 
         final ConcurrentLinkedDeque<GridFutureAdapter<Boolean>> futs = new ConcurrentLinkedDeque<>();
 
         for (int i = 0; i < 1000; i++) {
-            GridFutureAdapter<Boolean> part = new GridFutureAdapter<>();
+            GridFutureAdapter<Boolean> part = new GridFutureAdapter<>(null);
 
             fut.add(part);
 

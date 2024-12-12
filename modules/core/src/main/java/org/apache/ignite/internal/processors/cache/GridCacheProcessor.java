@@ -732,7 +732,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
             .filter(ctx -> ctx.config().getCacheMode() == REPLICATED // Caches without manual rebalance.
                 || ctx.config().getCacheMode() == PARTITIONED && ctx.config().getRebalanceDelay() >= 0)
             .map(ctx -> ctx.preloader().syncFuture())
-            .collect(IgniteCollectors.toCompoundFuture());
+            .collect(IgniteCollectors.toCompoundFuture(ctx));
     }
 
     /** {@inheritDoc} */
@@ -3660,7 +3660,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
         GridPlainClosure2<Collection<byte[]>, byte[], IgniteInternalFuture<Boolean>> after) {
         IgniteInternalFuture<T2<Collection<byte[]>, byte[]>> genEncKeyFut = ctx.encryption().generateKeys(keyCnt);
 
-        GridFutureAdapter<Boolean> res = new GridFutureAdapter<>();
+        GridFutureAdapter<Boolean> res = new GridFutureAdapter<>(ctx);
 
         genEncKeyFut.listen(new IgniteInClosure<IgniteInternalFuture<T2<Collection<byte[]>, byte[]>>>() {
             @Override public void apply(IgniteInternalFuture<T2<Collection<byte[]>, byte[]>> fut) {
@@ -3820,7 +3820,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
             if (clientReqs != null && srvReqs == null)
                 return startClientCacheChange(clientReqs, null);
 
-            GridCompoundFuture<?, Boolean> compoundFut = new GridCompoundFuture<>();
+            GridCompoundFuture<?, Boolean> compoundFut = new GridCompoundFuture<>(ctx);
 
             for (DynamicCacheStartFuture fut : initiateCacheChanges(srvReqs))
                 compoundFut.add((IgniteInternalFuture)fut);
@@ -3954,7 +3954,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
      * @return compound future.
      */
     @NotNull public IgniteInternalFuture<?> dynamicChangeCaches(List<DynamicCacheChangeRequest> reqs) {
-        return initiateCacheChanges(reqs).stream().collect(IgniteCollectors.toCompoundFuture());
+        return initiateCacheChanges(reqs).stream().collect(IgniteCollectors.toCompoundFuture(ctx));
     }
 
     /**
@@ -4012,7 +4012,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
             reqs.add(req);
         }
 
-        return initiateCacheChanges(reqs).stream().collect(IgniteCollectors.toCompoundFuture());
+        return initiateCacheChanges(reqs).stream().collect(IgniteCollectors.toCompoundFuture(ctx));
     }
 
     /**
@@ -4026,7 +4026,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
 
         Collection<DynamicCacheChangeRequest> reqs = Collections.singleton(DynamicCacheChangeRequest.finalizePartitionCounters(ctx));
 
-        return initiateCacheChanges(reqs).stream().collect(IgniteCollectors.toCompoundFuture());
+        return initiateCacheChanges(reqs).stream().collect(IgniteCollectors.toCompoundFuture(ctx));
     }
 
     /**
@@ -5793,6 +5793,8 @@ public class GridCacheProcessor extends GridProcessorAdapter {
          * @param id Future ID.
          */
         private DynamicCacheStartFuture(UUID id) {
+            super(ctx);
+
             this.id = id;
         }
 
@@ -5828,6 +5830,8 @@ public class GridCacheProcessor extends GridProcessorAdapter {
          * @param deploymentId Deployment ID.
          */
         private TemplateConfigurationFuture(String cacheName, IgniteUuid deploymentId) {
+            super(ctx);
+
             this.deploymentId = deploymentId;
             this.cacheName = cacheName;
         }
@@ -5864,6 +5868,8 @@ public class GridCacheProcessor extends GridProcessorAdapter {
          * @param id Future ID.
          */
         private EnableStatisticsFuture(UUID id) {
+            super(ctx);
+
             this.id = id;
         }
 

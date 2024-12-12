@@ -578,7 +578,7 @@ class BinaryMetadataFileStore {
                         ", typeVersion=" + typeVer + ']'
                 );
 
-            preparedTasks.putIfAbsent(new OperationSyncKey(meta.typeId(), typeVer), new WriteOperationTask(meta, typeVer));
+            preparedTasks.putIfAbsent(new OperationSyncKey(meta.typeId(), typeVer), new WriteOperationTask(ctx, meta, typeVer));
         }
 
         /**
@@ -594,7 +594,7 @@ class BinaryMetadataFileStore {
                 );
 
             preparedTasks.putIfAbsent(new OperationSyncKey(typeId, BinaryMetadataTransport.REMOVED_VERSION),
-                new RemoveOperationTask(typeId));
+                new RemoveOperationTask(ctx, typeId));
         }
 
         /**
@@ -649,7 +649,12 @@ class BinaryMetadataFileStore {
      */
     private abstract static class OperationTask {
         /** */
-        private final GridFutureAdapter<Void> future = new GridFutureAdapter<>();
+        private final GridFutureAdapter<Void> future;
+
+        /** */
+        protected OperationTask(GridKernalContext ctx) {
+            future = new GridFutureAdapter<>(ctx);
+        }
 
         /** */
         abstract void execute(BinaryMetadataFileStore store);
@@ -679,10 +684,13 @@ class BinaryMetadataFileStore {
         private final int typeVer;
 
         /**
+         * @param ctx Kernal context.
          * @param meta Metadata for binary type.
          * @param ver Version of type.
          */
-        private WriteOperationTask(BinaryMetadata meta, int ver) {
+        private WriteOperationTask(GridKernalContext ctx, BinaryMetadata meta, int ver) {
+            super(ctx);
+
             this.meta = meta;
             typeVer = ver;
         }
@@ -710,9 +718,10 @@ class BinaryMetadataFileStore {
         /** */
         private final int typeId;
 
-        /**
-         */
-        private RemoveOperationTask(int typeId) {
+        /** */
+        private RemoveOperationTask(GridKernalContext ctx, int typeId) {
+            super(ctx);
+
             this.typeId = typeId;
         }
 

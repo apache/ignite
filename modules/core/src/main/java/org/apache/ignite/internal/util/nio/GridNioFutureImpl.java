@@ -36,6 +36,8 @@ public class GridNioFutureImpl<R> extends GridFutureAdapter<R> implements GridNi
      * @param ackC Ack closure.
      */
     public GridNioFutureImpl(IgniteInClosure<IgniteException> ackC) {
+        super(null);
+
         this.ackC = ackC;
     }
 

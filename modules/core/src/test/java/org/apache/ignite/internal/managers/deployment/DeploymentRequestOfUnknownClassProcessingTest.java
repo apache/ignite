@@ -94,7 +94,7 @@ public class DeploymentRequestOfUnknownClassProcessingTest extends GridCommonAbs
 
         GridDeployment locDep = remNode.context().deploy().deploy(task, task.getClassLoader());
 
-        final GridFutureAdapter<Void> testResultFut = new GridFutureAdapter<>();
+        final GridFutureAdapter<Void> testResultFut = new GridFutureAdapter<>(null);
 
         final LogListener remNodeLogLsnr = LogListener
             .matches(s -> s.matches("Failed to resolve class.*?" + UNKNOWN_CLASS_NAME + ".*")).build();

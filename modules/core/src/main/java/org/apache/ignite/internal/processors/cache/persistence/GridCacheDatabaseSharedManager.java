@@ -548,6 +548,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
             });
 
             checkpointManager = new CheckpointManager(
+                kernalCtx,
                 kernalCtx::log,
                 cctx.igniteInstanceName(),
                 "db-checkpoint-thread",
@@ -784,6 +785,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
         );
 
         LightweightCheckpointManager lightCheckpointMgr = new LightweightCheckpointManager(
+            kernalCtx,
             kernalCtx::log,
             cctx.igniteInstanceName(),
             "db-checkpoint-thread-defrag",
@@ -2697,7 +2699,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
                                     IgniteInternalFuture<?> clearFut = grp.
                                         shared().
                                         evict().
-                                        evictPartitionAsync(grp, part, new GridFutureAdapter<>());
+                                        evictPartitionAsync(grp, part, new GridFutureAdapter<>(cctx.kernalContext()));
 
                                     clearFut.get();
 

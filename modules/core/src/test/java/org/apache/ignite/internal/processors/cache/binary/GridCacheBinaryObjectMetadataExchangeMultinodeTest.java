@@ -109,7 +109,7 @@ public class GridCacheBinaryObjectMetadataExchangeMultinodeTest extends GridComm
         final Ignite ignite0 = startGrid(0);
         final Ignite ignite1 = startGrid(1);
 
-        final GridFutureAdapter finishFut = new GridFutureAdapter();
+        final GridFutureAdapter finishFut = new GridFutureAdapter(null);
 
         applyDiscoveryHook = true;
         discoveryHook = new DiscoveryHook() {

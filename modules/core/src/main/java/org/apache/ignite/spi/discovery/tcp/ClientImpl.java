@@ -412,7 +412,7 @@ class ClientImpl extends TcpDiscoveryImpl {
         GridFutureAdapter<Boolean> fut = pingFuts.get(nodeId);
 
         if (fut == null) {
-            fut = new GridFutureAdapter<>();
+            fut = new GridFutureAdapter<>(((IgniteEx)spi.ignite()).context());
 
             GridFutureAdapter<Boolean> oldFut = pingFuts.putIfAbsent(nodeId, fut);
 

@@ -805,7 +805,7 @@ public abstract class GridCacheEventAbstractTest extends GridCacheAbstractSelfTe
                 return;
 
             // Create future that aggregates all required event types.
-            GridCompoundIdentityFuture<Object> cf = new GridCompoundIdentityFuture<>();
+            GridCompoundIdentityFuture<Object> cf = new GridCompoundIdentityFuture<>(null);
 
             for (IgniteBiTuple<Integer, Integer> t : evtCnts) {
                 Integer evtType = t.get1();
@@ -859,6 +859,7 @@ public abstract class GridCacheEventAbstractTest extends GridCacheAbstractSelfTe
          * @param partitioned Partitioned flag.
          */
         EventTypeFuture(int evtType, int expCnt, boolean partitioned) {
+            super(null);
             assert expCnt > 0;
 
             this.evtType = evtType;

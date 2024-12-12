@@ -288,7 +288,7 @@ public class SnapshotRestoreProcess {
                 if (restoringSnapshotName() != null || fut != null)
                     throw new IgniteException(OP_REJECT_MSG + "The previous snapshot restore operation was not completed.");
 
-                fut = new ClusterSnapshotFuture(UUID.randomUUID(), snpName, incIdx);
+                fut = new ClusterSnapshotFuture(ctx, UUID.randomUUID(), snpName, incIdx);
 
                 fut0 = fut;
             }
@@ -924,7 +924,7 @@ public class SnapshotRestoreProcess {
             return new GridFinishedFuture<>();
 
         SnapshotRestoreContext opCtx0 = opCtx;
-        GridFutureAdapter<Boolean> retFut = new GridFutureAdapter<>();
+        GridFutureAdapter<Boolean> retFut = new GridFutureAdapter<>(ctx);
 
         if (opCtx0 == null)
             return new GridFinishedFuture<>(new IgniteCheckedException("Snapshot restore process has incorrect restore state: " + reqId));
@@ -1386,7 +1386,7 @@ public class SnapshotRestoreProcess {
                 ", caches=" + F.viewReadOnly(opCtx0.cfgs, c -> c.config().getName()) + ']');
         }
 
-        GridFutureAdapter<Boolean> res = new GridFutureAdapter<>();
+        GridFutureAdapter<Boolean> res = new GridFutureAdapter<>(ctx);
 
         ctx.pools().getSnapshotExecutorService().submit(() -> {
             try {
@@ -1638,7 +1638,7 @@ public class SnapshotRestoreProcess {
         if (opCtx0 == null || F.isEmpty(opCtx0.dirs))
             return new GridFinishedFuture<>();
 
-        GridFutureAdapter<Boolean> retFut = new GridFutureAdapter<>();
+        GridFutureAdapter<Boolean> retFut = new GridFutureAdapter<>(ctx);
 
         synchronized (this) {
             opCtx0.stopFut = new IgniteFutureImpl<>(retFut.chain(() -> null));

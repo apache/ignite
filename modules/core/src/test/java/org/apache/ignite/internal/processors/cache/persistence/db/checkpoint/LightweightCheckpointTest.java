@@ -142,6 +142,7 @@ public class LightweightCheckpointTest extends GridCommonAbstractTest {
 
         //and: Create light checkpoint with only one region.
         LightweightCheckpointManager lightweightCheckpointMgr = new LightweightCheckpointManager(
+            ctx,
             ctx::log,
             ctx.igniteInstanceName(),
             "light-test-checkpoint",

@@ -128,7 +128,7 @@ class SnapshotFutureTask extends AbstractCreateSnapshotFutureTask implements Che
     private final CompletableFuture<Boolean> cpEndFut = new CompletableFuture<>();
 
     /** Future to wait until checkpoint mark phase will be finished and snapshot tasks scheduled. */
-    private final GridFutureAdapter<Void> startedFut = new GridFutureAdapter<>();
+    private final GridFutureAdapter<Void> startedFut;
 
     /** Absolute path to save intermediate results of cache partitions of this node. */
     private volatile File tmpConsIdDir;
@@ -180,6 +180,7 @@ class SnapshotFutureTask extends AbstractCreateSnapshotFutureTask implements Che
         assert cctx.pageStore() instanceof FilePageStoreManager : "Snapshot task can work only with physical files.";
         assert !parts.containsKey(MetaStorage.METASTORAGE_CACHE_ID) : "The withMetaStorage must be used instead.";
 
+        this.startedFut = new GridFutureAdapter<>(cctx.kernalContext());
         this.tmpSnpWorkDir = new File(tmpWorkDir, snpName);
         this.ioFactory = ioFactory;
         this.withMetaStorage = withMetaStorage;

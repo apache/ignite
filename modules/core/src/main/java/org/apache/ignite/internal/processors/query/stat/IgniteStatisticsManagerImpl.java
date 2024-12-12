@@ -191,6 +191,7 @@ public class IgniteStatisticsManagerImpl implements IgniteStatisticsManager {
         ) : null;
 
         statCfgMgr = new IgniteStatisticsConfigurationManager(
+            ctx,
             schemaMgr,
             ctx.internalSubscriptionProcessor(),
             ctx.systemView(),

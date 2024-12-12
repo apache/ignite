@@ -1121,7 +1121,7 @@ public class DistributedMetaStorageImpl extends GridProcessorAdapter
         }
         catch (Exception e) {
             if (X.hasCause(e, IgniteSpiException.class) && e.getMessage() != null && e.getMessage().contains("Node stopped.")) {
-                GridFutureAdapter<Boolean> fut = new GridFutureAdapter<>();
+                GridFutureAdapter<Boolean> fut = new GridFutureAdapter<>(ctx);
 
                 fut.onDone(nodeStoppingException());
 
@@ -1134,7 +1134,7 @@ public class DistributedMetaStorageImpl extends GridProcessorAdapter
         if (!supported)
             throw new IgniteCheckedException(NOT_SUPPORTED_MSG);
 
-        GridFutureAdapter<Boolean> fut = new GridFutureAdapter<>();
+        GridFutureAdapter<Boolean> fut = new GridFutureAdapter<>(ctx);
 
         updateFutsStopLock.readLock().lock();
 

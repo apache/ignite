@@ -265,6 +265,7 @@ public class RunningQueryManager {
             qryInitiatorId = SqlFieldsQuery.threadedQueryInitiatorId();
 
         final GridRunningQueryInfo run = new GridRunningQueryInfo(
+            ctx,
             qryId,
             localNodeId,
             qry,
@@ -592,7 +593,7 @@ public class RunningQueryManager {
             final ClusterNode node = nodeId != null ? ctx.discovery().node(nodeId) : ctx.discovery().localNode();
 
             if (node != null) {
-                fut = new CancelQueryFuture(nodeId, queryId);
+                fut = new CancelQueryFuture(ctx, nodeId, queryId);
 
                 long reqId = qryCancelReqCntr.incrementAndGet();
 
@@ -841,10 +842,13 @@ public class RunningQueryManager {
         /**
          * Constructor.
          *
+         * @param ctx Kernal context.
          * @param nodeId Node id.
          * @param nodeQryId Query id.
          */
-        public CancelQueryFuture(UUID nodeId, long nodeQryId) {
+        public CancelQueryFuture(GridKernalContext ctx, UUID nodeId, long nodeQryId) {
+            super(ctx);
+
             assert nodeId != null;
 
             this.nodeId = nodeId;

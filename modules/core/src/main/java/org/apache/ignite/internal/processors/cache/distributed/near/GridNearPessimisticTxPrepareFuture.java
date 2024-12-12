@@ -477,6 +477,8 @@ public class GridNearPessimisticTxPrepareFuture extends GridNearTxPrepareFutureA
          * @param futId Mini future ID.
          */
         MiniFuture(GridDistributedTxMapping m, int futId) {
+            super(cctx.kernalContext());
+
             this.m = m;
             this.futId = futId;
         }

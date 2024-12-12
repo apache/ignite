@@ -28,6 +28,7 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.cache.CacheWriteSynchronizationMode;
 import org.apache.ignite.cluster.ClusterNode;
+import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.NodeStoppingException;
 import org.apache.ignite.internal.cluster.ClusterTopologyCheckedException;
@@ -117,7 +118,7 @@ public final class GridNearTxFinishFuture<K, V> extends GridCacheCompoundIdentit
      * @param commit Commit flag.
      */
     public GridNearTxFinishFuture(GridCacheSharedContext<K, V> cctx, GridNearTxLocal tx, boolean commit) {
-        super(F.identityReducer(tx));
+        super(cctx.kernalContext(), F.identityReducer(tx));
 
         this.cctx = cctx;
         this.tx = tx;
@@ -906,7 +907,9 @@ public final class GridNearTxFinishFuture<K, V> extends GridCacheCompoundIdentit
         /**
          * @param futId Future ID.
          */
-        MinFuture(int futId) {
+        MinFuture(GridKernalContext ctx, int futId) {
+            super(ctx);
+
             this.futId = futId;
         }
 
@@ -938,7 +941,7 @@ public final class GridNearTxFinishFuture<K, V> extends GridCacheCompoundIdentit
          * @param m Mapping.
          */
         FinishMiniFuture(int futId, GridDistributedTxMapping m) {
-            super(futId);
+            super(cctx.kernalContext(), futId);
 
             this.m = m;
         }
@@ -1067,7 +1070,7 @@ public final class GridNearTxFinishFuture<K, V> extends GridCacheCompoundIdentit
          * @param m Mapping associated with the backup.
          */
         CheckBackupMiniFuture(int futId, ClusterNode backup, GridDistributedTxMapping m) {
-            super(futId);
+            super(cctx.kernalContext(), futId);
 
             this.backup = backup;
             this.m = m;
@@ -1130,7 +1133,7 @@ public final class GridNearTxFinishFuture<K, V> extends GridCacheCompoundIdentit
          * @param nodes Backup nodes.
          */
         CheckRemoteTxMiniFuture(int futId, Set<UUID> nodes) {
-            super(futId);
+            super(cctx.kernalContext(), futId);
 
             this.nodes = nodes;
         }

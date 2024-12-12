@@ -22,12 +22,12 @@ import java.util.UUID;
 import java.util.concurrent.CountDownLatch;
 import java.util.function.Function;
 import java.util.function.Supplier;
-import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.failure.FailureContext;
 import org.apache.ignite.failure.FailureType;
+import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.managers.discovery.IgniteDiscoverySpi;
 import org.apache.ignite.internal.processors.failure.FailureProcessor;
@@ -120,7 +120,7 @@ public class InboundConnectionHandler extends GridNioServerListenerAdapter<Messa
     private final CountDownLatch ctxInitLatch;
 
     /** Ignite ex supplier. */
-    private final Supplier<Ignite> igniteExSupplier;
+    private final Supplier<IgniteEx> igniteExSupplier;
 
     /** SPI listener. */
     private final CommunicationListener<Message> lsnr;
@@ -170,7 +170,7 @@ public class InboundConnectionHandler extends GridNioServerListenerAdapter<Messa
         GridNioServerWrapper nioSrvWrapper,
         CountDownLatch ctxInitLatch,
         boolean client,
-        Supplier<Ignite> igniteExSupplier,
+        Supplier<IgniteEx> igniteExSupplier,
         CommunicationListener<Message> lsnr
     ) {
         this.log = log;
@@ -585,7 +585,7 @@ public class InboundConnectionHandler extends GridNioServerListenerAdapter<Messa
                 return;
             }
 
-            GridFutureAdapter<GridCommunicationClient> fut = new GridFutureAdapter<>();
+            GridFutureAdapter<GridCommunicationClient> fut = new GridFutureAdapter<>(igniteExSupplier.get().context());
 
             GridFutureAdapter<GridCommunicationClient> oldFut = clientPool.putIfAbsentFut(connKey, fut);
 

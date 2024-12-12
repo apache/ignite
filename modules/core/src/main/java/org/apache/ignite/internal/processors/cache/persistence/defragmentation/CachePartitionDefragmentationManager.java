@@ -159,7 +159,7 @@ public class CachePartitionDefragmentationManager {
     private final Status status = new Status();
 
     /** */
-    private final GridFutureAdapter<?> completionFut = new GridFutureAdapter<>();
+    private final GridFutureAdapter<?> completionFut;
 
     /** Checkpoint runner thread pool. */
     private final IgniteThreadPoolExecutor defragmentationThreadPool;
@@ -193,6 +193,7 @@ public class CachePartitionDefragmentationManager {
         this.pageSize = pageSize;
         this.sharedCtx = sharedCtx;
 
+        this.completionFut = new GridFutureAdapter<>(sharedCtx.kernalContext());
         this.mntcReg = sharedCtx.kernalContext().maintenanceRegistry();
         this.log = sharedCtx.logger(getClass());
         this.defragmentationCheckpoint = defragmentationCheckpoint;
@@ -358,7 +359,7 @@ public class CachePartitionDefragmentationManager {
 
                     checkCancellation();
 
-                    GridCompoundFuture<Object, Object> cmpFut = new GridCompoundFuture<>();
+                    GridCompoundFuture<Object, Object> cmpFut = new GridCompoundFuture<>(sharedCtx.kernalContext());
 
                     PageMemoryEx oldPageMem = (PageMemoryEx)oldGrpCtx.dataRegion().pageMemory();
 

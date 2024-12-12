@@ -145,7 +145,7 @@ public final class GridDhtGetFuture<K, V> extends GridCompoundIdentityFuture<Col
         boolean addReaders,
         @Nullable String txLbl
     ) {
-        super(CU.<GridCacheEntryInfo>collectionsReducer(keys.size()));
+        super(cctx.kernalContext(), CU.<GridCacheEntryInfo>collectionsReducer(keys.size()));
 
         assert reader != null;
         assert !F.isEmpty(keys);
@@ -399,7 +399,7 @@ public final class GridDhtGetFuture<K, V> extends GridCompoundIdentityFuture<Col
 
                         if (f != null) {
                             if (txFut == null)
-                                txFut = new GridCompoundFuture<>(CU.boolReducer());
+                                txFut = new GridCompoundFuture<>(cctx.kernalContext(), CU.boolReducer());
 
                             txFut.add(f);
                         }
@@ -443,8 +443,9 @@ public final class GridDhtGetFuture<K, V> extends GridCompoundIdentityFuture<Col
             // when we were adding the reader. In that case we must wait for those
             // transactions to complete.
             fut = new GridEmbeddedFuture<>(
+                cctx.kernalContext(),
                 txFut,
-                new C2<Boolean, Exception, IgniteInternalFuture<Map<KeyCacheObject, EntryGetResult>>>() {
+                new C2<>() {
                     @Override public IgniteInternalFuture<Map<KeyCacheObject, EntryGetResult>> apply(Boolean b, Exception e) {
                         if (e != null)
                             throw new GridClosureException(e);
@@ -471,7 +472,8 @@ public final class GridDhtGetFuture<K, V> extends GridCompoundIdentityFuture<Col
         }
 
         return new GridEmbeddedFuture<>(
-            new C2<Map<KeyCacheObject, EntryGetResult>, Exception, Collection<GridCacheEntryInfo>>() {
+            cctx.kernalContext(),
+            new C2<>() {
                 @Override public Collection<GridCacheEntryInfo> apply(
                     Map<KeyCacheObject, EntryGetResult> map, Exception e
                 ) {

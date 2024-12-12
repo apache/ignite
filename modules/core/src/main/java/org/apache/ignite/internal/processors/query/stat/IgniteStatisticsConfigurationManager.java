@@ -32,6 +32,7 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.cluster.ClusterState;
 import org.apache.ignite.events.DiscoveryEvent;
+import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.NodeStoppingException;
 import org.apache.ignite.internal.events.DiscoveryCustomEvent;
@@ -116,6 +117,9 @@ public class IgniteStatisticsConfigurationManager {
 
     /** Configuration change subscribers. */
     private final List<Consumer<StatisticsObjectConfiguration>> subscribers = new CopyOnWriteArrayList<>();
+
+    /** */
+    private final GridKernalContext ctx;
 
     /** Change statistics configuration listener to update particular object statistics. */
     private final DistributedMetastorageLifecycleListener distrMetaStoreLsnr =
@@ -221,6 +225,7 @@ public class IgniteStatisticsConfigurationManager {
      * @param isServerNode Server node flag.
      */
     public IgniteStatisticsConfigurationManager(
+        GridKernalContext ctx,
         SchemaManager schemaMgr,
         GridInternalSubscriptionProcessor subscriptionProcessor,
         GridSystemViewManager sysViewMgr,
@@ -232,6 +237,7 @@ public class IgniteStatisticsConfigurationManager {
         Function<Class<?>, IgniteLogger> logSupplier,
         boolean isServerNode
     ) {
+        this.ctx = ctx;
         this.schemaMgr = schemaMgr;
         log = logSupplier.apply(IgniteStatisticsConfigurationManager.class);
         this.persistence = persistence;
@@ -379,7 +385,7 @@ public class IgniteStatisticsConfigurationManager {
      */
     public void updateAllLocalStatistics() {
         try {
-            GridCompoundFuture<Boolean, Boolean> compoundFut = new GridCompoundFuture<>(CU.boolReducer());
+            GridCompoundFuture<Boolean, Boolean> compoundFut = new GridCompoundFuture<>(ctx, CU.boolReducer());
 
             distrMetaStorage.iterate(STAT_OBJ_PREFIX, (k, v) -> {
                 StatisticsObjectConfiguration cfg = (StatisticsObjectConfiguration)v;
@@ -492,7 +498,7 @@ public class IgniteStatisticsConfigurationManager {
         if (log.isDebugEnabled())
             log.debug("Drop statistics [targets=" + targets + ']');
 
-        GridFutureAdapter<Boolean> resultFut = new GridFutureAdapter<>();
+        GridFutureAdapter<Boolean> resultFut = new GridFutureAdapter<>(ctx);
         IgniteInternalFuture<Boolean> chainFut = new GridFinishedFuture<>(true);
 
         for (StatisticsTarget target : targets) {

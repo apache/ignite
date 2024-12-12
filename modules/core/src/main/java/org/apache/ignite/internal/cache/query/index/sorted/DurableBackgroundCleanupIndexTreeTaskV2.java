@@ -225,7 +225,7 @@ public class DurableBackgroundCleanupIndexTreeTaskV2 extends IgniteDataTransferO
                     rootPages.putAll(findIndexRootPages(grpCtx, cacheName, newTreeName, segments));
 
                 if (!rootPages.isEmpty()) {
-                    GridFutureAdapter<DurableBackgroundTaskResult<Long>> fut = new GridFutureAdapter<>();
+                    GridFutureAdapter<DurableBackgroundTaskResult<Long>> fut = new GridFutureAdapter<>(ctx);
 
                     GridWorker w = new GridWorker(
                         ctx.igniteInstanceName(),

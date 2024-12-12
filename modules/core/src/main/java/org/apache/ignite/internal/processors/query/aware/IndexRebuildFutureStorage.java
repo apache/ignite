@@ -21,6 +21,7 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
+import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.jetbrains.annotations.Nullable;
@@ -45,6 +46,14 @@ public class IndexRebuildFutureStorage {
      * Guarded by {@code this}.
      */
     private final Map<Integer, AffinityTopologyVersion> tops = new HashMap<>();
+
+    /** */
+    private final GridKernalContext ctx;
+
+    /** */
+    public IndexRebuildFutureStorage(GridKernalContext ctx) {
+        this.ctx = ctx;
+    }
 
     /**
      * Getting index rebuild future for the cache.
@@ -112,7 +121,7 @@ public class IndexRebuildFutureStorage {
                             assert prevTopVer == null;
                         }
 
-                        futs.put(cacheId, new GridFutureAdapter<>());
+                        futs.put(cacheId, new GridFutureAdapter<>(ctx));
                     }
                     else
                         alreadyPrepared.add(cacheId);

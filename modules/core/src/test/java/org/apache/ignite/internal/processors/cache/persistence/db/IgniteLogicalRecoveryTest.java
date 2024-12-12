@@ -498,7 +498,7 @@ public class IgniteLogicalRecoveryTest extends GridCommonAbstractTest {
          * @param timeMillis Loading time in milliseconds.
          */
         public IgniteInternalFuture<?> loadByTime(int timeMillis) {
-            GridCompoundFuture<?, ?> loadFut = new GridCompoundFuture();
+            GridCompoundFuture<?, ?> loadFut = new GridCompoundFuture(null);
 
             for (CacheLoader cacheLdr : cacheLoaders) {
                 long endTime = U.currentTimeMillis() + timeMillis;

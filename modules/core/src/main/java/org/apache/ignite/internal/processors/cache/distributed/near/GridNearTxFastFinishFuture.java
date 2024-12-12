@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.processors.cache.distributed.near;
 
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteInternalTx;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
 
@@ -39,10 +40,13 @@ public class GridNearTxFastFinishFuture extends GridFutureAdapter<IgniteInternal
     private final boolean commit;
 
     /**
+     * @param ctx Kernal context.
      * @param tx Transaction.
      * @param commit Commit flag.
      */
-    GridNearTxFastFinishFuture(GridNearTxLocal tx, boolean commit) {
+    GridNearTxFastFinishFuture(GridKernalContext ctx, GridNearTxLocal tx, boolean commit) {
+        super(ctx);
+
         this.tx = tx;
         this.commit = commit;
     }

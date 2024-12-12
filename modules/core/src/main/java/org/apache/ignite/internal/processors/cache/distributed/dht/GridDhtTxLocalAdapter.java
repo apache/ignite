@@ -75,7 +75,7 @@ import static org.apache.ignite.transactions.TransactionState.UNKNOWN;
  */
 public abstract class GridDhtTxLocalAdapter extends IgniteTxLocalAdapter {
     /** Asynchronous rollback marker for lock futures. */
-    public static final IgniteInternalFuture<Boolean> ROLLBACK_FUT = new GridFutureAdapter<>();
+    public static final IgniteInternalFuture<Boolean> ROLLBACK_FUT = new GridFutureAdapter<>(null);
 
     /** Lock future updater. */
     private static final AtomicReferenceFieldUpdater<GridDhtTxLocalAdapter, IgniteInternalFuture> LOCK_FUT_UPD =
@@ -564,7 +564,7 @@ public abstract class GridDhtTxLocalAdapter extends IgniteTxLocalAdapter {
         onePhaseCommit(onePhaseCommit);
 
         try {
-            GridFutureAdapter<GridCacheReturn> enlistFut = new GridFutureAdapter<>();
+            GridFutureAdapter<GridCacheReturn> enlistFut = new GridFutureAdapter<>(cacheCtx.kernalContext());
 
             if (!updateLockFuture(null, enlistFut))
                 return finishFuture(enlistFut, timedOut() ? timeoutException() : rollbackException(), false);
@@ -721,8 +721,9 @@ public abstract class GridDhtTxLocalAdapter extends IgniteTxLocalAdapter {
             keepBinary);
 
         return new GridEmbeddedFuture<>(
+            cctx.kernalContext(),
             fut,
-            new PLC1<GridCacheReturn>(ret) {
+            new PLC1<>(ret) {
                 @Override protected GridCacheReturn postLock(GridCacheReturn ret) throws IgniteCheckedException {
                     if (log.isDebugEnabled())
                         log.debug("Acquired transaction lock on keys: " + passedKeys);

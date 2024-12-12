@@ -19,6 +19,7 @@ package org.apache.ignite.internal.processors.cache;
 
 import java.util.UUID;
 import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
+import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.util.future.GridFinishedFuture;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
@@ -38,11 +39,15 @@ public class GridCacheReturnCompletableWrapper {
     /** Node id. */
     private final UUID nodeId;
 
+    /** */
+    private final GridKernalContext ctx;
+
     /**
      * @param nodeId Node id.
      */
-    public GridCacheReturnCompletableWrapper(UUID nodeId) {
+    public GridCacheReturnCompletableWrapper(GridKernalContext ctx, UUID nodeId) {
         this.nodeId = nodeId;
+        this.ctx = ctx;
     }
 
     /**
@@ -88,7 +93,7 @@ public class GridCacheReturnCompletableWrapper {
         else if (obj instanceof IgniteInternalFuture)
             return (IgniteInternalFuture)obj;
         else if (obj == null) {
-            boolean res = COMPLETABLE_WRAPPER_UPD.compareAndSet(this, null, new GridFutureAdapter<>());
+            boolean res = COMPLETABLE_WRAPPER_UPD.compareAndSet(this, null, new GridFutureAdapter<>(ctx));
 
             if (res)
                 return (IgniteInternalFuture)this.o;

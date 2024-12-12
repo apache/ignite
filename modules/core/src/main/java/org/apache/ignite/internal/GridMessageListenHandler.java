@@ -35,6 +35,7 @@ import org.apache.ignite.internal.processors.continuous.GridContinuousBatchAdapt
 import org.apache.ignite.internal.processors.continuous.GridContinuousHandler;
 import org.apache.ignite.internal.util.future.GridFinishedFuture;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
+import org.apache.ignite.internal.util.future.SecurityAwareIgniteRunnable;
 import org.apache.ignite.internal.util.lang.GridPeerDeployAware;
 import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.internal.util.typedef.internal.S;
@@ -129,10 +130,10 @@ public class GridMessageListenHandler implements GridContinuousHandler {
 
     /** {@inheritDoc} */
     @Override public RegisterStatus register(UUID nodeId, UUID routineId, final GridKernalContext ctx) {
-        p2pUnmarshalFut.listen(() -> {
+        p2pUnmarshalFut.listen(SecurityAwareIgniteRunnable.wrap(ctx.security(), () -> {
             if (p2pUnmarshalFut.error() == null)
                 ctx.io().addUserMessageListener(topic, pred, nodeId);
-        });
+        }));
 
         return RegisterStatus.REGISTERED;
     }
@@ -257,7 +258,7 @@ public class GridMessageListenHandler implements GridContinuousHandler {
         depEnabled = in.readBoolean();
 
         if (depEnabled) {
-            p2pUnmarshalFut = new GridFutureAdapter<>();
+            p2pUnmarshalFut = new GridFutureAdapter<>(null);
             topicBytes = U.readByteArray(in);
             predBytes = U.readByteArray(in);
             clsName = U.readString(in);

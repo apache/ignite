@@ -20,6 +20,7 @@ package org.apache.ignite.internal.processors.cache.persistence.checkpoint;
 import java.util.concurrent.Executor;
 import java.util.concurrent.RejectedExecutionException;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.processors.cache.persistence.partstate.PartitionAllocationMap;
 import org.apache.ignite.internal.util.future.GridCompoundFuture;
@@ -53,23 +54,29 @@ public class CheckpointContextImpl implements CheckpointListener.Context {
     /** Whether to force flush WAL after Checkpoint process. */
     private boolean forceWalFlush;
 
+    /** */
+    private final GridKernalContext ctx;
+
     /**
+     * @param ctx Kernal context.
      * @param curr Current checkpoint progress.
      * @param map Partition map.
      * @param asyncRunner Checkpoint runner thread pool.
      * @param heartbeat Heartbeat updater.
      */
     CheckpointContextImpl(
+        GridKernalContext ctx,
         CheckpointProgressImpl curr,
         PartitionAllocationMap map,
         @Nullable IgniteThreadPoolExecutor asyncRunner,
         WorkProgressDispatcher heartbeat
     ) {
+        this.ctx = ctx;
         this.curr = curr;
         this.map = map;
         this.asyncRunner = asyncRunner;
         this.heartbeatUpdater = heartbeat;
-        this.pendingTaskFuture = this.asyncRunner == null ? null : new GridCompoundFuture();
+        this.pendingTaskFuture = this.asyncRunner == null ? null : new GridCompoundFuture(ctx);
     }
 
     /** {@inheritDoc} */
@@ -101,7 +108,7 @@ public class CheckpointContextImpl implements CheckpointListener.Context {
     @Override public Executor executor() {
         return asyncRunner == null ? null : cmd -> {
             try {
-                GridFutureAdapter<?> res = new GridFutureAdapter<>();
+                GridFutureAdapter<?> res = new GridFutureAdapter<>(ctx);
 
                 res.listen(heartbeatUpdater::updateHeartbeat);
 
@@ -123,7 +130,7 @@ public class CheckpointContextImpl implements CheckpointListener.Context {
     public void awaitPendingTasksFinished() throws IgniteCheckedException {
         GridCompoundFuture pendingFut = this.pendingTaskFuture;
 
-        this.pendingTaskFuture = new GridCompoundFuture();
+        this.pendingTaskFuture = new GridCompoundFuture(ctx);
 
         if (pendingFut != null) {
             pendingFut.markInitialized();

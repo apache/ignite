@@ -1047,8 +1047,9 @@ public abstract class GridDhtTransactionalCacheAdapter<K, V> extends GridDhtCach
                 final GridDhtTxLocal t = tx;
 
                 return new GridDhtEmbeddedFuture<>(
+                    ctx.kernalContext(),
                     txFut,
-                    new C2<GridCacheReturn, Exception, IgniteInternalFuture<GridNearLockResponse>>() {
+                    new C2<>() {
                         @Override public IgniteInternalFuture<GridNearLockResponse> apply(
                             GridCacheReturn o, Exception e) {
                             if (e != null)
@@ -1084,7 +1085,8 @@ public abstract class GridDhtTransactionalCacheAdapter<K, V> extends GridDhtCach
                 final GridCacheVersion mappedVer = fut.version();
 
                 return new GridDhtEmbeddedFuture<>(
-                    new C2<Boolean, Exception, GridNearLockResponse>() {
+                    ctx.kernalContext(),
+                    new C2<>() {
                         @Override public GridNearLockResponse apply(Boolean b, Exception e) {
                             if (e != null)
                                 e = U.unwrap(e);

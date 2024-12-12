@@ -30,6 +30,7 @@ import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.events.DiscoveryEvent;
 import org.apache.ignite.events.Event;
+import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.managers.eventstorage.GridLocalEventListener;
 import org.apache.ignite.internal.util.GridLeanMap;
@@ -91,16 +92,21 @@ public class TcpCommunicationConnectionCheckFuture
     private final IgniteLogger log;
 
     /**
+     * @param ctx Kernal context.
      * @param spi SPI instance.
      * @param log Logger.
      * @param nioSrvr NIO server.
      * @param nodes Nodes to check.
      */
-    public TcpCommunicationConnectionCheckFuture(TcpCommunicationSpi spi,
+    public TcpCommunicationConnectionCheckFuture(
+        GridKernalContext ctx,
+        TcpCommunicationSpi spi,
         IgniteLogger log,
         GridNioServer nioSrvr,
         List<ClusterNode> nodes
     ) {
+        super(ctx);
+
         this.spi = spi;
         this.log = log;
         this.nioSrvr = nioSrvr;

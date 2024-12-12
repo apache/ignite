@@ -95,7 +95,7 @@ public class GridCacheTxRecoveryFuture extends GridCacheCompoundIdentityFuture<B
         Set<UUID> failedNodeIds,
         Map<UUID, Collection<UUID>> txNodes
     ) {
-        super(CU.boolReducer());
+        super(cctx.kernalContext(), CU.boolReducer());
 
         this.cctx = cctx;
         this.tx = tx;
@@ -538,6 +538,8 @@ public class GridCacheTxRecoveryFuture extends GridCacheCompoundIdentityFuture<B
          * @param nodeId Node ID.
          */
         private MiniFuture(UUID nodeId) {
+            super(cctx.kernalContext());
+
             this.nodeId = nodeId;
         }
 

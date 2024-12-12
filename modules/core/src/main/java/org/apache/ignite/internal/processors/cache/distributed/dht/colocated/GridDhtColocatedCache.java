@@ -944,8 +944,10 @@ public class GridDhtColocatedCache<K, V> extends GridDhtTransactionalCacheAdapte
                 keepBinary);
         }
         else {
-            return new GridEmbeddedFuture<>(keyFut,
-                new C2<Object, Exception, IgniteInternalFuture<Exception>>() {
+            return new GridEmbeddedFuture<>(
+                ctx.kernalContext(),
+                keyFut,
+                new C2<>() {
                     @Override public IgniteInternalFuture<Exception> apply(Object o, Exception exx) {
                         if (exx != null)
                             return new GridDhtFinishedFuture<>(exx);
@@ -1056,7 +1058,8 @@ public class GridDhtColocatedCache<K, V> extends GridDhtTransactionalCacheAdapte
             fut.map();
 
             return new GridDhtEmbeddedFuture<>(
-                new C2<Boolean, Exception, Exception>() {
+                ctx.kernalContext(),
+                new C2<>() {
                     @Override public Exception apply(Boolean b, Exception e) {
                         if (e != null)
                             e = U.unwrap(e);
@@ -1085,7 +1088,8 @@ public class GridDhtColocatedCache<K, V> extends GridDhtTransactionalCacheAdapte
                 keepBinary);
 
             return new GridDhtEmbeddedFuture<>(
-                new C2<GridCacheReturn, Exception, Exception>() {
+                ctx.kernalContext(),
+                new C2<>() {
                     @Override public Exception apply(GridCacheReturn ret,
                         Exception e) {
                         if (e != null)

@@ -758,7 +758,7 @@ public class GridClusterStateProcessor extends GridProcessorAdapter implements I
             BaselineTopologyHistoryItem bltHistItem = BaselineTopologyHistoryItem.fromBaseline(
                 state.baselineTopology());
 
-            transitionFuts.put(msg.requestId(), new GridFutureAdapter<Void>());
+            transitionFuts.put(msg.requestId(), new GridFutureAdapter<Void>(ctx));
 
             DiscoveryDataClusterState newState = globalState = DiscoveryDataClusterState.createTransitionState(
                 msg.state(),
@@ -1007,7 +1007,7 @@ public class GridClusterStateProcessor extends GridProcessorAdapter implements I
             DiscoveryDataClusterState state = stateDiscoData.globalState;
 
             if (state.transition())
-                transitionFuts.put(state.transitionRequestId(), new GridFutureAdapter<Void>());
+                transitionFuts.put(state.transitionRequestId(), new GridFutureAdapter<Void>(ctx));
 
             globalState = state;
 
@@ -2042,7 +2042,7 @@ public class GridClusterStateProcessor extends GridProcessorAdapter implements I
 
         /** */
         @GridToStringInclude
-        private final GridFutureAdapter<?> initFut = new GridFutureAdapter<>();
+        private final GridFutureAdapter<?> initFut;
 
         /** Grid logger. */
         @GridToStringExclude
@@ -2054,9 +2054,12 @@ public class GridClusterStateProcessor extends GridProcessorAdapter implements I
          * @param ctx Context.
          */
         GridChangeGlobalStateFuture(UUID reqId, ClusterState state, GridKernalContext ctx) {
+            super(ctx);
+
             this.requestId = reqId;
             this.state = state;
             this.ctx = ctx;
+            initFut = new GridFutureAdapter<>(ctx);
 
             log = ctx.log(getClass());
         }
@@ -2177,6 +2180,8 @@ public class GridClusterStateProcessor extends GridProcessorAdapter implements I
          * @param discoCache Discovery data cache.
          */
         TransitionOnJoinWaitFuture(DiscoveryDataClusterState state, DiscoCache discoCache) {
+            super(ctx);
+
             assert state.transition() : state;
 
             transitionNodes = U.newHashSet(state.transitionNodes().size());

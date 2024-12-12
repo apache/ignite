@@ -386,13 +386,13 @@ public class DistributedProcess<I extends Serializable, R extends Serializable> 
         private final UUID id;
 
         /** Init coordinator future. */
-        private final GridFutureAdapter<Void> initCrdFut = new GridFutureAdapter<>();
+        private final GridFutureAdapter<Void> initCrdFut = new GridFutureAdapter<>(ctx);
 
         /** Coordinator node id. */
         private volatile UUID crdId;
 
         /** Init process future. */
-        private final GridFutureAdapter<Void> initFut = new GridFutureAdapter<>();
+        private final GridFutureAdapter<Void> initFut = new GridFutureAdapter<>(ctx);
 
         /** Remaining nodes ids to received single nodes result. */
         private final Set<UUID> remaining = new GridConcurrentHashSet<>();
@@ -401,7 +401,7 @@ public class DistributedProcess<I extends Serializable, R extends Serializable> 
         private volatile boolean waitClnRes;
 
         /** Future for a local action result. */
-        private final GridFutureAdapter<R> resFut = new GridFutureAdapter<>();
+        private final GridFutureAdapter<R> resFut = new GridFutureAdapter<>(ctx);
 
         /** Nodes results. */
         private final ConcurrentHashMap<UUID, SingleNodeMessage<R>> singleMsgs = new ConcurrentHashMap<>();

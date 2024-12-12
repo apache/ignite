@@ -24,6 +24,7 @@ import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.Callable;
 import org.apache.ignite.IgniteLogger;
+import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.zookeeper.AsyncCallback;
@@ -62,6 +63,8 @@ class ZkDistributedCollectDataFuture extends GridFutureAdapter<Void> {
         String futPath,
         Callable<Void> lsnr
     ) throws Exception {
+        super(((IgniteEx)impl.spi.ignite()).context());
+
         this.log = impl.log();
         this.futPath = futPath;
         this.lsnr = lsnr;

@@ -84,7 +84,7 @@ public class FileDownloaderTest extends GridCommonAbstractTest {
 
         InetSocketAddress addr = downloader.start();
 
-        GridFutureAdapter<Long> finishFut = new GridFutureAdapter<>();
+        GridFutureAdapter<Long> finishFut = new GridFutureAdapter<>(null);
 
         FileUploader uploader = new FileUploader(UPLOADER_PATH, log);
 

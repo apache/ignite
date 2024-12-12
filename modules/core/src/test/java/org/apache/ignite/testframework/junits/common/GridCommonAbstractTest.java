@@ -2664,7 +2664,7 @@ public abstract class GridCommonAbstractTest extends GridAbstractTest {
      * @throws IgniteCheckedException If failed.
      */
     protected void enableCheckpoints(Collection<Ignite> nodes, boolean enable) throws IgniteCheckedException {
-        GridCompoundFuture<Void, Void> fut = new GridCompoundFuture<>();
+        GridCompoundFuture<Void, Void> fut = new GridCompoundFuture<>(null);
 
         for (Ignite node : nodes) {
             assert !node.cluster().localNode().isClient();

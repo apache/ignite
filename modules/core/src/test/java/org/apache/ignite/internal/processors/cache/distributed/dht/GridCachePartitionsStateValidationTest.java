@@ -263,7 +263,7 @@ public class GridCachePartitionsStateValidationTest extends GridCommonAbstractTe
         private static final List<GridDhtPartitionsSingleMessage> messages = new CopyOnWriteArrayList<>();
 
         /** Future completes when {@link #singleMessagesThreshold} messages are sent to coordinator. */
-        private static final GridFutureAdapter allSingleMessagesSent = new GridFutureAdapter();
+        private static final GridFutureAdapter allSingleMessagesSent = new GridFutureAdapter(null);
 
         /** A number of single messages we're waiting for send. */
         private final int singleMessagesThreshold;

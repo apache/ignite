@@ -631,7 +631,7 @@ public class GridBasicPerformanceTest {
         long start = System.currentTimeMillis();
 
         for (int i = 0; i < MAX; i++) {
-            new GridFutureAdapter<Integer>().onDone(n);
+            new GridFutureAdapter<Integer>(null).onDone(n);
 
             n += 2;
         }
@@ -650,7 +650,7 @@ public class GridBasicPerformanceTest {
         long start = System.currentTimeMillis();
 
         for (int i = 0; i < MAX; i++) {
-            GridFutureAdapter<Integer> f = new GridFutureAdapter<>();
+            GridFutureAdapter<Integer> f = new GridFutureAdapter<>(null);
 
             f.onDone(n);
 

@@ -199,7 +199,7 @@ public abstract class AtomicDataStructureProxy<V extends AtomicDataStructureValu
 
     /** {@inheritDoc} */
     @Override public void suspend() {
-        suspendFut = new GridFutureAdapter<>();
+        suspendFut = new GridFutureAdapter<>(ctx.kernalContext());
     }
 
     /** {@inheritDoc} */

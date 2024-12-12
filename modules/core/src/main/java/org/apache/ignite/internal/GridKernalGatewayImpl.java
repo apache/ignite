@@ -161,7 +161,7 @@ public class GridKernalGatewayImpl implements GridKernalGateway, Serializable {
             return (GridFutureAdapter<?>)reconnectFut.internalFuture();
         }
 
-        GridFutureAdapter<?> fut = new GridFutureAdapter<>();
+        GridFutureAdapter<?> fut = new GridFutureAdapter<>(null);
 
         reconnectFut = new IgniteFutureImpl<>(fut);
 

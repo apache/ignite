@@ -157,7 +157,7 @@ public abstract class CacheDistributedGetFutureAdapter<K, V>
         boolean keepCacheObjects,
         boolean recovery
     ) {
-        super(CU.mapsReducer(keys.size()));
+        super(cctx.kernalContext(), CU.mapsReducer(keys.size()));
 
         assert !F.isEmpty(keys);
 
@@ -401,6 +401,8 @@ public abstract class CacheDistributedGetFutureAdapter<K, V>
             LinkedHashMap<KeyCacheObject, Boolean> keys,
             AffinityTopologyVersion topVer
         ) {
+            super(cctx.kernalContext());
+
             this.node = node;
             this.keys = keys;
             this.topVer = topVer;
