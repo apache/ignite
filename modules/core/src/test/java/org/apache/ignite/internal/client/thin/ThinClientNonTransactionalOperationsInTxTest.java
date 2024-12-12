@@ -33,7 +33,7 @@ import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
-import static org.apache.ignite.internal.client.thin.TcpClientCache.NON_TRANSACTIONAL_CLIENT_CACHE_CLEAR_IN_TX_ERROR_MESSAGE;
+import static org.apache.ignite.internal.client.thin.TcpClientCache.NON_TRANSACTIONAL_CLIENT_CACHE_IN_TX_ERROR_MESSAGE;
 import static org.apache.ignite.transactions.TransactionConcurrency.PESSIMISTIC;
 import static org.apache.ignite.transactions.TransactionIsolation.READ_COMMITTED;
 
@@ -55,29 +55,31 @@ public class ThinClientNonTransactionalOperationsInTxTest extends GridCommonAbst
     public void testThinClientCacheClear() throws Exception {
         startGrid(0);
 
-        IgniteClient client = Ignition.startClient(new ClientConfiguration().setAddresses(Config.SERVER));
+        try (IgniteClient client = Ignition.startClient(new ClientConfiguration().setAddresses(Config.SERVER))) {
 
-        checkThinClientCacheOperation(client, cache -> cache.clear());
+            checkThinClientCacheClearOperation(client, cache -> cache.clear());
 
-        checkThinClientCacheOperation(client, cache -> cache.clear(2));
+            checkThinClientCacheClearOperation(client, cache -> cache.clear(2));
 
-        checkThinClientCacheOperation(client, cache -> cache.clear(Collections.singleton(2)));
+            checkThinClientCacheClearOperation(client, cache -> cache.clear(Collections.singleton(2)));
 
-        checkThinClientCacheOperation(client, cache -> cache.clearAll(Collections.singleton(2)));
+            checkThinClientCacheClearOperation(client, cache -> cache.clearAll(Collections.singleton(2)));
 
-        checkThinClientCacheOperation(client, cache -> cache.clearAsync());
+            checkThinClientCacheClearOperation(client, cache -> cache.clearAsync());
 
-        checkThinClientCacheOperation(client, cache -> cache.clearAsync(2));
+            checkThinClientCacheClearOperation(client, cache -> cache.clearAsync(2));
 
-        checkThinClientCacheOperation(client, cache -> cache.clearAllAsync(Collections.singleton(2)));
+            checkThinClientCacheClearOperation(client, cache -> cache.clearAllAsync(Collections.singleton(2)));
+        }
     }
 
     /**
      * It should throw exception.
      *
      * @param client IgniteClient.
+     * @param op Operation.
      */
-    private void checkThinClientCacheOperation(IgniteClient client, Consumer<ClientCache<Object, Object>> op) {
+    private void checkThinClientCacheClearOperation(IgniteClient client, Consumer<ClientCache<Object, Object>> op) {
         ClientCache<Object, Object> cache = client.cache(DEFAULT_CACHE_NAME);
 
         cache.put(1, 1);
@@ -90,7 +92,45 @@ public class ThinClientNonTransactionalOperationsInTxTest extends GridCommonAbst
             }
 
             return null;
-        }, CacheException.class, NON_TRANSACTIONAL_CLIENT_CACHE_CLEAR_IN_TX_ERROR_MESSAGE);
+        }, CacheException.class, String.format(NON_TRANSACTIONAL_CLIENT_CACHE_IN_TX_ERROR_MESSAGE, "clear"));
+
+        assertTrue(cache.containsKey(1));
+        assertFalse(cache.containsKey(2));
+    }
+
+    /** */
+    @Test
+    public void testThinClientCacheRemove() throws Exception {
+        startGrid(0);
+
+        try (IgniteClient client = Ignition.startClient(new ClientConfiguration().setAddresses(Config.SERVER))) {
+
+            checkThinClientCacheRemoveOperation(client, cache -> cache.removeAll());
+
+            checkThinClientCacheRemoveOperation(client, cache -> cache.removeAllAsync());
+        }
+    }
+
+    /**
+     * It should throw exception.
+     *
+     * @param client IgniteClient.
+     * @param op Operation.
+     */
+    private void checkThinClientCacheRemoveOperation(IgniteClient client, Consumer<ClientCache<Object, Object>> op) {
+        ClientCache<Object, Object> cache = client.cache(DEFAULT_CACHE_NAME);
+
+        cache.put(1, 1);
+
+        GridTestUtils.assertThrows(log, (Callable<Void>)() -> {
+            try (ClientTransaction tx = client.transactions().txStart(PESSIMISTIC, READ_COMMITTED)) {
+                cache.put(2, 2);
+
+                op.accept(cache);
+            }
+
+            return null;
+        }, CacheException.class, String.format(NON_TRANSACTIONAL_CLIENT_CACHE_IN_TX_ERROR_MESSAGE, "removeAll"));
 
         assertTrue(cache.containsKey(1));
         assertFalse(cache.containsKey(2));
