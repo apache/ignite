@@ -30,6 +30,7 @@ import org.apache.ignite.internal.management.api.Command;
 import org.apache.ignite.internal.management.api.CommandInvoker;
 import org.apache.ignite.internal.management.api.CommandUtils;
 import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.internal.util.typedef.internal.U;
 import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.internal.processors.odbc.ClientListenerNioListener.MANAGEMENT_CLIENT_ATTR;
@@ -86,7 +87,6 @@ public class CliIgniteClientInvoker<A extends IgniteDataTransferObject> extends 
 
     /** {@inheritDoc} */
     @Override public void close() {
-        if (client != null)
-            client.close();
+        U.closeQuiet(client);
     }
 }
