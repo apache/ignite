@@ -39,6 +39,7 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.resources.CacheNameResource;
 import org.apache.ignite.resources.CacheStoreSessionResource;
 import org.apache.ignite.resources.IgniteInstanceResource;
+import org.apache.ignite.resources.InjectResource;
 import org.apache.ignite.resources.JobContextResource;
 import org.apache.ignite.resources.LoadBalancerResource;
 import org.apache.ignite.resources.LoggerResource;
@@ -480,6 +481,9 @@ public class GridResourceIoc {
         CACHE_NAME(CacheNameResource.class),
 
         /** */
+        RESOURCE(InjectResource.class),
+
+        /** */
         SPRING_APPLICATION_CONTEXT(SpringApplicationContextResource.class),
 
         /** */
@@ -533,6 +537,7 @@ public class GridResourceIoc {
             ResourceAnnotation.SPRING,
             ResourceAnnotation.IGNITE_INSTANCE,
             ResourceAnnotation.LOGGER,
+            ResourceAnnotation.RESOURCE,
             ResourceAnnotation.SERVICE
         ),
 
@@ -544,6 +549,7 @@ public class GridResourceIoc {
             ResourceAnnotation.SPRING,
             ResourceAnnotation.IGNITE_INSTANCE,
             ResourceAnnotation.LOGGER,
+            ResourceAnnotation.RESOURCE,
             ResourceAnnotation.SERVICE
         ),
 
@@ -557,6 +563,7 @@ public class GridResourceIoc {
             ResourceAnnotation.SPRING,
             ResourceAnnotation.IGNITE_INSTANCE,
             ResourceAnnotation.LOGGER,
+            ResourceAnnotation.RESOURCE,
             ResourceAnnotation.SERVICE
         ),
 
@@ -569,6 +576,7 @@ public class GridResourceIoc {
             ResourceAnnotation.SPRING,
             ResourceAnnotation.IGNITE_INSTANCE,
             ResourceAnnotation.LOGGER,
+            ResourceAnnotation.RESOURCE,
             ResourceAnnotation.SERVICE
         );
 
