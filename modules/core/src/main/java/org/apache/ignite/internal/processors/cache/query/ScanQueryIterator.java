@@ -182,8 +182,11 @@ public final class ScanQueryIterator<K, V, R> extends AbstractScanQueryIterator<
                     val = null;
                 }
 
-                if (dht != null && expiryPlc.readyToFlush(100))
+                if (dht != null && expiryPlc.readyToFlush(100)) {
                     dht.sendTtlUpdateRequest(expiryPlc);
+
+                    expiryPlc.reset();
+                }
             }
             else
                 val = row.value();
