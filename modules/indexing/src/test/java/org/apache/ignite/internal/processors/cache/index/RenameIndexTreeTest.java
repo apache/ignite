@@ -28,7 +28,7 @@ import java.util.UUID;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.client.Person;
 import org.apache.ignite.internal.IgniteEx;
-import org.apache.ignite.internal.cache.query.index.sorted.DurableBackgroundCleanupIndexTreeTaskV2;
+import org.apache.ignite.internal.cache.query.index.sorted.DurableBackgroundCleanupIndexTreeTask;
 import org.apache.ignite.internal.cache.query.index.sorted.SortedIndexDefinition;
 import org.apache.ignite.internal.cache.query.index.sorted.inline.InlineIndexImpl;
 import org.apache.ignite.internal.cache.query.index.sorted.inline.InlineIndexTree;
@@ -48,8 +48,8 @@ import org.junit.Test;
 import static java.util.stream.Collectors.toList;
 import static java.util.stream.Collectors.toSet;
 import static java.util.stream.StreamSupport.stream;
-import static org.apache.ignite.internal.cache.query.index.sorted.DurableBackgroundCleanupIndexTreeTaskV2.findIndexRootPages;
-import static org.apache.ignite.internal.cache.query.index.sorted.DurableBackgroundCleanupIndexTreeTaskV2.renameIndexRootPages;
+import static org.apache.ignite.internal.cache.query.index.sorted.DurableBackgroundCleanupIndexTreeTask.findIndexRootPages;
+import static org.apache.ignite.internal.cache.query.index.sorted.DurableBackgroundCleanupIndexTreeTask.renameIndexRootPages;
 import static org.apache.ignite.internal.pagemem.wal.record.WALRecord.RecordType.INDEX_ROOT_PAGE_RENAME_RECORD;
 import static org.apache.ignite.internal.processors.cache.persistence.IndexStorageImpl.MAX_IDX_NAME_LEN;
 import static org.apache.ignite.testframework.GridTestUtils.assertThrows;
@@ -217,8 +217,8 @@ public class RenameIndexTreeTest extends AbstractRebuildIndexTest {
     }
 
     /**
-     * Checking the correctness of {@link DurableBackgroundCleanupIndexTreeTaskV2#findIndexRootPages}
-     * and {@link DurableBackgroundCleanupIndexTreeTaskV2#renameIndexRootPages}.
+     * Checking the correctness of {@link DurableBackgroundCleanupIndexTreeTask#findIndexRootPages}
+     * and {@link DurableBackgroundCleanupIndexTreeTask#renameIndexRootPages}.
      *
      * @throws Exception If failed.
      */
@@ -280,7 +280,7 @@ public class RenameIndexTreeTest extends AbstractRebuildIndexTest {
     }
 
     /**
-     * Tests that {@link DurableBackgroundCleanupIndexTreeTaskV2#renameIndexTrees(CacheGroupContext)}
+     * Tests that {@link DurableBackgroundCleanupIndexTreeTask#renameIndexTrees(CacheGroupContext)}
      * can be run before submitting the task.
      *
      * @throws Exception If failed.
@@ -302,7 +302,7 @@ public class RenameIndexTreeTest extends AbstractRebuildIndexTest {
 
         InlineIndexTree[] segments = getFieldValue(idx, "segments");
 
-        DurableBackgroundCleanupIndexTreeTaskV2 task = new DurableBackgroundCleanupIndexTreeTaskV2(
+        DurableBackgroundCleanupIndexTreeTask task = new DurableBackgroundCleanupIndexTreeTask(
             cctx.group().name(),
             cctx.name(),
             idxName,
