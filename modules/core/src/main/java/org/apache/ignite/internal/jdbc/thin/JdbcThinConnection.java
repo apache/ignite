@@ -100,6 +100,7 @@ import org.apache.ignite.internal.processors.odbc.jdbc.JdbcBinaryTypePutRequest;
 import org.apache.ignite.internal.processors.odbc.jdbc.JdbcBulkLoadBatchRequest;
 import org.apache.ignite.internal.processors.odbc.jdbc.JdbcCachePartitionsRequest;
 import org.apache.ignite.internal.processors.odbc.jdbc.JdbcCachePartitionsResult;
+import org.apache.ignite.internal.processors.odbc.jdbc.JdbcClientInfoAwareRequest;
 import org.apache.ignite.internal.processors.odbc.jdbc.JdbcOrderedBatchExecuteRequest;
 import org.apache.ignite.internal.processors.odbc.jdbc.JdbcOrderedBatchExecuteResult;
 import org.apache.ignite.internal.processors.odbc.jdbc.JdbcQuery;
@@ -1140,7 +1141,8 @@ public class JdbcThinConnection implements Connection {
                     if (req instanceof JdbcQueryExecuteRequest)
                         qryReq = (JdbcQueryExecuteRequest)req;
 
-                    req.clientInfo(clientInfo);
+                    if (req instanceof JdbcClientInfoAwareRequest)
+                        ((JdbcClientInfoAwareRequest)req).clientInfo(clientInfo);
 
                     JdbcResponse res = cliIo.sendRequest(req, stmt);
 

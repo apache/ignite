@@ -17,7 +17,6 @@
 
 package org.apache.ignite.internal.processors.odbc.jdbc;
 
-import java.util.Map;
 import java.util.concurrent.atomic.AtomicLong;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.binary.BinaryObjectException;
@@ -25,10 +24,8 @@ import org.apache.ignite.internal.binary.BinaryReaderExImpl;
 import org.apache.ignite.internal.binary.BinaryWriterExImpl;
 import org.apache.ignite.internal.binary.streams.BinaryHeapInputStream;
 import org.apache.ignite.internal.binary.streams.BinaryInputStream;
-import org.apache.ignite.internal.jdbc.thin.JdbcThinConnection;
 import org.apache.ignite.internal.processors.odbc.ClientListenerRequestNoId;
 import org.apache.ignite.internal.util.typedef.internal.S;
-import org.jetbrains.annotations.Nullable;
 
 /**
  * JDBC request.
@@ -106,9 +103,6 @@ public class JdbcRequest extends ClientListenerRequestNoId implements JdbcRawBin
     /** Request id. */
     private long reqId;
 
-    /** Client info set with {@link JdbcThinConnection#setClientInfo} methods. */
-    private @Nullable Map<String, String> clientInfo;
-
     /**
      * @param type Command type.
      */
@@ -116,16 +110,6 @@ public class JdbcRequest extends ClientListenerRequestNoId implements JdbcRawBin
         this.type = type;
 
         reqId = REQ_ID_GENERATOR.incrementAndGet();
-    }
-
-    /** @return Client info. */
-    public @Nullable Map<String, String> clientInfo() {
-        return clientInfo;
-    }
-
-    /** @param clientInfo Client info. */
-    public void clientInfo(@Nullable Map<String, String> clientInfo) {
-        this.clientInfo = clientInfo;
     }
 
     /** {@inheritDoc} */
@@ -137,9 +121,6 @@ public class JdbcRequest extends ClientListenerRequestNoId implements JdbcRawBin
 
         if (protoCtx.isAffinityAwarenessSupported())
             writer.writeLong(reqId);
-
-        if (protoCtx.isFeatureSupported(JdbcThinFeature.CLIENT_INFO))
-            writer.writeMap(clientInfo);
     }
 
     /** {@inheritDoc} */
@@ -150,9 +131,6 @@ public class JdbcRequest extends ClientListenerRequestNoId implements JdbcRawBin
 
         if (protoCtx.isAffinityAwarenessSupported())
             reqId = reader.readLong();
-
-        if (protoCtx.isFeatureSupported(JdbcThinFeature.CLIENT_INFO))
-            clientInfo = reader.readMap();
     }
 
     /** {@inheritDoc} */

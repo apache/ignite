@@ -112,6 +112,9 @@ public class SqlClientContext implements AutoCloseable {
     /** Transaction label. */
     private String lb;
 
+    /** */
+    private @Nullable Map<String, String> clientInfo;
+
     /** Logger. */
     private final IgniteLogger log;
 
@@ -396,6 +399,20 @@ public class SqlClientContext implements AutoCloseable {
     /** */
     public String transactionLabel() {
         return lb;
+    }
+
+    /**
+     * @param clientInfo Client info.
+     */
+    public void clientInfo(Map<String, String> clientInfo) {
+        this.clientInfo = clientInfo;
+    }
+
+    /**
+     * @return Client info.
+     */
+    public Map<String, String> clientInfo() {
+        return clientInfo;
     }
 
     /** {@inheritDoc} */

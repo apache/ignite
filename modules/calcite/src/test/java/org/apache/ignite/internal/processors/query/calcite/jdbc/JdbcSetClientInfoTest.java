@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.ignite;
+package org.apache.ignite.internal.processors.query.calcite.jdbc;
 
 import java.sql.Connection;
 import java.sql.DriverManager;
@@ -45,7 +45,7 @@ public class JdbcSetClientInfoTest extends GridCommonAbstractTest {
     private static final String SESSION_ID = "sessionId";
 
     /** */
-    private static final String URL = "jdbc:ignite:thin://127.0.0.1?queryEngine=calcite";
+    private static final String URL = "jdbc:ignite:thin://127.0.0.1";
 
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String instanceName) throws Exception {
@@ -94,19 +94,6 @@ public class JdbcSetClientInfoTest extends GridCommonAbstractTest {
     }
 
     /** */
-    private void checkSessionId(Connection conn, @Nullable String sesId) throws Exception {
-        setClientInfo(conn, sesId);
-
-        ResultSet set = jdbcQuery(conn, "select sessionId() as SESSION_ID;");
-
-        set.next();
-
-        String actSesId = set.getString("SESSION_ID");
-
-        assertEquals(sesId, actSesId);
-    }
-
-    /** */
     @Test
     public void testWhereClause() throws Exception {
         for (int i = 0; i < 100; i++) {
@@ -117,7 +104,6 @@ public class JdbcSetClientInfoTest extends GridCommonAbstractTest {
 
         try (Connection conn = DriverManager.getConnection(URL)) {
             for (String sesId: F.asList("1", "2")) {
-
                 setClientInfo(conn, sesId);
 
                 ResultSet set = jdbcQuery(conn, "select * from PUBLIC.MYTABLE where sessionId = sessionId();");
@@ -273,6 +259,19 @@ public class JdbcSetClientInfoTest extends GridCommonAbstractTest {
             return statement.getResultSet();
 
         return null;
+    }
+
+    /** */
+    private void checkSessionId(Connection conn, @Nullable String sesId) throws Exception {
+        setClientInfo(conn, sesId);
+
+        ResultSet set = jdbcQuery(conn, "select sessionId() as SESSION_ID;");
+
+        set.next();
+
+        String actSesId = set.getString("SESSION_ID");
+
+        assertEquals(sesId, actSesId);
     }
 
     /** */
