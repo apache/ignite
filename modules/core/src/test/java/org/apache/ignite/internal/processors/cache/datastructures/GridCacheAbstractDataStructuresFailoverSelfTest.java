@@ -67,11 +67,9 @@ import org.apache.ignite.lang.IgniteClosure;
 import org.apache.ignite.lang.IgniteFuture;
 import org.apache.ignite.resources.IgniteInstanceResource;
 import org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi;
-import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.junit.Test;
 
-import static java.lang.Boolean.TRUE;
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
 import static org.apache.ignite.testframework.GridTestUtils.waitForCondition;
 
@@ -148,9 +146,6 @@ public abstract class GridCacheAbstractDataStructuresFailoverSelfTest extends Ig
         ccfg.setAtomicityMode(TRANSACTIONAL);
 
         cfg.setCacheConfiguration(ccfg);
-
-        if (cfg.isClientMode() == TRUE)
-            ((TcpDiscoverySpi)(cfg.getDiscoverySpi())).setForceServerMode(true);
 
         return cfg;
     }

@@ -81,7 +81,6 @@ import org.apache.ignite.internal.GridTopic;
 import org.apache.ignite.internal.IgniteClientDisconnectedCheckedException;
 import org.apache.ignite.internal.IgniteComponentType;
 import org.apache.ignite.internal.IgniteDeploymentCheckedException;
-import org.apache.ignite.internal.IgniteFeatures;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.IgniteKernal;
 import org.apache.ignite.internal.NodeStoppingException;
@@ -209,9 +208,7 @@ import static org.jsr166.ConcurrentLinkedHashMap.QueuePolicy.PER_SEGMENT_Q_OPTIM
  * <h3>File-based communication</h3>
  * <p>
  * Sending or receiving binary data (represented by a <em>File</em>) over a <em>SocketChannel</em> is only
- * possible when the build-in {@link TcpCommunicationSpi} implementation of Communication SPI is used and
- * both local and remote nodes are {@link IgniteFeatures#CHANNEL_COMMUNICATION CHANNEL_COMMUNICATION} feature
- * support.
+ * possible when the build-in {@link TcpCommunicationSpi} implementation of Communication SPI is used.
  * <p>
  * It is possible to receive a set of files on a particular topic (any of {@link GridTopic}) on the remote node.
  * A transmission handler for desired topic must be registered prior to opening transmission sender to it.
