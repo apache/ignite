@@ -137,8 +137,9 @@ public class IgniteWalRebalanceTest extends GridCommonAbstractTest {
         cfg.setConsistentId(gridName);
 
         CacheConfiguration<Object, Object> ccfg = new CacheConfiguration<>(CACHE_NAME)
-            .setAtomicityMode(CacheAtomicityMode.TRANSACTIONAL)
-//            .setWriteSynchronizationMode(CacheWriteSynchronizationMode.FULL_SYNC)
+//            .setAtomicityMode(CacheAtomicityMode.TRANSACTIONAL)
+            .setAtomicityMode(CacheAtomicityMode.ATOMIC)
+            .setWriteSynchronizationMode(CacheWriteSynchronizationMode.FULL_SYNC)
             .setRebalanceMode(CacheRebalanceMode.SYNC)
             .setCacheMode(CacheMode.PARTITIONED)
             .setBackups(backups)
@@ -321,7 +322,7 @@ public class IgniteWalRebalanceTest extends GridCommonAbstractTest {
 
         stopAllGrids();
 
-        IgniteEx ig0 = startGrids(2);
+        IgniteEx ig0 = startGrids(2); // здесь запуск ноды 0 и 1
 
         ig0.cluster().state(ACTIVE);
 
@@ -329,13 +330,17 @@ public class IgniteWalRebalanceTest extends GridCommonAbstractTest {
 
         int grpId = ig0.cachex(CACHE_NAME).context().groupId();
 
-        for (int k = 0; k < entryCnt; k++)
+        for (int k = 0; k < entryCnt; k++) {
+            System.out.println("k = " + k);
             cache.put(k, new IndexedObject(k));
+        }
+
+        awaitPartitionMapExchange();
 
         forceCheckpoint();
 
         // This node should rebalance data from other nodes and shouldn't have WAL history.
-        Ignite ignite = startGrid(2);
+        Ignite ignite = startGrid(2); // здесь запуск ноды 2
 
         awaitPartitionMapExchange();
 
@@ -368,11 +373,27 @@ public class IgniteWalRebalanceTest extends GridCommonAbstractTest {
 
         System.out.println("========================");
 
-
+        for (Ignite ig : G.allGrids()) {
+            System.out.println(ig.name());
+        }
         // Stop grids which have actual WAL history.
+        //вот тут поменял
+        // вот тут сейчас остаёться три ноды - 0 1 2
+
+        awaitPartitionMapExchange();
+
         stopGrid(0);
 
+        Thread.sleep(1000);
+
         stopGrid(1);
+
+        Thread.sleep(1000);
+
+        // далее остаётся нулевая нода
+        for (Ignite ig : G.allGrids()) {
+            System.out.println(ig.name());
+        }
 
         System.out.println("============1.1============");
 
@@ -424,7 +445,7 @@ cache1.get(319) = null
 failed
 cache1.get(0) = IndexedObject [iVal=1]
 cache1.get(1) = null
-cache1.get(2) = IndexedObject [iVal=1] // вот тут и дальше хуйня
+cache1.get(2) = IndexedObject [iVal=1] // вот тут и дальше неверно
 cache1.get(3) = IndexedObject [iVal=4]
 cache1.get(4) = null
 cache1.get(5) = IndexedObject [iVal=4]
