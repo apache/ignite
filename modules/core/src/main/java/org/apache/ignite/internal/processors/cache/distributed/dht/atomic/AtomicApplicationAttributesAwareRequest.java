@@ -32,9 +32,6 @@ public class AtomicApplicationAttributesAwareRequest extends GridCacheIdMessage 
     /** */
     private static final long serialVersionUID = 0L;
 
-    /** Message index. */
-    public static final int CACHE_MSG_IDX = nextIndexId();
-
     /** */
     public static final short TYPE_CODE = 180;
 

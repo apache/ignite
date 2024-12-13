@@ -297,11 +297,6 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
                         ctx.operationContextPerCall(null);
                     }
                 }
-
-                @Override public String toString() {
-                    return "AtomicApplicationAttributesAwareRequest handler " +
-                        "[msgIdx=" + AtomicApplicationAttributesAwareRequest.CACHE_MSG_IDX + ']';
-                }
             });
 
         ctx.io().addCacheHandler(
