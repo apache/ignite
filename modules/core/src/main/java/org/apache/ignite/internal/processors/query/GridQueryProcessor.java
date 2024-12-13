@@ -3080,6 +3080,8 @@ public class GridQueryProcessor extends GridProcessorAdapter {
                                 if (opCtx != null && opCtx.applicationAttributes() != null)
                                     sesCtx = new SessionContextImpl(opCtx.applicationAttributes());
                             }
+                            else if (cliCtx != null && cliCtx.applicationAttributes() != null)
+                                sesCtx = new SessionContextImpl(cliCtx.applicationAttributes());
 
                             QueryContext qryCtx = QueryContext.of(
                                 qry,
