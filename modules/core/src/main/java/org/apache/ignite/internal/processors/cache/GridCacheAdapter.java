@@ -1406,22 +1406,13 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
             opCtx != null ? opCtx.readRepairStrategy() : null);
 
         if (ctx.config().getInterceptor() != null)
-            fut = fut.chain(new CX1<IgniteInternalFuture<V>, V>() {
+            fut = fut.chain(new CX1ContextAware(new CX1<IgniteInternalFuture<V>, V>() {
                 @Override public V applyx(IgniteInternalFuture<V> f) throws IgniteCheckedException {
-                    CacheOperationContext prevOpCtx = ctx.operationContextPerCall();
+                    K key = keepBinary ? (K)ctx.unwrapBinaryIfNeeded(key0, true, false, null) : key0;
 
-                    ctx.operationContextPerCall(opCtx);
-
-                    try {
-                        K key = keepBinary ? (K)ctx.unwrapBinaryIfNeeded(key0, true, false, null) : key0;
-
-                        return (V)ctx.config().getInterceptor().onGet(key, f.get());
-                    }
-                    finally {
-                        ctx.operationContextPerCall(prevOpCtx);
-                    }
+                    return (V)ctx.config().getInterceptor().onGet(key, f.get());
                 }
-            });
+            }, opCtx));
 
         if (statsEnabled)
             fut.listen(new UpdateGetTimeStatClosure<V>(metrics0(), start));
@@ -1456,38 +1447,29 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
 
         final boolean intercept = ctx.config().getInterceptor() != null;
 
-        IgniteInternalFuture<CacheEntry<K, V>> fr = fut.chain(
+        IgniteInternalFuture<CacheEntry<K, V>> fr = fut.chain(new CX1ContextAware(
             new CX1<IgniteInternalFuture<EntryGetResult>, CacheEntry<K, V>>() {
                 @Override public CacheEntry<K, V> applyx(IgniteInternalFuture<EntryGetResult> f)
                     throws IgniteCheckedException {
-                    CacheOperationContext prevOpCtx = ctx.operationContextPerCall();
+                    EntryGetResult t = f.get();
 
-                    ctx.operationContextPerCall(opCtx);
+                    K key = keepBinary ? (K)ctx.unwrapBinaryIfNeeded(key0, true, false, null) : key0;
 
-                    try {
-                        EntryGetResult t = f.get();
+                    CacheEntry val = t != null ? new CacheEntryImplEx<>(
+                        key,
+                        t.value(),
+                        t.version())
+                        : null;
 
-                        K key = keepBinary ? (K)ctx.unwrapBinaryIfNeeded(key0, true, false, null) : key0;
+                    if (intercept) {
+                        V val0 = (V)ctx.config().getInterceptor().onGet(key, t != null ? val.getValue() : null);
 
-                        CacheEntry val = t != null ? new CacheEntryImplEx<>(
-                            key,
-                            t.value(),
-                            t.version())
-                            : null;
-
-                        if (intercept) {
-                            V val0 = (V)ctx.config().getInterceptor().onGet(key, t != null ? val.getValue() : null);
-
-                            return val0 != null ? new CacheEntryImplEx(key, val0, t != null ? t.version() : null) : null;
-                        }
-                        else
-                            return val;
+                        return val0 != null ? new CacheEntryImplEx(key, val0, t != null ? t.version() : null) : null;
                     }
-                    finally {
-                        ctx.operationContextPerCall(prevOpCtx);
-                    }
+                    else
+                        return val;
                 }
-            });
+            }, opCtx));
 
         if (statsEnabled)
             fut.listen(new UpdateGetTimeStatClosure<EntryGetResult>(metrics0(), start));
@@ -1589,20 +1571,11 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
             /*need ver*/false);
 
         if (ctx.config().getInterceptor() != null)
-            return fut.chain(new CX1<IgniteInternalFuture<Map<K, V>>, Map<K, V>>() {
+            return fut.chain(new CX1ContextAware(new CX1<IgniteInternalFuture<Map<K, V>>, Map<K, V>>() {
                 @Override public Map<K, V> applyx(IgniteInternalFuture<Map<K, V>> f) throws IgniteCheckedException {
-                    CacheOperationContext prevOpCtx = ctx.operationContextPerCall();
-
-                    ctx.operationContextPerCall(opCtx);
-
-                    try {
-                        return interceptGet(keys, f.get());
-                    }
-                    finally {
-                        ctx.operationContextPerCall(prevOpCtx);
-                    }
+                    return interceptGet(keys, f.get());
                 }
-            });
+            }, opCtx));
 
         if (statsEnabled)
             fut.listen(new UpdateGetAllTimeStatClosure<Map<K, V>>(metrics0(), start));
@@ -1642,31 +1615,22 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
         final boolean intercept = ctx.config().getInterceptor() != null;
 
         IgniteInternalFuture<Collection<CacheEntry<K, V>>> rf =
-            fut.chain(new CX1<IgniteInternalFuture<Map<K, EntryGetResult>>, Collection<CacheEntry<K, V>>>() {
+            fut.chain(new CX1ContextAware(new CX1<IgniteInternalFuture<Map<K, EntryGetResult>>, Collection<CacheEntry<K, V>>>() {
                 @Override public Collection<CacheEntry<K, V>> applyx(
                     IgniteInternalFuture<Map<K, EntryGetResult>> f) throws IgniteCheckedException {
-                    CacheOperationContext prevOpCtx = ctx.operationContextPerCall();
+                    if (intercept)
+                        return interceptGetEntries(keys, f.get());
+                    else {
+                        Map<K, CacheEntry<K, V>> res = U.newHashMap(f.get().size());
 
-                    ctx.operationContextPerCall(opCtx);
+                        for (Map.Entry<K, EntryGetResult> e : f.get().entrySet())
+                            res.put(e.getKey(),
+                                new CacheEntryImplEx<>(e.getKey(), (V)e.getValue().value(), e.getValue().version()));
 
-                    try {
-                        if (intercept)
-                            return interceptGetEntries(keys, f.get());
-                        else {
-                            Map<K, CacheEntry<K, V>> res = U.newHashMap(f.get().size());
-
-                            for (Map.Entry<K, EntryGetResult> e : f.get().entrySet())
-                                res.put(e.getKey(),
-                                    new CacheEntryImplEx<>(e.getKey(), (V)e.getValue().value(), e.getValue().version()));
-
-                            return res.values();
-                        }
-                    }
-                    finally {
-                        ctx.operationContextPerCall(prevOpCtx);
+                        return res.values();
                     }
                 }
-            });
+            }, opCtx));
 
         if (statsEnabled)
             fut.listen(new UpdateGetAllTimeStatClosure<Map<K, EntryGetResult>>(metrics0(), start));
@@ -6808,6 +6772,38 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
             GridCacheMapEntry entry = map.getEntry(ctx, ctx.toCacheKeyObject(o));
 
             return entry != null && internalSet.contains(entry);
+        }
+    }
+
+    /** */
+    private class CX1ContextAware extends CX1 {
+        /** */
+        private static final long serialVersionUID = 0L;
+
+        /** */
+        private final CX1 delegate;
+
+        /** */
+        private final @Nullable CacheOperationContext opCtx;
+
+        /** */
+        private CX1ContextAware(CX1 delegate, @Nullable CacheOperationContext opCtx) {
+            this.delegate = delegate;
+            this.opCtx = opCtx;
+        }
+
+        /** */
+        @Override public Object applyx(Object object) throws IgniteCheckedException {
+            CacheOperationContext prevOpCtx = ctx.operationContextPerCall();
+
+            ctx.operationContextPerCall(opCtx);
+
+            try {
+                return delegate.applyx(object);
+            }
+            finally {
+                ctx.operationContextPerCall(prevOpCtx);
+            }
         }
     }
 }
