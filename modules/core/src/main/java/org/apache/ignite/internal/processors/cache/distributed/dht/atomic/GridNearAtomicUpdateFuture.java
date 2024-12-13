@@ -27,6 +27,7 @@ import java.util.UUID;
 import javax.cache.expiry.ExpiryPolicy;
 import javax.cache.processor.EntryProcessor;
 import org.apache.ignite.IgniteCacheRestartingException;
+import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.cache.CacheWriteSynchronizationMode;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.IgniteInternalFuture;
@@ -35,10 +36,12 @@ import org.apache.ignite.internal.cluster.ClusterTopologyServerNotFoundException
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.CacheEntryPredicate;
 import org.apache.ignite.internal.processors.cache.CacheObject;
+import org.apache.ignite.internal.processors.cache.CacheOperationContext;
 import org.apache.ignite.internal.processors.cache.CachePartialUpdateCheckedException;
 import org.apache.ignite.internal.processors.cache.CacheStoppedException;
 import org.apache.ignite.internal.processors.cache.EntryProcessorResourceInjectorProxy;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
+import org.apache.ignite.internal.processors.cache.GridCacheMessage;
 import org.apache.ignite.internal.processors.cache.GridCacheOperation;
 import org.apache.ignite.internal.processors.cache.GridCacheReturn;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
@@ -651,14 +654,67 @@ public class GridNearAtomicUpdateFuture extends GridNearAtomicAbstractUpdateFutu
      * @param mappings Mappings to send.
      */
     private void sendUpdateRequests(Map<UUID, PrimaryRequestState> mappings) {
+        UUID locNodeId = cctx.localNodeId();
+
+        GridNearAtomicAbstractUpdateRequest locUpdate = null;
+
         // Send messages to remote nodes first, then run local update.
         for (PrimaryRequestState reqState : mappings.values()) {
             GridNearAtomicAbstractUpdateRequest req = reqState.req;
 
-            if (req.initMappingLocally() && reqState.mappedNodes.isEmpty())
-                reqState.resetLocalMapping();
+            if (locNodeId.equals(req.nodeId())) {
+                assert locUpdate == null : "Cannot have more than one local mapping [locUpdate=" + locUpdate +
+                    ", req=" + req + ']';
 
-            sendSingleRequest(req.nodeId, req);
+                locUpdate = req;
+            }
+            else {
+                try {
+                    if (req.initMappingLocally() && reqState.mappedNodes.isEmpty())
+                        reqState.resetLocalMapping();
+
+                    GridCacheMessage msg = req;
+
+                    if (appAttrs != null)
+                        msg = new AtomicApplicationAttributesAwareRequest(req, appAttrs);
+
+                    cctx.io().send(req.nodeId(), msg, cctx.ioPolicy());
+
+                    if (msgLog.isDebugEnabled()) {
+                        msgLog.debug("Near update fut, sent request [futId=" + req.futureId() +
+                            ", node=" + req.nodeId() + ']');
+                    }
+                }
+                catch (IgniteCheckedException e) {
+                    if (msgLog.isDebugEnabled()) {
+                        msgLog.debug("Near update fut, failed to send request [futId=" + req.futureId() +
+                            ", node=" + req.nodeId() +
+                            ", err=" + e + ']');
+                    }
+
+                    onSendError(req, e);
+                }
+            }
+        }
+
+        if (locUpdate != null) {
+            cache.updateAllAsyncInternal(cctx.localNode(), locUpdate,
+                (req, res) -> {
+                    CacheOperationContext prevOpCtx = cctx.operationContextPerCall();
+
+                    if (appAttrs != null)
+                        cctx.operationContextPerCall(new CacheOperationContext().setApplicationAttributes(appAttrs));
+
+                    try {
+                        if (syncMode != FULL_ASYNC)
+                            onPrimaryResponse(res.nodeId(), res, false);
+                        else if (res.remapTopologyVersion() != null)
+                            ((GridDhtAtomicCache<?, ?>)cctx.cache()).remapToNewPrimary(req);
+                    }
+                    finally {
+                        cctx.operationContextPerCall(prevOpCtx);
+                    }
+                });
         }
 
         if (syncMode == FULL_ASYNC)

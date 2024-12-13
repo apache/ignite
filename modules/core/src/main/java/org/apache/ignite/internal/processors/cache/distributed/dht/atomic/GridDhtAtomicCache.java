@@ -299,8 +299,8 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
                 }
 
                 @Override public String toString() {
-                    return "GridNearAtomicUpdateApplicationAttributesAwareRequest handler " +
-                        "[msgIdx=" + GridNearAtomicAbstractUpdateRequest.CACHE_MSG_IDX + ']';
+                    return "AtomicApplicationAttributesAwareRequest handler " +
+                        "[msgIdx=" + AtomicApplicationAttributesAwareRequest.CACHE_MSG_IDX + ']';
                 }
             });
 
