@@ -42,9 +42,6 @@ import static org.apache.ignite.events.EventType.EVT_CLIENT_NODE_RECONNECTED;
  */
 public class TcpClientDiscoverySpiMulticastTest extends GridCommonAbstractTest {
     /** */
-    private boolean forceSrv;
-
-    /** */
     private ThreadLocal<Boolean> client = new ThreadLocal<>();
 
     /** */
@@ -68,11 +65,8 @@ public class TcpClientDiscoverySpiMulticastTest extends GridCommonAbstractTest {
 
         client.set(null);
 
-        if (clientFlag != null && clientFlag) {
+        if (clientFlag != null && clientFlag)
             cfg.setClientMode(true);
-
-            spi.setForceServerMode(forceSrv);
-        }
         else {
             Integer port = discoPort.get();
 
@@ -98,7 +92,9 @@ public class TcpClientDiscoverySpiMulticastTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     @Test
-    public void testClientStartsFirst() throws Exception {
+    public void testClientStart() throws Exception {
+        Ignite srv = startGrid(1);
+
         IgniteInternalFuture<Ignite> fut = GridTestUtils.runAsync(new Callable<Ignite>() {
             @Override public Ignite call() throws Exception {
                 client.set(true);
@@ -110,8 +106,6 @@ public class TcpClientDiscoverySpiMulticastTest extends GridCommonAbstractTest {
         U.sleep(10_000);
 
         discoPort.set(TcpDiscoverySpi.DFLT_PORT);
-
-        Ignite srv = startGrid(1);
 
         Ignite client = fut.get();
 
@@ -154,23 +148,6 @@ public class TcpClientDiscoverySpiMulticastTest extends GridCommonAbstractTest {
      */
     @Test
     public void testJoinWithMulticast() throws Exception {
-        joinWithMulticast();
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
-    @Test
-    public void testJoinWithMulticastForceServer() throws Exception {
-        forceSrv = true;
-
-        joinWithMulticast();
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
-    private void joinWithMulticast() throws Exception {
         Ignite ignite0 = startGrid(0);
 
         assertSpi(ignite0, false);
@@ -181,7 +158,7 @@ public class TcpClientDiscoverySpiMulticastTest extends GridCommonAbstractTest {
 
         assertTrue(ignite1.configuration().isClientMode());
 
-        assertSpi(ignite1, !forceSrv);
+        assertSpi(ignite1, true);
 
         assertTrue(ignite1.configuration().isClientMode());
 

@@ -37,7 +37,6 @@ import org.apache.ignite.internal.binary.BinaryMarshaller;
 import org.apache.ignite.internal.util.GridConcurrentHashSet;
 import org.apache.ignite.internal.util.lang.GridAbsPredicate;
 import org.apache.ignite.internal.util.typedef.internal.U;
-import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
@@ -53,8 +52,6 @@ public class GridCacheClientNodeBinaryObjectMetadataMultinodeTest extends GridCo
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
         cfg.setPeerClassLoadingEnabled(false);
-
-        ((TcpDiscoverySpi)cfg.getDiscoverySpi()).setForceServerMode(true);
 
         cfg.setMarshaller(new BinaryMarshaller());
 
@@ -257,14 +254,14 @@ public class GridCacheClientNodeBinaryObjectMetadataMultinodeTest extends GridCo
      * @throws Exception If failed.
      */
     @Test
-    public void testClientStartsFirst() throws Exception {
-        final Ignite ignite0 = startClientGrid(0);
-
-        assertTrue(ignite0.configuration().isClientMode());
-
+    public void testClient() throws Exception {
         Ignite ignite1 = startGrid(1);
 
         assertFalse(ignite1.configuration().isClientMode());
+
+        final Ignite ignite0 = startClientGrid(0);
+
+        assertTrue(ignite0.configuration().isClientMode());
 
         IgniteBinary binaries = ignite(1).binary();
 

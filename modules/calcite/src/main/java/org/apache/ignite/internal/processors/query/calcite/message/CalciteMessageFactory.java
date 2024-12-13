@@ -18,7 +18,7 @@
 package org.apache.ignite.internal.processors.query.calcite.message;
 
 import java.util.function.Supplier;
-import org.apache.ignite.plugin.extensions.communication.IgniteMessageFactory;
+import org.apache.ignite.plugin.extensions.communication.MessageFactory;
 import org.apache.ignite.plugin.extensions.communication.MessageFactoryProvider;
 
 /**
@@ -27,7 +27,7 @@ import org.apache.ignite.plugin.extensions.communication.MessageFactoryProvider;
 public class CalciteMessageFactory implements MessageFactoryProvider {
     /** {@inheritDoc} */
     @SuppressWarnings({"unchecked", "rawtypes"})
-    @Override public void registerAll(IgniteMessageFactory factory) {
+    @Override public void registerAll(MessageFactory factory) {
         for (MessageType type : MessageType.values())
             factory.register(type.directType(), (Supplier)type.factory());
     }

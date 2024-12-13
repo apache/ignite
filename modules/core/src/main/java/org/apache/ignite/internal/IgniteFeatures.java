@@ -31,9 +31,6 @@ import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_IGNITE_FEATUR
  * Defines supported features and check its on other nodes.
  */
 public enum IgniteFeatures {
-    /** Cache metrics v2 support. */
-    CACHE_METRICS_V2(1),
-
     /** Support of splitted cache configurations to avoid broken deserialization on non-affinity nodes. */
     SPLITTED_CACHE_CONFIGURATIONS(5),
 

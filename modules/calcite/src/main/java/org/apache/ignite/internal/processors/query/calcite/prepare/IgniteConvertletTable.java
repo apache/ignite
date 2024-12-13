@@ -46,7 +46,7 @@ public class IgniteConvertletTable extends ReflectiveConvertletTable {
     public static final IgniteConvertletTable INSTANCE = new IgniteConvertletTable();
 
     /** */
-    private IgniteConvertletTable() {
+    protected IgniteConvertletTable() {
         // Replace Calcite's convertlet with our own.
         registerOp(SqlStdOperatorTable.TIMESTAMP_DIFF, new TimestampDiffConvertlet());
 
