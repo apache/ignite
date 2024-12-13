@@ -42,6 +42,9 @@ import org.jetbrains.annotations.Nullable;
 /** */
 public final class ScanQueryIterator<K, V, R> extends AbstractScanQueryIterator<K, V, R> {
     /** */
+    public static final int EXPIRE_ENTRIES_FLUSH_CNT = 100;
+
+    /** */
     private static final long serialVersionUID = 0L;
 
     /** */
@@ -182,7 +185,7 @@ public final class ScanQueryIterator<K, V, R> extends AbstractScanQueryIterator<
                     val = null;
                 }
 
-                if (dht != null && expiryPlc.readyToFlush(100)) {
+                if (dht != null && expiryPlc.readyToFlush(EXPIRE_ENTRIES_FLUSH_CNT)) {
                     dht.sendTtlUpdateRequest(expiryPlc);
 
                     expiryPlc.reset();
