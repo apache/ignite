@@ -307,7 +307,7 @@ public class JdbcRequestHandler implements ClientListenerRequestHandler, ClientT
                 "Failed to handle JDBC request because node is stopping.");
 
         if (req instanceof JdbcClientInfoAwareRequest)
-            cliCtx.clientInfo(((JdbcClientInfoAwareRequest)req).clientInfo());
+            cliCtx.applicationAttributes(((JdbcClientInfoAwareRequest)req).clientInfo());
 
         JdbcResponse resp;
         try {
