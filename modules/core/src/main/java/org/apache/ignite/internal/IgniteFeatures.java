@@ -36,9 +36,6 @@ public enum IgniteFeatures {
     /** Partition Map Exchange-free switch on baseline node left at fully rebalanced cluster.  */
     PME_FREE_SWITCH(19),
 
-    /** Support policy of shutdown. */
-    SHUTDOWN_POLICY(40),
-
     /** Compatibility support for new fields which are configured split. */
     SPLITTED_CACHE_CONFIGURATIONS_V2(46);
 
