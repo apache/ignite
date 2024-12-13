@@ -112,7 +112,7 @@ public class GridRedisSubscribeCommandHandler implements GridRedisCommandHandler
     	
     }
     
-    IgniteSet<ChanelInfo> topicsMap = null;
+    public IgniteSet<ChanelInfo> topicsMap = null;
     
 
     /**

@@ -196,6 +196,7 @@ public enum GridRedisCommand {
  	CLIENT,
     /** DBSIZE. */
     DBSIZE("DBSIZE"),
+    INFO,
     
     SAVE, // 所有数据的快照以 RDB 文件的形式保存到磁盘上。
     BGSAVE, // 异步保存

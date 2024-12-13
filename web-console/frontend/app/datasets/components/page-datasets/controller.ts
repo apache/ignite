@@ -42,11 +42,11 @@ export default class PageDatasetsController {
 
     _loadMongoExpress(id: string) {
         try {            
-            const mongoExpress = JSON.parse(localStorage.mongoExpress);
-            return mongoExpress;
+            const mongoExpress = localStorage.mongoExpress || "http://localhost:9090/phpMongoAdmin";
+            return {id: id, clusterName: "Mongo Express", url: mongoExpress};
         }
         catch (ignored) {
-            return {id: id, clusterName: "Mongo Express", url: "http://localhost:37017"}
+            return {id: id, clusterName: "Mongo Express", url: "http://localhost:9090/phpMongoAdmin"}
         }
     }
 

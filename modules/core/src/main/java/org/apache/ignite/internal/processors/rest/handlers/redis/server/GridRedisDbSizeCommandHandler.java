@@ -77,7 +77,7 @@ public class GridRedisDbSizeCommandHandler extends GridRedisRestCommandHandler {
         if(cmd == DBSIZE) {
 	        restReq.command(CACHE_SIZE);
 	        restReq.cacheName(msg.cacheName());
-        }
+        }        
 
         return restReq;
     }

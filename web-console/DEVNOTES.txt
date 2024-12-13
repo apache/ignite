@@ -58,6 +58,8 @@ Web Console Run In Development Mode
   If needed run "npm install" (if dependencies changed) and start webpack in development mode "npm start".
 4. Open in browser: http://localhost:9000
 
+5. When want to visit mongoExpress you can set localStorage.mongoExpress=http://localhost:9090/phpMongoAdmin
+
 End-to-end tests In Development Mode
 ==========================================
 E2E tests are performed with TestCafe framework - https://testcafe.devexpress.com

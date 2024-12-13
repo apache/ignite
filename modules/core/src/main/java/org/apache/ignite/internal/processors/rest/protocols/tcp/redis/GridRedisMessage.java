@@ -140,12 +140,12 @@ public class GridRedisMessage implements GridClientMessage {
     }
 	
 	
-	public String standardizeParams(String cmd) {
+	public String standardizeParams(String cmd,String baseCacheName) {
     	//add@byron hashset:
     	if(cmd.charAt(0)=='h' || cmd.charAt(0)=='H') {
-    		return CACHE_NAME_PREFIX+'-'+msgParts.remove(KEY_POS);
+    		return baseCacheName+'-'+msgParts.remove(KEY_POS);
     	}
-    	return null;
+    	return baseCacheName;
     	//end@
     }
 

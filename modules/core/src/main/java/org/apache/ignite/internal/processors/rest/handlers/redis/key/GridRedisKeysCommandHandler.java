@@ -36,6 +36,8 @@ import org.apache.ignite.internal.processors.rest.request.GridRestCacheRequest;
 import org.apache.ignite.internal.processors.rest.request.GridRestRequest;
 import org.apache.ignite.internal.util.typedef.internal.U;
 
+import com.sun.tools.javac.util.StringUtils;
+
 import static org.apache.ignite.internal.processors.rest.GridRestCommand.CACHE_GET_ALL;
 import static org.apache.ignite.internal.processors.rest.GridRestCommand.CACHE_GET_KEYS;
 import static org.apache.ignite.internal.processors.rest.GridRestCommand.CACHE_SIZE;
@@ -99,7 +101,14 @@ public class GridRedisKeysCommandHandler extends GridRedisRestCommandHandler {
     	
     	List<String> list = (List)restRes.getResponse();
     	if(params.size()>1) { 
-	    	int offset = Integer.valueOf(params.get(1)); // cmd, key, curser, MATCH pattem, COUNT 1000
+	    	int offset = 0;
+	    	if(params.get(1).matches("\\d")){ // cmd, key, curser, MATCH pattem, COUNT 1000
+	    		offset = Integer.valueOf(params.get(1));
+	    	}
+	    	else if(params.get(0).matches("\\d")){ // cmd, curser, MATCH pattem, COUNT 1000
+	    		offset = Integer.valueOf(params.get(0));
+	    	}
+	    	
 	    	int count = 10;
 	    	try {
 				Long countP = longValue("COUNT",params);

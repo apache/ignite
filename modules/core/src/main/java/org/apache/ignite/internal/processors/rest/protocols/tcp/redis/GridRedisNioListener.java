@@ -84,6 +84,17 @@ public class GridRedisNioListener extends GridNioServerListenerAdapter<GridRedis
     public static final int CONN_NAME_META_KEY = GridNioSessionMetaKey.nextUniqueKey();
     public static final int SESS_TX_META_KEY = GridNioSessionMetaKey.nextUniqueKey();
     public static final int SESS_TX_QUEUED_META_KEY = GridNioSessionMetaKey.nextUniqueKey();
+    
+    public static long total_connections_received = 0;
+    
+    public static long total_commands_processed = 0;
+    
+    public static long total_net_input_bytes = 0;
+    
+    public static long total_net_output_bytes = 0;
+    
+    public static long pubsub_channels = 0;
+
 
     /**
      * @param log Logger.
@@ -157,18 +168,28 @@ public class GridRedisNioListener extends GridNioServerListenerAdapter<GridRedis
 
     /** {@inheritDoc} */
     @Override public void onConnected(GridNioSession ses) {
-        // No-op, never called.       
+        // No-op, never called.    
+    	total_connections_received++;
     }
 
     /** {@inheritDoc} */
     @Override public void onDisconnected(GridNioSession ses, @Nullable Exception e) {
         // No-op, never called.
-    	subscribeHandler.removeChanelInfoOfClient(ses.remoteAddress().toString());        
+    	subscribeHandler.removeChanelInfoOfClient(ses.remoteAddress().toString());
+    	total_net_input_bytes = ses.bytesReceived();
+    	total_net_output_bytes = ses.bytesSent();
+    }
+    
+    private void updateStateInfo(GridNioSession ses) {    	
+    	if(subscribeHandler.topicsMap!=null) {
+    		pubsub_channels = subscribeHandler.topicsMap.size();
+    	}
     }
 
     /** {@inheritDoc} */
     @Override public void onMessage(final GridNioSession ses, final GridRedisMessage msg) {
-        if (handlers.get(msg.command()) == null) {
+    	GridRedisCommand redisCmd = msg.command();
+        if (handlers.get(redisCmd) == null) {
             U.warn(log, "Cannot find the corresponding command (session will be closed) [ses=" + ses +
                 ", command=" + msg.aux(0) + ']');
 
@@ -177,25 +198,33 @@ public class GridRedisNioListener extends GridNioServerListenerAdapter<GridRedis
             return;
         }
         else {
-            String cacheName = ses.meta(CONN_CTX_META_KEY);
-
-            if (cacheName != null)
-                msg.cacheName(cacheName);
+        	total_commands_processed++;        	
+        	
+            String cacheName = ses.meta(CONN_CTX_META_KEY);            
+            if (cacheName == null) {
+            	cacheName = GridRedisMessage.DFLT_CACHE_NAME;
+            }            
             
             //add@byron
             String cmd = msg.aux(0);
-            if(cmd.charAt(0)=='h' || cmd.charAt(0)=='H') { //Hashsets
-            	cacheName = msg.standardizeParams(cmd);     
-            	msg.cacheName(cacheName); // hash_name as cachename
-            	
-            	if(cacheName!=null) {
-            		CacheConfiguration<String,?> ccfg0 = ctx.cache().cacheConfiguration(GridRedisMessage.DFLT_CACHE_NAME);
-            		CacheConfiguration<String,?> ccfg = new CacheConfiguration<>(ccfg0);
-            		ccfg.setName(cacheName);
-            		ccfg.setGroupName(GridRedisMessage.CACHE_NAME_PREFIX);
-            		IgniteCache<String,?> cache = ctx.grid().getOrCreateCache(ccfg);
-            	}                
+            if(cmd.charAt(0)=='h' || cmd.charAt(0)=='H') { // Hashsets            	 
+            	msg.cacheName(msg.standardizeParams(cmd,cacheName)); // hash_name as cachename         	
+            	              
             }
+            else {
+            	msg.cacheName(cacheName);
+            }
+            
+            if(ctx.grid().cache(msg.cacheName())==null) {
+        		CacheConfiguration<String,?> ccfg0 = ctx.cache().cacheConfiguration(GridRedisMessage.DFLT_CACHE_NAME);
+        		CacheConfiguration<String,?> ccfg = new CacheConfiguration<>(ccfg0);
+        		ccfg.setName(msg.cacheName());
+        		if(cmd.charAt(0)=='h' || cmd.charAt(0)=='H') { // Hashsets
+        			ccfg.setGroupName(cacheName+"-hash");
+        		}
+        		ctx.grid().getOrCreateCache(ccfg);
+        		
+        	}
             //end@
             
             // 开始事务，事务往往和pipeline同时开启
@@ -204,10 +233,14 @@ public class GridRedisNioListener extends GridNioServerListenerAdapter<GridRedis
         		queued.add(msg);
         		msg.setResponse(GridRedisProtocolParser.toSimpleString("QUEUED"));
         		sendResponse(ses, msg);
+        		
         	}
         	else {
+        		if(redisCmd==GridRedisCommand.INFO) {
+        			updateStateInfo(ses);
+        		}
 
-	            IgniteInternalFuture<GridRedisMessage> f = handlers.get(msg.command()).handleAsync(ses, msg);
+	            IgniteInternalFuture<GridRedisMessage> f = handlers.get(redisCmd).handleAsync(ses, msg);
 	            
 	            f.listen(new CIX1<IgniteInternalFuture<GridRedisMessage>>() {
 	                @Override public void applyx(IgniteInternalFuture<GridRedisMessage> f) throws IgniteCheckedException {

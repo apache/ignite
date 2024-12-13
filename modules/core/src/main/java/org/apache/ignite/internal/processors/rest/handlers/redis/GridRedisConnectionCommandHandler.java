@@ -56,7 +56,8 @@ public class GridRedisConnectionCommandHandler implements GridRedisCommandHandle
         ECHO,
         SELECT,
         AUTH,
-        CLIENT
+        CLIENT,
+        INFO
     );
 
     /** Grid context. */
@@ -64,7 +65,8 @@ public class GridRedisConnectionCommandHandler implements GridRedisCommandHandle
 
     /** PONG response to PING. */
     private static final String PONG = "PONG";
-
+    
+    
     /**
      * Handler constructor.
      *
@@ -168,6 +170,43 @@ public class GridRedisConnectionCommandHandler implements GridRedisCommandHandle
             			msg.setResponse(GridRedisProtocolParser.nil());
             		}
             	}
+                return new GridFinishedFuture<>(msg);
+                
+            case INFO:
+            	// add@byron
+            	String section = msg.aux(1);
+            	if(section==null) {
+            		section = "default";
+            	}
+            	
+            	StringBuilder sb = new StringBuilder();
+            	if(section.equals("server") || section.equals("default") || section.equals("everything")) {
+            		sb.append("\n# Server");
+            		sb.append("\nredis_version:6.0.0");
+            		sb.append("\nredis_mode:standalone");
+            		sb.append("\nos:"+System.getenv("os.name"));
+            		sb.append("\nprocess_id:"+1);
+            	}
+            	if(section.equals("memory") || section.equals("default")  || section.equals("everything")) {
+            		sb.append("\n# Memory");
+            		sb.append("\nused_memory:"); sb.append(ctx.metric().heapMemoryUsage().getUsed());
+            		sb.append("\nused_memory_human:"); sb.append(ctx.metric().nonHeapMemoryUsage().getUsed());
+            		sb.append("\ntotal_system_memory:"); sb.append(ctx.metric().heapMemoryUsage().getInit());
+            		sb.append("\ntotal_system_memory_human:"); sb.append(ctx.metric().nonHeapMemoryUsage().getInit());
+            		sb.append("\nmaxmemory:"); sb.append(ctx.metric().heapMemoryUsage().getMax());
+            		sb.append("\nmaxmemory_human:"); sb.append(ctx.metric().nonHeapMemoryUsage().getMax());
+            	}
+            	if(section.equals("stats")  || section.equals("everything")) {
+            		sb.append("\n# Stats");
+            		sb.append("\ntotal_connections_received:"); sb.append(GridRedisNioListener.total_connections_received);
+            		sb.append("\ntotal_commands_processed:"); sb.append(GridRedisNioListener.total_commands_processed);
+            		sb.append("\ntotal_net_input_bytes:"); sb.append(GridRedisNioListener.total_net_input_bytes);
+            		sb.append("\ntotal_net_output_bytes:"); sb.append(GridRedisNioListener.total_net_output_bytes);
+            		sb.append("\npubsub_channels:"); sb.append(GridRedisNioListener.pubsub_channels);
+            		
+            	}
+            	
+            	msg.setResponse(GridRedisProtocolParser.toBulkString(sb.toString()));
                 return new GridFinishedFuture<>(msg);
         }
 
