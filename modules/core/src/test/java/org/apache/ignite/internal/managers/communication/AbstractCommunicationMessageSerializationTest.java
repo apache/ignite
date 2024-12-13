@@ -26,10 +26,10 @@ import java.util.UUID;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.lang.IgniteUuid;
-import org.apache.ignite.plugin.extensions.communication.IgniteMessageFactory;
 import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.plugin.extensions.communication.MessageCollectionItemType;
 import org.apache.ignite.plugin.extensions.communication.MessageFactory;
+import org.apache.ignite.plugin.extensions.communication.MessageFactoryProvider;
 import org.apache.ignite.plugin.extensions.communication.MessageReader;
 import org.apache.ignite.plugin.extensions.communication.MessageWriter;
 import org.apache.ignite.spi.communication.tcp.messages.HandshakeMessage;
@@ -52,7 +52,7 @@ public abstract class AbstractCommunicationMessageSerializationTest {
         AbstractTestMessageReader unboundedReader = createMessageReader(MAX_VALUE);
         AbstractTestMessageWriter unboundedWriter = createMessageWriter(MAX_VALUE);
 
-        IgniteMessageFactoryImpl msgFactory = new IgniteMessageFactoryImpl(new MessageFactory[]{messageFactory()});
+        IgniteMessageFactoryImpl msgFactory = new IgniteMessageFactoryImpl(new MessageFactoryProvider[]{messageFactory()});
 
         for (short msgType : msgFactory.registeredDirectTypes()) {
             checkSerializationAndDeserializationConsistency(msgFactory, msgType, oneFieldWriter, unboundedReader);
@@ -66,7 +66,7 @@ public abstract class AbstractCommunicationMessageSerializationTest {
     }
 
     /** */
-    protected abstract MessageFactory messageFactory();
+    protected abstract MessageFactoryProvider messageFactory();
 
     /** */
     protected Message initializeMessage(Message msg) throws Exception {
@@ -85,7 +85,7 @@ public abstract class AbstractCommunicationMessageSerializationTest {
 
     /** */
     private void checkSerializationAndDeserializationConsistency(
-        IgniteMessageFactory msgFactory,
+        MessageFactory msgFactory,
         short msgType,
         AbstractTestMessageWriter writer,
         AbstractTestMessageReader reader

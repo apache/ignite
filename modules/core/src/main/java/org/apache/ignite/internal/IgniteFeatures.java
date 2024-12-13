@@ -30,9 +30,6 @@ import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_IGNITE_FEATUR
  * Defines supported features and check its on other nodes.
  */
 public enum IgniteFeatures {
-    /** Cache metrics v2 support. */
-    CACHE_METRICS_V2(1),
-
     /** Partition Map Exchange-free switch on baseline node left at fully rebalanced cluster.  */
     PME_FREE_SWITCH(19),
 

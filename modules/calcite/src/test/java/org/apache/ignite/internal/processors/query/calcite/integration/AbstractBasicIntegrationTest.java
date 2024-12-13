@@ -144,7 +144,7 @@ public class AbstractBasicIntegrationTest extends GridCommonAbstractTest {
     }
 
     /** */
-    protected QueryChecker assertQuery(IgniteEx ignite, String qry) {
+    protected QueryChecker assertQuery(Ignite ignite, String qry) {
         return new QueryChecker(qry) {
             @Override protected QueryEngine getEngine() {
                 return Commons.lookupComponent(((IgniteEx)ignite).context(), QueryEngine.class);
@@ -301,7 +301,7 @@ public class AbstractBasicIntegrationTest extends GridCommonAbstractTest {
         }
 
         /** {@inheritDoc} */
-        @Override public long count(ExecutionContext<?> ectx, ColocationGroup grp, boolean notNull) {
+        @Override public <Row> Iterable<Row> count(ExecutionContext<Row> ectx, ColocationGroup grp, boolean notNull) {
             return delegate.count(ectx, grp, notNull);
         }
 
