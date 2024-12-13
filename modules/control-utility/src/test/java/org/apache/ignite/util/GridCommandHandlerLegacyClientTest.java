@@ -19,7 +19,6 @@ package org.apache.ignite.util;
 
 import org.apache.ignite.configuration.ClientConnectorConfiguration;
 import org.apache.ignite.configuration.ConnectorConfiguration;
-import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.commandline.CommandHandler;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.testframework.GridTestUtils;
@@ -36,11 +35,6 @@ import static org.apache.ignite.testframework.GridTestUtils.sslTrustedFactory;
 
 /** */
 public class GridCommandHandlerLegacyClientTest extends GridCommonAbstractTest {
-    /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
-        return super.getConfiguration(igniteInstanceName);
-    }
-
     /** {@inheritDoc} */
     @Override protected void afterTest() throws Exception {
         super.afterTest();
