@@ -432,6 +432,9 @@ public class SessionContextCacheInterceptorTest extends GridCommonAbstractTest {
         @Override public @Nullable String onBeforePut(Cache.Entry<Integer, String> entry, String newVal) {
             String ret = sesCtxPrv.getSessionContext().getAttribute("onBeforePut");
 
+            if (ret == null)
+                System.out.println();
+
             return ret == null ? newVal : ret + entry.getKey();
         }
 

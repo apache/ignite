@@ -37,6 +37,7 @@ import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.cluster.ClusterTopologyCheckedException;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.CacheEntryPredicate;
+import org.apache.ignite.internal.processors.cache.CacheOperationContext;
 import org.apache.ignite.internal.processors.cache.CachePartialUpdateCheckedException;
 import org.apache.ignite.internal.processors.cache.GridCacheAtomicFuture;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
@@ -297,27 +298,48 @@ public abstract class GridNearAtomicAbstractUpdateFuture extends GridCacheFuture
      * @param req Request.
      */
     final void sendSingleRequest(UUID nodeId, GridNearAtomicAbstractUpdateRequest req) {
-        try {
-            GridCacheMessage msg = req;
+        if (cctx.localNodeId().equals(nodeId)) {
+            cache.updateAllAsyncInternal(cctx.localNode(), req,
+                (ignored, res) -> {
+                    CacheOperationContext prevOpCtx = cctx.operationContextPerCall();
 
-            if (appAttrs != null)
-                msg = new AtomicApplicationAttributesAwareRequest(req, appAttrs);
+                    if (appAttrs != null)
+                        cctx.operationContextPerCall(new CacheOperationContext().setApplicationAttributes(appAttrs));
 
-            cctx.io().send(req.nodeId(), msg, cctx.ioPolicy());
-
-            if (msgLog.isDebugEnabled()) {
-                msgLog.debug("Near update fut, sent request [futId=" + req.futureId() +
-                    ", node=" + req.nodeId() + ']');
-            }
+                    try {
+                        if (syncMode != FULL_ASYNC)
+                            onPrimaryResponse(res.nodeId(), res, false);
+                        else if (res.remapTopologyVersion() != null)
+                            ((GridDhtAtomicCache<?, ?>)cctx.cache()).remapToNewPrimary(req);
+                    }
+                    finally {
+                        cctx.operationContextPerCall(prevOpCtx);
+                    }
+                });
         }
-        catch (IgniteCheckedException e) {
-            if (msgLog.isDebugEnabled()) {
-                msgLog.debug("Near update fut, failed to send request [futId=" + req.futureId() +
-                    ", node=" + req.nodeId() +
-                    ", err=" + e + ']');
-            }
+        else {
+            try {
+                GridCacheMessage msg = req;
 
-            onSendError(req, e);
+                if (appAttrs != null)
+                    msg = new AtomicApplicationAttributesAwareRequest(req, appAttrs);
+
+                cctx.io().send(req.nodeId(), msg, cctx.ioPolicy());
+
+                if (msgLog.isDebugEnabled()) {
+                    msgLog.debug("Near update fut, sent request [futId=" + req.futureId() +
+                        ", node=" + req.nodeId() + ']');
+                }
+            }
+            catch (IgniteCheckedException e) {
+                if (msgLog.isDebugEnabled()) {
+                    msgLog.debug("Near update fut, failed to send request [futId=" + req.futureId() +
+                        ", node=" + req.nodeId() +
+                        ", err=" + e + ']');
+                }
+
+                onSendError(req, e);
+            }
         }
     }
 
