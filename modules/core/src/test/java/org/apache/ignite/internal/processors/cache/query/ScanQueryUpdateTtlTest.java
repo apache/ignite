@@ -17,19 +17,20 @@
 
 package org.apache.ignite.internal.processors.cache.query;
 
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicBoolean;
 import javax.cache.expiry.Duration;
 import javax.cache.expiry.TouchedExpiryPolicy;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.cache.query.ScanQuery;
 import org.apache.ignite.cluster.ClusterNode;
-import org.apache.ignite.cluster.ClusterState;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.TestRecordingCommunicationSpi;
 import org.apache.ignite.internal.managers.communication.GridIoMessage;
+import org.apache.ignite.internal.processors.cache.KeyCacheObject;
 import org.apache.ignite.internal.processors.cache.distributed.GridCacheTtlUpdateRequest;
 import org.apache.ignite.lang.IgniteInClosure;
 import org.apache.ignite.plugin.extensions.communication.Message;
@@ -44,9 +45,6 @@ public class ScanQueryUpdateTtlTest extends GridCommonAbstractTest {
     /** */
     private static final int KEYS = EXPIRE_ENTRIES_FLUSH_CNT * 3;
 
-    /** */
-    AtomicBoolean failed = new AtomicBoolean(false);
-
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
@@ -57,7 +55,7 @@ public class ScanQueryUpdateTtlTest extends GridCommonAbstractTest {
                 .setExpiryPolicyFactory(TouchedExpiryPolicy.factoryOf(new Duration(TimeUnit.MINUTES, 60))));
         }
 
-        cfg.setCommunicationSpi(new CheckingCommunicationSpi(failed));
+        cfg.setCommunicationSpi(new CheckingCommunicationSpi());
 
         return cfg;
     }
@@ -65,9 +63,7 @@ public class ScanQueryUpdateTtlTest extends GridCommonAbstractTest {
     /** */
     @Test
     public void testScanQueryIteratorExpireEntriesFlush() throws Exception {
-        try (IgniteEx srv = startGrids(2)) {
-            srv.cluster().state(ClusterState.ACTIVE);
-
+        try (IgniteEx ignored = startGrids(2)) {
             try (IgniteEx cln = startClientGrid(2)) {
                 for (int i = 0; i < KEYS; i++)
                     cln.cache(DEFAULT_CACHE_NAME).put(i, i);
@@ -78,20 +74,24 @@ public class ScanQueryUpdateTtlTest extends GridCommonAbstractTest {
             grid(0).context().pools().getStripedExecutorService().awaitComplete();
             grid(1).context().pools().getStripedExecutorService().awaitComplete();
 
-            assertFalse("GridCacheTtlUpdateRequest was sent with more then maximum allowed keys [max=" +
-                (EXPIRE_ENTRIES_FLUSH_CNT + 1) + "]", failed.get());
+            assertTrue("Each key must be sent only once", CheckingCommunicationSpi.keyCnt.values().stream().allMatch(c -> c == 1));
+
+            assertTrue("Single GridCacheTtlUpdateRequest must be sent with no more then maximum allowed keys " +
+                    "[maxAllowed=" + (EXPIRE_ENTRIES_FLUSH_CNT + 1) +
+                    ", maxActual=" + CheckingCommunicationSpi.maxKeyBatchCnt + "]",
+                CheckingCommunicationSpi.maxKeyBatchCnt <= EXPIRE_ENTRIES_FLUSH_CNT + 1);
+
+            assertEquals("All keys must be sent", KEYS, CheckingCommunicationSpi.keyCnt.keySet().size());
         }
     }
 
     /** */
     private static class CheckingCommunicationSpi extends TestRecordingCommunicationSpi {
         /** */
-        private final AtomicBoolean failed;
+        private static int maxKeyBatchCnt = 0;
 
         /** */
-        CheckingCommunicationSpi(AtomicBoolean failed) {
-            this.failed = failed;
-        }
+        private static Map<KeyCacheObject, Integer> keyCnt = new ConcurrentHashMap<>(KEYS);
 
         /** {@inheritDoc} */
         @Override public void sendMessage(ClusterNode node, Message msg, IgniteInClosure<IgniteException> ackC)
@@ -99,11 +99,13 @@ public class ScanQueryUpdateTtlTest extends GridCommonAbstractTest {
             if ((msg instanceof GridIoMessage) && (((GridIoMessage)msg).message() instanceof GridCacheTtlUpdateRequest)) {
                 GridCacheTtlUpdateRequest ttlUpdReq = (GridCacheTtlUpdateRequest)((GridIoMessage)msg).message();
 
-                System.out.println("SIZE " + ttlUpdReq.keys().size());
+                if (ttlUpdReq.keys().size() > maxKeyBatchCnt)
+                    maxKeyBatchCnt = ttlUpdReq.keys().size();
 
-                if (ttlUpdReq.keys().size() > EXPIRE_ENTRIES_FLUSH_CNT + 1)
-                    failed.set(true);
+                for (KeyCacheObject key : ttlUpdReq.keys())
+                    keyCnt.put(key, keyCnt.getOrDefault(key, 0) + 1);
             }
+
             super.sendMessage(node, msg, ackC);
         }
     }
