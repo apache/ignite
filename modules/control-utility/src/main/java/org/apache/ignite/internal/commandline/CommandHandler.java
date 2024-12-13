@@ -371,16 +371,14 @@ public class CommandHandler {
                     String errMsg = errorMessage(e);
 
                     logger.error("Connection to cluster failed. " + errMsg);
-
-                    if (errMsg.contains("Channel is closed") || isSSLMisconfigurationError(cause)) {
-                        logger.error("Make sure you are connecting to the client connector (configured on a node via '" +
-                            ClientConnectorConfiguration.class.getName() + "'). Connection to the REST connector was " +
-                            "deprecated and will be removed for the control utility in future releases. Set up the '" +
-                            IGNITE_CONTROL_UTILITY_USE_CONNECTOR_CONNECTION + "' system property to the 'true' to " +
-                            "forcefully connect to the REST connector (configured on a node via '" +
-                            ConnectorConfiguration.class.getName() + "'). ");
-                    }
                 }
+
+                logger.error("Make sure you are connecting to the client connector (configured on a node via '" +
+                    ClientConnectorConfiguration.class.getName() + "'). Connection to the REST connector was " +
+                    "deprecated and will be removed for the control utility in future releases. Set up the '" +
+                    IGNITE_CONTROL_UTILITY_USE_CONNECTOR_CONNECTION + "' system property to the 'true' to " +
+                    "forcefully connect to the REST connector (configured on a node via '" +
+                    ConnectorConfiguration.class.getName() + "'). ");
 
                 logger.info("Command [" + cmdName + "] finished with code: " + EXIT_CODE_CONNECTION_FAILED);
 

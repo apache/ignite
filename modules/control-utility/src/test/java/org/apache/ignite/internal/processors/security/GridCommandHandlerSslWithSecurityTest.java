@@ -112,7 +112,7 @@ public class GridCommandHandlerSslWithSecurityTest extends GridCommandHandlerFac
         if (commandHandler.equals(CLI_CMD_HND)) {
             cfg.setClientConnectorConfiguration(new ClientConnectorConfiguration()
                 .setSslEnabled(true)
-                .setSslContextFactory(sslTrustedFactory("connectorServer", "trustthree"))
+                .setSslContextFactory(sslTrustedFactory("thinServer", "trusttwo"))
                 .setUseIgniteSslContextFactory(false)
             );
         }
@@ -166,10 +166,10 @@ public class GridCommandHandlerSslWithSecurityTest extends GridCommandHandlerFac
         args.add(login);
 
         args.add("--keystore");
-        args.add(keyStorePath("connectorServer"));
+        args.add(keyStorePath(CLI_CMD_HND.equals(commandHandler) ? "thinClient" : "connectorServer"));
 
         args.add("--truststore");
-        args.add(keyStorePath("trustthree"));
+        args.add(keyStorePath(CLI_CMD_HND.equals(commandHandler) ? "trusttwo" : "trustthree"));
 
         assertEquals(EXIT_CODE_OK, cmd.execute(args));
         assertEquals(1, keyStorePwdCnt.get());
@@ -193,9 +193,9 @@ public class GridCommandHandlerSslWithSecurityTest extends GridCommandHandlerFac
             "--state",
             "--user", login,
             "--password", pwd,
-            "--keystore", keyStorePath("connectorClient"),
+            "--keystore", keyStorePath(CLI_CMD_HND.equals(commandHandler) ? "thinClient" : "connectorServer"),
             "--keystore-password", keyStorePassword(),
-            "--truststore", keyStorePath("trustthree"),
+            "--truststore", keyStorePath(CLI_CMD_HND.equals(commandHandler) ? "trusttwo" : "trustthree"),
             "--truststore-password", keyStorePassword()));
 
         assertEquals(EXIT_CODE_OK, exitCode);
