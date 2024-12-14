@@ -372,6 +372,10 @@ public class GridCommandHandlerFactoryAbstractTest extends GridCommonAbstractTes
 
     /** */
     protected int commandHandlerExtraLines() {
-        return cliCommandHandler() ? 11 : 0;
+        return CLI_CMD_HND.equals(commandHandler)
+            ? 11
+            : CLI_GRID_CLIENT_CMD_HND.equals(commandHandler)
+                ? 12 // Deprecation message.
+                : 0;
     }
 }
