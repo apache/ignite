@@ -92,7 +92,7 @@ public class IgniteChangingBaselineDownCacheRemoveFailoverTest extends GridCache
 
         startGrids(GRIDS_COUNT);
 
-        startGrid(GRIDS_COUNT);
+        startGrid(CLI_IDX);
 
         grid(0).cluster().baselineAutoAdjustEnabled(false);
         grid(0).cluster().state(ClusterState.ACTIVE);
