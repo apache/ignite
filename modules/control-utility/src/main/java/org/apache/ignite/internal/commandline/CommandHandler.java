@@ -261,18 +261,18 @@ public class CommandHandler {
                 return EXIT_CODE_OK;
             }
 
-            if (useConnectorConnection()) {
-                logger.warning("WARNING: Deprecated protocol (ConnectorConfiguration) used to connect to cluster. " +
-                    "It will be removed in the next releases. Please update the control utility connection arguments " +
-                    "to use a thin client protocol: set up a port and/or SSL configuration " +
-                    "releated to the ClientConnectorConfiguration on nodes.");
-            }
-
             verbose = F.exist(rawArgs, CMD_VERBOSE::equalsIgnoreCase);
 
             ConnectionAndSslParameters<A> args = new ArgumentParser(logger, registry).parseAndValidate(rawArgs);
 
             cmdName = toFormattedCommandName(args.cmdPath().peekLast().getClass()).toUpperCase();
+
+            if (useConnectorConnection() && !(args.command() instanceof HelpCommand)) {
+                logger.warning("WARNING: Deprecated protocol (ConnectorConfiguration) used to connect to cluster. " +
+                    "It will be removed in the next releases. Please update the control utility connection arguments " +
+                    "to use a thin client protocol: set up a port and/or SSL configuration " +
+                    "releated to the ClientConnectorConfiguration on nodes.");
+            }
 
             int tryConnectMaxCnt = 3;
 
@@ -368,9 +368,7 @@ public class CommandHandler {
                     if (isSSLMisconfigurationError(cause))
                         e = cause;
 
-                    String errMsg = errorMessage(e);
-
-                    logger.error("Connection to cluster failed. " + errMsg);
+                    logger.error("Connection to cluster failed. " + errorMessage(e));
                 }
 
                 logger.error("Make sure you are connecting to the client connector (configured on a node via '" +
@@ -542,6 +540,11 @@ public class CommandHandler {
         }
 
         if (!F.isEmpty(args.sslKeyStorePath()) || !F.isEmpty(args.sslFactoryConfigPath())) {
+            if (!F.isEmpty(args.sslKeyStorePath()) && !F.isEmpty(args.sslFactoryConfigPath())) {
+                throw new IllegalArgumentException("Incorrect SSL configuration. SSL factory config path should " +
+                    "not be specified simultaneously with other SSL options like keystore path.");
+            }
+
             clientCfg.setSslContextFactory(createSslSupportFactory(args));
             clientCfg.setSslMode(SslMode.REQUIRED);
         }
@@ -587,7 +590,7 @@ public class CommandHandler {
 
         if (!F.isEmpty(args.sslKeyStorePath()) || !F.isEmpty(args.sslFactoryConfigPath())) {
             if (!F.isEmpty(args.sslKeyStorePath()) && !F.isEmpty(args.sslFactoryConfigPath()))
-                throw new IgniteCheckedException("Incorrect SSL configuration. " +
+                throw new IllegalArgumentException("Incorrect SSL configuration. " +
                     "SSL factory config path should not be specified simultaneously with other SSL options like keystore path.");
 
             clientCfg.setSslContextFactory(createSslSupportFactory(args));
