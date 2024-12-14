@@ -31,10 +31,7 @@ import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_IGNITE_FEATUR
  */
 public enum IgniteFeatures {
     /** Partition Map Exchange-free switch on baseline node left at fully rebalanced cluster.  */
-    PME_FREE_SWITCH(19),
-
-    /** Support policy of shutdown. */
-    SHUTDOWN_POLICY(40);
+    PME_FREE_SWITCH(19);
 
     /**
      * Unique feature identifier.
