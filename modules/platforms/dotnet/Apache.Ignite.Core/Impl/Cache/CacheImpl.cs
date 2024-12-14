@@ -110,8 +110,7 @@ namespace Apache.Ignite.Core.Impl.Cache
             {
                 HasPlatformCache = UsePlatformCache(platformCacheCfg);
                 
-                _platformCache = _ignite.PlatformCacheManager.GetOrCreatePlatformCache(configuration, 
-                    HasPlatformCache);
+                _platformCache = _ignite.PlatformCacheManager.GetOrCreatePlatformCache(configuration);
             }
         }
 
