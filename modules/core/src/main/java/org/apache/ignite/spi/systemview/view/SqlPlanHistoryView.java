@@ -35,13 +35,6 @@ public class SqlPlanHistoryView {
     }
 
     /**
-     * @return SQL plan entry.
-     */
-    public Map.Entry<SqlPlan, Long> sqlPlan() {
-        return plan;
-    }
-
-    /**
      * @return String Schema name.
      */
     @Order

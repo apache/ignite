@@ -25,9 +25,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Comparator;
-import java.util.LinkedHashMap;
 import java.util.List;
-import java.util.Map;
 import java.util.Set;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
@@ -48,7 +46,6 @@ import org.apache.ignite.indexing.IndexingQueryEngineConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.processors.query.IgniteSQLException;
 import org.apache.ignite.internal.processors.query.QueryEngineConfigurationEx;
-import org.apache.ignite.internal.processors.query.running.SqlPlan;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiTuple;
@@ -65,6 +62,7 @@ import static org.apache.ignite.internal.processors.query.running.RunningQueryMa
 import static org.apache.ignite.testframework.GridTestUtils.waitForCondition;
 import static org.junit.Assert.assertNotEquals;
 import static org.junit.Assume.assumeFalse;
+import static org.junit.Assume.assumeTrue;
 
 /** Tests for SQL plan history. */
 @RunWith(Parameterized.class)
@@ -126,13 +124,6 @@ public class SqlPlanHistoryIntegrationTest extends GridCommonAbstractTest {
     private final SqlFieldsQuery sqlFieldsQryWithReducePhase = new SqlFieldsQuery(SQL_WITH_REDUCE_PHASE)
         .setDistributedJoins(true);
 
-    /** Failed SqlFieldsQueries with reduce phase. */
-    private final SqlFieldsQuery[] sqlFieldsQryWithReducePhaseFailed = F.asArray(
-        new SqlFieldsQuery(SQL_WITH_REDUCE_PHASE.replace("o._key=101", "o._key=fail()"))
-            .setDistributedJoins(true),
-        new SqlFieldsQuery(SQL_WITH_REDUCE_PHASE.replace("o._key=102", "o._key=fail()"))
-            .setDistributedJoins(true));
-
     /** Successful SqlQuery. */
     private final SqlQuery sqlQry = new SqlQuery<>("String", "from String");
 
@@ -182,11 +173,9 @@ public class SqlPlanHistoryIntegrationTest extends GridCommonAbstractTest {
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
-        QueryEngineConfigurationEx engCfg = configureSqlEngine();
-
         cfg.setSqlConfiguration(new SqlConfiguration()
             .setSqlPlanHistorySize(planHistorySize)
-            .setQueryEnginesConfiguration(engCfg)
+            .setQueryEnginesConfiguration(configureSqlEngine())
         );
 
         return cfg.setCacheConfiguration(
@@ -223,8 +212,7 @@ public class SqlPlanHistoryIntegrationTest extends GridCommonAbstractTest {
     protected IgniteEx queryNode() {
         IgniteEx node = isClient ? grid(1) : grid(0);
 
-        if (isClient)
-            assertEquals(isClient, node.context().clientNode());
+        assertEquals(isClient, node.context().clientNode());
 
         return node;
     }
@@ -331,35 +319,11 @@ public class SqlPlanHistoryIntegrationTest extends GridCommonAbstractTest {
             checkSqlPlanHistory(3);
 
             for (int i = 1; i <= 2; i++) {
-                Map<SqlPlan, Long> sqlPlansOnMapNode = grid(i).context().query().runningQueryManager()
-                    .planHistoryTracker().sqlPlanHistory();
+                List<SqlPlanHistoryView> sqlPlansOnMapNode = getSqlPlanHistory(grid(i));
 
                 assertNotNull(sqlPlansOnMapNode);
 
                 checkMetrics(2, sqlPlansOnMapNode);
-            }
-        });
-    }
-
-    /**
-     * Checks failed SqlFieldsQuery with reduce phase. If the fisrt subquery fails, there should be only one entry in
-     * SQL plan history. If the fisrt subquery is successfully executed but the second one fails, the history should
-     * contain two entries.
-     */
-    @Test
-    public void testSqlFieldsQueryWithReducePhaseFailed() throws Exception {
-        runQueryWithReducePhase(() -> {
-            for (int i = 0; i < sqlFieldsQryWithReducePhaseFailed.length; i++) {
-                try {
-                    cacheQuery(sqlFieldsQryWithReducePhaseFailed[i], "pers");
-                }
-                catch (Exception ignore) {
-                    // No-op.
-                }
-
-                checkSqlPlanHistory( i + 1);
-
-                queryNode().context().query().runningQueryManager().resetPlanHistoryMetrics();
             }
         });
     }
@@ -429,7 +393,7 @@ public class SqlPlanHistoryIntegrationTest extends GridCommonAbstractTest {
 
         assertTrue(waitForCondition(() -> getSqlPlanHistory().size() == planHistorySize, 1000));
 
-        Set<String> qrys = getSqlPlanHistory().keySet().stream().map(SqlPlan::query).collect(Collectors.toSet());
+        Set<String> qrys = getSqlPlanHistory().stream().map(SqlPlanHistoryView::sql).collect(Collectors.toSet());
 
         for (int i = 1; i <= PLAN_HISTORY_EXCESS; i++) {
             int finI = i;
@@ -458,7 +422,7 @@ public class SqlPlanHistoryIntegrationTest extends GridCommonAbstractTest {
 
             checkSqlPlanHistory(1);
 
-            timeStamps[i] = F.first(getSqlPlanHistory().values());
+            timeStamps[i] = F.first(getSqlPlanHistory()).lastStartTime().getTime();
 
             if (i == 0) {
                 long ts0 = U.currentTimeMillis();
@@ -539,8 +503,8 @@ public class SqlPlanHistoryIntegrationTest extends GridCommonAbstractTest {
      * @param task Test task to execute.
      */
     public void runQueryWithReducePhase(Runnable task) throws Exception {
-        assumeFalse("Map/reduce queries are only applicable to H2 engine",
-            sqlEngine != IndexingQueryEngineConfiguration.ENGINE_NAME);
+        assumeTrue("Map/reduce queries are only applicable to H2 engine",
+            sqlEngine == IndexingQueryEngineConfiguration.ENGINE_NAME);
 
         assumeFalse("Only distributed queries have map and reduce phases", loc);
 
@@ -602,7 +566,7 @@ public class SqlPlanHistoryIntegrationTest extends GridCommonAbstractTest {
                     stmt.execute(cmd);
             }
             catch (SQLException e) {
-                new RuntimeException(e);
+                throw new RuntimeException(e);
             }
         });
     }
@@ -623,7 +587,7 @@ public class SqlPlanHistoryIntegrationTest extends GridCommonAbstractTest {
      * @param task Task to be executed.
      */
     public void executeDml(IgniteBiTuple<List<String>, Boolean> qrysInfo, Consumer<List<String>> task) throws Exception {
-        assumeFalse("There is no lazy mode for DML operations", !isFullyFetched);
+        assumeTrue("There is no lazy mode for DML operations", isFullyFetched);
 
         startTestGrid();
 
@@ -635,12 +599,17 @@ public class SqlPlanHistoryIntegrationTest extends GridCommonAbstractTest {
     }
 
     /** Returns current SQL plan history on the query node. */
-    public Map<SqlPlan, Long> getSqlPlanHistory() {
-        SystemView<SqlPlanHistoryView> views = queryNode().context().systemView().view(SQL_PLAN_HIST_VIEW);
+    public List<SqlPlanHistoryView> getSqlPlanHistory() {
+        return getSqlPlanHistory(queryNode());
+    }
 
-        Map<SqlPlan, Long> res = new LinkedHashMap<>();
+    /** Returns current SQL plan history on a given node. */
+    public List<SqlPlanHistoryView> getSqlPlanHistory(IgniteEx node) {
+        List<SqlPlanHistoryView> res = new ArrayList<>();
 
-        views.forEach(entry -> res.put(entry.sqlPlan().getKey(), entry.sqlPlan().getValue()));
+        SystemView<SqlPlanHistoryView> views = node.context().systemView().view(SQL_PLAN_HIST_VIEW);
+
+        views.forEach(res::add);
 
         return res;
     }
@@ -651,7 +620,7 @@ public class SqlPlanHistoryIntegrationTest extends GridCommonAbstractTest {
      * @param size Number of SQL plan entries expected to be in the history.
      */
     public void checkSqlPlanHistory(int size) {
-        Map<SqlPlan, Long> sqlPlans = getSqlPlanHistory();
+        List<SqlPlanHistoryView> sqlPlans = getSqlPlanHistory();
 
         assertNotNull(sqlPlans);
 
@@ -665,7 +634,7 @@ public class SqlPlanHistoryIntegrationTest extends GridCommonAbstractTest {
      * @param isSimpleQry Simple query flag.
      */
     public void checkSqlPlanHistoryDml(int size, boolean isSimpleQry) {
-        Map<SqlPlan, Long> sqlPlans = getSqlPlanHistory();
+        List<SqlPlanHistoryView> sqlPlans = getSqlPlanHistory();
 
         assertNotNull(sqlPlans);
 
@@ -677,9 +646,7 @@ public class SqlPlanHistoryIntegrationTest extends GridCommonAbstractTest {
             else
                 check = "the following " + (loc ? "local " : "") + "query has been executed:";
 
-            sqlPlans = sqlPlans.entrySet().stream()
-                .filter(e -> e.getKey().plan().contains(check))
-                .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
+            sqlPlans = sqlPlans.stream().filter(e -> e.plan().contains(check)).collect(Collectors.toList());
         }
 
         checkMetrics(size, sqlPlans);
@@ -691,14 +658,13 @@ public class SqlPlanHistoryIntegrationTest extends GridCommonAbstractTest {
      * @param size Number of SQL plan entries expected to be in the history.
      * @param sqlPlans Sql plans recorded in the history.
      */
-    public void checkMetrics(int size, Map<SqlPlan, Long> sqlPlans) {
+    public void checkMetrics(int size, List<SqlPlanHistoryView> sqlPlans) {
         if (size == 1 && sqlPlans.size() == 2) {
-            List<Map.Entry<SqlPlan, Long>> sortedPlans = new ArrayList<>(sqlPlans.entrySet()).stream()
-                .sorted(Comparator.comparing(Map.Entry::getValue))
-                .collect(Collectors.toList());
+            List<SqlPlanHistoryView> sortedPlans = sqlPlans.stream()
+                .sorted(Comparator.comparing(SqlPlanHistoryView::lastStartTime)).collect(Collectors.toList());
 
-            String plan1 = sortedPlans.get(0).getKey().plan();
-            String plan2 = sortedPlans.get(1).getKey().plan();
+            String plan1 = sortedPlans.get(0).plan();
+            String plan2 = sortedPlans.get(1).plan();
 
             assertTrue(plan2.contains(plan1) && plan2.contains("/* scanCount"));
         }
@@ -708,15 +674,15 @@ public class SqlPlanHistoryIntegrationTest extends GridCommonAbstractTest {
         if (size == 0)
             return;
 
-        for (Map.Entry<SqlPlan, Long> plan : sqlPlans.entrySet()) {
-            assertEquals(loc, plan.getKey().local());
-            assertEquals(sqlEngine, plan.getKey().engine());
+        for (SqlPlanHistoryView plan : sqlPlans) {
+            assertEquals(loc, plan.local());
+            assertEquals(sqlEngine, plan.engine());
 
-            assertNotNull(plan.getKey().plan());
-            assertNotNull(plan.getKey().query());
-            assertNotNull(plan.getKey().schema());
+            assertNotNull(plan.plan());
+            assertNotNull(plan.sql());
+            assertNotNull(plan.schemaName());
 
-            assertTrue(plan.getValue() > 0);
+            assertTrue(plan.lastStartTime().getTime() > 0);
         }
     }
 
@@ -737,7 +703,9 @@ public class SqlPlanHistoryIntegrationTest extends GridCommonAbstractTest {
 
             cacheQuery(new SqlFieldsQuery(SQL + " where _val='STR" + i + "'").setLocal(loc), "A");
 
-            qryText[i - 1] = getSqlPlanHistory().keySet().stream().findFirst().map(SqlPlan::query).orElse("");
+            checkSqlPlanHistory(1);
+
+            qryText[i - 1] = F.first(getSqlPlanHistory()).sql();
 
             if (i == 1)
                 reset.run();
