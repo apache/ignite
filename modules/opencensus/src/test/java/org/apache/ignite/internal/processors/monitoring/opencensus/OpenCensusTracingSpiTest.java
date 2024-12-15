@@ -25,7 +25,6 @@ import io.opencensus.trace.Status;
 import io.opencensus.trace.export.SpanData;
 import org.apache.ignite.events.EventType;
 import org.apache.ignite.internal.IgniteEx;
-import org.apache.ignite.internal.IgniteFeatures;
 import org.apache.ignite.internal.processors.tracing.MTC;
 import org.apache.ignite.internal.processors.tracing.SpanTags;
 import org.apache.ignite.spi.tracing.Scope;
@@ -344,13 +343,6 @@ public class OpenCensusTracingSpiTest extends AbstractTracingTest {
 
         assertTrue(nodejobMsgTags.stream().anyMatch(it -> it.equals(stringAttributeValue(COMMUNICATION_JOB_EXECUTE_REQUEST.spanName()))));
         assertTrue(nodejobMsgTags.stream().anyMatch(it -> it.equals(stringAttributeValue(COMMUNICATION_JOB_EXECUTE_RESPONSE.spanName()))));
-    }
-
-    /**
-     */
-    @Test
-    public void testTracingFeatureAvailable() {
-        assertTrue(IgniteFeatures.nodeSupports(IgniteFeatures.allFeatures(), IgniteFeatures.TRACING));
     }
 
     /**

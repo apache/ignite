@@ -18,14 +18,8 @@
 package org.apache.ignite.internal;
 
 import java.util.BitSet;
-import java.util.Collection;
-import org.apache.ignite.IgniteEncryption;
 import org.apache.ignite.cluster.ClusterNode;
-import org.apache.ignite.cluster.ClusterState;
 import org.apache.ignite.internal.managers.discovery.IgniteDiscoverySpi;
-import org.apache.ignite.internal.managers.encryption.GridEncryptionManager;
-import org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi;
-import org.apache.ignite.spi.communication.tcp.messages.HandshakeWaitMessage;
 import org.apache.ignite.spi.discovery.DiscoverySpi;
 
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_PME_FREE_SWITCH_DISABLED;
@@ -36,110 +30,14 @@ import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_IGNITE_FEATUR
  * Defines supported features and check its on other nodes.
  */
 public enum IgniteFeatures {
-    /**
-     * Support of {@link HandshakeWaitMessage} by {@link TcpCommunicationSpi}.
-     */
-    TCP_COMMUNICATION_SPI_HANDSHAKE_WAIT_MESSAGE(0),
-
-    /** Cache metrics v2 support. */
-    CACHE_METRICS_V2(1),
-
-    /** Data paket compression. */
-    DATA_PACKET_COMPRESSION(3),
-
-    /** Support of different rebalance size for nodes.  */
-    DIFFERENT_REBALANCE_POOL_SIZE(4),
-
     /** Support of splitted cache configurations to avoid broken deserialization on non-affinity nodes. */
     SPLITTED_CACHE_CONFIGURATIONS(5),
-
-    /**
-     * Support of providing thread dump of thread that started transaction. Used for dumping
-     * long running transactions.
-     */
-    TRANSACTION_OWNER_THREAD_DUMP_PROVIDING(6),
-
-    /** Displaying versbose transaction information: --info option of --tx control script command. */
-    TX_INFO_COMMAND(7),
-
-    /** Command which allow to detect and cleanup garbage which could left after destroying caches in shared groups */
-    FIND_AND_DELETE_GARBAGE_COMMAND(8),
-
-    /** Support of cluster read-only mode. */
-    CLUSTER_READ_ONLY_MODE(9),
-
-    /** Support of suspend/resume operations for pessimistic transactions. */
-    SUSPEND_RESUME_PESSIMISTIC_TX(10),
-
-    /** Distributed metastorage. */
-    DISTRIBUTED_METASTORAGE(11),
-
-    /** The node can communicate with others via socket channel. */
-    CHANNEL_COMMUNICATION(12),
-
-    /** Replacing TcpDiscoveryNode field with nodeId field in discovery messages. */
-    TCP_DISCOVERY_MESSAGE_NODE_COMPACT_REPRESENTATION(14),
-
-    /** LRT system and user time dump settings.  */
-    LRT_SYSTEM_USER_TIME_DUMP_SETTINGS(18),
 
     /** Partition Map Exchange-free switch on baseline node left at fully rebalanced cluster.  */
     PME_FREE_SWITCH(19),
 
-    /** Master key change. See {@link GridEncryptionManager#changeMasterKey(String)}. */
-    MASTER_KEY_CHANGE(20),
-
-    /** ContinuousQuery with security subject id support. */
-    CONT_QRY_SECURITY_AWARE(21),
-
-    /**
-     * Preventing loss of in-memory data when deactivating the cluster.
-     *
-     * @see ClusterState#INACTIVE
-     */
-    SAFE_CLUSTER_DEACTIVATION(22),
-
-    /** Persistence caches can be snapshot.  */
-    PERSISTENCE_CACHE_SNAPSHOT(23),
-
-    /** Tracing. */
-    TRACING(26),
-
-    /** Distributed change timeout for dump long operations. */
-    DISTRIBUTED_CHANGE_LONG_OPERATIONS_DUMP_TIMEOUT(30),
-
-    /** New region for volatile data. */
-    VOLATILE_DATA_STRUCTURES_REGION(33),
-
-    /** Check secondary indexes inline size on join/by control utility request. */
-    CHECK_INDEX_INLINE_SIZES(36),
-
-    /** Distributed propagation of tx collisions dump interval. */
-    DISTRIBUTED_TX_COLLISIONS_DUMP(37),
-
-    /** Remove metadata from cluster for specified type. */
-    REMOVE_METADATA(39),
-
-    /** Support policy of shutdown. */
-    SHUTDOWN_POLICY(40),
-
-    /** Force rebuild, list or request indexes rebuild status from control script. */
-    INDEXES_MANIPULATIONS_FROM_CONTROL_SCRIPT(42),
-
-    /** Pk index keys are applied in correct order. */
-    SPECIFIED_SEQ_PK_KEYS(45),
-
     /** Compatibility support for new fields which are configured split. */
-    SPLITTED_CACHE_CONFIGURATIONS_V2(46),
-
-    /** Cache encryption key change. See {@link IgniteEncryption#changeCacheGroupKey(Collection)}. */
-    CACHE_GROUP_KEY_CHANGE(47),
-
-    /** Collecting performance statistics. */
-    PERFORMANCE_STATISTICS(48),
-
-    /** Restore cache group from the snapshot. */
-    SNAPSHOT_RESTORE_CACHE_GROUP(49);
+    SPLITTED_CACHE_CONFIGURATIONS_V2(46);
 
     /**
      * Unique feature identifier.

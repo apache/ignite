@@ -259,6 +259,9 @@ public class StdSqlOperatorsTest extends AbstractBasicIntegrationTest {
         assertExpression("DATE('2021-01-01')").returns(Date.valueOf("2021-01-01")).check();
         assertExpression("TIME(1, 10, 30)").returns(Time.valueOf("01:10:30")).check();
         assertExpression("DATETIME(2021, 1, 1, 1, 10, 30)").returns(Timestamp.valueOf("2021-01-01 01:10:30")).check();
+        assertExpression("TO_CHAR(DATE '2021-01-01', 'YYMMDD')").returns("210101").check();
+        assertExpression("TO_DATE('210101', 'YYMMDD')").returns(Date.valueOf("2021-01-01")).check();
+        assertExpression("TO_TIMESTAMP('210101-01-10-30', 'YYMMDD-HH24-MI-SS')").returns(Timestamp.valueOf("2021-01-01 01:10:30")).check();
     }
 
     /** */

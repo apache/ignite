@@ -69,7 +69,7 @@
         <commons.codec.version>1.16.0</commons.codec.version>
         <commons.collections.version>3.2.2</commons.collections.version>
         <commons.lang.version>2.6</commons.lang.version>
-        <commons.io.version>2.11.0</commons.io.version>
+        <commons.io.version>2.17.0</commons.io.version>
         <commons.dbcp.version>1.4</commons.dbcp.version>
         <cron4j.version>2.2.5</cron4j.version>
         <curator.version>5.2.0</curator.version>
@@ -84,7 +84,7 @@
         <javax.cache.version>1.0.0</javax.cache.version>
         <jboss.rmi.version>1.0.6.Final</jboss.rmi.version>
         <jetbrains.annotations.version>16.0.3</jetbrains.annotations.version>
-        <jetty.version>9.4.55.v20240627</jetty.version>
+        <jetty.version>9.4.56.v20240826</jetty.version>
         <jmh.version>1.13</jmh.version>
         <jna.version>4.5.2</jna.version>
         <jnr.posix.version>3.1.15</jnr.posix.version>
@@ -104,7 +104,7 @@
         <mysql.connector.version>8.0.30</mysql.connector.version>
         <postgres.connector.version>42.7.3</postgres.connector.version>
         <slf4j.version>1.7.33</slf4j.version>
-        <snappy.version>1.1.10.4</snappy.version>
+        <snappy.version>1.1.10.7</snappy.version>
         <spring.version>5.3.39</spring.version>
         <surefire.version>3.1.2</surefire.version>
         <tomcat.version>9.0.63</tomcat.version>

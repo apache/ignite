@@ -906,6 +906,7 @@ public class JdbcThinMetadataSelfTest extends JdbcThinAbstractSelfTest {
                 "SYS.SNAPSHOT.NAME.null",
                 "SYS.SNAPSHOT.SNAPSHOT_RECORD_SEGMENT.null",
                 "SYS.SNAPSHOT.TYPE.null",
+                "SYS.SNAPSHOT.SNAPSHOT_TIME.null",
                 "SYS.TASKS.AFFINITY_CACHE_NAME.null",
                 "SYS.TASKS.INTERNAL.null",
                 "SYS.TASKS.END_TIME.null",

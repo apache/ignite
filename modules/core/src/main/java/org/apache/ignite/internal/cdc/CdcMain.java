@@ -73,7 +73,6 @@ import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiPredicate;
 import org.apache.ignite.lang.IgniteBiTuple;
-import org.apache.ignite.marshaller.MarshallerUtils;
 import org.apache.ignite.platform.PlatformType;
 import org.apache.ignite.spi.IgniteSpi;
 import org.apache.ignite.spi.metric.jmx.JmxMetricExporterSpi;
@@ -163,6 +162,9 @@ public class CdcMain implements Runnable {
     /** Event capture time. */
     public static final String EVT_CAPTURE_TIME = "EventCaptureTime";
 
+    /** Wal segment iterator consuming time. */
+    public static final String SEGMENT_CONSUMING_TIME = "SegmentConsumingTime";
+
     /** Binary metadata metric name. */
     public static final String BINARY_META_DIR = "BinaryMetaDir";
 
@@ -212,6 +214,9 @@ public class CdcMain implements Runnable {
      * by {@link CdcConsumer}.
      */
     private HistogramMetricImpl evtCaptureTime;
+
+    /** Metric represents time between creating {@link WALIterator} and finish consuming it, in milliseconds. */
+    private HistogramMetricImpl segmentConsumingTime;
 
     /** Change Data Capture configuration. */
     protected final CdcConfiguration cdcCfg;
@@ -443,6 +448,10 @@ public class CdcMain implements Runnable {
             EVT_CAPTURE_TIME,
             new long[] {5_000, 10_000, 15_000, 30_000, 60_000},
             "Time between creating an event on Ignite node and capturing it by CdcConsumer");
+        segmentConsumingTime = mreg.histogram(
+            SEGMENT_CONSUMING_TIME,
+            new long[] {25, 50, 100, 250, 500, 1000, 2500, 5000, 10000, 25000, 50000},
+            "Time of WAL segment consumption by consumer, in milliseconds.");
         mreg.register(CDC_MODE, () -> cdcModeState.name(), String.class, "CDC mode");
     }
 
@@ -576,12 +585,16 @@ public class CdcMain implements Runnable {
 
         curSegmentIdx.value(segmentIdx);
 
+        long start = U.currentTimeMillis();
+
         if (cdcModeState == CdcMode.IGNITE_NODE_ACTIVE) {
             if (consumeSegmentPassively(builder))
                 return true;
         }
         else
             consumeSegmentActively(builder);
+
+        segmentConsumingTime.value(U.currentTimeMillis() - start);
 
         processedSegments.add(segment);
 
@@ -762,7 +775,7 @@ public class CdcMain implements Runnable {
             Iterator<CdcCacheEvent> cacheEvts = GridLocalConfigManager
                 .readCachesData(
                     dbDir,
-                    MarshallerUtils.jdkMarshaller(kctx.igniteInstanceName()),
+                    kctx.marshallerContext().jdkMarshaller(),
                     igniteCfg)
                 .entrySet().stream()
                 .map(data -> {

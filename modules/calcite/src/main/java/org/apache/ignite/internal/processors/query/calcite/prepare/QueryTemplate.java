@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.processors.query.calcite.prepare;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -25,14 +26,19 @@ import java.util.Objects;
 import java.util.concurrent.atomic.AtomicReference;
 
 import com.google.common.collect.ImmutableList;
+import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.rel.metadata.RelMetadataQuery;
 import org.apache.ignite.internal.processors.query.IgniteSQLException;
 import org.apache.ignite.internal.processors.query.calcite.exec.PartitionExtractor;
 import org.apache.ignite.internal.processors.query.calcite.exec.partition.PartitionNode;
 import org.apache.ignite.internal.processors.query.calcite.metadata.FragmentMappingException;
 import org.apache.ignite.internal.processors.query.calcite.metadata.MappingService;
+import org.apache.ignite.internal.processors.query.calcite.rel.IgniteExchange;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteReceiver;
+import org.apache.ignite.internal.processors.query.calcite.rel.IgniteRel;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteSender;
+import org.apache.ignite.internal.processors.query.calcite.rel.IgniteTableModify;
+import org.apache.ignite.internal.processors.query.calcite.trait.IgniteDistributions;
 import org.apache.ignite.internal.processors.query.calcite.util.Commons;
 import org.apache.ignite.internal.util.typedef.F;
 import org.jetbrains.annotations.NotNull;
@@ -85,7 +91,27 @@ public class QueryTemplate {
                 else
                     ex.addSuppressed(e);
 
-                fragments = replace(fragments, e.fragment(), new FragmentSplitter(e.node()).go(e.fragment()));
+                RelNode cutPoint = e.node();
+
+                if (Commons.queryTransactionVersion(ctx) != null && cutPoint instanceof IgniteTableModify) {
+                    IgniteRel input = (IgniteRel)cutPoint.getInput(0);
+
+                    // Table modify under transaction should always be executed on initiator node.
+                    if (!input.distribution().equals(IgniteDistributions.single())) {
+                        cutPoint = ((IgniteRel)cutPoint).clone(cutPoint.getCluster(), Collections.singletonList(
+                            new IgniteExchange(
+                                input.getCluster(),
+                                input.getTraitSet().replace(IgniteDistributions.single()),
+                                input,
+                                IgniteDistributions.single())));
+
+                        fragments = replace(fragments, e.fragment(), new Splitter().go((IgniteRel)cutPoint));
+
+                        continue;
+                    }
+                }
+
+                fragments = replace(fragments, e.fragment(), new FragmentSplitter(cutPoint).go(e.fragment()));
             }
         }
 

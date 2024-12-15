@@ -59,7 +59,6 @@ import org.apache.ignite.failure.FailureContext;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteFeatures;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
-import org.apache.ignite.internal.IgniteKernal;
 import org.apache.ignite.internal.managers.discovery.IgniteDiscoverySpi;
 import org.apache.ignite.internal.managers.discovery.IgniteDiscoverySpiInternalListener;
 import org.apache.ignite.internal.processors.failure.FailureProcessor;
@@ -77,7 +76,6 @@ import org.apache.ignite.lang.IgniteProductVersion;
 import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.marshaller.Marshaller;
 import org.apache.ignite.marshaller.MarshallerUtils;
-import org.apache.ignite.marshaller.jdk.JdkMarshaller;
 import org.apache.ignite.resources.IgniteInstanceResource;
 import org.apache.ignite.resources.LoggerResource;
 import org.apache.ignite.spi.IgniteSpiAdapter;
@@ -634,10 +632,7 @@ public class TcpDiscoverySpi extends IgniteSpiAdapter implements IgniteDiscovery
             setLocalAddress(ignite.configuration().getLocalHost());
             setAddressResolver(ignite.configuration().getAddressResolver());
 
-            if (ignite instanceof IgniteKernal) // IgniteMock instance can be injected from tests.
-                marsh = ((IgniteKernal)ignite).context().marshallerContext().jdkMarshaller();
-            else
-                marsh = new JdkMarshaller();
+            marsh = ((IgniteEx)ignite).context().marshallerContext().jdkMarshaller();
         }
     }
 
@@ -2206,7 +2201,6 @@ public class TcpDiscoverySpi extends IgniteSpiAdapter implements IgniteDiscovery
             dataPacket.marshalJoiningNodeData(
                 dataBag,
                 marshaller(),
-                allNodesSupport(IgniteFeatures.DATA_PACKET_COMPRESSION),
                 ignite.configuration().getNetworkCompressionLevel(),
                 log);
         else
@@ -2214,7 +2208,6 @@ public class TcpDiscoverySpi extends IgniteSpiAdapter implements IgniteDiscovery
                 dataBag,
                 locNode.id(),
                 marshaller(),
-                allNodesSupport(IgniteFeatures.DATA_PACKET_COMPRESSION),
                 ignite.configuration().getNetworkCompressionLevel(),
                 log);
 
@@ -2245,14 +2238,8 @@ public class TcpDiscoverySpi extends IgniteSpiAdapter implements IgniteDiscovery
                 throw new IgniteException(e);
             }
         }
-        else {
+        else
             dataBag = dataPacket.unmarshalJoiningNodeDataSilently(marshaller(), clsLdr, locNode.clientRouterNodeId() != null, log);
-
-            //Marshal unzipped joining node data if it was zipped but not whole cluster supports that.
-            //It can be happened due to several nodes, including node without compression support, are trying to join cluster concurrently.
-            if (!allNodesSupport(IgniteFeatures.DATA_PACKET_COMPRESSION) && dataPacket.isJoiningDataZipped())
-                dataPacket.unzipData(log);
-        }
 
         exchange.onExchange(dataBag);
     }
