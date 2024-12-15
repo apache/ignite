@@ -71,16 +71,10 @@ public class SqlPlanHistoryIntegrationTest extends GridCommonAbstractTest {
     private static final int PLAN_HISTORY_EXCESS = 2;
 
     /** Simple SQL query. */
-    private static final String SQL = "SELECT * FROM A.String";
+    private static final String SQL = "select * from A.String";
 
     /** Failed SQL query. */
     private static final String SQL_FAILED = "select * from A.String where A.fail()=1";
-
-    /** Cross-cache SQL query. */
-    private static final String SQL_CROSS_CACHE = "SELECT * FROM B.String";
-
-    /** Failed cross-cache SQL query. */
-    private static final String SQL_CROSS_CACHE_FAILED = "select * from B.String where B.fail()=1";
 
     /** SQL query with reduce phase. */
     private static final String SQL_WITH_REDUCE_PHASE = "select o.name n1, p.name n2 from \"pers\".Person p, " +
@@ -107,34 +101,6 @@ public class SqlPlanHistoryIntegrationTest extends GridCommonAbstractTest {
             "delete from A.String where _key in (select orgId from \"pers\".Person)"
         ), false
     );
-
-    /** Successful SqlFieldsQuery. */
-    private final SqlFieldsQuery sqlFieldsQry = new SqlFieldsQuery(SQL);
-
-    /** Failed SqlFieldsQuery. */
-    private final SqlFieldsQuery sqlFieldsQryFailed = new SqlFieldsQuery(SQL_FAILED);
-
-    /** Successful cross-cache SqlFieldsQuery. */
-    private final SqlFieldsQuery sqlFieldsQryCrossCache = new SqlFieldsQuery(SQL_CROSS_CACHE);
-
-    /** Failed cross-cache SqlFieldsQuery. */
-    private final SqlFieldsQuery sqlFieldsQryCrossCacheFailed = new SqlFieldsQuery(SQL_CROSS_CACHE_FAILED);
-
-    /** Succesful SqlFieldsQuery with reduce phase. */
-    private final SqlFieldsQuery sqlFieldsQryWithReducePhase = new SqlFieldsQuery(SQL_WITH_REDUCE_PHASE)
-        .setDistributedJoins(true);
-
-    /** Successful SqlQuery. */
-    private final SqlQuery sqlQry = new SqlQuery<>("String", "from String");
-
-    /** Failed SqlQuery. */
-    private final SqlQuery sqlQryFailed = new SqlQuery<>("String", "from String where fail()=1");
-
-    /** ScanQuery. */
-    private final ScanQuery<Integer, String> scanQry = new ScanQuery<>();
-
-    /** TextQuery. */
-    private final TextQuery<Integer, String> textQry = new TextQuery<>("String", "2");
 
     /** SQL plan history size. */
     private int planHistorySize = 10;
@@ -218,7 +184,7 @@ public class SqlPlanHistoryIntegrationTest extends GridCommonAbstractTest {
     }
 
     /**
-     * Starts and initiates Ignite instance.
+     * Starts Ignite instance, initiates and populates caches.
      *
      * @throws Exception In case of failure.
      */
@@ -277,25 +243,25 @@ public class SqlPlanHistoryIntegrationTest extends GridCommonAbstractTest {
     /** Checks successful SqlFieldsQuery. */
     @Test
     public void testSqlFieldsQuery() throws Exception {
-        runSuccessfulQuery(sqlFieldsQry);
+        runSuccessfulQuery(new SqlFieldsQuery(SQL));
     }
 
     /** Checks failed SqlFieldsQuery. */
     @Test
     public void testSqlFieldsQueryFailed() throws Exception {
-        runFailedQuery(sqlFieldsQryFailed);
+        runFailedQuery(new SqlFieldsQuery(SQL_FAILED));
     }
 
     /** Checks successful cross-cache SqlFieldsQuery. */
     @Test
     public void testSqlFieldsCrossCacheQuery() throws Exception {
-        runSuccessfulQuery(sqlFieldsQryCrossCache);
+        runSuccessfulQuery(new SqlFieldsQuery("select * from B.String"));
     }
 
     /** Checks failed cross-cache SqlFieldsQuery. */
     @Test
     public void testSqlFieldsCrossCacheQueryFailed() throws Exception {
-        runFailedQuery(sqlFieldsQryCrossCacheFailed);
+        runFailedQuery(new SqlFieldsQuery("select * from B.String where B.fail()=1"));
     }
 
     /**
@@ -314,7 +280,7 @@ public class SqlPlanHistoryIntegrationTest extends GridCommonAbstractTest {
                 throw new RuntimeException(e);
             }
 
-            cacheQuery(sqlFieldsQryWithReducePhase, "pers");
+            cacheQuery(new SqlFieldsQuery(SQL_WITH_REDUCE_PHASE).setDistributedJoins(true), "pers");
 
             checkSqlPlanHistory(3);
 
@@ -331,25 +297,25 @@ public class SqlPlanHistoryIntegrationTest extends GridCommonAbstractTest {
     /** Checks successful SqlQuery. */
     @Test
     public void testSqlQuery() throws Exception {
-        runSuccessfulQuery(sqlQry);
+        runSuccessfulQuery(new SqlQuery<>("String", "from String"));
     }
 
     /** Checks failed SqlQuery. */
     @Test
     public void testSqlQueryFailed() throws Exception {
-        runFailedQuery(sqlQryFailed);
+        runFailedQuery(new SqlQuery<>("String", "from String where fail()=1"));
     }
 
     /** Checks ScanQuery. */
     @Test
     public void testScanQuery() throws Exception {
-        runQueryWithoutPlan(scanQry);
+        runQueryWithoutPlan(new ScanQuery<>());
     }
 
     /** Checks TextQuery. */
     @Test
     public void testTextQuery() throws Exception {
-        runQueryWithoutPlan(textQry);
+        runQueryWithoutPlan(new TextQuery<>("String", "2"));
     }
 
     /** Checks DML commands executed via JDBC. */
@@ -388,7 +354,7 @@ public class SqlPlanHistoryIntegrationTest extends GridCommonAbstractTest {
 
             SqlFieldsQuery qry = new SqlFieldsQuery(SQL + " where _val='STR" + String.format("%02d", i) + "'");
 
-            cacheQuery(qry.setLocal(loc), "A");
+            cacheQuery(qry, "A");
         }
 
         assertTrue(waitForCondition(() -> getSqlPlanHistory().size() == planHistorySize, 1000));
@@ -418,7 +384,7 @@ public class SqlPlanHistoryIntegrationTest extends GridCommonAbstractTest {
         long[] timeStamps = new long[2];
 
         for (int i = 0; i < 2; i++) {
-            cacheQuery(sqlFieldsQry.setLocal(loc), "A");
+            cacheQuery(new SqlFieldsQuery(SQL), "A");
 
             checkSqlPlanHistory(1);
 
@@ -466,7 +432,7 @@ public class SqlPlanHistoryIntegrationTest extends GridCommonAbstractTest {
         startTestGrid();
 
         for (int i = 0; i < 2; i++) {
-            cacheQuery(qry.setLocal(loc), "A");
+            cacheQuery(qry, "A");
 
             checkSqlPlanHistory(1);
         }
@@ -479,7 +445,7 @@ public class SqlPlanHistoryIntegrationTest extends GridCommonAbstractTest {
         startTestGrid();
 
         try {
-            cacheQuery(qry.setLocal(loc), "A");
+            cacheQuery(qry, "A");
         }
         catch (Exception ignore) {
             //No-Op
@@ -494,7 +460,7 @@ public class SqlPlanHistoryIntegrationTest extends GridCommonAbstractTest {
     public void runQueryWithoutPlan(Query qry) throws Exception {
         startTestGrid();
 
-        cacheQuery(qry.setLocal(loc), "A");
+        cacheQuery(qry, "A");
 
         checkSqlPlanHistory(0);
     }
@@ -541,6 +507,8 @@ public class SqlPlanHistoryIntegrationTest extends GridCommonAbstractTest {
      */
     public void cacheQuery(Query qry, String cacheName) {
         IgniteCache<Integer, String> cache = queryNode().getOrCreateCache(cacheName);
+
+        qry.setLocal(loc);
 
         if (isFullyFetched)
             assertFalse(cache.query(qry).getAll().isEmpty());
@@ -607,9 +575,9 @@ public class SqlPlanHistoryIntegrationTest extends GridCommonAbstractTest {
     public List<SqlPlanHistoryView> getSqlPlanHistory(IgniteEx node) {
         List<SqlPlanHistoryView> res = new ArrayList<>();
 
-        SystemView<SqlPlanHistoryView> views = node.context().systemView().view(SQL_PLAN_HIST_VIEW);
+        SystemView<SqlPlanHistoryView> plans = node.context().systemView().view(SQL_PLAN_HIST_VIEW);
 
-        views.forEach(res::add);
+        plans.forEach(res::add);
 
         return res;
     }
@@ -660,11 +628,10 @@ public class SqlPlanHistoryIntegrationTest extends GridCommonAbstractTest {
      */
     public void checkMetrics(int size, List<SqlPlanHistoryView> sqlPlans) {
         if (size == 1 && sqlPlans.size() == 2) {
-            List<SqlPlanHistoryView> sortedPlans = sqlPlans.stream()
-                .sorted(Comparator.comparing(SqlPlanHistoryView::lastStartTime)).collect(Collectors.toList());
+            sqlPlans.sort(Comparator.comparing(SqlPlanHistoryView::lastStartTime));
 
-            String plan1 = sortedPlans.get(0).plan();
-            String plan2 = sortedPlans.get(1).plan();
+            String plan1 = sqlPlans.get(0).plan();
+            String plan2 = sqlPlans.get(1).plan();
 
             assertTrue(plan2.contains(plan1) && plan2.contains("/* scanCount"));
         }
@@ -701,7 +668,7 @@ public class SqlPlanHistoryIntegrationTest extends GridCommonAbstractTest {
         for (int i = 1; i <= 2; i++) {
             cache.put(100 + i, "STR" + i);
 
-            cacheQuery(new SqlFieldsQuery(SQL + " where _val='STR" + i + "'").setLocal(loc), "A");
+            cacheQuery(new SqlFieldsQuery(SQL + " where _val='STR" + i + "'"), "A");
 
             checkSqlPlanHistory(1);
 
@@ -727,7 +694,7 @@ public class SqlPlanHistoryIntegrationTest extends GridCommonAbstractTest {
         if (!startGridFirst)
             startTestGrid();
 
-        cacheQuery(sqlFieldsQry.setLocal(loc), "A");
+        cacheQuery(new SqlFieldsQuery(SQL), "A");
 
         assertTrue(getSqlPlanHistory().isEmpty());
     }
