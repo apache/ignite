@@ -341,7 +341,7 @@ public abstract class GridCacheAbstractSelfTest extends GridCommonAbstractTest {
      */
     @SuppressWarnings({"unchecked"})
     @Override protected IgniteCache<String, Integer> jcache() {
-        return defaultInstance().cache(DEF);
+        return defaultInstance().cache(DEFAULT_CACHE_NAME);
     }
 
     /**
