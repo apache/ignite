@@ -36,12 +36,10 @@ import org.apache.ignite.internal.cluster.ClusterTopologyServerNotFoundException
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.CacheEntryPredicate;
 import org.apache.ignite.internal.processors.cache.CacheObject;
-import org.apache.ignite.internal.processors.cache.CacheOperationContext;
 import org.apache.ignite.internal.processors.cache.CachePartialUpdateCheckedException;
 import org.apache.ignite.internal.processors.cache.CacheStoppedException;
 import org.apache.ignite.internal.processors.cache.EntryProcessorResourceInjectorProxy;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
-import org.apache.ignite.internal.processors.cache.GridCacheMessage;
 import org.apache.ignite.internal.processors.cache.GridCacheOperation;
 import org.apache.ignite.internal.processors.cache.GridCacheReturn;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
@@ -673,12 +671,7 @@ public class GridNearAtomicUpdateFuture extends GridNearAtomicAbstractUpdateFutu
                     if (req.initMappingLocally() && reqState.mappedNodes.isEmpty())
                         reqState.resetLocalMapping();
 
-                    GridCacheMessage msg = req;
-
-                    if (appAttrs != null)
-                        msg = new AtomicApplicationAttributesAwareRequest(req, appAttrs);
-
-                    cctx.io().send(req.nodeId(), msg, cctx.ioPolicy());
+                    cctx.io().send(req.nodeId(), wrapWithApplicationAttributes(req), cctx.ioPolicy());
 
                     if (msgLog.isDebugEnabled()) {
                         msgLog.debug("Near update fut, sent request [futId=" + req.futureId() +
@@ -698,23 +691,14 @@ public class GridNearAtomicUpdateFuture extends GridNearAtomicAbstractUpdateFutu
         }
 
         if (locUpdate != null) {
-            cache.updateAllAsyncInternal(cctx.localNode(), locUpdate,
-                (req, res) -> {
-                    CacheOperationContext prevOpCtx = cctx.operationContextPerCall();
-
-                    if (appAttrs != null)
-                        cctx.operationContextPerCall(new CacheOperationContext().setApplicationAttributes(appAttrs));
-
-                    try {
-                        if (syncMode != FULL_ASYNC)
-                            onPrimaryResponse(res.nodeId(), res, false);
-                        else if (res.remapTopologyVersion() != null)
-                            ((GridDhtAtomicCache<?, ?>)cctx.cache()).remapToNewPrimary(req);
-                    }
-                    finally {
-                        cctx.operationContextPerCall(prevOpCtx);
-                    }
-                });
+            cache.updateAllAsyncInternal(cctx.localNode(), locUpdate, new UpdateReplyClosureContextAware() {
+                @Override void apply0(GridNearAtomicAbstractUpdateRequest req, GridNearAtomicUpdateResponse res) {
+                    if (syncMode != FULL_ASYNC)
+                        onPrimaryResponse(res.nodeId(), res, false);
+                    else if (res.remapTopologyVersion() != null)
+                        ((GridDhtAtomicCache<?, ?>)cctx.cache()).remapToNewPrimary(req);
+                }
+            });
         }
 
         if (syncMode == FULL_ASYNC)

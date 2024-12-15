@@ -299,32 +299,18 @@ public abstract class GridNearAtomicAbstractUpdateFuture extends GridCacheFuture
      */
     final void sendSingleRequest(UUID nodeId, GridNearAtomicAbstractUpdateRequest req) {
         if (cctx.localNodeId().equals(nodeId)) {
-            cache.updateAllAsyncInternal(cctx.localNode(), req,
-                (ignored, res) -> {
-                    CacheOperationContext prevOpCtx = cctx.operationContextPerCall();
-
-                    if (appAttrs != null)
-                        cctx.operationContextPerCall(new CacheOperationContext().setApplicationAttributes(appAttrs));
-
-                    try {
-                        if (syncMode != FULL_ASYNC)
-                            onPrimaryResponse(res.nodeId(), res, false);
-                        else if (res.remapTopologyVersion() != null)
-                            ((GridDhtAtomicCache<?, ?>)cctx.cache()).remapToNewPrimary(req);
-                    }
-                    finally {
-                        cctx.operationContextPerCall(prevOpCtx);
-                    }
-                });
+            cache.updateAllAsyncInternal(cctx.localNode(), req, new UpdateReplyClosureContextAware() {
+                @Override void apply0(GridNearAtomicAbstractUpdateRequest req, GridNearAtomicUpdateResponse res) {
+                    if (syncMode != FULL_ASYNC)
+                        onPrimaryResponse(res.nodeId(), res, false);
+                    else if (res.remapTopologyVersion() != null)
+                        ((GridDhtAtomicCache<?, ?>)cctx.cache()).remapToNewPrimary(req);
+                }
+            });
         }
         else {
             try {
-                GridCacheMessage msg = req;
-
-                if (appAttrs != null)
-                    msg = new AtomicApplicationAttributesAwareRequest(req, appAttrs);
-
-                cctx.io().send(req.nodeId(), msg, cctx.ioPolicy());
+                cctx.io().send(req.nodeId(), wrapWithApplicationAttributes(req), cctx.ioPolicy());
 
                 if (msgLog.isDebugEnabled()) {
                     msgLog.debug("Near update fut, sent request [futId=" + req.futureId() +
@@ -914,6 +900,35 @@ public abstract class GridNearAtomicAbstractUpdateFuture extends GridCacheFuture
          * on primary to ensure FULL_SYNC guarantee.
          */
         ALL_RCVD_CHECK_PRIMARY
+    }
+
+    /** Wraps closure with CacheOperationContext awared of application attributes. */
+    protected abstract class UpdateReplyClosureContextAware implements GridDhtAtomicCache.UpdateReplyClosure {
+        /** */
+        @Override public void apply(GridNearAtomicAbstractUpdateRequest req, GridNearAtomicUpdateResponse res) {
+            CacheOperationContext prevOpCtx = cctx.operationContextPerCall();
+
+            if (appAttrs != null)
+                cctx.operationContextPerCall(new CacheOperationContext().setApplicationAttributes(appAttrs));
+
+            try {
+                apply0(req, res);
+            }
+            finally {
+                cctx.operationContextPerCall(prevOpCtx);
+            }
+        }
+
+        /** */
+        abstract void apply0(GridNearAtomicAbstractUpdateRequest req, GridNearAtomicUpdateResponse res);
+    }
+
+    /**
+     * @param msg Message to wrap if application attributes are specified.
+     * @return Original or wrapped message.
+     */
+    protected GridCacheMessage wrapWithApplicationAttributes(GridNearAtomicAbstractUpdateRequest msg) {
+        return appAttrs != null ? new AtomicApplicationAttributesAwareRequest(msg, appAttrs) : msg;
     }
 
     /** {@inheritDoc} */
