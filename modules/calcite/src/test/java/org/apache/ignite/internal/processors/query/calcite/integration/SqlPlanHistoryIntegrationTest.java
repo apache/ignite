@@ -121,7 +121,9 @@ public class SqlPlanHistoryIntegrationTest extends GridCommonAbstractTest {
     @Parameterized.Parameter(3)
     public boolean isFullyFetched;
 
-    /** */
+    /**
+     * @return Test parameters.
+     */
     @Parameterized.Parameters(name = "sqlEngine={0}, isClient={1} loc={2}, isFullyFetched={3}")
     public static Collection<Object[]> params() {
         return Arrays.stream(new Object[][]{
@@ -152,7 +154,9 @@ public class SqlPlanHistoryIntegrationTest extends GridCommonAbstractTest {
         );
     }
 
-    /** */
+    /**
+     * @return SQL engine configuration.
+     */
     protected QueryEngineConfigurationEx configureSqlEngine() {
         if (sqlEngine.equals(CalciteQueryEngineConfiguration.ENGINE_NAME))
             return new CalciteQueryEngineConfiguration();
@@ -183,11 +187,7 @@ public class SqlPlanHistoryIntegrationTest extends GridCommonAbstractTest {
         return node;
     }
 
-    /**
-     * Starts Ignite instance, initiates and populates caches.
-     *
-     * @throws Exception In case of failure.
-     */
+    /** Starts Ignite instance, initiates and populates caches. */
     protected void startTestGrid() throws Exception {
         startGrid(0);
 
@@ -480,9 +480,9 @@ public class SqlPlanHistoryIntegrationTest extends GridCommonAbstractTest {
     }
 
     /**
-     * @param qry Query.
+     * @param qryText Query text.
      */
-    private void jdbcQuery(String qry) throws Exception {
+    private void jdbcQuery(String qryText) throws Exception {
         assumeFalse("There is no 'local query' parameter for JDBC queries", loc);
 
         if (Ignition.allGrids().isEmpty())
@@ -495,7 +495,7 @@ public class SqlPlanHistoryIntegrationTest extends GridCommonAbstractTest {
             if (!isFullyFetched)
                 stmt.setFetchSize(1);
 
-            ResultSet rs = stmt.executeQuery(qry);
+            ResultSet rs = stmt.executeQuery(qryText);
 
             assertTrue(rs.next());
         }
@@ -520,7 +520,7 @@ public class SqlPlanHistoryIntegrationTest extends GridCommonAbstractTest {
     }
 
     /**
-     * @param qrysInfo DML commands info (queries, simple query flag).
+     * @param qrysInfo DML commands info (command text, simple query flag).
      */
     public void runJdbcDml(IgniteBiTuple<List<String>, Boolean> qrysInfo) throws Exception {
         assumeFalse("There is no 'local query' parameter for JDBC queries", loc);
@@ -540,7 +540,7 @@ public class SqlPlanHistoryIntegrationTest extends GridCommonAbstractTest {
     }
 
     /**
-     * @param qrysInfo DML commands info (queries, simple query flag).
+     * @param qrysInfo DML commands info (command text, simple query flag).
      */
     public void runSqlFieldsDml(IgniteBiTuple<List<String>, Boolean> qrysInfo) throws Exception {
         executeDml(qrysInfo, (cmds) -> {
@@ -566,12 +566,17 @@ public class SqlPlanHistoryIntegrationTest extends GridCommonAbstractTest {
         checkSqlPlanHistoryDml(cmds.size(), qrysInfo.get2());
     }
 
-    /** Returns current SQL plan history on the query node. */
+    /**
+     * @return current SQL plan history on the query node.
+     */
     public List<SqlPlanHistoryView> getSqlPlanHistory() {
         return getSqlPlanHistory(queryNode());
     }
 
-    /** Returns current SQL plan history on a given node. */
+    /**
+     * @param node Ignite node.
+     * @return current SQL plan history on a given node.
+     */
     public List<SqlPlanHistoryView> getSqlPlanHistory(IgniteEx node) {
         List<SqlPlanHistoryView> res = new ArrayList<>();
 
