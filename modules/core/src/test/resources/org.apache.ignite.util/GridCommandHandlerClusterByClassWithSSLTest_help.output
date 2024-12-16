@@ -467,7 +467,7 @@ Use --yes option to disable it.
 
 Default values:
     HOST_OR_IP=127.0.0.1
-    PORT=11211
+    PORT=10800
     PING_INTERVAL=5000
     PING_TIMEOUT=30000
     SSL_PROTOCOL=TLS

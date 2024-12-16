@@ -15,23 +15,24 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.util;
+package org.apache.ignite.internal.commandline;
 
-import org.junit.Assume;
+import java.util.function.Consumer;
+import org.apache.ignite.internal.management.api.CommandInvoker;
 
 /**
- *
+ * CLI command invoker.
  */
-public class GridCommandHandlerIndexingWithSSLTest extends GridCommandHandlerIndexingTest {
-    /** {@inheritDoc} */
-    @Override protected boolean sslEnabled() {
-        return true;
-    }
+public interface CloseableCliCommandInvoker extends AutoCloseable {
+    /** @return Message text to show user for. {@code null} means that confirmantion is not required. */
+    String confirmationPrompt();
 
-    /** {@inheritDoc} */
-    @Override protected void beforeTest() throws Exception {
-        Assume.assumeTrue(cliCommandHandler());
+    /** @see CommandInvoker#prepare(Consumer) */
+    boolean prepare(Consumer<String> printer) throws Exception;
 
-        super.beforeTest();
-    }
+    /** @see CommandInvoker#invoke(Consumer, boolean) */
+    <R> R invoke(Consumer<String> printer, boolean verbose) throws Exception;
+
+    /** */
+    <R> R invokeBeforeNodeStart(Consumer<String> printer) throws Exception;
 }
