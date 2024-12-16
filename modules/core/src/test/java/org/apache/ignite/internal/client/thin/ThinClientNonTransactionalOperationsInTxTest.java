@@ -57,19 +57,19 @@ public class ThinClientNonTransactionalOperationsInTxTest extends GridCommonAbst
 
         try (IgniteClient client = Ignition.startClient(new ClientConfiguration().setAddresses(Config.SERVER))) {
 
-            checkThinClientCacheClearOperation(client, cache -> cache.clear());
+            checkThinClientCacheClearOperation(client, false, cache -> cache.clear());
 
-            checkThinClientCacheClearOperation(client, cache -> cache.clear(2));
+            checkThinClientCacheClearOperation(client, false, cache -> cache.clear(2));
 
-            checkThinClientCacheClearOperation(client, cache -> cache.clear(Collections.singleton(2)));
+            checkThinClientCacheClearOperation(client, false, cache -> cache.clear(Collections.singleton(2)));
 
-            checkThinClientCacheClearOperation(client, cache -> cache.clearAll(Collections.singleton(2)));
+            checkThinClientCacheClearOperation(client, false, cache -> cache.clearAll(Collections.singleton(2)));
 
-            checkThinClientCacheClearOperation(client, cache -> cache.clearAsync());
+            checkThinClientCacheClearOperation(client, true, cache -> cache.clearAsync());
 
-            checkThinClientCacheClearOperation(client, cache -> cache.clearAsync(2));
+            checkThinClientCacheClearOperation(client, true, cache -> cache.clearAsync(2));
 
-            checkThinClientCacheClearOperation(client, cache -> cache.clearAllAsync(Collections.singleton(2)));
+            checkThinClientCacheClearOperation(client, true, cache -> cache.clearAllAsync(Collections.singleton(2)));
         }
     }
 
@@ -77,9 +77,10 @@ public class ThinClientNonTransactionalOperationsInTxTest extends GridCommonAbst
      * It should throw exception.
      *
      * @param client IgniteClient.
+     * @param async Async flag.
      * @param op Operation.
      */
-    private void checkThinClientCacheClearOperation(IgniteClient client, Consumer<ClientCache<Object, Object>> op) {
+    private void checkThinClientCacheClearOperation(IgniteClient client, boolean async, Consumer<ClientCache<Object, Object>> op) {
         ClientCache<Object, Object> cache = client.cache(DEFAULT_CACHE_NAME);
 
         cache.put(1, 1);
@@ -92,10 +93,15 @@ public class ThinClientNonTransactionalOperationsInTxTest extends GridCommonAbst
             }
 
             return null;
-        }, CacheException.class, String.format(NON_TRANSACTIONAL_CLIENT_CACHE_IN_TX_ERROR_MESSAGE, "clear"));
+        }, CacheException.class, String.format(NON_TRANSACTIONAL_CLIENT_CACHE_IN_TX_ERROR_MESSAGE, checkClearAsync(async)));
 
         assertTrue(cache.containsKey(1));
         assertFalse(cache.containsKey(2));
+    }
+
+    /** */
+    private String checkClearAsync(boolean async) {
+        return async ? "clearAsync" : "clear";
     }
 
     /** */
@@ -105,9 +111,9 @@ public class ThinClientNonTransactionalOperationsInTxTest extends GridCommonAbst
 
         try (IgniteClient client = Ignition.startClient(new ClientConfiguration().setAddresses(Config.SERVER))) {
 
-            checkThinClientCacheRemoveOperation(client, cache -> cache.removeAll());
+            checkThinClientCacheRemoveOperation(client, false, cache -> cache.removeAll());
 
-            checkThinClientCacheRemoveOperation(client, cache -> cache.removeAllAsync());
+            checkThinClientCacheRemoveOperation(client, true, cache -> cache.removeAllAsync());
         }
     }
 
@@ -115,9 +121,10 @@ public class ThinClientNonTransactionalOperationsInTxTest extends GridCommonAbst
      * It should throw exception.
      *
      * @param client IgniteClient.
+     * @param async Async flag.
      * @param op Operation.
      */
-    private void checkThinClientCacheRemoveOperation(IgniteClient client, Consumer<ClientCache<Object, Object>> op) {
+    private void checkThinClientCacheRemoveOperation(IgniteClient client, boolean async, Consumer<ClientCache<Object, Object>> op) {
         ClientCache<Object, Object> cache = client.cache(DEFAULT_CACHE_NAME);
 
         cache.put(1, 1);
@@ -130,9 +137,14 @@ public class ThinClientNonTransactionalOperationsInTxTest extends GridCommonAbst
             }
 
             return null;
-        }, CacheException.class, String.format(NON_TRANSACTIONAL_CLIENT_CACHE_IN_TX_ERROR_MESSAGE, "removeAll"));
+        }, CacheException.class, String.format(NON_TRANSACTIONAL_CLIENT_CACHE_IN_TX_ERROR_MESSAGE, checkRemoveAsync(async)));
 
         assertTrue(cache.containsKey(1));
         assertFalse(cache.containsKey(2));
+    }
+
+    /** */
+    private String checkRemoveAsync(boolean async) {
+        return async ? "removeAllAsync" : "removeAll";
     }
 }

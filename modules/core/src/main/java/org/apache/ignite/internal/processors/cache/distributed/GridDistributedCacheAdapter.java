@@ -94,6 +94,10 @@ public abstract class GridDistributedCacheAdapter<K, V> extends GridCacheAdapter
         super(ctx, map);
     }
 
+    /** Exception thrown when a non-transactional IgniteCache operation is invoked within a transaction. */
+    public static final String NON_TRANSACTIONAL_IGNITE_CACHE_IN_TX_ERROR_MESSAGE = "Failed to invoke a " +
+        "non-transactional IgniteCache %s operation within a transaction.";
+
     /** {@inheritDoc} */
     @Override public IgniteInternalFuture<Boolean> txLockAsync(
         Collection<KeyCacheObject> keys,
@@ -206,7 +210,7 @@ public abstract class GridDistributedCacheAdapter<K, V> extends GridCacheAdapter
     /** {@inheritDoc} */
     @Override public IgniteInternalFuture<?> removeAllAsync() {
         if (ctx.transactional() && ctx.grid().transactions().tx() != null)
-            throw new CacheException(String.format(NON_TRANSACTIONAL_IGNITE_CACHE_IN_TX_ERROR_MESSAGE, "removeAll"));
+            throw new CacheException(String.format(NON_TRANSACTIONAL_IGNITE_CACHE_IN_TX_ERROR_MESSAGE, "removeAllAsync"));
 
         GridFutureAdapter<Void> opFut = new GridFutureAdapter<>();
 

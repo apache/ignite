@@ -564,7 +564,7 @@ public class TcpClientCache<K, V> implements ClientCache<K, V> {
     /** {@inheritDoc} */
     @Override public IgniteClientFuture<Void> removeAllAsync() throws ClientException {
         if (transactions.tx() != null)
-            throw new CacheException(String.format(NON_TRANSACTIONAL_CLIENT_CACHE_IN_TX_ERROR_MESSAGE, "removeAll"));
+            throw new CacheException(String.format(NON_TRANSACTIONAL_CLIENT_CACHE_IN_TX_ERROR_MESSAGE, "removeAllAsync"));
 
         return ch.requestAsync(ClientOperation.CACHE_REMOVE_ALL, this::writeCacheInfo);
     }
@@ -751,7 +751,7 @@ public class TcpClientCache<K, V> implements ClientCache<K, V> {
      */
     @Override public IgniteClientFuture<Void> clearAsync() throws ClientException {
         if (transactions.tx() != null)
-            throw new CacheException(String.format(NON_TRANSACTIONAL_CLIENT_CACHE_IN_TX_ERROR_MESSAGE, "clear"));
+            throw new CacheException(String.format(NON_TRANSACTIONAL_CLIENT_CACHE_IN_TX_ERROR_MESSAGE, "clearAsync"));
 
         return ch.requestAsync(ClientOperation.CACHE_CLEAR, this::writeCacheInfo);
     }
@@ -1372,7 +1372,7 @@ public class TcpClientCache<K, V> implements ClientCache<K, V> {
         // Transactional operation cannot be executed on affinity node, it should be executed on node started
         // the transaction.
         if (tx != null) {
-            checkTxClearOperation(op);
+            checkTxClearOperation(op, false);
 
             try {
                 return tx.clientChannel().service(op, payloadWriter, payloadReader);
@@ -1401,7 +1401,7 @@ public class TcpClientCache<K, V> implements ClientCache<K, V> {
         // Transactional operation cannot be executed on affinity node, it should be executed on node started
         // the transaction.
         if (tx != null) {
-            checkTxClearOperation(op);
+            checkTxClearOperation(op, true);
 
             CompletableFuture<T> fut = new CompletableFuture<>();
 
@@ -1426,9 +1426,14 @@ public class TcpClientCache<K, V> implements ClientCache<K, V> {
     }
 
     /** */
-    private void checkTxClearOperation(ClientOperation op) {
+    private void checkTxClearOperation(ClientOperation op, boolean async) {
         if (op == ClientOperation.CACHE_CLEAR_KEY || op == ClientOperation.CACHE_CLEAR_KEYS)
-            throw new CacheException(String.format(NON_TRANSACTIONAL_CLIENT_CACHE_IN_TX_ERROR_MESSAGE, "clear"));
+            throw new CacheException(String.format(NON_TRANSACTIONAL_CLIENT_CACHE_IN_TX_ERROR_MESSAGE, checkClearAsync(async)));
+    }
+
+    /** */
+    private String checkClearAsync(boolean async) {
+        return async ? "clearAsync" : "clear";
     }
 
     /**
