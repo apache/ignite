@@ -48,11 +48,13 @@ import org.apache.ignite.lang.IgniteExperimental;
 import org.apache.ignite.ssl.SslContextFactory;
 
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_ENABLE_EXPERIMENTAL_COMMAND;
+import static org.apache.ignite.configuration.ConnectorConfiguration.DFLT_TCP_PORT;
 import static org.apache.ignite.internal.client.GridClientConfiguration.DFLT_PING_INTERVAL;
 import static org.apache.ignite.internal.client.GridClientConfiguration.DFLT_PING_TIMEOUT;
 import static org.apache.ignite.internal.commandline.CommandHandler.DFLT_HOST;
 import static org.apache.ignite.internal.commandline.CommandHandler.DFLT_PORT;
 import static org.apache.ignite.internal.commandline.CommandHandler.UTILITY_NAME;
+import static org.apache.ignite.internal.commandline.CommandHandler.useConnectorConnection;
 import static org.apache.ignite.internal.commandline.argument.parser.CLIArgument.optionalArg;
 import static org.apache.ignite.internal.management.api.CommandUtils.CMD_WORDS_DELIM;
 import static org.apache.ignite.internal.management.api.CommandUtils.NAME_PREFIX;
@@ -184,7 +186,7 @@ public class ArgumentParser {
                 "Whenever possible, use interactive prompt for password (just discard %s option).", name, name));
 
         arg(CMD_HOST, "HOST_OR_IP", String.class, DFLT_HOST);
-        arg(CMD_PORT, "PORT", Integer.class, DFLT_PORT, PORT_VALIDATOR);
+        arg(CMD_PORT, "PORT", Integer.class, useConnectorConnection() ? DFLT_TCP_PORT : DFLT_PORT, PORT_VALIDATOR);
         arg(CMD_USER, "USER", String.class, null);
         arg(CMD_PASSWORD, "PASSWORD", String.class, null, (BiConsumer<String, String>)securityWarn);
         arg(CMD_PING_INTERVAL, "PING_INTERVAL", Long.class, DFLT_PING_INTERVAL, POSITIVE_LONG);
