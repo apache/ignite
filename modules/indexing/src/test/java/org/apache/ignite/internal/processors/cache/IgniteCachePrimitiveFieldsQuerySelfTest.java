@@ -42,9 +42,6 @@ public class IgniteCachePrimitiveFieldsQuerySelfTest extends GridCommonAbstractT
 
         cfg.setCacheConfiguration(cacheConfiguration(CACHE_NAME));
 
-        // Force BinaryMarshaller.
-        cfg.setMarshaller(null);
-
         return cfg;
     }
 

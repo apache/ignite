@@ -29,7 +29,6 @@ import java.util.concurrent.Callable;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.ClientConnectorConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
-import org.apache.ignite.internal.binary.BinaryMarshaller;
 import org.apache.ignite.internal.jdbc.thin.JdbcThinConnection;
 import org.apache.ignite.internal.processors.odbc.ClientListenerProcessor;
 import org.apache.ignite.internal.util.lang.GridAbsPredicate;
@@ -71,8 +70,6 @@ public class JdbcThinConnectionMultipleAddressesTest extends JdbcThinAbstractSel
         IgniteConfiguration cfg = super.getConfiguration(name);
 
         cfg.setCacheConfiguration(cacheConfiguration(DEFAULT_CACHE_NAME));
-
-        cfg.setMarshaller(new BinaryMarshaller());
 
         cfg.setClientConnectorConfiguration(
             new ClientConnectorConfiguration()

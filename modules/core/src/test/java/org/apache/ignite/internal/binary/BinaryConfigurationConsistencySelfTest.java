@@ -46,8 +46,6 @@ public class BinaryConfigurationConsistencySelfTest extends GridCommonAbstractTe
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
-        cfg.setMarshaller(new BinaryMarshaller());
-
         cfg.setBinaryConfiguration(binaryCfg);
 
         return cfg;
