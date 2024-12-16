@@ -24,6 +24,7 @@ import java.io.InvalidObjectException;
 import java.io.ObjectInput;
 import java.io.ObjectOutput;
 import java.io.ObjectStreamException;
+import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -2419,7 +2420,10 @@ public class GridCacheContext<K, V> implements Externalizable {
     }
 
     /** SessionContext provider to UDF. */
-    private static final class SessionContextProviderImpl implements SessionContextProvider {
+    private static final class SessionContextProviderImpl implements SessionContextProvider, Serializable {
+        /** */
+        private static final long serialVersionUID = 0L;
+
         /** Emtpy session context. */
         private static final SessionContext EMPTY = (attrName) -> null;
 

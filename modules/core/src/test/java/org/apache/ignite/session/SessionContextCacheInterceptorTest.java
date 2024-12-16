@@ -147,6 +147,8 @@ public class SessionContextCacheInterceptorTest extends GridCommonAbstractTest {
             ign = grid(3);
 
         cache = ign.getOrCreateCache(cacheConfig(mode, syncMode, backups, dynamicCache, clnNode));
+
+        cache.clear();
     }
 
     /** {@inheritDoc} */
@@ -158,7 +160,7 @@ public class SessionContextCacheInterceptorTest extends GridCommonAbstractTest {
     @Test
     public void testGetOperations() {
         // CacheInterceptor#onGet doesn't work for client nodes.
-        assumeFalse(clnNode);
+        assumeFalse("https://issues.apache.org/jira/browse/IGNITE-23810", clnNode);
 
         for (int i = 0; i < KEYS; i++)
             cache.put(i, String.valueOf(i));
@@ -175,6 +177,8 @@ public class SessionContextCacheInterceptorTest extends GridCommonAbstractTest {
 
             assertEquals("sessionOnGet" + j, () -> cacheApp.getAsync(j).get(getTestTimeout()));
             assertEquals("sessionOnGet" + j, () -> cacheApp.getEntryAsync(j).get(getTestTimeout()).getValue());
+
+            assertEquals(String.valueOf(j), () -> cache.get(j));
         }
 
         Set<Integer> keys = IntStream.range(0, KEYS).boxed().collect(Collectors.toSet());
@@ -402,12 +406,50 @@ public class SessionContextCacheInterceptorTest extends GridCommonAbstractTest {
     }
 
     /** */
+    @Test
+    public void testMultipleApplicationAttributes() {
+        assumeFalse("https://issues.apache.org/jira/browse/IGNITE-23810", clnNode);
+
+        IgniteCache<Integer, String> cacheApp = ign
+            .withApplicationAttributes(F.asMap(
+                "onGet", "sessionOnGet",
+                "onBeforePut", "sessionOnPut"))
+            .cache(cacheName());
+
+        cache.put(0, "0");
+
+        assertEquals("sessionOnGet" + 0, () -> cacheApp.get(0));
+
+        cacheApp.put(1, "1");
+
+        assertEquals("sessionOnPut" + 1, () -> cache.get(1));
+    }
+
+    /** */
+    @Test
+    public void testWithNoRetries() {
+        IgniteCache<Object, Object> cacheApp = ign
+            .withApplicationAttributes(F.asMap("onBeforePut", "sessionOnPut"))
+            .cache(cacheName())
+            .withNoRetries();
+
+        for (int i = 0; i < KEYS; i++)
+            cacheApp.putAsync((i), String.valueOf(i));
+
+        for (int i = 0; i < KEYS; i++) {
+            final int j = i;
+
+            assertEquals("sessionOnPut" + j, () -> cache.get(j));
+        }
+    }
+
+    /** */
     private void assertEquals(Object exp, Supplier<Object> act) {
         if (syncMode == CacheWriteSynchronizationMode.FULL_SYNC)
             assertEquals(exp, act.get());
         else {
             try {
-                assertTrue(GridTestUtils.waitForCondition(() -> exp.equals(act.get()), getTestTimeout(), 1L));
+                assertTrue(GridTestUtils.waitForCondition(() -> exp.equals(act.get()), getTestTimeout(), 10L));
             }
             catch (IgniteInterruptedCheckedException e) {
                 throw new RuntimeException(e);
@@ -431,9 +473,6 @@ public class SessionContextCacheInterceptorTest extends GridCommonAbstractTest {
         /** */
         @Override public @Nullable String onBeforePut(Cache.Entry<Integer, String> entry, String newVal) {
             String ret = sesCtxPrv.getSessionContext().getAttribute("onBeforePut");
-
-            if (ret == null)
-                System.out.println();
 
             return ret == null ? newVal : ret + entry.getKey();
         }
