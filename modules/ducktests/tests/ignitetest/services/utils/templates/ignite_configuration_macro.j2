@@ -21,6 +21,7 @@
 {% import 'datastorage_macro.j2' as datastorage_utils %}
 {% import 'misc_macro.j2' as misc_utils %}
 {% import 'ssl_params_macro.j2' as ssl_params_util %}
+{% import 'connector_configuration.j2' as connector_configuration_util %}
 {% import 'client_connector_configuration.j2' as client_connector_configuration_util %}
 {% import 'transaction_macro.j2' as transaction_util %}
 
@@ -98,6 +99,8 @@
                 {{ ssl_params_util.ssl_params(config.ssl_params) }}
             </property>
         {% endif %}
+
+        {{ connector_configuration_util.connector_configuration(config.connector_configuration) }}
 
         {{ client_connector_configuration_util.client_connector_configuration(config.client_connector_configuration) }}
 

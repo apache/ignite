@@ -19,6 +19,7 @@ This module contains smoke tests that checks that ducktape works as expected
 import os
 
 from ducktape.mark import matrix
+
 from ignitetest.services.ignite import IgniteService
 from ignitetest.services.ignite_app import IgniteApplicationService
 from ignitetest.services.ignite_execution_exception import IgniteExecutionException
@@ -32,6 +33,7 @@ from ignitetest.services.utils.ignite_configuration.data_storage import DataRegi
 from ignitetest.services.utils.ignite_configuration.discovery import from_ignite_cluster
 from ignitetest.services.utils.ssl.client_connector_configuration import ClientConnectorConfiguration, \
     ThinClientConfiguration
+from ignitetest.services.utils.ssl.connector_configuration import ConnectorConfiguration
 from ignitetest.utils import ignite_versions, cluster
 from ignitetest.utils.bean import Bean
 from ignitetest.utils.ignite_test import IgniteTest
@@ -238,5 +240,6 @@ def get_server_config(ignite_version):
                                    selectors_count=18,
                                    connections_per_node=4,
                                    use_paired_connections=True,
-                                   message_queue_limit=0)
+                                   message_queue_limit=0),
+                               connector_configuration=ConnectorConfiguration(idle_timeout=180000)
                                )

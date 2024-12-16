@@ -46,14 +46,16 @@ class SslTest(IgniteTest):
         server_ssl = SslParams(shared_root, key_store_jks=DEFAULT_SERVER_KEYSTORE)
 
         server_configuration = IgniteConfiguration(
-            version=IgniteVersion(ignite_version), ssl_params=server_ssl)
+            version=IgniteVersion(ignite_version), ssl_params=server_ssl,
+            connector_configuration=ConnectorConfiguration(ssl_enabled=True, ssl_params=server_ssl))
 
         ignite = IgniteService(self.test_context, server_configuration, num_nodes=2,
                                startup_timeout_sec=180)
 
         client_configuration = server_configuration._replace(
             client_mode=True,
-            ssl_params=SslParams(shared_root, key_store_jks=DEFAULT_CLIENT_KEYSTORE))
+            ssl_params=SslParams(shared_root, key_store_jks=DEFAULT_CLIENT_KEYSTORE),
+            connector_configuration=None)
 
         app = IgniteApplicationService(
             self.test_context,
