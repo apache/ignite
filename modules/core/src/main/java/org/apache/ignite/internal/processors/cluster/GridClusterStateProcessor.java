@@ -48,14 +48,12 @@ import org.apache.ignite.events.DiscoveryEvent;
 import org.apache.ignite.events.Event;
 import org.apache.ignite.events.EventType;
 import org.apache.ignite.internal.GridKernalContext;
-import org.apache.ignite.internal.IgniteFeatures;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.NodeStoppingException;
 import org.apache.ignite.internal.cluster.ClusterTopologyCheckedException;
 import org.apache.ignite.internal.cluster.DistributedBaselineConfiguration;
 import org.apache.ignite.internal.cluster.IgniteClusterImpl;
 import org.apache.ignite.internal.managers.discovery.DiscoCache;
-import org.apache.ignite.internal.managers.discovery.IgniteDiscoverySpi;
 import org.apache.ignite.internal.managers.eventstorage.GridLocalEventListener;
 import org.apache.ignite.internal.managers.systemview.walker.BaselineNodeAttributeViewWalker;
 import org.apache.ignite.internal.managers.systemview.walker.BaselineNodeViewWalker;
@@ -1178,17 +1176,8 @@ public class GridClusterStateProcessor extends GridProcessorAdapter implements I
                 Map<String, StoredCacheData> cfgs = ctx.cache().configManager().readCacheConfigurations();
 
                 if (!F.isEmpty(cfgs)) {
-                    storedCfgs = new ArrayList<>(cfgs.values());
-
-                    IgniteDiscoverySpi spi = (IgniteDiscoverySpi)ctx.discovery().getInjectedDiscoverySpi();
-
-                    boolean splittedCacheCfgs = spi.allNodesSupport(IgniteFeatures.SPLITTED_CACHE_CONFIGURATIONS);
-
-                    storedCfgs = storedCfgs.stream()
-                        .map(storedCacheData -> splittedCacheCfgs
-                            ? storedCacheData.withSplittedCacheConfig(ctx.cache().splitter())
-                            : storedCacheData.withOldCacheConfig(ctx.cache().enricher())
-                        )
+                    storedCfgs = cfgs.values().stream()
+                        .map(storedCacheData -> storedCacheData.withSplittedCacheConfig(ctx.cache().splitter()))
                         .collect(Collectors.toList());
                 }
             }
