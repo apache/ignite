@@ -37,6 +37,7 @@ import org.apache.ignite.session.GridSessionSetTaskAttributeSelfTest;
 import org.apache.ignite.session.GridSessionTaskWaitJobAttributeSelfTest;
 import org.apache.ignite.session.GridSessionWaitAttributeSelfTest;
 import org.apache.ignite.session.IgniteWithApplicationAttributesAwareTest;
+import org.apache.ignite.session.SessionContextCacheInterceptorTest;
 import org.junit.runner.RunWith;
 import org.junit.runners.Suite;
 
@@ -65,6 +66,7 @@ import org.junit.runners.Suite;
     GridSessionCollisionSpiSelfTest.class,
     GridSessionCheckpointSelfTest.class,
     IgniteWithApplicationAttributesAwareTest.class,
+    SessionContextCacheInterceptorTest.class,
 })
 public class IgniteTaskSessionSelfTestSuite {
 }

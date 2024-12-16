@@ -22,6 +22,7 @@ import java.util.Map;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutorService;
 import javax.cache.CacheException;
+import org.apache.ignite.cache.CacheInterceptor;
 import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.cache.affinity.Affinity;
 import org.apache.ignite.cache.query.annotations.QuerySqlFunction;
@@ -798,6 +799,7 @@ public interface Ignite extends AutoCloseable {
      * List of supported types of user defined functions that have access the attributes:
      * <ul>
      *     <li>{@link QuerySqlFunction}</li>
+     *     <li>{@link CacheInterceptor}</li>
      * </ul>
      *
      * @param attrs Application attributes.
