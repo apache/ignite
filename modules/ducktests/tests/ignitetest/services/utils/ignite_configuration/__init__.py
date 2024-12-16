@@ -20,14 +20,13 @@ import socket
 from typing import NamedTuple
 
 from ignitetest.services.utils import IgniteServiceType
+from ignitetest.services.utils.ignite_configuration.binary_configuration import BinaryConfiguration
 from ignitetest.services.utils.ignite_configuration.communication import CommunicationSpi, TcpCommunicationSpi
-from ignitetest.services.utils.path import IgnitePathAware
-from ignitetest.services.utils.ssl.client_connector_configuration import ClientConnectorConfiguration
-from ignitetest.services.utils.ssl.connector_configuration import ConnectorConfiguration
 from ignitetest.services.utils.ignite_configuration.data_storage import DataStorageConfiguration
 from ignitetest.services.utils.ignite_configuration.discovery import DiscoverySpi, TcpDiscoverySpi
-from ignitetest.services.utils.ignite_configuration.binary_configuration import BinaryConfiguration
 from ignitetest.services.utils.ignite_configuration.transaction import TransactionConfiguration
+from ignitetest.services.utils.path import IgnitePathAware
+from ignitetest.services.utils.ssl.client_connector_configuration import ClientConnectorConfiguration
 from ignitetest.services.utils.ssl.ssl_params import SslParams, is_ssl_enabled, get_ssl_params, IGNITE_CLIENT_ALIAS, \
     IGNITE_SERVER_ALIAS
 from ignitetest.utils.bean import Bean
@@ -53,7 +52,6 @@ class IgniteConfiguration(NamedTuple):
     caches: list = []
     local_host: str = None
     ssl_params: SslParams = None
-    connector_configuration: ConnectorConfiguration = None
     client_connector_configuration: ClientConnectorConfiguration = None
     auth_enabled: bool = False
     plugins: list = []
@@ -87,11 +85,8 @@ class IgniteConfiguration(NamedTuple):
                 IGNITE_CLIENT_ALIAS if self.client_mode else IGNITE_SERVER_ALIAS
             )
         if ssl_params:
-            connector_configuration = self.connector_configuration or ConnectorConfiguration()
             client_connector_configuration = self.client_connector_configuration or ClientConnectorConfiguration()
             return self._replace(ssl_params=ssl_params,
-                                 connector_configuration=connector_configuration._replace(
-                                     ssl_enabled=True, ssl_params=ssl_params),
                                  client_connector_configuration=client_connector_configuration._replace(
                                      ssl_enabled=True, ssl_params=ssl_params))
         return self
