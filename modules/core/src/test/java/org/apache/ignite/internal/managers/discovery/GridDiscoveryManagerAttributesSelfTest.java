@@ -25,7 +25,6 @@ import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.binary.BinaryMarshaller;
 import org.apache.ignite.internal.marshaller.optimized.OptimizedMarshaller;
 import org.apache.ignite.spi.discovery.TestReconnectSecurityPluginProvider;
-import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
 
@@ -38,7 +37,7 @@ import static org.apache.ignite.configuration.DeploymentMode.SHARED;
 /**
  * Tests for node attributes consistency checks.
  */
-public abstract class GridDiscoveryManagerAttributesSelfTest extends GridCommonAbstractTest {
+public class GridDiscoveryManagerAttributesSelfTest extends GridCommonAbstractTest {
     /** */
     private static final String PREFER_IPV4 = "java.net.preferIPv4Stack";
 
@@ -398,26 +397,5 @@ public abstract class GridDiscoveryManagerAttributesSelfTest extends GridCommonA
         boolean isClientCfg = g.configuration().isClientMode() == null ? false : g.configuration().isClientMode();
 
         assertEquals(isClientCfg, isClientDiscovery);
-    }
-
-    /**
-     *
-     */
-    public static class RegularDiscovery extends GridDiscoveryManagerAttributesSelfTest {
-        /** {@inheritDoc} */
-        @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
-            IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
-
-            ((TcpDiscoverySpi)cfg.getDiscoverySpi()).setForceServerMode(true);
-
-            return cfg;
-        }
-    }
-
-    /**
-     *
-     */
-    public static class ClientDiscovery extends GridDiscoveryManagerAttributesSelfTest {
-        // No-op.
     }
 }

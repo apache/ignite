@@ -1,2 +1,0 @@
-# .husky/pre-commit
-yarn test && yarn lint

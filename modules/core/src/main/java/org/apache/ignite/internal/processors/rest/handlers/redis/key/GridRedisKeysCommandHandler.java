@@ -36,8 +36,6 @@ import org.apache.ignite.internal.processors.rest.request.GridRestCacheRequest;
 import org.apache.ignite.internal.processors.rest.request.GridRestRequest;
 import org.apache.ignite.internal.util.typedef.internal.U;
 
-import com.sun.tools.javac.util.StringUtils;
-
 import static org.apache.ignite.internal.processors.rest.GridRestCommand.CACHE_GET_ALL;
 import static org.apache.ignite.internal.processors.rest.GridRestCommand.CACHE_GET_KEYS;
 import static org.apache.ignite.internal.processors.rest.GridRestCommand.CACHE_SIZE;

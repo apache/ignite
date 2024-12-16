@@ -27,7 +27,7 @@ import org.apache.ignite.internal.processors.igfs.data.IgfsDataPutProcessor;
 import org.apache.ignite.internal.processors.igfs.meta.*;
 
 import org.apache.ignite.internal.util.typedef.internal.U;
-import org.apache.ignite.plugin.extensions.communication.IgniteMessageFactory;
+import org.apache.ignite.plugin.extensions.communication.MessageFactory;
 import org.apache.ignite.plugin.extensions.communication.MessageFactoryProvider;
 
 /**
@@ -91,7 +91,7 @@ public class IgfsMessageFactoryProvider implements MessageFactoryProvider {
     }
 
 	@Override
-	public void registerAll(IgniteMessageFactory factory) {
+	public void registerAll(MessageFactory factory) {
 		
 		factory.register((short)64, IgfsAckMessage::new);
     	factory.register((short)65, IgfsBlockKey::new);

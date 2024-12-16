@@ -23,7 +23,7 @@ import org.apache.ignite.internal.processors.compress.CompressionProcessor;
 import org.apache.ignite.internal.processors.query.NoOpQueryEngine;
 import org.apache.ignite.internal.util.IgniteUtils;
 import org.apache.ignite.internal.util.typedef.internal.U;
-import org.apache.ignite.plugin.extensions.communication.MessageFactory;
+import org.apache.ignite.plugin.extensions.communication.MessageFactoryProvider;
 import org.jetbrains.annotations.Nullable;
 
 /**
@@ -150,7 +150,7 @@ public enum IgniteComponentType {
      * @param noOpClsName Class name for no-op implementation.
      * @param clsName Class name.
      * @param module Module name.
-     * @param msgFactoryCls {@link MessageFactory} class for the component.
+     * @param msgFactoryCls {@link MessageFactoryProvider} class for the component.
      */
     IgniteComponentType(String noOpClsName, String clsName, String module, String msgFactoryCls) {
         this.noOpClsName = noOpClsName;
@@ -324,13 +324,13 @@ public enum IgniteComponentType {
      * @return Message factory or {@code null} if none or the component is not in classpath.
      * @throws IgniteCheckedException If failed.
      */
-    @Nullable public MessageFactory messageFactory() throws IgniteCheckedException {
+    @Nullable public MessageFactoryProvider messageFactory() throws IgniteCheckedException {
         Class<?> cls;
 
         if (msgFactoryCls == null || null == (cls = U.classForName(msgFactoryCls, null)))
             return null;
 
-        return (MessageFactory)U.newInstance(cls);
+        return (MessageFactoryProvider)U.newInstance(cls);
     }
 
     /**

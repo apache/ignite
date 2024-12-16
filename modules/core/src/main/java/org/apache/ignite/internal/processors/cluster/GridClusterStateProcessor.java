@@ -92,7 +92,6 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiPredicate;
 import org.apache.ignite.lang.IgniteFuture;
 import org.apache.ignite.lang.IgniteInClosure;
-import org.apache.ignite.lang.IgniteProductVersion;
 import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.marshaller.jdk.JdkMarshaller;
 import org.apache.ignite.plugin.security.SecurityPermission;
@@ -113,9 +112,6 @@ import static org.apache.ignite.events.EventType.EVT_NODE_JOINED;
 import static org.apache.ignite.events.EventType.EVT_NODE_LEFT;
 import static org.apache.ignite.internal.GridClosureCallMode.BALANCE;
 import static org.apache.ignite.internal.GridComponent.DiscoveryDataExchangeType.STATE_PROC;
-import static org.apache.ignite.internal.IgniteFeatures.CLUSTER_READ_ONLY_MODE;
-import static org.apache.ignite.internal.IgniteFeatures.SAFE_CLUSTER_DEACTIVATION;
-import static org.apache.ignite.internal.IgniteFeatures.allNodesSupports;
 import static org.apache.ignite.internal.managers.communication.GridIoPolicy.SYSTEM_POOL;
 import static org.apache.ignite.internal.processors.cache.GridCacheUtils.extractDataStorage;
 import static org.apache.ignite.internal.processors.metric.impl.MetricUtils.metricName;
@@ -189,9 +185,6 @@ public class GridClusterStateProcessor extends GridProcessorAdapter implements I
 
     /** Distributed baseline configuration. */
     private DistributedBaselineConfiguration distributedBaselineConfiguration;
-
-    /** Minimal IgniteProductVersion supporting BaselineTopology */
-    private static final IgniteProductVersion MIN_BLT_SUPPORTING_VER = IgniteProductVersion.fromString("2.4.0");
 
     /** Listener. */
     private final GridLocalEventListener lsr = new GridLocalEventListener() {
@@ -713,8 +706,7 @@ public class GridClusterStateProcessor extends GridProcessorAdapter implements I
             }
         }
         else if (isApplicable(msg, state)) {
-            if (msg.state() == INACTIVE && !msg.forceDeactivation() &&
-                allNodesSupports(ctx.discovery().serverNodes(topVer), SAFE_CLUSTER_DEACTIVATION)) {
+            if (msg.state() == INACTIVE && !msg.forceDeactivation()) {
                 List<String> inMemCaches = listInMemoryUserCaches();
 
                 if (!inMemCaches.isEmpty()) {
@@ -1249,13 +1241,6 @@ public class GridClusterStateProcessor extends GridProcessorAdapter implements I
     ) {
         if (node.isClient())
             return null;
-
-        if (globalState.state() == ACTIVE_READ_ONLY && !IgniteFeatures.nodeSupports(node, CLUSTER_READ_ONLY_MODE)) {
-            String msg = "Node not supporting cluster read-only mode is not allowed to join the cluster with enabled" +
-                " read-only mode";
-
-            return new IgniteNodeValidationResult(node.id(), msg, msg);
-        }
 
         if (discoData.joiningNodeData() == null) {
             if (globalState.baselineTopology() != null) {

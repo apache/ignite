@@ -216,7 +216,6 @@ import org.apache.ignite.internal.compute.ComputeTaskCancelledCheckedException;
 import org.apache.ignite.internal.compute.ComputeTaskTimeoutCheckedException;
 import org.apache.ignite.internal.events.DiscoveryCustomEvent;
 import org.apache.ignite.internal.logger.IgniteLoggerEx;
-import org.apache.ignite.internal.managers.communication.GridIoManager;
 import org.apache.ignite.internal.managers.communication.GridIoPolicy;
 import org.apache.ignite.internal.managers.deployment.GridDeployment;
 import org.apache.ignite.internal.managers.deployment.GridDeploymentInfo;
@@ -10629,36 +10628,6 @@ public abstract class IgniteUtils {
     }
 
     /**
-     * Defines which protocol version to use for
-     * communication with the provided node.
-     *
-     * @param ctx Context.
-     * @param nodeId Node ID.
-     * @return Protocol version.
-     * @throws IgniteCheckedException If node doesn't exist.
-     */
-    public static byte directProtocolVersion(GridKernalContext ctx, UUID nodeId) throws IgniteCheckedException {
-        assert nodeId != null;
-
-        ClusterNode node = ctx.discovery().node(nodeId);
-
-        if (node == null)
-            throw new IgniteCheckedException("Failed to define communication protocol version " +
-                "(has node left topology?): " + nodeId);
-
-        assert !node.isLocal();
-
-        Byte attr = node.attribute(GridIoManager.DIRECT_PROTO_VER_ATTR);
-
-        byte rmtProtoVer = attr != null ? attr : 1;
-
-        if (rmtProtoVer < GridIoManager.DIRECT_PROTO_VER)
-            return rmtProtoVer;
-        else
-            return GridIoManager.DIRECT_PROTO_VER;
-    }
-
-    /**
      * @return Whether provided method is {@code Object.hashCode()}.
      */
     public static boolean isHashCodeMethod(Method mtd) {
@@ -11708,7 +11677,7 @@ public abstract class IgniteUtils {
      * @param err Error to add.
      * @return New root error.
      */
-    private static Throwable addSuppressed(Throwable root, Throwable err) {
+    public static <T extends Throwable> T addSuppressed(T root, T err) {
         assert err != null;
 
         if (root == null)

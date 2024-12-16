@@ -25,6 +25,7 @@ import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Consumer;
+import java.util.function.Supplier;
 import javax.management.JMException;
 import javax.management.MBeanServer;
 import javax.management.ObjectName;
@@ -754,6 +755,10 @@ public abstract class IgniteSpiAdapter implements IgniteSpi {
 
             if (msgFactory0 == null) {
                 msgFactory0 = new MessageFactory() {
+                    @Override public void register(short directType, Supplier<Message> supplier) throws IgniteException {
+                        throw new IgniteException("Failed to register message, node is not started.");
+                    }
+
                     @Nullable @Override public Message create(short type) {
                         throw new IgniteException("Failed to read message, node is not started.");
                     }

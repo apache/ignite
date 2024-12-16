@@ -42,7 +42,6 @@ import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.logging.Handler;
-import java.util.stream.Collectors;
 import javax.management.JMException;
 import javax.management.MBeanServer;
 import javax.management.ObjectName;
@@ -2230,24 +2229,17 @@ public class IgnitionEx {
                         safeToStop = false;
 
                     if (safeToStop && !proposedSuppliers.isEmpty()) {
-                        Set<UUID> supportedPlcNodes = proposedSuppliers.keySet().stream()
-                            .filter(nodeId ->
-                                IgniteFeatures.nodeSupports(grid0.cluster().node(nodeId), IgniteFeatures.SHUTDOWN_POLICY))
-                            .collect(Collectors.toSet());
+                        try {
+                            safeToStop = grid0.context().task().execute(
+                                CheckCpHistTask.class,
+                                proposedSuppliers,
+                                options(grid0.cluster().forNodeIds(proposedSuppliers.keySet()).nodes())
+                            ).get();
+                        }
+                        catch (IgniteCheckedException e) {
+                            U.error(log, "Failed to check availability of historical rebalance", e);
 
-                        if (!supportedPlcNodes.isEmpty()) {
-                            try {
-                                safeToStop = grid0.context().task().execute(
-                                    CheckCpHistTask.class,
-                                    proposedSuppliers,
-                                    options(grid0.cluster().forNodeIds(supportedPlcNodes).nodes())
-                                ).get();
-                            }
-                            catch (IgniteCheckedException e) {
-                                U.error(log, "Failed to check availability of historical rebalance", e);
-
-                                safeToStop = false;
-                            }
+                            safeToStop = false;
                         }
                     }
 

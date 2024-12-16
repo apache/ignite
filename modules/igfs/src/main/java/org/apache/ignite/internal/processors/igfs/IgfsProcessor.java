@@ -46,9 +46,6 @@ import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.lang.IgniteClosure;
 import org.apache.ignite.lang.IgnitePredicate;
-import org.apache.ignite.plugin.extensions.communication.IgniteMessageFactory;
-import org.apache.ignite.plugin.extensions.communication.MessageFactory;
-import org.apache.ignite.plugin.extensions.communication.MessageFactoryProvider;
 import org.jetbrains.annotations.Nullable;
 import java.util.concurrent.ConcurrentHashMap;
 
@@ -68,8 +65,7 @@ public class IgfsProcessor extends IgfsProcessorAdapter {
     };
 
     /** */
-    private final ConcurrentMap<String, IgfsContext> igfsCache =
-        new ConcurrentHashMap<>();
+    private final ConcurrentMap<String, IgfsContext> igfsCache = new ConcurrentHashMap<>();
 
     /**
      * @param ctx Kernal context.

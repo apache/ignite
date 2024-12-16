@@ -209,7 +209,7 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
 
     /** Cache eviction policy factory. */
     @SerializeSeparately
-    private Factory evictPlcFactory;
+    private Factory<? extends EvictionPolicy<? super K, ? super V>> evictPlcFactory;
 
     /** */
     private boolean onheapCache;
@@ -245,7 +245,7 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
 
     /** */
     @SerializeSeparately
-    private Factory storeFactory;
+    private Factory<? extends CacheStore<? super K, ? super V>> storeFactory;
 
     /** */
     private Boolean storeKeepBinary = DFLT_STORE_KEEP_BINARY;
@@ -642,7 +642,7 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
      * @return Cache eviction policy factory or {@code null} if evictions should be disabled
      * or if {@link #getEvictionPolicy()} should be used instead.
      */
-    @Nullable public Factory<EvictionPolicy<? super K, ? super V>> getEvictionPolicyFactory() {
+    @Nullable public Factory<? extends EvictionPolicy<? super K, ? super V>> getEvictionPolicyFactory() {
         return evictPlcFactory;
     }
 
