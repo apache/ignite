@@ -29,6 +29,7 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.processors.cache.GridCacheAbstractSelfTest;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.G;
+import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.junit.Test;
 
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
@@ -70,11 +71,13 @@ public abstract class GridCacheClientModesAbstractSelfTest extends GridCacheAbst
 
         int cnt = gridCnt.incrementAndGet();
 
-        if (cnt == gridCount()) {
+        if ((cnt == gridCount() && isClientStartedLast()) || (cnt == 1 && !isClientStartedLast())) {
             cfg.setClientMode(true);
 
             nearOnlyIgniteInstanceName = igniteInstanceName;
         }
+
+        ((TcpDiscoverySpi)cfg.getDiscoverySpi()).setForceServerMode(true);
 
         return cfg;
     }
@@ -100,6 +103,13 @@ public abstract class GridCacheClientModesAbstractSelfTest extends GridCacheAbst
     /** {@inheritDoc} */
     @Override protected CacheMode cacheMode() {
         return PARTITIONED;
+    }
+
+    /**
+     * @return boolean {@code True} if client's grid must be started last, {@code false} if it must be started first.
+     */
+    protected boolean isClientStartedLast() {
+        return false;
     }
 
     /**
