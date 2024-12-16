@@ -17,29 +17,42 @@
 
 package org.apache.ignite.internal.management.cache;
 
+import java.util.List;
 import java.util.Optional;
+import java.util.concurrent.atomic.AtomicInteger;
+
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
-import org.apache.ignite.internal.ComputeMXBeanImpl;
+import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.management.api.NoArg;
+import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.visor.VisorJob;
-import org.apache.ignite.internal.visor.VisorOneNodeTask;
+import org.apache.ignite.internal.visor.VisorMultiNodeTask;
 import org.apache.ignite.lang.IgniteUuid;
+import org.apache.ignite.resources.IgniteInstanceResource;
 import org.apache.ignite.resources.LoggerResource;
+import org.apache.ignite.spi.systemview.view.ComputeJobView;
 import org.apache.ignite.spi.systemview.view.ComputeTaskView;
+import org.jetbrains.annotations.Nullable;
 
+import static org.apache.ignite.internal.processors.job.GridJobProcessor.JOBS_VIEW;
 import static org.apache.ignite.internal.processors.task.GridTaskProcessor.TASKS_VIEW;
 
 /**
  * Task that cancels idle_verify command.
  */
-public class CacheIdleVerifyCancelTask extends VisorOneNodeTask<NoArg, Void> {
+public class CacheIdleVerifyCancelTask extends VisorMultiNodeTask<NoArg, Void, Void> {
     /** */
     private static final long serialVersionUID = 0L;
 
     /** {@inheritDoc} */
     @Override protected VisorJob<NoArg, Void> job(NoArg arg) {
         return new CacheIdleVerifyCancelJob(debug);
+    }
+
+    /** {@inheritDoc} */
+    @Override protected @Nullable Void reduce0(List list) throws IgniteException {
+        return null;
     }
 
     /**
@@ -54,6 +67,12 @@ public class CacheIdleVerifyCancelTask extends VisorOneNodeTask<NoArg, Void> {
         private IgniteLogger log;
 
         /**
+         * Auto-injected grid instance.
+         */
+        @IgniteInstanceResource
+        private transient IgniteEx ignite;
+
+        /**
          * @param debug Debug flag.
          */
         public CacheIdleVerifyCancelJob(boolean debug) {
@@ -62,19 +81,49 @@ public class CacheIdleVerifyCancelTask extends VisorOneNodeTask<NoArg, Void> {
 
         /** {@inheritDoc} */
         @Override protected Void run(NoArg arg) {
-            idleVerifyId().ifPresent(igniteUuid -> {
-                new ComputeMXBeanImpl(ignite.context()).cancel(igniteUuid);
+            cancelJob(IdleVerifyTaskV2.class);
 
-                log.info("idle_verify command has been canceled succesfully");
-            });
+            cancelJob(VerifyBackupPartitionsTaskV2.class);
 
             return null;
+        }
+
+        /**
+         * @param taskCls Job class.
+         */
+        private void cancelJob(Class<?> taskCls) {
+            AtomicInteger jobsCnt = new AtomicInteger();
+            AtomicInteger tasksCnt = new AtomicInteger();
+
+            F.iterator(ignite.context().systemView().view(TASKS_VIEW),
+                ComputeTaskView::taskClassName,
+                true,
+                name -> name.taskClassName().equals(taskCls.getName())
+            ).forEach(name -> {
+                tasksCnt.incrementAndGet();
+            });
+
+            F.iterator(
+                ignite.context().systemView().view(JOBS_VIEW),
+                ComputeJobView::sessionId,
+                true,
+                job -> job.taskClassName().equals(taskCls.getName())
+            ).forEach(sesId -> {
+                ignite.context().job().cancelJob(sesId, null, false);
+                jobsCnt.incrementAndGet();
+            });
+
+            log.info(taskCls.getName() + " found jobs: " + jobsCnt );
+
+            log.info(taskCls.getName() + " found tasks: " + tasksCnt);
         }
 
         /**
          * @return Retrieves idle_verify command session id if present.
          */
         private Optional<IgniteUuid> idleVerifyId() {
+            log.info("id retrieve called");
+
             int idleVerifyCnt = 0;
 
             ComputeTaskView foundView = null;

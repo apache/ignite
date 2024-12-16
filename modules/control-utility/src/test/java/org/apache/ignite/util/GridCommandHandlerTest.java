@@ -186,6 +186,7 @@ import static org.apache.ignite.transactions.TransactionConcurrency.OPTIMISTIC;
 import static org.apache.ignite.transactions.TransactionConcurrency.PESSIMISTIC;
 import static org.apache.ignite.transactions.TransactionIsolation.READ_COMMITTED;
 import static org.apache.ignite.util.TestStorageUtils.corruptDataEntry;
+import static org.junit.Assert.assertNotEquals;
 
 /**
  * Command line handler test.
@@ -767,7 +768,7 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
 
         srv.cluster().state(ACTIVE);
 
-        IgniteCache<Integer, Integer> cache = srv.createCache(DEFAULT_CACHE_NAME);
+        IgniteCache<Integer, Integer> cache = srv.createCache(new CacheConfiguration<Integer, Integer>(DEFAULT_CACHE_NAME).setBackups(3));
 
         for (int i = 0; i < 10000; i++)
             cache.put(i, i);
@@ -782,20 +783,16 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
 
         assertFalse(idleVerifyFut.isDone());
 
+        doSleep(1000);
         assertEquals(EXIT_CODE_OK, execute("--cache", "idle_verify", "--cancel"));
 
-        waitForCondition(() -> idleVerifyFut.isDone() && cancelMsgListener.check(), 1000);
-
-        int idleVerifyCnt = 0;
-
         for (int i = 0; i < gridsCnt; i++) {
-            for (ComputeTaskView view : grid(i).context().systemView().<ComputeTaskView>view(TASKS_VIEW)) {
-                if (view.taskName().equals(IdleVerifyTaskV2.class.getName()))
-                    idleVerifyCnt++;
-            }
+            for (ComputeTaskView view : grid(i).context().systemView().<ComputeTaskView>view(TASKS_VIEW))
+                assertNotEquals(IdleVerifyTaskV2.class.getName(), view.taskName());
         }
 
-        assertEquals(0, idleVerifyCnt);
+        assertTrue(idleVerifyFut.isDone());
+        waitForCondition(cancelMsgListener::check, 1000);
     }
 
     /**

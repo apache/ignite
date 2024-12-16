@@ -17,8 +17,11 @@
 
 package org.apache.ignite.internal.management.cache;
 
+import org.apache.ignite.internal.client.GridClientNode;
 import org.apache.ignite.internal.management.api.ComputeCommand;
 import org.apache.ignite.internal.management.api.NoArg;
+
+import java.util.Collection;
 
 /**
  * Cancels idle_verify command.
@@ -37,5 +40,10 @@ public class CacheIdleVerifyCancelCommand implements ComputeCommand<NoArg, Void>
     /** {@inheritDoc} */
     @Override public Class<NoArg> argClass() {
         return NoArg.class;
+    }
+
+    /** {@inheritDoc} */
+    @Override public Collection<GridClientNode> nodes(Collection<GridClientNode> nodes, NoArg arg) {
+        return nodes;
     }
 }
