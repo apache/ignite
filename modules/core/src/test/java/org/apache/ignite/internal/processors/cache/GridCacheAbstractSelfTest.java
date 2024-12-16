@@ -201,11 +201,7 @@ public abstract class GridCacheAbstractSelfTest extends GridCommonAbstractTest {
 
         cfg.setCacheConfiguration(cacheConfiguration(igniteInstanceName));
 
-        TcpCommunicationSpi comm = new TcpCommunicationSpi();
-
-        comm.setSharedMemoryPort(-1);
-
-        cfg.setCommunicationSpi(comm);
+        cfg.setCommunicationSpi(new TcpCommunicationSpi());
 
         return cfg;
     }

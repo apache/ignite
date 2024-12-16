@@ -60,11 +60,7 @@ public class GridJobServicesAddNodeTest extends GridCommonAbstractTest {
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         IgniteConfiguration c = super.getConfiguration(igniteInstanceName);
 
-        TcpCommunicationSpi commSpi = new TcpCommunicationSpi();
-
-        commSpi.setSharedMemoryPort(-1);
-
-        c.setCommunicationSpi(commSpi);
+        c.setCommunicationSpi(new TcpCommunicationSpi());
 
         return c;
     }

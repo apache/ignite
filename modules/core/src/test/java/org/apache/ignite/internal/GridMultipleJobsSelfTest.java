@@ -76,11 +76,7 @@ public class GridMultipleJobsSelfTest extends GridCommonAbstractTest {
             c.setCacheConfiguration(cc);
         }
 
-        TcpCommunicationSpi commSpi = new TcpCommunicationSpi();
-
-        commSpi.setSharedMemoryPort(-1);
-
-        c.setCommunicationSpi(commSpi);
+        c.setCommunicationSpi(new TcpCommunicationSpi());
 
         return c;
     }

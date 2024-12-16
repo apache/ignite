@@ -76,11 +76,7 @@ public class GridCacheDhtPreloadPerformanceTest extends GridCommonAbstractTest {
 
         c.setCacheConfiguration(cc, cc1);
 
-        TcpCommunicationSpi comm = new TcpCommunicationSpi();
-
-        comm.setSharedMemoryPort(-1);
-
-        c.setCommunicationSpi(comm);
+        c.setCommunicationSpi(new TcpCommunicationSpi());
 
         return c;
     }

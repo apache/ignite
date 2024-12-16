@@ -113,11 +113,7 @@ public class IgniteClientReconnectCacheTest extends IgniteClientReconnectAbstrac
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
-        TestCommunicationSpi commSpi = new TestCommunicationSpi();
-
-        commSpi.setSharedMemoryPort(-1);
-
-        cfg.setCommunicationSpi(commSpi);
+        cfg.setCommunicationSpi(new TestCommunicationSpi());
 
         cfg.setPeerClassLoadingEnabled(false);
 

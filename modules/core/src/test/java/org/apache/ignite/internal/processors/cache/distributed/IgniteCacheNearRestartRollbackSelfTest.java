@@ -68,11 +68,7 @@ public class IgniteCacheNearRestartRollbackSelfTest extends GridCommonAbstractTe
         cfg.setClientFailureDetectionTimeout(50000);
         cfg.setCacheConfiguration(cacheConfiguration(igniteInstanceName));
 
-        TcpCommunicationSpi commSpi = new TcpCommunicationSpi();
-
-        commSpi.setSharedMemoryPort(-1);
-
-        cfg.setCommunicationSpi(commSpi);
+        cfg.setCommunicationSpi(new TcpCommunicationSpi());
 
         return cfg;
     }

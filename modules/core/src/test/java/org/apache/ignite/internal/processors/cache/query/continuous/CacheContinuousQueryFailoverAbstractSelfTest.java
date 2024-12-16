@@ -131,7 +131,6 @@ public abstract class CacheContinuousQueryFailoverAbstractSelfTest extends GridC
 
         TestCommunicationSpi commSpi = new TestCommunicationSpi();
 
-        commSpi.setSharedMemoryPort(-1);
         commSpi.setIdleConnectionTimeout(100);
 
         cfg.setCommunicationSpi(commSpi);

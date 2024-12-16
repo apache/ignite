@@ -99,13 +99,8 @@ public class IgnitePdsTransactionsHangTest extends GridCommonAbstractTest {
         BinaryConfiguration binaryCfg = new BinaryConfiguration();
         binaryCfg.setCompactFooter(false);
         cfg.setBinaryConfiguration(binaryCfg);
-
         cfg.setPeerClassLoadingEnabled(true);
-
-        TcpCommunicationSpi tcpCommSpi = new TcpCommunicationSpi();
-
-        tcpCommSpi.setSharedMemoryPort(-1);
-        cfg.setCommunicationSpi(tcpCommSpi);
+        cfg.setCommunicationSpi(new TcpCommunicationSpi());
 
         TransactionConfiguration txCfg = new TransactionConfiguration();
 
