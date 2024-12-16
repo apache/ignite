@@ -88,7 +88,10 @@ public class IgniteStableBaselineCacheRemoveFailoverTest extends GridCacheAbstra
 
         startGrids(GRIDS_COUNT);
 
-        grid(0).cluster().state(ClusterState.ACTIVE);
+        if (testClientNode())
+            startClientGrid(CLI_IDX);
+
+        grid(CLI_IDX).cluster().state(ClusterState.ACTIVE);
 
         startGrid(OUT_OF_BASELINE_GRID_ID);
 
