@@ -364,7 +364,7 @@ public class SystemViewCommandTest extends GridCommandHandlerClusterByClassAbstr
             IgniteClient ignored1 = Ignition.startClient(new ClientConfiguration().setAddresses(host + ":" + port));
             Connection ignored2 = new IgniteJdbcThinDriver().connect("jdbc:ignite:thin://" + host, new Properties())
         ) {
-            assertEquals(2, systemView(ignite0, CLI_CONN_VIEW).size());
+            assertEquals(commandHandler.equals(CLI_CMD_HND) ? 3 : 2, systemView(ignite0, CLI_CONN_VIEW).size());
         }
     }
 
@@ -1282,7 +1282,7 @@ public class SystemViewCommandTest extends GridCommandHandlerClusterByClassAbstr
      * @return System view values.
      */
     private Map<UUID, List<List<String>>> parseSystemViewCommandOutput(String out) {
-        if (commandHandler.equals(CLI_CMD_HND)) {
+        if (cliCommandHandler()) {
             String outStart = "--------------------------------------------------------------------------------";
 
             String outEnd = "Command [SYSTEM-VIEW] finished with code: " + EXIT_CODE_OK;
