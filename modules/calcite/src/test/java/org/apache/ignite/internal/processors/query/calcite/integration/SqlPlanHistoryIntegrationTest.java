@@ -255,13 +255,13 @@ public class SqlPlanHistoryIntegrationTest extends GridCommonAbstractTest {
     /** Checks successful cross-cache SqlFieldsQuery. */
     @Test
     public void testSqlFieldsCrossCacheQuery() throws Exception {
-        runSuccessfulQuery(new SqlFieldsQuery("select * from B.String"));
+        runSuccessfulQuery(new SqlFieldsQuery(SQL.replace("A.", "B.")));
     }
 
     /** Checks failed cross-cache SqlFieldsQuery. */
     @Test
     public void testSqlFieldsCrossCacheQueryFailed() throws Exception {
-        runFailedQuery(new SqlFieldsQuery("select * from B.String where B.fail()=1"));
+        runFailedQuery(new SqlFieldsQuery(SQL_FAILED.replace("A.", "B.")));
     }
 
     /**
