@@ -38,6 +38,7 @@ import org.apache.ignite.cache.store.CacheStore;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.NearCacheConfiguration;
+import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteKernal;
 import org.apache.ignite.internal.cluster.ClusterTopologyCheckedException;
 import org.apache.ignite.internal.util.lang.GridAbsPredicateX;
@@ -340,7 +341,14 @@ public abstract class GridCacheAbstractSelfTest extends GridCommonAbstractTest {
      */
     @SuppressWarnings({"unchecked"})
     @Override protected IgniteCache<String, Integer> jcache() {
-        return jcache(0);
+        return defaultInstance().cache(DEFAULT_CACHE_NAME);
+    }
+
+    /**
+     * @return Default Ignite instance.
+     */
+    public IgniteEx defaultInstance() {
+        return grid(0);
     }
 
     /**
