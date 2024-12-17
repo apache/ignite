@@ -20,7 +20,6 @@ package org.apache.ignite.spi.communication.tcp;
 import java.io.InputStream;
 import java.net.Socket;
 import org.apache.ignite.configuration.IgniteConfiguration;
-import org.apache.ignite.internal.IgniteFeatures;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.ListeningTestLogger;
@@ -34,8 +33,7 @@ import static org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi.NODE_I
 import static org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi.makeMessageType;
 
 /**
- * This test check that client sends only Node ID message type on connect. There is a gap when {@link
- * IgniteFeatures#allNodesSupports} isn't consistent, because the list of nodes is empty.
+ * This test check that client sends only Node ID message type on connect.
  */
 public class GridTcpCommunicationSpiSkipWaitHandshakeOnClientTest extends GridCommonAbstractTest {
     /** Tcp communication start message. */
