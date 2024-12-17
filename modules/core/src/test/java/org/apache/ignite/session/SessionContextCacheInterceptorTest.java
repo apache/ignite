@@ -434,7 +434,7 @@ public class SessionContextCacheInterceptorTest extends GridCommonAbstractTest {
             .withNoRetries();
 
         for (int i = 0; i < KEYS; i++)
-            cacheApp.putAsync((i), String.valueOf(i));
+            cacheApp.putAsync((i), String.valueOf(i)).get(getTestTimeout());
 
         for (int i = 0; i < KEYS; i++) {
             final int j = i;
