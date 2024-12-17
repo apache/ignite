@@ -100,7 +100,6 @@ public class IgnitePdsTransactionsHangTest extends GridCommonAbstractTest {
         binaryCfg.setCompactFooter(false);
         cfg.setBinaryConfiguration(binaryCfg);
         cfg.setPeerClassLoadingEnabled(true);
-        cfg.setCommunicationSpi(new TcpCommunicationSpi());
 
         TransactionConfiguration txCfg = new TransactionConfiguration();
 

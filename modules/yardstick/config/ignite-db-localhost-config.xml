@@ -43,10 +43,5 @@
                 </property>
             </bean>
         </property>
-
-        <property name="communicationSpi">
-            <bean class="org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi">
-            </bean>
-        </property>
     </bean>
 </beans>
