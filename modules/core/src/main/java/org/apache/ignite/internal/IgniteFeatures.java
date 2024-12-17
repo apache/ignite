@@ -30,14 +30,8 @@ import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_IGNITE_FEATUR
  * Defines supported features and check its on other nodes.
  */
 public enum IgniteFeatures {
-    /** Support of splitted cache configurations to avoid broken deserialization on non-affinity nodes. */
-    SPLITTED_CACHE_CONFIGURATIONS(5),
-
     /** Partition Map Exchange-free switch on baseline node left at fully rebalanced cluster.  */
-    PME_FREE_SWITCH(19),
-
-    /** Compatibility support for new fields which are configured split. */
-    SPLITTED_CACHE_CONFIGURATIONS_V2(46);
+    PME_FREE_SWITCH(19);
 
     /**
      * Unique feature identifier.

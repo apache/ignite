@@ -21,7 +21,7 @@ import java.util.List;
 import org.junit.Assume;
 import org.junit.Test;
 
-import static org.apache.ignite.internal.commandline.CommandHandler.EXIT_CODE_UNEXPECTED_ERROR;
+import static org.apache.ignite.internal.commandline.CommandHandler.EXIT_CODE_INVALID_ARGUMENTS;
 import static org.apache.ignite.testframework.GridTestUtils.assertContains;
 
 /**
@@ -43,7 +43,7 @@ public class GridCommandHandlerIncompatibleSslConfigTest extends GridCommandHand
 
     /** {@inheritDoc} */
     @Override protected void beforeTest() throws Exception {
-        Assume.assumeTrue(commandHandler.equalsIgnoreCase(CLI_CMD_HND));
+        Assume.assumeTrue(cliCommandHandler());
 
         super.beforeTest();
     }
@@ -55,7 +55,7 @@ public class GridCommandHandlerIncompatibleSslConfigTest extends GridCommandHand
 
         injectTestSystemOut();
 
-        assertEquals(EXIT_CODE_UNEXPECTED_ERROR, execute("--set-state", "ACTIVE"));
+        assertEquals(EXIT_CODE_INVALID_ARGUMENTS, execute("--set-state", "ACTIVE"));
 
         assertContains(log, testOut.toString(), "Incorrect SSL configuration.");
     }

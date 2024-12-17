@@ -19,6 +19,7 @@ package org.apache.ignite.internal.management;
 
 import java.util.function.Consumer;
 import org.apache.ignite.Ignite;
+import org.apache.ignite.client.IgniteClient;
 import org.apache.ignite.internal.client.GridClient;
 import org.apache.ignite.internal.client.GridClientClusterState;
 import org.apache.ignite.internal.client.GridClientException;
@@ -44,6 +45,7 @@ public class ActivateCommand implements LocalCommand<NoArg, NoArg> {
     /** {@inheritDoc} */
     @Override public NoArg execute(
         @Nullable GridClient cli,
+        @Nullable IgniteClient client,
         @Nullable Ignite ignite,
         NoArg arg,
         Consumer<String> printer
@@ -53,6 +55,8 @@ public class ActivateCommand implements LocalCommand<NoArg, NoArg> {
 
             state.state(ACTIVE, false);
         }
+        else if (client != null)
+            client.cluster().state(ACTIVE);
         else
             ignite.cluster().state(ACTIVE);
 
