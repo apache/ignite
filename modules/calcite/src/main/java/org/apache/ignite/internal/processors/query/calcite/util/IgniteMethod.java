@@ -102,7 +102,10 @@ public enum IgniteMethod {
     SKIP_FIRST_ARGUMENT(IgniteSqlFunctions.class, "skipFirstArgument", Object.class, Object.class),
 
     /** See {@link BigDecimal#multiply(BigDecimal)}. */
-    BIG_DECIMAL_MULTIPLY(BigDecimal.class, "multiply", BigDecimal.class);
+    BIG_DECIMAL_MULTIPLY(BigDecimal.class, "multiply", BigDecimal.class),
+
+    /** See {@link ExecutionContext#udfInstance(String)}. */
+    UDF_INSTANCE(ExecutionContext.class, "udfInstance", String.class);
 
     /** */
     private final Method method;

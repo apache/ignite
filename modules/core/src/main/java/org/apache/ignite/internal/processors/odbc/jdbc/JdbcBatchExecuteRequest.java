@@ -30,7 +30,7 @@ import org.jetbrains.annotations.Nullable;
 /**
  * JDBC batch execute request.
  */
-public class JdbcBatchExecuteRequest extends JdbcRequest {
+public class JdbcBatchExecuteRequest extends JdbcClientInfoAwareRequest {
     /** Schema name. */
     private String schemaName;
 

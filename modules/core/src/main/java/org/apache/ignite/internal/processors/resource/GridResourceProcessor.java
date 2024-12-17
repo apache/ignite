@@ -40,6 +40,7 @@ import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.lifecycle.LifecycleBean;
 import org.apache.ignite.services.Service;
 import org.apache.ignite.services.ServiceContext;
+import org.apache.ignite.session.SessionContextProvider;
 import org.apache.ignite.spi.IgniteSpi;
 import org.jetbrains.annotations.Nullable;
 
@@ -231,6 +232,17 @@ public class GridResourceProcessor extends GridProcessorAdapter {
     }
 
     /**
+     * Inject resources to object contained a user defined function.
+     *
+     * @param obj Object to inject resources.
+     * @param sesCtxProv Session context provider.
+     * @throws IgniteCheckedException If failed to inject.
+     */
+    public void injectToUdf(Object obj, SessionContextProvider sesCtxProv) throws IgniteCheckedException {
+        inject(obj, GridResourceIoc.AnnotationSet.USER_DEFINED_FUNCTION, sesCtxProv);
+    }
+
+    /**
      * @param obj Object to inject.
      * @param annSet Supported annotations.
      * @param params Parameters.
@@ -331,6 +343,7 @@ public class GridResourceProcessor extends GridProcessorAdapter {
             case TASK_CONTINUOUS_MAPPER:
             case CACHE_STORE_SESSION:
             case SERVICE_CONTEXT:
+            case SESSION_CONTEXT_PROVIDER:
                 res = new GridResourceBasicInjector<>(param);
                 break;
 
