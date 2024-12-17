@@ -660,13 +660,6 @@ public final class IgniteSystemProperties {
     public static final String IGNITE_H2_DEBUG_CONSOLE_PORT = "IGNITE_H2_DEBUG_CONSOLE_PORT";
 
     /**
-     * @deprecated This property is ignored and will be deleted in future releases.
-     */
-    @Deprecated
-    @SystemProperty("This option is ignored and will be deleted in future releases")
-    public static final String IGNITE_IPC_SHMEM_SPACE_DEBUG = "IGNITE_IPC_SHMEM_SPACE_DEBUG";
-
-    /**
      * Property allowing to skip configuration consistency checks.
      */
     @SystemProperty("Skip configuration consistency checks")

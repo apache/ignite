@@ -51,7 +51,6 @@ import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.lang.IgniteAsyncCallback;
 import org.apache.ignite.resources.IgniteInstanceResource;
-import org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi;
 import org.apache.ignite.spi.eventstorage.memory.MemoryEventStorageSpi;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
@@ -98,8 +97,6 @@ public class CacheContinuousQueryOperationFromCallbackTest extends GridCommonAbs
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
         cfg.setSystemThreadPoolSize(SYSTEM_POOL_SIZE);
-
-        ((TcpCommunicationSpi)cfg.getCommunicationSpi()).setSharedMemoryPort(-1);
 
         MemoryEventStorageSpi storeSpi = new MemoryEventStorageSpi();
         storeSpi.setExpireCount(100);

@@ -395,7 +395,6 @@ public class GridTcpCommunicationSpiConcurrentConnectSelfTest<T extends Communic
         spi.setLocalPort(port++);
         spi.setIdleConnectionTimeout(60_000);
         spi.setConnectTimeout(10_000);
-        spi.setSharedMemoryPort(-1);
         spi.setConnectionsPerNode(connectionsPerNode);
         spi.setUsePairedConnections(pairedConnections);
 

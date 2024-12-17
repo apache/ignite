@@ -49,7 +49,6 @@ import org.apache.ignite.internal.util.typedef.R1;
 import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgnitePredicate;
-import org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
@@ -201,12 +200,6 @@ public abstract class GridCacheAbstractSelfTest extends GridCommonAbstractTest {
         cfg.setDiscoverySpi(disco);
 
         cfg.setCacheConfiguration(cacheConfiguration(igniteInstanceName));
-
-        TcpCommunicationSpi comm = new TcpCommunicationSpi();
-
-        comm.setSharedMemoryPort(-1);
-
-        cfg.setCommunicationSpi(comm);
 
         return cfg;
     }

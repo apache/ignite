@@ -31,7 +31,6 @@ import org.apache.ignite.cache.query.QueryCursor;
 import org.apache.ignite.cache.query.TextQuery;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
-import org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Ignore;
 import org.junit.Test;
@@ -76,12 +75,6 @@ public class IgniteCacheFullTextQueryNodeJoiningSelfTest extends GridCommonAbstr
         cache.setQueryEntities(Arrays.asList(qryEntity));
 
         cfg.setCacheConfiguration(cache);
-
-        TcpCommunicationSpi commSpi = new TcpCommunicationSpi();
-
-        commSpi.setSharedMemoryPort(-1);
-
-        cfg.setCommunicationSpi(commSpi);
 
         return cfg;
     }

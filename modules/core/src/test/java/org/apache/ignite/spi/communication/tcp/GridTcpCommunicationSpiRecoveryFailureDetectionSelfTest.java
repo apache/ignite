@@ -28,7 +28,6 @@ public class GridTcpCommunicationSpiRecoveryFailureDetectionSelfTest extends Gri
     @Override protected TcpCommunicationSpi getSpi(int idx) {
         TcpCommunicationSpi spi = new TcpCommunicationSpi();
 
-        spi.setSharedMemoryPort(-1);
         spi.setLocalPort(port++);
         spi.setIdleConnectionTimeout(10_000);
         spi.setAckSendThreshold(5);
