@@ -75,6 +75,7 @@ import org.apache.ignite.internal.processors.query.calcite.exec.ExchangeService;
 import org.apache.ignite.internal.processors.query.calcite.exec.ExchangeServiceImpl;
 import org.apache.ignite.internal.processors.query.calcite.exec.ExecutionService;
 import org.apache.ignite.internal.processors.query.calcite.exec.ExecutionServiceImpl;
+import org.apache.ignite.internal.processors.query.calcite.exec.InjectResourcesService;
 import org.apache.ignite.internal.processors.query.calcite.exec.MailboxRegistry;
 import org.apache.ignite.internal.processors.query.calcite.exec.MailboxRegistryImpl;
 import org.apache.ignite.internal.processors.query.calcite.exec.QueryTaskExecutor;
@@ -237,6 +238,9 @@ public class CalciteQueryProcessor extends GridProcessorAdapter implements Query
     private final DistributedCalciteConfiguration distrCfg;
 
     /** */
+    private final InjectResourcesService injectSvc;
+
+    /** */
     private volatile boolean started;
 
     /**
@@ -259,6 +263,7 @@ public class CalciteQueryProcessor extends GridProcessorAdapter implements Query
         prepareSvc = new PrepareServiceImpl(ctx);
         timeoutSvc = new TimeoutServiceImpl(ctx);
         qryReg = new QueryRegistryImpl(ctx);
+        injectSvc = new InjectResourcesService(ctx);
 
         FrameworkConfig customFrameworkCfg = ctx.plugins().createComponent(FrameworkConfig.class);
         frameworkCfg = customFrameworkCfg != null ? customFrameworkCfg : FRAMEWORK_CONFIG;
@@ -779,5 +784,10 @@ public class CalciteQueryProcessor extends GridProcessorAdapter implements Query
     /** */
     public FrameworkConfig frameworkConfig() {
         return frameworkCfg;
+    }
+
+    /** */
+    public InjectResourcesService injectService() {
+        return injectSvc;
     }
 }

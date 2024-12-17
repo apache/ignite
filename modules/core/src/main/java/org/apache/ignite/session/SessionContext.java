@@ -15,35 +15,21 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.util.nio;
+package org.apache.ignite.session;
 
-import java.io.IOException;
-import java.io.OutputStream;
-import java.nio.ByteBuffer;
-import java.util.UUID;
-import org.apache.ignite.plugin.extensions.communication.Message;
+import org.apache.ignite.Ignite;
+import org.apache.ignite.resources.SessionContextProviderResource;
 import org.jetbrains.annotations.Nullable;
 
 /**
- * Message writer.
+ * Provides access to attributes set with {@link Ignite#withApplicationAttributes}.
+ *
+ * @see SessionContextProviderResource
  */
-public interface GridNioMessageWriter {
+public interface SessionContext {
     /**
-     * @param nodeId Node ID.
-     * @param msg Message to write.
-     * @param buf Buffer.
-     * @return Whether message was fully written.
+     * @param name Attribute name.
+     * @return Attribute value, or {@code null} if not specified.
      */
-    public boolean write(@Nullable UUID nodeId, Message msg, ByteBuffer buf);
-
-    /**
-     * @param nodeId Node ID.
-     * @param msg Message to write.
-     * @param out Output stream to write to.
-     * @param buf Buffer.
-     * @return Number of bytes written.
-     * @throws IOException In case of error.
-     */
-    public int writeFully(@Nullable UUID nodeId, Message msg, OutputStream out,
-        ByteBuffer buf) throws IOException;
+    public @Nullable String getAttribute(String name);
 }

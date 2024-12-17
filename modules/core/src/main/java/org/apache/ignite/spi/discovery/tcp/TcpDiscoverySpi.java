@@ -57,7 +57,6 @@ import org.apache.ignite.configuration.AddressResolver;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.failure.FailureContext;
 import org.apache.ignite.internal.IgniteEx;
-import org.apache.ignite.internal.IgniteFeatures;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.managers.discovery.IgniteDiscoverySpi;
 import org.apache.ignite.internal.managers.discovery.IgniteDiscoverySpiInternalListener;
@@ -2201,7 +2200,6 @@ public class TcpDiscoverySpi extends IgniteSpiAdapter implements IgniteDiscovery
             dataPacket.marshalJoiningNodeData(
                 dataBag,
                 marshaller(),
-                allNodesSupport(IgniteFeatures.DATA_PACKET_COMPRESSION),
                 ignite.configuration().getNetworkCompressionLevel(),
                 log);
         else
@@ -2209,7 +2207,6 @@ public class TcpDiscoverySpi extends IgniteSpiAdapter implements IgniteDiscovery
                 dataBag,
                 locNode.id(),
                 marshaller(),
-                allNodesSupport(IgniteFeatures.DATA_PACKET_COMPRESSION),
                 ignite.configuration().getNetworkCompressionLevel(),
                 log);
 
@@ -2240,14 +2237,8 @@ public class TcpDiscoverySpi extends IgniteSpiAdapter implements IgniteDiscovery
                 throw new IgniteException(e);
             }
         }
-        else {
+        else
             dataBag = dataPacket.unmarshalJoiningNodeDataSilently(marshaller(), clsLdr, locNode.clientRouterNodeId() != null, log);
-
-            //Marshal unzipped joining node data if it was zipped but not whole cluster supports that.
-            //It can be happened due to several nodes, including node without compression support, are trying to join cluster concurrently.
-            if (!allNodesSupport(IgniteFeatures.DATA_PACKET_COMPRESSION) && dataPacket.isJoiningDataZipped())
-                dataPacket.unzipData(log);
-        }
 
         exchange.onExchange(dataBag);
     }
@@ -2454,14 +2445,6 @@ public class TcpDiscoverySpi extends IgniteSpiAdapter implements IgniteDiscovery
     /** {@inheritDoc} */
     @Override public void clientReconnect() throws IgniteSpiException {
         impl.reconnect();
-    }
-
-    /** {@inheritDoc} */
-    @Override public boolean allNodesSupport(IgniteFeatures feature) {
-        if (impl == null)
-            return false;
-
-        return impl.allNodesSupport(feature);
     }
 
     /** {@inheritDoc} */

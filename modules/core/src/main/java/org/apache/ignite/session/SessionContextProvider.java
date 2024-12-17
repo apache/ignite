@@ -15,28 +15,16 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.util.nio;
+package org.apache.ignite.session;
 
-import java.nio.ByteBuffer;
-import java.util.UUID;
-import org.apache.ignite.plugin.extensions.communication.Message;
-import org.apache.ignite.plugin.extensions.communication.MessageFactory;
-import org.jetbrains.annotations.Nullable;
+import org.apache.ignite.resources.SessionContextProviderResource;
 
 /**
- * Message reader.
+ * Provides access to session context.
+ *
+ * @see SessionContextProviderResource
  */
-public interface GridNioMessageReader {
-    /**
-     * @param nodeId Node ID.
-     * @param msg Message to read.
-     * @param buf Buffer.
-     * @return Whether message was fully read.
-     */
-    public boolean read(@Nullable UUID nodeId, Message msg, ByteBuffer buf);
-
-    /**
-     * @return Optional message factory.
-     */
-    @Nullable public MessageFactory messageFactory();
+public interface SessionContextProvider {
+    /** @return Session context, never {@code null}. */
+    public SessionContext getSessionContext();
 }

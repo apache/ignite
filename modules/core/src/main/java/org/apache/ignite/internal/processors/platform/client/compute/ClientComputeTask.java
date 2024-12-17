@@ -68,15 +68,20 @@ class ClientComputeTask implements ClientCloseableResource {
     /** Task closed flag. */
     private final AtomicBoolean closed = new AtomicBoolean();
 
+    /** */
+    private final boolean systemTask;
+
     /**
      * Ctor.
      *
      * @param ctx Connection context.
+     * @param sysTask {@code True} if task is system.
      */
-    ClientComputeTask(ClientConnectionContext ctx) {
+    ClientComputeTask(ClientConnectionContext ctx, boolean sysTask) {
         assert ctx != null;
 
         this.ctx = ctx;
+        this.systemTask = sysTask;
 
         log = ctx.kernalContext().log(getClass());
     }
@@ -148,7 +153,8 @@ class ClientComputeTask implements ClientCloseableResource {
             finally {
                 // If task was explicitly closed before, resource is already released.
                 if (closed.compareAndSet(false, true)) {
-                    ctx.decrementActiveTasksCount();
+                    if (!systemTask)
+                        ctx.decrementActiveTasksCount();
 
                     ctx.resources().release(taskId);
                 }
@@ -168,7 +174,8 @@ class ClientComputeTask implements ClientCloseableResource {
      */
     @Override public void close() {
         if (closed.compareAndSet(false, true)) {
-            ctx.decrementActiveTasksCount();
+            if (!systemTask)
+                ctx.decrementActiveTasksCount();
 
             try {
                 if (taskFut != null)

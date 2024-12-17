@@ -15,14 +15,19 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.cache.datastructures;
+package org.apache.ignite.internal.processors.odbc;
+
+import org.apache.ignite.IgniteCheckedException;
 
 /**
- *
+ * Indicates that node is unavailable due to recovery mode.
  */
-public class IgniteClientDiscoveryDataStructuresTest extends IgniteClientDataStructuresAbstractTest {
+public class ClientConnectionNodeRecoveryException extends IgniteCheckedException {
+    /** */
+    private static final long serialVersionUID = 0L;
+
     /** {@inheritDoc} */
-    @Override protected boolean clientDiscovery() {
-        return true;
+    public ClientConnectionNodeRecoveryException(String msg) {
+        super(msg);
     }
 }

@@ -35,6 +35,7 @@ import org.apache.ignite.cache.affinity.Affinity;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.IgniteKernal;
 import org.apache.ignite.internal.TestDelayingCommunicationSpi;
@@ -47,7 +48,6 @@ import org.apache.ignite.internal.util.lang.GridAbsPredicate;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.plugin.extensions.communication.Message;
-import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
@@ -63,6 +63,9 @@ import static org.apache.ignite.cache.CacheWriteSynchronizationMode.PRIMARY_SYNC
  */
 @SuppressWarnings("ErrorNotRethrown")
 public class GridCacheAtomicInvalidPartitionHandlingSelfTest extends GridCommonAbstractTest {
+    /** */
+    private static final int GRID_CNT = 6;
+
     /** Delay flag. */
     private static volatile boolean delay;
 
@@ -72,8 +75,6 @@ public class GridCacheAtomicInvalidPartitionHandlingSelfTest extends GridCommonA
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
-
-        ((TcpDiscoverySpi)cfg.getDiscoverySpi()).setForceServerMode(true);
 
         CacheConfiguration ccfg = cacheConfiguration();
 
@@ -85,7 +86,7 @@ public class GridCacheAtomicInvalidPartitionHandlingSelfTest extends GridCommonA
 
         cfg.setCommunicationSpi(spi);
 
-        if (testClientNode() && getTestIgniteInstanceName(0).equals(igniteInstanceName))
+        if (testClientNode() && getTestIgniteInstanceName(GRID_CNT).equals(igniteInstanceName))
             cfg.setClientMode(true);
 
         return cfg;
@@ -156,22 +157,21 @@ public class GridCacheAtomicInvalidPartitionHandlingSelfTest extends GridCommonA
         throws Exception {
         this.writeSync = writeSync;
 
-        final int gridCnt = 6;
-
-        startGrids(gridCnt);
+        // Extra node for a client.
+        startGrids(GRID_CNT + 1);
 
         awaitPartitionMapExchange();
 
         try {
-            assertEquals(testClientNode(), (boolean)grid(0).configuration().isClientMode());
+            assertEquals(testClientNode(), (boolean)defaultNode().configuration().isClientMode());
 
-            final IgniteCache<Object, Object> cache = grid(0).cache(DEFAULT_CACHE_NAME);
+            final IgniteCache<Object, Object> cache = defaultNode().cache(DEFAULT_CACHE_NAME);
 
             final int range = 10_000;
 
             final Set<Integer> keys = new LinkedHashSet<>();
 
-            try (IgniteDataStreamer<Integer, Integer> streamer = grid(0).dataStreamer(DEFAULT_CACHE_NAME)) {
+            try (IgniteDataStreamer<Integer, Integer> streamer = defaultNode().dataStreamer(DEFAULT_CACHE_NAME)) {
                 streamer.allowOverwrite(true);
 
                 for (int i = 0; i < range; i++) {
@@ -184,7 +184,7 @@ public class GridCacheAtomicInvalidPartitionHandlingSelfTest extends GridCommonA
                 }
             }
 
-            final Affinity<Integer> aff = grid(0).affinity(DEFAULT_CACHE_NAME);
+            final Affinity<Integer> aff = defaultNode().affinity(DEFAULT_CACHE_NAME);
 
             boolean putDone = GridTestUtils.waitForCondition(new GridAbsPredicate() {
                 @Override public boolean apply() {
@@ -195,7 +195,7 @@ public class GridCacheAtomicInvalidPartitionHandlingSelfTest extends GridCommonA
 
                         Collection<ClusterNode> affNodes = aff.mapKeyToPrimaryAndBackups(key);
 
-                        for (int i = 0; i < gridCnt; i++) {
+                        for (int i = 0; i < GRID_CNT; i++) {
                             ClusterNode locNode = grid(i).localNode();
 
                             IgniteCache<Object, Object> cache = grid(i).cache(DEFAULT_CACHE_NAME);
@@ -264,7 +264,7 @@ public class GridCacheAtomicInvalidPartitionHandlingSelfTest extends GridCommonA
 
             // Restart random nodes.
             for (int r = 0; r < 10; r++) {
-                int idx0 = rnd.nextInt(gridCnt - 1) + 1;
+                int idx0 = rnd.nextInt(GRID_CNT - 1) + 1;
 
                 stopGrid(idx0);
 
@@ -289,7 +289,7 @@ public class GridCacheAtomicInvalidPartitionHandlingSelfTest extends GridCommonA
                 GridCacheVersion ver = null;
                 UUID nodeId = null;
 
-                for (int i = 0; i < gridCnt; i++) {
+                for (int i = 0; i < GRID_CNT + 1; i++) {
                     ClusterNode locNode = grid(i).localNode();
 
                     GridCacheAdapter<Object, Object> c = ((IgniteKernal)grid(i)).internalCache(DEFAULT_CACHE_NAME);
@@ -356,6 +356,11 @@ public class GridCacheAtomicInvalidPartitionHandlingSelfTest extends GridCommonA
         finally {
             stopAllGrids();
         }
+    }
+
+    /** */
+    private IgniteEx defaultNode() {
+        return grid(GRID_CNT);
     }
 
     /**
