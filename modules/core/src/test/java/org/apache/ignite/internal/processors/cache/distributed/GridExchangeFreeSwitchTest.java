@@ -55,11 +55,7 @@ import org.apache.ignite.transactions.Transaction;
 import org.jetbrains.annotations.Nullable;
 import org.junit.Test;
 
-import static org.apache.ignite.IgniteSystemProperties.IGNITE_PME_FREE_SWITCH_DISABLED;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
-import static org.apache.ignite.internal.IgniteFeatures.PME_FREE_SWITCH;
-import static org.apache.ignite.internal.IgniteFeatures.allNodesSupports;
-import static org.apache.ignite.internal.IgniteFeatures.nodeSupports;
 import static org.apache.ignite.testframework.GridTestUtils.runAsync;
 
 /**
@@ -142,7 +138,7 @@ public class GridExchangeFreeSwitchTest extends GridCommonAbstractTest {
      */
     @Test
     public void testNonBaselineNodeLeftOnFullyRebalancedCluster() throws Exception {
-        testNodeLeftOnFullyRebalancedCluster(PmeFreeSwitchDisabledNode.NONE);
+        testNodeLeftOnFullyRebalancedCluster();
     }
 
     /**
@@ -150,41 +146,10 @@ public class GridExchangeFreeSwitchTest extends GridCommonAbstractTest {
      */
     @Test
     public void testBaselineNodeLeftOnFullyRebalancedCluster() throws Exception {
-        testBaselineNodeLeftOnFullyRebalancedCluster(PmeFreeSwitchDisabledNode.NONE);
-    }
-
-    /**
-     * Checks PME is absent/present with all nodes except first one supports PME-free switch.
-     */
-    @Test
-    public void testBaselineNodeLeftOnFullyRebalancedClusterPmeFreeDisabledFirstNode() throws Exception {
-        testBaselineNodeLeftOnFullyRebalancedCluster(PmeFreeSwitchDisabledNode.FIRST);
-    }
-
-    /**
-     * Checks PME is absent/present with all nodes except midlle one supports PME-free switch.
-     */
-    @Test
-    public void testBaselineNodeLeftOnFullyRebalancedClusterPmeFreeDisabledMiddleNode() throws Exception {
-        testBaselineNodeLeftOnFullyRebalancedCluster(PmeFreeSwitchDisabledNode.MIDDLE);
-    }
-
-    /**
-     * Checks PME is absent/present with all nodes except last one supports PME-free switch.
-     */
-    @Test
-    public void testBaselineNodeLeftOnFullyRebalancedClusterPmeFreeDisabledLastNode() throws Exception {
-        testBaselineNodeLeftOnFullyRebalancedCluster(PmeFreeSwitchDisabledNode.LAST);
-    }
-
-    /**
-     * Checks PME is absent/present in case of persistence enabled.
-     */
-    private void testBaselineNodeLeftOnFullyRebalancedCluster(PmeFreeSwitchDisabledNode order) throws Exception {
         persistence = true;
 
         try {
-            testNodeLeftOnFullyRebalancedCluster(order);
+            testNodeLeftOnFullyRebalancedCluster();
         }
         finally {
             persistence = false;
@@ -192,61 +157,12 @@ public class GridExchangeFreeSwitchTest extends GridCommonAbstractTest {
     }
 
     /**
-     * Starts node with PME-free feature explicitly disabled.
-     */
-    private void startNodeWithPmeFreeSwitchDisabled() throws Exception {
-        try {
-            System.setProperty(IGNITE_PME_FREE_SWITCH_DISABLED, "true");
-
-            Ignite ignite = startGrid(G.allGrids().size());
-
-            assertFalse(nodeSupports(ignite.cluster().localNode(), PME_FREE_SWITCH));
-        }
-        finally {
-            System.clearProperty(IGNITE_PME_FREE_SWITCH_DISABLED);
-        }
-    }
-
-    /**
      * Checks node left PME absent/present on fully rebalanced topology (Latest PME == LAA).
      */
-    private void testNodeLeftOnFullyRebalancedCluster(PmeFreeSwitchDisabledNode disabled) throws Exception {
+    private void testNodeLeftOnFullyRebalancedCluster() throws Exception {
         int nodes = 10;
 
-        switch (disabled) {
-            case FIRST:
-                startNodeWithPmeFreeSwitchDisabled();
-
-                startGridsMultiThreaded(1, nodes - 1);
-
-                break;
-
-            case MIDDLE:
-                startGridsMultiThreaded(0, (nodes / 2) - 1);
-
-                startNodeWithPmeFreeSwitchDisabled();
-
-                int started = G.allGrids().size();
-
-                startGridsMultiThreaded(started, nodes - started);
-
-                break;
-
-            case LAST:
-                startGridsMultiThreaded(0, nodes - 1);
-
-                startNodeWithPmeFreeSwitchDisabled();
-
-                break;
-
-            case NONE:
-                startGridsMultiThreaded(0, nodes);
-
-                break;
-
-            default:
-                throw new UnsupportedOperationException();
-        }
+        startGridsMultiThreaded(0, nodes);
 
         assertEquals(nodes, G.allGrids().size());
 
@@ -272,7 +188,7 @@ public class GridExchangeFreeSwitchTest extends GridCommonAbstractTest {
 
             assertTrue(alive.context().cache().context().exchange().lastFinishedFuture().rebalanced());
 
-            boolean pmeFreeSwitch = persistence && allNodesSupports(alive.cluster().nodes(), PME_FREE_SWITCH);
+            boolean pmeFreeSwitch = persistence;
 
             assertEquals(pmeFreeSwitch ? 0 : (nodes - 1), singleCnt.get());
             assertEquals(pmeFreeSwitch ? 0 : (nodes - 1), fullCnt.get());
@@ -774,22 +690,5 @@ public class GridExchangeFreeSwitchTest extends GridCommonAbstractTest {
 
             return res;
         }
-    }
-
-    /**
-     * Specifies node to start with IGNITE_PME_FREE_SWITCH_DISABLED JVM option.
-     */
-    private enum PmeFreeSwitchDisabledNode {
-        /** First. */
-        FIRST,
-
-        /** Middle. */
-        MIDDLE,
-
-        /** Last. */
-        LAST,
-
-        /** None. */
-        NONE
     }
 }

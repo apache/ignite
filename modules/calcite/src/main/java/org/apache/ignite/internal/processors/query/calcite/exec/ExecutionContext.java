@@ -28,6 +28,7 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import java.util.UUID;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Consumer;
 import java.util.function.Function;
@@ -46,6 +47,7 @@ import org.apache.ignite.internal.processors.cache.transactions.IgniteTxEntry;
 import org.apache.ignite.internal.processors.cache.transactions.TransactionChanges;
 import org.apache.ignite.internal.processors.query.calcite.exec.exp.ExpressionFactory;
 import org.apache.ignite.internal.processors.query.calcite.exec.exp.ExpressionFactoryImpl;
+import org.apache.ignite.internal.processors.query.calcite.exec.exp.ReflectiveCallNotNullImplementor;
 import org.apache.ignite.internal.processors.query.calcite.exec.tracker.ExecutionNodeMemoryTracker;
 import org.apache.ignite.internal.processors.query.calcite.exec.tracker.IoTracker;
 import org.apache.ignite.internal.processors.query.calcite.exec.tracker.MemoryTracker;
@@ -63,6 +65,8 @@ import org.apache.ignite.internal.util.lang.RunnableX;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.session.SessionContext;
+import org.apache.ignite.session.SessionContextProvider;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -77,6 +81,9 @@ public class ExecutionContext<Row> extends AbstractQueryContext implements DataC
 
     /** Placeholder for NULL values in search bounds. */
     private static final Object NULL_BOUND = new Object();
+
+    /** Emtpy session context. */
+    private static final SessionContext EMPTY_SESSION_CONTEXT = (attrName) -> null;
 
     /** */
     private final UUID qryId;
@@ -127,6 +134,15 @@ public class ExecutionContext<Row> extends AbstractQueryContext implements DataC
     private final long startTs;
 
     /** */
+    private final InjectResourcesService injectSvc;
+
+    /** Map associates UDF name to instance of class that contains this UDF. */
+    private final Map<String, Object> udfInstances = new ConcurrentHashMap<>();
+
+    /** Session context provider injected into UDF targets. */
+    private final SessionContextProvider sesCtxProv = new SessionContextProviderImpl();
+
+    /** */
     private Object[] correlations = new Object[16];
 
     /**
@@ -139,6 +155,7 @@ public class ExecutionContext<Row> extends AbstractQueryContext implements DataC
     public ExecutionContext(
         BaseQueryContext qctx,
         QueryTaskExecutor executor,
+        InjectResourcesService injectSvc,
         UUID qryId,
         UUID locNodeId,
         UUID originatingNodeId,
@@ -154,6 +171,7 @@ public class ExecutionContext<Row> extends AbstractQueryContext implements DataC
         super(qctx);
 
         this.executor = executor;
+        this.injectSvc = injectSvc;
         this.qryId = qryId;
         this.locNodeId = locNodeId;
         this.originatingNodeId = originatingNodeId;
@@ -457,6 +475,31 @@ public class ExecutionContext<Row> extends AbstractQueryContext implements DataC
         return ioTracker;
     }
 
+    /**
+     * Return an instance of class that contained a user defined function. If not exist yet, then instantiate the object
+     * and inject resources into it. Used by {@link ReflectiveCallNotNullImplementor} while it is preparing user function call.
+     *
+     * @param udfClsName Classname of the class contained UDF.
+     * @return Object with injected resources.
+     */
+    public Object udfInstance(String udfClsName) {
+        return udfInstances.computeIfAbsent(udfClsName, ignore -> {
+            try {
+                Class<?> funcCls = getClass().getClassLoader().loadClass(udfClsName);
+
+                Object target = funcCls.getConstructor().newInstance();
+
+                injectSvc.injectToUdf(target, sesCtxProv);
+
+                return target;
+            }
+            catch (Exception e) {
+                throw new IgniteException("Failed to instantiate an object for UDF. " +
+                    "Class " + udfClsName + " must have public zero-args constructor.", e);
+            }
+        });
+    }
+
     /** {@inheritDoc} */
     @Override public boolean equals(Object o) {
         if (this == o)
@@ -472,5 +515,15 @@ public class ExecutionContext<Row> extends AbstractQueryContext implements DataC
     /** {@inheritDoc} */
     @Override public int hashCode() {
         return Objects.hash(qryId, fragmentDesc.fragmentId());
+    }
+
+    /** */
+    private class SessionContextProviderImpl implements SessionContextProvider {
+        /** {@inheritDoc} */
+        @Override public @Nullable SessionContext getSessionContext() {
+            SessionContext ctx = unwrap(SessionContext.class);
+
+            return ctx == null ? EMPTY_SESSION_CONTEXT : ctx;
+        }
     }
 }
