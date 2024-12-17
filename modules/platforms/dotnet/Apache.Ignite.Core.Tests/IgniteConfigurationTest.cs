@@ -747,7 +747,6 @@ namespace Apache.Ignite.Core.Tests
                         Endpoints = new[] {"127.0.0.1:47503", "127.0.0.1:47504"}
                     },
                     ClientReconnectDisabled = true,
-                    ForceServerMode = true,
                     IpFinderCleanFrequency = TimeSpan.FromMinutes(7),
                     LocalAddress = "127.0.0.1",
                     LocalPort = 47503,
