@@ -49,7 +49,6 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.resources.IgniteInstanceResource;
-import org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Ignore;
@@ -100,8 +99,6 @@ public class GridEventConsumeSelfTest extends GridCommonAbstractTest {
         cfg.setConsistentId(igniteInstanceName);
 
         cfg.setIncludeEventTypes(EventType.EVTS_ALL);
-
-        ((TcpCommunicationSpi)cfg.getCommunicationSpi()).setSharedMemoryPort(-1);
 
         if (include)
             cfg.setUserAttributes(F.asMap("include", true));

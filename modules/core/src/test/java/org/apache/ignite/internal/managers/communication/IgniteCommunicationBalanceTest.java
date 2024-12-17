@@ -54,7 +54,6 @@ public class IgniteCommunicationBalanceTest extends GridCommonAbstractTest {
 
         TcpCommunicationSpi commSpi = ((TcpCommunicationSpi)cfg.getCommunicationSpi());
 
-        commSpi.setSharedMemoryPort(-1);
         commSpi.setConnectionsPerNode(connectionsPerNode());
         commSpi.setUsePairedConnections(usePairedConnections());
 

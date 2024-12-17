@@ -67,7 +67,6 @@ public class TcpCommunicationSpiDropNodesTest extends GridCommonAbstractTest {
         TestCommunicationSpi spi = new TestCommunicationSpi();
 
         spi.setIdleConnectionTimeout(100);
-        spi.setSharedMemoryPort(-1);
 
         cfg.setCommunicationSpi(spi);
 
