@@ -94,7 +94,6 @@ import org.apache.ignite.internal.processors.cache.index.H2TransactionAwareQueri
 import org.apache.ignite.internal.processors.cache.index.IgniteDecimalSelfTest;
 import org.apache.ignite.internal.processors.cache.index.IndexColumnTypeMismatchTest;
 import org.apache.ignite.internal.processors.cache.index.LongIndexNameTest;
-import org.apache.ignite.internal.processors.cache.index.OptimizedMarshallerIndexNameTest;
 import org.apache.ignite.internal.processors.cache.index.PojoIndexLocalQueryTest;
 import org.apache.ignite.internal.processors.cache.index.SqlPartitionEvictionTest;
 import org.apache.ignite.internal.processors.cache.metric.SqlViewExporterSpiTest;
@@ -257,7 +256,6 @@ import org.junit.runners.Suite;
     H2ConnectionLeaksSelfTest.class,
     H2ConnectionSettingsTest.class,
     IgniteCheckClusterStateBeforeExecuteQueryTest.class,
-    OptimizedMarshallerIndexNameTest.class,
     SqlSystemViewsSelfTest.class,
     ScanQueryConcurrentUpdatesTest.class,
     ScanQueryConcurrentSqlUpdatesTest.class,
