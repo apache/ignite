@@ -149,8 +149,6 @@ public class CacheLateAffinityAssignmentTest extends GridCommonAbstractTest {
         else
             commSpi = new TestRecordingCommunicationSpi();
 
-        commSpi.setSharedMemoryPort(-1);
-
         cfg.setCommunicationSpi(commSpi);
 
         TcpDiscoverySpi discoSpi = (TcpDiscoverySpi)cfg.getDiscoverySpi();

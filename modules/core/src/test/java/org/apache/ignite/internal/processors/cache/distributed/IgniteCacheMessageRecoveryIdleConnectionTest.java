@@ -56,7 +56,6 @@ public class IgniteCacheMessageRecoveryIdleConnectionTest extends GridCommonAbst
         TcpCommunicationSpi commSpi = new TcpCommunicationSpi();
 
         commSpi.setIdleConnectionTimeout(IDLE_TIMEOUT);
-        commSpi.setSharedMemoryPort(-1);
 
         cfg.setCommunicationSpi(commSpi);
 

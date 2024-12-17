@@ -46,7 +46,6 @@ import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.U;
-import org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.transactions.Transaction;
@@ -95,8 +94,6 @@ public abstract class GridCacheAbstractRemoveFailureTest extends GridCommonAbstr
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
         cfg.setClientMode(testClientNode() && getTestIgniteInstanceName(CLI_IDX).equals(igniteInstanceName));
-
-        ((TcpCommunicationSpi)cfg.getCommunicationSpi()).setSharedMemoryPort(-1);
 
         return cfg;
     }
