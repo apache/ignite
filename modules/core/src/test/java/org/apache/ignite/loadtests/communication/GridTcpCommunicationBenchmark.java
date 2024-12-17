@@ -572,7 +572,6 @@ package org.apache.ignite.loadtests.communication;
 //    private GridCommunicationSpi getCommunication() {
 //        GridTcpCommunicationSpi spi = new GridTcpCommunicationSpi();
 //
-//        spi.setSharedMemoryPort(-1);
 //        spi.setNoDelay(true);
 //        spi.setLocalAddress("127.0.0.1");
 //
