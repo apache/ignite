@@ -81,8 +81,6 @@ public class IgniteServiceProxyTimeoutInitializedTest extends GridCommonAbstract
             cfg.setServiceConfiguration(scfg);
         }
 
-        cfg.setMarshaller(null);
-
         final BinaryConfiguration binCfg = new BinaryConfiguration();
 
         // Despite defaults explicitly set to lower case.

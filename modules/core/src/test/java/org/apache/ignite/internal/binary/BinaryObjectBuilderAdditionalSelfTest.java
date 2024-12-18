@@ -97,8 +97,6 @@ public class BinaryObjectBuilderAdditionalSelfTest extends AbstractBinaryArraysT
 
         bCfg.setClassNames(Arrays.asList("org.apache.ignite.internal.binary.mutabletest.*"));
 
-        cfg.setMarshaller(new BinaryMarshaller());
-
         return cfg;
     }
 
