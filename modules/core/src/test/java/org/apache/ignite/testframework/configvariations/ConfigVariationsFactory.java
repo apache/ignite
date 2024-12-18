@@ -22,7 +22,6 @@ import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.failure.NoOpFailureHandler;
 import org.apache.ignite.internal.util.typedef.internal.SB;
-import org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi;
 import org.jetbrains.annotations.Nullable;
 
 /**
@@ -103,7 +102,6 @@ public class ConfigVariationsFactory implements ConfigFactory {
         cfg.setIncludeEventTypes(srcCfg.getIncludeEventTypes());
 
         // Specials.
-        ((TcpCommunicationSpi)cfg.getCommunicationSpi()).setSharedMemoryPort(-1);
         cfg.getTransactionConfiguration().setTxSerializableEnabled(true);
     }
 
