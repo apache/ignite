@@ -32,7 +32,6 @@ import org.apache.ignite.configuration.ClientConnectorConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.OdbcConfiguration;
 import org.apache.ignite.configuration.SqlConnectorConfiguration;
-import org.apache.ignite.internal.binary.BinaryMarshaller;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.GridTestUtils;
@@ -365,7 +364,6 @@ public class ClientConnectorConfigurationValidationSelfTest extends GridCommonAb
             NODE_IDX_GEN.incrementAndGet());
 
         cfg.setLocalHost("127.0.0.1");
-        cfg.setMarshaller(new BinaryMarshaller());
 
         TcpDiscoverySpi spi = new TcpDiscoverySpi();
         spi.setIpFinder(new TcpDiscoveryVmIpFinder(true));
