@@ -527,14 +527,6 @@ public class GridReduceQueryExecutor {
                             );
                         }
 
-                        h2.runningQueryManager().planHistoryTracker().addPlan(
-                            qryInfo.plan(),
-                            qry.originalSql(),
-                            schemaName,
-                            qry.isLocal(),
-                            IndexingQueryEngineConfiguration.ENGINE_NAME
-                        );
-
                         H2PooledConnection conn0 = conn;
 
                         ResultSet res = h2.executeWithResumableTimeTracking(
@@ -548,6 +540,14 @@ public class GridReduceQueryExecutor {
                                 null
                             ),
                             qryInfo
+                        );
+
+                        h2.runningQueryManager().planHistoryTracker().addPlan(
+                            qryInfo.plan(),
+                            qry.originalSql(),
+                            schemaName,
+                            qry.isLocal(),
+                            IndexingQueryEngineConfiguration.ENGINE_NAME
                         );
 
                         resIter = new H2FieldsIterator(

@@ -456,14 +456,6 @@ public class IgniteH2Indexing implements GridQueryIndexing {
                         );
                     }
 
-                    runningQueryManager().planHistoryTracker().addPlan(
-                        qryInfo.plan(),
-                        qry,
-                        qryDesc.schemaName(),
-                        true,
-                        IndexingQueryEngineConfiguration.ENGINE_NAME
-                    );
-
                     ResultSet rs = executeWithResumableTimeTracking(
                         () -> executeSqlQueryWithTimer(
                             stmt,
@@ -475,6 +467,14 @@ public class IgniteH2Indexing implements GridQueryIndexing {
                             null
                         ),
                         qryInfo
+                    );
+
+                    runningQueryManager().planHistoryTracker().addPlan(
+                        qryInfo.plan(),
+                        qry,
+                        qryDesc.schemaName(),
+                        true,
+                        IndexingQueryEngineConfiguration.ENGINE_NAME
                     );
 
                     return new H2FieldsIterator(

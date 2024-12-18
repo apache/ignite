@@ -477,14 +477,6 @@ public class GridMapQueryExecutor {
                             );
                         }
 
-                        h2.runningQueryManager().planHistoryTracker().addPlan(
-                            qryInfo.plan(),
-                            sql,
-                            schemaName,
-                            false,
-                            IndexingQueryEngineConfiguration.ENGINE_NAME
-                        );
-
                         GridQueryCancel qryCancel = qryResults.queryCancel(qryIdx);
 
                         ResultSet rs = h2.executeWithResumableTimeTracking(
@@ -498,6 +490,14 @@ public class GridMapQueryExecutor {
                                 null
                             ),
                             qryInfo
+                        );
+
+                        h2.runningQueryManager().planHistoryTracker().addPlan(
+                            qryInfo.plan(),
+                            sql,
+                            schemaName,
+                            false,
+                            IndexingQueryEngineConfiguration.ENGINE_NAME
                         );
 
                         if (evt) {

@@ -24,7 +24,6 @@ import java.sql.Statement;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
-import java.util.Comparator;
 import java.util.List;
 import java.util.Set;
 import java.util.function.Consumer;
@@ -376,9 +375,6 @@ public class SqlPlanHistoryIntegrationTest extends GridCommonAbstractTest {
      */
     @Test
     public void testEntryReplacement() throws Exception {
-        assumeFalse("With the H2 engine, scan counts can be added to SQL plans for local queries ",
-            loc && sqlEngine == IndexingQueryEngineConfiguration.ENGINE_NAME);
-
         startTestGrid();
 
         long[] timeStamps = new long[2];
@@ -632,16 +628,7 @@ public class SqlPlanHistoryIntegrationTest extends GridCommonAbstractTest {
      * @param sqlPlans Sql plans recorded in the history.
      */
     public void checkMetrics(int size, List<SqlPlanHistoryView> sqlPlans) {
-        if (size == 1 && sqlPlans.size() == 2) {
-            sqlPlans.sort(Comparator.comparing(SqlPlanHistoryView::lastStartTime));
-
-            String plan1 = sqlPlans.get(0).plan();
-            String plan2 = sqlPlans.get(1).plan();
-
-            assertTrue(plan2.contains(plan1) && plan2.contains("/* scanCount"));
-        }
-        else
-            assertTrue(size == sqlPlans.size());
+        assertTrue(size == sqlPlans.size());
 
         if (size == 0)
             return;
@@ -655,6 +642,9 @@ public class SqlPlanHistoryIntegrationTest extends GridCommonAbstractTest {
             assertNotNull(plan.schemaName());
 
             assertTrue(plan.lastStartTime().getTime() > 0);
+
+            if (loc)
+                assertFalse(plan.plan().contains("/* scanCount"));
         }
     }
 
