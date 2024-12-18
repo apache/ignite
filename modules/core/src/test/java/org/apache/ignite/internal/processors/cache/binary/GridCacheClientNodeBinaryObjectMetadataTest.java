@@ -29,7 +29,6 @@ import org.apache.ignite.cache.affinity.Affinity;
 import org.apache.ignite.configuration.BinaryConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.NearCacheConfiguration;
-import org.apache.ignite.internal.binary.BinaryMarshaller;
 import org.apache.ignite.internal.processors.cache.GridCacheAbstractSelfTest;
 import org.junit.Test;
 
@@ -63,8 +62,6 @@ public class GridCacheClientNodeBinaryObjectMetadataTest extends GridCacheAbstra
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
-        BinaryMarshaller marsh = new BinaryMarshaller();
-
         BinaryConfiguration bCfg = new BinaryConfiguration();
 
         bCfg.setClassNames(Arrays.asList(TestObject1.class.getName(), TestObject2.class.getName()));
@@ -83,8 +80,6 @@ public class GridCacheClientNodeBinaryObjectMetadataTest extends GridCacheAbstra
 
         if (igniteInstanceName.equals(getTestIgniteInstanceName(gridCount() - 1)))
             cfg.setClientMode(true);
-
-        cfg.setMarshaller(marsh);
 
         return cfg;
     }

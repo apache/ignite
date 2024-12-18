@@ -25,7 +25,6 @@ import java.util.List;
 import java.util.Map;
 import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.binary.BinaryObject;
-import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
 
@@ -35,15 +34,6 @@ import static org.apache.ignite.internal.util.tostring.GridToStringBuilder.DFLT_
  * Tests for {@code BinaryObject.toString()}.
  */
 public class BinaryObjectToStringSelfTest extends GridCommonAbstractTest {
-    /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
-        IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
-
-        cfg.setMarshaller(new BinaryMarshaller());
-
-        return cfg;
-    }
-
     /** {@inheritDoc} */
     @Override protected void beforeTest() throws Exception {
         startGrid();

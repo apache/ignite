@@ -21,7 +21,6 @@ import org.apache.ignite.IgniteDataStreamer;
 import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.configuration.IgniteConfiguration;
-import org.apache.ignite.internal.binary.BinaryMarshaller;
 import org.apache.ignite.internal.processors.cache.GridCacheAbstractSelfTest;
 import org.apache.ignite.lang.IgniteRunnable;
 import org.junit.Test;
@@ -45,8 +44,6 @@ public class PublicThreadpoolStarvationTest extends GridCacheAbstractSelfTest {
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
         cfg.setPublicThreadPoolSize(1);
-
-        cfg.setMarshaller(new BinaryMarshaller());
 
         return cfg;
     }

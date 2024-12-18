@@ -62,8 +62,6 @@ public class GridDefaultBinaryMappersBinaryMetaDataSelfTest extends GridCommonAb
 
         cfg.setBinaryConfiguration(bCfg);
 
-        cfg.setMarshaller(new BinaryMarshaller());
-
         CacheConfiguration ccfg = new CacheConfiguration(DEFAULT_CACHE_NAME);
 
         cfg.setCacheConfiguration(ccfg);

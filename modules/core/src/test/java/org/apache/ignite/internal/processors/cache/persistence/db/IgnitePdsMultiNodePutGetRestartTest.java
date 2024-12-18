@@ -75,8 +75,6 @@ public class IgnitePdsMultiNodePutGetRestartTest extends GridCommonAbstractTest 
 
         cfg.setCacheConfiguration(ccfg);
 
-        cfg.setMarshaller(null);
-
         BinaryConfiguration bCfg = new BinaryConfiguration();
 
         bCfg.setCompactFooter(false);
