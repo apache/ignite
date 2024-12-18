@@ -27,7 +27,6 @@ import java.util.function.Supplier;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
-
 import com.google.common.collect.ImmutableList;
 import org.apache.calcite.rel.RelCollations;
 import org.apache.calcite.rel.core.AggregateCall;
@@ -45,7 +44,6 @@ import org.apache.ignite.internal.processors.query.calcite.exec.exp.agg.Aggregat
 import org.apache.ignite.internal.processors.query.calcite.type.IgniteTypeFactory;
 import org.apache.ignite.internal.processors.query.calcite.util.TypeUtils;
 import org.apache.ignite.internal.util.typedef.F;
-import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.WithSystemProperty;
 import org.junit.Assert;
@@ -446,10 +444,8 @@ public abstract class BaseAggregateTest extends AbstractExecutionTest {
     /** */
     @Test
     public void sumOnDifferentRowsCount() throws IgniteCheckedException {
-        int bufSize = U.field(AbstractNode.class, "IN_BUFFER_SIZE");
-
-        int[] grpsCnt = {1, bufSize / 2, bufSize, bufSize + 1, bufSize * 4};
-        int[] rowsInGrps = {1, 5, bufSize};
+        int[] grpsCnt = {1, inBufSize / 2, inBufSize, inBufSize + 1, inBufSize * 4};
+        int[] rowsInGrps = {1, 5, inBufSize};
 
         for (int grps : grpsCnt) {
             for (int rowsInGrp : rowsInGrps) {

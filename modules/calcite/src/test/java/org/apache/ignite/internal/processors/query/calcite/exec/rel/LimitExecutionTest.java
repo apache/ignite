@@ -28,7 +28,6 @@ import org.apache.ignite.internal.processors.query.calcite.exec.ExecutionContext
 import org.apache.ignite.internal.processors.query.calcite.type.IgniteTypeFactory;
 import org.apache.ignite.internal.processors.query.calcite.util.TypeUtils;
 import org.apache.ignite.internal.util.typedef.F;
-import org.apache.ignite.internal.util.typedef.internal.U;
 import org.junit.Test;
 
 /**
@@ -38,15 +37,13 @@ public class LimitExecutionTest extends AbstractExecutionTest {
     /** */
     @Test
     public void testLimit() throws Exception {
-        int bufSize = U.field(AbstractNode.class, "IN_BUFFER_SIZE");
-
         checkLimit(0, 1);
         checkLimit(1, 0);
         checkLimit(1, 1);
-        checkLimit(0, bufSize);
-        checkLimit(bufSize, 0);
-        checkLimit(bufSize, bufSize);
-        checkLimit(bufSize - 1, 1);
+        checkLimit(0, inBufSize);
+        checkLimit(inBufSize, 0);
+        checkLimit(inBufSize, inBufSize);
+        checkLimit(inBufSize - 1, 1);
         checkLimit(2000, 0);
         checkLimit(0, 3000);
         checkLimit(2000, 3000);
@@ -55,15 +52,13 @@ public class LimitExecutionTest extends AbstractExecutionTest {
     /** Tests Sort node can limit its output when fetch param is set. */
     @Test
     public void testSortLimit() throws Exception {
-        int bufSize = U.field(AbstractNode.class, "IN_BUFFER_SIZE");
-
         checkLimitSort(0, 1);
         checkLimitSort(1, 0);
         checkLimitSort(1, 1);
-        checkLimitSort(0, bufSize);
-        checkLimitSort(bufSize, 0);
-        checkLimitSort(bufSize, bufSize);
-        checkLimitSort(bufSize - 1, 1);
+        checkLimitSort(0, inBufSize);
+        checkLimitSort(inBufSize, 0);
+        checkLimitSort(inBufSize, inBufSize);
+        checkLimitSort(inBufSize - 1, 1);
         checkLimitSort(2000, 0);
         checkLimitSort(0, 3000);
         checkLimitSort(2000, 3000);

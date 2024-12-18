@@ -36,6 +36,7 @@ import java.util.stream.Stream;
 import com.google.common.collect.ImmutableMap;
 import org.apache.calcite.rel.type.RelDataType;
 import org.apache.calcite.rel.type.RelDataTypeField;
+import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.GridCacheProcessor;
@@ -62,6 +63,7 @@ import org.apache.ignite.internal.processors.query.calcite.prepare.BaseQueryCont
 import org.apache.ignite.internal.processors.security.NoOpIgniteSecurityProcessor;
 import org.apache.ignite.internal.processors.timeout.GridTimeoutProcessor;
 import org.apache.ignite.internal.util.typedef.T2;
+import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.GridTestKernalContext;
@@ -102,6 +104,19 @@ public class AbstractExecutionTest extends GridCommonAbstractTest {
 
     /** */
     protected int nodesCnt = 3;
+
+    /** */
+    protected final int inBufSize;
+
+    /** */
+    protected AbstractExecutionTest() {
+        try {
+            inBufSize = U.field(AbstractNode.class, "IN_BUFFER_SIZE");
+        }
+        catch (IgniteCheckedException e) {
+            throw new RuntimeException(e);
+        }
+    }
 
     /** */
     enum TaskExecutorType {
@@ -396,13 +411,13 @@ public class AbstractExecutionTest extends GridCommonAbstractTest {
      */
     public static class TestTable implements Iterable<Object[]> {
         /** */
-        private int rowsCnt;
+        private final int rowsCnt;
 
         /** */
-        private RelDataType rowType;
+        private final int colsCnt;
 
         /** */
-        private Function<Integer, Object>[] fieldCreators;
+        private final Function<Integer, Object>[] fieldCreators;
 
         /** */
         TestTable(int rowsCnt, RelDataType rowType) {
@@ -430,7 +445,14 @@ public class AbstractExecutionTest extends GridCommonAbstractTest {
         /** */
         TestTable(int rowsCnt, RelDataType rowType, Function<Integer, Object>... fieldCreators) {
             this.rowsCnt = rowsCnt;
-            this.rowType = rowType;
+            colsCnt = rowType.getFieldCount();
+            this.fieldCreators = fieldCreators;
+        }
+
+        /** */
+        TestTable(int rowsCnt, int colsCnt, Function<Integer, Object>... fieldCreators) {
+            this.rowsCnt = rowsCnt;
+            this.colsCnt = colsCnt;
             this.fieldCreators = fieldCreators;
         }
 
@@ -451,7 +473,7 @@ public class AbstractExecutionTest extends GridCommonAbstractTest {
 
         /** */
         private Object[] createRow(int rowNum) {
-            Object[] row = new Object[rowType.getFieldCount()];
+            Object[] row = new Object[colsCnt];
 
             for (int i = 0; i < fieldCreators.length; ++i)
                 row[i] = fieldCreators[i].apply(rowNum);
