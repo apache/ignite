@@ -15,17 +15,16 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.cache.distributed.near;
+package org.apache.ignite.session;
 
-import org.apache.ignite.configuration.NearCacheConfiguration;
+import org.apache.ignite.resources.SessionContextProviderResource;
 
 /**
- * Tests for local cache.
+ * Provides access to session context.
+ *
+ * @see SessionContextProviderResource
  */
-public class GridCachePartitionedNearOnlyNoPrimaryFullApiSelfTest
-    extends GridCachePartitionedClientOnlyNoPrimaryFullApiSelfTest {
-    /** {@inheritDoc} */
-    @Override protected NearCacheConfiguration nearConfiguration() {
-        return new NearCacheConfiguration();
-    }
+public interface SessionContextProvider {
+    /** @return Session context, never {@code null}. */
+    public SessionContext getSessionContext();
 }

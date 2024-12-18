@@ -24,7 +24,6 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.binary.BinaryMarshaller;
 import org.apache.ignite.internal.processors.cache.GridCacheAbstractSelfTest;
 import org.apache.ignite.lang.IgniteRunnable;
-import org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi;
 import org.junit.Test;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.ATOMIC;
@@ -46,8 +45,6 @@ public class PublicThreadpoolStarvationTest extends GridCacheAbstractSelfTest {
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
         cfg.setPublicThreadPoolSize(1);
-
-        ((TcpCommunicationSpi)cfg.getCommunicationSpi()).setSharedMemoryPort(-1);
 
         cfg.setMarshaller(new BinaryMarshaller());
 

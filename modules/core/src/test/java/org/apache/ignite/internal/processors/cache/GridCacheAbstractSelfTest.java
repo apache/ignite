@@ -38,6 +38,7 @@ import org.apache.ignite.cache.store.CacheStore;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.NearCacheConfiguration;
+import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteKernal;
 import org.apache.ignite.internal.cluster.ClusterTopologyCheckedException;
 import org.apache.ignite.internal.util.lang.GridAbsPredicateX;
@@ -48,7 +49,6 @@ import org.apache.ignite.internal.util.typedef.R1;
 import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgnitePredicate;
-import org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
@@ -201,12 +201,6 @@ public abstract class GridCacheAbstractSelfTest extends GridCommonAbstractTest {
 
         cfg.setCacheConfiguration(cacheConfiguration(igniteInstanceName));
 
-        TcpCommunicationSpi comm = new TcpCommunicationSpi();
-
-        comm.setSharedMemoryPort(-1);
-
-        cfg.setCommunicationSpi(comm);
-
         return cfg;
     }
 
@@ -340,7 +334,14 @@ public abstract class GridCacheAbstractSelfTest extends GridCommonAbstractTest {
      */
     @SuppressWarnings({"unchecked"})
     @Override protected IgniteCache<String, Integer> jcache() {
-        return jcache(0);
+        return defaultInstance().cache(DEFAULT_CACHE_NAME);
+    }
+
+    /**
+     * @return Default Ignite instance.
+     */
+    public IgniteEx defaultInstance() {
+        return grid(0);
     }
 
     /**

@@ -27,7 +27,6 @@ import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPreloader;
 import org.apache.ignite.internal.util.typedef.internal.U;
-import org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
 
@@ -75,12 +74,6 @@ public class GridCacheDhtPreloadPerformanceTest extends GridCommonAbstractTest {
         c.setPeerClassLoadingThreadPoolSize(1);
 
         c.setCacheConfiguration(cc, cc1);
-
-        TcpCommunicationSpi comm = new TcpCommunicationSpi();
-
-        comm.setSharedMemoryPort(-1);
-
-        c.setCommunicationSpi(comm);
 
         return c;
     }

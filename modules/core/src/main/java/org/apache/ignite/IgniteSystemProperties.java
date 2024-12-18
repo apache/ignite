@@ -373,10 +373,6 @@ public final class IgniteSystemProperties {
         type = Long.class, defaults = "" + DFLT_EXCHANGE_MERGE_DELAY)
     public static final String IGNITE_EXCHANGE_MERGE_DELAY = "IGNITE_EXCHANGE_MERGE_DELAY";
 
-    /** PME-free switch explicitly disabled. */
-    @SystemProperty("Disables PME-free switch")
-    public static final String IGNITE_PME_FREE_SWITCH_DISABLED = "IGNITE_PME_FREE_SWITCH_DISABLED";
-
     /**
      * Name of the system property defining name of command line program.
      */
@@ -662,13 +658,6 @@ public final class IgniteSystemProperties {
         "If this property is not set or set to 0, H2 debug console will use system-provided dynamic port. " +
         "This property is only relevant when " + IGNITE_H2_DEBUG_CONSOLE + " property is set", type = Integer.class)
     public static final String IGNITE_H2_DEBUG_CONSOLE_PORT = "IGNITE_H2_DEBUG_CONSOLE_PORT";
-
-    /**
-     * @deprecated This property is ignored and will be deleted in future releases.
-     */
-    @Deprecated
-    @SystemProperty("This option is ignored and will be deleted in future releases")
-    public static final String IGNITE_IPC_SHMEM_SPACE_DEBUG = "IGNITE_IPC_SHMEM_SPACE_DEBUG";
 
     /**
      * Property allowing to skip configuration consistency checks.

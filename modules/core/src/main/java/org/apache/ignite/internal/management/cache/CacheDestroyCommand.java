@@ -22,6 +22,7 @@ import java.util.Set;
 import java.util.TreeSet;
 import java.util.function.Consumer;
 import org.apache.ignite.Ignite;
+import org.apache.ignite.client.IgniteClient;
 import org.apache.ignite.internal.client.GridClient;
 import org.apache.ignite.internal.client.GridClientException;
 import org.apache.ignite.internal.client.GridClientNode;
@@ -53,6 +54,7 @@ public class CacheDestroyCommand
     /** {@inheritDoc} */
     @Override public boolean prepare(
         @Nullable GridClient cli,
+        @Nullable IgniteClient client,
         @Nullable Ignite ignite,
         CacheDestroyCommandArg arg,
         Consumer<String> printer
@@ -64,6 +66,8 @@ public class CacheDestroyCommand
                 for (GridClientNode node : cli.compute().nodes(GridClientNode::connectable))
                     caches.addAll(node.caches().keySet());
             }
+            else if (client != null)
+                caches.addAll(client.cacheNames());
             else
                 caches.addAll(ignite.cacheNames());
 

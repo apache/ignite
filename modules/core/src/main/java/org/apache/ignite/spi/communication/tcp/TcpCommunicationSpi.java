@@ -196,11 +196,6 @@ import static org.apache.ignite.spi.communication.tcp.internal.TcpConnectionInde
 @IgniteSpiMultipleInstancesSupport(true)
 @IgniteSpiConsistencyChecked(optional = false)
 public class TcpCommunicationSpi extends TcpCommunicationConfigInitializer {
-    /** @deprecated This constant is not used and will be removed in future releases. */
-    @Deprecated
-    public static final String OUT_OF_RESOURCES_TCP_MSG = "Failed to allocate shared memory segment " +
-        "(switching to TCP, may be slower).";
-
     /** Node attribute that is mapped to node IP addresses (value is <tt>comm.tcp.addrs</tt>). */
     public static final String ATTR_ADDRS = "comm.tcp.addrs";
 
@@ -210,10 +205,6 @@ public class TcpCommunicationSpi extends TcpCommunicationConfigInitializer {
     /** Node attribute that is mapped to node port number (value is <tt>comm.tcp.port</tt>). */
     public static final String ATTR_PORT = "comm.tcp.port";
 
-    /** @deprecated This constant is not used and will be removed in future releases. */
-    @Deprecated
-    public static final String ATTR_SHMEM_PORT = "comm.shmem.tcp.port";
-
     /** Node attribute that is mapped to node's external addresses (value is <tt>comm.tcp.ext-addrs</tt>). */
     public static final String ATTR_EXT_ADDRS = "comm.tcp.ext-addrs";
 
@@ -222,10 +213,6 @@ public class TcpCommunicationSpi extends TcpCommunicationConfigInitializer {
 
     /** Default port which node sets listener to (value is <tt>47100</tt>). */
     public static final int DFLT_PORT = 47100;
-
-    /** @deprecated This constant is not used and will be removed in future releases. */
-    @Deprecated
-    public static final int DFLT_SHMEM_PORT = -1;
 
     /** Default idle connection timeout (value is <tt>10</tt>min). */
     public static final long DFLT_IDLE_CONN_TIMEOUT = 10 * 60_000;

@@ -306,6 +306,9 @@ public class JdbcRequestHandler implements ClientListenerRequestHandler, ClientT
             return new JdbcResponse(IgniteQueryErrorCode.UNKNOWN,
                 "Failed to handle JDBC request because node is stopping.");
 
+        if (req instanceof JdbcClientInfoAwareRequest)
+            cliCtx.applicationAttributes(((JdbcClientInfoAwareRequest)req).clientInfo());
+
         JdbcResponse resp;
         try {
             switch (req.type()) {

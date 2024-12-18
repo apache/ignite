@@ -79,12 +79,7 @@ public class GridCacheAtomicInvalidPartitionHandlingSelfTest extends GridCommonA
         CacheConfiguration ccfg = cacheConfiguration();
 
         cfg.setCacheConfiguration(ccfg);
-
-        DelayCommunicationSpi spi = new DelayCommunicationSpi();
-
-        spi.setSharedMemoryPort(-1);
-
-        cfg.setCommunicationSpi(spi);
+        cfg.setCommunicationSpi(new DelayCommunicationSpi());
 
         if (testClientNode() && getTestIgniteInstanceName(GRID_CNT).equals(igniteInstanceName))
             cfg.setClientMode(true);
