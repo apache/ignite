@@ -75,7 +75,6 @@ import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.events.NodeValidationFailedEvent;
 import org.apache.ignite.failure.FailureContext;
 import org.apache.ignite.internal.IgniteEx;
-import org.apache.ignite.internal.IgniteFeatures;
 import org.apache.ignite.internal.IgniteFutureTimeoutCheckedException;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.IgniteNodeAttributes;
@@ -362,12 +361,6 @@ class ServerImpl extends TcpDiscoveryImpl {
     /** {@inheritDoc} */
     @Override public Collection<ClusterNode> getRemoteNodes() {
         return upcast(ring.visibleRemoteNodes());
-    }
-
-    /** {@inheritDoc} */
-    @Override public boolean allNodesSupport(IgniteFeatures feature) {
-        // It is ok to see visible node without order here because attributes are available when node is created.
-        return IgniteFeatures.allNodesSupports(upcast(ring.allNodes()), feature);
     }
 
     /** {@inheritDoc} */

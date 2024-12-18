@@ -41,7 +41,6 @@ public class IgniteCacheMessageWriteTimeoutTest extends GridCommonAbstractTest {
         TcpCommunicationSpi commSpi = (TcpCommunicationSpi)cfg.getCommunicationSpi();
 
         // Try provoke connection close on socket writeTimeout.
-        commSpi.setSharedMemoryPort(-1);
         commSpi.setMessageQueueLimit(10);
         commSpi.setSocketReceiveBuffer(64);
         commSpi.setSocketSendBuffer(64);

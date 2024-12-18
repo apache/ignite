@@ -24,8 +24,8 @@ import org.apache.ignite.internal.processors.cache.distributed.near.GridCacheAto
  */
 public class GridCacheAtomicNearOnlyMultiJvmP2PDisabledFullApiSelfTest extends
     GridCacheAtomicNearOnlyMultiNodeP2PDisabledFullApiSelfTest {
-    /** {@inheritDoc} */
-    @Override protected boolean isMultiJvm() {
-        return true;
+    /** */
+    public GridCacheAtomicNearOnlyMultiJvmP2PDisabledFullApiSelfTest() {
+        isMultiJvm = true;
     }
 }
