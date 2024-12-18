@@ -21,12 +21,13 @@ from ignitetest.services.ignite_app import IgniteApplicationService
 from ignitetest.services.utils.control_utility import ControlUtility
 from ignitetest.services.utils.ignite_configuration import IgniteConfiguration
 from ignitetest.services.utils.path import get_shared_root_path
+from ignitetest.services.utils.ssl.client_connector_configuration import ClientConnectorConfiguration
 from ignitetest.services.utils.ssl.connector_configuration import ConnectorConfiguration
 from ignitetest.services.utils.ssl.ssl_params import SslParams, DEFAULT_SERVER_KEYSTORE, DEFAULT_CLIENT_KEYSTORE, \
     DEFAULT_ADMIN_KEYSTORE
 from ignitetest.utils import ignite_versions, cluster
 from ignitetest.utils.ignite_test import IgniteTest
-from ignitetest.utils.version import IgniteVersion, DEV_BRANCH, LATEST
+from ignitetest.utils.version import IgniteVersion, DEV_BRANCH, LATEST, V_2_16_0
 
 
 class SslTest(IgniteTest):
@@ -47,7 +48,11 @@ class SslTest(IgniteTest):
 
         server_configuration = IgniteConfiguration(
             version=IgniteVersion(ignite_version), ssl_params=server_ssl,
-            connector_configuration=ConnectorConfiguration(ssl_enabled=True, ssl_params=server_ssl))
+            client_connector_configuration=ClientConnectorConfiguration(ssl_enabled=True, ssl_params=server_ssl))
+
+        if ignite_version <= V_2_16_0:
+            server_configuration = server_configuration._replace(
+                connector_configuration=ConnectorConfiguration(ssl_enabled=True, ssl_params=server_ssl))
 
         ignite = IgniteService(self.test_context, server_configuration, num_nodes=2,
                                startup_timeout_sec=180)
@@ -55,7 +60,8 @@ class SslTest(IgniteTest):
         client_configuration = server_configuration._replace(
             client_mode=True,
             ssl_params=SslParams(shared_root, key_store_jks=DEFAULT_CLIENT_KEYSTORE),
-            connector_configuration=None)
+            connector_configuration=None,
+            client_connector_configuration=None)
 
         app = IgniteApplicationService(
             self.test_context,
