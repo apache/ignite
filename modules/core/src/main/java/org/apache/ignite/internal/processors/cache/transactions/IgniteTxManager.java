@@ -43,6 +43,7 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteClientDisconnectedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteSystemProperties;
+import org.apache.ignite.IgniteTransactions;
 import org.apache.ignite.binary.BinaryObjectException;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.TransactionConfiguration;
@@ -69,6 +70,7 @@ import org.apache.ignite.internal.processors.cache.GridCacheEntryRemovedExceptio
 import org.apache.ignite.internal.processors.cache.GridCacheMapEntry;
 import org.apache.ignite.internal.processors.cache.GridCacheMessage;
 import org.apache.ignite.internal.processors.cache.GridCacheMvccCandidate;
+import org.apache.ignite.internal.processors.cache.GridCacheMvccManager;
 import org.apache.ignite.internal.processors.cache.GridCacheReturnCompletableWrapper;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedManagerAdapter;
 import org.apache.ignite.internal.processors.cache.GridCacheVersionedFuture;
@@ -2774,7 +2776,9 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
      * Method checks that current thread does not have active transactions.
      * If transaction or topology lock is hold by current thread
      * exception {@link IgniteException} with given {@code errMsgConstructor} message will be thrown.
-     *
+     * Method is not appropriate for cache clear cases and the check {@link IgniteTransactions#tx() != null} should be
+     * used instead. Otherwise, {@link GridCacheMvccManager#pendingExplicit} in {@link GridCacheMvccManager#addExplicitLock}
+     * will contain the mapping of Thread ID to value. As a result, the key will not be cleaned from cache as it is locked.
      * @param errMsgConstructor Error message constructor.
      */
     public void checkEmptyTransactions(@NotNull IgniteOutClosure<String> errMsgConstructor) {
