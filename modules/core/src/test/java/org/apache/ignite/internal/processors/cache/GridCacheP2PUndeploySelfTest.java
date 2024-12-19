@@ -77,12 +77,6 @@ public class GridCacheP2PUndeploySelfTest extends GridCommonAbstractTest {
         repCacheCfg.setWriteSynchronizationMode(CacheWriteSynchronizationMode.FULL_SYNC);
         repCacheCfg.setAtomicityMode(TRANSACTIONAL);
 
-        // TODO GG-10884.
-//        if (offheap)
-//            repCacheCfg.setOffHeapMaxMemory(OFFHEAP);
-//        else
-//            repCacheCfg.setSwapEnabled(true);
-
         CacheConfiguration partCacheCfg = defaultCacheConfiguration();
 
         partCacheCfg.setName("partitioned");
@@ -91,12 +85,6 @@ public class GridCacheP2PUndeploySelfTest extends GridCommonAbstractTest {
         partCacheCfg.setAffinity(new GridCacheModuloAffinityFunction(11, 1));
         partCacheCfg.setWriteSynchronizationMode(CacheWriteSynchronizationMode.FULL_SYNC);
         partCacheCfg.setAtomicityMode(TRANSACTIONAL);
-
-        // TODO GG-10884.
-//        if (offheap)
-//            partCacheCfg.setOffHeapMaxMemory(OFFHEAP);
-//        else
-//            partCacheCfg.setSwapEnabled(true);
 
         cfg.setCacheConfiguration(repCacheCfg, partCacheCfg);
 

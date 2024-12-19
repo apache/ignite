@@ -99,7 +99,7 @@ public class IgniteNodeRunner {
     public static String storeToFile(IgniteConfiguration cfg, boolean resetDiscovery) throws IOException, IgniteCheckedException {
         String fileName = IGNITE_CONFIGURATION_FILE + cfg.getNodeId();
 
-        storeToFile(cfg, fileName, true, resetDiscovery);
+        storeToFile(cfg, fileName, resetDiscovery);
 
         return fileName;
     }
@@ -109,19 +109,14 @@ public class IgniteNodeRunner {
      *
      * @param cfg Ignite Configuration.
      * @param fileName A name of file where the configuration was stored.
-     * @param resetMarshaller Reset marshaller configuration to default.
      * @param resetDiscovery Reset discovery configuration to default.
      * @throws IOException If failed.
      * @see #readCfgFromFileAndDeleteFile(String)
      */
     public static void storeToFile(IgniteConfiguration cfg, String fileName,
-        boolean resetMarshaller,
         boolean resetDiscovery) throws IOException, IgniteCheckedException {
         try (OutputStream out = new BufferedOutputStream(new FileOutputStream(fileName))) {
             IgniteConfiguration cfg0 = new IgniteConfiguration(cfg);
-
-            if (resetMarshaller)
-                cfg0.setMarshaller(null);
 
             if (resetDiscovery)
                 cfg0.setDiscoverySpi(null);
