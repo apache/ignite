@@ -34,11 +34,9 @@ import org.apache.ignite.cache.CacheWriteSynchronizationMode;
 import org.apache.ignite.cache.store.CacheStoreAdapter;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
-import org.apache.ignite.internal.binary.BinaryMarshaller;
 import org.apache.ignite.internal.processors.cache.extras.GridCacheObsoleteEntryExtras;
 import org.apache.ignite.internal.processors.cache.store.CacheLocalStore;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
-import org.apache.ignite.marshaller.jdk.JdkMarshaller;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
 
@@ -78,11 +76,6 @@ public class GridCacheStoreManagerDeserializationTest extends GridCommonAbstract
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(final String igniteInstanceName) throws Exception {
         IgniteConfiguration c = super.getConfiguration(igniteInstanceName);
-
-        if (igniteInstanceName != null && igniteInstanceName.toLowerCase().startsWith("binary"))
-            c.setMarshaller(new BinaryMarshaller());
-        else
-            c.setMarshaller(new JdkMarshaller());
 
         c.setCacheConfiguration(cacheConfiguration());
 
@@ -211,7 +204,8 @@ public class GridCacheStoreManagerDeserializationTest extends GridCommonAbstract
         cache.destroy();
         cache.close();
 
-        assert store.map.containsKey(key);
+        assertEquals(1, store.map.size());
+        assertEquals(key.<Integer>field("id"), ((BinaryObject)store.map.keySet().iterator().next()).<Integer>field("id"));
 
         final IgniteCache<BinaryObject, BinaryObject> cache2 = grid.createCache(CACHE_NAME).withKeepBinary();
 
