@@ -144,7 +144,7 @@ import org.junit.runners.Suite;
     NodeSecurityContextPropagationTest.class,
     NodeJoinPermissionsTest.class,
     ActivationOnJoinWithoutPermissionsWithPersistenceTest.class,
-    SecurityContextInternalFuturePropagationTest.class
+    SecurityContextInternalFuturePropagationTest.class,
 })
 public class SecurityTestSuite {
     /** */

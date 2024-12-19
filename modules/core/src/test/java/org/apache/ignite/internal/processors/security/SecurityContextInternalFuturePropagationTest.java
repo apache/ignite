@@ -210,9 +210,8 @@ public class SecurityContextInternalFuturePropagationTest extends GridCommonAbst
         awaitPartitionMapExchange();
 
         try (IgniteClient cli = startClient("allowed_client")) {
-            for (int i = 0; i < PRELOADED_KEY_CNT; i++) {
+            for (int i = 0; i < PRELOADED_KEY_CNT; i++)
                 cli.cache(DEFAULT_CACHE_NAME).put(i, i);
-            }
         }
     }
 
