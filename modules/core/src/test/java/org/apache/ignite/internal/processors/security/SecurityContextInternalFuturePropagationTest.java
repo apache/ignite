@@ -18,7 +18,6 @@
 package org.apache.ignite.internal.processors.security;
 
 import java.security.Permissions;
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
@@ -73,43 +72,35 @@ public class SecurityContextInternalFuturePropagationTest extends GridCommonAbst
     private static final AtomicInteger KEY_CNTR = new AtomicInteger();
 
     /** */
-    private static final List<Function<ClientCache<Object, Object>, IgniteClientFuture<?>>> CACHE_OPERATIONS = Arrays.asList(
-        cache -> cache.getAllAsync(ImmutableSet.of(nextKey(), nextKey())), // 0
-        cache -> cache.getAndPutAsync(nextKey(), 0), // 1
-        cache -> cache.getAndPutIfAbsentAsync(nextKey(), 0), // 2
-        cache -> cache.getAndPutIfAbsentAsync(PRELOADED_KEY_CNT + nextKey(), 0), // 3
-        cache -> cache.getAndRemoveAsync(nextKey()), // 4
-        cache -> cache.getAndReplaceAsync(nextKey(), 0), // 5
-        cache -> cache.getAsync(nextKey()), // 6
-        cache -> cache.putAllAsync(new HashMap<>() {{ put(nextKey(), 0); put(nextKey(), 0); }}), // 7
-        cache -> cache.putAsync(nextKey(), 0), // 8
-        cache -> cache.putIfAbsentAsync(PRELOADED_KEY_CNT + nextKey(), 0), // 9
-        cache -> cache.removeAsync(nextKey()), // 10
-        cache -> {
-            int key = nextKey();
-            return cache.removeAsync(key, key);
-        }, // 11
-        cache -> cache.replaceAsync(nextKey(), 0), // 12
-        cache -> {
-            int key = nextKey();
-
-            return cache.replaceAsync(key, key, 0);
-        } // 13
-    );
-
-    /** */
     @Parameterized.Parameter()
     public Function<ClientCache<Object, Object>, IgniteClientFuture<?>> op;
 
     /** */
     @Parameterized.Parameters()
-    public static Iterable<Object[]> data() {
-        List<Object[]> res = new ArrayList<>();
+    public static List<Function<ClientCache<Object, Object>, IgniteClientFuture<?>>> data() {
+        return Arrays.asList(
+            cache -> cache.getAllAsync(ImmutableSet.of(nextKey(), nextKey())), // 0
+            cache -> cache.getAndPutAsync(nextKey(), 0), // 1
+            cache -> cache.getAndPutIfAbsentAsync(nextKey(), 0), // 2
+            cache -> cache.getAndPutIfAbsentAsync(PRELOADED_KEY_CNT + nextKey(), 0), // 3
+            cache -> cache.getAndRemoveAsync(nextKey()), // 4
+            cache -> cache.getAndReplaceAsync(nextKey(), 0), // 5
+            cache -> cache.getAsync(nextKey()), // 6
+            cache -> cache.putAllAsync(new HashMap<>() {{ put(nextKey(), 0); put(nextKey(), 0); }}), // 7
+            cache -> cache.putAsync(nextKey(), 0), // 8
+            cache -> cache.putIfAbsentAsync(PRELOADED_KEY_CNT + nextKey(), 0), // 9
+            cache -> cache.removeAsync(nextKey()), // 10
+            cache -> {
+                int key = nextKey();
+                return cache.removeAsync(key, key);
+            }, // 11
+            cache -> cache.replaceAsync(nextKey(), 0), // 12
+            cache -> {
+                int key = nextKey();
 
-        for (Function<ClientCache<Object, Object>, IgniteClientFuture<?>> op : CACHE_OPERATIONS)
-            res.add(new Object[] {op});
-
-        return res;
+                return cache.replaceAsync(key, key, 0);
+            } // 13
+        );
     }
 
     /** {@inheritDoc} */
