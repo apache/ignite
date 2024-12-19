@@ -34,7 +34,6 @@ import org.apache.ignite.cache.CacheMetrics;
 import org.apache.ignite.cluster.ClusterMetrics;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.IgniteEx;
-import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.processors.tracing.NoopTracing;
 import org.apache.ignite.internal.processors.tracing.Tracing;
 import org.apache.ignite.internal.util.typedef.T2;
@@ -383,50 +382,6 @@ abstract class TcpDiscoveryImpl {
         ClusterMetrics metrics,
         Map<Integer, CacheMetrics> cacheMetrics,
         long tsNanos);
-
-    /**
-     * @throws IgniteSpiException If failed.
-     */
-    protected final void registerLocalNodeAddress() throws IgniteSpiException {
-        long spiJoinTimeout = spi.getJoinTimeout();
-
-        // Make sure address registration succeeded.
-        // ... but limit it if join timeout is configured.
-        long startNanos = spiJoinTimeout > 0 ? System.nanoTime() : 0;
-
-        while (true) {
-            try {
-                spi.ipFinder.initializeLocalAddresses(
-                    U.resolveAddresses(spi.getAddressResolver(), locNode.socketAddresses()));
-
-                // Success.
-                break;
-            }
-            catch (IllegalStateException e) {
-                throw new IgniteSpiException("Failed to register local node address with IP finder: " +
-                    locNode.socketAddresses(), e);
-            }
-            catch (IgniteSpiException e) {
-                LT.error(log, e, "Failed to register local node address in IP finder on start " +
-                    "(retrying every " + spi.getReconnectDelay() + " ms; " +
-                    "change 'reconnectDelay' to configure the frequency of retries).");
-            }
-
-            if (spiJoinTimeout > 0 && U.millisSinceNanos(startNanos) > spiJoinTimeout)
-                throw new IgniteSpiException(
-                    "Failed to register local addresses with IP finder within join timeout " +
-                        "(make sure IP finder configuration is correct, and operating system firewalls are disabled " +
-                        "on all host machines, or consider increasing 'joinTimeout' configuration property) " +
-                        "[joinTimeout=" + spiJoinTimeout + ']');
-
-            try {
-                U.sleep(spi.getReconnectDelay());
-            }
-            catch (IgniteInterruptedCheckedException e) {
-                throw new IgniteSpiException("Thread has been interrupted.", e);
-            }
-        }
-    }
 
     /**
      * @param ackTimeout Acknowledgement timeout.
