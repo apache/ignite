@@ -101,6 +101,7 @@ import org.apache.ignite.internal.processors.cache.persistence.db.IgniteCacheGro
 import org.apache.ignite.internal.processors.cache.persistence.diagnostic.pagelocktracker.dumpprocessors.ToFileDumpProcessor;
 import org.apache.ignite.internal.processors.cache.persistence.file.FileIO;
 import org.apache.ignite.internal.processors.cache.persistence.file.FileIOFactory;
+import org.apache.ignite.internal.processors.cache.persistence.snapshot.AbstractSnapshotSelfTest;
 import org.apache.ignite.internal.processors.cache.persistence.snapshot.DataStreamerUpdatesHandler;
 import org.apache.ignite.internal.processors.cache.persistence.snapshot.IgniteSnapshotManager;
 import org.apache.ignite.internal.processors.cache.persistence.snapshot.SnapshotPartitionsVerifyTaskResult;
@@ -3283,6 +3284,46 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
         List<Integer> range = IntStream.range(0, keysCnt).boxed().collect(Collectors.toList());
 
         snpIg.cache(DEFAULT_CACHE_NAME).forEach(e -> range.remove((Integer)e.getKey()));
+        assertTrue("Snapshot must contains cache data [left=" + range + ']', range.isEmpty());
+    }
+
+    /** @throws Exception If fails. */
+    @Test
+    public void testOnlyPrimarySnapshotCreate() throws Exception {
+        int keysCnt = 2048;
+
+        IgniteEx ig = startGrid(0);
+        startGrid(1);
+
+        ig.cluster().state(ACTIVE);
+
+        createCacheAndPreload(ig, keysCnt);
+
+        TestCommandHandler h = newCommandHandler();
+
+        String full = "full";
+
+        assertEquals(EXIT_CODE_INVALID_ARGUMENTS, execute(h, "--snapshot", "create", full, "--only-primary", "--incremental"));
+
+        assertEquals(EXIT_CODE_OK, execute(h, "--snapshot", "create", full, "--sync"));
+
+        AbstractSnapshotSelfTest.checkSnapshot(full, null, false);
+
+        String onlyPrimary = "only_primary";
+
+        assertEquals(EXIT_CODE_OK, execute(h, "--snapshot", "create", onlyPrimary, "--only-primary", "--sync"));
+
+        AbstractSnapshotSelfTest.checkSnapshot(onlyPrimary, null, true);
+
+        ig.destroyCache(DEFAULT_CACHE_NAME);
+
+        awaitPartitionMapExchange();
+
+        assertEquals(EXIT_CODE_OK, execute(h, "--snapshot", "restore", onlyPrimary, "--sync"));
+
+        List<Integer> range = IntStream.range(0, keysCnt).boxed().collect(Collectors.toList());
+
+        ig.cache(DEFAULT_CACHE_NAME).forEach(e -> range.remove((Integer)e.getKey()));
         assertTrue("Snapshot must contains cache data [left=" + range + ']', range.isEmpty());
     }
 
