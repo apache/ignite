@@ -20,6 +20,7 @@ package org.apache.ignite.internal.processors.platform.client;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteIllegalStateException;
 import org.apache.ignite.IgniteLogger;
+import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.internal.IgniteFutureTimeoutCheckedException;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.binary.BinaryWriterExImpl;
@@ -39,6 +40,7 @@ import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.plugin.security.SecurityException;
 
+import static org.apache.ignite.IgniteSystemProperties.IGNITE_THIN_CLIENT_ASYNC_REQUESTS_WAIT_TIMEOUT;
 import static org.apache.ignite.internal.processors.platform.client.ClientProtocolVersionFeature.BITMAP_FEATURES;
 import static org.apache.ignite.internal.processors.platform.client.ClientProtocolVersionFeature.PARTITION_AWARENESS;
 
@@ -47,7 +49,13 @@ import static org.apache.ignite.internal.processors.platform.client.ClientProtoc
  */
 public class ClientRequestHandler implements ClientListenerRequestHandler {
     /** Timeout to wait for async requests completion, to handle them as regular sync requests. */
-    private static final long ASYNC_REQUEST_WAIT_TIMEOUT_MILLIS = 10L;
+    public static final long DFLT_ASYNC_REQUEST_WAIT_TIMEOUT_MILLIS = 10L;
+
+    /** */
+    private final long asyncReqWaitTimeout = IgniteSystemProperties.getLong(
+        IGNITE_THIN_CLIENT_ASYNC_REQUESTS_WAIT_TIMEOUT,
+        DFLT_ASYNC_REQUEST_WAIT_TIMEOUT_MILLIS
+    );
 
     /** Client context. */
     private final ClientConnectionContext ctx;
@@ -122,10 +130,13 @@ public class ClientRequestHandler implements ClientListenerRequestHandler {
         if (req0.isAsync(ctx)) {
             IgniteInternalFuture<ClientResponse> fut = req0.processAsync(ctx);
 
+            if (asyncReqWaitTimeout <= 0)
+                return new ClientAsyncResponse(req0.requestId(), fut);
+
             try {
                 // Give request a chance to be executed and response processed by the current thread,
                 // so we can avoid any performance drops caused by async requests execution.
-                return fut.get(ASYNC_REQUEST_WAIT_TIMEOUT_MILLIS);
+                return fut.get(asyncReqWaitTimeout);
             }
             catch (IgniteFutureTimeoutCheckedException ignored) {
                 return new ClientAsyncResponse(req0.requestId(), fut);
