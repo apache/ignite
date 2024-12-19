@@ -90,6 +90,14 @@ jobs:
             # "fetch-depth: 0" is needed for Sonar's new code detection, blame information and issue backdating
             # see more details at https://community.sonarsource.com/t/git-fetch-depth-implications/75260
 
+      - name: Checkout PR base branch
+        run: |
+          git remote add upstream https://github.com/apache/ignite
+          git fetch upstream
+          git checkout -B $pr_base_ref upstream/$pr_base_ref
+          git checkout ${{ github.event.workflow_run.head_sha }}
+          git clean -ffdx && git reset --hard HEAD
+
       - name: Download compiled classes artifact
         uses: actions/download-artifact@v4
         with:
