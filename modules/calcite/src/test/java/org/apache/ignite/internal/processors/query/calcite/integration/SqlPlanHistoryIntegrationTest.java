@@ -422,6 +422,37 @@ public class SqlPlanHistoryIntegrationTest extends GridCommonAbstractTest {
     }
 
     /**
+     * Checks that there is no 'scanCount' suffix in H2 local query plans even if identical queries are not
+     * executed one after another (when there are other queries executed between them).
+     */
+    @Test
+    public void testNoScanCountSuffix() throws Exception {
+        assumeTrue("ScanCount suffix can only be present in H2 local query plans",
+            sqlEngine == IndexingQueryEngineConfiguration.ENGINE_NAME && loc);
+
+        startTestGrid();
+
+        final int iterations = 5;
+
+        for (int i = 0; i < iterations; i++) {
+            cacheQuery(new SqlFieldsQuery(SQL), "A");
+
+            cacheQuery(new SqlFieldsQuery(SQL.replace("A", "B")), "A");
+
+            cacheQuery(new SqlFieldsQuery(SQL + " where _key > 10"), "A");
+
+            if (i != (iterations - 1)) {
+                long startTs = U.currentTimeMillis();
+
+                while (U.currentTimeMillis() - startTs <= 250)
+                    doSleep(50L);
+            }
+        }
+
+        checkSqlPlanHistory(3);
+    }
+
+    /**
      * @param qry Query.
      */
     public void runSuccessfulQuery(Query qry) throws Exception {
