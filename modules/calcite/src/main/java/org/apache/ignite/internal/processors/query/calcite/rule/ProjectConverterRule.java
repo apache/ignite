@@ -54,15 +54,16 @@ public class ProjectConverterRule extends AbstractIgniteConverterRule<LogicalPro
             .traitSetOf(IgniteConvention.INSTANCE)
             .replace(IgniteDistributions.single());
 
+        RelTraitSet inputTraits = traits;
+
         Set<CorrelationId> corrIds = RexUtils.extractCorrelationIds(rel.getProjects());
 
         if (!corrIds.isEmpty()) {
-            traits = traits
-                .replace(CorrelationTrait.correlations(corrIds))
-                .replace(RewindabilityTrait.REWINDABLE);
+            traits = traits.replace(CorrelationTrait.correlations(corrIds));
+            inputTraits = inputTraits.replace(RewindabilityTrait.REWINDABLE);
         }
 
-        RelNode input = convert(rel.getInput(), traits);
+        RelNode input = convert(rel.getInput(), inputTraits);
 
         return new IgniteProject(cluster, traits, input, rel.getProjects(), rel.getRowType());
     }
