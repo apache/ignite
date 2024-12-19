@@ -1365,12 +1365,16 @@ public abstract class GridDhtCacheAdapter<K, V> extends GridDistributedCacheAdap
         @Nullable UUID srcNodeId
     ) {
         if (!F.isEmpty(expiryPlc.entries())) {
+            Map<KeyCacheObject, GridCacheVersion> entries = Map.copyOf(expiryPlc.entries());
+
+            assert entries != null && !entries.isEmpty();
+
+            Map<UUID, Collection<IgniteBiTuple<KeyCacheObject, GridCacheVersion>>> rdrs =
+                expiryPlc.readers() != null ? Map.copyOf(expiryPlc.readers()) : null;
+
             ctx.closures().runLocalSafe(new GridPlainRunnable() {
                 @SuppressWarnings({"ForLoopReplaceableByForEach"})
                 @Override public void run() {
-                    Map<KeyCacheObject, GridCacheVersion> entries = expiryPlc.entries();
-
-                    assert entries != null && !entries.isEmpty();
 
                     Map<ClusterNode, GridCacheTtlUpdateRequest> reqMap = new HashMap<>();
 
@@ -1415,8 +1419,6 @@ public abstract class GridDhtCacheAdapter<K, V> extends GridDistributedCacheAdap
                             req.addEntry(e.getKey(), e.getValue());
                         }
                     }
-
-                    Map<UUID, Collection<IgniteBiTuple<KeyCacheObject, GridCacheVersion>>> rdrs = expiryPlc.readers();
 
                     if (rdrs != null) {
                         assert !rdrs.isEmpty();
