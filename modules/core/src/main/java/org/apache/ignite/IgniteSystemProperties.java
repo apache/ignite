@@ -1326,7 +1326,7 @@ public final class IgniteSystemProperties {
      */
     @SystemProperty(
         value = "Timeout in milliseconds that determines how long Ignite will synchronously wait for" +
-            " asynchronous thin client requests to complete before releasing the thread.",
+            " asynchronous thin client requests to complete before releasing the thread",
         type = Long.class,
         defaults = "" + DFLT_ASYNC_REQUEST_WAIT_TIMEOUT_MILLIS)
     public static final String IGNITE_THIN_CLIENT_ASYNC_REQUESTS_WAIT_TIMEOUT = "IGNITE_THIN_CLIENT_ASYNC_REQUESTS_WAIT_TIMEOUT";
