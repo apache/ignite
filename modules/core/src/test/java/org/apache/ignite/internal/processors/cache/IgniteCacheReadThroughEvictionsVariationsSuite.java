@@ -36,9 +36,6 @@ public class IgniteCacheReadThroughEvictionsVariationsSuite {
                 /** {@inheritDoc} */
                 @SuppressWarnings("RedundantIfStatement")
                 @Override public boolean apply(IgniteConfiguration cfg) {
-                    if (cfg.getMarshaller() != null && !(cfg.getMarshaller() instanceof BinaryMarshaller))
-                        return false;
-
                     if (cfg.isPeerClassLoadingEnabled())
                         return false;
 
