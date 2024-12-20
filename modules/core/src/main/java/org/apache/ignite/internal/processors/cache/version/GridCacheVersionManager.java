@@ -125,7 +125,7 @@ public class GridCacheVersionManager extends GridCacheSharedManagerAdapter {
 
         last = new GridCacheVersion(0, order.get(), 0, dataCenterId);
 
-        lastDataVer.value(last.order());
+        lastDataVer.set(last.order());
 
         isolatedStreamerVer = new GridCacheVersion(1 + offset, 0, 1, dataCenterId);
     }
@@ -301,7 +301,7 @@ public class GridCacheVersionManager extends GridCacheSharedManagerAdapter {
 
         last = next;
 
-        lastDataVer.value(ord);
+        lastDataVer.set(ord);
 
         return next;
     }
@@ -322,7 +322,7 @@ public class GridCacheVersionManager extends GridCacheSharedManagerAdapter {
 
         last = next;
 
-        lastDataVer.value(ord);
+        lastDataVer.set(ord);
 
         return next;
     }
