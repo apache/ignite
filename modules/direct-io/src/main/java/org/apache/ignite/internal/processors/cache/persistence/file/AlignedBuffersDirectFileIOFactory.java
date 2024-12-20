@@ -27,6 +27,7 @@ import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.internal.util.GridUnsafe;
+import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.jetbrains.annotations.NotNull;
 
@@ -164,5 +165,10 @@ public class AlignedBuffersDirectFileIOFactory implements FileIOFactory {
      */
     ConcurrentHashMap<Long, Thread> managedAlignedBuffers() {
         return managedAlignedBuffers;
+    }
+
+    /** {@inheritDoc} */
+    @Override public String toString() {
+        return S.toString(AlignedBuffersDirectFileIOFactory.class, this);
     }
 }
