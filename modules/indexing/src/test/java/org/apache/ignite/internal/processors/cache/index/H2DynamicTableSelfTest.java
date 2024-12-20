@@ -356,7 +356,7 @@ public class H2DynamicTableSelfTest extends AbstractSchemaSelfTest {
                 execute(client(), String.format(createTemplate, "NameTest1", cacheName));
 
                 return null;
-            }, IgniteSQLException.class, "Cache is already indexed: " + cacheName);
+            }, IgniteSQLException.class, "Cache already supports SQL: " + cacheName);
         }
         finally {
             client().destroyCache("new");
