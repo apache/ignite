@@ -18,8 +18,6 @@
 == Overview
 Change Data Capture (link:https://en.wikipedia.org/wiki/Change_data_capture[CDC]) is a data processing pattern used to asynchronously receive entries that have been changed on the local node so that action can be taken using the changed entry.
 
-WARNING: CDC is an experimental feature. API or design architecture might be changed.
-
 Below are some CDC use cases:
 
  * Streaming changes in Warehouse;
