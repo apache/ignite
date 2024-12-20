@@ -208,4 +208,137 @@ public class GridCommandHandlerSslWithSecurityTest extends GridCommandHandlerFac
         assertContains(log, testOutput, "--keystore-password *****");
         assertContains(log, testOutput, "--truststore-password *****");
     }
+
+    /**
+     * Verify that the command work correctly when request starts with the --password argument
+     * without value that invoke console password input for user, and that it is requested only once.
+     *
+     * @throws Exception If failed.
+     */
+    @Test
+    public void testInputKeyUserPwdOnlyOncePwdArgStart() throws Exception {
+        performTest(Arrays.asList(
+                "--password",
+                "--state",
+                "--user", login,
+                "--keystore", keyStorePath("connectorClient"),
+                "--keystore-password", keyStorePassword(),
+                "--truststore", keyStorePath("trustthree"),
+                "--truststore-password", keyStorePassword()));
+    }
+
+    /**
+     * Verify that the command work correctly when request contains the --password argument inside
+     * without value that invoke console password input for user, and that it is requested only once.
+     *
+     * @throws Exception If failed.
+     */
+    @Test
+    public void testInputKeyUserPwdOnlyOncePwdArgMiddle() throws Exception {
+        performTest(Arrays.asList(
+                "--state",
+                "--user", login,
+                "--password",
+                "--keystore", keyStorePath("connectorClient"),
+                "--keystore-password", keyStorePassword(),
+                "--truststore", keyStorePath("trustthree"),
+                "--truststore-password", keyStorePassword()));
+    }
+
+    /**
+     * Verify that the command work correctly when request ends with the --password argument
+     * without value that invoke console password input for user, and that it is requested only once.
+     *
+     * @throws Exception If failed.
+     */
+    @Test
+    public void testInputKeyUserPwdOnlyOncePwdArgEnd() throws Exception {
+        performTest(Arrays.asList(
+                "--state",
+                "--user", login,
+                "--keystore", keyStorePath("connectorClient"),
+                "--keystore-password", keyStorePassword(),
+                "--truststore", keyStorePath("trustthree"),
+                "--truststore-password", keyStorePassword(),
+                "--password"));
+    }
+
+    /**
+     * Perform the test with prepared List arguments
+     *
+     * @param args List of query arguments.
+     * @throws Exception If failed.
+     */
+    private void performTest(List<String> args) throws Exception {
+        IgniteEx crd = startGrid();
+
+        crd.cluster().state(ACTIVE);
+
+        TestCommandHandler hnd = newCommandHandler();
+
+        AtomicInteger pwdCnt = new AtomicInteger();
+
+        ((CommandHandler)GridTestUtils.getFieldValue(hnd, "hnd")).console = new NoopConsole() {
+            /** {@inheritDoc} */
+            @Override public char[] readPassword(String fmt, Object... args) {
+                pwdCnt.incrementAndGet();
+                log.info("PASSWORD: " + pwd);
+                return pwd.toCharArray();
+            }
+        };
+
+        int exitCode = hnd.execute(args);
+
+        assertEquals(EXIT_CODE_OK, exitCode);
+        assertEquals(1, pwdCnt.get());
+    }
+
+    /**
+     * Verify that the command work correctly when request few arguments
+     * without value that invoke console input.
+     *
+     * @throws Exception If failed.
+     */
+    @Test
+    public void testInputKeyForFewRequestedArguments() throws Exception {
+        IgniteEx crd = startGrid();
+
+        crd.cluster().state(ACTIVE);
+
+        TestCommandHandler hnd = newCommandHandler();
+
+        AtomicInteger usrCnt = new AtomicInteger();
+        AtomicInteger pwdCnt = new AtomicInteger();
+
+        ((CommandHandler)GridTestUtils.getFieldValue(hnd, "hnd")).console = new NoopConsole() {
+            /** {@inheritDoc} */
+            @Override public String readLine(String fmt, Object... args) {
+                usrCnt.incrementAndGet();
+                return login;
+            }
+
+            /** {@inheritDoc} */
+            @Override public char[] readPassword(String fmt, Object... args) {
+                pwdCnt.incrementAndGet();
+                if (pwdCnt.get() == 1) {
+                    return keyStorePassword().toCharArray();
+                }
+                    return pwd.toCharArray();
+            }
+        };
+
+        int exitCode = hnd.execute(Arrays.asList(
+                "--state",
+                "--user",
+                "--verbose",
+                "--keystore", keyStorePath("connectorClient"),
+                "--keystore-password",
+                "--truststore", keyStorePath("trustthree"),
+                "--truststore-password", keyStorePassword(),
+                "--password"));
+
+        assertEquals(EXIT_CODE_OK, exitCode);
+        assertEquals(1, usrCnt.get());
+        assertEquals(2, pwdCnt.get());
+    }
 }

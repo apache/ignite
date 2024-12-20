@@ -25,6 +25,7 @@ import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.internal.util.GridStringBuilder;
@@ -205,6 +206,16 @@ public class CLIArgumentParser {
         }
 
         return sb.toString();
+    }
+
+    /**
+     * Return optional argument type.
+     *
+     * @param name Argument name.
+     * @return Optional argument type.
+     */
+    public Optional<?> argType(String name) {
+        return Optional.ofNullable(argConfiguration.get(name).type());
     }
 
     /** */
