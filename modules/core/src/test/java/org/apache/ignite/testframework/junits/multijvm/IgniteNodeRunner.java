@@ -38,9 +38,7 @@ import org.apache.ignite.internal.processors.cache.GridCacheAbstractFullApiSelfT
 import org.apache.ignite.internal.util.GridJavaProcess;
 import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.U;
-import org.apache.ignite.marshaller.Marshaller;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
-import org.apache.ignite.testframework.junits.IgniteTestResources;
 import sun.jvmstat.monitor.HostIdentifier;
 import sun.jvmstat.monitor.MonitoredHost;
 import sun.jvmstat.monitor.MonitoredVm;
@@ -136,20 +134,11 @@ public class IgniteNodeRunner {
      * @return Readed configuration.
      * @throws IOException If failed.
      * @see #storeToFile(IgniteConfiguration, boolean)
-     * @throws IgniteCheckedException On error.
      */
     private static IgniteConfiguration readCfgFromFileAndDeleteFile(String fileName)
-        throws IOException, IgniteCheckedException {
+        throws IOException {
         try (BufferedReader cfgReader = new BufferedReader(new FileReader(fileName))) {
             IgniteConfiguration cfg = (IgniteConfiguration)new XStream().fromXML(cfgReader);
-
-            if (cfg.getMarshaller() == null) {
-                Marshaller marsh = IgniteTestResources.getMarshaller();
-
-                cfg.setMarshaller(marsh);
-            }
-
-            X.println("Configured marshaller class: " + cfg.getMarshaller().getClass().getName());
 
             if (cfg.getDiscoverySpi() == null) {
                 TcpDiscoverySpi disco = new TcpDiscoverySpi();

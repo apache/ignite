@@ -54,7 +54,6 @@ import org.apache.ignite.internal.processors.cache.GridCacheConfigurationConsist
 import org.apache.ignite.internal.processors.cache.GridCacheConfigurationValidationSelfTest;
 import org.apache.ignite.internal.processors.cache.GridCacheEntryMemorySizeSelfTest;
 import org.apache.ignite.internal.processors.cache.GridCacheObjectToStringSelfTest;
-import org.apache.ignite.internal.processors.cache.GridCacheP2PUndeploySelfTest;
 import org.apache.ignite.internal.processors.cache.GridCacheStoreValueBytesSelfTest;
 import org.apache.ignite.internal.processors.cache.GridCacheTtlManagerSelfTest;
 import org.apache.ignite.internal.processors.cache.GridDataStorageConfigurationConsistencySelfTest;
@@ -163,7 +162,6 @@ public class IgniteCacheTestSuite {
         GridTestUtils.addTestIfNeeded(suite, GridCacheAffinityMapperSelfTest.class, ignoredTests);
         GridTestUtils.addTestIfNeeded(suite, CacheAffinityCallSelfTest.class, ignoredTests);
         GridTestUtils.addTestIfNeeded(suite, GridCacheAffinityRoutingSelfTest.class, ignoredTests);
-        GridTestUtils.addTestIfNeeded(suite, GridCacheP2PUndeploySelfTest.class, ignoredTests);
         GridTestUtils.addTestIfNeeded(suite, GridCacheConfigurationValidationSelfTest.class, ignoredTests);
         GridTestUtils.addTestIfNeeded(suite, GridCacheConfigurationConsistencySelfTest.class, ignoredTests);
         GridTestUtils.addTestIfNeeded(suite, CacheAffinityKeyConfigurationMismatchTest.class, ignoredTests);
