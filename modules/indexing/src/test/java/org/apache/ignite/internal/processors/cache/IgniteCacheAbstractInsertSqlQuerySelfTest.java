@@ -35,7 +35,6 @@ import org.apache.ignite.cache.query.annotations.QuerySqlField;
 import org.apache.ignite.configuration.BinaryConfiguration;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
-import org.apache.ignite.internal.binary.BinaryMarshaller;
 import org.apache.ignite.internal.processors.query.QueryUtils;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.marshaller.Marshaller;
@@ -62,13 +61,6 @@ public abstract class IgniteCacheAbstractInsertSqlQuerySelfTest extends GridComm
         catch (IgniteCheckedException e) {
             throw U.convertException(e);
         }
-    }
-
-    /**
-     * @return whether {@link #marsh} is an instance of {@link BinaryMarshaller} or not.
-     */
-    boolean isBinaryMarshaller() {
-        return marsh instanceof BinaryMarshaller;
     }
 
     /** {@inheritDoc} */
@@ -101,25 +93,9 @@ public abstract class IgniteCacheAbstractInsertSqlQuerySelfTest extends GridComm
     @Override protected void beforeTest() throws Exception {
         super.beforeTest();
 
-        if (!isBinaryMarshaller())
-            createCaches();
-        else
-            createBinaryCaches();
+        createBinaryCaches();
 
         ignite(0).createCache(cacheConfig("I2AT", true, false, Integer.class, AllTypes.class));
-    }
-
-    /**
-     *
-     */
-    void createCaches() {
-        ignite(0).getOrCreateCache(cacheConfig("S2P", true, false, String.class, Person.class, String.class,
-            String.class));
-        ignite(0).getOrCreateCache(cacheConfig("I2P", true, false, Integer.class, Person.class));
-        ignite(0).getOrCreateCache(cacheConfig("K2P", true, false, Key.class, Person.class));
-        ignite(0).getOrCreateCache(cacheConfig("K22P", true, true, Key2.class, Person2.class));
-        ignite(0).getOrCreateCache(cacheConfig("I2I", true, false, Integer.class, Integer.class));
-        ignite(0).getOrCreateCache(cacheConfig("U2I", true, false, UUID.class, Integer.class));
     }
 
     /**
@@ -244,40 +220,23 @@ public abstract class IgniteCacheAbstractInsertSqlQuerySelfTest extends GridComm
      *
      */
     Object createPerson(int id, String name) {
-        if (!isBinaryMarshaller()) {
-            Person p = new Person(id);
-            p.name = name;
+        BinaryObjectBuilder o = grid(0).binary().builder("Person");
+        o.setField("id", id);
+        o.setField("name", name);
 
-            return p;
-        }
-        else {
-            BinaryObjectBuilder o = grid(0).binary().builder("Person");
-            o.setField("id", id);
-            o.setField("name", name);
-
-            return o.build();
-        }
+        return o.build();
     }
 
     /**
      *
      */
     Object createPerson2(int id, String name, int valFld) {
-        if (!isBinaryMarshaller()) {
-            Person2 p = new Person2(id);
-            p.name = name;
-            p.IntVal = valFld;
+        BinaryObjectBuilder o = grid(0).binary().builder("Person2");
+        o.setField("id", id);
+        o.setField("name", name);
+        o.setField("IntVal", valFld);
 
-            return p;
-        }
-        else {
-            BinaryObjectBuilder o = grid(0).binary().builder("Person2");
-            o.setField("id", id);
-            o.setField("name", name);
-            o.setField("IntVal", valFld);
-
-            return o.build();
-        }
+        return o.build();
     }
 
     /**

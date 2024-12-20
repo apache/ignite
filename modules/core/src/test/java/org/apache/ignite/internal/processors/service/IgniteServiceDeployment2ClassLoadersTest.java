@@ -36,7 +36,7 @@ import org.junit.Test;
 /**
  * Tests that not all nodes in cluster need user's service and interceptor definition (only nodes according to filter).
  */
-public class IgniteServiceDeployment2ClassLoadersDefaultMarshallerTest extends GridCommonAbstractTest {
+public class IgniteServiceDeployment2ClassLoadersTest extends GridCommonAbstractTest {
     /** */
     private static final String NOOP_SERVICE_CLS_NAME = "org.apache.ignite.tests.p2p.NoopService";
 
@@ -88,8 +88,6 @@ public class IgniteServiceDeployment2ClassLoadersDefaultMarshallerTest extends G
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
         cfg.setPeerClassLoadingEnabled(false);
-
-        cfg.setMarshaller(marshaller());
 
         cfg.setUserAttributes(Collections.singletonMap(NODE_NAME_ATTR, igniteInstanceName));
 

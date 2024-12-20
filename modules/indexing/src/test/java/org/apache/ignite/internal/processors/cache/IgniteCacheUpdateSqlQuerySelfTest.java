@@ -84,16 +84,16 @@ public class IgniteCacheUpdateSqlQuerySelfTest extends IgniteCacheAbstractSqlDml
 
         assertEquals(4, leftovers.size());
 
-        assertEqualsCollections(asList("FirstKey", createPerson(2, "Jo", "White"), 2, "Jo", "White"),
+        assertEqualsCollections(asList("FirstKey", createBinPerson(2, "Jo", "White"), 2, "Jo", "White"),
             leftovers.get(0));
 
-        assertEqualsCollections(asList("SecondKey", createPerson(2, "Joe", "Black"), 2, "Joe", "Black"),
+        assertEqualsCollections(asList("SecondKey", createBinPerson(2, "Joe", "Black"), 2, "Joe", "Black"),
             leftovers.get(1));
 
-        assertEqualsCollections(asList("f0u4thk3y", createPerson(4, "Jane", "Silver"), 4, "Jane", "Silver"),
+        assertEqualsCollections(asList("f0u4thk3y", createBinPerson(4, "Jane", "Silver"), 4, "Jane", "Silver"),
             leftovers.get(2));
 
-        assertEqualsCollections(asList("k3", createPerson(6, "Sy", "Green"), 6, "Sy", "Green"),
+        assertEqualsCollections(asList("k3", createBinPerson(6, "Sy", "Green"), 6, "Sy", "Green"),
             leftovers.get(3));
     }
 
@@ -111,7 +111,7 @@ public class IgniteCacheUpdateSqlQuerySelfTest extends IgniteCacheAbstractSqlDml
             IgniteCache p = cache();
 
             QueryCursor<List<?>> c = p.query(new SqlFieldsQuery("update Person p set _val = ? where _key = ?")
-                .setArgs(createPerson(2, "Jo", "White"), "FirstKey"));
+                .setArgs(createBinPerson(2, "Jo", "White"), "FirstKey"));
 
             c.iterator();
 
@@ -121,16 +121,16 @@ public class IgniteCacheUpdateSqlQuerySelfTest extends IgniteCacheAbstractSqlDml
 
             assertEquals(4, leftovers.size());
 
-            assertEqualsCollections(asList("FirstKey", createPerson(2, "Jo", "White"), 2, "Jo", "White"),
+            assertEqualsCollections(asList("FirstKey", createBinPerson(2, "Jo", "White"), 2, "Jo", "White"),
                 leftovers.get(0));
 
-            assertEqualsCollections(asList("SecondKey", createPerson(2, "Joe", "Black"), 2, "Joe", "Black"),
+            assertEqualsCollections(asList("SecondKey", createBinPerson(2, "Joe", "Black"), 2, "Joe", "Black"),
                 leftovers.get(1));
 
-            assertEqualsCollections(asList("k3", createPerson(3, "Sylvia", "Green"), 3, "Sylvia", "Green"),
+            assertEqualsCollections(asList("k3", createBinPerson(3, "Sylvia", "Green"), 3, "Sylvia", "Green"),
                 leftovers.get(2));
 
-            assertEqualsCollections(asList("f0u4thk3y", createPerson(4, "Jane", "Silver"), 4, "Jane", "Silver"),
+            assertEqualsCollections(asList("f0u4thk3y", createBinPerson(4, "Jane", "Silver"), 4, "Jane", "Silver"),
                 leftovers.get(3));
         }
         finally {

@@ -2076,6 +2076,9 @@ public abstract class GridAbstractTest extends JUnitAssertAware {
      */
     @SuppressWarnings({"IfMayBeConditional"})
     protected String getDefaultCheckpointPath(Marshaller marshaller) {
+        if (marshaller == null)
+            marshaller = new BinaryMarshaller();
+
         if (marshaller instanceof JdkMarshaller)
             return SharedFsCheckpointSpi.DFLT_DIR_PATH + "/jdk/";
         else
@@ -2112,7 +2115,6 @@ public abstract class GridAbstractTest extends JUnitAssertAware {
 
         cfg.setIgniteInstanceName(igniteInstanceName);
         cfg.setGridLogger(rsrcs.getLogger());
-        cfg.setMarshaller(rsrcs.getMarshaller());
         cfg.setNodeId(rsrcs.getNodeId());
         cfg.setIgniteHome(rsrcs.getIgniteHome());
         cfg.setMBeanServer(rsrcs.getMBeanServer());
