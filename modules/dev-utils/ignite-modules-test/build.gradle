@@ -26,7 +26,7 @@ sourceCompatibility = 11
 targetCompatibility = 11
 
 ext {
-    ignVer = '2.17.0-SNAPSHOT'
+    ignVer = '2.17.0'
     moduleName = 'ignite_modules_test'
 }
 
