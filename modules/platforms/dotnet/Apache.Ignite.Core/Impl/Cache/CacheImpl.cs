@@ -104,10 +104,31 @@ namespace Apache.Ignite.Core.Impl.Cache
 
             _persistenceEnabled = target.InLongOutLong((int)CacheOp.PersistenceEnabled, 0) == True;
 
-            if (configuration.PlatformCacheConfiguration != null)
+            var platformCacheCfg = configuration.PlatformCacheConfiguration;
+            
+            if (platformCacheCfg != null)
             {
+                HasPlatformCache = UsePlatformCache(platformCacheCfg);
+                
                 _platformCache = _ignite.PlatformCacheManager.GetOrCreatePlatformCache(configuration);
             }
+        }
+
+        /// <summary>
+        /// Invokes .NET or Java node filter, if any.
+        /// </summary>
+        private bool UsePlatformCache(PlatformCacheConfiguration platformCacheCfg)
+        {
+            var nodeFilter = platformCacheCfg.NodeFilter;
+
+            if (nodeFilter is null)
+                return true;
+            
+            var locNode = Ignite.GetCluster().GetLocalNode();
+            
+            return nodeFilter is JavaNodeFilter || nodeFilter is AttributeNodeFilter ?
+                DoOutOp(CacheOp.CacheNodeFilterApply, writer => writer.WriteGuid(locNode.Id)) :
+                nodeFilter.Invoke(locNode);
         }
 
         /** <inheritDoc /> */
@@ -115,13 +136,13 @@ namespace Apache.Ignite.Core.Impl.Cache
         {
             get { return _ignite.GetIgnite(); }
         }
-
+        
         /// <summary>
         /// Returns a value indicating whether this instance has platform cache.
         /// </summary>
         private bool HasPlatformCache
         {
-            get { return _platformCache != null && !_platformCache.IsStopped; }
+            get;
         }
 
         /// <summary>
@@ -133,7 +154,7 @@ namespace Apache.Ignite.Core.Impl.Cache
             {
                 // Platform caching within transaction is not supported for now.
                 // Commit/rollback logic requires additional implementation.
-                return HasPlatformCache && (_txManager == null || !_txManager.IsInTx());
+                return HasPlatformCache && !_platformCache.IsStopped && (_txManager == null || !_txManager.IsInTx());
             }
         }
 
