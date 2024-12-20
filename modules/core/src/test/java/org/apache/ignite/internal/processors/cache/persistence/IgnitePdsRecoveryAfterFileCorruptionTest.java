@@ -52,7 +52,6 @@ import org.apache.ignite.internal.processors.cache.persistence.pagemem.PageMemor
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.PageIO;
 import org.apache.ignite.internal.processors.cache.persistence.wal.FileWriteAheadLogManager;
 import org.apache.ignite.internal.processors.cache.persistence.wal.WALPointer;
-import org.apache.ignite.internal.util.future.GridFinishedFuture;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
@@ -347,7 +346,7 @@ public class IgnitePdsRecoveryAfterFileCorruptionTest extends GridCommonAbstract
             }
         }
 
-        Collection<FullPageId> pageIds = mem.beginCheckpoint(new GridFinishedFuture());
+        Collection<FullPageId> pageIds = mem.beginCheckpoint(() -> Boolean.TRUE);
 
         info("Acquired pages for checkpoint: " + pageIds.size());
 
@@ -384,7 +383,7 @@ public class IgnitePdsRecoveryAfterFileCorruptionTest extends GridCommonAbstract
                 if (pageIds.contains(fullId)) {
                     long cpStart = System.nanoTime();
 
-                    mem.checkpointWritePage(fullId, tmpBuf, pageStoreWriter, null);
+                    mem.checkpointWritePage(fullId, tmpBuf, pageStoreWriter, null, false);
 
                     long cpEnd = System.nanoTime();
 
