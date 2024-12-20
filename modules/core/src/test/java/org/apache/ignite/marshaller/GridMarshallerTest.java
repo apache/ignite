@@ -82,7 +82,7 @@ import static org.apache.ignite.events.EventType.EVTS_CACHE;
 /**
  * Common test for marshallers.
  */
-public abstract class GridMarshallerAbstractTest extends GridCommonAbstractTest implements Serializable {
+public class GridMarshallerTest extends GridCommonAbstractTest implements Serializable {
     /** */
     private static final String CACHE_NAME = "namedCache";
 
@@ -125,7 +125,7 @@ public abstract class GridMarshallerAbstractTest extends GridCommonAbstractTest 
     };
 
     /** */
-    protected GridMarshallerAbstractTest() {
+    public GridMarshallerTest() {
         super(/*start grid*/true);
     }
 
@@ -138,16 +138,10 @@ public abstract class GridMarshallerAbstractTest extends GridCommonAbstractTest 
         namedCache.setName(CACHE_NAME);
         namedCache.setAtomicityMode(TRANSACTIONAL);
 
-        cfg.setMarshaller(marshaller());
         cfg.setCacheConfiguration(new CacheConfiguration(DEFAULT_CACHE_NAME), namedCache);
 
         return cfg;
     }
-
-    /**
-     * @return Marshaller.
-     */
-    protected abstract Marshaller marshaller();
 
     /** {@inheritDoc} */
     @Override protected void beforeTest() throws Exception {
