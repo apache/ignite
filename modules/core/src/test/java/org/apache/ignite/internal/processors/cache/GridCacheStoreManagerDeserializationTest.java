@@ -136,12 +136,15 @@ public class GridCacheStoreManagerDeserializationTest extends GridCommonAbstract
         cache.destroy();
         cache.close();
 
-        assert store.map.containsKey(testObj);
+        assertEquals(1, store.map.size());
+        assertEquals(testObj.val, ((BinaryObject)store.map.keySet().iterator().next()).<Integer>field("val"));
 
         final IgniteCache<TestObj, TestObj> cache2 = grid.createCache(CACHE_NAME);
 
         assert testObj.equals(cache2.get(testObj));
-        assert store.map.containsKey(testObj);
+
+        assertEquals(1, store.map.size());
+        assertEquals(testObj.val, ((BinaryObject)store.map.keySet().iterator().next()).<Integer>field("val"));
     }
 
     /**
