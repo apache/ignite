@@ -41,7 +41,7 @@ import org.junit.Test;
 
 import static org.apache.ignite.internal.GridKernalState.STARTED;
 import static org.apache.ignite.internal.IgnitionEx.gridx;
-import static org.apache.ignite.internal.processors.odbc.ClientListenerNioListener.MANAGEMENT_CLIENT_ATTR;
+import static org.apache.ignite.internal.processors.odbc.ClientListenerConnectionContext.MANAGEMENT_CLIENT_ATTR;
 import static org.apache.ignite.internal.processors.odbc.ClientListenerNioListener.MANAGEMENT_CONNECTION_SHIFTED_ID;
 import static org.apache.ignite.internal.processors.odbc.ClientListenerProcessor.CLI_CONN_VIEW;
 import static org.apache.ignite.testframework.GridTestUtils.assertThrowsWithCause;

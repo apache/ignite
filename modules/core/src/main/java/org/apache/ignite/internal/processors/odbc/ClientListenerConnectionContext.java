@@ -28,6 +28,9 @@ import org.jetbrains.annotations.Nullable;
  * SQL listener connection context.
  */
 public interface ClientListenerConnectionContext {
+    /** {@code True} if a management client. Internal operations will be available. */
+    String MANAGEMENT_CLIENT_ATTR = "ignite.internal.management-client";
+
     /**
      * @return Client type.
      */
@@ -88,4 +91,11 @@ public interface ClientListenerConnectionContext {
      * Connection attributes.
      */
     Map<String, String> attributes();
+
+    /**
+     * @return {@code True} if client is management.
+     */
+    default boolean isManagementClient() {
+        return Boolean.parseBoolean(attributes().get(MANAGEMENT_CLIENT_ATTR));
+    }
 }
