@@ -256,9 +256,6 @@ public class StandaloneGridKernalContext implements GridKernalContext {
         cfg.setDiscoverySpi(new StandaloneNoopDiscoverySpi());
         cfg.setCommunicationSpi(new StandaloneNoopCommunicationSpi());
 
-        final Marshaller marshaller = new BinaryMarshaller();
-        cfg.setMarshaller(marshaller);
-
         final DataStorageConfiguration pstCfg = new DataStorageConfiguration();
         final DataRegionConfiguration regCfg = new DataRegionConfiguration();
         regCfg.setPersistenceEnabled(true);
@@ -266,7 +263,7 @@ public class StandaloneGridKernalContext implements GridKernalContext {
 
         cfg.setDataStorageConfiguration(pstCfg);
 
-        marshaller.setContext(marshallerCtx);
+        cfg.getMarshaller().setContext(marshallerCtx);
 
         cfg.setMetricExporterSpi(new NoopMetricExporterSpi());
         cfg.setSystemViewExporterSpi(new JmxSystemViewExporterSpi());

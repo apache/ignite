@@ -30,41 +30,12 @@ import org.jetbrains.annotations.Nullable;
  * <p>
  * Ignite provides the following {@code Marshaller} implementations:
  * <ul>
- * <li>Default binary marshaller. Will be used when no other marshaller is explicitly set to the
- * configuration. For more information, see {@link IgniteBinary}.</li>
- * <li>{@link org.apache.ignite.marshaller.jdk.JdkMarshaller}</li>
+ * <li>Default binary marshaller. For more information, see {@link IgniteBinary}.</li>
  * </ul>
  * <p>
- * Below are examples of marshaller configuration, usage, and injection into tasks, jobs,
- * and SPI's.
- * <h2 class="header">Java Example</h2>
- * {@code Marshaller} can be explicitly configured in code.
- * <pre name="code" class="java">
- * JdkMarshaller marshaller = new JdkMarshaller();
+ * <p>Usage of other marshallers</p>
  *
- * IgniteConfiguration cfg = new IgniteConfiguration();
  *
- * // Override marshaller.
- * cfg.setMarshaller(marshaller);
- *
- * // Starts grid.
- * G.start(cfg);
- * </pre>
- * <h2 class="header">Spring Example</h2>
- * Marshaller can be configured from Spring XML configuration file:
- * <pre name="code" class="xml">
- * &lt;bean id="grid.custom.cfg" class="org.apache.ignite.configuration.IgniteConfiguration" singleton="true"&gt;
- *     ...
- *     &lt;property name="marshaller"&gt;
- *         &lt;bean class="org.apache.ignite.marshaller.jdk.JdkMarshaller"/&gt;
- *     &lt;/property&gt;
- *     ...
- * &lt;/bean&gt;
- * </pre>
- * <p>
- * <img src="http://ignite.apache.org/images/spring-small.png">
- * <br>
- * For information about Spring framework visit <a href="http://www.springframework.org/">www.springframework.org</a>
  */
 public interface Marshaller {
     /**
