@@ -377,14 +377,17 @@ public class ClientListenerNioListener extends GridNioServerListenerAdapter<Clie
             if (connCtx.isVersionSupported(ver)) {
                 connCtx.initializeFromHandshake(ses, ver, reader);
 
-                if (connCtx.isManagementClient()) {
-                    if (connCtx.securityContext() != null) {
-
-
+                if (nodeInRecoveryMode()) {
+                    if (!connCtx.isManagementClient())
+                        throw new ClientConnectionNodeRecoveryException("Node in recovery mode.");
+                }
+                else if (connDisabled) {
+                    connCtx.clientType()
+                    this.ctx.distributedMetastorage().reg
+                    if (connCtx.isManagementClient()) {
+                        // check security.
                     }
                 }
-                else if (nodeInRecoveryMode())
-                    throw new ClientConnectionNodeRecoveryException("Node in recovery mode.");
 
                 ses.addMeta(CONN_CTX_META_KEY, connCtx);
             }

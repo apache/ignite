@@ -187,7 +187,7 @@ public class OdbcConnectionContext extends ClientListenerAbstractConnectionConte
             }
         }
 
-        authenticate(ses, user, passwd);
+        authenticate(ses, user, passwd, false);
 
         ClientListenerResponseSender snd = new ClientListenerResponseSender() {
             @Override public void send(ClientListenerResponse resp) {

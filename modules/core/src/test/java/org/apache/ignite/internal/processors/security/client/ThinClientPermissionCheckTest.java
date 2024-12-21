@@ -35,6 +35,7 @@ import org.apache.ignite.IgniteException;
 import org.apache.ignite.Ignition;
 import org.apache.ignite.client.ClientAuthorizationException;
 import org.apache.ignite.client.ClientCache;
+import org.apache.ignite.client.ClientConnectionException;
 import org.apache.ignite.client.ClientException;
 import org.apache.ignite.client.Config;
 import org.apache.ignite.client.IgniteClient;
@@ -55,6 +56,7 @@ import org.apache.ignite.internal.processors.security.AbstractTestSecurityPlugin
 import org.apache.ignite.internal.processors.security.impl.TestSecurityData;
 import org.apache.ignite.internal.processors.security.impl.TestSecurityPluginProvider;
 import org.apache.ignite.internal.util.lang.RunnableX;
+import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.lang.IgniteBiTuple;
@@ -66,6 +68,7 @@ import org.junit.runners.JUnit4;
 import static java.util.Collections.singletonMap;
 import static org.apache.ignite.configuration.DataPageEvictionMode.RANDOM_LRU;
 import static org.apache.ignite.events.EventType.EVT_CACHE_OBJECT_EXPIRED;
+import static org.apache.ignite.internal.processors.odbc.ClientListenerConnectionContext.MANAGEMENT_CLIENT_ATTR;
 import static org.apache.ignite.internal.util.lang.GridFunc.t;
 import static org.apache.ignite.plugin.security.SecurityPermission.CACHE_CREATE;
 import static org.apache.ignite.plugin.security.SecurityPermission.CACHE_DESTROY;
@@ -115,6 +118,9 @@ public class ThinClientPermissionCheckTest extends AbstractSecurityTest {
 
     /** Size of the data region for object eviction testing. */
     protected static final int EVICTION_TEST_DATA_REGION_SIZE = 20 * (1 << 20);
+
+    /** */
+    private Map<String, String> userAttrs;
 
     /**
      * @param clientData Array of client security data.
@@ -366,6 +372,22 @@ public class ThinClientPermissionCheckTest extends AbstractSecurityTest {
         }
     }
 
+    /** */
+    @Test
+    public void testConnectAsManagementClient() {
+        userAttrs = F.asMap(MANAGEMENT_CLIENT_ATTR, "true");
+        try {
+            assertThrowsWithCause(() -> {
+                runOperation(CLIENT, F.t(cli -> fail(""), "expected"));
+            }, ClientConnectionException.class);
+
+            // TODO: add for allowed mngmnt client
+        }
+        finally {
+            userAttrs = null;
+        }
+    }
+
     /**
      * Gets all operations.
      *
@@ -451,7 +473,7 @@ public class ThinClientPermissionCheckTest extends AbstractSecurityTest {
      * @return User attributes.
      */
     protected Map<String, String> userAttributres() {
-        return null;
+        return userAttrs;
     }
 
     /** */
