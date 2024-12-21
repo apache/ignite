@@ -300,7 +300,7 @@ public class JdbcThinTransactionalSelfTest extends GridCommonAbstractTest {
         try (Connection conn = DriverManager.getConnection(URL)) {
             conn.setAutoCommit(false);
 
-            try(Statement stmt = conn.createStatement()) {
+            try (Statement stmt = conn.createStatement()) {
                 try (ResultSet rs = stmt.executeQuery("SELECT 1")) {
                     assertEquals(1, F.size(grid().context().cache().context().tm().activeTransactions()));
 
