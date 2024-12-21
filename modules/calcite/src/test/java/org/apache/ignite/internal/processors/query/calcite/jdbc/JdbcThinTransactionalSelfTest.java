@@ -23,6 +23,7 @@ import java.sql.DriverManager;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.sql.Statement;
 import java.util.Arrays;
 import java.util.List;
 import org.apache.ignite.calcite.CalciteQueryEngineConfiguration;
@@ -291,5 +292,26 @@ public class JdbcThinTransactionalSelfTest extends GridCommonAbstractTest {
         assertTrue(stmt1.isClosed());
         assertTrue(rs0.isClosed());
         assertTrue(rs1.isClosed());
+    }
+
+    /** */
+    @Test
+    public void testCreateStatementOnDefaults() throws Exception {
+        try (Connection conn = DriverManager.getConnection(URL)) {
+            conn.setAutoCommit(false);
+
+            try(Statement stmt = conn.createStatement()) {
+                try (ResultSet rs = stmt.executeQuery("SELECT 1")) {
+                    assertEquals(1, F.size(grid().context().cache().context().tm().activeTransactions()));
+
+                    try (Statement stmt2 = conn.createStatement(TYPE_FORWARD_ONLY, CONCUR_READ_ONLY)) {
+                        try (ResultSet rs2 = stmt.executeQuery("SELECT 1")) {
+                            assertEquals(1, F.size(grid().context().cache().context().tm().activeTransactions()));
+                        }
+                    }
+                }
+            }
+
+        }
     }
 }
