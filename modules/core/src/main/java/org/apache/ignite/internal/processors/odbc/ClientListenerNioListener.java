@@ -19,6 +19,7 @@ package org.apache.ignite.internal.processors.odbc;
 
 import java.io.Closeable;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.function.Predicate;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.configuration.ClientConnectorConfiguration;
@@ -41,12 +42,14 @@ import org.apache.ignite.internal.processors.odbc.odbc.OdbcConnectionContext;
 import org.apache.ignite.internal.processors.platform.client.ClientConnectionContext;
 import org.apache.ignite.internal.processors.platform.client.ClientStatus;
 import org.apache.ignite.internal.processors.security.OperationSecurityContext;
+import org.apache.ignite.internal.processors.security.SecurityContext;
 import org.apache.ignite.internal.util.GridSpinBusyLock;
 import org.apache.ignite.internal.util.nio.GridNioFuture;
 import org.apache.ignite.internal.util.nio.GridNioServerListenerAdapter;
 import org.apache.ignite.internal.util.nio.GridNioSession;
 import org.apache.ignite.internal.util.nio.GridNioSessionMetaKey;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.plugin.security.SecurityPermission;
 import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.internal.processors.odbc.ClientListenerMetrics.clientTypeLabel;
@@ -101,6 +104,17 @@ public class ClientListenerNioListener extends GridNioServerListenerAdapter<Clie
     private final ClientListenerMetrics metrics;
 
     /**
+     * If return {@code true} for connection type then proptocol connection allowed by administrator.
+     * Predicate checks distributed property value.
+     *
+     * @see ClientListenerProcessor#registerDistributedProperties
+     * @see ClientListenerNioListener#ODBC_CLIENT
+     * @see ClientListenerNioListener#JDBC_CLIENT
+     * @see ClientListenerNioListener#THIN_CLIENT
+     */
+    private final Predicate<Byte> connAllowed;
+
+    /**
      * Constructor.
      *
      * @param ctx Context.
@@ -112,7 +126,8 @@ public class ClientListenerNioListener extends GridNioServerListenerAdapter<Clie
         GridKernalContext ctx,
         GridSpinBusyLock busyLock,
         ClientConnectorConfiguration cliConnCfg,
-        ClientListenerMetrics metrics
+        ClientListenerMetrics metrics,
+        Predicate<Byte> connAllowed
     ) {
         assert cliConnCfg != null;
 
@@ -123,10 +138,12 @@ public class ClientListenerNioListener extends GridNioServerListenerAdapter<Clie
         maxCursors = cliConnCfg.getMaxOpenCursorsPerConnection();
         log = ctx.log(getClass());
 
-        thinCfg = cliConnCfg.getThinClientConfiguration() == null ? new ThinClientConfiguration()
+        thinCfg = cliConnCfg.getThinClientConfiguration() == null
+            ? new ThinClientConfiguration()
             : new ThinClientConfiguration(cliConnCfg.getThinClientConfiguration());
 
         this.metrics = metrics;
+        this.connAllowed = connAllowed;
     }
 
     /** {@inheritDoc} */
@@ -372,22 +389,10 @@ public class ClientListenerNioListener extends GridNioServerListenerAdapter<Clie
         try {
             connCtx = prepareContext(clientType, ses);
 
-            ensureClientPermissions(clientType);
-
             if (connCtx.isVersionSupported(ver)) {
                 connCtx.initializeFromHandshake(ses, ver, reader);
 
-                if (nodeInRecoveryMode()) {
-                    if (!connCtx.isManagementClient())
-                        throw new ClientConnectionNodeRecoveryException("Node in recovery mode.");
-                }
-                else if (connDisabled) {
-                    connCtx.clientType()
-                    this.ctx.distributedMetastorage().reg
-                    if (connCtx.isManagementClient()) {
-                        // check security.
-                    }
-                }
+                ensureClientPermissions(clientType, connCtx);
 
                 ses.addMeta(CONN_CTX_META_KEY, connCtx);
             }
@@ -509,9 +514,10 @@ public class ClientListenerNioListener extends GridNioServerListenerAdapter<Clie
      * Ensures if the given type of client is enabled by config.
      *
      * @param clientType Client type.
+     * @param connCtx
      * @throws IgniteCheckedException If failed.
      */
-    private void ensureClientPermissions(byte clientType) throws IgniteCheckedException {
+    private void ensureClientPermissions(byte clientType, ClientListenerConnectionContext connCtx) throws IgniteCheckedException {
         switch (clientType) {
             case ODBC_CLIENT: {
                 if (!cliConnCfg.isOdbcEnabled())
@@ -538,6 +544,26 @@ public class ClientListenerNioListener extends GridNioServerListenerAdapter<Clie
 
             default:
                 throw new IgniteCheckedException("Unknown client type: " + clientType);
+        }
+
+        boolean controlShClient = clientType == THIN_CLIENT && connCtx.isManagementClient();
+
+        if (nodeInRecoveryMode()) {
+            if (!controlShClient)
+                throw new ClientConnectionNodeRecoveryException("Node in recovery mode.");
+        }
+
+        if (!connAllowed.test(clientType)) {
+            // Allow to connect by the control.sh even if connection disabled to be able to invoke commands.
+            if (!controlShClient)
+                throw new IgniteCheckedException("Connection disabled by administrator");
+
+            // TODO: checkme
+            if (connCtx.securityContext() != null) {
+                try (OperationSecurityContext ignored = ctx.security().withContext(connCtx.securityContext())) {
+                    ctx.security().authorize(SecurityPermission.CONNECT_AS_MAMAGEMENT_CLIENT);
+                }
+            }
         }
     }
 }

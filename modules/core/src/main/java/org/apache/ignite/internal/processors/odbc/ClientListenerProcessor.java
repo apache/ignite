@@ -23,11 +23,13 @@ import java.nio.ByteOrder;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.Function;
+import java.util.function.Predicate;
 import javax.cache.configuration.Factory;
 import javax.management.JMException;
 import javax.management.ObjectName;
@@ -39,9 +41,13 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.OdbcConfiguration;
 import org.apache.ignite.configuration.SqlConnectorConfiguration;
 import org.apache.ignite.internal.GridKernalContext;
+import org.apache.ignite.internal.cluster.DistributedConfigurationUtils;
 import org.apache.ignite.internal.managers.systemview.walker.ClientConnectionAttributeViewWalker;
 import org.apache.ignite.internal.managers.systemview.walker.ClientConnectionViewWalker;
 import org.apache.ignite.internal.processors.GridProcessorAdapter;
+import org.apache.ignite.internal.processors.configuration.distributed.DistributedBooleanProperty;
+import org.apache.ignite.internal.processors.configuration.distributed.DistributedConfigurationLifecycleListener;
+import org.apache.ignite.internal.processors.configuration.distributed.DistributedPropertyDispatcher;
 import org.apache.ignite.internal.processors.configuration.distributed.DistributedThinClientConfiguration;
 import org.apache.ignite.internal.processors.metric.MetricRegistryImpl;
 import org.apache.ignite.internal.processors.odbc.jdbc.JdbcConnectionContext;
@@ -71,6 +77,9 @@ import static org.apache.ignite.internal.processors.metric.impl.MetricUtils.metr
 import static org.apache.ignite.internal.processors.odbc.ClientListenerMetrics.clientTypeLabel;
 import static org.apache.ignite.internal.processors.odbc.ClientListenerNioListener.CLI_TYPES;
 import static org.apache.ignite.internal.processors.odbc.ClientListenerNioListener.CONN_CTX_META_KEY;
+import static org.apache.ignite.internal.processors.odbc.ClientListenerNioListener.JDBC_CLIENT;
+import static org.apache.ignite.internal.processors.odbc.ClientListenerNioListener.ODBC_CLIENT;
+import static org.apache.ignite.internal.processors.odbc.ClientListenerNioListener.THIN_CLIENT;
 
 /**
  * Client connector processor.
@@ -177,12 +186,21 @@ public class ClientListenerProcessor extends GridProcessorAdapter {
                         ? this::onOutboundMessageOffered
                         : null;
 
+                Map<Byte, DistributedBooleanProperty> allowConnMap = registerDistributedProperties();
+
+                Predicate<Byte> connAllowed = type -> {
+                    assert type != null : "Connection type is null";
+                    assert allowConnMap.containsKey(type) : "Unknown connection type: " + type;
+
+                    return allowConnMap.get(type).get() != Boolean.FALSE;
+                };
+
                 for (int port = cliConnCfg.getPort(); port <= portTo && port <= 65535; port++) {
                     try {
                         srv = GridNioServer.<ClientMessage>builder()
                             .address(hostAddr)
                             .port(port)
-                            .listener(new ClientListenerNioListener(ctx, busyLock, cliConnCfg, metrics))
+                            .listener(new ClientListenerNioListener(ctx, busyLock, cliConnCfg, metrics, connAllowed))
                             .logger(log)
                             .selectorCount(selectorCnt)
                             .igniteInstanceName(ctx.igniteInstanceName())
@@ -246,6 +264,31 @@ public class ClientListenerProcessor extends GridProcessorAdapter {
                 throw new IgniteCheckedException("Failed to start client connector processor.", e);
             }
         }
+    }
+
+    private Map<Byte, DistributedBooleanProperty> registerDistributedProperties() {
+        Map<Byte, DistributedBooleanProperty> allowConnMap = new HashMap<>();
+
+        Function<String, DistributedBooleanProperty> prop = type -> DistributedBooleanProperty.detachedBooleanProperty(
+            "allowNew" + type + "Connections",
+            "If true then new " + type.toUpperCase() + " connections allowed. Default is true."
+        );
+
+        allowConnMap.put(ODBC_CLIENT, prop.apply("Odbc"));
+        allowConnMap.put(JDBC_CLIENT, prop.apply("Jdbc"));
+        allowConnMap.put(THIN_CLIENT, prop.apply("Thin"));
+
+        ctx.internalSubscriptionProcessor().registerDistributedConfigurationListener(new DistributedConfigurationLifecycleListener() {
+            @Override public void onReadyToRegister(DistributedPropertyDispatcher dispatcher) {
+                allowConnMap.values().forEach(dispatcher::registerProperty);
+            }
+
+            @Override public void onReadyToWrite() {
+                allowConnMap.values().forEach(prop -> DistributedConfigurationUtils.setDefaultValue(prop, true, log));
+            }
+        });
+
+        return allowConnMap;
     }
 
     /** */
