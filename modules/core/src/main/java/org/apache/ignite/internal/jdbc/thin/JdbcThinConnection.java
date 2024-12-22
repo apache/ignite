@@ -477,12 +477,12 @@ public class JdbcThinConnection implements Connection {
 
     /** {@inheritDoc} */
     @Override public Statement createStatement() throws SQLException {
-        return createStatement(TYPE_FORWARD_ONLY, CONCUR_READ_ONLY, HOLD_CURSORS_OVER_COMMIT);
+        return createStatement(TYPE_FORWARD_ONLY, CONCUR_READ_ONLY, holdability);
     }
 
     /** {@inheritDoc} */
     @Override public Statement createStatement(int resSetType, int resSetConcurrency) throws SQLException {
-        return createStatement(resSetType, resSetConcurrency, HOLD_CURSORS_OVER_COMMIT);
+        return createStatement(resSetType, resSetConcurrency, holdability);
     }
 
     /** {@inheritDoc} */
