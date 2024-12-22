@@ -394,7 +394,7 @@ public class ClientListenerNioListener extends GridNioServerListenerAdapter<Clie
             if (connCtx.isVersionSupported(ver)) {
                 connCtx.initializeFromHandshake(ses, ver, reader);
 
-                ensureClientPermissions(clientType, connCtx);
+                ensureClientPermissions(connCtx);
 
                 ses.addMeta(CONN_CTX_META_KEY, connCtx);
             }
@@ -513,14 +513,13 @@ public class ClientListenerNioListener extends GridNioServerListenerAdapter<Clie
     }
 
     /**
-     * Ensures if the given type of client is enabled by config.
+     * Ensures if the client are allowed to connect.
      *
-     * @param clientType Client type.
-     * @param connCtx
+     * @param connCtx Connection context.
      * @throws IgniteCheckedException If failed.
      */
-    private void ensureClientPermissions(byte clientType, ClientListenerConnectionContext connCtx) throws IgniteCheckedException {
-        switch (clientType) {
+    private void ensureClientPermissions(ClientListenerConnectionContext connCtx) throws IgniteCheckedException {
+        switch (connCtx.clientType()) {
             case ODBC_CLIENT: {
                 if (!cliConnCfg.isOdbcEnabled())
                     throw new IgniteCheckedException("ODBC connection is not allowed, " +
@@ -545,17 +544,17 @@ public class ClientListenerNioListener extends GridNioServerListenerAdapter<Clie
             }
 
             default:
-                throw new IgniteCheckedException("Unknown client type: " + clientType);
+                throw new IgniteCheckedException("Unknown client type: " + connCtx.clientType());
         }
 
-        boolean controlShClient = clientType == THIN_CLIENT && connCtx.isManagementClient();
+        boolean controlShClient = connCtx.clientType() == THIN_CLIENT && connCtx.isManagementClient();
 
         if (nodeInRecoveryMode()) {
             if (!controlShClient)
                 throw new ClientConnectionNodeRecoveryException("Node in recovery mode.");
         }
 
-        if (!connAllowed.test(clientType)) {
+        if (!connAllowed.test(connCtx.clientType())) {
             // Allow to connect by the control.sh even if connection disabled to be able to invoke commands.
             if (!controlShClient)
                 throw new IgniteCheckedException("Connection disabled by administrator");
