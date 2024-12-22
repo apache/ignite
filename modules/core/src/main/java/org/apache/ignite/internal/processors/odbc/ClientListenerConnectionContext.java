@@ -24,13 +24,12 @@ import org.apache.ignite.internal.processors.security.SecurityContext;
 import org.apache.ignite.internal.util.nio.GridNioSession;
 import org.jetbrains.annotations.Nullable;
 
+import static org.apache.ignite.internal.processors.odbc.ClientListenerNioListener.MANAGEMENT_CLIENT_ATTR;
+
 /**
  * SQL listener connection context.
  */
 public interface ClientListenerConnectionContext {
-    /** {@code True} if a management client. Internal operations will be available. */
-    String MANAGEMENT_CLIENT_ATTR = "ignite.internal.management-client";
-
     /**
      * @return Client type.
      */

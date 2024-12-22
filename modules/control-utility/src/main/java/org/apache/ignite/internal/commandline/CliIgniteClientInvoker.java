@@ -33,7 +33,7 @@ import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.jetbrains.annotations.Nullable;
 
-import static org.apache.ignite.internal.processors.odbc.ClientListenerConnectionContext.MANAGEMENT_CLIENT_ATTR;
+import static org.apache.ignite.internal.processors.odbc.ClientListenerNioListener.MANAGEMENT_CLIENT_ATTR;
 
 /**
  * Adapter of new management API command for {@code control.sh} execution flow.

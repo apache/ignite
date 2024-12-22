@@ -45,7 +45,7 @@ import static java.util.Objects.requireNonNull;
 import static java.util.function.Function.identity;
 import static java.util.stream.Collectors.toMap;
 import static org.apache.ignite.client.Config.SERVER;
-import static org.apache.ignite.internal.processors.odbc.ClientListenerConnectionContext.MANAGEMENT_CLIENT_ATTR;
+import static org.apache.ignite.internal.processors.odbc.ClientListenerNioListener.MANAGEMENT_CLIENT_ATTR;
 import static org.apache.ignite.testframework.GridTestUtils.assertThrowsAnyCause;
 
 /**

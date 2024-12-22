@@ -42,7 +42,6 @@ import org.apache.ignite.internal.processors.odbc.odbc.OdbcConnectionContext;
 import org.apache.ignite.internal.processors.platform.client.ClientConnectionContext;
 import org.apache.ignite.internal.processors.platform.client.ClientStatus;
 import org.apache.ignite.internal.processors.security.OperationSecurityContext;
-import org.apache.ignite.internal.processors.security.SecurityContext;
 import org.apache.ignite.internal.util.GridSpinBusyLock;
 import org.apache.ignite.internal.util.nio.GridNioFuture;
 import org.apache.ignite.internal.util.nio.GridNioServerListenerAdapter;
@@ -75,6 +74,9 @@ public class ClientListenerNioListener extends GridNioServerListenerAdapter<Clie
 
     /** Connection-related metadata key. */
     public static final int CONN_CTX_META_KEY = GridNioSessionMetaKey.nextUniqueKey();
+
+    /** {@code True} if a management client. Internal operations will be available. */
+    public static final String MANAGEMENT_CLIENT_ATTR = "ignite.internal.management-client";
 
     /** Connection shifted ID for management clients. */
     public static final long MANAGEMENT_CONNECTION_SHIFTED_ID = -1;

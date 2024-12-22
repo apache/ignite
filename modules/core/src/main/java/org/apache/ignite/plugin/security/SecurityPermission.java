@@ -18,7 +18,7 @@
 package org.apache.ignite.plugin.security;
 
 import org.apache.ignite.cluster.ClusterState;
-import org.apache.ignite.internal.processors.odbc.ClientListenerConnectionContext;
+import org.apache.ignite.internal.processors.odbc.ClientListenerNioListener;
 import org.jetbrains.annotations.Nullable;
 
 /**
@@ -122,7 +122,7 @@ public enum SecurityPermission {
 
     /**
      * Connect as a management client.
-     * @see ClientListenerConnectionContext#MANAGEMENT_CLIENT_ATTR
+     * @see ClientListenerNioListener#MANAGEMENT_CLIENT_ATTR
      */
     CONNECT_AS_MAMAGEMENT_CLIENT;
 

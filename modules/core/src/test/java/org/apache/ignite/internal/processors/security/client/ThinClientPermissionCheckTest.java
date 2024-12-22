@@ -68,7 +68,7 @@ import org.junit.runners.JUnit4;
 import static java.util.Collections.singletonMap;
 import static org.apache.ignite.configuration.DataPageEvictionMode.RANDOM_LRU;
 import static org.apache.ignite.events.EventType.EVT_CACHE_OBJECT_EXPIRED;
-import static org.apache.ignite.internal.processors.odbc.ClientListenerConnectionContext.MANAGEMENT_CLIENT_ATTR;
+import static org.apache.ignite.internal.processors.odbc.ClientListenerNioListener.MANAGEMENT_CLIENT_ATTR;
 import static org.apache.ignite.internal.util.lang.GridFunc.t;
 import static org.apache.ignite.plugin.security.SecurityPermission.CACHE_CREATE;
 import static org.apache.ignite.plugin.security.SecurityPermission.CACHE_DESTROY;
