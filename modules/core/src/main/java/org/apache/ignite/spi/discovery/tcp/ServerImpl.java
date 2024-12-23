@@ -300,7 +300,11 @@ class ServerImpl extends TcpDiscoveryImpl {
     private final ConcurrentMap<InetSocketAddress, GridPingFutureAdapter<IgniteBiTuple<UUID, Boolean>>> pingMap =
         new ConcurrentHashMap<>();
 
+    /** Client node connection allowed property. */
     private DistributedBooleanProperty clientNodeConnectionAllowed;
+
+    /** Server node connection allowed property. */
+    private DistributedBooleanProperty serverNodeConnectionAllowed;
 
     /**
      * Maximum size of history of IDs of server nodes ever tried to join current topology (ever sent join request).
@@ -476,11 +480,15 @@ class ServerImpl extends TcpDiscoveryImpl {
     @Override public void onContextInitialized0(IgniteSpiContext spiCtx) throws IgniteSpiException {
         spiCtx.registerPort(tcpSrvr.port, TCP);
 
-        clientNodeConnectionAllowed = DistributedConfigurationUtils.connectionAllowedProperty(
+        List<DistributedBooleanProperty> props = DistributedConfigurationUtils.connectionAllowedProperty(
             ((IgniteEx)spi.ignite()).context().internalSubscriptionProcessor(),
             log,
-            "ClientNode"
-        ).get(0);
+            "ClientNode",
+            "ServerNode"
+        );
+
+        clientNodeConnectionAllowed = props.get(0);
+        serverNodeConnectionAllowed = props.get(1);
     }
 
     /** {@inheritDoc} */
@@ -4416,7 +4424,7 @@ class ServerImpl extends TcpDiscoveryImpl {
                     }
                 }
 
-                IgniteNodeValidationResult err = node.isClient() ? ensureClientJoinAllowed(node.id()) : null;
+                IgniteNodeValidationResult err = node.isClient() ? ensureJoinAllowed(node) : null;
 
                 if (err == null)
                     err = spi.getSpiContext().validateNode(node);
@@ -6435,12 +6443,16 @@ class ServerImpl extends TcpDiscoveryImpl {
     }
 
     /**
-     * @param nodeId Node id.
+     * @param node Node to connect.
      * @return {@code null} if connection allowed, error otherwise.
      */
-    private IgniteNodeValidationResult ensureClientJoinAllowed(UUID nodeId) {
-        if (clientNodeConnectionAllowed != null && clientNodeConnectionAllowed.get() == Boolean.FALSE)
-            return new IgniteNodeValidationResult(nodeId, CONN_DISABLED_BY_ADMIN_ERR_MSG);
+    private IgniteNodeValidationResult ensureJoinAllowed(TcpDiscoveryNode node) {
+        DistributedBooleanProperty connAllowed = node.isClient()
+            ? clientNodeConnectionAllowed
+            : serverNodeConnectionAllowed;
+
+        if (connAllowed != null && connAllowed.get() == Boolean.FALSE)
+            return new IgniteNodeValidationResult(node.id(), CONN_DISABLED_BY_ADMIN_ERR_MSG);
 
         return null;
     }
