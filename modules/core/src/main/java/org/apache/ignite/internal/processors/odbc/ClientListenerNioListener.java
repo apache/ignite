@@ -51,6 +51,7 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.plugin.security.SecurityPermission;
 import org.jetbrains.annotations.Nullable;
 
+import static org.apache.ignite.internal.cluster.DistributedConfigurationUtils.CONN_DISABLED_BY_ADMIN_ERR_MSG;
 import static org.apache.ignite.internal.processors.odbc.ClientListenerMetrics.clientTypeLabel;
 
 /**
@@ -557,12 +558,12 @@ public class ClientListenerNioListener extends GridNioServerListenerAdapter<Clie
         if (!connAllowed.test(connCtx.clientType())) {
             // Allow to connect by the control.sh even if connection disabled to be able to invoke commands.
             if (!controlShClient)
-                throw new IgniteCheckedException("Connection disabled by administrator");
+                throw new IgniteCheckedException(CONN_DISABLED_BY_ADMIN_ERR_MSG);
 
-            // TODO: checkme
+            // TODO: checkme in tests.
             if (connCtx.securityContext() != null) {
                 try (OperationSecurityContext ignored = ctx.security().withContext(connCtx.securityContext())) {
-                    ctx.security().authorize(SecurityPermission.CONNECT_AS_MAMAGEMENT_CLIENT);
+                    ctx.security().authorize(SecurityPermission.ADMIN_OPS);
                 }
             }
         }

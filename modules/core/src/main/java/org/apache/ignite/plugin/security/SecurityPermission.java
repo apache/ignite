@@ -18,7 +18,6 @@
 package org.apache.ignite.plugin.security;
 
 import org.apache.ignite.cluster.ClusterState;
-import org.apache.ignite.internal.processors.odbc.ClientListenerNioListener;
 import org.jetbrains.annotations.Nullable;
 
 /**
@@ -118,13 +117,7 @@ public enum SecurityPermission {
     SQL_VIEW_CREATE,
 
     /** Permission to execute DROP VIEW command. */
-    SQL_VIEW_DROP,
-
-    /**
-     * Connect as a management client.
-     * @see ClientListenerNioListener#MANAGEMENT_CLIENT_ATTR
-     */
-    CONNECT_AS_MAMAGEMENT_CLIENT;
+    SQL_VIEW_DROP;
 
     /** Enumerated values. */
     private static final SecurityPermission[] VALS = values();

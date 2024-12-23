@@ -79,9 +79,11 @@ import org.apache.ignite.internal.IgniteFutureTimeoutCheckedException;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.IgniteNodeAttributes;
 import org.apache.ignite.internal.IgnitionEx;
+import org.apache.ignite.internal.cluster.DistributedConfigurationUtils;
 import org.apache.ignite.internal.events.DiscoveryCustomEvent;
 import org.apache.ignite.internal.managers.discovery.CustomMessageWrapper;
 import org.apache.ignite.internal.managers.discovery.DiscoveryServerOnlyCustomMessage;
+import org.apache.ignite.internal.processors.configuration.distributed.DistributedBooleanProperty;
 import org.apache.ignite.internal.processors.failure.FailureProcessor;
 import org.apache.ignite.internal.processors.security.SecurityContext;
 import org.apache.ignite.internal.processors.security.SecurityUtils;
@@ -177,6 +179,7 @@ import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_MARSHALLER;
 import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_MARSHALLER_COMPACT_FOOTER;
 import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_MARSHALLER_USE_BINARY_STRING_SER_VER_2;
 import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_MARSHALLER_USE_DFLT_SUID;
+import static org.apache.ignite.internal.cluster.DistributedConfigurationUtils.CONN_DISABLED_BY_ADMIN_ERR_MSG;
 import static org.apache.ignite.internal.processors.security.SecurityUtils.authenticateLocalNode;
 import static org.apache.ignite.internal.processors.security.SecurityUtils.withSecurityContext;
 import static org.apache.ignite.spi.IgnitePortProtocol.TCP;
@@ -296,6 +299,8 @@ class ServerImpl extends TcpDiscoveryImpl {
     /** Map with proceeding ping requests. */
     private final ConcurrentMap<InetSocketAddress, GridPingFutureAdapter<IgniteBiTuple<UUID, Boolean>>> pingMap =
         new ConcurrentHashMap<>();
+
+    private DistributedBooleanProperty clientNodeConnectionAllowed;
 
     /**
      * Maximum size of history of IDs of server nodes ever tried to join current topology (ever sent join request).
@@ -470,6 +475,12 @@ class ServerImpl extends TcpDiscoveryImpl {
     /** {@inheritDoc} */
     @Override public void onContextInitialized0(IgniteSpiContext spiCtx) throws IgniteSpiException {
         spiCtx.registerPort(tcpSrvr.port, TCP);
+
+        clientNodeConnectionAllowed = DistributedConfigurationUtils.connectionAllowedProperty(
+            ((IgniteEx)spi.ignite()).context().internalSubscriptionProcessor(),
+            log,
+            "ClientNode"
+        ).get(0);
     }
 
     /** {@inheritDoc} */
@@ -4405,9 +4416,10 @@ class ServerImpl extends TcpDiscoveryImpl {
                     }
                 }
 
-                IgniteNodeValidationResult err;
+                IgniteNodeValidationResult err = node.isClient() ? ensureClientJoinAllowed(node.id()) : null;
 
-                err = spi.getSpiContext().validateNode(node);
+                if (err == null)
+                    err = spi.getSpiContext().validateNode(node);
 
                 if (err == null) {
                     try {
@@ -6420,6 +6432,17 @@ class ServerImpl extends TcpDiscoveryImpl {
         @Override public String toString() {
             return String.format("%s, nextNode=[%s]", super.toString(), next);
         }
+    }
+
+    /**
+     * @param nodeId Node id.
+     * @return {@code null} if connection allowed, error otherwise.
+     */
+    private IgniteNodeValidationResult ensureClientJoinAllowed(UUID nodeId) {
+        if (clientNodeConnectionAllowed != null && clientNodeConnectionAllowed.get() == Boolean.FALSE)
+            return new IgniteNodeValidationResult(nodeId, CONN_DISABLED_BY_ADMIN_ERR_MSG);
+
+        return null;
     }
 
     /**

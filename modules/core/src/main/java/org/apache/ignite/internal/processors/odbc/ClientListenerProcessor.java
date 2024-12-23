@@ -41,13 +41,10 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.OdbcConfiguration;
 import org.apache.ignite.configuration.SqlConnectorConfiguration;
 import org.apache.ignite.internal.GridKernalContext;
-import org.apache.ignite.internal.cluster.DistributedConfigurationUtils;
 import org.apache.ignite.internal.managers.systemview.walker.ClientConnectionAttributeViewWalker;
 import org.apache.ignite.internal.managers.systemview.walker.ClientConnectionViewWalker;
 import org.apache.ignite.internal.processors.GridProcessorAdapter;
 import org.apache.ignite.internal.processors.configuration.distributed.DistributedBooleanProperty;
-import org.apache.ignite.internal.processors.configuration.distributed.DistributedConfigurationLifecycleListener;
-import org.apache.ignite.internal.processors.configuration.distributed.DistributedPropertyDispatcher;
 import org.apache.ignite.internal.processors.configuration.distributed.DistributedThinClientConfiguration;
 import org.apache.ignite.internal.processors.metric.MetricRegistryImpl;
 import org.apache.ignite.internal.processors.odbc.jdbc.JdbcConnectionContext;
@@ -72,6 +69,7 @@ import org.apache.ignite.spi.systemview.view.ClientConnectionView;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
+import static org.apache.ignite.internal.cluster.DistributedConfigurationUtils.connectionAllowedProperty;
 import static org.apache.ignite.internal.processors.metric.GridMetricManager.CLIENT_CONNECTOR_METRICS;
 import static org.apache.ignite.internal.processors.metric.impl.MetricUtils.metricName;
 import static org.apache.ignite.internal.processors.odbc.ClientListenerMetrics.clientTypeLabel;
@@ -186,21 +184,12 @@ public class ClientListenerProcessor extends GridProcessorAdapter {
                         ? this::onOutboundMessageOffered
                         : null;
 
-                Map<Byte, DistributedBooleanProperty> allowConnMap = registerDistributedProperties();
-
-                Predicate<Byte> connAllowed = type -> {
-                    assert type != null : "Connection type is null";
-                    assert allowConnMap.containsKey(type) : "Unknown connection type: " + type;
-
-                    return allowConnMap.get(type).get() != Boolean.FALSE;
-                };
-
                 for (int port = cliConnCfg.getPort(); port <= portTo && port <= 65535; port++) {
                     try {
                         srv = GridNioServer.<ClientMessage>builder()
                             .address(hostAddr)
                             .port(port)
-                            .listener(new ClientListenerNioListener(ctx, busyLock, cliConnCfg, metrics, connAllowed))
+                            .listener(new ClientListenerNioListener(ctx, busyLock, cliConnCfg, metrics, connectionAllowedPredicate()))
                             .logger(log)
                             .selectorCount(selectorCnt)
                             .igniteInstanceName(ctx.igniteInstanceName())
@@ -266,29 +255,33 @@ public class ClientListenerProcessor extends GridProcessorAdapter {
         }
     }
 
-    private Map<Byte, DistributedBooleanProperty> registerDistributedProperties() {
+    /**
+     * @return Predicate to check is connection for specific client type allowed by administrator.
+     * @see ClientListenerNioListener#ODBC_CLIENT
+     * @see ClientListenerNioListener#JDBC_CLIENT
+     * @see ClientListenerNioListener#THIN_CLIENT
+     */
+    private Predicate<Byte> connectionAllowedPredicate() {
         Map<Byte, DistributedBooleanProperty> allowConnMap = new HashMap<>();
 
-        Function<String, DistributedBooleanProperty> prop = type -> DistributedBooleanProperty.detachedBooleanProperty(
-            "allowNew" + type + "Connections",
-            "If true then new " + type.toUpperCase() + " connections allowed. Default is true."
+        List<DistributedBooleanProperty> props = connectionAllowedProperty(
+            ctx.internalSubscriptionProcessor(),
+            log,
+            "Odbc",
+            "Jdbc",
+            "Thin"
         );
 
-        allowConnMap.put(ODBC_CLIENT, prop.apply("Odbc"));
-        allowConnMap.put(JDBC_CLIENT, prop.apply("Jdbc"));
-        allowConnMap.put(THIN_CLIENT, prop.apply("Thin"));
+        allowConnMap.put(ODBC_CLIENT, props.get(0));
+        allowConnMap.put(JDBC_CLIENT, props.get(1));
+        allowConnMap.put(THIN_CLIENT, props.get(2));
 
-        ctx.internalSubscriptionProcessor().registerDistributedConfigurationListener(new DistributedConfigurationLifecycleListener() {
-            @Override public void onReadyToRegister(DistributedPropertyDispatcher dispatcher) {
-                allowConnMap.values().forEach(dispatcher::registerProperty);
-            }
+        return type -> {
+            assert type != null : "Connection type is null";
+            assert allowConnMap.containsKey(type) : "Unknown connection type: " + type;
 
-            @Override public void onReadyToWrite() {
-                allowConnMap.values().forEach(prop -> DistributedConfigurationUtils.setDefaultValue(prop, true, log));
-            }
-        });
-
-        return allowConnMap;
+            return allowConnMap.get(type).get() != Boolean.FALSE;
+        };
     }
 
     /** */
