@@ -42,9 +42,6 @@ public class TransactionConfiguration implements Serializable {
     public static final Set<TransactionIsolation> TX_AWARE_QUERIES_SUPPORTED_MODES = EnumSet.of(TransactionIsolation.READ_COMMITTED);
 
     /** */
-    private static final IgniteProductVersion TX_PME_TIMEOUT_SINCE = IgniteProductVersion.fromString("2.5.1");
-
-    /** */
     private static final IgniteProductVersion DEADLOCK_TIMEOUT_SINCE = IgniteProductVersion.fromString("2.7.3");
 
     /** */
@@ -456,9 +453,6 @@ public class TransactionConfiguration implements Serializable {
     @SuppressWarnings("unused")
     private static String[] transientSerializableFields(IgniteProductVersion ver) {
         ArrayList<String> transients = new ArrayList<>(2);
-
-        if (TX_PME_TIMEOUT_SINCE.compareToIgnoreTimestamp(ver) >= 0)
-            transients.add("txTimeoutOnPartitionMapExchange");
 
         if (DEADLOCK_TIMEOUT_SINCE.compareToIgnoreTimestamp(ver) >= 0)
             transients.add("deadlockTimeout");
