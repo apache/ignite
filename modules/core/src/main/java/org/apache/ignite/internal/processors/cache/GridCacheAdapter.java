@@ -110,6 +110,8 @@ import org.apache.ignite.internal.processors.datastreamer.DataStreamerImpl;
 import org.apache.ignite.internal.processors.dr.IgniteDrDataStreamerCacheUpdater;
 import org.apache.ignite.internal.processors.performancestatistics.OperationType;
 import org.apache.ignite.internal.processors.platform.cache.PlatformCacheEntryFilter;
+import org.apache.ignite.internal.processors.security.OperationSecurityContext;
+import org.apache.ignite.internal.processors.security.SecurityContext;
 import org.apache.ignite.internal.processors.task.GridInternal;
 import org.apache.ignite.internal.transactions.IgniteTxHeuristicCheckedException;
 import org.apache.ignite.internal.transactions.IgniteTxRollbackCheckedException;
@@ -3856,24 +3858,30 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
             };
 
             if (fut != null && !fut.isDone()) {
-                IgniteInternalFuture<T> f = new GridEmbeddedFuture(fut,
-                    (IgniteOutClosure<IgniteInternalFuture>)() -> {
-                        GridFutureAdapter resFut = new GridFutureAdapter();
+                SecurityContext secCtx = ctx.kernalContext().security().securityContext();
+
+                IgniteInternalFuture<T> f = new GridEmbeddedFuture<>(
+                    fut,
+                    (IgniteOutClosure<IgniteInternalFuture<T>>)() -> {
+                        GridFutureAdapter<T> resFut = new GridFutureAdapter<>();
 
                         ctx.kernalContext().closure().runLocalSafe((GridPlainRunnable)() -> {
-                            IgniteInternalFuture fut0;
+                            IgniteInternalFuture<T> opFut;
 
                             if (ctx.kernalContext().isStopping())
-                                fut0 = new GridFinishedFuture<>(
+                                opFut = new GridFinishedFuture<>(
                                     new IgniteCheckedException("Operation has been cancelled (node or cache is stopping)."));
                             else if (ctx.gate().isStopped())
-                                fut0 = new GridFinishedFuture<>(new CacheStoppedException(ctx.name()));
+                                opFut = new GridFinishedFuture<>(new CacheStoppedException(ctx.name()));
                             else {
                                 ctx.operationContextPerCall(opCtx);
                                 ctx.shared().txContextReset();
 
-                                try {
-                                    fut0 = op.op(tx0).chain(clo);
+                                try (OperationSecurityContext ignored = ctx.kernalContext().security().withContext(secCtx)) {
+                                    opFut = op.op(tx0).chain(clo);
+                                }
+                                catch (Throwable e) {
+                                    opFut = new GridFinishedFuture<>(e);
                                 }
                                 finally {
                                     // It is necessary to clear tx context in this thread as well.
@@ -3882,9 +3890,9 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
                                 }
                             }
 
-                            fut0.listen(() -> {
+                            opFut.listen(lsnrFut -> {
                                 try {
-                                    resFut.onDone(fut0.get());
+                                    resFut.onDone(lsnrFut.get());
                                 }
                                 catch (Throwable ex) {
                                     resFut.onDone(ex);

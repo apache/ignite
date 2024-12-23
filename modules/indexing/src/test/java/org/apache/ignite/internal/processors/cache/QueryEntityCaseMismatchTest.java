@@ -25,7 +25,6 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.cache.QueryEntity;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
-import org.apache.ignite.internal.binary.BinaryMarshaller;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
@@ -62,8 +61,6 @@ public class QueryEntityCaseMismatchTest extends GridCommonAbstractTest {
         cfg.setDiscoverySpi(discoSpi);
 
         CacheConfiguration<Object, Integer> ccfg = new CacheConfiguration<>(DEFAULT_CACHE_NAME);
-
-        cfg.setMarshaller(new BinaryMarshaller());
 
         QueryEntity qryEntity = new QueryEntity("KeyType", Integer.class.getName());
 
