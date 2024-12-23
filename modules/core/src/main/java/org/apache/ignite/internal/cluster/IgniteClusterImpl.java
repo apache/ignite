@@ -53,6 +53,7 @@ import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteComponentType;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.managers.discovery.DiscoCache;
+import org.apache.ignite.internal.processors.cache.CacheGroupDescriptor;
 import org.apache.ignite.internal.processors.cache.DynamicCacheDescriptor;
 import org.apache.ignite.internal.processors.cluster.BaselineTopology;
 import org.apache.ignite.internal.processors.cluster.baseline.autoadjust.BaselineAutoAdjustStatus;
@@ -670,24 +671,57 @@ public class IgniteClusterImpl extends ClusterGroupAdapter implements IgniteClus
     }
 
     /** {@inheritDoc} */
+    @Override public boolean enableWal(Collection<String> cacheNames) throws IgniteException {
+        return changeWalMode(cacheNames,true);
+    }
+
+    /** {@inheritDoc} */
+    @Override public Map<String, Boolean> enableWal() throws IgniteException {
+        return changeWalMode(true);
+    }
+
+    /** {@inheritDoc} */
     @Override public boolean disableWal(String cacheName) throws IgniteException {
         return changeWalMode(cacheName, false);
+    }
+
+    /** {@inheritDoc} */
+    @Override public boolean disableWal(Collection<String> cacheNames) throws IgniteException {
+        return changeWalMode(cacheNames, false);
+    }
+
+    /** {@inheritDoc} */
+    @Override public Map<String, Boolean> disableWal() throws IgniteException {
+        return changeWalMode(false);
     }
 
     /**
      * Change WAL mode.
      *
      * @param cacheName Cache name.
-     * @param enabled Enabled flag.
+     * @param enabled Enabled.
      * @return {@code True} if WAL mode was changed as a result of this call.
      */
     private boolean changeWalMode(String cacheName, boolean enabled) {
         A.notNull(cacheName, "cacheName");
 
+        return changeWalMode(Collections.singleton(cacheName), enabled);
+    }
+
+    /**
+     * Change WAL mode.
+     *
+     * @param cacheNames Cache names.
+     * @param enabled Enabled flag.
+     * @return {@code True} if WAL mode was changed as a result of this call.
+     */
+    private boolean changeWalMode(Collection<String> cacheNames, boolean enabled) {
+        A.notNull(cacheNames, "cacheNames");
+
         guard();
 
         try {
-            return ctx.cache().context().walState().changeWalMode(Collections.singleton(cacheName), enabled).get();
+            return ctx.cache().context().walState().changeWalMode(Collections.unmodifiableCollection(cacheNames), enabled).get();
         }
         catch (IgniteCheckedException e) {
             throw U.convertException(e);
@@ -695,6 +729,37 @@ public class IgniteClusterImpl extends ClusterGroupAdapter implements IgniteClus
         finally {
             unguard();
         }
+    }
+
+    /**
+     * Change WAL mode for all caches.
+     *
+     * @param enabled Enabled.
+     */
+    private Map<String, Boolean> changeWalMode(boolean enabled) {
+        Map<String,Boolean> result = new HashMap<>();
+
+        guard();
+
+        try {
+            Collection<CacheGroupDescriptor> cacheGrpDscs = ctx.cache().cacheGroupDescriptors().values();
+            cacheGrpDscs.forEach(dsc -> {
+                Set<String> cacheNames = dsc.caches().keySet();
+
+                try {
+                    Boolean b = ctx.cache().context().walState().changeWalMode(Collections.unmodifiableCollection(cacheNames), enabled).get();
+                    cacheNames.forEach(name -> result.put(name,b));
+                }
+                catch (IgniteCheckedException e) {
+                    throw U.convertException(e);
+                }
+            });
+        }
+        finally {
+            unguard();
+        }
+
+        return result;
     }
 
     /** {@inheritDoc} */
