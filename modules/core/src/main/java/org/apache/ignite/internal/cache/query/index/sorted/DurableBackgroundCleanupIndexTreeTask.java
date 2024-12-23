@@ -14,31 +14,40 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package org.apache.ignite.internal.cache.query.index.sorted;
 
-import java.util.ArrayList;
+import java.io.Externalizable;
+import java.io.IOException;
+import java.io.ObjectInput;
+import java.io.ObjectOutput;
+import java.util.HashMap;
+import java.util.Iterator;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.atomic.AtomicLong;
 import org.apache.ignite.IgniteCheckedException;
-import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteInternalFuture;
-import org.apache.ignite.internal.cache.query.index.IndexName;
-import org.apache.ignite.internal.cache.query.index.sorted.DurableBackgroundCleanupIndexTreeTaskV2.NoopRowHandlerFactory;
+import org.apache.ignite.internal.cache.query.index.sorted.inline.InlineIndexKeyType;
 import org.apache.ignite.internal.cache.query.index.sorted.inline.InlineIndexTree;
-import org.apache.ignite.internal.metric.IoStatisticsHolderIndex;
-import org.apache.ignite.internal.pagemem.PageIdUtils;
-import org.apache.ignite.internal.pagemem.PageMemory;
+import org.apache.ignite.internal.cache.query.index.sorted.keys.IndexKey;
+import org.apache.ignite.internal.dto.IgniteDataTransferObject;
+import org.apache.ignite.internal.pagemem.FullPageId;
+import org.apache.ignite.internal.pagemem.wal.IgniteWriteAheadLogManager;
+import org.apache.ignite.internal.pagemem.wal.record.IndexRenameRootPageRecord;
 import org.apache.ignite.internal.processors.cache.CacheGroupContext;
-import org.apache.ignite.internal.processors.cache.GridCacheContext;
-import org.apache.ignite.internal.processors.cache.IgniteCacheOffheapManager;
+import org.apache.ignite.internal.processors.cache.persistence.CacheDataRow;
 import org.apache.ignite.internal.processors.cache.persistence.RootPage;
 import org.apache.ignite.internal.processors.cache.persistence.metastorage.pendingtask.DurableBackgroundTask;
 import org.apache.ignite.internal.processors.cache.persistence.metastorage.pendingtask.DurableBackgroundTaskResult;
-import org.apache.ignite.internal.processors.cache.persistence.tree.BPlusTree;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.PageIoResolver;
+import org.apache.ignite.internal.util.future.GridFinishedFuture;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
+import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -46,252 +55,138 @@ import org.apache.ignite.internal.util.worker.GridWorker;
 import org.apache.ignite.thread.IgniteThread;
 import org.jetbrains.annotations.Nullable;
 
+import static java.util.Collections.emptyList;
+import static java.util.Collections.emptyMap;
 import static java.util.Collections.singleton;
-import static org.apache.ignite.internal.metric.IoStatisticsType.SORTED_INDEX;
 
 /**
- * Tasks that cleans up index tree.
- *
- * @deprecated Use {@link DurableBackgroundCleanupIndexTreeTaskV2}.
+ * Task for background cleaning of index trees.
  */
-@Deprecated
-public class DurableBackgroundCleanupIndexTreeTask implements DurableBackgroundTask {
-    /** */
+public class DurableBackgroundCleanupIndexTreeTask extends IgniteDataTransferObject implements
+    DurableBackgroundTask<Long> {
+    /** Serial version uid. */
     private static final long serialVersionUID = 0L;
 
-    /** */
-    private List<Long> rootPages;
-
-    /** */
-    private transient volatile List<InlineIndexTree> trees;
-
-    /** */
-    private String cacheGrpName;
-
-    /** */
-    private final String cacheName;
-
-    /** */
-    private String schemaName;
-
-    /** */
-    private final String treeName;
-
-    /** */
-    private final String idxName;
-
-    /** */
-    private final String id;
+    /**
+     * Index tree index factory.
+     * NOTE: Change only in tests, to control the creation of trees in the task.
+     */
+    public static InlineIndexTreeFactory idxTreeFactory = new InlineIndexTreeFactory();
 
     /** Logger. */
     @Nullable private transient volatile IgniteLogger log;
 
-    /** Worker tasks. */
+    /** Unique id. */
+    private String uid;
+
+    /** Cache group name. */
+    @Nullable private String grpName;
+
+    /** Cache name. */
+    private String cacheName;
+
+    /** Index name. */
+    private String idxName;
+
+    /** Old name of underlying index tree name. */
+    private String oldTreeName;
+
+    /** New name of underlying index tree name. */
+    private String newTreeName;
+
+    /** Number of segments. */
+    private int segments;
+
+    /** Need to rename index root pages. */
+    private transient volatile boolean needToRen;
+
+    /** Index root pages. Mapping: segment number -> index root page. */
+    private final transient Map<Integer, RootPage> rootPages = new ConcurrentHashMap<>();
+
+    /** Worker cleaning index trees. */
     @Nullable private transient volatile GridWorker worker;
 
-    /** */
+    /** Total number of pages recycled from index trees. */
+    private final transient AtomicLong pageCnt = new AtomicLong();
+
+    /**
+     * Constructor.
+     *
+     * @param grpName Cache group name.
+     * @param cacheName Cache name.
+     * @param idxName Index name.
+     * @param oldTreeName Old name of underlying index tree name.
+     * @param newTreeName New name of underlying index tree name.
+     * @param segments Number of segments.
+     * @param trees Index trees.
+     */
     public DurableBackgroundCleanupIndexTreeTask(
-        List<Long> rootPages,
-        List<InlineIndexTree> trees,
-        String cacheGrpName,
+        @Nullable String grpName,
         String cacheName,
-        IndexName idxName,
-        String treeName
+        String idxName,
+        String oldTreeName,
+        String newTreeName,
+        int segments,
+        @Nullable InlineIndexTree[] trees
     ) {
-        this.rootPages = rootPages;
-        this.trees = trees;
-        this.cacheGrpName = cacheGrpName;
+        uid = UUID.randomUUID().toString();
+        this.grpName = grpName;
         this.cacheName = cacheName;
-        this.id = UUID.randomUUID().toString();
-        this.idxName = idxName.idxName();
-        this.schemaName = idxName.schemaName();
-        this.treeName = treeName;
+        this.idxName = idxName;
+        this.oldTreeName = oldTreeName;
+        this.newTreeName = newTreeName;
+        this.segments = segments;
+
+        if (trees != null) {
+            assert trees.length == segments :
+                "Invalid number of index trees [trees=" + trees.length + ", segments=" + segments + ']';
+
+            this.rootPages.putAll(toRootPages(trees));
+        }
+
+        needToRen = true;
+    }
+
+    /**
+     * Default constructor for {@link Externalizable}.
+     */
+    public DurableBackgroundCleanupIndexTreeTask() {
+        // No-op.
+    }
+
+    /** {@inheritDoc} */
+    @Override protected void writeExternalData(ObjectOutput out) throws IOException {
+        U.writeLongString(out, uid);
+        U.writeLongString(out, grpName);
+        U.writeLongString(out, cacheName);
+        U.writeLongString(out, idxName);
+        U.writeLongString(out, oldTreeName);
+        U.writeLongString(out, newTreeName);
+        out.writeInt(segments);
+    }
+
+    /** {@inheritDoc} */
+    @Override protected void readExternalData(
+        byte protoVer,
+        ObjectInput in
+    ) throws IOException, ClassNotFoundException {
+        uid = U.readLongString(in);
+        grpName = U.readLongString(in);
+        cacheName = U.readLongString(in);
+        idxName = U.readLongString(in);
+        oldTreeName = U.readLongString(in);
+        newTreeName = U.readLongString(in);
+        segments = in.readInt();
     }
 
     /** {@inheritDoc} */
     @Override public String name() {
-        return "DROP_SQL_INDEX-" + schemaName + "." + idxName + "-" + id;
-    }
-
-    /** {@inheritDoc} */
-    @Override public IgniteInternalFuture<DurableBackgroundTaskResult> executeAsync(GridKernalContext ctx) {
-        log = ctx.log(this.getClass());
-
-        assert worker == null;
-
-        GridFutureAdapter<DurableBackgroundTaskResult> fut = new GridFutureAdapter<>();
-
-        worker = new GridWorker(
-            ctx.igniteInstanceName(),
-            "async-durable-background-task-executor-" + name(),
-            log
-        ) {
-            /** {@inheritDoc} */
-            @Override protected void body() {
-                try {
-                    execute(ctx);
-
-                    worker = null;
-
-                    fut.onDone(DurableBackgroundTaskResult.complete(null));
-                }
-                catch (Throwable t) {
-                    worker = null;
-
-                    fut.onDone(DurableBackgroundTaskResult.restart(t));
-                }
-            }
-        };
-
-        new IgniteThread(worker).start();
-
-        return fut;
-    }
-
-    /**
-     * Task execution.
-     *
-     * @param ctx Kernal context.
-     */
-    private void execute(GridKernalContext ctx) {
-        List<InlineIndexTree> trees0 = trees;
-
-        if (trees0 == null) {
-            trees0 = new ArrayList<>(rootPages.size());
-
-            GridCacheContext cctx = ctx.cache().context().cacheContext(CU.cacheId(cacheName));
-
-            int grpId = CU.cacheGroupId(cacheName, cacheGrpName);
-
-            CacheGroupContext grpCtx = ctx.cache().cacheGroup(grpId);
-
-            // If group context is null, it means that group doesn't exist and we don't need this task anymore.
-            if (grpCtx == null)
-                return;
-
-            IgniteCacheOffheapManager offheap = grpCtx.offheap();
-
-            if (treeName != null) {
-                ctx.cache().context().database().checkpointReadLock();
-
-                try {
-                    int cacheId = CU.cacheId(cacheName);
-
-                    for (int segment = 0; segment < rootPages.size(); segment++) {
-                        try {
-                            RootPage rootPage = offheap.findRootPageForIndex(cacheId, treeName, segment);
-
-                            if (rootPage != null && rootPages.get(segment) == rootPage.pageId().pageId())
-                                offheap.dropRootPageForIndex(cacheId, treeName, segment);
-                        }
-                        catch (IgniteCheckedException e) {
-                            throw new IgniteException(e);
-                        }
-                    }
-                }
-                finally {
-                    ctx.cache().context().database().checkpointReadUnlock();
-                }
-            }
-
-            IoStatisticsHolderIndex stats = new IoStatisticsHolderIndex(
-                SORTED_INDEX,
-                cctx.name(),
-                idxName,
-                cctx.kernalContext().metric()
-            );
-
-            PageMemory pageMem = grpCtx.dataRegion().pageMemory();
-
-            for (int i = 0; i < rootPages.size(); i++) {
-                Long rootPage = rootPages.get(i);
-
-                assert rootPage != null;
-
-                if (skipDeletedRoot(grpId, pageMem, rootPage)) {
-                    ctx.log(getClass()).warning(S.toString("Skipping deletion of the index tree",
-                        "cacheGrpName", cacheGrpName, false,
-                        "cacheName", cacheName, false,
-                        "idxName", idxName, false,
-                        "segment", i, false,
-                        "rootPageId", PageIdUtils.toDetailString(rootPage), false
-                    ));
-
-                    continue;
-                }
-
-                // Below we create a fake index tree using it's root page, stubbing some parameters,
-                // because we just going to free memory pages that are occupied by tree structure.
-                try {
-                    String treeName = "deletedTree_" + i + "_" + name();
-
-                    InlineIndexTree tree = new InlineIndexTree(
-                        null, grpCtx, treeName, cctx.offheap(), cctx.offheap().reuseListForIndex(treeName),
-                        cctx.dataRegion().pageMemory(), PageIoResolver.DEFAULT_PAGE_IO_RESOLVER,
-                        rootPage, false, 0, 0, new IndexKeyTypeSettings(), null,
-                        stats, new NoopRowHandlerFactory(), null);
-
-                    trees0.add(tree);
-                }
-                catch (IgniteCheckedException e) {
-                    throw new IgniteException(e);
-                }
-            }
-        }
-
-        ctx.cache().context().database().checkpointReadLock();
-
-        try {
-            for (int i = 0; i < trees0.size(); i++) {
-                BPlusTree tree = trees0.get(i);
-
-                try {
-                    tree.destroy(null, true);
-                }
-                catch (IgniteCheckedException e) {
-                    throw new IgniteException(e);
-                }
-            }
-        }
-        finally {
-            ctx.cache().context().database().checkpointReadUnlock();
-        }
-    }
-
-    /**
-     * Checks that pageId is still relevant and has not been deleted / reused.
-     * @param grpId Cache group id.
-     * @param pageMem Page memory instance.
-     * @param rootPageId Root page identifier.
-     * @return {@code true} if root page was deleted/reused, {@code false} otherwise.
-     */
-    private boolean skipDeletedRoot(int grpId, PageMemory pageMem, long rootPageId) {
-        try {
-            long page = pageMem.acquirePage(grpId, rootPageId);
-
-            try {
-                long pageAddr = pageMem.readLock(grpId, rootPageId, page);
-
-                try {
-                    return pageAddr == 0;
-                }
-                finally {
-                    if (pageAddr != 0)
-                        pageMem.readUnlock(grpId, rootPageId, page);
-                }
-            }
-            finally {
-                pageMem.releasePage(grpId, rootPageId, page);
-            }
-        }
-        catch (IgniteCheckedException e) {
-            throw new IgniteException("Cannot acquire tree root page.", e);
-        }
+        return "drop-sql-index-" + cacheName + "-" + idxName + "-" + uid;
     }
 
     /** {@inheritDoc} */
     @Override public void cancel() {
-        trees = null;
+        rootPages.clear();
 
         GridWorker w = worker;
 
@@ -303,16 +198,329 @@ public class DurableBackgroundCleanupIndexTreeTask implements DurableBackgroundT
     }
 
     /** {@inheritDoc} */
-    @Override public DurableBackgroundTask<?> convertAfterRestoreIfNeeded() {
-        return new DurableBackgroundCleanupIndexTreeTaskV2(
-            cacheGrpName,
-            cacheName,
-            idxName,
-            treeName,
-            UUID.randomUUID().toString(),
-            rootPages.size(),
-            null
-        );
+    @Override public IgniteInternalFuture<DurableBackgroundTaskResult<Long>> executeAsync(GridKernalContext ctx) {
+        assert worker == null;
+
+        log = ctx.log(DurableBackgroundCleanupIndexTreeTask.class);
+
+        IgniteInternalFuture<DurableBackgroundTaskResult<Long>> outFut;
+
+        CacheGroupContext grpCtx = ctx.cache().cacheGroup(CU.cacheGroupId(cacheName, grpName));
+
+        if (grpCtx != null) {
+            try {
+                // Renaming should be done once when adding (and immediately launched) a task at the time of drop the index.
+                // To avoid problems due to node crash between renaming and adding a task.
+                if (needToRen) {
+                    // If the node falls before renaming, then the index was definitely not dropped.
+                    // If the node crashes after renaming, the task will delete the old index trees,
+                    // and the node will rebuild this index when the node starts.
+                    renameIndexRootPages(grpCtx, cacheName, oldTreeName, newTreeName, segments);
+
+                    // After restoring from MetaStorage, it will also be {@code false}.
+                    needToRen = false;
+                }
+
+                if (rootPages.isEmpty())
+                    rootPages.putAll(findIndexRootPages(grpCtx, cacheName, newTreeName, segments));
+
+                if (!rootPages.isEmpty()) {
+                    GridFutureAdapter<DurableBackgroundTaskResult<Long>> fut = new GridFutureAdapter<>();
+
+                    GridWorker w = new GridWorker(
+                        ctx.igniteInstanceName(),
+                        "async-worker-" + name(),
+                        log
+                    ) {
+                        /** {@inheritDoc} */
+                        @Override protected void body() {
+                            try {
+                                Iterator<Map.Entry<Integer, RootPage>> it = rootPages.entrySet().iterator();
+
+                                while (it.hasNext()) {
+                                    Map.Entry<Integer, RootPage> e = it.next();
+
+                                    RootPage rootPage = e.getValue();
+                                    int segment = e.getKey();
+
+                                    long pages = destroyIndexTrees(grpCtx, rootPage, cacheName, newTreeName, segment);
+
+                                    if (pages > 0)
+                                        pageCnt.addAndGet(pages);
+
+                                    it.remove();
+                                }
+
+                                fut.onDone(DurableBackgroundTaskResult.complete(pageCnt.get()));
+                            }
+                            catch (Throwable t) {
+                                fut.onDone(DurableBackgroundTaskResult.restart(t));
+                            }
+                            finally {
+                                worker = null;
+                            }
+                        }
+                    };
+
+                    new IgniteThread(w).start();
+
+                    this.worker = w;
+
+                    outFut = fut;
+                }
+                else
+                    outFut = new GridFinishedFuture<>(DurableBackgroundTaskResult.complete());
+            }
+            catch (Throwable t) {
+                outFut = new GridFinishedFuture<>(DurableBackgroundTaskResult.restart(t));
+            }
+        }
+        else
+            outFut = new GridFinishedFuture<>(DurableBackgroundTaskResult.complete());
+
+        return outFut;
+    }
+
+    /**
+     * Renames index's trees.
+     *
+     * @param grpCtx Cache group context.
+     * @throws IgniteCheckedException If failed to rename index's trees.
+     */
+    public void renameIndexTrees(CacheGroupContext grpCtx) throws IgniteCheckedException {
+        renameIndexRootPages(grpCtx, cacheName, oldTreeName, newTreeName, segments);
+
+        needToRen = false;
+    }
+
+    /**
+     * Destroying index trees.
+     *
+     * @param grpCtx Cache group context.
+     * @param rootPage Index root page.
+     * @param cacheName Cache name.
+     * @param treeName Name of underlying index tree name.
+     * @param segment Segment number.
+     * @return Total number of pages recycled from this tree.
+     * @throws IgniteCheckedException If failed.
+     */
+    public static long destroyIndexTrees(
+        CacheGroupContext grpCtx,
+        RootPage rootPage,
+        String cacheName,
+        String treeName,
+        int segment
+    ) throws IgniteCheckedException {
+        long pageCnt = 0;
+
+        grpCtx.shared().database().checkpointReadLock();
+
+        try {
+            InlineIndexTree tree = idxTreeFactory.create(grpCtx, rootPage, treeName);
+
+            pageCnt += tree.destroy(null, true);
+
+            if (grpCtx.offheap().dropRootPageForIndex(CU.cacheId(cacheName), treeName, segment) != null)
+                pageCnt++;
+        }
+        finally {
+            grpCtx.shared().database().checkpointReadUnlock();
+        }
+
+        return pageCnt;
+    }
+
+    /**
+     * Finding the root pages of the index.
+     *
+     * @param grpCtx Cache group context.
+     * @param cacheName Cache name.
+     * @param treeName Name of underlying index tree name.
+     * @param segments Number of segments.
+     * @return Index root pages. Mapping: segment number -> index root page.
+     * @throws IgniteCheckedException If failed.
+     */
+    public static Map<Integer, RootPage> findIndexRootPages(
+        CacheGroupContext grpCtx,
+        String cacheName,
+        String treeName,
+        int segments
+    ) throws IgniteCheckedException {
+        Map<Integer, RootPage> rootPages = new HashMap<>();
+
+        for (int i = 0; i < segments; i++) {
+            RootPage rootPage = grpCtx.offheap().findRootPageForIndex(CU.cacheId(cacheName), treeName, i);
+
+            if (rootPage != null)
+                rootPages.put(i, rootPage);
+        }
+
+        return rootPages;
+    }
+
+    /**
+     * Renaming the root index pages.
+     *
+     * @param grpCtx Cache group context.
+     * @param cacheName Cache name.
+     * @param oldTreeName Old name of underlying index tree name.
+     * @param newTreeName New name of underlying index tree name.
+     * @param segments Number of segments.
+     * @throws IgniteCheckedException If failed.
+     */
+    public static void renameIndexRootPages(
+        CacheGroupContext grpCtx,
+        String cacheName,
+        String oldTreeName,
+        String newTreeName,
+        int segments
+    ) throws IgniteCheckedException {
+        IgniteWriteAheadLogManager wal = grpCtx.shared().wal();
+
+        int cacheId = CU.cacheId(cacheName);
+
+        if (wal != null)
+            wal.log(new IndexRenameRootPageRecord(cacheId, oldTreeName, newTreeName, segments));
+
+        grpCtx.shared().database().checkpointReadLock();
+
+        try {
+            for (int i = 0; i < segments; i++)
+                grpCtx.offheap().renameRootPageForIndex(cacheId, oldTreeName, newTreeName, i);
+        }
+        finally {
+            grpCtx.shared().database().checkpointReadUnlock();
+        }
+    }
+
+    /**
+     * Create index root pages based on its trees.
+     *
+     * @param trees Index trees.
+     * @return Index root pages. Mapping: segment number -> index root page.
+     */
+    public static Map<Integer, RootPage> toRootPages(InlineIndexTree[] trees) {
+        if (F.isEmpty(trees))
+            return emptyMap();
+        else {
+            Map<Integer, RootPage> res = new HashMap<>();
+
+            for (int i = 0; i < trees.length; i++) {
+                InlineIndexTree tree = trees[i];
+
+                assert tree != null : "No tree for segment: " + i;
+
+                res.put(i, new RootPage(new FullPageId(tree.getMetaPageId(), tree.groupId()), tree.created()));
+            }
+            return res;
+        }
+    }
+    
+    /**
+     * A do-nothing {@link InlineIndexRowHandlerFactory} implementation.
+     */
+    public static class NoopRowHandlerFactory implements InlineIndexRowHandlerFactory {
+        /** {@inheritDoc} */
+        @Override public InlineIndexRowHandler create(
+            SortedIndexDefinition sdef,
+            IndexKeyTypeSettings keyTypeSettings
+        ) {
+            return new InlineIndexRowHandler() {
+                /** {@inheritDoc} */
+                @Override public IndexKey indexKey(int idx, CacheDataRow row) {
+                    return null;
+                }
+
+                /** {@inheritDoc} */
+                @Override public List<InlineIndexKeyType> inlineIndexKeyTypes() {
+                    return emptyList();
+                }
+
+                /** {@inheritDoc} */
+                @Override public List<IndexKeyDefinition> indexKeyDefinitions() {
+                    return emptyList();
+                }
+
+                @Override public IndexKeyTypeSettings indexKeyTypeSettings() {
+                    return null;
+                }
+
+                /** {@inheritDoc} */
+                @Override public int partition(CacheDataRow row) {
+                    return 0;
+                }
+
+                /** {@inheritDoc} */
+                @Override public Object cacheKey(CacheDataRow row) {
+                    return null;
+                }
+
+                /** {@inheritDoc} */
+                @Override public Object cacheValue(CacheDataRow row) {
+                    return null;
+                }
+            };
+        }
+    }
+
+    /**
+     * Factory for creating index trees.
+     */
+    public static class InlineIndexTreeFactory {
+        /**
+         * Creation of an index tree.
+         *
+         * @param grpCtx Cache group context.
+         * @param rootPage Index root page.
+         * @param treeName Name of underlying index tree name.
+         * @return New index tree.
+         * @throws IgniteCheckedException If failed.
+         */
+        protected InlineIndexTree create(
+            CacheGroupContext grpCtx,
+            RootPage rootPage,
+            String treeName
+        ) throws IgniteCheckedException {
+            return new InlineIndexTree(
+                null,
+                grpCtx,
+                treeName,
+                grpCtx.offheap(),
+                grpCtx.offheap().reuseListForIndex(treeName),
+                grpCtx.dataRegion().pageMemory(),
+                PageIoResolver.DEFAULT_PAGE_IO_RESOLVER,
+                rootPage.pageId().pageId(),
+                false,
+                0,
+                0,
+                new IndexKeyTypeSettings(),
+                null,
+                null,
+                new NoopRowHandlerFactory(),
+                null
+            );
+        }
+    }
+
+    /**
+     * @return Cache name.
+     */
+    public String cacheName() {
+        return cacheName;
+    }
+
+    /**
+     * @return Index name.
+     */
+    public String idxName() {
+        return idxName;
+    }
+
+    /**
+     * @return {@code true} if needs to rename index trees, {@code false} otherwise.
+     */
+    public boolean needToRename() {
+        return needToRen;
     }
 
     /** {@inheritDoc} */
