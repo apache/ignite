@@ -301,10 +301,10 @@ class ServerImpl extends TcpDiscoveryImpl {
         new ConcurrentHashMap<>();
 
     /** Client node connection allowed property. */
-    private DistributedBooleanProperty clientNodeConnectionAllowed;
+    private DistributedBooleanProperty clientConnectionEnabled;
 
     /** Server node connection allowed property. */
-    private DistributedBooleanProperty serverNodeConnectionAllowed;
+    private DistributedBooleanProperty serverConnectionEnabled;
 
     /**
      * Maximum size of history of IDs of server nodes ever tried to join current topology (ever sent join request).
@@ -328,6 +328,16 @@ class ServerImpl extends TcpDiscoveryImpl {
             utilityPoolSize,
             2000,
             new LinkedBlockingQueue<>());
+
+        List<DistributedBooleanProperty> props = DistributedConfigurationUtils.newConnectionEnabledProperty(
+            ((IgniteEx)spi.ignite()).context().internalSubscriptionProcessor(),
+            log,
+            "ClientNode",
+            "ServerNode"
+        );
+
+        clientConnectionEnabled = props.get(0);
+        serverConnectionEnabled = props.get(1);
     }
 
     /** {@inheritDoc} */
@@ -479,16 +489,6 @@ class ServerImpl extends TcpDiscoveryImpl {
     /** {@inheritDoc} */
     @Override public void onContextInitialized0(IgniteSpiContext spiCtx) throws IgniteSpiException {
         spiCtx.registerPort(tcpSrvr.port, TCP);
-
-        List<DistributedBooleanProperty> props = DistributedConfigurationUtils.connectionAllowedProperty(
-            ((IgniteEx)spi.ignite()).context().internalSubscriptionProcessor(),
-            log,
-            "ClientNode",
-            "ServerNode"
-        );
-
-        clientNodeConnectionAllowed = props.get(0);
-        serverNodeConnectionAllowed = props.get(1);
     }
 
     /** {@inheritDoc} */
@@ -6447,11 +6447,11 @@ class ServerImpl extends TcpDiscoveryImpl {
      * @return {@code null} if connection allowed, error otherwise.
      */
     private IgniteNodeValidationResult ensureJoinAllowed(TcpDiscoveryNode node) {
-        DistributedBooleanProperty connAllowed = node.isClient()
-            ? clientNodeConnectionAllowed
-            : serverNodeConnectionAllowed;
+        DistributedBooleanProperty enabled = node.isClient()
+            ? clientConnectionEnabled
+            : serverConnectionEnabled;
 
-        if (connAllowed != null && connAllowed.get() == Boolean.FALSE)
+        if (enabled != null && enabled.get() == Boolean.FALSE)
             return new IgniteNodeValidationResult(node.id(), CONN_DISABLED_BY_ADMIN_ERR_MSG);
 
         return null;

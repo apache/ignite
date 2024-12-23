@@ -69,7 +69,7 @@ import org.apache.ignite.spi.systemview.view.ClientConnectionView;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
-import static org.apache.ignite.internal.cluster.DistributedConfigurationUtils.connectionAllowedProperty;
+import static org.apache.ignite.internal.cluster.DistributedConfigurationUtils.newConnectionEnabledProperty;
 import static org.apache.ignite.internal.processors.metric.GridMetricManager.CLIENT_CONNECTOR_METRICS;
 import static org.apache.ignite.internal.processors.metric.impl.MetricUtils.metricName;
 import static org.apache.ignite.internal.processors.odbc.ClientListenerMetrics.clientTypeLabel;
@@ -189,7 +189,7 @@ public class ClientListenerProcessor extends GridProcessorAdapter {
                         srv = GridNioServer.<ClientMessage>builder()
                             .address(hostAddr)
                             .port(port)
-                            .listener(new ClientListenerNioListener(ctx, busyLock, cliConnCfg, metrics, connectionAllowedPredicate()))
+                            .listener(new ClientListenerNioListener(ctx, busyLock, cliConnCfg, metrics, connectionEnabledPredicate()))
                             .logger(log)
                             .selectorCount(selectorCnt)
                             .igniteInstanceName(ctx.igniteInstanceName())
@@ -256,15 +256,15 @@ public class ClientListenerProcessor extends GridProcessorAdapter {
     }
 
     /**
-     * @return Predicate to check is connection for specific client type allowed by administrator.
+     * @return Predicate to check is connection for specific client type enabled.
      * @see ClientListenerNioListener#ODBC_CLIENT
      * @see ClientListenerNioListener#JDBC_CLIENT
      * @see ClientListenerNioListener#THIN_CLIENT
      */
-    private Predicate<Byte> connectionAllowedPredicate() {
+    private Predicate<Byte> connectionEnabledPredicate() {
         Map<Byte, DistributedBooleanProperty> allowConnMap = new HashMap<>();
 
-        List<DistributedBooleanProperty> props = connectionAllowedProperty(
+        List<DistributedBooleanProperty> props = newConnectionEnabledProperty(
             ctx.internalSubscriptionProcessor(),
             log,
             "Odbc",
@@ -280,7 +280,9 @@ public class ClientListenerProcessor extends GridProcessorAdapter {
             assert type != null : "Connection type is null";
             assert allowConnMap.containsKey(type) : "Unknown connection type: " + type;
 
-            return allowConnMap.get(type).get() != Boolean.FALSE;
+            Boolean val = allowConnMap.get(type).get();
+
+            return val == null || val;
         };
     }
 

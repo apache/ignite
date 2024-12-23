@@ -107,18 +107,19 @@ public final class DistributedConfigurationUtils {
     }
 
     /**
+     * Creates and registers distributed properties to enable connection by type.
      * @param subscriptionProcessor Processor to register properties.
      * @param log Logger to log default values.
      * @param types Connection types.
      * @return Detached distributed property.
      */
-    public static List<DistributedBooleanProperty> connectionAllowedProperty(
+    public static List<DistributedBooleanProperty> newConnectionEnabledProperty(
         GridInternalSubscriptionProcessor subscriptionProcessor,
         IgniteLogger log,
         String... types
     ) {
         List<DistributedBooleanProperty> props = Arrays.stream(types).map(type -> DistributedBooleanProperty.detachedBooleanProperty(
-            "allowNew" + type + "Connections",
+            "new" + type + "ConnectionsEnabled",
             "If true then new " + type.toUpperCase() + " connections allowed."
         )).collect(Collectors.toList());
 
@@ -131,7 +132,6 @@ public final class DistributedConfigurationUtils {
                 props.forEach(prop -> setDefaultValue(prop, true, log));
             }
         });
-
 
         return props;
     }
