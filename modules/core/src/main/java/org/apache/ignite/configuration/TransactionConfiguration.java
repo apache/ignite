@@ -22,7 +22,6 @@ import java.util.ArrayList;
 import java.util.EnumSet;
 import java.util.Set;
 import javax.cache.configuration.Factory;
-import org.apache.ignite.internal.util.TransientSerializable;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.lang.IgniteProductVersion;
 import org.apache.ignite.transactions.Transaction;
@@ -32,7 +31,6 @@ import org.apache.ignite.transactions.TransactionIsolation;
 /**
  * Transactions configuration.
  */
-@TransientSerializable(methodName = "transientSerializableFields")
 public class TransactionConfiguration implements Serializable {
     /**
      * Supported levels of transaction isolation for SQL queries.
@@ -43,9 +41,6 @@ public class TransactionConfiguration implements Serializable {
 
     /** */
     private static final IgniteProductVersion TX_PME_TIMEOUT_SINCE = IgniteProductVersion.fromString("2.5.1");
-
-    /** */
-    private static final IgniteProductVersion DEADLOCK_TIMEOUT_SINCE = IgniteProductVersion.fromString("2.7.3");
 
     /** */
     private static final long serialVersionUID = 0L;
@@ -459,9 +454,6 @@ public class TransactionConfiguration implements Serializable {
 
         if (TX_PME_TIMEOUT_SINCE.compareToIgnoreTimestamp(ver) >= 0)
             transients.add("txTimeoutOnPartitionMapExchange");
-
-        if (DEADLOCK_TIMEOUT_SINCE.compareToIgnoreTimestamp(ver) >= 0)
-            transients.add("deadlockTimeout");
 
         return transients.isEmpty() ? null : transients.toArray(new String[transients.size()]);
     }
