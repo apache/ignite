@@ -44,6 +44,7 @@ import org.apache.ignite.compute.ComputeTaskAdapter;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.internal.IgniteEx;
+import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.processors.cache.CacheGroupContext;
 import org.apache.ignite.internal.processors.cache.DynamicCacheDescriptor;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
@@ -234,6 +235,12 @@ public class VerifyBackupPartitionsTaskV2 extends ComputeTaskAdapter<CacheIdleVe
                 Future<Map<PartitionKeyV2, PartitionHashRecordV2>> fut = partHashCalcFuts.get(i);
 
                 try {
+                    if (isCancelled()) {
+                        cancelFuts(i, partHashCalcFuts);
+
+                        throw new IgniteException("Task was cancelled");
+                    }
+
                     Map<PartitionKeyV2, PartitionHashRecordV2> partHash = fut.get(100, TimeUnit.MILLISECONDS);
 
                     res.putAll(partHash);
@@ -249,8 +256,7 @@ public class VerifyBackupPartitionsTaskV2 extends ComputeTaskAdapter<CacheIdleVe
                         continue;
                     }
 
-                    for (int j = i + 1; j < partHashCalcFuts.size(); j++)
-                        partHashCalcFuts.get(j).cancel(false);
+                    cancelFuts(i, partHashCalcFuts);
 
                     if (e instanceof InterruptedException)
                         throw new IgniteInterruptedException((InterruptedException)e);
@@ -273,7 +279,19 @@ public class VerifyBackupPartitionsTaskV2 extends ComputeTaskAdapter<CacheIdleVe
             if (!F.isEmpty(exceptions))
                 throw new IdleVerifyException(exceptions);
 
-            return res;
+            return isCancelled() ? null : res;
+        }
+
+        private static void cancelFuts(int i, List<Future<Map<PartitionKeyV2, PartitionHashRecordV2>>> partHashCalcFuts) {
+            for (int j = i + 1; j < partHashCalcFuts.size(); j++)
+                partHashCalcFuts.get(j).cancel(false);
+        }
+
+        /** {@inheritDoc} */
+        @Override public void cancel() {
+            log.warning("Cancel request sent to VerifyBackupPartitionsJobV2.");
+
+            super.cancel();
         }
 
         /**
@@ -512,6 +530,11 @@ public class VerifyBackupPartitionsTaskV2 extends ComputeTaskAdapter<CacheIdleVe
                             ", grpId=" + gctx.groupId() + ", partId=" + part.id() + "] changed during size " +
                             "calculation [updCntrBefore=" + updateCntrBefore + ", updCntrAfter=" + updateCntrAfter + "]");
                     }
+                }
+                catch (IgniteInterruptedCheckedException e) {
+                    U.warn(log, "Interrupted while calculate partition hash [grpId=" + gctx.groupId() +
+                        ", partId=" + part.id() + "]", e);
+                    throw e;
                 }
                 catch (IgniteCheckedException e) {
                     U.error(log, "Can't calculate partition hash [grpId=" + gctx.groupId() +

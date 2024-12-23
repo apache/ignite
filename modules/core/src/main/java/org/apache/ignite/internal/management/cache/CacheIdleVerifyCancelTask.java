@@ -96,26 +96,32 @@ public class CacheIdleVerifyCancelTask extends VisorMultiNodeTask<NoArg, Void, V
             AtomicInteger tasksCnt = new AtomicInteger();
 
             F.iterator(ignite.context().systemView().view(TASKS_VIEW),
-                ComputeTaskView::taskClassName,
+                ComputeTaskView::sessionId,
                 true,
-                name -> name.taskClassName().equals(taskCls.getName())
-            ).forEach(name -> {
+                taskView -> {
+                    log.info("taskView.taskClassName(): " + taskView.taskClassName() + ", taskView.taskName(): " + taskView.taskName());
+                    return taskView.taskClassName().equals(taskCls.getName());
+                }
+            ).forEach(sesId -> {
+                ignite.context().job().cancelJob(sesId, null, false);
+
                 tasksCnt.incrementAndGet();
             });
 
-            F.iterator(
-                ignite.context().systemView().view(JOBS_VIEW),
-                ComputeJobView::sessionId,
-                true,
-                job -> job.taskClassName().equals(taskCls.getName())
-            ).forEach(sesId -> {
-                ignite.context().job().cancelJob(sesId, null, false);
-                jobsCnt.incrementAndGet();
-            });
+//            F.iterator(
+//                ignite.context().systemView().view(JOBS_VIEW),
+//                ComputeJobView::sessionId,
+//                true,
+//                jobView -> {
+//                    log.info("jobView.taskClassName(): " + jobView.taskClassName() + ", jobView.taskName(): " + jobView.taskName());
+//                    return jobView.taskClassName().equals(taskCls.getName());
+//                }
+//            ).forEach(sesId -> {
+//                ignite.context().job().cancelJob(sesId, null, false);
+//                jobsCnt.incrementAndGet();
+//            });
 
-            log.info(taskCls.getName() + " found jobs: " + jobsCnt );
-
-            log.info(taskCls.getName() + " found tasks: " + tasksCnt);
+            log.info(taskCls.getName() + " found jobs: " + jobsCnt + ", found tasks: " + tasksCnt);
         }
 
         /**
