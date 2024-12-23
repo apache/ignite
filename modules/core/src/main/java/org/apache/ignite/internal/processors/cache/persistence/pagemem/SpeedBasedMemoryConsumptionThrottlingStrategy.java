@@ -145,7 +145,7 @@ class SpeedBasedMemoryConsumptionThrottlingStrategy {
     /***/
     private long computeParkTime(@NotNull AtomicInteger writtenPagesCounter, long curNanoTime) {
         final int cpWrittenPages = writtenPagesCounter.get();
-        final long donePages = cpDonePagesEstimation(cpWrittenPages);
+        final int donePages = cpDonePagesEstimation(cpWrittenPages);
 
         final long instantaneousMarkDirtySpeed = markSpeedAndAvgParkTime.getSpeedOpsPerSec(curNanoTime);
         // NB: we update progress for speed calculation only in this (clean pages protection) scenario, because
@@ -168,8 +168,7 @@ class SpeedBasedMemoryConsumptionThrottlingStrategy {
             return parkTimeToThrottleByJustCPSpeed(instantaneousMarkDirtySpeed, avgCpWriteSpeed);
         }
         else {
-            return speedBasedParkTime(cpWrittenPages, donePages, cpTotalPages, instantaneousMarkDirtySpeed,
-                    avgCpWriteSpeed);
+            return speedBasedParkTime(donePages, cpTotalPages, instantaneousMarkDirtySpeed, avgCpWriteSpeed);
         }
     }
 
@@ -185,6 +184,13 @@ class SpeedBasedMemoryConsumptionThrottlingStrategy {
         // TODO: IGNITE-16879 - this only works correctly if time-to-write a page is close to time-to-sync a page.
         // In reality, this does not seem to hold, which produces wrong estimations. We could measure the real times
         // in Checkpointer and make this estimation a lot more precise.
+        // Here we also assume that time-to-write + time-to-sync checkpoint recovery data (if this phase is used by
+        // checkpointer) is close to time-to-write + time-to-sync of pages to page store.
+        int cpWrittenRecoveryPages = cpWrittenRecoveryPages();
+
+        if (cpWrittenRecoveryPages > 0)
+            return (cpWrittenRecoveryPages * 2 + cpWrittenPages + cpSyncedPages()) / 4;
+
         return (cpWrittenPages + cpSyncedPages()) / 2;
     }
 
@@ -207,13 +213,17 @@ class SpeedBasedMemoryConsumptionThrottlingStrategy {
     }
 
     /***/
-    private long speedBasedParkTime(int cpWrittenPages, long donePages, int cpTotalPages,
-                                    long instantaneousMarkDirtySpeed, long avgCpWriteSpeed) {
+    private long speedBasedParkTime(
+        int donePages,
+        int cpTotalPages,
+        long instantaneousMarkDirtySpeed,
+        long avgCpWriteSpeed
+    ) {
         final double dirtyPagesRatio = pageMemory.getDirtyPagesRatio();
 
         currDirtyRatio = dirtyPagesRatio;
 
-        detectCpPagesWriteStart(cpWrittenPages, dirtyPagesRatio);
+        detectCpPagesWriteStart(donePages, dirtyPagesRatio);
 
         if (dirtyPagesRatio >= MAX_DIRTY_PAGES)
             return 0; // too late to throttle, will wait on safe to update instead.
@@ -412,6 +422,15 @@ class SpeedBasedMemoryConsumptionThrottlingStrategy {
         AtomicInteger syncedPagesCntr = cpProgress.apply().syncedPagesCounter();
 
         return syncedPagesCntr == null ? 0 : syncedPagesCntr.get();
+    }
+
+    /**
+     * @return Counter for written recovery pages on checkpoint.
+     */
+    int cpWrittenRecoveryPages() {
+        AtomicInteger writtenRecoveryPagesCounter = cpProgress.apply().writtenRecoveryPagesCounter();
+
+        return writtenRecoveryPagesCounter == null ? 0 : writtenRecoveryPagesCounter.get();
     }
 
     /**

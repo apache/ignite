@@ -490,7 +490,7 @@ public abstract class PageHandler<X, R> {
         @Nullable Boolean walPlc) {
         // If the page is clean, then it is either newly allocated or just after checkpoint.
         // In both cases we have to write full page contents to WAL.
-        return wal != null && !wal.isAlwaysWriteFullPages() && walPlc != TRUE && !wal.disabled(cacheId, pageId) &&
+        return wal != null && !wal.isAlwaysWriteFullPages() && walPlc != TRUE && !wal.pageRecordsDisabled(cacheId, pageId) &&
             (walPlc == FALSE || pageMem.isDirty(cacheId, pageId, page));
     }
 
