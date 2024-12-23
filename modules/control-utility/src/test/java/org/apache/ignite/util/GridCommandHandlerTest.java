@@ -230,7 +230,7 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
 
         initDiagnosticDir();
 
-        cleanDiagnosticDir();
+        cleanPersistenceDir();
     }
 
     /** {@inheritDoc} */
@@ -775,7 +775,7 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
 
         ListeningTestLogger listeningLog = new ListeningTestLogger(log);
 
-        LogListener cancelMsgListener = LogListener.matches("idle_verify command has been canceled succesfully").times(1).build();
+        LogListener cancelMsgListener = LogListener.matches("Idle verify was cancelled.").times(1).build();
 
         listeningLog.registerListener(cancelMsgListener);
 
@@ -784,15 +784,17 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
         assertFalse(idleVerifyFut.isDone());
 
         doSleep(1000);
+
         assertEquals(EXIT_CODE_OK, execute("--cache", "idle_verify", "--cancel"));
 
         for (int i = 0; i < gridsCnt; i++) {
             for (ComputeTaskView view : grid(i).context().systemView().<ComputeTaskView>view(TASKS_VIEW))
-                waitForCondition(() -> !IdleVerifyTaskV2.class.getName().equals(view.taskName()), 100);
+                assertTrue(waitForCondition(() -> !IdleVerifyTaskV2.class.getName().equals(view.taskName()), 100));
         }
 
-        assertTrue(idleVerifyFut.isDone());
-        waitForCondition(cancelMsgListener::check, 1000);
+        assertTrue(waitForCondition(() -> idleVerifyFut.isDone(), 1000));
+
+        assertTrue(waitForCondition(cancelMsgListener::check, 1000));
     }
 
     /**

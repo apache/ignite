@@ -1133,8 +1133,6 @@ public class GridJobProcessor extends GridProcessorAdapter {
         int cnt = 0;
 
         for (GridJobWorker jobWorker : activeJobs.values()) {
-            assert !jobWorker.isInternal();
-
             cnt++;
 
             if (!jobWorker.held()) {
