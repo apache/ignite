@@ -32,7 +32,7 @@
         <relativePath/>
     </parent>
 
-    <groupId>org.apache.ignite</groupId>
+    <groupId>com.sbt.ignite</groupId>
     <artifactId>ignite-checkstyle</artifactId>
     <version>${revision}</version>
 
