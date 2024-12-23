@@ -93,15 +93,11 @@ public class ThinClientNonTransactionalOperationsInTxTest extends GridCommonAbst
             }
 
             return null;
-        }, CacheException.class, String.format(NON_TRANSACTIONAL_CLIENT_CACHE_IN_TX_ERROR_MESSAGE, checkClearAsync(async)));
+        }, CacheException.class, String.format(NON_TRANSACTIONAL_CLIENT_CACHE_IN_TX_ERROR_MESSAGE,
+            async ? "clearAsync" : "clear"));
 
         assertTrue(cache.containsKey(1));
         assertFalse(cache.containsKey(2));
-    }
-
-    /** */
-    private String checkClearAsync(boolean async) {
-        return async ? "clearAsync" : "clear";
     }
 
     /** */
@@ -137,14 +133,10 @@ public class ThinClientNonTransactionalOperationsInTxTest extends GridCommonAbst
             }
 
             return null;
-        }, CacheException.class, String.format(NON_TRANSACTIONAL_CLIENT_CACHE_IN_TX_ERROR_MESSAGE, checkRemoveAsync(async)));
+        }, CacheException.class, String.format(NON_TRANSACTIONAL_CLIENT_CACHE_IN_TX_ERROR_MESSAGE,
+            async ? "removeAllAsync" : "removeAll"));
 
         assertTrue(cache.containsKey(1));
         assertFalse(cache.containsKey(2));
-    }
-
-    /** */
-    private String checkRemoveAsync(boolean async) {
-        return async ? "removeAllAsync" : "removeAll";
     }
 }

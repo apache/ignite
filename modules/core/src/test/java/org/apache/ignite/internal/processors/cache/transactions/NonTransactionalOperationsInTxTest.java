@@ -119,17 +119,12 @@ public class NonTransactionalOperationsInTxTest extends GridCommonAbstractTest {
                 return null;
             }),
             CacheException.class,
-            String.format(NON_TRANSACTIONAL_IGNITE_CACHE_CLEAR_IN_TX_ERROR_MESSAGE, checkClearAsync(async))
+            String.format(NON_TRANSACTIONAL_IGNITE_CACHE_CLEAR_IN_TX_ERROR_MESSAGE, async ? "clearAsync" : "clear")
         );
 
         assertTrue(cache.containsKey(1));
 
         assertFalse(cache.containsKey(2));
-    }
-
-    /** */
-    private String checkClearAsync(boolean async) {
-        return async ? "clearAsync" : "clear";
     }
 
     /** */
@@ -183,16 +178,11 @@ public class NonTransactionalOperationsInTxTest extends GridCommonAbstractTest {
                 return null;
             }),
             CacheException.class,
-            String.format(NON_TRANSACTIONAL_IGNITE_CACHE_IN_TX_ERROR_MESSAGE, checkRemoveAsync(async))
+            String.format(NON_TRANSACTIONAL_IGNITE_CACHE_IN_TX_ERROR_MESSAGE, async ? "removeAllAsync" : "removeAll")
         );
 
         assertTrue(cache.containsKey(1));
 
         assertFalse(cache.containsKey(2));
-    }
-
-    /** */
-    private String checkRemoveAsync(boolean async) {
-        return async ? "removeAllAsync" : "removeAll";
     }
 }

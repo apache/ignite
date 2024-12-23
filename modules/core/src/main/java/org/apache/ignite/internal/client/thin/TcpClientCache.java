@@ -1428,12 +1428,8 @@ public class TcpClientCache<K, V> implements ClientCache<K, V> {
     /** */
     private void checkTxClearOperation(ClientOperation op, boolean async) {
         if (op == ClientOperation.CACHE_CLEAR_KEY || op == ClientOperation.CACHE_CLEAR_KEYS)
-            throw new CacheException(String.format(NON_TRANSACTIONAL_CLIENT_CACHE_IN_TX_ERROR_MESSAGE, checkClearAsync(async)));
-    }
-
-    /** */
-    private String checkClearAsync(boolean async) {
-        return async ? "clearAsync" : "clear";
+            throw new CacheException(String.format(NON_TRANSACTIONAL_CLIENT_CACHE_IN_TX_ERROR_MESSAGE,
+                async ? "clearAsync" : "clear"));
     }
 
     /**
