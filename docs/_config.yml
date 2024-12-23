@@ -14,7 +14,7 @@
 # limitations under the License.
 exclude: [guidelines.md,  "Gemfile", "Gemfile.lock", README.adoc, "_docs/code-snippets", "_docs/includes", '*.sh']
 attrs: &asciidoc_attributes
-  version: 2.18.0-SNAPSHOT
+  version: 18.0.0-SNAPSHOT
   base_url: /docs
   stylesdir: /docs/assets/css
   imagesdir: /docs
