@@ -40,9 +40,6 @@ import org.apache.ignite.internal.processors.query.calcite.util.Commons;
 /** Represent hash join. */
 public class IgniteHashJoin extends AbstractIgniteJoin {
     /** */
-    private static final String REL_TYPE = "HashJoin";
-
-    /** */
     public IgniteHashJoin(
         RelOptCluster cluster,
         RelTraitSet traitSet,
@@ -113,11 +110,5 @@ public class IgniteHashJoin extends AbstractIgniteJoin {
     @Override public IgniteRel clone(RelOptCluster cluster, List<IgniteRel> inputs) {
         return new IgniteHashJoin(cluster, getTraitSet(), inputs.get(0), inputs.get(1), getCondition(),
             getVariablesSet(), getJoinType());
-    }
-
-    // TODO: needed?
-    /** {@inheritDoc} */
-    @Override public String getRelTypeName() {
-        return REL_TYPE;
     }
 }

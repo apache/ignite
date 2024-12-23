@@ -183,6 +183,8 @@ public abstract class HashJoinNode<Row> extends AbstractRightMaterializedJoinNod
 
         checkState();
 
+        nodeMemoryTracker.onRowAdded(row);
+
         waitingRight--;
 
         Key key = extractKey(row, rightJoinPositions);
@@ -422,7 +424,8 @@ public abstract class HashJoinNode<Row> extends AbstractRightMaterializedJoinNod
                         if (!rightIt.hasNext())
                             left = null;
                     }
-                } finally {
+                }
+                finally {
                     inLoop = false;
                 }
             }
@@ -717,7 +720,7 @@ public abstract class HashJoinNode<Row> extends AbstractRightMaterializedJoinNod
             if (obj == null || getClass() != obj.getClass())
                 return false;
 
-            RowWrapper<RowT> row0 = (RowWrapper<RowT>) obj;
+            RowWrapper<RowT> row0 = (RowWrapper<RowT>)obj;
 
             for (int i = 0; i < items.length; ++i) {
                 Object input = row0.handler.get(row0.items[i], row0.row);

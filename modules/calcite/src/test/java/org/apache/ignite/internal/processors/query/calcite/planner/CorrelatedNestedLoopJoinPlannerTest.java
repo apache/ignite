@@ -153,7 +153,7 @@ public class CorrelatedNestedLoopJoinPlannerTest extends AbstractPlannerTest {
         IgniteRel phys = physicalPlan(
             sql,
             publicSchema,
-            "MergeJoinConverter", "NestedLoopJoinConverter", "FilterSpoolMergeRule", "HashJoinConverter"
+            "MergeJoinConverter", "NestedLoopJoinConverter", "FilterSpoolMergeRule"
         );
 
         assertNotNull(phys);

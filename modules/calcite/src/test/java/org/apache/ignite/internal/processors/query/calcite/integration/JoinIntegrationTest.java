@@ -842,21 +842,32 @@ public class JoinIntegrationTest extends AbstractBasicIntegrationTransactionalTe
         NESTED_LOOP(
             "CorrelatedNestedLoopJoin",
             "JoinCommuteRule",
-            "MergeJoinConverter"
+            "MergeJoinConverter",
+            "HashJoinConverter"
         ),
 
         /** */
         MERGE(
             "CorrelatedNestedLoopJoin",
             "JoinCommuteRule",
-            "NestedLoopJoinConverter"
+            "NestedLoopJoinConverter",
+            "HashJoinConverter"
         ),
 
         /** */
         CORRELATED(
             "MergeJoinConverter",
             "JoinCommuteRule",
-            "NestedLoopJoinConverter"
+            "NestedLoopJoinConverter",
+            "HashJoinConverter"
+        ),
+
+        /** */
+        HASH(
+            "MergeJoinConverter",
+            "JoinCommuteRule",
+            "NestedLoopJoinConverter",
+            "CorrelatedNestedLoopJoin"
         );
 
         /** */

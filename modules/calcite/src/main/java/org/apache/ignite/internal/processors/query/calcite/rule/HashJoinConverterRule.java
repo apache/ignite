@@ -32,22 +32,23 @@ import org.apache.calcite.rex.RexVisitor;
 import org.apache.calcite.rex.RexVisitorImpl;
 import org.apache.calcite.sql.SqlKind;
 import org.apache.calcite.util.Util;
+import org.apache.ignite.internal.processors.query.calcite.hint.HintDefinition;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteConvention;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteHashJoin;
 import org.apache.ignite.internal.util.typedef.F;
 
 /** Hash join converter rule. */
-public class HashJoinConverterRule extends AbstractIgniteConverterRule<LogicalJoin> {
+public class HashJoinConverterRule extends AbstractIgniteJoinConverterRule {
     /** */
     public static final RelOptRule INSTANCE = new HashJoinConverterRule();
 
     /** Ctor. */
     public HashJoinConverterRule() {
-        super(LogicalJoin.class, "HashJoinConverter");
+        super("HashJoinConverter", HintDefinition.HASH_JOIN);
     }
 
     /** {@inheritDoc} */
-    @Override public boolean matches(RelOptRuleCall call) {
+    @Override public boolean matchesJoin(RelOptRuleCall call) {
         LogicalJoin join = call.rel(0);
 
         return !F.isEmpty(join.analyzeCondition().pairs()) && join.analyzeCondition().isEqui() && checkConditions(join.getCondition());

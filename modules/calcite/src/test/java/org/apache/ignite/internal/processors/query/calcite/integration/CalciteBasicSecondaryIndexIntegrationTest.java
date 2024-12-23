@@ -276,6 +276,7 @@ public class CalciteBasicSecondaryIndexIntegrationTest extends AbstractBasicInte
             .check();
     }
 
+    // TODO: hash join
     /** */
     @Test
     public void testMergeJoin() {

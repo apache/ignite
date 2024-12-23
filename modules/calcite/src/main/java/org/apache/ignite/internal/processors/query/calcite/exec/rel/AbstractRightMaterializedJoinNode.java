@@ -25,7 +25,7 @@ import org.apache.ignite.internal.util.typedef.F;
 import org.jetbrains.annotations.Nullable;
 
 /** Right-part materialized join node. Holds data from the right part locally. */
-public abstract class AbstractRightMaterializedJoinNode<Row> extends AbstractNode<Row> {
+public abstract class AbstractRightMaterializedJoinNode<Row> extends MemoryTrackingNode<Row> {
     /** Special flag which marks that all the rows are received. */
     protected static final int NOT_WAITING = -1;
 

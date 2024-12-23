@@ -23,8 +23,10 @@ import java.util.List;
 import java.util.UUID;
 import com.google.common.collect.ImmutableSet;
 import org.apache.calcite.rel.core.CorrelationId;
+import org.apache.calcite.rel.core.JoinInfo;
 import org.apache.calcite.rel.core.JoinRelType;
 import org.apache.calcite.rel.type.RelDataType;
+import org.apache.calcite.util.ImmutableIntList;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.processors.query.calcite.exec.ExecutionContext;
@@ -289,10 +291,7 @@ public class ExecutionTest extends AbstractExecutionTest {
 
         assertEquals(4, rows.size());
 
-        Assert.assertArrayEquals(new Object[] {0, "Igor", "Core"}, rows.get(0));
-        Assert.assertArrayEquals(new Object[] {3, "Alexey", "Core"}, rows.get(1));
-        Assert.assertArrayEquals(new Object[] {1, "Roman", "SQL"}, rows.get(2));
-        Assert.assertArrayEquals(new Object[] {2, "Ivan", null}, rows.get(3));
+        checkDepJoinEmpResults(RIGHT, rows);
     }
 
     /**
@@ -409,10 +408,7 @@ public class ExecutionTest extends AbstractExecutionTest {
         while (node.hasNext())
             rows.add(node.next());
 
-        assertEquals(2, rows.size());
-
-        Assert.assertArrayEquals(new Object[] {"Core"}, rows.get(0));
-        Assert.assertArrayEquals(new Object[] {"SQL"}, rows.get(1));
+        checkDepJoinEmpResults(SEMI, rows);
     }
 
     /**
@@ -469,7 +465,7 @@ public class ExecutionTest extends AbstractExecutionTest {
 
         assertEquals(1, rows.size());
 
-        Assert.assertArrayEquals(new Object[] {"QA"}, rows.get(0));
+        checkDepJoinEmpResults(ANTI, rows);
     }
 
     /**
@@ -535,6 +531,117 @@ public class ExecutionTest extends AbstractExecutionTest {
                     }
                 }
             }
+        }
+    }
+
+    /** */
+    @Test
+    public void testHashJoin() {
+        // select e.id, e.name, d.name as dep_name from DEP d <JOIN TYPE> join EMP e on e.DEPNO = d.DEPNO
+        for (JoinRelType joinType : F.asList(LEFT, INNER, RIGHT, FULL, SEMI, ANTI)) {
+            ExecutionContext<Object[]> ctx = executionContext(F.first(nodes()), UUID.randomUUID(), 0);
+            IgniteTypeFactory tf = ctx.getTypeFactory();
+
+            RelDataType rowType = TypeUtils.createRowType(tf, int.class, String.class);
+            ScanNode<Object[]> leftDeps = new ScanNode<>(ctx, rowType, Arrays.asList(
+                new Object[] {1, "Core"},
+                new Object[] {2, "SQL"},
+                new Object[] {3, "QA"}
+            ));
+
+            rowType = TypeUtils.createRowType(tf, int.class, String.class, Integer.class);
+            ScanNode<Object[]> rightEmps = new ScanNode<>(ctx, rowType, Arrays.asList(
+                new Object[] {0, "Igor", 1},
+                new Object[] {1, "Roman", 2},
+                new Object[] {2, "Ivan", null},
+                new Object[] {3, "Alexey", 1}
+            ));
+
+            RelDataType leftType = TypeUtils.createRowType(ctx.getTypeFactory(), int.class, String.class);
+            RelDataType rightType = TypeUtils.createRowType(ctx.getTypeFactory(), int.class, String.class, Integer.class);
+            RelDataType outType = TypeUtils.createRowType(ctx.getTypeFactory(), int.class, String.class, int.class,
+                String.class, Integer.class);
+
+            rowType = TypeUtils.createRowType(tf, int.class, String.class, String.class);
+
+            HashJoinNode<Object[]> join = HashJoinNode.create(ctx, outType, leftType, rightType, joinType,
+                JoinInfo.of(ImmutableIntList.of(0), ImmutableIntList.of(2)));
+
+            join.register(F.asList(leftDeps, rightEmps));
+
+            ProjectNode<Object[]> project = new ProjectNode<>(ctx, rowType,
+                r -> joinType == SEMI || joinType == ANTI ? new Object[] {r[1]} : new Object[] {r[2], r[3], r[1]});
+
+            project.register(join);
+
+            RootNode<Object[]> rootScan = new RootNode<>(ctx, rowType);
+            rootScan.register(project);
+
+            assert rootScan.hasNext();
+
+            ArrayList<Object[]> rows = new ArrayList<>();
+
+            while (rootScan.hasNext())
+                rows.add(rootScan.next());
+
+            checkDepJoinEmpResults(joinType, rows);
+        }
+    }
+
+    /** */
+    private void checkDepJoinEmpResults(JoinRelType joinType, ArrayList<Object[]> results) {
+        switch (joinType) {
+            case LEFT:
+                assertEquals(4, results.size());
+
+                Assert.assertArrayEquals(new Object[] {0, "Igor", "Core"}, results.get(0));
+                Assert.assertArrayEquals(new Object[] {3, "Alexey", "Core"}, results.get(1));
+                Assert.assertArrayEquals(new Object[] {1, "Roman", "SQL"}, results.get(2));
+                Assert.assertArrayEquals(new Object[] {null, null, "QA"}, results.get(3));
+                break;
+
+            case INNER:
+                assertEquals(3, results.size());
+
+                Assert.assertArrayEquals(new Object[] {0, "Igor", "Core"}, results.get(0));
+                Assert.assertArrayEquals(new Object[] {3, "Alexey", "Core"}, results.get(1));
+                Assert.assertArrayEquals(new Object[] {1, "Roman", "SQL"}, results.get(2));
+                break;
+
+            case RIGHT:
+                assertEquals(4, results.size());
+
+                Assert.assertArrayEquals(new Object[] {0, "Igor", "Core"}, results.get(0));
+                Assert.assertArrayEquals(new Object[] {3, "Alexey", "Core"}, results.get(1));
+                Assert.assertArrayEquals(new Object[] {1, "Roman", "SQL"}, results.get(2));
+                Assert.assertArrayEquals(new Object[] {2, "Ivan", null}, results.get(3));
+                break;
+
+            case FULL:
+                assertEquals(5, results.size());
+
+                Assert.assertArrayEquals(new Object[] {0, "Igor", "Core"}, results.get(0));
+                Assert.assertArrayEquals(new Object[] {3, "Alexey", "Core"}, results.get(1));
+                Assert.assertArrayEquals(new Object[] {1, "Roman", "SQL"}, results.get(2));
+                Assert.assertArrayEquals(new Object[] {null, null, "QA"}, results.get(3));
+                Assert.assertArrayEquals(new Object[] {2, "Ivan", null}, results.get(4));
+                break;
+
+            case SEMI:
+                assertEquals(2, results.size());
+
+                Assert.assertArrayEquals(new Object[] {"Core"}, results.get(0));
+                Assert.assertArrayEquals(new Object[] {"SQL"}, results.get(1));
+                break;
+
+            case ANTI:
+                assertEquals(1, results.size());
+
+                Assert.assertArrayEquals(new Object[] {"QA"}, results.get(0));
+                break;
+
+            default:
+                throw new IllegalArgumentException("Unknows join type.");
         }
     }
 

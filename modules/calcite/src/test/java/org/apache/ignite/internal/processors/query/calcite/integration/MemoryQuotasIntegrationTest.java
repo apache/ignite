@@ -17,12 +17,14 @@
 
 package org.apache.ignite.internal.processors.query.calcite.integration;
 
+import java.util.List;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.cache.query.QueryCursor;
 import org.apache.ignite.calcite.CalciteQueryEngineConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.SqlConfiguration;
 import org.apache.ignite.internal.processors.query.calcite.QueryChecker;
+import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.junit.Test;
 
@@ -234,22 +236,28 @@ public class MemoryQuotasIntegrationTest extends AbstractBasicIntegrationTest {
 
     /** */
     @Test
-    public void testNestedLoopJoinNode() {
+    public void testJoins() {
         sql("CREATE TABLE tbl2 (id INT, b VARBINARY) WITH TEMPLATE=PARTITIONED");
 
         for (int i = 0; i < 800; i++)
             sql("INSERT INTO tbl2 VALUES (?, ?)", i, new byte[1000]);
 
-        assertQuery("SELECT /*+ NL_JOIN */ tbl.id, tbl.b, tbl2.id, tbl2.b FROM tbl JOIN tbl2 USING (id)")
-            .matches(QueryChecker.containsSubPlan("IgniteNestedLoopJoin"))
-            .resultSize(800)
-            .check();
+        List<List<String>> params = F.asList(F.asList("NL_JOIN", "NestedLoopJoin"), F.asList("HASH_JOIN", "IgniteHashJoin"));
+
+        for (List<String> paramSet : params) {
+            assertQuery("SELECT /*+ " + paramSet.get(0) + " */ tbl.id, tbl.b, tbl2.id, tbl2.b FROM tbl JOIN tbl2 USING (id)")
+                .matches(QueryChecker.containsSubPlan(paramSet.get(1)))
+                .resultSize(800)
+                .check();
+        }
 
         for (int i = 800; i < 1000; i++)
             sql("INSERT INTO tbl2 VALUES (?, ?)", i, new byte[1000]);
 
-        assertThrows("SELECT /*+ NL_JOIN */ tbl.id, tbl.b, tbl2.id, tbl2.b FROM tbl JOIN tbl2 USING (id)",
-            IgniteException.class, "Query quota exceeded");
+        for (List<String> paramSet : params) {
+            assertThrows("SELECT /*+ " + paramSet.get(0) + " */ tbl.id, tbl.b, tbl2.id, tbl2.b FROM tbl JOIN tbl2 USING (id)",
+                IgniteException.class, "Query quota exceeded");
+        }
     }
 
     /** */

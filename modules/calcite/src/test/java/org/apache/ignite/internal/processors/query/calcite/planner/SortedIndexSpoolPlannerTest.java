@@ -90,7 +90,7 @@ public class SortedIndexSpoolPlannerTest extends AbstractPlannerTest {
         IgniteRel phys = physicalPlan(
             sql,
             publicSchema,
-            "MergeJoinConverter", "NestedLoopJoinConverter", "FilterSpoolMergeToHashIndexSpoolRule"
+            "MergeJoinConverter", "NestedLoopJoinConverter", "HashJoinConverter", "FilterSpoolMergeToHashIndexSpoolRule"
         );
 
         checkSplitAndSerialization(phys, publicSchema);
@@ -157,7 +157,7 @@ public class SortedIndexSpoolPlannerTest extends AbstractPlannerTest {
         IgniteRel phys = physicalPlan(
             sql,
             publicSchema,
-            "MergeJoinConverter", "NestedLoopJoinConverter", "FilterSpoolMergeToHashIndexSpoolRule"
+            "MergeJoinConverter", "HashJoinConverter", "NestedLoopJoinConverter", "FilterSpoolMergeToHashIndexSpoolRule"
         );
 
         System.out.println("+++ \n" + RelOptUtil.toString(phys));
@@ -252,7 +252,7 @@ public class SortedIndexSpoolPlannerTest extends AbstractPlannerTest {
                     .and(input(1, isInstanceOf(IgniteSortedIndexSpool.class)
                         .and(spool -> spool.collation().getFieldCollations().get(0).getFieldIndex() == equalIdx)
                     ))),
-                "MergeJoinConverter", "NestedLoopJoinConverter", "FilterSpoolMergeToHashIndexSpoolRule"
+                "MergeJoinConverter", "HashJoinConverter", "NestedLoopJoinConverter", "FilterSpoolMergeToHashIndexSpoolRule"
             );
         }
     }

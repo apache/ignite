@@ -90,28 +90,28 @@ public class HashJoinPlannerTest extends AbstractPlannerTest {
     /** */
     @Test
     public void testHashJoinWinsOnSkewedLeftInput() throws Exception {
-        TestTable thinTblSortedPk = createSimpleTable("SMALL_TBL", 1000);
-        TestTable thickTblSortedPk = createSimpleTable("LARGE_TBL", 500_000);
+        TestTable smallTbl = createSimpleTable("SMALL_TBL", 1000);
+        TestTable largeTbl = createSimpleTable("LARGE_TBL", 500_000);
 
-        IgniteSchema schema = createSchema(thinTblSortedPk, thickTblSortedPk);
+        IgniteSchema schema = createSchema(smallTbl, largeTbl);
 
         assertPlan(
-            "select t1.ID, t1.ID2, t2.ID, t2.ID2 from LARGE_TBL t1 join SMALL_TBL t2 on t1.ID2 = t2.ID2",
+            "select t1.ID, t1.INT_VAL, t2.ID, t2.INT_VAL from LARGE_TBL t1 join SMALL_TBL t2 on t1.INT_VAL = t2.INT_VAL",
             schema,
             nodeOrAnyChild(isInstanceOf(IgniteHashJoin.class)),
             "JoinCommuteRule"
         );
 
         assertPlan(
-            "select t1.ID, t1.ID2, t2.ID, t2.ID2 from SMALL_TBL t1 join LARGE_TBL t2 on t1.ID2 = t2.ID2",
+            "select t1.ID, t1.INT_VAL, t2.ID, t2.INT_VAL from SMALL_TBL t1 join LARGE_TBL t2 on t1.INT_VAL = t2.INT_VAL",
             schema,
             nodeOrAnyChild(isInstanceOf(IgniteHashJoin.class).negate()),
             "JoinCommuteRule"
         );
 
-        // Merge join can consume less cpu resources.
+        // Merge join can consume less CPU resources.
         assertPlan(
-            "select t1.ID, t1.ID2, t2.ID, t2.ID2 from SMALL_TBL t1 join LARGE_TBL t2 on t1.ID = t2.ID",
+            "select t1.ID, t1.INT_VAL, t2.ID, t2.INT_VAL from SMALL_TBL t1 join LARGE_TBL t2 on t1.ID = t2.ID",
             schema,
             nodeOrAnyChild(isInstanceOf(IgniteHashJoin.class).negate()),
             "JoinCommuteRule"
@@ -124,7 +124,7 @@ public class HashJoinPlannerTest extends AbstractPlannerTest {
             .and(node -> node.getInputs().size() == 1 && node.getInput(0) instanceof Join));
 
         if (sortNodes.size() > 1)
-            throw new IllegalStateException("Unexpected count of sort nodes: exp<=1, act=" + sortNodes.size());
+            throw new IllegalStateException("Incorrect sort nodes number: expected 1, actual " + sortNodes.size());
 
         return sortNodes.isEmpty() ? null : sortNodes.get(0);
     }
@@ -182,8 +182,8 @@ public class HashJoinPlannerTest extends AbstractPlannerTest {
             size,
             IgniteDistributions.affinity(0, ++tableId, 0),
             "ID", Integer.class,
-            "ID2", Integer.class,
-            "VAL", String.class
+            "INT_VAL", Integer.class,
+            "STR_VAL", String.class
         ).addIndex(
             RelCollations.of(new RelFieldCollation(0, ASCENDING, RelFieldCollation.NullDirection.LAST)),
             "PK"
@@ -198,7 +198,7 @@ public class HashJoinPlannerTest extends AbstractPlannerTest {
             IgniteDistributions.affinity(ImmutableIntList.of(0, 1), ++tableId, 0),
             "ID1", Integer.class,
             "ID2", Integer.class,
-            "VAL", String.class
+            "STR_VAL", String.class
         ).addIndex(
             RelCollations.of(
                 new RelFieldCollation(0, ASCENDING, RelFieldCollation.NullDirection.LAST),
@@ -207,22 +207,4 @@ public class HashJoinPlannerTest extends AbstractPlannerTest {
             "PK"
         );
     }
-
-//    /** */
-//    static IgniteTable createSimpleTableHashPk(String tableName, int size) {
-//        return TestBuilders.table()
-//            .name(tableName)
-//            .size(size)
-//            .distribution(someAffinity())
-//            .addColumn("ID", NativeTypes.INT32)
-//            .addColumn("ID2", NativeTypes.INT32)
-//            .addColumn("VAL", NativeTypes.STRING)
-//            .hashIndex()
-//            .name("PK")
-//            .addColumn("ID")
-//            .end()
-//            .build();
-//    }
-
-
 }
