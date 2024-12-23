@@ -17,8 +17,10 @@
 
 package org.apache.ignite.util;
 
+import static org.apache.ignite.testframework.GridTestUtils.assertContains;
+
 /**
- * It is recommended to extends from this class in case of creating a cluster
+ * It is recommended to extend from this class in case of creating a cluster
  * for each test method. Otherwise, use
  * {@link GridCommandHandlerClusterByClassAbstractTest}
  * */
@@ -30,5 +32,19 @@ public abstract class GridCommandHandlerClusterPerMethodAbstractTest extends Gri
         stopAllGrids();
 
         cleanPersistenceDir();
+    }
+
+    /**
+     * Checks idle_vefify result.
+     *
+     * @param counter Counter conflicts.
+     * @param hash    Hash conflicts.
+     */
+    protected void assertConflicts(boolean counter, boolean hash) {
+        if (counter || hash)
+            assertContains(log, testOut.toString(), "conflict partitions has been found: " +
+                "[counterConflicts=" + (counter ? 1 : 0) + ", hashConflicts=" + (hash ? 1 : 0) + "]");
+        else
+            assertContains(log, testOut.toString(), "no conflicts have been found");
     }
 }
