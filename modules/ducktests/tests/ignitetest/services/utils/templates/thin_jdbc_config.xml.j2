@@ -22,6 +22,11 @@
        http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans.xsd
        http://www.springframework.org/schema/util http://www.springframework.org/schema/util/spring-util.xsd">
     <bean class="org.apache.ignite.IgniteJdbcThinDataSource" id="thin.jdbc.cfg">
+        {% if config.url %}
+            <property name="url" value="{{ config.url }}"/>
+        {% endif %}
+
+        {% if config.addresses | length > 0 %}
         <property name="addresses">
             <list>
                 {% for address in config.addresses %}
@@ -29,6 +34,7 @@
                 {% endfor %}
             </list>
         </property>
+        {% endif %}
 
         {% if config.username %}
             <property name="username" value="{{ config.username }}"/>
