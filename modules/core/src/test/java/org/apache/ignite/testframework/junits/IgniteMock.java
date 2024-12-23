@@ -166,7 +166,6 @@ public class IgniteMock implements IgniteEx {
 
         IgniteConfiguration cfg = new IgniteConfiguration();
 
-        cfg.setMarshaller(marshaller);
         cfg.setNodeId(nodeId);
         cfg.setMBeanServer(jmx);
         cfg.setIgniteHome(home);
@@ -444,8 +443,7 @@ public class IgniteMock implements IgniteEx {
                 }
             };
 
-            if (marshaller instanceof BinaryMarshaller)
-                ctx.configure((BinaryMarshaller)marshaller, configuration().getBinaryConfiguration());
+            ctx.configure((BinaryMarshaller)marshaller, configuration().getBinaryConfiguration());
         }
 
         binaryMock = new NoOpBinary() {
