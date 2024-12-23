@@ -19,4 +19,4 @@
 # due to python version naming restrictions, which are enforced by python packaging tools
 # (see  https://www.python.org/dev/peps/pep-0440/)
 #
-__version__ = '2.18.0-SNAPSHOT'
+__version__ = '18.0.0-SNAPSHOT'
