@@ -788,7 +788,7 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
 
         for (int i = 0; i < gridsCnt; i++) {
             for (ComputeTaskView view : grid(i).context().systemView().<ComputeTaskView>view(TASKS_VIEW))
-                assertNotEquals(IdleVerifyTaskV2.class.getName(), view.taskName());
+                waitForCondition(() -> !IdleVerifyTaskV2.class.getName().equals(view.taskName()), 100);
         }
 
         assertTrue(idleVerifyFut.isDone());
