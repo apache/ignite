@@ -252,7 +252,7 @@ public class SortedIndexSpoolPlannerTest extends AbstractPlannerTest {
                     .and(input(1, isInstanceOf(IgniteSortedIndexSpool.class)
                         .and(spool -> spool.collation().getFieldCollations().get(0).getFieldIndex() == equalIdx)
                     ))),
-                "MergeJoinConverter", "HashJoinConverter", "NestedLoopJoinConverter", "FilterSpoolMergeToHashIndexSpoolRule"
+                "MergeJoinConverter", "NestedLoopJoinConverter", "HashJoinConverter", "FilterSpoolMergeToHashIndexSpoolRule"
             );
         }
     }
