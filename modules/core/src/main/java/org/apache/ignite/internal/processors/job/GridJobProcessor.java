@@ -1516,8 +1516,6 @@ public class GridJobProcessor extends GridProcessorAdapter {
 
         activeJobs.put(jobWorker.getJobId(), jobWorker);
 
-        log.info("jobId: " + jobWorker.getJobId() + ", job: " + jobWorker.getJob().getClass().getName());
-
         activeJobsMetric.increment();
 
         // Check if job has been concurrently cancelled.

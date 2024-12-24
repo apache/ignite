@@ -82,8 +82,6 @@ public class ComputeMXBeanImpl implements ComputeMXBean {
 
         /** {@inheritDoc} */
         @Override public Void apply(IgniteUuid sesId) {
-            System.out.println("ComputeCancelSession#apply()");
-
             ignite.context().job().cancelJob(sesId, null, false);
 
             IgniteCompute compute = ignite.compute(ignite.cluster().forLocal());

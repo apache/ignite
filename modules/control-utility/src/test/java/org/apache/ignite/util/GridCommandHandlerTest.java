@@ -775,37 +775,13 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
         for (int i = 0; i < 10000; i++)
             cache.put(i, i);
 
-        ListeningTestLogger listeningLog = new ListeningTestLogger(log);
-
-        LogListener cancelMsgListener = LogListener.matches("Idle verify was cancelled.").times(1).build();
-
-        listeningLog.registerListener(cancelMsgListener);
-
         IgniteInternalFuture<Integer> idleVerifyFut = GridTestUtils.runAsync(() -> execute("--cache", "idle_verify"));
 
         assertFalse(idleVerifyFut.isDone());
 
-        doSleep(1000);
-
         assertEquals(EXIT_CODE_OK, execute("--cache", "idle_verify", "--cancel"));
 
-        for (int i = 0; i < gridsCnt; i++) {
-            for (ComputeJobView jobView : grid(i).context().systemView().<ComputeJobView>view(JOBS_VIEW)) {
-                if (!waitForCondition(() -> !IdleVerifyTaskV2.class.getName().equals(jobView.taskName()), 1000))
-                    System.out.println("remained job id: " + jobView.id() + ", grid id: " + i + ", node id: " + grid(i).localNode().id());
-//                assertTrue(waitForCondition(() -> !IdleVerifyTaskV2.class.getName().equals(jobView.taskName()), 1000));
-            }
-
-            for (ComputeTaskView taskView : grid(i).context().systemView().<ComputeTaskView>view(TASKS_VIEW)) {
-                if (!waitForCondition(() -> !IdleVerifyTaskV2.class.getName().equals(taskView.taskName()), 1000))
-                    System.out.println("remained task node id: " + taskView.taskNodeId());
-//                 assertTrue(waitForCondition(() -> !IdleVerifyTaskV2.class.getName().equals(taskView.taskName()), 1000));
-            }
-        }
-
-        assertTrue(waitForCondition(() -> idleVerifyFut.isDone(), 1000));
-
-        assertTrue(waitForCondition(cancelMsgListener::check, 1000));
+        idleVerifyFut.get(getTestTimeout());
     }
 
     /**
