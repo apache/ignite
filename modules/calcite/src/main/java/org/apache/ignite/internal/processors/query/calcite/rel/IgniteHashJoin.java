@@ -15,7 +15,6 @@
  * limitations under the License.
  */
 
-
 package org.apache.ignite.internal.processors.query.calcite.rel;
 
 import java.util.List;

@@ -30,6 +30,7 @@ import org.apache.ignite.internal.processors.query.calcite.rel.IgniteSort;
 import org.apache.ignite.internal.processors.query.calcite.schema.IgniteSchema;
 import org.apache.ignite.internal.processors.query.calcite.trait.IgniteDistributions;
 import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.jetbrains.annotations.Nullable;
 import org.junit.Test;
 
@@ -43,10 +44,7 @@ public class HashJoinPlannerTest extends AbstractPlannerTest {
         "JoinCommuteRule"};
 
     /** */
-    private static final String[] JOIN_TYPES = {"LEFT", "RIGHT", "INNER", "FULL OUTER"};
-
-    /** */
-    private static int tableId = 1;
+    private static final String[] JOIN_TYPES = {"LEFT", "RIGHT", "INNER", "FULL"};
 
     /** */
     @Test
@@ -132,10 +130,11 @@ public class HashJoinPlannerTest extends AbstractPlannerTest {
     /** */
     @Test
     public void testHashJoinApplied() throws Exception {
-        for (List<Object> paramSet : joinAppliedParameters()) {
+        for (List<Object> paramSet : testJoinIsAppliedParameters()) {
             assert paramSet != null && paramSet.size() == 2;
 
             String sql = (String)paramSet.get(0);
+
             boolean canBePlanned = (Boolean)paramSet.get(1);
 
             TestTable tbl = createTable("T1", IgniteDistributions.single(), "ID", Integer.class, "C1", Integer.class);
@@ -156,7 +155,7 @@ public class HashJoinPlannerTest extends AbstractPlannerTest {
     }
 
     /** */
-    private static List<List<Object>> joinAppliedParameters() {
+    private static List<List<Object>> testJoinIsAppliedParameters() {
         return F.asList(
             F.asList("select t1.c1 from t1 %s join t1 t2 using(c1)", true),
             F.asList("select t1.c1 from t1 %s join t1 t2 on t1.c1 = t2.c1", true),
@@ -180,7 +179,7 @@ public class HashJoinPlannerTest extends AbstractPlannerTest {
         return createTable(
             name,
             size,
-            IgniteDistributions.affinity(0, ++tableId, 0),
+            IgniteDistributions.affinity(0, CU.cacheId("default"), 0),
             "ID", Integer.class,
             "INT_VAL", Integer.class,
             "STR_VAL", String.class
@@ -195,7 +194,7 @@ public class HashJoinPlannerTest extends AbstractPlannerTest {
         return createTable(
             "TEST_TBL_CMPLX",
             DEFAULT_TBL_SIZE,
-            IgniteDistributions.affinity(ImmutableIntList.of(0, 1), ++tableId, 0),
+            IgniteDistributions.affinity(ImmutableIntList.of(0, 1), CU.cacheId("default"), 0),
             "ID1", Integer.class,
             "ID2", Integer.class,
             "STR_VAL", String.class

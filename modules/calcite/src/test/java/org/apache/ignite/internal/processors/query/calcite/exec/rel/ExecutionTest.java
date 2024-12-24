@@ -291,7 +291,7 @@ public class ExecutionTest extends AbstractExecutionTest {
 
         assertEquals(4, rows.size());
 
-        checkDepJoinEmpResults(RIGHT, rows);
+        checkDepartmentsJoinEmployeesResults(RIGHT, rows);
     }
 
     /**
@@ -408,7 +408,7 @@ public class ExecutionTest extends AbstractExecutionTest {
         while (node.hasNext())
             rows.add(node.next());
 
-        checkDepJoinEmpResults(SEMI, rows);
+        checkDepartmentsJoinEmployeesResults(SEMI, rows);
     }
 
     /**
@@ -465,7 +465,7 @@ public class ExecutionTest extends AbstractExecutionTest {
 
         assertEquals(1, rows.size());
 
-        checkDepJoinEmpResults(ANTI, rows);
+        checkDepartmentsJoinEmployeesResults(ANTI, rows);
     }
 
     /**
@@ -534,15 +534,15 @@ public class ExecutionTest extends AbstractExecutionTest {
         }
     }
 
-    /** */
+    /** Tests 'Select e.id, e.name, d.name as dep_name from DEP d <JOIN TYPE> join EMP e on e.DEPNO = d.DEPNO'. */
     @Test
     public void testHashJoin() {
-        // select e.id, e.name, d.name as dep_name from DEP d <JOIN TYPE> join EMP e on e.DEPNO = d.DEPNO
         for (JoinRelType joinType : F.asList(LEFT, INNER, RIGHT, FULL, SEMI, ANTI)) {
             ExecutionContext<Object[]> ctx = executionContext(F.first(nodes()), UUID.randomUUID(), 0);
             IgniteTypeFactory tf = ctx.getTypeFactory();
 
             RelDataType rowType = TypeUtils.createRowType(tf, int.class, String.class);
+
             ScanNode<Object[]> leftDeps = new ScanNode<>(ctx, rowType, Arrays.asList(
                 new Object[] {1, "Core"},
                 new Object[] {2, "SQL"},
@@ -550,6 +550,7 @@ public class ExecutionTest extends AbstractExecutionTest {
             ));
 
             rowType = TypeUtils.createRowType(tf, int.class, String.class, Integer.class);
+
             ScanNode<Object[]> rightEmps = new ScanNode<>(ctx, rowType, Arrays.asList(
                 new Object[] {0, "Igor", 1},
                 new Object[] {1, "Roman", 2},
@@ -575,6 +576,7 @@ public class ExecutionTest extends AbstractExecutionTest {
             project.register(join);
 
             RootNode<Object[]> rootScan = new RootNode<>(ctx, rowType);
+
             rootScan.register(project);
 
             assert rootScan.hasNext();
@@ -584,12 +586,12 @@ public class ExecutionTest extends AbstractExecutionTest {
             while (rootScan.hasNext())
                 rows.add(rootScan.next());
 
-            checkDepJoinEmpResults(joinType, rows);
+            checkDepartmentsJoinEmployeesResults(joinType, rows);
         }
     }
 
     /** */
-    private void checkDepJoinEmpResults(JoinRelType joinType, ArrayList<Object[]> results) {
+    private void checkDepartmentsJoinEmployeesResults(JoinRelType joinType, ArrayList<Object[]> results) {
         switch (joinType) {
             case LEFT:
                 assertEquals(4, results.size());

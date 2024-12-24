@@ -32,7 +32,7 @@ import org.apache.ignite.internal.processors.query.calcite.exec.ExecutionContext
 import org.apache.ignite.internal.processors.query.calcite.exec.RowHandler;
 import org.apache.ignite.internal.processors.query.calcite.type.IgniteTypeFactory;
 
-/** HashJoin implementor. */
+/** Hash join implementor. */
 public abstract class HashJoinNode<Row> extends AbstractRightMaterializedJoinNode<Row> {
     /** */
     private static final int INITIAL_CAPACITY = 128;
@@ -41,10 +41,10 @@ public abstract class HashJoinNode<Row> extends AbstractRightMaterializedJoinNod
     private static final Key NULL_KEY = new Key();
 
     /** */
-    private final int[] leftJoinPositions;
+    private final int[] leftKeys;
 
     /** */
-    private final int[] rightJoinPositions;
+    private final int[] rightKeys;
 
     /** Output row handler. */
     protected final RowHandler<Row> outRowHnd;
@@ -66,21 +66,21 @@ public abstract class HashJoinNode<Row> extends AbstractRightMaterializedJoinNod
     protected HashJoinNode(ExecutionContext<Row> ctx, RelDataType rowType, JoinInfo info, RowHandler<Row> outRowHnd) {
         super(ctx, rowType);
 
-        leftJoinPositions = info.leftKeys.toIntArray();
-        rightJoinPositions = info.rightKeys.toIntArray();
+        leftKeys = info.leftKeys.toIntArray();
+        rightKeys = info.rightKeys.toIntArray();
 
-        assert leftJoinPositions.length == rightJoinPositions.length;
+        assert leftKeys.length == rightKeys.length;
 
         this.outRowHnd = outRowHnd;
     }
 
     /** {@inheritDoc} */
     @Override protected void rewindInternal() {
+        super.rewindInternal();
+
         rightIt = Collections.emptyIterator();
 
         hashStore.clear();
-
-        super.rewindInternal();
     }
 
     /** Creates certain join node. */
@@ -116,13 +116,13 @@ public abstract class HashJoinNode<Row> extends AbstractRightMaterializedJoinNod
                 return new AntiHashJoin<>(ctx, outRowType, info, rowHnd);
 
             default:
-                throw new IllegalArgumentException("Join of type ''" + type + "' isn't supported yet.");
+                throw new IllegalArgumentException("Join of type '" + type + "' isn't supported.");
         }
     }
 
     /** */
     protected Collection<Row> lookup(Row row) {
-        Key row0 = extractKey(row, leftJoinPositions);
+        Key row0 = extractKey(row, leftKeys);
 
         // Key with null field can't be compared with other keys.
         if (row0 == NULL_KEY)
@@ -162,7 +162,7 @@ public abstract class HashJoinNode<Row> extends AbstractRightMaterializedJoinNod
                 return innerIt.next();
             }
 
-            void advance() {
+            private void advance() {
                 while (it.hasNext()) {
                     TouchedCollection<RowT> coll = it.next();
 
@@ -187,9 +187,9 @@ public abstract class HashJoinNode<Row> extends AbstractRightMaterializedJoinNod
 
         waitingRight--;
 
-        Key key = extractKey(row, rightJoinPositions);
+        Key key = extractKey(row, rightKeys);
 
-        // No storing the row in hashStore, if it contains NULL. And we won't emit right part alone like in FULL OUTER and RIGHT joins.
+        // No storing in #hashStore, if the row contains NULL. And we won't emit right part alone like in FULL OUTER and RIGHT joins.
         if (keepRowsWithNull() || key != NULL_KEY) {
             TouchedCollection<Row> raw = hashStore.computeIfAbsent(key, k -> new TouchedCollection<>());
 
@@ -213,7 +213,7 @@ public abstract class HashJoinNode<Row> extends AbstractRightMaterializedJoinNod
     }
 
     /** */
-    protected void getMoreOrEnd() throws Exception {
+    protected void requestMoreOrEnd() throws Exception {
         if (waitingRight == 0)
             rightSource().request(waitingRight = IN_BUFFER_SIZE);
 
@@ -230,8 +230,7 @@ public abstract class HashJoinNode<Row> extends AbstractRightMaterializedJoinNod
 
     /**
      * Returns {@code true} if we need to store the row from right shoulder even if it contains NULL in any of join key position.
-     *
-     * <p>This is required for joins which emit unmatched part of the right shoulder, such as RIGHT JOIN and FULL OUTER JOIN.
+     * This is required for joins which emit unmatched part of the right shoulder, such as RIGHT JOIN and FULL OUTER JOIN.
      *
      * @return {@code true} when row must be stored in {@link #hashStore} unconditionally.
      */
@@ -247,7 +246,7 @@ public abstract class HashJoinNode<Row> extends AbstractRightMaterializedJoinNod
          * @param ctx Execution context.
          * @param rowType Row type.
          * @param info Join info.
-         * @param outRowHnd Output row factory.
+         * @param outRowHnd Output row handler.
          */
         private InnerHashJoin(ExecutionContext<RowT> ctx, RelDataType rowType, JoinInfo info, RowHandler<RowT> outRowHnd) {
             super(ctx, rowType, info, outRowHnd);
@@ -288,7 +287,7 @@ public abstract class HashJoinNode<Row> extends AbstractRightMaterializedJoinNod
                 }
             }
 
-            getMoreOrEnd();
+            requestMoreOrEnd();
         }
     }
 
@@ -363,7 +362,7 @@ public abstract class HashJoinNode<Row> extends AbstractRightMaterializedJoinNod
                 }
             }
 
-            getMoreOrEnd();
+            requestMoreOrEnd();
         }
     }
 
@@ -378,7 +377,7 @@ public abstract class HashJoinNode<Row> extends AbstractRightMaterializedJoinNod
          * @param ctx Execution context.
          * @param rowType Row type.
          * @param info Join info.
-         * @param outRowHnd Output row factory.
+         * @param outRowHnd Output row handler.
          * @param leftRowFactory Left row factory.
          */
         private RightHashJoin(
@@ -459,7 +458,7 @@ public abstract class HashJoinNode<Row> extends AbstractRightMaterializedJoinNod
                 }
             }
 
-            getMoreOrEnd();
+            requestMoreOrEnd();
         }
 
         /** {@inheritDoc} */
@@ -574,7 +573,7 @@ public abstract class HashJoinNode<Row> extends AbstractRightMaterializedJoinNod
                 }
             }
 
-            getMoreOrEnd();
+            requestMoreOrEnd();
         }
 
         /** {@inheritDoc} */
@@ -627,7 +626,7 @@ public abstract class HashJoinNode<Row> extends AbstractRightMaterializedJoinNod
                 }
             }
 
-            getMoreOrEnd();
+            requestMoreOrEnd();
         }
     }
 
@@ -675,7 +674,7 @@ public abstract class HashJoinNode<Row> extends AbstractRightMaterializedJoinNod
                 }
             }
 
-            getMoreOrEnd();
+            requestMoreOrEnd();
         }
     }
 

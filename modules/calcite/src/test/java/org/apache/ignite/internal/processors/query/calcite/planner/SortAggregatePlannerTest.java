@@ -94,7 +94,6 @@ public class SortAggregatePlannerTest extends AbstractAggregatePlannerTest {
             publicSchema,
             F.concat(HASH_AGG_RULES,
                 "NestedLoopJoinConverter",
-                "HashConverter",
                 "CorrelatedNestedLoopJoin",
                 "CorrelateToNestedLoopRule"
             )

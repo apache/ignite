@@ -270,17 +270,10 @@ public class LogicalRelImplementor<Row> implements IgniteRelVisitor<Node<Row>> {
 
     /** {@inheritDoc} */
     @Override public Node<Row> visit(IgniteHashJoin rel) {
-        RelDataType outType = rel.getRowType();
-        RelDataType leftType = rel.getLeft().getRowType();
-        RelDataType rightType = rel.getRight().getRowType();
-        JoinRelType joinType = rel.getJoinType();
+        Node<Row> node = HashJoinNode.create(ctx, rel.getRowType(), rel.getLeft().getRowType(), rel.getRight().getRowType(),
+            rel.getJoinType(), rel.analyzeCondition());
 
-        Node<Row> node = HashJoinNode.create(ctx, outType, leftType, rightType, joinType, rel.analyzeCondition());
-
-        Node<Row> leftInput = visit(rel.getLeft());
-        Node<Row> rightInput = visit(rel.getRight());
-
-        node.register(Arrays.asList(leftInput, rightInput));
+        node.register(Arrays.asList(visit(rel.getLeft()), visit(rel.getRight())));
 
         return node;
     }

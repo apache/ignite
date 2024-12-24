@@ -44,7 +44,7 @@ import static org.junit.Assert.assertThat;
  */
 public class JoinColocationPlannerTest extends AbstractPlannerTest {
     /** */
-    private static String[] DISABLED_RULES = new String[] {"HashJoinConverter", "MergeJoinConverter"};
+    private static final String[] DISABLED_RULES = new String[] {"HashJoinConverter", "MergeJoinConverter"};
 
     /**
      * Join of the same tables with a simple affinity is expected to be colocated.

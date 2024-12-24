@@ -24,6 +24,7 @@ import org.apache.ignite.calcite.CalciteQueryEngineConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.SqlConfiguration;
 import org.apache.ignite.internal.processors.query.calcite.QueryChecker;
+import org.apache.ignite.internal.processors.query.calcite.hint.HintDefinition;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.junit.Test;
@@ -236,17 +237,18 @@ public class MemoryQuotasIntegrationTest extends AbstractBasicIntegrationTest {
 
     /** */
     @Test
-    public void testJoins() {
+    public void testRightMeterializedJoins() {
         sql("CREATE TABLE tbl2 (id INT, b VARBINARY) WITH TEMPLATE=PARTITIONED");
 
         for (int i = 0; i < 800; i++)
             sql("INSERT INTO tbl2 VALUES (?, ?)", i, new byte[1000]);
 
-        List<List<String>> params = F.asList(F.asList("NL_JOIN", "NestedLoopJoin"), F.asList("HASH_JOIN", "IgniteHashJoin"));
+        List<List<String>> params = F.asList(F.asList(HintDefinition.NL_JOIN.name(), "NestedLoopJoin"),
+            F.asList(HintDefinition.HASH_JOIN.name(), "IgniteHashJoin"));
 
-        for (List<String> paramSet : params) {
-            assertQuery("SELECT /*+ " + paramSet.get(0) + " */ tbl.id, tbl.b, tbl2.id, tbl2.b FROM tbl JOIN tbl2 USING (id)")
-                .matches(QueryChecker.containsSubPlan(paramSet.get(1)))
+        for (List<String> params0 : params) {
+            assertQuery("SELECT /*+ " + params0.get(0) + " */ tbl.id, tbl.b, tbl2.id, tbl2.b FROM tbl JOIN tbl2 USING (id)")
+                .matches(QueryChecker.containsSubPlan(params0.get(1)))
                 .resultSize(800)
                 .check();
         }
