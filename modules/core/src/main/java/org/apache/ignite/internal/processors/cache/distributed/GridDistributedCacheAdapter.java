@@ -72,6 +72,10 @@ public abstract class GridDistributedCacheAdapter<K, V> extends GridCacheAdapter
     /** */
     private static final long serialVersionUID = 0L;
 
+    /** Exception thrown when a non-transactional IgniteCache operation is invoked within a transaction. */
+    public static final String NON_TRANSACTIONAL_IGNITE_CACHE_IN_TX_ERROR_MESSAGE = "Failed to invoke a " +
+        "non-transactional IgniteCache %s operation within a transaction.";
+
     /**
      * Empty constructor required by {@link Externalizable}.
      */
@@ -93,10 +97,6 @@ public abstract class GridDistributedCacheAdapter<K, V> extends GridCacheAdapter
     protected GridDistributedCacheAdapter(GridCacheContext<K, V> ctx, GridCacheConcurrentMap map) {
         super(ctx, map);
     }
-
-    /** Exception thrown when a non-transactional IgniteCache operation is invoked within a transaction. */
-    public static final String NON_TRANSACTIONAL_IGNITE_CACHE_IN_TX_ERROR_MESSAGE = "Failed to invoke a " +
-        "non-transactional IgniteCache %s operation within a transaction.";
 
     /** {@inheritDoc} */
     @Override public IgniteInternalFuture<Boolean> txLockAsync(
@@ -169,7 +169,7 @@ public abstract class GridDistributedCacheAdapter<K, V> extends GridCacheAdapter
 
     /** {@inheritDoc} */
     @Override public void removeAll() throws IgniteCheckedException {
-        if (ctx.transactional() && ctx.grid().transactions().tx() != null)
+        if (ctx.grid().transactions().tx() != null)
             throw new CacheException(String.format(NON_TRANSACTIONAL_IGNITE_CACHE_IN_TX_ERROR_MESSAGE, "removeAll"));
 
         try {
@@ -209,7 +209,7 @@ public abstract class GridDistributedCacheAdapter<K, V> extends GridCacheAdapter
 
     /** {@inheritDoc} */
     @Override public IgniteInternalFuture<?> removeAllAsync() {
-        if (ctx.transactional() && ctx.grid().transactions().tx() != null)
+        if (ctx.grid().transactions().tx() != null)
             throw new CacheException(String.format(NON_TRANSACTIONAL_IGNITE_CACHE_IN_TX_ERROR_MESSAGE, "removeAllAsync"));
 
         GridFutureAdapter<Void> opFut = new GridFutureAdapter<>();

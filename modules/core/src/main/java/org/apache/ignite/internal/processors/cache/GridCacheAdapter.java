@@ -1123,7 +1123,7 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
      * @return Future.
      */
     private IgniteInternalFuture<?> executeClearTask(@Nullable Set<? extends K> keys, boolean near) {
-        if (ctx.transactional() && ctx.grid().transactions().tx() != null)
+        if (ctx.grid().transactions().tx() != null)
             throw new CacheException(NON_TRANSACTIONAL_IGNITE_CACHE_CLEAR_IN_TX_ERROR_MESSAGE);
 
         Collection<ClusterNode> srvNodes = ctx.grid().cluster().forCacheNodes(name(), !near, near, false).nodes();
@@ -4008,7 +4008,7 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
      * @param readers Whether to clear readers.
      */
     private boolean clearLocally0(K key, boolean readers) {
-        if (ctx.transactional() && ctx.grid().transactions().tx() != null)
+        if (ctx.grid().transactions().tx() != null)
             throw new CacheException(NON_TRANSACTIONAL_IGNITE_CACHE_CLEAR_IN_TX_ERROR_MESSAGE);
 
         ctx.shared().cache().checkReadOnlyState("clear", ctx.config());
