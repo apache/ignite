@@ -18,13 +18,10 @@
 package org.apache.ignite.configuration;
 
 import java.io.Serializable;
-import java.util.ArrayList;
 import java.util.EnumSet;
 import java.util.Set;
 import javax.cache.configuration.Factory;
-import org.apache.ignite.internal.util.TransientSerializable;
 import org.apache.ignite.internal.util.typedef.internal.S;
-import org.apache.ignite.lang.IgniteProductVersion;
 import org.apache.ignite.transactions.Transaction;
 import org.apache.ignite.transactions.TransactionConcurrency;
 import org.apache.ignite.transactions.TransactionIsolation;
@@ -32,7 +29,6 @@ import org.apache.ignite.transactions.TransactionIsolation;
 /**
  * Transactions configuration.
  */
-@TransientSerializable(methodName = "transientSerializableFields")
 public class TransactionConfiguration implements Serializable {
     /**
      * Supported levels of transaction isolation for SQL queries.
@@ -40,9 +36,6 @@ public class TransactionConfiguration implements Serializable {
      * @see #setTxAwareQueriesEnabled(boolean)
      */
     public static final Set<TransactionIsolation> TX_AWARE_QUERIES_SUPPORTED_MODES = EnumSet.of(TransactionIsolation.READ_COMMITTED);
-
-    /** */
-    private static final IgniteProductVersion DEADLOCK_TIMEOUT_SINCE = IgniteProductVersion.fromString("2.7.3");
 
     /** */
     private static final long serialVersionUID = 0L;
@@ -442,21 +435,5 @@ public class TransactionConfiguration implements Serializable {
     /** {@inheritDoc} */
     @Override public String toString() {
         return S.toString(TransactionConfiguration.class, this);
-    }
-
-    /**
-     * Excludes incompatible fields from serialization/deserialization process.
-     *
-     * @param ver Sender/Receiver node version.
-     * @return Array of excluded from serialization/deserialization fields.
-     */
-    @SuppressWarnings("unused")
-    private static String[] transientSerializableFields(IgniteProductVersion ver) {
-        ArrayList<String> transients = new ArrayList<>(2);
-
-        if (DEADLOCK_TIMEOUT_SINCE.compareToIgnoreTimestamp(ver) >= 0)
-            transients.add("deadlockTimeout");
-
-        return transients.isEmpty() ? null : transients.toArray(new String[transients.size()]);
     }
 }
