@@ -21,6 +21,8 @@ import java.math.BigDecimal;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.EnumSet;
+import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -101,8 +103,11 @@ public class IgniteSqlValidator extends SqlValidatorImpl {
         HUMAN_READABLE_ALIASES_FOR = Collections.unmodifiableSet(kinds);
     }
 
-    /** Dynamic parameters. */
-    Object[] parameters;
+    /** Validated dynamic parameters with the passed values if any. */
+    @Nullable private Map<Integer, DynamicParameterHolder> dynParams;
+
+    /** Detected dynamic parameter nodes. */
+    @Nullable private Set<SqlDynamicParam> dynParamNodes;
 
     /**
      * Creates a validator.
@@ -117,7 +122,22 @@ public class IgniteSqlValidator extends SqlValidatorImpl {
         IgniteTypeFactory typeFactory, SqlValidator.Config config, Object[] parameters) {
         super(opTab, catalogReader, typeFactory, config);
 
-        this.parameters = parameters;
+        if (!F.isEmpty(parameters)) {
+            dynParams = new HashMap<>(parameters.length);
+
+            for (int i = 0; i < parameters.length; ++i)
+                dynParams.put(i, new DynamicParameterHolder(parameters[i]));
+        }
+    }
+
+    /** */
+    @Nullable private DynamicParameterHolder dynamicParamater(int idx) {
+        assert idx >= 0;
+
+        if (dynParams == null)
+            dynParams = new HashMap<>();
+
+        return dynParams.computeIfAbsent(idx, idx0 -> new DynamicParameterHolder());
     }
 
     /** {@inheritDoc} */
@@ -257,19 +277,12 @@ public class IgniteSqlValidator extends SqlValidatorImpl {
                 throw newValidationError(n, IgniteResource.INSTANCE.correctIntegerLimit(nodeName));
         }
         else if (n instanceof SqlDynamicParam) {
-            // will fail in params check.
-            if (F.isEmpty(parameters))
-                return;
+            SqlDynamicParam dynamicParam = (SqlDynamicParam)n;
 
-            int idx = ((SqlDynamicParam)n).getIndex();
+            DynamicParameterHolder pHolder = deriveDynamicParamType(dynamicParam);
 
-            if (idx < parameters.length) {
-                Object param = parameters[idx];
-                if (parameters[idx] instanceof Integer) {
-                    if ((Integer)param < 0)
-                        throw newValidationError(n, IgniteResource.INSTANCE.correctIntegerLimit(nodeName));
-                }
-            }
+            if (pHolder.hasValue && pHolder.val instanceof Integer && (Integer)pHolder.val < 0)
+                throw newValidationError(n, IgniteResource.INSTANCE.correctIntegerLimit(nodeName));
         }
     }
 
@@ -287,6 +300,59 @@ public class IgniteSqlValidator extends SqlValidatorImpl {
         }
 
         super.validateCall(call, scope);
+    }
+
+    /** {@inheritDoc} */
+    @Override public RelDataType deriveType(SqlValidatorScope scope, SqlNode expr) {
+        if (expr instanceof SqlDynamicParam)
+            return deriveDynamicParamType((SqlDynamicParam)expr).type;
+
+        return super.deriveType(scope, expr);
+    }
+
+    /**
+     * Derives type of the passed dynamic parameter.
+     *
+     * @return A dynamic parameter holder related to {@code node} with the derived type.
+     */
+    private DynamicParameterHolder deriveDynamicParamType(SqlDynamicParam node) {
+        if (dynParamNodes == null)
+            dynParamNodes = new HashSet<>();
+
+        DynamicParameterHolder pHolder = dynamicParamater(node.getIndex());
+
+        if (pHolder.type != null && pHolder.hasValue)
+            setValidatedNodeType(node, pHolder.type);
+        else {
+            dynParamNodes.add(node);
+
+            if (pHolder.hasValue) {
+                RelDataType type = pHolder.val == null
+                    ? typeFactory().createSqlType(SqlTypeName.NULL)
+                    : typeFactory().toSql(typeFactory().createType(pHolder.val.getClass()));
+
+                dynamicParameterType(pHolder, node, typeFactory.createTypeWithNullability(type, true));
+            }
+            else {
+                RelDataType validatedNodeType = getValidatedNodeTypeIfKnown(node);
+
+                dynamicParameterType(pHolder, node, validatedNodeType == null ? unknownType : validatedNodeType);
+            }
+        }
+
+        return pHolder;
+    }
+
+    /** Sets {@code node} and {@code type} to {@code pHolder}. */
+    private void dynamicParameterType(DynamicParameterHolder pHolder, SqlDynamicParam node, RelDataType type) {
+        assert pHolder.node == null || node.getIndex() == pHolder.node.getIndex()
+            : "Node is already set for a dynamic parameter #" + pHolder.node.getIndex();
+
+        pHolder.type = type;
+
+        pHolder.node = node;
+
+        setValidatedNodeType(node, type);
     }
 
     /** {@inheritDoc} */
@@ -540,12 +606,18 @@ public class IgniteSqlValidator extends SqlValidatorImpl {
             return;
 
         if (node instanceof SqlCall) {
+            final SqlCall call = (SqlCall)node;
+
+            // SqlStdOperatorTable::IS_NULL and SqlStdOperatorTable::IS_NOT_NULL overrides with VARCHAR_1024 for argument type inference.
+            if ((node.getKind() == SqlKind.IS_NULL || node.getKind() == SqlKind.IS_NOT_NULL)
+                && call.getOperandList().get(0) instanceof SqlDynamicParam)
+                return;
+
             final SqlValidatorScope newScope = scopes.get(node);
 
             if (newScope != null)
                 scope = newScope;
 
-            final SqlCall call = (SqlCall)node;
             final SqlOperandTypeInference operandTypeInference = call.getOperator().getOperandTypeInference();
             final SqlOperandTypeChecker operandTypeChecker = call.getOperator().getOperandTypeChecker();
             final SqlCallBinding callBinding = new SqlCallBinding(this, scope, call);
@@ -583,36 +655,20 @@ public class IgniteSqlValidator extends SqlValidatorImpl {
             super.inferUnknownTypes(inferredType, scope, node);
     }
 
-    /**
-     * Tries to set actual type of dynamic parameter if {@code node} is a {@link SqlDynamicParam} and if its index
-     * is actual to {@link #parameters}.
-     *
-     * @return {@code True} if a new type was set. {@code False} otherwise.
-     */
+    /** @return {@code True} if a type was successfully set to {@code node}. {@code False} if type is not determined. */
     private boolean inferDynamicParamType(RelDataType inferredType, SqlNode node) {
-        if (parameters == null || !(node instanceof SqlDynamicParam) || ((SqlDynamicParam)node).getIndex() >= parameters.length)
+        if (!(node instanceof SqlDynamicParam))
             return false;
 
-        Object val = parameters[((SqlDynamicParam)node).getIndex()];
+        SqlDynamicParam dpNode = (SqlDynamicParam)node;
 
-        if (val == null) {
-            if (inferredType.equals(unknownType)) {
-                setValidatedNodeType(node, typeFactory().createSqlType(SqlTypeName.NULL));
+        DynamicParameterHolder pHolder = deriveDynamicParamType(dpNode);
 
-                return true;
-            }
-
+        if (unknownType.equals(inferredType) && unknownType.equals(pHolder.type))
             return false;
-        }
 
-        RelDataType valType = typeFactory().toSql(typeFactory().createType(val.getClass()));
-
-        assert !unknownType.equals(valType);
-
-        if (unknownType.equals(inferredType) || valType.getFamily().equals(inferredType.getFamily()))
-            setValidatedNodeType(node, valType);
-        else
-            setValidatedNodeType(node, inferredType);
+        if (!inferredType.equals(unknownType) && !inferredType.getFamily().equals(pHolder.type.getFamily()))
+            dynamicParameterType(pHolder, dpNode, typeFactory.createTypeWithNullability(inferredType, true));
 
         return true;
     }
@@ -633,5 +689,34 @@ public class IgniteSqlValidator extends SqlValidatorImpl {
         }
 
         return super.resolveLiteral(literal);
+    }
+
+    /** */
+    private static final class DynamicParameterHolder {
+        /** */
+        @Nullable private final Object val;
+
+        /** */
+        private final boolean hasValue;
+
+        /** */
+        private SqlDynamicParam node;
+
+        /** */
+        private RelDataType type;
+
+        /** */
+        private DynamicParameterHolder(@Nullable Object val) {
+            this.val = val;
+
+            this.hasValue = true;
+        }
+
+        /** */
+        private DynamicParameterHolder() {
+            this.val = null;
+
+            this.hasValue = false;
+        }
     }
 }
