@@ -32,6 +32,7 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.cache.CacheEntryVersion;
 import org.apache.ignite.internal.IgniteEx;
+import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.binary.BinaryObjectEx;
 import org.apache.ignite.internal.management.cache.PartitionKeyV2;
 import org.apache.ignite.internal.pagemem.PageIdAllocator;
@@ -297,6 +298,9 @@ public class IdleVerifyUtility {
         VerifyPartitionContext ctx = new VerifyPartitionContext();
 
         while (it.hasNextX()) {
+            if (Thread.currentThread().isInterrupted())
+                throw new IgniteInterruptedCheckedException("Interrupted due to job cancel");
+
             CacheDataRow row = it.nextX();
 
             if (row.expireTime() > 0)

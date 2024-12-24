@@ -224,7 +224,7 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
 
         initDiagnosticDir();
 
-        cleanDiagnosticDir();
+        cleanPersistenceDir();
     }
 
     /** {@inheritDoc} */
@@ -745,6 +745,31 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
 
         assertEquals(EXIT_CODE_OK, execute("--cache", "idle_verify"));
         assertContains(log, testOut.toString(), "The check procedure has finished, no conflicts have been found.");
+    }
+
+    /**
+     *
+     */
+    @Test
+    public void testIdleVerifyCancelCommand() throws Exception {
+        final int gridsCnt = 4;
+
+        IgniteEx srv = startGrids(gridsCnt);
+
+        srv.cluster().state(ACTIVE);
+
+        IgniteCache<Integer, Integer> cache = srv.createCache(new CacheConfiguration<Integer, Integer>(DEFAULT_CACHE_NAME).setBackups(3));
+
+        for (int i = 0; i < 10000; i++)
+            cache.put(i, i);
+
+        IgniteInternalFuture<Integer> idleVerifyFut = GridTestUtils.runAsync(() -> execute("--cache", "idle_verify"));
+
+        assertFalse(idleVerifyFut.isDone());
+
+        assertEquals(EXIT_CODE_OK, execute("--cache", "idle_verify", "--cancel"));
+
+        idleVerifyFut.get(getTestTimeout());
     }
 
     /**
