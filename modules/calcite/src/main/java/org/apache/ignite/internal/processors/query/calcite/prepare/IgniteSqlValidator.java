@@ -101,7 +101,7 @@ public class IgniteSqlValidator extends SqlValidatorImpl {
         HUMAN_READABLE_ALIASES_FOR = Collections.unmodifiableSet(kinds);
     }
 
-    /** Passed query arguments. */
+    /** Passed to the query dynamic parameters. */
     private final Object[] parameters;
 
     /** If {@code true}, enables validation of {@link #parameters}'s number against the query's dynamic parameters. */
