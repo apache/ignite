@@ -282,6 +282,9 @@ public class VerifyBackupPartitionsTaskV2 extends ComputeTaskAdapter<CacheIdleVe
             return res;
         }
 
+        /**
+         *
+         */
         private static void cancelFuts(int i, List<Future<Map<PartitionKeyV2, PartitionHashRecordV2>>> partHashCalcFuts) {
             for (int j = i + 1; j < partHashCalcFuts.size(); j++)
                 partHashCalcFuts.get(j).cancel(false);

@@ -18,8 +18,6 @@
 package org.apache.ignite.internal.management.cache;
 
 import java.util.List;
-import java.util.Optional;
-import java.util.concurrent.atomic.AtomicInteger;
 
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
@@ -28,7 +26,6 @@ import org.apache.ignite.internal.management.api.NoArg;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.visor.VisorJob;
 import org.apache.ignite.internal.visor.VisorMultiNodeTask;
-import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.resources.IgniteInstanceResource;
 import org.apache.ignite.resources.LoggerResource;
 import org.apache.ignite.spi.systemview.view.ComputeJobView;
@@ -92,65 +89,18 @@ public class CacheIdleVerifyCancelTask extends VisorMultiNodeTask<NoArg, Void, V
          * @param taskCls Job class.
          */
         private void cancelJob(Class<?> taskCls) {
-            AtomicInteger jobsCnt = new AtomicInteger();
-            AtomicInteger tasksCnt = new AtomicInteger();
-
             F.iterator(ignite.context().systemView().view(TASKS_VIEW),
                 ComputeTaskView::sessionId,
                 true,
-                taskView -> {
-                    log.info("taskView.taskClassName(): " + taskView.taskClassName() + ", taskView.taskName(): " + taskView.taskName());
-                    return taskView.taskClassName().equals(taskCls.getName());
-                }
-            ).forEach(sesId -> {
-                ignite.context().job().cancelJob(sesId, null, false);
-
-                tasksCnt.incrementAndGet();
-            });
+                taskView -> taskView.taskClassName().equals(taskCls.getName())
+            ).forEach(sesId -> ignite.context().job().cancelJob(sesId, null, false));
 
             F.iterator(
                 ignite.context().systemView().view(JOBS_VIEW),
                 ComputeJobView::sessionId,
                 true,
-                jobView -> {
-                    log.info("jobView.taskClassName(): " + jobView.taskClassName() + ", jobView.taskName(): " + jobView.taskName());
-                    return jobView.taskClassName().equals(taskCls.getName());
-                }
-            ).forEach(sesId -> {
-                ignite.context().job().cancelJob(sesId, null, false);
-
-                jobsCnt.incrementAndGet();
-            });
-
-            log.info(taskCls.getName() + " found jobs: " + jobsCnt + ", found tasks: " + tasksCnt);
-        }
-
-        /**
-         * @return Retrieves idle_verify command session id if present.
-         */
-        private Optional<IgniteUuid> idleVerifyId() {
-            log.info("id retrieve called");
-
-            int idleVerifyCnt = 0;
-
-            ComputeTaskView foundView = null;
-
-            for (ComputeTaskView view : ignite.context().systemView().<ComputeTaskView>view(TASKS_VIEW)) {
-                if (view.taskName().equals(IdleVerifyTaskV2.class.getName())) {
-                    idleVerifyCnt++;
-
-                    foundView = view;
-                }
-            }
-
-            switch (idleVerifyCnt) {
-                case 0:
-                    return Optional.empty();
-                case 1:
-                    return Optional.of(foundView.id());
-                default:
-                    throw new IgniteException("Invalid running idle verify command count: " + idleVerifyCnt);
-            }
+                jobView -> jobView.taskClassName().equals(taskCls.getName())
+            ).forEach(sesId -> ignite.context().job().cancelJob(sesId, null, false));
         }
     }
 }

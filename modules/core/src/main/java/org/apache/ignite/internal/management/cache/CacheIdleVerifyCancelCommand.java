@@ -17,11 +17,11 @@
 
 package org.apache.ignite.internal.management.cache;
 
+import java.util.Collection;
+
 import org.apache.ignite.internal.client.GridClientNode;
 import org.apache.ignite.internal.management.api.ComputeCommand;
 import org.apache.ignite.internal.management.api.NoArg;
-
-import java.util.Collection;
 
 /**
  * Cancels idle_verify command.

@@ -784,8 +784,9 @@ public class GridJobWorker extends GridWorker implements GridTimeoutObject {
                 status = CANCELLED;
 
                 U.wrapThreadLoader(dep.classLoader(), (IgniteRunnable)() -> {
-                    try (OperationSecurityContext c = ctx.security().withContext(secCtx))
+                    try (OperationSecurityContext c = ctx.security().withContext(secCtx)) {
                         job0.cancel();
+                    }
                 });
             }
 
